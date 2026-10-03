@@ -22,11 +22,13 @@ Selector census command (script-vm.md §2.3): grep of every `_(DoInterp|HasPrope
 | file | sections | labels present |
 |---|---|---|
 | `data-format.md` | 1 segment file (layout, xxd, encryption, overlay/saves, id map) · 2 LZ codec · 3 level maps (header, cell bits, chunks/roofs, tiles/animation/compo tiles/displacement filters, seen bits) · 4 props (table, record, kind byte, per-type tables, worked decode) · 5 world globals 0xF0xx · 6 characters (CharEntry, names/portraits, schedules) · 7 save game | HIGH MED LOW NOT RESOLVED |
-| `script-vm.md` | 1 VAddr values & literals · 2 segments, classes, dispatch, selector table · 3 frames · 4 statement opcodes · 5 expression opcodes + worked decode · 6 builtin table (resolved: location, calling convention → `script-builtins.md`) · 7 persistent heap | HIGH MED LOW NOT RESOLVED |
+| `script-vm.md` | 1 VAddr values & literals · 2 segments, classes, dispatch, selector table · 3 frames · 4 statement opcodes · 5 expression opcodes + worked decode · 6 builtin table (resolved: location, calling convention → `script-builtins.md`) · 7 persistent heap · 8 decoder findings from `scriptdis.py` (text termination, absolute branches, call encodings, writable globals, iterator shape, 0x0101 symtab, stale-slot builtins, shared methods) | HIGH MED LOW NOT RESOLVED |
 | `script-builtins.md` | 0 provenance/recipe/notation · 1 iterator protocol · 2 opcode → address → behaviour table (0xA0–0xFE, 95 rows) · 3 what it settles · 4 builtin NOT RESOLVED | HIGH MED LOW NOT RESOLVED |
 | `ai-scripts.md` | 1 vocabulary (STR# 9300–9321) · 2 lexer/grammar · 3 compiled form + xxd · 4 evaluator, objects/modifiers, built-in tests · 5 scenario tests/actions = script routines · 6 binding · 7 `.rsrc` siblings · 8 the seven scripts | HIGH MED LOW NOT RESOLVED |
 | `rules.md` | 1 combat · 2 movement/party/levels · 3 schedules & `EvalCondition` · 4 status/regeneration · 5 conversation · 6 magic/skills/trade | HIGH MED LOW NOT RESOLVED |
 | `engine-classes.md` | 1 program shape · 2 class roles (framework, world, logic, rendering, out-of-scope) · 3 clock, rates, pacing, day/night, sky · 5 screen pipeline | HIGH MED LOW NOT RESOLVED |
+| `script-census.md` | mechanical output of `tools/scriptdis.py`: 1 script-band segments by page/kind · 2 totals, coverage, 0 unknown opcodes, plaintext 0x0101/0x0210 + symtab mapping · 3 opcode histograms · 4 builtin calls/arg counts · 5 selectors (methods incl. shared, properties), fields, globals · 6 string tables · 7 open pages measured (calls in, never called, native reach, computed calls, data pages) | HIGH (mechanical) |
+| `tools/scriptdis.py` | stdlib disassembler for all 958 script-band segments → `ghidra/cythera-scripts/<seg>.txt` (git-ignored) + `--census`; renders 0x45 inline blocks, shared methods, 0x0101 symtab names. Run: `python3 docs/cythera/tools/scriptdis.py --census docs/cythera/script-census.md --out ghidra/cythera-scripts` | HIGH (mechanical) |
 | `engine-classmap-1/2/3.md` | mechanical demangled listing (classes CharEntry…TInteraction, TInterp…VAddr, free functions) | HIGH (mechanical) |
 
 ## Class map summary (class → decompiled methods)
@@ -85,8 +87,8 @@ with the free functions — the demangler does not split `Q2` names.)
 ## NOT RESOLVED (consolidated)
 Data format
 1. Segment file header bytes 0x00–0x7F (title "Cythera: Fate of Alaric", version word at 0x40 `1300 0200`) — `SegFileHeader::CompatibleVersions(a,b)` (same major byte, b.minor ≤ a.minor) is known, but which header field it compares was not traced.
-2. Script pages 0x01, 0x03, 0x05, 0x08, 0x0A–0x0F: which script kind each page holds (beyond 0x02 string tables, 0x04 AI, 0x09 AI routines, 0x10–0x1E object classes, 0x30 routines).
-3. Segment 0x0210 stored plaintext and 0x0101 not decryptable with its id key.
+2. Script pages 0x01, 0x03, 0x05, 0x08, 0x0A–0x0F: which script kind each page holds (beyond 0x02 string tables, 0x04 AI, 0x09 AI routines, 0x10–0x1E object classes, 0x30 routines). ⚑ corrected (scriptdis 2026-10-03): **kinds settled** (census §1/§7): 0x01 = the plaintext 0x0101 symbol table, 0x03/0x05 = data words/arrays read by 0x49 and written by 0x85, 0x08 and 0x0A–0x0F = routines (frame op 0x81); 0x0E40–48/0x0E64–67 and 0x0F00–13 are named helper routines via 0x0101 (script-vm.md §8) [MED for the names]. Still open: the role of the 0x0A/0x0C routine families (reached only through `R[0A00+A30.f03]` / `R[0C00+A31]`), the never-called routines (dead in 1.0.4 or reached by `callx`), and what 0x03/0x05 words mean.
+3. Segment 0x0210 stored plaintext and 0x0101 not decryptable with its id key. ⚑ corrected (scriptdis 2026-10-03): **both are stored plaintext** (raw bytes parse, decrypted do not; `GetEncryptedSegment` always decrypts, so the engine would read garbage) and no script references either; 0x0101 is a renumbered compiler symbol table (55 keys, 39 for absent segments; 0x16xx/0x17xx ↔ 0x0Exx/0x0Fxx) — script-vm.md §8, census §2. Still open: why they ship plaintext (build-tool path), and what 0x0210 "Return" was for.
 4. Map header +0x04 and +0x14..+0x1F; chunked-map body offset `C*0x40` vs `C*0x80`.
 5. Prop bytes +0x0A..+0x0B and +0x0E..+0x0F; kinds 0x11 and 0x80; 'B' frames 0, 1, 3, 4, 6, 7 semantics.
 6. Globals 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 (no reader), 0xF008, 0xF00D, 0xF011, 0xF012 meanings; 0xF00F arrival byte meaning.
@@ -141,3 +143,10 @@ the cited place.
 18. Minor — zone minimum floors at `zoneMin / 3` → engine-classes.md §3.3.
 19. Minor — statement 0x80 invalid; 0x9D non-object receiver → script-vm.md §4 (new 0x80 row, 0x9D row).
 20. Minor — unlabelled "Combat AI" pointer row → rules.md §1 (labelled as a pointer row).
+
+**2026-10-03 — scriptdis review: ACCEPT_WITH_FIXES** (0 Critical, 2 Major, 4 Minor, 4 Notes; full text
+`REVIEW-scriptdis-2026-10-03.md`; fix pass summary in `notes-scriptdis.md`). Majors: 0x45 inline-block
+contents now listed and booked as literal bytes; cross-segment dictionary code pointers (seven
+signal → 0x0D07) are shared methods. Minors/notes → script-vm.md §4 0x9B row and §8 lines marked
+`⚑ corrected (fix pass 2026-10-03)` (0x0101 symtab names, stale-slot builtins, 0xFF = null TVector,
+0x9C FFFF leak [MED]); census §2/§5/§7 (coverage buckets, shared methods, native reach); this index.

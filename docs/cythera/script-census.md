@@ -37,15 +37,15 @@ Kinds are measured on the decrypted bytes: `class` = u16 dictionary offset whose
 ## 2. Totals
 
 - **Code segments disassembled: 918** (class 700, routine 218), **424209 bytes**. Plus 23 literal segments (string tables, dictionaries, arrays) decoded as data, 3 data segments and 14 combat-AI segments listed structurally. Every one of the 958 script-band segments has a listing.
-- Byte coverage of the code segments (unique bytes): statements reached from a dictionary entry / routine entry / jump / pointer **379721**; statements reached only by the gap sweep (dead code) 2254; literal blocks (headers, dictionaries, arrays, strings, words) 42234; left undecoded **0**. Sum = 424209.
-- **UNKNOWN-OPCODE COUNT: 0** — statement 0x80 / 0x94–0x9A / 0xFF, expression 0x65–0x9A / 0xFF, or an operand running past the segment end. Anomalies flagged in listings: 0.
+- Byte coverage of the code segments (unique bytes): statements reached from a dictionary entry / routine entry / jump / pointer **353152**; statements reached only by the gap sweep (dead code) 2254; literal blocks (headers, dictionaries, arrays, strings, words, and the contents of 0x45 inline blocks — 26569 bytes in 176 blocks) 68803; left undecoded **0**. Sum = 424209.
+- **UNKNOWN-OPCODE COUNT: 0** — statement 0x80 / 0x94–0x9A and expression 0x65–0x9A (the engine's invalid-opcode error, `FUN_100bdef4`), 0xFF in either form (not the error path: it indexes the builtin table, whose entry is null, and calls through a null TVector), or an operand running past the segment end. Anomalies flagged in listings: 0.
 - Literal-text statements entered in the middle by a jump (GetString prints the shared tail up to the same terminator — compiler tail sharing, not an error): 106.
 
 Dead-code runs (decoded by the gap sweep; no dictionary entry, jump, pointer or call reaches them): `8B 41 00 40` (return 0) after a final return — compiler epilogue: 420; lone `88` goto after a return (if/else join): 175; longer run (goto + body; cut or unreachable branches — see listings): 4.
 
 Stored plaintext in the shipped file (decrypted bytes match no structure, raw bytes do; `GetEncryptedSegment @ 1007d148` always decrypts, so the interpreter would read garbage): 0x0101 (dict, 1246 B), 0x0210 (strtab, 13 B). No code references either (0 calls, 0 string refs, 0 pointers).
 
-0x0101 is a 127-slot dictionary whose 55 keys are segment ids and whose values point at identifier strings — a compiler symbol table left in the data (e.g. 0200→gTileNames, 0201→gCharNames, 0202→gSigns, 1700→setbit, 3000→__init__, 3001→Look, 3006→Talk, 300E→Attack). Its routine numbering does **not** match the selectors native code sends (it has 0x3006 "Talk"; native talk is selector 12 → 0x300C; script-vm.md §2.3), so it is an older build's table: the tool does not use it for names.
+0x0101 is a 127-slot dictionary whose 55 keys are segment ids and whose values point at identifier strings — a compiler symbol table left in the data (e.g. 0200→gTileNames, 0201→gCharNames, 0202→gSigns, 3000→__init__, 3001→Look, 3006→Talk, 300C→Signal, 300E→Attack). **39 of its 55 keys name segments absent from the shipped data** (0200 0202 1000 1640 1641 1642 1643 1644 1645 1646 1647 1648 1664 1665 1666 1667 1700 1701 1702 1703 1704 1705 1706 1707 1708 1709 170A 170B 170C 170D 170E 170F 1710 1711 1712 1713 3022 3026 3028). It is a **renumbered** table: the absent helper keys map 1:1 onto the shipped helper pages, 0x1700+k ↔ 0x0F00+k and 0x1640+k / 0x1664+k ↔ 0x0E40+k / 0x0E64+k (checked on the bodies: 0F00 `flags |= 1 << A31` = setbit, 0F01 clrbit, 0F02 tstbit, 0F03 `activity = A31` = setworktype, 0F05 `health = health_max` = heal, 0F06 `status &= ~2` = curepoison, 0F07 `status |= 1; health = health_max` = raisedead, 0F0F `status & 2` = ispoisoned, 0F10 `status & 4` = ishorsed, 0F11/0F12 `g0C ∓ A30` = deckarma/inckarma; 0E44 prints "It is now unlocked" = DoToggleLock, 0E46 "You aren't hungry." = DoFood, 0E47 sundial = DoClock, 0E64/65/67 build `sysnew_window` = DisplaySign/Scroll/Instrument) [MED]. The 0x30 keys do **not** map (shipped 0x3006 is not Talk; native talk is selector 12 → 0x300C, script-vm.md §2.3), so the table predates the selector renumbering. The tool labels the 33 mapped 0x0E/0x0F routines (headers and call-site comments, `[from 0x0101 symtab]`): 0E40 DoDoor, 0E41 DoToggle, 0E42 DoLockable, 0E43 DoKey, 0E44 DoToggleLock, 0E45 DoVolumeCheck, 0E46 DoFood, 0E47 DoClock, 0E48 SpillOut, 0E64 DisplaySign, 0E65 DisplayScroll, 0E66 DisplayContainer, 0E67 DisplayInstrument, 0F00 setbit, 0F01 clrbit, 0F02 tstbit, 0F03 setworktype, 0F04 getworktype, 0F05 heal, 0F06 curepoison, 0F07 raisedead, 0F08 enhorse, 0F09 adjint, 0F0A adjdex, 0F0B adjstr, 0F0C adjexp, 0F0D adjlevel, 0F0E getinjury, 0F0F ispoisoned, 0F10 ishorsed, 0F11 deckarma, 0F12 inckarma, 0F13 inparty.
 
 ## 3. Opcode histogram
 
@@ -231,11 +231,11 @@ Expression opcodes:
 
 Total builtin calls: 2542. Never called by the shipped scripts (14): set_tile_animation, stub_aa, find_item, count_items, party_member, who_will, ask_digit, stub_b6, iterate_props_of_type, play_music, set_waypoint, next_serial, stub_fb, stub_fe.
 
-Non-iterator builtins called with an argument count different from the banked list: A8 give_item 3×1 (banked 4); AC random 1×1 (banked 2); B1 remove_items 3×1 (banked 4); C0 pick_item 3×1 (banked 4); E2 missile_burst 7×2 (banked 8); F0 queue_activity 3×3 (banked 5).
+Non-iterator builtins called with an argument count different from the banked list: A8 give_item 3×1 (banked 4); AC random 1×1 (banked 2); B1 remove_items 3×1 (banked 4); C0 pick_item 3×1 (banked 4); E2 missile_burst 7×2 (banked 8); F0 queue_activity 3×3 (banked 5). An under-supplied builtin reads the slot(s) above the stack top, which still hold whatever was last popped there (the interpreter never clears popped slots) — script-vm.md §8.
 
 ## 5. Selectors, fields, globals
 
-Selectors defined in class dictionaries (methods = code pointers to a 0x8x byte; properties = any other value) and selectors sent with 0x9D / tested with 0x60 / read with 0x61:
+Selectors defined in class dictionaries (methods = code pointers whose target byte is 0x80–0x8F, in the class's own segment **or any other**; properties = any other value) and selectors sent with 0x9D / tested with 0x60 / read with 0x61. The method/property split is a first-byte heuristic: the engine has no such rule — `DoInterp0` → `Dispatch` runs whatever value a sent selector finds as code at seg:off, and 0x60/0x61 read values as properties. Shared methods (pointer into another segment's code; counted under methods and as calls into that segment): 7 — 102E signal → 0D07:0000; 1846 signal → 0D07:0000; 1847 signal → 0D07:0000; 1848 signal → 0D07:0000; 1849 signal → 0D07:0000; 1864 signal → 0D07:0000; 1865 signal → 0D07:0000.
 
 | sel | banked name | methods | properties | 0x9D sends | 0x60/0x61 uses |
 |---|---|---|---|---|---|
@@ -255,7 +255,7 @@ Selectors defined in class dictionaries (methods = code pointers to a 0x8x byte;
 | 16 | take_drop_16 | 5 | 0 | 0 | 0 |
 | 17 | take_drop_17 | 1 | 0 | 0 | 0 |
 | 20 | enter | 55 | 0 | 0 | 0 |
-| 21 | signal | 28 | 7 | 4 | 0 |
+| 21 | signal | 35 | 0 | 4 | 0 |
 | 22 |  | 0 | 10 | 0 | 0 |
 | 23 |  | 10 | 0 | 0 | 0 |
 | 26 |  | 4 | 0 | 2 | 0 |
@@ -330,22 +330,22 @@ Tag-3 string references from code and literal data: 66 resolved (of which 4 poin
 
 ## 7. Open pages 0x01, 0x03, 0x05, 0x08, 0x0A–0x0F — measured
 
-`decoded` = unique bytes covered by statements + literal blocks / segment bytes; `calls in` = static routine calls into the page from all disassembled code (0x9F, 0x9C with a constant offset, tag-6 literals); `computed` = 0x9C sites whose base segment lies in the page.
+`decoded` = unique bytes covered by statements + literal blocks / segment bytes; `calls in` = static routine calls into the page from all disassembled code (0x9F, 0x9C with a constant offset, tag-6 literals, and class-dictionary code pointers into the page = shared methods, §5); `computed` = 0x9C sites whose base segment lies in the page; `native reach` = how native code enters the page. No native code constructs a `TInterp` on a literal segment (`grep -cE '__ct__7TInterpFs\([^,]*,0x' Cythera_pef.decompiled.c` = 0; the only literal `DoInterp` arguments are selectors; `DoInterpRoutine @ 10082a0c` has two callers, both computed page-0x09 bases), so a "never called statically" routine on a page whose native reach is "none" is **dead in 1.0.4** unless a computed `R[base+…]` call below reaches it (a tag-6 routine literal would already count as a static call).
 
-| page | segs | bytes | kinds | decoded | unknown | calls in | segs never called statically | computed |
-|---|---|---|---|---|---|---|---|---|
-| 0x01 | 1 | 1246 | dict 1 | 1246/1246 | 0 | 0 | 0 | 0 |
-| 0x03 | 2 | 30 | array 1, data 1 | 26/30 | 0 | 0 | 0 | 0 |
-| 0x05 | 3 | 300 | array 1, data 2 | 276/300 | 0 | 0 | 0 | 0 |
-| 0x08 | 22 | 34380 | routine 22 | 34380/34380 | 0 | 269 | 1: 0814 | 0 |
-| 0x09 | 19 | 1866 | routine 19 | 1866/1866 | 0 | 5 | 16: 0902 0903 0906 0981 0982 0983 0984 0985 0986 0987 0988 0989 098A 098B 098C 098D | 0 |
-| 0x0A | 8 | 561 | routine 8 | 561/561 | 0 | 0 | 8: 0A00 0A01 0A02 0A03 0A04 0A05 0A06 0A07 | 1 |
-| 0x0B | 1 | 7 | routine 1 | 7/7 | 0 | 0 | 1: 0B00 | 0 |
-| 0x0C | 30 | 2202 | routine 30 | 2202/2202 | 0 | 15 | 22: 0C40 0C41 0C42 0C43 0C44 0C45 0C46 0C47 0C48 0C49 0C4A 0C4B 0C4C 0C4D 0C4E 0C4F 0C50 0C51 0C52 0C53 0C54 0C55 | 1 |
-| 0x0D | 10 | 936 | routine 10 | 936/936 | 0 | 90 | 1: 0D08 | 0 |
-| 0x0E | 66 | 17989 | routine 66 | 17989/17989 | 0 | 367 | 11: 0E45 0E46 0E47 0E67 0E80 0E8E 0E91 0E92 0E94 0EA4 0EA7 | 0 |
-| 0x0F | 22 | 517 | routine 22 | 517/517 | 0 | 636 | 15: 0F03 0F04 0F05 0F06 0F07 0F08 0F09 0F0A 0F0B 0F0C 0F0D 0F0E 0F0F 0F10 0F14 | 0 |
-| 0x30 | 40 | 4224 | routine 40 | 4224/4224 | 0 | 20 | 37: 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 300A 300B 300C 300D 300E 300F 3010 3011 3012 3013 3014 3015 3017 3018 3019 301A 301B 301C 301F 3021 3035 3039 303D 303E 3040 3042 3043 | 0 |
+| page | segs | bytes | kinds | decoded | unknown | calls in | segs never called statically | computed | native reach |
+|---|---|---|---|---|---|---|---|---|---|
+| 0x01 | 1 | 1246 | dict 1 | 1246/1246 | 0 | 0 | 0 | 0 | no (data) |
+| 0x03 | 2 | 30 | array 1, data 1 | 26/30 | 0 | 0 | 0 | 0 | no (data) |
+| 0x05 | 3 | 300 | array 1, data 2 | 276/300 | 0 | 0 | 0 | 0 | no (data) |
+| 0x08 | 22 | 34380 | routine 22 | 34380/34380 | 0 | 269 | 1: 0814 | 0 | none |
+| 0x09 | 19 | 1866 | routine 19 | 1866/1866 | 0 | 5 | 16: 0902 0903 0906 0981 0982 0983 0984 0985 0986 0987 0988 0989 098A 098B 098C 098D | 0 | yes: `DoInterpRoutine` from `EvaluateCondition` (`byte + 0x880`) / `PerformAction` (`byte + 0x900`) |
+| 0x0A | 8 | 561 | routine 8 | 561/561 | 0 | 0 | 8: 0A00 0A01 0A02 0A03 0A04 0A05 0A06 0A07 | 1 | none; only computed `R[0A00+A30.f03]` (101F) |
+| 0x0B | 1 | 7 | routine 1 | 7/7 | 0 | 0 | 1: 0B00 | 0 | none |
+| 0x0C | 30 | 2202 | routine 30 | 2202/2202 | 0 | 15 | 22: 0C40 0C41 0C42 0C43 0C44 0C45 0C46 0C47 0C48 0C49 0C4A 0C4B 0C4C 0C4D 0C4E 0C4F 0C50 0C51 0C52 0C53 0C54 0C55 | 1 | none; only computed `R[0C00+A31]` (3021) |
+| 0x0D | 10 | 936 | routine 10 | 936/936 | 0 | 97 | 1: 0D08 | 0 | none |
+| 0x0E | 66 | 17989 | routine 66 | 17989/17989 | 0 | 367 | 11: 0E45 0E46 0E47 0E67 0E80 0E8E 0E91 0E92 0E94 0EA4 0EA7 | 0 | none (0x0E40–48 / 0x0E64–67 named from 0x0101: §2) |
+| 0x0F | 22 | 517 | routine 22 | 517/517 | 0 | 636 | 15: 0F03 0F04 0F05 0F06 0F07 0F08 0F09 0F0A 0F0B 0F0C 0F0D 0F0E 0F0F 0F10 0F14 | 0 | none (helper library, names from 0x0101: §2) |
+| 0x30 | 40 | 4224 | routine 40 | 4224/4224 | 0 | 20 | 37: 3000 3001 3002 3003 3004 3005 3006 3007 3008 3009 300A 300B 300C 300D 300E 300F 3010 3011 3012 3013 3014 3015 3017 3018 3019 301A 301B 301C 301F 3021 3035 3039 303D 303E 3040 3042 3043 | 0 | yes: `DoInterp0` falls back to `0x3000+selector` when `Dispatch` finds no value (`___ct__7TInterpFs(auStack_48,param_2 + 0x3000)`) |
 
 Computed routine calls (0x9C) — the only way the uncalled segments above can be reached from script code:
 

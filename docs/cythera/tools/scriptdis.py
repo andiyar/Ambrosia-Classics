@@ -15,6 +15,11 @@ Decrypt, nothing else.
 Output: one listing per segment (`<out>/<segid>.txt`), and with --census a markdown census.
 Stdlib only.
 
+Fix pass 2026-10-03 (REVIEW-scriptdis-2026-10-03.md): 0x45 inline blocks are listed indented under
+their instruction and booked as literal bytes; class-dictionary code pointers into ANOTHER segment's
+code are shared methods (cross-referenced in the target routine's header); routines on pages
+0x0E/0x0F carry the names of the renumbered 0x0101 symbol table (0x16xx/0x17xx -> 0x0Exx/0x0Fxx).
+
 Usage:
   scriptdis.py [--data PATH] [--out DIR] [--seg HEX ...] [--census [FILE]] [--quiet]
 """
@@ -232,6 +237,7 @@ class Store:
         self.notes = collections.defaultdict(list)
         self._classify()
         self._names()
+        self._symtab()
 
     # --- structure probes (measured, not assumed) ---
     @staticmethod
@@ -386,6 +392,31 @@ class Store:
         except KeyError:
             pass
 
+    def symtab_keys(self):
+        """0x0101 (stored plaintext): dictionary {segment id -> code pointer to an identifier}."""
+        b = self.data.get(0x0101)
+        if b is None or not self.probe_dict(b):
+            return []
+        keys = []
+        for i in range(u16(b, 0) & 0xFFF):
+            v = u32(b, 2 + 6 * i)
+            if v != 0x5000FFFF:
+                keys.append((u16(b, 6 + 6 * i), cstr(b, v & 0xFFFF)[0].decode('mac_roman')))
+        return sorted(keys)
+
+    def _symtab(self):
+        """0x0101 is a RENUMBERED symbol table: its helper keys 0x16xx / 0x17xx name no shipped
+        segment but map 1:1 onto pages 0x0E / 0x0F (0x1700+k <-> 0x0F00+k, 0x1640+k <-> 0x0E40+k,
+        0x1664+k <-> 0x0E64+k; checked on the routine bodies: 0F00 sets a flags bit = setbit, 0F05
+        health = health_max = heal, 0E44 "It is now unlocked" = DoToggleLock).  The 0x30 keys do
+        NOT map (it has 0x3006 "Talk"; native talk is selector 12), so only 0x16/0x17 are used."""
+        self.symnames = {}
+        for k, name in self.symtab_keys():
+            if k >> 8 in (0x16, 0x17):
+                t = k - 0x0800
+                if self.kind.get(t) == 'routine':
+                    self.symnames[t] = name
+
     def seg_label(self, sid):
         """Human label for a segment id (class/selector/routine role per the bank)."""
         p = sid >> 8
@@ -410,6 +441,9 @@ class Store:
             s = sid - 0x3000
             return 'routine: default handler for selector %d%s' % (
                 s, ' (%s)' % SELECTORS[s] if s in SELECTORS else '')
+        if sid in self.symnames:
+            return 'routine "%s" [from 0x0101 symtab: key %04X; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]' % (
+                self.symnames[sid], sid + 0x0800)
         if p == 0x09:
             k = sid & 0xFF
             if k >= 0x80:
@@ -474,6 +508,11 @@ class Dis:
         self.rawgaps = []       # (start, end) bytes left undecoded
         self.methods = {}       # offset -> [selector,...]
         self.props = []         # (selector, rendered value)
+        self.xmethods = []      # (selector, target seg, target off): dictionary code pointers into
+                                # ANOTHER segment's code (shared methods, e.g. 0x0D07 signal)
+        self.inline = {}        # 0x45 inline literal blocks: start -> end (bytes after the length)
+        self.items = {}         # literal block start -> [(label, raw VAddr, rendered text)]
+        self.cur_calls = []     # static routine targets called by the statement being decoded
         self.dict_info = None
 
     # --- references ---
@@ -568,8 +607,10 @@ class Dis:
             self.add_block(off, end, 'array', 'array[%d]' % n)
             items = []
             for i in range(n):
-                items.append(self.vaddr(u32(b, off + 2 + 4 * i), off + 2 + 4 * i, 'array@%04X' % off))
-            self.blocks[off] = (end, 'array', 'array[%d] = [%s]' % (n, ', '.join(items)))
+                v = u32(b, off + 2 + 4 * i)
+                items.append(('[%d]' % i, v, self.vaddr(v, off + 2 + 4 * i, 'array@%04X' % off)))
+            self.items[off] = items
+            self.blocks[off] = (end, 'array', 'array[%d] = [%s]' % (n, ', '.join(t for _, _, t in items)))
         elif 0xA0 <= c <= 0xAF:
             n = u16(b, off) & 0xFFF
             end = off + 2 + 6 * n
@@ -586,9 +627,13 @@ class Dis:
                     continue   # empty slot (key bytes are don't-care)
                 ents.append((k, v, off + 2 + 6 * i))
             out = []
+            items = []
             for k, v, w in sorted(ents):
                 kn = '%d%s' % (k, '/' + SELECTORS[k] if k in SELECTORS else '')
-                out.append('%s: %s' % (kn, self.vaddr(v, w, 'key %s' % kn)))
+                t = self.vaddr(v, w, 'key %s' % kn)
+                items.append(('key %s' % kn, v, t))
+                out.append('%s: %s' % (kn, t))
+            self.items[off] = items
             self.blocks[off] = (end, 'dict', 'dict[%d] {%s}' % (n, ', '.join(out)))
             return end
         else:
@@ -659,6 +704,7 @@ class Dis:
                 stack.append(N('blk@%04X' % pc))
                 for i in range(pc, pc + ln):
                     self.blk_owner.setdefault(i, pc)
+                self.inline[pc] = pc + ln
                 pc += ln
             elif op == 0x46:
                 i = pop()
@@ -744,6 +790,7 @@ class Dis:
             if len(e1) == 1 and e1[0].t == 'atom' and e1[0].txt.lstrip('-').isdigit():
                 t = (s + int(e1[0].txt)) & 0xFFFF
                 self.st['xref_call'][t] += 1
+                self.cur_calls.append(t)
                 return pc, N('R%04X' % t, args, 'call')
             self.st['xref_call_base'][s] += 1
             self.st['computed_calls'].append((self.sid, pc0, s))
@@ -770,6 +817,7 @@ class Dis:
             pc += 2
             pc, args = self.expr(pc, pc0)
             self.st['xref_call'][s] += 1
+            self.cur_calls.append(s)
             return pc, N('R%04X' % s, args, 'call')
         # builtin
         pc, args = self.expr(pc, pc0)
@@ -938,17 +986,30 @@ class Dis:
             self.add_block(0, 2, 'hdr', 'dictionary offset = %04X' % off)
             self.dict_info = off
             self.block(off, 0)
-            # method/property map for the header
+            # method/property map for the header.  HEURISTIC (first byte of the target): a tag -1
+            # value whose target byte is 0x80-0x8F, in THIS or ANY OTHER segment, is a method.
+            # The engine has no such rule: DoInterp0 -> Dispatch runs any non-Nil dictionary value
+            # it is sent as code at seg:off (`___ct__7TInterpFs(auStack_38,local_28[0]._0_2_ &
+            # 0x7fff)`); 0x60/0x61 read a value as a property.  Usage decides, not storage.
             n = u16(b, off) & 0xFFF
             for i in range(n):
                 v = u32(b, off + 2 + 6 * i)
                 k = u16(b, off + 6 + 6 * i)
                 if v == 0x5000FFFF:
                     continue
-                if tag_of(v) == -1 and (v >> 16) & 0x7FFF == self.sid and (v & 0xFFFF) < len(b) \
-                        and 0x80 <= b[v & 0xFFFF] <= 0x8F:
-                    self.methods.setdefault(v & 0xFFFF, []).append(k)
+                ts, to = (v >> 16) & 0x7FFF, v & 0xFFFF
+                tb = self.S.data.get(ts) if self.S.kind.get(ts) in ('class', 'routine') else None
+                if tag_of(v) == -1 and ts == self.sid and to < len(b) and 0x80 <= b[to] <= 0x8F:
+                    self.methods.setdefault(to, []).append(k)
                     self.st['sel_method'][k] += 1
+                elif tag_of(v) == -1 and ts != self.sid and tb is not None and to < len(tb) \
+                        and 0x80 <= tb[to] <= 0x8F:
+                    # shared method: code in another segment (counted as a call into it)
+                    self.xmethods.append((k, ts, to))
+                    self.st['sel_method'][k] += 1
+                    self.st['sel_xmethod'][k] += 1
+                    self.st['xref_call'][ts] += 1
+                    self.st['shared_method'][(ts, to)].append((self.sid, k))
                 else:
                     self.props.append(k)
                     self.st['sel_prop'][k] += 1
@@ -1004,6 +1065,7 @@ class Dis:
                 if pc in self.blk_owner and self.blocks.get(self.blk_owner[pc], (0, ''))[1] != 'word':
                     self.anoms.append((pc, 'control falls into literal block @%04X' % self.blk_owner[pc]))
                     break
+                self.cur_calls = []
                 try:
                     end, mn, ops, com, succ, term = self.stmt(pc)
                 except DisErr as e:
@@ -1026,6 +1088,10 @@ class Dis:
                     if inner or outer is not None:
                         com = 'shares its tail with text @%04X' % (min(inner) if inner else outer)
                         self.st['text_shared'] += 1
+                syms = ['R%04X = %s' % (t, self.S.symnames[t]) for t in dict.fromkeys(self.cur_calls)
+                        if t in self.S.symnames]
+                if syms:
+                    com = (com + '; ' if com else '') + ', '.join(syms) + ' [from 0x0101 symtab]'
                 self.insns[pc] = (end, mn, ops, com)
                 if dead:
                     self.dead.add(pc)
@@ -1077,9 +1143,23 @@ class Dis:
         if self.kind == 'class':
             meths = ', '.join('%s@%04X' % ('/'.join(self.selname(k) for k in ks), o)
                               for o, ks in sorted(self.methods.items()))
+            xm = ', '.join('%s@%04X:%04X (shared method: code in routine %04X)' % (self.selname(k), ts, to, ts)
+                           for k, ts, to in sorted(self.xmethods))
             props = ', '.join(self.selname(k) for k in sorted(self.props))
-            L.append('; dictionary @%04X  methods: %s' % (self.dict_info, meths or '-'))
+            L.append('; dictionary @%04X  methods: %s' % (self.dict_info, ', '.join(x for x in (meths, xm) if x) or '-'))
             L.append('; properties: %s' % (props or '-'))
+            L.append('; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte'
+                     ' HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61'
+                     ' values as properties)')
+        shared = sorted((to, k, c) for (ts, to), lst in self.st['shared_method'].items() if ts == sid
+                        for c, k in lst)
+        if shared:
+            byk = collections.defaultdict(list)
+            for to, k, c in shared:
+                byk[(to, k)].append(c)
+            for (to, k), cs in sorted(byk.items()):
+                L.append('; called as %s of classes %s (their dictionaries hold the code pointer @%04X:%04X)'
+                         % (self.selname(k), ', '.join('%04X' % c for c in sorted(cs)), sid, to))
         L.append('; unknown opcodes: %d   anomalies: %d   dead-code runs: %d   undecoded bytes: %d'
                  % (len(self.unknown), len(self.anoms), len(self.unreached),
                     sum(e - s for s, e in self.rawgaps)))
@@ -1091,6 +1171,7 @@ class Dis:
         L.append('; offset: bytes  mnemonic operands  ; comment')
         L.append('; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);')
         L.append('; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code')
+        L.append('; blk@off = 0x45 inline literal block, its contents listed indented under the instruction')
         starts = sorted(set(self.insns) | set(self.blocks) | {s for s, e in self.rawgaps})
         unref = {s for s, e in self.unreached}
         for o in starts:
@@ -1108,6 +1189,8 @@ class Dis:
                 if o in self.dead:
                     lab = 'x'
                 L.append(self.fmt(o, end, lab, mn, ops, com))
+                for s_ in sorted(x for x in self.inline if o <= x < end):
+                    L.extend(self.inline_lines(s_, self.inline[s_]))
             elif o in self.blocks:
                 end, kind, txt = self.blocks[o]
                 if self.owner.get(o) is not None:
@@ -1119,6 +1202,58 @@ class Dis:
                         for k in range(s, e, 16):
                             L.append(self.fmt(k, min(e, k + 16), ' ', '.bytes', '', 'undecoded', full=True))
         return '\n'.join(L) + '\n'
+
+    def inline_lines(self, start, end):
+        """Render the contents of a 0x45 inline literal block [start, end) as an indented tree:
+        arrays/dictionaries one item per line, same-segment pointers to strings resolved, pointers to
+        blocks inside the inline range expanded under their item."""
+        out = ['      ; 0x45 inline block %04X-%04X (%d bytes):' % (start, end, end - start)]
+        seen = set()
+
+        def hexs(o, e):
+            bs = self.b[o:e]
+            h = ' '.join('%02x' % x for x in bs[:8])
+            return h + (' …+%d' % (len(bs) - 8) if len(bs) > 8 else '')
+
+        def walk(o, depth):
+            seen.add(o)
+            ind = '      ' + '  ' * depth
+            e, kind, txt = self.blocks[o]
+            if kind in ('array', 'dict'):
+                n = u16(self.b, o) & 0xFFF
+                used = len(self.items.get(o, []))
+                out.append('%s%04X: %-32s .%s[%s]' % (ind, o, hexs(o, o + 2), kind,
+                                                       n if kind == 'array' else '%d slots, %d used' % (n, used)))
+                for lab, v, t in self.items.get(o, []):
+                    tgt = v & 0xFFFF
+                    if tag_of(v) == -1 and (v >> 16) & 0x7FFF == self.sid and tgt in self.blocks:
+                        te, tk, tt = self.blocks[tgt]
+                        if tk == 'string':
+                            out.append('%s  %s %s %s' % (ind, lab, t, tt))
+                            seen.add(tgt)
+                            continue
+                        if start <= tgt < end and tgt not in seen:
+                            out.append('%s  %s %s ->' % (ind, lab, t))
+                            walk(tgt, depth + 2)
+                            continue
+                    elif tag_of(v) == -1 and (v >> 16) & 0x7FFF == self.sid and tgt in self.insns:
+                        t += ' (code)'
+                    out.append('%s  %s %s' % (ind, lab, t))
+            else:
+                out.append('%s%04X: %-32s .%s %s' % (ind, o, hexs(o, e), kind, txt))
+
+        if start in self.blocks:
+            walk(start, 0)
+        for o in sorted(x for x in self.blocks if start <= x < end and x not in seen):
+            walk(o, 0)          # blocks inside the range not reached from its head
+        cov = set()
+        for o, (e, _, _) in self.blocks.items():
+            if start <= o < end:
+                cov.update(range(o, e))
+        raw = [i for i in range(start, end) if i not in cov]
+        if raw:
+            out.append('      %04X: %d byte(s) inside the block not covered by any literal' % (raw[0], len(raw)))
+        return out
 
     def fmt(self, o, end, lab, mn, ops, com, full=False):
         bs = self.b[o:end]
@@ -1168,8 +1303,10 @@ def new_stats():
     return {k: collections.Counter() for k in (
         'stmt_ops', 'expr_ops', 'builtin', 'builtin_argc', 'unknown', 'xref_str', 'xref_obj',
         'xref_call', 'xref_call_base', 'xref_ptr', 'xref_glob', 'xref_glob_w', 'xref_glob_off',
-        'sel_method', 'sel_prop', 'sel_send', 'sel_test', 'field_r', 'field_w', 'glob_r', 'glob_w')} | {
-        'str_resolved': 0, 'str_unresolved': 0, 'text_shared': 0, 'str_nilbase': 0, 'computed_calls': []}
+        'sel_method', 'sel_xmethod', 'sel_prop', 'sel_send', 'sel_test', 'field_r', 'field_w', 'glob_r',
+        'glob_w')} | {
+        'str_resolved': 0, 'str_unresolved': 0, 'text_shared': 0, 'str_nilbase': 0, 'computed_calls': [],
+        'shared_method': collections.defaultdict(list)}
 
 
 STAT_COUNTERS = ('sel_method', 'sel_prop', 'sel_send', 'sel_test', 'field_r', 'field_w', 'glob_r', 'glob_w')
@@ -1188,12 +1325,17 @@ def run_all(S, only=None):
 
 
 def coverage(r):
-    """Unique byte coverage of one Dis result."""
-    ins = set(r.owner)
+    """Unique byte coverage of one Dis result.  The contents of 0x45 inline blocks lie inside their
+    instruction's byte range but are literal data: they count as literal blocks, not statements."""
+    inl = set()
+    for s_, e in r.inline.items():
+        inl.update(range(s_, e))
+    ins = set(r.owner) - inl
     dead = set()
     for o in r.dead:
         dead.update(range(o, r.insns[o][0]))
-    blk = set(r.blk_owner) - ins
+    dead -= inl
+    blk = (set(r.blk_owner) - ins) | inl
     raw = set()
     for s_, e in r.rawgaps:
         raw.update(range(s_, e))
@@ -1243,6 +1385,8 @@ def census(S, st, results, outdir):
     code_segs = sorted(s for s in results if S.kind[s] in ('class', 'routine'))
     code_bytes = sum(len(S.data[s]) for s in code_segs)
     cov = collections.Counter()
+    inl_bytes = sum(e - b_ for s_ in code_segs for b_, e in results[s_].inline.items())
+    inl_n = sum(len(results[s_].inline) for s_ in code_segs)
     for s_ in code_segs:
         a_, d_, b_, r_ = coverage(results[s_])
         cov['live'] += a_
@@ -1263,11 +1407,14 @@ def census(S, st, results, outdir):
          allseg))
     w('- Byte coverage of the code segments (unique bytes): statements reached from a dictionary'
       ' entry / routine entry / jump / pointer **%d**; statements reached only by the gap sweep'
-      ' (dead code) %d; literal blocks (headers, dictionaries, arrays, strings, words) %d; left'
-      ' undecoded **%d**. Sum = %d.' % (cov['live'], cov['dead'], cov['blk'], cov['raw'],
-                                        cov['live'] + cov['dead'] + cov['blk'] + cov['raw']))
-    w('- **UNKNOWN-OPCODE COUNT: %d** — statement 0x80 / 0x94–0x9A / 0xFF, expression 0x65–0x9A /'
-      ' 0xFF, or an operand running past the segment end. Anomalies flagged in listings: %d.' % (unk, anoms))
+      ' (dead code) %d; literal blocks (headers, dictionaries, arrays, strings, words, and the'
+      ' contents of 0x45 inline blocks — %d bytes in %d blocks) %d; left undecoded **%d**. Sum = %d.'
+      % (cov['live'], cov['dead'], inl_bytes, inl_n, cov['blk'], cov['raw'],
+         cov['live'] + cov['dead'] + cov['blk'] + cov['raw']))
+    w('- **UNKNOWN-OPCODE COUNT: %d** — statement 0x80 / 0x94–0x9A and expression 0x65–0x9A (the'
+      ' engine\'s invalid-opcode error, `FUN_100bdef4`), 0xFF in either form (not the error path: it'
+      ' indexes the builtin table, whose entry is null, and calls through a null TVector), or an operand'
+      ' running past the segment end. Anomalies flagged in listings: %d.' % (unk, anoms))
     w('- Literal-text statements entered in the middle by a jump (GetString prints the shared tail'
       ' up to the same terminator — compiler tail sharing, not an error): %d.' % st['text_shared'])
     if unk:
@@ -1298,23 +1445,28 @@ def census(S, st, results, outdir):
       ' No code references either (0 calls, 0 string refs, 0 pointers).' %
       ', '.join('0x%04X (%s, %d B)' % (s_, S.kind[s_], len(S.data[s_])) for s_ in plain))
     if 0x0101 in S.kind:
-        r = results.get(0x0101)
-        keys = []
-        if r:
-            b_ = S.data[0x0101]
-            n = u16(b_, 0) & 0xFFF
-            for i in range(n):
-                v = u32(b_, 2 + 6 * i)
-                if v != 0x5000FFFF:
-                    keys.append((u16(b_, 6 + 6 * i), cstr(b_, v & 0xFFFF)[0]))
-        sample = ', '.join('%04X→%s' % (k, v.decode('mac_roman')) for k, v in sorted(keys)
-                           if k in (0x0200, 0x0201, 0x0202, 0x3000, 0x3001, 0x3006, 0x300E, 0x1700))
+        keys = S.symtab_keys()
+        absent = [k for k, _ in keys if k not in S.kind]
+        sample = ', '.join('%04X→%s' % (k, v) for k, v in keys
+                           if k in (0x0200, 0x0201, 0x0202, 0x3000, 0x3001, 0x3006, 0x300C, 0x300E))
         w('')
         w('0x0101 is a %d-slot dictionary whose %d keys are segment ids and whose values point at'
-          ' identifier strings — a compiler symbol table left in the data (e.g. %s). Its routine'
-          ' numbering does **not** match the selectors native code sends (it has 0x3006 "Talk"; native'
-          ' talk is selector 12 → 0x300C; script-vm.md §2.3), so it is an older build\'s table: the tool'
-          ' does not use it for names.' % (u16(S.data[0x0101], 0) & 0xFFF, len(keys), sample))
+          ' identifier strings — a compiler symbol table left in the data (e.g. %s). **%d of its %d keys'
+          ' name segments absent from the shipped data** (%s). It is a **renumbered** table: the absent'
+          ' helper keys map 1:1 onto the shipped helper pages, 0x1700+k ↔ 0x0F00+k and 0x1640+k /'
+          ' 0x1664+k ↔ 0x0E40+k / 0x0E64+k (checked on the bodies: 0F00 `flags |= 1 << A31` = setbit,'
+          ' 0F01 clrbit, 0F02 tstbit, 0F03 `activity = A31` = setworktype, 0F05 `health = health_max` ='
+          ' heal, 0F06 `status &= ~2` = curepoison, 0F07 `status |= 1; health = health_max` = raisedead,'
+          ' 0F0F `status & 2` = ispoisoned, 0F10 `status & 4` = ishorsed, 0F11/0F12 `g0C ∓ A30` ='
+          ' deckarma/inckarma; 0E44 prints "It is now unlocked" = DoToggleLock, 0E46 "You aren\'t'
+          ' hungry." = DoFood, 0E47 sundial = DoClock, 0E64/65/67 build `sysnew_window` ='
+          ' DisplaySign/Scroll/Instrument) [MED]. The 0x30 keys do **not** map (shipped 0x3006 is not'
+          ' Talk; native talk is selector 12 → 0x300C, script-vm.md §2.3), so the table predates the'
+          ' selector renumbering. The tool labels the %d mapped 0x0E/0x0F routines (headers and call-site'
+          ' comments, `[from 0x0101 symtab]`): %s.' % (
+              u16(S.data[0x0101], 0) & 0xFFF, len(keys), sample, len(absent), len(keys),
+              ' '.join('%04X' % k for k in absent), len(S.symnames),
+              ', '.join('%04X %s' % kv for kv in sorted(S.symnames.items()))))
     w('')
     # --- opcode histograms
     w('## 3. Opcode histogram')
@@ -1375,13 +1527,22 @@ def census(S, st, results, outdir):
         if n != want and not BUILTINS[op][0].startswith('iterate'):
             mism.append('%02X %s %d×%d (banked %d)' % (op, BUILTINS[op][0], n, v, want))
     w('Non-iterator builtins called with an argument count different from the banked list: %s.'
+      ' An under-supplied builtin reads the slot(s) above the stack top, which still hold whatever was'
+      ' last popped there (the interpreter never clears popped slots) — script-vm.md §8.'
       % ('; '.join(mism) or 'none'))
     w('')
     # --- selectors / fields / globals
     w('## 5. Selectors, fields, globals')
     w('')
-    w('Selectors defined in class dictionaries (methods = code pointers to a 0x8x byte; properties ='
-      ' any other value) and selectors sent with 0x9D / tested with 0x60 / read with 0x61:')
+    xm = sorted((c, k, ts, to) for (ts, to), lst in st['shared_method'].items() for c, k in lst)
+    w('Selectors defined in class dictionaries (methods = code pointers whose target byte is 0x80–0x8F,'
+      ' in the class\'s own segment **or any other**; properties = any other value) and selectors sent'
+      ' with 0x9D / tested with 0x60 / read with 0x61. The method/property split is a first-byte'
+      ' heuristic: the engine has no such rule — `DoInterp0` → `Dispatch` runs whatever value a sent'
+      ' selector finds as code at seg:off, and 0x60/0x61 read values as properties. Shared methods'
+      ' (pointer into another segment\'s code; counted under methods and as calls into that segment):'
+      ' %d — %s.' % (len(xm), '; '.join('%04X %s → %04X:%04X' % (c, SELECTORS.get(k, 'sel%d' % k), ts, to)
+                                        for c, k, ts, to in xm) or 'none'))
     w('')
     w('| sel | banked name | methods | properties | 0x9D sends | 0x60/0x61 uses |')
     w('|---|---|---|---|---|---|')
@@ -1428,10 +1589,24 @@ def census(S, st, results, outdir):
     w('')
     w('`decoded` = unique bytes covered by statements + literal blocks / segment bytes; `calls in` ='
       ' static routine calls into the page from all disassembled code (0x9F, 0x9C with a constant'
-      ' offset, tag-6 literals); `computed` = 0x9C sites whose base segment lies in the page.')
+      ' offset, tag-6 literals, and class-dictionary code pointers into the page = shared methods,'
+      ' §5); `computed` = 0x9C sites whose base segment lies in the page; `native reach` = how native'
+      ' code enters the page. No native code constructs a `TInterp` on a literal segment'
+      ' (`grep -cE \'__ct__7TInterpFs\\([^,]*,0x\' Cythera_pef.decompiled.c` = 0; the only literal'
+      ' `DoInterp` arguments are selectors; `DoInterpRoutine @ 10082a0c` has two callers, both computed'
+      ' page-0x09 bases), so a "never called statically" routine on a page whose'
+      ' native reach is "none" is **dead in 1.0.4** unless a computed `R[base+…]` call below reaches it'
+      ' (a tag-6 routine literal would already count as a static call).')
     w('')
-    w('| page | segs | bytes | kinds | decoded | unknown | calls in | segs never called statically | computed |')
-    w('|---|---|---|---|---|---|---|---|---|')
+    w('| page | segs | bytes | kinds | decoded | unknown | calls in | segs never called statically | computed | native reach |')
+    w('|---|---|---|---|---|---|---|---|---|---|')
+    native = {0x09: 'yes: `DoInterpRoutine` from `EvaluateCondition` (`byte + 0x880`) / `PerformAction` (`byte + 0x900`)',
+              0x30: 'yes: `DoInterp0` falls back to `0x3000+selector` when `Dispatch` finds no value (`___ct__7TInterpFs(auStack_48,param_2 + 0x3000)`)',
+              0x0A: 'none; only computed `R[0A00+A30.f03]` (101F)',
+              0x0C: 'none; only computed `R[0C00+A31]` (3021)',
+              0x0F: 'none (helper library, names from 0x0101: §2)',
+              0x0E: 'none (0x0E40–48 / 0x0E64–67 named from 0x0101: §2)',
+              0x01: 'no (data)', 0x03: 'no (data)', 0x05: 'no (data)'}
     calls_p = collections.Counter()
     for s_, v in st['xref_call'].items():
         calls_p[s_ >> 8] += v
@@ -1451,10 +1626,10 @@ def census(S, st, results, outdir):
                 dec += len(set(r.owner) | set(r.blk_owner))
         unk_p = sum(len(results[s_].unknown) for s_ in sids if s_ in results)
         uncalled = [s_ for s_ in sids if st['xref_call'][s_] == 0 and S.kind[s_] == 'routine']
-        w('| 0x%02X | %d | %d | %s | %d/%d | %d | %d | %s | %d |' % (
+        w('| 0x%02X | %d | %d | %s | %d/%d | %d | %d | %s | %d | %s |' % (
             p, len(sids), nb, ', '.join('%s %d' % kv for kv in sorted(byp[p].items())), dec, nb, unk_p,
             calls_p[p], ('%d: ' % len(uncalled) + ' '.join('%04X' % x for x in uncalled)) if uncalled else '0',
-            comp_p[p]))
+            comp_p[p], native.get(p, 'none')))
     w('')
     w('Computed routine calls (0x9C) — the only way the uncalled segments above can be reached from'
       ' script code:')
