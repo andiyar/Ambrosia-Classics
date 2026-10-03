@@ -23,6 +23,15 @@
 - **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
   `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
 
+- **Bubble Trouble X core lane (2026-10-03 night, Fable orchestrator, cap lifted by Ben):** plans LOCKED
+  (`docs/plans/2026-10-03-btx-core-and-film-harness.md` 18 tasks; `2026-10-03-hectorkit-btx-decoders.md`);
+  core Tasks 0–3b + T12 bank corrections merged (44 tests green at 48e29db); HectorKit main 5a33384 = BTX locator,
+  snd census, `CIcon`, `PixelPattern` (renamed from PixPat: SDK collision), docs D5, floor 160, **tag v0.2.0 pending**.
+  In flight on lane branches when the session hit its usage limit: core `btx-t4` (Task 4 level build), kit `btx-pict`
+  (Task 4a masked PICT), Classics `btx-census` (kit Task 7). Lane worktrees under `.claude/worktrees/btx-*` and
+  `~/Developer/HectorKit-btx*`. Honest bar: FILM oracle = replay to count exhaustion + golden freeze (bank derives no
+  end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
+
 ## Open, ordered
 
 1. **Phase 1 — HectorShell + Aki static screens** (Trigger C in `docs/RESUME.md`): brainstorm → plan → build.
@@ -42,3 +51,4 @@
   "rename prefixes only" rule; trim only with a ruling. Only data-gated tests cover `snd` format 1.
 - `quickTimeBands` returns a tuple, not a struct (API polish for v0.2). No dimension cap on codec images.
 - Ambrosia's 1996 installer format unreversed. HD-art packs late polish. Licence at the very end (EV D65).
+- **Ferazel RE deepening (2026-10-03, CLOSED 2026-10-04):** 11 Opus readers + 2 gap readers wrote 17 new `docs/ferazel/` files (~6,400 lines: enemies ×3, bosses ×2, enemy-shots-and-damage, pickups-boxes, triggers-background ×2, spells-detail, save-continue, platforms-ropes-radial, player-states ×2, geysers, held-item-melee, coverage, physics-sprites); three Fable review legs all ACCEPT_WITH_FIXES (1a 0/4/6, 1b 1 Critical/3/9, 1c 0/4/11; `REVIEW-2026-10-03-deepening.md`); fix passes 1a/1b landed; consolidated fix pass landed (`FIXPASS-2026-10-03-deepening.md`; labels HIGH 727 / MED 228 / LOW 27); merged to main at 5b15177. Fable spot-review 1d of the fix-pass diff (2026-10-04): ACCEPT_WITH_FIXES, 0 Critical / 0 Important / 6 Minor, 66/66 markers + 76 raw addresses confirmed; fixes + the held-item-melee carries (rows 3, 4, 6–8) landed at 02f29cc. Worktree and branch `recursing-rhodes-932ac0` removed. Still open in the bank: INDEX NOT-RESOLVED items 15–29 (`+0xb8` draw modes, tint/remap colours, NewParticle args, Xichra cannons, OmniPx/PxMid, Mcnv item 3, lighting item 10, Titles item 12). Nothing needs Ben's play check. Handoff `docs/handoff-2026-10-03-ferazel-re.md`.

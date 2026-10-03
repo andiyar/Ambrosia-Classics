@@ -138,6 +138,14 @@ unless the cell is dynamite; points `AddToScore(1, 1)` when `score` arg set (her
   `_Blocks_DeactivateRubberBlocks` (every active blue/purple block is retired and written into the
   maze at its current grid col/row, even if it was between cells). [HIGH]
 - During states 1, 3, 4 `_ProcessHero` returns early (no input sampled). [HIGH]
+- ⚑ corrected (plan 2026-10-03 btx-core) — **C1.** The `_HeroCaught` note above ("can be called several times in one frame …
+  re-draws RNG each time") does not hold. `_IsHeroCaught @ 00021c79` returns 0 unless
+  `*(short *)(PTR__hero_0003f014 + 2) == 2`, `_HeroCaught @ 00021dfa` first does
+  `*(undefined2 *)(PTR__hero_0003f014 + 2) = 3;`, and all three callers gate on `_IsHeroCaught`
+  (`python3 ghidra/find_func.py '_HeroCaught\(' --file <dump>` → 4 blocks). The first catch of a frame
+  sets state 3, so the remaining blast rects, enemies and blocks fail the test. At most one
+  `_HeroCaught` runs per frame: one `GetRandomFast(0,1)`, plus one star group 0xe (14 stars,
+  replay-oracle.md §4.2 C2) for kind 2 only. [HIGH]
 
 ## 6. Balloon trap (shark bubble) on the hero
 

@@ -33,6 +33,7 @@
 | `data-formats.md` | 1 MAZE · 2 LEVL · 3 FILM · 4 SpIL/SpIc/cicn/btSP · 5 orbit + checksum tables · 6 snd · 7 PICT/Rect · 8 SCOR · 9 prefs file · 10 other resources | HIGH, MED, LOW |
 | `replay-oracle.md` | 1 determinism inventory (all clock reads) · 2 input stream · 3 demo start sequence with RNG draw counts · 4 replay hazards · 5 per-frame order · 6 validation plan | HIGH, MED, LOW |
 | `tools/rsrc_census.py` | resource-fork census / extractor used for every table and decode in this bank | — |
+| `data-census.md` | `btx-census` stdout (BubbleTrouble/Core): every cicn/ppat/PICT/snd through HectorKit; its ⚑ corrections (plan 2026-10-03 hectorkit-btx-decoders) are in `data-formats.md` §4 §6 §7 | HIGH, MED |
 | `REVIEW-2026-10-03.md` · `FIXPASS-2026-10-03.md` | Fable review and the fix-pass summary (ledger at the end of this file) | — |
 
 Append rule: new findings append to the topical file (new numbered subsection, with `name @ addr`,
@@ -152,8 +153,8 @@ ics4 1, ics# 1, BNDL 1, BteD 1, FREF 1, ALRT 3, icl8 1, PICT 6, carb 1, plst 1, 
 - NR-2 btSP header second i16 (8, 101, …): unused by the plotter; meaning unknown.
 - NR-3 ⚑ corrected (review 2026-10-03), narrowed: the algorithm is cited as Apple's documented QuickDraw `Random` (`randSeed = randSeed×16807 mod (2^31−1)`, 16-bit i16 result) at [LOW] (engine-loop.md §3). Open: (a) whether Carbon's `Random` keeps the 0x8000 → 0 adjustment; (b) the process-start `randSeed` (QD docs: 1 after `InitGraf`). Needs a runtime probe on the original.
 - NR-4 `RT3_GetDisplayCopies()` returning "N/A" — which license state arms the `_DrawPointsToComp` RNG trap.
-- NR-6 `_PopEnemy(-1)` / `_ReleaseEnemyFromBalloon(-1)` after a hero balloon: reads/writes below the enemy array; effect unknown.
-- NR-7 `_FigureEnemyMove` homing with `old dir == 0`: `back` is uninitialised after `LocationErrorInt`.
+- NR-6 `_PopEnemy(-1)` / `_ReleaseEnemyFromBalloon(-1)` after a hero balloon: reads/writes below the enemy array; effect unknown. → narrowed by C12 (`_ReleaseEnemyFromBalloon(-1)` only on the residual path: an enemy catch on exactly trap-release frame h+91 at a w16 = 120 level; `_PopEnemy(-1)` is live on every hero-balloon pop and reads slot −1 = `_environment`+4 / +0x47 = 0x393ab. Its effect depends on runtime memory and stays open. bubbles-items-scoring.md §5).
+- NR-7 `_FigureEnemyMove` homing with `old dir == 0`: `back` is uninitialised after `LocationErrorInt`. → RESOLVED by C11 (`_LocationErrorInt` → `_DoLocationError` → `_StopAlert` + `_CleanUp` → `_ExitToShell`: the original quits; `back` is never read. enemies-ai.md §4d).
 - NR-8 Editor "Balloon time" ↔ LEVL word: code uses w15 (flash) and w16 (release); w17 (always 300) is never read.
 - NR-9 Conditions the FILMs were recorded under (prefs 0x35/0x36, license state).
 - NR-10 Whether the shipped FILMs (possibly recorded with the 2002 engine) replay in sync in X 1.1 itself — needs Ben's eyes on the original demo.
@@ -190,3 +191,33 @@ ics4 1, ics# 1, BNDL 1, BteD 1, FREF 1, ALRT 3, icl8 1, PICT 6, carb 1, plst 1, 
     `_CheckLevelReroute` → `INDEX.md` "Out of scope"; `_EditorRunning` → `engine-loop.md` §1.
 12. [Minor] FILM leftovers share one residue (last nonzero index identical across all four) —
     landed in `data-formats.md` §3.
+
+**2026-10-03 — Plan 2026-10-03 btx-core corrections** (`docs/plans/2026-10-03-btx-core-and-film-harness.md`
+§"Bank corrections to append"). Each one was re-checked against the dump/disasm at append time and is
+marked `⚑ corrected (plan 2026-10-03 btx-core)` at the place below.
+1. C1 [HIGH] At most one `_HeroCaught` per frame (state-2 gate in `_IsHeroCaught`, state 3 set first)
+   — `replay-oracle.md` §4.5, `hero-and-input.md` §5, `bubbles-items-scoring.md` §4.
+2. C2 [HIGH] Hero-squash star group 0xe = 14 stars (shared tail `LAB_00004af8`) — `replay-oracle.md` §4.2
+   (supersedes REVIEW finding 1's "13 stars").
+3. C3 [HIGH] Star groups 1/0xb/0xc/0xd have no callers; type-0xb stars come only from groups 3/4/5 and
+   0xe — `replay-oracle.md` §4.1.
+4. C4 [HIGH] The shark balloon's collision box grows once (frame ≤ 1 gate), never to the full balloon —
+   `bubbles-items-scoring.md` §5.
+5. C5 [HIGH] A moving block pops flying balloons only; held-enemy balloons pop via `_WasEnemySquished`,
+   hero balloons never — `bubbles-items-scoring.md` §1.
+6. C6 [HIGH] `_ResetBlocks` seeds `gNumNormalBlocks = 100` so frame 1's recount runs — `engine-loop.md` §4.
+7. C7 [HIGH] An air bubble dies when its bottom < 0; delayed bubbles skip movement and the drift-index
+   advance — `bubbles-items-scoring.md` §11.
+8. C8 [HIGH] `_Bonus_SetNumEnemySquishes` returns early for n < 3 — `bubbles-items-scoring.md` §6,
+   `enemies-ai.md` §5.
+9. C9 [HIGH, arithmetic] Hero state 2 on frame 71, first `_CheckNewEnemies` on frame 82 —
+   `replay-oracle.md` §3, `engine-loop.md` §4.
+10. C10 [HIGH] An enemy squished on entry can still catch the hero in the same call — `enemies-ai.md` §3.
+11. C11 [HIGH] Old dir 0 in homing → `_LocationErrorInt` → `_ExitToShell` (the original quits) —
+    `enemies-ai.md` §4d; NR-7 resolved.
+12. C12 [HIGH code path; MED residual] Hero balloon: `_PopEnemy(-1)` runs at trap release h+91;
+    `_ReleaseEnemyFromBalloon(-1)` is reachable only on the residual h+91-catch path at w16 = 120 —
+    `bubbles-items-scoring.md` §5; NR-6 narrowed. New at append time [MED]: slot −1 lies in
+    `_environment`, so the original `_PopEnemy(-1)` may award +100 once per process (effect open).
+- Note (not a correction; from the plan's Research note 6 [derived], not re-checked here): registration
+  is RNG-neutral for levels 1–4, so FILMs 1–4 cannot discriminate Decision 2.

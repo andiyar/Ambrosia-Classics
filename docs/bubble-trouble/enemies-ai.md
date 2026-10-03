@@ -89,6 +89,14 @@ is entering — dir 1/3: `gMaze[col,row]` (the coords already rounded toward the
 (a bubble that has come to rest into the enemy's path squashes it: 200 points). [HIGH]
 Finally, state 1 only: if hero state 2 and `_IsHeroCaught(enemyRect,1,1)` → `_HeroCaught(1)`. [HIGH]
 Collision insets: enemy rect −11 each side, hero rect −8 → bodies must overlap by more than 19 px. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C10, an enemy squished on entry can still catch the hero.** `_ProcessEnemies @
+00011ad3` sets `bVar14 = true;` for state 1 at the top of the iteration (`LAB_00011ba5`). It then runs
+the not-aligned entry test (`_SquishEnemy(iVar13,1);`, which sets the dead flag `+0x47` and leaves the
+state byte at 1). Then it tests `if (((bVar14) && (*(short *)(PTR__hero_0003f014 + 2) == 2)) &&
+((cVar5 = _IsHeroCaught(…enemy rect…,1,1), cVar5 != '\0' && (*pcVar1 != '\x04')))) { _HeroCaught(1);
+}` with no `+0x47` test. So an enemy that a resting bubble squashes on entry can still catch the hero
+in the same call, and the replica must reproduce that. Command: `python3 ghidra/find_func.py
+'_ProcessEnemies' --file <dump>` (also `'_SquishEnemy'`). [HIGH]
 
 ## 4. `_EnemyAI @ 00014296`
 
@@ -212,6 +220,15 @@ dir = old; pause = 1
 stateStart)/30)`; `_CanDoNormalOtherPop` the same with 4. The second term is true whenever
 `10 < frame < 32778` (left side negative) — effectively a 120-frame cool-down. [MED] (the formula is
 exact; "effectively" assumes levels shorter than ~18 min).
+⚑ corrected (plan 2026-10-03 btx-core) — **C11, old dir 0: the original quits (resolves NR-7).** The switch on the old direction
+(`-0x45(%ebp)`, disasm 00013e1d..00013e29) sends every value except 1..4 to 00013e2b `movl $0x1,
+0x4(%esp)`; `movl $0x7d8,(%esp)`; 00013e3a `calll _LocationErrorInt`. `_LocationErrorInt @ 000145be` is
+`_DoLocationError((int)param_1,(int)param_2,0x232c);`. `_DoLocationError @ 00014511` shows the string,
+then `_StopAlert((int)param_3,0); _CleanUp();`, and `_CleanUp @ 00005413` ends `_FlushEvents(0xffff,0);
+… _ExitToShell();`. Control never returns, so `back` is never read. An enemy homing with old dir 0
+ends the program. Replica: stop with "original would abort" (plan Invariant 18). Command: `otool -tV
+<binary>` 00013e1d..00013e3a; `python3 ghidra/find_func.py '_DoLocationError' --file <dump>` (also
+`'_CleanUp'`). [HIGH]
 
 ### 4e. Actions (all set `dir`, pause the enemy and wait N aligned frames before acting)
 
@@ -252,6 +269,11 @@ Jewels (20/30) and dynamite (52) are never popped or pushed by enemies (pop mask
   the big blast, rects A and C overlap on row r−1 (cols c−1..c+1), so an enemy killed by A is
   re-counted by C and inflates `base+k` (points and multiplier step) for every later enemy in C.
   Original-engine quirk — the replica must reproduce it (bubbles-items-scoring.md §4). [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C8.** The "for n ≥ 3 (and 0)" call is real (the 3200 default arm `LAB_000113bd` covers n ≤ 0
+and n ≥ 5 and falls through to `_Bonus_SetNumEnemySquishes(iVar7);`). But `_Bonus_SetNumEnemySquishes
+@ 0001a818` begins `if (param_1 < 3) { _gBonus_NumEnemiesSquishedAtOnce = 0; return; }`, so n ≤ 2
+never steps the multiplier. Command: `python3 ghidra/find_func.py '_SquishEnemy' --file <dump>` (also
+`'_Bonus_SetNumEnemySquishes'`). [HIGH]
 
 ## 6. Level count bookkeeping
 

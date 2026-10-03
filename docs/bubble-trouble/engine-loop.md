@@ -156,6 +156,18 @@ Things the order implies (all [HIGH], derived from the order above):
   `_CheckNewEnemies`.
 - `_TimeBonus_CountDown` (end of level) calls `_AdvanceFrameCounter` inside its loop and uses
   `_WaitFor` (TickCount); harmless because `_NewLevel` zeroes the counter. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C6, the `gNumNormalBlocks` sentinel** (the §4 recount line; the §5 `_NewLevel` line).
+`_ResetBlocks @ 0001b90e`, called from `_NewLevel @ 0001735f` after `_gFrameCounter = 0;`, ends
+`*(undefined2 *)PTR__gNumNormalBlocks_0003f050 = 100;`. That sentinel is what lets frame 1's `if (0 <
+*(short *)PTR__gNumNormalBlocks_00034188) { … sVar14 = _NormalBlockCount(); *(short *)puVar5 = sVar14;
+… }` in `_PlayGame` run the first recount. Both pointer slots hold 0x3a380 = `_gNumNormalBlocks`
+(read from `__data` 0x34188 and `__pointers` 0x3f050 with Python `struct`). The other writers are the
+recount itself and the egg decrement in `_CheckNewEnemies`, and neither runs before frame 1. The
+replica seeds 100 at level start. Command: `python3 ghidra/find_func.py '_ResetBlocks' --file
+<dump>`; `grep -n gNumNormalBlocks <dump>`. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C9.** The "appear after 70" line is a delay. Hero state 2 begins on **frame 71**
+(`stateStart 0 + 0x46 < frame`), and the first `_CheckNewEnemies` runs on **frame 82**
+(`hero.stateStart 71 + 10 < frame`). Quoted lines: replay-oracle.md §3 C9. [HIGH] (arithmetic)
 
 ## 5. Game-state machine
 

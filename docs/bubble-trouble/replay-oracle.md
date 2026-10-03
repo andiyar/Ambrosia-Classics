@@ -67,6 +67,16 @@ PlayGame(level = id, mode 1):
 bounds (table sizes from nm addresses: XLoc 0x34e80–0x34ec2 = 33 shorts, Drift/Vertical/Groups 21
 bytes, Delay 13 shorts, star lookup 0x2a/2 = 21, bonus drift 0x37700–0x3772a = 21 shorts).
 The hero's first appearance takes 70 frames (fresh `_PlayGame` call). [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C9, frame numbers.** The 70 is a delay, not a frame number. `_NewLevel @ 0001735f` does
+`_gFrameCounter = 0;` before `_InitHero()`, which sets hero state 1 and stateStart = frame (0); the loop
+increments the counter before the hero state machine. In `_PlayGame @ 00018247` the state-1 arm
+`if ((int)((uint)*(ushort *)(puVar7 + 4) + iVar13) < (int)(uint)_gFrameCounter)` (iVar13 =
+`(-(ushort)!bVar1 & 0xfff6) + 0x46` = 0x46 on the first appearance) first holds on **frame 71**. That
+sets state 2 and `*(ushort *)(puVar7 + 4) = _gFrameCounter;` (71). The state-2 arm
+`if (*(ushort *)(PTR__hero_0003f014 + 4) + 10 < (uint)_gFrameCounter) { … _CheckNewEnemies(); }` first
+fires on **frame 82**. Frame 71 does not reach it because the state arms are an if/else chain. Command:
+`python3 ghidra/find_func.py '_PlayGame' --file <dump>` (also `'_NewLevel'`, `'_InitHero'`).
+[HIGH] (arithmetic over the quoted lines)
 
 ## 4. RNG consumers that depend on things a FILM does not record (replay hazards)
 
@@ -78,6 +88,19 @@ The hero's first appearance takes 70 frames (fresh `_PlayGame` call). [HIGH]
    with both ON to match a FILM recorded with defaults**, and the original itself would desync if a
    user turned them off. [HIGH] for the gating; that FILMs were recorded with both ON is [LOW]
    (assumed default) — NR-9.
+   ⚑ corrected (plan 2026-10-03 btx-core) — **C3, which star groups really draw.** Groups **1, 0xb, 0xc and 0xd have no
+   callers**. Every call site of `_NewStarGroup @ 000035b5` (13 `calll _NewStarGroup` plus the tail
+   `jmp _NewStarGroup` at 0001c008 in `_KillEggBlock`, from `otool -tV <binary>`; the group is the
+   `0x8(%esp)` / `0x10(%ebp)` immediate, or the decompile's argument): 3/4/5 (`_SquishEnemy` by sprite,
+   `_KillEggBlock` 0001bfb1/0001bfce/0001c00d), 0xe (`_HeroCaught`, 00021f16), 0 and 2 (`_PlayGame`
+   0001889f/00018b0e, `_Jewels_TurnToBlocks`, `_Jewels_GiveBonus`, `_CheckJewelMovement`, `_Bonus_Pop`
+   0001a769), 0xf/0x10 (`_ExplodeBombBlock` 0001c171/0001c0b8), 6–9 (`_ProcessHero`, decompile
+   `uVar14 = 6/7/8/9` by direction), 10 (`_PauseGame` 00017a7f). Star type = the 5th `_NewStar`
+   argument. Groups 3/4/5 make 4 type-0xb stars each and 0xe makes 14 (C2, next item). Group 0 makes
+   type 0 (+ type 10 at the tail), group 2 types 3..10, groups 6–9 type 0, group 10 type 2 (orbit), and
+   groups 0xf/0x10 type 0. So the type-0xb `(0,1)` draws come only from squishes, egg kills and the
+   hero squash. Command: `python3 ghidra/find_func.py '_NewStarGroup' --file <dump>`; `otool -tV
+   <binary>`. [HIGH]
 2. **Cosmetic pools have to be simulated exactly.** `_NewStar` returns before its RNG draw when 60
    stars are alive (`gNumActiveStars == 0x3c`) or no slot is free, **or when the star leaves the
    playfield** (next paragraph); `_Bubbles_New` returns before its
@@ -94,6 +117,16 @@ The hero's first appearance takes 70 frames (fresh `_PlayGame` call). [HIGH]
    stars clip), in **row 0 draws 3** (the −8 star), in **row 10 draws 2** (the +20 stars: bottom
    400+20+26 = 446 > 440); the clip is per star, so corners combine. Group 0xe (hero squash, 13
    stars) clips the same way. A replica without this clip desyncs on edge squishes. [HIGH]
+   ⚑ corrected (plan 2026-10-03 btx-core) — **C2, group 0xe is 14 stars, not 13.** `_NewStarGroup @ 000035b5` case 0xe has 13
+   explicit `_NewStar(…,0xb,0xffffffff)` calls and sets `iVar8 = (int)(short)(param_2 + -2); iVar12 =
+   (int)(short)(param_1 + 10);` inside the case. It then sets `uVar15 = 0xb; uVar14 = 8; uVar13 = 2;`
+   and `break`s to the shared tail `LAB_00004af8: _NewStar(iVar12,iVar8,uVar13,uVar14,uVar15,uVar16);`.
+   That tail is a **14th** type-0xb star, so two stars sit at (x+10, y−2) (anim 4 and anim 8).
+   Disasm cross-check: `otool -tV <binary>` shows 83 `calll _NewStar` between 000035b5 and 00004b04,
+   which is the 82 explicit calls in the decompile plus the tail at 00004af8. The clip above applies
+   per star to all 14, so a hero squash makes up to 14 `(0,1)` draws. This also supersedes the "13
+   stars" in REVIEW-2026-10-03.md finding 1 (that file is the review record and stays as written).
+   Command: `python3 ghidra/find_func.py '_NewStarGroup' --file <dump>`. [HIGH]
 3. **Session latches.** `_Get0To6()` (u) and `_Get13To22()` (L) are fixed at the first menu entry from
    the process's initial QuickDraw seed (no RNG call happens earlier in `_InitMac` — caller scan).
    - L: from the first `_ProcessHero` with state 2 onward, every direction choice at level ≥ L draws
@@ -124,6 +157,15 @@ The hero's first appearance takes 70 frames (fresh `_PlayGame` call). [HIGH]
    times in one frame by a large blast; `_CheckForBombKills` order is A, B, C rects. Replicate call
    counts, not just outcomes. [HIGH] ⚑ corrected (review 2026-10-03): the blast kill count `k` also counts
    already-dead enemies (A and C overlap on row r−1) — scoring/multiplier, not RNG; enemies-ai.md §5.
+   ⚑ corrected (plan 2026-10-03 btx-core) — **C1, at most one `_HeroCaught` per frame.** `_IsHeroCaught @ 00021c79` returns 0
+   unless `(*(short *)(PTR__hero_0003f014 + 2) == 2)`, and `_HeroCaught @ 00021dfa` begins
+   `*(undefined2 *)(PTR__hero_0003f014 + 2) = 3;`. All three callers gate on `_IsHeroCaught`:
+   `_CheckForBombKills @ 000116eb`, `_ProcessEnemies @ 00011ad3` (which also tests `hero+2 == 2`) and
+   `_MoveBlock @ 0001cccb`. `python3 ghidra/find_func.py '_HeroCaught\(' --file <dump>` → 4 blocks:
+   those three plus the definition. After the first catch, every later test that frame fails: the
+   second and third blast rects, later enemies, later blocks. So the "up to three times" above does not
+   happen. There is **one `_HeroCaught` per catch**: one `(0,1)` draw, plus one star group 0xe for
+   kind 2 only (block/blast). Kind 1 (enemy) draws `(0,1)` and makes no stars. [HIGH]
 6. **Iteration order is part of the RNG order.** Enemies are processed in slot order 0..29; blocks in
    slot order 0..34 (MoveBlock squish → star group draws); free-slot search is "lowest free index".
    Slot allocation must match the original (first free). [HIGH]
