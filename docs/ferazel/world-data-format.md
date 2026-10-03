@@ -64,7 +64,7 @@ counts, size ranges) is in INDEX. Loader routines:
 | `Mcnv` | conversation id | `.OpenDefaultWorldConv @ 100487d4` (from `.Conversation @ 1007a7e8`) | §6 |
 | `STR#` | 1000 "level names" | `.InitMapLevelNames @ 1007ad84`: `GetIndString(buf, 1000, i)` for i=0..99 into 256-byte slots at `_DAT_100a0c34` | map/status-bar names |
 | `STR#` | 500 "signs" | 19 sign texts; read by `.HitPlayerSprite` for sign sprites (§3.4) | [HIGH] |
-| `PICT` | 7000 | `.ShowWorldMap` draws `PICT 7000` (608×384 world-map art; the app fork holds another 608×384 `PICT 7000`) [MED: resource-chain order decides which one is drawn] | |
+| `PICT` | 7000 | `.ShowWorldMap` draws `PICT 7000` (608×384 world-map art; the app fork holds another 608×384 `PICT 7000`) [MED: resource-chain order decides which one is drawn] ⚑ corrected (deepening 2026-10-03): the **app fork's** copy is drawn; the World Data copy is dead (they differ in a 63×86 region) — save-continue §8.4 [MED] | |
 
 All loaders open the world file by name (`_DAT_100a0060` ← `"Ferazel's Wand World Data"`, pstr
 at `0x100a2714`, copied in `.InitAppGlobals`) or via the FSSpec saved by `.OpenWorld` when the
@@ -127,8 +127,8 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x25c4 | pstr[256] | level display name | written by `.ShowWorldMap` from `STR# 1000`; drawn by `.UpdateTextStats` | [HIGH] |
 | 0x26c4 | i16 | map-node level number (= own id in all 24) | `.ShowWorldMap`: `FindCurrNode(hdr+0x26c4)` | [HIGH] |
 | 0x26c6 | u8 | "draw submerged tiles as tinted faces" flag (=1 only in 11) | `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`, `.RedrawScrollGrid` | [MED] |
-| 0x26c7 | u8 | OmniPx mode (0,1,2,5,6) | `.SetupOmniPx`, `.TurnOnOmniPx`, `.UpdateOmniPx`, `.PaintFrameWrap` | [MED] meaning NOT RESOLVED |
-| 0x26c8 | u8 | copied to game-globals +0x16 at level start | `.NewGame`, `.ContinueGame` | [HIGH] copy; meaning NOT RESOLVED |
+| 0x26c7 | u8 | OmniPx mode (0,1,2,5,6) | `.SetupOmniPx`, `.TurnOnOmniPx`, `.UpdateOmniPx`, `.PaintFrameWrap` | [MED] meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): narrowed per mode (1 rain + overlay faces 6000/6001, level 15; 2/5 faces 6200/6201 and 6300/6301 with an animated port; 6 interlaced 29 frames, level 70); draw composition still open (save-continue §8.3) |
+| 0x26c8 | u8 | copied to game-globals +0x16 at level start | `.NewGame`, `.ContinueGame` | [HIGH] copy; meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): **player starts facing left** (`.SetupPlayerSprite` sets `+0x17e = G+0x16 ≠ 0`); 1 in levels 3, 5, 11, 18, 40, 45, the six that start at the map's right edge [HIGH]; a resumed session never refreshes it from the header (save-continue §8.3, player-states §6) |
 | 0x26c9 | u8 | water-surface effect flag | `.WrapDrawWaterEffects` | [MED] |
 | 0x26ca | u8 | parallax ripple flag | `.RipplePxBackOffsets`, `.DoubleBlitPPCParallaxOneLayer` | [MED] |
 | 0x26cb | u8 | FG pattern tile period: 0 → 8×8, ≠0 → 6×6 | `.GetFGPatternTile @ 1003c0b8` | [HIGH] |
@@ -141,16 +141,16 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x2710 | i16 | ice slipperiness: ground friction = (256−v)·800>>8 (100 in 1,2; 80 in 11,18; 220 in 30,31) | `.HandlePlayerSprite` (`+0xd8 == 3`) | [HIGH] |
 | 0x2712 | i16 | gamma fade-in on level start | `.GameLoop` | [HIGH] (0 in data) |
 | 0x2714 | i16 | water-current push, 1/256 px/frame (550, 470, −512, 768) | `.StandardSpriteHandles`, `.WrapDrawWaterEffects` | [HIGH] |
-| 0x2716/18/1a | i16×3 | parallax sprite: PICT id, ?, ? (265/128/222 …) | `.SetupLevel → .MTAddPxSprite(id, a, b)`; 0x271a also `.BuildSineTable` | [MED] |
+| 0x2716/18/1a | i16×3 | parallax sprite: PICT id, ?, ? (265/128/222 …) | `.SetupLevel → .MTAddPxSprite(id, a, b)`; 0x271a also `.BuildSineTable` | [MED] — ⚑ corrected (deepening 2026-10-03): Backgrounds PICT id of a 768-px horizon strip / its x-parallax factor (/256) / base y (+232), tiled across the level as `Px` sprites (triggers-background-2 §4) [HIGH arithmetic] |
 | 0x271c | i16 | alternate CLUT id (0 in data) → `.AltClutMod` | `.SetupLevel` | [HIGH] |
 | 0x271e | i16 | parallax mode flag | `.DoubleBlitPPCParallaxOneLayer`, `.PaintFrameWrap` | [MED] (0 in data) |
 | 0x2722 | i16 | fire/flame mode (0; 1 in 52; 2 in 55) | `.SetupLevel` (pre-runs `FlameAddLine/FlameUpdate` 59/60 times), `.PaintFrameWrap`, `.DoubleBlitPPCParallaxOneLayerFire`, `.HandleEnemyShotSprite` | [HIGH] (setup) |
-| 0x2724 | i16 | boss-arena camera bound x: >0 right edge, <0 left edge (|v|); also triggers track 30 (engine.md §4) | `.FindUpperLeftCorner`, `.GameLoop`, `.PlayerConstraints` | [HIGH] |
+| 0x2724 | i16 | boss-arena camera bound x: >0 right edge, <0 left edge (|v|); also triggers track 30 (engine.md §4) | `.FindUpperLeftCorner`, `.GameLoop`, `.PlayerConstraints` | [HIGH] — ⚑ corrected (deepening 2026-10-03): the player lock line is `|v| ∓ 60`, applied only while a boss is alive (`_DAT_1009fed0 == 0`); level 55's 16000 never locks (bosses §1.3, bosses-2 corr. 5) |
 | 0x2726 | i16 | auto-scroll x speed (1/256 px/frame) (768 in 51) | `.SetupLevelSprites`, `.FindUpperLeftCorner` | [HIGH] |
 | 0x2728 | i16 | auto-scroll y speed (640 in 52) | same | [HIGH] |
 | 0x272a | i16 | auto-scroll enable | `.SetupLevelSprites` | [HIGH] |
 | 0x272c | i16 | constant side push on the player (−320 in 15, Storm Valley): airborne vx drifts toward 5·v, grounded x += v/4 per frame (physics.md §4) | `.HandlePlayerSprite` | [HIGH] |
-| 0x272e | i16 | second arena bound (−640 in 18, 1384 in 25, −448 in 55) | `.FindUpperLeftCorner` | [MED] |
+| 0x272e | i16 | second arena bound (−640 in 18, 1384 in 25, −448 in 55) | `.FindUpperLeftCorner` | [MED] — ⚑ corrected (deepening 2026-10-03): applied only after the lock; arithmetic in bosses §1.3 [HIGH there] |
 | 0x2730..0x2736 | i16×4 | CLUT animation (mode, first index, count?, period 12000) | `.AnimateCLUT` | [MED] |
 | 0x273c | i16 | chapter-screen number shown on entry (1..7) | `.GameLoop → .ChapterScreen` while `G+0x176+2·L == 0`, i.e. no checkpoint save **or** completion recorded for the level yet (engine.md §9) ⚑ corrected (review 2026-10-03) #1 | [HIGH] |
 | 0x2846 | i16 | player start y (px) | `.NewGame`: `GameLoop(x−32, y−32, …)` | [HIGH] |
@@ -172,7 +172,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x726c | i16[8192] | PxMid per-scanline x-parallax factor (/256) | same | [HIGH] |
 | 0xb26c | i16 | PxBack y-parallax factor (/256) | same | [HIGH] |
 | 0xb26e | i16 | PxMid y-parallax factor (/256) | same | [HIGH] |
-| 0xb270..0xb276 | | 0x20,8,0x20,8 in level 1 | no reader found | NOT RESOLVED |
+| 0xb270..0xb276 | | ~~0x20,8,0x20,8 in level 1~~ ⚑ corrected (deepening 2026-10-03): **zero in all 24 levels**, no access in the code; the quoted values are 0xb278..0xb27e (this file's own xxd below: `004f4f8d` = +0xb270 starts with 8 zero bytes) (save-continue §8.3) | no reader found | [HIGH] unused |
 | 0xb278/0xb27a | i16 | PxBack map w,h (tiles of 128 px) | §3.1 | [HIGH] |
 | 0xb27c/0xb27e | i16 | PxMid map w,h | §3.1 | [HIGH] |
 | 0xb280/0xb282 | i16 | main grid w,h (tiles of 32 px) | §3.1, all Get*Tile | [HIGH] |
@@ -230,7 +230,7 @@ map #5 all zero; overlay 20 non-zero cells with low byte 101 (o1 = 100 → FG ti
 | rec off | hdr off | type | meaning | evidence |
 |---|---|---|---|---|
 | +0x0 | +0x4 | u8 | 1 = spawn; cleared to 0 when the sprite dies/collected (`.UpdateSprites` writes `+4 = 0`) | `.SetupLevelSprites` `*(char*)(rec+4) == 1` |
-| +0x1 | +0x5 | u8 | no reader found | NOT RESOLVED |
+| +0x1 | +0x5 | u8 | no reader found | NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): 0 in every active record and read by no class (all class readers, coverage.md §3) [HIGH] |
 | +0x2 | +0x6 | i16 | sprite type (→ class table §3.5) | same, `GenerateSprite(...,type,...)` |
 | +0x4 | +0x8 | i16 | param 1 | per-class Setup routines (xref list below) |
 | +0x6 | +0xa | i16 | param 2 | |
@@ -250,7 +250,24 @@ Platform (`.DoSetupPlatformSprite` 40 reads), Bonus, Walker, Crawler, Roach, Flo
 Dillo, Crab, Chief, Demon, Warrior, Bat, `.SetupProgrammedPath`, `.HitPlayerSprite` (17 reads of
 param 1 — triggers/exits) [HIGH for the existence of the reads, awk over both dumps]. The
 per-class meaning of each param is **NOT RESOLVED** (needs one pass per Setup routine), except
-these talker/trigger types read in `.HitPlayerSprite` [HIGH]:
+these talker/trigger types read in `.HitPlayerSprite` [HIGH]. ⚑ corrected (deepening 2026-10-03) — per-class meanings now
+live in the deepening files (the readings stay there; this is the index):
+
+| class (types) | params p1..p4 (summary) | file § |
+|---|---|---|
+| Walker (1700..1769) | p1 bomb type (1760), p3 tier → HP / cooldown / palette / coins | enemies-ground §1, §3.1 |
+| Crawler / Roach / Dillo | Crawler p1 ceiling/floor, p2 HP; Roach none; Dillo by type | enemies-ground §4–§6 |
+| Bat / Gremlin / Floater | Bat p1 < 0 → background bat (harmless, uncounted), path params (physics-sprites §8.5) | enemies-flyers §6 |
+| Frog / Salamander / Blob / Crab | Frog p1 = variant (HP, tint, score); Crab p1 = reach; others none | enemies-water-cave §0 |
+| Warrior / Wizard / Chief / Demon / Xichra | p4 = boss flag; Demon p3 = partner offset; Warrior/Wizard p2 written 150, unread | bosses §1.1 |
+| Bonus (1055..3248) | per type (scroll p1, sphere p2 duration, containers p4 = spent, trigger 1058) | pickups-boxes §1.3, §1.10 |
+| Box (1060..3099) | per type (doors p1/p4, chests p3, crates p1..p3, gates/blocks rec(p1/p2).p4, geysers p1..p4, pipes p1/p2, signs/talkers p1/p4) | pickups-boxes §2.2, §2.4 |
+| Button (1320..1329) | writes its own p4 (pressed); p1 = 1 latches | triggers-background §1 |
+| Background (1090..3249) | cannons p1 mode, passages p1 = partner record / p2 darkness, spikes p1..p3, fire p1 tint, exits p1/p2 | triggers-background §2 |
+| Platform (1400..1429) | p1 mode, p2 radius/travel/count, p3 speed, p4 start angle/offset; catapult p1 = 2 non-solid | platforms-ropes-radial §2.2, §2.9 |
+| Rope (3020..3039) | p1..p4 = absolute end points (x1,y1,x2,y2) | platforms-ropes-radial §3.3 |
+
+Read in `.HitPlayerSprite` [HIGH]:
 - type 2902 (0xb56) **sign**: on first touch (param 4 == 0) or UP, with a 90-frame cooldown,
   if param 1 > 0 → `GetIndString(STR# 500, param1)` from the world file, shown by
   `.SimpleConv` titled "Wooden Sign"; param 4 is then set to 1 ("read").
@@ -314,7 +331,12 @@ y 439, x 406.
 | 3020..3039 | Rope | idle |
 | 1830 is inside the 1700..1839 sub-chain (Wizard), so the later `type == 0x726 → Effect` arm is dead | | |
 
-Types in 1710/1711, 1713..1719, 1721..1729 and anything not listed spawn nothing. Every one of
+Types in 1710/1711, 1713..1719, 1721..1729 and anything not listed spawn nothing.
+⚑ corrected (deepening 2026-10-03): a class's range is wider than its behaviour — the Background Setup handles only
+1090..1098, 1150..1153, 1208, 1211..1213, 1480..1489, 1840..1843, 1855/1856, 1900..1903,
+2700..2799 (faces 2700..2729), 2890..2893, 2900/2901, 3000..3009, 3060, 3080..3087, 3249; the rest
+are inert (triggers-background §2.1). Walker behaviour exists only for 1700, 1705, 1750, 1760
+(enemies-ground §8). Placed-type census per class: coverage.md §3. Every one of
 the 243 types present in the shipped levels maps to a class (script run, this session; per-class
 type list with counts reproduced by `gensprite_map.py` + the census loop). The `layer` arg
 (default −1 → 0) lands in sprite+0x80; MTNewSprite callers pass 10 (player), 11 (shots),
@@ -324,7 +346,9 @@ type list with counts reproduced by `gensprite_map.py` + the census loop). The `
 
 ### 4.1 Level number lifecycle  [HIGH]
 - New game: level = `Mwld+0x1c4` (1). Option-key cheat/warp only when debug flag
-  `_DAT_100a0064` is set (`.WarpDialog`) — out of scope (debug).
+  `_DAT_100a0064` is set (`.WarpDialog`) — out of scope (debug). ⚑ corrected (deepening 2026-10-03): the shipped path
+  loads literal level 1; `Mwld+0x1c4` is read only with the debug flag or a non-default world
+  (same value in the data) (save-continue §1, raw 0x1000b2b8..0x1000b2cc cited there).
 - `.NewGame` loop: `GameLoop(hdr+0x2848−32, hdr+0x2846−32, 0, 1)`; on level complete
   (`_DAT_100a0088` set) and not victory → `.ShowWorldMap()` returns a level number → 
   `OpenDefaultWorldLevel(n)` → next `GameLoop` at that level's start.
@@ -384,7 +408,12 @@ frames, 2 ticks per frame (1 tick when pct > 45), with a looping tick sound; the
 by score band (< 11, < 100, = 100). The three stats per level are the counters
 `G+0x306/0x3ce/0x496` (achieved) vs `G+0x6ee/0x7b6/0x87e` (totals, set by `.SetupLevel` from the
 counts `.SetupLevelSprites` accumulates); the manual names them enemies defeated, Xichrons
-collected, secrets found [MED: which counter is which not traced].
+collected, secrets found [MED: which counter is which not traced]. ⚑ corrected (deepening 2026-10-03): `G+0x306/0x6ee` =
+**enemies** (bosses, flyers and water-cave readers: each counted enemy has `+0x1b5 = 1`, its kill
+increments 0x306 — enemies-flyers §1.2, enemies-water-cave §0.1), `G+0x3ce/0x7b6` = **Xichrons**
+(1055/1056), `G+0x496/0x87e` = **secrets** (1059) (pickups-boxes §1.10) [HIGH]. Swarms (1869) and
+the Wraith are counted but never credited, so the enemies stat of levels 10, 11, 21, 62 cannot
+reach 100 % (enemies-flyers §1.2).
 
 ## 5. `Mcnv` — conversations  [MED]
 
@@ -402,6 +431,8 @@ starts at line index 0x13 and loops while the index is < 0x14; `.HandleLineRespo
 save-game block). Response/action encoding: **NOT RESOLVED**.
 
 ## 6. Open items (also in INDEX)
-- Per-class meaning of record params 1–4.
-- 0x26c7/0x26c8/0x272c/0xb270..0xb276 header fields.
+- ~~Per-class meaning of record params 1–4.~~ ⚑ corrected (deepening 2026-10-03): closed for every placed class (§3.4 table).
+- ~~0x26c7/0x26c8/0x272c/0xb270..0xb276 header fields.~~ ⚑ corrected (deepening 2026-10-03): 0x26c8 and 0xb270..0xb276
+  closed (§3.2); 0x272c was already HIGH; 0x26c7 OmniPx composition and PxMid −1 drawing remain
+  (save-continue §8.3).
 - Mcnv response/action encoding; `STR# 500` sign reader.
