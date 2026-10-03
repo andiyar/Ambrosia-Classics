@@ -13,6 +13,11 @@ import AkiCore
     private static let droppedActions: Set<String> = ["showRegistration:", "checkForUpdates:"]
     /// "Download Levels…" (method-map §4, tag 15).
     private static let droppedTag = 15
+    /// The nib's title for the `showPreferences:` item ("Preferences…"), which AppKit renames "Settings…".
+    private(set) static var preferencesTitle: String?
+    /// The Edit menu as built from the nib (the submenu holding `copy:`) and the items the nib gave it.
+    private static var editMenu: NSMenu?
+    private static var nibEditItems: [NSMenuItem] = []
 
     /// The main menu: `AMainMenu` of `MainMenu.nib/designable.nib`. Items the nib targets at "Controller"
     /// get `controller` as target; the rest (FirstResponder) target nil. Also sets `NSApp.windowsMenu` to
@@ -23,7 +28,28 @@ import AkiCore
         NSApp.windowsMenu = menu.items.compactMap(\.submenu).first { submenu in
             submenu.items.contains { $0.action == #selector(NSApplication.arrangeInFront(_:)) }
         }
+        editMenu = menu.items.compactMap(\.submenu).first { submenu in
+            submenu.items.contains { $0.action == #selector(NSText.copy(_:)) }
+        }
+        nibEditItems = editMenu?.items ?? []
+        // Runs after the caller's `NSApp.mainMenu =` (an immediate re-set does not stick, measured).
+        controller.perform(#selector(AkiController.restoreNibMenu), with: nil, afterDelay: 0)
         return menu
+    }
+
+    /// Undoes what AppKit adds to the installed bar and the nib lacks: the Preferences item's nib title
+    /// comes back over "Settings…", and every Edit item the nib did not build (AutoFill) is removed.
+    /// Start Dictation… and Emoji & Symbols are switched off by registered defaults in `AkiMain`; the ⌥
+    /// alternates, the Window menu's tiling items and Clear Current Layer's dropped ⌘X are left alone.
+    static func restoreNibItems() {
+        if let title = preferencesTitle, let item = NSApp.mainMenu?.items.lazy.compactMap(\.submenu)
+            .compactMap({ $0.items.first { $0.action == #selector(AkiController.showPreferences(_:)) } }).first {
+            item.title = title
+        }
+        guard let editMenu else { return }
+        for item in editMenu.items where !nibEditItems.contains(where: { $0 === item }) {
+            editMenu.removeItem(item)
+        }
     }
 
     private static func makeMenu(title: String, items: [CocoaNib.MenuItem], controller: AkiController) -> NSMenu {
@@ -56,6 +82,9 @@ import AkiCore
         menuItem.keyEquivalentModifierMask = NSEvent.ModifierFlags(rawValue: UInt(UInt32(truncatingIfNeeded: item.modifierMask)))
             .intersection(.deviceIndependentFlagsMask)
         menuItem.tag = item.tag
+        if item.action == "showPreferences:" {
+            preferencesTitle = item.title
+        }
         if item.action != nil, item.target == "Controller" {
             menuItem.target = controller
         }

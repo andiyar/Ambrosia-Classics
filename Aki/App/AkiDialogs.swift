@@ -144,8 +144,9 @@ import AkiCore
     }
 }
 
-/// The installed event handler: a button press records its HICommand, sets `g.dialogOK` for `'ok  '`
-/// and quits the modal loop (`QuitAppModalLoopForWindow`).
+/// The installed event handler: a button press records its HICommand, sets `g.dialogOK` for `'ok  '`,
+/// clears it for `'not!'`, and quits the modal loop (`QuitAppModalLoopForWindow`). The LoadLevel, Warning
+/// and Stats handlers clear it on `'not!'` (DC:2083) while Unavailable's only sets it; one rule covers all.
 @MainActor private final class CarbonDialogRunner: NSObject {
     private unowned let controller: AkiController
     private var commands: [ObjectIdentifier: String] = [:]
@@ -163,6 +164,8 @@ import AkiCore
         command = commands[ObjectIdentifier(sender)]
         if command == "ok  " {
             controller.g.dialogOK = true
+        } else if command == "not!" {
+            controller.g.dialogOK = false                      // DC:2083
         }
         NSApp.stopModal()
     }
@@ -180,19 +183,24 @@ import AkiCore
 }
 
 extension NSWindow {
-    /// `-[NSWindow(AkiAdditions) scheduleSetShieldingLevel]` for the dialogs: after delay 0 in the
-    /// modal-panel run-loop mode (i.e. inside the modal session that is about to start), centre on the
-    /// display (`centerWithCGDisplaySize`; its 800×600-mode correction is not replicated — Known delta 2)
-    /// and raise to `CGShieldingWindowLevel()` so the dialog shows above the fullscreen window.
+    /// `-[NSWindow(AkiAdditions) scheduleSetShieldingLevel]` for every window (dialogs, alerts, splashes,
+    /// Preferences): after delay 0 in the modal-panel run-loop mode (i.e. inside the modal session that is
+    /// about to start), `centerWithCGDisplaySize` and raise to `CGShieldingWindowLevel()` so the window
+    /// shows above the fullscreen window.
     func scheduleShieldingLevel() {
         perform(#selector(applyShieldingLevel), with: nil, afterDelay: 0, inModes: [.modalPanel])
     }
 
     @objc fileprivate func applyShieldingLevel() {
-        if let screen = screen ?? NSScreen.main {
-            let s = screen.frame
-            setFrameOrigin(NSPoint(x: (s.midX - frame.width / 2).rounded(.down), y: (s.midY - frame.height / 2).rounded(.down)))
-        }
+        centerWithCGDisplaySize()
         level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+    }
+
+    /// `-[NSWindow(AkiAdditions) centerWithCGDisplaySize]`: the exact centre of the window's display (its
+    /// 800×600-mode correction is not replicated — Known delta 2). `AkiSplashWindow` overrides it.
+    @objc func centerWithCGDisplaySize() {
+        guard let screen = screen ?? NSScreen.main else { return }
+        let s = screen.frame
+        setFrameOrigin(NSPoint(x: (s.midX - frame.width / 2).rounded(.down), y: (s.midY - frame.height / 2).rounded(.down)))
     }
 }

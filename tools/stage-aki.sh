@@ -31,6 +31,15 @@ mkdir -p "$OUT"
 ditto "$APP" "$OUT/Aki.app"
 mkdir -p "$OUT/Aki.app/Contents/Resources"
 rsync -a --exclude '.DS_Store' "$DATA/" "$OUT/Aki.app/Contents/Resources/"
+# Release Notes.rtf is set in Osaka-Mono, a downloadable asset on current macOS: bundle Apple's copy
+# (registered by Info.plist ATSApplicationFontsPath = Fonts) so the notes never prompt for a download.
+OSAKA="$(find /System/Library/AssetsV2 -name OsakaMono.ttf -print -quit 2>/dev/null || true)"
+if [ -n "$OSAKA" ]; then
+    mkdir -p "$OUT/Aki.app/Contents/Resources/Fonts"
+    cp "$OSAKA" "$OUT/Aki.app/Contents/Resources/Fonts/OsakaMono.ttf"
+else
+    echo "stage-aki: warning: OsakaMono.ttf not found under /System/Library/AssetsV2; Release Notes fall back to Menlo" >&2
+fi
 xattr -cr "$OUT/Aki.app"
 # --deep is deprecated but still accepted by Xcode 27's codesign (dry run 2026-10-03); errors stay visible
 codesign --force --deep --sign - "$OUT/Aki.app"

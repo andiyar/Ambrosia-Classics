@@ -15,11 +15,11 @@ import AppKit
     /// `_ShowSplashScreenWithImage(image, timeout)`: windowed → the splash's origin is centred on the main
     /// window's frame (`(frame.size − image.size) × 0.5 + frame.origin`); fullscreen → centred on its
     /// screen and raised to `CGShieldingWindowLevel()` from inside the modal loop
-    /// (`scheduleSetShieldingLevel`); then `runModalForWindow:`.
+    /// (`scheduleShieldingLevel`); then `runModalForWindow:`.
     static func show(image: NSImage, timeout: Int, controller: AkiController) {
         let window = AkiSplashWindow(image: image, timeout: timeout)
         if controller.shell.isFullscreen {
-            window.scheduleSetShieldingLevel()
+            window.scheduleShieldingLevel()
         } else {
             let size = image.size
             let frame = controller.shell.windowedWindow.frame
@@ -103,18 +103,13 @@ import AppKit
         close()
     }
 
-    /// `-[NSWindow(AkiAdditions) scheduleSetShieldingLevel]`: after delay 0 in the modal-panel mode, centre
-    /// on the screen (`centerWithCGDisplaySize`; its 800×600-display-mode x correction is not replicated —
-    /// Known delta 2) and set `CGShieldingWindowLevel()`.
-    func scheduleSetShieldingLevel() {
-        perform(#selector(setShieldingLevelAndCenter), with: nil, afterDelay: 0, inModes: [.modalPanel])
-    }
-
-    @objc private func setShieldingLevelAndCenter() {
+    /// `centerWithCGDisplaySize` for the splash, inside the shared `scheduleShieldingLevel` pass: the one
+    /// deliberate `center()` that the override above lets through (its 800×600-display-mode x correction
+    /// is not replicated — Known delta 2).
+    override func centerWithCGDisplaySize() {
         centeringOnScreen = true
         center()
         centeringOnScreen = false
-        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
     }
 }
 

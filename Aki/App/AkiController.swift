@@ -155,6 +155,11 @@ import HectorShell
 
     // MARK: Menus (MainMenu.nib, P1.9)
 
+    /// The delayed pass `AkiMenus.build` schedules once the bar is installed.
+    @objc func restoreNibMenu() {
+        AkiMenus.restoreNibItems()
+    }
+
     /// `-[Controller gameMenuAction:]` @ 0x31db: every tagged menu item → `_HandleMenuCommand(tag)`.
     @objc func gameMenuAction(_ sender: NSMenuItem) {
         handleMenuCommand(sender.tag)
@@ -172,7 +177,13 @@ import HectorShell
     /// `-[Controller validateMenuItem:]` @ 0x3de5 (DC:1048), all three modes, then `false` for any tag in
     /// `notYetBuilt` (retitling still happens). Untagged items: Help is off while a window is modal; Close
     /// is off when the key window is the main window, else follows the key window's close box; the rest on.
+    /// Also puts the nib's "Preferences…" back each time AppKit validates it (AppKit retitles it
+    /// "Settings…"; see `AkiMenus.restoreNibItems`).
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(showPreferences(_:)), let title = AkiMenus.preferencesTitle,
+           menuItem.title != title {
+            menuItem.title = title
+        }
         let tag = menuItem.tag
         guard tag >= 1 else {
             if menuItem.action == #selector(showHelp(_:)), NSApp.modalWindow != nil { return false }
@@ -254,10 +265,14 @@ import HectorShell
         AkiSplash.show(named: "guide", timeout: 0, controller: self)
     }
 
-    /// `-[Controller showHandbook:]` @ 0x33b2: opens the shipped `Aki Handbook.pdf`. 1.2 named Preview
-    /// (`openFile:withApplication:`); the replica hands it to the user's default PDF viewer.
+    /// `-[Controller showHandbook:]` @ 0x33b2 (DC:587): `openFile:withApplication:@"Preview"` on the
+    /// shipped `Aki Handbook.pdf` — opened in Preview (`com.apple.Preview`); only if Preview is missing
+    /// does it go to the default PDF handler.
     @objc func showHandbook(_ sender: Any?) {
-        if let url = assets.url("Aki Handbook.pdf") {
+        guard let url = assets.url("Aki Handbook.pdf") else { return }
+        if let preview = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Preview") {
+            NSWorkspace.shared.open([url], withApplicationAt: preview, configuration: NSWorkspace.OpenConfiguration())
+        } else {
             NSWorkspace.shared.open(url)
         }
     }
