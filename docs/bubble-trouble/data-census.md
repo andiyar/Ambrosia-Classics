@@ -1,6 +1,6 @@
-> Generated 2026-10-03 by `btx-census` (`BubbleTrouble/Core`) through HectorKit `5a33384` (the decoder
-> docs commit on top of `f637278`; decoder sources identical): `CIcon`, `PixelPattern`, `PICT`,
-> `PICT.decodeQuickTime`, `SndSound`. Everything below the rule is the tool's stdout, verbatim —
+> Generated 2026-10-04 by `btx-census` (`BubbleTrouble/Core`) through HectorKit `4d3746d` (tag `v0.2.0`):
+> `CIcon`, `PixelPattern`, `PICT.decodeAny` (raster · banded QuickTime · 0x0099 region · 0x8201 matte),
+> `SndSound`. Everything below the rule is the tool's stdout, verbatim —
 > `BTXCensusTests.testStdoutEqualsCommittedCensus` pins it byte for byte. Re-run from the repo root:
 >
 >     swift build --package-path BubbleTrouble/Core -c release
@@ -8,12 +8,14 @@
 >
 > `HECTORKIT_DATA_BTX` = the Bubble Trouble X 1.1 UB `Contents/Resources` folder; the archive copy is
 > `~/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Bubble Trouble X/BubbleTroubleX_1.1_UB/Bubble Trouble X.app/Contents/Resources`
-> (game data never enters git). Plan: `docs/plans/2026-10-03-hectorkit-btx-decoders.md` Task 7.
+> (game data never enters git). Plan: `docs/plans/2026-10-03-hectorkit-btx-decoders.md` Tasks 7 and 4c.
 >
 > **Read with the numbers:**
-> 1. **9 masked PICTs are named deferrals, not failures.** 0x0099 PackBitsRgn (9001 9002 9012 9020) and
->    0x8201 QuickTime 'rle ' matte (2910 7000 9030 9031 9077) make `PICT(data:)` throw `unsupportedOpcode`;
->    the kit decoders are plan Tasks 4a/4b (last wave). Task 4c regenerates this file through `PICT.decodeAny`.
+> 1. **The 9 masked PICTs decode via `PICT.decodeAny`.** 0x0099 PackBitsRgn (9001 9002 9012 9020: alpha 255
+>    inside the region, 0 outside — 9001/9002's region is the whole frame, so opaque) and 0x8201 QuickTime
+>    'rle ' matte (2910 7000 9030 9031 9077: alpha = the 8-bit matte sample) — kit plan Tasks 4a/4b. Both
+>    masked paths are census-verified on ONE game (this one): no EV or Aki PICT carries either opcode (plan
+>    delta 2), so the kit calls them verified on one game's data, not yet general.
 > 2. **PICT 200 (32-bit, cmpCount 4) has an all-zero alpha plane** — 102,300 of 102,300 pixels A = 0
 >    (re-checked in Python by unpacking the 0x009A rows: alpha-plane histogram `{0: 102300}`). The kit
 >    carries the plane faithfully. [HIGH] for the bytes. Classic QuickDraw ignores the high (alpha) byte of a
@@ -100,9 +102,9 @@ ppat 7 · 256×256 8-bit · device colour table 7 · RGB sum 89,901,763
 
 ## 4. `PICT` — every picture through HectorKit
 
-path: raw = `PICT(data:)`; quicktime = banded 0x8200 JPEG via `PICT.decodeQuickTime(data:)`;
-deferred region = 0x0099 PackBitsRgn and deferred matte = 0x8201 QuickTime 'rle ' matte — both throw
-`unsupportedOpcode` today and are named deferrals (not failures) until the kit decodes them.
+path (every picture through `PICT.decodeAny(data:)`): raw = `PICT(data:)`; quicktime = banded 0x8200 JPEG
+via `PICT.decodeQuickTime(data:)`; region = 0x0099 PackBitsRgn, alpha 255 inside the region and 0 outside;
+matte = 0x8201 QuickTime 'rle ' matte, alpha = the 8-bit matte sample. A decode throw is a failure.
 frame = picFrame; a decode must match it. alpha: opaque = every A 255, else counts of A 255 / 0 / partial.
 
 | file | id | name | frame | path | alpha |
@@ -113,11 +115,11 @@ frame = picFrame; a decode must match it. alpha: opaque = every A 255, else coun
 | `BT Levels.rsrc` | 13003 | — | 640×480 | quicktime · 3 bands | opaque |
 | `BT Levels.rsrc` | 13004 | — | 640×480 | quicktime · 3 bands | opaque |
 | `BT Levels.rsrc` | 13005 | — | 640×480 | quicktime · 3 bands | opaque |
-| `BT Titles.rsrc` | 9001 | Letters | 546×46 | deferred region | — |
-| `BT Titles.rsrc` | 9002 | Letters Highlighted | 546×46 | deferred region | — |
+| `BT Titles.rsrc` | 9001 | Letters | 546×46 | region | opaque |
+| `BT Titles.rsrc` | 9002 | Letters Highlighted | 546×46 | region | opaque |
 | `BT Titles.rsrc` | 9010 | Small title | 239×150 | raw | opaque |
 | `BT Titles.rsrc` | 9011 | Title | 640×480 | raw | opaque |
-| `BT Titles.rsrc` | 9020 | High Scores | 222×37 | deferred region | — |
+| `BT Titles.rsrc` | 9020 | High Scores | 222×37 | region | α255 5,930 · α0 2,284 · partial 0 |
 | `BT Titles.rsrc` | 9099 | Register please | 640×480 | raw | opaque |
 | `BT Titles.rsrc` | 9100 | — | 300×300 | raw | opaque |
 | `Bubble Trouble X.rsrc` | 200 | Large Ambrosia logo | 300×341 | raw | α255 0 · α0 102,300 · partial 0 |
@@ -126,17 +128,17 @@ frame = picFrame; a decode must match it. alpha: opaque = every A 255, else coun
 | `Bubble Trouble X.rsrc` | 913 | — | 640×480 | raw | opaque |
 | `Bubble Trouble X.rsrc` | 998 | Keyboard PICT | 32×32 | raw | opaque |
 | `Bubble Trouble X.rsrc` | 999 | Icon PICT | 32×32 | raw | opaque |
-| `Bubble Trouble X.rsrc` | 2910 | — | 309×328 | deferred matte | — |
-| `Bubble Trouble X.rsrc` | 7000 | — | 92×47 | deferred matte | — |
+| `Bubble Trouble X.rsrc` | 2910 | — | 309×328 | matte | α255 18,659 · α0 69,858 · partial 12,835 |
+| `Bubble Trouble X.rsrc` | 7000 | — | 92×47 | matte | α255 3,136 · α0 800 · partial 388 |
 | `Bubble Trouble X.rsrc` | 8001 | And so it seems | 160×234 | raw | opaque |
-| `Bubble Trouble X.rsrc` | 9012 | By Alex Metcalf & David Wareing | 182×14 | deferred region | — |
-| `Bubble Trouble X.rsrc` | 9030 | Pause 1 | 330×16 | deferred matte | — |
-| `Bubble Trouble X.rsrc` | 9031 | Pause 2 | 260×16 | deferred matte | — |
-| `Bubble Trouble X.rsrc` | 9077 | Custom levels | 47×23 | deferred matte | — |
+| `Bubble Trouble X.rsrc` | 9012 | By Alex Metcalf & David Wareing | 182×14 | region | α255 1,927 · α0 621 · partial 0 |
+| `Bubble Trouble X.rsrc` | 9030 | Pause 1 | 330×16 | matte | α255 3,074 · α0 1,228 · partial 978 |
+| `Bubble Trouble X.rsrc` | 9031 | Pause 2 | 260×16 | matte | α255 2,503 · α0 836 · partial 821 |
+| `Bubble Trouble X.rsrc` | 9077 | Custom levels | 47×23 | matte | α255 433 · α0 231 · partial 417 |
 | `Bubble Trouble X.rsrc` | 29401 | David | 148×172 | quicktime · 1 band | opaque |
 | `Bubble Trouble X.rsrc` | 29402 | Alex | 148×172 | quicktime · 1 band | opaque |
 
-PICT 28 · raw 11 · quicktime 8 · deferred region 4 (9001 9002 9012 9020) · deferred matte 5 (2910 7000 9030 9031 9077)
+PICT 28 · raw 11 · quicktime 8 · region 4 (9001 9002 9012 9020) · matte 5 (2910 7000 9030 9031 9077)
 
 ## 5. `snd ` — every sound through `SndSound(data:)`
 
@@ -202,4 +204,4 @@ snd 52 · pcm8 48 · ima4 4 (stereo) · 22050 Hz 46 · 22254 Hz 5 · 11127 Hz 1
 
 ## Totals
 
-Totals: cicn 335 (331 + 4), ppat 7, PICT 28 (raw 11 · quicktime 8 · deferred region 4 · deferred matte 5), snd 52 (pcm8 48 · ima4 4), failures 0
+Totals: cicn 335 (331 + 4), ppat 7, PICT 28 (raw 11 · quicktime 8 · region 4 · matte 5), snd 52 (pcm8 48 · ima4 4), failures 0
