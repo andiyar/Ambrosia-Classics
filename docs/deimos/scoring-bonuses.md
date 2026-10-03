@@ -469,8 +469,10 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
 5. The `noal`/`12gc` finale unit chain is data-driven; its state order and the moment the game
    actually ends relative to the 1200-frame wait are not traced (needs the entity state machine,
    waves-and-enemies.md §3, applied to those unit files).
-6. Which non-player destroy paths can hit counted units in shipped levels (accuracy can only rise
-   from those) — needs a level/unit census of `Destroy` actions on counted units.
+6. ~~Which non-player destroy paths can hit counted units in shipped levels (accuracy can only rise
+   from those) — needs a level/unit census of `Destroy` actions on counted units.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
+   none — a counted unit is destroyed only by player damage in 1.0.6 (census of the 36 counted units,
+   gameplay-leftovers.md §7.4e).
 7. Console handler at `0x1000827c` (`FUN_10029a10(p, 9000, 0)`) and the death call at
    `0x10008380` belong to the `PLAYER` debug command family (strings at r31+0x33a…); not read.
 

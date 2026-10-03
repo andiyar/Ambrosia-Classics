@@ -422,8 +422,10 @@ would corrupt one row of the table.
    Settle: resolve the TVector's code address and read it; recover the jump table at `0x10048fc8`.
    ⚑ corrected (review wave 2, 2026-10-03) #C10 narrowed: code 8 = the Quit AppleEvent (event 23 at `100490ec`, front-end.md
    §2.5); open only whether that event is pumped during play.
-2. `FUN_10045ab0` (the alert behind `FUN_1000ced0`) — whether a non-fatal alert can still quit
-   (e.g. a Quit button). Decides whether "Tag Index Incomplete! Aborting." really continues.
+2. ~~`FUN_10045ab0` (the alert behind `FUN_1000ced0`) — whether a non-fatal alert can still quit
+   (e.g. a Quit button). Decides whether "Tag Index Incomplete! Aborting." really continues.~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04): file-pict-alerts-manager.md §1.1 — one exit, never quits; non-fatal = Caution alert "OK",
+   then return, so the game continues (INDEX #3).
 3. The finale's same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850`
    update) and `aieg`'s group-delay meaning (members staggered vs spawn-in delay). These shift
    §5.3 by ±1 tick and set the explosion spread. Settle with `FUN_10033220`/`FUN_10035cd0`

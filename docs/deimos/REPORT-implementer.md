@@ -14,6 +14,7 @@ Corrections to the prompt: classic Mac OS 8/9 app (imports InterfaceLib, no Carb
 resource), not Carbon; no CPU-side compression — the paks are plain ZIPs with every entry stored (zlib is
 linked; the pak reader accepts only stored entries, so it is not reached through the paks — [MED], the
 inflate callers were not traced; ⚑ corrected (review 2026-10-03) #17: was stated flatly as "never reached").
+⚑ corrected (wave 3+4, 2026-10-04): now HIGH — the zip reader has no call into zlib (app-pak-music-library.md §5.1).
 
 Main findings: all text data is obfuscated `#key <value>` text, each byte nibble-swapped then inverted
 (`FUN_10046470`); the play order of the 12 levels comes from an encoded table in the binary, not the file

@@ -78,7 +78,7 @@ Methods:
 ### 2.1 Begin frame `FUN_10030360 @ 10030360` (every frame) [HIGH — dump + listing `100304e8..10030564`]
 Order: music service `FUN_10047f50` → clear 16 render-layer queues `FUN_100189f0` (listing
 `100189f0`: zeroes 16 words at `*(r2-0x7198)`; MED that they are the layer heads flushed by
-`FUN_10018b20`) → console: if closed and key 0x32 down open it (`FUN_1002d1a0`), else console
+`FUN_10018b20` — ⚑ corrected (wave 3+4, 2026-10-04): HIGH, they are the 16 render-layer counts, blit-pixel-rules.md §7.1) → console: if closed and key 0x32 down open it (`FUN_1002d1a0`), else console
 update `FUN_1002d230` → message aging `FUN_1002dd90` (per **frame**) → volume/F6 keys
 `FUN_10030910` → `GetMouse` `FUN_10048ee0` → Caps Lock (0x39): released → paused = 0; pressed
 and not paused and **not a film** → paused = 1 + notice GameString 0 → quit flag =
@@ -271,7 +271,7 @@ Fresh prefs: `FUN_10004540` → `FUN_10004f80` fails (no file; and no `pref` tag
 | pref | default | set by | UI | effect |
 |---|---|---|---|---|
 | byte 2 | 0 → 1 after first dialog | boot | — | config dialog shown at first launch |
-| byte 4 | 1 | `FUN_100050f0` (`stb r3,0x8`) | DITL item 8 **"Full Screen (Takes Effect on Relaunch)"** | display mode |
+| byte 4 | 1 | `FUN_100050f0` (`stb r3,0x8`) | DITL item 8 **"Full Screen (Takes Effect on Relaunch)"** | none — never read; the game always runs DrawSprocket 640×480×16 (display-window-present.md §8.1) ⚑ corrected (wave 3+4, 2026-10-04): was "display mode" |
 | byte 5 | 0 | `FUN_100050f0` (`stb r29,0x9`) | item 9 **"Interlacing  (Faster but lower quality)"**, F6 | §5 |
 | byte 6 | 0 | `FUN_100050f0` (`stb r29,0xa`) | none | auto-interlace §2.6 |
 | byte 7 | 0 | `FUN_100050f0` (`stb r29,0xb`) | item 10 **"Bypass System Volume"** (enables slider 12) | sound |
@@ -369,12 +369,14 @@ pref 6 is 0.
    step 1 — layers 0/1 are terrain **stamps** (layer 1 = the stamp sprite, layer 0 its shadow),
    drawn into the terrain buffer by flag 8; entity shadows are on layers 2/4/6. "Layer 1 =
    shadows" (engine-loop §5) was wrong.
-4. The non-interlaced background path issues two identical `CopyBits` (dump of `FUN_10009fd0`);
-   listing not checked; purpose unknown (timing ballast or a bug).
+4. ~~The non-interlaced background path issues two identical `CopyBits` (dump of `FUN_10009fd0`);
+   listing not checked; purpose unknown (timing ballast or a bug).~~ → ⚑ corrected (wave 3+4, 2026-10-04): listing-confirmed —
+   two identical CopyBits srcCopy, redundant (display-window-present.md §2.1).
 5. Exact TickCount rate on the target OS (60.15 Hz is the brief's value); Ben's machine/emulator
    would decide whether the original felt like 30.07 or 30.00 ticks/s.
-6. `FUN_1000beb0` internals (which buffers it copies, whether it waits for VBL); not read beyond
-   the border painting.
+6. ~~`FUN_1000beb0` internals (which buffers it copies, whether it waits for VBL); not read beyond
+   the border painting.~~ → ⚑ corrected (wave 3+4, 2026-10-04): display-window-present.md §5.5 — 2 border PaintRects + 2 CopyBits
+   from `D+0x68` (game area, score bar), no VBL wait or page flip.
 
 ## Role-table rows (for merge)
 | `FUN_10030190` | frame ctrl | construct frame controller (= zero all fields) | MED | dump; callers `FUN_100051a0`, `FUN_1002e310` — ⚑ label audit (review wave 2): was HIGH on dump |
@@ -416,7 +418,7 @@ Touched but **not read**: `FUN_1002dea0` (messages draw, LOW by perm F27), `FUN_
 particles-debris-blur.md §2.9; was LOW "draws something sized to the game area"), `FUN_1001a650`
 (layer flush, LOW), `FUN_1002d1a0/1002d230/1002d190` (console open/update/is-open, LOW),
 `FUN_1002db50`, `FUN_1002d040` (console/message reset, LOW), `FUN_10047990/10047a30` (volume
-down/up returning %, LOW), `FUN_1000bd80` (present used by fades, not read), `FUN_10048220`.
+down/up returning %, LOW), `FUN_1000bd80` (present used by fades; ⚑ corrected (wave 3+4, 2026-10-04): read — display-window-present.md §5.4), `FUN_10048220`.
 
 ## INDEX updates (for merge)
 - **#12 closed** → timing-frame.md §3: no code writes the divider; the game always runs at

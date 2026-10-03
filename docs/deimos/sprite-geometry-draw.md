@@ -337,7 +337,9 @@ Runs only when `+0x58 > 0.0` (`10013310 lfs f1,0x58(r25); lfd f5,0x0(r30); fcmpo
 double in f2 (`10019848..100198a4`: `stw r0,0x6c(r1)` = alpha, `lfd f0,0x68(r1); fsubs f2,f0,f2`)
 and the mode byte as the first stack argument (`10019848 stw r22,0x38(r1)`, read at
 `1001a718 lbz r0,0xfb(r1)`). [HIGH]
-Global switches read on the way, writers not traced:
+Global switches read on the way (⚑ corrected (wave 3+4, 2026-10-04): writers now traced — only the debugOnly FX/ALPHA console
+handlers write them and neither command is registered, so all three stay 1 all session;
+blit-pixel-rules.md §6, sprite-manager-resource-image.md §3.2):
 - `DAT_100e0172` (`FUN_1001a290` setter, initial 1) enables alpha maps in scaled blits.
 - `DAT_100e0181` (initial 1) does the same for unscaled blits (INDEX #9 residue).
 - `DAT_100e0171` (initial 1, no writer found): when 0, `FUN_10018a40` forces every queued
@@ -390,7 +392,8 @@ Builds the same command as §3.1 with flags |2 (`10013518 ori r0,r0,0x2`). Alpha
   - A fading unit's shadow lightens with it. At v ≤ ~37 the shadow alpha exceeds 20, and at
     v ≈ 0 it reaches 32 (not drawn).
   - Partial-alpha pixels go through a float path the decompiler hides (`FUN_1004d5c0` with a
-    lost f1). [MED for that sub-case]
+    lost f1). [MED for that sub-case] → ⚑ corrected (wave 3+4, 2026-10-04): HIGH — α = trunc(a + 0.032·p²) as float, skip ≥ 32
+    (listing `1001ddd8..1001de48`, blit-pixel-rules.md §3.1).
 - 4CC names are the `lis/addi` constants: `0x6875 6420` `hud `, `0x6174 6d6f` `atmo`,
   `0x6169 6c6f/6869` `ailo/aihi`, `0x6772 6f75/6869` `grou/grhi`, `0x706c 7368/6566/6179/7765/7569`
   `plsh/plef/play/plwe/plui`, `0x6465 6661` `defa`.
@@ -472,22 +475,32 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
 1. ~~`FUN_10043ba0` (called between the ground and air layer flushes) — not read. Clouds/atmosphere
    overlay? Settles: read it.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: particles-debris-blur.md §2.9 (the particle
    draw, HIGH).
-2. Where the per-layer render lists of layers 2..15 are emptied each frame (`FUN_1001a650` only
-   clears 0/1). A reset of `_DAT_100df198` counts must exist. Settles: xrefs to `_DAT_100df198`.
-3. Writers of `DAT_100e0171` (queue "effects": alpha/scale forced off when 0), `DAT_100e0181`,
+2. ~~Where the per-layer render lists of layers 2..15 are emptied each frame (`FUN_1001a650` only
+   clears 0/1). A reset of `_DAT_100df198` counts must exist. Settles: xrefs to `_DAT_100df198`.~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04): `FUN_100189f0` zeroes the 16 layer counts at every begin frame (`10030388`)
+   (blit-pixel-rules.md §7.1 and sprite-manager-resource-image.md §7 agree; INDEX #36).
+3. ~~Writers of `DAT_100e0171` (queue "effects": alpha/scale forced off when 0), `DAT_100e0181`,
    and the callers of `FUN_1001a290`/`FUN_10019c00` (`FUN_10018740`). Settles: xref search on the
-   raw `stb …,-0x61bf/-0x61af(r2)` displacements.
+   raw `stb …,-0x61bf/-0x61af(r2)` displacements.~~ → ⚑ corrected (wave 3+4, 2026-10-04): only the FX (`1001afdc`) and ALPHA
+   (`1001f060`, via `FUN_1001a290`) console handlers, both debugOnly and never registered → all three
+   switches stay 1; `FUN_10019c00` is called once with (0, 1) (blit-pixel-rules.md §6,
+   sprite-manager-resource-image.md §3.2 agree; INDEX #9). `DAT_100e0172` is `-0x61be(r2)`.
 4. ~~That the console `SHADOWS` registration pointer (`0x100e0868`) reaches byte `0x100fb1c0`
    (`FUN_10006220`). Settles: read `FUN_1002d080` and what `0x100e0868` holds after init.~~ →
    ⚑ corrected (review wave 2, 2026-10-03) #M7a: `0x100e0868` = TVector of `0x10007e00` (SHADOWS), which flips `G+0x28` = the
    byte `FUN_10006220` reads; SHADOWS is unregistered, so the byte is 1 all session (§3.2).
-5. Writer of entity `+0x1a` (assumed `adjustShadowLocForScaling` U+0x12c). Settles: grep the
-   raw listing of `FUN_10035cd0`/`FUN_100146f0` for `stb …,0x1a(`.
-6. Scaled mode-2/3 blitters `FUN_1001c6c0`, `FUN_1001bcf0`, `FUN_1001c8f0`, `FUN_1001bfd0` (and
-   modes 0/1 `FUN_1001c270/c480`, `FUN_1001b7d0/ba40`) — not read. Assumed to be the scaled
+5. ~~Writer of entity `+0x1a` (assumed `adjustShadowLocForScaling` U+0x12c). Settles: grep the
+   raw listing of `FUN_10035cd0`/`FUN_100146f0` for `stb …,0x1a(`.~~ → ⚑ corrected (wave 3+4, 2026-10-04): closed for entities
+   (blit-pixel-rules.md §7.2); the player's writer is its NR 4, and three reset/copy `stb …,0x1a(` sites
+   are sprite-manager-resource-image.md NR 6.
+6. ~~Scaled mode-2/3 blitters `FUN_1001c6c0`, `FUN_1001bcf0`, `FUN_1001c8f0`, `FUN_1001bfd0` (and
+   modes 0/1 `FUN_1001c270/c480`, `FUN_1001b7d0/ba40`) — not read.~~ (⚑ corrected (wave 3+4, 2026-10-04): all read —
+   nearest-neighbour, left/top-aligned integer sampling; per-mode formulas = the unscaled ones;
+   blit-pixel-rules.md §5; INDEX #37.) Assumed to be the scaled
    twins of the unscaled formulas (sampling rule unknown: nearest? which source pixel for a
    given destination pixel). Settles: read one.
-7. Partial-alpha pixel branch of `FUN_1001dd20` (float factor lost in the decompile).
+7. ~~Partial-alpha pixel branch of `FUN_1001dd20` (float factor lost in the decompile).~~ → ⚑ corrected (wave 3+4, 2026-10-04):
+   α = trunc(a + 0.032·p²), skip ≥ 32 (blit-pixel-rules.md §3.1).
 8. ~~`FUN_10005ce0` meaning (game block +0x1c; the terrain-stamp once-per-tick guard).~~ →
    ⚑ corrected (review wave 2, 2026-10-03) #C5 #S: game time getter `G+0x1c` (messages-notices-console.md role row
    `FUN_10005ce0`, HIGH).
@@ -524,9 +537,9 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
 | ⚑ corrected `FUN_10012840` | G_GameObject (span) | scale step +0x84 → +0x88 by +0x8c, clamp, dirty +0x34 | HIGH | listing `10012840–100128b0` (was MED dump) |
 | `FUN_1000a530` | M_Display.cc (span) | copy a port's bounds rect (+0x1c..+0x28) | MED | dump only |
 | `FUN_1000ad90` | M_Display.cc | display port by index 0/1/2 → +0x68/+0x6c/+0x70 | MED | dump |
-| `FUN_10019ee0` | U_Sprite.cc | frame count of a group (error message only) | LOW | caller context, not read |
+| `FUN_10019ee0` | U_Sprite.cc | frame count of a group (error message only) | LOW | caller context, not read — ⚑ corrected (wave 3+4, 2026-10-04): read — HIGH in sprite-manager-resource-image.md §2 / function-roles.md |
 | `FUN_10043ba0` | G_Particle (span) | particle draw, between layer bands 1 and 2 | HIGH | particles-debris-blur.md §2.9 listing `10043ba0..10044500` — ⚑ corrected (review wave 2, 2026-10-03) #C5: was LOW "not read" |
-| `FUN_1001c270` `FUN_1001c480` `FUN_1001c6c0` `FUN_1001c8f0` `FUN_1001b7d0` `FUN_1001ba40` `FUN_1001bcf0` `FUN_1001bfd0` | U_SpriteBlit.cc | scaled blit modes 0–3 without / with alpha map | LOW | callers in `FUN_1001a6f0` only, not read |
+| `FUN_1001c270` `FUN_1001c480` `FUN_1001c6c0` `FUN_1001c8f0` `FUN_1001b7d0` `FUN_1001ba40` `FUN_1001bcf0` `FUN_1001bfd0` | U_SpriteBlit.cc | scaled blit modes 0–3 without / with alpha map | LOW | callers in `FUN_1001a6f0` only, not read — ⚑ corrected (wave 3+4, 2026-10-04): all eight read — HIGH rows in blit-pixel-rules.md / function-roles.md (§5 sampling rule) |
 Also touched, not read (roles stand in the bank or are generic): `FUN_10014060` (4CC → text),
 `FUN_10049550` (log), `FUN_1001f950` (G_Res_Load), `FUN_1001fc30`, `FUN_10002420`,
 `FUN_10000ce0`/`FUN_10000e10` (list count / iterate), `FUN_10000ed0`/`FUN_10000f80`/`FUN_10000e70`

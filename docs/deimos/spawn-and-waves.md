@@ -37,7 +37,9 @@ template at `0x100eb41c` (`FUN_10033090` uses r2+0x50ec; bytes identical to `0x1
 initialised by `FUN_10039100`). ⚑ corrected (review wave 1, 2026-10-03) #M3: was `0x100eb420` (level-scroll-objects.md §6.3 has it right).
 ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: `FUN_10039100` runs before `main`, so every template value at
 `0x100eb41c…` must come from its writes, not from the data image (cf. the sprite template clip,
-sprite-geometry-draw.md §3.1; INDEX #56).
+sprite-geometry-draw.md §3.1; INDEX #56). ⚑ corrected (wave 3+4, 2026-10-04): audited — the only pre-`main` change to
+`0x100e64b0`/`0x100eb41c` is +0x24 = −1; every other word equals the image (static-init-audit.md §3,
+§5.1 #18).
 | off | type | meaning | evidence |
 |---|---|---|---|
 | +0x00 | 4CC | unit ID to spawn (`none` → assert) | `10033240 lwz r3,0x0(r3)`, 33220 assert line 0x194 |
@@ -48,7 +50,7 @@ sprite-geometry-draw.md §3.1; INDEX #56).
 | +0x14 | s8 | owning player (−1 none) → entity +0xd8 | `10016174 stb r0,0x4c(r1)` from spawner +0xd8 |
 | +0x18 | int | editor heading (level `headingDegrees`) → group +0xb4 | `10033594 lwz r8,0x18(r24)` |
 | +0x1c/+0x1d | byte | stationary / terrain-effects option → group +0xb8/+0xb9, entity +0x13c/+0x13d | `1001617c/84 stb …,0x54/0x55(r1)`; `10035f20..34` |
-| +0x20/+0x24 | ptr/int | owner entity / owner entity id → entity +0x140/+0x144 | `10016158 stw r30,0x58(r1)`, `1001616c stw r0,0x5c(r1)` |
+| +0x20/+0x24 | ptr/int | owner entity / owner entity id → entity +0x140/+0x144; template value 0 / **−1** at runtime (`FUN_10017f80`, `FUN_10039100`, `FUN_1003ce60`; static-init-audit.md §5.2) ⚑ corrected (wave 3+4, 2026-10-04) | `10016158 stw r30,0x58(r1)`, `1001616c stw r0,0x5c(r1)` |
 | +0x28 | float | speed multiplier for `FUN_10037b50` (template 1.0) | `10035f44 lfs f1,0x28(r22)` |
 [HIGH — listing lines above; caller `FUN_10015b40` traced]
 
@@ -428,7 +430,7 @@ entity B has `passHitsToOwner` (0x32b), the redirect goes to the **attacker A's*
 (`10037064 lbz r0,0x32b(r3)` (B's state) then `10037074 lwz r5,0x140(r17)` and `100370b4 lwz
 r3,0x140(r17)`, r17 = A). That looks like an original copy-paste bug. [HIGH for those lines]
 **Consequence** (traced in the fix pass): player shots carry no owner (request template
-`0x100ecd14` +0x20/+0x24 = 0, not written by `FUN_1003c4f0`/`FUN_1003c7a0`), so the redirect
+`0x100ecd14` +0x20 = 0, +0x24 = −1 [⚑ corrected (wave 3+4, 2026-10-04): was "+0x20/+0x24 = 0"; static-init-audit.md §5.2], not written by `FUN_1003c4f0`/`FUN_1003c7a0`), so the redirect
 never fires and a turret or bubble with `passHitsToOwner` hit by a player shot takes the damage on
 its own shields; only ramming reaches the owner (bosses.md §3.5). ⚑ corrected (review wave 1, 2026-10-03) #I1
 
@@ -532,9 +534,13 @@ of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 5. ~~`FUN_100146f0` internal draw order (timer → frame → scale tol → flee → spawn sets) is from the
    decompile only~~ → listing-confirmed (§3.2 step 6) ⚑ corrected (review wave 1, 2026-10-03) #M10. Still open: the
    scale-tolerance draw's arguments are dropped by the decompiler (presumably `R(−tol/2, …)`).
+   → ⚑ corrected (wave 3+4, 2026-10-04) (critic O5): `R(−(tol/2), tol/2)` (C division), scale% = max(0, initial + R), once at
+   spawn; 17 shipped units have tol ≠ 0 (all even) — gameplay-leftovers.md §7.2.
 6. `FUN_10005ed0` (closest active player) and `FUN_10005d40` (nearest-player distance) bodies.
 7. Consumer of entity +0x13d (terrain-effects option) and `FUN_10016880` (deletion-spawn gate).
-8. `req+0x28` speed multiplier: which callers pass a value ≠ 1.0 (weapon launcher `FUN_1003c4f0`?).
+8. ~~`req+0x28` speed multiplier: which callers pass a value ≠ 1.0 (weapon launcher `FUN_1003c4f0`?).~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04) (critic O4): only the ground launcher `FUN_1003c4f0` (`1003c6d0`, distance ratio); air/aux
+   launchers copy the template 1.0 (gameplay-leftovers.md §7.1).
 
 ## Role-table rows (for merge)
 | `FUN_10015b40` | G_Entity.cc (span) | ⚑ corrected — **state spawn-set executor** (+ rotation gate call): per set volley arm/countdown/issue, positions (absolute / relative / rotated, owner scale), request to `FUN_10033220` (was listed among movement executors, NOT-RESOLVED #19) | HIGH | disasm (spawn-and-waves.md §2.3, §2.5) |

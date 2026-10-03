@@ -327,7 +327,9 @@ Only the ground launcher overrides it (`1003c6cc fdivs; 1003c6d0 stfs f0,0x9c(r1
 distance ratio).
 Side note: template +0x24 is −1 at runtime (initialiser), not 0 as damage-health-death.md §2.5 reads
 from the image ("+0x20/+0x24 = 0"). +0x20 (the owner) is 0 either way, so that file's conclusion
-stands. ⚑ conflict (minor): the image value of +0x24 is quoted where the runtime value is −1.
+stands. ⚑ conflict (minor): the image value of +0x24 is quoted where the runtime value is −1. → applied by the wave 3+4
+synthesis (2026-10-04) in damage-health-death.md §2.5, bosses.md §3.5 + NR 3, spawn-and-waves.md §1.1 + §7,
+weapons-projectiles.md §3.1 and level-scroll-objects.md §6.3.
 
 ### 7.2 O5 — the scale-tolerance draw (spawn NR 5 residue) → **closed** [HIGH]
 `FUN_100146f0` has three `bl 0x10046580` (int RandomRange):

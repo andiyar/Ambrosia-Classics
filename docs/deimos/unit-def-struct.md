@@ -390,7 +390,8 @@ A pure load-time accelerator: an exact memory image of the parsed master list. [
   written by `FUN_100426e0(buf,size,1)`: path `FUN_10048560(" Data", _DAT_100e0248 → "Units Cache")`,
   create with `FUN_10001200(…,0x17,'Data','Deim')`, reopen, `FUN_10001430` write, log "Data Saved:".
 - **Reader `FUN_100420f0`** (from `FUN_1003cf10`): frees and recreates the master and family lists;
-  gated by `FUN_100461b0()` (not read); finds the file (`FUN_10044ce0`) and its modification date
+  gated by `FUN_100461b0()` (= running Mac OS X, loose-ends-session.md §8.3 — ⚑ corrected (wave 3+4, 2026-10-04): was "not read");
+  finds the file (`FUN_10044ce0` = FSMakeFSSpec on `": Data:Units Cache"`; file-pict-alerts-manager.md §3) and its modification date
   (`FUN_10044f00`); enumerates ` Data:Local:unde` (`FUN_10048610`) for the newest local file date;
   **cache older than any local `unde` file ⇒ ignored** ("ignoring cache as Unit Defs data is more
   recent"). Pak dates are not compared [MED — only this folder is enumerated]. Opens (`FUN_10001200`

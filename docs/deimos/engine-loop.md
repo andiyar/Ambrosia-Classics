@@ -189,8 +189,10 @@ Claims:
 
 ## 5. Screen pipeline and coordinates
 - Display 640×480×16 (PermFloats 52/53/56) via DrawSprocket (`M_Display.cc`, "DrawSprocket
-  1.7.2 or later is required") or a window ("Running in windowed mode"); choice from pref byte 4
-  (`FUN_1000ae20(…, pref 4)`). [MED]
+  1.7.2 or later is required"); the window path ("Running in windowed mode") is unreachable and pref
+  byte 4 is passed to `FUN_1000c470` but never read, so the game always runs DrawSprocket 640×480×16
+  [HIGH — display-window-present.md §6.1, §8.1]. ⚑ corrected (wave 3+4, 2026-10-04): was "or a window …; choice from pref byte 4
+  (`FUN_1000ae20(…, pref 4)`)" [MED].
 - Screen layout from flli: left border 32 | game area 416×480 | right border 32 | score bar
   160×480 (32+416+32+160 = 640). `FUN_1000ae20` reads exactly PermFloats 52,53,59,55,54,57,58.
   Score-bar element positions are absolute screen x (e.g. `ScoreBar_P1ShieldMeter_XLoc` 495). [HIGH
@@ -437,7 +439,7 @@ Size 0x34f0 = 13552 bytes, raw memory image of the prefs struct `_DAT_100def40`.
 | off | size | field | evidence |
 |---|---|---|---|
 | 0x0000 | 4 | version 0x2714 (10004); other → "Preferences Data Version Invalid" | `FUN_10004f80` |
-| 0x0004+n | 1 | byte prefs n: 2 config-dialog-done, 4 display mode, 5 interlacing, 6 auto-interlacing, 8 Esc-hold, 9 FPS display, 10 FPS limiter | `FUN_10004ef0/ab0` callers |
+| 0x0004+n | 1 | byte prefs n: 2 config-dialog-done, 4 "Full Screen" (never read — display-window-present.md §8.1; ⚑ corrected (wave 3+4, 2026-10-04)), 5 interlacing, 6 auto-interlacing, 8 Esc-hold, 9 FPS display, 10 FPS limiter | `FUN_10004ef0/ab0` callers |
 | 0x0068+4n | 4 | int prefs n: 3 = highest sector reached | `FUN_10004f00/ac0` |
 | 0x10f8 | 15×21 | high-score names, obfuscated on disk (§3 of pak-format) | `FUN_10004640/4f80` |
 | 0x1233 | 2×21 | player names, default "Player %i" | `FUN_10004ae0` |

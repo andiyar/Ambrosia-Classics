@@ -369,10 +369,14 @@ frames F+61…F+91 (strip off once fade > 16); deleted at F+92 (fade 32). At the
 solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy piggy!` in red (`meer`) + `gaso[5]`.
 
 ## NOT RESOLVED (this file)
-1. Text-buffer fields +0x10c (set to 0x0f by every overlay draw), +0x10d (= 1) and +0x110 (= 0): meaning is in
-   the renderer `FUN_1000d380`/`FUN_1000e270` (out of scope). Settle by reading those listings.
-2. Whether tefo `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px left border).
-   Settle with `FUN_1000e270` (where Loc is consumed) or one screenshot of the original.
+1. ~~Text-buffer fields +0x10c (set to 0x0f by every overlay draw), +0x10d (= 1) and +0x110 (= 0): meaning is in
+   the renderer `FUN_1000d380`/`FUN_1000e270` (out of scope). Settle by reading those listings.~~ → ⚑ corrected (wave 3+4, 2026-10-04):
+   +0x10c = render layer (0x0f = `hud `, flushed last), +0x10d = clip select (1 = template game-area clip),
+   +0x110 = draw now (0 = queue) (text-metrics-lists.md §2.2).
+2. ~~Whether tefo `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px left border).
+   Settle with `FUN_1000e270` (where Loc is consumed) or one screenshot of the original.~~ → ⚑ corrected (wave 3+4, 2026-10-04):
+   buffer coordinates, no offset added — in game that is game-area-relative (screen = +32) and overlays are
+   clipped to the game area (text-metrics-lists.md §2.4; MED residue = which buffer the flush targets, its NR 2).
 3. ~~`FUN_10047670(id, 0x32, 100, 1)` argument meanings (volume 50?) for the console and cheat sounds:
    INDEX #11.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: sound-music.md §2.3 — `(id, priority 0x32 = 50, volume 100,
    allowMultiple 1)`.
@@ -384,7 +388,8 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
    (`FUN_100461b0`). The replica runs on macOS, so whether to reproduce the OS 9 messages is a ruling for Ben.
 7. ~~`FUN_10022ef0` pause-screen loop internals (`FUN_10023030`, quit flag `DAT_100e01b8`) were read from the decompile only.~~
    → ⚑ corrected (review wave 2, 2026-10-03) #S: front-end.md §8 (pause screen).
-8. `FUN_1004a9f0`/`FUN_1004a9c0`/`FUN_1004a990` (InputSprocket suspend/resume around the console): roles LOW.
+8. ~~`FUN_1004a9f0`/`FUN_1004a9c0`/`FUN_1004a990` (InputSprocket suspend/resume around the console): roles LOW.~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04): HIGH — ISp active getter / suspend / resume(mouse) wrappers (app-pak-music-library.md §5.2).
 
 ## Role-table rows (for merge)
 | `FUN_1002cef0` | G_Console.cc | console module init: name, reset, command list, HELP/COMMANDS/? (debug-only, not added) | HIGH | listing `1002cef0..1002cfec` |

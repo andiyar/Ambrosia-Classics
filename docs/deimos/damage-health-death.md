@@ -195,7 +195,8 @@ entity is not deleted and its state `Collides` (+0x347). A = the entity being up
      owner (`10037074 lwz r5,0x140(r17)` … `100370b4 lwz r3,0x140(r17)`), not B's. The listing
      carries this copy-paste bug; a 100 % replica keeps it. **Consequence:** a player shot is
      always A (next paragraph) and carries no owner (spawn-request template `0x100ecd14`
-     +0x20/+0x24 = 0; neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` writes them), so the
+     +0x20 = 0, +0x24 = −1 (static init `FUN_1003ce60`, static-init-audit.md §5.2; ⚑ corrected (wave 3+4, 2026-10-04): was "+0x20/+0x24 = 0"
+     from the data image); neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` writes them), so the
      redirect never fires and a `passHitsToOwner` turret/bubble struck by a player shot takes the
      damage on its **own** shields (`100370d8–100370e8`); bubbles with 0.0 shields swallow it (§3).
      Only ramming (§2.3, the entity's own `+0x140`) passes damage to the owner. See bosses.md §3.5
@@ -445,11 +446,14 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 3. `entity+0x13e` ("has children") writer `FUN_100142f0` l. 11933 — not read.
 4. The weapon-pickup (`air `/`grnd`) swap and the shield-pickup cap (`FUN_10027490` listing) —
    player/weapon reader.
-5. The ground-accuracy crosshair rectangle in step 9 (`FUN_1003bab0`): decompile reads
+5. ~~The ground-accuracy crosshair rectangle in step 9 (`FUN_1003bab0`): decompile reads
    `left ≤ cx < right && top ≤ cy < bottom` (strict upper bound), for ground, non-harmless,
-   canBeHit, `IsTargetable` units only — listing not checked; scoring reader.
-6. `FUN_1000fec0` = scroll offset used by the water test (MED). Also the return codes of
-   `FUN_1000fee0` other than 0/1.
+   canBeHit, `IsTargetable` units only — listing not checked; scoring reader.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
+   listing-confirmed half-open `l ≤ cx < r`, `t ≤ cy < b`; the test is in `FUN_10033850` `100343ac..100344e8`
+   (gameplay-leftovers.md §7.4b).
+6. ~~`FUN_1000fec0` = scroll offset used by the water test (MED). Also the return codes of
+   `FUN_1000fee0` other than 0/1.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7): `FUN_1000fee0` returns only 0/1;
+   `FUN_1000fec0` = window top `0x100e5acc` (HIGH) (gameplay-leftovers.md §7.4a).
 7. `FUN_100431f0`'s two `RandomRange(0,99)` at app init: are they before `srand`, and do they
    matter for film replay? (engine reader). ⚑ corrected (wave 2, 2026-10-03): closed — 302 draws, all before
    `srand`, no replay effect (particles-debris-blur.md §1).

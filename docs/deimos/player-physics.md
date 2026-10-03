@@ -388,7 +388,8 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
    handler reader.
 3. The checksum arithmetic of §9 (registration, out of scope by project ruling).
 4. Lifecycle of the crosshair flag `+0x360` (set in `FUN_1003b3c0`; clearer not traced) and the
-   consumer of flli 149/150 `Crosshair_FadeIn/OutPercentageRate`.
+   consumer of flli 149/150 `Crosshair_FadeIn/OutPercentageRate`. ⚑ corrected (wave 3+4, 2026-10-04) narrowed: the crosshair
+   fade is `FUN_10012750` run on the crosshair object (gameplay-leftovers.md §2.1).
 5. ~~`FUN_10029c00` has no direct caller (`$W/callers.txt`); body reads sector and re-assigns a
    handler weapon slot via `FUN_1002adb0`/`FUN_1003b180`. Settle: search the data image for
    its address (function-pointer table).~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: two raw callers `10008408` ('PEAA')
@@ -396,7 +397,8 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
    (messages-notices-console.md §5.5, loose-ends-session.md §8.1).
 6. Reset points of the lives-decrement gate (`FUN_10006b50` `*param_1` = `local_a27[2]` in
    `FUN_100051a0`). Settle: read `FUN_100051a0` around the level loop.
-7. Hit factor f1 passed by `FUN_10033850` to `FUN_10027100` (damage reader).
+7. ~~Hit factor f1 passed by `FUN_10033850` to `FUN_10027100` (damage reader).~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
+   f1 = the colliding unit's `damage_FLOAT` (+0x274), `100342c0 lfs f1,0x274(r31)` (gameplay-leftovers.md §7.4c).
 8. What `+0x68` (appear fade) and `+0x58` (glow) do at draw time (`FUN_10012f20`, sprite blit).
 9. Level-start invulnerability carry-over (§4.4) is a code reading with no indirect-clear search;
    Ben's eyes: is the ship invulnerable for ~2 s after appearing on level 2+?

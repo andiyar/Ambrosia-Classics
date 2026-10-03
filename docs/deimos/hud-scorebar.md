@@ -138,9 +138,13 @@ in this file's functions; field meanings from `FUN_10019570` (sprite-sound-conta
 unscaled sprites are drawn with **(x, y) = frame centre** (`iVar15 - iVar16/2`, int division)
 [HIGH, decompile of the dispatcher]; whether the scaled path (`FUN_1001a6f0/aa90`, slots 1–2) also
 centres is MED (the reli rects fit only if it does)]
-Template statics are filled at startup by `FUN_10032b20` (copies from `_DAT_100df3f8/f4/f0` and
-`PTR_DAT_100df3e4` into `0x100eb22c…0x100eb26c` and two further templates `0x100eb374`, `0x100eb3c8`).
-[MED] ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: a static initialiser runs before `main`, so the data-image
+Template statics are filled before `main` by `FUN_10032b20`: the draw-command template `0x100eb228`
+(only change vs the image: clip +0x28/+0x2c = 480/416, which every HUD builder overwrites via
+`FUN_1000a530`), the text-format template `0x100eb274` (+0x100/+0x104 = `0x100eb374` ← 0) and the sound
+record of the notice-post template `0x100eb3bc` (+0x0c = `0x100eb3c8` ← `'none'`,100,100,100,1.0,1.0).
+[HIGH — static-init-audit.md §3, §5.1 #4–6] ⚑ corrected (wave 3+4, 2026-10-04): was "copies from `_DAT_100df3f8/f4/f0` and
+`PTR_DAT_100df3e4` into `0x100eb22c…0x100eb26c` and two further templates `0x100eb374`, `0x100eb3c8`"
+[MED]; the caution below is answered — x = y = 0, face `none`, scale 1.0 are the runtime values. ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: a static initialiser runs before `main`, so the data-image
 bytes of these templates are **not** their runtime values (the same trap as the sprite template
 `0x100e63e4`, whose clip `FUN_10014120` sets to {0, 0, 480, 416} — sprite-geometry-draw.md §3.1).
 No value read from the image here is trusted until the static-initialiser audit (INDEX #56).
@@ -265,7 +269,8 @@ HUD formats (decoded files): | idx | tag | Loc | align | mono | spacing | colour
    (`1000d3f4 li r4,0x31; bl 0x1000ebd0` → frame of '1'; `1000d418 add r4,r28,r24`;
    `1000d434 ble`; `1000d438 addi r0,r24,0x30`; `1000d474 stb r25,-0x620c(r2)`). Frame f('1')+i
    is the glyph for digit i+1 (frames 52–61 = 1…9,0, data-tags.md §5), so the label is off by one:
-   with tesm widths 5,6,7,7,7,6,7,7,7,7 (frames 52–61, `plate_frames.py` scan) the widest-first is
+   with tesm widths 5,6,7,7,7,7,6,7,7,7 (frames 52–61; ⚑ corrected (wave 3+4, 2026-10-04): was "5,6,7,7,7,6,7,7,7,7" — the 6-px
+   digit is frame 58 ('7'), not 57 ('6'); outcome unchanged; text-metrics-lists.md §1.4) the widest-first is
    frame 54 ('3', 7 px) but `DAT_100e0124` = '2', whose glyph is 6 px. **Monospaced cells are 6 px,
    not 7** — an original quirk the replica must copy. [HIGH for the code; MED for the frame widths]
 2. If shadows: one pass with shadows (`FUN_1000e670`: offset F19/F20, blend max(F21, blend)). [MED]
@@ -325,19 +330,28 @@ for the slot-1/2 contents (cycle order)]
 2. ~~The scaled sprite path `FUN_1001a6f0`/`FUN_1001aa90`: whether (x, y) is the centre and how
    0.7 × 26 is rounded (slots 1–2 pixel extents).~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: sprite-geometry-draw.md
    §3.3 (centred; w' = trunc(w·s), left = trunc(X − 0.5·W); listing `1001a75c..1001a7e8`).
-3. Format byte `+0x10c` (default 8 → draw cmd +0x30) and the `+0x31 == 0` path `FUN_1001a450`
-   (`+0x110`): meanings unknown; the HUD always uses `+0x110 = 1`.
-4. `FUN_1000bbd0` / `FUN_10009fd0` exact copy semantics (mode 0; interlacing interaction).
+3. ~~Format byte `+0x10c` (default 8 → draw cmd +0x30) and the `+0x31 == 0` path `FUN_1001a450`
+   (`+0x110`): meanings unknown; the HUD always uses `+0x110 = 1`.~~ → ⚑ corrected (wave 3+4, 2026-10-04): text-metrics-lists.md
+   §2.2 — +0x10c = render layer, +0x10d = clip select, +0x110 = draw now (0 queues on layer +0x10c).
+4. ~~`FUN_1000bbd0` / `FUN_10009fd0` exact copy semantics (mode 0; interlacing interaction).~~ → ⚑ corrected (wave 3+4, 2026-10-04):
+   display-window-present.md §2.1, §5.2 — one `CopyBits` srcCopy per rect, no offset; `FUN_10009fd0`'s two
+   CopyBits are identical; interlacing touches only the background copy.
 5. Frame widths come from the plate re-scan, not from the game's own frame table; a run of
-   `FUN_10019ca0` on `tesm` frames 52–61 would confirm the 6-px monospaced cell.
-6. Space-character advance (INDEX #6) narrowed only: with scale 1.0 `FUN_1000ebd0` takes the size
-   from the per-ASCII cache `*(0x100df024)` (`FUN_1000ed10`, 128 × 8 bytes); its filler is unread.
-7. `FUN_10032b20` source values (`_DAT_100df3f8/f4/f0`, `PTR_DAT_100df3e4`) not resolved; the
+   `FUN_10019ca0` on `tesm` frames 52–61 would confirm the 6-px monospaced cell. ⚑ corrected (wave 3+4, 2026-10-04) narrowed:
+   an index-plate re-scan confirms 6 px (text-metrics-lists.md §1.4–§1.5; widths still MED, its NR 6).
+6. ~~Space-character advance (INDEX #6) narrowed only: with scale 1.0 `FUN_1000ebd0` takes the size
+   from the per-ASCII cache `*(0x100df024)` (`FUN_1000ed10`, 128 × 8 bytes); its filler is unread.~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04): text-metrics-lists.md §1.2–§1.5 — filler `FUN_1000ec70`; space = invisible frame 90,
+   4 px at scale 1.0 (`trunc(4·s)` otherwise), never drawn (INDEX #6 closed).
+7. ~~`FUN_10032b20` source values (`_DAT_100df3f8/f4/f0`, `PTR_DAT_100df3e4`) not resolved; the
    template bytes in the image already give x=y=0, face `none`, scale 1.0. ⚑ caution ⚑ corrected (review wave 2, 2026-10-03)
    #C1: those image bytes are pre-initialiser values; `FUN_10032b20` overwrites (at least)
    `0x100eb22c…0x100eb26c`, `0x100eb374`, `0x100eb3c8` before `main`, exactly as `FUN_10014120`
    turns the sprite template's zero clip into {0, 0, 480, 416} (sprite-geometry-draw.md §3.1).
-   The image reading is not evidence for the runtime template; settle with the INDEX #56 audit.
+   The image reading is not evidence for the runtime template; settle with the INDEX #56 audit.~~ → ⚑ corrected (wave 3+4, 2026-10-04): closed — static-init-audit.md §5.1 #6 (conflict 7):
+   `FUN_10032b20` writes only x, y ← 0 and the clip (overwritten by every builder), so the image values
+   x = y = 0, face `none`, scale 1.0 are the runtime values; the two "further templates" are T+0x100 and the
+   notice sound record.
 
 ## Role-table rows (for merge)
 | `FUN_10030f40` | G_ScoreBar.cc | score-bar init: per player 8 local rects (R0–7 / R8–15) + back-buffer copies (+416 x), state reset | HIGH | listing `10030fbc…10031124` — ⚑ corrected: was "score bar rects" MED |
@@ -354,7 +368,7 @@ for the slot-1/2 contents (cycle order)]
 | `FUN_10032500` | G_ScoreBar.cc | draw power meter F122–125 (tefo 42) | HIGH | listing |
 | `FUN_100327b0` | G_ScoreBar.cc | draw weapon icon slot 0/1/2 (F128–139, scale F142, blend F140/F141) | HIGH | listing |
 | `FUN_10032a70` | G_ScoreBar.cc | blit one element rect back buffer → screen (local rect + D+0x2c/0x30) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
-| `FUN_10032b20` | G_ScoreBar.cc (static init) | fill draw-command templates `0x100eb228`, `0x100eb374`, `0x100eb3c8` | MED | read; caller `FUN_10000000` |
+| `FUN_10032b20` | G_ScoreBar.cc (static init) | fill draw template `0x100eb228` (clip), text-format template `0x100eb274` (+0x100/+0x104 = `0x100eb374`), notice-post sound record `0x100eb3c8` | HIGH | listing + interpreter (static-init-audit.md §3) — ⚑ corrected (wave 3+4, 2026-10-04): was "fill draw-command templates `0x100eb228`, `0x100eb374`, `0x100eb3c8`" MED on read |
 | `FUN_10032bd0` | G_EntityGroup.cc | "Entity Group" module init: counters, flags `DAT_100e021c..f`, NUMENT/LOGENT/TRACKENT/ENTSTATES/SPAWNTOP/ENTID/ENTFAMILIES/ENTNAMES/PLAYERACTIVESPAWNS console commands | MED | strings |
 | `FUN_10032df0` | G_EntityGroup.cc | "Entity Group" module teardown | MED | strings |
 | `FUN_1003bb40` | G_WeaponHandler.cc | score-bar icons: {face,frame} of cur(pending)/next/next-after air weapon; repeats (by face+frame) → none | HIGH | listing `1003bb70…1003bcb4` — ⚑ corrected: was MED |

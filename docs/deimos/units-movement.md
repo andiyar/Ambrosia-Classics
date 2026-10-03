@@ -487,7 +487,9 @@ offset, which of timer/range fires first for a given member) is constructed, not
    `FUN_10005d40`'s uninitialised stack slot (`10005e68..10005e84` with r23 = −1 → `r1+0x3c`).
    Unobservable while `+0x118 = −1` gates the turn and seek is not called with it — except a
    cyclic/constrained/Hunts state with no player: Hunts is skipped (`hunt` is only set when a
-   player exists), so believed harmless. A replica can store (0,0).
+   player exists), so believed harmless. A replica can store (0,0). → ⚑ corrected (wave 3+4, 2026-10-04) (critic O6): closed —
+   the stale target is never read (only readers `FUN_10016cc0`/`FUN_100172d0`, both gated); the next tick with a
+   player overwrites it (gameplay-leftovers.md §7.3).
 4. Which spawn record supplies `+8` for the air flag in `FUN_10035cd0` (`param_2`): level object
    group vs unit def (`FUN_10033850` also tests `unit+8 == 'grnd'`). Spawn reader.
 5. `FUN_10012940` frame size source `FUN_10019ca0`/`FUN_10019c10` (U_Sprite, not read) — half

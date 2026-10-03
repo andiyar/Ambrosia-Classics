@@ -199,8 +199,9 @@ else 'grnd' / stw r0,0x8(r30)`. The constant: r28 = TOC slot `0x100df440` → `0
 For each pending record (iteration over the initial count; `FUN_10000c00` unlinks the current
 node and backs the iterator up to its predecessor, so removal never skips a neighbour — list
 helpers `FUN_10000e10`/`FUN_10000c00` read): if `fctiwz(+0xa0) == row`, build a 0x2c-byte spawn
-request on the stack from the template at `0x100eb41c` (r2+0x50ec; bytes = `'none'`, 0…, +0x14 =
-0xff, +0x28 = 1.0f) and overwrite: +0x00 unit, +0x04 x (+0x9c), +0x08 y (+0xa0), **+0x0c = 1**
+request on the stack from the template at `0x100eb41c` (r2+0x50ec; runtime bytes = `'none'`, 0…, +0x14 =
+0xff, +0x24 = −1 (`FUN_10039100`), +0x28 = 1.0f; ⚑ corrected (wave 3+4, 2026-10-04): the image has +0x24 = 0, static-init-audit.md
+§5.1 #24) and overwrite: +0x00 unit, +0x04 x (+0x9c), +0x08 y (+0xa0), **+0x0c = 1**
 ("y is a map row"), +0x18 heading, +0x1c stationary, +0x1d terrain effects; call
 `FUN_10033220(&req, 0, 0)`; then **unconditionally** unlink and free the pending record
 (`100331b0 bl FUN_10033220 / 100331c4 bl FUN_10000c00`). [HIGH — listing `1003310c…100331ec`]
@@ -407,8 +408,10 @@ Reading:
    right. ⚑ corrected (review wave 1, 2026-10-03) #M9. `FUN_1003af90` carry-over details stay with the weapons reader.
 7. Which on-screen text the level select shows for "Starting Bonus" vs "No Starting Bonus"
    (`pgsl` lines 3/6) — the code-side consequences are §8 (1 life, later air weapon).
-8. Whether entities still in their spawn countdown (+0xb0 > 0) can pause the scroll (they appear
-   to be skipped before `LAB_10033d70`) — bosses reader.
+8. ~~Whether entities still in their spawn countdown (+0xb0 > 0) can pause the scroll (they appear
+   to be skipped before `LAB_10033d70`) — bosses reader.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7): cannot — the loop
+   head `10033a60..10033a7c` skips them before `10033d70`; new detail: no `+0xcb` test there, so an
+   entity killed earlier in the same pass still runs its pause check that tick (gameplay-leftovers.md §7.4d).
 9. `FUN_1000b9a0(display, 1)` at the level transition (fade?) and `FUN_10010f90` registered test —
    not read.
 
@@ -470,7 +473,9 @@ Not read in scope: none of the functions in `0x1000fbc0–0x10010860`, `0x10011a
 `FUN_10011bf0` (10 lines) — rows below. ⚑ corrected (review wave 1, 2026-10-03) #M7: the old line claimed `0x10011c00–` was
 fully read. Callees named but not read: `FUN_1002b3a0`→`FUN_1002b6d0`, `FUN_10027de0`,
 `FUN_10027db0`, `FUN_1000b9a0`, `FUN_100467c0`, `FUN_1004a950`, `FUN_10018130`, `FUN_100189f0`,
-`FUN_10031ad0`, `FUN_10031400`, `FUN_10036af0`, `FUN_10006110`, `FUN_10005cf0`.
+`FUN_10031ad0`, `FUN_10031400`, `FUN_10036af0`, `FUN_10006110`, `FUN_10005cf0`. ⚑ corrected (wave 3+4, 2026-10-04):
+`FUN_1004a950` (per-level input reset, app-pak-music-library.md §5.2) and `FUN_100189f0` (render-layer
+count reset, blit-pixel-rules.md §7.1) are now read; every function in the list has a function-roles.md row.
 
 ## INDEX updates (for merge)
 - **#17 closed** → this file §2 (initial top 3120, HIGH from `FUN_1000fa90` listing) and §5

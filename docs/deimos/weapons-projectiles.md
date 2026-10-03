@@ -292,9 +292,10 @@ offset (0, −121). [HIGH for `FUN_1003bab0` (listing); MED for when it is calle
 ## 3. Launch → entity
 
 ### 3.1 Spawn request (0x2c bytes; template at `r2+0x69e4` = `0x100ecd14`)
-Every launcher copies the template, then fills the fields. Template image: `none, 0.0, 0.0, 0, 0, 0xff000000,
-0, 0, 0, 0, 1.0f` (Python on `mem/100de330.bin` at `0x100ecd14`). `FUN_1003ce60` (static init) refreshes
-parts of it. Fields as `FUN_10033220`/`FUN_10035cd0` consume them:
+Every launcher copies the template, then fills the fields. Runtime template (image overwritten before `main` by `FUN_1003ce60`): `none, 0.0, 0.0, 0, 0, 0xff000000,
+0, 0, 0, −1, 1.0f` — only +0x24 differs from the image (`1003cf00 stw r0,0x24(r12)`, source `0x100d72a8`
+= `00000000 ffffffff`; static-init-audit.md §5.1 #23). ⚑ corrected (wave 3+4, 2026-10-04): was "Template image: … 0, 0, 0, 0, 1.0f
+(Python on `mem/100de330.bin` at `0x100ecd14`). `FUN_1003ce60` (static init) refreshes parts of it." Fields as `FUN_10033220`/`FUN_10035cd0` consume them:
 | off | meaning | consumer (listing) |
 |---|---|---|
 | 0x00 | unit ID (`none` → assert) | `10033240` |
