@@ -91,6 +91,33 @@ final class CosmeticPoolTests: XCTestCase {
         XCTAssertEqual(pool.activeCount, 0)
     }
 
+    /// `_Bubbles_NewGroup @ 0001657e` last call per group at (x, y) = (300, 200), rect (y', x', y' + side, x' + side)
+    /// with side 0x12 / 0x17 / 0x1d / 0x2b by size (`_Bubbles_New @ 00016349`):
+    /// 4 → `New(x+0x14, y+8, 0, 0)`; 5 → `New(x+0x14, y+8, 2, 0)`; 6 → `New(x+0x14, y+0x10, 2, 0)`;
+    /// 7 → `New(x+0x14, y+0x29, 0, 0)`; 8 → `New(x+1, y+4, 0, 0)`; 10 → `New(x, y+8, 2, 4)`;
+    /// 0xb → `New(x+0xc, y+0xc, 0, 6)`.
+    func testBubbleGroupLastOffsets() {
+        let cases: [(group: Int, rect: QDRect, size: Int8, delay: Int16)] = [
+            (4, QDRect(top: 208, left: 320, bottom: 226, right: 338), 0, 0),
+            (5, QDRect(top: 208, left: 320, bottom: 237, right: 349), 2, 0),
+            (6, QDRect(top: 216, left: 320, bottom: 245, right: 349), 2, 0),
+            (7, QDRect(top: 241, left: 320, bottom: 259, right: 338), 0, 0),
+            (8, QDRect(top: 204, left: 301, bottom: 222, right: 319), 0, 0),
+            (10, QDRect(top: 208, left: 300, bottom: 237, right: 329), 2, 4),
+            (0xb, QDRect(top: 212, left: 312, bottom: 230, right: 330), 0, 6),
+        ]
+        for c in cases {
+            var pool = AirBubblePool()
+            var rng = GameRandom(seed: 0x0046_42a0)
+            pool.reset(rng: &rng)
+            pool.newGroup(x: 300, y: 200, group: c.group, frame: 40, prefs: CosmeticPrefs(), rng: &rng)
+            let last = pool.slots[pool.activeCount - 1]
+            XCTAssertEqual(last.rect, c.rect, "group \(c.group)")
+            XCTAssertEqual(last.size, c.size, "group \(c.group)")
+            XCTAssertEqual(last.delay, c.delay, "group \(c.group)")
+        }
+    }
+
     /// `_Bubbles_New`: `if (_gBubbles_NumActive == 8) return;` precedes `_GetRandomFast(5,9)`.
     func testBubbleCapEight() {
         var pool = AirBubblePool()
@@ -164,7 +191,9 @@ final class CosmeticPoolTests: XCTestCase {
 
     /// `_Bubbles`: after `reset` (last 0, delay 0x1e) no launch at frame 30, launch at 31 (FILM 1: group 2 → one
     /// `(5,9)`, Research note 22). Hero aligned facing left with `lastBubbleFrame + 140 < frame` → group 9 at the
-    /// hero's (left, top), `lastBubbleFrame = frame`, random indices untouched; facing up → random-table group.
+    /// hero's (left, top), `lastBubbleFrame = frame`, random indices untouched. (The frame-31 facing-up launch only
+    /// shows the timing gate — `lastBubbleFrame 0 + 140` already fails; the facing fallback and facing right are
+    /// `testLauncherFacingUpFallsBackToRandomTable` / `testLauncherFacingRightLaunchesGroup10`.)
     func testLauncherTimingAndHeroMouth() {
         var pool = AirBubblePool()
         var rng = GameRandom(seed: 0x0046_42a0)
@@ -175,7 +204,8 @@ final class CosmeticPoolTests: XCTestCase {
         XCTAssertEqual(rng.drawCount, 115)
         XCTAssertEqual(pool.activeCount, 0)
         XCTAssertEqual(pool.timeLastGroupLaunched, 0)
-        // Frame 31, hero facing up (lastBubbleFrame 0 + 140 ≮ 31 anyway) → random group groups[0] = 2 at (159, 0x181).
+        // Frame 31: lastBubbleFrame 0 + 140 ≮ 31 fails the hero gate before facing is read → random group
+        // groups[0] = 2 at (159, 0x181).
         pool.launch(frame: 31, hero: &up, prefs: CosmeticPrefs(), rng: &rng)
         XCTAssertEqual(rng.drawCount, 116)
         XCTAssertEqual(pool.activeCount, 1)
@@ -213,6 +243,47 @@ final class CosmeticPoolTests: XCTestCase {
         off.launch(frame: 31, hero: &up, prefs: CosmeticPrefs(stars: true, airBubbles: false), rng: &rng2)
         XCTAssertEqual(rng2.drawCount, 109)
         XCTAssertEqual(off.timeLastGroupLaunched, 0)
+    }
+
+    /// `_Bubbles @ 000169e2`: state 2, aligned and `hero+0x0c + 0x8c < frame` all hold (59 + 140 = 199 < 200), but
+    /// facing (hero+0x26) is neither 3 nor 4 → `goto LAB_00016a88`, the random launch: groups[0] = 2 at
+    /// (xLoc[0] = 159, 0x181), and `hero+0x0c` is **not** rewritten (only the mouth branch stores the frame).
+    func testLauncherFacingUpFallsBackToRandomTable() {
+        var pool = AirBubblePool()
+        var rng = GameRandom(seed: 0x0046_42a0)
+        for _ in 0..<6 { _ = rng.random() }
+        pool.reset(rng: &rng)
+        var up = hero(facing: .up, last: 59)
+        pool.launch(frame: 200, hero: &up, prefs: CosmeticPrefs(), rng: &rng)
+        XCTAssertEqual(rng.drawCount, 116)
+        XCTAssertEqual(pool.activeCount, 1)
+        XCTAssertEqual(pool.slots[0].size, 2)
+        XCTAssertEqual(pool.slots[0].rect, QDRect(top: 0x181, left: 159, bottom: 0x181 + 29, right: 159 + 29))
+        XCTAssertEqual([pool.xIndex, pool.groupIndex, pool.delayIndex], [1, 1, 1])
+        XCTAssertEqual(up.lastBubbleFrame, 59)
+        XCTAssertEqual(pool.timeLastGroupLaunched, 200)
+        XCTAssertEqual(pool.delayTilNextGroup, 85)
+    }
+
+    /// `_Bubbles @ 000169e2`: facing 4 (right) → `_Bubbles_NewGroup(hero+0x1a = right, hero+0x14 = top, 10)`;
+    /// `_Bubbles_NewGroup` case 10 → `New(x, y+0xc, 0, 0)`, `New(x, y+10, 1, 2)`, `New(x, y+8, 2, 4)`. Hero cell (7,6):
+    /// right 320, top 240. Sides 0x12 / 0x17 / 0x1d (`_Bubbles_New`). Random x/group indices untouched.
+    func testLauncherFacingRightLaunchesGroup10() {
+        var pool = AirBubblePool()
+        var rng = GameRandom(seed: 0x0046_42a0)
+        for _ in 0..<6 { _ = rng.random() }
+        pool.reset(rng: &rng)
+        var right = hero(facing: .right, last: 59)
+        pool.launch(frame: 200, hero: &right, prefs: CosmeticPrefs(), rng: &rng)
+        XCTAssertEqual(rng.drawCount, 118)
+        XCTAssertEqual(pool.activeCount, 3)
+        XCTAssertEqual(right.lastBubbleFrame, 200)
+        XCTAssertEqual([pool.xIndex, pool.groupIndex, pool.delayIndex], [0, 0, 1])
+        XCTAssertEqual(pool.slots[0].rect, QDRect(top: 252, left: 320, bottom: 270, right: 338))
+        XCTAssertEqual(pool.slots[1].rect, QDRect(top: 250, left: 320, bottom: 273, right: 343))
+        XCTAssertEqual(pool.slots[2].rect, QDRect(top: 248, left: 320, bottom: 277, right: 349))
+        XCTAssertEqual(pool.slots.prefix(3).map(\.size), [0, 1, 2])
+        XCTAssertEqual(pool.slots.prefix(3).map(\.delay), [0, 2, 4])
     }
 
     // MARK: - Score points
@@ -260,7 +331,7 @@ final class CosmeticPoolTests: XCTestCase {
         points.process()
         XCTAssertTrue(points.slots[0].dead)
         XCTAssertEqual(points.activeCount, 1)
-        points.drawPass(rng: &rng)
+        XCTAssertFalse(points.drawPass(rng: &rng))
         XCTAssertFalse(points.slots[0].active)
         XCTAssertEqual(points.activeCount, 0)
         XCTAssertEqual(rng.drawCount, base, "no trap draws when gPointsNotReg is false")
@@ -297,10 +368,10 @@ final class CosmeticPoolTests: XCTestCase {
         trap.newPoint(x: 300, y: 100, sprite: 1, delay: 0, level: 24, notRegistered: true)
         XCTAssertEqual(trap.slots.prefix(3).map(\.trap), [false, true, true])
         let t0 = r3.drawCount
-        trap.drawPass(rng: &r3)
+        XCTAssertFalse(trap.drawPass(rng: &r3))
         XCTAssertEqual(r3.drawCount - t0, 2)
         trap.process()
-        trap.drawPass(rng: &r3)
+        XCTAssertFalse(trap.drawPass(rng: &r3))
         XCTAssertEqual(r3.drawCount - t0, 4)
 
         // A trap draw of 1 → the original quits; the replica reports it.

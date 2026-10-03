@@ -120,20 +120,20 @@ public struct PointPool: Sendable {
     /// The non-drawing half of `_DrawPointsToComp @ 00002641`: skipped when `_gNumActivePoints == 0`; per active
     /// slot 0…7, a trap-armed point draws `GetRandomFast(0,0x14)` (the only draw-pass RNG site), then a dead
     /// point is freed (`_ResetPoint`). A trap draw of 1 makes the original `_StdError(…"hacked copy"…)` →
-    /// `_CleanUp` (it quits); the replica returns `true` then (`StopReason.originalWouldAbort` is the caller's)
-    /// and finishes the pass. Never reached in the modelled licence state (`gPointsNotReg` false).
-    @discardableResult
+    /// `_CleanUp` → `_ExitToShell`: the process ends inside the pass, so the replica returns `true` at once (no
+    /// further draws, no further frees) and the caller **must stop the frame immediately** with
+    /// `StopReason.originalWouldAbort` — nothing after this call in the frame may run. Not discardable for that
+    /// reason. Never reached in the modelled licence state (`gPointsNotReg` false).
     public mutating func drawPass(rng: inout GameRandom) -> Bool {
         if activeCount == 0 { return false }
-        var wouldAbort = false
         for i in slots.indices where slots[i].active {
             if slots[i].trap {
-                if rng.fast(0, 0x14) == 1 { wouldAbort = true }
+                if rng.fast(0, 0x14) == 1 { return true }
             }
             if slots[i].dead {
                 resetPoint(i)
             }
         }
-        return wouldAbort
+        return false
     }
 }

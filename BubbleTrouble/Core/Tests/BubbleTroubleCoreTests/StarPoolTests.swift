@@ -64,6 +64,78 @@ final class StarPoolTests: XCTestCase {
         XCTAssertEqual(groupDraws(0xe, col: 15, row: 5).draws, 14)
     }
 
+    /// `_NewStarGroup @ 000035b5` groups 0, 1, 2 at (280, 240) (no clipping, motions ≠ 0xb → no draws):
+    /// group 0 delays `0, 2, 6, 0xc, 2, 9, 6` + tail `0x12` at (x+9, y+9); group 1 `(x−8, y−8)` delay 0 + tail
+    /// `(x+6, y+6)` delay 3; group 2 seven calls at (x+6, y+6) motions 3…9 + tail motion 10 at the same point.
+    func testGroups0To2DelaysAndMotions() {
+        func run(_ group: Int) -> StarPool {
+            var pool = StarPool()
+            var rng = GameRandom(seed: 0x0046_42a0)
+            pool.newGroup(x: 280, y: 240, group: group, hero: hero, frame: 0, prefs: CosmeticPrefs(), rng: &rng)
+            XCTAssertEqual(rng.drawCount, 0, "group \(group)")
+            return pool
+        }
+        let g0 = run(0)
+        XCTAssertEqual(g0.activeCount, 8)
+        XCTAssertEqual(g0.slots.prefix(8).map(\.delay), [0, 2, 6, 12, 2, 9, 6, 18])
+        XCTAssertEqual(g0.slots[7].rect.left, 289)
+        XCTAssertEqual(g0.slots[7].rect.top, 249)
+        let g1 = run(1)
+        XCTAssertEqual(g1.activeCount, 2)
+        XCTAssertEqual(g1.slots.prefix(2).map(\.delay), [0, 3])
+        XCTAssertEqual(g1.slots[1].rect.left, 286)
+        XCTAssertEqual(g1.slots[1].rect.top, 246)
+        let g2 = run(2)
+        XCTAssertEqual(g2.activeCount, 8)
+        XCTAssertEqual(g2.slots.prefix(8).map(\.motion), [3, 4, 5, 6, 7, 8, 9, 10])
+        XCTAssertTrue(g2.slots.prefix(8).allSatisfy { $0.rect.left == 286 && $0.rect.top == 246 && $0.delay == 0 })
+    }
+
+    /// `_NewStarGroup @ 000035b5` groups 6–9: one kind-2, delay-0, motion-0 star from the hero rect (hero+0x16 left,
+    /// hero+0x14 top) and `gStarsLocationLookup[gStarsLocationIndex]`, index then 1: 6 → (left+6+j, top+0x1a);
+    /// 7 → (left+6+j, top−0xd); 8 → (left+0x1e, top+6+j); 9 → (left−0x11, top+6+j). Hero cell (7,6) = (280, 240).
+    func testSpeedUpGroups6To9HeroOffsets() {
+        let left = Int16(280), top = Int16(240)
+        for group in 6...9 {
+            var pool = StarPool()
+            var rng = GameRandom(seed: 0x0046_42a0)
+            pool.reset(rng: &rng)
+            let j = pool.locationLookup[0]
+            pool.newGroup(x: 0, y: 0, group: group, hero: hero, frame: 0, prefs: CosmeticPrefs(), rng: &rng)
+            XCTAssertEqual(pool.activeCount, 1, "group \(group)")
+            XCTAssertEqual(pool.locationIndex, 1, "group \(group)")
+            let expected: (x: Int16, y: Int16)
+            switch group {
+            case 6: expected = (left + 6 + j, top + 26)
+            case 7: expected = (left + 6 + j, top - 13)
+            case 8: expected = (left + 30, top + 6 + j)
+            default: expected = (left - 17, top + 6 + j)
+            }
+            let s = pool.slots[0]
+            XCTAssertEqual(s.rect.left, expected.x, "group \(group)")
+            XCTAssertEqual(s.rect.top, expected.y, "group \(group)")
+            XCTAssertEqual([s.kind, s.delay, s.motion], [2, 0, 0], "group \(group)")
+        }
+    }
+
+    /// `_NewStarGroup @ 000035b5` groups 0xb–0xd (`LAB_00003812`): tail `_NewStar(x+2, y+0xe, kind, 4, 0xb)` with
+    /// kind 4 / 5 / 6 = group − 7 is slot 4 on a fresh pool at (280, 240) (nothing clipped; 5 hop draws).
+    func testGroups0xBTo0xDTailStar() {
+        for group in 0xb...0xd {
+            var pool = StarPool()
+            var rng = GameRandom(seed: 0x0046_42a0)
+            pool.newGroup(x: 280, y: 240, group: group, hero: hero, frame: 0, prefs: CosmeticPrefs(), rng: &rng)
+            XCTAssertEqual(pool.activeCount, 5, "group \(group)")
+            XCTAssertEqual(rng.drawCount, 5, "group \(group)")
+            let s = pool.slots[4]
+            XCTAssertEqual(s.kind, Int16(group - 7), "group \(group)")
+            XCTAssertEqual(s.delay, 4, "group \(group)")
+            XCTAssertEqual(s.motion, 0xb, "group \(group)")
+            XCTAssertEqual(s.rect.left, 282, "group \(group)")
+            XCTAssertEqual(s.rect.top, 254, "group \(group)")
+        }
+    }
+
     /// `gNumActiveStars == 0x3c` → `_NewStar` returns before anything, so the group draws nothing.
     func testStarCapSixtyDrawsNothing() {
         var pool = StarPool()
