@@ -333,7 +333,8 @@ final class ItemsTests: XCTestCase {
     /// B12 + Research note 45 on six synthetic candidates: level 10 → all six blue, 12 draws, no stars; level 11 → each
     /// cell blue/purple by its attempt's `(0,1)` (0 → 16, 1 → 15; cell per an independent walk oracle), 18 draws;
     /// level 10 with a state-1 piranha on a candidate → squished n = 1 (+200) with its group-3 stars (4 draws,
-    /// interior cell) → 16 draws.
+    /// interior cell) → 16 draws; the maze outcome of `_SquishEnemy` clearing the **enemy's** cell, aligned and
+    /// half a cell off (hand-derived below from the seed-1 draws).
     func testRegenerateBlocks() {
         var state = regenerateWorld(level: 10)
         var want = state.maze
@@ -364,6 +365,9 @@ final class ItemsTests: XCTestCase {
         XCTAssertEqual(probe.drawCount, 18)
         XCTAssertEqual(state.stars.activeCount, 0)
 
+        // Seed-1 attempt pairs (col, row) = (GetRandomFast(1,14), GetRandomFast(1,9)) from raw draws 1–10:
+        // (4,3) → (14,3); (10,1) → (9,2); (11,8) → (12,9); (8,1) → (1,5); (3,1) → (4,8) (the piranha's cell).
+        // That 5th attempt's squish spends draws 11–14 on stars, so attempt 6 reads draws 15–16 = (12,2).
         state = regenerateWorld(level: 10)
         place(&state, slot: 2, col: 4, row: 8)
         state.regenerateBlocks()
@@ -372,5 +376,33 @@ final class ItemsTests: XCTestCase {
         XCTAssertEqual(state.score, 200)
         XCTAssertEqual(state.stars.activeCount, 4)
         XCTAssertEqual(state.rng.drawCount, 16)
+        // Aligned: the squish zeroes the piranha's cell (4,8) — the bubble just placed — so (4,8) is a candidate
+        // again; attempt 6 from (12,2) walks to (4,8) before wrapping to (2,1), re-places it, and the dead piranha
+        // handed out again is ignored (one squish). Six placements, five bubbles: (2,1) stays empty.
+        want = regenerateWorld(level: 10).maze
+        for c in [(14, 3), (9, 2), (12, 9), (1, 5), (4, 8)] { want[c.0, c.1] = CellCode.blue }
+        XCTAssertEqual(state.maze, want)
+        XCTAssertEqual(state.maze[2, 1], CellCode.empty, "the clear sent attempt 6 back to (4,8), not on to (2,1)")
+
+        // Half a cell off: piranha rect left 4·40 + 20 = 180 (cols 4–5), its col/row bytes on (5,8). It overlaps
+        // (4,8)'s inset-3 rect (163…197), so the 5th attempt still squishes it (+200, 4 star draws), but the clear
+        // hits its own cell (5,8) — a sentinel there (gMazeCopy 0: never a candidate) makes the write visible — and
+        // the new bubble at (4,8) survives; attempt 6 from (12,2) then wraps to (2,1). Six bubbles, all placed.
+        state = regenerateWorld(level: 10)
+        place(&state, slot: 2, col: 5, row: 8)
+        state.enemies[2].rect = QDRect(top: 320, left: 180, bottom: 360, right: 220)
+        state.enemies[2].prevRect = state.enemies[2].rect
+        state.enemies[2].aligned = false
+        state.maze[5, 8] = CellCode.normal
+        state.regenerateBlocks()
+        XCTAssertTrue(state.enemies[2].dead)
+        XCTAssertEqual(state.numEnemiesSquished, 1)
+        XCTAssertEqual(state.score, 200)
+        XCTAssertEqual(state.rng.drawCount, 16)
+        want = regenerateWorld(level: 10).maze
+        for c in Self.candidates { want[c.col, c.row] = CellCode.blue }
+        XCTAssertEqual(state.maze, want, "(5,8) cleared to 0; (4,8) keeps its bubble (15)")
+        XCTAssertEqual(state.maze[4, 8], CellCode.blue)
+        XCTAssertEqual(state.maze[5, 8], CellCode.empty)
     }
 }

@@ -7,8 +7,13 @@ extension GameState {
     /// the first time and **give up this attempt** the second; cells on the hero's column or row are stepped over;
     /// the walk stops on a cell with `gMaze == 0` and `gMazeCopy == 10`. That cell becomes blue (15) below level 11,
     /// else `GetRandomFast(0,1)`: 0 → purple (16), 1 → blue (15). The cell rect inset by 3 → `_WasEnemySquished`
-    /// (dead not tested, Invariant 7) → `_SquishEnemy(e, 1)` — which clears the enemy's maze cell, i.e. the new
-    /// bubble itself (replicated: the cell is a candidate again for the remaining attempts).
+    /// (dead not tested, Invariant 7) → `_SquishEnemy(e, 1)`. `_SquishEnemy @ 0001131b` zeroes
+    /// `gMaze[enemy col (+0x24) + enemy row (+0x30) · 16]` — the **enemy's** cell, not the new bubble's. Only when
+    /// the enemy's col/row bytes name the bubble's cell (an enemy aligned on it) does the squish clear the bubble just
+    /// placed, making that cell a candidate again for the remaining attempts. An enemy halfway between cells still
+    /// overlaps the inset-3 rect (`_WasEnemySquished` is a strict rect overlap), so it is squished, but its own other
+    /// cell is zeroed and the new bubble survives. A later attempt landing on the same cell hands the (now dead,
+    /// still state-1) enemy out again and `_SquishEnemy` ignores it, so a re-placed bubble stays. All replicated.
     mutating func regenerateBlocks() {
         let currentLevel = level
         var attempts: Int8 = 6
