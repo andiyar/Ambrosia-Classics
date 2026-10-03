@@ -16,6 +16,7 @@
 - **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`,
   `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
   handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
+- **Deimos RE deepening, wave 1 landed (2026-10-03 night):** nine gameplay files in `docs/deimos/` (movement, spawn sets, weapons, damage, player, scoring, unit-def structs, bosses, level/scroll), Fable-reviewed ACCEPT_WITH_FIXES + fix-passed; role table 293→510 rows (240 HIGH / 256 MED / 14 LOW); INDEX closes #7 #17 #19 #20 #22 #24 #25 #26 #28. Wave 2 (sprite geometry, particles/RNG, timing, HUD, messages, loose ends, sound, front end) in flight.
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
@@ -37,8 +38,10 @@
    800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by
    measuring (§7); splash (`welcome.png`), map (`map.png` + lanterns), prefs dialog from the 1.2 nibs' strings.
    First staged `.app` for Ben: gate "that is Aki's map screen".
-2. ~~RE-bank lane~~ done; Trigger A2 only if a build session hits a NOT-RESOLVED wall.
-3. Phases 2–3 Aki, then Bubble Trouble X (design §6). EV's adoption of HectorKit (re-export shim): separate task.
+2. ~~RE-bank lane~~ done. **Chips issued 2026-10-03 evening (Ben's call, parallel sessions):** Bubble Trouble X build
+   (core + FILM replay oracle first, shell last); RE deepening ×3 — Deimos gameplay code, Ferazel open items, Cythera
+   script disassembly → rules. All Opus 5.5 subagents, wide fan-out authorised, Fable-grade review per wave.
+3. Phases 2–3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit (re-export shim): separate task.
 
 ## Carried (not blockers)
 
