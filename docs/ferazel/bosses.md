@@ -140,7 +140,10 @@ the held sprite carries the shot handler for swing calls c = 3, 4, 5 (c ≥ 3, r
 [HIGH]), Fire seeds / Smite bolts (id 0x5a). Every boss Hit routine tests only
 shots with `shot+0xa6 == 0` (`.SetupPlayerShotSprite` writes 0; no non-zero writer found in the
 shot code ~~[MED]~~ — confirmed for melee too: no code writes a non-zero `+0xa6` on the held item,
-held-item-melee.md §1.7, so the gate always passes for a stab [HIGH]). "Falling solid" = a sprite whose handler is `.HandleStatueSprite` (slot
+held-item-melee.md §1.7, so the gate always passes for a stab [HIGH]) (1d: `.CastSpell`
+10051d1c–10052960 and `.SetupPlayerShotSprite` 1005925c–10059700 also scanned, no `+0xa6` writer
+other than the zero store `100592dc sth r31,0xa6` with r31 = 0 from 10059284 — ⚑ corrected (review 1d,
+2026-10-03) #6). "Falling solid" = a sprite whose handler is `.HandleStatueSprite` (slot
 0x100a01f8: an enemy turned to stone) or `.HandleBoxSprite` (0x100a0484) that `.PlatformBounce`
 reports as hitting the boss from above (return 2, physics.md §8.1) while `solid.vy > 0` or the boss
 is grounded (`+0xce`); the solid is destroyed (`.KillBox`).

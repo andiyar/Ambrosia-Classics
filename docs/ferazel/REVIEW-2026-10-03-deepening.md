@@ -150,6 +150,40 @@ handler swaps reproduce from raw.
 
 ---
 
+# Review 1d — spot-review of the consolidated fix pass (74a8a46), 2026-10-03
+
+**Verdict: ACCEPT_WITH_FIXES** — 0 Critical, 0 Important, 6 Minor, plus un-carried held-item-melee
+corrections. Fixes applied and marked `⚑ corrected (review 1d, 2026-10-03) #n` (FIXPASS leg 1d).
+
+## Minor findings
+1. engine §6 and save-continue corr. B18 row cite "review 1a #6 (adjudication B18)"; 1a *finding* 6
+   is the PICT captions — the raw is 1a *adjudication* 6. Relabel.
+2. INDEX NOT RESOLVED intro says new items are 15–27; the pass added 28–29.
+3. FIXPASS: "#10 → NR 15/19/21/27" (only 19/21 carry #10; 15 = #5, 27 = #3/#4/#6/#7); "B24 →
+   physics §4" with no `(adjudication B24)` marker in the bank.
+4. FIXPASS claims 1a #5 "Statue no `+0x185`" carried to physics §7 with raw; the statue text has
+   only the earlier strike, no 1a #5 marker, no raw (1a adjudication 2 gives it).
+5. physics-sprites §8.9 mode 3 "[MED: that this read is the raft's]": `1006496c`/`10064974`/
+   `10064980` enter one branch, so the `100649c4` gravity test is shared by raft, floe and Walker
+   corpse — HIGH; mode 4 and platforms §2.5 should say so.
+6. bosses §1.5 closes "no non-zero `+0xa6` writer" [HIGH] on held-item-melee §1.7, whose scan did
+   not cover `.CastSpell` or `.SetupPlayerShotSprite` — scan them.
+
+## Held-item-melee "Corrections to the existing bank"
+Needed: row 3 (pickups §3.1 rect = exact opaque box, not mirrored), row 4 (pickups §3.1 no carry →
+HIGH for the item path), row 6 (enemy-shots §2.4 shadow facts), row 7 (enemy-shots §2.3 entries 0/1
+never shown), row 8 (cites spells-items §4 item 8, which has no cave-wall claim). Row 9 consistent.
+Rows 1, 2, 5 confirmed landed.
+
+## Verified OK
+Checked 66/66 numbered markers and 36/36 adjudication markers; 76 cited raw addresses confirmed in
+the listing (incl. −3637, 2941 == 300, +0x1a2 chain, +0x88 gate, 0x5a9, +0x116, 0x26c8 → 1004b2b0,
+hdr+0x2724, B23 0xb200/0xb600). No marker cites a non-existent finding. Structure: all files carry
+a register line; max 560 lines; every added pointer resolves; coverage rows for geysers/held
+item/shadow/trail correct.
+
+---
+
 # Appendix — synthesis contradiction ledger (pre-adjudication; see leg 1c for the OPEN rows' outcomes)
 
 # Synthesis — contradiction ledger, Ferazel deepening wave (2026-10-03)
