@@ -16,11 +16,21 @@
 - **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`,
   `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
   handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
+- **Deimos RE deepening, wave 1 landed (2026-10-03 night):** nine gameplay files in `docs/deimos/` (movement, spawn sets, weapons, damage, player, scoring, unit-def structs, bosses, level/scroll), Fable-reviewed ACCEPT_WITH_FIXES + fix-passed; role table 293→510 rows (240 HIGH / 256 MED / 14 LOW); INDEX closes #7 #17 #19 #20 #22 #24 #25 #26 #28. Wave 2 (sprite geometry, particles/RNG, timing, HUD, messages, loose ends, sound, front end) in flight.
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
 - **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
   `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
+
+- **Bubble Trouble X core lane (2026-10-03 night, Fable orchestrator, cap lifted by Ben):** plans LOCKED
+  (`docs/plans/2026-10-03-btx-core-and-film-harness.md` 18 tasks; `2026-10-03-hectorkit-btx-decoders.md`);
+  core Tasks 0–3b + T12 bank corrections merged (44 tests green at 48e29db); HectorKit main 5a33384 = BTX locator,
+  snd census, `CIcon`, `PixelPattern` (renamed from PixPat: SDK collision), docs D5, floor 160, **tag v0.2.0 pending**.
+  In flight on lane branches when the session hit its usage limit: core `btx-t4` (Task 4 level build), kit `btx-pict`
+  (Task 4a masked PICT), Classics `btx-census` (kit Task 7). Lane worktrees under `.claude/worktrees/btx-*` and
+  `~/Developer/HectorKit-btx*`. Honest bar: FILM oracle = replay to count exhaustion + golden freeze (bank derives no
+  end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
 
 ## Open, ordered
 - **Cythera RE wave 1 (2026-10-03 night):** scriptdis.py + census on main (0 unknown opcodes); eight rules banks on branch `claude/dazzling-ramanujan-8d8f23`, UNREVIEWED (critic 1 Blocker/7 Major/23 Minor) — handoff `docs/handoff-2026-10-03-cythera-re.md`.
@@ -42,3 +52,4 @@
   "rename prefixes only" rule; trim only with a ruling. Only data-gated tests cover `snd` format 1.
 - `quickTimeBands` returns a tuple, not a struct (API polish for v0.2). No dimension cap on codec images.
 - Ambrosia's 1996 installer format unreversed. HD-art packs late polish. Licence at the very end (EV D65).
+- **Ferazel RE deepening WIP (2026-10-03 late, branch `claude/recursing-rhodes-932ac0`, worktree kept):** 11 Opus readers + 2 gap readers wrote 17 new `docs/ferazel/` files (~6,400 lines: enemies ×3, bosses ×2, enemy-shots-and-damage, pickups-boxes, triggers-background ×2, spells-detail, save-continue, platforms-ropes-radial, player-states ×2, geysers, held-item-melee, coverage, physics-sprites); three Fable review legs all ACCEPT_WITH_FIXES (1a 0/4/6, 1b 1 Critical/3/9, 1c 0/4/11; `REVIEW-2026-10-03-deepening.md`); fix passes 1a/1b landed; consolidated fix pass landed (`FIXPASS-2026-10-03-deepening.md`; labels HIGH 727 / MED 228 / LOW 27); merged to main. Owed: one Fable spot-review of the final fix-pass diff (skipped at the usage limit). Handoff `docs/handoff-2026-10-03-ferazel-re.md`.
