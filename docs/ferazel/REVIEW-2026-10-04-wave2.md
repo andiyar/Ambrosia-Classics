@@ -1,6 +1,6 @@
 # Ferazel RE bank — wave 2 Fable reviews (2026-10-04)
 
-Register: code readings only; nothing behaviour-verified (meta file). Legs A–F reported; legs G and H were cut off by the usage limit and must be re-run (see docs/handoff-2026-10-04-ferazel-wave2.md). Fix pass: owed.
+Register: code readings only; nothing behaviour-verified (meta file). Legs A–G reported; leg H was cut off by the usage limit and must be re-run (see docs/handoff-2026-10-04-ferazel-wave2.md). Fix pass: owed.
 
 ---
 
@@ -127,6 +127,27 @@ Corrections rows 1–13: all correct against engine/world-data/save-continue/spr
 Scorecard: 2 closed; 12 closed; 13 closed; 24 (OmniPx/PxMid) closed; 26 (PICT 1026) closed; 4 undeterminable (facts HIGH).
 
 Re-derivations (✓ unless ✗): li r16 1001793c; 1001891c; srwi 10018a2c; ConstrainXY; GetPxMidTile lha 1003c60c no test; lwzx r18/r17 10017bb4/10018a88/aa0; byte rule 10018044 + 0x84=0xff/0 10017f94/fa0; word back 100180e8; word mid 10018198; lead/tail/w<5 10017dd8; ring 0x4ec4ec4f/0x1a0 100174cc; DoubleBlitUniversal gates 10022f8c..1002307c; PaintFrameWrap 10012700/08/74 under 10011fd4; prefs+9→arg6 bne 10017734; GetPxBackTile 1003c4f8/510; 10004e18; 1000a46c/74; TurnOn 10019b04..84 (mode skip, 0x2000, slot swap); SetupOmniPx consts 10019fc0..1001a148 incl. 0xaa→0xc0/0xd2/0xe6/0x100a3802; NewBlitPort 10019e2c; UpdateOmniPx 18/58/56/29, +0x18, +4, 56−c; face loop null-skip/mod 0x8000/rem 128 1001a640..758; slots 0x100a008c→0x100f97e8, 0x100a00b4→0x100f97e4; GenerateRain gate 10011ee4, 90/210/150/0x4b3-4 tuples/50/200, gamma 2,0xc,0x10/0x6e; CD hash chain 100100d0..1001017c, pstr len 29, GetNewDialog 0x640 @100106ec; Titles sites (0x80,0x88,0x83,0x82/0x86+flag,0x8a,0x8c-e,0x9f/a1/a2,0xac+i/0xb6−i,8 credit pairs,0x1324,0x1329→0x133d,0x1339,0x1373−0xa,0x1379×3,0x11f8); cluts 0x80/82/83×2/84/104, +0x118, slots −0x7814/18 only 10000a08/0c; DisposePxMidTileset blr 100027f8; 1009ff68 single load 10002424; no 0x402/0x41e/'Tune'; Fire bl set; Mlvl census (14 levels, table shapes, ym, 0x26c7/26ca/2722/273c, sheets, level-15 row 18 cols 128..199); Titles 67/16 ids+8 sizes, no Sprites/Sounds overlap; 6200≡6300 ace346500df0; volume 842/60/639. ✗ 0x100f00b0/40b0; ✗ level-22 "5001".
+
+---
+
+# Review leg G (wave 2) — commit 0de6265, lane L10
+
+**Verdicts**: platforms-ropes-radial-2.md ACCEPT_WITH_FIXES · held-item-melee.md ACCEPT_WITH_FIXES · player-states.md ACCEPT_WITH_FIXES · platforms-ropes-radial.md ACCEPT_WITH_FIXES · save-continue.md ACCEPT · player-states-2.md ACCEPT · physics-sprites.md ACCEPT. Commit touched only the seven owned files; marker on every in-place edit; line-3 register; sizes 217–526 lines; all 13 Corrections rows (not 10) consistent with their targets.
+
+**Findings**
+- Important — platforms-2 §8.3: distance gate R named but value missing; raw `li r0,0x168; sth 0x1c` (10032274/8) = 360 px. HIGH.
+- Minor — §8.3 "each callback runs twice": omits that a first-visit kill (+0xe9, tested 10032750/1003276c) skips the second visit, and that no +0xe9 re-test sits between A.hit and B.hit (ESD-2 §4.2 states both). HIGH.
+- Minor — §8.3: main pass intersects via `.TheSectRect` (10032688), player pass via `.SectRectFast` (10034db4); "twice" assumes they agree on touching edges — unverified. MED.
+- Minor — held-item §4.3: "light-overlay argument (100149f4)" — that site is `lwz +0x11c; stw +0x124` (a copy); water draw also needs `+0x18c == 0` and mode ≠ 0xe (100147cc..e4), unstated. HIGH.
+- Minor — platforms-2 §12: 40-px ledge spans are X−23..X+16 and X+15..X+54, not ..X+17/..X+55. HIGH.
+- Minor — §10.1: pickups-boxes §2.4.9 Tree-Trunk lifetime `fd30 + 120` (read 1005b374) is now 120/121 by parity — no Corrections row. HIGH.
+- Minor — platforms-ropes-radial.md corrections: "14." inserted between 11 and 12. player-states.md W1 row has six cells in a five-column table. HIGH.
+- Minor — save-continue §2 upgrades "15th landing frame" to HIGH while §9.2 rests on MED "standing lands every frame" (RectBounce l. 36297). MED.
+- Note — §13 "strength 0 unless falling fast" is right: +0xeb rewritten from the vy>0x9c4 test (100552a0/ac) before `lbz r4,0xeb` (100552b4).
+
+**Scorecard**: 25 closed · 29 closed except NR 4 · 5 remainder closed (400..495 UNDETERMINABLE, honest) · 26 closed except PICT 1026 · 24 in part (faces, hold, nil-handle UNDETERMINABLE) — all genuinely closed.
+
+**Re-derived (✓ unless noted)**: HandleSprites order/alive gate 10007c30–64; PaintFrameWrap pause 10011d00, draw 10011dd0, parity 10012710–2c, idle/handle 100127cc/d4; GameLoop 1000a184/1000a298; +0x44 clear 100326f4; outer tests 10032738–58; inner-from-head 10032714; +0x184 exclusion 100327d0–e8; 6-buffer/7th-at-once 10032830–70; key near-x/far-y negated 100328e8–10032950; minimum-first 10032990–bc; rest list-order 10032a2c–80; player-pass +0x34 rects 10032bfc–c84, cap 0x10 10032c9c, see-saw slot −0x7678 @10032db8, break 10032e30, 10032e9c–d8; TV 1009fdd4→100a21b4→100556f4, 100a01c8→100655c8; player +0x5c=0 1004af44/afd4; MTInsertSprite bge 10032f44/f80, tail 10032fc0; MTNewSprite 10033200/1003321c/1003322c; MTHandleSprites 100325b8/bc; layers −1/−2/0/2/10/0x14 (10061fbc→fd4, 10062610, 10062fc0, 1006b498→4ac, 1004af88→afac, 1004bdfc→be20, 1004be7c/beb0, held spawn 1004b018–30); direct +0x80 stores 10066500→518, 100632d8, 10063400; SetupLevelSprites passes 10003e1c/e8c–eb0/f04–f2c, GenerateSprite r30=0 10003588–a0; see-saw slave 10063e48–ea8 (no +0x8/+0xc), clear 10063eb0; fd30 10 refs, sole writer r27, all lbz, bss 0; 067c 3 refs write-only; J reset 1004dc54–ca0 (r15=−0x70e8=0x100a0758, ridden −0x72e8); +0x190 three stores (r7/r8/r0 = 0); TurnIntoStatue 10043138–c4; wall ice 1005b1f0–320, k raw (1005b0d0); PICT 711 re-decoded (3 faces, 927/960 mirror mask); PICT 1065 re-decoded (green only in face 0, faces 1/2 mirrored masks), cut 1002f220–50; save point 1005771c/40/54–5c/68/74/83c, decay 1004de68–98, early returns only l.810/813; PlatformBounce→RectBounce; held water sign 1004c060/64; SafeReportStr 100359cc/10035918/10049e74; CrunchTile 10044974→c20, 10044988–9c→c24, 10044c18 (only exits 10044b70/bd4); callers 100552c0–fc, 1005b600–2c (+0x158); OpenDefaultWorldLevel 10048b70–c54, ignored at 1000d19c/d714/d90c; 06bc 4 refs + 06b8 sth/lha; 06e8 3 refs, neighbours byte ops; +0xa0 six operands; FlipNoClip 10028d08/ed4–ed8; 0x28e0/0x29a0 10041df4/8; LookupBG 26 / LookupFG 8 sites. ✗ R=360 omitted; ✗ 100149f4 mislabelled.
 
 ---
 
