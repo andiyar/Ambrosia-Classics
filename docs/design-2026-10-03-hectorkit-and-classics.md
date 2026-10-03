@@ -1,7 +1,7 @@
 # Design — HectorKit + Ambrosia Classics, with Aki as the first game (2026-10-03)
 
-Status: DRAFT for Ben's review. Approved verbally in pieces during the 2026-10-03 session; this
-is the written form. Supersedes the "rename EVResources → AmbrosiaResources inside the EV repo"
+Status: **APPROVED by Ben 2026-10-03** ("it looks good"); both the RE-bank and Phase 0 sessions were launched
+from it the same day. Supersedes the "rename EVResources → AmbrosiaResources inside the EV repo"
 idea from earlier the same day (dropped: it entangled new games with EV's process and open lanes).
 
 ## 1. Decision summary
@@ -98,7 +98,10 @@ so scaling is a shell concern plus an optional offline pass:
 3. **Optional per-game "HD art" pack**, generated offline (ML upscaler such as Real-ESRGAN for
    photographic backgrounds; xBRZ/hqx pixel-art scaler for glyph/tile strips), loaded through a
    HectorKit asset-overlay lookup that falls back to the original file, behind a preference, **outside
-   the replica gate**. A late polish item per game, after it plays. Never a runtime ML/shader path.
+   the replica gate**. Per game, after it plays — but **Ben expects this for every game** ("we will end
+   up doing a proper ML upscale for everything", 2026-10-03), so the overlay lookup and a reusable
+   offline upscale script belong in HectorKit tooling, planned once, not re-invented per game. Never a
+   runtime ML/shader path; the faithful integer-scaled originals remain the default.
 
 ## 5. Verification model
 
