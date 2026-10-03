@@ -63,6 +63,8 @@ Alg. Piece, Alg. Frame [HIGH for the art; rendered in review 1a] ⚑ corrected (
 `.HandleKeys` is called from `.HandlePlayerSprite` (handler l. 1199) only while `_DAT_100a06f0 == 0`,
 and returns early while `|PTR_DAT_100a0700| > 30`, while the potion-drink counter
 `_DAT_100a05b0 > 0` (which also zeroes the wand step and crouch), and while `_DAT_100a0570 > 0`.
+⚑ wave 2 (2026-10-04): the gates are the door-transit lock, the teleporter charge, the potion drink and the
+boss-grab counter — writers, readers and raw addresses in spells-detail-2 §1 [HIGH].
 Then, each frame:
 1. If USE (action 6) is up, **or** the selected slot is not a spell (`slot+8 == 0`), **or** the
    shield is raised (`*PTR_DAT_100a05e8 > 0`, the block counter of `.ShieldBlock`), the USE latch
@@ -72,7 +74,8 @@ Then, each frame:
    (`_DAT_100a0578 == 0 && _DAT_100a0574 == 0`):
    - magic `G+0xe < 1` → selection jumps to the first slot holding item 0 or 0x15 (dagger /
      Vorpal Dirk), `.MoveSelectedItemToFront`, `.UpdateStatusBar(1,1,0)`;
-   - else latch = 1, `_DAT_100a075c = 1`; if the wand step `_DAT_100a06d4` is 0 → cast flag
+   - else latch = 1, `_DAT_100a075c = 1` (⚑ wave 2 (2026-10-04): that write is dead — the item block entered
+     later in the same call clears it because the selected slot is a spell, spells-detail-2 §1); if the wand step `_DAT_100a06d4` is 0 → cast flag
      `_DAT_100a06ec = 1`, step = 3, `PTR_DAT_100a06e0 = 0`; if the step is 3 (wand still raised) →
      cast flag = 1; **steps 1, 2, 4, 5, 6 swallow the press** (latch set, no cast);
      `.MoveSelectedItemToFront`.
@@ -148,8 +151,10 @@ Power affects **only damage and the visual stack**; not speed, size, range, hit 
 1. **Damage ×p**: on the shot's second handler frame (age `+0x14c` goes −1 → 0 → 1; handler
    l. 5323–5333, raw `mullw` at 0x10059fc0) `+0xa4 *= p`. p is clamped to ≤ 5 in Setup, so the
    maximum is ×5 (Fireball 500, Ice Wall 1500, V Blade 750 per half). A shot that hits on its
-   first frame deals the base damage [MED: depends on whether a shot spawned during the player's
-   handler is handled that same frame].
+   first frame deals the base damage ~~[MED: depends on whether a shot spawned during the player's
+   handler is handled that same frame]~~ [HIGH] ⚑ wave 2 (2026-10-04): creation-frame hits always deal base damage;
+   a frame-2 hit is multiplied only if the shot was already handled in its creation frame, which
+   happens iff the sprite after the player in the active list has layer ≤ 11 (spells-detail-2 §4).
 2. **Follower stack**: Setup spawns `p − 1` followers (≤ 4) of type `id << 8` (power 0). Power-0
    sprites get no sprite-hit callback, no tile callback, gravity 0 (Setup l. 4991–4996). Each frame
    the main shot places follower k (k = 1..4, pointers `+0x1d4/+0x1d8/+0x1dc/+0x1e0`; the decompile's
@@ -210,10 +215,14 @@ place the followers.
 | 0x5a | `PICT 1116` (8 × 12×12) | 8 | `+0xa4 = 800`, or 0x578 (1400) with tint 0x10004 when `+0xf4` (Ziridium); `+0xa6 = 0`; invisible if `+0xf0 ≠ 0` | none |
 
 Light face is `PICT 810` (72×72) except ids 6/0x3c; lights are added only if the face passes the
-on-screen test (`face+0xe ≤ s+0x1b6 || s+0x1b8 ≤ face+0xa` → skip) [MED: fields not decoded] and
-removed when the shot leaves it. `NewParticle(a, b, pos, size, vx, vy, c, f)`: the meanings of
+on-screen test (`face+0xe ≤ s+0x1b6 || s+0x1b8 ≤ face+0xa` → skip) ~~[MED: fields not decoded] and
+removed when the shot leaves it~~ ⚑ wave 2 (2026-10-04): it is a **wall-tunnel** test, not an on-screen test — face
+`+0xa/+0xe` = opaque-bounds left/right, `+0x1b6/+0x1b8` = the tunnel clip; the light is skipped at age 1
+or removed at frame end (for good) only while the shot is entirely hidden in a tunnel (spells-detail-2 §2) [HIGH]. `NewParticle(a, b, pos, size, vx, vy, c, f)`: the meanings of
 `a`/`b` (colour/kind? gravity?) are not decoded here [LOW]; `s+0x84/+0x86` are zeroed in Setup.
-`FUN_1003f218` is an unnamed callee (accelerate along a 36-step direction) [MED].
+`FUN_1003f218` is an unnamed callee (accelerate along a 36-step direction) ~~[MED]~~ [HIGH] ⚑ wave 2 (2026-10-04): adds an
+impulse of 800 to the velocity in 10° direction `dir` (0 left, 9 down, 18 right, 27 up; raw jump table
+`0x100a5694`), aimed at 4 px above the player's centre, then per-axis cap 0x1450 (spells-detail-2 §3).
 
 **Liquids** (handler l. 5414–5444) [HIGH]: if the shot is in liquid (`+0x11c > 0`, set via the tile
 callback's `.HandleUnderWater`) and its id < 100 and ≠ 6: effect sprite type 5 at (x−8, y−12) with
@@ -262,7 +271,9 @@ Lifetime/flash/explode at `+0xa6` → physics.md §8.9 [HIGH there].
   `.PaintFrameWrap`, main l. 9400–9404); effect sprite type 2 at (trunk x−6, y−9), `+0x46 = 8`,
   light colour 0x42; `snd 302` 'statue hit' at 0x100; shot kill flag set directly (no
   `.KillPlayerShot`, so followers are **not** killed — they fly on, invisible, emitting
-  particles [MED]).
+  particles ~~[MED]~~ [HIGH] ⚑ wave 2 (2026-10-04): horizontally at the main's last vx, through walls (no tile
+  interaction), until an enemy consumes them; they can press Buttons; same for the level-bottom and
+  V-Blade ±500 kills (spells-detail-2 §5)).
 - Hitting a trunk sprite (Box class, type 0x2c8/0x2c9; `.HitPlayerShotSprite` handler l. 5630–5654):
   follow `+0x1d4` up to the top segment, add segment 0x2c9 at (top.x, top.y−16), link it
   (`top+0x1d4`), its `+0xa6 = 0x78 + parity`, raise the old top's `+0xa6` to ≥ 0x23; same effect,
@@ -297,7 +308,9 @@ physics.md §7). The bosses have no statue branch, so Statue hits them for 200·
 Hit routines are the enemy readers'].
 
 `.KillPlayerShot(s, sound, effect) @ 1005ac34` (main l. 45377–45521) [HIGH; raw checked]: kills the
-followers; no effect sprite when the face is off-screen. id 0: `snd 301` 'fireball hit new'
+followers; no effect sprite when the face is ~~off-screen~~ entirely hidden in a wall tunnel ⚑ wave 2 (2026-10-04)
+(the clip fields are this frame's only when called from a sprite collision; from the tile callback they
+read 0/32000 except on the age-1 frame — spells-detail-2 §2). id 0: `snd 301` 'fireball hit new'
 (Rand), effect type 0 at (x−8, y−12). ids 1–7, 0x3c: `snd 301`, effect type 5 (type 2 for id 4)
 at (x−5, y−12), light colour 0x21 (1, 2), 0x4d (3), 0x42 (4), unchanged for 5–7 (reads an
 uninitialised register when `effect == 0` [MED]). 0x50: hits left −1; at 0 `snd 424` 'rock crush'
@@ -390,7 +403,8 @@ Ground contact (`+0xce` or `+0xcd` set, not riding a platform `+0xdc`): count +1
 platform never ends the glide). Count > 12 at phase 0 → phase −23 (l. 1492). Stowing (l. 1595–1627):
 face 1050[|phase|>>2], vx = 0, gravity 0, vy = 0x100, y −= 2 px while phase < −16; at phase 0:
 a glider pickup 0xbea (`.SetupBonusSprite`, layer 2) is dropped at the player's position, cooldown
-180 frames, glider off, gravity 0x1b8, **x += 30 px, y += 32 px** (10 px if `PTR_DAT_100a04cc`),
+180 frames, glider off, gravity 0x1b8, **x += 30 px, y += 32 px** (10 px if `PTR_DAT_100a04cc` — ⚑ wave 2 (2026-10-04): the 15-frame "landed on a
+BG-tile surface" timer, spells-detail-2 §1),
 standard face and rect (0x26,0x22,0x3e,0x55).
 - **No other cancel**: the only writers of `_DAT_100a05e0` are `.ClearPlayerVars`,
   `.SetupPlayerSprite`, this stow, and the pickup (`tools/tocrefs.py 100a05e0`); water, damage and
@@ -404,21 +418,29 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 
 ## NOT RESOLVED
 1. The meaning of `NewParticle` args 1/2 (colour? gravity?) and of `s+0x84/+0x86` offsets in shot
-   particles; effect-sprite types 0/2/5/0x442 visuals (effects reader).
-2. On-screen test fields `s+0x1b6/+0x1b8` and face `+0xa/+0xe` that gate lights and impact effects.
+   particles; effect-sprite types 0/2/5/0x442 visuals (effects reader). ⚑ wave 2 (2026-10-04): INDEX items 15/28
+   (carried as spells-detail-2 NR 1); not this lane.
+2. ~~On-screen test fields `s+0x1b6/+0x1b8` and face `+0xa/+0xe` that gate lights and impact effects.
    (Narrowed: `+0x1b6/+0x1b8` are the left/right draw-clip edges in face-local px, physics §0.1 —
-   ⚑ corrected (review 1c, 2026-10-03) #6.)
-3. `_DAT_100a06f0`, `PTR_DAT_100a0700`, `_DAT_100a0570` (HandleKeys gates); `PTR_DAT_100a04cc`
-   (stow drop 10 vs 32 px); ~~`+0xcd` (second ground-contact byte);~~ `_DAT_100a075c` reader. (`+0xcd`
+   ⚑ corrected (review 1c, 2026-10-03) #6.)~~ → closed: spells-detail-2 §2 (wall-tunnel visibility test) ⚑ wave 2 (2026-10-04)
+3. ~~`_DAT_100a06f0`, `PTR_DAT_100a0700`, `_DAT_100a0570` (HandleKeys gates); `PTR_DAT_100a04cc`
+   (stow drop 10 vs 32 px); `+0xcd` (second ground-contact byte); `_DAT_100a075c` reader.~~ → closed:
+   spells-detail-2 §1 ⚑ wave 2 (2026-10-04). (`+0xcd`
    closed: grounded at frame start or landed on a sprite this frame — physics §0.1, synthesis ledger A5,
    raw `100368c4..c8` / `100379c4`.)
-4. Enemy shot 0x77b's identity; Box 0xb7c/0xb7d (2940/2941) roles; Bonus 0x517/0x51b `+0xb0`.
-5. `FUN_1003f218` (Boomerang steering) internals; whether same-frame handling of new shots occurs
-   (affects first-frame damage and follower lag by one frame).
-6. Whether a shipped scroll grants spell 7 (scroll-census reader).
-7. Trunk `+0xa6` use (Box reader); `.TurnIntoStatue` duration vs power (statue reader).
-8. Orphaned followers (Tree Trunk direct kills) and reuse of a dead follower's slot by a new sprite
-   while the main shot still writes to it — code allows both; effect in play unverified [LOW].
+4. ~~Enemy shot 0x77b's identity; Box 0xb7c/0xb7d (2940/2941) roles; Bonus 0x517/0x51b `+0xb0`.~~ →
+   closed by reference: spells-detail-2 §6 ⚑ wave 2 (2026-10-04)
+5. ~~`FUN_1003f218` (Boomerang steering) internals; whether same-frame handling of new shots occurs
+   (affects first-frame damage and follower lag by one frame).~~ → closed: spells-detail-2 §3, §4 (no
+   follower lag exists) ⚑ wave 2 (2026-10-04)
+6. ~~Whether a shipped scroll grants spell 7 (scroll-census reader).~~ → closed: none does (INDEX 11,
+   pickups-boxes §1.7) ⚑ wave 2 (2026-10-04)
+7. ~~Trunk `+0xa6` use (Box reader); `.TurnIntoStatue` duration vs power (statue reader).~~ → closed by
+   reference: spells-detail-2 §6 (lifetime; statue fixed 120 frames, power-independent) ⚑ wave 2 (2026-10-04)
+8. ~~Orphaned followers (Tree Trunk direct kills) and reuse of a dead follower's slot by a new sprite
+   while the main shot still writes to it — code allows both; effect in play unverified [LOW].~~ →
+   closed as code reading: spells-detail-2 §5 (four orphaning paths, orphan behaviour, allocator
+   condition for reuse); how often reuse happens in play stays open there (NR 3) ⚑ wave 2 (2026-10-04)
 
 ## Proposed additions to physics.md §0
 | off | type | meaning |
@@ -448,3 +470,4 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 | C10 | physics.md §4 glider | "air drag 20 on the glider"; glider hot rect | drag also on the ground; full glider model §5 (pitch gravity, wind scale, vy cap 2000, floor −2500) | §5 |
 | C11 | physics.md §7 (review 1a #5, adj. 2–3) | Bat "HP 100, 200"; "Statue/Box/Platform set +0x185"; Floater rect (0x17,2,0x38,0x5c) | Bat 1740 family 500 (`1007dcc0`), 1850 family 100 (`1007dde0`), insects 200 (`1007e144`); the Statue does **not** set `+0x185` (no store in `100664a8–100665bc`, `10043138–100431c4`; thaw −200 `1006656c–10066574`, `+0x130 = 0x78` `10043194`); shipped 1780 rect (0x23,1,0x3e,0x4b) `10081550–1008155c` | enemies-flyers, enemies-water-cave |
 | C12 | physics.md §2 water gravity (review 1a #2, adj. 4) | `max(0.7·g, 0x100)` in water | only when `+0x11c ≠ 0` at entry (`100375c8`); zeroed per frame (`100369ac`), so a first call each frame uses dry gravity; only a second same-frame call (Frog) or a direct `+0x11c` writer (Bonus 1055, 1350) takes the 0x100 branch | enemies-water-cave §0.1 |
+| — | (wave 2) | — | ⚑ wave 2 (2026-10-04): wave-2 corrections (S1..S4) are in spells-detail-2 "Corrections to the existing bank" | — |

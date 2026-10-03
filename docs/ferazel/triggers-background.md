@@ -61,8 +61,11 @@ Code: `.SetupButtonSprite @ 10070d30` (handler dump l. 13717–13754), `.HandleB
 
 **Faces** (`.InitButtonSprite`): 1320 ← PICT 1320 (84×12, 6 cells 14×12), 1321 ← PICT 1321 (84×12,
 6 cells 14×12), 1322 ← PICT 1322 (256×21, 8 cells 32×21). PICTs are unnamed. 1323..1329 get no
-face and no hot rect from Setup (inert if placed; none are) [MED: relies on the allocator's rect
-being empty].
+face and no hot rect from Setup (inert if placed; none are) ~~[MED: relies on the allocator's rect
+being empty]~~ [HIGH] ⚑ wave 2 (2026-10-04): `.MTNewSprite` clears all 0x1fc bytes before Setup (raw 100331b8..100331c0),
+Setup's type switch has no arm ≥ 0x52b (raw 10070d90..10070d98 → 10070df8), so the rect stays
+(0,0,0,0) and Toolbox `SectRect` never reports an overlap — never pressed; the Handle still forces
+the record's p4 to 0 within two frames unless p4 ≠ 0 at start **and** p1 == 1 (part 2 §8.6).
 
 **Hot rects** (Setup): 1320 `SetRect(0,−20,20,12)`; 1321 `SetRect(−4,0,16,12)`; 1322
 `SetRect(8,4,24,20)`. Layer 1. Handler/hit installed: Handle = `.HandleButtonSprite` (TOC
@@ -95,25 +98,37 @@ Census: 1322 p1=1 ×11, p1=0 ×11; 1320 p1=1 ×2.
 
 **Linkage (who reads a button).** Consumers name the button by its **placement record index**
 and test `rec(index).p4 == 1`. Every `hdr + index·16 + 0xe` read whose index is not the reader's
-own `s+0x48` was searched in both dumps (pattern `* 0x10 + 0xe`); exactly two consumers exist
+own `s+0x48` was searched in both dumps (pattern `* 0x10 + 0xe`); ~~exactly two consumers exist
 [HIGH for the reads; MED for "only two" — a read through another pointer form would escape the
-pattern]:
+pattern]~~ ⚑ wave 2 (2026-10-04): **three** consumers exist — the raw-listing search of part 2 §8.5 (every
+index ×16 `rlwinm …,0x4,0x0,0x1b` followed by a +0xe access, every record-walking loop, every
+`sthx`) found the Box spouts 1450..1453, which read through `lhax` on a +0xe base and so escaped the
+decompile pattern [HIGH: raw 1006e914..1006e950]. The search is complete for all address forms the
+binary uses [HIGH]:
 
 | consumer (Box class, owned by the Box reader) | code | rule |
 |---|---|---|
 | gate 2940 (0xb7c) — **not 2941**, see the next row | `.HandleBoxSprite` l. 13234–13280 | p1 ≥ 0: open ⇔ `rec(p1).p4 == 1`; p1 = −1: open ⇔ boss-defeated flag `*_DAT_1009fed0 == 1` (TOC users: the Setup and Kill routines of Warrior, Demon, Chief, Wizard, Xichra; `.KillDemon` sets it when its counter reaches 0, l. 21463; the other Kill writes per bosses.md §1.4, re-derived by review 1b, e.g. `.KillWarrior` 100887a4–100887fc [HIGH]); p1 = −2: open ⇔ countdown `iRam100a5110 > −20` (part 2 §4). Open: y −= 2 px/frame up to 100 px above its base `s+0x158`; closed: back down 2 px/frame |
 | weakened ice wall 2941 (0xb7d) — destructible, never a switch gate. ⚑ corrected (review 1b, 2026-10-03) #2 | `.HandleBoxSprite` raw 1006f564–1006f5b0; `.HitPlayerShotSprite` handler l. 5665–5672 | the open flag r19 is forced 0 for type 0xb7d unconditionally (`1006f568 cmpwi r0,0xb7d` / `1006f574 li r19,0x0`), so p1 is never consulted; when HP `+0xa4 < 1` (1006f570–1006f57c) the face explodes (`.ExplodeFaceIntoParticles`, 1006f59c) and `+0xe9 = 1` (1006f5a8). Damage: each player shot whose `+0xa4 == 300` hitting a 2941 with `+0x116 < 1` takes **0x50** HP off it, sets `+0xaa = 10` and invul `+0x116 = 10`, plays a pitched 3D sound (pitch 35000), and the shot is killed. Initial HP 300 and the Ice-Pick identity of the damage-300 hit: pickups-boxes.md §2.4.4, spells-items.md (→ held-item-melee.md) [HIGH for the gate/damage code; MED for what carries damage 300] |
 | block 1250..1279 (0x4e2..0x4ff) with p1 == 2 | `.HandleBoxSprite` l. 13306–13325 | solid + visible (rect (1,1,35,35), face) ⇔ `rec(p2).p4 == 1`, else rect empty and the "off" face |
+| spout 1450..1453 (0x5aa..0x5ad) — ⚑ wave 2 (2026-10-04) | `.HandleBoxSprite` raw 1006e914..1006e960 | when its timer `+0xa6` reaches 0: fires (enemy shot type `0x6e1 + own p4`) iff `rec(p1).p4 == 1` **or** `rec(p2).p4 == 1`; firing detail is the Box reader's (pickups-boxes §2.2, enemy-shots-and-damage §1.4) [HIGH for the test] |
 
-Census of the wiring (all levels): **22 of 24 buttons are referenced** — 19 by exactly one 2940 gate
-each; level 4 rec 57 by five 1250 blocks, level 4 rec 63 by four, level 11 rec 162 by five; 2
-unreferenced (level 4 recs 30, 31). Every referencing gate has p1 > 0 and every block's p2 target is a
+Census of the wiring (all levels): ~~**22 of 24 buttons are referenced**~~ **24 of 24** ⚑ wave 2 (2026-10-04) — 19 by exactly one 2940 gate
+each; level 4 rec 57 by five 1250 blocks **and spout 68**, level 4 rec 63 by four blocks **and spouts 67, 70**,
+level 11 rec 162 by five blocks; level 4 recs 30/31 (the "unreferenced" pair) are spout rec 28's p1/p2.
+Spouts 67/68/70 name record 0 as p2 and spout 183 names it as both p1 and p2 (record 0 of level 4 is
+a type-1401 record with p4 = 0 and no p4 writer → spout 183 never fires) [HIGH: part 2 §8.5 census]. Every referencing gate has p1 > 0 and every block's p2 target is a
 1320/1322 record [HIGH: fresh `Mlvl` census of all 24 levels]. ⚑ corrected (review 1b, 2026-10-03) #5
 (was "19 of 24 — 15 by one gate, 2 by three blocks each"). Special gates: p1 = −1 in the boss levels 5, 18, 25, 55 (one each);
 p1 = −2 once, level 40 rec 181, paired with the level's only 2907 timer trigger (rec 209, p1 = 300 →
 a 5-minute clock). 2940 with p1 = 0 (19 records: L18 ×4, L25 ×4, L45 ×3, L62 ×1, L67 ×7) read
 **record 0**, which in those levels is never a button → such gates stay shut unless record 0's p4 is 1
-[HIGH reading; the "decorative/closed door" intent is LOW]. The 10 type-2941 records (L30 ×2, L31 ×5,
+[HIGH reading; the "decorative/closed door" intent is LOW]. ⚑ wave 2 (2026-10-04): closed — **no code writes
+record 0's p4 for any of those record-0 types** (2940 ×3 levels, 1055, 1208; the complete p4-writer list
+is part 2 §8.5), so all 19 are permanently shut solids; 18 of them have their placement x at or within
+32 px beyond the level's left or right boundary (L18/L25 x −32/−31 and 2047/2048 of a 2048-px level, L45 x −30, L67 x −29..−28 and 893..900 of an
+896-px level), the 19th is L62 rec 0 reading itself. Intent (edge walls?) is UNDETERMINABLE from code
+[HIGH as-written; LOW intent]. The 10 type-2941 records (L30 ×2, L31 ×5,
 L62 ×3) also carry p1 = 0, but 2941 ignores p1 (row above): they are shoot-to-destroy ice walls.
 ⚑ corrected (review 1b, 2026-10-03) #2 (was "every 2941 reads record 0 and stays shut unless record 0's
 p4 is 1").
@@ -183,7 +198,8 @@ whose handler is not Background/Statue/Cannoned/Button/EnemyShot/Effect and whos
 enemies, boxes** and player shots of non-105/106 cannons. The captive's handlers are saved
 (`+0x1ec/+0x1f0/+0x1f4`) and replaced by `.HandleCannonedSprite @ 10058710`; it is pinned to the
 cannon centre (`s+0x1e4` = cannon), velocity 0, light removed; snd 484 'cannon load' (vol 0x97);
-cannon `s+0x154 = 6` [unused here]. Not captured: the dead player; a Bonus sprite with
+cannon `s+0x154 = 6` ~~[unused here]~~ (`10075354..10075358`) — ⚑ wave 2 (2026-10-04): write-only, no instruction in the
+binary reads +0x154 of a cannon (part 2 §8.1) [HIGH]. Not captured: the dead player; a Bonus sprite with
 `s+0x168 == 1`.
 
 **Firing** (`.HandleCannonedSprite`, handler dump l. 4640–4888): hold timer `s+0x130 = 15`,
@@ -201,10 +217,15 @@ Then: three smoke effects (Effect type 1090, part 2 §2) at `centre + 1.5·v/256
 cannon recoil `pos −= 1.6·v` (0x100a19b0 = 1.6) only when p1 ≥ 0; captive `pos += v`; if
 vy > 0 the stored velocity is `vx·0.7, vy·0.55` (0x100a19a8, 0x100a19a0); snd 483 'cannon
 shoot' (vol 0x100); original handlers restored; re-entry block `s+0x130 = −5` (player) /
-`−35` (others) — HitBackground refuses captives with `s+0x130 < 0` [HIGH for the writes; the
-re-increment of `s+0x130` was not traced — NOT RESOLVED]. Player: `_DAT_100a05b8 = 1` (the
+`−35` (others) — HitBackground refuses captives with `s+0x130 < 0` [HIGH for the writes; ~~the
+re-increment of `s+0x130` was not traced — NOT RESOLVED~~ ⚑ wave 2 (2026-10-04): `.StandardSpriteHandles` adds 1 per
+frame while negative (raw 10036894..100368a4), so the player can be recaptured after 5 frames, others
+after 35 — part 2 §8.1]. Player: `_DAT_100a05b8 = 1` (the
 launched flag, cleared on landing, physics §8.7), climb/other state globals cleared, camera
-re-centred. A captive of type 90 gets gravity 0x15e [HIGH; identity of type 90 not resolved].
+re-centred. A captive of type 90 gets gravity 0x15e [HIGH; ~~identity of type 90 not resolved~~
+⚑ wave 2 (2026-10-04): type 90 = player-shot id 0x5a (thrown fire/Ziridium seeds and Ring-of-Smiting blasts; Setup
+stores `+4 = (char)(type >> 8)`, handler l. 4931) — seeds launched by a cannon fall at 350 instead of
+250 (`10058da4..10058db4`); part 2 §8.1].
 
 ### 2.3 Springs 1150..1159 (extends physics §8.3)  [HIGH]
 Faces: PICTs 1150, 1151, 1152 (240×60, 4 cells 60×60); 1153 reuses the 1152 sheet mirrored
@@ -295,7 +316,10 @@ So a spike is dangerous only in its two most-extended frames. Census: 68 of 87 1
 p4 = 0/20/40/60/80 staggering.
 
 **Damage** (`.HitPlayerSprite` l. 4453–4462): `_DAT_100a0758 = 0` (climb state off, physics §8.3),
-`PTR_DAT_100a05f0 = 3` [meaning NOT RESOLVED]; if `s+0x116 == 0`: `HurtPlayer(0x70, blood 1,
+`PTR_DAT_100a05f0 = 3` ~~[meaning NOT RESOLVED]~~ ⚑ wave 2 (2026-10-04): the **no-cling timer** — wall-cling start in
+`.HitPlayerTileSprite` requires it to be 0 (`10054f24..10054f30`), −1/frame in `.HandlePlayerSprite`
+(`1004de9c..1004deb4`); with the climb flag cleared in the same store pair (`100583c8..100583dc`) a spike
+knocks the player off a wall for 3 frames (part 2 §8.2) [HIGH]; if `s+0x116 == 0`: `HurtPlayer(0x70, blood 1,
 0x3c, 0)`, `s+0x116 = 30` (`@ 100583f4..10058408`).
 
 ### 2.7 Water urchins 1855/1856  [HIGH; none placed]
@@ -354,7 +378,11 @@ fade-out; at 22 the player is moved: the destination is the **idle-table entry w
 equals p1** (idle table `DAT_100ac02c`, 0x220-byte entries, +0 used, +0xa x, +0xc y, +0xe record
 index — `.AddIdleSprite @ 10007d8c`), keeping the player's offset from the passage; camera snapped
 (`view = player − (322, 192)`, 90 `.FindUpperLeftCorner` passes), fade-in, `_DAT_100a05f8 = −15`,
-counter `= −22` [the counter's recovery to 0 and `_DAT_100a05f8`'s meaning are NOT RESOLVED].
+counter `= −22` ~~[the counter's recovery to 0 and `_DAT_100a05f8`'s meaning are NOT RESOLVED]~~
+⚑ wave 2 (2026-10-04): the counter climbs back −22 → 0 by the same +1 per **contact frame** with the destination passage
+(the player keeps its offset and is frozen: vx = vy = 0, no `.HandleKeys`), and `_DAT_100a05f8` is the door
+walk-in/walk-out face counter; the camera look-ahead `_DAT_100a0680` is zeroed at counts 21 and 22 —
+full timeline part 2 §8.2 [HIGH].
 **p1 = the paired passage's record index**: census 54/54 (2900) and 4/4 (2901) p1 values point
 at a record of the same type [HIGH]. **p2 = ambient darkness override** (`hdr+0x2706`,
 world-data §3.2): −1 → restore the level default `G+0x22` and clear `G+0x20`; 10 → 0 (full light);
@@ -421,4 +449,19 @@ cooldown `PTR_DAT_100a06cc`, sets p4 = 1; 2902 shows `STR# 500` string p1, other
 (destination = idle entry with record index = p1; mosaic transition, 120 camera passes;
 l. 4117–4180). Save point 1065 (l. 4181–). Nothing in the Background or Button class acts as a
 camera lock or a wind source: wind is the overlay-tile layer only (physics §6), so its MED
-orientation **cannot be settled from the sprite side**.
+orientation **cannot be settled from the sprite side**. ⚑ wave 2 (2026-10-04): settled from the overlay map and the
+raw impulse table — o1 = k blows toward k·10° counter-clockwise from screen-right (0 right, 9 straight
+up, 12 up-left); 2,885 of the 3,002 shipped wind cells (96 %) are o1 = 9 updrafts, all in levels 10 and 20 (part 2
+§8.4) [HIGH].
+
+## NOT RESOLVED
+
+⚑ wave 2 (2026-10-04): the list for both parts is consolidated in part 2 §5; every row this part
+contributed (part 2 §5 rows 2, 3, 6–10) is closed there with its evidence in part 2 §8. Rows 1 and 5
+(draw-effect modes, `.NewParticle` arguments) belong to INDEX item 15 and are not re-opened here.
+
+## Corrections to the existing bank
+
+⚑ wave 2 (2026-10-04): consolidated in part 2 §7 (wave-1 rows) and §7.1 (wave-2 rows, numbered W1..).
+The wave-2 corrections to **this** part are made in place above (each marked ⚑ wave 2) — the
+Button-consumer count (two → three) and the wiring census (22 → 24 of 24) were wrong here.
