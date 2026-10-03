@@ -45,7 +45,7 @@ import HectorShell
 
         let g = controller.g
         if g.lost {
-            // P1.8 (`AkiSplash`) — `_RandomProverbScreen()` belongs here; g.lost is never set before Phase 2.
+            AkiSplash.randomProverb(controller: controller)   // _RandomProverbScreen (g.lost is set from Phase 2 on)
         }
         g.lost = false
         // The customLost / tryAgainOK tail (`_CreateNewDialog(0x53)`, `_LoadCustomLevel`) is P3.6's.

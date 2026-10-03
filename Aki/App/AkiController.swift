@@ -3,9 +3,9 @@ import AkiCore
 import HectorShell
 
 /// `Controller` (method-map §1): the app delegate, window delegate and owner of `_g`, `_p`, the GWorlds
-/// and the shell window. Launch composes the map (P1.7) and starts the 0.05 s idle loop that draws it;
-/// sound/music (P1.6), splashes and `finishLaunch` (P1.8), menus (P1.9), Preferences (P1.11) and the
-/// lifecycle (P1.12) extend this class.
+/// and the shell window. Launch composes the map (P1.7), starts the 0.05 s idle loop that draws it and
+/// schedules `finishLaunch` (P1.8: shows the window, first-launch "welcome" splash); sound/music (P1.6),
+/// menus (P1.9), Preferences (P1.11) and the lifecycle (P1.12) extend this class.
 @MainActor final class AkiController: NSObject, NSApplicationDelegate, NSWindowDelegate, ShellInputHandler {
     let g: AkiG
     let store: GameSettingsStore
@@ -71,7 +71,21 @@ import HectorShell
         let timer = ShellIdleTimer(interval: 0.05) { [weak self] in self?.idleTimerFired() }
         idleTimer = timer
         timer.start()
+        perform(#selector(finishLaunch(_:)), with: nil, afterDelay: 0.5)
+    }
+
+    /// `-[Controller finishLaunch:]` @ 0x41d4, 0.5 s after launch: the main window (hidden at launch —
+    /// MainMenu.nib `visibleAtLaunch` 0) is shown only now, over the map the idle loop has already drawn;
+    /// on first launch (p+0x215) the flag is cleared and saved, then the "welcome" splash runs (no timeout).
+    /// The fullscreen branch (`_enterFullscreen` when p+0x212 is set) is P1.12's.
+    @objc func finishLaunch(_ sender: Any?) {
+        launched = true
         shell.windowedWindow.makeKeyAndOrderFront(nil)
+        if p.firstLaunch != 0 {
+            p.firstLaunch = 0
+            savePrefs()
+            AkiSplash.show(named: "welcome", timeout: 0, controller: self)
+        }
     }
 
     // MARK: Screens
