@@ -53,9 +53,14 @@ once a game ships.
 
 ## 4. Aki — scope and posture
 
-**Replica target:** Aki — Mahjong Solitaire as shipped (1.1.0 PPC in hand; **1.2.0 Universal
-Binary (2008) to be fetched from Macintosh Repository, id 33772, plus `aki_addons.sit` id 65479**
-— the 1.2 Intel slice is the preferred decompile and 1.1.0 vs 1.2.0 is diffed before the plan).
+**Replica target:** Aki — Mahjong Solitaire as shipped. Two originals in hand, and they are
+different programs: **1.1.0 (2004)** is Liquid Metal's Carbon C++ build on Matt Slot's toolkit,
+PPC-only, art in an 82-PICT resource file; **1.2.0 (2008)** is a **Cocoa/Objective-C rewrite**
+(classes `Controller`, `AkiView`, `AkiSplashWindow`, `LevelDescriptionWindowController`), i386+ppc,
+art as loose PNGs at the **same native sizes** (800x600 backgrounds, 237x181 previews, strip sheets),
+ASW frameworks + Sparkle, 17 levels, plain-text `.aki` custom levels (tile count, then `x y layer`
+per line) and a 36-level community pack. Both decompiles are oracles; where they disagree on a rule,
+1.1.0 is the game Ben remembers and 1.2.0 is the last word — bank the delta and let Ben arbitrate.
 
 In scope, 100%: splash; map screen with the twelve lanterns and progression; level-description
 dialogs (text lives in the Carbon nibs); the game screen (144 tiles, open-tile rule, red
@@ -65,6 +70,9 @@ Level Statistics; Preferences (music, sound, tile animation, level description, 
 no update check); the **Level Editor** and `.aki` (`LVLE`) custom-level files incl. "Play Custom
 Level…", layer buttons, nudge arrows, undo, 144-tile validation; three MP3 themes, AIFF effects,
 `tick.mp3`; English + Japanese `.lproj` strings where the data carries them.
+
+Level editors are in scope for every game (whole-game ports) but are the **last phase within each
+game**; Ben does not play them (ruling 2026-10-03).
 
 Out of scope, by preservation posture (one-line note, no hedging): the RT3 registration layer
 (game behaves as registered), the online version check, "Download Levels…" (dead server; the
@@ -78,6 +86,19 @@ each table reproduces the exact call sequence and tile count.
 
 **Logic oracle:** `ghidra/Aki_ppc.decompiled.c` (3503 functions, every game function named) and
 the 1.2 Intel dump once fetched. Rules oracle: the Aki Handbook. Feel oracle: Ben.
+
+## 4a. Display scaling and upscaling (ruling 2026-10-03, applies to every game in this repo)
+
+No higher-resolution art exists for any of these games (Aki 1.2's PNGs match the 2004 PICT sizes),
+so scaling is a shell concern plus an optional offline pass:
+
+1. **HectorShell native mode: integer scaling, crisp pixels** — the faithful default (800x600 → 3x =
+   2400x1800 on a 5K display, letterboxed). Every original pixel survives.
+2. **Fit-to-window with smooth filtering** when the window is not an integer multiple (fullscreen 3.6x).
+3. **Optional per-game "HD art" pack**, generated offline (ML upscaler such as Real-ESRGAN for
+   photographic backgrounds; xBRZ/hqx pixel-art scaler for glyph/tile strips), loaded through a
+   HectorKit asset-overlay lookup that falls back to the original file, behind a preference, **outside
+   the replica gate**. A late polish item per game, after it plays. Never a runtime ML/shader path.
 
 ## 5. Verification model
 
@@ -93,6 +114,12 @@ Honesty gates (Ben only, feel): does it look and play like Aki — splash, map, 
 editor. Unreachable defects are carries, not gates (EV D67 carried over).
 
 ## 6. Sequencing (each a plan of its own)
+
+**Parallel lane (own session, ruling 2026-10-03): RE-bank the whole hit list up front** — Aki 1.2
+(Intel), Bubble Trouble X (dump exists), Ferazel's Wand (PEF), Deimos Rising (PEF), Cythera (PEF),
+pop-pop (stripped UB). Output: `docs/<game>/` topical banks + `INDEX.md` per game, same discipline as
+EV's `docs/ghidra/` (confidence-labelled code readings; nothing is behaviour-verified until Ben's
+eyes). Maelstrom needs no RE: the GPL 3.0.x source is upstream. Trigger in `docs/RESUME.md`.
 
 0. **Kit lift** — create HectorKit from the EV files + tests; green at floor. Fetch Aki 1.2 +
    add-ons; census + Ghidra on the Intel slice; diff vs 1.1.0; bank findings in `docs/aki/`.
