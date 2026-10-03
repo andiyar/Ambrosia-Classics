@@ -62,6 +62,10 @@ final class RandomTests: XCTestCase {
         // n = 0x10000, r = 0x8000 → p = 0x80000000 > 0x7fffffff → += 0xffff → arithmetic >> 16 = −32768,
         // (0 + −32768) & 0xffff = 32768: the branch no game range reaches, kept and pinned here.
         XCTAssertEqual(fast(0, 0xffff, raw: 0x8000), 32768)
+        // Review 2026-10-03: the case above gives 32768 with OR without the branch (p's low half is zero), so
+        // it does not pin it. This one does: n = 0xffff, r = 0xffff → p = 0xfffe0001 > 0x7fffffff → += 0xffff
+        // = 0xffff0000 → >> 16 = −1 → & 0xffff = 65535; without the branch: −2 → 65534.
+        XCTAssertEqual(fast(0, 0xfffe, raw: 0xffff), 65535)
     }
 
     /// FILM 1 level construction starts the first jewel with `fast(1,14)`, `fast(1,9)` → 2, 2
