@@ -36,8 +36,6 @@ listed, nothing behaviour-verified until Ben's eyes). Games, in this order:
  4. Deimos Rising 1.0.6 (PEF, …/DeimosRising/Deimos Rising 1.0.6 (volume)/Deimos Rising/): Pak format,
     sprite/sound containers, wave scripting.
  5. Cythera 1.0.4 (PEF, …/RPG/Cythera/Cythera (installed)/files/): Cythera Data format, .ai scripts.
- 6. pop-pop 1.0.4 (stripped i386; strings + data formats only unless symbols appear).
-Maelstrom: no RE — note the GPL 3.0.x upstream source as the oracle.
 
 RULES: Ghidra headless per ghidra/README.md (reuse existing dumps; new dumps + binaries stay git-ignored);
 Opus implementers for each game's bank, a Fable reviewer per bank that reports EVERYTHING with confidence
