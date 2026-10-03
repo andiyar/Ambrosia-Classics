@@ -11,7 +11,10 @@ extension GameState {
     /// `max (w7) <= active` → return; the first free slot of 30 (state byte 0), none → return; `gNumNormalBlocks < 1`
     /// re-tested (the original repeats gate 2 here). Then `c = GetRandomFast(0,15)`, `r = GetRandomFast(0,10)` and
     /// the forward row-major scan from (c+1, r) — col wraps 15 → 0 with row + 1, row wraps 10 → 0 — to the first
-    /// normal bubble (10); the start cell is tested last. The enemy: rect = prevRect = the cell, tier 4, state 2,
+    /// normal bubble (10); the start cell is tested last. With `gNumNormalBlocks` ≥ 1 but no normal bubble in the
+    /// maze the original's scan loops forever (a hang); the gates make that unreachable in a consistent world (the
+    /// count tracks the maze), so after all 176 cells the replica records `.originalWouldAbort` and returns with no
+    /// other state change beyond the two cell draws already made. The enemy: rect = prevRect = the cell, tier 4, state 2,
     /// stateStart = frame, marker 0x14, `dir = GetRandomFast(1,4)`, aligned, `+0x42 = 1`, col/row, offsets 0,
     /// lastPop = frame. Pool: w18…w23 all zero → w18 = 1; `do i = GetRandomFast(0,5) while pool[i] == 0`;
     /// `pool[i]--`; type i+1, sprite set 0x1b/0x1c/0x1d/0x1e; anim frame 1 for the starfish, else by dir 1→1,
@@ -63,10 +66,14 @@ extension GameState {
                 c = 0
                 col = 0
             }
+            if maze.cells[col + row * 0x10] == CellCode.normal { break }
             scanned += 1
             // `gNumNormalBlocks` ≥ 1 with no normal bubble in the maze: the original spins here forever.
-            precondition(scanned <= Maze.byteCount, "NewEnemy: no normal bubble to lay in — the original hangs")
-        } while maze.cells[col + row * 0x10] != CellCode.normal
+            if scanned == Maze.byteCount {
+                pendingStops.insert(.originalWouldAbort("CheckNewEnemies: no normal bubble — original hangs"))
+                return
+            }
+        } while true
 
         var e = enemies[slot]
         e.rect = QDRect.cell(col: col, row: row)

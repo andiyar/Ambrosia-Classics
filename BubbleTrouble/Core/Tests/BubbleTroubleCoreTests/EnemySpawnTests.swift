@@ -71,7 +71,12 @@ final class EnemySpawnTests: XCTestCase {
     }
 
     /// Research note 29: pool words 18…23 all zero → word 18 := 1, then the `(0,5)` rejection loop can only accept
-    /// i = 0 → a piranha, and the pool is all zero again.
+    /// i = 0 → a piranha, and the pool is all zero again. Seed 7: `(0,15)` = 12, `(0,10)` = 6, `(1,4)` = 3,
+    /// `(0,5)` = 1 (rejected), `(0,5)` = 0 (accepted) → 5 draws.
+    ///
+    /// Also: `gNumNormalBlocks` ≥ 1 (the `testWorld` 100) with no normal bubble in the maze — the original's
+    /// `_NewEnemy` scan loops forever; the replica records `.originalWouldAbort` after the two cell draws and
+    /// allocates nothing.
     func testPoolFallbackWord18() {
         var maze = Self.emptyMaze()
         maze[2, 3] = CellCode.normal
@@ -88,7 +93,20 @@ final class EnemySpawnTests: XCTestCase {
         XCTAssertEqual(Array(state.levelRecord.words[18...23]), [0, 0, 0, 0, 0, 0])
         XCTAssertEqual(state.numEnemiesActive, 1)
         XCTAssertEqual(state.blocks[0].frame, 1)
-        XCTAssertGreaterThanOrEqual(state.rng.drawCount, 4, "(0,15) (0,10) (1,4) + at least one (0,5)")
+        XCTAssertEqual(state.rng.drawCount, 5, "(0,15) (0,10) (1,4) + (0,5)×2 (1 rejected, 0 accepted)")
+
+        var hung = GameState.testWorld(maze: Self.emptyMaze(), seed: 7, pool: [0, 0, 0, 0, 0, 0])
+        XCTAssertGreaterThanOrEqual(hung.numNormalBlocks, 1)
+        let mazeBefore = hung.maze
+        hung.checkNewEnemies()
+        XCTAssertEqual(hung.pendingStops, [.originalWouldAbort("CheckNewEnemies: no normal bubble — original hangs")])
+        XCTAssertEqual(hung.rng.drawCount, 2, "only the (0,15) (0,10) cell draws precede the scan")
+        XCTAssertTrue(hung.enemies.allSatisfy { $0.state == 0 })
+        XCTAssertTrue(hung.blocks.allSatisfy { $0.state == 0 })
+        XCTAssertEqual(hung.numEnemiesActive, 0)
+        XCTAssertEqual(hung.numNormalBlocks, 100)
+        XCTAssertEqual(hung.maze, mazeBefore)
+        XCTAssertEqual(Array(hung.levelRecord.words[18...23]), [0, 0, 0, 0, 0, 0])
     }
 
     /// Research note 30 / enemies-ai.md §2, with LEVL w10 (pre-egg delay) = 10 and w8 (egg time) = 50 set
@@ -153,7 +171,9 @@ final class EnemySpawnTests: XCTestCase {
         case .right: base = 10
         case nil: base = 0
         }
-        XCTAssertTrue((base...(base + 2)).contains(e.animFrame), "frame \(e.animFrame) in \(base)…\(base + 2)")
+        XCTAssertEqual(e.direction, .up, "seed 3: (1,4) = 1")
+        XCTAssertEqual(base, 1)
+        XCTAssertEqual(e.animFrame, 3, "up cycle 1…3 from 1, 5 advances: 2 3 1 2 3")
         XCTAssertEqual(e.animTick, 1, "16 ticks: 5 wraps (15) + 1")
     }
 
