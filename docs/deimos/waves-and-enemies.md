@@ -65,7 +65,9 @@ Worked decode — `xxd -l 64 "$D/Game/leve/Level 07[le07].leve"`:
 [HIGH — bytes + cipher of pak-format.md §3]
 
 Spawning (engine-loop.md §5): an object spawns when the scroll row `top − 64` equals its yLoc
-(`FUN_10033090`); `grnd` objects get x −= 32 (`FUN_10035900`); each object becomes an "entity
+(`FUN_10033090`); objects whose unit is `isGroundBased` (unit+8 == `grnd`) get x −= 32
+(`FUN_10035900`) ⚑ corrected (wave 1, 2026-10-03): was "`grnd` objects get x −= 32" — see level-scroll-objects.md §6.2
+(the placement `#layer_ID` is unused; all 565 placements agree, so behaviour is unchanged); each object becomes an "entity
 group" (0xbc bytes) holding the unit, position, heading and the two flags. [HIGH]
 
 Placement census (Python over the 12 decoded levels): 565 placements (`grnd` 353, `air ` 212),
@@ -230,17 +232,23 @@ Per tick, for every entity group and entity (code reading, trimmed to the decisi
 5. If the state has active rules (+0x24 ≥ 1) → `FUN_10015550` (below), which may switch state.
 6. `statePauseVerticalScrolling` of any updated entity makes `FUN_10033850` return 1 → the
    caller stops the scroll this tick (`FUN_1000ffe0`), else scroll resumes (`FUN_1000ffc0`).
-7. Visibility/tint/scale targets set from the state; movement `FUN_10015930`/`FUN_10015280`/
-   `FUN_10015b40` (not read); ground-obstacle collision; owner link/lock/orbit
+7. Visibility/tint/scale targets set from the state; animation step `FUN_10015930`, motion
+   controller `FUN_10015280`, **state spawn-set executor `FUN_10015b40`** (every on-screen entity,
+   controllers included) ⚑ corrected (wave 1, 2026-10-03): was "movement `FUN_10015930`/`FUN_10015280`/`FUN_10015b40` (not
+   read)" — see units-movement.md §1, spawn-and-waves.md §2.3, bosses.md §3.3; ground-obstacle collision; owner link/lock/orbit
    (`FUN_10037130/7230/7350`); off-screen culling `FUN_10012ca0(entity, 0x80, 1)` (128-px margin);
    `stateDestructIfVerticalScrollingNotPaused` → destroy when scrolling resumes.
 8. Player collision (state `Collides` + `CollidesWithPlayers`, unit not `harmlessToPlayers`,
    entity inside the game area with 32-px slack): bounding boxes, then `FUN_10042f80`
-   (pixel/shape test, not read) → if the unit is not a pickup (`pickup_Type_ID` == none):
-   player takes the hit (`FUN_10026c90`), entity takes `Player_ImpactDamageToEntities` (flli 161
+   (strict circle overlap `dist < rA + rB`) → if the unit is not a pickup (`pickup_Type_ID` == none):
+   player takes the hit (`FUN_10027100`), entity takes `Player_ImpactDamageToEntities` (flli 161
    = 100) via `FUN_10014f10`; pickups go to `FUN_10037580` and are destroyed on success.
+   ⚑ corrected (wave 1, 2026-10-03): was "(pixel/shape test, not read)" and "player takes the hit (`FUN_10026c90`)" —
+   see damage-health-death.md §2.1, §2.3, §5.2 (`FUN_10026c90` only fetches the player index).
 9. Motion-blur trail emission, ground-accuracy crosshair test (`FUN_1003bab0`), obstacle
-   creation, spawn sets `FUN_10036cf0(entity, gameTime)` for colliding entities.
+   creation, entity↔entity collision + mutual damage `FUN_10036cf0(entity, gameTime)` for
+   entities whose state Collides ⚑ corrected (wave 1, 2026-10-03): was "spawn sets `FUN_10036cf0(entity, gameTime)` for
+   colliding entities" — see damage-health-death.md §2.5, spawn-and-waves.md §7 (spawn sets run in step 7).
 [MED overall — control flow read; most callees unnamed; step 4 "Delete"/"Destroy" strings HIGH]
 
 Rules `FUN_10015550 @ 10015550`: for r = 0..4, skip if rule unit = `none`; the unit must exist
@@ -310,16 +318,22 @@ Shuriken group at the top centre (208 = 416/2) every ~2 s for 300 ticks, pauses 
 500 more, waits 130–140 and deletes itself (scrolling resumes). The file lists 6 states; the
 order of state 4/5 in the file differs from execution order because transitions are by name.
 [MED — semantics of RateMin/Max and AbsoluteCoordinates from key names + this consistent
-example; the spawn-set executor `FUN_10036cf0` was not read]
+example; the spawn-set executor `FUN_10036cf0` was not read] ⚑ corrected (wave 1, 2026-10-03): was "executor
+`FUN_10036cf0` … not read" — the executor is `FUN_10015b40` (spawn-and-waves.md §2, HIGH); exact
+emission is 3 groups in "Pause, Spawn Shurikens" and 5 (rarely 4) in "Spawn Shurikens", the first
+on the entry tick, each 10–11 Shurikens staggered 9–16 ticks — see spawn-and-waves.md worked example.
 Groups (`FUN_10033220` spawn request → `FUN_100369f0` size → `FUN_10035bf0` → `FUN_10035cd0`
 per member):
 - size: `min = max(numInGroupMin, 1)`, clamped to `numInGroupMax`; if min ≠ max a random draw
-  (`FUN_10046580()` — arguments dropped by the decompiler, presumably (min, max)) [MED];
+  (`FUN_10046580()` — arguments dropped by the decompiler, presumably (min, max)) [MED]
+  ⚑ corrected (wave 1, 2026-10-03): was MED — draw is `R(min′, max)` [HIGH], see spawn-and-waves.md §3.1;
   then each of the n members is removed unless `appearsPercent == 100`, or
   `appearsPercent != 0 && appearsPercent >= Random(0,100)` [HIGH];
 - members are created at once but each gets a spawn countdown (entity+0xb0) equal to the running
   sum of `groupDelayMin` (if min == max) or `Random(groupDelayMin, groupDelayMax)` — i.e. a
-  staggered column [HIGH; the random's args dropped → MED for its range];
+  staggered column [HIGH; the random's args dropped → MED for its range] ⚑ corrected (wave 1, 2026-10-03): was MED for
+  the range — args `R(groupDelayMin, groupDelayMax)` from `10035fb8`, and the first member also
+  draws [HIGH], see spawn-and-waves.md §3.2;
 - every member starts in the unit's first state (`FUN_100146f0(…, unit + 0x97c, …)`;
   0x97c = 0x4e0 + 0x49c = state 0 `stateName_STR`) [HIGH];
 - member placement `FUN_10037930(group, entity) @ 10037930`, called unconditionally by
@@ -342,6 +356,8 @@ per member):
   `fabs f0,f31 (|+0x260|); lfs f1,0x10(r3); frsp f2,f0; bl 0x100465e0` radius,
   `fmadds f0,f3,f1,f0` = cx·r + gx; MED for which component of `FUN_10042b30`'s vector is x
   (its helpers `FUN_10042f00`/`FUN_10042ee0` decompile empty — table lookups not read)]
+  ⚑ corrected (wave 1, 2026-10-03): was "MED for which component … is x" — x = sin h, y = cos h [HIGH], see
+  damage-health-death.md §1.
   ⚑ corrected (review 2026-10-03) #2: closes NOT RESOLVED #21 (INDEX) / §8 item 3 below.
 - `doNotSpawnIfTypeAlreadyExists` (+0x118) suppresses the request if one exists;
   `canBeSpawnedOnlyWhenPlayersActive` (+0x12a) needs an active player [HIGH];
@@ -378,6 +394,9 @@ Level %i" (G_WeaponHandler.cc) show availability is filtered by level with
 default; Photon Beam "cannot be overloaded" ↔ `powerup_Air_OverloadTime 0`. Bombs:
 `WepHandler_DefaultNumBombs` 1, `WepHandler_MaxNumBombs` 8 (flli 151/152, `FUN_1003beb0`).
 [HIGH for values; MED for type/default semantics; weapon firing/power-up code NOT RESOLVED]
+⚑ corrected (wave 1, 2026-10-03): was "Bombs: DefaultNumBombs 1, MaxNumBombs 8" and "weapon firing/power-up code NOT
+RESOLVED" — flli 151/152 give a bomb **salvo size** min(sector + F151 − 1, F152) = min(sector, 8)
+(weapons-projectiles.md §2.7); fire/power-up/overload/launch → weapons-projectiles.md §2–§3.
 
 ## 7. Scoring
 - Kill score: when a unit is destroyed by a player (`FUN_10014f10` damage path),
@@ -395,34 +414,52 @@ default; Photon Beam "cannot be overloaded" ↔ `powerup_Air_OverloadTime 0`. Bo
   Initial threshold/step values NOT RESOLVED (set outside this function); with threshold 10000
   and step 0 this yields 10000, 40000, 80000, 130000, … — the guide's "10,000 then 30,000 …
   then another 40,000" wording is compatible only if read as increments. [MED]
+  ⚑ corrected (wave 1, 2026-10-03): was "Initial threshold/step values NOT RESOLVED" — threshold =
+  `life_InitialRequiredScore` 10000, step 0, set by `FUN_10026cc0` [HIGH], see scoring-bonuses.md §3.2.
 - End-of-level coin bonus (`FUN_10027670`): coinValue = flli 171 (100) if flli 170 == 0 else
   sector × flli 171; bonus = coins × coinValue (player+0x1f0); the tally animation step
   (player+0x1f4) = max(bonus × flli 200 (0.02), flli 199 (100)). [MED]
+  ⚑ corrected (wave 1, 2026-10-03): was "coins × coinValue" — the bonus is money (held in coin units, $) × 100 ×
+  multiplier, paid in max(2·money, 100) steps [HIGH], see scoring-bonuses.md §6.5.
 - Ground accuracy (`FUN_100072c0`, `FUN_100075e0`): tiers every flli 188 (5) percent worth
   5000/2000/1000/500/250/0 (flli 189–194); 100 % = `Game_GroundAccuracyCount_MissionBonus`
   100000 (flli 205) + sound `miac`. [MED — consumers identified by flli keys, arithmetic not read]
+  ⚑ corrected (wave 1, 2026-10-03): was "100 % = MissionBonus 100000 + miac" — a 100 % level gives tier 1
+  (5000 × sector) + sound `acbo` + the reward flag; the mission bonus is 10 × 100000 raw, once,
+  only when every level of a run started at sector 1 ended at 100 % [HIGH], see scoring-bonuses.md §6.3–§6.4.
 - Random bonus on destruction (`FUN_10016300`): cumulative percent table flli 209–217
   (70,78,82,84,87,91,95,98,100) selects idli objects 25–34 `RandomBonus_1..10`; flli 218 (10)
   and 219 (3: minimum level for the highest bonus) also read. [MED]
+  ⚑ corrected (wave 1, 2026-10-03): was "flli 218 (10) and 219 (3: minimum level for the highest bonus)" — 218 is the
+  reward-armed upgrade threshold (r < 10 → multiplier pickup once after a 100 % level), 219 the
+  minimum sector for rb09/rb10 [HIGH], see scoring-bonuses.md §7.
 - Penalties/bonuses from data: Hospital `score_INT -10000`; Baccula 10000;
   `Player_DefenceBonusBaseAmount` 2000 (flli 184, "Shield Bonus" for no damage, per guide). [HIGH
   values / LOW for the defence-bonus formula]
 
 ## 8. NOT RESOLVED (this file)
-1. Movement model: `stateMaxSpeed/Delta/HoldMaxSpeed/Hunts/CyclicMotion/Flee*` executors
-   (`FUN_10015930`, `FUN_10015280`, `FUN_10015b40`) — speeds' units (px/tick) unconfirmed.
-2. Spawn-set executor `FUN_10036cf0` (rate, volley, delay, offsets, absolute coords, heading).
+1. ~~Movement model: `stateMaxSpeed/Delta/HoldMaxSpeed/Hunts/CyclicMotion/Flee*` executors
+   (`FUN_10015930`, `FUN_10015280`, `FUN_10015b40`) — speeds' units (px/tick) unconfirmed.~~
+   → units-movement.md §1–§8 (px/tick, HIGH). ⚑ corrected (wave 1, 2026-10-03)
+2. ~~Spawn-set executor `FUN_10036cf0` (rate, volley, delay, offsets, absolute coords, heading).~~
+   → executor is `FUN_10015b40` (spawn-and-waves.md §2.2–§2.6); `FUN_10036cf0` is collision. ⚑ corrected (wave 1, 2026-10-03)
 3. ~~Group member placement offsets (`xOffsetMin/Max`, `yOffsetMin/Max`, `randomiseInitialLoc`).~~
    Resolved — §4 "member placement" (`FUN_10037930`). ⚑ corrected (review 2026-10-03)
-4. Rule condition callees `FUN_10034ee0` (tracking), `FUN_10035070` (active), `FUN_10017ef0`.
+4. ~~Rule condition callees `FUN_10034ee0` (tracking), `FUN_10035070` (active), `FUN_10017ef0`.~~
+   → spawn-and-waves.md §6, units-movement.md §5.8. ⚑ corrected (wave 1, 2026-10-03)
 5. ~~`_DAT_100df43c` string compared in the timer step (likely the "no change" marker).~~
    Resolved — `"none"`, §3 step 4. ⚑ corrected (review 2026-10-03)
-6. Collision shape test `FUN_10042f80`; damage formula `FUN_10014f10` (uses flli 167
-   Entity_HitDelay) and player hit `FUN_10026c90` (shield % per hit).
-7. Player physics and crosshair (`FUN_10028170`), weapon fire/power-up/overload logic.
+6. ~~Collision shape test `FUN_10042f80`; damage formula `FUN_10014f10` (uses flli 167
+   Entity_HitDelay) and player hit `FUN_10026c90` (shield % per hit).~~ → damage-health-death.md
+   §2.1, §3, §5.2 (player hit = `FUN_10027100`). ⚑ corrected (wave 1, 2026-10-03)
+7. ~~Player physics and crosshair (`FUN_10028170`), weapon fire/power-up/overload logic.~~ →
+   player-physics.md §2–§3, weapons-projectiles.md §2–§3. ⚑ corrected (wave 1, 2026-10-03)
    (Partly read since: the input→velocity block of `FUN_10028170`, engine-loop.md §8; the air
    power-up/overload state machine `FUN_1003c0d0` and the launch function `FUN_1003c4f0` are
    identified in function-roles.md §1 but their arithmetic is not written up.) ⚑ corrected (review 2026-10-03)
-8. Initial extra-life threshold/step; exact coin-bonus and accuracy arithmetic.
+8. ~~Initial extra-life threshold/step; exact coin-bonus and accuracy arithmetic.~~ →
+   scoring-bonuses.md §3.2, §6.3–§6.5. ⚑ corrected (wave 1, 2026-10-03)
 9. Whether `numStates`>14 or rule counts other than 5 occur in any mod data (engine allows 1–20
    states; rules loop reads `#stateNumRules_INT` but the evaluator scans exactly 5).
+   ⚑ narrowed (wave 1, 2026-10-03): the parser has no cap on rules/states and accepts 0 states
+   (assert only < 0 or > 20) — unit-def-struct.md §2.5.

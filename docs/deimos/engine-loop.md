@@ -173,17 +173,26 @@ Claims:
   the visible 416-wide window is offset horizontally inside the 480-wide map by up to ±32
   (`FUN_100100b0`: offset `_DAT_100e0144` clamped to [-32, 31], moved ±1 per call;
   `FUN_10010120` draws from x = offset+32). [HIGH for the clamp; MED that the player's x drives it]
+  ⚑ corrected (wave 1, 2026-10-03): was "MED that the player's x drives it" — the shift is driven by each active
+  player's left/right **input** (not the ship's x), ±1 px per tick, reset per level [HIGH], see
+  player-physics.md §2.5, level-scroll-objects.md §5.
 - Vertical scroll `FUN_10010220`: each logic tick the window top `_DAT_100e5acc` decreases by the
   scroll speed `_DAT_100e0128` (set to **1** by `FUN_1000ffc0`, 0 by `FUN_1000ffe0`), so the
   map scrolls **1 pixel per tick** from the bottom (row 3600-480) towards row 0. When the window
   top reaches 0 the level-end flag `DAT_100e0148` is set (`FUN_10010000`). [HIGH for the -1/tick;
   MED for initial top = 3120 (from `_DAT_100e5acc < 1` clamp logic and VisibleGameHeight)]
+  ⚑ corrected (wave 1, 2026-10-03): was "When the window top reaches 0 the level-end flag … is set" and "MED for initial
+  top = 3120" — the flag is set when the progress counter (starts 481, +1 per scrolled px)
+  reaches the RECT bottom 3600, i.e. at window top = **1** (minimum 3119 scroll ticks); initial top
+  3120 is HIGH (`FUN_1000fa90`, listing `1000fb38`) — see level-scroll-objects.md §2–§3, bosses.md §2.3.
   At 30 ticks/s a level lasts ≥ 3120/30 = 104 s plus every scroll pause. [MED — arithmetic]
 - Level objects spawn when the scroll reaches them: `FUN_10010000` calls
   `FUN_10033090(_DAT_100e5acc - 0x40)`, which spawns every pending level object whose `yLoc`
   equals that row exactly, i.e. 64 px above the visible top. Ground-layer objects have their x
   shifted by −32.0 (`*(float*)(_DAT_100df440+0xc)` = 32.0, read from the memory image) in
-  `FUN_10035900`. [HIGH]
+  `FUN_10035900`. [HIGH] ⚑ corrected (wave 1, 2026-10-03): was "Ground-layer objects" — the shift is keyed on the
+  unit's `isGroundBased` (unit+8 == `grnd`), not the placement `#layer_ID`; the spawn row enters
+  as world y −64 — see level-scroll-objects.md §6.2, §7.
 - Render layers (`FUN_10012fa0`, draw-layer 4CC → layer number): `defa` → 3 (ground) / 7 (air,
   by entity flag +0x19), `grou` 3, `grhi` 5, `ailo` 7, `aihi` 8, `plwe` 9, `play` 10, `plsh` 11,
   `plef` 12, `plui` 13, `atmo` 14, `hud ` 15; shadows → layer 1 offset by Shadow_X/Y (flli
@@ -360,6 +369,17 @@ Per created entity the order of draws is: `FUN_10037930` placement (int and/or f
 (int) — `FUN_10035cd0` calls them in that order (dump: `FUN_10037930(param_1,iVar3);
 FUN_10037b50(...); FUN_100146f0(iVar3,1,…+0x97c,…)`). A replica must keep the call order
 identical for films to replay. [HIGH for the order of the three calls]
+⚑ corrected (wave 1, 2026-10-03): was "placement → speed → heading tolerance → state-0 timer" as the whole per-entity
+order — incomplete. Full order per member: D1 heading tolerance (int, conditional, before
+placement) → `FUN_10037930` → `FUN_10037b50` (speed; tolerance only in its default-heading branch)
+→ `FUN_100146f0` state 0 (timer, frame, scale tolerance, flee floats, `FUN_10017cb0` per set
+rate → volley → delay) → group delay `R(groupDelayMin, groupDelayMax)` (first member included) →
+`FUN_10037ed0` (cyclic, conditional); group size/appears draws in `FUN_100369f0` come first and
+`FUN_10015b40` re-arms sets delay → volley → rate — see spawn-and-waves.md §3.2, §9. Further int
+RandomRange consumers missing from the table above: `FUN_100269a0` draws `R(400,2000)` per in-game
+player at every level start (player-physics.md §4.2); `FUN_10033850` draws the motion-blur
+interval per qualifying entity per tick and `FUN_100431f0` draws `R(0,99)` twice at app init
+(damage-health-death.md §1, NR 7/8; INDEX #33).
 
 ## 10. Preferences and high scores (U_Prefs.cc)
 File: System Folder `Preferences` (`FindFolder(kOnSystemDisk, 'pref')`), name Pascal
