@@ -6,7 +6,7 @@ import HectorShell
 /// and the shell window. Launch composes the map (P1.7), starts the 0.05 s idle loop that draws it and
 /// schedules `finishLaunch` (P1.8: shows the window, first-launch "welcome" splash); sound/music (P1.6),
 /// menus (P1.9), Preferences (P1.11) and the lifecycle (P1.12) extend this class.
-@MainActor final class AkiController: NSObject, NSApplicationDelegate, NSWindowDelegate, ShellInputHandler {
+@MainActor final class AkiController: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation, ShellInputHandler {
     let g: AkiG
     let store: GameSettingsStore
     var p: GameSettings                                        // `_p`
@@ -20,6 +20,9 @@ import HectorShell
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
     private var idleTimer: ShellIdleTimer?                     // ivar 0x30
+    /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
+    /// rules (Known delta 3). P2.11 and P3.4–P3.6 remove tags as their commands are built.
+    static var notYetBuilt: Set<Int> = [3, 4, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19]
 
     init(store: GameSettingsStore = GameSettingsStore()) {
         g = AkiG()
@@ -43,6 +46,11 @@ import HectorShell
         #endif
         p = store.load()                                       // _Initialize: _LoadPrefs
         self.assets = assets
+        do {
+            NSApp.mainMenu = try AkiMenus.build(controller: self)   // NSMainNibFile = MainMenu.nib
+        } catch {
+            fatalError("Aki: cannot read MainMenu.nib: \(error)")
+        }
         do {
             gworlds = try AkiGWorlds(assets: assets)           // _Initialize: _InitializeGWorlds
         } catch {
@@ -111,6 +119,130 @@ import HectorShell
     /// `-[Controller showPreferences:]` — P1.11 builds the Preferences window; until then the map bar's
     /// Preferences does nothing.
     @objc func showPreferences(_ sender: Any?) {}
+
+    /// `-[Controller toggleFullscreen:]` — P1.12 builds fullscreen; until then File ▸ Toggle Fullscreen
+    /// (⌘F) does nothing.
+    @objc func toggleFullscreen(_ sender: Any?) {}
+
+    // MARK: Menus (MainMenu.nib, P1.9)
+
+    /// `-[Controller gameMenuAction:]` @ 0x31db: every tagged menu item → `_HandleMenuCommand(tag)`.
+    @objc func gameMenuAction(_ sender: NSMenuItem) {
+        handleMenuCommand(sender.tag)
+    }
+
+    /// `_HandleMenuCommand` @ 0xd465 (DC:5176). Phase 1 has no reachable case: every tag `validateMenuItem`
+    /// would enable on the map (9 Level Statistics, 10 Open Level Editor, 14 Play Custom Level, 18 Replay)
+    /// is in `notYetBuilt`. P2.11 and P3.4–P3.6 add the cases.
+    func handleMenuCommand(_ tag: Int) {
+        switch tag {
+        default: break
+        }
+    }
+
+    /// `-[Controller validateMenuItem:]` @ 0x3de5 (DC:1048), all three modes, then `false` for any tag in
+    /// `notYetBuilt` (retitling still happens). Untagged items: Help is off while a window is modal; Close
+    /// is off when the key window is the main window, else follows the key window's close box; the rest on.
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        let tag = menuItem.tag
+        guard tag >= 1 else {
+            if menuItem.action == #selector(showHelp(_:)), NSApp.modalWindow != nil { return false }
+            guard menuItem.action == #selector(performClose(_:)) else { return true }
+            guard let key = NSApp.keyWindow, key !== shell.windowedWindow else { return false }
+            return key.styleMask.contains(.closable)
+        }
+        return validateTaggedItem(menuItem, tag: tag) && !Self.notYetBuilt.contains(tag)
+    }
+
+    /// The tagged half of DC:1048: `setTitle:` with `localizedStringForKey:` where the original retitles.
+    private func validateTaggedItem(_ menuItem: NSMenuItem, tag: Int) -> Bool {
+        switch g.mode {
+        case .map:
+            switch tag {
+            case 2:
+                menuItem.title = assets.localized("New Game")
+                return false
+            case 9, 14, 15:
+                return true
+            case 10:
+                menuItem.title = assets.localized("Open Level Editor")
+                return true
+            case 18:
+                // g+0xd0 (the last custom file) set → "Replay %@" with its name, enabled. P3.4 adds the
+                // custom-file fields to `AkiG`; until then there is no custom file.
+                menuItem.title = assets.localized("Replay Last Level")
+                return false
+            default:
+                return false
+            }
+        case .editor:
+            switch tag {
+            case 2:
+                menuItem.title = assets.localized("New Game")
+                return false
+            case 9, 11:
+                return true
+            case 10:
+                menuItem.title = assets.localized("Exit Level Editor")
+                return true
+            case 18:
+                menuItem.title = assets.localized("Replay Last Level")
+                return false
+            case 3, 12, 13, 16, 17, 19:
+                // 3 → g+0x1f1 (undo), 12/13 → dirty (g+0x1f0) and ≥ 1 tile, 16 → tiles on the current layer,
+                // 17 → any tiles, 19 → g+0x1f2 (exactly 144): the editor state P3.4 adds.
+                return false
+            default:
+                return false
+            }
+        case .game:
+            switch tag {
+            case 2:
+                menuItem.title = assets.localized("Give Up")
+                return true
+            case 3:
+                return false                                   // g+0x1f1 (undo enabled): the game P2 adds
+            case 4, 6:
+                return !g.paused
+            case 7, 9:
+                return true
+            case 10:
+                menuItem.title = assets.localized("Open Level Editor")
+                return false
+            default:
+                return false
+            }
+        }
+    }
+
+    /// `-[Controller showAboutBox:]` @ 0x327a (Q10).
+    @objc func showAboutBox(_ sender: Any?) {
+        AkiInfoWindows.showAbout(controller: self)
+    }
+
+    /// `-[Controller showHelp:]` @ 0x342c: `_SplashScreen("guide", 0)`.
+    @objc func showHelp(_ sender: Any?) {
+        AkiSplash.show(named: "guide", timeout: 0, controller: self)
+    }
+
+    /// `-[Controller showHandbook:]` @ 0x33b2: opens the shipped `Aki Handbook.pdf`. 1.2 named Preview
+    /// (`openFile:withApplication:`); the replica hands it to the user's default PDF viewer.
+    @objc func showHandbook(_ sender: Any?) {
+        if let url = assets.url("Aki Handbook.pdf") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    /// `-[Controller showReleaseNotes:]` @ 0x358e (Q10).
+    @objc func showReleaseNotes(_ sender: Any?) {
+        AkiInfoWindows.showReleaseNotes(controller: self)
+    }
+
+    /// `-[Controller performClose:]` @ 0x31fe: the key window's `performClose:` when it responds.
+    @objc func performClose(_ sender: Any?) {
+        guard let key = NSApp.keyWindow, key.responds(to: #selector(NSWindow.performClose(_:))) else { return }
+        key.performClose(sender)
+    }
 
     // MARK: Helpers
 
