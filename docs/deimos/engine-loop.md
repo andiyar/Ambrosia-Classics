@@ -85,6 +85,13 @@ Skeleton (decompile, trimmed):
       FUN_10030570(auStack_9a0,1,puVar9[0x38]);                   // end frame: present + pace
   }
 ```
+⚑ corrected (wave 2, 2026-10-03): was "console commands registered once (SHADOWS, FPS, LIMITFPS, PLAYER,
+VERSION, … cheats)" — `FUN_1002d080` skips every command registered with debugOnly ≠ 0, so only
+FPS, VERSION/VERS, SUPERMUNKI and the cheats LIFE, ACCURACY, FUNDS, SCORE, SHIELDS, MULT exist;
+SHADOWS, LIMITFPS and PLAYER are not added — see messages-notices-console.md §5.2, timing-frame.md §6.
+⚑ corrected (wave 2, 2026-10-03): was "music; fade in" at game appearance — there is no music fade-in: the
+call is `FUN_10047f90(levelMusic, 1, 0)` followed by `FUN_1000ba70(display, 1)`, a display fade
+from black (9 steps) — see sound-music.md §6.2, loose-ends-session.md §6.
 Claims:
 - One logic tick = one call of `FUN_10006b50` and one increment of game time (`+0x1c` of the
   game struct at `PTR_DAT_100defd0`); all game durations in the data (frames, `*_INT` delays)
@@ -114,7 +121,10 @@ Caps Lock (0x39) sets the paused flag and shows GameString 0 "Press Caps Lock"; 
 flag `+0x34`. [HIGH for keys/strings]
 Esc (`FUN_100307c0`): if pref byte 8 == 0 (the default) → quit at once; else Esc must be held
 for more than PermFloat 32 (=30) consecutive frames. [HIGH reading; the dialog label of pref 8
-NOT RESOLVED]
+NOT RESOLVED] ⚑ corrected (wave 2, 2026-10-03): was "held for more than … 30 consecutive frames" — the hold
+counter is bumped twice per frame (begin frame and the end-frame wrapper), so quit comes on the
+**16th** held frame; pref 8 is DITL item 17 "ESC Key Delay (Requires key to be held down)" — see
+timing-frame.md §2.5, §6.
 
 End frame `FUN_10030bc0 @ 10030bc0`:
 ```c
@@ -143,18 +153,34 @@ End frame `FUN_10030bc0 @ 10030bc0`:
   }
   ... present: FUN_1000beb0 (interlaced, field +4 == 1) or FUN_1000bc60 (+4 == 0)
 ```
+⚑ corrected (wave 2, 2026-10-03): was "`FUN_1000beb0` (interlaced, field +4 == 1)" — `fc+4` is the
+`FUN_10030210` init argument (1 in the game loop, 0 on level select), not the interlace pref;
+`FUN_1000beb0` is the game-screen present (borders, game area, score bar) and `FUN_1000bc60` the
+full-screen present. Interlacing is byte pref 5, consumed by the background blit `FUN_10010120` —
+see timing-frame.md §2.3–§2.4, §5, messages-notices-console.md §4.4.
 Claims:
 - With the limiter on, each frame is presented no sooner than 2 Mac ticks (TickCount, ~60.15 Hz)
   after the previous one ⇒ at most ~30 frames/s — the `FPS_MaxRate` 30 of the data is the label
   of that cap. `FUN_100497f0` is a thin `TickCount()` wrapper. [HIGH]
+  ⚑ corrected (wave 2, 2026-10-03): was "the `FPS_MaxRate` 30 … is the label of that cap" — the limiter
+  constant is `FPS_Delay` (flli 33 = 2); `FPS_MaxRate` (flli 32) is the FPS-monitor and Esc-hold
+  threshold. The limiter (byte pref 10, ON in fresh prefs) cannot be toggled in a stock build:
+  `LIMITFPS` is not registered and no dialog item exists → 30.07 ticks/s on a fast machine — see
+  timing-frame.md §2.3, §4, §6.
 - Logic ticks per frame: 1 when the divider `+0x2c` is 0 ("Game Speed Normal"); otherwise one
   tick every `div+1` frames; `div == 999` freezes ticks ("Stopped"). The GameString list holds
   "Game Speed Normal/Half/1/4th/1/8th/1/16th/1/32th/Stopped" (lines 24–30) but the code that
   writes `+0x2c` was not found (only `FUN_10030790` zeroes it) → divider values per label NOT
-  RESOLVED. [HIGH for the mechanism]
+  RESOLVED. [HIGH for the mechanism] ⚑ corrected (wave 2, 2026-10-03): was "divider values per label NOT
+  RESOLVED" — no code writes `+0x2c` (only the zeroing `FUN_10030790`/`FUN_10030df0`), so the game
+  always runs at Normal, one tick per frame; the strings have no consumer — see timing-frame.md §3.
 - FPS monitor `FUN_10030640`: once per 60 ticks compares frames counted with PermFloat 32 (30);
   after PermFloat 34 (=10) deficient seconds, if the "auto interlacing" pref byte 6 is set and
   interlacing (byte 5) is off, it switches interlacing on and shows GameString 17. [MED]
+  ⚑ corrected (wave 2, 2026-10-03): was "after … 10 deficient seconds" — deficient windows (> 60 ticks,
+  count < 30) are counted cumulatively, never reset by a good window; the whole monitor runs only
+  with the limiter on and needs session flag +3; pref 6 has no UI, so in a stock install
+  auto-interlace never fires — see timing-frame.md §2.6, §5.
 - `Microseconds` is imported but called only from library code (two calls, in `FUN_1006df40` and `FUN_1006e080`,
   `0x1006c000` region); the game clock is TickCount via `FUN_100497f0` (18 callers) and `FUN_10049820`.
   [HIGH for the call sites — `find_func.py 'glue::Microseconds\(|glue::TickCount\('`]
@@ -169,6 +195,11 @@ Claims:
   160×480 (32+416+32+160 = 640). `FUN_1000ae20` reads exactly PermFloats 52,53,59,55,54,57,58.
   Score-bar element positions are absolute screen x (e.g. `ScoreBar_P1ShieldMeter_XLoc` 495). [HIGH
   for values; MED for the placement arithmetic]
+  ⚑ corrected (wave 2, 2026-10-03): was "left border 32 | game area | right border 32 | score bar" and
+  "absolute screen x" — `FUN_1000ae20` places the score bar directly after the game area (screen
+  x 448..607; the remaining 32 px are x 608..639, `RightBorderWidth` F60 is not read there), and
+  every score-bar flli XLoc/YLoc and `tefo` Loc is in **back-buffer** coordinates (bar = x 416..575),
+  so screen x = buffer x + 32 — see hud-scorebar.md §1.
 - Terrain: the level map is 480×3600 (`#background_RECT <0, 0, 480, 3600>` in all 12 levels);
   the visible 416-wide window is offset horizontally inside the 480-wide map by up to ±32
   (`FUN_100100b0`: offset `_DAT_100e0144` clamped to [-32, 31], moved ±1 per call;
@@ -197,6 +228,8 @@ Claims:
   by entity flag +0x19), `grou` 3, `grhi` 5, `ailo` 7, `aihi` 8, `plwe` 9, `play` 10, `plsh` 11,
   `plef` 12, `plui` 13, `atmo` 14, `hud ` 15; shadows → layer 1 offset by Shadow_X/Y (flli
   48–51). 4CCs decoded from the float-typed compares (`2.926252e+29` = `play`, etc.). [HIGH]
+  ⚑ corrected (wave 2, 2026-10-03): was "shadows → layer 1" — shadows go to layers 2/4/6 (0 for terrain
+  stamps; layer 1 is the terrain-stamp sprite) — see sprite-geometry-draw.md §5.2, §6.
 
 ## 6. Level order, sectors, demos
 `FUN_10011c00 @ 10011c00` builds the level list from a 12 × 64-byte table (pointer in TOC slot
@@ -380,6 +413,13 @@ RandomRange consumers missing from the table above: `FUN_100269a0` draws `R(400,
 player at every level start (player-physics.md §4.2); `FUN_10033850` draws the motion-blur
 interval per qualifying entity per tick and `FUN_100431f0` draws `R(0,99)` twice at app init
 (damage-health-death.md §1, NR 7/8; INDEX #33).
+⚑ corrected (wave 2, 2026-10-03): was "`FUN_100431f0` draws `R(0,99)` twice at app init" — it makes **302** draws
+(300 in `FUN_10044630`, then the two `R(0,99)`), all at app start before any `srand`, so they do
+not affect replays. Add to the per-tick consumers: the particle emitter `FUN_10043340` draws one
+`R(0,4)` per particle inside the logic tick (callers `FUN_10014f10`, `FUN_10016300`,
+`FUN_10033850`) — replay-relevant. The motion-blur interval draw is real but every shipped blur
+state has 0/0 (min == max → no draw), so it never fires with shipped data — see
+particles-debris-blur.md §1, §4.4. The LOW table below is superseded by that listing walk.
 
 Other rand consumers found by the wave-1 critic (unread, wave 2) [LOW — callers from
 `$W/callers.txt` (direct calls only); bodies not listing-walked] ⚑ corrected (review wave 1,
@@ -402,7 +442,7 @@ Size 0x34f0 = 13552 bytes, raw memory image of the prefs struct `_DAT_100def40`.
 | 0x10f8 | 15×21 | high-score names, obfuscated on disk (§3 of pak-format) | `FUN_10004640/4f80` |
 | 0x1233 | 2×21 | player names, default "Player %i" | `FUN_10004ae0` |
 | 0x1260 | 15×4 | high scores, on disk = value + 0x024A8903 | save/load ±0x24a8903 |
-| 0x129c | 15×4 | per-entry int (sector reached?), on disk = value − 0x5969FBD0 | save/load |
+| 0x129c | 15×4 | per-entry int (sector reached?), on disk = value − 0x5969FBD0 | save/load — ⚑ corrected (wave 2, 2026-10-03): was "sector reached?" — never written by the insertion; only the prefs save/load/copy routines touch it (dead) — see loose-ends-session.md §3.1 |
 | 0x12d8 | 15×32 | per-entry sector name, obfuscated; default "New Atlantis" | `FUN_10004ae0` |
 Fresh prefs (`FUN_10004540` when loading fails): zero the block, version 0x2714, default
 high scores (`FUN_10004ae0`), then `FUN_10004f20(1)`:
@@ -418,7 +458,10 @@ Configuration dialog (`FUN_10010fc0`, M_Configuration.cc, `ModalDialog` loop): i
 byte pref 4, item 9 pref 5 (interlacing), item 10 pref 7, item 0x11 pref 8; items 0x0c/0x0f
 store slider values into int prefs 0/1 (then `FUN_10047920`, sound-related — volumes?); item
 0x12 opens `ISpConfigure` (`FUN_1004ae00`); item 3 resets defaults (`FUN_10004f20(0)`). Item
-labels live in the resource-fork DITL/CNTL (not parsed). [MED]
+labels live in the resource-fork DITL/CNTL (not parsed). [MED] ⚑ corrected (wave 2, 2026-10-03): DITL 190 is now
+parsed — item 8 "Full Screen", 9 "Interlacing", 10 "Bypass System Volume", 17 "ESC Key Delay",
+sliders 12/15 = Sound/Music Volume (int prefs 0/1, defaults 50/100) — see timing-frame.md §6,
+sound-music.md §4.2.
 Defaults (`FUN_10004ae0`): scores 15000, 14000, …, 1000 (`16000 - iVar5`, iVar5 = 1000·k);
 names decoded from a 15×21 table at `0x100d61c0`: Mars, Supercobra, Neurotik, El B, Dilvish,
 Sam, Vodi, Fisj, Alex, h'biki, Goldenberry, Leadfeather, Troll, Thomas, Electrofryer. [HIGH for

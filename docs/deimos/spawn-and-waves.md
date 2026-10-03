@@ -296,7 +296,11 @@ Args `(group r25, entity r30, flag r26, heading r28, owner r27, mult f30)`.
   2. else `initiallyHuntsClosestPlayer` (0x11f): target = closest active player
      (`FUN_10005ed0`), default `(VisibleGameWidth·0.5, 0.0)`, and if no player
      `(VisibleGameWidth·0.5, −100.0)`; velocity = unit(target − pos)·speed (`FUN_10042bf0`);
-     +0x138 untouched. No draw.
+     +0x138 untouched. No draw. ⚑ corrected (wave 2, 2026-10-03): was "default `(VisibleGameWidth·0.5, 0.0)`" —
+     (208, 0) is the **reference point** of the closest-player search (`FUN_10005ed0(ref, out)`,
+     out defaults to (0,0)): with two active players the hunter aims at the ship nearer the
+     top-centre point (208, 0), not the one nearer to itself (ties → P1) — see
+     loose-ends-combat.md §7.2.
   3. else `doBurst` (0x122) / `doImplode` (0x123): `d = pos − groupPos` (burst) or
      `groupPos − pos` (implode); `(ux,uy) = FUN_10042bf0(d)`; velocity = `(ux·speed,
      −(uy·speed))` (**y negated**); +0x138 = `FUN_10042cd0(velocity)` normalised. No draw.
@@ -462,6 +466,9 @@ its own shields; only ramming reaches the owner (bosses.md §3.5). ⚑ corrected
 Observation outside scope (for the damage/level reader): `FUN_10033850` draws `R(0x2f0,0x2f4)`
 (`state_MotionBlur_Min/MaxTimeBetween`) every tick for each entity whose state has
 `MotionBlur_Required` and a sprite (dump lines ~382–385). [MED — decompile only]
+⚑ corrected (wave 2, 2026-10-03): the draw is real (listing `10034340`), but every shipped blur state has 0/0
+(min == max → no `rand` call), so it consumes nothing with shipped data — see
+particles-debris-blur.md §1, §4.4.
 
 ## Worked example — `Level 7 - Start 1 [07s1]` in `Level 12 [le12]`
 Data (`grep` of `$W/data/Game/unde/Level 7 - Start 1[07s1].unde.txt`, `Shuriken[shur]…`,

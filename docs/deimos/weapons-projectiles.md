@@ -204,7 +204,10 @@ stfs f1,0x124(r27)`, `1003ae64 stw r0,0xd8(r27)` (`lis r3,0x706c` = 'pl..'), `10
   the first match, because the current weapon is not in the matching set. [HIGH for the code; MED for the
   table, since it rests on list order and on sector = "level"]
 - **Ground weapon** is always the `DEAG` default (Plasma Bomb). Only the pending-apply in the reset and the
-  uncalled `FUN_10029c00` can change it. [HIGH]
+  uncalled `FUN_10029c00` can change it. [HIGH] ⚑ corrected (wave 2, 2026-10-03): was "uncalled" — `FUN_10029c00` has two raw
+  callers (`10008408` 'PEAA', `10008490` 'PEAG') in an undecompiled debug console handler that is
+  not registered in 1.0.6, so it is unreachable in release — see messages-notices-console.md §5.5,
+  loose-ends-session.md §8.1.
 - **Death / respawn**: `FUN_1002a150` → `FUN_10029cc0` → `FUN_1003af90(h,0)` resets timers,
   power-up state, held counters and bomb salvo, and applies any pending switch, but does **not** touch
   `+0x58/+0x74`. **No weapon is lost on death.** [HIGH (listing `1003afc0…1003aff8`
@@ -346,6 +349,9 @@ on each state change `FUN_100146f0` cycles the entity's shown weapon `+0xf8` wit
 these types** (census: coin 4, exli 1, mult 1, shie 2, none 378). The only code that moves a player to the
 next weapon of a type, `FUN_10029c00` (G_Player), has no caller in the dump and no pointer in either
 memory image. [HIGH for the census and the code; LOW that `FUN_10029c00` is dead rather than reached indirectly]
+⚑ corrected (wave 2, 2026-10-03): was "has no caller in the dump" — raw calls at `10008408`/`10008490` (debug console
+weapon command, AIRWEP/AIR/GROUNDWEP/GROUND strings), unregistered → unreachable in normal play —
+see loose-ends-session.md §8.1, messages-notices-console.md §5.5.
 Not read: `FUN_10027dd0`'s flag writer `FUN_10027de0` (role of `+0xce/+0xcf`), `FUN_10027490`, `FUN_10029b20`.
 
 ## 5. Other in-range functions
@@ -467,7 +473,7 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 | `FUN_10037580` | G_EntityGroup.cc | apply pickup by pickup_Type_ID (coin/exli/shie/mult; air/grnd only check player+0xce) | HIGH | listing |
 | `FUN_10026ee0` | G_Player.cc | overload warning pulse; 8th warning → player death | HIGH | read + plde offsets — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | ⚑ corrected `FUN_10027e50` | G_Player.cc | player death: death spawn, coin spill (MoneyUnit 50/10/5/1), state 3 | MED | read (was "coin unit selection") |
-| `FUN_10029c00` | G_Player.cc | advance player to next weapon of type (no caller found) | MED | read |
+| `FUN_10029c00` | G_Player.cc | advance player to next weapon of type (no caller found) | MED | read — ⚑ corrected (wave 2, 2026-10-03): callers found in an unregistered debug console handler (`10008408`, `10008490`); see messages-notices-console.md §5.5 |
 | `FUN_10029f60` | G_Player.cc | ship sprite = displayed weapon's appearance face | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 
 ## INDEX updates (for merge)

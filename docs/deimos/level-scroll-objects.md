@@ -306,7 +306,9 @@ decompile]
    holds one level); else stop music, play `PermSoundID(3)` (`tran` InterfaceTransition, vol
    75/100), `FUN_1000b9a0(display, 1)`, clear `+0x09`/`+0x39`, frame-controller reset
    `FUN_100302e0`, then **`FUN_100064d0(0, info)` → next sector**. No active player → session
-   ends. [HIGH reading]
+   ends. [HIGH reading] ⚑ corrected (wave 2, 2026-10-03): was "vol 75/100" — the arguments are priority 75, volume
+   100 (`FUN_10047670(id, priority, volume, allowMultiple)`, sound-music.md §2.3);
+   `FUN_1000b9a0` is the fade to black (33 steps, loose-ends-session.md §6).
 The defence bonus is paid inside the player update when `+0x39` is set: once per level per active
 player (`player+0xd0` latch, cleared per level), spawn the player-def `active_DefenceBonusObject_ID`
 and add score `Player_DefenceBonusBaseAmount (2000) × sector` (`FUN_10029a10(p, F184·FUN_10005cd0())`).

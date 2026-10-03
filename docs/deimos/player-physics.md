@@ -141,7 +141,10 @@ in a two-player game both players call it in the same tick (P1 first), so opposi
 
 ### 2.6 Crosshair (ground-weapon aim), flli 185–187 [HIGH arithmetic; MED for the flag]
 Runs only when `+0x360` (weapon handler +0x120, set by `FUN_1003b3c0` while the ground weapon
-is being fired) is set (`10029704`):
+is being fired) is set (`10029704`): ⚑ corrected (wave 2, 2026-10-03): was "set … while the ground weapon is being
+fired" — `1003b9ec stb r4,0x120(r22)` (r4 = 1) runs on every handler tick and no clearer exists, so
+the flag is 1 from the player's first active tick for the rest of the session — see
+loose-ends-combat.md §6.2.
 ```
 10029710  cmplwi r14,0x0 (down) ; rlwinm. r0,r15 (bottomPinned)
 10029720  li r3,0xb9 …  add  ; stw r0,0x20c(r31)   ; down AND pinned at bottom: adj += int(flli 185 Crosshair_DownSpeed 3)
@@ -247,7 +250,10 @@ only while the level is not complete. So: invulnerable from death through the 80
 state and the first 61 ticks after respawn; and, because the level-end flag is never cleared by
 the level start (`FUN_100269a0` does not write `+0xce`), also for the first 61 ticks after
 appearing in every level after the first (constructor `FUN_10026260` writes `+0xce = 0` only at
-game start). No direct caller passes `FUN_10027de0(p,0,…)` (`$W/callers.txt`: only `FUN_10006b50`).
+game start). ⚑ corrected (wave 2, 2026-10-03): was "the level-end flag is never cleared by the level start" — the
+game's level-end flag `+0x39` **is** cleared (in `FUN_10007170`, `10007248`, before the next
+level start); what level start leaves set is the player's invulnerable flag `+0xce` — see
+loose-ends-combat.md §2.1, §3.3. No direct caller passes `FUN_10027de0(p,0,…)` (`$W/callers.txt`: only `FUN_10006b50`).
 
 ## 5. Death from the player's side: `FUN_10027e50` (scoring reader owns the coin arithmetic)
 Callers: `FUN_10027100` (shield < 0) and `FUN_10026ee0` (8th overload warning). Player-side

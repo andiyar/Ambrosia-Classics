@@ -75,7 +75,7 @@ it is a math module (proposed name `U_Math` — LOW, name pattern only).
 | `FUN_10042f80 @ 10042f80` | **circle overlap test** (§2.1) | HIGH | listing below |
 | `FUN_100426e0` | writes a data file in `Data` (type/creator `Data`/`Deim`); "FILE ERROR: Could not create new…", "Data Saved: %s"; used by the units-cache writer | MED | decompile strings; caller `FUN_10041e40` (cache builder) |
 | `FUN_100428b0` | static initialiser: copies three constant records into globals `0x100ecfc8…0x100ed008` | LOW | decompile; caller `FUN_10000000` |
-| `FUN_100431f0` | an init routine: `FUN_1003a870(…)`, `FUN_10044630()`, then **two `RandomRange(0,99)`** into `_DAT_100e026c`/`_DAT_100e0268`, then `FUN_1002d080` | LOW (role) / HIGH (RNG calls in the decompile) | caller `FUN_100000e0` (app init). These are RNG consumers at app init (engine-loop.md §9 handoff) |
+| `FUN_100431f0` | an init routine: `FUN_1003a870(…)`, `FUN_10044630()`, then **two `RandomRange(0,99)`** into `_DAT_100e026c`/`_DAT_100e0268`, then `FUN_1002d080` | LOW (role) / HIGH (RNG calls in the decompile) | caller `FUN_100000e0` (app init). These are RNG consumers at app init (engine-loop.md §9 handoff) — ⚑ corrected (wave 2, 2026-10-03): particle module init; 302 draws (300 in `FUN_10044630` + 2), all before any `srand`; see particles-debris-blur.md §1 |
 | `FUN_10043280` | the teardown paired with `FUN_100431f0` (`FUN_10044550`) | LOW | decompile; caller `FUN_10000630` |
 
 Heading convention check [MED]. `FUN_10042b30` and `FUN_10042cd0` agree: heading h ↔ vector
@@ -83,7 +83,10 @@ Heading convention check [MED]. `FUN_10042b30` and `FUN_10042cd0` agree: heading
 (dump l. 30641–30643) follows `FUN_10042ad0(p1,p2)` with `FUN_10043040`, giving
 `180 − (−h) = h + 180`. That is the heading of p2 − p1, so the composition is consistent. The
 caller in `FUN_10017150` (l. 13621) uses `FUN_10042ad0` without the mirror. Movement reader:
-check its sign.
+check its sign. ⚑ corrected (wave 2, 2026-10-03): the convention is settled — compass h (data keys, `+0x138`,
+`FUN_10043090`/`FUN_10042ad0` results) vs internal h' = (180 − h) mod 360 (`FUN_10042b30/2b80`
+input, `FUN_10042cd0` output); `FUN_10017150` is the rotation gate that calls `FUN_100172d0`
+(turn toward target), not a spawn-set reader — see loose-ends-combat.md §1.3, §7.1.
 
 ## 2. Collision tests
 
@@ -448,11 +451,14 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 6. `FUN_1000fec0` = scroll offset used by the water test (MED). Also the return codes of
    `FUN_1000fee0` other than 0/1.
 7. `FUN_100431f0`'s two `RandomRange(0,99)` at app init: are they before `srand`, and do they
-   matter for film replay? (engine reader).
+   matter for film replay? (engine reader). ⚑ corrected (wave 2, 2026-10-03): closed — 302 draws, all before
+   `srand`, no replay effect (particles-debris-blur.md §1).
 8. The motion-blur trail (`FUN_10033850` step 9, state +0x2ec) draws `RandomRange(min +0x2f0,
    max +0x2f4)` per entity per tick while enabled. It is an RNG consumer that the engine-loop.md
-   §9 table should list (dump l. 31047; listing not walked).
-9. `FUN_10042cd0` full branch listing; `FUN_10017150` heading sign (see §1).
+   §9 table should list (dump l. 31047; listing not walked). ⚑ corrected (wave 2, 2026-10-03): closed — the draw is
+   real but every shipped blur state has 0/0, so it never draws (particles-debris-blur.md §1, §4.4).
+9. `FUN_10042cd0` full branch listing; `FUN_10017150` heading sign (see §1). ⚑ corrected (wave 2, 2026-10-03): closed
+   — full listing walk and convention in loose-ends-combat.md §1.2–§1.3.
 10. Behaviour gates for Ben's eyes: the second-bullet waste (§3), the `passHitsToOwner` B-side
     bug (§2.5 — now traced: player shots land on the turret's own shields; only its visible
     effect is left for Ben), and ramming scoring (§2.3). ⚑ corrected (review wave 1, 2026-10-03) #I1

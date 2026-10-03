@@ -426,6 +426,9 @@ set +0xbd (§1.1) on each active player: `accuracy` (`0x10008b80`) sets created 
 ("Ground Accuracy 100%", sound 22); `score` (`0x10008df0`) `FUN_10029a10(p, 10000, 0)` — at most 2
 per game (`G+0x174`), else "I Think Not, Young Kitty!"; `funds` (`0x10008c90`) money += 20
 (`10008d6c li r4,0x14`); `ALLLEVELS` (`0x10008930`) pref3 = numLevels ("Access All Areas ON").
+⚑ corrected (wave 2, 2026-10-03): was ALLLEVELS listed with the cheats that refuse during a film, need pref 11 and set
++0xbd — it does none of these and is a debug-only command that `FUN_1002d080` never registers in
+1.0.6, so it is unreachable — see messages-notices-console.md §5.5.
 
 ## Worked example
 Sector 1, one player, multiplier ×1, score 0 at level start, the ship took a hit this level.
