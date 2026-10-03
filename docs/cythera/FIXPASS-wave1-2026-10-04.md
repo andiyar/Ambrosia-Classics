@@ -83,3 +83,41 @@ Reviewer: schedules §2.3 census says +0x1E 0:10, data-format's 0:11 recounts co
 
 wc -l: INDEX 177, rules 147, data-format 508, script-vm 269, script-builtins 187, tools/README 41, STATE 55.
 
+
+## Post-review fixer (E) — after `REVIEW-wave1-2026-10-04.md`
+
+# fix-E — post-review fixer (2026-10-04)
+
+**Status: DONE_WITH_CONCERNS** (nothing committed)
+
+**Applied** (all marked `⚑ corrected (wave 1 2026-10-03)`): C1, M1, M2, m1, m2, m3, m4 (find_func.py regex plus a README sentence), m5, m6, N4, N6, the 100 % decompile record (INDEX: new *missing dump* row, amended *extra dump* and *traceback table* rows, item 20 RESOLVED, review ledger entry), and the STATE line.
+
+**Results:**
+- **N4** resolved: Die's call goes through vtable 0x100d499c +0x24 to `CloseRoutine__16TInventoryWindowFv` @10031168. Now HIGH.
+- **m2:** the scan found the 7 TViewer functions and the 3 extra functions the review named.
+- **m3:** both scans give the same results as the review.
+- **N6:** census reproduced exactly. Tests use byte 0 = 0x65 (18 times) or 0x66 (4 times).
+
+**Re-verified counts:**
+- `missing-addrs.txt` has 840 rows.
+- Missing dump: 23,585 lines, 840 functions, all 840 marked created. Log says `wrote 840/840`.
+- `tb.py --missing` over all three dumps gives 0 lines.
+- 1,994 = 1,117 + 37 + 840. The main dump has 1,955 functions, 290 of them unnamed. 836 functions sit after 0x100B20EC.
+- There are 15 gaps over 0x100 bytes. Each is a traceback table that ends within 4 bytes of the next function.
+
+**Concern for the reviewer:** the brief's gap example was wrong. Word 3 `00000288` at 0x10057A6C is the body length (tb_offset), not the name length. The name length is u16 0x0458 = 1,112 bytes. INDEX records the corrected version.
+
+**`wc -l`:**
+
+| File | Lines |
+|---|---|
+| dialogue.md | 659 (N1 accepted) |
+| quests-flags.md | 455 |
+| INDEX.md | 190 |
+| script-library.md | 519 |
+| open-items-2026-10-03.md | 532 |
+| schedules-npcs.md | 554 |
+| combat.md | 585 |
+| tools/README.md | 43 |
+| find_func.py | 65 |
+| STATE.md | 55 |

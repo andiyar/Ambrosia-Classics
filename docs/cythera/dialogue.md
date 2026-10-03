@@ -197,8 +197,10 @@ its first four letters, §5) [HIGH].
 `TENew`), then runs a
 `TConvResponseMode` modal loop, then **lower-cases A–Z in the buffer**:
 `if (('@' < cVar6) && (cVar6 < '[')) cVar6 = cVar6 + ' ';`. [HIGH]
-`TConvResponseMode` (vtable 0x100d50d4 — ctor `*param_1 = &PTR_PTR_100d50d4;`; slot +0xC →
-0x1003e378, +0x18 → 0x1003e8ec by the §0 one-liner; `tb.py --grep TConvResponseMode`):
+`TConvResponseMode` (vtable 0x100d50d4 — ctor `*param_1 = &PTR_PTR_100d50d4;`; slot +0x10 →
+0x1003e378 MouseRoutine, +0x1C → 0x1003e8ec KeyRoutine (+0xC → 0x1003e17c DrawRoutine, +0x18 →
+0x1003e778 CursorRoutine, both unread) by the §0 one-liner + `tb.py --at` ⚑ corrected (wave 1
+2026-10-03); `tb.py --grep TConvResponseMode`):
 - `KeyRoutine @ 1003e8ec` ⚑ corrected (wave 1 2026-10-03), `ppcdis.py --func 'KeyRoutine__17TConv'`:
   key mapped through the to-lower table (`1003e924: 38623806  addi r3,r2,14342  ; = 0x100d8a86`,
   §6). Return (13) / Enter (3) with a text field → `TEGetText`, `BlockMove` of the full buffer

@@ -412,7 +412,7 @@ Dictionary users 102E, 1846–1849, 1864, 1865 plus 3015 when cls48 `f35 == 2`. 
 TakeCommand calls `SendSignal(param_1,0x100)` when selector 15 returns neither False nor Nil. 0D06
 (the `f35 == 0` default) protests ("Hey! Stop that!") and `send_signal(320)` (`0D06 @0077 c5 43 00 00
 01 40 40`) — calling the 0D07 guards — and on 321 attacks only if `leader_can_see`. 321 comes from
-3043 (party struck a non-party civilian). Activity 6 = attack target [MED].
+3043 (party struck a non-party civilian). Activity 6 = Beserk (schedules §2.1) [HIGH] ⚑ corrected (wave 1 2026-10-03).
 
 ### 10.6 0x0E87 ResolveHit (1073 B) [HIGH]
 ```

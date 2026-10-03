@@ -432,8 +432,13 @@ egg-contents prop (`HatchEgg`: `piVar3[5] = (int)puVar11;`), short at `param_1 +
   `RemoveStackedAbility` 0xd, 0xe, 0x16, 0x15 (13, 14, 22, 21) and `*(ushort *)(*param_1 + 6) |
   1` (alive bit).
 - Dead, all cases: if `FindInventory__16TInventoryWindowFs(index)` finds a window, an indirect call
-  through `FUN_100c50e8` (the glue; its target — closing the window — is MED); then alive bit cleared
-  (`& 0xfffe`).
+  through `FUN_100c50e8` (the glue); then alive bit cleared (`& 0xfffe`). ⚑ corrected (wave 1
+  2026-10-03): the target is **`CloseRoutine__16TInventoryWindowFv @ 10031168`** [HIGH] —
+  `ppcdis.py --func 'Die__14TActiveMonsterFv'`: `10046b04: 81830000  lwz r12,0(r3)` ·
+  `10046b08: 818c0024  lwz r12,36(r12)` · `10046b0c: 4807e5dd  bl 0x100c50e8` (r3 = the window);
+  the TInventoryWindow ctors store `*param_1 = &PTR_PTR_100d499c;`, and the §12.1 chain on
+  0x100d499c + 0x24 (word 0x2af0 → 0x100CFD70 → code 0x10031168; +8 → `__dt__16TInventoryWindowFv`
+  as a control) with `tb.py --at 10031168` names it.
 - **Named** (index < 0x100): party bit `+8 & 0x40` cleared → `RebuildParty`. Corpse word
   `uStack_4e = *(ushort *)(param_1[1] + 0xe);` (record bytes 14–15):
   - **0**: every prop from 0x100 up with kind 0x10, 0x18 or 0x09 (`'\x10'`, `'\x18'`, `'\t'`) whose

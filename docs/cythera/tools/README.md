@@ -13,6 +13,7 @@ section loaded at 0x100CD280; TOC r2 = 0x100D5280. Python tools are stdlib only.
 | `ppcdis.py` | small PPC32 BE decoder (loads/stores, branches, lis/ori/addi, compares, rotates, X/XO-form, FP); unknown words print `.long` | `python3 docs/cythera/tools/ppcdis.py 10043c58 10043ff0`; `… 100c50e8 +5`; `--func 'DoMove__14'`; `--hex` |
 | `CyDecompAt.java` | Ghidra postScript: create (if needed) + decompile functions at listed addresses, r2 pinned, DumpDecompile-style separators | header recipe → `ghidra/Cythera_extra.decompiled.c` from `extra-addrs.txt` |
 | `extra-addrs.txt` | the address list for `CyDecompAt.java` (functions the wave-1 banks cite as missing from the main dump) | input: `@docs/cythera/tools/extra-addrs.txt` |
+| `missing-addrs.txt` | the 840 traceback-named functions absent from BOTH the main dump and `Cythera_extra.decompiled.c` (toward 100 % coverage, Ben 2026-10-04); header holds the regenerate command | `CyDecompAt.java … "$PWD/ghidra/Cythera_missing.decompiled.c" @"$PWD/docs/cythera/tools/missing-addrs.txt"` → log `CyDecompAt: wrote 840/840`; then `tb.py --missing <(cat ghidra/Cythera_pef.decompiled.c ghidra/Cythera_extra.decompiled.c ghidra/Cythera_missing.decompiled.c)` = 0 lines |
 | `CyDecompBuiltins.java` | Ghidra postScript: create + decompile the 96 script-VM builtins 0xA0–0xFF from the TVector table at 0x100D7270 | header recipe → `ghidra/Cythera_builtins.decompiled.c` |
 | `seg.py` | `TSegFile` reader (`Cythera Data`): TOC pages, segment table, id-keyed XOR decrypt (`toc()`, `dec()`) | `python3 docs/cythera/tools/seg.py ["$G/Cythera Data"]` (page census) |
 | `lz.py` | LZ decompressor for pixel data (`unlz(bytes)`; library only) | `python3 -c "import sys; sys.path.insert(0,'docs/cythera/tools'); import lz; …"` |
@@ -25,6 +26,7 @@ Ghidra: 12.1.3 Homebrew `analyzeHeadless`; the project path must not contain a d
 (`.claude/worktrees/…`), so copy the analysed project (`/tmp/ghidra-proj-cythera`, made by
 `ghidra/decompile.sh Cythera_pef -processor PowerPC:BE:32:default -cspec macosx`) somewhere else and
 run the postScripts `-process Cythera_pef -noanalysis -readOnly` (see each header).
+The builtins/extra/missing dumps are read with `python3 ghidra/find_func.py '<regex>' --file <dump>` (the default `--file` is Aki's dump; the header regex accepts the builtins dump's ` (name)` suffix ⚑ corrected (wave 1 2026-10-03)).
 
 Recipes (⚑ corrected (wave 1 2026-10-03)):
 ```sh

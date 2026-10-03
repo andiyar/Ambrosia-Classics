@@ -73,7 +73,7 @@ install [HIGH]. New player files are type/creator `'DelP'`/`'Delv'`
   which read +0, +2, +6, +8, +0xA, +0xB, +0xC..+0x12 only. No other TOC slot points inside the
   header: scanning every TOC word for values in [0x1882C−0x10, 0x1882C+0x30) finds only
   `0x100cdbd4 → 0x1882c` and `0x100cdbfc → 0x1884c` (= header+0x20, which is the 0xF00F table,
-  item 6). Census (`tools/seg.py`, 42 maps): `+4 {'0000': 42}`, `+14..1f {'00…00': 42}`.
+  item 6). ⚑ corrected (wave 1 2026-10-03) scan: `python3 -c "import sys,struct;sys.path.insert(0,'docs/cythera/tools');import toc;D=toc.D;print([(hex(toc.DB+o),hex(v)) for o in range(0,len(D)-3,4) for v in [struct.unpack('>I',D[o:o+4])[0]] if 0x1882c-0x10<=v<0x1882c+0x30])"`. Census (`tools/seg.py`, 42 maps): `+4 {'0000': 42}`, `+14..1f {'00…00': 42}`.
   ⇒ **+0x04 and +0x14..+0x1F are reserved/unused** in 1.0.4 [HIGH].
 - **`C*0x40` is literal and is a latent defect**, confirmed by disassembly of `LoadLevelMap`
   (`ppcdis.py 10005dd4 10005df4`, `ppcdis.py 10005e9c 10005eb4`; `tb.py --at 10005dd4` →
@@ -104,8 +104,14 @@ case 0x10: *param_1 = (int)((uint)*(byte *)((int)puVar8 + 0xe) << 0x1a |
 `case 0x10: *(byte *)(+0xe) = (value & 0x3f) | old & 0xc0`.
 - **+0x0A..+0x0B** = a free 16-bit script slot (field 0x0F, raw r/w). No script reads or writes
   field 0x0F (census §5 field list has no `0F`), and the PPC scan of every `lbz/lhz/lha/stb/sth`
-  with displacement 10/11/14/15 in functions named `*Prop*`/`*Item*`/`*Stage*` hits only `TViewer`
-  members. Data: `0000` in all 14,485 shipped records. ⇒ reserved [HIGH for the accessor, HIGH unused].
+  with displacement 10/11/14/15 in functions named `*Prop*`/`*Item*`/`*Stage*` ⚑ corrected (wave 1
+  2026-10-03) (`ppcdis.py 10000000 100cd280` grepped, each hit mapped to its function by the
+  `ghidra/Cythera_pef.tb.txt` entry/length ranges) hits 7 `TViewer` members (`BuildStageEntry` ×2,
+  `InteractProps`, `GetBestProp`, `SetStage`, `Set/ClearMonstStage`) plus `TMapWindow::KeyTargetToProp`
+  (`10044954 lha r0,14(r29)`, r29 = `this`), `TMapWindow::PropToPoint` (`10043068 lha r0,10(r31)`,
+  beside +2/+8 of the same base) and `TCreatePlayerDialog::DialogItemRoutine` ("Item" by name only);
+  none of the three touches the prop table. Data: `0000` in all 14,485 shipped records. ⇒ reserved
+  [HIGH for the accessor, HIGH unused].
 - **+0x0E bits 0–5** = signed 6-bit **elevation offset** (field 0x10), applied in
   `Render__7TViewerFssss @ 10066ac0` as `local_2a2 = (sext6(byte E)) << 2` and added to both the x and
   the y pixel displacement of the sprite (with the per-type/frame offsets of 0xF011/0xF012, item 6):
@@ -341,7 +347,10 @@ events themselves are not decoded here [HIGH layout; MED for the QuickTime field
 **No PPC reader [HIGH].** 4CCs are built with `lis/ori` (`addis rD,0,hi; ori rD,rD,lo`). A scan of
 the whole code section for every `addis` whose following `ori/addi` completes the 4CC finds `FILT`
 (`LoadDisplacementFilters`) and `Lite` (×3) and **none** of the six (control: the scan finds the
-known readers). The bytes are absent from the data section too. Content (`rsrc.py`-based dump this
+known readers). ⚑ corrected (wave 1 2026-10-03) scan: `ppcdis.py 10000000 100cd280`, every `lis rD,hi` /
+`addis rD,r0,hi` + the next `ori`/`addi rX,rD,lo` within 12 lines → 4 printable bytes, function from the
+`ghidra/Cythera_pef.tb.txt` ranges → `FILT`, `Lite` ×3 (`AmbientLight` ×2, `CalcLighting`), `Char`/`Mons`/
+`FXQ `/`Wind`/`Grem`/`DelP`/`Delv`/`asnd` (controls), none of PORT/LINF/MSta/eBRS/eSTM/RMAP. The bytes are absent from the data section too. Content (`rsrc.py`-based dump this
 session) shows editor/build-tool resources:
 - `eBRS` (25×32 B, named "Water 1", "Mountains 1", …) = editor tile **brushes**; `eSTM` (16, "Stamp 1",
   first words `0008 0008` = 8×8 then tile ids) = editor **stamps** [MED].

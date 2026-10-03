@@ -421,7 +421,8 @@ uses `+ 10`. [HIGH bytes / MED "slip"]
   R0F02(A30, 1)`), set from the Halos topic when Halos bit 3 (1861@039E–0454); Ariadne / Dryas —
   quest joins (§7.1, §7.2); Timon — free once talking is unlocked (var 2 ≥ 12).
 - Forced leaves: Philinus `leave_party(53)` 1832@0145; Berossus `leave_party(98)` 1848@0A08;
-  spell type 246 `leave_party(G09:speaker)` 1AF6@005D.
+  the "Wait" command 0x1AF6 (`1af6 @0005 return "Wait"`; class-0x50 command type 0xF6, magic §1)
+  `leave_party(G09:speaker)` @005D ⚑ corrected (wave 1 2026-10-03).
 - `join_party` returns 1 in party mode 2 and 2 at 8 members (script-builtins B9); no shipped call
   site reads the result, so a full party silently fails to take a quest companion. [HIGH]
 

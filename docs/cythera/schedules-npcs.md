@@ -103,7 +103,11 @@ Quotes for the three defects (raw bytes decrypted this session with `seg.py dec`
 ```
 (0C55: two consecutive lines, `ghidra/cythera-scripts/0c55.txt` @0003 and @0009 ⚑ corrected (wave 1
 2026-10-03).)
-Shipped use (segments 0x0410–0x0436, entry byte1 ≥ 0x80, census this session): tests 0x81 ×6,
+Shipped use (segments 0x0410–0x0416/0x0430–0x0436, `entry` lines of `ghidra/cythera-scripts/04xx.txt`
+with byte 1 ≥ 0x80; ⚑ corrected (wave 1 2026-10-03): an entry is a **test** when byte 0 is a condition
+class 0x65–0x68 — shipped only 0x65 ×18 / 0x66 ×4, e.g. `0020: entry 65 82 f0 …` in 0410 — and an
+**action** when byte 0 is a weight 0..100, e.g. `0048: entry 00 8b …`; ai-scripts.md §3.2, the
+`EvaluateAI` switch): tests 0x81 ×6,
 0x82 ×6, 0x83 ×4, 0x85 ×4, 0x86 ×2; actions 0x81 ×6, 0x82 ×22, 0x83 ×4, 0x84 ×4, 0x88 ×4, 0x89 ×4,
 0x8A ×2, 0x8B ×22, 0x8C ×10. So **OutOfAmmo, EquipRanged and RunToward — all three defective — are
 used by "Missile Script" (0x0415/0x0435)**, EquipRanged also by "Defend"; SetProtecting, EquipMelee,
@@ -317,7 +321,9 @@ if (((-0xe < sVar12) && (sVar12 < 0xe)) && ((-0xe < sVar11 && (sVar11 < 0xe)))) 
 ```
 Vtable slots of the TActiveMonster table at 0x100D5BAC (`[0]` RTTI, `[4]` 0) ⚑ corrected (wave 1
 2026-10-03): `toc.py 100d5bb4 … 100d5be4` gives each slot's TVector data offset (e.g. `100d5bbc
-0x2eb8`), `toc.py 0x100cd280+off` its code offset (`100d0138 0x4b8e8`), `tb.py --at` the name
+0x2eb8`), `toc.py <0x100CD280 + off>` its code offset — the sum done by hand, e.g. 0x100CD280 +
+0x2EB8 = 0x100D0138 → `toc.py 100d0138` → `100d0138 0x4b8e8` ⚑ corrected (wave 1 2026-10-03); same
+chain as combat.md §12.1's one-liner — `tb.py --at` the name
 (`1004b8e8  1dec .DoMove__14TActiveMonsterFss`); 13/13 slots re-resolved:
 +0x08 dtor, +0x0C Save, +0x10 DoMove, +0x14 LeaveLevel, +0x18 Die, +0x1C IsPartOfMonster, +0x20
 CanFace, +0x24 CanMove, +0x28 HandleMove, +0x2C HandleSubMove, +0x30 AdjustAspect, +0x34
@@ -358,7 +364,10 @@ restores the target activity it parks in prop byte 7** (grep of the dump and DoM
   or 1; others roam (busy 8).
 - Formation (activity 1, party mode 1): offsets (dx, dy) for rank r and leader facing f =
   `565C[r + 8f]`, `56DC[r + 8f]`; f = 0: dx (−1, 1, 0, −2, 2, −1, 1, 0), dy (1, 1, 2, 2, 2, 3, 3, 4) — a
-  wedge behind the leader (values read with `tools/pef.py`). Followers take busy = leader monster
+  wedge behind the leader. ⚑ corrected (wave 1 2026-10-03): both tables are **i32 words** — DoMove
+  `iVar8 = (int)param_2 + *(int *)(&DAT_100d565c + ((int)sStack_86 + sStack_88 * 8) * 4);`
+  (`Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt)); values by `python3 -c "import sys;sys.path.insert(0,'docs/cythera/tools');import toc;print([x-(1<<32) if x>>31 else x for x in toc.data_u32(0x100d565c,8)],[x-(1<<32) if x>>31 else x for x in toc.data_u32(0x100d56dc,8)])"`
+  → the two rows above (read as i16/i8 they are not). Followers take busy = leader monster
   +0x3E. Mode 2 snapping is rules.md §2.
 
 ---------------------------------------------------------------------------------------------
