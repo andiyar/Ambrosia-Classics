@@ -6,20 +6,36 @@ inferred; LOW = conjecture. Every byte below came from a command run in this ses
 Items are numbered as in `INDEX.md` § NOT RESOLVED; the later fix pass folds these into the
 topical files.
 
-**Method notes (reproducible).**
-- Ghidra dropped some functions (the TStream format reader/writer, `TViewer::AddSound`, the
-  `TMapWindow::KeyRoutine` body is merged into `ShowTileAnimate`). For those I used a ~60-line PPC
-  decoder (scratch, not committed): code section = file offset 0x3470, loaded at 0x10000000;
-  instruction at `A` = big-endian u32 at `0x3470 + (A − 0x10000000)`. Function names come from the
-  **traceback tables** that follow each body (`00 00 00 00 00 09 …` then a length-prefixed name).
-- TOC register: `LoadLevelMap` does `lwz r3,-30292(r2)` for TOC slot 0x100CDC2C ⇒ **r2 =
-  0x100D5280**. `addi rX,r2,8562` = 0x100D73F2 etc. — this is how direct-addressed globals were
-  enumerated (every load/store/addi with rA = 2 scanned over the whole code section).
-- `FUN_100c50e8` is **`__ptr_glue`**, not a function: `lwz r0,0(r12); stw r2,20(r1); mtctr r0;
-  lwz r2,4(r12); bctr` (disasm @ 0x100C50E8). Every "unnamed glue" call is an indirect call through a
-  TVector in r12 — almost always a C++ virtual (`lwz r12,0(this); lwz r12,off(r12)`). Vtables were
-  resolved by reading the vtable words from the unpacked data section (`tools/toc.py` `D`), each word
-  = data offset of a TVector, whose first word = code offset.
+---------------------------------------------------------------------------------------------
+## 0. Scope, method, what was not read ⚑ corrected (wave 1 2026-10-03)
+
+**Scope.** The INDEX § NOT RESOLVED items 1, 4, 5, 6, 7, 8, 9, 10, 12, 16, 18, 19 (numbering kept).
+Items 2, 3, 11, 13, 14, 15, 17 are not worked here (other wave-1 banks: script-library, dialogue,
+combat/magic/trade, schedules-npcs).
+
+**Method — banked tools (`docs/cythera/tools/`, recipes in `tools/README.md`).**
+- Bodies Ghidra's main dump lacks (the TStream reader/writer, `TViewer::AddSound`, the
+  `TMapWindow::KeyRoutine` body Ghidra merges into `ShowTileAnimate`, DoMove, Die …) are decompiled
+  in `ghidra/Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt; 37 functions). Disassembly
+  = `python3 docs/cythera/tools/ppcdis.py <start> <end>` (code section = file offset 0x3470, loaded at
+  0x10000000); function names = traceback tables, `python3 docs/cythera/tools/tb.py` (`--tb`, `--at`,
+  `--grep`); `tb.py --missing ghidra/Cythera_pef.decompiled.c` = **877** named functions still absent
+  from the main dump (840 with the extra dump concatenated). Consolidated item 20 (DoMove / Die /
+  LeaveLevel absent from the dump) is resolved by the extra dump. Every listing below names its
+  command; all were re-run 2026-10-04 for the wave-1 fix pass.
+- TOC register: `ppcdis.py 10005d58 +1` → `lwz r3,-30292(r2)  ; TOC 0x100cdc2c` (in `LoadLevelMap`)
+  ⇒ **r2 = 0x100D5280**. Direct-addressed globals were enumerated by grepping the whole-section
+  listing `ppcdis.py 10000000 100cd280` for `(r2)` / `r2,` operands (e.g. `addi r21,r2,8562  ; =
+  0x100d73f2`).
+- `FUN_100c50e8` is **`__ptr_glue`**, not a function: `ppcdis.py 100c50e8 +5` → `lwz r0,0(r12); stw
+  r2,20(r1); mtctr r0; lwz r2,4(r12); bctr`. Every "unnamed glue" call is an indirect call through a
+  TVector in r12 — almost always a C++ virtual (`lwz r12,0(this); lwz r12,off(r12)`). Vtables are
+  read with `tools/toc.py <addr>` over the data section `pef.py` unpacks (loaded at 0x100CD280): each
+  vtable word = data offset of a TVector, whose first word = code offset; `tb.py --at` names it.
+
+**Not read.** Subclass stream ctors (`'Mons'` extras), the QTMA event stream, `PORT` content, `Render`
+layer order and `TMaskTile`, 0xF005/0xF007 content, `PostProcessSounds` beyond its use of the
+AddSound list (§5), the menu/pref code that could set the 0x100D3E23 bit (§18).
 
 ---------------------------------------------------------------------------------------------
 ## 1. Segment-file header (0x00–0x7F) — RESOLVED (HIGH except where marked)
@@ -59,7 +75,9 @@ install [HIGH]. New player files are type/creator `'DelP'`/`'Delv'`
   `0x100cdbd4 → 0x1882c` and `0x100cdbfc → 0x1884c` (= header+0x20, which is the 0xF00F table,
   item 6). Census (`tools/seg.py`, 42 maps): `+4 {'0000': 42}`, `+14..1f {'00…00': 42}`.
   ⇒ **+0x04 and +0x14..+0x1F are reserved/unused** in 1.0.4 [HIGH].
-- **`C*0x40` is literal and is a latent defect**, confirmed by disassembly of `LoadLevelMap`:
+- **`C*0x40` is literal and is a latent defect**, confirmed by disassembly of `LoadLevelMap`
+  (`ppcdis.py 10005dd4 10005df4`, `ppcdis.py 10005e9c 10005eb4`; `tb.py --at 10005dd4` →
+  `.LoadLevelMap__Fs` ⚑ corrected (wave 1 2026-10-03)):
   ```
   flat path     10005dd4: lha r7,8(r29)          ; C
                 10005dec: rlwinm r6,r7,7,0,24    ; C << 7
@@ -129,15 +147,21 @@ case 8: if (IsInArea(…)) *(ushort *)PTR_DAT_100cde74 = type;   // current room
 case 10: if (pbVar15[6] != 0) pbVar15[6]--;  }
 ```
 and `SetStage @ 10065034` for frame 3: `if (0xff < idx && frame == 3) (*viewer->vtbl[+8])(viewer,
-x−vx, y−vy, type, (char)byte6)`; vtable 0x100D606C/+8 = `AddSound__7TViewerFssss` (traceback name;
-body not decompiled).
+x−vx, y−vy, type, (char)byte6)`; vtable 0x100D606C/+8 = `AddSound__7TViewerFssss` (`toc.py 100d6074` →
+TVector 0x3060 → code 0x66790). ⚑ corrected (wave 1 2026-10-03): the body is now in the extra dump (`find_func.py
+'AddSound__7TViewer' --file ghidra/Cythera_extra.decompiled.c`, @ 0x10066790): it appends one 8-byte
+record {dx, dy, type, byte6} to a 128-entry list at viewer +0x1D814 (count +0x1DC14) and drops the
+call when the list is full: `if (0x7f < *(short *)(param_1 + 0x1dc14)) { return; }`. The list is
+reset in `SetStage` and read by `PostProcessSounds__11TGameViewerFv @ 1005e07c` (main dump), which
+uses the byte-6 word as a timing parameter (positive: a period-table index; negative: a random
+1-in-|n| gate) [HIGH store / MED timing reading].
 
 | frame | count (0x81xx) | meaning | conf |
 |---|---|---|---|
 | 0 | 312 | spawn egg → `HatchEgg` | HIGH |
 | 1 | 30 | teleport area: type = teleport index (0xF00C), arrival transition 0xF00F[type] | HIGH |
 | 2 | 0 | one-shot step-on trigger at exact x,y → `SendSignal(type)`, then kind 0xC2 | HIGH |
-| 3 | 330 | **ambient sound emitter**: `TViewer::AddSound(dx, dy, sound type, byte 6)` | HIGH call / MED args |
+| 3 | 330 | **ambient sound emitter**: `TViewer::AddSound(dx, dy, sound type, byte 6)` → per-frame sound list (above) ⚑ corrected (wave 1 2026-10-03) | HIGH call and store / MED byte-6 timing |
 | 4 | 8 | zone change: `ChangeZone(type)` (types 0x100–0x102 in data) | HIGH |
 | 5 | 0 | `PlayMusic(type)` | HIGH |
 | 6 | 2 | one-shot area trigger → `SendSignal(type)` | HIGH |
@@ -150,7 +174,10 @@ body not decompiled).
 ## 6. World globals 0xF005/7/A/14/15, 0xF008/D/11/12, 0xF00F — mostly RESOLVED
 
 **No reader for 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 [HIGH].** Scan of every `li/ori/addi`
-immediate in the code section for 0xF000..0xF017: 0xF003/5/6/7/A/14/15/17 have **zero** uses; the
+immediate in the code section for 0xF000..0xF017 (re-run ⚑ corrected (wave 1 2026-10-03): `ppcdis.py
+10000000 100cd280`, `li`/`addi` immediates whose low 16 bits fall in 0xF000–0xF017 — ids are built
+as `lis r4,1; addi r4,r4,-4094` = 0xF002, e.g. `100057ec` in `LoadGlobals` — functions named with
+`tb.py --at`): 0xF003/5/6/7/A/14/15/17 have **zero** uses; the
 others resolve to `LoadGlobals`, `SaveGlobals`, `NewModel`, `RestoreModel`, `NewGame`,
 `GetTileName` (F004), `TViewer` ctor (F00D). Content (this session):
 - 0xF00A: 1024 bytes, all zero.
@@ -175,8 +202,9 @@ while (true) { if (0x7f < sVar1) return 0;  if (*(short *)(iVar2 + 0xc) == 0) br
 Body/Reflex/Mind, byte 5 → Health, byte 6 → alignment (`*(char*)(ce+0x19) = *(param_1[1]+6)`), all
 scaled by the difficulty roll (item 7). Script class **0x48** objects are these records (item 12);
 `GetField` class 0x48 fields 0x2C→b0, 0x2D→b1, 0x2E→b2, 0x2F→b5, 0x30→b3, 0x31→b4, 0x32→u16@+0xA,
-0x33→u16@+8, 0x35→b6, 0x36→s16@+0xE. Bytes 3/4/7, u16@8/A, s16@E meanings: STILL OPEN (combat
-reader owns them). The tail `(size−0x800)>>4` records (`PTR_DAT_100cdc30/38`) = 0 in 1.0.4; no
+0x33→u16@+8, 0x35→b6, 0x36→s16@+0xE. ⚑ corrected (wave 1 2026-10-03): combat.md §4 resolves byte 3 (natural armour),
+byte 4 (natural damage base), u16@8 and u16@A (flag words) and s16@E (corpse item); **byte 7** has no
+reader found — STILL OPEN. The tail `(size−0x800)>>4` records (`PTR_DAT_100cdc30/38`) = 0 in 1.0.4; no
 reader of `cdc30/cdc38` besides the writer.
 ```
 $ xxd -s 0x5079bc -l 0x20 "$G/Cythera Data"     # 0xF008 records 0, 1
@@ -211,12 +239,12 @@ Data: of 190 used teleports, 147 → 0, 30 → 14 (shrink), 6 → 2, 3 → 13, 2
 | off | meaning | evidence | conf |
 |---|---|---|---|
 | +0x12 | **busy / time-debt ticks**: `DoTick` decrements it one per tick (leader: `DoTicks(viewer,1,0)` each); scripts add action costs | `DoTick @ 1004ded8`: `*(char *)(*param_1 + 0x12) = … + -1; if (leader) _DoTicks__11TGameViewerFlUc(…,1,0);`; scripts: `301c` (selector 28 attack) `setfield A30.f23:busy = (A30.f23:busy + 12)` / `+ L04`; `0ea1` `+ ((busy+5)+A31)`; `0c42` `+ A31`; `1802` `= 100`. Smooth movement divides it by 2 or 4 (`HandleMove`: `*(char *)(*param_1 + 0x12) = … / uVar8`) | HIGH |
-| +0x17 | **merchant price factor, tenths** (10 = list price). Sell routine `0EA5`: `jf (A32 < 9) -> 0010; set A32 = 20` … `L0E = (((L07[4] * A32) + 9) / 10)`, haggling `A32 = (A32 - 1)`, `return A32`; buy routine `0EA9`: `jf (A32 == 0)…; set A32 = 10`, price `((… * 10) + 5) / A32`. Every caller is `setfield A30.f27:ce17 = R0EA5/R0EA9(…, A30.f27:ce17, …)` (22 merchants) | HIGH (agrees with trade-economy.md §3.1) |
+| +0x17 | **merchant price factor, tenths** (10 = list price). Player-buys routine `0EA5` (trade-economy.md §3): `jf (A32 < 9) -> 0010; set A32 = 20` … `L0E = (((L07[4] * A32) + 9) / 10)`, haggling `A32 = (A32 - 1)`, `return A32`; player-sells routine `0EA9` (trade-economy.md §5): `jf (A32 == 0)…; set A32 = 10`, price `((… * 10) + 5) / A32`. ⚑ corrected (wave 1 2026-10-03): `grep -E 'R0EA[59]\(' ghidra/cythera-scripts/*.txt` = 23 `R0EA5` calls in 22 segments + 2 `R0EA9` calls; 22 of the 25 are `setfield A30.f27:ce17 = R0EA5/R0EA9(…, A30.f27:ce17, …)`, the other three pass a literal 10 and discard the result: `1869@0215 call R0EA5("Flax", blk@0221, 10, Nil)`, `186A@0447 call R0EA5("Cheese", blk@0455, 10, Nil)`, `1823@0474 call R0EA9("Flax", blk@0480, 10)` | HIGH (agrees with trade-economy.md §3.1) |
 | +0x18 | **smooth-move sub-step state**: bits 2–7 direction index, bits 0–1 sub-step | `HandleMove @ 100488e4` (pref `DAT_100d3e20 < 0`): `*(char *)(*param_1 + 0x18) = (char)param_6;` prop moved by `DAT_100d5576/5564[param_6>>2]`; `HandleSubMove @ 10048fb0`: `if ((ce[0x18] & 3) < bVar4) { ce[0x18] += cVar5; prop[6] = DAT_100d5540[ce[0x18]]; } else { … ce[0x18] = 0; prop[6] = 0; }`; `DoTick` takes the "still sliding" branch while non-zero; ctor zeroes it. Prop byte 6 then carries the sub-cell offset nibbles (`SetStage` `byte6 & 3`, `>>4 & 3`) | HIGH |
-| +0x1D | **character class / profession**: bits 0–1 = health-growth code, bits 2–3 = magic-growth code; also an index into data table `seg0501[0110]` | `0E95`: `switch (A30.f20:ce1D & 3) → 0, level/2, level, level*2`; `0E96`: same on `(ce1D >> 2) & 3`; callers `0E82`/`0E84` (health max) and `0E83`/`0E85`/`0EB5` (magic max); `1801` char creation: `L00 = seg0501[0110][A32]` → Body/Reflex/Mind, `setfield A30.f20:ce1D = A32`; `1802`: `L05 = seg0501[0110][G05:leader.f20:ce1D]` then grants `create_prop(28, …)` skills and zeroes it | HIGH usage / MED the word "profession" |
+| +0x1D | **character class / profession**: bits 0–1 = health-growth code, bits 2–3 = magic-growth code; also an index into data table `seg0501[0110]` | `0E95`: `switch (A30.f20:ce1D & 3) → 0, level/2, level, level*2`; `0E96`: same on `(ce1D >> 2) & 3`; callers of 0E95: `0E82` (health max) and `0E84` (offence/defence bonus, combat.md §6.3) ⚑ corrected (wave 1 2026-10-03); of 0E96: `0E83`/`0E85`/`0EB5` (magic max); `1801` char creation: `L00 = seg0501[0110][A32]` → Body/Reflex/Mind, `setfield A30.f20:ce1D = A32`; `1802`: `L05 = seg0501[0110][G05:leader.f20:ce1D]` then grants `create_prop(28, …)` skills and zeroes it | HIGH usage / MED the word "profession" |
 | +0x1F | **difficulty stat roll (%) of a spawned monster** (entries 0x100–0x1FF only) | `__ct__14TActiveMonsterFs @ 10044b98`: `sVar6 = Random() % 0x28 + 10` (diff 0), `% 0x4b + 0x19` (1), `% 100 + 0x32` (2), `% 100 + 100` (3), `% 0x96 + 0x96` (4), else 100; `*(char *)(*param_1 + 0x1f) = (char)sVar6;` then Body/Reflex/Mind/Health/Level `= (base * sVar6 + 0x32) / 100` (min 1). Stored as a byte (rolls > 255 wrap). No reader found | HIGH write / HIGH "no reader" in decompile grep |
 
-Difficulty `DAT_100d73f2` is item 8's third `hhhh` value.
+Difficulty `DAT_100d73f2` is item 8's third `hhhh` value (the name "difficulty" MED ⚑ corrected (wave 1 2026-10-03)).
 
 ---------------------------------------------------------------------------------------------
 ## 8. Save stream — RESOLVED (HIGH)
@@ -228,21 +256,27 @@ Difficulty `DAT_100d73f2` is item 8's third `hhhh` value.
 |---|---|---|---|---|
 | 1 | `DAT_100d73f0` | 0x0037 = 55 | **karma** = script global 0x0C, clamped 0..100 | `SetGlobal @ 10093a5c`: `_DAT_100d73f0 = …; if (<0) 0; if (100 <) 100`; `GetGlobal` case 0xc; `1801` sets 55; `ShowPortrait @ 1003dba4` colours the player's name by it (`<0 → 0x21; <0x60 → -(0x1f - v/6); else 0x1e`) | HIGH (name MED, = dialogue.md) |
 | 2 | `PTR_DAT_100cdcf4` (short) | 0 | script global 0x0E (scripts use only bit 0: `G0E | 1`, `(G0E & 1) == 0` ×4) | `GetGlobal` case 0xe, `SetGlobal` `param_1 < 0xf` | HIGH store / meaning OPEN |
-| 3 | `DAT_100d73f2` | 0x0002 | **difficulty 0–4** — read only by the monster ctor (item 7 +0x1F); **never written** except by the restore stream | disasm scan of all r2-relative access: only `addi r21,r2,8562` in the ctor + save/restore | HIGH ⇒ effectively constant 2 (rolls 50–149 %) |
+| 3 | `DAT_100d73f2` | 0x0002 | **difficulty 0–4** (name MED) — read only by the monster ctor (item 7 +0x1F); written only by the restore stream | `ppcdis.py 10000000 100cd280 \| grep 'r2,8562'` → `10044ba8: addi r21,r2,8562` (ctor), `100130f4: addi r7,r2,8562` (`SaveToFile`), `10014180: addi r7,r2,8562` (`RestoreModel`) — no other r2-relative reference ⚑ corrected (wave 1 2026-10-03) | writers HIGH (restore only); "difficulty" MED; value 2 unless a save carries another, MED |
 | 4 | `DAT_100d73f4` | 0x0800 = 2048 | **serial counter** returned-and-incremented by builtin 0xF9 | `Builtin_F9 @ 1009ad40`: `uVar1 = _DAT_100d73f4; _DAT_100d73f4 = _DAT_100d73f4 + 1; *param_1 = uVar1 & 0xfffffff;` | HIGH |
 ```
 initial values: toc.D[0x100d73f0 − 0x100cd280 :+8] = 0037 0002 0800 0000   (tools/toc.py D, this session)
 ```
-**Stream encoding** — `TStream` bodies recovered by disassembly (traceback names
-`.ReadData__7TStreamFPce` 0x10017CE0, `.WriteData__7TStreamFPce` 0x10018060, `.BeginChunk__7TStreamFUl`
-0x100181C4, `.EndChunk__7TStreamFv` 0x1001828C, `.ReadChunk`, `.IsEOChunk`):
+**Stream encoding** — `TStream` bodies ⚑ corrected (wave 1 2026-10-03): entries (`tb.py --tb --grep TStream`) ReadData
+0x10017990, WriteData 0x10017CFC, BeginChunk 0x10018134, EndChunk 0x100181E0, ReadChunk 0x100182A4,
+IsEOChunk 0x1001837C (the addresses quoted here before, 0x10017CE0/0x10018060/0x100181C4/0x1001828C,
+were the traceback **name** fields); all six bodies are decompiled in the extra dump
+(`ghidra/Cythera_extra.decompiled.c`, CyDecompAt.java, extra-addrs.txt); the listings below are
+`ppcdis.py 10017cfc 10018050` (WriteData), `10018134 100181b4` (BeginChunk), `100181e0 1001827c`
+(EndChunk):
 - `WriteData(fmt, …)` walks the format, each code calling `Write(ptr,len)` (vtable +0x18) on a
-  big-endian stack temp: **`b`** 1 byte (`stb r0,70(r1)… addi r5,r0,1`), **`h`** 2 (`extsh; sth;
+  big-endian stack temp: **`b`** 1 byte (`10017e6c: stb r0,70(r1)` … `10017e74: li r5,1` ⚑ corrected (wave 1 2026-10-03)), **`h`** 2 (`extsh; sth;
   li r5,2`), **`l`** and **`i`** 4, **`s`** C string incl. NUL (`strlen+1`), **`P`** Pascal string
   (`lbz r5,0(r26); addi r5,r5,1`), **`a`** = (len, ptr) raw bytes, **`H`** = Handle: NULL → u32
   0xFFFFFFFF, else u32 size + contents; **`' '`** = `Align(2)`, **`;`** = `Align(4)` (vtable +0x24
   with 2/4). Dispatch: `cmpwi r0,97 ('a') … 72 ('H') … 59 (';') … 32 (' ') … 80 ('P') … 108 ('l')
-  … 104 ('h') … 99 → <0x63 = 'b' … 106 → <0x6a = 'i' … 115 ('s')` @ 0x10017D50–0x10017DC0.
+  … 104 ('h') … 99 → <0x63 = 'b' … 106 → <0x6a = 'i' … 115 ('s')` @ 0x10017D50–0x10017DC0
+  (`ppcdis.py 10017d50 10017dc4 | grep cmp` — 10 compares; the extra dump shows the same chain as
+  `if (cVar2 == 'a') … else if (cVar2 < 'a') { if (cVar2 == 'H') …` ⚑ corrected (wave 1 2026-10-03)).
 - `BeginChunk(tag)`: write u32 tag; remember `pos` (vtable +8) in `this+4`; write u32 0.
   `EndChunk()`: `len = GetPos − this[+4]`; seek back, write `len`, seek forward
   (`subf r0,r0,r30; stw r0,56(r1); … lwz r12,12(r12)`). So a chunk = **tag(4) + u32 length counted
@@ -253,7 +287,7 @@ Segment 0x0400 is therefore: `'Char'` chunk {hhhh; 32×b vars; 8×l flags; l clo
 +0xD (= auto-map flag, item 19); l play-seconds; 27×b 0} — then four more chunks:
 | chunk | writer | body | conf |
 |---|---|---|---|
-| `'Mons'` | `SaveMonsters @ 1004e878` | per active monster: `b` = script property 0x37 of its type (the loader picks the class: 9–10 `TCrawlMonster` 0x9C B, 11 `TDragonMonster` 0x68, 12 `TOctoMonster` 0x78, else `TActiveMonster` 0x58), then `TActiveMonster::Save @ 100459a8`: `hhh` {prop index, +0xA, +0xC}; if prop ≥ 0x100: `ha` {prop index, 0x20 bytes of its CharEntry}; `bhhhh` {+0x4C byte, +0x4E, +0x50, +0x52, +0x54}; `h` {word +0x2C}; then per node of the list at +0x30: `bhhl` {+8 byte, +0xA, +0xC, +0x10}. Formats resolved with `tools/toc.py 100ce90c 100ce908 100ce904 100ce900 100ce8fc` → `hhh`, `ha`, `bhhhh`, `h`, `bhhl`. Subclass extras and the list terminator are in the subclass stream ctors (not read) | HIGH layout / MED field names |
+| `'Mons'` | `SaveMonsters @ 1004e878` | per active monster: `b` = script property 0x37 of its type (the loader picks the class: 9–10 `TCrawlMonster` 0x9C B, 11 `TDragonMonster` 0x68, 12 `TOctoMonster` 0x78, else `TActiveMonster` 0x58), then `TActiveMonster::Save @ 100459a8`: `hhh` {prop index, +0xA, +0xC}; if prop ≥ 0x100: `ha` {prop index, 0x20 bytes of its CharEntry}; `bhhhh` {+0x4C byte, +0x4E, +0x50, +0x52, +0x54}; `h` {word +0x2C}; then per node of the list at +0x30: `bhhl` {+8 byte, +0xA, +0xC, +0x10}. Formats resolved with `tools/toc.py 100ce90c 100ce908 100ce904 100ce900 100ce8fc` → `hhh`, `ha`, `bhhhh`, `h`, `bhhl`. Subclass extras and the list terminator are in the subclass `Save` / stream ctors (the three `Save` overrides are now in the extra dump ⚑ corrected (wave 1 2026-10-03); not read) | HIGH layout / MED field names |
 | `'FXQ '` | `WriteFXQueue @ 100561b0` | per entry of the `map<TSpellFX,u16>`: `hhh` {key +0xC, key +0xE, value +0x10} (`tools/toc.py 100cea24` → `hhh`) | HIGH |
 | `'Wind'` | `MarshalAll @ 10030bd4` | per open inventory window (oldest first): virtual Marshal; reader `UnMarshalAll` reads `l` class id → `TRegistry::GetRegister(id)` → stream ctor; `TInventoryWindow::Marshal` adds `h` owner index (+0x10) | HIGH shape / base-class fields not read |
 | `'Grem'` | `SaveGremlins @ 100ad124` | raw `Write(PTR_DAT_100cf008, 0x400)` = 256 × {u16 flags (field 0x14), u16 heap frame (`AllocateFrame`)} | HIGH |
@@ -358,12 +392,15 @@ iVar10 = TickCount();
 if (local_4c < (uint)(iVar10 - *(int *)PTR_DAT_100ce898)) *(uint *)PTR_DAT_100ce898 = TickCount() - local_4c;
 ```
 and a disassembly scan of every r2-relative access to `PTR_DAT_100ce898/89c/8a0/8a4` (statics at
-0x10132A5C..62) finds **only MoveAll** — the value is never consumed (vestigial) [HIGH]. The loop
+0x10132A5C..62) finds **only MoveAll** — `ppcdis.py 10000000 100cd280 | grep -E -- '-27(100|104|108|112)\(r2\)'`
+→ 8 hits, 0x1004E4B4–0x1004E55C, all inside `MoveAll` (`tb.py --at 1004e4b4` → entry 0x1004E334, length
+0x414) ⚑ corrected (wave 1 2026-10-03) — the value is never consumed (vestigial) [HIGH]. The loop
 then calls `DoTick` on monsters until one returns 3/4 (leader ready for input / level changed); the
 only TickCount use left is `if (iVar10 + 0x3cU < TickCount()) cdc40[leader] = 1;` which, on exit,
 `FlushEvents(0x2a,0)` + `FlushKeyDown` (drops typed-ahead keys after a ≥ 1 s turn). `DoTick @
 1004ded8`: busy ≠ 0 → `busy−1` (+1 clock unit for the leader); busy = 0 and leader → `return 3`
-unless the leader is Afraid/Paralysed/Confused/Charmed (status 0x20/0x40/0x2000/0x4000), in which
+unless the leader is Afraid/Paralysed/Confused/Asleep (status 0x20/0x40/0x2000/0x4000; 0x4000 =
+Asleep, ability 22 — Charmed is 0x200 ⚑ corrected (wave 1 2026-10-03)), in which
 case it `YieldToAnyThread()`s and plays on. ⇒ **World time is turn-driven**: each leader action's
 cost (busy ticks) is simulated synchronously; wall-clock appears only through thread yields
 (`TTaskMaster`) and animation: smooth movement (`DAT_100d3e20` bit 7) slides creatures in 2 or 4
@@ -388,9 +425,11 @@ arithmetic; MED "two moons" — the sun itself is just `q`].
 ## 18. Who sets the all-ally override `PTR_DAT_100cde4c` — RESOLVED (HIGH)
 
 Reader: `GetEnemyStatus__14TActiveMonsterFP14TActiveMonster @ 100487d8`: `if (*PTR_DAT_100cde4c != '\0') return 1;` (everyone
-friendly). Writer (r2-relative scan, only hit): `0x10043FD8`, inside the body of
-`.KeyRoutine__10TMapWindowFs` (traceback name at 0x100446D8; Ghidra mis-attributes it to
-`ShowTileAnimate`):
+friendly). Writer (r2-relative scan `ppcdis.py 10000000 100cd280 | grep -- '-29748(r2)'`: three
+hits, 0x10043FD8/0x10043FDC and the reader 0x100487DC): `0x10043FD8`, inside the body of
+`.KeyRoutine__10TMapWindowFs` (`tb.py --tb --grep KeyRoutine__10TMapWindow` → entry 0x100437B8, name
+at 0x100446D8; Ghidra's main dump mis-attributes it to `ShowTileAnimate`; the body is now in the
+extra dump). Listing = `ppcdis.py 10043c58 10043c60` and `ppcdis.py 10043fcc 10043ff0` ⚑ corrected (wave 1 2026-10-03):
 ```
 10043c58: cmpwi r0,250        ; key char 0xFA
 10043c5c: beq  0x10043fcc
@@ -399,8 +438,8 @@ friendly). Writer (r2-relative scan, only hit): `0x10043FD8`, inside the body of
 10043fd8: lwz r4,-29748(r2)   ; 0x100cde4c
 10043fe0: lbz r0,0(r4); cntlzw r0,r0; rlwinm r0,r0,27,5,31; stb r0,0(r3)   ; flag = !flag
 ```
-Cheat mode itself (same function, 0x10043814–0x10043884): a 4-key rolling buffer
-`buf = buf<<8 | key`; `addis r0,r4,0x5699; cmplwi r0,0x7261` ⇒ `buf == 0xA9677261` (keys 0xA9,
+Cheat mode itself (same function, `ppcdis.py 10043814 10043888` ⚑ corrected (wave 1 2026-10-03)): a 4-key rolling buffer
+`buf = buf<<8 | key`; `10043828: addis r0,r4,22169` (= 0x5699), `1004382c: cmplwi r0,0x7261` ⇒ `buf == 0xA9677261` (keys 0xA9,
 'g', 'r', 'a' — 0xA9 = '©', Option-G on a US layout), gated by bit 0 of `0x100d3e23` (prefs byte
 block at `DAT_100d3e20`); toggles `*r28` and prints "Cheat mode activated." / "Cheat mode
 deactivated." (`tools/toc.py 100ce85c 100ce858`). So the override is a **cheat toggle: key 0xFA
@@ -410,8 +449,11 @@ glyphs]. Who sets the `0x100d3e23` bit: not traced.
 ---------------------------------------------------------------------------------------------
 ## 19. `script-builtins.md` §4 — RESOLVED except F8 (out of scope)
 
-Vtable slots resolved as described in the method notes (vtables: app 0x100D4358, status window
-0x100D4B08, conversation 0x100D5298, scripted window 0x100D69E8, fade-in text 0x100D786C).
+Vtable slots resolved as described in §0 (vtables: app 0x100D4358, status window
+0x100D4B08, conversation 0x100D5298, scripted window 0x100D69E8, fade-in text 0x100D786C). Each call
+site below is a `bl 0x100c50e8` glue call in `ppcdis.py 10000000 100cd280` (13/13 re-read; e.g.
+`ppcdis.py 10094140 10094170` → `lwz r4,-30460(r2)  ; TOC 0x100cdb84` … `lwz r12,124(r12)` … `lwz
+r12,100(r12)` for A2) ⚑ corrected (wave 1 2026-10-03).
 
 | builtin | call site (disasm) | receiver | slot → method | conf |
 |---|---|---|---|---|
@@ -431,14 +473,15 @@ Vtable slots resolved as described in the method notes (vtables: app 0x100D4358,
   (`Builtin_D0`, lines `puVar4[1] = *puVar5; … (*puVar5 != puVar4[1])`) therefore iterates the props
   whose monster shares *who*'s CharEntry — the body segments of one multi-prop creature
   (`TCrawlMonster`/`TOctoMonster`/`TDragonMonster`) [HIGH code; MED "body segments"].
-- **FC's viewer +0xD = auto-mapping on.** Only reader: `Render` (`lbz r14,13(r31)` @ 0x100672DC, r31 =
-  `this` from `or r31,r3,r3` @ 0x10066ACC) → `if (local_fc != 0) *local_28c |= 0x8000` on every drawn
+- **FC's viewer +0xD = auto-mapping on.** Only reader: `Render` (`100672dc: lbz r14,13(r31)`, r31 =
+  `this` from `10066acc: mr r31,r3` — `ppcdis.py 10066acc +1`, `ppcdis.py 100672dc +1` ⚑ corrected (wave 1 2026-10-03)) → `if (local_fc != 0) *local_28c |= 0x8000` on every drawn
   map cell (the "seen" bit saved as 0x8200+L). Scripts: object 0x117A (type 378) `sel16`
   `set_viewer_flag_d(True)` / `sel17` `set_viewer_flag_d(False)` (pick up / drop), and 0x1CC3 gives
   item 378 "this magical mapping device" then sets it True. Saved in the `'Char'` chunk [HIGH].
 - **E2's `TBres` callback** = `TLineEffect` (vtable 0x100D76BC, +8 =
   `DoBresPixel__11TLineEffectFl` @ 0x1009930C): for each line point within ±15 cells of the view,
-  `GetBestProp(x,y)` (bl 0x1006B188) → `GetCharacter(prop)` (bl 0x1004D704) → `stbx 1` into
+  `GetBestProp(x,y)` (`100993a4: bl 0x1006b188`) → `GetCharacter(prop)` (`100993bc: bl 0x1004d704`) →
+  `100993e8: stbx r5,r4,r0` (`ppcdis.py --func DoBresPixel__11TLineEffect` ⚑ corrected (wave 1 2026-10-03)) into
   `cee00[(CharEntry* − table) >> 5]` — the set of characters on the missile path, which E2 clears
   first [HIGH].
 - **Iterator loop shape** (listing `0ea5` 0x001A–0x006E): `L02 = iterate_list(&L03, 0, coll)` (init
@@ -453,16 +496,28 @@ Vtable slots resolved as described in the method notes (vtables: app 0x100D4358,
 | 1 header fields / CompatibleVersions field | RESOLVED (+0x40 engine fmt, +0x42 scenario ver, +0x48 max map dim, +0x20 player name) | HIGH (+0x20 copy fn MED) |
 | 4 map +0x04, +0x14..0x1F; C*0x40 | RESOLVED (unused; C*0x40 literal latent defect) | HIGH |
 | 5 prop +0xA..0xF; kinds 0x11/0x80; 'B' frames | PARTIAL: +0xA free slot, +0xE elevation, 0x80 hidden, all 'B' frames 0–10 resolved; **kind 0x11 open** | HIGH (0x11 open) |
-| 6 globals | PARTIAL: F008 species, F00D wall substitution, F011/F012 offsets, F00F transitions, F014/F015 symbol tables, F00A zero; **F005/F007 content open** | HIGH / LOW |
+| 6 globals | PARTIAL: F008 species (fields: combat.md §4; byte 7 open ⚑ corrected (wave 1 2026-10-03)), F00D wall substitution, F011/F012 offsets, F00F transitions, F014/F015 symbol tables, F00A zero; **F005/F007 content open** | HIGH / LOW |
 | 7 CharEntry +0x12/17/18/1D/1F | RESOLVED | HIGH (+0x1D name MED) |
-| 8 save stream | RESOLVED (hhhh = karma, G0E, difficulty, serial; chunk + format encodings; Mons/FXQ/Wind/Grem) | HIGH (subclass extras MED) |
+| 8 save stream | RESOLVED (hhhh = karma, G0E, difficulty (name MED), serial; chunk + format encodings; Mons/FXQ/Wind/Grem) | HIGH (subclass extras MED) |
 | 9 music / sound formats | RESOLVED (asnd fully; music = QT MusicDescription + QTMA tune, events not decoded) | HIGH |
 | 10 resource types; Lite 128–133 | RESOLVED (editor-only, no reader; Lite = tile light emitters); PORT content open | HIGH / MED |
 | 12 class 0x28, 0x48 | RESOLVED (0x48 species; 0x28 unused, 0x15xx = zones 0x100+) | HIGH |
-| 16 pacing; Render; sky | PARTIAL: pacing and sky resolved; Render layer order open | HIGH / MED |
+| 16 pacing; Render; sky | PARTIAL: pacing and sky resolved (leader states Afraid/Paralysed/Confused/Asleep ⚑ corrected (wave 1 2026-10-03)); Render layer order open | HIGH / MED |
 | 18 all-ally override writer | RESOLVED (cheat toggle key 0xFA under cheat mode) | HIGH |
 | 19 builtin §4 | RESOLVED (F8 out of scope) | HIGH |
 
 Counts: **resolved 9** (1, 4, 7, 8, 9, 10, 12, 18, 19), **partially 3** (5, 6, 16), **still open 0**
-whole items (open sub-points: kind 0x11, 0xF005/0xF007 content, `PORT` content, `Render` layer
-order, 0xF008 bytes 3/4/7/8–0xF, global 0x0E meaning, writer of pref bit `0x100d3e23`).
+whole items; open sub-points in the next section.
+
+---------------------------------------------------------------------------------------------
+## Open items ⚑ corrected (wave 1 2026-10-03)
+1. Prop kind 0x11 (55 records): no reader found (§5).
+2. 0xF005 / 0xF007 content (§6).
+3. 0xF008 byte 7: no reader found (§6; combat.md §4 covers the other fields).
+4. `PORT` 0/1 content; QTMA event stream of the music segments (§9, §10).
+5. `Render` layer/priority order and `TMaskTile` use; the per-frame wall-clock wait, if any (§16).
+6. Script global 0x0E meaning beyond bit 0 (§8).
+7. Who sets the pref bit 0x100D3E23 that arms cheat mode (§18).
+8. Subclass `'Mons'` stream extras and the list terminator (§8; bodies now in the extra dump).
+9. `tb.py --missing ghidra/Cythera_pef.decompiled.c`: 877 named functions absent from the main dump
+   (840 with the extra dump); any open point above may have its reader among them.

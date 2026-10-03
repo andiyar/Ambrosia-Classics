@@ -3,7 +3,9 @@
 Register: **code reading**. Every claim is labelled **HIGH** (quoted bytecode or decompiled /
 disassembled lines prove it), **MED** (inferred from code read) or **LOW** (conjecture). Citations:
 `segid @ offset` = a line of `ghidra/cythera-scripts/<segid>.txt`; `Function @ addr` = a function of
-`ghidra/Cythera_pef.decompiled.c` unless marked *(scratch)* — see §0. Cross-references: rules.md §3
+`ghidra/Cythera_pef.decompiled.c` unless marked *(extra dump)* = `ghidra/Cythera_extra.decompiled.c`
+(CyDecompAt.java, extra-addrs.txt) or cited with a `ppcdis.py` / `tb.py` / `toc.py` command — see §0
+⚑ corrected (wave 1 2026-10-03). Cross-references: rules.md §3
 (ScheduleOne/EvalCondition/RepositionChar — cited, not repeated), engine-classes.md §3 (clock),
 ai-scripts.md (the `.ai` language), script-builtins.md (builtins), data-format.md §6 (CharEntry).
 
@@ -22,20 +24,29 @@ FindWaypoint,CanSimpleNavigate}`, `PerformAI`, `PerformAction`, `EvaluateConditi
 `CalculateObject`, `DoInterpRoutine`, `TGremlin::OnEnter/OnSignal`, `GetField/SetField` (cases cited),
 `RecalcUserAIMenu`, `TCharacterWindow::PostInit` (behaviour radios).
 
-**New method (scratch, not banked as a tool):**
-1. *PPC traceback tables name the functions the dump lacks.* A stdlib parse of the PEF code section
-   (zero word, then `00 09 …` table, `tb_offset`, name) lists **1,952 names**; e.g. at 0x1004D6D4:
-   `00000000 00092041 80010000 00001dec 001c 2e44 6f4d6f76…` = `.DoMove__14TActiveMonsterFss`,
-   length 0x1DEC ⇒ entry 0x1004B8E8 — the 7.9 KB **activity dispatcher**, absent from the dump. Also
-   named: `Die` 0x100469C0, `LeaveLevel` 0x100465A4, `CanFace` 0x1004A358 / Crawl 0x1004A3A4,
+**Method — banked tools (`docs/cythera/tools/`, recipes in `tools/README.md`)** ⚑ corrected (wave 1
+2026-10-03; every quote below re-run with the command named beside it):
+1. *Traceback tables name the functions the main dump lacks* — `python3 docs/cythera/tools/tb.py`
+   (1,994 tables, `--cxx-only` 1,952). `ppcdis.py --hex 1004d6d4 +5` prints the DoMove table:
+   `00000000 00092041 80120000 00001dec 001c2e44` (zero word … tb_offset 0x1DEC, name length 0x1C,
+   ".D"); `tb.py --tb --grep DoMove` → `1004b8e8  1dec .DoMove__14TActiveMonsterFss  tb@1004d6d4
+   name@1004d6e4` — the 7.9 KB **activity dispatcher**. `tb.py --tb --grep` also gives `Die`
+   0x100469C0, `LeaveLevel` 0x100465A4, `CanFace` 0x1004A358 (TCrawlMonster's 0x1004A3A4),
    `AdjustAspect` 0x1004ACC8, and every Crawl/Octo/Dragon override. [HIGH]
-2. A scratch Ghidra postScript on a *copy* of the analysed project (`/private/tmp/ghidra-proj-
-   cythera`) that dumps vtables, disassembles ranges, scans the listing for an operand, and creates +
-   decompiles functions with r2 pinned to the TOC (recipe of `tools/CyDecompBuiltins.java`). Output
-   lines quoted below as *(scratch)*. A banked replica of these two tools is an open item (§10).
+2. *Bodies* — the 37 functions the main dump lacks (DoMove, Die, LeaveLevel, the subclass
+   overrides…) are in `ghidra/Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt); DoMove =
+   `python3 ghidra/find_func.py 'DoMove__14TActiveMonster' --file ghidra/Cythera_extra.decompiled.c`.
+   Disassembly = `python3 docs/cythera/tools/ppcdis.py <start> <end>` (r2 = 0x100D5280 annotated);
+   data words (vtables, jump tables) = `toc.py <addr>` over the data section `pef.py` unpacks (loaded
+   at 0x100CD280). [HIGH]
+   Consolidated item 20 (DoMove/Die/LeaveLevel absent from the dump) is resolved by the extra dump;
+   `tb.py --missing ghidra/Cythera_pef.decompiled.c` still lists **877** named functions absent from
+   the main dump (840 with the extra dump concatenated).
 
 **Not read:** `FollowLeader` (only called from `TeleportTo`), `GotAway`, `HandleMove` and the
-subclass `HandleMove/CanMove` bodies beyond their vtable slots, `Die`, `LeaveLevel`, `ShowBarks`
+subclass `HandleMove/CanMove` bodies beyond their vtable slots, `Die`, `LeaveLevel` (the subclass
+bodies, `Die` and `LeaveLevel` are now in the extra dump, not read for this bank ⚑ corrected (wave 1
+2026-10-03)), `ShowBarks`
 internals, `FurthestPoint`, `FindFirstStep/Waypoint`, `Render`, the 0x0C00–0x0C3F routines other
 than 0x0C00, the 146 room/zone first-visit texts beyond counts, the hintbook.
 
@@ -87,8 +98,11 @@ Quotes for the three defects (raw bytes decrypted this session with `seg.py dec`
 098A @0040: f0 30 43 00 00 00 a0 41 00 41 00 43 50 00 ff ff 40   queue_activity(A30, 160, 0, 0, Nil)
 0989 @00A1: f0 30 43 00 00 00 a0 01 02 43 50 00 ff ff 40         queue_activity(A30, 160, L01, L02, Nil)
 0987 @0034: 8d 31 60 2a 40 00 42                                  jf has(A31, sel42) -> 0042
-0C55 @0003: 86 2b 30 40 33 40 8b 41 00 40                         setfield A30.f2B = A33; return 0
+0C55 @0003: 86 2b 30 40 33 40                                     setfield A30.f2B = A33
+0C55 @0009: 8b 41 00 40                                           return 0
 ```
+(0C55: two consecutive lines, `ghidra/cythera-scripts/0c55.txt` @0003 and @0009 ⚑ corrected (wave 1
+2026-10-03).)
 Shipped use (segments 0x0410–0x0436, entry byte1 ≥ 0x80, census this session): tests 0x81 ×6,
 0x82 ×6, 0x83 ×4, 0x85 ×4, 0x86 ×2; actions 0x81 ×6, 0x82 ×22, 0x83 ×4, 0x84 ×4, 0x88 ×4, 0x89 ×4,
 0x8A ×2, 0x8B ×22, 0x8C ×10. So **OutOfAmmo, EquipRanged and RunToward — all three defective — are
@@ -103,9 +117,12 @@ Field 0x15 `activity` = CharEntry +0x16; field 0x16 `behaviour` = **+0x1E** (`Se
 `setworktype` (0x0F03) is `activity = A31`. GetField 0x15 returns **0x7F** while the monster walks to a
 waypoint (`_GetWaypoint… != '\0') { *param_1 = 0x7f;`). [HIGH]
 
-### 2.1 What each value makes an NPC do natively (`DoMove @ 1004b8e8` *(scratch)*, empty queue)
-The switch reads `uStack_78 = *(byte *)(*param_1 + 0x16)` (or the queue head's code, §3). Busy = the
-tick count written to CharEntry +0x12 before the next decision. [HIGH — every case read]
+### 2.1 What each value makes an NPC do natively (`DoMove @ 1004b8e8` *(extra dump)*, empty queue)
+The switch reads `uStack_78 = (ushort)*(byte *)(*param_1 + 0x16);` (or the queue head's code,
+`uStack_78 = (ushort)*(byte *)(piStack_80 + 2);`, §3) — quotes from `find_func.py
+'DoMove__14TActiveMonster' --file ghidra/Cythera_extra.decompiled.c` ⚑ corrected (wave 1
+2026-10-03: the earlier quote lacked the `(ushort)` cast). Busy = the tick count written to CharEntry
++0x12 before the next decision. [HIGH — every case read in the extra dump]
 
 | value | native behaviour | busy | conf |
 |---|---|---|---|
@@ -121,9 +138,9 @@ tick count written to CharEntry +0x12 before the next decision. [HIGH — every 
 | 0x09, 0x0A, 0x0B | roam (`DoRoam`: random 8-way step) | 16 | HIGH |
 | 0x0D | Target Attack: no target → activity := 0x0C, busy 8; else `DoAttack` | — | HIGH |
 | 0x0F / 0x10 | pace E–W / N–S | 12 | HIGH |
-| 0x71 | return from combat: party member → activity 1; else if the egg template's (+0x14) type equals the body type → activity := template byte 6, otherwise `ScheduleOne(char, hour, 1)`; **falls through** to 0x93 (so food := 30 too). For a non-spawned NPC +0x14 is 0 (ctor `param_1[5] = 0`) and the compare reads address 4 — no fault on classic Mac OS; treat as a mismatch [MED] | 32 | HIGH |
+| 0x71 | return from combat: party member → activity 1; else if the egg template's (+0x14) type equals the body type → activity := template byte 6, otherwise `ScheduleOne(char, hour, 1)`; **falls through** to 0x93 (so food := 30 too). For a non-spawned NPC +0x14 is 0 (ctor `param_1[5] = 0`) and the compare reads address 4 — no fault on classic Mac OS; the outcome depends on the low-memory word there [MED] ⚑ corrected (wave 1 2026-10-03: register) | 32 | HIGH |
 | 0x93 | eating: **food (+0x1B) := 30** | 32 | HIGH |
-| 0x86–0x89 | stand still facing 0–3 (`AdjustAspect(1, dir)`, vtable +0x30 — disasm `li r4,0x1; li r5,0x2; lwz r12,0x30(r12)`) | 20 | HIGH |
+| 0x86–0x89 | stand still facing 0–3 (`AdjustAspect(1, dir)`, vtable +0x30 — case 0x88: `ppcdis.py 1004d02c 1004d060` → `1004d040: li r4,1` … `1004d048: li r5,2` … `1004d050: lwz r12,48(r12)` ⚑ corrected (wave 1 2026-10-03)) | 20 | HIGH |
 | 0x8A / 0x8B | pace N–S / E–W | 12 | HIGH |
 | 0x8C / 0x8D | pace N–S / E–W (slower) | 16 | HIGH |
 | 0x8F, 0x97 / 0x90 | roam | 12 / 20 | HIGH |
@@ -145,9 +162,11 @@ per-character selector-32 methods such as `181E @0005` `jf (A30.f15:activity == 
 Census (this session, `seg.py` over 0xF009/0xF00B): schedule activities (entries with loc ≠ 0):
 0x93 ×133, 0x91 ×99, 0x92 ×93, 0x90 ×82, 0x8F ×39, 0x8B ×25, 0x8A ×24, 0x8E ×20, 0x00 ×18, 0x94 ×12,
 0x8D ×9, 0x96 ×8, 0x88 ×6, 0x8C ×6, 0x87 ×5, 0x89 ×5, 0x0F ×5, 0x86 ×2, 0x0C ×2, 0x10 ×2 (617
-entries). Initial CharEntry +0x16: 0x91 ×87, 0x00 ×16, 0x92 ×6, 0x88 ×4 … [HIGH]
+entries). Initial CharEntry +0x16 (131 non-empty entries, same command as §2.3 with `r[0x16]`):
+0x91 ×87, 0x00 ×17 (16 without placeholder entry 0), 0x92 ×6, 0x88 ×4 … [HIGH] ⚑ corrected (wave 1
+2026-10-03)
 
-### 2.2 Pre-emption before the switch (DoMove head) [HIGH]
+### 2.2 Pre-emption before the switch (DoMove head, *(extra dump)* ⚑ corrected (wave 1 2026-10-03)) [HIGH]
 Status bit 0x20 (Afraid) → `DoRetreat`; 0x40 (Paralysed) or 0x4000 (Asleep) → busy 20, nothing;
 0x2000 (Confused) and `Random() & 3 != 0` → busy 12, step to a random diagonal neighbour.
 ```
@@ -180,7 +199,12 @@ segments 0x0431/0x0434/0x0432/0x0433/0x0430, whose names match). [HIGH]
   default, the Hero's attack puts every party member into its behaviour). [HIGH]
 - `HatchEgg @ 1004f420` sets spawned monsters' +0x1E from the template activity: 3–8 → same; 9 → 3;
   10 → 4; 11 → 5; 0x0C/0x0F/0x10 → 6; anything else 7 (Retreat). [HIGH]
-- Data census +0x1E: {0:10, 2:1, 3:7, 4:7, 5:1, 6:5, 7:8, 8:91}. [HIGH]
+- Data census +0x1E over the **131 non-empty** 0xF009 CharEntries: {0:11, 2:1, 3:7, 4:7, 5:1, 6:5,
+  7:8, 8:91} — the 0s are entries 0, 15, 43, 44, 47, 99, 126–129, 190 (10 without placeholder entry
+  0); agrees with data-format.md §6.1. Command: `python3 -c "import sys,collections;
+  sys.path.insert(0,'docs/cythera/tools'); import seg; d,s,p=seg.toc(); o,l=s[0xF009]; R=[d[o+i:o+i+32]
+  for i in range(0,l,32)]; print(collections.Counter(r[0x1e] for r in R if any(r)))"` (0xF009 is read
+  raw, not XOR-decrypted). [HIGH] ⚑ corrected (wave 1 2026-10-03: was 0:10)
 
 ---------------------------------------------------------------------------------------------
 ## 3. The activity queue (`ActivityQueueEntry`, builtin F0)
@@ -191,7 +215,14 @@ segments 0x0431/0x0434/0x0432/0x0433/0x0430, whose names match). [HIGH]
 param_1 + 0x30`). DoMove reads node +8 act, +0xA x, +0xC y, +0x10 value; non-empty test `param_1[0xb]
 != 0`, head `param_1[0xd]`.
 
-### 3.2 Head codes handled natively (`DoMove` *(scratch)*) [HIGH]
+### 3.2 Head codes handled natively (`DoMove` *(extra dump)*) [HIGH]
+⚑ corrected (wave 1 2026-10-03): the head switch is `switch(*(undefined1 *)(iStack_a4 + 8))` (extra
+dump), compiled as a jump table at 0x100D5A1C (`ppcdis.py 1004bb20 +1` → `addi r3,r2,1948  ; =
+0x100d5a1c`), whose 11 words (`toc.py 100d5a1c … 100d5a44`, code offsets) send 0xA0–0xAA to
+0x1004BB34, BBA0, BC40, BCFC, **BD8C (0xA4), BE24 (0xA5), BEB4 (0xA6), BF78 (0xA7)**, C01C, C054, C0B4.
+0xA6 / 0xA7 lines: `if (((byte)puStack_f4[8] & uStack_f8) == 0) { cStack_64 = '\x01'; }` (value ≠
+True: popped when the bit is clear) and `if ((bool)uStack_fe) { puStack_fc[8] = puStack_fc[8] | bVar2; }
+else { puStack_fc[8] = puStack_fc[8] & ~bVar2; }` (`uStack_fe = True == value`).
 | code | meaning (x, y, value) | popped when |
 |---|---|---|
 | 0xA0 | walk to (x, y) — sets waypoint if not walking | at (x, y) |
@@ -200,8 +231,8 @@ param_1 + 0x30`). DoMove reads node +8 act, +0xA x, +0xC y, +0x10 value; non-emp
 | 0xA3 | walk to (x, y) | dist² < 2 |
 | 0xA4 | wait for global flag x; if y == 0 also clear it | flag set |
 | 0xA5 | set (y ≠ 0) / clear global flag x | at once |
-| 0xA6 | wait until CharEntry[x] +8 bit y is set (value True) / clear | condition |
-| 0xA7 | set / clear CharEntry[x] +8 bit y (value True / else) | at once |
+| 0xA6 | **wait until** CharEntry[x] +8 bit y is set (value True) / clear (any other value, e.g. False) ⚑ | condition |
+| 0xA7 | set / clear CharEntry[x] +8 bit y (value True / any other value) ⚑ | at once |
 | 0xA8 | drop y entries starting with itself | at once |
 | 0xA9 | wait until `EvalCondition(x>>8, x&0xFF)`, then drop y entries from the head | condition |
 | 0xAA | one `GoTowards` step to prop x | after the step |
@@ -213,7 +244,9 @@ param_1 + 0x30`). DoMove reads node +8 act, +0xA x, +0xC y, +0x10 value; non-emp
           (int)sVar9 & 0xfffffff,(int)sVar16 & 0xfffffff,iVar8);
 if (iStack_b4 == *(int *)PTR_DAT_100cddec) { cStack_7a = '\x01'; }
 ```
-No class defines selector 33, so it lands in **0x3021** `return R[0C00+A31](A30, A32, A33, A34)` —
+(the default-case lines above: extra dump, DoMove ⚑ corrected (wave 1 2026-10-03).) While an 0xA4 or
+0xA6 head waits, the main switch's `case 0xa4: case 0xa6:` sets busy 8. No class defines selector 33,
+so it lands in **0x3021** `return R[0C00+A31](A30, A32, A33, A34)` —
 the "never called" routines 0x0C40–0x0C55 of census §7 are the **queued-activity handlers**. [HIGH]
 
 ### 3.3 Script handlers 0x0C40–0x0C55 (A30 = char, A31 = x, A32 = y, A33 = value)
@@ -282,17 +315,22 @@ Off its game thread `MoveAll` only calls `TTaskMaster::ScheduleMonster`. [HIGH]
 ```
 if (((-0xe < sVar12) && (sVar12 < 0xe)) && ((-0xe < sVar11 && (sVar11 < 0xe)))) { bVar4 = true; }
 ```
-Vtable slots (dumped *(scratch)* from the TActiveMonster table at 0x100D5BAC, `[0]` RTTI, `[4]` 0):
+Vtable slots of the TActiveMonster table at 0x100D5BAC (`[0]` RTTI, `[4]` 0) ⚑ corrected (wave 1
+2026-10-03): `toc.py 100d5bb4 … 100d5be4` gives each slot's TVector data offset (e.g. `100d5bbc
+0x2eb8`), `toc.py 0x100cd280+off` its code offset (`100d0138 0x4b8e8`), `tb.py --at` the name
+(`1004b8e8  1dec .DoMove__14TActiveMonsterFss`); 13/13 slots re-resolved:
 +0x08 dtor, +0x0C Save, +0x10 DoMove, +0x14 LeaveLevel, +0x18 Die, +0x1C IsPartOfMonster, +0x20
 CanFace, +0x24 CanMove, +0x28 HandleMove, +0x2C HandleSubMove, +0x30 AdjustAspect, +0x34
 ClearMonstStage, +0x38 SetMonstStage. [HIGH]
 
 ### 4.3 Wall clock [HIGH for the disasm / MED for "no throttle"]
 `MoveAll` computes a budget of 0x10 or 0x20 Mac ticks (sign bit of `DAT_100d3e20`) and only clamps the
-global at 0x100CE898 with it; the scratch scan finds that global's TOC slot (−0x69E8) read **only in
-`MoveAll`** (0x1004E4F4, 0x1004E538, 0x1004E55C) and never compared again:
+global at 0x100CE898 with it; a scan of the whole code section (`ppcdis.py 10000000 100cd280 | grep --
+'-27112(r2)'`) finds that global's TOC slot (−0x69E8) read **only in `MoveAll`** (0x1004E4F4,
+0x1004E538, 0x1004E55C) and never compared again ⚑ corrected (wave 1 2026-10-03):
 ```
-1004e548  cmplw r3,r0 ; 1004e54c  ble 0x1004e568 ; … 1004e560  subf r0,r0,r3 ; 1004e564  stw r0,0x0(r4)
+$ python3 docs/cythera/tools/ppcdis.py 1004e544 1004e568
+1004e548: cmplw r3,r0 ; 1004e54c: ble 0x1004e568 ; … 1004e560: subf r0,r0,r3 ; 1004e564: stw r0,0(r4)
 ```
 So **game logic has no wall-clock rate**: a step costs the leader busy 10 (≈ 10 clock units) and every
 other monster gets the same number of `DoTick`s. The only timing in `MoveAll` is a 60-tick (1 s) guard
@@ -340,7 +378,7 @@ bit 0x100; timer props, §7.2), `TSpellFX::PassTime/RemoveAllAbility`.
 |---|---|---|
 | quality / byte7 of the prop | levers `10BB @001F/@002B`, buttons `1107 @0045`, `1104`, `1110`, loose board `1162 @001B`, fine wire `1165 @005F`, coffer slide `108E @00B8` | lever/door/trap chains: the receiving props carry the same number in byte 6 |
 | type of a 'B' trigger | `DrawRoutine` frames 2 and 6 (§7.1) | step-on / area triggers |
-| 0x100 (256) | `TakeCommand`: `if (local_60 != *(int *)puVar3) { _SendSignal__8TGameSysFs(param_1,0x100); }` after sending selector 15 to the item | **theft** — the item's take hook did not return the "ok" value (MED: `puVar3` not identified) |
+| 0x100 (256) | `TakeCommand`: `if (local_60 != *(int *)puVar3) { _SendSignal__8TGameSysFs(param_1,0x100); }` after sending selector 15 to the item; `puVar3 = PTR_DAT_100cdbb0;` (Nil) and, just before, `if (local_60 == *(int *)PTR_DAT_100cde70) { return; }` (False) | **theft** — the take hook (default 300F) returned neither False (abort) nor Nil (quiet take) ⚑ corrected (wave 1 2026-10-03: `puVar3` identified, same reading as script-library §9 300F) [HIGH] |
 | 320 | `0D06 @0077` | alarm raised by a witness |
 | 321 | `3043 @0096` | a party member provoked a neutral/good non-party character |
 | 0x101 | `DoTicks` | hourly chime |
@@ -372,20 +410,23 @@ attacks whom afterwards still goes through `GetEnemyStatus` (rules.md §1); the 
 the f22 field, so a neutral on Beserk attacks its set target. [HIGH code / MED combat consequence]
 
 ### 6.4 The all-ally override byte — INDEX 18 settled [HIGH disasm / MED key name]
-The scratch scan for the TOC slot of `PTR_DAT_100cde4c` (r2 − 0x7434) over the whole listing (incl. the
-builtin block) finds three uses: the read in `GetEnemyStatus` (0x100487DC) and a **toggle** in
-`TMapWindow::KeyRoutine` (traceback name, entry 0x100437B8):
+A scan of the whole code section for the TOC slot of `PTR_DAT_100cde4c` (r2 − 0x7434;
+`ppcdis.py 10000000 100cd280 | grep -- '-29748(r2)'`, builtin block included) finds three uses: the
+read in `GetEnemyStatus` (0x100487DC) and a **toggle** in `TMapWindow::KeyRoutine` (`tb.py --tb --grep
+KeyRoutine__10TMapWindow` → entry 0x100437B8) ⚑ corrected (wave 1 2026-10-03):
 ```
-10043c58  cmpwi r0,0xfa ; 10043c5c  beq 0x10043fcc
-10043fcc  lbz r0,0x0(r28) ; 10043fd0  cmplwi r0,0x0 ; 10043fd4  beq 0x100446b4
-10043fd8  lwz r4,-0x7434(r2) ; 10043fdc  lwz r3,-0x7434(r2) ; 10043fe0  lbz r0,0x0(r4)
-10043fe4  cntlzw r0,r0 ; 10043fe8  rlwinm r0,r0,0x1b,0x5,0x1f ; 10043fec  stb r0,0x0(r3)
+$ python3 docs/cythera/tools/ppcdis.py --hex 10043c58 10043c60 ; … --hex 10043fcc 10043ff0
+10043c58: cmpwi r0,0xfa ; 10043c5c: beq 0x10043fcc
+10043fcc: lbz r0,0x0(r28) ; 10043fd0: cmplwi r0,0x0 ; 10043fd4: beq 0x100446b4
+10043fd8: lwz r4,-0x7434(r2) ; 10043fdc: lwz r3,-0x7434(r2) ; 10043fe0: lbz r0,0x0(r4)
+10043fe4: cntlzw r0,r0 ; 10043fe8: rlwinm r0,r0,27,5,31 ; 10043fec: stb r0,0x0(r3)
 ```
-i.e. key code **0xFA** (Mac Roman "˙", Option-h) toggles it when the byte at r2 − 0x7430 (0x100CDE50)
-is set. That byte is toggled at 0x10043844 when the last four keys are **0xA9 'g' 'r' 'a'** (`addis
-r0,r4,0x5699; cmplwi r0,0x7261` ⇒ buffer 0xA9677261) and bit 0 of byte 0x100D3E23 is set. So the
+i.e. key code **0xFA** (Mac Roman "˙", Option-h) toggles it when the byte at r2 − 0x7430 (0x100CDE50;
+`100437d4: lwz r28,-29744(r2)`) is set. That byte is toggled at 0x10043844 when the last four keys are
+**0xA9 'g' 'r' 'a'** (`ppcdis.py 10043814 10043888`: `10043828: addis r0,r4,22169` = 0x5699,
+`1004382c: cmplwi r0,0x7261` ⇒ buffer 0xA9677261) and bit 0 of byte 0x100D3E23 is set. So the
 override is a **debug cheat ("everyone is an ally")**, not game logic; nothing else writes it and it
-is not saved. Replica: omit or keep as a hidden debug toggle.
+is not saved. ⚑ corrected (wave 1 2026-10-03): a design sentence was removed here (house register).
 
 ---------------------------------------------------------------------------------------------
 ## 7. Map and room hooks
@@ -441,7 +482,11 @@ come only from 'B' frame-0 eggs and character bodies (§8).
   CharEntry 0x100–0x1FF and rolls a strength percentage by `_DAT_100d73f2` (0: 10–49, 1: 25–99, 2:
   50–149, 3: 100–199, 4: 150–299, else 100) applied to the monster record's Body/Reflex/Mind/Health
   (record bytes 0, 1, 2, 5); alignment := record byte 6; level from HP and stats; +0x1F := the roll.
-  [HIGH code / LOW that `_DAT_100d73f2` is a difficulty setting — saved by `SaveToFile`, writer not traced]
+  [HIGH code] ⚑ corrected (wave 1 2026-10-03): writers of `_DAT_100d73f2` — HIGH: the only r2-relative
+  references in the code section (`ppcdis.py 10000000 100cd280 | grep 'r2,8562'`) are the ctor
+  `10044ba8: addi r21,r2,8562`, `SaveToFile` `100130f4: addi r7,r2,8562` and `RestoreModel`
+  `10014180: addi r7,r2,8562` (the 'Char' stream `hhhh` save/restore), so only the restore writes it;
+  the name "difficulty" — MED (open-items §8, combat §4.1).
 
 ### 8.2 Classes by property 55 (`CreateMonster @ 1004eb08`) [HIGH]
 | prop 55 | class (size) | difference |
@@ -464,27 +509,36 @@ re-plans on arrival at each waypoint.
 
 ---------------------------------------------------------------------------------------------
 ## 9. `PerformAI` and `CompileAIFile` callers — INDEX 14 (second half)
-- `PerformAI(m, slot)` is called **six times from `DoMove`** (disasm *(scratch)* `1004c51c bl
-  0x100b0ba4`, …c57c, …c5a8, …c608, …c688, `1004d5bc`): slots 0xD1/0xD4/0xD2/0xD3/0xD0 for activities
-  3/4/5/6/8 and the activity value itself for 0xB0–0xFF. The dump showed no caller because DoMove was
-  never made a function. It loads segment 0x360 + slot (≥ 0x20 bytes), opens `TAIDebug` for flagged
-  slots 0xB0–0xCE, runs `EvaluateAI`, returns 1; missing segment → 0 (native fallback). [HIGH]
-- `CompileAIFile`: the whole-program scan for a TVector or `bl` to 0x100B0EF8 was not run (only
-  `PerformAI`/`EvaluateCondition`/`PerformAction` TVector searches: their code words occur once each at
-  0x100CCFE0/0x100CCFBC/0x100CCFC8, inside the code section, i.e. not TVectors). Still open; the
-  `EditUserBehaviors` lead (ai-scripts §6) stands. [MED]
+- `PerformAI(m, slot)` (`tb.py --grep PerformAI` → entry 0x100B0BA4) is called **six times, all from
+  `DoMove`** ⚑ corrected (wave 1 2026-10-03): `ppcdis.py 1004b8e8 1004d6d4 | grep 'bl 0x100b0ba4'` →
+  `1004c51c`, `1004c57c`, `1004c5a8`, `1004c608`, `1004c688`, `1004d5bc`, each preceded by `li
+  r4,209`/`212`/`210`/`211`/`208` (0xD1/0xD4/0xD2/0xD3/0xD0) or `1004d5b8: lha r4,376(r1)`; the same
+  grep over the whole code section (`ppcdis.py 10000000 100cd280`) finds no other `bl 0x100b0ba4`.
+  Slots 0xD1/0xD4/0xD2/0xD3/0xD0 serve activities 3/4/5/6/8 (extra dump: `case 3:
+  cVar11 = .debug::_PerformAI__FP14TActiveMonsters(param_1,0xd1);` …) and the activity value itself
+  for 0xB0–0xFF. The main dump showed no caller because DoMove was never made a function there. It
+  loads segment 0x360 + slot (≥ 0x20 bytes), opens `TAIDebug` for flagged slots 0xB0–0xCE, runs
+  `EvaluateAI`, returns 1; missing segment → 0 (native fallback). [HIGH]
+- `CompileAIFile` (entry 0x100B0EF8): ⚑ corrected (wave 1 2026-10-03) the whole-code-section scan
+  (`ppcdis.py 10000000 100cd280 | grep 'bl 0x100b0ef8'`) finds one direct call, `100b1854: bl
+  0x100b0ef8  ; .CompileAIFile__FR6FSSpecs`, inside `DialogItemRoutine__17TEditUserBehaviorFs`
+  (`tb.py --at 100b1854` → entry 0x100B1780) — the `EditUserBehaviors` lead of ai-scripts §6 [HIGH
+  direct call; indirect calls through a TVector not searched, MED that it is the only path].
 
 ---------------------------------------------------------------------------------------------
 ## 10. Open items
-1. Bank the two scratch tools (traceback-name extractor; Ghidra vtable/range/scan/decompile script)
-   under `docs/cythera/tools/` and re-run the main dump with the 1,952 traceback names applied —
-   several engine methods (DoMove, Die, LeaveLevel, CanFace, subclass overrides) are missing from it.
-2. `CompileAIFile` caller (scan for `bl 0x100b0ef8`).
+1. **Done** ⚑ corrected (wave 1 2026-10-03): the tools are banked (`tools/tb.py`, `tools/ppcdis.py`,
+   `tools/CyDecompAt.java` + `extra-addrs.txt`) and DoMove, Die, LeaveLevel, CanFace and the subclass
+   overrides are in `ghidra/Cythera_extra.decompiled.c`; still absent from the main dump: 877 named
+   functions (`tb.py --missing ghidra/Cythera_pef.decompiled.c`), 840 counting the extra dump.
+2. **Done** ⚑ corrected (wave 1 2026-10-03): `CompileAIFile` direct caller =
+   `TEditUserBehavior::DialogItemRoutine` (§9); TVector (indirect) callers not searched.
 3. Per-frame wall-clock wait in `DrawRoutine` / `HandleMove` (what Ben's "feel" pacing is).
 4. Who re-arms spent 'B' eggs (kind bit 0x80); 'B' frame 3; what restores an NPC's activity after a
    visible walk (prop byte 7).
 5. Party mode values (`cdbe8`): 1 = formation follow, 2 = snap (rules.md); 0 not traced.
-6. `_DAT_100d73f2` (strength roll) — writer and UI.
+6. `_DAT_100d73f2` (strength roll) — writer settled (restore stream only, §8.1 ⚑ corrected (wave 1
+   2026-10-03)); no menu or UI writer found (absence of a reference, MED).
 7. Routines 0x0C86 (work animation), 0x0EB7 (equip), 0x0C00 callers; 0x3042 (selector 66) fully.
 8. Signal numbers 1, 34, 35, 100+frame, 129–135: receivers.
 9. Confirm in play (Ben's eyes): Missile-Script monsters wandering toward the map's top-left corner

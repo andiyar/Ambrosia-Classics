@@ -314,9 +314,11 @@ Training [HIGH bytecode]:
   (208) 1805, Ake (209) 1820, Neoptolemus 1821, Meleager (205, 199) 1822, Tlepolemus (206) 1837,
   Eteocles 1838, Lindus 1850, Thersites 1865, Aethon (200) 1861; R0EAF directly for 210/211/212 at
   1852/1853/184E.
-- **Training points:** level-up R0E86 adds `(6 - G11) * A31`; G11 has no `GetGlobal` case (Nil),
-  and DoExpr 0x4B with a non-integer pushes the left operand (`else { … = uVar17; }`), so **+6 per
-  level** (`0E86 @004E`). Char 0x1801 sets `training = 4` (`@00B9`). [HIGH / MED for the Nil path]
+- **Training points:** level-up R0E86 adds `(6 - G11) * A31` (`0E86 @004E`); `GetGlobal__Fs @
+  1009376c` has no case 0x11 (`default: *param_1 = *(uint *)PTR_DAT_100cdbb0;` = Nil), and
+  `DoExpr__7TInterpFRPUc @ 1007ddfc` case 0x4b with a non-integer operand pushes the left operand
+  (`*(uint *)(iVar8 + sVar18 * 4) = uVar17;`), so **+6 per level** (combat.md §13.2). Char 0x1801
+  sets `training = 4` (`@00B9`). [HIGH — one label for the whole rule, ⚑ corrected (wave 1 2026-10-03)]
 - Quirk: 1853 @047C, 1852 @039D, 184E @043C call `R0EAE(G05:leader, id)` with **2** of its 3 args;
   A32 then aliases local L00 (the found skill) — behaviour differs from passing False only when the
   skill already exists. [MED]

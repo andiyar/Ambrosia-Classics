@@ -25,3 +25,17 @@ Ghidra: 12.1.3 Homebrew `analyzeHeadless`; the project path must not contain a d
 (`.claude/worktrees/…`), so copy the analysed project (`/tmp/ghidra-proj-cythera`, made by
 `ghidra/decompile.sh Cythera_pef -processor PowerPC:BE:32:default -cspec macosx`) somewhere else and
 run the postScripts `-process Cythera_pef -noanalysis -readOnly` (see each header).
+
+Recipes (⚑ corrected (wave 1 2026-10-03)):
+```sh
+python3 docs/cythera/tools/tb.py > ghidra/Cythera_pef.tb.txt              # 1,994 tables (wc -l)
+python3 docs/cythera/tools/tb.py --missing ghidra/Cythera_pef.decompiled.c  # 877 entries with no
+                                     # `// ==== … @ addr` block in the main dump (37 of them are in the extra dump)
+cp -R /tmp/ghidra-proj-cythera "$P/proj-extra"                              # $P: a dir with no dot-prefixed element
+/opt/homebrew/Cellar/ghidra/12.1.3/libexec/support/analyzeHeadless "$P/proj-extra" Cythera_pef \
+  -process Cythera_pef -noanalysis -readOnly -scriptPath docs/cythera/tools \
+  -postScript CyDecompAt.java "$PWD/ghidra/Cythera_extra.decompiled.c" \
+  @"$PWD/docs/cythera/tools/extra-addrs.txt" > ghidra/analyze-Cythera_extra.log 2>&1
+grep 'CyDecompAt: wrote' ghidra/analyze-Cythera_extra.log                  # "CyDecompAt: wrote 37/37 functions …"
+grep -c '^// ==== ' ghidra/Cythera_extra.decompiled.c                      # 37
+```

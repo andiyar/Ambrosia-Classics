@@ -23,9 +23,10 @@ short line per entry, as evidence only.
   byte +8), 0xF00B (schedule conditions), 0xF00C (teleport targets), 0x8100+L (crystal props).
 - **Not read**: the Cythera hintbook — **not present** in the installed folder (only a
   "Stuck_ Get the Cythera Hintbook" link file), so quest order below comes from code, not from
-  the hintbook; the native activity interpreter (activities 164–167 — the `TActiveMonster`
-  code between `QueueActivity @ 1004b824` and `GetCharacter @ 1004d704` is not decompiled);
-  `TJournalList`/`TToDoList` drawing; heap per-instance frames (prop +0xC); the 0x10xx prop
+  the hintbook; the rest of the native activity interpreter (`DoMove @ 1004b8e8`, now decompiled
+  in `ghidra/Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt) — read here only for
+  activities 164–167, §2.3 / §4.1; the full reading is schedules-npcs.md §0, §2–§3) ⚑ corrected
+  (wave 1 2026-10-03); `TJournalList`/`TToDoList` drawing; heap per-instance frames (prop +0xC); the 0x10xx prop
   scripts beyond the sites named here; the 0x30xx fallback routines except where cited.
 - Cited, not duplicated: `script-vm.md` (VM, §7 heap, §8 0x0101 helper names, globals),
   `script-builtins.md` (builtin bodies), `data-format.md` §5 / §6 / §7, `rules.md` §3
@@ -94,15 +95,25 @@ with `puVar1 = PTR_DAT_100cdbbc`, `puVar2 = PTR_DAT_100cdbc0`. So the first two 
 | 0–7 | — | **schedule condition bits**: `EvalCondition` cond 0x40–0x5F / 0x60–0x7F tests "byte +8 bit b" for b < 8 (rules.md §3.3) — schedules read the same bits scripts set (§2.4) | HIGH |
 | 0–7 | — | **ability ids 0–7 alias these bits**: `RemoveAllAbility__8TSpellFXFs @ 10057080` `if (*(short *)(local_88 + 0xe) < 8) { puVar4[*psVar5 * 0x20 + 8] = … & ~(byte)(1 << …); }` — an ability with id < 8 clears the same byte. Shipped scripts use ids 0–2 only on character 0 (`temp_ability(0, 0|1|2, …)` in 0x1A02/0x1A0C/0x1A10/0x1A25), which no story site reads | HIGH code / MED "no collision" |
 
-### 2.3 Bits 4 and 5 — ambient-behaviour latch [MED]
-0C84 and 0C85 do `R0F00(A30, 4)` / `R0F00(A30, 5)` then
-`queue_activity(A30, 166, A30, 4|5, False)`. They are called only from the selector-32
-(`spawned`) methods of 1834 Ascalon, 1837 Tlepolemus and 1865 Thersites, behind
-`jf ((random(0, 40) == 1) && !R0F02(A30, 4))` (1834@0012) or `jf ((random(0, 10) == 1) &&
-!R0F02(A30, 5))` (1834@008E, 1837@0012, 1865@0018). Activity 166 with operands (char, bit, False)
-reads as "clear that bit when the queued chatter completes" — a busy latch for idle chatter.
-For other characters bits 4/5 are ordinary story bits (Crito 4, Apis 4/5, Halos 4, Sacas 4).
-The native handler for activities 164–167 is **not traced**.
+### 2.3 Bits 4 and 5 — wait-until-served latch ⚑ corrected (wave 1 2026-10-03)
+0C84 / 0C85 (A30 = the character): `0003 setfield A30.f26:f26 = A31[random(0, len(A31))]` (a bark
+line), `0010 call R0F00(A30, 4|5)` (setbit), `0017 queue_activity(A30, 166, A30, 4|5, False)`, then
+`0027 queue_activity(A30, 68, 0, 0, A32[…])` (a queued bark; 0C85 adds `0038 queue_activity(A30, 66,
+40, 0, 0)`). [HIGH bytes] Activity 166 = 0xA6 is a native DoMove queue-head case (schedules-npcs.md
+§3.2; `find_func.py 'DoMove__14TActiveMonster' --file ghidra/Cythera_extra.decompiled.c`): with a
+value other than True the entry is popped only when CharEntry[x] +8 bit y is **clear** — `if
+(((byte)puStack_f4[8] & uStack_f8) == 0) { cStack_64 = ''; }` — and while it waits the main
+switch's `case 0xa4: case 0xa6:` sets busy 8. So 166 with False = **wait until** the bit is clear:
+the character sets its own bit and then waits for something to clear it before the queued bark.
+[HIGH] The only clears of bit 4 / 5 in the scripts are activity **167** (0xA7: set the bit when the
+value is True, else clear it) queued by 0C80 on the customer `L00` it serves (`0C80@007F
+queue_activity(A30, 167, L00, 4, False)`, `0C80@01B6 queue_activity(A30, 167, L00, 5, 0)`; 0C80 is
+called by 1829@0147 and 182D@00F7); no `R0F01` (clrbit) call names bit 4 or 5. [HIGH bytes / MED
+"patron waits to be served" reading] 0C84/0C85 are called only from the selector-32 methods
+(per-tick think hook, schedules-npcs.md §2.2) of 1834 Ascalon, 1837 Tlepolemus and 1865 Thersites,
+behind `jf ((random(0, 40) == 1) && !R0F02(A30, 4))` (1834@0012) or `jf ((random(0, 10) == 1) &&
+!R0F02(A30, 5))` (1834@008E, 1837@0012, 1865@0018). For other characters bits 4/5 are ordinary
+story bits (Crito 4, Apis 4/5, Halos 4, Sacas 4).
 
 ### 2.4 Schedules that read story state (0xF00B, all 617 entries scanned)
 | cond, arg | reading (rules.md §3.3) | characters gated | conf |
@@ -119,8 +130,9 @@ The native handler for activities 164–167 is **not traced**.
 | 0x89, 0/1/2 | var 9 == … | 34 Meleager, 109 Demodocus | HIGH |
 | 0xA1, 7 / 0xA3, 2 | var 1 ≥ 7 / var 3 ≥ 2 | 94 Antiphus / 10 Myus, 11 Naxos, 12 Darius | HIGH |
 | 0xE1, 3/7 · 0xE2, 10/11 · 0xE7, 3 | var 1 < 3 or < 7 · var 2 < 10 or < 11 · var 7 < 3 | 50, 53, 94 · 60, 61, 74 · 9, 90, 91 | HIGH |
-So NPC placement is driven by the same variables and bits as dialogue: a replica must evaluate
-schedules against live script state, not a snapshot. [MED]
+So NPC placement reads the same variables, flags and character bits that dialogue writes; each
+`ScheduleTime` pass evaluates `EvalCondition` against the current stores (rules.md §3.3). [MED]
+⚑ corrected (wave 1 2026-10-03: register)
 
 ### 2.5 Initial values (0xF009 byte +8, shipped data)
 Only three characters start non-zero: 1 Hero = 0xC0 (party + name known), 94 Antiphus = 0x01,
@@ -172,9 +184,9 @@ character (0C80@001D/00B1 `L00`, 0C84/0C85 `A30`) — §2.3.
 | 42 Apis | 3,4,5 | S 182A@04E0 (3), 02C8 (4), 02D8 (5) | 182A@01BF/0490/0104, [Periphas]1841@0151 | flour / wine-contract steps (to-do 16/17, 182A@0542/0376) | MED |
 | 50 Philinus | 0,1 | S 1832@0D69 (0), 0EF9 (1) | 1832@0C5D, [Tlepolemus]1837@058B | Philinus–Tlepolemus thread | MED |
 | 51 Opheltius | 1 | S 1833@030C/03B4 | 1833@0093/00ED/0202/03D0 | conversation step (combined with flag 3 at 1833@0093) | MED |
-| 52 Ascalon | 4,5 | — | 1834@0012, 008E | ambient latch (§2.3) | MED |
+| 52 Ascalon | 4,5 | — | 1834@0012, 008E | wait-until-served latch (§2.3) ⚑ corrected (wave 1 2026-10-03) | MED |
 | 55 Tlepolemus | 1,2 | S 1837@071F (1), 068C (2) | 1837@053F, [Philinus]1832@0E1F/0D85 | Philinus–Tlepolemus thread | MED |
-| 55 Tlepolemus | 0,5 | — | 1837@07AD (0), 0012 (5) | 0 never set (open); 5 ambient latch | MED |
+| 55 Tlepolemus | 0,5 | — | 1837@07AD (0), 0012 (5) | 0 never set (open); 5 wait-until-served latch (§2.3) ⚑ corrected (wave 1 2026-10-03) | MED |
 | 60 Propontis | 1 | S 183C@05F3 | [Halos]183E@0AFC/0D61/0E34 | sent to Halos (beside `add_to_do(10, title 113)` 183C@05E7) | HIGH |
 | 61 Mantinea | 1 | S 183D@02A2 | [Halos]183E@15A8, [gossip]0813@00CB | conversation step | MED |
 | 62 Halos | 1,2,4 | S 183E@0D42 (1), 0DED/0EC0 (2), 102C (4) | 183E@09BE/0AFC/0CDB/0D6E/0E41/0EEF/103E/1385/1408, [zone 1]1401@002B | **Comana question answered**, three variants — each beside `done_to_do(10)` (183E@0D3E/0DE9/0EBC/1028); any of them + Pelagon bit 1 lets zone 1 set var 3 := 1 | HIGH |
@@ -187,7 +199,7 @@ character (0C80@001D/00B1 `L00`, 0C84/0C85 `A30`) — §2.3.
 | 72 Berossus | 1 | S 1848@1471 | 1848@1635/16A2/1746, [Eteocles]1838@0A9B | murder-weapon step (Eteocles then sends you to Dryas) | MED |
 | 73 Itanos | 1,2 | S 1849@06F8 (1), 0BC2 (2) | 1849@05AB, [Stentor]186C@0267 (1); 1849@0A3D (2) | net-for-Stentor / Prusa steps (to-do 35 1849@0684, 15 1849@0A18) | MED |
 | 74 Timon | 1 | S [Sabinate]1878@0041, [Jhiaxus]1879@0041 | 184A@048D, 1878@002D, 1879@002D | **has met a living Seldane** (1878@0051 text) | HIGH |
-| 74 Timon | 2,3 | S [room 301]1C2D@0124 and 1C2D@01A0 (both bit 2) | 1C2D@008E (2), 1C2D@0130 (3) | one-shot remarks in room 301; the second branch tests bit 3 but sets bit 2 (`1C2D@0130 jf (… !R0F02(74, 3))`, `1C2D@01A0 call R0F00(74, 2)`), so bit 3 is never set and the second remark repeats on every entry — original data bug, replicate | HIGH bytes / MED "bug" |
+| 74 Timon | 2,3 | S [room 301]1C2D@0124 and 1C2D@01A0 (both bit 2) | 1C2D@008E (2), 1C2D@0130 (3) | one-shot remarks in room 301; the second branch tests bit 3 but sets bit 2 (`1C2D@0130 jf (… !R0F02(74, 3))`, `1C2D@01A0 call R0F00(74, 2)`), so bit 3 is never set and the second remark repeats on every entry — original data bug ⚑ corrected (wave 1 2026-10-03: register) | HIGH bytes / MED "bug" |
 | 75 Prusa | 1 | S [Itanos]1849@0A24 | schedule 0x41/75 | **Prusa placed** (beside `add_to_do(15)` 1849@0A18) | HIGH |
 | 75 Prusa | 2 | S 184B@069B | 184B@05DA | conversation step | MED |
 | 77 Anisa | 1,2 | S 184D@199D (1), 1646 (2) | 184D@107E, 102C | mother quest given (beside `add_to_do(32)` 184D@1991) | HIGH (1) / MED (2) |
@@ -226,10 +238,10 @@ layout `EvalCondition` cond 2/3 reads and the 'Char' stream saves.
 | 2 | **never set** | 184A@0F93 (Timon's Metic topic) | dead branch: the "we've met them" line never plays | HIGH |
 | 3 | 1864@05EB (Gate Guard, after the "slain in battle" exchange; `set_variable(1, 4)` 05E5) | 1832/1833/1834/1846/185E/1864/1865 (16 sites) | **Ariadne died** (corpse item 3150, quality 53, tested 1864@0527) | HIGH |
 | 4 | 1838@05CD (Eteocles, after `give_item(1, 2114, 0, 0)` "key to the sewers") | 1838@02DC/06A9/07C6/0C65/0D2F | **joined the sewer guild** | HIGH |
-| 15 / 16 / 17 | zone 0x17 @0031 / class 0x28 #2 (0x1502) @002A / zone 0x1D @0038 | same sites | one-shot "first entry" guards (16 and 17 also queue visions 6 and 7, §6) | HIGH |
+| 15 / 16 / 17 | zone 0x17 1417@0031 / zone 0x102 (segment 0x1502, class 0x20 — open-items §12) @002A ⚑ corrected (wave 1 2026-10-03) / zone 0x1D 141D@0038 | same sites | one-shot "first entry" guards (16 and 17 also queue visions 6 and 7, §6) | HIGH |
 | 64 / 65 | crystal 1025@066B / 1025@0591 (=1) and 059A (=0) | not tested by script | crystal opened a hole (64); toggled a cave entrance (65) — read natively? not traced | MED |
 | 66 | Itanos 1849@0241 (topic "idom") | room 454 (0x1CC6@0005) | Idomeneus told — unlocks room 454's event | MED |
-| 253 / 254 / 255 | activity 165 only: `queue_activity(c, 165, 253|254|255, 1, Nil)` ×10 | `wait_for_flag` 1802@1502/1599/1711, 1809@02F3, 184F@056C, 1AFE@012B | **cut-scene sync**: the script queues a walk then activity 165 (flag, 1), and `wait_for_flag` spins `TActiveMonster::Guide` until it is set (script-builtins F1; it clears the flag before and after). Activity 164 (flag, 0) appears beside them (wait-for-flag inside the actor queue?) | HIGH bytes / MED activity semantics |
+| 253 / 254 / 255 | activity 165 only: `queue_activity(c, 165, 253|254|255, 1, Nil)` ×10 | `wait_for_flag` 1802@1502/1599/1711, 1809@02F3, 184F@056C, 1AFE@012B; activity 164 `queue_activity(1, 164, 254|255, 0, Nil)` ×4 | **cut-scene sync**: the script queues a walk then activity 165 = 0xA5 (set flag x when y ≠ 0, else clear; popped at once), and `wait_for_flag` spins `TActiveMonster::Guide` until it is set (script-builtins F1; it clears the flag before and after). Activity 164 = 0xA4 makes the actor itself wait: popped when flag x is set, and with y == 0 it also clears the flag (schedules-npcs.md §3.2, DoMove jump table 0x100D5A1C → 0x1004BD8C / 0x1004BE24) ⚑ corrected (wave 1 2026-10-03) | HIGH |
 
 ### 4.2 Byte variables (DC/DD) [HIGH layout]
 `Builtin_DD @ 10098ff8`: `PTR_DAT_100cdbbc[int(a0)] = (char)int(a1)` — no bounds check, the value
@@ -245,7 +257,7 @@ used: 0–16 (17 of 32). Chains in §5–§7.
 | 4 | 080A@0016 (1), 1829@0B73 (1), 080B@00F5 / 1828@0823 (2), 080E@0C85 (3), 080D@0601 (4), 1401@008D (5), 080C@0084 / 184C@059F (6), 1401@009E / 186D@0B69 (7) | 27 sites, schedule 0x84 | **where is Demodocus** — town gossip routines 080A–080E (topic `demo`) pass the bard's trail along (§7.3) | MED |
 | 5, 6 | Selinus 1851@036A (`var5 + 1`), 1851@03C2 (`var6 + 1`) | 1851, metal door 0x1114@0149–01B9 (`var6 >= 1..5`) | books returned (to-do 18 + var 5 picks titles 18–28); var 6 = Degree-Hall passwords given — the door accepts password k only when `var6 >= k` | HIGH |
 | 7 | Ruins Guard 1809@035E (1), Larisa 185A@047A (2), Timon 184A@0690 (3) | 1809, 184A, 185A, room 301 | **Seldane-ruins / Larisa chain** | HIGH |
-| 8 | Alastor 1825@0387 `= (G0F:day + 1) + random(1, 3)`, 1825@01FF (0) | 1825@004A `get_variable(8) > G0F:day` | gator-boots ready day; stored in a **byte**, so from day ≈ 252 on the comparison wraps — replicate | HIGH code / MED consequence |
+| 8 | Alastor 1825@0387 `= (G0F:day + 1) + random(1, 3)`, 1825@01FF (0) | 1825@004A `get_variable(8) > G0F:day` | gator-boots ready day; stored in a **byte**, so from day ≈ 252 on the comparison wraps ⚑ corrected (wave 1 2026-10-03: register) | HIGH code / MED consequence |
 | 9 | bridge zone 0x26 @0049 (1), @0067 (2), @0070 (99) | schedules 0x89 (Meleager, Demodocus) | bridge encounter state with Meleager (`R0F02(34, 7)`, `R0F13(34)`, odd day) | MED |
 | 10 | brazier 0x113F@00AA (quality), @00B4 / @00DC (0) | 0x113F@0025 | brazier lighting order puzzle: correct when `quality == var10 + 1`; 10 reached prints the riddle | HIGH |
 | 11 | zone 1 1401@00BC (1), Cademia 1408@0038 (1), Hero signal 1801@11FE (2), 1801@1376 (4) | 1401@00A4 `== 0`, 1408@0020 `== 2` | **vision sequencer** (§6) | HIGH |
@@ -261,7 +273,11 @@ in 1801/1802 are dead — script-vm §8).
   Ennomus 1811@0262 `R0F11(1)` / 02B2 `R0F12(L01 / 10)` and Eumelus 185D@008D/00DD the same.
   On a kill by the Hero, 0E8D@00C9 adds `[1, 4, -10, 0][victim.f35]` (inline block 0E8D@00B6;
   read as alignment neutral/evil/good/feral — MED). Hero's signal with `A31 == 256` lowers it by
-  1 in a zone lacking property 36 (1801@18B4–18D1; what sends 256 not traced, MED). Read:
+  1 in a zone lacking property 36 (1801@18B4–18D1). The sender is `TakeCommand @ 10053fd8`:
+`if (local_60 != *(int *)puVar3) { _SendSignal__8TGameSysFs(param_1,0x100); }` with `puVar3 =
+PTR_DAT_100cdbb0;` (Nil), after an early return on False — a take the item's selector-15 hook did not
+answer False or Nil, i.e. theft (trade-economy.md §11, schedules-npcs.md §6.2) [HIGH] ⚑ corrected
+(wave 1 2026-10-03). Read:
   `> 45` lets the amulet revive the Hero (1801@020C), `> 50` at Alaric 1802@0D3E, `< 40` makes the
   Seldane refuse you (1878@0109, 187A@00C5, 187B@00C2, 187C@00C4).
 - **G0E bit 0** = Sabinate's blessing: set 1878@0E2F `setglobal G0E = (G0E | 1)`; tested by
@@ -307,7 +323,7 @@ HIGH per step]
 returns **Nil** when nothing matches (`*param_1 = *(uint *)PTR_DAT_100cdbb0;`) and `IsEqual @
 10080adc` compares raw VAddrs (`return param_2 == param_1;`) — the pushed −1 is the tag-0 integer
 `(int)cStack_57 & 0xfffffff` = 0x0FFFFFFF, never 0x5000FFFF. So Timon's "That's odd …" refusal
-(184A@0755) is unreachable and Lindus's L05 is always True: replicate. (AE also matches the
+(184A@0755) is unreachable and Lindus's L05 is always True. ⚑ corrected (wave 1 2026-10-03: register) (AE also matches the
 frame — item 37 = frame 0 only.)
 
 Item codes are `type | frame << 10` (script-builtins §0): 1061 = 0x425, 2085 = 0x825, 6181 =
@@ -333,7 +349,8 @@ script writes `.f06` on a type-37 prop, all shipped type-37 map props (0x8107 #2
   (1801@03A6 `jf ((A31.f00:kind == 66) && (A31.f03:frame == 9))`) then plays vision `A31.type`
   with portrait 126 "Omen" and deletes the prop. Queued: k 0 Alaric 1802@199C; 1 first crystal
   1025@012A; 8 two pieces 1025@0290; 3 four pieces 1025@035C; 4 zone 1 1401@00AF (var 11 == 0);
-  5 Cademia 1408@002B (var 11 == 2); 6 class-0x28 #2 1502@0033 (flag 16); 7 zone 0x1D 141D@0041
+  5 Cademia 1408@002B (var 11 == 2); 6 zone 0x102 (segment 1502, class 0x20) 1502@0033 (flag 16)
+  ⚑ corrected (wave 1 2026-10-03); 7 zone 0x1D 141D@0041
   (flag 17). Vision 4 sets var 11 := 2 (1801@11FE), vision 5 var 11 := 4 (1801@1376); vision 0
   ends with `teleport(1, 148, 0)` and a non-local `raise` (1801@09D1–09DC).
 - **Teleport** (`TeleportTo__8TGameSysFsss @ 10050e98`: arg a = arrival byte, −1/65535 → 0xF00F
@@ -347,7 +364,7 @@ script writes `.f06` on a type-37 prop, all shipped type-37 map props (0x8107 #2
 - **pass_time** (BD) only twice, both 1024 ticks: sleep loop 0E93@00C1 (runs `A30 * 4` times —
   so 1024 ticks = ¼ hour, MED) and fishing 1091@011D. No story beat passes time. [HIGH]
   Sleep side-note: 0E93@0214 compares `magic < health_max` and 0243 sets `magic =
-  health_max` — copy-paste slips in the original; replicate. [HIGH bytes]
+  health_max` — copy-paste slips in the original. ⚑ corrected (wave 1 2026-10-03: register) [HIGH bytes]
 
 ---------------------------------------------------------------------------------------------
 ## 7. Side chains as variable / bit clusters
@@ -376,14 +393,15 @@ Values 0–7 set by Crito/Parium/Bryaxis/Demodocus and by the town gossip routin
 var 3 ≥ 2) or 7 (from 0). Demodocus `add_to_do(14, title 114)` 186D@03E4.
 
 ### 7.4 To-do slots seen as quest ids (F2/F3) — titles from 0x021A
-Slot n = to-do index; `add_to_do(n, str[021A:0] + k)` stores title k (normally k = n).
-0 Cure Alaric · 1 Rescue kidnapped Ariadne · 2 Learn Magic · 3 Cure Plague · 4 Interrogate
-Bandit · 5 Show Crystal to Lindus · 6 Take Crystal to Timon · 7 Free Maayti · 8 Find Son of
-Sabinate · 9 Honor Jinrai · 10 Ask Halos about Comana · 11 Take Dryas to Berossus · 12 Timeflux
-book · 13 Kelp · 14 Iron Mine · 15 Seek out Prusa · 16 flour · 17 wine contract · 18 Books of
-Wisdom (titles 18–28 = 0/10…10/10, `18 + get_variable(5)` at 1851@03DA) · 29 Harpy Egg · 30 Find
-Eioneus · 31 Gator Skin · 32 Alaric's Mother · 33 flowers on the grave · 34 Thersites' Ring ·
-35 net to Stentor · 36 source of Kesh · 37 Interview Stentor. Variant titles 111–116 reuse a slot
+Slot n = to-do index; `add_to_do(n, str[021A:0] + k)` stores title k (normally k = n). Our labels
+for the slots (own words; the titles are in `ghidra/cythera-scripts/021a.txt`) ⚑ corrected (wave 1
+2026-10-03: verbatim titles replaced): 0 Alaric's cure · 1 Ariadne's rescue · 2 magic lessons ·
+3 plague cure · 4 bandit questioning · 5 crystal shown to Lindus · 6 crystal brought to Timon ·
+7 Maayti's release · 8 Sabinate's son · 9 Jinrai's honour · 10 Halos and House Comana · 11 Dryas
+delivered to Berossus · 12 timeflux book · 13 kelp · 14 iron mine · 15 Prusa · 16 flour · 17 wine
+contract · 18 the wisdom books (titles 18–28 = progress 0…10 of 10, `18 + get_variable(5)` at
+1851@03DA) · 29 harpy egg · 30 Eioneus search · 31 gator skin · 32 Alaric's mother · 33 grave
+flowers · 34 Thersites's ring · 35 Stentor's net · 36 Kesh source · 37 Stentor interview. Variant titles 111–116 reuse a slot
 with a new wording (11 ← 111/112, 10 ← 113, 14 ← 114, 16 ← 116). 0x021A entries 1024+k hold the
 long descriptions. [HIGH strings / LOW that the list shows 1024+k — drawing not traced]
 Data slip: Ake 1820@0101 `add_to_do(10, … + 114)` files slot 10 under title 114 ("Ask Thuria
@@ -419,11 +437,14 @@ never lives in the journal.
 
 ---------------------------------------------------------------------------------------------
 ## 10. Open items
-1. The activity interpreter: semantics of activities 164/165/166/167 (flag sync, bit clear),
-   66 (wait), 68 (bark), 160 (walk) — needed for every cut-scene; code not decompiled.
+1. **Closed** ⚑ corrected (wave 1 2026-10-03): activities 164–167 are DoMove queue-head cases
+   (0xA4 wait for flag + clear, 0xA5 set/clear flag, 0xA6 wait until char bit = value, 0xA7 set/clear
+   char bit — §2.3, §4.1, schedules-npcs.md §3.2); 66 (0x42 pass), 68 (0x44 bark), 160 (0xA0 walk)
+   are schedules-npcs.md §3.2–§3.3.
 2. What makes the frame-6 crystal's quality non-zero (damned ending), §5.
-3. Who sends the Hero signal `256` (karma −1, 1801@18B4) and the countdown that fires the
-   vision props (byte 6 timer, data-format §4.2) — assumed `DoTicks`, not traced.
+3. Hero signal `256`: sent by `TakeCommand` (§4.3) ⚑ corrected (wave 1 2026-10-03). The countdown
+   that fires the vision props (frame-9 byte-6 timer) is `DoTicks` per schedules-npcs.md §7.1 — not
+   re-read here.
 4. Bits tested but never set: Hero 0, Magpie 1, Tlepolemus 0, Sabinate 4, Timon 3 (bug),
    Dryas 0 (only cleared), flag 2; Glaucus (102) bit 7 tested 5× (0813, 184F, 1852, 1867) and
    never set — confirm none is set natively.

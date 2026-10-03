@@ -2,8 +2,8 @@
 
 Register: **code reading**. Every claim carries HIGH (quoted bytecode or decompiled/disassembled
 lines prove it), MED (inferred) or LOW (conjecture). Listings are `ghidra/cythera-scripts/<seg>.txt`
-(`docs/cythera/tools/scriptdis.py`); native code is `ghidra/Cythera_pef.decompiled.c` plus raw PPC
-disassembly of functions Ghidra did not decompile (method below). Dialogue text is Ambrosia's: it is
+(`docs/cythera/tools/scriptdis.py`); native code is `ghidra/Cythera_pef.decompiled.c` plus
+`ppcdis.py` listings of functions Ghidra did not decompile (method below). Dialogue text is Ambrosia's: it is
 quoted only as a few bytes of evidence, never transcribed.
 
 ## 0. Scope, method, what was not read
@@ -15,19 +15,38 @@ quoted only as a few bytes of evidence, never transcribed.
   terminator rule), script-builtins.md (A4, B4, BB, C0, E8/E9, F4), rules.md §5 (TalkCommand,
   CanTalk, STR# 128), data-format.md §6.2 (GetCharacterName, DrawPortrait), census §2/§5/§7,
   trade-economy.md (shop/money routines R0EA5/R0EA9/R0D04/R0D05 — not re-read here).
-- **Native method**: `find_func.py` on the dump; for the vtable calls that the decompiler shows as
-  bare `FUN_100c50e8()` (the cross-TOC pointer-call glue, script-vm §6), the vtable slot was read
-  from raw disassembly, the vtable from the unpacked data section (`tools/toc.py` `data_u32`,
-  section-relative TVector words, code = 0x10000000 + word), and the target named from the
-  **MetroWerks traceback table** that follows each function (the `.Name__Class…` string after the
-  `blr; 0x00000000` pair). A ~60-line scratch PPC decoder (not committed) produced the listings
-  quoted as `addr word mnemonic`. Undecompiled functions read this way: `ForceOut`, `mygets`,
-  `mygetch`, `mygetnum`, `myprintstr` (TConversation), `MouseRoutine`/`KeyRoutine`
-  (TConvResponseMode, TConvMoreMode), `MouseRoutine` (TPickMode), `FUN_100b6dc8`.
-- **Corpus method**: a scratch analyser over the listings: for each segment whose dictionary has
-  `sel12/talk`, collect the talk method's region plus every local subroutine it reaches through
-  `sub_XXXX` (transitively), skip dead-code lines, count statements, keywords, flag-helper calls and
-  builtin names. Code reached through **routine calls** (R08xx, R0Exx, R0Dxx) is **not** folded in.
+- **Native method** ⚑ corrected (wave 1 2026-10-03), banked tools only: decompiles via `python3
+  ghidra/find_func.py --func '<name>' --file ghidra/Cythera_pef.decompiled.c`; entry/extent/name via
+  `python3 docs/cythera/tools/tb.py --at <hex>` / `--grep '<re>'`; bodies Ghidra lacks (`tb.py
+  --missing ghidra/Cythera_pef.decompiled.c`: `ForceOut`, `mygets`, `mygetch`, `myprintstr`, the
+  TConvResponseMode/TConvMoreMode/TPickMode Key/MouseRoutines) via `python3 docs/cythera/tools/ppcdis.py
+  --func '<name>'` or `<start> <end>`; every listing quote is ppcdis output with its command beside it.
+  Vtable calls (bare `FUN_100c50e8()`, script-vm §6): slot from the listing (`lwz r12,<slot>(r12)`),
+  vtable from the ctor's store, target = data word w → TVector 0x100CD280+w → code 0x10000000+word0:
+  `python3 -c "import sys;sys.path.insert(0,'docs/cythera/tools');import toc;vt,s=0x100d5298,0x114;w=toc.data_u32(vt+s)[0];print(hex(0x10000000+toc.data_u32(toc.DB+w)[0]))"`
+  (→ 0x1003f314 = `mygets`), then `tb.py --at`.
+- **Corpus method** ⚑ corrected (wave 1 2026-10-03): for each listing whose dictionary has
+  `sel12/talk`, the region = the talk method's lines plus every local subroutine it reaches through
+  `sub_XXXX` (transitively), dead-code (`x`) lines skipped; statements are counted by the mnemonic
+  column; **routine calls** (R08xx, R0Exx, R0Dxx) are **not** folded in. Prints `127, 108, 1325,
+  1551, 88`; the §14 in/br/w/pr/sp columns and builtin totals come from the same region set:
+```sh
+python3 - <<'PY'
+import glob,re,collections as C; T=C.Counter()
+for f in sorted(glob.glob('ghidra/cythera-scripts/*.txt')):
+  R={}; k=None; todo,seen=['sel12/talk'],set()
+  for l in open(f):
+    m=re.match(r'; (?:==== method (\S+) @|---- local subroutine @)(\w{4})',l)
+    if m: k=m[1] or 'sub_'+m[2]; R[k]=[]
+    elif k and re.match(r'\w{4}:[ >]',l): R[k].append(l)
+  while todo:
+    k=todo.pop()
+    if k in R and k not in seen: seen.add(k); todo+=re.findall(r'sub_\w{4}',''.join(R[k]))
+  for l in (l for k in seen for l in R[k]): op=l[51:61].strip(); T[op]+=1; T['words']+=op=='match' and len(l[61:].split(' else')[0].split(','))
+  T['methods']+=bool(seen)
+print({k:T[k] for k in ('methods','input','match','words','prompt')})
+PY
+```
 - **Not read**: TConvResponseMode Draw/Idle, TPickMode Key/Draw, THowManyMode input, TModalMode,
   TSimpleInteraction, TJournal (`IsJournalable`/`WriteJournal` only named), TTextContext `&`/`<d`
   codes; per-character meanings of flag bits 0–5. No hintbook PDF is in the installed folder (only
@@ -71,13 +90,9 @@ publishes itself in the global the VM reads (`*_DAT_100cdcc8 = param_1`), clears
 
 **1.3 NPC-initiated speech.** Scripts open the same window themselves with builtins E8/E9:
 `begin_talking` 22 calls / `end_talking` 24 calls, of which 12/12 in character **signal**
-(selector 21) methods, the rest in use/use_on/enter/first_visit methods. Shape (1801 @03C1–09CC):
-```
-03C1: e8 40                    builtin   begin_talking()
-03C3: a4 42 00 01 41 02 40     builtin   show_portrait(1, 2)
-03CA: a4 42 00 7e 41 00 40     builtin   show_portrait(126, 0)
-09CC: e9 40                    builtin   end_talking()
-```
+(selector 21) methods, the rest in use/use_on/enter/first_visit methods. Shape (1801): `03C1: e8 40 begin_talking()`,
+`03C3: a4 42 00 01 41 02 40 show_portrait(1, 2)`, `03CA: a4 42 00 7e 41 00 40 show_portrait(126, 0)`,
+`09CC: e9 40 end_talking()`
 [HIGH for the bytes and counts; MED that every site follows this order]. Signal-driven speech
 has no `input` (0 of 108 `input` statements lie outside talk methods — §3). [HIGH]
 
@@ -96,32 +111,38 @@ calls `TTextOut::More` and CR/LF break lines in the status pane. [HIGH]
 (lower-cased, §3.3) input with a capital (1813 @00AB/@00C1). [HIGH]
 
 **2.3 Quotes split the window into two panes.** `myprintstr__13TConversationFPcs @ 1003d054`
-(undecompiled; disassembly + traceback name) keeps an "inside quotes" byte at +0x4C:
-```
-1003d110 lbz r0,0(r29) / cmpwi cr0,r0,34          ; '"'
-1003d134 bl AppendConv   … 1003d148 bl AppendConv(r27 = '"', 1) / bl ShowTalking / stb 0 → +0x4C
-1003d178 bl AppendMessage … 1003d184 bl ShowMessage / addi r0,r0,1 / stb r0,76(r31)
-```
-Text outside quotes goes to the **message pane** (`AppendMessage`/`ShowMessage`, narration), text
-from an opening `"` up to the closing one (re-appended from TOC 0x100ce7f4 = `"`) goes to the
-**talk pane** (`AppendConv`/`ShowTalking`, drawn beside the current speaker's portrait,
+(undecompiled) keeps an "inside quotes" byte at +0x4C — ⚑ corrected (wave 1 2026-10-03), quoted from
+`ppcdis.py --func 'myprintstr__13TConversation'` (r27 = TOC 0x100ce7f4 = `"`, `toc.py 100ce7f4`):
+`1003d114: 2c000022  cmpwi r0,34` · in quotes: `1003d134: 48000109  bl 0x1003d23c  ;
+.AppendConv__13TConversationFPcs`, `1003d140: 389b0000  addi r4,r27,0`, `1003d144: 38a00001  li r5,1`,
+`1003d148: 480000f5  bl 0x1003d23c`, `1003d15c: 38000000  li r0,0`, `1003d160: 981f004c  stb
+r0,76(r31)` · outside: `1003d178: 480001cd  bl 0x1003d344  ; .AppendMessage__13TConversationFPcs`,
+`1003d18c: 38000001  li r0,1`, `1003d190: 981f004c  stb r0,76(r31)`, `1003d194: 7fbeeb78  mr r30,r29`.
+Text outside quotes goes to the **message pane** (`AppendMessage`/`ShowMessage`, narration; then
++0x4C := 1 and the next run starts **at** the opening quote, `mr r30,r29`); text from the opening
+`"` up to the closing one, plus the TOC `"` (1 byte), goes to the **talk pane**
+(`AppendConv`/`ShowTalking`, then +0x4C := 0; drawn beside the current speaker's portrait,
 `OffsetRect(… *(short *)(param_1 + 0xa4e) * 0x58)`). Each pane holds ≤ 0x3FF bytes
 (`AppendConv`: `if (0x3ff < param_3 + len) param_3 = 0x3ff - len`). [HIGH]
 
-**2.4 `*` = "more" pause.** At `*` (`cmpwi r0,42`) the pending run is flushed with length
-`p − 1 − start` (`addi r0,r29,-1; subf r5,r30,r0`) and `ConvMore()` runs. `ConvMore @ 1003ceb0`
-does nothing if +0x4F is already set (no text since the last pause) or if +0x38 ("skip") is set,
-else runs a `TConvMoreMode` (vtable 0x100d510c; `KeyRoutine__13TConvMoreModeFs @ 1003ce34`,
-`MouseRoutine__13TConvMoreModeF5PointsN @ 1003cce4`, names from traceback tables). [HIGH]
-- Any key ends the pause; **Esc** also sets interaction +0x38 = 1 (`cmpwi r0,27 … stb r0,56(r3)`),
-  which suppresses every further pause until the next prompt (`GetResponse` clears +0x38). [HIGH]
-- A click on the text first asks the window `IsJournalable`/`WriteJournal` (vtable +0xF4/+0xF8 of
-  TConversation resolve to `IsJournalable__13TConversationF5Point @ 1003c4e4`,
-  `WriteJournal__13TConversationFs @ 1003c628`) — clicking a journalable word records it. [HIGH
-  for the calls; MED for "records it"; TJournal not read]
+**2.4 `*` = "more" pause.** ⚑ corrected (wave 1 2026-10-03), same listing: at `*` (`1003d0a0:
+2c00002a  cmpwi r0,42`) the run is flushed with length `p − 1 − start` (`1003d0b4: 381dffff  addi
+r0,r29,-1`, `1003d0c0: 7cbe0050  subf r5,r30,r0`), the next run starts at `p + 1` (`1003d100:
+3bdd0001  addi r30,r29,1`), and `ConvMore @ 1003ceb0` runs (`ppcdis.py --func 'ConvMore__13TConv'`):
+return if +0x4F (`1003ced0: 8803004f  lbz r0,79(r3)`); unless +0x38 "skip" (`1003cf08: 881f0038
+lbz r0,56(r31)`) run a `TConvMoreMode` (`1003cf38: 3802fe8c  addi r0,r2,-372  ; = 0x100d510c`);
+then +0x4F := 1 (`1003cf78: 981f004f  stb r0,79(r31)`). [HIGH]
+- Any key ends the pause; **Esc** also sets interaction +0x38 = 1 (`ppcdis.py --func
+  'KeyRoutine__13TConvMoreMode'`: `1003ce50: 2c00001b  cmpwi r0,27`, `1003ce60: 98030038  stb
+  r0,56(r3)`) until the next prompt (`GetResponse`: `*(undefined1 *)(param_1 + 0x38) = 0;`). [HIGH]
+- A click calls TConversation vtable +0xF4, then +0xF8 (`ppcdis.py --func 'MouseRoutine__13TConvMore'`:
+  `1003cd0c: 818c00f4  lwz r12,244(r12)`, `1003cd50: 818c00f8  lwz r12,248(r12)`) = `IsJournalable
+  @ 1003c4e4` / `WriteJournal @ 1003c628` (§0 one-liner): journalable → `AutoEye("[Write To
+  Journal]")` + WriteJournal, the pause stays; else `*MORE*` and `Done`. [HIGH calls; MED for what
+  is recorded; TJournal not read]
 - ⚑ quirk: the byte **just before** `*` is dropped from the flushed run. Harmless after a closing
   quote (that run is already empty); after narration such as `…to the north.*` the full stop is
-  lost. [MED — read from the length arithmetic only; not seen on screen]
+  lost. [HIGH for the length arithmetic quoted above; not observed on screen]
 
 **2.5 Markup inside a pane.** `__ct__12TTextContextFPCcssss @ 10075d98` (markup on unless
 `param_6 & 1`): `\n`/`\r` new line; **`@` starts a hint run** (`*(undefined1 *)(puVar4 + 3) = 1`)
@@ -141,28 +162,34 @@ In talk methods the printed values are locals (22), `globstr(1:time_of_day)` (19
 
 ## 3. Reading the player: statement 0x8E `input`
 
-**3.1 Native.** DoInterpAt, decompiled + raw (r19 → `cdcc8` conversation pointer, r24 = input
-buffer `_DAT_100cdf60`):
-```
-10081a00 lwz r12,0(r3) / 10081a04 lwz r12,260(r12) / bl 0x100c50e8   ; vtable +0x104
-10081a14 addi r4,r24,0 / li r5,0x40 / li r6,0x1 / lwz r12,0x114(r12) / bl 0x100c50e8
-10081a30 lbz r0,0x0(r24) … 10081a40 lwz r4,-0x65a4(r2) / bl 0x100b6d08   ; strcpy(buf, "bye")
-```
+**3.1 Native.** ⚑ corrected (wave 1 2026-10-03): DoInterpAt case 0x8E, `ppcdis.py 10081a00
+10081a50` (DoInterpAt's prologue loads r24 = TOC 0x100cdf60, the input buffer `_DAT_100cdf60`, and
+r19 = TOC 0x100cdcc8, the conversation pointer: `ppcdis.py 10080ca0 10080cac`):
+`10081a04: 818c0104  lwz r12,260(r12)`, `10081a08: 480436e1  bl 0x100c50e8`, `10081a14: 38980000
+addi r4,r24,0`, `10081a18: 38a00040  li r5,64`, `10081a20: 38c00001  li r6,1`, `10081a24: 818c0114
+lwz r12,276(r12)`, `10081a30: 88180000  lbz r0,0(r24)`, `10081a40: 80829a5c  lwz r4,-26020(r2)  ;
+TOC 0x100cecdc`, `10081a44: 480352c5  bl 0x100b6d08`.
 TConversation vtable at 0x100d5298 (`*param_1 = &PTR_PTR_100d5298` in the ctor): +0x104 →
 0x1003dfd4 `ForceOut__13TConversationFv`, +0x114 → 0x1003f314 `mygets__13TConversationFPcsUc`,
-+0x118 → 0x1003f4dc `mygetch__13TConversationFPc`, +0x11C → 0x1003f650 `mygetnum`. TOC
-0x100cecdc = `bye`. So **`input` = `ForceOut(); mygets(buf, 64, withAnswers=1); if (buf[0]==0)
-strcpy(buf,"bye")`** — an empty line ends the conversation by the script's own `bye` branch.
-It returns nothing on the stack; scripts read the result only through 0x90 and `globstr(10)`. [HIGH]
-`ForceOut` = unless +0x4F ("nothing new since the last pause"), redraw the talk pane if +0x4D is
-clear and the message pane if +0x4E is clear; then clear the in-quote byte +0x4C. [HIGH]
++0x118 → 0x1003f4dc `mygetch__13TConversationFPc`, +0x11C → 0x1003f650 `mygetnum` (§0
+one-liner + `tb.py --at`). TOC 0x100cecdc = `bye`; `FUN_100b6d08` is strcpy (decompile). So
+**`input` = `ForceOut(); mygets(buf, 64, withAnswers=1); if (buf[0]==0) strcpy(buf,"bye")`** — an
+empty line ends the conversation by the script's own `bye` branch. It returns nothing on the
+stack; scripts read the result only through 0x90 and `globstr(10)`. [HIGH]
+`ForceOut` (`ppcdis.py --func 'ForceOut__13TConversation'`) = unless +0x4F (`1003dfe8: 8803004f
+lbz r0,79(r3)`), `ShowTalking` if +0x4D is clear (`1003dff4: 881f004d  lbz r0,77(r31)`) and
+`ShowMessage` if +0x4E is clear (`1003e008: 881f004e  lbz r0,78(r31)`); then +0x4C := 0
+(`1003e020: 981f004c  stb r0,76(r31)`). [HIGH]
 
-**3.2 `mygets` (1003f314).** With `withAnswers`: walks the 100 answer slots (+0x8B8), skips null
-and −1, upper-cases each answer's first letter **in place** (`cmpwi r0,97 … addi r5,r3,-32`),
-collects at most 20 (`cmpwi cr0,r0,20`) into a local array filled backwards, then
-`GetResponse(this, buf, 0, 64, list, n)` and finally `bl RemoveAnswer(buf)` if `buf[0] != 0`.
-Without: `GetResponse(this, buf, 0, len, NULL, 0)`. [HIGH] Effects: chips show in reverse slot
-order (newest-slot first) [MED]; **the topic just asked is removed from the chips** (matching on
+**3.2 `mygets` (1003f314).** ⚑ corrected (wave 1 2026-10-03), `ppcdis.py --func 'mygets__13TConv'`:
+calls `ForceOut` first (`1003f338: 818c0104  lwz r12,260(r12)`); with `withAnswers` walks the 100
+slots at +0x8B8 (`1003f364: 380308b8  addi r0,r3,2232`, `1003f428: 2c000064  cmpwi r0,100`), skips
+null and −1, upper-cases each first letter **in place** (`1003f3d4: 2c000061  cmpwi r0,97`,
+`1003f3ec: 38a3ffe0  addi r5,r3,-32`), collects ≤ 20 (`1003f414: 2c000014  cmpwi r0,20`) into a
+local array filled backwards (`1003f3a8: 20600014  subfic r3,r0,20`), calls `GetResponse(this,
+buf, NULL, len, list, n)`, then `RemoveAnswer(buf)` if `buf[0] != 0` (`1003f470: 480017f9  bl
+0x10040c68  ; .RemoveAnswer__13TConversationFPc`); without: `GetResponse(this, buf, NULL, len,
+NULL, 0)`. [HIGH] Effects: chips show in reverse slot order (newest-slot first) [MED]; **the topic just asked is removed from the chips** (matching on
 its first four letters, §5) [HIGH].
 
 **3.3 `GetResponse__12TInteractionFPcPcsPPcs @ 1003ec2c`.** Lays out ≤ 20 chips (each drawn as
@@ -170,27 +197,28 @@ its first four letters, §5) [HIGH].
 `TENew`), then runs a
 `TConvResponseMode` modal loop, then **lower-cases A–Z in the buffer**:
 `if (('@' < cVar6) && (cVar6 < '[')) cVar6 = cVar6 + ' ';`. [HIGH]
-`TConvResponseMode` (vtable 0x100d50d4, names from traceback tables):
-- `KeyRoutine @ 1003e8ec`: Return (13) / Enter (3) with a text field → `TEGetText`, `BlockMove`
-  ≤ 64 bytes into the buffer, NUL at the TE length if shorter, `Done`. Other keys go to `TEKey`
-  (no filtering when a text field exists). [HIGH] ⚑ A 64-character entry is copied without a NUL
-  terminator by this routine. [MED]
-- `MouseRoutine @ 1003e378`: a click tracked inside chip *i* stores *i* as the result and, when a
-  text field exists, **copies the chip text into the buffer** (`lwz r4,28(r31)… lwzx r4,r4,r0 /
-  bl 0x100b6d08`), `Done`. A chip therefore behaves exactly as if its text had been typed
-  (`Where Is...` → `where is...`). [HIGH]
+`TConvResponseMode` (vtable 0x100d50d4 — ctor `*param_1 = &PTR_PTR_100d50d4;`; slot +0xC →
+0x1003e378, +0x18 → 0x1003e8ec by the §0 one-liner; `tb.py --grep TConvResponseMode`):
+- `KeyRoutine @ 1003e8ec` ⚑ corrected (wave 1 2026-10-03), `ppcdis.py --func 'KeyRoutine__17TConv'`:
+  key mapped through the to-lower table (`1003e924: 38623806  addi r3,r2,14342  ; = 0x100d8a86`,
+  §6). Return (13) / Enter (3) with a text field → `TEGetText`, `BlockMove` of the full buffer
+  length (`1003e970: a8bf002c  lha r5,44(r31)`; 64 for `input`), NUL at the TE length only when
+  shorter (`1003e98c: 7c030000  cmpw r3,r0`, `1003e990: 4080001c  bge 0x1003e9ac`), `Done`. Other
+  keys: with a choice string (mode +0x24) a key not in it (`FUN_100b6e38`, strchr) beeps unless it
+  is Backspace with a text field; then `TEKey` (text field) or store the key's index and `Done`.
+  `mygets` passes no choice string, so typed lines are unfiltered. [HIGH] ⚑ An entry of ≥ 64
+  characters is left without a NUL by this routine. [HIGH code; not observed on screen]
+- `MouseRoutine @ 1003e378`: a click in chip *i* stores *i* and, when a buffer length is set,
+  **copies the chip text into the buffer** (`ppcdis.py --func 'MouseRoutine__17TConv'`: `1003e5e8:
+  a81f002c  lha r0,44(r31)`, `1003e604: 7c84002e  lwzx r4,r4,r0`, `1003e608: 48078701  bl
+  0x100b6d08`), `Done` — a chip behaves as if typed (`Where Is...` → `where is...`). [HIGH]
 
 **3.4 Loop shape.** All 108 `input` statements sit inside talk-method regions (corpus count; the
 census total is 108). The compiled shape is one `input` at a fixed label, a chain of `match`
 statements whose bodies end with `goto <input label>`, and `bye` (or the end) returning. 1810:
-```
-0088:>8e                          input
-0089: 90 6e 61 6d 65 00 00 d4     match     name else -> 00D4
-00CA: 9f 0f 00 30 41 07 40        call      R0F00(A30, 7)    ; setbit
-00D4:>90 62 79 65 00 00 f4        match     bye else -> 00F4
-00ED: 8b 41 00 40                 return    0
-04B8:>90 2a 00 05 04              match     * else -> 0504
-```
+`0088:>8e input`, `0089: 90 6e 61 6d 65 00 00 d4 match name else -> 00D4`, `00CA: 9f 0f 00 30 41 07
+40 call R0F00(A30, 7)`, `00D4:>90 62 79 65 00 00 f4 match bye else -> 00F4`, `00ED: 8b 41 00 40
+return 0`, `04B8:>90 2a 00 05 04 match * else -> 0504`.
 [HIGH for 1810; MED as the general shape — 3 talk methods have 2 `input` labels (183C, 183E,
 1864), 22 have none]
 
@@ -204,16 +232,13 @@ if (local_ac[0] == 0x2a) { bVar1 = true; }
 else { iVar19 = FUN_100b6dc8(local_ac,pcVar6,(int)pbVar13 - (int)local_ac); if (iVar19 == 0) bVar1 = true; }
 } while (local_88 == 0x2c);
 ```
-and `FUN_100b6dc8` (raw):
-```
-100b6dd8 8c030001 lbzu r0,0x1(r3)      100b6ddc 8ca40001 lbzu r5,0x1(r4)
-100b6de0 7c002840 cmplw r0,r0,r5       100b6de4 4182000c bc 12,2,0x100b6df0
-100b6de8 7c650050 subf r3,r5,r0       100b6dec 4e800020 bclr
-100b6df0 28000000 cmplwi cr0,r0,0     100b6df4 4182000c bc 12,2,0x100b6e00
-100b6df8 34c6ffff addic. r6,r6,-1     100b6dfc 4082ffdc bc 4,2,0x100b6dd8
-100b6e00 38600000 li r3,0x0           100b6e04 4e800020 bclr
-```
-`FUN_100b6dc8` is plain **`strncmp(word, input, strlen(word))`**: case-sensitive, no folding. [HIGH]
+and `FUN_100b6dc8`, ⚑ corrected (wave 1 2026-10-03): it **is** in the main dump (`// ==== FUN_100b6dc8
+@ 100b6dc8 ====`; `python3 ghidra/find_func.py --func FUN_100b6dc8 --file ghidra/Cythera_pef.decompiled.c`; line breaks joined): `param_3 = param_3 + 1; while( true ) { param_3 = param_3 + -1;
+if (param_3 == 0) { return 0; } pbVar2 = pbVar2 + 1; uVar1 = (uint)*pbVar2; pbVar3 = pbVar3 + 1;
+if (uVar1 != *pbVar3) break; if (uVar1 == 0) { return 0; } } return uVar1 - *pbVar3;`
+(the listing agrees: `ppcdis.py 100b6dc8 100b6e08`, `100b6dd8: 8c030001  lbzu r0,1(r3)` …
+`100b6de8: 7c650050  subf r3,r5,r0`). `FUN_100b6dc8` is plain **`strncmp(word, input,
+strlen(word))`**: case-sensitive, no folding. [HIGH]
 
 **4.2 Semantics.** [HIGH unless marked]
 - A keyword matches when it is a **prefix of the whole input line** (`name` matches "name",
@@ -260,31 +285,35 @@ topic libraries (§8) and a few prop `use` methods (1036 fountain, 1110 button, 
   1822 @0275/027E/0290 `Leave`/`Wait`/`Follow` guarded by `R0F13(34)` inparty; 1 in 0816, which
   re-adds `Where Is` before showing its menu). [HIGH]
 - Display: at most 20, first letter capitalised in place (§3.2). [HIGH]
-- Consequence for a replica: the chip row is the game's **discoverability** mechanism — new topics
-  appear as the NPC says `@words`, and vanish once asked. [MED — synthesis of the above]
+- Net effect in code ⚑ corrected (wave 1 2026-10-03): a topic enters the chip row when the NPC
+  prints `@word` and leaves it once the player asks it. [MED — synthesis of the above]
 
 ## 6. Prompts: statement 0x8F (INDEX item 13 — identity settled)
 
-DoInterpAt (raw 10081a50–10081b04): `GetString` the operand (skip terminator), then
-- first byte `*` → `ForceOut; mygets(buf, 0x40, 0)` — a free-text line with **no chips** and **no
-  `bye` default** (an empty line stays empty; only a `*` match catches it). [HIGH]
-- otherwise → `ForceOut; c = mygetch(string)`; `if (c == 0) c = buf[0]; buf[0] = c; buf[1] = 0`. [HIGH]
+DoInterpAt case 0x8F, ⚑ corrected (wave 1 2026-10-03) `ppcdis.py 10081a50 10081b08`: `GetString`
+the operand (`10081a5c: 48001555  bl 0x10082fb0  ; .GetString__7TInterpFPUcPUc`), then
+- first byte `*` (`10081a70: 2c04002a  cmpwi r4,42`) → `ForceOut; mygets(buf, 64, 0)`
+  (`10081a94: 38a00040  li r5,64`, `10081a9c: 38c00000  li r6,0`) — a free-text line with **no
+  chips** and **no `bye` default** (an empty line stays empty; only a `*` match catches it). [HIGH]
+- otherwise → `ForceOut; c = mygetch(string)` (`10081ad0: 818c0118  lwz r12,280(r12)`);
+  `if (c == 0) c = buf[0]; buf[0] = c; buf[1] = 0` (`10081b00: 98d80000  stb r6,0(r24)`,
+  `10081b04: 98980001  stb r4,1(r24)`). [HIGH]
 
-`mygetch__13TConversationFPc @ 1003f4dc` (raw): length > 20 → `SysBeep` and clamp; if the string
-equals TOC 0x100ce7e4 `yn` (`bl 0x100b6d94` strcmp) the chips are TOC `Yes` / `No`
-(0x100ce7e0/dc), else one chip per character, upper-cased; then
-`GetResponse(this, NULL, choices, 0, list, n)` and `return choices[index]`. [HIGH]
+`mygetch__13TConversationFPc @ 1003f4dc` (`ppcdis.py --func 'mygetch__13TConv'`): `ForceOut`;
+length > 20 → `SysBeep` (`1003f524: 480831dd  bl 0x100c2700`, `SysBeep` in the dump) and clamp to
+20; if the string equals TOC 0x100ce7e4 `yn` (`1003f538: 4807785d  bl 0x100b6d94`, strcmp) the
+chips are TOC `Yes`/`No` (0x100ce7e0/dc), else one upper-cased 2-byte string per character at
+sp+56+2i; `GetResponse(this, NULL, choices, 0, list, n)`; `return choices[index]` (`1003f608:
+7c7c00ae  lbzx r3,r28,r0`). [HIGH] ⚑ In the per-character branch every list slot gets the same
+pointer sp+64 (`1003f56c: 38830008  addi r4,r3,8`, `1003f578: 7c83012e  stwx r4,r3,r0`), the
+string of character 4. [HIGH code; unreached — every shipped prompt is `"yn"`/`"*"`, B5 never called]
 In `TConvResponseMode::KeyRoutine` the key is first mapped through the 256-byte table at
-`r2+0x3806` = 0x100D8A86 (bytes 0x41–0x5A read as `abc…z`: a **to-lower** table) and compared with
-the choice string, so keys are case-insensitive for lower-case choice strings. [HIGH]
+`r2+14342` = 0x100D8A86 (bytes 0x41–0x5A and 0x61–0x7A both read `abc…z` in `toc.D`: **to-lower**) and compared with the choice string, so keys are
+case-insensitive for lower-case choice strings. [HIGH]
 
 Corpus: 95 prompts = **77 `"yn"`** + **18 `"*"`** (all 88 in talk methods are among them). The
-`yn` form is always followed by `match y` / `match n`, e.g. 1804:
-```
-08B9: 8f 79 6e 00        prompt    "yn"
-08BD: 90 79 00 09 24     match     y else -> 0924
-0924:>90 6e 00 09 64     match     n else -> 0964
-```
+`yn` form is always followed by `match y` / `match n`, e.g. 1804 `08B9: 8f 79 6e 00 prompt "yn"`,
+`08BD: 90 79 00 09 24 match y else -> 0924`, `0924:>90 6e 00 09 64 match n else -> 0964`.
 The `*` form is used for names/passwords and echoed with `^` + `globstr(10)` (1813 @00A8–00C1).
 [HIGH] Builtin B5 `ask_digit` (mygetch on `0123456789`, TOC 0x100ce7d8) is never called. [HIGH]
 
@@ -308,8 +337,9 @@ string is passed only to the standalone `TSimpleInteraction` (no-conversation ca
 
 **7.3 C0 `pick_item(prompt, format, items, buttons)`** → `TInteraction::PickItem` / `TPickMode`
 (vtable 0x100d509c). `MouseRoutine__9TPickModeF5Points @ 10040200` stores **−(k+1)** for button
-*k* (`addi r0,r26,1 / neg r0,r0 / sth r0,0(r3)`), an item index ≥ 0 otherwise; items are capped
-at 20 (`sVar8 < 0x14` in Builtin_C0). Scripts test it accordingly: 0816 @013B `jf (L09 == -1)`,
+*k* (⚑ corrected (wave 1 2026-10-03) `ppcdis.py --func 'MouseRoutine__9TPickMode'`:
+`10040824: 381a0001  addi r0,r26,1`, `1004082c: 7c0000d0  neg r0,r0`, `10040834: b0030000  sth
+r0,0(r3)`), an item index ≥ 0 otherwise; items are capped at 20 (`sVar8 < 0x14` in Builtin_C0). Scripts test it accordingly: 0816 @013B `jf (L09 == -1)`,
 1821 @0F8E `jf (L05 >= 0)`. The **0x45 inline blocks** carry these tables — the button list
 (`blk@0F7F … .array[1] [0] @0F85 "Cancel"`, 1821/1804) and, for "Where Is", a 13-entry array of
 `[room, label, phrase, x, y, tail]` rows (0809 @0131 `call R0816(A30, blk@0138, 1)`). [HIGH for the
@@ -374,8 +404,12 @@ inparty operate on it (`0F02 @0009 return ((L00.f13:flags & (1 << A31)) != 0)`,
 - **bit 7 = name known**: `GetCharacterName @ 10007d40` shows the 0x0201 name only
   `if ((param_3 != '\0') || ((PTR_DAT_100cdbf0[id * 0x20 + 8] & 0x80) != 0))`, else the tile name
   ("guard", "man"…). Writing field 0x13 calls `UpdateCharName(conv, id)` (SetField case 0x13), so
-  the portrait label changes the moment `name` is answered. [HIGH] (The call is made even when no
-  conversation exists — `*_DAT_100cdcc8` may be 0 — a replica must guard it. [MED])
+  the portrait label changes the moment `name` is answered. [HIGH] ⚑ corrected (wave 1 2026-10-03):
+  the call has no null test (`_UpdateCharName__13TConversationFs(*_DAT_100cdcc8,param_1);`, unlike
+  the guarded `RedoStat` above it), the TConversation dtor zeroes that global (`ppcdis.py --func
+  '__dt__13TConversation'`: `1003b28c: 80828a48  lwz r4,-30136(r2)  ; TOC 0x100cdcc8`, `1003b298:
+  90040000  stw r0,0(r4)`), and `UpdateCharName` reads `this+0xa4e`/`+0xa48` unguarded — so a 0x13
+  write outside a conversation reads low memory 0xA48–0xA4F. [HIGH code; not observed on screen]
 - **bit 6 = in party** (native, rules.md §2 RebuildParty). [HIGH]
 - **bits 0–5 = script state** per character (quest stage, "asked already", "cured"): talk methods
   touch bit 1 ×40, 2 ×20, 0 ×10, 3 ×7, 4 ×5, 5 ×1 (self). The same bits are schedule conditions
@@ -413,7 +447,8 @@ else `0x1e`; `_DAT_100d73f0` is global 0x0C (karma, clamped 0..100 by SetGlobal,
   slot to the first occupied one (`while (… < 3 && slot[i] < 1) i++`). [HIGH]
 - Conventions: TalkCommand puts the leader in 2 and the partner in 0 (§1.1); scripts add a third
   speaker in slot 1 (1802 @05AA `show_portrait(3, 1)`) or swap the speaker. Corpus: b = 0 ×139,
-  1 ×54, 2 ×93; no call clears (a = 0 never occurs); 236 of 286 calls are in talk methods. [HIGH]
+  1 ×54, 2 ×93; no call clears (a = 0 never occurs); ⚑ corrected (wave 1 2026-10-03): 238 of 286 calls are in
+  talk-method bodies, 244 in talk regions incl. local subroutines (§0 command). [HIGH]
 
 ## 11. Ending a conversation
 
@@ -448,8 +483,9 @@ else `0x1e`; `_DAT_100d73f0` is global 0x0C (karma, clamped 0..100 by SetGlobal,
 ## 13. Conversation UI modes
 
 All are `TConvMode` subclasses run by `TConvMode::Perform @ 1003ca28` (flush events, disable menu
-0x81, run the modal loop, restore) and ended by `Done @ 1003cba0` (sets app +0x1C). Vtable names
-from traceback tables: [HIGH]
+0x81, run the modal loop, restore) and ended by `Done @ 1003cba0` (sets app +0x1C). Vtables from the ctor
+stores (`*param_1 = &PTR_PTR_100d50d4;` etc.; ConvMore's `addi r0,r2,-372`), slots by the §0 one-liner,
+names `tb.py --at` ⚑ corrected (wave 1 2026-10-03): [HIGH]
 
 | class | vtable | started by | ends on |
 |---|---|---|---|
@@ -468,8 +504,8 @@ test_flag/set_flag; **vars** g/s = get/set_variable; **builtins** JP join, LP le
 remove_items, TI transfer_item, TP teleport, CP create_prop, DP delete_prop, AA add_answer, PI
 pick_item, HM how_many, EG end_game, TD/DD add/done_to_do, AB ability, QA queue_activity, WF
 wait_for_flag, ET end_talking, WH who_in_party_has, SS send_signal, CU curtain_picture, RS
-reschedule; **08xx** topic libraries called. Scope: method + local subroutines only. [HIGH — tool
-output, this session]
+reschedule; **08xx** topic libraries called. Scope: method + local subroutines only. [HIGH — ⚑
+corrected (wave 1 2026-10-03): every column but per-row builtins re-derived from the §0 region set]
 
 | seg | name | in | br | w | pr | sp | self t | self s | other | flags | vars | builtins | 08xx |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -614,8 +650,8 @@ A `0` in **in** with non-zero **br** means the keywords follow `prompt "yn"` onl
 2. TConvResponseMode Draw/Idle, THowManyMode input, TModalMode, TSimpleInteraction.
 3. TTextContext `<d`, `>`, `&` codes; whether hint runs are drawn differently.
 4. What `IsJournalable`/`WriteJournal` record on a click (TJournal).
-5. The byte dropped before `*` (§2.4) and the unterminated 64-char input (§3.3): confirm on screen
-   (Ben) before replicating.
+5. ⚑ corrected (wave 1 2026-10-03) Not yet observed on screen (behaviour check): the byte dropped
+   before `*` (§2.4), the unterminated ≥ 64-char input (§3.3), the 0x13 write outside a talk (§9.1).
 6. EA/EB `conversation_cue_2/1` (unnamed glue).
 7. Quest meanings of CharEntry+8 bits 0–5, global flags and byte variables used by talk methods.
 8. Whether the Talk command checks `CanTalk` first; native callers of `TConversation::mygetnum`.

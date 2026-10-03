@@ -18,9 +18,11 @@ it; **MED** = inferred from structure, names or a single source; **LOW** = conje
   `FindSkill__Fss`, `MoveAll` (the `cdd98` store), `DoInterp__7TInterpFs5VAddr[5VAddr]`, the
   `TakeCommand`/`WieldCommand` encumbrance tests; `Cythera_builtins.decompiled.c` `Builtin_AC`,
   `Builtin_F5`; segment 0xF008 and CharEntry 0–2 of 0xF009 (raw, via `tools/seg.py`); STR# 500/501.
-- Raw PPC disassembly (a throw-away 30-line decoder over `ghidra/Cythera_pef`, code section file
-  offset 0x3470 ↔ 0x10000000) for `DeathRites` and the **undecompiled** monster-death method at
-  0x100469C0 (§12).
+- ⚑ corrected (wave 1 2026-10-03): native bodies the main dump lacks come from `Cythera_extra.decompiled.c` (CyDecompAt.java,
+  extra-addrs.txt): `Die__14TActiveMonsterFv @ 100469c0` and `LeaveLevel__14TActiveMonsterFv @
+  100465a4` (§12.2). Listings and names from the banked tools only: `docs/cythera/tools/ppcdis.py`
+  (the `DeathRites` virtual call), `tb.py --at` (names), `toc.py`'s `data_u32` (vtable words, §12.1).
+  The earlier throw-away decoder is no longer cited.
 - Not read: the hintbook PDFs and the Documentation viewer (no LOW claim below cites them); the
   `TMissile*` / `TBres` / `ShowAttack` / `ShowHit` bodies (animation only — see §1 why they cannot
   hold arithmetic); `DoDefend`/`DoRetreat` and the AI choice of target (ai-scripts.md owns it); spell
@@ -98,8 +100,9 @@ uVar2 = (int)sVar1 - (int)sVar3;
 *param_1 = (int)sVar3 + ((int)sVar4 - ((uint)(int)sVar4 / uVar2) * uVar2) & 0xfffffff;
 ```
 `rnd(lo,hi)` = `lo + (unsigned)(signed 16-bit Random()) mod (hi−lo)` → **lo … hi−1** (exclusive);
-`hi ≤ lo` → `lo`. So `rnd(0,30)` is 0–29 and `rnd(0, n+1)` is 0–n. The unsigned modulo of a
-sign-extended negative `Random()` is slightly non-uniform — replicate literally. [HIGH]
+`hi ≤ lo` → `lo`. So `rnd(0,30)` is 0–29 and `rnd(0, n+1)` is 0–n. The modulo is taken on the
+**unsigned** 32-bit value of the sign-extended 16-bit `Random()` (a negative result becomes
+2³²−k), so results over lo…hi−1 are not exactly uniform (⚑ corrected (wave 1 2026-10-03): code fact only). [HIGH]
 
 ---------------------------------------------------------------------------------------------
 ## 3. Item properties that combat reads [HIGH for the reads, MED for the role names]
@@ -173,10 +176,11 @@ one. The shipped file has **50 records** (record 50 is zero). Field map (`GetFie
 | 4 | 0x31 | natural damage base (0x3042 @0258 `L00.f31`) |
 | 5 | 0x2F | base Health (monster ctor) |
 | 6 | 0x35 | alignment → CharEntry +0x19 (ctor); karma table index (R0E8D) |
+| 7 | — | **open** ⚑ corrected (wave 1 2026-10-03): no `GetField` class-0x48 case (the cases are 0x2C–0x33, 0x35, 0x36), and neither the monster ctor (bytes 0, 1, 2, 5, 6) nor `Die` (+0xE) reads it [HIGH for those three readers; "no reader anywhere" MED] |
 | 8–9 | 0x33 | flags A: 1 = to-hit uses Body, 2 = immune to all damage, 4 = immune to flag 1, 8 = natural hits add flag 256 |
 | 10–11 | 0x32 | flags B: resistances (§9), 64 = poison-immune (0x3041), 0x2000 = group death (R0E8D), 0x4000 = leaves blood (R0E8D) |
 | 12–13 | — | object-type key |
-| 14–15 | 0x36 | corpse item (type \| frame<<10) created on death (§12.2), 0 = none |
+| 14–15 | 0x36 | s16 corpse item (type \| frame<<10) created on death, 0 = none — `Die` reads `*(ushort *)(param_1[1] + 0xe)` (§12.2) ⚑ corrected (wave 1 2026-10-03) |
 
 Examples (`python3` over `seg.toc()`, 16 bytes per row): rec 0 key 32 "hero" `0c 0c 0c 00 03 14 02
 00 00 00 00 04 00 20 11 1b` (12/12/12, armour 0, fist 3, health 20, align 2, corpse 0x111B = type
@@ -187,7 +191,7 @@ over the 50 records: f33 bit 8 on 5 (e.g. rec 20 key 88 "asp" `… 40 08 40 40 0
 
 ### 4.1 Spawned-monster statistics (`__ct__14TActiveMonsterFs @ 10044b98`) [HIGH]
 For prop index ≥ 0x100 the ctor takes the first free CharEntry 0x100–0x1FF and rolls a **scale** s
-from the save-stream word `DAT_100d73f2` (difficulty): 0 → `Random()%40+10`, 1 → `%75+25`,
+from the save-stream word `DAT_100d73f2` (called "difficulty" here — the name is MED, ⚑ corrected (wave 1 2026-10-03)): 0 → `Random()%40+10`, 1 → `%75+25`,
 2 → `%100+50`, 3 → `%100+100`, 4 → `%150+150`, other → 100 (`uVar5` is `ushort`). Then
 ```
 *(char *)(*param_1 + 0x1f) = (char)sVar6;                                   /* +0x1F = scale % */
@@ -201,9 +205,13 @@ alignment = byte 6; **Level = ((Health·10 / Body + (Body+Reflex)·10) / 10 · s
 stores are `(char)` byte casts, so a scale ≥ 256 (difficulty 4) wraps in +0x1F, and any stat > 255
 wraps too.
 This settles CharEntry **+0x1F** (INDEX item 7) as the spawn scale. The data-section initial value
-of `DAT_100d73f2` is **2** (unpacked data section, `toc.D[0xA170:0xA174]` = `00 37 00 02`); the only
-writers found are the 'Char' stream restore (`SaveToFile`/`RestoreModel` `"hhhh"`) — no menu or
-script writes it [MED: absence of writers]. Named characters (< 0x100) keep their 0xF009 values.
+of `DAT_100d73f2` is **2** (unpacked data section, `toc.D[0xA170:0xA174]` = `00 37 00 02`). ⚑ corrected (wave 1 2026-10-03): the whole code section has exactly three
+r2-relative references to it (`python3 docs/cythera/tools/ppcdis.py 10000000 100cd280 | grep
+'r2,8562'` → `100130f4: 38e22172  addi r7,r2,8562` in `SaveToFile__10TDelverAppFR6FSSpecP8TSegFileUc`
+(passes the value), `10014180` in `RestoreModel__10TDelverAppFv` (passes `&DAT_100d73f2` to the
+`"hhhh"` stream read — the only writer), `10044ba8: 3aa22172  addi r21,r2,8562` in this ctor
+(reads)); no script global maps to it [HIGH: writers = restore only]. Named characters (< 0x100)
+keep their 0xF009 values.
 
 ---------------------------------------------------------------------------------------------
 ## 5. 0x3042 — choosing the attack (sel 66 default) [HIGH]
@@ -253,6 +261,8 @@ weapon 42[2] or 45[2], else 0) — doors/chests apply their own sel-65 method. [
 damage max `A33 + R0EAC(A30, 200)` (0E89 @002A, @0039, @0065). No Body option.
 
 ### 6.3 Offence / defence bonus — R0E84(char, defending) and R0E95 [HIGH]
+⚑ corrected (wave 1 2026-10-03): **R0E84 is the to-hit attack/defence bonus** (this section is the source of truth for it);
+it is not a health or magic maximum — those are R0E82/R0E83 (§13.2).
 `defending` False → skill 192 Attack, True → skill 193 Defense (`R0EAC(A30, 192/193)`); if that
 skill is **0**, fall back to `R0E95`: `switch (A30.f20:ce1D & 3)` → 0, `level / 2`, `level`,
 `level * 2`. Non-characters → 0. `f20:ce1D` is CharEntry **+0x1D** (GetField case 0x20) — bits 0–1
@@ -295,7 +305,12 @@ L02 is Nil (iterators return Nil at the end — script-builtins.md §1), `prop(N
 `find_skill(A30, Nil)` passes `(short)int(Nil)` = −1 to `FindSkill__Fss`, which compares
 `(*(ushort *)(puVar2 + 1) & 0x3ff) == (int)param_2` — never true → 0. **Sword/Axe/Mace skills
 never add to melee to-hit or damage in 1.0.4**; only Attack/Defense (§6.3), Barehand, Missile and
-parry skills do. Replicate literally. [HIGH]
+parry skills do. [HIGH] (⚑ corrected (wave 1 2026-10-03): replication advice removed — code fact only.)
+**No durability**: no combat routine writes item byte 6. `grep -n 'f06' ghidra/cythera-scripts/0e*.txt
+ghidra/cythera-scripts/30*.txt` finds `0E87 @0075: set L05 = A32.f06:quality` as the only `.f06`
+access in the combat routines (§1 call graph, 0x0E81–0x0E96, 0x0EAC, 0x0EB8, 0x301C–0x3043) — a
+read; the only `setfield … .f06` on those pages are 0E0A @0113, 0E0B @00AD, 0E0C @0048/@0055,
+none of them in the combat call graph. ⚑ corrected (wave 1 2026-10-03) [HIGH]
 
 ---------------------------------------------------------------------------------------------
 ## 8. Damage roll, type flags, message [HIGH]
@@ -365,7 +380,12 @@ value is < 1 (§12.1). [HIGH]
 `A30.f15:activity = A30.f16:behaviour`; if the victim is the Hero or `inparty`, every party member
 not already in its behaviour gets the same two stores. If the victim is **not** in the party, the
 attacker **is**, and the victim's record alignment `f35` is 0 or 2 (neutral/good), `send_signal(321)`
-— the scripts' alarm signal (who answers 321 not traced). Other damage sources: 0x0EB8 (spells,
+— the scripts' alarm signal. ⚑ corrected (wave 1 2026-10-03): 321 is answered by `3015` (default sel 21 for characters
+without their own signal method): record byte 6 = 0 → `R0D06` (`0D06 @0081: jf (A31 == 321)`,
+then `leader_can_see(A30)` → `target := leader`, `activity := 6`), = 2 → `R0D07` (`0D07 @0014: jf
+((A31 == 320) || (A31 == 321)) -> 003B`, same two stores, no sight test); the guard type 0x102E
+and chars 0x1846–0x1849, 0x1864, 0x1865 use `0D07` itself as their selector-21 method (dictionary
+`21/signal: @0D07:0000`; schedules-npcs.md §6.3). Other damage sources: 0x0EB8 (spells,
 traps: sel 64 then 65 then the same XP rule) with flags 4, 8, 32, 64, 66, 68, 1026, 2052, 4098 at
 its 16 call sites; 0x301F (sel 31, stepping on terrain): codes −5…−2 → 1 in 9 `rnd(1,10)==3` "something
 bit me" poison + 1 damage (flags 2) unless ability 31 or record `f32 & 64`, code −221 → `rnd(0,4)+1` fire damage (flags 8) unless
@@ -380,24 +400,72 @@ _DeathRites__9CharEntryFv(puVar12); }`. `DeathRites @ 1004fc50` writes health 0,
 - **no active monster**: `DoInterp(0x1d, char)` (one value pushed — `DoInterp__7TInterpFs5VAddr`
   pushes only the receiver); health still 0 → clear alive bit, leave party (`RebuildParty`); revived
   → `RemoveStackedAbility` 0xD, 0xE, 0x16, 0x15 and set alive (rules.md §1);
-- **active monster**: a virtual call (disasm `1004fc84: lwz r12,72(r28); lwz r12,24(r12); bl
-  0x100c50e8`) → vtable `PTR_PTR_100d5bac` slot +24 = TVector → code **0x100469C0** (slot +8 →
-  0x100463D0 = `__dt`, +12 → 0x100459A8 = `Save`, checking the table read). This function is not in
-  the dump.
+- **active monster**: a virtual call (⚑ corrected (wave 1 2026-10-03); `python3 docs/cythera/tools/ppcdis.py 1004fc78 +8`):
+  `1004fc84: 819c0048  lwz r12,72(r28)` · `1004fc88: 818c0018  lwz r12,24(r12)` · `1004fc8c:
+  4807545d  bl 0x100c50e8` — monster +0x48 holds `&PTR_PTR_100d5bac` (ctor: `param_1[0x12] =
+  (int)&PTR_PTR_100d5bac;`). The vtable words (`python3 -c "import sys;
+  sys.path.insert(0,'docs/cythera/tools'); import toc; print([hex(w) for w in
+  toc.data_u32(0x100d5bac,8)])"`) are data-section offsets of TVectors; base 0x100CD280 + word →
+  TVector, TVector word 0 + 0x10000000 → code, named by `python3 docs/cythera/tools/tb.py --at
+  <code>`:
 
-### 12.2 Monster death method 0x100469C0 (raw disassembly) [MED — branch structure read, loops not exhaustively]
-- `10046a14: addi r4,r0,29` … `bl 0x10082658` (`DoInterp(29, char)`), then `lbz r0,14(r4)` —
-  revived (health ≠ 0): the same four `RemoveStackedAbility` (13, 14, 22, 21) and `status |= 1`.
-- Dead: closes the inventory window (`FindInventory`), `status &= ~1`; for **named** characters
-  (prop < 0x100) drops the party bit + `RebuildParty`; if the creature record's +0xE corpse item is
-  non-zero a new prop of kind 1 is made with that type/frame and byte 6 = the character index, and
-  every prop with kind 0x10/0x18/0x09 parented to the body is re-parented into it as kind 9; if
-  zero, those props are dropped on the body's cell (kind 1) and kind-0x1C skill props are deleted.
-  The body prop becomes kind 0xFF. If the dead prop index is 1 (Hero) a global's +0x1C byte := 1
-  (not traced).
-- **Spawned** (≥ 0x100): if the egg contents prop (`monster+0x14`, set by `HatchEgg`) matches and
-  its egg has byte 6 & 4, the egg's count byte 7 += 1 (respawn); with a corpse item the body prop
-  itself turns into kind 0x21 of the corpse type and keeps the carried props (kind 9).
+| slot | word | TVector | code | `tb.py --at` |
+|---|---|---|---|---|
+| +8 | 0x2fb0 | 0x100D0230 | 0x100463D0 | `__dt__14TActiveMonsterFv` |
+| +12 | 0x2fa8 | 0x100D0228 | 0x100459A8 | `Save__14TActiveMonsterFP7TStream` |
+| +16 | 0x2eb8 | 0x100D0138 | 0x1004B8E8 | `DoMove__14TActiveMonsterFss` |
+| +20 | 0x2f88 | 0x100D0208 | 0x100465A4 | `LeaveLevel__14TActiveMonsterFv` |
+| +24 | 0x2f68 | 0x100D01E8 | **0x100469C0** | `Die__14TActiveMonsterFv` |
+| +28 | 0x2eb0 | 0x100D0130 | 0x1004D7AC | `IsPartOfMonster__14TActiveMonsterFs` |
+
+  [HIGH: every slot lands on a TActiveMonster traceback entry; the two base additions are the PEF
+  section bases, applied by hand]
+
+### 12.2 Monster death — `Die__14TActiveMonsterFv @ 100469c0` [HIGH] ⚑ corrected (wave 1 2026-10-03)
+Read from the decompile (`python3 ghidra/find_func.py 'Die__14TActiveMonster' --file
+ghidra/Cythera_extra.decompiled.c`; `Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt)),
+replacing the earlier branch-level disassembly reading. `param_1[0]` = CharEntry, `param_1[1]` =
+creature record (`ObjToMonst`), `param_1[4]` = the body prop's 16-byte entry, `param_1[5]` = the
+egg-contents prop (`HatchEgg`: `piVar3[5] = (int)puVar11;`), short at `param_1 + 2` = the index.
+- First `_DoInterp__7TInterpFs5VAddr(auStack_54,0x1d,uStack_58);` (sel 29, one value pushed), then
+  `if (*(char *)(*param_1 + 0xe) == '\0')` — health still 0 → dead. Else revived:
+  `RemoveStackedAbility` 0xd, 0xe, 0x16, 0x15 (13, 14, 22, 21) and `*(ushort *)(*param_1 + 6) |
+  1` (alive bit).
+- Dead, all cases: if `FindInventory__16TInventoryWindowFs(index)` finds a window, an indirect call
+  through `FUN_100c50e8` (the glue; its target — closing the window — is MED); then alive bit cleared
+  (`& 0xfffe`).
+- **Named** (index < 0x100): party bit `+8 & 0x40` cleared → `RebuildParty`. Corpse word
+  `uStack_4e = *(ushort *)(param_1[1] + 0xe);` (record bytes 14–15):
+  - **0**: every prop from 0x100 up with kind 0x10, 0x18 or 0x09 (`'\x10'`, `'\x18'`, `'\t'`) whose
+    low 16 bits are this index becomes kind 1 at the body prop's x/y; kind-0x1C props of the index
+    (skills) → `DeleteProp`. Body prop kind := 0xFF; `ForceReset__5THoodFv`.
+  - **≠ 0**: `NewProp`, kind 1, type `& 0x3ff`, frame `>> 10`, byte 6 = the index
+    (`*(char *)((int)puVar6 + 6) = (char)*(undefined2 *)(param_1 + 2);` — what Resurrection's
+    `as_char(quality)` reads, magic.md §3 row 2F), byte 7 = 0, at the body's cell; carried kind
+    0x10/0x18/0x09 props → kind 9 inside the new prop; skill props are **not** deleted on this
+    path. Body prop kind := 0xFF; `AddToHood(new prop)`.
+  - Then `if (*(short *)(param_1 + 2) == *(short *)PTR_DAT_100cdbec) { *(undefined2 *)(param_1 + 2)
+    = 1; }`, `RebuildParty` if entry [index] has `+8 & 0x40`, and `if (*(short *)(param_1 + 2) == 1)
+    { *(undefined1 *)(*(int *)PTR_DAT_100cdb84 + 0x1c) = 1; }` — the byte is set when the Hero dies
+    **or** when the dying named character is the index held in `PTR_DAT_100cdbec` (the word the
+    spawn ctor copies the current level byte from — the leader, MED). Its reader is not traced.
+- **Spawned** (index ≥ 0x100): `if (((*(ushort *)(param_1[5] + 4) & 0x3ff) == (*(ushort
+  *)(param_1[4] + 4) & 0x3ff)) && ((*(byte *)(*(int *)PTR_DAT_100cdc44 + (*(uint *)param_1[5] &
+  0xffff) * 0x10 + 6) & 4) == 4)) { *(char *)(param_1[5] + 7) = *(char *)(param_1[5] + 7) + '\x01'; }`
+  (the middle term reads byte 6 of the prop whose index is the contents' parent field, i.e. the egg) — the egg-**contents** prop's byte 7 (the count
+  `HatchEgg` decrements per hatch) goes back up by one when it has the dead monster's type and its
+  egg has byte 6 bit 4. There is no test that `param_1[5]` is non-zero (`__ct__14TActiveMonsterFs`
+  sets `param_1[5] = 0`; `HatchEgg` and the stream ctor set it) [HIGH for the missing test; the
+  effect for a non-egg monster is not traced].
+  - corpse **0**: as for named (carried → kind 1 on the cell, skill props deleted, body kind 0xFF,
+    `ForceReset`).
+  - corpse **≠ 0**: the body prop itself becomes the corpse — kind 0x21, type/frame from the corpse
+    word, bytes 6 and 7 = 0; carried kind 0x10/0x18/0x09 props → kind 9 (parent unchanged = the body
+    prop); index := 0.
+- `LeaveLevel__14TActiveMonsterFv @ 100465a4` (vtable +20, same extra dump): spawned monsters do the
+  contents increment **without** the type/egg-bit test (`*(char *)(param_1[5] + 7) = *(char
+  *)(param_1[5] + 7) + '\x01';`); a named character's body prop becomes kind 0xFF (alive bit
+  clear) or 0x42 (alive). [HIGH]
 
 ### 12.3 Script side — sel 29 [HIGH]
 0x301D (default): `jf is_char(A30)`; `L00 = as_cls48(A30)`; `send L00.sel29(A30)`; else
@@ -446,8 +514,11 @@ Hero (`grep -h 'R0E8B(' ghidra/cythera-scripts/*.txt`).
 0036: setfield A30.f1F:magic_max = R0E83(A30)            ; only if old magic_max ≠ 0, same rescale
 004E: setfield A30.f21:training = (A30.f21:training + ((6 - G11:g11_unhandled) * A31))
 ```
-`G11` is Nil (no `GetGlobal` case 0x11, script-vm.md §8) and `6 − Nil` = 6 (DoExpr 0x4B leaves the
-left operand), so **+6 training points per level**. Max health **R0E82** = `Body + Reflex/2 + level
+`G11` is Nil — `GetGlobal__Fs @ 1009376c` has no case 0x11 and its `default: *param_1 = *(uint
+*)PTR_DAT_100cdbb0;` pushes Nil — and `6 − Nil` = 6: `DoExpr__7TInterpFRPUc @ 1007ddfc` case 0x4b
+subtracts only when both operands are integers, else `*(uint *)(iVar8 + sVar18 * 4) = uVar17;`
+pushes the left operand. So **+6 training points per level** [HIGH; one label for this rule across
+the banks, ⚑ corrected (wave 1 2026-10-03)]. Max health **R0E82** = `Body + Reflex/2 + level
 + ((D·5)·Reflex)/15` with D = Defense skill, or R0E95 if 0; max magic **R0E83** = `Mind + M`
 with M = Mana skill (194), or `R0E96` (`(ce1D >> 2) & 3` → 0, level/2, level, level·2) if 0, and 0
 when M = 0. Check on data: character 2 (Body 20, Reflex 20, Mind 20, level 8, +0x1D = 15) →
@@ -489,14 +560,19 @@ Reflex 12, Health 20, Level `((200/15 + 270)/10·100 + 50)/100 = 28`, +0x1D = 0,
 
 ---------------------------------------------------------------------------------------------
 ## 16. Open items
-1. 0x100469C0 (monster death) read from raw disassembly at branch level only: the Hero-death global
-   (+0x1C := 1), the exact corpse location stores and the egg test need a Ghidra function at that
-   address (and at slot +16 0x1004B8E8, +20 0x100465A4) and a re-decompile.
-2. Who answers signal 321 (guard alarm?) and what `f2A` (monster +0x20) drives in `DoTick`.
-3. `DAT_100d73f2` difficulty: confirm no UI writer (pointer-based write via `&DAT_100d73f2` other
-   than the stream restore) — only 2 code references found.
-4. Creature-record bytes 7 and 14–15 beyond the corpse use; f32 bits 1, 2, 4, 16, 32 and f33 bits
-   0x1000–0x8000 have no reader in the combat routines read here.
+1. ~~DoMove/Die/LeaveLevel absent from the dump~~ — resolved ⚑ corrected (wave 1 2026-10-03): `DoMove` 0x1004B8E8, `Die`
+   0x100469C0, `LeaveLevel` 0x100465A4 are in `Cythera_extra.decompiled.c` (CyDecompAt.java,
+   extra-addrs.txt); §12.2 is read from it. Still open: the reader of `*PTR_DAT_100cdb84 + 0x1C`,
+   the identity of `PTR_DAT_100cdbec`, the glue call on an open inventory window, and `Die` on a
+   spawned monster whose `param_1[5]` is 0.
+2. ~~Who answers signal 321~~ — resolved ⚑ corrected (wave 1 2026-10-03): `3015` → `R0D06`/`R0D07` by record byte 6, and the
+   guards' shared `0D07` method (§11). Still open: what `f2A` (monster +0x20) drives in `DoTick`.
+3. ~~`DAT_100d73f2` writers~~ — resolved ⚑ corrected (wave 1 2026-10-03): three r2-relative references in the code section,
+   the only writer is the `RestoreModel` stream read (§4.1, HIGH); no UI writer. The name
+   "difficulty" stays MED.
+4. ⚑ corrected (wave 1 2026-10-03): creature-record **byte 7** has no reader (§4) — open; bytes 14–15 are the corpse word
+   (§12.2). f32 bits 1, 2, 4, 16, 32 and f33 bits 0x1000–0x8000 have no reader in the combat
+   routines read here.
 5. R0EA3 spell selection (weights, sel 54 target classes) — belongs with the spells bank.
 6. The A31-aliasing reading of 0x301D for record-less characters (§12.3) — trace the stack layout
    of `DoInterp0` → `DoInterpAt` for a 1-value send with a 2-arg frame.

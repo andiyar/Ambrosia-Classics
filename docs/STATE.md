@@ -33,7 +33,7 @@
   end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
 
 ## Open, ordered
-- **Cythera RE wave 1 (2026-10-03 night):** scriptdis.py + census on main (0 unknown opcodes); eight rules banks on branch `claude/dazzling-ramanujan-8d8f23`, UNREVIEWED (critic 1 Blocker/7 Major/23 Minor) — handoff `docs/handoff-2026-10-03-cythera-re.md`.
+- Cythera RE wave 1 (2026-10-04): eight rules banks fix-passed (critic 1 Blocker/7 Major/23 Minor applied), Fable review in flight on branch `claude/optimistic-rosalind-dd2c63` — handoff `docs/handoff-2026-10-03-cythera-re.md`.
 
 1. **Phase 1 — HectorShell + Aki static screens** (Trigger C in `docs/RESUME.md`): brainstorm → plan → build.
    800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by

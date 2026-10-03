@@ -10,9 +10,12 @@ combat, magic, dialogue, trade, schedules and quests cite this file for helper s
 - **Scope**: all 199 routine segments on pages 0x08 (22), 0x0A (8), 0x0B (1), 0x0C (30), 0x0D (10),
   0x0E (66), 0x0F (22), 0x30 (40). Page 0x09 (combat-AI tests/actions) belongs to `ai-scripts.md`.
 - **Method**: every listing above was read this session (statement lines; inline-block contents only
-  where cited). Calls-in were counted by a scratch script over **all 958 listings**: static `R<seg>(`
-  calls (0x9F, 0x9C with a constant) outside dead code, plus cross-segment dictionary code pointers
-  `@seg:off`. Page totals reproduce census §7 exactly (08: 269, 0C: 15, 0D: 97, 0E: 367, 0F: 636,
+  where cited). Calls-in over **all 958 listings** ⚑ corrected (wave 1 2026-10-03): static `R<seg>(`
+  calls (0x9F, 0x9C with a constant) on live lines, plus dictionary code pointers `@seg:off` —
+  `grep -h '^[0-9A-F]\{4\}:[ >]' ghidra/cythera-scripts/*.txt | grep -o 'R\(08\|0A\|0B\|0C\|0D\|0E\|0F\|30\)[0-9A-F][0-9A-F](' | sort | uniq -c`
+  (per routine) and `grep -h '^; dictionary' ghidra/cythera-scripts/*.txt | grep -o '@0D07:'` (7);
+  per-routine segments: `grep -l '^[0-9A-F]\{4\}:[ >].*R0F15(' ghidra/cythera-scripts/*.txt | wc -l`.
+  Page totals reproduce census §7 exactly (08: 269, 0C: 15, 0D: 90 + 7 = 97, 0E: 367, 0F: 636,
   30: 20). "calls (segs)" = call sites (distinct calling segments). Liveness was closed transitively
   (§11). Native reach was measured with a raw-PEF scan (code section at file offset 0x3470, base
   0x10000000) for `bl` to the four `DoInterp` wrappers, taking the nearest preceding `li r4,imm` as
@@ -20,7 +23,8 @@ combat, magic, dialogue, trade, schedules and quests cite this file for helper s
 - Arg slots: **A30 = first argument (receiver for methods)**, A31.. next; L00.. locals (script-vm §3).
   `jf c -> X` jumps when `c` is **false**. `random(lo,hi)` returns lo..hi−1 (script-builtins AC).
 - **Not read**: the bodies of the ~600 class segments that call into the library (only their call
-  lines and a few inline tables); the undumped native function around 0x1004d554 (§9); page 0x09.
+  lines and a few inline tables); page 0x09. (The native sender at 0x1004d554 is `DoMove`, now in
+  `Cythera_extra.decompiled.c` — §5. ⚑ corrected (wave 1 2026-10-03))
   Activity codes ≥ 0x80 (160, 162 …) used in `queue_activity` are native and not interpreted here.
 
 ## 1. How each page is entered
@@ -96,12 +100,17 @@ drinker, print only if `A30 == G05:leader`, return 0.
 
 ## 5. Page 0x0C — activity dispatch and NPC chores (30 routines, 2,202 B)
 
-**Selector 33 = activity step.** Native code sends selector 33 with **five** values from the undumped
-function at 0x1004d554 (`li r4,33` @0x1004d538, `bl 0x100828c4` = `DoInterp(short,VAddr×5)`) [HIGH for
-the instruction pair; function identity MED]. No class defines 33, so 0x3021 runs:
-`return R[0C00+A31](A30, A32, A33, A34)`. Reading 3021's slots against `queue_activity(char, act, x, y,
-value)` (script-builtins F0), the 0x0C4x/0x0C5x handlers see **A30 = char, A31 = x, A32 = y, A33 =
-value**, and act 64–85 (0x40–0x55) selects the handler [MED: the native packing is not read]. Every
+**Selector 33 = activity step.** ⚑ corrected (wave 1 2026-10-03): the sender is
+`DoMove__14TActiveMonsterFss` (`tb.py --at 1004d554` → 0x1004b8e8, extent 0x1dec; `ppcdis.py 1004d530
+1004d558`: `1004d538: 38800021  li r4,33`, `1004d554: 48035371  bl 0x100828c4  ;
+.DoInterp__7TInterpFs5VAddr5VAddr5VAddr5VAddr5VAddr`). Its decompile (`Cythera_extra.decompiled.c`
+(CyDecompAt.java, extra-addrs.txt); schedules-npcs §0, §3.2) packs the queue head:
+`_DoInterp…(&iStack_b4,0x21,uStack_b8,uVar1,(int)sVar9 & 0xfffffff,(int)sVar16 & 0xfffffff,iVar8)` with
+`uStack_b8` = VAddr(4, 0x40, char), `uVar1` = node byte +8 (act), `sVar9` = +0xA (x), `sVar16` = +0xC
+(y), `iVar8` = +0x10 (value). No class defines 33, so 0x3021 runs `return R[0C00+A31](A30, A32, A33,
+A34)`: the handlers see **A30 = char, A31 = x, A32 = y, A33 = value**, act 64–85 selects. [HIGH] The
+queue head is erased only when the result is True (`if (iStack_b4 == *(int *)PTR_DAT_100cddec)
+{ cStack_7a = '\x01'; }` → `erase`). Every
 `queue_activity` in the corpus has a literal act; codes used: 64×2 65×2 66×19 68×16 70 71×8 73 75 76×2
 78 79 81×2 82×4 83 84×2 85; **never queued: 67, 69, 72, 74, 77, 80** (0C43, 0C45, 0C48, 0C4A, 0C4D,
 0C50) [HIGH for literals]. All return True except 0C43 (the callee's value) and 0C55 (0).
@@ -188,8 +197,11 @@ Names in quotes come from 0x0101 (`[from 0x0101 symtab]`, mapping MED per census
 
 ### 7b. Character statistics, combat, magic (0E80–0E90, 0EA1–0EA3, 0EB5, 0EB8)
 
-Skill numbers seen: 192 attack bonus, 193 defence/health, 194 magic pool, 195 spell power, 199
-unarmed, 200 missile [MED from use sites].
+Skill numbers ⚑ corrected (wave 1 2026-10-03): the class-0x50 `name` methods `1AC0 @0005 return
+"Attack"` … `1AD6 @0005` name all 23 (192 Attack, 193 Defense, 194 Mana, 195 Casting, 196–198 Sword/Axe/
+Mace, 199 Barehand, 200 Missile, 201 Shield, 202 Traps, 203 Persuasion, 204 Haggling, 205 Awareness,
+206 Fishing, 207 Gambling, 208 Cooking, 209 Weaving, 210 Alchemy, 211 Runic Magic, 212 Healing Magic,
+213 Lock Picking, 214 Thievery) [HIGH; combat §3, magic §6]; their roles below are read from use sites.
 
 | id | name | sig | behaviour | calls (segs) | conf |
 |---|---|---|---|---|---|
@@ -199,14 +211,14 @@ unarmed, 200 missile [MED from use sites].
 | 0E83 | MaxMagic [named here] | A30; int | `mind + (skill 194 or R0E96)`, 0 when both 0 | 3 (3) | HIGH |
 | 0E84 | CombatBonus [named here] | A30, A31 defending?; int | skill 192 (attack) / 193 (defence), else R0E95; non-char 0 | 4 (2) | HIGH |
 | 0E85 | SpellPower [named here] | A30; int | skill 195 or R0E96 | 9 (9) | HIGH |
-| 0E86 | LevelUp [named here] | A30, A31 levels | level += A31; rescales health/magic to new maxima; `training += (6 - G11)·A31` — G11 reads Nil (no GetGlobal case), so the term is `6·A31` if non-int arithmetic keeps the left operand (script-vm §5) | 4 (3) | HIGH bytes / MED value |
+| 0E86 | LevelUp [named here] | A30, A31 levels | level += A31; rescales health/magic to new maxima; `training += (6 - G11)·A31` — G11 reads Nil (GetGlobal `default: *param_1 = *(uint *)PTR_DAT_100cdbb0;`) and DoExpr case 0x4b pushes the left operand when either tag is non-integer (`else { … *(uint *)(iVar8 + sVar18 * 4) = uVar17; }`, `.DoExpr__7TInterpFRPUc @ 1007ddfc` in the main dump), so **+6·A31** ⚑ corrected (wave 1 2026-10-03; combat §13.2) | 4 (3) | HIGH |
 | 0E87 | ResolveHit [named here] | A30 att, A31 def, A32 weapon/Nil, A33 to-hit, A34 dmg die; Bool | parry, damage words, armour, damage, XP (§10.6) | 2 (0E88 0E89) | HIGH |
 | 0E88 | MeleeAttack [named here] | A30, A31, A32 weapon/Nil, A33 dmg; Bool | to-hit = reflex (body if cls48 `f33&1`) [+skill 199 unarmed] + rand(0,30) − (def.reflex + rand(0,30)) + R0E84(att,F) − R0E84(def,T) → R0E87; non-char target → R0E8F | 2 (3042) | HIGH |
 | 0E89 | MissileAttack [named here] | same | as 0E88 with reflex + skill 200 (to-hit and damage) | 2 (3042) | HIGH |
 | 0E8A | CanLearnSpell [named here] | A30, A31 spell level; Bool | known-skill count (types 0–127) ≥ R0EB5 → "can't learn another"; A31 > R0E85 → "beyond your current skills" | 1 (301A) | HIGH |
 | 0E8B | GainExp [named here] | A30, A31 xp | exp += A31 capped 65535; `exp > 2^(level−1)·100` → `R0E86(A30, 1)` (§10.7) | 48 (32) | HIGH |
 | 0E8C | DistSq [named here] | A30, A31; int | dx² + dy² | 5 (5) | HIGH |
-| 0E8D | DeathEffects [named here] | A30 corpse; 0 | remains prop `create_prop(33, x, y, random(0,4), 77, 0, 0)` if cls48 `f32 & 16384` ("remains" LOW); group flags if `& 8192`; Hero kill → `G0C += L05[cls48.f35]` (karma) | 4 (4) | HIGH bytes / MED karma |
+| 0E8D | DeathEffects [named here] | A30 corpse; 0 | remains prop `create_prop(33, x, y, random(0,4), 77, 0, 0)` if cls48 `f32 & 16384` — type 77 = "blood" (`104D` header `tile-name "blood"`) ⚑ corrected (wave 1 2026-10-03); group flags if `& 8192`; Hero kill → `G0C += L05[cls48.f35]` (karma) | 4 (4) | HIGH bytes / MED karma |
 | 0E8E | SplitExp [named here] | A30 xp | R0E8B(member, A30/G07) for each member; **dead** | 0 | HIGH |
 | 0E8F | HitObject [named here] | A30, A31 obj, A32 weapon, A33 die | `A31.sel65(rand(0,A33)+1, weapon sel42[2] or sel45[2])` | 2 (0E88 0E89) | HIGH |
 | 0E90 | AttrBonus [named here] | A30 attr; int | `(A30 − 12) / 4` | 4 (3042) | HIGH |
@@ -273,14 +285,15 @@ All `as_char(A30)` then one field op; names 0F00–0F13 from 0x0101 [HIGH bodies
 | 0F12 | "inckarma" | A30 n | `G0C = G0C + A30` | 2 (2) | HIGH |
 | 0F13 | "inparty" | A30; int | `@0009 return (L00.f13:flags & 64)` | 64 (36) | HIGH |
 | 0F14 | AddSkill [named here] | A30 char, A31 type; prop | `create_prop(28, 0, A30, 0, A31, 0, 0)` (kind 0x1C skill, as 0C4B/0EAF); dead | 0 | HIGH bytes / MED name |
-| 0F15 | SetTimer [named here] | A30 loc, A31 type, A32 byte6, A33 count; prop | `create_prop(66, 0, A30, 9, A31, A32, A33)` = kind 0x42 frame 9 countdown trigger (data-format 4.3); callers pass `(256, n, 1–8 ticks, 0)` | 8 (6) | HIGH bytes / MED meaning / LOW loc 256 |
+| 0F15 | SetTimer [named here] | A30 owner (location), A31 type, A32 byte 6 (countdown), A33 byte 7; prop | `create_prop(66, 0, A30, 9, A31, A32, A33)` = kind 0x42 frame 9 countdown trigger (data-format §4.3; fires selector 21 at the owner with the prop, schedules §7.1). ⚑ corrected (wave 1 2026-10-03): all 8 sites are `R0F15(1, k, d, 0)` — `42 00 01` = 1 (the Hero), k 0–8 = vision type, d ∈ {5, 2, 1}: 1025 @012A (1,1,5,0), @0290 (1,8,2,0), @035C (1,3,1,0); 1401 @00AF (1,4,2,0); 1408 @002B (1,5,2,0); 141D @0041 (1,7,2,0); 1502 @0033 (1,6,2,0); 1802 @199C (1,0,2,0) (quests §6) | 8 (6) | HIGH |
 
 ## 9. Page 0x30 — default handlers (40 routines, 4,224 B)
 
 Native senders from the raw `bl`+`li r4` scan (count of sites): 0 (2), 1 (1), 2 (9), 3 (1), 4 (3),
 5 (1, DoInterp×3), 7 (1), 8 (4), 9 (3), 10 (3), 11 (1), 12 (2), 13 (1), 14 (3), 15 (1), 16 (1), 17 (1),
 20 (4), 21 (20), 23 (2), 24 (1), 25 (1), 26 (2), 27 (3), 28 (3), 29 (2), 31 (4), **32 (2: 0x1004fa70,
-0x1004c3e4)**, **33 (1: 0x1004d554, 5-arg)** [MED: heuristic]. Script 0x9D sends: census §5. Selectors
+0x1004c3e4)**, **33 (1: 0x1004d554, 5-arg)** [MED: heuristic] — ⚑ corrected (wave 1 2026-10-03):
+0x1004c3e4 and 0x1004d554 lie in `DoMove`, 0x1004fa70 in `HatchEgg` (`tb.py --at`). Script 0x9D sends: census §5. Selectors
 18, 19, 61, 62 have **no** sender of either kind; every shipped `sel6` receiver is a `sysnew_01` list
 (handled natively), so 3006 is unreached too.
 
@@ -352,9 +365,12 @@ So the 0x9C FFFF site receives a **non-routine value in 113 of 114 entries**; th
 question of script-vm §8 is exercised by shipped data [HIGH from listings].
 
 ### 10.2 0x0EA5 Shop (2602 B, 23 merchant calls) [HIGH]
-21 of 23 callers write `setfield A30.f27:ce17 = R0EA5("…", blk, A30.f27:ce17, blk|Nil)`, so the merchant's
-price factor persists in CharEntry field 0x27; the other two (`call R0EA5("Cheese", …, 10, Nil)`,
-`call R0EA5("Flax", …, 10, Nil)`) sell at a fixed factor 10 without haggling. `@0003 jf (A32 < 9) -> 0010` / `@000B set A32 = 20` (a factor under 9,
+R0EA5 = the player **buys** (trade-economy §3). ⚑ corrected (wave 1 2026-10-03), `grep -n 'R0EA5('
+ghidra/cythera-scripts/*.txt`: 23 calls in 22 segments; 21 write `setfield A30.f27:ce17 = R0EA5("…",
+blk, A30.f27:ce17, blk|Nil)`, so the merchant's price factor persists in CharEntry field 0x27; the
+other two are `call` with a literal 10 — `186A @0447 call R0EA5("Cheese", blk@0455, 10, Nil)`, `1869
+@0215 call R0EA5("Flax", blk@0221, 10, Nil)` — fixed factor 10, no haggling. The third literal-10 call
+is the sell side, `1823 @0474 call R0EA9("Flax", blk@0480, 10)`. `@0003 jf (A32 < 9) -> 0010` / `@000B set A32 = 20` (a factor under 9,
 e.g. a fresh 0, starts at 20 = 200 %). Stock entries are `[item, name, price, count]`;
 `@0034 set L05 = L02[3]` / `@003B set L05 = callx[L05](L02)` — the counts are integers (71×1, 1×12 over
 all 23 tables), so this callx always takes the **non-routine path** and yields the integer itself.
@@ -384,7 +400,7 @@ value queued with act 67, but no shipped `queue_activity` uses 67. 3021's `0x9C 
 int) can reach any segment 0x0C00+A31; shipped acts stay in 0x40–0x55 [HIGH literals; native-made
 activities MED].
 
-### 10.5 0x0D07 shared signal method and 0x0D06 [HIGH]
+### 10.5 0x0D07 shared signal method and 0x0D06 [HIGH] (lines re-checked against `0d07.txt` ⚑ corrected (wave 1 2026-10-03))
 ```
 0D07 0003: 8d 31 43 00 00 01 00 54 40 00 14   jf (A31 == 256) -> 0014
 0D07 000E: 9f 0d 06 30 31 40                  call R0D06(A30, A31)
@@ -449,7 +465,7 @@ Asleep (`@0010 activity == 145`): bed orientation for type 264 from adjacent pro
 idle chatter when activity 3–13; `@01AF jf (A30.f28:food < 4)` → eats a carried 69/213/231 prop
 (`@01EE send L00.sel10/use_on(A30)`) or complains; fatigue lines weighted by G0D². Others:
 `@031B return L00.sel32/spawned()` (re-sent to the body prop's class). Native senders of 32 include one
-inside the activity function (0x1004c3e4), so this runs as a periodic idle tick, not only at hatch [MED].
+inside `DoMove` (0x1004c3e4, `tb.py --at`; ⚑ corrected (wave 1 2026-10-03)), so this runs as a periodic idle tick, not only at hatch [MED].
 
 ### 10.11 0x3042 strike (654 B) [HIGH]
 ```
@@ -490,12 +506,14 @@ Roots: all class segments (pages 0x10–0x1E), page 0x09, the 35 0x30 handlers w
 
 ## 12. Open items
 
-1. The native function containing `li r4,33; bl DoInterp×5` (0x1004d538/0x1004d554) and a selector-32
-   send (0x1004c3e4) lies in the undumped gap 0x1004b824–0x1004d704 after `QueueActivity`; dump it to
-   settle the 5-argument packing for 3021 and what result 0C55's `0` vs True means.
+1. ⚑ corrected (wave 1 2026-10-03) **Closed**: the 0x1004b824–0x1004d704 gap holds `DoMove` (0x1004B8E8, extent 0x1DEC),
+   now in `Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt; schedules-npcs §0, §3.2):
+   the 5-argument packing and the True-pops rule are in §5 (0C55's `0` leaves the entry queued).
 2. script-vm §8 stack-leak question for 0x9C FFFF with non-routine targets is **live**: 0816 (113 of
-   114 entries) and 0EA5 (every entry) take that path — verify from raw PPC before replicating.
-3. 0F15's location argument 256 (parent encoding of kind-0x42 frame-9 triggers) and its signal payload.
-4. 0E86 `6 − G11` with G11 = Nil: confirm the non-integer subtraction result from `DoExpr`.
+   114 entries) and 0EA5 (every entry) take that path; the VM's handling of that path is not yet
+   read from the code (⚑ corrected (wave 1 2026-10-03)).
+3. ⚑ corrected (wave 1 2026-10-03) **Closed**: 0F15's location is 1 (the Hero) at every site (§8).
+4. ⚑ corrected (wave 1 2026-10-03) **Closed**: `6 − G11` = 6 (DoExpr case 0x4b, §7b row 0E86).
 5. Selector names left `[unnamed]` (1, 18, 19, 23, 61, 62) and the role of selector 7 for non-rooms.
-6. Skill-number meanings (192–214) are inferred from use sites only.
+6. ⚑ corrected (wave 1 2026-10-03) **Closed** for names (1AC0–1AD6 `name` methods, §7b); the roles of
+   202–214 beyond their use sites in this library stay MED.

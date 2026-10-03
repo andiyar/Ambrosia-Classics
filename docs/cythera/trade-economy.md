@@ -5,7 +5,7 @@ it), MED (inferred) or LOW (conjecture). Listing citations are `segid @ offset` 
 `ghidra/cythera-scripts/<segid>.txt` (scriptdis output, decrypted, git-ignored); engine citations
 are `function @ addr` from `ghidra/Cythera_pef.decompiled.c` / `Cythera_builtins.decompiled.c`.
 Headline: **trade is entirely scenario bytecode** on top of eight inventory builtins. One live
-buy routine (`R0EA5`, 22 call sites), one live sell routine (`R0EA9`, 2 call sites), a money
+buy routine (`R0EA5`, 23 calls in 22 segments ⚑ corrected (wave 1 2026-10-03)), one live sell routine (`R0EA9`, 2 call sites), a money
 library on page 0x0D, and per-merchant **markup bytes** in `CharEntry +0x17` make up the economy.
 Six older shop routines on page 0x0E are dead in 1.0.4.
 
@@ -23,8 +23,8 @@ Six older shop routines on page 0x0E are dead in 1.0.4.
   `GetItemCount @ 1005577c`, `SetItemCount @ 1005560c`, `GetField @ 100921b4` (cases 4–0xA,
   0x27, class 0x48), `SetField @ 10092bd4` (0x27, 9), `GetGlobal` (6, 7), `FillIntfCache` (0x24),
   `IsEqual @ 10080adc`, `DoExpr` case 0x4D, `DrawWeightPart @ 1002c7e0`.
-- Data read with `tools/seg.py`: 0xF009 byte +0x17 for all 256 CharEntries, 0xF008 byte 6 for
-  the first 128 records, 0x0201 names.
+- Data read with `tools/seg.py`: 0xF009 byte +0x17 for all 256 CharEntries, 0xF008 byte 6 of
+  each character's creature-species record (reached through CharEntry +0x14, §11 ⚑ corrected (wave 1 2026-10-03)), 0x0201 names.
 - **Not read**: `TInteraction::PickItem` / `HowMany` bodies (cited from script-builtins.md as
   MED); the sysnew widget classes 0x06/0x08/0x10/0x11/0x12 (their fields `f37`, `f3C`–`f40` are
   read only as the scripts use them); `TInventoryWindow`, `TInventoryPile`, `TDroppableWindow`
@@ -76,7 +76,7 @@ Six older shop routines on page 0x0E are dead in 1.0.4.
   0) { uVar8 = 1; }`) and adds it to an existing stack, while the full `n` is also dropped on the
   floor (`L00 = A31 − 0`). Net: one extra obol. With no existing stack the new prop's count 0
   reads as 1 (`GetItemCount @ 1005577c`: `if (*(char *)(param_1 + 6) == '\0' && *(char
-  *)(param_1 + 7) == '\0') { sVar2 = 1; }`). [HIGH arithmetic; replicate literally]
+  *)(param_1 + 7) == '\0') { sVar2 = 1; }`). [HIGH arithmetic] (⚑ corrected (wave 1 2026-10-03): register — code fact only.)
 - Macros 252 "Split Cash" and 253 "Pool Cash" (skill/macro classes 0x1AFC/0x1AFD, sent selector
   9): `1AFC @ 0039: set L00 = R0D04()`, `0040: call R0D05(L00)`, `0045: call R0D0A(L00)` —
   take everything, redistribute evenly; `1AFD @ 003D/0044/0049`: take everything, `R0D09(G09:speaker,
@@ -145,7 +145,8 @@ All [HIGH] — each is `<seg> … 36/p_weight: @x` → `@x .array array[1] = [w]
 ---------------------------------------------------------------------------------------------
 ## 3. The live buy routine `R0EA5(prompt, stock, markup, haggleTable)`
 
-Called 22 times, always as `setfield A30.f27:ce17 = R0EA5("…", blk@…, A30.f27:ce17, blk@…|Nil)`
+Called 23 times in 22 segments (Milcom 181E has two calls; `grep -l 'R0EA5(' ghidra/cythera-scripts/*.txt
+| wc -l` = 22, `grep -c` summed = 23 ⚑ corrected (wave 1 2026-10-03)), always as `setfield A30.f27:ce17 = R0EA5("…", blk@…, A30.f27:ce17, blk@…|Nil)`
 (e.g. `1810 @ 01BF`), except Pelops `1869 @ 0215: call R0EA5("Flax", blk@0221, 10, Nil)` and
 Alcmena `186a @ 0447: call R0EA5("Cheese", blk@0455, 10, Nil)` (fixed markup 10, not stored). [HIGH]
 
@@ -168,7 +169,7 @@ Alcmena `186a @ 0447: call R0EA5("Cheese", blk@0455, 10, Nil)` (fixed markup 10,
   L01.sel6(sysnew_01(L02[0], L02[1], L02[2], L05, L02[2]))`: `units` may be a routine (called
   with the entry; falsy → item hidden). Every shipped entry holds a plain integer (1, or 12 for
   arrows), which 0x9C FFFF returns unchanged (script-vm.md §8; the possible stack-slot leak noted
-  there applies to all 22 sites). [HIGH for the data; leak MED, per script-vm.md]
+  there applies to all 23 calls ⚑ corrected (wave 1 2026-10-03)). [HIGH for the data; leak MED, per script-vm.md]
 - Display price: `00A2: atput L02[2] = (((L02[4] * A32) + 9) / 10)` — **unit price =
   ⌈base × markup / 10⌉** (integer ceiling for non-negative values). [HIGH]
 - A one-entry list skips the menu (`00C4: jf (len(L01) == 1) -> 00D7`, `00CD: set L07 = L01[0]`);
@@ -282,7 +283,7 @@ Census §7 lists 0E91, 0E92, 0E94, 0EA4, 0EA7 as never called statically; 0EA6 i
 | 0EA7 | `haggle(base, markup, ?, ?)` | standalone "Haggle" menu (Can't Afford / Poor Quality / Better Price Elsewhere / Indifferent), table `[5, 6, 4, 5]`, same formula family as §4 (`00B5: L03 = ((L03 - random(0, 10)) - ((A31 - 12) / 2))`, lie penalty `random(1, 4)` when money > ((base·markup+9)/10)·15/10) |
 [HIGH bytes; argument names MED]
 
-These differ from the live code in three ways a replica must **not** copy into R0EA5: per-member
+These differ from the live R0EA5 in three ways (⚑ corrected (wave 1 2026-10-03): register): per-member
 payment (R0D02 on the chosen member), a weight check, and the weight check's **sign**: 0E91/0E92
 *add* the coins' weight (`R0D03(…) + weight_if_added(…)`) while 0E94/0EA4 *subtract* it
 (`weight_if_added(…) - R0D03(…)`). [HIGH]
@@ -360,9 +361,9 @@ char 1). The list is complete for 1.0.4 (grep of `R0D0[1-5A9]` over all listings
   (flag bit 2, `066B: jf R0F02(A30, 2)`). [HIGH]
 - **Drinks**: each round increments a per-conversation counter `L00` and calls `R0EA2(L00)`:
   per member, `jf ((random(0, 6) + (3 * A30)) > (L00.f17:body + L00.f1B:level))` →
-  `temp_ability(L00, 21, ((A30 + 2) * 3))` — ability 21 (drunk, LOW) for `(n+2)·3` units when
-  `random(0..5) + 3n > Body + Level`. Then `R0813` prints a rumour (zone- and flag-dependent).
-  [HIGH bytes; ability 21's meaning LOW]
+  `temp_ability(L00, 21, ((A30 + 2) * 3))` — ability 21 = **Confused** (status +6 bit 13; magic.md
+  §4.1 ability table) for `(n+2)·3` units when `random(0..5) + 3n > Body + Level`. Then `R0813`
+  prints a rumour (zone- and flag-dependent). [HIGH] ⚑ corrected (wave 1 2026-10-03)
 - **Inn token**: `seg0301[0016]` (a persistent script word, `0x85` re-saves it) holds the paid inn
   id. A bed (type 14, `100E` sel9) with quality q: q = 0 free bed, q = 255 "somebody else is
   staying here", else `jf (A30.f06:quality != seg0301[0016])` → "You need to pay the innkeeper
@@ -375,7 +376,7 @@ char 1). The list is complete for 1.0.4 (grep of `R0D0[1-5A9]` over all listings
   `0203`). [HIGH]
 - Rest-bonus bug: the magic half compares and clamps against **health_max** (`0214: jf
   ((L03.f1E:magic < L03.f1D:health_max) && …`, `0243: setfield L03.f1E:magic =
-  L03.f1D:health_max`) while the overflow test uses magic_max (`023A`). Replicate. [HIGH]
+  L03.f1D:health_max`) while the overflow test uses magic_max (`023A`). [HIGH] (⚑ corrected (wave 1 2026-10-03): register.)
 - **Dice** (`0812`, entered from the inns' "dice/game"): house dice L03, L05 and player die L04,
   each `random(0, 6)`; with Gambling (skill 207), if L03 ≠ L04 then with probability ~1/6
   (`0488: jf (random(0, 6) == L03)`) `L04 = L03`. Result L06: match → 2; else the distance of L04
@@ -421,10 +422,11 @@ char 1). The list is complete for 1.0.4 (grep of `R0D0[1-5A9]` over all listings
   quality < 6 (`0518: jf (L0A.f06:quality >= 6)`), result `0799: setfield L0A.f06:quality =
   (L0A.f06:quality + 1)`; obsidian is counted and removed across the whole party (`05F8`,
   `06CC`–`06E8`). Labels "Unimproved" … "Legendary Improvement" for qualities 0..7. [HIGH]
-  What quality does in combat: combat domain, not read.
-- No durability decrement and no repair service were found in the trade code (§8). "broken sword"
-  (type 326) is a separate item type ("It is broken, and beyond repair."). [MED — weapon wear, if
-  any, would live in the selector-28 combat scripts, not read]
+  In combat, quality is added to the margin and the damage roll (`0E87 @0075: set L05 =
+  A32.f06:quality`, combat.md §3, §7.3, §8). ⚑ corrected (wave 1 2026-10-03)
+- **No durability**: no repair service in the trade code (§8), and no combat routine writes item
+  byte 6 — `0E87 @0075` is the only `.f06` access in the combat routines, a read (combat.md §7.3).
+  "broken sword" (type 326) is a separate item type ("It is broken, and beyond repair."). [HIGH] ⚑ corrected (wave 1 2026-10-03)
 
 ---------------------------------------------------------------------------------------------
 ## 11. Theft
@@ -446,21 +448,48 @@ char 1). The list is complete for 1.0.4 (grep of `R0D0[1-5A9]` over all listings
   Success chance `1 − (5/6)^k` (approximately, `Random()` mod 6). [HIGH bytes; probability MED]
 - Reactions to signal 256 (only outside selector-36 zones, each handler re-tests it):
   - the Hero (1801 `18D1: setglobal G0C = (G0C - 1)`, "Your deeds stain your soul.") — karma −1;
-  - characters without their own signal method run `0x3015`: class-0x48 field 0x35 (= byte 6 of
-    the character's 16-byte record in segment 0xF008's first 0x800 bytes, `GetField` class 0x48
-    `case 0x35: *param_1 = (uint)pbVar7[6];`) selects R0D06 (value 0) or R0D07 (value 2);
+  - characters without their own signal method run `0x3015`: class-0x48 field 0x35 (`3015 @0027:
+    set L01 = as_cls48(A30)`; `GetField` class 0x48 `case 0x35: *param_1 = (uint)pbVar7[6];`) is byte
+    6 of the character's **creature-species record** — `Ctor__Fsss` maps the character through its
+    CharEntry +0x14 type: `_ObjToMonst__Fs(*(ushort *)(PTR_DAT_100cdbf0 + sVar6 * 0x20 + 0x14) &
+    0x3ff)` (combat.md §4) ⚑ corrected (wave 1 2026-10-03) — and selects R0D06 (value 0) or R0D07 (value 2);
   - R0D06: on 256, if `leader_can_see(self)` → bark one of three lines and `send_signal(320)`; on
     321, if `leader_can_see(self)` → `target = leader`, `activity = 6`; R0D07 (also the shared signal method of the guard type
-    0x102E and chars 70–73, 100, 101): any 320 or 321 → `target = leader`, `activity = 6`. [HIGH]
+    0x102E and chars 70–73, 100, 101): on 256 it runs R0D06 too (`0D07 @0003: jf (A31 == 256) ->
+    0014`, `0D07 @000E: call R0D06(A30, A31)` ⚑ corrected (wave 1 2026-10-03)); any 320 or 321 → `target = leader`,
+    `activity = 6` with no sight test. [HIGH]
   - So one witness who sees the leader calls the guards (320); guards and value-2 characters turn
     on the leader. Signal 321 is also sent by 0x3043 (the default for selector 67, which no class
     defines and scripts send 8 times, census §5) when its receiver is not in the party, its
     argument is (`006F: jf (!R0F13(A30) && R0F13(A31))`) and the receiver's value is 0 or 2.
-    [HIGH bytes; activity 6 = "attack" and selector 67 = "was attacked" MED]
-- F008 byte 6 census (first 128 characters): 0 ×101, 1 ×11, 2 ×4 (chars 0, 2 Alaric, 3 Magpie,
-  4 Hadrian), 3 ×12. Values 1 and 3 (most merchants) select **neither** handler — merchants who
-  do not bark. Note data-format.md §5 describes 0xF008's first 0x800 bytes as a header; GetField
-  indexes it per character. [HIGH data; reconciliation with data-format.md left to that bank]
+    Activity 6 = **Beserk**: `DoMove__14TActiveMonsterFss` `case 6:` → `PerformAI(param_1,0xd3)`
+    (`Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt); name from STR# 502,
+    schedules-npcs.md §2.1/§2.3) [HIGH ⚑ corrected (wave 1 2026-10-03)]; selector 67 = "was attacked" [MED].
+- **Byte-6 census by species** ⚑ corrected (wave 1 2026-10-03) (replaces a census that indexed 0xF008 by character id; its
+  128 × 16-byte slots are species records). `ObjToMonst__Fs @ 10044a60` returns the first record
+  whose u16 +0xC equals the type, stopping at the first zero key (`if (*(short *)(iVar2 + 0xc) == 0)
+  break;`). Over the shipped 0xF009 (0xF0xx globals are read raw, not decrypted — data-format.md
+  §1.3):
+  ```
+  python3 -c "import sys,struct; sys.path.insert(0,'docs/cythera/tools'); import seg
+  d,S,_=seg.toc(); g=lambda i:d[S[i][0]:S[i][0]+S[i][1]]; f8,f9=g(0xF008),g(0xF009)
+  K=[struct.unpack_from('>H',f8,16*i+12)[0] for i in range(128)]; K=K[:K.index(0)]; r={}
+  for c in range(256):
+    t=struct.unpack_from('>H',f9,32*c+0x14)[0]&0x3ff
+    if any(f9[32*c:32*c+32]): r.setdefault(f8[16*K.index(t)+6] if t in K else None,[]).append(c)
+  print({k:len(v) for k,v in r.items()}, r[1], r[2], r[None])"
+  ```
+  - **0** → R0D06: 115 characters of 19 species (types 44–46, 48–50, 79–83, 85–87, 116, 117, 211,
+    290, 292); 14 of them have their own selector-21 method (1, 6, 10–13, 34, 70–74, 97, 100, 101
+    carry one: `grep -l 'sel21/signal' ghidra/cythera-scripts/18*.txt`), so **101** reach R0D06 —
+    every merchant of §7 among them;
+  - **1** → neither handler: chars 14, 92, 94 (Deiphobus, Eudoxus, Antiphus), all type 47 (record 1);
+  - **2** → R0D07: chars 1 (Hero, type 32, own method), 2 Alaric (type 34), 3 Magpie (type 35) — so
+    3015 → R0D07 reaches only Alaric and Magpie;
+  - **3**: no character; the 12 records with byte 6 = 3 serve spawned monsters only;
+  - no record (`as_cls48` → Nil; the `f35` tests on Nil not traced): char 38 (type 78) and the
+    type-0 entries 0, 43, 44, 47, 99, 126, 128, 129, 190.
+  [HIGH data + code]
 - Thievery (214) is read only through R0EAC in 0x300F; no `find_skill(…, 214)` exists. [HIGH]
 
 ---------------------------------------------------------------------------------------------
@@ -498,11 +527,12 @@ State: fresh game, party of 2, member A (leader) holds 30 oboloi, member B holds
    (char 69) has markup 16 but no shop call — leftover or reached another way.
 4. `R0D03` / B8's `GetCurInvEncumb(130)` term in the dead routines and in DoVolumeCheck 0E45 —
    magnitude depends on what character 130 / prop 130 holds at run time.
-5. 0x9C FFFF with an integer target (R0EA5 `003B`, 22 sites): the stack-slot leak from
+5. 0x9C FFFF with an integer target (R0EA5 `003B`, 23 calls ⚑ corrected (wave 1 2026-10-03)): the stack-slot leak from
    script-vm.md §8 is unverified at PPC level; it runs once per stock entry per menu pass.
 6. R0EA9's release-then-`len` and double release (`0373`, `0376`, `0385`): THeap behaviour.
 7. Over-encumbrance effects (rules.md §2 open item) — the live shop can push the leader over.
-8. Meaning of temp ability 21 (drinks), activity 6 (theft response), F008 byte 6 values 1/3, and
-   the 0813 rumour table conditions.
+8. ⚑ corrected (wave 1 2026-10-03): ability 21 = Confused and activity 6 = Beserk (§8, §11) and the byte-6 census (§11) are
+   resolved; open: the 0813 rumour table conditions.
 9. Crito's 20-obol char-1 payment (`1829 @ 035E`) — context not read.
-10. Whether any combat script decrements weapon quality (durability) — combat bank.
+10. ~~Whether any combat script decrements weapon quality~~ — closed ⚑ corrected (wave 1 2026-10-03): no combat routine
+   writes item byte 6 (combat.md §7.3; §10).

@@ -12,6 +12,8 @@ computes to-hit/damage, so combat arithmetic stays in script bytecode.
 ---------------------------------------------------------------------------------------------
 ## 1. Combat
 
+Full combat arithmetic: `combat.md` (supersedes the pointer row). ⚑ corrected (wave 1 2026-10-03)
+
 | rule | reading | evidence | conf |
 |---|---|---|---|
 | Attack command | `AttackCommand__8TGameSysFs @ 10055288`: refuses target 0 ("There is nothing to attack") and self ("It isn't worth killing yourself"); if the target has an active monster, sets its status bit 3 (`|= 8`, **IsAngry**) and sends selector **28** to the *attacker's* character script with the target; the integer result is the time cost passed to `HeartBeat`; a non-integer result prints "It is too far away to attack" (or "nothing to attack" for props) | code | HIGH |
@@ -23,6 +25,8 @@ computes to-hit/damage, so combat arithmetic stays in script bytecode.
 | Combat AI | pointer row → ai-scripts.md | — | n/a (pointer; ⚑ corrected (review 2026-10-03): label added) |
 
 ## 2. Movement, party, levels
+
+XP/levels `combat.md` §13; party follow/formation `schedules-npcs.md` §5; turn pacing `schedules-npcs.md` §4. ⚑ corrected (wave 1 2026-10-03)
 
 | rule | reading | evidence | conf |
 |---|---|---|---|
@@ -40,6 +44,8 @@ computes to-hit/damage, so combat arithmetic stays in script bytecode.
 | Encumbrance | inventory limit Body×20, equipped Body×10; weights per type (data-format.md §4.4) | code | HIGH; what exceeding does is NOT RESOLVED |
 
 ## 3. Schedules (`ScheduleTime`, `ScheduleOne`, `EvalCondition`, `RepositionChar`)
+
+Work types, activity queue, signals: `schedules-npcs.md` §2–§7; story-state conditions `quests-flags.md` §2.4. ⚑ corrected (wave 1 2026-10-03)
 
 ### 3.1 When [HIGH]
 `ScheduleTime(hour, force)` runs at every hour change, on new game, and on big time jumps (> 100
@@ -96,6 +102,9 @@ visible* likewise (both forced false if the prop's bit 31 is set).
   ("walking") with the target activity stored in prop byte 7.
 
 ## 4. Status effects and regeneration (native) [HIGH unless marked]
+
+Ability ids and TSpellFX: `magic.md` §4. ⚑ corrected (wave 1 2026-10-03)
+
 From `DoTicks` (engine-classes.md §3.1) and the status ladder:
 - Status word +6 bits = the 16 `ObjectFlags` of the AI language: 0 IsAlive, 1 IsPoisoned, 2
   IsEnhorsed, 3 IsAngry, 4 IsRegen, 5 IsFear, 6 IsParalyse, 7 IsInvisible, 8 IsXray, 9 IsCharmed,
@@ -110,6 +119,9 @@ From `DoTicks` (engine-classes.md §3.1) and the status ladder:
 - Spell/ability durations: `TSpellFX::PassTime(units)` each `DoTicks` — internals NOT RESOLVED.
 
 ## 5. Conversation [MED overall]
+
+Full dialogue system: `dialogue.md`. ⚑ corrected (wave 1 2026-10-03)
+
 - `TalkCommand__8TGameSysFs @ 100524b0`: prints "> Talk to <name>"; refuses sleepers (activity
   0x91 or IsSleep); opens the talk UI (`BeginTalking`, both portraits), sends selector **12** to
   the character (VAddr class 0x40) or, for non-characters, to the prop (class 0); closes; clears
@@ -124,6 +136,8 @@ From `DoTicks` (engine-classes.md §3.1) and the status ladder:
 - Journal: `TJournal::SaidToJournal/AddToJournal/MakeEntry` append to 0xE000+ pages. [MED]
 
 ## 6. Magic, alchemy, skills, trading
+
+Magic/alchemy/skills `magic.md`; trade `trade-economy.md`; routine reference `script-library.md`. ⚑ corrected (wave 1 2026-10-03)
 | topic | reading | conf |
 |---|---|---|
 | Spells | `CastSpell(@,#)` and `HasSpell(#)` are script routines 0x0981 / 0x0901; abilities live in `TSpellFX` (`HasAbility`, `RemoveStackedAbility`, FX queue saved in the 'Char' stream); the "Spells" source module's internals are not read | NOT RESOLVED |
