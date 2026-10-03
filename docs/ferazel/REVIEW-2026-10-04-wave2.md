@@ -1,6 +1,6 @@
 # Ferazel RE bank — wave 2 Fable reviews (2026-10-04)
 
-Register: code readings only; nothing behaviour-verified (meta file). Legs A–D reported; legs E–H were cut off by the usage limit and must be re-run (see docs/handoff-2026-10-04-ferazel-wave2.md). Fix pass: owed.
+Register: code readings only; nothing behaviour-verified (meta file). Legs A–F reported; legs G and H were cut off by the usage limit and must be re-run (see docs/handoff-2026-10-04-ferazel-wave2.md). Fix pass: owed.
 
 ---
 
@@ -88,6 +88,45 @@ Findings (no Critical, no Important):
 INDEX scorecard: 16 closed (replica-implementable: conversion block, ramp, flotation constants, permanence, Crawler cooldown table, Roach unreachability, voice-pool semantics). 17 closed (`+0x84/86` zero everywhere; Rand 60535..70534; guard never fires; `+0x1b2` full semantics; idle children HIGH code / honest MED geometry). 18 closed with §7.4 honestly UNDETERMINABLE beyond the demo.
 
 Re-derived from raw (all ✓): 10068ad4/adc/ae8 conversion gates; 10068b38 TOC−0x7640=HandlePlatform; SetRect 10/0x35/0x42/0x47 10068b40..54; +0x1a0=−6 10068b60; 10063614 SSH; 10036994..a c `+0x120←+0x11c`; dispatch 1006361c..54→10064968; 1006496c/74/80 shared branch; ramp 10064994..c0 (<0x50, FastRand(2)==1); gravity gate 100649c4..d8; ApplyFriction 100 10064ac8; +0xa6≤0 10064ad0; +0x1f8 calls 1003cc24/68/c4; 1006a9ec IsWaterTile 200..209; HandleFlotation target surface−68, 0x15e cap, 0.86/0.93 (0x100a17f8/f0), |vy|<0x46 snap; Crawler 100659e0/10065a10/10065f34..5c/10065e98/10065fd8/10066068/100660c8; Roach 1007794c/1007798c, dispatch 10077b1c..40, 10077d70 sole state-3 writer; FUN_100916dc 100916dc..744; 10004da4/db0/db4/dc0; tocrefs 1009fe8c = 18 (16 Setups); pipe 1006ec9c/eca8/ecdc/f040/f048..60; MTCollide 10032744 outer-only, 1003276c, 1003285c..70; WrapDraw 1001452c/38; Rand 10047d60/d80/d90; Pitched no srawi, 0x80 centre, L+R<0x14; STPlay3DSound srawi 10047b3c/b48; all 23 Setup `+0x84/86` stores li 0; InitSprite 1003d494/9c; r26=*TOC−0x732c (1004af10), r30=*TOC−0x7880 (10052ad4); Bat 1007ea14..48; guard 1007f348 TOC−0x77c4=PICT 151 (m. l. 115, 73868ff.); face indices ≤10/≤9/≤8 vs sets 11/12/9; Hit idioms 1007f5c4, 10080df0, 100835ac; nine crush writes; +0x150 readers only Crawler/Roach/other-sprite 1006687c/10082b00 (0x5a0 gate); Salamander 10082fec/10083538, no Handle access; GetBGTile W/H/map hdr+0xb280/82/8c, (col,row); ConstrainXY; Crab 10089594..ac; AddIdleSprite r8 untouched 10007d8c..e08; idle rect −0x18/0x278/0x198 ± 0x60; TurnIntoStatue +0x5c=HitBoxSprite, type unchanged; HitBoxSprite 0xc12..0xc1b/0xb74; demo path exists, PEF 2000-03-21 12:57 vs 2000-03-13 12:41, vers 2 = 1.0.3, seven routines 471/283/329/120/157/96/103 words, 0 masked diffs; census: six level-21 pipes (types/p1/p2 match), level 62 360×60, 102 water cells rows 20..49, crabs (238,51)/(253,51)/(267,50) kind −1, swapped 495. Commit touched only the four owned files; markers 7/7/7; line-3 register line matches siblings.
+
+---
+
+# Leg F — L9 commit 32bef32
+
+Verdicts: spells-detail-2.md ACCEPT_WITH_FIXES; triggers-background-2.md ACCEPT; triggers-background.md ACCEPT; spells-detail.md ACCEPT. Commit touched only the four owned files; §8-before-§5 signposted twice; markers present on every edit; files < 650 lines; register line on l.3.
+
+Findings
+- Important — spells-detail-2 §4 / spells-detail §2.4 "handled in creation frame **iff** sprite after player has +0x80 ≤ 11": raw (`.MTInsertSprite` 10032f68..9c walks from the head) makes this hold only while no sprite *before* the player carries layer > 11; state the assumption (direct `+0x80` stores exist) — conf. high.
+- Minor — §2 "only two routines write +0x1b6/+0x1b8": raw scan also shows `.InitSprite` 1003d56c/1003d584 (creation-time); harmless, claim incomplete — high.
+- Minor — §6 rock pile 1303 `+0xb0` [MED] is provably HIGH: all 212 `st? …,0xb0(` sites classified; Bonus writers are the 0x51b Setup arm (1005e0d4..e0), `.HitBonusSprite` 0x51b/0xc1c arm (1005fe0c, writes 0) and `.HandleBonusSprite` decrement (1005f808..18); none for 0x517 — high.
+- Minor — §1 attributes 1008bbc8 / 1008f3e4 to `.HandleChiefSprite`/`.HandleXichraSprite`; names table places them in `.GoblinChiefRandomCry` / `.DoXichraShot` (addresses correct) — medium.
+- Minor — S2 duplicates a closure lane L7/L8 already made in enemy-shots-and-damage(-2) (uncommitted); values agree; synthesis must dedupe — high.
+- Minor — spells-detail-2 NR 1–2 are hand-offs without "what I tried" — low.
+- bosses-2 W3 and §8.1 agree (type 90 = shot id 0x5a, 10058da8..db4). GenerateSprite 0x726 path confirmed dead (world-data §3.5; L25 rec 1 type 1830 is the Wizard).
+
+Scorecard: 22 closed (p1 = 0 gate intent honestly UNDETERMINABLE; as-written rule replicable); 23 closed (slot-reuse frequency correctly left as NR 3; same-frame rule needs the caveat above).
+
+Re-derivations (all ✓ unless noted): MTNewSprite layer→Setup→insert 10033200/1003321c/1003322c; insert strict-> 10032f7c `cmpw;bge`; next cached 100325bc; gates 10052b1c..b64 (0x1e), 1004e66c..6ac, 0x18 1008bbcc, 0x14 1008f3e8, −1 1004df54; latch 100531d4/100532bc/100534e4/10053294; slot+0x2c 10053250; 04cc=15 10055214, −1 10051cb4, 0xa00/0x2000 1004f25c/24c; clip reset 100368a8..bc; tunnel tests 10059f90, 1005a790, 1005ad1c; cmpwi 0xc 10059c5c, 0x320, 0x1450; table 0x100a5694 [0/9/18/27]→1003fb60/1003fff0/1003f240/1003f6d0; 0x100a18c8=0.985; e9<4 10009970, +1 10009a74, neg 100099b4; followers 1005ac88..c4/1005a360..9c; H·32 1005a3b4; ±0x1f4 10059cf4; +0x1f8 gate 1003c86c; no x-bound in shot handler; 58 `+0x154` loads, 10071910 (r26=0), 10075354..58, none in Cannoned; 10058da8..db4; 1007522c; 10036894..a4; passage 10057f68..78/100581b4..bc/10057f4c/100581ac/1004fe70..80/10057f94/fdc; look-ahead 10051494..158c (0x5000, 0x200, 0x100a5f5a, 0x100a5114); 05f0 100583d4..dc/1004deac/10054f24; wind 100369b0..10036a38 (0x38e38e39), o2·15/o2·14, table 0x100a5724 [0/9/18/27]→h−/v+/h+/v−, ramp /33, vy 10036c0c; Mlvl: 24/24 buttons, spouts 28/67/68/70/183, 19 p1=0 gates with x, L4 rec0 1401, wind L10 103 / L20 2899 (dists exact), glider (1392,256), no type-90/1202..1251 placements; consumers 1006f4f0/1006f74c/1006e914 (`lhax`); 0 `mulli 0x10`; 211 `sth +0xe`/`sthx` sites all own-record/centre/local; Buttons 100331bc, 10070d90..df8; Effect TV sole word 0x1009fef8→10060680, 16 loads, 181 calls, r23∈{5,2}; idle 511/512 (100083e8/10007de0), window −0x18/+0x278/+0x198/outset 0x60, 10007f38, lwzu/stwu; CastSpell `li r6,0xb`; MTCollideSprites outer-only +0x5c (orphan pressable).
+
+---
+
+# Leg E — `docs/ferazel/rendering-omnipx-titles.md` (cf29995, L4): ACCEPT_WITH_FIXES
+
+Attack results: (1) `10018a24 subf; 10018a2c rlwinm r3,r0,0x19,0x7,0x1f` = logical srwi 7 ✓; ConstrainXY (`1003be0c..6c`) sign-extends then clamps ✓. "Never draws −1" is honestly MED (simulation); the no-test/reads-[−1] part is HIGH and reconciles INDEX 2 correctly. I re-derived level 10 analytically: the ring split puts the band's first mid row in call 2 at every V 1392..1536 (qm=16, n−qm 53..95) → row 16 vs geometric 17 ✓. (2) `bl 10017924/10018dd4` only at `10022ff0..1002307c`; `.RedrawScrollGrid` (10013498) has no bl to 1003c4d8/1003c59c ✓. (3) r16 written only at `1001793c` and `1001891c` ✓. (4) sprites §2.2 l.73 "pixel value 0 is transparent" and lighting-tables l.234 "index 0 (white)" agree with §1.2/§3.5 ✓. (5) 128/136/138/4921/4985/4803 sites ✓; 137 (0x89 hits are SetRect/r0 tables), 4951/4961, cluts 288–290/729: no loader ✓. (6) manifest: AIFC stride 0xbc, 20@0x24e3→22@0x259f, 26@0x288f→28@0x294b; all 10 SetAIFFMusic callers use 24/25/29/30/hdr+0x284a/n−1 ✓. (7) Installer Data = RTF "Plot Writeup 1", 10,934 B; fork PICT 32000/STR 128/STR# 128/vers 128, no PICT 7000 ✓.
+
+Findings (no Critical/Important):
+- Minor §3.2 — backup buffers "0x100f00b0/0x100f40b0" — TOC slots 0x100a00c0/bc (`10019ae4/10019acc`) → 0x100f00a8/0x100f40a8 — HIGH.
+- Minor §1.5 — "then 128 from row 5001" for every level — level 22 switches at 6001 (census) — HIGH data; LOW that the simulation was affected.
+- Minor §1.3 step 6 back refill — x omits `+ripple[r]` (`10018974`, array −0x682c; levels 11/18 only) — HIGH.
+- Minor §1.3 step 6 — extra refill trigger unmentioned: flag 0x86 (`100187c4`, 0xe0≠0 && row>640, likely dead) — MED.
+- Minor §3.6 — drop x jitter (−1 px per sub-drop for style 0x4b3; random for 0x4b4, `10010bb4..c4`) omitted — HIGH.
+- Minor NR 3 — lighting-tables l.234 already asserts index 0 = white; cross-reference.
+- Minor — coverage.md routine map lacks the blitters (synthesis).
+Corrections rows 1–13: all correct against engine/world-data/save-continue/sprites/player-states. Structure OK (line 3, numbered, NR with tries, 429 lines, pointers resolve, commit touches only this file).
+
+Scorecard: 2 closed; 12 closed; 13 closed; 24 (OmniPx/PxMid) closed; 26 (PICT 1026) closed; 4 undeterminable (facts HIGH).
+
+Re-derivations (✓ unless ✗): li r16 1001793c; 1001891c; srwi 10018a2c; ConstrainXY; GetPxMidTile lha 1003c60c no test; lwzx r18/r17 10017bb4/10018a88/aa0; byte rule 10018044 + 0x84=0xff/0 10017f94/fa0; word back 100180e8; word mid 10018198; lead/tail/w<5 10017dd8; ring 0x4ec4ec4f/0x1a0 100174cc; DoubleBlitUniversal gates 10022f8c..1002307c; PaintFrameWrap 10012700/08/74 under 10011fd4; prefs+9→arg6 bne 10017734; GetPxBackTile 1003c4f8/510; 10004e18; 1000a46c/74; TurnOn 10019b04..84 (mode skip, 0x2000, slot swap); SetupOmniPx consts 10019fc0..1001a148 incl. 0xaa→0xc0/0xd2/0xe6/0x100a3802; NewBlitPort 10019e2c; UpdateOmniPx 18/58/56/29, +0x18, +4, 56−c; face loop null-skip/mod 0x8000/rem 128 1001a640..758; slots 0x100a008c→0x100f97e8, 0x100a00b4→0x100f97e4; GenerateRain gate 10011ee4, 90/210/150/0x4b3-4 tuples/50/200, gamma 2,0xc,0x10/0x6e; CD hash chain 100100d0..1001017c, pstr len 29, GetNewDialog 0x640 @100106ec; Titles sites (0x80,0x88,0x83,0x82/0x86+flag,0x8a,0x8c-e,0x9f/a1/a2,0xac+i/0xb6−i,8 credit pairs,0x1324,0x1329→0x133d,0x1339,0x1373−0xa,0x1379×3,0x11f8); cluts 0x80/82/83×2/84/104, +0x118, slots −0x7814/18 only 10000a08/0c; DisposePxMidTileset blr 100027f8; 1009ff68 single load 10002424; no 0x402/0x41e/'Tune'; Fire bl set; Mlvl census (14 levels, table shapes, ym, 0x26c7/26ca/2722/273c, sheets, level-15 row 18 cols 128..199); Titles 67/16 ids+8 sizes, no Sprites/Sounds overlap; 6200≡6300 ace346500df0; volume 842/60/639. ✗ 0x100f00b0/40b0; ✗ level-22 "5001".
 
 ---
 
