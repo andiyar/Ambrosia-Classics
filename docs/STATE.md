@@ -22,9 +22,15 @@
 - **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
   `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
 
+- **Aki Phases 1–3 plan REVIEWED** (`docs/plans/2026-10-03-aki-phases-1-3.md`, contracts not code — Ben's ruling
+  2026-10-03). **Phase 1 built through P1.8 (MERGEABLE) + P1.9 (unreviewed)** on branch `claude/suspicious-tu-1af46f`
+  (pushed, not merged); AkiCore 31 tests; app builds and stages. HectorShell built by the HectorKit session (main
+  `8287ddb`, floor 139). Handoff: `docs/handoff-2026-10-03-aki-phase1-wip.md`. DECISIONS D3 = present path.
+
 ## Open, ordered
 
-1. **Phase 1 — HectorShell + Aki static screens** (Trigger C in `docs/RESUME.md`): brainstorm → plan → build.
+1. **Phase 1 finish** (handoff 2026-10-03 aki-phase1-wip): P1.9 review+fix, P1.10–P1.12, P1.13 gate → Ben's verdict. Then Phase 2 per the plan.
+   ~~Trigger C~~ superseded by the plan; HectorShell done.
    800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by
    measuring (§7); splash (`welcome.png`), map (`map.png` + lanterns), prefs dialog from the 1.2 nibs' strings.
    First staged `.app` for Ben: gate "that is Aki's map screen".
