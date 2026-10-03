@@ -58,3 +58,23 @@ preference), so a mutant or a new data shape can never pass silently.
 srcRect/matte/mask/mode because Aki never sets them (a future game's band would composite wrong, silently) ·
 refusing them inside `quickTimeBands` (moves EV 5027's pinned refusal from 0x0007 to `maskSize`).
 **Approved by:** Phase-0 orchestrator rulings on the Task 5 quality review (2026-10-03); Ben's review pending.
+
+## D3 — Phase 1 present path: CoreGraphics canvas through a CALayer-backed NSView, measured (2026-10-03)
+
+**Decided:**
+1. HectorShell draws into a CPU `ShellBitmap` (a `CGContext` over a once-allocated BGRA buffer, 800×600
+   logical) and presents it as a CALayer's `contents` (`makeImage()`), letterboxed: exact integer multiple of
+   the logical size → crisp (nearest-neighbour, `integerScale = k`); otherwise smooth fit (design §4a items
+   1–2). Retina: 800×600 logical → 2x/3x in backing pixels.
+2. HectorShell's render-smoke test asserts the present cost at 3× stays **< 4 ms/frame median over 60
+   frames**. Metal is adopted only if that budget is missed. Design §7's open question ("Metal vs CALayer,
+   decide by measuring") is closed by this measurement: the plan's scratch replica measured 1.34 ms median.
+3. Aki 1.2's `_enterFullscreen` switched the display to 800×600; the replica instead fills the main screen
+   (crisp at an exact multiple, smooth fit otherwise) per design §4a — listed for Ben as Q3 in the plan.
+
+**Because:** 800×600 at ≤ 20 presents/s is a 1.9 MB copy; the original's QuickDraw call sites transcribe 1:1
+onto CPU blits; no per-frame allocation; nothing to shade.
+**Rejected:** Metal up front (no measured need; a second present path to keep correct) · per-pixel NSImage
+drawing (allocates per frame) · integer-letterbox fullscreen (orchestrator ruling under §4a; Q3 open for Ben).
+**Approved by:** Phases 1–3 orchestrator ruling 2026-10-03 (`docs/plans/2026-10-03-aki-phases-1-3.md` Task 0);
+Ben's review pending.
