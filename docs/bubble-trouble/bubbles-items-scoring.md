@@ -51,6 +51,15 @@ Types: 10/15/16 bubbles move; 20 jewel moves; 30 cluster static anim; 40 pop (st
 `_CheckBlock` / `_NewHurtBlock`: dirty-rect redraw of a maze cell (the "hurt block" list drawn in the
 draw pass); the consumers of LEVL w3/w4 (data-formats.md §2). No simulation state, no RNG.
 ⚑ corrected (review 2026-10-03) (names added). [MED]
+⚑ corrected (plan 2026-10-03 btx-core) — **C5, step 3 of `_MoveBlock`: which balloons a block pops.** Only **flying** ones.
+`_MoveBlock` calls `_Balloons_CheckSquishes(&local_24)`, and `_Balloons_CheckSquishes @ 00023ae8` tests
+`if (*pcVar2 == '\x01') { cVar1 = _RectsCollide(param_1,puVar4); if (cVar1 != '\0') {
+_Balloons_PopBalloon(iVar3); } }` (balloon state 1 only). A balloon **holding an enemy** pops through
+the enemy instead. `_WasEnemySquished @ 00010eca` returns the first overlapping enemy in states
+1/4/5/6/3 and ends `if (puVar1[iVar5] != '\x06') { return iVar3; } _Balloons_PopBalloon((int)*local_28);`
+(`local_28` = enemy +0x43, its balloon index). A balloon **holding the hero** (state 2, holder 0xff)
+is never popped by a block. Command: `python3 ghidra/find_func.py '_Balloons_CheckSquishes' --file
+<dump>` (also `'_WasEnemySquished'`). [HIGH]
 
 ## 2. Popping and eggs
 
@@ -118,6 +127,13 @@ Joining (`_CheckJewelMovement @ 0001ca05`, when a sliding jewel aligns): [HIGH]
   is killed (`_HeroCaught(2)`, once per rect that hits). [HIGH]
   Guide: "squishes everything one 'bubble width' away … the larger size … two bubble widths away" —
   consistent; the code adds the exact cut-corner shape.
+⚑ corrected (plan 2026-10-03 btx-core) — **C1.** "once per rect that hits" is wrong: the hero dies at most once per blast.
+`_CheckForBombKills @ 000116eb` ends `cVar1 = _IsHeroCaught(*param_1,param_1[1],1,1); if (cVar1 != '\0')
+{ _PlayMySnd(0x2b,10,5); _HeroCaught(2); }`. `_IsHeroCaught @ 00021c79` requires
+`*(short *)(PTR__hero_0003f014 + 2) == 2`, and `_HeroCaught @ 00021dfa` sets it to 3 first, so the
+second and third rect find the hero in state 3. That is one `_HeroCaught(2)`: one `(0,1)` draw and one
+star group 0xe (14 stars, replay-oracle.md §4.2 C2). Command: `python3 ghidra/find_func.py
+'_IsHeroCaught' --file <dump>`. [HIGH]
 
 ## 5. Balloons (Normal the shark's bubble attack, and capture balloons)
 
@@ -137,6 +153,49 @@ Joining (`_CheckJewelMovement @ 0001ca05`, when a sliding jewel aligns): [HIGH]
   `_PopEnemy` → +100 ×mult, enemy dead. Moving blocks and blasts also pop/kill. [HIGH]
 - `_Balloons_CaptureAllEnemies @ 000240dd` (jewel bonus, EXTRA, capture bonus): every enemy in state
   1/4/5 gets a holding balloon at its position (`GetRandomFast(4,7)` each); eggs are not captured. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C4, the shark balloon's collision box grows once, not to the full balloon.**
+`_Balloons_New @ 000237f9` starts the anim frame (+0x1c) at 1 and the counter (+0x1e) at 0. The flying
+arm of `_Balloons_Process @ 00024394` grows the box only under `if ((*(short *)(puVar7 + -5) < 2) && (sVar6 =
+*(short *)(puVar7 + -3), *(ushort *)(puVar7 + -3) = sVar6 + 1U, 2 < (ushort)(sVar6 + 1U)))` (disasm
+0002449f `cmpw $0x1,-0x5(%ebx); jg 0x24621`), so growth runs only while the frame ≤ 1. On the 3rd
+flying call that reaches this step, the counter passes 2 and the frame becomes 2. The box is then
+(top+8, left+8, top+31, left+26) (`+5 = left+8; +3 = top+8; +9 = left+0x1a; +7 = top+0x1f`, disasm
+000244f9..0002453b). From then on frame 2 fails the gate. The frame-3 arm (0002451b: top+3, left+3,
+top+32, left+26) and the frame-4 arm (00024544: the full balloon rect) cannot be reached from the
+flying path. Command: `otool -tV <binary>` 0002449f..00024550; `python3 ghidra/find_func.py
+'_Balloons_Process' --file <dump>`. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C12, the hero balloon's holder −1 (narrows NR-6).** `_Balloons_CaptureHero @ 00023cbb`
+sets the balloon to state 2 (`(&_gBalloons)[iVar7] = 2;`), start = frame h, holder
+`(&DAT_00037a03)[iVar7] = 0xff;`, and on the hero `puVar4[0x4c] = 1; *(undefined2 *)(puVar4 + 0x4e) =
+uVar5;`. `_ProcessHero @ 00022de0` clears the trap (`puVar12[0x4c] = 0;`) on the first frame where
+`(uVar9 & 0xffff) <= *(ushort *)(puVar12 + 0x4e) + 0x5a` fails, i.e. frame h+91. This is state 2 only:
+states 1/3 return first and state 4 skips the block. Later that frame, the state-2 arm of
+`_Balloons_Process @ 00024394` tests `if ((puVar1[0x4c] == '\0') && (cVar2 =
+_RectsCollide(local_2c,puVar1 + 0x14), cVar2 != '\0')) { _Balloons_PopBalloon(iVar8);
+_PopEnemy((int)(char)puVar7[2]); }`. The box was set to the hero's 40×40 rect at capture and the
+trapped hero cannot move, so the balloon pops: `_PopEnemy(-1)` runs on h+91 (the live path). The release
+test after it (`start + *(short *)(PTR__level_0003f010 + 0x20)` (LEVL w16, ≥ 120) `< frame` →
+`_ReleaseEnemyFromBalloon(-1)`) cannot be reached while the hero stays in state 2. [HIGH] (code path)
+Residual path [MED, derived]: an enemy catches the hero in `_ProcessEnemies` on exactly frame h+91,
+before `_ProcessHero` would clear the trap. The caught hero's `_ProcessHero` returns at state 3, so +0x4c
+stays 1 and the hero-pop never fires. The balloon then reaches its release test at h+w16+1, while state
+3→4 runs at the top of frame h+122 (`_MakeAllEnemiesDisappear` → `_Balloons_PopAll @ 00023f54`: state
+2 → 3, no release). Release comes first only if h+w16+1 < h+122, i.e. w16 = 120 (levels 16–50):
+release at h+121. A catch on h+90 or earlier puts the PopAll at the top of frame h+121 or earlier, so
+there is no release. Never in levels 1–4 (w16 ≥ 140). Replica (plan Invariant 18): both calls with
+holder −1 are no-ops.
+New finding at append time (not in the plan) [MED, address arithmetic]: `_PopEnemy @ 00011254` with −1
+does not test the index. `pcVar1 = PTR__enemy_0003f04c + param_1 * 0x5c; if ((pcVar1[0x47] == '\0') &&
+(*pcVar1 != '\0')) { … _AddToScore(100,1); _NewPoint(…); puVar2[param_1 * 0x5c + 0x47] = 1; …
+_gNumEnemiesSquished++ …; gMaze[…] = 0; }`. `_enemy` is at 0x393c0 (`nm -n`), so slot −1 starts at
+0x39364 = `_environment` (0x39360) + 4, and its +0x47 byte is 0x393ab, between `_gCompGWorld`
+(0x393a0) and `_gSpriteGWorld` (0x393b0). The original's effect therefore depends on runtime memory.
+If `_environment`+4 is nonzero and 0x393ab is still 0, the first hero-balloon pop in a process awards
++100 ×mult with a popup, increments `gNumEnemiesSquished`, writes 0 to a maze cell indexed from that
+memory, and sets 0x393ab = 1, so it fires at most once per process. If not, it does nothing. NOT
+RESOLVED. The replica's no-op matches the original only in the second case. Command: `python3
+ghidra/find_func.py '_Balloons_CaptureHero' --file <dump>` (also `'_Balloons_Process'`,
+`'_ProcessHero'`, `'_Balloons_PopAll'`, `'_PopEnemy'`); `nm -n <binary>`.
 
 ## 6. Multiplier — `gBonusMultiplier` 1..5
 
@@ -157,6 +216,11 @@ Reset to 1 on new game and on every respawn (`_Multiplier_Reset(1)` at hero stat
 across levels. Applies to every ×mult award and to the time bonus at level end. [HIGH]
 `_Multiplier_Process`: the multiplier's flash animation only; no RNG, no state change.
 ⚑ corrected (review 2026-10-03) (name added). [MED]
+⚑ corrected (plan 2026-10-03 btx-core) — **C8.** `_SquishEnemy @ 0001131b` does call `_Bonus_SetNumEnemySquishes(n)` for n ≥ 3 and for
+n ≤ 0, but `_Bonus_SetNumEnemySquishes @ 0001a818` begins `_gBonus_NumEnemiesSquishedAtOnce = param_1;
+if (param_1 < 3) { _gBonus_NumEnemiesSquishedAtOnce = 0; return; }`. So n ≤ 2 (including 0 and
+negatives) never steps the multiplier. Only n = 3, 4, 5 and ≥ 6 reach the table above. Command:
+`python3 ghidra/find_func.py '_Bonus_SetNumEnemySquishes' --file <dump>`. [HIGH]
 
 ## 7. Bonus bubbles — `_Bonus_Init @ 00019734`, `_Bonus_Process @ 0001a92b`
 
@@ -221,6 +285,17 @@ Death also emits group 0xb. [HIGH] — they matter only for RNG order (replay-or
 ⚑ corrected (review 2026-10-03): the type-0xb **stars'** `(0,1)` draw has a further pre-draw exit besides the
 60-star cap — `_NewStar @ 0000329a` returns before drawing when the star rect leaves the playfield
 (x 0..640, y 0..440); edge squishes draw fewer numbers. Details: replay-oracle.md §4.2. [HIGH]
+⚑ corrected (plan 2026-10-03 btx-core) — **C7, air-bubble death and delayed bubbles.** `_Bubbles_Process @ 00016b1a`:
+`if (*(short *)(pcVar11 + 0xe) < 0) { pcVar11[0x21] = '\x01'; }`. The bubble rect is at +0xa (top
++0xa, left +0xc, bottom +0xe, right +0x10, as written by `_Bubbles_New @ 00016349`), so a bubble is
+marked dead when its **bottom** is above y 0, not its top. `_Bubbles_New` sets `+0x22` (delayed) when
+its 4th argument (the delay) is ≥ 1. Groups 9, 10 and 0xb of `_Bubbles_NewGroup @ 0001657e` pass
+delays 2/3/4/6 to some of their bubbles. A delayed bubble runs only `if ((int)((int)*(short *)(pcVar11 +
+0x24) + (uint)*(ushort *)(pcVar11 + 2)) < (int)(uVar6 & 0xffff)) { pcVar11[0x22] = '\0';
+pcVar11[0x20] = '\x01'; } goto LAB_00016cc1;`. Until `delay + start < frame` it skips movement, its
+snaking index **and** the shared `_gBubbles_RandDriftIndex` advance. Command: `python3
+ghidra/find_func.py '_Bubbles_Process' --file <dump>` (also `'_Bubbles_New'`,
+`'_Bubbles_NewGroup'`). [HIGH]
 
 ## 12. Score events (all ×mult unless noted)
 

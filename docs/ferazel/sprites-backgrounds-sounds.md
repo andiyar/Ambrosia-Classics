@@ -183,7 +183,12 @@ relative to the face's top-left — e.g. the player `SetRect(+0x34, 0x26,0x22,0x
 x 38..62, y 34..85 within the 100×120 cell [HIGH]; crouch/shield variants change it
 (physics.md). Tile hot rects (`.InitTileHotRects`) → physics.md §3. Kick rects
 (`.InitPlayerKickRects @ 10000408`): 36 rects of ≈8×12 around a 64×64 box, one per 10°
-(`SetRect` list, quoted coordinates in the dump) — used by the dagger/kick hit test [MED].
+(`SetRect` list, quoted coordinates in the dump) — used by the dagger/kick hit test [MED]. ⚑ corrected (deepening 2026-10-03): the table (0x1024b394, TOC slot
+0x100a0078) is written by `.InitPlayerKickRects` and **read by nothing** — enemy-shots-and-damage.md
+corrections #1, labelled [HIGH] by that reader (one TOC load in the whole code section; residual
+risk: an arithmetic address); melee hits use the held-item sprite's face rect (pickups-boxes.md §3.1).
+Per-class hot rects, faces and sheets of every sprite class are now in the class files (index:
+coverage.md §1); the draw-effect word `+0xb8` and its NOT-RESOLVED modes: physics.md §0.1.
 
 ## 6. Sounds
 
