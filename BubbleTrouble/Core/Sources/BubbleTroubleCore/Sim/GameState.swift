@@ -141,6 +141,9 @@ public struct GameState: Sendable {
     public internal(set) var playing: Bool
     /// `_gLevelForEffect` — 50 (process start) until the first state-2 `_ProcessHero` latches `_Get13To22()`.
     public internal(set) var levelForEffect: Int
+    /// `gHero_Up/Down/Left/Right/PushKeyPressed` — written only by `_CheckHeroMovement`, persisting across frames
+    /// (`gHero_MoveKeyDown` = any direction held; computed in `Input.swift`).
+    public internal(set) var heroKeys: FilmSample
     /// Set by `_HeroCaught` during a frame; the frame step clears it at the top of each frame (Task 10 report).
     public internal(set) var heroCaughtThisFrame: Bool
     /// Every stop reason that fired (Invariant 14).
@@ -205,6 +208,7 @@ public struct GameState: Sendable {
         firstAppearance = true
         playing = false
         levelForEffect = 50          // `__data` 0x34254 = 0x32
+        heroKeys = FilmSample(up: false, down: false, left: false, right: false, push: false)
         heroCaughtThisFrame = false
         pendingStops = []
     }
