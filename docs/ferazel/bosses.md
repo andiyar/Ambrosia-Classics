@@ -8,7 +8,8 @@ by reading TOC word → `word + 0x1009f840` → TVector code word → traceback 
 same arithmetic as `tools/tocrefs.py`), level data via `tools/rsrc_census.py`.
 Scope: Warrior 1820..1829, Wizard 1830..1839, Chief 1910..1919, Demon / Fire Guardians
 1920..1929, Xichra 1990..1999, and the main-dump helpers they call. Part 2 (`bosses-2.md`):
-Demon, Xichra, boss projectiles, NOT RESOLVED, proposed §0 fields, corrections.
+Demon, Xichra, boss projectiles, NOT RESOLVED, proposed §0 fields, corrections. ⚑ wave 2 (2026-10-04): part 3
+(`bosses-3.md`): Xichra's lair objects, CLUT animation, vestigial-field proofs, loose ends.
 
 Conventions. Sprite fields as in physics.md §0. `SetRect` arguments are quoted in Toolbox order
 `(left, top, right, bottom)`; the stored Rect at `+0x34` is `(top, left, bottom, right)`.
@@ -38,8 +39,8 @@ Parameter use (every record read in the boss code, grep of `* 0x10 +` over both 
 
 | class | p1 | p2 | p3 | p4 | byte +1 |
 |---|---|---|---|---|---|
-| Warrior | — | written 150 if 0 (`lhau r0,0xa(r3)` 10087a00, `li r0,0x96` 10087a0c), never read by the boss code | — | **boss flag**: ≠0 → HP 2000 + boss mode; 0 → HP 1200 (handler l. 20066–20077; `li r0,0x4b0` 1008795c / `0x7d0` 10087968) | not read |
-| Wizard | — | same 150 write (l. 22036–22039, 1008c814), never read by the boss code | — | **boss flag**: ≠0 → HP **1000**; 0 → 1200 (l. 22011–22021; 1008c75c / 1008c768) | not read |
+| Warrior | — | written 150 if 0 (`lhau r0,0xa(r3)` 10087a00, `li r0,0x96` 10087a0c), never read by the boss code — ⚑ wave 2 (2026-10-04): nor by any other code (all p2 readers are class-gated); the write is the Dillo Setup's prologue, where p2 is the patrol width (bosses-3 §10.1) | — | **boss flag**: ≠0 → HP 2000 + boss mode; 0 → HP 1200 (handler l. 20066–20077; `li r0,0x4b0` 1008795c / `0x7d0` 10087968) | not read |
+| Wizard | — | same 150 write (l. 22036–22039, 1008c814), never read by the boss code — ⚑ wave 2 (2026-10-04): inert, same template (bosses-3 §10.1) | — | **boss flag**: ≠0 → HP **1000**; 0 → 1200 (l. 22011–22021; 1008c75c / 1008c768) | not read |
 | Chief | — | — | — | **boss flag**: ≠0 → HP 2000; 0 → 1200 (l. 21516–21528; 1008b600 / 1008b60c) | not read |
 | Demon | — | — | **partner offset**: second guardian at x − p3·32 (l. 21001) | **boss flag**: ≠0 → HP 2000; 0 → 1000 (l. 20943–20953; 1008a178 / 1008a184) | not read |
 | Xichra | — | — | — | not read (HP 5000 fixed, `li r9,0x1388` 1008dd98) | not read |
@@ -89,7 +90,8 @@ Active only while `_DAT_1009fed0 == 0` and hdr+0x2724 = `v` ≠ 0.
 - Per level: 5 → lock when x < 1384, camera window then [map left, 1444]; 18 → x < 1340, window
   [640, 1400]; 25 → x > 532, window [592, 1384]; **55 → v = 16000: lock needs x > 15940, so the
   Fire Guardians never lock the arena** (only the gate and music of §1.4 apply) [HIGH for the
-  arithmetic, MED that no level-55 geometry reaches x 15940]; 67 → v = 0, no arena.
+  arithmetic, ~~MED that no level-55 geometry reaches x 15940~~ ⚑ wave 2 (2026-10-04): HIGH — `.PlayerConstraints`
+  clamps the player to x ≤ 64·32 − 32 = 2016 before the lock test, raw 1004cb84..1004cbb4; bosses-3 §11]; 67 → v = 0, no arena.
 - Chief only: its idle timer advances only while `fed4` is set (§4). Warrior: its decision state
   returns early (no gravity, no AI) while `fed4` is clear (§2).
 
@@ -206,7 +208,10 @@ branch exists for it. Projectile damage: part 2 §7.
 | `_DAT_100a0344` | 468 | goblinhurt | Xichra phase changes (rate 78000–102000) |
 
 Calls are `.STPlay3DSound(snd, 1, vol, pos)` / `.STPlay3DSoundPitched(snd, 1, vol, pos, rate)`;
-`rate` values are near 65536 (e.g. 42000+`FastRand(10000)`) [MED: 16.16 rate meaning not traced].
+`rate` values are near 65536 (e.g. 42000+`FastRand(10000)`) ~~[MED: 16.16 rate meaning not traced]~~ ⚑ wave 2 (2026-10-04):
+16.16 Fixed pitch multiplier, 0x10000 = original pitch (the unpitched call stores `lis r0,0x1` in the
+same slot, 10047af0/10047afc; the mixer `FixMul`s it into the channel step, 1009139c..100913a4) [HIGH]
+(bosses-3 §12.1).
 
 ---------------------------------------------------------------------------------------------
 
@@ -246,7 +251,7 @@ State machine (`+0xb0`):
 
 | state | behaviour |
 |---|---|
-| 6 decide | face = walk frame 0; `+0xa6` (if > 0) counts down; **if `fed4` (arena locked) is clear the handler returns here** (no gravity, no cleanup). At `+0xa6 ≤ 0`: `r = FastRand(100)`; if `|playerCY − cy| < 80` (`cmpwi 0x50` 10087f28): threshold T = 65 and face the player, else T = 19; T = −1 while the game-over flag `_DAT_1009ffa8` is set (only set after death, so never in play). `r > T` → **walk/run** (state 7, `+0x46 = 1`, cycles `+0xa6 = FastRand(3)+2`; run if `FastRand(100) > 100 − T` else walk, and on walk with `FastRand(100) > 80` `.WarriorLayEgg` → `+0x154 = 2` (never read), `+0xa6 = 5`, `+0x14c = FastRand(2)+1` (≠0 → run); then if x > `+0x160` face left, if x < `+0x15c` face right). Else → `.RandomWarriorAttack` (state 2, `+0x46 = 0`, `+0x154 = 0`, `+0xa6 = 16`, swings `+0x14c = FastRand(2)+1`). Then vx ×0.5 |
+| 6 decide | face = walk frame 0; `+0xa6` (if > 0) counts down; **if `fed4` (arena locked) is clear the handler returns here** (no gravity, no cleanup). At `+0xa6 ≤ 0`: `r = FastRand(100)`; if `|playerCY − cy| < 80` (`cmpwi 0x50` 10087f28): threshold T = 65 and face the player, else T = 19; T = −1 while the game-over flag `_DAT_1009ffa8` is set (only set after death, so never in play). `r > T` → **walk/run** (state 7, `+0x46 = 1`, cycles `+0xa6 = FastRand(3)+2`; run if `FastRand(100) > 100 − T` else walk, and on walk with `FastRand(100) > 80` `.WarriorLayEgg` → `+0x154 = 2` (never read — ⚑ wave 2 (2026-10-04): proven, and the routine is a copy of `.DilloLayEgg`, whose Handle drops an egg on 2; bosses-3 §10.1), `+0xa6 = 5`, `+0x14c = FastRand(2)+1` (≠0 → run); then if x > `+0x160` face left, if x < `+0x15c` face right). Else → `.RandomWarriorAttack` (state 2, `+0x46 = 0`, `+0x154 = 0`, `+0xa6 = 16`, swings `+0x14c = FastRand(2)+1`). Then vx ×0.5 |
 | 7 walk (`+0x14c == 0`) | frames walk[`+0x46>>1`], cycle 15 frames, vx ±0x600 (6 px/frame) by facing; each completed cycle `+0xa6 −= 1`, forced to 0 if x left `[+0x15c, +0x160]`; at 0 → state 6 with `+0xa6 = FastRand(9)+4` |
 | 7 run (`+0x14c ≠ 0`) | frames walk[`+0x46`], cycle 7 frames, vx ±0xc00 (12 px/frame); same cycle/bounds rule |
 | 2 attack | vx ×0.4; `+0x46 < 2`: walk frame 0, face the player; else attack frame `+0x46/2 − 1` (8 frames; read as `set + (n>>1)·4`, i.e. no `+4`). `+0x46 == 7`: snd 704, rate 50000+`FastRand(6000)`. `+0x46 == 9`: enemy shot **0x71f** at (cx ± 0x30 − 0x18, cy − 0x25), layer 0, vx ±0xb00 (11 px/frame) by facing (part 2 §7). `+0x46 > 16`: `+0x46 = 0`, swings −1, at < 1 → state 6, `+0xa6 = FastRand(9)+4` |
@@ -283,7 +288,8 @@ state 6; `+0x46 = 2`; `+0xa6 = FastRand(10)`; `+0xf0 = 0x1e`; p2 default write (
 `+0x9c = AllocateGameMem(0xe)` (zeroed, 7 i16): `w[0]` actions left in the current attack,
 `w[2]` state to enter after the attack, `w[3]` attack kind (0 fireballs, 1 crate), `w[4]` attack
 counter (only incremented), `w[5]` crate-carry timer, `w[6]` consecutive fireball attacks;
-`w[1]` unused.
+`w[1]` unused. ⚑ wave 2 (2026-10-04): `w[4]` write-only (one load/store pair, 1008cbf8/1008cc00), `w[1]` never
+accessed; `+0x14c..+0x168` stored only by Setup (bosses-3 §10.1–§10.2) [HIGH].
 
 ### 3.2 State machine  [HIGH]
 HP bands used below: **high** HP > 600, **mid** 301..600, **low** ≤ 300 (`cmpwi 0x258 / 0x12c`).
@@ -297,7 +303,7 @@ HP bands used below: **high** HP > 600, **mid** 301..600, **low** ≤ 300 (`cmpw
 | done | `+0xa6 = +0x46 = 0`, state = `w[2]` = 12 |
 | 12 | face the player → state 10 |
 | 10 retreat-animation | move-set frame `7 − (n mod 16)/2` (reverse), vx ±0x500 toward the facing; stand from `+0x46 > 31`; at > 35 → state 6 |
-| 11 | same as 10 with the opposite vx sign; **no writer of state 11 exists** (dead) |
+| 11 | same as 10 with the opposite vx sign; **no writer of state 11 exists** (dead) — ⚑ wave 2 (2026-10-04): every `+0xb0` store of the Wizard listed and `w[2]` is only ever 12 (1008cabc..1008cac0); bosses-3 §10.2 [HIGH] |
 | 4 dying | vx ×0.9 (0x100a1cc0); cast-set frame `+0x46>>2` (cap 16); `+0xa6 == 20` → burn |
 
 Crate carry (every frame while `w[5] > 0`, l. 22370–22394): `w[5]−−`; if the crate is gone
@@ -346,7 +352,9 @@ right; `+0xf0 = 0x1e` (no glow code reads it); `+0xa6 = −40` (`li r0,-0x28` 10
 | 2 throw | 19-frame cycle `+0x46` 0..18: at n = 0 face the player and `+0x158−−` (→ state 6 with `+0xa6 = 0` when < 1 — the decrement precedes the first throw, so a landing yields **1 or 2 throws**); frames n/2 0–3 throw-A, 4–7 throw-B, ≥8 standing; at **n = 7**: snd 704 vol 0x5f rate 45000+`FastRand(8000)`, enemy shot **0x77b** at (x + (facing right ? 0xa1 : −0x11), y + 0x33), layer −1, facing copied, `+0x46 = 15`, vx 4000+`FastRand(500)`, vy −1200−`FastRand(150)`; if `|playerX − cx| < 240`: vx ×0.8, vy = **+2000** (thrown down at a near player); the following `< 155` branch (vx ×0.5, vy 0xc80) is unreachable; vx negated when facing left |
 | 4 dying | vx ×0.9; death frame `min(n>>2, 3)`, n cap 16; `+0xa6 == 20` → burn |
 
-`+0xb2` (set 1 by a hit) counts 1..5 then 0; nothing else reads it [HIGH; purpose LOW].
+`+0xb2` (set 1 by a hit) counts 1..5 then 0; nothing else reads it [HIGH; purpose LOW]. ⚑ wave 2 (2026-10-04): its only
+reader also runs an empty switch on `(b2 − 1) >> 1` (all arms branch to 1008c008, raw
+1008bfd4..1008c024) — a removed consumer (bosses-3 §10.3).
 On HP ≤ 0: 60 % (`FastRand(100) < 60`) a random cry, then snd 703.
 Constants: 0.9 / 0.8 / 0.5 at 0x100a1c88 / 0x100a1c98 / 0x100a1c90 (`lfd -0x5bb8/-0x5ba8/-0x5bb0`,
 1008bf44 / 1008bdf8 / 1008be54); vy and lane speeds `li` at 1008ba00..1008baf8; 0x77b spawn
