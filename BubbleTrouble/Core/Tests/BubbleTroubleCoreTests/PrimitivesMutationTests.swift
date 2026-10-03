@@ -157,6 +157,36 @@ final class PrimitivesMutationTests: XCTestCase {
         XCTAssertEqual(state.newBlock(col: 14, row: 9, direction: .up, type: 10, enemy: -1, moving: true), 2)
         XCTAssertEqual(state.newBlock(col: 14, row: 8, direction: .up, type: 10, enemy: -1, moving: true), rows.count)
         XCTAssertEqual(state.rng.drawCount, 0)
+        // None free: `_NewBlock` returns 0 silently (`if (iVar6 == 0x23) { return 0; }`) and changes nothing; the
+        // replica returns −1. `_ActivateBombBlock` ignores the result and carries on; `_PushBlock`/`_CrushBlock`
+        // test it and `_CleanUp` (quit) before their maze write → `.originalWouldAbort`, maze untouched.
+        var full = world()
+        full.frame = 200
+        for slot in 0..<35 {
+            XCTAssertEqual(full.newBlock(col: slot % 16, row: slot / 16, direction: .down, type: 10, enemy: -1,
+                                         moving: true), slot)
+        }
+        XCTAssertEqual(full.numActiveBlocks, 35)
+        full.maze[3, 10] = CellCode.blue
+        let mazeBefore = full.maze, blocksBefore = full.blocks
+        XCTAssertEqual(full.newBlock(col: 5, row: 10, direction: .left, type: 40, enemy: -1, moving: false), -1)
+        XCTAssertEqual(full.numActiveBlocks, 35)
+        XCTAssertEqual(full.maze, mazeBefore)
+        XCTAssertEqual(full.blocks, blocksBefore)
+        full.activateBombBlock(col: 5, row: 10, direction: .right)
+        XCTAssertEqual(full.numActiveBlocks, 35)
+        XCTAssertEqual(full.maze, mazeBefore)
+        XCTAssertEqual(full.blocks, blocksBefore)
+        XCTAssertTrue(full.pendingStops.isEmpty)
+        full.pushBlock(col: 2, row: 10, direction: .right, type: CellCode.blue)
+        XCTAssertEqual(full.maze, mazeBefore)
+        XCTAssertEqual(full.blocks, blocksBefore)
+        XCTAssertEqual(full.pendingStops.count, 1)
+        full.crushBlock(col: 2, row: 10, direction: .right, score: true)
+        XCTAssertEqual(full.maze, mazeBefore)
+        XCTAssertEqual(full.blocks, blocksBefore)
+        XCTAssertEqual(full.pendingStops.count, 2)
+        XCTAssertEqual(full.numActiveBlocks, 35)
     }
 
     /// Research note 26: `_PushBlock` makes a moving block of the pushed type in the adjacent cell

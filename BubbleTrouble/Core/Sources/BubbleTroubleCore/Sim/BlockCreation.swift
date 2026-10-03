@@ -4,20 +4,22 @@
 
 extension GameState {
     /// `_NewBlock(col, row, dir, type, enemy, moving) @ 0001b94b`: the first slot (0…34) whose state byte is 0. None
-    /// free → the original returns 0 and its callers quit (`_CrushBlock`/`_PushBlock` `_CleanUp`, `_CheckNewEnemies`
-    /// `_StdError`) — the replica stops with a precondition failure (Research note 35). The slot gets rect = prevRect
+    /// free → the original returns 0 silently (`while (*pcVar4 != '\0') { iVar6++; pcVar4 += 0x34; if (iVar6 ==
+    /// 0x23) { return 0; } }`) having written nothing; the replica returns −1 and changes nothing (no maze write, no
+    /// `_gNumActiveBlocks++`). Each caller decides: `_ActivateBombBlock` and `_CheckJewelMovement` ignore the result
+    /// and carry on; `_PushBlock`/`_CrushBlock` test it and `_DebugValues("… no free block. Increase kMaxNumBlocks.")`
+    /// + `_CleanUp` (quit); `_CheckNewEnemies` `_StdError`s. (Research note 35's "none free → original error" is
+    /// imprecise: the error is the caller's.) The slot gets rect = prevRect
     /// = the cell, type, direction, aligned, chain count 0, col/row, offsets 0, egg toggle 0, anim counter 0, retired 0,
     /// enemy, bouncing 0, bounces 0, bounce step 0; then by type: 10/15/16 → state 1, moving, sprite 0x11/0x14/0x15,
     /// frame 1; 20 → state 1, moving, 0x16, frame 1, jewel cell; 30 → state 1, static, 0x17, frame 1, jewel cell;
     /// 40 → state 2, static, 0x18, frame 1; 51 → nothing (state stays 0); 52 → `moving` ? state 1, moving, frame 1
     /// : state 3, static, frame 2, sprite 0x12 below level 12 else 0x13; 60 → state 3, static, 0x1f, frame = the
     /// enemy's type, egg pop delay 15; any other type is the original's "Unknown block type" quit (precondition).
-    /// Finally start = frame and `_gNumActiveBlocks++`. Returns the slot (the original returns 1).
+    /// Finally start = frame and `_gNumActiveBlocks++`. Returns the slot (the original returns 1), or −1 when none free.
     @discardableResult
     mutating func newBlock(col: Int, row: Int, direction: Direction?, type: UInt8, enemy: Int8, moving: Bool) -> Int {
-        guard let i = blocks.firstIndex(where: { $0.state == 0 }) else {
-            preconditionFailure("NewBlock() - none free (35 slots): the original quits here")
-        }
+        guard let i = blocks.firstIndex(where: { $0.state == 0 }) else { return -1 }
         let c = Int8(truncatingIfNeeded: col), r = Int8(truncatingIfNeeded: row)
         let rect = QDRect(top: Int16(r) &* 0x28, left: Int16(c) &* 0x28,
                           bottom: Int16(r) &* 0x28 &+ 0x28, right: Int16(c) &* 0x28 &+ 0x28)
@@ -84,19 +86,29 @@ extension GameState {
     }
 
     /// `_PushBlock(col, row, dir, type) @ 0001bd62` (the hero at (col, row) pushes the cell in `dir`):
-    /// `_NewBlock(next cell, dir, type, −1, moving 1)`, then that maze cell = 0.
+    /// `_NewBlock(next cell, dir, type, −1, moving 1)`, then that maze cell = 0. A 0 (none free) result is the
+    /// original's `_DebugValues("PushBlock() - no free block. Increase kMaxNumBlocks.")` + `_CleanUp` (quit) before
+    /// the maze write → `.originalWouldAbort`, maze untouched.
     mutating func pushBlock(col: Int, row: Int, direction: Direction, type: UInt8) {
         let next = Self.adjacentCell(col: col, row: row, direction)
-        newBlock(col: next.col, row: next.row, direction: direction, type: type, enemy: -1, moving: true)
+        if newBlock(col: next.col, row: next.row, direction: direction, type: type, enemy: -1, moving: true) < 0 {
+            pendingStops.insert(.originalWouldAbort("PushBlock() - no free block. Increase kMaxNumBlocks."))
+            return
+        }
         maze.cells[next.col + next.row * Maze.columns] = 0
     }
 
     /// `_CrushBlock(col, row, dir, score) @ 0001bc14`: `_NewBlock(next cell, dir, 0x28, −1, 0)` (a pop block); the
     /// maze cell becomes 0x28 unless it holds dynamite (0x34); when `score`, `_AddToScore(1, 1)` (×mult). (The
     /// licence-checksum mismatch branch — `GetRandomFast(0,0x28)`, −5120 — is outside the modelled licence state.)
+    /// A 0 (none free) result is the original's `_DebugValues("CrushBlock() - no free block. Increase
+    /// kMaxNumBlocks.")` + `_CleanUp` (quit) before the maze write → `.originalWouldAbort`, maze and score untouched.
     mutating func crushBlock(col: Int, row: Int, direction: Direction, score: Bool) {
         let next = Self.adjacentCell(col: col, row: row, direction)
-        newBlock(col: next.col, row: next.row, direction: direction, type: 0x28, enemy: -1, moving: false)
+        if newBlock(col: next.col, row: next.row, direction: direction, type: 0x28, enemy: -1, moving: false) < 0 {
+            pendingStops.insert(.originalWouldAbort("CrushBlock() - no free block. Increase kMaxNumBlocks."))
+            return
+        }
         let i = next.col + next.row * Maze.columns
         if maze.cells[i] != CellCode.dynamite {
             maze.cells[i] = CellCode.popping
@@ -151,7 +163,7 @@ extension GameState {
     /// `_ActivateBombBlock(col, row, dir) @ 0001c1c4` (the hero pushes a blocked dynamite cell): the first block with
     /// a non-zero state, type 0x34, at the next cell (retire flag not tested): `frame <= start + 0x1e` → nothing,
     /// else `_ExplodeBombBlock(slot)` now (otool 0001c23b–0001c25c). None → `_NewBlock(next cell, dir, 0x34, −1, 0)`
-    /// — a static, lit fuse (state 3, frame 2).
+    /// — a static, lit fuse (state 3, frame 2); the original ignores that result, so a full pool (−1) changes nothing.
     mutating func activateBombBlock(col: Int, row: Int, direction: Direction) {
         let next = Self.adjacentCell(col: col, row: row, direction)
         let c = Int8(truncatingIfNeeded: next.col), r = Int8(truncatingIfNeeded: next.row)
