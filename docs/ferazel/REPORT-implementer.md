@@ -1,5 +1,7 @@
 # Ferazel's Wand RE bank — implementer report (2026-10-03, Opus implementer; saved by the orchestrator)
 
+Register: code readings only; nothing behaviour-verified (meta file of the RE bank).
+
 Status: DONE_WITH_CONCERNS. Files: INDEX 130, engine 264, world-data-format 394,
 sprites-backgrounds-sounds 236, physics 261, spells-items 158 lines; tools/: pef.py, const.py, tocrefs.py,
 rsrc_census.py, gensprite_map.py, FzDecompTargets.java, FzDisasm.java, targets.txt, fer_names.txt (scripts

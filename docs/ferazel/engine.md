@@ -121,6 +121,17 @@ odd = !odd;
 - Boss-arena music: if hdr+0x2724 ≠ 0 and `_DAT_1009fed0` and music on, the loop switches to
   track 30 when the counter `_DAT_1009fd6c` ≤ 0, else fades out [MED: the counter's meaning
   (boss alive?) not traced]. At level start the same condition forces `hdr+0x284a = 30`.
+  ⚑ corrected (deepening 2026-10-03): `_DAT_1009fd6c` is the current music volume and `_DAT_1009fed0` is "no boss
+  alive" (cleared by a boss Setup with the boss flag, set by its Kill): with no live boss the
+  level track fades out, then track 30 fades in; the level-start force fires on a revisit after
+  the kill (bosses-2 corr. 3, bosses §1.2–§1.4). ⚑ corrected (review 1c, 2026-10-03) (adjudication
+  B16): settled for bosses-2 — `.SetMusicAIFFVolume` stores its argument through the `fd6c` slot
+  (`10049704..10049708 sth r31,0(r3)`) = music volume; `.GameLoop` l. 5231–5238 `*fd6c < 1 →
+  SetAIFFMusic(0x1e)` + fade in, else fade out; `fed0` = 0 in `.SetupWarriorSprite`
+  (`1008796c..10087974`, r8 = 0 from `100878d8`, inside the p4 / HP-2000 branch), = 1 in `.KillWarrior`
+  (`100887f4..100887fc`), same pattern in the other four Setup/Kill pairs [HIGH]. ⚑ corrected (review
+  1b, 2026-10-03) #4: both sites carry the hdr+0x2724 ≠ 0 gate (main l. 5183, 5231), so level 67
+  (0x2724 = 0) fires neither.
 
 ## 5. Camera  [HIGH]
 
@@ -156,10 +167,18 @@ main → MainMenu ─New Game→ NewGame ──→ [GameLoop ⇄ ShowWorldMap]* 
 death (G+4 < 1) → DeathEffect → AskToContinue: only if a save was made/loaded this session
                   (PTR_DAT_1009fe00); "continue" re-enters ContinueGame on that save, else menu.
 ```
+⚑ corrected (deepening 2026-10-03): "continue" re-reads the **file** (`OpenSG(fd18)`) — nothing is refilled, the player
+restarts on the save point, and level completions since that save are lost; with no save this
+session there is no death screen at all. Only save points (type 1065, once each per game) write
+saves; the Esc dialog's Save branch is dead (DITL 202 has no item 5); level completion only
+updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a, 2026-10-03) #6
+(adjudication B18): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
+(`100071d0..100071e4`); `.ContinueGame` copies G from save+0x18 (`1000d0cc`) [HIGH].
 - There is **no lives counter**: death ends the run unless the player resumes from a save
   (`.AskToContinue @ 10007190` buttons via `TrackClickOnCommandButtonDeath`) [MED: no other
   decrement of a life-like field found; `G+0x12 = 3` is set in `.InitGameGlobals` but its
-  reader was not traced — NOT RESOLVED].
+  reader was not traced — NOT RESOLVED]. ⚑ corrected (deepening 2026-10-03): `G+0x12` is write-only; no lives concept
+  (save-continue §8.1) [HIGH].
 - Chapter screens: entry to a level with hdr+0x273c ≠ 0 shows `.ChapterScreen(n)` (Titles
   CLUTs 281..287 "1 intro … 7 mountain chapter") only while `G+0x176+2·L == 0` (`.GameLoop`,
   main dump l. 5188–5192). That flag is set by **checkpoint saves as well as completion** (§9),
@@ -169,7 +188,11 @@ death (G+4 < 1) → DeathEffect → AskToContinue: only if a save was made/loade
 - Stage load popup `.PopupStageLoad`/`.UpdateStageLoad(…, 100)` during `.SetupLevel`.
 - Victory: `_DAT_1009ffc4` set by `.HandleXichraSprite @ 1008e4ec` (death-animation counter
   > 0x96 also sets `DAT_100a5106` to end the loop) or the F8 debug key → `.Victory` (track 29,
-  PICTs 159/161/162).
+  PICTs 159/161/162). ⚑ corrected (deepening 2026-10-03): the counter is Xichra state 8, `w+0x38 − 60 > 150` (frame 211 of
+  the death state), reached only after the phase-6 crash landing (bosses-2 §6.4, corr. 4).
+  ⚑ corrected (review 1c, 2026-10-03) (adjudication B17): raw `1008f7c0..1008f898` — `w+0x38 += 1`;
+  past 60, `d = w+0x38 − 60`: d < 140 → an explosion every 12 frames; d > 0x96 → `stb 1` to
+  `100a5106` and `*1009ffc4` [HIGH].
 
 ## 7. Input
 
@@ -220,9 +243,9 @@ Field defaults from `.InitPrefs`; meaning from the reading site:
 |---|---|---|---|
 | 0x00 | u8 | 0 | reduce frame rate (`.GameLoop`) [HIGH] |
 | 0x01 | u8 | 0 | auto-reuse saved-game file (`.SavePointSave → SaveSG(prefs[1]==0)`) [HIGH] |
-| 0x02 | i16 | 1 | graphics detail popup; 3 → scan-line ("black lines") mode, 2/3 → even scroll v [MED] |
-| 0x04 | i16 | 2 | effects popup [LOW] |
-| 0x06 | i16 | 2 if `_DAT_100a511a` < 0x108 else 1; value 3 skips `DrawLightsOntoTiles` [MED] |
+| 0x02 | i16 | 1 | graphics detail popup; 3 → scan-line ("black lines") mode, 2/3 → even scroll v [MED] — ⚑ corrected (deepening 2026-10-03): **Graphics** 1 High / 2 Low / 3 Line-skipped (save-continue §8.2) |
+| 0x04 | i16 | 2 | effects popup [LOW] — ⚑ corrected (deepening 2026-10-03): ~~effects~~ **Parallax** 1 Super / 2 Parallax / 3 No; no control in the shipped dialog (orphan `CNTL 604`), so always 2 (save-continue §8.2) [HIGH] |
+| 0x06 | i16 | 2 if `_DAT_100a511a` < 0x108 else 1; value 3 skips `DrawLightsOntoTiles` [MED] — ⚑ corrected (deepening 2026-10-03): **Effects** 1 Enhanced / 2 Normal / 3 Reduced (save-continue §8.2) |
 | 0x08 | u8 | 0 | allow background tasks (`WaitNextEvent` in loop) [HIGH] |
 | 0x09 | u8 | 0 | passed as "!flag" to `WrapCopyToScreen` [LOW] |
 | 0x0a | u8 | 0 | use InputSprocket [HIGH] |
@@ -231,12 +254,12 @@ Field defaults from `.InitPrefs`; meaning from the reading site:
 | 0x0e / 0x10 | i16 | 7 / 9 | sound volume? / music volume (music = v·256/9) [MED] |
 | 0x12..0x22 | i16[9] | §7.1 | key codes [HIGH] |
 | 0x2a, 0x30 | i16 | 0x30, 0x4c | Tab, Enter (dialog keys?) [LOW] |
-| 0x32 / 0x34 | i16 | 0 / 1 | written by `.InitPrefs @ 1000f180`; reader not traced [HIGH for the defaults] ⚑ corrected (review 2026-10-03) #9 |
+| 0x32 / 0x34 | i16 | 0 / 1 | written by `.InitPrefs @ 1000f180`; reader not traced [HIGH for the defaults] ⚑ corrected (review 2026-10-03) #9 — ⚑ corrected (deepening 2026-10-03): +0x32 switch the monitor to 640×480 (`.ResSwitch`), +0x34 ask the resolution question on launch (`DLOG 1300`) (save-continue §8.2) |
 | 0x36 / 0x38 | i16 | 0 / sysvol/28 | use system volume / sound volume·28 [MED] |
 | 0x3a | i16 | −1 | machine hash for the CD check (out of scope) [HIGH] |
 | 0x3c / 0x3e / 0x40 | i16 | 0 / 0 / 0 | written by `.InitPrefs`; reader not traced [HIGH for the defaults] ⚑ corrected (review 2026-10-03) #9 |
 | 0x42 | pstr[256] | **"@@@@@"** — the 5-byte pstr at `0x100a3193` (`pef.b(0x100a3180,0x40)` → `…quit.\x05@@@@@\x0bPreferences…`); "Preferences" at `0x100a3199` is the resource *name* passed to `AddResource(h,'Pref',0,&DAT_100a3199)`, not this default [HIGH] ⚑ corrected (review 2026-10-03) #5 | last saved-game file name [MED] |
-| 0x142 | pstr[256]×8 | empty | NOT RESOLVED |
+| 0x142 | pstr[256]×8 | empty | NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): **write-only** (only `.InitPrefs` touches it, raw 0x1000f410) (save-continue §8.2) [HIGH] |
 
 ## 9. Saved games  [HIGH unless noted]
 
@@ -246,7 +269,7 @@ File type `'FWSg'`, creator `'Msct'`; one resource `'FWSg'` id 0 named "Ferazel 
 
 | off | size | content | writer |
 |---|---|---|---|
-| 0x00000 | u32 | `Mwld+0x100` stamp (resume refuses a mismatch) | DoSaveGame / SavePointSave / EndLevelSGUpdate |
+| 0x00000 | u32 | `Mwld+0x100` stamp (resume refuses a mismatch) — ⚑ corrected (deepening 2026-10-03): compared only on `.ContinueGame`'s fallback branch (default world file unopenable) (save-continue §3.3–§4). ⚑ corrected (review 1c, 2026-10-03) (adjudication B19): the only `0x100(` load in `.ContinueGame` is `1000d8e8`, on the `1000d898` branch (reached when the default world `−0x77e0` fails to open at `1000d17c..1000d188` or flag r18 is 0); that branch opens the world named at save+0xe7d98 (`1000d8a8..1000d8ac`) [HIGH] | DoSaveGame / SavePointSave / EndLevelSGUpdate |
 | 0x00004 | u8 | "preview version" flag (resume refuses if 1) | set 0 |
 | 0x00005 | u8 | "demo version" flag (resume refuses if 1) | set 0 |
 | 0x00006 | u8 | 1 = at checkpoint / end of level (restores the record snapshot) | |
@@ -256,12 +279,14 @@ File type `'FWSg'`, creator `'Msct'`; one resource `'FWSg'` id 0 named "Ferazel 
 | 0x00018 | 0x19978 | copy of `G` (0x332f × 8 bytes; ends exactly at 0x19990). The decompile's `puVar9 = save+0x10; puVar9[2] = …` hides the +8: raw disasm of `.SavePointSave` shows `addi r5,r3,0x10` then `stwu r3,0x8(r5)` (pre-increment) — first store at +0x18 [HIGH] | |
 | 0x19990 | u32 | `GetDateTime` | |
 | 0x19998 + 0x2000·L | 511×16 | placement-record snapshot of level L (x,y stored −6, restored +6) | |
-| 0xe7d98 | pstr | world file name (`_DAT_1009fd58`) | DoSaveGame |
+| 0xe7d98 | pstr | world file name (`_DAT_1009fd58`) | DoSaveGame — ⚑ corrected (deepening 2026-10-03): `.DoSaveGame` is unreachable in 1.0.3 (DITL 202 has no item 5), so this is never written (save-continue §3.3) |
 
 `G` itself (from `.InitGameGlobals @ 10001498`; uses from the pickup/HUD code) holds: +0x00
 score (i32; drawn by `.UpdateTextStats`), +0x04 health, +0x06 breath (oxygen, ≤ health), +0x08
 suffocation countdown, +0x0a max health (start 560 each), +0x0c max magic, +0x0e magic (560),
-+0x10 coins (drawn at (150,19); lost on hits), +0x12 = 3 (NOT RESOLVED), +0x14 gold-Xichron
++0x10 coins (drawn at (150,19); lost on hits), +0x12 = 3 (NOT RESOLVED; ⚑ corrected (deepening 2026-10-03): write-only,
+save-continue §8.1), +0x16 start facing (header 0x26c8 at NewGame / once at ContinueGame; the
+facing at each save point — save-continue §8.3) ⚑ corrected (deepening 2026-10-03), +0x14 gold-Xichron
 counter (wraps at 100), +0x24 + 10·k inventory slots k < 27 (spells-items.md §1), +0xad8 + 2·n
 world flags set by trigger sprite 1058,
 +0x172 selected slot, +0x174 OmniPx-active, +0x176 + 2·L **"level L has a save snapshot"
@@ -271,7 +296,11 @@ per-level achieved counters[100], +0x6ee/+0x7b6/+0x87e (+0x946/+0xa0e) per-level
 by `.SetupLevel` when revisiting). Pair order: `.SetupLevel` calls
 `GetFGCrunchDirTile(G[0x60fa+4i], G[0x60f8+4i])` / `DestroyCrunchTile(same, …)`, so the label
 "(y,x)" rests on the unread argument order of those two callees [MED] ⚑ corrected (review
-2026-10-03) #12.
+2026-10-03) #12. ⚑ corrected (deepening 2026-10-03): **(y at +0x60f8, x at +0x60fa) [HIGH]** — `.CrunchTile` unpacks a
+QuickDraw Point and calls `GetFGCrunchDirTile(h>>5, v>>5)` (platforms-ropes-radial §6,
+triggers-background-2 corr.). The save-block layout re-checked against raw, the save-point trigger
+and the New Game / Continue / death flows: **save-continue.md** §2–§5 (its §3.3 table supersedes
+the table above where they differ).
 
 **G+0x176 is not "completed"** ⚑ corrected (review 2026-10-03) #1. It is cleared only by
 `.InitGameGlobals` and set to 1 by both `.SavePointSave @ 1000c104` (every checkpoint save:
