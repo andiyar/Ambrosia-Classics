@@ -205,7 +205,7 @@ in 3, 20, 22, 25, 30, 31, 40); liquids 200..205 (physics §5.1); 400..483 and 49
   0 while dying); `+0x92` in-wind flag (holds the fall animation).
 - `+0xc0` current face record; `+0xb8` draw effect (0x10001..0x1000c power-up tints, 0x5000n
   teleporter sparkle, 0xb0001/0xb0005 spirit, 0x10007 debug); `+0x1a6/+0x1a8` effect parameters;
-  `+0x88` draw-normal flag; `+0x18c` effect-active flag.
+  `+0x88` ~~draw-normal flag~~ light-overlay gate (`.WrapLightFace` pass; ⚑ corrected (review 1c, 2026-10-03) #5, physics §0.1); `+0x18c` effect-active flag.
 - `+0xd0` on a one-way top (`.WallBounceBG` 1, `.WallBounce` 0, `.PlatformBounce` one-way).
 - `+0xe4` enables `.SeparateFromTiles2`'s second (dead) loop — player 1; `+0xeb` crunch-capable.
 - `+0x140` skip water processing; `+0x181` ice slide applied this frame; `+0x1b2` handler skip.

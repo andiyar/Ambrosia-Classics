@@ -455,7 +455,7 @@ player's own invulnerability (`+0x116`, 60 frames after each hit) gates all of t
 | +0xb0 / +0xb2 | i16 | state / sub-phase (Blob pulse) |
 | +0xb8 | i32 | draw mode `mode<<16 | sub` (§0.2) |
 | +0xc0 | ptr | current face record (`.WrapDrawSprites`) |
-| +0xcd | u8 | standing on a sprite (`.PlatformBounce`) |
+| +0xcd | u8 | standing on a sprite (`.PlatformBounce`); also the start-of-frame copy of `+0xce` (`.StandardSpriteHandles` `100368c4..c8`) — both hold (physics §0.1, synthesis ledger A5) |
 | +0xea | u8 | clear placement flag on removal |
 | +0xf0 | i32 | Frog voice pitch (0x10000 = 1.0) |
 | +0x130 / +0x134 | i32 | statue frames left / saved `+0xb8` |

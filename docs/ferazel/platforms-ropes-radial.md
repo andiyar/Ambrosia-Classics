@@ -168,7 +168,9 @@ set0x578 + (type − 0x578)·0x34`, the set being `LoadEncFaceSetFromPICT(0x578,
   record platform: angle in (0x200, 0xb400) → speed −= 0x18, in (0xb400, 0x16600) → += 0x18;
   sibling (`+0x48 == −1`): angle < 0xb200 → += 0x18, > 0xb600 → −= 0x18; then the sibling is slaved
   (angle + 0xb400, speed, hub). Every frame `+0x186 = 0`, `+0x194 = 0`, **face `+0xc0 = 0`** (the arm is
-  drawn only by its segments); its own hot rect is empty.
+  drawn only by its segments); its own hot rect is empty. ⚑ corrected (review 1c, 2026-10-03)
+  (adjudication B23): settled for this file against physics §8.9's "hanging angle" — raw free arm
+  `10063db4..10063e44` (`lis 1; subi 0x4e00` = 0xb200; > 0xb600 → −0x18), limits 0xe1/0x87 = 180 ± 45 [HIGH].
   **See-saw segment** type 0x59b (`.SetupSeeSawSegSprite` handler l. 9380, `.HandleSeeSawSegSprite`
   l. 9406): one-way, rect (0,0,0x18,0x58), `+0xd2 = +0xd4 = 0x57`; face from the 45-face set 0x59b by
   the angle folded to 0..89 (÷2), mirrored by `+0x17e`. When the player touches it (`.HitPlayerSprite`
@@ -366,7 +368,12 @@ shipped content.
   `+0x46` by 1 per frame clamped to 0..3 and uses it as the face index (compression frames; tables
   `_DAT_100a0b08` for 1150, `0b04` for 1151, `0b00` for 1152/1153 with 1153 mirrored) — re-armed 4
   handler frames after a hit [MED: hit/handle order within a frame]. **Only 1150..1153 decrement**;
-  1154..1159 would fire once per life (and are unplaced).
+  ~~1154..1159 would fire once per life (and are unplaced).~~ ⚑ corrected (review 1c, 2026-10-03)
+  (adjudication A4; synthesis ledger A4): 1154..1159 are **inert** — `.SetupBackgroundSprite`'s tree
+  (`100717cc..10071804`) has arms only for 0x47e..0x481 (`10071cc0`/`10071d14`/`10071d68`/`10071db8`,
+  each `stw r30,0x5c`); 0x482..0x487 fall through to `10072e8c` with the default `+0x5c = 0`
+  (`1007178c`), so they get no hit callback and can never reach `.SuperSpring` (triggers-background
+  §2.3). Unplaced [HIGH].
 - **`_DAT_100a0678` (global 0x102bb7a4, i32) = the jump base J** of physics §4. Writers: `.ClearPlayerVars`,
   `.HandlePlayerSprite` (handler l. 916: 0 when on the ground or `*psVar26 ≠ 0`, not frozen; l. 919:
   −0x898 with High Jump), `.HandleKeys` (= ridden sprite's `+0x194` at a jump), `.SuperSpring` (1 for

@@ -59,6 +59,8 @@ manual / a PICT name). `[LOW]` pattern inference, string evidence, guesswork fro
 | `platforms-ropes-radial.md` (deepening) | 1 radial geometry (tables, block, per-frame, wheels, wall bounce, spokes) · 2 platforms (setup per type, radial modes, mode-4 floes, corpse platform, Hit/HitTile, visual stages, census) · 3 ropes (types, span, sag curves, census, rope bridge) · 4 springs leftovers + `_DAT_100a0678`/`0718` · 5 player `+0x19e` · 6 crunch arg order · 7 hot-rect tables · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
 | `player-states.md` (deepening) | 0 conventions · 1 per-frame order of `.HandlePlayerSprite` · 2 state globals · 3 state selection (glider, dying, spirit, boss grab, stun, doors, rope, swim, cling, melee, grounded, airborne) · 4 inputs · 5 jump/spin/swim/wall jump · 6 facing · 7 face sets, hot rects · 8 initial state | HIGH, MED, LOW |
 | `player-states-2.md` (deepening) | 9 `.WallBounce` (pre-processing, full kind table, composites) · 10 `.HitPlayerTileSprite`, `.WallBounceBG` · 11 kind census of the 24 levels · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
+| `geysers.md` (deepening gap file, review 1a #4) | 1 census + type map (1440..1449 → 0x5a0 / 0x5a5 triple / 0x5a9 head) · 2 setup (params, caches, children) · 3 eruption cycle (level-frame phase, rise/fall rules, worked table) · 4 `.HandleGeyserColumn` (segments, head, solidity, tints, particles, idle) · 5 triple re-targeting · 6 sound (none played) · 7 contacts (player, enemies, boxes) · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `held-item-melee.md` (deepening gap file, review 1b #11) | 1 held-item sprite (creation, swing start, the 10-frame swing, `.SetHeldItemPos`, hit geometry, state interactions, what a strike does — c = 3..5, `+0xa6` never set, seeds in hand, no carrying) · 2 Shadow Double 0x1b39 · 3 Double-Speed trail · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
 | `coverage.md` (deepening synthesis) | 1 the 154 targets → file § (140 covered, 1 partial, 13 uncovered system callbacks) · 2 cited helpers, name-only list · 3 placed-type census vs explanation (243 types) · 4 inheritance | coverage only (no readings) |
 | `tools/` | `pef.py`, `const.py`, `tocrefs.py`, `rsrc_census.py`, `gensprite_map.py`, `FzDecompTargets.java`, `FzDisasm.java`, `targets.txt`, `fer_names.txt` | scripts only (no game data) |
 
@@ -119,7 +121,7 @@ AppleEvent handlers · movie capture (`.HandleMovieCapture`) · resolution switc
 
 ## NOT RESOLVED (consolidated)
 ⚑ corrected (deepening 2026-10-03): items 1–14 keep their numbers; "→ closed: file §" marks an item
-the deepening wave answered (pending the wave review below), "narrowed" keeps what remains. New
+the deepening wave answered (reviewed — legs 1a/1b/1c below, all fixes applied), "narrowed" keeps what remains. New
 sub-items from the deepening files are items 15–27. Contradictions between files:
 `coverage.md` §4 and the review ledger.
 1. ~~Per-class meaning of sprite placement params 1–4 and record byte +1 (world-data §3.4).~~
@@ -175,11 +177,11 @@ sub-items from the deepening files are items 15–27. Contradictions between fil
     `pow` exponents (§3.4), `.GetRopeBridgeHeight` installer = Box 1466 (§3.7), spring cooldown
     and excluded class = Effect (§4, triggers-background §2.3), player `+0x19e` (§5),
     `_DAT_100a0678` = jump base J (§4), `_DAT_100a0718` = air-animation counter (player-states
-    §3.12 — **not** the platforms file's "launch latch", see the review ledger), floe mode 4 set by
+    §3.12; the platforms file's "launch latch" was withdrawn — review 1b #1, Critical), floe mode 4 set by
     the shot code (spells-detail §3.4), `+0x88`/`+0xb8` writes (platforms §2.8), crunch-pair order
     (y,x) HIGH (§6). Left: item 25.
 15. Draw effects (shared by six files): `+0xb8` modes 1, 3/4, 7, 8, 9, 0xb, 0xc, 0x10..0x13 as
-    pixels; the `+0x88` draw gate (sole reader `.WrapDrawSprites` 1001493c); colours of remap /
+    pixels; ~~the `+0x88` draw gate~~ (closed: light-overlay gate, physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5); colours of remap /
     tint tables 2/3/4/0xb/0xc/0xf/0x10..0x15/0x17/0x18; `.HandleBurn` row arithmetic and styles
     1 vs 0xd; `.BloodSpray` / `.NewParticle` arguments (enemies-ground NR 1–2, enemies-flyers NR 1/6,
     enemies-water-cave NR 3–4, bosses-2 NR 1, platforms NR 1, triggers-background-2 NR 1/5,
@@ -193,37 +195,47 @@ sub-items from the deepening files are items 15–27. Contradictions between fil
     argument order (Crab water test); whether the dead Frog/Salamander water blocks were live in
     another build.
 19. bosses / bosses-2: Xichra cannons (Background 0x442..0x44a values); hdr+0x2730 modes 3..7 on
-    screen; whether a player shot ever has `+0xa6 ≠ 0` (held item: its `+0xa6` counts up from
-    negative); 0x6d6 minions with p3 = 4; vestigial fields (Wizard state 11, Chief `+0xb2`,
+    screen; ~~whether a player shot ever has `+0xa6 ≠ 0`~~ (closed: no code writes a non-zero `+0xa6`
+    on the held item, and the strike frames are c = 3..5 — held-item-melee §1.3, §1.7; ⚑ corrected (review 1c, 2026-10-03) #10); 0x6d6 minions with p3 = 4; vestigial fields (Wizard state 11, Chief `+0xb2`,
     Warrior `+0x154`, p2 = 150); level-55 reach beyond x 15940; the Demon type write.
 20. enemy-shots-and-damage: spawner of 0x46b/0x46c; writer of 0x77b's `+0x14c`; setter of the
     input lock `_DAT_100a0570` (also spells-detail NR 3); `+0x1aa` on the Gremlin spit; active-list
     order (bomb splitting twice; 0x6a9 collidable twice); `.WallBounce`'s 0xa0 argument;
     shadow-double flags `PTR_DAT_100a0674`, `_DAT_100a06d0/06d4`.
 21. pickups-boxes: `snd ` ids behind several TOC handles; readers of Bonus `+0x168` (p4 = 1 on five
-    1291); gate byte 0x100a53d6, `_DAT_100a069c`, `PTR_DAT_100a0708`; `.HandleGeyserColumn`
-    geometry and liquids, 0x5a9 creation; spiked-ball PICT, the 2932 object, 1080's 1-px rect;
+    1291); gate byte 0x100a53d6, `_DAT_100a069c`, `PTR_DAT_100a0708`; ~~`.HandleGeyserColumn`
+    geometry and liquids, 0x5a9 creation~~ (closed: geysers.md §1, §4; ⚑ corrected (review 1c, 2026-10-03) #10); spiked-ball PICT, the 2932 object, 1080's 1-px rect;
     falling-rock `+0x160 < 0` setter; door `+0xa0`; effect 0x4b7 against enemies.
 22. triggers-background(-2): cannon `+0x154 = 6` and sprite type 90 (re-entry itself closed:
     `.StandardSpriteHandles` counts a negative `+0x130` up, raw 10036894..100368a4); passage
     globals `*_DAT_100a06f0`, `_DAT_100a05f8`, `_DAT_100a0680`, `PTR_DAT_100a05f0`; spawners of
-    effects 1202..1205, 1251, −1; Button 1323..1329 rects; gate-link search completeness; gates
-    2940/2941 with p1 = 0 reading record 0 (intent); idle activation rule; wind orientation (no
+    effects 1202..1205, 1251, −1; Button 1323..1329 rects; gate-link search completeness; gate
+    2940 with p1 = 0 reading record 0 (intent; 2941 is a destructible wall that ignores p1 — ⚑ corrected
+    (review 1b, 2026-10-03) #2, triggers-background §1); idle activation rule; wind orientation (no
     sprite emits wind — physics §6 stays MED).
-23. spells-detail: on-screen test fields `+0x1b6/+0x1b8` and face `+0xa/+0xe`; `_DAT_100a06f0`,
+23. spells-detail: on-screen test fields `+0x1b6/+0x1b8` (narrowed: left/right draw-clip edges, physics
+    §0.1) and face `+0xa/+0xe`; `_DAT_100a06f0`,
     `PTR_DAT_100a0700`, `PTR_DAT_100a04cc`, `_DAT_100a075c`; Boomerang steering `FUN_1003f218`;
     same-frame handling of new shots; orphaned followers and slot reuse [LOW].
 24. save-continue: save-point face for p1 = 1 vs 2; exact hold-frame timing; OmniPx composition
     and PxMid −1 (item 2); CD `Installer Data`; `OpenDefaultWorldLevel` failure inside ContinueGame.
 25. platforms-ropes-radial: `_DAT_1009fd30`, `_DAT_100a067c`, `*psVar26` in the J reset; platform
     `+0x190`; within-frame order of sibling wheel/see-saw updates; wall-ice face 1 vs 2. (Its NR 5
-    play check on `_DAT_100a0718` is answered from raw — review ledger.)
+    play check on `_DAT_100a0718` is answered from raw — review 1b #1; closed in that file.)
 26. player-states(-2): PICT 1026 loader; the 5 type-1 trail sprites and `PTR_DAT_100a06bc`; intent of
     the as-written oddities a replica copies anyway (kind-indexed tile rect, kind 0x13's absolute-y
     test, BG 0xc's vy-for-vx, the 0x2c..0x2f ice rules).
-27. Field semantics from the synthesis ledger: `+0x1b6..+0x1bc` (edges vs extents), the order of
+27. ~~Field semantics from the synthesis ledger: `+0x1b6..+0x1bc` (edges vs extents), the order of
     `+0x1be..+0x1c4`, `+0x1a2` reuse on reflected shots, and whether other classes read `+0x11c`
-    before their own tile pass (physics §0/§0.1).
+    before their own tile pass (physics §0/§0.1).~~ → closed by review 1c from raw (physics §0/§0.1,
+    ⚑ corrected (review 1c, 2026-10-03) #3/#4/#6/#7): edges in face-local px; xmin/xmax/ymax/ymin; `+0x1a2` is the burn row and a
+    Magical-Shield-reflected shot burns away; the Gremlin's water block is dead too, Walker/Platform lag
+    one frame, the Bat copies the previous frame's value.
+28. geysers: `.NewParticle` arg 4; colours of particle kinds 200–202; whether idle→active re-runs
+    Setup for a collapsed geyser; intent of kinds 3/4 and of the inert p4 (geysers.md NR 1–4).
+29. held-item-melee: face mirroring within 32 px (§1.5); active-list order player vs held sprite; door
+    `+0xa0`; whether conversations/drops grant Ice Pick / Vorpal Dirk / Hammer; revive vs a frozen
+    swing (held-item-melee.md NR 1–4, 6).
 
 ## Reviewer notes (attack first)
 - Decompiler trap met once already: 8-byte copy loops written as `p[2] = q[2]` after
@@ -239,6 +251,15 @@ sub-items from the deepening files are items 15–27. Contradictions between fil
   100a0718` shows one hit in `.HandlePlayerSprite` (`1004d648 lwz r27,-0x7128(r2)`), yet that
   function stores to the global 13 times through r27 (`sth …,0x0(r27)` between `1004e64c` and `1005073c`). Any "no writer / never decays"
   claim built on `tocrefs.py` must follow the loaded register through the function.
+  **Recurring** (2026-10-03 reviews): `tools/tocrefs.py` lists TOC **loads**, not uses — a slot loaded
+  once into a callee-saved register is written many times. It produced the deepening's only Critical
+  (review 1b #1, the `0x100a0718` "never-decaying latch" in platforms-ropes-radial §4, withdrawn).
+- ⚑ (review 1c, 2026-10-03) **`.StandardSpriteHandles` zeroes per-frame fields.** SSH (`10036854`)
+  zeroes `+0x11c` (copying it to `+0x120`, `100369ac`), resets the draw clips `+0x1b6..+0x1bc`
+  (`100368a8..100368bc`) and the latch `+0x180` every frame, so "handler reads `+0x11c`" means
+  nothing without the **call order**: a read after SSH and before the class's own tile pass sees 0.
+  Met three times (Frog/Salamander, then the Gremlin's second SSH at `1008061c`, review 1c #4; the
+  water-gravity branch of `.ApplyGravityAndSeparateFromTiles`, review 1a #2).
 - ⚑ (deepening 2026-10-03) **Signed-compare idiom.** Ghidra renders
   `eqv; subfc; rlwinm 1,31,31; addze; rlwinm 0,31,31` (= `rB < rA` signed) as
   `(uint)(x <= y) - (~(int)(x ^ y) >> 0x1f) & 1`; read alone, the first term gives the opposite
@@ -267,8 +288,11 @@ marked `⚑ corrected (review 2026-10-03) #n` at its place. "Verified OK" items 
 | 12 | Minor | crunch-pair "(y,x)" rests on unread callee arg order | engine.md §9, labelled MED; NOT-RESOLVED 14 |
 
 (Row 2: physics §8 now lives in `physics-sprites.md`, numbering kept — deepening split.)
+(Review-ledger references "synthesis ledger A1..B26" and "adjudication An/Bn" resolve to the
+appendix and leg-1c table of `REVIEW-2026-10-03-deepening.md`.)
 
-**2026-10-03 — Deepening wave (RE lane), UNDER REVIEW.** Eleven readers wrote 14 new topical
+**2026-10-03 — Deepening wave (RE lane), reviewed: ACCEPT_WITH_FIXES on all three legs, fixes
+applied.** Eleven readers wrote 14 new topical
 files (`enemies-ground`, `enemies-flyers`, `enemies-water-cave`, `bosses`, `bosses-2`,
 `enemy-shots-and-damage`, `pickups-boxes`, `triggers-background`, `triggers-background-2`,
 `spells-detail`, `save-continue`, `platforms-ropes-radial`, `player-states`, `player-states-2`) against
@@ -287,4 +311,25 @@ not a never-decaying latch (raw: `1004d648` loads the slot into r27; `sth …,0(
 `.HitPlayerSprite` returns first, handler dump l. 3859–4214; enemy-shots-and-damage is right); (A3)
 enemies-flyers §1.3 — dead attackers do **not** hurt (`.HurtPlayer` refuses HP < 1 unless enemy shot
 or box, raw `10054768..10054798`); (A4) platforms-ropes-radial §4 — springs 1154..1159 are inert,
-not "fire once" (triggers-background §2.3). Reviewer verdicts: _(to be filled in by the orchestrator)_.
+not "fire once" (triggers-background §2.3). Two gap files were then written for review findings
+1a #4 and 1b #11: `geysers.md` and `held-item-melee.md`.
+
+Reviewer verdicts (Fable reviewers; full texts `REVIEW-2026-10-03-deepening.md`, with the synthesis
+ledger as its appendix; fix summary `FIXPASS-2026-10-03-deepening.md`):
+- **Leg 1a — ACCEPT_WITH_FIXES**, 0 Critical / 4 Important / 6 Minor, over seven files
+  (enemies-ground, enemies-flyers, enemies-water-cave, enemy-shots-and-damage, pickups-boxes,
+  spells-detail, save-continue). Important: dead attackers do not hurt (A3); the water-gravity branch
+  is unreachable on a first call; the save point is a Box-arm landing, not a Bonus gate; geysers had no
+  coverage (→ `geysers.md`). Fixes marked `⚑ corrected (review 1a, 2026-10-03) #n`.
+- **Leg 1b — ACCEPT_WITH_FIXES**, 1 Critical / 3 Important / 9 Minor, over seven files (bosses,
+  bosses-2, triggers-background, triggers-background-2, player-states, player-states-2,
+  platforms-ropes-radial). The Critical was the `0x100a0718` latch misreading (A1; it is the air
+  animation counter). Important: 2941 is a destructible wall, not a switch gate; wall-jump vy −3637;
+  the boss-music hdr+0x2724 gate. Gap: held item / shadow / trail (→ `held-item-melee.md`). Marked
+  `⚑ corrected (review 1b, 2026-10-03) #n`.
+- **Leg 1c — ACCEPT_WITH_FIXES**, 0 Critical / 4 Important / 11 Minor, over the synthesis edits, the
+  14 OPEN contradictions (all adjudicated from raw: A2, A4, A8, A10–A12, B4 tail, B16–B25) and the
+  two gap files (both hold). Important: wall jump −3637 not −3610 in physics §4; any 300-damage
+  player shot breaks 2941 (not only the Ice Pick); `+0x1a2` is one field — reflected shots burn; the
+  Gremlin's water block is dead code. Marked `⚑ corrected (review 1c, 2026-10-03) #n` or
+  `(adjudication An/Bn)`.

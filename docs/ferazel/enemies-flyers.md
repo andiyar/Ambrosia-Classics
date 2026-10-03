@@ -244,6 +244,8 @@ Setup spawns `MTNewSprite(own type, x, y, layer − 1, 0x200, SetupInsectBody)` 
 Handle replaced by HandleInsectBody (only Standard handles/cleanup; no hit callback, empty rect). Each
 Bat frame (before and after the body) copies to the body: face = sheet-1860 frame 8 (types
 0x744..0x746 only), `+0xa/+0xc`, `+0x11c`, `+0x17e`, `+0x1ba`. `.KillBat` recurses into `+0x1d4`.
+⚑ corrected (review 1c, 2026-10-03) (adjudication B4 tail): the first copy (`1007e744`) runs before the
+Bat's own `.StandardSpriteHandles`, so it carries the previous frame's `+0x11c` [HIGH].
 
 ### 3.6 Damage taken, death, drops (`.HitBatSprite`, `.HitSwarmMemberSprite`, l. 17041–17080)  [HIGH]
 - Player shot (handler HandlePlayerShot, shot `+0xa6 == 0`): `.KillPlayerShot`; spell id 1 →
@@ -297,7 +299,11 @@ then `.SetupProgrammedPath(s, −1, 0)` (p1 mode, p2 travel, p3 speed; p4 unused
 - Copies `+0x14c` (rider state: 0 mounted, 1 dislodged, 2 rider dead) to the rider.
 - Water (`+0x11c ≠ 0`, this frame): `vy −= 100` while > −800; fully submerged kind 0 **or any kind
   > 0 (including healing kind 3)** with no invul → HP −100, invul 0x13, flash 0x11, "Ouch" Rand 0x55,
-  18% monster sound.
+  18% monster sound. ⚑ corrected (review 1c, 2026-10-03) #4: **dead code as shipped** — `1008061c or
+  r3,r31,r31; bl 0x10036854` is a second `.StandardSpriteHandles` on the gremlin itself, right before
+  the reads at `10080628`/`10080648`, and SSH zeroes `+0x11c` (`100369ac`), so the test never sees
+  water (like the Frog/Salamander blocks, enemies-water-cave §0.1): gremlins neither slow nor take
+  water damage. A replica copies the dead block as dead [HIGH].
 - `.HandleProgrammedPath`. Mode 1: anim advances while `vy < +0x30` (previous frame's vy, copied by
   `.WrapDrawSprites`, main dump l. 10348) or mid-cycle; `vx ·= 0.8`; faces the player. Mode 2: anim
   always advances; faces by `vx` sign; `vy ·= 0.7`. Other modes: anim advances, faces player.

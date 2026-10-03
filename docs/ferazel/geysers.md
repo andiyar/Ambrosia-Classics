@@ -23,8 +23,10 @@ Damage to the player is banked in enemy-shots-and-damage.md §3.3 (head 0x5a9) a
 | 1441 | 0x5a0 | 1 acid | — | 0 |
 | 1442 | 0x5a0 | 2 lava | — | 25 (level 50: 9, level 51: 16) |
 | 1443, 1444 | 0x5a0 | 3, 4 | — | 0 |
-| 1445..1449 | 0x5a5 (triple) | type − 1445 (0..4) | two Box 0x5a0 at x+72, x+144 | 0 |
+| 1445..~~1449~~**1448** | 0x5a5 (triple) | type − 1445 (~~0..4~~ **0..3**) | two Box 0x5a0 at x+72, x+144 | 0 |
 | 1449 (0x5a9) as runtime | head piece, created by the column | copied each frame | — | never placed |
+
+⚑ corrected (review 1c, 2026-10-03) #11: placed 1449 = 0x5a9 takes the **head** arm, which `.SetupBoxSprite` tests first (handler l. 11624 `iVar16 == 0x5a9`), so the triples are 1445..1448 only (kinds 0..3), as the last row already says. All unplaced [HIGH].
 
 Kind names: 0 water / 1 acid / 2 lava per physics.md §5.1 (1 acid MED there). Levels 52 and 55 have
 no geysers. Record byte +1 is 0 in all 27 placements and no geyser code reads it. Kinds 3/4 are
@@ -77,6 +79,11 @@ Worked cycles (Python transcription of the above; `trunc` = `fctiwz`) [HIGH arit
 | 180/40/60 (L51 rec 63, 64) | 101 | 175.2 px | 15 | 39 |
 | 100/20/60 (L51 rec 134, 136) | 81 | 88.7 px | 9 | 21 |
 | 190/60/40 (L51 rec 158) | 101 | 189.7 px | 13 | **never** — bottoms out at ~21 px |
+
+⚑ corrected (review 1c, 2026-10-03) #12: the "falls to 0 after" column mixes counting conventions —
+review 1c's transcription of the same rules, counting from the first falling call (t = on) as frame 1,
+gives **38** (180/40/60) and **20** (100/20/60) while matching 32 / 35 / never on the other rows. Use
+"first falling call = frame 1" and treat those two cells as ±1 [MED for the two cells].
 
 The rise is capped at 6 px/frame until half height, then closes 12 %/frame; it stalls within
 8/256 px of the target. The 190/60/40 column never collapses, so it never goes idle (§4).

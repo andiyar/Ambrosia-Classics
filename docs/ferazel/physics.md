@@ -34,12 +34,12 @@ below means that file ⚑ corrected (deepening 2026-10-03).
 | +0xe9 | u8 | kill request (handled by `.UpdateSprites`) |
 | +0x110 | i16 | gravity per frame |
 | +0x112 | i16 | slipperiness value (ice) |
-| +0x11c/+0x120 | i32 | water contact: `surfaceY − y − face top inset`, clamped ≥ 1 while in water (so 1 = fully submerged, larger = visible top that far above the surface), 0 = not in water / previous frame's (fix-pass reading of `.HandleUnderWater`, §5.1) [MED]. ⚑ corrected (deepening 2026-10-03): `.StandardSpriteHandles` copies `+0x11c` into `+0x120` (when non-zero) and **zeroes `+0x11c` every frame** while `+0x118 < 0x1d` (raw `10036990..100369ac`), so `+0x11c` is valid only after the frame's own tile pass ran `.HandleUnderWater`; handlers that test it earlier never see water (Frog/Salamander water blocks are dead code — enemies-water-cave §0.1) [HIGH] |
+| +0x11c/+0x120 | i32 | water contact: `surfaceY − y − face top inset`, clamped ≥ 1 while in water (so 1 = fully submerged, larger = visible top that far above the surface), 0 = not in water / previous frame's (fix-pass reading of `.HandleUnderWater`, §5.1) [MED]. ⚑ corrected (deepening 2026-10-03): `.StandardSpriteHandles` copies `+0x11c` into `+0x120` (when non-zero) and **zeroes `+0x11c` every frame** while `+0x118 < 0x1d` (raw `10036990..100369ac`), so `+0x11c` is valid only after the frame's own tile pass ran `.HandleUnderWater`; handlers that test it earlier never see water (Frog/Salamander water blocks are dead code — enemies-water-cave §0.1) [HIGH]. ⚑ corrected (review 1c, 2026-10-03) #4 (adjudication B4 tail): readers between that zeroing and their own tile pass — Frog `10082198/b8`, Salamander `100830c4/e4` and **Gremlin `10080628/48`** (a second `.StandardSpriteHandles` on the gremlin itself at `1008061c` precedes the read) are dead; Walker `10068adc` and Platform `100649c4` test `+0x11c == 0 ∧ +0x120 == 0`, so they degrade to a one-frame lag (previous frame via `+0x120`, harmless); the Bat reads at `1007e744` **before** its SSH (previous-frame value, copied to a child); every other class reads after `bl 0x100375b0` [HIGH] |
 | +0x128 | i16 | water kind (BG kind − 200) |
 | +0x138 / +0x13a / +0x13c | i16 | push mass (a sideways push by a mover adds `mover+0x13c · (+0x138 · Δvx >> 8) >> 8` to this vx) / landing sag (`vy += landing vy · +0x13a >> 8` when landed on at vy > 0x200) / pusher factor — `.RectBounce`, `.PlatformBounce` (§8.1) [HIGH arithmetic, MED names] ⚑ corrected (review 2026-10-03) #2 |
 | +0x170 | i32 | player shot: **power** (`type & 0xff`; `.SetupPlayerShotSprite`, handler dump l. 4929) ⚑ corrected (review 2026-10-03) #3. Per-class reuse ⚑ corrected (deepening 2026-10-03): bosses = boss flag (placement p4, bosses §1.1); rope = animated flag (platforms-ropes-radial §3.1); Background 1480.. = harmful flag (triggers-background §2.5); Walker = wall-hit lockout (enemies-ground §Proposed) |
 | +0x17e | u8 | facing left — ⚑ corrected (deepening 2026-10-03): it is the **horizontal mirror flag** of the blitter; the facing it means depends on the sheet: player (player-states §6) and Walker 1700 (enemies-ground §3.3) 1 = left; Crawler, Dillo, every flyer, Frog/Salamander/Blob/Crab and every boss 1 = right (enemies-flyers corr. 4, enemies-water-cave corr. 4, bosses-2 corr. 2) [HIGH per class] |
-| +0x185 | u8 | one-way top: `.RectBounce` skips side/underside resolution and lands a mover only if its previous-frame bottom was above the top (+8 px slack, +0x20 on sloped tops) (§8.1) ⚑ corrected (review 2026-10-03) #2. Writers ⚑ corrected (deepening 2026-10-03) (synthesis scan of every `stb …,0x185(`): `.InitSprite` (0), Platform setup (**every platform one-way by default**, platforms-ropes-radial §2.1), see-saw segments, the Walker corpse (enemies-ground §3.8), `.SetupBoxSprite` per type (pickups-boxes §2.2 table), geyser column, Background setup, `.SetupTree`; **not** the statue (enemies-ground §2.2) |
+| +0x185 | u8 | one-way top: `.RectBounce` skips side/underside resolution and lands a mover only if its previous-frame bottom was above the top (+8 px slack, +0x20 on sloped tops) (§8.1) ⚑ corrected (review 2026-10-03) #2. Writers ⚑ corrected (deepening 2026-10-03) (synthesis scan of every `stb …,0x185(`): `.InitSprite` (0), Platform setup (**every platform one-way by default**, platforms-ropes-radial §2.1), see-saw segments, the Walker corpse (enemies-ground §3.8), `.SetupBoxSprite` per type (pickups-boxes §2.2 table), geyser column, Background setup, `.SetupTree`; **not** the statue (enemies-ground §2.2). ⚑ corrected (review 1c, 2026-10-03) #9: also `.DoSetupPlatformSprite` (3 stores), `.HandleBoxSprite` (4) and `.HitBoxSprite` (`10070570`: the magic carpet 0x438 → 0x439 **clears** it) (60 `stb …,0x185(` sites in all) |
 | +0x186 | u8 | "ridden this frame" (set by `.PlatformBounce`/`.RopeCollide`, cleared by the owner's handler) ⚑ corrected (review 2026-10-03) #2 |
 | +0x194 | i32 | jump bonus lent to a rider: `.HandleKeys` copies the ridden sprite's +0x194 into the jump base J of §4 (`*piVar12 = *(int *)(platform + 0x194)`, main dump l. 44901/44937) ⚑ corrected (review 2026-10-03) #2 |
 | +0x19e / +0x1a0 | i16 | buoyancy strength (0 = sinks) / float-line offset (`.HandleFlotation`, §8.6) ⚑ corrected (review 2026-10-03) #7; the player's `+0x19e` is written only by the death/revive sequence (3 stores, platforms-ropes-radial §5) ⚑ corrected (deepening 2026-10-03) |
@@ -59,7 +59,7 @@ both readings are kept.
 | +0x50 | proc | Kill callback, called by `.HandleBurn` when the burn-away ends (EF, EW, B2; EG `.KillWalker`) |
 | +0x54 / +0x58 | proc | active→idle / idle→active callbacks; ropes `.RopeIdleize` / `.RopeDeIdleize` (EF, PR) |
 | +0x84 / +0x86 | i16 | zeroed for bats, written by the player's `.RectBounceFake2` (EF: looks vestigial); shot-particle offsets (SD) — NOT RESOLVED |
-| +0x88 | u8 | **⚠** "lit / draw the light overlay, default 1" (EF, PR) vs "draw-normal flag" (P2) vs "[draw/collide flag?]" (ES); boss Setups clear it (B2). Synthesis: its only reader is `.WrapDrawSprites` (`1001493c`), so it is a draw gate, not a collision flag; which draw step: NOT RESOLVED |
+| +0x88 | u8 | ~~**⚠** "lit / draw the light overlay, default 1" (EF, PR) vs "draw-normal flag" (P2) vs "[draw/collide flag?]" (ES)~~ ⚑ corrected (review 1c, 2026-10-03) #5 (adjudication A8): **light-overlay gate** — its only reader, `.WrapDrawSprites` `1001493c..1001499c`, selects the **second** pass `.WrapLightFace @ 100156c8` after the unconditional `.WrapDrawFace @ 100151c4` (`100148e4`/`1001491c`); that pass is also skipped when prefs (`−0x79fc`) +6 == 3 (Effects = Reduced) or draw mode 0xe; its arg r4 = `+0x11c` unless `+0x18c`. Default 1 (`.InitSprite` `1003d3d0 li r5,0x1` → `1003d444 stb r5,0x88`); boss Setups clear it (B2). EF/PR right, P2 wrong [HIGH] |
 | +0x89 | u8 | dynamic lighting: `.WrapDrawSprites` samples the light map and writes `+0xb8 = 0xc0000 + …` (PR, T2) |
 | +0x8a | u8 | water current applies (= not clinging for the player) (EW, P2; §2) |
 | +0x8c / +0x8d / +0x8e | u8 | burn sound variant (sole reader `.HandleBurn`, synthesis `10043d3c`) / extra burn rows per frame / burn style 0xd (EW, B2); `.SetupEnemyShotSprite` writes `+0x8c = 1` (ES) |
@@ -91,14 +91,14 @@ both readings are kept.
 | +0x188 / +0x189 / +0x18a / +0x18b | u8 | placement write-back gates in `.UpdateSprites` (synthesis reads `10009880`, `1000988c`, `10009898`, `10009a00`, `10009ac4`): type/x/y copied back only when 188, 189 and 18a are all 0; 188 also keeps the record on death; 18b keeps it on the final kill frame (EG, EF, PB, B2) |
 | +0x18c | u8 | effect-active flag (P2); tested next to `+0x88` in `.WrapDrawSprites` |
 | +0x190 | ? | platform: cleared before `.TurnIntoStatue` — NOT RESOLVED (PR) |
-| +0x1a2 | i16 | **⚠** burn-away row (≠ 0 → `.HandleBurn`; < 0 delay) (EG, EF, EW, B2) vs enemy shots: reflected by the Magical Shield (ES). Per-class reuse — NOT RESOLVED whether a reflected shot can burn |
+| +0x1a2 | i16 | burn-away row (≠ 0 → `.HandleBurn`; < 0 delay) (EG, EF, EW, B2). ~~vs enemy shots: reflected by the Magical Shield (ES). Per-class reuse — NOT RESOLVED whether a reflected shot can burn~~ ⚑ corrected (review 1c, 2026-10-03) #3 (adjudication A12): **one field, one meaning**. `.ShieldBlock` stores 1 (`10055550`, gated by `.HasItem(0xf)` `bl 0x1004c0e0`); `.HandleEnemyShotSprite` calls `.StandardSpriteCleanup` (`1005c844`), the **only** caller of `.HandleBurn` (`10036ed0 lha 0x1a2; cmpwi 0; beq` → `10036ee0 bl 0x10043cd8`). A shield-reflected enemy shot therefore starts the burn-away from row 1 and dies through its `+0x50` Kill callback — a replica with a mere "reflected" flag draws it wrong [HIGH] |
 | +0x1a6 / +0x1a8 | i16 | draw-effect parameters (P2) |
 | +0x1aa / +0x1ae | i16 | draw rotation in degrees (copied to face +0x1a) / draw scale, 0x100 = 1.0 (EF, EW, PB, PR, T2) |
 | +0x1b2 | u8 | handler skip — every handler returns at once; writer `.HandleBoxSprite` (inside a container) (EW, P2, B2) |
 | +0x1b4 | u8 | hurt flash uses mode 4 instead of 3 (B2; 2941 ice wall, PB) |
 | +0x1b5 | u8 | counted in the level totals (enemies, Xichrons, secrets) (EG, EF, EW, PB, B2) |
-| +0x1b6 / +0x1b8 / +0x1ba / +0x1bc | i16 | **⚠** draw clips "left, right, bottom, top" (PR) vs "left-skip / visible width / visible height / top-skip" (T2); reset each frame to 0 / 32000 / 32000 / 0 (synthesis `100368a8..b8`); `+0x1bc` = burn row clip (EF, EW) |
-| +0x1be / +0x1c0 / +0x1c2 / +0x1c4 | i16 | occluder rect in world px (PR) = wall-tunnel window xmin / xmax / ymax / ymin (T2); InitSprite 32000; consumed by `.StandardSpriteCleanup` |
+| +0x1b6 / +0x1b8 / +0x1ba / +0x1bc | i16 | draw clips **left, right, bottom, top as edges in face-local px** (PR) — ⚑ corrected (review 1c, 2026-10-03) #6 (adjudication A10): T2's "visible width / visible height" is wrong; `.WrapDrawSprites` `1001461c..10014684` draws rows `min(+0x1ba, h) − +0x1bc` and cols `min(+0x1b8, w) − +0x1b6`; `.StandardSpriteCleanup` writes `+0x1b8 = occluder xmin − x` or `+0x1b6 = occluder xmax − x`, clamped 0..w (`10036f74..10036ff0`); reset each frame to 0 / 32000 / 32000 / 0 (`100368a8..100368bc`); `+0x1bc` = burn row clip (EF, EW) [HIGH] |
+| +0x1be / +0x1c0 / +0x1c2 / +0x1c4 | i16 | occluder rect in world px (PR) = wall-tunnel window **xmin / xmax / ymax / ymin** (T2) — ⚑ corrected (review 1c, 2026-10-03) #7 (adjudication A11): order settled, `10036f20..10036f58` tests `x+w+8 ≥ +0x1be`, `x−8 ≤ +0x1c0`, `cy ≥ +0x1c4`, `cy ≤ +0x1c2`, then clips only horizontally (row above); InitSprite 32000; consumed by `.StandardSpriteCleanup` [HIGH] |
 | +0x1c6 / +0x1c8..+0x1ce | u8 / i16 | may go idle off-screen / idle-test margins left, right, top, bottom (EG, PR, T2) |
 | +0x1d4..+0x1e0 | ptr | linked sprites: children, siblings, parent, followers, trunk chain (EF, B2, PB, PR, T2, SD) |
 | +0x1e4 | ptr | the cannon holding this sprite (ES, T2, P2) |
@@ -124,7 +124,11 @@ unrelated base — none seen]. Every constant below is hard-coded in the handler
   water (`s+0x11c ≠ 0`) `g = (int)(g · 0.7)` but at least 0x100 (double at 0x100a1938 = 0.7);
   `s+0xce = 0`; separate; `vy += g`; `x += vx`; then `y += vy` in sub-steps of at most 0xc00
   (12 px), calling `.SeparateFromTiles2` after each step; then refresh integer and centre
-  positions.
+  positions. ⚑ corrected (review 1a, 2026-10-03) #2: the water test reads `+0x11c` at entry
+  (`100375c8`), before the first `.SeparateFromTiles2` (`10037624`); since `.StandardSpriteHandles`
+  zeroes `+0x11c` every frame (`100369ac`, §0 row), the first call of a frame always uses the dry
+  gravity — the 0.7 / ≥ 0x100 branch is reachable only by a **second** call in the same frame after a
+  first call's `.HandleUnderWater` (the Frog) [HIGH].
 - `.ApplySpeedAndSeparateFromTiles @ 1004b83c` (player): `x += vx`; `y += vy` in sub-steps of
   0x400 (4 px) while `vy > 0x400`, stopping early when a collision changed vy; separate after
   each.
@@ -248,16 +252,16 @@ Action indices as engine.md §7.1 (0 L, 1 R, 2 U, 3 D, 4 run, 5 jump, 6 use).
 | run max | 0xc80 = 3200 | 12.5 | `_DAT_100a600c` |
 | double-speed power-up max walk / run | 0xd82 = 3458 / 0x15e0 = 5600 | 13.5 / 21.9 | `PTR_DAT_100a0620` |
 | ground deceleration (no input) | 800; 300 while hurt-stunned (`_DAT_100a0748`); ice formula §3.3 | 3.1 | |
-| air drag (no input) | 100; 600 in state `_DAT_100a0588` (= **on a rope**: the byte `.RopeCollide` sets to 1, §8.2 — fix-pass reading [HIGH for the write, MED that this is its only meaning]); 20 on the glider | 0.39 | ⚑ corrected (deepening 2026-10-03): applied every airborne frame **regardless of input** (player-states-2 corr.); the glider's 20 also on the ground (spells-detail C10) |
+| air drag (no input) | 100; 600 in state `_DAT_100a0588` (= **on a rope**: the byte `.RopeCollide` sets to 1, §8.2 — fix-pass reading [HIGH for the write, MED that this is its only meaning]); 20 on the glider | 0.39 | ⚑ corrected (deepening 2026-10-03): applied every airborne frame **regardless of input** (player-states-2 corr.; ⚑ corrected (review 1c, 2026-10-03) #15: not re-derived by review 1c — the drag site was not located by constant in `1004d5fc..10054ca8`; the label is the reader's); the glider's 20 also on the ground (spells-detail C10) |
 | air control | ±0x14a = 330 per frame up to walk/run max | | not on ground, not swimming — ⚑ corrected (deepening 2026-10-03): asymmetric — LEFT only in plain air, **RIGHT in every non-cling state** (ground, rope, swim, air), so ground right accel = 0x14f/0x104 + 0x14a (player-states-2 corr., raw `10053748..100539a8`) |
 | air control in `_DAT_100a0588` state | ±1000 per frame, clamp ±0x960 = 2400 | | |
 | swim horizontal | ±0xd2 = 210 up to ±0x76c | | `_DAT_100a0714 ≠ 0` |
 | jump impulse | `vy = 0; vy += J + (−0xc80 − ((|vx| + 0x4e2) >> 3))`, cap 8000 | −13.1 at rest | J = `_DAT_100a0678`: carried platform vy, or −0x898 (−2200) with High Jump |
-| jump hold | the impulse is re-applied each frame JUMP is held, while the counter (6 on ground, 3 when leaving a rope/ladder) > 0 | | `_DAT_100a0764` — ⚑ corrected (deepening 2026-10-03): 3 = clinging to a wall; rope = 6 (`.RopeCollide`); refilled only while JUMP is up — no coyote time, no buffer (player-states-2 corr., player-states §5) |
+| jump hold | the impulse is re-applied each frame JUMP is held, while the counter (6 on ground, 3 when leaving a rope/ladder) > 0 | | `_DAT_100a0764` — ⚑ corrected (deepening 2026-10-03): 3 = clinging to a wall; rope = 6 (`.RopeCollide`); ~~refilled only while JUMP is up~~ ⚑ corrected (review 1c, 2026-10-03) #8 (= review 1b #7): the refill is the `else` of `glider == 0 ∧ JUMP ∧ charge < 1` (main l. 44962–44973), so it also refills with JUMP held while gliding or with charge ≥ 1 — no coyote time, no buffer (player-states-2 corr., player-states §5) |
 | swim stroke | `−0x640 − ((|vx|+200)>>3)`, halved on later strokes, cap 2000; gravity 0x50 | | in water |
 | spin jump | DOWN + JUMP with counter 1..6 → spin flag, sound | | ⚑ corrected (deepening 2026-10-03): also refills the counter to 6 (cooldown 20) → a second rise; DOWN alone with counter 1..5 also spins (player-states-2 corr.) |
 | wall-climb vertical | vy = −1000 (UP) / +1000 (DOWN) / 0, or ±0x578 = 1400 with Double Speed | 3.9 | climb state `_DAT_100a0758 ≠ 0` (§3.4) — ⚑ corrected (deepening 2026-10-03): effective **±900** (±1300 Double Speed): a same-frame ±100 ease (player-states-2 corr., raw `1004ea5c..1004eacc`) |
-| wall jump | JUMP while clinging: vx = +0x8ca if the wall side `PTR_DAT_100a074c` is 1 else −0x8ca; vy = 0 (−0x8cb when the counter is 3) | 8.8 | ⚑ corrected (deepening 2026-10-03): the counter is 3 while clinging, so the jump-sustain arm runs in the same call: net **vy = −3610**; the −0x8cb store is dead (player-states-2 corr.) |
+| wall jump | JUMP while clinging: vx = +0x8ca if the wall side `PTR_DAT_100a074c` is 1 else −0x8ca; vy = 0 (−0x8cb when the counter is 3) | 8.8 | ⚑ corrected (deepening 2026-10-03): the counter is 3 while clinging, so the jump-sustain arm runs in the same call: net ~~vy = −3610~~ **vy = −3637** = −0xc80 − ((0x8ca + 0x4e2) >> 3) = −3200 − 437 (⚑ corrected (review 1c, 2026-10-03) #1, = review 1b #3; raw `10053f54 li r0,0x8ca`, `100541c4`/`10054240 addi r0,r3,0x4e2`); the −0x8cb store is dead (player-states-2 corr.) |
 | magic-carpet ride (ridden sprite type 0x438/0x439) | the **carpet's** vx ±0x140/frame (cap ±0xc80), vy ±0x100/frame (cap ±4000) from the arrows; player vx forced 0 | | `PTR_DAT_100a05a4` |
 
 Additional rules read in `.HandlePlayerSprite`:
@@ -310,7 +314,10 @@ Additional rules read in `.HandlePlayerSprite`:
   (The Labyrinth, Parched Earth, The Dig) → desert **quicksand**; kind 3 (heals) is small pools in
   22 levels. Labels: 0 water / 2 lava / 5 quicksand [HIGH on code + census]; 1 acid [MED,
   power-up order only] ⚑ corrected (review 2026-10-03) #8.
-- `.HurtPlayer @ 1005473c (p, attacker, dmg, blood, invul, coinsLost)`: `HurtSprite(p, dmg,
+- `.HurtPlayer @ 1005473c (p, attacker, dmg, blood, invul, coinsLost)`: ⚑ corrected (review 1a,
+  2026-10-03) #1: first returns 0 (no damage) when the attacker's HP `+0xa4` < 1 unless its handler
+  is EnemyShot (TOC −0x73b8) or Box (−0x73bc) — dead or dying enemies never hurt (raw `10054768 lha
+  r0,0xa4(r4)`; `cmpwi 0; bgt 1005479c`; else `10054794 li r3,0`) [HIGH]; otherwise `HurtSprite(p, dmg,
   attacker.vx, −1000, invul, 12)`; on a hit: if a Multi Crystal (item 0x13) is held, 4 crystal
   shards fly and a 15-frame timer later removes one crystal; climb/spin/pull-up states end;
   scream sound by damage (< 0xe0 vs larger); `coinsLost` (randomised ±1 when > 2, capped at
@@ -319,16 +326,23 @@ Additional rules read in `.HandlePlayerSprite`:
   0x18); lava/acid pools (Box class 0x5a0, mode `s+0x14c` 1/2): −0x70 / −0x150 unless the
   matching walk-on power-up or (lava) Fire Charm (`.HitPlayerSprite`).
   ⚑ corrected (deepening 2026-10-03): the Fire Charm protects only from fires with p1 ≤ 0 (`+0x14c ≤ 0`; tinted fires in
-  level 62 burn through it) (triggers-background §2.4, enemy-shots-and-damage corr. 3). ~~lava/acid
+  level 62 burn through it) (triggers-background §2.4, enemy-shots-and-damage corr. 3; ⚑ corrected (review 1c, 2026-10-03) #15:
+  not re-derived by review 1c — label is the readers'). ~~lava/acid
   pools (Box class 0x5a0)~~: the hurting 0x5a0 sprites are the Effect-class **geyser-column
   segments** (`.HandleGeyserSegSprite`, ±300 knockback) and the Box geyser head 0x5a9 when stood on
   (±400), both via `.HurtSprite` (no coins); a Box-class 0x5a0 never reaches that test because
   the Box arm of `.HitPlayerSprite` returns first (enemy-shots-and-damage §3.3–§3.4; synthesis
   check of the dispatch, handler dump l. 3859/4214; triggers-background-2 §2.2's "any sprite of
-  type 1440" needs that qualifier). `.HurtPlayer` refuses dead attackers (HP < 1) except enemy
-  shots and boxes, takes the knockback from the attacker's own vx, skips the Multi-Crystal loss for
-  Blobs and spikes, randomises coins only when n > 2 (enemy-shots-and-damage §3.7; raw
-  `10054768..10054798`). Per-class contact damage: enemy-shots-and-damage §3.4–§3.5.
+  type 1440" needs that qualifier). ⚑ corrected (review 1c, 2026-10-03) (adjudication A2): settled
+  from raw — the Box/SeeSaw arm `10056b2c..10057860` (entered at `10056b18` on TOC −0x73bc / −0x7678)
+  leaves by 25 branches, all to the epilogue `1005855c`; the hazard arm `10058458..10058494` is entered
+  only from `10057e00` on the non-Box path. Only **non-Box** type-1440 sprites hurt [HIGH].
+  `.HurtPlayer` refuses dead attackers (HP < 1) except enemy
+  shots and boxes [HIGH, raw `10054768..10054798`], takes the knockback from the attacker's own vx, skips the Multi-Crystal loss for
+  Blobs and spikes, randomises coins only when n > 2 (enemy-shots-and-damage §3.7; ⚑ corrected
+  (review 1c, 2026-10-03) #14: these three are the file's readings, **MED here** — spot-checked
+  consistent: `1005476c lwz r5,0x24(r4)`, handler compares −0x7380/−0x73c0 at `100547c4`/`100547d0`,
+  `cmpwi 0x3`/`0x2` at `1005486c`/`1005487c`). Per-class contact damage: enemy-shots-and-damage §3.4–§3.5.
 - Death power-up sphere (0x53b): −0x380 HP.
 
 ### 5.2 Death sequence  [HIGH]
@@ -358,9 +372,9 @@ type/params, conditions not traced — ⚑ corrected (deepening 2026-10-03): the
 | Crawler (1712) | 1000, 500, 300, 1600 | ±0x151 (−337 = ceiling crawler) | (0x14,0xc,0x2c,0x21) |
 | Roach (1720) | 200 | 0x151 | (0x23,0x1b,0x44,0x2d); vx 0x4b0 |
 | Blob (1730..) | 1500, 700, 1100, 2000 | 0xfa | (0xe,0xc,0x2f,0x21) |
-| Bat / insect swarms | ~~100, 200~~ ⚑ 500 (1740..1749), 100 (1850..), 200 (insects), 100 (swarm) | 0 | varies |
+| Bat / insect swarms | ~~100, 200~~ ⚑ corrected (review 1a, 2026-10-03) #5: 500 (1740..1749, raw `1007dcc0 li 0x1f4`), 100 (1850.., `1007dde0`), 200 (insects, `1007e144`), 100 (swarm) | 0 | varies |
 | Gremlin (1770..) | 500 | 0 | (0x28,0x26,0x59,0x50) |
-| Floater (1780..) | 500 | 0 | (0x17,2,0x38,0x5c) ⚑ = the unplaced 1790..1799 variant; 1780 Wraith (0x23,1,0x3e,0x4b), no tile callback |
+| Floater (1780..) | 500 | 0 | (0x17,2,0x38,0x5c) ⚑ corrected (review 1a, 2026-10-03) #5 (adjudication B25): = the unplaced 1790..1799 variant; the shipped 1780 Wraith is (0x23,1,0x3e,0x4b) (raw `10081550..1008155c`), no tile callback |
 | Frog (1800..) | 500, 350, 1000 | 0x8c | (0xb,0x14,0x48,0x49) |
 | Salamander (1810..) | 500 | 0x8c | (0xe,0x14,0x42,0x49) |
 | Warrior (boss, 1820) | 1200, 2000 | 0x122 | (0x1a,0x17,0x4a,0x3a) |

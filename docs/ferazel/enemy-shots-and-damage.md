@@ -319,7 +319,7 @@ correction 1), statues/boxes, explosions and liquids.
 | any sprite of type 0x5a0 (the geyser column segments, `.HandleGeyserSegSprite`) | liquid kind `+0x14c ≥ 1` | kind 1: 0x70, immune with Solid-Acid; kind 2: 0x150, immune with Solid-Lava or `HasItem(0x18)`; other kinds 0x70; `HurtSprite(dmg, ±300, −0x640, 60, 12)`, hurt-stun | 10058540 |
 
 The explosion and geyser paths use `.HurtSprite` directly: no scream, no coin loss, no Multi-Crystal
-loss. Box-class 0x5a0 sprites (pools) never reach this row — the Box arm takes them first.
+loss. Box-class 0x5a0 sprites (~~pools~~ the geyser bases — no pool object exists, ⚑ corrected (deepening 2026-10-03, geysers.md corr.)) never reach this row — the Box arm takes them first. ⚑ corrected (review 1c, 2026-10-03) (adjudication A2): confirmed from raw — the Box/SeeSaw arm of `.HitPlayerSprite` (`10056b2c..10057860`, entered at `10056b18` on TOC −0x73bc / −0x7678) leaves by 25 branches, all to the epilogue `1005855c`; the hazard arm (`10058458..10058494`) is entered only from `10057e00` on the non-Box path [HIGH].
 
 ### 3.5 Generic enemy / enemy-shot path (step 7, l. 4512–4637; disasm 10057968–10057bcc)  [HIGH]
 1. Return (no damage) if: type 0x76c..0x775 or 0x754 with gravity `+0x110 > 0` (i.e. a dart or
@@ -347,7 +347,8 @@ and the shield counter `PTR_DAT_100a05e8 > 2` (raised); the counter is set to 7.
 303 'metal hit':
 - darts 0x76c..0x775 and spines 0x754: reflected — `vx ×= −0.38`, `vy ×= −0.38` (0x100a1a18),
   `vy −= 1500`, gravity 0x100 (so §3.5 step 1 makes them harmless thereafter); with the Magical
-  Shield (item 0xf) also `+0x1a2 = 1` [MED: presumably "hurts enemies now"; reader not traced].
+  Shield (item 0xf) also `+0x1a2 = 1` ~~[MED: presumably "hurts enemies now"; reader not traced]~~.
+  ⚑ corrected (review 1c, 2026-10-03) #3 (adjudication A12): `+0x1a2` is the ordinary **burn-away row**, not a reflection flag — `.ShieldBlock` stores 1 (`10055550`, gated `bl 0x1004c0e0` = `.HasItem(0xf)`); `.HandleEnemyShotSprite` calls `.StandardSpriteCleanup` (`1005c844`), the only caller of `.HandleBurn` (`10036ed0 lha 0x1a2; cmpwi 0; beq` → `10036ee0 bl 0x10043cd8`). A Magical-Shield-reflected dart/spine therefore **burns away** from row 1 and dies through its `+0x50` Kill callback [HIGH].
 - 0x6f4 with the Magical Shield: once (`+0x160 == 0`): vx, vy negated, `vy += 0x140`,
   `+0x160 = 1`, particles. Without it, 0x6f4 is destroyed.
 - every other shot: `.KillEnemyShot`.
@@ -401,7 +402,8 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
    their faces from PICT 0x46a at 64×64 would ever show.
 2. Writer of 0x77b's `+0x14c` (the "harmless while ≠ 0" test) — none found; 0 at spawn.
 3. Setter of `_DAT_100a0570` (input-lock zeroed by enemy-shot hits).
-4. Meaning of `+0x1a2` (Magical-Shield reflection flag) and `+0x1aa` (Gremlin spit, 0xdc/0x140).
+4. ~~Meaning of `+0x1a2` (Magical-Shield reflection flag) and~~ `+0x1aa` (Gremlin spit, 0xdc/0x140).
+   (`+0x1a2` closed: burn row, §3.6 ⚑ corrected (review 1c, 2026-10-03) #3.)
 5. The frog `+0x15c` source (probably placement param 1, census values 0/1/2/4).
 6. Active-list order between the player and shots, hence whether a bomb can split twice (§1.6)
    and whether 0x6a9 (2-frame life) is ever collidable twice.
@@ -412,7 +414,7 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
 ## Proposed additions to physics.md §0
 | off | type | meaning (writer/reader) |
 |---|---|---|
-| +0x88 | u8 | cleared by several handlers each frame (0x712 shots, shadow, trail) [draw/collide flag?] |
+| +0x88 | u8 | cleared by several handlers each frame (0x712 shots, shadow, trail) ~~[draw/collide flag?]~~ — ⚑ corrected (review 1c, 2026-10-03) #5: light-overlay gate, not a collision flag (sole reader `.WrapDrawSprites` `1001493c`, physics §0.1) |
 | +0x8c | u8 | set 1 by `.SetupEnemyShotSprite` [unknown] |
 | +0xa6 | i16 | enemy shot: age (+1/frame); 0x6d6: intended lifetime; Bonus/power-up: duration |
 | +0xb8 | i32 | tint mode (0x1000b statue/strong variant, 0x10006 invuln blink, 0xb000n trail fade) [MED] |
@@ -425,7 +427,7 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
 | +0x160 | i32 | 0x6f4 reflected-once flag; falling-box arm flag (0x433/0x434) |
 | +0x164 | i32 | 0x6e6 age; cannon launch speed |
 | +0x16c | i32 | enemy shot: pass through walls and solids; coin: −240 |
-| +0x1a2 | i16 | reflected by the Magical Shield |
+| +0x1a2 | i16 | ~~reflected by the Magical Shield~~ burn-away row; `.ShieldBlock` starts the burn on a Magical-Shield reflection (§3.6) ⚑ corrected (review 1c, 2026-10-03) #3 |
 | +0x1e4 | ptr | cannon holding this sprite |
 | +0x1ec / +0x1f0 / +0x1f4 | proc | saved Handle / Hit / HitTile while a statue or in a cannon |
 
@@ -457,7 +459,8 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
    for the last 19 frames, and **costs the sprite 200 HP when it ends**. [HIGH]
 7. **spells-items.md §4 item 0xf "reflects shots [LOW]"** — any raised shield reflects darts and
    spines and destroys other shots; the Magical Shield additionally reflects the Wraith's 0x6f4
-   (once) and marks reflected darts/spines (`+0x1a2`). [HIGH]
+   (once) and marks reflected darts/spines (`+0x1a2`). [HIGH] ⚑ corrected (review 1c, 2026-10-03) #3:
+   the "mark" is the burn row — those darts/spines burn away (§3.6).
 8. **physics.md §7 table** — add contact damage per class (§3.4/§3.5): Gremlin 0xe0;
    Crawler/Roach/Bat/Blob 0x38; Walker/Warrior/Frog/Wizard/Chief/Demon/Swarm/Salamander/Crab 0x70;
    Wraith 0x70 only while its `+0x46 > 12`; Dillo 0xe0/0x1c0 by type. [HIGH]

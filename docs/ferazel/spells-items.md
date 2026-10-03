@@ -58,14 +58,20 @@ therefore at most [MED], with the evidence named. `G` = game globals (engine.md 
 6. Shadow Double power-up: a second copy of the shot is spawned at the double's offset with the
    same velocity (`_DAT_100a0658`). ⚑ corrected (deepening 2026-10-03): the copy has power 1 and **0 damage**, its own vx
    sign (the double's facing) and vy −0x44c when the replayed frame is grounded (spells-detail C5,
-   §2.3).
+   §2.3). ⚑ corrected (review 1c, 2026-10-03) (adjudication B21): settled from raw — copy type =
+   `(r29 − r22) + 1` = id·256 + **1** (`10052714..1005272c`); vx = the original's, negated if the
+   double's `+0x17e` (`10052804..1005281c`); vy = original + (−0x44c if the replay byte ∧ `+0x110 > 0`)
+   (`100527b4..100527fc`); no `+0xa4` store on the copy, and `.SetupPlayerShotSprite`'s only `+0xa4`
+   store is the 0x50 arm (`1005949c`), so damage = 0 × power = 0 [HIGH].
 7. `.SetupPlayerShotSprite @ 1005925c`: after the +4/+0x170 split of item 3, power
    (`+0x170`) ≥ 2 spawns `power−1` trailing copies (max 4, i.e. 5 sprites) spaced 6 px (10 px
    for ids 6 and 0x3c); first frame of `.HandlePlayerShotSprite`: damage `+0xa4 ×= power`, and
    a light is attached ⚑ corrected (review 2026-10-03) #3. ⚑ corrected (deepening 2026-10-03): the trailing copies are
    power-0 **harmless followers** repositioned every frame (the hit rect stays at the stack
    centre), though they can still petrify; power only multiplies damage (≤ ×5)
-   (spells-detail §2.4, C6). Per-id flight, tile hits, liquids: spells-detail §3.
+   (spells-detail §2.4, C6). ⚑ corrected (review 1c, 2026-10-03) (adjudication B22): raw follower
+   spawn `100595b0..100595e0` (`lha r4,0x4; rlwinm r5,r4,8` → type = id<<8, power 0); first frame
+   `10059fc0 mullw` → `+0xa4 = 0`; the petrify test is `+4 == 1` only [HIGH]. Per-id flight, tile hits, liquids: spells-detail §3.
 
 ### 2.1 Spell table
 
@@ -82,7 +88,12 @@ therefore at most [MED], with the evidence named. `G` = game globals (engine.md 
 | 0x3c, 0x50, 0x5a | non-spell player shots (held/thrown items, §4) ⚑ 0x3c = V Blade's lower shot; 0x50 = Pentashield orb; 0x5a = thrown seeds and Smiting blasts; the melee stab is type 100 (spells-detail §3.8, pickups-boxes §3.3) | — | — | — | | |
 
 Costs/damages/speeds: `.CastSpell` switch arms; gravity: `.SetupPlayerShotSprite` switch
-[HIGH for numbers; names [MED] as stated]. Manual order (Fireball, Boomerang, Tree Trunk,
+[HIGH for numbers; names [MED] as stated]. ⚑ corrected (review 1a, 2026-10-03) #6 (adjudication 1):
+the `PICT 700` (Sprites) captions were rendered by the review — 0..11 = Fireball, Statue, **Ice
+Crystals**, **Ice Wall**, Tree Trunk, Boomerang, VBlade, **Ice Wall**, DensityBall, Sandstorm,
+EnergyBolt, Ice Shards — so id 2 = "Ice Crystals", 3 = "Ice Wall" (floes/ledges), 7 = a second
+Ice-Wall icon (cost 0xc, damage 0x96, gravity 0xfa, no floe) [HIGH for the art; MED that the caption
+is the designer's name]. Manual order (Fireball, Boomerang, Tree Trunk,
 Statue, Ice Wall, V Blade) = six spells; ids 2 and 7 are never granted by the debug "give
 items" key (which grants spells 1,3,4,5,6) [HIGH for the debug list] and no shipped scroll was
 checked for them [NOT RESOLVED: scroll sprite params in the levels]. ⚑ corrected (deepening 2026-10-03): closed — the five
@@ -125,7 +136,7 @@ drops) in **pickups-boxes.md §1**; boxes, crates, doors, gates, save points in 
 | id | name | evidence in code |
 |---|---|---|
 | 0 | dagger | starting item; held-weapon sprite damage 100 (`.HandleItemUse`); replaced by 0x15 |
-| 1, 2, 3 | keys | selecting shows "You don't need to select keys…" (`.HandleKeys` case 1–3, string 0x100a616f) |
+| 1, 2, 3 | keys — ⚑ corrected (review 1a, 2026-10-03) #6: 1 **Steel Key**, 2 Gold Key, 3 Plat. Key (`PICT 702` HUD captions, rendered by review 1a) [HIGH for the art] | selecting shows "You don't need to select keys…" (`.HandleKeys` case 1–3, string 0x100a616f) |
 | 4 | Magic potion | drinking (frame 20): magic = max |
 | 5 | Health potion | drinking: HP = breath = max, sprite HP = max |
 | 6 | Fire seeds | thrown at animation frame 5: shot 0x5a01, vx 0x60e (+player vx), vy −0x60e, damage 800 |
@@ -133,7 +144,7 @@ drops) in **pickups-boxes.md §1**; boxes, crates, doors, gates, save points in 
 | 0xf | Magical Shield | replaces 0xe on pickup; bigger block animation; reflects shots [LOW for "reflects"] — ⚑ any raised shield reflects darts and spines and destroys other shots; the Magical Shield also reflects the Wraith bolt 0x6f4 once (enemy-shots-and-damage §3.6) [HIGH] |
 | 0x10 | Ring of Smiting | `.SmiteEnemies`, consumed |
 | 0x11 | Escape Ring | ends the level with exit −1 (no unlock), skips the stage-complete effect, consumed |
-| 0x12 | ~~Hammer?~~ ⚑ **Ice Pick** (PICT 3218, HUD caption; the only damage-300 hit that breaks 2941 ice walls) [MED name] (best melee: damage 300, `+0x158 = 4`, can crunch) | debug kit puts it in slot 1 [LOW name] (pickups-boxes corr. 2, spells-detail C9) |
+| 0x12 | ~~Hammer?~~ ⚑ **Ice Pick** (PICT 3218, HUD caption; ~~the only damage-300 hit that breaks 2941 ice walls~~ ⚑ corrected (review 1c, 2026-10-03) #2: one of the hits that break 2941 ice walls — `.HitPlayerShotSprite` (handler l. 5663–5672) tests only `shot+0xa4 == 300`, so **any** 300-damage player shot qualifies: the Ice Pick stab, the Ice Wall spell at power 1 (`.CastSpell` r23 = 0x12c, `10052648`) and the Pentashield orb 0x50 (`1005949c sth 0x12c,0xa4`)) [MED name] (best melee: damage 300, `+0x158 = 4`, can crunch) | debug kit puts it in slot 1 [LOW name] (pickups-boxes corr. 2, spells-detail C9) |
 | 0x13 | Multi Crystal | spell power +1 each; one is lost 15 frames after taking damage |
 | 0x14 | (not seen in code) | NOT RESOLVED (Ice Pick?) ⚑ **Light Orb** (PICT 3220) [MED]. Items 7..0xd: Locket, **Hammer (8)**, Poppyseed Muffin, Algernon Piece, Algernon Frame, Algernon, Gwendolyn (pickups-boxes §1.8, spells-detail §1) |
 | 0x15 | Vorpal Dirk | damage 200 ("double the dagger"); replaces item 0 |

@@ -12,7 +12,8 @@ headings. "§" = section of the named file. Status: **COVERED** (behaviour decod
 File key: EG `enemies-ground.md` · EF `enemies-flyers.md` · EW `enemies-water-cave.md` ·
 B1 `bosses.md` · B2 `bosses-2.md` · ES `enemy-shots-and-damage.md` · PB `pickups-boxes.md` ·
 T1 `triggers-background.md` · T2 `triggers-background-2.md` · SD `spells-detail.md` ·
-SC `save-continue.md` · PR `platforms-ropes-radial.md` · P1 `player-states.md` · P2 `player-states-2.md`.
+SC `save-continue.md` · PR `platforms-ropes-radial.md` · P1 `player-states.md` · P2 `player-states-2.md` ·
+GY `geysers.md` · HM `held-item-melee.md` (the two gap files written after review 1a #4 / 1b #11; ⚑ corrected (review 1c, 2026-10-03) #10).
 
 ## 1. The 154 targets of `tools/targets.txt`
 
@@ -27,9 +28,9 @@ HitTile / Kill callback is covered.
 | 10054ca8 | `.HitPlayerTileSprite` | COVERED | P2 §10, §10.1 (`.WallBounceBG`); P2 §9 (`.WallBounce` kinds) |
 | 100556f4 | `.HitPlayerSprite` | COVERED | ES §3.1–§3.5 (gate, dispatch order, Box/hazard/generic arms); PB §1.2 (pickup gate), §2.3 (talkers); T1 §2.4–§2.13 (Background hazards); SC §2.1 (save point); P1 §3.6 (doors, teleporters) |
 | 10058710 | `.HandleCannonedSprite` | COVERED | ES §2.1; T1 §2.2 (cannon side) |
-| 1004b3b4 / 1004b354 | `.SetupTrailSprite` / `.HandleTrailSprite` | COVERED | ES §2.3 |
-| 1004b7d4 / 1004b4f0 | `.SetupShadowSprite` / `.HandleShadowSprite` | COVERED [MED in ES] | ES §2.4 |
-| 1004bdd0 / 1004be74 | `.SetupHeldItemSprite` / `.HandleHeldItemSprite` | COVERED | PB §3.1; P1 §3.10 |
+| 1004b3b4 / 1004b354 | `.SetupTrailSprite` / `.HandleTrailSprite` | COVERED | **HM §3** (Double-Speed trail, five type-1 sprites); ES §2.3 |
+| 1004b7d4 / 1004b4f0 | `.SetupShadowSprite` / `.HandleShadowSprite` | COVERED (HIGH in HM; was MED in ES) | **HM §2** (Shadow Double 0x1b39: faces, empty rect, bob table, respawn); ES §2.4 |
+| 1004bdd0 / 1004be74 | `.SetupHeldItemSprite` / `.HandleHeldItemSprite` | COVERED | **HM §1** (creation, swing, `.SetHeldItemPos`, hit geometry, strike = c 3..5, `+0xa6`); PB §3.1; P1 §3.10 |
 | 1005925c / 10059704 | `.SetupPlayerShotSprite` / `.HandlePlayerShotSprite` | COVERED | SD §3.1 / §3.2 (+ §2.4 power) |
 | 1005a7fc / 1005b0bc | `.HitPlayerShotSprite` / `.HitPlayerShotTileSprite` | COVERED | SD §3.7 / §3.3–§3.5 |
 | 1005ba5c / 1005bffc | `.SetupEnemyShotSprite` / `.HandleEnemyShotSprite` | COVERED | ES §1.1, §1.2, §1.4, §1.5 |
@@ -38,7 +39,7 @@ HitTile / Kill callback is covered.
 | 1005fd38 / 1006010c | `.HitBonusSprite` / `.HitBonusTileSprite` | COVERED | PB §1.1, §1.5 |
 | 10060680 / 10061160 | `.SetupEffectSprite` / `.HandleEffectSprite` | COVERED | T2 §2.1, §2.2 |
 | 10061978 / 100619a0 | `.HitEffectSprite` / `.HitEffectTileSprite` | COVERED | T2 §2 |
-| 10060cd8 | `.HandleGeyserSegSprite` | COVERED | T2 §2.2 (row 1440); ES §3.4 |
+| 10060cd8 | `.HandleGeyserSegSprite` | COVERED | **GY §4, §7** (column segments, contacts); T2 §2.2 (row 1440); ES §3.4 |
 | 10060c0c / 10060c78 | `.SetupDigitSprite` / `.anon_10060c78` | COVERED | T2 §3 |
 | 10033418 / 10033378 | `.SetupPxSprite` / `.HandlePxSprite` | COVERED | T2 §4 |
 | 10061f94 / 100635b4 | `.SetupPlatformSprite` / `.HandlePlatformSprite` | COVERED | PR §2.1–§2.3, §2.5, §2.8 |
@@ -103,6 +104,10 @@ PB §3.1), radial family `.MakeRadialTables` `.MakeRadial` `.UpdateRadialPos`
 `.Init<Class>Sprite` sheet loaders (each class file), `.DoubleSpeedTrail` (ES §2.3),
 `.MTAddPxSprite` (T2 §4), `.UpdateDigits` (T2 §3).
 
+Now COVERED by the gap files (⚑ corrected (review 1c, 2026-10-03) #10): `.HandleGeyserColumn` (GY §4: geometry, liquid per
+kind, head 0x5a9 creation), the geyser arms of `.SetupBoxSprite`/`.HandleBoxSprite` (GY §2–§3, §5),
+`.HandleItemUse` / `.SetHeldItemPos` (HM §1.3–§1.4), `.DoubleSpeedTrail` (HM §3).
+
 NAME-ONLY or arithmetic explicitly left open (each is in a file's NOT RESOLVED list):
 
 | helper | cited by | what is missing |
@@ -111,7 +116,6 @@ NAME-ONLY or arithmetic explicitly left open (each is in a file's NOT RESOLVED l
 | `.BuildTintTable` | EG, EW, T1 | colours of remap tables 2/3/4/0xb/0xc/0xf/0x10..0x15/0x17/0x18 |
 | `.HandleBurn` / `.BurnFaceRow` | EF, EW, EG, B1 | row arithmetic, styles 1 vs 0xd (trigger and end are read) |
 | `.BloodSpray` / `.NewParticle` / `.ExplodeFaceIntoParticles` | EG, EW, T2, SD | argument meanings, particle kinds |
-| `.HandleGeyserColumn` | PB, ES, T2 | column geometry, liquid per geyser kind, 0x5a9 creation |
 | `.UpdateXichraCannons` | B2 | cannon values `+0x158..+0x164` |
 | `FUN_1003f218` (Boomerang steering) | SD | internals |
 | `.HandleLineActions` / `.HandleLineResponses` | SC | `Mcnv` action encoding (INDEX NR 3) |
@@ -142,7 +146,7 @@ per class (count = active records):
 | Button 1320..1329 | 1320 ×2, 1322 ×22 | T1 §1 | 1323..1329 hot rect (T2 NR 6) |
 | Background | 1090..1097 (171), 1150..1153 (57), 1208 ×89, 1480..1488 (152), 1840..1843 (286), 1900..1903 (100), 2700..2714 (45), 2890..2893 (164), 2900 ×54, 2901 ×4, 3002 ×20, 3060 ×53, 3080..3086 (31), 3249 ×48 | T1 §2.2–§2.15 | Setup handles only the sub-ranges in T1 §2.1; the rest of each world-data range is inert |
 | Bonus | 43 types: 1055 ×1944, 1056, 1058, 1059 ×236, 1290..1293, 1303, 1307 ×224, 1330..1341, 1350, 2000 ×5, 3050, 3100..3108, 3204..3226 | PB §1.3–§1.11 | — |
-| Box | 105 types: 1060..1062, 1065 ×89, 1070, 1072, 1080, 1250 ×14, 1308, 1440, 1442 ×25, 1450, 1453, 1461..1464, 1470, 1475, 1490..1493, 2808..2884 (decor), 2902..2911, 2921..2932, 2940 ×43, 2941, 2951..2965, 3070, 3090..3092 | PB §2.2–§2.4; SC §2 (1065); T1 §3 (talkers) | decoration rows are range-level only (PB §2.2 rows 2805..2889) |
+| Box | 105 types: 1060..1062, 1065 ×89, 1070, 1072, 1080, 1250 ×14, 1308, 1440, 1442 ×25, 1450, 1453, 1461..1464, 1470, 1475, 1490..1493, 2808..2884 (decor), 2902..2911, 2921..2932, 2940 ×43, 2941, 2951..2965, 3070, 3090..3092 | PB §2.2–§2.4; SC §2 (1065); T1 §3 (talkers); GY §1–§5 (1440, 1442 geysers) | decoration rows are range-level only (PB §2.2 rows 2805..2889) |
 
 Record byte +1 is 0 in every active record and is read by no class (EG, EF, EW, B1, PB, T1, PR).
 
@@ -152,7 +156,7 @@ Record byte +1 is 0 in every active record and is read by no class (EG, EF, EW, 
 - Draw-effect semantics (`+0xb8`, `+0x88`, tint tables, burn) are the largest shared gap: six files
   stop at the same `.WrapDrawSprites` boundary.
 - Contradictions between the new files and with the bank: summarised in the INDEX review ledger
-  (deepening paragraph: 41 entries, 16 settled from raw, four new-file fixes pending); the
+  (deepening paragraph: 41 entries, 16 settled from raw by the synthesis pass, the 14 OPEN ones adjudicated from raw by review 1c; all fixes applied by the consolidated fix pass, `FIXPASS-2026-10-03-deepening.md`); the
   bank-facing results are marked
   `⚑ corrected (deepening 2026-10-03)` in physics.md, spells-items.md, world-data-format.md,
   engine.md, sprites-backgrounds-sounds.md, INDEX.md and physics-sprites.md (physics §8, split off by this pass).

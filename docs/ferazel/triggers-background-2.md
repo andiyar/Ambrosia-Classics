@@ -103,8 +103,9 @@ start 813; frame 2 → 812, 4 → 811, 6 → 810, 14 → 811, 17 → 812, 20 →
 the glow swells and fades [HIGH].
 
 **Effect damage** (`.HitPlayerSprite` l. 4473–4500): (a) id 1207 (handler Effect) while
-`+0x46 ≤ 7`; (b) **any** sprite of type 1440 with `+0x14c ≥ 1` — geyser segments copy `+0x14c`
-from their column. Damage `0x70`, or `0x150` when `+0x14c == 2`; skipped for kind 1 if the
+`+0x46 ≤ 7`; (b) ~~**any**~~ any **non-Box** sprite of type 1440 with `+0x14c ≥ 1` — geyser segments copy `+0x14c`
+from their column. ⚑ corrected (review 1c, 2026-10-03) (adjudication A2; synthesis ledger A2): the Box/SeeSaw arm of `.HitPlayerSprite` (`10056b2c..10057860`, entered at `10056b18` on TOC −0x73bc / −0x7678) leaves by 25 branches, all to the epilogue `1005855c`; this hazard arm (`10058458..10058494`) is entered only from `10057e00` on the non-Box path, so a Box-class 1440
+never reaches the test (enemy-shots-and-damage §3.4 was right) [HIGH]. Damage `0x70`, or `0x150` when `+0x14c == 2`; skipped for kind 1 if the
 walk-on power-up 1 is active, for kind 2 if power-up 2 is active or the Fire Charm (item 0x18)
 is held; then `HurtSprite(player, dmg, ±300 (away), −0x640, 0x3c, 12)` and hurt-stun
 `_DAT_100a0748 = 1` — **no coin loss** (HurtSprite, not HurtPlayer) [HIGH].
@@ -187,7 +188,8 @@ Code: `.MTAddPxSprite @ 1003359c` (main l. 30769–30842), `.SetupPxSprite @ 100
 9. Exact `.HandleIdleSprites` activation rule for idle Background sprites (margins `+0x1c8..`
    apply to deactivation only; activation uses the idle entry's own margins).
 10. Wind orientation (physics §6) — not settleable here: no sprite emits wind.
-11. `s+0x88` (set 0/1 by many Setups; read sites not traced).
+11. ~~`s+0x88` (set 0/1 by many Setups; read sites not traced).~~ Closed: light-overlay gate, sole
+    reader `.WrapDrawSprites` `1001493c` (physics §0.1) ⚑ corrected (review 1c, 2026-10-03) #5.
 
 ## 6. Proposed additions to physics.md §0
 
@@ -210,9 +212,9 @@ Code: `.MTAddPxSprite @ 1003359c` (main l. 30769–30842), `.SetupPxSprite @ 100
 | +0x187 / +0x198 | u8 / ptr | radial record allocated / radial record R (0xa4 B, part 1 §2.5) |
 | +0x1aa | i16 | draw rotation in degrees (copied to the face's +0x1a) |
 | +0x1ae | i16 | draw scale, 0x100 = 1.0 (InitSprite) |
-| +0x1b6 / +0x1b8 | i16 | left-skip columns / visible width; reset to 0 / 32000 by `.StandardSpriteHandles` each frame |
-| +0x1ba / +0x1bc | i16 | visible height (InitSprite 32000) / top-skip rows |
-| +0x1be / +0x1c0 / +0x1c2 / +0x1c4 | i16 | wall-tunnel window xmin / xmax / ymax / ymin (InitSprite 32000) |
+| +0x1b6 / +0x1b8 | i16 | left-skip columns / ~~visible width~~ **right edge** (face-local px); reset to 0 / 32000 by `.StandardSpriteHandles` each frame — ⚑ corrected (review 1c, 2026-10-03) #6 (adjudication A10): edges, not extents; `.WrapDrawSprites` `1001461c..10014684` draws cols `min(+0x1b8, w) − +0x1b6`, rows `min(+0x1ba, h) − +0x1bc` (physics §0.1) |
+| +0x1ba / +0x1bc | i16 | ~~visible height~~ **bottom edge** (InitSprite 32000) / top-skip rows (⚑ corrected (review 1c, 2026-10-03) #6) |
+| +0x1be / +0x1c0 / +0x1c2 / +0x1c4 | i16 | wall-tunnel window xmin / xmax / ymax / ymin (InitSprite 32000) — ⚑ corrected (review 1c, 2026-10-03) #7 (adjudication A11): order confirmed, raw `10036f20..10036f58` [HIGH] |
 | +0x1c6 | u8 | may go idle off-screen (InitSprite 1) |
 | +0x1c8 / +0x1ca / +0x1cc / +0x1ce | i16 | idle-test margins left / right / top / bottom (`.HandleIdleSprites` main l. 4302–4316) |
 | +0x1d4..+0x1e0 | ptr | linked sprites (radial parent, see-saw twin, tree branches, balloon) |
@@ -226,7 +228,7 @@ Code: `.MTAddPxSprite @ 1003359c` (main l. 30769–30842), `.SetupPxSprite @ 100
 | physics §8.3 | excluded hitter class `PTR_PTR_100a0460` unidentified; cooldown decrement not traced | `PTR_PTR_100a0460` → `.HandleEffectSprite` (effects never trigger springs); `.HandleBackgroundSprite` decrements `+0x46` 1/frame clamped 0..3 and uses it as the face → 4-frame cooldown | TOC 0x100a0460 → TV 0x100a229c → 0x10061160; handler dump l. 14805–14834 |
 | physics §8.3 | 1154..1159: "sound only" | inert: no Setup branch (no rect, face or hit callback), no Handle branch; none placed | l. 13958–14160 type tree |
 | physics §8.5 | m = 10/11: `.MakeRadial(s, cx, cy, radius = param2, phase = param3, speed = param4, 0 \| 0x1e, …)` | param3 → R+0x14 = **angular speed** (1/256 °/frame; dropped for 110/111), param4 → R+0x18 = **start angle** (°); the 0x1e is R+0x36 = pendulum pull → **m = 11 is a pendulum** hanging at 270° (angles: 90° up, tables cos / −sin) | `.MakeRadial @ 1003d718` field writes; `.UpdateRadialPos` R+0x18 += R+0x14; `.FindUpdatedRadialSpeed`; `neg r0,r0 @ 1003d6a4` |
-| physics §5.1 | "lava/acid pools (Box class 0x5a0, mode s+0x14c 1/2)" | the same branch hits for **any** sprite of type 1440 with `+0x14c ≥ 1`, including Effect-class geyser segments that copy `+0x14c` from the geyser column; damage via `HurtSprite` (no coins); also effect 1207 hurts 0x70 while frame ≤ 7 | `.HitPlayerSprite` l. 4473–4500; `.HandleGeyserColumn` main l. 47594 (`+0x14c` copy) [MED that the Box 1440 itself is a pool] |
+| physics §5.1 | "lava/acid pools (Box class 0x5a0, mode s+0x14c 1/2)" | the same branch hits for any **non-Box** sprite of type 1440 with `+0x14c ≥ 1` (⚑ corrected (review 1c, 2026-10-03) (adjudication A2): the Box arm returns first, raw `10056b2c..10057860` → `1005855c`; hazard arm only from `10057e00`) — i.e. the Effect-class geyser segments that copy `+0x14c` from the geyser column; damage via `HurtSprite` (no coins); also effect 1207 hurts 0x70 while frame ≤ 7 | `.HitPlayerSprite` l. 4473–4500; `.HandleGeyserColumn` main l. 47594 (`+0x14c` copy) ~~[MED that the Box 1440 itself is a pool]~~ [HIGH] |
 | physics §5.1 | fire −0xe0 unless Fire Charm | unless Fire Charm **and** the fire's p1 ≤ 0 (tinted fires p1 1..4 ignore the charm) | l. 4285–4289 |
 | world-data §3.2 | 0x2716/18/1a "parallax sprite: PICT id, ?, ?" | PICT id in the Backgrounds file / x-parallax factor (/256) / base y (+232) of a 768-px strip tiled across the level | part 2 §4 |
 | any synthesis text (INDEX, physics) that carries 2941 with the 2940 switch rule (physics §0 `+0x1b4` row already names the 2941 ice wall correctly) | 2941 = switch gate wired like 2940, open ⇔ `rec(p1).p4 == 1` | 2941 = destructible weakened ice wall: open flag forced 0, −0x50 HP per player shot with `+0xa4 == 300`, invul 10, explodes at HP < 1 (review 1b #2) | raw 1006f568–1006f5a8; handler l. 5665–5672 |

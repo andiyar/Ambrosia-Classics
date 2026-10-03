@@ -259,14 +259,18 @@ no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFro
 2. Xichra's cannons: Background types 0x442..0x44a with p1 0x67/0x68, p2 15 and the
    `+0x158/+0x15c/+0x160/+0x164` values written by `.UpdateXichraCannons`.
 3. `.HitEnemyShotTileSprite` for 0x46a/0x71f; whether 0x77b ignores tiles.
-4. (→ held-item-melee.md, review 1b #11: the melee hit frames live in `.HandleHeldItemSprite`.)
+4. ~~(→ held-item-melee.md, review 1b #11: the melee hit frames live in `.HandleHeldItemSprite`.)
    Which held-weapon frames carry the player-shot handler (`.HandleItemUse` condition), i.e.
    exactly when melee counts against the Chief / Xichra window; whether any player shot ever has
-   `+0xa6 ≠ 0` (the boss Hit gate).
+   `+0xa6 ≠ 0` (the boss Hit gate).~~ Closed by held-item-melee.md §1.3/§1.7: strike = swing calls
+   c = 3, 4, 5; the held item's `+0xa6` is never written non-zero, so the boss gate always passes for
+   melee. ⚑ corrected (review 1c, 2026-10-03) #10.
 5. hdr+0x2730 modes 3..7 as seen on screen (CLUT animation during Xichra's phases).
-6. `+0xcd` (grounded/landed) — PlatformBounce writes it; the tile-landing writer was not traced.
+6. ~~`+0xcd` (grounded/landed) — PlatformBounce writes it; the tile-landing writer was not traced.~~
+   Closed (synthesis ledger A5): `.StandardSpriteHandles` copies `+0xce` into `+0xcd` at frame start
+   (raw `100368c4..100368c8`); `.PlatformBounce` sets 1 on a landing (`100379c4`) — physics §0.1.
 7. Behaviour of the 0x6d6 minions with record-500 p3 = 4 and `+0x100 = 1` (Walker reader).
-8. `+0x88 = 0` in boss mode (field meaning); `STPlay3DSoundPitched` rate units.
+8. ~~`+0x88 = 0` in boss mode (field meaning);~~ `STPlay3DSoundPitched` rate units. (`+0x88` closed: light-overlay gate, physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5 — boss mode switches the light pass off.)
 9. Vestigial: Wizard state 11 (no writer), `w[4]`, Chief `+0xb2`, Warrior `+0x154` (egg) and p2
    default 150 — written, never read in the boss code; purpose unknown.
 10. Gate 2940 with p1 ≥ 0 (`record[p1].p4 == 1` condition) — Box-class reader.
@@ -277,7 +281,7 @@ no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFro
 | off | type | proposal |
 |---|---|---|
 | +0x50 | proc | Kill callback (called by `.HandleBurn` when the burn finishes; bosses set it) |
-| +0x88 | u8 | cleared by boss Setups in boss mode (meaning NOT RESOLVED) |
+| +0x88 | u8 | cleared by boss Setups in boss mode — ⚑ corrected (review 1c, 2026-10-03) #5: light-overlay gate (`.WrapLightFace` pass skipped), physics §0.1 |
 | +0x8c / +0x8d | u8 | burn sound variant (pitched) / extra burn rows per frame (Chief 1) |
 | +0x9c | ptr | per-class work block (Demon segment table 0x30, Wizard 7×i16, Xichra 0x374) |
 | +0xb0 / +0xb2 | i16 | AI state / sub-state |
@@ -313,9 +317,15 @@ no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFro
    level-start force-to-30 (main l. 5183: `0x2724 != 0 ∧ fed0`) fires only when no boss Setup
    cleared the flag (idle bosses run Setup at load too) — i.e. on a revisit after the kill (§1.2,
    §1.4). Level 67 (0x2724 = 0) fires neither. ⚑ corrected (review 1b, 2026-10-03) #4.
+   ⚑ corrected (review 1c, 2026-10-03) (adjudication B16): this file's reading is confirmed from raw
+   — `.SetMusicAIFFVolume` `10049704..10049708 sth r31,0(r3)` through the `fd6c` slot; `fed0` = 0 in
+   `.SetupWarriorSprite` `1008796c..10087974` (inside the p4 / HP-2000 branch), = 1 in `.KillWarrior`
+   `100887f4..100887fc`, same pattern in the other four pairs [HIGH] (engine.md §4 now carries it).
 4. engine.md §6 Victory "death-animation counter > 0x96" → Xichra state 8, `w+0x38 − 60 > 150`
    (frame 211 of the death state), which sets both `DAT_100a5106` and `_DAT_1009ffc4`; reached only
-   after the phase-6 crash landing (§6.4).
+   after the phase-6 crash landing (§6.4). ⚑ corrected (review 1c, 2026-10-03) (adjudication B17):
+   confirmed, raw `1008f7c0..1008f898` (explosion every 12 frames while d < 140; d > 0x96 → `stb 1`
+   to `100a5106` and `*1009ffc4`) [HIGH] (engine.md §6 now carries it).
 5. world-data-format.md §3.2 row 0x2724 → lock/clamp line is `|v ∓ 60|`, camera bounds as §1.3;
    0x272e is applied only after the lock (upgrade MED → HIGH); level 55's 16000 never locks.
 6. world-data-format.md §3.4 per-class params → closed for the five boss classes (§1.1); record

@@ -216,7 +216,11 @@ Faces: PICTs 1150, 1151, 1152 (240×60, 4 cells 60×60); 1153 reuses the 1152 sh
 - **Excluded hitter class resolved:** `PTR_PTR_100a0460` = TOC slot 0x100a0460 → TVector
   0x100a229c → `.HandleEffectSprite @ 10061160` — effects never trigger springs.
 - **1154..1159 are inert**: no Setup branch (no rect, no face, no hit callback), no Handle branch
-  — the "sound only" row of physics §8.3 is unreachable (and none is placed).
+  — the "sound only" row of physics §8.3 is unreachable (and none is placed). ⚑ corrected (review 1c, 2026-10-03)
+  (adjudication A4): confirmed from raw — Setup arms only for 0x47e..0x481 (`10071cc0`/`10071d14`/
+  `10071d68`/`10071db8`, each `stw r30,0x5c`), 0x482..0x487 → `10072e8c` with default `+0x5c = 0`
+  (`1007178c`); `.HitBackgroundSprite` `100750f4` tests the whole 0x47e..0x487 band but is never
+  installed for 0x482.. [HIGH].
 
 ### 2.4 Fire 1208 (and 1211..1213)  [HIGH]
 1208: two 16-cell sheets PICT 1208/1209 (1536×72, cells 96×72) alternated by parity of a

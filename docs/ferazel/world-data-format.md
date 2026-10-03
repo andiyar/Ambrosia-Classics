@@ -79,7 +79,7 @@ affordance — record only.
 | 0x000 | pstr[256] | `\x09Teraknorn` (+ stale bytes `orld name here>`) | nothing found |
 | 0x100 | u32 | 0x152be0ed | world identity stamp: copied to save +0x00 by `.DoSaveGame/.SavePointSave/.EndLevelSGUpdate`, compared on resume by `.ContinueGame` |
 | 0x144 | i16 | 2 | no reader found |
-| 0x1c4 | i16 | 1 | start level for New Game (`.NewGame @ 1000b11c`) |
+| 0x1c4 | i16 | 1 | start level for New Game (`.NewGame @ 1000b11c`) — ⚑ corrected (review 1c, 2026-10-03) (adjudication B20): read only with the debug flag or a non-default world; the shipped path loads literal 1 (§4.1) |
 | 0x1c6 | i16 | 100 | no reader found |
 | rest | | zero | |
 
@@ -128,7 +128,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x26c4 | i16 | map-node level number (= own id in all 24) | `.ShowWorldMap`: `FindCurrNode(hdr+0x26c4)` | [HIGH] |
 | 0x26c6 | u8 | "draw submerged tiles as tinted faces" flag (=1 only in 11) | `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`, `.RedrawScrollGrid` | [MED] |
 | 0x26c7 | u8 | OmniPx mode (0,1,2,5,6) | `.SetupOmniPx`, `.TurnOnOmniPx`, `.UpdateOmniPx`, `.PaintFrameWrap` | [MED] meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): narrowed per mode (1 rain + overlay faces 6000/6001, level 15; 2/5 faces 6200/6201 and 6300/6301 with an animated port; 6 interlaced 29 frames, level 70); draw composition still open (save-continue §8.3) |
-| 0x26c8 | u8 | copied to game-globals +0x16 at level start | `.NewGame`, `.ContinueGame` | [HIGH] copy; meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): **player starts facing left** (`.SetupPlayerSprite` sets `+0x17e = G+0x16 ≠ 0`); 1 in levels 3, 5, 11, 18, 40, 45, the six that start at the map's right edge [HIGH]; a resumed session never refreshes it from the header (save-continue §8.3, player-states §6) |
+| 0x26c8 | u8 | copied to game-globals +0x16 at level start | `.NewGame`, `.ContinueGame` | [HIGH] copy; meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): **player starts facing left** (`.SetupPlayerSprite` sets `+0x17e = G+0x16 ≠ 0`); 1 in levels 3, 5, 11, 18, 40, 45, the six that start at the map's right edge [HIGH]; a resumed session never refreshes it from the header (save-continue §8.3, player-states §6). ⚑ corrected (review 1b, 2026-10-03) #13: raw — `lbz 0x26c8` at `1000b3d8` (`.NewGame`) and `1000d684` (`.ContinueGame`) → `G+0x16`; read by `.SetupPlayerSprite` `1004b2b0..1004b2d0` (`≠ 0 → +0x17e = 1`) [HIGH, re-derived by review 1c] |
 | 0x26c9 | u8 | water-surface effect flag | `.WrapDrawWaterEffects` | [MED] |
 | 0x26ca | u8 | parallax ripple flag | `.RipplePxBackOffsets`, `.DoubleBlitPPCParallaxOneLayer` | [MED] |
 | 0x26cb | u8 | FG pattern tile period: 0 → 8×8, ≠0 → 6×6 | `.GetFGPatternTile @ 1003c0b8` | [HIGH] |
@@ -349,6 +349,10 @@ type list with counts reproduced by `gensprite_map.py` + the census loop). The `
   `_DAT_100a0064` is set (`.WarpDialog`) — out of scope (debug). ⚑ corrected (deepening 2026-10-03): the shipped path
   loads literal level 1; `Mwld+0x1c4` is read only with the debug flag or a non-default world
   (same value in the data) (save-continue §1, raw 0x1000b2b8..0x1000b2cc cited there).
+  ⚑ corrected (review 1c, 2026-10-03) (adjudication B20): settled for save-continue — `1000b27c lbz
+  r0,0(r14)` (r14 ← TOC −0x77dc = the debug flag `_DAT_100a0064`, re-assigned at `1000b22c` on the
+  non-default-world path): set → `lha 0x1c4(Mwld)`; clear → `li r3,1; bl OpenDefaultWorldLevel`
+  (`1000b2b8..1000b2cc`) [HIGH].
 - `.NewGame` loop: `GameLoop(hdr+0x2848−32, hdr+0x2846−32, 0, 1)`; on level complete
   (`_DAT_100a0088` set) and not victory → `.ShowWorldMap()` returns a level number → 
   `OpenDefaultWorldLevel(n)` → next `GameLoop` at that level's start.

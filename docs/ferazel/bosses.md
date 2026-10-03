@@ -134,10 +134,13 @@ Kill routines (`.KillWarrior` l. 20464–20496, `.KillWizard` 22510, `.KillChief
 ### 1.5 What can hurt each boss  [HIGH unless noted]
 Player shots are sprites whose handler `+0x4c` is `.HandlePlayerShotSprite` (TOC slot
 0x100a04e8): spells (`+4` = spell id after `.SetupPlayerShotSprite`), held melee weapons during the
-strike frames (`.HandleItemUse` gives the held item that handler, main l. 43598 [MED: frame
-condition not decoded]), Fire seeds / Smite bolts (id 0x5a). Every boss Hit routine tests only
+strike frames (`.HandleItemUse` gives the held item that handler, main l. 43598 ~~[MED: frame
+condition not decoded]~~ — ⚑ corrected (review 1c, 2026-10-03) #10: decoded in held-item-melee.md §1.3:
+the held sprite carries the shot handler for swing calls c = 3, 4, 5 (c ≥ 3, raw `1004d154..1004d1d4`)
+[HIGH]), Fire seeds / Smite bolts (id 0x5a). Every boss Hit routine tests only
 shots with `shot+0xa6 == 0` (`.SetupPlayerShotSprite` writes 0; no non-zero writer found in the
-shot code [MED]). "Falling solid" = a sprite whose handler is `.HandleStatueSprite` (slot
+shot code ~~[MED]~~ — confirmed for melee too: no code writes a non-zero `+0xa6` on the held item,
+held-item-melee.md §1.7, so the gate always passes for a stab [HIGH]). "Falling solid" = a sprite whose handler is `.HandleStatueSprite` (slot
 0x100a01f8: an enemy turned to stone) or `.HandleBoxSprite` (0x100a0484) that `.PlatformBounce`
 reports as hitting the boss from above (return 2, physics.md §8.1) while `solid.vy > 0` or the boss
 is grounded (`+0xce`); the solid is destroyed (`.KillBox`).

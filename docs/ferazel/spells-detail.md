@@ -307,7 +307,10 @@ uninitialised register when `effect == 0` [MED]). 0x50: hits left −1; at 0 `sn
 (tint 0x10004 if Ziridium), and unless `+0xf0`: 8 fragments 0x442 from a 4×4 grid (every second
 cell) flung outward at `400 + rand(150)`, `+0x46 = rand(7)`. Types > 100 (the held melee item
 while swinging, `.HandleItemUse` main l. 43598): `snd 419` at 0xab if `+0xa6 == 0`, then
-`+0xa6 = −6` (6-frame re-hit guard) [MED].
+`+0xa6 = −6` (6-frame re-hit guard) [MED]. ⚑ corrected (deepening 2026-10-03, held-item-melee.md corr. 1; raw verified by review 1c): the held item is
+type **100**, `.KillPlayerShot` returns at once for it (`cmpwi r0,0x64; beq` `1005ac64..1005ac68`), and the
+> 100 arm (`1005accc..1005ad08`) is unreachable — no player shot has `+0x04 > 100`; one hit per target
+comes from the target's invulnerability [HIGH].
 
 ### 3.8 Non-spell player shots
 - **0x3c is the V Blade's lower half** (spawned only by `.CastSpell` case 6), not a thrown item.
@@ -403,8 +406,12 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 1. The meaning of `NewParticle` args 1/2 (colour? gravity?) and of `s+0x84/+0x86` offsets in shot
    particles; effect-sprite types 0/2/5/0x442 visuals (effects reader).
 2. On-screen test fields `s+0x1b6/+0x1b8` and face `+0xa/+0xe` that gate lights and impact effects.
+   (Narrowed: `+0x1b6/+0x1b8` are the left/right draw-clip edges in face-local px, physics §0.1 —
+   ⚑ corrected (review 1c, 2026-10-03) #6.)
 3. `_DAT_100a06f0`, `PTR_DAT_100a0700`, `_DAT_100a0570` (HandleKeys gates); `PTR_DAT_100a04cc`
-   (stow drop 10 vs 32 px); `+0xcd` (second ground-contact byte); `_DAT_100a075c` reader.
+   (stow drop 10 vs 32 px); ~~`+0xcd` (second ground-contact byte);~~ `_DAT_100a075c` reader. (`+0xcd`
+   closed: grounded at frame start or landed on a sprite this frame — physics §0.1, synthesis ledger A5,
+   raw `100368c4..c8` / `100379c4`.)
 4. Enemy shot 0x77b's identity; Box 0xb7c/0xb7d (2940/2941) roles; Bonus 0x517/0x51b `+0xb0`.
 5. `FUN_1003f218` (Boomerang steering) internals; whether same-frame handling of new shots occurs
    (affects first-frame damage and follower lag by one frame).
@@ -433,8 +440,8 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 | C2 | spells-items §2.1 id 2 | "a scroll of id 2 is converted to id 3 on pickup" | also **every HUD redraw** rewrites any held spell 2 to 3 | main l. 4713–4715, raw 0x10009188 |
 | C3 | spells-items §2.1 row 0x3c / §2 "non-spell player shots 0x3c, 0x50, 0x5a (thrown held items)" | 0x3c a thrown item | 0x3c = V Blade lower half; 0x50 = Pentashield orb; 0x5a = seeds and Smiting blasts | §3.8 |
 | C4 | spells-items §2.1 row 0 | Fireball "particles" | Fireball emits no particles in flight; ids 2/3/4 do (2/5/7 per frame); id 4 has **no face** | handler l. 5157–5229 |
-| C5 | spells-items §2 item 6 | double's copy "with the same velocity" | power 1, **0 damage**, vy −0x44c when the double's replayed frame is grounded and the shot has gravity, vx sign from the double's facing | §2.3, raw 0x10052700ff |
-| C6 | spells-items §2 item 7 | trailing copies spaced 6/10 px | followers are power-0, harmless, repositioned each frame; hit rect stays at the stack centre; followers can still petrify | §2.4 |
+| C5 | spells-items §2 item 6 | double's copy "with the same velocity" | power 1, **0 damage**, vy −0x44c when the double's replayed frame is grounded and the shot has gravity, vx sign from the double's facing | §2.3, raw 0x10052700ff; ⚑ corrected (review 1c, 2026-10-03) (adjudication B21): confirmed from raw — copy type id·256+1 (10052714..1005272c), no `+0xa4` store on the copy (only 0x50 arm at 1005949c) [HIGH] |
+| C6 | spells-items §2 item 7 | trailing copies spaced 6/10 px | followers are power-0, harmless, repositioned each frame; hit rect stays at the stack centre; followers can still petrify | §2.4; ⚑ corrected (review 1c, 2026-10-03) (adjudication B22): confirmed — follower type = id<<8, power 0 (100595b0..100595e0), `+0xa4 = 0` after the first-frame `mullw` (10059fc0) [HIGH] |
 | C7 | spells-items §2 items 1–2 | "if magic is 0 …"; "animation counter reaches 4" | `G+0xe < 1`; cast is on the press frame; presses at wand steps 1/2/4–6 are swallowed; shield raised blocks; fresh press required | §2.1–2.2 |
 | C8 | physics.md §8.9 mode 4 | "[MED: … who sets mode 4 on a code-spawned floe was not traced]" | the shot code writes `+0xb0 = 4`; DoSetup keeps it (`+0x48 = −1`); `+0x16c` 1/2 = wall ledges from Ice Wall — HIGH | §3.4 |
 | C9 | spells-items §4 items | 0x12 "Hammer?", 0x14 not seen | HUD `PICT 702` captions (and Sprites PICTs 3200+id): 7 Locket, **8 Hammer**, 9 Poppy Muffin, 0xa Alg. Piece, 0xb Alg. Frame, 0xc Algernon, 0xd Gwendolyn, **0x12 Ice Pick**, **0x14 Light Orb**; PICT 702 ids 0..11 also give **1 Steel Key**, 5 Health Ptn. [HIGH for ids 0..11 art, review 1a; MED for 0x12/0x14 (PICT 3200+id names)] | §1 |

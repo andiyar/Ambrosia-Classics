@@ -124,7 +124,14 @@ odd = !odd;
   ⚑ corrected (deepening 2026-10-03): `_DAT_1009fd6c` is the current music volume and `_DAT_1009fed0` is "no boss
   alive" (cleared by a boss Setup with the boss flag, set by its Kill): with no live boss the
   level track fades out, then track 30 fades in; the level-start force fires on a revisit after
-  the kill (bosses-2 corr. 3, bosses §1.2–§1.4).
+  the kill (bosses-2 corr. 3, bosses §1.2–§1.4). ⚑ corrected (review 1c, 2026-10-03) (adjudication
+  B16): settled for bosses-2 — `.SetMusicAIFFVolume` stores its argument through the `fd6c` slot
+  (`10049704..10049708 sth r31,0(r3)`) = music volume; `.GameLoop` l. 5231–5238 `*fd6c < 1 →
+  SetAIFFMusic(0x1e)` + fade in, else fade out; `fed0` = 0 in `.SetupWarriorSprite`
+  (`1008796c..10087974`, r8 = 0 from `100878d8`, inside the p4 / HP-2000 branch), = 1 in `.KillWarrior`
+  (`100887f4..100887fc`), same pattern in the other four Setup/Kill pairs [HIGH]. ⚑ corrected (review
+  1b, 2026-10-03) #4: both sites carry the hdr+0x2724 ≠ 0 gate (main l. 5183, 5231), so level 67
+  (0x2724 = 0) fires neither.
 
 ## 5. Camera  [HIGH]
 
@@ -164,7 +171,9 @@ death (G+4 < 1) → DeathEffect → AskToContinue: only if a save was made/loade
 restarts on the save point, and level completions since that save are lost; with no save this
 session there is no death screen at all. Only save points (type 1065, once each per game) write
 saves; the Esc dialog's Save branch is dead (DITL 202 has no item 5); level completion only
-updates memory. Full flow: **save-continue.md** §1–§7.
+updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a, 2026-10-03) #6
+(adjudication B18): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
+(`100071d0..100071e4`); `.ContinueGame` copies G from save+0x18 (`1000d0cc`) [HIGH].
 - There is **no lives counter**: death ends the run unless the player resumes from a save
   (`.AskToContinue @ 10007190` buttons via `TrackClickOnCommandButtonDeath`) [MED: no other
   decrement of a life-like field found; `G+0x12 = 3` is set in `.InitGameGlobals` but its
@@ -181,6 +190,9 @@ updates memory. Full flow: **save-continue.md** §1–§7.
   > 0x96 also sets `DAT_100a5106` to end the loop) or the F8 debug key → `.Victory` (track 29,
   PICTs 159/161/162). ⚑ corrected (deepening 2026-10-03): the counter is Xichra state 8, `w+0x38 − 60 > 150` (frame 211 of
   the death state), reached only after the phase-6 crash landing (bosses-2 §6.4, corr. 4).
+  ⚑ corrected (review 1c, 2026-10-03) (adjudication B17): raw `1008f7c0..1008f898` — `w+0x38 += 1`;
+  past 60, `d = w+0x38 − 60`: d < 140 → an explosion every 12 frames; d > 0x96 → `stb 1` to
+  `100a5106` and `*1009ffc4` [HIGH].
 
 ## 7. Input
 
@@ -257,7 +269,7 @@ File type `'FWSg'`, creator `'Msct'`; one resource `'FWSg'` id 0 named "Ferazel 
 
 | off | size | content | writer |
 |---|---|---|---|
-| 0x00000 | u32 | `Mwld+0x100` stamp (resume refuses a mismatch) — ⚑ corrected (deepening 2026-10-03): compared only on `.ContinueGame`'s fallback branch (default world file unopenable) (save-continue §3.3–§4) | DoSaveGame / SavePointSave / EndLevelSGUpdate |
+| 0x00000 | u32 | `Mwld+0x100` stamp (resume refuses a mismatch) — ⚑ corrected (deepening 2026-10-03): compared only on `.ContinueGame`'s fallback branch (default world file unopenable) (save-continue §3.3–§4). ⚑ corrected (review 1c, 2026-10-03) (adjudication B19): the only `0x100(` load in `.ContinueGame` is `1000d8e8`, on the `1000d898` branch (reached when the default world `−0x77e0` fails to open at `1000d17c..1000d188` or flag r18 is 0); that branch opens the world named at save+0xe7d98 (`1000d8a8..1000d8ac`) [HIGH] | DoSaveGame / SavePointSave / EndLevelSGUpdate |
 | 0x00004 | u8 | "preview version" flag (resume refuses if 1) | set 0 |
 | 0x00005 | u8 | "demo version" flag (resume refuses if 1) | set 0 |
 | 0x00006 | u8 | 1 = at checkpoint / end of level (restores the record snapshot) | |

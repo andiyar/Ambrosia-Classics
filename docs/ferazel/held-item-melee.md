@@ -148,7 +148,7 @@ LOW in-play].
 - **Enemies**: every enemy Hit routine treats it as a player shot (handler 0x100a04e8, `+0xa6 == 0`;
   enemies-ground §2.3, bosses §1.5) and applies `HurtSprite(enemy, held+0xa4, …)` with its own
   knockback/invulnerability; knockback derived from the shot's v is 0 (v = 0). `.HurtSprite` refuses
-  damage ≤ 0 and any target with `+0x116 > 0` (main l. 32479ff), so with the usual 4–8 invul frames a
+  damage ≤ 0 and any target with ~~`+0x116 > 0`~~ **`+0x116 ≠ 0`** (also negative; raw `10037058..1003709c` — ⚑ corrected (review 1c, 2026-10-03) #13) (main l. 32479ff), so with the usual 4–8 invul frames a
   swing lands **once** per target. **Statue never**: the 12 statue sites test `+0x04 == 1`.
 - **`+0xa6` gate**: no code writes a non-zero `+0xa6` on the held item — raw scan of every `sth
   …,0xa6` in `1004b354–1004c000`, `1004d054–1004d370`, `100556f4–10058594`, `10059704–1005b670`: the
@@ -261,7 +261,9 @@ Entries 0 and 1 are recorded but never shown. Tint meanings: bosses-2 NR 1.
 2. Active-list order player vs held sprite (frame of the seed centre / strike rect, §1.5, §1.8).
 3. Door `+0xa0` (zeroed by non-exempt touchers) — no reader found. Crunch kinds 0..4 as art.
 4. Whether conversations/enemy drops grant Ice Pick, Vorpal Dirk, Hammer; the Hammer's intent.
-5. Lead (Box/shot reader): Pentashield orbs (0x50, `+0xa4` 300) also pass the 2941 `== 300` test.
+5. ~~Lead (Box/shot reader): Pentashield orbs (0x50, `+0xa4` 300) also pass the 2941 `== 300` test.~~
+   Confirmed (⚑ corrected (review 1c, 2026-10-03) #2): `li r3,0x12c; sth r3,0xa4` `10059494..1005949c`, arm
+   `cmpwi 0x50` `10059384`; the Ice Wall spell at power 1 qualifies too (spells-items §4 row 0x12).
 6. Revive path vs a frozen swing (§1.6).
 
 ## Proposed additions to physics.md §0

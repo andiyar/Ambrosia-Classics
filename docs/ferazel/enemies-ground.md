@@ -98,7 +98,7 @@ below, physics §8.1): Crawler/Roach/Dillo die if the solid's `vy > 0` or `S` st
 not 0x5d2..0x5d6 (enemy pipes); the Walker also tests `.HandlePlatformSprite` solids (raw
 1006a520–1006a574). Environmental hazards (`HurtSprite`/`HurtGoblin` 100 dmg, kvy −1000, invul 4,
 flash 8 or 10): Effect sprite 0x4b7 with `+0x46 < 8` (all four classes except Dillo), Box 0x5a0
-(lava/acid pool) in mode `+0x14c` 1 or 2 (Walker, Roach; Crawler tests `+0x14c == 1 || +0x150 ==
+(~~lava/acid pool~~ geyser base or segment, ⚑ corrected (deepening 2026-10-03, geysers.md corr.)) in mode `+0x14c` 1 or 2 (Walker, Roach; Crawler tests `+0x14c == 1 || +0x150 ==
 2` — field mismatch, h. l. 9971, raw 1006687c [HIGH as read; intent LOW]).
 
 ### 2.4 Liquids (after `.ApplyGravityAndSeparateFromTiles`)  [HIGH]
@@ -328,7 +328,9 @@ active byte is cleared at once.)
 Animation: 1700 path — face PICT 1704 frame min(b2/3, 7), at b2 == 22 vy −= 800, layer 1,
 `+0xea = 1`, vx: |vx| ≤ 128 → 0 else ×0.9; 1750 path — face 1754 frame min(b2/4, 5), vy −= 800 at
 b2 == 20, same friction. Once `+0xb2 > 50` (1700 path) / `> 60` (1750): if `S` is in water (`+0x11c` or
-`+0x120`, 1700 path only) the corpse **becomes a floating platform**: counted as killed,
+`+0x120`, 1700 path only; ⚑ corrected (review 1c, 2026-10-03) (adjudication B4 tail): the read at
+`10068adc` precedes the Walker's tile pass, so `+0x11c` is already zeroed and the test runs on `+0x120`
+— the previous frame's contact, a harmless one-frame lag) the corpse **becomes a floating platform**: counted as killed,
 `+0x4c = .HandlePlatformSprite`, rect (0x10,0x35,0x42,0x47), float line `+0x1a0 = −6`, one-way
 `+0x185 = 1`, `+0x13a = 0x20`, `+0x138 = 0x3c` (§8.1 fields) — the player can ride it (h. l.
 10541–10552). Otherwise `+0x15c++` per frame, at > 2 burn starts (`+0x1a2 = 1`), the record's
@@ -520,7 +522,8 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
 
 ## Proposed additions to physics.md §0
 - `+0x30` i32 previous-frame vy (copied with +0x18/+0x20/+0x28 in `.WrapDrawSprites`, m. l. 10348).
-- `+0xcd` u8 previous-frame ground flag (copy of `+0xce` in `.StandardSpriteHandles`).
+- `+0xcd` u8 previous-frame ground flag (copy of `+0xce` in `.StandardSpriteHandles`); also set 1 by
+  `.PlatformBounce` on a landing (`100379c4`) — both readings hold (physics §0.1, synthesis ledger A5).
 - `+0xb0` i16 behaviour state; `+0xb2`, `+0xb4`, `+0xb6` i16 per-class sub-state/counters
   (Walker: b4 turn counter, b6 = 3 flee).
 - `+0xb8` i32 draw effect: high word mode (1 = colour remap table `low`, 3/4 hurt flash, 0xc

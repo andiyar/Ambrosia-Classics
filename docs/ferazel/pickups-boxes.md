@@ -264,7 +264,7 @@ one-way/surface-function box); only crates (§2.4.1), 2932 and 2941 take shot da
 | 1080 / 1081 (0x438/0x439) | crumbling ledge (PICT 1080, 6 frames 113×24) | lifetime `+0x14c = p2·30` (−1 if p2 = 0 → never), `+0xb8 = p1 + 0x10000`, gravity 0, one-way; 1080 rect 0x34,4,0x35,0xc (1 px wide) and no tile hits; 1081 rect 0x12,4,0x5b,0x12 | §2.4.6 |
 | 1250..1279 (0x4e2..0x4ff) | switch blocks (PICT 1250, 21 frames 36×36; off face PICT 1252) | snapped to 8 px; rect 1,1,0x23,0x23; HP 1; gravity 0; no sprite/tile callbacks; layer `−(2y + x)`; `+0x14c = p1`; 1270 animated | §2.4.5 |
 | 1308 (0x51c) | chest (PICT 1308, 4 frames 33×31) | layer 0, gravity 0, one-way, rect 0,7,0x1c,0x1e, no hit callback, `+0xa6 = 4` | §2.4.2 |
-| 1440..1449 (0x5a0..0x5a9) | geysers (PICT 1440..1442 face caches) | 1440..1444 → type 0x5a0 with kind `+0x14c = type−1440`; 1445..1449 → 0x5a5 (+ two 0x5a0 children at x+0x48, x+0x90); height `+0x154 = p1<<8` (default 0x6400), on `+0x158 = p2` (60), off `+0x15c = p3` (60), phase `+0xa6 = p4`; 0x44-byte column buffer `+0x9c` | `HandleGeyserColumn` (not read here). Column pieces 0x5a9 hurt a lander (§2.4.10) [MED]. → geysers.md |
+| 1440..1449 (0x5a0..0x5a9) | geysers (PICT 1440..1442 face caches) | 1440..1444 → type 0x5a0 with kind `+0x14c = type−1440`; ~~1445..1449~~ 1445..1448 → 0x5a5 (+ two 0x5a0 children at x+0x48, x+0x90; 1449 = 0x5a9 takes the head arm first — ⚑ corrected (review 1c, 2026-10-03) #11, geysers.md §1); height `+0x154 = p1<<8` (default 0x6400), on `+0x158 = p2` (60), off `+0x15c = p3` (60), phase `+0xa6 = p4` (⚑ corrected (deepening 2026-10-03, geysers.md corr.): p4 is overwritten every frame by `C mod (p2+p3+1)` before any read — inert; raw 1006bcf4 vs 1006df90); 0x44-byte column buffer `+0x9c` | `HandleGeyserColumn` (not read here). Column pieces 0x5a9 hurt a lander (§2.4.10) [MED]. → geysers.md (§3 cycle, §4 column, §7 contacts) |
 | 1450..1453 (0x5aa..0x5ad) | boulder spouts (PICT 1450, 4 frames 32×32) | layer 10, gravity 0 | when record[p1].p4 = 1 or record[p2].p4 = 1 (Button records, §2.4.5): every 50+rand(30) frames `MTNewSprite(0x6e1 + p4, …, SetupEnemyShotSprite)` — 0x6e1 'goblin boulders', 0x6e2 'bomb boulder' — with vx/vy: 1450 rand(300)−150 / rand(400); 1451 same / −3000−rand(300); 1452 +(0xaf0+rand(600)) / −(500+rand(700)); 1453 mirrored (l. 12706–12770) |
 | 1460..1467 (0x5b4..0x5bb) | bridges ('Bridge - Wooden - Full', '… Left half', 'Bridge - Stone', …, 'Bridge - Rope') | gravity 0, layer 0, no hit callback; 1462/1465 are flipped halves; 1466 rope bridge has surface fn `+0x1e8 = .GetRopeBridgeHeight`; 1467 a layer-50 decoration | static solids; rect per type (l. 11704–11751) |
 | 1470 (0x5be) | trampoline (PICT 1470, 4 frames 56×54) | layer 0x3c, gravity 0, one-way, rect 7,0x10,0x2c,0x37 | §2.4.11 |
@@ -413,7 +413,7 @@ A spell-4 shot landing on an FG floor spawns 712 at (centreX−8, centreY−6), 
 (< 23), 0xb0000 (< 21), 0xb0002 (< 11), killed at < 1. A 713 that lands on ground becomes 712 with
 gravity 0 (`.HitBoxTileSprite`). Trunks are ordinary solids for the player (Box arm).
 
-#### 2.4.10 Geyser column hazard 0x5a9  [MED]
+#### 2.4.10 Geyser column hazard 0x5a9  [MED] → ⚑ corrected (deepening 2026-10-03, geysers.md corr.): one head 0x5a9 per column, created and moved by `.HandleGeyserColumn` [HIGH] (geysers.md §4, §7)
 A player landing on a 0x5a9 piece with kind `+0x14c` 1 takes `HurtSprite(p, 0x70, ±400, −0x640,
 0x3c, 0xc)` unless the Solid Acid sphere is active (`PTR_DAT_100a0648` and liquid 1); kind 2 takes
 0x150 unless Solid Lava (liquid 2) or the Fire Charm (item 0x18) is held (l. 4023–4052); kind
@@ -430,7 +430,9 @@ trampoline plays its 4-frame squash (l. 4054–4072, 12773–12780).
 `.SetupPlayerSprite` creates one held-item sprite (`MTNewSprite(100, 0, 0, 0x14, 0x1ff,
 SetupHeldItemSprite)`, handler dump l. 305; pointer `_DAT_100a065c`). Setup: type 100, layer 0x14,
 no hit/tile callbacks, rect −2,2,0x1a,0x16. `.HandleHeldItemSprite`: v = 0, keeps type 100 and
-layer 0x14, rect = the face's rect inset 1 px horizontally, negative `+0xa6` counts up.
+layer 0x14, rect = the face's rect inset 1 px horizontally, negative `+0xa6` counts up (nothing
+writes it non-zero, so the boss/container gate `+0xa6 == 0` always passes for a stab — full read of the
+held item, swing, placement and strike in **held-item-melee.md** §1; ⚑ corrected (review 1c, 2026-10-03) #10).
 `.HandleItemUse` (main dump l. 43547–43650) runs each frame of a USE animation with counter
 `c = _DAT_100a0698` stepping 1,2,3,4,5,−5,−4,…: player face = use frame `|c|−1` (crouch set when
 crouching); held face = item `_DAT_100a5fd8`'s face (none if −1); **for c ≥ 3 the held sprite
@@ -465,14 +467,19 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
 1. `snd ` resource ids behind the TOC sound handles (`_DAT_100a02d4`, `_DAT_100a02cc`, …).
 2. Readers of Bonus `+0x168` (= p4) and the meaning of p4 = 1 on five 1291 placements.
 3. Gate byte `0x100a53d6` (save points, Pause, CheckGameLoopKeys); `_DAT_100a069c` (blocks every
-   player contact); `PTR_DAT_100a0708` (teleport trigger, presumably UP); the 2940 p1 = −2 timer test.
-4. `HandleGeyserColumn` geometry and which liquid each geyser kind is; 0x5a9 creation → geysers.md (review 1a #4).
+   player contact); `PTR_DAT_100a0708` (teleport trigger, presumably UP); ~~the 2940 p1 = −2 timer test~~
+   (closed: open ⇔ countdown `iRam100a5110 > −20`, raw `1006f538..1006f560`, triggers-background §1 —
+   synthesis ledger B8).
+4. ~~`HandleGeyserColumn` geometry and which liquid each geyser kind is; 0x5a9 creation~~ → closed by
+   geysers.md §1 (kinds 0 water / 1 acid / 2 lava), §4 (column geometry, head 0x5a9 created by the
+   column) (review 1a #4). ⚑ corrected (review 1c, 2026-10-03) #10.
 5. Face PICT of the spiked balls 1475/1476 (cache `PTR_DAT_100a09f4+0x70`); purpose of the 2932
    hanging object and whether it hurts when it falls; 1080's 1-px dormant rect intent.
 6. Who sets a falling rock's `+0x160 < 0` (1075/1076 are never placed; spawner not found here).
 7. Whether `Mcnv` conversations grant spells or items (merchants sell potions per the manual).
 8. Door `+0xa0` cleared by `.HitBoxSprite` for non-pickup contacts.
-9. Effect 0x4b7's damage to enemies/player (Effect class reader).
+9. Effect 0x4b7's damage to enemies ~~/player~~ (Effect class reader). (Player side closed:
+   enemy-shots-and-damage §3.4, triggers-background-2 §2.2 — 0x70 while frame ≤ 7.)
 
 ## Proposed additions to physics.md §0
 | off | type | meaning (this file) |
@@ -499,8 +506,11 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
    crystal' is never loaded by `.InitBonusSprite` (main dump l. 45711–45775). Row "every 100
    Xichrons": the counter is **set to 0**, not reduced by 100 (`10055ac4..acc`), so a 1056 taken at
    99 loses 99. [HIGH]
-2. spells-items §4: item **0x12 is the Ice Pick** (PICT 3218 '$Ice Pick'; damage 300 = the only
-   damage that breaks 2941 ice walls; manual TEXT 132), not "Hammer?"; 'Hammer' is item 8 (PICT
+2. spells-items §4: item **0x12 is the Ice Pick** (PICT 3218 '$Ice Pick'; damage 300 = ~~the only
+   damage that breaks 2941 ice walls~~ one of the 300-damage player shots that break 2941 ice walls — the
+   test is `shot+0xa4 == 300` on any player shot, so the Ice Wall spell at power 1 and the Pentashield orb
+   0x50 qualify too (⚑ corrected (review 1c, 2026-10-03) #2; handler l. 5663–5672, raw 10052648,
+   1005949c); manual TEXT 132), not "Hammer?"; 'Hammer' is item 8 (PICT
    3208). Item **0x14 is the Light Orb** (PICT 3220). Items 7..13 are named Locket, Hammer, Poppyseed
    Muffin, Algernon Piece, Algernon Frame, Algernon, Gwendolyn (§1.8). [MED names, HIGH id↔PICT]
 3. spells-items §2.1 "no shipped scroll was checked" → closed: the five shipped scrolls teach

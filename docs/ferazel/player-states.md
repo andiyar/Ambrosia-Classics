@@ -410,6 +410,6 @@ dying: drifts 2 px/frame after frame 8 [HIGH].
 type 100 at layer 0x14 (`_DAT_100a065c`; → held-item-melee.md); exertion 0; `s+0x13c = 0x100`; `s+0xe4 = 1`; wind scale
 `s+0x90 = 0x100`; Shadow-Double trail ring: 14 × 16 B `{−1, −1, 0, 0}`; five type-1 sprites at
 layer 9 into `PTR_DAT_100a051c` (16-B records `{sprite, 0, −1, −1, 0}`) [MED: Double-Speed trail
-by `.SetupTrailSprite` handler]; eight Pentashield slots at `PTR_DAT_100a0514` (0x14 B: angle
+by `.SetupTrailSprite` handler] → HIGH: slot 0x100a0518 → `1004b3b4` (⚑ corrected (deepening 2026-10-03, held-item-melee.md corr. 5; held-item-melee §3)); eight Pentashield slots at `PTR_DAT_100a0514` (0x14 B: angle
 `0x4800·i` = 72°·i, radius 0x30, 0xa00, active 0) and count 0; idle/fidgets/wand 0; died-in-water
 0; facing from `G+0x16` (§6, also sets `_DAT_100a5f5c`); door/revive/debug-kill/glider 0.
