@@ -120,9 +120,9 @@ editor. Unreachable defects are carries, not gates (EV D67 carried over).
 
 **Parallel lane (own session, ruling 2026-10-03): RE-bank the whole hit list up front** — Aki 1.2
 (Intel), Bubble Trouble X (dump exists), Ferazel's Wand (PEF), Deimos Rising (PEF), Cythera (PEF) —
-Ben's list exactly, nothing added (pop-pop was removed 2026-10-03). Output: `docs/<game>/` topical banks + `INDEX.md` per game, same discipline as
+Ben's list exactly, nothing added (pop-pop and Maelstrom were never on it; removed 2026-10-03). Output: `docs/<game>/` topical banks + `INDEX.md` per game, same discipline as
 EV's `docs/ghidra/` (confidence-labelled code readings; nothing is behaviour-verified until Ben's
-eyes). Maelstrom needs no RE: the GPL 3.0.x source is upstream. Trigger in `docs/RESUME.md`.
+eyes). Trigger in `docs/RESUME.md`.
 
 0. **Kit lift** — create HectorKit from the EV files + tests; green at floor. Fetch Aki 1.2 +
    add-ons; census + Ghidra on the Intel slice; diff vs 1.1.0; bank findings in `docs/aki/`.
