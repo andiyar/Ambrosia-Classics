@@ -217,9 +217,14 @@ the suffix is. The folders mirror the type names by authoring convention. [HIGH]
    found" (non-fatal); `FUN_10004300` then resolves overrides, logging `"Tag Overridden: …"`.
    Which copy wins (Local vs Pak, or pak order) is NOT RESOLVED (`FUN_10004300`/`FUN_100043c0`
    not read). The intent stated by strings ("Local Folder" scanned first, "Tag Overridden") is
-   that Local files override pak entries. [LOW]
+   that Local files override pak entries. [LOW] ⚑ corrected (wave 2, 2026-10-03): was "Which copy wins … NOT
+   RESOLVED" — each Local record removes every non-Local record with the same (type, ID); pak
+   duplicates are both kept and the first in list order wins — see loose-ends-session.md §8.7.
 4. If the index holds fewer tags than `_DAT_100e00ec` → "Tag Index Incomplete! Aborting."
    (`FUN_10000fd0`, fatal). The threshold value is NOT RESOLVED (set elsewhere). [MED]
+   ⚑ corrected (wave 2, 2026-10-03): was "fatal" — `FUN_10000fd0` calls `FUN_1000ced0("Error", msg, 0)`
+   (`10000fdc li r4,0x0`), which shows the alert and returns, so the game continues (unless the
+   alert routine `FUN_10045ab0` itself quits, MED) — see loose-ends-session.md §8.2.
 
 ### 2.4 Reading an entry
 `FUN_10002850(type, id)` / `FUN_10002a20` / `FUN_10002be0(index, type, &id)` open the owning zip
