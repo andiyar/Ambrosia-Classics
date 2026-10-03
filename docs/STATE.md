@@ -19,12 +19,15 @@
   50 PNG / 10 AIFF / 5 MP3. 1.1.0 PPC decompile: `~/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c`.
 - **Bubble Trouble X 1.1 UB** + Intel decompile; **Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4**
   extracted (PEF). Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
+- **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`, `docs/deimos/`,
+  `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed; ruling: **Aki targets 1.2.0**;
+  handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
 
 ## Open, ordered
 
 1. **Execute Phase 0** (Trigger B2): HectorKit lift → zero-skip floor → QuickTime bands → Aki census →
    `v0.1.0`. Expect two orchestrator sessions (Tasks 0–4, then 5–8).
-2. **RE-bank lane** (Trigger A, parallel session; may already be running in worktree `focused-darwin-329781`).
+2. ~~RE-bank lane~~ done (see above); Aki build chip queued (waits on Phase 0).
 3. Phase 1 (HectorShell + Aki static screens), then phases 2–3, then Bubble Trouble X (design §6).
 
 ## Carried (not blockers)
