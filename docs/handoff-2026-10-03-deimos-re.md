@@ -24,8 +24,11 @@ Session stopped by usage limit, not by the token cap (Ben lifted the cap in chat
 ## In flight when cut off (check before anything else)
 1. **Wave-2 synthesis is committed** (branch head). Open conflicts it left for the reviewer:
    `FUN_10009750` (signed/unsigned compare), `FUN_10029c00` (command name), `FUN_10030df0` (+4 field).
-2. **Wave-2 Fable reviewer** writes `/Users/andiyar/ghidra-proj-deimos/review-wave2.md`. If present,
-   run the fix pass against it exactly as wave 1 did (see `docs/deimos/FIXPASS-wave1-2026-10-03.md`
+2. **Wave-2 Fable review is DONE** — `docs/deimos/REVIEW-wave2-2026-10-03.md`: ACCEPT_WITH_FIXES,
+   0 Critical / 1 Important / 8 Minor; 196 HIGH claims re-derived, 192 confirmed. Important: timing-frame
+   §2.6/§4 "FPS monitor does nothing when the limiter is off" is wrong (count published before the
+   pref-10 test). Also ~20 dump-only HIGH rows to lower, 12 sound-lib functions unmentioned,
+   loose-ends-session's "signed" compares are unsigned. **Fix pass NOT run** — run it against this report exactly as wave 1 did (see `docs/deimos/FIXPASS-wave1-2026-10-03.md`
    and the review ledger in INDEX.md), plus the critic's contradictions C1–C10.
 3. Then: commit, merge `origin/main`, push `HEAD:main`, remove the worktree, delete the branch.
 
