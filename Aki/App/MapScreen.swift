@@ -107,16 +107,50 @@ import HectorShell
     /// `-[Controller keyDown:]` has no map branch (method-map §1): menu key equivalents arrive through the menu.
     func keyDown(_ event: NSEvent) {}
 
-    /// `_SelectMapArea`, Phase 1 / P1.7 part: only the chosen-level path (`_LoadLayout`). The Unavailable
-    /// dialog, guide splash, Practice alert and Level Description are P1.10's.
+    /// `_SelectMapArea` @ 0x78c2 (DC:2782, Research note 13): one "Unavailable" dialog
+    /// (`_CreateNewDialog(0x28)`) per locked lantern hit; the chosen level is the last unlocked hit (Option
+    /// bypasses the locks — levels.md §4 MED, Q51); then the "guide" splash while level 2 is locked and
+    /// g+0x22b is set; the Practice alert (`alertWithMessageText:…`, Cancel → g+0x7c); the Level
+    /// Description when p+0x214 is set; and `_LoadLayout` unless one of them cancelled — else g+0x7c is
+    /// cleared. The trailing `_g`+0xc4 bookkeeping is not replicated (INDEX NOT RESOLVED #3, never read).
     func selectMapArea(_ point: ShellPoint) {
         let g = controller.g
         g.levelIndex = nil
         let selection = AkiMap.select(h: point.h, v: point.v, optionDown: NSEvent.modifierFlags.contains(.option),
                                       settings: controller.p)
+        for _ in 0..<selection.unavailableDialogs {
+            _ = CarbonDialog.run("Unavailable", controller: controller)
+        }
         guard let chosen = selection.chosen else { return }
         g.levelIndex = chosen
-        controller.loadLayout()
+        if AkiMap.showsGuide(settings: controller.p, guideFlag: g.guideFlag) {
+            AkiSplash.show(named: "guide", timeout: 0, controller: controller)
+        }
+        if AkiMap.needsPracticeAlert(level: chosen, settings: controller.p) {
+            // NSAlert alertWithMessageText:"Practice Mode" defaultButton:"Practice Level"
+            // alternateButton:"Cancel" otherButton:nil informativeTextWithFormat:…; g+0x7c = (alternate).
+            let assets = controller.assets!
+            let alert = NSAlert()
+            alert.messageText = assets.localized("Practice Mode")
+            alert.informativeText = assets.localized(
+                "You will not be able to progress to the next level when playing in practice mode.")
+            alert.addButton(withTitle: assets.localized("Practice Level"))
+            alert.addButton(withTitle: assets.localized("Cancel"))
+            if controller.shell.isFullscreen {
+                alert.window.scheduleShieldingLevel()
+            }
+            g.cancelStart = alert.runModal() == .alertSecondButtonReturn
+        }
+        if !g.cancelStart {
+            if controller.p.showDescription != 0 {
+                LevelDescriptionWindowController.runModal(layout: chosen, custom: false, controller: controller)
+            }
+            if !g.cancelStart {
+                controller.loadLayout()
+                return
+            }
+        }
+        g.cancelStart = false
     }
 
     /// `_SelectMenuOptions`: Preferences, Quit, or a difficulty arrow (flash the pressed arrow into the
