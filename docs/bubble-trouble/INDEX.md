@@ -33,6 +33,7 @@
 | `data-formats.md` | 1 MAZE · 2 LEVL · 3 FILM · 4 SpIL/SpIc/cicn/btSP · 5 orbit + checksum tables · 6 snd · 7 PICT/Rect · 8 SCOR · 9 prefs file · 10 other resources | HIGH, MED, LOW |
 | `replay-oracle.md` | 1 determinism inventory (all clock reads) · 2 input stream · 3 demo start sequence with RNG draw counts · 4 replay hazards · 5 per-frame order · 6 validation plan | HIGH, MED, LOW |
 | `tools/rsrc_census.py` | resource-fork census / extractor used for every table and decode in this bank | — |
+| `data-census.md` | `btx-census` stdout (BubbleTrouble/Core): every cicn/ppat/PICT/snd through HectorKit; its ⚑ corrections (plan 2026-10-03 hectorkit-btx-decoders) are in `data-formats.md` §4 §6 §7 | HIGH, MED |
 | `REVIEW-2026-10-03.md` · `FIXPASS-2026-10-03.md` | Fable review and the fix-pass summary (ledger at the end of this file) | — |
 
 Append rule: new findings append to the topical file (new numbered subsection, with `name @ addr`,

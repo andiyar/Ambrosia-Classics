@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .library(name: "BubbleTroubleCore", targets: ["BubbleTroubleCore"]),
         .executable(name: "btx-replay", targets: ["btx-replay"]),
+        .executable(name: "btx-census", targets: ["btx-census"]),
     ],
     dependencies: [.package(path: "../../../HectorKit")],
     targets: [
@@ -16,5 +17,17 @@ let package = Package(
         .executableTarget(name: "btx-replay", dependencies: ["BubbleTroubleCore"]),
         .testTarget(name: "BubbleTroubleCoreTests",
                     dependencies: ["BubbleTroubleCore", .product(name: "HectorResources", package: "HectorKit")]),
+        // Data census through HectorKit's decoders (plan 2026-10-03-hectorkit-btx-decoders Task 7, ruling R3).
+        .executableTarget(name: "btx-census", dependencies: [
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
+        .testTarget(name: "BTXCensusTests", dependencies: [
+            "btx-census",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
     ]
 )
