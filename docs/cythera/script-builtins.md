@@ -67,7 +67,7 @@ loop that drives them was not traced (how scripts order modes 0/1/2 is inferred 
 | B1 | 10095244 | remove items | (char, item, quality, count; 0 → 1) → Nil | walks matching props (type/frame, quality, ultimate parent): stack > remaining → reduce count, done; else subtract its count and `DeleteProp`; invalidates the char's inventory | HIGH |
 | B2 | 1009541C | party member | (n, mode) → char / Nil | mode 1: `char(party[n])` unchecked; else the n-th **alive** (CharEntry +6 & 1) party member | HIGH |
 | B3 | 10095544 | who will (built-in prompt) | (includeDead) → char / Nil | `TInteraction::WhoWill(s_Who_Will…, flag & 0xFF)`: candidates = party members (alive only unless flag); 0 → Nil, 1 → that one, else a selection dialog (or the conversation's) | HIGH |
-| B4 | 100955FC | how many | (prompt or Nil, a, b) → int | `TInteraction::HowMany(prompt, a, b)` | MED (HowMany not read; a/b likely max/default) |
+| B4 | 100955FC | how many | (prompt or Nil, a, b) → int | `TInteraction::HowMany(prompt, a, b)` — ⚑ corrected (wave 1 2026-10-03): a = minimum, b = maximum, slider starts at b (§4, dialogue.md §7.1) | HIGH |
 | B5 | 100956B4 | ask digit | () → int | unnamed glue on the conversation with "0123456789" (single-key choice), echoes it with `TConversation::myprintf`, returns key − '0' | MED |
 | B6 | 10095770 | (stub) | → Nil | returns Nil | HIGH |
 | B7 | 100957A8 | free capacity | (char) → int | `GetMaxInvEncumb − GetCurInvEncumb`, floored at 0 | HIGH |
@@ -161,8 +161,27 @@ Counts: 95 bodies read; **HIGH 77** (5 of them — A4, BC, C8, D4, F7 — carry 
   `PerformAI` or `CompileAIFile`.
 
 ## 4. NOT RESOLVED (builtins)
-- Unnamed glue callees in A2, A6, B5, DB, E7(2), EA, EB, ED, EE, F8 (`FUN_100c50e8` pointer calls and
-  `FUN_100bf…`); F8 is CD audio (out of scope).
-- D0's monster word 0; FC's viewer +0xD flag; E2's `TBres` subclass (`PTR_PTR_100d76bc`) behaviour;
-  D4's flag; B4's two integer arguments.
-- How compiled `for` loops sequence the iterator modes (trace a script that uses 0xA0/0xC7).
+- ~~Unnamed glue callees in A2, A6, B5, DB, E7(2), EA, EB, ED, EE, F8~~ — ⚑ corrected (wave 1 2026-10-03):
+  resolved except F8 by `open-items-2026-10-03.md` §19 (`FUN_100c50e8` = `__ptr_glue`; vtable slots read
+  from the unpacked data section): A2 → app `DoQuit` (+124) and `ShowMenuBar` (+100); A6 → status window
+  `IdleRoutine` (+64); B5 → conversation `mygetch("0123456789")` (+280), `ForceOut` (+260); DB → found
+  window `Select` (+104); E7 case 2 → app `MyGetEvent(8, &ev, 1)` (+68, waits on keyDown); EA →
+  conversation `Hide` (+112); EB → conversation `Show` (+108); ED → app `RedrawAllNow` (+64); EE →
+  `TStringFadeInTextImageObject` `Tick` (+8) / `Apply` (+12) [HIGH per open-items §19 disasm sites].
+  F8 is CD audio (out of scope).
+- ⚑ corrected (wave 1 2026-10-03): **D0's monster word 0** = the `TActiveMonster`'s `CharEntry*`; D0
+  iterates the props whose monster shares *who*'s CharEntry (the body props of one multi-prop creature)
+  [HIGH code; MED "body segments"] — open-items §19. **FC's viewer +0xD** = auto-mapping on (only reader
+  `Render`, sets the 0x8000 "seen" bit on each drawn cell; saved in the `'Char'` chunk) [HIGH] — open-items
+  §19. **E2's `TBres` subclass** = `TLineEffect` (vtable 0x100D76BC, +8 `DoBresPixel` @ 0x1009930C): marks
+  every character on the missile path in the byte set E2 clears first [HIGH] — open-items §19.
+- ⚑ corrected (wave 1 2026-10-03): **B4's two integer arguments** = (minimum, maximum); the slider starts
+  at the maximum (`__ct__12THowManyMode… @ 100412c0`: `*(short *)param_1[5] = (short)param_5;` and
+  `NewControl(…, (int)*(short *)param_1[5], param_4, param_5, 0x3e91, …)`) [HIGH] — dialogue.md §7.1.
+  **BB** `WhoWill(string, 0) @ 10041114`: 0 alive party members → 0; exactly 1 → that member without
+  asking; else the name menu plus a `None` chip mapped to 0; all four BB call sites are in never-called
+  routines [HIGH] — dialogue.md §7.2.
+- D4's flag (4th argument 1 to the D3 path) — meaning still open.
+- ~~How compiled `for` loops sequence the iterator modes~~ — ⚑ corrected (wave 1 2026-10-03): mode 0
+  init → first, mode 1 done-test (`jt … -> exit`), body, mode 2 next, `goto` the test (listing `0ea5`
+  0x001A–0x006E; `1802` 0x0746–0x078D for `iterate_range`) [HIGH] — open-items §19.

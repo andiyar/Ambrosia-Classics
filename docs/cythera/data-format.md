@@ -38,6 +38,16 @@ Topics", "The Delver Engine …") — the engine is internally "Delver" [HIGH: n
 - In-memory `TSegFile` object (0x408 bytes, `FUN_100be7c8(0x408)` before every ctor): +0 i16
   file refnum, +2 u8 dirty-TOC, +3 u8 locked (save asserts if set), +4 u32 open date, +8
   `TOCEntry*[256]`. [HIGH]
+- ⚑ corrected (wave 1 2026-10-03) — **header fields** (detail and quotes: `open-items-2026-10-03.md` §1; `xxd -s 0x40 -l 16
+  "$G/Cythera Data"` → `1300 0200 0000 0000 0200 …`): +0x00 Pascal title "Cythera: Fate of Alaric"
+  [HIGH bytes]; +0x20 player files only — the character name, copied from the player file's name by
+  `NewGame @ 100152a4` [HIGH data flow; MED for the copy routine]; **+0x40** i16 engine data-format
+  version 0x1300, the field `CompatibleVersions` checks (`OpenScenFile @ 10014694`:
+  `_CompatibleVersions__13SegFileHeaderFss(0x1300,(int)*(short *)(puVar4 + 0x40))`, mismatch →
+  `StopAlert(0x400)`, `ExitToShell`) [HIGH]; **+0x42** i16 scenario version 0x0200, matched by patch
+  and player files (`CheckPlayerFile @ 10014b44`) [HIGH]; **+0x48** i16 maximum map dimension 0x0200
+  (0 → 0x400): `InitWorld @ 10012e38` `_CreateGlobals__Fs((int)*(short *)(PTR_DAT_100cdcfc + 0x48))`
+  [HIGH]; +0x44, +0x46, +0x4A–0x7F zero with no PPC reader [HIGH].
 
 ### 1.2 Worked decode (real file)
 ```
@@ -96,7 +106,7 @@ fork (`AddFilePreview(…,0x50494354,…)`). [HIGH]
 
 | ids | count in data | len range | content | reader (evidence) | conf |
 |---|---|---|---|---|---|
-| 0x0101 | 1 | 1246 | script/heap support (encrypted?) | not traced | NOT RESOLVED |
+| 0x0101 | 1 | 1246 | ⚑ corrected (wave 1 2026-10-03) (m20): **stored plaintext**; a renumbered compiler symbol table (55 keys, 39 for absent segments) — settled by script-vm.md §8 / census §2; no script references it | none (`GetEncryptedSegment` would decrypt it to garbage) | HIGH |
 | 0x02xx–0x0Fxx | 1–66 per page (⚑ corrected (review 2026-10-03): page 0x0B has 1 segment, 0x0B00 = 7 bytes; page 0x01 also has 1) | 4–29972 | script code segments (encrypted) — see script-vm.md | `TInterp` | MED |
 | 0x0400 | — (save only) | — | **save-game 'Char' stream** | `SaveToFile`: `SaveSegment(…,0x400,…)` | HIGH |
 | 0x0401 | — | 0x800 | to-do list | `LoadToDo__5TToDoFv @ 1007782c` | HIGH (id) |
@@ -113,8 +123,8 @@ fork (`AddFilePreview(…,0x50494354,…)`). [HIGH]
 | 0x8E00+n | 160 | 1429–11198 | tile sheet n: 16 tiles × 32×32 8-bit, LZ → 0x4000 B | `LoadTiles__Fv @ 10005080` | HIGH |
 | 0x8F00+n | (part of 59) | | backdrop pattern: {u16 w,u16 h, LZ pixels} | `LoadPattern__13TBackdropWindFv` | HIGH |
 | 0x8F80+n | (part of 59) | | status-window artwork, same {w,h,LZ} form | `__ct__13TStatusWindowFv` | HIGH |
-| 0x9000+n | 11 | 8412–40612 | music (handed to GMS `GMSPlayAmbient/Spot`) | `PlayMusic__6TAudioFsUc @ 1001bb3c` | HIGH (id) / format NOT RESOLVED |
-| 0x9100+n | 46 | 7180–175116 | sounds, begin **`'asnd'`** (⚑ corrected (review 2026-10-03): segment 0x9101 begins `61 73 6e 64 00 00 00 08`) | `PlaySound__6TAudio…`, `BeginSpotSound` | HIGH (id) / format NOT RESOLVED |
+| 0x9000+n | 11 | 8412–40612 | music (handed to GMS `GMSPlayAmbient/Spot`) | `PlayMusic__6TAudioFsUc @ 1001bb3c` | HIGH (id) / ⚑ corrected (wave 1 2026-10-03): format = QuickTime MusicDescription (u32@0 = its size = offset of the QTMA event stream; +0x14 QTMA header events) followed by the tune events, played by `GMSTune::Play @ 1001a3c0` — open-items §9 [HIGH layout; MED QuickTime field names; QTMA events not decoded] |
+| 0x9100+n | 46 | 7180–175116 | sounds, begin **`'asnd'`** (⚑ corrected (review 2026-10-03): segment 0x9101 begins `61 73 6e 64 00 00 00 08`) | `PlaySound__6TAudio…`, `BeginSpotSound` | HIGH (id) / ⚑ corrected (wave 1 2026-10-03): format = `'asnd'`, u32 block count (1024 samples each), Fixed 16.16 rate, then big-endian i16 mono samples × (blocks·1024 + 512); all 46 segments satisfy `len == blocks·0x800 + 0x40c` — open-items §9 (converter `FUN_100b7fac`) [HIGH] |
 | 0xE000+k | — (save only) | ≤0x2000 | journal pages (`pos>>13`) | `Flush__15TJournalSegmentFv @ 10077bfc` | HIGH |
 | 0xF000–0xF016 | 20 | 16–131072 | **world globals** — §5 | `LoadGlobals__Fv @ 10005798` | HIGH ids |
 | 0xF306 | — (save only) | 0x1000 | props 0..255 (the character props) | `SaveLevelProps` | HIGH |
@@ -123,6 +133,8 @@ fork (`AddFilePreview(…,0x50494354,…)`). [HIGH]
 Pages present in the shipped data and not traced to a reader: 0x01, 0x03 (0x0301, 0x033F),
 0x05, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F (all in the encrypted-script band) —
 **NOT RESOLVED** which script class/kind each page holds beyond the `ObjIDToSegmentID` formula.
+⚑ corrected (wave 1 2026-10-03): kinds settled by `script-census.md` §1/§7 and INDEX NOT RESOLVED 2 (0x01 symbol table,
+0x03/0x05 data words, 0x08 and 0x0A–0x0F routines); roles per page in `script-library.md` §2–§9.
 
 ---------------------------------------------------------------------------------------------
 ## 2. The LZ codec (`FUN_1007573c @ 1007573c`)
@@ -150,7 +162,7 @@ exactly 5378; portrait 0x8800: 1482 → 4096; sky 0x8400: 5474 → 9216 = 288×3
 |---|---|---|---|---|
 | 0x00 | i16 | width W (tiles) | `LoadLevelMap`: map body = `W*H*2`; `SetViewerLocation @ 1005c328`: `+0x20c1c = *(short*)hdr` | HIGH |
 | 0x02 | i16 | height H | same, `+0x20c1e = hdr[2]` | HIGH |
-| 0x04 | i16 | unused by `LoadLevelMap` (0 in all 42 maps) | census | NOT RESOLVED |
+| 0x04 | i16 | unused by `LoadLevelMap` (0 in all 42 maps) — ⚑ corrected (wave 1 2026-10-03): **no reader** (the header's only users `LoadLevelMap`, `SaveLevelProps`, `MoveCommand`, `SetViewerLocation` read +0/+2/+6/+8/+0xA/+0xB/+0xC–0x12; no other TOC slot points inside it) — open-items §4 | census + grep | HIGH (unused) |
 | 0x06 | i16 | first chunk index used by "chunked" maps (see 3.3) | `LoadLevelMap` | HIGH |
 | 0x08 | i16 | number C of 0x80-byte chunk records following the header | `LoadSegment(…,0x20, C<<7)` into `PTR_DAT_100cdc50` | HIGH |
 | 0x0A | u8 | X wrap span (power of 2, 0 = no wrap) | `SetViewerLocation`: `+0x20c20 = (byte)hdr[10]`; `SetStage` masks `x & (span-1)` | HIGH |
@@ -159,7 +171,7 @@ exactly 5378; portrait 0x8800: 1482 → 4096; sky 0x8400: 5474 → 9216 = 288×3
 | 0x0E | i16 | exit east | `x ≥ W → hdr[0xE]` | HIGH (⚑ corrected (review 2026-10-03)) |
 | 0x10 | i16 | exit south | `y ≥ H → hdr[0x10]` | HIGH (⚑ corrected (review 2026-10-03)) |
 | 0x12 | i16 | exit west | `x == 0 → hdr[0x12]` | HIGH (⚑ corrected (review 2026-10-03)) |
-| 0x14–0x1F | — | zero in all 42 maps | census below | NOT RESOLVED |
+| 0x14–0x1F | — | zero in all 42 maps — ⚑ corrected (wave 1 2026-10-03): no reader, reserved (open-items §4) | census below | HIGH (unused) |
 
 ⚑ corrected (review 2026-10-03) — **fallback when the hit edge's exit is 0**: `MoveCommand` then uses the perpendicular
 edge's exit chosen by half of the map, e.g. top row with hdr[0xC] = 0: x < W/2 → hdr[0x12] (west)
@@ -211,7 +223,12 @@ Two uses, both read in code:
 2. **Chunked maps** (`hdr[6] < hdr[8]`): body is `(W/8)·(H/8)` u16 block indices at
    `0x20 + C*0x40`, each block `k` expanded from chunk `hdr[6]+k`. [HIGH as code; never exercised
    by shipped data. Note the body offset uses `C*0x40` here but `C*0x80` in the flat path — read
-   literally, flagged for review.]
+   literally, flagged for review.] ⚑ corrected (wave 1 2026-10-03): `C*0x40` is literal in the code — `LoadLevelMap`
+   flat path `rlwinm r6,r7,7,0,24` (C << 7) at 0x10005DEC vs chunked path `rlwinm r6,r8,6,0,25`
+   (C << 6) at 0x10005EAC, both then `addi r6,r6,32` (`python3 docs/cythera/tools/ppcdis.py 10005dec +2`,
+   `… 10005eac +2`) — while the chunk records are loaded as
+   `C << 7` bytes, so a chunked map would read its block indices from inside the chunk records: a
+   latent defect, never reached because every shipped map has `+6 == +8` (open-items §4) [HIGH].
 
 ### 3.4 Tiles, animation, compo tiles
 - Tile pixels: 0xA00 tiles × 32×32 bytes (8-bit, palette `clut` 256 / app resource), loaded from
@@ -277,9 +294,9 @@ everything whose parent is it. [HIGH]
 | 6..7 | 16 or 8 | **count** (u16 at +6 if type flag 0x200; u8 at +7 if flag 0x100; else 1; 0 reads as 1) | `GetItemCount__FP8PropItem @ 1005577c` | HIGH |
 | 7 | 8 | facing/activity copy for characters | `RepositionChar` writes `param_2+7` | MED |
 | 8..9 | 16 | index into the unique-object table (`PTR_DAT_100cdba4`, saved as 0xF308) | `AllocateFrame__8PropItemFv @ 10007c5c` | HIGH |
-| 0xA..0xB | 16 | not touched by any accessor read | — | NOT RESOLVED |
+| 0xA..0xB | 16 | ⚑ corrected (wave 1 2026-10-03): a free 16-bit **script slot**, script field 0x0F (`GetField__Fsss @ 100921b4` `case 0xf: *param_1 = (uint)*(ushort *)((int)puVar8 + 10);`, `SetField` writes it); no script uses field 0x0F and all 14,485 shipped records hold 0 — open-items §5 | GetField/SetField, census | HIGH (accessor; unused) |
 | 0xC..0xD | 16 | script heap reference (a THeapObj "frame", type 2) holding per-instance variables; DecRef'd on delete | `AllocateFrame`, `DeleteProp`, `ChainFreeProps` | HIGH |
-| 0xE..0xF | 16 | not touched by any accessor read | — | NOT RESOLVED |
+| 0xE..0xF | 16 | ⚑ corrected (wave 1 2026-10-03): byte 0xE bits 0–5 = signed 6-bit sprite **offset** (script field 0x10), applied in `Render__7TViewerFssss @ 10066ac0` as `sext6(byte E) << 2` added to the x and y pixel displacement (with the 0xF011/0xF012 per-type offsets); 291 shipped records carry it; bits 6–7 and byte 0xF: no reader, 0 in data — open-items §5 | GetField/SetField, `Render` | HIGH code; MED the name "elevation" |
 
 ### 4.3 Kind byte (byte 0)
 Census over all 40 shipped prop segments (`kind byte census`): `0:12104, 1:116, 2:46, 8:618,
@@ -293,15 +310,15 @@ Census over all 40 shipped prop segments (`kind byte census`): `0:12104, 1:116, 
 | 0x04, 0x24 | on map, drawn as roof layer (priority 7) | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED |
 | 0x08–0x0B | **inside a container prop** (parent = low 16 bits) | `GetPropParent` (`7 < b < 0xc`), `GetCurInvEncumb` walks `\t`/`\b` chains | HIGH |
 | 0x10 | in a character's **inventory** (parent = char index) | `GetCurInvEncumb__Fs` | HIGH |
-| 0x11 | (present in data, 55×) — not decoded | — | NOT RESOLVED |
+| 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5) | — | NOT RESOLVED |
 | 0x18 | **equipped/wielded** by a character | `GetCurEquEncumb__Fs` | HIGH |
 | 0x1C | a character's **skill** (type = skill id) | `FindSkill__Fss @ 10056100` | HIGH |
 | bit 0x20 | "transient" — freed by `ChainFreeProps(1)` on level load | `ChainFreeProps`: `(*puVar5 & 0x20000000) != 0` | HIGH |
 | 0x21 `'!'`, 0x20 `' '` | merge records: on (re)load from a save, a scenario prop of the same type may overwrite them | `LoadLevelProps` merge loop | MED |
 | 0x40 | per-frame tile pseudo-prop (from 0xF010) | `SetStage` | HIGH |
-| 0x42 `'B'` | **invisible marker ("egg") prop**. For props 0..0xFF it is the character's on-map body (CharEntry-linked). For level props the 5-bit frame field selects the marker sub-kind (census over 0x81xx: frame 0: 312, 1: 30, 3: 330, 4: 8, 6: 2, 7: 3, 8: 170, 10: 24): **frame 8 = room rectangle** (type = room id, centre x,y, byte 6 = width, byte 7 = height); **frame 9 = countdown trigger** (byte 6 = ticks at rate 16 units, parent low16: 0 → zone, <0x100 → character, else prop; fires selector 21); frame 10 = always staged; frame 3 = viewer effect taking (type, byte 6); frame 0 = spawn egg consumed by `HatchEgg` | `CueCharacters`, `RebuildParty`; `GetRoom__9CharEntryFv @ 10053cec`; `DoTicks`; `SetStage`; `HatchEgg @ 1004f420` | HIGH (room, trigger) / MED (10, egg) / LOW (3) |
+| 0x42 `'B'` | **invisible marker ("egg") prop**. For props 0..0xFF it is the character's on-map body (CharEntry-linked). For level props the 5-bit frame field selects the marker sub-kind (census over 0x81xx: frame 0: 312, 1: 30, 3: 330, 4: 8, 6: 2, 7: 3, 8: 170, 10: 24): **frame 8 = room rectangle** (type = room id, centre x,y, byte 6 = width, byte 7 = height); **frame 9 = countdown trigger** (byte 6 = ticks at rate 16 units, parent low16: 0 → zone, <0x100 → character, else prop; fires selector 21); frame 10 = always staged; frame 3 = viewer effect taking (type, byte 6); frame 0 = spawn egg consumed by `HatchEgg`. ⚑ corrected (wave 1 2026-10-03): **all frames 0–10 resolved** from `DrawRoutine__11TGameViewerFs @ 1005c844` (open-items §5 table): 0 spawn egg → `HatchEgg`; 1 teleport area (type = 0xF00C index, transition 0xF00F[type]); 2 one-shot step-on → `SendSignal(type)`; 3 ambient sound emitter → `TViewer::AddSound(dx, dy, type, byte 6)` (vtable 0x100D606C +8; body now in `Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt) `.AddSound__7TViewerFssss @ 10066790`); 4 `ChangeZone(type)`; 5 `PlayMusic(type)`; 6 one-shot area → `SendSignal(type)`; 7 `EvalCondition(byte6, byte7)` shows/hides the next `type` props; 8 room rectangle; 9 countdown; 10 byte-6 countdown, always staged | `CueCharacters`, `RebuildParty`; `GetRoom__9CharEntryFv @ 10053cec`; `DoTicks`; `SetStage`; `HatchEgg @ 1004f420`; `DrawRoutine` | HIGH (room, trigger; frames 0–10 per open-items §5) / MED (frame-3 argument roles) |
 | 0x44 `'D'` | roof/overlay zone: type field = chunk index, frame field = roof id | `SetStage` | MED |
-| 0x80 | (present, 52×) — not decoded | — | NOT RESOLVED |
+| 0x80 | (present, 52×) — ⚑ corrected (wave 1 2026-10-03): **bit 0x80 = hidden/disabled**: `SetStage` stages no kind ≥ 0x80 except 0xC2; 'B' frame-7 groups set/clear it; scripts toggle it (`setfield A30.f00:kind = (128 ^ A30.f00:kind)`); the 52 shipped records are map objects that start hidden — open-items §5 | `SetStage`, `DrawRoutine @ 1005c844`, script census | HIGH code; MED data reading |
 | 0xC2 | character hidden off-stage (reverts to 0x42 when out of the 31×31 window) | `SetStage`, `ChainFreeProps` | MED |
 | 0xFF | free slot | `NewProp`, `DeleteProp` | HIGH |
 
@@ -346,16 +363,16 @@ the tile-name join is a tool join, not a game display.]
 | 0xF001 | var | (temp) | tile animation records (§3.4) | HIGH |
 | 0xF002 | 0x8000 | `PTR_DAT_100cdc14` | u32 **tile flags** per tile (0x2000) — passability/LOS/draw-layer bits; render priority logic in `SetStage` reads 0x10000000, 0x100000, 0x800, 0x20000, 0x200, 0x30, 0xC0 (multi-tile extension, `SetStage`: 0x80 → tile−1 also drawn one cell left (`puVar12[-2]`); 0x40 → tile−1 one cell up (`puVar12[-0x3e]`, row stride 0xF8); 0xC0 → tile−1 up, tile−2 left, tile−3 up-left (`puVar12[-0x40]`); bit 7 of the prop's byte 4 swaps 0x40↔0x80) | HIGH ids / MED per-bit meaning |
 | 0xF004 | var | (cached) | **tile names**: {u16 last-tile-of-range, C string}…, terminated by an id > 0x2000 (0x7FFF). A tile without its own entry takes the next higher entry's name. `/` = plural-only text, `\` = singular-only text, reset at space (`SingPlur__FPcPcUc`). 547 names (tool). | HIGH |
-| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits) | NOT RESOLVED |
-| 0xF008 | 2048 | `PTR_DAT_100cdbd8` | first 0x800 bytes = header; rest = 16-byte records, count `(size−0x800)>>4` → `PTR_DAT_100cdc38` (here 0 records) | NOT RESOLVED meaning |
+| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits). ⚑ corrected (wave 1 2026-10-03): no `li/ori/addi` immediate use either (HIGH); 0xF00A = all zero; 0xF014/0xF015 = {u16, C string} symbol tables of frame-variable / object names [HIGH decode; MED/LOW role]; 0xF005/0xF007 content still open — open-items §6 | HIGH (no reader) / NOT RESOLVED (F005/F007 content) |
+| 0xF008 | 2048 | `PTR_DAT_100cdbd8` | ⚑ corrected (wave 1 2026-10-03): **128 × 16-byte creature-species records keyed by u16 +0xC (object type), 50 used**; field map combat.md §4; tail list after +0x800 empty (`(size−0x800)>>4` = 0 → `PTR_DAT_100cdc30/38`). Reader `ObjToMonst__Fs @ 10044a60` (`if (0x7f < sVar1) return 0; … if (*(short *)(iVar2 + 0xc) == param_1) return iVar2;`); `tools/seg.py` this session: length 2048, first zero key at record 50, 50 non-zero records, 0 tail records. Script class 0x48 = these records (script-vm.md §2.1) | HIGH |
 | 0xF009 | 0x2000 (0x4000 in saves) | `PTR_DAT_100cdbf0` | **CharEntry[256]** (§6); saved back with 0x4000 | HIGH |
 | 0xF00B | var | `PTR_DAT_100cdbe0/dc` | **schedules** (§6.3) | HIGH |
 | 0xF00C | 0x1000 | `PTR_DAT_100cdc00` | **teleport table**: 1024 × u32 location (level<<24 \| x<<12 \| y); 190 non-zero (tool) | HIGH |
-| 0xF00D | var (500) | TViewer+0xC188.. | 10-byte records {u16 tile (≤0x2000), 4×u16}; per-tile pointer table | NOT RESOLVED meaning |
+| 0xF00D | var (500) | TViewer+0xC188.. | 10-byte records {u16 tile (≤0x2000), 4×u16}; per-tile pointer table. ⚑ corrected (wave 1 2026-10-03): **wall-face substitution** — `Render` replaces the tile by alt[0..3] by which neighbour (N/E/S/W) is visible; 50 records — open-items §6 | HIGH code / MED reading |
 | 0xF00E | 0x800 — ⚑ corrected (review 2026-10-03): **absent from the shipped data** (the F0 page has 20 segments: f000–f002, f004–f005, f007–f00d, f00f–f016); like the "save only" rows, it exists only in saves — `NewModel` loads it via `TCachedSegFiles`, so a fresh game sees zeros | `PTR_DAT_100cdbac` | u16 flags per **room** (0x400): bit 0 = visited (set on first entry, which sends selector 7 to the room script); saved by `SaveGlobals` | HIGH (`HeartBeat__8TGameSysFs @ 10053a80`: `if ((flags[room] & 1) == 0) { DoInterp(7, room); flags[room] |= 1; }`) |
-| 0xF00F | 0x400 | `PTR_DAT_100cdbfc` | byte per teleport index → viewer `+0x20c28` on arrival (value 14 in samples) | MED id / NOT RESOLVED meaning |
+| 0xF00F | 0x400 | `PTR_DAT_100cdbfc` | byte per teleport index → viewer `+0x20c28` on arrival (value 14 in samples). ⚑ corrected (wave 1 2026-10-03): **arrival screen transition** consumed by `DrawRoutine` (blend, grow, shrink-in, wipes) — open-items §6 | HIGH |
 | 0xF010 | 0x4000 | `PTR_DAT_100cdc10` | u16 per tile; non-zero spawns a kind-0x40 pseudo-prop carrying it (light source id?) | MED |
-| 0xF011, 0xF012 | 0x8000 each | `PTR_DAT_100cdc08`, `…c04` | not traced | NOT RESOLVED |
+| 0xF011, 0xF012 | 0x8000 each | `PTR_DAT_100cdc08`, `…c04` | ⚑ corrected (wave 1 2026-10-03): per (type, frame) sprite x / y pixel offsets, `[type*0x20 + frame]`, swapped by the prop's mirror bit; only reader `Render` — open-items §6 | HIGH |
 | 0xF013 | 0x20000 | `PTR_DAT_100cdc58` | **CompoTileRecord[4096]** | HIGH |
 | 0xF016 | 0x2000 | `PTR_DAT_100cdc0c` | displacement-filter id per tile | HIGH |
 
@@ -366,12 +383,14 @@ the tile-name join is a tool join, not a game display.]
 The runtime table is 0x4000 bytes = 512 entries: `NewModel`/`RestoreModel` load 0xF009 and zero
 the upper 0x2000 bytes; `SaveGlobals` writes all 0x4000; `HeartBeat` iterates 0..0x1FF. Entries
 0x100..0x1FF are therefore runtime-only (spawned monsters — MED, `CreateMonster` not traced to the
-index allocator). [HIGH for sizes]
+index allocator). [HIGH for sizes] ⚑ corrected (wave 1 2026-10-03): the allocator is the monster
+ctor — `__ct__14TActiveMonsterFs @ 10044b98` takes the first free CharEntry 0x100–0x1FF for a prop
+index ≥ 0x100 (combat.md §4.1) [HIGH].
 | off | type | meaning | evidence | conf |
 |---|---|---|---|---|
 | 0x00 | u32 | location: level<<24 \| x<<12 \| y | `RepositionChar`, `MovePartyBetweenLevels`, `NewModel` (`>>0x18`, `>>0xc & 0xfff`, `& 0xfff`) | HIGH |
 | 0x04 | u16 | current type (10 bits) + frame (bits 10–14) — copied to prop i | `CueCharacters` | HIGH |
-| 0x06 | u16 | status flags: bit0 alive/active (clear → "Dead"); 0x2 Poisoned; 0x40 Paralyzed; 0x2000 Confused; 0x20 Afraid; 0x200 Charmed; 0x10 regenerating (DoTicks); bit k = condition bit k+8 for `EvalCondition` | `DrawStatPart__16TCharacterWindow` string ladder (strings resolved via `tools/toc.py`: "Dead","Fine","Hurt","Wounded","Critical","Poisoned"…) | HIGH |
+| 0x06 | u16 | status flags: bit0 alive/active (clear → "Dead"); 0x2 Poisoned; 0x40 Paralyzed; 0x2000 Confused; 0x20 Afraid; 0x200 Charmed; 0x10 regenerating (DoTicks); ⚑ corrected (wave 1 2026-10-03): 0x4000 **Asleep** (`TalkCommand`: `((*(ushort *)(puVar2 + sVar4 * 0x20 + 6) & 0x4000) != 0)` → "They are asleep"; ability 22, magic.md §4.1); bit k = condition bit k+8 for `EvalCondition` | `DrawStatPart__16TCharacterWindow` string ladder (strings resolved via `tools/toc.py`: "Dead","Fine","Hurt","Wounded","Critical","Poisoned"…) | HIGH |
 | 0x08 | u8 | flags: 0x40 = **party member**; 0x80 = name known (use scripted name); bits = condition bits 0–7 | `RebuildParty`, `GetCharacterName__FsPcUc` | HIGH |
 | 0x09 | u8 | **Body** | `DrawStatPart`: "Body: %d" ← `+9` | HIGH |
 | 0x0A | u8 | **Reflex** | "Reflex: %d" ← `+10` | HIGH |
@@ -381,19 +400,19 @@ index allocator). [HIGH for sizes]
 | 0x0F | u8 | Health max | `+0xf` | HIGH |
 | 0x10 | u8 | **Magic** current | "Magic" ← `+0x10` | HIGH |
 | 0x11 | u8 | Magic max | `+0x11` | HIGH |
-| 0x12 | u8 | not traced | — | NOT RESOLVED |
+| 0x12 | u8 | ⚑ corrected (wave 1 2026-10-03): **busy ticks** (time debt): `DoTick` decrements it once per tick; scripts add action costs; script field 0x23 (`GetField`: `PTR_DAT_100cdbf0[sVar4 * 0x20 + 0x12]`) — open-items §7 | `DoTick @ 1004ded8`, `GetField__Fsss` | HIGH |
 | 0x13 | u8 | **Level** | "Level: %2d" ← `+0x13` | HIGH |
 | 0x14 | u16 | "home" type/frame (restored by `RepositionChar`) | `RepositionChar`: `*(ushort*)(param_1+5) & 0x3ff` | MED |
 | 0x16 | u8 | current schedule activity (from schedule byte 1); 'p'(0x70) excluded from scheduling; 0x80 = walking to waypoint | `ScheduleTime`, `RepositionChar` | MED |
-| 0x17 | u8 | not traced (0 for 110 chars; 10–18 for 21) | census | NOT RESOLVED |
-| 0x18 | u8 | non-zero → `TActiveMonster::DoTick` takes the "controlled/other" branch | `DoTick__14TActiveMonsterFUc @ 1004ded8` | LOW |
+| 0x17 | u8 | ⚑ corrected (wave 1 2026-10-03): **merchant markup, tenths of base price** (10 = list price; < 9 → 20); script field 0x27 (`GetField`: `PTR_DAT_100cdbf0[sVar4 * 0x20 + 0x17]`), passed to and written back from R0EA5 (player buys) — trade-economy.md §3.1 | `GetField/SetField`, R0EA5 | HIGH |
+| 0x18 | u8 | non-zero → `TActiveMonster::DoTick` takes the "controlled/other" branch. ⚑ corrected (wave 1 2026-10-03): **smooth-move sub-step state** — bits 2–7 direction index, bits 0–1 sub-step (`HandleMove @ 100488e4`: `*(char *)(*param_1 + 0x18) = (char)param_6;`; `HandleSubMove @ 10048fb0` advances/clears it); `DoTick` keeps sliding while non-zero; no script field — open-items §7 | `DoTick__14TActiveMonsterFUc @ 1004ded8`, `HandleMove`, `HandleSubMove` | HIGH |
 | 0x19 | u8 | **alignment**: 0 neutral, 1 evil, 2 good, 3 feral | `CalculateObject__14SCombatAIEntry` groups good/evil/neutral/feral test `+0x19 == 2/1/0/3` | HIGH |
 | 0x1A | u8 | more condition flags (bits 0x18–0x1F) | `DrawStatPart` icon loop | MED |
 | 0x1B | u8 | **food** hours remaining; 0 → no regeneration ("Hungry") | `DoTicks` (decrement per hour; regen gated on `!= 0`) | MED (name inferred from the "Hungry" status) |
 | 0x1C | u8 | **Training** points | "Training: %2d" ← `+0x1c` | HIGH |
-| 0x1D | u8 | not traced (values 0–15 in data) | census | NOT RESOLVED |
-| 0x1E | u8 | combat behaviour: <0xB0 built-in mode (3..8 set by `HatchEgg` from the activity byte), ≥0xB0 user AI slot (segment 0x360+v) | `RecalcUserAIMenu__16TCharacterWindowFv @ 1003071c`, `HatchEgg @ 1004f420` | MED |
-| 0x1F | u8 | 0 in all data; not traced | census | NOT RESOLVED |
+| 0x1D | u8 | (values 0–15 in data) ⚑ corrected (wave 1 2026-10-03): **character class**, script field 0x20: bits 0–1 = combat growth code (R0E95 `switch (A30.f20:ce1D & 3)` → 0, level/2, level, level·2 — the fallback when skill 192/193 is 0, used by R0E84 offence/defence and R0E82), bits 2–3 = magic growth code (R0E96 `switch ((A30.f20:ce1D >> 2) & 3)`, same ladder; fallback for skills 194/195 in R0E83/R0E85/R0EB5); also the creation-table index `seg0501[0110]` (1801/1802) — combat.md §6.3, open-items §7 | listings `0e95`, `0e96`; `GetField` case 0x20 | HIGH usage / MED the word "class" |
+| 0x1E | u8 | combat behaviour: <0xB0 built-in mode (3..8 set by `HatchEgg` from the activity byte), ≥0xB0 user AI slot (segment 0x360+v). ⚑ corrected (wave 1 2026-10-03): values < 0xB0 are **activity codes** — 3 Attack Strongest, 4 Defend, 5 Attack Weakest, 6 Beserk, 7 Retreat, 8 Attack Nearest, 13 Target Attack (radio values (3, 4, 5, 6, 7, 8, 13, 0xB0) at data 0x100D4784, `TCharacterWindow::PostInit @ 1002fb58`); `DoMove` runs scenario AIs 0xD1/0xD4/0xD2/0xD3/0xD0 for 3/4/5/6/8 and the value itself for 0xB0–0xFF (`DoMove__14TActiveMonsterFss @ 1004b8e8`, `Cythera_extra.decompiled.c` (CyDecompAt.java, extra-addrs.txt): six calls, e.g. `_PerformAI__FP14TActiveMonsters(param_1,0xd1)`, last `(param_1,(int)(short)uStack_78)`); scripts copy it into +0x16 (`3043 @0009`, `301C @003A`) — schedules-npcs.md §2.3, §9 | `RecalcUserAIMenu__16TCharacterWindowFv @ 1003071c`, `HatchEgg @ 1004f420`, `PostInit`, `DoMove` | HIGH |
+| 0x1F | u8 | 0 in all data. ⚑ corrected (wave 1 2026-10-03): **spawn scale %** of a spawned monster (entries 0x100–0x1FF): `__ct__14TActiveMonsterFs @ 10044b98` `*(char *)(*param_1 + 0x1f) = (char)sVar6;` (roll from difficulty `DAT_100d73f2`; byte store wraps ≥ 256); no reader found — combat.md §4.1 | monster ctor | HIGH write / HIGH no reader in the decompile |
 
 Worked decode (character 2):
 ```
@@ -463,10 +482,27 @@ A save is a `TSegFile` (creator/type from `NewGame`/`DoSaveAs`, not traced) that
    updated from `GetDateTime`); 27 × `"b"` zero padding; then `TActiveMonster::SaveMonsters`,
    `TSpellFX::WriteFXQueue`, `TInventoryWindow::MarshalAll`, `TGremlin::SaveGremlins`. Format
    strings resolved with `tools/toc.py 100ce360 100ce35c 100ce358 100ce354` → `hhhh`, `b`, `l`,
-   `h`. [HIGH for order/types; the four `hhhh` values are NOT RESOLVED]
+   `h`. [HIGH for order/types; the four `hhhh` values are NOT RESOLVED] ⚑ corrected (wave 1 2026-10-03): the four `hhhh`
+   values are `DAT_100d73f0` **karma** (script global 0x0C, clamped 0..100, initial 55), `PTR_DAT_100cdcf4`
+   script global 0x0E (scripts use bit 0 only; meaning open), `DAT_100d73f2` **difficulty** (initial 2;
+   writers found: the stream restore only [HIGH]; the name is MED), `DAT_100d73f4` **serial counter**
+   (returned-and-incremented by builtin 0xF9) — open-items §8 [HIGH except as marked].
 4. Every segment of the scratch file is copied in; `Compact` if requested. [HIGH]
 
 `RestoreModel__10TDelverAppFv @ 10013ff4` reads the same order back. [HIGH]
 
 NOT RESOLVED here: the stream encodings of `SaveMonsters`, `WriteFXQueue`, `MarshalAll`,
 `SaveGremlins` (functions identified, not read field-by-field).
+⚑ corrected (wave 1 2026-10-03): **encodings resolved** (open-items §8). `TStream` entries (`tb.py --tb --grep TStream`):
+`ReadData` 0x10017990, `WriteData` 0x10017CFC, `BeginChunk` 0x10018134, `EndChunk` 0x100181E0,
+`ReadChunk` 0x100182A4, `IsEOChunk` 0x1001837C; bodies in `Cythera_extra.decompiled.c`
+(CyDecompAt.java, extra-addrs.txt). Format codes: `b` 1 byte, `h` 2, `l`/`i` 4, `s` C string incl.
+NUL, `P` Pascal string, `a` (len, ptr) raw bytes, `H` handle (NULL → u32 0xFFFFFFFF, else u32 size +
+contents), `' '` align 2, `;` align 4 (`WriteData`: `if (cVar2 == 'a')`, `'H'`, `';'`, `' '`, `'P'`,
+`'l'`, `'h'`, `'s'` branches). A chunk = u32 tag + u32 length counted from the length field itself
++ body (`EndChunk`: `aiStack_18[0] = iVar1 - *(int *)(param_1 + 4);` then seek back and write it);
+one remembered position, so chunks do not nest. Segment 0x0400 = `'Char'` then `'Mons'`
+(`SaveMonsters`: per monster a class byte, `hhh`, optional `ha` CharEntry copy, `bhhhh`, `h`, list
+nodes `bhhl`), `'FXQ '` (`hhh` per FX entry), `'Wind'` (per open inventory window: `l` class id +
+virtual Marshal), `'Grem'` (raw 0x400 bytes = 256 × {u16 flags, u16 heap frame}) [HIGH layout; MED
+field names; subclass extras MED].

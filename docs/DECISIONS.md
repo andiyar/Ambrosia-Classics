@@ -58,3 +58,48 @@ preference), so a mutant or a new data shape can never pass silently.
 srcRect/matte/mask/mode because Aki never sets them (a future game's band would composite wrong, silently) ·
 refusing them inside `quickTimeBands` (moves EV 5027's pinned refusal from 0x0007 to `maskSize`).
 **Approved by:** Phase-0 orchestrator rulings on the Task 5 quality review (2026-10-03); Ben's review pending.
+
+## D3 — Phase 1 present path: CoreGraphics canvas through a CALayer-backed NSView, measured (2026-10-03)
+
+**Decided:**
+1. HectorShell draws into a CPU `ShellBitmap` (a `CGContext` over a once-allocated BGRA buffer, 800×600
+   logical) and presents it as a CALayer's `contents` (`makeImage()`), letterboxed: exact integer multiple of
+   the logical size → crisp (nearest-neighbour, `integerScale = k`); otherwise smooth fit (design §4a items
+   1–2). Retina: 800×600 logical → 2x/3x in backing pixels.
+2. HectorShell's render-smoke test asserts the present cost at 3× stays **< 4 ms/frame median over 60
+   frames**. Metal is adopted only if that budget is missed. Design §7's open question ("Metal vs CALayer,
+   decide by measuring") is closed by this measurement: the plan's scratch replica measured 1.34 ms median.
+3. Aki 1.2's `_enterFullscreen` switched the display to 800×600; the replica instead fills the main screen
+   (crisp at an exact multiple, smooth fit otherwise) per design §4a — listed for Ben as Q3 in the plan.
+
+**Because:** 800×600 at ≤ 20 presents/s is a 1.9 MB copy; the original's QuickDraw call sites transcribe 1:1
+onto CPU blits; no per-frame allocation; nothing to shade.
+**Rejected:** Metal up front (no measured need; a second present path to keep correct) · per-pixel NSImage
+drawing (allocates per frame) · integer-letterbox fullscreen (orchestrator ruling under §4a; Q3 open for Ben).
+**Approved by:** Phases 1–3 orchestrator ruling 2026-10-03 (`docs/plans/2026-10-03-aki-phases-1-3.md` Task 0);
+Ben's review pending.
+
+## D4 — Phase 1 fidelity rulings under modern macOS: Aqua forced, Osaka-Mono bundled, AppKit menu mutations, dialogOK (2026-10-04)
+
+**Decided:**
+1. The app forces the Aqua (light) appearance (`NSApp.appearance`): the 2008 binary never drew dark mode, and AppKit
+   would otherwise paint white labels on the parchment dialogs. Fidelity, not an affordance (plan Q56).
+2. `Release Notes.rtf` names Osaka-Mono, which modern macOS only offers as a download; parsing it froze the app behind
+   a FontRegistryUIAgent prompt (~1 min, measured). **Ben's ruling:** ship the font. `tools/stage-aki.sh` copies Apple's
+   downloaded `OsakaMono.ttf` into `Contents/Resources/Fonts` (`ATSApplicationFontsPath`); the RTF is parsed with Menlo
+   substituted only when `CTFontManagerCopyAvailablePostScriptNames()` lacks the face (cannot prompt). The font is for
+   Ben's machine; it is never committed (Q55).
+3. AppKit rewrites an installed menu bar. **Ben's ruling:** suppress what it allows — "Preferences…" re-set a run-loop
+   turn later and in validation; Dictation/Emoji via `NSDisabledDictationMenuItem` / `NSDisabledCharacterPaletteMenuItem`
+   registered defaults; the Edit items the nib did not build removed after they appear — and list the rest (⌥ alternates,
+   Window tiling items, "Clear Current Layer" losing its duplicate ⌘X) as Questions rows Q53/Q54.
+4. `Aki Handbook.pdf` opens in Preview (the original's `openFile:withApplication:@"Preview"`, DC:587), default handler
+   only when Preview is absent — the plan's "names no viewer" was corrected by review.
+5. One rule for every Carbon dialog: `g.dialogOK` true on `ok  `, false on `not!` (DC:2083/DC:1911); the plan's
+   P1.10 wording ("sets for ok") would have left the flag latched after "Level Unavailable" (Q57).
+6. Splash windows stay AppKit panels at 1× (slightly soft over the crisp canvas) — **Ben: "fine as is"** (Q52 closed).
+
+**Because:** each is the behaviour the original showed on its own OS, reproduced under an OS that now intervenes.
+**Rejected:** drawing splashes through the canvas (Ben) · Menlo-only Release Notes (Ben wants the real face) ·
+fighting AppKit's ⌥ alternates and tiling items (no switch exists) · leaving dark mode to AppKit.
+**Approved by:** Ben 2026-10-04 (items 2, 3, 6 explicitly); orchestrator ruling for 1, 4, 5 under invariant 1.

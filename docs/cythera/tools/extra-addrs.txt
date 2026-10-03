@@ -1,0 +1,45 @@
+# CyDecompAt address list — functions named "not in the dump" by the 2026-10-03 wave-1 banks.
+# Format: ADDR LEN NAME (tb.py output). Regenerate the rows with:
+#   python3 docs/cythera/tools/tb.py --missing ghidra/Cythera_pef.decompiled.c \
+#     --grep '(Crawl|Octo|Dragon|Active)Monster|^\.(ReadData|WriteData|Align|IsEOF|BeginChunk|EndChunk|ReadChunk|IsEOChunk)__7TStream|KeyRoutine__10TMapWindow|AddSound__7TViewer'
+# Cited by: schedules-npcs.md §0/§2/§3 (DoMove, Die, LeaveLevel, CanFace, AdjustAspect, subclass
+# overrides), quests-flags.md §0/§10 (activities 164-167 = DoMove switch cases 0xA4-0xA7),
+# combat.md §12 (Die 0x100469C0 = vtable +24), open-items-2026-10-03.md §0/§8/§18 (TStream,
+# AddSound, KeyRoutine).
+10017990   340 .ReadData__7TStreamFPce
+10017cfc   354 .WriteData__7TStreamFPce
+1001807c     8 .Align__7TStreamFs
+100180a8    68 .IsEOF__7TStreamFv
+10018134    80 .BeginChunk__7TStreamFUl
+100181e0    9c .EndChunk__7TStreamFv
+100182a4    ac .ReadChunk__7TStreamFUl
+1001837c    4c .IsEOChunk__7TStreamFv
+100437b8   f10 .KeyRoutine__10TMapWindowFs
+10045b64    a8 .Save__13TCrawlMonsterFP7TStream
+10045c40    ac .Save__14TDragonMonsterFP7TStream
+10045d20    88 .Save__12TOctoMonsterFP7TStream
+100465a4   104 .LeaveLevel__14TActiveMonsterFv
+100466dc    bc .__dt__13TCrawlMonsterFv
+100467c4    ec .__dt__14TDragonMonsterFv
+100468dc    b8 .__dt__12TOctoMonsterFv
+100469c0   714 .Die__14TActiveMonsterFv
+1004735c    98 .ClearMonstStage__13TCrawlMonsterFv
+1004742c    98 .SetMonstStage__13TCrawlMonsterFv
+100474f8    94 .ClearMonstStage__12TOctoMonsterFv
+100475c0    94 .SetMonstStage__12TOctoMonsterFv
+10047688    d4 .ClearMonstStage__14TDragonMonsterFv
+10047794    d4 .SetMonstStage__14TDragonMonsterFv
+10049228   134 .HandleSubMove__13TCrawlMonsterFv
+10049390    6c .HandleSubMove__14TDragonMonsterFv
+10049430   130 .HandleSubMove__12TOctoMonsterFv
+10049684   158 .HandleMove__12TOctoMonsterFsssss
+10049810   498 .HandleMove__13TCrawlMonsterFsssss
+1004a13c   1e8 .CanMove__13TCrawlMonsterFRsRsRsRs
+1004a358     8 .CanFace__14TActiveMonsterFQ28TGameSys10EDirection
+1004a3a4     8 .CanFace__13TCrawlMonsterFQ28TGameSys10EDirection
+1004acc8   220 .AdjustAspect__14TActiveMonsterFss
+1004b8e8  1dec .DoMove__14TActiveMonsterFss
+1004d7fc    a0 .IsPartOfMonster__13TCrawlMonsterFs
+1004d8d4    9c .IsPartOfMonster__12TOctoMonsterFs
+1004d9a4    a8 .IsPartOfMonster__14TDragonMonsterFs
+10066790    80 .AddSound__7TViewerFssss
