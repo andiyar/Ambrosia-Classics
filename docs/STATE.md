@@ -28,8 +28,10 @@
    800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by
    measuring (§7); splash (`welcome.png`), map (`map.png` + lanterns), prefs dialog from the 1.2 nibs' strings.
    First staged `.app` for Ben: gate "that is Aki's map screen".
-2. ~~RE-bank lane~~ done; Trigger A2 only if a build session hits a NOT-RESOLVED wall.
-3. Phases 2–3 Aki, then Bubble Trouble X (design §6). EV's adoption of HectorKit (re-export shim): separate task.
+2. ~~RE-bank lane~~ done. **Chips issued 2026-10-03 evening (Ben's call, parallel sessions):** Bubble Trouble X build
+   (core + FILM replay oracle first, shell last); RE deepening ×3 — Deimos gameplay code, Ferazel open items, Cythera
+   script disassembly → rules. All Opus 5.5 subagents, wide fan-out authorised, Fable-grade review per wave.
+3. Phases 2–3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit (re-export shim): separate task.
 
 ## Carried (not blockers)
 
