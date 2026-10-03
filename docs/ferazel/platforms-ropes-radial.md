@@ -16,6 +16,8 @@ sprites; who sets mode 4 on the ice floe; the `+0x88`/`+0xb8` visual fields; the
 (`+0x46` cooldown, `PTR_PTR_100a0460`, `_DAT_100a0718`, `_DAT_100a0678`); the player's `+0x19e`;
 `.GetFGCrunchDirTile` arg order; the hot-rect tables at `DAT_100a4794+0xc` and `DAT_100a4314`.
 Placement censuses for Platform, Rope and spring types.
+⚑ wave 2 (2026-10-04): continued in `platforms-ropes-radial-2.md` (§8 frame order and active list,
+§9 sibling order, §10 globals, §11 `+0x190` / frozen platform, §12 wall-ice faces).
 
 Units as physics.md: px; 24.8 fixed point for positions and velocities ("1/256 px"); angles in
 **degrees·256** ("1/256°"); one frame = one `.GameLoop` iteration. Rects in `SetRect` argument order
@@ -167,7 +169,8 @@ set0x578 + (type − 0x578)·0x34`, the set being `LoadEncFaceSetFromPICT(0x578,
   `.UpdateRadiusSprites(s, 1, 0x4b)`; if driver and (not ridden or `+0x150 == 0`): drift toward level —
   record platform: angle in (0x200, 0xb400) → speed −= 0x18, in (0xb400, 0x16600) → += 0x18;
   sibling (`+0x48 == −1`): angle < 0xb200 → += 0x18, > 0xb600 → −= 0x18; then the sibling is slaved
-  (angle + 0xb400, speed, hub). Every frame `+0x186 = 0`, `+0x194 = 0`, **face `+0xc0 = 0`** (the arm is
+  (angle + 0xb400, speed, hub; ⚑ wave 2 (2026-10-04): hub position only, not hub velocity; list order and the
+  one-frame lead of later siblings, the n+2 see-saw latency: platforms-ropes-radial-2 §9). Every frame `+0x186 = 0`, `+0x194 = 0`, **face `+0xc0 = 0`** (the arm is
   drawn only by its segments); its own hot rect is empty. ⚑ corrected (review 1c, 2026-10-03)
   (adjudication B23): settled for this file against physics §8.9's "hanging angle" — raw free arm
   `10063db4..10063e44` (`lis 1; subi 0x4e00` = 0xb200; > 0xb600 → −0x18), limits 0xe1/0x87 = 180 ± 45 [HIGH].
@@ -176,7 +179,7 @@ set0x578 + (type − 0x578)·0x34`, the set being `LoadEncFaceSetFromPICT(0x578,
   the angle folded to 0..89 (÷2), mirrored by `+0x17e`. When the player touches it (`.HitPlayerSprite`
   handler l. 3858, hitter handler `_DAT_100a01c8` = `.HandleSeeSawSegSprite`: player centre x within
   the segment's rect) the segment gets `+0xb2 = 1` and
-  `_DAT_100a067c = 1`; when it is then ridden it marks its arm ridden and writes the arm's
+  `_DAT_100a067c = 1` (⚑ wave 2 (2026-10-04): write-only, no reader — platforms-ropes-radial-2 §10.2); when it is then ridden it marks its arm ridden and writes the arm's
   `+0x150 = ((n − (k+1))·256)/n` = the segment's distance fraction from the pivot (lever).
   While tilted more than 5°, the segment separates from tiles with a temporarily lowered rect bottom.
 - **Chain spokes** type 0x596 (`.HandleChainSprite`, handler l. 9325): face = set 0x599 (60 faces
@@ -193,7 +196,8 @@ setup proc immediately — `.MTNewSprite @ 10033060`, main l. 30596; the record 
   `+0x16c = 0` → floe face/rect.
 - `.HitPlayerShotTileSprite` (handler l. 5761–5776): the same shot hitting a solid tile →
   0x57c at (tileX − 0x17) with `+0x16c = 1`, or (tileX + 0xf) with `+0x16c = 2` (wall-ice faces 1/2 of
-  set 0x2c7, rect (0,3,0x28,0x18), no gravity) [MED: which contact side selects 1 vs 2]; `+0xa6 = 0xb4`,
+  set 0x2c7, rect (0,3,0x28,0x18), no gravity) ~~[MED: which contact side selects 1 vs 2]~~ ⚑ wave 2 (2026-10-04): HIGH — face 1 = ledge merging into a
+  wall on its right (kinds 2/6/7), face 2 = on its left (kinds 0/4/5), PICT 711 decoded (platforms-ropes-radial-2 §12); `+0xa6 = 0xb4`,
   `+0xb0 = 4`.
 
 ### 2.5 Walker corpse as a platform (type 0x6a4)  [HIGH]
@@ -208,7 +212,8 @@ physics-sprites §8.9.
 
 ### 2.6 `.HitPlatformSprite(self, other) @ 10064d94` (handler l. 9148)  [HIGH]
 - `other` is a player shot (handler `.HandlePlayerShotSprite`) with id 1 (Statue): shot killed,
-  `self+0x190 = 0`, `.TurnIntoStatue(self)`.
+  `self+0x190 = 0`, `.TurnIntoStatue(self)`. (⚑ wave 2 (2026-10-04): `+0x190` is store-only in the whole binary;
+  the frozen platform: platforms-ropes-radial-2 §11.)
 - `other` is a Platform-handled sprite: unless both are modes 3/4 (rafts/floes) or both are
   0x582..0x585 (catapult parts): `PlatformBounce(self, other, own rect centre, 0, own rect, 0)` — the
   platform is the mover; a springboard (0x58c) uses `+0x154` as its vy for the call.
@@ -250,7 +255,8 @@ Stage sequences (handler l. 8670–8810, 9055–9073, 8990–9008):
 - mode 52 blink, `+0x46` ramps 0..0x14: > 2 → effect 0, `+0x1ba = 32000`, `+0x88 = 1`; > 6 →
   `0xb0001`, `+0x88 = 0`; > 10 → `0xb0000`; > 14 → `0xb0002`; ≥ 0x13 → empty rect, `+0x1ba = 0`.
 - mode 4 floe, lifetime `+0xa6 < 0x2d`: face reset, `+0x88 = 1`, effect 0 or `0xb0000` on frames where
-  `*_DAT_1009fd30 ≠ 0` [MED: that global as a flash phase].
+  `*_DAT_1009fd30 ≠ 0` ~~[MED: that global as a flash phase]~~ ⚑ wave 2 (2026-10-04): HIGH — `_DAT_1009fd30` is the frame
+  parity (1, 0, 1, … per frame), so a 2-frame translucent blink (platforms-ropes-radial-2 §10.1).
 - springboard gauge 0x58e: fill `q = ((top+0x2d − y') << 8)/0x2d`; q < 11 → no face; else face 0x58e
   with effect `0xa0000 + q` when q < 0xfb, else 0.
 
@@ -370,7 +376,8 @@ shipped content.
 - **Cooldown**: set to 4 on trigger; `.HandleBackgroundSprite` (handler l. 14805–14833) decrements
   `+0x46` by 1 per frame clamped to 0..3 and uses it as the face index (compression frames; tables
   `_DAT_100a0b08` for 1150, `0b04` for 1151, `0b00` for 1152/1153 with 1153 mirrored) — re-armed 4
-  handler frames after a hit [MED: hit/handle order within a frame]. **Only 1150..1153 decrement**;
+  handler frames after a hit ~~[MED: hit/handle order within a frame]~~ (⚑ wave 2 (2026-10-04): HIGH — all handlers run
+  before all hit callbacks, so a spring fired in frame n can fire again in frame n+4; platforms-ropes-radial-2 §8.1). **Only 1150..1153 decrement**;
   ~~1154..1159 would fire once per life (and are unplaced).~~ ⚑ corrected (review 1c, 2026-10-03)
   (adjudication A4; synthesis ledger A4): 1154..1159 are **inert** — `.SetupBackgroundSprite`'s tree
   (`100717cc..10071804`) has arms only for 0x47e..0x481 (`10071cc0`/`10071d14`/`10071d68`/`10071db8`,
@@ -378,7 +385,8 @@ shipped content.
   (`1007178c`), so they get no hit callback and can never reach `.SuperSpring` (triggers-background
   §2.3). Unplaced [HIGH].
 - **`_DAT_100a0678` (global 0x102bb7a4, i32) = the jump base J** of physics §4. Writers: `.ClearPlayerVars`,
-  `.HandlePlayerSprite` (handler l. 916: 0 when on the ground or `*psVar26 ≠ 0`, not frozen; l. 919:
+  `.HandlePlayerSprite` (handler l. 916: 0 when on the ground or `*psVar26 ≠ 0`, ~~not frozen~~ ⚑ wave 2 (2026-10-04): and not riding a sprite (`*PTR_DAT_100a0558 == 0`);
+  `*psVar26` = the climb flag `_DAT_100a0758`, raw `1004dc54..1004dc84`, platforms-ropes-radial-2 §10.3; l. 919:
   −0x898 with High Jump), `.HandleKeys` (= ridden sprite's `+0x194` at a jump), `.SuperSpring` (1 for
   1150/1151). Readers: `.HandleKeys` jump impulse; `.PlayerScroll` (main l. 43151, 43160): J ≠ 0
   forces the "snap camera y to target" branch. So the spring's J = 1 adds 1/256 px/frame to a jump
@@ -441,16 +449,17 @@ Readers (every r2-relative reference, `subi rX,r2,0x30ac` / `0x352c`; no TOC slo
 ## NOT RESOLVED
 1. Pixel semantics of draw-effect modes 1..4, 7, 9, 0xc, 0x10..0x13 (`.BlitEncFaceSpecial*`), so what
    `0x10018` on 0x57c spokes looks like; which blend operand is the sprite pixel (§2.8).
-2. `_DAT_1009fd30` (floe flash phase?), `_DAT_100a067c` (set when the player touches a see-saw
-   segment; reader not traced), `*psVar26` in the J reset (handler l. 915).
-3. `+0x190` on platforms (cleared before `.TurnIntoStatue`; meaning) and what `.TurnIntoStatue` does to a
-   platform.
-4. Within-frame order of sibling wheel/see-saw updates (a slaved sibling may lead or lag one frame of
-   speed depending on list order).
+2. ~~`_DAT_1009fd30` (floe flash phase?), `_DAT_100a067c` (set when the player touches a see-saw
+   segment; reader not traced), `*psVar26` in the J reset (handler l. 915).~~ → closed: platforms-ropes-radial-2
+   §10 (frame parity; write-only; climb flag) — ⚑ wave 2 (2026-10-04)
+3. ~~`+0x190` on platforms (cleared before `.TurnIntoStatue`; meaning) and what `.TurnIntoStatue` does to a
+   platform.~~ → closed: platforms-ropes-radial-2 §11 — ⚑ wave 2 (2026-10-04)
+4. ~~Within-frame order of sibling wheel/see-saw updates (a slaved sibling may lead or lag one frame of
+   speed depending on list order).~~ → closed: platforms-ropes-radial-2 §8–§9 — ⚑ wave 2 (2026-10-04)
 5. ~~Whether `_DAT_100a0718` really never clears in play~~ — closed: it is zeroed every grounded / rope /
    swim / cling frame through r27 (§4). ⚑ corrected (review 1b, 2026-10-03) #1, #12 — no play-check
    needed.
-6. Which contact side gives the wall-ice face 1 vs 2 (§2.4).
+6. ~~Which contact side gives the wall-ice face 1 vs 2 (§2.4).~~ → closed: platforms-ropes-radial-2 §12 — ⚑ wave 2 (2026-10-04)
 
 ## Proposed additions to physics.md §0
 | off | type | meaning |
@@ -511,5 +520,7 @@ Readers (every r2-relative reference, `subi rX,r2,0x30ac` / `0x352c`; no TOC slo
 10. physics.md §8.6 last sentence: the player's `+0x19e` is written only by the death/revive sequence
     (3 stores), §5.
 11. engine.md §9 crunch pairs: "(y,x)" upgrade to HIGH (§6).
+14. ⚑ wave 2 (2026-10-04): further corrections (frame order, layers, `.HitPlayerSprite` reached only through
+    `.MTCollideSpecialSprite`) are in platforms-ropes-radial-2 "Corrections to the existing bank".
 12. physics.md §3.2 last paragraph / INDEX NOT-RESOLVED 5 (tables part): resolved per §7, including that
     `.WallBounce`/`.WallBounceBG` index the per-tile rect by kind.

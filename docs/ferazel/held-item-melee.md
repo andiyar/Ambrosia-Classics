@@ -7,6 +7,7 @@ raw `ghidra/Ferazel_pef.disasm.txt`, `tools/const.py`/`tocrefs.py` (TVector = wo
 Scope: Setup/HandleHeldItem, `.HandleItemUse @ 1004d054`, `.SetHeldItemPos @ 1004bf2c`, the USE-item
 arm of `.HandleKeys`, the held item inside the player-shot handlers and the Hit routines that see it;
 Setup/HandleShadow, `.ShadowBob @ 1004b410`; Setup/HandleTrail, `.DoubleSpeedTrail @ 1004d370`.
+⚑ wave 2 (2026-10-04): §4 closes NR 1–3 and 6 (list order, mirroring, `+0x11c`, door `+0xa0`, crunch kinds, revive).
 
 Handler slots used below [HIGH, each resolved through its TVector this session]:
 `0x100a0524`/`0x100a04f8` → Setup/Handle HeldItem (`1004bdd0`/`1004be74`); `0x100a04e8` →
@@ -87,12 +88,13 @@ L/R works and the player can walk with the stab face (no walk cycle, no footstep
 `y = (player.y_fixed >> 8) + dy + 0x16`; `x = (player.x_fixed >> 8) + dx` (side 0) or `+ (100 − dx)`
 (side 1, `subfic …,0x64` at `1004c008`); then mirror flag `+0x17e` := the player's `+0x17e`, and if
 set `x −= 0x20` (`1004c094–1004c09c`). Water: held `+0x11c = max(p+0x11c, p+0x120) + (held.y −
-p.y)`, ≥ 1, when the player has water contact (read by nothing that affects a type-100 shot, §1.5).
+p.y)`, ≥ 1, when the player has water contact (read by nothing that affects a type-100 shot, §1.5;
+⚑ wave 2 (2026-10-04): read by the draw only, §4.3).
 The side flag is latched at the press but the mirror flag follows the player's current `+0x17e` (as
 of the previous frame's facing pass): turning mid-swing (USE released) shifts the item 32 px and
 flips its art without changing side [HIGH reading; on-screen effect MED].
 
-### 1.5 Hit geometry  [MED: depends on the face +8 bounds rule, sprites-backgrounds-sounds §2.1, and on the blitter mirroring within the 32-px frame]
+### 1.5 Hit geometry  [MED: depends on the face +8 bounds rule, sprites-backgrounds-sounds §2.1, ~~and on the blitter mirroring within the 32-px frame~~ (⚑ wave 2 (2026-10-04): mirroring within the cell confirmed HIGH, §4.2)]
 Item PICTs are 32×24. Opaque bounds (white = index 0) and the resulting hot rect (face+8 =
 `(top, left−1 clamped 0, bottom+1, right+2)`, then left+1 / right−1 = the exact opaque box):
 
@@ -116,10 +118,11 @@ y 34..85; crouch adds 12 to y):
 So the drawn (mirrored) blade and the hit box disagree when facing left: the box sits
 `32 − (left+right)` px further out — dagger 10, Dirk 8, Ice Pick 2 — and the left-facing reach
 beyond the body is 35/40/53 px against 25/30/43 facing right (dagger).
-Collision timing [HIGH]: `.GameLoop` runs `.MTHandleSprites` then `.MTCollideSprites` (main l.
-4006–4007); the strike state set during the player's handler is live in the same frame's collision
+Collision timing [HIGH]: ~~`.GameLoop` runs `.MTHandleSprites` then `.MTCollideSprites` (main l.
+4006–4007)~~ (⚑ wave 2 (2026-10-04): `.PaintFrameWrap` → `.HandleSprites` runs them, after the draw — platforms-ropes-radial-2 §8.1); the strike state set during the player's handler is live in the same frame's collision
 pass. In strike frames the held item's own HandleHeldItem does not run, so its rect is the one set on
-its last inert frame (same face) [MED: active-list order].
+its last inert frame (same face) ~~[MED: active-list order]~~ (⚑ wave 2 (2026-10-04): HIGH — the player (layer 10) precedes the
+held item (0x14), §4.1).
 
 ### 1.6 Interaction with other states  [HIGH reading]
 `.HandleItemUse` is reached only from the swim branch and the generic `c ≠ 0` test (handler l. 1984,
@@ -135,7 +138,8 @@ SetHeldItemPos, HandleItemUse, HandleKeys ×4 and two reads). Consequences:
 - Crouching mid-swing switches to the crouch faces and lowers the item 12 px. Swimming: crouch is 0
   (zeroed by DOWN off the ground, else decays), the swim stroke counter keeps running under the stab face.
 - Airborne: the air-animation counter and spin faces are not updated during the swing.
-- Death: dying freezes the swing; no revive path writes the counter [MED: revive not re-read].
+- Death: dying freezes the swing; no revive path writes the counter ~~[MED: revive not re-read]~~ (⚑ wave 2 (2026-10-04): HIGH,
+  the swing resumes after the revive, §4.6).
 
 ### 1.7 What a strike does (the held sprite as a player shot, `+0x04` = 100)  [HIGH unless noted]
 `.HandlePlayerShotSprite` (handler l. 5089–5568) on it: `.StandardSpriteHandles`; age `+0x14c` +1 to
@@ -174,7 +178,7 @@ LOW in-play].
   2×2 block: Dirk (1) — k 0 breaks at once, k 1/3 crack (crunch-sprite HP −1 per cooldown), k 2/4
   resist (rock-crack sound); Ice Pick (4) — k 0 and **k 4** break at once, k 1/3 crack, k 2 nothing
   unless a crunch sprite already exists. The dagger never touches tiles. (Seeds: strength 2 breaks
-  k 0..3.) [HIGH arithmetic; kind meanings NOT RESOLVED].
+  k 0..3.) [HIGH arithmetic; ~~kind meanings NOT RESOLVED~~ ⚑ wave 2 (2026-10-04): kind behaviour table player-states-2 §13].
 - The player is not hurt by it: `.HitPlayerSprite` has no type-100 arm [MED: hazard arm scanned by
   type, not exhaustively].
 
@@ -186,7 +190,7 @@ since level start → `.HurtSprite` refuses; 100/200/300 otherwise). At c == 5 t
 (`vx ±0x60e` + player vx, x +12 px when side 1, `vy −0x60e` + player vy if falling, Ziridium `+0xf4 = 1`;
 raw `1004d260–1004d30c`; flight and blast: spells-detail §3.8, pickups-boxes §3.2) and the in-use item
 becomes −1. The centre used is the one computed by the held sprite's last handler run, i.e. the c = 4
-placement (SetHeldItemPos does not write `+0xe/+0x10`) [MED: list order].
+placement (SetHeldItemPos does not write `+0xe/+0x10`) ~~[MED: list order]~~ (⚑ wave 2 (2026-10-04): HIGH, §4.1).
 
 ### 1.9 No carrying  [HIGH for the item path; MED as a global absence]
 No routine name in either dump mentions carry/lift/throw/pick/grab, and the USE-item switch has no
@@ -256,15 +260,93 @@ midpoint of entries s and s+1 (≤ 4):
 
 Entries 0 and 1 are recorded but never shown. Tint meanings: bosses-2 NR 1.
 
+## 4. Wave 2 (2026-10-04): list order, mirroring, `+0x11c`, door `+0xa0`, revive
+
+### 4.1 The player runs before the held item  [HIGH]
+The active list is sorted by layer, ascending, insertion order within a layer, and one list serves
+handlers, collisions and drawing (platforms-ropes-radial-2 §8). The player is layer 10 (`1004af88` →
+`1004afac`), the held item 0x14 (`1004bdfc` → `1004be20`, re-stored every frame at `1004beb0`; created
+inside `.SetupPlayerSprite` at `1004b018..1004b030`). So in every frame `.HandlePlayerSprite` (with
+`.HandleItemUse` and `.SetHeldItemPos`) runs **before** the held sprite's handler, and both before
+every hit callback. Consequences:
+- Calls c = 1, 2 and the return calls: the held handler is `.HandleHeldItemSprite`; it runs after the
+  player set this frame's face, so `+0x34` is that face's bounds (§1.1).
+- Strike calls c = 3, 4, 5: the player's call has already switched the held sprite to
+  `.HandlePlayerShotSprite` / `.HitPlayerShotSprite` when the list reaches it, so the shot handler runs
+  **in the same frame** (no `.HandleHeldItemSprite`): `+0x34` keeps the last inert frame's rect (the
+  same item face), the position is this frame's `.SetHeldItemPos` result, and the collision pass tests
+  `.CalcHotRect` = `+0x34` + that position: the strike box is this frame's placement. With the Dirk
+  or the Ice Pick (`+0x158 > 0`) the shot handler also runs `.SeparateFromTiles2`, which may push the
+  held sprite out of a solid tile before the collision pass [MED: in-play effect].
+- The held sprite is the outer sprite of `.MTCollideSprites` (it has a hit callback); an enemy with a
+  hit callback is visited both ways, so its Hit routine sees the stab twice per strike frame — the
+  first `.HurtSprite` sets invulnerability and the second is refused (§1.7, "lands once").
+- Seed throw at c = 5: the centre `+0xe/+0x10` comes from the held sprite's previous-frame handler
+  (`.HandlePlayerShotSprite` → `.StandardSpriteHandles` writes it at `10036dc0`/`10036de4`), i.e. the c = 4
+  placement (§1.8).
+
+### 4.2 Mirroring of the item face  [HIGH]
+`.WrapDrawSprites` (main l. 10221ff) draws every face at the sprite's x plus the left clip with width =
+face `+6` minus clips (`.InitSprite` sets clips 0 / 32000) and passes `+0x17e` as the flip flag;
+`.BlitEncFaceX` sends a flipped draw to `.BlitEncFaceFlip*`, which starts every row at
+`dest + width − 1` and writes leftwards (`.BlitEncFaceFlipNoClip`, raw `10028d08` width = 5th argument,
+`10028ed4..10028ed8 subi r10,r8,1; add r10,r7,r10`). So pixel column c of the 32-px item cell lands on
+column 31 − c of the same cell: §1.5's assumption holds, and since `.CalcHotRect` never mirrors the hot
+rect, the left-facing offsets of §1.5 (dagger 10, Dirk 8, Ice Pick 2 px) stand.
+
+### 4.3 The held item's `+0x11c`  [HIGH for the rule; intent UNDETERMINABLE]
+`.SetHeldItemPos` writes it only while the player has water contact (`+0x11c` or `+0x120` ≠ 0):
+`held+0x11c = max(p+0x11c, p+0x120) − (p.y − held.y)`, then at least 1 (raw `1004c028..1004c07c`:
+`subf r5,r6,r5` = p.y − held.y, `subf r0,r5,r0`). Its only reader is the draw: `.WrapDrawSprites`
+(raw `100147c0..1001486c`, main l. 10336ff) — `< 1` plain face; `== 1` whole face with effect
+`0x60000 + +0x128` (water ripple); `> 1` the top `+0x11c` rows plain and the rest with the water
+effect; it is also the light-overlay argument (`100149f4`). For a sprite `+0x11c` counts face rows
+above the surface (physics §0), which for the item would be `p+0x11c − (held.y − p.y)`; the code adds
+`(held.y − p.y)` (always > 0: `dy + 0x16`), so the item's water line falls `2·(dy + 0x16)` rows lower
+than the surface and the item is drawn dry unless the player is deep. In strike frames the shot
+handler's `.StandardSpriteHandles` copies and may zero `+0x11c` before the draw (physics §0 rule)
+[MED: the held sprite's `+0x118` not traced]; `+0x128` is never written for the held sprite [MED].
+Copy as written; whether the sign was meant cannot be settled from code.
+
+### 4.4 Door `+0xa0`  [HIGH]
+Scan of every `0xa0(rN)` operand (rN ≠ r1, r2) in the listing: `.DrawBlackLines` `1001fb7c`,
+`.InitParticles` `10030660`, `.ConvertKeyName` `100776a0` (not sprites); `.HitBoxSprite` `100705ac`
+(the door reset, store); `.HandleButtonSprite` `10070f3c` (load) / `100710a0` (store) — Buttons only
+(previous press level, triggers-background §1). **No load of a Box's `+0xa0`**: the door reset is dead
+and doors keep no state there (the idle↔active struct copies carry it unread).
+
+### 4.5 Crunch kinds 0..4
+Behaviour per kind and strength: player-states-2 §13 (kind 3 crumbles under any contact; 2 and 4 resist
+weak strikes; 0 and 1 give way). The art of a crunch cell is the level's own FG tile, so a name per
+kind is UNDETERMINABLE from code; the behaviour table is what a replica needs.
+
+### 4.6 Revive vs a frozen swing  [HIGH reading; MED in play]
+- The counter `_DAT_100a0698` has 9 TOC loads (`tocrefs`): `.ClearPlayerVars` (store 0), `.SetHeldItemPos`
+  (read), `.HandleItemUse` (r31), `.HandlePlayerSprite` `1004ffcc` / `100502a8` (reads, followed),
+  `.HandleKeys` ×4 (two reads, two stores when a swing starts). The dying / revive branch (handler
+  l. 1729–1812) touches neither the counter nor the held sprite.
+- While dying (≥ 80 or 100 frames) and reviving (30 frames) the counter stays frozen and the held face
+  is zeroed every frame (handler l. 1397, before the state branches): invisible. If it froze after a
+  strike call (counter 4, 5 or −5), the held sprite keeps the shot handler and hit callback: a live,
+  invisible hit box at its last placement for the whole death and revive.
+- The revive ends with dying counter 0 (handler l. 1754–1767); on the next frame the generic `c ≠ 0`
+  test (l. 2074) calls `.HandleItemUse` and the swing **resumes** from the frozen counter and finishes
+  its remaining calls (frozen at 4: calls 4, 5, −5, …, −1), with the stale item id `_DAT_100a5fd8`.
+- Without a revive the level ends; the next `.SetupPlayerSprite` → `.ClearPlayerVars` zeroes the counter
+  and makes a new held sprite.
+
 ## NOT RESOLVED
-1. Mirroring of a 32-px face by `+0x17e` (§1.5 assumes within the frame width); held `+0x11c` use.
-2. Active-list order player vs held sprite (frame of the seed centre / strike rect, §1.5, §1.8).
-3. Door `+0xa0` (zeroed by non-exempt touchers) — no reader found. Crunch kinds 0..4 as art.
+1. ~~Mirroring of a 32-px face by `+0x17e` (§1.5 assumes within the frame width); held `+0x11c` use.~~
+   → closed: §4.2, §4.3 — ⚑ wave 2 (2026-10-04)
+2. ~~Active-list order player vs held sprite (frame of the seed centre / strike rect, §1.5, §1.8).~~
+   → closed: §4.1 — ⚑ wave 2 (2026-10-04)
+3. ~~Door `+0xa0` (zeroed by non-exempt touchers) — no reader found. Crunch kinds 0..4 as art.~~
+   → closed: §4.4 (write-only), §4.5 (behaviour; art UNDETERMINABLE) — ⚑ wave 2 (2026-10-04)
 4. Whether conversations/enemy drops grant Ice Pick, Vorpal Dirk, Hammer; the Hammer's intent.
 5. ~~Lead (Box/shot reader): Pentashield orbs (0x50, `+0xa4` 300) also pass the 2941 `== 300` test.~~
    Confirmed (⚑ corrected (review 1c, 2026-10-03) #2): `li r3,0x12c; sth r3,0xa4` `10059494..1005949c`, arm
    `cmpwi 0x50` `10059384`; the Ice Wall spell at power 1 qualifies too (spells-items §4 row 0x12).
-6. Revive path vs a frozen swing (§1.6).
+6. ~~Revive path vs a frozen swing (§1.6).~~ → closed: §4.6 — ⚑ wave 2 (2026-10-04)
 
 ## Proposed additions to physics.md §0
 | off | type | meaning |
@@ -290,3 +372,10 @@ index/riding offset; `_DAT_100a05c0`/`0604`/`PTR_DAT_100a0608` bob; `PTR_DAT_100
 | 7 | enemy-shots §2.3 trail | — | trail 4 = current pose; entries 0/1 never shown | §3 |
 | 8 | ~~spells-items §4 item 8~~ no bank target (manual-only claim) ⚑ corrected (review 1d, 2026-10-03) #C8 | Hammer breaks cave walls (manual) | no code reads item 8 | §1.2 |
 | 9 | player-states §3.10 | stab | add stale-damage seed stab, frozen live hit box, glider deferral, cadence | §1.3, §1.6, §1.8 |
+
+Wave 2 (2026-10-04):
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | pickups-boxes NR 8 ("Door `+0xa0` cleared by `.HitBoxSprite`") / INDEX 21 | reader unknown | no reader anywhere: write-only | §4.4 field scan |
+| W2 | enemies-* notes that a stab "hits once" | via invulnerability | also: the enemy's Hit routine runs twice per strike frame (pair visited both ways); the second call is the one refused | §4.1; platforms-ropes-radial-2 §8.3 |

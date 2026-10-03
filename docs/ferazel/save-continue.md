@@ -9,6 +9,8 @@ Scope: `.NewGame`, `.ContinueGame`, `.SavePointSave`, `.DoSaveGame`, `.EndLevelS
 `.OpenSG`, `.IncrementLastSGString`, `.AskToContinue`, `.SetupLevel` restore branch, save-point
 sprite trigger, saved-game file format, dialogs, what is / is not persisted; INDEX NOT-RESOLVED
 items 8, 9, 2, 13. Extends engine.md §6/§8/§9 and world-data-format.md §3.2/§4 (read first).
+⚑ wave 2 (2026-10-04): §9 adds INDEX 24's save-point faces, hold timing and the `OpenDefaultWorldLevel`
+failure (PICT 1065 decoded with an own PackBits reader; frame order from platforms-ropes-radial-2 §8).
 
 Global flags used below (TOC slot → meaning; all byte flags unless noted):
 
@@ -76,7 +78,7 @@ account and pickups-boxes §2.4.8 now describe the same path; the step table her
 |---|---|---|
 | gate 1 | `DAT_100a53d6 != 0` — the "no async gamma fade running" flag (cleared by `GammaFadeIn/OutAsync`, set when the fade ends, l. 31650–31745; initial 1 at `const.py 100a53d6` → `01`) [MED for the name] | 0x1005771c |
 | gate 2 | placement **param 1** of the save point's record (`hdr + idx·16 + 8`, idx = sprite `+0x48`) == 0 | 0x10057740 |
-| hold | counter `*_DAT_100a0684 += 2`; fire only when it exceeds 15. `.HandlePlayerSprite` moves the counter 1 toward 0 every frame (0x1004de68..0x1004de98), so ≈15 consecutive landing frames (standing on the point) are needed [MED: frame order] | 0x10057754, 0x10057768 |
+| hold | counter `*_DAT_100a0684 += 2`; fire only when it exceeds 15. `.HandlePlayerSprite` moves the counter 1 toward 0 every frame (0x1004de68..0x1004de98), so ≈15 consecutive landing frames (standing on the point) are needed ~~[MED: frame order]~~ ⚑ wave 2 (2026-10-04): HIGH — fires on the 15th consecutive landing frame (§9.2) | 0x10057754, 0x10057768 |
 | fire | counter ← −150 (0x10057774); record param 1 ← player `+0x17e` (facing-left) + 1, i.e. 1 = faced right, 2 = faced left (0x1005778c..0x100577a0); `G+0x16 ← player +0x17e` (0x100577b0); `SavePointSave()` (0x100577b4) | |
 | success | `snd 420` "teleport in" + `snd 421` "teleport out" (handles `_DAT_100a03e0/03dc` ← `FUN_10091748(0x1a4/0x1a5)`, l. 39562–39564), `GammaFadeOutAsync(2, …, 0xc, 0x10)`, three `HandleAsyncGammaFade`, `GammaFadeInAsync(0x2d)` — a short flash [MED: visual] | 0x100577c4.. |
 | failure / cancel | record param 1 ← 0 — the point stays usable | 0x1005783c |
@@ -86,7 +88,7 @@ once per game, even after resuming** (manual TEXT 130 agrees: "Once Ferazel has 
 point, he can't use it again"). Visual: `.SetupBoxSprite`/`.HandleBoxSprite` (handler l. 11517,
 12409) set face `*_DAT_100a0a28 + param1·0x34` from `PICT 1065 'save point'` (Sprites, 252×100 =
 3 faces of 84×100, `LoadEncFaceSetFromPICT(0x429,3,0x54,100,…)`, l. 47417): face 0 idle, 1/2 used
-[MED: face art not inspected]; Setup also sets no gravity (`+0x110 = 0`), `+0x185 = 1`, hot rect
+~~[MED: face art not inspected]~~ ⚑ wave 2 (2026-10-04): decoded — 0 empty pedestal with a green check, 1 stone statue facing right, 2 facing left (§9.1); Setup also sets no gravity (`+0x110 = 0`), `+0x185 = 1`, hot rect
 `SetRect(+0x34, 0x21,0x3f,0x33,99)`.
 
 Census (all 24 levels, records of type 1065): **91** save points (89 with spawn flag 1, two with 0:
@@ -382,16 +384,96 @@ Fire In The Hole (h 51, v 265)) [HIGH, Python decode]. Caveat [LOW]: the CD chec
 "Ferazel's Wand:Installer Data" (only when the machine hash ≠ prefs+0x3a) and never closes it; its
 contents are unknown — if it held a `PICT 7000` it would sit above the app in the chain.
 
+## 9. Wave 2 (2026-10-04): save-point faces, hold timing, a missing level on resume
+
+### 9.1 Save-point faces (NR 1)  [HIGH unless noted]
+- Face index = record param 1: `+0xc0 = *_DAT_100a0a28 + p1·0x34` in both `.SetupBoxSprite` (handler
+  l. 11517–11524) and `.HandleBoxSprite` (handler l. 12409–12413). The 0x429 arms and the Setup tail
+  (`LAB_1006cf1c`, handler l. 12239–12244) never write `+0x17e`, which `.MTNewSprite`'s
+  `_MemoryClear` leaves 0: **never mirrored** [MED for the absence: decompile of those arms].
+- Set cut: `LoadEncFaceSetFromPICT(0x429, 3, 0x54, 100, 3, …)` (main l. 58807); face i is column
+  `i mod 3`, row `i / 3` of the sheet, i.e. x 84i..84i+83 (raw `1002f220..1002f250`:
+  `divw; mullw; subf`, then `SetRect(col·w, row·h, (col+1)·w, (row+1)·h)`).
+- `PICT 1065 'save point'` decoded (Sprites file, 252×100, 8-bit, 153-entry clut, PackBits rows):
+
+| face | record p1 | art |
+|---|---|---|
+| 0 | 0 — unused | a short dark pedestal with green rims and a **green check mark**; nothing on it |
+| 1 | 1 — saved facing right (`+0x17e` = 0) | taller pedestal (grey check mark) carrying a grey **stone statue of a hooded figure pointing a wand to the right** |
+| 2 | 2 — saved facing left | the same statue mirrored, wand to the **left** |
+
+  So a used save point shows Ferazel turned to stone in the direction he faced when he saved
+  [MED: "Ferazel" from the art and the manual's wording; the direction rule is HIGH].
+- Timing: p1 is written in the collision pass of frame n (§9.2); the Box handler installs the face in
+  frame n+1 after that frame's draw, so the statue is first drawn in frame n+2
+  (platforms-ropes-radial-2 §8.1). `.SavePointSave`'s own full redraw happens inside frame n, before.
+
+### 9.2 Hold timing (NR 2)  [HIGH unless noted]
+Counter `C = *_DAT_100a0684` (i16). TOC loads: `.ClearPlayerVars` 1, `.HandlePlayerSprite` 3,
+`.HitPlayerSprite` 4 (`tocrefs`; each followed — single-use registers).
+- Level start: `.ClearPlayerVars` (called by `.SetupPlayerSprite`) stores 0 (`1004ac1c..1004ac28`).
+- **Handler pass**: `.HandlePlayerSprite` moves C one step toward 0 every frame — `> 0 → −1`,
+  `< 0 → +1` (`1004de68..1004de98`), after only the `+0xe9` / `+0x1b2` early returns.
+- **Collision pass, same frame** (all handlers run first; the player's hits come only from
+  `.MTCollideSpecialSprite`, once per contact per frame — platforms-ropes-radial-2 §8.1, §8.3): a
+  landing (`.PlatformBounce` = 1) on an unused save point (p1 == 0, gate byte set) does `C += 2`
+  (`10057754..1005775c`) and fires when `C > 15` (`cmpwi r0,0xf; ble` at `10057768/1005776c`).
+- Standing still lands every frame [MED]: the gravity add leaves `vy ≥ 1` on every frame (`vy == 0 → 1`,
+  player-states §1 l. 1205–1222) and `.RectBounce` returns 1 for a from-above contact with `vy > 0`
+  (main l. 36297–36300).
+
+| consecutive landing frame k | C after the handler | C after the landing |
+|---|---|---|
+| 1 | 0 | 2 |
+| 2 | 1 | 3 |
+| k | k − 1 | k + 1 |
+| 15 | 14 | **16 > 15 → fire** |
+
+So from C = 0 the save fires in the collision pass of the **15th consecutive landing frame** (half a
+second at 30 frames/s). A frame without a landing costs one step of decay and nothing else.
+- Fire (`10057770..100577b4`): `C = −150`, p1 = facing + 1, `G+0x16` = facing, then `.SavePointSave()`
+  runs **synchronously inside the collision pass** (its `.SaveSG` file dialog included).
+- After a failed or cancelled save (p1 back to 0 at `1005783c`) C is still −150: standing on the point
+  adds +1 (handler) +2 (landing) = +3 per frame, `C = −150 + 3j` after j frames, so it fires again on
+  the **56th** landing frame (j = 55 gives exactly 15, not > 15); stepping off, C is back to 0 after 150
+  frames.
+
+### 9.3 `OpenDefaultWorldLevel` failing inside `.ContinueGame` (NR 6)  [HIGH up to the nil dereference]
+`.OpenDefaultWorldLevel(level, fileName) @ 10048ac0` (main l. 41500–41562):
+1. **File cannot be opened** (`ResError ≠ 0`, or refNum 0 / −1: `addi 1; rlwinm 16..31; cmplwi 1`
+   at `10048b70..10048b84`): `ParamText(fileName, …)`, `.ReportError(0x100a5b3c "The world file "^0"
+   could not be accessed. Please report this error code to Ambrosia.", err)` (`10048b88..10048bac`;
+   `.ReportError` puts the message and the number in a `GenericMessage` alert), then
+   **`ExitToShell`** (`10048bb0`). Inside ContinueGame's default branch the same file was opened a
+   moment earlier by `.OpenDefaultWorld` (§4 step 4), so this needs the file to vanish in between.
+2. **Level resource missing** (`GetResource('Mlvl', level)` returns nil — a save naming a level < 80
+   that World Data lacks; the shipped file has 24): the nil handle is stored to `*_DAT_100a0058`
+   (`10048bf4`), `DetachResource` / `HLock` get nil, and **`.SetupLevelTilemapPtrs` dereferences it**
+   (`bl 0x1004913c` at `10048c34`; main l. 41774: `*(int *)*handle + 0xb29c`, then five stores into
+   `+0xb284..+0xb298` of whatever address 0 holds). Then `.SafeReportStr(0x100a5af7 "Tried to open a
+   level that wasn't there!")` — which **shows nothing**: it overwrites r3 at its first instruction
+   pair (raw `100359c8..10035a04`: fade in if `*_DAT_1009fde8`, `InputActivate(0,0)`, return). The
+   routine returns false (`10048c50`).
+3. `.ContinueGame` **ignores the result** at all three calls (`1000d19c`, `1000d714`, `1000d90c`: r3
+   is not tested afterwards) and proceeds to the snapshot copy and `.GameLoop` through the nil level
+   handle.
+Beyond step 2 the outcome depends on the memory at address 0 (readable low memory on Mac OS 9, an
+unmapped page under Mac OS X), not on the game: **CLOSED AS UNDETERMINABLE** past the first nil
+dereference. Unreachable with any file 1.0.3 writes (save +8 is always the level that was running).
+A replica cannot reproduce undefined behaviour; refusing such a file is the only defined choice.
+
 ## NOT RESOLVED
-1. Save-point face art: which of `PICT 1065`'s 3 faces is drawn for param 1 = 1 vs 2 (direction).
-2. Exact frame timing of the save-point hold (call order of HandlePlayerSprite vs HitPlayerSprite
-   within a frame; ≈15 frames).
+1. ~~Save-point face art: which of `PICT 1065`'s 3 faces is drawn for param 1 = 1 vs 2 (direction).~~
+   → closed: §9.1 — ⚑ wave 2 (2026-10-04)
+2. ~~Exact frame timing of the save-point hold (call order of HandlePlayerSprite vs HitPlayerSprite
+   within a frame; ≈15 frames).~~ → closed: §9.2 (15th consecutive landing frame) — ⚑ wave 2 (2026-10-04)
 3. OmniPx composition (how the 16 overlay faces and the animated port combine with PxMid/FG) and
    the role of `uRam100a3742..3766` values set only in mode 1.
 4. PxMid −1 drawing semantics and the "no PxMid tileset" skip path (§8.3).
 5. Contents of the CD's `Installer Data` (affects item 13 only if it carries `PICT 7000`).
-6. Behaviour when `OpenDefaultWorldLevel` fails inside the ContinueGame default branch (return value
-   ignored) — only reachable with a corrupt/foreign save.
+6. ~~Behaviour when `OpenDefaultWorldLevel` fails inside the ContinueGame default branch (return value
+   ignored) — only reachable with a corrupt/foreign save.~~ → closed: §9.3 — file failure = alert +
+   `ExitToShell`; missing level = silent nil dereference, CLOSED AS UNDETERMINABLE past it — ⚑ wave 2 (2026-10-04)
 
 ## Proposed additions to physics.md §0
 - `+0x46` (player): set from `GameLoop`'s 3rd argument at spawn (always 0) — reading of `+0x46`
@@ -418,3 +500,11 @@ contents are unknown — if it held a `PICT 7000` it would sit above the app in 
 | physics.md §2 water gravity (review 1a #2, adj. 4) | `max(0.7·g, 0x100)` "in water" | taken only if `+0x11c ≠ 0` at entry (`100375c8`), before the routine's own `SeparateFromTiles2` (`10037624`); `+0x11c` is zeroed per frame (`100369ac`), so a sprite's first call each frame uses dry gravity; only a second same-frame call (Frog) or a direct writer (Bonus 1055, 1350) can take the 0x100 branch | enemies-water-cave §0.1 |
 | spells-items.md §2.1 (review 1a adj. 1) | spell names | names only: id 2 "Ice Crystals", id 3 "Ice Wall" (floes/ledges), id 7 second Ice-Wall icon (PICT 700 captions 0..11: Fireball, Statue, Ice Crystals, Ice Wall, Tree Trunk, Boomerang, VBlade, Ice Wall, DensityBall, Sandstorm, EnergyBolt, Ice Shards) | spells-detail §1 |
 | world-data-format.md §2 table, PICT 7000 row | "[MED: resource-chain order decides]" | the app fork's copy is drawn; World Data's is dead (they differ in a 63×86 region) | §8.4 |
+
+Wave 2 (2026-10-04):
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | pickups-boxes §2.4.8 "lit face" | p1 = facing+1 selects a "lit" frame | the used faces are a stone statue facing right (p1 = 1) or left (p1 = 2); face 0 is the empty pedestal with a green check | §9.1, PICT 1065 decode |
+| W2 | engine.md §6 (saved-game continue) | — | add: a world file that cannot be reopened on resume quits the application (`ExitToShell`); a save naming a missing level dereferences a nil handle with no visible message (`.SafeReportStr` ignores its string) | §9.3; raw `10048bb0`, `100359c8..10035a04` |
+| W3 | any reader of `.SafeReportStr` call sites | message shown | `.SafeReportStr` never displays its argument (fade-in + input off only) | raw `100359c8..10035a04` |

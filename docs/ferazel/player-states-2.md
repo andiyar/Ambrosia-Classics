@@ -5,6 +5,9 @@ Code readings only; nothing behaviour-verified. Date 2026-10-03. Continuation of
 dump l. 2909–3152), `.WallBounce @ 10037a54` (main dump l. 32854–33885), `.WallBounceBG @ 1003a2e8`
 (main dump l. 33888–34556), the hot-rect table reads, and a census of collision kinds over the
 24 shipped `Mlvl` resources. Closes INDEX NOT-RESOLVED 5 except where listed at the end.
+⚑ wave 2 (2026-10-04): §12–§15 close the rest of INDEX 5 and the INDEX 26 rows of this file (kind
+readers, `.CrunchTile`'s return and the crunch kinds, the as-written oddities, the leftover globals);
+sources as before plus `PICT 185` decoded with an own PackBits reader.
 
 Notation: the tile cell's top-left is (X, Y) (px). The mover's hot rect in world px is T (top),
 L (left), B (bottom), R (right); "c" = the **centred** left (`x + (rectL + rectR)/2`), c + 1 the
@@ -30,7 +33,7 @@ run for the player; they are listed only as "(bounce arm)".
    The per-kind rects that loop 3 builds at `+0xc` are read only by `.SeparateFromTiles2`'s dead
    second loop (raw `1003ce74..1003cea0`). Census (§11): in all 24 levels, for every kind k < 0x30
    that occurs, FG tile #k has a kind ≡ k (mod 100), so the per-tile rect equals the natural
-   one — the mis-index has **no effect on shipped data** [HIGH on the census; LOW that it is a slip].
+   one — the mis-index has **no effect on shipped data** [HIGH on the census; ~~LOW that it is a slip~~ intent UNDETERMINABLE, ⚑ wave 2 (2026-10-04) §14].
 5. `k == 0x3c` → `k = 3`, `Y −= 8` (a half-floor 8 px higher; never in FG data, BG only as 160).
 6. Switch on k (jump table at `r2−0x236c` = 0x100a54d4, 0x3a entries; `k > 0x39` → default).
 7. After a resolution (return 1): player only (`s == *_DAT_1009fdd8`) and an ice slide happened
@@ -93,7 +96,7 @@ surface formulas, not from tile art).
 The recursive call gets the original (uncentred) rect, so base kinds 0/2/0xd/0xe then use the real
 edges. 0x13's second test compares an absolute y (`y + *param_4 + rectB`, `param_4` = the hot
 rect's vertical-centre offset `sStack_72`, handler dump l. 2952) with 16, so for any on-map y it is
-true and 0x13 ≡ (2 / 0xf) [HIGH as written; LOW that a tile-relative test was meant]. The `default`
+true and 0x13 ≡ (2 / 0xf) [HIGH as written; ~~LOW that a tile-relative test was meant~~ intent UNDETERMINABLE, ⚑ wave 2 (2026-10-04) §14]. The `default`
 arm's "copy position to old position for 0xb < k < 0x20" is unreachable (all have cases).
 
 ## 10. `.HitPlayerTileSprite @ 10054ca8` (handler dump l. 2909–3152)  [HIGH]
@@ -140,7 +143,7 @@ switch on k − 3 (table `r2−0x2284` = 0x100a55bc, kinds 3..0x2f; others → n
   the same `vy` rule as `.WallBounce` but only when `vy > 0` (also for 0x2c..0x2f), apply the
   ice `vx` slide, and have no `vy` coupling and no post-slide `+2 px`.
 - **BG kind 0xc samples `x − vy>>8`** (`+0x2c`, raw `1003a708 lwz r5,0x2c(r31)`) where every
-  other case uses vx — a slip in the original; no shipped level has BG kind 112 (§11).
+  other case uses vx — ~~a slip in the original~~ as written, intent UNDETERMINABLE (⚑ wave 2 (2026-10-04) §14); no shipped level has BG kind 112 (§11).
 - Kinds 4 / 7: position reverts to last frame's integers; if `(Y+32 − B) < (L − X)` (4) /
   `(X+32 − R)` (7) the routine returns "hit" with only that revert; else lands on Y+16 when
   `Bprev ≤ Y+19`, otherwise no hit (but the revert stays).
@@ -182,21 +185,138 @@ plain floor); **2** (damaging) = kind 203 only, 340 cells in levels 1, 2, 4, 11,
 BG kinds: < 100 solid only in level 45 (The Dig: kinds 1..11, 1,554 cells, plus 5,663 of 95);
 one-way 103 (525 cells, 19 levels), 104 (5) and 107 (6) in levels 1/51/67, 160 (= 0x3c, 166 cells
 in 3, 20, 22, 25, 30, 31, 40); liquids 200..205 (physics §5.1); 400..483 and 495 (21,112 cells in
-11, 18, 22, 30, 31, 40, 62) — ignored by the player (§10 item 5) [NOT RESOLVED: other readers].
+11, 18, 22, 30, 31, 40, 62) — ignored by the player (§10 item 5) ~~[NOT RESOLVED: other readers]~~ (⚑ wave 2 (2026-10-04): no reader at all, §12).
+
+## 12. Wave 2 (2026-10-04): who reads FG kinds 0x4e/0x4f and BG kinds 400..495 (NR 1)  [HIGH]
+Method. A tile kind is read only through `.LookupFGTileKind @ 10041fe8` / `.LookupBGTileKind @ 10041f98`:
+their tables `_DAT_100a0218` / `_DAT_100a0214` have no other TOC load than `.LoadTileDefinitions`
+(`tocrefs`), and the header tables hdr+0x28e0 / hdr+0x29a0 appear only there (`10041df4`/`10041df8`, the
+only `0x28e0`/`0x29a0` operands in the listing). Every call site was read: 8 × `bl 0x10041fe8`, 26 ×
+`bl 0x10041f98`, the tile-callback dispatch of `.SeparateFromTiles2` (main l. 35293–35343) and the kind
+tests of all 22 `Hit*TileSprite` routines.
+
+FG kinds 0x4e / 0x4f (78 / 79; 91 / 86 cells, only in levels 22, 40, 45, 62, 70 — §11):
+
+| reader | use | raw |
+|---|---|---|
+| `.SeparateFromTiles2` → every class's tile callback (layer 1) | → `.WallBounce`, which returns 0 for `k mod 100 > 0x3c` (§9.1 step 1); the player's cling test lists only 0, 2, 4–7, 0x13, 0x14, 0x2d, 0x2f: **no collision** | `1003caf4`, `10037a54..` |
+| `.PlainWrapFGTile`, `.RedrawScrollGrid` | `k = kind mod 100` selects **blend face k** of `PICT 185` through which the level's pattern tile is mixed into the cell (sprites-backgrounds-sounds §3.1 step 2) | `10012bd0..10012c04`, `10013870..100138a0` |
+| `.LoadEncWaterFaceSetFromPICT` | kind 0..0x5f selects the FG-water-mask cell (`PICT 183`) stamped into the water copy of the tile | `1002f7d0..1002f7f0` |
+| `.InitTileHotRects` | per-kind rect switch (no 0x4e/0x4f case → default); feeds only the overlap pre-test | `10002858..10002890` |
+| `.ReshapeCrunchedTile` | neighbour-kind switch: no 0x4e/0x4f case | `10043f54..` |
+
+So 0x4e/0x4f are **draw-only kinds**: no solidity, only a blend shape. `PICT 185` cells 0x4e/0x4f
+decoded (weights per sprites-backgrounds-sounds §3.2: index 0 or 0x97..0x98 → 3; 1..0x96 → 0;
+0x99..0x9b → 2; 0x9c..0x9e → 1): weight 3 only in a band along the **top edge**, about 6 px deep where
+the two cells meet (right side of 0x4e, left side of 0x4f) and thinning to nothing at the outer
+edges; everything below is weight 0 — a two-cell arch at the top [HIGH decode; MED which weight
+means pattern, sprites §3.2].
+
+BG kinds 400..495 (21,112 cells in 11, 18, 22, 30, 31, 40, 62):
+- `.SeparateFromTiles2` passes every non-zero BG kind to the tile callback (layer 0, `1003cb04`,
+  main l. 35334–35342); every callback dispatches `< 100` → `.WallBounce`, `< 200` → `.WallBounceBG`,
+  `.IsWaterTile` (200..209, main l. 38228) → `.HandleUnderWater`, anything else → nothing.
+- Every other BG-kind call site tests only water: `.FillCachedTileArray` (cache fields read only by
+  `.WrapDrawWaterEffects`, which uses them under the water flag: kinds 200 / 0xcb / 0xcd),
+  `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`, `.RedrawScrollGrid`, `.HandleParticles`, `.Splash`
+  (`< 200` clamped to 200, `100429c8..100429d4`), `.HandleUnderWater`, and the water tests in Setup
+  Bonus / Box / Background / Crab.
+- **No reader distinguishes 400..495**: to every sprite and to the draw they are the same as "no BG
+  kind". What the level designers meant by them is UNDETERMINABLE from code (data-only marks).
+
+## 13. `.CrunchTile`'s return value; crunch kinds (NR 2)  [HIGH]
+`.CrunchTile(pos, strength) @ 10044928`; callers test only the low byte (`rlwinm. r0,r3,0,24,31`):
+
+| case | return | raw |
+|---|---|---|
+| the cell has no crunch direction (`.GetFGCrunchDirTile` = bits 12..15 of the FG cell word, `1003bfb4`, is 0) | 0 | `10044968..10044974` → `10044c20` |
+| strength 0 and crunch kind ≠ 3 | the **crunch kind itself** (r3 still holds `.GetFGCrunchKindTile`'s result): non-zero for kinds 1, 2, 4; nothing else happens | `10044988..1004499c` → `10044c24` |
+| strength ≠ 0, or kind 3 | **1**, whatever happened (broke, cracked, resisted, or nothing) | `10044c18` |
+
+So it means "a crunch cell was there and was processed", **not** "broke" and not "bounce". Callers:
+- `.HitPlayerTileSprite` (`100552b8..100552fc`): the bounce needs return ≠ 0 **and** `s+0xeb ≠ 0`; with
+  `+0xeb = 1` the return is always 1, so a fast-falling player (`vy > 0x9c4`, cooldown 0) **bounces off
+  the cell it has just broken** as well as off one that resisted.
+- `.HitPlayerShotTileSprite` (`1005b5f8..1005b62c`): return ≠ 0 and shot type ∉ {6, 0x3c} →
+  `KillPlayerShot(shot,1,1)` (immediate return for the held item, held-item-melee §1.7).
+- `.HitEffectTileSprite` (`10061a84`): ignored.
+
+Crunch kinds as the code treats them (`10044988..10044b6c`; s = strength: player 0/1, shots 1, seeds 2,
+Ice Pick 4, Vorpal Dirk 1), break = immediate `.DestroyCrunchTile` + rock sound + crunch log:
+
+| kind | breaks at once when | otherwise |
+|---|---|---|
+| 0 | s ≠ 0 | s = 0: nothing |
+| 1 | s == 2 | s = 0: nothing; s ∈ {1, 3, 4}: crumble overlay created (hp 2), or hp −1 if one exists and its delay is 0; crack sound and delay rand(3)+1 when hp ≥ 1; breaks when hp < 1 |
+| 2 | s == 2 | s = 0: nothing; s = 1: resist sound only (if not already playing [MED: helper `FUN_100916dc`]); s ≥ 3: nothing unless an overlay already exists (then as kind 1) |
+| 3 | s == 2 | **any contact, s = 0 included**: overlay created armed (`+0x16c = 1`, delay 15) — it then counts down and crumbles the cell **by itself** (triggers-background-2 §2.3) |
+| 4 | s ≥ 4 | s = 0: nothing; 1 ≤ s < 4: resist sound only |
+
+A grounded player calls the crunch pass every frame (`+0xeb = spin ∨ grounded`, §10 item 4) with
+strength 0 unless falling fast, so kind 3 is the cell that collapses under a player standing on it.
+The tiles' art is level data; a name for each kind is UNDETERMINABLE from code — the table above is
+what a replica implements.
+
+## 14. The as-written oddities (NR 8): intent CLOSED AS UNDETERMINABLE  [HIGH for each rule]
+No comment, assertion, second build or data case shows what was meant; for three of the four the
+shipped data never exercises the odd part (§11). A replica copies these rules exactly:
+1. **Kind-indexed tile rect** (`10037b8c..10037bc0`): for `k = kind mod 100 < 0x30`, the (centred) mover
+   rect must meet `(X + e+6, Y + e+4, X + e+0xa, Y + e+8)` with `e = 0x100a4794 + 0x14·k` — the hot-rect
+   entry of **FG tile number k** of the current level, not of the tile that was hit; no overlap → no
+   collision (`.WallBounceBG` the same against the uncentred rect). No effect on shipped data (§9.1).
+2. **Kind 0x13** (`10038e54..10038ed0`): `x + Rc < X + 16` (Rc = right edge of the centred rect copy,
+   `lha 0x90(r1)`) → resolve as kind 2; else if `y + vC + Bc > 16` — y the sprite's integer y, vC the
+   caller's vertical-centre value (`*param_4`, added at `10037c60`), Bc the rect copy's bottom
+   (`lha 0x8e(r1)`) — resolve as kind 0xf; else no collision. The comparison is against the absolute
+   number 16, so below the top 16 px of a map 0x13 ≡ (kind 2 / kind 0xf). 118 + 4 ice cells shipped.
+3. **BG kind 112** (`.WallBounceBG` case 0xc, `1003a708..1003a770`): `s = clamp((x − (vy >> 8)) + L − X,
+   0, 32)` — the previous position is taken with **vy** (`lwz r5,0x2c`) where every other slope uses vx;
+   lands when `y + B > Y + s` and `(y − (vy >> 8)) + B ≤ Y + s + 3`. No shipped BG cell has kind 112.
+4. **2:1 floors 0x2c..0x2f** (`10039768..100398f0`, `100398f4..10039a84`): on overlap with `y + B > Y + s`
+   (0x2d needs `t ≤ 16`, 0x2f `t ≥ 16`): optional bounce scaling of vx and vy (overwritten next), then
+   unconditionally `vy = 2|vx| + 0x100`, `s+0xce = k` (no `vy > 0` test: a rising sprite is snapped down
+   onto the surface); then if the slide applies (`+0x112 > 0`, latch `+0x181` clear): latch,
+   `vx = (int)(vx + 9.23·slip)` (0x2c/0x2d, `fmadd`) or `(int)(vx − 9.23·slip)` (0x2e/0x2f, `fnmsub`;
+   9.23 = f64 at TOC −0x5f40 = `0x100a1900`), then `vy = 2·vx` resp. `vy = −2·vx` — the guarding tests
+   (`vy < 2·vy`, `vy > −2·vy`) mean `vy > 0`, always true after the store, so the assignment is
+   unconditional and uses the signed post-slide vx; finally `y = Y + s − B`, hit. No shipped ice on
+   0x2c..0x2f (§11), so the ice half is never reached in 1.0.3.
+
+## 15. The other rows of the NR list (wave 2)  [HIGH]
+- **NR 3 `PTR_DAT_100a06e8`** (byte 0x102bb7dc): its 3 TOC loads store 0 (`.ClearPlayerVars`
+  `1004ab50..1004ab5c`, `.HandlePlayerSprite` `1004ed18..1004ed1c`) or read it (`1004ecf0`); the adjacent
+  slots `0x100a06dc` / `0x100a06e0` (bytes 0x102bb7da / 0x102bb7db) are accessed only with byte ops
+  (all loads followed, incl. r28 at `1004c55c`). Never non-zero: the "second entry flag" branch
+  (handler l. 1399–1402) is dead.
+- **NR 5** cannon launch geometry: covered by triggers-background §2 "Firing" (`.HandleCannonedSprite`,
+  handler l. 4640–4888). **NR 6** glider internals: spells-detail §5.
+- **NR 7** the five type-1 sprites are the Double-Speed trail (held-item-melee §3, slot `0x100a0518` →
+  `.SetupTrailSprite 1004b3b4`). **`PTR_DAT_100a06bc`** (i16 0x102bb7ca): set to 3 when the player's
+  invulnerability `+0x116` exceeds last frame's copy `PTR_DAT_100a06c0` (a new hit) and no door
+  transit (`1004dd90..1004ddbc`), counted down to 0 every frame (`1004ddc0..1004ddd8`), zeroed by
+  `.ClearPlayerVars` (`1004abac`); those are all its TOC loads, no neighbour slot reaches it: **no
+  reader** (a dead counter). Its partner `PTR_DAT_100a06c0` = `+0x116` copied each frame
+  (`1004e1bc..1004e1c8`, handler l. 1071), read only by that test.
 
 ## NOT RESOLVED
-1. Readers of FG kinds 0x4e/0x4f (desert levels) and BG kinds 400..495 other than the player's
-   tile callback (both are no-ops for the player).
-2. `.CrunchTile`'s return value meaning (break vs bounce) — only its use is read here.
-3. `PTR_DAT_100a06e8` (second cast-start flag): no writer in either dump.
+1. ~~Readers of FG kinds 0x4e/0x4f (desert levels) and BG kinds 400..495 other than the player's
+   tile callback (both are no-ops for the player).~~ → closed: §12 (0x4e/0x4f draw-only blend shapes;
+   400..495 read by nothing) — ⚑ wave 2 (2026-10-04)
+2. ~~`.CrunchTile`'s return value meaning (break vs bounce) — only its use is read here.~~ → closed: §13 — ⚑ wave 2 (2026-10-04)
+3. ~~`PTR_DAT_100a06e8` (second cast-start flag): no writer in either dump.~~ → closed: §15, never
+   non-zero, the branch is dead — ⚑ wave 2 (2026-10-04)
 4. PICT 1026 (0x402): no loader found.
-5. Cannon launch geometry (`.HandleCannonedSprite` arms, the cannon's `+0x46/+0x164`) — cannon reader.
-6. Glider internals (`_DAT_100a05d0/05d4/05d8/05dc/05c8`, faces 1050–1053) — spells reader.
-7. The 5 type-1 sprites at `PTR_DAT_100a051c` (trail by handler name only) and `PTR_DAT_100a06bc`
-   (3-frame counter on a new hit; reader not traced).
-8. Intent of the three as-written oddities a replica must copy anyway: WallBounce's kind-indexed
+5. ~~Cannon launch geometry (`.HandleCannonedSprite` arms, the cannon's `+0x46/+0x164`) — cannon reader.~~
+   → closed elsewhere: triggers-background §2 "Firing" — ⚑ wave 2 (2026-10-04)
+6. ~~Glider internals (`_DAT_100a05d0/05d4/05d8/05dc/05c8`, faces 1050–1053) — spells reader.~~ → closed
+   elsewhere: spells-detail §5 — ⚑ wave 2 (2026-10-04)
+7. ~~The 5 type-1 sprites at `PTR_DAT_100a051c` (trail by handler name only) and `PTR_DAT_100a06bc`
+   (3-frame counter on a new hit; reader not traced).~~ → closed: §15 (trail = held-item-melee §3;
+   `PTR_DAT_100a06bc` has no reader) — ⚑ wave 2 (2026-10-04)
+8. ~~Intent of the three as-written oddities a replica must copy anyway: WallBounce's kind-indexed
    tile rect (§9.1.4), kind 0x13's absolute-y test (§9.3), BG 0xc's `vy` for previous x (§10.1),
-   and the 0x2c..0x2f ice `vy` rules.
+   and the 0x2c..0x2f ice `vy` rules.~~ → CLOSED AS UNDETERMINABLE (intent): §14 states each rule
+   exactly; nothing in code or data shows the intent — ⚑ wave 2 (2026-10-04)
 
 ## Proposed additions to physics.md §0
 - `+0x46` (player) walk/run cycle phase (even 0..30 / 0..22); `+0x14c` (player) catapult launch
@@ -232,3 +352,12 @@ in 3, 20, 22, 25, 30, 31, 40); liquids 200..205 (physics §5.1); 400..483 and 49
 | physics §4 wall-jump row (already ⚑-corrected by the deepening to "net **vy = −3610**") | −3610 | **−3637** = −3200 − (3500 >> 3) (review 1b #3) | main dump l. 44869–44880; 0x4e2 = 1250 |
 | physics §8.3 / §8.4 (`_DAT_100a0718`, FootPressure gate) | any "launch latch, never decays" text carried over from platforms-ropes-radial corr. 9 | air animation counter, zeroed every grounded / rope / swim / cling frame through r27 (loaded once at raw 1004d648; stores 100500c4, 10050250, 100505d4, 1005073c); `.FootPressure` skipped only on airborne / first-landing frames (review 1b #1) | §2, §3.12; platforms-ropes-radial §4 |
 | world-data §3.2 0x26c8 row | HIGH, evidence by dump line | add the raw addresses `.NewGame` 1000b3d8, `.ContinueGame` 1000d684, `.SetupPlayerSprite` 1004b2b0 (review 1b #13) | §6 |
+
+Wave 2 (2026-10-04):
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | physics.md §3.3 crunch bullet | "bounce if not broken" | the player bounces whenever it falls fast onto a crunch cell, **broken or not** (`.CrunchTile` returns 1 for every processed cell when the strength is non-zero) | §13; raw `10044c18`, `100552c0..100552fc` |
+| W2 | spells-detail §3 (line "crunch cell … if it broke → kill") | kill if it broke | kill if the cell was processed (return ≠ 0: broke, cracked or resisted) | §13; raw `1005b5f8..1005b62c` |
+| W3 | sprites-backgrounds-sounds §3.1 step 2 | (kinds as collision only) | add: FG kinds 0x4e/0x4f exist only for this blend step (no collision); BG kinds 400..495 have no reader | §12 |
+| W4 | held-item-melee §1.7 "kind meanings NOT RESOLVED" (owned by this lane; applied there) | open | crunch kinds 0..4 per §13 table; art = level data | §13 |

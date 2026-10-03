@@ -11,6 +11,8 @@ with `.HandleKeys @ 10052ac0` (main dump l. 44140–44975), `.HandleItemUse @ 10
 `.WallBounce @ 10037a54` (main dump l. 32854–33885) and `.WallBounceBG @ 1003a2e8` (main dump
 l. 33888–34556) — part (b) is in `player-states-2.md`. Units as physics.md (1/256 px per frame).
 Labels per INDEX. Glider physics belong to the spells reader; only its entry/exit are named here.
+⚑ wave 2 (2026-10-04): §9 places the player in the frame (handler/collision order, layers) and closes the
+dead globals `PTR_DAT_100a06e8`, `PTR_DAT_100a06bc`, `_DAT_100a067c`.
 
 ## 0. Conventions
 The player's state lives almost entirely in **globals**, not in sprite fields. They are named here
@@ -104,6 +106,8 @@ player sprite. Face sets are pointers to arrays of 0x34-byte face records; "set[
 | `_DAT_100a059c` | carpet-steering lock (5 after `.HurtPlayer`, 2 after a carpet wall hit) | HIGH |
 | `_DAT_100a0738` | ground kind last pass (`s+0xce` copy) | HIGH |
 | `PTR_DAT_100a04cc` | "stood on a BG one-way top" timer (15) — only read by the glider exit | HIGH |
+| `PTR_DAT_100a06bc` / `PTR_DAT_100a06c0` | ⚑ wave 2 (2026-10-04): 3-frame "new hit" counter (set 3 when `+0x116` rises above last frame's copy `06c0`, counts down) — **no reader** / that copy (§9.2) | HIGH |
+| `_DAT_100a0684` | ⚑ wave 2 (2026-10-04): save-point hold counter (−1/+1 toward 0 per frame here; +2 per landing in `.HitPlayerSprite`) — save-continue §9.2 | HIGH |
 
 ## 3. State selection (handler dump l. 1476–2453; first match wins)
 
@@ -254,7 +258,8 @@ Common: air counter 0, spin 0, spin sound stopped.
    > 0, after 6 → inactive, phase 3. At phase 3 a hold counter runs to 18, then phase 2 → 1 → 0
    (one tick each). Fastest re-cast: 4 ticks (USE must be released between casts,
    `_DAT_100a0760`). A second entry flag `PTR_DAT_100a06e8` (+1 phase up to 3, then active) has
-   no writer in either dump [NOT RESOLVED].
+   no writer in either dump ~~[NOT RESOLVED]~~ (⚑ wave 2 (2026-10-04): never non-zero, the branch is dead — §9.2,
+   player-states-2 §15).
 7. Potion counter (l. 1431–1475): +1/frame; at 20: item 5 → HP = breath = max; item 4 → magic =
    max (flash 6); item 0x19 → just removed; at 40 item 0x19 → spirit (§3.3); > 40 → 0.
 
@@ -276,7 +281,8 @@ falling frame jumps to 5 (if it rose < 3 frames) or advances 2/frame to the fall
 - **Cannoned**: `.TurnIntoCannoned @ 10058594` swaps the sprite's handler/hit/tile callbacks into
   `+0x1ec/+0x1f0/+0x1f4`, installs `.HandleCannonedSprite`, timer `+0x130 = 15`, cannon `+0x1e4`;
   for the player sets the launched flag; the player fires early with JUMP when the cannon's record
-  param 1 < 0. Launch geometry belongs to the cannon reader [NOT RESOLVED here].
+  param 1 < 0. Launch geometry belongs to the cannon reader ~~[NOT RESOLVED here]~~ (⚑ wave 2 (2026-10-04): read in
+  triggers-background §2 "Firing").
 - **Statue / carrying / pushing**: no player statue state exists (`.TurnIntoStatue` has no
   player caller); no carry state; pushing is `.RectBounce` mass transfer (physics §8.1), no
   player face or flag. "Running" (1024) was formerly unlabelled.
@@ -413,3 +419,43 @@ layer 9 into `PTR_DAT_100a051c` (16-B records `{sprite, 0, −1, −1, 0}`) [MED
 by `.SetupTrailSprite` handler] → HIGH: slot 0x100a0518 → `1004b3b4` (⚑ corrected (deepening 2026-10-03, held-item-melee.md corr. 5; held-item-melee §3)); eight Pentashield slots at `PTR_DAT_100a0514` (0x14 B: angle
 `0x4800·i` = 72°·i, radius 0x30, 0xa00, active 0) and count 0; idle/fidgets/wand 0; died-in-water
 0; facing from `G+0x16` (§6, also sets `_DAT_100a5f5c`); door/revive/debug-kill/glider 0.
+
+## 9. Wave 2 (2026-10-04): the player in the frame; dead globals  [HIGH]
+
+### 9.1 Where the player runs in a frame
+Order of one frame and the active list: platforms-ropes-radial-2 §8. For the player:
+- Layer 10 (`1004af88 li r5,0xa` → `1004afac`). Before it in every frame: the five trail sprites and the
+  Shadow Double (layer 9 = player layer − 1; their Setups do not change `+0x80`), platforms (−1), Box
+  class (2). After it: the held item (0x14, held-item-melee §4.1).
+- The Shadow Double's handler therefore reads the pose ring **before** the player appends this
+  frame's pose (handler l. 2771–2866): its newest readable entry is last frame's. A Double created in
+  frame n (inside the player's handler, layer 9 = before the player) is first handled in n+1.
+- The player has **no hit callback** (`s+0x5c = 0`, §8): `.HitPlayerSprite` runs only from
+  `.MTCollideSpecialSprite`, after every handler of the frame, once per touching sprite, in list order
+  (raw `10032ac8..10032eec`; the `+0x34` rect plus position, not `.CalcHotRect`). Whatever it writes
+  (stun, spring velocity, counters, save point) is seen by the player's handler in the **next** frame.
+  The touching sprite's own hit callback with the player as argument runs twice per frame (once in
+  `.MTCollideSprites` as the outer sprite, once here) unless a see-saw segment is among the contacts.
+- The player's tile callback runs inside its own handler (the two `.SeparateFromTiles2` passes, §1).
+
+### 9.2 Globals with no reader
+- `PTR_DAT_100a06e8` (byte 0x102bb7dc): its three TOC loads store 0 (`1004ab50..1004ab5c`,
+  `1004ed18..1004ed1c`) or read it (`1004ecf0`); the neighbouring byte slots `0x100a06dc` / `0x100a06e0`
+  are accessed only with byte operations — never non-zero, so the l. 1399–1402 branch is dead.
+- `PTR_DAT_100a06bc` (i16 0x102bb7ca): set to 3 at `1004ddb4..1004ddbc` when `+0x116 > *PTR_DAT_100a06c0`
+  and `*_DAT_100a06f0 == 0`, decremented at `1004ddc0..1004ddd8`, zeroed at `1004abac`; no other load and
+  no aliasing slot — write-only. `PTR_DAT_100a06c0` = `+0x116` copied at `1004e1bc..1004e1c8`.
+- `_DAT_100a067c`: written 1 by `.HitPlayerSprite` on a see-saw segment touch and 0 every frame here
+  (`1004e57c..1004e588`) — write-only (platforms-ropes-radial-2 §10.2).
+
+## NOT RESOLVED
+1. `PICT 1026` (0x402, 400×152): no loader found (§7) — not this lane's (wave 2: lane L4).
+
+## Proposed additions to physics.md §0
+- `+0x5c` (player) = 0 always: the player's sprite-contact logic is `.HitPlayerSprite`, called only by
+  `.MTCollideSpecialSprite` (platforms-ropes-radial-2 §8.3).
+
+## Corrections to the existing bank
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | enemy-shots-and-damage / spells-detail notes on "same-frame handling of new shots" | open | rule: a sprite created inside a handler is handled in the same frame only if its insertion point (layer, then insertion order) lies after the creator's successor as saved before the call; a Double (layer 9, created by the layer-10 player) never is | §9.1; platforms-ropes-radial-2 §8.2 (raw `100325b8..100325d8`, `10032f1c..10032fd0`) | §9.1; platforms-ropes-radial-2 §8.2 |
