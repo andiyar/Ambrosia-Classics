@@ -76,3 +76,5 @@ what new evidence changed it.
 6. "verified identical" → "identical by code comparison" — landed in `levels-layouts.md` line 1.
 7. 1.1 evidence class stated (decompile + reviewer PPC listing-decoder trace; `otool -tV` fails on `Aki_ppc`) — landed in `INDEX.md` Provenance.
 8. D5 1.1 `1 < diff` guard marked not re-verified (LOW) — landed in `delta-1.1-vs-1.2.md` §B D5.
+
+- **Phase 0 data census (machine-generated, 2026-10-03):** `data-census.md` — every 1.1.0 PICT (82), 1.2.0 PNG (50) and audio file decoded/opened through HectorKit; numbers are tool output.

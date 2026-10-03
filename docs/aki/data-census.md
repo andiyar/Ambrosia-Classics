@@ -1,6 +1,7 @@
 # Aki — data census (Phase 0)
 
-> Generated 2026-10-03 by `aki-census` (`Aki/Core`) through HectorKit `54dc37d`. Everything below the
+> Generated 2026-10-03 by `aki-census` (`Aki/Core`) through HectorKit `54dc37d` (README-only
+> commit on top of the Task 6 code `1a342ef`; decoder identical). Everything below the
 > rule is the tool's stdout, verbatim. Re-run from the repo root:
 >
 >     swift build --package-path Aki/Core -c release
@@ -23,6 +24,11 @@
    Clip · N × [0x8200 JPEG band · 0x0098 1-bit "decompressor required" BitMap] · 0x00FF`, N ∈ {1, 2, 4, 6}
    (45 / 5 / 20 / 1 PICTs); bands are full-width strips at their matrix ty that tile the frame exactly.
    HectorKit composites them (`PICT.decodeQuickTime`, HectorKit DECISIONS D2) and skips the placeholders.
+4. **Three 1.1-vs-1.2 similarity rows sit above the 6.0 threshold in section 3 and are NOT decoder
+   defects** (reviewer rendered all three, 2026-10-03): 155 vs `welcome.png` (15.30) and 313 vs
+   `buyaki.png` (16.53) are wording changes between versions; 160 vs `paper.png` (122.99) is a 1.1-only
+   splash with no 1.2 counterpart (`paper.png` pairs with 315 at 0.07). Band-order mistakes cost ≥ 10,
+   which is why the threshold line exists; these rows are version deltas for the RE bank, not Phase 0.
 
 ---
 
