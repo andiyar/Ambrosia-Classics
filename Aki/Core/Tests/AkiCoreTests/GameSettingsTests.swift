@@ -117,12 +117,18 @@ final class GameSettingsTests: XCTestCase {
     }
 
     func testStoreSavesLoadsAndMigrates() throws {
-        let suite = "aki-settings-test-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        // The suite name is an absolute path inside a scratch directory: CFPreferences then keeps the
+        // domain at `<path>.plist` there, so the test never writes to `~/Library/Preferences` (25 leaked
+        // `aki-settings-test-*` plists by 2026-10-04; `removePersistentDomain` alone leaves an empty file
+        // behind, written by cfprefsd after the process exits).
         let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("aki-prefs-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: dir) }
+        let suite = dir.appendingPathComponent("aki-settings-test").path
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer {
+            defaults.removePersistentDomain(forName: suite)
+            try? FileManager.default.removeItem(at: dir)
+        }
         let legacy = dir.appendingPathComponent("Aki Prefs")
         let store = GameSettingsStore(defaults: defaults, legacyPrefsURL: legacy)
 
