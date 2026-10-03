@@ -69,11 +69,11 @@ counter `+0x150` starts at 0 so the first counted wall hit kills (§1.3). Damage
 |---|---|---|---|---|---|---|---|
 | 0, 1 | Walker 0x6a4 axe throw (type = thrower's facing byte) | default 8,8,16,16 → 8×8 | 0xaf | 0 | 0x6a7, 8 × 24×24; frame +1/−1 per frame (type 0/1), wraps 0..7 | dies on wall | 0x38 |
 | 0x46a | Demon, Wizard, Xichra fireball | 6,6,0x2a,0x1a → 36×20 | 0 | 8 | 0x46a, 6 × 48×48, cycles 0..5 | dies on first **FG** hit; ignores BG tiles/water; sound 301 on death | 0x70 |
-| 0x46b, 0x46c | **no spawner found** (literal scan) | 8,8,0x38,0x32 → 48×42 | 0 | 8 | PICT **0x46a** loaded at 64×64 (sic, disasm 1005b994/1005b9c4; PICTs 0x46b/0x46c 384×64 exist unused) | as 0x46a | 0x70 / 0xa8 |
+| 0x46b, 0x46c | ~~**no spawner found** (literal scan)~~ **no spawner exists**: every type passed to `MTNewSprite(…, SetupEnemyShot)` is resolved in enemy-shots-and-damage-2 §4.1 ⚑ wave 2 (2026-10-04) | 8,8,0x38,0x32 → 48×42 | 0 | 8 | PICT **0x46a** loaded at 64×64 (sic, disasm 1005b994/1005b9c4; PICTs 0x46b/0x46c 384×64 exist unused) | as 0x46a | 0x70 / 0xa8 |
 | 0x6a9 | Walker 0x6a9 sword swing | 0,0,0x5a,0xe → 90×14 | 0 | 0x14 | none (`+0xc0 = 0` every frame) | `+0x14c = 2` → killed by the 2nd Handle | 0x70 |
 | 0x6d6 | Walker 0x6d6 swing | 0,0,0x3c,0x18 → 60×24 | 0xaf (not cleared) | 0 | none | `+0xa6 = 3`, Handle does `+1` then `−1` → **never times out** (disasm 1005c050 vs 1005c0d4); dies on first wall/floor hit | 0x70, invul **0x24** |
-| 0x6e1 | Walker 0x6e0 (param 1 = 0), box launchers | 8,8,0x18,0x18 → 16×16 | 300 | thrower+1 | 0x6e1 'goblin boulders', 8 × 32×32, cycles | bounces (§1.3), then splits into 3..5 × 0x6e6 | 0x38 |
-| 0x6e2 | Walker 0x6e0 (param 1 = 1), box launchers (param 4 = 1) | as 0x6e1 | 300 | thrower+1 | 0x6e2 'bomb boulder' | as 0x6e1 + explosion 0x4b7 at (x−32,y−32) + snd 435 | 0x38 (+ explosion §3.4) |
+| 0x6e1 | Walker 0x6e0 (param 1 = 0), box launchers | 8,8,0x18,0x18 → 16×16 | 300 | thrower+1 | 0x6e1 'goblin boulders', 8 × 32×32, cycles | bounces (§1.3), then splits into 3..5 × 0x6e6 | ~~0x38~~ **none on contact**: its own callback kills it before `.HitPlayerSprite` can see it; the shards hurt (enemy-shots-and-damage-2 §4.3) ⚑ wave 2 (2026-10-04) |
+| 0x6e2 | Walker 0x6e0 (param 1 = 1), box launchers (param 4 = 1) | as 0x6e1 | 300 | thrower+1 | 0x6e2 'bomb boulder' | as 0x6e1 + explosion 0x4b7 at (x−32,y−32) + snd 435 | ~~0x38 (+ explosion §3.4)~~ none on contact; shards 0x38 or the explosion 0x70 (enemy-shots-and-damage-2 §4.3) ⚑ wave 2 (2026-10-04) |
 | 0x6e6 | `.KillEnemyShot` of 0x6e1/0x6e2 | 6,6,10,10 → 4×4 | 0xaf | parent's | 0x6e6, 8 × 16×16, cycles | `+0x150 = +0x154 = 1` → dies on the first wall hit after its first frame | 0x38, only while `+0x164 ≤ 1` (age counter, Handle `+1`/frame) |
 | 0x6f4 | Floater/'Wraith' 0x6f4 | 5,5,0x12,0xc → 13×7 | 0 | 0 | 0x45d, 15 × 24×24, cycles 0..14; tint 0xb0002/0xb0000/0xb0001 for age <3/<5/<7 | homing (§1.5); dies on wall | 0x70 |
 | 0x709 | Frog | 8,3,0xf,0xc → 7×9 | 0 | frog+1 | 0x455 (vx ≤ 0) / 0x454 (vx > 0), 6 × 24×15 | dies on wall | 0x38 |
@@ -100,7 +100,7 @@ type numbers deliberately reuse the spawner's type space: 0x6a9/0x6d6 are also W
 (set only on Xichra's darts → they fly through walls) or when the debug key 0x32 is held with the
 debug flag:
 - **FG** (`layer == 1`), only while `+0x154 == 0`: `fast = |vx| ≥ 0x1195 || |vy| ≥ 0x1965`;
-  `.WallBounce(s, kind, pos, centre, 0xa0, hotRect, 0, 1)`; if it collided: type 0x753 → if
+  `.WallBounce(s, kind, pos, centre, 0xa0, hotRect, 0, 1)` (0xa0 = restitution 160/256, enemy-shots-and-damage-2 §4.6 ⚑ wave 2 (2026-10-04)); if it collided: type 0x753 → if
   `|vy| < 300` it stops (`vx = vy = 0`, gravity 0x200); other types → 0x6e1/0x6e2 play snd 436
   'Object Hit' (vol 0x55, random pitch); `+0x150 += 1` (once per frame: `+0x154 = 1`, re-armed
   by Handle); **kill when `+0x150 ≥ 0` or `fast`**.
@@ -136,7 +136,7 @@ All via `MTNewSprite(…, SetupEnemyShot)`; the TOC slot 0x100a0830 is loaded at
 | Box 0x5aa..0x5ad launchers (12706–12760) | 0x6e1 + own param 4 | timer `+0xa6` reaches 0 **and** the record named by param 1 or param 2 has param 4 == 1 (a linked switch); re-arm 50 + R(30) | own x, y | 0x5aa: vx R(300)−150, vy R(400); 0x5ab: vx R(300)−150, vy −3000−R(300); 0x5ac: vx 0xaf0+R(600), vy −(500+R(700)); 0x5ad: mirror of 0x5ac | bl 1006e9a0/ea00/ea64/eacc; 1006ea40, 1006ea84 |
 | Background traps 0x76c..0x76f (15174–15210) | type + 5 | sight line: player within ±`+0x150` of the trap's axis and in front, at step 0x12 (snd 499 'ArrowShootSound') | trap + (±0x20/0x2a) | 0x76c→0x771 vx +0x1000; 0x76d→0x772 −0x1000; 0x76e→0x773 vy −0x1000; 0x76f→0x774 vy +0x1000 | 10074a98…10074af4 |
 | Bat (17020–17038) | 0x712 | `+0x14c == 1` bats, cooldown `+0x154` 0, `|playerCy − cy| < 30` | cx − 0xc, cy − 7 | vx −0x708 when `+0x17e == 0`, else +0x708; vy = bat vy / 4; cooldown 60 + R(75). Also adds vx to the shot's **integer** x and bat vy to its integer y (unit mismatch, overwritten by the next integration) [HIGH code; LOW intent] | 1007eec4/1007eed0 |
-| Gremlin (17760–17777) | 0x712 | `+0x154 == 7` (fire-hiss snd 495/496 at 1) | x + 4, y + 6 | impulse 0x708 in direction `+0x158` (36-step table, physics §6) + vx of `+0x1d4`; hot-rect bottom −3; dir 4 → facing 1, `+0x1aa = 0xdc`; dir 0xe → `+0x1aa = 0x140` | 100804f0 |
+| Gremlin (17760–17777) | 0x712 | `+0x154 == 7` (fire-hiss snd 495/496 at 1) | x + 4, y + 6 | impulse 0x708 in direction `+0x158` (36-step table, physics §6) + vx of `+0x1d4`; hot-rect bottom −3; dir 4 → facing 1, `+0x1aa = 0xdc`; dir 0xe → `+0x1aa = 0x140` (draw rotation 220° / 320°, enemy-shots-and-damage-2 §4.5 ⚑ wave 2 (2026-10-04)) | 100804f0 |
 | Floater/Wraith (18121–18132) | own type (0x6f4 in all 7 placements) | step `== 0x1d` (snd 504 'elecshot') | x + 6/0x5e − 0xc, y + 10 | at rest; `+0x15c` = direction to player (unused by the handler) | — |
 | Frog (18397–18429) | 0x709 | attack `+0x46 == 6` | cx + 0x5a·`+0x17e` − 0x2d, cy − 0x14 | vx −2000 when `+0x17e == 0`, else +2000; tint by frog `+0x15c`: 1 → 0x1000c (and `+0xa4 ×2`), 2 → 0x10017, 3 → 0x1000f (`×4`), 4 → 0x1000b (`×3`) — the multipliers act on `+0xa4 = 0` and the damage path never reads it: **dead** | 1008270c/10082718 |
 | Salamander (18860–18872) | 0x712 | attack `+0x46 == 0xc` | cx + 0x3c·`+0x17e` − 0x2d, cy − 0x19 | vx −2000 when `+0x17e == 0`, else +2000 | 10083410/1008341c |
@@ -174,8 +174,10 @@ vx/vy. The shot is spawned at rest, so it accelerates toward the player for 20 f
 - 0x6f4: particles (…,1,1,1,0,0x65). 0x46a: snd 301 pitched 44000 + R(13000), particles
   (…,2,2,2,0x96,0x66). Everything else: just removed.
 - The routine does not test `+0xe9`; when two callbacks both reach it in one frame (§3.1), a
-  0x6e1/0x6e2 would split twice — whether that ordering occurs depends on active-list order
-  [NOT RESOLVED].
+  0x6e1/0x6e2 would split twice — ~~whether that ordering occurs depends on active-list order
+  [NOT RESOLVED]~~ ⚑ wave 2 (2026-10-04): never against the player (the player has no hit callback, enemy-shots-and-damage-2 §4.2);
+  only a box-launcher bomb touching a Pentashield orb can split twice, and no shipped level holds
+  both (enemy-shots-and-damage-2 §4.3) [HIGH code; HIGH census].
 
 ## 2. Cannons, statues, trails, shadow double
 
@@ -246,7 +248,7 @@ to 0x1b (in step) while the player rides a sprite (`PTR_DAT_100a0558` = ridden s
 l. 742) (l. 2772–2790). `HandleShadowSprite`
 draws entry `index>>1` with tint 0x1000b, swapping in alternative faces while casting
 (`_DAT_100a06d4`, `_DAT_100a06d0`) or with `.ShadowBob` bobbing (`_DAT_100a05c0`, table at
-`DAT_100a5fda`) [HIGH arithmetic, MED meanings of the flags]. ⚑ corrected (review 1d, 2026-10-03)
+`DAT_100a5fda`) [HIGH arithmetic, ~~MED meanings of the flags~~ flags named, enemy-shots-and-damage-2 §4.7 ⚑ wave 2 (2026-10-04)]. ⚑ corrected (review 1d, 2026-10-03)
 #C6: face rule — not casting: crouch face if the player crouches and the entry is grounded, else the
 entry's face while moving, bobbing entry face when still and airborne, breathing face (bob reset)
 when still and grounded; casting: cast face from the player's current wand phase. Its hot rect is
@@ -259,14 +261,18 @@ shipped bug to reproduce [HIGH] → held-item-melee §2.
 
 ## 3. The player's damage intake — `.HitPlayerSprite @ 100556f4`
 
-### 3.1 How it is called  [HIGH]
-`.MTCollideSprites @ 100326cc` (main dump l. 30181–30335) tests every active sprite with a hit
-callback against every other (pairs closer than a global distance, hot rects intersecting, and not
-both of a class flagged `+0x184`), and for each intersecting pair calls **both** callbacks
-(A(B), then B(A) if B has one); with several partners the nearest is processed first. A pair can
-therefore be visited from both ends in one frame; killed sprites (`+0xe9`) are skipped as the
-*outer* sprite and as the partner, but `.HitPlayerSprite` itself never checks the partner's
-`+0xe9` [HIGH reading; consequence §1.6].
+### 3.1 How it is called  [HIGH] ⚑ wave 2 (2026-10-04) (corrected: the player is not a callback sprite of `.MTCollideSprites`)
+~~`.MTCollideSprites @ 100326cc` (main dump l. 30181–30335) tests every active sprite with a hit
+callback against every other (…), and for each intersecting pair calls **both** callbacks
+(A(B), then B(A) if B has one); with several partners the nearest is processed first.~~
+The player's hit callback `+0x5c` is **0** (`.SetupPlayerSprite` `li r31,0` 1004af44 → `stw r31,0x5c`
+1004afd4; `.HandlePlayerSprite` re-zeroes it, 1004f55c/1004f794), so `.MTCollideSprites` only ever
+calls the *other* sprite's callback with the player as partner. **`.HitPlayerSprite` is reached only
+through `.MTCollideSpecialSprite(player, HitPlayerSprite)`**, a second pass that `.HandleSprites`
+runs after `.MTCollideSprites` (raw 10007c30/10007c38/10007c64; the TVector slot 0x1009fdd4 is
+loaded only at 10007c60). Exact passes, order and the active-list rule: enemy-shots-and-damage-2 §4.2. `.HitPlayerSprite`
+itself never checks the partner's `+0xe9`; the special pass skips killed partners when it gathers
+them [HIGH; consequences enemy-shots-and-damage-2 §4.3].
 
 ### 3.2 Gate and dispatch order  [HIGH]
 `.HitPlayerSprite(player, other)` (handler dump l. 3155–4637):
@@ -334,18 +340,19 @@ loss. Box-class 0x5a0 sprites (~~pools~~ the geyser bases — no pool object exi
 
 ### 3.5 Generic enemy / enemy-shot path (step 7, l. 4512–4637; disasm 10057968–10057bcc)  [HIGH]
 1. Return (no damage) if: type 0x76c..0x775 or 0x754 with gravity `+0x110 > 0` (i.e. a dart or
-   spine after a shield reflection); EnemyShot 0x77b with `+0x14c ≠ 0`; `.ShieldBlock` (§3.6)
+   spine after a shield reflection); EnemyShot 0x77b with `+0x14c ≠ 0` (never true: nothing writes a 0x77b's `+0x14c`, enemy-shots-and-damage-2 §4.1 ⚑ wave 2 (2026-10-04)); `.ShieldBlock` (§3.6)
    succeeds; type 0x6e6 with `+0x164 ≥ 2`; type 0x74d; types 0x73a..0x73e with `+0x160 ≠ 0`.
 2. Damage by class (defaults: 0x70, invul 60): Gremlin 0xe0; Crawler, Roach, Bat, Blob 0x38;
    Warrior, Frog, Wizard, Chief 0x70; Walker, Demon, SwarmMember (no entry) 0x70; EnemyShot by type
    (§1.2 column): 0x46a/0x46b 0x70, 0x46c 0xa8, 0x6f4 0x70, 0x71f 0x70, 0x77b 0x70, 0x753/0x754
-   and 0x771..0x774 the shot's `+0xa4`, all others 0x38.
+   and 0x771..0x774 the shot's `+0xa4`, all others 0x38 (for 0x6e1/0x6e2 and 0x46b/0x46c this arm
+   is dead, enemy-shots-and-damage-2 §4.1/enemy-shots-and-damage-2 §4.3 ⚑ wave 2 (2026-10-04)).
 3. Type overrides for any class: 0x6a9 → 0x70; 0x6d6 → 0x70 with **invul 0x24** (36) — this also
    hits the Walker *body* of type 0x6d6.
 4. Coins lost: damage == 0x70 → 3 when `FastRand(100) > 80` (19 %), else 0; damage > 0x70 → 5;
    less → 0. Blood spray always on.
 5. `HurtPlayer(player, other, dmg, 1, invul, coins)`; if it hit and `other` is an EnemyShot,
-   `_DAT_100a0570 = 0` (an input-lock timer that `.HandleKeys` honours; its setter not found).
+   `_DAT_100a0570 = 0` (an input-lock timer that `.HandleKeys` honours; ~~its setter not found~~ set by the Chief/Xichra landing stagger, enemy-shots-and-damage-2 §4.4 ⚑ wave 2 (2026-10-04)).
 6. If `other` is an EnemyShot: 0x77b → `+0x15c = 1` (spin reverses), `vx ×= −0.15`
    (0x100a1a00), gravity set to 0x15e only if it was ≤ 0; **every other shot is killed, whether or
    not damage landed** (invulnerable players still absorb shots).
@@ -408,19 +415,34 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
   (physics §5.1, §3.3), the Death sphere (spells-items §5). `.HurtPlayer` has exactly 14 call
   sites, all in `.HitPlayerSprite` (`bl 0x1005473c` count in the disasm = 14).
 
+## 4. Wave 2 (2026-10-04) — continued in `enemy-shots-and-damage-2.md`
+§4.1 the complete enemy-shot spawn set (0x46b/0x46c dead; 0x77b `+0x14c` never written) · §4.2 the
+three collision passes and the active-list order rule (the player is reached only by
+`.MTCollideSpecialSprite`) · §4.3 bombs, double split, 0x6a9 · §4.4 `_DAT_100a0570` · §4.5 `+0x1aa` ·
+§4.6 `.WallBounce` restitution · §4.7 shadow flags · §4.8 names, frog tint. ⚑ wave 2 (2026-10-04)
+
 ## NOT RESOLVED
-1. Who spawns enemy shots 0x46b/0x46c (no literal found; a computed type is possible) and whether
-   their faces from PICT 0x46a at 64×64 would ever show.
-2. Writer of 0x77b's `+0x14c` (the "harmless while ≠ 0" test) — none found; 0 at spawn.
-3. Setter of `_DAT_100a0570` (input-lock zeroed by enemy-shot hits).
-4. ~~Meaning of `+0x1a2` (Magical-Shield reflection flag) and~~ `+0x1aa` (Gremlin spit, 0xdc/0x140).
-   (`+0x1a2` closed: burn row, §3.6 ⚑ corrected (review 1c, 2026-10-03) #3.)
-5. The frog `+0x15c` source (probably placement param 1, census values 0/1/2/4).
-6. Active-list order between the player and shots, hence whether a bomb can split twice (§1.6)
-   and whether 0x6a9 (2-frame life) is ever collidable twice.
-7. `.WallBounce`'s use of the 0xa0 argument (assumed restitution 160/256).
-8. Names of 0x57d (platform hurting from below), 0x433/0x434, 0x5c3/0x5c4, 0x5c8..0x5d1.
-9. Shadow-double flags `PTR_DAT_100a0674`, `_DAT_100a06d0/06d4` (why riding a sprite re-syncs the double).
+1. ~~Who spawns enemy shots 0x46b/0x46c (no literal found; a computed type is possible) and whether
+   their faces from PICT 0x46a at 64×64 would ever show.~~ → closed: enemy-shots-and-damage-2 §4.1 (no spawner;
+   dead types) ⚑ wave 2 (2026-10-04)
+2. ~~Writer of 0x77b's `+0x14c` (the "harmless while ≠ 0" test) — none found; 0 at spawn.~~ → closed:
+   enemy-shots-and-damage-2 §4.1 (never written; the test is dead) ⚑ wave 2 (2026-10-04)
+3. ~~Setter of `_DAT_100a0570` (input-lock zeroed by enemy-shot hits).~~ → closed: enemy-shots-and-damage-2 §4.4
+   (Chief 24 / Xichra 20 landing stagger) ⚑ wave 2 (2026-10-04)
+4. ~~Meaning of `+0x1a2` (Magical-Shield reflection flag) and~~ ~~`+0x1aa` (Gremlin spit, 0xdc/0x140).~~
+   (`+0x1a2` closed: burn row, §3.6 ⚑ corrected (review 1c, 2026-10-03) #3.) → closed: enemy-shots-and-damage-2 §4.5
+   (`+0x1aa` = draw rotation in degrees) ⚑ wave 2 (2026-10-04)
+5. ~~The frog `+0x15c` source (probably placement param 1, census values 0/1/2/4).~~ → closed:
+   enemy-shots-and-damage-2 §4.8 (= p1, 10081fe0–10081ff4) ⚑ wave 2 (2026-10-04)
+6. ~~Active-list order between the player and shots, hence whether a bomb can split twice (§1.6)
+   and whether 0x6a9 (2-frame life) is ever collidable twice.~~ → closed: enemy-shots-and-damage-2 §4.2 (rule),
+   §4.3 (no double split in shipped levels; 0x6a9 collidable in one frame) ⚑ wave 2 (2026-10-04)
+7. ~~`.WallBounce`'s use of the 0xa0 argument (assumed restitution 160/256).~~ → closed: enemy-shots-and-damage-2 §4.6 ⚑ wave 2 (2026-10-04)
+8. ~~Names of 0x57d (platform hurting from below), 0x433/0x434, 0x5c3/0x5c4, 0x5c8..0x5d1.~~ →
+   closed: enemy-shots-and-damage-2 §4.8 (names MED, from decoded faces and sibling files) ⚑ wave 2 (2026-10-04)
+9. ~~Shadow-double flags `PTR_DAT_100a0674`, `_DAT_100a06d0/06d4` (why riding a sprite re-syncs the
+   double).~~ → closed: enemy-shots-and-damage-2 §4.7 (flags HIGH; the riding intent LOW) ⚑ wave 2 (2026-10-04)
+10. New wave-2 items: enemy-shots-and-damage-2 NOT RESOLVED.
 
 ## Proposed additions to physics.md §0
 | off | type | meaning (writer/reader) |
@@ -443,6 +465,7 @@ Returns 1 (block) → no damage. A shield never stops enemy bodies or hazards.
 | +0x1ec / +0x1f0 / +0x1f4 | proc | saved Handle / Hit / HitTile while a statue or in a cannon |
 
 ## Corrections to the existing bank
+(wave-2 rows W1–W7: `enemy-shots-and-damage-2.md` corrections table) ⚑ wave 2 (2026-10-04)
 1. **sprites-backgrounds-sounds.md §5 and spells-items.md §4 (melee)** — old: the 36 kick rects
    "used by the dagger/kick hit test [MED]" / "are the swing arc positions [MED]". New: the table
    at 0x1024b394 (TOC slot 0x100a0078) is written by `.InitPlayerKickRects` and **read by nothing**:
