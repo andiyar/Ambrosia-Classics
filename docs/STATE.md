@@ -27,7 +27,9 @@
 
 1. **Execute Phase 0** (Trigger B2): HectorKit lift → zero-skip floor → QuickTime bands → Aki census →
    `v0.1.0`. Expect two orchestrator sessions (Tasks 0–4, then 5–8).
-2. ~~RE-bank lane~~ done (see above); Aki build chip queued (waits on Phase 0).
+2. ~~RE-bank lane~~ done (see above). **Chips issued 2026-10-03 evening (Ben's call, parallel sessions):** Aki build (running);
+   Bubble Trouble X build (core + FILM replay oracle first, shell last); RE deepening ×3 — Deimos gameplay code, Ferazel open
+   items, Cythera script disassembly → rules. All Opus 5.5 subagents, wide fan-out authorised, Fable-grade review per wave.
 3. Phase 1 (HectorShell + Aki static screens), then phases 2–3, then Bubble Trouble X (design §6).
 
 ## Carried (not blockers)
