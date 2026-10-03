@@ -103,3 +103,39 @@ Ben's review pending.
 **Rejected:** drawing splashes through the canvas (Ben) · Menlo-only Release Notes (Ben wants the real face) ·
 fighting AppKit's ⌥ alternates and tiling items (no switch exists) · leaving dark mode to AppKit.
 **Approved by:** Ben 2026-10-04 (items 2, 3, 6 explicitly); orchestrator ruling for 1, 4, 5 under invariant 1.
+
+---
+
+## D5 — Bubble Trouble X core + decoder lane: forks closed during the build-out (2026-10-03/04)
+
+**Decided:**
+1. **FILM oracle, restated honestly.** The bank derives no end state for any FILM. The machine bar is: each of the four
+   demos replays to count exhaustion (hero never caught before the final frame; a level completed inside the last 70
+   frames is a FLAGGED pass printed `end = count,level`), with self-consistent numbers (frames, samples, score, lives,
+   total RNG draws) frozen as self-derived goldens after a Fable plausibility review. "Matches the original" is Ben's
+   gate only (NR-10, his eyes on the original demo once the shell exists).
+2. **`PixPat` → `PixelPattern`** in HectorKit (the SDK's legacy QuickDraw struct `PixPat` collides).
+3. **`btSP` dropped from the kit** (kit plan R2) — no consumer, no census evidence of use.
+4. **NR-6 carried, not modelled.** The hero-balloon `_PopEnemy(-1)` reads outside the enemy array (level ≥ 6 only;
+   C12 narrows the release path). The replica treats slot −1 as a no-op and records the quirk; no attempt to emulate
+   the neighbouring globals.
+5. **Tag numbering.** HectorKit's BTX-decoder milestone (locator, snd census, CIcon, PixelPattern, masked PICT 4a/4b)
+   is tagged `v0.2.0` on the commit that includes it; the tag covers HectorShell D4 too since it is on the same main.
+   Ben's Aki map-screen verdict stays an honesty gate independent of the tag (a tag marks a kit API milestone, not a
+   screen sign-off). `v0.3.0` would have been used only if `v0.2.0` had already been taken.
+6. **Seat rulings from the review rounds (2026-10-04):** (a) `_GetDistantObject` keeps the original's flat-array read
+   inside the 176 maze bytes (col 15 right wraps to the next row's col 1, col 0 left to the previous row's col 14);
+   only a read that leaves the array returns 50 — the original would read neighbouring globals there (undefined;
+   unreachable from the push table because `_GetNextObject` hits the edge first). (b) Sound/redraw-only parameters
+   are dropped from `addHero`, `multiplierReset`; they touch no state and no RNG. (c) QuickDraw regions that never
+   close are refused (`unsupportedRegion("unclosed")`): Inside Macintosh regions close and both real region PICTs do.
+   (d) `PICT.decodeMasked` on a QuickTime-only (0x8200) stream throws `.noMask`, per the 4a contract.
+   (e) Implementer commits carry the executing model's trailer (`Claude Opus 5.5`); orchestrator merges and docs
+   carry `Claude Fable 5.1`. (f) Merge-head test totals run **+12** over the plan's table (the T3 fix round added 6
+   tests, kit Task 7's census added 6): W4 56, W5 72, W6 96, W7 122, W8 128, W9 130/131.
+
+**Because:** every one of these was a real fork a worker hit; writing the ruling down stops the next lane re-deciding it.
+**Rejected:** modelling NR-6's out-of-array read (depends on runtime memory layout; no oracle) · refusing the flat
+wrap in `_GetDistantObject` (it IS the original's behaviour, reachable or not) · accepting unclosed regions (no census
+evidence; Invariant 4) · tagging `v0.3.0` to leave `v0.2.0` for the shell session (version order would invert).
+**Approved by:** BTX orchestrator (Fable 5.1), 2026-10-04; Ben's review pending on items 1 and 5.

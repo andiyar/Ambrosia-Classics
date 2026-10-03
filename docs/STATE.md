@@ -29,14 +29,15 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X core lane (2026-10-03 night, Fable orchestrator, cap lifted by Ben):** plans LOCKED
-  (`docs/plans/2026-10-03-btx-core-and-film-harness.md` 18 tasks; `2026-10-03-hectorkit-btx-decoders.md`);
-  core Tasks 0–3b + T12 bank corrections merged (44 tests green at 48e29db); HectorKit main 5a33384 = BTX locator,
-  snd census, `CIcon`, `PixelPattern` (renamed from PixPat: SDK collision), docs D5, floor 160, **tag v0.2.0 pending**.
-  In flight on lane branches when the session hit its usage limit: core `btx-t4` (Task 4 level build), kit `btx-pict`
-  (Task 4a masked PICT), Classics `btx-census` (kit Task 7). Lane worktrees under `.claude/worktrees/btx-*` and
-  `~/Developer/HectorKit-btx*`. Honest bar: FILM oracle = replay to count exhaustion + golden freeze (bank derives no
-  end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
+- **Bubble Trouble X core lane (2026-10-04, Fable orchestrator, cap lifted):** Classics main `0a9db19` = core Tasks 0–9c merged
+  (every task Opus-reviewed, fix rounds applied; merge-head suite **122** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX`;
+  merge heads run +12 over the plan's table). HectorKit **v0.2.0 tagged** at `4d3746d` (masked PICT 4a regions + 4b mattes,
+  floor 167); Classics `btx-census` decodes all 28 PICTs via `decodeAny` (kit Task 4c). **Task 10 (frame step) is DONE but
+  UNREVIEWED on lane `btx-t10` (`5205666`, 128 tests):** all nine FILM 1 draw checkpoints match the planner's numbers; a throwaway
+  full run shows **FILM 1 reaches count exhaustion (1227 frames, 1118/1118 samples, no catch); FILMs 2, 3, 4 die early (first
+  catches at frames 645, 1097, 447)** — Task 11's harness + the Diagnosis protocol (suspect 1: the QuickDraw `Random()` step /
+  0x8000 adjustment, NR-3) are the next step. Session cut by the usage limit after Task 10's hand-back; handoff = this paragraph
+  + memory `btx-core-lane-2026-10-03.md` + the chip.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
