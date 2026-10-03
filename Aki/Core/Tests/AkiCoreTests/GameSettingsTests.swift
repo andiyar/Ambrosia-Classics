@@ -48,7 +48,7 @@ final class GameSettingsTests: XCTestCase {
 
     /// A 1.1 `Aki Prefs` image: the 0x290-byte `PrefsType` with `_p`'s offsets, big-endian.
     private func akiPrefs11(length: Int = 0x290, unlocked: [UInt8], difficulty: Int16, music: Int16, sound: Int16,
-                            flags: [UInt8], wins0: Int16, best0: Int32) -> Data {
+                            flags: [UInt8], wins0: Int16, best0: Int32, losses0: Int16 = 0, giveUps0: Int16 = 0) -> Data {
         var b = [UInt8](repeating: 0, count: length)
         for i in 0..<min(0x200, length) { b[i] = 0xEE }
         func put16(_ v: Int16, _ o: Int) { b[o] = UInt8(UInt16(bitPattern: v) >> 8); b[o + 1] = UInt8(UInt16(bitPattern: v) & 0xFF) }
@@ -56,13 +56,15 @@ final class GameSettingsTests: XCTestCase {
         put16(difficulty, 0x20c); put16(music, 0x20e); put16(sound, 0x210)
         for (i, f) in flags.enumerated() { b[0x212 + i] = f }
         put16(wins0, 0x218)
+        put16(losses0, 0x230); put16(giveUps0, 0x248)
         let u = UInt32(bitPattern: best0)
         if length >= 0x264 { for k in 0..<4 { b[0x260 + k] = UInt8((u >> (24 - 8 * UInt32(k))) & 0xFF) } }
         return Data(b)
     }
 
     func testMigrationReadsThe11StructAtItsOffsets() throws {
-        let data = akiPrefs11(unlocked: [1, 1], difficulty: 2, music: 0, sound: 2, flags: [0, 1, 0, 0, 1], wins0: 4, best0: 95)
+        let data = akiPrefs11(unlocked: [1, 1], difficulty: 2, music: 0, sound: 2, flags: [0, 1, 0, 0, 1], wins0: 4, best0: 95,
+                              losses0: 6, giveUps0: 0x0203)
         let s = try XCTUnwrap(GameSettings.migrating(akiPrefs11: data))
         XCTAssertEqual(s.unlocked, [1, 1] + [UInt8](repeating: 0, count: 10))
         XCTAssertEqual(s.difficulty, .easy)
@@ -70,9 +72,11 @@ final class GameSettingsTests: XCTestCase {
         XCTAssertTrue(s.soundAudible)
         XCTAssertTrue(s.soundCheckbox)
         XCTAssertEqual([s.fullscreen, s.tileAnimation, s.showDescription, s.firstLaunch, s.unused216], [0, 1, 0, 0, 1])
-        XCTAssertEqual(s.wins[0], 4)
-        XCTAssertEqual(s.bestTimes[0], 95)
-        XCTAssertEqual(s.losses, [Int16](repeating: 0, count: 12))
+        let zeros11 = [Int16](repeating: 0, count: 11)
+        XCTAssertEqual(s.wins, [4] + zeros11)
+        XCTAssertEqual(s.losses, [6] + zeros11)
+        XCTAssertEqual(s.giveUps, [0x0203] + zeros11)
+        XCTAssertEqual(s.bestTimes, [95] + [Int32](repeating: 0, count: 11))
         XCTAssertNil(GameSettings.migrating(akiPrefs11: Data(data.prefix(0x28f))))
     }
 

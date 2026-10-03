@@ -105,5 +105,46 @@ final class AkiMapTests: XCTestCase {
                                            QDRect(left: 355, top: 336, right: 430, bottom: 409),
                                            QDRect(left: 281, top: 149, right: 356, bottom: 222),
                                            QDRect(left: 356, top: 149, right: 431, bottom: 222)])
+
+        // Every remaining rect, from the decompile's own literals (DC = Aki12_i386.decompiled.c).
+        // The lantern table: `local_68` (left) / `local_98` (top) in `_MapScreen` DC:2383–2406,
+        // the same values in `_RedrawMapScreen`'s `local_94` DC:2624–2671.
+        let lefts = [0x2c9, 0x193, 0xe7, 0x59, 0xc, 0xea, 0x146, 0x163, 0x223, 0x1b2, 0x176, 0x195]
+        let tops = [0x136, 0xb0, 0x73, 0x2d, 0x10d, 0x164, 0x119, 0x126, 0x13b, 0xdf, 0xd8, 0xf4]
+        // Lantern sprite + static mask: `_RedrawMapScreen` DC:2726/2730 (sprite also `_MapScreen` DC:2474).
+        XCTAssertEqual(AkiMap.lanternSprite, QDRect(left: 0xcd, top: 0x150, right: 0x118, bottom: 0x199))
+        XCTAssertEqual(AkiMap.lanternStaticMask, QDRect(left: 0x118, top: 0x150, right: 0x163, bottom: 0x199))
+        for i in 0..<12 {
+            // Static lit lantern: `_RedrawMapScreen` DC:2727–2729 (left, top, left+0x4a, top+0x48).
+            XCTAssertEqual(AkiMap.litLanternDestination(i),
+                           QDRect(left: lefts[i], top: tops[i], right: lefts[i] + 0x4a, bottom: tops[i] + 0x48), "lit \(i)")
+            // Blink (and restore): `_MapScreen` DC:2465–2471 (left, top, left+0x4b, top+0x49).
+            XCTAssertEqual(AkiMap.blinkDestination(i),
+                           QDRect(left: lefts[i], top: tops[i], right: lefts[i] + 0x4b, bottom: tops[i] + 0x49), "blink \(i)")
+            // Preview strip: `_MapScreen` DC:2577 (0, s*0xb5, 0xec, s*0xb5+0xb4).
+            XCTAssertEqual(AkiMap.previewStrip(i), QDRect(left: 0, top: i * 0xb5, right: 0xec, bottom: i * 0xb5 + 0xb4), "preview \(i)")
+        }
+        for d in 0...3 {
+            // Difficulty word + mask: `_RedrawMapScreen` DC:2753–2757 (top d*0x17+0xf1, bottom d*0x17+0x108).
+            XCTAssertEqual(AkiMap.difficultyWord(d), QDRect(left: 0x128, top: d * 0x17 + 0xf1, right: 0x17b, bottom: d * 0x17 + 0x108), "word \(d)")
+            XCTAssertEqual(AkiMap.difficultyWordMask(d), QDRect(left: 0x17b, top: d * 0x17 + 0xf1, right: 0x1ce, bottom: d * 0x17 + 0x108), "mask \(d)")
+        }
+        XCTAssertEqual(AkiMap.difficultyWordDestination, QDRect(left: 0x163, top: 0x235, right: 0x1b6, bottom: 0x24c))
+        // Arrows: rest = `_RedrawMapScreen` DC:2678–2684 (word dest DC:2755); pressed = `_SelectMenuOptions` DC:3007/2984.
+        XCTAssertEqual(AkiMap.leftArrowSprite, QDRect(left: 0, top: 0x55, right: 0x21, bottom: 0x71))
+        XCTAssertEqual(AkiMap.leftArrowMask, QDRect(left: 0, top: 0x71, right: 0x21, bottom: 0x8d))
+        XCTAssertEqual(AkiMap.leftArrowRest, QDRect(left: 0x118, top: 0x232, right: 0x139, bottom: 0x24e))
+        XCTAssertEqual(AkiMap.leftArrowPressed, QDRect(left: 0x11a, top: 0x234, right: 0x13b, bottom: 0x250))
+        XCTAssertEqual(AkiMap.rightArrowSprite, QDRect(left: 0x21, top: 0x55, right: 0x42, bottom: 0x71))
+        XCTAssertEqual(AkiMap.rightArrowMask, QDRect(left: 0x21, top: 0x71, right: 0x42, bottom: 0x8d))
+        XCTAssertEqual(AkiMap.rightArrowRest, QDRect(left: 0x1df, top: 0x232, right: 0x200, bottom: 0x24e))
+        XCTAssertEqual(AkiMap.rightArrowPressed, QDRect(left: 0x1e1, top: 0x234, right: 0x202, bottom: 0x250))
+        // Preview destination / restore: `_MapScreen` DC:2578 / DC:2564–2565.
+        XCTAssertEqual(AkiMap.previewDestination, QDRect(left: 0x207, top: 0x2b, right: 0x2f2, bottom: 0xde))
+        XCTAssertEqual(AkiMap.previewRestore, QDRect(left: 0x207, top: 0x2b, right: 0x2f3, bottom: 0xdf))
+        // Locked overlay, its mask and destination: `_MapScreen` DC:2584 / DC:2592 / DC:2591.
+        XCTAssertEqual(AkiMap.lockedOverlay, QDRect(left: 0, top: 100, right: 0xf0, bottom: 0x96))
+        XCTAssertEqual(AkiMap.lockedOverlayMask, QDRect(left: 0, top: 0x32, right: 0xf0, bottom: 100))
+        XCTAssertEqual(AkiMap.lockedOverlayDestination, QDRect(left: 0x206, top: 0x6e, right: 0x2f6, bottom: 0xa0))
     }
 }
