@@ -10,8 +10,8 @@ Session stopped by usage limit, not by the token cap (Ben lifted the cap in chat
 
 ## State of the bank (as of c79d5e2 on the branch)
 - `docs/deimos/` now has 23 topical files. Role table after wave 1: 510 rows = 240 HIGH / 256 MED /
-  14 LOW (verified by grep). Wave 2's ~250 proposed rows are still in each file's "Role-table rows
-  (for merge)" section, NOT yet in function-roles.md.
+  14 LOW (verified by grep). Wave-2 synthesis landed on the branch after the cut-off: role table 678 rows = 392 HIGH /
+  271 MED / 15 LOW (synthesis agent's count, not re-verified by the seat); INDEX #36–#55 added.
 - Wave-2 critic (`/Users/andiyar/ghidra-proj-deimos/critic-wave2.md`, also to be copied into the repo
   as `docs/deimos/CRITIC-wave2-2026-10-03.md`): gameplay range 92.7 % labelled by lines, whole game
   code 84.1 %. What remains: 19 blitter pixel loops (fade blend, clipped/scaled variants), 6 static
@@ -22,9 +22,8 @@ Session stopped by usage limit, not by the token cap (Ben lifted the cap in chat
   review): #2 #4 #5 #8 #11 #12 #27 #29 #30 #32 #33; narrowed #6 #9 #13 #14; untouched #1 #3 #10 #31 #35.
 
 ## In flight when cut off (check before anything else)
-1. **Wave-2 synthesis agent** was editing `function-roles.md`, `INDEX.md` and the conflict lines in
-   older files inside this worktree. Run `git status` in the worktree: if those files are modified,
-   the synthesis finished (or partly) — read its diff, don't discard it.
+1. **Wave-2 synthesis is committed** (branch head). Open conflicts it left for the reviewer:
+   `FUN_10009750` (signed/unsigned compare), `FUN_10029c00` (command name), `FUN_10030df0` (+4 field).
 2. **Wave-2 Fable reviewer** writes `/Users/andiyar/ghidra-proj-deimos/review-wave2.md`. If present,
    run the fix pass against it exactly as wave 1 did (see `docs/deimos/FIXPASS-wave1-2026-10-03.md`
    and the review ledger in INDEX.md), plus the critic's contradictions C1–C10.
