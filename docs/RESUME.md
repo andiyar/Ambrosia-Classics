@@ -2,9 +2,9 @@
 
 ## FOR BEN
 
-Phase 0 is done (HectorKit v0.1.0; Aki data census). Two sessions can run from here, in either order or at
-the same time: the **RE-bank lane** remainder (Trigger A: Ferazel, Deimos, Cythera) and **Phase 1** (Trigger
-C: HectorShell + Aki's splash, map and prefs screens — the first thing you will SEE).
+Phase 0 is done (HectorKit v0.1.0; Aki data census) and all five RE banks are on main. Next is **Phase 1**
+(Trigger C: HectorShell + Aki's splash, map and prefs screens — the first thing you will SEE). Trigger A2 is
+optional deepening, only if a build session hits a NOT-RESOLVED wall.
 
 ---
 
