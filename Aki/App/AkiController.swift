@@ -20,6 +20,7 @@ import HectorShell
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
     private var idleTimer: ShellIdleTimer?                     // ivar 0x30
+    private var preferences: PreferencesWindowController?      // ivar 0x20, created on first use
     /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
     /// rules (Known delta 3). P2.11 and P3.4–P3.6 remove tags as their commands are built.
     static var notYetBuilt: Set<Int> = [3, 4, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19]
@@ -107,6 +108,16 @@ import HectorShell
         }
     }
 
+    /// `-[Controller pause]` @ 0x3c1f: the current mode's pause (the map's is a no-op).
+    func pause() {
+        currentScreen?.pause()
+    }
+
+    /// `-[Controller unpause]`: the current mode's unpause (the map's is a no-op).
+    func unpause() {
+        currentScreen?.unpause()
+    }
+
     /// `-[Controller idleTimerFired:]`: `_MapScreen`, `_EditorScreen` or `_CustomGameScreen` by mode.
     private func idleTimerFired() {
         currentScreen?.idle()
@@ -116,9 +127,27 @@ import HectorShell
     /// P2.10 replaces this body.
     func loadLayout() {}
 
-    /// `-[Controller showPreferences:]` — P1.11 builds the Preferences window; until then the map bar's
-    /// Preferences does nothing.
-    @objc func showPreferences(_ sender: Any?) {}
+    /// `-[Controller showPreferences:]` @ 0x3443 (DC:610, otool): the `Preferences` controller is created
+    /// once (ivar 0x20). Fullscreen → `runModal`, then the fullscreen window `makeKeyAndOrderFront:` — no
+    /// pause; windowed → `pause`, then the sheet on the main window, whose end (`preferencesSheetDidEnd:…`)
+    /// sends `unpause`.
+    @objc func showPreferences(_ sender: Any?) {
+        if preferences == nil {
+            do {
+                preferences = try PreferencesWindowController(controller: self)
+            } catch {
+                fatalError("Aki: cannot read Preferences.nib: \(error)")
+            }
+        }
+        guard let preferences else { return }
+        if shell.isFullscreen {
+            preferences.runModal()
+            shell.currentWindow.makeKeyAndOrderFront(nil)
+            return
+        }
+        pause()
+        preferences.beginSheet(on: shell.windowedWindow)
+    }
 
     /// `-[Controller toggleFullscreen:]` — P1.12 builds fullscreen; until then File ▸ Toggle Fullscreen
     /// (⌘F) does nothing.
