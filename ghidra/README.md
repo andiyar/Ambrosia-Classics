@@ -39,5 +39,7 @@ Hazards: Ghidra refuses a project path with a dot-prefixed element (`.claude/wor
 - `python3 ghidra/find_func.py '<regex>' [--names] [--file <dump>]` — whole functions that match.
 - `python3 ghidra/read_const.py <thin-mach-o> [vaddr …]` — resolve `FLOAT_`/`DOUBLE_` symbols
   (reads `__literal4/8` via `otool -l`, byte order from the magic; PPC is big-endian).
-- Raw disassembly for HIGH-claim evidence: `otool -tV <thin-mach-o>` (Mach-O only). For PEF,
-  disassemble inside Ghidra (`-postScript` your own) or cite the decompile plus the data bytes.
+- Raw disassembly for HIGH-claim evidence: `otool -tV <thin-mach-o>` works for the i386 slices. It does
+  NOT work on the Aki 1.1 PPC binary on this machine (`otool`/`objdump` refuse it: truncated symtab /
+  obsolete load command) — use a Ghidra disassembly post-script (`docs/ferazel/tools/FzDisasm.java` is a
+  reusable one) or a listing decoder. For PEF, likewise Ghidra post-script, or cite decompile + data bytes.
