@@ -47,8 +47,9 @@ every `* 0x10 +` record access inside the four classes' handler ranges finds exa
   type/x/y/layer/record index (`+0x48`) and **calls the setup proc immediately**
   (`FUN_1009f80c(pcVar4)`, main dump `.MTNewSprite`); `.AddIdleSprite` creates the sprite with
   `MTNewSprite`, copies the set-up record into the idle table and kills it, so an idle enemy is
-  re-activated with the state drawn at load (including its `FastRand` timers) [MED: one
-  `MTNewSprite` argument is lost in the decompile of `.AddIdleSprite`].
+  re-activated with the state drawn at load (including its `FastRand` timers) ~~[MED: one
+  `MTNewSprite` argument is lost in the decompile of `.AddIdleSprite`]~~ ⚑ wave 2 (2026-10-04): HIGH —
+  the lost argument is the caller's r8 (setup proc), passed through untouched (§7.5).
 - **Enemy statistic.** `.SetupLevel` sets `*_DAT_1009fe8c = 1` around `.SetupLevelSprites`
   (main dump l. 2521–2527). Frog/Salamander/Blob Setups then set `+0x1b5 = 1` and increment
   `*_DAT_1009ffb4`, which `.SetupLevel` stores to **G+0x6ee + 2·L** (first visit, l. 2533).
@@ -61,7 +62,8 @@ every `* 0x10 +` record access inside the four classes' handler ranges finds exa
   (`.UpdateSprites`, main dump l. 4936–4944) so killed enemies never respawn.
 - Every Handle starts `if (+0xe9 == 0 && +0x1b2 == 0)`; `+0x1b2` is set by `.HandleBoxSprite`
   (handler dump l. 12866) on a sprite it generates from a container and cleared later
-  (l. 12969) [MED: "held in container" reading].
+  (l. 12969) ~~[MED: "held in container" reading]~~ ⚑ wave 2 (2026-10-04): the generator is the
+  enemy pipe (Box 1490..1493); `+0x1b2` = "being pushed out of the pipe" — enemies-flyers §7.4 [HIGH].
 - `.StandardSpriteHandles` first (counts `+0x116`/`+0xaa` down, resets `+0x140`, water current
   because `+0x8a = 1` from `.InitSprite`); **no wind**: the wind block needs `+0x90 > 0`
   (`.StandardSpriteHandles` line `if (0 < *(short *)(param_1 + 0x90))`) and none of these
@@ -289,7 +291,7 @@ fireball's impact) [MED for "burst"].
 ### 2.5 Damage taken, death  [HIGH]
 Player shot: `.KillPlayerShot(shot,0,0)`; Statue spell → `.TurnIntoStatue`; else
 `.HurtSprite(shot+0xa4, shot vx>>5, shot vy>>3, invul **2**, flash 8)`; on a hit: `+0xa6 = 21`
-if it was < 2 (no reader found — NOT RESOLVED), blood (kind 2) if alive, sound 702 if HP < 201
+if it was < 2 (no reader found — NOT RESOLVED; ⚑ wave 2 (2026-10-04): write-only, §7.1), blood (kind 2) if alive, sound 702 if HP < 201
 else 701. Statue/Box crush as Frog. **No explosion/geyser branch** (fire-seed blasts do not
 hurt it beyond the shot itself). No state-4 guard (a dying salamander can still be statued).
 `.KillSalamander`: stat, score **+400** (only if `+0xe9 == 0`), `+0xe9 = +0xea = 1`.
@@ -367,7 +369,8 @@ No gravity, **no tile callback**, no kill proc, HP 1000 never reduced.
 ### 4.1 Setup  [HIGH]
 Anchor `+0x150/+0x154` = initial x/y; reach `+0x14c` = **p1, 0 → 100**; in-water flag `+0x16c
 = 1` if the BG tile under the top-left cell is water (`.GetBGTile(x>>5, y>>5)` →
-`.IsWaterTile`) [MED: GetBGTile arg order]; links: `n = min((reach + 23)/24, 12)` sprites of type
+`.IsWaterTile`) ~~[MED: GetBGTile arg order]~~ ⚑ wave 2 (2026-10-04): HIGH — `.GetBGTile(col, row)`,
+and no shipped crab is in water (§7.3); links: `n = min((reach + 23)/24, 12)` sprites of type
 0x767 via `MTNewSprite(0x767, x+30, y+30, layer−1, 0x1ff, .SetupCrabSprite)` stored in a
 0x34-byte block at `+0x9c` (12 pointers, count at +0x30); type 0x767's Setup arm gives them a
 zero rect, no callbacks, handler `.HandleCrabSegSprite` (face only). In water, claw and links
@@ -430,19 +433,105 @@ player's own invulnerability (`+0x116`, 60 frames after each hit) gates all of t
 (`.HurtSprite`). No class here can be stomped (no `.PlatformBounce` arm for them in
 `.HitPlayerSprite`).
 
+## 7. Wave 2 (2026-10-04): loose ends  [labels per item]
+Sources for this section: raw listing, both dumps, a field-access scan (scratch Python over every
+`l*/st* rX,0xNN(rY)` of the raw listing, bucketed by function, `(r1)` dropped), World Data `Mlvl` 62
+decoded with `tools/rsrc_census.py` + world-data-format §3.1/§3.3, and the demo binary
+`…/Action-Adventure/ferazelswand/Ferazel Demo (installed)/files/Ferazel's Wand Demo` unpacked with
+`tools/pef.py` (`FZ_PEF`). Closes INDEX item 18.
+
+### 7.1 Salamander `+0xa6 = 21` is write-only  [HIGH]
+Accesses to `+0xa6` in the Salamander routines: Setup store (`10082fec`), `.HitSalamanderSprite`
+`10083538` (the *shot's* `+0xa6 == 0` test, r31 = other) and `100835ac..100835bc` (own: `< 2 → 0x15`);
+`.HandleSalamanderSprite` (`10083074..1008350c`) has **no** `+0xa6` access. Generic routines that
+load `+0xa6` (`.HitPlayerSprite` `100557a4`/`10056f7c`, `.HitPlayerShotSprite` `1005a9dc`, the other
+`.Hit*` routines) read it only behind a handler/type gate (player shot, EnemyShot, Bonus, type
+0xb5b/0x2c8) that a Salamander never passes; the remaining loads are blitter stack slots `(r1)`.
+The write is the Bat's wake-up idiom copied verbatim (enemies-flyers §7.3); for the Salamander it
+has no effect.
+
+### 7.2 Crush `+0x150 = 0x16`: read only by Crawler and Roach  [HIGH]
+The crush idiom `+0xa4 = 0; +0x150 = 0x16` sits in nine Hit routines: Frog `10082ab0..10082abc`,
+Salamander `100836d4..100836e0`, Blob `1007d894..1007d8a0`, Bat `1007f6ec..1007f6f8`, Gremlin
+`10081088..10081094`, Floater `10081c14..10081c20`, Dillo `10087570..1008757c`, Crawler
+`1006682c..10066838`, Roach `100781c4..100781d0`. Loads of `+0x150` in enemy routines: Crawler
+`10066170..10066204` and Roach `10077dc4..10077e20` (their death counter — a crush makes them die next
+frame), the swarm member and the Crab (other meanings), and two reads of the *other* sprite behind
+the geyser-segment gate `type == 0x5a0` (`1006687c`, `10082b00`). So for Frog, Salamander and Blob
+the value is never read; the crush kills through HP 0 alone.
+
+### 7.3 `.GetBGTile(col, row)`; no shipped crab is in water  [HIGH]
+`.GetBGTile @ 1003c204`: `.ConstrainXY(a, b, W−1, H−1, &c, &r)` with `W = hdr+0xb280`, `H = hdr+0xb282`
+(`1003c22c..1003c244`; `.ConstrainXY` clamps r3 into `[0, r5]` → `*r7` and r4 into `[0, r6]` → `*r8`,
+`1003be0c..1003be6c`); cell = `map[r·W + c]` (`1003c24c..1003c274`: `r` times `2W`, `c` times 2);
+returns low byte − 1. So the **first argument is the column (x)**. The Crab passes `(+0xc >> 5,
++0xa >> 5)` = (x/32, y/32) (`10089594..100895ac`) — the top-left cell, correct order. Then
+`.LookupBGTileKind` (`10041f98`: tile 0..95 → `*TOC−0x762c` table, else −1) and `.IsWaterTile`
+(`100430c8`: 200 ≤ kind < 210).
+Level 62 (W = 360, H = 60), decoded from the World Data `Mlvl 62` (BG map at `0xb29c + 2(w0h0 +
+w1h1)`, kind table hdr+0x29a0): water tiles are BG 0..5 (kinds 200, 200, 203, 203, 201, 201); 102
+water cells, all in rows 20..49.
+
+| rec | type | x, y | cell (col, row) | BG tile → kind | nearest water cell |
+|---|---|---|---|---|---|
+| 97 | 1892 | 7620, 1655 | (238, 51) | none (−1) → −1 | (231, 28), 30 cells away |
+| 98 | 1892 | 8098, 1655 | (253, 51) | none → −1 | 45 cells |
+| 99 | 1892 | 8556, 1629 | (267, 50) | none → −1 | 58 cells |
+
+All three get `+0x16c = 0`: the in-water `+0xb8 = 0x90000` tint (§4.1) never appears in 1.0.3.
+(With the arguments swapped the cells would be kind 495, also not water — the shipped outcome does
+not depend on the order.)
+
+### 7.4 The dead Frog/Salamander water blocks in "another build"  [HIGH for the demo; UNDETERMINABLE beyond]
+The archive holds exactly two Ferazel builds (ARCHIVE-INDEX rows 22–23): this 1.0.3 (PEF timestamp
+2000-03-21 12:57) and the demo (`Ferazel's Wand Demo`, PEF timestamp 2000-03-13 12:41; both
+`vers 2` = "1.0.3"). (The lane prompt's `$FW/../../ferazelswand/` is one level short: the demo is
+`$FW/../../../ferazelswand/`.) Locating each routine in the demo by its traceback name and diffing
+instruction words with branch displacements and r2-relative offsets masked:
+
+| routine | full / demo words | differing words after masking |
+|---|---|---|
+| `.HandleFrogSprite` | 471 / 471 | 1 (`10082278 addi r3,r2,−0xa0c` jump-table address: `3862f5f4` vs `3862f4b8`) |
+| `.HandleSalamanderSprite` | 283 / 283 | 1 (`1008316c`, the same kind of r2-relative `addi`) |
+| `.StandardSpriteHandles` | 329 / 329 | 0 |
+| `.ApplyGravityAndSeparateFromTiles` | 120 / 120 | 0 |
+| `.HandleUnderWater` | 157 / 157 | 0 |
+| `.HitFrogTileSprite`, `.HitSalamanderTileSprite` | 96, 103 / same | 0 |
+
+So in the demo the blocks are dead for the same reason (the `+0x11c` zeroing at `100369ac` precedes
+the test at `10082198`). Whether an earlier retail build (1.0.0–1.0.2, none archived) had them live
+is **UNDETERMINABLE** from code: no such binary exists to read, and 1.0.3's own code cannot say what a
+different compile contained.
+
+### 7.5 `.AddIdleSprite`'s "lost" argument is the setup proc  [HIGH]
+Callers pass six arguments (m. l. 1924: `AddIdleSprite(type, x, y, rec, 0, setup)` → r3..r8).
+`10007d94..10007da4` save r3..r6; `10007df4..10007e04` re-load r3 = type, r4 = x, r5 = y, r7 = rec,
+`li r6,1` (layer) and leave **r8 = setup** unwritten before `bl .MTNewSprite` (`10007e08`); no
+instruction in `10007d8c..10007e08` writes r8. So `.MTNewSprite` runs the class Setup at load for idle
+enemies too (same as bosses.md §1.2). The §0.1 reading is now HIGH.
+
+### 7.6 `+0x1b2`  [pointer]
+Writer = enemy pipes 1490..1493 (level 21 only; a Blob 1730 comes out of two of them). Full reading
+(handler skipped, drawn, still collidable, released after length/3 + 4 frames): enemies-flyers §7.4.
+
 ## NOT RESOLVED
-1. Salamander `+0xa6 = 21` on hurt: no reader found in the Salamander routines or the main dump
-   `+0xa6` readers.
-2. `+0x150 = 0x16` written on a crush (all three killable classes): no reader found here.
+1. ~~Salamander `+0xa6 = 21` on hurt: no reader found in the Salamander routines or the main dump
+   `+0xa6` readers.~~ → closed: §7.1 (write-only).
+2. ~~`+0x150 = 0x16` written on a crush (all three killable classes): no reader found here.~~ →
+   closed: §7.2 (read only by Crawler/Roach).
 3. Exact rendered colours of tint tables 0x4/0xb/0xc/0xf/0x17 (assumes CLUT 200 is current
    when `.BuildTintTable` runs) and of `.BurnFaceRow` styles 1 vs 0xd.
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane — not attempted by L7.
 4. BloodSpray particle kinds 2 vs 0xc9 (colours); Effect type 0 appearance.
-5. `.GetBGTile` argument order (Crab water test) and whether any level-62 crab sits in water.
-6. Whether the Frog/Salamander dead water blocks were ever live in another build (only 1.0.3
-   read).
-7. `.AddIdleSprite`'s lost `MTNewSprite` argument (setup proc) — the load-time Setup reading
-   rests on the `.MTNewSprite` body.
-8. The `+0x1b2` "contained" meaning (writer is `.HandleBoxSprite`; not traced further).
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.
+5. ~~`.GetBGTile` argument order (Crab water test) and whether any level-62 crab sits in water.~~ →
+   closed: §7.3 (col, row; none in water).
+6. ~~Whether the Frog/Salamander dead water blocks were ever live in another build (only 1.0.3
+   read).~~ → closed: §7.4 (dead in the demo build too; other builds UNDETERMINABLE — none archived).
+7. ~~`.AddIdleSprite`'s lost `MTNewSprite` argument (setup proc) — the load-time Setup reading
+   rests on the `.MTNewSprite` body.~~ → closed: §7.5.
+8. ~~The `+0x1b2` "contained" meaning (writer is `.HandleBoxSprite`; not traced further).~~ →
+   closed: §7.6 / enemies-flyers §7.4.
 
 ## Proposed additions to physics.md §0
 | off | type | meaning (this file) |
@@ -467,7 +556,7 @@ player's own invulnerability (`+0x116`, 60 frames after each hit) gates all of t
 | +0x16c / +0x170 | i32 | Crab in-water flag (setup) / strike vector x, y |
 | +0x1a2 | i16 | burn row (0 = not burning) |
 | +0x1aa | i16 | face rotation angle, degrees (copied to face +0x1a) |
-| +0x1b2 | u8 | inert (inside a container) [MED] |
+| +0x1b2 | u8 | ~~inert (inside a container) [MED]~~ ⚑ wave 2 (2026-10-04): emerging from an enemy pipe — handler skipped, still drawn and collidable [HIGH] (§7.6) |
 | +0x1b5 | u8 | counts toward the enemies stat |
 | +0x1bc | i16 | rows clipped from the face top |
 | +0x1ec / +0x1f0 / +0x1f4 | proc | saved handler / hit / tile-hit while a statue |
@@ -509,3 +598,11 @@ player's own invulnerability (`+0x116`, 60 frames after each hit) gates all of t
    `1005a2e4–1005a30c`, ledges `1005b2c4/1005b2f4`), id 7 = second Ice-Wall icon (cost 0xc, dmg
    0x96, gravity 0xfa, no floe); PICT 700 captions 0..11 = Fireball, Statue, Ice Crystals, Ice Wall,
    Tree Trunk, Boomerang, VBlade, Ice Wall, DensityBall, Sandstorm, EnergyBolt, Ice Shards.
+
+Wave 2 (2026-10-04) corrections:
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | INDEX.md item 18 | open | closed: §7.1 (`+0xa6 = 21` write-only), §7.2 (crush `+0x150` read only by Crawler/Roach), §7.3 (`.GetBGTile(col,row)`, no crab in water), §7.4 (demo identical; earlier builds UNDETERMINABLE) | this file |
+| W2 | world-data-format.md §3.3 "Getters clamp `x,y`" | arg order implied | state it: every `.Get*Tile(a, b)` that goes through `.ConstrainXY` takes **(column, row)** — shown for `.GetBGTile` (`1003c204..1003c27c`) [HIGH]; other getters not re-checked here | §7.3 |
+| W3 | bosses.md §1.2 / pickups-boxes.md (`_DAT_1009fe8c`) | from the decompile | raw: `10004da4..10004dc0` (`stb 1`, `bl .SetupLevelSprites`, `stb 0`) | enemies-ground-2 §4 |

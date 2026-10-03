@@ -66,7 +66,9 @@ HandlePlayerShot, `0x100a01f8` HandleStatue, `0x100a0484` HandleBox, `0x1009ff38
 - Idle spawning (`.AddIdleSprite @ 10007d8c`) also goes through `.MTNewSprite` (layer arg 1, which
   the Setups below overwrite), so Setup runs at level load; children a Setup spawns (swarm members,
   insect body) are ordinary active sprites and are **not** idled with their parent
-  (`.ActiveToIdleSprite` only calls the parent's `+0x54`, unset here) [MED: consequence not traced].
+  (`.ActiveToIdleSprite` only calls the parent's `+0x54`, unset here) ~~[MED: consequence not traced]~~
+  ⚑ wave 2 (2026-10-04): traced — §7.5 (they keep running and are drawn like any active sprite, but
+  sit ≥ 120 px outside the view by construction).
 
 ### 1.2 Enemy counting and the level "enemies" stat  [HIGH]
 During `.SetupLevelSprites` the flag `*_DAT_1009fe8c` is 1 (`.SetupLevel`, main dump l. 2521–2527).
@@ -120,7 +122,7 @@ back layers have empty hot rects and cannot touch [MED: empty-rect SectRect assu
 
 | slot | `snd ` id / name | used for |
 |---|---|---|
-| `_DAT_100a02a8` | 608 "batdisturb" | chaser bat wakes (`STPlay3DSoundRand`, vol 0xab) |
+| `_DAT_100a02a8` | 608 "batdisturb" | chaser bat wakes (`STPlay3DSoundRand`, vol 0xab; pitch ×0.924..×1.076, ⚑ wave 2 (2026-10-04) §7.2) |
 | `_DAT_100a02a4` | 609 "bathit" | bat/insect hurt by a shot (Rand, 0xab) |
 | `_DAT_100a0274` | 701 "Crawler Ouch" | water damage (0x55); hurt with HP > 200 (0x100); wraith hurt |
 | `_DAT_100a0270` | 702 "Crawler uh oh" | hurt leaving HP ≤ 200 (0x100) |
@@ -192,6 +194,7 @@ globals). `+0x46` = heading 0..35, `+0xb0` = state, `+0xa6` = awake/animation co
      1850 family `> 0x4f`, insect `|vx| > 0x1c1 && |vy| > 0x1c1`. `+0x84/+0x86` are only ever zeroed for
      bats (writers: `.InitSprite`, the Setups, `.RectBounceFake2` on the player — raw `sth …0x84/0x86`
      scan), so bats of the 1740/1850 families thrust every aligned frame [HIGH for the scan].
+     ⚑ wave 2 (2026-10-04): the pair is 0 in every sprite for the whole game — §7.1.
    - 6: with `+0x84 = +0x86 = 0` → state 7 at once (skips the rest of the steering that frame).
    - 5: heading = d (no writer of state 5 found in these handlers).
    No speed cap exists in the Bat handler; only the horizontal brake, wall bounces and water slow it.
@@ -264,7 +267,9 @@ Bat's own `.StandardSpriteHandles`, so it carries the previous frame's `+0x11c` 
 - Tiles (`.HitBatTileSprite`): kind < 100 → `.WallBounce(…, 0, rect, 0, 0)`, < 200 →
   `.WallBounceBG`, water kinds → `.HandleUnderWater` unless `+0x140`.
 - Unexplained tail (l. 17141): if the face is the placeholder face of PICT 151 (`*_DAT_100a007c`,
-  `.InitSprites`) `+0xa6 += 0x45` [HIGH code; LOW purpose].
+  `.InitSprites`) `+0xa6 += 0x45` [HIGH code; LOW purpose]. ⚑ wave 2 (2026-10-04): PICT 151 is the
+  *out-of-range* filler of a face set (slots past the frame count), not the unloaded placeholder
+  (PICT 150); every face index the handler computes is in range, so the guard never fires — §7.3.
 
 ### 3.7 Variant summary (every type in the class ranges)
 
@@ -407,18 +412,120 @@ feeds the −100 write itself ⚑ corrected (review 1a, 2026-10-03) #8 — earli
 
 "—" = no reader in the class's routines (record reads are `hdr + 0x48·16 + {8,10,0xc,0xe}`).
 
+## 7. Wave 2 (2026-10-04): loose ends  [labels per item]
+Sources for this section: raw listing (addresses), both dumps, and a field-access scan (scratch
+Python over every `l*/st* rX,0xNN(rY)` of the raw listing, bucketed by function; `(r1)` stack
+accesses dropped). Closes INDEX item 17.
+
+### 7.1 `+0x84/+0x86`: a secondary velocity pair that is always 0  [HIGH]
+Store scan of `+0x84`/`+0x86` (and of word stores at 0x80..0x87 that could overlap): `.InitSprite`
+(`1003d494/1003d49c`) and every class Setup store 0; `.RectBounceFake2 @ 1003ecc0` and
+`.HandleBatSprite` (`1007ea14/1007ea24/1007ea44/1007ea48`) only rescale or zero them —
+`.RectBounceFake2` multiplies by its 5th argument (its only caller, `.HitPlayerTileSprite`, h. l.
+3095, passes 0) and only when the component is already non-zero; the Bat's state 5 multiplies by
+`+0x15c`. The two remaining stores at these offsets are into globals, not sprites
+(`.SetupPlayerSprite` `1004b274` via `r26 = *TOC−0x732c`; `.HandleKeys` `10052e28` via
+`r30 = *TOC−0x7880`). So both halves are 0 for every sprite all game. Shape (from
+`.RectBounceFake2`): `+0x86` is paired with x, `+0x84` with y — a vestigial i16 "bounce velocity".
+Consequences: the §3.2 thrust gates always pass; state 6 always drops to 7 at once; state 5's
+rescale keeps 0; the player-shot particle offsets that subtract them (h. l. 5135–5225) subtract 0.
+
+### 7.2 `.STPlay3DSoundRand @ 10047d44` randomises pitch  [HIGH]
+`rate = FastRand(10000) + 0x10000 − 0x1389` (`10047d60 li r3,0x2710; bl FastRand`, `10047d80 addis
+r7,r3,1`, `10047d90 subi r7,r7,0x1389`) = 60535..70534 in 16.16 fixed → **×0.9237..×1.0763**, then
+`.STPlay3DSoundPitched(snd, prio, vol, pos, rate)`. The pitched path differs from `.STPlay3DSound`
+in three ways (raw `10047b8c..10047c5c` vs `10047b3c..10047b48`): the stereo pair is **not halved**
+(`.STPlay3DSound` does `srawi 1` on both; pitched copies them as is), a position of exactly
+(0,0) plays centred at 0x80/0x80 without distance attenuation (`10047bd0..10047bf4`), and the
+request is dropped when `L + R < 0x14` (`10047c3c`). So every "Rand" sound here (608 batdisturb,
+609 bathit, 494 flap — h. l. 16808, `1007f5bc bl 0x10047d44`, h. l. 17540) plays about twice as loud as an `.STPlay3DSound` call with
+the same `vol` [HIGH arithmetic; audible loudness also depends on the mixer, sprites §6.2].
+
+### 7.3 The `+0xa6` guards in the Hit routines  [HIGH]
+- **`+0xa6 < 2 → 0x15`** after a successful `.HurtSprite` is one idiom in three routines:
+  `.HitBatSprite` `1007f5c4..1007f5d4`, `.HitGremlinSprite` `10080df0..10080e00`,
+  `.HitSalamanderSprite` `100835ac..100835bc`. Bat: a sleeping 1740 (`+0xa6 = 0`) becomes 21 →
+  next frame 22 → `> 0x15` → 2: woken and animating; 0x73a family: next frame `> 0x12` → 0 (anim
+  restart); insect: 21 → 22 → −8 → clamp 8. Gremlin: 21 → next frame 22 ≥ 22 → wing index 0 plus one
+  "flap" (h. l. 17538–17541) — a hit forces a wing-cycle wrap and its sound. Salamander: no reader
+  (enemies-water-cave §7.1).
+- **`+0xa6 += 0x45` when the face is PICT 151** (`1007f348..1007f364`): `.InitSprites` loads PICT
+  150 into `*TOC−0x77c0` and PICT 151 into `*TOC−0x77c4` (m. l. 112–115); `.CacheEncFaceSetFromPICT`
+  fills a set's slots 1..count with the PICT-150 face (placeholder until loaded) and slots
+  count+1..63 with the **PICT-151** face (m. l. 73903–73928; same in `.DisposeUnneededCachedSpriteFaces`
+  for unloading, which writes PICT 150). So PICT 151 marks an **out-of-range frame index**, and the
+  guard pushes the counter past the wrap so the next frame re-enters the cycle. Every index
+  `.HandleBatSprite` computes is in range: 1740 set 11 frames (`.InitBatSprite`, index ≤ 0x15>>1 = 10),
+  1850/1851 sets 12 (index ≤ 9), 1860 set 9 (`set[+0xa6]`, `+0xa6` 1..8 from Setup's 3); the only
+  other `+0xc0` stores are 0 (death) and Setup faces. The guard therefore **never fires** in 1.0.3
+  [HIGH for the listed indices; MED for unplaced variants' Setup faces, not re-checked].
+
+### 7.4 `+0x1b2` = "emerging from an enemy pipe"  [HIGH]
+Store scan of `+0x1b2`: `.InitSprite` 0 (`1003d3cc`) and the enemy-pipe arm of `.HandleBoxSprite`
+(types 1490..1493 = 0x5d2..0x5d5, '!Enemy pipe facing up/down/right/left'): when it has no live
+child and its interval runs out, `.GenerateSprite(x, y, type = p1, rec 0x200, now, layer+1)`
+(`1006ec90..1006ecac`) and **`child+0x1b2 = 1`** (`1006ecdc`, r19 = 1); each frame it pushes the
+child 3 px out of the mouth (0x5d2 up, 0x5d3 down, 0x5d4 right, 0x5d5 left), sets the child's draw
+clip edge (`+0x1ba`/`+0x1bc`/`+0x1b6`/`+0x1b8` respectively, physics §0.1) so only the part outside
+the pipe shows, and plays a random-pitch sound at frame 3; when its step counter `+0x150` exceeds
+`+0x154` = (child length)/3 + 4 it clears **`child+0x1b2 = 0`** (`1006f040`) and resets the clip
+edges to 32000/32000/0/0 (`1006f01c..1006f060`) (h. l. 12842–12975). While set:
+- every class handler returns at once (one `lbz 0x1b2` in each of 26 `Handle*` routines in the load
+  scan; the other two loads are `.MTCollideSprites` and `.HitEnemyShotSprite`) —
+  no AI, gravity, `.StandardSpriteHandles` (so the pipe's clip writes are not reset) or cleanup;
+- **drawn** normally (`.WrapDrawSprites` gates only on `+0xe9` and `+0xc0`: `1001452c`, `10014538`;
+  no `+0x1b2` load there);
+- **still collidable**: `.MTCollideSprites` skips a `+0x1b2` sprite only as the *outer* sprite
+  (`10032744`); as the inner one it is tested (`1003275c..10032878` loads only its `+0xe9`) and its
+  hit callback is called (`1003285c..10032870`). So an emerging enemy can be shot and can hurt the
+  player on contact. `.HitEnemyShotSprite` also reads it (`1005c9c8`).
+Shipped pipes (enemies-ground-2 §6): level 21 only — children 1730 Blob ×2, 1705 ×2, 1700, 1860.
+
+### 7.5 Children left active while the parent is idle  [HIGH code; MED geometry]
+Only sprites created through `.AddIdleSprite` have an idle slot; `.HandleIdleSprites @ 100081ac`
+idles a slot's sprite (`.ActiveToIdleSprite`, which snapshots it, sets `+0x4c = 0` and calls only its
+`+0x54`) when its face rect (+ margins `+0x1c8..+0x1ce`, 0 for bats) leaves the activity rect = view
+(`−0x18 .. +0x278` × `−0x18 .. +0x198` around the scroll origin) grown by 0x60 on every side (m. l.
+4299–4317). Swarm members and the insect body are `MTNewSprite` children (record 0x200), never in the
+idle table, and no Bat-class routine stores `+0x54` (store scan: only `.SetupRopeSprite`), so they
+stay active. Re-activation (`.IdleToActiveSprite`) restores the snapshot without Setup, re-linking
+the same children through `+0x9c`/`+0x1d4`.
+- **Swarm members** keep homing on the centre's last `+0x14c/+0x150` (the centre stopped updating
+  them) — i.e. on a point ≥ 120 px (24 + 96) outside the view edge; with speed capped at 0xa8c and a
+  370..519 pull per frame they stay within a few tens of px of it [MED]. They are drawn by the normal
+  pass (no parent test, §7.4) but are off-screen; they remain shootable if a shot reaches them.
+- **Insect body**: its position/face are copied only inside the head's handler, so it freezes at the
+  head's last position — off-screen by the same margin — and is invisible in practice; it has no
+  hit callback and an empty rect.
+- A member killed while its centre is idle is freed while the centre's table still points at it
+  [LOW: what the centre then reads on re-activation was not traced].
+
+### 7.6 Statue form on flyers (closes NR 7 by pointer)  [HIGH unless noted]
+The statue mechanics are class-independent: enemies-ground §2.2, enemy-shots-and-damage §2.2,
+enemies-water-cave §5 (120 frames, no gravity, Box-class solid, thaw −200 HP). Flyer specifics: the
+statue's hit callback is `.HitBoxSprite`, whose player-shot arm damages only crate types
+0xc12..0xc1b and 0xb74 (h. l. 13399ff.) — a statued bat/gremlin/wraith takes **no** shot
+damage until it thaws [MED: from the decompile]; linked parts (insect body, gremlin rider) are
+updated only by the suspended handler, so they freeze in place for the 120 frames [MED].
+
 ## NOT RESOLVED
 1. `+0xb8` draw-mode values (0xb0000/1/2/4, 0x10009, 0x1000c): passed to `.WrapDrawFace` (main dump
    l. 10246–10351; flash overrides with 0x30000/0x40000) — the meaning of modes 0xb/1 not read.
-2. `+0x84/+0x86` purpose (only zeroed for bats; player `.RectBounceFake2` writes them) — the bat gates
-   look vestigial.
-3. Whether `.STPlay3DSoundRand` randomises pitch (name only).
-4. The `+0xa6 += 0x45` placeholder-face guard (§3.6).
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane — not attempted by L7.
+2. ~~`+0x84/+0x86` purpose (only zeroed for bats; player `.RectBounceFake2` writes them) — the bat gates
+   look vestigial.~~ → closed: §7.1 (always 0; gates always pass).
+3. ~~Whether `.STPlay3DSoundRand` randomises pitch (name only).~~ → closed: §7.2 (×0.924..×1.076).
+4. ~~The `+0xa6 += 0x45` placeholder-face guard (§3.6).~~ → closed: §7.3 (out-of-range-frame guard; never fires).
 5. `.WallBounce` argument semantics (bounce 0xa0, last arg 1) — physics.md §3 open item.
+   ⚑ wave 2 (2026-10-04): INDEX item 20, another lane — not attempted by L7.
 6. `.HandleBurn` row arithmetic (only its trigger and end — `+0xe9` or `+0x50` — are read here).
-7. Statue-form interactions beyond the 120-frame revert (another reader's scope).
-8. What sets `+0x1b2` (every handler returns early on it).
-9. Whether children left active while a parent is idle (swarm members, insect body) are visible.
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.
+7. ~~Statue-form interactions beyond the 120-frame revert (another reader's scope).~~ → closed: §7.6
+   (pointer + flyer specifics; the no-damage reading is MED).
+8. ~~What sets `+0x1b2` (every handler returns early on it).~~ → closed: §7.4 (enemy pipes 1490..1493).
+9. ~~Whether children left active while a parent is idle (swarm members, insect body) are visible.~~
+   → closed: §7.5 (drawn by the normal pass, but parked ≥ 120 px off-screen; geometry MED).
+10. (wave 2) What a swarm centre reads through a member pointer freed while the centre was idle (§7.5).
 
 ## Proposed additions to physics.md §0
 `+0x28/+0x30` i32 previous-frame vx/vy (copied by `.WrapDrawSprites`) · `+0x50` proc kill callback
@@ -451,3 +558,14 @@ write-back and no record clear on death · `+0x1a2` i16 burn-away progress (≠ 
 9. physics.md §2 water gravity `max(0.7·g, 0x100)` — add the caveat (review 1a #2, adjudication 4): taken only when `+0x11c ≠ 0` at the routine's entry (`lwz 0x11c @100375c8`), before its own `SeparateFromTiles2` (`bl 1003c804 @10037624`); `.StandardSpriteHandles` zeroes `+0x11c` each frame (`100368d4 … 100369ac`), so every sprite's first call uses dry gravity; only a second same-frame call (Frog) or a direct `+0x11c` writer (Bonus 1055 in-water flag, 1350 air bubble) takes the 0x100 branch.
 10. spells-items.md §2.1 (review 1a adjudication 1) — names only: id 2 "Ice Crystals" (cost 10, gravity 0, unholdable), id 3 "Ice Wall" (cost 0x1e `1005213c`, dmg 0x12c `10052138`, floes `1005a2e4–1005a30c`, ledges `1005b2c4/1005b2f4`), id 7 second Ice-Wall icon (cost 0xc, dmg 0x96, gravity 0xfa, no floe); PICT 700 captions 0..11 = Fireball, Statue, Ice Crystals, Ice Wall, Tree Trunk, Boomerang, VBlade, Ice Wall, DensityBall, Sandstorm, EnergyBolt, Ice Shards.
 11. physics.md §5.1 `.HurtPlayer` (review 1a #1): refuses (returns 0) when the attacker's HP < 1 unless its handler is EnemyShot (TOC −0x73b8) or Box (TOC −0x73bc) — raw `10054768–10054798`; dead flyers do not hurt on contact (§1.3).
+
+Wave 2 (2026-10-04) corrections:
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | physics.md §0 row `+0x84 / +0x86` | "zeroed for bats, written by `.RectBounceFake2` … NOT RESOLVED" | i16 pair (`+0x86` x, `+0x84` y) of a vestigial bounce velocity; 0 in every sprite all game (all writers store 0 or rescale 0) | §7.1; store scan, `.RectBounceFake2` caller h. l. 3095 passes 0 |
+| W2 | physics.md §0 row `+0x1b2` | "writer `.HandleBoxSprite` (inside a container)" | set on the child of an enemy pipe (Box 1490..1493) while it is pushed out (3 px/frame), cleared on release; handler skipped, still drawn, still collidable as the inner sprite | §7.4; `1006ecdc`, `1006f040`, `10032744`, `1003275c..10032878` |
+| W3 | sprites-backgrounds-sounds.md §6.3 | only `.STPlay3DSound` described | add `.STPlay3DSoundPitched`: stereo pair not halved, (0,0) position → centred 0x80/0x80, dropped if L+R < 0x14; `.STPlay3DSoundRand` = Pitched with rate 60535..70534 (×0.924..×1.076) | §7.2; `10047b8c..10047c5c`, `10047d60..10047d90` |
+| W4 | coverage.md row `.STPlay3DSoundRand` / `.STPlay3DSoundPitched` (open: "pitch randomisation / rate units") | open | answered: enemies-flyers §7.2 | §7.2 |
+| W5 | INDEX.md item 17 | open | closed: `+0x84/+0x86` §7.1, Rand pitch §7.2, `+0xa6 += 0x45` §7.3, `+0x1b2` §7.4, idle children §7.5 | this file |
+| W6 | enemies-flyers.md §3.6 (own file, applied in place) | "placeholder face of PICT 151" | PICT 151 = out-of-range frame filler; PICT 150 = unloaded placeholder | §7.3; m. l. 73903–73928 |
