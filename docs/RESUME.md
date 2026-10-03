@@ -2,9 +2,9 @@
 
 ## FOR BEN
 
-Two sessions can run from here, in either order or at the same time: the **RE-bank lane** (Trigger A:
-decompile and bank every game on the hit list) and **Phase 0 execution** (Trigger B2: build HectorKit from
-the locked plan, then census the Aki data). The Phase 0 plan is written and reviewed; B2 executes it.
+Phase 0 is done (HectorKit v0.1.0; Aki data census). Two sessions can run from here, in either order or at
+the same time: the **RE-bank lane** remainder (Trigger A: Ferazel, Deimos, Cythera) and **Phase 1** (Trigger
+C: HectorShell + Aki's splash, map and prefs screens — the first thing you will SEE).
 
 ---
 
@@ -46,60 +46,62 @@ continuation; never start a new game's bank you cannot finish. This lane edits d
 status line to docs/STATE.md; it does not touch the design doc or HectorKit.
 ```
 
-## Trigger B2 — Phase 0 EXECUTE: HectorKit lift + Aki census, from the locked plan
+## Trigger C — Phase 1: HectorShell + Aki static screens (brainstorm → plan → build)
 
 ```
-You are the ORCHESTRATOR for Ambrosia Classics — Phase 0 execution: lift HectorKit out of the EV engine and
-census the Aki data, from the LOCKED plan. Repos ~/Developer/Ambrosia-Classics (work in a worktree: EnterWorktree,
-never `git stash`, verify the branch before every commit) and ~/Developer/HectorKit (work on `main` directly —
-nobody else touches it). Push both. 300k-token orchestrator HARD CAP measured by the drop in <total_tokens>
-since your first message (note the opening figure now); at the cap finish the in-flight task, wrap, chip.
-Invoke `superpowers:subagent-driven-development` first. House method: ~/Developer/Toolkits/fable-kit/
-orchestrator.md (§2 loop, §5 cap, §6 model policy); if you are not Fable, opus-driver.md before anything else.
+You are the ORCHESTRATOR for Ambrosia Classics — Phase 1: HectorShell (fixed 800x600 logical canvas in an AppKit
+window, integer-crisp scaling with fit-smooth fallback, fullscreen toggle, mouse/keys in canvas coords, per-frame
+RGBA present path — Metal vs CALayer decided by MEASURING) plus Aki's static screens from the real 1.2.0 art:
+splash (welcome.png), map (map.png + the twelve lanterns, progression state), Preferences dialog (strings from
+the 1.2 nibs). Repos ~/Developer/Ambrosia-Classics (work in a worktree: EnterWorktree, never `git stash`, verify
+the branch before every commit; the worktree needs the untracked symlink .claude/worktrees/HectorKit →
+~/Developer/HectorKit for the ../../../HectorKit path dependency) and ~/Developer/HectorKit (main directly; pin
+Classics to the HectorKit tag only when a game ships). Push both. Orchestrator cap: measure the drop in
+<total_tokens> since your first message (note the opening figure); Ben may lift it — ask before pushing past 300k.
+Invoke `superpowers:brainstorming` FIRST (this phase has unlocked design decisions: present path, window/scaling
+behaviour, how the map's lanterns and progression are drawn), then `superpowers:writing-plans` (one Opus planner,
+one Fable reviewer with a dry run, fix pass), then `superpowers:subagent-driven-development`. House method:
+~/Developer/Toolkits/fable-kit/orchestrator.md; if you are not Fable, opus-driver.md first.
 
-MODEL SEAT: say which model you are in your first message. Every subagent `model: "opus"` — never Sonnet/Haiku,
-never omitted — except the Task 5 (MAJOR) second review leg: omit `model` so it runs Fable-grade.
+MODEL SEAT: say which model you are in your first message. Every subagent `model: "opus"` — except Fable-grade
+review legs on MAJOR tasks (omit `model`).
 
-READ FIRST (in order): 1. docs/plans/2026-10-03-phase0-hectorkit-lift.md — "Verification model",
-"Non-negotiable invariants", "Research notes", then the tasks you will run. 2. docs/STATE.md (whole).
-3. docs/handoff-2026-10-03-phase0-plan.md. 4. CLAUDE.md of both repos. 5. Design doc §2 and §5 only.
-Do NOT read the EV repo's STATE/DECISIONS/ghidra findings. The EV repo is read-only this phase (no edits, no
-commits); its HEAD e23122f4 is the lift source.
+READ FIRST (in order): 1. docs/STATE.md (whole). 2. docs/handoff-2026-10-03-phase0-plan.md. 3. Design doc
+docs/design-2026-10-03-hectorkit-and-classics.md §2 (HectorShell row), §4, §4a (scaling ruling), §5, §6 item 1,
+§7. 4. docs/aki/INDEX.md, then rules.md and method-map-1.2.md ONLY for splash/map/prefs (the RE bank; 1.2.0 is
+the replica target — Ben's ruling 2026-10-03). 5. docs/aki/data-census.md §3 (art map 1.1 PICT ↔ 1.2 PNG) and
+assets-census.md. 6. HectorKit CLAUDE.md + docs/DECISIONS.md D1–D3; its public API (Sources/HectorGraphics:
+PICT, CodecImage, Ditl; HectorResources: ResourceReader). 7. The Aki Handbook PDF (1.2 bundle) for what the
+screens look like. Do NOT read the EV repo's STATE/DECISIONS/ghidra findings.
 
-STATE (live, 2026-10-03): HectorKit = one commit (door), no code. Classics `main` = design + plan + handoff.
-Aki data facts are in the plan's research notes (82 PICT = 71 banded QuickTime-JPEG + 11 raw; 0 snd; 50 PNG;
-14/15 audio files). The plan was dry-run by its reviewer: 112 HectorKit tests green with real data, Classics
-census 6/6. Deviations the plan doesn't know about: none yet.
+STATE (live, 2026-10-03 night): HectorKit v0.1.0 = f578925, gate `tools/check-zero-skip.sh` PASS floor 119
+(env HECTORKIT_DATA_NOVA / _NOVA_REFERENCE / _AKI11; defaults in the script). Classics main has Aki/Core
+(AkiCore: AkiBundle; aki-census; 6 tests via AKI_DATA_11/_12), docs/aki/data-census.md, DECISIONS D1–D2.
+Resources/Aki/1.1.0.app and 1.2.0.app are git-ignored symlinks to the archive copies. No app target, no
+project.yml yet (xcodegen; one app target per game; never hand-edit the pbxproj). Deviations the design doc
+doesn't know about: 71/11 PICT split; PICT 135 has a real alpha plane; 1.2.0 is the replica target.
 
-SCOPE: plan Tasks 0–8 in order; expect to close Tasks 0–4 in this session and chip Tasks 5–8 (Task 5 is MAJOR:
-implementer + spec reviewer + Fable-grade quality reviewer). Per task: pre-dispatch grounding by you (grep the
-real files the task names), one Opus implementer (TDD, explicit `git add` paths, commit with the trailer
-`Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`), one Opus reviewer that RUNS `swift test` and
-reports every finding with confidence/severity (no self-filtering), a fix round if needed. Deviations you may
-settle alone: test names, file splits, script wording. Everything that changes a decoded byte, a public API
-shape, a census number or a ruling in the plan's D1–D3 is Ben's — STOP and ask. Do NOT start HectorShell,
-Phase 1 screens, or the EV shim.
+SCOPE: design + plan + build HectorShell (HectorKit, new module, unit tests for coordinate mapping + scale
+rules + a render smoke) and the Aki app target's splash/map/prefs — static screens, no game logic, no editor,
+no sound beyond what the splash needs (music toggle in prefs may be a stub that records the setting). The
+output Ben sees: a staged double-clickable `.app` in out/Aki/ with what-to-expect steps, boot-smoke-tested
+without stealing focus more than once per batch. STOP at the honesty gate: "that is Aki's map screen" is Ben's
+verdict; do not chip past it. Do NOT start Phase 2 (tiles/rules/timer).
 
-VERIFICATION GATE (run yourself from the merge head, never relay a subagent's number):
-`cd ~/Developer/HectorKit && tools/check-zero-skip.sh` must print 0 skipped, 0 failures, and the floor the
-plan records for the task you just closed (89 after Task 4, 109 after Task 5, 112 after Task 6);
-`cd Aki/Core && AKI_DATA_11=… AKI_DATA_12=… swift test` 6/6 after Task 7; `swift run aki-census` output pasted
-verbatim into docs/aki/data-census.md. Tag HectorKit v0.1.0 only after Task 8's gates pass.
-Honesty gates: none this phase (no screens); Ben reads docs/aki/data-census.md.
+VERIFICATION GATE: HectorKit `tools/check-zero-skip.sh` PASS at the new recorded floor (≥ 119 + HectorShell
+tests); `swift test` in Aki/Core green; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED;
+headless screenshot of each screen compared by eye (yours) against the Handbook/1.2 art before Ben sees it;
+then SendUserFile the screenshots + the .app path and STOP for his verdict.
 
-AUTHORIZATIONS: merge the Classics worktree branch to main when a task's gates pass: yes; push both repos:
-yes; tag HectorKit v0.1.0: yes (Task 8 only); EV repo: NEVER edit or commit; game data: never commit
-(Resources/ is ignored; symlinks only).
+AUTHORIZATIONS: merge the worktree branch to main when gates pass: yes; push both repos: yes; tag HectorKit:
+v0.2.0 only after Ben's map-screen verdict; EV repo: NEVER edit; game data: never commit.
 
-HAZARDS: `swift test` prints one 'All tests' block per test bundle, no package total — count `Test Case` lines
-(the plan's script does). The Classics path dependency `../../../HectorKit` needs the untracked symlink
-`.claude/worktrees/HectorKit → ~/Developer/HectorKit` when working in a worktree (plan Task 0). `grep skipped`
-also matches the `[HectorResources] skipped A Corrupt.rez` log line — anchor on `Test Case`. A worktree with
-untracked files is fine; "clean" means no modified tracked files.
+HAZARDS: `swift test` prints one 'All tests' block per bundle — count `Test Case` lines (the gate does).
+`HECTORKIT_TEST_LOG` per concurrent gate run. Retina: 800x600 logical → integer scale 2x/3x; fit-smooth only when
+not an integer multiple. The 1.2 nibs are XML (no DITLs). Never put game knowledge in HectorKit.
 
 CLOSE: finish the in-flight task at the cap, never start another. Merge when verified; STATE + DECISIONS
-(plan Task 8 seeds docs/DECISIONS.md in both repos; if you stop before Task 8, seed them yourself with the
-rulings in the handoff) + handoff; memory file + index line; remove the worktree, delete the branch; spawn ONE
-chip for the next tasks carrying THIS block updated (state as it will be, last SHAs, floor reached);
-closing message in plain English: what landed, what review caught, "Still owed by you", "Chips queued".
+(real forks only) + handoff as-built; memory file + index line; spawn ONE chip for the next step carrying THIS
+block updated; closing message in plain English: what landed, what review caught, "Still owed by you" (the
+map-screen verdict), "Chips queued".
 ```

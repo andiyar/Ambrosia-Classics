@@ -1,6 +1,6 @@
 # Plan — Phase 0: HectorKit lift from EV + Aki data census — 2026-10-03
 
-> Status: LOCKED (Ben: "just do the executor here", 2026-10-03) | EXECUTING
+> Status: DONE (executed 2026-10-03; HectorKit v0.1.0 at floor 119; Classics 6/6; every review MERGEABLE)
 > **For agentic workers:** execute task-by-task with superpowers:subagent-driven-development (or
 > superpowers:executing-plans). Steps use checkbox (`- [ ]`) syntax. Every number below that a step
 > "expects" came from tool output on this machine on 2026-10-03; if reality differs, STOP and report —
