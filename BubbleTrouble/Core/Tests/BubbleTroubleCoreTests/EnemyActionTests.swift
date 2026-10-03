@@ -97,24 +97,36 @@ final class EnemyActionTests: XCTestCase {
 
     /// Note 33 at level 1: pop waits 40 − 1 = 39 frames, push 70 − 2 = 68, shark balloon 70 − 3 = 67; the starfish
     /// (sprite set 0x1e) waits 10 for pop and push. The action fires on the call after the last waiting frame.
+    /// `+0x5a` (lastPop) is written on every waiting frame only by the balloon; pop and push write it only on fire.
+    /// The starfish wait keys on the sprite set (`+0x3a == 0x1e`), not the type byte.
     func testActionWaits() {
-        // Pop (piranha): normal bubble to the right.
+        // Pop (piranha): normal bubble to the right; lastPop untouched while waiting.
         var s = Self.world()
         Self.place(&s, type: 1, col: 7, row: 5, dir: .right)
         s.maze[8, 5] = CellCode.normal
+        s.enemies[0].lastPop = 123
         XCTAssertEqual(Self.waitingFrames(&s, pending: 2, fired: { $0.maze[8, 5] == CellCode.popping }) {
-            $0.tryRemoveGo(0, .right)
+            let r = $0.tryRemoveGo(0, .right)
+            if $0.maze[8, 5] != CellCode.popping {
+                XCTAssertEqual($0.enemies[0].lastPop, 123, "pop waiting frames leave +0x5a alone")
+            }
+            return r
         }, 39)
         XCTAssertEqual(s.blocks[0].type, CellCode.popping, "pop block at the bubble")
         XCTAssertEqual(s.enemies[0].direction, .right)
         XCTAssertEqual(s.score, 0, "enemy pops never score")
 
-        // Push (eel): normal bubble then empty.
+        // Push (eel): normal bubble then empty; lastPop untouched while waiting.
         s = Self.world()
         Self.place(&s, type: 2, col: 7, row: 5, dir: .right)
         s.maze[8, 5] = CellCode.normal
+        s.enemies[0].lastPop = 123
         XCTAssertEqual(Self.waitingFrames(&s, pending: 1, fired: { $0.maze[8, 5] == CellCode.empty }) {
-            $0.tryEnemyPushBlock(0, .right)
+            let r = $0.tryEnemyPushBlock(0, .right)
+            if $0.maze[8, 5] != CellCode.empty {
+                XCTAssertEqual($0.enemies[0].lastPop, 123, "push waiting frames leave +0x5a alone")
+            }
+            return r
         }, 68)
         XCTAssertEqual(s.blocks[0].type, CellCode.normal, "moving normal bubble")
         XCTAssertEqual(s.blocks[0].direction, .right)
@@ -159,6 +171,22 @@ final class EnemyActionTests: XCTestCase {
         XCTAssertEqual(Self.waitingFrames(&s, pending: 1, fired: { $0.maze[7, 4] == CellCode.empty }) {
             $0.tryEnemyPushBlock(0, .up)
         }, 10)
+
+        // The wait keys on the sprite set, not the type byte: a piranha-typed enemy wearing sprite set 0x1e waits 10.
+        s = Self.world()
+        Self.place(&s, type: 1, col: 7, row: 5, dir: .right)
+        s.enemies[0].spriteSet = 0x1e
+        s.maze[8, 5] = CellCode.normal
+        XCTAssertEqual(Self.waitingFrames(&s, pending: 2, fired: { $0.maze[8, 5] == CellCode.popping }) {
+            $0.tryRemoveGo(0, .right)
+        }, 10, "type 1 with sprite set 0x1e → starfish wait")
+        s = Self.world()
+        Self.place(&s, type: 2, col: 7, row: 5, dir: .right)
+        s.enemies[0].spriteSet = 0x1e
+        s.maze[8, 5] = CellCode.normal
+        XCTAssertEqual(Self.waitingFrames(&s, pending: 1, fired: { $0.maze[8, 5] == CellCode.empty }) {
+            $0.tryEnemyPushBlock(0, .right)
+        }, 10, "type 2 with sprite set 0x1e → starfish wait")
     }
 
     /// B8, `_TryEnemyPushBlock @ 000131fd`: the adjacent cell must be a normal bubble (10) and the cell beyond empty
@@ -199,6 +227,12 @@ final class EnemyActionTests: XCTestCase {
         }
 
         // Edge limits: a normal bubble next to the enemy in `d` with empty cells beyond where the grid has them.
+        // The plan's B8 bar ("returns 0 before any maze read") is behaviourally unobservable here: at these four
+        // positions `getDistantObject` already returns 50 (off-grid) and `getNextObject` returns 50 one cell further
+        // out, so the maze query alone would refuse too. Observing the ordering would need a maze-read spy, and
+        // production code carries none (ruling). The edge switch in `EnemyActions.swift` (`tryEnemyPushBlock`) is
+        // transcribed from `_TryEnemyPushBlock @ 000131fd` and is behaviourally redundant with the maze-query edge
+        // returns; these assertions pin only the refusal and that nothing is touched.
         for (col, row, d) in [(7, 1, Direction.up), (7, 9, .down), (1, 5, .left), (14, 5, .right)] {
             var s = Self.world()
             Self.place(&s, type: 3, col: col, row: row, dir: .up)
@@ -210,7 +244,9 @@ final class EnemyActionTests: XCTestCase {
             XCTAssertEqual(s.maze, before)
         }
 
-        // Direction 0 (raw +0x23 after _ToastBubble) → _LocationErrorInt(0x7d8,5): the original quits.
+        // Direction 0 → _LocationErrorInt(0x7d8,5): the original quits. Unreachable in play (`_ToastBubble` always
+        // leaves +0x23 non-zero — 00013040 on pop, 0001304f otherwise — and every other writer sets it non-zero); the
+        // nil arm is defensive transcription of the original's 0 exit, pinned here directly.
         var s = Self.world()
         Self.place(&s, type: 3, col: 7, row: 5, dir: .up)
         XCTAssertFalse(s.tryEnemyPushBlock(0, nil))

@@ -5,8 +5,8 @@
 //
 // The direction is `Direction?` (nil = 0) only so the pending-action dispatch can pass the raw `+0x23` byte; a 0 can
 // never reach these four actions. `_ToastBubble` writes the direction when it pops (00013040 `movb %bl,0x23(%esi)`)
-// and sets 1 when nothing pops (0001304f); `+0x23` is zeroed only transiently while deciding (00013cca in
-// `_FigureEnemyMove`, 000139b4 in `_MoveEnemyRandomly`) and every exit of those sets it non-zero; spawn draws `(1,4)`;
+// and sets 1 when nothing pops (0001304f); `+0x23` is zeroed only transiently while deciding (00013cdc in
+// `_FigureEnemyMove`, 000139bb in `_MoveEnemyRandomly`) and every exit of those sets it non-zero; spawn draws `(1,4)`;
 // balloon capture/release never write `+0x23`. The nil arms are therefore unreachable defensive transcription of the
 // originals' own 0 exits: `_TryRemoveGo` → `_LocationErrorInt(0x7d8,3)`; `_TryEnemyPushBlock` →
 // `_LocationErrorInt(0x7d8,5)`; `_TryEnemyCreateBalloon` returns 0 first when the hero is trapped (`hero+0x4c`), else
