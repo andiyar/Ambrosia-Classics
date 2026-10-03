@@ -18,7 +18,6 @@ those).
 | Ferazel's Wand 1.0.3 | `…/files/Ferazel's Wand` | **PEF** (`Joy!peffpwpc`), CFM Carbon | copy as-is to `ghidra/Ferazel_pef` |
 | Deimos Rising 1.0.6 | `…/Deimos Rising/Deimos Rising` | PEF | copy to `ghidra/Deimos_pef` |
 | Cythera 1.0.4 | `…/files/Cythera` | PEF | copy to `ghidra/Cythera_pef` |
-| pop-pop 1.0.4 | `pop-pop.app/Contents/MacOS/pop-pop` | Mach-O UB, stripped | (not on the lane — Ben 2026-10-03) |
 
 `lipo` wants `-output` (not `-o`) in this form; `file` and `xxd -l 48` confirm the form.
 
