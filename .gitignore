@@ -9,3 +9,5 @@
 *.xcodeproj
 DerivedData/
 .DS_Store
+!/ghidra/*.sh
+!/ghidra/README.md
