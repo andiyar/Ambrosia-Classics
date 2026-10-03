@@ -8,12 +8,13 @@ import HectorResources
 ///     btx-census <Bubble Trouble X.app/Contents/Resources>
 ///
 /// Reads the game's five data-fork resource files and decodes every `cicn` (`CIcon`), `ppat` (`PixelPattern`),
-/// `PICT` (`PICT(data:)`, then `PICT.decodeQuickTime` on 0x8200) and `snd ` (`SndSound`). Prints Markdown on
-/// stdout — docs/bubble-trouble/data-census.md is this output verbatim under a header — ending in a Totals
-/// line. Exit 0 = no failures, 1 = any failure, 2 = bad arguments. Prints file NAMES only, never paths.
+/// `PICT` (`PICT.decodeAny`: raster, banded QuickTime, 0x0099 region, 0x8201 matte) and `snd ` (`SndSound`).
+/// Prints Markdown on stdout — docs/bubble-trouble/data-census.md is this output verbatim under a header —
+/// ending in a Totals line. Exit 0 = no failures, 1 = any failure, 2 = bad arguments. Prints file NAMES only,
+/// never paths.
 ///
-/// The masked PICTs (0x0099 PackBitsRgn, 0x8201 QuickTime 'rle ' matte) are NAMED DEFERRALS, not failures,
-/// until the kit decodes them (plan docs/plans/2026-10-03-hectorkit-btx-decoders.md Tasks 4a/4b/4c).
+/// The masked PICTs (0x0099 PackBitsRgn, 0x8201 QuickTime 'rle ' matte) decode through `PICT.decodeAny`
+/// (plan docs/plans/2026-10-03-hectorkit-btx-decoders.md Tasks 4a/4b/4c); any decode throw is a failure.
 @main
 enum BTXCensus {
     /// The five resource files of Bubble Trouble X 1.1 `Contents/Resources` (bank INDEX.md "Resource census").
@@ -225,16 +226,16 @@ enum BTXCensus {
     // MARK: - 4. PICT
 
     private enum PictPath: String, CaseIterable {
-        case raw = "raw", quickTime = "quicktime", region = "deferred region", matte = "deferred matte"
+        case raw = "raw", quickTime = "quicktime", region = "region", matte = "matte"
     }
 
     private static func pictSection(_ files: [(name: String, collection: ResourceCollection)],
                                     _ out: inout Output) -> (totals: String, failures: Int) {
         out("## 4. `PICT` — every picture through HectorKit")
         out()
-        out("path: raw = `PICT(data:)`; quicktime = banded 0x8200 JPEG via `PICT.decodeQuickTime(data:)`;")
-        out("deferred region = 0x0099 PackBitsRgn and deferred matte = 0x8201 QuickTime 'rle ' matte — both throw")
-        out("`unsupportedOpcode` today and are named deferrals (not failures) until the kit decodes them.")
+        out("path (every picture through `PICT.decodeAny(data:)`): raw = `PICT(data:)`; quicktime = banded 0x8200 JPEG")
+        out("via `PICT.decodeQuickTime(data:)`; region = 0x0099 PackBitsRgn, alpha 255 inside the region and 0 outside;")
+        out("matte = 0x8201 QuickTime 'rle ' matte, alpha = the 8-bit matte sample. A decode throw is a failure.")
         out("frame = picFrame; a decode must match it. alpha: opaque = every A 255, else counts of A 255 / 0 / partial.")
         out()
         out(row(["file", "id", "name", "frame", "path", "alpha"])); out(row(["---", "---:", "---", "---", "---", "---"]))
@@ -257,22 +258,23 @@ enum BTXCensus {
                          : "α255 \(grouped(s.alpha255)) · α0 \(grouped(s.alpha0)) · partial \(grouped(s.partial))")
                     byPath[path, default: []].append(id)
                 }
+                let result: (pict: PICT, path: PICT.DecodePath)
                 do {
-                    decoded(try PICT(data: res.data), .raw, PictPath.raw.rawValue)
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x8200 {
+                    result = try PICT.decodeAny(data: res.data)
+                } catch {
+                    line("?", "FAIL: \(error)"); failed.append(id); continue
+                }
+                switch result.path {
+                case .raster: decoded(result.pict, .raw, PictPath.raw.rawValue)
+                case .quickTime:
                     do {
                         let bands = try PICT.quickTimeBands(data: res.data).bands.count
-                        decoded(try PICT.decodeQuickTime(data: res.data), .quickTime,
-                                "quicktime · \(bands) band\(bands == 1 ? "" : "s")")
+                        decoded(result.pict, .quickTime, "quicktime · \(bands) band\(bands == 1 ? "" : "s")")
                     } catch {
                         line("quicktime", "FAIL: \(error)"); failed.append(id)
                     }
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x0099 {
-                    line(PictPath.region.rawValue, "—"); byPath[.region, default: []].append(id)
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x8201 {
-                    line(PictPath.matte.rawValue, "—"); byPath[.matte, default: []].append(id)
-                } catch {
-                    line("?", "FAIL: \(error)"); failed.append(id)
+                case .packBitsRegion: decoded(result.pict, .region, PictPath.region.rawValue)
+                case .quickTimeMatte: decoded(result.pict, .matte, PictPath.matte.rawValue)
                 }
             }
         }

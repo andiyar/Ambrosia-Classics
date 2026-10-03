@@ -29,8 +29,8 @@ private func btxFile(_ name: String) throws -> ResourceCollection {
 
 /// Census pins for `btx-census` (plan docs/plans/2026-10-03-hectorkit-btx-decoders.md Task 7).
 /// Numbers: research notes 6 (cicn), 10 (ppat), 13 (PICT), 20–22 (snd), 24 (per-file counts = bank INDEX.md
-/// "Resource census"). Masked PICTs (0x0099 regions, 0x8201 mattes) are named deferrals until kit Tasks 4a/4b
-/// land and Task 4c switches the census to `PICT.decodeAny`.
+/// "Resource census"). Every PICT goes through `PICT.decodeAny` (Task 4c); the masked ones (0x0099 regions,
+/// 0x8201 mattes) decode via kit Tasks 4a/4b.
 final class BTXCensusTests: XCTestCase {
 
     /// The seven exact summary lines of plan Task 7, in order (the Totals line is the last stdout line).
@@ -39,9 +39,9 @@ final class BTXCensusTests: XCTestCase {
         "files 5 · resources 1066 (BT Levels.rsrc 119 · BT Sounds.rsrc 53 · BT Sprites.rsrc 662 · BT Titles.rsrc 9 · Bubble Trouble X.rsrc 223)",
         "cicn 335 (331 + 4) · depth {1: 20, 2: 11, 4: 84, 8: 220} · opaque px 236,687 · RGB sum 64,978,590 · blank 7: 25004 25108 25208 25308 25408 25504 27308",
         "ppat 7 · 256×256 8-bit · device colour table 7 · RGB sum 89,901,763",
-        "PICT 28 · raw 11 · quicktime 8 · deferred region 4 (9001 9002 9012 9020) · deferred matte 5 (2910 7000 9030 9031 9077)",
+        "PICT 28 · raw 11 · quicktime 8 · region 4 (9001 9002 9012 9020) · matte 5 (2910 7000 9030 9031 9077)",
         "snd 52 · pcm8 48 · ima4 4 (stereo) · 22050 Hz 46 · 22254 Hz 5 · 11127 Hz 1",
-        "Totals: cicn 335 (331 + 4), ppat 7, PICT 28 (raw 11 · quicktime 8 · deferred region 4 · deferred matte 5), snd 52 (pcm8 48 · ima4 4), failures 0",
+        "Totals: cicn 335 (331 + 4), ppat 7, PICT 28 (raw 11 · quicktime 8 · region 4 · matte 5), snd 52 (pcm8 48 · ima4 4), failures 0",
     ]
 
     // MARK: - Per-file decoding through the kit directly
@@ -71,22 +71,18 @@ final class BTXCensusTests: XCTestCase {
         XCTAssertEqual([cicn, ppat], [335, 7])
     }
 
-    /// Note 13: 28 PICTs = raw 11 (`PICT(data:)`) · quicktime 8 (`decodeQuickTime` after 0x8200) · 4 throw
-    /// `unsupportedOpcode(0x0099)` · 5 throw `unsupportedOpcode(0x8201)`; any other error fails the test.
+    /// Note 13: 28 PICTs, every one through `PICT.decodeAny` = raster 11 · quickTime 8 (0x8200) ·
+    /// packBitsRegion 4 (0x0099) · quickTimeMatte 5 (0x8201); any throw fails the test.
     func testEveryPICTClassified() throws {
         var raw: [Int] = [], quickTime: [Int] = [], region: [Int] = [], matte: [Int] = []
         for name in BTXCensus.fileNames {
             for res in try btxFile(name).resources(of: "PICT") {
                 let id = Int(res.id)
-                do {
-                    _ = try PICT(data: res.data); raw.append(id)
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x8200 {
-                    XCTAssertNoThrow(try PICT.decodeQuickTime(data: res.data), "PICT \(id)")
-                    quickTime.append(id)
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x0099 {
-                    region.append(id)
-                } catch PICT.DecodeError.unsupportedOpcode(let op) where op == 0x8201 {
-                    matte.append(id)
+                switch try PICT.decodeAny(data: res.data).path {
+                case .raster: raw.append(id)
+                case .quickTime: quickTime.append(id)
+                case .packBitsRegion: region.append(id)
+                case .quickTimeMatte: matte.append(id)
                 }
             }
         }
@@ -120,6 +116,7 @@ final class BTXCensusTests: XCTestCase {
     func testSummaryLinesExact() throws {
         let census = BTXCensus.render(resourcesDirectory: try btxResources())
         XCTAssertEqual(census.failures, 0)
+        XCTAssertFalse(census.stdout.contains("deferred"), "no PICT is a deferral after Task 4c")
         let lines = census.stdout.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         XCTAssertEqual(lines.last, "", "stdout ends with a newline")
         XCTAssertEqual(lines.dropLast().last, Self.summaryLines.last, "the Totals line is the last line")
