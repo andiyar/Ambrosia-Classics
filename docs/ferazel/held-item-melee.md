@@ -288,5 +288,5 @@ index/riding offset; `_DAT_100a05c0`/`0604`/`PTR_DAT_100a0608` bob; `PTR_DAT_100
 | 5 | player-states §8 trail setup [MED] | MED | HIGH: slot 0x100a0518 → `1004b3b4` | §3 |
 | 6 | enemy-shots §2.4 shadow [MED] | partial | face rule, empty rect (no collisions), still-freeze, blink respawn, bob table + re-sync bug | §2 |
 | 7 | enemy-shots §2.3 trail | — | trail 4 = current pose; entries 0/1 never shown | §3 |
-| 8 | spells-items §4 item 8 | Hammer breaks cave walls (manual) | no code reads item 8 | §1.2 |
+| 8 | ~~spells-items §4 item 8~~ no bank target (manual-only claim) ⚑ corrected (review 1d, 2026-10-03) #C8 | Hammer breaks cave walls (manual) | no code reads item 8 | §1.2 |
 | 9 | player-states §3.10 | stab | add stale-damage seed stab, frozen live hit box, glider deferral, cadence | §1.3, §1.6, §1.8 |

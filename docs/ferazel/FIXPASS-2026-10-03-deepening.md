@@ -37,8 +37,9 @@ the deferred touches to the existing files, and the bank side of every settled l
   NR 8 + §0; enemy-shots §0.
 - #6 / A10 clip edges → physics §0.1; triggers-2 §6; spells-detail NR 2. #7 / A11 order → physics
   §0.1; triggers-2 §6.
-- #9 `+0x185` writers → physics §0. #10 indexing → INDEX table + NR 15/19/21/27, coverage, bosses §1.5,
-  bosses-2 NR 4, pickups §3.1/NR 4.
+- #9 `+0x185` writers → physics §0. #10 indexing → INDEX table + NR 19/21, coverage, bosses §1.5,
+  bosses-2 NR 4, pickups §3.1/NR 4 (NR 15 carries #5, NR 27 #3/#4/#6/#7 — ⚑ corrected (review 1d,
+  2026-10-03) #3).
 - #11 / #12 → geysers §1 (1445..1448), §3 counting note. #13 → held-item-melee §1.7 (`+0x116 ≠ 0`).
 - #14 → physics §5.1 (MED here + spot-check addresses); engine.md carries no such sentence.
 - #15 → physics §4 drag and §5.1 Fire Charm marked "not re-derived by 1c".
@@ -46,7 +47,7 @@ the deferred touches to the existing files, and the bank side of every settled l
   A4 → platforms §4, triggers §2.3; B16 → engine §4, bosses-2 corr. 3; B17 → engine §6, bosses-2
   corr. 4; B19 → engine §9, save-continue; B20 → world-data §4.1 + Mwld row, save-continue;
   B21/B22 → spells-items §2 items 6/7, spells-detail C5/C6; B23 → physics-sprites §8.9, platforms §2;
-  B24 → physics §4; B25 → physics §7.
+  B24 → physics §4 spin-gravity row (marker added by 1d #3); B25 → physics §7.
 
 ## Ledger rows settled by the synthesis pass (bank side checked)
 A1, A3, A5 (`+0xcd` in enemies-ground/water-cave §0, bosses-2 NR 6, spells-detail NR 3), B1–B15:
@@ -54,7 +55,22 @@ already in the bank or carried now. Gap-file corrections applied: geysers corr. 
 inert, §2.4.10 head HIGH, "pool" wording in enemy-shots/enemies-ground); held-item-melee corr. 1, 5
 (spells-detail §3.7, player-states §8).
 
+## Leg 1d (0 C / 0 I / 6 M + carries) — spot-review of this pass
+- #1 B18 marker relabelled "review 1a adjudication 6 / B18" → engine §6, save-continue corr. row.
+- #2 INDEX NOT RESOLVED intro "items 15–27" → "15–29" (items 28 geysers, 29 held-item-melee).
+- #3 this record: #10 line (NR 19/21 only) and B24 line; `(adjudication B24)` added to physics §4
+  spin-gravity row (it states B24's conclusion, raw `1004da90..1004dacc`).
+- #4 physics §7 statue text: 1a #5 marker + raw (`1004316c`/`10043194` `+0x130 = 0x78`,
+  `10043198–1004319c`, thaw `1006656c–10066574`; no `+0x185` store in either range, re-scanned).
+- #5 physics-sprites §8.9 modes 3 and 4: shared gravity branch (`1006496c`/`10064974`/`10064980` →
+  `10064988`, test `100649c4`) [HIGH]; platforms §2.5 pointer sentence.
+- #6 bosses §1.5: `.CastSpell` 10051d1c–10052960 and `.SetupPlayerShotSprite` 1005925c–10059700
+  scanned; only `100592dc sth r31,0xa6` (r31 = 0) → [HIGH] kept.
+- Carries of held-item-melee corrections: 3, 4 → pickups §3.1 (#C3 rect/not mirrored [MED], #C4
+  no carry HIGH for the item path); 6 → enemy-shots §2.4 (#C6); 7 → enemy-shots §2.3 (#C7); 8 → no
+  bank target, the cave-wall claim is only in HM itself; HM row 8 cell corrected (#C8).
+  Rows 1, 2, 5 already landed; row 9 consistent — not touched.
+
 ## Not applied
-Gap-file corrections 3, 4, 6–9 of held-item-melee.md (refinements; the file carries them).
 INDEX carries no label-count line, so none was added. Register line added to the three
 first-review meta files.

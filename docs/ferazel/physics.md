@@ -242,7 +242,7 @@ Action indices as engine.md §7.1 (0 L, 1 R, 2 U, 3 D, 4 run, 5 jump, 6 use).
 |---|---|---|---|
 | gravity, normal | 0x1b8 = 440 | 1.72 | `s+0x110` set every frame |
 | gravity, swimming or deep water | 0x50 = 80 | 0.31 | `_DAT_100a0714 ≠ 0` or depth == 1 |
-| gravity, spin jump | 0x118 = 280 | 1.09 | spin flag `PTR_DAT_100a0668` — ⚑ corrected (deepening 2026-10-03): only when swimming or fully submerged; out of water a spin falls at 0x1b8 (player-states-2 corr., raw `1004da90..1004dacc`) |
+| gravity, spin jump | 0x118 = 280 | 1.09 | spin flag `PTR_DAT_100a0668` — ⚑ corrected (deepening 2026-10-03): only when swimming or fully submerged; out of water a spin falls at 0x1b8 (player-states-2 corr., raw `1004da90..1004dacc`); confirmed (adjudication B24) — marker ⚑ corrected (review 1d, 2026-10-03) #3 |
 | gravity, feather-fall power-up | 0x40 = 64, vy clamped ≤ 0x352 = 850 | 3.3 max | `PTR_DAT_100a062c` |
 | terminal fall speed | 12000 | 46.9 | clamp after gravity; vy 0 is bumped to 1 |
 | walk accel (from rest / turning) | 0x14f = 335 | 1.31 | `.AccelerateBasedOnSlope`, ground |
@@ -421,7 +421,10 @@ l. 4929–4930) before anything reads it, so the statue test means "Statue spell
 replica must store the id in +4 and the power in +0x170 ⚑ corrected (review 2026-10-03) #3. ~~The Statue/Box/Platform classes
 set `+0x185` (one-way top, §8.1) [MED].~~ ⚑ corrected (deepening 2026-10-03): the statue does **not** set `+0x185`
 (statues are full solids through the Box callbacks); Box sets it per type and every Platform is
-one-way by default (§0 row). The statue lasts 120 frames, hangs without gravity, blinks on odd
+one-way by default (§0 row). ⚑ corrected (review 1a #5, 2026-10-03)
+(marker added ⚑ corrected (review 1d, 2026-10-03) #4): raw — `.TurnIntoStatue` `li r6,0x78` → `+0x130` (1004316c/10043194),
+`+0x134 ← +0xb8` (10043198–1004319c); thaw `lha 0xa4; subi 0xc8; sth 0xa4` (1006656c–10066574);
+no store to `+0x185` (or a word covering it) in 100664a8–100665bc or 10043138–100431c4 [HIGH]. The statue lasts 120 frames, hangs without gravity, blinks on odd
 counts below 20, and **costs 200 HP when it ends** — the shot's own damage is never applied
 (enemies-ground §2.2, enemy-shots-and-damage §2.2; raw `10066570`). No boss can be petrified
 (bosses §1.5). For the Floater the statue is the only effect of a player shot (enemies-flyers §5.3).

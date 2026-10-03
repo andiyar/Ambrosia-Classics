@@ -122,7 +122,7 @@ AppleEvent handlers · movie capture (`.HandleMovieCapture`) · resolution switc
 ## NOT RESOLVED (consolidated)
 ⚑ corrected (deepening 2026-10-03): items 1–14 keep their numbers; "→ closed: file §" marks an item
 the deepening wave answered (reviewed — legs 1a/1b/1c below, all fixes applied), "narrowed" keeps what remains. New
-sub-items from the deepening files are items 15–27. Contradictions between files:
+sub-items from the deepening files are items 15–29 (⚑ corrected (review 1d, 2026-10-03) #2). Contradictions between files:
 `coverage.md` §4 and the review ledger.
 1. ~~Per-class meaning of sprite placement params 1–4 and record byte +1 (world-data §3.4).~~
    → closed: per-class table in world-data §3.4 (every placed class; the readings live in the class
