@@ -250,9 +250,15 @@ Playback: `FUN_10047bf0(id, …)` ("RESOURCE: Sound '%s' loaded/not found"), wra
 `FUN_10047670(id, vol, ?, ?)` and `FUN_100475e0(soundSettings*)` (picks a random volume/pitch with
 `FUN_10046580`). Channels: `SoundNumChannels` = 8 (flli 38) passed to `FUN_10047160`
 ("Sound Channels: %i"). [HIGH for format gates; MED for playback parameters]
+⚑ corrected (wave 2, 2026-10-03): was "`FUN_10047670(id, vol, ?, ?)`" and "`FUN_100475e0` picks a random volume/pitch" —
+the signature is `FUN_10047670(id, priority, volume, allowMultiple)` at pitch 1.0, and
+`FUN_100475e0` uses volume = MinVolume (no draw); only the pitch is random — see sound-music.md §2.3
+(also engine-loop.md §9).
 The sound library at `0x100cfc90–0x100d3530` (Sound Manager glue: `SndNewChannel`,
 `SndPlayDoubleBuffer`, `SndDoImmediate`, `GetCompressionInfo`) is a third-party/utility layer;
-identified, not read further.
+identified, not read further. ⚑ corrected (wave 2, 2026-10-03): was "identified, not read further" — it is a 16-voice
+software mixer (ranked voice list, 8 audible, 44.1 kHz 16-bit stereo, IMA decode + resample) plus
+an AIFC music streamer — see sound-music.md §1, §3, §6.
 
 ## 5. Music (Music.pak, streamed)
 

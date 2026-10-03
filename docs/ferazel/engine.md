@@ -171,8 +171,8 @@ death (G+4 < 1) → DeathEffect → AskToContinue: only if a save was made/loade
 restarts on the save point, and level completions since that save are lost; with no save this
 session there is no death screen at all. Only save points (type 1065, once each per game) write
 saves; the Esc dialog's Save branch is dead (DITL 202 has no item 5); level completion only
-updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a, 2026-10-03) #6
-(adjudication B18): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
+updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a adjudication 6 / B18,
+2026-10-03) (label ⚑ corrected (review 1d, 2026-10-03) #1): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
 (`100071d0..100071e4`); `.ContinueGame` copies G from save+0x18 (`1000d0cc`) [HIGH].
 - There is **no lives counter**: death ends the run unless the player resumes from a save
   (`.AskToContinue @ 10007190` buttons via `TrackClickOnCommandButtonDeath`) [MED: no other

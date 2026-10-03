@@ -36,3 +36,5 @@ Fable-kit method: STATE updated the same session; real forks recorded in DECISIO
 with a handoff + a `spawn_task` chip carrying the full next-session trigger (RESUME.md fallback).
 Commit each verified logical step to `main` and push. Local verification only; no cloud CI.
 Opus implementers, Fable reviewers; reviewers report everything with confidence, no self-filtering.
+Portability shape (HectorKit D6): every game's `*Core` target is Foundation-only; Apple frameworks only in
+the app shell (HectorShell) and census oracles — keeps a later SDL/Windows shell possible. Mac stays native.

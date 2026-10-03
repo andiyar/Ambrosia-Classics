@@ -132,7 +132,7 @@ no player alive, `gaob[24]` `nogo` Game Over instead. [MED — dump read; tally 
 | 4 | No Destroyable Air Entities Are Active | `FUN_100352f0`: false if ANY entity in any group has unit `includeInAirAccuracyCount` (+0x133). No live / deleted / spawn-delay / on-screen test — pending group members count. | MED (dump; only offset +0x133 = named key) — ⚑ label audit (review wave 1) |
 | 5 | No Destroyable Ground Entities Are Active | `FUN_100353e0`: false if any entity has unit `includeInGroundAccuracyCount` (+0x134) **and** `FUN_10016bd0(entity)` = on-screen. Off-screen ground targets do not hold the gate. | MED (dump) — ⚑ label audit (review wave 1) |
 | — | on-screen test `FUN_10016bd0` | `0.0 ≤ x ≤ (int)PermFloat54 (416)` and `0.0 ≤ y ≤ (int)PermFloat55 (480)`, inclusive, entity `+0/+4` = screen x/y | HIGH — raw `10016bf4 fcmpo; blt`, `10016c38 fcmpo; bgt`, `10016c8c fcmpo; ble`; 0.0 from `*(float*)0x100d6c8c` (code image) |
-| 2/3 | Is Active / Is Not Active | `FUN_10035070(unit, pos, range)`: true if any entity of that unit ID with `+0xb0 < 1` (spawn delay over) exists; if range ≠ 0 it must also be within `range` (distance `FUN_10042e90`, compare `dist ≤ range`) | MED (distance helper not read) |
+| 2/3 | Is Active / Is Not Active | `FUN_10035070(unit, pos, range)`: true if any entity of that unit ID with `+0xb0 < 1` (spawn delay over) exists; if range ≠ 0 it must also be within `range` (distance `FUN_10042e90` = sqrtI(trunc(dx²+dy²)), compare `dist ≤ range`, **inclusive**; range 0 = any distance). `pos` = the polling entity's own (x, y), copied by `FUN_100128d0` at `100156ac or r3,r26,r26; 100156b0 addi r4,r1,0x4c; 100156b4 bl 0x100128d0` in the rule evaluator `FUN_10015550` (case 2/3 wiring from the decompile) | HIGH — listing `$W/disasm-bosses.txt`: `10035094 subis r0,r21,0x6e6f; 10035098 cmplwi r0,0x6e65; 100350a0 beq` (unit `none` → false); `1003512c cmpw r0,r21` (member unit ID); `10035134 lwz r0,0xb0(r3); 10035138 cmpwi r0,0x0; 1003513c bgt` (spawn delay must be ≤ 0); `10035140 cmpwi r23,0x0; 10035144 beq 0x100351b0` (range 0 → true without a distance); `10035148 bl 0x100128c0` (= `blr`, identity → member +0/+4) `10035158 bl 0x10042e90` (distance from `param_2`); `10035184 fcmpo cr0,f1,f2; 10035188 cror eq,lt,eq` (dist ≤ (double)range); `100351a8 fcmpu cr0,f1,f0; 100351ac beq 0x100351b8` (f0 = 0.0 at `0x100d7238`: result 0 → next member) — ⚑ corrected (review wave 2, 2026-10-03) (critic O3): was MED "distance helper not read" |
 | 14 | Number of This Type of Entity Active | `FUN_100351f0(unit)` counts entities of that unit with `+0xb0 < 1`; rule fires on `count == range` | MED (dump) — ⚑ label audit (review wave 1) |
 [callers: all five `<- FUN_10015550` (`$W/callers.txt` lines 655–659)]
 
@@ -287,7 +287,7 @@ earlier `s`/`m`/`p`/`b` controllers.
 | `fgnu` Flare Gun Nuke (sec 10 finale; also sec 12 y 2409/2501) | `fgnt` turret (passHits; own shields 1.0 → 3 bombs) | identical `nsde == 2` gate; 2.0 → 6 bombs; `10e1` does **not** wait for it (timer-only) | `fgnt` same cycle as `betu` with `fgbu` | HIGH (data) |
 | `twgu` Twin Gun (sec 4 finale) | `tgtu` turret (passHits; own shields 5.0 → 13 bombs), `tgca` cap | 12.0 (cap) → 31 bombs | `tgtu`: wait 90 → S3 until player ≤ 280 **or** rule `carf` (Radar flag) Is Active → track 80 → attack 270: 2×4 `tgbu` every 90 → wait 160 → attack … | HIGH (data) |
 | `fg02` Flare Gun Mk 2 (sec 8 finale) | `polb` background only — the gun itself fires | 15.0 → 38 bombs | same 60/40/180/90/extended cycle as `betu`, range 300 | HIGH (data) |
-| `pola` Popup - Large (sec 5, 6 finales) | `polb` background | invulnerable while closed (S0, S3, S4, S8); S0 waits for flag `plaf` Is Active within 400 px → open 24 → rotate 40 → attack 180 (8 `polp` per 60) → post 40 → close when animation stops → S3 70–85 (if `plsf` active → S8 do nothing forever) → reopen | (itself) | HIGH (data) / MED (range semantics, §3.1) |
+| `pola` Popup - Large (sec 5, 6 finales) | `polb` background | invulnerable while closed (S0, S3, S4, S8); S0 waits for flag `plaf` Is Active within 400 px → open 24 → rotate 40 → attack 180 (8 `polp` per 60) → post 40 → close when animation stops → S3 70–85 (if `plsf` active → S8 do nothing forever) → reopen | (itself) | HIGH (data); range semantics HIGH (§3.1, ⚑ corrected (review wave 2, 2026-10-03) O3; was MED) |
 | `popu` Popup (sec 8 finale) | `poba` | same pattern, flags `poaf`/`posf`, 6 `popr` per 40, random 0–70 open delay | (itself) | HIGH (data) |
 | `bala` Laser Base / `plla` Laser Platform (sec 3, 7 / sec 1) | `pllt` turret (passHits; own shields 3.0 → 8 bombs), `pllc` cap | 6.0+0.4/sector (max 16) / 2.6+0.4 (max 6) | `pllt`: wait 90 → until player ≤ 260 → track 75–80 → attack: 6 `pllb` every 65–70 (dbe 2–3) | HIGH (data) |
 | `tapu` Pulse Tank | `tapt` turret (passHits; own shields 3.0 + 0.4/sector, max 5.0 → 8 bombs in sector 1), `tapc` cap, `tatr` track marks | 1.5+0.4 (max 4); moves at 0.7–0.8 | `tapt`: wait 90–100 → until player ≤ 180 → track 70–75 → attack: 3 `tapb` every 80 | HIGH (data) |
@@ -296,6 +296,8 @@ Controller ⇄ unit coordination uses invisible **flag units** spawned at the co
 position (offset 0,0): the target polls them with `Is Active` (+ range) rules — `plaf`/`plsf`
 (Large Popup), `poaf`/`posf` (Popup), `imof` (Iris Mine), `carf` (Radar → Twin Gun). [HIGH data;
 MED that range is measured from the polling entity — `FUN_10035070` distance helper not read]
+⚑ corrected (review wave 2, 2026-10-03) (O3): settled — rule 2 measures `dist(polling entity, flag) ≤ range` inclusive, with the
+truncated-integer distance `FUN_10042e90` (§3.1, listing).
 
 ## Worked example — sector 1 (Mariner Valley, `le07`), the "Level 1 boss"
 Controller `01b1` "Level 1 - Bridge", description "Pauses scrolling, spawns groups of Buzzsaws,
@@ -351,9 +353,12 @@ spawned tank's entry path (movement executor not read), "both overlapping victim
 (group-list order and the bomb's own survival not traced), per-launch bomb count (flli 151/152 handling not read)]
 
 ## NOT RESOLVED (this file)
-1. `FUN_10035070` range semantics: which position is passed (`param_2`) and the distance helper
+1. ~~`FUN_10035070` range semantics: which position is passed (`param_2`) and the distance helper
    `FUN_10042e90` — settles whether `plaf … 400` means "flag within 400 px of the Popup". Read
-   both in raw listing.
+   both in raw listing.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S (O3): §3.1 — `param_2` = the polling entity's position,
+   distance = `FUN_10042e90` (damage-health-death.md §1, HIGH), test `dist ≤ range` inclusive
+   (`10035184 fcmpo; 10035188 cror eq,lt,eq`), range 0 = any. So `plaf … 400` = "a live `plaf`
+   within 400 px (integer-truncated) of the Popup".
 2. `FUN_10017e70` (shield-depletion state switch) and `FUN_10035cd0`'s `+0xcd` setter — data never
    uses the key, so behaviour-neutral for 1.0.6; read for mod support only.
 3. ~~B-side `passHitsToOwner` in `FUN_10036cf0` uses **A's** owner — does the redirect ever
@@ -385,7 +390,7 @@ spawned tank's entry path (movement executor not read), "both overlapping victim
 | ⚑ corrected `FUN_100353e0` |  | rule #5: any entity with unit includeInGroundAccuracyCount (+0x134) that is on-screen (`FUN_10016bd0`) | MED | dump; caller `FUN_10015550` — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_100352f0` |  | rule #4: any entity with unit includeInAirAccuracyCount (+0x133); no live/on-screen test | MED | dump; caller `FUN_10015550` — ⚑ label audit (review wave 1) |
 | `FUN_100351f0` |  | count entities of unit with spawn delay over (rule #14–16) — unchanged role, now read | MED | dump — ⚑ label audit (review wave 1) |
-| `FUN_10035070` |  | rule #2 "Is Active": live entity of unit exists [within range of pos] | MED | dump; distance helper `FUN_10042e90` not read |
+| `FUN_10035070` |  | rule #2 "Is Active": live entity of unit (spawn delay ≤ 0) exists, within `dist ≤ range` (inclusive) of the polling entity; range 0 = any; unit `none` → false | HIGH | listing `10035140 cmpwi r23,0x0; beq` (range 0), `10035158 bl 0x10042e90`, `10035184 fcmpo cr0,f1,f2; 10035188 cror eq,lt,eq`, `100351ac beq` skip (`$W/disasm-bosses.txt`) — ⚑ corrected (review wave 2, 2026-10-03) (O3): was MED "distance helper not read" |
 | `FUN_10016bd0` |  | entity on-screen test 0≤x≤416, 0≤y≤480 inclusive | HIGH | raw listing; callers `FUN_10015b40`, `FUN_100353e0` |
 | `FUN_10036ab0` |  | owner link valid (ptr, serial +0x9c, not deleted) | MED | dump (4 lines) — ⚑ label audit (review wave 1) |
 | `FUN_10036930` |  | copy owner visibility / scale / hit-glow fields (useOwners*, visuallyReflectOwnerHits) | HIGH | raw `10033f4c..10033f58` args; dump |

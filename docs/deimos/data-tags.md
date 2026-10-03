@@ -125,6 +125,8 @@ if absent. Permanent tables filled by `FUN_1001fcf0` (decompiled loop counts):
 | `gaob` Objects | 40 (0x28) | `0x100df208` / `FUN_100201f0(i)` | 0/1 Player 1/2, 2–5 MoneyUnit 50/10/5/1, 6–9 water impacts, 10–21 Notice_Level_01..12, 22 LevelEnd, 23 AllLevelsCompleted, 24 GameOver, 25–34 RandomBonus_1..10, 35–39 Multiplier X2 X3 X4 X5 X10 |
 | `gaco` Colors (coli) | 1 | `uRam100e0194` via `FUN_10003340` | scoreBar_Digit `52c594` |
 Other idli: `Fonts[tesp]` (3 items, all `tesm`), `Editor[edit]`, `Formats[gate]` (55 tefo IDs).
+⚑ corrected (wave 2, 2026-10-03): was "55 tefo IDs" — the file has 54 items (0..53) and `FUN_1000ed60` loads 54
+(`cmpwi …0x36` loop) — see hud-scorebar.md §9.
 [HIGH for counts/slots (literal loop bounds + accessor disassembly); MED for each consumer's use]
 
 `reli/Rects[inre]` RECT values are `<a, b, c, d>` read by `FUN_1002cc90` (strtok ","): the
@@ -135,7 +137,9 @@ Cross-check: every level has `#background_RECT <0, 0, 480, 3600>`, and `FUN_1000
 height ("Background image dimensions do not match Level data") — consistent only with this order.
 So `#Scorebar Player 1 Score <25, 81, 135, 95>` = left 25, top 81, right 135, bottom 95 (110×14,
 relative to the 160-px score bar). [MED — the store order comes from `unaff_r26..r29` juggling;
-the background cross-check is HIGH]
+the background cross-check is HIGH] ⚑ corrected (wave 2, 2026-10-03): MED → HIGH — the meter code computes the bar
+width as `r[3] − r[1]` (`10032460`, `10032464`, `1003246c subf`), which gives 96 = the `shme` frame
+width only in this order — see hud-scorebar.md §1.
 
 ## 5. `tefo` — text formats (54 files, G_Text.cc `FUN_1000ef90`)
 
@@ -144,6 +148,9 @@ Keys (order-independent, §1): `#Loc_X_INT #Loc_Y_INT #Size_INT #Format_ID #Mono
 #Colorise_Do_BOOL #ColoriseColor_RGB #ColorStrip_Do_BOOL #ColorStrip_HOffset_INT
 #ColorStrip_VOffset_INT #ColorStrip_BlendAmount_0To32_INT #ColorStrip_Color_RGB
 #ColorStrip_MinWidth_INT #ColorStrip_MinHeight_INT`. [HIGH — strings + read order]
+⚑ corrected (wave 2, 2026-10-03): was "`#Size_INT`" in the key list — it is never read: the string "Size_INT" does not
+occur in the data image and `FUN_1000ef90` reads only the other 16 keys; every format uses the one
+font `tesm` — see hud-scorebar.md §9.
 `#Format_ID`: the first 4 chars after `<` become a 4CC; the strings "0".."4" (`0x100e5735…3d`)
 map to `LEFT CENT RIGH CEBU CEGA`; anything else not among those five logs "Unknown Text Format
 Flag" and becomes `LEFT`. Shipped values: LEFT ×28, CENT ×8, RIGHT ×4 (→`RIGH`), CEBU ×5,

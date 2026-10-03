@@ -201,7 +201,10 @@ setup proc immediately — `.MTNewSprite @ 10033060`, main l. 30596; the record 
 death timer passes 0x32 gets handler `_DAT_100a0200` (Platform), rect (0x10,0x35,0x42,0x47), float
 offset `+0x1a0 = −6`, one-way, `+0x17c = 1` (no Platform setup), `+0x13a = 0x20`, `+0x138 = 0x3c`. Its
 `+0xb0` is already 4, so it runs the mode-4 branch with no lifetime (`+0xa6 = 0`); buoyancy grows +1
-with probability ½ per frame to 0x50 (physics §8.6).
+with probability ½ per frame to 0x50 (physics §8.6). ⚑ corrected (review 1d, 2026-10-03) #5: its
+gravity test (`100649c4`, `+0x11c == 0 ∧ +0x120 == 0`, previous-frame water contact) is the one
+branch shared with raft mode 3 and floe mode 4 (`1006496c`/`10064974`/`10064980` → `10064988`) —
+physics-sprites §8.9.
 
 ### 2.6 `.HitPlatformSprite(self, other) @ 10064d94` (handler l. 9148)  [HIGH]
 - `other` is a player shot (handler `.HandlePlayerShotSprite`) with id 1 (Statue): shot killed,

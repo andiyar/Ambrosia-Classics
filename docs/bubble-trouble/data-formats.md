@@ -220,6 +220,18 @@ from the missing flipper + forced cicn path).
 (PixMap rowBytes 0x8028, bounds 0,0,40,40, 8-bit, then mask/bitmap/CTab/data). [HIGH] (format is
 Apple's; the game only calls `GetCIcon`).
 
+⚑ corrected (plan 2026-10-03 hectorkit-btx-decoders, Task 7) — evidence: `data-census.md` §2 (HectorKit `CIcon` over every
+cicn) and a Python re-check of the mask bits, colour tables and pixel values over the
+`tools/rsrc_census.py --extract` payloads at append time:
+- Not every sprite is 8-bit. The 331 `cicn` are **8-bit 217 · 4-bit 83 · 1-bit 20 · 2-bit 11** (sizes
+  18×18 … 64×64; size × depth table in `data-census.md` §2). [HIGH]
+- **7 cicns are all-transparent blanks** (mask all zero): the six with no btSP twin (25004, 25108, 25208,
+  25308, 25408, 25504) and **27308**. [HIGH]
+- The colour tables are **value-indexed** (ctFlags 0x0000): in 227 of 331 the pixel values reach past the
+  entry count, and every one of those 227 tables is entries 0…n−2 at values 0…n−2 plus a final black entry
+  whose value is 2^d−1 (d = pixel depth). Position indexing would read past the table; `CIcon` looks entries
+  up by `value`. [HIGH]
+
 ---------------------------------------------------------------------------------------------------
 ## 5. Orbit table `SPIN 1` (240 B) and checksum tables `DARK 129` / `SPIN 2` (Bubble Trouble X.rsrc)
 
@@ -259,6 +271,15 @@ length 0x1f26 = 7974 B, rate 0x56220000 = 22050 Hz, encode 0. [HIGH]
 Music: `_LoadMusic(1)` builds "Level set " + LEVL word 2 + " music" + ".1" and `GetNamedResource`;
 title music (`LoadMusic(0)`) is mapped to "Level set 3 music". [HIGH]
 
+⚑ corrected (plan 2026-10-03 hectorkit-btx-decoders, Task 7) — evidence: `data-census.md` §5 (HectorKit `SndSound` over all 52)
+and a Python re-read of each sound header's Fixed rate / encode / numChannels at append time:
+- Music 11001–11004 plays at **22254.545 Hz** (Fixed 0x56EE8BA3), not "22255 Hz", and is **stereo**
+  (cmpSH numChannels 2, codec 'ima4'; packets 24,032 · 19,168 · 21,924 · 26,064). [HIGH]
+- **9047** "Squeak squeak" (app rsrc) is standard 8-bit PCM at the same **22254.545 Hz** (0x56EE8BA3),
+  11,498 frames. 9046's exact rate is **11127.273 Hz** (0x2B7745D1). [HIGH]
+- HectorKit's `SndSound.sampleRateHz` truncates the Fixed rate (22254, 11127 — ≤ 0.0025 % pitch); the exact
+  fraction is deferred to the BTX audio plan (HectorKit decoder plan, Scope). [HIGH]
+
 ---------------------------------------------------------------------------------------------------
 ## 7. Pictures, rects, cursors
 
@@ -271,6 +292,21 @@ fixed at the call). Titles 9001–9100 (BT Titles.rsrc); menu `PICT 0x238c` (910
 `0x2332` (9010) title in `_Interface`; splash `PICT 200`, `0x2333` in `_InitMac`. [HIGH]
 `Rect` 1..7 (flipped): main-menu button hot rects, QuickDraw order top,left,bottom,right.
 `xxd res/Rect_1.bin` → `00a5 00e4 013b 0106` = "Interface - New Button" (165,228,315,262). [HIGH]
+
+⚑ corrected (plan 2026-10-03 hectorkit-btx-decoders, Task 7) — evidence: `data-census.md` §3–§4 (HectorKit `PICT`,
+`PICT.decodeQuickTime`, `PixelPattern`) and a Python opcode walk over every PICT and ppat payload at append time:
+- The 28 PICTs (Levels 6, Titles 7, app 15) take **four shapes**: raw 11 — PackBitsRect 0x0098 (900, 998,
+  999, 8001, 9100) and DirectBitsRect 0x009A (200, 912, 913, 9010, 9011, 9099) · banded QuickTime JPEG
+  0x8200, 8 (13000–13005, 29401, 29402) · **0x0099 PackBitsRgn**, 4 (9001, 9002, 9012, 9020: 8-bit pixels cut
+  out by a QuickDraw region) · **0x8201 uncompressed QuickTime with a QuickTime 'rle ' 8-bit matte**, 5 (2910,
+  7000, 9030, 9031, 9077). The two masked shapes are not decoded by the kit yet (HectorKit decoder plan Tasks
+  4a/4b); the census lists them as named deferrals. [HIGH] for the opcode streams.
+- PICT 200 (32-bit DirectBits, cmpCount 4) stores an **all-zero alpha plane** (102,300 of 102,300 pixels).
+  [HIGH] for the bytes; that the original draws it opaque (QuickDraw ignores the high byte of a 32-bit pixel)
+  is [MED] — Ben's eyes on the splash close it.
+- The 7 `ppat` (912, 13000–13005) are all patType 1, 256×256 8-bit, PixMap rowBytes 0x8110 = **272** (16
+  junk bytes per row past the 256-pixel width — never image), pmVersion 1, colour table **ctFlags 0x8000**
+  (device-relative: looked up by position), 256 entries, offsets patMap 28 / patData 78 / pmTable 69,710. [HIGH]
 
 ---------------------------------------------------------------------------------------------------
 ## 8. High scores: `SCOR 128` (138 B) and its copy in the prefs file

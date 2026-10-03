@@ -430,7 +430,11 @@ trampoline plays its 4-frame squash (l. 4054–4072, 12773–12780).
 `.SetupPlayerSprite` creates one held-item sprite (`MTNewSprite(100, 0, 0, 0x14, 0x1ff,
 SetupHeldItemSprite)`, handler dump l. 305; pointer `_DAT_100a065c`). Setup: type 100, layer 0x14,
 no hit/tile callbacks, rect −2,2,0x1a,0x16. `.HandleHeldItemSprite`: v = 0, keeps type 100 and
-layer 0x14, rect = the face's rect inset 1 px horizontally, negative `+0xa6` counts up (nothing
+layer 0x14, rect = ~~the face's rect inset 1 px horizontally~~ ⚑ corrected (review 1d, 2026-10-03)
+#C3: the face's `+8` rect with left +1 / right −1 (raw `1004bec4–1004bee8`), which is the item's
+**exact opaque bounding box**, and it is **not mirrored** when facing left — the hit box sits
++10 / 8 / 2 px further out than the drawn dagger / Dirk / Ice Pick [MED] → held-item-melee §1.5;
+negative `+0xa6` counts up (nothing
 writes it non-zero, so the boss/container gate `+0xa6 == 0` always passes for a stab — full read of the
 held item, swing, placement and strike in **held-item-melee.md** §1; ⚑ corrected (review 1c, 2026-10-03) #10).
 `.HandleItemUse` (main dump l. 43547–43650) runs each frame of a USE animation with counter
@@ -443,7 +447,9 @@ mirrored as `100 − off` and −0x20 when facing left; it inherits the player's
 Damage `+0xa4`: item 0 dagger 100; 0x15 Vorpal Dirk 200 (`+0x158 = 1`, `+0xeb = 1`); **0x12 Ice
 Pick 300** (`+0x158 = 4`, `+0xeb = 1`). `KillPlayerShot` ignores type 100, so a stab is never
 consumed. No carry/lift-and-throw of boxes or pickups exists in the routines read: the player only
-pushes boxes (§2.1) [MED for the absence; `.HandlePlayerSprite` was not read whole].
+pushes boxes (§2.1) ~~[MED for the absence; `.HandlePlayerSprite` was not read whole]~~
+⚑ corrected (review 1d, 2026-10-03) #C4: [HIGH for the item path — the USE-item switch has no case
+that attaches a Box or Bonus; MED only as a global absence] → held-item-melee §1.9.
 
 ### 3.2 Thrown seeds, shot id 0x5a  [HIGH]
 At c == 5 with item 6 (fire seeds) or 0x1a (Ziridium seeds) in use: `MTNewSprite(0x5a01, held

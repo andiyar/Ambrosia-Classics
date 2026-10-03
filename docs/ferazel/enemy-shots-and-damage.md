@@ -232,9 +232,11 @@ The player stands on statues (`.HitPlayerSprite` Statue arm = `.PlatformBounce`,
 `.DoubleSpeedTrail` shifts the history (entry 4 ← current face/position/facing); when Double
 Speed is active (`PTR_DAT_100a0620`) trail i uses entry `s = (i>>1)+2` — even i at that entry,
 odd i at the midpoint of entries s and min(s+1, 4) — with tint i0 0xb0002, i1 0xb0000, i2 0xb0001,
-i3/i4 0; otherwise their faces are cleared. Tint meanings (fade levels) [LOW].
+i3/i4 0; otherwise their faces are cleared. Tint meanings (fade levels) [LOW]. ⚑ corrected (review
+1d, 2026-10-03) #C7: trail 4 = the current pose (on the player); history entries 0/1 are recorded
+but never shown [HIGH] → held-item-melee §3.
 
-### 2.4 Shadow double (`.SetupShadowSprite @ 1004b7d4`, `.HandleShadowSprite @ 1004b4f0`)  [MED]
+### 2.4 Shadow double (`.SetupShadowSprite @ 1004b7d4`, `.HandleShadowSprite @ 1004b4f0`)  ~~[MED]~~ [HIGH unless noted] ⚑ corrected (review 1d, 2026-10-03) #C6
 The Shadow-Double power-up (spells-items §5) makes `.HandlePlayerSprite` spawn sprite 0x1b39 with
 this Setup (handler dump l. 929–940; killed when the flag clears). No hit/tile callbacks.
 `.HandlePlayerSprite` records a 14-entry pose history (16 B: (y,x) +0, on-ground +4, face +8,
@@ -244,7 +246,16 @@ to 0x1b (in step) while the player rides a sprite (`PTR_DAT_100a0558` = ridden s
 l. 742) (l. 2772–2790). `HandleShadowSprite`
 draws entry `index>>1` with tint 0x1000b, swapping in alternative faces while casting
 (`_DAT_100a06d4`, `_DAT_100a06d0`) or with `.ShadowBob` bobbing (`_DAT_100a05c0`, table at
-`DAT_100a5fda`) [HIGH arithmetic, MED meanings of the flags].
+`DAT_100a5fda`) [HIGH arithmetic, MED meanings of the flags]. ⚑ corrected (review 1d, 2026-10-03)
+#C6: face rule — not casting: crouch face if the player crouches and the entry is grounded, else the
+entry's face while moving, bobbing entry face when still and airborne, breathing face (bob reset)
+when still and grounded; casting: cast face from the player's current wand phase. Its hot rect is
+never set (empty) → **it collides with nothing**; only the 0-damage `.CastSpell` copies act. While
+the player is still nothing is recorded, so the double freezes 13 moving frames behind ["still"
+flag compares against the last drawn position, whose draw-routine writer is MED]. In the last 210 of its 600 frames it is killed and re-spawned every 15 frames
+(blink). `.ShadowBob`: 24-short table ±10 px, 47-frame cycle; the re-sync search compares the same
+`table[phase]` (byte index `phase·2`, overrunning past phase 24) 24 times → phase 46 or 0 — a
+shipped bug to reproduce [HIGH] → held-item-melee §2.
 
 ## 3. The player's damage intake — `.HitPlayerSprite @ 100556f4`
 
