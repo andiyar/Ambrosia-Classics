@@ -4,7 +4,7 @@
 closed or declared undeterminable with evidence. Ten Opus reader lanes ran in parallel and ALL TEN
 landed on branch `worktree-ferazel-wave2` (worktree `.claude/worktrees/ferazel-wave2`), 11 new files +
 17 files edited in place (marker `⚑ wave 2 (2026-10-04)`), ~97 "Corrections to the existing bank" rows
-waiting for a synthesis pass. Eight Fable review legs were dispatched; **seven reported (A–G — saved
+waiting for a synthesis pass. Eight Fable review legs were dispatched; **ALL EIGHT reported (A–H — saved
 verbatim in `docs/ferazel/REVIEW-2026-10-04-wave2.md`), one (H) was still running when the
 session was cut off and their reports are LOST — re-run them.** Nothing from the wave is merged to main.
 INDEX.md and coverage.md are NOT yet updated (synthesis owed).
@@ -48,7 +48,7 @@ handlers now saved in the project —, handlers 154/154, disasm 163k lines). Bin
   consistency incl. Corrections rows → structure; ≤ 350 words; Fable-grade (omit `model`).
 
 ## Next session (in order)
-1. Re-run leg H only (read-only; A–G are saved). 2. ONE Opus fix+synthesis agent: apply all eight legs' findings
+1. No review legs owed (A–H all saved in REVIEW-2026-10-04-wave2.md) — go straight to step 2. 2. ONE Opus fix+synthesis agent: apply all eight legs' findings
 (markers `⚑ corrected (review 2a..2h, 2026-10-04) #n`), rule the two cross-lane conflicts from raw, merge the
 ~97 Corrections rows into their target files (dedupe W3/§8.1; L1 row 6 = L6 W1/W2 on 0x2730..36), rewrite INDEX
 NOT-RESOLVED (items 2,3,4,5,10,12,13,15–29 → closed / undeterminable / narrowed with pointers; add the new files

@@ -1,6 +1,6 @@
 # Ferazel RE bank — wave 2 Fable reviews (2026-10-04)
 
-Register: code readings only; nothing behaviour-verified (meta file). Legs A–G reported; leg H was cut off by the usage limit and must be re-run (see docs/handoff-2026-10-04-ferazel-wave2.md). Fix pass: owed.
+Register: code readings only; nothing behaviour-verified (meta file). All eight legs (A–H) reported; no leg owed. Fix pass: owed.
 
 ---
 
@@ -151,3 +151,23 @@ Re-derivations (✓ unless ✗): li r16 1001793c; 1001891c; srwi 10018a2c; Const
 
 ---
 
+# Leg H (wave 2) — L8 commit 104c48e
+
+Verdicts: `enemy-shots-and-damage-2.md` ACCEPT_WITH_FIXES · `pickups-boxes-2.md` ACCEPT_WITH_FIXES · in-place edits to both part-1 files ACCEPT (marker on every edit; commit touched only the 4 owned files).
+
+**Cross-lane rulings**
+1. HitPlayerSprite: confirmed HIGH. Player `+0x5c`=0 (1004af44→1004afd4, r23=r3 @1004af08; re-zeroed 1004f55c/1004f794). Slot 0x1009fdd4 loaded only at 10007c60; zero direct `bl 0x100556f4`. Bombs: player arm 1005c9e8–1005ca60 excludes neither 0x6e1/0x6e2 → KillEnemyShot (1005caac → +0xe9 at 1005cd28/1005cd7c) → special pass skips (+0xe9 test 10032be8). W1–W4 correct.
+2. Collision order: NO conflict — L8 §4.2 and L10 §8.3 state the identical rule and both are right (farthest-key first 10032990–100329bc, rest list order 10032a2c–10032a80; each A(B),B(A); player pass list-order via `addi r6,r27` 10032e30). Neither must change substantively; L8 wording "far vertical edge/near horizontal edge" is axis-inverted (y-term uses top/bottom = horizontal edge) — adopt L10's "far edge in y, near edge in x". Minor, HIGH.
+3. Mcnv: NO conflict. Decoded: 205 line#8 =(2,3,0) give Platinum Key, line#5 =(3,5,0) removes a Health Potion (not a key); 207 #7 =(1,500)(2,18) Ice Pick, #9 =(3,1,0) removes Steel Key. Table 0x100a6cd0 [2]=1007a364,[3]=1007a438,[0,7,8]=1007a55c. L5 and L8 agree; P5/P6/P9 duplicate L5 rows 4–6/1 — synthesis dedupe.
+
+**Findings**
+- Important: W7 stale — spells-detail NR 3 already struck/closed by spells-detail-2 §1 (same 0x18/0x14 reading); its row S2 also targets enemy-shots §3.5/NR 3 which L8 edited in place → double edit. HIGH.
+- Important: W5 old-text already rewritten in place by L10 (⚑ wave 2) — merge, not replace. HIGH.
+- Minor: §4.2 "player 10 (`li r5,0xa` 1004af88)" wrong cite — that's a SetRect arg; layer is `li r6,0xa` 10009e4c. HIGH.
+- Minor: §4.2 MTKillSprite callers omit `.MTKillPxSprites` 100334ec (conclusion holds). §4.3 KillEnemyShot caller list omits ShieldBlock 1005567c, HitPlayerSprite 10057c6c, HitEnemyShotTileSprite ×3 (irrelevant to main pass). HIGH.
+- Minor: §4.3 0x6a9 "runs same frame" also assumes Walker's insertion-time layer ≤0x14 (direct 11 writes don't re-sort) — add hedge. MED.
+- Minor: pickups-2 NR rows lack "what I tried"; pointer "sprites-backgrounds §6" → file is sprites-backgrounds-sounds.md (§6 exists). LOW.
+
+**Scorecard**: 20 closed · 21 closed · 1 remainder closed (per-type table matches my census exactly).
+
+**Re-derived (✓ unless noted)**: HandleSprites 10007c30/38/40–64; outer filters 10032738–58; 0x168 @10032274; +0x184 100327d0–e8; 6-buffer 10032830–70; key 100328e8–958; see-saw TOC 0x100a01c8 @10032db8; 16-buffer 10032c9c; MTInsert cmpw/bge 10032f40/7c; Setup-before-insert 1003321c/2c; 0x6a9 0x14/+0x14c=2 1005badc/bb04; dec 1005c06c; 0x77b test 100579b0; 0x46b/c =7 sites, no addi 0x46a; 17 slot-0830 loads; spawners 10068638/10069084/100699f4(+1 layer)/1006e958–88/10074a68/100818f8; 0570 all 8 uses (+0xce/+0xcd gate); Gremlin 1008052c–54, 10014688, 1002ad24; WallBounce 10037a70/c90–cc4; 0.5@100a1a28, 0.65@100a1a90; frog p1 10081fe0–f4; Wizard −0x34 1008d060–6c, Xichra none, only other +0x160 store 1006db24; snd 'snd ' 1009175c/64, 300→a0424, 501→a02d4, 505→a02c4, 437→a03a8, 439→a03a0, 489→a0300, names verified, World Data no snd; cannon 100585e0–f8 (0x100a047c); byte 100a53d6=1 + 5 stores + reader 1005771c; 069c 10055700/64–7c; 0708 10050fdc, 10051124–34, 100576f8–0c; PICT cache 10071654/78, 1006c014/54, 1006eb74/94, 1487=100×100; stalactite 0x100a0a58/0a5c, 2932 384×20, 2933 384×108, HP 0x96, gravity 0xfa, no 0xb74/5 in HitPlayerSprite; carpet SetRect 1006b970–88, 10070544–70; door 0xa0 6 uses; Effect slot 9 loads; Crawler/Walker/crate arms; HandleLineActions 0x72a/0x81c/0x822/0xb70; decoration arms (0xb0b/9, 0x2710, 0x96, 0x78, 0xb0005, rect 0x15,0x14,0x47,0x54); census 2932/1080/1291-p4/1338/spouts/1760/1800/2841/2827/byte+1 all match. ✗ player-layer cite 1004af88.
