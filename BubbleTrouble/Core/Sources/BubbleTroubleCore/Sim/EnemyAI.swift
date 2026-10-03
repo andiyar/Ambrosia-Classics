@@ -33,8 +33,9 @@ extension GameState {
     /// 3. Clear the pause; `r = _FigureEnemyRandomness(i)`; `roll = GetRandomFast(1, r)`.
     /// 4. `roll ≠ 1` and bonus > 0 → `dir = old`, tail-jump `_MoveEnemyRandomly(i)`.
     /// 5. Homing with SIGNED dx = e.col − hero.col, dy = e.row − hero.row (negated only when `u == −1`, which
-    ///    `_Get0To6` never returns); the unregistered dummy `GetRandomFast(0,7)` when `u + 9 ≤ level` (decompile; the
-    ///    bank flags the threshold [LOW], u+9 vs u+10 — inert while `gAIRegistered` is set); `back = opposite(old)`
+    ///    `_Get0To6` never returns); the unregistered dummy `GetRandomFast(0,7)` when `u + 9 ≤ level` (settled by the
+    ///    disasm: 00013d43–49 stores `−0x2c = u − 1`, 00013df8 adds `+0xa` before the compare — inert while
+    ///    `gAIRegistered` is set); `back = opposite(old)`
     ///    — old 0 → `_LocationErrorInt(0x7d8,1)` → the original quits (C11) → `.originalWouldAbort`, enemy unmoved;
     ///    then the (p, s) table and the try-sequence of §4d.
     mutating func figureEnemyMove(_ slot: Int) {
