@@ -6,8 +6,8 @@ project, one app target + small core package per game, all on `HectorKit`
 data from its own folder under `Resources/` and replicates its own original 100% (no modern
 affordances, no per-element commissioning questions — standing ruling carried from EV, D30/D67).
 
-Games, in order: **Aki — Mahjong Solitaire** (first), **Bubble Trouble X**, then Ferazel's Wand,
-Deimos Rising, others from the archive index.
+The games (Ben's list, final 2026-10-03): **Aki — Mahjong Solitaire** (first), **Bubble Trouble X**
+(second), then Ferazel's Wand, Deimos Rising, Cythera. Nothing else unless Ben names it.
 
 ## Session start (read first)
 1. `docs/STATE.md` — live state, whole file (small by rule).
