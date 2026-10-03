@@ -27,6 +27,8 @@
 | `REPORT-implementer.md` | implementer report (saved by the orchestrator from the hand-back) | — |
 
 ## Headline findings
+
+- **Ruling 2026-10-03 (Ben): 1.2.0 is the replica target.** All 1.1↔1.2 deltas resolve to 1.2 (see `delta-1.1-vs-1.2.md` header).
 1. All 12 layouts are byte-for-byte the same in 1.1.0 and 1.2.0 (incl. order and layers); 144 tiles each.
 2. "Levels 13–17" are not layouts: they are five random backgrounds/titles for user `.aki` levels.
 3. Difficulty 0 = Hard, 1 = Medium, 2 = Easy, 3 = Practice; Undo exists only in Easy/Practice.

@@ -2,7 +2,11 @@
 
 1.1 = `/Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c` (+ binary `Aki_ppc`, sha256
 c53f581c…6366, byte-identical to the 1.1.0 bundle executable — `shasum` this session).
-1.2 = `ghidra/Aki12_i386.decompiled.c`. The replica follows 1.2 unless the owner rules otherwise.
+1.2 = `ghidra/Aki12_i386.decompiled.c`.
+
+> **Ruling 2026-10-03 (Ben, in session): 1.2.0 is the aim for the Aki replica.** Every row below resolves
+> to its 1.2 column; "Arb?" rows stay listed so a later override can be made per row, but none blocks
+> the build. (Record this in `docs/DECISIONS.md` when that ledger is created.)
 "Arb?" = owner to arbitrate (Y = a real choice; – = cosmetic/plumbing or 1.2 clearly a bug fix).
 Field names: 1.1 `g` offsets differ from 1.2 (e.g. 1.1 remaining time g+0x104 = 1.2 g+0xb8); the
 `_p` prefs struct has the **same** offsets in both.
