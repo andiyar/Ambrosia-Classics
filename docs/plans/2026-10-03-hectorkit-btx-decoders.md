@@ -141,7 +141,7 @@ scratchpad; payloads from `python3 docs/bubble-trouble/tools/rsrc_census.py --ex
 8. Pixel unpacking for depth d ∈ {1,2,4,8}: MSB-first within each byte (QuickDraw pixel order, as
    PICT.swift's 4-bit branch: high nibble first). Row y starts at `pixOff + y·rowBytes`.
 
-**ppat (`PixPat`, Inside Macintosh "PixPat", resource form: handles replaced by offsets)**
+**ppat (`PixelPattern`, Inside Macintosh "PixPat", resource form: handles replaced by offsets)**
 
 9. **Worked decode, `ppat 912` "Main Menu Pattern" (71,766 B, BT Levels.rsrc):** `@0` patType i16 = **1**
    (full-colour pixel pattern) · `@2` patMap u32 = **28** (offset of the PixMap) · `@6` patData u32 = **78**
@@ -225,7 +225,7 @@ scratchpad; payloads from `python3 docs/bubble-trouble/tools/rsrc_census.py --ex
     `PICT.DecodeError` cases cannot be added from another file; `HectorResources.ByteReader` is internal to
     HectorResources (not usable from HectorGraphics). ⇒ the masked paths **rewrite the opcode stream and
     hand it to `PICT(data:)`**, walking it with **`PICT.Cursor`** (Tasks 4a/4b need nothing from Task 2);
-    `CIcon`/`PixPat` use the bounds-checked reader in Task 2's `PixMapRecord.swift`.
+    `CIcon`/`PixelPattern` use the bounds-checked reader in Task 2's `PixMapRecord.swift`.
 19a. **Where the 9 masked PICTs are drawn (shell art — why the shell plan needs Tasks 4a/4b):** letter font
     9001/9002 via `_LoadLetters @ 0001e2ff` (`_LoadPict(0x2329)` / `_LoadPict(0x232a)` into the sprite GWorld,
     decompile lines 20041/20043) · 9012 menu credit (`_DrawMainMenu @ 00009eb3`, `_DrawPictInRect(0x2334, …)`
@@ -272,7 +272,7 @@ scratchpad; payloads from `python3 docs/bubble-trouble/tools/rsrc_census.py --ex
 - **Does:**
   1. HectorGraphics `CIcon` (`'cicn'` → RGBA with mask alpha; 1/2/4/8-bit) — all 335 BTX + 45 EV decode to
      the census numbers.
-  2. HectorGraphics `PixPat` (`'ppat'` type 1 → opaque RGBA tile) — 7 BTX + 10 EV.
+  2. HectorGraphics `PixelPattern` (`'ppat'` type 1 → opaque RGBA tile) — 7 BTX + 10 EV.
   3. HectorGraphics `PICT.decodeMasked` (0x0099 regions → alpha, Task 4a; 0x8201 'rle ' mattes → alpha, Task 4b)
      and `PICT.decodeAny` (one entry point choosing raster / QuickTime / region / matte) — all 28 BTX PICTs.
      Last wave, after Task 7; may be deferred to the shell wave without blocking the tag (note 19a).
@@ -380,13 +380,13 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
   (155 if it lands after T1 + T5 at 143).
 - Commit: `HectorGraphics: CIcon ('cicn') decoder — 1/2/4/8-bit, value-indexed + device colour tables, mask alpha; BTX 335 + EV 45 census; floor <n>`.
 
-### Task 3 — `PixPat` ('ppat' type 1) (+5 tests) — after Task 2 landed
-- Files (new): `Sources/HectorGraphics/PixPat.swift`, `Tests/HectorGraphicsTests/PixPatTests.swift`,
-  `Tests/HectorGraphicsTests/BTXPixPatCensusTests.swift`. Edit: `NovaColorRecordCensusTests.swift` (created in Task 2,
+### Task 3 — `PixelPattern` ('ppat' type 1) (+5 tests) — after Task 2 landed
+- Files (new): `Sources/HectorGraphics/PixelPattern.swift`, `Tests/HectorGraphicsTests/PixelPatternTests.swift`,
+  `Tests/HectorGraphicsTests/BTXPixelPatternCensusTests.swift`. Edit: `NovaColorRecordCensusTests.swift` (created in Task 2,
   this plan's own file), FLOOR.
 - Contract:
   ```swift
-  public struct PixPat: Sendable, Equatable {
+  public struct PixelPattern: Sendable, Equatable {
       public let width: Int, height: Int, pixelDepth: Int, colorCount: Int
       public let rgba: Data             // width*height*4, opaque (A = 255); one tile, top row first
       public init(data: Data) throws    // throws PixMapDecodeError
@@ -395,12 +395,12 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
   patType must be 1 (`unsupportedPatternType(t)` otherwise); PixMap at patMap (u32 @2), pixels at patData (u32 @6),
   ColorTable at the PixMap's pmTable (offset); every offset + length range-checked; stale handle fields ignored;
   depth 1/2/4/8 via the shared unpacker; only `width` pixels per row (invariant 6).
-- Tests: `PixPatTests.testSyntheticPositionalTableAndJunkRowPadding` (rowBytes > width, junk ignored) ·
+- Tests: `PixelPatternTests.testSyntheticPositionalTableAndJunkRowPadding` (rowBytes > width, junk ignored) ·
   `testSyntheticValueIndexedTable` · `testRefusals` (patType 0 and 2, offsets past end, truncated) ·
-  `BTXPixPatCensusTests.testAllSevenLevelPatternsDecode` (7 × 256×256, per-id RGB sums + pixel (0,0) of note 10,
-  13000's (128,128)/(255,255)) · `NovaColorRecordCensusTests.testNovaEssentialsPixPats` (10 × 64×64, RGB 2,357,016).
+  `BTXPixelPatternCensusTests.testAllSevenLevelPatternsDecode` (7 × 256×256, per-id RGB sums + pixel (0,0) of note 10,
+  13000's (128,128)/(255,255)) · `NovaColorRecordCensusTests.testNovaEssentialsPixelPatterns` (10 × 64×64, RGB 2,357,016).
 - Verify: filtered `swift test` green; gate base+5 (160 — the floor at the tag).
-- Commit: `HectorGraphics: PixPat ('ppat' type 1) decoder; BTX 7 + EV 10 census; floor <n>`.
+- Commit: `HectorGraphics: PixelPattern ('ppat' type 1) decoder; BTX 7 + EV 10 census; floor <n>`.
 
 ### Task 5 — `SndSound` over all 52 BTX sounds (+3 tests, no source change)
 - Files (new): `Tests/HectorAudioTests/BTXSndCensusTests.swift`. Edit: FLOOR.
@@ -413,15 +413,15 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
 - Commit: `HectorAudio tests: all 52 BTX snd parse through SndSound (48 pcm8, 4 stereo ima4); floor <n>`.
 
 ### Task 6 — HectorKit docs + tag `v0.2.0` (after Tasks 1, 2, 3, 5 on origin/main)
-- Edits (minimal, after rebase): `docs/STATE.md` (modules list gains CIcon/PixPat; gate floor 160 (or the re-gated
+- Edits (minimal, after rebase): `docs/STATE.md` (modules list gains CIcon/PixelPattern; gate floor 160 (or the re-gated
   total, invariant 9); census line "BTX: 335 cicn, 7 ppat, 19 of 28 PICT (9 masked — Tasks 4a/4b, last wave), 52 snd";
   carried: masked PICTs pending and one-game-only when they land, sampleRate truncation) · `docs/DECISIONS.md` —
   **D5** (verified at fix pass: D1–D4 exist, D4 = HectorShell; re-check after the final rebase and use the next free
-  number): "BTX decoders: value-indexed cicn tables, padding ignored, PixPat type 1 only, masked PICT via stream
+  number): "BTX decoders: value-indexed cicn tables, padding ignored, PixelPattern type 1 only, masked PICT via stream
   rewrite + straight alpha (planned; lands with Tasks 4a/4b), 'rle ' 8-bit refusal set, btSP rejected (R2),
   HECTORKIT_DATA_BTX locator accepted as D3" with Rejected alternatives (position-indexed tables; editing PICT.swift;
   ImageIO for 'rle ' — it cannot read it; a btSP decoder) · `CLAUDE.md` env-var sentence gains `HECTORKIT_DATA_BTX`.
-- Tag (R1): `git tag -l v0.2.0` empty → `git tag -a v0.2.0 -m "BTX decoders: CIcon, PixPat, snd census"` and
+- Tag (R1): `git tag -l v0.2.0` empty → `git tag -a v0.2.0 -m "BTX decoders: CIcon, PixelPattern, snd census"` and
   `git push origin v0.2.0`; if `v0.2.0` exists, use `v0.3.0` and say so in the commit message.
 - Verify: gate PASS on origin/main HEAD (160 unless re-gated); `git log origin/main` shows Tasks 1, 2, 3, 5, 6.
 - Commit: `docs: BTX decoders landed (STATE, DECISIONS D5, CLAUDE env vars); tag v0.2.0`. Then R4's catch-up rule.
@@ -463,7 +463,7 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
   (Derived from notes 6, 10, 13, 20–22: depth 8 = 217 + 3 app, 4 = 83 + 1001; opaque 234,347 + 2,340; RGB 64,064,551 +
   914,039; ppat RGB = Σ of note 10; 22254 Hz = 9047 + 4 music. Arithmetic re-checked at fix pass.)
 - Tests (`BTXCensusTests`, env `HECTORKIT_DATA_BTX`, XCTSkip naming it): `testFiveFilesOpen` ·
-  `testEveryCIconAndPixPatDecodes` (335, 7) · `testEveryPICTClassified` (28: raw 11, quicktime 8, deferred region 4,
+  `testEveryCIconAndPixelPatternDecodes` (335, 7) · `testEveryPICTClassified` (28: raw 11, quicktime 8, deferred region 4,
   deferred matte 5; no other error) · `testEverySoundParses` (52; 48 pcm8, 4 compressed) · `testSummaryLinesExact`
   (the seven lines above, verbatim, in order, Totals last; `failures == 0`) · `testStdoutEqualsCommittedCensus`
   (stdout byte-equals the body of `docs/bubble-trouble/data-census.md` below its rule, located via `#filePath`).
@@ -565,7 +565,7 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
 
 1. Does `PICT(data:)` really throw `unsupportedOpcode(0x0099)` / `(0x8201)`? ✅ ok — `default:` branch of the opcode
    switch in `PICT.swift` throws `unsupportedOpcode(op)`; neither opcode has a case.
-2. Can the new code reuse `ByteReader`? ✅→FIXED: it is internal to HectorResources; `CIcon`/`PixPat` get an internal
+2. Can the new code reuse `ByteReader`? ✅→FIXED: it is internal to HectorResources; `CIcon`/`PixelPattern` get an internal
    reader in `PixMapRecord.swift` (Task 2); the masked-PICT walk uses the existing internal `PICT.Cursor` (same module),
    so Tasks 4a/4b do not depend on Task 2.
 3. Can `decodeMasked` call the PackBits row decoders? ✅→FIXED: they are `private static`; switched to the
@@ -582,7 +582,7 @@ HectorKit work happens on a branch in `HK=/Users/andiyar/Developer/HectorKit-btx
 10. Classics build picking up a stale or dirty HectorKit through the shared symlink? ✅→FIXED: invariant 10; Task 7/4c
     precondition checks Task 6's (resp. 4b's) commit is an ancestor of the main checkout's HEAD; clean-only
     `pull --ff-only`, else `HECTORKIT_PATH` (R4).
-11. "Census-verified against two games" for every decoder? ✅→FIXED partly: CIcon and PixPat have EV Nova data
+11. "Census-verified against two games" for every decoder? ✅→FIXED partly: CIcon and PixelPattern have EV Nova data
     (notes 7, 11; tests added); masked PICT has NO second game anywhere (planner walked EV + Aki) — disclosed as delta 2
     and in the doc comment, not hidden.
 12. Is value-indexing really right, or an artefact of tables that happen to be sequential? ✅ ok — 227 of 331 sprites
@@ -643,3 +643,4 @@ Fable-grade review verdict ACCEPT_WITH_FIXES; orchestrator rulings R1–R4. Each
 | 10 | `Dictionary(counts())` does not compile | Task 1 Test (uniqueKeysWithValues form) |
 | 11 | Task 7 tests assert the exact stdout | Task 7 "Exact summary lines" + `testSummaryLinesExact` + `testStdoutEqualsCommittedCensus`; Task 4c changed lines; Verification model |
 | 12 | Split Task 4 → 4a (0x0099, 4 PICTs) / 4b (0x8201, 5 PICTs), ≤ ~250 lines each, last wave after Task 7, deferrable; record per-PICT drawing sites | Tasks 4a, 4b (+ Task 4c Classics catch-up, needed so Task 7 can run first); Scope Does 3; Execution order Wave 5; note 19a (sites; 9077/7000/2910 marked orchestrator-supplied, not found as literals); invariant 2; self-audit 16, 17, 19 |
+| 13 | Rename PixPat → PixelPattern (orchestrator ruling 2026-10-03: SDK name collision reported by the Task 3 implementer) | Task 3 (header, Files, contract, Tests, Commit); notes 9–11 heading + note on the shared reader; Scope; Task 6 Edits + Tag; Task 7 test name; self-audit 2, 11 |
