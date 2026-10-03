@@ -119,8 +119,8 @@ editor. Unreachable defects are carries, not gates (EV D67 carried over).
 ## 6. Sequencing (each a plan of its own)
 
 **Parallel lane (own session, ruling 2026-10-03): RE-bank the whole hit list up front** — Aki 1.2
-(Intel), Bubble Trouble X (dump exists), Ferazel's Wand (PEF), Deimos Rising (PEF), Cythera (PEF),
-pop-pop (stripped UB). Output: `docs/<game>/` topical banks + `INDEX.md` per game, same discipline as
+(Intel), Bubble Trouble X (dump exists), Ferazel's Wand (PEF), Deimos Rising (PEF), Cythera (PEF) —
+Ben's list exactly, nothing added (pop-pop was removed 2026-10-03). Output: `docs/<game>/` topical banks + `INDEX.md` per game, same discipline as
 EV's `docs/ghidra/` (confidence-labelled code readings; nothing is behaviour-verified until Ben's
 eyes). Maelstrom needs no RE: the GPL 3.0.x source is upstream. Trigger in `docs/RESUME.md`.
 
