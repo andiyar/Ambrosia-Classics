@@ -22,6 +22,15 @@
 - **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
   `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
 
+- **Bubble Trouble X core lane (2026-10-03 night, Fable orchestrator, cap lifted by Ben):** plans LOCKED
+  (`docs/plans/2026-10-03-btx-core-and-film-harness.md` 18 tasks; `2026-10-03-hectorkit-btx-decoders.md`);
+  core Tasks 0–3b + T12 bank corrections merged (44 tests green at 48e29db); HectorKit main 5a33384 = BTX locator,
+  snd census, `CIcon`, `PixelPattern` (renamed from PixPat: SDK collision), docs D5, floor 160, **tag v0.2.0 pending**.
+  In flight on lane branches when the session hit its usage limit: core `btx-t4` (Task 4 level build), kit `btx-pict`
+  (Task 4a masked PICT), Classics `btx-census` (kit Task 7). Lane worktrees under `.claude/worktrees/btx-*` and
+  `~/Developer/HectorKit-btx*`. Honest bar: FILM oracle = replay to count exhaustion + golden freeze (bank derives no
+  end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
+
 ## Open, ordered
 
 1. **Phase 1 — HectorShell + Aki static screens** (Trigger C in `docs/RESUME.md`): brainstorm → plan → build.
