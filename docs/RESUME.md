@@ -8,42 +8,26 @@ C: HectorShell + Aki's splash, map and prefs screens — the first thing you wil
 
 ---
 
-## Trigger A — RE-bank lane (all hit-list games)
+## Trigger A — RE-bank lane: DONE 2026-10-03
+
+All five banks are on `main` (head 01cb120): `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`, `docs/deimos/`,
+`docs/ferazel/`. See `docs/handoff-2026-10-03-re-bank.md`. Ruling: Aki targets 1.2.0.
+
+## Trigger A2 — optional RE deepening (only if a build session hits a NOT-RESOLVED wall)
 
 ```
-Session: Ambrosia Classics — RE-bank lane (all hit-list games). Repo ~/Developer/Ambrosia-Classics.
-READ FIRST (scoped): CLAUDE.md; docs/STATE.md (whole); docs/design-2026-10-03-hectorkit-and-classics.md §1, §4, §6
-only; ghidra/README.md (the decompile recipe + binary forms); ~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md
-(where every original lives). Method: ~/Developer/Toolkits/fable-kit/fable.md §4 §6 §10 if first session here.
-Do NOT read the EV repo's STATE/DECISIONS/ghidra findings.
-
-GOAL: produce a confidence-labelled RE bank per game under docs/<game>/ (INDEX.md + topical files, same
-discipline as the EV repo's docs/ghidra/INDEX.md: code readings, HIGH/MED/LOW per claim, NOT-RESOLVED
-listed, nothing behaviour-verified until Ben's eyes). Games, in this order:
- 1. Aki 1.2.0 (Intel slice of ~/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Aki -
-    Mahjong Solitaire/Aki 1.2 UB/Aki.app) — Cocoa/ObjC rewrite; bank the ObjC method map, the rules
-    (open-tile test, timer/bonus/penalty maths per difficulty, shuffle/hint/undo), level progression (17),
-    the plain-text .aki format, prefs/stats storage; then DIFF against the 1.1.0 PPC dump
-    (~/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c, Layout1..12 = AddTile(x,y,layer) lists; resolve the
-    DOUBLE_ literals via read_const.py adapted to the PPC __literal8 section) — every rule delta is a
-    banked item for Ben to arbitrate (1.1.0 = what he remembers, 1.2.0 = last word).
- 2. Bubble Trouble X 1.1 (dump exists: ~/Developer/Ambrosia/ghidra/BTX_i386.decompiled.c, 1559 fns, all
-    named): hero/enemy movement + AI per enemy type, bubble push/pop/bounce, dynamite, balloons, jewels,
-    bonuses/EXTRA/multiplier/time bonus, MAZE(176 B)/LEVL(64 B)/btSP(TMPL in file)/FILM record layouts,
-    the 30 fps frame step, FILM replay semantics (the future machine oracle).
- 3. Ferazel's Wand 1.0.3 (PEF data fork `Ferazel's Wand` + .rsrc, under …/Ferazel's Wand (installed)/files/):
-    engine identity, World Data / Sprites / Backgrounds record formats, physics constants, spell system.
- 4. Deimos Rising 1.0.6 (PEF, …/DeimosRising/Deimos Rising 1.0.6 (volume)/Deimos Rising/): Pak format,
-    sprite/sound containers, wave scripting.
- 5. Cythera 1.0.4 (PEF, …/RPG/Cythera/Cythera (installed)/files/): Cythera Data format, .ai scripts.
-
-RULES: Ghidra headless per ghidra/README.md (reuse existing dumps; new dumps + binaries stay git-ignored);
-Opus implementers for each game's bank, a Fable reviewer per bank that reports EVERYTHING with confidence
-(no self-filtering) and demands raw-disasm/data evidence for every HIGH claim; census numbers only from tool
-output; write files, not chat reports (background agents: name an output path). Commit each bank to main
-and push. Orchestrator stop at ~300k of its OWN context: wrap (STATE + handoff + RESUME) and chip the
-continuation; never start a new game's bank you cannot finish. This lane edits docs/<game>/ and appends ONE
-status line to docs/STATE.md; it does not touch the design doc or HectorKit.
+Session: Ambrosia Classics — RE deepening for <game>. Repo ~/Developer/Ambrosia-Classics (main; push allowed).
+READ FIRST: CLAUDE.md; docs/STATE.md; docs/handoff-2026-10-03-re-bank.md ("What remains"); docs/<game>/INDEX.md
+(NOT-RESOLVED list + Review ledger) and ONLY the topical file the wall names; ghidra/README.md (recipe; the dumps
+are git-ignored — regenerate with decompile.sh, PEF needs -processor PowerPC:BE:32:default -cspec macosx; set
+GHIDRA_PROJ outside any dot-dir). Method: fable-kit orchestrator.md; Opus implementer, Fable-grade reviewer that
+demands raw-disasm/data evidence per HIGH claim, Opus fix pass; append findings to the topical file + one INDEX line
+(never a monolith), ⚑ corrected markers for changed readings. Known walls: Deimos gameplay code (movement, spawn
+sets, weapons, damage — consider running the original under emulation to label functions by behaviour); Cythera
+combat arithmetic (script bytecode; builtins are decompiled in script-builtins.md); Ferazel INDEX item 14.
+Hazards: otool -tV fails on the Aki 1.1 PPC binary (use a Ghidra disasm post-script, e.g. docs/ferazel/tools/
+FzDisasm.java); subagents cannot write files named REPORT-*.md. Commit per finished bank to main and push;
+one STATE line; handoff + chip at the cap (250k orchestrator context).
 ```
 
 ## Trigger C — Phase 1: HectorShell + Aki static screens (brainstorm → plan → build)

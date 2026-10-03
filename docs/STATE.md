@@ -13,8 +13,9 @@
 - **Replica target is 1.2.0** (Ben's ruling 2026-10-03, recorded by the RE lane in `docs/aki/INDEX.md`; all
   1.1↔1.2 deltas resolve to 1.2). Art therefore comes from the 1.2.0 PNGs (same native sizes as the 1.1 PICTs;
   `data-census.md` §3 maps them); the PICT path stays as oracle and for Bubble Trouble.
-- **RE banks landed:** `docs/aki/` (1.2 method map, rules, 12 layouts, .aki + prefs formats, 1.1↔1.2 delta) and
-  `docs/bubble-trouble/` (engine loop, AI, formats, FILM replay oracle). Ferazel / Deimos / Cythera: not yet.
+- **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`,
+  `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
+  handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
@@ -27,7 +28,7 @@
    800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by
    measuring (§7); splash (`welcome.png`), map (`map.png` + lanterns), prefs dialog from the 1.2 nibs' strings.
    First staged `.app` for Ben: gate "that is Aki's map screen".
-2. RE-bank lane remainder (Ferazel, Deimos, Cythera) — Trigger A, parallel.
+2. ~~RE-bank lane~~ done; Trigger A2 only if a build session hits a NOT-RESOLVED wall.
 3. Phases 2–3 Aki, then Bubble Trouble X (design §6). EV's adoption of HectorKit (re-export shim): separate task.
 
 ## Carried (not blockers)
