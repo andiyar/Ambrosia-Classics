@@ -11,12 +11,18 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "AkiCore", targets: ["AkiCore"]),
+        .executable(name: "aki-census", targets: ["aki-census"]),
     ],
     dependencies: [
         .package(path: "../../../HectorKit"),
     ],
     targets: [
         .target(name: "AkiCore"),
+        .executableTarget(name: "aki-census", dependencies: [
+            "AkiCore",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
+        ]),
         .testTarget(name: "AkiCoreTests", dependencies: [
             "AkiCore",
             .product(name: "HectorResources", package: "HectorKit"),
