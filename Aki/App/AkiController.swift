@@ -12,6 +12,8 @@ import HectorShell
     var p: GameSettings                                        // `_p`
     var assets: AkiAssets!
     var gworlds: AkiGWorlds!
+    var sound: AkiSound!
+    var music: AkiMusic!
     var shell: ShellWindowController!
     var launched = false, updateAvailable = false, inactivePause = false   // ivars 0x0e, 0x0d, 0x2d
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
@@ -44,6 +46,12 @@ import HectorShell
         } catch {
             fatalError("Aki: cannot load the original art: \(error)")
         }
+        do {
+            sound = try AkiSound(assets: assets, controller: self)   // _Initialize: _InitializeSound
+            music = try AkiMusic(assets: assets, controller: self)   // _Initialize: _InitializeMusic
+        } catch {
+            fatalError("Aki: cannot load the original sounds: \(error)")
+        }
 
         shell = ShellWindowController(title: "Aki - Mahjong Solitaire", logicalWidth: 800, logicalHeight: 600)
         shell.view.inputHandler = self
@@ -51,6 +59,8 @@ import HectorShell
 
         let full = QDRect(left: 0, top: 0, right: 800, bottom: 600)
         drawToWindow(gworlds.map, srcRect: full, dstRect: full, flush: true)
+        p.applyLaunchRegistration()                            // _LoopMusic(1): the replica is registered
+        music.playMovie(0x80)                                  // _PlayMovie(0x80): Theme 3 when Music is on
         shell.windowedWindow.center()
         shell.windowedWindow.makeKeyAndOrderFront(nil)
     }
