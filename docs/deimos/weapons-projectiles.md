@@ -21,13 +21,13 @@ in the bank (data-tags.md §1) and were not re-read here. One tick = one logic f
 ### 1.1 Loading
 | function | role | label / evidence |
 |---|---|---|
-| `FUN_1002ab20 @ 1002ab20` | build master weapon list `_DAT_100e01d4`: free old (`FUN_1002b590`), then `FUN_1002b8e0(i)` for i = 0,1,… until 0, append each; logs "Weapon Definitions Loaded: %i"; with `param_1` it also logs through `inte` strings 12/13 | HIGH (read; caller `FUN_1002aa90`) |
-| `FUN_1002b8e0 @ 1002b8e0` | load the i-th `wede` tag (`FUN_10002be0(i,'wede',&id)`), alloc 0x208, zero, defaults `FUN_1002b2a0`, parse `FUN_1002ba00`; "A Weapon Definition file contain…" if the parse-error flag is set | HIGH (read) |
+| `FUN_1002ab20 @ 1002ab20` | build master weapon list `_DAT_100e01d4`: free old (`FUN_1002b590`), then `FUN_1002b8e0(i)` for i = 0,1,… until 0, append each; logs "Weapon Definitions Loaded: %i"; with `param_1` it also logs through `inte` strings 12/13 | MED (read; caller `FUN_1002aa90`) — ⚑ label audit (review wave 1) |
+| `FUN_1002b8e0 @ 1002b8e0` | load the i-th `wede` tag (`FUN_10002be0(i,'wede',&id)`), alloc 0x208, zero, defaults `FUN_1002b2a0`, parse `FUN_1002ba00`; "A Weapon Definition file contain…" if the parse-error flag is set | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1002b2a0 @ 1002b2a0` | defaults: `+0x000` magic `0x499602d2`, ID fields `+0x130 +0x144 +0x148 +0x168 +0x170 +0x180 +0x1cc +0x1dc +0x1ec +0x1fc` = `none`, selection-sound block `+0x150..+0x164` ← `{none,100,100,100,1.0,1.0}` (table `0x100d7014`), frees spawn list `+0x1c4` | HIGH (read + image: `0x100df324 → 0x100d7014` = `6e6f6e65 64 64 64 3f800000 3f800000`) |
-| `FUN_1002ba00 @ 1002ba00` | the parser (table §1.2). Stores the tag ID at `+0x004`. Decodes the text only if `strstr(buf,"#type_ID")` fails | HIGH (read) |
-| `FUN_1002c490 @ 1002c490` | spawn record init: name "", unit `none`, XLoc/YLoc ← `{0,0}` (`_DAT_100df320`), SetHeading 0, Angle 0 | HIGH (read; sole caller `FUN_1002ba00`) |
-| `FUN_1002acf0 @ 1002acf0` | i-th definition of the master list (0 past the end) | HIGH (read) |
-| `FUN_1002b590 @ 1002b590` | free the master list (checks magic, frees spawn lists) | HIGH (read) |
+| `FUN_1002ba00 @ 1002ba00` | the parser (table §1.2). Stores the tag ID at `+0x004`. Decodes the text only if `strstr(buf,"#type_ID")` fails | MED (read) — ⚑ label audit (review wave 1) |
+| `FUN_1002c490 @ 1002c490` | spawn record init: name "", unit `none`, XLoc/YLoc ← `{0,0}` (`_DAT_100df320`), SetHeading 0, Angle 0 | MED (read; sole caller `FUN_1002ba00`) — ⚑ label audit (review wave 1) |
+| `FUN_1002acf0 @ 1002acf0` | i-th definition of the master list (0 past the end) | MED (read) — ⚑ label audit (review wave 1) |
+| `FUN_1002b590 @ 1002b590` | free the master list (checks magic, frees spawn lists) | MED (read) — ⚑ label audit (review wave 1) |
 
 List order = tag-index order. In `Game.pak` the `wede` entries sit in the order `aibg, aiic, aipb, airg, plbo`, in both the
 local-header order and the central-directory order (Python walk of `Game.pak`). [MED: that the
@@ -84,9 +84,9 @@ whole-dump grep for `+ 0x184)` etc. found no reader that is typed as a weapon de
 | `FUN_1003cdb0 @ 1003cdb0` | starting air weapon for a level: among `PEAA` with `min ≤ L ≤ max`, the one with the **largest `minimumLevelAvailable`** (first in list on ties) | HIGH (listing `1003ce28 lwz r0,0x13c(r30); cmpw r0,r4; bge skip` → replaces only on strictly greater min) |
 | `FUN_1003cd30 @ 1003cd30` | first `PEAA` whose `minimumLevelAvailable == L` (newly unlocked weapon) | HIGH (listing `1003cd80 lwz r0,0x13c(r3); cmpw r0,r29; bne`) |
 | `FUN_1002b3a0 @ 1002b3a0` → `FUN_1002b6d0` → `FUN_1002b790` | level-start preload: for types `PEAA`,`PEAG`,`SPEC` available at the level, `G_Res_Load` the selection sound, preview, crosshair faces and appearances, and `FUN_1003e580` every referenced unit (crosshair spawn, 4 power-up IDs, spawn units) | HIGH (read; caller `FUN_100064d0` start level) |
-| `FUN_1002aec0 @ 1002aec0` | new list of every unit ID a weapon references (`+0x180 +0x1cc +0x1dc +0x1ec +0x1fc` + each spawn `+0x20`) | HIGH (read; caller `FUN_1002b150`) |
+| `FUN_1002aec0 @ 1002aec0` | new list of every unit ID a weapon references (`+0x180 +0x1cc +0x1dc +0x1ec +0x1fc` + each spawn `+0x20`) | MED (read; caller `FUN_1002b150`) — ⚑ label audit (review wave 1) |
 | `FUN_1002b150 @ 1002b150` | "is unit X referenced by any weapon" (uses `FUN_1002aec0`, frees with `FUN_1002b240`) | MED (read; **no caller**: none in the dump, and no pointer to it in either memory image. Probably for the `LOGUNUSEDUNITS` console log, LOW) |
-| `FUN_1002b240 @ 1002b240` | free an ID list | HIGH (read) |
+| `FUN_1002b240 @ 1002b240` | free an ID list | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1002b400 @ 1002b400` | append the sprite IDs (mode 1) or selection sound (mode 0) of every weapon to a list | MED (read; no caller found, same search) |
 
 ## 2. Weapon handler (G_WeaponHandler.cc): struct, per-tick flow
@@ -352,17 +352,17 @@ Not read: `FUN_10027dd0`'s flag writer `FUN_10027de0` (role of `+0xce/+0xcf`), `
 | function | role | label |
 |---|---|---|
 | `FUN_1003af90 @ 1003af90` | handler reset (arg 1 = level start: auto-equip `FUN_1003cd30(sector)`; arg 0 = apply pending air). Always applies pending ground, unlocks the crosshair, sets `+0xf4/+0xf8` = {0,100}, `+0xfc` = fade-in rate | HIGH (listing §2.4) |
-| `FUN_1003b340 @ 1003b340` | weapon of type: `PEAA` → `+0x58`, `PEAG` → `+0x74`, else 0 | HIGH (read; caller `FUN_10029c00`) |
+| `FUN_1003b340 @ 1003b340` | weapon of type: `PEAA` → `+0x58`, `PEAG` → `+0x74`, else 0 | MED (read; caller `FUN_10029c00`) — ⚑ label audit (review wave 1) |
 | `FUN_1003bab0 @ 1003bab0` | crosshair locked/unlocked frame | HIGH (listing) |
-| `FUN_1003bb00 @ 1003bb00` | copy x,y into the handler | HIGH (read) |
+| `FUN_1003bb00 @ 1003bb00` | copy x,y into the handler | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1003bb20 @ 1003bb20` | get power percent `+0x24` (float return; the decompiler shows an empty body) | HIGH (listing) |
 | `FUN_1003bb30 @ 1003bb30` | get `+0x08` flag | HIGH (listing) |
-| `FUN_1003bb40 @ 1003bb40` | score-bar weapon icons (§2.4) | HIGH (read) |
+| `FUN_1003bb40 @ 1003bb40` | score-bar weapon icons (§2.4) | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1003bce0 @ 1003bce0` | displayed air weapon = pending `+0x50` else `+0x58` | HIGH (listing) |
-| `FUN_1003bd00 @ 1003bd00` | draw crosshair if shown (`FUN_10012f20(+0x8c)`) | HIGH (read; caller `FUN_100298c0`) |
+| `FUN_1003bd00 @ 1003bd00` | draw crosshair if shown (`FUN_10012f20(+0x8c)`) | MED (read; caller `FUN_100298c0`) — ⚑ label audit (review wave 1) |
 | `FUN_1003bd40 @ 1003bd40` | debug log "Weapon Handler Log for Player…" (primary air/ground, aux list) | MED (read; no caller) |
 | `FUN_1003cb30 @ 1003cb30` | free all aux records | HIGH (read; callers `FUN_1003ad40`, `FUN_1003ade0`) |
-| `FUN_1003cbf0 @ 1003cbf0` | find aux record by weapon ID | HIGH (read) |
+| `FUN_1003cbf0 @ 1003cbf0` | find aux record by weapon ID | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1003ce60 @ 1003ce60` | static init of request/record templates at `0x100ecccc…0x100ecd4c` | MED (read; caller `FUN_10000000`) |
 | `FUN_1003cf10 @ 1003cf10` | **G_UnitDefinitions** module init: console commands LOGSCROLLPAUSERS, LOGFAMILIES, FAMILIES, LOGUNUSEDUNITS, UNITSCORES. Loads the units cache (`FUN_100420f0`) or builds the master list `FUN_1003d0a0(1)` | MED (read; caller `FUN_100000e0`) |
 | `FUN_1003d030 @ 1003d030` | G_UnitDefinitions module teardown (`FUN_10041e40` cache save if dirty, frees) | MED (read; caller `FUN_10000630`) |
@@ -420,32 +420,32 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 9. Handler `+0x6c/+0x6d` and aux `+0x14/+0x15` meanings (ammo/infinite flags?): unused by shipped data.
 
 ## Role-table rows (for merge)
-| `FUN_1002ab20` | G_WeaponDefinitions.cc | build master weapon list (wede tags in index order) | HIGH | read; caller `FUN_1002aa90` |
-| `FUN_1002acf0` | G_WeaponDefinitions.cc | i-th weapon definition | HIGH | read |
+| `FUN_1002ab20` | G_WeaponDefinitions.cc | build master weapon list (wede tags in index order) | MED | read; caller `FUN_1002aa90` — ⚑ label audit (review wave 1) |
+| `FUN_1002acf0` | G_WeaponDefinitions.cc | i-th weapon definition | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1002adb0` | G_WeaponDefinitions.cc | next weapon of type available at level after cur (wraps; `none` → first) | HIGH | listing `1002ae30…1002ae8c` |
-| `FUN_1002aec0` | G_WeaponDefinitions.cc | list of unit IDs a weapon references | HIGH | read |
+| `FUN_1002aec0` | G_WeaponDefinitions.cc | list of unit IDs a weapon references | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1002b150` | G_WeaponDefinitions.cc | is unit referenced by any weapon (no caller found) | MED | read |
-| `FUN_1002b240` | G_WeaponDefinitions.cc | free ID list | HIGH | read |
+| `FUN_1002b240` | G_WeaponDefinitions.cc | free ID list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1002b2a0` | G_WeaponDefinitions.cc | weapon-def defaults (magic, none IDs, sound defaults) | HIGH | read + image `0x100d7014` |
-| `FUN_1002b3a0` | G_WeaponDefinitions.cc | preload PEAA/PEAG/SPEC weapons for level | HIGH | read; caller `FUN_100064d0` |
+| `FUN_1002b3a0` | G_WeaponDefinitions.cc | preload PEAA/PEAG/SPEC weapons for level | MED | read; caller `FUN_100064d0` — ⚑ label audit (review wave 1) |
 | `FUN_1002b400` | G_WeaponDefinitions.cc | collect weapon sprite (1) / sound (0) IDs (no caller found) | MED | read |
-| `FUN_1002b590` | G_WeaponDefinitions.cc | free master weapon list | HIGH | read |
-| `FUN_1002b6d0` | G_WeaponDefinitions.cc | preload weapons of type at level | HIGH | read |
-| `FUN_1002b790` | G_WeaponDefinitions.cc | preload one weapon's sprites/sound/units | HIGH | read |
-| `FUN_1002b8e0` | G_WeaponDefinitions.cc | load i-th wede tag (0x208 def) | HIGH | read |
-| `FUN_1002c490` | G_WeaponDefinitions.cc | init weapon spawn record (0x34) | HIGH | read |
+| `FUN_1002b590` | G_WeaponDefinitions.cc | free master weapon list | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1002b6d0` | G_WeaponDefinitions.cc | preload weapons of type at level | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1002b790` | G_WeaponDefinitions.cc | preload one weapon's sprites/sound/units | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1002b8e0` | G_WeaponDefinitions.cc | load i-th wede tag (0x208 def) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1002c490` | G_WeaponDefinitions.cc | init weapon spawn record (0x34) | MED | read — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_1003ade0` | G_WeaponHandler.cc | weapons-handler setup: reset, crosshair fade rates F149/150, default ground (DEAG) + starting air (`FUN_1003cdb0`) | HIGH | listing `1003ae48…1003af3c` (was "crosshair fade", MED) |
 | `FUN_1003af90` | G_WeaponHandler.cc | handler reset (arg 1: auto-equip weapon unlocked at sector; pending apply; keeps weapons) | HIGH | listing `1003b0ac…1003b134` |
 | `FUN_1003b180` | G_WeaponHandler.cc | set weapon of type (immediate if no power-up active, else pending); AUX toggle | HIGH | listing |
-| `FUN_1003b340` | G_WeaponHandler.cc | current weapon of type | HIGH | read |
+| `FUN_1003b340` | G_WeaponHandler.cc | current weapon of type | MED | read — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_1003b3c0` | G_WeaponHandler.cc | per-tick weapon handler: held counters, release, power-ups, select, air fire, bomb salvo, crosshair, launches; returns 1 overload / 2 release | HIGH | listing (was "weapon selector switch", MED) |
 | `FUN_1003bab0` | G_WeaponHandler.cc | crosshair locked/unlocked frame | HIGH | listing |
-| `FUN_1003bb00` | G_WeaponHandler.cc | set handler x,y | HIGH | read |
+| `FUN_1003bb00` | G_WeaponHandler.cc | set handler x,y | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1003bb20` | G_WeaponHandler.cc | get air power percent (+0x24) | HIGH | listing |
 | `FUN_1003bb30` | G_WeaponHandler.cc | get weapon-list-changed flag | HIGH | listing |
-| `FUN_1003bb40` | G_WeaponHandler.cc | score-bar weapon icons (cur/next/next) | HIGH | read |
+| `FUN_1003bb40` | G_WeaponHandler.cc | score-bar weapon icons (cur/next/next) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1003bce0` | G_WeaponHandler.cc | displayed air weapon (pending else current) | HIGH | listing |
-| `FUN_1003bd00` | G_WeaponHandler.cc | draw crosshair | HIGH | read |
+| `FUN_1003bd00` | G_WeaponHandler.cc | draw crosshair | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1003bd40` | G_WeaponHandler.cc | debug log of handler (no caller) | MED | read |
 | ⚑ corrected `FUN_1003beb0` | G_WeaponHandler.cc | start bomb salvo: n = min(sector + F151 − 1, F152) | HIGH | listing `1003beec…1003bf58` (was "bomb count default/max", MED) |
 | `FUN_1003bf80` | G_WeaponHandler.cc | air fire timing (cooldown + edge unless autoRepeat) | HIGH | listing |
@@ -454,21 +454,21 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 | ⚑ corrected `FUN_1003c4f0` | G_WeaponHandler.cc | GROUND weapon launch (spawn records + speed ratio to crosshair) + crosshairSpawnOnActivation | HIGH | listing `1003c578…1003c784` (was "launch weapon", MED) |
 | `FUN_1003c7a0` | G_WeaponHandler.cc | AIR weapon launch (spawn records at pos + XLoc/YLoc) | HIGH | listing |
 | `FUN_1003c940` | G_WeaponHandler.cc | aux weapon launch | MED | read |
-| `FUN_1003cb30` | G_WeaponHandler.cc | free aux records | HIGH | read |
-| `FUN_1003cbf0` | G_WeaponHandler.cc | find aux record by weapon ID | HIGH | read |
+| `FUN_1003cb30` | G_WeaponHandler.cc | free aux records | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1003cbf0` | G_WeaponHandler.cc | find aux record by weapon ID | MED | read — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_1003cca0` | G_WeaponHandler.cc | first weapon with default DEAA (0) / DEAG (≠0), level ignored | HIGH | read + caller listing (was MED) |
 | `FUN_1003cd30` | G_WeaponHandler.cc | PEAA weapon with min level == L | HIGH | listing |
 | `FUN_1003cdb0` | G_WeaponHandler.cc | starting air weapon: available PEAA with highest min level | HIGH | listing |
 | `FUN_1003ce60` | G_WeaponHandler.cc (span) | static init of spawn-request templates | MED | read |
 | `FUN_1003cf10` | G_UnitDefinitions.cc | unit-defs module init (console cmds, cache or build) | MED | read |
 | `FUN_1003d030` | G_UnitDefinitions.cc | unit-defs module teardown | MED | read |
-| `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial → `FUN_10014670` | HIGH | read |
-| `FUN_10014670` | G_Entity (span) | switch entity to its UseThisStateOnWeaponPowerupRelease state | HIGH | read (+0x835 = 0x4e0+0x355) |
+| `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial → `FUN_10014670(entity, now)` | HIGH | read; listing `10034d8c lwz r0,0x9c(r3); cmpw r0,r25`, `10034d98 or r4,r24,r24; bl 0x10014670` (arg 1 = time, passed on as `FUN_100146f0` param_4 → +0xa4); callers `FUN_1003b3c0`, `FUN_1003c0d0` — ⚑ label audit (review wave 1): HIGH kept, listing added in the fix pass; this reading wins the spawn-and-waves.md conflict |
+| `FUN_10014670` | G_Entity (span) | switch entity to its UseThisStateOnWeaponPowerupRelease state | MED | read (+0x835 = 0x4e0+0x355) — ⚑ label audit (review wave 1) |
 | `FUN_10037580` | G_EntityGroup.cc | apply pickup by pickup_Type_ID (coin/exli/shie/mult; air/grnd only check player+0xce) | HIGH | listing |
-| `FUN_10026ee0` | G_Player.cc | overload warning pulse; 8th warning → player death | HIGH | read + plde offsets |
+| `FUN_10026ee0` | G_Player.cc | overload warning pulse; 8th warning → player death | HIGH | read + plde offsets — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | ⚑ corrected `FUN_10027e50` | G_Player.cc | player death: death spawn, coin spill (MoneyUnit 50/10/5/1), state 3 | MED | read (was "coin unit selection") |
 | `FUN_10029c00` | G_Player.cc | advance player to next weapon of type (no caller found) | MED | read |
-| `FUN_10029f60` | G_Player.cc | ship sprite = displayed weapon's appearance face | HIGH | read |
+| `FUN_10029f60` | G_Player.cc | ship sprite = displayed weapon's appearance face | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 
 ## INDEX updates (for merge)
 - **#25 closed for the weapon half** (fire, power-up, overload, bombs, launch → entity): this file §2–§3.

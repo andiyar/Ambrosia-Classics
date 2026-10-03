@@ -381,7 +381,15 @@ player at every level start (player-physics.md §4.2); `FUN_10033850` draws the 
 interval per qualifying entity per tick and `FUN_100431f0` draws `R(0,99)` twice at app init
 (damage-health-death.md §1, NR 7/8; INDEX #33).
 
-## 10. Preferences and high scores (U_Prefs.cc)
+Other rand consumers found by the wave-1 critic (unread, wave 2) [LOW — callers from
+`$W/callers.txt` (direct calls only); bodies not listing-walked] ⚑ corrected (review wave 1,
+2026-10-03): the replay-order table and the per-entity order above do **not** yet contain these,
+so they are not a complete draw order:
+| consumer | direct callers (`callers.txt`) | why it matters for replay |
+|---|---|---|
+| `FUN_10043340` particle emitter (284 lines; calls `FUN_10046580`) | `FUN_10014f10` (entity hit), `FUN_10016300` (entity destroyed), `FUN_10033850` (entity update) | in-game, per hit / kill / update; its draws interleave with the gameplay draws above |
+| motion blur: the interval draw `R(state+0x2f0, state+0x2f4)` sits in `FUN_10033850` itself (per qualifying entity per tick); the blur functions `FUN_100467c0` reset, `FUN_10046840` emit, `FUN_10046a10` update, `FUN_10046ae0` draw (+ `FUN_10046ba0` `FUN_10046c70` `FUN_10046d30` `FUN_10046e20` `FUN_10046eb0` `FUN_100470f0`) do **not** call `FUN_10046580`/`FUN_100465e0` directly | `FUN_100467c0` ← `FUN_100064d0`; `FUN_10046840` ← `FUN_10033850`; `FUN_10046a10` ← `FUN_10006b50`; `FUN_10046ae0` ← `FUN_10007070`; `FUN_10046eb0` ← `FUN_10046840`; `FUN_100470f0` ← `FUN_10046a10` | the draw is per entity per tick in the entity update; indirect draws through the blur module are not excluded (jump-table/indirect calls are missed by `callers.txt`) |
+| `FUN_10044630` init-time table (79 lines; two `FUN_10046580` per table entry) | `FUN_100431f0` ← `FUN_100000e0` (app boot) | runs at app start, so before the `srand(TickCount())` of a new game — matters only if the LCG state is not reseeded (it is, §9 seeding); listing not walked |
 File: System Folder `Preferences` (`FindFolder(kOnSystemDisk, 'pref')`), name Pascal
 "Deimos Rising Preferences" (`_DAT_100df59c`+0x5d), type `pref`, creator `Deim`
 (`FUN_10048ac0`). Fallback when absent: a `pref`/`pref` tag in the pak hierarchy (`FUN_10004f80`).

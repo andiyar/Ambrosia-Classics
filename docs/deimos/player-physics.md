@@ -33,7 +33,7 @@ extended with player fields. Field table (offsets from raw listings unless marke
 | +0x68/+0x6c/+0x70 | float | appear fade current / required / delta | §4.3 |
 | +0x94 | ptr | `plde` definition | `FUN_10026410` `10026490 stw r3,0x94(r27)` |
 | +0x98 | int | **lives, obfuscated** stored = lives + 0x1524dcef | `FUN_10026d60` `addis r4,r4,0x1525; subi r0,r4,0x2311; stw r0,0x98(r3)` |
-| +0x9c/+0xa0 | int | next extra-life score threshold / (cleared) | `FUN_10026cc0` `10026d10 lwz r3,0x68(r3); stw r3,0x9c(r31)` |
+| +0x9c/+0xa0 | int | next extra-life score threshold / extra-life step increment (set 0 at session start; `threshold += AdditionalRequired + step`, `step += flli 182` — scoring-bonuses.md §3.1) | `FUN_10026cc0` `10026d10 lwz r3,0x68(r3); stw r3,0x9c(r31)` — ⚑ corrected (review wave 1, 2026-10-03) #M6: +0xa0 was "(cleared)" |
 | +0xa4 | float | max speed = `active_DefaultMaxSpeed` | `FUN_10026cb0` `lfs f0,0xd4(r4); stfs f0,0xa4(r3)` |
 | +0xa8 | float | **shield %, obfuscated** stored = shield + 1324366.0 (pf[2]) | `FUN_10027540` `lfs f1,0xa8(r3); lfs f0,0x8(r4); fsubs f1,f1,f0` |
 | +0xac | int | money held, obfuscated (+0xb2cce) | `FUN_10027610` `subis r3,r3,0xb; subi r3,r3,0x2cce` |
@@ -359,7 +359,7 @@ tick; no other key. Single-precision results (Python with `struct` float32 round
 | 6 | −7.8 | 298.4 | |
 | 7 | −7.8 | 290.6 | |
 | 8 | −7.8 | 282.8 | |
-| 9 | −7.8 | 275.0 | |
+| 9 | −7.8 | 275.0 | (float32: 275.00006) ⚑ corrected (review wave 1, 2026-10-03) #M6 |
 | 10 | −7.8 | 267.2 | (float32: 267.20007) |
 Release on tick 11: decay +1.6/tick → vy −6.2, −4.6, −3.0, −1.4, then −1.4 + 1.6 = 0.2 > 0 →
 snapped to 0 on tick 15; y = 261.0, 256.4, 253.4, 252.0, 252.0 (rest 78 px above the start).
@@ -403,18 +403,18 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 | ⚑ corrected `FUN_10026410` | G_Player.cc | player setup: plde by index, perm unit loads O2–39, in-game by numPlayers, lives 3 at sector 1 else 1, shield 100, score/money 0, state 2 | HIGH | disasm `10026434..10026874`; was "player setup + permanent unit loads MED" |
 | ⚑ corrected `FUN_100269a0` | G_Player.cc | level start per player: state 2, start position, shield 100, money 0, defence-bonus flag reset, appear fade F163–165, RandomRange(400,2000) | HIGH | disasm `100269d0..10026af0`; was "player appear fade MED" |
 | `FUN_10026b10` | G_Player.cc | place at solo/multi start, v = 0, crosshair 0 | HIGH | disasm |
-| `FUN_10026c20` | G_Player.cc | in game and state 1 (out of lives) | HIGH | dump (2 loads) |
-| `FUN_10026c50` | G_Player.cc | get life state +0xc6 | HIGH | dump |
-| `FUN_10026c60` | G_Player.cc | life state == arg | HIGH | dump |
+| `FUN_10026c20` | G_Player.cc | in game and state 1 (out of lives) | MED | dump (2 loads) — ⚑ label audit (review wave 1) |
+| `FUN_10026c50` | G_Player.cc | get life state +0xc6 | MED | dump — ⚑ label audit (review wave 1) |
+| `FUN_10026c60` | G_Player.cc | life state == arg | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10026c80` | G_Player.cc | set life state + enter time | HIGH | dump; callers 10026410, 100269a0 |
 | ⚑ corrected `FUN_10026c90` | G_Player.cc | get player index +0xcc | HIGH | `lbz r3,0xcc(r3)`; was "player takes hit LOW" |
 | ⚑ corrected `FUN_10026c10` | G_Player.cc | in game flag +0xc4 | HIGH | `lbz r3,0xc4(r3)`; was "player is alive LOW" |
-| `FUN_10026ca0` | G_Player.cc | get plde +0x94 | HIGH | dump |
+| `FUN_10026ca0` | G_Player.cc | get plde +0x94 | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10026cb0` | G_Player.cc | max speed = active_DefaultMaxSpeed | HIGH | disasm |
 | `FUN_10026cc0` | G_Player.cc | init lives (NumInitial or 1) + extra-life threshold | HIGH | disasm |
 | `FUN_10026d50` / `FUN_10026d60` | G_Player.cc | get / set lives (obfuscated +0x1524dcef) | HIGH | disasm |
 | `FUN_10026d70` | G_Player.cc | add one life, cap life_MaxNum, spawn life_Spawn_ID | HIGH | disasm `10026d84..10026dc0` |
-| `FUN_10026ea0` | G_Player.cc | clear overload + glow fields | HIGH | dump |
+| `FUN_10026ea0` | G_Player.cc | clear overload + glow fields | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10026ee0` | G_Player.cc | overload warning flashes; Nth warning destroys ship | HIGH | disasm `10026f0c..100270d8` |
 | ⚑ corrected `FUN_10027100` | G_Player.cc | player hit: shield −= f×15, death if < 0, glow, spawn-on-hit (F162), shield warning | HIGH | disasm; was "player hit spawn delay MED" |
 | `FUN_10027400` | G_Player.cc | reset shield (100 / 0) + hit timers | HIGH | disasm |
@@ -430,7 +430,7 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 | `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, money text | MED | dump; caller `FUN_10007070` |
 | `FUN_100299c0` / `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | reset / get / set score (obfuscated +0x5532a3e) | HIGH | disasm |
 | `FUN_10029b20` | G_Player.cc | step score multiplier 1→2→3→4→5→10 | HIGH | jump table `0x100e93c0` |
-| `FUN_10029bd0` / `FUN_10029fd0` | G_Player.cc | get / reset(1) multiplier | HIGH | dump |
+| `FUN_10029bd0` / `FUN_10029fd0` | G_Player.cc | get / reset(1) multiplier | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | get / set flag +0xbd | LOW | dump |
 | `FUN_10029c00` | G_Player.cc | re-assign a weapon slot for the sector (no direct caller) | LOW | dump |
 | `FUN_10029cb0` | G_Player.cc | get +0xc0 (level ref) | MED | dump |

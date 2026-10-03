@@ -26,7 +26,8 @@ module** (function-roles.md header, all from tool output). ⚑ corrected (review
 hand table is 293 rows = 119 HIGH / 163 MED / 11 LOW (19 downgrades, 14 added rows); the
 311/609 unions were not re-run. ⚑ wave 1 (2026-10-03): the hand table is now **509 rows = 308
 HIGH / 187 MED / 14 LOW** (+216 rows, 56 corrected; function-roles.md header); unions still not
-re-run.
+re-run. ⚑ corrected (review wave 1, 2026-10-03): after the review-wave-1 fix pass the hand table is **510 rows = 240 HIGH /
+256 MED / 14 LOW** (68 HIGH → MED by the label audit, +1 MED row; function-roles.md header).
 
 ## Topical files
 | file | lines | sections | labels present (`grep -o '\[HIGH'` etc.: H/M/L) |
@@ -50,7 +51,9 @@ Label counts per file: `cd docs/deimos; for f in *.md; do grep -o '\[HIGH' $f | 
 first label of each bracket; compound brackets such as "[HIGH for X; MED for Y]" count once).
 Line and label counts in this table are as of the implementer session; the 2026-10-03 fix pass
 added text to every topical file (see Review ledger). The nine wave-1 rows were counted on
-2026-10-03 (`wc -l`; `grep -o '\[HIGH' f | wc -l` etc.) at commit a57c0fd.
+2026-10-03 (`wc -l`; `grep -o '\[HIGH' f | wc -l` etc.) at commit a57c0fd; the review-wave-1 fix
+pass then lowered role-row/table labels (`… | MED | … ⚑ label audit`) and added text, so those
+per-file counts are pre-fix-pass.
 
 Tools (`docs/deimos/tools/`, all run in this session):
 `list_paks.py` (pak census/listing/decode/audio/images), `StringXrefs.java` (Ghidra post-script:
@@ -164,8 +167,14 @@ Wave 1 additions (2026-10-03)
     damage-health-death.md NR 2.
 33. RNG consumers not listing-walked (now noted in engine-loop.md §9): `FUN_100431f0` init draws
     (before/after `srand`?) and per-tick motion-blur draws — damage-health-death.md NR 7/8.
-34. B-side `passHitsToOwner` in `FUN_10036cf0` redirects to A's owner (original bug?) —
-    bosses.md NR 3, damage-health-death.md NR 10.
+    ⚑ corrected (review wave 1, 2026-10-03): widened by the wave-1 critic — particle emitter `FUN_10043340` (callers
+    `FUN_10014f10`, `FUN_10016300`, `FUN_10033850`), the motion-blur interval draw in
+    `FUN_10033850`, init table `FUN_10044630`; all listed LOW in engine-loop.md §9 (wave 2).
+34. ~~B-side `passHitsToOwner` in `FUN_10036cf0` redirects to A's owner (original bug?) —
+    bosses.md NR 3, damage-health-death.md NR 10.~~ → closed: player shots carry no owner, so
+    the redirect never fires and turrets/bubbles absorb player shots on their own shields; only
+    ramming reaches the owner (bosses.md §3.5, damage-health-death.md §2.5, spawn-and-waves.md §7;
+    HIGH). ⚑ corrected (review wave 1, 2026-10-03) #I1
 35. `invulnerableUntil…` unit keys appear inert (no consumer, MED) — bosses.md §3.5.
 
 ## Append rule
@@ -206,4 +215,25 @@ a57c0fd). Synthesis merged 216 new + 56 corrected rows into function-roles.md §
 `FUN_10017150`, `FUN_10034ce0`, `FUN_10010570`), closed NOT-RESOLVED #7, #17, #19, #20, #22, #24,
 #25, #26, #28, narrowed #2, #4, #27, added #29–#35, and applied the named ⚑ conflict corrections
 to waves-and-enemies.md and engine-loop.md (marked `⚑ corrected (wave 1, 2026-10-03)`).
-Verdict: **pending Fable review**.
+**Verdict: ACCEPT_WITH_FIXES** — Fable review of commit a57c0fd (1 Important, 10 Minor; 170 HIGH
+claims re-derived from listings/data: 166 confirmed / 4 wrong; full text
+`docs/deimos/REVIEW-wave1-2026-10-03.md`; completeness critic `CRITIC-wave1-2026-10-03.md`;
+fix-pass summary `FIXPASS-wave1-2026-10-03.md`). Every fix is marked inline with
+`⚑ corrected (review wave 1, 2026-10-03) #n` (or `⚑ label audit (review wave 1)`).
+| # | sev | finding | landed in |
+|---|---|---|---|
+| I1 | Imp | `passHitsToOwner`: player shots land on the turret's own shields (B-side redirect tests A's owner; player shots have none); only ramming passes to the owner | bosses.md header, §3.4, §3.5 row rewritten, §4 turret table (pllt/talt 3.0→8, tapt 3.0/3.4→8/9, tgtu 5.0→13, betu/fgnt 1.0→3, bubbles 0.0 swallow), §5 rows, worked example, NR 3 closed; damage-health-death.md §2.5 + NR 10; spawn-and-waves.md §7; function-roles.md `FUN_10036cf0`; NOT-RESOLVED #34 struck |
+| M1 | Min | `+0xce` cleared in state 4 only (`1002a1a8 cmpwi r0,5; bge`) | damage-health-death.md §5.1 |
+| M2 | Min | `bu01`: no per-kill coin (`destructCoin_ID none`); only the group-kill `cass` | bosses.md worked example |
+| M3 | Min | level request template at `0x100eb41c` (r2+0x50ec), not `0x100eb420` | spawn-and-waves.md §1.1, §8 row |
+| M4 | Min | range test precedes integration: y = −100 + 6(n−1); trigger at update 50, not 49 | units-movement.md worked example step 2 |
+| M5 | Min | spawn executor runs for every cull survivor; `FUN_10017150` holds rotation (not firing); `FUN_10014f10` r4 unread | bosses.md §3.3, §3.4 |
+| M6 | Min | player `+0xa0` = extra-life step increment; tick 9 = 275.00006 (float32) | player-physics.md §1 table, worked example |
+| M7 | Min | scope census: scoring `FUN_10030570/5e0/640/790/7b0/7c0/870/910`, level `FUN_10011bf0`/`FUN_10011c00` | scoring-bonuses.md §10 table (8 "not re-read" rows); level-scroll-objects.md role rows + scope line; function-roles.md `FUN_10011bf0` (new MED row) |
+| M8 | Min | label audit: HIGH rows backed by dump/read/strings only | 72 role rows + 34 body-table rows in the nine files and 68 rows in function-roles.md lowered to MED (`⚑ label audit`); 11 kept HIGH with a pointer to another file's listing; counts re-run (function-roles.md header, above) |
+| M9 | Min | close scoring NR 3 (`'shie'`/`'spec'` both compared) and level-scroll NR 6 (`FUN_1003cdb0` not inverted) | scoring-bonuses.md §5.1, NR 3, `FUN_10037580` row → HIGH; level-scroll-objects.md NR 6; function-roles.md `FUN_10037580` |
+| M10 | Min | `FUN_100146f0` draw order listing-confirmed (`100148dc`→`100149f0`→`10014b14`→`10014d74`→`10014d90`→`10014dc0`) | spawn-and-waves.md §3.2 step 6, §9 row → HIGH, NR 5 |
+Also from the critic: the three open role conflicts (`FUN_10017150` rotation gate, `FUN_10034ce0(now,
+id)`, `FUN_10010570` REVERSE) and `FUN_1003cf10` (unit-module init) were resolved against the
+raw listing (`$W/disasm-fix.txt`) — function-roles.md rows, losing files corrected (damage §2.5,
+spawn §5, bosses §2.4/role rows); engine-loop.md §9 gained the unread rand-consumer list (LOW).

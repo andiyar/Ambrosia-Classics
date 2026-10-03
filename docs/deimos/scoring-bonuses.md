@@ -157,12 +157,12 @@ Callers: `FUN_10029a10`, the `exli` pickup (`FUN_10037580`), console 'life' chea
 
 ## 5. Money
 
-### 5.1 Pickups — `FUN_10037580 @ 10037580 (player, entity)` [HIGH for coin/exli/mult]
+### 5.1 Pickups — `FUN_10037580 @ 10037580 (player, entity)` [HIGH for every case — ⚑ corrected (review wave 1, 2026-10-03) #M9: was "HIGH for coin/exli/mult"; `shie` and `spec` confirmed in NR 3]
 Called from the entity update `FUN_10033850` on player contact; switch on unit
 `pickup_Type_ID` (+0x4d4): `coin` → if `pickup_Value_INT` (+0x4dc) ≠ 0: `FUN_100275b0(player,
 value)` (money += value; `10037660 lwz r4,0x4dc(r6); cmpwi r4,0; beq; bl 0x100275b0`) and the
 pickup is consumed; `exli` → `FUN_10026d70(p,1)`; `mult` → `FUN_10029b20`; `shie` → shields
-(player reader); any other type (`none` in the data) returns 1 so the contacted entity is
++= `pickup_Value` (`FUN_10027490`, cap: player reader); `spec` → nothing; any other type (`none` in the data) returns 1 so the contacted entity is
  destroyed via `FUN_10016300` (impact — damage reader); types `grnd`/`air ` return 0 while the
  player is invulnerable (no unit def uses them).
 Coin units (unde data): `calg` Large Gold 50, `cals` Large Silver 10, `casg` Small Gold 5,
@@ -406,6 +406,14 @@ score/money/lives are only initialised (§9.3) and every score add is one of the
 | `FUN_100302e0` | 15 | between-level reset: messages, console, FPS monitor init, speed divider | MED (read) |
 | `FUN_10030350` | 9 | frame counter getter (+8) | MED (read) |
 | `FUN_10030360`–`FUN_10030bc0` | | frame loop rows (engine-loop.md) | existing, not re-read |
+| `FUN_10030570` | 18 | end-frame wrapper (bank: HIGH; callers `FUN_100051a0`, `FUN_1002e310`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_100305e0` | 18 | FPS monitor init (bank: MED; callers `FUN_10030210`, `FUN_100302e0`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_10030640` | 48 | FPS monitor + auto interlace (bank: MED; caller `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_10030790` | 12 | reset speed divider (bank: HIGH; callers `FUN_10030210`, `FUN_100302e0`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_100307b0` | 9 | tick-this-frame flag (bank: HIGH, disasm; callers `FUN_10030360`, `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_100307c0` | 31 | Esc quit (bank: HIGH, disasm; callers `FUN_10030360`, `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_10030870` | 22 | pause handling (bank: MED; caller `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
+| `FUN_10030910` | 95 | −/= volume, F6 interlace keys (bank: HIGH; caller `FUN_10030360`) — the heaviest function in this range, owned by a future timing/frame reader | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
 | `FUN_10030900` | 9 | frame-controller byte 0 getter (used as "redraw" gate in `FUN_1002e310`) | LOW (read) |
 | `FUN_10030df0` | 25 | zero-init of a 0x35-byte struct (score-bar state?) | LOW (read) |
 | `FUN_10030e70` | 43 | static initialiser of score-bar globals | LOW (read) |
@@ -448,10 +456,11 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
 2. `FUN_100234d0` pref-3 update and high-score gate: decompile only (the `best − 1` rule matches
    the guide); listing of `0x100235xx..0x100236f0` would settle it at HIGH. `DAT_100e01b8`
    (an extra gate, likely film/demo playback) not identified.
-3. `FUN_10037580` 'shie'/'spec' cases: the decompile shows `0x73686965` ('shie') but the listing
-   at `1003761c` compares `0x73706563` ('spec') — the switch may be partly mis-recovered; the
-   coin/exli/mult cases were confirmed in the listing. Settle with a full listing of
-   `0x10037580–0x10037720` case by case (player reader owns shields).
+3. ~~`FUN_10037580` 'shie'/'spec' cases~~ → closed: the switch is not mis-recovered; both are
+   compared — `100375f4 lis r4,0x7368; addi r0,r4,0x6965` ('shie') `beq 0x100376ac` → shields +=
+   `pickup_Value` (+0x4dc, int→float, `100376d0 bl 0x10027490`); `1003761c lis r3,0x7370; addi
+   r0,r3,0x6563` ('spec') `beq 0x100376d8` → nothing (return the default). damage-health-death.md
+   §6 had it right. ⚑ corrected (review wave 1, 2026-10-03) #M9
 4. Text alpha/fade arithmetic of both tallies (`+0x50`, `+0xe0`) and the money-counter draw
    `FUN_100298c0` were not checked against listings (visual only).
 5. The `noal`/`12gc` finale unit chain is data-driven; its state order and the moment the game
@@ -469,7 +478,7 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
 | `FUN_10026d50` / `FUN_10026d60` | G_Player.cc | lives get/set (± 0x1524DCEF) | HIGH | listing |
 | `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | score get/set (± 0x05532A3E) | HIGH | decompile + `FUN_10029a10` listing |
 | `FUN_10027610` / `FUN_10027620` / `FUN_100275b0` | G_Player.cc | money get / set / add (± 0xB2CCE) | HIGH | listing `10027738` |
-| `FUN_10037580` | G_EntityGroup.cc | player-contact handler by pickup_Type_ID: coin → money += pickup_Value; exli → life; mult → multiplier step; shie → shields; other → 1 (entity destroyed) | MED | listing for coin/exli/mult; NR #3 |
+| `FUN_10037580` | G_EntityGroup.cc | player-contact handler by pickup_Type_ID: coin → money += pickup_Value; exli → life; mult → multiplier step; shie → shields += pickup_Value; spec → nothing; other → 1 (entity destroyed) | HIGH | listing for every case (`100375f4`→`100376ac` shie, `1003761c`→`100376d8` spec); caller `FUN_10033850` — ⚑ corrected (review wave 1, 2026-10-03) #M9: was MED, NR #3 |
 | `FUN_10029fe0` | G_Player.cc | spawn multiplier indicator O35–39 for ×2/3/4/5/10, replace previous (+0xb8) | HIGH | jump table `0x100e93ec` + listing |
 | ⚑ corrected `FUN_10027e50` | G_Player.cc | ship destroyed: death spawn, spill money as $50/$10/$5/$1 coins (greedy), money 0, state 3, multiplier reset | HIGH | listing `10027f64..10028124`; was "coin unit selection MED" |
 | ⚑ corrected `FUN_10027670` | G_Player.cc | coin-bonus setup: coinValue = flli171 (×sector if flli170≠0), bonus = money×coinValue, step = max(trunc(bonus·0.02f),100), spawn money-counter unit | HIGH | listing `100276c8..100277ec`; was MED |

@@ -16,6 +16,10 @@ Counts (tool output, this session):
   4th column, `sort | uniq -c`). Combined rows (`FUN_a` / `FUN_b`) count once; the undefined
   G_Background console-handler row is not a `FUN_` row and is not counted. §2/§3/union still not
   re-run.
+- ⚑ corrected (review wave 1, 2026-10-03): after the review-wave-1 fix pass → §1 hand table:
+  **510 functions — HIGH 240, MED 256, LOW 14** (same command). Delta: 68 HIGH → MED by the label
+  audit (review M8), +1 MED row (`FUN_10011bf0`, review M7); the four conflict rows kept HIGH
+  with fix-pass listings.
 - §2 data-key consumers: 93 functions, 61 of them also in §1 → 311 distinct functions with a
   specific role (`sort -u` of both name lists | `wc -l` → 311).
 - §3 module attribution: 123 functions tagged by their own assert/source-file string + 301
@@ -41,10 +45,10 @@ Counts (tool output, this session):
 | `FUN_10000f80` |  | assert: data error | MED | "DATA ERROR" — ⚑ corrected (review 2026-10-03) #8: was HIGH on string/import/usage evidence only |
 | `FUN_10000fd0` |  | fatal: critical files missing | MED | string — ⚑ corrected (review 2026-10-03) #8: was HIGH on string/import/usage evidence only |
 | `FUN_10000910` | U_LinkedList.cc | linked list insert | MED | newLinkPtr |
-| `FUN_100009e0` | U_LinkedList.cc | linked list append (node = prev,next,data); used as list add everywhere | HIGH | read + assert string — ⚑ corrected (wave 1, 2026-10-03): was "linked list append" MED; see level-scroll-objects.md role rows |
+| `FUN_100009e0` | U_LinkedList.cc | linked list append (node = prev,next,data); used as list add everywhere | MED | read + assert string — ⚑ corrected (wave 1, 2026-10-03): was "linked list append" MED; see level-scroll-objects.md role rows — ⚑ label audit (review wave 1) |
 | `FUN_10000ce0` |  | list count | MED | usage pattern |
-| `FUN_10000e10` |  | list iterate (cursor over prev,next,data nodes) | HIGH | read + assert string — ⚑ corrected (wave 1, 2026-10-03): was "list iterate (cursor)" MED; see level-scroll-objects.md role rows |
-| `FUN_10000c00` | U_LinkedList.cc | unlink current node (cursor) | HIGH | read + assert string (level-scroll-objects.md role rows) |
+| `FUN_10000e10` |  | list iterate (cursor over prev,next,data nodes) | MED | read + assert string — ⚑ corrected (wave 1, 2026-10-03): was "list iterate (cursor)" MED; see level-scroll-objects.md role rows — ⚑ label audit (review wave 1) |
+| `FUN_10000c00` | U_LinkedList.cc | unlink current node (cursor) | MED | read + assert string (level-scroll-objects.md role rows) — ⚑ label audit (review wave 1) |
 | `FUN_1000cb60` | M_Memory.cc | allocate (NewPtr/NewPtrClear) with failure log | MED | imports + "MEMORY ALLOCATION FAILURE" — ⚑ corrected (review 2026-10-03) #8: was HIGH on string/import/usage evidence only |
 | `FUN_1004d320` |  | operator new | MED | alloc + null asserts at callers |
 | `FUN_1000cd60` |  | memcpy | MED | usage |
@@ -129,8 +133,8 @@ Counts (tool output, this session):
 | `FUN_100051a0` | G_Game.cc | game loop (one session) | HIGH | read |
 | `FUN_10006b50` |  | logic tick: input, notices, debris, particles, blur, players, scorebar, scroll, end-level, entities | HIGH | read |
 | `FUN_10007070` |  | draw world | MED | callees |
-| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector (session ends via `none`) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "level complete -> next level / end" MED; see level-scroll-objects.md §8 |
-| `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "end session request" MED; see level-scroll-objects.md §8 |
+| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector (session ends via `none`) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "level complete -> next level / end" MED; see level-scroll-objects.md §8 — ⚑ label audit (review wave 1) |
+| `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "end session request" MED; see level-scroll-objects.md §8 — ⚑ label audit (review wave 1) |
 | `FUN_100064d0` | G_Game.cc (span) | level start: next sector, per-level resets, scroll init, load spawns, preload weapons (`FUN_1002b3a0`), Notice_Level_NN; perm F52-56 | HIGH | read + listing — ⚑ corrected (wave 1, 2026-10-03): was "start level (display, level load)" MED; see level-scroll-objects.md §8 |
 | `FUN_100069b0` |  | load film for playback (attract cycle), srand(seed) | HIGH | read |
 | `FUN_100072c0` | G_Game.cc (span) | accuracy tier: pct float ≥100/95/90/85/80 → flli189–194 × sector; step max(trunc(b·0.02f),100); sets 100 % flag G+0xb | HIGH | listing `100072c0..100075dc` — ⚑ corrected (wave 1, 2026-10-03): was "ground accuracy tier computation" MED; see scoring-bonuses.md §6.3 |
@@ -173,44 +177,45 @@ Counts (tool output, this session):
 | `FUN_1000f9c0` | G_Background.cc | module shutdown, free mask | MED | read (level-scroll-objects.md §9) |
 | `FUN_1000fa10` | G_Background.cc | level-load spawn pass: rows bottom … top−64 (3600 … 3056) | HIGH | listing `1000fa48 subi r3,r3,0x41` (level-scroll-objects.md §2) |
 | `FUN_1000fa90` | G_Background.cc | level scroll init: speed 1, offset 0, window top = RECT bottom − 480 (3600 − 480 = 3120), progress 481 | HIGH | listing `1000fb38` (level-scroll-objects.md §2); dump (bosses.md §2.3) |
-| `FUN_1000fbc0` | G_Background.cc | load level map + media mask, mask element size | HIGH | read |
-| `FUN_1000fee0` |  | is point on water (mask == 0x001f) | HIGH | read |
+| `FUN_1000fbc0` | G_Background.cc | load level map + media mask, mask element size | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1000fee0` |  | is point on water (mask == 0x001f) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1000ffc0` | G_Background.cc | resume vertical scroll (speed 1) unless the level has ended | HIGH | listing — ⚑ corrected (wave 1, 2026-10-03): was "resume vertical scroll (speed 1)" HIGH; see level-scroll-objects.md §4 |
-| `FUN_1000ffe0` |  | pause vertical scroll | HIGH | read |
-| `FUN_1000fff0` |  | is scroll paused | HIGH | read |
+| `FUN_1000ffe0` |  | pause vertical scroll | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1000fff0` |  | is scroll paused | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10010000` | G_Background.cc | per-tick scroll step; level end when progress (r2−0x61e4, starts 481) ≥ level RECT bottom (3600), i.e. window top = 1; spawn row top−64 (world y −64) | HIGH | raw `10010000..1001009c` — ⚑ corrected (wave 1, 2026-10-03): was "scroll step, level-end flag, spawn objects at top-64" HIGH; see bosses.md §2.3, level-scroll-objects.md §3 |
 | `FUN_10010220` |  | advance scroll window by speed | HIGH | read |
 | `FUN_100100b0` | G_Background.cc | horizontal view offset ±1 px per call, clamp [−32, 31]; driven by each active player's left/right input (`FUN_10028170`, call `10029508`), reset per level | HIGH | listing + caller — ⚑ corrected (wave 1, 2026-10-03): was "horizontal view shift ±32" HIGH; see level-scroll-objects.md §5, player-physics.md §2.5 |
 | `FUN_10010120` | G_Background.cc | draw terrain window: map (top, off+32, top+480, off+448) → buffer (0,0,480,416); perm F54/55 | HIGH | listing — ⚑ corrected (wave 1, 2026-10-03): was "draw terrain window" MED; see level-scroll-objects.md §9 |
-| `FUN_1000fec0` | G_Background.cc | scroll window top (map row of world y 0) | HIGH | read; callers use it for map↔world — ⚑ corrected (wave 1, 2026-10-03): was "scroll window top" MED; see level-scroll-objects.md §1 |
-| `FUN_1000fed0` | G_Background.cc | pixels scrolled this tick (ground entities add it to y) | HIGH | read; writer `FUN_10010220` (units-movement.md §2.1, level-scroll-objects.md §3) |
-| `FUN_100100a0` | G_Background.cc | horizontal offset getter | HIGH | read (level-scroll-objects.md §5) |
-| `FUN_10010360` | G_Background.cc | free media mask | HIGH | read (level-scroll-objects.md §9) |
-| `FUN_10010570` | G_Background.cc | console REVERSE: scroll speed 1 ↔ −1 (debug) | HIGH | listing (level-scroll-objects.md §9) — ⚑ conflict: bosses.md role rows call it the SCROLL toggle (MED, strings + dump); level-scroll-objects.md puts SCROLL at undefined `0x100104f0` from the TOC slots |
-| `FUN_10010860` | G_Background.cc | console LEVELSPAWNS toggle (debug) | HIGH | read (level-scroll-objects.md §9) |
+| `FUN_1000fec0` | G_Background.cc | scroll window top (map row of world y 0) | MED | read; callers use it for map↔world — ⚑ corrected (wave 1, 2026-10-03): was "scroll window top" MED; see level-scroll-objects.md §1 — ⚑ label audit (review wave 1) |
+| `FUN_1000fed0` | G_Background.cc | pixels scrolled this tick (ground entities add it to y) | MED | read; writer `FUN_10010220` (units-movement.md §2.1, level-scroll-objects.md §3) — ⚑ label audit (review wave 1) |
+| `FUN_100100a0` | G_Background.cc | horizontal offset getter | MED | read (level-scroll-objects.md §5) — ⚑ label audit (review wave 1) |
+| `FUN_10010360` | G_Background.cc | free media mask | MED | read (level-scroll-objects.md §9) — ⚑ label audit (review wave 1) |
+| `FUN_10010570` | G_Background.cc | console REVERSE handler: scroll speed −1 ↔ 1 unless the level has ended ("Vertical Scrolling Reversed/Resumed"); debug | HIGH | listing `10010570..100105f8` (`10010580 lwz r0,-0x6208(r2); cmpwi r0,-0x1`); registration: `FUN_1000f7a0` passes TOC slot `0x100df07c` for "REVERSE" → TVector `0x100e0890` → `0x10010570`; SCROLL/SCROLLING use `0x100df094` → `0x100104f0` (undefined code, toggle 1 ↔ 0) — memory image, fix pass — ⚑ corrected (review wave 1, 2026-10-03) (conflict resolved): level-scroll-objects.md §9 wins; bosses.md "SCROLL toggle" (MED) corrected in bosses.md §2.4 and role rows |
+| `FUN_10010860` | G_Background.cc | console LEVELSPAWNS toggle (debug) | MED | read (level-scroll-objects.md §9) — ⚑ label audit (review wave 1) |
 | (undefined) `0x100103b0` `0x10010430` `0x10010480` `0x100104f0` `0x10010600` `0x10010640` `0x100106f0` `0x100107a0` | G_Background.cc | console BACKSIZE, ERASEBACK, JUMP, SCROLL, ROW, LOGMEDIA, MEDIASIZE, MEDIA handlers (no Ghidra function) | HIGH | TOC slots `0x100df07c…a0` + listings (level-scroll-objects.md §9); not counted in the `FUN_` row counts |
 | `FUN_10010990` |  | HTML RRGGBB -> 16-bit pixel | MED | string — ⚑ corrected (review 2026-10-03) #8: was HIGH on string/import/usage evidence only |
 | `FUN_10010f90` |  | registered? (out of scope) | MED | callers |
 | `FUN_10010e90` |  | registration banner (out of scope) | MED | perm S33-35 |
 | `FUN_10010cf0` | M_Registration.cc | registration profile (out of scope) | MED | strings |
-| `FUN_10011a70` | G_Level.cc | module init: register "Level", build order list | HIGH | read (level-scroll-objects.md §8) |
+| `FUN_10011a70` | G_Level.cc | module init: register "Level", build order list | MED | read (level-scroll-objects.md §8) — ⚑ label audit (review wave 1) |
 | `FUN_10011ab0` | G_Level.cc | module shutdown, free order list | MED | read (level-scroll-objects.md §8) |
-| `FUN_10011b00` | G_Level.cc | number of unregistered levels = 4 (demo, out of scope) | HIGH | read (level-scroll-objects.md §8) |
+| `FUN_10011b00` | G_Level.cc | number of unregistered levels = 4 (demo, out of scope) | MED | read (level-scroll-objects.md §8) — ⚑ label audit (review wave 1) |
 | `FUN_10011b10` | G_Level.cc | free order list (demo cut) | MED | read (level-scroll-objects.md §8) |
-| `FUN_10011c00` | G_Level.cc | build level order list from encoded table | HIGH | read |
-| `FUN_10011b30` |  | is level in first-4 (unregistered) set | HIGH | read |
+| `FUN_10011bf0` | ~after G_Background (G_Level span) | set byte `DAT_100e0151` = 1 (flag `FUN_100120f0` asserts clear); caller `FUN_100015a0` (pak version-mismatch error path) | MED | dump (level-scroll-objects.md role rows) — ⚑ corrected (review wave 1, 2026-10-03) #M7 (new row) |
+| `FUN_10011c00` | G_Level.cc | build level order list from encoded table | HIGH | read (not re-read in wave 1: level-scroll-objects.md role rows ⚑ corrected (review wave 1, 2026-10-03) #M7) |
+| `FUN_10011b30` |  | is level in first-4 (unregistered) set | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_100122f0` | G_Level.cc | parse level file | HIGH | read |
-| `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "load level by tag" MED; see level-scroll-objects.md §6.1 |
-| `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "level info by ID" MED; see level-scroll-objects.md §6.1 |
-| `FUN_10011e30` | G_Level.cc | level tag → sector (0 if absent) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "sector number of current level" MED; see level-scroll-objects.md §8 |
-| `FUN_10011de0` | G_Level.cc | level count (order-list length via `FUN_10000ce0`, 12) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "level count" LOW; see level-scroll-objects.md §8 |
-| `FUN_10011f00` | G_Level.cc | sector → level tag (`none` if absent) | HIGH | read (level-scroll-objects.md §8) |
-| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | HIGH | read (level-scroll-objects.md §8) |
-| `FUN_10012170` | G_Level.cc | free a level-object list | HIGH | read (level-scroll-objects.md §6.1) |
-| `FUN_100121c0` | G_Level.cc | free the level order list | HIGH | read (level-scroll-objects.md §8) |
+| `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "load level by tag" MED; see level-scroll-objects.md §6.1 — ⚑ label audit (review wave 1) |
+| `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "level info by ID" MED; see level-scroll-objects.md §6.1 — ⚑ label audit (review wave 1) |
+| `FUN_10011e30` | G_Level.cc | level tag → sector (0 if absent) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "sector number of current level" MED; see level-scroll-objects.md §8 — ⚑ label audit (review wave 1) |
+| `FUN_10011de0` | G_Level.cc | level count (order-list length via `FUN_10000ce0`, 12) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "level count" LOW; see level-scroll-objects.md §8 — ⚑ label audit (review wave 1) |
+| `FUN_10011f00` | G_Level.cc | sector → level tag (`none` if absent) | MED | read (level-scroll-objects.md §8) — ⚑ label audit (review wave 1) |
+| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | MED | read (level-scroll-objects.md §8) — ⚑ label audit (review wave 1) |
+| `FUN_10012170` | G_Level.cc | free a level-object list | MED | read (level-scroll-objects.md §6.1) — ⚑ label audit (review wave 1) |
+| `FUN_100121c0` | G_Level.cc | free the level order list | MED | read (level-scroll-objects.md §8) — ⚑ label audit (review wave 1) |
 | `FUN_100125d0` | G_GameObject (span) | constructors: `FUN_100125d0` game object, `FUN_100141a0` entity | MED | dump (units-movement.md §10) |
 | `FUN_10012650` | G_GameObject (span) | object reset (air = 1, layer `defa`, sprite none) | MED | dump (units-movement.md §3) |
-| `FUN_100128d0` | G_GameObject (span) | get position | HIGH | dump (units-movement.md §2.1) |
+| `FUN_100128d0` | G_GameObject (span) | get position | MED | dump (units-movement.md §2.1) — ⚑ label audit (review wave 1) |
 | `FUN_10012940` | G_GameObject (span) | half-size from sprite frame dims / 2 | MED | decompile (damage-health-death.md §2.2) |
 | `FUN_10012a00` | G_GameObject (span) | entity bounds as Mac rect {t,l,b,r} | HIGH | listing (damage-health-death.md §2.2) |
 | `FUN_10012ad0` | G_GameObject (span) | bounding box l,t,r,b = centre ± half size (trunc) | HIGH | listing (damage-health-death.md §2.2); dump (units-movement.md §2.1) |
@@ -219,9 +224,9 @@ Counts (tool output, this session):
 | `FUN_10012fa0` |  | draw entity: draw-layer 4CC -> render layer | HIGH | read |
 | `FUN_10013460` |  | draw entity shadow | MED | perm F48-51 |
 | `FUN_10014650` |  | current state pointer (unit+0x4e0+s*0x5e0) | HIGH | read |
-| `FUN_100142f0` | G_Entity.cc (span) | entity reset (target none `+0x118 = −1`, velocities 0) | HIGH | dump (units-movement.md §3) |
+| `FUN_100142f0` | G_Entity.cc (span) | entity reset (target none `+0x118 = −1`, velocities 0) | MED | dump (units-movement.md §3) — ⚑ label audit (review wave 1) |
 | `FUN_100144a0` | G_Entity.cc | bind unit def to entity (unit cache +0x98); allocate per-state spawn-record lists (+0x19c+4s, 0x18-byte records); +0x13e | MED | read/dump, asserts `newSpawnInfoPtr`; caller `FUN_10035cd0` (spawn-and-waves.md §2.1, bosses.md §3.3; units-movement.md proposed HIGH on strings only — kept MED per review #8) |
-| `FUN_10014670` | G_Entity.cc (span) | switch entity to its first `UseThisStateOnWeaponPowerupRelease` state (+0x835 = 0x4e0 + 0x355) | HIGH | dump (units-movement.md §10, weapons-projectiles.md §2.5) |
+| `FUN_10014670` | G_Entity.cc (span) | switch entity to its first `UseThisStateOnWeaponPowerupRelease` state (+0x835 = 0x4e0 + 0x355) | MED | dump (units-movement.md §10, weapons-projectiles.md §2.5) — ⚑ label audit (review wave 1) |
 | `FUN_100146f0` | G_Entity.cc | change state by name (last match wins; Delete/Destroy special): stamps +0xa4, draws timer +0xb8, entry counter +0x14c+4s with OnCounter (+0x3b4 → +0x51c); velocity ramp set-up (accel = s1·dir − v, desired = MaxSpeed·dir); flee start/stop; re-arms spawn sets (`FUN_10017cb0`) | HIGH | listing `10014bac..10014db4` (units-movement.md §4); OnCounter dump (bosses.md §3.2); 7 callers — ⚑ corrected (wave 1, 2026-10-03): was "change state by name (Delete/Destroy special)" MED; see units-movement.md §4, bosses.md §3.2 |
 | `FUN_10015550` |  | evaluate 5 state rules | HIGH | read |
 | `FUN_10015280` | G_Entity.cc (span) | motion controller: nearest player, no-player actions, cyclic, constrain, OnRange trigger, hold / hunt / ramp | HIGH | listing `10015280..1001554c` (units-movement.md §5) |
@@ -236,7 +241,7 @@ Counts (tool output, this session):
 | `FUN_10016cc0` | G_Entity.cc (span) | seek target: per-axis ±Delta, clamp ±MaxSpeed (flee speeds when fleeing) | HIGH | listing (units-movement.md §5.2) |
 | `FUN_10016da0` | G_Entity.cc (span) | constrainInGameArea bounce | HIGH | listing (units-movement.md §5.7) |
 | `FUN_10016fe0` | G_Entity.cc (span) | cyclic motion (2 RNG draws per tick) | HIGH | listing (units-movement.md §5.5) |
-| `FUN_10017150` | G_Entity.cc (span) | spawn-time rotation gate: DoRotateToTarget (+0x303), +0xc4 countdown, hold rotation while a PauseAnyRotationWhileSpawning volley is in progress, else `FUN_100172d0` | HIGH | dump + listing (units-movement.md §8.2); spawn-and-waves.md §2.4 and bosses.md §3.3 read it MED; caller `FUN_10015b40` — ⚑ conflict: damage-health-death.md INDEX updates call it "the runtime spawn-set reader (LOW)"; three files with listings put the executor in `FUN_10015b40` |
+| `FUN_10017150` | G_Entity.cc (span) | spawn-time rotation gate: if the state lacks DoRotateToTarget (+0x303) → +0xc1 = 0, return; else count +0xc4 down, hold rotation while +0xc4 > 0 or while any set with PauseAnyRotationWhileSpawning (+0x48) is mid-volley (0 < left < volley), else `FUN_100172d0` (turn toward target) | HIGH | listing `10017180 lbz r0,0x303(r31)`, `1001719c–100171c0` (+0xc4), `10017210 lwz r3,0x5dc(r31)`, `1001725c lbz r0,0x48(r25)`, `10017268–1001727c`, `100172a4 bl 0x100172d0` (fix-pass listing `$W/disasm-fix.txt`); only caller `FUN_10015b40` — ⚑ corrected (review wave 1, 2026-10-03) (conflict resolved): rotation gate wins (units-movement.md §8.2, spawn-and-waves.md §2.4, bosses.md §3.3); damage-health-death.md's "runtime spawn-set reader (LOW)" corrected in its §2.5 and INDEX updates |
 | `FUN_100172d0` | G_Entity.cc (span) | turn sprite one direction step toward target point (+0x11c/+0x120) every FrameDelay; sets +0xc1 tracking flag | HIGH | listing (units-movement.md §8.2); spawn-and-waves.md §6 MED |
 | `FUN_10017510` | G_Entity.cc (span) | flee target by 4CC code (13 codes), sets fleeing; perm F14-17 | HIGH | listing — ⚑ corrected (wave 1, 2026-10-03): was "flee targets" MED; see units-movement.md §6 |
 | `FUN_10017a10` | G_Entity.cc (span) | ramp velocity to desired; stationary → zero; orbit rate | HIGH | listing (units-movement.md §5.6) |
@@ -309,16 +314,16 @@ Counts (tool output, this session):
 | `FUN_10026260` | G_Player.cc (span) | player constructor (field defaults, lives 0, money 0, score 0, index 0xff, numPlayers 1) | HIGH | disasm stores `100262a4..10026340`; caller `FUN_100051a0` (player-physics.md §1) |
 | `FUN_100263a0` | G_Player.cc (span) | player destructor | MED | dump (player-physics.md) |
 | `FUN_10026b10` | G_Player.cc | place at solo/multi start, v = 0, crosshair 0 | HIGH | disasm (player-physics.md §4.1) |
-| `FUN_10026c20` | G_Player.cc | in game and life state 1 (out of lives) | HIGH | dump (player-physics.md §4) |
-| `FUN_10026c50` | G_Player.cc | get life state (+0xc6) | HIGH | dump (player-physics.md §4, damage-health-death.md §5.1) |
-| `FUN_10026c60` | G_Player.cc | life state == arg (+0xc6) | HIGH | dump (player-physics.md §4, damage-health-death.md §5.1) |
+| `FUN_10026c20` | G_Player.cc | in game and life state 1 (out of lives) | MED | dump (player-physics.md §4) — ⚑ label audit (review wave 1) |
+| `FUN_10026c50` | G_Player.cc | get life state (+0xc6) | MED | dump (player-physics.md §4, damage-health-death.md §5.1) — ⚑ label audit (review wave 1) |
+| `FUN_10026c60` | G_Player.cc | life state == arg (+0xc6) | MED | dump (player-physics.md §4, damage-health-death.md §5.1) — ⚑ label audit (review wave 1) |
 | `FUN_10026c80` | G_Player.cc | set life state + enter time | HIGH | dump; callers `FUN_10026410`, `FUN_100269a0` (player-physics.md §4) |
-| `FUN_10026ca0` | G_Player.cc | get plde pointer (+0x94) | HIGH | dump (player-physics.md §1) |
+| `FUN_10026ca0` | G_Player.cc | get plde pointer (+0x94) | MED | dump (player-physics.md §1) — ⚑ label audit (review wave 1) |
 | `FUN_10026cb0` | G_Player.cc | max speed = active_DefaultMaxSpeed | HIGH | disasm (player-physics.md §2.1) |
 | `FUN_10026cc0` | G_Player.cc | init session lives (life_NumInitial if start sector 1 else 1), extra-life threshold = life_InitialRequiredScore (+0x9c), step 0 | HIGH | listing `10026ce0..10026d18`, `10026838` (scoring-bonuses.md §3.2, player-physics.md §7, level-scroll-objects.md §8) |
 | `FUN_10026d50` | G_Player.cc | get / set lives (`FUN_10026d60`; stored ± 0x1524DCEF) | HIGH | listing (player-physics.md §7, scoring-bonuses.md §2) |
 | `FUN_10026d70` | G_Player.cc | add one life, cap life_MaxNum, spawn life_Spawn_ID | HIGH | listing `10026d84..10026dc0` (scoring-bonuses.md §3.3, player-physics.md §7) |
-| `FUN_10026ea0` | G_Player.cc | clear overload + glow fields | HIGH | dump (player-physics.md §6.2) |
+| `FUN_10026ea0` | G_Player.cc | clear overload + glow fields | MED | dump (player-physics.md §6.2) — ⚑ label audit (review wave 1) |
 | `FUN_10026ee0` | G_Player.cc | overload warning pulse; the Nth (powerupOverload_NumWarnings, 8) warning destroys the ship | HIGH | disasm `10026f0c..100270d8` (player-physics.md §6.2, weapons-projectiles.md §2.6) |
 | `FUN_10027400` | G_Player.cc | reset shield (100 / 0) + hit timers | HIGH | disasm (player-physics.md §3) |
 | `FUN_10027490` | G_Player.cc | add shield, clamp [0,100] | HIGH | disasm (player-physics.md §3) |
@@ -332,7 +337,7 @@ Counts (tool output, this session):
 | `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, coin-tally text while alpha < 32 | MED | dump; caller `FUN_10007070` (player-physics.md, scoring-bonuses.md) |
 | `FUN_100299c0` | G_Player.cc | reset / get / set score (`FUN_100299f0` / `FUN_10029a00`; stored ± 0x05532A3E) | HIGH | disasm (player-physics.md §7, scoring-bonuses.md §2, level-scroll-objects.md §8) |
 | `FUN_10029b20` | G_Player.cc | step score multiplier 1→2→3→4→5→10 | HIGH | jump table `0x100e93c0` (player-physics.md, scoring-bonuses.md §4) |
-| `FUN_10029bd0` | G_Player.cc | get multiplier / `FUN_10029fd0` reset to 1 | HIGH | dump (player-physics.md, scoring-bonuses.md §4) |
+| `FUN_10029bd0` | G_Player.cc | get multiplier / `FUN_10029fd0` reset to 1 | MED | dump (player-physics.md, scoring-bonuses.md §4) — ⚑ label audit (review wave 1) |
 | `FUN_10029be0` | G_Player.cc | get / set flag +0xbd (`FUN_10029bf0`) | LOW | dump (player-physics.md) |
 | `FUN_10029c00` | G_Player.cc | advance / re-assign the player's weapon of a type for the sector (no direct caller) | MED | read (weapons-projectiles.md §5); player-physics.md rates it LOW |
 | `FUN_10029cb0` | G_Player.cc | get +0xc0 (level ref) | MED | dump (player-physics.md) |
@@ -342,23 +347,23 @@ Counts (tool output, this session):
 | `FUN_1002a450` | G_Player.cc | load-and-check a permanent unit def | MED | strings (player-physics.md) |
 | `FUN_1002a4f0` | (static init) | spawn-request template statics | LOW | dump (player-physics.md) |
 | `FUN_1002a5b0` | G_Debris.cc (span) | register / tear down (`FUN_1002a610`) "Debris" + NUMDEBRIS console command | MED | strings (player-physics.md) |
-| `FUN_1002a6d0` | G_Debris.cc | add debris rect | HIGH | decompile + assert string (damage-health-death.md §2.4) |
+| `FUN_1002a6d0` | G_Debris.cc | add debris rect | MED | decompile + assert string (damage-health-death.md §2.4) — ⚑ label audit (review wave 1) |
 | `FUN_1002a830` | G_Debris.cc | rect vs debris list (inclusive) | MED | decompile (damage-health-death.md §2.4) |
-| `FUN_1002ba00` | G_WeaponDefinitions.cc | parse weapon definition | HIGH | read |
-| `FUN_1002ab20` | G_WeaponDefinitions.cc | build master weapon list (wede tags in index order) | HIGH | read; caller `FUN_1002aa90` (weapons-projectiles.md §1.1) |
-| `FUN_1002acf0` | G_WeaponDefinitions.cc | i-th weapon definition | HIGH | read (weapons-projectiles.md §1.3) |
+| `FUN_1002ba00` | G_WeaponDefinitions.cc | parse weapon definition | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1002ab20` | G_WeaponDefinitions.cc | build master weapon list (wede tags in index order) | MED | read; caller `FUN_1002aa90` (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
+| `FUN_1002acf0` | G_WeaponDefinitions.cc | i-th weapon definition | MED | read (weapons-projectiles.md §1.3) — ⚑ label audit (review wave 1) |
 | `FUN_1002adb0` | G_WeaponDefinitions.cc | next weapon of type available at level after current (wraps; `none` → first) | HIGH | listing `1002ae30…1002ae8c` (weapons-projectiles.md §2.4) |
-| `FUN_1002aec0` | G_WeaponDefinitions.cc | list of unit IDs a weapon references | HIGH | read (weapons-projectiles.md §1.3) |
+| `FUN_1002aec0` | G_WeaponDefinitions.cc | list of unit IDs a weapon references | MED | read (weapons-projectiles.md §1.3) — ⚑ label audit (review wave 1) |
 | `FUN_1002b150` | G_WeaponDefinitions.cc | is unit referenced by any weapon (no caller found) | MED | read (weapons-projectiles.md §1.3) |
-| `FUN_1002b240` | G_WeaponDefinitions.cc | free ID list | HIGH | read (weapons-projectiles.md §1.3) |
+| `FUN_1002b240` | G_WeaponDefinitions.cc | free ID list | MED | read (weapons-projectiles.md §1.3) — ⚑ label audit (review wave 1) |
 | `FUN_1002b2a0` | G_WeaponDefinitions.cc | weapon-def defaults (magic, none IDs, sound defaults) | HIGH | read + image `0x100d7014` (weapons-projectiles.md §1.2) |
-| `FUN_1002b3a0` | G_WeaponDefinitions.cc | preload PEAA/PEAG/SPEC weapons for the level | HIGH | read; caller `FUN_100064d0` (weapons-projectiles.md §1.1) |
+| `FUN_1002b3a0` | G_WeaponDefinitions.cc | preload PEAA/PEAG/SPEC weapons for the level | MED | read; caller `FUN_100064d0` (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
 | `FUN_1002b400` | G_WeaponDefinitions.cc | collect weapon sprite (1) / sound (0) IDs (no caller found) | MED | read (weapons-projectiles.md §1.3) |
-| `FUN_1002b590` | G_WeaponDefinitions.cc | free master weapon list | HIGH | read (weapons-projectiles.md §1.1) |
-| `FUN_1002b6d0` | G_WeaponDefinitions.cc | preload weapons of a type at a level | HIGH | read (weapons-projectiles.md §1.1) |
-| `FUN_1002b790` | G_WeaponDefinitions.cc | preload one weapon's sprites / sound / units | HIGH | read (weapons-projectiles.md §1.1) |
-| `FUN_1002b8e0` | G_WeaponDefinitions.cc | load i-th wede tag (0x208-byte def) | HIGH | read (weapons-projectiles.md §1.1) |
-| `FUN_1002c490` | G_WeaponDefinitions.cc | init weapon spawn record (0x34) | HIGH | read (weapons-projectiles.md §1.2) |
+| `FUN_1002b590` | G_WeaponDefinitions.cc | free master weapon list | MED | read (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
+| `FUN_1002b6d0` | G_WeaponDefinitions.cc | preload weapons of a type at a level | MED | read (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
+| `FUN_1002b790` | G_WeaponDefinitions.cc | preload one weapon's sprites / sound / units | MED | read (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
+| `FUN_1002b8e0` | G_WeaponDefinitions.cc | load i-th wede tag (0x208-byte def) | MED | read (weapons-projectiles.md §1.1) — ⚑ label audit (review wave 1) |
+| `FUN_1002c490` | G_WeaponDefinitions.cc | init weapon spawn record (0x34) | MED | read (weapons-projectiles.md §1.2) — ⚑ label audit (review wave 1) |
 | `FUN_1003beb0` | G_WeaponHandler.cc | start bomb salvo: n = min(sector + F151 − 1, F152) | HIGH | listing `1003beec…1003bf58` — ⚑ corrected (wave 1, 2026-10-03): was "bomb count default/max" MED; see weapons-projectiles.md §2.7 |
 | `FUN_1003b3c0` | G_WeaponHandler.cc | per-tick weapon handler: held counters, release, power-ups, select (SND18), air fire, bomb salvo, crosshair, launches; returns 1 overload / 2 release | HIGH | listing — ⚑ corrected (wave 1, 2026-10-03): was "weapon selector switch" MED; see weapons-projectiles.md §2.3 |
 | `FUN_1003ade0` | G_WeaponHandler.cc | weapons-handler setup: reset, crosshair fade rates F149/150, default ground weapon (DEAG) + starting air weapon (`FUN_1003cdb0`) | HIGH | listing `1003ae48…1003af3c` — ⚑ corrected (wave 1, 2026-10-03): was "crosshair fade" MED; see weapons-projectiles.md §2.1 |
@@ -367,21 +372,21 @@ Counts (tool output, this session):
 | `FUN_1003c4f0` | G_WeaponHandler.cc | GROUND weapon launch: spawn records with speed ratio to the crosshair distance, then `crosshairSpawnOnActivation` (+0x180); the air launch is `FUN_1003c7a0` | HIGH | listing `1003c578…1003c784` — ⚑ corrected (review 2026-10-03) #9 — ⚑ corrected (wave 1, 2026-10-03): was "launch weapon: spawn each `spawn_*` record (unit +0x20 at player pos + XLoc/YLoc, heading +0x2c/+0x30) via `FUN_10033220`, then `crosshairSpawnOnActivation` (+0x180)" MED; see weapons-projectiles.md §3.2 |
 | `FUN_1003af90` | G_WeaponHandler.cc | handler reset (arg 1: auto-equip weapon unlocked at sector; pending apply; keeps weapons) | HIGH | listing `1003b0ac…1003b134` (weapons-projectiles.md §2.4) |
 | `FUN_1003b180` | G_WeaponHandler.cc | set weapon of type (immediate if no power-up active, else pending); AUX toggle | HIGH | listing (weapons-projectiles.md §2.4) |
-| `FUN_1003b340` | G_WeaponHandler.cc | current weapon of type | HIGH | read (weapons-projectiles.md §2.2) |
+| `FUN_1003b340` | G_WeaponHandler.cc | current weapon of type | MED | read (weapons-projectiles.md §2.2) — ⚑ label audit (review wave 1) |
 | `FUN_1003bab0` | G_WeaponHandler.cc | crosshair locked/unlocked frame | HIGH | listing (weapons-projectiles.md §2.8) |
-| `FUN_1003bb00` | G_WeaponHandler.cc | set handler x,y | HIGH | read (weapons-projectiles.md §2.2) |
+| `FUN_1003bb00` | G_WeaponHandler.cc | set handler x,y | MED | read (weapons-projectiles.md §2.2) — ⚑ label audit (review wave 1) |
 | `FUN_1003bb20` | G_WeaponHandler.cc | get air power percent (+0x24) | HIGH | listing (weapons-projectiles.md §2.5) |
 | `FUN_1003bb30` | G_WeaponHandler.cc | get weapon-list-changed flag | HIGH | listing (weapons-projectiles.md §2.2) |
-| `FUN_1003bb40` | G_WeaponHandler.cc | score-bar weapon icons (cur / next / next) | HIGH | read (weapons-projectiles.md §5) |
+| `FUN_1003bb40` | G_WeaponHandler.cc | score-bar weapon icons (cur / next / next) | MED | read (weapons-projectiles.md §5) — ⚑ label audit (review wave 1) |
 | `FUN_1003bce0` | G_WeaponHandler.cc | displayed air weapon (pending else current) | HIGH | listing (weapons-projectiles.md §2.4) |
-| `FUN_1003bd00` | G_WeaponHandler.cc | draw crosshair | HIGH | read (weapons-projectiles.md §2.8) |
+| `FUN_1003bd00` | G_WeaponHandler.cc | draw crosshair | MED | read (weapons-projectiles.md §2.8) — ⚑ label audit (review wave 1) |
 | `FUN_1003bd40` | G_WeaponHandler.cc | debug log of handler (no caller) | MED | read (weapons-projectiles.md §5) |
 | `FUN_1003bf80` | G_WeaponHandler.cc | air fire timing (cooldown + edge unless autoRepeat) | HIGH | listing (weapons-projectiles.md §2.4) |
 | `FUN_1003bff0` | G_WeaponHandler.cc | aux fire timing | MED | read (weapons-projectiles.md §2.4) |
 | `FUN_1003c7a0` | G_WeaponHandler.cc | AIR weapon launch: spawn records at player pos + XLoc/YLoc → `FUN_10033220` | HIGH | listing (weapons-projectiles.md §3.2) |
 | `FUN_1003c940` | G_WeaponHandler.cc | aux weapon launch | MED | read (weapons-projectiles.md §3.2) |
-| `FUN_1003cb30` | G_WeaponHandler.cc | free aux records | HIGH | read (weapons-projectiles.md §5) |
-| `FUN_1003cbf0` | G_WeaponHandler.cc | find aux record by weapon ID | HIGH | read (weapons-projectiles.md §5) |
+| `FUN_1003cb30` | G_WeaponHandler.cc | free aux records | MED | read (weapons-projectiles.md §5) — ⚑ label audit (review wave 1) |
+| `FUN_1003cbf0` | G_WeaponHandler.cc | find aux record by weapon ID | MED | read (weapons-projectiles.md §5) — ⚑ label audit (review wave 1) |
 | `FUN_1003cd30` | G_WeaponHandler.cc | PEAA weapon with min level == L | HIGH | listing (weapons-projectiles.md §2.4) |
 | `FUN_1003cdb0` | G_WeaponHandler.cc | starting air weapon: available PEAA with highest min level | HIGH | listing (weapons-projectiles.md §2.4) |
 | `FUN_1003ce60` | G_WeaponHandler.cc (span) | static init of spawn-request templates | MED | read (weapons-projectiles.md §3.1) |
@@ -432,17 +437,17 @@ Counts (tool output, this session):
 | `FUN_10035cd0` |  | create one entity (shields by sector, spawn delay) | HIGH | read |
 | `FUN_10037930` | G_EntityGroup.cc (span) | member placement: x/yOffsetMin/Max rectangular or radial, randomiseInitialLoc | HIGH | disasm (waves-and-enemies.md §4) — ⚑ corrected (review 2026-10-03) #2 |
 | `FUN_10037b50` | G_EntityGroup.cc (span) | initial motion: stationary / supplied heading / hunt closest / burst-implode (y negated) / default heading ± tolerance; speed FloatRandomRange(min,max) × request multiplier | HIGH | disasm — ⚑ corrected (review 2026-10-03) #2 — ⚑ corrected (wave 1, 2026-10-03): was "initial speed (float draw initialSpeedMin/Max) + initial heading (± tolerance draw) / hunt / burst" MED; see spawn-and-waves.md §3.3 |
-| `FUN_10012910` | G_GameObject (span) | set entity position (x,y) | HIGH | dump; callers `FUN_10037930`, `FUN_10028170` — ⚑ corrected (review 2026-10-03) #2 — ⚑ corrected (wave 1, 2026-10-03): was "set entity position (x,y)" MED; see units-movement.md §2.1 |
-| `FUN_100351f0` | G_EntityGroup.cc | count entities of a unit whose spawn delay is over (rules #14–16) | HIGH | dump — ⚑ corrected (wave 1, 2026-10-03): was "count live entities of a unit" MED; see bosses.md §3.1 |
-| `FUN_100352f0` | G_EntityGroup.cc | rule #4: any entity whose unit has includeInAirAccuracyCount (+0x133); no live/on-screen test | HIGH | dump; caller `FUN_10015550` — ⚑ corrected (wave 1, 2026-10-03): was "any destroyable air entity" MED; see bosses.md §3.1 |
-| `FUN_100353e0` | G_EntityGroup.cc | rule #5: any entity whose unit has includeInGroundAccuracyCount (+0x134) and is on screen (`FUN_10016bd0`) | HIGH | dump; caller `FUN_10015550` — ⚑ corrected (wave 1, 2026-10-03): was "any destroyable ground entity" MED; see bosses.md §3.1 |
+| `FUN_10012910` | G_GameObject (span) | set entity position (x,y) | MED | dump; callers `FUN_10037930`, `FUN_10028170` — ⚑ corrected (review 2026-10-03) #2 — ⚑ corrected (wave 1, 2026-10-03): was "set entity position (x,y)" MED; see units-movement.md §2.1 — ⚑ label audit (review wave 1) |
+| `FUN_100351f0` | G_EntityGroup.cc | count entities of a unit whose spawn delay is over (rules #14–16) | MED | dump — ⚑ corrected (wave 1, 2026-10-03): was "count live entities of a unit" MED; see bosses.md §3.1 — ⚑ label audit (review wave 1) |
+| `FUN_100352f0` | G_EntityGroup.cc | rule #4: any entity whose unit has includeInAirAccuracyCount (+0x133); no live/on-screen test | MED | dump; caller `FUN_10015550` — ⚑ corrected (wave 1, 2026-10-03): was "any destroyable air entity" MED; see bosses.md §3.1 — ⚑ label audit (review wave 1) |
+| `FUN_100353e0` | G_EntityGroup.cc | rule #5: any entity whose unit has includeInGroundAccuracyCount (+0x134) and is on screen (`FUN_10016bd0`) | MED | dump; caller `FUN_10015550` — ⚑ corrected (wave 1, 2026-10-03): was "any destroyable ground entity" MED; see bosses.md §3.1 — ⚑ label audit (review wave 1) |
 | `FUN_10034ee0` | G_EntityGroup.cc | rule "Is Tracking Player": live entity of unit with +0xc1 set, dist ≤ range (0 = any) | HIGH | disasm (spawn-and-waves.md §6) |
 | `FUN_10035070` | G_EntityGroup.cc | rule #2 "Is Active": live entity of unit, dist ≤ range (0 = any) | HIGH | disasm (spawn-and-waves.md §6); bosses.md §3.1 MED |
-| `FUN_10036cf0` | G_EntityGroup.cc | entity↔entity collision: same layer (unit+8), harmless XOR, playerProjectile (+0x11b) / canBeHitByPlayerProjectile (+0x11c) pairing, AABB then circle (`FUN_10042f80`); A takes B.damage_FLOAT (to A's owner if passHitsToOwner), then B takes A.damage via `FUN_10014f10` (B-side passHitsToOwner also redirects to A's owner — bug); returns A deleted. Called per entity whose state has Collides (+0x347). NOT the spawn-set executor (that is `FUN_10015b40`) | HIGH | raw `10036fc4..100370e8` (`lfs f1,0x274(r4)`), dump; caller `FUN_10033850` (`10034594 bl`) — ⚑ corrected (wave 1, 2026-10-03): was "state spawn sets executor" LOW; see damage-health-death.md §2.5, spawn-and-waves.md §7, bosses.md §3.4 |
+| `FUN_10036cf0` | G_EntityGroup.cc | entity↔entity collision: same layer (unit+8), harmless XOR, playerProjectile (+0x11b) / canBeHitByPlayerProjectile (+0x11c) pairing, AABB then circle (`FUN_10042f80`); A takes B.damage_FLOAT (to A's owner if passHitsToOwner), then B takes A.damage via `FUN_10014f10` (B-side passHitsToOwner tests and damages A's owner — bug; player shots have no owner, so a passHits turret/bubble hit by a player shot takes the damage on its own shields — only ramming reaches the owner; bosses.md §3.5 ⚑ corrected (review wave 1, 2026-10-03) #I1); returns A deleted. Called per entity whose state has Collides (+0x347). NOT the spawn-set executor (that is `FUN_10015b40`) | HIGH | raw `10036fc4..100370e8` (`lfs f1,0x274(r4)`), dump; caller `FUN_10033850` (`10034594 bl`) — ⚑ corrected (wave 1, 2026-10-03): was "state spawn sets executor" LOW; see damage-health-death.md §2.5, spawn-and-waves.md §7, bosses.md §3.4 |
 | `FUN_10032e60` | G_EntityGroup.cc | level start: reset groups, notice list, id counters, create PERM group, pending list | HIGH | disasm (spawn-and-waves.md §8) |
 | `FUN_10033600` | G_EntityGroup.cc | owner-relative init: offset, orbit radius/angle, owner last pos | HIGH | disasm (spawn-and-waves.md §4) |
 | `FUN_10034b90` | G_EntityGroup.cc | player gone: destroy (0x329) / delete (0x32a) entities owned by that player; caller `FUN_10027e50` | MED | read (spawn-and-waves.md §5, damage-health-death.md §4.3) |
-| `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial (+0x9c) → `FUN_10014670` (switch to its UseThisStateOnWeaponPowerupRelease state; arg 1 = time); callers `FUN_1003b3c0`, `FUN_1003c0d0` | HIGH | read (weapons-projectiles.md §2.3, §2.5) — ⚑ conflict: spawn-and-waves.md §5 reads it as "set named state on entity by id" (arg 1 = state name, MED); the dump passes arg 1 through `FUN_10014670` as the time argument of `FUN_100146f0` |
+| `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial (+0x9c) → `FUN_10014670(entity, now)` (enter its first UseThisStateOnWeaponPowerupRelease state; `now` becomes the state-start time); callers `FUN_1003b3c0`, `FUN_1003c0d0` | HIGH | listing `10034d8c lwz r0,0x9c(r3); cmpw r0,r25`, `10034d98 or r4,r24,r24; bl 0x10014670` (r24 = arg 1); `FUN_10014670` dump passes it as `FUN_100146f0` param_4, stored at +0xa4 — ⚑ corrected (review wave 1, 2026-10-03) (conflict resolved): weapons-projectiles.md §2.3/§2.5 wins; spawn-and-waves.md §5 "set named state on entity by id (arg 1 = state name)" corrected |
 | `FUN_10034de0` | G_EntityGroup.cc | delete entity by id; callers `FUN_10027e50`, `FUN_10029fe0` | MED | read (spawn-and-waves.md §5) |
 | `FUN_10035580` | G_EntityGroup.cc | active group count | MED | read (spawn-and-waves.md §8) |
 | `FUN_100355b0` | G_EntityGroup.cc | debug integrity check / dump (no direct callers) | MED | read (spawn-and-waves.md §8) |
@@ -453,13 +458,13 @@ Counts (tool output, this session):
 | `FUN_100364f0` | G_EntityGroup.cc | delete children whose state has canBeDeletedOnOwnerDeletion | MED | read (spawn-and-waves.md §5) |
 | `FUN_10036610` | G_EntityGroup.cc | per-tick reaper of +0xcb entities: ground count, draw-to-terrain, destroy owner, deletion spawn, `FUN_10036120`, free entity / empty non-PERM group | HIGH | disasm (spawn-and-waves.md §5); damage-health-death.md §4.3 MED; call at `100345d4` |
 | `FUN_10036930` | G_EntityGroup.cc | copy owner visibility / scale / hit-glow fields (useOwners*, visuallyReflectOwnerHits) | HIGH | raw `10033f4c..10033f58` args (bosses.md §3.5); spawn-and-waves.md §4 MED |
-| `FUN_10036ab0` | G_EntityGroup.cc | owner link valid (ptr, serial +0x9c, not deleted) | HIGH | dump 1-liner (spawn-and-waves.md §1.3, damage-health-death.md §4.3, bosses.md §3.5) |
+| `FUN_10036ab0` | G_EntityGroup.cc | owner link valid (ptr, serial +0x9c, not deleted) | MED | dump 1-liner (spawn-and-waves.md §1.3, damage-health-death.md §4.3, bosses.md §3.5) — ⚑ label audit (review wave 1) |
 | `FUN_10036af0` | G_EntityGroup.cc | first live entity of a unit | MED | read (spawn-and-waves.md §8) |
 | `FUN_10036be0` | G_EntityGroup.cc | remove entities of a unit owned by a player (deleteExisting…) | MED | read (spawn-and-waves.md §3.1) |
 | `FUN_10037130` | G_EntityGroup.cc | LockToOwnerLoc: pos = owner + offset | HIGH | disasm (spawn-and-waves.md §4) |
 | `FUN_10037230` | G_EntityGroup.cc | LinkToOwnerLoc: pos += owner displacement | HIGH | disasm (spawn-and-waves.md §4) |
 | `FUN_10037350` | G_EntityGroup.cc | OrbitOwner: angle += trunc(+0x10) deg/tick at radius | HIGH | disasm (spawn-and-waves.md §4) |
-| `FUN_10037580` | G_EntityGroup.cc | player-contact pickup by pickup_Type_ID: coin → money += pickup_Value; exli → life; mult → multiplier step; shie → shields; air/grnd only check player +0xce; other → 1 (entity destroyed) | HIGH | listing `10037580–100376f0` (damage-health-death.md §6, weapons-projectiles.md §4); scoring-bonuses.md §5.1 MED for shie/other; spawn-and-waves.md MED |
+| `FUN_10037580` | G_EntityGroup.cc | player-contact pickup by pickup_Type_ID: coin → money += pickup_Value; exli → life; mult → multiplier step; shie → shields += pickup_Value; spec → nothing; air/grnd only check player +0xce; other → 1 (entity destroyed) | HIGH | listing `10037580–100376f0` (damage-health-death.md §6, weapons-projectiles.md §4); 'shie' `100375f4`→`100376ac`, 'spec' `1003761c`→`100376d8` re-checked — ⚑ corrected (review wave 1, 2026-10-03) #M9: scoring-bonuses.md §5.1/NR 3 now HIGH too; spawn-and-waves.md MED |
 | `FUN_100377f0` | G_EntityGroup.cc | debug tracked-entity spawn notice | MED | read (spawn-and-waves.md §8) |
 | `FUN_10037ed0` | G_EntityGroup.cc | cyclic-motion start velocity (5–6 int draws) | HIGH | disasm (spawn-and-waves.md §3.4) |
 | `FUN_100380e0` | G_EntityGroup.cc | entry notice (once-only list, delay, sound) | MED | read (spawn-and-waves.md §8) |
@@ -472,15 +477,15 @@ Counts (tool output, this session):
 | `FUN_10038810` | G_EntityGroup.cc (span) | free pooled entity | MED | read (spawn-and-waves.md §1.3) |
 | `FUN_10039100` | ~after G_EntityGroup | static init of request templates | LOW | read (spawn-and-waves.md §8) |
 | `FUN_100391f0` | G_PlayerDefinitions.cc | player-definition module init ("Player Definition", builds list); `FUN_10039230` unload | LOW | strings (spawn-and-waves.md §8, unit-def-struct.md §9) |
-| `FUN_10039280` | G_PlayerDefinitions.cc | build player-definition list | HIGH | read (unit-def-struct.md §9) |
-| `FUN_10039460` | G_PlayerDefinitions.cc | plde index by tag ID (−1 if none) | HIGH | read (unit-def-struct.md §9) |
+| `FUN_10039280` | G_PlayerDefinitions.cc | build player-definition list | MED | read (unit-def-struct.md §9) — ⚑ label audit (review wave 1) |
+| `FUN_10039460` | G_PlayerDefinitions.cc | plde index by tag ID (−1 if none) | MED | read (unit-def-struct.md §9) — ⚑ label audit (review wave 1) |
 | `FUN_10039520` | G_PlayerDefinitions.cc | i-th plde record | MED | read (unit-def-struct.md §9) |
 | `FUN_100395d0` | G_PlayerDefinitions.cc | unit referenced by plde / free list / collect IDs / free plde list (`FUN_100395d0` / `FUN_10039940` / `FUN_10039a80` / `FUN_10039c00`) | MED | read (unit-def-struct.md §9) |
-| `FUN_100396c0` | G_PlayerDefinitions.cc | plde referenced unit IDs; `FUN_100399a0` load plde resources | HIGH | read (unit-def-struct.md §9) |
+| `FUN_100396c0` | G_PlayerDefinitions.cc | plde referenced unit IDs; `FUN_100399a0` load plde resources | MED | read (unit-def-struct.md §9) — ⚑ label audit (review wave 1) |
 | `FUN_10039cf0` | G_PlayerDefinitions.cc | load plde i (0x108 record, defaults, parse, error ⇒ fatal) | HIGH | listing (unit-def-struct.md §9) |
 | `FUN_10039e70` | G_PlayerDefinitions.cc | parse plde: 57 keys → offsets 0x008–0x107 (table in unit-def-struct.md §9 and player-physics.md role rows) | HIGH | listing reader calls `10039ee8..1003a758` (unit-def-struct.md §9, player-physics.md) |
 | `FUN_1003a780` | U_Manager.cc | manager init ("Manager God") | MED | strings (unit-def-struct.md §9) |
-| `FUN_1003cf10` | G_UnitDefinitions.cc | unit manager init: debug console commands (LOGSCROLLPAUSERS, LOGFAMILIES, LOGUNUSEDUNITS), Units Cache load or master-list build | HIGH | read (unit-def-struct.md §1); weapons-projectiles.md MED, bosses.md LOW (strings only) |
+| `FUN_1003cf10` | G_UnitDefinitions.cc | unit-module init: register "Unit Definition" (`FUN_1003a870`), 5 console names on 4 handlers (LOGSCROLLPAUSERS, LOGFAMILIES/FAMILIES, LOGUNUSEDUNITS, UNITSCORES; handlers are undefined code `0x10041a40/b30/b70/d70`), then Units Cache read `FUN_100420f0`, falling back to the full build `FUN_1003d0a0(1)` | HIGH | listing `1003cf34 bl 0x1003a870`, `1003cf5c…1003cfdc` 4× `bl 0x1002d080`, `1003cfe4 bl 0x100420f0`, `1003d000 bl 0x1003d0a0`; caller `FUN_100000e0` — ⚑ corrected (review wave 1, 2026-10-03) (conflict resolved): unit-def-struct.md §1 wins; bosses.md "console unit commands" (LOW) corrected |
 | `FUN_1003d030` | G_UnitDefinitions.cc | unit-defs module teardown | MED | read (weapons-projectiles.md §5) |
 | `FUN_1003d0a0` | G_UnitDefinitions.cc | build master unit list; numStates check passes 0..20 (log + assert only < 0 or > 20) | HIGH | listing `1003d1bc–1003d218` — ⚑ corrected (wave 1, 2026-10-03): was "build master unit list (1..20 states)" HIGH; see unit-def-struct.md §2.5 |
 | `FUN_1003d650` | G_UnitDefinitions.cc | compiler copy-assignment of unit `fileData` (unit+0xc, 0x7a54 B); only for the Units Cache writer `FUN_10041e40` | HIGH | listing `1003d904–1003dcb8` — ⚑ corrected (review 2026-10-03) #9 — ⚑ corrected (wave 1, 2026-10-03): was "unit-definition struct copy (field-by-field assignment)" MED; see unit-def-struct.md §1 |
@@ -488,8 +493,8 @@ Counts (tool output, this session):
 | `FUN_1003fda0` | G_UnitDefinitions.cc | parse unit definition | HIGH | read |
 | `FUN_10040920` | G_UnitDefinitions.cc | parse one state | HIGH | read |
 | `FUN_1003d2f0` | G_UnitDefinitions.cc | find unit definition by ID (unit+4 = tag) | HIGH | listing `1003d35c` — ⚑ corrected (wave 1, 2026-10-03): was "find unit definition by ID" MED; see unit-def-struct.md §1 |
-| `FUN_1003e680` | G_UnitDefinitions.cc | load/verify a unit's sounds + sprites, recurse into referenced units | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "load unit resources (sounds/sprites)" MED; see unit-def-struct.md §1 |
-| `FUN_1003f4e0` | G_UnitDefinitions.cc | add unit to family list (0x4c family records) | HIGH | read — ⚑ corrected (wave 1, 2026-10-03): was "add unit to family list" MED; see unit-def-struct.md §1 |
+| `FUN_1003e680` | G_UnitDefinitions.cc | load/verify a unit's sounds + sprites, recurse into referenced units | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "load unit resources (sounds/sprites)" MED; see unit-def-struct.md §1 — ⚑ label audit (review wave 1) |
+| `FUN_1003f4e0` | G_UnitDefinitions.cc | add unit to family list (0x4c family records) | MED | read — ⚑ corrected (wave 1, 2026-10-03): was "add unit to family list" MED; see unit-def-struct.md §1 — ⚑ label audit (review wave 1) |
 | `FUN_1003d3a0` | G_UnitDefinitions.cc | i-th unit of the master list | MED | read (unit-def-struct.md §1) |
 | `FUN_1003d450` | G_UnitDefinitions.cc | family record of a unit (" Misc" if no family name) | HIGH | read; `0x100ed01f` (unit-def-struct.md §1) |
 | `FUN_1003d550` | G_UnitDefinitions.cc | find unit by ID, family list first then global | MED | read (unit-def-struct.md §1) |
@@ -498,19 +503,19 @@ Counts (tool output, this session):
 | `FUN_1003e1e0` | G_UnitDefinitions.cc | unit-definition defaults (incl. 20 states, state 0 "State 1") | HIGH | listing (unit-def-struct.md §3) |
 | `FUN_1003e3d0` | G_UnitDefinitions.cc | state defaults | HIGH | listing (unit-def-struct.md §4) |
 | `FUN_1003e490` | G_UnitDefinitions.cc | spawn-set defaults | HIGH | listing (unit-def-struct.md §6) |
-| `FUN_1003e510` | G_UnitDefinitions.cc | reset loaded-unit-resources list | HIGH | string + callers (unit-def-struct.md §1) |
+| `FUN_1003e510` | G_UnitDefinitions.cc | reset loaded-unit-resources list | MED | string + callers (unit-def-struct.md §1) — ⚑ label audit (review wave 1) |
 | `FUN_1003e580` | G_UnitDefinitions.cc | load resources of a unit ID | HIGH | listing (unit-def-struct.md §1) |
-| `FUN_1003ec70` | G_UnitDefinitions.cc | list unit IDs referenced by a unit | HIGH | read (unit-def-struct.md §1) |
+| `FUN_1003ec70` | G_UnitDefinitions.cc | list unit IDs referenced by a unit | MED | read (unit-def-struct.md §1) — ⚑ label audit (review wave 1) |
 | `FUN_1003ef90` | G_UnitDefinitions.cc | is unit referenced by another unit (LOGUNUSEDUNITS) | MED | read (unit-def-struct.md §1) |
 | `FUN_1003f0b0` | G_UnitDefinitions.cc | collect all unit sprite/sound IDs into a list | MED | read (unit-def-struct.md §1) |
 | `FUN_1003f280` | G_UnitDefinitions.cc | master-list integrity check (magic 0x499602d2) | HIGH | listing (unit-def-struct.md §1) |
 | `FUN_1003f360` | G_UnitDefinitions.cc | free master list / ID list / family list / family / resource list (`FUN_1003f360` / `FUN_1003f410` / `FUN_1003f830` / `FUN_1003fa10` / `FUN_1003fa80`) | MED | read (unit-def-struct.md §1) |
 | `FUN_1003f470` | G_UnitDefinitions.cc | rule-block defaults (5 rules) | HIGH | listing (unit-def-struct.md §5) |
 | `FUN_1003f8b0` | G_UnitDefinitions.cc | log family table | MED | strings (unit-def-struct.md §1) |
-| `FUN_1003fb60` | G_UnitDefinitions.cc | test-and-insert unit ID into the loaded-resources list | HIGH | read (unit-def-struct.md §1) |
-| `FUN_10041960` | G_UnitDefinitions.cc | sprite (parse time) / sound / sprite (load time) existence check, else `'none'` (`FUN_10041960` / `FUN_100417d0` / `FUN_100418a0`) | HIGH | read (unit-def-struct.md §2) |
-| `FUN_10041e40` | G_UnitDefinitions.cc | Units Cache writer (format unit-def-struct.md §8) | HIGH | read (unit-def-struct.md §8) — ⚑ corrected (wave 1, 2026-10-03): the fix-pass note named `FUN_100420f0` as the writer |
-| `FUN_100420f0` | G_UnitDefinitions.cc | Units Cache reader / validator | HIGH | read (unit-def-struct.md §8) — ⚑ corrected (wave 1, 2026-10-03): was "Units Cache writer" (function-roles.md §1 fix-pass notes, unread); see unit-def-struct.md §8 |
+| `FUN_1003fb60` | G_UnitDefinitions.cc | test-and-insert unit ID into the loaded-resources list | MED | read (unit-def-struct.md §1) — ⚑ label audit (review wave 1) |
+| `FUN_10041960` | G_UnitDefinitions.cc | sprite (parse time) / sound / sprite (load time) existence check, else `'none'` (`FUN_10041960` / `FUN_100417d0` / `FUN_100418a0`) | MED | read (unit-def-struct.md §2) — ⚑ label audit (review wave 1) |
+| `FUN_10041e40` | G_UnitDefinitions.cc | Units Cache writer (format unit-def-struct.md §8) | MED | read (unit-def-struct.md §8) — ⚑ corrected (wave 1, 2026-10-03): the fix-pass note named `FUN_100420f0` as the writer — ⚑ label audit (review wave 1) |
+| `FUN_100420f0` | G_UnitDefinitions.cc | Units Cache reader / validator | MED | read (unit-def-struct.md §8) — ⚑ corrected (wave 1, 2026-10-03): was "Units Cache writer" (function-roles.md §1 fix-pass notes, unread); see unit-def-struct.md §8 — ⚑ label audit (review wave 1) |
 | `FUN_100426e0` | ? (after G_UnitDefinitions) | write a data file in the Data folder (Units Cache helper) | MED | strings; caller `FUN_10041e40` (damage-health-death.md §1) |
 | `FUN_100428b0` | ? | static initialiser copying constant records | LOW | decompile (damage-health-death.md §1) |
 | `FUN_100431f0` | ? | init: two RandomRange(0,99) + `FUN_1002d080`; `FUN_10043280` teardown | LOW | decompile; caller `FUN_100000e0` (damage-health-death.md §1) |
@@ -575,7 +580,24 @@ Wave 1 notes (⚑ wave 1, 2026-10-03; nine topical files, rows merged above, pen
 - The fix-pass "still unread" list is now read: `FUN_10036610`/`FUN_10036120`
   (spawn-and-waves.md §5), `FUN_1003e1e0` (unit-def-struct.md §3), `FUN_100420f0` (= Units Cache
   reader, not writer; writer `FUN_10041e40`, unit-def-struct.md §8).
-- Open conflicts flagged in rows: `FUN_10017150`, `FUN_10034ce0`, `FUN_10010570`.
+- ~~Open conflicts flagged in rows: `FUN_10017150`, `FUN_10034ce0`, `FUN_10010570`.~~ → resolved
+  in the review-wave-1 fix pass (below).
+
+Review wave 1 fix-pass notes (⚑ corrected (review wave 1, 2026-10-03); review verdict
+ACCEPT_WITH_FIXES, `REVIEW-wave1-2026-10-03.md`):
+- **Conflicts resolved from the raw listing** (`$W/disasm-fix.txt`, own project copy
+  `$W/work-fix`): `FUN_10017150` = rotation gate (not a spawn-set reader); `FUN_10034ce0(now, id)`
+  (arg 1 is the time, not a state name); `FUN_10010570` = REVERSE (SCROLL is undefined
+  `0x100104f0`); `FUN_1003cf10` = unit-module init + console registration + cache load (not
+  "console unit commands"). Rows above carry the winning reading and the listing lines.
+- **passHitsToOwner (review I1):** only ramming passes damage to the owner; player shots land on
+  the turret's own shields (`FUN_10036cf0` row; bosses.md §3.5, §4 turret table).
+- **Label audit (review M8):** HIGH rows whose only evidence was "dump"/"read"/"strings"/
+  "accessor" and that no wave-1 file backs with a listing line were lowered to MED — 68 rows here,
+  each marked `— ⚑ label audit (review wave 1)`; the same rows were lowered in the owning files'
+  role-row sections (72 rows) and matching body tables (34 rows). Rows kept HIGH by pointing to
+  another file's listing are marked "HIGH kept". `FUN_1003cf10`, `FUN_10034ce0` (listings read in
+  the fix pass) and `FUN_1000f7a0` (TOC slots re-resolved) stayed HIGH.
 
 ## 2. Data-key consumers (`perm_consumers.py`)
 

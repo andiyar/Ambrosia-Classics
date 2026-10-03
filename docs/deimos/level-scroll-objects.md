@@ -396,9 +396,13 @@ Reading:
 4. `FUN_1002b3a0(sector)` → `FUN_1002b6d0('PEAA'/'PEAG'/'SPEC', sector)`: per-sector item setup,
    probably the level-gated weapon availability; not read.
 5. `FUN_10027de0(player, 1, 0)` at level end and `FUN_10027db0`: player end-of-level mode; not read.
-6. Weapon carry-over details of `FUN_1003af90(handler, 1)` and the start-weapon pick
-   `FUN_1003cdb0` (decompiler dropped arguments; its "best" bookkeeping looks inverted) — weapons
-   reader.
+6. ~~Weapon carry-over details of `FUN_1003af90(handler, 1)` and the start-weapon pick
+   `FUN_1003cdb0` ("best" bookkeeping looks inverted)~~ → `FUN_1003cdb0` closed: not inverted.
+   Over weapon defs of class `PEAA` (`1003cdf4 subis r0,r4,0x5045; cmplwi r0,0x4141`) with
+   `+0x13c ≤ sector ≤ +0x140` (`1003ce00–1003ce14`), the first match is taken and a later one
+   replaces it only when best.min < cand.min (`1003ce28 lwz r0,0x13c(r30); cmpw r0,r4; bge
+   skip`) — the highest minimum sector wins, ties keep the first; weapons-projectiles.md §1.3 is
+   right. ⚑ corrected (review wave 1, 2026-10-03) #M9. `FUN_1003af90` carry-over details stay with the weapons reader.
 7. Which on-screen text the level select shows for "Starting Bonus" vs "No Starting Bonus"
    (`pgsl` lines 3/6) — the code-side consequences are §8 (1 life, later air weapon).
 8. Whether entities still in their spawn countdown (+0xb0 > 0) can pause the scroll (they appear
@@ -409,56 +413,60 @@ Reading:
 ## Role-table rows (for merge)
 | function | module | role | label | evidence |
 |---|---|---|---|---|
-| `FUN_1000f7a0` | G_Background.cc | module init: register "Background", 12 debug console command names (10 handlers) | HIGH | strings + TOC handler slots |
+| `FUN_1000f7a0` | G_Background.cc | module init: register "Background", 12 debug console command names (10 handlers) | HIGH | strings + TOC handler slots (re-checked in the fix pass: REVERSE slot `0x100df07c` → TVector `0x100e0890` → `0x10010570`; SCROLL/SCROLLING `0x100df094` → `0x100e08c0` → `0x100104f0`, memory image) — ⚑ label audit (review wave 1): HIGH kept on data evidence |
 | `FUN_1000f990` | G_Background.cc | free media mask if module live (session end) | MED | read |
 | `FUN_1000f9c0` | G_Background.cc | module shutdown, free mask | MED | read |
 | `FUN_1000fa10` | G_Background.cc | level-load spawn pass: rows bottom … top−64 (3600…3056) | HIGH | listing `1000fa48 subi r3,r3,0x41` |
 | `FUN_1000fa90` | G_Background.cc | level scroll init: speed 1, offset 0, window top = rect.bottom − 480 (3120), progress 481 | HIGH | listing `1000fb38` |
-| `FUN_1000fbc0` | G_Background.cc | load map + media mask, size/aspect asserts, mask element size (unchanged; evidence added §9) | HIGH | read |
-| `FUN_1000fec0` | G_Background.cc | scroll window top (map row of world y 0) | HIGH | read; callers use it for map↔world |
-| `FUN_1000fed0` | G_Background.cc | pixels scrolled this tick | HIGH | read; ground entities add it to y |
-| `FUN_1000fee0` | G_Background.cc | is map point water (mask pixel 0x001f) | HIGH | read |
+| `FUN_1000fbc0` | G_Background.cc | load map + media mask, size/aspect asserts, mask element size (unchanged; evidence added §9) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1000fec0` | G_Background.cc | scroll window top (map row of world y 0) | MED | read; callers use it for map↔world — ⚑ label audit (review wave 1) |
+| `FUN_1000fed0` | G_Background.cc | pixels scrolled this tick | MED | read; ground entities add it to y — ⚑ label audit (review wave 1) |
+| `FUN_1000fee0` | G_Background.cc | is map point water (mask pixel 0x001f) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1000ffc0` | G_Background.cc | resume scroll (speed 1) unless level ended | HIGH | listing |
-| `FUN_1000ffe0` | G_Background.cc | pause scroll (speed 0) | HIGH | read |
-| `FUN_1000fff0` | G_Background.cc | scroll paused? | HIGH | read |
+| `FUN_1000ffe0` | G_Background.cc | pause scroll (speed 0) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_1000fff0` | G_Background.cc | scroll paused? | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10010000` | G_Background.cc | per-tick scroll step; level end when progress ≥ 3600; spawn row top−64 | HIGH | listing |
-| `FUN_100100a0` | G_Background.cc | horizontal offset getter | HIGH | read |
+| `FUN_100100a0` | G_Background.cc | horizontal offset getter | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_100100b0` | G_Background.cc | horizontal offset ±1, clamp [−32, 31]; driven by player left/right input | HIGH | listing + caller `10029508` |
 | ⚑ corrected `FUN_10010120` | G_Background.cc | draw terrain window: map (top, off+32, top+480, off+448) → buffer (0,0,480,416) (was MED "draw terrain window") | HIGH | listing |
 | `FUN_10010220` | G_Background.cc | advance window by speed, clamp, set scrolled delta | HIGH | listing |
-| `FUN_10010360` | G_Background.cc | free media mask | HIGH | read |
+| `FUN_10010360` | G_Background.cc | free media mask | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10010570` | G_Background.cc | console REVERSE (speed 1↔−1), debug | HIGH | listing |
-| `FUN_10010860` | G_Background.cc | console LEVELSPAWNS toggle, debug | HIGH | read |
+| `FUN_10010860` | G_Background.cc | console LEVELSPAWNS toggle, debug | MED | read — ⚑ label audit (review wave 1) |
 | (undefined) `0x100103b0` `0x10010430` `0x10010480` `0x100104f0` `0x10010600` `0x10010640` `0x100106f0` `0x100107a0` | G_Background.cc | console BACKSIZE, ERASEBACK, JUMP, SCROLL, ROW, LOGMEDIA, MEDIASIZE, MEDIA handlers (no Ghidra function) | HIGH | TOC slots `0x100df07c…a0` + listings |
-| `FUN_10011a70` | G_Level.cc | module init: register "Level", build order list | HIGH | read |
+| `FUN_10011a70` | G_Level.cc | module init: register "Level", build order list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10011ab0` | G_Level.cc | module shutdown, free order list | MED | read |
-| `FUN_10011b00` | G_Level.cc | number of unregistered levels = 4 (demo, out of scope) | HIGH | read |
+| `FUN_10011b00` | G_Level.cc | number of unregistered levels = 4 (demo, out of scope) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10011b10` | G_Level.cc | free order list (demo cut) | MED | read |
-| `FUN_10011b30` | G_Level.cc | level among first 4 identifiers? (demo, out of scope) | HIGH | read |
-| `FUN_10011de0` | G_Level.cc | level count (list length, 12) | HIGH | read (`FUN_10000ce0` = count) — was LOW |
-| `FUN_10011e30` | G_Level.cc | tag → sector (0 if absent) | HIGH | read — was MED |
-| `FUN_10011f00` | G_Level.cc | sector → tag (`none` if absent) | HIGH | read |
-| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | HIGH | read |
-| `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | HIGH | read — was MED |
-| `FUN_10012170` | G_Level.cc | free a level-object list | HIGH | read |
-| `FUN_100121c0` | G_Level.cc | free the order list | HIGH | read |
-| `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | HIGH | read — was MED |
+| `FUN_10011b30` | G_Level.cc | level among first 4 identifiers? (demo, out of scope) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10011bf0` | ~after G_Background (G_Level span) | set byte `DAT_100e0151` = 1 (the flag `FUN_100120f0` asserts clear); called twice by `FUN_100015a0` on the pak version-mismatch error path ("Sorry, but this version of Deimos…") | MED | dump (2 lines); caller `FUN_100015a0` — not re-read in wave 1; ⚑ corrected (review wave 1, 2026-10-03) #M7 (new row) |
+| `FUN_10011c00` | G_Level.cc | build level order list from encoded table (existing bank row; caller `FUN_10011a70`) | HIGH (bank, unchanged) | not re-read in wave 1 — ⚑ corrected (review wave 1, 2026-10-03) #M7 (new row) |
+| `FUN_10011de0` | G_Level.cc | level count (list length, 12) | MED | read (`FUN_10000ce0` = count) — was LOW — ⚑ label audit (review wave 1) |
+| `FUN_10011e30` | G_Level.cc | tag → sector (0 if absent) | MED | read — was MED — ⚑ label audit (review wave 1) |
+| `FUN_10011f00` | G_Level.cc | sector → tag (`none` if absent) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | MED | read — was MED — ⚑ label audit (review wave 1) |
+| `FUN_10012170` | G_Level.cc | free a level-object list | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_100121c0` | G_Level.cc | free the order list | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_100064d0` | G_Game.cc (span) | level start: next sector, per-level resets, scroll init, load spawns, Notice_Level_NN | HIGH | read + listing |
-| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | HIGH | read |
-| `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | HIGH | read |
+| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10007130` / `FUN_10007150` / `FUN_10007280` | G_Game.cc (span) | per-level counter resets (game struct +0x16c…, +0x3c/40, +0x48…) | MED | read |
 | ⚑ corrected `FUN_10033090` | G_EntityGroup.cc (span) | spawn pending level objects whose yLoc == row; request y flagged "map row"; record always removed (was HIGH "spawn level objects at a scroll row") | HIGH | listing |
 | ⚑ corrected `FUN_10035900` | G_EntityGroup.cc | build pending list; x −= 32 iff unit `isGroundBased` (unit+8 == `grnd`), placement `#layer_ID` unused (was: "grnd objects" by layer) | HIGH | listing `10035abc` |
 | `FUN_1003fc50` | G_UnitDefinitions.cc | load unit def; unit+8 = `grnd`/`air ` from isGroundBased | HIGH | listing `1003fd20` |
-| `FUN_1003d2f0` | G_UnitDefinitions.cc | unit def by tag (list lookup, unit+4 = tag) | HIGH | read |
+| `FUN_1003d2f0` | G_UnitDefinitions.cc | unit def by tag (list lookup, unit+4 = tag) | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in unit-def-struct.md role rows |
 | `FUN_10026cc0` | G_Player.cc | session lives: life_NumInitial if start sector 1 else 1; extra-life threshold | HIGH | listing |
-| `FUN_10026d60` | G_Player.cc | set lives (stored + 0x1524dcef) | HIGH | read |
+| `FUN_10026d60` | G_Player.cc | set lives (stored + 0x1524dcef) | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | `FUN_10027620` | G_Player.cc | set coins held (stored + 0xb2cce) | MED | read + coin-bonus use |
-| `FUN_100299f0` | G_Player.cc | score getter (stored − 0x5532a3e) | HIGH | read |
+| `FUN_100299f0` | G_Player.cc | score getter (stored − 0x5532a3e) | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | `FUN_10012ca0` | G_Sprite (span) | move entity (ground: + scrolled px), in-area test with margin | HIGH | listing (bounds MED) |
-| `FUN_10000e10` / `FUN_10000c00` / `FUN_100009e0` | U_LinkedList.cc | iterate / unlink-current / append (node = prev,next,data) | HIGH | read + assert string |
-Not read in scope: none of the functions in `0x1000fbc0–0x10010860` or `0x10011c00–0x100122f0`
-is unread. Callees named but not read: `FUN_1002b3a0`→`FUN_1002b6d0`, `FUN_10027de0`,
+| `FUN_10000e10` / `FUN_10000c00` / `FUN_100009e0` | U_LinkedList.cc | iterate / unlink-current / append (node = prev,next,data) | MED | read + assert string — ⚑ label audit (review wave 1) |
+Not read in scope: none of the functions in `0x1000fbc0–0x10010860`, `0x10011a70–0x10011b30` or
+`0x10011de0–0x100122f0` is unread. Not re-read: `FUN_10011c00` (79 lines, build level order list, existing bank row) and
+`FUN_10011bf0` (10 lines) — rows below. ⚑ corrected (review wave 1, 2026-10-03) #M7: the old line claimed `0x10011c00–` was
+fully read. Callees named but not read: `FUN_1002b3a0`→`FUN_1002b6d0`, `FUN_10027de0`,
 `FUN_10027db0`, `FUN_1000b9a0`, `FUN_100467c0`, `FUN_1004a950`, `FUN_10018130`, `FUN_100189f0`,
 `FUN_10031ad0`, `FUN_10031400`, `FUN_10036af0`, `FUN_10006110`, `FUN_10005cf0`.
 

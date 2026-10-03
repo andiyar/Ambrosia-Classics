@@ -392,14 +392,14 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_10012750` | step visibility (+0x68→+0x6c by +0x70) and tint (+0x58→+0x5c by +0x60), floor at table[0] | MED | dump |
 | `FUN_10012840` | step scale +0x84→+0x88 by +0x8c, sets dirty | MED | dump |
 | `FUN_100128c0` | empty stub | HIGH | dump `return;` |
-| `FUN_100128d0` | get position (x,y) | HIGH | dump, §5.1 |
-| `FUN_100128f0` | get position as two outs | HIGH | dump |
-| `FUN_10012910` | set position (x,y) | HIGH | dump `*param_1 = *param_2` |
+| `FUN_100128d0` | get position (x,y) | MED | dump, §5.1 — ⚑ label audit (review wave 1) |
+| `FUN_100128f0` | get position as two outs | MED | dump — ⚑ label audit (review wave 1) |
+| `FUN_10012910` | set position (x,y) | MED | dump `*param_1 = *param_2` — ⚑ label audit (review wave 1) |
 | `FUN_10012930` | set position from f1,f2 | MED | dump (float args dropped) |
 | `FUN_10012940` | refresh frame size + half size when dirty | MED | dump |
 | `FUN_10012a00` | bounding Rect (t,l,b,r) | HIGH | dump |
 | `FUN_10012ad0` | bounding box (l,t,r,b) | HIGH | dump |
-| `FUN_10012ba0` | get frame w,h | HIGH | dump |
+| `FUN_10012ba0` | get frame w,h | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10012bc0` / `FUN_10012c00` / `FUN_10012c10` | hit glow start / stop / tick (32↔4 by step) | MED | dump; callers damage/pickup |
 | `FUN_10012ca0` | **integrate position (+scroll for ground) and cull** | HIGH | §2.1, §7 |
 | `FUN_10012f20` | draw object if visibility > 0 (shadow then sprite) | MED | dump |
@@ -408,10 +408,10 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_10014120` | static init (entity globals) | LOW | dump |
 | `FUN_100141a0` | G_Entity ctor | MED | dump (calls 125d0, 142f0) |
 | `FUN_10014290` | G_Entity dtor | MED | dump |
-| `FUN_100142f0` | G_Entity reset (§3 init values) | HIGH | dump |
-| `FUN_100144a0` | bind unit def; allocate per-state spawn runtime lists (0x18 each, "newSpawnInfoPtr"); `drawLayer hud ` → +0x18 = 0 | HIGH | dump strings G_Entity.cc |
+| `FUN_100142f0` | G_Entity reset (§3 init values) | MED | dump — ⚑ label audit (review wave 1) |
+| `FUN_100144a0` | bind unit def; allocate per-state spawn runtime lists (0x18 each, "newSpawnInfoPtr"); `drawLayer hud ` → +0x18 = 0 | MED | dump strings G_Entity.cc — ⚑ label audit (review wave 1) |
 | `FUN_10014650` | current state pointer | HIGH | bank |
-| `FUN_10014670` | enter first state flagged `UseThisStateOnWeaponPowerupRelease` (+0x355) | HIGH | dump `0x835` = 0x4e0+0x355 |
+| `FUN_10014670` | enter first state flagged `UseThisStateOnWeaponPowerupRelease` (+0x355) | MED | dump `0x835` = 0x4e0+0x355 — ⚑ label audit (review wave 1) |
 | `FUN_100146f0` | change state by name + velocity set-up (§4) | HIGH | listing |
 | `FUN_10015280` | **motion controller** (§5) | HIGH | listing |
 | `FUN_10015550` | evaluate 5 rules | — | bank row stands |
@@ -455,9 +455,13 @@ point (208, 330), speed draw = 6.0.
 1. Spawn: compass 180 → `h' = 180 − 180 = 0`; v = 6·(S[0], C[0]) = (0, 6) (down). State-0 entry
    (`param_2 = 1`): s = 6, M = 7, D = 0 → step = min(0, 1) = 0 → s1 = 6 → accel = 6·(0,1) −
    (0,6) = (0,0); desired = (0,7). Each tick `FUN_10017a10`: vy 6 < 7 → vy += 0 → stays **6 px/tick**.
-2. Range: before update n the centre is at y = −100 + 6n; `dist = sqrt(trunc(0² + (330 − y)²))
-   = 430 − 6n`; n = 48 → 142 (not < 140), **n = 49 → 136 < 140** → "RULE - Wait Anim Done"
-   (the 50–60-tick timer would fire one or more ticks later, so the range trigger wins).
+2. Range: the range test runs before integration in the same update (§1), so at the test of
+   update n the centre is at y = −100 + 6(n−1); `dist = sqrt(trunc(0² + (330 − y)²)) = 430 −
+   6(n−1)`; n = 49 → 142 (not < 140), **n = 50 → 136 < 140** → "RULE - Wait Anim Done" (the 50–60-tick
+   timer would fire one or more ticks later, so the range trigger wins). Update 1 is the first
+   update the entity gets; whether that is its spawn tick is open (spawn-and-waves.md NR 4), so the
+   trigger tick may shift by one more. [MED] ⚑ corrected (review wave 1, 2026-10-03) #M4: was
+   "before update n the centre is at y = −100 + 6n … n = 49 → 136" (off by one update).
 3. Entry (`param_2 = 0`): h' = angle of (0,6) = 0; s = 6 = M → step 0, s1 = 6 → accel 0, desired
    (0,6). Same tick, new state Hunts → `FUN_10016cc0` with M 6, D 0.25: x = 208 = tx → **tie →
    ax = −0.25**; y = 194 < 330 → ay = +0.25 → v = (−0.25, 6.25) → vy clamped to 6 → v = (−0.25,
@@ -497,15 +501,15 @@ offset, which of timer/range fires first for a given member) is constructed, not
 | function | module | role | conf | evidence |
 |---|---|---|---|---|
 | `FUN_10012ca0` | G_GameObject (span) | integrate position: ground `y += scroll delta`; `x += vx; y += vy`; cull with margin (128) | HIGH | listing `10012cc0..10012e30` (units-movement.md §2.1, §7) |
-| `FUN_10012910` | G_GameObject (span) | set position (x,y) | HIGH | dump; callers `FUN_10037930`, `FUN_10028170` |
-| `FUN_100128d0` | G_GameObject (span) | get position | HIGH | dump |
-| `FUN_10012ad0` | G_GameObject (span) | bounding box from centre ± half size | HIGH | dump |
+| `FUN_10012910` | G_GameObject (span) | set position (x,y) | MED | dump; callers `FUN_10037930`, `FUN_10028170` — ⚑ label audit (review wave 1) |
+| `FUN_100128d0` | G_GameObject (span) | get position | MED | dump — ⚑ label audit (review wave 1) |
+| `FUN_10012ad0` | G_GameObject (span) | bounding box from centre ± half size | HIGH | dump — ⚑ label audit (review wave 1): HIGH kept — listing evidence in damage-health-death.md role rows |
 | `FUN_10012650` | G_GameObject (span) | object reset (air=1, layer `defa`, sprite none) | MED | dump |
-| `FUN_100142f0` | G_Entity.cc (span) | entity reset (target none `+0x118=−1`, velocities 0) | HIGH | dump |
-| `FUN_100144a0` | G_Entity.cc | bind unit def; allocate per-state spawn runtime lists | HIGH | strings `newSpawnInfoPtr`, `G_Entity.cc` |
+| `FUN_100142f0` | G_Entity.cc (span) | entity reset (target none `+0x118=−1`, velocities 0) | MED | dump — ⚑ label audit (review wave 1) |
+| `FUN_100144a0` | G_Entity.cc | bind unit def; allocate per-state spawn runtime lists | MED | strings `newSpawnInfoPtr`, `G_Entity.cc` — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_100146f0` | G_Entity.cc | change state by name (last match wins) + velocity ramp set-up (accel = s1·dir − v, desired = MaxSpeed·dir) + flee start/stop | HIGH | listing `10014bac..10014db4`; was MED "change state by name" |
-| `FUN_10014670` | G_Entity.cc (span) | enter `UseThisStateOnWeaponPowerupRelease` state | HIGH | dump `+0x835` |
-| `FUN_10017e70` | G_Entity.cc (span) | enter `UseThisStateOnShieldDepletion` state | HIGH | dump `+0x836`; caller `FUN_10014f10` |
+| `FUN_10014670` | G_Entity.cc (span) | enter `UseThisStateOnWeaponPowerupRelease` state | MED | dump `+0x835` — ⚑ label audit (review wave 1) |
+| `FUN_10017e70` | G_Entity.cc (span) | enter `UseThisStateOnShieldDepletion` state | HIGH | dump `+0x836`; caller `FUN_10014f10` — ⚑ label audit (review wave 1): HIGH kept — listing evidence in damage-health-death.md role rows |
 | `FUN_10015280` | G_Entity.cc (span) | motion controller: nearest player, no-player actions, cyclic, constrain, OnRange trigger, hold/hunt/ramp | HIGH | listing `10015280..1001554c` |
 | `FUN_10015930` | G_Entity.cc (span) | sprite animation step (row from heading, loop/ping-pong/stop, random frames) | HIGH | listing `10015930..10015b20` |
 | `FUN_10015b40` | G_Entity.cc (span) | rotation gate + per-tick spawn-set emitter (rate/volley/delay, rotated/absolute offsets) → `FUN_10033220` | HIGH | listing `10015b40..100161b0` |
@@ -523,14 +527,14 @@ offset, which of timer/range fires first for a given member) is constructed, not
 | `FUN_100161c0` | G_Entity.cc (span) | heading of current frame | MED | dump |
 | `FUN_10016230` | G_Entity.cc (span) | frame for heading (rounded) | MED | dump |
 | `FUN_10005d40` | G_Game (span) | nearest active player: pos, distance, player number (ties → player 1) | HIGH | listing `10005d40..10005ec0` |
-| ⚑ corrected `FUN_10026c90` | G_Player.cc (span) | get player number (`+0xcc`) | HIGH | dump one-liner; `FUN_10026410` "Setting Up Player %i"; was described as "player hit" in waves §3 step 8 / INDEX #24 |
+| ⚑ corrected `FUN_10026c90` | G_Player.cc (span) | get player number (`+0xcc`) | HIGH | dump one-liner; `FUN_10026410` "Setting Up Player %i"; was described as "player hit" in waves §3 step 8 / INDEX #24 — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | `FUN_10042920` | trig (span) | build atan/sqrt/sin/cos tables | HIGH | listing; glue `cos`/`sin`/`atan`/`sqrt` |
 | `FUN_10042ad0` / `FUN_10043090` | trig | heading (compass int) from two points | HIGH | listing |
 | `FUN_10042ee0` / `FUN_10042f00` | trig | cos / sin of int degrees (table) | HIGH | listing |
 | `FUN_10042b80` / `FUN_10042b30` | trig | vector = speed·(sin h', cos h') | HIGH | listing |
 | `FUN_10042f20` | trig | sqrt(int) via table < 16384 | HIGH | listing |
 | `FUN_10043040` | trig | compass ↔ internal heading (180 − h) | HIGH | listing |
-| `FUN_1000fed0` | G_Background (span) | pixels scrolled this tick | HIGH | dump; writer `FUN_10010220` |
+| `FUN_1000fed0` | G_Background (span) | pixels scrolled this tick | MED | dump; writer `FUN_10010220` — ⚑ label audit (review wave 1) |
 | `FUN_10018070`…`FUN_100184b0` | Notice (strings) | notice start/stop/reset/post/tick/draw (see §10) | MED | strings + dump |
 | `FUN_100125d0` / `FUN_100141a0` | G_GameObject / G_Entity | constructors | MED | dump |
 

@@ -33,7 +33,8 @@ holds every single-entity spawn without a non-PERM owner and is never freed when
 ### 1.1 Spawn request (0x2c bytes, argument of `FUN_10033220`)
 Template for spawn-set requests = 0x2c bytes at `r2+0x180` = `0x100e64b0` (data image:
 `6e6f6e65 00000000 00000000 00000000 00000000 ff000000 … 3f800000`); level requests use the
-template at `0x100eb420` (initialised by `FUN_10039100`).
+template at `0x100eb41c` (`FUN_10033090` uses r2+0x50ec; bytes identical to `0x100e64b0`;
+initialised by `FUN_10039100`). ⚑ corrected (review wave 1, 2026-10-03) #M3: was `0x100eb420` (level-scroll-objects.md §6.3 has it right).
 | off | type | meaning | evidence |
 |---|---|---|---|
 | +0x00 | 4CC | unit ID to spawn (`none` → assert) | `10033240 lwz r3,0x0(r3)`, 33220 assert line 0x194 |
@@ -275,8 +276,11 @@ bank said MED "arguments dropped"]
 [HIGH — listing `10035ec8..10035f1c` (D1: `rlwinm r0,r3,0x1,0x1f,0x1f; add; srawi r4,r0,0x1;
 neg r3,r4; bl 0x10046580`), `10035f38 bl 0x10037930`, `10035f44 lfs f1,0x28(r22) … bl
 0x10037b50`, `10035f74 bl 0x100146f0`, `10035fb4 bl 0x10033600`, `10035fc8 bl 0x10046580`,
-`10035ffc lbz r0,0x34a(r20) … bl 0x10037ed0`; step 6 internal order from the `FUN_100146f0`
-decompile, MED]
+`10035ffc lbz r0,0x34a(r20) … bl 0x10037ed0`; step 6 internal order now also listing-checked
+(HIGH): `FUN_100146f0` `100148dc bl 0x10046580` timer → `100149f0 bl 0x10046580` frame →
+`10014b14 bl 0x10046580` scale tolerance → `10014c48…10014d5c` 4× `bl 0x10042b80` (velocity set-up,
+no draws) → `10014d74 bl 0x10033600` → `10014d90 bl 0x10017510` (flee point: the float/int draws)
+→ `10014dc0 bl 0x10017cb0` (spawn sets)] ⚑ corrected (review wave 1, 2026-10-03) #M10: step 6 order was "from the decompile, MED".
 ⚑ corrected: engine-loop.md §9 lists the per-entity order as placement → speed → heading
 tolerance → state-0 timer; it misses D1 (before placement), the other state-0 draws, the
 group-delay draw and `FUN_10037ed0`, and the `FUN_10037b50` tolerance draw happens only in its
@@ -380,8 +384,15 @@ r0,0xcb(r26)`]
 Direct removers (call `FUN_10036120` at once): `FUN_10034b90(player)` (player gone: that
 player's entities destroyed if 0x329 else deleted if 0x32a; caller `FUN_10027e50`),
 `FUN_10034de0(id)` (delete entity by id; callers `FUN_10027e50`, `FUN_10029fe0`),
-`FUN_10036be0(unit, player, destroyed)`. `FUN_10034ce0(stateName, id)` switches entity `id` to
-a named state (`FUN_10014670`; callers weapon handler `FUN_1003b3c0`, `FUN_1003c0d0`). [MED]
+`FUN_10036be0(unit, player, destroyed)`. `FUN_10034ce0(now, id)` finds entity `id` (serial
++0x9c) and calls `FUN_10014670(entity, now)`, which enters the first state flagged
+`UseThisStateOnWeaponPowerupRelease` (state +0x355) with `now` as the state-start time (4th
+argument of `FUN_100146f0`, stored at +0xa4); callers weapon handler `FUN_1003b3c0`,
+`FUN_1003c0d0` (pass the game time). [HIGH — listing `10034d8c lwz r0,0x9c(r3); cmpw r0,r25`,
+`10034d98 or r4,r24,r24; bl 0x10014670` (r24 = arg 1); `FUN_10014670` dump `FUN_100146f0(param_1,
+0, state+0x49c, param_2, …)`, `FUN_100146f0` dump `*(param_1+0xa4) = param_4`] ⚑ corrected (review wave 1, 2026-10-03) (conflict):
+was "`FUN_10034ce0(stateName, id)` switches entity `id` to a named state" [MED];
+weapons-projectiles.md §2.3 had it right.
 
 ## 6. Rule condition callees (closes NOT-RESOLVED #22)
 - `FUN_10034ee0(unitID, pos, range)` — "Is Tracking Player": true iff some entity of that unit
@@ -409,6 +420,10 @@ from `FUN_10033850` for entities whose state `Collides`. Covered by the damage r
 entity B has `passHitsToOwner` (0x32b), the redirect goes to the **attacker A's** owner
 (`10037064 lbz r0,0x32b(r3)` (B's state) then `10037074 lwz r5,0x140(r17)` and `100370b4 lwz
 r3,0x140(r17)`, r17 = A). That looks like an original copy-paste bug. [HIGH for those lines]
+**Consequence** (traced in the fix pass): player shots carry no owner (request template
+`0x100ecd14` +0x20/+0x24 = 0, not written by `FUN_1003c4f0`/`FUN_1003c7a0`), so the redirect
+never fires and a turret or bubble with `passHitsToOwner` hit by a player shot takes the damage on
+its own shields; only ramming reaches the owner (bosses.md §3.5). ⚑ corrected (review wave 1, 2026-10-03) #I1
 
 ## 8. Remaining range functions
 | function | role | label |
@@ -425,7 +440,7 @@ r3,0x140(r17)`, r17 = A). That looks like an original copy-paste bug. [HIGH for 
 | `FUN_100380e0` | entry notice: if `entryNotice_STR ≠ none` and (not `displayNoticeOnceOnly` (0x120) or not yet shown) → queue with `entryNoticeDelay` (0x1b8) and `entryNoticeSound` block (0x424..) via `FUN_100181e0` | MED |
 | `FUN_10038230` / `FUN_100382f0` | notice-shown list lookup / add (63-char copy) | MED |
 | `FUN_10038390` / `FUN_10038450` / `FUN_10038540` / `FUN_100385d0` / `FUN_10038810` | entity pool: build / reset / dispose / allocate / free (§1.3) | MED |
-| `FUN_10039100` | static init of the level request template `0x100eb420` and other templates (caller `FUN_10000000`) | LOW |
+| `FUN_10039100` | static init of the level request template `0x100eb41c` (⚑ corrected #M3: was `0x100eb420`) and other templates (caller `FUN_10000000`) | LOW |
 | `FUN_100391f0` / `FUN_10039230` | load / unload "Player Definition" (`FUN_1003a870`/`FUN_1003a900`, `FUN_10039280`/`FUN_10039c00`) — start of the G_PlayerDefinitions span, not EntityGroup | LOW |
 | `FUN_10033090`, `FUN_10033850`, `FUN_100345f0` | excluded (other readers) | not read |
 | `FUN_100351f0`, `FUN_100352f0`, `FUN_100353e0`, `FUN_10035900`, `FUN_10037930` | as in the bank (glanced: 352f0 tests `includeInAirAccuracyCount` 0x133, 353e0 0x134) | unchanged |
@@ -439,7 +454,7 @@ r3,0x140(r17)`, r17 = A). That looks like an original copy-paste bug. [HIGH for 
 | `FUN_10037930` | rect: int x, int y (each only if its range open); radial: `R(0,359)`, then `F(0,|xMax|)` if randomise | bank §4 |
 | `FUN_10037b50` | `F(speedMin,speedMax)` (skipped if stationary) → `R(−tol/2,tol/2)` only in the default-heading branch | |
 | `FUN_10037ed0` | `R(0,1)`, `R(1,4)`, `R(1,100)`, `R(0,1)`, `R(1,4)`, [`R(0,1)` if y > H/4] | |
-| `FUN_100146f0` (out of range) | timer, frame, scale tol, flee floats, then `FUN_10017cb0` | MED |
+| `FUN_100146f0` (out of range) | timer, frame, scale tol, flee (inside `FUN_10017510`), then `FUN_10017cb0` | HIGH — listing `100148dc`, `100149f0`, `10014b14`, `10014d90`, `10014dc0` (⚑ corrected #M10: was MED) |
 | `FUN_10017cb0` per set | rate → volley → delay | |
 | `FUN_10015b40` per set | in-volley: delay; re-arm: **delay → volley → rate** (reverse of entry order); a request's own draws happen immediately, before the next set | |
 | `FUN_10036120` | coin requests, then group-kill coin request (each a full `FUN_10033220`) | |
@@ -504,8 +519,9 @@ of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 4. Same-tick processing of entities spawned during `FUN_10033850` (groups appended to the active
    list are reached in the same pass since the loop re-reads the count; PERM-group children are
    appended behind the current index). Exact effect on the first update tick is unverified.
-5. `FUN_100146f0` internal draw order (timer → frame → scale tol → flee → spawn sets) is from the
-   decompile only; the scale-tolerance draw's arguments are dropped (presumably `R(−tol/2, …)`).
+5. ~~`FUN_100146f0` internal draw order (timer → frame → scale tol → flee → spawn sets) is from the
+   decompile only~~ → listing-confirmed (§3.2 step 6) ⚑ corrected (review wave 1, 2026-10-03) #M10. Still open: the
+   scale-tolerance draw's arguments are dropped by the decompiler (presumably `R(−tol/2, …)`).
 6. `FUN_10005ed0` (closest active player) and `FUN_10005d40` (nearest-player distance) bodies.
 7. Consumer of entity +0x13d (terrain-effects option) and `FUN_10016880` (deletion-spawn gate).
 8. `req+0x28` speed multiplier: which callers pass a value ≠ 1.0 (weapon launcher `FUN_1003c4f0`?).
@@ -527,11 +543,11 @@ of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 | `FUN_100363c0` | G_EntityGroup.cc | destroy children with canBeDestroyedOnOwnerDestruction | MED | read §5 |
 | `FUN_100364f0` | G_EntityGroup.cc | delete children with canBeDeletedOnOwnerDeletion | MED | read §5 |
 | `FUN_10034b90` | G_EntityGroup.cc | player gone: destroy/delete entities owned by that player | MED | read §5 |
-| `FUN_10034ce0` | G_EntityGroup.cc | set named state on entity by id | MED | read §5 |
+| ⚑ corrected `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial → `FUN_10014670(entity, now)` (enter its UseThisStateOnWeaponPowerupRelease state) | HIGH | listing `10034d8c`, `10034d98`; callers `FUN_1003b3c0`, `FUN_1003c0d0` — ⚑ corrected (review wave 1, 2026-10-03) (conflict): was "set named state on entity by id" MED |
 | `FUN_10034de0` | G_EntityGroup.cc | delete entity by id | MED | read §5 |
 | `FUN_10036be0` | G_EntityGroup.cc | remove entities of unit owned by player (deleteExisting…) | MED | read §3.1 |
 | `FUN_10036af0` | G_EntityGroup.cc | first live entity of a unit | MED | read |
-| `FUN_10036ab0` | G_EntityGroup.cc | owner link valid | HIGH | read §1.3 |
+| `FUN_10036ab0` | G_EntityGroup.cc | owner link valid | MED | read §1.3 — ⚑ label audit (review wave 1) |
 | `FUN_10036930` | G_EntityGroup.cc | copy owner visibility / scale / hit glow | MED | read §4 |
 | `FUN_10033600` | G_EntityGroup.cc | owner-relative init: offset, orbit radius/angle, owner last pos | HIGH | disasm §4 |
 | `FUN_10037130` | G_EntityGroup.cc | LockToOwnerLoc: pos = owner + offset | HIGH | disasm §4 |

@@ -162,8 +162,13 @@ that were not spawned on the air layer, §4.1) and `FUN_10035cd0` (spawned alrea
 ### 2.5 Entity ↔ entity — `FUN_10036cf0(A, now) @ 10036cf0` [HIGH]
 ⚑ conflict: the bank calls this the "state spawn sets executor" (function-roles.md §1 LOW;
 waves-and-enemies.md §3 step 9, §4, §8 #2; INDEX #20). It is not. It is the entity-vs-entity
-collision and mutual-damage pass. It reads no spawn-set list. The runtime reader of state+0x5dc
-is `FUN_10017150` (called from `FUN_10015b40`; dump l. 13568) [LOW — one grep hit].
+collision and mutual-damage pass. It reads no spawn-set list. The per-tick spawn-set executor is
+`FUN_10015b40` (spawn-and-waves.md §2.3); `FUN_10017150` (its first callee) reads state+0x5dc only
+to hold **rotation** while a `PauseAnyRotationWhileSpawning` volley is mid-way — it is the
+rotation gate, not a spawn-set reader [HIGH — listing `10017180 lbz r0,0x303(r31)`, `10017210
+lwz r3,0x5dc(r31)`, `1001725c lbz r0,0x48(r25)`, `10017268–1001727c` 0 < left < volley, `100172a4
+bl 0x100172d0`]. ⚑ corrected (review wave 1, 2026-10-03) (conflict): was "The runtime reader of state+0x5dc is `FUN_10017150` …
+[LOW — one grep hit]".
 Called from `FUN_10033850` (`1003458c … bl 0x10036cf0`), last in the entity's update, when the
 entity is not deleted and its state `Collides` (+0x347). A = the entity being updated.
 - A gate: if A is a `playerProjectile` (+0x11b), it needs `A.bottom ≥ 0` (`10036d64–10036d78`).
@@ -185,7 +190,13 @@ entity is not deleted and its state `Collides` (+0x347). A = the entity being up
   2. **B takes `A.unit.damage_FLOAT`**, credited to `A+0xd8` (`100370d8 lfs f1,0x274(r27); lbz
      r5,0xd8(r17)`). If **B's** state has `passHitsToOwner`, the code tests and damages **A's**
      owner (`10037074 lwz r5,0x140(r17)` … `100370b4 lwz r3,0x140(r17)`), not B's. The listing
-     carries this copy-paste bug; a 100 % replica keeps it.
+     carries this copy-paste bug; a 100 % replica keeps it. **Consequence:** a player shot is
+     always A (next paragraph) and carries no owner (spawn-request template `0x100ecd14`
+     +0x20/+0x24 = 0; neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` writes them), so the
+     redirect never fires and a `passHitsToOwner` turret/bubble struck by a player shot takes the
+     damage on its **own** shields (`100370d8–100370e8`); bubbles with 0.0 shields swallow it (§3).
+     Only ramming (§2.3, the entity's own `+0x140`) passes damage to the owner. See bosses.md §3.5
+     for the per-turret numbers. ⚑ corrected (review wave 1, 2026-10-03) #I1.
   3. if A is now deleted, stop scanning (`100370f0 lbz r0,0xcb(r17); bne exit`).
 Layer: unit+8 is set after parsing in `FUN_1003fc50`: `'grnd'` if `isGroundBased` (+0x125)
 else `'air '` (`1003fd20 lbz r0,0x125(r30); beq; lis r3,0x6772; addi r0,r3,0x6e64; stw r0,0x8(r30)`).
@@ -319,8 +330,10 @@ is already set.
   cleared after `gameOverTime` in state 1, and gates the lives decrement, extra lives
   (`FUN_10026d70`), shield pickups (`FUN_10027490`) and death-time invulnerability [MED].
 - `FUN_10027dd0` = `player+0xce`, the **invulnerable** flag. It is set on death if +0xc4
-  (`FUN_10027e50`) and cleared in states 4/5 once `entry_InvulnerabilityTime` (plde +0x8c) has
-  passed since the state started (+0xc8, `FUN_1002a150` tail). The cheat/debug latch `+0xcf`
+  (`FUN_10027e50`) and cleared in state 4 only once `entry_InvulnerabilityTime` (plde +0x8c) has
+  passed since the state started (+0xc8, `FUN_1002a150` tail; state switch `1002a18c cmpwi
+  r0,0x3` … `1002a1a8 cmpwi r0,0x5; bge exit` → state 4 falls to `1002a1e8 lbz r0,0xce(r29)`,
+  clear at `1002a214`). ⚑ corrected (review wave 1, 2026-10-03) #M1: was "cleared in states 4/5". The cheat/debug latch `+0xcf`
   comes from `FUN_10027de0` [MED].
 - plde offsets used here (literal reader-call offsets in `FUN_10039e70`; key_offsets.py missed
   this reader form): `defaultShieldPercentage +0x48`, `shieldWarningPercentage +0x4c`,
@@ -441,7 +454,8 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
    §9 table should list (dump l. 31047; listing not walked).
 9. `FUN_10042cd0` full branch listing; `FUN_10017150` heading sign (see §1).
 10. Behaviour gates for Ben's eyes: the second-bullet waste (§3), the `passHitsToOwner` B-side
-    bug (§2.5), and ramming scoring (§2.3).
+    bug (§2.5 — now traced: player shots land on the turret's own shields; only its visible
+    effect is left for Ben), and ramming scoring (§2.3). ⚑ corrected (review wave 1, 2026-10-03) #I1
 
 ## Role-table rows (for merge)
 | `FUN_10042f80` | U_Math (LOW name) | circle overlap: trunc(dx²+dy²) → sqrt table/libm; dist < rA+rB (strict) | HIGH | listing 10042f9c–10043018; callers FUN_10033850, FUN_10036cf0 |
@@ -467,13 +481,13 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 | `FUN_10016300` | | destroy entity: obstacle, particles, destructSpawn (media-gated), notice, sound, flags cb/d9/da, ground-kill count, random bonus | HIGH | listing |
 | `FUN_10016880` | | media gate for death/deletion spawns + water impact by mediaImpactSize | HIGH | listing |
 | ⚑ corrected `FUN_10027100` | G_Player | player takes hit: shieldHitDelay (≥), loss=dmg×shieldBaseHitPercentage, death <0, glow, SpawnOnHit (flli162), shield warning | HIGH | listing; was "player hit spawn delay" MED |
-| ⚑ corrected `FUN_10026c90` | G_Player | player index (+0xcc) | HIGH | 1-line accessor; uses; was "player takes hit" LOW |
+| ⚑ corrected `FUN_10026c90` | G_Player | player index (+0xcc) | HIGH | 1-line accessor; uses; was "player takes hit" LOW — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | ⚑ corrected `FUN_10026c10` | G_Player | player in-game flag (+0xc4) | MED | accessor + writers; was "player is alive" LOW |
-| `FUN_10026c60` | G_Player | player state == s (+0xc6) | HIGH | accessor |
-| `FUN_10026c50` | G_Player | player state (+0xc6) | HIGH | accessor |
+| `FUN_10026c60` | G_Player | player state == s (+0xc6) | MED | accessor — ⚑ label audit (review wave 1) |
+| `FUN_10026c50` | G_Player | player state (+0xc6) | MED | accessor — ⚑ label audit (review wave 1) |
 | `FUN_10027540` | G_Player | get shields (+0xa8 − 1324366.0) | HIGH | listing |
 | `FUN_10027560` | G_Player | set shields (+0xa8 = v + 1324366.0) | HIGH | listing |
-| `FUN_10027dd0` | G_Player | player invulnerable flag (+0xce) | HIGH | accessor |
+| `FUN_10027dd0` | G_Player | player invulnerable flag (+0xce) | HIGH | accessor — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | `FUN_10027e50` | G_Player | player death: owned entities, death spawn, coin drop, state 3, multiplier reset | MED | decompile (was "coin unit selection") |
 | ⚑ corrected `FUN_10036cf0` | G_EntityGroup | entity↔entity collision + mutual damage_FLOAT (layer, harmless XOR, playerProjectile/canBeHit, AABB, circle) | HIGH | listing; was "state spawn sets executor" LOW |
 | `FUN_10037580` | G_EntityGroup | pickup dispatcher by pickup_Type_ID | HIGH | listing |
@@ -481,19 +495,20 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 | `FUN_10036610` | G_EntityGroup | end-of-tick deletion sweep (ground count, terrain stamp, owner destroy, deletionSpawn) | MED | decompile; call at 100345d4 |
 | `FUN_10036120` | G_EntityGroup | remove entity: children, group-kill count, coins, group coin | MED | decompile + partial listing |
 | `FUN_10034b90` | G_EntityGroup | destroy/delete entities owned by a player | MED | decompile |
-| `FUN_10036ab0` | G_EntityGroup | owner link valid (ptr, serial, not deleted) | HIGH | decompile 1-liner |
+| `FUN_10036ab0` | G_EntityGroup | owner link valid (ptr, serial, not deleted) | MED | decompile 1-liner — ⚑ label audit (review wave 1) |
 | `FUN_10012ad0` | | entity bounds l,t,r,b (trunc) | HIGH | listing |
 | `FUN_10012a00` | | entity bounds Mac rect {t,l,b,r} | HIGH | listing |
 | `FUN_10012940` | | half-size from sprite frame dims /2 | MED | decompile |
 | `FUN_10012bc0` | | start hit glow (colour, speed, 32) unless active | HIGH | listing |
 | `FUN_1002a830` | G_Debris | rect vs debris list (inclusive) | MED | decompile |
-| `FUN_1002a6d0` | G_Debris | add debris rect | HIGH | decompile + assert string |
+| `FUN_1002a6d0` | G_Debris | add debris rect | MED | decompile + assert string — ⚑ label audit (review wave 1) |
 
 ## INDEX updates (for merge)
 - **#24 closed** → this file §2.1 (`FUN_10042f80` = circle test, not pixel/shape), §3
   (`FUN_10014f10`), §5.2 (`FUN_10026c90` is an accessor; the player hit is `FUN_10027100`).
 - **#20 ⚑ conflict / narrowed:** `FUN_10036cf0` is entity↔entity collision (§2.5), not the
-  spawn-set executor. The runtime spawn-set reader is `FUN_10017150` (LOW). waves-and-enemies.md
+  spawn-set executor. The executor is `FUN_10015b40`; `FUN_10017150` is its rotation gate (HIGH,
+  §2.5) ⚑ corrected (review wave 1, 2026-10-03) (conflict): was "The runtime spawn-set reader is `FUN_10017150` (LOW)". waves-and-enemies.md
   §3 step 8 ("pixel/shape test") and step 9/§4/§8 #2 need the same correction.
 - **#7 narrowed:** the plde key→offset subset in §5.1 (literal offsets in `FUN_10039e70`).
 - **#26 touched only:** the random bonus is invoked from `FUN_10016300` step 9; the coin

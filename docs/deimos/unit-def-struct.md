@@ -42,7 +42,7 @@ FUN_1003d030 (shutdown, also called from the shutdown sequence FUN_10000630)
 
 | function | role | label | evidence |
 |---|---|---|---|
-| `FUN_1003cf10 @ 1003cf10` | unit manager init: `FUN_1003a870("Unit Definition",1)`, 5 debug commands (LOGSCROLLPAUSERS, LOGFAMILIES/FAMILIES, LOGUNUSEDUNITS, UNITSCORES), then cache-or-build | HIGH | dump; strings `0x100ed179` "Units Cache not loaded. (Attempting to load all Unit Def Tags instead.)" |
+| `FUN_1003cf10 @ 1003cf10` | unit manager init: `FUN_1003a870("Unit Definition",1)`, 5 debug commands (LOGSCROLLPAUSERS, LOGFAMILIES/FAMILIES, LOGUNUSEDUNITS, UNITSCORES), then cache-or-build | HIGH | dump; strings `0x100ed179` "Units Cache not loaded. (Attempting to load all Unit Def Tags instead.)"; listing `1003cf34 bl 0x1003a870` ("Unit Definition"), `1003cf5c…1003cfdc` 4× `bl 0x1002d080` (handlers = undefined code `0x10041a40/b30/b70/d70` via TOC r2−0x6e3c/−0x6e40/−0x6e44/−0x6e48), `1003cfe4 bl 0x100420f0; bne` → else `1003d000 bl 0x1003d0a0(1)`; caller `FUN_100000e0` — ⚑ label audit (review wave 1): HIGH kept, listing added in the fix pass |
 | `FUN_1003d0a0 @ 1003d0a0` | build master list (list head `_DAT_100e0260`, family list `_DAT_100e025c`); loops `FUN_1003fc50(i)` until 0; appends **before** the bounds check; logs + asserts only when n < 0 or n > 20 | HIGH | listing `1003d1bc lwz r0,0x14(r28) · cmpwi r0,0x0 · blt · cmpwi r0,0x14 · ble 1003d220` (skip both log and assert); assert text `0x100ed297` "unitPtr->fileData.numStatesUsed > 0 and … <= kG_UnitDef_MaxNumStates" |
 | `FUN_1003fc50 @ 1003fc50` | load unit i: `FUN_10002be0(i,'unde')`, decode, alloc 0x7a60, memset, defaults, parse, layer, error flag | HIGH | dump + listing `1003fd68 stb r0,0x10(r30)`; `FUN_1004d320(0x7a60)` |
 | `FUN_1003e1e0 @ 1003e1e0` | unit defaults (frees any old spawn-set lists, memset 0x7a60, header + 20 `'none'` IDs + 4 sound records + group/scale/visibility/appears + 20× `FUN_1003e3d0`; state 0 name "State 1") | HIGH | listing `1003e1e0–1003e3c4` (§3 D@ column); `"State 1"` = `r2+0x6ce0+0x46b` = `0x100ed47b` |
@@ -61,22 +61,22 @@ FUN_1003d030 (shutdown, also called from the shutdown sequence FUN_10000630)
 | `FUN_1003d3a0 @ 1003d3a0` | i-th unit of the master list (0-based) | MED | dump (counter `== i+1`) |
 | `FUN_1003d450 @ 1003d450` | family record of a unit (by `familyName` +0x58, empty → default family `" Misc"`) | HIGH | dump; `_DAT_100e0244 → 0x100ed01f " Misc"` (memory image) |
 | `FUN_1003d550 @ 1003d550` | find unit by ID, first inside a family's member list (`fam+0x40`), then globally | MED | dump; callers `FUN_10015550` (rules), `FUN_10015b40` |
-| `FUN_1003f4e0 @ 1003f4e0` | add unit to its family (create 0x4c-byte family {name[0x40], list@+0x40} if new; no-name units → " Misc", prepended) | HIGH | dump; `FUN_1004d320(0x4c)` |
-| `FUN_1003e680 @ 1003e680` | load a unit's resources once (`FUN_1003fb60` guard): verify 4 unit sounds + every state's entry sound (`FUN_100417d0`) and sprite face (`FUN_100418a0`), missing → field reset to `'none'` with a log; recurse into destructCoin, coinOnGroupKill, deletionSpawn, destructSpawn, pickup_MultiplierSpawn, each state's collision_Spawn and every spawn-set Spawn_ID | HIGH | dump (offsets 0x4bc 0x448 0x460 0x424 0x4a8 0x4ac 0x2dc 0x478 0x4d8; state +0x000 +0x304 +0x2e0; spawn +0x20) |
+| `FUN_1003f4e0 @ 1003f4e0` | add unit to its family (create 0x4c-byte family {name[0x40], list@+0x40} if new; no-name units → " Misc", prepended) | MED | dump; `FUN_1004d320(0x4c)` — ⚑ label audit (review wave 1) |
+| `FUN_1003e680 @ 1003e680` | load a unit's resources once (`FUN_1003fb60` guard): verify 4 unit sounds + every state's entry sound (`FUN_100417d0`) and sprite face (`FUN_100418a0`), missing → field reset to `'none'` with a log; recurse into destructCoin, coinOnGroupKill, deletionSpawn, destructSpawn, pickup_MultiplierSpawn, each state's collision_Spawn and every spawn-set Spawn_ID | MED | dump (offsets 0x4bc 0x448 0x460 0x424 0x4a8 0x4ac 0x2dc 0x478 0x4d8; state +0x000 +0x304 +0x2e0; spawn +0x20) — ⚑ label audit (review wave 1) |
 | `FUN_1003e580 @ 1003e580` | load resources for unit ID (find + `FUN_1003e680`) | HIGH | listing `1003e5fc lwz r0,0x4(r3)`; callers `FUN_1002b790`, `FUN_100399a0` |
-| `FUN_1003e510 @ 1003e510` | (re)create the "already-loaded resources" list `_DAT_100e0258` | HIGH | string `sPriv_UnitResourceListPtr`; callers `FUN_100051a0 FUN_100064d0` (game start) |
-| `FUN_1003fb60 @ 1003fb60` | test-and-insert unit ID into that list | HIGH | dump |
+| `FUN_1003e510 @ 1003e510` | (re)create the "already-loaded resources" list `_DAT_100e0258` | MED | string `sPriv_UnitResourceListPtr`; callers `FUN_100051a0 FUN_100064d0` (game start) — ⚑ label audit (review wave 1) |
+| `FUN_1003fb60 @ 1003fb60` | test-and-insert unit ID into that list | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_1003fa80 @ 1003fa80` | free that list | MED | dump |
-| `FUN_1003ec70 @ 1003ec70` | list of unit IDs a unit references (coin, coinOnGroupKill, deletionSpawn, destructSpawn, pickup_MultiplierSpawn, **all 5** rule units per state, spawn-set IDs — not collision_Spawn) | HIGH | dump (`iVar4 < 5`, stride 0x88 at state+0x28) |
+| `FUN_1003ec70 @ 1003ec70` | list of unit IDs a unit references (coin, coinOnGroupKill, deletionSpawn, destructSpawn, pickup_MultiplierSpawn, **all 5** rule units per state, spawn-set IDs — not collision_Spawn) | MED | dump (`iVar4 < 5`, stride 0x88 at state+0x28) — ⚑ label audit (review wave 1) |
 | `FUN_1003ef90 @ 1003ef90` | "is unit ID referenced by any other unit" (LOGUNUSEDUNITS) | MED | dump; no direct caller (debug command table) |
 | `FUN_1003f0b0 @ 1003f0b0` | collect all sprite IDs (mode 1: each state's sprite face, unit+0x7e4 = 0x4e0+0x304) or sound IDs (mode 0: 4 unit sounds + state entry sounds) of every unit into a list | MED | dump; no direct caller |
 | `FUN_1003f280 @ 1003f280` | integrity check: every master-list entry has magic 0x499602d2, else "Unit Manager Integrity FAILURE" | HIGH | listing `1003f2fc subis r0,r3,0x4996 · cmplwi r0,0x2d2` |
 | `FUN_1003f360 / f410 / f830 / fa10` | free master list (and every state's spawn-set list) / free one list / free family list / free one family | MED | dump |
 | `FUN_1003f8b0 @ 1003f8b0` | log the family table ("Unit Definition Families") | MED | strings |
-| `FUN_10041960 @ 10041960` | check a sprite ID exists (`FUN_1001fbe0`), else log "MISSING SPRITE RESOURCE" and set `'none'` (used for editorPreviewSpriteFace and stateSpriteFace at parse time) | HIGH | dump; callers `FUN_1003fda0 FUN_10040920` |
-| `FUN_100417d0 / FUN_100418a0` | same for sound / sprite at resource-load time | HIGH | strings "SOUND RESOURCE MISSING", "SPRITE RESOURCE MISSING" |
-| `FUN_10041e40 @ 10041e40` | **Units Cache writer** (§8) | HIGH | dump + `FUN_100426e0` |
-| `FUN_100420f0 @ 100420f0` | **Units Cache reader** (§8) — ⚑ the review/handoff called it the writer | HIGH | dump; strings "Units Cache Invalid…" |
+| `FUN_10041960 @ 10041960` | check a sprite ID exists (`FUN_1001fbe0`), else log "MISSING SPRITE RESOURCE" and set `'none'` (used for editorPreviewSpriteFace and stateSpriteFace at parse time) | MED | dump; callers `FUN_1003fda0 FUN_10040920` — ⚑ label audit (review wave 1) |
+| `FUN_100417d0 / FUN_100418a0` | same for sound / sprite at resource-load time | MED | strings "SOUND RESOURCE MISSING", "SPRITE RESOURCE MISSING" — ⚑ label audit (review wave 1) |
+| `FUN_10041e40 @ 10041e40` | **Units Cache writer** (§8) | MED | dump + `FUN_100426e0` — ⚑ label audit (review wave 1) |
+| `FUN_100420f0 @ 100420f0` | **Units Cache reader** (§8) — ⚑ the review/handoff called it the writer | MED | dump; strings "Units Cache Invalid…" — ⚑ label audit (review wave 1) |
 
 ## 2. Parse semantics that decide which defaults survive
 
@@ -483,14 +483,14 @@ Other `G_PlayerDefinitions` functions:
 
 | function | role | label | evidence |
 |---|---|---|---|
-| `FUN_10039460 @ 10039460` | index of the plde with tag ID (−1 if none / `'none'`) | HIGH | dump `*(int *)(local_14 + 4) != param_1`; callers `FUN_100222f0 FUN_10026410` |
+| `FUN_10039460 @ 10039460` | index of the plde with tag ID (−1 if none / `'none'`) | MED | dump `*(int *)(local_14 + 4) != param_1`; callers `FUN_100222f0 FUN_10026410` — ⚑ label audit (review wave 1) |
 | `FUN_10039520 @ 10039520` | i-th plde record | MED | dump; callers `FUN_100222f0 FUN_10026410 FUN_100395d0 FUN_10039a80` |
-| `FUN_100396c0 @ 100396c0` | list of unit IDs a plde references (0xa0 entry, 0x70 life, 0xbc death, 0xc4 money counter, 0xc8 spawn-on-hit, 0xcc shield warning, 0xd0 defence bonus) | HIGH | dump offsets = table |
+| `FUN_100396c0 @ 100396c0` | list of unit IDs a plde references (0xa0 entry, 0x70 life, 0xbc death, 0xc4 money counter, 0xc8 spawn-on-hit, 0xcc shield warning, 0xd0 defence bonus) | MED | dump offsets = table — ⚑ label audit (review wave 1) |
 | `FUN_100395d0 @ 100395d0` | is unit ID referenced by any plde (pairs with `FUN_1003ef90`) | MED | dump; no direct caller |
 | `FUN_10039940 @ 10039940` | free an ID list | MED | dump |
-| `FUN_100399a0 @ 100399a0` | load a plde's resources: sprites 0x28/0x30/0x38/0x40, sound 0xf0 (`FUN_1001f950(0/1,id,1)`), then `FUN_1003e580` for the 7 unit IDs | HIGH | dump; caller `FUN_10026410` |
+| `FUN_100399a0 @ 100399a0` | load a plde's resources: sprites 0x28/0x30/0x38/0x40, sound 0xf0 (`FUN_1001f950(0/1,id,1)`), then `FUN_1003e580` for the 7 unit IDs | MED | dump; caller `FUN_10026410` — ⚑ label audit (review wave 1) |
 | `FUN_10039a80 @ 10039a80` | collect plde sprite IDs (mode 1) or the overload sound (mode 0) into a list | MED | dump; no direct caller (pairs with `FUN_1003f0b0`) |
-| `FUN_10039c00 @ 10039c00` | free the plde list (only records with magic 0x499602d2) | HIGH | dump; callers `FUN_10039230` (shutdown), `FUN_10039280` |
+| `FUN_10039c00 @ 10039c00` | free the plde list (only records with magic 0x499602d2) | MED | dump; callers `FUN_10039230` (shutdown), `FUN_10039280` — ⚑ label audit (review wave 1) |
 | `FUN_1003a780 @ 1003a780` | U_Manager init ("Manager God", list `_DAT_100e023c`) — next module, not plde | MED | strings `U_Manager.cc`; caller `FUN_100000e0` |
 
 ## 10. Reconciliation with waves-and-enemies.md §2/§5 and function-roles.md
@@ -585,7 +585,7 @@ magic/version, reserved `'none'` IDs, zeroed unknown regions) and in the unused 
 
 ## Role-table rows (for merge)
 
-| `FUN_1003cf10` | G_UnitDefinitions.cc | unit manager init: debug commands, Units Cache load or master-list build | HIGH | read §1 |
+| `FUN_1003cf10` | G_UnitDefinitions.cc | unit manager init: debug commands, Units Cache load or master-list build | HIGH | read §1; listing `1003cf34 bl 0x1003a870` ("Unit Definition"), `1003cf5c…1003cfdc` 4× `bl 0x1002d080` (handlers = undefined code `0x10041a40/b30/b70/d70` via TOC r2−0x6e3c/−0x6e40/−0x6e44/−0x6e48), `1003cfe4 bl 0x100420f0; bne` → else `1003d000 bl 0x1003d0a0(1)`; caller `FUN_100000e0` — ⚑ label audit (review wave 1): HIGH kept, listing added in the fix pass; this reading wins the bosses.md conflict ("console unit commands" LOW) |
 | `FUN_1003d0a0` | G_UnitDefinitions.cc | build master unit list; numStates check passes 0..20 (log+assert only <0 or >20) | HIGH | listing 1003d1bc–1003d218 |
 | `FUN_1003d2f0` | G_UnitDefinitions.cc | find unit definition by ID (unit+4) | HIGH | listing 1003d35c (was MED "usage") |
 | `FUN_1003d3a0` | G_UnitDefinitions.cc | i-th unit of the master list | MED | read |
@@ -598,26 +598,26 @@ magic/version, reserved `'none'` IDs, zeroed unknown regions) and in the unused 
 | `FUN_1003e3d0` | G_UnitDefinitions.cc | state defaults | HIGH | listing §4 |
 | `FUN_1003f470` | G_UnitDefinitions.cc | rule-block defaults (5 rules) | HIGH | listing §5 |
 | `FUN_1003e490` | G_UnitDefinitions.cc | spawn-set defaults | HIGH | listing §6 |
-| `FUN_1003e510` | G_UnitDefinitions.cc | reset loaded-unit-resources list | HIGH | string + callers |
+| `FUN_1003e510` | G_UnitDefinitions.cc | reset loaded-unit-resources list | MED | string + callers — ⚑ label audit (review wave 1) |
 | `FUN_1003e580` | G_UnitDefinitions.cc | load resources of unit ID | HIGH | listing |
-| `FUN_1003e680` | G_UnitDefinitions.cc | load/verify a unit's sounds+sprites, recurse into referenced units | HIGH | read (was MED strings) |
-| `FUN_1003ec70` | G_UnitDefinitions.cc | list unit IDs referenced by a unit | HIGH | read |
+| `FUN_1003e680` | G_UnitDefinitions.cc | load/verify a unit's sounds+sprites, recurse into referenced units | MED | read (was MED strings) — ⚑ label audit (review wave 1) |
+| `FUN_1003ec70` | G_UnitDefinitions.cc | list unit IDs referenced by a unit | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1003ef90` | G_UnitDefinitions.cc | is unit referenced by another unit (LOGUNUSEDUNITS) | MED | read |
 | `FUN_1003f0b0` | G_UnitDefinitions.cc | collect all unit sprite/sound IDs into a list | MED | read |
 | `FUN_1003f280` | G_UnitDefinitions.cc | master-list integrity check (magic 0x499602d2) | HIGH | listing |
 | `FUN_1003f360` `FUN_1003f410` `FUN_1003f830` `FUN_1003fa10` `FUN_1003fa80` | G_UnitDefinitions.cc | free master list / ID list / family list / family / resource list | MED | read |
-| `FUN_1003f4e0` | G_UnitDefinitions.cc | add unit to family list (0x4c family records) | HIGH | read (was MED strings) |
+| `FUN_1003f4e0` | G_UnitDefinitions.cc | add unit to family list (0x4c family records) | MED | read (was MED strings) — ⚑ label audit (review wave 1) |
 | `FUN_1003f8b0` | G_UnitDefinitions.cc | log family table | MED | strings |
-| `FUN_1003fb60` | G_UnitDefinitions.cc | test-and-insert unit ID into loaded-resources list | HIGH | read |
+| `FUN_1003fb60` | G_UnitDefinitions.cc | test-and-insert unit ID into loaded-resources list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_1003fc50` | G_UnitDefinitions.cc | load unit i (alloc 0x7a60, defaults, parse, layer, error ⇒ fatal) | HIGH | listing (was MED strings) |
-| `FUN_10041960` `FUN_100417d0` `FUN_100418a0` | G_UnitDefinitions.cc | sprite (parse time) / sound / sprite (load time) existence check, else `'none'` | HIGH | read |
-| ⚑ corrected `FUN_10041e40` | G_UnitDefinitions.cc | Units Cache writer (format §8) | HIGH | read |
-| ⚑ corrected `FUN_100420f0` | G_UnitDefinitions.cc | Units Cache reader/validator (handoff called it the writer) | HIGH | read |
-| `FUN_10039280` | G_PlayerDefinitions.cc | build player-definition list | HIGH | read |
+| `FUN_10041960` `FUN_100417d0` `FUN_100418a0` | G_UnitDefinitions.cc | sprite (parse time) / sound / sprite (load time) existence check, else `'none'` | MED | read — ⚑ label audit (review wave 1) |
+| ⚑ corrected `FUN_10041e40` | G_UnitDefinitions.cc | Units Cache writer (format §8) | MED | read — ⚑ label audit (review wave 1) |
+| ⚑ corrected `FUN_100420f0` | G_UnitDefinitions.cc | Units Cache reader/validator (handoff called it the writer) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10039280` | G_PlayerDefinitions.cc | build player-definition list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10039cf0` | G_PlayerDefinitions.cc | load plde i (0x108 record, defaults, parse) | HIGH | listing |
 | `FUN_10039e70` | G_PlayerDefinitions.cc | parse plde (57 keys, table §9) | HIGH | listing |
-| `FUN_10039460` `FUN_10039520` | G_PlayerDefinitions.cc | plde index by ID / i-th plde | HIGH / MED | read |
-| `FUN_100396c0` `FUN_100399a0` | G_PlayerDefinitions.cc | plde referenced unit IDs / load plde resources | HIGH | read |
+| `FUN_10039460` `FUN_10039520` | G_PlayerDefinitions.cc | plde index by ID / i-th plde | MED / MED | read — ⚑ label audit (review wave 1) |
+| `FUN_100396c0` `FUN_100399a0` | G_PlayerDefinitions.cc | plde referenced unit IDs / load plde resources | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_100395d0` `FUN_10039940` `FUN_10039a80` `FUN_10039c00` | G_PlayerDefinitions.cc | unit referenced by plde / free list / collect IDs / free plde list | MED | read |
 | `FUN_1003a780` | U_Manager.cc | manager init ("Manager God") | MED | strings |
 
