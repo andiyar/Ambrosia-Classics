@@ -192,7 +192,14 @@ and ≈ 87 px at ×5.
 
 ### 2.9 Draw — `FUN_10043ba0 @ 10043ba0` [HIGH listing `10043ba0..10044500`; layer placement MED]
 Called from the end-frame routine `FUN_10030bc0` (`10030cd0`), **every frame whether ticked or
-not**. It sits between `FUN_10018b20(1)` and `FUN_10018b20(2)`, after the terrain blit
+not**. ⚑ corrected (review wave 2, 2026-10-03) #C4 (critic C4 checked against the listing and **not** adopted): the call is
+gated on the end-frame **`param_2`** byte, not on the tick flag — `10030be0 or r28,r4,r4` …
+`10030cc8 rlwinm. r0,r28,0x0,0x18,0x1f; 10030ccc beq 0x10030cd8` (skips only `10030cd0 bl
+0x10043ba0`). `param_2` is the "draw background + particles" argument that `FUN_10030570` passes
+through: the game loop passes the constant 1 (`10005aac li r4,0x1; 10005ab0 bl 0x10030570`), level
+selection passes 0 (`1002e840 li r4,0x0`, `1002ee1c li r4,0x0`). The tick flag is a separate
+byte (`r1+0x39`, §2.1 of timing-frame.md). So in a game the particles are drawn **every
+presented frame, ticked or not**, and never in level selection. It sits between `FUN_10018b20(1)` and `FUN_10018b20(2)`, after the terrain blit
 `FUN_10010120`, and writes straight into the game pixel buffer `*(*(r2−0x7904)+0x68)` via
 `FUN_1000a4a0`. Groups with +0x468 > 0 are skipped. Per alive particle: `sx = x − hOffset`
 (`FUN_100100a0` = `0x100e0144`), `sy = y`. It draws only if `sx ≥ 0`, `sx + 7 < W`, `sy ≥ 0`, `sy + 7 < H`.
@@ -222,7 +229,7 @@ right}` (16 bytes) in `0x100e01cc` (`r2−0x6164`). All code-image accesses to t
 |---|---|---|
 | `FUN_1002a5b0 @ 1002a5b0` | init: register "Debris", live flag `0x100e01d0`, console `NUMDEBRIS` ("Displays the number of Debris ob…") | decompile strings |
 | `FUN_1002a610 @ 1002a610` | teardown → `FUN_1002a950` | decompile; caller `FUN_10000630` |
-| `FUN_1002a660 @ 1002a660` | per-level reset: free all, new list (assert "sPriv_ListPtr" line 0x58) | decompile; caller `FUN_100064d0` |
+| `FUN_1002a660 @ 1002a660` | per-level reset: free all, new list (assert "sPriv_ListPtr" line 0x58) | decompile; caller `FUN_100064d0` — MED, ⚑ label audit (review wave 2) (no listing line cited) |
 | `FUN_1002a6d0 @ 1002a6d0` | add: alloc 0x10 ("newDebris" line 0x69), copy words +0/+4/+8/+c | `1002a6f4..1002a744` |
 | `FUN_1002a770 @ 1002a770` | per tick: `top += d; bottom += d` with d = `FUN_1000fed0()` (scroll delta) — obstacles ride the terrain; **never removed** until the level reset | `1002a7e4..1002a7fc` |
 | `FUN_1002a830 @ 1002a830` | hit test of rect e against every entry, inclusive: `e.bottom ≥ d.top && e.top ≤ d.bottom && e.right ≥ d.left && e.left ≤ d.right` | `1002a8a4 lwz 8(r28)…blt`, `1002a8b4…bgt`, `1002a8c4 lwz 0xc…blt`, `1002a8d4…bgt` |
@@ -238,7 +245,8 @@ already stopped) — on hit: velocity 0, +0x13c = 1. **Physics:** the rects only
 velocity, lifetime or drawing. **Collision:** yes. Debris is gameplay-relevant, because queues of
 stopped tanks form behind wrecks. It uses no RNG.
 ⚑ raises damage-health-death.md §2.4 "MED for the inequalities — decompile only" to HIGH (listing above).
-`FUN_1002a4f0` (static init, copies template words from `PTR_DAT_100df2c0`/`_DAT_100df2b8`/`…2b4`/
+`FUN_1002a4f0` (static init — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: runtime values of its templates come from these
+writes, not the data image, INDEX #56 — copies template words from `PTR_DAT_100df2c0`/`_DAT_100df2b8`/`…2b4`/
 `…2fc`/`…2b0` into `0x100e9178..0x100e9304`) and `FUN_1002aa70` (static init of the `"nonenone"`
 string pair at `0x100e99d4`) sit in the range but belong to neighbouring modules [LOW].
 `FUN_1002aa90`/`FUN_1002aad0` are "Weapon Definition" register+load (`FUN_1002ab20(1)`) and
@@ -356,16 +364,26 @@ derivation is from unit-def-struct.md].
 1. `FUN_10043340`'s request colour: whether the unde `RRGGBB` reader packs 8-bit channels into
    555 by `>>3` (assumed in the worked example). Settle: listing of the COLOR reader in
    G_UnitDefinitions (unit-def-struct.md P@ rows).
-2. Whether `FUN_100009e0` appends at the list tail. It decides whether an entity spawned during
+2. ~~Whether `FUN_100009e0` appends at the list tail. It decides whether an entity spawned during
    `FUN_10033850` (e.g. psbh) emits its state particles in the same tick, and so where its 10 draws
-   fall relative to the remaining entities' draws. Settle: listing of `FUN_100009e0`/`FUN_10000e10`.
+   fall relative to the remaining entities' draws. Settle: listing of `FUN_100009e0`/`FUN_10000e10`.~~
+   → ⚑ corrected (review wave 2, 2026-10-03) #C5 #S: **appends at the tail** (listing `$W/disasm-w2s5c.txt`: list header
+   {+0 count, +4 head, +8 tail}, node {+0 prev, +4 next, +8 data}; `10000a40 lwz r0,0x4(r28);
+   cmplwi; bne; 10000a4c stw r31,0x4(r28)` head only if empty, `10000a5c stw r31,0x4(r3)` old
+   tail→next, `10000a68 stw r3,0x0(r31)` node→prev = old tail, `10000a70 stw r31,0x8(r28)` tail =
+   node, `10000a7c` count+1). So psbh is updated in the same tick N (worked example step 6).
+   Also loose-ends-combat.md §4.5; INDEX #38 struck.
 3. LCG state at the first app draw = image value 1. This assumes the data image is pre-execution
    and that no indirect call reaches `rand` earlier in `FUN_100000e0`. Settle: confirm the image
    provenance in `dumpmem.log`, or trace at runtime. It affects only the particle direction table.
-4. How `FUN_10012f20` turns visibility +0x68 into blending, and what blur fields +0x1a and +0x38
-   are (forced 0). Settle: the sprite blitter listing (sprite-sound-containers.md reader).
-5. The `FUN_10018b20(n)` layer passes around the particle draw: which sprites are drawn over or
-   under particles. Settle: read `FUN_10018b20`.
+4. ~~How `FUN_10012f20` turns visibility +0x68 into blending, and what blur fields +0x1a and +0x38
+   are (forced 0). Settle: the sprite blitter listing (sprite-sound-containers.md reader).~~ →
+   ⚑ corrected (review wave 2, 2026-10-03) #S: sprite-geometry-draw.md §4.1 (visibility → alpha; +0x38 = shadow pass flag,
+   +0x1a = shadow-scaling flag, §5.2).
+5. ~~The `FUN_10018b20(n)` layer passes around the particle draw: which sprites are drawn over or
+   under particles. Settle: read `FUN_10018b20`.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: sprite-geometry-draw.md §6
+   (particles over layers 0–5 = terrain, ground shadows, ground units; under layers 6–15 = air
+   shadows, air units, player, effects, atmosphere, HUD).
 6. Console callbacks `FUN_1002a920` / `FUN_10046b70` (no direct callers) are presumed to be the
    NUMDEBRIS/NUMBLURS handlers via TOC function descriptors `_DAT_100df318` / `_DAT_100df568`.
    Settle: resolve the descriptors in the data image.
@@ -380,13 +398,13 @@ derivation is from unit-def-struct.md].
 | `FUN_100432d0` | G_Particle.cc | per-level reset: free groups, new group list 0x100e0270; indices NOT reset | HIGH | listing; caller `FUN_100064d0` |
 | ⚑ corrected `FUN_10043340` | G_Particle.cc | emit burst: type tiny/tici 5, smal/smci 10, med/meci 20, larg/laci 40 (`ci` = ring table, small ×3 / others ×5); 5 colour variants (flli 145/146); per particle **R(0,4)** colour draw; velocity from the cycling table entry (was MED "emit particles", perm F145/146) | HIGH | listing `10043340..100438b0`; callers `FUN_10033850` `10033b4c`, `FUN_10014f10` `10015114`, `FUN_10016300` `100163c4` |
 | ⚑ corrected `FUN_100438c0` | G_Particle (span) | particle update: delay, ground scroll, drag ×flli144 (0.96, not gravity), move, bounds x∈[−32, W+25] y∈[0, H−7], fade += trunc(flli148) to 32 then die; frees empty groups (was MED "particles update (gravity)") | HIGH | listing `100438c0..10043b9c`; caller `FUN_10006b50` `10006be0` |
-| `FUN_10043ba0` | G_Particle (span) | particle draw: 7×7 top-left-anchored 555 blend stamp into the game buffer, every frame, at end-frame | HIGH | listing; caller `FUN_10030bc0` `10030cd0` |
+| `FUN_10043ba0` | G_Particle (span) | particle draw: 7×7 top-left-anchored 555 blend stamp into the game buffer, every presented frame (gated on end-frame `param_2`, constant 1 in the game loop, 0 in level select), at end-frame | HIGH | listing; caller `FUN_10030bc0` `10030cd0`, gate `10030cc8 rlwinm. r0,r28; beq 0x10030cd8` — ⚑ corrected (review wave 2, 2026-10-03) #C4 |
 | `FUN_10044550` | G_Particle (span) | free all groups + list | HIGH | listing; callers `FUN_10043280`, `FUN_100432d0` |
 | `FUN_10044630` | G_Particle (span) | build ring (unit) and burst (×1/.85/.7/.55) direction tables, 100 entries, 3 draws each (R(0,W), R(0,H), R(0,3)) | HIGH | listing `10044630..10044834`; caller `FUN_100431f0` |
 | `FUN_10044840` | G_Particle (span) | free one group | HIGH | listing; caller `FUN_100438c0` |
 | `FUN_1002a5b0` | G_Debris.cc (span) | debris module init + NUMDEBRIS (row exists; unchanged) | MED | strings |
 | `FUN_1002a610` | G_Debris.cc (span) | debris teardown | MED | decompile |
-| `FUN_1002a660` | G_Debris.cc | per-level reset of the obstacle-rect list | HIGH | decompile + assert string; caller `FUN_100064d0` |
+| `FUN_1002a660` | G_Debris.cc | per-level reset of the obstacle-rect list | MED | decompile + assert string; caller `FUN_100064d0` — ⚑ label audit (review wave 2): was HIGH without a listing line |
 | `FUN_1002a6d0` | G_Debris.cc | add obstacle rect (16 bytes) — unchanged | HIGH | listing `1002a6d0..1002a760` |
 | `FUN_1002a770` | G_Debris.cc (span) | per tick: shift every obstacle rect's top/bottom by the scroll delta | HIGH | listing; caller `FUN_10006b50` `10006bd8` |
 | ⚑ corrected `FUN_1002a830` | G_Debris.cc (span) | rect vs obstacle list, inclusive on all sides (was MED decompile) | HIGH | listing `1002a8a4..1002a8e4` |

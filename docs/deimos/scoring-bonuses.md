@@ -416,7 +416,7 @@ score/money/lives are only initialised (§9.3) and every score add is one of the
 | `FUN_10030910` | 95 | −/= volume, F6 interlace keys (bank: HIGH; caller `FUN_10030360`) — the heaviest function in this range, owned by a future timing/frame reader | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
 | `FUN_10030900` | 9 | frame-controller byte 0 getter (used as "redraw" gate in `FUN_1002e310`) | LOW (read) |
 | `FUN_10030df0` | 25 | zero-init of a 0x35-byte struct (score-bar state?) | LOW (read) |
-| `FUN_10030e70` | 43 | static initialiser of score-bar globals | LOW (read) |
+| `FUN_10030e70` | 43 | static initialiser of score-bar globals (writes `0x100eb03c`/`0x100eb184`/`0x100eb1d8`) — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: those templates' data-image bytes are pre-initialiser values (INDEX #56) | LOW (read) |
 | `FUN_10030f40` | 135 | score bar rects | existing, not re-read |
 | `FUN_100313b0` | 13 | release "Score Bar" resource group, clear `DAT_100e0200` | LOW (read) |
 

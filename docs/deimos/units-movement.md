@@ -405,7 +405,7 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_10012f20` | draw object if visibility > 0 (shadow then sprite) | MED | dump |
 | `FUN_10012fa0`, `FUN_10013460` | draw / draw shadow | — | not re-read (bank rows stand) |
 | `FUN_10014060`, `FUN_100140b0` | 4CC↔string | — | not re-read |
-| `FUN_10014120` | static init (entity globals) | LOW | dump |
+| `FUN_10014120` | static init: draw-command template `0x100e63e4` (+0x04/+0x08 ← 0, clip +0x20..+0x2c ← {0, 0, 480, 416}, +0x38..+0x44 ← 0) and `r2+0x100` +0x08/+0x0c ← 0 | HIGH | raw listing `10014120..10014194` (`$W/disasm-units.txt`) — ⚑ corrected (review wave 2, 2026-10-03) #C1: was LOW "static init (entity globals)"; sprite-geometry-draw.md §3.1 |
 | `FUN_100141a0` | G_Entity ctor | MED | dump (calls 125d0, 142f0) |
 | `FUN_10014290` | G_Entity dtor | MED | dump |
 | `FUN_100142f0` | G_Entity reset (§3 init values) | MED | dump — ⚑ label audit (review wave 1) |

@@ -237,7 +237,13 @@ spawn request, not `FUN_100181e0`]
     ⇒ **at most 30 characters**, and after 4 s (120 frames at 30 fps) without a key the console closes and executes
     the line as typed.
   - 0x1E (up arrow) → copy the last executed line into the buffer.
-  - 0x0A/0x0D → execute. 0x08 → delete the last char. `` ` `` / `~` → ignored, so ~ does **not** close the console.
+  - 0x0A/0x0D → execute. 0x08 → delete the last char. `` ` `` / `~` → not appended; it sets the console draw flag
+    `DAT_100e01f0` (`1002d354 li r0,0x1; 1002d358 stb r0,-0x6140(r2)`), which reset (`1002d060`)
+    and open (`1002d1f4`) also set and the draw `FUN_1002d410` reads/clears: `1002d434 lbz
+    r0,-0x6140(r2); 1002d43c beq 0x1002d5b0` (nothing drawn when 0), `1002d4d4 stb r3,-0x6140(r2)`
+    (r3 = 0, once the closing slide offset `-0x6148(r2)` reaches 32), `1002d4dc lbz` (re-test) —
+    confirmed from `$W/disasm-review2.txt`, so it is the console's visible/redraw flag. ~ does
+    **not** close the console. ⚑ corrected (review wave 2, 2026-10-03) #M4: was "ignored".
     Anything else is appended (`1002d3e0 stbx r3,r30,r31`).
   - Execute: open = 0 (visible stays 1, so it fades), `FUN_1002d770(buffer)`, then restore InputSprocket:
     `FUN_1004a990(0)` if `FUN_1002e300()` (level-select flag `DAT_100e01fd`, written only in
@@ -367,15 +373,17 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
    the renderer `FUN_1000d380`/`FUN_1000e270` (out of scope). Settle by reading those listings.
 2. Whether tefo `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px left border).
    Settle with `FUN_1000e270` (where Loc is consumed) or one screenshot of the original.
-3. `FUN_10047670(id, 0x32, 100, 1)` argument meanings (volume 50?) for the console and cheat sounds:
-   INDEX #11.
+3. ~~`FUN_10047670(id, 0x32, 100, 1)` argument meanings (volume 50?) for the console and cheat sounds:
+   INDEX #11.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: sound-music.md §2.3 — `(id, priority 0x32 = 50, volume 100,
+   allowMultiple 1)`.
 4. Whether `noel` plays `exli` on its 5th Flash On entry before the OnCounter delete, and what its 5 rules do
    ("Fade Out, Delete" state reachable?): `FUN_100146f0` order plus the rule rows of the `noel` file.
 5. TV resolution command used for every handler: `python3` over `$W/mem/100de330.bin`, word at the TOC slot →
    TV → first word (output in §5.5). Not an open question; recorded so it can be reproduced.
 6. Mac OS X volume path: `FUN_10047990/a30` skip the hardware call and the message under OS X
    (`FUN_100461b0`). The replica runs on macOS, so whether to reproduce the OS 9 messages is a ruling for Ben.
-7. `FUN_10022ef0` pause-screen loop internals (`FUN_10023030`, quit flag `DAT_100e01b8`) were read from the decompile only.
+7. ~~`FUN_10022ef0` pause-screen loop internals (`FUN_10023030`, quit flag `DAT_100e01b8`) were read from the decompile only.~~
+   → ⚑ corrected (review wave 2, 2026-10-03) #S: front-end.md §8 (pause screen).
 8. `FUN_1004a9f0`/`FUN_1004a9c0`/`FUN_1004a990` (InputSprocket suspend/resume around the console): roles LOW.
 
 ## Role-table rows (for merge)
@@ -415,7 +423,7 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
 | `FUN_10005ce0` | G_Game.cc (span) | game time getter `G+0x1c` | HIGH | decompile one-liner + GAMETIME TV use |
 | `FUN_10048d70` | ? | read one OS event: keyDown → 2 + char, autoKey → 3, mouseDown → 1 | MED | decompile |
 | `FUN_100461b0` | ? | running on Mac OS X (Gestalt 'sysv' ≥ 0x0A00) | HIGH | decompile one-liner |
-| ⚑ corrected `FUN_10029c00` | G_Player.cc | advance player to next weapon of type; **caller found**: PLAYER AIR/GROUND debug sub-commands (`10008408`, `10008490`), unreachable in release | MED | raw listing; weapons-projectiles.md said "no caller" |
+| ⚑ corrected `FUN_10029c00` | G_Player.cc | advance player to next weapon of type; **caller found**: the debug command `PLAYER AIRWEP\|AIR` / `PLAYER GROUNDWEP\|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`, §5.5), unregistered → unreachable in 1.0.6 | HIGH | raw listing `10008404 addi r4,r30,0x4141; 10008408 bl 0x10029c00` ('PEAA'), `1000848c addi r4,r30,0x4147; 10008490 bl 0x10029c00` ('PEAG'); strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211` (data image); weapons-projectiles.md said "no caller" — ⚑ corrected (review wave 2, 2026-10-03) (`FUN_10029c00` conflict closed): was MED "PLAYER AIR/GROUND" |
 
 ## INDEX updates (for merge)
 - **Out-of-scope note "Debug console commands …" refined:** only `FPS`, `VERSION`/`VERS`, `SUPERMUNKI`, `LIFE`,
@@ -423,11 +431,13 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
   `FUN_1002d080`'s debugOnly flag (§5.2). Cheat word = `supermunki` (§5.3). New topical row:
   `messages-notices-console.md`.
 - **#12 narrowed:** GameString 24–30 (`Game Speed …`) and 19/20 (`Auto Interlacing …`) have no code reference
-  at all (§3 raw scans). The game-speed feature posts no text in 1.0.6. The divider writer is still open.
+  at all (§3 raw scans). The game-speed feature posts no text in 1.0.6. ~~The divider writer is still open.~~
+  ⚑ corrected (review wave 2, 2026-10-03) #C11: #12 is closed by timing-frame.md §3 (no code writes the divider).
 - **#13 narrowed:** byte pref 9 = FPS counter (console `FPS` toggles it), **byte pref 11 = cheats enabled**
   (set by `supermunki`, 0 in fresh prefs), int pref 0 = sound volume 0–100 in steps of 10 (`-`/`=`), int pref 3 also
   written by the unreachable ALLLEVELS (§2.5, §5).
-- **#11 touched:** console/cheat sounds use `FUN_10047670(id, 0x32, 100, 1)` (§NR 3).
+- **#11 touched:** console/cheat sounds use `FUN_10047670(id, 0x32, 100, 1)` (§NR 3, now settled by
+  sound-music.md §2.3).
 - **scoring-bonuses.md NR 7 closed:** `0x1000827c` = PLAYER SCORE (+9000) and `0x10008380` = PLAYER DESTROY.
   Both are debug-only and unreachable (§5.5).
 - **weapons-projectiles.md NR (FUN_10029c00 "no caller"):** closed (§5.5; caller in raw code, unreachable).

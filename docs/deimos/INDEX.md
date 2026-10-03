@@ -30,7 +30,9 @@ re-run. ⚑ corrected (review wave 1, 2026-10-03): after the review-wave-1 fix p
 256 MED / 14 LOW** (68 HIGH → MED by the label audit, +1 MED row; function-roles.md header).
 ⚑ wave 2 (2026-10-03): the hand table is now **678 rows = 392 HIGH / 271 MED / 15 LOW** (+168
 rows, 96 corrected; 36 proposed-HIGH rows lowered to MED by the label rule; function-roles.md
-header); unions still not re-run.
+header); unions still not re-run. ⚑ corrected (review wave 2, 2026-10-03): after the review-wave-2 fix pass the hand table
+is **679 rows = 397 HIGH / 267 MED / 15 LOW** (+1 row `FUN_10014120`; 6 MED → HIGH on quoted
+listings, 2 HIGH → MED; function-roles.md header).
 
 ## Topical files
 | file | lines | sections | labels present (`grep -o '\[HIGH'` etc.: H/M/L) |
@@ -67,7 +69,10 @@ added text to every topical file (see Review ledger). The nine wave-1 rows were 
 pass then lowered role-row/table labels (`… | MED | … ⚑ label audit`) and added text, so those
 per-file counts are pre-fix-pass. The nine wave-2 rows (marked "(wave 2)") were counted on
 2026-10-03 at commit c79d5e2 (same commands), before their Fable review; function-roles.md is
-now 969 lines.
+now 969 lines. The review-wave-2 fix pass (`FIXPASS-wave2-2026-10-03.md`) then lowered 32 owning-file
+role rows (plus a few matching body-table rows) from HIGH to MED (`… | MED | … ⚑ label audit (review
+wave 2)`), raised four back to HIGH on quoted listings and added text to every wave-2 file, so the
+nine wave-2 per-file counts above are pre-fix-pass.
 
 Tools (`docs/deimos/tools/`, all run in this session):
 `list_paks.py` (pak census/listing/decode/audio/images), `StringXrefs.java` (Ghidra post-script:
@@ -217,7 +222,8 @@ Wave 1 additions (2026-10-03)
     `canBeSpawnedOnlyWhenPlayersActive`) — weapons-projectiles.md NR 1.~~ → `+0x39` = level end
     reached: set `10006db4` (`FUN_10006b50`), cleared `10007248` (`FUN_10007170`) and
     `10005524`/`10005828` (session init); five gates (loose-ends-combat.md §2,
-    loose-ends-session.md §8.8). ⚑ closed (wave 2, 2026-10-03)
+    loose-ends-session.md §8.8). ⚑ closed (wave 2, 2026-10-03) — ⚑ corrected (review wave 2, 2026-10-03): one closure (the
+    two files closed it independently and agree; combat §2 is the primary text).
 31. Weapon-def keys with no consumer found (`numAmmoInPack`, `ammoWarnAtCount`, `shieldIncrease`,
     `livesIncrease`, `invulnerableForTime`, `maxAllowed`, …) — weapons-projectiles.md NR 3.
 32. ~~Owner index `entity+0xd8` of enemy-spawned entities (do enemy-shot kills ever score?) —
@@ -243,9 +249,13 @@ Wave 2 additions (2026-10-03)
     only 0/1; xrefs to `_DAT_100df198`) — sprite-geometry-draw.md NR 2.
 37. Scaled blitters (`FUN_1001c270` … `FUN_1001bfd0`) unread: sampling rule for scaled sprites —
     sprite-geometry-draw.md NR 6 (also hud-scorebar.md NR 2).
-38. Whether `FUN_100009e0` appends at the list tail (dump says tail, MED; listing would settle it).
+38. ~~Whether `FUN_100009e0` appends at the list tail (dump says tail, MED; listing would settle it).
     It decides whether an entity spawned mid-update emits particles in the same tick (replay
-    order) — particles-debris-blur.md NR 2, loose-ends-session.md role rows.
+    order) — particles-debris-blur.md NR 2, loose-ends-session.md role rows.~~ → ⚑ corrected (review wave 2, 2026-10-03) #C5:
+    **tail** — listing `$W/disasm-w2s5c.txt` `10000a5c stw r31,0x4(r3)` (old tail→next),
+    `10000a68 stw r3,0x0(r31)` (prev = old tail), `10000a70 stw r31,0x8(r28)` (tail = node); an
+    entity spawned mid-update is reached by the same pass (particles-debris-blur.md NR 2,
+    function-roles.md `FUN_100009e0` HIGH).
 39. LCG state at the first app draw = image value 1 (assumes a pre-execution data image and no
     indirect `rand` before `FUN_100431f0`); affects only the particle direction table —
     particles-debris-blur.md NR 3.
@@ -267,7 +277,9 @@ Wave 2 additions (2026-10-03)
 47. Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
     and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.
 48. In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
-    unrecovered jump table at `0x10048fc8`) — loose-ends-session.md NR 1.
+    unrecovered jump table at `0x10048fc8`) — loose-ends-session.md NR 1. ⚑ corrected (review wave 2, 2026-10-03) #C10
+    narrowed: event code 8 = the Quit AppleEvent (high-level event 23 at `100490ec`, front-end.md
+    §2.5, HIGH); still open: whether that event is pumped during play.
 49. Pitch direction by ear: the code makes `pitch` a duration multiplier (speed 1/p) — Ben listens
     to `exsl` at 0.5 or `icbu` — sound-music.md NR 1.
 50. `ampCmd` full scale on a sampled-sound channel (255 or 256): decides whether music at pref 100
@@ -280,8 +292,16 @@ Wave 2 additions (2026-10-03)
     front-end.md NR 2.
 54. Music state after a demo/replay returns to the menu (`inmu` not restarted in modes 1/2?) —
     front-end.md NR 4.
-55. Whether erasing high scores (Option+SCORES) is saved immediately (`FUN_10004ae0` writes the
-    live prefs; prefs are written at quit by `FUN_100045f0`) — front-end.md NR 7.
+55. ~~Whether erasing high scores (Option+SCORES) is saved immediately (`FUN_10004ae0` writes the
+    live prefs; prefs are written at quit by `FUN_100045f0`) — front-end.md NR 7.~~ → ⚑ corrected (review wave 2, 2026-10-03)
+    #C7: not immediately — saved at quit (`FUN_10000630 → FUN_100045f0`, loose-ends-session.md
+    §3.2; front-end.md §4.3 step 4 corrected: `FUN_100047f0` only copies into the live prefs).
+Review wave 2 fix pass (2026-10-03)
+56. Static initialisers (32 callees of `FUN_10000000`) overwrite module templates before main;
+    every bank value read from the data image needs the audit (critic C1; wave 3). Proven case:
+    `FUN_10014120` turns the sprite template clip from 0 into {0, 0, 480, 416}
+    (sprite-geometry-draw.md §3.1); cautions placed at hud-scorebar.md NR 7, `FUN_10030e70`,
+    `FUN_10039100`, `FUN_100228d0`, `FUN_1002a4f0`. ⚑ corrected (review wave 2, 2026-10-03)
 
 ## Append rule
 New findings append to the topical file they belong to (or a new topical file of ≤ ~600 lines)
@@ -344,7 +364,7 @@ id)`, `FUN_10010570` REVERSE) and `FUN_1003cf10` (unit-module init) were resolve
 raw listing (`$W/disasm-fix.txt`) — function-roles.md rows, losing files corrected (damage §2.5,
 spawn §5, bosses §2.4/role rows); engine-loop.md §9 gained the unread rand-consumer list (LOW).
 
-**Wave 2 (2026-10-03) — RE-bank deepening, nine topical files, pending Fable review**
+**Wave 2 (2026-10-03) — RE-bank deepening, nine topical files**
 (`sprite-geometry-draw.md`, `particles-debris-blur.md`, `timing-frame.md`, `hud-scorebar.md`,
 `messages-notices-console.md`, `loose-ends-combat.md`, `loose-ends-session.md`, `sound-music.md`,
 `front-end.md`; reader output at c79d5e2). Synthesis merged 168 new + 96 corrected rows into
@@ -361,3 +381,34 @@ results: no speed setting exists; 30.07 ticks/s from the 2-tick limiter (`FPS_De
 console commands are live; game flag `+0x39` = level end reached; particle draws are in the replay
 stream; M_Sound is a 16-voice software mixer. Wave-1 file-level NRs closed by wave 2 are listed in
 each wave-2 file's "INDEX updates" section (not re-marked in the wave-1 files).
+**Verdict: ACCEPT_WITH_FIXES** — Fable review of commit c79d5e2 (1 Important, 8 Minor; 196 HIGH
+claims re-derived: 192 confirmed / 4 wrong; full text `REVIEW-wave2-2026-10-03.md`; critic
+`CRITIC-wave2-2026-10-03.md`; fix-pass summary `FIXPASS-wave2-2026-10-03.md`). Every fix is marked
+inline with `⚑ corrected (review wave 2, 2026-10-03) #id` (or `⚑ label audit (review wave 2)`).
+| # | sev | finding | landed in |
+|---|---|---|---|
+| I1 | Imp | FPS monitor publishes the count before the pref-10 test (`10030688`/`10030690` before `10030694 bl 0x10004ef0`); only the deficit/auto-interlace block is gated | timing-frame.md §2.6, §4 limiter-off bullet, role row; function-roles.md `FUN_10030640` |
+| M1 | Min | compare polarity of `FUN_10021470` / `FUN_10009750` — **checked and not adopted**: the `xor; srawi 1; and; subf; rlwinm` sequence evaluates to **signed** `a > b` (e.g. (0x80000000, 1) → 0); the review's own two test points also fit signed | timing-frame.md §7 + role row (unsigned → signed); loose-ends-session.md §2.2, §7, role row (signed kept, listing cited); function-roles.md `FUN_10009750` (conflict closed: signed), `FUN_10021470` |
+| M2 | Min | 34 `bl 0x10033220` sites, two (`0x10038ce4`, `0x10038ed8`) in unreachable G_EntityGroup debug handlers | loose-ends-combat.md §4.4 |
+| M3 | Min | label audit of HIGH rows on dump/read | merged into Part C below: `FUN_1001dd20`/`FUN_1001df00` HIGH with listing; `FUN_100d1780` → MED; `FUN_10010120` HIGH kept with listing `100101cc..100101f8`; the rest lowered in the owning files |
+| M4 | Min | `` ` ``/`~` set the console draw flag `DAT_100e01f0` (`1002d354`); draw reads/clears it (`1002d434`, `1002d4d4`, `1002d4dc`, confirmed) | messages-notices-console.md §5.1; timing-frame.md not-read list |
+| M5 | Min | 12 sound-lib functions in range had no row | sound-music.md scope ("not read" line) |
+| M6 | Min | "Game - Preferences" is the DITL/DLOG 190 resource name; the DLOG title is empty | timing-frame.md §6 (hud-scorebar.md has no such claim) |
+| M7 | Min | cross-file closures: SHADOWS unregistered → shadows always on; fade direction HIGH; easter eggs = BIKI/FISJ; MENU 128/2000 labels | sprite-geometry-draw.md §0, §3.2, §5.1, NR 4; front-end.md §5.1, NR 3, NR 8; loose-ends-session.md §3.2 |
+| M8 | Min | TickCount callers also `FUN_1000d6d0`, `FUN_10023040`, `FUN_10025330` | timing-frame.md §4 |
+| C1 | HIGH | static initialiser `FUN_10014120` writes the sprite template: clip = {0, 0, 480, 416} at runtime | sprite-geometry-draw.md §0, §3.1; cautions in hud-scorebar.md §4 + NR 7, scoring-bonuses.md `FUN_10030e70`, spawn-and-waves.md §1.1, front-end.md §4.2 + census, player-physics.md + particles-debris-blur.md `FUN_1002a4f0`, function-roles.md rows; `FUN_10014120` new HIGH row (units-movement.md row raised); NOT-RESOLVED #56 added |
+| C2 | — | controller +4 = present selector (1 `FUN_1000beb0`, 0 `FUN_1000bc60`); the fades' 2nd argument selects `FUN_1000bc60`/`FUN_1000bd80` — neither is "interlace" | front-end.md §3 step 4, §5.1, §8, `FUN_10030df0` row; function-roles.md conflict closed |
+| C3 | — | shadows on layers 2/4/6 (0 for stamps), layer 1 = stamp sprite | timing-frame.md NR 3 struck |
+| C4 | — | particle-draw gate — **checked and not adopted** as "ticked frames": `10030cc8 rlwinm. r0,r28; beq` tests end-frame `param_2`, constant 1 from the game loop (`10005aac li r4,0x1`), 0 from level select; so every presented game frame | particles-debris-blur.md §2.9 + role row; function-roles.md `FUN_10043ba0` |
+| C5 | — | `FUN_10005ce0` = game time; `FUN_10043ba0` = particle draw; `FUN_1001ec80` one wording (MED); `FUN_100009e0` appends at the tail (listing) | sprite-geometry-draw.md §0, §3.2, §6, NR 1/8, rows; timing-frame.md not-read list; loose-ends-session.md rows; function-roles.md rows; particles NR 2; INDEX #38 struck |
+| C6 | — | SHADOWS/SHADOW not registered (= M7a) | sprite-geometry-draw.md §3.2 |
+| C7 | — | `FUN_100047f0` copies into live prefs; disk write at quit | front-end.md §4.3 step 4, NR 7; INDEX #55 struck |
+| C8 | — | two-player insertion rules replace "tie-shift" | front-end.md §4.3 |
+| C9 | — | easter eggs BIKI/FISJ, ctype table `0x100f0f94` | loose-ends-session.md §3.2, NR 5 struck |
+| C10 | — | event code 8 = Quit AppleEvent (`100490ec`) | loose-ends-session.md §2.3, NR 1; INDEX #48 narrowed |
+| C11 | — | #12 closed by timing §3 | messages-notices-console.md INDEX updates, NR 3 |
+| C12 | — | TickCount 60.15 Hz nominal | loose-ends-session.md §6 |
+| O3 | — | rule-2 distance: `dist(polling entity, member) ≤ range` inclusive, range 0 = any (`10035140`, `10035184 fcmpo; 10035188 cror eq,lt,eq`) | bosses.md §3.1, §4 note, NR 1 struck, role row → HIGH; loose-ends-session.md §5.2, NR 4 struck; function-roles.md `FUN_10035070` |
+| — | — | `FUN_10029c00` = `PLAYER AIRWEP` (alias `AIR`) / `PLAYER GROUNDWEP` (alias `GROUND`), HIGH — not a conflict | function-roles.md, loose-ends-session.md §8.1 + row, messages-notices-console.md row, weapons-projectiles.md §2 + §4 + row, player-physics.md NR 5 + row |
+| L | — | label reconciliation of the 36 label-rule rows: 4 raised to HIGH on quoted listings (`FUN_1001dd20`, `FUN_1001df00`, `FUN_10018b20`, `FUN_10048120`), 32 lowered to MED in their owning files; table now 679 = 397/267/15 | function-roles.md header + rows; hud-scorebar, front-end, loose-ends-session, sprite-geometry-draw, timing-frame, particles-debris-blur, sound-music role rows |
+| S | — | stale NRs struck with pointers: sprite NR 1, 4, 8; particles NR 2, 4, 5; timing NR 3; hud NR 1, 2; messages NR 3, 7; front NR 3, 5, 7, 8; weapons-projectiles NR 4; session NR 4 (both halves), NR 5; bosses NR 1; player-physics NR 5; INDEX #30 merged | the files named |

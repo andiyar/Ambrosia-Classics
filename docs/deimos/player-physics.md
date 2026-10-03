@@ -389,9 +389,11 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 3. The checksum arithmetic of §9 (registration, out of scope by project ruling).
 4. Lifecycle of the crosshair flag `+0x360` (set in `FUN_1003b3c0`; clearer not traced) and the
    consumer of flli 149/150 `Crosshair_FadeIn/OutPercentageRate`.
-5. `FUN_10029c00` has no direct caller (`$W/callers.txt`); body reads sector and re-assigns a
+5. ~~`FUN_10029c00` has no direct caller (`$W/callers.txt`); body reads sector and re-assigns a
    handler weapon slot via `FUN_1002adb0`/`FUN_1003b180`. Settle: search the data image for
-   its address (function-pointer table).
+   its address (function-pointer table).~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: two raw callers `10008408` ('PEAA')
+   and `10008490` ('PEAG') in the debug command `PLAYER AIRWEP|AIR` / `PLAYER GROUNDWEP|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`), unregistered → unreachable in 1.0.6
+   (messages-notices-console.md §5.5, loose-ends-session.md §8.1).
 6. Reset points of the lives-decrement gate (`FUN_10006b50` `*param_1` = `local_a27[2]` in
    `FUN_100051a0`). Settle: read `FUN_100051a0` around the level loop.
 7. Hit factor f1 passed by `FUN_10033850` to `FUN_10027100` (damage reader).
@@ -438,13 +440,13 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 | `FUN_10029b20` | G_Player.cc | step score multiplier 1→2→3→4→5→10 | HIGH | jump table `0x100e93c0` |
 | `FUN_10029bd0` / `FUN_10029fd0` | G_Player.cc | get / reset(1) multiplier | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | get / set flag +0xbd | LOW | dump |
-| `FUN_10029c00` | G_Player.cc | re-assign a weapon slot for the sector (no direct caller) | LOW | dump |
+| `FUN_10029c00` | G_Player.cc | advance a weapon slot to the next weapon of its type available at the sector; reached only from the debug command `PLAYER AIRWEP\|AIR` / `PLAYER GROUNDWEP\|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`) (unreachable in 1.0.6) | HIGH | raw calls `10008408`/`10008490` + strings (messages-notices-console.md §5.5) — ⚑ corrected (review wave 2, 2026-10-03): was "(no direct caller)" LOW |
 | `FUN_10029cb0` | G_Player.cc | get +0xc0 (level ref) | MED | dump |
 | `FUN_10029cc0` | G_Player.cc | become active / respawn: start pos, v 0, state 4, appear fade, spawn entry unit | HIGH | disasm |
 | `FUN_10029f10` / `FUN_10029f60` | G_Player.cc | reset ship sprite/frame / sprite from weapon appearance face | HIGH | disasm |
 | `FUN_1002a150` | G_Player.cc | life-state step (entering, dying, lives decrement, game over, invulnerability expiry) | HIGH | disasm |
 | `FUN_1002a450` | G_Player.cc | load-and-check a permanent unit def | MED | strings |
-| `FUN_1002a4f0` | (static init) | spawn-request template statics | LOW | dump |
+| `FUN_1002a4f0` | (static init) | spawn-request template statics | LOW | dump — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: it writes `0x100e9178…` before `main`, so no value of those templates may be taken from the data image (INDEX #56) |
 | `FUN_1002a5b0` / `FUN_1002a610` | G_Debris.cc (span) | register / tear down "Debris" + NUMDEBRIS console command | MED | strings |
 | `FUN_10039e70` | G_PlayerDefinitions.cc | `plde` parser (table below) | HIGH | disasm reader calls |
 `plde` key → offset (`FUN_10039e70`, from the listing pairs `addi r5,r31,<key>` /

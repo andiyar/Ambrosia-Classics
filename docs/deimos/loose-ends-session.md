@@ -86,20 +86,26 @@ Film", 2 attract demo). Result (0x18 bytes at `r1+0x44`), filled at the end of `
 So: **int pref 3 (highest sector) = max(old, best)**, with `best = max sector over players with
 score > 0, minus 1 unless the finale was reached, at least 1`; only for a non-film, non-cheated,
 not-quit game started at sector 1. **High-score entry** runs under the same gates when any present
-player passes `FUN_10021470` (score > 15th entry, signed strict; scoring-bonuses.md §9.1). This
+player passes `FUN_10021470` (score > 15th entry, signed strict; scoring-bonuses.md §9.1; ⚑ corrected (review wave 2, 2026-10-03)
+#M1 checked and **not** adopted: the listing `10021494 xor r0,r31,r0; 10021498 srawi r3,r0,0x1;
+1002149c and r0,r0,r31; 100214a0 subf r0,r0,r3; 100214a4 rlwinm r3,r0,0x1,0x1f,0x1f` evaluates to
+the **signed** `score > entry` on 200 000 random pairs plus all sign-boundary pairs, e.g.
+(0x80000000, 1) → 0 and (0xFFFFFFFF, 0) → 0, which unsigned would give as 1). This
 upgrades scoring-bonuses.md §9.2 (MED) to HIGH; the reading is unchanged.
 
 ### 2.3 `DAT_100e01b8` = "quit requested" [HIGH for the writers; MED for the in-game route]
 Writers (dump, `0x100e01b8` = r2−0x6178): cleared at the top of the menu loop `FUN_100229a0`;
 set by the menu key handler `FUN_10023b00` for `'q'`/`'Q'`; by `FUN_10023330(part == 2)` (menu
 command); by `FUN_10022ed0` (event code 8 of `FUN_10048f30`, whose jump table Ghidra could not
-recover). Readers: the menu loop (`if set → FUN_10024f90` = flash button 6, set
+recover; ⚑ corrected (review wave 2, 2026-10-03) #C10: code 8 = the **Quit AppleEvent** — high-level event 23 at `100490ec`
+returns 8 when `b8` is set after `AEProcessAppleEvent`, front-end.md §2.5 [HIGH]). Readers: the menu loop (`if set → FUN_10024f90` = flash button 6, set
 `DAT_100e01b9` = leave the app), `FUN_10022ef0` (the Caps-Lock pause loop, key 0x39, exits with
 "quit" when it is set → frame controller quit flag → `FUN_100064c0` ends the game), and the gate
 above. So a game that ends because the player quit the application gives **no pref update and
 no high-score entry**, and the menu then quits. (The `aevt`/`quit` Apple-event handler installed
 by `FUN_10049aa0` is the probable in-game setter; its TVector target was not traced. LOW for
-that link.)
+that link.) ⚑ corrected (review wave 2, 2026-10-03) #C10: the aevt route itself is identified (event 23 → code 8, front-end.md
+§2.5, HIGH); what stays open is only whether the event pump runs during play (INDEX #48).
 
 ## 3. High-score insertion and name entry
 
@@ -145,7 +151,9 @@ chars (ctype mask 0xdc) are appended up to 20, else sound 15. The `0x5e5b` compa
 fails the printable test). On commit: sound 4; the name is upper-cased for the easter-egg test
 (`FUN_100463b0`, `FUN_10057a30`): DILVISH → "Just Ship It, Baby", SUPERCOBRA → "Munkis Rool
 J00", PYTHOS → "Leonard Cohen Rules J00", two more from `0x100e8af8`/`0x100e8b63` (one gives
-"Filthy Communist"); an empty name becomes "Jar Jar Must Die". The result is stored into the slot
+"Filthy Communist") — ⚑ corrected (review wave 2, 2026-10-03) #M7c #C9: these are front-end.md §4.3's `BIKI` → "Filthy
+Communist" and `FISJ` → "Daikajinn!!" (order BIKI, DILVISH, SUPERCOBRA, PYTHOS, FISJ, last match
+wins; ctype table `0x100f0f94` checked there); an empty name becomes "Jar Jar Must Die". The result is stored into the slot
 **and back into the player's default name** (`FUN_10057780(iVar14, iVar15)`). After commit the
 screen closes after flli 79 `Scores_DurationBetweenPlayers` = 25 TickCount ticks or a key/click;
 flli 78 `Scores_Duration` = 600 is the menu-viewing timeout (`param_4 == 0`).
@@ -212,7 +220,10 @@ pickup, `migs` gold-coin storm; sound `powe`) for 40 → S4 Close 30 → S0. In 
 (map − 32 in x at view offset 0, y = map y at the top of the map) the flags fall 18–28 px from
 miac/mipo/mimu/migc respectively. That is within 60 for any view offset in [−32, 31] (worst case
 54.6 px, migc at offset −32), so **each flag opens one iris**. [MED — distance helper of rule 2
-not read, bosses.md NR 1; frame equivalence assumed]
+not read, bosses.md NR 1; frame equivalence assumed] ⚑ corrected (review wave 2, 2026-10-03) (O3): the rule-2 test is now
+listing-read — inclusive `dist ≤ 60` from the polling iris (bosses.md §3.1, HIGH) with the
+truncated integer distance (54.6 → 54); the −32 frame rule is settled by loose-ends-combat.md
+§5.1. The per-iris px figures stay MED (frame equivalence).
 
 ### 5.3 Timeline (T0 = the level-end tick that spawns `noal`; ticks of game time)
 | tick | event |
@@ -246,7 +257,8 @@ Uses: level end `FUN_10007170` (fade out, then the next level); in-game fade-in 
 flli 18 = 2 of every level (`FUN_100051a0`: `FUN_1000ba70(display,1)` and the level music, once per
 level because `FUN_100064d0` clears `G+0x38`, `10006510 stb r5,0x38(r30)`); `FUN_100234d0`:
 fade out before the level select and after the game, fade in on the `back` background.
-TickCount is 60 Hz (`FUN_100497f0` = `TickCount` glue), so the transitions are real time, not
+TickCount is 60.15 Hz nominal (timing-frame.md §4; exact rate = INDEX #42) (⚑ corrected (review wave 2, 2026-10-03) #C12:
+was "60 Hz") (`FUN_100497f0` = `TickCount` glue), so the transitions are real time, not
 logic ticks.
 
 ## 7. The film (replay), end to end
@@ -275,7 +287,9 @@ routines; `FUN_10009970` cursor reset has the callers `FUN_10009390`/`FUN_100096
 multi-level game therefore records all its levels into one stream, but "Last Film" replays only
 the **start level** of that game.
 **Replay ends** when any key or mouse button is pressed (`FUN_10048e60`), or when P1's cursor > P1's
-frames (`FUN_10009750`, brute-forced idiom = signed `cursor > frames`; checked after every draw,
+frames (`FUN_10009750`, brute-forced idiom = signed `cursor > frames` — ⚑ corrected (review wave 2, 2026-10-03) #M1 checked and
+**not** adopted: listing `10009758 xor; 1000975c srawi 1; 10009760 and r0,r0,r4; 10009764 subf;
+10009768 rlwinm r3,r0,0x1,0x1f,0x1f` is the signed compare, as for `FUN_10021470` §2.2; checked after every draw,
 `10005a24..10005a48`), or at level complete, or at game over. `FUN_100097a0` still reads the
 byte at `cursor == frames` (zero), so the replay runs one tick past the recording. P2's frames
 are never checked. While replaying, "REPLAY" (GameString 9) is drawn and cheats are refused.
@@ -295,7 +309,10 @@ pak copy (§8.7). Each game overwrites the previous Last Film.
 
 ## 8. D14 — miscellany
 
-8.1 **`FUN_10029c00 (player, type)` = console weapon cheat** [HIGH — raw decode]. There is no
+8.1 **`FUN_10029c00 (player, type)` = console weapon cheat** [HIGH — raw decode]. ⚑ corrected (review wave 2, 2026-10-03)
+(`FUN_10029c00` conflict closed): the command is `PLAYER AIRWEP|AIR` / `PLAYER GROUNDWEP|GROUND`
+— sub-keywords of the PLAYER handler at `0x10007ff0` (messages-notices-console.md §5.5); this
+section had dropped the `PLAYER` prefix. PLAYER is unregistered, so it is unreachable in 1.0.6. There is no
 data-image pointer to it (all three memory images scanned for the word 0x10029c00), but there are
 two direct `bl` calls in code Ghidra left undefined: `10008408` with `r4 = 0x5045<<16 + 0x4141` =
 `'PEAA'` and `10008490` with `'PEAG'`. Both run in loops over the players, gated by
@@ -403,17 +420,25 @@ would corrupt one row of the table.
 1. The in-game route that sets `DAT_100e01b8` (quit) during play: the `aevt/quit` handler TVector
    (`_DAT_100dea78`, `FUN_10049aa0`) and event code 8 of `FUN_10048f30` (unrecovered jump table).
    Settle: resolve the TVector's code address and read it; recover the jump table at `0x10048fc8`.
+   ⚑ corrected (review wave 2, 2026-10-03) #C10 narrowed: code 8 = the Quit AppleEvent (event 23 at `100490ec`, front-end.md
+   §2.5); open only whether that event is pumped during play.
 2. `FUN_10045ab0` (the alert behind `FUN_1000ced0`) — whether a non-fatal alert can still quit
    (e.g. a Quit button). Decides whether "Tag Index Incomplete! Aborting." really continues.
 3. The finale's same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850`
    update) and `aieg`'s group-delay meaning (members staggered vs spawn-in delay). These shift
    §5.3 by ±1 tick and set the explosion spread. Settle with `FUN_10033220`/`FUN_10035cd0`
    listings.
-4. The rule-2 distance (`FUN_10035070`/`FUN_10042e90`, bosses.md NR 1) and the frame of
+4. ~~The rule-2 distance (`FUN_10035070`/`FUN_10042e90`, bosses.md NR 1) and the frame of
    spawn-set children versus level objects (−32 x shift, bosses.md NR 4). Both affect whether every
-   flag opens its iris; §5.2 shows a ≥ 5 px margin under the stated assumptions.
-5. Name-entry easter eggs at `0x100e8af8`/`0x100e8b63` (strings not decoded) and the ctype table
-   `_DAT_100dea48` (exact accepted character set).
+   flag opens its iris; §5.2 shows a ≥ 5 px margin under the stated assumptions.~~ → ⚑ corrected (review wave 2, 2026-10-03)
+   #S (O3): rule 2 = `dist(polling entity, member) ≤ range`, inclusive, range 0 = any distance
+   (bosses.md §3.1, listing `10035184 fcmpo cr0,f1,f2; 10035188 cror eq,lt,eq`), distance =
+   `FUN_10042e90` sqrtI(trunc(dx²+dy²)) (damage-health-death.md §1, HIGH); the −32 half →
+   loose-ends-combat.md §5.1 (no −32 shift for spawn-set children; only `FUN_10035900` level
+   objects).
+5. ~~Name-entry easter eggs at `0x100e8af8`/`0x100e8b63` (strings not decoded) and the ctype table
+   `_DAT_100dea48` (exact accepted character set).~~ → ⚑ corrected (review wave 2, 2026-10-03) #C9 #S: front-end.md §4.3 —
+   `BIKI` → "Filthy Communist", `FISJ` → "Daikajinn!!"; ctype table `0x100f0f94` checked.
 6. `FUN_10048e60` (replay abort) — which keys/buttons count (assumed any key or click).
 7. Pak directory order on modern file systems (HFS order = alphabetical by name), relevant only
    when duplicate tags exist across paks (none in 1.0.6).
@@ -433,21 +458,22 @@ would corrupt one row of the table.
 | `FUN_1000ced0` | — (unattributed) | error alert; arg 3 ≠ 0 → shutdown | MED | dump |
 | `FUN_100461b0` | — (unattributed) | Gestalt('sysv') ≥ 0x0A00 (Mac OS X) | HIGH | listing |
 | `FUN_1003d550` | G_UnitDefinitions | find unit by ID: entity's family member list, then the master list | HIGH | raw call sites `100155b4`, `10015d74`; entity+0x98 from `100144c8` |
-| `FUN_10029c00` | G_Player | console AIRWEP/GROUNDWEP: cycle a weapon type to the next available at the sector | HIGH | raw calls `10008408` ('PEAA'), `10008490` ('PEAG') |
+| `FUN_10029c00` | G_Player | debug command `PLAYER AIRWEP\|AIR` / `PLAYER GROUNDWEP\|GROUND` (PLAYER handler `0x10007ff0`, unregistered → unreachable in 1.0.6): cycle a weapon type to the next available at the sector | HIGH | raw calls `10008408` ('PEAA'), `10008490` ('PEAG'); strings `0x100e41fc`/`4203`/`4207`/`4211` — ⚑ corrected (review wave 2, 2026-10-03) (conflict closed): was "console AIRWEP/GROUNDWEP" without the PLAYER prefix |
 | ⚑ corrected `FUN_10012ca0` | G_GameObject (span) | integrate position; mode-1 keep test `x±hw` within [−128, 544], `y ≥ −128` (no half height), `y−hh ≤ 608`; mode 0 dead | HIGH | listing §8.6; bounds were MED |
 | `FUN_1000b9a0` | — (display module, unattributed) | fade to black, 33 steps a=32→0, in-place compounding scale, ≥1 TickCount per step | HIGH | listing §6 |
 | `FUN_1000ba70` | — (display module, unattributed) | fade from black to a snapshot, 9 steps a=0,4…32 | HIGH | listing §6 |
 | `FUN_1001e9d0` | U_SpriteBlit | RGB555 two-source blend floor((A·a+B·(32−a))/32) | HIGH | listing §6 |
-| `FUN_1001ec80` | U_SpriteBlit | in-place blend of a buffer toward a colour (a = 32 no-op) | MED | dump |
+| `FUN_1001ec80` | U_SpriteBlit | in-place blend of a buffer toward a colour (draw type `COST`, a = 32 no-op) | MED | dump — ⚑ corrected (review wave 2, 2026-10-03) #C5: wording harmonised with function-roles.md |
 | `FUN_10009ac0` | M_PixelBuffer | clone a pixel buffer (with contents) | MED | dump ("clonePtr") |
 | `FUN_100069b0` | G_Game (span) | load a film: mode 2 = next "Demo" tag (counter G+0x24, wraps), else `last`; srand(film seed) | HIGH | dump + listing `10006b24` |
-| `FUN_10009750` | G_Film (span) | replay exhausted: P1 cursor > P1 frames (signed) | HIGH | dump idiom brute-forced |
+| `FUN_10009750` | G_Film (span) | replay exhausted: P1 cursor > P1 frames (signed) | HIGH | dump idiom brute-forced; listing `10009750..1000976c` evaluated signed — ⚑ corrected (review wave 2, 2026-10-03) #M1: review's "unsigned" not adopted (§7) |
 | `FUN_100095b0` | G_Film.cc | save the film image as `film`/`last` "Last Film" in Data:Local, rebuild the tag index | HIGH | dump + listing `10005b00..10005b18` |
-| `FUN_10004300` / `FUN_100043c0` | — (tag index, pak-format.md §2) | apply overrides: each Local record removes every non-Local record with the same (type, ID) | HIGH | dump |
-| `FUN_100009e0` / `FUN_10000c00` | U_LinkedList.cc | append at tail / unlink + free (iterator to prev) | MED | dump |
+| `FUN_10004300` / `FUN_100043c0` | — (tag index, pak-format.md §2) | apply overrides: each Local record removes every non-Local record with the same (type, ID) | MED | dump — ⚑ label audit (review wave 2): was HIGH on dump only |
+| `FUN_100009e0` | U_LinkedList.cc | append at tail (header {+0 count, +4 head, +8 tail}, node {+0 prev, +4 next, +8 data}) | HIGH | listing `10000a4c stw r31,0x4(r28)` (head if empty), `10000a5c stw r31,0x4(r3)` (old tail→next), `10000a70 stw r31,0x8(r28)` (tail = node), `10000a7c` count+1 (`$W/disasm-w2s5c.txt`) — ⚑ corrected (review wave 2, 2026-10-03) #C5: was MED (dump), INDEX #38 |
+| `FUN_10000c00` | U_LinkedList.cc | unlink + free (iterator to prev) | MED | dump |
 | `FUN_10022ef0` | ~after G_Scores | Caps-Lock pause loop; returns 1 when quit is requested meanwhile | MED | dump |
 | `FUN_10024f90` | G_Interface | menu Quit: flash button 6, set leave-app flag | MED | dump |
-| `FUN_10024de0` / `FUN_10024e10` | G_Interface | start attract demo (film 2) / play Last Film (film 1) | HIGH | dump |
+| `FUN_10024de0` / `FUN_10024e10` | G_Interface | start attract demo (film 2) / play Last Film (film 1) | MED | dump — ⚑ label audit (review wave 2): was HIGH on dump only |
 
 ## INDEX updates (for merge)
 - **#2 closed** → §8.7 (Local overrides every pak copy; pak duplicates both kept, first in list
@@ -457,7 +483,8 @@ would corrupt one row of the table.
   parse error quits. ⚑ New conflict for pak-format.md §2.3 item 4: `FUN_10000fd0` is non-fatal.
 - **#27 closed** → §5 (the full `noal` → `12gc` → `miof` → Mission Iris chain with timings; `leen`
   played once by `noal` S4). Residual ±1-tick items are this file's NR 3/4.
-- **#30 closed** → §8.8 (writers of `G+0x39`).
+- **#30 closed** → §8.8 (writers of `G+0x39`). ⚑ corrected (review wave 2, 2026-10-03): the same closure as loose-ends-combat.md §2
+  (they agree); INDEX #30 carries one merged closure line.
 - Wave-1 file NRs closed here: player-physics.md NR 1 (§1), NR 5 (§8.1), NR 6 (§4);
   scoring-bonuses.md NR 1 (§3.1), NR 2 (§2.2–2.3, `DAT_100e01b8` = quit requested), NR 5 (§5);
   level-scroll-objects.md NR 2 (§8.5), NR 3 (§8.6), NR 7 (§8.9), NR 9 (§6); bosses.md NR 8

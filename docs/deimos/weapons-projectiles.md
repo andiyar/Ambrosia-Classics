@@ -207,7 +207,8 @@ stfs f1,0x124(r27)`, `1003ae64 stw r0,0xd8(r27)` (`lis r3,0x706c` = 'pl..'), `10
   uncalled `FUN_10029c00` can change it. [HIGH] ⚑ corrected (wave 2, 2026-10-03): was "uncalled" — `FUN_10029c00` has two raw
   callers (`10008408` 'PEAA', `10008490` 'PEAG') in an undecompiled debug console handler that is
   not registered in 1.0.6, so it is unreachable in release — see messages-notices-console.md §5.5,
-  loose-ends-session.md §8.1.
+  loose-ends-session.md §8.1. ⚑ corrected (review wave 2, 2026-10-03) (`FUN_10029c00` conflict closed): the command is
+  `PLAYER AIRWEP|AIR` / `PLAYER GROUNDWEP|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`); unregistered → unreachable in 1.0.6 [HIGH for the code + strings].
 - **Death / respawn**: `FUN_1002a150` → `FUN_10029cc0` → `FUN_1003af90(h,0)` resets timers,
   power-up state, held counters and bomb salvo, and applies any pending switch, but does **not** touch
   `+0x58/+0x74`. **No weapon is lost on death.** [HIGH (listing `1003afc0…1003aff8`
@@ -349,6 +350,8 @@ on each state change `FUN_100146f0` cycles the entity's shown weapon `+0xf8` wit
 these types** (census: coin 4, exli 1, mult 1, shie 2, none 378). The only code that moves a player to the
 next weapon of a type, `FUN_10029c00` (G_Player), has no caller in the dump and no pointer in either
 memory image. [HIGH for the census and the code; LOW that `FUN_10029c00` is dead rather than reached indirectly]
+⚑ corrected (review wave 2, 2026-10-03): its only callers are the debug command `PLAYER AIRWEP|AIR` / `PLAYER GROUNDWEP|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`), unregistered → unreachable in 1.0.6
+(messages-notices-console.md §5.5) [HIGH].
 ⚑ corrected (wave 2, 2026-10-03): was "has no caller in the dump" — raw calls at `10008408`/`10008490` (debug console
 weapon command, AIRWEP/AIR/GROUNDWEP/GROUND strings), unregistered → unreachable in normal play —
 see loose-ends-session.md §8.1, messages-notices-console.md §5.5.
@@ -416,7 +419,8 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 3. Consumers of `numAmmoInPack`, `ammoWarnAtCount`, `ammoWarning_STR`, `shieldIncrease`, `livesIncrease`,
    `invulnerableForTime`, `maxAllowed`, `playerGlow_COLOR`, `name/description` (none found). A data
    xref of the definition pointer, or the editor code, would settle it.
-4. `FUN_10047670(snd, 0x4b, 100, 1)` argument meaning for the select sound (INDEX #11).
+4. ~~`FUN_10047670(snd, 0x4b, 100, 1)` argument meaning for the select sound (INDEX #11).~~ → ⚑ corrected (review wave 2, 2026-10-03)
+   #S: sound-music.md §2.3 (priority 0x4b = 75, volume 100, allowMultiple 1).
 5. Whether handler `+0x08` is ever cleared after a select (score-bar refresh flag). Only setup clears it.
 6. `bVar17` in the crosshair adjustment (which vertical limit pins the ship). Needs the listing of
    `FUN_10028170` around `0x100293xx`.
@@ -473,7 +477,7 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 | `FUN_10037580` | G_EntityGroup.cc | apply pickup by pickup_Type_ID (coin/exli/shie/mult; air/grnd only check player+0xce) | HIGH | listing |
 | `FUN_10026ee0` | G_Player.cc | overload warning pulse; 8th warning → player death | HIGH | read + plde offsets — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | ⚑ corrected `FUN_10027e50` | G_Player.cc | player death: death spawn, coin spill (MoneyUnit 50/10/5/1), state 3 | MED | read (was "coin unit selection") |
-| `FUN_10029c00` | G_Player.cc | advance player to next weapon of type (no caller found) | MED | read — ⚑ corrected (wave 2, 2026-10-03): callers found in an unregistered debug console handler (`10008408`, `10008490`); see messages-notices-console.md §5.5 |
+| `FUN_10029c00` | G_Player.cc | advance player to next weapon of type; reached only from the debug command `PLAYER AIRWEP\|AIR` / `PLAYER GROUNDWEP\|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`), unregistered → unreachable in 1.0.6 | HIGH | raw calls `10008408` ('PEAA'), `10008490` ('PEAG') + data-image strings — ⚑ corrected (wave 2, 2026-10-03): callers found in an unregistered debug console handler (`10008408`, `10008490`); see messages-notices-console.md §5.5 — ⚑ corrected (review wave 2, 2026-10-03) (conflict closed): was "(no caller found)" MED |
 | `FUN_10029f60` | G_Player.cc | ship sprite = displayed weapon's appearance face | HIGH | read — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 
 ## INDEX updates (for merge)

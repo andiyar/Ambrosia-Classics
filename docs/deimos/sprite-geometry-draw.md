@@ -31,14 +31,16 @@ Raw listings: `$W/disasm-w2s1.txt`, `$W/disasm-w2s1b.txt`, `$W/disasm-w2s1c.txt`
   - Air-layer shadows: a half-size copy of the sprite at offset (−24, +52).
   - Ground-layer shadows: full size at offset (−6, +8).
   - In both, the pixels under the silhouette are darkened to 20/32 of their brightness.
-  - The SHADOWS console flag (default on) gates all of them.
+  - The SHADOWS console flag (default on) gates all of them. ⚑ corrected (review wave 2, 2026-10-03) #M7a: SHADOWS is never
+    registered in 1.0.6, so the flag stays 1 and shadows are always on (§3.2).
 - **(5)** Visibility `+0x68` becomes an alpha of 32·(1 − v/100). Tint `+0x58` is a second
   solid-colour silhouette pass. Scale `+0x84` takes the scaled blit path.
 - **(6)** Draw order:
   - layers 0–1: terrain stamps, drawn into the terrain buffer
   - the terrain
   - layers 2–5: ground shadows and ground units
-  - `FUN_10043ba0` (not read)
+  - `FUN_10043ba0` = the particle draw (particles-debris-blur.md §2.9, HIGH; ⚑ corrected (review wave 2, 2026-10-03) #C5, was
+    "not read")
   - layers 6–15: air shadows, air units, player, effects, atmosphere, HUD
 
 ## 0. Constant resolution
@@ -55,8 +57,8 @@ python3 -c "from rd import *; p=u32(0x100df180); print([i32(p+4*i) for i in rang
 | `0x100df17c` (r2−0x71b4) | `0x100d6d0c` | Rect {0, 0, 480, 416} = game-area buffer | scaled path picks the unclipped blitter |
 | `0x100df0e8` (r2−0x7248) | `0x100d67c4` | f64 **0.0**, bias, **100.0**, **32.0**, **1.0**, 2⁵² | visibility/tint compares |
 | `0x100df0f0` (r2−0x7240) | `0x100d67a8` | f32 0.0, 100.0, 1.0, −32.0, **0.03125**, **32.0**, **0.5** (+0x18) | tint arithmetic; shadow factor 0.5 |
-| `0x100df0ec` (r2−0x7244) | `0x100d6788` | Rect {0, 0, 480, 416} | default entity clip rect (`FUN_10012650`) |
-| `r2+0xb4` (address, not a slot) | `0x100e63e4` | 0x4c-byte draw-command template (§3.1) | `FUN_10012fa0`, `FUN_10013460` |
+| `0x100df0ec` (r2−0x7244) | `0x100d6788` | Rect {0, 0, 480, 416} | default entity clip rect (`FUN_10012650`); also copied into the template clip by the static initialiser `FUN_10014120` (§3.1) |
+| `r2+0xb4` (address, not a slot) | `0x100e63e4` | 0x4c-byte draw-command template (§3.1). ⚑ corrected (review wave 2, 2026-10-03) #C1: the data-image bytes are **not** the runtime template — `FUN_10014120` (a static initialiser, runs before `main`) writes +0x04/+0x08 ← 0, clip +0x20..+0x2c ← {0, 0, 480, 416}, +0x38..+0x44 ← 0 (§3.1) | `FUN_10012fa0`, `FUN_10013460` |
 | `0x100df0ac` (r2−0x7284) | `0x100d6444` | f32 255, 65535, **100.0**, **32.0**, **0.0** | `FUN_10010c20` |
 | `0x100df5e8` (r2−0x6d48) | `0x100d77dc` | f64 0.0, 2³², 2³¹ | `FUN_1004d5c0` (double → unsigned) |
 flli items (`grep '^#' "$W/data/Game/flli/Game[gafl].flli.txt"`, line−1 = index): **48
@@ -168,8 +170,28 @@ Callers (callers.txt): `FUN_100146f0` (state enter), `FUN_10033850` (every entit
 
 ### 3.1 The 0x4c-byte draw command (template at `0x100e63e4`) [HIGH]
 Built on the stack by `FUN_10012fa0` (at r1+0x38) and `FUN_10013460` (r1+0x38). Field
-offsets come from the stores; the template comes from the data image (`b(0x100e63e4,0x4c)`).
-| off | field | template | entity source (FUN_10012fa0 listing) |
+offsets come from the stores. ⚑ corrected (review wave 2, 2026-10-03) #C1: the template is
+**not** the data image (`b(0x100e63e4,0x4c)`, was the source of the "template" column) — the
+static initialiser `FUN_10014120 @ 10014120` (a callee of `FUN_10000000`, runs before `main`)
+overwrites part of it. Raw listing (`$W/disasm-units.txt`), r8 = `addi r8,r2,0xb4` = `0x100e63e4`,
+single-word `lwz`/`stw` copies (no 8-byte loop, no hidden +8):
+```
+10014120 lwz r3,-0x7254(r2)  ; slot 0x100df0dc -> 0x100d6778 = {0, 0, 0, 0}
+10014128 lwz r7,0x0(r3) ; 10014130 lwz r6,0x4(r3) ; 10014134 stw r7,0x4(r8) ; 1001413c stw r6,0x8(r8)   ; +0x04/+0x08 <- 0
+10014124 lwz r4,-0x7244(r2)  ; slot 0x100df0ec -> 0x100d6788 = {0, 0, 0x1e0, 0x1a0} (code image)
+10014144 stw r0,0x20(r8) ; 1001414c stw r3,0x24(r8) ; 10014154 stw r0,0x28(r8) ; 10014160 stw r0,0x2c(r8)  ; clip <- {0, 0, 480, 416}
+10014150 lwz r5,-0x7258(r2)  ; slot 0x100df0d8 -> 0x100d6798 = {0, 0, 0, 0}
+10014168 stw r3,0x38(r8) ; 10014170 stw r0,0x3c(r8) ; 10014180 stw r4,0x40(r8) ; 1001418c stw r0,0x44(r8)  ; +0x38..+0x44 <- 0
+```
+(It also writes +0x08/+0x0c of the neighbouring block `r2+0x100` ← 0.) The data image holds an
+all-zero clip at +0x20..+0x2c; the **runtime template clip is the game area {top 0, left 0,
+bottom 480, right 416}** = the rect `0x100d6d0c` that `FUN_10019570` compares against. Consequence:
+any command builder that keeps the template clip gets a 416 × 480 game-area clip (and therefore
+the **unclipped** scaled blitter `FUN_1001a6f0`, §3.3), not a zero clip. Entity draws are not
+affected — `FUN_10012fa0` overwrites the clip from entity +0x3c..+0x48 (`10013098..100130b4`).
+Values in the "template" column below are now the runtime ones. [HIGH — raw listing + code-image
+bytes]
+| off | field | template (runtime, after `FUN_10014120`) | entity source (FUN_10012fa0 listing) |
 |---|---|---|---|
 | 0x00 | frame ptr | 0 | `10013044 lwz r0,0x50(r25); stw r0,0x38(r1)` |
 | 0x04 / 0x08 | x, y (int) | 0 | `1001305c lfs f0,0x0(r25); fctiwz … subf r0,r3,r0; add r0,r27,r0; stw r0,0x3c(r1)` / `10013078 … add r0,r0,r26; stw r0,0x40(r1)` |
@@ -177,7 +199,7 @@ offsets come from the stores; the template comes from the data image (`b(0x100e6
 | 0x14 | flags: 1 fade blend, 2 shadow, 4 tint, 8 target = terrain buffer | 0 | §3.2, §4 |
 | 0x18 | scale (f32) | 1.0 | `10013090 lfs f0,0x84(r25); stfs f0,0x50(r1)` |
 | 0x1c | alpha 0..32 (32 = not drawn) | 0 | §4 |
-| 0x20..0x2c | clip {top, left, bottom, right} | 0 | `10013098..100130b4` (+0x3c..+0x48) |
+| 0x20..0x2c | clip {top, left, bottom, right} | {0, 0, 480, 416} ⚑ corrected (review wave 2, 2026-10-03) #C1 (was 0, the data-image value) | `10013098..100130b4` (+0x3c..+0x48) |
 | 0x30 | render layer (byte) | **7** | §6 |
 | 0x31 | draw-now flag | 0 | `100130b8 lbz r0,0x35(r25); stb r0,0x69(r1)` |
 | 0x34 | colour (u16) | 0x7fff | tint/hit passes |
@@ -198,16 +220,25 @@ windowTop is `FUN_1000fec0` = `_DAT_100e5acc`. Both are named in level-scroll-ob
 - `FUN_10006220 @ 10006220` is the **SHADOWS console flag**. It returns the byte at
   `*(0x100defd0) + 0x28` (= `0x100fb1c0`) once the console has been set up (`DAT_100e00fe`).
   Before that it returns 1.
-- The console setup (dump l. 3243–3246) sets `puVar9[0x28] = 1` and registers `SHADOWS` and
-  `SHADOW` ("Toggles the drawing of Game Entity shadows"). [HIGH for the read and the default;
-  MED that the registered pointer `0x100e0868` toggles this same byte — the registration arg is
-  a different pointer, not followed]
+- The console setup (dump l. 3243–3246) sets `puVar9[0x28] = 1` and **calls** the registration
+  for `SHADOWS` and `SHADOW` ("Toggles the drawing of Game Entity shadows"). ⚑ corrected (review
+  wave 2, 2026-10-03) #C6 #M7a: was "registers SHADOWS/SHADOW" and "MED that `0x100e0868`
+  toggles this byte". The pointer `0x100e0868` is the TVector of `0x10007e00` (data image word =
+  `0x10007e00`), the SHADOWS handler, which reads and flips `G+0x28` (`10007e10 lwz
+  r31,-0x7360(r2)` … `10007e24 lbz r0,0x28(r31)`) — the same byte `FUN_10006220` reads
+  (`1000622c lwz r3,-0x7360(r2); 10006230 lbz r3,0x28(r3)`). SHADOWS/SHADOW are debug-only and
+  gated out by `FUN_1002d080` (messages-notices-console.md §5.2, §5.5), so they are **never
+  registered**: the byte stays 1 all session and **shadows are always on** in 1.0.6. [HIGH — raw
+  listings + data image]
 - Entity draw (`FUN_10012fa0`), after the command is built:
-  - `+0x36` set → if `FUN_10005ce0()` (game block +0x1c, LOW: last-present tick) `> +0x90`:
+  - `+0x36` set → if `FUN_10005ce0()` (game block +0x1c = the **game time** getter, HIGH per
+    messages-notices-console.md role row `FUN_10005ce0`; ⚑ corrected (review wave 2, 2026-10-03)
+    #C5, was "LOW: last-present tick") `> +0x90`:
     layer 1, flags |8, clip = the terrain buffer bounds (`FUN_1000a530(display+0x6c)`), and
     `+0x90 = now`. If not, the command keeps template layer 7 and map coordinates (a latent
     oddity; it cannot happen on the single stamp call from `FUN_10036610`). [HIGH listing
-    `10013264..100132a4`; LOW for the meaning of `FUN_10005ce0`]
+    `10013264..100132a4`; meaning of `FUN_10005ce0` = game time, ⚑ corrected (review wave 2,
+    2026-10-03) #C5, was LOW]
   - otherwise the layer comes from the 4CC table (§6).
   - visibility ≠ 100.0 → flags |1, alpha = `FUN_10010c20(trunc(+0x68))` (§4.1).
   - main pass unless `+0x54`; then the tint pass (§4.2), then the hit pass (§4.3). Each pass
@@ -328,6 +359,8 @@ Global switches read on the way, writers not traced:
   so the ship always casts a shadow (dump l. 24494–24501).
 - **Terrain stamps.** `FUN_10036610` sets `+0x38 = castsShadows` and draws once with `+0x36`.
   The shadow is baked into the terrain on layer 0.
+- **Global gate.** Every shadow pass also needs `FUN_10006220` = `G+0x28` ≠ 0. ⚑ corrected (review wave 2, 2026-10-03) #M7a: that
+  byte is 1 all session in 1.0.6 (SHADOWS is never registered, §3.2), so the gate always passes.
 
 ### 5.2 `FUN_10013460(e) @ 10013460` — offset, size, darkness [HIGH]
 Builds the same command as §3.1 with flags |2 (`10013518 ori r0,r0,0x2`). Alpha starts at 20
@@ -351,7 +384,7 @@ Builds the same command as §3.1 with flags |2 (`10013518 ori r0,r0,0x2`). Alpha
   −hOffset, `fctiwz`).
 - **Darkness.** Mode 2 = `FUN_1001dd20 @ 1001dd20` (unscaled) or `FUN_1001c6c0`/`FUN_1001bcf0`
   (scaled, not read). For each silhouette pixel (colour ≠ key, or the alpha-map rules)
-  `dst = dst·a/32` per 5-bit channel:
+  `dst = dst·a/32` per 5-bit channel (⚑ corrected (review wave 2, 2026-10-03) #M3: listing `1001ddb4..1001ddd0`, see the role row):
   `uVar3 = ((dst & 0x3e0) << 15 | dst & 0x7c1f) * a; dst = (uVar3>>20)&0x3e0 | (uVar3>>5)&0x7c1f`.
   - a = 20: the ground under the shadow drops to **62.5 %** brightness (37.5 % darker).
   - A fading unit's shadow lightens with it. At v ≤ ~37 the shadow alpha exceeds 20, and at
@@ -382,7 +415,8 @@ Builds the same command as §3.1 with flags |2 (`10013518 ori r0,r0,0x2`). Alpha
      port `DAT_100e0170`, initial 1 = display+0x6c via `FUN_1000ad90`)
   2. `FUN_10010120` (the terrain window to the screen buffer)
   3. `FUN_10018b20(1)` (ground shadows 2, ground units 3, `grhi` shadows 4, `grhi` units 5)
-  4. `FUN_10043ba0` (not read)
+  4. `FUN_10043ba0` = particle draw, particles-debris-blur.md §2.9 [HIGH there] (⚑ corrected (review wave 2, 2026-10-03) #C5,
+     was "not read")
   5. `FUN_10018b20(2)` (air shadows 6, `ailo`/air `defa` 7, `aihi` 8, player weapons 9,
      player 10, player shield 11, effects 12, `plui` 13, `atmo` 14, HUD 15)
 - **Consequences:**
@@ -435,15 +469,18 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
   - Its radius against the player is 5 → 9, so the hit distance is under 26 → 30 px.
 
 ## NOT RESOLVED (this file)
-1. `FUN_10043ba0` (called between the ground and air layer flushes) — not read. Clouds/atmosphere
-   overlay? Settles: read it.
+1. ~~`FUN_10043ba0` (called between the ground and air layer flushes) — not read. Clouds/atmosphere
+   overlay? Settles: read it.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: particles-debris-blur.md §2.9 (the particle
+   draw, HIGH).
 2. Where the per-layer render lists of layers 2..15 are emptied each frame (`FUN_1001a650` only
    clears 0/1). A reset of `_DAT_100df198` counts must exist. Settles: xrefs to `_DAT_100df198`.
 3. Writers of `DAT_100e0171` (queue "effects": alpha/scale forced off when 0), `DAT_100e0181`,
    and the callers of `FUN_1001a290`/`FUN_10019c00` (`FUN_10018740`). Settles: xref search on the
    raw `stb …,-0x61bf/-0x61af(r2)` displacements.
-4. That the console `SHADOWS` registration pointer (`0x100e0868`) reaches byte `0x100fb1c0`
-   (`FUN_10006220`). Settles: read `FUN_1002d080` and what `0x100e0868` holds after init.
+4. ~~That the console `SHADOWS` registration pointer (`0x100e0868`) reaches byte `0x100fb1c0`
+   (`FUN_10006220`). Settles: read `FUN_1002d080` and what `0x100e0868` holds after init.~~ →
+   ⚑ corrected (review wave 2, 2026-10-03) #M7a: `0x100e0868` = TVector of `0x10007e00` (SHADOWS), which flips `G+0x28` = the
+   byte `FUN_10006220` reads; SHADOWS is unregistered, so the byte is 1 all session (§3.2).
 5. Writer of entity `+0x1a` (assumed `adjustShadowLocForScaling` U+0x12c). Settles: grep the
    raw listing of `FUN_10035cd0`/`FUN_100146f0` for `stb …,0x1a(`.
 6. Scaled mode-2/3 blitters `FUN_1001c6c0`, `FUN_1001bcf0`, `FUN_1001c8f0`, `FUN_1001bfd0` (and
@@ -451,7 +488,9 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
    twins of the unscaled formulas (sampling rule unknown: nearest? which source pixel for a
    given destination pixel). Settles: read one.
 7. Partial-alpha pixel branch of `FUN_1001dd20` (float factor lost in the decompile).
-8. `FUN_10005ce0` meaning (game block +0x1c; the terrain-stamp once-per-tick guard).
+8. ~~`FUN_10005ce0` meaning (game block +0x1c; the terrain-stamp once-per-tick guard).~~ →
+   ⚑ corrected (review wave 2, 2026-10-03) #C5 #S: game time getter `G+0x1c` (messages-notices-console.md role row
+   `FUN_10005ce0`, HIGH).
 9. Negative frame numbers in `FUN_10019ad0` pass the `n < count` check and index before the
    array (no data case known).
 
@@ -472,27 +511,28 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
 | `FUN_10006220` | G_Game? | SHADOWS console flag (`*(0x100defd0)+0x28`, 1 before console init) | HIGH | listing `10006220–1000623c` |
 | ⚑ corrected `FUN_100345f0` | G_EntityGroup.cc | per group: debug labels + shadow pass (castsShadows), then **sprite pass** of every spawned member | HIGH | listing `10034a98–10034b5c` (was MED "labels + shadow draw") |
 | `FUN_10018a40` | U_Sprite.cc | queue or draw a command (when `DAT_100e0171` is 0: alpha 0, scale 1) | HIGH | listing `10018a40–10018b10` |
-| `FUN_1001a450` | U_Sprite.cc | append command to the per-layer render list (grows ×2) | HIGH | dump; strings "Sprite Render List expanded" |
-| `FUN_1001a650` | U_Sprite.cc | flush one render layer; layers 0/1 consumed | HIGH | dump |
-| `FUN_10018b20` | U_Sprite.cc | flush layer bands: 0 → {0,1}, 1 → {2..5}, 2 → {6..15} | HIGH | dump (Ghidra notes one unreachable block at `10018b44`, not inspected) |
+| `FUN_1001a450` | U_Sprite.cc | append command to the per-layer render list (grows ×2) | MED | dump; strings "Sprite Render List expanded" — ⚑ label audit (review wave 2): was HIGH on dump + strings |
+| `FUN_1001a650` | U_Sprite.cc | flush one render layer; layers 0/1 consumed | MED | dump — ⚑ label audit (review wave 2): was HIGH on dump |
+| `FUN_10018b20` | U_Sprite.cc | flush layer bands: 0 → {0,1}, 1 → {2..5}, 2 → {6..15} | HIGH | dump; ⚑ label audit (review wave 2): HIGH kept on the raw listing (`$W/disasm-review2.txt`): `10018b54 li r3,0x0; bl 0x1001a650; li r3,0x1; bl` (band 0), `10018b68..10018b84` `li r3,0x2..0x5` (band 1), `10018b8c..10018bd8` `li r3,0x6..0xf` (band 2); `10018b44 b 0x10018bdc` = the argument < 0 exit (no flush), `10018b48 cmpwi r0,0x3; bge` = ≥ 3 exit |
 | `FUN_1001a6f0` / `FUN_1001aa90` | U_SpriteBlit.cc | scaled blit (unclipped / clipped): centred, size trunc(w·s), mode by stack byte | HIGH | listing `1001a75c–1001a7e8`, `1001ab0c–1001ab80` |
-| `FUN_1001dd20` | U_SpriteBlit.cc | mode 2 shadow blit: dst·a/32 under the silhouette | HIGH | dump |
-| `FUN_1001df00` | U_SpriteBlit.cc | mode 3 tint blit: (dst·a + colour·(32−a))/32 under the silhouette | HIGH | dump |
+| `FUN_1001dd20` | U_SpriteBlit.cc | mode 2 shadow blit: dst·a/32 under the silhouette | HIGH | dump; ⚑ corrected (review wave 2, 2026-10-03) #M3: listing `1001ddb4 lhz r3,0(r26); andi. r0,r3,0x7c1f; rlwimi r0,r3,0xf,0x7,0xb; mullw r3,r0,r21; rlwinm r0,r3,0x1b,0x5,0x1f; andi. 0x7c1f; rlwimi r0,r3,0xc,0x16,0x1a; 1001ddd0 sth` (reviewer-confirmed) |
+| `FUN_1001df00` | U_SpriteBlit.cc | mode 3 tint blit: (dst·a + colour·(32−a))/32 under the silhouette | HIGH | dump; ⚑ corrected (review wave 2, 2026-10-03) #M3: listing `1001df94 subfic r12,r8,0x20` (32−a), `1001dfa8 mullw r31,r31,r8` (dst·a), `1001dfac mullw r12,r30,r12` (colour·(32−a)), `1001dfb0 add`, `1001dfb4..1001dfbc` repack, `1001dfc0 sth` (reviewer-confirmed) |
 | `FUN_1001a260` | U_Sprite.cc (span) | percent int → float /100 | HIGH | listing `1001a260–1001a28c` |
-| `FUN_1001a290` | U_Sprite.cc (span) | set `DAT_100e0172` (scaled alpha maps on/off) | HIGH | dump |
-| `FUN_10019c00` | U_Sprite.cc (span) | set port indices `DAT_100e0179` (normal) / `DAT_100e0170` (flag 8) | HIGH | dump; caller `FUN_10018740` |
+| `FUN_1001a290` | U_Sprite.cc (span) | set `DAT_100e0172` (scaled alpha maps on/off) | MED | dump — ⚑ label audit (review wave 2): was HIGH on dump |
+| `FUN_10019c00` | U_Sprite.cc (span) | set port indices `DAT_100e0179` (normal) / `DAT_100e0170` (flag 8) | MED | dump; caller `FUN_10018740` — ⚑ label audit (review wave 2): was HIGH on dump |
 | `FUN_1004d5c0` | MSL runtime | double → unsigned int | HIGH | listing |
 | ⚑ corrected `FUN_10012840` | G_GameObject (span) | scale step +0x84 → +0x88 by +0x8c, clamp, dirty +0x34 | HIGH | listing `10012840–100128b0` (was MED dump) |
 | `FUN_1000a530` | M_Display.cc (span) | copy a port's bounds rect (+0x1c..+0x28) | MED | dump only |
 | `FUN_1000ad90` | M_Display.cc | display port by index 0/1/2 → +0x68/+0x6c/+0x70 | MED | dump |
 | `FUN_10019ee0` | U_Sprite.cc | frame count of a group (error message only) | LOW | caller context, not read |
-| `FUN_10043ba0` | — | drawn between layer bands 1 and 2 | LOW | not read |
+| `FUN_10043ba0` | G_Particle (span) | particle draw, between layer bands 1 and 2 | HIGH | particles-debris-blur.md §2.9 listing `10043ba0..10044500` — ⚑ corrected (review wave 2, 2026-10-03) #C5: was LOW "not read" |
 | `FUN_1001c270` `FUN_1001c480` `FUN_1001c6c0` `FUN_1001c8f0` `FUN_1001b7d0` `FUN_1001ba40` `FUN_1001bcf0` `FUN_1001bfd0` | U_SpriteBlit.cc | scaled blit modes 0–3 without / with alpha map | LOW | callers in `FUN_1001a6f0` only, not read |
 Also touched, not read (roles stand in the bank or are generic): `FUN_10014060` (4CC → text),
 `FUN_10049550` (log), `FUN_1001f950` (G_Res_Load), `FUN_1001fc30`, `FUN_10002420`,
 `FUN_10000ce0`/`FUN_10000e10` (list count / iterate), `FUN_10000ed0`/`FUN_10000f80`/`FUN_10000e70`
 (asserts), `FUN_1002dbd0` (console text), `FUN_1000a4a0`, `FUN_1001ec80`, `FUN_10012750`,
-`FUN_10010120`, `FUN_10005ce0` (LOW, game block +0x1c).
+`FUN_10010120`, `FUN_10005ce0` (game time getter `G+0x1c`, HIGH in messages-notices-console.md;
+⚑ corrected (review wave 2, 2026-10-03) #C5, was LOW).
 
 ## INDEX updates (for merge)
 - **#8 closed** → this file §1.1: `kU_Sprite_MaxDimensions` = {width 300, height 256},

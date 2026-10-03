@@ -299,7 +299,10 @@ or notice carries **0xff**, so enemy-shot kills never credit a player. A chain t
 a player-side spawn carries that player's index. Pickups spawned from destroyed caps carry 0xff.
 
 ### 4.4 req+0x28 speed multiplier (S NR8) [HIGH]
-Of the 32 `bl 0x10033220` sites, all but one write req+0x28 only as the template halves (`sth rX,
+Of the 32 reachable `bl 0x10033220` sites (⚑ corrected (review wave 2, 2026-10-03) #M2: the code image holds **34** — a raw
+scan for `bl` with target `0x10033220`; the two extra, `0x10038ce4` and `0x10038ed8`, lie in the
+undecompiled G_EntityGroup debug-command handlers after `FUN_10038810`, which are never registered
+and so unreachable, messages-notices-console.md §5.2; they are excluded here), all but one write req+0x28 only as the template halves (`sth rX,
 base+0x28 / +0x2a` = 1.0; the struct is copied 2-byte aligned). The exception is `FUN_1003c4f0` (ground launcher):
 `1003c6cc fdivs f0,f1,f0; 1003c6d0 stfs f0,0x9c(r1)` (base 0x74) = `max(0, trunc(h.y − crosshair.y)) /
 |crosshairYOffset|` (W §3). The consumer `FUN_10037b50` does `10037e58 lfs f0,0x18(r31)` (1.0) `fcmpu f0,f30;

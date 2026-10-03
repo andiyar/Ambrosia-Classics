@@ -10,7 +10,11 @@ to each entry point). OUT: the AIFF/WAVE/ima4 parsers beyond their accept/reject
 (`FUN_100d2400`, `FUN_100d2750`, `FUN_100d0ef8`, `FUN_100d0cf0`), the IMA encoder `FUN_100d3170`
 (never reached by shipped data), the list primitives `FUN_100009e0/0c00/0ce0/0e10` (U_List,
 used by name only), and `FUN_100470f0` (sits before the range; a motion-blur slot helper, not
-sound). Evidence files: `$W/disasm-w2s8.txt`, `$W/disasm-w2s8b.txt` (raw PPC), dump lines cited
+sound). ⚑ corrected (review wave 2, 2026-10-03) #M5 — **not read** (in the declared `0x100cfc90–0x100d3530` range but no row and
+no mention): `FUN_100d0394`, `FUN_100d05a8`, `FUN_100d0bd8` (22 lines), `FUN_100d0c64` (21),
+`FUN_100d1284` (20), `FUN_100d12f8`, `FUN_100d2360` (33), `FUN_100d26d0` (29), `FUN_100d2da0` (27),
+`FUN_100d2e30` (37), `FUN_100d3020`, `FUN_100d3060` (27) — all small (≤ 37 lines; sizes from the
+review's census). Evidence files: `$W/disasm-w2s8.txt`, `$W/disasm-w2s8b.txt` (raw PPC), dump lines cited
 as `dump:N`. Constants resolved from `$W/mem/10000000.bin` (code image: TOC float tables live
 there, not in the data section) with the Python one-liners quoted in place.
 
@@ -32,8 +36,8 @@ so it scales effects and music together; music has its own level via `ampCmd`. [
 | function | role | label | evidence |
 |---|---|---|---|
 | `FUN_10047160 @ 10047160` | sound init(numChannels): logs "    Sound Channels: %i"; warns (non-fatal assert `numChannels > 0 and numChannels <kPriv_MaxChannels`, i.e. 1..98) if out of range; `FUN_100d1400(n & 0xffff, 0xAC440000)`; on success saves the user's device volume (`FUN_100d1730`) in `DAT_100e028c`, sets `DAT_100e0290` (sound available) = `DAT_100e0291` (effects enabled) = 1, applies prefs `FUN_10047920`, allocates the record list `DAT_100e0294` (12 bytes); on failure logs "NON FATAL TOOL ERROR: (%i) Sound not available." and sound stays off | HIGH | `1004719c cmpwi r30,0x0; ble; cmpwi r30,0x63; blt` · `100471e8 lis r4,-0x53bc` (=0xAC44<<16) · `10047228 stb r0,-0x60a0(r2)` · `10047230 stb r0,-0x609f(r2)`; strings `0x100f0038+0x15/+0x2c/+0x6b`; caller `FUN_100000e0` with PermFloat 38 `SoundNumChannels` = 8 |
-| `FUN_10047290 @ 10047290` | sound shutdown: free all records (`FUN_10047460`), stop mixer (`FUN_100d1630`, restores the user's device volume), free list | HIGH (read) | caller `FUN_10000630` |
-| `FUN_10047330 @ 10047330` | load sound tag `('soun', id)` → convert with `FUN_100d1780` → record `{+0 magic 0x499602D2, +4 id, +8 asnd*, +0xC lastVoice = −1}` appended to the list; frees the original tag handle | HIGH | dump:42205–42239; error string `+0xd5` "couldn't convert an AIFF sound to the internal format" |
+| `FUN_10047290 @ 10047290` | sound shutdown: free all records (`FUN_10047460`), stop mixer (`FUN_100d1630`, restores the user's device volume), free list | MED (read) ⚑ label audit (review wave 2) | caller `FUN_10000630` |
+| `FUN_10047330 @ 10047330` | load sound tag `('soun', id)` → convert with `FUN_100d1780` → record `{+0 magic 0x499602D2, +4 id, +8 asnd*, +0xC lastVoice = −1}` appended to the list; frees the original tag handle | MED ⚑ label audit (review wave 2) | dump:42205–42239; error string `+0xd5` "couldn't convert an AIFF sound to the internal format" |
 | `FUN_10047460 @ 10047460` | delete every record | MED (read) | caller `FUN_10047290` |
 | `FUN_10047510 @ 10047510` | delete the record of one id (does **not** stop its voices) | MED (read) | callers boot (`publ`), `FUN_1001faf0` |
 | `FUN_100475e0 @ 100475e0` | play from a 0x18 sound record (unit/player/weapon `*Sound_*` blocks) — §2.3 | HIGH | listing `10047600–1004764c` |
@@ -51,7 +55,8 @@ IMA nibble stream: it walks the 34-byte packets as 16-bit words, **drops word 0 
 (the per-packet predictor/step-index header) and swaps the two nibbles of every byte
 (`(w & 0x0f0f)<<4 | (w>>4) & 0x0f0f`); header = `{'asnd', sampleCount, rate, 'mIMA'}`.
 8/16-bit PCM is re-encoded to IMA (`FUN_100d3170`); every shipped effect is already ima4.
-[HIGH for the drop/swap (dump:106741–106752); MED for the consequences below]
+[MED for the drop/swap (dump:106741–106752; ⚑ label audit (review wave 2): was HIGH on the dump only); MED for the
+consequences below]
 - The decoder never re-syncs to the dropped packet headers; it carries predictor/index across
   packets. Differences from a reference ima4 decode are rounding-level. [MED]
 - `sampleCount = (bytes − bytes/34) × 2` = 66·P for P packets, but only 64·P real samples exist:
@@ -289,15 +294,15 @@ Priorities in all sound records: 50 ×2359, 100 ×54, 70 ×73, 30–90 others. [
 ### 6.1 Functions
 | function | role | label | evidence |
 |---|---|---|---|
-| `FUN_10047e40 @ 10047e40` | music init(spoolBuffer = PermFloat 37 = 204800): "    Music Spool Buffer Size: %i"; `FUN_100cfc90` requires Sound Manager ≥ 3.2 (`version 3 && minor ≥ 0x20`); stores the size in `DAT_100e029c` | HIGH | dump:42669–42694, strings `0x100f01ec+0x15/+0x5a` |
-| `FUN_10047ef0 @ 10047ef0` | music shutdown: `FUN_10048120(1)`, `FUN_100cfe30` | HIGH | caller `FUN_10000630` |
+| `FUN_10047e40 @ 10047e40` | music init(spoolBuffer = PermFloat 37 = 204800): "    Music Spool Buffer Size: %i"; `FUN_100cfc90` requires Sound Manager ≥ 3.2 (`version 3 && minor ≥ 0x20`); stores the size in `DAT_100e029c` | MED ⚑ label audit (review wave 2) | dump:42669–42694, strings `0x100f01ec+0x15/+0x5a` |
+| `FUN_10047ef0 @ 10047ef0` | music shutdown: `FUN_10048120(1)`, `FUN_100cfe30` | MED ⚑ label audit (review wave 2) | caller `FUN_10000630` |
 | `FUN_10047f50 @ 10047f50` | "music service" = `FUN_100cfdd4`: fires the stream's completion callback when flagged; the game always passes callback 0 → **no-op**; streaming is interrupt-driven | MED | `FUN_100cfe64` arg 5 = 0 (`_DAT_100e0764 = param_5`), `FUN_100cfdd4` tests it |
-| `FUN_10047f80 @ 10047f80` | return `DAT_100e02a0` (music playing, not paused) | HIGH | caller `FUN_100064d0` |
+| `FUN_10047f80 @ 10047f80` | return `DAT_100e02a0` (music playing, not paused) | MED ⚑ label audit (review wave 2) | caller `FUN_100064d0` |
 | `FUN_10047f90 @ 10047f90` | `playMusic(id, loop, startPaused)`: pause+stop the current stream; find the tag's pak PATH and byte range (`FUN_10002080('soun',…)`); `FUN_100cfe64(spec, off, len, 204800, 0, loop, startPaused)`; playing flag = !startPaused; errors "MUSIC ERROR …" (−43 has its own line) | HIGH | listing `10047f90–1004811c`; every caller passes loop 1, paused 0 |
-| `FUN_10048120 @ 10048120` | `stopMusic(fade)`: if a stream exists and is playing and fade: `FUN_100d04d8(1000)` then **block** servicing until the fade ends or 600 ticks pass ("ALERT: Sound Spool infinite loop!"); pause; dispose (`FUN_100d0250`: `quietCmd`, close file, free buffers) | HIGH | dump:42795–42816; fade=1 only from quit (`10022e88`) and shutdown (`10047f20`) |
-| `FUN_100481e0 @ 100481e0` | stream exists (`DAT_100e077a`) | HIGH | |
+| `FUN_10048120 @ 10048120` | `stopMusic(fade)`: if a stream exists and is playing and fade: `FUN_100d04d8(1000)` then **block** servicing until the fade ends or 600 ticks pass ("ALERT: Sound Spool infinite loop!"); pause; dispose (`FUN_100d0250`: `quietCmd`, close file, free buffers) | HIGH | ⚑ label audit (review wave 2): HIGH kept on the listing (`$W/disasm-review2.txt`) `10048134 bl 0x100481e0` (exists), `10048144 lbz r0,-0x6090(r2)` (playing), `10048150 rlwinm. r0,r31` (fade), `10048158 li r3,0x3e8; bl 0x100d04d8` (1000 ms), `1004819c addi r31,r3,0x258` (now + 600), `10048180 cmplw r3,r31; ble` (guard), `100481b0 li r3,0x1; bl 0x10048220` (pause), `100481bc bl 0x100d0250` (dispose); dump:42795–42816; fade=1 only from quit (`10022e88`) and shutdown (`10047f20`) |
+| `FUN_100481e0 @ 100481e0` | stream exists (`DAT_100e077a`) | MED ⚑ label audit (review wave 2) | |
 | `FUN_10048220 @ 10048220` | `p=1`: pause = `getRateCmd`(0x55) saved, `rateCmd`(0x52) 0; flag 0. `p=0`: if a stream exists: resume = `rateCmd` saved rate; flag 1 | HIGH | `FUN_100d039c` `100d03dc li r4,0x55`, `100d03ec li r4,0x52`; `FUN_100d040c` `100d0448 li r4,0x52; 100d044c lwz r6,-0x5bc0(r2)` |
-| `FUN_10048280 @ 10048280` | music level ← int pref 1: `FUN_100d0470(FUN_100482c0(v))` | HIGH | |
+| `FUN_10048280 @ 10048280` | music level ← int pref 1: `FUN_100d0470(FUN_100482c0(v))` | MED ⚑ label audit (review wave 2) | |
 | `FUN_100482c0 @ 100482c0` | `clamp((int)(128.0·v/100.0), 0, 128)`; table `*(r2…) = 0x100d7430` = {128.0, 100.0, 0.0} | HIGH | `struct.unpack('>3f', code[0xd7430:0xd743c])` |
 
 ### 6.2 Level and fade arithmetic
@@ -455,8 +460,8 @@ of the first, both behind any prio ≥ 40 sound of equal-or-greater gain.
 
 ## Role-table rows (for merge)
 | `FUN_10047160` | M_Sound.cpp | sound init: mixer `FUN_100d1400(n,44100)`, n = flli 38 (8) (warn unless 1..98), save user device volume, flags 0290/0291, apply prefs, record list | HIGH | listing `1004719c–10047270` |
-| `FUN_10047290` | M_Sound.cpp | sound shutdown: free records, mixer stop (restores device volume) | HIGH | read |
-| `FUN_10047330` | M_Sound.cpp | load `soun` tag → asnd/mIMA record {magic, id, data, lastVoice −1} | HIGH | read |
+| `FUN_10047290` | M_Sound.cpp | sound shutdown: free records, mixer stop (restores device volume) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
+| `FUN_10047330` | M_Sound.cpp | load `soun` tag → asnd/mIMA record {magic, id, data, lastVoice −1} | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_10047460` | M_Sound.cpp | free all sound records | MED | read |
 | `FUN_10047510` | M_Sound.cpp | free one sound record by id (voices not stopped) | MED | read |
 | ⚑ corrected `FUN_100475e0` | M_Sound.cpp | play sound record: volume = MinVolume, prio = Priority&0xFF, pitch = RandomRangeF(Min,Max), (record, allowMultiple) (was "play sound from settings block" MED) | HIGH | listing `10047600–1004764c` |
@@ -472,32 +477,32 @@ of the first, both behind any prio ≥ 40 sound of equal-or-greater gain.
 | `FUN_10047b10` | M_Sound.cpp | re-apply prefs (same body as `FUN_10047920`; resume) | HIGH | listing |
 | `FUN_10047b80` | M_Sound.cpp | volume % → 0..128 (`clamp(128·v/100,0,128)`) | HIGH | listing + table `0x100d7414` |
 | ⚑ corrected `FUN_10047bf0` | M_Sound.cpp | play primitive (id, prio≤100, vol→128·v/100 L=R, allowMultiple, f1 pitch→16.16) → mixer voice (was "play sound by ID" MED) | HIGH | listing `10047bf0–10047e34` |
-| `FUN_10047e40` | M_Music.cpp | music init (spool buffer flli 37 = 204800; SM ≥ 3.2) | HIGH | read |
-| `FUN_10047ef0` | M_Music.cpp | music shutdown (fade-stop, lib close) | HIGH | read |
+| `FUN_10047e40` | M_Music.cpp | music init (spool buffer flli 37 = 204800; SM ≥ 3.2) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
+| `FUN_10047ef0` | M_Music.cpp | music shutdown (fade-stop, lib close) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_10047f50` | M_Music.cpp | music service (completion callback; no-op as used) | MED | read |
-| `FUN_10047f80` | M_Music.cpp | music-playing flag getter | HIGH | read |
+| `FUN_10047f80` | M_Music.cpp | music-playing flag getter | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_10047f90` | M_Music.cpp | play music (id, loop, startPaused) streamed from pak | HIGH | listing |
-| ⚑ corrected `FUN_10048120` | M_Music.cpp | stop music (fade=1: 1 s blocking fade-out, 600-tick guard) (was "stop/fade music" LOW) | HIGH | read + call args |
-| `FUN_100481e0` | M_Music.cpp | music stream exists | HIGH | read |
+| ⚑ corrected `FUN_10048120` | M_Music.cpp | stop music (fade=1: 1 s blocking fade-out, 600-tick guard) (was "stop/fade music" LOW) | HIGH | read + call args; ⚑ label audit (review wave 2): HIGH kept on the listing `10048158 li r3,0x3e8; bl 0x100d04d8`, `1004819c addi r31,r3,0x258`, `10048180 cmplw r3,r31; ble` (`$W/disasm-review2.txt`) |
+| `FUN_100481e0` | M_Music.cpp | music stream exists | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_10048220` | M_Music.cpp | pause (1: getRate+rateCmd 0) / resume (0: rateCmd saved) music | HIGH | listings `FUN_100d039c/040c` |
-| `FUN_10048280` | M_Music.cpp | music level ← int pref 1 | HIGH | read |
+| `FUN_10048280` | M_Music.cpp | music level ← int pref 1 | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100482c0` | M_Music.cpp | music % → 0..128 | HIGH | table `0x100d7430` |
 | `FUN_100d1400` | sound lib | mixer init (≤16 audible, 44.1k 16-bit stereo, 1024-frame double buffer, save device volume) | HIGH | listing |
-| `FUN_100d1630` | sound lib | mixer shutdown, restore device L/R | HIGH | read |
+| `FUN_100d1630` | sound lib | mixer shutdown, restore device L/R | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100d16d0` | sound lib | SetDefaultOutputVolume(v) | HIGH | listing |
 | `FUN_100d1730` | sound lib | saved device volume, avg L/R | HIGH | listing |
-| `FUN_100d1780` | sound lib | convert AIFF/AIFC/WAVE (NONE/ima4, mono) → asnd | HIGH | read |
+| `FUN_100d1780` | sound lib | convert AIFF/AIFC/WAVE (NONE/ima4, mono) → asnd | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100d18d0` | sound lib | start voice: ranked insertion, evict 16th, refuse below all | HIGH | listing `100d18d0–100d1b20` |
 | `FUN_100d1b30` | sound lib | count voices by id / data / all | HIGH | listing |
 | `FUN_100d1be0` | sound lib | stop voices by id / data / all | HIGH | listing |
 | `FUN_100d1cf0` | sound lib | remove voice i | MED | read |
-| `FUN_100d1d90` | sound lib | build asnd/mIMA (strip ima4 packet headers, nibble swap; PCM → IMA) | HIGH | read |
+| `FUN_100d1d90` | sound lib | build asnd/mIMA (strip ima4 packet headers, nibble swap; PCM → IMA) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100d21a0` | sound lib | mixer render: voices < numChannels mixed, rest advanced silently | HIGH | listing |
 | `FUN_100d32d0` | sound lib | IMA decode + gain>>7 + linear-interp resample + saturating mix (one voice) | HIGH | listing |
-| `FUN_100d2c30` | sound lib | open mixer output (SndNewChannel sampledSynth stereo, SndPlayDoubleBuffer) | HIGH | read |
+| `FUN_100d2c30` | sound lib | open mixer output (SndNewChannel sampledSynth stereo, SndPlayDoubleBuffer) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100d136c` | sound lib | music ampCmd = min(255, vol·fade>>8) | HIGH | listing |
-| `FUN_100cfe64` | sound lib | start music stream (FSpOpenDF, AIFC header, double buffer, loop flag) | HIGH | read |
-| `FUN_100d0250` | sound lib | stop music stream (quietCmd, dispose, close) | HIGH | read |
+| `FUN_100cfe64` | sound lib | start music stream (FSpOpenDF, AIFC header, double buffer, loop flag) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
+| `FUN_100d0250` | sound lib | stop music stream (quietCmd, dispose, close) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
 | `FUN_100d04d8` | sound lib | start music fade-out over N ms | MED | read |
 | `FUN_100d05d0` | sound lib | music double-buffer callback (fill, last-buffer, fade step) | MED | read |
 | `FUN_100d0968` | sound lib | music buffer copy + PBReadAsync refill + loop wrap | MED | read |

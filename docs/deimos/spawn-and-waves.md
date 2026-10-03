@@ -35,6 +35,9 @@ Template for spawn-set requests = 0x2c bytes at `r2+0x180` = `0x100e64b0` (data 
 `6e6f6e65 00000000 00000000 00000000 00000000 ff000000 … 3f800000`); level requests use the
 template at `0x100eb41c` (`FUN_10033090` uses r2+0x50ec; bytes identical to `0x100e64b0`;
 initialised by `FUN_10039100`). ⚑ corrected (review wave 1, 2026-10-03) #M3: was `0x100eb420` (level-scroll-objects.md §6.3 has it right).
+⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: `FUN_10039100` runs before `main`, so every template value at
+`0x100eb41c…` must come from its writes, not from the data image (cf. the sprite template clip,
+sprite-geometry-draw.md §3.1; INDEX #56).
 | off | type | meaning | evidence |
 |---|---|---|---|
 | +0x00 | 4CC | unit ID to spawn (`none` → assert) | `10033240 lwz r3,0x0(r3)`, 33220 assert line 0x194 |

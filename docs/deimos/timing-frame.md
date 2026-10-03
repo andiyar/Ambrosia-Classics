@@ -62,13 +62,13 @@ the names of +0x03/+0x04 (usage pattern)]
 Methods:
 | function | role | label | evidence |
 |---|---|---|---|
-| `FUN_10030190 @ 10030190` | construct (= `FUN_10030df0`) | HIGH | dump, callers game loop + level select |
+| `FUN_10030190 @ 10030190` | construct (= `FUN_10030df0`) | MED ⚑ label audit (review wave 2) | dump, callers game loop + level select |
 | `FUN_10030df0 @ 10030df0` | zero every field | HIGH | listing `10030e0c..10030e54` |
 | `FUN_100301d0 @ 100301d0` | destructor (`FUN_1004d3b0` delete if `param_2 > 0`) | MED | dump; called with −1 |
 | `FUN_10030210 @ 10030210` | start session: zero, set +1/+4/+3, clear layer queues `FUN_100189f0`, console `FUN_1002d040(+8)`, messages `FUN_1002db50`, FPS monitor init, divider reset, FlushEvents | HIGH | dump + listing |
-| `FUN_100302e0 @ 100302e0` | level-transition reset: same minus the field writes (does **not** reset +0x1c) | HIGH | dump; caller `FUN_10007170` |
+| `FUN_100302e0 @ 100302e0` | level-transition reset: same minus the field writes (does **not** reset +0x1c) | MED ⚑ label audit (review wave 2) | dump; caller `FUN_10007170` |
 | `FUN_100302b0 @ 100302b0` | end session: FlushEvents `FUN_10048e30` | MED | dump |
-| `FUN_10030350 @ 10030350` | get frames presented (+8) | HIGH | dump |
+| `FUN_10030350 @ 10030350` | get frames presented (+8) | MED ⚑ label audit (review wave 2) | dump |
 | `FUN_10030900 @ 10030900` | get paused (+0) | MED | dump; caller level select |
 | `FUN_100307b0 @ 100307b0` | get tick flag (+0x34) | HIGH | listing |
 | `FUN_10030790 @ 10030790` | reset divider: +0x2c = 0, +0x30 = 0, +0x34 = 1 | HIGH | listing `10030790..100307a0` |
@@ -166,15 +166,21 @@ where it is discarded), so with pref 8 on the counter reaches 31 at the begin-fr
 ### 2.6 FPS monitor `FUN_10030640 @ 10030640` / init `FUN_100305e0` [HIGH — listing]
 Init: +0x18 = TickCount, +0x20 = +0x24 = PermFloat 32 (30), +0x28 = 0. Per call (tick frames
 only): if `TickCount > +0x18 + 60` (`10030680 cmplw r3,r0 ; ble` exit — strictly more than 60
-ticks): +0x24 = +0x20; if pref 10 (limiter): clamp +0x20 to 30; if `+0x20 < 30`
+ticks): +0x24 = +0x20 (published **before** the pref-10 test); if pref 10 (limiter): clamp +0x20 to 30; if `+0x20 < 30`
 (`100306b8 cmpw ; bge` skip): `+0x28 += 1`, and when `+0x28 == PermFloat 34 (=10)`: +0x28 = 0 and,
 if +3 and byte pref 6 and not byte pref 5 → byte pref 5 = 1 + message GameString 17
 "Interlacing ON". Then +0x20 = 0, +0x18 = TickCount. The deficit counter is **never reset by a
 good window** — it counts deficient windows cumulatively, not consecutively. On a fast machine
 with the limiter, frames land every 2 ticks, so the first check that passes is at +62 ticks with
-31 frames counted → the FPS counter shows **31**, and 31 ≥ 30 is not deficient. The monitor does
-nothing at all when the limiter is off (whole body gated by pref 10). [HIGH arithmetic; the "31"
-is MED — it assumes the present stamp falls on the tick boundary, see §4]
+31 frames counted → the FPS counter shows **31**, and 31 ≥ 30 is not deficient. ⚑ corrected (review wave 2, 2026-10-03) #I1:
+was "The monitor does nothing at all when the limiter is off (whole body gated by pref 10)".
+The count is published before the pref-10 test — `10030688 lwz r0,0x20(r30); 1003068c li
+r3,0xa; 10030690 stw r0,0x24(r30)` precedes `10030694 bl 0x10004ef0` (pref 10) — and the
+`100306a0 beq 0x1003075c` on pref 10 off skips only the clamp / deficit / auto-interlace block,
+landing on the window reset (`1003075c li r0,0; stw r0,0x20(r30)`, `1003076c stw r3,0x18(r30)` =
+TickCount). So with the limiter off the FPS readout still updates every > 60-tick window; only the
+deficiency logic is gated. (Pref 10 cannot be cleared in a stock build, §6.) [HIGH arithmetic;
+the "31" is MED — it assumes the present stamp falls on the tick boundary, see §4]
 
 ## 3. INDEX #12 — the speed divider is never set: the game always runs at "Normal"
 
@@ -220,10 +226,13 @@ TickCount = the Mac 60.15 Hz tick (brief value). One logic tick per presented fr
   advance and nothing is made up afterwards (the next limiter target is already in the past, so
   one frame goes out unpaced). [HIGH for no tick during the block; MED for the fade timing below]
 - **Limiter off** (only possible by editing the prefs file, §6): period = W, so a fast machine
-  plays faster than designed; the FPS monitor is disabled. [HIGH]
+  plays faster than designed; the FPS monitor's deficit/auto-interlace logic is disabled, but the
+  counter still publishes (§2.6). ⚑ corrected (review wave 2, 2026-10-03) #I1: was "the FPS monitor is disabled". [HIGH]
 - Gameplay code never reads the clock: the 18 callers of `FUN_100497f0` are boot, menus, scores,
   credits, fades (`FUN_1000b9a0`/`FUN_1000ba70`), music fade `FUN_10048120`, the game loop's seed,
-  and the three controller functions (callers.txt). All gameplay durations are in ticks.
+  the three controller functions, and (⚑ corrected (review wave 2, 2026-10-03) #M8, previously
+  unlisted) `FUN_1000d6d0`, `FUN_10023040`, `FUN_10025330` — text/progress-line timing
+  (callers.txt). The conclusion stands. All gameplay durations are in ticks.
   [HIGH for the caller list; MED for "gameplay" = none of those]
 - Level start: game time is reset to 0 and `game[0x38]` (appeared) cleared by `FUN_100064d0`
   (dump lines 41/44). Ticks 0 and 1 run with no present (`param_3` = 0); on tick 2 (PermFloat
@@ -275,7 +284,8 @@ Fresh prefs: `FUN_10004540` → `FUN_10004f80` fails (no file; and no `pref` tag
 | int 3 | 1 | `FUN_10004f20` (`stw r0,0x74`) | — | highest sector (engine-loop §10) |
 The dialog "Defaults" button (item 3) runs `FUN_10004f20(0)` = `FUN_100050f0` only, so it
 never touches bytes 9/10. [HIGH — listings + DITL]
-DITL 190 "Game - Preferences" (parsed from the binary's resource fork with a small map parser;
+DITL 190 "Game - Preferences" (⚑ corrected (review wave 2, 2026-10-03) #M6: that is the resource
+*name* of DITL 190 and DLOG 190; the DLOG 190 window-title pstring is empty) (parsed from the binary's resource fork with a small map parser;
 `xattr` `com.apple.ResourceFork`, 151602 B): 1 Save, 2 Cancel, 3 Defaults, 4 Revert, 5–7 group
 boxes (CNTL 200 "Video", 201 "Audio", 202 "Controls"), items 8–17 as above, 18 "Set Controls…"
 (→ `ISpConfigure` `FUN_1004ae00`), 19 "Set Gamepad Controls..." (hidden by
@@ -306,8 +316,13 @@ film holds **one input byte per logic tick of a live player**, and in 1.0.6 tick
   cursor == count still reads one byte past the recording (zero in all four demos — checked:
   `byte[0x1c+count] = 0`, no non-zero byte after) and the replay runs count+1 input ticks. [HIGH]
 - End test `FUN_10009750 @ 10009750` (listing `xor ; srawi ; and ; subf ; rlwinm …,0x1,0x1f,0x1f`)
-  is the branchless unsigned **cursor > count** for player 1 (evaluated: (4809,4809)→0,
-  (4810,4809)→1), i.e. "film finished"; the game loop stops the session when it returns 1 or the
+  is the branchless **signed** **cursor > count** for player 1 (evaluated: (4809,4809)→0,
+  (4810,4809)→1), i.e. "film finished". ⚑ corrected (review wave 2, 2026-10-03) #M1: was "unsigned"; the review's M1 also
+  called it unsigned, but evaluating the exact sequence (`10009758 xor r0,r4,r0; 1000975c srawi
+  r3,r0,0x1; 10009760 and r0,r0,r4; 10009764 subf r0,r0,r3; 10009768 rlwinm r3,r0,0x1,0x1f,0x1f`,
+  r4 = cursor `+0x4`, r0 = count `+0x24`) over 200 000 random pairs and every sign-boundary pair
+  matches signed `a > b` only — (0x80000000, 1) → 0, (0xFFFFFFFF, 0) → 0 (unsigned would give 1).
+  No difference for real counts (< 2³¹). loose-ends-session.md §7 ("signed") was right; the game loop stops the session when it returns 1 or the
   mouse button is down. ⚑ corrected: function-roles.md calls it "film still playing" (the
   polarity is inverted). [HIGH]
 - **Replica consequence:** replay determinism needs tick-exact sequencing (one update, one input
@@ -348,9 +363,12 @@ pref 6 is 0.
    `lwz rX,0x70(prefs)` and `li r3,2 ; bl 0x10004f00`.
 2. Per-slot meaning of the default key table (`+0x14b8…`, 2 × 7 codes) and its consumer —
    needs the OS X keyboard path (INDEX #14) or `M_ControlsConfigure.cc` code.
-3. `FUN_10018b20(0)` flushes layers 0–1 **before** the background blit: whether
+3. ~~`FUN_10018b20(0)` flushes layers 0–1 **before** the background blit: whether
    `FUN_1001a650(0/1)` draws into the terrain picture or into the work buffer (layer 1 = shadows,
-   engine-loop §5) — read `FUN_1001a650`.
+   engine-loop §5) — read `FUN_1001a650`.~~ → ⚑ corrected (review wave 2, 2026-10-03) #C3 #S: sprite-geometry-draw.md §6
+   step 1 — layers 0/1 are terrain **stamps** (layer 1 = the stamp sprite, layer 0 its shadow),
+   drawn into the terrain buffer by flag 8; entity shadows are on layers 2/4/6. "Layer 1 =
+   shadows" (engine-loop §5) was wrong.
 4. The non-interlaced background path issues two identical `CopyBits` (dump of `FUN_10009fd0`);
    listing not checked; purpose unknown (timing ballast or a bug).
 5. Exact TickCount rate on the target OS (60.15 Hz is the brief's value); Ben's machine/emulator
@@ -359,27 +377,27 @@ pref 6 is 0.
    the border painting.
 
 ## Role-table rows (for merge)
-| `FUN_10030190` | frame ctrl | construct frame controller (= zero all fields) | HIGH | dump; callers `FUN_100051a0`, `FUN_1002e310` |
+| `FUN_10030190` | frame ctrl | construct frame controller (= zero all fields) | MED | dump; callers `FUN_100051a0`, `FUN_1002e310` — ⚑ label audit (review wave 2): was HIGH on dump |
 | `FUN_10030df0` | frame ctrl | zero controller fields +0…+0x34 (0x38 B) | HIGH | listing `10030e0c..10030e54` |
 | `FUN_100301d0` | frame ctrl | controller destructor (delete if flag > 0) | MED | dump; called with −1 |
 | `⚑ corrected` `FUN_10030210` | frame ctrl | start session: zero; +1 film, +4 game-layout, +3 auto-interlace allowed; clear layer queues; FPS monitor init; divider reset; FlushEvents | HIGH | listing — was "frame controller start session" MED |
 | `FUN_100302b0` | frame ctrl | end session (FlushEvents) | MED | dump |
-| `FUN_100302e0` | frame ctrl | level-transition reset (layers, messages, FPS monitor, divider; keeps limiter stamp) | HIGH | dump; caller `FUN_10007170` listing |
-| `FUN_10030350` | frame ctrl | get frames-presented counter (+8) | HIGH | dump |
+| `FUN_100302e0` | frame ctrl | level-transition reset (layers, messages, FPS monitor, divider; keeps limiter stamp) | MED | dump; caller `FUN_10007170` listing — ⚑ label audit (review wave 2): was HIGH on the dump (only the caller is listing-read) |
+| `FUN_10030350` | frame ctrl | get frames-presented counter (+8) | MED | dump — ⚑ label audit (review wave 2): was HIGH on dump |
 | `FUN_10030900` | frame ctrl | get paused flag (+0) | MED | dump; caller `FUN_1002e310` |
 | `⚑ corrected` `FUN_10030360` | frame ctrl | begin frame: music, clear layers, console, message aging, volume/F6, mouse, Caps-Lock pause (not in films), Esc, input poll on tick frames; returns frame count | HIGH | listing `100304e8..` — was "keys, console, pause, quit" |
 | `⚑ corrected` `FUN_10030570` | frame ctrl | end-frame wrapper: end frame (r4/r5 passed through), Esc counter (discarded), pause screen, FPS monitor on tick frames | HIGH | listing `10030570..100305d4` |
 | `FUN_10030bc0` | frame ctrl | end frame: messages, FPS text (pref 9), console, layers 0–1/bg/2–5/`FUN_10043ba0`/6–15, limiter spin to lastPresent+FPS_Delay (pref 10), counters, divider→tick flag, present by +4 | HIGH | listing `10030bc0..10030de8` |
 | `FUN_100305e0` | frame ctrl | FPS monitor init (+0x18 = now, +0x20 = +0x24 = 30, +0x28 = 0) | HIGH | listing |
-| `⚑ corrected` `FUN_10030640` | frame ctrl | FPS monitor: per >60-tick window publish count; if limiter on, cumulative deficient windows (count < 30) → every 10th sets pref 5 if +3 and pref 6 | HIGH | listing — was MED "FPS monitor + auto interlace" |
+| `⚑ corrected` `FUN_10030640` | frame ctrl | FPS monitor: per >60-tick window publish count **always** (before the pref-10 test); if limiter on, cumulative deficient windows (count < 30) → every 10th sets pref 5 if +3 and pref 6 | HIGH | listing `10030688..10030694`, `100306a0 beq 0x1003075c` — was MED "FPS monitor + auto interlace"; ⚑ corrected (review wave 2, 2026-10-03) #I1: the publish is not gated |
 | `FUN_10030790` | frame ctrl | reset divider (+0x2c = +0x30 = 0, tick = 1) — the only divider writer besides the constructor | HIGH | listing |
 | `⚑ corrected` `FUN_100307c0` | frame ctrl | Esc: quit at once, or (pref 8 "ESC Key Delay") when hold counter > 30; called twice per frame → 16 frames | HIGH | listing — was "hold > 30 frames if pref 8" |
 | `FUN_10030870` | frame ctrl | if paused: blocking pause screen `FUN_10022ef0`, quit flag, clear notice | MED | dump |
 | `FUN_100189f0` |  | clear the 16 render-layer queue heads (`*(r2-0x7198)`) | MED | listing `100189f0..10018a38`; callers begin frame, session start, level start |
-| `FUN_10018b20` |  | flush render layers: 0 → 0–1, 1 → 2–5, 2 → 6–15 (`FUN_1001a650(n)`) | HIGH | dump; caller `FUN_10030bc0` |
+| `FUN_10018b20` |  | flush render layers: 0 → 0–1, 1 → 2–5, 2 → 6–15 (`FUN_1001a650(n)`) | HIGH | dump; caller `FUN_10030bc0`; ⚑ label audit (review wave 2): HIGH kept on the raw listing `10018b54..10018b60` (0, 1), `10018b68..10018b84` (2–5), `10018b8c..10018bd8` (6–15) (`$W/disasm-review2.txt`) |
 | `⚑ corrected` `FUN_1000beb0` |  | present **game screen** (borders, game area, score bar) — chosen by controller +4, not by interlacing | MED | dump (border PaintRects, F54/F55/F59); was "present frame (interlaced)" |
 | `⚑ corrected` `FUN_1000bc60` |  | present full screen (640×480; level select, fades) | MED | dump F52/F53; was "present frame" |
-| `FUN_10010120` |  | blit visible terrain (x offset+32) into the work buffer; interlaced if pref 5 | HIGH | dump; caller `FUN_10030bc0` |
+| `FUN_10010120` |  | blit visible terrain (x offset+32) into the work buffer; interlaced if pref 5 | HIGH | dump; caller `FUN_10030bc0`; ⚑ label audit (review wave 2): HIGH kept on the listing (`$W/disasm-review2.txt`) `100101cc li r3,0x5; bl 0x10004ef0; 100101e4 or r7,r3,r3; 100101f8 bl 0x10009fd0` (pref 5 = 5th argument of the copy) and level-scroll-objects.md §9; the every-other-row behaviour inside `FUN_10009fd0`/`FUN_100450e0` stays MED (§5) |
 | `FUN_100450e0` |  | interlaced CopyBits: every other row, field parity at picture +0x2c toggled per call | MED | dump |
 | `FUN_10009fd0` |  | copy picture → picture (CopyBits ×2, or interlaced `FUN_100450e0`) | MED | dump |
 | `FUN_100050f0` | U_Prefs.cc (span) | prefs defaults: byte 4=1, 5/6/7/8=0, int 0/1/2 = 50/100/50, key table 14 codes at +0x14b8 | HIGH | listing `100050f0..1000519c` |
@@ -389,11 +407,13 @@ pref 6 is 0.
 | `FUN_10007eb0` (no Ghidra function) |  | console `FPS` handler: toggle byte pref 9, message | HIGH | range listing `10007eb0..10007f44` |
 | `FUN_10007f50` (no Ghidra function) |  | console `LIMITFPS` handler: toggle byte pref 10 — command never registered (p5 = 1) | HIGH | range listing `10007f50..10007fe4`, `10005294` |
 | `FUN_1002d080` | G_Console.cc | register console command (skipped when p5 ≠ 0) | HIGH | listing `1002d0a4..1002d0ac` |
-| `⚑ corrected` `FUN_10009750` |  | film **finished**: P1 cursor > recorded count (branchless unsigned compare) | HIGH | listing `10009750..1000976c`; was "film still playing" |
+| `⚑ corrected` `FUN_10009750` |  | film **finished**: P1 cursor > recorded count (branchless **signed** compare) | HIGH | listing `10009750..1000976c`; was "film still playing"; ⚑ corrected (review wave 2, 2026-10-03) #M1: was "unsigned" (§7) |
 | `FUN_10022ef0` |  | pause screen (blocking until Caps Lock released / menu) | MED | dump; caller `FUN_10030870` |
 | `FUN_1000ba70` |  | fade in/out over 9 steps (blend 0..32 by 4), ≥1 Mac tick each, blocking | MED | dump |
 Touched but **not read**: `FUN_1002dea0` (messages draw, LOW by perm F27), `FUN_1002d410`
-(console draw, LOW), `FUN_10043ba0` (LOW, draws something sized to the game area), `FUN_1001a650`
+(console draw, LOW; its draw/visible flag `DAT_100e01f0` is described in messages-notices-console.md
+§5.1), `FUN_10043ba0` (⚑ corrected (review wave 2, 2026-10-03) #C5: = the particle draw, HIGH in
+particles-debris-blur.md §2.9; was LOW "draws something sized to the game area"), `FUN_1001a650`
 (layer flush, LOW), `FUN_1002d1a0/1002d230/1002d190` (console open/update/is-open, LOW),
 `FUN_1002db50`, `FUN_1002d040` (console/message reset, LOW), `FUN_10047990/10047a30` (volume
 down/up returning %, LOW), `FUN_1000bd80` (present used by fades, not read), `FUN_10048220`.
