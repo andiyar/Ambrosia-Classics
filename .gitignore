@@ -1,0 +1,11 @@
+# game data, mirrors, decompiles — all derived from copyrighted originals, never committed
+/Resources/
+/ghidra/*
+!/ghidra/*.py
+!/ghidra/*.java
+/out/
+.build/
+.swiftpm/
+*.xcodeproj
+DerivedData/
+.DS_Store
