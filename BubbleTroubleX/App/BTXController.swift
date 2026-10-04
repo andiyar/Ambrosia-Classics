@@ -175,24 +175,43 @@ import HectorShell
         return true
     }
 
+    /// Quit now. When a terminate request (the quit Apple event) is waiting on the game's own quit path, it is
+    /// answered yes instead.
     private func terminate() {
         frontEndQuit = true
-        NSApp.terminate(nil)
+        if insideShouldTerminate { return }                             // its own return value says "now"
+        if replyPending {
+            replyPending = false
+            NSApp.reply(toApplicationShouldTerminate: true)
+        } else {
+            NSApp.terminate(nil)
+        }
     }
 
-    /// A terminate that did not come from the game or the front end (e.g. the quit Apple event) goes through
-    /// `quitChosen`'s routes; the game's own `.quitNow`, the front end's `.quit` and the other quits proceed.
+    /// `applicationShouldTerminate` answered `.terminateLater`: the reply comes when the music fade has run.
+    private var replyPending = false
+    private var insideShouldTerminate = false
+
+    /// A terminate that did not come from the game or the front end (the quit Apple event — `_QuitAppleEventHandler`
+    /// sets `gFinished` and returns at once) goes through `quitChosen`'s routes and is answered once the original's
+    /// quit path (the music fade) has run; the game's own `.quitNow`, the front end's `.quit` and the rest proceed.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if quitWithoutSaving || saveOnQuit || frontEndQuit || frontEnd == nil { return .terminateNow }
+        if quitWithoutSaving || saveOnQuit || frontEndQuit || frontEnd == nil || replyPending { return .terminateNow }
         guard let session, session.isInGame else {
-            return quitThroughFrontEnd() ? .terminateCancel : .terminateNow
+            insideShouldTerminate = true
+            let fading = quitThroughFrontEnd()
+            insideShouldTerminate = false
+            guard fading, !frontEndQuit else { return .terminateNow }
+            replyPending = true
+            return .terminateLater
         }
         if session.phase == .paused {
             saveOnQuit = true
             return .terminateNow
         }
         quitPending = true
-        return .terminateCancel
+        replyPending = true
+        return .terminateLater
     }
 
     /// A launch/start failure: logged; DEBUG also shows an alert (Invariant 6); then a clean quit without saving.
@@ -337,7 +356,7 @@ import HectorShell
 
         if quitNow {                                                    // ⌘Q in play / a load failure: `_CleanUp`
             quitWithoutSaving = true
-            NSApp.terminate(nil)
+            terminate()
             return
         }
         if quit {                                                       // `gFinished`: `_main` saves, then quits
