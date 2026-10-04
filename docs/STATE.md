@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-04
+# STATE — Ambrosia Classics — 2026-10-04 (evening)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -42,14 +42,14 @@
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Aki Phase 2 — the game** (plan P2.1–P2.12). **P2.1–P2.4 DONE and merged 2026-10-04 afternoon** (Fable seat, Opus
-   implementers + one Opus review leg each, all MERGEABLE, Minors carried): layouts generated from the bank (e36de83),
-   `Tile`/`Board` (d029b7d), deal + `_CountOpenPairs` (bbffd38), `GameClock` (6d86638). AkiCore **67 tests / 0 skips**;
-   M2 BUILD SUCCEEDED; M3 floor 167. Plan P2.2 `testCounts` corrected 22 → 25 (seat ruling, ⚑ in the plan). Next chip:
-   P2.5–P2.8 (P2.5/P2.6 ⚑ MAJOR → two review legs; total 107 after P2.8), then P2.9–P2.12 and Ben's gate ("plays like
-   Aki" on each difficulty). Handoff `docs/handoff-2026-10-04-aki-phase2-p21-p24.md` (reviewer exports need
-   `AKI_DATA_11/12`; spawn the session IN the lane worktree — the write hook). Ben's Phase 1 question rows (S6 Q1–Q18,
-   Q51–Q57) stay open for his play notes; none blocks Phase 2.
+1. **Aki Phase 2 — the game** (plan P2.1–P2.12). **P2.1–P2.6 DONE and merged 2026-10-04** (Fable seat, Opus
+   implementers; P2.1–P2.4 one review leg each, P2.5/P2.6 ⚑ MAJOR two legs each, all MERGEABLE; one fix round on P2.6
+   test gaps). `AkiGame` state machine: select/match/stacked loss (49ed89a), hint/reshuffle/undo/pause/button bar/tick/
+   time bar (bb9513d + 69e7398 + 95ba274). AkiCore **92 tests / 0 skips**; M2 BUILD SUCCEEDED; M3 floor 167. Plan ⚑
+   corrections by the seat: P2.2 `testCounts` 22 → 25; P2.6 reshuffle-button test with pairs 0 emits no `.pressButton(4)`
+   (DC:7753). Next chip: P2.7 (`Stats`, 13–17 slot → 100) and P2.8 (`AkiGameArt` → 107), then P2.9–P2.12 and Ben's gate
+   ("plays like Aki" on each difficulty). Handoff `docs/handoff-2026-10-04-aki-phase2-p25-p26.md`. Ben's Phase 1
+   question rows (S6 Q1–Q18, Q51–Q57) stay open for his play notes; none blocks Phase 2.
 2. Bubble Trouble X core lane: Tasks 4–5b merged; remaining tasks per its plan (separate chip chain).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
