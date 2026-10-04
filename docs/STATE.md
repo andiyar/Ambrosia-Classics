@@ -49,6 +49,8 @@
    delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
    **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
+   **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
+   `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
 2. **Bubble Trouble X playable app on HectorShell — next (Ben, D8):** write the plan (contracts, not code), then build. Side lane: FILM demos 2–4 (Ben watches the original's demo 4, NR-10), then the golden freeze.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
