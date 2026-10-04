@@ -1,4 +1,4 @@
-import AppKit
+import QuartzCore
 import AkiCore
 import HectorShell
 

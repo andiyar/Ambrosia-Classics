@@ -26,7 +26,8 @@ targets:
     sources:
       - path: Aki/App
         excludes:
-          - "Info.plist"
+          - "Mac/Info.plist"
+          - "iOS/**"
     dependencies:
       - package: AkiCore
         product: AkiCore
@@ -36,7 +37,7 @@ targets:
       base:
         PRODUCT_NAME: Aki
         PRODUCT_BUNDLE_IDENTIFIER: com.ambrosiaclassics.aki
-        INFOPLIST_FILE: Aki/App/Info.plist
+        INFOPLIST_FILE: Aki/App/Mac/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES

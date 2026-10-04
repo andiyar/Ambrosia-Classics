@@ -8,6 +8,7 @@ import AkiCore
 /// when windowed, app-modal over the fullscreen window otherwise. OK writes the `_p` bytes and the
 /// `GameSettings` blob.
 @MainActor final class PreferencesWindowController: NSObject {
+    private unowned let app: AkiAppDelegate
     private unowned let controller: AkiController
     private let window: NSWindow
     private let soundCheckbox: NSButton                        // _soundCheckbox (ivar 0x28)
@@ -21,7 +22,9 @@ import AkiCore
     /// `PaperBackgroundView` content (the nib's custom class); the five checkbox outlets and the buttons
     /// wired to `save:` / `cancel:`, with their nib frames, titles, fonts and key equivalents, added in the
     /// nib's subview order (OK, Cancel, Sound, Fullscreen, Tile Animation, Music, Display Level Description).
-    init(controller: AkiController) throws {
+    init(app: AkiAppDelegate) throws {
+        self.app = app
+        let controller = app.controller
         self.controller = controller
         let nib = try CocoaNib(data: controller.assets.lproj("Preferences.nib/designable.nib"))
         guard let w = nib.window,
@@ -109,7 +112,7 @@ import AkiCore
         let fullscreenOn = fullscreenCheckbox.state == .on
         if (controller.p.fullscreen != 0) != fullscreenOn {
             controller.p.fullscreen = fullscreenOn ? 1 : 0
-            controller.perform(#selector(AkiController.toggleFullscreen(_:)), with: nil, afterDelay: 0)
+            app.perform(#selector(AkiAppDelegate.toggleFullscreen(_:)), with: nil, afterDelay: 0)
         }
         controller.savePrefs()
         controller.music.playMovie(0x80)

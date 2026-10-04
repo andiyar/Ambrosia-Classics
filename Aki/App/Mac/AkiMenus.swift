@@ -20,11 +20,11 @@ import AkiCore
     private static var nibEditItems: [NSMenuItem] = []
 
     /// The main menu: `AMainMenu` of `MainMenu.nib/designable.nib`. Items the nib targets at "Controller"
-    /// get `controller` as target; the rest (FirstResponder) target nil. Also sets `NSApp.windowsMenu` to
+    /// get the app delegate (the nib's `Controller`) as target; the rest (FirstResponder) target nil. Also sets `NSApp.windowsMenu` to
     /// the submenu holding `arrangeInFront:` (the nib's Window menu).
-    static func build(controller: AkiController) throws -> NSMenu {
-        let nib = try CocoaNib(data: controller.assets.lproj("MainMenu.nib/designable.nib"))
-        let menu = makeMenu(title: "AMainMenu", items: nib.mainMenu, controller: controller)
+    static func build(app: AkiAppDelegate) throws -> NSMenu {
+        let nib = try CocoaNib(data: app.controller.assets.lproj("MainMenu.nib/designable.nib"))
+        let menu = makeMenu(title: "AMainMenu", items: nib.mainMenu, controller: app)
         NSApp.windowsMenu = menu.items.compactMap(\.submenu).first { submenu in
             submenu.items.contains { $0.action == #selector(NSApplication.arrangeInFront(_:)) }
         }
@@ -33,7 +33,7 @@ import AkiCore
         }
         nibEditItems = editMenu?.items ?? []
         // Runs after the caller's `NSApp.mainMenu =` (an immediate re-set does not stick, measured).
-        controller.perform(#selector(AkiController.restoreNibMenu), with: nil, afterDelay: 0)
+        app.perform(#selector(AkiAppDelegate.restoreNibMenu), with: nil, afterDelay: 0)
         return menu
     }
 
@@ -43,7 +43,7 @@ import AkiCore
     /// alternates, the Window menu's tiling items and Clear Current Layer's dropped ⌘X are left alone.
     static func restoreNibItems() {
         if let title = preferencesTitle, let item = NSApp.mainMenu?.items.lazy.compactMap(\.submenu)
-            .compactMap({ $0.items.first { $0.action == #selector(AkiController.showPreferences(_:)) } }).first {
+            .compactMap({ $0.items.first { $0.action == #selector(AkiAppDelegate.showPreferences(_:)) } }).first {
             item.title = title
         }
         guard let editMenu else { return }
@@ -52,7 +52,7 @@ import AkiCore
         }
     }
 
-    private static func makeMenu(title: String, items: [CocoaNib.MenuItem], controller: AkiController) -> NSMenu {
+    private static func makeMenu(title: String, items: [CocoaNib.MenuItem], controller: AkiAppDelegate) -> NSMenu {
         let menu = NSMenu(title: title)
         for item in collapsingSeparators(items.filter(isInScope)) {
             menu.addItem(makeItem(item, controller: controller))
@@ -75,7 +75,7 @@ import AkiCore
         return result
     }
 
-    private static func makeItem(_ item: CocoaNib.MenuItem, controller: AkiController) -> NSMenuItem {
+    private static func makeItem(_ item: CocoaNib.MenuItem, controller: AkiAppDelegate) -> NSMenuItem {
         if item.isSeparator { return .separator() }
         let menuItem = NSMenuItem(title: item.title, action: item.action.map(NSSelectorFromString),
                                   keyEquivalent: item.keyEquivalent)

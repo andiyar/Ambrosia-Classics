@@ -22,7 +22,8 @@ import AkiCore
     /// description `level%d_description`; image `preview%d`; then `+runModalWithTitle:description:image:`
     /// @ 0x29e86 (DC:11369): the shared instance, `_setupWithTitle:description:image:` @ 0x2a0a7 (DC:11446),
     /// `scheduleSetShieldingLevel` when fullscreen, `runModalForWindow:` (AppKit centres it — Q6).
-    static func runModal(layout: Int, custom: Bool, controller: AkiController) {
+    static func runModal(layout: Int, custom: Bool, app: AkiAppDelegate) {
+        let controller = app.controller
         let n = layout + 1
         let assets = controller.assets!
         let title = assets.localized(custom ? "level\(n)_custom_title" : "level\(n)_title")
@@ -39,7 +40,7 @@ import AkiCore
         instance.titleTextField.stringValue = title
         instance.descriptionTextField.stringValue = description
         instance.imageView.image = image
-        if controller.shell.isFullscreen {
+        if app.shell.isFullscreen {
             instance.window.scheduleShieldingLevel()
         }
         NSApp.runModal(for: instance.window)
