@@ -27,6 +27,27 @@ public struct FrameReport: Equatable, Sendable {
     public let heroCaughtThisFrame: Bool
     /// Every stop reason recorded so far (Invariant 14) — non-empty only on the final frame.
     public let stops: Set<StopReason>
+    /// This frame's `_PlayMySnd` calls in order (plan 2026-10-04 btx-playable S2) — always empty until task C2.
+    public let sounds: [SoundCue]
+    /// This frame's QuickDraw calls in order (S2) — always empty until task C3. Replays ignore both fields.
+    public let drawOps: [DrawOp]
+
+    init(frame: UInt16, drawsThisFrame: Int, totalDraws: Int, samplesConsumed: Int, heroState: Int16,
+         heroCell: CellRef, score: Int32, lives: Int16, heroCaughtThisFrame: Bool, stops: Set<StopReason>,
+         sounds: [SoundCue] = [], drawOps: [DrawOp] = []) {
+        self.frame = frame
+        self.drawsThisFrame = drawsThisFrame
+        self.totalDraws = totalDraws
+        self.samplesConsumed = samplesConsumed
+        self.heroState = heroState
+        self.heroCell = heroCell
+        self.score = score
+        self.lives = lives
+        self.heroCaughtThisFrame = heroCaughtThisFrame
+        self.stops = stops
+        self.sounds = sounds
+        self.drawOps = drawOps
+    }
 }
 
 extension GameState {
