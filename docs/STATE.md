@@ -29,18 +29,15 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X core lane (2026-10-04 evening, Opus 5.5 orchestrator, cap lifted):** core Tasks 0–11 on main
-  (`22e228d`): Task 10 (frame step) and Task 11 (FILM replay harness `btx-replay` + `FilmReplayTests`) each Opus-reviewed
+- **Bubble Trouble X core lane — rules engine DONE (2026-10-04 evening, Opus 5.5 orchestrator):** core Tasks 0–11 on
+  main: Task 10 (frame step) and Task 11 (FILM replay harness `btx-replay` + `FilmReplayTests`) each Opus-reviewed
   MERGEABLE; merge-head suite **130** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX` (106 passed / 24 skipped without).
-  Replay table (seat-run): FILM 1 `count,level` **FLAG** (level completed frame 1167, samples out 1227 — a pass to name to
-  Ben); FILMs 2/3/4 end by the hero's death at frames 645 / 1097 / 447 (pinned as `knownDiverging` in the acceptance test,
-  orchestrator ruling). **Diagnosis protocol open:** the hero side stays in sync in every FILM up to its catch (every fresh
-  push lands on an object), so the drift is enemy-side; the RNG 0x8000 variant is moot (no such draw occurs), pool counters
-  never drift, prefs-off variants are worse, and four Opus audits (eels, blocks/jewels, starfish/multiplier, FILM-3 paths)
-  found no discrepancy against the decompile. Strongest lead: FILM 4's original makes **one more `Random()`** between frame
-  212's eel roll and frame 213's piranha roll (one inserted draw there makes the player's later pushes squash enemies);
-  FILM 3 has a similar window at frames 473–512; FILM 2's catch is a 1-pixel overlap. Mechanism hunt in progress. HectorKit
-  v0.2.0 tagged (`4d3746d`, floor 167). Memory `btx-core-lane-2026-10-03.md`.
+  Replay table (seat-run): FILM 1 `count,level` **FLAG** (level completed frame 1167, samples out 1227); FILMs 2/3/4 end by
+  the hero's death at frames 645 / 1097 / 447 (pinned `knownDiverging`). **Nothing playable yet** — Ben's ruling (DECISIONS
+  D8): the playable app on HectorShell goes next; the FILM diagnosis is a side lane. Its finding: no X 1.1 code discrepancy
+  (six Opus audits/investigations); the FILM headers show an **older recording build** (16-bit level field), so X 1.1 itself
+  likely dies in demos 2–4 too — Ben's eyes on the original's demo decide (NR-10). Golden freeze (Task 11.5) waits on that.
+  HectorKit v0.2.0 tagged (`4d3746d`, floor 167). Memory `btx-core-lane-2026-10-03.md`.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
@@ -52,7 +49,7 @@
    delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
    **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
-2. Bubble Trouble X core lane: Tasks 0–11 merged (130 tests); Diagnosis protocol on FILMs 2–4, then golden freeze (Task 11.5); then the BTX shell on HectorShell.
+2. **Bubble Trouble X playable app on HectorShell — next (Ben, D8):** write the plan (contracts, not code), then build. Side lane: FILM demos 2–4 (Ben watches the original's demo 4, NR-10), then the golden freeze.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 

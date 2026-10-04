@@ -157,7 +157,7 @@ ics4 1, ics# 1, BNDL 1, BteD 1, FREF 1, ALRT 3, icl8 1, PICT 6, carb 1, plst 1, 
 - NR-7 `_FigureEnemyMove` homing with `old dir == 0`: `back` is uninitialised after `LocationErrorInt`. → RESOLVED by C11 (`_LocationErrorInt` → `_DoLocationError` → `_StopAlert` + `_CleanUp` → `_ExitToShell`: the original quits; `back` is never read. enemies-ai.md §4d).
 - NR-8 Editor "Balloon time" ↔ LEVL word: code uses w15 (flash) and w16 (release); w17 (always 300) is never read.
 - NR-9 Conditions the FILMs were recorded under (prefs 0x35/0x36, license state).
-- NR-10 Whether the shipped FILMs (possibly recorded with the 2002 engine) replay in sync in X 1.1 itself — needs Ben's eyes on the original demo.
+- NR-10 Whether the shipped FILMs (possibly recorded with the 2002 engine) replay in sync in X 1.1 itself — needs Ben's eyes on the original demo. → evidence 2026-10-04: the FILM headers' 16-bit level field shows an older recording build (`data-formats.md` §3 ⚑); the replica desyncs on FILMs 2–4 with no 1.1 code discrepancy found (Classics DECISIONS D8).
 - NR-11 Delivered frame rate of the original on real hardware (code: 0.033 s timer = 30.3 Hz nominal).
 - NR-12 `_openApplicationAEHandler` tail (InitMac/Interface invocation) not read line by line.
 (NR-5 was resolved this session: all shipped mazes have (7,6) empty.)
@@ -221,3 +221,5 @@ marked `⚑ corrected (plan 2026-10-03 btx-core)` at the place below.
     `_environment`, so the original `_PopEnemy(-1)` may award +100 once per process (effect open).
 - Note (not a correction; from the plan's Research note 6 [derived], not re-checked here): registration
   is RNG-neutral for levels 1–4, so FILMs 1–4 cannot discriminate Decision 2.
+- 2026-10-04 — BTX Diagnosis protocol (Classics DECISIONS D8): `data-formats.md` §3 ⚑ — FILM level field is a 16-bit store,
+  so FILMs 1–4 predate X 1.1 [HIGH]; NR-10 evidence appended.

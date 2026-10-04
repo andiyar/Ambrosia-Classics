@@ -144,6 +144,13 @@ Worked decode — `xxd -l 16 res/FILM_1.bin; xxd -s 12 -l 64 res/FILM_1.bin`:
 ```
 Run-length of the first samples (`U D L R P`, '.' = not held): `..... ×16, ...R. ×25, ..... ×5,
 U.... ×37, ..... ×8, ..L.. ×7, …`; first push at sample 212. [HIGH]
+⚑ corrected (BTX Diagnosis protocol 2026-10-04) — **the level field's layout shows the FILMs were written by an older
+build, not X 1.1.** All four headers hold `00 0L 00 00` at +8 (`0002 0000`, `0002 0000`, `0003 0000`, `0004 0000`) — a
+16-bit big-endian store. X 1.1 stores a full 32-bit int: `_PlayGame` i386 `000184c6 calll _GetLevel; 000184cb cwtl;
+000184cc movl %eax, 0x34f48` (PPC `stw r3,8(r29)` at 1a074, per the session's investigator), and `_FlipFILM @ 000284e3`
+byte-swaps all three header longs — either way 1.1 would write `0000 000L`. The identical leftover bytes past each count
+(above) put all four recordings in one session of that older build. Bears on NR-10: X 1.1 may itself desync on FILMs 2–4.
+Command: `otool -tV <BTX_i386> | grep -n '^000184c'`; header bytes read from `BT Levels.rsrc`. [HIGH]
 
 Which level a film plays: the film **id**, not the level field. `_DemoButton` calls
 `_RequestGame(filmCounter+1, 1)`; `_PlayGame` loads `FILM id = gFilmCounter+1` and `_SetLevel(param-1)`;
