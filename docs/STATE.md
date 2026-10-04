@@ -29,15 +29,18 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X core lane (2026-10-04, Fable orchestrator, cap lifted):** Classics main `0a9db19` = core Tasks 0–9c merged
-  (every task Opus-reviewed, fix rounds applied; merge-head suite **122** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX`;
-  merge heads run +12 over the plan's table). HectorKit **v0.2.0 tagged** at `4d3746d` (masked PICT 4a regions + 4b mattes,
-  floor 167); Classics `btx-census` decodes all 28 PICTs via `decodeAny` (kit Task 4c). **Task 10 (frame step) is DONE but
-  UNREVIEWED on lane `btx-t10` (`5205666`, 128 tests):** all nine FILM 1 draw checkpoints match the planner's numbers; a throwaway
-  full run shows **FILM 1 reaches count exhaustion (1227 frames, 1118/1118 samples, no catch); FILMs 2, 3, 4 die early (first
-  catches at frames 645, 1097, 447)** — Task 11's harness + the Diagnosis protocol (suspect 1: the QuickDraw `Random()` step /
-  0x8000 adjustment, NR-3) are the next step. Session cut by the usage limit after Task 10's hand-back; handoff = this paragraph
-  + memory `btx-core-lane-2026-10-03.md` + the chip.
+- **Bubble Trouble X core lane (2026-10-04 evening, Opus 5.5 orchestrator, cap lifted):** core Tasks 0–11 on main
+  (`22e228d`): Task 10 (frame step) and Task 11 (FILM replay harness `btx-replay` + `FilmReplayTests`) each Opus-reviewed
+  MERGEABLE; merge-head suite **130** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX` (106 passed / 24 skipped without).
+  Replay table (seat-run): FILM 1 `count,level` **FLAG** (level completed frame 1167, samples out 1227 — a pass to name to
+  Ben); FILMs 2/3/4 end by the hero's death at frames 645 / 1097 / 447 (pinned as `knownDiverging` in the acceptance test,
+  orchestrator ruling). **Diagnosis protocol open:** the hero side stays in sync in every FILM up to its catch (every fresh
+  push lands on an object), so the drift is enemy-side; the RNG 0x8000 variant is moot (no such draw occurs), pool counters
+  never drift, prefs-off variants are worse, and four Opus audits (eels, blocks/jewels, starfish/multiplier, FILM-3 paths)
+  found no discrepancy against the decompile. Strongest lead: FILM 4's original makes **one more `Random()`** between frame
+  212's eel roll and frame 213's piranha roll (one inserted draw there makes the player's later pushes squash enemies);
+  FILM 3 has a similar window at frames 473–512; FILM 2's catch is a 1-pixel overlap. Mechanism hunt in progress. HectorKit
+  v0.2.0 tagged (`4d3746d`, floor 167). Memory `btx-core-lane-2026-10-03.md`.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
@@ -53,7 +56,7 @@
    gate** — play a level start to finish on each difficulty, "it plays like Aki", watch the fade (Q24) and the Give Up
    time-out edge (Q25). Not done: the plan's P2.12 screenshot script (Ben declined computer-use control of the app this
    session). Handoff `docs/handoff-2026-10-04-aki-phase2-p210-p212.md`. Next after the gate: Phase 3 (editor, `.aki`).
-2. Bubble Trouble X core lane: Tasks 4–5b merged; remaining tasks per its plan (separate chip chain).
+2. Bubble Trouble X core lane: Tasks 0–11 merged (130 tests); Diagnosis protocol on FILMs 2–4, then golden freeze (Task 11.5); then the BTX shell on HectorShell.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
