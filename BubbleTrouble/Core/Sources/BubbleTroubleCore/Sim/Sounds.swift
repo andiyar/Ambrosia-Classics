@@ -70,21 +70,21 @@
 // end / dialogs (C6/C7/A4).
 
 /// One `_delayedSound` entry (6 bytes in the original: slot, fire frame, priority — all `short`).
-public struct DelayedSound: Equatable, Sendable {
+struct DelayedSound: Equatable, Sendable {
     /// −1 (0xffff) = free.
-    public internal(set) var slot: Int16 = -1
+    var slot: Int16 = -1
     /// `delay + gFrameCounter` at the `_PlayMySnd` call (16-bit, wraps).
-    public internal(set) var fireAt: UInt16 = 0
-    public internal(set) var priority: Int16 = 0
+    var fireAt: UInt16 = 0
+    var priority: Int16 = 0
     /// The `delay` the call passed — kept for the cue's provenance (`SoundCue.delayFrames`).
-    public internal(set) var delay: Int16 = 0
+    var delay: Int16 = 0
 
-    public var isFree: Bool { slot == -1 }
+    var isFree: Bool { slot == -1 }
 }
 
 extension GameState {
     /// `_delayedSound` holds 5 entries (`_Sounds_InitDelayedSounds` walks to `_gShowWhichNotice`, 30 bytes on).
-    public static let delayedSoundCapacity = 5
+    static let delayedSoundCapacity = 5
 
     /// `_PlayMySnd(slot, priority, delay) @ 00026a7b`.
     mutating func playMySnd(_ slot: Int, priority: Int, delay: Int = 0) {

@@ -161,33 +161,126 @@ final class SoundCueTests: XCTestCase {
         XCTAssertEqual(state.soundsThisFrame, [cue(13, 20), cue(13, 20)])
     }
 
+    // MARK: - More sites
+
+    /// `_MoveBlock`: a bouncing blue block cues "Bounce" 20/10 at step 3 in every direction and at step 4 for
+    /// up / down / left — the right-moving block's step-4 reversal (0001d221) skips the shared call (0001cfeb).
+    func testRightMovingBounceReversalIsSilent() {
+        for (dir, col, wallCol) in [(Direction.right, 14, 15), (Direction.left, 1, 0)] {
+            var state = world()
+            state.maze[wallCol, 1] = CellCode.wall
+            let i = state.newBlock(col: col, row: 1, direction: dir, type: CellCode.blue, enemy: -1, moving: true)
+            state.blocks[i].bouncing = true                       // aligned against the wall: the bounce steps
+            var perStep: [[SoundCue]] = []
+            for _ in 1...4 {
+                state.soundsThisFrame = []
+                state.moveBlock(i)
+                perStep.append(state.soundsThisFrame)
+            }
+            let step4: [SoundCue] = dir == .right ? [] : [cue(20, 10)]
+            XCTAssertEqual(perStep, [[], [], [cue(20, 10)], step4], "\(dir)")
+            XCTAssertEqual(state.blocks[i].direction, dir.opposite, "\(dir) reversed")
+        }
+    }
+
+    /// `_Bubbles_NewGroup`'s tail `jmp _PlayMySnd` (000166bc): 4, 5, 6, 9, 10 → 28/1; 7 → 29/1; 8 → 27/1;
+    /// 0xb → 27/10; 0…3 and ≥ 0xc → none; pref 0x36 off → none. The launcher forwards the group's sound.
+    func testBubbleGroupTailCues() {
+        let short = AirBubblePool.GroupSound(slot: 28, priority: 1)
+        let expected: [Int: AirBubblePool.GroupSound?] = [
+            0: nil, 1: nil, 2: nil, 3: nil, 4: short, 5: short, 6: short,
+            7: AirBubblePool.GroupSound(slot: 29, priority: 1), 8: AirBubblePool.GroupSound(slot: 27, priority: 1),
+            9: short, 10: short, 0xb: AirBubblePool.GroupSound(slot: 27, priority: 10), 0xc: nil, 0xd: nil,
+        ]
+        for group in 0...0xd {
+            var pool = AirBubblePool()
+            var rng = GameRandom(seed: 1)
+            let sound = pool.newGroup(x: 100, y: 100, group: group, frame: 1, prefs: CosmeticPrefs(), rng: &rng)
+            XCTAssertEqual(sound, expected[group]!, "group \(group)")
+        }
+        var pool = AirBubblePool()
+        var rng = GameRandom(seed: 1)
+        XCTAssertNil(pool.newGroup(x: 0, y: 0, group: 7, frame: 1, prefs: CosmeticPrefs(airBubbles: false),
+                                   rng: &rng))
+    }
+
+    /// `_TimeBonus_Process`: −50 to exactly 0 → "Hurry Up!" 30/20 then "No Bonus Points" 23/20 (00006a95,
+    /// 00006ab1); −50 to below 500 → "Bonus Timer Warning" 21/20 (00006aee); 550 → 500 → nothing.
+    func testTimeBonusCues() {
+        for (bonus, cues) in [(Int32(50), [cue(30, 20), cue(23, 20)]), (540, [cue(21, 20)]), (550, [])] {
+            var state = world()
+            state.timeBonus = bonus
+            state.timeBonusTimer = 0
+            state.frame = 0x1f
+            state.timeBonusProcess()
+            XCTAssertEqual(state.soundsThisFrame, cues, "bonus \(bonus)")
+        }
+    }
+
+    /// `_Multiplier_Process`: "Bonus Multiplier Flash" 32/30 on the flash-on steps (bit in 0x155) while the
+    /// counter is < 9 (00019e5d); off steps and the final clamp to 9 are silent.
+    func testMultiplierFlashCue() {
+        for (counter, cues) in [(Int16(1), [cue(32, 30)]), (2, []), (7, [cue(32, 30)]), (8, [])] {
+            var state = world()
+            state.multiplierAnimating = true
+            state.multiplierTimer = 0
+            state.multiplierAnimCounter = counter
+            state.frame = 6
+            state.multiplierProcess()
+            XCTAssertEqual(state.soundsThisFrame, cues, "counter \(counter) → \(counter + 1)")
+        }
+    }
+
+    /// Balloons: launch 14/10 (00023a63); hero captured 15/10 now + "Heyahoo" 39/10 queued +5 (00023cf6/00023d12);
+    /// capture-all 15/10 once at the end (00024253) but nothing on the `29 < numActive` early return.
+    func testBalloonCues() {
+        var state = world()
+        state.enemies[0].state = 1
+        state.enemies[0].direction = .down
+        state.enemies[0].rect = QDRect.cell(col: 2, row: 2)
+        state.balloonsNew(enemy: 0)
+        XCTAssertEqual(state.soundsThisFrame, [cue(14, 10)])
+
+        state.soundsThisFrame = []
+        state.balloonsCaptureHero(0)
+        XCTAssertEqual(state.soundsThisFrame, [cue(15, 10)])
+        XCTAssertEqual(state.delayedSounds[0].slot, 39)
+        XCTAssertEqual(state.delayedSounds[0].fireAt, 5)
+
+        state = world()
+        state.balloonsCaptureAllEnemies()
+        XCTAssertEqual(state.soundsThisFrame, [cue(15, 10)], "no enemies: the loop ends normally")
+        state = world()
+        state.enemies[0].state = 1
+        state.numActiveBalloons = 30
+        state.balloonsCaptureAllEnemies()
+        XCTAssertEqual(state.soundsThisFrame, [], "early return")
+    }
+
     // MARK: - FILM 1 (self-derived golden)
 
-    /// FILM 1 in full: the cue stream is pinned (count, per-slot histogram and the first cues) so any moved or lost
-    /// site shows. SELF-DERIVED from this implementation (not an oracle) — it guards against regressions only.
+    /// FILM 1 in full: the whole ordered cue stream ("frame/slot/priority/delay") is pinned so any moved, added or
+    /// lost site shows. SELF-DERIVED from this implementation (not an oracle) — it guards against regressions only.
     func testFilm1CueCountIsStable() throws {
         let files = try BTXTestData.files()
         let film = try files.film(1)
         var state = try GameState.newGame(level: 1, mode: .demo, seed: film.seed, files: files)
         var input = FilmInput(film: film)
-        var cues: [(frame: Int, cue: SoundCue)] = []
+        var cues: [String] = []
         while state.playing {
             let report = state.stepFrame(input: &input)
-            cues += report.sounds.map { (Int(report.frame), $0) }
+            cues += report.sounds.map { "\(report.frame)/\($0.slot)/\($0.priority)/\($0.delayFrames)" }
         }
-        var histogram: [Int: Int] = [:]
-        for c in cues { histogram[c.cue.slot, default: 0] += 1 }
-        let summary = histogram.keys.sorted().map { "\($0):\(histogram[$0]!)" }.joined(separator: " ")
-        let head = cues.prefix(6).map { "\($0.frame)/\($0.cue.slot)/\($0.cue.priority)/\($0.cue.delayFrames)" }
-        print("FILM1 cues \(cues.count) [\(summary)] head \(head)")
-        XCTAssertEqual(cues.count, Self.film1CueCount)
-        XCTAssertEqual(summary, Self.film1Histogram)
-        XCTAssertEqual(head, Self.film1Head)
-        XCTAssertFalse(cues.contains { $0.cue.slot == 8 || $0.cue.slot == 35 }, "demo: no Hahohaho / End of Level")
+        XCTAssertEqual(cues, Self.film1Cues)
     }
 
-    private static let film1CueCount = 42
-    private static let film1Histogram = "0:4 5:7 6:10 16:4 19:1 26:1 27:1 28:11 29:2 31:1"
-    private static let film1Head = ["71/27/10/0", "148/16/10/0", "149/16/10/0", "271/6/10/0", "283/5/10/0",
-                                    "295/28/1/0"]
+    private static let film1Cues: [String] = [
+        "71/27/10/0", "148/16/10/0", "149/16/10/0", "271/6/10/0", "283/5/10/0", "295/28/1/0",
+        "339/6/10/0", "352/28/1/0", "372/5/10/0", "409/6/10/0", "430/6/10/0", "438/6/10/0",
+        "486/28/1/0", "538/28/1/0", "542/5/10/0", "542/0/10/0", "583/19/10/5", "588/29/1/0",
+        "597/6/10/0", "609/16/10/0", "617/5/10/0", "638/0/10/0", "679/28/1/0", "701/5/10/0",
+        "701/6/10/0", "701/26/20/0", "701/31/20/0", "705/16/10/0", "731/28/1/0", "781/28/1/0",
+        "856/28/1/0", "942/28/1/0", "980/5/10/0", "1011/6/10/0", "1012/28/1/0", "1078/6/10/0",
+        "1107/6/10/0", "1120/29/1/0", "1166/5/10/0", "1166/0/10/0", "1167/0/10/0", "1177/28/1/0",
+    ]
 }

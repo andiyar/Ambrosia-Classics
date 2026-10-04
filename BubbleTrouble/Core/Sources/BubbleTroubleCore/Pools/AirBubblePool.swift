@@ -120,8 +120,8 @@ public struct AirBubblePool: Sendable {
     /// `last = frame; delay = delayTable[dIdx]` (dIdx wraps after 12). Returns the group's tail sound (see
     /// `newGroup`), which the caller plays.
     @discardableResult
-    public mutating func launch(frame: UInt16, hero: inout HeroAnchor, prefs: CosmeticPrefs,
-                                rng: inout GameRandom) -> GroupSound? {
+    mutating func launch(frame: UInt16, hero: inout HeroAnchor, prefs: CosmeticPrefs,
+                         rng: inout GameRandom) -> GroupSound? {
         if !prefs.airBubbles { return nil }
         if Int(frame) <= Int(timeLastGroupLaunched) + Int(delayTilNextGroup) { return nil }
         let sound: GroupSound?
@@ -152,9 +152,9 @@ public struct AirBubblePool: Sendable {
     }
 
     /// The `_PlayMySnd(slot, priority, 0)` that `_Bubbles_NewGroup` tail-jumps to (000166bc) after its last bubble.
-    public struct GroupSound: Equatable, Sendable {
-        public let slot: Int
-        public let priority: Int
+    struct GroupSound: Equatable, Sendable {
+        let slot: Int
+        let priority: Int
     }
 
     /// `_Bubbles_NewGroup(x, y, group) @ 0001657e`. Pref 0x36 off → return. Each row is one
@@ -167,8 +167,8 @@ public struct AirBubblePool: Sendable {
     /// 7 → slot 29 "More Bubbles", priority 1 (0001676a); 8 → slot 27 "Bubbles", priority 1 (0001681d, joining
     /// 000169ce); 0xb (hero death) → slot 27, priority 10 (000169c0). Groups 0…3 and ≥ 0xc → none.
     @discardableResult
-    public mutating func newGroup(x: Int16, y: Int16, group: Int, frame: UInt16, prefs: CosmeticPrefs,
-                                  rng: inout GameRandom) -> GroupSound? {
+    mutating func newGroup(x: Int16, y: Int16, group: Int, frame: UInt16, prefs: CosmeticPrefs,
+                           rng: inout GameRandom) -> GroupSound? {
         if !prefs.airBubbles { return nil }
         func b(_ ox: Int16, _ oy: Int16, _ size: Int8, _ delay: Int16) {
             newBubble(x: x &+ ox, y: y &+ oy, size: size, delay: delay, frame: frame, rng: &rng)

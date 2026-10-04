@@ -153,7 +153,7 @@ public struct GameState: Sendable {
 
     /// `_delayedSound` — the 5-entry delayed-sound queue of `_PlayMySnd @ 00026a7b` /
     /// `_Sounds_CheckDelayedSounds @ 000268a1`; emptied only by `_Sounds_InitDelayedSounds` (`_NewLevel`).
-    public internal(set) var delayedSounds: [DelayedSound]
+    var delayedSounds: [DelayedSound]
     /// This frame's `ST_PlaySound` calls in order — cleared at the top of `stepFrame`, copied into `FrameReport.sounds`.
     var soundsThisFrame: [SoundCue]
 
