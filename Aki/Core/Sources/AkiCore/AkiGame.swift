@@ -17,7 +17,8 @@ public struct FadeJob: Equatable, Sendable {                  // P2.5
     public var surrounding: [Tile]; public var animate: Bool; public var offsetX: Int; public var offsetY: Int
 }
 
-/// The two-tile redraw of `_UndoLastCGMove` @ 0x128cb (rules §12) — used by P2.6.
+/// The redraw `_UndoLastCGMove` @ 0x128cb (rules §12) issues after restoring the pair: a full `_DrawGameTiles` buffer
+/// rebuild + window copies, drawn with the open-pair count as it was BEFORE the recount (`openPairsAtDraw`) — P2.6.
 public struct UndoJob: Equatable, Sendable {                  // P2.5 (used by P2.6)
     public var first: Int; public var second: Int; public var openPairsAtDraw: Int
 }
