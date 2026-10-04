@@ -210,13 +210,31 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(Int(state.frame), chunks, "_AdvanceFrameCounter once per chunk")
         // Timeline: 3 × (8 + 8) flash ticks, then snd 9 and a 60-tick wait; 3 ticks per chunk; final 15.
         XCTAssertEqual(ticks, 48 + 60 + chunks * 3 + 15)
-        let slots = sounds.map { $0.1.slot }
+        XCTAssertEqual(sounds.filter { $0.1.slot == 13 }.count, 2, "the 10000 life's _AddHero pair")
+        let slots = sounds.map { $0.1.slot }.filter { $0 != 13 }
         XCTAssertEqual(Array(slots.prefix(5)), [32, 32, 32, 9, 41])
         XCTAssertEqual(slots.dropFirst(5).count, chunks / 3)
         XCTAssertTrue(slots.dropFirst(5).allSatisfy { $0 == 17 })
-        XCTAssertTrue(sounds.allSatisfy { $0.1.priority == 30 && $0.1.delayFrames == 0 })
-        XCTAssertEqual(sounds.map { $0.0 }.prefix(5), [8, 24, 40, 48, 108])
-        XCTAssertEqual(sounds[5].0, 108 + 2 * 3, "snd 17 on the third chunk")
+        let own = sounds.filter { $0.1.slot != 13 }
+        XCTAssertTrue(own.allSatisfy { $0.1.priority == 30 && $0.1.delayFrames == 0 })
+        XCTAssertEqual(own.map { $0.0 }.prefix(5), [8, 24, 40, 48, 108])
+        XCTAssertEqual(own[5].0, 108 + 2 * 3, "snd 17 on the third chunk")
+    }
+
+    /// `_AddToScore(chunk, 0)` crossing 10000 → `_AddHero`: its two snd 13 (20, 0) come out with that chunk.
+    func testCountdownExtraLifeCuesSnd13Twice() throws {
+        var state = try GameState.newGame(level: 1, mode: .play, seed: 1, files: try gameData().levels)
+        state.score = 9900
+        state.timeBonus = 300
+        let (sounds, _) = runCountdown(&state)
+        XCTAssertEqual(state.lives, 4)
+        XCTAssertEqual(state.score, 10200)
+        let extra = SoundCue(slot: 13, priority: 20, delayFrames: 0)
+        XCTAssertEqual(sounds.filter { $0.1 == extra }.count, 2)
+        // Chunks of 50 at ticks 0, 3, 6 …: the 2nd chunk (tick 3) reaches 10000; the 3rd's snd 17 follows at tick 6.
+        XCTAssertEqual(sounds.map { $0.1.slot }, [13, 13, 17, 17])
+        XCTAssertEqual(sounds.map { $0.0 }, [3, 3, 6, 15])
+        XCTAssertTrue(state.takeSounds().isEmpty, "drained")
     }
 
     func testCountdownCap99950() throws {

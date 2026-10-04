@@ -8,8 +8,8 @@
 // `_TimeBonus_CountDown` 00006e16 (9, 30, 0) after the multiply; 00006e8c (42 if bonus 0 / 41 if ≥ 10001, 30, 0);
 // 00006f07 (17, 30, 0) every third chunk.
 //
-// Integration note (C2): `_AddToScore` may award a life → `_AddHero`'s two snd 13 cues land in the sim's
-// `soundsThisFrame`; the session must drain them after each chunk (C2's buffer is not on this branch).
+// `_AddToScore` may award a life → `_AddHero`'s two snd 13 cues (C2, `Scoring.swift`) land in the sim's buffer; each
+// chunk drains them (`takeSounds`) into its output right after the transfer, before the chunk's snd 17.
 
 /// One `_TimeBonus_CountDown` run, stepped by ticks.
 struct TimeBonusCountdown {
@@ -90,6 +90,7 @@ struct TimeBonusCountdown {
                 }
             case .chunk:
                 state.countdownTransferChunk()
+                out.sounds += state.takeSounds()                                     // _AddToScore → _AddHero
                 chunkCount += 1
                 if 2 < chunkCount {
                     out.sounds.append(SoundCue(slot: 0x11, priority: 0x1e, delayFrames: 0)) // 00006f07 "Bloop"

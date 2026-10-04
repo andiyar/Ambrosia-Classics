@@ -84,6 +84,14 @@ extension GameState {
         return chunk
     }
 
+    /// Drains the sim's `_PlayMySnd` buffer (`soundsThisFrame`, C2) — for sim code the session calls OUTSIDE
+    /// `stepFrame` (which clears the buffer at its top): e.g. `_AddToScore` in the count-down awarding a life
+    /// (`_AddHero`'s two snd 13). Returns the cues in call order and empties the buffer.
+    mutating func takeSounds() -> [SoundCue] {
+        defer { soundsThisFrame = [] }
+        return soundsThisFrame
+    }
+
     /// `_Multiplier_Flash @ 00019d23` sets `gBonusMultiplier` to 1 and back around each draw (display only).
     mutating func setMultiplierForFlash(_ value: Int16) {
         multiplier = value
