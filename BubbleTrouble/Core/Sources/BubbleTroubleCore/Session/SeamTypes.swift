@@ -198,6 +198,9 @@ public enum SessionEnd: Equatable, Sendable {
     case demoStopped(Set<StopReason>)
     /// Demo: any key / mouse / activate event.
     case demoInterrupted
+    /// The original would quit the application here (`_CleanUp` / `_LocationError` / `ExitToShell` — a level or maze
+    /// that fails to load, `StopReason.originalWouldAbort`). Added by C4.
+    case originalWouldQuit(String)
 }
 
 /// Everything one `GameSession.frame` / `.tick` or `FrontEnd` call hands the App (S2).

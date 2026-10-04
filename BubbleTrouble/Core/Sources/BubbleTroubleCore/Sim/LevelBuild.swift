@@ -48,6 +48,13 @@ extension GameState {
         return state
     }
 
+    /// `_PlayGame @ 00018247`'s level transition (00018ea4 → `_NewLevel @ 0001735f`) for the play session (plan
+    /// 2026-10-04 btx-playable C4): exactly `newLevel(files:)` — the simulation half of `_NewLevel` — over the game's
+    /// level file. No behaviour of its own.
+    public mutating func advanceLevel(data: BTXGameData) throws {
+        try newLevel(files: data.levels)
+    }
+
     /// `_NewLevel @ 0001735f`, in its exact order (Research note 12).
     mutating func newLevel(files: BTXResourceFiles) throws {
         var unused: [LevelBuildCheckpoint: Int] = [:]
