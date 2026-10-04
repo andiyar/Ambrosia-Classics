@@ -94,13 +94,18 @@ public enum AkiGameArt {
     // MARK: - Button flash (`_FlashCGButton` DC:5412)
 
     /// The rects of one `_FlashCGButton(n, glow)` call. The glow is masked by the phase row `glowMask(p)`.
+    /// Order in `_FlashCGButton` (DC:5450–5466): the plate restore and the sprite copy happen on EVERY call;
+    /// only when the glow flag is set is the phase STEPPED FIRST (`FlashPhase.step()`) and the glow then drawn
+    /// with the NEW p. The App executor (P2.9) must step, then draw.
     public struct FlashRects: Equatable, Sendable {
         public var restoreSource: QDRect, restoreDestination: QDRect
         public var spriteSource: QDRect, spriteDestination: QDRect, spriteMask: QDRect
         public var glowSource: QDRect, glowDestination: QDRect
         public var window: QDRect
 
-        /// misc.png glow mask for phase p: (233, 149+25p, 258, 174+25p) (DC:5465).
+        /// misc.png glow mask for phase p: (233, 149+25p, 258, 174+25p) (DC:5465). p is the phase AFTER this
+        /// call's `FlashPhase.step()` — the original steps first, then draws, both only under the glow flag
+        /// (DC:5450–5466).
         public func glowMask(_ p: Int) -> QDRect {
             QDRect(left: glowSource.left, top: glowSource.top + 25 * p,
                    right: glowSource.right, bottom: glowSource.bottom + 25 * p)
@@ -128,7 +133,9 @@ public enum AkiGameArt {
     }
 
     /// The glow ping-pong (g+0x87 falling flag, g+0x88 phase): rising → p += 1, at 6 → falling;
-    /// falling → p −= 1, at 1 → rising. Level start = rising, p = 2 (R4).
+    /// falling → p −= 1, at 1 → rising. Level start = rising, p = 2 (R4). In `_FlashCGButton` (DC:5450–5466)
+    /// the step runs only when the glow flag is set, and BEFORE the glow draw, which uses the new p (step, then
+    /// draw); the restore + sprite copies happen every call regardless.
     public struct FlashPhase: Equatable, Sendable {
         public var rising: Bool
         public var p: Int
@@ -240,15 +247,17 @@ public enum AkiGameArt {
 
     // MARK: - Slides (R4; shared by the game and the editor slides)
 
-    /// Opening slide offset after t ticks (t clamped to 60): `Int(Float(t)/60·400)`, 0 → 400.
+    /// Opening slide offset after t ticks: `Int(Float(t)/60·400)`, 0 → 400. The tick delta is an UNSIGNED
+    /// 32-bit compare (`(uint)delta < 0x3d`, DC:6600): ≥ 61 clamps to 60, and so does a negative (wrapped) delta.
     public static func slideIn(ticks: Int) -> Int {
-        let t = min(ticks, 60)
+        let t = (ticks < 0 || ticks > 60) ? 60 : ticks
         return Int(Float(t) / 60 * 400)
     }
 
-    /// Closing slide offset after t ticks (t clamped to 60): `Int(Float(t)/60·(−400) + 400)`, 400 → 0.
+    /// Closing slide offset after t ticks: `Int(Float(t)/60·(−400) + 400)`, 400 → 0. Same unsigned clamp as
+    /// `slideIn` (DC:6600): a delta ≥ 61 or negative becomes 60.
     public static func slideOut(ticks: Int) -> Int {
-        let t = min(ticks, 60)
+        let t = (ticks < 0 || ticks > 60) ? 60 : ticks
         return Int(Float(t) / 60 * -400 + 400)
     }
 

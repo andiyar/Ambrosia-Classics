@@ -29,16 +29,26 @@ final class GameArtTests: XCTestCase {
         XCTAssertEqual(l0?.capDestination, r(144, 552, 169, 591))
         XCTAssertEqual(l0?.capMask, r(128, 156, 153, 195))
 
+        let l11 = AkiGameArt.timeBarStones(raw: 1, length: 11)
+        XCTAssertEqual(l11?.k, 0)
+        XCTAssertEqual(l11?.capMask, r(3, 117, 28, 156))
+
         XCTAssertEqual(AkiGameArt.timeBarStones(raw: 1, length: 23)?.capMask, r(3, 195, 28, 234))
 
         let l24 = AkiGameArt.timeBarStones(raw: 1, length: 24)
         XCTAssertEqual(l24?.k, 1)
         XCTAssertEqual(l24?.fullDestination, r(144, 552, 169, 591))
         XCTAssertEqual(l24?.capMask, r(128, 156, 153, 195))
+        XCTAssertEqual(l24?.fullSource, r(3, 39, 28, 78))
+        XCTAssertEqual(l24?.fullMask, r(3, 78, 28, 117))
+        XCTAssertEqual(l24?.capSource, r(28, 39, 53, 78))
 
         let l225 = AkiGameArt.timeBarStones(raw: 1, length: 225)
         XCTAssertEqual(l225?.k, 9)
         XCTAssertEqual(l225?.capMask, r(53, 117, 78, 156))
+        XCTAssertEqual(l225?.fullSource, r(3, 39, 228, 78))
+        XCTAssertEqual(l225?.fullDestination, r(144, 552, 369, 591))
+        XCTAssertEqual(l225?.fullMask, r(3, 78, 228, 117))
 
         let l450 = AkiGameArt.timeBarStones(raw: 1, length: 450)
         XCTAssertEqual(l450?.k, 17)
@@ -76,6 +86,8 @@ final class GameArtTests: XCTestCase {
     func testSlides() {
         XCTAssertEqual([0, 30, 45, 60].map { AkiGameArt.slideIn(ticks: $0) }, [0, 200, 300, 400])
         XCTAssertEqual([0, 30, 60].map { AkiGameArt.slideOut(ticks: $0) }, [400, 200, 0])
+        XCTAssertEqual(AkiGameArt.slideIn(ticks: -1), 400)
+        XCTAssertEqual(AkiGameArt.slideOut(ticks: -1), 0)
         let rects = AkiGameArt.slideRects(100)
         XCTAssertEqual(rects.count, 3)
         XCTAssertEqual(rects[0].src, r(100, 0, 400, 600)); XCTAssertEqual(rects[0].dst, r(0, 0, 300, 600))
