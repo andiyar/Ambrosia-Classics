@@ -56,6 +56,9 @@ final class FrontEndOpTests: XCTestCase {
         XCTAssertEqual(c.screen[100, 284], RGBAImage.opaqueBlack)
         for row in 11...63 { c.applyWipeOut(row: row) }                        // the last bands are fully clipped
         XCTAssertEqual(c.screen, c.comp)
+        XCTAssertNil(c.wipeOutStep)                                            // the wipe has ended
+        XCTAssertEqual(Compositor.wipeOutSteps(4), DrawOp.wipeOutSteps(4))
+        XCTAssertEqual(Compositor.wipeSteps(12), DrawOp.wipeSteps(12))
     }
 
     func testFillRectSolidAndOnePixel() throws {

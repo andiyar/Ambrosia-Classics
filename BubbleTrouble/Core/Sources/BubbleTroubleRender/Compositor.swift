@@ -260,14 +260,9 @@ public final class Compositor {
 
     // MARK: - Wipe
 
-    /// `_WipeScreen @ 000076d3`: the number of band advances after the initial pair — the loop adds `step` per
-    /// TickCount change until the sum reaches `2·step + 240`.
-    public static func wipeSteps(_ step: Int) -> Int {
-        guard step > 0 else { return 0 }
-        var swept = 0, n = 0
-        while swept < step * 2 + 0xF0 { swept += step; n += 1 }
-        return n
-    }
+    /// `_WipeScreen @ 000076d3`: the number of band advances after the initial pair — the single source is the
+    /// core's `DrawOp.wipeSteps` (0 for a non-positive step).
+    public static func wipeSteps(_ step: Int) -> Int { step > 0 ? DrawOp.wipeSteps(step) : 0 }
 
     /// The pre-loop part of `_WipeScreen`: comp → screen over rows [0, step) and [480 − step, 480).
     private func beginWipe(step: Int) {
@@ -288,15 +283,9 @@ public final class Compositor {
         Self.copyBits(from: comp, bottom, to: &screen, bottom, transparent: false)
     }
 
-    /// `_WipeScreenOut @ 000074fc`: the number of band advances after the initial pair — the loop runs while the
-    /// rows swept (a `short`, + `step` per TickCount change) are ≤ `2·step + 240`, i.e. ⌊(2·step + 240) / step⌋ + 1
-    /// (63 at step 4).
-    public static func wipeOutSteps(_ step: Int) -> Int {
-        guard step > 0 else { return 0 }
-        var swept: Int16 = 0, n = 0
-        while Int(swept) <= step * 2 + 0xF0 { swept &+= Int16(truncatingIfNeeded: step); n += 1 }
-        return n
-    }
+    /// `_WipeScreenOut @ 000074fc`: the number of band advances after the initial pair — the single source is the
+    /// core's `DrawOp.wipeOutSteps` (63 at step 4; 0 for a non-positive step).
+    public static func wipeOutSteps(_ step: Int) -> Int { step > 0 ? DrawOp.wipeOutSteps(step) : 0 }
 
     /// The pre-loop part of `_WipeScreenOut`: comp → screen over rows [240, 240 + step) and [240 − step, 240).
     private func beginWipeOut(step: Int) {
@@ -306,7 +295,8 @@ public final class Compositor {
 
     /// Band advance `row` (1…`wipeOutSteps(step)`; 0 = the initial pair) of the last `.wipeOut` op: comp → screen
     /// over rows [240 + row·step, 240 + step + row·step) (moving down) and [240 − step − row·step, 240 − row·step)
-    /// (moving up); rows outside 0…480 are clipped by CopyBits. The App calls it once per tick.
+    /// (moving up); rows outside 0…480 are clipped by CopyBits. The App calls it once per tick. The last advance
+    /// ends the wipe: `wipeOutStep` is cleared, so a stray later call draws nothing.
     public func applyWipeOut(row: Int) {
         guard let step = wipeOutStep else { return }
         let down = QDRect(top: Int16(truncatingIfNeeded: 240 + row * step), left: 0,
@@ -315,6 +305,7 @@ public final class Compositor {
                         bottom: Int16(truncatingIfNeeded: 240 - row * step), right: 640)
         Self.copyBits(from: comp, down, to: &screen, down, transparent: false)
         Self.copyBits(from: comp, up, to: &screen, up, transparent: false)
+        if row >= Self.wipeOutSteps(step) { wipeOutStep = nil }
     }
 
     // MARK: - QuickDraw primitives
