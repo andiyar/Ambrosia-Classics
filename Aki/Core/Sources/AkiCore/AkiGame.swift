@@ -304,8 +304,11 @@ public struct AkiGame: Equatable, Sendable {
 
     /// `_HandleMenuCommand` case 3 + `_UndoLastCGMove` @ 0x128cb (rules §12): only for raw > 1 (Easy, Practice)
     /// with b8 ≠ 0; in "no more pairs" a8 += now − c0, c0 = 0 (unguarded). The first two removed tiles in list
-    /// order get removed/selected off; the two-tile redraw runs with the pre-recount g+0x60 (grey tiles in
-    /// "no more pairs"); then visibility, openness and `_RedrawCustomOpenPairs(1)` (which recounts); g+0x1ec = 0;
+    /// order get removed/selected off; then `_DrawGameTiles` redraws the WHOLE tile buffer (plus the window copies)
+    /// BEFORE `_SetVisibleTiles` / `_SetOpenTiles` / the recount — it reads removed/face/position/selected/hinted
+    /// and the pre-recount g+0x60 (carried as `openPairsAtDraw`: grey tiles in "no more pairs"), never
+    /// isOpen/isVisible, so the App's `.undoRedraw` executor (P2.9/P2.10) rebuilds the full buffer, not just
+    /// `first`/`second`; then visibility, openness and `_RedrawCustomOpenPairs(1)` (which recounts); g+0x1ec = 0;
     /// the penalty (3 / 6 / 12 / 0). g+0x1f1 is left on (its re-disable is under raw < 2, unreachable here) and
     /// g+0x62 is not touched, as in the original. No removed pair (after a reshuffle, or a second undo): nothing.
     public mutating func undo(now: UInt32) -> [GameEvent] {                                         // P2.6

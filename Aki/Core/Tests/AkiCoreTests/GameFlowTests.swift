@@ -81,6 +81,15 @@ final class GameFlowTests: XCTestCase {
         XCTAssertEqual(h.showNextHint(), [.redrawTile(2), .redrawTile(3)])
         XCTAssertEqual(h.board.tiles.map(\.isHinted), [false, false, false, false])
         XCTAssertEqual(h.clock.penalty, 37)
+
+        // Pins the scan start at F.next, not F: faces 201, 202, 201, 202 — the first hint flags 0 ↔ 2 (F = 0);
+        // the second must scan from tile 1 and flag 1 ↔ 3 (a scan from F would re-find 0 ↔ 2).
+        var k = row([201, 202, 201, 202])
+        XCTAssertEqual(k.showNextHint(), [.redrawGameScreen(tiles: true)])
+        XCTAssertEqual(k.board.tiles.map(\.isHinted), [true, false, true, false])
+        XCTAssertEqual(k.showNextHint(), [.redrawTile(0), .redrawTile(2), .redrawGameScreen(tiles: true)])
+        XCTAssertEqual(k.board.tiles.map(\.isHinted), [false, true, false, true])
+        XCTAssertFalse(k.board.tiles[0].isHinted || k.board.tiles[2].isHinted)
     }
 
     func testHintWithoutAnyPairStillCharges() {
@@ -107,6 +116,15 @@ final class GameFlowTests: XCTestCase {
         XCTAssertGreaterThan(g.openPairs, 0)
         XCTAssertEqual(g.openPairs, g.board.countOpenPairs())
         XCTAssertEqual(faces(g), before)
+
+        // g+0x60 == 0 but c0 == 0: the button's thaw is guarded on c0 ≠ 0 — a8 and the live b8 stay.
+        var n = frozenNoPairs()
+        n.clock.freezeTick = 0
+        var rng2 = SplitMix64(seed: 11)
+        _ = n.buttonClick(h: 70, paused: false, now: 1600, using: &rng2)
+        XCTAssertEqual(n.clock.baseTick, 100)
+        XCTAssertEqual(n.clock.freezeTick, 0)
+        XCTAssertEqual(n.clock.remaining, 70)
     }
 
     func testReshuffleMenuUsesTheLiveRemaining() {
@@ -120,6 +138,15 @@ final class GameFlowTests: XCTestCase {
         XCTAssertEqual(g.clock.freezeTick, 0)
         XCTAssertEqual(g.clock.remaining, 70)
         XCTAssertEqual(g.clock.penalty, 52)   // Hard: 3 · 70 / 4
+
+        // g+0x60 ≠ 0 with c0 ≠ 0: the menu's thaw is guarded on g+0x60 == 0 — a8 and c0 stay.
+        var m = frozenNoPairs()
+        m.openPairs = 1
+        var rng2 = SplitMix64(seed: 11)
+        _ = m.reshuffle(fromButton: false, now: 1600, using: &rng2)
+        XCTAssertEqual(m.clock.baseTick, 100)
+        XCTAssertEqual(m.clock.freezeTick, 1000)
+        XCTAssertEqual(m.clock.remaining, 70)
     }
 
     func testReshuffleClearsSelectionHintsAndRemoved() {
@@ -180,6 +207,16 @@ final class GameFlowTests: XCTestCase {
             XCTAssertEqual(g.undo(now: 0), [], "second undo, raw \(raw)")
             XCTAssertEqual(g.clock.penalty, penalty)
         }
+
+        // Easy with b8 == 0 and a removed pair present: the b8 ≠ 0 guard (rules §12) — nothing happens.
+        var z = row([200, 200, 201, 201], difficultyRaw: 2)
+        _ = z.selectTile(h: 10, v: 10, tileAnimation: false)
+        _ = z.selectTile(h: 100, v: 10, tileAnimation: false)
+        XCTAssertEqual(z.board.tiles.map(\.isRemoved), [true, true, false, false])
+        z.clock.remaining = 0
+        let before = z
+        XCTAssertEqual(z.undo(now: 0), [])
+        XCTAssertEqual(z, before)
     }
 
     func testUndoInNoMorePairsThawsAndDrawsGrey() {
