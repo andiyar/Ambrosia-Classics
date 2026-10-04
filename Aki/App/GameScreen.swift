@@ -161,13 +161,61 @@ import HectorShell
 
     /// `_PauseGame(paused)` @ 0xd34b (DC:5123): g+0x7f = 0, g+0x67 = `on`, g+0x86 = `on`, then the clock /
     /// tick / music / redraw core (`pauseChange`). The tail's `_PlayMovie()` runs only in the editor
-    /// (g+0x80, DC:5168–5171) — never on this screen.
+    /// (g+0x80, DC:5168–5171) — never on this screen. `_HandleMenuCommand` case 9 calls it on the map too
+    /// (DC:5194–5204): there the three flags are set and the core is skipped — no level, g+0x60 == 0, so the
+    /// original draws and plays nothing (its `b8 < 15 → _StopSound(tick)` is silent: tick.mp3 stopped at the leave).
     func pauseGame(_ on: Bool) {                                                          // P2.11 (landed in P2.10)
         let g = controller.g
         g.pausedBeforeExternal = false
         g.paused = on
         g.pauseFlash = on
         guard let events = self.game?.pauseChange(paused: on, now: ShellClock.ticks()) else { return }
+        perform(events)
+    }
+
+    // MARK: - Give Up (P2.11)
+
+    /// `-[Controller abortGame]` @ 0x3cbc (DC:974–1002): the "LoadLevel" dialog (`_CreateNewDialog(0x57)`, "Are
+    /// you sure you want to end this game?"); `ok  ` (g+0x81) → g+0x81 = 0, g+0x68 = 1, the current music track
+    /// stops, give-ups[g+0x90] += 1 (built-in levels only, in `Stats`), `_SavePrefs`, YES; else NO. The game is
+    /// not paused under the dialog (Q25) and no proverb follows (rules §14); the next game tick leaves the level
+    /// (`idle`'s g+0x68 branch).
+    func abortGame() -> Bool {                                                            // P2.11
+        let g = controller.g
+        _ = CarbonDialog.run("LoadLevel", controller: controller)
+        guard g.dialogOK else { return false }
+        g.dialogOK = false
+        g.endLevel = true
+        controller.music.stopCurrent()
+        if let level = game?.levelIndex {
+            Stats.recordGiveUp(&controller.p, level: level)
+        }
+        controller.savePrefs()
+        return true
+    }
+
+    // MARK: - Menu commands (P2.11)
+
+    /// `_HandleMenuCommand` case 3 in the game (DC:5248–5261): raw difficulty > 1 ∧ b8 ≠ 0 → the "no more
+    /// pairs" thaw and `_UndoLastCGMove` — gate, thaw and undo are all `AkiGame.undo`. No paused gate.
+    func menuUndo() {                                                                     // P2.11
+        guard let events = self.game?.undo(now: ShellClock.ticks()) else { return }
+        perform(events)
+    }
+
+    /// `_HandleMenuCommand` case 4 (DC:5263–5266): g+0x60 ≠ 0 ∧ !g+0x67 → `_ShowNextCGHint`.
+    func menuHint() {                                                                     // P2.11
+        guard (game?.openPairs ?? 0) != 0, !controller.g.paused,
+              let events = self.game?.showNextHint() else { return }
+        perform(events)
+    }
+
+    /// `_HandleMenuCommand` case 6 (DC:5268–5278): !g+0x67 → (g+0x60 == 0: the unguarded thaw) and
+    /// `_ReshuffleCustomTiles` — both `AkiGame.reshuffle(fromButton: false, …)`.
+    func menuReshuffle() {                                                                // P2.11
+        guard !controller.g.paused else { return }
+        var rng = SystemRandomNumberGenerator()
+        guard let events = self.game?.reshuffle(fromButton: false, now: ShellClock.ticks(), using: &rng) else { return }
         perform(events)
     }
 
@@ -232,12 +280,87 @@ import HectorShell
         controller.music.loopMusic()
     }
 
-    // MARK: AkiScreen (bodies land in P2.11; map-safe no-ops so the target builds)
+    /// The game branch of `-[Controller mouseDown:]` @ 0x4489 (DC:1347–1388); `point` is `_GetMouseLocation`.
+    /// g+0x4c = now, and the idle hint flash (g+0x84) if on is cleared and its button drawn up (DC:1348–1353).
+    /// v 555…587 (`(ushort)(v − 0x22b) < 0x21`, DC:1354) → `_SelectCGButton` (DC:1356). Else, unpaused
+    /// (DC:1363): a click within `GetDblTime() >> 1` ticks of the last remembered one (DC:1368–1371) selects only
+    /// when it moved > 1 px in both v and h from the remembered point and there are pairs, and is not
+    /// remembered (DC:1372–1378); any other click is remembered — ivar 0x44 = now, select when there are pairs,
+    /// then ivar 0x50 = the point (DC:1381–1386). The editor's `_CreateTile` / `_SelectLevelButton` arms are P3.4's.
+    func mouseDown(at point: ShellPoint, event: NSEvent) {                                // P2.11
+        guard game != nil else { return }
+        let g = controller.g
+        if self.game?.noteClick(now: ShellClock.ticks()) == true {
+            flashButton(1, glow: false)
+        }
+        if (555...587).contains(point.v) {
+            var rng = SystemRandomNumberGenerator()
+            guard let events = self.game?.buttonClick(h: point.h, paused: g.paused, now: ShellClock.ticks(),
+                                                      using: &rng) else { return }
+            perform(events)
+        } else if !g.paused {
+            let doubleClickTicks = Int(NSEvent.doubleClickInterval * 60)                  // GetDblTime (Q29)
+            if AkiGame.isRepeatClick(now: ShellClock.ticks(), lastTick: controller.lastTick,
+                                     doubleClickTicks: doubleClickTicks) {
+                let last = controller.lastMouse
+                if AkiGame.movedEnough(h: point.h, v: point.v, lastH: last.h, lastV: last.v),
+                   (game?.openPairs ?? 0) > 0 {
+                    selectTile(at: point)
+                }
+            } else {
+                controller.lastTick = ShellClock.ticks()
+                if (game?.openPairs ?? 0) > 0 {
+                    selectTile(at: point)
+                }
+                controller.lastMouse = point
+            }
+        }
+    }
 
-    func mouseDown(at point: ShellPoint, event: NSEvent) {}
-    func keyDown(_ event: NSEvent) {}
-    func redrawWindow() {}
-    func pause() {}
-    func unpause() {}
-    func shouldTerminate() -> Bool { true }
+    /// `_SelectCGTile(point)` (DC:8023) with the Tile Animation preference (p+0x213).
+    private func selectTile(at point: ShellPoint) {
+        let animate = controller.p.tileAnimation != 0
+        guard let events = self.game?.selectTile(h: point.h, v: point.v, tileAnimation: animate) else { return }
+        perform(events)
+    }
+
+    /// The game branch of `-[Controller keyDown:]` @ 0x42eb (DC:1265–1285): the first character U+001B (Esc)
+    /// → `abortGame`; every other key does nothing (menu key equivalents arrive through the menu).
+    func keyDown(_ event: NSEvent) {                                                      // P2.11
+        guard event.characters?.utf16.first == 0x1B else { return }
+        _ = abortGame()
+    }
+
+    /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932, R6): `_RedrawCustomGameScreen(!g+0x67)`.
+    func redrawWindow() {                                                                 // P2.11
+        guard game != nil else { return }
+        redrawCustomGameScreen(tiles: !controller.g.paused)
+    }
+
+    /// `-[Controller pause]` @ 0x3c1f (DC:950–970): b8 < 16 → tick.mp3 stops; with pairs, unpaused →
+    /// `_PauseGame(1)`, already paused → g+0x7f = 1 (so `unpause` leaves the player's own pause alone).
+    func pause() {                                                                        // P2.11
+        guard let remaining = game?.clock.remaining, let openPairs = game?.openPairs else { return }
+        let g = controller.g
+        if remaining < 16 {
+            controller.sound.stop(.tick)
+        }
+        guard openPairs != 0 else { return }
+        if !g.paused {
+            pauseGame(true)
+        } else {
+            g.pausedBeforeExternal = true
+        }
+    }
+
+    /// `-[Controller unpause]` @ 0x3c85 (R6): with pairs and g+0x7f == 0 → `_PauseGame(0)`.
+    func unpause() {                                                                      // P2.11
+        guard let openPairs = game?.openPairs, openPairs != 0, !controller.g.pausedBeforeExternal else { return }
+        pauseGame(false)
+    }
+
+    /// The game branch of `-[Controller applicationShouldTerminate:]` (DC:226): `abortGame` decides.
+    func shouldTerminate() -> Bool {                                                      // P2.11
+        abortGame()
+    }
 }

@@ -84,8 +84,8 @@ import AkiCore
 
     /// One Carbon control as an AppKit view: image view 200 → `PaperBackgroundView`; static text → a
     /// wrapping label; push button → `NSButton` inflated by the AppKit push-button insets; icon → the
-    /// system alert icon for resID 2 (`kCautionIcon`); separator → a separator box. Other kinds are not
-    /// in any dialog this replica opens and are skipped.
+    /// system alert icon for resID 2 (`kCautionIcon`); separator → a separator box. Every other kind (the
+    /// pictures, e.g. the Stats window's two) is skipped.
     private static func makeView(_ c: CarbonNib.Control, windowHeight: Int, runner: CarbonDialogRunner,
                                  controller: AkiController) -> NSView? {
         let frame = NSRect(x: c.x, y: windowHeight - c.y - c.height, width: c.width, height: c.height)
@@ -124,6 +124,7 @@ import AkiCore
             box.boxType = .separator
             return box
         default:
+            // The IBCarbonPicture controls (contentResID 315) are skipped: 1.2 ships no PICT 315 (paper.png, view 200, replaced it).
             return nil
         }
     }

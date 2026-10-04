@@ -28,8 +28,9 @@ import HectorShell
     private var fullscreen = false
     private var preferences: PreferencesWindowController?      // ivar 0x20, created on first use
     /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
-    /// rules (Known delta 3). P2.11 and P3.4–P3.6 remove tags as their commands are built.
-    static var notYetBuilt: Set<Int> = [3, 4, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19]
+    /// rules (Known delta 3). Since P2.11 only Phase 3's commands remain (10–14, 16–19: the Level Editor and
+    /// its commands, Play Custom Level, Replay); P3.4–P3.6 remove them as they land.
+    static var notYetBuilt: Set<Int> = [10, 11, 12, 13, 14, 16, 17, 18, 19]
 
     init(store: GameSettingsStore = GameSettingsStore()) {
         g = AkiG()
@@ -297,12 +298,59 @@ import HectorShell
         handleMenuCommand(sender.tag)
     }
 
-    /// `_HandleMenuCommand` @ 0xd465 (DC:5176). Phase 1 has no reachable case: every tag `validateMenuItem`
-    /// would enable on the map (9 Level Statistics, 10 Open Level Editor, 14 Play Custom Level, 18 Replay)
-    /// is in `notYetBuilt`. P2.11 and P3.4–P3.6 add the cases.
+    /// `_HandleMenuCommand` @ 0xd465 (DC:5176–5300). Map (g+0x66 == 0): 9 Level Statistics (DC:5194–5205).
+    /// Game: 2 Give Up → `abortGame` (DC:5240–5246); 3 Undo (DC:5248–5261); 4 Tip (DC:5263–5266); 6 Reshuffle
+    /// (DC:5268–5278); 7 Pause → Chime at 0x40, then `_PauseGame(!g+0x67)` with no pairs gate (DC:5280–5283);
+    /// 9 Level Statistics (DC:5284). The game cases run in `GameScreen`, which alone mutates the level. The
+    /// editor's cases and tags 10–19 (Level Editor, files, Play Custom Level, Replay) are Phase 3's (P3.4–P3.6).
     func handleMenuCommand(_ tag: Int) {
-        switch tag {
-        default: break
+        switch g.mode {
+        case .map:
+            switch tag {
+            case 9: showStatistics()                                                       // P2.11
+            default: break
+            }
+        case .game:
+            switch tag {                                                                   // P2.11
+            case 2: _ = gameScreenImpl.abortGame()
+            case 3: gameScreenImpl.menuUndo()
+            case 4: gameScreenImpl.menuHint()
+            case 6: gameScreenImpl.menuReshuffle()
+            case 7:
+                sound.play(.chime, volume: 0x40)
+                gameScreenImpl.pauseGame(!g.paused)
+            case 9: showStatistics()
+            default: break
+            }
+        case .editor:
+            break
+        }
+    }
+
+    /// `_HandleMenuCommand` case 9 (DC:5194–5205), map and game alike: remember g+0x67, `_PauseGame(1)`, the
+    /// Stats dialog (`_CreateNewDialog(0x3c)`), and `_PauseGame(0)` unless the game was already paused. On the
+    /// map `_PauseGame` only sets its flags (`GameScreen.pauseGame` skips the core with no level).
+    func showStatistics() {                                                                // P2.11
+        let wasPaused = g.paused
+        gameScreenImpl.pauseGame(true)
+        // `_CreateNewDialog(0x3c)` DC:1717–1791: `SetControlData('cfst')` with `"%d"` on each control found by ID;
+        // only static texts take the text, so ID 2 — the OK button, first in nib order (Q21) — keeps its title and
+        // level 2's Wins stays as the nib left it. The running totals end as the sums written here.
+        let table = Stats.table(p)
+        let ids = AkiLevels.statsControlIDs
+        var fill: [(id: Int, value: Int)] = []
+        for (i, row) in table.rows.enumerated() {
+            fill += [(ids.minutes + i, row.bestMinutes), (ids.seconds + i, row.bestSeconds), (ids.wins + i, row.wins),
+                     (ids.losses + i, row.losses), (ids.giveUps + i, row.giveUps)]
+        }
+        fill += [(ids.totals[0], table.totalWins), (ids.totals[1], table.totalLosses), (ids.totals[2], table.totalGiveUps)]
+        _ = CarbonDialog.run("Stats", controller: self) { controls in
+            for (id, value) in fill {
+                (controls[id] as? NSTextField)?.stringValue = String(format: "%d", value)
+            }
+        }
+        if !wasPaused {
+            gameScreenImpl.pauseGame(false)
         }
     }
 
@@ -373,7 +421,7 @@ import HectorShell
                 menuItem.title = assets.localized("Give Up")
                 return true
             case 3:
-                return false                                   // g+0x1f1 (undo enabled): the game P2 adds
+                return gameScreenImpl.game?.undoEnabled ?? false   // g+0x1f1 (DC:1175) — P2.11
             case 4, 6:
                 return !g.paused
             case 7, 9:
