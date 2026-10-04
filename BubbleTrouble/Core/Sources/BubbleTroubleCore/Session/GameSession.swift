@@ -11,7 +11,7 @@
 //   `_NewLevel` 00017658 (2, 20, 0) not demo · `_PlayGame` 00018dc9 (27, 30, 0) after the count-down ·
 //   `_PlayGame` 00019304 (27, 30, 0) on game exit · `_TimeBonus_CountDown` 00006e16 / 00006e8c / 00006f07 and
 //   `_Multiplier_Flash` 00019d90 (`TimeBonusCountdown.swift`) · `_PauseGame` 00017712 (22, 30, 0) at entry.
-//   Not here: `_PauseGame`'s cheat confirmations (C8); `_ResumeGame @ 0000a28e` 0000a32d (13, 20, 0) is the
+//   Not here: `_PauseGame`'s cheat sites (C8, `Cheats.swift`); `_ResumeGame @ 0000a28e` 0000a32d (13, 20, 0) is the
 //   main-menu registration thank-you (unregistered path, not built).
 // Music: `_LoadMusic(1)` (`_NewLevel`, not demo), `_StartMusic` at hero appear, `_StopMusicWithoutFade` at death,
 // `_StopMusic` (fade) at level end and ⌘Q, `_UnloadMusic` after the count-down and at exit, pause/resume. Never demo.
@@ -61,7 +61,7 @@ public final class GameSession {
     /// `isInGame` OR when it receives `.quitNow`.
     public var isInGame: Bool { phase != .ended }
 
-    private let data: BTXGameData
+    let data: BTXGameData
     private var filmInput: FilmInput?
     private var keyboard: KeyboardInput
     private var pending = SessionOutput()
@@ -76,7 +76,9 @@ public final class GameSession {
     private var fadeLastTick: UInt32?
 
     private var countdown: TimeBonusCountdown?
-    private var pause: PauseState?
+    var pause: PauseState?
+    /// gHacked, `_gDaddyMode`, `_gLimitFrames`, `_gShowFPS` and the FPS counter (C8, `Cheats.swift`).
+    var cheats = CheatFlags()
     /// `bVar2` + `local_e9`: `_PauseGame` is due at the end of this loop iteration, restoring this notice.
     private var pauseDue: (previous: Int, deactivated: Bool)?
     /// `local_ea`: the app was deactivated during play (pauses at the next frame).
@@ -196,12 +198,14 @@ public final class GameSession {
         }
 
         out.append(afterLevelChecks(keys: keys))
+        out.drawOps += endOfLoopIteration()                              // 00019129 FPS (after the pause, if any)
         return out
     }
 
     /// One TickCount tick (1/60 s) for the blocking phases. Outside them it only flushes pending output.
     public func tick(now: UInt32, keys: HeldKeys) -> SessionOutput {
         var out = takePending()
+        noteTick(now)
         switch phase {
         case .wipe:
             if let last = wipeLastTick {
@@ -230,8 +234,9 @@ public final class GameSession {
         case .countdown:
             out.append(runCountdown(now: now, keys: keys))
         case .paused:
-            if !keys.capsLock && pause?.mayResume == true {                // null event: !PauseKey && local_61
-                out.append(exitPause())
+            out.append(runCheatScript(now: now))                          // a cheat's `_Delay`s block the loop
+            if pause?.cheatScriptBusy == false && !keys.capsLock && pause?.mayResume == true {
+                out.append(exitPause())                                    // null event: !PauseKey && local_61
             }
         case .playing, .ended:
             break
@@ -271,17 +276,15 @@ public final class GameSession {
     public func appActivated(keys: HeldKeys) -> SessionOutput {
         guard phase == .paused else { return SessionOutput() }
         pause?.mayResume = true
-        return keys.capsLock ? SessionOutput() : exitPause()
+        // A cheat's `_Delay` still blocking the loop: the event waits; the next idle tick resumes.
+        return keys.capsLock || pause?.cheatScriptBusy == true ? SessionOutput() : exitPause()
     }
 
-    /// A character typed while paused (event kind 3): the cheat buffer shifts in `char` — the hash check and its
-    /// effects are task C8's hook here.
-    public func pauseKeyTyped(_ char: UInt8) -> SessionOutput {
-        guard phase == .paused, var p = pause else { return SessionOutput() }
-        p.cheatBuffer.removeFirst()
-        p.cheatBuffer.append(char)
-        pause = p
-        return SessionOutput()
+    /// A character typed while paused (event kind 3 = key-down; auto-repeat is kind 5 and not handled): unless ⌘ is
+    /// held, the cheat buffer shifts in `char` (the event's char code, Mac Roman) and the hash is checked
+    /// (`Cheats.swift`). With Caps Lock engaged — the pause key — letters arrive upper-case.
+    public func pauseKeyTyped(_ char: UInt8, command: Bool = false) -> SessionOutput {
+        cheatKeyTyped(char, command: command)
     }
 
     // MARK: - Sequences
@@ -418,6 +421,7 @@ public final class GameSession {
             out.requests.append(.enableMenus(false))
         } else {
             out.append(afterLevelChecks(keys: keys))
+            out.drawOps += endOfLoopIteration()                          // the level-end iteration's FPS check
         }
         return out
     }
@@ -430,11 +434,12 @@ public final class GameSession {
 
     private func exitPause() -> SessionOutput {
         guard let p = pause else { return SessionOutput() }
-        let out = PauseState.exitOutput(musicLoaded: musicLoaded, musicPlaying: musicPlaying)
+        var out = PauseState.exitOutput(musicLoaded: musicLoaded, musicPlaying: musicPlaying)
         if musicLoaded { musicPlaying = true }
         state.notices.prepare(p.previousNotice)
         pause = nil
         phase = .playing
+        if cheats.fpsDeferred { out.drawOps += fpsCheck() }             // the pausing iteration's FPS check
         return out
     }
 

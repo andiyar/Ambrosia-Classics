@@ -6,7 +6,7 @@
 // Caps Lock is engaged (Q3 default). Never in demo. App deactivation (event kind 2 → `local_ea`) also pauses; such a
 // pause ends only on reactivation with Caps Lock off (`local_61`).
 //
-// Cheat typing (the "OOGLE" hash buffer, its effects and their cue sites) is task C8: `GameSession.pauseKeyTyped` is the hook.
+// Cheat typing (the "OOGLE" hash buffer, its effects and their cue sites): `Cheats.swift` (C8).
 
 /// One `_PauseGame` stay.
 struct PauseState {
@@ -14,8 +14,17 @@ struct PauseState {
     let previousNotice: Int
     /// `local_61`: a Caps-Lock-off null event may end the pause (false while entered by / still in a deactivation).
     var mayResume: Bool
-    /// `_PauseGame`'s cheat buffer `local_2b`, "OOGLE" at entry (C8 reads/shifts it).
-    var cheatBuffer: [UInt8] = Array("OOGLE".utf8)
+    /// `_PauseGame`'s cheat buffer `local_2b`, "OOGLE" at entry.
+    var cheatBuffer: [UInt8] = Cheats.bufferSeed
+    /// The matched cheat site's remaining calls (`Cheats.Effect.steps`).
+    var steps: [CheatStep] = []
+    /// A `_Delay` in progress: the pause loop is blocked until TickCount reaches this.
+    var waitUntil: UInt32?
+    /// Characters typed while a `_Delay` blocks the loop: still in the event queue, handled after it.
+    var backlog: [UInt8] = []
+
+    /// A cheat's `_Delay`s are still running (events — keys, the Caps-Lock-off null event — wait).
+    var cheatScriptBusy: Bool { waitUntil != nil || !steps.isEmpty || !backlog.isEmpty }
 
     init(previousNotice: Int, deactivated: Bool) {
         self.previousNotice = previousNotice
