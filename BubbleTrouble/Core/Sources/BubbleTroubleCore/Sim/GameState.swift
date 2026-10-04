@@ -148,6 +148,8 @@ public struct GameState: Sendable {
     public internal(set) var heroCaughtThisFrame: Bool
     /// Every stop reason that fired (Invariant 14).
     public internal(set) var pendingStops: Set<StopReason>
+    /// `_gShowWhichNotice` / `_gLastNoticeShown` / `_gEraseNotice` (`Session/NoticeBoard.swift`, C4's transcription).
+    public internal(set) var notices: NoticeBoard
 
     // MARK: Sound (`Sounds.swift`; plan 2026-10-04 btx-playable C2)
 
@@ -221,6 +223,7 @@ public struct GameState: Sendable {
         pendingStops = []
         delayedSounds = Array(repeating: DelayedSound(), count: Self.delayedSoundCapacity)
         soundsThisFrame = []
+        notices = NoticeBoard()
     }
 
     /// What the cosmetic pools read from the hero record (`HeroAnchor`); `_Bubbles` writes `lastBubbleFrame` back.

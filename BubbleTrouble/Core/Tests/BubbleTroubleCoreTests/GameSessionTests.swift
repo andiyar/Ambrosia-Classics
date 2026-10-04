@@ -442,4 +442,161 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(demo.phase, .playing)
         XCTAssertEqual(demo.notices.current, 4)
     }
+
+    // MARK: Fix round (orchestrator rulings 1–11)
+
+    /// Plays to the hero's appearance (frame 71, music playing).
+    private func sessionAtAppear(_ data: BTXGameData, now: inout UInt32) throws -> GameSession {
+        let session = try playSession(data)
+        finishWipe(session, now: &now)
+        for _ in 0..<71 { _ = session.frame(keys: HeldKeys()) }
+        XCTAssertTrue(session.musicPlaying)
+        return session
+    }
+
+    /// Ruling 1: the frame's cues leave through `FrameReport` only — the sim buffer is empty after every frame, so the
+    /// count-down's drain never replays the level-ending frame's cues.
+    func testFrameDrainsSimSoundBufferAfterReport() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        finishWipe(session, now: &now)
+        session.state.levelRecord.words[6] = 0
+        var heard: [Int] = []
+        while session.phase == .playing {
+            heard += session.frame(keys: HeldKeys()).sounds.map(\.slot)
+            XCTAssertTrue(session.state.takeSounds().isEmpty, "frame \(session.state.frame)")
+        }
+        XCTAssertTrue(heard.contains(8) && heard.contains(27), "appear cues came through the report")
+        let rest = ticks(session, now: &now) { $0.phase != .wipe }
+        let allowed: Set<Int> = [9, 13, 17, 27, 32, 41, 42]
+        XCTAssertTrue(rest.sounds.allSatisfy { allowed.contains($0.slot) }, "\(rest.sounds.map(\.slot))")
+        XCTAssertEqual(rest.sounds.filter { $0.slot == 27 }.count, 1)
+    }
+
+    /// Ruling 6: the fade's first volume is set in the frame and holds for one tick change, like every later one.
+    func testFadeFirstStepWaitsOneTick() throws {
+        let data = try gameData()
+        var now: UInt32 = 100
+        let session = try sessionAtAppear(data, now: &now)
+        session.state.levelRecord.words[6] = 0
+        var last = SessionOutput()
+        while session.phase == .playing { last = session.frame(keys: HeldKeys()) }
+        XCTAssertEqual(last.music, [.volume(0x100)])
+        XCTAssertEqual(session.tick(now: now, keys: HeldKeys()).music, [], "baseline tick")
+        XCTAssertEqual(session.tick(now: now, keys: HeldKeys()).music, [], "same TickCount")
+        XCTAssertEqual(session.tick(now: now + 1, keys: HeldKeys()).music, [.volume(0xfb)])
+    }
+
+    /// Ruling 3 + 7: pause entry halts then plays snd 22 — the pause frame's own cues are dropped — and the frame
+    /// ends with `_ScreenToComp`.
+    func testPauseEntryHaltDropsFrameCues() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        finishWipe(session, now: &now)
+        for _ in 0..<70 { _ = session.frame(keys: HeldKeys()) }
+        let out = session.frame(keys: HeldKeys(capsLock: true))          // frame 71: appear (snd 8 + 27) and pause
+        XCTAssertEqual(session.state.frame, 71)
+        XCTAssertEqual(out.sounds, [SoundCue(slot: 0x16, priority: 0x1e, delayFrames: 0)])
+        XCTAssertEqual(out.music, [.start, .pause])
+        XCTAssertEqual(out.drawOps.last, .screenToComp(Self.level1Rect))
+        XCTAssertEqual(session.phase, .paused)
+    }
+
+    /// Ruling 2 (play): a deactivation during the wipe / fade / count-down is queued and pauses at the next frame;
+    /// such a pause ends only on reactivation with Caps Lock off.
+    func testDeactivateQueuedDuringBlockingPhasesAndActivateResumes() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        _ = session.tick(now: now, keys: HeldKeys())
+        session.appDeactivated()                                         // during the wipe
+        finishWipe(session, now: &now)
+        XCTAssertEqual(session.phase, .playing)
+        let entry = session.frame(keys: HeldKeys())
+        XCTAssertEqual(session.phase, .paused)
+        XCTAssertTrue(entry.requests.contains(.haltAllSound))
+        for _ in 0..<5 { _ = session.tick(now: now, keys: HeldKeys()); now += 1 }
+        XCTAssertEqual(session.phase, .paused, "Caps Lock off is not enough after a deactivation")
+        XCTAssertEqual(session.appActivated(keys: HeldKeys(capsLock: true)), SessionOutput())
+        XCTAssertEqual(session.phase, .paused, "reactivated with Caps Lock on stays paused")
+        let resumed = session.tick(now: now, keys: HeldKeys())
+        XCTAssertEqual(session.phase, .playing)
+        XCTAssertTrue(resumed.requests.contains(.hideCursor))
+
+        // During the count-down: queued, the pause comes at the first frame of the next level.
+        let s2 = try sessionAtAppear(data, now: &now)
+        s2.state.levelRecord.words[6] = 0
+        while s2.phase == .playing { _ = s2.frame(keys: HeldKeys()) }
+        ticks(s2, now: &now) { $0.phase == .musicFade }
+        s2.appDeactivated()
+        ticks(s2, now: &now) { $0.phase != .playing }
+        XCTAssertEqual(s2.state.level, 2)
+        _ = s2.frame(keys: HeldKeys())
+        XCTAssertEqual(s2.phase, .paused)
+        XCTAssertEqual(s2.state.frame, 1)
+    }
+
+    /// Ruling 2 (demo) + demo end: an interruption during the wipe ends the demo at the next loop top (no frame
+    /// runs); otherwise a demo ends on the core's stops.
+    func testDemoInterruptQueuedAndDemoEnds() throws {
+        let data = try gameData()
+        var now: UInt32 = 0
+        let demo = try GameSession(data: data, prefs: .defaults, mode: .demo, startLevel: 1, seed: 1,
+                                   film: try data.levels.film(4))
+        _ = demo.tick(now: now, keys: HeldKeys())
+        demo.interrupt()
+        finishWipe(demo, now: &now)
+        let out = demo.frame(keys: HeldKeys())
+        XCTAssertEqual(out.ended, .demoInterrupted)
+        XCTAssertEqual(demo.state.frame, 0)
+        XCTAssertFalse(demo.isInGame)
+
+        // Uninterrupted FILM 4: the hero dies (D8) → the demo ends on the death-animation stop.
+        let full = try GameSession(data: data, prefs: .defaults, mode: .demo, startLevel: 1, seed: 1,
+                                   film: try data.levels.film(4))
+        finishWipe(full, now: &now)
+        var end: SessionEnd?
+        for _ in 0..<3000 where end == nil { end = full.frame(keys: HeldKeys()).ended }
+        XCTAssertEqual(end, .demoStopped([.heroDeathAnimationDone]))
+
+        XCTAssertThrowsError(try GameSession(data: data, prefs: .defaults, mode: .demo, startLevel: 1, seed: 1,
+                                             film: nil)) { XCTAssertEqual($0 as? GameSessionError, .demoNeedsFilm) }
+    }
+
+    /// Ruling 4: ⌘Q in play fades the music (`_StopMusic`) then quits with `.quit`; no prefs save is requested, and
+    /// the session is in game until then.
+    func testCommandQFadesThenQuitsWithoutSave() throws {
+        let data = try gameData()
+        var now: UInt32 = 0
+        let session = try sessionAtAppear(data, now: &now)
+        XCTAssertTrue(session.isInGame)
+        let out = session.frame(keys: HeldKeys(codes: [0x0c], command: true))
+        XCTAssertEqual(out.music, [.volume(0x100)])
+        XCTAssertEqual(session.phase, .musicFade)
+        XCTAssertTrue(session.isInGame)
+        let rest = ticks(session, now: &now) { $0.phase != .ended }
+        XCTAssertEqual(rest.music.last, .stopNow)
+        XCTAssertEqual(rest.requests, [.quitNow])
+        XCTAssertEqual(rest.ended, .quit)
+        XCTAssertEqual(session.endReason, .quit)
+        XCTAssertFalse(session.isInGame)
+        XCTAssertFalse((out.requests + rest.requests).contains(.savePrefs))
+    }
+
+    /// The original would quit (`_LocationError` etc. → `StopReason.originalWouldAbort`): the game ends with
+    /// `.originalWouldQuit`, and the exit sequence ends with `_ScreenToComp` and snd 27.
+    func testOriginalWouldQuitEnd() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        finishWipe(session, now: &now)
+        session.state.pendingStops.insert(.originalWouldAbort("test"))
+        XCTAssertNil(session.frame(keys: HeldKeys()).ended)
+        let out = session.frame(keys: HeldKeys())
+        XCTAssertEqual(out.ended, .originalWouldQuit("test"))
+        XCTAssertEqual(out.drawOps, [.screenToComp(Self.level1Rect)])
+        XCTAssertEqual(out.requests.last, .disableAbout(false))
+    }
 }

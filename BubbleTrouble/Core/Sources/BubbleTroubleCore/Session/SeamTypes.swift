@@ -30,6 +30,9 @@ public struct SoundCue: Equatable, Sendable {
 public enum MusicCue: Equatable, Sendable {
     /// Load music set `set` (snd 11001…11004).
     case load(set: Int)
+    /// `_StartMusic @ 0001ad8c`: set the music voice's volume from prefs short 0x35 (1 → 0, 2 → 0x40, 3 → 0x80,
+    /// 4 → 0x100; 0 when the game is not running and bool 0x40 is off) — undoing any earlier `volume` fade — then
+    /// queue the set's loop. The App must apply that volume reset on every `start`.
     case start
     case stopNow
     case pause
@@ -201,9 +204,16 @@ public enum SessionEnd: Equatable, Sendable {
     /// The original would quit the application here (`_CleanUp` / `_LocationError` / `ExitToShell` — a level or maze
     /// that fails to load, `StopReason.originalWouldAbort`). Added by C4.
     case originalWouldQuit(String)
+    /// ⌘Q in play (`_PlayGame` 00018eb0: `_StopMusic` then `_CleanUp` — quit, no prefs save, R7). Added by C4.
+    case quit
 }
 
 /// Everything one `GameSession.frame` / `.tick` or `FrontEnd` call hands the App (S2).
+///
+/// Order of application: the App applies `requests` BEFORE `sounds` (so a `.haltAllSound` never cuts this output's own
+/// cues). Producers keep that true: when an output carries `.haltAllSound`, any cue the original played before the
+/// halt in the same instant is dropped from `sounds` (it would have been cut at once) — e.g. pause entry = halt →
+/// snd 22, game exit = halt → snd 27.
 public struct SessionOutput: Equatable, Sendable {
     public var sounds: [SoundCue]
     public var music: [MusicCue]

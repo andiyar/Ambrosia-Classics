@@ -43,7 +43,8 @@ public final class GameSession {
     /// The prefs as the game leaves them (`_LoadLevel` raises short 0x3a); the App saves them on `.savePrefs`.
     public private(set) var prefs: BTXPrefs
     public private(set) var phase: SessionPhase
-    public private(set) var notices = NoticeBoard()
+    /// The notice state (`GameState.notices`, the single notice implementation).
+    public var notices: NoticeBoard { state.notices }
     /// `gPlayerIsCheating` (`_RequestGame`: start level > 1; C8 cheats set it too) — no high score when set.
     public internal(set) var playerIsCheating: Bool
     /// `gMusicLoaded` / "the music channel is playing" as far as the session has driven it.
@@ -54,6 +55,11 @@ public final class GameSession {
 
     /// True only while frames run (plan C4 item 9).
     public var wantsFrameTimer: Bool { phase == .playing }
+
+    /// True from game start until the session has ended. Any quit while a session `isInGame` goes through
+    /// `_CleanUp`, which never saves prefs (R7): the App's terminate path skips the prefs save when a `GameSession`
+    /// `isInGame` OR when it receives `.quitNow`.
+    public var isInGame: Bool { phase != .ended }
 
     private let data: BTXGameData
     private var filmInput: FilmInput?
@@ -80,6 +86,9 @@ public final class GameSession {
     /// `gEscapeKeyFrames`.
     private var escapeFrames = 0
 
+    /// Full logical screen (`environment+0x12/+0x16`).
+    static let screenRect = QDRect(top: 0, left: 0, bottom: 480, right: 640)
+
     /// `_RequestGame(level, mode)` → `_PlayGame`'s prologue → `_NewLevel` up to its `_WipeScreen(12)`. Play: `seed` is
     /// the caller's TickCount, `startLevel` 1…; demo: `film` is required and gives both (level = FILM id, seed =
     /// FILM.seed; replay-oracle §3) — `startLevel` and `seed` are ignored. The first `tick` returns the opening
@@ -88,7 +97,7 @@ public final class GameSession {
                 film: Film?) throws {
         var level = startLevel, seed = seed
         if mode == .demo {
-            guard let film else { preconditionFailure("GameSession(mode: .demo) needs a FILM") }
+            guard let film else { throw GameSessionError.demoNeedsFilm }
             level = film.id
             seed = film.seed
             filmInput = FilmInput(film: film)
@@ -130,25 +139,13 @@ public final class GameSession {
         let transition = state.upcomingHeroTransition
         let wasEndOfLevel = state.isEndOfLevel
 
-        // The hero state machine's notices (000187a7…): appear → `_PrepareNotice(0)` (not demo); respawn → 2 / 1.
-        switch transition {
-        case .appear:
-            if mode == .play { notices.prepare(0) }
-        case .respawn(let livesLeft, let endOfLevel):
-            if livesLeft < 1 {
-                notices.prepare(2)
-            } else if !endOfLevel {
-                notices.prepare(1)
-            }
-        case .death, nil:
-            break
-        }
+        inFrameNoticesBeforeStep(transition)
 
         // 00018a7e: `_PauseKey() || local_ea` → (not demo) remember the notice, `_PrepareNotice(3)`, pause after the
         // frame.
         if (keys.capsLock || deactivated) && mode == .play {
-            pauseDue = (notices.current, deactivated)
-            notices.prepare(3)
+            pauseDue = (state.notices.current, deactivated)
+            state.notices.prepare(3)
         }
 
         let report: FrameReport
@@ -158,19 +155,11 @@ public final class GameSession {
         } else {
             report = state.stepFrame(input: &keyboard)
         }
+        // The report holds the frame's cues; `stepFrame` clears the sim buffer only at its NEXT top, so empty it now
+        // — otherwise a later drain outside the frame (count-down `takeSounds`) would replay them.
+        _ = state.takeSounds()
 
-        // `_TimeBonus_Process` (inside the frame): bonus reaching exactly 0 → `_PrepareNotice(5)`; at 0 with HURRY UP!
-        // up for > 60 frames → `_PrepareNotice(0)`. Derived from the state the frame left:
-        // the −50 step ran this frame iff the hero is in state 2 and the timer was just set to this frame.
-        if !wasEndOfLevel {
-            let decremented = state.hero.state == 2 && state.timeBonusTimer == state.frame
-            if state.timeBonus == 0 && decremented {
-                notices.prepare(5)
-            } else if state.timeBonus < 1 && notices.current == 5
-                        && Int(state.timeBonusTimer) + 0x3c < Int(state.frame) {
-                notices.prepare(0)
-            }
-        }
+        inFrameNoticesAfterStep(wasEndOfLevel: wasEndOfLevel)
 
         // Music of the hero state machine (FrameReport carries no music).
         switch transition {
@@ -188,12 +177,10 @@ public final class GameSession {
             break
         }
 
-        // Draw: `_EraseNotice` (before the draw pass) → the frame's ops → `_DrawNotice` → the screen flush.
-        let erased = notices.erase()
-        let drawn = notices.draw(level: Int(state.level))
         out.sounds += report.sounds
-        out.drawOps += erased.restore.map { .restoreBgnd($0) } + report.drawOps + drawn.ops
-            + (erased.flush + drawn.flush).map { .compToScreen($0) }
+        out.drawOps += inFrameNoticeDrawOps(around: report.drawOps)
+        // 00018c3e: `if (bVar2) _ScreenToComp(whole screen)` after the pause frame's flush.
+        if pauseDue != nil { out.drawOps.append(.screenToComp(Self.screenRect)) }
 
         // 00018c71: Esc ends the game at once, or after > 30 held frames when bool 0x3d is set.
         if keys.codes.contains(0x35) {
@@ -234,7 +221,10 @@ public final class GameSession {
                 out.append(finishNewLevel(keys: keys))
             }
         case .musicFade:
-            if let last = fadeLastTick, now <= last { break }
+            // `_StopMusic`: each volume (the first set in the frame) holds until TickCount changes; the first tick
+            // seen is the baseline.
+            guard let last = fadeLastTick else { fadeLastTick = now; break }
+            guard last < now else { break }
             fadeLastTick = now
             if 0 <= fadeVolume {
                 out.music.append(.volume(fadeVolume))
@@ -256,9 +246,10 @@ public final class GameSession {
 
     // MARK: - Shell events
 
-    /// A key-down / mouse-down / activate event (kind 1) while a demo runs: `gPlayGame = 0`.
+    /// A key-down / mouse-down / activate event (kind 1) while a demo runs: `gPlayGame = 0` (000190a1). Received
+    /// during a blocking phase (wipe) it is queued and acted on at the next frame's loop top.
     public func interrupt() {
-        if mode == .demo && phase == .playing && exitReason == nil {
+        if mode == .demo && phase != .ended && exitReason == nil {
             exitReason = .demoInterrupted
         }
     }
@@ -266,17 +257,18 @@ public final class GameSession {
     /// The app was deactivated (event kind 2): demo → `_SuspendGame` and the demo ends; play → paused at the next
     /// frame (`local_ea`); while paused → `_InGameSuspend`, the pause then needs a reactivation to end.
     public func appDeactivated() {
+        // Outside `.playing` (wipe / fade / count-down) the event waits in the queue: it is acted on at the next frame.
         switch phase {
-        case .playing:
+        case .paused:
+            pause?.mayResume = false
+        case .ended:
+            break
+        case .playing, .wipe, .musicFade, .countdown:
             if mode == .demo {
                 if exitReason == nil { exitReason = .demoInterrupted }
             } else {
                 deactivated = true
             }
-        case .paused:
-            pause?.mayResume = false
-        default:
-            break
         }
     }
 
@@ -342,8 +334,7 @@ public final class GameSession {
             countdown = TimeBonusCountdown(state: state)
             phase = .countdown                                      // its first step runs on the next tick
         case .quit:
-            out.requests.append(.quitNow)
-            phase = .ended
+            out.append(quitNow())
         }
         return out
     }
@@ -359,10 +350,16 @@ public final class GameSession {
             phase = .countdown
             out.append(runCountdown(now: now, keys: keys))
         case .quit:
-            out.requests.append(.quitNow)
-            phase = .ended
+            out.append(quitNow())
         }
         return out
+    }
+
+    /// `_CleanUp` from ⌘Q in play: quit at once, prefs NOT saved.
+    private func quitNow() -> SessionOutput {
+        endReason = .quit
+        phase = .ended
+        return SessionOutput(requests: [.quitNow], ended: .quit)
     }
 
     private func runCountdown(now: UInt32, keys: HeldKeys) -> SessionOutput {
@@ -413,8 +410,8 @@ public final class GameSession {
         var out = SessionOutput()
         out.drawOps = state.reserveInfoOps() + state.scoreOps() + state.timeBonusOps() + state.multiplierOps()
             + state.extraOps()
-        notices.reset()
-        notices.prepare(mode == .demo ? 4 : 6)
+        state.notices.reset()
+        state.notices.prepare(mode == .demo ? 4 : 6)
         if mode == .play {
             out.music.append(.load(set: state.levelMusicSet))
             musicLoaded = true
@@ -440,14 +437,18 @@ public final class GameSession {
         guard let p = pause else { return SessionOutput() }
         let out = PauseState.exitOutput(musicLoaded: musicLoaded, musicPlaying: musicPlaying)
         if musicLoaded { musicPlaying = true }
-        notices.prepare(p.previousNotice)
+        state.notices.prepare(p.previousNotice)
         pause = nil
         phase = .playing
         return out
     }
 
     /// `_PlayGame`'s exit (00019189…) and `_RequestGame`'s cursor: menus re-enabled; (not demo) mouse restored, cursor
-    /// shown, music unloaded, `ST_HaltSound`; snd 27; `_ShowMyCursor`; About re-enabled.
+    /// shown, music unloaded, `ST_HaltSound`; `_ScreenToComp` (OS X); snd 27; `_ShowMyCursor`; About re-enabled.
+    ///
+    /// NOTE for C6/C7: the original re-enables About in `_RequestGame` only AFTER `_CheckHiScore` (and, on the
+    /// high-score path, after `_DrawCompPattern`) — `.disableAbout(false)` is therefore the LAST request here; a front
+    /// end that runs the high-score entry must hold it back until that check is done.
     private func exitGame() -> SessionOutput {
         var out = SessionOutput()
         out.requests.append(.enableMenus(true))
@@ -460,6 +461,7 @@ public final class GameSession {
             }
             out.requests.append(.haltAllSound)
         }
+        out.drawOps.append(.screenToComp(Self.screenRect))                             // 000192ed
         out.sounds.append(SoundCue(slot: 0x1b, priority: 0x1e, delayFrames: 0))        // 00019304 "Bubbles"
         if mode == .demo { out.requests.append(.showCursor) }
         out.requests.append(.disableAbout(false))
@@ -489,15 +491,70 @@ public final class GameSession {
         }
     }
 
+    // MARK: - In-frame notices — C3 REPLACES THIS SECTION
+    //
+    // The notice changes `_PlayGame`'s frame body makes (hero appear / respawn, `_TimeBonus_Process`'s HURRY UP! and
+    // its timeout) and the frame's `_EraseNotice` / `_DrawNotice` ops, DERIVED here from state until C3 sets them
+    // inside `stepFrame` and records the notice draw at its place in `FrameReport.drawOps`. At that merge, delete these
+    // three functions and their three call sites in `frame(keys:)` (keep `report.drawOps` as the frame's ops).
+
+    /// The hero state machine's notices (000187a7…): appear → `_PrepareNotice(0)` (not demo); respawn → 2 (FIN!) /
+    /// 1 (GET READY!, unless the level is ending).
+    private func inFrameNoticesBeforeStep(_ transition: HeroTransition?) {
+        switch transition {
+        case .appear:
+            if mode == .play { state.notices.prepare(0) }
+        case .respawn(let livesLeft, let endOfLevel):
+            if livesLeft < 1 {
+                state.notices.prepare(2)
+            } else if !endOfLevel {
+                state.notices.prepare(1)
+            }
+        case .death, nil:
+            break
+        }
+    }
+
+    /// `_TimeBonus_Process @ 00006a15`: bonus reaching exactly 0 → `_PrepareNotice(5)`; at 0 with HURRY UP! up and
+    /// `timer + 0x3c < frame` → `_PrepareNotice(0)`. The −50 step ran this frame iff the hero is in state 2 and the
+    /// timer was just set to this frame.
+    private func inFrameNoticesAfterStep(wasEndOfLevel: Bool) {
+        guard !wasEndOfLevel else { return }
+        let decremented = state.hero.state == 2 && state.timeBonusTimer == state.frame
+        if state.timeBonus == 0 && decremented {
+            state.notices.prepare(5)
+        } else if state.timeBonus < 1 && state.notices.current == 5
+                    && Int(state.timeBonusTimer) + 0x3c < Int(state.frame) {
+            state.notices.prepare(0)
+        }
+    }
+
+    /// `_EraseNotice` (before the draw pass) → the frame's ops → `_DrawNotice` → the screen flush of both.
+    private func inFrameNoticeDrawOps(around frameOps: [DrawOp]) -> [DrawOp] {
+        let erased = state.notices.erase()
+        let drawn = state.notices.draw(level: Int(state.level))
+        return erased.restore.map { .restoreBgnd($0) } + frameOps + drawn.ops
+            + (erased.flush + drawn.flush).map { .compToScreen($0) }
+    }
+
     private func takePending() -> SessionOutput {
         defer { pending = SessionOutput() }
         return pending
     }
 }
 
+/// Why a `GameSession` cannot start.
+public enum GameSessionError: Error, Equatable {
+    /// `GameSession(mode: .demo, …)` was given no FILM.
+    case demoNeedsFilm
+}
+
 extension SessionOutput {
-    /// Appends `other` after this output, field by field (`ended` = the later one when set).
+    /// Appends `other` after this output, field by field (`ended` = the later one when set). When `other` halts all
+    /// sound, the cues queued before it in this output are dropped: the original played them and cut them in the same
+    /// instant (the App applies `requests` before `sounds` — see `SessionOutput`).
     mutating func append(_ other: SessionOutput) {
+        if other.requests.contains(.haltAllSound) { sounds = [] }
         sounds += other.sounds
         music += other.music
         drawOps += other.drawOps
