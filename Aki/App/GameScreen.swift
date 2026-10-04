@@ -109,9 +109,10 @@ import HectorShell
     /// The slide loops of `_AnimationMapScreenToCustom` (DC:6597–6623) and `_AnimationCustomGameScreenToMap`
     /// (DC:5605–5631), a busy loop paced by the tick count alone: s from the unsigned tick delta (clamped to 60
     /// by `offset`); left and right from scratch2c, the middle from `middle`, flushed on the third copy only;
-    /// until the clamped delta reaches 60. `CATransaction.flush()` puts each frame on screen (as `runFade`).
-    /// A pass whose clamped delta equals the last drawn one is skipped — its frame would be bit-identical —
-    /// so the first pass and the final (delta 60) frame are always drawn; each pass drains its own pool.
+    /// until the clamped delta reaches 60. `CATransaction.flush()` puts each frame on screen (as `runFade`,
+    /// which also waits a tick per present). A pass whose clamped delta equals the last drawn one is skipped —
+    /// its frame would be bit-identical — so the first pass and the final (delta 60) frame are always drawn;
+    /// each pass drains its own pool.
     private func slide(middle: ShellBitmap, offset: (Int) -> Int) {
         let gw = controller.gworlds!
         let start = ShellClock.ticks()

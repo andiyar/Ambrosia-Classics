@@ -46,9 +46,9 @@ Pick the difficulty with the arrows under Skill Level on the map, then click a l
 - Level Editor, Play Custom Level and Replay are Phase 3 (their menu items stay disabled).
 
 ## Please look at (readings we could not settle from the code alone)
-- **Fade:** does a matched pair visibly fade, or just vanish? The original draws 11 fade steps with no pause
-  between them; on a modern Mac they may all land inside one screen refresh. If it just vanishes, we add a
-  one-refresh wait per step — that would be fidelity, not a new feature.
+- **Fade (fixed after your first play):** a matched pair should now visibly fade, about a third of a second. Like
+  the 2008 Mac, each of the 11 steps waits for the screen refresh (the two tiles step one refresh apart). Does
+  it look like the original's fade?
 - The stone bar at the start, and after bonuses push it past 2½ minutes — do grey stones appear over black ones?
 - The eight Season tiles all match each other, and nothing else cross-matches.
 - Level Statistics, row 2: the Wins box stays blank (the original's OK button shares its control number).
