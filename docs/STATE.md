@@ -49,10 +49,14 @@
    M2 BUILD SUCCEEDED; M3 floor 167. Plan ⚑ corrections by the seat: P2.2 `testCounts` 22 → 25; P2.6 reshuffle-button
    test with pairs 0 emits no `.pressButton(4)` (DC:7753); P2.8 Interfaces named `overlayMask` twice — as-built
    `overlaySourceMask` for the pause/nopairs sheet, plus `pairsHundredsDigit(_:)` and `FlashRects.glowMask(_ p:)`.
-   **AkiCore is complete for Phase 2.** Next chip: P2.9 (⚑ MAJOR, App `GameScreen` drawing — two review legs, M2 from the
-   head), then P2.10, P2.11 (App, ⚑ MAJOR) and the P2.12 gate: Ben plays a level start to finish on each difficulty —
-   "it plays like Aki". Handoff `docs/handoff-2026-10-04-aki-phase2-p27-p28.md`. Ben's Phase 1 question rows (S6 Q1–Q18,
-   Q51–Q57) stay open for his play notes; none blocks Phase 2.
+   **AkiCore is complete for Phase 2.** **P2.9 DONE and merged 2026-10-04 (late):** App `GameScreen` drawing — the
+   QuickDraw pipeline (11cdd1d + fix f61b8eb; ⚑ MAJOR, spec + quality legs both MERGEABLE). ⚑ plan corrections: the fade
+   window copy is (left, top+1, left+53, top+69) → `AkiGameArt.fadeWindowRect(_:)` (+ `screenRect`), not `tileRect`
+   (DC:7957/7960); Q24 carries the review's fade-pacing reasoning (22 presents in one refresh — Ben's eyes decide). Gates from
+   the head: AkiCore 107 / 0, M2 BUILD SUCCEEDED (0 our warnings), M3 floor 167. Next chip: P2.10 (⚑ MAJOR, App: level start
+   → tick → end, event executor, sounds/music — wires `controller.gameScreen`, replaces the `perform(_:)` stub), then P2.11
+   (⚑ MAJOR) and the P2.12 gate: Ben plays a level start to finish on each difficulty — "it plays like Aki". Handoff
+   `docs/handoff-2026-10-04-aki-phase2-p29.md`. Ben's Phase 1 question rows (S6 Q1–Q18, Q51–Q57) stay open; none blocks Phase 2.
 2. Bubble Trouble X core lane: Tasks 4–5b merged; remaining tasks per its plan (separate chip chain).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
