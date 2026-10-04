@@ -26,7 +26,7 @@ final class NibElement {
 
     func attribute(forName name: String) -> String? { attributes[name] }
 
-    /// The DOM `stringValue` of an element, as the macOS DOM (whitespace-preserving option or not)
+    /// The DOM `stringValue` of an element, as the macOS DOM with `.nodePreserveWhitespace`
     /// computes it on the shipped macOS: every descendant text / comment / processing-instruction data,
     /// concatenated — where a text run made only of XML whitespace (space, tab, CR, LF) is dropped, as
     /// the macOS DOM drops such text nodes at parse time. Never nil (an empty element gives "").
