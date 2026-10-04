@@ -16,6 +16,7 @@ import HectorShell
     var music: AkiMusic!
     var shell: ShellWindowController!
     var mapScreen: MapScreen!; var gameScreen: AkiScreen?; var editorScreen: AkiScreen?   // P2.10 sets gameScreen, P3.4 editorScreen
+    private(set) var gameScreenImpl: GameScreen!               // P2.10 — the one GameScreen (`gameScreen` points at it)
     var launched = false, updateAvailable = false, inactivePause = false   // ivars 0x0e, 0x0d, 0x2d
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
@@ -63,6 +64,8 @@ import HectorShell
             fatalError("Aki: cannot load the original art: \(error)")
         }
         mapScreen = MapScreen(controller: self)
+        gameScreenImpl = GameScreen(controller: self)          // P2.10
+        gameScreen = gameScreenImpl
         do {
             sound = try AkiSound(assets: assets, controller: self)   // _Initialize: _InitializeSound
             music = try AkiMusic(assets: assets, controller: self)   // _Initialize: _InitializeMusic
@@ -133,9 +136,27 @@ import HectorShell
         currentScreen?.idle()
     }
 
-    /// `_LoadLayout`. Phase 1: the game is Phase 2, so a chosen level stays on the map (Known delta 3);
-    /// P2.10 replaces this body.
-    func loadLayout() {}
+    /// `_LoadLayout` @ 0x132f1 (DC:7593): the chosen built-in level's layout (`_Layout1`…`_Layout12` by
+    /// g+0x90, which also set g+0x8e), tilesLeft 144 and Undo off (`AkiGame.init`), the fresh deal
+    /// (`_ShuffleCustomTiles(0)`, g+0x60), then the slide-in, `_DrawGameTiles` and `_RedrawEntireWindow`
+    /// (`GameScreen.startLevel`).
+    func loadLayout() {                                                                    // P2.10
+        let level = g.levelIndex!
+        let layout = Layouts.forLevel(level)
+        var game = AkiGame(layout: layout, difficultyRaw: p.difficultyRaw, levelIndex: level)
+        g.background = layout.background
+        var rng = SystemRandomNumberGenerator()
+        game.dealFresh(using: &rng)
+        gameScreenImpl.startLevel(game)
+    }
+
+    /// `_TriggerGameToMap` @ 0xe5a2 (DC:5668): stop the current music track, then `_DeleteAllCGTiles` and
+    /// `_AnimationCustomGameScreenToMap` — both in `GameScreen.leaveLevel`. Its only caller is P3.6's
+    /// Finder-open path.
+    func triggerGameToMap() {                                                              // P2.10
+        music.stopCurrent()
+        gameScreenImpl.leaveLevel()
+    }
 
     /// `-[Controller showPreferences:]` @ 0x3443 (DC:610, otool): the `Preferences` controller is created
     /// once (ivar 0x20). Fullscreen → `runModal`, then the fullscreen window `makeKeyAndOrderFront:` — no

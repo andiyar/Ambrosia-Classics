@@ -46,6 +46,15 @@ import HectorShell
     func rewind(_ id: GameSound) {
         bank.rewind(id: id.rawValue)
     }
+
+    /// `_LoopSound` @ 0xd21f (DC:5057), called by the game tick while b8 < 15: only while `_p`+0x210 ≠ 0;
+    /// when tick.mp3 (id 100) is done it is rewound and `_PlayMovie(0x80)` runs — the MUSIC; the tick itself
+    /// is not restarted (Q28). The trailing `MoviesTask` has no counterpart (AVFoundation services itself).
+    func loopTick() {                                                                     // P2.10
+        guard controller.p.soundAudible, isDone(.tick) else { return }
+        rewind(.tick)
+        controller.music.playMovie(0x80)
+    }
 }
 
 /// `_InitializeMusic` @ 0x27ca2, `_PlayMovie` @ 0x2755c and `_LoopMusic(0)` @ 0x275e5 (method-map §2,
@@ -95,5 +104,30 @@ import HectorShell
     /// `_StopMovie` of the current track (pause, keeping the position).
     func stopCurrent() {
         bank.stop(id: controller.g.musicTrack)
+    }
+
+    /// `_AnimationMapScreenToCustom`'s music (DC:6573–6579, DC:6587–6595): the current track stops and
+    /// `_g`+0x5c = `_g`+0x5e (the last game track); then, Music on (`_p`+0x20e > 1), volume 0x80, rewind, start.
+    func startGameTrack() {                                                               // P2.10
+        let g = controller.g
+        bank.stop(id: g.musicTrack)
+        g.musicTrack = g.lastGameTrack
+        guard controller.p.musicFlags > 1 else { return }
+        bank.play(id: g.musicTrack, volume: 0x80)
+    }
+
+    /// `_AnimationCustomGameScreenToMap`'s bookkeeping (DC:5515–5521): `_g`+0x5e = `_g`+0x5c, `_g`+0x5c = 0
+    /// (the map theme). Nothing is stopped or started here.
+    func returnToMapTrack() {                                                             // P2.10
+        let g = controller.g
+        g.lastGameTrack = g.musicTrack
+        g.musicTrack = 0
+    }
+
+    /// Music on (`_p`+0x20e > 1) → volume 0x80 and start the current track from where it is — no rewind, no
+    /// paused test (`_AnimationCustomGameScreenToMap` DC:5596–5604; `_ReshuffleCustomTiles` DC:7712).
+    func startCurrentIfMusicOn() {                                                        // P2.10
+        guard controller.p.musicFlags > 1 else { return }
+        bank.start(id: controller.g.musicTrack, volume: 0x80)
     }
 }
