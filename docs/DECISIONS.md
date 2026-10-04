@@ -204,3 +204,13 @@ the RNG 0x8000 variant is moot (no such draw in any FILM — NR-3 untested by th
 one more `Random()` between frame 212's eel roll and frame 213's piranha roll; FILM 3 has a similar window (473–512);
 FILM 2's catch is a 1-pixel overlap. Four Opus audits found no code discrepancy against the decompile.
 **Approved by:** Ben 2026-10-04 (items 1–2, his choice "Start the playable app"); item 3 orchestrator (Opus 5.5).
+
+## D9 — Aki Phase 2 gate PASSED (2026-10-04)
+
+**Decided (Ben, on the re-staged build with the Q24 fix, 6603e55):** "the game works fine"; formal gate answers — matched
+pairs **fade** ("Yes, it fades"), Phase 2 **Pass** (plays like Aki across Hard / Medium / Easy / Practice).
+Ben asked whether difficulty changes the timer: every level starts at 150 s on every difficulty (faithful,
+`_AnimationMapScreenToCustom` `b8 = 0x96`); difficulty sets the match bonus (3/6/12/0 s), the hint and reshuffle
+penalties, Undo (Easy/Practice only) and Practice's frozen clock (rules.md §10) — all in AkiCore. No change.
+Q24 ruling as built: one full-tick wait per present (plan Q24 row ⚑). Next: the iPad version (D7), then Phase 3.
+**Approved by:** Ben 2026-10-04.

@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-04 (late night)
+# STATE — Ambrosia Classics — 2026-10-04 (night, P2 gate passed)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -45,20 +45,16 @@
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Aki Phase 2 — the game: CODE COMPLETE, STAGED FOR BEN'S GATE (2026-10-04 night).** P2.1–P2.9 as before (AkiCore
-   complete, 107 tests; GameScreen drawing). **P2.10** (level start → tick → end, the event executor, game music and tick;
-   4a6d906) and **P2.11** (input, button bar, Give Up / Undo / Tip / Reshuffle / Pause menus, focus-loss pause, Stacked,
-   Level Statistics; 5e96287) — both ⚑ MAJOR, spec + quality legs each (P2.10 MERGEABLE ×2; P2.11 MERGEABLE +
-   MERGEABLE_WITH_FIXES), one fix round 70becea; plan ⚑ corrections 51ac4a2; **P2.12** note 9ea8c5d = origin/main. Gates
-   from the merge head (seat-run): AkiCore **107 / 0**, M2 BUILD SUCCEEDED (0 our warnings), M3 floor **167**, staged
-   `out/Aki/Aki.app` (50 PNG) + `out/Aki/WHAT-TO-EXPECT.md`, boot smoke ok. Opus seat (cap lifted by Ben). **Ben's first play (2026-10-04, DECISIONS D6): delighted; matched pairs VANISH → fade fix owed (one refresh wait per
-   frame); Esc-Cancel kept; Q25 left as is. Open: the fade fix, then Ben's formal P2
-   gate** — play a level start to finish on each difficulty, "it plays like Aki", watch the fade (Q24) and the Give Up
-   time-out edge (Q25). Not done: the plan's P2.12 screenshot script (Ben declined computer-use control of the app this
-   session). Handoff `docs/handoff-2026-10-04-aki-phase2-p210-p212.md`. Next after the gate: Phase 3 (editor, `.aki`).
+1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
+   as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
+   per frame (plan Q24 ⚑; ~22/60 s fade). Gates from main (seat-run): M1 **107 / 0**, M2 BUILD SUCCEEDED (0 our
+   warnings), M3 floor **167**. Staged build on **~/Desktop/Aki.app** (+ WHAT-TO-EXPECT.md) — Ben plays that copy; never
+   delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
+   **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
+   queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
 2. Bubble Trouble X core lane: Tasks 0–11 merged (130 tests); Diagnosis protocol on FILMs 2–4, then golden freeze (Task 11.5); then the BTX shell on HectorShell.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
-4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
+4. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
 ## Carried (not blockers)
 
