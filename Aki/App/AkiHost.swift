@@ -19,6 +19,14 @@ import HectorShell
 /// - `mouseLocation()` returns (0, 0) while any modal is up (the Mac tests `NSApp.modalWindow`).
 /// - Menu commands are disabled while a modal is up (AND it with `AkiController.menuState(tag:)`).
 /// - Input to the screens (`AkiController.mouseDown` / `keyDown`) is not delivered while a modal is up.
+/// - Modals STACK. On the Mac the idle timer keeps firing under a click- or key-opened modal (the LoadLevel
+///   "Are you sure", Stacked) and the game is not paused, so a time-out can leave the level and open the
+///   proverb ON TOP; the outer dialog's completion runs only after the proverb closes. A new modal goes above
+///   the current one, dismissal returns to the one below, completions run in LIFO order, and the idle freeze
+///   applies per idle-originated modal.
+/// - Ownership: `AkiController.host` is weak — the host must own the controller (or be owned by something
+///   that outlives it) and never deallocate first.
+/// - Every completion runs on the main actor, exactly once.
 @MainActor protocol AkiHost: AnyObject {
     /// `_DrawToWindow`'s flush: put the window port on screen.
     func present(_ window: ShellBitmap)

@@ -20,6 +20,8 @@ import HectorShell
     private(set) var gameScreenImpl: GameScreen!               // P2.10 — the one GameScreen (`gameScreen` points at it)
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
+    /// `_inactivePause` (Controller ivar 0x2d): the game was paused by a focus loss, not by the player.
+    var inactivePause = false
     /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
     /// rules (Known delta 3). Since P2.11 only Phase 3's commands remain (10–14, 16–19: the Level Editor and
     /// its commands, Play Custom Level, Replay); P3.4–P3.6 remove them as they land.
@@ -147,6 +149,43 @@ import HectorShell
     func triggerGameToMap() {                                                              // P2.10
         music.stopCurrent()
         gameScreenImpl.leaveLevel {}
+    }
+
+    // MARK: Focus (the platform-neutral bodies of the Mac window/app delegate methods; T4 lift)
+
+    /// The body of `-[Controller windowDidResignMain:]` @ 0x30c0 (DC:423) after its fullscreen test (the
+    /// host's): not paused → `pause`, `_inactivePause` = 1.
+    func focusLost() {
+        guard !g.paused else { return }
+        pause()
+        inactivePause = true
+    }
+
+    /// The tail of `-[Controller windowDidBecomeMain:]` @ 0x30f6 (DC:436), after the host has scheduled
+    /// `_redrawWindow` (delay 0): if `_inactivePause` → `unpause`, clear it.
+    func focusRegained() {
+        if inactivePause {
+            unpause()
+            inactivePause = false
+        }
+    }
+
+    /// `-[Controller applicationWillResignActive:]` @ 0x2ecb (DC:309): stops the music without pausing the
+    /// game — `_g`+0x67 is set around `_PlayMovie(0x80)` and then restored.
+    func resignActiveMusic() {
+        let wasPaused = g.paused
+        g.paused = true
+        music?.playMovie(0x80)
+        g.paused = wasPaused
+    }
+
+    /// `-[Controller applicationDidBecomeActive:]` @ 0x2efe (DC:326): once launched (RT3 refresh out of
+    /// scope), on the map or unless the game's "no pairs" flash (`_g`+0x85) is up → `_LoopMusic(1)`
+    /// (`applyLaunchRegistration`) and `_PlayMovie` (args lost → 0x80, Q15).
+    func becomeActiveMusic(launched: Bool) {
+        guard launched, g.mode == .map || !g.noPairsFlash else { return }
+        p.applyLaunchRegistration()
+        music.playMovie(0x80)
     }
 
     // MARK: Menus

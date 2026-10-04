@@ -10,7 +10,7 @@ import HectorShell
 @MainActor final class AkiAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation, ShellInputHandler {
     let controller: AkiController
     var shell: ShellWindowController!
-    var launched = false, updateAvailable = false, inactivePause = false   // ivars 0x0e, 0x0d, 0x2d
+    var launched = false, updateAvailable = false   // ivars 0x0e, 0x0d (`_inactivePause` 0x2d: AkiController)
     private var idleTimer: ShellIdleTimer?                     // ivar 0x30
     /// `_fullscreen` (ivar 0x2c), what `-isFullscreen` returns. Kept beside `shell.isFullscreen` because the
     /// original sets it BEFORE the windowed window leaves the screen (`_enterFullscreen` @ 0x36f8) and clears
@@ -143,21 +143,17 @@ import HectorShell
     // MARK: Window and app lifecycle
 
     /// `-[Controller windowDidResignMain:]` @ 0x30c0 (DC:423): windowed and not paused → `pause`,
-    /// `_inactivePause` = 1.
+    /// `_inactivePause` = 1 (the shared body: `AkiController.focusLost`).
     func windowDidResignMain(_ notification: Notification) {
-        guard !fullscreen, !controller.g.paused else { return }
-        controller.pause()
-        inactivePause = true
+        guard !fullscreen else { return }
+        controller.focusLost()
     }
 
     /// `-[Controller windowDidBecomeMain:]` @ 0x30f6 (DC:436): `_redrawWindow` after delay 0; if
-    /// `_inactivePause` → `unpause`, clear it.
+    /// `_inactivePause` → `unpause`, clear it (`AkiController.focusRegained`).
     func windowDidBecomeMain(_ notification: Notification) {
         perform(#selector(redrawWindow), with: nil, afterDelay: 0)
-        if inactivePause {
-            controller.unpause()
-            inactivePause = false
-        }
+        controller.focusRegained()
     }
 
     /// `-[Controller windowShouldClose:]` @ 0x3153 (DC:460): YES on the map and in the game; in the editor
@@ -166,23 +162,14 @@ import HectorShell
         true
     }
 
-    /// `-[Controller applicationWillResignActive:]` @ 0x2ecb (DC:309): stops the music without pausing the
-    /// game — `_g`+0x67 is set around `_PlayMovie(0x80)` and then restored.
+    /// `-[Controller applicationWillResignActive:]` @ 0x2ecb (DC:309): `AkiController.resignActiveMusic`.
     func applicationWillResignActive(_ notification: Notification) {
-        let g = controller.g
-        let wasPaused = g.paused
-        g.paused = true
-        controller.music?.playMovie(0x80)
-        g.paused = wasPaused
+        controller.resignActiveMusic()
     }
 
-    /// `-[Controller applicationDidBecomeActive:]` @ 0x2efe (DC:326): once launched (RT3 refresh out of
-    /// scope), on the map or unless the game's "no pairs" flash (`_g`+0x85) is up → `_LoopMusic(1)`
-    /// (`applyLaunchRegistration`) and `_PlayMovie` (args lost → 0x80, Q15).
+    /// `-[Controller applicationDidBecomeActive:]` @ 0x2efe (DC:326): `AkiController.becomeActiveMusic`.
     func applicationDidBecomeActive(_ notification: Notification) {
-        guard launched, controller.g.mode == .map || !controller.g.noPairsFlash else { return }
-        controller.p.applyLaunchRegistration()
-        controller.music.playMovie(0x80)
+        controller.becomeActiveMusic(launched: launched)
     }
 
     /// `-[Controller applicationShouldTerminateAfterLastWindowClosed:]` @ 0x2f7e (DC:357): `_launched` and
