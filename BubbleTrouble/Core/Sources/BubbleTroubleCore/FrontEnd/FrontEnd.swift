@@ -15,6 +15,7 @@
 // takes over the game's stream when a game returns, as the shared seed would.
 
 import Foundation
+import HectorResources
 
 /// Where the front end stands.
 public enum FrontEndPhase: Equatable, Sendable {
@@ -51,7 +52,7 @@ protocol FrontEndScreen: AnyObject {
 }
 
 /// An answer the App gives to a dialog a C7 screen requested.
-public enum FrontEndDialogAnswer: Equatable, Sendable {
+enum FrontEndDialogAnswer: Equatable, Sendable {
     /// DLOG 1000 "High Score Name": the text in the field when OK was hit.
     case name(String)
     case dismissed
@@ -92,12 +93,17 @@ public final class FrontEnd {
     public internal(set) var session: GameSession?
     /// The prefs as they stand (a running game's copy while it runs — `_LoadLevel` raises short 0x3a).
     public var prefs: BTXPrefs { session?.prefs ?? storedPrefs }
-    public internal(set) var highScores: HighScoreTable
+    /// The table as it stands. The App writes back what `BTXPrefsStore.save` leaves in it (the first-ever save swaps
+    /// in the factory scores — C5).
+    public var highScores: HighScoreTable
     /// True while a game frame is due on the 0.033 s timer.
     public var wantsFrameTimer: Bool { phase == .game && session?.wantsFrameTimer == true }
     /// `gFilmCounter` (bss → 0: the first demo is FILM 1 — closes U10 / Q11) and `gNumFilmsAvailable`.
     var filmCounter = 0
     var numFilms = 0
+    /// `_gShowFPS`: never reset by `_PlayGame`, so it lasts for the app's run — copied out of each session that
+    /// ends and into the next one (demos too; C8 carry).
+    var showFPS = false
     /// `gMsgCounter`, `gInfoTimer`, `gSuspended`.
     var msgCounter = 0
     var infoTimer: UInt32 = 0
@@ -230,14 +236,25 @@ public final class FrontEnd {
         return out
     }
 
-    /// One 0.033 s frame of the running game / demo.
+    /// One 0.033 s frame of the running game / demo at TickCount `now` (the App's clock: the FPS readout counts
+    /// frames against it, and the steps after a game ending in this frame start at it).
+    public func frame(keys: HeldKeys, now: UInt32) -> SessionOutput {
+        self.now = now
+        return frame(keys: keys, tick: now)
+    }
+
+    /// One frame at the last TickCount seen.
     public func frame(keys: HeldKeys) -> SessionOutput {
+        frame(keys: keys, tick: now)
+    }
+
+    private func frame(keys: HeldKeys, tick: UInt32) -> SessionOutput {
         guard case .game = steps.first, let s = session else { return SessionOutput() }
         var out = SessionOutput()
         // `_StopMusicWithoutFade` at the hero's death runs in a demo too: it stops the title music (demo only —
         // in play the title music is unloaded and the session drives the level music).
         let deathDue = s.mode == .demo && s.phase == .playing && s.state.upcomingHeroTransition == .death
-        out.append(s.frame(keys: keys))
+        out.append(s.frame(keys: keys, now: tick))
         if deathDue && musicLoaded {
             out.music.append(.stopNow)
             musicPlaying = false
@@ -247,16 +264,18 @@ public final class FrontEnd {
         return out
     }
 
-    /// A keyDown / autoKey event. A2: `chars` must be the character WITH the modifiers applied, as the Carbon
-    /// event's `charCode` was (`NSEvent.characters`, not `charactersIgnoringModifiers`): `_Interface` switches on
-    /// that byte, so Ctrl-C (0x03 = Enter) starts a New Game and Ctrl-M (0x0d) too; ⌘ is in `modifiers.command`.
-    public func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput {
+    /// A keyDown (`isRepeat` false) or autoKey (`isRepeat` true) event. A2: `chars` must be the character WITH the
+    /// modifiers applied, as the Carbon event's `charCode` was (`NSEvent.characters`, not
+    /// `charactersIgnoringModifiers`): `_Interface` switches on that byte, so Ctrl-C (0x03 = Enter) starts a New Game
+    /// and Ctrl-M (0x0d) too; ⌘ is in `modifiers.command`. The menus take both kinds; `_PauseGame` handles key-downs
+    /// only (event kind 3 — autoKey is kind 5) and gets the Mac Roman byte with the ⌘ flag (it ignores ⌘ keys).
+    public func key(_ code: UInt16, chars: String, modifiers: KeyModifiers, isRepeat: Bool = false) -> SessionOutput {
         switch steps.first {
         case .game?:
             guard let s = session else { return SessionOutput() }
             if s.mode == .demo { s.interrupt(); return SessionOutput() }
-            if s.phase == .paused, let c = chars.unicodeScalars.first, c.value < 0x100 {
-                return s.pauseKeyTyped(UInt8(c.value))
+            if s.phase == .paused, !isRepeat, let c = chars.first, let byte = MacRoman.bytes(String(c)).first {
+                return s.pauseKeyTyped(byte, command: modifiers.command)
             }
             return SessionOutput()
         case .screen?:
@@ -333,6 +352,24 @@ public final class FrontEnd {
             if phase != .splash && phase != .quit { events.append(.activated) }
             return SessionOutput()
         }
+    }
+
+    /// The menu bar changed the prefs (`_HandleMenuChoice @ 0000a482`): one global prefs block, so the front end and
+    /// a running game see the change at once. Pass `prefs` (the running game's copy, short 0x3a raised) changed.
+    public func prefsChanged(_ newPrefs: BTXPrefs) {
+        storedPrefs = newPrefs
+        session?.prefsChanged(newPrefs)
+    }
+
+    /// Quit from the menu bar or the quit Apple event at the idle main menu (`_HandleMenuChoice` 0x81/1:
+    /// `gFinished = 1`, `_SaveGamePrefs`, `_StopMusic`, `_CleanUp`; `_QuitAppleEventHandler` → the loop's exit
+    /// `_StopMusic`): the title music's blocking fade, then `.quit`. The App saves the prefs before calling. nil when
+    /// the front end is not idle at the menu (the App quits at once).
+    public func quitFromMenuBar() -> SessionOutput? {
+        guard phase == .menu, steps.isEmpty else { return nil }
+        push(quitSteps())
+        ticked = true
+        return runSteps(keys: HeldKeys())
     }
 
     /// `gDidToggleFullscreen`: the menu is redrawn 10 ticks later.

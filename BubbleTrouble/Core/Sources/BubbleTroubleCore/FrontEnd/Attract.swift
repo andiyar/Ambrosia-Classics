@@ -337,7 +337,7 @@ extension FrontEnd {
     // MARK: - Level select (`_Interface` 'L' + `_DoLevelSelect`)
 
     /// The level `_DoLevelSelect` returns for `typed` on OK: 2…short 0x3a, else 0 after `SysBeep(1)`.
-    public static func levelSelectChoice(typed: Int, max: Int) -> Int? {
+    static func levelSelectChoice(typed: Int, max: Int) -> Int? {
         typed < 2 || max < typed ? nil : typed
     }
 
@@ -387,6 +387,7 @@ extension FrontEnd {
                 }
                 session = try GameSession(data: data, prefs: storedPrefs, mode: mode, startLevel: level, seed: now,
                                           film: film, latches: latches ?? .fromProcessSeedOne)
+                session!.showFPS = showFPS
                 push([.game(then: { [unowned self] s in afterGameSteps(s, startLevel: level) })])
                 // The session's opening output arrives with its first tick, this tick.
                 lastSessionTick = now
@@ -423,6 +424,7 @@ extension FrontEnd {
         // The shared QuickDraw seed carries on from the game; prefs come back with short 0x3a raised.
         random = GameRandom(seed: s.state.rng.seed)
         storedPrefs = s.prefs
+        showFPS = s.showFPS
         let checkScore = s.mode == .play && startLevel <= 1 && !s.playerIsCheating
         let score = s.state.score, level = Int(s.state.level)
         session = nil

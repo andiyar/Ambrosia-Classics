@@ -36,7 +36,7 @@ public enum SessionPhase: Equatable, Sendable {
 public final class GameSession {
     /// `_WipeScreen(12)`: the bands advance 12 rows per tick until `2·12 + 240` rows → 22 advances.
     static let wipeStep = 12
-    static let wipeAdvances = (2 * 12 + 0xf0) / 12
+    static let wipeAdvances = DrawOp.wipeSteps(wipeStep)
 
     public let mode: GameMode
     public internal(set) var state: GameState
