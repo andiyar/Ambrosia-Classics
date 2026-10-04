@@ -1,59 +1,69 @@
-# Aki — what to expect (Phase 1 gate build, 2026-10-04)
+# Aki — what to expect (Phase 2 gate build, 2026-10-04)
 
-This is the Phase 1 build of the Aki — Mahjong Solitaire 1.2.0 replica: splash, map screen, menus,
-Preferences, dialogs and fullscreen. The game itself is Phase 2. The app loads every picture, sound,
-string and nib from its own bundle under the original file names.
+This is the Phase 2 build of the Aki — Mahjong Solitaire 1.2.0 replica: everything from Phase 1 plus the game
+itself. Every picture, sound, string and dialog still comes from the original files, under their original names.
 
 ## Opening it
-- Double-click `Aki.app`. For about half a second nothing happens, then an 800×600 window "Aki -
-  Mahjong Solitaire" appears centred, showing the map with the Fukuyama lantern (level 1) blinking.
-- If Music is on (the shipped default), Theme 3 starts at once. First launch also shows the welcome
-  splash centred over the window; click it or press a key to dismiss.
-- To see the first launch again: `defaults delete com.ambrosiaclassics.aki` in Terminal, then relaunch.
+- Double-click `Aki.app`. The map appears as in Phase 1 (Theme 3 if Music is on).
+- To start over as a first launch (all levels locked again, stats cleared): run
+  `defaults delete com.ambrosiaclassics.aki` in Terminal, then relaunch.
 
-## What to try
-- Hover each lantern: the Level Preview frame shows that level's picture and Preview.aiff plays once per
-  new lantern. Levels 2–12 show the LOCKED banner over the preview.
-- Click a locked lantern: the "Level Unavailable" dialog (parchment, OK). Option-click a locked lantern:
-  no dialog, the level opens.
-- Click Fukuyama: the guide splash (click to dismiss), then the Level Description window (Fukuyama,
-  preview picture, "Display Level Description" box, Continue / Cancel). Continue returns you to the
-  map — the level itself is Phase 2.
-- The arrows beside Skill Level cycle Hard / Medium / Easy / Practice with a click sound; the pressed
-  arrow stays pressed until the next map tick.
-- Practice + a locked next level: the Practice alert comes before the description (never on level 12).
-- Preferences (the map button or ⌘,): a sheet with the five boxes. Music off stops Theme 3 at OK; Sound
-  off silences the preview sound; the settings survive a relaunch.
-- ⌘F or the Fullscreen box: fade to black, the canvas fills the screen, fade back. Preferences in
-  fullscreen is a modal window, not a sheet. Closing the window quits; switching apps stops the music and
-  coming back resumes it.
-- Menus from the shipped nib. Help ▸ Aki Handbook opens the PDF in Preview; Help ▸ Release Notes shows the
-  notes in Osaka-Mono; About shows the shipped credits.
+## The question for you
+**Play a level start to finish on each difficulty — does it play like Aki?** Plain yes or no; detail below.
+Pick the difficulty with the arrows under Skill Level on the map, then click a lit lantern.
+
+1. **Hard.** Each pair matched adds 3 s. A Tip (⌘T or the left button) costs half the time left; a reshuffle
+   costs three quarters. No Undo.
+2. **Medium.** A match adds 6 s. A Tip costs a quarter of the time left, a reshuffle half. No Undo.
+3. **Easy.** A match adds 12 s. Tip costs an eighth, reshuffle a quarter. **Undo** (⌘Z) takes back the last pair
+   for 12 s.
+4. **Practice.** The stone bar never runs down, nothing costs time, Undo works, and winning does not unlock the
+   next lantern (but the win still counts in Level Statistics).
+
+## What to try along the way
+- The slide: clicking a lantern slides the map apart onto the level's own background, with LevelStart and the
+  game theme. Winning or giving up slides back to the map, with the lanterns you have lit.
+- Click a tile: red selection and the tile-hit click. Click it again: deselects. A non-matching tile: the cancel
+  sound. A match: TileMatch, the pair fades away (please watch this closely — see "fade" below).
+- ⌘T twice in a row (the second Tip moves on to the next pair); ⌘R and the Reshuffle button; ⌘P and the Pause
+  button (the board hides, the Pause button glows); Give Up with Esc or ⌘N ("Are you sure…?").
+- Leave the mouse alone for 30 seconds: the Tip button starts to flash.
+- Let the clock run out on Hard: the stones run out, then the proverb screen on the way back to the map.
+- Run out of moves: "no more pairs" — the panel appears, the board greys and the Reshuffle button flashes.
+- Win a level: LevelComplete, back to the map, the next lantern lit.
+- ⌘L Level Statistics, both from the map and in the middle of a level (the game pauses under it).
+- Preferences ▸ untick Tile Animation: matched pairs vanish in one step instead of fading.
+- Switch to another app mid-level (windowed): the game pauses; coming back resumes it.
 
 ## Known differences from the 1.2.0 original (deliberate)
 - No registration: the replica behaves as registered. "Register Aki…", "Check for Updates…" and
-  "Download Levels…" are gone from the menus (the servers are dead).
-- Fullscreen does not switch the display to 800×600: the picture fills your screen, pixel-crisp at an
-  exact multiple, smoothly scaled otherwise.
-- Clicking an unlocked lantern runs the whole pre-level sequence and then stays on the map.
-- Preferences live under the replica's own identifier, so an old Aki 1.2 prefs file is not read; an Aki
-  1.1 "Aki Prefs" file is migrated.
+  "Download Levels…" are gone (the servers are dead), and so is the demo's "levels available" alert.
+- Fullscreen does not switch the display to 800×600: the picture fills your screen, crisp at an exact multiple,
+  smoothly scaled otherwise.
+- Preferences live under the replica's own identifier, so an old Aki 1.2 prefs file is not read; an Aki 1.1
+  "Aki Prefs" file is migrated.
 - The About box is the standard macOS panel with the shipped credits, not the ASW framework window.
-
-## The question for you
-**Is that Aki's splash and map screen?** Say yes or no in plain words; everything below is detail.
+- Level Editor, Play Custom Level and Replay are Phase 3 (their menu items stay disabled).
 
 ## Please look at (readings we could not settle from the code alone)
-- Q1/Q2 edges of the hover preview, lit lanterns, difficulty word and LOCKED banner (QuickDraw stretch and masks).
-- Q3/Q4 fullscreen: smooth fill acceptable, or a crisp letterbox? And the fade feel both ways.
-- Q5 the Level Description box starts UNticked. Q13 Practice never alerts on level 12. Q14 the guide on every pick.
-- Q6/Q7/Q8 the dialogs: parchment look, placement (they centre on your main display, as the Carbon code did),
-  the rebuilt "Level Unavailable".
-- Q9/Q52 splash position and its slightly soft look over the crisp map (you said fine).
-- Q10 About and Release Notes as standard panels. Q55 Release Notes in the bundled Osaka-Mono.
-- Q11 Aki and File menus without the three dead items. Q53 macOS's ⌥ alternates and Window tiling items.
-- Q54 "Clear Current Layer" shows no ⌘X (AppKit strips the duplicate; matters in Phase 3).
-- Q12 should the replica read the old `com.ambrosiasw.aki` prefs instead of its own?
-- Q15/Q18 music volume after Preferences and re-activation; loudness of music versus effects.
-- Q16 hover and preview freeze while the Preferences sheet is up. Q17 Lucida Grande 13 in the dialogs.
-- Q51 Option-click on a locked lantern bypasses the lock. Q56 always light (Aqua) even in dark mode.
+- **Fade:** does a matched pair visibly fade, or just vanish? The original draws 11 fade steps with no pause
+  between them; on a modern Mac they may all land inside one screen refresh. If it just vanishes, we add a
+  one-refresh wait per step — that would be fidelity, not a new feature.
+- The stone bar at the start, and after bonuses push it past 2½ minutes — do grey stones appear over black ones?
+- The eight Season tiles all match each other, and nothing else cross-matches.
+- Level Statistics, row 2: the Wins box stays blank (the original's OK button shares its control number).
+- Clicking a wrong tile on a stack: upper-layer mismatch clears the selection, bottom-layer keeps it.
+- In "no more pairs": the Reshuffle button restores the frozen time; ⌘R charges from the clock as it kept running.
+- Leave the Give Up dialog open for 10 s: the clock, low-time tick and flashes keep going behind it. Did the
+  original's clock really keep running under that dialog? If so, letting the time run out under it, then clicking
+  OK, stops the map music and makes the next level end straight away — we copied that; tell us if you remember
+  otherwise.
+- The pressed look of the Tip and Reshuffle buttons.
+- Easy, reach "no more pairs", then ⌘Z: the board stays grey with the panel until the next full redraw.
+- Under 15 s with bonuses: the low-time tick plays once each time you drop below 16 s.
+- Fast clicks on two different tiles (the double-click guard is half your system double-click time).
+- Levels 3, 4, 8, 11 while a tile is selected: a small patch may flash at an unshifted spot.
+- The stacked ending: music stops, Reshuffle sound, the no-more-pairs panel, then "Tile Stacked".
+- Esc mid-level asks "Are you sure…?" first; quitting mid-level asks the same.
+- ⌘Tab out windowed (pauses) and fullscreen (only the music stops).
+- The tile-select click is `tilehit.mp3`.
