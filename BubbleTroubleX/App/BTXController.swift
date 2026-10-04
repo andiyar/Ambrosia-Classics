@@ -251,6 +251,15 @@ import HectorShell
                 if let savedMouse { CGWarpMouseCursorPosition(savedMouse) }
             case let .disableAbout(off): aboutDisabled = off
             case .beep: NSSound.beep()
+            // C6 front-end requests — A2 wires the front end; until then these are not emitted.
+            case .watchCursor: break                                    // A2: busy cursor (no public NSCursor)
+            case .closeDialog: break                                    // A2/A4: dispose the level-select dialog
+            case .levelSelectDialog: break                              // A4: DLOG 160
+            case .prefsDialog: break                                    // A4: DLOG 190
+            case .hiScoreEraseDialog: break                             // A4: DLOG 1001
+            case .modalDialog: break                                    // A4: DLOG 290/291/3000/3001
+            case .quit: break                                           // A2: quit through the prefs-saving path
+            case .displayFade: break                                    // A2: CGDisplayFade (full-screen splash)
             }
         }
         for cue in out.music { audio.apply(cue) }

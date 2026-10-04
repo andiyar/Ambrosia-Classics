@@ -99,7 +99,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(at(1315).music, [.load(set: 3)])
         XCTAssertEqual(at(1315).drawOps.last, .wipe(step: 6))
         XCTAssertEqual(at(1357 - 1).music, [])
-        XCTAssertEqual(at(1357).music, [.volume(0x100), .start])           // `_StartMusic`: bool 0x40, music 4
+        XCTAssertEqual(at(1357).music, [.start, .volume(0x100)])           // `_StartMusic`: bool 0x40, music 4
         XCTAssertEqual(at(1357).drawOps.first, .compToScreen(MainMenu.screenRect))
         XCTAssertEqual(fe.phase, .menu)
         XCTAssertEqual(fe.latches, SessionConfig().latches)                // process seed 1 → u 1, L 15
@@ -428,7 +428,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(fade.requests, [.modalDialog(id: 291)])           // same tick as the stop
         ticks(fe, 5, now: &now)
         XCTAssertEqual(fe.phase, .busy)
-        XCTAssertEqual(fe.dialogDone().music, [.resume, .volume(0x100), .start])
+        XCTAssertEqual(fe.dialogDone().music, [.resume, .start, .volume(0x100)])
         // R (Register) does nothing in the registered build; Q fades the music and quits through `_main`.
         _ = fe.key(0x0f, chars: "r", modifiers: KeyModifiers())
         XCTAssertTrue(sounds(ticks(fe, 3, now: &now)).isEmpty)
@@ -547,7 +547,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertFalse(fe.musicPlaying)
         // Back on the menu the loop restarts the title music.
         let back = ticks(fe, now: &now) { $0.phase != .menu } + fe.tick(now: now, keys: HeldKeys(), mouse: Self.away)
-        XCTAssertEqual(back.music, [.volume(0x100), .start])
+        XCTAssertEqual(back.music, [.start, .volume(0x100)])
     }
 
     func testSuspendResumeQueuedDuringSteps() throws {

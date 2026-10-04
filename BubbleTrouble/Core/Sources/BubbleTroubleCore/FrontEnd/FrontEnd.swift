@@ -483,9 +483,9 @@ public final class FrontEnd {
         return SessionOutput(music: [.load(set: BTXGameData.titleMusicSet)])
     }
 
-    /// `_StartMusic @ 0001ad8c` on the menu (no game running): the volume first — 0 unless bool 0x40 (title-screen
-    /// music), else by short 0x35 (1 → 0, 2 → 0x40, 3 → 0x80, 4 → 0x100) — then the play. The App applies the
-    /// `volume` cue to the music voice and must not override it at `start`.
+    /// `_StartMusic @ 0001ad8c` on the menu (no game running): the volume is 0 unless bool 0x40 (title-screen
+    /// music), else by short 0x35 (1 → 0, 2 → 0x40, 3 → 0x80, 4 → 0x100). The App's `.start` resets the voice
+    /// volume from short 0x35 (what game music needs after a fade), so the menu volume follows as `.volume(v)`.
     func startMusic() -> SessionOutput {
         guard musicLoaded else { return SessionOutput() }
         musicPlaying = true
@@ -496,7 +496,7 @@ public final class FrontEnd {
         default: 0
         }
         let volume = prefs.titleMusic ? byPref : 0
-        return SessionOutput(music: [.volume(volume), .start])
+        return SessionOutput(music: [.start, .volume(volume)])
     }
 
     /// `_StopMusic @ 0001afac`: when loaded, music volume not off (short 0x35 ≠ 1), the title music pref on (no
