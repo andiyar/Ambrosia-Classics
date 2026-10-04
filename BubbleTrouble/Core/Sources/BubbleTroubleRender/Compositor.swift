@@ -29,10 +29,9 @@ public final class Compositor {
     private let text: any TextRasterizer
     /// The step of the last `.wipe` op (`applyWipe` continues it).
     public private(set) var wipeStep: Int?
+    /// The step of the last `.wipeOut` op (`applyWipeOut` continues it).
+    public private(set) var wipeOutStep: Int?
 
-    /// `_TransSpriteToComp`'s lightening factor and offset (`_ASWPlotCIconHandle @ 000148cb`:
-    /// `DOUBLE_00033fb8` = −0.5, `DOUBLE_00033fc0` = 255.0).
-    static let transFactor = -0.5, transOffset = 255.0
     /// `_DrawInterfaceText`'s frame colour, `RGBForeColor(0xffff, 0x9999, 0)`.
     static let infoFrameRGB: UInt32 = 0xFF9900
     /// `gTextRect` = SetRect(0x9d, 0x1a9, 0x1e2, 0x1bd) and `gSrcTextRect` (sprite GWorld rows 92…112, same
@@ -108,9 +107,11 @@ public final class Compositor {
             withTarget(target) { Self.copyBits(from: source, src, to: &$0, dst, transparent: true) }
         case let .string(text, h, v, highlighted, fixedPitch, target):
             let source = spriteWorld
-            let placements = letters.layout(text, h: h, v: v, highlighted: highlighted, fixedPitch: fixedPitch)
+            let font = letters
             withTarget(target) { buffer in
-                for p in placements { Self.copyBits(from: source, p.src, to: &buffer, p.dst, transparent: true) }
+                font.forEachPlacement(text, h: h, v: v, highlighted: highlighted, fixedPitch: fixedPitch) { p in
+                    Self.copyBits(from: source, p.src, to: &buffer, p.dst, transparent: true)
+                }
             }
         case let .infoText(string, colour):
             infoText(string, colour: colour)
@@ -126,9 +127,22 @@ public final class Compositor {
             beginWipe(step: step)
         case let .fps(n):
             drawFPS(n)
-        case .compToSpriteWorld, .spriteWorldToComp, .compToBgnd, .wipeOut, .fillRect:
-            // C6 front-end ops (SeamTypes) — not drawn yet; R1 follow-up implements them.
-            break
+        case let .compToSpriteWorld(src, dst):
+            // `_CompToSpriteGWorld @ 00014e99`: CopyBits(comp → gSpriteGWorld, src, dst, 0 = srcCopy). The sprite
+            // GWorld is 546 × 112 at screen depth (`_CreateSpriteGWorld @ 0001eb37`: NewGWorld(…, 0, (0,0,0x222,
+            // 92 + 20), …)).
+            Self.copyBits(from: comp, src, to: &spriteWorld, dst, transparent: false)
+        case let .spriteWorldToComp(src, dst):
+            // `_SpriteGWorldToCompGWorld @ 00014ef0` / `_WorldSpriteToComp @ 00015206`: CopyBits srcCopy back.
+            Self.copyBits(from: spriteWorld, src, to: &comp, dst, transparent: false)
+        case let .compToBgnd(rect):
+            // `_CopyCompToBgnd @ 0001533f`: CopyBits(comp → bgnd, r, r, mode) — mode 0 (srcCopy) at the call site.
+            Self.copyBits(from: comp, rect, to: &bgnd, rect, transparent: false)
+        case let .wipeOut(step):
+            beginWipeOut(step: step)
+        case let .fillRect(rect, rgb, target):
+            // `_FillRect` (pattern black) under `RGBForeColor(rgb)`: a solid fill, clipped.
+            withTarget(target) { Self.paintRect(rect, rgb: rgb, in: &$0) }
         }
     }
 
@@ -272,6 +286,35 @@ public final class Compositor {
                             bottom: Int16(truncatingIfNeeded: 480 - row * step), right: 640)
         Self.copyBits(from: comp, top, to: &screen, top, transparent: false)
         Self.copyBits(from: comp, bottom, to: &screen, bottom, transparent: false)
+    }
+
+    /// `_WipeScreenOut @ 000074fc`: the number of band advances after the initial pair — the loop runs while the
+    /// rows swept (a `short`, + `step` per TickCount change) are ≤ `2·step + 240`, i.e. ⌊(2·step + 240) / step⌋ + 1
+    /// (63 at step 4).
+    public static func wipeOutSteps(_ step: Int) -> Int {
+        guard step > 0 else { return 0 }
+        var swept: Int16 = 0, n = 0
+        while Int(swept) <= step * 2 + 0xF0 { swept &+= Int16(truncatingIfNeeded: step); n += 1 }
+        return n
+    }
+
+    /// The pre-loop part of `_WipeScreenOut`: comp → screen over rows [240, 240 + step) and [240 − step, 240).
+    private func beginWipeOut(step: Int) {
+        wipeOutStep = step
+        applyWipeOut(row: 0)
+    }
+
+    /// Band advance `row` (1…`wipeOutSteps(step)`; 0 = the initial pair) of the last `.wipeOut` op: comp → screen
+    /// over rows [240 + row·step, 240 + step + row·step) (moving down) and [240 − step − row·step, 240 − row·step)
+    /// (moving up); rows outside 0…480 are clipped by CopyBits. The App calls it once per tick.
+    public func applyWipeOut(row: Int) {
+        guard let step = wipeOutStep else { return }
+        let down = QDRect(top: Int16(truncatingIfNeeded: 240 + row * step), left: 0,
+                          bottom: Int16(truncatingIfNeeded: 240 + step + row * step), right: 640)
+        let up = QDRect(top: Int16(truncatingIfNeeded: 240 - step - row * step), left: 0,
+                        bottom: Int16(truncatingIfNeeded: 240 - row * step), right: 640)
+        Self.copyBits(from: comp, down, to: &screen, down, transparent: false)
+        Self.copyBits(from: comp, up, to: &screen, up, transparent: false)
     }
 
     // MARK: - QuickDraw primitives

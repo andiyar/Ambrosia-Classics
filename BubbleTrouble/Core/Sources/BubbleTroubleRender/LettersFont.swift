@@ -85,14 +85,30 @@ public struct LettersFont: Equatable, Sendable {
     /// `char`) are skipped; each glyph lands at (h, v) with its own rect size and advances h by its width, or by
     /// `fixedPitch` (15 at the only call sites) — `_DrawLetter` writes the next h through `param_4` as a ushort.
     public func layout(_ text: String, h: Int, v: Int, highlighted: Bool, fixedPitch: Int?) -> [Placement] {
-        let bytes = Self.bytes(text)
+        var out: [Placement] = []
+        forEachPlacement(text, h: h, v: v, highlighted: highlighted, fixedPitch: fixedPitch) { out.append($0) }
+        return out
+    }
+
+    /// `layout` without building an array (the compositor's per-op path). An all-ASCII string is walked as its
+    /// UTF-8 bytes (identical to MacRoman there) with no conversion allocation.
+    public func forEachPlacement(_ text: String, h: Int, v: Int, highlighted: Bool, fixedPitch: Int?,
+                                 _ body: (Placement) -> Void) {
+        if text.utf8.allSatisfy({ $0 < 0x80 }) {
+            place(text.utf8, h: h, v: v, highlighted: highlighted, fixedPitch: fixedPitch, body)
+        } else {
+            place(Self.bytes(text), h: h, v: v, highlighted: highlighted, fixedPitch: fixedPitch, body)
+        }
+    }
+
+    private func place<C: Collection>(_ bytes: C, h: Int, v: Int, highlighted: Bool, fixedPitch: Int?,
+                                      _ body: (Placement) -> Void) where C.Element == UInt8 {
         var x = h
         if Int16(truncatingIfNeeded: h) == -1 {
             var total: Int16 = 0
             for b in bytes where b < 0x80 { total &+= Int16(truncatingIfNeeded: width(b)) }
             x = Int((640 - Int32(total)) / 2)
         }
-        var out: [Placement] = []
         for b in bytes where b < 0x80 {
             var src = glyphs[Int(b)]
             let w = Int(src.right) - Int(src.left), hgt = Int(src.bottom) - Int(src.top)
@@ -100,9 +116,8 @@ public struct LettersFont: Equatable, Sendable {
             if highlighted { src.offset(dx: 0, dy: Int16(Self.highlightOffset)) }
             let dst = QDRect(top: Int16(truncatingIfNeeded: v), left: Int16(truncatingIfNeeded: x),
                              bottom: Int16(truncatingIfNeeded: v + hgt), right: Int16(truncatingIfNeeded: next))
-            out.append(Placement(src: src, dst: dst))
+            body(Placement(src: src, dst: dst))
             if let pitch = fixedPitch { x += pitch } else { x = Int(Int16(truncatingIfNeeded: next)) }
         }
-        return out
     }
 }
