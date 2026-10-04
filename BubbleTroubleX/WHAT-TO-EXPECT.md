@@ -1,13 +1,23 @@
-# Bubble Trouble X — first playable build (M1)
+# Bubble Trouble X — playable build with the front end
 
-Double-click **Bubble Trouble X.app**. It opens a 640×480 window and goes straight into a new game at
-level 1 — there is no splash, title screen, menus, demo or high-score screen yet (they come next). When a
-game ends (lives gone, or Esc), a new game starts at level 1.
+Double-click **Bubble Trouble X.app**. It opens a 640×480 window: the Ambrosia logo, the loading screen with its
+progress bar, then the title screen (main menu), as the original did.
+
+## Title screen
+- Buttons highlight while the mouse is held on them and act when released inside; keys **N** / Return / Enter
+  New Game, **D** Demo, **S** Scores, **P** Prefs, **C** Credits, **Q** Quit, **L** level select.
+- Moving the mouse leaves a trail of stars; the box at the bottom cycles its messages every 3 s.
+- Leave it alone for 20 s: a demo plays (any key or click ends it); the next 20 s idle shows the scores, then a
+  demo again, and so on.
+- The pointer is the original's hand cursor (`crsr 200`).
+- **Not yet:** the dialogs (level select, Preferences, the high-score name entry, the erase-scores question, the
+  poem / quote pictures) — they close at once for now; the Scores and Credits screens are still empty (they
+  return straight to the menu). Both come next.
 
 ## Keys (the original's default key set)
 - **← → ↑ ↓** move, **Space** push
 - **Caps Lock** pauses while it is engaged (as the original: it reads the lock state); release it to go on
-- **Esc** ends the game (a new one starts)
+- **Esc** ends the game (back to the title screen)
 - **⌘Q** quits: in play the music fades out first, as the original did; quitting while playing does
   not save prefs, quitting while paused does — again as the original
 
