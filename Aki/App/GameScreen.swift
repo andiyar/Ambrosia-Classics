@@ -33,24 +33,26 @@ import HectorShell
     // MARK: - Level start (P2.10)
 
     /// `_AnimationMapScreenToCustom` @ 0x10f5f (DC:6550–6658), then `_LoadLayout`'s tail (DC:7649–7650). The
-    /// game is stored first (every drawing routine returns while it is nil). The music switches to the last
-    /// game track; `background<g+0x8e>.png` replaces the background GWorld; LevelStart.aiff; the slide-in —
+    /// game is stored first (every drawing routine returns while it is nil). `background<g+0x8e>.png` replaces
+    /// the background GWorld (DC:6582–6585), then the music switches to the last game track (the stop/switch
+    /// of DC:6572–6579 and the start of DC:6586–6595 — stop-before-load is unobservable, so they are one call
+    /// after the load); LevelStart.aiff; the slide-in —
     /// the map (scratch2c, as the map loop left it) parts outward over the background; then g+0x66 = 1 (game),
     /// g+0x67/0x85/0x86/0x87 = 0, g+0x88 = 2 (DC:6626–6632); the clock starts (a8 = now, ac/b0/b4/c0 = 0,
-    /// b8 = 150, g+0x84 = 0 and g+0x4c — `startClock`, DC:6628, DC:6633–6643); `_RedrawCustomGameScreen(0)`;
-    /// then `_DrawGameTiles` (greyed reads g+0x60) and `_RedrawEntireWindow`. The trailing `_DrawToGWorld` after the
+    /// b8 = 150, g+0x84 = 0 — `startClock`, DC:6628, DC:6633–6640); `_RedrawCustomGameScreen(0)`; g+0x4c = a
+    /// fresh TickCount after it (DC:6641–6643); then `_DrawGameTiles` (greyed reads g+0x60) and `_RedrawEntireWindow`. The trailing `_DrawToGWorld` after the
     /// slide loop (DC:6624, empty rects at s = 400) is not transcribed; the menu enabling and the "Give Up"
     /// title (DC:6644–6656) follow from `validateMenuItem` reading g.mode.
-    func startLevel(_ game: AkiGame) {                                                    // P2.10
-        self.game = game
+    func startLevel(_ fresh: AkiGame) {                                                   // P2.10
+        game = fresh
         let g = controller.g
         let gw = controller.gworlds!
-        controller.music.startGameTrack()
         do {
             gw.background = try controller.assets.png("background\(g.background)")
         } catch {
             fatalError("Aki: cannot load background\(g.background).png: \(error)")   // _CreateGWorld
         }
+        controller.music.startGameTrack()
         controller.sound.play(.levelStart, volume: 0x100)
         slide(middle: gw.background, offset: AkiGameArt.slideIn(ticks:))
         g.mode = .game
@@ -61,6 +63,7 @@ import HectorShell
         g.flashPhase = 2
         self.game?.startClock(now: ShellClock.ticks())
         redrawCustomGameScreen(tiles: false)
+        self.game?.lastClickTick = ShellClock.ticks()                       // DC:6641–6643
         drawGameTiles(greyed: self.game?.openPairs == 0)
         redrawEntireWindow()
     }
@@ -107,18 +110,26 @@ import HectorShell
     /// (DC:5605–5631), a busy loop paced by the tick count alone: s from the unsigned tick delta (clamped to 60
     /// by `offset`); left and right from scratch2c, the middle from `middle`, flushed on the third copy only;
     /// until the clamped delta reaches 60. `CATransaction.flush()` puts each frame on screen (as `runFade`).
+    /// A pass whose clamped delta equals the last drawn one is skipped — its frame would be bit-identical —
+    /// so the first pass and the final (delta 60) frame are always drawn; each pass drains its own pool.
     private func slide(middle: ShellBitmap, offset: (Int) -> Int) {
         let gw = controller.gworlds!
         let start = ShellClock.ticks()
-        var delta: Int
+        var drawn = -1
+        var clamped = 0
         repeat {
-            delta = Int(ShellClock.ticks() &- start)
-            let r = AkiGameArt.slideRects(offset(delta))
-            controller.drawToWindow(gw.scratch2c, srcRect: r[0].src, dstRect: r[0].dst, flush: false)
-            controller.drawToWindow(middle, srcRect: r[1].src, dstRect: r[1].dst, flush: false)
-            controller.drawToWindow(gw.scratch2c, srcRect: r[2].src, dstRect: r[2].dst, flush: true)
-            CATransaction.flush()
-        } while delta < 60
+            autoreleasepool {
+                let delta = Int(ShellClock.ticks() &- start)
+                clamped = (delta < 0 || delta > 60) ? 60 : delta        // the clamp of `slideIn` / `slideOut`
+                guard clamped != drawn else { return }
+                drawn = clamped
+                let r = AkiGameArt.slideRects(offset(clamped))
+                controller.drawToWindow(gw.scratch2c, srcRect: r[0].src, dstRect: r[0].dst, flush: false)
+                controller.drawToWindow(middle, srcRect: r[1].src, dstRect: r[1].dst, flush: false)
+                controller.drawToWindow(gw.scratch2c, srcRect: r[2].src, dstRect: r[2].dst, flush: true)
+                CATransaction.flush()
+            }
+        } while clamped < 60
     }
 
     // MARK: - The event executor (P2.10)
@@ -145,7 +156,11 @@ import HectorShell
             case .pauseGame(let on): pauseGame(on)
             case .dialog(let id):
                 // `_CreateNewDialog(0x47)` (DC:8005), "Tile Stacked" — the only dialog AkiGame emits.
-                if id == 0x47 { _ = CarbonDialog.run("Stacked", controller: controller) }
+                if id == 0x47 {
+                    _ = CarbonDialog.run("Stacked", controller: controller)
+                } else {
+                    assertionFailure("unexpected dialog id \(id)")
+                }
             case .setNoPairsFlash(let on): g.noPairsFlash = on
             case .setLost: g.lost = true
             case .setCustomLost: g.customLost = true
@@ -175,11 +190,11 @@ import HectorShell
 
     // MARK: - Give Up (P2.11)
 
-    /// `-[Controller abortGame]` @ 0x3cbc (DC:974–1002): the "LoadLevel" dialog (`_CreateNewDialog(0x57)`, "Are
+    /// `-[Controller abortGame]` @ 0x3cbc (DC:972–995): the "LoadLevel" dialog (`_CreateNewDialog(0x57)`, "Are
     /// you sure you want to end this game?"); `ok  ` (g+0x81) → g+0x81 = 0, g+0x68 = 1, the current music track
-    /// stops, give-ups[g+0x90] += 1 (built-in levels only, in `Stats`), `_SavePrefs`, YES; else NO. The game is
-    /// not paused under the dialog (Q25) and no proverb follows (rules §14); the next game tick leaves the level
-    /// (`idle`'s g+0x68 branch).
+    /// stops, give-ups[g+0x90] += 1 (built-in levels only, in `Stats`; g+0x90 survives a leave, DC:990–993),
+    /// `_SavePrefs`, YES; else NO. The game is not paused under the dialog (Q25) and no proverb follows
+    /// (rules §14); the next game tick leaves the level (`idle`'s g+0x68 branch).
     func abortGame() -> Bool {                                                            // P2.11
         let g = controller.g
         _ = CarbonDialog.run("LoadLevel", controller: controller)
@@ -187,7 +202,7 @@ import HectorShell
         g.dialogOK = false
         g.endLevel = true
         controller.music.stopCurrent()
-        if let level = game?.levelIndex {
+        if let level = g.levelIndex {
             Stats.recordGiveUp(&controller.p, level: level)
         }
         controller.savePrefs()
@@ -337,7 +352,7 @@ import HectorShell
         redrawCustomGameScreen(tiles: !controller.g.paused)
     }
 
-    /// `-[Controller pause]` @ 0x3c1f (DC:950–970): b8 < 16 → tick.mp3 stops; with pairs, unpaused →
+    /// `-[Controller pause]` @ 0x3c1f (DC:948–969): b8 < 16 → tick.mp3 stops; with pairs, unpaused →
     /// `_PauseGame(1)`, already paused → g+0x7f = 1 (so `unpause` leaves the player's own pause alone).
     func pause() {                                                                        // P2.11
         guard let remaining = game?.clock.remaining, let openPairs = game?.openPairs else { return }

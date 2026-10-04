@@ -34,7 +34,8 @@ import AkiCore
     /// Builds `name` from Aki.nib/objects.xib, runs it app-modal; returns the HICommand of the button
     /// that closed it ("ok  ", "not!"). `configure` fills dynamic controls by controlID (Stats, P2.11).
     /// P2.11 semantics (no signature change): `controlsByID` keeps the FIRST control per ID in nib subview
-    /// order (GetControlByID); `configure` writes text to static texts only.
+    /// order (GetControlByID); callers' `configure` writes only to static texts
+    /// (`run` does not enforce it; `showStatistics` casts to `NSTextField`).
     static func run(_ name: String, controller: AkiController,
                     configure: ((_ controlsByID: [Int: NSView]) -> Void)? = nil) -> String? {
         let nibWindow: CarbonNib.Window
