@@ -157,3 +157,28 @@ evidence; Invariant 4) · tagging `v0.3.0` to leave `v0.2.0` for the shell sessi
 **Still open:** the formal P2 gate (each of Hard / Medium / Easy / Practice start to finish, "it plays like Aki") — re-stage
 after the fade fix and ask Ben then.
 **Approved by:** Ben 2026-10-04 (items 1–3, in his words).
+
+---
+
+## D7 — Aki on iPad: Ben's six rulings, sequencing, cap (2026-10-04)
+
+**Decided (Ben, answering `docs/plans/2026-10-04-aki-ipad.md` §0):**
+- **Sequencing:** the iPad version comes BEFORE Phase 3 ("custom levels are much less exciting for me").
+- **R1 — menu-only commands:** "undo doesn't actually work in Aki, that would be cheating" (true on Hard/Medium: the
+  original enables Undo only when difficulty > 1, i.e. Easy/Practice — rules.md §10). Undo gets NO on-screen control; it
+  stays the original menu command (iPadOS 26 menu bar + ⌘Z on a hardware keyboard, enabled exactly as on the Mac). **Give
+  Up gets an on-screen control: an X at the top left** — placed in the black border outside the 800×600 canvas (R3), so
+  the drawn screen is untouched. Every other menu command lives in the iPadOS 26 menu bar from the same nib XML.
+- **R2 — map hover preview:** first tap on a lantern previews it (the hover state + `Preview.aiff`), a second tap on the
+  same lantern enters; a tap on another lantern moves the preview.
+- **R3 — scaling:** borders — the largest INTEGER scale that fits, black border (mini 2×, Air 2×, 13" Pro 3×). Crisp.
+- **R4 — Quit:** drawn, non-functional on iPad ("oh well").
+- **R5 — device:** doesn't matter; **iPadOS 26+** floor. The paired iPad mini (A17 Pro) is the first install target.
+- **R6 — HectorKit:** "fork" it — do the work on a HectorKit branch, merge back. Ruled mechanics: branch `ipad` in a
+  HectorKit worktree, reviewed, macOS floor (167) unchanged + HectorShell builds for iOS, then ff-merged to HectorKit main
+  (Classics sees HectorKit through the shared `.claude/worktrees/HectorKit` symlink, so it consumes merged HectorKit only).
+- **Cap:** Opus seat, cap lifted, one session, "just go for it".
+
+**Rejected:** on-screen Undo (cheating, and disabled on Hard/Medium anyway); tap-hover via trackpad only (Ben chose
+tap-to-preview); fit scaling (soft); Aki-local shell (Ben chose the fork-and-merge-back).
+**Approved by:** Ben 2026-10-04, in his words.
