@@ -221,3 +221,13 @@ Ben asked whether difficulty changes the timer: every level starts at 150 s on e
 penalties, Undo (Easy/Practice only) and Practice's frozen clock (rules.md §10) — all in AkiCore. No change.
 Q24 ruling as built: one full-tick wait per present (plan Q24 row ⚑). Next: the iPad version (D7), then Phase 3.
 **Approved by:** Ben 2026-10-04.
+
+---
+
+## D10 — Distributing the original game data is fine (2026-10-04)
+
+**Decided (Ben):** "There is also no issue distributing files. All ASW files were full shareware downloads anyway. And ASW
+released a key unlock." Public builds may ship each game's original data inside the app (plug-and-play, as EV ARM plans).
+The README says so. **Unchanged for now:** the data stays out of git (`Resources/` ignored, invariant 3) — staged apps
+carry it; committing data to the repo would be its own ruling.
+**Approved by:** Ben 2026-10-04.
