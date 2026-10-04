@@ -24,6 +24,7 @@ final class RenderTests: XCTestCase {
         // Every cicn of the five files decodes (331 sprites + cicn 128, 1000–1002 in the app file, R9).
         XCTAssertEqual(art.cicnIDs.count, 335)
         for id in art.cicnIDs { XCTAssertNoThrow(try art.cicn(id), "cicn \(id)") }
+        XCTAssertNoThrow(try art.prewarm())
         // The flat loaded-sprite array: 52 sets, 325 frames, every one a decodable cicn.
         XCTAssertEqual(art.setOffset.count, 52)
         XCTAssertEqual(art.flatCICN.count, 325)
@@ -74,6 +75,7 @@ final class RenderTests: XCTestCase {
         }
         XCTAssertEqual(data.fileName(containingType: "snd ", id: 9047), BTXGameData.appFileName)
         XCTAssertEqual(try bank.effect(slot: 5), try bank.pcm(9005))
+        XCTAssertNoThrow(try bank.prewarm())
     }
 
     // MARK: - Level picture, score bar
@@ -162,12 +164,13 @@ final class RenderTests: XCTestCase {
         comp.apply([.sprite(set: 0, frame: 1, h: 100, v: 120, mode: .normal),
                     .sprite(set: 0x34, frame: 99, h: 100, v: 120, mode: .normal)])
         XCTAssertEqual(comp.comp, before)
-        // `_TransSpriteToComp`: masked pixels lightened halfway to white, (255 + c) >> 1; pure white dropped.
+        // `_TransSpriteToComp`: masked pixels lightened halfway to white, (255 + c) >> 1 — pure white drawn too
+        // (10.5+; set 2 frame 1.. holds a white pixel, checked below).
         comp.apply(.sprite(set: 1, frame: 1, h: 300, v: 300, mode: .transparent))
         for v in 0..<40 {
             for h in 0..<40 {
                 let p = icon[h, v], out = comp.comp[300 + h, 300 + v]
-                if p >> 24 == 0 || p & 0xFFFFFF == 0xFFFFFF { XCTAssertEqual(out, RGBAImage.opaqueBlack); continue }
+                if p >> 24 == 0 { XCTAssertEqual(out, RGBAImage.opaqueBlack); continue }
                 let r = (255 + (p >> 16 & 0xFF)) >> 1, g = (255 + (p >> 8 & 0xFF)) >> 1, b = (255 + (p & 0xFF)) >> 1
                 let want = 0xFF00_0000 | r << 16 | g << 8 | b
                 XCTAssertEqual(out, want)

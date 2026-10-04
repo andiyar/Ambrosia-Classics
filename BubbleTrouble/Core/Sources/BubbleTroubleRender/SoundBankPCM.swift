@@ -35,6 +35,11 @@ public final class SoundBankPCM {
         return pcm
     }
 
+    /// Decode all 52 sounds now (the App calls it at launch). Throws the first failure.
+    public func prewarm() throws {
+        for id in Self.allIDs { _ = try pcm(id) }
+    }
+
     /// The effect a `SoundCue` names: slot 0…47 → `snd 9000 + slot`.
     public func effect(slot: Int) throws -> SndPCM {
         try pcm(9000 + slot)

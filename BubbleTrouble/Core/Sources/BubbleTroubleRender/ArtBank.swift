@@ -105,4 +105,11 @@ public final class ArtBank {
 
     /// Every `PICT` id across the five files.
     public var pictIDs: [Int] { data.ids(of: "PICT") }
+
+    /// Decode every `cicn` and `PICT` now (the App calls it at launch so no frame pays a first-use decode).
+    /// Throws the first failure.
+    public func prewarm() throws {
+        for id in cicnIDs { _ = try cicn(id) }
+        for id in pictIDs { _ = try pict(id) }
+    }
 }

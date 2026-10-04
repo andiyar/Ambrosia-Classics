@@ -8,6 +8,8 @@ public protocol TextRasterizer {
     /// position (`MoveTo`): `h` = left edge, `v` = BASELINE. With `centredIn`, `h` is replaced by
     /// `rect.left + ((rect.right − rect.left) − StringWidth(s)) / 2` (C truncating division), as
     /// `_DrawInterfaceText @ 0000898d` computes it.
+    /// Every pixel written must be opaque (alpha 0xFF): the compositor's buffers are opaque and its srcCopy
+    /// moves pixels unchanged.
     func rasterize(_ s: String, font: String, size: Int, rgb: UInt32, into: inout RGBAImage,
                    at: (h: Int, v: Int), centredIn: QDRect?)
     /// QuickDraw `StringWidth`: the pen advance of `s` (`_DrawFPS @ 00016f72` draws "FPS: " and the number in

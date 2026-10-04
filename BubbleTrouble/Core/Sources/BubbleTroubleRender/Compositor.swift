@@ -7,7 +7,11 @@ import Foundation
 /// `spriteWorld` (546×112: the Letters strips + the info-box background stash, `_CreateSpriteGWorld`), and
 /// `screen` (the window, 640×480) which the App presents.
 ///
-/// Not `Sendable`; used on the App's main actor.
+/// On OS X the original's `_PlayGame` draws its sprites straight into the window (`_SetToScreen` in force,
+/// `_RestoreBgnd(0)` → `_BgndToScreen`) and only the HUD goes through comp; the ops say which buffer via `target`.
+///
+/// Not `Sendable`; used on the App's main actor. The buffers are value types: read `screen` to present it and drop
+/// the copy before the next `apply` — holding it across frames makes the next write copy the whole buffer (COW).
 public final class Compositor {
     public static let width = 640, height = 480
     /// Playfield height: `_RestoreBgndRect` clips to it, the score bar lives below it (FI §6a).
@@ -68,13 +72,15 @@ public final class Compositor {
         switch op {
         case let .drawMaze(pictID):
             drawMaze(pictID: pictID)
-        case let .restoreBgnd(rect):
-            restoreBgnd(rect)
-        case let .sprite(set, frame, h, v, mode):
+        case let .restoreBgnd(rect, target):
+            restoreBgnd(rect, target: target)
+        case let .sprite(set, frame, h, v, mode, target):
             guard let icon = art.sprite(set: set, frame: frame) else { return }
-            switch mode {
-            case .normal: Self.plotIcon(icon, h: h, v: v, into: &comp)
-            case .transparent: Self.plotIconTranslucent(icon, h: h, v: v, into: &comp)
+            withTarget(target) { buffer in
+                switch mode {
+                case .normal: Self.plotIcon(icon, h: h, v: v, into: &buffer)
+                case .transparent, .ghost: Self.plotIconTranslucent(icon, h: h, v: v, into: &buffer)
+                }
             }
         case let .spriteToBgnd(set, frame, h, v):
             guard let icon = art.sprite(set: set, frame: frame) else { return }
@@ -89,6 +95,8 @@ public final class Compositor {
             Self.copyBits(from: score, src, to: &comp, rect, transparent: false)
         case let .compToScreen(rect):
             Self.copyBits(from: comp, rect, to: &screen, rect, transparent: false)
+        case let .screenToComp(rect):
+            Self.copyBits(from: screen, rect, to: &comp, rect, transparent: false)
         case let .pict(id, dst, target):
             guard let p = try? art.pict(id) else { return }
             withTarget(target) { Self.drawPicture(p, in: dst, into: &$0) }
@@ -111,7 +119,7 @@ public final class Compositor {
         case let .frameRect(rect, rgb, target):
             withTarget(target) { Self.frameRect(rect, rgb: rgb, in: &$0) }
         case let .fillBlack(target):
-            withTarget(target) { $0 = RGBAImage(width: $0.width, height: $0.height) }
+            withTarget(target) { Self.fill(&$0, RGBAImage.opaqueBlack) }
         case let .patternOverlay(index):
             patternOverlay(index: index)
         case let .wipe(step):
@@ -136,8 +144,8 @@ public final class Compositor {
     /// port bounds), then `_DrawAndCentrePict(LEVL w1)` into bgnd and into comp. (The score bar and the maze-cell
     /// sprites — into comp only — are the following `.prepareScoreBar` / `.sprite` ops.)
     private func drawMaze(pictID: Int) {
-        bgnd = RGBAImage(width: Self.width, height: Self.height)
-        comp = RGBAImage(width: Self.width, height: Self.height)
+        Self.fill(&bgnd, RGBAImage.opaqueBlack)
+        Self.fill(&comp, RGBAImage.opaqueBlack)
         guard let p = try? art.pict(pictID) else { return }
         let dst = Self.centredRect(width: p.width, height: p.height)
         Self.drawPicture(p, in: dst, into: &bgnd)
@@ -167,15 +175,17 @@ public final class Compositor {
     /// unless right ≥ 0, left < 641, top < 441, bottom ≥ 0; then `left < 0 → left = 0` ELSE `right > 640 →
     /// right = 640`, and `top < 0 → top = 0` ELSE `bottom > 440 → bottom = 440` (so a rect straddling an edge keeps
     /// its far side unclipped, as the original did — CopyBits then clips to the GWorld); copied only when
-    /// non-empty. Source and destination are the same rect.
-    private func restoreBgnd(_ rect: QDRect) {
+    /// non-empty. Source and destination are the same rect; `target` .comp = `_BgndToComp`, .screen =
+    /// `_BgndToScreen` (the OS X double-buffered branch at 00015cda).
+    private func restoreBgnd(_ rect: QDRect, target: DrawTarget) {
         var top = Int(rect.top), left = Int(rect.left), bottom = Int(rect.bottom), right = Int(rect.right)
         guard right >= 0, left < 0x281, top < 0x1b9, bottom >= 0 else { return }
         if left < 0 { left = 0 } else if right > 0x280 { right = 0x280 }
         if top < 0 { top = 0 } else if bottom > 0x1b8 { bottom = 0x1b8 }
         guard right > left, bottom > top else { return }
         let r = QDRect(top: Int16(top), left: Int16(left), bottom: Int16(bottom), right: Int16(right))
-        Self.copyBits(from: bgnd, r, to: &comp, r, transparent: false)
+        let source = bgnd
+        withTarget(target) { Self.copyBits(from: source, r, to: &$0, r, transparent: false) }
     }
 
     // MARK: - Front-end pieces
@@ -208,11 +218,12 @@ public final class Compositor {
     /// index, pattern-aligned to the port origin. Ben compares.
     private func patternOverlay(index: Int) {
         _ = index
-        let rows: [UInt8] = [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55]
-        for v in 0..<comp.height {
-            let bits = rows[v & 7]
-            for h in 0..<comp.width where bits & (0x80 >> UInt8(h & 7)) != 0 {
-                comp[h, v] = RGBAImage.opaqueBlack
+        let w = comp.width, hgt = comp.height
+        comp.pixels.withUnsafeMutableBufferPointer { d in
+            for v in 0..<hgt {
+                let bits: UInt8 = v & 1 == 0 ? 0xAA : 0x55
+                let row = v * w
+                for h in 0..<w where bits & (0x80 >> UInt8(h & 7)) != 0 { d[row + h] = RGBAImage.opaqueBlack }
             }
         }
     }
@@ -263,23 +274,42 @@ public final class Compositor {
     // MARK: - QuickDraw primitives
 
     /// `CopyBits` srcCopy (mode 0) or transparent (mode 0x24: a source pixel equal to the BackColor — white at
-    /// every call site — is not copied). Equal-size rects copy 1:1; different sizes stretch (nearest, as
-    /// QuickDraw's srcCopy scaling). Clipped to both buffers.
+    /// every call site — is not copied). Equal-size rects copy 1:1 (srcCopy: one row move per row); different
+    /// sizes stretch (nearest, as QuickDraw's srcCopy scaling). Clipped to both buffers. Every buffer the
+    /// compositor owns is opaque, so srcCopy moves pixels as they are.
     static func copyBits(from src: RGBAImage, _ srcRect: QDRect, to dst: inout RGBAImage, _ dstRect: QDRect,
                          transparent: Bool) {
         let dl = Int(dstRect.left), dt = Int(dstRect.top), dw = Int(dstRect.right) - dl, dh = Int(dstRect.bottom) - dt
         let sl = Int(srcRect.left), st = Int(srcRect.top), sw = Int(srcRect.right) - sl, sh = Int(srcRect.bottom) - st
         guard dw > 0, dh > 0, sw > 0, sh > 0 else { return }
-        let x0 = max(dl, 0), x1 = min(dl + dw, dst.width), y0 = max(dt, 0), y1 = min(dt + dh, dst.height)
+        let sWidth = src.width, sHeight = src.height, dWidth = dst.width, dHeight = dst.height
+        if dw == sw && dh == sh {
+            // 1:1 — clip the destination so the matching source stays inside its buffer too.
+            let x0 = max(dl, 0, dl - sl), x1 = min(dl + dw, dWidth, dl - sl + sWidth)
+            let y0 = max(dt, 0, dt - st), y1 = min(dt + dh, dHeight, dt - st + sHeight)
+            guard x0 < x1, y0 < y1 else { return }
+            let count = x1 - x0, dx = sl - dl, dy = st - dt
+            src.pixels.withUnsafeBufferPointer { s in
+                dst.pixels.withUnsafeMutableBufferPointer { d in
+                    guard let sBase = s.baseAddress, let dBase = d.baseAddress else { return }
+                    for y in y0..<y1 {
+                        let from = sBase + ((y + dy) * sWidth + x0 + dx), to = dBase + (y * dWidth + x0)
+                        if !transparent { to.update(from: from, count: count); continue }
+                        for i in 0..<count where from[i] & 0x00FF_FFFF != 0x00FF_FFFF { to[i] = from[i] | 0xFF00_0000 }
+                    }
+                }
+            }
+            return
+        }
+        let x0 = max(dl, 0), x1 = min(dl + dw, dWidth), y0 = max(dt, 0), y1 = min(dt + dh, dHeight)
         guard x0 < x1, y0 < y1 else { return }
-        let sWidth = src.width, sHeight = src.height, dWidth = dst.width
         src.pixels.withUnsafeBufferPointer { s in
             dst.pixels.withUnsafeMutableBufferPointer { d in
                 for y in y0..<y1 {
-                    let sy = st + (dh == sh ? y - dt : (y - dt) * sh / dh)
+                    let sy = st + (y - dt) * sh / dh
                     guard sy >= 0, sy < sHeight else { continue }
                     for x in x0..<x1 {
-                        let sx = sl + (dw == sw ? x - dl : (x - dl) * sw / dw)
+                        let sx = sl + (x - dl) * sw / dw
                         guard sx >= 0, sx < sWidth else { continue }
                         let p = s[sy * sWidth + sx]
                         if transparent && p & 0x00FF_FFFF == 0x00FF_FFFF { continue }
@@ -290,40 +320,44 @@ public final class Compositor {
         }
     }
 
+    /// Every pixel of `image` set to `value`, in place (no allocation).
+    static func fill(_ image: inout RGBAImage, _ value: UInt32) {
+        image.pixels.withUnsafeMutableBufferPointer { $0.update(repeating: value) }
+    }
+
     /// `PlotCIcon` (`_SpriteToComp @ 00015398` / `_SpriteToBgnd @ 00015567` → `_ASWPlotCIcon @ 000147c4`, which on
     /// every OS X but 10.4 calls `PlotCIcon` itself): the icon's pixels where its mask is set, at (h, v), clipped.
     static func plotIcon(_ icon: RGBAImage, h: Int, v: Int, into dst: inout RGBAImage) {
-        blit(icon, h: h, v: v, into: &dst) { p, _ in p | 0xFF00_0000 }
+        blit(icon, h: h, v: v, into: &dst, lighten: false)
     }
 
-    /// `_TransSpriteToComp @ 0001566e` → `_ASWPlotCIconHandle(r, 0, 1, icon) @ 000148cb`: the icon plotted into the
-    /// white-erased trans GWorld (32-bit, native-endian — `NewGWorld(…, 0x20, …, 0x100)`, so bytes 0–2 are B,G,R),
-    /// every colour byte replaced by `(int)((255 − c) · −0.5 + 255.0)` = `(255 + c) >> 1` (lightened halfway to
-    /// white), then `CopyBits` mode 0x24 to comp — white (the erased background, and any pure-white icon pixel)
-    /// is not copied. The explicit arithmetic is the binary's own (its 10.4 path; elsewhere it defers to the
-    /// system's `PlotCIconHandle` "disabled" transform, which the binary does not spell out).
+    /// `_TransSpriteToComp @ 0001566e` → `_ASWPlotCIconHandle(r, 0, 1, icon) @ 000148cb` (and, for `.ghost`,
+    /// `_PlotCIconHandle(r, 0, 3, icon)`): the masked icon pixels lightened halfway to white — the binary's own
+    /// arithmetic, `(int)((255 − c) · −0.5 + 255.0)` = `(255 + c) >> 1` per colour byte. On 10.5+ (the OS X the
+    /// replica follows) the system transform draws every masked pixel, pure white included; only the 10.4 branch
+    /// (erase-white trans GWorld + CopyBits mode 0x24) dropped white ones. Ghost (`kTransformOpen`) lightens the
+    /// same way (reviewer measurement, orchestrator ruling).
     static func plotIconTranslucent(_ icon: RGBAImage, h: Int, v: Int, into dst: inout RGBAImage) {
-        blit(icon, h: h, v: v, into: &dst) { p, _ in
-            if p & 0x00FF_FFFF == 0x00FF_FFFF { return nil }
-            func lighten(_ c: UInt32) -> UInt32 { UInt32(Int(Double(255 - Int(c)) * transFactor + transOffset)) }
-            return 0xFF00_0000 | lighten(p >> 16 & 0xFF) << 16 | lighten(p >> 8 & 0xFF) << 8 | lighten(p & 0xFF)
-        }
+        blit(icon, h: h, v: v, into: &dst, lighten: true)
     }
 
-    /// Masked blit: for every icon pixel with alpha ≠ 0 inside `dst`, `transform(icon pixel, dst pixel)` (nil =
-    /// leave the destination).
-    private static func blit(_ icon: RGBAImage, h: Int, v: Int, into dst: inout RGBAImage,
-                             _ transform: (UInt32, UInt32) -> UInt32?) {
+    /// Masked blit: every icon pixel with alpha ≠ 0 inside `dst` is written opaque — as is, or lightened
+    /// `(255 + c) >> 1` per channel.
+    private static func blit(_ icon: RGBAImage, h: Int, v: Int, into dst: inout RGBAImage, lighten: Bool) {
         let x0 = max(h, 0), x1 = min(h + icon.width, dst.width), y0 = max(v, 0), y1 = min(v + icon.height, dst.height)
         guard x0 < x1, y0 < y1 else { return }
         let iw = icon.width, dw = dst.width
         icon.pixels.withUnsafeBufferPointer { s in
             dst.pixels.withUnsafeMutableBufferPointer { d in
                 for y in y0..<y1 {
+                    let sRow = (y - v) * iw - h, dRow = y * dw
                     for x in x0..<x1 {
-                        let p = s[(y - v) * iw + (x - h)]
+                        let p = s[sRow + x]
                         guard p >> 24 != 0 else { continue }
-                        if let out = transform(p, d[y * dw + x]) { d[y * dw + x] = out }
+                        d[dRow + x] = lighten
+                            ? 0xFF00_0000 | ((0xFF + (p >> 16 & 0xFF)) >> 1) << 16 | ((0xFF + (p >> 8 & 0xFF)) >> 1) << 8
+                                | (0xFF + (p & 0xFF)) >> 1
+                            : p | 0xFF00_0000
                     }
                 }
             }
@@ -365,21 +399,34 @@ public final class Compositor {
         let x0 = max(Int(rect.left), 0), x1 = min(Int(rect.right), dst.width)
         let y0 = max(Int(rect.top), 0), y1 = min(Int(rect.bottom), dst.height)
         guard x0 < x1, y0 < y1 else { return }
-        for y in y0..<y1 { for x in x0..<x1 { dst[x, y] = 0xFF00_0000 | rgb } }
+        let w = dst.width, value = 0xFF00_0000 | rgb
+        dst.pixels.withUnsafeMutableBufferPointer { d in
+            guard let base = d.baseAddress else { return }
+            for y in y0..<y1 { (base + (y * w + x0)).update(repeating: value, count: x1 - x0) }
+        }
     }
+
+    /// The blend tables of the two `OpColor`s the game uses.
+    private static let blend7FFF = (0..<256).map { QuickDrawColour.blendTowardBlack(UInt32($0), opColor: 0x7FFF) }
+    private static let blend8FFF = (0..<256).map { QuickDrawColour.blendTowardBlack(UInt32($0), opColor: 0x8FFF) }
 
     /// `PaintRect` black with `PenMode(blend)` and an equal-component `OpColor` (`QuickDrawColour.blendTowardBlack`).
     static func blendRectTowardBlack(_ rect: QDRect, opColor: UInt32, in dst: inout RGBAImage) {
         let x0 = max(Int(rect.left), 0), x1 = min(Int(rect.right), dst.width)
         let y0 = max(Int(rect.top), 0), y1 = min(Int(rect.bottom), dst.height)
         guard x0 < x1, y0 < y1 else { return }
-        var lut = [UInt32](repeating: 0, count: 256)
-        for c in 0..<256 { lut[c] = QuickDrawColour.blendTowardBlack(UInt32(c), opColor: opColor) }
-        for y in y0..<y1 {
-            for x in x0..<x1 {
-                let p = dst[x, y]
-                dst[x, y] = 0xFF00_0000 | lut[Int(p >> 16 & 0xFF)] << 16 | lut[Int(p >> 8 & 0xFF)] << 8
-                    | lut[Int(p & 0xFF)]
+        let table = opColor == 0x7FFF ? blend7FFF : opColor == 0x8FFF ? blend8FFF
+            : (0..<256).map { QuickDrawColour.blendTowardBlack(UInt32($0), opColor: opColor) }
+        let w = dst.width
+        table.withUnsafeBufferPointer { lut in
+            dst.pixels.withUnsafeMutableBufferPointer { d in
+                for y in y0..<y1 {
+                    for i in (y * w + x0)..<(y * w + x1) {
+                        let p = d[i]
+                        d[i] = 0xFF00_0000 | lut[Int(p >> 16 & 0xFF)] << 16 | lut[Int(p >> 8 & 0xFF)] << 8
+                            | lut[Int(p & 0xFF)]
+                    }
+                }
             }
         }
     }

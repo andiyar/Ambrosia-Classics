@@ -65,14 +65,20 @@ public enum DrawOp: Equatable, Sendable {
         /// (transparent) rect copy from the sprite GWorld with no SpIc addressing; its only caller is
         /// `_DrawLetter @ 0001e3be`, i.e. it belongs to `.string`, not to `.sprite`.
         case transparent
+        /// `_SpriteToComp` with `gGhostIcons` set (pause cheat 0x21dd0a7): `_PlotCIconHandle(r, 0, 3, icon)`
+        /// (`kTransformOpen`) instead of `_ASWPlotCIcon` — drawn lightened like the disabled transform.
+        case ghost
     }
 
     /// `_DrawMaze @ 00025daa`: PICT `pictID` (LEVL word 1) into bgnd and comp.
     case drawMaze(pictID: Int)
-    /// `_RestoreBgnd @ 00015dbe`: bgnd → comp over one dirty rect.
-    case restoreBgnd(QDRect)
-    /// `_SpriteToComp` / `_TransSpriteToComp` (see `SpriteMode`).
-    case sprite(set: Int, frame: Int, h: Int, v: Int, mode: SpriteMode)
+    /// `_RestoreBgnd @ 00015dbe` → `_RestoreBgndRect`: bgnd → `target` over one dirty rect. On OS X (double
+    /// buffered) `_PlayGame`'s `_RestoreBgnd(0)` takes the `_BgndToScreen` branch (00015cda) → `target: .screen`;
+    /// `.comp` is `_BgndToComp` (the `param_2 != 0` / not-double-buffered branch).
+    case restoreBgnd(QDRect, target: DrawTarget = .comp)
+    /// `_SpriteToComp` / `_TransSpriteToComp` (see `SpriteMode`), plotted into the CURRENT port: `_PlayGame` on OS X
+    /// has `_SetToScreen` in force (00018bac–00018bc8), so its sprites go to `.screen`.
+    case sprite(set: Int, frame: Int, h: Int, v: Int, mode: SpriteMode, target: DrawTarget = .comp)
     /// `_SpriteToBgnd @ 00015567`.
     case spriteToBgnd(set: Int, frame: Int, h: Int, v: Int)
     /// `_PrepareScoreBar @ 00025c65`.
@@ -81,6 +87,9 @@ public enum DrawOp: Equatable, Sendable {
     case scoreToComp(QDRect)
     /// `_CompToScreen @ 00014bfe`: comp → screen over one rect (`_AddRectToScreen @ 0002635a`).
     case compToScreen(QDRect)
+    /// `_ScreenToComp @ 00014dda`: screen → comp over one rect (srcCopy) — `_PlayGame`'s conditional copy after
+    /// the flush on OS X.
+    case screenToComp(QDRect)
     /// `_DrawPicture` of a whole PICT into `dst` of `target` (e.g. `_DrawPictInRect @ 0000bfbc`,
     /// `_DrawAndCentrePict @ 0000bd14`; `_FlashButton @ 000078e0` draws PICT 9100 into **bgnd** at (0,0,300,300)).
     case pict(id: Int, dst: QDRect, target: DrawTarget)
