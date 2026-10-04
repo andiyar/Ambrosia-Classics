@@ -8,8 +8,8 @@ game ends (lives gone, or Esc), a new game starts at level 1.
 - **← → ↑ ↓** move, **Space** push
 - **Caps Lock** pauses while it is engaged (as the original: it reads the lock state); release it to go on
 - **Esc** ends the game (a new one starts)
-- **⌘Q** quits: in play the music fades out first, as the original did; quitting from inside a game
-  (playing or paused) does not save prefs — again as the original
+- **⌘Q** quits: in play the music fades out first, as the original did; quitting while playing does
+  not save prefs, quitting while paused does — again as the original
 
 ## What this build is — and is not — yet
 - **No sound or music yet.** The sound mixer is waiting on a HectorKit fix (this Mac's CoreAudio was hung

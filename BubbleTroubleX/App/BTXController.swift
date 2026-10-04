@@ -37,8 +37,11 @@ import HectorShell
 
     /// `.disableAbout` — UNUSED until A3 adds the About item (it enables/disables that item from this flag).
     private var aboutDisabled = false
-    /// `_CleanUp` from inside a game (`.quitNow`, a quit while paused, a data failure): terminate without saving.
+    /// `_CleanUp` from inside a game (`.quitNow`, a data failure): terminate without saving.
     private var quitWithoutSaving = false
+    /// Quit while paused: `_PauseGame` case 0x17 (the quit Apple event — Carbon's Quit menu item and ⌘Q arrive as
+    /// it) runs `_SaveGamePrefs` → `_StopMusic` → `_CleanUp`, so this quit saves although a game is running.
+    private var saveOnQuit = false
     /// Quit was chosen while a game runs outside its pause: ⌘ + key 0x0C is injected into every frame's keys until
     /// the game's own ⌘Q check (`_PlayGame` 00018ea4) fades the music and quits. A menu key equivalent eats the
     /// keyDown, so the view never sees it.
@@ -129,8 +132,9 @@ import HectorShell
 
     /// Quit (menu ⌘Q, or the quit Apple event via `applicationShouldTerminate`):
     /// - no game: terminate, prefs saved (`_HandleMenuChoice` 0x81/1 → `_SaveGamePrefs`);
-    /// - paused: `_PauseGame`'s loop sees `gFinished` → `_StopMusic` + `_CleanUp`, no save — terminate now (the
-    ///   music voice is paused; ⌘-keys never reach the cheat buffer, `_PauseGame` case 3 tests cmdKey);
+    /// - paused: `_PauseGame` case 0x17 (DC ~15381): `_AEProcessAppleEvent` → `_SaveGamePrefs` → `_StopMusic` →
+    ///   `_CleanUp` — terminate now WITH the save (the music voice is paused; ⌘-keys never reach the cheat buffer,
+    ///   `_PauseGame` case 3 tests cmdKey);
     /// - any other phase: ⌘ + 0x0C is injected into the frames' keys, so `_PlayGame`'s check (00018ea4) runs its
     ///   `_StopMusic` fade and `.quitNow` follows; blocking phases (wipe, fade, count-down) poll no keys, so the
     ///   injection waits for frames to run again.
@@ -140,7 +144,7 @@ import HectorShell
             return
         }
         if session.phase == .paused {
-            quitWithoutSaving = true
+            saveOnQuit = true
             NSApp.terminate(nil)
         } else {
             quitPending = true
@@ -150,9 +154,13 @@ import HectorShell
     /// A terminate that did not come from the game (e.g. the quit Apple event) goes through `quitChosen` while a game
     /// runs; the game's own `.quitNow` and every quit outside a game proceed.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if quitWithoutSaving || !(session?.isInGame ?? false) { return .terminateNow }
-        quitChosen(nil)
-        return quitWithoutSaving ? .terminateNow : .terminateCancel
+        if quitWithoutSaving || saveOnQuit || !(session?.isInGame ?? false) { return .terminateNow }
+        if session?.phase == .paused {
+            saveOnQuit = true
+            return .terminateNow
+        }
+        quitPending = true
+        return .terminateCancel
     }
 
     /// A launch/start failure: logged; DEBUG also shows an alert (Invariant 6); then a clean quit without saving.
@@ -375,10 +383,10 @@ import HectorShell
         handle(session.appActivated(keys: heldKeys()), now: ShellClock.ticks())
     }
 
-    /// Quit saves the prefs only from outside a game (the menu screens, A2): `_CleanUp` from inside a game never
-    /// saves (R7; `GameSession.isInGame`).
+    /// Quit saves the prefs from outside a game (the menu screens, A2) and from the pause (`saveOnQuit`); the
+    /// game's own ⌘Q path (`_PlayGame` → `_CleanUp`) never saves (R7; `GameSession.isInGame`).
     func applicationWillTerminate(_ notification: Notification) {
-        if !quitWithoutSaving && !(session?.isInGame ?? false) && store != nil {
+        if !quitWithoutSaving && (saveOnQuit || !(session?.isInGame ?? false)) && store != nil {
             savePrefs()
         }
         showCursor()
