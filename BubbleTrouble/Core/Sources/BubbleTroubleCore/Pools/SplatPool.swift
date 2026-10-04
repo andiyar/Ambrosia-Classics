@@ -69,7 +69,7 @@ public struct SplatPool: Sendable {
         }
     }
 
-    /// The freeing half of `_Splats_DrawToComp @ 00002c79` (drawing itself is the shell's): per active slot
+    /// The freeing half of `_Splats_DrawToComp @ 00002c79` (its plots are recorded by `GameState.runDrawPass`, C3): per active slot
     /// 0…11, a live splat copies rect → prevRect, a dead one is freed.
     public mutating func drawPassFree() {
         for i in slots.indices where slots[i].active {

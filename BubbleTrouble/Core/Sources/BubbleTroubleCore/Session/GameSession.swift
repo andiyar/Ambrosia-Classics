@@ -136,17 +136,9 @@ public final class GameSession {
         }
 
         keyboard.keys = keys
+        keyboard.appDeactivated = deactivated
         let transition = state.upcomingHeroTransition
         let wasEndOfLevel = state.isEndOfLevel
-
-        inFrameNoticesBeforeStep(transition)
-
-        // 00018a7e: `_PauseKey() || local_ea` → (not demo) remember the notice, `_PrepareNotice(3)`, pause after the
-        // frame.
-        if (keys.capsLock || deactivated) && mode == .play {
-            pauseDue = (state.notices.current, deactivated)
-            state.notices.prepare(3)
-        }
 
         let report: FrameReport
         if mode == .demo, var input = filmInput {
@@ -159,7 +151,10 @@ public final class GameSession {
         // — otherwise a later drain outside the frame (count-down `takeSounds`) would replay them.
         _ = state.takeSounds()
 
-        inFrameNoticesAfterStep(wasEndOfLevel: wasEndOfLevel)
+        // 00018a7e (inside the frame, after the hero state machine): the pause check fired → `_PauseGame` after it.
+        if let restore = report.pauseRestoreNotice {
+            pauseDue = (restore, deactivated)
+        }
 
         // Music of the hero state machine (FrameReport carries no music).
         switch transition {
@@ -178,7 +173,7 @@ public final class GameSession {
         }
 
         out.sounds += report.sounds
-        out.drawOps += inFrameNoticeDrawOps(around: report.drawOps)
+        out.drawOps += report.drawOps
         // 00018c3e: `if (bVar2) _ScreenToComp(whole screen)` after the pause frame's flush.
         if pauseDue != nil { out.drawOps.append(.screenToComp(Self.screenRect)) }
 
@@ -489,52 +484,6 @@ public final class GameSession {
         if prefs.levelSelectMax < id && id < 0x1f {
             prefs.levelSelectMax = id
         }
-    }
-
-    // MARK: - In-frame notices — C3 REPLACES THIS SECTION
-    //
-    // The notice changes `_PlayGame`'s frame body makes (hero appear / respawn, `_TimeBonus_Process`'s HURRY UP! and
-    // its timeout) and the frame's `_EraseNotice` / `_DrawNotice` ops, DERIVED here from state until C3 sets them
-    // inside `stepFrame` and records the notice draw at its place in `FrameReport.drawOps`. At that merge, delete these
-    // three functions and their three call sites in `frame(keys:)` (keep `report.drawOps` as the frame's ops).
-
-    /// The hero state machine's notices (000187a7…): appear → `_PrepareNotice(0)` (not demo); respawn → 2 (FIN!) /
-    /// 1 (GET READY!, unless the level is ending).
-    private func inFrameNoticesBeforeStep(_ transition: HeroTransition?) {
-        switch transition {
-        case .appear:
-            if mode == .play { state.notices.prepare(0) }
-        case .respawn(let livesLeft, let endOfLevel):
-            if livesLeft < 1 {
-                state.notices.prepare(2)
-            } else if !endOfLevel {
-                state.notices.prepare(1)
-            }
-        case .death, nil:
-            break
-        }
-    }
-
-    /// `_TimeBonus_Process @ 00006a15`: bonus reaching exactly 0 → `_PrepareNotice(5)`; at 0 with HURRY UP! up and
-    /// `timer + 0x3c < frame` → `_PrepareNotice(0)`. The −50 step ran this frame iff the hero is in state 2 and the
-    /// timer was just set to this frame.
-    private func inFrameNoticesAfterStep(wasEndOfLevel: Bool) {
-        guard !wasEndOfLevel else { return }
-        let decremented = state.hero.state == 2 && state.timeBonusTimer == state.frame
-        if state.timeBonus == 0 && decremented {
-            state.notices.prepare(5)
-        } else if state.timeBonus < 1 && state.notices.current == 5
-                    && Int(state.timeBonusTimer) + 0x3c < Int(state.frame) {
-            state.notices.prepare(0)
-        }
-    }
-
-    /// `_EraseNotice` (before the draw pass) → the frame's ops → `_DrawNotice` → the screen flush of both.
-    private func inFrameNoticeDrawOps(around frameOps: [DrawOp]) -> [DrawOp] {
-        let erased = state.notices.erase()
-        let drawn = state.notices.draw(level: Int(state.level))
-        return erased.restore.map { .restoreBgnd($0) } + frameOps + drawn.ops
-            + (erased.flush + drawn.flush).map { .compToScreen($0) }
     }
 
     private func takePending() -> SessionOutput {

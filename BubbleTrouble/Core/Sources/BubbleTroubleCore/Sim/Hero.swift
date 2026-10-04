@@ -1,7 +1,7 @@
 // The hero (plan §Task 6.1; Invariant 5; Research notes 23, 25, 26; hero-and-input.md §2–§4, §7), transcribed from
 // `_ProcessHero @ 00022de0`, `_MoveHeroAligned @ 00022847`, `_MoveHeroNotAligned @ 000224c8`,
-// `_HeroPushCrushCheck @ 000220d8` (with `_MyOffsetRect @ 0000c3d2` = `QDRect.offset`). Sounds, `_AddRectToBgnd`
-// and `_DebugValues` are not modelled (no RNG). The licence-checksum blocks of `_ProcessHero` (state 4's `+0x24`
+// `_HeroPushCrushCheck @ 000220d8` (with `_MyOffsetRect @ 0000c3d2` = `QDRect.offset`). Sounds are cued, `_AddRectToBgnd`
+// (00022df5) is recorded (C3); `_DebugValues` is not modelled (no RNG). The licence-checksum blocks of `_ProcessHero` (state 4's `+0x24`
 // recomputation, the push branch's `+0x44`) draw no RNG and are outside the modelled licence state (Decision 2).
 
 extension GameState {

@@ -8,6 +8,8 @@
 public struct KeyboardInput: InputSource, Sendable {
     public var keySet: KeySet
     public var keys: HeldKeys
+    /// `local_ea`: the app was deactivated during play (the session sets it; it pauses like the key).
+    public var appDeactivated = false
 
     public init(keySet: KeySet, keys: HeldKeys = HeldKeys()) {
         self.keySet = keySet
@@ -26,4 +28,7 @@ public struct KeyboardInput: InputSource, Sendable {
     public var samplesConsumed: Int { 0 }
 
     public var isExhausted: Bool { false }
+
+    /// `_PauseKey()` (Caps Lock state, `GameKeyDown(0x39)`) `|| local_ea`.
+    public var pauseRequested: Bool { keys.capsLock || appDeactivated }
 }

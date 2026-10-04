@@ -25,7 +25,7 @@ public struct AirBubble: Equatable, Sendable {
 /// The air-bubble pool: `_Bubbles_Init` (+ `_Bubbles_CreateRandomLUT`), `_Bubbles`, `_Bubbles_NewGroup`,
 /// `_Bubbles_New`, `_Bubbles_Process` and the freeing half of `_Bubbles_DrawToComp`, transcribed from the
 /// decompile (Research notes 15 and 48). Self-contained: frame counter, hero record, prefs and RNG come in as
-/// parameters. Sounds (`_PlayMySnd` at the end of groups 4–0xb) are the shell's.
+/// parameters. Sounds (`_PlayMySnd` at the end of groups 4–0xb) are returned to the caller, which cues them.
 ///
 /// Slots are scanned from 0, allocation takes the first free slot, and slots are freed only by `drawPassFree`
 /// (Invariant 8). `_Bubbles_New` returns before its `(5,9)` draw when 8 bubbles are alive.
@@ -306,7 +306,7 @@ public struct AirBubblePool: Sendable {
         }
     }
 
-    /// The freeing half of `_Bubbles_DrawToComp @ 00016d25` (drawing itself is the shell's): skipped when
+    /// The freeing half of `_Bubbles_DrawToComp @ 00016d25` (its plots are recorded by `GameState.runDrawPass`, C3): skipped when
     /// `NumActive == 0`; per active slot 0…7, a live bubble copies rect → prevRect, a dead one is freed and
     /// `NumActive -= 1`.
     public mutating func drawPassFree() {

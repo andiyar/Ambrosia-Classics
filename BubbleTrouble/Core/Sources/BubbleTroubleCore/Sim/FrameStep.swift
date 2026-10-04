@@ -8,9 +8,10 @@
 // Sounds: every `_PlayMySnd` site of the loop body (`Sounds.swift` lists them) and `_Sounds_CheckDelayedSounds` after
 // `_TimeBonus_Process` fill `FrameReport.sounds` (plan 2026-10-04 btx-playable C2).
 //
-// Not modelled (no RNG, no simulation state): the timer/event wait, `_ResetNumBgndRects`/`_ResetNumScrnRects`,
-// music, notices, reserve-hero/score/time-bonus drawing, `_EraseOuch`/`_DrawOuchToComp`, the pause key (ignored in
-// demo; Scope), the escape key, `_CheckForHacking`, the licence parity check and the Cmd-key `_CleanUp`.
+// Draw ops: the OS X draw pass, `_ResetNumBgndRects`, the notices set in the frame, `_EraseNotice`, `_EraseOuch` /
+// `_DrawOuchToComp` and the pause check (00018a7e) fill `FrameReport.drawOps` / `.pauseRestoreNotice` (C3 —
+// `DrawOps.swift`, `HUD.swift`). Not modelled here (the session's — C4): the timer/event wait, music, the escape key,
+// `_PauseGame` itself; nor `_CheckForHacking`, the licence parity check and the Cmd-key `_CleanUp`.
 
 /// What one `stepFrame` call leaves behind (plan §Task 10.1).
 public struct FrameReport: Equatable, Sendable {
@@ -35,10 +36,13 @@ public struct FrameReport: Equatable, Sendable {
     public let sounds: [SoundCue]
     /// This frame's QuickDraw calls in order (S2) — always empty until task C3. Replays ignore both fields.
     public let drawOps: [DrawOp]
+    /// The pause check at 00018a7e fired this frame (play only): `_PauseGame` is due after the frame, restoring this
+    /// notice (`local_e9`); nil = no pause.
+    public let pauseRestoreNotice: Int?
 
     init(frame: UInt16, drawsThisFrame: Int, totalDraws: Int, samplesConsumed: Int, heroState: Int16,
          heroCell: CellRef, score: Int32, lives: Int16, heroCaughtThisFrame: Bool, stops: Set<StopReason>,
-         sounds: [SoundCue] = [], drawOps: [DrawOp] = []) {
+         sounds: [SoundCue] = [], drawOps: [DrawOp] = [], pauseRestoreNotice: Int? = nil) {
         self.frame = frame
         self.drawsThisFrame = drawsThisFrame
         self.totalDraws = totalDraws
@@ -51,6 +55,7 @@ public struct FrameReport: Equatable, Sendable {
         self.stops = stops
         self.sounds = sounds
         self.drawOps = drawOps
+        self.pauseRestoreNotice = pauseRestoreNotice
     }
 }
 
@@ -59,7 +64,7 @@ extension GameState {
     /// any stop fired (it takes effect before the next call — the caller stops calling).
     ///
     /// Order (`_PlayGame` 00018767–00018f4e): `frame &+= 1` → the hero state machine (state 2 → `_CheckNewEnemies`
-    /// when `stateStart + 10 < frame`; 1 → appear; 3 → 4; 4 → stop/respawn) → (pause: not modelled) →
+    /// when `stateStart + 10 < frame`; 1 → appear; 3 → 4; 4 → stop/respawn) → the pause check (play only) →
     /// `gNumNormalBlocks > 0` → recount, and 0 → +2000 ×mult, star group 2, point 12/12, `_FinishLevel` →
     /// `_Bubbles` → `_ProcessEnemies` → `_ProcessHero` → `_Splats_Process` → `_Bubbles_Process` →
     /// `_Balloons_Process` → `_Bonus_Process` → `_ProcessBlocks` → `_ProcessStars` → `_ProcessPoints` →
@@ -74,13 +79,21 @@ extension GameState {
         presentation.ops = []
         guard playing, pendingStops.isEmpty else {
             playing = false
-            return report(input: input, drawsBefore: drawsBefore)
+            return report(input: input, drawsBefore: drawsBefore, pause: nil)
         }
         heroCaughtThisFrame = false
         frame &+= 1                                              // gTimerFired = 0; gFrameCounter++ (u16, Invariant 9)
         presentation.bgndRects = []                              // _ResetNumBgndRects (_ResetNumScrnRects: unused on OS X)
 
         runHeroStateMachine()
+
+        // 00018a7e: `_PauseKey() || local_ea` → (not demo) `local_e9 = _GetCurrentNotice()`, `_PrepareNotice(3)`,
+        // `bVar2` — `_PauseGame` runs at the end of this loop iteration (the session's).
+        var pauseRestoreNotice: Int?
+        if input.pauseRequested && mode != .demo {
+            pauseRestoreNotice = notices.current
+            prepareNotice(3)
+        }
 
         // `if (0 < gNumNormalBlocks)`: recount; reaching 0 is the "all bubbles gone" award.
         if 0 < numNormalBlocks {
@@ -135,7 +148,7 @@ extension GameState {
         if !runDrawPass() {
             pendingStops.insert(.originalWouldAbort("DrawPointsToComp: hacked-copy trap (StdError → ExitToShell)"))
             playing = false
-            return report(input: input, drawsBefore: drawsBefore)
+            return report(input: input, drawsBefore: drawsBefore, pause: pauseRestoreNotice)
         }
 
         checkEndOfLevel()
@@ -149,15 +162,17 @@ extension GameState {
         if !pendingStops.isEmpty {
             playing = false
         }
-        return report(input: input, drawsBefore: drawsBefore)
+        return report(input: input, drawsBefore: drawsBefore, pause: pauseRestoreNotice)
     }
 
-    private func report<I: InputSource>(input: I, drawsBefore: Int) -> FrameReport {
-        FrameReport(frame: frame, drawsThisFrame: rng.drawCount - drawsBefore, totalDraws: rng.drawCount,
+    /// Builds the report and empties the frame's op buffer (the report owns them; nothing can re-read them stale).
+    private mutating func report<I: InputSource>(input: I, drawsBefore: Int, pause: Int?) -> FrameReport {
+        defer { presentation.ops = [] }
+        return FrameReport(frame: frame, drawsThisFrame: rng.drawCount - drawsBefore, totalDraws: rng.drawCount,
                     samplesConsumed: input.samplesConsumed, heroState: hero.state,
                     heroCell: CellRef(col: hero.col, row: hero.row), score: score, lives: lives,
                     heroCaughtThisFrame: heroCaughtThisFrame, stops: pendingStops, sounds: soundsThisFrame,
-                    drawOps: presentation.ops)
+                    drawOps: presentation.ops, pauseRestoreNotice: pause)
     }
 
     /// `_PlayGame`'s hero state machine at the top of the frame (Research note 20; 000187a7–000189a3). Timer tests
@@ -261,8 +276,9 @@ extension GameState {
     /// each routine's QuickDraw calls recorded BEFORE its slot is freed (Invariant 2; OS X path — `DrawOps.swift`):
     /// `_RestoreBgnd(0)` → hurt blocks → hero → enemies → balloons → blocks → splats → bonus → stars → "Erk!" → points
     /// → air bubbles → `_DrawScore(0)` → `_TimeBonus_Draw(0)` → `_DrawReserveInfo` → `_DrawNotice`. A slot freed in
-    /// this pass (dead enemy, balloon, bonus, …) is NOT drawn on its freeing frame — every draw routine tests the
-    /// visibility / drawn flag the processing already cleared — exactly as the original.
+    /// this pass is drawn on its freeing frame exactly when its routine's own flag says so: enemies test only the
+    /// drawn flag (a dead-but-drawn enemy IS plotted once more), balloons / bonus / splats / stars / points / air
+    /// bubbles test their visible flag (which their deaths clear, so they are not), blocks test only the sprite set.
     /// Returns false when `_DrawPointsToComp`'s trap fired (the original exits inside the pass — nothing after runs).
     private mutating func runDrawPass() -> Bool {
         restoreBgndToScreen()                                    // _RestoreBgnd(0) after _SetToScreen

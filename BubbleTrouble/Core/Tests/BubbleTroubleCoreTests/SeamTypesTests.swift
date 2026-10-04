@@ -69,7 +69,7 @@ final class SeamTypesTests: XCTestCase {
 
     /// `FrameReport` gains `sounds` and `drawOps`. A quiet frame plays nothing; since C3 its draw ops are the OS X
     /// frame's QuickDraw calls — here just the hero's restore and plot, into the window.
-    func testFrameReportDefaultsEmpty() {
+    func testFrameReportCarriesQuietFrameOps() {
         var maze = try! Maze(data: Data(count: Maze.byteCount))
         maze[2, 2] = CellCode.normal
         var config = SessionConfig()

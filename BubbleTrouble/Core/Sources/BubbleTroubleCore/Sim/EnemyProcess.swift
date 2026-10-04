@@ -1,6 +1,6 @@
 // Per-frame enemy processing (plan §Task 9a.1; Research note 30; Invariants 8, 9, 18; INDEX C10), transcribed from
 // `_ProcessEnemies @ 00011ad3` (incl. the per-type animation cycles) and `_CorrectEnemyAligned @ 00012596`.
-// `_AddRectToBgnd` (drawing) is not modelled. The hatch's licence checksum (`RT3_CheckLicenseName`,
+// `_AddRectToBgnd` (00011bbf) is recorded at its site (C3, `DrawOps.swift`). The hatch's licence checksum (`RT3_CheckLicenseName`,
 // `RT3_ExtractLicenseBlock1`, `_TimerGetSeconds`, `_IsPlatformOpen` — no RNG) is reduced to its result in the
 // modelled licence state (Research note 6): `+0x22` = 1.
 

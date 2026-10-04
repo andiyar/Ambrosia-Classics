@@ -164,8 +164,6 @@ public struct GameState: Sendable {
     /// The draw-side globals the frame's QuickDraw calls read and write (dirty list, HUD flags, reserve-hero
     /// animation, "Erk!" rect) and this frame's recorded `DrawOp`s.
     public internal(set) var presentation: Presentation
-    /// `_gShowWhichNotice` / `_gLastNoticeShown` / `_gEraseNotice` (`Session/NoticeBoard.swift`, C4's transcription).
-    public internal(set) var notices: NoticeBoard
 
     /// An empty world: all slots free, zero tables, RNG seeded with `seed` through `config.rngStep`, frame 0.
     init(config: SessionConfig, mode: GameMode, seed: UInt32) {

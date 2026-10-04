@@ -129,8 +129,11 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(Array(out.requests.suffix(2)), [.hideCursor, .enableMenus(false)])
         // The first frame draws the LEVEL 1 notice.
         let first = again.frame(keys: HeldKeys())
-        XCTAssertTrue(first.drawOps.contains(.sprite(set: 0xf, frame: 2, h: 0x166, v: 223, mode: .normal)))
-        XCTAssertTrue(first.drawOps.contains(.compToScreen(NoticeBoard.levelRect)))
+        // OS X path (C3): `_DrawNotice` plots into the window; there is no screen-rect flush.
+        XCTAssertTrue(first.drawOps.contains(.sprite(set: 0xe, frame: 1, h: 0xfe, v: 221, mode: .normal,
+                                                     target: .screen)))
+        XCTAssertTrue(first.drawOps.contains(.sprite(set: 0xf, frame: 2, h: 0x166, v: 223, mode: .normal,
+                                                     target: .screen)))
 
         // Demo: GAME OVER notice, no music, no Get Ready — and the frames are exactly FilmReplay's (G4 path).
         let film = try data.levels.film(1)
@@ -206,7 +209,9 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(state.score, 74 * 200 + 49 * 100 + 100 * 50)
         XCTAssertEqual(state.lives, 4, "_AddToScore(chunk, 0) still awards the 10000 life")
         XCTAssertEqual(state.multiplier, 2, "the flash restores the multiplier")
-        XCTAssertTrue(state.timeBonusFlash)
+        // `_TimeBonus_Draw` (each chunk) ends the flash once `frame > flashTimer + 4` — `_AdvanceFrameCounter` moves
+        // the frame on per chunk, so it is off again by the end (C3).
+        XCTAssertFalse(state.timeBonusFlash)
         XCTAssertEqual(Int(state.frame), chunks, "_AdvanceFrameCounter once per chunk")
         // Timeline: 3 × (8 + 8) flash ticks, then snd 9 and a 60-tick wait; 3 ticks per chunk; final 15.
         XCTAssertEqual(ticks, 48 + 60 + chunks * 3 + 15)
@@ -413,10 +418,11 @@ final class GameSessionTests: XCTestCase {
                                         .showCursor, .enableMenus(true)])
         XCTAssertTrue(entry.music.isEmpty, "music loaded but not yet playing → no _PauseMusic")
         XCTAssertTrue(entry.drawOps.contains(.pict(id: 9030, dst: QDRect(top: 279, left: 155, bottom: 295, right: 485),
-                                                   target: .comp)))
+                                                   target: .screen)))
         XCTAssertTrue(entry.drawOps.contains(.pict(id: 9031, dst: QDRect(top: 299, left: 190, bottom: 315, right: 450),
-                                                   target: .comp)))
-        XCTAssertTrue(entry.drawOps.contains(.sprite(set: 0xa, frame: 1, h: 265, v: 221, mode: .normal)))
+                                                   target: .screen)))
+        XCTAssertTrue(entry.drawOps.contains(.sprite(set: 0xa, frame: 1, h: 265, v: 221, mode: .normal,
+                                                     target: .screen)))
         XCTAssertEqual(session.notices.current, 3)
 
         // Frames do nothing; ticks with Caps Lock still on stay paused.
@@ -444,6 +450,46 @@ final class GameSessionTests: XCTestCase {
     }
 
     // MARK: Fix round (orchestrator rulings 1–11)
+
+    /// Ruling (C3 integration): the pause check sits INSIDE the frame at 00018a7e, after the hero state machine — so
+    /// on the appearance frame `_PrepareNotice(0)` runs first and PAUSED (3) survives; the notice restored on exit
+    /// is the post-appear one (0).
+    func testPauseOnAppearFrameKeepsPausedNotice() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        finishWipe(session, now: &now)
+        for _ in 0..<70 { _ = session.frame(keys: HeldKeys()) }
+        XCTAssertEqual(session.notices.current, 6)
+        let entry = session.frame(keys: HeldKeys(capsLock: true))   // frame 71: appear + pause
+        XCTAssertEqual(session.state.hero.state, 2)
+        XCTAssertEqual(session.phase, .paused)
+        XCTAssertEqual(session.notices.current, 3)
+        XCTAssertTrue(entry.drawOps.contains(.sprite(set: 0xa, frame: 1, h: 265, v: 221, mode: .normal,
+                                                     target: .screen)))
+        XCTAssertEqual(entry.drawOps.last, .screenToComp(Self.level1Rect))
+        _ = session.tick(now: now, keys: HeldKeys())
+        XCTAssertEqual(session.phase, .playing)
+        XCTAssertEqual(session.notices.current, 0)
+    }
+
+    /// C3: `gScoreRect` is reset only by `_ResetScore` (game start), so `_DrawScore`'s cache erase at the next level
+    /// still reaches the old right edge; `_gTimeBonusRect` is reset by `_TimeBonus_Reset` in every `_NewLevel`.
+    func testScoreRectCarriesAcrossLevelsTimeBonusRectResets() throws {
+        let data = try gameData()
+        let session = try playSession(data)
+        var now: UInt32 = 0
+        finishWipe(session, now: &now)
+        session.state.score = 1_234_567
+        _ = session.state.scoreOps()                                    // right edge 132 + 7·24 = 300
+        XCTAssertEqual(session.state.presentation.timeBonusRect.right, 480 + 4 * 23 + 22)
+        try session.state.advanceLevel(data: data)
+        _ = session.state.levelStartOps()
+        XCTAssertEqual(session.state.scoreOps().first,
+                       .scoreToComp(QDRect(top: 446, left: 132, bottom: 476, right: 300)))
+        XCTAssertEqual(session.state.timeBonusOps().first,
+                       .scoreToComp(QDRect(top: 446, left: 480, bottom: 476, right: 480)))
+    }
 
     /// Plays to the hero's appearance (frame 71, music playing).
     private func sessionAtAppear(_ data: BTXGameData, now: inout UInt32) throws -> GameSession {

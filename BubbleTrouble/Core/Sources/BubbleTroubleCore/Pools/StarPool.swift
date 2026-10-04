@@ -259,7 +259,7 @@ public struct StarPool: Sendable {
         }
     }
 
-    /// The freeing half of `_DrawStarsToComp @ 00004de0` (drawing itself is the shell's): skipped when
+    /// The freeing half of `_DrawStarsToComp @ 00004de0` (its plots are recorded by `GameState.runDrawPass`, C3): skipped when
     /// `gNumActiveStars == 0`; per active slot 0…59, a live star copies rect → prevRect, a dead one is freed and
     /// `gNumActiveStars -= 1`.
     public mutating func drawPassFree() {

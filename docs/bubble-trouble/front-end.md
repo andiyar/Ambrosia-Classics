@@ -193,9 +193,9 @@ Orbit stars only from the star-burst cheat; invisible on Intel (SPIN 1 read unsw
 |---|---|---|---|
 | reserve-hero icon | 8 (26000–26011, 32×32, Blinky turning) | x16 y445 | `_DrawReserveHeroImage` |
 | lives digit | 0x21 (30000–30009, 22×30; frame k = digit k−1) | x55 y446 | `_DrawReserveHeroNumber` |
-| score | 0x21, up to 8 digits, no leading zeros, 24 px pitch | from x132, y446 | `_DrawScore @ 00028168` |
+| score | 0x21, 5–8 digits — ⚑ (C3) padded with leading zeros to 5 (`_DrawScore`'s digit buffer starts 0,0,0,0,0,ff,ff,ff: 123 → "00123"), none beyond; 24 px pitch | from x132, y446 | `_DrawScore @ 00028168` |
 | EXTRA | 0x24 lit / 0x25 unlit (30700/30750, 22×32), frames 1–5 = E,X,T,R,A | x 322,338,359,381,403, y446 | `_EXTRA_Draw` |
-| time bonus | 0x21 normal / 0x22 flashing (30500–30509); 5 digits, leading zeros blank (last kept), 23 px pitch, shifted +22 when < 10000 | from x480, y446 | `_TimeBonus_Draw @ 00006b3a` |
+| time bonus | 0x21 normal / 0x22 flashing (30500–30509); 5 digit slots — ⚑ (C3) only a zero ten-thousands digit is blanked (2500 → "2500", 0 → "0000"), 23 px pitch, shifted +22 when < 10000 | from x480, y446 | `_TimeBonus_Draw @ 00006b3a` |
 | multiplier | 0x23 (30600–30603 = x2..x5, 28×28), hidden at 1x | x601 y448 | `_Multiplier_Draw` |
 | notices | 1 GET READY! set 9 (3×64×38) x236 · 2 FIN! set 0xb (2×64×64) x256 · 3 PAUSED set 0xa x265 + PICT 9030/9031 · 4 GAME OVER set 0xc x234 · 5 HURRY UP! set 0xd x234 · 6 LEVEL set 0xe (x254, or x241 when ≥10) + digits set 0xf (26700–26709, 27×35) at x358 / x345+x372; all at y221 (= (480−38)/2) | `_ResetNotices`, `_DrawNotice @ 00027948` |
 | FPS (cheat) | text "FPS: n", red if < 30 | bottom-right | `_DrawFPS` |

@@ -15,8 +15,8 @@
 //   - the conditional `_ScreenToComp` after the flush (00018c6c, the pause entry) and on game exit (000192ed) are
 //     the session's (C4): they follow the pause / exit decisions it owns.
 //
-// `_AddRectToBgnd @ 00015e09` (22 call sites; the 20 reachable from the frame body are wired in at their sites —
-// each caller says which) both queues a restore rect and, through `_CheckBlock @ 0001b842`, puts every stationary
+// `_AddRectToBgnd @ 00015e09` (22 call sites; the 21 reachable from the frame body — all but `_DisplayHiScores`
+// 00025961 — are wired in at their sites, each caller says which) both queues a restore rect and, through `_CheckBlock @ 0001b842`, puts every stationary
 // maze bubble the rect touches on the hurt-block list (`_NewHurtBlock @ 0001b6d0`), which `_DrawHurtBlocksToComp`
 // redraws right after the restore: `_DrawMaze` paints the maze bubbles into comp only, never into bgnd, so a restore
 // would otherwise wipe them.
@@ -256,7 +256,7 @@ extension GameState {
             case let .pict(id, dst, _):
                 presentation.ops.append(.pict(id: id, dst: dst, target: .screen))
             default:
-                presentation.ops.append(op)
+                preconditionFailure("NoticeBoard.draw emits only .sprite and .pict")
             }
         }
     }
@@ -271,9 +271,4 @@ extension GameState {
         notices.reset()
     }
 
-    /// Drains `presentation.ops` (for calls made outside `stepFrame`, which clears it at its top).
-    public mutating func takeDrawOps() -> [DrawOp] {
-        defer { presentation.ops = [] }
-        return presentation.ops
-    }
 }

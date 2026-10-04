@@ -1,11 +1,11 @@
 // Time (level) bonus (plan §Task 7b.1; Research note 44; Invariant 9), transcribed from
 // `_TimeBonus_Process @ 00006a15`, `_TimeBonus_Increase @ 000069cd` and `_Jewels_TurnToBlocks @ 0001c705`.
 // `_TimeBonus_Reset` lives in `LevelBuild.swift`. Sounds are cued (`Sounds.swift`); the "Hurry up" notice (`_PrepareNotice`,
-// `_GetCurrentNotice`), `gTimeBonusHasChanged` and the screen/background restores are presentation only (no RNG).
+// `_GetCurrentNotice`), `gTimeBonusHasChanged` and the background restores are presentation (C3), no RNG.
 
 extension GameState {
     /// `_TimeBonus_Process @ 00006a15`, once per frame. End of level → nothing. Bonus < 1 → only the notice
-    /// bookkeeping (not modelled); the timer is untouched. Otherwise: hero state ≠ 2 → timer = frame; state 2 and
+    /// timeout (HURRY UP! up and `timer + 60 < frame` → `_PrepareNotice(0)`); the timer is untouched. Otherwise: hero state ≠ 2 → timer = frame; state 2 and
     /// `timer + 0x1e < frame` → bonus −50, timer = frame, then bonus **exactly** 0 → `_Jewels_TurnToBlocks`, else
     /// bonus < 500 → flash on, flash timer = frame.
     mutating func timeBonusProcess() {

@@ -1,5 +1,5 @@
 // The per-frame block pass (plan §Task 8.1; Research note 37; Invariants 8, 9; bubbles-items-scoring.md §1.5),
-// transcribed from `_ProcessBlocks @ 0001d2b8`. `_AddRectToBgnd` (dirty rects) is not modelled; sounds are cued (`Sounds.swift`).
+// transcribed from `_ProcessBlocks @ 0001d2b8`. `_AddRectToBgnd` (0001d306) is recorded (C3); sounds are cued (`Sounds.swift`).
 
 extension GameState {
     /// `_ProcessBlocks @ 0001d2b8`. Nothing when `_gNumActiveBlocks` is 0. Per slot 0…34 with a non-zero state:

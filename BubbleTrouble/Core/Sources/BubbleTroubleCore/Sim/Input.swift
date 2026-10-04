@@ -11,6 +11,13 @@ public protocol InputSource {
     var samplesConsumed: Int { get }
     /// Demo: `FILM.count <= gRecordingCounter` (the `_PlayGame` end check); live input: false.
     var isExhausted: Bool { get }
+    /// `_PauseKey() || local_ea` as `_PlayGame` tests it at 00018a7e (after the hero state machine): Caps Lock
+    /// (`GameKeyDown(0x39)`) or the app deactivated. FILM / scripted input: false (demo never pauses).
+    var pauseRequested: Bool { get }
+}
+
+extension InputSource {
+    public var pauseRequested: Bool { false }
 }
 
 /// FILM playback (`gGameMode == 1`): `FILM.{up,down,left,right,push}[gRecordingCounter] != 0`, then the counter

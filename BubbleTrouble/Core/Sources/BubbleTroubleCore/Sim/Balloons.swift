@@ -5,7 +5,7 @@
 // `_Balloons_CaptureAllEnemies @ 000240dd`. `_Balloons_PopBalloon` / `_Balloons_PopAll` live in
 // `EnemyMutations.swift`. Slots are scanned 0…29 and claimed first-free; nothing here frees a slot or decrements
 // `numActiveBalloons` — the draw pass does (Invariant 8). Sounds are cued (`Sounds.swift`); the background-restore
-// (`_AddRectToBgnd`) consumes no RNG and is not modelled.
+// (`_AddRectToBgnd`, 000243f0) is recorded at its site (C3, `DrawOps.swift`); no RNG.
 
 extension GameState {
     /// `_Balloons_New(e) @ 000237f9` — the shark's bubble attack. Cap 30 (`numActive == 30` → return before any

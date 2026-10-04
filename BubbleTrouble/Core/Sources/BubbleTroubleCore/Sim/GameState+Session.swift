@@ -96,25 +96,4 @@ extension GameState {
     mutating func setMultiplierForFlash(_ value: Int16) {
         multiplier = value
     }
-
-    // MARK: Placeholder draw seams — C3 FILLS (each returns [] until task C3 lands; the session already calls them at
-    // the original's call points, so integration replaces only the bodies)
-
-    /// C3 fills: `_DrawMaze @ 00025daa` — PICT LEVL.w1 into bgnd + comp, `_PrepareScoreBar @ 00025c65`, maze cells.
-    public func levelStartOps() -> [DrawOp] { [] }
-
-    /// C3 fills: `_DrawReserveInfo @ 00021bd2` (reserve-hero number + image while it needs drawing).
-    func reserveInfoOps() -> [DrawOp] { [] }
-
-    /// C3 fills: `_DrawScore(1) @ 00028168`.
-    func scoreOps() -> [DrawOp] { [] }
-
-    /// C3 fills: `_TimeBonus_Draw(1) @ 00006b3a`.
-    func timeBonusOps() -> [DrawOp] { [] }
-
-    /// C3 fills: `_Multiplier_Draw(1)` (hidden at 1×).
-    func multiplierOps() -> [DrawOp] { [] }
-
-    /// C3 fills: `_EXTRA_Draw(1)`.
-    func extraOps() -> [DrawOp] { [] }
 }

@@ -33,6 +33,10 @@ extension GameState {
     /// 20 / 30 / 52 as set 0x11 / 0x14 / 0x15 / 0x16 / 0x17 / (0x12 below level 12, else 0x13), frame 1, into comp
     /// (rows outer, columns inner) — then `_RequestDrawReserveHero(0)`. `_NewLevel` continues with `_SetToScreen` +
     /// `_WipeScreen(12)` (the session's `.wipe`) and the score bar (`reserveInfoOps`…`extraOps`).
+    ///
+    /// State side effects: resets the reserve-hero animation and the time-bonus rect / changed flag, and requests a
+    /// reserve-hero draw — call it EXACTLY ONCE per level, right after the level is built (`GameSession` does, at
+    /// `init` and `beginNewLevel`).
     public mutating func levelStartOps() -> [DrawOp] {
         let start = presentation.ops.count
         presentation.reserveHeroNeedsDrawing = false
@@ -64,35 +68,38 @@ extension GameState {
         return takeOps(from: start)
     }
 
-    /// `_DrawReserveInfo` (`_NewLevel`, `_TimeBonus_CountDown`).
+    /// `_DrawReserveInfo` (`_NewLevel`, `_TimeBonus_CountDown`). State side effects: advances the reserve-hero
+    /// animation and may end it / clear its needs-drawing flag; clamps `lives` to 9 (`_SetLives(9)`). Empty when no
+    /// draw is pending.
     mutating func reserveInfoOps() -> [DrawOp] {
         let start = presentation.ops.count
         drawReserveInfo()
         return takeOps(from: start)
     }
 
-    /// `_DrawScore(1)`.
+    /// `_DrawScore(1)`. State side effects: the score rect's right edge moves; `gScoreHasChanged` clears.
     mutating func scoreOps() -> [DrawOp] {
         let start = presentation.ops.count
         drawScore(force: true)
         return takeOps(from: start)
     }
 
-    /// `_TimeBonus_Draw(1)`.
+    /// `_TimeBonus_Draw(1)`. State side effects: the bonus rect moves; the changed flag clears — and the bonus FLASH
+    /// (`timeBonusFlash`) is turned off once `frame > flashTimer + 4` (the flag then stays set for one more draw).
     mutating func timeBonusOps() -> [DrawOp] {
         let start = presentation.ops.count
         timeBonusDraw(force: true)
         return takeOps(from: start)
     }
 
-    /// `_Multiplier_Draw(1)` (no sprite at 1×).
+    /// `_Multiplier_Draw(1)` (no sprite at 1×). No state side effects.
     mutating func multiplierOps() -> [DrawOp] {
         let start = presentation.ops.count
         multiplierDraw(true)
         return takeOps(from: start)
     }
 
-    /// `_EXTRA_Draw(1)`.
+    /// `_EXTRA_Draw(1)`. No state side effects.
     mutating func extraOps() -> [DrawOp] {
         let start = presentation.ops.count
         extraDraw(true)

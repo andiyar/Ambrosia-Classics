@@ -1,7 +1,7 @@
 // Score, lives and the squish multiplier (plan §Task 5a.1; Research notes 28, 43; INDEX C8), transcribed from
 // `_AddToScore @ 000280dd`, `_AddHero @ 00022d62`, `_Bonus_SetNumEnemySquishes @ 0001a818`,
-// `_Multiplier_Change @ 00019ceb`, `_Multiplier_Reset @ 00019e68`. Sounds, the reserve-hero redraw flags and the
-// multiplier draw are presentation only and not modelled; none of these functions draws from the RNG.
+// `_Multiplier_Change @ 00019ceb`, `_Multiplier_Reset @ 00019e68`. Sounds are cued; the reserve-hero redraw flags,
+// `gScoreHasChanged` and the multiplier draw are presentation (C3, `HUD.swift`); none of these functions draws from the RNG.
 
 extension GameState {
     /// `_AddToScore(v, multiply) @ 000280dd`: `v ×= gBonusMultiplier` when flagged (the original also skips the
@@ -26,7 +26,7 @@ extension GameState {
     }
 
     /// `_AddHero(1, 1) @ 00022d62` (every caller passes (1, 1)): lives += 1, capped at 9; then "Extra Life" twice
-    /// (00022dab, 00022dc7). (The reserve-hero redraw/animate flags are presentation only.)
+    /// (00022dab, 00022dc7). Then the reserve-hero redraw + animate flags (presentation, C3).
     mutating func addHero() {
         lives &+= 1
         if 9 < lives {

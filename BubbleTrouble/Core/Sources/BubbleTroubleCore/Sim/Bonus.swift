@@ -2,7 +2,7 @@
 // `_Bonus_Process @ 0001a92b`, `_Multiplier_Process @ 00019dae`, `_Bonus_DoesHeroTouch @ 00019a13`,
 // `_Bonus_WasHit @ 0001a79a`, `_Bonus_Pop @ 0001a6fd`, `_Bonus_Reward @ 0001a2c5` (jump table 0x337f4). `_Bonus_Init`
 // lives in `LevelBuild.swift`. Sounds are cued at their call sites (`Sounds.swift`); `_EXTRA_Draw` /
-// `_Multiplier_Draw` and the background restore (`_AddRectToBgnd`) consume no RNG and are not modelled. Nothing here frees a slot — `dead` is
+// `_Multiplier_Draw` / `_EXTRA_Draw` and the background restore (`_AddRectToBgnd`) are recorded at their sites (C3); no RNG. Nothing here frees a slot — `dead` is
 // set and the draw pass frees it (Invariant 8); a dead slot that is still armed keeps being processed, as in the
 // original. The Toolbox `InsetRect` by 8 on a 40×40 rect never empties it, so `QDRect.inset` is exact here.
 

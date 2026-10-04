@@ -114,6 +114,114 @@ final class DrawOpTests: XCTestCase {
         ])
     }
 
+    /// A popping balloon (state 3) in slot 0 at (x, y), box inside the playfield; `counter` = its pop step.
+    private func placeBalloon(_ state: inout GameState, x: Int16, y: Int16, counter: Int16) {
+        state.balloons[0].state = 3
+        state.balloons[0].rect = QDRect(top: y, left: x, bottom: y + 40, right: x + 40)
+        state.balloons[0].prevRect = state.balloons[0].rect
+        state.balloons[0].box = QDRect(top: y + 8, left: x + 8, bottom: y + 31, right: x + 26)
+        state.balloons[0].spriteSet = 0x31
+        state.balloons[0].frame = 2
+        state.balloons[0].counter = counter
+        state.balloons[0].visible = true
+        state.numActiveBalloons = 1
+    }
+
+    /// The rest of the pass, in `_PlayGame`'s order: hero (state 3) → balloon → bonus icon then shell → star →
+    /// "Erk!" → air bubble → `_TimeBonus_Draw(0)` → `_DrawReserveInfo` (both through comp).
+    func testDrawOrderBalloonsBonusStarsErkBubblesHUD() {
+        var state = world()
+        state.hero.state = 3
+        state.newOuch()                                               // facing left: (243, 210), face 1
+        placeBalloon(&state, x: 40, y: 320, counter: 0)
+        state.bonus[0].armed = true
+        state.bonus[0].visible = true
+        state.bonus[0].launchFrame = 1000                             // not launched: no processing
+        state.bonus[0].rect = QDRect.cell(col: 10, row: 2)
+        state.bonus[0].iconSet = 0x1a
+        state.bonus[0].iconFrame = 4
+        state.bonus[0].shellFrame = 2
+        state.stars.slots[0].active = true
+        state.stars.slots[0].visible = true
+        state.stars.slots[0].kind = 1
+        state.stars.slots[0].spriteSet = 0x28
+        state.stars.slots[0].frame = 1
+        state.stars.slots[0].period = 100
+        state.stars.slots[0].rect = QDRect(top: 100, left: 500, bottom: 126, right: 526)
+        state.stars.slots[0].prevRect = state.stars.slots[0].rect      // a zero prevRect would queue cell (0,0)
+        state.stars.activeCount = 1
+        state.airBubbles.slots[0].active = true
+        state.airBubbles.slots[0].visible = true
+        state.airBubbles.slots[0].spriteSet = 0x2d
+        state.airBubbles.slots[0].frame = 1
+        state.airBubbles.slots[0].animPeriod = 100
+        state.airBubbles.slots[0].snakeIndex = 4                      // table value 0: no x move
+        state.airBubbles.slots[0].rect = QDRect(top: 300, left: 40, bottom: 316, right: 56)
+        state.airBubbles.slots[0].prevRect = state.airBubbles.slots[0].rect
+        state.airBubbles.activeCount = 1
+        state.presentation.timeBonusHasChanged = true
+        state.requestDrawReserveHero(animate: false)
+
+        let ops = step(&state).drawOps
+        let firstSprite = ops.firstIndex { if case .sprite = $0 { return true }; return false }!
+        let sprites = ops[firstSprite...].compactMap { op -> DrawOp? in
+            if case let .sprite(set, frame, h, v, mode, target) = op, target == .screen {
+                return .sprite(set: set, frame: frame, h: h, v: v, mode: mode, target: target)
+            }
+            return nil
+        }
+        XCTAssertEqual(sprites, [
+            screenSprite(1, 3, 280, 240),                                  // hero (state 3)
+            screenSprite(0x31, 2, 40, 320),                                // balloon
+            screenSprite(0x1a, 4, 400, 80), screenSprite(0x19, 2, 400, 80), // bonus icon, shell
+            screenSprite(0x28, 1, 500, 100),                               // star
+            screenSprite(0x10, 1, 243, 210),                               // "Erk!"
+            screenSprite(0x2d, 1, 40, 300),                                // air bubble
+        ])
+        let lastScreen = ops.lastIndex(of: screenSprite(0x2d, 1, 40, 300))!
+        let hud = Array(ops[(lastScreen + 1)...])
+        XCTAssertEqual(hud.first, .scoreToComp(QDRect(top: 446, left: 480, bottom: 476, right: 480)))
+        let timeEnd = hud.firstIndex { if case .compToScreen = $0 { return true }; return false }!
+        XCTAssertEqual(Array(hud[(timeEnd + 1)...]), [
+            .scoreToComp(QDRect(top: 445, left: 55, bottom: 476, right: 77)), compSprite(0x21, 3, 55, 446),
+            .compToScreen(QDRect(top: 446, left: 55, bottom: 476, right: 77)),
+            .scoreToComp(QDRect(top: 444, left: 16, bottom: 477, right: 48)), compSprite(8, 4, 16, 445),
+            .compToScreen(QDRect(top: 445, left: 16, bottom: 477, right: 48)),
+        ])
+    }
+
+    /// A balloon whose pop finishes and a bonus whose float-up ends die in the processing (visible cleared), so
+    /// `_Balloons_DrawToComp` / `_Bonus_Draw` do not plot them on the frame that frees them.
+    func testDeadBalloonAndBonusNotDrawnOnFreeingFrame() {
+        var state = world()
+        state.frame = 100
+        placeBalloon(&state, x: 40, y: 320, counter: 3)               // 4th pop step → dead
+        state.bonus[0].armed = true
+        state.bonus[0].visible = true
+        state.bonus[0].popped = true
+        state.bonus[0].poppedFrame = 0                                // 0 + 30 < 101 → dead
+        state.bonus[0].rect = QDRect.cell(col: 10, row: 2)
+        state.bonus[0].prevRect = state.bonus[0].rect
+        state.bonus[0].iconSet = 0x1a
+        state.bonus[0].iconFrame = 4
+        let ops = step(&state).drawOps
+        XCTAssertFalse(ops.contains { if case .sprite(0x31, _, _, _, _, _) = $0 { return true }; return false })
+        XCTAssertFalse(ops.contains { if case .sprite(0x1a, _, _, _, _, _) = $0 { return true }; return false })
+        XCTAssertEqual(state.balloons[0].state, 0)
+        XCTAssertEqual(state.numActiveBalloons, 0)
+        XCTAssertFalse(state.bonus[0].armed)
+        // Their last rects were still queued for restore at their process sites.
+        XCTAssertTrue(ops.contains(.restoreBgnd(QDRect(top: 320, left: 40, bottom: 360, right: 80), target: .screen)))
+        XCTAssertTrue(ops.contains(.restoreBgnd(QDRect.cell(col: 10, row: 2), target: .screen)))
+    }
+
+    /// The report owns the frame's ops: the state's buffer is empty after `stepFrame`.
+    func testFrameOpsBufferEmptiedAfterReport() {
+        var state = world()
+        XCTAssertFalse(step(&state).drawOps.isEmpty)
+        XCTAssertTrue(state.presentation.ops.isEmpty)
+    }
+
     /// The bgnd list is filled by the processing at `_AddRectToBgnd`'s sites, in call order — `_ProcessEnemies`
     /// (prevRect), `_ProcessHero` (prevRect, first thing), `_Splats_Process`, `_ProcessBlocks` (before the move),
     /// `_ProcessPoints` (rect, after the rise) — and restored before any sprite.

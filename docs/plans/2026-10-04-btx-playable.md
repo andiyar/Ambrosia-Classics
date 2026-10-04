@@ -258,10 +258,10 @@ Legend: ⚑ MAJOR = two Opus review legs (spec compliance, then quality — Ben:
   Level start: `levelStartOps()` = `_DrawMaze` (PICT LEVL.w1 into bgnd+comp, `_PrepareScoreBar @ 00025c65`, maze cells
   10/15/16/20/30/52 → sets 0x11/0x14/0x15/0x16/0x17/0x12-or-0x13 by level < 12; `DC` `_DrawMaze` switch). Notice state
   (`_PrepareNotice @ 00027829`, `_EraseNotice @ 0002784e`, ids 1–6, rects FI §6a) lives in `GameState`. HUD positions FI §6a
-  (score 8 digits x132 pitch 24, lives digit = lives−1, EXTRA x322…403, time bonus 5 digits x480 (+22 when < 10000),
+  (score 8 digits x132 pitch 24 — ⚑ C3: padded with leading zeros to 5 digits, `_DrawScore` buffer 0,0,0,0,0,ff,ff,ff, lives digit = lives−1, EXTRA x322…403, time bonus 5 digits x480 (+22 when < 10000),
   multiplier x601 hidden at 1×). Orbit stars draw nothing (Intel unswapped SPIN 1, data-formats §5).
 - **Tests:** `testLevelStartOpsLevel1` (PICT 912, score bar, N sprite ops = maze bubble count), `testDrawOrderMatchesPlayGame`,
-  `testRestoreBgndPrecedesSprites`, `testDeadEnemyDrawnOnFreeingFrameAsOriginal`, `testScoreDigitsNoLeadingZeros`,
+  `testRestoreBgndPrecedesSprites`, `testDeadEnemyDrawnOnFreeingFrameAsOriginal`, `testScoreDigitsNoLeadingZeros` (⚑ C3: `testScoreDigitsPadToFiveDigits` — the original pads to 5),
   `testLivesDigitShowsSpareLives`, `testTimeBonusShiftBelow10000`, `testNoticeLevelTwoDigitPlacement`.
 - **Verify:** G1 152/0; **G4 no diff**.
 

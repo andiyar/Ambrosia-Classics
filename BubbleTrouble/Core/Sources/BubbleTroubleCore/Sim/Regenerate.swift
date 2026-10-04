@@ -1,5 +1,5 @@
 // Regenerate bubbles (plan §Task 7b.1; Research note 45; Invariants 7, 18), transcribed from
-// `_RegenerateBlocks @ 0001c3db`. The screen/background restores are presentation only.
+// `_RegenerateBlocks @ 0001c3db`. The background restore (`_AddRectToBgnd`, 0001c4ee) is recorded (C3); the screen list is unused on OS X.
 
 extension GameState {
     /// `_RegenerateBlocks @ 0001c3db` (the type-2 bonus). Six attempts; each draws `(col, row) = (GetRandomFast(1,14),

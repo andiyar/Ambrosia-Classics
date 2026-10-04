@@ -3,9 +3,10 @@
 //
 // Notice ids: 0 none · 1 GET READY! · 2 FIN! · 3 PAUSED (+ PICT 9030 / 9031) · 4 GAME OVER · 5 HURRY UP! · 6 LEVEL n.
 //
-// Ownership: the session sets every notice for now (its own sites — `_NewLevel`, pause — and the frame sites it
-// derives from state: hero appear/respawn, the time-bonus HURRY UP!). C3 may move this value into `GameState` and set
-// the in-frame sites itself; the transcription is meant to be reused, not re-done.
+// Ownership: one board, `GameState.notices`. The frame sets its own notices at their original points (hero appear →
+// 0, respawn → FIN! 2 / GET READY! 1, the pause check → 3, `_TimeBonus_Process`'s HURRY UP! 5 and its timeout) and
+// records `_EraseNotice` / `_DrawNotice` (C3, `Sim/DrawOps.swift`, which retargets `draw`'s ops to the window — the
+// OS X port); the session sets the rest (`_NewLevel`'s LEVEL n / GAME OVER, the pause-exit restore).
 
 /// `_gShowWhichNotice` / `_gLastNoticeShown` / `_gEraseNotice` and the rects `_ResetNotices` computes for a 480-high
 /// screen (`(480 − 38) / 2 = 221` is the common top).
@@ -52,7 +53,7 @@ public struct NoticeBoard: Equatable, Sendable {
     }
 
     /// `_EraseNotice @ 0002784e` (once per frame, before the draw pass): when flagged, the last notice's rects go on
-    /// the bgnd-restore list (`_AddRectToBgnd`) and the screen list (`_AddRectToScreen`); the flag clears.
+    /// the bgnd-restore list (`_AddRectToBgnd`) and the screen list (`_AddRectToScreen` — unused on OS X); the flag clears.
     public mutating func erase() -> (restore: [QDRect], flush: [QDRect]) {
         guard erasePending else { return ([], []) }
         let rects: [QDRect]
@@ -69,10 +70,10 @@ public struct NoticeBoard: Equatable, Sendable {
         return (rects, rects)
     }
 
-    /// `_DrawNotice @ 00027948` (every frame, last before the flush): the current notice's sprites into comp, plus the
-    /// rects for the screen list. `level` = `_GetCurrLevelNum()`. PAUSED also draws PICT 9030 / 9031 with
-    /// `_DrawPictInRect` into the port `_IsDoubleBuffered` selects — on OS X the window port the frame is drawn
-    /// into, i.e. the comp-equivalent here (so the flush shows them).
+    /// `_DrawNotice @ 00027948` (every frame, last before the flush): the current notice's `_SpriteToComp`s, plus the
+    /// rects for the (OS X-unused) screen list. `level` = `_GetCurrLevelNum()`. PAUSED also draws PICT 9030 / 9031
+    /// with `_DrawPictInRect`. The ops carry the default target; `GameState.drawNotice` retargets them to the port
+    /// they really land in on OS X — the window (`.screen`).
     public func draw(level: Int) -> (ops: [DrawOp], flush: [QDRect]) {
         let v = Int(Self.top)
         func strip(_ set: Int, _ h: Int, frames: Int) -> [DrawOp] {
