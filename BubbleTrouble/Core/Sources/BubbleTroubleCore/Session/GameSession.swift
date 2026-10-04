@@ -63,7 +63,7 @@ public final class GameSession {
 
     let data: BTXGameData
     private var filmInput: FilmInput?
-    private var keyboard: KeyboardInput
+    private(set) var keyboard: KeyboardInput
     private var pending = SessionOutput()
 
     private var wipeDone = 0
@@ -272,6 +272,15 @@ public final class GameSession {
                 deactivated = true
             }
         }
+    }
+
+    /// The menu bar changed the prefs mid-game (`_HandleMenuChoice @ 0000a482`, task A3). The original keeps one
+    /// global prefs block, so every later reader sees the change at once: `_StopMusic` reads short 0x35, and a Key
+    /// Sets choice runs `_InitControls @ 00019395` (the codes `_CheckHeroMovement` tests from the next frame on).
+    /// The caller passes this session's `prefs` with its changes applied (the level-select max raised so far stays).
+    public func prefsChanged(_ newPrefs: BTXPrefs) {
+        prefs = newPrefs
+        keyboard.keySet = newPrefs.currentKeySet
     }
 
     /// The app was reactivated (event kind 1 inside `_PauseGame`): `local_61 = true`; Caps Lock off → resume.

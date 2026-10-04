@@ -35,8 +35,8 @@ import HectorShell
     /// The `_WipeScreen` being paced (`.wipe` op seen): its step, the band advance done, the tick it was done on.
     private var wipe: (step: Int, row: Int, lastTick: UInt32)?
 
-    /// `.disableAbout` — UNUSED until A3 adds the About item (it enables/disables that item from this flag).
-    private var aboutDisabled = false
+    /// The menu bar (A3).
+    private(set) var menus: BTXMenus!
     /// `_CleanUp` from inside a game (`.quitNow`, a data failure): terminate without saving.
     private var quitWithoutSaving = false
     /// Quit while paused: `_PauseGame` case 0x17 (the quit Apple event — Carbon's Quit menu item and ⌘Q arrive as
@@ -90,7 +90,10 @@ import HectorShell
         audio = BTXAudio(output: SilentAudioOutput(), sounds: sounds, data: data)
         applyPrefsToAudio()
 
-        NSApp.mainMenu = buildMenuBar()
+        menus = BTXMenus(controller: self, assets: assets)
+        NSApp.mainMenu = menus.bar                                      // `_LoadMenuBar`
+        menus.installed()
+        menus.resetOptionsMenu(prefs)                                   // `_InitMac` → `_ResetOptionsMenu`
 
         // `_CreateGameWindow @ 00010144`: `CreateNewWindow(6, 0x2800000)` 640×480 → titled only (R5), titled
         // "Bubble Trouble X", `RepositionWindow(…, kWindowCenterOnMainScreen)`.
@@ -101,6 +104,7 @@ import HectorShell
         present()
         shell.windowedWindow.makeKeyAndOrderFront(nil)
         NSApp.activate()
+        if prefs.fullScreen { _ = setFullScreen(true) }                 // `_InitMac` → `_PrepareMonitor`
 
         frameTimer = ShellIdleTimer(interval: 0.033) { [weak self] in self?.frameFired() }
         tickTimer = ShellIdleTimer(interval: 1.0 / 60.0) { [weak self] in self?.tickFired() }
@@ -113,21 +117,6 @@ import HectorShell
         let area = screen.visibleFrame, size = window.frame.size
         window.setFrameOrigin(NSPoint(x: (area.midX - size.width / 2).rounded(),
                                       y: (area.midY - size.height / 2).rounded()))
-    }
-
-    /// The menu bar until A3 transcribes `main.nib`: the application menu with Quit (⌘Q). The original keeps Quit
-    /// enabled in play (only 'pref' and 'Full' are disabled, `_PlayGame`); the item goes to `quitChosen`, which
-    /// lets a running game quit its own way.
-    private func buildMenuBar() -> NSMenu {
-        let bar = NSMenu()
-        let appItem = NSMenuItem()
-        bar.addItem(appItem)
-        let appMenu = NSMenu(title: "Bubble Trouble X")
-        let quit = appMenu.addItem(withTitle: "Quit Bubble Trouble X", action: #selector(quitChosen(_:)),
-                                   keyEquivalent: "q")
-        quit.target = self
-        appItem.submenu = appMenu
-        return bar
     }
 
     /// Quit (menu ⌘Q, or the quit Apple event via `applicationShouldTerminate`):
@@ -241,7 +230,7 @@ import HectorShell
             switch request {
             case .hideCursor: hideCursor()
             case .showCursor: showCursor()
-            case .enableMenus: break                                    // A3: Prefs / Full Screen items
+            case let .enableMenus(on): menus.playMenusEnabled = on
             case .haltAllSound: audio.haltEffects()
             case .highScoreEntry: break                                 // A4's dialog (C7); no high scores at A1
             case .quitNow: quit = true
@@ -249,7 +238,7 @@ import HectorShell
             case let .setCursor(id): (id == 200 ? NSCursor.pointingHand : NSCursor.arrow).set()   // crsr 200: Q16
             case .restoreMousePosition:
                 if let savedMouse { CGWarpMouseCursorPosition(savedMouse) }
-            case let .disableAbout(off): aboutDisabled = off
+            case let .disableAbout(off): menus.aboutDisabled = off
             case .beep: NSSound.beep()
             // C6 front-end requests — A2 wires the front end; until then these are not emitted.
             case .watchCursor: break                                    // A2: busy cursor (no public NSCursor)
@@ -342,6 +331,31 @@ import HectorShell
     private func savePrefs() {
         if let session { prefs = session.prefs }
         store.save(prefs: prefs, scores: &scores)
+    }
+
+    // MARK: Menu hooks (A3, `BTXMenus`)
+
+    /// The prefs every reader sees now: the running game's (it raises short 0x3a) or the app's.
+    var currentPrefs: BTXPrefs { session?.prefs ?? prefs }
+
+    /// A menu command changed the prefs (`_HandleMenuChoice`): the game and the sound take them at once, then
+    /// `_SaveGamePrefs`. `updateMusicVolume`: the Music toggle's `_UpdateMusicVolume`.
+    func menuChangedPrefs(_ newPrefs: BTXPrefs, updateMusicVolume: Bool = false) {
+        prefs = newPrefs
+        session?.prefsChanged(newPrefs)
+        applyPrefsToAudio()
+        if updateMusicVolume { audio.updateMusicVolume() }
+        savePrefs()
+    }
+
+    /// `_GoFullScreenMode` / `_GoWindowMode` (D3: the main screen filled, integer-crisp, no display-mode switch),
+    /// then the window redrawn. False when the switch did not happen (no main screen).
+    func setFullScreen(_ on: Bool) -> Bool {
+        if on { shell.enterFullscreen() } else { shell.exitFullscreen() }
+        guard shell.isFullscreen == on else { return false }
+        menus.setHideKeysCleared(on)
+        present()
+        return true
     }
 
     // MARK: Cursor (`_RequestGame` / `_PlayGame` / `_PauseGame`)

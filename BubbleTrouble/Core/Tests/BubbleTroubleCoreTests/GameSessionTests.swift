@@ -645,4 +645,24 @@ final class GameSessionTests: XCTestCase {
         XCTAssertEqual(out.drawOps, [.screenToComp(Self.level1Rect)])
         XCTAssertEqual(out.requests.last, .disableAbout(false))
     }
+
+    // MARK: A3. Menu-bar prefs changes mid-game
+
+    /// `_HandleMenuChoice @ 0000a482` writes the one global prefs block every reader sees: Music off (short 0x35 = 1)
+    /// mid-level means `_StopMusic` (⌘Q here) skips the fade and stops at once, and a Key Sets choice runs
+    /// `_InitControls`, so the next frame reads the new set's codes. The level-select max the game raised survives.
+    func testMenuPrefsChangeAppliesMidGame() throws {
+        let data = try gameData()
+        var now: UInt32 = 0
+        let session = try sessionAtAppear(data, now: &now)
+        var prefs = session.prefs
+        prefs.musicVolume = 1
+        prefs.currentKeySetIndex = 7
+        session.prefsChanged(prefs)
+        XCTAssertEqual(session.prefs.musicVolume, 1)
+        XCTAssertEqual(session.keyboard.keySet.name, "Classic")
+        let out = session.frame(keys: HeldKeys(codes: [0x0c], command: true))
+        XCTAssertEqual(out.music, [.stopNow], "no fade when the music pref is off")
+        XCTAssertEqual(out.ended, .quit)
+    }
 }

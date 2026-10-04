@@ -11,6 +11,19 @@ game ends (lives gone, or Esc), a new game starts at level 1.
 - **⌘Q** quits: in play the music fades out first, as the original did; quitting while playing does
   not save prefs, quitting while paused does — again as the original
 
+## Menu bar (transcribed from the original's `main.nib`)
+- **Bubble Trouble X**: About (the standard panel with the original credits), Preferences… (greyed until the
+  Preferences window lands), Services, Hide, Hide Others, Show All, Quit. No Register / Check for Updates.
+- **Edit**: the standard items (for the dialogs' text fields later).
+- **Options**: **Full Screen ⌘F** (fills the screen, black border, no resolution switch; remembered across launches),
+  **Sound Effects ⇧⌘A**, **Music ⌘M** (both ticked = on; they stick), **Key Sets ▸** (Default, then the
+  built-in sets — the choice takes effect at once, even mid-level).
+- **Window**: Minimize and Zoom (greyed — the game window has no minimize or zoom box, as the original's),
+  Bring All to Front; hold ⌥ for Minimize All / Arrange in Front. ⌘M is Music, not Minimize.
+- In play, About, Preferences… and Full Screen are greyed; pausing re-enables Preferences… and Full Screen
+  (About stays greyed while paused; after you resume, About is enabled for the rest of that game — the
+  original's own quirk: its resume path re-enables About).
+
 ## What this build is — and is not — yet
 - **No sound or music yet.** The sound mixer is waiting on a HectorKit fix (this Mac's CoreAudio was hung
   when it was built); every sound cue is already routed, so sound arrives without changing the game.

@@ -162,6 +162,19 @@ import Foundation
         }
     }
 
+    /// `_UpdateMusicVolume @ 0001b0d5` (the Music menu toggle, `_PrefsButton`): nothing unless music is loaded; out of
+    /// a game with the music not playing → `_StartMusic`; else the channel's volume = 0 out of a game without bool 0x40,
+    /// else short 0x35's (1 → 0, 2 → 0x40, 3 → 0x80, 4 → 0x100).
+    func updateMusicVolume() {
+        guard musicID != nil else { return }
+        let voice = Self.musicVoice
+        if !output.isPlaying(voice: voice) && !gameRunning {
+            apply(.start)
+            return
+        }
+        output.setVolume(voice: voice, !gameRunning && !titleMusicPref ? 0 : Self.musicVolume(pref: musicVolumePref))
+    }
+
     /// Hands sound `id` to the output once (decoded by `SoundBankPCM`, prewarmed at launch).
     private func upload(_ id: Int) {
         guard !loaded.contains(id), let pcm = try? sounds.pcm(id) else { return }
