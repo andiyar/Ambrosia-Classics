@@ -246,3 +246,30 @@ untouched; the toggle has its own UserDefaults key. Upscaled art is generated fr
 (softer, smears the fade dither and text); upscaling whole sheets (sprite bleed, smeared masks); upscayl-standard /
 ultrasharp / digital-art / high-fidelity (Ben's eye). Open for U4: plain vs de-dithered backgrounds (remacri hatching).
 **Approved by:** Ben 2026-10-04.
+
+---
+
+## D12 — Bubble Trouble X playable: architecture split, time bases, transcribed draw ops, data out of git (2026-10-04)
+
+**Decided (plan `docs/plans/2026-10-04-btx-playable.md`, after its Opus review; recorded by task T0):**
+1. **Three layers** (plan Invariant 1, S1): `BubbleTroubleCore` stays Foundation + HectorResources only (rules, session,
+   front-end state, sound cues, draw ops); a new library target **`BubbleTroubleRender`** in the same package
+   (Foundation + HectorGraphics + HectorAudio, no AppKit) owns pixels and PCM — a headless, golden-tested compositor; the
+   **App** (`BubbleTroubleX/App`) is the only code importing AppKit/HectorShell and only presents a finished 640×480
+   buffer, plays PCM and translates events. Seam types (S2 + R1: `SoundCue`, `MusicCue`, `DrawOp`, `HeldKeys`,
+   `KeyModifiers`, `SessionOutput`, `ShellRequest`, `SessionEnd`, `GameMode`, `FrameReport.sounds/.drawOps`) are LOCKED:
+   cases may be added, never renamed.
+2. **Transcribe, don't reinvent** (Invariant 2): the core records the original's `_PlayMySnd` calls and QuickDraw calls
+   (`_AddRectToBgnd`, `_RestoreBgnd`, `_SpriteToComp`, …) as ordered op lists **at the original's call sites**; the
+   renderer executes them on persistent bgnd/comp/screen buffers as QuickDraw did, artefacts included. The simulation is
+   frozen (Invariant 3): FILM replay must not change (gate G4).
+3. **Two time bases** (Invariant 4): in-game time is frames of the 0.033 s Carbon timer (`_PlayGame @ 00018247`, nominal
+   30.3 fps, missed fires dropped, never caught up); front-end and blocking sequences (countdown, music fade, wipes,
+   splashes, menus, scores) run on TickCount (1/60 s). The session API takes both explicitly; the App owns the clocks.
+4. **Original data stays out of git** for this lane (Ben's brief; plan R13): the staged `.app` carries the five `.rsrc`
+   files + `AboutCredits1.rtf` copied at staging (D10 permits shipping).
+**Rejected:** "redraw the world from state" each frame (loses the original's dirty-rect artefacts and free-frame draws);
+all logic + pixels in one Core target (Aki's shape — BTX's QuickDraw sprite pipeline needs a tested headless compositor,
+and HectorGraphics/HectorAudio must stay out of Core); a single frame clock for menus too (the original's front end is
+TickCount-paced).
+**Approved by:** orchestrator (Opus 5.5) under the plan review; Ben's yes to the full playable game 2026-10-04.

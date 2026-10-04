@@ -297,8 +297,14 @@ The same ids also exist as `ppat` in BT Levels ("Main Menu Pattern" 912, "Waves 
 `GetPicture` asks for type PICT only, so the ppats are not what the level shows. [HIGH] (type is
 fixed at the call). Titles 9001–9100 (BT Titles.rsrc); menu `PICT 0x238c` (9100) buttons and
 `0x2332` (9010) title in `_Interface`; splash `PICT 200`, `0x2333` in `_InitMac`. [HIGH]
-`Rect` 1..7 (flipped): main-menu button hot rects, QuickDraw order top,left,bottom,right.
-`xxd res/Rect_1.bin` → `00a5 00e4 013b 0106` = "Interface - New Button" (165,228,315,262). [HIGH]
+`Rect` 1..7 (flipped): main-menu button hot rects, ~~QuickDraw order top,left,bottom,right.~~
+`xxd res/Rect_1.bin` → `00a5 00e4 013b 0106` = "Interface - New Button" ~~(165,228,315,262)~~. [HIGH]
+
+⚑ corrected (plan 2026-10-04 btx-playable, task T0): `Rect` 1..7 are stored **Left, Top, Right, Bottom**, not
+QuickDraw's top,left,bottom,right. Evidence: `TMPL 128 'Rect'` and `_GetRectRsrc @ 0000c9e9`, which swaps each pair
+into a QuickDraw `Rect` (`param_2[1] = word0` left, `param_2[0] = word1` top, `param_2[3] = word2` right,
+`param_2[2] = word3` bottom). So the New button is **L165 T228 R315 B262** (QuickDraw top 228, left 165, bottom 262,
+right 315). [HIGH]
 
 ⚑ corrected (plan 2026-10-03 hectorkit-btx-decoders, Task 7) — evidence: `data-census.md` §3–§4 (HectorKit `PICT`,
 `PICT.decodeQuickTime`, `PixelPattern`) and a Python opcode walk over every PICT and ppat payload at append time:
