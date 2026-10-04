@@ -22,4 +22,8 @@ enum AkiMode { case map, game, editor }
     var tryAgainOK = false                                     // 0x22a
     var guideFlag = true                                       // 0x22b
     var quitRequested = false                                  // g+100
+    var pauseFlash = false                                     // 0x86  — P2.9
+    var flashFalling = false                                   // 0x87  — P2.9
+    var flashPhase = 2                                         // 0x88  — P2.9
+    var background = 1                                         // 0x8e  — P2.9: background/decoration number (1…12 built-in, 13…17 custom)
 }
