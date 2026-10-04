@@ -17,6 +17,8 @@ final class StatsTests: XCTestCase {
         Stats.recordWin(&s, level: 0, elapsed: 150, difficulty: .medium)
         XCTAssertEqual(s.bestTimes[0], 150)
         XCTAssertEqual(s.wins[0], 3)
+        Stats.recordWin(&s, level: 10, elapsed: 400, difficulty: .medium)
+        XCTAssertEqual(s.unlocked[11], 1)
     }
 
     func testPracticeWinCountsOnly() {
@@ -25,6 +27,10 @@ final class StatsTests: XCTestCase {
         XCTAssertEqual(s.wins[0], 1)
         XCTAssertEqual(s.bestTimes[0], 0)
         XCTAssertEqual(s.unlocked[1], 0)
+        s.bestTimes[2] = 300
+        Stats.recordWin(&s, level: 2, elapsed: 100, difficulty: .practice)
+        XCTAssertEqual(s.wins[2], 1)
+        XCTAssertEqual(s.bestTimes[2], 300)
     }
 
     func testLevel12WinUnlocksNothingBeyond() {
@@ -53,6 +59,9 @@ final class StatsTests: XCTestCase {
         Stats.recordGiveUp(&s, level: 4)
         XCTAssertEqual(s.giveUps[4], 1)
         XCTAssertEqual(s.losses[4], 1)
+        s.losses[4] = 32767
+        Stats.recordLoss(&s, level: 4)
+        XCTAssertEqual(s.losses[4], -32768)
     }
 
     func testTableSplitsBestTimeAndSumsTotals() {

@@ -1,9 +1,9 @@
 import Foundation
 
 /// The statistics half of `_p` (docs/aki/rules.md §14, file-formats.md §2.2): the win block of
-/// `_CustomGameScreen`, the loss and give-up counters, and the Stats dialog fill. Every write is
-/// guarded by `level < 12` (custom levels 13…17 record nothing, levels.md §3); the counters are the
-/// original's 16-bit adds (`&+`, Int16 wrap).
+/// `_CustomGameScreen`, the loss and give-up counters, and the Stats dialog fill. The counters and
+/// the best time are guarded by `level < 12` (custom levels 13…17 record nothing, levels.md §3); the
+/// unlock by `level < 11` and not Practice. The counters are the original's 16-bit adds (`&+`, Int16 wrap).
 public enum Stats {                                             // P2.7 — rules §14, file-formats §2.2 stats dialog
     /// `_CustomGameScreen` win block DC:7479–7501: level < 12 → wins[level] += 1 (incl. Practice);
     /// not Practice → best[level] = elapsed (g+0xb4) if 0, else the smaller; not Practice ∧ level < 11 →
@@ -41,13 +41,6 @@ public enum Stats {                                             // P2.7 — rule
     /// One level's line of the Stats dialog.
     public struct Row: Equatable, Sendable {
         public var wins: Int, losses: Int, giveUps: Int, bestMinutes: Int, bestSeconds: Int
-        public init(wins: Int, losses: Int, giveUps: Int, bestMinutes: Int, bestSeconds: Int) {
-            self.wins = wins
-            self.losses = losses
-            self.giveUps = giveUps
-            self.bestMinutes = bestMinutes
-            self.bestSeconds = bestSeconds
-        }
     }
 
     /// `_CreateNewDialog(0x3c)` DC:1717–1780: minutes = (short)(best / 60); seconds =
