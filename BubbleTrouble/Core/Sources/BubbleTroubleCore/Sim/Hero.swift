@@ -14,6 +14,7 @@ extension GameState {
     /// freeze, duration 2; 2 → pop freeze, duration 5; both return, so no turn draw that call); otherwise a held
     /// direction → `_MoveHeroAligned`.
     mutating func processHero<I: InputSource>(input: inout I) {
+        addRectToBgnd(hero.prevRect)                            // 00022df5, first thing, every state
         switch hero.state {
         case 3, 1: return
         case 4:

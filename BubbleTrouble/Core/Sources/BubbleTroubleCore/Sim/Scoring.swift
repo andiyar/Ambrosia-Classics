@@ -14,6 +14,7 @@ extension GameState {
             v = Int32(multiplier) &* v
         }
         score &+= v
+        presentation.scoreHasChanged = true
         if nextExtraLifeScore <= score {
             addHero()
             if nextExtraLifeScore < 40000 {
@@ -31,6 +32,8 @@ extension GameState {
         if 9 < lives {
             lives = 9
         }
+        presentation.reserveHeroNeedsDrawing = true
+        presentation.reserveHeroAnimate = true
         playMySnd(0xd, priority: 0x14)
         playMySnd(0xd, priority: 0x14)
     }
@@ -82,13 +85,17 @@ extension GameState {
     /// `_Multiplier_Change(v) @ 00019ceb`: multiplier = v; (draw); animate on, timer = frame, anim counter 0.
     mutating func multiplierChange(_ v: Int16) {
         multiplier = v
+        multiplierDraw(true)
         multiplierAnimating = true
         multiplierTimer = frame
         multiplierAnimCounter = 0
     }
 
     /// `_Multiplier_Reset(draw) @ 00019e68`: multiplier = 1 (the flag only triggers a redraw).
-    mutating func multiplierReset() {
+    mutating func multiplierReset(draw: Bool = false) {
         multiplier = 1
+        if draw {
+            multiplierDraw(true)
+        }
     }
 }

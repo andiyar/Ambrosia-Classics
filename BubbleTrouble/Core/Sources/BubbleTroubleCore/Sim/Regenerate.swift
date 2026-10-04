@@ -50,6 +50,7 @@ extension GameState {
                 } else {
                     maze[Int(col), Int(row)] = rng.fast(0, 1) == 0 ? CellCode.purple : CellCode.blue
                 }
+                addRectToBgnd(QDRect.cell(col: Int(col), row: Int(row)))   // 0001c4ee, after the maze write
                 var r = QDRect.cell(col: Int(col), row: Int(row))
                 r.inset(dx: 3, dy: 3)
                 let e = wasEnemySquished(r)

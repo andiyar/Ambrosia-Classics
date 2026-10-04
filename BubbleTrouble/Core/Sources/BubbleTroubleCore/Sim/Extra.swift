@@ -12,7 +12,9 @@ extension GameState {
         if (1...5).contains(letter) {
             extraLetters[letter - 1] = true
         }
+        extraDraw(true)                                         // 0001a1c3
         guard !extraAnimating, extraLetters.allSatisfy({ $0 }) else { return }
+        extraDraw(true)                                         // 0001a21f (before the letters clear)
         extraAnimating = true
         extraTimer = frame
         extraAnimCounter = 0
@@ -28,7 +30,10 @@ extension GameState {
     }
 
     /// `_EXTRA_Reset(draw) @ 0001a128`: all five letters cleared (the flag only redraws).
-    mutating func extraReset() {
+    mutating func extraReset(draw: Bool = false) {
         for k in extraLetters.indices { extraLetters[k] = false }
+        if draw {
+            extraDraw(true)
+        }
     }
 }

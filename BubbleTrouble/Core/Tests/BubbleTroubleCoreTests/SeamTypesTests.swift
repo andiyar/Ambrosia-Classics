@@ -67,7 +67,8 @@ final class SeamTypesTests: XCTestCase {
         XCTAssertNotEqual(SessionOutput(ended: .gameOver), SessionOutput())
     }
 
-    /// `FrameReport` gains `sounds` and `drawOps`, empty until C2 / C3 fill them; a real `stepFrame` leaves both empty.
+    /// `FrameReport` gains `sounds` and `drawOps`. A quiet frame plays nothing; since C3 its draw ops are the OS X
+    /// frame's QuickDraw calls — here just the hero's restore and plot, into the window.
     func testFrameReportDefaultsEmpty() {
         var maze = try! Maze(data: Data(count: Maze.byteCount))
         maze[2, 2] = CellCode.normal
@@ -80,7 +81,9 @@ final class SeamTypesTests: XCTestCase {
         for _ in 0..<3 {
             let report = state.stepFrame(input: &input)
             XCTAssertEqual(report.sounds, [])
-            XCTAssertEqual(report.drawOps, [])
+            let hero = QDRect.cell(col: 7, row: 6)
+            XCTAssertEqual(report.drawOps, [.restoreBgnd(hero, target: .screen),
+                                            .sprite(set: 1, frame: 3, h: 280, v: 240, mode: .normal, target: .screen)])
         }
     }
 }

@@ -10,7 +10,13 @@ extension GameState {
     /// bonus < 500 → flash on, flash timer = frame.
     mutating func timeBonusProcess() {
         guard !isEndOfLevel else { return }
-        guard 0 < timeBonus else { return }      // the notice timeout (`_PrepareNotice(0)`) — presentation only
+        guard 0 < timeBonus else {
+            // HURRY UP! up for more than 60 frames since the bonus ran out → `_PrepareNotice(0)` (timer untouched).
+            if notices.current == 5 && Int(timeBonusTimer) + 0x3c < Int(frame) {
+                prepareNotice(0)
+            }
+            return
+        }
         let now = frame
         guard hero.state == 2 else {
             timeBonusTimer = now
@@ -18,10 +24,12 @@ extension GameState {
         }
         guard Int(timeBonusTimer) + 0x1e < Int(now) else { return }
         timeBonus &-= 0x32
+        presentation.timeBonusHasChanged = true
         timeBonusTimer = now
         if timeBonus == 0 {
             playMySnd(0x1e, priority: 0x14)          // 00006a95 "Hurry Up!"
             playMySnd(0x17, priority: 0x14)          // 00006ab1 "No Bonus Points"
+            prepareNotice(5)                         // HURRY UP!
             jewelsTurnToBlocks()
         } else if timeBonus < 500 {
             playMySnd(0x15, priority: 0x14)          // 00006aee "Bonus Timer Warning"
@@ -35,6 +43,7 @@ extension GameState {
     mutating func timeBonusIncrease(_ v: Int32) {
         let sum = timeBonus &+ v
         timeBonus = sum < 0x1866f ? sum : 0x1866e
+        presentation.timeBonusHasChanged = true
         timeBonusFlash = true
         timeBonusFlashTimer = frame
     }
@@ -49,6 +58,7 @@ extension GameState {
                 let cell = maze[col, row]
                 guard cell == CellCode.jewel || cell == CellCode.cluster else { continue }
                 maze[col, row] = CellCode.normal
+                addRectToBgnd(QDRect.cell(col: col, row: row))   // 0001c769, after the maze write
                 stars.newGroup(x: Int16(col * 0x28), y: Int16(row * 0x28), group: 0, hero: heroAnchor, frame: frame,
                                prefs: config.prefs, rng: &rng)
             }

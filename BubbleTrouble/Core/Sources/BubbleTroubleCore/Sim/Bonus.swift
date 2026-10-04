@@ -35,8 +35,13 @@ extension GameState {
                 let bit = 1 << (Int(extraAnimCounter) & 0x1f)
                 if bit & 0x155 != 0 {
                     for k in extraLetters.indices { extraLetters[k] = true }
-                } else if bit & 0xaa != 0 || bit & 0x200 != 0 {
+                    extraDraw(true)                         // 0001aa34
+                } else if bit & 0xaa != 0 {
                     for k in extraLetters.indices { extraLetters[k] = false }
+                    extraDraw(false)
+                } else if bit & 0x200 != 0 {
+                    for k in extraLetters.indices { extraLetters[k] = false }
+                    extraDraw(true)
                 }
             }
         }
@@ -83,6 +88,7 @@ extension GameState {
                 bonusRise(i)
                 bonusExitAndClamp(i)
             }
+            addRectToBgnd(bonus[i].prevRect)                // 0001ac9a, every launched armed slot
         }
     }
 
@@ -121,8 +127,13 @@ extension GameState {
             multiplierAnimating = false
         }
         multiplierTimer = now
-        if multiplierAnimCounter < 9, (1 << (Int(multiplierAnimCounter) & 0x1f)) & 0x155 != 0 {
+        guard multiplierAnimCounter < 9 else { return }
+        let bit = 1 << (Int(multiplierAnimCounter) & 0x1f)
+        if bit & 0x155 != 0 {
+            multiplierDraw(true)                            // 00019e41
             playMySnd(0x20, priority: 0x1e)                 // 00019e5d "Bonus Multiplier Flash"
+        } else if bit & 0xaa != 0 {
+            multiplierDraw(false)                           // 00019e33
         }
     }
 
@@ -158,6 +169,7 @@ extension GameState {
         playMySnd(0x1a, priority: 0x14)                     // 0001a73a "Get Bonus"
         bonus[slot].popped = true
         bonus[slot].poppedFrame = frame
+        addRectToBgnd(bonus[slot].rect)                     // 0001a764
         stars.newGroup(x: bonus[slot].rect.left, y: bonus[slot].rect.top, group: 2, hero: heroAnchor, frame: frame,
                        prefs: config.prefs, rng: &rng)
         bonusReward(slot)

@@ -28,6 +28,7 @@ extension GameState {
         hero.state = 3
         hero.stateStart = frame
         stopAllEnemies()
+        newOuch()                                                   // display only
         heroCaughtThisFrame = true
         if kind == 1 {
             // 00021e80: the draw picks "Ayeeee" (0) or "Oooer" — no extra draw.

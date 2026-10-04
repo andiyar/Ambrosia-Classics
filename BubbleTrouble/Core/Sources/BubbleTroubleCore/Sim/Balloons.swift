@@ -87,6 +87,7 @@ extension GameState {
         guard numActiveBalloons != 0 else { return }
         let now = frame
         for i in balloons.indices where balloons[i].state != 0 {
+            addRectToBgnd(balloons[i].prevRect)                 // 000243f0, before the state switch
             switch balloons[i].state {
             case 2:
                 if Int(balloons[i].animTimer) + Int(balloons[i].animPeriod) < Int(now) {

@@ -23,6 +23,7 @@ extension GameState {
         guard numActiveBlocks != 0 else { return }
         for i in blocks.indices {
             guard blocks[i].state != 0 else { continue }
+            addRectToBgnd(blocks[i].prevRect)                   // 0001d306, before `_MoveBlock`
             if blocks[i].moving {
                 moveBlock(i)
             }

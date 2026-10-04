@@ -62,6 +62,7 @@ extension GameState {
                 return
             }
 
+            addRectToBgnd(enemies[i].prevRect)                  // 00011bbf (LAB_00011baa), every state 1…6
             correctEnemyAligned(i)
             if !enemies[i].aligned {
                 let e = enemies[i]
