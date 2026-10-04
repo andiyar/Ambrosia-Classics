@@ -4,6 +4,7 @@ name: AmbrosiaClassics
 options:
   deploymentTarget:
     macOS: "15.0"
+    iOS: "26.0"
   createIntermediateGroups: true
 packages:
   AkiCore:
@@ -41,8 +42,63 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
+  # The iPad app (plan C6, D7): the same shared Aki/App code over HectorShell's iOS shell, host in Aki/App/iOS.
+  AkiPad:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Aki/App
+        excludes:
+          - "Mac/**"
+          - "iOS/Info.plist"
+    dependencies:
+      - package: AkiCore
+        product: AkiCore
+      - package: HectorKit
+        product: HectorShell
+    settings:
+      base:
+        PRODUCT_NAME: Aki
+        PRODUCT_BUNDLE_IDENTIFIER: com.ambrosiaclassics.aki.ipad
+        TARGETED_DEVICE_FAMILY: "2"
+        IPHONEOS_DEPLOYMENT_TARGET: "26.0"
+        DEVELOPMENT_TEAM: 5W72UJL332
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        INFOPLIST_FILE: Aki/App/iOS/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        COMPRESS_PNG_FILES: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+    postBuildScripts:
+      # The ORIGINAL Aki 1.2.0 Contents/Resources, unchanged, into the bundle root (before signing), plus
+      # Apple's OsakaMono.ttf for the Release Notes (UIAppFonts) when this Mac has it — as tools/stage-aki.sh.
+      - name: Copy original Aki data
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          DATA="${AKI_DATA_12:-$SRCROOT/Resources/Aki/1.2.0.app/Contents/Resources}"
+          if [ ! -f "$DATA/map.png" ]; then
+            echo "error: AkiPad: no Aki 1.2.0 Contents/Resources at $DATA (set AKI_DATA_12)" >&2
+            exit 1
+          fi
+          DEST="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH"
+          rsync -a --exclude '.DS_Store' --exclude '*.icns' "$DATA/" "$DEST/"
+          OSAKA="$(find /System/Library/AssetsV2 -name OsakaMono.ttf -print -quit 2>/dev/null || true)"
+          if [ -n "$OSAKA" ]; then
+            cp "$OSAKA" "$DEST/OsakaMono.ttf"
+          else
+            echo "warning: AkiPad: OsakaMono.ttf not found under /System/Library/AssetsV2; Release Notes fall back to Menlo"
+          fi
 schemes:
   Aki:
     build:
       targets:
         Aki: all
+  AkiPad:
+    build:
+      targets:
+        AkiPad: all
