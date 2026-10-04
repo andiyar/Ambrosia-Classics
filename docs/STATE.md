@@ -48,7 +48,8 @@
    Level Statistics; 5e96287) — both ⚑ MAJOR, spec + quality legs each (P2.10 MERGEABLE ×2; P2.11 MERGEABLE +
    MERGEABLE_WITH_FIXES), one fix round 70becea; plan ⚑ corrections 51ac4a2; **P2.12** note 9ea8c5d = origin/main. Gates
    from the merge head (seat-run): AkiCore **107 / 0**, M2 BUILD SUCCEEDED (0 our warnings), M3 floor **167**, staged
-   `out/Aki/Aki.app` (50 PNG) + `out/Aki/WHAT-TO-EXPECT.md`, boot smoke ok. Opus seat (cap lifted by Ben). **Open: Ben's P2
+   `out/Aki/Aki.app` (50 PNG) + `out/Aki/WHAT-TO-EXPECT.md`, boot smoke ok. Opus seat (cap lifted by Ben). **Ben's first play (2026-10-04, DECISIONS D6): delighted; matched pairs VANISH → fade fix owed (one refresh wait per
+   frame); Esc-Cancel kept; Q25 left as is. Open: the fade fix, then Ben's formal P2
    gate** — play a level start to finish on each difficulty, "it plays like Aki", watch the fade (Q24) and the Give Up
    time-out edge (Q25). Not done: the plan's P2.12 screenshot script (Ben declined computer-use control of the app this
    session). Handoff `docs/handoff-2026-10-04-aki-phase2-p210-p212.md`. Next after the gate: Phase 3 (editor, `.aki`).

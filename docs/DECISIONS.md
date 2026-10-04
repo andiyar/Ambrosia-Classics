@@ -139,3 +139,21 @@ fighting AppKit's ⌥ alternates and tiling items (no switch exists) · leaving 
 wrap in `_GetDistantObject` (it IS the original's behaviour, reachable or not) · accepting unclosed regions (no census
 evidence; Invariant 4) · tagging `v0.3.0` to leave `v0.2.0` for the shell session (version order would invert).
 **Approved by:** BTX orchestrator (Fable 5.1), 2026-10-04; Ben's review pending on items 1 and 5.
+
+---
+
+## D6 — Aki Phase 2 first play: the fade must show, Esc keeps Cancel, Give Up clock left as is (2026-10-04)
+
+**Decided (Ben, after his first game of Aki "in a decade", on the staged P2.12 build):**
+1. **Q24 — matched pairs must fade.** On the staged build they just vanish (the 11 fade frames land inside one display
+   refresh). Fix: one display-refresh wait per fade frame in `runFade`, so each frame reaches the screen — fidelity with the
+   2008 Mac (beam-synced QuickDraw flushes), not an affordance.
+2. **Esc presses Cancel in the Carbon dialogs** (P1.10's mapping of Esc to every `not!` button) — kept, although the original
+   set no cancel button. The carried P2.11 review Minor (held Esc can re-open Give Up) is accepted with it.
+3. **Q25 — Give Up clock:** Ben's instinct is that the clock should pause under "Are you sure…?", but that "sorta cheats" —
+   not ruled. The replica keeps the current reading (clock runs under the modal; the time-out-then-OK edge stays copied).
+   Re-ask only if new evidence about the original appears.
+
+**Still open:** the formal P2 gate (each of Hard / Medium / Easy / Practice start to finish, "it plays like Aki") — re-stage
+after the fade fix and ask Ben then.
+**Approved by:** Ben 2026-10-04 (items 1–3, in his words).
