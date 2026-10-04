@@ -68,8 +68,20 @@ import HectorShell
     private var handCursor = NSCursor.pointingHand
     /// `CGDisplayFade` stand-in for the full-screen splash (`.displayFade`).
     private let displayFade = BTXDisplayFade()
-    /// Dialog answers waiting to be delivered once the output that asked is fully applied (A4 hook stubs).
+    /// The original's dialogs (A4).
+    private var dialogs: BTXDialogs!
+    /// Dialog requests of the output being handled: shown once its draw ops are applied, presented and the clock
+    /// selected (never over a stale screen).
+    private var pendingDialogs: [ShellRequest] = []
+    /// Dialog answers waiting to be delivered once the output being handled is fully applied.
     private var pendingAnswers: [(FrontEnd) -> SessionOutput] = []
+    /// Nesting of `handle` (answers are drained only at the outermost level).
+    private var handleDepth = 0
+    /// `ModalDialog` blocks the original's loop: while a dialog waits for the user the clocks stop, and the
+    /// TickCount the App hands out freezes (`suspendedAt`); on resume the frozen span is taken out (`clockOffset`),
+    /// so no hold, wipe or idle timer jumps.
+    private var suspendedAt: UInt32?
+    private var clockOffset: UInt32 = 0
 
     // MARK: Launch
 
@@ -128,6 +140,15 @@ import HectorShell
         // `_InitMac` → `_Interface`: the splash, the loading screen, then the main menu (C6). Info message 2 is
         // "Registered To: <name>" — the macOS account's full name (Q15).
         frontEnd = FrontEnd(data: data, prefs: prefs, highScores: scores, registeredName: NSFullUserName())
+        dialogs = BTXDialogs(data: data, art: art)
+        dialogs.playSound = { [unowned self] cue, level in audio.play(cue, sfxLevel: level) }
+        dialogs.livePrefs = { [unowned self] p, updateMusic in
+            prefs = p
+            applyPrefsToAudio()
+            if updateMusic { audio.updateMusicVolume() }
+        }
+        dialogs.modalStateChanged = { [unowned self] in modalStateChanged() }
+        menus.preferencesHandler = { [unowned self] in preferencesChosen() }
         frameTimer = ShellIdleTimer(interval: 0.033) { [weak self] in self?.frameFired() }
         fastFrameTimer = ShellIdleTimer(interval: 0.001) { [weak self] in self?.frameFired() }
         tickTimer = ShellIdleTimer(interval: 1.0 / 60.0) { [weak self] in self?.tickFired() }
@@ -171,7 +192,7 @@ import HectorShell
         if frontEnd.phase == .quit { return false }
         savePrefs()
         guard let out = frontEnd.quitFromMenuBar() else { return false }
-        handle(out, now: ShellClock.ticks())
+        handle(out, now: ticksNow())
         return true
     }
 
@@ -254,14 +275,14 @@ import HectorShell
             keys.codes.insert(0x0c)
             keys.command = true
         }
-        let now = ShellClock.ticks()
+        let now = ticksNow()
         handle(frontEnd.frame(keys: keys, now: now), now: now)
     }
 
     /// One 1/60 s fire: the wipe advances when TickCount has moved on, then the front end ticks.
     private func tickFired() {
         guard let frontEnd else { return }
-        let now = ShellClock.ticks()
+        let now = ticksNow()
         var dirty = false
         if var w = wipe, w.lastTick < now {
             w.row += 1
@@ -287,7 +308,7 @@ import HectorShell
 
     private func selectClock() {
         let want: Clock
-        if frontEnd == nil || frontEnd.phase == .quit {
+        if frontEnd == nil || frontEnd.phase == .quit || dialogs?.isModal == true {
             want = .none
         } else if frontEnd.wantsFrameTimer {
             want = session?.limitFrames == false ? .fastFrame : .frame
@@ -313,6 +334,8 @@ import HectorShell
     /// that follow it), music, effects; a wipe still in flight is finished before any new drawing (the original's
     /// wipes block), then the draw ops, present; then quit and the clock for the new phase.
     private func handle(_ out: SessionOutput, now: UInt32, alreadyDirty: Bool = false) {
+        handleDepth += 1
+        defer { handleDepth -= 1 }
         var quitNow = false, quit = false
         audio.gameRunning = session != nil                              // `gPlayGame` (`_StartMusic`'s volume rule)
         for request in out.requests {
@@ -333,7 +356,7 @@ import HectorShell
             case let .displayFade(toBlack, seconds): displayFade.fade(toBlack: toBlack, seconds: seconds)
             case .quit: quit = true
             case .highScoreNameDialog, .levelSelectDialog, .prefsDialog, .hiScoreEraseDialog, .modalDialog, .closeDialog:
-                dialogRequested(request)
+                pendingDialogs.append(request)
             }
         }
         for cue in out.music { audio.apply(cue) }
@@ -369,10 +392,21 @@ import HectorShell
             return
         }
         selectClock()
+        showPendingDialogs()
+        if handleDepth == 1 { drainAnswers() }
+    }
+
+    /// The answers queued so far, each output handled in turn (an answer's output may queue more).
+    private func drainAnswers() {
         while !pendingAnswers.isEmpty, let frontEnd {
             let answer = pendingAnswers.removeFirst()
-            handle(answer(frontEnd), now: ShellClock.ticks())
+            handle(answer(frontEnd), now: ticksNow())
         }
+    }
+
+    /// TickCount as the App hands it out: frozen while a dialog blocks, with the blocked spans taken out.
+    private func ticksNow() -> UInt32 {
+        (suspendedAt ?? ShellClock.ticks()) &- clockOffset
     }
 
     /// Copies the compositor's screen into the window bitmap (never holding the buffer across frames) and shows it.
@@ -397,42 +431,90 @@ import HectorShell
         frontEnd?.highScores = scores
     }
 
-    // MARK: - A4 dialog hooks (BTXDialogs / BTXPrefsWindow)
+    // MARK: - Dialogs (A4: `BTXDialogs`, `BTXPrefsWindow`)
 
-    /// A4 HOOK — every modal dialog the front end asks for lands here; the front end waits on the answer (its
-    /// `.dialog` step) until one of `FrontEnd`'s answer methods is called through `dialogAnswered(_:)`:
-    /// - `.levelSelectDialog(max:)` — DLOG 160 → `levelSelectDone(typed:)` (nil = Cancel); `.closeDialog` follows
-    ///   the 30-tick hold after OK (and comes at once after Cancel): dispose the dialog then.
-    /// - `.prefsDialog` — DLOG 190 → `prefsDialogDone(prefs:)`, then `audio.updateMusicVolume()` (`_PrefsButton`).
-    /// - `.hiScoreEraseDialog` — DLOG 1001 → `hiScoreEraseDone(reset:)`.
-    /// - `.modalDialog(id:)` — DLOG 290 / 291 (any key or click) and 3000 / 3001 (OK) → `dialogDone()`.
-    /// - `.highScoreNameDialog(defaultName:)` — DLOG 1000 name entry (C7) → `highScoreNameEntered(_:)`; apply that
-    ///   answer's output (snd 15 + any joke-name sound) before disposing the dialog, as the original did.
-    /// Until A4 replaces the body, each is answered at once as its Cancel / dismiss would be (after this output
-    /// is applied), so the front end never waits on a dialog nobody shows.
-    private func dialogRequested(_ request: ShellRequest) {
-        switch request {
-        case .levelSelectDialog: pendingAnswers.append { $0.levelSelectDone(typed: nil) }
-        case .prefsDialog: pendingAnswers.append { $0.prefsDialogDone(prefs: $0.prefs) }
-        case .hiScoreEraseDialog: pendingAnswers.append { $0.hiScoreEraseDone(reset: false) }
-        case .modalDialog: pendingAnswers.append { $0.dialogDone() }
-        case let .highScoreNameDialog(name): pendingAnswers.append { $0.highScoreNameEntered(name) }   // OK at once
-        case .closeDialog: break
-        default: break
+    /// The front end's dialog requests of the output just handled, in order. `.closeDialog` disposes DLOG 160 after
+    /// the front end's 30-tick hold (it comes at once after Cancel).
+    private func showPendingDialogs() {
+        while !pendingDialogs.isEmpty {
+            let request = pendingDialogs.removeFirst()
+            if request == .closeDialog {
+                dialogs.close()
+            } else {
+                showDialog(request, fromPause: false)
+            }
         }
     }
 
-    /// A4 HOOK — a dialog's answer: `dialogAnswered { $0.levelSelectDone(typed: 5) }`. The output is applied now.
-    func dialogAnswered(_ answer: (FrontEnd) -> SessionOutput) {
-        guard let frontEnd else { return }
-        handle(answer(frontEnd), now: ShellClock.ticks())
+    private func showDialog(_ request: ShellRequest, fromPause: Bool) {
+        switch request {
+        case .highScoreNameDialog, .modalDialog(id: 3000), .modalDialog(id: 3001):
+            // `_InitCursor` (`_CheckHiScore`, `_DoBirthdaysCheck`): the arrow, shown.
+            showCursor()
+            setCursor(.arrow)
+        default:
+            break
+        }
+        dialogs.present(request, prefs: currentPrefs, fullScreen: shell.isFullscreen) { [unowned self] answer in
+            answerArrived(answer, fromPause: fromPause)
+        }
     }
 
-    /// A4 HOOK — Preferences… (⌘,) at the menu screen: `_PrefsAppleEventHandler` sets `gDoPrefsNow`, which the
-    /// menu loop turns into `.prefsDialog`. A4 wires it: `menus.preferencesHandler = { [unowned self] in
-    /// preferencesChosen() }` (the item validates disabled while the handler is nil).
+    /// A dialog answered. The answer reaches the front end after the output being handled (if any) is applied; from
+    /// an event (a click, a key) it is handled at once — DLOG 1000's snd 15 / joke-name sound play with it still up.
+    private func answerArrived(_ answer: BTXDialogs.Answer, fromPause: Bool) {
+        if case let .prefs(p) = answer {
+            prefsDialogClosed(p)
+            if !fromPause {
+                pendingAnswers.append { [unowned self] in
+                    let out = $0.prefsDialogDone(prefs: p)
+                    audio.updateMusicVolume()                           // `_PrefsButton`: `_UpdateMusicVolume`
+                    return out
+                }
+            }
+        } else {
+            pendingAnswers.append { BTXDialogs.deliver(answer, to: $0) }
+        }
+        if handleDepth == 0 { drainAnswers() }
+    }
+
+    /// The tail of `_PrefsDialog` after Save (the edited prefs) or Cancel (the prefs at open): `_GoFullScreenMode` /
+    /// `_GoWindowMode` when bool 0x37 no longer matches, `_SaveGamePrefs`, `_InitControls` (the running game's keys),
+    /// `_UpdateSoundVol`, `_UpdateMusicStatus`, then `_ResetOptionsMenu` and `_SetMyCCursor(200)`.
+    private func prefsDialogClosed(_ p: BTXPrefs) {
+        if p.fullScreen != shell.isFullscreen { _ = setFullScreen(p.fullScreen) }
+        prefs = p
+        frontEnd?.prefsChanged(p)
+        applyPrefsToAudio()
+        savePrefs()
+        menus.resetOptionsMenu(p)
+        setCursor(handCursor)
+    }
+
+    /// Preferences… (⌘,): at the menu screen `_PrefsAppleEventHandler` sets `gDoPrefsNow`, which the menu loop turns
+    /// into `.prefsDialog`; while paused, `_PauseGame`'s loop opens `_PrefsDialog` itself (no `_UpdateMusicVolume`).
     func preferencesChosen() {
-        frontEnd?.requestPreferences()
+        guard let frontEnd, !dialogs.isShowing else { return }
+        if let session, session.phase == .paused {
+            showDialog(.prefsDialog, fromPause: true)
+        } else {
+            frontEnd.requestPreferences()
+        }
+    }
+
+    /// A dialog went up or away: the menu bar follows (app-modal), and the clocks stop while one waits for the user
+    /// and resume where they stopped when none does.
+    private func modalStateChanged() {
+        menus.dialogUp = dialogs.isShowing
+        if dialogs.isModal {
+            guard suspendedAt == nil else { return }
+            suspendedAt = ShellClock.ticks()
+        } else {
+            guard let t = suspendedAt else { return }
+            clockOffset &+= ShellClock.ticks() &- t
+            suspendedAt = nil
+        }
+        selectClock()
     }
 
     // MARK: Menu hooks (A3, `BTXMenus`)
@@ -535,14 +617,14 @@ import HectorShell
     /// next frame.
     func applicationDidResignActive(_ notification: Notification) {
         guard let frontEnd else { return }
-        handle(frontEnd.appDeactivated(), now: ShellClock.ticks())
+        handle(frontEnd.appDeactivated(), now: ticksNow())
     }
 
     /// `kEventAppActivated` (resume): the menu loop's `_ResumeGame`; a pause taken by deactivation may end (Caps
     /// Lock off); a demo ends.
     func applicationDidBecomeActive(_ notification: Notification) {
         guard let frontEnd else { return }
-        handle(frontEnd.appActivated(keys: heldKeys()), now: ShellClock.ticks())
+        handle(frontEnd.appActivated(keys: heldKeys()), now: ticksNow())
     }
 
     /// Quit saves the prefs from outside a game (the front end's `.quit`, the menu screens) and from the pause
@@ -562,20 +644,20 @@ import HectorShell
     func shellView(_ view: ShellView, keyDown event: NSEvent) {
         guard let frontEnd else { return }
         handle(frontEnd.key(event.keyCode, chars: event.characters ?? "", modifiers: Self.modifiers(event),
-                            isRepeat: event.isARepeat), now: ShellClock.ticks())
+                            isRepeat: event.isARepeat), now: ticksNow())
     }
 
     func shellView(_ view: ShellView, mouseDown event: NSEvent) {
         guard let frontEnd else { return }
         let p = logicalPoint(event)
-        handle(frontEnd.mouseDown(h: p.h, v: p.v, modifiers: Self.modifiers(event)), now: ShellClock.ticks())
+        handle(frontEnd.mouseDown(h: p.h, v: p.v, modifiers: Self.modifiers(event)), now: ticksNow())
     }
 
     /// K1's mouseUp forwarding: ends `_HandleMSMouse`'s `StillDown` tracking.
     func shellView(_ view: ShellView, mouseUp event: NSEvent) {
         guard let frontEnd else { return }
         let p = logicalPoint(event)
-        handle(frontEnd.mouseUp(h: p.h, v: p.v, modifiers: Self.modifiers(event)), now: ShellClock.ticks())
+        handle(frontEnd.mouseUp(h: p.h, v: p.v, modifiers: Self.modifiers(event)), now: ticksNow())
     }
 
     /// The event's point in the 640×480 logical screen (truncating, unclamped).

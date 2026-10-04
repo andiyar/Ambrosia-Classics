@@ -494,6 +494,16 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
    binary (A2, R10).
 10. `_WatchCursor` (the system watch, `GetCursor(4)`, during the windowed splash) shows the arrow: AppKit has no public
     busy cursor (A2).
+11. Dialogs (A4) are AppKit Aqua controls laid out at the DITL rects: the prefs popups (`CNTL` proc 1010, variable
+    width) are drawn at the item's fixed width; the dialog windows have modern rounded corners (Carbon's `dBoxProc`
+    were square); DLOG 160 (no `dlgx`) gets the theme background like the others; the font is Lucida Grande 13 (what
+    Carbon/Aqua showed). Dialogs centre on the MAIN display (D4 Q6), whichever screen the game window is on.
+12. Window levels per the original: only DLOG 1000 and 190 (and DLOG 200 / alerts inside Prefs) make a window group —
+    floating windowed, shielding in full screen; DLOG 160 / 1001 / 290 / 291 / 3000 / 3001 sit at the modal-panel
+    level, which in full screen is BELOW the shielding game window (as the original's would be) — Ben judges in full
+    screen.
+13. Dialog text fields take typed keys only (through the original's filters): no paste, drag, context menu or
+    press-and-hold accents (Carbon's `ModalDialog` handled none of them).
 
 ## Questions (defaults in force until Ben rules)
 | Q | question | default | who |

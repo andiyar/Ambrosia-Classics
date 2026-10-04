@@ -48,10 +48,64 @@ struct DialogKey {
     static let system: NSFont = NSFont(name: "Lucida Grande", size: 13) ?? .systemFont(ofSize: 13)
 }
 
-/// A Carbon dialog window (`dBoxProc`, no title bar): an Aqua panel that can be key.
+/// A Carbon dialog window (`dBoxProc`, no title bar): an Aqua panel that can be key, with its own field editor.
 final class CarbonDialogPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    private let textEditor = DialogFieldEditor()
+
+    override func fieldEditor(_ createFlag: Bool, for object: Any?) -> NSText? {
+        object is DialogEditField ? textEditor : super.fieldEditor(createFlag, for: object)
+    }
+}
+
+/// The edit items' field editor — TextEdit as the Dialog Manager ran it: text changes ONLY through a key event that
+/// went through the dialog's filter (`CarbonDialog.handleKeyDown` let it pass) or the dialog's own `setText`; no
+/// context menu, no drag and drop, no paste (Carbon's `ModalDialog` took none of those), no substitutions or
+/// press-and-hold accents (those insert without a key event).
+final class DialogFieldEditor: NSTextView {
+    private var inKeyDown = false
+
+    init() {
+        let container = NSTextContainer()
+        let layout = NSLayoutManager()
+        let storage = NSTextStorage()
+        storage.addLayoutManager(layout)
+        layout.addTextContainer(container)
+        super.init(frame: .zero, textContainer: container)
+        isFieldEditor = true
+        isRichText = false
+        importsGraphics = false
+        allowsUndo = false
+        isAutomaticQuoteSubstitutionEnabled = false
+        isAutomaticDashSubstitutionEnabled = false
+        isAutomaticTextReplacementEnabled = false
+        isAutomaticSpellingCorrectionEnabled = false
+        isContinuousSpellCheckingEnabled = false
+        isAutomaticTextCompletionEnabled = false
+        isAutomaticLinkDetectionEnabled = false
+        isAutomaticDataDetectionEnabled = false
+        isGrammarCheckingEnabled = false
+        unregisterDraggedTypes()
+    }
+
+    required init?(coder: NSCoder) { fatalError("not used") }
+
+    override func keyDown(with event: NSEvent) {
+        inKeyDown = true
+        super.keyDown(with: event)
+        inKeyDown = false
+    }
+
+    override func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
+        inKeyDown && super.shouldChangeText(in: affectedCharRange, replacementString: replacementString)
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? { nil }
+    override var acceptableDragTypes: [NSPasteboard.PasteboardType] { [] }
+    override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [] }
+    override func dragSelection(with event: NSEvent, offset mouseOffset: NSSize, slideBack: Bool) -> Bool { false }
 }
 
 /// The dialog's content: flipped (dialog-local QuickDraw coordinates), theme background, plus what the original
@@ -510,10 +564,11 @@ final class DialogEditField: NSTextField {
     // MARK: - Showing
 
     /// Shows the dialog at the `alertPosition…` place (horizontally centred, a third of the free height above it)
-    /// on the main screen, at `level` (BTX: `CGShieldingWindowLevel` in full screen, floating windowed — FI §1d).
+    /// on the MAIN display (the menu-bar screen — D4 Q6: the original centred on the main display, whichever screen
+    /// the game window is on), at `level` (`BTXDialogs.level(grouped:fullScreen:)`).
     func show(level: NSWindow.Level, fullScreen: Bool) {
         panel.level = level
-        if let screen = NSScreen.main {
+        if let screen = NSScreen.screens.first {
             let area = fullScreen ? screen.frame : screen.visibleFrame
             let size = template.size
             let x = (area.midX - size.width / 2).rounded()

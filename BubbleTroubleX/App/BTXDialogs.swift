@@ -12,12 +12,14 @@ import BubbleTroubleRender
 /// | 190 Preferences | `.prefsDialog` | `_PrefsDialog @ 0000ea93` | `BTXPrefsWindow` |
 /// | 200 Key set name | (inside prefs) | `_PrefsDialog` case 0x1f, `_NewSetDlgFilter @ 0000dc38` | `BTXPrefsWindow` |
 /// | 290 / 291 | `.modalDialog(id:)` | `_DisplayPoem @ 0000ce2b` / `_DisplayQuote @ 0000ceb4` | drawn, then `_WaitUntilKeyOrMousePress` (any key or click anywhere) |
-/// | 1000 High Score Name | `.highScoreEntry(rank:)` | `_CheckHiScore @ 00024b34`, `_HiScoreNameFilter @ 00024890` | default 1; edit 2 = slot-0 name, selected 0…0x400; Return/Enter → "OK!" (flashed); arrows / Delete → snd 6, a key when the text is ≥ 10 characters and nothing is selected → `SysBeep` (swallowed), else snd 1 (priority 0x14) |
+/// | 1000 High Score Name | `.highScoreNameDialog(defaultName:)` | `_CheckHiScore @ 00024b34`, `_HiScoreNameFilter @ 00024890` | default 1; edit 2 = slot-0 name, selected 0…0x400; Return/Enter → "OK!" (flashed); arrows / Delete → snd 6, a key when the text is ≥ 10 characters and nothing is selected → `SysBeep` (swallowed), else snd 1 (priority 0x14) |
 /// | 1001 High Score Erase | `.hiScoreEraseDialog` | `_HiScoreEraseDialog @ 00024670`, `_HiScoreEraseFilter @ 0000dd8d` | snd 22; default AND cancel item 2; Return / Enter / Esc / ⌘. → Cancel (flashed); `_OutlineItem(1)` ring on Reset on every update |
 /// | 3000 / 3001 birthdays | `.modalDialog(id:)` | `_DoBirthdaysCheck @ 0000c78e` | default 1, no filter, until item 1 |
 ///
 /// Sounds the FRONT END already emits are not repeated here: snd 22 for level select (`_DoLevelSelect`, C6), snd 13
-/// before DLOG 1000 and snd 15 after it (`_CheckHiScore`, C7's screen).
+/// before DLOG 1000, snd 15 and the joke-name sound in the answer's output (`_CheckHiScore`, C7's screen — applied by
+/// the App while DLOG 1000 is still up). Window levels: only DLOG 1000 and 190 (with DLOG 200 and the alerts inside
+/// it) make a window group — floating windowed, shielding in full screen; the rest sit at the modal-panel level.
 ///
 /// Alerts (amendment R10 — every `ALRT` the 1.1 code shows, with its call site; `alert(_:params:)` shows any of them):
 /// | ALRT | call site | reachable in the replica |
@@ -54,49 +56,66 @@ import BubbleTroubleRender
     /// `_PlayMySnd` from inside a dialog. The `Int?` is a stand-in for short 0x33 (the sound-effects level) for
     /// this one play — the prefs Music popup plays snd 13 at the MUSIC level (`_PrefsDialog` case 0x1b).
     var playSound: (SoundCue, Int?) -> Void = { _, _ in }
-    /// `_UpdateSoundVol` / `_UpdateMusicVolume` while the prefs dialog is up: the edited prefs, live.
-    var livePrefs: (BTXPrefs) -> Void = { _ in }
+    /// `_UpdateSoundVol` / `_UpdateMusicVolume` while the prefs dialog is up: the edited prefs, live; the flag says
+    /// whether the original called `_UpdateMusicVolume` here (Music popup, Title screen music, Defaults, Revert).
+    var livePrefs: (BTXPrefs, Bool) -> Void = { _, _ in }
+    /// Called whenever `isShowing` / `isModal` may have changed (the App stops / restarts its clocks and menus).
+    var modalStateChanged: () -> Void = {}
 
     /// Dialogs and alerts on screen, front last.
-    private(set) var stack: [CarbonDialog] = []
+    private var stack: [CarbonDialog] = []
     /// The dialog `.closeDialog` disposes (DLOG 160 after the front end's 30-tick hold).
-    private var pendingClose: CarbonDialog?
+    private var pendingClose: CarbonDialog? { didSet { modalStateChanged() } }
+    /// The open Preferences window (held here; its closures hold it only weakly).
+    private var prefsWindow: BTXPrefsWindow?
     private var monitor: Any?
     private var nullTimer: Timer?
     private var keyObserver: NSObjectProtocol?
 
-    /// True while any dialog is up — A3 disables the menu bar's items then (Carbon `ModalDialog` is app-modal).
+    /// True while any dialog is on screen — the menu bar is disabled then (Carbon `ModalDialog` is app-modal).
     var isShowing: Bool { !stack.isEmpty }
+    /// True while a dialog waits for the user (`ModalDialog` / `_WaitUntilKeyOrMousePress` block the original's
+    /// loop): the App's clocks stop. False for DLOG 160 after its OK / Cancel, held up through the front end's hold.
+    var isModal: Bool { stack.contains { $0 !== pendingClose } }
+    /// The front dialog (diagnostics, the offscreen render harness).
+    var frontDialog: CarbonDialog? { stack.last }
 
     init(data: BTXGameData, art: ArtBank) {
         self.data = data
         self.art = art
     }
 
-    static func level(fullScreen: Bool) -> NSWindow.Level {
-        // `_CheckHiScore` / `_PrefsDialog`: the dialog's window group at `CGShieldingWindowLevel()` in full screen,
-        // else `CGWindowLevelForKey(kCGFloatingWindowLevelKey)`.
-        fullScreen ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel())) : .floating
+    /// `_CheckHiScore` (DLOG 1000) and `_PrefsDialog` (DLOG 190, and DLOG 200 / its alerts inside it) put their
+    /// dialog in a window group at `CGShieldingWindowLevel()` in full screen, else `CGWindowLevelForKey(
+    /// kCGFloatingWindowLevelKey)`; every other dialog / alert stays at the modal-dialog window class's level.
+    static func level(grouped: Bool, fullScreen: Bool) -> NSWindow.Level {
+        guard grouped else { return .modalPanel }
+        return fullScreen ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel())) : .floating
     }
 
     // MARK: - Requests
 
     /// Shows the dialog a `ShellRequest` asks for; `completion` gets its answer (pass it to `deliver(_:to:)`).
-    /// Returns false for requests that are not dialogs. `prefs` / `highScores` are the front end's current ones.
+    /// Returns false for requests that are not dialogs. `prefs` are the front end's (or the paused game's) current ones.
+    /// `completion` may run before this returns (a resource that fails to load answers as Cancel at once).
     @discardableResult
-    func present(_ request: ShellRequest, prefs: BTXPrefs, highScores: HighScoreTable, fullScreen: Bool,
+    func present(_ request: ShellRequest, prefs: BTXPrefs, fullScreen: Bool,
                  completion: @escaping (Answer) -> Void) -> Bool {
         switch request {
         case .levelSelectDialog(let max):
             levelSelect(max: max, fullScreen: fullScreen, completion: completion)
-        case .highScoreEntry:
-            highScoreName(defaultName: highScores.defaultName, fullScreen: fullScreen, completion: completion)
+        case .highScoreNameDialog(let name):
+            highScoreName(defaultName: name, fullScreen: fullScreen, completion: completion)
         case .hiScoreEraseDialog:
             hiScoreErase(fullScreen: fullScreen, completion: completion)
         case .modalDialog(let id):
             modal(id, fullScreen: fullScreen, completion: completion)
         case .prefsDialog:
-            let window = BTXPrefsWindow(dialogs: self, prefs: prefs, fullScreen: fullScreen) { completion(.prefs($0)) }
+            let window = BTXPrefsWindow(dialogs: self, prefs: prefs, fullScreen: fullScreen) { [weak self] p in
+                self?.prefsWindow = nil
+                completion(.prefs(p))
+            }
+            prefsWindow = window
             window.open()
         default:
             return false
@@ -107,8 +126,7 @@ import BubbleTroubleRender
     /// `.closeDialog`: `_DoLevelSelect`'s `_DisposeDialog` after its hold.
     func close() {
         guard let d = pendingClose else { return }
-        pendingClose = nil
-        pop(d)
+        pop(d)                                                          // clears `pendingClose`
     }
 
     /// Hands an answer to the front end (`FrontEnd`'s answer methods); handle the returned output as any other.
@@ -159,7 +177,7 @@ import BubbleTroubleRender
             d.setText(4, String(level))
             completion(.levelSelect(typed: typed))
         }
-        push(d, fullScreen: fullScreen)
+        push(d, grouped: false, fullScreen: fullScreen)
         d.selectText(4)
     }
 
@@ -186,10 +204,13 @@ import BubbleTroubleRender
         d.itemHit = { [unowned self, unowned d] item in
             guard item == 1 else { return }
             let name = d.text(2)
-            pop(d)
+            d.keyFilter = { _ in true }
+            // `_CheckHiScore` plays snd 15 and the joke-name sound with the dialog still up: the answer's output is
+            // applied (synchronously, by the App) before `_DisposeDialog`.
             completion(.highScoreName(name))
+            pop(d)
         }
-        push(d, fullScreen: fullScreen)
+        push(d, grouped: true, fullScreen: fullScreen)
         d.selectText(2, from: 0, to: 0x400)
     }
 
@@ -215,7 +236,7 @@ import BubbleTroubleRender
             pop(d)
             completion(.hiScoreErase(reset: item == 1))
         }
-        push(d, fullScreen: fullScreen)
+        push(d, grouped: false, fullScreen: fullScreen)
     }
 
     /// DLOG 290 / 291 (`_WaitUntilKeyOrMousePress`) and 3000 / 3001 (`ModalDialog` until item 1).
@@ -235,7 +256,7 @@ import BubbleTroubleRender
                 completion(.dismissed)
             }
         }
-        push(d, fullScreen: fullScreen)
+        push(d, grouped: false, fullScreen: fullScreen)
     }
 
     /// `NoteAlert` / `StopAlert(id)` after `ParamText(params…)`: the alert's stage sound (`SysBeep`), item 1 the
@@ -250,7 +271,7 @@ import BubbleTroubleRender
             completion?()
         }
         if let stages = t.alertStages, stages & 0x3 != 0 { NSSound.beep() }
-        push(d, fullScreen: fullScreen)
+        push(d, grouped: false, fullScreen: fullScreen)
     }
 
     /// `StringToNum`: optional sign, decimal digits, 32-bit wrap-around.
@@ -266,16 +287,28 @@ import BubbleTroubleRender
 
     // MARK: - The modal stack and event routing
 
-    /// Puts `d` on screen in front of every other dialog and routes the app's events to it.
-    func push(_ d: CarbonDialog, fullScreen: Bool) {
-        let level = stack.last?.panel.level ?? Self.level(fullScreen: fullScreen)
+    /// `BTXPrefsWindow`: DLOG 190 itself (grouped), and DLOG 200 in its window group.
+    func open(_ d: CarbonDialog, grouped: Bool, fullScreen: Bool) {
+        push(d, grouped: grouped, fullScreen: fullScreen)
+    }
+
+    /// `BTXPrefsWindow`: `_DisposeDialog`.
+    func dismiss(_ d: CarbonDialog) {
+        pop(d)
+    }
+
+    /// Puts `d` on screen in front of every other dialog and routes the app's events to it. A dialog raised over
+    /// another shares its window group (level).
+    private func push(_ d: CarbonDialog, grouped: Bool, fullScreen: Bool) {
+        let level = stack.last?.panel.level ?? Self.level(grouped: grouped, fullScreen: fullScreen)
         stack.append(d)
         d.show(level: level, fullScreen: fullScreen)
         startRouting()
+        modalStateChanged()
     }
 
     /// Disposes `d` (and anything in front of it) and gives the key focus back to the dialog behind, if any.
-    func pop(_ d: CarbonDialog) {
+    private func pop(_ d: CarbonDialog) {
         guard let i = stack.firstIndex(where: { $0 === d }) else { return }
         for dialog in stack[i...].reversed() { dialog.dispose() }
         stack.removeSubrange(i...)
@@ -285,6 +318,7 @@ import BubbleTroubleRender
         } else {
             stopRouting()
         }
+        modalStateChanged()
     }
 
     private func startRouting() {

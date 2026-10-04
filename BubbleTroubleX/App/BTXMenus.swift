@@ -43,6 +43,31 @@ import BubbleTroubleCore
     /// Preferences… → `_PrefsButton @ 000084c6` (`_PrefsDialog` + `_UpdateMusicVolume`): task A4's Preferences window
     /// sets this. Until then the item validates disabled (there is nothing to show).
     var preferencesHandler: (() -> Void)?
+    /// A4: a Carbon dialog is up. `ModalDialog` is app-modal — every menu item is disabled until it goes (separate
+    /// from `playMenusEnabled`); the items' own enabling comes back when it ends.
+    var dialogUp = false {
+        didSet {
+            guard dialogUp != oldValue else { return }
+            for menu in allMenus(bar) {
+                if dialogUp {
+                    savedAutoenables[ObjectIdentifier(menu)] = menu.autoenablesItems
+                    menu.autoenablesItems = false
+                    for item in menu.items { item.isEnabled = false }
+                } else {
+                    let auto = savedAutoenables[ObjectIdentifier(menu)] ?? true
+                    for item in menu.items { item.isEnabled = true }
+                    menu.autoenablesItems = auto
+                }
+            }
+            if !dialogUp { savedAutoenables = [:] }
+        }
+    }
+    private var savedAutoenables: [ObjectIdentifier: Bool] = [:]
+
+    /// Every submenu of the bar, depth first (the Services menu is the system's: left alone).
+    private func allMenus(_ menu: NSMenu) -> [NSMenu] {
+        menu.items.compactMap(\.submenu).filter { $0 !== NSApp.servicesMenu }.flatMap { [$0] + allMenus($0) }
+    }
 
     private unowned let controller: BTXController
     private let assets: BTXAssets

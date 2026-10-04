@@ -12,9 +12,18 @@ progress bar, then the title screen (main menu), as the original did.
 - The pointer is the original's hand cursor (`crsr 200`).
 - Known differences: during the logo the original showed the system's watch cursor; macOS offers no such cursor
   to apps, so the arrow shows. The original also carried a spinning cursor it never used; it is not built.
-- **Not yet:** the dialogs (level select, Preferences, the high-score name entry, the erase-scores question, the
-  poem / quote pictures) — they close at once for now; the Scores and Credits screens are still empty (they
-  return straight to the menu). Both come next.
+- **Dialogs** are the original's, rebuilt from its own dialog resources: **L** level select ("Go go go!"), **P** /
+  ⌘, Preferences (Sound / Keys / Misc areas, help line at the bottom, New Set… / Delete Set, Defaults / Revert;
+  Esc or Cancel throws your changes away), the high-score name entry, option-click Scores for the erase question,
+  **X** / **Z** the poem and quote pictures. While a dialog waits for you the game stands still and the menu bar is
+  greyed, as the original's modal dialogs did. Preferences… also works while paused.
+- To redefine keys: Preferences → Keys → **New Set…**, name it, then click a field and press the key you want
+  (Control / Shift / Option / Command count — the left-hand ones); a key already used in the set beeps.
+- Known differences in the dialogs: Aqua controls of today (rounded window corners; the popups keep a fixed
+  width); dialogs appear on the main display. **In full screen**, judge this: only the high-score name entry and
+  Preferences float above the game (the original put just those two in a raised window group); level select, the
+  erase question and the poem / quote sit at the normal dialog level, which may leave them behind the full-screen
+  game, as we think the original's did — tell us if you remember them showing.
 
 ## Keys (the original's default key set)
 - **← → ↑ ↓** move, **Space** push
@@ -24,8 +33,7 @@ progress bar, then the title screen (main menu), as the original did.
   not save prefs, quitting while paused does — again as the original
 
 ## Menu bar (transcribed from the original's `main.nib`)
-- **Bubble Trouble X**: About (the standard panel with the original credits), Preferences… (greyed until the
-  Preferences window lands), Services, Hide, Hide Others, Show All, Quit. No Register / Check for Updates.
+- **Bubble Trouble X**: About (the standard panel with the original credits), Preferences…, Services, Hide, Hide Others, Show All, Quit. No Register / Check for Updates.
 - **Edit**: the standard items (for the dialogs' text fields later).
 - **Options**: **Full Screen ⌘F** (fills the screen, black border, no resolution switch; remembered across launches),
   **Sound Effects ⇧⌘A**, **Music ⌘M** (both ticked = on; they stick), **Key Sets ▸** (Default, then the

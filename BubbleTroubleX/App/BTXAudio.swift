@@ -111,8 +111,10 @@ import Foundation
         return best
     }
 
-    func play(_ cue: SoundCue) {
-        guard let volume = Self.sfxVolume(pref: sfxVolumePref) else { return }
+    /// `_PlayMySnd`. `sfxLevel` stands in for short 0x33 on this one play (the prefs Music popup's snd 13 is played
+    /// with short 0x33 set to the music level for the call — `_PrefsDialog` case 0x1b).
+    func play(_ cue: SoundCue, sfxLevel: Int? = nil) {
+        guard let volume = Self.sfxVolume(pref: sfxLevel ?? sfxVolumePref) else { return }
         let id = 9000 + cue.slot
         guard SoundBankPCM.effectIDs.contains(id), loaded.contains(id) else { return }
         let busy = (0..<Self.effectVoices).map { output.isPlaying(voice: $0) }

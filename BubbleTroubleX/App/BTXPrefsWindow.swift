@@ -83,10 +83,11 @@ import BubbleTroubleRender
         dialogs.playSound(SoundCue(slot: 0x16, priority: 10, delayFrames: 0), nil)
         addItems(d)
         resetSoundValues(d)
-        d.keyFilter = { [self] key in filter(key) }
-        d.nullEvent = { [self] in nullEvent() }
-        d.itemHit = { [self] item in hit(item) }
-        dialogs.push(d, fullScreen: fullScreen)
+        // `BTXDialogs` holds this window while it is open; the dialog's closures only point back weakly.
+        d.keyFilter = { [weak self] key in self?.filter(key) ?? true }
+        d.nullEvent = { [weak self] in self?.nullEvent() }
+        d.itemHit = { [weak self] item in self?.hit(item) }
+        dialogs.open(d, grouped: true, fullScreen: fullScreen)
     }
 
     private func finish(_ result: BTXPrefs) {
@@ -94,7 +95,7 @@ import BubbleTroubleRender
             d.keyFilter = nil
             d.nullEvent = nil
             d.itemHit = nil
-            dialogs.pop(d)
+            dialogs.dismiss(d)
         }
         dialog = nil
         let done = completion
@@ -229,11 +230,11 @@ import BubbleTroubleRender
             prefs.applyAlexPrefsKeysInit()
             prefs.applyAlexPrefsGameInit()
             resetCurrentArea(d)
-            dialogs.livePrefs(prefs)                                  // `_UpdateSoundVol`, `_UpdateMusicVolume`
+            dialogs.livePrefs(prefs, true)                            // `_UpdateSoundVol`, `_UpdateMusicVolume`
         case 4:
             prefs = saved
             resetCurrentArea(d)
-            dialogs.livePrefs(prefs)
+            dialogs.livePrefs(prefs, true)
         case 5, 6, 7:
             if area != item - 4 { changeArea(d, to: item - 4) }
         default:
@@ -252,18 +253,18 @@ import BubbleTroubleRender
         case 0x1a:
             prefs.sfxVolume = d.value(0x1a)
             if prefs.sfxVolume != 1 { prefs.lastSfxVolume = prefs.sfxVolume }
-            dialogs.livePrefs(prefs)
+            dialogs.livePrefs(prefs, false)                           // `_PlayMySnd` reads short 0x33 live
             dialogs.playSound(SoundCue(slot: 0x12, priority: 10, delayFrames: 0), nil)
         case 0x1b:
             prefs.musicVolume = d.value(0x1b)
             if prefs.musicVolume != 1 { prefs.lastMusicVolume = prefs.musicVolume }
             // short 0x33 is swapped to the music level for this one `_PlayMySnd(0xd)`, then restored.
             dialogs.playSound(SoundCue(slot: 0x0d, priority: 10, delayFrames: 0), prefs.musicVolume)
-            dialogs.livePrefs(prefs)                                  // `_UpdateMusicVolume`
+            dialogs.livePrefs(prefs, true)                            // `_UpdateMusicVolume`
         case 0x1c:
             prefs.titleMusic.toggle()
             d.setValue(0x1c, prefs.titleMusic ? 1 : 0)
-            dialogs.livePrefs(prefs)
+            dialogs.livePrefs(prefs, true)
         default:
             break
         }
@@ -326,10 +327,11 @@ import BubbleTroubleRender
             n.flash(2)
             return true
         }
-        n.itemHit = { [self, unowned n] item in
+        n.itemHit = { [weak self, unowned n] item in
+            guard let self else { return }
             switch item {
             case 2:
-                dialogs.pop(n)
+                dialogs.dismiss(n)
             case 1:
                 let name = n.text(3)
                 guard BTXDialogResources.byteLength(name) < 11 else {
@@ -339,7 +341,7 @@ import BubbleTroubleRender
                     }
                     return
                 }
-                dialogs.pop(n)
+                dialogs.dismiss(n)
                 prefs.keySetCount += 1
                 prefs.currentKeySetIndex = prefs.keySetCount
                 prefs.setKeySet(prefs.keySetCount, KeySet(name: name, left: 0x7b, right: 0x7c, up: 0x7e, down: 0x7d,
@@ -349,7 +351,7 @@ import BubbleTroubleRender
                 break
             }
         }
-        dialogs.push(n, fullScreen: fullScreen)
+        dialogs.open(n, grouped: true, fullScreen: fullScreen)
         n.selectText(3, from: 0, to: 0xff)
     }
 
@@ -369,13 +371,13 @@ import BubbleTroubleRender
     }
 
     /// The filter's null event: `_CheckPrefsHelp`, then (Keys area, set ≠ 1) one modifier key per event, each on
-    /// its press only — Control (0x3b), Shift (0x38), Option (0x3a), Command (0x37), in that order.
+    /// its press only — Control (0x3b), Shift (0x38), Option (0x3a), Command (0x37), in that order. `_GameKeyDown`
+    /// reads those KeyMap bits: the LEFT-side keys only (the right-side ones are 0x3e / 0x3c / 0x3d / 0x36).
     private func nullEvent() {
         checkHelp()
         guard area == 2, prefs.currentKeySetIndex != 1 else { return }
-        let flags = NSEvent.modifierFlags
-        let control = flags.contains(.control), shift = flags.contains(.shift)
-        let option = flags.contains(.option), command = flags.contains(.command)
+        func down(_ code: CGKeyCode) -> Bool { CGEventSource.keyState(.combinedSessionState, key: code) }
+        let control = down(0x3b), shift = down(0x38), option = down(0x3a), command = down(0x37)
         if control && !Self.controlLatch {
             setPrefsKey(0x3b); Self.controlLatch = true
             return
