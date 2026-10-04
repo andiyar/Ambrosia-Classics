@@ -500,8 +500,8 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
     Carbon/Aqua showed). Dialogs centre on the MAIN display (D4 Q6), whichever screen the game window is on.
 12. Window levels per the original: only DLOG 1000 and 190 (and DLOG 200 / alerts inside Prefs) make a window group —
     floating windowed, shielding in full screen; DLOG 160 / 1001 / 290 / 291 / 3000 / 3001 sit at the modal-panel
-    level, which in full screen is BELOW the shielding game window (as the original's would be) — Ben judges in full
-    screen.
+    level windowed. In full screen they too are raised above the shielding game window (ruling: a hidden modal dialog
+    would look like a frozen game; whether the original showed them there is Q18).
 13. Dialog text fields take typed keys only (through the original's filters): no paste, drag, context menu or
     press-and-hold accents (Carbon's `ModalDialog` handled none of them).
 
@@ -525,6 +525,7 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
 | Q15 | Info msg 2 "Registered To: <name> [n copies]" — what name? | the macOS account's full name, "1 copy" | Ben |
 | Q16 | Hand cursor `crsr 200` — kit has no `crsr` decoder? | add a tiny decoder in Render (1-bit/colour crsr = cicn-like) or fall back to `NSCursor.pointingHand`; ask | Ben |
 | Q17 | Commit BTX's original data to git? | **closed for this lane:** the session brief says game data (Resources/, ghidra/*.c, out/) never enters git; stage from `BTX_DATA`/`$BTXR` | Ben (brief 2026-10-04) |
+| Q18 | In full screen, did Level Select / Erase scores / the poems (and birthday notes) appear over the game? | shown above the game (shielding level) | Ben |
 
 ## Ben's play gates (honesty gates — his eyes/ears only)
 1. **M1 (after A1):** "level 1 onwards plays like Bubble Trouble" — controls, push/thud, enemy behaviour, speed, sounds,

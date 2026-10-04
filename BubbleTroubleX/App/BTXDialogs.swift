@@ -87,10 +87,12 @@ import BubbleTroubleRender
 
     /// `_CheckHiScore` (DLOG 1000) and `_PrefsDialog` (DLOG 190, and DLOG 200 / its alerts inside it) put their
     /// dialog in a window group at `CGShieldingWindowLevel()` in full screen, else `CGWindowLevelForKey(
-    /// kCGFloatingWindowLevelKey)`; every other dialog / alert stays at the modal-dialog window class's level.
+    /// kCGFloatingWindowLevelKey)`; every other dialog / alert stays at the modal-dialog window class's level when
+    /// windowed. In full screen those too go above the shielding game window (orchestrator ruling, Q18 for Ben: a
+    /// dialog hidden under the shield would look like a frozen game; the original's behaviour there is unknown).
     static func level(grouped: Bool, fullScreen: Bool) -> NSWindow.Level {
-        guard grouped else { return .modalPanel }
-        return fullScreen ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel())) : .floating
+        if fullScreen { return NSWindow.Level(rawValue: Int(CGShieldingWindowLevel())) }
+        return grouped ? .floating : .modalPanel
     }
 
     // MARK: - Requests

@@ -20,10 +20,9 @@ progress bar, then the title screen (main menu), as the original did.
 - To redefine keys: Preferences → Keys → **New Set…**, name it, then click a field and press the key you want
   (Control / Shift / Option / Command count — the left-hand ones); a key already used in the set beeps.
 - Known differences in the dialogs: Aqua controls of today (rounded window corners; the popups keep a fixed
-  width); dialogs appear on the main display. **In full screen**, judge this: only the high-score name entry and
-  Preferences float above the game (the original put just those two in a raised window group); level select, the
-  erase question and the poem / quote sit at the normal dialog level, which may leave them behind the full-screen
-  game, as we think the original's did — tell us if you remember them showing.
+  width); dialogs appear on the main display. **In full screen** every dialog shows above the game. The original
+  raised only the high-score name entry and Preferences there — tell us: in full screen, did Level Select, the
+  erase-scores question and the poems appear over the game?
 
 ## Keys (the original's default key set)
 - **← → ↑ ↓** move, **Space** push
