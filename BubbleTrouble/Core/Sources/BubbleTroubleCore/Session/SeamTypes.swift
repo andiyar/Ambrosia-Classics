@@ -122,6 +122,33 @@ public enum DrawOp: Equatable, Sendable {
     case wipe(step: Int)
     /// The FPS cheat readout (`_DrawFPS @ 00016f72`).
     case fps(Int)
+
+    // MARK: Front-end ops (C6, additive)
+
+    /// `_CompToSpriteGWorld @ 00014e99`: CopyBits srcCopy from comp `src` to the sprite GWorld (546 × 112: the
+    /// Letters strips above row 92, the info-box stash below) `dst`. `_DrawMainMenu @ 00009eb3` stashes the clean
+    /// background under the info box — `gTextRect` (L157 T425 R482 B445) → `gSrcTextRect` (L0 T92 R325 B112,
+    /// `_CreateSpriteGWorld @ 0001eb37`) — which `.infoText` (`_DrawInterfaceText`'s `_WorldSpriteToComp`) restores.
+    case compToSpriteWorld(src: QDRect, dst: QDRect)
+    /// `_SpriteGWorldToCompGWorld @ 00014ef0` (= `_WorldSpriteToComp @ 00015206`): CopyBits srcCopy from the sprite
+    /// GWorld `src` to comp `dst` — `_Interface`'s info-box refresh restores the stash before `_DrawInterfaceText`.
+    case spriteWorldToComp(src: QDRect, dst: QDRect)
+    /// `_CopyCompToBgnd @ 0001533f`: CopyBits srcCopy (mode 0) comp → bgnd over one rect (src = dst) — the menu
+    /// stars' erase (`_ProcessMenuStars @ 0001075d`).
+    case compToBgnd(QDRect)
+    /// `_BgndToScreen @ 0001525d`: CopyBits srcCopy (mode 0) bgnd → screen over one rect (src = dst) — the menu
+    /// stars' flush. (Pixel-identical to R1's `restoreBgnd(_, target: .screen)`; named for its menu call site.)
+    case bgndToScreen(QDRect)
+    /// The WHOLE `_WipeScreenOut @ 000074fc` reveal, blocking: the centre-out twin of `.wipe`. Two `step`-row bands
+    /// copied comp → screen — rows 240…240+`step` moving down and rows 240−`step`…240 moving up — first copied at
+    /// once, then each advancing `step` rows (and copied) whenever TickCount has moved on, while the rows swept
+    /// (`step` per advance) are ≤ `2·step + 240` → ⌊(2·step + 240) / step⌋ + 1 advances (63 at step 4). Bands
+    /// leaving 0…480 are clipped. Recorded once; the front end holds a tick phase while the renderer steps it.
+    case wipeOut(step: Int)
+    /// `_FillRect` with `RGBForeColor(rgb)` (0xRRGGBB, the high byte of each 16-bit component) over `rect` in
+    /// `target` — the splash progress bar (`_InitProgressBar @ 00006f83`, `_UpdateProgress @ 000071c5`; a 1 × 1
+    /// rect is its `_SetCPixel` corners).
+    case fillRect(QDRect, rgb: UInt32, target: DrawTarget)
 }
 
 /// A mouse position in the 640×480 logical screen plus the button state, for `FrontEnd` (menu hot rects, Rect 1…7).
@@ -187,6 +214,30 @@ public enum ShellRequest: Equatable, Sendable {
     case disableAbout(Bool)
     /// `_SysBeep(1)`.
     case beep
+
+    // MARK: Front-end requests (C6, additive) — modal dialogs the App owns; the front end waits for the answer.
+
+    /// `_DoLevelSelect @ 0000d31e`: DLOG 160 ("Start at which level (2 - ^0)?", ^0 = `max` = short 0x3a), edit
+    /// item 4 preset "2" and selected. Answer with `FrontEnd.levelSelectDone(typed:)` when OK / Cancel is hit; on
+    /// OK the original then shows the validated number (0 when rejected, after `beep`) for `_WaitFor(0x1e)` — 30
+    /// ticks — before disposing the dialog: the App holds the dialog that long.
+    case levelSelectDialog(max: Int)
+    /// `_PrefsButton @ 000084c6` → `_PrefsDialog` (DLOG 190), then `_UpdateMusicVolume`. Answer with
+    /// `FrontEnd.prefsDialogDone(prefs:)`.
+    case prefsDialog
+    /// `_HiScoreEraseDialog` (DLOG 1001 "Are you sure you want to reset the High Scores?") — option-release on the
+    /// Scores button. Answer with `FrontEnd.hiScoreEraseDone(reset:)`.
+    case hiScoreEraseDialog
+    /// A dialog shown until dismissed, then disposed: DLOG 290 (`_DisplayPoem @ 0000ce2b`, PICT 8001) and 291
+    /// (`_DisplayQuote @ 0000ceb4`, PICT 2910) close on any key / mouse press (`_WaitUntilKeyOrMousePress`);
+    /// DLOG 3000 / 3001 (`_DoBirthdaysCheck @ 0000c78e`) on their OK (item 1). Answer with `FrontEnd.dialogDone()`.
+    case modalDialog(id: Int)
+    /// `gFinished = 1` (Quit button / Q): leave through the normal path — `_main` saves the prefs after the event
+    /// loop. (Unlike `quitNow`, ⌘Q in play.)
+    case quit
+    /// `CGDisplayFade(token, seconds, from, to, 0,0,0, synchronous)` — full-screen launch only (`_InitMac`):
+    /// `toBlack` fades the display to black, else back from black. The front end holds the duration in ticks.
+    case displayFade(toBlack: Bool, seconds: Double)
 }
 
 /// Why a session ended (C4 / C6 may add cases).
