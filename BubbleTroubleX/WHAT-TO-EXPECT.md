@@ -14,9 +14,8 @@ game ends (lives gone, or Esc), a new game starts at level 1.
 ## What this build is — and is not — yet
 - **No sound or music yet.** The sound mixer is waiting on a HectorKit fix (this Mac's CoreAudio was hung
   when it was built); every sound cue is already routed, so sound arrives without changing the game.
-- **The play screen may draw little or nothing yet** (background, sprites, score bar, notices): the step that
-  records the original's drawing calls is still in review. The game itself runs underneath — keys, timing,
-  levels, lives and the time-bonus count-down are live.
+- **The screen is drawn from the original's own art**: maze, bubbles, hero, enemies, bonuses, the score bar
+  (lives, score, EXTRA, time bonus, multiplier) and the notices (LEVEL n, GET READY!, HURRY UP!, PAUSED, FIN!).
 - The mouse pointer hides and is captured while you play (as the original did); pausing shows it.
 - Prefs and the level-select high-water mark are saved at every level start, under
   `com.ambrosiaclassics.bubbletroublex`.
