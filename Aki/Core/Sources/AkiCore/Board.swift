@@ -89,6 +89,54 @@ public struct Board: Equatable, Sendable {
         tiles.removeAll { $0.isRemoved }
     }
 
+    /// `_ShuffleCustomTiles(char reuse)` @ 0x12763 (rules §5). Each attempt copies `Layouts.faceMultiset` into
+    /// 144 slots; with `reuse` all 144 are zeroed and the CURRENT tiles' faces (list order) copied into slots
+    /// 0…N−1 — inside the retry loop, so attempt 2 starts from attempt 1's result (DC:7118). Each tile in
+    /// list order redraws `rand() % 144` until the slot is non-zero, takes that face, zeroes the slot and
+    /// clears hint/selected. Then `_SetVisibleTiles`, `_SetOpenTiles`, `_CountOpenPairs`; repeat while the
+    /// count is 0 (no retry cap, as the original) and return it (g+0x60). The original re-seeds
+    /// `srand(TickCount())` per attempt; the replica takes any generator — the sequence is unreproducible.
+    public mutating func deal<R: RandomNumberGenerator>(reuse: Bool, using rng: inout R) -> Int {   // P2.3
+        var pairs: Int
+        repeat {
+            var slots = Layouts.faceMultiset
+            if reuse {
+                slots = Array(repeating: 0, count: 144)
+                for (i, tile) in tiles.enumerated() { slots[i] = tile.face }
+            }
+            for i in tiles.indices {
+                var slot: Int
+                repeat { slot = Int(rng.next() % 144) } while slots[slot] == 0
+                tiles[i].face = slots[slot]
+                tiles[i].isHinted = false
+                tiles[i].isSelected = false
+                slots[slot] = 0
+            }
+            setVisibleTiles()
+            setOpenTiles()
+            pairs = countOpenPairs()
+        } while pairs == 0
+        return pairs
+    }
+
+    /// `_CountOpenPairs` @ 0xe5e4 (rules §6) — the original's approximation, not a true matching. Over open,
+    /// unremoved tiles: m(t) = other open unremoved tiles matching t (rules §4.2); A = #{m > 0}, B = #{m == 2};
+    /// B == 6 ⇒ A −= 2; A odd ⇒ A −= 1; result (short)(A × 0.5). Exact for pairs and one or two open triples,
+    /// over-counts three triples; g+0x60 == 0 is the "no more pairs" trigger, so the formula is replicated.
+    public func countOpenPairs() -> Int {                                         // P2.3
+        let faces = tiles.filter { $0.isOpen && !$0.isRemoved }.map(\.face)
+        var a = 0, b = 0
+        for (i, face) in faces.enumerated() {
+            var m = 0
+            for (j, other) in faces.enumerated() where j != i && Board.matches(face, other) { m += 1 }
+            if m > 0 { a += 1 }
+            if m == 2 { b += 1 }
+        }
+        if b == 6 { a -= 2 }
+        if a % 2 != 0 { a -= 1 }
+        return a / 2
+    }
+
     /// Tiles not yet removed (g+0x62 after a match, rules §8 step 5).
     public var unremovedCount: Int { tiles.reduce(0) { $0 + ($1.isRemoved ? 0 : 1) } }                    // P2.2
     /// Open tiles not yet removed (rules §8 step 7, the stacked-loss test).
