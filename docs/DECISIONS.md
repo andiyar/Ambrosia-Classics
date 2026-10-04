@@ -182,3 +182,25 @@ after the fade fix and ask Ben then.
 **Rejected:** on-screen Undo (cheating, and disabled on Hard/Medium anyway); tap-hover via trackpad only (Ben chose
 tap-to-preview); fit scaling (soft); Aki-local shell (Ben chose the fork-and-merge-back).
 **Approved by:** Ben 2026-10-04, in his words.
+
+---
+
+## D8 — Bubble Trouble X: the playable app goes next; the FILM-replay bug becomes a side lane (2026-10-04)
+
+**Decided (Ben, 2026-10-04 evening, when told the core rules engine is done but nothing is playable yet):**
+1. **Start the playable Bubble Trouble X on HectorShell next** (screen, sound, input, menus, level-to-level play — the
+   plan's deferred Known delta 7 included). It no longer waits on FILMs 2–4 replaying to count exhaustion.
+2. **The FILM-replay diagnosis is a side lane, not a gate on the shell.** The two Opus investigators already running
+   finish; the orchestrator does no further digging this session. The golden freeze (plan Task 11.5) waits until the
+   diagnosis closes or Ben rules on it.
+3. **Harness format rulings in force (orchestrator, this session):** `testAllFourFilmsEndByCountExhaustion` pins FILMs
+   2–4 in `knownDiverging` and asserts they are NOT accepted (a fix forces the set to be updated); `end` prints
+   `gameover` after `death` and `max-frames` when no stop fired; `btx-replay` exits 64 on usage / missing data, 66 on a
+   data-load failure; a non-default `--rng-variant` is announced on the first line.
+
+**Evidence carried to the side lane:** the hero side of every FILM stays in sync up to its catch (every fresh push lands);
+the RNG 0x8000 variant is moot (no such draw in any FILM — NR-3 untested by these FILMs, not refuted); prefs ON confirmed
+(off is worse); FILM 1 is a FLAGGED pass (`count,level`: level completed 1167, samples out 1227); FILM 4's original makes
+one more `Random()` between frame 212's eel roll and frame 213's piranha roll; FILM 3 has a similar window (473–512);
+FILM 2's catch is a 1-pixel overlap. Four Opus audits found no code discrepancy against the decompile.
+**Approved by:** Ben 2026-10-04 (items 1–2, his choice "Start the playable app"); item 3 orchestrator (Opus 5.5).
