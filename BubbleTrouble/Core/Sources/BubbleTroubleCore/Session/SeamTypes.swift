@@ -136,9 +136,6 @@ public enum DrawOp: Equatable, Sendable {
     /// `_CopyCompToBgnd @ 0001533f`: CopyBits srcCopy (mode 0) comp → bgnd over one rect (src = dst) — the menu
     /// stars' erase (`_ProcessMenuStars @ 0001075d`).
     case compToBgnd(QDRect)
-    /// `_BgndToScreen @ 0001525d`: CopyBits srcCopy (mode 0) bgnd → screen over one rect (src = dst) — the menu
-    /// stars' flush. (Pixel-identical to R1's `restoreBgnd(_, target: .screen)`; named for its menu call site.)
-    case bgndToScreen(QDRect)
     /// The WHOLE `_WipeScreenOut @ 000074fc` reveal, blocking: the centre-out twin of `.wipe`. Two `step`-row bands
     /// copied comp → screen — rows 240…240+`step` moving down and rows 240−`step`…240 moving up — first copied at
     /// once, then each advancing `step` rows (and copied) whenever TickCount has moved on, while the rows swept

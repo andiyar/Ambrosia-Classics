@@ -366,7 +366,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(rng.seed, expect.seed)
         let h = 237 + dh - 10, v = 237 + dv - 10
         let r = QDRect(top: Int16(v), left: Int16(h), bottom: Int16(v + 26), right: Int16(h + 26))
-        XCTAssertEqual(ops, [.compToBgnd(r), .spriteToBgnd(set: 0x28, frame: 1, h: h, v: v), .bgndToScreen(r)])
+        XCTAssertEqual(ops, [.compToBgnd(r), .spriteToBgnd(set: 0x28, frame: 1, h: h, v: v), .restoreBgnd(r, target: .screen)])
         // Same mouse: no spawn. Frames advance one per > 3 ticks; frame 6 plots nothing; past 6 the slot frees.
         var frames: [Int] = []
         var t: UInt32 = 103
@@ -387,7 +387,7 @@ final class FrontEndTests: XCTestCase {
         for k in 1...5 { _ = six.process(now: 2 + UInt32(4 * k), mouse: MousePoint(h: 100, v: 100, button: false), random: &rng) }
         XCTAssertEqual(six.stars[0].frame, 6)
         let sixOps = six.process(now: 23, mouse: MousePoint(h: 100, v: 100, button: false), random: &rng)
-        XCTAssertEqual(sixOps.count, 2)                                  // compToBgnd + bgndToScreen
+        XCTAssertEqual(sixOps.count, 2)                                  // compToBgnd + restoreBgnd(→ screen)
         // Clamped to 0…614 / 0…454; the ring wraps after 30.
         for i in 0..<31 {
             _ = stars.process(now: n, mouse: MousePoint(h: 639 - (i & 1), v: 479, button: false), random: &rng)

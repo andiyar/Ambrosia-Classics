@@ -126,6 +126,9 @@ public final class Compositor {
             beginWipe(step: step)
         case let .fps(n):
             drawFPS(n)
+        case .compToSpriteWorld, .spriteWorldToComp, .compToBgnd, .wipeOut, .fillRect:
+            // C6 front-end ops (SeamTypes) — not drawn yet; R1 follow-up implements them.
+            break
         }
     }
 

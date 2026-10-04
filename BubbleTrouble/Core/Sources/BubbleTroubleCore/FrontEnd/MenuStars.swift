@@ -63,7 +63,7 @@ public struct MenuStars: Equatable, Sendable {
             ops.append(.spriteToBgnd(set: Self.spriteSet, frame: s.frame, h: s.h, v: s.v))
         }
         for s in stars where s.frame != 0 {
-            ops.append(.bgndToScreen(Self.rect(s)))
+            ops.append(.restoreBgnd(Self.rect(s), target: .screen))   // `_BgndToScreen @ 0001525d`
         }
         // Frame advance: more than 3 ticks on this frame → next frame; past 6 → free.
         for i in stars.indices where stars[i].frame != 0 && 3 < now &- stars[i].time {
