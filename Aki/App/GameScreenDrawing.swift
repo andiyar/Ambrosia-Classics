@@ -9,9 +9,6 @@ import HectorShell
 /// sheet whose blank the face is painted into. Nothing here allocates a buffer (Invariant 15).
 extension GameScreen {
 
-    /// The whole 800×600 buffer — `_SetRect(r, 0, 0, 800, 600)` (DC:6270, DC:6458, DC:6488).
-    private static let full = QDRect(left: 0, top: 0, right: 800, bottom: 600)
-
     // MARK: - Tiles
 
     /// `_DrawGameTiles` @ 0xfe0a (DC:6244): background → scratch3c (full, CopyBits, DC:6272); then the R2
@@ -21,7 +18,7 @@ extension GameScreen {
     func drawGameTiles(greyed: Bool) {                                                    // P2.9
         guard let game else { return }
         let gw = controller.gworlds!
-        let full = Self.full
+        let full = AkiGameArt.screenRect
         QD.drawToGWorld(gw.background, gw.scratch3c, mask: gw.background, srcRect: full, dstRect: full,
                         maskRect: full, mode: -9)
         let board = game.board
@@ -96,10 +93,10 @@ extension GameScreen {
         var frame = job.clicked.fadeFrame
         while frame < 11 {
             drawFadeBufferTiles(clickedBox, selectedBox, &surrounding, offsetX: job.offsetX, offsetY: job.offsetY)
-            let clickedWindow = Self.fadeWindowRect(clickedBox)
+            let clickedWindow = AkiGameArt.fadeWindowRect(clickedBox)
             controller.drawToWindow(gw.scratch3c, srcRect: clickedWindow, dstRect: clickedWindow, flush: true)
             CATransaction.flush()
-            let selectedWindow = Self.fadeWindowRect(selectedBox)
+            let selectedWindow = AkiGameArt.fadeWindowRect(selectedBox)
             controller.drawToWindow(gw.scratch3c, srcRect: selectedWindow, dstRect: selectedWindow, flush: true)
             CATransaction.flush()
             if !job.animate { break }
@@ -144,10 +141,10 @@ extension GameScreen {
     /// g+0x60, then window ← scratch3c at the window rect of the SECOND restored tile, then the first's
     /// (g+0x1ec), each flushed.
     func undoRedraw(_ job: UndoJob) {                                                     // P2.9
-        guard game != nil else { return }
+        guard let game else { return }
         let gw = controller.gworlds!
         drawGameTiles(greyed: job.openPairsAtDraw == 0)
-        let board = game!.board
+        let board = game.board
         let secondWindow = AkiGameArt.tileWindowRect(board.pixelBox(of: job.second))
         controller.drawToWindow(gw.scratch3c, srcRect: secondWindow, dstRect: secondWindow, flush: true)
         let firstWindow = AkiGameArt.tileWindowRect(board.pixelBox(of: job.first))
@@ -162,14 +159,14 @@ extension GameScreen {
     /// the 300 s cap (DC:6526–6532); open pairs and elapsed time unflushed; the pause overlay while paused
     /// (DC:6535–6541); "no more pairs" when g+0x60 == 0 with tiles left (DC:6543); the whole window.
     func redrawCustomGameScreen(tiles: Bool) {                                            // P2.9
-        guard game != nil else { return }
+        guard let atEntry = game else { return }  // not `game`: later reads must see the mutated value
         let gw = controller.gworlds!
         let g = controller.g
-        let full = Self.full
+        let full = AkiGameArt.screenRect
         QD.drawToGWorld(gw.background, gw.scratch2c, mask: gw.background, srcRect: full, dstRect: full,
                         maskRect: full, mode: -9)
         if tiles {
-            drawGameTiles(greyed: game!.openPairs == 0)
+            drawGameTiles(greyed: atEntry.openPairs == 0)
         }
         QD.drawToGWorld(gw.plate, gw.scratch2c, mask: gw.plate, srcRect: AkiGameArt.plateSource,
                         dstRect: AkiGameArt.plateDestination, maskRect: AkiGameArt.plateMask, mode: 1)
@@ -292,7 +289,7 @@ extension GameScreen {
     func redrawEntireWindow() {                                                           // P2.9
         guard game != nil else { return }
         let gw = controller.gworlds!
-        controller.drawToWindow(gw.scratch2c, srcRect: Self.full, dstRect: Self.full, flush: true)
+        controller.drawToWindow(gw.scratch2c, srcRect: AkiGameArt.screenRect, dstRect: AkiGameArt.screenRect, flush: true)
     }
 
     // MARK: - Buttons
@@ -374,13 +371,5 @@ extension GameScreen {
             QD.drawToGWorld(gw.tiles, gw.scratch3c, mask: gw.tiles, srcRect: overlay, dstRect: rect,
                             maskRect: AkiGameArt.overlayMask, mode: 1)
         }
-    }
-
-    /// The fade's window copy (DC:7957, DC:7960): (left, top+1, left+53, top+69) — `AkiGameArt.tileRect`
-    /// with its top moved down one row (AkiGameArt has no member for this rect).
-    private static func fadeWindowRect(_ box: QDRect) -> QDRect {
-        var r = AkiGameArt.tileRect(box)
-        r.top += 1
-        return r
     }
 }

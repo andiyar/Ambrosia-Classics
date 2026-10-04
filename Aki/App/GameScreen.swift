@@ -23,6 +23,8 @@ import HectorShell
     /// `_RedrawCustomTimeBar` step, the `_RedrawCustomGameScreen` time-bar tail (DC:6527), `_RedrawNoMorePairs`
     /// (DC:6420) — call the matching `AkiGame` mutator through here at the same point (Phase 2 ownership rule),
     /// so `game`'s setter stays private. nil (nothing run) while no level is loaded.
+    /// Internal, not private: the drawing extension is a second file and P2.10's `startLevel` sets the game;
+    /// S3's `private(set)` intent is "only GameScreen mutates".
     func updateGame<R>(_ body: (inout AkiGame) -> R) -> R? {
         guard game != nil else { return nil }
         return body(&game!)

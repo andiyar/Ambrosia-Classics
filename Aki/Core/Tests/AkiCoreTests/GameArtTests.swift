@@ -18,6 +18,8 @@ final class GameArtTests: XCTestCase {
         XCTAssertEqual(AkiGameArt.tileRect(box), r(377, 440, 430, 509))
         XCTAssertEqual(AkiGameArt.tileWindowRect(box), r(377, 441, 428, 507))
         XCTAssertEqual(AkiGameArt.bufferRestore(box), r(324, 371, 430, 509))
+        XCTAssertEqual(AkiGameArt.fadeWindowRect(box), r(377, 441, 430, 509))
+        XCTAssertEqual(AkiGameArt.screenRect, r(0, 0, 800, 600))
     }
 
     func testStoneLayout() {

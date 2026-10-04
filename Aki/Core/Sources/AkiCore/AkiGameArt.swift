@@ -46,6 +46,15 @@ public enum AkiGameArt {
         QDRect(left: box.left, top: box.top + 1, right: box.left + 51, bottom: box.top + 67)
     }
 
+    /// The fade frame's scratch2c → window copy of one tile: (left, top+1, left+53, top+69) (`_RedrawMatchedTiles`
+    /// DC:7957, DC:7960) — neither `tileRect` nor `tileWindowRect`.
+    public static func fadeWindowRect(_ box: QDRect) -> QDRect {
+        QDRect(left: box.left, top: box.top + 1, right: box.left + 53, bottom: box.top + 69)
+    }
+
+    /// The whole 800×600 port — `_SetRect(r, 0, 0, 800, 600)` (DC:6271).
+    public static let screenRect = QDRect(left: 0, top: 0, right: 800, bottom: 600)
+
     /// The background restore around one tile: (left−53, top−69, left+53, top+69) (`_DrawBufferTiles` DC:6693).
     public static func bufferRestore(_ box: QDRect) -> QDRect {
         QDRect(left: box.left - 53, top: box.top - 69, right: box.left + 53, bottom: box.top + 69)
