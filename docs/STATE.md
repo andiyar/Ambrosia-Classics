@@ -42,14 +42,14 @@
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Aki Phase 2 — the game** (plan P2.1–P2.12; Phase 1 verdict in). **Session 2026-10-04 (Fable seat) cut short by
-   the usage limit:** hygiene fix DONE on branch `claude/friendly-almeida-c02139` (0e25b6f, worktree
-   `.claude/worktrees/friendly-almeida-c02139`): the store test now uses a path-named defaults suite in a scratch dir
-   (`removePersistentDomain` alone leaves an empty plist that cfprefsd writes after exit — verified 0 leaks over 4 runs).
-   A P2.1 Opus implementer was dispatched and may have committed `Layouts.swift`/`LayoutTables.swift`/
-   `tools/gen-aki-layouts.py` + tests on that branch UNREVIEWED — the next seat reviews it (expected 44/0) before anything
-   merges. Briefs to re-create: impl.md / review-task.md (conventions in the Phase 1 handoff). Ben's Phase 1 question
-   rows (plan S6 Q1–Q18, Q51–Q57) stay open for his play notes; none blocks Phase 2.
+1. **Aki Phase 2 — the game** (plan P2.1–P2.12). **P2.1–P2.4 DONE and merged 2026-10-04 afternoon** (Fable seat, Opus
+   implementers + one Opus review leg each, all MERGEABLE, Minors carried): layouts generated from the bank (e36de83),
+   `Tile`/`Board` (d029b7d), deal + `_CountOpenPairs` (bbffd38), `GameClock` (6d86638). AkiCore **67 tests / 0 skips**;
+   M2 BUILD SUCCEEDED; M3 floor 167. Plan P2.2 `testCounts` corrected 22 → 25 (seat ruling, ⚑ in the plan). Next chip:
+   P2.5–P2.8 (P2.5/P2.6 ⚑ MAJOR → two review legs; total 107 after P2.8), then P2.9–P2.12 and Ben's gate ("plays like
+   Aki" on each difficulty). Handoff `docs/handoff-2026-10-04-aki-phase2-p21-p24.md` (reviewer exports need
+   `AKI_DATA_11/12`; spawn the session IN the lane worktree — the write hook). Ben's Phase 1 question rows (S6 Q1–Q18,
+   Q51–Q57) stay open for his play notes; none blocks Phase 2.
 2. Bubble Trouble X core lane: Tasks 4–5b merged; remaining tasks per its plan (separate chip chain).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
