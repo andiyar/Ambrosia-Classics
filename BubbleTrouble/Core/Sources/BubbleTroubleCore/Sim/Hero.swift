@@ -132,8 +132,10 @@ extension GameState {
         hero.spriteFrame &+= 1
         guard 0x10 < hero.spriteFrame else { return }
         if hero.visible && !hero.deathBubblesEmitted {
-            airBubbles.newGroup(x: hero.rect.left, y: hero.rect.top, group: 0xb, frame: frame, prefs: config.prefs,
-                                rng: &rng)
+            if let sound = airBubbles.newGroup(x: hero.rect.left, y: hero.rect.top, group: 0xb, frame: frame,
+                                               prefs: config.prefs, rng: &rng) {
+                playMySnd(sound.slot, priority: sound.priority)
+            }
             hero.deathBubblesEmitted = true
         }
         hero.spriteFrame = 0x10
@@ -289,7 +291,10 @@ extension GameState {
                     pushBlock(col: col, row: row, direction: face, type: n)
                     pushed = true
                 }
-                if !pushed { pushed = true }                     // thud (sound 7)
+                if !pushed {                                     // LAB_0002234b: thud
+                    pushed = true
+                    playMySnd(7, priority: 10)                   // 00022367 "Push - Failed"
+                }
             } else if !isJewelTheTarget(face, col: c, row: r) {
                 let d = getDistantObject(face, col: col, row: row)
                 if d == CellCode.empty || d == CellCode.passableP {
@@ -300,14 +305,19 @@ extension GameState {
                     pushBlock(col: col, row: row, direction: face, type: n)
                     pushed = true
                 }
-                if !pushed { pushed = true }                     // thud (sound 7)
+                if !pushed {                                     // LAB_0002234b: thud
+                    pushed = true
+                    playMySnd(7, priority: 10)                   // 00022367 "Push - Failed"
+                }
             } else {
-                pushed = true                                    // the target itself: thud (sound 7)
+                pushed = true                                    // the target itself: thud
+                playMySnd(7, priority: 10)                       // 00022367 "Push - Failed"
             }
         }
         switch n {
         case CellCode.wall, CellCode.cluster:
-            return 1                                             // thud (sound 7)
+            playMySnd(7, priority: 10)                           // 00022285 "Push - Failed" (LAB_0002226e)
+            return 1
         case 0x33:
             popped = true
         case CellCode.egg:

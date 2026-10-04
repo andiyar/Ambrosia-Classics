@@ -1,6 +1,6 @@
 // Block creation (plan §Task 5b.1; Research notes 26, 35; Invariant 8), transcribed from `_NewBlock @ 0001b94b`,
 // `_PushBlock @ 0001bd62`, `_CrushBlock @ 0001bc14`, `_KillEggBlock @ 0001be3b`, `_IsActiveBombBlock @ 0001c9c6`,
-// `_ActivateBombBlock @ 0001c1c4`. Sounds are not modelled (no RNG).
+// `_ActivateBombBlock @ 0001c1c4`. Sounds are cued (`Sounds.swift`).
 
 extension GameState {
     /// `_NewBlock(col, row, dir, type, enemy, moving) @ 0001b94b`: the first slot (0…34) whose state byte is 0. None
@@ -96,6 +96,7 @@ extension GameState {
             return
         }
         maze.cells[next.col + next.row * Maze.columns] = 0
+        playMySnd(5, priority: 10)                                  // 0001be36 (tail jmp) "Push - Successful"
     }
 
     /// `_CrushBlock(col, row, dir, score) @ 0001bc14`: `_NewBlock(next cell, dir, 0x28, −1, 0)` (a pop block); the
@@ -113,6 +114,7 @@ extension GameState {
         if maze.cells[i] != CellCode.dynamite {
             maze.cells[i] = CellCode.popping
         }
+        playMySnd(6, priority: 10)                                  // 0001bcda "Pop"
         if score {
             addToScore(1, multiply: true)
         }
@@ -138,6 +140,8 @@ extension GameState {
         blocks[i].eggToggle = false
         blocks[i].animCounter = 0
         maze.cells[Int(blocks[i].col) + Int(blocks[i].row) * Maze.columns] = CellCode.popping
+        playMySnd(6, priority: 0x14)                                // 0001bf19 "Pop"
+        playMySnd(0, priority: 0x14)                                // 0001bf35 "Squish"
         addToScore(0x32, multiply: true)
         points.newPoint(x: blocks[i].rect.left, y: blocks[i].rect.top, sprite: 0x15, delay: 0xc, level: level,
                         notRegistered: config.pointsNotRegistered)
@@ -174,6 +178,7 @@ extension GameState {
             explodeBombBlock(i)
             return
         }
+        playMySnd(0x18, priority: 10)                               // 0001c286 "Ignite"
         newBlock(col: next.col, row: next.row, direction: direction, type: CellCode.dynamite, enemy: -1, moving: false)
     }
 

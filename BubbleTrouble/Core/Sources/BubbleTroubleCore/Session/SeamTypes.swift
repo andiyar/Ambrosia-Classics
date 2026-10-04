@@ -7,8 +7,10 @@
 // Foundation-only (Invariant 1): these cross the Core → Render → App boundary as plain values.
 
 /// One `_PlayMySnd @ 00026a7b` call: slot n plays `snd 9000+n` (`gSound[n]`, loaded 9000…9047 by
-/// `_LoadSounds @ 00026a20`), at the priority the call site passes (10 / 20 / 30). `delayFrames > 0` is the
-/// 5-slot delayed queue flushed by `_Sounds_CheckDelayedSounds @ 000268a1` (C2).
+/// `_LoadSounds @ 00026a20`), at the priority the call site passes (1 / 10 / 20 / 30). Every cue a report or
+/// session output carries plays NOW: the core itself runs the 5-slot delayed queue (`_Sounds_CheckDelayedSounds
+/// @ 000268a1`, `Sim/Sounds.swift`) and emits a delayed cue in the frame it fires. `delayFrames` is the `delay` the
+/// originating `_PlayMySnd` passed — provenance only; the App must never delay a cue again.
 public struct SoundCue: Equatable, Sendable {
     /// 0…47 → `snd 9000+slot`.
     public let slot: Int

@@ -83,6 +83,7 @@ extension GameState {
         checkpoints[.bonus] = rng.drawCount
         // _DrawMaze @ 00025daa: `gAIRegistered = RT3_GetLicenseCode() != 0` (no RNG; the rest is drawing).
         aiRegistered = config.registeredValidLicence
+        soundsInitDelayedSounds()                           // _Sounds_InitDelayedSounds @ 00026888 (after the draws)
     }
 }
 

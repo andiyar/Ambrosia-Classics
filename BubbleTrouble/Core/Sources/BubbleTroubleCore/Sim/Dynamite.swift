@@ -1,5 +1,5 @@
 // Dynamite (plan §Task 5b.1; Research note 38; Invariant 7; INDEX C1), transcribed from
-// `_ExplodeBombBlock @ 0001c032` and `_CheckForBombKills @ 000116eb`. Sounds are not modelled (no RNG).
+// `_ExplodeBombBlock @ 0001c032` and `_CheckForBombKills @ 000116eb`. Sounds are cued (`Sounds.swift`).
 
 extension GameState {
     /// `_ExplodeBombBlock(i) @ 0001c032`: copy the block rect, sprite set −1 (0xffff), frame 1, retired (the slot is
@@ -15,6 +15,7 @@ extension GameState {
         blocks[slot].retired = true
         let col = Int(blocks[slot].col), row = Int(blocks[slot].row)
         maze.cells[col + row * Maze.columns] = 0
+        playMySnd(0x19, priority: 0x14)                             // 0001c0a4 "Dull Explosion"
         let x = Int16(truncatingIfNeeded: col * 0x28), y = Int16(truncatingIfNeeded: row * 0x28)
         if level < 0xc {
             stars.newGroup(x: x, y: y, group: 0xf, hero: heroAnchor, frame: frame, prefs: config.prefs, rng: &rng)
@@ -51,6 +52,7 @@ extension GameState {
             squishEnemy(i, count: Int(base &+ Int8(truncatingIfNeeded: count)))
         }
         if isHeroCaught(rect, protectInvisible: true, bigInset: true) {
+            playMySnd(0x2b, priority: 10, delay: 5)                 // 000117ba "Oooch" (+5)
             heroCaught(kind: 2)
         }
         return Int(count)

@@ -1,6 +1,7 @@
 // Moving blocks (plan §Task 8.1; Research note 36; Invariants 7, 8, 18; B11; INDEX C5), transcribed from
-// `_MoveBlock @ 0001cccb`. Sounds (`_PlayMySnd(0x14)` on the squash — the blue/purple asymmetry: the `dir = 3`
-// branch has none at step 4) are not modelled (no RNG).
+// `_MoveBlock @ 0001cccb`. The bounce sound (`_PlayMySnd(0x14, 10, 0)`, "Bounce") is cued at step 3 for every
+// direction and at step 4 for up / down / left — the right-moving block's step-4 reversal (otool 0001d221, which sets
+// dir = 3) jumps past the shared sound at 0001cfeb: no sound, replicated.
 
 extension GameState {
     /// `_MoveBlock(i) @ 0001cccb`, once per frame for every block with `+0x1a` (moving) set, from `_ProcessBlocks`.
@@ -131,6 +132,7 @@ extension GameState {
             return
         }
         if step == 3 {
+            playMySnd(0x14, priority: 10)                   // 0001d07e / 0001d103 / 0001d16a / 0001d211
             blocks[i].frame = frames.a
             return
         }
@@ -144,6 +146,9 @@ extension GameState {
         blocks[i].bounceStep = 0
         blocks[i].bounces &+= 1
         let limit: Int16 = type == CellCode.blue ? 1 : 2
+        if dir != .right {
+            playMySnd(0x14, priority: 10)                   // 0001d002 (not on the right-moving reversal)
+        }
         if blocks[i].bounces <= limit {
             return
         }

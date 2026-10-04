@@ -1,5 +1,5 @@
 // The per-frame block pass (plan §Task 8.1; Research note 37; Invariants 8, 9; bubbles-items-scoring.md §1.5),
-// transcribed from `_ProcessBlocks @ 0001d2b8`. `_AddRectToBgnd` (dirty rects) and the sounds are not modelled.
+// transcribed from `_ProcessBlocks @ 0001d2b8`. `_AddRectToBgnd` (dirty rects) is not modelled; sounds are cued (`Sounds.swift`).
 
 extension GameState {
     /// `_ProcessBlocks @ 0001d2b8`. Nothing when `_gNumActiveBlocks` is 0. Per slot 0…34 with a non-zero state:
@@ -17,7 +17,7 @@ extension GameState {
     ///
     /// Then the block–block pass (§1.5) with a per-frame reversed flag per slot: for each i in state ≠ 0, moving,
     /// not retired, the first j > i in state ≠ 0, moving, not retired whose rect strictly overlaps → i reverses
-    /// unless bouncing or already flagged, j likewise, then both are flagged (sound 0x14 not modelled).
+    /// unless bouncing or already flagged, j likewise, then both are flagged and "Bounce" (0x14) plays.
     mutating func processBlocks() {
         var reversed = [Bool](repeating: false, count: Self.blockCapacity)
         guard numActiveBlocks != 0 else { return }
@@ -98,6 +98,7 @@ extension GameState {
                     blocks[i].spriteSet = 0x18
                     blocks[i].frame = 1
                     maze.cells[cellIndex] = CellCode.popping
+                    playMySnd(0x10, priority: 10)                   // 0001d4c4 "Enemy Hatch"
                 }
             default:
                 break
@@ -118,6 +119,7 @@ extension GameState {
             }
             reversed[j] = true
             reversed[i] = true
+            playMySnd(0x14, priority: 10)                           // 0001d6b9 "Bounce"
         }
     }
 }

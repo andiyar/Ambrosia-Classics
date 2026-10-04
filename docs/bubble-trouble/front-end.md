@@ -239,8 +239,9 @@ RestoreBgnd (dirty rects) → hurt blocks → hero → enemies → balloons → 
 | 23 / 30 | No Bonus Points / Hurry Up! | time bonus hits 0 (+ notice 5 "HURRY UP!", jewels revert; `_TimeBonus_Process`) |
 | 24 / 25 | Ignite / Dull Explosion | dynamite lit / explodes |
 | 26 | Get Bonus | bonus pop, time reward |
-| 27 | Bubbles | intro, hero appears, level end, game end |
-| 28 | Short Bubbles | some air-bubble groups (`_Bubbles_NewGroup` tail) |
+| 27 | Bubbles | intro, hero appears, level end, game end; air-bubble group 8 (priority 1) and the hero-death group 0xb (priority 10) — `_Bubbles_NewGroup` tail [H, C2] |
+| 28 | Short Bubbles | air-bubble groups 4, 5, 6, 9, 10 (priority 1; `_Bubbles_NewGroup` tail `jmp` 000166bc) |
+| 29 | More Bubbles | air-bubble group 7 (priority 1; args at 0001676a) [H, C2] |
 | 31 | Invisibility Bonus | EXTRA-letter / regen / invisibility rewards |
 | 32 | Bonus Multiplier Flash | multiplier change/flash |
 | 33 | All Jewels Joined | jewel bonus; all bubbles cleared |
@@ -252,7 +253,7 @@ RestoreBgnd (dirty rects) → hurt blocks → hero → enemies → balloons → 
 | 41 / 42 | Oh My / Oh No | countdown ≥10000 / 0 |
 | 43 | Oooch | blast catches hero (+5) |
 | 46 / 47 | Non the dog / Squeak squeak | W / B on menu |
-(12 Warble, 29 More Bubbles: no `_PlayMySnd` site found except the 48-sound cheat → likely unused [M].)
+(12 Warble: no `_PlayMySnd` site found except the 48-sound cheat → likely unused [M]. 29 More Bubbles IS used — C2 correction 2026-10-04: the tail-jump args of `_Bubbles_NewGroup` were not visible in the decompile. Also C2: "Bounce" 20 is not played on a right-moving blue/purple block's step-4 reversal (`_MoveBlock` 0001d221 skips the shared call at 0001cfeb).)
 - Music [H]: one `snd` per set, named "Level set N music.1" (11001–11004, ima4 stereo); level music = LEVL w2; **title music = "Level set 3 music"**. `_StartMusic` queues the segment 50× on one channel (effective loop ≈ 50 plays) [H `_StartMusic` loop to 0x33]. Starts: title (after load if registered; re-started whenever not playing on the menu), hero appearance each life. Stops: death (no fade), level end (fade), new game (fade), pause (pause/resume). Never in demo. Volume (short 0x35): 1 off, 2 → 0x40, 3 → 0x80, 4 (default) → 0x100; title-screen volume 0 unless bool 0x40 "Title screen music" (default ON).
 
 ## 8. Preferences (file "Bubble Trouble X Prefs", Preferences folder, data fork: version 0x17, 100 bool / 100 short / 100 long / 20 key sets / legacy scores, + 0x8a high-score block — bank data-formats §9) [H]

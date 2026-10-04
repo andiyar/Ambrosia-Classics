@@ -2,7 +2,8 @@
 // `_SquishEnemy @ 0001131b`, `_PopEnemy @ 00011254`, `_KillEnemy @ 00010f57`, `_CaptureEnemy @ 00010fa6`,
 // `_ReleaseEnemyFromBalloon @ 00010ff3`, `_MakeAllEnemiesDisappear @ 000117d7`, `_WasEnemySquished @ 00010eca`,
 // `_Balloons_PopBalloon @ 00023a84`, `_Balloons_PopAll @ 00023f54`. These only mark `dead`; slots are freed by the
-// draw pass (Invariant 8). Sounds and the anti-crack `gTopRef`/`gSavedRef` counters are not modelled (no RNG).
+// draw pass (Invariant 8). Sounds are cued (`Sounds.swift`); the anti-crack `gTopRef`/`gSavedRef` counters are not
+// modelled (no RNG).
 
 extension GameState {
     /// `_SquishEnemy(i, n) @ 0001131b`. Ignored when the enemy is dead (`+0x47`) or free (state 0). Marker `+0x3e`
@@ -17,6 +18,7 @@ extension GameState {
         if 0x13 < enemies[slot].marker {
             enemies[slot].marker &+= 2
         }
+        playMySnd(0, priority: 10)                                  // 0001139d "Squish"
         let n = Int8(truncatingIfNeeded: count)
         let x = enemies[slot].rect.left, y = enemies[slot].rect.top
         switch n {
@@ -28,6 +30,7 @@ extension GameState {
             points.newPoint(x: x, y: y, sprite: 4, delay: 0xc, level: level, notRegistered: config.pointsNotRegistered)
         case 3:
             addToScore(800, multiply: true)
+            playMySnd(0x26, priority: 10, delay: 0xf)               // 00011541 "Eat Seaweed…" (+15)
             points.newPoint(x: x, y: y, sprite: 8, delay: 0xc, level: level, notRegistered: config.pointsNotRegistered)
             bonusSetNumEnemySquishes(3)
         case 4:
@@ -71,6 +74,7 @@ extension GameState {
     mutating func popEnemy(_ slot: Int) {
         guard enemies.indices.contains(slot) else { return }      // NR-6 / C12: slot −1 → no-op
         if enemies[slot].dead || enemies[slot].state == 0 { return }
+        playMySnd(0, priority: 10)                                  // 0001129c "Squish"
         addToScore(100, multiply: true)
         points.newPoint(x: enemies[slot].rect.left, y: enemies[slot].rect.top, sprite: 1, delay: 0xc, level: level,
                         notRegistered: config.pointsNotRegistered)
@@ -170,6 +174,7 @@ extension GameState {
     mutating func balloonsPopBalloon(_ index: Int) {
         guard balloons.indices.contains(index) else { return }
         popBalloonFields(index)
+        playMySnd(0x10, priority: 10)                               // 00023add "Enemy Hatch"
     }
 
     /// `_Balloons_PopAll @ 00023f54`: every holding (state 2) balloon → the `_Balloons_PopBalloon` fields with one

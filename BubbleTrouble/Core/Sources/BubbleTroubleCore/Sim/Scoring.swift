@@ -24,13 +24,15 @@ extension GameState {
         }
     }
 
-    /// `_AddHero(1, 1) @ 00022d62` (every caller passes (1, 1)): lives += 1, capped at 9. (The sound pair and the
-    /// reserve-hero redraw/animate flags are presentation only.)
+    /// `_AddHero(1, 1) @ 00022d62` (every caller passes (1, 1)): lives += 1, capped at 9; then "Extra Life" twice
+    /// (00022dab, 00022dc7). (The reserve-hero redraw/animate flags are presentation only.)
     mutating func addHero() {
         lives &+= 1
         if 9 < lives {
             lives = 9
         }
+        playMySnd(0xd, priority: 0x14)
+        playMySnd(0xd, priority: 0x14)
     }
 
     /// `_Bonus_SetNumEnemySquishes(n) @ 0001a818` — the multiplier step on a block that squished n enemies at once.

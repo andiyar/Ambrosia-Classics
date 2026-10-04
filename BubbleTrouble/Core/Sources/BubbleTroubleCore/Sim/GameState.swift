@@ -149,6 +149,14 @@ public struct GameState: Sendable {
     /// Every stop reason that fired (Invariant 14).
     public internal(set) var pendingStops: Set<StopReason>
 
+    // MARK: Sound (`Sounds.swift`; plan 2026-10-04 btx-playable C2)
+
+    /// `_delayedSound` — the 5-entry delayed-sound queue of `_PlayMySnd @ 00026a7b` /
+    /// `_Sounds_CheckDelayedSounds @ 000268a1`; emptied only by `_Sounds_InitDelayedSounds` (`_NewLevel`).
+    public internal(set) var delayedSounds: [DelayedSound]
+    /// This frame's `ST_PlaySound` calls in order — cleared at the top of `stepFrame`, copied into `FrameReport.sounds`.
+    var soundsThisFrame: [SoundCue]
+
     /// An empty world: all slots free, zero tables, RNG seeded with `seed` through `config.rngStep`, frame 0.
     init(config: SessionConfig, mode: GameMode, seed: UInt32) {
         self.config = config
@@ -211,6 +219,8 @@ public struct GameState: Sendable {
         heroKeys = FilmSample(up: false, down: false, left: false, right: false, push: false)
         heroCaughtThisFrame = false
         pendingStops = []
+        delayedSounds = Array(repeating: DelayedSound(), count: Self.delayedSoundCapacity)
+        soundsThisFrame = []
     }
 
     /// What the cosmetic pools read from the hero record (`HeroAnchor`); `_Bubbles` writes `lastBubbleFrame` back.

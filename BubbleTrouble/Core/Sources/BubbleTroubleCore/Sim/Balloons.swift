@@ -4,8 +4,8 @@
 // `_Balloons_CheckHardObjectHit @ 00023da7`, `_Balloons_CheckSquishes @ 00023ae8`,
 // `_Balloons_CaptureAllEnemies @ 000240dd`. `_Balloons_PopBalloon` / `_Balloons_PopAll` live in
 // `EnemyMutations.swift`. Slots are scanned 0…29 and claimed first-free; nothing here frees a slot or decrements
-// `numActiveBalloons` — the draw pass does (Invariant 8). Sounds (`_PlayMySnd`) and the background-restore
-// (`_AddRectToBgnd`) consume no RNG and are not modelled.
+// `numActiveBalloons` — the draw pass does (Invariant 8). Sounds are cued (`Sounds.swift`); the background-restore
+// (`_AddRectToBgnd`) consumes no RNG and is not modelled.
 
 extension GameState {
     /// `_Balloons_New(e) @ 000237f9` — the shark's bubble attack. Cap 30 (`numActive == 30` → return before any
@@ -65,6 +65,7 @@ extension GameState {
             balloons[i].rect = rect
             balloons[i].prevRect = rect
             numActiveBalloons += 1
+            playMySnd(0xe, priority: 10)                            // 00023a63 "Balloon Launch"
             return
         }
     }
@@ -204,6 +205,8 @@ extension GameState {
     mutating func balloonsCaptureHero(_ index: Int) {
         guard !hero.trapped else { return }
         let now = frame
+        playMySnd(0xf, priority: 10)                                // 00023cf6 "Enemy Ballooned"
+        playMySnd(0x27, priority: 10, delay: 5)                     // 00023d12 "Heyahoo" (+5)
         balloons[index].state = 2
         balloons[index].startFrame = now
         balloons[index].spriteSet = 0x32
@@ -231,6 +234,7 @@ extension GameState {
             balloons[index].captureKind = 0x50
             balloons[index].holder = Int8(truncatingIfNeeded: e)
             captureEnemy(e, balloon: Int(Int8(truncatingIfNeeded: index)))
+            playMySnd(0xf, priority: 10)                            // 00024068 "Enemy Ballooned"
             let er = enemies[e].rect
             let rect = QDRect(top: er.top, left: er.left, bottom: er.top &+ 0x28, right: er.left &+ 0x28)
             balloons[index].rect = rect
@@ -301,5 +305,6 @@ extension GameState {
             balloons[i].rect = rect
             balloons[i].box = rect
         }
+        playMySnd(0xf, priority: 10)                                // 00024253 (not on the early return)
     }
 }

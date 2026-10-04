@@ -117,10 +117,14 @@ public struct AirBubblePool: Sendable {
     /// left → group 9 at (hero.left, hero.top), facing right → group 10 at (hero.right, hero.top), and
     /// `hero+0x0c = frame`; any other facing falls through to the random launch, as does every other case:
     /// group `groups[gIdx]` at (`xLoc[xIdx]`, 0x181), xIdx wrapping after 32 and gIdx after 20. Either way
-    /// `last = frame; delay = delayTable[dIdx]` (dIdx wraps after 12).
-    public mutating func launch(frame: UInt16, hero: inout HeroAnchor, prefs: CosmeticPrefs, rng: inout GameRandom) {
-        if !prefs.airBubbles { return }
-        if Int(frame) <= Int(timeLastGroupLaunched) + Int(delayTilNextGroup) { return }
+    /// `last = frame; delay = delayTable[dIdx]` (dIdx wraps after 12). Returns the group's tail sound (see
+    /// `newGroup`), which the caller plays.
+    @discardableResult
+    public mutating func launch(frame: UInt16, hero: inout HeroAnchor, prefs: CosmeticPrefs,
+                                rng: inout GameRandom) -> GroupSound? {
+        if !prefs.airBubbles { return nil }
+        if Int(frame) <= Int(timeLastGroupLaunched) + Int(delayTilNextGroup) { return nil }
+        let sound: GroupSound?
         var mouth: (x: Int16, y: Int16, group: Int)?
         if hero.state == 2 && hero.aligned && Int(hero.lastBubbleFrame) + 0x8c < Int(frame) {
             switch hero.facing {
@@ -130,7 +134,7 @@ public struct AirBubblePool: Sendable {
             }
         }
         if let mouth {
-            newGroup(x: mouth.x, y: mouth.y, group: mouth.group, frame: frame, prefs: prefs, rng: &rng)
+            sound = newGroup(x: mouth.x, y: mouth.y, group: mouth.group, frame: frame, prefs: prefs, rng: &rng)
             hero.lastBubbleFrame = frame
         } else {
             let xi = xIndex
@@ -138,39 +142,58 @@ public struct AirBubblePool: Sendable {
             if 0x20 < xIndex { xIndex = 0 }
             let gi = groupIndex
             groupIndex = groupIndex + 1 < Self.groupCount ? groupIndex + 1 : 0
-            newGroup(x: xLoc[xi], y: 0x181, group: Int(groups[gi]), frame: frame, prefs: prefs, rng: &rng)
+            sound = newGroup(x: xLoc[xi], y: 0x181, group: Int(groups[gi]), frame: frame, prefs: prefs, rng: &rng)
         }
         let di = delayIndex
         delayIndex = delayIndex + 1 < Self.delayCount ? delayIndex + 1 : 0
         timeLastGroupLaunched = frame
         delayTilNextGroup = delayTable[di]
+        return sound
+    }
+
+    /// The `_PlayMySnd(slot, priority, 0)` that `_Bubbles_NewGroup` tail-jumps to (000166bc) after its last bubble.
+    public struct GroupSound: Equatable, Sendable {
+        public let slot: Int
+        public let priority: Int
     }
 
     /// `_Bubbles_NewGroup(x, y, group) @ 0001657e`. Pref 0x36 off → return. Each row is one
     /// `_Bubbles_New(x', y', size, delay)` in call order (groups 0–3 → 1 bubble; 4–6 → 2; 7 → 3; 8 → 4;
     /// 9, 10 → 3 with delays 0/2/4; 0xb → 5 with delays 0/2/3/4/6); groups ≥ 0xc do nothing. The group is the
     /// original's byte (`undefined1`) parameter.
+    ///
+    /// Returns the tail sound the original then plays (otool: the args are stored over the caller's frame before the
+    /// `jmp _PlayMySnd` at 000166bc): groups 4, 5, 6, 9, 10 → slot 28 "Short Bubbles", priority 1 (000166a0);
+    /// 7 → slot 29 "More Bubbles", priority 1 (0001676a); 8 → slot 27 "Bubbles", priority 1 (0001681d, joining
+    /// 000169ce); 0xb (hero death) → slot 27, priority 10 (000169c0). Groups 0…3 and ≥ 0xc → none.
+    @discardableResult
     public mutating func newGroup(x: Int16, y: Int16, group: Int, frame: UInt16, prefs: CosmeticPrefs,
-                                  rng: inout GameRandom) {
-        if !prefs.airBubbles { return }
+                                  rng: inout GameRandom) -> GroupSound? {
+        if !prefs.airBubbles { return nil }
         func b(_ ox: Int16, _ oy: Int16, _ size: Int8, _ delay: Int16) {
             newBubble(x: x &+ ox, y: y &+ oy, size: size, delay: delay, frame: frame, rng: &rng)
         }
+        let short = GroupSound(slot: 0x1c, priority: 1)
         switch UInt8(truncatingIfNeeded: group) {
-        case 0: b(0, 0, 0, 0)
-        case 1: b(0, 0, 1, 0)
-        case 2: b(0, 0, 2, 0)
-        case 3: b(0, 0, 3, 0)
-        case 4: b(8, 0, 0, 0); b(0x14, 8, 0, 0)
-        case 5: b(0, 0, 0, 0); b(0x14, 8, 2, 0)
-        case 6: b(0, 0, 3, 0); b(0x14, 0x10, 2, 0)
-        case 7: b(8, 0, 0, 0); b(0x14, 8, 1, 0); b(0x14, 0x29, 0, 0)
-        case 8: b(8, 0, 1, 0); b(8, 0x10, 3, 0); b(0x14, 0x29, 1, 0); b(1, 4, 0, 0)
-        case 9: b(-8, 0xc, 0, 0); b(-0xc, 10, 1, 2); b(-0x10, 8, 2, 4)        // hero mouth, facing left
-        case 10: b(0, 0xc, 0, 0); b(0, 10, 1, 2); b(0, 8, 2, 4)              // hero mouth, facing right
-        case 0xb:                                                             // hero death
+        case 0: b(0, 0, 0, 0); return nil
+        case 1: b(0, 0, 1, 0); return nil
+        case 2: b(0, 0, 2, 0); return nil
+        case 3: b(0, 0, 3, 0); return nil
+        case 4: b(8, 0, 0, 0); b(0x14, 8, 0, 0); return short
+        case 5: b(0, 0, 0, 0); b(0x14, 8, 2, 0); return short
+        case 6: b(0, 0, 3, 0); b(0x14, 0x10, 2, 0); return short
+        case 7:
+            b(8, 0, 0, 0); b(0x14, 8, 1, 0); b(0x14, 0x29, 0, 0)
+            return GroupSound(slot: 0x1d, priority: 1)
+        case 8:
+            b(8, 0, 1, 0); b(8, 0x10, 3, 0); b(0x14, 0x29, 1, 0); b(1, 4, 0, 0)
+            return GroupSound(slot: 0x1b, priority: 1)
+        case 9: b(-8, 0xc, 0, 0); b(-0xc, 10, 1, 2); b(-0x10, 8, 2, 4); return short   // hero mouth, facing left
+        case 10: b(0, 0xc, 0, 0); b(0, 10, 1, 2); b(0, 8, 2, 4); return short        // hero mouth, facing right
+        case 0xb:                                                                      // hero death
             b(8, 8, 2, 0); b(10, 10, 1, 2); b(10, 10, 1, 3); b(0xc, 0xc, 0, 4); b(0xc, 0xc, 0, 6)
-        default: return
+            return GroupSound(slot: 0x1b, priority: 10)
+        default: return nil
         }
     }
 

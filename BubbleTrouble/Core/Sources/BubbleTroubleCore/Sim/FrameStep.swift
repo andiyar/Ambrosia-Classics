@@ -5,7 +5,10 @@
 // `_Balloons_DrawToComp @ 00024280`, `_DrawBlocksToComp @ 0001c315`, `_Splats_DrawToComp @ 00002c79`,
 // `_Bonus_Draw @ 00019a94`, `_DrawStarsToComp`, `_DrawPointsToComp`, `_Bubbles_DrawToComp`).
 //
-// Not modelled (no RNG, no simulation state): the timer/event wait, `_ResetNumBgndRects`/`_ResetNumScrnRects`, sounds,
+// Sounds: every `_PlayMySnd` site of the loop body (`Sounds.swift` lists them) and `_Sounds_CheckDelayedSounds` after
+// `_TimeBonus_Process` fill `FrameReport.sounds` (plan 2026-10-04 btx-playable C2).
+//
+// Not modelled (no RNG, no simulation state): the timer/event wait, `_ResetNumBgndRects`/`_ResetNumScrnRects`,
 // music, notices, reserve-hero/score/time-bonus drawing, `_EraseOuch`/`_DrawOuchToComp`, the pause key (ignored in
 // demo; Scope), the escape key, `_CheckForHacking`, the licence parity check and the Cmd-key `_CleanUp`.
 
@@ -27,7 +30,8 @@ public struct FrameReport: Equatable, Sendable {
     public let heroCaughtThisFrame: Bool
     /// Every stop reason recorded so far (Invariant 14) — non-empty only on the final frame.
     public let stops: Set<StopReason>
-    /// This frame's `_PlayMySnd` calls in order (plan 2026-10-04 btx-playable S2) — always empty until task C2.
+    /// This frame's `ST_PlaySound` calls in call order (plan 2026-10-04 btx-playable S2, C2): every immediate
+    /// `_PlayMySnd` plus every delayed one `_Sounds_CheckDelayedSounds` released this frame. Each plays now.
     public let sounds: [SoundCue]
     /// This frame's QuickDraw calls in order (S2) — always empty until task C3. Replays ignore both fields.
     public let drawOps: [DrawOp]
@@ -66,6 +70,7 @@ extension GameState {
     /// nothing runs, the frame does not advance, and `playing` is false on return.
     public mutating func stepFrame<I: InputSource>(input: inout I) -> FrameReport {
         let drawsBefore = rng.drawCount
+        soundsThisFrame = []
         guard playing, pendingStops.isEmpty else {
             playing = false
             return report(input: input, drawsBefore: drawsBefore)
@@ -79,6 +84,7 @@ extension GameState {
         if 0 < numNormalBlocks {
             numNormalBlocks = normalBlockCount()
             if numNormalBlocks == 0 {
+                playMySnd(0x21, priority: 0x14)                  // 00018af5 "All Jewels Joined"
                 addToScore(2000, multiply: true)                 // _AddToScore(0x7d0, 1)
                 stars.newGroup(x: Int16(hero.col) &* 0x28, y: Int16(hero.row) &* 0x28, group: 2, hero: heroAnchor,
                                frame: frame, prefs: config.prefs, rng: &rng)
@@ -89,8 +95,11 @@ extension GameState {
         }
 
         var anchor = heroAnchor                                  // _Bubbles writes hero+0x0c back
-        airBubbles.launch(frame: frame, hero: &anchor, prefs: config.prefs, rng: &rng)
+        let bubbleSound = airBubbles.launch(frame: frame, hero: &anchor, prefs: config.prefs, rng: &rng)
         heroAnchor = anchor
+        if let bubbleSound {                                     // _Bubbles_NewGroup's tail `jmp _PlayMySnd`
+            playMySnd(bubbleSound.slot, priority: bubbleSound.priority)
+        }
         processEnemies()
         processHero(input: &input)
         splats.process(frame: frame)
@@ -101,6 +110,7 @@ extension GameState {
         stars.process(frame: frame)
         points.process()
         timeBonusProcess()
+        soundsCheckDelayedSounds()                               // _Sounds_CheckDelayedSounds @ 000268a1
 
         if !runDrawPass() {
             pendingStops.insert(.originalWouldAbort("DrawPointsToComp: hacked-copy trap (StdError → ExitToShell)"))
@@ -126,7 +136,7 @@ extension GameState {
         FrameReport(frame: frame, drawsThisFrame: rng.drawCount - drawsBefore, totalDraws: rng.drawCount,
                     samplesConsumed: input.samplesConsumed, heroState: hero.state,
                     heroCell: CellRef(col: hero.col, row: hero.row), score: score, lives: lives,
-                    heroCaughtThisFrame: heroCaughtThisFrame, stops: pendingStops)
+                    heroCaughtThisFrame: heroCaughtThisFrame, stops: pendingStops, sounds: soundsThisFrame)
     }
 
     /// `_PlayGame`'s hero state machine at the top of the frame (Research note 20; 000187a7–000189a3). Timer tests
@@ -165,6 +175,10 @@ extension GameState {
                 hero.speed = 5
                 stars.newGroup(x: Int16(hero.col) &* 0x28, y: Int16(hero.row) &* 0x28, group: 0, hero: heroAnchor,
                                frame: now, prefs: config.prefs, rng: &rng)
+                if mode != .demo {
+                    playMySnd(8, priority: 0x14)                 // 000188ef "Hahohaho"
+                }
+                playMySnd(0x1b, priority: 10)                    // 0001890b "Bubbles"
                 blocksDeactivateRubberBlocks()
             }
             firstAppearance = false
@@ -177,6 +191,7 @@ extension GameState {
             hero.freezeCounter = 0
             hero.deathCounter = 0
             makeAllEnemiesDisappear()
+            playMySnd(0x22, priority: 0x14)                      // 0001898d "Hero Death Groan" (every mode)
         case 4:
             guard Int(hero.stateStart) + 0x41 < Int(now) else { return }
             switch mode {
@@ -187,6 +202,11 @@ extension GameState {
                 hero.stateStart = now
                 resetHeroPosition()
                 multiplierReset()
+                if lives < 1 {
+                    playMySnd(3, priority: 0x1e)                 // 00018a74 "Game Over!" (with notice 2)
+                } else if !isEndOfLevel {
+                    playMySnd(2, priority: 0x14)                 // 00018a3e "Get Ready!" (with notice 1)
+                }
             }
         default:
             break
@@ -288,6 +308,9 @@ extension GameState {
         if !isEndOfLevel && areAllEnemiesSquished() {
             endOfLevelTime = frame
             isEndOfLevel = true
+            if mode != .demo {
+                playMySnd(0x23, priority: 0x1e)                  // 00018d19 "End of Level"
+            }
         }
         guard 0 < lives, isEndOfLevel, Int(endOfLevelTime) + 0x46 < Int(frame) else { return }
         switch mode {
