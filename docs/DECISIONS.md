@@ -231,3 +231,18 @@ released a key unlock." Public builds may ship each game's original data inside 
 The README says so. **Unchanged for now:** the data stays out of git (`Resources/` ignored, invariant 3) — staged apps
 carry it; committing data to the repo would be its own ruling.
 **Approved by:** Ben 2026-10-04.
+
+---
+
+## D11 — Aki Remaster mode: remacri-4× AI-upscaled art behind a toggle, Original by default (2026-10-04)
+
+**Decided (Ben, brainstormed after the P2 gate):** add AI-upscaled art — Ben picked **remacri-4x** (Upscayl's local
+Real-ESRGAN engine) from samples of five models vs crisp pixels. **Both modes ship, behind a "Remaster" toggle** ("Can we
+not create a remaster mode toggle? So we have both options?"): a checkable menu item AND a Preferences checkbox; a fresh
+install starts in **Original**. Remaster changes pixels only; geometry, timing, rules and the original prefs blob are
+untouched; the toggle has its own UserDefaults key. Upscaled art is generated from the originals and stays out of git
+(D10). Plan: `docs/plans/2026-10-04-aki-remaster-art.md`; sequenced after the iPad session (D7) merges.
+**Rejected:** replacing the art outright (Ben's first pick, superseded by the toggle); live MetalFX frame upscaling
+(softer, smears the fade dither and text); upscaling whole sheets (sprite bleed, smeared masks); upscayl-standard /
+ultrasharp / digital-art / high-fidelity (Ben's eye). Open for U4: plain vs de-dithered backgrounds (remacri hatching).
+**Approved by:** Ben 2026-10-04.
