@@ -14,16 +14,20 @@ final class SeamTypesTests: XCTestCase {
         XCTAssertEqual(MusicCue.load(set: 2), .load(set: 2))
         XCTAssertNotEqual(MusicCue.load(set: 2), .load(set: 3))
         XCTAssertNotEqual(MusicCue.volume(0x100), .volume(0xfb))
-        let music: [MusicCue] = [.start, .stopFade, .stopNow, .pause, .resume, .unload]
+        let music: [MusicCue] = [.start, .stopNow, .pause, .resume, .unload]
         XCTAssertEqual(Set(music.map { "\($0)" }).count, music.count)
 
         let r = QDRect(top: 228, left: 165, bottom: 262, right: 315)
         let ops: [DrawOp] = [
             .drawMaze(pictID: 912), .restoreBgnd(r), .sprite(set: 0x11, frame: 1, h: 40, v: 80, mode: .normal),
             .sprite(set: 0x11, frame: 1, h: 40, v: 80, mode: .transparent), .spriteToBgnd(set: 0x11, frame: 1, h: 40, v: 80),
-            .prepareScoreBar, .compToScreen(r), .pict(id: 9030, dst: r), .pictSlice(id: 9100, src: r, dst: r),
-            .string(text: "BEN", h: 10, v: 20, highlighted: true), .infoText("Version 1.1.0", colour: 0x111),
-            .darkenRect(r), .frameRect(r, rgb: 0xff9900), .fillBlack, .patternOverlay(index: 1), .wipe(step: 12), .fps(30),
+            .prepareScoreBar, .scoreToComp(r), .compToScreen(r), .pict(id: 9100, dst: r, target: .bgnd),
+            .pict(id: 9100, dst: r, target: .comp), .pictSlice(id: 9100, src: r, dst: r, target: .comp),
+            .string(text: "BEN", h: -1, v: 20, highlighted: true, fixedPitch: nil, target: .comp),
+            .string(text: "BEN", h: -1, v: 20, highlighted: true, fixedPitch: 15, target: .comp),
+            .infoText("Version 1.1.0", colour: 0x111), .darkenRect(r, target: .comp),
+            .frameRect(r, rgb: 0xff9900, target: .comp), .fillBlack(target: .comp), .fillBlack(target: .screen),
+            .patternOverlay(index: 1), .wipe(step: 12), .fps(30),
         ]
         for (i, a) in ops.enumerated() {
             for (j, b) in ops.enumerated() {
@@ -42,15 +46,21 @@ final class SeamTypesTests: XCTestCase {
 
         XCTAssertEqual(ShellRequest.highScoreEntry(rank: 3), .highScoreEntry(rank: 3))
         XCTAssertNotEqual(ShellRequest.enableMenus(true), .enableMenus(false))
-        let requests: [ShellRequest] = [.hideCursor, .showCursor, .haltAllSound, .quitNow, .savePrefs]
+        let requests: [ShellRequest] = [.hideCursor, .showCursor, .haltAllSound, .quitNow, .savePrefs,
+                                         .setCursor(id: nil), .setCursor(id: 200), .restoreMousePosition,
+                                         .disableAbout(true), .disableAbout(false), .beep]
         XCTAssertEqual(Set(requests.map { "\($0)" }).count, requests.count)
 
         XCTAssertEqual(SessionEnd.levelCompleted, .levelCompleted)
         XCTAssertNotEqual(SessionEnd.gameOver, .escaped)
         XCTAssertNotEqual(GameMode.play, GameMode.demo)
 
+        XCTAssertEqual(MousePoint(h: 165, v: 228, button: true), MousePoint(h: 165, v: 228, button: true))
+        XCTAssertNotEqual(MousePoint(h: 165, v: 228, button: true), MousePoint(h: 165, v: 228, button: false))
+        XCTAssertNotEqual(DrawTarget.bgnd, DrawTarget.comp)
+
         let out = SessionOutput(sounds: [SoundCue(slot: 2, priority: 30, delayFrames: 0)], music: [.start],
-                                drawOps: [.fillBlack], requests: [.hideCursor], ended: nil)
+                                drawOps: [.fillBlack(target: .screen)], requests: [.hideCursor], ended: nil)
         XCTAssertEqual(out, out)
         XCTAssertNotEqual(out, SessionOutput())
         XCTAssertEqual(SessionOutput(), SessionOutput(sounds: [], music: [], drawOps: [], requests: [], ended: nil))

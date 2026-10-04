@@ -23,12 +23,12 @@ public struct SoundCue: Equatable, Sendable {
 }
 
 /// What the music voice must do (`_LoadMusic` / `_StartMusic` / `_StopMusic @ 0001afac` / pause …; FI §7).
-/// The App never fades on its own: a fade arrives as one `volume` per tick (plan R4: `_StopMusic` −5 per tick).
+/// There is no "fade" cue: `_StopMusic`'s fade is a blocking loop (−5 per tick, plan R4), so the session emits one
+/// `volume` per tick and then `stopNow`. The App never fades on its own.
 public enum MusicCue: Equatable, Sendable {
     /// Load music set `set` (snd 11001…11004).
     case load(set: Int)
     case start
-    case stopFade
     case stopNow
     case pause
     case resume
@@ -37,18 +37,31 @@ public enum MusicCue: Equatable, Sendable {
     case volume(Int)
 }
 
+/// The offscreen GWorlds (and the window) a `DrawOp` can draw into (`_SetToBgndGWorld`, `_SetToCompGWorld`,
+/// `_SetToScreen`, the 640×40 score GWorld of `_PrepareScoreBar @ 00025c65`). Ops that draw into a buffer name it,
+/// because the original's front end deliberately draws into bgnd and leaves it clobbered (Invariant 2).
+public enum DrawTarget: Equatable, Sendable {
+    case bgnd, comp, screen, score
+}
+
 /// One QuickDraw-level call of the original, recorded at the original's call site (Invariant 2). The compositor
-/// executes these on persistent bgnd / comp / screen buffers exactly as QuickDraw did.
+/// executes these on persistent bgnd / comp / screen / score buffers exactly as QuickDraw did.
 ///
 /// Sprite addressing (data-formats §4): `set` is the SpIc entry argument `s` of `_SpriteToComp(0, h, v, s, f)` /
 /// `_SpriteToBgnd(0, h, v, s, f)` (entry `s − 1`; the leading graphics-set argument is 0 at every call site), and
 /// `frame` is the 1-based `f`. `h`/`v` are the top-left in the 640×480 screen.
 public enum DrawOp: Equatable, Sendable {
-    /// How `.sprite` plots into comp.
+    /// How `.sprite` plots a SpIc frame into comp.
     public enum SpriteMode: Equatable, Sendable {
-        /// `_SpriteToComp @ 00015398` — mask-keyed copy.
+        /// `_SpriteToComp @ 00015398` — the masked plot (`_PlotCompiledGraphicToComp` / `_ASWPlotCIcon`).
         case normal
-        /// `_SpriteToCompTransparent @ 0001518d` — the blended plot.
+        /// `_TransSpriteToComp @ 0001566e` — the translucent plot (`_PlotCompiledTransToComp` /
+        /// `_ASWPlotCIconHandle(r, 0, 1, icon)`); SpIc call sites: `_DrawStarsToComp @ 00004de0` and the invisible
+        /// hero in `_DrawHeroToComp @ 00022b8b`.
+        ///
+        /// Not to be confused with `_SpriteToCompTransparent @ 0001518d`, which is a `CopyBits` mode 0x24
+        /// (transparent) rect copy from the sprite GWorld with no SpIc addressing; its only caller is
+        /// `_DrawLetter @ 0001e3be`, i.e. it belongs to `.string`, not to `.sprite`.
         case transparent
     }
 
@@ -56,33 +69,58 @@ public enum DrawOp: Equatable, Sendable {
     case drawMaze(pictID: Int)
     /// `_RestoreBgnd @ 00015dbe`: bgnd → comp over one dirty rect.
     case restoreBgnd(QDRect)
-    /// `_SpriteToComp` / `_SpriteToCompTransparent`.
+    /// `_SpriteToComp` / `_TransSpriteToComp` (see `SpriteMode`).
     case sprite(set: Int, frame: Int, h: Int, v: Int, mode: SpriteMode)
     /// `_SpriteToBgnd @ 00015567`.
     case spriteToBgnd(set: Int, frame: Int, h: Int, v: Int)
     /// `_PrepareScoreBar @ 00025c65`.
     case prepareScoreBar
+    /// `_ScoreToComp @ 0001507f`: score GWorld → comp over one rect (`CopyBits` mode 0, srcCopy).
+    case scoreToComp(QDRect)
     /// `_CompToScreen @ 00014bfe`: comp → screen over one rect (`_AddRectToScreen @ 0002635a`).
     case compToScreen(QDRect)
-    /// A whole PICT drawn into `dst`.
-    case pict(id: Int, dst: QDRect)
-    /// `_BgndToCompTransparent @ 00015028`: the `src` slice of a PICT into `dst`.
-    case pictSlice(id: Int, src: QDRect, dst: QDRect)
-    /// `_DrawCustomString @ 0001e4c0`: the Letters font (PICT 9001, or 9002 when `highlighted`).
-    case string(text: String, h: Int, v: Int, highlighted: Bool)
+    /// `_DrawPicture` of a whole PICT into `dst` of `target` (e.g. `_DrawPictInRect @ 0000bfbc`,
+    /// `_DrawAndCentrePict @ 0000bd14`; `_FlashButton @ 000078e0` draws PICT 9100 into **bgnd** at (0,0,300,300)).
+    case pict(id: Int, dst: QDRect, target: DrawTarget)
+    /// `_BgndToCompTransparent @ 00015028`: copy `src` of the **bgnd buffer as it stands** to `dst` in comp,
+    /// transparent. `id` names the PICT the caller drew into bgnd just before (the preceding `.pict(…, target: .bgnd)`
+    /// op does the drawing; bgnd stays clobbered afterwards, as in `_FlashButton @ 000078e0`). `target` is the
+    /// destination buffer (comp at every known call site).
+    case pictSlice(id: Int, src: QDRect, dst: QDRect, target: DrawTarget)
+    /// `_DrawCustomString @ 0001e4c0`: the Letters font (PICT 9001, or 9002 when `highlighted`) via `_DrawLetter`.
+    /// `h == -1` → the string is centred on 640 (`(640 − width) / 2`). `fixedPitch` nil = each glyph advances by its
+    /// own width; 15 = the fixed 15-px pitch (`param_5 != 0`, the high-score number columns — `DC` 24106/24109).
+    case string(text: String, h: Int, v: Int, highlighted: Bool, fixedPitch: Int?, target: DrawTarget)
     /// The info text box (`_DrawInterfaceText @ 0000898d`): Geneva 9 centred in `gTextRect`; `colour` is the
     /// original's colour index (0x111 cyan, 0x45 yellow — FI §1b).
     case infoText(String, colour: Int)
-    /// A 50 % darkened rect.
-    case darkenRect(QDRect)
-    /// A framed rect, `rgb` = 0xRRGGBB.
-    case frameRect(QDRect, rgb: UInt32)
-    case fillBlack
+    /// A 50 % darkened rect in `target`.
+    case darkenRect(QDRect, target: DrawTarget)
+    /// A framed rect (`_FrameRect`) in `target`, `rgb` = 0xRRGGBB.
+    case frameRect(QDRect, rgb: UInt32, target: DrawTarget)
+    /// The whole `target` filled black.
+    case fillBlack(target: DrawTarget)
     case patternOverlay(index: Int)
-    /// One step of the level-start wipe.
+    /// The WHOLE `_WipeScreen @ 000076d3` reveal, blocking: two `step`-row bands copied comp → screen — one starting
+    /// at row 0 moving down, one starting at row 480 − `step` moving up — each advancing `step` rows whenever
+    /// TickCount has moved on, until `2·step + 240` rows have been swept. The op is recorded once; the session holds a
+    /// tick phase (input ignored) while the renderer steps it one advance per tick (its `applyWipe(row)`).
     case wipe(step: Int)
     /// The FPS cheat readout (`_DrawFPS @ 00016f72`).
     case fps(Int)
+}
+
+/// A mouse position in the 640×480 logical screen plus the button state, for `FrontEnd` (menu hot rects, Rect 1…7).
+public struct MousePoint: Equatable, Sendable {
+    public var h: Int
+    public var v: Int
+    public var button: Bool
+
+    public init(h: Int, v: Int, button: Bool) {
+        self.h = h
+        self.v = v
+        self.button = button
+    }
 }
 
 /// The keys held this frame, as Mac virtual key codes (S2). Level-sampled: no repeat semantics.
@@ -127,6 +165,14 @@ public enum ShellRequest: Equatable, Sendable {
     /// ⌘Q in play: quit at once, no prefs save (R7).
     case quitNow
     case savePrefs
+    /// `_SetCursor`: nil = the arrow (`_InitCursor`), 200 = `crsr 200` (the hand, `_PauseGame` — R8).
+    case setCursor(id: Int?)
+    /// `_PauseGame @ 0001767b` puts the mouse back where it was on exit (R8).
+    case restoreMousePosition
+    /// `_DisableAboutMenu @ 0000886c` (true) / `_EnableAboutMenu @ 00008850` (false).
+    case disableAbout(Bool)
+    /// `_SysBeep(1)`.
+    case beep
 }
 
 /// Why a session ended (C4 / C6 may add cases).
