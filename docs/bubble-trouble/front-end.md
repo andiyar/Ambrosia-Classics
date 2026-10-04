@@ -87,6 +87,7 @@ Hidden keys: L = level select; B → snd 47 "Squeak squeak", W → snd 46 "Non t
 | 1002 High Score Null / 1003 "That's enough levels" | unregistered only (skip) | | |
 | 290 Scribblings (PICT 8001) / 291 Musings (PICT 2910) | X / Z keys | `_DisplayPoem`, `_DisplayQuote` |
 | ALRT 203/204/205 | "changes won't take effect…/re-open…/factory settings" | prefs |
+⚑ (A4/R10) Every ALRT call site in 1.1 is tabled in `BubbleTroubleX/App/BTXDialogs.swift`: only 201/202 are reachable on OS X (203 needs Misc items 0x19/0x1f that DITL 193 lacks; 204/205 have no call site). ALRT 201 fires when the name is longer than 10 bytes (`strlen < 11` accepted), the name is then cut to 10; ALRT 202 when 20 sets exist.
 Dialogs are raised into a window group at `CGShieldingWindowLevel` in full screen, `kCGFloatingWindowLevelKey(4)`-level windowed [H] (`_CheckHiScore`). About box and registration are ASW framework bundles (out of scope).
 
 ⚑ (R9) The prefs area icons cicn 1000/1001/1002 are in `Bubble Trouble X.rsrc` (see the §0 note).
@@ -284,7 +285,7 @@ U5 Sound Tool channel allocation / priority / stealing semantics (AmbrosiaTools,
 U6 ⌘M Music vs Minimize conflict; whether "A" = ⇧⌘A; Carbon-supplied app-menu items.
 U7 Sprite set 0x20 (enemy icons) consumer; snd 12/29 usage.
 U8 Delivered frame rate on real hardware (NR-11); exact behaviour when a frame overruns the 0.033 s timer.
-U9 Prefs-dialog item ↔ pref wiring beyond the item labels (dialog filter not fully read).
+U9 Prefs-dialog item ↔ pref wiring beyond the item labels (dialog filter not fully read). ⚑ Closed (A4, 2026-10-04): read from `_PrefsDialog`/`_PrefsDlgFilter` — the full item ↔ pref table is the doc comment of `BubbleTroubleX/App/BTXPrefsWindow.swift`.
 U10 Initial `gFilmCounter` (assumed 0 → FILM 1 first).
 U11 High-score joke-name substitution pairs.
 U12 Where `_SetChicagoTwelve` text is used.
