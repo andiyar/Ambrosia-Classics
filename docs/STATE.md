@@ -16,7 +16,7 @@
 - **RE-bank lane COMPLETE (2026-10-03, head 01cb120):** `docs/aki/`, `docs/bubble-trouble/`, `docs/cythera/`,
   `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
   handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
-- **Deimos RE deepening, wave 1 landed (2026-10-03 night):** nine gameplay files in `docs/deimos/` (movement, spawn sets, weapons, damage, player, scoring, unit-def structs, bosses, level/scroll), Fable-reviewed ACCEPT_WITH_FIXES + fix-passed; role table 293→510 rows (240 HIGH / 256 MED / 14 LOW); INDEX closes #7 #17 #19 #20 #22 #24 #25 #26 #28. Wave 2 (sprite geometry, particles/RNG, timing, HUD, messages, loose ends, sound, front end) committed on branch `claude/modest-chandrasekhar-868895` c79d5e2 — synthesis/review/fix pass UNFINISHED (usage limit); see `docs/handoff-2026-10-03-deimos-re.md`.
+- **Deimos RE deepening (2026-10-04): wave 2 CLOSED on main 6c085ca; waves 3+4 (eight files, 100 % of game code read: 938 role rows = 698 HIGH / 240 MED / 0 LOW, 0 unread by census) synthesised f12f95d + Fable-reviewed ACCEPT_WITH_FIXES on branch `claude/modest-chandrasekhar-868895` — FIX PASS OWED (usage limit); see `docs/handoff-2026-10-04-deimos-re-wave34.md`.
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.
