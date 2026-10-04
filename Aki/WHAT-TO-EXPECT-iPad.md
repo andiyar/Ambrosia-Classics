@@ -11,8 +11,8 @@ host around it is new, shaped by your rulings (D7).
   you to turn it on and restart.
 
 ## What is different on the iPad (your rulings)
-- **The picture:** the original 800×600 screen at 2× on the mini — crisp, with a black border around it.
-- **Give Up = the X** at the top left, in the black border. It only shows during a game, and asks
+- **The picture:** the original 800×600 screen scaled to fill the height (about 2.5× on the mini, smoothed), with black bars at the left and right. On a 4:3 iPad (13" Pro) it fills the whole screen.
+- **Give Up = the X** at the top left, in the black bar on the left. It only shows during a game, and asks
   "Are you sure…?" as the Mac's Give Up does.
 - **No on-screen Undo.** Undo is ⌘Z on a hardware keyboard, or Edit in the menu bar — on Easy and Practice only,
   exactly as the original.
@@ -34,7 +34,7 @@ Pick the difficulty with the arrows under Skill Level on the map, then tap a lan
 - **The match fade:** a matched pair should fade away, about a third of a second, like on the Mac.
 - **The X:** in a game it gives up (after "Are you sure…?"); on the map it is not there.
 - **Tap-preview:** first tap previews, second enters; a tap elsewhere doesn't enter by accident.
-- **Borders:** black all round, nothing of the game cut off, nothing blurred.
+- **Picture:** fills the height, black bars only at the sides, nothing of the game cut off.
 - **Dialogs:** the iPad has no Aqua, so Aki's dialogs (Give Up, no more pairs, Level Statistics, Preferences)
   are drawn to look close to the Mac's. Do they read right?
 - Tip, Reshuffle and Pause on screen; ⌘T / ⌘R / ⌘P on a keyboard.

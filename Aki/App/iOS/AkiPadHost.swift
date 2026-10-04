@@ -111,6 +111,7 @@ import os
         shellController = shell
         rootController = shell
         let shellView = shell.shellView
+        shellView.scalingPolicy = .aspectFit                    // Ben 2026-10-04 on the mini: fill the height (D7 amended)
         shellView.inputHandler = self
         let chrome = AkiChromeView(frame: shellView.bounds)
         chrome.autoresizingMask = [.flexibleWidth, .flexibleHeight]
