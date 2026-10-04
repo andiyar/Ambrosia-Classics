@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-04 (night)
+# STATE — Ambrosia Classics — 2026-10-04 (late night)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -42,21 +42,16 @@
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Aki Phase 2 — the game** (plan P2.1–P2.12). **P2.1–P2.8 DONE and merged 2026-10-04** (Fable seat, Opus
-   implementers; P2.1–P2.4, P2.7, P2.8 one review leg each, P2.5/P2.6 ⚑ MAJOR two legs each, all MERGEABLE; fix rounds on
-   P2.6, P2.7, P2.8). `AkiGame` state machine (49ed89a, bb9513d, 69e7398, 95ba274); `Stats` + `AkiLevels` (c70c815 +
-   46bd9e4); `AkiGameArt` rects (5ade8a5 + 11e6d9c). AkiCore **107 tests / 0 skips** (the plan's Phase 2 final total);
-   M2 BUILD SUCCEEDED; M3 floor 167. Plan ⚑ corrections by the seat: P2.2 `testCounts` 22 → 25; P2.6 reshuffle-button
-   test with pairs 0 emits no `.pressButton(4)` (DC:7753); P2.8 Interfaces named `overlayMask` twice — as-built
-   `overlaySourceMask` for the pause/nopairs sheet, plus `pairsHundredsDigit(_:)` and `FlashRects.glowMask(_ p:)`.
-   **AkiCore is complete for Phase 2.** **P2.9 DONE and merged 2026-10-04 (late):** App `GameScreen` drawing — the
-   QuickDraw pipeline (11cdd1d + fix f61b8eb; ⚑ MAJOR, spec + quality legs both MERGEABLE). ⚑ plan corrections: the fade
-   window copy is (left, top+1, left+53, top+69) → `AkiGameArt.fadeWindowRect(_:)` (+ `screenRect`), not `tileRect`
-   (DC:7957/7960); Q24 carries the review's fade-pacing reasoning (22 presents in one refresh — Ben's eyes decide). Gates from
-   the head: AkiCore 107 / 0, M2 BUILD SUCCEEDED (0 our warnings), M3 floor 167. Next chip: P2.10 (⚑ MAJOR, App: level start
-   → tick → end, event executor, sounds/music — wires `controller.gameScreen`, replaces the `perform(_:)` stub), then P2.11
-   (⚑ MAJOR) and the P2.12 gate: Ben plays a level start to finish on each difficulty — "it plays like Aki". Handoff
-   `docs/handoff-2026-10-04-aki-phase2-p29.md`. Ben's Phase 1 question rows (S6 Q1–Q18, Q51–Q57) stay open; none blocks Phase 2.
+1. **Aki Phase 2 — the game: CODE COMPLETE, STAGED FOR BEN'S GATE (2026-10-04 night).** P2.1–P2.9 as before (AkiCore
+   complete, 107 tests; GameScreen drawing). **P2.10** (level start → tick → end, the event executor, game music and tick;
+   4a6d906) and **P2.11** (input, button bar, Give Up / Undo / Tip / Reshuffle / Pause menus, focus-loss pause, Stacked,
+   Level Statistics; 5e96287) — both ⚑ MAJOR, spec + quality legs each (P2.10 MERGEABLE ×2; P2.11 MERGEABLE +
+   MERGEABLE_WITH_FIXES), one fix round 70becea; plan ⚑ corrections 51ac4a2; **P2.12** note 9ea8c5d = origin/main. Gates
+   from the merge head (seat-run): AkiCore **107 / 0**, M2 BUILD SUCCEEDED (0 our warnings), M3 floor **167**, staged
+   `out/Aki/Aki.app` (50 PNG) + `out/Aki/WHAT-TO-EXPECT.md`, boot smoke ok. Opus seat (cap lifted by Ben). **Open: Ben's P2
+   gate** — play a level start to finish on each difficulty, "it plays like Aki", watch the fade (Q24) and the Give Up
+   time-out edge (Q25). Not done: the plan's P2.12 screenshot script (Ben declined computer-use control of the app this
+   session). Handoff `docs/handoff-2026-10-04-aki-phase2-p210-p212.md`. Next after the gate: Phase 3 (editor, `.aki`).
 2. Bubble Trouble X core lane: Tasks 4–5b merged; remaining tasks per its plan (separate chip chain).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
@@ -76,8 +71,6 @@
   `ShellFullscreenWindow.canBecomeMain` true where the original allowed key only (no visible effect yet).
 - **Aki carried from Phase 1 reviews (not blockers):** Release Notes — Ben wants the replica's own notes at the very
   end (with the licence); ASWAboutBox/ASWTextViewer-faithful windows after P3 (Q10); the Carbon dialog centres on the
-  MAIN display, not the game window's display (as the Carbon code did — Q6, multi-display); P2.11 note: Level
-  Statistics has two IBCarbonPicture controls that `CarbonDialog` skips; one `fullscreen` accessor before Phase 2 adds
-  readers (ivar vs `shell.isFullscreen`); the Osaka-Mono guard's Menlo branch is only provable offline on this Mac
+  MAIN display, not the game window's display (as the Carbon code did — Q6, multi-display);  one `fullscreen` accessor (ivar vs `shell.isFullscreen`); the Osaka-Mono guard's Menlo branch is only provable offline on this Mac
   (the font is now installed system-wide); bundling Apple's font is for Ben's machine only (licence).
 - **Ferazel RE deepening (2026-10-03, CLOSED 2026-10-04):** 11 Opus readers + 2 gap readers wrote 17 new `docs/ferazel/` files (~6,400 lines: enemies ×3, bosses ×2, enemy-shots-and-damage, pickups-boxes, triggers-background ×2, spells-detail, save-continue, platforms-ropes-radial, player-states ×2, geysers, held-item-melee, coverage, physics-sprites); three Fable review legs all ACCEPT_WITH_FIXES (1a 0/4/6, 1b 1 Critical/3/9, 1c 0/4/11; `REVIEW-2026-10-03-deepening.md`); fix passes 1a/1b landed; consolidated fix pass landed (`FIXPASS-2026-10-03-deepening.md`; labels HIGH 727 / MED 228 / LOW 27); merged to main at 5b15177. Fable spot-review 1d of the fix-pass diff (2026-10-04): ACCEPT_WITH_FIXES, 0 Critical / 0 Important / 6 Minor, 66/66 markers + 76 raw addresses confirmed; fixes + the held-item-melee carries (rows 3, 4, 6–8) landed at 02f29cc. Worktree and branch `recursing-rhodes-932ac0` removed. Still open in the bank: INDEX NOT-RESOLVED items 15–29 (`+0xb8` draw modes, tint/remap colours, NewParticle args, Xichra cannons, OmniPx/PxMid, Mcnv item 3, lighting item 10, Titles item 12). Nothing needs Ben's play check. Handoff `docs/handoff-2026-10-03-ferazel-re.md`.
