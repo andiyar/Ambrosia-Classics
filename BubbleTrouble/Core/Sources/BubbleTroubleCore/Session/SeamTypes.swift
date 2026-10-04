@@ -147,6 +147,12 @@ public enum DrawOp: Equatable, Sendable {
     /// rect is its `_SetCPixel` corners).
     case fillRect(QDRect, rgb: UInt32, target: DrawTarget)
 
+    // MARK: Credits op (C7, additive)
+
+    /// `_DrawSecretPictInRect(id, r) @ 0000c0da`: `DrawPicture` of resource `IMAG` `id` (a picture stored under
+    /// another type) into `dst` of `target` — only the credits' secret page 29 (IMAG 128, `_DrawCredit @ 0001eee4`).
+    case imag(id: Int, dst: QDRect, target: DrawTarget)
+
     /// The single source of the wipe lengths (front end and Compositor): `_WipeScreen(step)` advances while the rows
     /// swept are < `2·step + 240` → ⌈(2·step + 240) / step⌉ advances (22 at 12, 42 at 6, 62 at 4).
     public static func wipeSteps(_ step: Int) -> Int { (2 * step + 0xf0 + step - 1) / step }
@@ -206,7 +212,6 @@ public enum ShellRequest: Equatable, Sendable {
     case showCursor
     case enableMenus(Bool)
     case haltAllSound
-    case highScoreEntry(rank: Int)
     /// ⌘Q in play: quit at once, no prefs save (R7).
     case quitNow
     case savePrefs
@@ -248,6 +253,25 @@ public enum ShellRequest: Equatable, Sendable {
     /// The front end's hold after a dialog answer is over: dispose the dialog (`_DoLevelSelect`'s `_DisposeDialog`
     /// after `_WaitFor(0x1e)`).
     case closeDialog
+
+    // MARK: High-score request (C7, additive)
+
+    /// `_CheckHiScore @ 00024b34`: DLOG 1000 "High Score Name" ("You made it into the High Scores! Please enter your
+    /// name:", edit item 2, "OK!" item 1 = default), raised into a window group at the floating level windowed /
+    /// `CGShieldingWindowLevel` in full screen, `_InitCursor` (the arrow — sent as `.setCursor(id: nil)`). The field is
+    /// preset to `defaultName` (the table's slot 0 — the last name entered) with all of it selected
+    /// (`SelectDialogItemText(2, 0, 0x400)`). The front end plays snd 13 on opening and snd 15 on OK.
+    ///
+    /// The App's dialog filter transcribes `_HiScoreNameFilter @ 00024890` — on every keyDown / autoKey:
+    /// Return (0x0d) or Enter (0x03) → OK (item 1 flashed); arrows (0x1c…0x1f) or backspace (0x08) → snd 6
+    /// (`PlayMySnd(6, 0x14, 0)`), key passed on; any other key while the field already holds ≥ 10 characters and the
+    /// selection is empty (`selEnd − selStart ≤ 0`) → `SysBeep(1)`, key swallowed; else snd 1 (`PlayMySnd(1, 0x14,
+    /// 0)`), key passed on. There is no Cancel: the dialog stays until OK. On OK the App answers with
+    /// `FrontEnd.highScoreNameEntered(_:)` carrying the field's text (the table stores ≤ 11 characters) and applies
+    /// that answer's output BEFORE disposing the dialog: the original plays snd 15 and the joke-name sound (snd 13 /
+    /// 46) with DLOG 1000 still up — `_DisposeDialog` comes after the compare chain. (Replaces the plan's earlier
+    /// `highScoreEntry(rank:)`, removed.)
+    case highScoreNameDialog(defaultName: String)
 }
 
 /// Why a session ended (C4 / C6 may add cases).

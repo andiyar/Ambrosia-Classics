@@ -332,7 +332,7 @@ import HectorShell
             case .watchCursor: setCursor(.arrow)
             case let .displayFade(toBlack, seconds): displayFade.fade(toBlack: toBlack, seconds: seconds)
             case .quit: quit = true
-            case .highScoreEntry, .levelSelectDialog, .prefsDialog, .hiScoreEraseDialog, .modalDialog, .closeDialog:
+            case .highScoreNameDialog, .levelSelectDialog, .prefsDialog, .hiScoreEraseDialog, .modalDialog, .closeDialog:
                 dialogRequested(request)
             }
         }
@@ -406,7 +406,8 @@ import HectorShell
     /// - `.prefsDialog` — DLOG 190 → `prefsDialogDone(prefs:)`, then `audio.updateMusicVolume()` (`_PrefsButton`).
     /// - `.hiScoreEraseDialog` — DLOG 1001 → `hiScoreEraseDone(reset:)`.
     /// - `.modalDialog(id:)` — DLOG 290 / 291 (any key or click) and 3000 / 3001 (OK) → `dialogDone()`.
-    /// - `.highScoreEntry(rank:)` — DLOG 1000 name entry (C7) → `highScoreNameEntered(_:)`.
+    /// - `.highScoreNameDialog(defaultName:)` — DLOG 1000 name entry (C7) → `highScoreNameEntered(_:)`; apply that
+    ///   answer's output (snd 15 + any joke-name sound) before disposing the dialog, as the original did.
     /// Until A4 replaces the body, each is answered at once as its Cancel / dismiss would be (after this output
     /// is applied), so the front end never waits on a dialog nobody shows.
     private func dialogRequested(_ request: ShellRequest) {
@@ -414,7 +415,8 @@ import HectorShell
         case .levelSelectDialog: pendingAnswers.append { $0.levelSelectDone(typed: nil) }
         case .prefsDialog: pendingAnswers.append { $0.prefsDialogDone(prefs: $0.prefs) }
         case .hiScoreEraseDialog: pendingAnswers.append { $0.hiScoreEraseDone(reset: false) }
-        case .modalDialog, .highScoreEntry: pendingAnswers.append { $0.dialogDone() }
+        case .modalDialog: pendingAnswers.append { $0.dialogDone() }
+        case let .highScoreNameDialog(name): pendingAnswers.append { $0.highScoreNameEntered(name) }   // OK at once
         case .closeDialog: break
         default: break
         }

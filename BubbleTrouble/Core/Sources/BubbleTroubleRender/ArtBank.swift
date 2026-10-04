@@ -17,7 +17,8 @@ public final class ArtBank {
 
     private let data: BTXGameData
     private var cicns: [Int: RGBAImage] = [:]
-    private var picts: [Int: RGBAImage] = [:]
+    private struct PictKey: Hashable { let type: String; let id: Int }
+    private var picts: [PictKey: RGBAImage] = [:]
 
     /// The original's flat loaded-sprite array of data set 0 (`_InitCompiledSprites @ 00015784` +
     /// `_LoadSprites @ 00015a32`): every set's frames in set order, `flatCICN[setOffset[s − 1] + k]` =
@@ -84,16 +85,27 @@ public final class ArtBank {
     /// A `PICT` as `DrawPicture` would draw it: plain raster / QuickTime pictures opaque; region (0x0099) and
     /// matte (0x8201) pictures with their mask as straight alpha.
     public func pict(_ id: Int) throws -> RGBAImage {
-        if let cached = picts[id] { return cached }
-        guard let bytes = data.data(type: "PICT", id: id) else { throw ArtError.missing(type: "PICT", id: id) }
+        try picture(type: "PICT", id: id)
+    }
+
+    /// An `IMAG` resource — a picture stored under another type and drawn with `DrawPicture` all the same
+    /// (`_DrawSecretPictInRect @ 0000c0da`: `GetResource('IMAG', id)`; IMAG 128, the credits' secret page 29).
+    public func imag(_ id: Int) throws -> RGBAImage {
+        try picture(type: "IMAG", id: id)
+    }
+
+    private func picture(type: String, id: Int) throws -> RGBAImage {
+        let key = PictKey(type: type, id: id)
+        if let cached = picts[key] { return cached }
+        guard let bytes = data.data(type: type, id: id) else { throw ArtError.missing(type: type, id: id) }
         let decoded: (pict: PICT, path: PICT.DecodePath)
         do { decoded = try PICT.decodeAny(data: bytes) } catch {
-            throw ArtError.undecodable(type: "PICT", id: id, reason: "\(error)")
+            throw ArtError.undecodable(type: type, id: id, reason: "\(error)")
         }
         let masked = decoded.path == .packBitsRegion || decoded.path == .quickTimeMatte
         let image = RGBAImage(width: decoded.pict.width, height: decoded.pict.height, rgba: decoded.pict.rgba,
                               forceOpaque: !masked)
-        picts[id] = image
+        picts[key] = image
         return image
     }
 
@@ -106,10 +118,11 @@ public final class ArtBank {
     /// Every `PICT` id across the five files.
     public var pictIDs: [Int] { data.ids(of: "PICT") }
 
-    /// Decode every `cicn` and `PICT` now (the App calls it at launch so no frame pays a first-use decode).
+    /// Decode every `cicn`, `PICT` and `IMAG` now (the App calls it at launch so no frame pays a first-use decode).
     /// Throws the first failure.
     public func prewarm() throws {
         for id in cicnIDs { _ = try cicn(id) }
         for id in pictIDs { _ = try pict(id) }
+        for id in data.ids(of: "IMAG") { _ = try imag(id) }
     }
 }

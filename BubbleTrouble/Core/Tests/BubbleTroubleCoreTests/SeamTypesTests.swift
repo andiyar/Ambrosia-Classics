@@ -44,7 +44,7 @@ final class SeamTypesTests: XCTestCase {
                        KeyModifiers(command: true, shift: false, option: false, control: false, capsLock: false))
         XCTAssertNotEqual(KeyModifiers(shift: true), KeyModifiers(option: true))
 
-        XCTAssertEqual(ShellRequest.highScoreEntry(rank: 3), .highScoreEntry(rank: 3))
+        XCTAssertEqual(ShellRequest.highScoreNameDialog(defaultName: "Ben"), .highScoreNameDialog(defaultName: "Ben"))
         XCTAssertNotEqual(ShellRequest.enableMenus(true), .enableMenus(false))
         let requests: [ShellRequest] = [.hideCursor, .showCursor, .haltAllSound, .quitNow, .savePrefs,
                                          .setCursor(id: nil), .setCursor(id: 200), .restoreMousePosition,

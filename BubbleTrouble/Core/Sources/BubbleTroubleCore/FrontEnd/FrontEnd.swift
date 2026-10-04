@@ -32,7 +32,8 @@ public enum FrontEndPhase: Equatable, Sendable {
 }
 
 /// A full-screen sequence the front end hands control to and waits on — C7's `_DisplayHiScores @ 00025733`,
-/// `_DisplayCredits @ 0002145a` and `_CheckHiScore @ 00024b34` (C6 ships placeholders that finish at once).
+/// `_DisplayCredits @ 0002145a` and `_CheckHiScore @ 00024b34` (`HighScores.swift`, `Credits.swift`). A screen gets
+/// its first tick as it is built, at the TickCount its step is reached.
 ///
 /// Screens are built lazily, when their step is reached (so they see the state as it then stands — e.g. the table
 /// just reset by the erase dialog), from factories that get the `FrontEnd`: a screen reads and writes back
@@ -65,23 +66,6 @@ enum FrontEndScreenResult: Equatable, Sendable {
     case finished
     case newGame
     case highScoreEntered(rank: Int?)
-}
-
-/// C6's stand-in for a C7 screen: no output, finishes on its first tick with `result`.
-final class PlaceholderScreen: FrontEndScreen {
-    private let outcome: FrontEndScreenResult
-    private(set) var result: FrontEndScreenResult?
-    init(_ outcome: FrontEndScreenResult) { self.outcome = outcome }
-    func tick(now: UInt32, keys: HeldKeys, mouse: MousePoint) -> SessionOutput {
-        result = outcome
-        return SessionOutput()
-    }
-    func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
-    func mouseDown(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
-    func mouseUp(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
-    func appActivated() -> SessionOutput { SessionOutput() }
-    func appDeactivated() -> SessionOutput { SessionOutput() }
-    func dialogAnswered(_ answer: FrontEndDialogAnswer) -> SessionOutput { SessionOutput() }
 }
 
 /// The front end (S2). Main-actor use by the App; not Sendable.
@@ -131,6 +115,8 @@ public final class FrontEnd {
     /// `local_30` — the full-screen-toggle redraw deadline (0 = none).
     var redrawAt: UInt32 = 0
     var doPrefsNow = false
+    /// `gFinished` set outside the loop's own Quit (⌘Q on the scores screen): the loop quits at its head.
+    var finished = false
     var foreground = true
     var hitButtons = Set<MainMenu.Button>()
     var mouse = MousePoint(h: 320, v: 240, button: false)
@@ -466,7 +452,12 @@ public final class FrontEnd {
                 steps.insert(contentsOf: then(s), at: 0)
                 continue
             case .screen(let make, let then):
-                if activeScreen == nil { activeScreen = make() }
+                if activeScreen == nil {
+                    // Built and started at once: the original enters the screen's routine at this TickCount.
+                    let screen = make()
+                    activeScreen = screen
+                    out.append(screen.tick(now: now, keys: keys, mouse: mouse))
+                }
                 guard let r = activeScreen?.result else { break }
                 activeScreen = nil
                 steps.removeFirst()

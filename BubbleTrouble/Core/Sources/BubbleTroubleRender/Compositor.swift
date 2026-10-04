@@ -99,6 +99,9 @@ public final class Compositor {
         case let .pict(id, dst, target):
             guard let p = try? art.pict(id) else { return }
             withTarget(target) { Self.drawPicture(p, in: dst, into: &$0) }
+        case let .imag(id, dst, target):
+            guard let p = try? art.imag(id) else { return }
+            withTarget(target) { Self.drawPicture(p, in: dst, into: &$0) }
         case let .pictSlice(_, src, dst, target):
             // `_BgndToCompTransparent @ 00015028`: CopyBits bgnd → comp, mode 0x24 (transparent: source pixels
             // equal to the BackColor, white, are not copied). `id` is informational: the bgnd holds whatever the

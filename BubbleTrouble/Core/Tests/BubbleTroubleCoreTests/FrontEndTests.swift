@@ -607,7 +607,10 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(reset.sounds, [SoundCue(slot: 0x27, priority: 10, delayFrames: 0),
                                       SoundCue(slot: 0x12, priority: 10, delayFrames: 0)])
         XCTAssertEqual(fe.highScores, try HighScoreTable.factory(from: data))
-        XCTAssertEqual(reset.drawOps, [.compToScreen(MainMenu.screenRect)])
+        XCTAssertEqual(reset.drawOps.first, .compToScreen(MainMenu.screenRect))
+        // C7: the scores screen starts at once and draws the reset table.
+        XCTAssertTrue(reset.drawOps.contains(.string(text: "Potsie", h: 116, v: 188, highlighted: false, fixedPitch: nil,
+                                                     target: .comp)))
         let back = ticks(fe, now: &now) { $0.phase != .menu }
         XCTAssertTrue(back.drawOps.contains(.wipe(step: 12)))
     }

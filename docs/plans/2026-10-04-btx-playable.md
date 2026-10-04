@@ -120,7 +120,7 @@ section. Every task with visible/audible output carries a "What Ben checks" line
   `func frame(keys: HeldKeys) -> SessionOutput` (one 0.033 s tick); `func tick(now: UInt32, keys: HeldKeys) -> SessionOutput`
   (1/60 s, for countdown/blocking phases); `var phase: SessionPhase { get }`; `var wantsFrameTimer: Bool { get }`.
 - `public struct SessionOutput { sounds: [SoundCue]; music: [MusicCue]; drawOps: [DrawOp]; requests: [ShellRequest]; ended: SessionEnd? }`
-  where `ShellRequest` = `.hideCursor`, `.showCursor`, `.enableMenus(Bool)`, `.haltAllSound`, `.highScoreEntry(rank:)`,
+  where `ShellRequest` = `.hideCursor`, `.showCursor`, `.enableMenus(Bool)`, `.haltAllSound`, `.highScoreNameDialog(defaultName:)` (C7; was `.highScoreEntry(rank:)`),
   `.quitNow` (⌘Q in play: no prefs save), `.savePrefs`.
 - `public struct HeldKeys { var codes: Set<UInt16>; var capsLock: Bool; var command: Bool }` (Mac virtual key codes).
 - `public final class FrontEnd` (tick-driven, owns `GameSession` while a game/demo runs): `func tick(now:keys:mouse:) -> SessionOutput`,
@@ -383,8 +383,10 @@ Legend: ⚑ MAJOR = two Opus review legs (spec compliance, then quality — Ben:
 ### C7 — minor — Core: high-score entry + screen, credits (+8 → 202)
 - **Files:** `FrontEnd/{HighScores,Credits}.swift`, tests `HighScoreScreenTests.swift`.
 - **Contract:** Game end → `_CheckHiScore` (start level 1, not cheating, not demo; Esc-quit games too): pattern-4 overlay
-  (`GetIndPattern(0,4)`, patOr — Q12), request DLOG 1000 (snd 13), default text = slot-0 name, max 10 chars, typing snd 1,
-  arrows/backspace snd 6, OK snd 15 → C5 insert → scores screen (snd 19). `_DisplayHiScores @ 00025733`: PICT 912 centred,
+  (`GetIndPattern(0,4)`, patOr — Q12), C5 insert (score + level), request DLOG 1000 as
+  `ShellRequest.highScoreNameDialog(defaultName:)` (snd 13), default text = slot-0 name, max 10 chars, typing snd 1,
+  arrows/backspace snd 6 (the App's filter), OK → `FrontEnd.highScoreNameEntered(_:)`: snd 15 + joke-name sound (played
+  before the dialog is disposed) → name into the row and slot 0 → scores screen (snd 19). `_DisplayHiScores @ 00025733`: PICT 912 centred,
   PICT 9020 at L209 T80 R431 B117, headers Name x116 / Score x337 / Level x451 at y145 (Letters font), rows y 188+35·i,
   new entry flashes 6× (5-tick halves), `wipe(12)`, 600 ticks or key/click (snd 17), N = new game. Credits
   (`_DisplayCredits @ 0002145a`, `_CreditsButton @ 0000ae16`): pages 0–13, 240 ticks each; ctrl/option/⌘/shift → secret
@@ -415,7 +417,7 @@ Legend: ⚑ MAJOR = two Opus review legs (spec compliance, then quality — Ben:
   as a K1 follow-up commit), `crsr 200` hand cursor in menus (decode via HectorGraphics if the kit has `crsr`, else Q16),
   modifier-aware keys (`keyDown` + autoKey both, FI §4); demo: cursor visible, any key/mouse ends; app deactivate → suspend
   music / pause game / end demo (FI §1e). Info-box text through `CoreTextRasterizer` (Geneva 9; Geneva ships with macOS).
-  `ShellRequest.highScoreEntry` → A4's dialog. Prefs/high scores saved at every `_LoadLevel` (C4 emits `.savePrefs`), menu
+  `ShellRequest.highScoreNameDialog` → A4's dialog. Prefs/high scores saved at every `_LoadLevel` (C4 emits `.savePrefs`), menu
   toggles, prefs Save, quit via menu.
 - **What Ben checks:** splash logo, title screen, buttons highlight, mouse-trail stars, 20 s idle → demo then scores.
 - **Verify:** G2, G5.

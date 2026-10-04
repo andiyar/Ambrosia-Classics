@@ -13,6 +13,13 @@ extension FrontEnd {
 
     /// One iteration of `_Interface`'s loop with no blocking step pending.
     func menuIteration(keys: HeldKeys) -> SessionOutput {
+        if finished {
+            // The loop's head: `if (gFinished) { _DoRegReminder (unregistered only); _StopMusic(); return; }` — set by
+            // ⌘Q on the scores screen (C7).
+            push(quitSteps())
+            ticked = true
+            return runSteps(keys: keys)
+        }
         var out = SessionOutput()
         if redrawAt != 0 && redrawAt < now {                       // gDidToggleFullscreen + 10 ticks
             out.drawOps += drawMainMenuOps() + [.compToScreen(MainMenu.screenRect)]
@@ -425,7 +432,7 @@ extension FrontEnd {
         random = GameRandom(seed: s.state.rng.seed)
         storedPrefs = s.prefs
         showFPS = s.showFPS
-        let checkScore = s.mode == .play && startLevel <= 1 && !s.playerIsCheating
+        let checkScore = Self.checksHighScore(mode: s.mode, startLevel: startLevel, cheating: s.playerIsCheating)
         let score = s.state.score, level = Int(s.state.level)
         session = nil
         var seq: [Step] = [.run { SessionOutput(requests: [.showCursor]) }]
@@ -458,23 +465,22 @@ extension FrontEnd {
         return seq
     }
 
-    // MARK: - C7 hand-over
+    // MARK: - C7 screens
 
-    /// `_DisplayHiScores` (C7); `newEntryRank` = the row `_CheckHiScore` filled (it flashes). C6 placeholder:
-    /// returns at once.
+    /// `_DisplayHiScores` (`HighScoresScreen`); `newEntryRank` = the row `_CheckHiScore` filled (it flashes).
     func makeScoresScreen(newEntryRank: Int?) -> FrontEndScreen {
-        PlaceholderScreen(.finished)
+        HighScoresScreen(frontEnd: self, newEntryRank: newEntryRank)
     }
 
-    /// `_DisplayCredits(secret)` (C7). C6 placeholder: returns at once.
+    /// `_DisplayCredits(secret)` (`CreditsScreen`).
     func makeCreditsScreen(secret: Int) -> FrontEndScreen {
-        PlaceholderScreen(.finished)
+        CreditsScreen(frontEnd: self, secret: secret)
     }
 
-    /// `_CheckHiScore` (C7): the pattern overlay, DLOG 1000 (answered via `FrontEnd.highScoreNameEntered`), the
-    /// insert into `highScores`. C6 placeholder: no entry.
+    /// `_CheckHiScore` (`HighScoreCheckScreen`): the pattern overlay, DLOG 1000 (answered via
+    /// `FrontEnd.highScoreNameEntered`), the insert into `highScores`.
     func makeHighScoreCheck(score: Int, level: Int) -> FrontEndScreen {
-        PlaceholderScreen(.highScoreEntered(rank: nil))
+        HighScoreCheckScreen(frontEnd: self, score: score, level: level)
     }
 }
 
