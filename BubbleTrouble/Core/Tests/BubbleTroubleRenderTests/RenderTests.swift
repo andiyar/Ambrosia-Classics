@@ -209,14 +209,13 @@ final class RenderTests: XCTestCase {
 
     // MARK: - Frames
 
-    /// Level 1's first frame, hand-assembled to mirror `_DrawMaze @ 00025daa` (C3's `levelStartOps` is not merged
-    /// yet — when it is, this test should build its ops from it): PICT LEVL.w1 into bgnd + comp, the score bar,
-    /// the maze-cell sprites of level 1 as the core builds it (seed 1: jewels placed), then comp → screen.
+    /// Level 1's first frame from C3's `levelStartOps` (`_DrawMaze @ 00025daa`): PICT LEVL.w1 into bgnd + comp, the
+    /// score bar, the maze-cell sprites of level 1 as the core builds it (seed 1: jewels placed), then comp → screen.
     func testLevel1FirstFrameGolden() throws {
         let (data, art, comp) = try make()
-        let state = try GameState.newGame(level: 1, mode: .play, seed: 1, files: data.levels)
-        let ops = Self.levelStartOps(maze: state.maze, level: 1, pict: try data.presentation.background(level: 1))
-            + [.compToScreen(Self.full)]
+        var state = try GameState.newGame(level: 1, mode: .play, seed: 1, files: data.levels)
+        XCTAssertEqual(state.levelRecord.words[1], Int16(try data.presentation.background(level: 1)))
+        let ops = state.levelStartOps() + [.compToScreen(Self.full)]
         XCTAssertEqual(ops.filter { if case .sprite = $0 { return true } else { return false } }.count,
                        state.maze.cells.filter { [10, 15, 16, 20, 30, 52].contains($0) }.count)
         comp.apply(ops)
@@ -232,28 +231,6 @@ final class RenderTests: XCTestCase {
         XCTAssertEqual(comp.screen[20, 20], bubble[20, 20])
         XCTAssertEqual(comp.screen[0, 440], 0xFF00_8011)
         XCTAssertEqual(comp.screen[300, 470], comp.score[300, 30])
-    }
-
-    /// `_DrawMaze`'s cell switch: 10 → 0x11, 15 → 0x14, 16 → 0x15, 20 → 0x16, 30 → 0x17, 52 → 0x12 (level < 12)
-    /// or 0x13; `_SpriteToComp(0, col·40, row·40, set, 1)`.
-    static func levelStartOps(maze: Maze, level: Int, pict: Int) -> [DrawOp] {
-        var ops: [DrawOp] = [.drawMaze(pictID: pict), .prepareScoreBar]
-        for row in 0..<Maze.rows {
-            for col in 0..<Maze.columns {
-                let set: Int
-                switch maze[col, row] {
-                case 10: set = 0x11
-                case 15: set = 0x14
-                case 16: set = 0x15
-                case 20: set = 0x16
-                case 30: set = 0x17
-                case 52: set = level < 12 ? 0x12 : 0x13
-                default: continue
-                }
-                ops.append(.sprite(set: set, frame: 1, h: col * 40, v: row * 40, mode: .normal))
-            }
-        }
-        return ops
     }
 
     func testWipeRevealsBandsStep12() throws {
