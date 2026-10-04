@@ -80,10 +80,12 @@ extension GameScreen {
 
     /// The frame loop of `_RedrawMatchedTiles` @ 0x13af5 (DC:7954–7966): while the clicked tile's frame
     /// (`param_1[2]`, 0 at entry) < 11: `_DrawFadeBufferTiles`, then window ← scratch3c at the clicked
-    /// tile's rect and the selected tile's, each flushed, with no wait between frames (Q24); without tile
-    /// animation (p+0x213 == 0) the loop breaks after one frame. The window rect is (left, top+1, left+53,
-    /// top+69) (DC:7957, DC:7960) — `tileRect` with its top moved down one row. The ST list is the job's
-    /// copies; their frames advance here, as `_DrawFadeBufferTiles` advances the malloc'd ST records.
+    /// tile's rect and the selected tile's, each flushed, with no explicit wait between frames; without tile
+    /// animation (p+0x213 == 0) the loop breaks after one frame. Pacing (D6, Q24 ⚑): each of the two presents
+    /// per frame is followed by `waitOneRefresh()`, standing in for the 10.4+ refresh-throttled port flush —
+    /// ~22/60 s for an animated fade. The window rect is (left, top+1, left+53, top+69) (DC:7957, DC:7960) —
+    /// `tileRect` with its top moved down one row. The ST list is the job's copies; their frames advance
+    /// here, as `_DrawFadeBufferTiles` advances the malloc'd ST records.
     func runFade(_ job: FadeJob) {                                                        // P2.9
         guard game != nil else { return }
         let gw = controller.gworlds!
@@ -96,12 +98,21 @@ extension GameScreen {
             let clickedWindow = AkiGameArt.fadeWindowRect(clickedBox)
             controller.drawToWindow(gw.scratch3c, srcRect: clickedWindow, dstRect: clickedWindow, flush: true)
             CATransaction.flush()
+            waitOneRefresh()
             let selectedWindow = AkiGameArt.fadeWindowRect(selectedBox)
             controller.drawToWindow(gw.scratch3c, srcRect: selectedWindow, dstRect: selectedWindow, flush: true)
             CATransaction.flush()
+            waitOneRefresh()
             if !job.animate { break }
             frame += 1
         }
+    }
+
+    /// One full tick (1/60 s) busy-waited on `ShellClock`'s clock — not "until the tick changes", which can
+    /// return at once. Mac OS X 10.4+ throttled each QuickDraw port flush to the display refresh (D6, Q24 ⚑).
+    private func waitOneRefresh() {
+        let end = ProcessInfo.processInfo.systemUptime + 1.0 / 60
+        while ProcessInfo.processInfo.systemUptime < end {}
     }
 
     /// `_DrawFadeBufferTiles(cx, cy, sx, sy)` @ 0x11e6d (DC:6847): background → scratch3c over the clicked
