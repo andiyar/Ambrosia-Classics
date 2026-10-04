@@ -4,8 +4,8 @@
 # app resolves them from its own bundle), strip quarantine/xattrs, ad-hoc re-sign, and place
 # out/BubbleTroubleX/Bubble Trouble X.app + out/BubbleTroubleX/WHAT-TO-EXPECT.md. out/, .build/ and *.xcodeproj are
 # git-ignored; the original data never enters git (plan R13).
-# BTX_DATA overrides the data folder; BTX_STAGE_DESKTOP=1 also ditto's both to ~/Desktop (hidden worktrees are
-# unopenable from Finder).
+# BTX_DATA overrides the data folder. Both are also ditto'd to ~/Desktop (hidden worktrees are unopenable from
+# Finder); BTX_STAGE_NO_DESKTOP=1 skips that (implementer test runs — the orchestrator stages for Ben).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -49,7 +49,7 @@ codesign --force --deep --sign - "$OUT/$NAME"
 codesign --verify --deep "$OUT/$NAME"
 cp "$ROOT/BubbleTroubleX/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
 
-if [ "${BTX_STAGE_DESKTOP:-0}" = "1" ]; then
+if [ "${BTX_STAGE_NO_DESKTOP:-0}" != "1" ]; then
     rm -rf "$HOME/Desktop/$NAME"
     ditto "$OUT/$NAME" "$HOME/Desktop/$NAME"
     cp "$OUT/WHAT-TO-EXPECT.md" "$HOME/Desktop/Bubble Trouble X — WHAT-TO-EXPECT.md"

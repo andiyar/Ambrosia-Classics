@@ -137,7 +137,11 @@ import Foundation
         case let .load(set):
             // `_LoadMusic(1)`: no-op while loaded; the named "Level set N music.1" resource.
             guard musicID == nil else { return }
-            guard let id = try? data.musicResourceID(set: set) else { return }
+            let id: Int
+            do { id = try data.musicResourceID(set: set) } catch {
+                NSLog("Bubble Trouble X: no music for set %d: %@", set, "\(error)")
+                return
+            }
             upload(id)
             if loaded.contains(id) { musicID = id }
         case .start:

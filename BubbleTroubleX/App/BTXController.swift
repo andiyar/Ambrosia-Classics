@@ -9,7 +9,7 @@ import HectorShell
 ///
 /// At A1 the app launches straight into a new game at level 1 and starts a new one when a game ends (temporary:
 /// A2 puts `FrontEnd` — splash, menu, demos — before and after it).
-@MainActor final class BTXController: NSObject, NSApplicationDelegate, NSMenuItemValidation, ShellInputHandler {
+@MainActor final class BTXController: NSObject, NSApplicationDelegate, ShellInputHandler {
     private var data: BTXGameData!
     private var art: ArtBank!
     private var sounds: SoundBankPCM!
@@ -35,15 +35,19 @@ import HectorShell
     /// The `_WipeScreen` being paced (`.wipe` op seen): its step, the band advance done, the tick it was done on.
     private var wipe: (step: Int, row: Int, lastTick: UInt32)?
 
-    /// `.enableMenus` (the game disables the menu bar while frames run).
-    private var menusEnabled = true
-    /// `.disableAbout` (kept for A3's About item).
+    /// `.disableAbout` — UNUSED until A3 adds the About item (it enables/disables that item from this flag).
     private var aboutDisabled = false
-    /// `.quitNow` (⌘Q in play, R7): the terminate path skips the prefs save.
+    /// `_CleanUp` from inside a game (`.quitNow`, a quit while paused, a data failure): terminate without saving.
     private var quitWithoutSaving = false
-    /// `_HideMyCursor` / `_ShowMyCursor` balance (NSCursor.hide counts).
+    /// Quit was chosen while a game runs outside its pause: ⌘ + key 0x0C is injected into every frame's keys until
+    /// the game's own ⌘Q check (`_PlayGame` 00018ea4) fades the music and quits. A menu key equivalent eats the
+    /// keyDown, so the view never sees it.
+    private var quitPending = false
+    /// `_HideMyCursor` / `_ShowMyCursor` (`gCursorVisible`: idempotent; NSCursor.hide counts).
     private var cursorHidden = false
-    /// `gSavedMousePosition` (global, top-left origin), taken when the game begins (`_RequestGame`).
+    /// The play-mode mouse capture (warped to centre, `CGAssociateMouseAndMouseCursorPosition(0)`).
+    private var mouseCaptured = false
+    /// `gSavedMousePosition` (global, top-left origin): `_GetMouse` right before each centre warp.
     private var savedMouse: CGPoint?
 
     // MARK: Launch
@@ -75,14 +79,15 @@ import HectorShell
             self.sounds = sounds
             self.store = store
         } catch {
-            fatalError("Bubble Trouble X: cannot load the original data: \(error)")
+            fail("cannot load the original data: \(error)")
+            return
         }
         compositor = Compositor(art: art, text: CoreTextRasterizer())
         // K3's `ShellMixer` is not on HectorKit main yet: a silent output stands in (one-file swap later).
         audio = BTXAudio(output: SilentAudioOutput(), sounds: sounds, data: data)
         applyPrefsToAudio()
 
-        NSApp.mainMenu = Self.buildMenuBar()
+        NSApp.mainMenu = buildMenuBar()
 
         // `_CreateGameWindow @ 00010144`: `CreateNewWindow(6, 0x2800000)` 640×480 → titled only (R5), titled
         // "Bubble Trouble X", `RepositionWindow(…, kWindowCenterOnMainScreen)`.
@@ -107,33 +112,71 @@ import HectorShell
                                       y: (area.midY - size.height / 2).rounded()))
     }
 
-    /// The menu bar until A3 transcribes `main.nib`: the application menu with Quit (⌘Q), disabled while the game
-    /// disables the menus — ⌘Q then reaches the game as keys (`_PlayGame`'s `GameKeyDown(0xc)` + ⌘, R7).
-    private static func buildMenuBar() -> NSMenu {
+    /// The menu bar until A3 transcribes `main.nib`: the application menu with Quit (⌘Q). The original keeps Quit
+    /// enabled in play (only 'pref' and 'Full' are disabled, `_PlayGame`); the item goes to `quitChosen`, which
+    /// lets a running game quit its own way.
+    private func buildMenuBar() -> NSMenu {
         let bar = NSMenu()
         let appItem = NSMenuItem()
         bar.addItem(appItem)
         let appMenu = NSMenu(title: "Bubble Trouble X")
-        appMenu.addItem(withTitle: "Quit Bubble Trouble X", action: #selector(NSApplication.terminate(_:)),
-                        keyEquivalent: "q")
+        let quit = appMenu.addItem(withTitle: "Quit Bubble Trouble X", action: #selector(quitChosen(_:)),
+                                   keyEquivalent: "q")
+        quit.target = self
         appItem.submenu = appMenu
         return bar
     }
 
-    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        menusEnabled
+    /// Quit (menu ⌘Q, or the quit Apple event via `applicationShouldTerminate`):
+    /// - no game: terminate, prefs saved (`_HandleMenuChoice` 0x81/1 → `_SaveGamePrefs`);
+    /// - paused: `_PauseGame`'s loop sees `gFinished` → `_StopMusic` + `_CleanUp`, no save — terminate now (the
+    ///   music voice is paused; ⌘-keys never reach the cheat buffer, `_PauseGame` case 3 tests cmdKey);
+    /// - any other phase: ⌘ + 0x0C is injected into the frames' keys, so `_PlayGame`'s check (00018ea4) runs its
+    ///   `_StopMusic` fade and `.quitNow` follows; blocking phases (wipe, fade, count-down) poll no keys, so the
+    ///   injection waits for frames to run again.
+    @objc func quitChosen(_ sender: Any?) {
+        guard let session, session.isInGame else {
+            NSApp.terminate(nil)
+            return
+        }
+        if session.phase == .paused {
+            quitWithoutSaving = true
+            NSApp.terminate(nil)
+        } else {
+            quitPending = true
+        }
+    }
+
+    /// A terminate that did not come from the game (e.g. the quit Apple event) goes through `quitChosen` while a game
+    /// runs; the game's own `.quitNow` and every quit outside a game proceed.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if quitWithoutSaving || !(session?.isInGame ?? false) { return .terminateNow }
+        quitChosen(nil)
+        return quitWithoutSaving ? .terminateNow : .terminateCancel
+    }
+
+    /// A launch/start failure: logged; DEBUG also shows an alert (Invariant 6); then a clean quit without saving.
+    private func fail(_ message: String) {
+        NSLog("Bubble Trouble X: %@", message)
+        #if DEBUG
+        let alert = NSAlert()
+        alert.messageText = "Bubble Trouble X: \(message)"
+        alert.runModal()
+        #endif
+        quitWithoutSaving = true
+        NSApp.terminate(nil)
     }
 
     // MARK: Game
 
     /// `_RequestGame(1, play)` (temporary A1 entry): a new game at level 1, seeded from TickCount.
     private func startNewGame() {
-        savedMouse = CGEvent(source: nil)?.location                     // `_GetMouse(gSavedMousePosition)`
         do {
             session = try GameSession(data: data, prefs: prefs, mode: .play, startLevel: 1,
                                       seed: ShellClock.ticks(), film: nil)
         } catch {
-            fatalError("Bubble Trouble X: cannot start a game: \(error)")
+            fail("cannot start a game: \(error)")
+            return
         }
         audio.gameRunning = true
         applyPrefsToAudio()
@@ -156,7 +199,12 @@ import HectorShell
     /// One 0.033 s fire: one simulation step, one present.
     private func frameFired() {
         guard let session else { return }
-        handle(session.frame(keys: heldKeys()))
+        var keys = heldKeys()
+        if quitPending {                                                // ⌘Q chosen from the menu (see `quitChosen`)
+            keys.codes.insert(0x0c)
+            keys.command = true
+        }
+        handle(session.frame(keys: keys), now: ShellClock.ticks())
     }
 
     /// One 1/60 s fire: the wipe advances when TickCount has moved on, then the session's blocking phase ticks.
@@ -173,18 +221,19 @@ import HectorShell
             }
             wipe = w.row < Compositor.wipeSteps(w.step) ? w : nil
         }
-        handle(session.tick(now: now, keys: heldKeys()), alreadyDirty: dirty)
+        handle(session.tick(now: now, keys: heldKeys()), now: now, alreadyDirty: dirty)
     }
 
-    /// Carries out one `SessionOutput`: requests (`ST_HaltSound` before the cues that follow it), music, effects,
-    /// draw ops, present; then the end of the game and the clock for the new phase.
-    private func handle(_ out: SessionOutput, alreadyDirty: Bool = false) {
+    /// Carries out one `SessionOutput` produced at TickCount `now`: requests (`ST_HaltSound` before the cues that
+    /// follow it), music, effects; a wipe whose blocking phase just ended is finished, then the draw ops, present;
+    /// then the end of the game and the clock for the new phase.
+    private func handle(_ out: SessionOutput, now: UInt32, alreadyDirty: Bool = false) {
         var quit = false
         for request in out.requests {
             switch request {
             case .hideCursor: hideCursor()
             case .showCursor: showCursor()
-            case let .enableMenus(on): menusEnabled = on
+            case .enableMenus: break                                    // A3: Prefs / Full Screen items
             case .haltAllSound: audio.haltEffects()
             case .highScoreEntry: break                                 // A4's dialog (C7); no high scores at A1
             case .quitNow: quit = true
@@ -198,23 +247,25 @@ import HectorShell
         }
         for cue in out.music { audio.apply(cue) }
         for cue in out.sounds { audio.play(cue) }
-        if !out.drawOps.isEmpty {
-            compositor.apply(out.drawOps)
-            if let step = out.drawOps.lastWipeStep {                    // the op itself copied the first band pair
-                wipe = (step, 0, ShellClock.ticks())
-            }
-        }
-        // A wipe still unfinished when its blocking phase ended completes at once (the original's loop ran out).
+        // A wipe still unfinished when its blocking phase ended completes first (`_WipeScreen` returns before
+        // `_NewLevel` draws on), then this output's post-wipe ops.
+        var dirty = alreadyDirty
         if let w = wipe, session?.phase != .wipe {
             let rows = Compositor.wipeSteps(w.step)
             if w.row < rows {
                 for row in (w.row + 1)...rows { compositor.applyWipe(row: row) }
+                dirty = true
             }
             wipe = nil
-            present()
-        } else if alreadyDirty || !out.drawOps.isEmpty {
-            present()
         }
+        if !out.drawOps.isEmpty {
+            compositor.apply(out.drawOps)
+            dirty = true
+            if let step = out.drawOps.lastWipeStep {                    // the op itself copied the first band pair
+                wipe = (step, 0, now)
+            }
+        }
+        if dirty { present() }
 
         if quit {
             quitWithoutSaving = true
@@ -232,8 +283,15 @@ import HectorShell
     private func gameEnded(_ reason: SessionEnd) {
         session = nil
         audio.gameRunning = false
-        if case .originalWouldQuit = reason {
+        switch reason {
+        case .originalWouldQuit, .quit:
             quitWithoutSaving = true
+            NSApp.terminate(nil)
+            return
+        default:
+            break
+        }
+        if quitPending {                        // the game ended before its ⌘Q check ran: an ordinary quit (saves)
             NSApp.terminate(nil)
             return
         }
@@ -271,26 +329,37 @@ import HectorShell
 
     // MARK: Cursor (`_RequestGame` / `_PlayGame` / `_PauseGame`)
 
-    /// `_HideMyCursor` with the play-mode mouse capture: warp to the main display's centre (unless the button is
-    /// down), `CGAssociateMouseAndMouseCursorPosition(0)`, hide.
-    /// Idempotent (the original guards with `gCursorVisible`): the session may ask twice.
+    /// `.hideCursor`. During the level-start wipe it is `_RequestGame`'s plain `_HideMyCursor`; once frames run
+    /// (`_PlayGame` after the first wipe, DC 15652…; `_PauseGame` exit, DC 15416…) it is the capture:
+    /// `_GetMouse(gSavedMousePosition)`, warp to the main display's centre unless the button is down,
+    /// `CGAssociateMouseAndMouseCursorPosition(0)`, `_HideMyCursor`. Idempotent (`gCursorVisible`).
     private func hideCursor() {
-        guard !cursorHidden else { return }
-        if NSEvent.pressedMouseButtons == 0 {
-            let b = CGDisplayBounds(CGMainDisplayID())
-            CGWarpMouseCursorPosition(CGPoint(x: b.origin.x + b.width * 0.5, y: b.origin.y + b.height * 0.5))
+        if session?.phase != .wipe && !mouseCaptured {
+            savedMouse = CGEvent(source: nil)?.location
+            if NSEvent.pressedMouseButtons == 0 {
+                let b = CGDisplayBounds(CGMainDisplayID())
+                CGWarpMouseCursorPosition(CGPoint(x: b.origin.x + b.width * 0.5, y: b.origin.y + b.height * 0.5))
+            }
+            CGAssociateMouseAndMouseCursorPosition(0)
+            mouseCaptured = true
         }
-        CGAssociateMouseAndMouseCursorPosition(0)
-        NSCursor.hide()
-        cursorHidden = true
+        if !cursorHidden {
+            NSCursor.hide()
+            cursorHidden = true
+        }
     }
 
-    /// `_ShowMyCursor` + `CGAssociateMouseAndMouseCursorPosition(1)`; idempotent.
+    /// `_ShowMyCursor` + `CGAssociateMouseAndMouseCursorPosition(1)`; idempotent. (`.restoreMousePosition`, sent
+    /// just before it, puts the pointer back.)
     private func showCursor() {
-        guard cursorHidden else { return }
-        NSCursor.unhide()
-        CGAssociateMouseAndMouseCursorPosition(1)
-        cursorHidden = false
+        if mouseCaptured {
+            CGAssociateMouseAndMouseCursorPosition(1)
+            mouseCaptured = false
+        }
+        if cursorHidden {
+            NSCursor.unhide()
+            cursorHidden = false
+        }
     }
 
     // MARK: Lifecycle
@@ -303,15 +372,13 @@ import HectorShell
     /// Event kind 1 (resume): a pause taken by deactivation may end (Caps Lock off).
     func applicationDidBecomeActive(_ notification: Notification) {
         guard let session else { return }
-        handle(session.appActivated(keys: heldKeys()))
+        handle(session.appActivated(keys: heldKeys()), now: ShellClock.ticks())
     }
 
     /// Quit saves the prefs only from outside a game (the menu screens, A2): `_CleanUp` from inside a game never
-    /// saves — ⌘Q in play (`.quitNow`, R7) or any quit while a session is in any phase (orchestrator ruling on C4's
-    /// review; C4 adds `GameSession.isInGame`, which replaces the phase test here after the rebase).
+    /// saves (R7; `GameSession.isInGame`).
     func applicationWillTerminate(_ notification: Notification) {
-        let inGame = session.map { $0.phase != .ended } ?? false
-        if !quitWithoutSaving && !inGame && store != nil {
+        if !quitWithoutSaving && !(session?.isInGame ?? false) && store != nil {
             savePrefs()
         }
         showCursor()

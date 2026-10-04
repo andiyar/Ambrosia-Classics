@@ -8,7 +8,8 @@ game ends (lives gone, or Esc), a new game starts at level 1.
 - **← → ↑ ↓** move, **Space** push
 - **Caps Lock** pauses while it is engaged (as the original: it reads the lock state); release it to go on
 - **Esc** ends the game (a new one starts)
-- **⌘Q** quits at once (as the original, it does not save prefs when you quit from inside a game)
+- **⌘Q** quits: in play the music fades out first, as the original did; quitting from inside a game
+  (playing or paused) does not save prefs — again as the original
 
 ## What this build is — and is not — yet
 - **No sound or music yet.** The sound mixer is waiting on a HectorKit fix (this Mac's CoreAudio was hung
@@ -19,6 +20,9 @@ game ends (lives gone, or Esc), a new game starts at level 1.
 - The mouse pointer hides and is captured while you play (as the original did); pausing shows it.
 - Prefs and the level-select high-water mark are saved at every level start, under
   `com.ambrosiaclassics.bubbletroublex`.
+
+- Info-box and FPS text is drawn antialiased, as OS X's QuickDraw smoothed text of 9 pt and up in 2008 —
+  tell us if it looks too soft or too crisp next to your memory.
 
 ## What to tell us (once drawing and sound are in)
 - Do the arrow keys + Space feel right (push, turning around mid-cell)? Is the speed the original's (≈ 30 fps)?

@@ -59,6 +59,9 @@ final class CoreTextRasterizer: TextRasterizer {
             guard let ctx = CGContext(data: raw.baseAddress, width: w, height: ht, bitsPerComponent: 8,
                                       bytesPerRow: w, space: CGColorSpaceCreateDeviceGray(),
                                       bitmapInfo: CGImageAlphaInfo.alphaOnly.rawValue) else { return }
+            // Antialiased, as 2008 OS X QuickDraw drew text above its 8 pt smoothing threshold (Geneva 9 included);
+            // no LCD subpixel smoothing (coverage only).
+            ctx.setShouldAntialias(true)
             ctx.setShouldSmoothFonts(false)
             ctx.setFillColor(CGColor(gray: 0, alpha: 1))
             ctx.textPosition = CGPoint(x: CGFloat(pad), y: CGFloat(below))
