@@ -2,18 +2,23 @@
 """Aki Remaster art (docs/DECISIONS.md D11): the original 1.2.0 PNGs upscaled 4x with Upscayl's remacri-4x.
 
 Region map: tools/aki-art-regions.json (coverage enforced by Aki/Core/Tests/AkiCoreTests/ArtRegionsTests.swift).
-  picture region -> crop, 8 px edge-replicate pad, remacri 4x, crop the 4x interior back, paste at (4l, 4t)
+  picture region -> crop, 8 px edge-replicate pad, remacri 4x, low-frequency colour back-projection on the
+                    padded 4x (hd += bicubic4x(blur(orig) - blur(box4(hd))), Gaussian 1.5 original px),
+                    crop the 4x interior back, paste at (4l, 4t)
   mask region and every pixel in no region -> nearest-neighbour 4x from the original (bit-exact)
 Outputs (git-ignored, derived from copyrighted originals — D10):
   Resources/Aki/hd-4x/<name>.png            every file, exactly 4x, RGB 8-bit
-  Resources/Aki/hd-4x-dedither/<name>.png   "dedither" files only: 3x3 median on the padded crop before remacri
-  Resources/Aki/.upscale-cache/<sha256>.png  remacri interiors keyed by (padded PNG bytes, model, scale, variant)
+  Resources/Aki/hd-4x-dedither/<name>.png   "dedither" files only: Gaussian 0.7 on the padded crop before remacri
+  Resources/Aki/.upscale-cache/<sha256>.png  raw remacri output of the whole PADDED crop, keyed by (padded PNG
+                                             bytes, model, scale, de-dither method + radius, layout tag); the
+                                             back-projection is a cheap post-step applied after the cache
 
 Usage (from the repo root):
   python3 tools/upscale-aki-art.py [--only a.png,b.png]   generate (idempotent; cached crops cost no upscayl call)
-  python3 tools/upscale-aki-art.py --check                verify map + outputs; non-zero exit on any failure
+  python3 tools/upscale-aki-art.py --check                verify map + outputs (incl. picture-region colour MAE
+                                                          <= 2.0 after Gaussian 1.5); non-zero exit on any failure
   python3 tools/upscale-aki-art.py --sheets [DIR]         contact sheets (default out/remaster-sheets/)
-Pillow only.
+Pillow + numpy.
 """
 import argparse
 import hashlib
@@ -26,6 +31,7 @@ import sys
 import tempfile
 import time
 
+import numpy as np
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,6 +43,10 @@ REGIONS = os.path.join(REPO, "tools/aki-art-regions.json")
 BIN = "/Applications/Upscayl.app/Contents/Resources/bin/upscayl-bin"
 MODELS = "/Applications/Upscayl.app/Contents/Resources/models"
 MODEL, SCALE, PAD = "remacri-4x", 4, 8
+DEDITHER = ("gaussian", 0.7)   # (method, radius in original px) for the "dedither" variant, before remacri
+BACKPROJ = ("on", 1.5)         # low-frequency colour back-projection after remacri (Gaussian radius, original px)
+COLOUR_MAE_MAX = 2.0           # --check: per-channel MAE of blur(box4(hd)) vs blur(orig), picture regions
+CACHE_LAYOUT = "padded-full"   # cache holds the whole padded 4x output (back-projection needs the pad)
 
 
 def load_map():
@@ -69,13 +79,46 @@ def edge_pad(img, pad):
 def padded_input(img, rect, variant):
     crop = img.crop(tuple(rect))
     p = edge_pad(crop, PAD)
+    vtag = "plain"
     if variant == "dedither":
-        p = p.filter(ImageFilter.MedianFilter(3))
+        method, radius = DEDITHER
+        assert method == "gaussian"
+        p = p.filter(ImageFilter.GaussianBlur(radius))
+        vtag = f"dedither-{method}-{radius}"
     buf = io.BytesIO()
     p.save(buf, format="PNG")
     data = buf.getvalue()
-    key = hashlib.sha256(data + f"|{MODEL}|{SCALE}|{variant}".encode()).hexdigest()
+    key = hashlib.sha256(data + f"|{MODEL}|{SCALE}|{vtag}|{CACHE_LAYOUT}".encode()).hexdigest()
     return key, data
+
+
+def upsample4_bicubic(arr):
+    """float HxWx3 -> float (4H)x(4W)x3, bicubic per channel (PIL mode F)."""
+    h, w, _ = arr.shape
+    chans = [np.asarray(Image.fromarray(arr[:, :, c].astype(np.float32), "F")
+                        .resize((w * SCALE, h * SCALE), Image.BICUBIC)) for c in range(3)]
+    return np.stack(chans, axis=2).astype(np.float64)
+
+
+def back_project(orig_padded, hd_padded):
+    """Low-frequency colour correction: hd += bicubic4x(blur(orig) - blur(box4(hd))). Both PIL RGB, padded."""
+    on, radius = BACKPROJ
+    if on != "on":
+        return hd_padded
+    w, h = orig_padded.size
+    blur_o = np.asarray(orig_padded.filter(ImageFilter.GaussianBlur(radius)), np.float64)
+    down = hd_padded.resize((w, h), Image.BOX)
+    blur_d = np.asarray(down.filter(ImageFilter.GaussianBlur(radius)), np.float64)
+    hd = np.asarray(hd_padded, np.float64) + upsample4_bicubic(blur_o - blur_d)
+    return Image.fromarray(np.clip(np.rint(hd), 0, 255).astype(np.uint8), "RGB")
+
+
+def finished_interior(img, rect, key):
+    """cached raw remacri (padded) -> back-projected against the ORIGINAL padded crop -> 4x interior."""
+    l, t, r, b = rect
+    orig_padded = edge_pad(img.crop(tuple(rect)), PAD)
+    hd = back_project(orig_padded, Image.open(os.path.join(CACHE, key + ".png")).convert("RGB"))
+    return hd.crop((PAD * SCALE, PAD * SCALE, (PAD + r - l) * SCALE, (PAD + b - t) * SCALE))
 
 
 def variants_for(entry):
@@ -89,7 +132,7 @@ def run_upscayl(in_path, out_path):
 
 
 def upscale_jobs(jobs, stats):
-    """jobs: {key: (padded PNG bytes, (w, h) of the unpadded crop)} -> writes CACHE/<key>.png (the 4x interior)."""
+    """jobs: {key: (padded PNG bytes, (w, h) of the unpadded crop)} -> writes CACHE/<key>.png (whole padded 4x)."""
     if not jobs:
         return
     tmp = tempfile.mkdtemp(prefix="aki-upscale-")
@@ -123,8 +166,7 @@ def upscale_jobs(jobs, stats):
             want = ((w + 2 * PAD) * SCALE, (h + 2 * PAD) * SCALE)
             if up.size != want:
                 sys.exit(f"upscayl output {key} is {up.size}, expected {want}")
-            interior = up.crop((PAD * SCALE, PAD * SCALE, (PAD + w) * SCALE, (PAD + h) * SCALE))
-            interior.save(os.path.join(CACHE, key + ".png"))
+            up.save(os.path.join(CACHE, key + ".png"))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -164,13 +206,13 @@ def generate(only):
     for name in names:
         t = time.time()
         entry = regions[name]
-        base = nearest4(original(name))
+        img = original(name)
+        base = nearest4(img)
         for v in variants_for(entry):
             out = base.copy()
             for (vv, rect, key) in plan[name]:
                 if vv == v:
-                    out.paste(Image.open(os.path.join(CACHE, key + ".png")).convert("RGB"),
-                              (rect[0] * SCALE, rect[1] * SCALE))
+                    out.paste(finished_interior(img, rect, key), (rect[0] * SCALE, rect[1] * SCALE))
             path = os.path.join(OUT[v], name)
             out.save(path)
             written[v] += os.path.getsize(path)
@@ -187,7 +229,7 @@ def overlaps(a, b):
 
 def check():
     regions = load_map()
-    fails = []
+    fails, colour = [], []
     pngs = sorted(f for f in os.listdir(SRC) if f.endswith(".png"))
     if sorted(regions) != pngs:
         fails.append(f"map files != shipped PNGs: missing {sorted(set(pngs) - set(regions))}, "
@@ -239,14 +281,36 @@ def check():
                                        keep1).getbbox()
             if bad1:
                 fails.append(f"{v}/{name}: box-downsample differs from the original in box {bad1}")
+            # colour fidelity of picture regions: blur(box4(hd)) vs blur(orig), per-channel MAE
+            worst = None
+            for a in regs:
+                if a["kind"] != "picture":
+                    continue
+                rect = tuple(a["rect"])
+                bo = np.asarray(img.crop(rect).filter(ImageFilter.GaussianBlur(BACKPROJ[1])), np.float64)
+                bd = np.asarray(down.crop(rect).filter(ImageFilter.GaussianBlur(BACKPROJ[1])), np.float64)
+                mae = np.abs(bo - bd).reshape(-1, 3).mean(axis=0)
+                if worst is None or mae.max() > worst[1].max():
+                    worst = (a["note"], mae)
+            if worst:
+                colour.append((f"{v}/{name}", worst[0], worst[1]))
+                if worst[1].max() > COLOUR_MAE_MAX:
+                    fails.append(f"{v}/{name}: colour MAE {np.round(worst[1], 2).tolist()} > {COLOUR_MAE_MAX} "
+                                 f"in region {worst[0]}")
     n_out = sum(len(variants_for(regions[n])) for n in regions)
+    print(f"colour MAE (blur {BACKPROJ[1]} of box4(hd) vs original; worst picture region per output, R G B):")
+    for out_name, note, mae in colour:
+        print(f"  {out_name:34s} {mae[0]:5.2f} {mae[1]:5.2f} {mae[2]:5.2f}  {note}")
+    if colour:
+        top = max(colour, key=lambda c: c[2].max())
+        print(f"  worst overall: {top[0]} {top[1]} max {top[2].max():.2f} (limit {COLOUR_MAE_MAX})")
     if fails:
         print(f"CHECK FAILED ({len(fails)}):")
         for f in fails:
             print("  " + f)
         sys.exit(1)
     print(f"CHECK OK: {len(regions)} files, {sum(len(e['regions']) for e in regions.values())} regions, "
-          f"{n_out} outputs exactly 4x, mask + undeclared pixels bit-exact")
+          f"{n_out} outputs exactly 4x, mask + undeclared pixels bit-exact, picture colour MAE <= {COLOUR_MAE_MAX}")
 
 
 def sheets(outdir):
@@ -311,6 +375,12 @@ def sheets(outdir):
     save("08-previews0", panels_for("previews.png", (0, 0, 236, 180)), "previews.png strip 0")
     save("09-proverbs0", panels_for("proverbs.png", (0, 0, 392, 157)), "proverbs.png strip 0")
     save("10-notavail", panels_for("notavail.png", (0, 0, 240, 150)), "notavail.png")
+    # both halves of pause.png (overlaySource picture | overlaySourceMask); rows cropped only if > 4000 px
+    rows = min(480, 4000 // SCALE - 30)
+    left = panels_for("pause.png", (0, 0, 208, rows))
+    right = panels_for("pause.png", (208, 0, 416, rows))
+    save("11-pause-full", [(f"{lab} L", im) for lab, im in left] + [(f"{lab} R", im) for lab, im in right],
+         f"pause.png both halves, rows 0-{rows}")
 
 
 def main():
