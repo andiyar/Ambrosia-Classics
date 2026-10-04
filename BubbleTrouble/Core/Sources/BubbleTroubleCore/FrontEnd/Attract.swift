@@ -36,10 +36,21 @@ extension FrontEnd {
             }
         }
         if doPrefsNow {
-            doPrefsNow = false
-            push(prefsSteps())
+            // `if (_gDoPrefsNow) { _PrefsDialog(); _gDoPrefsNow = 0; }` — then the iteration carries on.
+            push([.run { SessionOutput(requests: [.prefsDialog]) },
+                  .dialog(then: { [unowned self] _ in
+                      doPrefsNow = false
+                      return [.run { [unowned self] in menuIterationIdle(keys: keys) }]
+                  })])
+            ticked = true
             return out + runSteps(keys: keys)
         }
+        out.append(menuIterationIdle(keys: keys))
+        return out
+    }
+
+    /// From the idle attract check on.
+    func menuIterationIdle(keys: HeldKeys) -> SessionOutput {
         if idleStart &+ Self.idleTicks < now && !suspended {
             let scores = idleShowsScores
             idleShowsScores.toggle()
@@ -47,10 +58,9 @@ extension FrontEnd {
             seq.append(.run { [unowned self] in idleStart = now; return menuIterationTail(keys: keys) })
             push(seq)
             ticked = true
-            return out + runSteps(keys: keys)
+            return runSteps(keys: keys)
         }
-        out.append(menuIterationTail(keys: keys))
-        return out
+        return menuIterationTail(keys: keys)
     }
 
     /// The rest of the iteration: music upkeep, the stars, one event.
@@ -62,10 +72,15 @@ extension FrontEnd {
         guard !events.isEmpty else { return out }
         let event = events.removeFirst()
         switch event {
-        case let .key(_, chars, modifiers):
+        case let .key(chars, modifiers):
             out.append(handleKey(chars: chars, modifiers: modifiers))
         case let .mouseDown(h, v, modifiers):
             out.append(handleMouseDown(h: h, v: v, modifiers: modifiers))
+        case .activated:                                           // kind 1: local_3c = TickCount; _ResumeGame
+            idleStart = now
+            out.append(resumeGame())
+        case .deactivated:                                         // kind 2: _SuspendGame
+            out.append(suspendGame())
         }
         if !steps.isEmpty {
             ticked = true
@@ -81,6 +96,11 @@ extension FrontEnd {
 
     func drawMainMenuOps() -> [DrawOp] {
         menu.drawOps(info: infoMessage())
+    }
+
+    /// `FlushEvents(0x3e)`: mouse and key events go; the class 'appl' (activate / deactivate) events stay.
+    func flushEvents() {
+        events.removeAll { $0 != .activated && $0 != .deactivated }
     }
 
     /// After a key / mouse action returns to the loop: `local_3c = TickCount` (+ `gInfoTimer` for keys).
@@ -256,7 +276,7 @@ extension FrontEnd {
     /// `_DrawMainMenu`, `_WipeScreen(12)`, `_ResetMenuStars`.
     func scoresButtonSteps() -> [Step] {
         [.run { SessionOutput(drawOps: [.compToScreen(MainMenu.screenRect)]) },
-         .screen(makeScoresScreen(newEntry: nil), then: { [unowned self] r in
+         .screen(make: { [unowned self] in makeScoresScreen(newEntryRank: nil) }, then: { [unowned self] r in
             r == .newGame ? newGameButtonSteps() : []
          })] + returnToMenuSteps(flush: true)
     }
@@ -268,7 +288,7 @@ extension FrontEnd {
         let (secret, slot) = Self.creditsSecret(modifiers)
         return [.run { SessionOutput(sounds: [SoundCue(slot: slot, priority: 0x14, delayFrames: 0)],
                                      drawOps: [.compToScreen(MainMenu.screenRect)]) },
-                .screen(makeCreditsScreen(secret: secret), then: { [unowned self] r in
+                .screen(make: { [unowned self] in makeCreditsScreen(secret: secret) }, then: { [unowned self] r in
                     r == .newGame ? newGameButtonSteps() : []
                 })] + returnToMenuSteps(flush: true)
     }
@@ -284,10 +304,10 @@ extension FrontEnd {
     /// `FlushEvents(0x3e)` (scores / credits), `_DrawMainMenu`, `_WipeScreen(12)`, `_ResetMenuStars`.
     func returnToMenuSteps(flush: Bool) -> [Step] {
         [.run { [unowned self] in
-            if flush { events = [] }
+            if flush { flushEvents() }
             return SessionOutput(drawOps: drawMainMenuOps() + [.wipe(step: 12)])
          },
-         .advances(Self.wipeAdvances(12)),
+         .advances(DrawOp.wipeSteps(12)),
          .run { [unowned self] in
             stars.reset(now: now, mouse: mouse)
             return SessionOutput()
@@ -327,13 +347,18 @@ extension FrontEnd {
                           requests: [.levelSelectDialog(max: prefs.levelSelectMax)])
          },
          .dialog(then: { [unowned self] answer in
-            guard case .levelSelect(let typed?) = answer else { return [] }
-            guard let level = Self.levelSelectChoice(typed: typed, max: prefs.levelSelectMax) else {
-                return [.run { SessionOutput(requests: [.beep]) }]
+            guard case .levelSelect(let typed?) = answer else {
+                return [.run { SessionOutput(requests: [.closeDialog]) }]           // Cancel: disposed at once
             }
-            // snd 36, `_StopMusic`, `_UnloadMusic`, `_RequestGame(level, play)`, `_ResetMenuStars`, `_LoadMusic(0)`,
-            // `_StartMusic` unless playing.
-            return [Self.sound(SoundCue(slot: 0x24, priority: 0x14, delayFrames: 0))]
+            // OK: out of range → `SysBeep(1)` with the dialog up; `_WaitFor(0x1e)`; `_DisposeDialog`; return.
+            let level = Self.levelSelectChoice(typed: typed, max: prefs.levelSelectMax)
+            let hold: [Step] = [.run { SessionOutput(requests: level == nil ? [.beep] : []) },
+                                .waitTicks(0x1e),
+                                .run { SessionOutput(requests: [.closeDialog]) }]
+            guard let level else { return hold }
+            // Back in `_Interface`: snd 36, `_StopMusic`, `_UnloadMusic`, `_RequestGame(level, play)`,
+            // `_ResetMenuStars`, `_LoadMusic(0)`, `_StartMusic` unless playing.
+            return hold + [Self.sound(SoundCue(slot: 0x24, priority: 0x14, delayFrames: 0))]
                 + stopMusicSteps()
                 + [.run { [unowned self] in unloadMusic() }]
                 + requestGameSteps(level: level, mode: .play)
@@ -361,7 +386,7 @@ extension FrontEnd {
                     filmCounter = next != numFilms ? next : 0
                 }
                 session = try GameSession(data: data, prefs: storedPrefs, mode: mode, startLevel: level, seed: now,
-                                          film: film)
+                                          film: film, latches: latches ?? .fromProcessSeedOne)
                 push([.game(then: { [unowned self] s in afterGameSteps(s, startLevel: level) })])
                 // The session's opening output arrives with its first tick, this tick.
                 lastSessionTick = now
@@ -407,33 +432,35 @@ extension FrontEnd {
                 SessionOutput(drawOps: drawMainMenuOps() + [.wipe(step: 12)],
                               requests: [.disableAbout(false), .setCursor(id: 200), .showCursor])
             },
-            .advances(Self.wipeAdvances(12)),
+            .advances(DrawOp.wipeSteps(12)),
         ]
         guard checkScore else { return seq + menuPath }
-        seq.append(.screen(makeHighScoreCheck(score: Int(score), level: level), then: { [unowned self] r in
-            guard r == .highScoreEntered(true) else { return menuPath }
+        seq.append(.screen(make: { [unowned self] in makeHighScoreCheck(score: Int(score), level: level) },
+                           then: { [unowned self] r in
+            guard case .highScoreEntered(rank: let rank?) = r else { return menuPath }
             return [.run { [unowned self] in
-                        events = []
+                        flushEvents()
                         return SessionOutput(
                             sounds: [SoundCue(slot: 0x13, priority: 0x14, delayFrames: 0)],
                             drawOps: [.pict(id: MainMenu.compPatternPict, dst: menu.compPatternRect, target: .comp),
                                       .compToScreen(MainMenu.screenRect)],
                             requests: [.disableAbout(false), .setCursor(id: 200), .showCursor])
                     },
-                    .screen(makeScoresScreen(newEntry: level), then: { [unowned self] r in
+                    .screen(make: { [unowned self] in makeScoresScreen(newEntryRank: rank) }, then: { [unowned self] r in
                         r == .newGame ? newGameButtonSteps() : []
                     }),
                     .run { [unowned self] in SessionOutput(drawOps: drawMainMenuOps() + [.wipe(step: 12)]) },
-                    .advances(Self.wipeAdvances(12)),
-                    .run { [unowned self] in events = []; return SessionOutput() }]
+                    .advances(DrawOp.wipeSteps(12)),
+                    .run { [unowned self] in flushEvents(); return SessionOutput() }]
         }))
         return seq
     }
 
     // MARK: - C7 hand-over
 
-    /// `_DisplayHiScores` (C7). C6 placeholder: returns at once.
-    func makeScoresScreen(newEntry: Int?) -> FrontEndScreen {
+    /// `_DisplayHiScores` (C7); `newEntryRank` = the row `_CheckHiScore` filled (it flashes). C6 placeholder:
+    /// returns at once.
+    func makeScoresScreen(newEntryRank: Int?) -> FrontEndScreen {
         PlaceholderScreen(.finished)
     }
 
@@ -442,9 +469,10 @@ extension FrontEnd {
         PlaceholderScreen(.finished)
     }
 
-    /// `_CheckHiScore` (C7): the pattern overlay, DLOG 1000, the insert. C6 placeholder: no entry.
+    /// `_CheckHiScore` (C7): the pattern overlay, DLOG 1000 (answered via `FrontEnd.highScoreNameEntered`), the
+    /// insert into `highScores`. C6 placeholder: no entry.
     func makeHighScoreCheck(score: Int, level: Int) -> FrontEndScreen {
-        PlaceholderScreen(.highScoreEntered(false))
+        PlaceholderScreen(.highScoreEntered(rank: nil))
     }
 }
 

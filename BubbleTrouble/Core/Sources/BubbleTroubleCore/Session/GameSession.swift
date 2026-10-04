@@ -94,9 +94,10 @@ public final class GameSession {
     /// `_RequestGame(level, mode)` → `_PlayGame`'s prologue → `_NewLevel` up to its `_WipeScreen(12)`. Play: `seed` is
     /// the caller's TickCount, `startLevel` 1…; demo: `film` is required and gives both (level = FILM id, seed =
     /// FILM.seed; replay-oracle §3) — `startLevel` and `seed` are ignored. The first `tick` returns the opening
-    /// output; the wipe then runs on ticks.
+    /// output; the wipe then runs on ticks. `latches` = the `_Get0To6` / `_Get13To22` values `_Interface` latched on
+    /// the process seed (`FrontEnd.latches`; default: process seed 1).
     public init(data: BTXGameData, prefs: BTXPrefs, mode: GameMode, startLevel: Int, seed: UInt32,
-                film: Film?) throws {
+                film: Film?, latches: SessionLatches = .fromProcessSeedOne) throws {
         var level = startLevel, seed = seed
         if mode == .demo {
             guard let film else { throw GameSessionError.demoNeedsFilm }
@@ -110,6 +111,7 @@ public final class GameSession {
         playerIsCheating = 1 < level                                    // _RequestGame: gPlayerIsCheating = 1 < level
         keyboard = KeyboardInput(keySet: prefs.currentKeySet)
         var config = SessionConfig()
+        config.latches = latches
         config.prefs = prefs.cosmetic
         // _LoadLevel's first draw (levels ≥ 51 only) is the first draw of the game: peek it on a fresh stream.
         var probe = GameRandom(seed: seed, step: config.rngStep)

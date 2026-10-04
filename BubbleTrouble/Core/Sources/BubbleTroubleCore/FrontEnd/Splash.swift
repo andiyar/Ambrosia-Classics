@@ -18,12 +18,10 @@ extension FrontEnd {
     static let progressInside2: UInt32 = 0xffdf00
     /// `FLOAT_00033fb0` = 95.0 — `_UpdateProgress`'s step total.
     static let progressTotal: Float = 95
-    /// The `_UpdateProgress` calls of the load: 1 + one per sprite set of `_LoadSprites(0)` + 1 + orbit 1 + one per
-    /// `snd` 9000…9047 (48) + 1. The bar clamps at its right edge.
+    /// The `_UpdateProgress` calls of the load: `_InitMac`'s first, one per sprite set inside `_LoadSprites(0)`,
+    /// `_InitMac`'s after the sprites and after `_LoadOrbitData` (which makes none itself), one per `snd` 9000…9047
+    /// inside `_LoadSounds` (48), and `_InitMac`'s last. The bar clamps at its right edge.
     func progressSteps() -> Int { 1 + data.sprites.setCount + 1 + 1 + 48 + 1 }
-
-    static let wipeOutAdvances4 = (2 * 4 + 0xf0) / 4 + 1
-    static func wipeAdvances(_ step: Int) -> Int { (2 * step + 0xf0 + step - 1) / step }
 
     func splashSteps() -> [Step] {
         var steps: [Step] = []
@@ -70,19 +68,20 @@ extension FrontEnd {
                     return SessionOutput(drawOps: [.fillBlack(target: .screen), .fillBlack(target: .comp),
                                                    .pict(id: 200, dst: MainMenu.centred(data: data, pict: 200),
                                                          target: .comp),
-                                                   .wipeOut(step: 4)])
+                                                   .wipeOut(step: 4)],
+                                         requests: [.watchCursor])
                 },
-                .advances(Self.wipeOutAdvances4),
+                .advances(DrawOp.wipeOutSteps(4)),
                 .waitUntil { t0 &+ 0x82 },
                 .run { SessionOutput(drawOps: [.fillBlack(target: .comp), .wipe(step: 4)]) },
-                .advances(Self.wipeAdvances(4)),
+                .advances(DrawOp.wipeSteps(4)),
                 .run { [unowned self] in
                     SessionOutput(drawOps: [.fillBlack(target: .comp),
                                             .pict(id: 9011, dst: MainMenu.centred(data: data, pict: 9011),
                                                   target: .comp),
                                             .wipeOut(step: 4)])
                 },
-                .advances(Self.wipeOutAdvances4),
+                .advances(DrawOp.wipeOutSteps(4)),
             ]
         }
         var t1: UInt32 = 0
@@ -161,7 +160,7 @@ extension FrontEnd {
                 out.drawOps.append(.wipe(step: 6))
                 return out
             },
-            .advances(Self.wipeAdvances(6)),
+            .advances(DrawOp.wipeSteps(6)),
             .run { [unowned self] in
                 var out = SessionOutput()
                 if !foreground {

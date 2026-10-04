@@ -77,7 +77,8 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(at(1000).drawOps, [.fillBlack(target: .screen), .fillBlack(target: .comp),
                                           .pict(id: 200, dst: logo, target: .comp), .wipeOut(step: 4)])
         // `_WipeScreenOut(4)` = 63 advances, then held until 130 ticks after it began → black wiped in at 1130.
-        XCTAssertEqual(FrontEnd.wipeOutAdvances4, 63)
+        XCTAssertEqual(DrawOp.wipeOutSteps(4), 63)
+        XCTAssertEqual(at(1000).requests, [.watchCursor])                       // windowed: `_WatchCursor`
         for t in UInt32(1001)..<1130 { XCTAssertEqual(at(t), SessionOutput(), "tick \(t)") }
         XCTAssertEqual(at(1130).drawOps, [.fillBlack(target: .comp), .wipe(step: 4)])
         // `_WipeScreen(4)` = 62 advances → the title at 1192; 63 more → the bar + intro sound at 1255.
@@ -98,7 +99,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(at(1315).music, [.load(set: 3)])
         XCTAssertEqual(at(1315).drawOps.last, .wipe(step: 6))
         XCTAssertEqual(at(1357 - 1).music, [])
-        XCTAssertEqual(at(1357).music, [.start])
+        XCTAssertEqual(at(1357).music, [.volume(0x100), .start])           // `_StartMusic`: bool 0x40, music 4
         XCTAssertEqual(at(1357).drawOps.first, .compToScreen(MainMenu.screenRect))
         XCTAssertEqual(fe.phase, .menu)
         XCTAssertEqual(fe.latches, SessionConfig().latches)                // process seed 1 → u 1, L 15
@@ -427,7 +428,7 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(fade.requests, [.modalDialog(id: 291)])           // same tick as the stop
         ticks(fe, 5, now: &now)
         XCTAssertEqual(fe.phase, .busy)
-        XCTAssertEqual(fe.dialogDone().music, [.resume, .start])
+        XCTAssertEqual(fe.dialogDone().music, [.resume, .volume(0x100), .start])
         // R (Register) does nothing in the registered build; Q fades the music and quits through `_main`.
         _ = fe.key(0x0f, chars: "r", modifiers: KeyModifiers())
         XCTAssertTrue(sounds(ticks(fe, 3, now: &now)).isEmpty)
@@ -457,19 +458,28 @@ final class FrontEndTests: XCTestCase {
         XCTAssertEqual(o.sounds, [SoundCue(slot: 22, priority: 10, delayFrames: 0),
                                   SoundCue(slot: 22, priority: 10, delayFrames: 0)])
         XCTAssertEqual(o.requests, [.levelSelectDialog(max: 10)])
-        XCTAssertEqual(fe.levelSelectDone(typed: 11).requests, [.beep])          // out of range → SysBeep, no game
-        ticks(fe, 3, now: &now)
+        // Out of range → SysBeep at once with the dialog up, `_WaitFor(0x1e)`, then the dialog is disposed.
+        XCTAssertEqual(fe.levelSelectDone(typed: 11).requests, [.beep])
+        var hold = ticks(fe, 30, now: &now)
+        XCTAssertTrue(hold[..<29].allSatisfy { $0 == SessionOutput() })
+        XCTAssertEqual(hold[29].requests, [.closeDialog])
         XCTAssertNil(fe.session)
+        ticks(fe, 2, now: &now)
         _ = open()
         XCTAssertEqual(fe.levelSelectDone(typed: 1).requests, [.beep])
+        ticks(fe, 32, now: &now)
         _ = open()
-        XCTAssertEqual(fe.levelSelectDone(typed: nil), SessionOutput())         // Cancel
+        XCTAssertEqual(fe.levelSelectDone(typed: nil).requests, [.closeDialog])  // Cancel: no hold
         ticks(fe, 3, now: &now)
         XCTAssertEqual(fe.phase, .menu)
-        // OK with 5: snd 36, the title music stops, the game starts at level 5 — cheating, so no high score.
+        // OK with 5: no beep, the hold, then snd 36, the title music stops, the game starts at level 5 — cheating,
+        // so no high score.
         _ = open()
         o = fe.levelSelectDone(typed: 5)
-        XCTAssertEqual(o.sounds, [SoundCue(slot: 0x24, priority: 0x14, delayFrames: 0)])
+        XCTAssertEqual(o, SessionOutput())
+        hold = ticks(fe, 30, now: &now)
+        XCTAssertEqual(hold[29].requests, [.closeDialog])
+        XCTAssertEqual(hold[29].sounds, [SoundCue(slot: 0x24, priority: 0x14, delayFrames: 0)])
         ticks(fe, now: &now) { $0.session == nil }
         let s = try XCTUnwrap(fe.session)
         XCTAssertEqual(s.state.level, 5)
@@ -510,5 +520,117 @@ final class FrontEndTests: XCTestCase {
         _ = fe.frame(keys: HeldKeys())
         _ = fe.mouseDown(h: 10, v: 10, modifiers: KeyModifiers())
         XCTAssertEqual(fe.frame(keys: HeldKeys()).ended, .demoInterrupted)
+    }
+
+    // MARK: Fix-round coverage
+
+    func testDemoHeroDeathStopsTitleMusic() throws {
+        let data = try gameData()
+        let fe = frontEnd(data)
+        var now: UInt32 = 1000
+        toMenu(fe, now: &now)
+        fe.filmCounter = 3                                                  // FILM 4: the hero is caught (NR-10)
+        _ = fe.key(0x02, chars: "d", modifiers: KeyModifiers())
+        ticks(fe, now: &now) { $0.session == nil }
+        XCTAssertEqual(fe.session?.state.level, 4)
+        ticks(fe, now: &now) { $0.session?.phase == .wipe }
+        var stops: [Int] = []
+        var n = 0
+        while let s = fe.session, s.phase != .ended, n < 3000 {
+            let o = fe.frame(keys: HeldKeys())
+            stops += Array(repeating: n, count: o.music.filter { $0 == .stopNow }.count)
+            n += 1
+        }
+        // One `_StopMusicWithoutFade` (the front end's; the session never loaded music in a demo) at the death.
+        XCTAssertEqual(stops.count, 1)
+        XCTAssertTrue(fe.musicLoaded)
+        XCTAssertFalse(fe.musicPlaying)
+        // Back on the menu the loop restarts the title music.
+        let back = ticks(fe, now: &now) { $0.phase != .menu } + fe.tick(now: now, keys: HeldKeys(), mouse: Self.away)
+        XCTAssertEqual(back.music, [.volume(0x100), .start])
+    }
+
+    func testSuspendResumeQueuedDuringSteps() throws {
+        let data = try gameData()
+        let fe = frontEnd(data)
+        var now: UInt32 = 1000
+        toMenu(fe, now: &now)
+        // Deactivated during `_FlashButton`'s `_WaitFor(10)`: it waits in the queue.
+        _ = fe.key(0x01, chars: "s", modifiers: KeyModifiers())
+        ticks(fe, 3, now: &now)
+        XCTAssertEqual(fe.appDeactivated(), SessionOutput())
+        XCTAssertFalse(fe.suspended)
+        var busy: [SessionOutput] = []
+        while fe.phase != .menu { busy += ticks(fe, 1, now: &now) }
+        // FlushEvents(0x3e) after the scores kept it; the loop's first iteration acts on it: `_SuspendGame`.
+        XCTAssertTrue(busy.dropLast().allSatisfy { !$0.music.contains(.pause) })
+        XCTAssertEqual(busy.last?.music, [.pause])
+        XCTAssertTrue(fe.suspended)
+        // Suspended: no info-box cycle, no idle attract, no stars.
+        let idle = ticks(fe, 1300, now: &now, mouse: MousePoint(h: 100, v: 100, button: false))
+        XCTAssertTrue(idle.allSatisfy { $0 == SessionOutput() })
+        XCTAssertNil(fe.session)
+        // Reactivated: `_ResumeGame` (cursor, `_UpdateScreen`), then `_ResumeMusic`.
+        XCTAssertEqual(fe.appActivated(keys: HeldKeys()), SessionOutput())
+        // (`_MusicPaused && _GameInForeground` is read live, so the music resumes in the same iteration.)
+        let r = fe.tick(now: now, keys: HeldKeys(), mouse: Self.away); now += 1
+        XCTAssertEqual(r.music, [.resume])
+        XCTAssertEqual(r.requests, [.setCursor(id: 200), .showCursor])
+        XCTAssertEqual(r.drawOps.last, .compToScreen(MainMenu.screenRect))
+        XCTAssertFalse(fe.suspended)
+        XCTAssertEqual(fe.idleStart, now - 1)
+    }
+
+    func testOptionClickScoresEraseDialog() throws {
+        let data = try gameData()
+        let fe = frontEnd(data)
+        var now: UInt32 = 1000
+        toMenu(fe, now: &now)
+        let scores = MousePoint(h: 200, v: 340, button: true)
+        func optionClick() -> SessionOutput {
+            _ = fe.mouseDown(h: scores.h, v: scores.v, modifiers: KeyModifiers(option: true))
+            var o = fe.tick(now: now, keys: HeldKeys(), mouse: scores); now += 1
+            _ = fe.mouseUp(h: scores.h, v: scores.v, modifiers: KeyModifiers(option: true))
+            o.append(fe.tick(now: now, keys: HeldKeys(), mouse: MousePoint(h: 200, v: 340, button: false))); now += 1
+            return o
+        }
+        // Cancel: back to the menu, no scores.
+        XCTAssertEqual(optionClick().requests, [.hiScoreEraseDialog])
+        XCTAssertEqual(fe.phase, .busy)
+        XCTAssertEqual(fe.hiScoreEraseDone(reset: false), SessionOutput())
+        ticks(fe, 2, now: &now)
+        XCTAssertEqual(fe.phase, .menu)
+        XCTAssertEqual(fe.highScores, .empty)
+        // Reset: snd 39 + 18, the factory table (SCOR 128), then `_ScoresButton` — the screen built after the reset.
+        _ = optionClick()
+        let reset = fe.hiScoreEraseDone(reset: true)
+        XCTAssertEqual(reset.sounds, [SoundCue(slot: 0x27, priority: 10, delayFrames: 0),
+                                      SoundCue(slot: 0x12, priority: 10, delayFrames: 0)])
+        XCTAssertEqual(fe.highScores, try HighScoreTable.factory(from: data))
+        XCTAssertEqual(reset.drawOps, [.compToScreen(MainMenu.screenRect)])
+        let back = ticks(fe, now: &now) { $0.phase != .menu }
+        XCTAssertTrue(back.drawOps.contains(.wipe(step: 12)))
+    }
+
+    func testModifierClickLogoCredits() throws {
+        let data = try gameData()
+        let expected: [(KeyModifiers, Int)] = [(KeyModifiers(control: true), 38), (KeyModifiers(option: true), 40),
+                                               (KeyModifiers(command: true), 44), (KeyModifiers(shift: true), 39)]
+        let fe = frontEnd(data)
+        var now: UInt32 = 1000
+        toMenu(fe, now: &now)
+        for (mods, slot) in expected {
+            _ = fe.mouseDown(h: 320, v: 100, modifiers: mods)
+            let o = fe.tick(now: now, keys: HeldKeys(), mouse: Self.away); now += 1
+            XCTAssertEqual(o.sounds, [SoundCue(slot: 17, priority: 10, delayFrames: 0),
+                                      SoundCue(slot: slot, priority: 0x14, delayFrames: 0)])
+            let back = ticks(fe, now: &now) { $0.phase != .menu }
+            XCTAssertTrue(back.drawOps.contains(.wipe(step: 12)))
+        }
+        // The logo is inset 5: a modifier-click on its edge, or a plain click inside it, does nothing.
+        _ = fe.mouseDown(h: 172, v: 100, modifiers: KeyModifiers(control: true))
+        _ = fe.mouseDown(h: 320, v: 100, modifiers: KeyModifiers())
+        XCTAssertTrue(sounds(ticks(fe, 3, now: &now)).isEmpty)
+        XCTAssertEqual(FrontEnd.creditsSecret(KeyModifiers()).slot, 19)
     }
 }

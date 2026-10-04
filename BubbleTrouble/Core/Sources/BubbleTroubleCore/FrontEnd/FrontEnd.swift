@@ -32,20 +32,38 @@ public enum FrontEndPhase: Equatable, Sendable {
 
 /// A full-screen sequence the front end hands control to and waits on — C7's `_DisplayHiScores @ 00025733`,
 /// `_DisplayCredits @ 0002145a` and `_CheckHiScore @ 00024b34` (C6 ships placeholders that finish at once).
+///
+/// Screens are built lazily, when their step is reached (so they see the state as it then stands — e.g. the table
+/// just reset by the erase dialog), from factories that get the `FrontEnd`: a screen reads and writes back
+/// `frontEnd.highScores`, `frontEnd.storedPrefs` and draws from `frontEnd.random` (the process stream — C5's
+/// "Maniac"/"Swoop" `GetRandomFast(0, 1)`). Every input the front end receives while a screen runs is forwarded.
 protocol FrontEndScreen: AnyObject {
     func tick(now: UInt32, keys: HeldKeys, mouse: MousePoint) -> SessionOutput
     func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput
     func mouseDown(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput
+    func mouseUp(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput
+    func appActivated() -> SessionOutput
+    func appDeactivated() -> SessionOutput
+    /// A dialog the screen requested was answered (DLOG 1000 name entry → `FrontEnd.highScoreNameEntered`).
+    func dialogAnswered(_ answer: FrontEndDialogAnswer) -> SessionOutput
     /// nil while running.
     var result: FrontEndScreenResult? { get }
 }
 
+/// An answer the App gives to a dialog a C7 screen requested.
+public enum FrontEndDialogAnswer: Equatable, Sendable {
+    /// DLOG 1000 "High Score Name": the text in the field when OK was hit.
+    case name(String)
+    case dismissed
+}
+
 /// How a `FrontEndScreen` ended: `_DisplayHiScores` / `_DisplayCredits` return true when N was pressed (→
-/// `_NewGameButton`); `_CheckHiScore` returns whether a name was entered (→ the scores path of `_RequestGame`).
+/// `_NewGameButton`); `_CheckHiScore` returns whether a name was entered, with the table row it went into (the
+/// row `_DisplayHiScores` then flashes; nil = none → the plain menu path of `_RequestGame`).
 enum FrontEndScreenResult: Equatable, Sendable {
     case finished
     case newGame
-    case highScoreEntered(Bool)
+    case highScoreEntered(rank: Int?)
 }
 
 /// C6's stand-in for a C7 screen: no output, finishes on its first tick with `result`.
@@ -59,6 +77,10 @@ final class PlaceholderScreen: FrontEndScreen {
     }
     func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
     func mouseDown(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
+    func mouseUp(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
+    func appActivated() -> SessionOutput { SessionOutput() }
+    func appDeactivated() -> SessionOutput { SessionOutput() }
+    func dialogAnswered(_ answer: FrontEndDialogAnswer) -> SessionOutput { SessionOutput() }
 }
 
 /// The front end (S2). Main-actor use by the App; not Sendable.
@@ -74,21 +96,21 @@ public final class FrontEnd {
     /// True while a game frame is due on the 0.033 s timer.
     public var wantsFrameTimer: Bool { phase == .game && session?.wantsFrameTimer == true }
     /// `gFilmCounter` (bss → 0: the first demo is FILM 1 — closes U10 / Q11) and `gNumFilmsAvailable`.
-    public internal(set) var filmCounter = 0
-    public internal(set) var numFilms = 0
+    var filmCounter = 0
+    var numFilms = 0
     /// `gMsgCounter`, `gInfoTimer`, `gSuspended`.
-    public internal(set) var msgCounter = 0
-    public internal(set) var infoTimer: UInt32 = 0
-    public internal(set) var suspended = false
+    var msgCounter = 0
+    var infoTimer: UInt32 = 0
+    var suspended = false
     /// The title music as the front end has driven it (`gMusicLoaded`, "the channel is busy", `gMusicPaused`).
-    public internal(set) var musicLoaded = false
-    public internal(set) var musicPlaying = false
-    public internal(set) var musicPaused = false
+    var musicLoaded = false
+    var musicPlaying = false
+    var musicPaused = false
     /// The process `qd.randSeed` stream (`_GetRandomFast`).
-    public internal(set) var random: GameRandom
+    var random: GameRandom
     /// `_Get0To6` / `_Get13To22` as `_Interface` latched them.
-    public internal(set) var latches: SessionLatches?
-    public internal(set) var stars = MenuStars()
+    var latches: SessionLatches?
+    var stars = MenuStars()
 
     // MARK: Internals
 
@@ -110,8 +132,11 @@ public final class FrontEnd {
     var ticked = false
 
     enum Event: Equatable {
-        case key(code: UInt16, chars: String, modifiers: KeyModifiers)
+        case key(chars: String, modifiers: KeyModifiers)
         case mouseDown(h: Int, v: Int, modifiers: KeyModifiers)
+        /// Class 'appl' kind 1 / 2 — not dropped by `FlushEvents(0x3e)`.
+        case activated
+        case deactivated
     }
     var events: [Event] = []
 
@@ -124,12 +149,12 @@ public final class FrontEnd {
         case waitUntil(() -> UInt32)
         /// A `.wipe` / `.wipeOut` op in flight: `n` advances, one per tick that TickCount has moved on.
         case advances(Int)
-        /// `_StopMusic`'s blocking fade from `start`.
-        case musicFade(start: Int)
+        /// `_StopMusic`'s blocking fade (from `fadeVolume`).
+        case musicFade
         /// The game / demo in `session`.
         case game(then: (GameSession) -> [Step])
-        /// A C7 screen.
-        case screen(FrontEndScreen, then: (FrontEndScreenResult) -> [Step])
+        /// A C7 screen, built when the step is reached (`activeScreen`).
+        case screen(make: () -> FrontEndScreen, then: (FrontEndScreenResult) -> [Step])
         /// A modal dialog the App shows; resumes with its answer.
         case dialog(then: (DialogAnswer) -> [Step])
         /// Button tracking (`_HandleMSMouse`'s `StillDown` loop).
@@ -155,6 +180,8 @@ public final class FrontEnd {
     var trackFirst = true
     var released: (h: Int, v: Int, modifiers: KeyModifiers)?
     var lastSessionTick: UInt32?
+    /// The screen of the `.screen` step at the front, once built.
+    var activeScreen: FrontEndScreen?
 
     /// - Parameters:
     ///   - registeredName: info message 2's `RT3_GetDisplayName` (Q15: the macOS account's full name).
@@ -192,7 +219,7 @@ public final class FrontEnd {
             lastSessionTick = now
             out.append(s.tick(now: now, keys: keys))
             out.append(checkGameEnd(out))
-        } else if case .screen(let screen, _) = steps.first {
+        } else if case .screen? = steps.first, let screen = activeScreen {
             out.append(screen.tick(now: now, keys: keys, mouse: mouse))
         }
         out.append(runSteps(keys: keys))
@@ -220,7 +247,9 @@ public final class FrontEnd {
         return out
     }
 
-    /// A keyDown / autoKey event (`chars` = the event's character; ⌘ etc. in `modifiers`).
+    /// A keyDown / autoKey event. A2: `chars` must be the character WITH the modifiers applied, as the Carbon
+    /// event's `charCode` was (`NSEvent.characters`, not `charactersIgnoringModifiers`): `_Interface` switches on
+    /// that byte, so Ctrl-C (0x03 = Enter) starts a New Game and Ctrl-M (0x0d) too; ⌘ is in `modifiers.command`.
     public func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput {
         switch steps.first {
         case .game?:
@@ -230,13 +259,13 @@ public final class FrontEnd {
                 return s.pauseKeyTyped(UInt8(c.value))
             }
             return SessionOutput()
-        case .screen(let screen, _)?:
-            return screen.key(code, chars: chars, modifiers: modifiers)
+        case .screen?:
+            return activeScreen?.key(code, chars: chars, modifiers: modifiers) ?? SessionOutput()
         case .dialog?:
             return SessionOutput()
         default:
             if phase == .splash || phase == .quit { return SessionOutput() }   // FlushEvents(0xffff) in the holds
-            events.append(.key(code: code, chars: chars, modifiers: modifiers))
+            events.append(.key(chars: chars, modifiers: modifiers))
             return SessionOutput()
         }
     }
@@ -246,8 +275,8 @@ public final class FrontEnd {
         case .game?:
             if let s = session, s.mode == .demo { s.interrupt() }
             return SessionOutput()
-        case .screen(let screen, _)?:
-            return screen.mouseDown(h: h, v: v, modifiers: modifiers)
+        case .screen?:
+            return activeScreen?.mouseDown(h: h, v: v, modifiers: modifiers) ?? SessionOutput()
         case .dialog?:
             return SessionOutput()
         default:
@@ -259,34 +288,51 @@ public final class FrontEnd {
 
     /// The button went up: ends `_HandleMSMouse`'s `StillDown` loop at the next tick.
     public func mouseUp(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput {
-        if case .track? = steps.first { released = (h, v, modifiers) }
+        switch steps.first {
+        case .track?:
+            released = (h, v, modifiers)
+        case .screen?:
+            return activeScreen?.mouseUp(h: h, v: v, modifiers: modifiers) ?? SessionOutput()
+        default:
+            break
+        }
         return SessionOutput()
     }
 
-    /// The app was deactivated (`kEventAppDeactivated`).
+    /// The app was deactivated (`kEventAppDeactivated`). In a game / demo the session acts; in a screen it is
+    /// forwarded; otherwise it waits in the event queue like the original's, acted on by the loop
+    /// (`_SuspendGame`) once no blocking step holds it.
     public func appDeactivated() -> SessionOutput {
         foreground = false
-        var out = SessionOutput()
-        if case .game? = steps.first, let s = session {
+        switch steps.first {
+        case .game?:
+            guard let s = session else { return SessionOutput() }
             s.appDeactivated()
             // A demo: `_PlayGame` calls `_SuspendGame` before ending it.
-            if s.mode == .demo { out.append(suspendGame()) }
-            return out
+            return s.mode == .demo ? suspendGame() : SessionOutput()
+        case .screen?:
+            return activeScreen?.appDeactivated() ?? SessionOutput()
+        default:
+            if phase != .splash && phase != .quit { events.append(.deactivated) }
+            return SessionOutput()
         }
-        if phase == .menu || phase == .busy { out.append(suspendGame()) }
-        return out
     }
 
-    /// The app was reactivated (`kEventAppActivated`): in the menu `local_3c = TickCount; _ResumeGame`.
+    /// The app was reactivated (`kEventAppActivated`); queued like `appDeactivated` — the loop then does
+    /// `local_3c = TickCount; _ResumeGame`.
     public func appActivated(keys: HeldKeys) -> SessionOutput {
         foreground = true
-        if case .game? = steps.first, let s = session {
+        switch steps.first {
+        case .game?:
+            guard let s = session else { return SessionOutput() }
             if s.mode == .demo { s.interrupt(); return SessionOutput() }
             return s.appActivated(keys: keys)
+        case .screen?:
+            return activeScreen?.appActivated() ?? SessionOutput()
+        default:
+            if phase != .splash && phase != .quit { events.append(.activated) }
+            return SessionOutput()
         }
-        guard phase == .menu || phase == .busy else { return SessionOutput() }
-        idleStart = now
-        return resumeGame()
     }
 
     /// `gDidToggleFullscreen`: the menu is redrawn 10 ticks later.
@@ -301,9 +347,18 @@ public final class FrontEnd {
 
     // MARK: Dialog answers
 
-    /// DLOG 160 closed: `typed` = the number in the field when OK was hit, nil for Cancel.
+    /// DLOG 160 answered: `typed` = the number in the field when OK was hit, nil for Cancel. On OK the front end
+    /// beeps at once when out of range, holds 30 ticks with the dialog up, then emits `closeDialog`.
     public func levelSelectDone(typed: Int?) -> SessionOutput {
         answer(.levelSelect(typed))
+    }
+
+    /// DLOG 1000 (a C7 screen's high-score name entry) answered with the text in the field.
+    public func highScoreNameEntered(_ name: String) -> SessionOutput {
+        guard case .screen? = steps.first, let screen = activeScreen else { return SessionOutput() }
+        var out = screen.dialogAnswered(.name(name))
+        out.append(runSteps(keys: HeldKeys()))
+        return out
     }
 
     public func prefsDialogDone(prefs: BTXPrefs) -> SessionOutput {
@@ -316,7 +371,12 @@ public final class FrontEnd {
     }
 
     public func dialogDone() -> SessionOutput {
-        answer(.dismissed)
+        if case .screen? = steps.first, let screen = activeScreen {
+            var out = screen.dialogAnswered(.dismissed)
+            out.append(runSteps(keys: HeldKeys()))
+            return out
+        }
+        return answer(.dismissed)
     }
 
     private func answer(_ a: DialogAnswer) -> SessionOutput {
@@ -365,8 +425,10 @@ public final class FrontEnd {
                 steps.removeFirst()
                 steps.insert(contentsOf: then(s), at: 0)
                 continue
-            case .screen(let screen, let then):
-                guard let r = screen.result else { break }
+            case .screen(let make, let then):
+                if activeScreen == nil { activeScreen = make() }
+                guard let r = activeScreen?.result else { break }
+                activeScreen = nil
                 steps.removeFirst()
                 steps.insert(contentsOf: then(r), at: 0)
                 continue
@@ -407,8 +469,6 @@ public final class FrontEnd {
         steps.insert(contentsOf: more, at: 0)
     }
 
-    static func run(_ f: @escaping () -> SessionOutput) -> Step { .run(f) }
-
     /// QuickDraw `PtInRect`: left ≤ h < right, top ≤ v < bottom.
     static func ptInRect(_ h: Int, _ v: Int, _ r: QDRect) -> Bool {
         h >= Int(r.left) && h < Int(r.right) && v >= Int(r.top) && v < Int(r.bottom)
@@ -423,11 +483,20 @@ public final class FrontEnd {
         return SessionOutput(music: [.load(set: BTXGameData.titleMusicSet)])
     }
 
-    /// `_StartMusic` (the App sets the volume: 0 on the menu unless bool 0x40).
+    /// `_StartMusic @ 0001ad8c` on the menu (no game running): the volume first — 0 unless bool 0x40 (title-screen
+    /// music), else by short 0x35 (1 → 0, 2 → 0x40, 3 → 0x80, 4 → 0x100) — then the play. The App applies the
+    /// `volume` cue to the music voice and must not override it at `start`.
     func startMusic() -> SessionOutput {
         guard musicLoaded else { return SessionOutput() }
         musicPlaying = true
-        return SessionOutput(music: [.start])
+        let byPref: Int = switch prefs.musicVolume {
+        case 2: 0x40
+        case 3: 0x80
+        case 4: 0x100
+        default: 0
+        }
+        let volume = prefs.titleMusic ? byPref : 0
+        return SessionOutput(music: [.volume(volume), .start])
     }
 
     /// `_StopMusic @ 0001afac`: when loaded, music volume not off (short 0x35 ≠ 1), the title music pref on (no
@@ -444,7 +513,7 @@ public final class FrontEnd {
             }
             if prefs.musicVolume != 1, prefs.titleMusic, musicPlaying, let start {
                 fadeVolume = start
-                push([.musicFade(start: start)])
+                push([.musicFade])
                 return SessionOutput(music: [.volume(start)])
             }
             return stopMusicWithoutFade()

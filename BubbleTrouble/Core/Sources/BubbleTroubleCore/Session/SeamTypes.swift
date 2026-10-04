@@ -146,6 +146,13 @@ public enum DrawOp: Equatable, Sendable {
     /// `target` — the splash progress bar (`_InitProgressBar @ 00006f83`, `_UpdateProgress @ 000071c5`; a 1 × 1
     /// rect is its `_SetCPixel` corners).
     case fillRect(QDRect, rgb: UInt32, target: DrawTarget)
+
+    /// The single source of the wipe lengths (front end and Compositor): `_WipeScreen(step)` advances while the rows
+    /// swept are < `2·step + 240` → ⌈(2·step + 240) / step⌉ advances (22 at 12, 42 at 6, 62 at 4).
+    public static func wipeSteps(_ step: Int) -> Int { (2 * step + 0xf0 + step - 1) / step }
+    /// `_WipeScreenOut(step)` advances while the rows swept are ≤ `2·step + 240` → ⌊(2·step + 240) / step⌋ + 1
+    /// (63 at 4).
+    public static func wipeOutSteps(_ step: Int) -> Int { (2 * step + 0xf0) / step + 1 }
 }
 
 /// A mouse position in the 640×480 logical screen plus the button state, for `FrontEnd` (menu hot rects, Rect 1…7).
@@ -215,9 +222,10 @@ public enum ShellRequest: Equatable, Sendable {
     // MARK: Front-end requests (C6, additive) — modal dialogs the App owns; the front end waits for the answer.
 
     /// `_DoLevelSelect @ 0000d31e`: DLOG 160 ("Start at which level (2 - ^0)?", ^0 = `max` = short 0x3a), edit
-    /// item 4 preset "2" and selected. Answer with `FrontEnd.levelSelectDone(typed:)` when OK / Cancel is hit; on
-    /// OK the original then shows the validated number (0 when rejected, after `beep`) for `_WaitFor(0x1e)` — 30
-    /// ticks — before disposing the dialog: the App holds the dialog that long.
+    /// item 4 preset "2" and selected. Answer with `FrontEnd.levelSelectDone(typed:)` when OK / Cancel is hit
+    /// (Cancel: close it at once). On OK the original shows the validated number in the field (0 when rejected —
+    /// `FrontEnd.levelSelectChoice`; the `beep` comes with the answer) and holds the dialog `_WaitFor(0x1e)`; the
+    /// front end runs that hold and then emits `closeDialog`.
     case levelSelectDialog(max: Int)
     /// `_PrefsButton @ 000084c6` → `_PrefsDialog` (DLOG 190), then `_UpdateMusicVolume`. Answer with
     /// `FrontEnd.prefsDialogDone(prefs:)`.
@@ -235,6 +243,11 @@ public enum ShellRequest: Equatable, Sendable {
     /// `CGDisplayFade(token, seconds, from, to, 0,0,0, synchronous)` — full-screen launch only (`_InitMac`):
     /// `toBlack` fades the display to black, else back from black. The front end holds the duration in ticks.
     case displayFade(toBlack: Bool, seconds: Double)
+    /// `_WatchCursor` — the system watch (busy) cursor (`_InitMac`'s windowed splash).
+    case watchCursor
+    /// The front end's hold after a dialog answer is over: dispose the dialog (`_DoLevelSelect`'s `_DisposeDialog`
+    /// after `_WaitFor(0x1e)`).
+    case closeDialog
 }
 
 /// Why a session ended (C4 / C6 may add cases).

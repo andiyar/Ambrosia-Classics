@@ -3,7 +3,7 @@
 // button (Rect 7, src 0,204,123,238) is never drawn or hit (Invariant 5).
 
 /// The main menu's pictures, rects and the op lists of its drawing routines.
-public struct MainMenu: Equatable, Sendable {
+struct MainMenu: Equatable, Sendable {
     /// The six buttons, numbered as the original's `_FlashButton` / `_DrawButton` argument and `Rect` id.
     public enum Button: Int, CaseIterable, Sendable {
         case newGame = 1, demo, scores, prefs, credits, quit

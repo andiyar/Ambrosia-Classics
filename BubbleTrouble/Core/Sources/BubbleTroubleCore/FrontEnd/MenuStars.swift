@@ -3,7 +3,7 @@
 // a ring index `gNextMenuStar`, `gLastMenuStarTime` and `gLastMenuStarPoint` (mouse − 13, 13 = half of 26).
 
 /// `gMenuStars` and its bookkeeping.
-public struct MenuStars: Equatable, Sendable {
+struct MenuStars: Equatable, Sendable {
     public struct Star: Equatable, Sendable {
         /// 0 = free; 1…6 = the sprite frame (6 is drawn as nothing: the erase frame).
         public var frame: Int

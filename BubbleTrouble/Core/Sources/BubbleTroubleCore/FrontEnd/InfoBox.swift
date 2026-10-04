@@ -4,7 +4,7 @@
 // messages 0–33 and the occasions); the registered-only branches are kept (Invariant 5).
 
 /// `_DrawInterfaceText`'s message for `gMsgCounter`, and the `gInfoFlag` toggle message 3 makes.
-public struct InfoBox: Equatable, Sendable {
+struct InfoBox: Equatable, Sendable {
     /// `gTextRect` (`_CreateSpriteGWorld @ 0001eb37`: `SetRect(157, 425, 482, 445)`).
     public static let textRect = QDRect(top: 425, left: 157, bottom: 445, right: 482)
     /// `gSrcTextRect` — the stash in the sprite GWorld: top 0x5c, left 0, right = width, bottom = 0x5c + height.
