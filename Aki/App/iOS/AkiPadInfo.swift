@@ -8,7 +8,7 @@ import UIKit
 @MainActor enum AkiPadInfo {
     /// `showAboutBox:`: the app name and version over the shipped `AboutCredits1.rtf` (preferred `.lproj`,
     /// falling back to English).
-    static func about(controller: AkiController) -> UIViewController {
+    static func about(controller: AkiController) -> Sheet {
         let view = UIViewController()
         view.view.backgroundColor = .white
         let info = Bundle.main.infoDictionary ?? [:]
@@ -20,7 +20,7 @@ import UIKit
         heading.textAlignment = .center
         heading.textColor = .black
         let versionLabel = UILabel()
-        versionLabel.text = "Version \(version)"
+        versionLabel.text = "Version \(version)"           // the shipped Localizable.strings has no "Version" key
         versionLabel.font = .systemFont(ofSize: 11)
         versionLabel.textAlignment = .center
         versionLabel.textColor = .darkGray
@@ -28,7 +28,18 @@ import UIKit
         if let data = try? controller.assets.lproj("AboutCredits1.rtf"), let text = rtf(data) {
             credits.attributedText = text
         }
-        let stack = UIStackView(arrangedSubviews: [heading, versionLabel, credits])
+        var rows: [UIView] = [heading, versionLabel, credits]
+        if let copyright = Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String,
+           !copyright.isEmpty {
+            let copyrightLabel = UILabel()
+            copyrightLabel.text = copyright
+            copyrightLabel.font = .systemFont(ofSize: 11)
+            copyrightLabel.textAlignment = .center
+            copyrightLabel.textColor = .darkGray
+            copyrightLabel.numberOfLines = 0
+            rows.append(copyrightLabel)
+        }
+        let stack = UIStackView(arrangedSubviews: rows)
         stack.axis = .vertical
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -46,7 +57,7 @@ import UIKit
     /// `showReleaseNotes:`: "Aki Release Notes" (`localizedStringForKey:`), the shipped `Release Notes.rtf`
     /// read-only in a scrolling text view — in Osaka-Mono when the bundle registered it (`UIAppFonts`),
     /// else Menlo (the font table rewritten in memory; the file is untouched).
-    static func releaseNotes(controller: AkiController) -> UIViewController {
+    static func releaseNotes(controller: AkiController) -> Sheet {
         let view = UIViewController()
         view.view.backgroundColor = .white
         let text = textView()
@@ -61,7 +72,7 @@ import UIKit
     }
 
     /// `showHandbook:`: the shipped `Aki Handbook.pdf` in PDFKit's `PDFView`; nil when the bundle lacks it.
-    static func handbook(controller: AkiController) -> UIViewController? {
+    static func handbook(controller: AkiController) -> Sheet? {
         guard let url = controller.assets.url("Aki Handbook.pdf"), let document = PDFDocument(url: url) else { return nil }
         let view = UIViewController()
         let pdf = PDFView(frame: view.view.bounds)
@@ -72,15 +83,28 @@ import UIKit
         return sheet(view, title: url.deletingPathExtension().lastPathComponent, style: .pageSheet)
     }
 
+    /// A sheet that reports its dismissal (Done or a swipe), so the host can hand first responder back.
+    final class Sheet: UINavigationController {
+        var onDismissed: (() -> Void)?
+
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            guard isBeingDismissed else { return }
+            let onDismissed = onDismissed
+            self.onDismissed = nil
+            onDismissed?()
+        }
+    }
+
     // MARK: Helpers
 
-    private static func sheet(_ content: UIViewController, title: String, style: UIModalPresentationStyle) -> UIViewController {
+    private static func sheet(_ content: UIViewController, title: String, style: UIModalPresentationStyle) -> Sheet {
         content.title = title
         let done = UIBarButtonItem(systemItem: .done, primaryAction: UIAction { [weak content] _ in
             content?.dismiss(animated: true)
         })
         content.navigationItem.rightBarButtonItem = done
-        let navigation = UINavigationController(rootViewController: content)
+        let navigation = Sheet(rootViewController: content)
         navigation.modalPresentationStyle = style
         navigation.overrideUserInterfaceStyle = .light
         return navigation

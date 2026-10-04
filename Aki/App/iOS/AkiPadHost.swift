@@ -2,6 +2,7 @@ import AVFoundation
 import AkiCore
 import HectorShell
 import UIKit
+import os
 
 /// The iPad `AkiHost` (plan C1–C6, D7): HectorShell's `ShellViewController` as the window's root, the
 /// shared `AkiController` over it (owned here — `controller.host` is weak), the 0.05 s idle loop, the touch
@@ -17,6 +18,8 @@ import UIKit
 @MainActor final class AkiPadHost: NSObject, AkiHost, ShellTouchInputHandler {
     let controller: AkiController
     private var window: UIWindow?
+    /// The window's root, kept across scene reconnects (the shell, or the dev-build missing-data message).
+    private var rootController: UIViewController?
     private var shellController: ShellViewController?
     private var chrome: AkiChromeView?
     private let giveUpButton = UIButton(type: .custom)
@@ -60,22 +63,43 @@ import UIKit
 
     // MARK: Launch (the Mac's applicationDidFinishLaunching, in its order)
 
-    func launch(in scene: UIWindowScene) -> UIWindow {
+    /// The window for a connecting scene. The game launches ONCE per process: the first scene builds the
+    /// shell, loads the resources and starts the idle loop; a scene that connects after the previous one
+    /// disconnected gets a new window over the SAME root view controller (its overlays, the modal counts and
+    /// the idle timer are untouched).
+    func attach(to scene: UIWindowScene) -> UIWindow {
         let window = UIWindow(windowScene: scene)
         window.overrideUserInterfaceStyle = .light              // the 2008 app always drew Aqua
         window.backgroundColor = .black
         self.window = window
-        // Ben's ruling: obey the silent switch and stop other audio (`.soloAmbient`), before any sound.
-        let session = AVAudioSession.sharedInstance()
-        try? session.setCategory(.soloAmbient)
-        try? session.setActive(true)
+        if let root = rootController {
+            window.rootViewController = root
+            window.makeKeyAndVisible()
+            restoreFirstResponder()
+        } else {
+            launch(in: window)
+        }
+        return window
+    }
+
+    /// The scene went away: only its window is dropped (the root view controller is kept for the next one).
+    func sceneDidDisconnect() {
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+    }
+
+    private func launch(in window: UIWindow) {
+        configureAudioSession()
 
         let assets = AkiAssets()
         #if DEBUG
         if !assets.missingFiles().isEmpty {
-            window.rootViewController = MissingDataViewController()
+            let missing = MissingDataViewController()
+            rootController = missing
+            window.rootViewController = missing
             window.makeKeyAndVisible()
-            return window
+            return
         }
         #endif
         controller.beginLaunch(assets: assets)                  // _Initialize: _LoadPrefs
@@ -85,6 +109,7 @@ import UIKit
 
         let shell = ShellViewController(logicalWidth: 800, logicalHeight: 600)
         shellController = shell
+        rootController = shell
         let shellView = shell.shellView
         shellView.inputHandler = self
         let chrome = AkiChromeView(frame: shellView.bounds)
@@ -103,8 +128,37 @@ import UIKit
         idleTimer = timer
         timer.start()
         perform(#selector(finishLaunch), with: nil, afterDelay: 0.5)
-        return window
     }
+
+    /// Ben's ruling: obey the silent switch and stop other audio (`.soloAmbient`), before any sound. An
+    /// interruption that ends reactivates the session (no game state changes).
+    private func configureAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.soloAmbient)
+        } catch {
+            Self.log.error("AVAudioSession setCategory(.soloAmbient) failed: \(error.localizedDescription, privacy: .public)")
+        }
+        activateAudioSession()
+        NotificationCenter.default.addObserver(self, selector: #selector(audioSessionInterrupted(_:)),
+                                               name: AVAudioSession.interruptionNotification, object: session)
+    }
+
+    private func activateAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            Self.log.error("AVAudioSession setActive(true) failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    @objc private nonisolated func audioSessionInterrupted(_ notification: Notification) {
+        guard let raw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
+              AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
+        Task { @MainActor [weak self] in self?.activateAudioSession() }
+    }
+
+    private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "Aki", category: "AkiPadHost")
 
     /// `-[Controller finishLaunch:]` @ 0x41d4 (DC:1200): `_launched` = 1 (the window is already up — no
     /// fullscreen swap on iPad), then the first-launch "welcome" splash.
@@ -242,7 +296,16 @@ import UIKit
         updateGiveUp()
     }
 
+    /// After any overlay / alert / sheet dismissal (and a scene reconnect): on the next run-loop turn — after
+    /// UIKit's own first-responder restoration — the NEW top overlay becomes first responder (its Return / Esc
+    /// key commands), else the shell view. While a sheet or alert is presented it keeps first responder; its
+    /// dismissal calls this again.
     private func restoreFirstResponder() {
+        DispatchQueue.main.async { [weak self] in self?.focusTop() }
+    }
+
+    private func focusTop() {
+        guard shellController?.presentedViewController == nil else { return }
         if let top = chrome?.overlays.last {
             top.becomeFirstResponder()
         } else {
@@ -262,7 +325,18 @@ import UIKit
         chrome.addSubview(overlay)
         overlay.place(in: chrome.bounds, canvas: shellView.imageRectInPoints, logicalCanvasWidth: shellView.logicalWidth,
                       displayScale: max(shellView.traitCollection.displayScale, 1))
-        overlay.becomeFirstResponder()
+        // Opened under a sheet (About / Release Notes / Handbook): the sheet keeps first responder; the
+        // sheet's dismissal hands it to this overlay.
+        if shellController?.presentedViewController == nil {
+            overlay.becomeFirstResponder()
+        }
+    }
+
+    /// Presents a sheet / alert above everything; its dismissal (Done, swipe, or an alert action) returns
+    /// first responder to the top overlay or the canvas.
+    private func presentAbove(_ sheet: AkiPadInfo.Sheet) {
+        sheet.onDismissed = { [weak self] in self?.restoreFirstResponder() }
+        presenter?.present(sheet, animated: true)
     }
 
     /// The topmost presented view controller (sheets and alerts go above it).
@@ -336,7 +410,12 @@ import UIKit
         alert.addAction(practice)
         alert.addAction(UIAlertAction(title: assets.localized("Cancel"), style: .cancel) { _ in finish(true) })
         alert.preferredAction = practice
-        presenter?.present(alert, animated: true)
+        guard let presenter else {
+            // No view controller to present from (cannot happen once launched — the Mac's NSAlert always
+            // runs): end the modal as "Practice Level" (not cancelled) so the modal count cannot stick.
+            return finish(false)
+        }
+        presenter.present(alert, animated: true)
     }
 
     /// `+[LevelDescriptionWindowController runModalWithLayout:custom:]` @ 0x29d40: n = layout + 1; title
@@ -373,17 +452,17 @@ import UIKit
 
     func showAbout() {
         guard hostCommandsEnabled else { return }
-        presenter?.present(AkiPadInfo.about(controller: controller), animated: true)
+        presentAbove(AkiPadInfo.about(controller: controller))
     }
 
     func showReleaseNotes() {
         guard hostCommandsEnabled else { return }
-        presenter?.present(AkiPadInfo.releaseNotes(controller: controller), animated: true)
+        presentAbove(AkiPadInfo.releaseNotes(controller: controller))
     }
 
     func showHandbook() {
         guard hostCommandsEnabled, let handbook = AkiPadInfo.handbook(controller: controller) else { return }
-        presenter?.present(handbook, animated: true)
+        presentAbove(handbook)
     }
 }
 

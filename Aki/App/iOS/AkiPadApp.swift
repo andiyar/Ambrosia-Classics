@@ -89,7 +89,13 @@ import UIKit
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene, let host else { return }
-        window = host.launch(in: windowScene)
+        window = host.attach(to: windowScene)
+    }
+
+    /// The scene is released: only its window goes (the game was launched once and keeps running).
+    func sceneDidDisconnect(_ scene: UIScene) {
+        host?.sceneDidDisconnect()
+        window = nil
     }
 
     func sceneWillResignActive(_ scene: UIScene) {
