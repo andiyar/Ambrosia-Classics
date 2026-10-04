@@ -488,6 +488,10 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
 6. Prefs live in UserDefaults under the replica's bundle id; a surviving original prefs file is imported once (C5).
 7. FILMs 2–4 end with the hero dying (D8): the attract mode shows exactly what the core replays; not "fixed" here.
 8. Sound Tool channel stealing (U5) is an informed default (Q6), not a transcription.
+9. CURS 256–263 (the spinning cursor) are not built: their only user, `_SpinMyCursor @ 00025c1b`, has no caller in the
+   binary (A2, R10).
+10. `_WatchCursor` (the system watch, `GetCursor(4)`, during the windowed splash) shows the arrow: AppKit has no public
+    busy cursor (A2).
 
 ## Questions (defaults in force until Ben rules)
 | Q | question | default | who |

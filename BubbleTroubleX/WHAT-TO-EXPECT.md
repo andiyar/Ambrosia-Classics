@@ -10,6 +10,8 @@ progress bar, then the title screen (main menu), as the original did.
 - Leave it alone for 20 s: a demo plays (any key or click ends it); the next 20 s idle shows the scores, then a
   demo again, and so on.
 - The pointer is the original's hand cursor (`crsr 200`).
+- Known differences: during the logo the original showed the system's watch cursor; macOS offers no such cursor
+  to apps, so the arrow shows. The original also carried a spinning cursor it never used; it is not built.
 - **Not yet:** the dialogs (level select, Preferences, the high-score name entry, the erase-scores question, the
   poem / quote pictures) — they close at once for now; the Scores and Credits screens are still empty (they
   return straight to the menu). Both come next.

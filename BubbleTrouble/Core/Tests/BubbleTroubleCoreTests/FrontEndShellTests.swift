@@ -105,9 +105,6 @@ final class FrontEndShellTests: XCTestCase {
         fe.prefsChanged(p)
         XCTAssertEqual(s.prefs.sfxVolume, 2, "a running game sees the change at once (_HandleMenuChoice)")
         XCTAssertEqual(fe.prefs.sfxVolume, 2)
-        var t = HighScoreTable.empty
-        t = fe.highScores
-        fe.highScores = t                                   // the App writes back BTXPrefsStore.save's table
     }
 
     func testMenuBarQuitFadesTitleMusicThenQuits() throws {
@@ -124,5 +121,35 @@ final class FrontEndShellTests: XCTestCase {
         let busy = try frontEnd()
         XCTAssertNil(busy.quitFromMenuBar(), "splash: not the idle menu")
         XCTAssertEqual(busy.phase, .splash)
+    }
+
+    /// A screen that records the keys it is given.
+    private final class KeyRecorder: FrontEndScreen {
+        var keys: [String] = []
+        var result: FrontEndScreenResult?
+        func tick(now: UInt32, keys: HeldKeys, mouse: MousePoint) -> SessionOutput { SessionOutput() }
+        func key(_ code: UInt16, chars: String, modifiers: KeyModifiers) -> SessionOutput {
+            keys.append(chars)
+            return SessionOutput()
+        }
+        func mouseDown(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
+        func mouseUp(h: Int, v: Int, modifiers: KeyModifiers) -> SessionOutput { SessionOutput() }
+        func appActivated() -> SessionOutput { SessionOutput() }
+        func appDeactivated() -> SessionOutput { SessionOutput() }
+        func dialogAnswered(_ answer: FrontEndDialogAnswer) -> SessionOutput { SessionOutput() }
+    }
+
+    func testScreensTakeKeyDownsNotAutoKey() throws {
+        let fe = try frontEnd()
+        var now: UInt32 = 1000
+        ticks(fe, now: &now) { $0.phase != .menu }
+        let screen = KeyRecorder()
+        fe.push([.screen(make: { screen }, then: { _ in [] })])
+        _ = fe.tick(now: now, keys: HeldKeys(), mouse: Self.away)
+        XCTAssertTrue(fe.activeScreen === screen)
+        _ = fe.key(0x00, chars: "a", modifiers: KeyModifiers(), isRepeat: true)
+        XCTAssertEqual(screen.keys, [], "event mask 0x800a: no autoKey")
+        _ = fe.key(0x00, chars: "a", modifiers: KeyModifiers())
+        XCTAssertEqual(screen.keys, ["a"])
     }
 }

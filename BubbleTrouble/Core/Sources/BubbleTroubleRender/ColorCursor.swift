@@ -5,9 +5,9 @@ import Foundation
 /// sets in the menus, dialogs and the pause (plan Q16: the kit has no `crsr` decoder; this one lives in Render).
 ///
 /// Layout (Inside Macintosh: Imaging With QuickDraw, "CCrsr", handles flattened to offsets in the resource):
-/// crsrType @0 (0x8001) · crsrMap @2 (offset of a 50-byte PixMap) · crsrData @6 (offset of the pixels) · crsrXData,
-/// crsrXValid, crsrXHandle @10…19 · crsr1Data @18 (16 × 16 1-bit) · crsrMask @50 (16 × 16 1-bit) · crsrHotSpot @82
-/// (v, h). The PixMap's pmTable field holds the offset of its ColorTable (seed, flags, ctSize, then
+/// crsrType @0 (0x8001) · crsrMap @2 (offset of a 50-byte PixMap) · crsrData @6 (offset of the pixels) · crsrXData
+/// @10 · crsrXValid @14 · crsrXHandle @16 · crsr1Data @20 (16 × 16 1-bit) · crsrMask @52 (16 × 16 1-bit) ·
+/// crsrHotSpot @84 (v, h) · crsrXTable @88 · crsrID @92. The PixMap's pmTable field holds the offset of its ColorTable (seed, flags, ctSize, then
 /// `ctSize + 1` × (value, r, g, b)). Indexed 1/2/4/8-bit pixels, most-significant bits first, looked up by value.
 ///
 /// Mask 1 → the pixel's colour, opaque. Mask 0 → transparent; where the 1-bit data is also 1 QuickDraw inverts the
@@ -48,7 +48,7 @@ public struct ColorCursor: Sendable, Equatable {
         let type = try u16(0)
         guard type == 0x8001 else { throw DecodeError.notAColourCursor(type) }
         let map = try u32(2), pixels = try u32(6)
-        let hotV = try i16(82), hotH = try i16(84)
+        let hotV = try i16(84), hotH = try i16(86)
 
         // PixMap: rowBytes @4 (bit 15 = PixMap), bounds @6, pixelType @30, pixelSize @32, cmpCount @34, pmTable @42.
         let rowBytesField = try u16(map + 4)
@@ -76,8 +76,8 @@ public struct ColorCursor: Sendable, Equatable {
         var inverted = 0
         for y in 0..<16 {
             for x in 0..<16 {
-                guard bit(50, x, y) == 1 else {
-                    inverted += bit(18, x, y)
+                guard bit(52, x, y) == 1 else {
+                    inverted += bit(20, x, y)
                     continue
                 }
                 let bitOffset = x * depth

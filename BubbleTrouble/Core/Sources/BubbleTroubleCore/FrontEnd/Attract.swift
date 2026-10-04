@@ -337,7 +337,7 @@ extension FrontEnd {
     // MARK: - Level select (`_Interface` 'L' + `_DoLevelSelect`)
 
     /// The level `_DoLevelSelect` returns for `typed` on OK: 2…short 0x3a, else 0 after `SysBeep(1)`.
-    static func levelSelectChoice(typed: Int, max: Int) -> Int? {
+    public static func levelSelectChoice(typed: Int, max: Int) -> Int? {
         typed < 2 || max < typed ? nil : typed
     }
 

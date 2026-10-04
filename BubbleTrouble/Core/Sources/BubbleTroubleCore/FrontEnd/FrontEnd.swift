@@ -268,7 +268,7 @@ public final class FrontEnd {
     /// modifiers applied, as the Carbon event's `charCode` was (`NSEvent.characters`, not
     /// `charactersIgnoringModifiers`): `_Interface` switches on that byte, so Ctrl-C (0x03 = Enter) starts a New Game
     /// and Ctrl-M (0x0d) too; ⌘ is in `modifiers.command`. The menus take both kinds; `_PauseGame` handles key-downs
-    /// only (event kind 3 — autoKey is kind 5) and gets the Mac Roman byte with the ⌘ flag (it ignores ⌘ keys).
+    /// only (event kind 3 — autoKey is kind 5), as do the screens (mask 0x800a), and gets the Mac Roman byte with the ⌘ flag (it ignores ⌘ keys).
     public func key(_ code: UInt16, chars: String, modifiers: KeyModifiers, isRepeat: Bool = false) -> SessionOutput {
         switch steps.first {
         case .game?:
@@ -279,6 +279,9 @@ public final class FrontEnd {
             }
             return SessionOutput()
         case .screen?:
+            // `_DisplayHiScores` / `_DisplayCredits` / `_WaitUntilKeyOrMousePress` wait with event mask 0x800a
+            // (mouseDown | keyDown | highLevel): autoKey never reaches a screen.
+            guard !isRepeat else { return SessionOutput() }
             return activeScreen?.key(code, chars: chars, modifiers: modifiers) ?? SessionOutput()
         case .dialog?:
             return SessionOutput()
