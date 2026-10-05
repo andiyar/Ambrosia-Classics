@@ -31,13 +31,15 @@ import AppKit
 
     /// `_RandomProverbScreen`: `random() % 11` picks one 392×157 strip of `proverbs.png` (11 × 157 = 1727),
     /// drawn with `drawInRect:{0,0,392,157} fromRect:{0, k·157, 392, 157}` (NSImage coordinates, origin
-    /// bottom-left) source-over into a fresh 392×157 image, shown with a 20 s timeout.
+    /// bottom-left) source-over into a fresh 392×157 image, shown with a 20 s timeout. Remaster (D11): the strip's
+    /// bitmap is art-scale × the pixels at the same 392×157 point size.
     static func randomProverb(app: AkiAppDelegate) {
         let k = Int.random(in: 0..<11)
         let proverbs = app.controller.assets.image("proverbs")
         let size = NSSize(width: 392, height: 157)
         let strip = NSImage(size: size)
-        if let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 392, pixelsHigh: 157,
+        let s = app.controller.artScale
+        if let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 392 * s, pixelsHigh: 157 * s,
                                       bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
                                       colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) {
             rep.size = size

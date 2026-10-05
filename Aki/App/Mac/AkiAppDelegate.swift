@@ -218,6 +218,12 @@ import HectorShell
     /// Also puts the nib's "Preferences…" back each time AppKit validates it (AppKit retitles it
     /// "Settings…"; see `AkiMenus.restoreNibItems`).
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(toggleRemasteredArt(_:)) {
+            // D11: checked while the Remaster art runs; off without the art set, under a modal window and under
+            // the Preferences sheet (whose OK applies its own checkbox).
+            menuItem.state = controller.remasterActive ? .on : .off
+            return controller.remasterAvailable && NSApp.modalWindow == nil && shell?.windowedWindow.attachedSheet == nil
+        }
         if menuItem.action == #selector(showPreferences(_:)), let title = AkiMenus.preferencesTitle,
            menuItem.title != title {
             menuItem.title = title
@@ -235,6 +241,12 @@ import HectorShell
             menuItem.title = title
         }
         return state.enabled && !AkiController.notYetBuilt.contains(tag)
+    }
+
+    /// "Remastered Art" (D11, not in the nib): flips the Remaster art live (`AkiController.setRemastered`); the
+    /// Preferences checkbox shows the new state the next time Preferences opens (`updateUI`).
+    @objc func toggleRemasteredArt(_ sender: Any?) {
+        controller.setRemastered(!controller.remasterActive)
     }
 
     /// `-[Controller showAboutBox:]` @ 0x327a (Q10).

@@ -40,6 +40,13 @@ Pick the difficulty with the arrows under Skill Level on the map, then tap a lan
 - Tip, Reshuffle and Pause on screen; ⌘T / ⌘R / ⌘P on a keyboard.
 - Switch to another app mid-level: the game pauses; coming back resumes it.
 
+## Remastered Art (new, D11)
+- Every picture redrawn 4× sharper (AI-upscaled); layout, timing and rules unchanged.
+- With a keyboard: **Aki ▸ Remastered Art** in the menu bar (check mark = on). Without one: the **Remastered
+  art** checkbox at the bottom of Preferences (Preferences on the map's bottom bar), applied on OK.
+- A fresh install starts in Original. It switches live, on the map or mid-level.
+- Greyed out = this build has no Remaster art in it.
+
 ## Known differences (deliberate or iPad-only)
 - No key auto-repeat on a hardware keyboard.
 - About, Release Notes and the Handbook open as sheets over the game.

@@ -37,6 +37,11 @@ import UIKit
     @objc func akiShowHelp(_ sender: Any?) { host.showSplash(named: "guide", timeout: 0) {} }   // showHelp:
     @objc func akiShowHandbook(_ sender: Any?) { host.showHandbook() }
     @objc func akiShowReleaseNotes(_ sender: Any?) { host.showReleaseNotes() }
+    /// "Remastered Art" (D11, not in the nib): flips the Remaster art live, when enabled.
+    @objc func akiToggleRemasteredArt(_ sender: Any?) {
+        guard host.remasterCommandEnabled else { return }
+        host.controller.setRemastered(!host.controller.remasterActive)
+    }
     /// Quit Aki (⌘Q): drawn, does nothing (D7 R4).
     @objc func akiQuit(_ sender: Any?) {}
     /// A nib item wired to no action (the Japanese "Undo Last Move"): never enabled.
@@ -55,6 +60,7 @@ import UIKit
     /// while a modal is up (and before launch); Quit is always on (and does nothing).
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
         if action == #selector(akiMenuCommand(_:)) { return true }
+        if action == #selector(akiToggleRemasteredArt(_:)) { return true }   // `validate` sets its check and enabling
         if action == #selector(akiQuit(_:)) { return true }
         if action == #selector(akiNoAction(_:)) { return false }
         if Self.hostActions.contains(action) { return host.hostCommandsEnabled }
@@ -65,6 +71,15 @@ import UIKit
     /// unless a later phase's tag or a modal is up.
     override func validate(_ command: UICommand) {
         super.validate(command)
+        if command.action == #selector(akiToggleRemasteredArt(_:)) {
+            command.state = host.controller.remasterActive ? .on : .off
+            if host.remasterCommandEnabled {
+                command.attributes.remove(.disabled)
+            } else {
+                command.attributes.insert(.disabled)
+            }
+            return
+        }
         guard command.action == #selector(akiMenuCommand(_:)), let tag = Self.tag(command) else { return }
         let state = host.menuState(tag: tag)
         if let title = state.title {

@@ -88,6 +88,18 @@ targets:
           fi
           DEST="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH"
           rsync -a --exclude '.DS_Store' --exclude '*.icns' "$DATA/" "$DEST/"
+          # Remaster (D11): the git-ignored U1 art set into <bundle>/hd-4x/ when present (else Remaster shows
+          # disabled); AKI_REMASTER_BACKGROUNDS=dedither overlays hd-4x-dedither/background*.png.
+          HD="$SRCROOT/Resources/Aki/hd-4x"
+          if [ -d "$HD" ]; then
+            rsync -a --exclude '.DS_Store' "$HD/" "$DEST/hd-4x/"
+            if [ "${AKI_REMASTER_BACKGROUNDS:-plain}" = dedither ]; then
+              cp "$SRCROOT/Resources/Aki/hd-4x-dedither"/background*.png "$DEST/hd-4x/"
+            fi
+            echo "AkiPad: hd-4x staged ($(du -sh "$DEST/hd-4x" | cut -f1), backgrounds ${AKI_REMASTER_BACKGROUNDS:-plain})"
+          else
+            echo "warning: AkiPad: no $HD; Remastered Art will show disabled"
+          fi
           OSAKA="$(find /System/Library/AssetsV2 -name OsakaMono.ttf -print -quit 2>/dev/null || true)"
           if [ -n "$OSAKA" ]; then
             cp "$OSAKA" "$DEST/OsakaMono.ttf"

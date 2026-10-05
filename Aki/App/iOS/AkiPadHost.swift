@@ -53,6 +53,9 @@ import os
     /// About / Preferences / Help / Handbook / Release Notes: on once the game is loaded and no modal is up.
     var hostCommandsEnabled: Bool { resourcesLoaded && !isModalUp }
 
+    /// "Remastered Art" (D11): as the host commands, and only with the art set in the bundle.
+    var remasterCommandEnabled: Bool { hostCommandsEnabled && controller.remasterAvailable }
+
     /// The shared per-tag state (retitle + enabled), off before launch, for a later phase's tag, and while
     /// a modal is up.
     func menuState(tag: Int) -> (enabled: Bool, title: String?) {
@@ -389,11 +392,12 @@ import os
         guard let proverbs = controller.assets.image("proverbs"), let cg = proverbs.cgImage else {
             return completion()
         }
-        let y = cg.height - 157 - k * 157
-        guard y >= 0, let strip = cg.cropping(to: CGRect(x: 0, y: y, width: 392, height: 157)) else {
+        let s = controller.artScale                             // Remaster (D11): the 4× sheet, cropped in its pixels
+        let y = cg.height - 157 * s - k * 157 * s
+        guard y >= 0, let strip = cg.cropping(to: CGRect(x: 0, y: y, width: 392 * s, height: 157 * s)) else {
             return completion()
         }
-        present(SplashOverlay(image: UIImage(cgImage: strip, scale: 1, orientation: .up), timeout: 20), completion: completion)
+        present(SplashOverlay(image: UIImage(cgImage: strip, scale: CGFloat(s), orientation: .up), timeout: 20), completion: completion)
     }
 
     /// `_SelectMapArea`'s "Practice Mode" alert: "Practice Level" / "Cancel"; `cancelled` = Cancel.

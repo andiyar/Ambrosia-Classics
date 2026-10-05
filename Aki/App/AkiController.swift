@@ -20,6 +20,13 @@ import HectorShell
     private(set) var gameScreenImpl: GameScreen!               // P2.10 — the one GameScreen (`gameScreen` points at it)
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
+    /// The Remaster switch (D11): its own `RemasteredArt` defaults key, in the store's defaults.
+    let remaster: RemasterSetting
+    /// The bundle holds the complete `hd-4x/` art set (set at launch); without it Remaster is shown disabled
+    /// and the app runs the Original art whatever the key says (the key is not rewritten).
+    private(set) var remasterAvailable = false
+    /// The one app-wide art scale the GWorlds (and the platform images) are at: 1 Original, 4 Remaster.
+    private(set) var artScale = 1
     /// `_inactivePause` (Controller ivar 0x2d): the game was paused by a focus loss, not by the player.
     var inactivePause = false
     /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
@@ -30,6 +37,7 @@ import HectorShell
     init(store: GameSettingsStore = GameSettingsStore()) {
         g = AkiG()
         self.store = store
+        remaster = RemasterSetting(defaults: store.defaults)
         p = .defaults
     }
 
@@ -43,10 +51,23 @@ import HectorShell
 
     /// `_Initialize: _InitializeGWorlds`, the screens, `_InitializeSound`, `_InitializeMusic`.
     func loadLaunchResources() {
-        do {
-            gworlds = try AkiGWorlds(assets: assets)           // _Initialize: _InitializeGWorlds
-        } catch {
-            fatalError("Aki: cannot load the original art: \(error)")
+        remasterAvailable = assets.hasRemasterArt()
+        let scale = RemasterSetting.artScale(isOn: remaster.isOn, available: remasterAvailable)
+        if scale > 1 {
+            do {
+                gworlds = try AkiGWorlds(assets: assets, scale: scale)   // Remaster (D11)
+                artScale = scale
+                assets.artScale = scale
+            } catch {
+                print("Aki: cannot load the Remaster art, using the original: \(error)")
+            }
+        }
+        if gworlds == nil {
+            do {
+                gworlds = try AkiGWorlds(assets: assets)           // _Initialize: _InitializeGWorlds
+            } catch {
+                fatalError("Aki: cannot load the original art: \(error)")
+            }
         }
         mapScreen = MapScreen(controller: self)
         gameScreenImpl = GameScreen(controller: self)          // P2.10
@@ -149,6 +170,40 @@ import HectorShell
     func triggerGameToMap() {                                                              // P2.10
         music.stopCurrent()
         gameScreenImpl.leaveLevel {}
+    }
+
+    // MARK: Remaster (D11)
+
+    /// Whether the Remaster art is what the app is running (the menu item's check, the checkbox's state).
+    var remasterActive: Bool { artScale > 1 }
+
+    /// The "Remastered Art" menu item and the Preferences checkbox (D11, U3): writes the `RemasteredArt` key
+    /// and, when the effective art scale changes, builds a new GWorld set at it (with the current level's
+    /// background), replaces `gworlds` and redraws the current screen from it — no game-state side effects
+    /// beyond those of the original's own `_redrawWindow`, no timing change. Unavailable art → nothing (both
+    /// controls are disabled). Reached only from a menu action or Preferences' OK, which run between idle ticks
+    /// and never inside the slide / fade busy loops (they do not return to the run loop) or under a modal (the
+    /// hosts disable the item; Preferences' OK has closed its own sheet / overlay first).
+    func setRemastered(_ on: Bool) {
+        guard remasterAvailable else { return }
+        remaster.isOn = on
+        let scale = RemasterSetting.artScale(isOn: on, available: true)
+        guard scale != artScale else { return }
+        let fresh: AkiGWorlds
+        do {
+            fresh = try AkiGWorlds(assets: assets, scale: scale, background: g.background)
+        } catch {
+            print("Aki: cannot load the \(scale == 1 ? "original" : "Remaster") art, keeping the current set: \(error)")
+            return
+        }
+        gworlds = fresh
+        artScale = scale
+        assets.artScale = scale
+        switch g.mode {
+        case .map: mapScreen.redrawForArtChange()
+        case .game: gameScreenImpl.redrawForArtChange()
+        case .editor: break                                    // Phase 3 (not built)
+        }
     }
 
     // MARK: Focus (the platform-neutral bodies of the Mac window/app delegate methods; T4 lift)

@@ -49,7 +49,7 @@ import QuartzCore
         let g = controller.g
         let gw = controller.gworlds!
         do {
-            gw.background = try controller.assets.png("background\(g.background)")
+            gw.background = try controller.assets.png("background\(g.background)", scale: gw.scale)   // gw's art scale (D11)
         } catch {
             fatalError("Aki: cannot load background\(g.background).png: \(error)")   // _CreateGWorld
         }
@@ -374,6 +374,21 @@ import QuartzCore
     func keyDown(_ key: ShellKey) {                                                       // P2.11
         guard key.characters.utf16.first == 0x1B else { return }
         abortGame { _ in }                                         // nothing follows
+    }
+
+    /// A Remaster switch in the game (D11, `AkiController.setRemastered`): the new GWorlds hold no board and no
+    /// frame. The board buffer (scratch3c) is rebuilt by `_DrawGameTiles` — inside `_RedrawCustomGameScreen(1)`
+    /// when unpaused; explicitly first when paused, where the redraw leaves the tiles off but later partial
+    /// redraws (`_RedrawTile`, the fade) copy from it — with the greyed look read as `_RedrawCustomGameScreen`
+    /// reads it (g+0x60 == 0). Then exactly `_redrawWindow`'s `_RedrawCustomGameScreen(!g+0x67)`, so the pause
+    /// scroll, the "no more pairs" scroll over greyed tiles, the selected and hinted tiles and the plate all come
+    /// back as they were. Its `_g` writes are the ones the original's own `_redrawWindow` makes on any focus regain.
+    func redrawForArtChange() {
+        guard let game else { return }
+        if controller.g.paused {
+            drawGameTiles(greyed: game.openPairs == 0)
+        }
+        redrawCustomGameScreen(tiles: !controller.g.paused)
     }
 
     /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932, R6): `_RedrawCustomGameScreen(!g+0x67)`.

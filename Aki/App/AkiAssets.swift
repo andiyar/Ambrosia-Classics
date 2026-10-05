@@ -1,3 +1,4 @@
+import AkiCore
 import Foundation
 import HectorShell
 
@@ -9,17 +10,43 @@ import HectorShell
     enum AssetError: Error, Equatable { case missing(String) }
 
     let bundle: Bundle
+    /// The art scale the splash / proverb / paper / preview images load at (`image(_:)`, the platform
+    /// extensions): 1 = the original files (exactly as before Remaster), `RemasterSetting.scale` = the
+    /// `hd-4x/` files at the originals' point size. Set by `AkiController` with its `artScale`.
+    var artScale = 1
 
     init(bundle: Bundle = .main) {
         self.bundle = bundle
     }
 
-    /// "<name>.png" decoded at its native size, e.g. `png("map")`.
-    func png(_ name: String) throws -> ShellBitmap {
+    /// "<name>.png" decoded at its native size, e.g. `png("map")`. With `scale` k > 1 (Remaster, D11):
+    /// `hd-4x/<name>.png` as a k-scaled `ShellBitmap` of the original's logical size.
+    func png(_ name: String, scale: Int = 1) throws -> ShellBitmap {
+        if scale > 1 {
+            guard let url = remasterURL(name) else {
+                throw ShellBitmapError.unreadable("\(RemasterSetting.directory)/\(name).png")
+            }
+            return try ShellBitmap(contentsOf: url, scale: scale)
+        }
         guard let url = bundle.url(forResource: name, withExtension: "png") else {
             throw ShellBitmapError.unreadable("\(name).png")
         }
         return try ShellBitmap(contentsOf: url)
+    }
+
+    /// `hd-4x/<name>.png` in this bundle (nil when absent).
+    func remasterURL(_ name: String) -> URL? {
+        bundle.url(forResource: name, withExtension: "png", subdirectory: RemasterSetting.directory)
+    }
+
+    /// Remaster is available (D11, U3 contract 2) only when `hd-4x/` holds every PNG the GWorlds load and
+    /// every level background.
+    func hasRemasterArt() -> Bool {
+        guard let resources = bundle.resourceURL else { return false }
+        let folder = resources.appendingPathComponent(RemasterSetting.directory)
+        return RemasterSetting.requiredFiles(gworldPNGs: AkiGWorlds.pngNames).allSatisfy {
+            FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+        }
     }
 
     /// The exact shipped file name, e.g. `url("Aki Theme 3.mp3")`; nil when the bundle lacks it.
