@@ -298,3 +298,25 @@ TickCount-paced).
 **Open for Ben:** plan Questions Q1–Q18 (title/pause pictures, cheat codes now recovered, ⌘M/⇧⌘A, channel stealing,
 speed, full-screen fill, info texts, first demo = FILM 1, pattern-4 overlay, Q18 dialogs), NR-10, sound feel once K3 lands.
 **Approved by:** orchestrator rulings under the plan review; Ben 2026-10-06: "playable on desktop awesome".
+
+## D14 — Bubble Trouble X sound: the Sound Tool's volume law, music carries on, one mixer for both (2026-10-06)
+
+**Decided (orchestrator, Opus 5.5, from the original binary; Ben's ear still the gate):**
+1. **K3 `ShellMixer` is the BTX output** (HectorKit d9fdfa4): 4 effect voices (`ST_Open(4,0)`) + 1 music voice
+   (`gMusicChannel`) behind `BTXAudioOutput`; `SilentAudioOutput` stays only as the no-device fallback. A failed engine
+   restart after a device change is logged and retried (3×, 250 ms) instead of silently dropped.
+2. **Effects follow the AmbrosiaTools Sound Tool's law, not the Sound Manager's:** `ST_PlaySoundParam` (000e5598) clamps
+   volume to 0x80 and `ADPCM_Mixer` scales `sample*vol>>7` → 0x80 = unity, so `_PlayMySnd`'s 0x10/0x40/0x100 play at
+   0.125/0.5/1.0 (we had 0.0625/0.25/1.0 — effects half as loud, masked by the music). Music keeps the Sound Manager's
+   0x100 = unity.
+3. **`_StartMusic` on a busy channel carries on** (its 50 segments queue behind the current one, no flush): ours sets the
+   volumeCmd's volume and does not restart. Paused stays paused.
+4. **Channel stealing is the original's** (`ST_PlaySoundParam` recovered — plan Known delta 8 / Q6 closed). snd 9029 and
+   9012 are reachable (Q14 corrected).
+5. **Carried, not fixed (rare):** the core's `musicPlaying` is a flag, the original's `_MusicPlaying` asks the channel
+   (`SndChannelStatus`) — they differ only after the 50 music loops run out (~53 min on one screen) or when the Music
+   toggle restarts stopped title music; then the original restarts/fades where ours may not.
+
+**Because:** sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md` (151 `_PlayMySnd` sites: 146 match, 5 unregistered-
+only by ruling, 0 missing/wrong; music per level set matches for every level).
+**Approved by:** orchestrator rulings from the decompile; Ben 2026-10-06 playtesting ("feels so close", speed right).
