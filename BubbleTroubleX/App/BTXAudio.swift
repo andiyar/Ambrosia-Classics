@@ -107,7 +107,8 @@ extension ShellMixer: BTXAudioOutput {}
         }
     }
 
-    /// The voice an effect of `priority` takes (plan Q6 default — the Sound Tool's own rule is unrecovered, U5):
+    /// The voice an effect of `priority` takes — the Sound Tool's own rule (`ST_PlaySoundParam` 000e5598, recovered by the
+    /// 2026-10-06 sound audit; its extra "and volume ≤ new" tie-break never differs here, all effects share one volume):
     /// a free voice; else steal the lowest-priority busy voice whose priority ≤ the new one (the oldest of equals);
     /// else nil (dropped).
     static func chooseVoice(priority: Int, busy: [Bool], priorities: [Int], serials: [Int]) -> Int? {

@@ -489,7 +489,8 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
 5. InputSprockets, "OS 9 Drawing" (QuickerDraw), mode-2 recording, orbit stars (invisible on Intel anyway) — not built.
 6. Prefs live in UserDefaults under the replica's bundle id; a surviving original prefs file is imported once (C5).
 7. FILMs 2–4 end with the hero dying (D8): the attract mode shows exactly what the core replays; not "fixed" here.
-8. Sound Tool channel stealing (U5) is an informed default (Q6), not a transcription.
+8. ~~Sound Tool channel stealing (U5) is an informed default (Q6), not a transcription.~~ **Closed 2026-10-06:** recovered
+   from AmbrosiaTools `ST_PlaySoundParam` (000e5598) — our Q6 rule IS the original's (docs/bubble-trouble/sound-audit-2026-10-06.md).
 9. CURS 256–263 (the spinning cursor) are not built: their only user, `_SpinMyCursor @ 00025c1b`, has no caller in the
    binary (A2, R10).
 10. `_WatchCursor` (the system watch, `GetCursor(4)`, during the windowed splash) shows the arrow: AppKit has no public
@@ -513,7 +514,7 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
 | Q3 | Pause = Caps Lock *state* (paused while engaged) | as the code reads (`GameKeyDown(0x39)` = lock state) | Ben (feel) |
 | Q4 | ⌘M is both Options ▸ Music and Window ▸ Minimize (U6) | menus as the nib; AppKit matches menus left→right, so Music wins | Ben |
 | Q5 | Sound Effects key equivalent "A" — ⌘A collides with Select All (U6) | transcribe the nib literally; Edit precedes Options → Select All wins outside text fields too (as the original would) | Ben |
-| Q6 | 4-channel priority/stealing (U5) | free voice → else steal lowest priority ≤ new → else drop | Ben (ear) |
+| Q6 | 4-channel priority/stealing (U5) | free voice → else steal lowest priority ≤ new → else drop — **transcribed** (ST_PlaySoundParam, sound audit 2026-10-06) | closed |
 | Q7 | Game speed: 0.033 s timer = 30.3 fps (NR-11 delivered rate unknown) | 30.3 fps, missed frames dropped | Ben (feel) |
 | Q8 | Full screen: fill main screen vs switch to 640×480 | fill, integer-crisp (D3 precedent) | Ben |
 | Q9 | Info-box messages 4–33, occasion texts, birthday dialogs (DLOG 3000/3001) (U3) | transcribe what `DC` shows; birthdays built from `_DoBirthdaysCheck @ 0000c78e` dates if readable, else omitted | orchestrator, Ben sees |
@@ -521,7 +522,7 @@ T0 ─┬─ Lane K (HK worktree, branch btx-shell):  K1 ──► K2 ∥ K3 (di
 | Q11 | First demo = FILM 1 (U10, counter starts 0) | FILM 1 first | Ben (memory) |
 | Q12 | High-score overlay "pattern 4" look (U4) | the classic System pattern list item 4 if the bits are recoverable, else a 50 % checker; Ben compares | Ben |
 | Q13 | Progress-bar colours (U4) | read from the binary's initialised data in C6; grey ramp if unreadable | Ben |
-| Q14 | Sprite set 0x20 (enemy icons) and snd 12/29 (U7) | unused — not drawn/played | orchestrator |
+| Q14 | Sprite set 0x20 (enemy icons) and snd 12/29 (U7) | sprite set 0x20 unused. **Corrected 2026-10-06 (sound audit):** snd 9029 plays for air-bubble group 7 (`_Bubbles_NewGroup` 0001676a), snd 9012 only via the play-all-sounds cheat — both already played | orchestrator |
 | Q15 | Info msg 2 "Registered To: <name> [n copies]" — what name? | the macOS account's full name, "1 copy" | Ben |
 | Q16 | Hand cursor `crsr 200` — kit has no `crsr` decoder? | add a tiny decoder in Render (1-bit/colour crsr = cicn-like) or fall back to `NSCursor.pointingHand`; ask | Ben |
 | Q17 | Commit BTX's original data to git? | **closed for this lane:** the session brief says game data (Resources/, ghidra/*.c, out/) never enters git; stage from `BTX_DATA`/`$BTXR` | Ben (brief 2026-10-04) |
