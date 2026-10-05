@@ -142,6 +142,43 @@ final class ArtRegionsTests: XCTestCase {
         }
     }
 
+    /// Every picture region is the tight union bounding box of the picture source rects that lie in it, and those
+    /// rects leave no pixel of it uncovered, so a region
+    /// that swallows two separate sprites plus the gap between them (which would bleed into each other through the
+    /// upscaler) fails. A whole-file region passes only by being a whole-file picture's own enumerated source.
+    /// The one region with no enumerated source is notavail.png's demo-unavailable strip: shipped art the replica
+    /// never draws, kept as its own region (it still must not touch anything else — testRegionsDisjointAndInBounds).
+    func testNoPictureRegionSpansTwoSprites() throws {
+        let map = try loadMap()
+        let sources = pictureSources(map)
+        for (name, entry) in map {
+            for region in entry.regions where region.kind == "picture" {
+                let inRegion = sources.filter { $0.0 == name && inside($0.1, region.rect) }.map(\.1)
+                guard let first = inRegion.first else {
+                    XCTAssertTrue(name == "notavail.png" && region.note.contains("unused by the replica"),
+                                  "\(name) picture region \(region.note) \(region.rect) has no source rect in it")
+                    continue
+                }
+                let union = inRegion.dropFirst().reduce(first) {
+                    r(min($0.left, $1.left), min($0.top, $1.top), max($0.right, $1.right), max($0.bottom, $1.bottom))
+                }
+                XCTAssertEqual(region.rect, union, "\(name) picture region \(region.note) \(region.rect) is not the "
+                               + "bounding box \(union) of its \(inRegion.count) source rects")
+                // and no gap: the source rects together cover every pixel of the region
+                let w = region.rect.right - region.rect.left, h = region.rect.bottom - region.rect.top
+                var covered = [Bool](repeating: false, count: max(0, w * h))
+                for s in inRegion {
+                    for y in (s.top - region.rect.top)..<(s.bottom - region.rect.top) {
+                        for x in (s.left - region.rect.left)..<(s.right - region.rect.left) { covered[y * w + x] = true }
+                    }
+                }
+                let gaps = covered.filter { !$0 }.count
+                XCTAssertEqual(gaps, 0, "\(name) picture region \(region.note) \(region.rect): \(gaps) px covered by "
+                               + "none of its \(inRegion.count) source rects (two sprites and a gap?)")
+            }
+        }
+    }
+
     func testEveryMaskRectLiesInAMaskRegion() throws {
         let map = try loadMap()
         for (file, rect, label) in maskSources() {

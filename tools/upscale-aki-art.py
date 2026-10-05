@@ -10,14 +10,18 @@ Outputs (git-ignored, derived from copyrighted originals — D10):
   Resources/Aki/hd-4x/<name>.png            every file, exactly 4x, RGB 8-bit
   Resources/Aki/hd-4x-dedither/<name>.png   "dedither" files only: Gaussian 0.7 on the padded crop before remacri
   Resources/Aki/.upscale-cache/<sha256>.png  raw remacri output of the whole PADDED crop, keyed by (padded PNG
-                                             bytes, model, scale, de-dither method + radius, layout tag); the
-                                             back-projection is a cheap post-step applied after the cache
+                                             bytes, model, scale, de-dither method + radius, layout tag, and a
+                                             hash of upscayl-bin + remacri-4x.bin/.param so an Upscayl update
+                                             re-upscales); the back-projection is a cheap post-step after the cache
+  Cache entries and outputs are written to a temp file + os.replace (an interrupted run leaves no truncated file);
+  a cache hit must decode as an image of the expected padded 4x size, else it is deleted and re-upscaled.
 
 Usage (from the repo root):
   python3 tools/upscale-aki-art.py [--only a.png,b.png]   generate (idempotent; cached crops cost no upscayl call)
   python3 tools/upscale-aki-art.py --check                verify map + outputs (incl. picture-region colour MAE
                                                           <= 2.0 after Gaussian 1.5); non-zero exit on any failure
   python3 tools/upscale-aki-art.py --sheets [DIR]         contact sheets (default out/remaster-sheets/)
+  python3 tools/upscale-aki-art.py --prune-cache          delete cache entries no current crop/tool/model refers to
 Pillow + numpy.
 """
 import argparse
@@ -47,6 +51,66 @@ DEDITHER = ("gaussian", 0.7)   # (method, radius in original px) for the "dedith
 BACKPROJ = ("on", 1.5)         # low-frequency colour back-projection after remacri (Gaussian radius, original px)
 COLOUR_MAE_MAX = 2.0           # --check: per-channel MAE of blur(box4(hd)) vs blur(orig), picture regions
 CACHE_LAYOUT = "padded-full"   # cache holds the whole padded 4x output (back-projection needs the pad)
+_TOOL_TAG = None
+
+
+def die(msg):
+    print(f"upscale-aki-art: {msg}", file=sys.stderr)
+    sys.exit(2)
+
+
+def tool_tag():
+    """Short hash of the upscayl binary and the remacri model files (part of every cache key)."""
+    global _TOOL_TAG
+    if _TOOL_TAG is None:
+        paths = [BIN] + [os.path.join(MODELS, f"{MODEL}.{ext}") for ext in ("bin", "param")]
+        for path in paths:
+            if not os.path.isfile(path):
+                die(f"missing {path} (install Upscayl in /Applications; needs upscayl-bin + {MODEL} model)")
+        h = hashlib.sha256()
+        for path in paths:
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    h.update(chunk)
+        _TOOL_TAG = h.hexdigest()[:16]
+    return _TOOL_TAG
+
+
+def save_atomic(img, path):
+    """PNG to a temp file in the same directory, then os.replace — never a truncated file at `path`."""
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".tmp-", suffix=".png")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            img.save(f, format="PNG")
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def padded_size(rect):
+    l, t, r, b = rect
+    return ((r - l + 2 * PAD) * SCALE, (b - t + 2 * PAD) * SCALE)
+
+
+def cache_valid(key, rect):
+    """A cache hit must decode fully as an image of the expected padded 4x size; anything else is deleted."""
+    path = os.path.join(CACHE, key + ".png")
+    if not os.path.exists(path):
+        return False
+    try:
+        with Image.open(path) as im:
+            im.load()
+            ok = im.size == padded_size(rect)
+    except Exception:
+        ok = False
+    if not ok:
+        print(f"cache: discarding invalid entry {key}.png", flush=True)
+        os.unlink(path)
+    return ok
 
 
 def load_map():
@@ -88,7 +152,7 @@ def padded_input(img, rect, variant):
     buf = io.BytesIO()
     p.save(buf, format="PNG")
     data = buf.getvalue()
-    key = hashlib.sha256(data + f"|{MODEL}|{SCALE}|{vtag}|{CACHE_LAYOUT}".encode()).hexdigest()
+    key = hashlib.sha256(data + f"|{MODEL}|{SCALE}|{vtag}|{CACHE_LAYOUT}|{tool_tag()}".encode()).hexdigest()
     return key, data
 
 
@@ -166,14 +230,24 @@ def upscale_jobs(jobs, stats):
             want = ((w + 2 * PAD) * SCALE, (h + 2 * PAD) * SCALE)
             if up.size != want:
                 sys.exit(f"upscayl output {key} is {up.size}, expected {want}")
-            up.save(os.path.join(CACHE, key + ".png"))
+            save_atomic(up, os.path.join(CACHE, key + ".png"))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def check_names(regions, only):
+    if not only:
+        return sorted(regions)
+    unknown = [n for n in only if n not in regions]
+    if unknown:
+        die(f"--only: unknown file(s) {', '.join(unknown)}; valid names: {', '.join(sorted(regions))}")
+    return only
+
+
 def generate(only):
     regions = load_map()
-    names = sorted(regions) if not only else only
+    names = check_names(regions, only)
+    tool_tag()  # fail fast (exit 2) when Upscayl or the model is missing
     stats = {"upscayl_calls": 0, "upscayl_seconds": 0.0, "cache_hits": 0, "regions": 0, "fallback": False}
     t0 = time.time()
     # pass 1: every padded crop; collect the uncached ones
@@ -190,7 +264,7 @@ def generate(only):
             for v in variants_for(entry):
                 key, data = padded_input(img, reg["rect"], v)
                 items.append((v, reg["rect"], key))
-                if os.path.exists(os.path.join(CACHE, key + ".png")):
+                if cache_valid(key, reg["rect"]):
                     stats["cache_hits"] += 1
                 elif key not in jobs:
                     jobs[key] = (data, (r - l, b - t))
@@ -214,13 +288,37 @@ def generate(only):
                 if vv == v:
                     out.paste(finished_interior(img, rect, key), (rect[0] * SCALE, rect[1] * SCALE))
             path = os.path.join(OUT[v], name)
-            out.save(path)
+            save_atomic(out, path)
             written[v] += os.path.getsize(path)
         print(f"  {name:22s} {len(plan[name]):3d} upscaled crops  {time.time() - t:6.2f} s", flush=True)
     print(f"TOTAL {time.time() - t0:.1f} s: {len(names)} files, {stats['regions']} picture regions, "
           f"{stats['upscayl_calls']} upscayl calls ({stats['upscayl_seconds']:.1f} s), "
           f"{stats['cache_hits']} cache hits{', PER-FILE FALLBACK USED' if stats['fallback'] else ''}")
     print(f"bytes written: hd-4x {written['plain']:,}  hd-4x-dedither {written['dedither']:,}")
+
+
+def prune_cache():
+    """Delete cache entries not referenced by any current (file, picture region, variant) key."""
+    regions = load_map()
+    keep = set()
+    for name in sorted(regions):
+        entry = regions[name]
+        img = original(name)
+        for reg in entry["regions"]:
+            if reg["kind"] == "picture":
+                for v in variants_for(entry):
+                    keep.add(padded_input(img, reg["rect"], v)[0] + ".png")
+    n, freed, kept = 0, 0, 0
+    for f in sorted(os.listdir(CACHE)) if os.path.isdir(CACHE) else []:
+        path = os.path.join(CACHE, f)
+        if f in keep:
+            kept += os.path.getsize(path)
+            continue
+        freed += os.path.getsize(path)
+        os.unlink(path)
+        n += 1
+    print(f"prune-cache: removed {n} entries ({freed:,} bytes freed); "
+          f"{len(keep)} referenced keys, {kept:,} bytes kept")
 
 
 def overlaps(a, b):
@@ -281,14 +379,19 @@ def check():
                                        keep1).getbbox()
             if bad1:
                 fails.append(f"{v}/{name}: box-downsample differs from the original in box {bad1}")
-            # colour fidelity of picture regions: blur(box4(hd)) vs blur(orig), per-channel MAE
+            # colour fidelity of picture regions: blur(box4(hd)) vs blur(orig), per-channel MAE. Measured the way
+            # generation corrects: both crops edge-replicate padded by PAD before the blur, then cropped back, so
+            # the region border sees the same edge handling the back-projection was computed with.
             worst = None
             for a in regs:
                 if a["kind"] != "picture":
                     continue
                 rect = tuple(a["rect"])
-                bo = np.asarray(img.crop(rect).filter(ImageFilter.GaussianBlur(BACKPROJ[1])), np.float64)
-                bd = np.asarray(down.crop(rect).filter(ImageFilter.GaussianBlur(BACKPROJ[1])), np.float64)
+                rw, rh = rect[2] - rect[0], rect[3] - rect[1]
+                inner = (PAD, PAD, PAD + rw, PAD + rh)
+                blur = ImageFilter.GaussianBlur(BACKPROJ[1])
+                bo = np.asarray(edge_pad(img.crop(rect), PAD).filter(blur).crop(inner), np.float64)
+                bd = np.asarray(edge_pad(down.crop(rect), PAD).filter(blur).crop(inner), np.float64)
                 mae = np.abs(bo - bd).reshape(-1, 3).mean(axis=0)
                 if worst is None or mae.max() > worst[1].max():
                     worst = (a["note"], mae)
@@ -388,9 +491,12 @@ def main():
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--sheets", nargs="?", const=os.path.join(REPO, "out/remaster-sheets"))
     ap.add_argument("--only", help="comma-separated file names (generate only)")
+    ap.add_argument("--prune-cache", action="store_true", help="delete unreferenced cache entries")
     a = ap.parse_args()
     if a.check:
         check()
+    elif a.prune_cache:
+        prune_cache()
     elif a.sheets:
         sheets(a.sheets)
     else:
