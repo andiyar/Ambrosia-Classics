@@ -77,7 +77,10 @@ extension ShellMixer: BTXAudioOutput {}
     // MARK: Effects
 
     /// `_PlayMySnd`'s volume for short pref 0x33: 2 → 0x10, 3 → 0x40, 4 → 0x100; anything else (1 = off) plays
-    /// nothing.
+    /// nothing. These are Sound Tool volumes, not Sound Manager ones: `ST_PlaySoundParam` (AmbrosiaTools 000e5598)
+    /// clamps each side to 0x80 (000e55e7…000e5600) and `ADPCM_Mixer` (000e8683) scales `sample * vol >> 7`
+    /// (000e8843…000e8859) — 0x80 is unity, so they played at 0.125 / 0.5 / 1.0. `effectOutputVolume` maps them
+    /// onto the output's 0x100-unity law.
     static func sfxVolume(pref: Int) -> Float? {
         switch pref {
         case 2: 0x10
@@ -85,6 +88,13 @@ extension ShellMixer: BTXAudioOutput {}
         case 4: 0x100
         default: nil
         }
+    }
+
+    /// A Sound Tool effect volume (0x80 = unity, clamped at 0x80) as the output's 0x100-unity volume:
+    /// `min(v, 0x80) * 2` — 0x10 → 0x20, 0x40 → 0x80, 0x100 → 0x100. Effect voices only; music is the Sound
+    /// Manager's volumeCmd, already 0x100 = unity.
+    static func effectOutputVolume(_ soundToolVolume: Float) -> Float {
+        min(soundToolVolume, 0x80) * 2
     }
 
     /// `_StartMusic`'s volume for short pref 0x35: 1 → 0, 2 → 0x40, 3 → 0x80, 4 → 0x100.
@@ -127,7 +137,7 @@ extension ShellMixer: BTXAudioOutput {}
         serial += 1
         voicePriority[voice] = cue.priority
         voiceSerial[voice] = serial
-        output.play(id: id, on: voice, volume: volume, loops: 1)
+        output.play(id: id, on: voice, volume: Self.effectOutputVolume(volume), loops: 1)
     }
 
     /// `ST_HaltSound(0)`: every effect channel stops (the music channel is not the Sound Tool's).
@@ -151,9 +161,17 @@ extension ShellMixer: BTXAudioOutput {}
             upload(id)
             if loaded.contains(id) { musicID = id }
         case .start:
+            // `_StartMusic @ 0001ad8c`: returns if a demo is playing / music not open / not loaded; then a volumeCmd
+            // (0x2e) by `SndDoImmediate`, then `SndPlay`s the segment 50× async. On a busy channel those plays queue
+            // behind the current sound (no flushCmd), so playing music carries on at the new volume — and a paused
+            // channel stays paused (queued buffers don't undo a pauseCmd). Only an idle channel starts afresh.
             guard let id = musicID else { return }
             let volume: Float = gameRunning || titleMusicPref ? Self.musicVolume(pref: musicVolumePref) : 0
-            output.play(id: id, on: voice, volume: volume, loops: Self.musicLoops)
+            if output.isPlaying(voice: voice) {
+                output.setVolume(voice: voice, volume)
+            } else {
+                output.play(id: id, on: voice, volume: volume, loops: Self.musicLoops)
+            }
         case .stopNow:
             if musicID != nil { output.stop(voice: voice) }
         case .pause:
