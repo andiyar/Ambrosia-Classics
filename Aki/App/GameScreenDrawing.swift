@@ -171,13 +171,54 @@ extension GameScreen {
     /// (DC:6535–6541); "no more pairs" when g+0x60 == 0 with tiles left (DC:6543); the whole window.
     func redrawCustomGameScreen(tiles: Bool) {                                            // P2.9
         guard let atEntry = game else { return }  // not `game`: later reads must see the mutated value
+        drawGameScreenHead(tiles: tiles, greyed: atEntry.openPairs == 0)
+        redrawTimeBar(now: ShellClock.ticks(), flush: false)
+        let now = ShellClock.ticks()
+        updateGame { $0.clock.applyTimeBarAdjustments(now: now, difficultyRaw: $0.difficultyRaw) }
+        redrawOpenPairs(flush: false)
+        redrawTimeAccumulated(flush: false)
+        drawPauseOverlayIfPaused()
+        if let game, game.openPairs == 0 && game.tilesLeft > 0 {
+            redrawNoMorePairs()
+        }
+        redrawEntireWindow()
+    }
+
+    /// The Remaster switch's recompose (D11, U3 "pixels only"): exactly `redrawCustomGameScreen`'s draws in its
+    /// order — the same drawing helpers — reading the current state and writing NO game or clock state: the
+    /// time bar from `AkiGame.timeBarView` (the step's bar without its a8 reset / cap penalty / latch / events),
+    /// the open-pairs count and the elapsed / "no more pairs" guards from a recount that is not stored, the
+    /// "no more pairs" overlay without `enterNoMorePairs` (bc, c0 and g+0x85 already hold what its first entry
+    /// stored). `greyed` reads the stored g+0x60, as the redraw's entry read does.
+    func composeCustomGameScreen(tiles: Bool) {                                           // U3
+        guard let game else { return }
+        let paused = controller.g.paused
+        drawGameScreenHead(tiles: tiles, greyed: game.openPairs == 0)
+        if let bar = game.timeBarView(now: ShellClock.ticks(), paused: paused) {
+            drawTimeBar(raw: bar.raw, length: bar.length, flush: false)
+        }
+        let pairs = game.board.countOpenPairs()
+        drawOpenPairs(pairs, flush: false)
+        if pairs != 0 {
+            drawTimeAccumulated(elapsed: game.clock.elapsed, flush: false)
+        }
+        drawPauseOverlayIfPaused()
+        if pairs == 0 && game.tilesLeft > 0 {
+            drawNoMorePairsOverlay()
+        }
+        redrawEntireWindow()
+    }
+
+    /// The head of `_RedrawCustomGameScreen` (no state): background → scratch2c (full); the tiles when `tiles`;
+    /// the plate masked by its right half; hint and reshuffle buttons; the pause button, paused or not.
+    private func drawGameScreenHead(tiles: Bool, greyed: Bool) {
         let gw = controller.gworlds!
         let g = controller.g
         let full = AkiGameArt.screenRect
         QD.drawToGWorld(gw.background, gw.scratch2c, mask: gw.background, srcRect: full, dstRect: full,
                         maskRect: full, mode: -9)
         if tiles {
-            drawGameTiles(greyed: atEntry.openPairs == 0)
+            drawGameTiles(greyed: greyed)
         }
         QD.drawToGWorld(gw.plate, gw.scratch2c, mask: gw.plate, srcRect: AkiGameArt.plateSource,
                         dstRect: AkiGameArt.plateDestination, maskRect: AkiGameArt.plateMask, mode: 1)
@@ -188,19 +229,14 @@ extension GameScreen {
         QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc,
                         srcRect: g.paused ? AkiGameArt.pausedSprite : AkiGameArt.buttonSprite(5),
                         dstRect: AkiGameArt.buttonDestination(5), maskRect: AkiGameArt.buttonMask, mode: 1)
-        redrawTimeBar(now: ShellClock.ticks(), flush: false)
-        let now = ShellClock.ticks()
-        updateGame { $0.clock.applyTimeBarAdjustments(now: now, difficultyRaw: $0.difficultyRaw) }
-        redrawOpenPairs(flush: false)
-        redrawTimeAccumulated(flush: false)
-        if g.paused {
-            QD.drawToGWorld(gw.pause, gw.scratch2c, mask: gw.pause, srcRect: AkiGameArt.overlaySource,
-                            dstRect: AkiGameArt.overlayDestination, maskRect: AkiGameArt.overlaySourceMask, mode: 1)
-        }
-        if let game, game.openPairs == 0 && game.tilesLeft > 0 {
-            redrawNoMorePairs()
-        }
-        redrawEntireWindow()
+    }
+
+    /// The pause overlay of `_RedrawCustomGameScreen` (DC:6535–6541), while paused (no state).
+    private func drawPauseOverlayIfPaused() {
+        guard controller.g.paused else { return }
+        let gw = controller.gworlds!
+        QD.drawToGWorld(gw.pause, gw.scratch2c, mask: gw.pause, srcRect: AkiGameArt.overlaySource,
+                        dstRect: AkiGameArt.overlayDestination, maskRect: AkiGameArt.overlaySourceMask, mode: 1)
     }
 
     /// `_RedrawCustomTimeBar(now, flush)` @ 0xefa0 (DC:5860): `_CountOpenPairs() == 0` → nothing (the
@@ -211,10 +247,16 @@ extension GameScreen {
     func redrawTimeBar(now: UInt32, flush: Bool) {                                        // P2.9
         let paused = controller.g.paused
         guard let step = updateGame({ $0.timeBarStep(now: now, paused: paused) }) ?? nil else { return }
+        drawTimeBar(raw: step.raw, length: step.length, flush: flush)
+        perform(step.events)
+    }
+
+    /// The drawing of `_RedrawCustomTimeBar` (no state): plate → scratch2c over the bar, the stones, window ← bar.
+    private func drawTimeBar(raw: Int, length: Int, flush: Bool) {
         let gw = controller.gworlds!
         QD.drawToGWorld(gw.plate, gw.scratch2c, mask: gw.plate, srcRect: AkiGameArt.timeBarRestore.src,
                         dstRect: AkiGameArt.timeBarRestore.dst, maskRect: AkiGameArt.timeBarRestore.src, mode: -9)
-        if let stones = AkiGameArt.timeBarStones(raw: step.raw, length: step.length) {
+        if let stones = AkiGameArt.timeBarStones(raw: raw, length: length) {
             if let src = stones.fullSource, let dst = stones.fullDestination, let mask = stones.fullMask {
                 QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc, srcRect: src, dstRect: dst, maskRect: mask, mode: 1)
             }
@@ -223,7 +265,6 @@ extension GameScreen {
         }
         let window = AkiGameArt.timeBarWindow
         controller.drawToWindow(gw.scratch2c, srcRect: window, dstRect: window, flush: flush)
-        perform(step.events)
     }
 
     /// `_RedrawCustomTimeAccumulated(flush)` @ 0xe6e4 (DC:5746): `_CountOpenPairs()` (stores g+0x60) == 0 →
@@ -232,8 +273,12 @@ extension GameScreen {
     /// colon, H-ones, H-tens (DC:5777–5848; a 0 digit uses row 10); window ← the field, `flush` (DC:5852).
     func redrawTimeAccumulated(flush: Bool) {                                             // P2.9
         guard let pairs = updateGame({ $0.countOpenPairs() }), pairs != 0, let game else { return }
+        drawTimeAccumulated(elapsed: game.clock.elapsed, flush: flush)
+    }
+
+    /// The drawing of `_RedrawCustomTimeAccumulated` (no state): the HH:MM:SS field from b4, window ← the field.
+    private func drawTimeAccumulated(elapsed: Int, flush: Bool) {
         let gw = controller.gworlds!
-        let elapsed = game.clock.elapsed
         let hh = elapsed / 3600, mm = elapsed % 3600 / 60, ss = elapsed % 3600 - mm * 60
         QD.drawToGWorld(gw.plate, gw.scratch2c, mask: gw.plate, srcRect: AkiGameArt.elapsedRestore.src,
                         dstRect: AkiGameArt.elapsedRestore.dst, maskRect: AkiGameArt.elapsedRestore.src, mode: -9)
@@ -262,6 +307,11 @@ extension GameScreen {
     /// 0 → 10 row map (DC:6401); window ← the field, `flush` (DC:6412).
     func redrawOpenPairs(flush: Bool) {                                                   // P2.9
         guard let n = updateGame({ $0.countOpenPairs() }) else { return }
+        drawOpenPairs(n, flush: flush)
+    }
+
+    /// The drawing of `_RedrawCustomOpenPairs` (no state): the count `n` into its field, window ← the field.
+    private func drawOpenPairs(_ n: Int, flush: Bool) {
         let gw = controller.gworlds!
         QD.drawToGWorld(gw.plate, gw.scratch2c, mask: gw.plate, srcRect: AkiGameArt.pairsRestore.src,
                         dstRect: AkiGameArt.pairsRestore.dst, maskRect: AkiGameArt.pairsRestore.src, mode: -9)
@@ -290,10 +340,15 @@ extension GameScreen {
         guard let events = updateGame({ $0.enterNoMorePairs(now: ShellClock.ticks()) }) else { return }
         let split = events.firstIndex(of: .setNoPairsFlash(true)) ?? events.endIndex
         perform(Array(events[..<split]))
+        drawNoMorePairsOverlay()
+        perform(Array(events[split...]))
+    }
+
+    /// The drawing of `_RedrawNoMorePairs` (no state): nopairs.png deep-masked by its right half into scratch2c.
+    private func drawNoMorePairsOverlay() {
         let gw = controller.gworlds!
         QD.drawToGWorld(gw.nopairs, gw.scratch2c, mask: gw.nopairs, srcRect: AkiGameArt.overlaySource,
                         dstRect: AkiGameArt.overlayDestination, maskRect: AkiGameArt.overlaySourceMask, mode: 1)
-        perform(Array(events[split...]))
     }
 
     /// `_RedrawEntireWindow` @ 0x10975 (DC:6453): scratch2c → window (full), flushed.

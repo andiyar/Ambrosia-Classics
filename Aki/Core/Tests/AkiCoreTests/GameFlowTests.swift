@@ -321,6 +321,48 @@ final class GameFlowTests: XCTestCase {
         XCTAssertEqual(step?.raw, p.clock.timeBarRaw(at: 600))
     }
 
+    /// U3 (D11, pixels only): `timeBarView` draws what `timeBarStep` draws and writes nothing — not the Practice
+    /// a8 reset, not the 300 s cap penalty, not g+0x60, not the tick latch.
+    func testTimeBarViewMatchesStepWithoutWrites() {
+        for (difficulty, remaining, paused) in [(Int16(1), 20, false), (1, 400, false), (3, 50, false),
+                                                (3, 400, true), (2, 10, true)] {
+            var g = row([200, 200, 201, 201], difficultyRaw: difficulty)
+            g.clock.baseTick = 100
+            g.clock.penalty = 7
+            g.clock.bonus = 3
+            g.clock.remaining = remaining
+            g.clock.freezeTick = paused ? 900 : 0
+            g.openPairs = 5                                    // stale g+0x60: the view must not store the recount
+            let before = g
+            let view = g.timeBarView(now: 1500, paused: paused)
+            XCTAssertEqual(g, before)
+            var stepped = g
+            let step = stepped.timeBarStep(now: 1500, paused: paused)
+            XCTAssertEqual(view?.raw, step?.raw)
+            XCTAssertEqual(view?.length, step?.length)
+        }
+        XCTAssertNil(row([200, 201, 202, 203]).timeBarView(now: 0, paused: false))
+    }
+
+    /// U3: the switch's decode time is discounted from a running clock only; the idle-hint clock moves with it.
+    func testDiscountTicks() {
+        var running = row([200, 200, 201, 201])
+        running.clock.baseTick = 1000
+        running.lastClickTick = 1200
+        running.discountTicks(90)
+        XCTAssertEqual(running.clock.baseTick, 1090)
+        XCTAssertEqual(running.lastClickTick, 1290)
+        running.clock.update(now: 1090 + 600)
+        XCTAssertEqual(running.clock.elapsed, 10)
+
+        var frozen = row([200, 200, 201, 201])
+        frozen.clock.baseTick = 1000
+        frozen.clock.freezeTick = 1500
+        frozen.discountTicks(90)
+        XCTAssertEqual(frozen.clock.baseTick, 1000)
+        XCTAssertEqual(frozen.clock.freezeTick, 1500)
+    }
+
     // MARK: game tick (_CustomGameScreen)
 
     func testTickCadenceAndIdleHint() {

@@ -81,8 +81,7 @@ import AkiCore
         fullscreenCheckbox.state = p.fullscreen != 0 ? .on : .off
         remasterCheckbox.state = controller.remasterActive ? .on : .off   // D11: the effective setting
         remasterCheckbox.isEnabled = controller.remasterAvailable
-        if paperScale != controller.artScale {                 // a Remaster switch since the window was built
-            paperScale = controller.artScale
+        controller.refreshArt(loadedAt: &paperScale) {         // a Remaster switch since the window was built
             content.paper = controller.assets.image("paper")
         }
     }

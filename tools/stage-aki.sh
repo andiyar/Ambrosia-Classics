@@ -20,7 +20,8 @@ HD_DEDITHER="$ROOT/Resources/Aki/hd-4x-dedither"
 BACKGROUNDS="${AKI_REMASTER_BACKGROUNDS:-plain}"
 case "$BACKGROUNDS" in
     plain|dedither) ;;
-    *) echo "stage-aki: AKI_REMASTER_BACKGROUNDS must be plain or dedither (got $BACKGROUNDS)" >&2; exit 64 ;;
+    *) echo "stage-aki: warning: AKI_REMASTER_BACKGROUNDS must be plain or dedither (got $BACKGROUNDS); using plain" >&2
+       BACKGROUNDS=plain ;;
 esac
 cd "$ROOT"
 
@@ -42,12 +43,13 @@ ditto "$APP" "$OUT/Aki.app"
 mkdir -p "$OUT/Aki.app/Contents/Resources"
 rsync -a --exclude '.DS_Store' "$DATA/" "$OUT/Aki.app/Contents/Resources/"
 if [ -d "$HD" ]; then
-    rsync -a --exclude '.DS_Store' "$HD/" "$OUT/Aki.app/Contents/Resources/hd-4x/"
+    rsync -a --delete --exclude '.DS_Store' "$HD/" "$OUT/Aki.app/Contents/Resources/hd-4x/"
     if [ "$BACKGROUNDS" = dedither ]; then
         if compgen -G "$HD_DEDITHER/background*.png" > /dev/null; then
             cp "$HD_DEDITHER"/background*.png "$OUT/Aki.app/Contents/Resources/hd-4x/"
         else
             echo "stage-aki: warning: AKI_REMASTER_BACKGROUNDS=dedither but no $HD_DEDITHER/background*.png; plain backgrounds staged" >&2
+            BACKGROUNDS=plain
         fi
     fi
 else

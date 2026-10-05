@@ -1,6 +1,7 @@
 import AkiCore
 import Foundation
 import HectorShell
+import ImageIO
 
 /// The only file-system entry point (S4): every original file is loaded from `bundle` by its shipped
 /// name — PNGs as `ShellBitmap`s, audio by exact file name, splash/preview/paper images with
@@ -40,13 +41,53 @@ import HectorShell
     }
 
     /// Remaster is available (D11, U3 contract 2) only when `hd-4x/` holds every PNG the GWorlds load and
-    /// every level background.
+    /// every level background, each EXACTLY `RemasterSetting.scale` × its original's pixel size (read from the
+    /// PNG headers through ImageIO properties — no decode; U3 review).
     func hasRemasterArt() -> Bool {
         guard let resources = bundle.resourceURL else { return false }
         let folder = resources.appendingPathComponent(RemasterSetting.directory)
-        return RemasterSetting.requiredFiles(gworldPNGs: AkiGWorlds.pngNames).allSatisfy {
-            FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+        let k = RemasterSetting.scale
+        for file in RemasterSetting.requiredFiles(gworldPNGs: AkiGWorlds.pngNames) {
+            guard let original = Self.pixelSize(resources.appendingPathComponent(file)),
+                  let hd = Self.pixelSize(folder.appendingPathComponent(file)),
+                  hd.width == original.width * k, hd.height == original.height * k else {
+                print("Aki: Remaster unavailable — \(RemasterSetting.directory)/\(file) is missing or not \(k)× its original")
+                return false
+            }
         }
+        return true
+    }
+
+    /// A PNG's pixel size from its header (ImageIO properties, no full decode); nil when absent or unreadable.
+    static func pixelSize(_ url: URL) -> (width: Int, height: Int)? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = (properties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
+              let height = (properties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue else { return nil }
+        return (width, height)
+    }
+
+    /// An art PNG loaded after launch (the level background): `png(name, scale:)`, but when the `hd-4x/` file
+    /// fails to load, the ORIGINAL at k = 1 for this bitmap (HectorShell copies between bitmaps of different k
+    /// are defined — nearest), logged once per file. Never fails because of hd art; throws only when the
+    /// original itself is unreadable.
+    func artPNG(_ name: String, scale: Int) throws -> ShellBitmap {
+        guard scale > 1 else { return try png(name) }
+        do {
+            return try png(name, scale: scale)
+        } catch {
+            noteRemasterFallback("\(name).png", error)
+            return try png(name)
+        }
+    }
+
+    /// The `hd-4x/` files that have already fallen back to their originals (each is logged once).
+    private var loggedFallbacks: Set<String> = []
+
+    /// Logs, once per file, that an `hd-4x/` file failed to load and its original is used instead.
+    func noteRemasterFallback(_ file: String, _ error: Error? = nil) {
+        guard loggedFallbacks.insert(file).inserted else { return }
+        print("Aki: cannot load \(RemasterSetting.directory)/\(file), using the original\(error.map { ": \($0)" } ?? "")")
     }
 
     /// The exact shipped file name, e.g. `url("Aki Theme 3.mp3")`; nil when the bundle lacks it.

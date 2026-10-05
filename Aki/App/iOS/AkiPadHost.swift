@@ -392,7 +392,7 @@ import os
         guard let proverbs = controller.assets.image("proverbs"), let cg = proverbs.cgImage else {
             return completion()
         }
-        let s = controller.artScale                             // Remaster (D11): the 4× sheet, cropped in its pixels
+        let s = max(1, cg.width / 392)                          // the loaded sheet's art scale (Remaster 4×, or 1)
         let y = cg.height - 157 * s - k * 157 * s
         guard y >= 0, let strip = cg.cropping(to: CGRect(x: 0, y: y, width: 392 * s, height: 157 * s)) else {
             return completion()

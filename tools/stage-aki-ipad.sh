@@ -27,6 +27,17 @@ if [ ! -f "$DATA/map.png" ]; then
 fi
 DATA="$(cd "$DATA" && pwd -P)"
 export AKI_DATA_12="$DATA"   # read by the AkiPad "Copy original Aki data" build phase
+BACKGROUNDS="${AKI_REMASTER_BACKGROUNDS:-plain}"
+case "$BACKGROUNDS" in
+    plain|dedither) ;;
+    *) echo "stage-aki-ipad: warning: AKI_REMASTER_BACKGROUNDS must be plain or dedither (got $BACKGROUNDS); using plain" >&2
+       BACKGROUNDS=plain ;;
+esac
+if [ "$BACKGROUNDS" = dedither ] && ! compgen -G "$ROOT/Resources/Aki/hd-4x-dedither/background*.png" > /dev/null; then
+    echo "stage-aki-ipad: warning: AKI_REMASTER_BACKGROUNDS=dedither but no Resources/Aki/hd-4x-dedither/background*.png; plain backgrounds staged" >&2
+    BACKGROUNDS=plain
+fi
+export AKI_REMASTER_BACKGROUNDS="$BACKGROUNDS"   # read by the same build phase (which validates it again)
 DEVICE="${AKI_IPAD_DEVICE:-08C59560-D6CD-5E0B-98A4-89454AB9A7F8}"
 cd "$ROOT"
 
@@ -56,7 +67,7 @@ fi
 echo "staged: $OUT/Aki.app ($PNGS PNG, expect 50; Aki.nib/objects.xib present)"
 if [ -d "$OUT/Aki.app/hd-4x" ]; then
     echo "remaster: hd-4x $(find "$OUT/Aki.app/hd-4x" -name '*.png' | wc -l | tr -d ' ') PNG, $(du -sh "$OUT/Aki.app/hd-4x" | cut -f1)," \
-         "backgrounds ${AKI_REMASTER_BACKGROUNDS:-plain}"
+         "backgrounds $BACKGROUNDS"
 else
     echo "stage-aki-ipad: warning: no hd-4x/ in the bundle (Resources/Aki/hd-4x absent); Remastered Art will show disabled" >&2
 fi

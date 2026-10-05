@@ -27,7 +27,7 @@ import HectorShell
         proverbs = try assets.png("proverbs", scale: scale)                   // g+0x08
         tilePictures = try assets.png("tile_pictures", scale: scale)          // g+0x0c
         pause = try assets.png("pause", scale: scale)                         // g+0x10
-        background = try assets.png("background\(number)", scale: scale)      // g+0x14
+        background = try assets.artPNG("background\(number)", scale: scale)   // g+0x14 (bad hd → original, U3)
         previews = try assets.png("previews", scale: scale)                   // g+0x18
         plate = try assets.png("plate", scale: scale)                         // g+0x1c
         map = try assets.png("map", scale: scale)                             // g+0x20

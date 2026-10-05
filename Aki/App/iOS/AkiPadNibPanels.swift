@@ -124,8 +124,7 @@ import UIKit
         titleField.text = title
         descriptionField.text = description
         imageView.image = image
-        if paperScale != controller.artScale {                         // a Remaster switch since it was built (D11)
-            paperScale = controller.artScale
+        controller.refreshArt(loadedAt: &paperScale) {                 // a Remaster switch since it was built (D11)
             content.image = controller.assets.image("paper")
         }
         if let image, image.size.width > imageView.bounds.width || image.size.height > imageView.bounds.height {
@@ -204,8 +203,7 @@ import UIKit
         remaster.isOn = controller.remasterActive                      // D11: the effective setting
         remaster.isEnabled = controller.remasterAvailable
         remaster.alpha = controller.remasterAvailable ? 1 : 0.4        // AquaCheckbox has no disabled look of its own
-        if paperScale != controller.artScale {                         // a Remaster switch since it was built
-            paperScale = controller.artScale
+        controller.refreshArt(loadedAt: &paperScale) {                 // a Remaster switch since it was built
             content.image = controller.assets.image("paper")
         }
     }

@@ -43,8 +43,7 @@ import AkiCore
         instance.titleTextField.stringValue = title
         instance.descriptionTextField.stringValue = description
         instance.imageView.image = image
-        if instance.paperScale != controller.artScale {        // a Remaster switch since the window was built (D11)
-            instance.paperScale = controller.artScale
+        controller.refreshArt(loadedAt: &instance.paperScale) {   // a Remaster switch since the window was built (D11)
             instance.content.paper = assets.image("paper")
         }
         if app.shell.isFullscreen {

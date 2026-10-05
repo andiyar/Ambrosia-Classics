@@ -417,6 +417,28 @@ public struct AkiGame: Equatable, Sendable {
         return events
     }
 
+    // MARK: U3 — Remaster switch (D11: pixels only)
+
+    /// The bar `timeBarStep(now:paused:)` would draw — the same open-pairs guard (recounted, not stored), the same
+    /// Practice reset and 300 s cap applied to a COPY of the clock, the same t — with nothing written: no g+0x60,
+    /// no a8 / ac, no tick latch, no events. For the Remaster switch's recompose, which must not change state.
+    public func timeBarView(now: UInt32, paused: Bool) -> (raw: Int, length: Int)? {                 // U3
+        guard board.countOpenPairs() != 0 else { return nil }
+        var c = clock
+        c.applyTimeBarAdjustments(now: now, difficultyRaw: difficultyRaw)
+        let t = paused ? c.freezeTick : now
+        return (c.timeBarRaw(at: t), c.timeBarLength(now: t))
+    }
+
+    /// Discounts `ticks` of wall time the app spent outside the game (the Remaster switch's synchronous art
+    /// decode): a running clock (c0 == 0) moves a8 forward by them, so b4 / b8 / the bar read as if no time
+    /// passed; a frozen clock (paused, "no more pairs") is left alone — its thaw already discounts the frozen
+    /// span. The idle-hint clock g+0x4c moves with it. Pure compensation: nothing else changes.
+    public mutating func discountTicks(_ ticks: UInt32) {                                            // U3
+        if clock.freezeTick == 0 { clock.baseTick &+= ticks }
+        lastClickTick &+= ticks
+    }
+
     /// The game-block cadence of `_CustomGameScreen`: `last + 1 < now`, unsigned 32-bit (as `AkiMap.tickDue`).
     public static func gameTickDue(now: UInt32, last: UInt32) -> Bool {                              // P2.6
         last &+ 1 < now

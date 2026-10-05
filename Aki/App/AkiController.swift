@@ -59,6 +59,9 @@ import HectorShell
                 artScale = scale
                 assets.artScale = scale
             } catch {
+                // The fallback state (U3 review): the key stays on but Remaster is unusable this run — the menu
+                // item and the checkbox are disabled and Preferences' OK does not rewrite the key.
+                remasterAvailable = false
                 print("Aki: cannot load the Remaster art, using the original: \(error)")
             }
         }
@@ -177,18 +180,24 @@ import HectorShell
     /// Whether the Remaster art is what the app is running (the menu item's check, the checkbox's state).
     var remasterActive: Bool { artScale > 1 }
 
-    /// The "Remastered Art" menu item and the Preferences checkbox (D11, U3): writes the `RemasteredArt` key
-    /// and, when the effective art scale changes, builds a new GWorld set at it (with the current level's
-    /// background), replaces `gworlds` and redraws the current screen from it — no game-state side effects
-    /// beyond those of the original's own `_redrawWindow`, no timing change. Unavailable art → nothing (both
-    /// controls are disabled). Reached only from a menu action or Preferences' OK, which run between idle ticks
-    /// and never inside the slide / fade busy loops (they do not return to the run loop) or under a modal (the
-    /// hosts disable the item; Preferences' OK has closed its own sheet / overlay first).
+    /// The "Remastered Art" menu item and the Preferences checkbox (D11, U3): when the effective art scale
+    /// changes, builds a new GWorld set at it (with the current level's background), replaces `gworlds` and
+    /// redraws the current screen from it — pixels only, no game-state writes (the screens' `redrawForArtChange`
+    /// compose without the redraws' state steps). The `RemasteredArt` key is written only once the new set has
+    /// loaded (or when no load is needed); a failed load keeps the current set AND the key. Unavailable art (no
+    /// complete `hd-4x/`, or the launch load failed) → nothing (both controls are disabled). The decode runs on
+    /// wall time; its ticks are discounted from a running game clock (`GameScreen.discountArtSwitch`). Reached only
+    /// from a menu action or Preferences' OK, which run between idle ticks and never inside the slide / fade busy
+    /// loops (they do not return to the run loop) or under a modal (the hosts disable the item; Preferences' OK
+    /// has closed its own sheet / overlay first).
     func setRemastered(_ on: Bool) {
         guard remasterAvailable else { return }
-        remaster.isOn = on
         let scale = RemasterSetting.artScale(isOn: on, available: true)
-        guard scale != artScale else { return }
+        guard scale != artScale else {
+            remaster.isOn = on
+            return
+        }
+        let start = ShellClock.ticks()
         let fresh: AkiGWorlds
         do {
             fresh = try AkiGWorlds(assets: assets, scale: scale, background: g.background)
@@ -196,14 +205,29 @@ import HectorShell
             print("Aki: cannot load the \(scale == 1 ? "original" : "Remaster") art, keeping the current set: \(error)")
             return
         }
+        remaster.isOn = on
         gworlds = fresh
         artScale = scale
         assets.artScale = scale
+        let spent = ShellClock.ticks() &- start
+        #if DEBUG
+        print("Aki: Remaster switch to k = \(scale) decoded in \(spent) ticks")
+        #endif
         switch g.mode {
         case .map: mapScreen.redrawForArtChange()
-        case .game: gameScreenImpl.redrawForArtChange()
+        case .game:
+            gameScreenImpl.discountArtSwitch(ticks: spent)
+            gameScreenImpl.redrawForArtChange()
         case .editor: break                                    // Phase 3 (not built)
         }
+    }
+
+    /// Reloads a view's art after a Remaster switch: runs `reload` when the art scale differs from `loadedScale`
+    /// (the scale the view's art was loaded at), then records the current one.
+    func refreshArt(loadedAt loadedScale: inout Int, reload: () -> Void) {
+        guard loadedScale != artScale else { return }
+        loadedScale = artScale
+        reload()
     }
 
     // MARK: Focus (the platform-neutral bodies of the Mac window/app delegate methods; T4 lift)
