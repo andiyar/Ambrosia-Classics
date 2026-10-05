@@ -2,7 +2,8 @@ import Foundation
 
 /// The Remaster mode switch (DECISIONS D11, plan `2026-10-04-aki-remaster-art.md` C5/C6): a Bool under its OWN
 /// defaults key `RemasteredArt` — never inside the 143-byte `GameSettings` blob — default false (a fresh
-/// install plays the Original art). Remaster loads the AI-upscaled art set `hd-4x/` (same file names, every
+/// install plays the Original art). Remaster loads the 4x art set `hd-4x/` (`tools/upscale-aki-art.py`: AI-upscaled
+/// pictures, plain-Lanczos tile body, de-dithered backgrounds — Ben's U4 rulings; same file names, every
 /// file 4× the original's pixel size) at art scale 4; it is effective only while that set is in the bundle.
 public struct RemasterSetting {
     /// The defaults key (not `GameSettings.defaultsKey`).

@@ -38,8 +38,10 @@ Pick the difficulty with the arrows under Skill Level on the map, then click a l
 ## Remastered Art (new, D11)
 - A second look for the same game: every picture redrawn 4× sharper (AI-upscaled). Nothing else changes —
   same layout, timing and rules.
-- Turn it on or off with **Aki ▸ Remastered Art** (a check mark shows it is on), or the **Remastered art**
-  checkbox at the bottom of Preferences (applies on OK).
+- Your picks from the last look: the backgrounds are the smooth (de-dithered) set, and the tile body is a plain
+  smooth enlargement (no grain) with the AI-upscaled pictures on top.
+- Turn it on or off with **⌘G** — works in fullscreen too, where the menu bar is hidden — or **Aki ▸ Remastered
+  Art** (a check mark shows it is on), or the **Remastered art** checkbox at the bottom of Preferences (applies on OK).
 - A fresh install starts in Original. It switches live — on the map or mid-level (also paused or in "no more
   pairs"); the game carries on where it was.
 - If the menu item and the checkbox are greyed out, this build was staged without the Remaster art.

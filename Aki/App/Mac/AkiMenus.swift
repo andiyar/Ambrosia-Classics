@@ -55,13 +55,17 @@ import AkiCore
     }
 
     /// The one item the nib lacks (D11): "Remastered Art", after the `showPreferences:` item, targeting the app
-    /// delegate (`toggleRemasteredArt:`); its check and enabling are `validateMenuItem`'s.
+    /// delegate (`toggleRemasteredArt:`); its check and enabling are `validateMenuItem`'s. Key equivalent ⌘G (Ben's
+    /// U4 ruling; neither MainMenu.nib uses G): fullscreen covers the menu bar, and a ⌘-key down reaches
+    /// `NSApp.mainMenu.performKeyEquivalent` there exactly as the nib's ⌘F and ⌘P do (ShellView has no
+    /// `performKeyEquivalent` of its own), so the toggle works in both modes.
     private static func insertRemasteredArt(into menu: NSMenu, app: AkiAppDelegate) {
         for submenu in menu.items.compactMap(\.submenu) {
             guard let index = submenu.items.firstIndex(where: { $0.action == #selector(AkiAppDelegate.showPreferences(_:)) })
             else { continue }
             let item = NSMenuItem(title: "Remastered Art", action: #selector(AkiAppDelegate.toggleRemasteredArt(_:)),
-                                  keyEquivalent: "")
+                                  keyEquivalent: "g")
+            item.keyEquivalentModifierMask = .command
             item.target = app
             submenu.insertItem(item, at: index + 1)
             return

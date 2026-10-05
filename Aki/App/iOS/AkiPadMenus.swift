@@ -11,7 +11,7 @@ import UIKit
 /// screen), and the Window menu's Minimize, Zoom, Bring All to Front (the system's Window menu stays). The
 /// system menus the nib lacks are removed (Format, View); the nib's File, Edit, Level Editor and Help menus
 /// replace the system ones. Clear Current Layer's ⌘X is dropped (it collides with Cut; AppKit drops it too).
-/// Added, as on the Mac (D11): the checkable "Remastered Art" directly after Preferences.
+/// Added, as on the Mac (D11): the checkable "Remastered Art" (⌘G) directly after Preferences.
 @MainActor enum AkiPadMenus {
     private static let droppedActions: Set<String> = [
         "showRegistration:", "checkForUpdates:",                       // Known delta 1 (as the Mac)
@@ -67,9 +67,10 @@ import UIKit
                 sections.append([])
             } else if let element = element(item) {
                 sections[sections.count - 1].append(element)
-                if item.action == "showPreferences:" {             // D11: "Remastered Art" right after Preferences
-                    sections[sections.count - 1].append(
-                        UICommand(title: "Remastered Art", action: #selector(AkiPadAppDelegate.akiToggleRemasteredArt(_:))))
+                if item.action == "showPreferences:" {             // D11: "Remastered Art" right after Preferences,
+                    sections[sections.count - 1].append(            // ⌘G as on the Mac (U4; no nib item uses G)
+                        UIKeyCommand(title: "Remastered Art", action: #selector(AkiPadAppDelegate.akiToggleRemasteredArt(_:)),
+                                     input: "g", modifierFlags: .command))
                 }
             }
         }

@@ -3,9 +3,9 @@
 # Contents/Resources into the built app unchanged (original names, no re-encoding — the app loads
 # everything from its own bundle), strip quarantine/xattrs, ad-hoc re-sign, and place
 # out/Aki/Aki.app + out/Aki/WHAT-TO-EXPECT.md. out/, .build/ and *.xcodeproj are git-ignored.
-# Remaster (DECISIONS D11): Resources/Aki/hd-4x/ (the U1 art set, git-ignored) goes to Contents/Resources/hd-4x/;
-# AKI_REMASTER_BACKGROUNDS=plain|dedither (default plain) — dedither overlays Resources/Aki/hd-4x-dedither/
-# background*.png onto it. No hd-4x/ → a warning; the app then shows Remastered Art disabled.
+# Remaster (DECISIONS D11): Resources/Aki/hd-4x/ (the U1 art set, git-ignored; de-dithered backgrounds and a
+# plain-Lanczos tile body per Ben's U4 rulings) is mirrored to Contents/Resources/hd-4x/. No hd-4x/ → a warning;
+# the app then shows Remastered Art disabled.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,13 +16,6 @@ if [ ! -f "$DATA/map.png" ]; then
 fi
 DATA="$(cd "$DATA" && pwd -P)"
 HD="$ROOT/Resources/Aki/hd-4x"
-HD_DEDITHER="$ROOT/Resources/Aki/hd-4x-dedither"
-BACKGROUNDS="${AKI_REMASTER_BACKGROUNDS:-plain}"
-case "$BACKGROUNDS" in
-    plain|dedither) ;;
-    *) echo "stage-aki: warning: AKI_REMASTER_BACKGROUNDS must be plain or dedither (got $BACKGROUNDS); using plain" >&2
-       BACKGROUNDS=plain ;;
-esac
 cd "$ROOT"
 
 mkdir -p .build
@@ -44,14 +37,6 @@ mkdir -p "$OUT/Aki.app/Contents/Resources"
 rsync -a --exclude '.DS_Store' "$DATA/" "$OUT/Aki.app/Contents/Resources/"
 if [ -d "$HD" ]; then
     rsync -a --delete --exclude '.DS_Store' "$HD/" "$OUT/Aki.app/Contents/Resources/hd-4x/"
-    if [ "$BACKGROUNDS" = dedither ]; then
-        if compgen -G "$HD_DEDITHER/background*.png" > /dev/null; then
-            cp "$HD_DEDITHER"/background*.png "$OUT/Aki.app/Contents/Resources/hd-4x/"
-        else
-            echo "stage-aki: warning: AKI_REMASTER_BACKGROUNDS=dedither but no $HD_DEDITHER/background*.png; plain backgrounds staged" >&2
-            BACKGROUNDS=plain
-        fi
-    fi
 else
     echo "stage-aki: warning: no $HD (run the U1 upscale tool); Remastered Art will show disabled" >&2
 fi
@@ -73,6 +58,6 @@ cp "$ROOT/Aki/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
 echo "staged: $OUT/Aki.app ($(find "$OUT/Aki.app/Contents/Resources" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ') PNG)"
 if [ -d "$OUT/Aki.app/Contents/Resources/hd-4x" ]; then
     echo "remaster: Contents/Resources/hd-4x $(find "$OUT/Aki.app/Contents/Resources/hd-4x" -name '*.png' | wc -l | tr -d ' ') PNG," \
-         "$(du -sh "$OUT/Aki.app/Contents/Resources/hd-4x" | cut -f1), backgrounds $BACKGROUNDS"
+         "$(du -sh "$OUT/Aki.app/Contents/Resources/hd-4x" | cut -f1)"
 fi
 echo "notes:  $OUT/WHAT-TO-EXPECT.md"
