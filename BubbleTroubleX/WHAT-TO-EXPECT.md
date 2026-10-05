@@ -44,8 +44,9 @@ progress bar, then the title screen (main menu), as the original did.
   original's own quirk: its resume path re-enables About).
 
 ## What this build is — and is not — yet
-- **No sound or music yet.** The sound mixer is waiting on a HectorKit fix (this Mac's CoreAudio was hung
-  when it was built); every sound cue is already routed, so sound arrives without changing the game.
+- **Sound and music are in** (new in this build): 4 effect channels + 1 music channel like the original, the
+  original's own sounds at their own rates, music looping per level set. Effects and Music menu ticks and the
+  Preferences volume levels apply. If no audio device is available the game still runs, silently.
 - **The screen is drawn from the original's own art**: maze, bubbles, hero, enemies, bonuses, the score bar
   (lives, score, EXTRA, time bonus, multiplier) and the notices (LEVEL n, GET READY!, HURRY UP!, PAUSED, FIN!).
 - The mouse pointer hides and is captured while you play (as the original did); pausing shows it.
@@ -55,6 +56,7 @@ progress bar, then the title screen (main menu), as the original did.
 - Info-box and FPS text is drawn antialiased, as OS X's QuickDraw smoothed text of 9 pt and up in 2008 —
   tell us if it looks too soft or too crisp next to your memory.
 
-## What to tell us (once drawing and sound are in)
+## What to tell us
 - Do the arrow keys + Space feel right (push, turning around mid-cell)? Is the speed the original's (≈ 30 fps)?
-- Are the sounds the right ones at the right moments, and the music right per level set?
+- Are the sounds the right ones at the right moments, and the music right per level set? Does the music loop
+  without a gap or click? Are the volumes right next to your memory?
