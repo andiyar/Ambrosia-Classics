@@ -1,8 +1,8 @@
 // Bonus bubbles (plan §Task 7b.1; Research notes 41, 47; Invariants 8, 9, 18), transcribed from
 // `_Bonus_Process @ 0001a92b`, `_Multiplier_Process @ 00019dae`, `_Bonus_DoesHeroTouch @ 00019a13`,
 // `_Bonus_WasHit @ 0001a79a`, `_Bonus_Pop @ 0001a6fd`, `_Bonus_Reward @ 0001a2c5` (jump table 0x337f4). `_Bonus_Init`
-// lives in `LevelBuild.swift`. Sounds (`_PlayMySnd`, the launch harp), `_EXTRA_Draw` / `_Multiplier_Draw` and the
-// background restore (`_AddRectToBgnd`) consume no RNG and are not modelled. Nothing here frees a slot — `dead` is
+// lives in `LevelBuild.swift`. Sounds are cued at their call sites (`Sounds.swift`); `_EXTRA_Draw` /
+// `_Multiplier_Draw` / `_EXTRA_Draw` and the background restore (`_AddRectToBgnd`) are recorded at their sites (C3); no RNG. Nothing here frees a slot — `dead` is
 // set and the draw pass frees it (Invariant 8); a dead slot that is still armed keeps being processed, as in the
 // original. The Toolbox `InsetRect` by 8 on a 40×40 rect never empties it, so `QDRect.inset` is exact here.
 
@@ -35,8 +35,13 @@ extension GameState {
                 let bit = 1 << (Int(extraAnimCounter) & 0x1f)
                 if bit & 0x155 != 0 {
                     for k in extraLetters.indices { extraLetters[k] = true }
-                } else if bit & 0xaa != 0 || bit & 0x200 != 0 {
+                    extraDraw(true)                         // 0001aa34
+                } else if bit & 0xaa != 0 {
                     for k in extraLetters.indices { extraLetters[k] = false }
+                    extraDraw(false)
+                } else if bit & 0x200 != 0 {
+                    for k in extraLetters.indices { extraLetters[k] = false }
+                    extraDraw(true)
                 }
             }
         }
@@ -44,7 +49,9 @@ extension GameState {
         for i in bonus.indices {
             let now = frame
             guard bonus[i].armed else { continue }
-            // now == launchFrame: `_PlayMySnd(0x13, 10, 5)` (the harp) — not modelled.
+            if now == bonus[i].launchFrame {
+                playMySnd(0x13, priority: 10, delay: 5)     // 0001aa77 "Harp"
+            }
             if now <= bonus[i].launchFrame { continue }
             if !bonus[i].popped {
                 bonusRise(i)
@@ -81,6 +88,7 @@ extension GameState {
                 bonusRise(i)
                 bonusExitAndClamp(i)
             }
+            addRectToBgnd(bonus[i].prevRect)                // 0001ac9a, every launched armed slot
         }
     }
 
@@ -90,11 +98,12 @@ extension GameState {
         bonus[i].rect.bottom &-= bonus[i].riseSpeed
     }
 
-    /// The shared exit test and x clamp: top < 0 → dead (sound); left < 5 → left 5, right 0x2d; else right > 0x27b →
+    /// The shared exit test and x clamp: top < 0 → dead + "Pop" (0001aad9 / 0001ac1c); left < 5 → left 5, right 0x2d; else right > 0x27b →
     /// right 0x27b, left 0x253.
     private mutating func bonusExitAndClamp(_ i: Int) {
         if bonus[i].rect.top < 0 {
             bonus[i].dead = true
+            playMySnd(6, priority: 10)
         }
         if bonus[i].rect.left < 5 {
             bonus[i].rect.left = 5
@@ -106,8 +115,8 @@ extension GameState {
     }
 
     /// `_Multiplier_Process @ 00019dae` — the multiplier's flash animation: while animating and `timer + 5 < frame`:
-    /// counter + 1, > 9 → 9 and the animation stops; timer = frame; (counter < 9: draw on bits 0x155 / off on 0xaa,
-    /// with a sound — presentation only). The multiplier itself never changes here.
+    /// counter + 1, > 9 → 9 and the animation stops; timer = frame; counter < 9: draw on bits 0x155 (with sound 32,
+    /// 00019e5d) / off on 0xaa. The multiplier itself never changes here.
     mutating func multiplierProcess() {
         guard multiplierAnimating else { return }
         let now = frame
@@ -118,6 +127,14 @@ extension GameState {
             multiplierAnimating = false
         }
         multiplierTimer = now
+        guard multiplierAnimCounter < 9 else { return }
+        let bit = 1 << (Int(multiplierAnimCounter) & 0x1f)
+        if bit & 0x155 != 0 {
+            multiplierDraw(true)                            // 00019e41
+            playMySnd(0x20, priority: 0x1e)                 // 00019e5d "Bonus Multiplier Flash"
+        } else if bit & 0xaa != 0 {
+            multiplierDraw(false)                           // 00019e33
+        }
     }
 
     /// `_Bonus_DoesHeroTouch(slot) @ 00019a13`: armed, hero state 2 and not popped; the bonus rect inset by 8 on both
@@ -148,8 +165,11 @@ extension GameState {
     /// `_Bonus_Pop(slot) @ 0001a6fd` (regparm: the slot in EAX): two sounds; popped; poppedFrame = frame;
     /// `_NewStarGroup(left, top, 2)`; `_Bonus_Reward(slot)`.
     mutating func bonusPop(_ slot: Int) {
+        playMySnd(6, priority: 10)                          // 0001a71e "Pop"
+        playMySnd(0x1a, priority: 0x14)                     // 0001a73a "Get Bonus"
         bonus[slot].popped = true
         bonus[slot].poppedFrame = frame
+        addRectToBgnd(bonus[slot].rect)                     // 0001a764
         stars.newGroup(x: bonus[slot].rect.left, y: bonus[slot].rect.top, group: 2, hero: heroAnchor, frame: frame,
                        prefs: config.prefs, rng: &rng)
         bonusReward(slot)
@@ -164,16 +184,25 @@ extension GameState {
         let type = bonus[slot].type
         switch type {
         case 1:
+            playMySnd(0xf, priority: 10)
             balloonsCaptureAllEnemies()
         case 2:
+            playMySnd(0x1f, priority: 0x14)
+            playMySnd(4, priority: 0x14)
+            playMySnd(0xf, priority: 10)
             regenerateBlocks()
         case 4:
+            playMySnd(0x1f, priority: 0x14)
+            playMySnd(4, priority: 0x14)
             setHeroInvisibility(true)
         case 5, 6, 7, 8:
+            playMySnd(0x2c, priority: 0x14)
             multiplierChange(type - 3)
         case 9, 10, 11, 12, 13:
+            playMySnd(0x1f, priority: 0x14)
             extraChange(letter: Int(type) - 8, bonusSlot: slot)
         case 0xe:
+            playMySnd(0x1a, priority: 0x14)
             let sprite: Int16
             switch bonus[slot].timeValue {
             case 500: sprite = 5
@@ -185,6 +214,9 @@ extension GameState {
             case 5000: sprite = 0xf
             case 10000: sprite = 0x14
             default: return
+            }
+            if sprite == 0xf || sprite == 0x14 {
+                playMySnd(0x28, priority: 0x14, delay: 5)   // 5000 / 10000: "Hooley Dooleys" (+5)
             }
             timeBonusIncrease(Int32(bonus[slot].timeValue))
             points.newPoint(x: bonus[slot].rect.left, y: bonus[slot].rect.top, sprite: sprite, delay: 3, level: level,

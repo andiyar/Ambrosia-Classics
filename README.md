@@ -25,7 +25,7 @@ I just played my first game of Aki in a decade. I am so happy!
 
 ## Status
 
-**Aki is playable.** Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. Being polished now: matched pairs were vanishing instead of fading; the fix has just landed and is waiting on my eyes. Next up is Phase 3: the Level Editor and custom `.aki` level packs.
+**Aki is playable.** Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. Phase 2 passed my hands-on check on 2026-10-04: it plays like Aki, on every difficulty. Next up is an **iPad version** (same game, same data, touch in place of the mouse), then Phase 3: the Level Editor and custom `.aki` level packs.
 
 **Bubble Trouble X** is next: its game logic is being rebuilt against recordings of the original. **Ferazel's Wand, Deimos Rising and Cythera** have their reverse-engineering notes written (rules, formats, the decompiled functions mapped); no code yet.
 
@@ -44,13 +44,16 @@ I just played my first game of Aki in a decade. I am so happy!
 - [x] Fullscreen, the original's preferences format (and 1.1 prefs migration)
 - [x] Owner's gate: "yes it absolutely is Aki"
 
-### Phase 2: the game
+### Phase 2: the game ✅
 - [x] The rules engine: dealing, open tiles, matching, hints, reshuffle, undo, the clock and its penalties and bonuses, statistics (107 tests)
 - [x] The board drawn the way the original drew it, same buffers, same rectangles, same QuickDraw quirks
 - [x] Level start and end slides, the game tick, win/loss, music and sound
 - [x] Mouse, keyboard, menus, pause, Give Up, Tile Stacked, Level Statistics
-- [ ] The match fade actually visible on a modern display *(fix landed, awaiting the owner's eyes)*
-- [ ] Owner's gate: a level start to finish on each difficulty
+- [x] The match fade, paced the way a 2008 Mac's display drew it
+- [x] Owner's gate: a level start to finish on each difficulty — "it plays like Aki"
+
+### Next: Aki on iPad
+- [ ] The same app on iPadOS: crisp integer scaling, tap-to-preview lanterns, the original menus in the iPad menu bar
 
 ### Phase 3: Level Editor and custom levels
 - [ ] Level Editor, `.aki` files, Play Custom Level, Replay
@@ -77,7 +80,7 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ## Get it running
 
-**No public build yet.** When there is one it'll be a double-click `.app`. For now it's source only, and you bring your own copy of Aki 1.2.
+**No public build yet.** When there is one it'll be a double-click `.app` with the game data already inside. For now it's source only, and you point it at a copy of Aki 1.2.
 
 You need macOS 15+, a full Xcode install, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and HectorKit checked out next to this repo (it's a local package dependency during the build-out).
 
@@ -87,13 +90,13 @@ xcodegen generate && xcodebuild -scheme Aki build  # the app (project.yml is the
 tools/stage-aki.sh                                 # builds Release and copies your Aki data in → out/Aki/Aki.app
 ```
 
-`stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). No game data lives in this repo.
+`stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). The game data isn't in the repo itself (yet); the staged app carries it.
 
 ---
 
 ## The data, and copyright
 
-Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified from your own copy. Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
+Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside. Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
 
 ---
 

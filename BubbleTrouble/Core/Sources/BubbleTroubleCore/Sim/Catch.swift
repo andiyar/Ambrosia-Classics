@@ -20,19 +20,23 @@ extension GameState {
     }
 
     /// `_HeroCaught(kind) @ 00021dfa`: hero state 3 **first**, stateStart = frame, `_StopAllEnemies`, `_NewOuch`
-    /// (display only). Kind 1: one `GetRandomFast(0,1)` (the "ouch" sound choice). Kind 2: one `GetRandomFast(0,1)`
-    /// (sound), `_Splats_NewSplat(hero.left, hero.top, 1)`, `_NewStarGroup(col·40, row·40, 0xe)` (14 hop stars, C2),
+    /// (display only). Kind 1: one `GetRandomFast(0,1)` (the "ouch" sound choice: 0 → 37, else 10). Kind 2: sound 0,
+    /// then one `GetRandomFast(0,1)` (0 → 45, else 11, +5 frames), `_Splats_NewSplat(hero.left, hero.top, 1)`, `_NewStarGroup(col·40, row·40, 0xe)` (14 hop stars, C2),
     /// then `hero[0x4a] = 0` — the **visible** flag, not the invisibility bonus `+0x50` (B6). Any other kind: nothing
     /// more. Also latches `heroCaughtThisFrame` (the replica's report flag, Task 10).
     mutating func heroCaught(kind: Int) {
         hero.state = 3
         hero.stateStart = frame
         stopAllEnemies()
+        newOuch()                                                   // display only
         heroCaughtThisFrame = true
         if kind == 1 {
-            _ = rng.fast(0, 1)
+            // 00021e80: the draw picks "Ayeeee" (0) or "Oooer" — no extra draw.
+            playMySnd(rng.fast(0, 1) == 0 ? 0x25 : 10, priority: 0x14)
         } else if kind == 2 {
-            _ = rng.fast(0, 1)
+            playMySnd(0, priority: 0x14)                            // 00021ea1 "Squish"
+            // 00021eef: the draw picks "Yeow" (0) or "Zoiks", delayed 5 frames — no extra draw.
+            playMySnd(rng.fast(0, 1) == 0 ? 0x2d : 0xb, priority: 0x14, delay: 5)
             splats.newSplat(x: hero.rect.left, y: hero.rect.top, kind: 1, frame: frame)
             let x = Int16(hero.col) &* 0x28, y = Int16(hero.row) &* 0x28
             stars.newGroup(x: x, y: y, group: 0xe, hero: heroAnchor, frame: frame, prefs: config.prefs, rng: &rng)

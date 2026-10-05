@@ -9,6 +9,8 @@ options:
 packages:
   AkiCore:
     path: Aki/Core
+  BubbleTroubleCore:
+    path: BubbleTrouble/BubbleTroubleCore
   HectorKit:
     path: ../HectorKit
 settings:
@@ -122,6 +124,27 @@ targets:
           else
             echo "warning: AkiPad: OsakaMono.ttf not found under /System/Library/AssetsV2; Release Notes fall back to Menlo"
           fi
+
+  BubbleTroubleX:
+    type: application
+    platform: macOS
+    sources:
+      - path: BubbleTroubleX/App
+        excludes: ["Info.plist"]
+    dependencies:
+      - package: BubbleTroubleCore
+        product: BubbleTroubleCore
+      - package: BubbleTroubleCore
+        product: BubbleTroubleRender
+      - package: HectorKit
+        product: HectorShell
+    settings:
+      base:
+        PRODUCT_NAME: "Bubble Trouble X"
+        PRODUCT_BUNDLE_IDENTIFIER: com.ambrosiaclassics.bubbletroublex
+        INFOPLIST_FILE: BubbleTroubleX/App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
 schemes:
   Aki:
     build:
@@ -131,3 +154,7 @@ schemes:
     build:
       targets:
         AkiPad: all
+  BubbleTroubleX:
+    build:
+      targets:
+        BubbleTroubleX: all

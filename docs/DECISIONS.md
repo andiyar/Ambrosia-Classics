@@ -204,3 +204,119 @@ the RNG 0x8000 variant is moot (no such draw in any FILM — NR-3 untested by th
 one more `Random()` between frame 212's eel roll and frame 213's piranha roll; FILM 3 has a similar window (473–512);
 FILM 2's catch is a 1-pixel overlap. Four Opus audits found no code discrepancy against the decompile.
 **Approved by:** Ben 2026-10-04 (items 1–2, his choice "Start the playable app"); item 3 orchestrator (Opus 5.5).
+**Added at the session close (two further Opus investigators, independent angles):** no X 1.1 mechanism can draw in FILM 4's
+window — the only `calll _Random` is at 0000c4d9, the bundled AmbrosiaTools `_RandomSeed` (called by `_Useless7`) keeps its
+own seed, and every `_GetRandomFast` site is gated off there. The FILM headers' level field is a **16-bit** store (`00 0L 00 00`)
+where 1.1 writes 32 bits (`000184cc movl %eax, 0x34f48`), so all four FILMs were recorded by an **older build** (bank
+correction `data-formats.md` §3 ⚑). Consequence: X 1.1 itself most likely dies in demos 2–4 where the replica does (FILM 4
+at frame 447 ≈ 15 s; FILM 2 at 645; FILM 3 at 1097) — if Ben's eyes on the original confirm it (NR-10), the replica is
+already faithful and must NOT be changed; the goldens then freeze the deaths as the original's behaviour.
+
+## D9 — Aki Phase 2 gate PASSED (2026-10-04)
+
+**Decided (Ben, on the re-staged build with the Q24 fix, 6603e55):** "the game works fine"; formal gate answers — matched
+pairs **fade** ("Yes, it fades"), Phase 2 **Pass** (plays like Aki across Hard / Medium / Easy / Practice).
+Ben asked whether difficulty changes the timer: every level starts at 150 s on every difficulty (faithful,
+`_AnimationMapScreenToCustom` `b8 = 0x96`); difficulty sets the match bonus (3/6/12/0 s), the hint and reshuffle
+penalties, Undo (Easy/Practice only) and Practice's frozen clock (rules.md §10) — all in AkiCore. No change.
+Q24 ruling as built: one full-tick wait per present (plan Q24 row ⚑). Next: the iPad version (D7), then Phase 3.
+**Approved by:** Ben 2026-10-04.
+
+---
+
+## D10 — Distributing the original game data is fine (2026-10-04)
+
+**Decided (Ben):** "There is also no issue distributing files. All ASW files were full shareware downloads anyway. And ASW
+released a key unlock." Public builds may ship each game's original data inside the app (plug-and-play, as EV ARM plans).
+The README says so. **Unchanged for now:** the data stays out of git (`Resources/` ignored, invariant 3) — staged apps
+carry it; committing data to the repo would be its own ruling.
+**Approved by:** Ben 2026-10-04.
+
+---
+
+## D11 — Aki Remaster mode: remacri-4× AI-upscaled art behind a toggle, Original by default (2026-10-04)
+
+**Decided (Ben, brainstormed after the P2 gate):** add AI-upscaled art — Ben picked **remacri-4x** (Upscayl's local
+Real-ESRGAN engine) from samples of five models vs crisp pixels. **Both modes ship, behind a "Remaster" toggle** ("Can we
+not create a remaster mode toggle? So we have both options?"): a checkable menu item AND a Preferences checkbox; a fresh
+install starts in **Original**. Remaster changes pixels only; geometry, timing, rules and the original prefs blob are
+untouched; the toggle has its own UserDefaults key. Upscaled art is generated from the originals and stays out of git
+(D10). Plan: `docs/plans/2026-10-04-aki-remaster-art.md`; sequenced after the iPad session (D7) merges.
+**Rejected:** replacing the art outright (Ben's first pick, superseded by the toggle); live MetalFX frame upscaling
+(softer, smears the fade dither and text); upscaling whole sheets (sprite bleed, smeared masks); upscayl-standard /
+ultrasharp / digital-art / high-fidelity (Ben's eye). Open for U4: plain vs de-dithered backgrounds (remacri hatching).
+**Approved by:** Ben 2026-10-04.
+
+---
+
+## D12 — Bubble Trouble X playable: architecture split, time bases, transcribed draw ops, data out of git (2026-10-04)
+
+**Decided (plan `docs/plans/2026-10-04-btx-playable.md`, after its Opus review; recorded by task T0):**
+1. **Three layers** (plan Invariant 1, S1): `BubbleTroubleCore` stays Foundation + HectorResources only (rules, session,
+   front-end state, sound cues, draw ops); a new library target **`BubbleTroubleRender`** in the same package
+   (Foundation + HectorGraphics + HectorAudio, no AppKit) owns pixels and PCM — a headless, golden-tested compositor; the
+   **App** (`BubbleTroubleX/App`) is the only code importing AppKit/HectorShell and only presents a finished 640×480
+   buffer, plays PCM and translates events. Seam types (S2 + R1: `SoundCue`, `MusicCue`, `DrawOp`, `HeldKeys`,
+   `KeyModifiers`, `SessionOutput`, `ShellRequest`, `SessionEnd`, `GameMode`, `DrawTarget`, `MousePoint`, `FrameReport.sounds/.drawOps`) are LOCKED:
+   cases may be added, never renamed.
+2. **Transcribe, don't reinvent** (Invariant 2): the core records the original's `_PlayMySnd` calls and QuickDraw calls
+   (`_AddRectToBgnd`, `_RestoreBgnd`, `_SpriteToComp`, …) as ordered op lists **at the original's call sites**; the
+   renderer executes them on persistent bgnd/comp/screen buffers as QuickDraw did, artefacts included. The simulation is
+   frozen (Invariant 3): FILM replay must not change (gate G4).
+3. **Two time bases** (Invariant 4): in-game time is frames of the 0.033 s Carbon timer (`_PlayGame @ 00018247`, nominal
+   30.3 fps, missed fires dropped, never caught up); front-end and blocking sequences (countdown, music fade, wipes,
+   splashes, menus, scores) run on TickCount (1/60 s). The session API takes both explicitly; the App owns the clocks.
+4. **Data stays out of git — this lane's brief from Ben (2026-10-04)**, not a standing rule (plan R13): the staged
+   `.app` carries the five `.rsrc` files + `AboutCredits1.rtf` copied at staging (D10 permits shipping).
+**Rejected:** "redraw the world from state" each frame (loses the original's dirty-rect artefacts and free-frame draws);
+all logic + pixels in one Core target (Aki's shape — BTX's QuickDraw sprite pipeline needs a tested headless compositor,
+and HectorGraphics/HectorAudio must stay out of Core); a single frame clock for menus too (the original's front end is
+TickCount-paced).
+**Approved by:** orchestrator (Opus 5.5) under the plan review; Ben's yes to the full playable game 2026-10-04.
+
+---
+
+## D13 — Bubble Trouble X playable lane: rulings closed during the build (2026-10-04/06)
+
+**Decided (orchestrator, Opus 5.5, under the plan's invariants; Ben's yes to "the full playable game"):**
+1. **Replicate the OS X branch of `_PlayGame`** (draws to the window via `_SetToScreen`, `_RestoreBgndRect`→`_BgndToScreen`,
+   HUD through comp, conditional `_ScreenToComp`) — not the OS 9 comp path; seam: `restoreBgnd/sprite(target:)`, `screenToComp`.
+2. **Pause is checked inside the frame** at 00018a7e (after the hero state machine), so PAUSED survives a same-frame
+   appear/respawn; the session reacts after the frame.
+3. **Quit:** ⌘Q in play is the GAME's (injected ⌘+0x0C → `_StopMusic` fade → quit, no prefs save); quitting while paused
+   saves (`_PauseGame` case 0x17); idle-menu quit saves then fades title music.
+4. **Faithful quirks kept:** first-session high scores are lost on the second launch (bool 0x3e, decompile 1178/25541/8929);
+   score pads to 5 digits; time bonus counts past zero for non-multiples of 50; every key typed while paused sets gHacked.
+5. **Audio:** cues play immediately (`delayFrames` provenance only); requests apply before sounds; `.start` resets music
+   volume from pref 0x35; K3 voices are AVAudioSourceNodes (sample-exact volume/loops) with linear resampling — Ben's ear.
+6. **Dialogs:** stop the game clocks while shown (ModalDialog); in full screen all dialogs sit above the game window
+   (evidence for hiding them was a coin flip — Q18 for Ben).
+7. **Text** antialiased (2008 QuickDraw smoothed ≥ 9 pt); hand cursor decoded from crsr 200; CURS 256–263 unbuilt (no caller).
+8. **SwiftPM identity:** `BubbleTrouble/BubbleTroubleCore → Core` symlink (both games' packages were named "core").
+
+**Because:** each follows the decompile (anchors in the plan, banks and code) or removes a trap with no evidence for it.
+**Open for Ben:** plan Questions Q1–Q18 (title/pause pictures, cheat codes now recovered, ⌘M/⇧⌘A, channel stealing,
+speed, full-screen fill, info texts, first demo = FILM 1, pattern-4 overlay, Q18 dialogs), NR-10, sound feel once K3 lands.
+**Approved by:** orchestrator rulings under the plan review; Ben 2026-10-06: "playable on desktop awesome".
+
+## D14 — Bubble Trouble X sound: the Sound Tool's volume law, music carries on, one mixer for both (2026-10-06)
+
+**Decided (orchestrator, Opus 5.5, from the original binary; Ben's ear still the gate):**
+1. **K3 `ShellMixer` is the BTX output** (HectorKit d9fdfa4): 4 effect voices (`ST_Open(4,0)`) + 1 music voice
+   (`gMusicChannel`) behind `BTXAudioOutput`; `SilentAudioOutput` stays only as the no-device fallback. A failed engine
+   restart after a device change is logged and retried (3×, 250 ms) instead of silently dropped.
+2. **Effects follow the AmbrosiaTools Sound Tool's law, not the Sound Manager's:** `ST_PlaySoundParam` (000e5598) clamps
+   volume to 0x80 and `ADPCM_Mixer` scales `sample*vol>>7` → 0x80 = unity, so `_PlayMySnd`'s 0x10/0x40/0x100 play at
+   0.125/0.5/1.0 (we had 0.0625/0.25/1.0 — effects half as loud, masked by the music). Music keeps the Sound Manager's
+   0x100 = unity.
+3. **`_StartMusic` on a busy channel carries on** (its 50 segments queue behind the current one, no flush): ours sets the
+   volumeCmd's volume and does not restart. Paused stays paused.
+4. **Channel stealing is the original's** (`ST_PlaySoundParam` recovered — plan Known delta 8 / Q6 closed). snd 9029 and
+   9012 are reachable (Q14 corrected).
+5. **Carried, not fixed (rare):** the core's `musicPlaying` is a flag, the original's `_MusicPlaying` asks the channel
+   (`SndChannelStatus`) — they differ only after the 50 music loops run out (~53 min on one screen) or when the Music
+   toggle restarts stopped title music; then the original restarts/fades where ours may not.
+
+**Because:** sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md` (151 `_PlayMySnd` sites: 146 match, 5 unregistered-
+only by ruling, 0 missing/wrong; music per level set matches for every level).
+**Approved by:** orchestrator rulings from the decompile; Ben 2026-10-06 playtesting ("feels so close", speed right).

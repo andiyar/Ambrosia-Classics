@@ -1,7 +1,7 @@
 // The hero (plan §Task 6.1; Invariant 5; Research notes 23, 25, 26; hero-and-input.md §2–§4, §7), transcribed from
 // `_ProcessHero @ 00022de0`, `_MoveHeroAligned @ 00022847`, `_MoveHeroNotAligned @ 000224c8`,
-// `_HeroPushCrushCheck @ 000220d8` (with `_MyOffsetRect @ 0000c3d2` = `QDRect.offset`). Sounds, `_AddRectToBgnd`
-// and `_DebugValues` are not modelled (no RNG). The licence-checksum blocks of `_ProcessHero` (state 4's `+0x24`
+// `_HeroPushCrushCheck @ 000220d8` (with `_MyOffsetRect @ 0000c3d2` = `QDRect.offset`). Sounds are cued, `_AddRectToBgnd`
+// (00022df5) is recorded (C3); `_DebugValues` is not modelled (no RNG). The licence-checksum blocks of `_ProcessHero` (state 4's `+0x24`
 // recomputation, the push branch's `+0x44`) draw no RNG and are outside the modelled licence state (Decision 2).
 
 extension GameState {
@@ -14,6 +14,7 @@ extension GameState {
     /// freeze, duration 2; 2 → pop freeze, duration 5; both return, so no turn draw that call); otherwise a held
     /// direction → `_MoveHeroAligned`.
     mutating func processHero<I: InputSource>(input: inout I) {
+        addRectToBgnd(hero.prevRect)                            // 00022df5, first thing, every state
         switch hero.state {
         case 3, 1: return
         case 4:
@@ -132,8 +133,10 @@ extension GameState {
         hero.spriteFrame &+= 1
         guard 0x10 < hero.spriteFrame else { return }
         if hero.visible && !hero.deathBubblesEmitted {
-            airBubbles.newGroup(x: hero.rect.left, y: hero.rect.top, group: 0xb, frame: frame, prefs: config.prefs,
-                                rng: &rng)
+            if let sound = airBubbles.newGroup(x: hero.rect.left, y: hero.rect.top, group: 0xb, frame: frame,
+                                               prefs: config.prefs, rng: &rng) {
+                playMySnd(sound.slot, priority: sound.priority)
+            }
             hero.deathBubblesEmitted = true
         }
         hero.spriteFrame = 0x10
@@ -289,7 +292,10 @@ extension GameState {
                     pushBlock(col: col, row: row, direction: face, type: n)
                     pushed = true
                 }
-                if !pushed { pushed = true }                     // thud (sound 7)
+                if !pushed {                                     // LAB_0002234b: thud
+                    pushed = true
+                    playMySnd(7, priority: 10)                   // 00022367 "Push - Failed"
+                }
             } else if !isJewelTheTarget(face, col: c, row: r) {
                 let d = getDistantObject(face, col: col, row: row)
                 if d == CellCode.empty || d == CellCode.passableP {
@@ -300,14 +306,19 @@ extension GameState {
                     pushBlock(col: col, row: row, direction: face, type: n)
                     pushed = true
                 }
-                if !pushed { pushed = true }                     // thud (sound 7)
+                if !pushed {                                     // LAB_0002234b: thud
+                    pushed = true
+                    playMySnd(7, priority: 10)                   // 00022367 "Push - Failed"
+                }
             } else {
-                pushed = true                                    // the target itself: thud (sound 7)
+                pushed = true                                    // the target itself: thud
+                playMySnd(7, priority: 10)                       // 00022367 "Push - Failed"
             }
         }
         switch n {
         case CellCode.wall, CellCode.cluster:
-            return 1                                             // thud (sound 7)
+            playMySnd(7, priority: 10)                           // 00022285 "Push - Failed" (LAB_0002226e)
+            return 1
         case 0x33:
             popped = true
         case CellCode.egg:

@@ -4,6 +4,7 @@ import HectorResources
 public enum BTXDataError: Error, Equatable {
     case missingFile(String), notAResourceFile(String)
     case missingResource(type: String, id: Int16), badSize(type: String, id: Int16, size: Int)
+    case missingNamedResource(type: String, name: String)
 }
 
 /// The shipped Bubble Trouble X resource files, opened eagerly from a `Contents/Resources` folder.
@@ -34,6 +35,11 @@ public struct BTXResourceFiles: Sendable {
             throw BTXDataError.notAResourceFile(Self.levelsFileName)
         }
         guard let collection else { throw BTXDataError.notAResourceFile(Self.levelsFileName) }
+        try self.init(levelsCollection: collection)
+    }
+
+    /// Converts an already-opened `BT Levels.rsrc` (used by `BTXGameData`, which opens all five files once).
+    init(levelsCollection collection: ResourceCollection) throws {
         var counts: [String: Int] = [:]
         for entry in collection.counts() { counts[entry.type] = entry.count }
         typeCounts = counts

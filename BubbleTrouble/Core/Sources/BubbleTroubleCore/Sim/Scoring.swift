@@ -1,7 +1,7 @@
 // Score, lives and the squish multiplier (plan §Task 5a.1; Research notes 28, 43; INDEX C8), transcribed from
 // `_AddToScore @ 000280dd`, `_AddHero @ 00022d62`, `_Bonus_SetNumEnemySquishes @ 0001a818`,
-// `_Multiplier_Change @ 00019ceb`, `_Multiplier_Reset @ 00019e68`. Sounds, the reserve-hero redraw flags and the
-// multiplier draw are presentation only and not modelled; none of these functions draws from the RNG.
+// `_Multiplier_Change @ 00019ceb`, `_Multiplier_Reset @ 00019e68`. Sounds are cued; the reserve-hero redraw flags,
+// `gScoreHasChanged` and the multiplier draw are presentation (C3, `HUD.swift`); none of these functions draws from the RNG.
 
 extension GameState {
     /// `_AddToScore(v, multiply) @ 000280dd`: `v ×= gBonusMultiplier` when flagged (the original also skips the
@@ -14,6 +14,7 @@ extension GameState {
             v = Int32(multiplier) &* v
         }
         score &+= v
+        presentation.scoreHasChanged = true
         if nextExtraLifeScore <= score {
             addHero()
             if nextExtraLifeScore < 40000 {
@@ -24,13 +25,17 @@ extension GameState {
         }
     }
 
-    /// `_AddHero(1, 1) @ 00022d62` (every caller passes (1, 1)): lives += 1, capped at 9. (The sound pair and the
-    /// reserve-hero redraw/animate flags are presentation only.)
+    /// `_AddHero(1, 1) @ 00022d62` (every caller passes (1, 1)): lives += 1, capped at 9; then "Extra Life" twice
+    /// (00022dab, 00022dc7). Then the reserve-hero redraw + animate flags (presentation, C3).
     mutating func addHero() {
         lives &+= 1
         if 9 < lives {
             lives = 9
         }
+        presentation.reserveHeroNeedsDrawing = true
+        presentation.reserveHeroAnimate = true
+        playMySnd(0xd, priority: 0x14)
+        playMySnd(0xd, priority: 0x14)
     }
 
     /// `_Bonus_SetNumEnemySquishes(n) @ 0001a818` — the multiplier step on a block that squished n enemies at once.
@@ -80,13 +85,17 @@ extension GameState {
     /// `_Multiplier_Change(v) @ 00019ceb`: multiplier = v; (draw); animate on, timer = frame, anim counter 0.
     mutating func multiplierChange(_ v: Int16) {
         multiplier = v
+        multiplierDraw(true)
         multiplierAnimating = true
         multiplierTimer = frame
         multiplierAnimCounter = 0
     }
 
     /// `_Multiplier_Reset(draw) @ 00019e68`: multiplier = 1 (the flag only triggers a redraw).
-    mutating func multiplierReset() {
+    mutating func multiplierReset(draw: Bool = false) {
         multiplier = 1
+        if draw {
+            multiplierDraw(true)
+        }
     }
 }

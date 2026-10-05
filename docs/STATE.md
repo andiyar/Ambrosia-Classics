@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-04 (late night)
+# STATE — Ambrosia Classics — 2026-10-06 (BTX playable with sound; Ben playtesting)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -29,36 +29,33 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X core lane (2026-10-04 evening, Opus 5.5 orchestrator, cap lifted):** core Tasks 0–11 on main
-  (`22e228d`): Task 10 (frame step) and Task 11 (FILM replay harness `btx-replay` + `FilmReplayTests`) each Opus-reviewed
-  MERGEABLE; merge-head suite **130** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX` (106 passed / 24 skipped without).
-  Replay table (seat-run): FILM 1 `count,level` **FLAG** (level completed frame 1167, samples out 1227 — a pass to name to
-  Ben); FILMs 2/3/4 end by the hero's death at frames 645 / 1097 / 447 (pinned as `knownDiverging` in the acceptance test,
-  orchestrator ruling). **Diagnosis protocol open:** the hero side stays in sync in every FILM up to its catch (every fresh
-  push lands on an object), so the drift is enemy-side; the RNG 0x8000 variant is moot (no such draw occurs), pool counters
-  never drift, prefs-off variants are worse, and four Opus audits (eels, blocks/jewels, starfish/multiplier, FILM-3 paths)
-  found no discrepancy against the decompile. Strongest lead: FILM 4's original makes **one more `Random()`** between frame
-  212's eel roll and frame 213's piranha roll (one inserted draw there makes the player's later pushes squash enemies);
-  FILM 3 has a similar window at frames 473–512; FILM 2's catch is a 1-pixel overlap. Mechanism hunt in progress. HectorKit
-  v0.2.0 tagged (`4d3746d`, floor 167). Memory `btx-core-lane-2026-10-03.md`.
+- **Bubble Trouble X PLAYABLE WITH SOUND (2026-10-04/06, Opus 5.5 orchestrators, plan `docs/plans/2026-10-04-btx-playable.md`,
+  DECISIONS D12/D13/D14):** every plan task merged and Opus-reviewed (T0, C1–C8, R1, A1–A4), then 2026-10-06: K3
+  `ShellMixer` merged to HectorKit main d9fdfa4 (kit gate floor **222**, zero skips; C1 off-main-thread regression test
+  proven to trap pre-fix), A5 wires it in (4 effect voices + music, silent fallback without a device), A6 effects at the
+  Sound Tool's 0x80-unity law + `_StartMusic` carries on (sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md`: all
+  146 registered effect sites and music per level set match the original). Gates at Classics main (seat-run): core
+  **258 / 0 / 0**; BubbleTroubleX + Aki BUILD SUCCEEDED, 0 warnings in our code; FILM replay traces 1–4 = baseline.
+  Staged **~/Desktop/Bubble Trouble X.app** (Release, with sound) — Ben: "feels so close", speed right; he is playtesting
+  "for a while"; unsure about music per set / missing effects (audit says both right; effects were half as loud — fixed
+  in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Aki Phase 2 — the game: CODE COMPLETE, STAGED FOR BEN'S GATE (2026-10-04 night).** P2.1–P2.9 as before (AkiCore
-   complete, 107 tests; GameScreen drawing). **P2.10** (level start → tick → end, the event executor, game music and tick;
-   4a6d906) and **P2.11** (input, button bar, Give Up / Undo / Tip / Reshuffle / Pause menus, focus-loss pause, Stacked,
-   Level Statistics; 5e96287) — both ⚑ MAJOR, spec + quality legs each (P2.10 MERGEABLE ×2; P2.11 MERGEABLE +
-   MERGEABLE_WITH_FIXES), one fix round 70becea; plan ⚑ corrections 51ac4a2; **P2.12** note 9ea8c5d = origin/main. Gates
-   from the merge head (seat-run): AkiCore **107 / 0**, M2 BUILD SUCCEEDED (0 our warnings), M3 floor **167**, staged
-   `out/Aki/Aki.app` (50 PNG) + `out/Aki/WHAT-TO-EXPECT.md`, boot smoke ok. Opus seat (cap lifted by Ben). **Ben's first play (2026-10-04, DECISIONS D6): delighted; matched pairs VANISH → fade fix owed (one refresh wait per
-   frame); Esc-Cancel kept; Q25 left as is. Open: the fade fix, then Ben's formal P2
-   gate** — play a level start to finish on each difficulty, "it plays like Aki", watch the fade (Q24) and the Give Up
-   time-out edge (Q25). Not done: the plan's P2.12 screenshot script (Ben declined computer-use control of the app this
-   session). Handoff `docs/handoff-2026-10-04-aki-phase2-p210-p212.md`. Next after the gate: Phase 3 (editor, `.aki`).
-2. Bubble Trouble X core lane: Tasks 0–11 merged (130 tests); Diagnosis protocol on FILMs 2–4, then golden freeze (Task 11.5); then the BTX shell on HectorShell.
+1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
+   as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
+   per frame (plan Q24 ⚑; ~22/60 s fade). Gates from main (seat-run): M1 **107 / 0**, M2 BUILD SUCCEEDED (0 our
+   warnings), M3 floor **167**. Staged build on **~/Desktop/Aki.app** (+ WHAT-TO-EXPECT.md) — Ben plays that copy; never
+   delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
+   **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
+   queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
+   **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
+   `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
+2. **Bubble Trouble X — Ben's play gate (sound is in):** take his playtest verdicts; then the rest of his gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
-4. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
+4. **Windows port** (Ben 2026-10-06, "windows port!") — design-first chip queued (games, shell tech, how Ben tests).
+5. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
 ## Carried (not blockers)
 

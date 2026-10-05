@@ -1,4 +1,4 @@
-import BubbleTroubleCore
+@testable import BubbleTroubleCore
 import XCTest
 
 /// Task 3b — Cosmetic pools II: air bubbles, score points, splats (docs/plans/2026-10-03-btx-core-and-film-harness.md

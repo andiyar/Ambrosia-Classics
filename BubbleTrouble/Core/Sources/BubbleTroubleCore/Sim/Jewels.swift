@@ -1,5 +1,5 @@
 // Jewel joining and the jewel bonus (plan §Task 8.1; Research note 39; bubbles-items-scoring.md §3), transcribed
-// from `_CheckJewelMovement @ 0001ca05` and `_Jewels_GiveBonus @ 0001c7c5`. Sounds are not modelled (no RNG).
+// from `_CheckJewelMovement @ 0001ca05` and `_Jewels_GiveBonus @ 0001c7c5`. Sounds are cued (`Sounds.swift`).
 
 extension GameState {
     /// `_CheckJewelMovement(i, col, row) @ 0001ca05` — a moving jewel block aligned on (col, row) (the original's
@@ -67,6 +67,7 @@ extension GameState {
             let t = targetJewelOrNone
             stars.newGroup(x: Int16(t.col) &* 0x28, y: Int16(t.row) &* 0x28, group: 0, hero: heroAnchor,
                            frame: frame, prefs: config.prefs, rng: &rng)
+            playMySnd(9, priority: 0x14)                            // 0001cae8 / 0001cbf6 "Minor Jewel Join"
         } else {
             jewelsGiveBonus()
         }
@@ -91,6 +92,7 @@ extension GameState {
             default: (value, sprite) = (10000, 0x14)
             }
         }
+        playMySnd(0x21, priority: 0x14)                             // 0001c876 "All Jewels Joined"
         addToScore(value, multiply: true)
         let x = Int16(t.col) &* 0x28, y = Int16(t.row) &* 0x28
         stars.newGroup(x: x, y: y, group: 2, hero: heroAnchor, frame: frame, prefs: config.prefs, rng: &rng)

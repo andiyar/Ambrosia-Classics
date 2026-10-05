@@ -1,6 +1,6 @@
 // EXTRA letters (plan §Task 7b.1; Research note 42), transcribed from `_EXTRA_Change @ 0001a163` and
-// `_EXTRA_Reset @ 0001a128`. The blink animation runs in `_Bonus_Process` (`Bonus.swift`). `_EXTRA_Draw`, the
-// sounds and the debug message consume no RNG and are not modelled.
+// `_EXTRA_Reset @ 0001a128`. The blink animation runs in `_Bonus_Process` (`Bonus.swift`). `_EXTRA_Draw` is
+// recorded (C3, `HUD.swift`), sounds are cued; the debug message is not modelled. No RNG.
 
 extension GameState {
     /// `_EXTRA_Change(letter, bonusSlot) @ 0001a163`: letter 1…5 sets E/X/T/R/A (any other value: a debug message,
@@ -12,7 +12,9 @@ extension GameState {
         if (1...5).contains(letter) {
             extraLetters[letter - 1] = true
         }
+        extraDraw(true)                                         // 0001a1c3
         guard !extraAnimating, extraLetters.allSatisfy({ $0 }) else { return }
+        extraDraw(true)                                         // 0001a21f (before the letters clear)
         extraAnimating = true
         extraTimer = frame
         extraAnimCounter = 0
@@ -28,7 +30,10 @@ extension GameState {
     }
 
     /// `_EXTRA_Reset(draw) @ 0001a128`: all five letters cleared (the flag only redraws).
-    mutating func extraReset() {
+    mutating func extraReset(draw: Bool = false) {
         for k in extraLetters.indices { extraLetters[k] = false }
+        if draw {
+            extraDraw(true)
+        }
     }
 }
