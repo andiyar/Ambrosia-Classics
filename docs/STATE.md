@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-04 (night, P2 gate passed)
+# STATE — Ambrosia Classics — 2026-10-06 (BTX playable, silent)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -29,15 +29,18 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X core lane — rules engine DONE (2026-10-04 evening, Opus 5.5 orchestrator):** core Tasks 0–11 on
-  main: Task 10 (frame step) and Task 11 (FILM replay harness `btx-replay` + `FilmReplayTests`) each Opus-reviewed
-  MERGEABLE; merge-head suite **130** tests, 0 failed/skipped with `HECTORKIT_DATA_BTX` (106 passed / 24 skipped without).
-  Replay table (seat-run): FILM 1 `count,level` **FLAG** (level completed frame 1167, samples out 1227); FILMs 2/3/4 end by
-  the hero's death at frames 645 / 1097 / 447 (pinned `knownDiverging`). **Nothing playable yet** — Ben's ruling (DECISIONS
-  D8): the playable app on HectorShell goes next; the FILM diagnosis is a side lane. Its finding: no X 1.1 code discrepancy
-  (six Opus audits/investigations); the FILM headers show an **older recording build** (16-bit level field), so X 1.1 itself
-  likely dies in demos 2–4 too — Ben's eyes on the original's demo decide (NR-10). Golden freeze (Task 11.5) waits on that.
-  HectorKit v0.2.0 tagged (`4d3746d`, floor 167). Memory `btx-core-lane-2026-10-03.md`.
+- **Bubble Trouble X PLAYABLE (2026-10-04/06, Opus 5.5 orchestrator, plan `docs/plans/2026-10-04-btx-playable.md`,
+  DECISIONS D12/D13):** main ab5737f. Every Classics task of the plan merged, each Opus-reviewed (two legs on MAJOR) with
+  fix rounds: T0 seams, C1 data, C2 sound cues, C3 draw ops (OS X screen path), C4 GameSession play loop, C5 prefs/high
+  scores, C6 FrontEnd, C7 scores/credits, C8 pause cheats (plain-text codes recovered), R1 BubbleTroubleRender, A1 app,
+  A2 front-end wiring, A3 menus from main.nib, A4 DLOG/DITL dialogs + Preferences. HectorKit main 566f957 (K1 held keys,
+  K2 IMA4/PCM; kit floor 213). Gates at the merge head (seat-run): core `swift test` **258 / 0 failed / 0 skipped**;
+  `xcodebuild` BubbleTroubleX + Aki BUILD SUCCEEDED, 0 warnings outside HectorKit; FILM replay trace = baseline
+  (sim untouched). Staged **~/Desktop/Bubble Trouble X.app** (+ WHAT-TO-EXPECT) — Ben played the first build: "playable
+  on desktop awesome". **SILENT:** K3 `ShellMixer` (HectorKit branch `btx-k3` 771a7be, worktree
+  ~/Developer/HectorKit/.claude/worktrees/btx-k3) is written + fix-rounded but its tests never ran — this Mac's CoreAudio
+  hung after a review crash smoke (Ben must `sudo killall coreaudiod`); the app plays through `SilentAudioOutput` behind
+  `BTXAudioOutput`. Next: K3 tests → review → merge → `extension ShellMixer: BTXAudioOutput {}` + one line → restage.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
@@ -51,7 +54,7 @@
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
    **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
    `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
-2. **Bubble Trouble X playable app on HectorShell — next (Ben, D8):** write the plan (contracts, not code), then build. Side lane: FILM demos 2–4 (Ben watches the original's demo 4, NR-10), then the golden freeze.
+2. **Bubble Trouble X — sound + Ben's play gate next:** K3 mixer (after `sudo killall coreaudiod`), plug it in, restage; then Ben's gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried review minors: scratchpad-only list folded into the chip.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 

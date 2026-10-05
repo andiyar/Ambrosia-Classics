@@ -273,3 +273,28 @@ all logic + pixels in one Core target (Aki's shape — BTX's QuickDraw sprite pi
 and HectorGraphics/HectorAudio must stay out of Core); a single frame clock for menus too (the original's front end is
 TickCount-paced).
 **Approved by:** orchestrator (Opus 5.5) under the plan review; Ben's yes to the full playable game 2026-10-04.
+
+---
+
+## D13 — Bubble Trouble X playable lane: rulings closed during the build (2026-10-04/06)
+
+**Decided (orchestrator, Opus 5.5, under the plan's invariants; Ben's yes to "the full playable game"):**
+1. **Replicate the OS X branch of `_PlayGame`** (draws to the window via `_SetToScreen`, `_RestoreBgndRect`→`_BgndToScreen`,
+   HUD through comp, conditional `_ScreenToComp`) — not the OS 9 comp path; seam: `restoreBgnd/sprite(target:)`, `screenToComp`.
+2. **Pause is checked inside the frame** at 00018a7e (after the hero state machine), so PAUSED survives a same-frame
+   appear/respawn; the session reacts after the frame.
+3. **Quit:** ⌘Q in play is the GAME's (injected ⌘+0x0C → `_StopMusic` fade → quit, no prefs save); quitting while paused
+   saves (`_PauseGame` case 0x17); idle-menu quit saves then fades title music.
+4. **Faithful quirks kept:** first-session high scores are lost on the second launch (bool 0x3e, decompile 1178/25541/8929);
+   score pads to 5 digits; time bonus counts past zero for non-multiples of 50; every key typed while paused sets gHacked.
+5. **Audio:** cues play immediately (`delayFrames` provenance only); requests apply before sounds; `.start` resets music
+   volume from pref 0x35; K3 voices are AVAudioSourceNodes (sample-exact volume/loops) with linear resampling — Ben's ear.
+6. **Dialogs:** stop the game clocks while shown (ModalDialog); in full screen all dialogs sit above the game window
+   (evidence for hiding them was a coin flip — Q18 for Ben).
+7. **Text** antialiased (2008 QuickDraw smoothed ≥ 9 pt); hand cursor decoded from crsr 200; CURS 256–263 unbuilt (no caller).
+8. **SwiftPM identity:** `BubbleTrouble/BubbleTroubleCore → Core` symlink (both games' packages were named "core").
+
+**Because:** each follows the decompile (anchors in the plan, banks and code) or removes a trap with no evidence for it.
+**Open for Ben:** plan Questions Q1–Q18 (title/pause pictures, cheat codes now recovered, ⌘M/⇧⌘A, channel stealing,
+speed, full-screen fill, info texts, first demo = FILM 1, pattern-4 overlay, Q18 dialogs), NR-10, sound feel once K3 lands.
+**Approved by:** orchestrator rulings under the plan review; Ben 2026-10-06: "playable on desktop awesome".
