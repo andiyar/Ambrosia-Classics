@@ -116,8 +116,16 @@ import HectorShell
             return
         }
         compositor = Compositor(art: art, text: CoreTextRasterizer())
-        // K3's `ShellMixer` is not on HectorKit main yet: a silent output stands in (one-file swap later).
-        audio = BTXAudio(output: SilentAudioOutput(), sounds: sounds, data: data)
+        // HectorShell's real-time `ShellMixer`: 4 effect channels (`ST_Open(4,0)`) + `gMusicChannel`. Without an
+        // audio device it cannot start; the game then runs silent.
+        let output: any BTXAudioOutput
+        do {
+            output = try ShellMixer(voices: BTXAudio.effectVoices + 1)
+        } catch {
+            NSLog("Bubble Trouble X: no sound — cannot start the mixer: %@", "\(error)")
+            output = SilentAudioOutput()
+        }
+        audio = BTXAudio(output: output, sounds: sounds, data: data)
         applyPrefsToAudio()
         handCursor = Self.makeHandCursor(data) ?? .pointingHand
 

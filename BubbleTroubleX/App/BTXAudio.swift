@@ -1,9 +1,10 @@
 import BubbleTroubleCore
 import BubbleTroubleRender
 import Foundation
+import HectorShell
 
-/// What `BTXAudio` needs from a mixer: exactly the HectorShell `ShellMixer` (K3) surface it uses, so the K3 adapter
-/// is one line (`extension ShellMixer: BTXAudioOutput {}`) once K3 is on HectorKit main. Volumes are the Sound
+/// What `BTXAudio` needs from a mixer: exactly the HectorShell `ShellMixer` (K3) surface it uses, so the adapter is
+/// the one-line extension below. Volumes are the Sound
 /// Manager's 8.8 fixed point as a Float: 0x100 = full, linear. Unknown ids and out-of-range voices are no-ops.
 @MainActor protocol BTXAudioOutput: AnyObject {
     /// Registers sound `id`: interleaved Int16 `samples`, `channels` 1 or 2, at the exact `sampleRate`.
@@ -18,8 +19,11 @@ import Foundation
     func isPlaying(voice: Int) -> Bool
 }
 
-/// A mixer that plays nothing (no CoreAudio at all), used until K3's `ShellMixer` merges. A voice is never
-/// "playing", so every cue finds a free voice.
+/// The real output: HectorShell's real-time mixer, whose surface is exactly `BTXAudioOutput`.
+extension ShellMixer: BTXAudioOutput {}
+
+/// A mixer that plays nothing (no CoreAudio at all): the fallback when `ShellMixer` cannot start (no audio
+/// device), so the game still runs. A voice is never "playing", so every cue finds a free voice.
 @MainActor final class SilentAudioOutput: BTXAudioOutput {
     func load(id: Int, samples: [Int16], channels: Int, sampleRate: Double) {}
     func play(id: Int, on voice: Int, volume: Float, loops: Int) {}
