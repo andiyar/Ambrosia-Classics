@@ -67,6 +67,24 @@ HectorKit: portability guards only (see 4).
 the seat asks Ben about the Windows-PC fallback. Do not hack around a compiler-version mismatch.
 **Report:** versions pinned, total download size, exact commands, Proof A output, Proof B counts.
 
+## W0.5 ⚑ MAJOR — Windows parity fixes (from W0 Proof B; rulings D16)
+
+**Files:** HectorKit `Sources/HectorResources/MacRoman.swift` (+ every `.macOSRoman` call site in HectorResources),
+`Sources/HectorGraphics/CodecImage.swift` (precomputed table), tests; Classics core: the four `.macOSRoman` sites
+(`BTXPrefs.swift:195,199`, `BTXGameData.swift:120`, `LettersFont.swift:66`), `BTXPrefsStore.swift` (additive
+backing protocol), tests; `BubbleTroubleX/Windows/Sources/btx-predecode/` (Mac-only tool).
+**Contract.** (1) `MacRoman` — a hard-coded 256-entry table, `decode([UInt8]) -> String`, `encode(String, lossy:) ->
+[UInt8]?`; every HectorKit and core `.macOSRoman` use goes through it; Mac output byte-identical (test: all 256 bytes
+equal Foundation's `.macOSRoman` on the Mac, round-trip). (2) `CodecImage` off Apple looks up a precomputed RGBA8
+result keyed by (length, FNV-1a 64 of the bytes) registered via `CodecImage.registerPrecomputed(directory:)`; on
+Apple it is never consulted. `btx-predecode` (Mac) decodes every QuickTime-JPEG PICT the BTX data carries through
+the real `CodecImage` and writes `<key>.rgba` files (header: w, h) — staged into `Data/Decoded/`. (3)
+`BTXPrefsStore` gains `protocol BTXPrefsBacking { data(forKey:), set(_ Data, forKey:), removeObject(forKey:) }`,
+`UserDefaults` conforms by extension, the existing `init(defaults: UserDefaults, …)` stays (Mac app unchanged), a new
+`init(backing:…)`; Windows will pass a file-backed store (W4).
+**Acceptance:** Mac gates green and unchanged counts + new tests; Proof B re-run in CrossOver → **258 / 0 / 0**
+(with `Data/Decoded` registered by the test harness off Apple).
+
 ## W1 — `HectorAudio.PCMMixer` (HectorKit)
 
 **Files:** `Sources/HectorAudio/PCMMixer.swift`, `Tests/HectorAudioTests/PCMMixerTests.swift`, a Mac-only oracle
@@ -75,7 +93,7 @@ test comparing against `ShellMixer` (new test target or in `HectorShellTests`; o
 **Contract.** `public final class PCMMixer: @unchecked Sendable` — `init(voices: Int, outputRate: Double)`;
 `load(id:samples:channels:sampleRate:)`, `isLoaded(_:)`, `play(id:on:volume:loops:)`, `stop(voice:)`, `stopAll()`,
 `pause(voice:)`, `resume(voice:)`, `pauseAll()`, `resumeAll()`, `isPlaying(voice:)`, `setVolume(voice:_:)` —
-identical semantics to `ShellMixer` (HectorKit d9fdfa4: resample at load, seamless loops by in-render linear
+identical semantics to `ShellMixer` (HectorKit d9fdfa4: linear interpolation at a fractional source position in render — as-built, ShellMixer does not resample at load — seamless loops by in-render linear
 interpolation, volume law `min(max(v/256,0),1)` (BTX applies its own Sound Tool scaling before calling — D14),
 setVolume from the next sample). `render(into: UnsafeMutableBufferPointer<Float>, frames: Int)` writes interleaved
 stereo Float32 at `outputRate`; called from the audio thread, everything else from the main thread — guarded by a

@@ -336,3 +336,20 @@ only by ruling, 0 missing/wrong; music per level set matches for every level).
 **Rejected:** extracting a shared driver out of `BTXController` (Ben: don't touch the Mac app while he playtests) ·
 native Win32 menus/dialogs (less faithful) · user-supplied data.
 **Plan:** `docs/plans/2026-10-06-btx-windows.md`. **Approved by:** Ben in chat.
+
+## D16 — Windows port: toolchain proven; three parity rulings from the first Windows test run (2026-10-06)
+
+**Facts (W0):** Swift 6.4.0 (swift.org macOS toolchain, extracted) + its Windows SDK + xwin 0.10.0 (MSVC 14.44, SDK
+10.0.26100) + SDL3 3.4.16 cross-build x86_64 Windows from this Mac; CrossOver runs it. BTX core tests on Windows:
+250 / 258 first run; the 8 misses have three causes.
+**Decided (orchestrator, Opus 5.5 — no change to how the game plays or looks; Ben ruled the font licence himself):**
+1. **JPEG without ImageIO:** BTX's 8 QuickTime-JPEG PICTs are decoded ONCE on the Mac at staging time by the same
+   `CodecImage` and shipped as exact RGBA (`Data/Decoded/`), looked up off-Apple by content key. Pixel-identical to
+   the Mac; a portable JPEG decoder is deferred until a game needs arbitrary JPEGs at run time (Aki/Ferazel ports).
+2. **`.macOSRoman` is mis-tabled in Foundation on Windows:** HectorKit owns the table (`MacRoman`), used by HectorKit
+   and the BTX core — HectorKit D6 rule 4 ("faithful decoding is our code, not the OS's"). Mac bytes identical.
+3. **`UserDefaults` crashes under Wine:** additive `BTXPrefsBacking` protocol in the core; the Mac app's call stays
+   `UserDefaults`; Windows stores the same blob in a file under `%APPDATA%`.
+4. **Font licence (Ben, 2026-10-06):** ship the baked Apple Geneva / SF glyphs in the Windows build (private copy);
+   swap for an open font only if it is ever shared wider.
+**Approved by:** Ben (4); orchestrator rulings (1–3) under D15's "seat may settle" list.
