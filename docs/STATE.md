@@ -39,7 +39,7 @@
   (sim untouched). Staged **~/Desktop/Bubble Trouble X.app** (+ WHAT-TO-EXPECT) — Ben played the first build: "playable
   on desktop awesome". **SILENT:** K3 `ShellMixer` (HectorKit branch `btx-k3` 771a7be, worktree
   ~/Developer/HectorKit/.claude/worktrees/btx-k3) is written + fix-rounded but its tests never ran — this Mac's CoreAudio
-  hung after a review crash smoke (Ben must `sudo killall coreaudiod`); the app plays through `SilentAudioOutput` behind
+  was hung after a review crash smoke (recovered by 2026-10-06 — AVAudioEngine answers again); the app plays through `SilentAudioOutput` behind
   `BTXAudioOutput`. Next: K3 tests → review → merge → `extension ShellMixer: BTXAudioOutput {}` + one line → restage.
 
 ## Open, ordered
@@ -54,7 +54,7 @@
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
    **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
    `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
-2. **Bubble Trouble X — sound + Ben's play gate next:** K3 mixer (after `sudo killall coreaudiod`), plug it in, restage; then Ben's gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried review minors: scratchpad-only list folded into the chip.
+2. **Bubble Trouble X — sound + Ben's play gate next:** K3 mixer (CoreAudio answers again), plug it in, restage; then Ben's gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried review minors: scratchpad-only list folded into the chip.
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
