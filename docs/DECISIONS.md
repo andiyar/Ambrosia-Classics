@@ -320,3 +320,19 @@ speed, full-screen fill, info texts, first demo = FILM 1, pattern-4 overlay, Q18
 **Because:** sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md` (151 `_PlayMySnd` sites: 146 match, 5 unregistered-
 only by ruling, 0 missing/wrong; music per level set matches for every level).
 **Approved by:** orchestrator rulings from the decompile; Ben 2026-10-06 playtesting ("feels so close", speed right).
+
+## D15 — Bubble Trouble X on Windows: cross-compiled, drawn Mac UI, bundled data, Mac app untouched (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06, "windows port!" → "build it from end to end"):**
+1. **Bubble Trouble X is the first Windows game** (Aki later).
+2. **Built on this Mac:** open-source Swift toolchain + Swift's Windows SDK (x86_64) + Microsoft's SDK/CRT via `xwin`
+   (Ben accepted Microsoft's licence for it); tested in CrossOver. A Windows PC build is the fallback only if the
+   cross-compile proof fails.
+3. **The Mac UI is drawn in-window** on Windows — menu bar and Carbon dialogs from the original DLOG/DITL — Ctrl for ⌘.
+4. **Original data bundled** beside the `.exe` (D10). BTX's OS X data is already data-fork `.rsrc` — no extraction.
+5. **The Mac app is not touched:** Windows gets its own port of the controller logic (`BubbleTroubleX/Windows`);
+   shared engine pieces are new files only (HectorKit `PCMMixer`, separate `HectorKit/SDL` package with SDL3).
+**Because:** keeps Ben's playtest build stable; HectorKit D6 already shaped the cores for this.
+**Rejected:** extracting a shared driver out of `BTXController` (Ben: don't touch the Mac app while he playtests) ·
+native Win32 menus/dialogs (less faithful) · user-supplied data.
+**Plan:** `docs/plans/2026-10-06-btx-windows.md`. **Approved by:** Ben in chat.
