@@ -1,6 +1,6 @@
 # Design — Cythera 1.0.4, native Apple Silicon (and Windows) replica — 2026-10-06
 
-> Status: **DRAFT, awaiting Ben's approval** (orchestrator Claude Opus 5.5; brainstorm 2026-10-06). Ben's answers are
+> Status: **APPROVED by Ben 2026-10-06** ("merge, and chip."; orchestrator Claude Opus 5.5; brainstorm 2026-10-06). Ben's answers are
 > the rulings in §11 (recorded as DECISIONS D28). Everything else here is the seat's design under the standing ruling:
 > replicate the original 100 %, no modern affordances, no per-element commissioning questions (CLAUDE.md).
 > **Spec:** the RE bank `docs/cythera/` (`INDEX.md` provenance + Files table; three waves, Fable-reviewed; ~13k lines).

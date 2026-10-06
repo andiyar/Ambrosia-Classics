@@ -623,3 +623,31 @@ files, `.DS_Store`. `.gitignore` re-includes `!/Resources/Ferazel/` (other games
 4. **Feel oracle = YouTube longplays + Ben's eyes at each gate**; the RE bank is the logic oracle. Rejected: running the
    original in an emulator; eyes only.
 **Approved by:** Ben.
+
+## D28 — Cythera build: Ben's brainstorm rulings + the seat's design rulings (2026-10-06)
+
+**Decided (Ben, brainstorm of 2026-10-06, orchestrator Claude Opus 5.5; design `docs/plans/2026-10-06-cythera-design.md`
+APPROVED "merge, and chip."):**
+1. **Done = the whole game, Mac + Windows** — every level, both endings, start screen, saves, prefs, the party-AI
+   strategy editor + debugger; Mac on HectorShell, Windows on the SDL shell BTX proved.
+2. **First gate = walking Catamarca** — full desktop, Map window drawing a new game's Catamarca exactly, Alaric walks,
+   roofs lift; no talk, no scripts; side by side with the 1999 Catamarca screenshot.
+3. **Screen = like the original** — backdrop fills the display, the game's own windows float on it, drawn by the
+   replica, one original pixel per point; windowed mode treats the window as the monitor. Rejected: a fixed 1999
+   monitor at whole-number scale; real macOS windows.
+4. **Feel oracle = longplays + Ben's memory + his eyes**; the five 1999 screenshots for the look. Rejected: emulator.
+5. **Gate order = world → talk → start/saves → items/shops → fights/magic → whole story → Windows + docs viewer +
+   release.** Rejected: front end first; fights early.
+6. **Extras IN: cheat/debug keys, the Cythera Documentation viewer.** Out: registration screens, InputSprocket.
+7. **Saves = the original format both ways.**
+8. **Music = Apple's General-MIDI synth live on the Mac; each tune recorded once from it for Windows.** Rejected: a
+   bundled SoundFont; deciding later.
+9. **Process:** the Phase 0 plan is written by a Fable planner directly from the design, no separate review (Ben:
+   "seems token silly" to have Opus write and Fable review). Done: `docs/plans/2026-10-06-cythera-phase0.md`, 14 tasks.
+**Seat's rulings under the 100 % rule (design §5–§10):** three layers (CytheraCore Foundation-only incl. the VM and the
+window-system model; CytheraRender composites the whole desktop to one 8-bit screen; thin shells); the original's
+three cooperative threads as real threads taking strict turns (rejected: re-entrant VM state machines, Swift async);
+HectorShell gains a resizable 1:1 canvas (Phase 1); data in git by the D24 shape; deviations list §8 (no monitor
+picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Apple glyphs per D16.4/D20).
+**Approved by:** Ben (1–9, in his words, 2026-10-06); seat rulings recorded, Ben shown the design.
+
