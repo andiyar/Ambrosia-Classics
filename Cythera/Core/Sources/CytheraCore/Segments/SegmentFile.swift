@@ -103,7 +103,7 @@ public struct SegmentFile: SegmentStore {
 
     /// True iff the u32 at 0x80 is 0x80 (`IsSegFile__8TSegFileFs @ 100795dc`).
     public static func isSegmentFile(_ data: Data) -> Bool {
-        guard data.count >= rootOffset + 8 else { return false }
+        guard data.count >= rootOffset + 4 else { return false }
         let b = data.startIndex + rootOffset
         return data[b] == 0 && data[b + 1] == 0 && data[b + 2] == 0 && data[b + 3] == 0x80
     }
@@ -122,6 +122,9 @@ public struct SegmentFile: SegmentStore {
 
     /// The segment as the interpreter sees it (`GetEncryptedSegment @ 1007d148`, data-format §1.3):
     /// decrypted with `SegmentCipher`, except the two stored-plaintext ids returned as stored.
+    /// The combat-AI band 0x0410–0x0436 is NOT a script read: `PerformAI` loads it with plain
+    /// `GetSegment(0x360+n)` and `scriptdis.py` keeps it raw (ai-scripts.md §3) — read those ids with
+    /// `segment(_:)`; `scriptSegment` would scramble them. Routing is the AI/script decoders' (C8/C9).
     public func scriptSegment(_ id: UInt16) -> Data? {
         guard let raw = segment(id) else { return nil }
         if Self.storedPlaintext.contains(id) { return raw }

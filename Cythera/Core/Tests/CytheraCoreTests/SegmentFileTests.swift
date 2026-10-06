@@ -19,7 +19,8 @@ final class SegmentFileTests: XCTestCase {
     func testIsSegmentFileAndHeaderFields() throws {
         let raw = try rawFile()
         XCTAssertTrue(SegmentFile.isSegmentFile(raw))
-        XCTAssertFalse(SegmentFile.isSegmentFile(raw.prefix(0x87)))
+        XCTAssertFalse(SegmentFile.isSegmentFile(raw.prefix(0x83)))
+        XCTAssertTrue(SegmentFile.isSegmentFile(raw.prefix(0x84)))
         let file = try segmentFile()
         let h = file.header
         XCTAssertEqual(h.title, "Cythera: Fate of Alaric")
@@ -43,6 +44,23 @@ final class SegmentFileTests: XCTestCase {
         hostile.replaceSubrange(0x551226..<0x55122A, with: [0xFF, 0xFF, 0xFF, 0xF0])
         XCTAssertThrowsError(try SegmentFile(data: hostile)) { error in
             XCTAssertEqual(error as? SegmentFileError, .entryOutOfBounds(id: 0x8000, offset: 0xFFFF_FFF0, length: 0x820))
+        }
+        // Shapes outside the census (Invariant 4) on mutated copies: a Str31 overflow, a root entry whose
+        // page is not 0x800 bytes, a root entry whose page lies past EOF (root[1] at 0x88).
+        var longTitle = Data(raw.prefix(0x880))
+        longTitle[0] = 32
+        XCTAssertThrowsError(try SegmentFile(data: longTitle)) { error in
+            XCTAssertEqual(error as? SegmentFileError, .titleTooLong(32))
+        }
+        var shortPage = Data(raw)
+        shortPage.replaceSubrange(0x8C..<0x90, with: [0x00, 0x00, 0x07, 0xFF])
+        XCTAssertThrowsError(try SegmentFile(data: shortPage)) { error in
+            XCTAssertEqual(error as? SegmentFileError, .pageLength(page: 1, length: 0x7FF))
+        }
+        var farPage = Data(raw)
+        farPage.replaceSubrange(0x88..<0x8C, with: [0xFF, 0xFF, 0xFF, 0x00])
+        XCTAssertThrowsError(try SegmentFile(data: farPage)) { error in
+            XCTAssertEqual(error as? SegmentFileError, .pageOutOfBounds(page: 1, offset: 0xFFFF_FF00, length: 0x800))
         }
         // Not a segment file at all.
         var notSeg = Data(raw.prefix(0x880))

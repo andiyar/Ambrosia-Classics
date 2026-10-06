@@ -30,6 +30,8 @@ public final class MemorySegmentStore: SegmentStore {
 /// The `TCachedSegFiles` model (data-format §1.4, HIGH): up to 16 stores, slot 0 on top. `AddFile` shifts
 /// slots 0xF..1 down one and puts the new file in slot 0 — so a push onto a full stack drops the bottom
 /// store. Reads come from the topmost store that has the id; writes always go to slot 0.
+/// The drop models AddFile's slot shift only: the original's merged per-id directory (`SetEntry`) may
+/// still point at a dropped file's segments. Only a 17th+ file is affected; here it is modelled as dropped.
 public struct SegmentOverlay {
     public static let capacity = 16
 
