@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (Ferazel designed + planned; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-06 (Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -17,6 +17,7 @@
   `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
   handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
 - **Deimos RE deepening CLOSED (2026-10-06):** waves 1–4 on main — 100 % of game code read (0 unread by census). Wave 3+4 fix pass (`docs/deimos/FIXPASS-wave3-2026-10-06.md`: review I1/M1–M7, critic C1–C9, stale NRs, label audit; one reversal seat-verified) + critic §6 micro-wave (`docs/deimos/micro-wave-2026-10-06.md`, every claim spot-checked HIGH) folded in: role table **938 rows = 716 HIGH / 222 MED / 0 LOW**; INDEX #40 #47 #48 #54 #58 #60 closed, #62–#64 new. Still open: #13, #59 residue, #62–#64, the 134 cross-file HIGH/MED label mismatches (critic), Ben's ear/eye items (handoff 2026-10-04-deimos-re-wave34 "Owed by Ben").
+- **Deimos Rising build (D27, Ben 2026-10-06): design + Phase 1 plan written** on branch `deimos-phase1` (5106149, unreviewed, not executed) — Phase 1 = gate 1 "level 1 look". Handoff `docs/handoff-2026-10-06-deimos-phase1.md`.
 - **Deimos Rising Phase 0 DONE (2026-10-06, on main; plan `docs/plans/2026-10-06-deimos-phase0-data.md`,
   DECISIONS D22/D24):** original data in git (`Resources/Deimos/Data` four paks + Local film; app fork as
   `Resources/Deimos/Deimos Rising.rsrc`); HectorKit `StoredZipArchive`/`AIFFAudio`/`WAVEAudio`/`SoundFile` + PICT 0x009B
@@ -69,13 +70,19 @@
   Fable review ACCEPT_WITH_FIXES 3 Important / 12 Minor, all applied; ladder Ferazel/Core 6 → 100 tests, HectorKit floor
   289 → 301). Planner probes found two bank gaps now in the plan's "Bank corrections": face pixels go through
   Color2Index at load (sheets carry their own palettes) and 326 PICTs are 32-bit `ditherCopy` — both LOW, both on the
-  gate card. **Nothing implemented yet.** Next: Phase 0 K1 + C0 + C1 (chip issued). Ben owes the Let's Play link
+  gate card. **Phase 0 K1 + C0 + C1 DONE (2026-10-06, Opus orchestrator):** HectorKit `PICT.decodePixels` (indices + public 16-bit `ColorTable`, v1 BitMaps, DirectBits RGB + mode; HK D12; HK main d38a541, **floor 313** — the plan said 301, Deimos had already added 12); data in git `Resources/Ferazel/` (6 `.rsrc` + 28 AIFC, `cmp`-identical; D26 as-built); `Ferazel/Core` package + `FerazelData`/`FerazelResources`/`ResourceChain`, **6/0** tests. Next: C2 + C3 (+ C4) (chip issued); ladder C2 21 → C3 28 → C4 43. Deimos plans a kit `ShellView.scalingPolicy` (integer full screen) — Ferazel A1 reuses it, no second one. Ben owes the Let's Play link
   (goes into design §2).
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 - **Cythera RE wave 2 DONE (2026-10-06, Opus 5.5 seat):** all 840 newly decompiled bodies read or identified into `docs/cythera/` (census + six new banks: ui-play, dialogue-ui, scripted-windows, app-shell, ui-toolkit, open-items-2026-10-06; appends to ten banks; the 95 builtins now carry their real names). Review ACCEPT_WITH_FIXES (0 Critical/3 Major/13 Minor, 82/84 claims pass; ran on Opus 5.5, so a Fable revision pass is owed), all fixed. NOT RESOLVED 5/6/10/14/19/21–25 closed (22: wave 1 had the ending branch inverted — crystal quality 1 = saved ending); still open: `Render__7TViewer` layer order (16) and small carried sub-points — handoff `docs/handoff-2026-10-06-cythera-re.md`.
 - **Cythera RE wave 3 DONE (2026-10-06, Opus 5.5 seat, Fable reviewer):** `docs/cythera/render.md` closes NOT RESOLVED 16 (draw order ground → passes 0/1/3 by tile flag → creatures → missiles → pass 5 → backdrops → roofs → filter/lighting; pass 2 never draws); open-items recipes banked as six tools. **Fable revision review** over wave 2 + 3: ACCEPT_WITH_FIXES (0 Critical/1 Major/11 Minor; 113/116 claims pass; every wave-2 closure and both wave-1 overturns hold), all 12 fixed. Still open (small): THood order within a pass, QTMA music events, over-encumbrance, 0x03/0x05 words, 0x0210 — handoff `docs/handoff-2026-10-06-cythera-re-wave3.md`.
+- **Cythera — DESIGNED AND PLANNED (2026-10-06, Opus 5.5 orchestrator; DECISIONS D28):** whole game Mac + Windows;
+  first gate = walking Catamarca; screen like the original (backdrop + floating game windows, 1 px = 1 pt); saves in the
+  original format; cheats + Documentation viewer IN; music via Apple's GM synth (recorded for Windows). Design
+  `docs/plans/2026-10-06-cythera-design.md` (APPROVED); Phase 0 plan `docs/plans/2026-10-06-cythera-phase0.md` (Fable
+  planner, 14 tasks K1/C0–C12, ladder Cythera/Core → 84 tests, HK floor 313 → 319, census `failures 0`). **Nothing
+  built.** Next: Phase 0 (chip issued).
 
 1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
    as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents

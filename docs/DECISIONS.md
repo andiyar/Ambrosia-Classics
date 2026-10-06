@@ -594,6 +594,22 @@ Windows build was played to level 20 with sound on a real PC (D19 lane), and its
 **Rejected:** the Aki two-layer shape (no headless pixel tests, Windows would duplicate the compositor) · one engine
 target with pixels in Core (D6) · data out of git behind symlinks (superseded by D24).
 **Approved by:** Ben (items 1–5, in his words, 2026-10-06); seat rulings recorded for the executors, Ben told.
+**As built (C0, 2026-10-06):** `Resources/Ferazel/` holds Ferazel's Wand 1.0.3 byte-identical (`cp -p`, `cmp` clean)
+from the archive mirror's installed `files/`: six resource forks as data-fork `.rsrc` — `Ferazel's Wand.rsrc` 264,712 B
+`5d1165339d64b4dd360043e62e1baa888762bac69d3555e985a9ce54ec7b401a` · `World Data.rsrc` 5,511,430 B
+`c1b208543ee501219a631ce0a5a0151c818ff15f9aa41090afb5586c8500d541` · `Backgrounds.rsrc` 15,821,213 B
+`110db531084f970473497f25541736906fa621970c654758b46a28d2ffcf9b1b` · `Sprites.rsrc` 10,028,422 B
+`795ac20d2a5a61ac2f18a31802a76ebd871e028f4bacd1e5bdaa38493e6608f4` · `Sounds.rsrc` 2,448,841 B
+`39cd36d5bd56908afa6bc607d360592db2172e140be231bbfeaecb8c61c5893f` · `Titles.rsrc` 4,005,325 B
+`b1d30e7720f8b30d782824216fea52527a78c2bff761ba744a227d98d210df9b` (SHA-256 re-measured, equal to the plan's Research
+note 1) — and `Ferazel's Wand Music/` with the 28 extensionless AIFC tracks `01`..`30` minus `21` and `27`. Totals
+38,079,943 + 47,201,968 = 85,281,911 B; largest file 15,821,213 B (under GitHub's 50 MB warning). Stays out: the PEF
+binary `Ferazel's Wand`, the `Ferazel's Wand Documentation` app, the 28 `NN.rsrc` SoundEdit leftovers, the five zero-byte data-fork stubs
+(`Ferazel's Wand Backgrounds` etc. — the resources live in the `.rsrc` forks), the 1.0.3 Notes / License / Ambrosia FAQ /
+Ambrosia Products FAQ texts, the web-site link files, `Icon_*`, the InputSprocket / USBHID files, the `.pict`
+files, `.DS_Store`. `.gitignore` re-includes `!/Resources/Ferazel/` (other games' data stays ignored);
+`.gitattributes` `Resources/Ferazel/** binary`. `FERAZEL_DATA` overrides the folder. Rejected as in D24: Git LFS
+(breaks anonymous clones of the public repo past the free quota) · data out of git behind symlinks.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
@@ -607,3 +623,31 @@ target with pixels in Core (D6) · data out of git behind symlinks (superseded b
 4. **Feel oracle = YouTube longplays + Ben's eyes at each gate**; the RE bank is the logic oracle. Rejected: running the
    original in an emulator; eyes only.
 **Approved by:** Ben.
+
+## D28 — Cythera build: Ben's brainstorm rulings + the seat's design rulings (2026-10-06)
+
+**Decided (Ben, brainstorm of 2026-10-06, orchestrator Claude Opus 5.5; design `docs/plans/2026-10-06-cythera-design.md`
+APPROVED "merge, and chip."):**
+1. **Done = the whole game, Mac + Windows** — every level, both endings, start screen, saves, prefs, the party-AI
+   strategy editor + debugger; Mac on HectorShell, Windows on the SDL shell BTX proved.
+2. **First gate = walking Catamarca** — full desktop, Map window drawing a new game's Catamarca exactly, Alaric walks,
+   roofs lift; no talk, no scripts; side by side with the 1999 Catamarca screenshot.
+3. **Screen = like the original** — backdrop fills the display, the game's own windows float on it, drawn by the
+   replica, one original pixel per point; windowed mode treats the window as the monitor. Rejected: a fixed 1999
+   monitor at whole-number scale; real macOS windows.
+4. **Feel oracle = longplays + Ben's memory + his eyes**; the five 1999 screenshots for the look. Rejected: emulator.
+5. **Gate order = world → talk → start/saves → items/shops → fights/magic → whole story → Windows + docs viewer +
+   release.** Rejected: front end first; fights early.
+6. **Extras IN: cheat/debug keys, the Cythera Documentation viewer.** Out: registration screens, InputSprocket.
+7. **Saves = the original format both ways.**
+8. **Music = Apple's General-MIDI synth live on the Mac; each tune recorded once from it for Windows.** Rejected: a
+   bundled SoundFont; deciding later.
+9. **Process:** the Phase 0 plan is written by a Fable planner directly from the design, no separate review (Ben:
+   "seems token silly" to have Opus write and Fable review). Done: `docs/plans/2026-10-06-cythera-phase0.md`, 14 tasks.
+**Seat's rulings under the 100 % rule (design §5–§10):** three layers (CytheraCore Foundation-only incl. the VM and the
+window-system model; CytheraRender composites the whole desktop to one 8-bit screen; thin shells); the original's
+three cooperative threads as real threads taking strict turns (rejected: re-entrant VM state machines, Swift async);
+HectorShell gains a resizable 1:1 canvas (Phase 1); data in git by the D24 shape; deviations list §8 (no monitor
+picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Apple glyphs per D16.4/D20).
+**Approved by:** Ben (1–9, in his words, 2026-10-06); seat rulings recorded, Ben shown the design.
+
