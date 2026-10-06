@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0–C5 done, C6 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -80,8 +80,16 @@
   Fable review ACCEPT_WITH_FIXES 3 Important / 12 Minor, all applied; ladder Ferazel/Core 6 → 100 tests, HectorKit floor
   289 → 301). Planner probes found two bank gaps now in the plan's "Bank corrections": face pixels go through
   Color2Index at load (sheets carry their own palettes) and 326 PICTs are 32-bit `ditherCopy` — both LOW, both on the
-  gate card. **Phase 0 K1 + C0 + C1 DONE (2026-10-06, Opus orchestrator):** HectorKit `PICT.decodePixels` (indices + public 16-bit `ColorTable`, v1 BitMaps, DirectBits RGB + mode; HK D12; HK main d38a541, **floor 313** — the plan said 301, Deimos had already added 12); data in git `Resources/Ferazel/` (6 `.rsrc` + 28 AIFC, `cmp`-identical; D26 as-built); `Ferazel/Core` package + `FerazelData`/`FerazelResources`/`ResourceChain`, **6/0** tests. Next: C2 + C3 (+ C4) (chip issued); ladder C2 21 → C3 28 → C4 43. Deimos plans a kit `ShellView.scalingPolicy` (integer full screen) — Ferazel A1 reuses it, no second one. Ben owes the Let's Play link
-  (goes into design §2).
+  gate card. **Phase 0 K1 + C0 + C1 DONE (2026-10-06, Opus orchestrator):** HectorKit `PICT.decodePixels` (indices + public 16-bit `ColorTable`, v1 BitMaps, DirectBits RGB + mode; HK D12; HK main d38a541, **floor 313** — the plan said 301, Deimos had already added 12); data in git `Resources/Ferazel/` (6 `.rsrc` + 28 AIFC, `cmp`-identical; D26 as-built); `Ferazel/Core` package + `FerazelData`/`FerazelResources`/`ResourceChain`, **6/0** tests. **C2–C5 DONE (2026-10-07, Opus orchestrator; two Opus review legs per MAJOR):** world parsers
+  (Mlvl/Mwld/Mmap/Mcnv/STR#, placements, sprite class table) · ColorLUT / SoundBank / MusicTrack · TableRequests +
+  ColorSearch (`.ruled` default, `Prepared` fast path) + the Color2Index measurement · faces (PICT → indices, ditherCopy
+  model, 1-bit bypass, EncodeRect RLE, face/plain/water/blend sheets, tile sets); ladder 6 → 21 → 28 → 43 → **56/0**.
+  **Ben 2026-10-07: follow the binary** where plan/bank disagree with the PPC code — C4 water 1 / glow 014c / grey-pull
+  0144 keep the original's 32-bit overflow (Color2Index all-sixteen 1,178,146, not the plan's 1,178,143); C5 FG/FG-water
+  convert under the level CLUT (201 on L1), fixed sets 183/185 under clut 199 (D26 as-built C4 + C5; bank ⚑ Corrections in
+  lighting-tables and sprites-backgrounds-sounds). HectorKit untouched (main 522feb8, floor 316 — Deimos's
+  `ShellView.scalingPolicy` `.integerFit` is there; Ferazel A1 reuses it). Next: C6 `ferazel-census` (→ 60), then R1.
+  Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
