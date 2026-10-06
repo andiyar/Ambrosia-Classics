@@ -1,5 +1,7 @@
 # Handoff — 2026-10-04 — Ferazel's Wand RE bank wave 2 (cut off by usage limit mid-review)
 
+**CLOSED 2026-10-06:** fix passes, synthesis and spot-review 2i landed; merged to main (see STATE and `docs/ferazel/FIXPASS-2026-10-04-wave2.md`). Kept for the record.
+
 **TL;DR.** Ben asked for the bank "decompiled to 100%": every NOT-RESOLVED item in `docs/ferazel/INDEX.md`
 closed or declared undeterminable with evidence. Ten Opus reader lanes ran in parallel and ALL TEN
 landed on branch `worktree-ferazel-wave2` (worktree `.claude/worktrees/ferazel-wave2`), 11 new files +
