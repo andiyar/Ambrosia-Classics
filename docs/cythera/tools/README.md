@@ -20,6 +20,7 @@ section loaded at 0x100CD280; TOC r2 = 0x100D5280. Python tools are stdlib only.
 | `rsrc.py` | classic Mac resource-fork parser + type census | `python3 docs/cythera/tools/rsrc.py "$G/Cythera.rsrc"` |
 | `scriptdis.py` | script-bytecode disassembler + census for segment pages 0x01–0x3F | `python3 docs/cythera/tools/scriptdis.py --out ghidra/cythera-scripts --census` (`--help`) |
 | `demangle.py` | Metrowerks C++ demangler over a `NAME @ ADDR` list | `grep -o '^// ==== .* @ [0-9a-f]*' ghidra/Cythera_pef.decompiled.c \| sed 's,^// ==== ,,' > names.txt; python3 docs/cythera/tools/demangle.py names.txt [counts\|full]` |
+| `tileflag_census.py` | ⚑ wave 3 (2026-10-06): count tiles 0..0x9FF by 0xF002 flag mask, with the commonest 0xF004 tile names (`--eq` = all mask bits set); used by render.md §2.4/§5 | `python3 docs/cythera/tools/tileflag_census.py 0x10 0x200 0x100000 0x10000000`; `… --eq 0xc0` |
 | `gen_classmap.py` | writes `engine-classmap-{1,2,3}.md` from `names.txt` via `demangle.py` | run inside `docs/cythera/tools` with `names.txt` there; **edit its hard-coded `D=` output dir** (points at the focused-darwin worktree) first |
 
 Ghidra: 12.1.3 Homebrew `analyzeHeadless`; the project path must not contain a dot-prefixed element
