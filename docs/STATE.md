@@ -17,6 +17,13 @@
   `docs/deimos/`, `docs/ferazel/` — each Opus-built, Fable-reviewed (all ACCEPT_WITH_FIXES), fix-passed;
   handoff `docs/handoff-2026-10-03-re-bank.md`; optional deepening = RESUME Trigger A2.
 - **Deimos RE deepening CLOSED (2026-10-06):** waves 1–4 on main — 100 % of game code read (0 unread by census). Wave 3+4 fix pass (`docs/deimos/FIXPASS-wave3-2026-10-06.md`: review I1/M1–M7, critic C1–C9, stale NRs, label audit; one reversal seat-verified) + critic §6 micro-wave (`docs/deimos/micro-wave-2026-10-06.md`, every claim spot-checked HIGH) folded in: role table **938 rows = 716 HIGH / 222 MED / 0 LOW**; INDEX #40 #47 #48 #54 #58 #60 closed, #62–#64 new. Still open: #13, #59 residue, #62–#64, the 134 cross-file HIGH/MED label mismatches (critic), Ben's ear/eye items (handoff 2026-10-04-deimos-re-wave34 "Owed by Ben").
+- **Deimos Rising Phase 0 DONE (2026-10-06, branch `deimos-phase0`; plan `docs/plans/2026-10-06-deimos-phase0-data.md`,
+  DECISIONS D22/D24):** original data in git (`Resources/Deimos/Data` four paks + Local film; app fork as
+  `Resources/Deimos/Deimos Rising.rsrc`); HectorKit `StoredZipArchive`/`AIFFAudio`/`WAVEAudio`/`SoundFile` + PICT 0x009B
+  (main `33d4dee`, floor 301); `Deimos/Core` 104/0/0; `deimos-census` 872 entries decoded, 0 failures, PICT 12/12,
+  DITL 6/6 (`docs/deimos/data-census.md`). **Phase 1 (the build plan) needs:** the game's continuous-IMA effect decode +
+  16-voice/8-audible mixer, music streamed from the pak range, the glyph map over `tesm`, the MED colour rules (plan
+  notes 15/21). **Ben's eyes:** INDEX #10 — `deimos-census --render out/deimos-render`, is `menu.png` upright?
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).
   Archive map: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md`.

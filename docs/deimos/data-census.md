@@ -1,8 +1,8 @@
 # Deimos Rising — data census (Phase 0)
 
 > Generated 2026-10-06 by `deimos-census` (`Deimos/Core`, plan `docs/plans/2026-10-06-deimos-phase0-data.md`
-> Task C7) through HectorKit `13c8f9b` (tag `v0.3.0`), on Classics branch `deimos-phase0` at `fd6b2c9` + the C7
-> commit (the tool and this file). Everything below the rule is the tool's stdout, verbatim
+> Tasks C7–C8) through HectorKit main `33d4dee` (tag `v0.3.0` + PICT 0x009B, HectorKit D11), on Classics branch
+> `deimos-phase0` at `7b0a8fe` (C8). Everything below the rule is the tool's stdout, verbatim
 > (`DeimosCensusTests.testStdoutEqualsCommittedCensus` keeps it so). Re-run from the repo root:
 >
 >     swift build --package-path Deimos/Core -c release
@@ -11,7 +11,8 @@
 > Add `--render out/deimos-render` to also write `menu.png`, `background.png`, `canyon1-map.png` (top-down),
 > `bocr-frames.png`, `tesm-plate.png` (ImageIO; `out/` is git-ignored) — `menu.png` is Ben's INDEX #10 look.
 > The data is the committed copy `Resources/Deimos/Data` (DECISIONS D24): the four paks + the Local
-> `Last Film`. "Decoded" means decodes to the census — not "looks/sounds right".
+> `Last Film`; section 9 reads the application's resource fork, committed beside it as `Resources/Deimos/Deimos
+> Rising.rsrc` (D24 addendum). "Decoded" means decodes to the census — not "looks/sounds right".
 
 ## Spec-vs-data deltas
 

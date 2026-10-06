@@ -534,3 +534,12 @@ binary per `.gitattributes`). Census section 9: 39 types · 140 resources · PIC
 items 76). Nine PICTs (130 135 190–193 195–197) are 0x009B DirectBitsRgn, 16-bit packType 3/1 — decoded since
 HectorKit `c4a8866` (HectorKit D11; doc minors + floor 301 at `33d4dee`). HectorGraphics is a dependency of the census
 executable and the test target only, never of the Foundation-only `DeimosCore` library.
+
+**As built — Phase 0 DONE (2026-10-06):** HectorKit main `33d4dee` (tag `v0.3.0` = `13c8f9b` + PICT 0x009B `c4a8866`
++ doc minors), zero-skip gate floor **301**, PASS. `Deimos/Core`: DeimosCore + `deimos-census` + two test targets,
+**104 / 0 / 0** (DeimosCoreTests 99 · DeimosCensusTests 5). Census Totals `entries 872 (pak 871 + local 1), decoded
+872, failures 0`; section 9 `rsrc 39 types · 140 resources · PICT 12 (decoded 12) · DITL 6 (decoded 6, items 76)`;
+`docs/deimos/data-census.md` = stdout (golden test). Reviews R-A…R-E all fixed; the GIF no-end-code leniency is
+invariant 4's one deliberate exception (plan As built). MED items carried to Phase 1: 24→16 truncation and the 8-bit
+inverse-table mapping (plan note 15), the game's own continuous-IMA effect decode + mixer (note 21); Ben's eyes: INDEX
+#10 — `deimos-census --render out/deimos-render` → `menu.png` upright.

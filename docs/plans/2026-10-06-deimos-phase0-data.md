@@ -777,6 +777,9 @@ The research notes above keep the planner's text; ⚑ marks the corrected spots.
   → 102. C8 STOPPED at its decode gate (2026-10-06): HectorKit `PICT.decodeAny` refuses 9 of the 12 app-fork PICTs
   (opcode 0x009B DirectBitsRgn, 16-bit packType 3: 130 135 190–193 195–197); PICT 128/900/1000 and all 6 DITLs decode.
   Nothing of C8 is committed; the orchestrator rules (kit support for 0x009B, or record them as named refusals).
+  ⚑ Resolved: the orchestrator ruled kit support — HectorKit `c4a8866` (D11) decodes 0x009B, doc minors `33d4dee` (floor
+  301); C8 landed at `7b0a8fe` (PICT 12/12, DITL 6/6, items 76; +2 tests), R-E fixes at `f93a974` → ladder **104**; C9 gates and
+  numbers: DECISIONS D24 "As built".
 
 ## Execution order
 
