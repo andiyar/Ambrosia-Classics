@@ -36,11 +36,9 @@ mostly) get no block in the dump, so the dump's block count is the "ok" number, 
 
 Hazards: Ghidra refuses a project path with a dot-prefixed element (`.claude/worktrees/…`), hence
 `GHIDRA_PROJ`; running several headless instances at once is fine (separate project names).
-**Where projects live (Ben, 2026-10-06):** always under the MAIN checkout's git-ignored `ghidra/` —
-`/Users/andiyar/Developer/Ambrosia-Classics/ghidra/<game>-proj` (no dot element in that path) — never in `~` or
-anywhere outside the repo. Parallel readers need their own copy (Ghidra locks a project); delete the copies when the
-wave closes. Deimos: `ghidra/deimos-proj` (moved from `~/ghidra-proj-deimos`; its 31 reader copies are in
-`project-copies-backup.zip` there).
+Parallel readers need their own project copy (Ghidra locks a project): make it under `~/Developer/Ghidra/<game>/`,
+never in `~` itself, and delete the copies when the wave closes (Deimos's 31 reader copies are zipped in
+`~/Developer/Ghidra/deimos/proj/project-copies-backup.zip`).
 
 ## Reading the dumps
 - `python3 ghidra/find_func.py '<regex>' [--names] [--file <dump>]` — whole functions that match.
