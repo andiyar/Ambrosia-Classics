@@ -49,9 +49,10 @@
 #   --skip-build          reuse the existing Release build in .build/xcode-aki-release; it may be stale
 #                         against the current sha, so it is refused unless --allow-dirty is also given,
 #                         and the summary says REUSED BUILD
-#   --replace             allow a real run when out/release/Aki-<version>.dmg already exists (it may be
-#                         a released artifact): it is overwritten on success, removed if the run fails.
-#                         Without it such a run is refused — bump --version instead
+#   --replace             allow replacing an existing out/release/Aki-<version>.dmg; it is replaced only
+#                         when this run's new DMG passes every check, and left untouched otherwise.
+#                         Without it a --notarize run is refused when that DMG exists — bump --version
+#                         instead (a sign-only run never touches it, so it is not refused)
 #   --dry-run             print the plan; build, copy, sign and write nothing
 #
 #   AKI_DATA_12           the original 1.2.0 Contents/Resources (default
@@ -168,9 +169,9 @@ step "inputs"
 PROBLEMS=()
 problem() { if (( DRY_RUN )); then info "PROBLEM (a real run would stop): $*"; PROBLEMS+=("$*"); else die "$*"; fi; }
 
-if [[ -e "$DMG" ]]; then
+if [[ -n "$NOTARIZE" && -e "$DMG" ]]; then
     if (( REPLACE )); then
-        info "--replace: the existing $DMG (+ .sha256) will be overwritten on success, removed on failure"
+        info "--replace: allow replacing the existing $DMG (+ .sha256); it is replaced only when this run's new DMG passes every check, and left untouched otherwise"
     else
         problem "Aki-$VERSION.dmg already exists (a released artifact?) — bump --version or pass --replace"
     fi
@@ -294,7 +295,7 @@ if (( DRY_RUN )); then
         would "$KIT/notarize-bundle.sh \"$APP\" \"$NOTARIZE\""
         would "$KIT/package-dmg.sh \"$APP\" \"${SIGN:-<identity>}\" \"$NOTARIZE\" \"$APP/Contents/Resources/AppIcon.icns\" → $REL/Aki.dmg"
         would "mount $REL/Aki.dmg read-only: stapler validate, spctl execute (source=Notarized Developer ID), codesign verify, verbatim check #3, no fonts; stapler + spctl open (source=Notarized Developer ID) on the DMG"
-        would "only after every final check passes: mv it to $DMG and write $DMG.sha256 (any failure removes it)"
+        would "only after every final check passes: mv it to $DMG (an existing one is replaced only then, left untouched by any earlier failure) and write $DMG.sha256"
     else
         would "stop after signing: NOT notarized, no DMG (pass --notarize <profile>)"
     fi
@@ -309,15 +310,19 @@ fi
 MNT=""
 WDMG="$REL/Aki.dmg"   # package-dmg.sh's output; renamed to $DMG only after the final check passes
 SCRUB_ON_EXIT=0
+MOVED=0   # 1 once THIS run's new DMG has been mv'd to $DMG (only then may a failure scrub remove $DMG)
 # On failure leave no plausible-looking unfinished DMG-shaped artefact behind: the half-made or unchecked
 # DMG, the notary zip, create-dmg's rw.*.dmg temporaries and the /Volumes/dmg.XXXXXX mounts THIS run's
-# create-dmg left (as notarize-kit's package-dmg.sh dmg_cleanup does). The signed $REL/Aki.app and
-# $MANIFEST are deliberately KEPT on failure — they are verified intermediate output, useful for
-# diagnosis, and wiped at the start of the next run anyway.
+# create-dmg left. A pre-existing $DMG (+ .sha256), e.g. a previous release under --replace, is NEVER
+# removed by a failure before the mv; after the mv, $DMG is this run's own file and is scrubbed with
+# its .sha256. The signed $REL/Aki.app and $MANIFEST are deliberately KEPT on failure — they are
+# verified intermediate output, useful for diagnosis, and wiped at the start of the next run anyway.
 #
 # run_dmg_mounts <image-path prefix> — reads `hdiutil info` on stdin and prints the mount point of every
 # /Volumes/dmg.XXXXXX volume whose backing image path starts with the prefix. Only those are detached:
-# a blanket /Volumes/dmg.* detach could hit a parallel create-dmg run from another session.
+# a blanket /Volumes/dmg.* detach could hit a parallel create-dmg run from another session. NOTE:
+# notarize-kit's package-dmg.sh itself still detaches every /Volumes/dmg.* on its create-dmg retries
+# (its dmg_cleanup); this narrowing applies only to this script's own failure scrub.
 run_dmg_mounts() {
     local prefix="$1" line img="" mp
     while IFS= read -r line; do
@@ -339,7 +344,8 @@ scrub_artefacts() {
     while IFS= read -r v; do
         hdiutil detach "$v" -force >/dev/null 2>&1 || true
     done < <(hdiutil info 2>/dev/null | run_dmg_mounts "$REL/rw.")
-    rm -f "$WDMG" "$REL"/rw.*.dmg "$REL"/*-notarize.zip "$DMG" "$DMG.sha256"
+    rm -f "$WDMG" "$REL"/rw.*.dmg "$REL"/*-notarize.zip
+    if (( MOVED )); then rm -f "$DMG" "$DMG.sha256"; fi
 }
 cleanup() {
     if [[ -n "$MNT" ]]; then
@@ -391,7 +397,6 @@ info "archs: $ARCHS · Info.plist CFBundleShortVersionString $BUNDLE_VERSION, CF
 step "assemble"
 rm -rf "$REL"
 mkdir -p "$REL"
-rm -f "$DMG" "$DMG.sha256"
 ditto "$BUILT_APP" "$APP"
 mkdir -p "$APP/Contents/Resources"
 rsync -a --exclude '.DS_Store' "$DATA/" "$APP/Contents/Resources/"
@@ -521,6 +526,7 @@ if [[ -n "$NOTARIZE" ]]; then
 
     # Every check passed: only now does the release-named DMG (and its .sha256) come into existence.
     mv "$WDMG" "$DMG"
+    MOVED=1
     ( cd "$OUT" && shasum -a 256 "Aki-$VERSION.dmg" ) > "$DMG.sha256"
     DMG_SHA="$(cut -d ' ' -f 1 < "$DMG.sha256")"
     [[ "$DMG_SHA" =~ ^[0-9a-f]{64}$ ]] || die "could not write $DMG.sha256"
