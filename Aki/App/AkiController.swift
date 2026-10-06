@@ -1,12 +1,12 @@
-import AppKit
 import AkiCore
+import Foundation
 import HectorShell
 
-/// `Controller` (method-map §1): the app delegate, window delegate and owner of `_g`, `_p`, the GWorlds
-/// and the shell window. Launch composes the map (P1.7), starts the 0.05 s idle loop that draws it and
-/// schedules `finishLaunch` (P1.8: shows the window, first-launch "welcome" splash); sound/music (P1.6),
-/// menus (P1.9), Preferences (P1.11) and the lifecycle (P1.12) extend this class.
-@MainActor final class AkiController: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation, ShellInputHandler {
+/// `Controller` (method-map §1), its platform-neutral core: the owner of `_g`, `_p`, the GWorlds, the sound and
+/// music, and the three screens; the idle / mouse / key dispatch by mode; the menu commands and their enable
+/// state. The AppKit app delegate, window delegate and menu target is `AkiAppDelegate` (Mac); everything
+/// platform-specific is reached through `host` (`AkiHost`, plan C2).
+@MainActor final class AkiController {
     let g: AkiG
     let store: GameSettingsStore
     var p: GameSettings                                        // `_p`
@@ -14,19 +14,14 @@ import HectorShell
     var gworlds: AkiGWorlds!
     var sound: AkiSound!
     var music: AkiMusic!
-    var shell: ShellWindowController!
+    /// The platform shell (the Mac app delegate owns this controller and sets itself here).
+    weak var host: (any AkiHost)!
     var mapScreen: MapScreen!; var gameScreen: AkiScreen?; var editorScreen: AkiScreen?   // P2.10 sets gameScreen, P3.4 editorScreen
     private(set) var gameScreenImpl: GameScreen!               // P2.10 — the one GameScreen (`gameScreen` points at it)
-    var launched = false, updateAvailable = false, inactivePause = false   // ivars 0x0e, 0x0d, 0x2d
     var lastTimeCount: UInt32 = 0, lastMouseCount: UInt32 = 0, updateTimeCount: UInt32 = 0, flash: UInt32 = 0, lastTick: UInt32 = 0
     var lastMouse = ShellPoint.zero                            // ivar 0x50 (double-click guard, P2.11)
-    private var idleTimer: ShellIdleTimer?                     // ivar 0x30
-    /// `_fullscreen` (ivar 0x2c), what `-isFullscreen` returns. Kept beside `shell.isFullscreen` because the
-    /// original sets it BEFORE the windowed window leaves the screen (`_enterFullscreen` @ 0x36f8) and clears
-    /// it only after the windowed window is back (`_finishExitFullscreen:` @ 0x3b52), so the windowed
-    /// window's resign-main during the swap never pauses the game.
-    private var fullscreen = false
-    private var preferences: PreferencesWindowController?      // ivar 0x20, created on first use
+    /// `_inactivePause` (Controller ivar 0x2d): the game was paused by a focus loss, not by the player.
+    var inactivePause = false
     /// Menu tags whose commands land in a later phase: `validateMenuItem` disables them after the 1.2
     /// rules (Known delta 3). Since P2.11 only Phase 3's commands remain (10–14, 16–19: the Level Editor and
     /// its commands, Play Custom Level, Replay); P3.4–P3.6 remove them as they land.
@@ -36,29 +31,18 @@ import HectorShell
         g = AkiG()
         self.store = store
         p = .defaults
-        super.init()
     }
 
-    // MARK: Launch
+    // MARK: Launch (the shared steps of -[Controller applicationDidFinishLaunching:], in its order)
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        let assets = AkiAssets()
-        #if DEBUG
-        if !assets.missingFiles().isEmpty {
-            let alert = NSAlert()
-            alert.messageText = "Aki's original data files are missing from this app. Run tools/stage-aki.sh."
-            alert.runModal()
-            NSApp.terminate(nil)
-            return
-        }
-        #endif
+    /// `_Initialize: _LoadPrefs`, then the assets every later step reads.
+    func beginLaunch(assets: AkiAssets) {
         p = store.load()                                       // _Initialize: _LoadPrefs
         self.assets = assets
-        do {
-            NSApp.mainMenu = try AkiMenus.build(controller: self)   // NSMainNibFile = MainMenu.nib
-        } catch {
-            fatalError("Aki: cannot read MainMenu.nib: \(error)")
-        }
+    }
+
+    /// `_Initialize: _InitializeGWorlds`, the screens, `_InitializeSound`, `_InitializeMusic`.
+    func loadLaunchResources() {
         do {
             gworlds = try AkiGWorlds(assets: assets)           // _Initialize: _InitializeGWorlds
         } catch {
@@ -73,41 +57,32 @@ import HectorShell
         } catch {
             fatalError("Aki: cannot load the original sounds: \(error)")
         }
+    }
 
-        shell = ShellWindowController(title: "Aki - Mahjong Solitaire", logicalWidth: 800, logicalHeight: 600)
-        shell.view.inputHandler = self
-        shell.windowedWindow.delegate = self
-
-        mapScreen.redrawMapScreen()                            // _Initialize's tail: _RedrawMapScreen
+    /// `_Initialize`'s tail: `_RedrawMapScreen`, `_LoopMusic(1)`, `_PlayMovie(0x80)`. `g.lost` is false at
+    /// launch (`AkiG`'s initial value), so `redrawMapScreen` shows no proverb and its continuation runs
+    /// before it returns on every host — the steps after it need not move into it.
+    func composeLaunchMap() {
+        mapScreen.redrawMapScreen {}                           // _Initialize's tail: _RedrawMapScreen
         p.applyLaunchRegistration()                            // _LoopMusic(1): the replica is registered
         music.playMovie(0x80)                                  // _PlayMovie(0x80): Theme 3 when Music is on
-        shell.windowedWindow.center()
+    }
+
+    /// The tick ivars 0x34…0x44 = TickCount(), and the map's blink / preview state, before the idle loop starts.
+    func startLaunchClocks() {
         let now = ShellClock.ticks()                           // the tick ivars 0x34…0x44 = TickCount()
         lastTimeCount = now; lastMouseCount = now; updateTimeCount = now; flash = now; lastTick = now
         mapScreen.blink = AkiMap.Blink()                       // LastColor 0, ColorDown 1
         mapScreen.lastPreview = nil                            // −9
-        let timer = ShellIdleTimer(interval: 0.05) { [weak self] in self?.idleTimerFired() }
-        idleTimer = timer
-        timer.start()
-        perform(#selector(finishLaunch(_:)), with: nil, afterDelay: 0.5)
     }
 
-    /// `-[Controller finishLaunch:]` @ 0x41d4 (DC:1200), 0.5 s after launch: `_launched` = 1; Fullscreen
-    /// (p+0x212) set and no update pending (`_updateAvailable`) → `_enterFullscreen`, else the main window
-    /// (hidden at launch — MainMenu.nib `visibleAtLaunch` 0) is shown now, over the map the idle loop has
-    /// already drawn; on first launch (p+0x215) the flag is cleared and saved, then the "welcome" splash
-    /// runs (no timeout).
-    @objc func finishLaunch(_ sender: Any?) {
-        launched = true
-        if p.fullscreen != 0 && !updateAvailable {
-            enterFullscreen()
-        } else {
-            shell.windowedWindow.makeKeyAndOrderFront(nil)
-        }
+    /// The tail of `-[Controller finishLaunch:]` @ 0x41d4 (DC:1200): on first launch (p+0x215) the flag is
+    /// cleared and saved, then the "welcome" splash runs (no timeout). Nothing follows it.
+    func showFirstLaunchWelcome() {
         if p.firstLaunch != 0 {
             p.firstLaunch = 0
             savePrefs()
-            AkiSplash.show(named: "welcome", timeout: 0, controller: self)
+            host.showSplash(named: "welcome", timeout: 0) {}
         }
     }
 
@@ -132,9 +107,26 @@ import HectorShell
         currentScreen?.unpause()
     }
 
-    /// `-[Controller idleTimerFired:]`: `_MapScreen`, `_EditorScreen` or `_CustomGameScreen` by mode.
-    private func idleTimerFired() {
+    /// `-[Controller idleTimerFired:]`: `_MapScreen`, `_EditorScreen` or `_CustomGameScreen` by mode. The ONE
+    /// idle entry point: a host's idle timer calls only this, so it can wrap it to know whether a modal was
+    /// requested from inside the idle tick (see `AkiHost`).
+    func idleTick() {
         currentScreen?.idle()
+    }
+
+    /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932): the current screen's redraw (the map's is a no-op).
+    func redrawWindow() {
+        currentScreen?.redrawWindow()
+    }
+
+    /// `-[Controller mouseDown:]`: the click's point is `_GetMouseLocation`, not the event's location.
+    func mouseDown(_ click: ShellClick) {
+        currentScreen?.mouseDown(at: click.point, click: click)
+    }
+
+    /// `-[Controller keyDown:]` (the map's branch is a no-op).
+    func keyDown(_ key: ShellKey) {
+        currentScreen?.keyDown(key)
     }
 
     /// `_LoadLayout` @ 0x132f1 (DC:7593): the chosen built-in level's layout (`_Layout1`…`_Layout12` by
@@ -153,102 +145,34 @@ import HectorShell
 
     /// `_TriggerGameToMap` @ 0xe5a2 (DC:5668): stop the current music track, then `_DeleteAllCGTiles` and
     /// `_AnimationCustomGameScreenToMap` — both in `GameScreen.leaveLevel`. Its only caller is P3.6's
-    /// Finder-open path.
+    /// Finder-open path; nothing follows the leave (and its proverb), so the continuation is empty.
     func triggerGameToMap() {                                                              // P2.10
         music.stopCurrent()
-        gameScreenImpl.leaveLevel()
+        gameScreenImpl.leaveLevel {}
     }
 
-    /// `-[Controller showPreferences:]` @ 0x3443 (DC:610, otool): the `Preferences` controller is created
-    /// once (ivar 0x20). Fullscreen → `runModal`, then the fullscreen window `makeKeyAndOrderFront:` — no
-    /// pause; windowed → `pause`, then the sheet on the main window, whose end (`preferencesSheetDidEnd:…`)
-    /// sends `unpause`.
-    @objc func showPreferences(_ sender: Any?) {
-        if preferences == nil {
-            do {
-                preferences = try PreferencesWindowController(controller: self)
-            } catch {
-                fatalError("Aki: cannot read Preferences.nib: \(error)")
-            }
-        }
-        guard let preferences else { return }
-        if shell.isFullscreen {
-            preferences.runModal()
-            shell.currentWindow.makeKeyAndOrderFront(nil)
-            return
-        }
-        pause()
-        preferences.beginSheet(on: shell.windowedWindow)
-    }
+    // MARK: Focus (the platform-neutral bodies of the Mac window/app delegate methods; T4 lift)
 
-    /// `-[Controller toggleFullscreen:]` @ 0x3684 (DC:682): windowed → `_enterFullscreen`, p+0x212 = 1;
-    /// fullscreen → `_exitFullscreen`, p+0x212 = 0; then `_SavePrefs`. Each half ends in `_redrawWindow`.
-    @objc func toggleFullscreen(_ sender: Any?) {
-        if !fullscreen {
-            enterFullscreen()
-            p.fullscreen = 1
-        } else {
-            exitFullscreen()
-            p.fullscreen = 0
-        }
-        savePrefs()
-    }
-
-    /// `-[Controller _enterFullscreen]` @ 0x36f8 (DC:712): `_fullscreen` = 1, then the faded swap to the
-    /// shielding-level window (HectorShell; no 800×600 display-mode switch — Known delta 2), then
-    /// `_redrawWindow`. The fullscreen window gets no delegate, as `AkiFullscreenWindow` had none.
-    private func enterFullscreen() {
-        guard !fullscreen else { return }
-        fullscreen = true
-        shell.enterFullscreen()
-        fullscreen = shell.isFullscreen                       // no main screen → stays windowed
-        if !fullscreen { shell.windowedWindow.makeKeyAndOrderFront(nil) }
-        currentScreen?.redrawWindow()
-    }
-
-    /// `-[Controller _exitFullscreen]` @ 0x3a05 (DC:883) + `_finishExitFullscreen:` @ 0x3b52: the faded
-    /// swap back to the main window, then `_redrawWindow` and `_fullscreen` = 0.
-    private func exitFullscreen() {
-        guard fullscreen else { return }
-        shell.exitFullscreen()
-        currentScreen?.redrawWindow()
-        fullscreen = false
-    }
-
-    /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932): the current screen's redraw (the map's is a no-op).
-    @objc private func redrawWindow() {
-        currentScreen?.redrawWindow()
-    }
-
-    // MARK: Window and app lifecycle
-
-    /// `-[Controller windowDidResignMain:]` @ 0x30c0 (DC:423): windowed and not paused → `pause`,
-    /// `_inactivePause` = 1.
-    func windowDidResignMain(_ notification: Notification) {
-        guard !fullscreen, !g.paused else { return }
+    /// The body of `-[Controller windowDidResignMain:]` @ 0x30c0 (DC:423) after its fullscreen test (the
+    /// host's): not paused → `pause`, `_inactivePause` = 1.
+    func focusLost() {
+        guard !g.paused else { return }
         pause()
         inactivePause = true
     }
 
-    /// `-[Controller windowDidBecomeMain:]` @ 0x30f6 (DC:436): `_redrawWindow` after delay 0; if
-    /// `_inactivePause` → `unpause`, clear it.
-    func windowDidBecomeMain(_ notification: Notification) {
-        perform(#selector(redrawWindow), with: nil, afterDelay: 0)
+    /// The tail of `-[Controller windowDidBecomeMain:]` @ 0x30f6 (DC:436), after the host has scheduled
+    /// `_redrawWindow` (delay 0): if `_inactivePause` → `unpause`, clear it.
+    func focusRegained() {
         if inactivePause {
             unpause()
             inactivePause = false
         }
     }
 
-    /// `-[Controller windowShouldClose:]` @ 0x3153 (DC:460): YES on the map and in the game; in the editor
-    /// with unsaved changes the save alert decides (P3.5).
-    func windowShouldClose(_ sender: NSWindow) -> Bool {
-        true
-    }
-
     /// `-[Controller applicationWillResignActive:]` @ 0x2ecb (DC:309): stops the music without pausing the
     /// game — `_g`+0x67 is set around `_PlayMovie(0x80)` and then restored.
-    func applicationWillResignActive(_ notification: Notification) {
+    func resignActiveMusic() {
         let wasPaused = g.paused
         g.paused = true
         music?.playMovie(0x80)
@@ -258,51 +182,20 @@ import HectorShell
     /// `-[Controller applicationDidBecomeActive:]` @ 0x2efe (DC:326): once launched (RT3 refresh out of
     /// scope), on the map or unless the game's "no pairs" flash (`_g`+0x85) is up → `_LoopMusic(1)`
     /// (`applyLaunchRegistration`) and `_PlayMovie` (args lost → 0x80, Q15).
-    func applicationDidBecomeActive(_ notification: Notification) {
+    func becomeActiveMusic(launched: Bool) {
         guard launched, g.mode == .map || !g.noPairsFlash else { return }
         p.applyLaunchRegistration()
         music.playMovie(0x80)
     }
 
-    /// `-[Controller applicationShouldTerminateAfterLastWindowClosed:]` @ 0x2f7e (DC:357): `_launched` and
-    /// not `_fullscreen` — closing the main window quits.
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        launched && !fullscreen
-    }
-
-    /// `-[Controller applicationShouldTerminate:]` @ 0x2cf7 (DC:226): the map quits at once; the game asks
-    /// `abortGame`, the editor its save alert — each screen's `shouldTerminate()`.
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        (currentScreen?.shouldTerminate() ?? true) ? .terminateNow : .terminateCancel
-    }
-
-    /// `-[Controller applicationWillTerminate:]` @ 0x2d7d (DC:264): invalidates the idle timer, then leaves
-    /// fullscreen (the unregistered nag, `ExitMovies`, `RT3_Close`/`FT_Close` are out of scope; the
-    /// deferred `_finishExitFullscreen:` never gets a turn, so no redraw).
-    func applicationWillTerminate(_ notification: Notification) {
-        idleTimer?.invalidate()
-        if fullscreen {
-            shell.exitFullscreen()
-        }
-    }
-
-    // MARK: Menus (MainMenu.nib, P1.9)
-
-    /// The delayed pass `AkiMenus.build` schedules once the bar is installed.
-    @objc func restoreNibMenu() {
-        AkiMenus.restoreNibItems()
-    }
-
-    /// `-[Controller gameMenuAction:]` @ 0x31db: every tagged menu item → `_HandleMenuCommand(tag)`.
-    @objc func gameMenuAction(_ sender: NSMenuItem) {
-        handleMenuCommand(sender.tag)
-    }
+    // MARK: Menus
 
     /// `_HandleMenuCommand` @ 0xd465 (DC:5176–5300). Map (g+0x66 == 0): 9 Level Statistics (DC:5194–5205).
     /// Game: 2 Give Up → `abortGame` (DC:5240–5246); 3 Undo (DC:5248–5261); 4 Tip (DC:5263–5266); 6 Reshuffle
     /// (DC:5268–5278); 7 Pause → Chime at 0x40, then `_PauseGame(!g+0x67)` with no pairs gate (DC:5280–5283);
     /// 9 Level Statistics (DC:5284). The game cases run in `GameScreen`, which alone mutates the level. The
     /// editor's cases and tags 10–19 (Level Editor, files, Play Custom Level, Replay) are Phase 3's (P3.4–P3.6).
+    /// Nothing follows a case, so the modal ones (2, 9) need no continuation here.
     func handleMenuCommand(_ tag: Int) {
         switch g.mode {
         case .map:
@@ -312,7 +205,7 @@ import HectorShell
             }
         case .game:
             switch tag {                                                                   // P2.11
-            case 2: _ = gameScreenImpl.abortGame()
+            case 2: gameScreenImpl.abortGame { _ in }
             case 3: gameScreenImpl.menuUndo()
             case 4: gameScreenImpl.menuHint()
             case 6: gameScreenImpl.menuReshuffle()
@@ -328,8 +221,9 @@ import HectorShell
     }
 
     /// `_HandleMenuCommand` case 9 (DC:5194–5205), map and game alike: remember g+0x67, `_PauseGame(1)`, the
-    /// Stats dialog (`_CreateNewDialog(0x3c)`), and `_PauseGame(0)` unless the game was already paused. On the
-    /// map `_PauseGame` only sets its flags (`GameScreen.pauseGame` skips the core with no level).
+    /// Stats dialog (`_CreateNewDialog(0x3c)`), and `_PauseGame(0)` unless the game was already paused — in the
+    /// dialog's completion. On the map `_PauseGame` only sets its flags (`GameScreen.pauseGame` skips the core
+    /// with no level).
     func showStatistics() {                                                                // P2.11
         let wasPaused = g.paused
         gameScreenImpl.pauseGame(true)
@@ -344,128 +238,71 @@ import HectorShell
                      (ids.losses + i, row.losses), (ids.giveUps + i, row.giveUps)]
         }
         fill += [(ids.totals[0], table.totalWins), (ids.totals[1], table.totalLosses), (ids.totals[2], table.totalGiveUps)]
-        _ = CarbonDialog.run("Stats", controller: self) { controls in
-            for (id, value) in fill {
-                (controls[id] as? NSTextField)?.stringValue = String(format: "%d", value)
+        var texts: [Int: String] = [:]
+        for (id, value) in fill {
+            texts[id] = String(format: "%d", value)                // in fill order: a repeated ID keeps the last write
+        }
+        host.runDialog("Stats", texts: texts) { [self] _ in
+            if !wasPaused {
+                gameScreenImpl.pauseGame(false)
             }
         }
-        if !wasPaused {
-            gameScreenImpl.pauseGame(false)
-        }
     }
 
-    /// `-[Controller validateMenuItem:]` @ 0x3de5 (DC:1048), all three modes, then `false` for any tag in
-    /// `notYetBuilt` (retitling still happens). Untagged items: Help is off while a window is modal; Close
-    /// is off when the key window is the main window, else follows the key window's close box; the rest on.
-    /// Also puts the nib's "Preferences…" back each time AppKit validates it (AppKit retitles it
-    /// "Settings…"; see `AkiMenus.restoreNibItems`).
-    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        if menuItem.action == #selector(showPreferences(_:)), let title = AkiMenus.preferencesTitle,
-           menuItem.title != title {
-            menuItem.title = title
-        }
-        let tag = menuItem.tag
-        guard tag >= 1 else {
-            if menuItem.action == #selector(showHelp(_:)), NSApp.modalWindow != nil { return false }
-            guard menuItem.action == #selector(performClose(_:)) else { return true }
-            guard let key = NSApp.keyWindow, key !== shell.windowedWindow else { return false }
-            return key.styleMask.contains(.closable)
-        }
-        return validateTaggedItem(menuItem, tag: tag) && !Self.notYetBuilt.contains(tag)
-    }
-
-    /// The tagged half of DC:1048: `setTitle:` with `localizedStringForKey:` where the original retitles.
-    private func validateTaggedItem(_ menuItem: NSMenuItem, tag: Int) -> Bool {
+    /// The tagged half of `-[Controller validateMenuItem:]` @ 0x3de5 (DC:1048), all three modes: whether the
+    /// item is enabled, and the `localizedStringForKey:` title where the original retitles it (`setTitle:`),
+    /// else nil. The host applies the title, then disables `notYetBuilt` tags (and, on a host whose modals do
+    /// not block the menu bar, every tag while a modal is up — see `AkiHost`).
+    func menuState(tag: Int) -> (enabled: Bool, title: String?) {
         switch g.mode {
         case .map:
             switch tag {
             case 2:
-                menuItem.title = assets.localized("New Game")
-                return false
+                return (false, assets.localized("New Game"))
             case 9, 14, 15:
-                return true
+                return (true, nil)
             case 10:
-                menuItem.title = assets.localized("Open Level Editor")
-                return true
+                return (true, assets.localized("Open Level Editor"))
             case 18:
                 // g+0xd0 (the last custom file) set → "Replay %@" with its name, enabled. P3.4 adds the
                 // custom-file fields to `AkiG`; until then there is no custom file.
-                menuItem.title = assets.localized("Replay Last Level")
-                return false
+                return (false, assets.localized("Replay Last Level"))
             default:
-                return false
+                return (false, nil)
             }
         case .editor:
             switch tag {
             case 2:
-                menuItem.title = assets.localized("New Game")
-                return false
+                return (false, assets.localized("New Game"))
             case 9, 11:
-                return true
+                return (true, nil)
             case 10:
-                menuItem.title = assets.localized("Exit Level Editor")
-                return true
+                return (true, assets.localized("Exit Level Editor"))
             case 18:
-                menuItem.title = assets.localized("Replay Last Level")
-                return false
+                return (false, assets.localized("Replay Last Level"))
             case 3, 12, 13, 16, 17, 19:
                 // 3 → g+0x1f1 (undo), 12/13 → dirty (g+0x1f0) and ≥ 1 tile, 16 → tiles on the current layer,
                 // 17 → any tiles, 19 → g+0x1f2 (exactly 144): the editor state P3.4 adds.
-                return false
+                return (false, nil)
             default:
-                return false
+                return (false, nil)
             }
         case .game:
             switch tag {
             case 2:
-                menuItem.title = assets.localized("Give Up")
-                return true
+                return (true, assets.localized("Give Up"))
             case 3:
-                return gameScreenImpl.game?.undoEnabled ?? false   // g+0x1f1 (DC:1175) — P2.11
+                return (gameScreenImpl.game?.undoEnabled ?? false, nil)   // g+0x1f1 (DC:1175) — P2.11
             case 4, 6:
-                return !g.paused
+                return (!g.paused, nil)
             case 7, 9:
-                return true
+                return (true, nil)
             case 10:
-                menuItem.title = assets.localized("Open Level Editor")
-                return false
+                return (false, assets.localized("Open Level Editor"))
             default:
-                return false
+                return (false, nil)
             }
         }
-    }
-
-    /// `-[Controller showAboutBox:]` @ 0x327a (Q10).
-    @objc func showAboutBox(_ sender: Any?) {
-        AkiInfoWindows.showAbout(controller: self)
-    }
-
-    /// `-[Controller showHelp:]` @ 0x342c: `_SplashScreen("guide", 0)`.
-    @objc func showHelp(_ sender: Any?) {
-        AkiSplash.show(named: "guide", timeout: 0, controller: self)
-    }
-
-    /// `-[Controller showHandbook:]` @ 0x33b2 (DC:587): `openFile:withApplication:@"Preview"` on the
-    /// shipped `Aki Handbook.pdf` — opened in Preview (`com.apple.Preview`); only if Preview is missing
-    /// does it go to the default PDF handler.
-    @objc func showHandbook(_ sender: Any?) {
-        guard let url = assets.url("Aki Handbook.pdf") else { return }
-        if let preview = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Preview") {
-            NSWorkspace.shared.open([url], withApplicationAt: preview, configuration: NSWorkspace.OpenConfiguration())
-        } else {
-            NSWorkspace.shared.open(url)
-        }
-    }
-
-    /// `-[Controller showReleaseNotes:]` @ 0x358e (Q10).
-    @objc func showReleaseNotes(_ sender: Any?) {
-        AkiInfoWindows.showReleaseNotes(controller: self)
-    }
-
-    /// `-[Controller performClose:]` @ 0x31fe: the key window's `performClose:` when it responds.
-    @objc func performClose(_ sender: Any?) {
-        guard let key = NSApp.keyWindow, key.responds(to: #selector(NSWindow.performClose(_:))) else { return }
-        key.performClose(sender)
     }
 
     // MARK: Helpers
@@ -475,32 +312,16 @@ import HectorShell
         store.save(p)
     }
 
-    /// `_GetMouseLocation` @ 0x46ee (DC:1413): (0, 0) unless the app is active, no window is modal, and
-    /// the game is fullscreen or the main window is key; else the pointer in the 800×600 canvas,
-    /// truncating and unclamped.
+    /// `_GetMouseLocation` @ 0x46ee (DC:1413) — the host's (it knows the window, the activity and the modal).
     func getMouseLocation() -> ShellPoint {
-        guard NSApp.isActive, NSApp.modalWindow == nil,
-              shell.isFullscreen || shell.windowedWindow.isKeyWindow else { return .zero }
-        return shell.view.logicalMouseLocation()
+        host.mouseLocation()
     }
 
     /// `_DrawToWindow` @ 0x4b40: `CopyBits` from `src` into the window port; `flush` presents the port.
     func drawToWindow(_ src: ShellBitmap, srcRect: QDRect, dstRect: QDRect, flush: Bool) {
         gworlds.window.copyBits(from: src, srcRect: ShellRect(srcRect), dstRect: ShellRect(dstRect))
         if flush {
-            shell.view.present(gworlds.window)
+            host.present(gworlds.window)
         }
-    }
-
-    // MARK: ShellInputHandler
-
-    /// `-[Controller mouseDown:]`: the point is `_GetMouseLocation`, not the event's location.
-    func shellView(_ view: ShellView, mouseDown event: NSEvent) {
-        currentScreen?.mouseDown(at: getMouseLocation(), event: event)
-    }
-
-    /// `-[Controller keyDown:]` (the map's branch is a no-op).
-    func shellView(_ view: ShellView, keyDown event: NSEvent) {
-        currentScreen?.keyDown(event)
     }
 }

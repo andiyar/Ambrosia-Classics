@@ -1,9 +1,9 @@
-import AppKit
+import Foundation
 import HectorShell
 
 /// The only file-system entry point (S4): every original file is loaded from `bundle` by its shipped
 /// name — PNGs as `ShellBitmap`s, audio by exact file name, splash/preview/paper images with
-/// `NSImage imageNamed:` semantics, strings from the shipped `Localizable.strings`, nib XML from the
+/// `NSImage imageNamed:` semantics (the Mac extension in `Mac/AkiAssets+Mac.swift`), strings from the shipped `Localizable.strings`, nib XML from the
 /// preferred `.lproj` (falling back to `English.lproj`).
 @MainActor final class AkiAssets {
     enum AssetError: Error, Equatable { case missing(String) }
@@ -27,11 +27,6 @@ import HectorShell
         guard let resources = bundle.resourceURL else { return nil }
         let url = resources.appendingPathComponent(fileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
-    }
-
-    /// `[NSImage imageNamed:]` semantics over this bundle (nil when absent).
-    func image(_ name: String) -> NSImage? {
-        bundle.image(forResource: name)
     }
 
     /// The shipped `Localizable.strings` of the preferred localization, keyed by the English text.

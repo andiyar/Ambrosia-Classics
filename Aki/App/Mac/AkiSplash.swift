@@ -7,22 +7,22 @@ import AppKit
 /// the modal mode too, so the map keeps blinking underneath.
 @MainActor enum AkiSplash {
     /// `_SplashScreen(name, timeout)`: `[NSImage imageNamed:]`; nothing happens when the image is absent.
-    static func show(named name: String, timeout: Int, controller: AkiController) {
-        guard let image = controller.assets.image(name) else { return }
-        show(image: image, timeout: timeout, controller: controller)
+    static func show(named name: String, timeout: Int, app: AkiAppDelegate) {
+        guard let image = app.controller.assets.image(name) else { return }
+        show(image: image, timeout: timeout, app: app)
     }
 
     /// `_ShowSplashScreenWithImage(image, timeout)`: windowed → the splash's origin is centred on the main
     /// window's frame (`(frame.size − image.size) × 0.5 + frame.origin`); fullscreen → centred on its
     /// screen and raised to `CGShieldingWindowLevel()` from inside the modal loop
     /// (`scheduleShieldingLevel`); then `runModalForWindow:`.
-    static func show(image: NSImage, timeout: Int, controller: AkiController) {
+    static func show(image: NSImage, timeout: Int, app: AkiAppDelegate) {
         let window = AkiSplashWindow(image: image, timeout: timeout)
-        if controller.shell.isFullscreen {
+        if app.shell.isFullscreen {
             window.scheduleShieldingLevel()
         } else {
             let size = image.size
-            let frame = controller.shell.windowedWindow.frame
+            let frame = app.shell.windowedWindow.frame
             window.setFrameOrigin(NSPoint(x: (frame.size.width - size.width) * 0.5 + frame.origin.x,
                                           y: (frame.size.height - size.height) * 0.5 + frame.origin.y))
         }
@@ -32,9 +32,9 @@ import AppKit
     /// `_RandomProverbScreen`: `random() % 11` picks one 392×157 strip of `proverbs.png` (11 × 157 = 1727),
     /// drawn with `drawInRect:{0,0,392,157} fromRect:{0, k·157, 392, 157}` (NSImage coordinates, origin
     /// bottom-left) source-over into a fresh 392×157 image, shown with a 20 s timeout.
-    static func randomProverb(controller: AkiController) {
+    static func randomProverb(app: AkiAppDelegate) {
         let k = Int.random(in: 0..<11)
-        let proverbs = controller.assets.image("proverbs")
+        let proverbs = app.controller.assets.image("proverbs")
         let size = NSSize(width: 392, height: 157)
         let strip = NSImage(size: size)
         if let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 392, pixelsHigh: 157,
@@ -49,7 +49,7 @@ import AppKit
             NSGraphicsContext.restoreGraphicsState()
             strip.addRepresentation(rep)
         }
-        show(image: strip, timeout: 20, controller: controller)
+        show(image: strip, timeout: 20, app: app)
     }
 }
 
