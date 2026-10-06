@@ -29,7 +29,7 @@ art mode.
 |---|---|
 | The RE bank (`docs/deimos/`) | the rules, as **code readings only** ("nothing here is behaviour-verified", INDEX header). Labels HIGH (read from the listing, constants resolved) / MED (one inferred link). |
 | The original data (`Resources/Deimos/`, D24) | every level, unit, weapon, sprite, sound, text format and film — loaded through the Phase 0 decoders, never re-authored. |
-| The raw listing `~/ghidra-proj-deimos/disasm-review3-all.txt` + memory images `mem/10000000.bin` (code) / `mem/100de330.bin` (data; r2 = `0x100e6330`) | the tie-breaker when a bank sentence and a test disagree. `ghidra/Deimos_pef.decompiled.c` does **not** exist on this machine (Phase 0 "As built"); every citation is a listing address. |
+| The raw listing `~/Developer/Ambrosia-Classics/ghidra/deimos-proj/disasm-review3-all.txt` + memory images `mem/10000000.bin` (code) / `mem/100de330.bin` (data; r2 = `0x100e6330`) | the tie-breaker when a bank sentence and a test disagree. `ghidra/Deimos_pef.decompiled.c` does **not** exist on this machine (Phase 0 "As built"); every citation is a listing address. |
 | **The four shipped demo films** (`film` de01–de04) | the strongest machine oracle for game logic (§9.4): each records a seed, a level and every input byte, and stores the score at its last recorded tick. |
 | **YouTube longplays + Ben's eyes** (D27.4) | look, timing, feel. Compressed video settles "does the jungle look like that", never a 5-bit channel. |
 

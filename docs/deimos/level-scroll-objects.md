@@ -13,7 +13,7 @@ placement (waves-and-enemies.md §4), player physics, weapon/score arithmetic (o
 registration/demo (noted only), level editor.
 
 Evidence: disassembly `$W/disasm-levelscroll.txt` and `$W/disasm-levelscroll-2.txt`
-(`$W` = `/Users/andiyar/ghidra-proj-deimos`), made with a copy of `DisasmFuncs.java` extended to
+(`$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`), made with a copy of `DisasmFuncs.java` extended to
 disassemble address ranges (`DisasmMix.java`, scratchpad) against `$W/work-levelscroll`. TOC
 r2 = `0x100e6330`, so `-0x6208(r2)` = `0x100e0128` etc. Floats/tables from `$W/mem/*.bin`
 (TOC slots point into the code image `10000000.bin`). Data from `$W/data/Game/` (decoded paks).

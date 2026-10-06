@@ -756,7 +756,7 @@ Task C1). Never edit the shared symlink.
 
 The research notes above keep the planner's text; ⚑ marks the corrected spots. In one place:
 - **Oracle.** `ghidra/Deimos_pef.decompiled.c` was never produced for 1.0.6; implementers and reviewers worked from the
-  disassembly listing `~/ghidra-proj-deimos/disasm-review3-all.txt` plus the memory images `mem/10000000.bin` (code,
+  disassembly listing `~/Developer/Ambrosia-Classics/ghidra/deimos-proj/disasm-review3-all.txt` plus the memory images `mem/10000000.bin` (code,
   base 0x10000000) and `mem/100de330.bin` (data, base 0x100de330, r2 = 0x100e6330). Every address cited in the
   DeimosCore doc comments is a listing address.
 - Note 11: the one stli with Mac Roman bytes is `edit`, not `cred`.

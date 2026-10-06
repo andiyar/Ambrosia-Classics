@@ -17,7 +17,7 @@ text rendering, registration.
 Evidence: raw listing `$W/disasm-w2s7.txt` (DisasmFuncs.java against `$W/work-w2s7`, 32
 functions), plus a raw PPC decoder over `$W/mem/10000000.bin` for the address scans (scratch
 scripts `scan94.py`, `r2scan.py`, `rawdis.py`; the method is described where used). `$W` =
-`/Users/andiyar/ghidra-proj-deimos`; TOC r2 = `0x100e6330`; data image base `0x100de330`.
+`/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`; TOC r2 = `0x100e6330`; data image base `0x100de330`.
 Unit data: `$W/data/Game/unde/*.unde.txt`, `$W/data/Game/leve/*.leve.txt`, flli from
 `$W/data/Game/flli/Game[gafl].flli.txt` (index = line order, checked against flli 13/18/196).
 

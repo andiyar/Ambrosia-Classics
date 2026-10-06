@@ -30,7 +30,7 @@ Raw listings:
 - `$W/disasm-w4s3-range.txt` (DisasmRange over `10018740:1001b7d0 1001d570:1001d9f0 1001ee80:1001eec0 1001f750:10021190`);
 - `$W/disasm-w4s3-range2.txt` (`1001efa0:1001f140`).
 
-All from the private copy `$W/work-w4s3`, where `$W` = `/Users/andiyar/ghidra-proj-deimos`. Scratch
+All from the private copy `$W/work-w4s3`, where `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`. Scratch
 scripts are `$W/w4s3-*.py`.
 
 ## 0. Constant resolution

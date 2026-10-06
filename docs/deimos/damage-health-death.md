@@ -12,7 +12,7 @@ owner destruction) and player death `FUN_10027e50` (what it does to the hit path
 only the moment it is invoked is described here); the player state machine, the lives
 arithmetic and respawn `FUN_1002a150`/`FUN_10029cc0` (player reader; only the hook is
 described); movement executors; how the spawn sets execute. Code readings only, nothing
-behaviour-verified. `$W` = `/Users/andiyar/ghidra-proj-deimos`. Raw listings:
+behaviour-verified. `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`. Raw listings:
 `$W/disasm-dmg.txt` and `$W/disasm-dmg2.txt` (DisasmFuncs.java, run against the private copy
 `$W/work-dmg`). Constants were resolved with a Python reader over `$W/mem/10000000.bin` and
 `$W/mem/100de330.bin` (command in §0).

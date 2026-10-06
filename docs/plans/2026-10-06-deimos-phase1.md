@@ -7,7 +7,7 @@
 > behaviour with bank anchors, test names verbatim with the number each checks and where it came from, gate commands,
 > commit messages. No implementations.
 > **Numbers:** every expected value is from the bank (file § + label), a listing address in
-> `~/ghidra-proj-deimos/disasm-review3-all.txt`, or a planner probe run on this machine on 2026-10-06 over the committed
+> `~/Developer/Ambrosia-Classics/ghidra/deimos-proj/disasm-review3-all.txt`, or a planner probe run on this machine on 2026-10-06 over the committed
 > `Resources/Deimos` (cited "probe pNN", Research notes). Self-derived goldens are named as such. Where a probe and the
 > bank disagree, the probe wins and "Bank corrections" says so (none so far).
 
@@ -37,7 +37,7 @@ Python 3 only as the planner's probe tool (never a build or test dependency).
 WT      = /Users/andiyar/Developer/Ambrosia-Classics/.claude/worktrees/<lane worktree>  (branched from Classics main)
 HK      = /Users/andiyar/Developer/HectorKit        (main 33d4dee, zero-skip FLOOR 301 at plan time; ferazel-k1 branch = main)
 HKWT    = /Users/andiyar/Developer/HectorKit-worktrees/deimos-k1   (branch deimos-k1, for K1 only)
-LISTING = /Users/andiyar/ghidra-proj-deimos/disasm-review3-all.txt  (+ mem/10000000.bin code, mem/100de330.bin data; r2 = 0x100e6330)
+LISTING = /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/disasm-review3-all.txt  (+ mem/10000000.bin code, mem/100de330.bin data; r2 = 0x100e6330)
 SCRATCH = the executing session's scratchpad directory (logs, dumps; never the repo)
 ```
 

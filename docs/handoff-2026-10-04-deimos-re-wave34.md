@@ -9,14 +9,14 @@ Ben's usage limit. Branch `claude/modest-chandrasekhar-868895` is pushed; nothin
 
 ## State of the bank (branch head)
 - 32 topical files. Role table 938 rows = 698 HIGH / 240 MED / 0 LOW (orchestrator recount).
-  Census (best label across files, `/Users/andiyar/ghidra-proj-deimos/w4-census-all.py`): **0 unread
+  Census (best label across files, `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/w4-census-all.py`): **0 unread
   functions** in `0x10000000–0x1004b400`; the critic confirmed independently (751/228/0/0).
 - New files (wave 3): `blit-pixel-rules.md`, `static-init-audit.md`, `text-metrics-lists.md`;
   (wave 4): `display-window-present.md`, `app-pak-music-library.md`, `sprite-manager-resource-image.md`,
   `file-pict-alerts-manager.md`, `gameplay-leftovers.md`. INDEX #1 #3 #6 #9 #10 #36 #37 #43 #46 #53 #56
   closed by the synthesis; #57–#61 added.
 - Briefs (reuse verbatim): `$W/brief.md`, `brief-wave3.md`, `brief-wave4.md`, `synthesis.md`,
-  `critic.md`, `review.md`, `fixpass-wave2.md` (the fix-pass format). `$W = /Users/andiyar/ghidra-proj-deimos`.
+  `critic.md`, `review.md`, `fixpass-wave2.md` (the fix-pass format). `$W = /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`.
 
 ## Next session, in order
 1. **Fix pass (one Opus agent, brief like `fixpass-wave2.md`)**: apply review I1 + M1–M7
