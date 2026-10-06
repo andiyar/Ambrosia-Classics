@@ -43,7 +43,8 @@ import HectorShell
         }
         do {
             let assets = try DeimosAssets.load(dataDirectory: dataDirectory)
-            driver = try DeimosDriver(assets: assets, prefs: .fresh, rate: .classic,
+            // Mac OS X's 60 Hz TickCount: Ben played Deimos on OS X (gate 1, DECISIONS D30; Q1).
+            driver = try DeimosDriver(assets: assets, prefs: .fresh, rate: .osx,
                                       start: SessionStart(sector: 1, players: 1, film: nil))
         } catch {
             // The folder is there but its contents do not load (design §7.7): DEBUG says so, Release logs and quits.

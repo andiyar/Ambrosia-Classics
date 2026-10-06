@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Deimos Phase 1 staged for Ben; Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -25,14 +25,15 @@
   DITL 6/6 (`docs/deimos/data-census.md`). **Phase 1 (the build plan) needs:** the game's continuous-IMA effect decode +
   16-voice/8-audible mixer, music streamed from the pak range, the glyph map over `tesm`, the MED colour rules (plan
   notes 15/21). **Ben's eyes:** INDEX #10 — `deimos-census --render out/deimos-render`, is `menu.png` upright?
-- **Deimos Rising Phase 1 — level 1 look: MACHINE GATES GREEN, Ben's gate 1 pending (2026-10-07, Opus 5.5 orchestrator,
+- **Deimos Rising Phase 1 — level 1 look: GATE 1 PASSED (Ben, 2026-10-07: "it looks okay!"; D30 — runs at OS X's
+  60 Hz tick, Ben played on OS X) (2026-10-07, Opus 5.5 orchestrator,
   Opus implementers / Fable reviewers; plan `docs/plans/2026-10-06-deimos-phase1.md` + review record `…-phase1-REVIEW.md`;
   DECISIONS D29 + as-built addendum):** K1 `ShellView.scalingPolicy` on HectorKit main 522feb8 (HK D13, floor **316**);
   `Deimos/Core` grew DeimosRender + DeimosHost — suite **189/0/0** (plan ladder 177 + 13 from three review fix passes − 1
   KeyTable moved to Core); census unchanged; Deimos + Aki + BubbleTroubleX BUILD SUCCEEDED. Every task Fable-reviewed
   (MAJOR tasks two legs); one Critical found and fixed (held Esc hung the driver). Frame goldens independently re-derived
-  in Python. Staged **~/Desktop/Deimos Rising.app** + WHAT-TO-EXPECT (gate card). Q1 tick rate proceeding on 60.15 Hz.
-  Next: Ben's verdict; then the Phase 2 plan (level 1 plays; de01 film replay gate). Carries for Phase 2: `DeimosAudio`
+  in Python. Staged **~/Desktop/Deimos Rising.app** + WHAT-TO-EXPECT (gate card). Q1 ruled 60 Hz (D30), restaged.
+  Next: the Phase 2 plan (level 1 plays; de01 film replay gate). Carries for Phase 2: `DeimosAudio`
   target (design M6), `playerOps` return type, `HeadlessRun` film params, Phase-4 prefs file widening (C1 review m3).
 - **Originals:** Aki 1.1.0 + 1.2.0 UB (symlinked as git-ignored `Resources/Aki/1.1.0.app`, `1.2.0.app`);
   Bubble Trouble X 1.1 UB; Ferazel's Wand 1.0.3, Deimos Rising 1.0.6, Cythera 1.0.4 (PEF).

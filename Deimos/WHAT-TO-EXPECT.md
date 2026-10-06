@@ -72,8 +72,7 @@ and what would be wrong.
 8. **Colours of the sprites** (ship, shadow, HUD art) — the plates are 24-bit GIFs the game drew into 16-bit, which keeps
    the top 5 bits of each channel (not fully certain). If the ship or HUD look a shade dark or off against the video,
    this is the suspect.
-9. **Speed** — 30.07 frames a second (Mac OS 9's 60.15 Hz tick, Q1). If you ran it on OS X, it would be 30.00.
-   **If you played Deimos on OS X, just say "60"** and we switch it — it's a one-line change.
+9. **Speed** — 30.00 frames a second (Mac OS X's 60 Hz tick — you played it on OS X; gate 1, D30).
 10. **After ~104 s** the map reaches its top and stops (the level end, tallies and next sector come with Phase 2).
 11. **Keys** — Esc starts level 1 again (stand-in for the main menu); ⌘Q quits. Caps Lock, `-`/`=`, F6 and `~` do nothing yet.
 12. **Silence** — no sound or music yet (Phase 2).
@@ -94,4 +93,3 @@ The code didn't fully settle these four. If something looks off, it is probably 
 
 ## What to tell us
 Plain yes or no to "does it look like Deimos?" — then anything that looked wrong, by card number if you can.
-And "60" if you played it on OS X.

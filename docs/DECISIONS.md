@@ -692,3 +692,12 @@ picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Ap
   `[.titled, .miniaturizable]` (the original's windowed variant: title bar, no close box, collapsible — `FUN_1000a640`).
   **Suspends while in the background or miniaturised** (display-window-present §7); on resume it shows the held screen
   rather than the original's black window until the next present (disclosed).
+
+## D30 — Deimos Rising gate 1 PASSED; TickCount 60 Hz (2026-10-07)
+
+**Decided (Ben, in chat, after playing the staged Phase 1 build):** "it looks okay!" — **gate 1 ("level 1 look", D27.2)
+passed.** Q1 (design §11.1, INDEX #42): "i'm playing on osx. let's try 60" → the replica runs at **Mac OS X's 60 Hz
+TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic 60.15 Hz default D29.5 proceeded on.
+`TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
+widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
+**Approved by:** Ben.
