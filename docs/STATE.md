@@ -60,18 +60,18 @@
    per frame (plan Q24 ⚑; ~22/60 s fade). Gates from main (seat-run): M1 **107 / 0**, M2 BUILD SUCCEEDED (0 our
    warnings), M3 floor **167**. Staged build on **~/Desktop/Aki.app** (+ WHAT-TO-EXPECT.md) — Ben plays that copy; never
    delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
-   **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
-   queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
-   **Remaster mode — Ben's gate PASSED 2026-10-06 (DECISIONS D17)**, code on branch `aki-remaster` (pushed; built on
-   `aki-ipad` + a merge of main) — **merges to main only after the iPad branch `aki-ipad` lands** (Ben's call). Art tool
-   `tools/upscale-aki-art.py` + region map + `ArtRegionsTests` already on main (regenerate `Resources/Aki/hd-4x/`, 207 MB,
-   git-ignored). HectorKit scale factor + IOSurface present merged to HectorKit main 465200a (floor then 201). Toggle: Aki ▸
-   Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Branch gates: AkiCore 123/0/0, Aki + AkiPad +
-   BubbleTroubleX BUILD SUCCEEDED. Staged: ~/Desktop/Aki.app + Ben's iPad mini. Handoff `docs/handoff-2026-10-06-aki-remaster.md`.
+   **Aki on iPad + Remaster mode — both on main 2026-10-06** (Ben: iPad first, then Remaster). iPad (plan
+   `docs/plans/2026-10-04-aki-ipad.md`, rulings D7; AkiPad target, Aki/App split shared/Mac/iOS) merged 5e6755d; no formal
+   iPad gate is recorded in DECISIONS — Ben has been playing it on his iPad mini. **Remaster (D11, gate PASSED D17)** merged
+   on top. Toggle: Aki ▸ Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Art: regenerate
+   `Resources/Aki/hd-4x/` per worktree with `python3 tools/upscale-aki-art.py` (~2.5 min cold, Upscayl; then `--check`;
+   207 MB, git-ignored) — without it Remastered Art shows disabled. Gates from main (seat-run): AkiCore **123/0/0**; Aki,
+   AkiPad (sim), BubbleTroubleX BUILD SUCCEEDED, 0 our warnings; HectorKit floor **252**. Staged copies (~/Desktop/Aki.app,
+   Ben's mini) are the 2026-10-06 Remaster builds. **Next: Aki Phase 3** (editor, `.aki`).
 2. **Bubble Trouble X — Ben's play gate (sound is in):** take his playtest verdicts; then the rest of his gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. **Windows port** (Ben 2026-10-06) — BTX engine side done (above); **W4 playable next** (chip queued).
-5. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
+5. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
 ## Carried (not blockers)
 

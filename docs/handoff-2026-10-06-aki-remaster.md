@@ -16,7 +16,12 @@ Opus 5.5 orchestrator (Fable 5.1 trailer kept, invariant 16). Plan `docs/plans/2
 - **Staged:** ~/Desktop/Aki.app (Ben's prefs exported first to the session scratchpad; never `defaults delete`), iPad mini via
   `tools/stage-aki-ipad.sh`.
 
-## To merge (the next session)
+## To merge — DONE 2026-10-06
+Merged to main: aki-ipad first (5e6755d, only conflict project.yml), then aki-remaster on top with no conflicts.
+Gates from the merge head: AkiCore 123/0/0; Aki, AkiPad (sim), BubbleTroubleX BUILD SUCCEEDED; HectorKit 252 = floor.
+Both branches deleted. The recipe below is kept for the record.
+
+### Recipe (as written)
 1. Confirm `aki-ipad` is on `origin/main` (`git branch -r --contains aki-ipad` lists origin/main, or STATE says so).
 2. In a fresh worktree: `git merge origin/aki-remaster` into a branch from origin/main (expect conflicts only where the iPad
    merge resolved project.yml/docs differently); gates from the merge head: M1 AkiCore all passed/0/0, M2 `xcodegen generate`
