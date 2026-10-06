@@ -515,3 +515,37 @@ Windows build was played to level 20 with sound on a real PC (D19 lane), and its
 4. The Windows WHAT-TO-EXPECT drops "private test build" / "we could not listen to it" wording.
 **Approved by:** Ben (1, 3); seat (2, 4). Ben tried the downloaded DMG and said "publish" — published 2026-10-06;
 `btx-windows-test-1` notes now point to btx-1.0.
+
+---
+
+## D26 — Ferazel's Wand build: Ben's five brainstorm rulings + the seat's design rulings (2026-10-06)
+
+**Decided (Ben, in the brainstorm of 2026-10-06, orchestrator Claude Fable 5.1; design `docs/plans/2026-10-06-ferazel-design.md`):**
+1. **Done = the whole game, Windows included** — all 24 levels, map, chapters, saves, bosses, Xichra, victory; on the Mac
+   (HectorShell) and Windows (the SDL shell BTX proved). Not a first slice.
+2. **First gate = level 1 "A Scent Of Peril" look-and-feel** — drawn exactly as the original's frame order, camera on the
+   keys, Ferazel standing/walking in place, **no physics**; Ben judges "does it look like Ferazel".
+3. **Gate order = front end early:** look → Ferazel moves → title/menus/world map/saves/conversations → spells and items →
+   enemies → bosses → Windows + notarized release. One plan per phase, written when its turn comes.
+4. **Screen = 640×480 at whole-number scale**, fullscreen the largest whole multiple with a black border (D3/D7 R3 shape);
+   the 8-bit palette, parallax strips and lighting tables reproduced as computed. Rejected: smooth fit (Aki's rule),
+   widescreen view.
+5. **Feel oracle = YouTube longplays + a Let's Play of part one Ben will link + his eyes at each gate.** Rejected:
+   running the original in SheepShaver, the demo build.
+**Seat's rulings under the standing 100 % rule (design §3–§7, plan `docs/plans/2026-10-06-ferazel-phase1.md`):**
+- Three layers (BTX D12 shape): `FerazelCore` (Foundation + HectorResources), `FerazelRender` (+ HectorGraphics/Audio,
+  headless 8-bit compositor, frame goldens), `Ferazel/App` on HectorShell; later `Ferazel/Windows` on HectorSDL. The
+  kit gains only PICT pixels-as-stored + a public ColorTable (K1) and uses the Deimos session's `AIFFAudio`.
+- Original data in git at `Resources/Ferazel/` by the Deimos D24 shape (six `.rsrc` forks + 28 AIFC tracks; the PEF
+  binary, the Documentation app and the SoundEdit leftovers stay out); tests never skip; `FERAZEL_DATA` overrides.
+- **Colour search (the bank's one LOW, widened by the planner's probes):** every face pixel AND every computed table
+  goes through QuickDraw's `Color2Index` at load time (the sheets carry their own palettes; 326 are 32-bit with
+  `ditherCopy`). Ruled model: exact match → that entry (ties → lowest), else the 4-bit inverse-table rule;
+  32-bit sheets Floyd–Steinberg-dithered through the same search; 1-bit masks bypass it (0/0xff). Both the exact and
+  5-bit searches and "no dither" stay selectable in tests; measured disagreement on CLUT 202: 75,461 of 211,731 table
+  entries, ~1 % of the player's pixels. On every gate card until Ben's eyes or a capture from a real Mac settle it.
+- PICT 257's short last row reads 0 (design §11 said "whatever the port held" — the alternative). Phase 1's camera stub
+  accepts arrow keys as well as the keypad (a stub; the game proper keeps the original defaults + Options dialog).
+**Rejected:** the Aki two-layer shape (no headless pixel tests, Windows would duplicate the compositor) · one engine
+target with pixels in Core (D6) · data out of git behind symlinks (superseded by D24).
+**Approved by:** Ben (items 1–5, in his words, 2026-10-06); seat rulings recorded for the executors, Ben told.

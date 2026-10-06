@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-06 (Ferazel designed + planned; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -54,6 +54,16 @@
   `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (37 MB; `tools/windows/stage-btx.sh`; stamp 83febbe) — Ben sends it
   to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. **Real PC verified 2026-10-06 by Ben's brother** (played to level 20, high-score entry, idle attract demo all work). Sound fine on the real PC (Ben, 2026-10-06). Esc ends the game with no "are you sure?" — original behaviour, kept. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
   (CrossOver strips `SDL_*`).** **D21 (Ben): no menu bar — game-only 640×480 window (2× on 1080p), Ctrl shortcuts kept, About gone; merged f482270, restaged and the release asset replaced in place.** Next: any fixes from the brother's play; then Aki on Windows.
+
+- **Ferazel's Wand — DESIGNED AND PLANNED (2026-10-06, Fable orchestrator; DECISIONS D26):** Ben's brainstorm rulings
+  (whole game + Windows; first gate = level 1 look-and-feel; front end early; 640×480 integer scale; longplays + his
+  Let's Play link as the feel oracle). Design `docs/plans/2026-10-06-ferazel-design.md` (APPROVED); plan
+  `docs/plans/2026-10-06-ferazel-phase1.md` (Phases 0 + 1, 15 tasks K1/C0–C6/R1–R6/A1–A2, 7+1 ⚑ MAJOR; Opus planner,
+  Fable review ACCEPT_WITH_FIXES 3 Important / 12 Minor, all applied; ladder Ferazel/Core 6 → 100 tests, HectorKit floor
+  289 → 301). Planner probes found two bank gaps now in the plan's "Bank corrections": face pixels go through
+  Color2Index at load (sheets carry their own palettes) and 326 PICTs are 32-bit `ditherCopy` — both LOW, both on the
+  gate card. **Nothing implemented yet.** Next: Phase 0 K1 + C0 + C1 (chip issued). Ben owes the Let's Play link
+  (goes into design §2).
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
