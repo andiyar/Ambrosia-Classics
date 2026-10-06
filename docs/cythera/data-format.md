@@ -506,3 +506,54 @@ one remembered position, so chunks do not nest. Segment 0x0400 = `'Char'` then `
 nodes `bhhl`), `'FXQ '` (`hhh` per FX entry), `'Wind'` (per open inventory window: `l` class id +
 virtual Marshal), `'Grem'` (raw 0x400 bytes = 256 × {u16 flags, u16 heap frame}) [HIGH layout; MED
 field names; subclass extras MED].
+
+---------------------------------------------------------------------------------------------
+## 8. Preferences file and the "UI Prefs" word — ⚑ wave 2 (2026-10-06)
+Code: `TPrefs` (main dump p:3837–4140), `TDelverApp::PostInitMac @ 1001215c`, `DefaultMenu @
+10015b10`, `TApPrefWindow::SaveSettings @ 100a23e8`; the shell around them is `app-shell.md` §1.3/§7.
+
+### 8.1 Container [HIGH]
+A resource file named by `STR 128` "Cythera Preferences" in the Preferences folder
+(`FindFolder(0xffff8000, 'pref', …)`; created `FSpCreateResFile(…, '????' (data 0x100d4264), 'pref')`).
+Each setting is a **named `'Pref'` resource** (id = first `UniqueID('Pref') ≥ 0x80`). `LoadPrefs` /
+`GetOrdinal` use `GetNamedResource`, so the application's own `Pref 128 "Volume"` (4 B, `00000005`)
+and `Pref 129 "Music"` (`00000002`) answer when the prefs file lacks the key (`rsrc.parse` of
+`$G/Cythera.rsrc`).
+
+| name | size | content | written by |
+|---|---|---|---|
+| UI Prefs | 4 | the word at 0x100d3e20 (§8.2) | PostInitMac (default), DefaultMenu 0x88, SaveSettings |
+| Volume / Music / Ambient | 4 | u32 ordinal: sound 0..8 (−1 = system), music 0..3, ambient 0/1; code defaults 5 / 8 / 1 | `TAudio::SetSoundVolume/SetMusicVolume/EnableAmbient` (`SetOrdinal`, p:7026–7106) |
+| Backdrop | 4 | ordinal, default 0 (MENU 138: Default Pattern / Black) | `TBackdropWind` (p:16695 reads) |
+| Map Window Loc | 8 | Rect (global) of the map window | `TDelverApp::DoQuit`; read by the `TMapWindow` ctor (p:19092) |
+| CurPlayer | alias | last saved game | `SetFile` in OpenFromFS, DoItemHit, NewGame paths |
+| CurScen | alias | scenario file | `OpenScenFile` (p:5263) |
+
+### 8.2 The "UI Prefs" word (big-endian; bytes at 0x100d3e20..23) [HIGH unless marked]
+Readers/writers: `grep -n 'd3e2[0-3]'` over the four dumps (pef, extra, missing, builtins).
+| byte.bit | meaning | evidence |
+|---|---|---|
+| 0.7 + 0.1 | movement / Graphics Quality: none = Fastest (Better Performance), 0.7 = Faster, 0.7+0.1 = Smoother (Better Quality) — sub-tile steps (engine-classes §3.4) | DefaultMenu 0x88 items 6/7/8 `& 0x7d \| 0x82 / 0x80 / –`; SaveSettings same; readers `HandleMove`, `HandleSubMove`, `SetStage`, `DrawRoutine`, `MoveAll`, `Render`, `TBark::Draw` |
+| 0.6 | Manually Place Containers (0 = auto-place) | items 1/2; `TInventoryWindow::RandomPlace` |
+| 0.5–0.2 | anim-frame spacing F in ticks (4/6/8 = 15/10/7.5 frames/s) | items 10/11/12 `& 0xc3 \| 0x10/0x18/0x20`; read only by `MyScheduler` |
+| 0.0 | Live Dragging (copied to app +0x67/+0x68/+0x69) | item 4; SaveSettings |
+| 1.7 | Use 'ZoomRects' | SaveSettings; `TCharacterWindow::PostInit`, `TInventoryWindow::CloseRoutine/RandomPlace` |
+| 1.6 | Walk around obstacles | SaveSettings; `TGameSys::MoveCommand` |
+| 1.5 | switch the game monitor to 256 colours at startup | PostInitMac DLOG 140 item 1; `TryAMonitor` |
+| 1.4 | don't ask about 256 colours again | PostInitMac DLOG 140 item 3 |
+| 1.3 | Motion Filters (displacement filters) | SaveSettings; `DisplacementFilterTile`, `CopyTile`, `TCopyTile`, `MaskAnyTile` |
+| 1.2 | multi-button mouse → modifier mapping | read by `MyGetEvent`; **no writer** [HIGH scan] |
+| 3.0 | skip the 2-s splash wait; also gates one `TMapWindow::KeyRoutine` branch (x:375) [MED: branch purpose] | read by `main`, x:375; **no writer** |
+Other bits: no reader or writer found; byte 2 is 0 in every default word (§8.3).
+
+### 8.3 First-run defaults by CPU [HIGH words; CPU names MED (Apple Gestalt constants)]
+`PostInitMac` (m:4333–4356): `Gestalt('cput')`, else `Gestalt('proc') − 1`; words from
+`python3 -c "import sys;sys.path.insert(0,'docs/cythera/tools');import toc;print([hex(w) for w in toc.data_u32(0x100d426c,4)])"`.
+| `cput` | word | decode |
+|---|---|---|
+| < 4 (68000–68030) | 0x18800000 | Fastest, auto-place, F = 6, ZoomRects; **also `SetMusicVolume(0, 1)`** |
+| = 4 (68040) | 0x18800000 | as above, music untouched |
+| 0x101–0x105 (601/603/604) | 0x99800000 | Faster, Live Dragging, F = 6, ZoomRects |
+| ≥ 0x106 (603e, 750, 604e, …) | 0xDBC80000 | Smoother, manual containers, Live Dragging, F = 6, ZoomRects, walk around obstacles, motion filters |
+The static initial value of the word (`toc.data_u32(0x100d3e20,1)` = 0x98C00000) is always replaced
+by the loaded or default word before use. [HIGH]
