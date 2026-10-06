@@ -124,25 +124,28 @@ SDL_AUDIO_DRIVER=dummy SDL_VIDEO_DRIVER=dummy swift run --package-path BubbleTro
   BubbleTroubleXWin --data <Data> --frames 600 --dump mac.ppm
 ```
 
-**Window (W4.5):** the in-window menu bar in the 20 px strip, the original dialogs drawn over the game (DLOG/DITL),
-the About panel; resizable, opening at the largest integer scale whose window fits the screen's usable area
-(`--scale N` overrides); Options ▸ Full Screen (Ctrl+F, saved in the prefs and restored at launch) hides the strip
-and integer-fits the game screen on black; Window ▸ Minimize and Zoom are disabled, as on the Mac (its window is
-titled only). While the window is dragged or resized (Windows' modal move/size loop blocks the event poll) the game
-keeps its clocks and picture through HectorSDL's live-redraw handler (`WinGameDriver.liveStep`). The loop sleeps
+**Window (W4.5, D21):** the 640×480 game screen alone — no menu bar (D21, Ben 2026-10-06) — with the original
+dialogs drawn over it (DLOG/DITL); resizable, opening at the largest integer scale whose window fits the screen's
+usable area (`--scale N` overrides). The Mac menus' key equivalents stay, with their enable rules (`WinShortcuts`):
+Ctrl+F full screen (saved in the prefs and restored at launch; integer-fits the game screen on black) and Ctrl+,
+preferences — both off in play — Ctrl+M music, Ctrl+Shift+A sound effects, Ctrl+Q quit, Ctrl+Alt+M eaten (Minimize
+All: nothing happens); every one off while a dialog is up. No About (it had no other way in). While the
+window is dragged or resized (Windows' modal move/size loop blocks the event poll) the game keeps its clocks and picture through HectorSDL's live-redraw handler (`WinGameDriver.liveStep`). The loop sleeps
 until the next timer is due (`SDLClock.sleepPrecise`). Layout-aware text (SDL text
 input, AltGr) while a dialog's edit field has the focus. `--auto-dialogs` answers every dialog at once with its
 default instead (the old W4 behaviour).
 
-**Window scale on a 1080p Windows 11 screen:** the initial scale stays integer-fit (HectorShell D7), so 2× (1280×1000
-plus the title bar) does not fit above the taskbar and the window opens at 1× — Full Screen (Ctrl+F) gives 2×.
+**Window scale:** the initial scale stays integer-fit (HectorShell D7): the largest k with 640k × 480k plus HectorSDL's
+16 × 40 frame allowance inside the usable bounds. 1080p (Windows 10/11, taskbar at the bottom: 1920 × 1032–1040
+usable): 2× (1280×960 — height (1032 − 40) / 480 = 2, width 1904 / 640 = 2). 1366×768 (≈ 1366 × 728 usable): 1× (688 / 480 = 1). Before
+D21 the 640×500 canvas opened at 1× on 1080p (992 / 500 = 1).
 
 **Headless smoke mode** (`--frames N`): N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s,
-each), then the last presented canvas (640×500; 640×480 in full screen) → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio
+each), then the last presented canvas (640×480) → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio
 driver in-process, keeps prefs in memory (unless `--prefs`), uses the name "Player" and 3 March, and ignores
 focus events — so a dump depends only on N, the script and the data. `--keys FILE` plays timed input, one
 command per line (`#` comments): `<frame> press|down|up <key> [cmd|shift|option|control]`, `<frame> click <x>
-<y>` (canvas pixels; the menu strip is rows 0–19), `<frame> move <x> <y>` (the pointer, no button), `<frame> text <string>` (typed text, as SDL text input delivers it
+<y>` (canvas pixels, the 640×480 game screen), `<frame> move <x> <y>` (the pointer, no button), `<frame> text <string>` (typed text, as SDL text input delivers it
 after the key), `<frame> caps on|off`, `<frame> quit`. Keys: a–z, 0–9, space,
 return, enter, tab, delete, esc, left/right/up/down, command/shift/capslock/option/control, or `0x..`
 (Carbon key codes). Ctrl+Q on Windows is `press q cmd`. Example: `620 press return` starts a game from the menu.
@@ -150,10 +153,14 @@ return, enter, tab, delete, esc, left/right/up/down, command/shift/capslock/opti
 W4 results (2026-10-06): `--frames 600` reaches the main menu; `--frames 900` with `620 press return` is in
 level 1 (its JPEG background from `Decoded/`); both CrossOver dumps `cmp`-identical to the Mac SDL build's.
 
-W4.5 results (2026-10-06): `--frames 610` with `600 click 180 10` + `602 move 220 84` shows the Options menu open
-over the main menu (Music highlighted); `--frames 660` with `600 press 0x2b cmd` (Ctrl+,) shows DLOG 190 over it;
+W4.5 results (2026-10-06, before D21 removed the bar): `--frames 610` with `600 click 180 10` + `602 move 220 84`
+showed the Options menu open over the main menu (Music highlighted); `--frames 660` with `600 press 0x2b cmd` (Ctrl+,) shows DLOG 190 over it;
 both CrossOver dumps (`HECTOR_SDL_*_DRIVER=dummy`, `--prefs` in scratch) exit 0 and are `cmp`-identical to the Mac
 SDL build's.
+
+D21 results (2026-10-06, no menu bar): every dump is 640×480. `--frames 600` (main menu), `--frames 900` with `620 press
+return` (level 1) and `--frames 660` with `600 press 0x2b cmd` (Ctrl+, → DLOG 190) exit 0 in CrossOver and are
+`cmp`-identical to the Mac SDL build's.
 
 ## Staging for a tester (W7)
 
@@ -186,8 +193,8 @@ SDL build's.
 - **Data/:** the five `.rsrc` files, `Fonts/*.btxfont`, `Decoded/*.rgba` + `manifest.txt` regenerated by
   `btx-predecode` (D18.3).
 - **`WHAT-TO-EXPECT.txt`:** `docs/bubble-trouble/WINDOWS-WHAT-TO-EXPECT.md`, markup stripped, UTF-8 BOM + CRLF.
-- **Start-up check** (`WinStartup.missingData`): the five `.rsrc` files, all four fonts the game draws with
-  (Geneva 9/10, System 12, System Bold 12) and every band `Decoded/manifest.txt` lists; the message names what is
+- **Start-up check** (`WinStartup.missingData`): the five `.rsrc` files, all four baked fonts (Geneva 9/10, System
+  12, System Bold 12 — since D21 the game draws only Geneva 9 and System 12; the other two are still shipped) and every band `Decoded/manifest.txt` lists; the message names what is
   missing.
 - **Start-up failures** are visible without a console: a message box (HectorSDL `SDLMessageBox`; never in `--frames`
   mode; `HECTOR_SDL_MESSAGEBOX_CAPTURE=<file>` writes it to a file instead) and `BubbleTroubleX.log` beside the prefs

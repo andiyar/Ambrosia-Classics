@@ -435,3 +435,20 @@ anonymous download verified byte-identical to the staged zip. **Supersedes D16.4
 Apple-glyph `.btxfont` files (menu bar/dialog text only) now ship publicly, Ben's call knowing it. Original game data
 public per D10. Ben reports the Windows build **plays with sound in CrossOver** (first ear check).
 **Approved by:** Ben.
+
+## D21 — Windows build has no menu bar; Ctrl shortcuts kept; window 640×480 (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "it looks silly. just get rid of it entirely. it doesn't need it. ctrl-f full
+screen can be as given." **Supersedes D15.3 for the menu bar only** — the original Carbon dialogs stay drawn in-window
+(DLOG/DITL, D15.3). The drawn bar, its tracker and the Alt alternates are deleted; D19.1 and D19.3 (about the
+bar's items) lapse with it. The window is the 640×480 game screen alone, windowed and in full screen (no 20 px strip, no
+offsets); at the integer-fit opening scale (D19.4, unchanged rule) that is now **2× on a 1080p screen** (Windows 10/11,
+taskbar at the bottom) and 1× on 1366×768.
+**Kept:** the Mac bar's key equivalents with its enable rules (`WinShortcuts`): Ctrl+F full screen, Ctrl+, preferences
+(both off in play), Ctrl+M music, Ctrl+Shift+A sound effects, Ctrl+Q quit, Ctrl+Alt+M eaten (Minimize All: nothing
+happens, as on the Mac); all off while a dialog is up. Physical keys only (D19.2).
+**Dropped with the bar:** About (no shortcut, no other way in — `WinAboutPanel` deleted); Options ▸ Key Sets (no
+shortcut; Preferences ▸ Keys still chooses the set); the check marks.
+**Carried:** Geneva 10 and System Bold 12 (drawn only by the bar and About) are still baked, shipped and checked at
+start-up — read by nothing; dropping them is a staging change for another day.
+**Approved by:** Ben (the removal); orchestrator brief (shortcut list, About's fate).

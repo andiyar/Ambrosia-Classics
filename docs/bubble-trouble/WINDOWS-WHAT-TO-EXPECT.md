@@ -13,19 +13,24 @@ original game's own data. Thank you for trying it.
    Click **More info**, then **Run anyway**. You only need to do this once.
 
 You should see the Ambrosia logo, a loading screen, then the title screen. It looks like the 2008 Mac game on
-purpose: the Mac-style menu bar is drawn at the top of the game window, and the dialogs are the original Mac ones.
+purpose: the window is just the game, and the dialogs (preferences, high scores) are the original Mac ones.
 
 ## Window size
-The window opens at the biggest whole-number size that fits your screen. On a typical 1080p laptop that is the
-original size (640×500: the 640×480 game plus the menu bar — small). **Ctrl+F** switches to full screen with a bigger, sharp picture; Ctrl+F again
-goes back. The game remembers which you used.
+The game is 640×480. The window opens at the biggest whole-number multiple of that which fits your screen: on a
+typical 1080p screen that is double size (1280×960); on a smaller 1366×768 laptop screen it is the original size.
+**Ctrl+F** switches to full screen with the biggest sharp picture that fits; Ctrl+F again goes back. The game
+remembers which you used.
 
 ## Keys
 - Title screen: **N** or **Enter** new game, **D** demo, **S** high scores, **P** preferences, **C** credits,
   **L** level select, **Q** quit.
 - Playing: **arrow keys** move, **Space** pushes, **Caps Lock** pauses while it is on, **Esc** ends the game.
-- The Mac's ⌘ (Command) key is **Ctrl** here: **Ctrl+F** full screen, **Ctrl+M** music on/off,
-  **Ctrl+Shift+A** sound effects on/off, **Ctrl+,** (comma) preferences, **Ctrl+Q** quit.
+- There is no menu bar; the Mac menus' shortcuts work, with **Ctrl** for the Mac's ⌘ (Command) key:
+  - **Ctrl+F** full screen on/off (not while playing)
+  - **Ctrl+,** (comma) preferences (not while playing — pause with Caps Lock first, then Ctrl+,)
+  - **Ctrl+M** music on/off
+  - **Ctrl+Shift+A** sound effects on/off
+  - **Ctrl+Q** quit (closing the window quits too)
 - The Mac's Option key is **Alt** (for example Alt-click "Scores" on the title screen to erase the high scores).
 - You can choose other keys in Preferences → Keys → New Set….
 
@@ -40,5 +45,5 @@ game starts. If the game cannot start it shows a message saying why.
 
 ## What to tell us
 - Did it start? If not: what you saw, a screenshot, and the BubbleTroubleX.log file.
-- Does it play right — speed, controls, sound, music, menus, dialogs, full screen?
+- Does it play right — speed, controls, sound, music, dialogs, full screen?
 - Anything odd: what you did just before, a screenshot (Windows+Shift+S), and the log file.
