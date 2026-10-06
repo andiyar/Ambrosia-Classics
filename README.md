@@ -25,11 +25,40 @@ I just played my first game of Aki in a decade. I am so happy!
 
 ## Status
 
+### Aki — Mahjong Solitaire
+![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
+![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
+![iPad](https://img.shields.io/badge/iPad-build%20from%20source-lightgrey) &nbsp;
+![Remastered Art](https://img.shields.io/badge/Remastered%20Art-⌘G-blueviolet)
+
 **Aki 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/aki-1.0): a signed, notarized Mac app with the original Aki 1.2.0 data inside. Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. It passed my hands-on check on 2026-10-04: it plays like Aki, on every difficulty.
 
 There's also an **iPad version** (same game, same data, touch in place of the mouse). It's in the source, not in the download: you build it yourself for now. And there's a **Remastered Art** mode: every picture redrawn 4× sharper, with smooth de-dithered backgrounds, grain-free tile bodies and sharp tile faces. Same game underneath. Turn it on with **Aki ▸ Remastered Art** (⌘G); off is the original 2008 pixels. Next for Aki is Phase 3: the Level Editor and custom `.aki` level packs.
 
-**Bubble Trouble X** is playable on the Mac, with sound, and I'm playtesting it now. There's also a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1). **Ferazel's Wand, Deimos Rising and Cythera** have their reverse-engineering notes written (rules, formats, the decompiled functions mapped); no code yet.
+### Bubble Trouble X
+![status](https://img.shields.io/badge/status-playable-green) &nbsp;
+![Mac](https://img.shields.io/badge/Mac-playtesting-yellow) &nbsp;
+![Windows](https://img.shields.io/badge/Windows-test%20build-yellow)
+
+Playable on the Mac, with sound and music, and I'm playtesting it now. Every sound effect and each level set's music matches the original. It also runs on Windows 10/11: there's a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1), cross-compiled from the same Swift code. A proper release comes once my playtest is done.
+
+### Deimos Rising
+![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
+![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%%20read-green)
+
+Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). It's the next one to be built: first the decoders for its data files, then the game.
+
+### Ferazel's Wand
+![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
+![code](https://img.shields.io/badge/code-not%20started-lightgrey)
+
+The reverse-engineering notes are written (rules, formats, enemies, bosses, spells, physics) and a second deeper pass is under way. No code yet.
+
+### Cythera
+![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
+![code](https://img.shields.io/badge/code-not%20started-lightgrey)
+
+The rules notes are written and the whole binary is decompiled; the next pass reads the rest of it. No code yet.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
