@@ -19,6 +19,8 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 | `run-in-crossover.sh <exe> [args]` | Runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through **truncated to 8 bits** (see below), watchdog `WIN_RUN_TIMEOUT` (default 900 s) |
 | `proof-b.sh` | Copies `BubbleTrouble/Core` (laid out like the repo; its sources unmodified, but the copy's test-only `PNGWriter.swift` is patched — see the end of this file) + a symlinked HectorKit, cross-builds the tests, runs each test class in CrossOver, tallies verdicts; exits 1 if `--list-tests` finds no tests |
 | `hello/` | Proof A package |
+| `btx-predecode` (`BubbleTroubleX/Windows`, Mac-only) | Decodes BTX's QuickTime-JPEG PICT bands with ImageIO into `<key>.rgba` files (D16.1); `proof-b.sh` runs it first into `$WIN_CROSS/work/proof-b/decoded` |
+| `HECTORKIT_DECODED_DIR` (env) | Off Apple, the core's data-gated render/census tests register this directory of `.rgba` files once (`CodecImage.registerPrecomputed`); unset there → XCTSkip. Ignored on the Mac |
 
 ## Pinned versions (2026-10-06)
 

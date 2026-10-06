@@ -6,6 +6,9 @@
 #   HECTORKIT_DIR      HectorKit checkout to build against (default ~/Developer/HectorKit)
 #   HECTORKIT_DATA_BTX the BTX data folder as a MAC path (converted to Z:\… for Wine); default = the 1.1 UB copy
 #
+# Before the run, btx-predecode (Mac-only, from the repo — not the copy) decodes the QuickTime-JPEG bands into
+# $work/decoded, exported to the tests as HECTORKIT_DECODED_DIR (Z:\…; D16.1 — no ImageIO on Windows).
+#
 # One CrossOver run per test class (a crash only loses its class); a class that dies is re-run test by test
 # so every test gets a verdict. Prints per-class lines and a final "passed / failed / skipped / crashed" tally.
 set -euo pipefail
@@ -49,8 +52,13 @@ WIN_BUILD_ROOT="$work/build" "$here/build.sh" "$core" all --tests >&2
 exe="$work/build/Core/$WIN_TRIPLE/debug/BubbleTroubleCorePackageTests.exe"
 [[ -f "$exe" ]] || { print -u2 "proof-b: test executable not built"; exit 70; }
 
+# ---- Precomputed decodes (on the Mac) ----------------------------------------------------------------
+# The repo's btx-predecode builds against the repo's HectorKit symlink, not $HECTORKIT_DIR.
+swift run -c release --package-path "$repo/BubbleTroubleX/Windows" btx-predecode "$data" "$work/decoded" >&2
+
 # ---- Run ----------------------------------------------------------------------------------------------
 export HECTORKIT_DATA_BTX="$(win_path "$data")"
+export HECTORKIT_DECODED_DIR="$(win_path "$work/decoded")"
 export WIN_RUN_TIMEOUT="${WIN_RUN_TIMEOUT:-900}"
 logs="$work/logs"; rm -rf "$logs"; mkdir -p "$logs"
 "$here/run-in-crossover.sh" "$exe" --list-tests > "$logs/list.txt" 2>&1 || true
