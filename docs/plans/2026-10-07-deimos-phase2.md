@@ -287,13 +287,12 @@ New Core sources go under `Sources/DeimosCore/{Math,Units,Combat,Effects,Weapons
   and `SpawnResult` (`{entity index, serial}` — `FUN_10035cd0`'s out-param).
 - ★ `CueBuffer` (C0, `Audio/CueBuffer.swift`) — the pass's `[SoundCue]`, `[MusicCue]`, **`haltEffectsAt: Int?`** (the
   index into the sound list at which `FUN_100476a0` ran — sounds before it are cut, sounds from it on start after the
-  halt; leg A I-6), `masterVolume: Int32?`; `SoundPlay.record(_:allowMultiple:rng:)` = `FUN_100475e0` (listing
+  halt; leg A I-6); `SoundPlay.record(_:allowMultiple:rng:)` = `FUN_100475e0` (listing
   `10047600–1004764c`: id `none` → no draw, no cue; volume = `R(min, min)` — no draw; priority = `Priority & 0xFF`;
   pitch = `rng.range(minPitch, maxPitch)`); `SoundPlay.perm(_:priority:volume:allowMultiple:)` = `FUN_10047670`
   (pitch 1.0, no draw). The `min(P, 100)` clamp of `FUN_10047bf0` step 3 is the mixer's (A1).
 - ★ `ParticleSystem`, `DebrisList`, `MotionBlurPool` (C13); `NoticeSlot`, `MessageQueue` (C16); `WeaponHandler`
-  moves to `Weapons/WeaponHandler.swift` (C15, same name, fields grow); `Console`, `FrameKeys`,
-  `VolumeKeyBehaviour` (C19); `FilmCursor` (C7: the film, a cursor per player, **`scoreAtRead`** per player (the score
+  moves to `Weapons/WeaponHandler.swift` (C15, same name, fields grow); `Console`, `FrameKeys` (C19); `FilmCursor` (C7: the film, a cursor per player, **`scoreAtRead`** per player (the score
   at the last read — G4.1); `next(player:)` = `FUN_100097a0` — the byte at the cursor, 0 past the recording, cursor +
   1; `finished` = `FUN_10009750`, signed P1 cursor > frames) and `TickTrace` (C7 declares the row shape; H2 records it).
 - ★ `Player` gains the full field set of player-physics §1 (C14). ◇ `Player.updatePhase1` stays as a wrapper until
@@ -312,7 +311,6 @@ public static func isHostOp(_ op: RenderOp) -> Bool   // true for .fade, .limit,
 public struct ParticleStamp: Equatable, Sendable { public var x, y: Int32; public var core, fringe: UInt16; public var fade: Int32 }   // top-left, §2.9
 // PassOutput — new fields (defaults nil)
 public var haltEffectsAt: Int?          // index into `sounds` where FUN_100476a0 ran
-public var masterVolume: Int32?         // int pref 0 to apply as the app gain (OS 9 behaviour only, Q4)
 // HeldKeys — new field (default [])
 public var typed: [UInt8]               // key-down Mac charCodes since the last pass, no auto-repeat (GetOSEvent keyDown — C19 pins the codes)
 // MSLRandom — new field
@@ -331,7 +329,7 @@ public mutating func pass(keys: HeldKeys, ticks: UInt32) -> PassOutput   // tick
 ### S5. DeimosAudio public surface (A1, A2)
 ```swift
 public protocol DeimosAudioSink: AnyObject, Sendable {    // what the driver feeds, in pass order
-    func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?, masterVolume: Int32?)
+    func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?)
 }
 public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {   // PCMPullSource = K2
     public init(assets: DeimosAssets) throws                    // preloads every soun effect from assets.index (sound-music §2.3 step 4)
@@ -340,8 +338,8 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {   // PCMP
 }
 ```
 Internals (A1/A2, not LOCKED): `IMAContinuous`, `EffectMixer` (16 voices, 8 audible, 1024-frame blocks),
-`MusicStream` (non-allocating ima4 packet decoder), all shared state under one `Mutex`. Master gain starts at unity
-(128/128) and changes only when a `masterVolume` arrives.
+`MusicStream` (non-allocating ima4 packet decoder), all shared state under one `Mutex`. There is no master gain: the app
+plays at unity and the OS volume controls apply (Q4 RULED by Ben 2026-10-07, D31).
 
 ### S6. DeimosHost additions (H2, H3)
 `DeimosDriver.init(assets:prefs:rate:start:audio:)` (`audio: (any DeimosAudioSink)? = nil` keeps every Phase-1
@@ -434,10 +432,10 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **Contract:** S3 and the `CueBuffer`/`SoundPlay` lines of S2. `unitIndex` built once in `DeimosAssets.load`.
   **DECISIONS D31** "Deimos Rising build: Phase 2 rulings (seat)": DeimosAudio target (the ruling above), S3 additions,
   `GameState` storage rule and hook stubs (invariants 13–14), cue routing at pass begin with the positional halt (H2),
-  S9 stand-ins, the button mapping pinned to the guide (p17), Q2/Q3 built on their defaults, **Q4 built as one switch
-  defaulting to the OS X behaviour pending Ben** (C19), Q5 not reachable, the G4 rule incl. "pending trace", F1 and
+  S9 stand-ins, the button mapping pinned to the guide (p17), Q2/Q3 built on their defaults, **Q4 RULED by Ben: the Mac OS X behaviour, no
+  in-game volume — unity gain, the OS controls the level** (C19), Q5 not reachable, the G4 rule incl. "pending trace", F1 and
   "predates the code", bank corrections owned by B1, prefs file stays Phase 4.
-- **Tests (6):** `testPassOutputAdditiveDefaults` (haltEffectsAt nil, masterVolume nil, typed []; the new `RenderOp`
+- **Tests (6):** `testPassOutputAdditiveDefaults` (haltEffectsAt nil, typed []; the new `RenderOp`
   cases round-trip `Equatable`; `isHostOp` true for `.fade`, `.limit`, `.pauseWait`, false for `.present`) ·
   `testRandomDrawCounter` (srand(1): `range(10, 11)` = 10 from rand 16838 (p08), draws 1; `range(5, 5)` and `range(1.0,
   1.0)` leave draws at 1; `srand` resets to 0; two generators equal in state but not in `draws` compare `==`) ·
@@ -447,7 +445,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   `testUnitIndex` (386 entries; `bu01` → "Buzzsaw Mk 1"; `none` absent) · `testButtonMappingMatchesGuideAndFilms`
   (KeyTable slot bits up, left, right, down, fireAir, fireGround, select; ⌘ → fireAir, ⌥ → fireGround, Space → select
   per the guide's Default Controls; film census: ticks with bit 6 set de01 0, de02 15, de03 26, de04 3; p11/p17).
-- **Gate:** G2 = **195/0**, G5. **Commit:** `DeimosCore: Phase 2 seam additions (particles, pauseWait, positional halt, masterVolume, typed keys), CueBuffer + SoundPlay, draw counter, unit index; DECISIONS D31; 6 tests`.
+- **Gate:** G2 = **195/0**, G5. **Commit:** `DeimosCore: Phase 2 seam additions (particles, pauseWait, positional halt, typed keys), CueBuffer + SoundPlay, draw counter, unit index; DECISIONS D31; 6 tests`.
 
 ### A1 — ⚑ MAJOR — DeimosAudio: the continuous-IMA conversion and the 16-voice effects mixer (→ +8, canonical 203)
 - **Precondition:** disassemble `FUN_100d1d90` with `DisasmRange.java` (it has no listing; `$LISTX`) and read it
@@ -519,10 +517,9 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   packets per channel decoded on demand into a buffer preallocated at `.play`; the kit's `IMA4` is the oracle in tests
   — leg B I9 ruling (a)), looping the whole SSND seamlessly (§6.3), linear resampling to 44.1 kHz if the file rate
   differs; `.play` restarts from 0, `.stop` disposes, `.pause`/`.resume` freeze/continue (§6.5); level amp `min(255,
-  m·fade >> 8)` with fade 0x100 → gain `amp/255` (**Q3 default 255**). Master gain `clamp(trunc(128·v/100), 0, 128)/128`
-  (`FUN_10047b80`) applied to effects **and** music, **starting at unity** and changed only by a `masterVolume` (Q4:
-  the OS X default never sends one). `apply` order: start `sounds[0..<k]`, `stopAll` effects when `haltEffectsAt = k`,
-  start `sounds[k...]`, then music cues, then the master volume. `render` mixes under one `Mutex`, never allocates.
+  m·fade >> 8)` with fade 0x100 → gain `amp/255` (**Q3 default 255**). No master gain: `FUN_10047b80`'s OS-volume write did nothing audible on Mac OS X, so effects and music play at unity
+  and the OS volume controls apply (Q4 RULED by Ben 2026-10-07, D31). `apply` order: start `sounds[0..<k]`, `stopAll` effects when `haltEffectsAt = k`,
+  start `sounds[k...]`, then music cues. `render` mixes under one `Mutex`, never allocates.
   Effects preload: every `soun` tag in `assets.index` that passes `DeimosSound`'s effect gate.
 - **Tests (7):** `testMusicAmpFullScale255` (int pref 1 = 100 → m 128 → amp 128 → gain 128/255; §6.2) ·
   `testMusicLoopsSeamlessly` (a synthetic 2-packet AIFC: frame after the last = frame 0) ·
@@ -705,23 +702,19 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   returns a value (`FrameKeysResult`: pause started, volume change, interlace toggled, quit) — C18a turns it into
   ops/cues. Caps Lock (pressed, not paused, not a film → paused + "Press Caps Lock" notice; the end-frame wrapper's
   pause = `haltEffects` at the current sound index, gaso 8 `incl` prio 50, `MusicCue.pause`, `.pauseWait(.gameScreen)`;
-  resume: `MusicCue.resume`, notice clear). **Volume keys — one switch `VolumeKeyBehaviour` (orchestrator ruling 7),
-  default `.osX` pending Ben:** `.osX` (`FUN_100461b0` true — what Ben played, D30): `-`/`=` still change int pref 0 by
-  ∓10 (clamped 0…100) but emit **no** device/app-gain change, no click, no message; the app gain stays unity.
-  `.os9`: `-`/`=` edge-triggered ±10 from the pref's value (fresh prefs 50; the boot quantisation 100 → 90 applies at
-  launch — Phase 4 boot, emitted by C18a at session start in `.os9`), `masterVolume`, gaso 7 `incl` prio 100 vol 100,
-  message pgsl 21 / "%s%i%s" (22, v, 23). F6 toggles byte pref 5 with pgsl 17/18 + gaso 7. FPS monitor (`ticks`) and
+  resume: `MusicCue.resume`, notice clear). **Volume keys — Q4 RULED by Ben 2026-10-07 (D31): the Mac OS X behaviour only** (`FUN_100461b0` true — what Ben
+  played, D30): `-`/`=` still change int pref 0 by ∓10 (clamped 0…100) but emit **no** gain change, no click, no
+  message; the game plays at full level and the OS volume controls apply. The OS 9 branch is not built.
+  F6 toggles byte pref 5 with pgsl 17/18 + gaso 7. FPS monitor (`ticks`) and
   the pref-9 counter text (formats 39/40). Console: open on `~` (flush typed queue, gaso 1), one char per frame, the
   **charCode table** (up-arrow 0x1E, backspace 0x08, Return 0x0D, line feed 0x0A; no auto-repeat — leg B m15), 30-char
   cap and 120-frame expiry → Return, recall, `~` sets the redraw flag, execute (uppercased name over the ten,
   `Unknown Command` type 1, gaso 4/5), input withheld while open, draw (formats 33/34, fade-out 4/frame); cheats.
 - **Tests (9):** `testCapsLockPauseResult` (FrameKeys result: pause started, notice posted, the halt/`incl`/music-pause
-  cue sequence; none in a film; leg B I6) · `testVolumeKeysBothBehaviours` (`.osX`: 50 `-` → pref 40, no cue, no
-  message, no masterVolume; `.os9`: 50 `-` → 40 "Sound Volume     40%", masterVolume 40, gaso 7 prio 100; 0 → "Sound
-  Volume     OFF"; edge only) · `testF6Interlace` ("Interlacing      ON" (6 spaces) from 0) · `testFPSCounterText` (31
+  cue sequence; none in a film; leg B I6) · `testVolumeKeysOSX` (50 `-` → pref 40, no cue, no message; 100 `=` stays 100; 0 `-` stays 0; edge only) · `testF6Interlace` ("Interlacing      ON" (6 spaces) from 0) · `testFPSCounterText` (31
   frames → "31" in format 39; 29 → format 40) · `testConsoleTyping` · `testRegisteredCommandsOnly` ·
   `testCheatWordAndGate` · `testCheatLimits` · `testVersionText` ("Version: 1.0.6, Jan  2 2004, 11:55:08").
-- **Gate:** G2 = previous + **9** (canonical **299**). **Commit:** `DeimosCore: begin-frame keys (Caps Lock pause, volume keys OS X/OS 9 switch, F6, FPS monitor) and the console with the 1.0.6 commands + cheats; 9 tests`.
+- **Gate:** G2 = previous + **9** (canonical **299**). **Commit:** `DeimosCore: begin-frame keys (Caps Lock pause, volume keys as on OS X (pref only), F6, FPS monitor) and the console with the 1.0.6 commands + cheats; 9 tests`.
 
 ### C11b — ⚑ MAJOR — Combat II: destruction, random bonus, media gate, removal sweep, terrain stamps (→ +6, canonical 305) — ∥ C17
 - **Precondition:** read `FUN_10016300` (`10016300–10016528` + the bonus ladder to `1001685c`), `FUN_10016880`,
@@ -803,7 +796,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   `start.film?.seed ?? seed`; sector from the film's level; players from the film) then `FUN_100064d0` (music `[.play(
   ammu), .stop]` when not a film (S9.4); players' level start (draws); resets; scroll level start incl. the mask;
   `FUN_10032e60` + pending list; load pass; `no01` (0 draws) at (208, 240); black fill; score bar; first terrain blit;
-  `.os9` → session-start `masterVolume`). `pass(keys:ticks:)`: begin frame (`FrameKeys`, console) → tick: appear check
+  ). `pass(keys:ticks:)`: begin frame (`FrameKeys`, console) → tick: appear check
   (level music then the fade — not in a film) → `updateWorld` → level complete → game time + 1 → **`tickOps`** → draw
   world (groups → blurs → players → tally text → notice → score bar) → film banner → end frame (messages → FPS counter
   → console → flush 0–1 → terrain → flush 2–5 → `.particles` → flush 6–15 → limit → present) → pause (FrameKeys result
@@ -919,9 +912,8 @@ and what would be wrong.
    **Q2 (pitch):** bullet impacts `exsl` play short and high (speed = 1/pitch, as the code). If the longplay's impacts
    are deep and slow, say "flip pitch". **Q3 (music level):** music sits about half as loud as a full-volume effect
    (full scale 255). Too quiet? Say so.
-9. **Volume keys `-`/`=` (Q4):** built as on Mac OS X, which is how you played (D30) — they do nothing you can hear,
-   no message; the game plays at full app volume. The Mac OS 9 behaviour (±10 % with a click and a "Sound Volume 40%"
-   message, starting at the original's 50 %) is one switch away — say "OS 9 volume keys" if you remember them.
+9. **Volume keys `-`/`=` (Q4, your ruling):** as on Mac OS X — they do nothing you can hear and show no message; the
+   game plays at full level and your Mac's own volume controls set the loudness.
 10. **Caps Lock** pauses ("Press Caps Lock" notice; sound cut, the pause click, music frozen) until released. **F6**
     toggles interlacing with a message. **`~`** opens the console: `FPS`, `VERSION`, `supermunki` then the cheats
     (`life`, `score`, `funds`, `shields`, `mult`, `accuracy`). **Esc** starts level 1 again (◇).
@@ -1007,10 +999,9 @@ Q5 (invulnerability carry-over) is not reachable until level 2 (Phase 3).
 
 - **Q2 — pitch direction** (design §11.2, INDEX #49): default **as the code** — speed = 1/pitch.
 - **Q3 — music loudness** (§11.3, INDEX #50): default **full scale 255** — music at 128/255 of a full effect.
-- **Q4 — volume keys** (§11.4, INDEX #44/#52; orchestrator ruling 7, asked of Ben 2026-10-07): **one switch, default
-  the Mac OS X behaviour** (D30: Ben played on OS X — keys silent, full app volume); the alternative is the OS 9
-  behaviour (±10 with click and message, the original's 50 % start). The orchestrator patches the default if Ben
-  answers otherwise.
+- **Q4 — volume keys** (§11.4, INDEX #44/#52): **RULED by Ben 2026-10-07 (D31): the Mac OS X behaviour** — keys
+  silent, no in-game volume, unity gain; the OS volume controls apply ("can't we just have the game default to 100% and
+  use the system controls?").
 - **Q5 — invulnerability carry-over** (§11.5): default **as read**; not reachable in Phase 2.
 - **Only if G4 misses:** "the demo was recorded on an earlier build" — Ben's eyes on `-film de01` decide (G4.4).
 
