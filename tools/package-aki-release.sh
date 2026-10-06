@@ -152,7 +152,7 @@ check_manifest() {
 no_fonts() {
     local hit
     hit="$(find -L "$1" -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' -o -iname '*.otc' \
-            -o -iname '*.dfont' \) -print -quit)"
+            -o -iname '*.dfont' \) -print -quit)" || die "find failed while scanning $1 for font files"
     [[ -z "$hit" ]] || die "a font file is in the bundle ($hit) — Apple's fonts are not redistributable (D4)"
     [[ ! -e "$1/Contents/Resources/Fonts" ]] \
         || die "the bundle has a Contents/Resources/Fonts directory — no fonts ship in the release (D4)"
@@ -174,7 +174,8 @@ else
 fi
 if (( DATA_OK )); then
     # (no `| head` here: under pipefail its early exit can SIGPIPE the find and kill the script silently)
-    RSRC="$(find "$DATA" -type f ! -name .DS_Store -exec sh -c 'for f; do if [ -s "$f/..namedfork/rsrc" ]; then echo "$f"; fi; done' _ {} +)"
+    RSRC="$(find "$DATA" -type f ! -name .DS_Store -exec sh -c 'for f; do if [ -s "$f/..namedfork/rsrc" ]; then echo "$f"; fi; done' _ {} +)" \
+        || die "find failed while scanning $DATA for resource forks"
     RSRC="${RSRC%%$'\n'*}"
     [[ -z "$RSRC" ]] || problem "a data file carries a resource fork ($RSRC); xattr -cr / codesign would drop it"
     DATA_MANIFEST="$(manifest_of "$DATA" "")"
@@ -269,7 +270,7 @@ if (( DRY_RUN )); then
         would "xcodegen generate --quiet"
         would "xcodebuild -project AmbrosiaClassics.xcodeproj -scheme Aki -configuration Release -derivedDataPath $DERIVED build  (log $BUILD_LOG)"
     fi
-    would "report lipo -archs of the Aki executable"
+    would "lipo -archs of the Aki executable must list both arm64 and x86_64 (universal)"
     would "wipe $REL/; ditto the app to $APP"
     would "rsync the data (no .DS_Store) into Contents/Resources/; rsync --delete hd-4x into Contents/Resources/hd-4x/"
     would "assert no *.ttf/*.otf/*.ttc/*.otc/*.dfont and no Contents/Resources/Fonts (OsakaMono is NOT shipped, D4); xattr -cr"
@@ -278,8 +279,9 @@ if (( DRY_RUN )); then
     would "codesign --verify --deep --strict --verbose=2; codesign -dv (Authority, flags=runtime, Timestamp)"
     if [[ -n "$NOTARIZE" ]]; then
         would "$KIT/notarize-bundle.sh \"$APP\" \"$NOTARIZE\""
-        would "$KIT/package-dmg.sh \"$APP\" \"${SIGN:-<identity>}\" \"$NOTARIZE\" \"$APP/Contents/Resources/AppIcon.icns\" → $DMG (+ .sha256)"
-        would "mount the DMG read-only: stapler validate, spctl execute (source=Notarized Developer ID), codesign verify, verbatim check #3, no fonts; stapler + spctl open on the DMG"
+        would "$KIT/package-dmg.sh \"$APP\" \"${SIGN:-<identity>}\" \"$NOTARIZE\" \"$APP/Contents/Resources/AppIcon.icns\" → $REL/Aki.dmg"
+        would "mount $REL/Aki.dmg read-only: stapler validate, spctl execute (source=Notarized Developer ID), codesign verify, verbatim check #3, no fonts; stapler + spctl open (source=Notarized Developer ID) on the DMG"
+        would "only after every final check passes: mv it to $DMG and write $DMG.sha256 (any failure removes it)"
     else
         would "stop after signing: NOT notarized, no DMG (pass --notarize <profile>)"
     fi
@@ -292,13 +294,29 @@ if (( DRY_RUN )); then
 fi
 
 MNT=""
+WDMG="$REL/Aki.dmg"   # package-dmg.sh's output; renamed to $DMG only after the final check passes
+SCRUB_ON_EXIT=0
+# On failure leave no plausible-looking unfinished artefact behind (half-made or unchecked DMG, notary
+# zip, create-dmg's rw.*.dmg temporaries and any /Volumes/dmg.* mount it left — as notarize-kit's
+# package-dmg.sh dmg_cleanup does).
+scrub_artefacts() {
+    local v
+    for v in /Volumes/dmg.*; do
+        [[ -d "$v" ]] && { hdiutil detach "$v" -force >/dev/null 2>&1 || true; }
+    done
+    rm -f "$WDMG" "$REL"/rw.*.dmg "$REL"/*-notarize.zip "$DMG" "$DMG.sha256"
+}
 cleanup() {
     if [[ -n "$MNT" ]]; then
         hdiutil detach "$MNT" -quiet >/dev/null 2>&1 || hdiutil detach "$MNT" -force >/dev/null 2>&1 || true
         rmdir "$MNT" 2>/dev/null || true
     fi
 }
-trap cleanup EXIT
+on_exit() {
+    cleanup
+    if (( SCRUB_ON_EXIT )); then scrub_artefacts; fi
+}
+trap on_exit EXIT
 
 # ── 2. Build ────────────────────────────────────────────────────────────────────────────────────
 step "build"
@@ -318,6 +336,8 @@ fi
 EXE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BUILT_APP/Contents/Info.plist")" \
     || die "the built app's Info.plist has no CFBundleExecutable"
 ARCHS="$(lipo -archs "$BUILT_APP/Contents/MacOS/$EXE_NAME")" || die "lipo cannot read the Aki executable"
+[[ " $ARCHS " == *" arm64 "* && " $ARCHS " == *" x86_64 "* ]] \
+    || die "the Aki executable is not universal (lipo -archs: “$ARCHS”; the release needs arm64 and x86_64)"
 BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
 BUNDLE_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
 [[ "$BUNDLE_BUILD" == "$VERSION" ]] \
@@ -410,10 +430,10 @@ VERIFY_OUT="$(codesign --verify --deep --strict --verbose=2 "$APP" 2>&1)" || {
 }
 printf '%s\n' "$VERIFY_OUT" | sed 's/^/   /' || true
 SIG="$(codesign -dv --verbose=4 "$APP" 2>&1)"
-printf '%s\n' "$SIG" | grep -E '^(Identifier=|Format=|CodeDirectory |Authority=|Timestamp=|TeamIdentifier=|Runtime Version=)' | sed 's/^/   /' || true
-printf '%s\n' "$SIG" | grep -q '^Authority=Developer ID Application' || die "not signed by a Developer ID Application identity"
-printf '%s\n' "$SIG" | grep -E '^CodeDirectory' | grep -q 'runtime' || die "the hardened runtime flag is missing"
-printf '%s\n' "$SIG" | grep -q '^Timestamp=' || die "no secure timestamp in the signature"
+grep -E '^(Identifier=|Format=|CodeDirectory |Authority=|Timestamp=|TeamIdentifier=|Runtime Version=)' <<<"$SIG" | sed 's/^/   /' || true
+grep -q '^Authority=Developer ID Application' <<<"$SIG" || die "not signed by a Developer ID Application identity"
+grep -q -E '^CodeDirectory .*runtime' <<<"$SIG" || die "the hardened runtime flag is missing"
+grep -q '^Timestamp=' <<<"$SIG" || die "no secure timestamp in the signature"
 check_manifest "$APP" "#2, after signing"
 no_fonts "$APP"
 info "signed: $SIGN — hardened runtime, secure timestamp, verify --deep --strict OK, data still verbatim"
@@ -424,24 +444,21 @@ DMG_LINE="(none — not notarized; pass --notarize <profile>)"
 DMG_SHA="-"
 if [[ -n "$NOTARIZE" ]]; then
     step "notarize (notarize-kit)"
-    # On failure leave no plausible-looking unnotarized artefact behind (half-made DMG, notary zip).
-    scrub_artefacts() { rm -f "$REL/Aki.dmg" "$REL"/*-notarize.zip "$DMG" "$DMG.sha256"; }
-    "$KIT/notarize-bundle.sh" "$APP" "$NOTARIZE" || { scrub_artefacts; die "notarize-bundle.sh failed"; }
+    # From here until the DMG is named, ANY exit (die, set -e) scrubs every unfinished artefact.
+    SCRUB_ON_EXIT=1
+    "$KIT/notarize-bundle.sh" "$APP" "$NOTARIZE" || die "notarize-bundle.sh failed"
     step "dmg (notarize-kit)"
     VOLICON="$APP/Contents/Resources/AppIcon.icns"
-    [[ -f "$VOLICON" ]] || { scrub_artefacts; die "no $VOLICON (the app icon compiled from AppIcon.icon) for the DMG volume icon"; }
-    "$KIT/package-dmg.sh" "$APP" "$SIGN" "$NOTARIZE" "$VOLICON" || { scrub_artefacts; die "package-dmg.sh failed"; }
+    [[ -f "$VOLICON" ]] || die "no $VOLICON (the app icon compiled from AppIcon.icon) for the DMG volume icon"
+    "$KIT/package-dmg.sh" "$APP" "$SIGN" "$NOTARIZE" "$VOLICON" || die "package-dmg.sh failed"
     rm -f "$REL"/*-notarize.zip
-    [[ -f "$REL/Aki.dmg" ]] || die "package-dmg.sh produced no $REL/Aki.dmg"
-    mv "$REL/Aki.dmg" "$DMG"
-    ( cd "$OUT" && shasum -a 256 "Aki-$VERSION.dmg" ) > "$DMG.sha256"
-    DMG_SHA="$(cut -d ' ' -f 1 < "$DMG.sha256")"
-    NOTARIZED="yes (app + DMG accepted, tickets stapled)"
+    [[ -f "$WDMG" ]] || die "package-dmg.sh produced no $WDMG"
 
+    # The DMG stays at $WDMG (not a release name) through every check below.
     step "final check (the DMG players download)"
     MNT="$(mktemp -d "${TMPDIR:-/tmp}/aki-release-mnt.XXXXXX")"
     # NOTE: `hdiutil attach -mountpoint` is deprecated as of macOS 27 (it still works); revisit when removed.
-    hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null || die "hdiutil attach failed"
+    hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "$WDMG" >/dev/null || die "hdiutil attach failed"
     FAPP="$MNT/Aki.app"
     [[ -d "$FAPP" ]] || die "the DMG has no Aki.app at its root"
     xcrun stapler validate "$FAPP" >/dev/null || die "stapler validate failed on the app inside the DMG"
@@ -458,12 +475,25 @@ if [[ -n "$NOTARIZE" ]]; then
     FINAL_HD="$(find "$FAPP/Contents/Resources/hd-4x" -type f -name '*.png' | wc -l | tr -d ' ')"
     [[ "$FINAL_HD" == "$HD_EXPECT" ]] || die "the DMG's app holds $FINAL_HD hd-4x PNGs, expected $HD_EXPECT"
     cleanup; MNT=""
-    xcrun stapler validate "$DMG" >/dev/null || die "stapler validate failed on the DMG"
-    spctl --assess --type open --context context:primary-signature -vv "$DMG" 2>&1 | sed 's/^/   /' || true
-    spctl --assess --type open --context context:primary-signature "$DMG" 2>/dev/null \
-        || die "Gatekeeper rejects the DMG"
+    xcrun stapler validate "$WDMG" >/dev/null || die "stapler validate failed on the DMG"
+    SPCTL_DMG="$(spctl --assess --type open --context context:primary-signature -vv "$WDMG" 2>&1)" || {
+        printf '%s\n' "$SPCTL_DMG" | sed 's/^/   /' >&2 || true
+        die "Gatekeeper rejects the DMG"
+    }
+    printf '%s\n' "$SPCTL_DMG" | sed 's/^/   /' || true
+    grep -q 'source=Notarized Developer ID' <<<"$SPCTL_DMG" \
+        || die "Gatekeeper accepts the DMG but not as source=Notarized Developer ID"
+
+    # Every check passed: only now does the release-named DMG (and its .sha256) come into existence.
+    mv "$WDMG" "$DMG"
+    ( cd "$OUT" && shasum -a 256 "Aki-$VERSION.dmg" ) > "$DMG.sha256"
+    DMG_SHA="$(cut -d ' ' -f 1 < "$DMG.sha256")"
+    [[ "$DMG_SHA" =~ ^[0-9a-f]{64}$ ]] || die "could not write $DMG.sha256"
+    SCRUB_ON_EXIT=0
+    NOTARIZED="yes (app + DMG accepted, tickets stapled)"
     DMG_LINE="$DMG ($(du -h "$DMG" | cut -f 1 | tr -d ' '))"
     info "inside the DMG: stapled, Gatekeeper-accepted, signature intact, data verbatim, no fonts"
+    info "the DMG: stapled, Gatekeeper-accepted as source=Notarized Developer ID → $DMG"
 fi
 
 # ── 8. Gate summary ─────────────────────────────────────────────────────────────────────────────
