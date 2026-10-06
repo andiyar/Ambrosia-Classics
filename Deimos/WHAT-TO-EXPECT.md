@@ -18,6 +18,7 @@ The question for you is one line: **does it look like Deimos?**
 ## Opening it
 - Double-click `Deimos Rising.app` on your Desktop.
 - If macOS says it can't check the app: right-click it, choose Open, then Open again.
+- If the window opens but stays black, click it once — the game pauses whenever it isn't the front app.
 
 ## Keys
 - **← / →** — the ship banks and the whole map pans sideways.
