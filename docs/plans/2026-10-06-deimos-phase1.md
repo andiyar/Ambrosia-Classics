@@ -336,10 +336,11 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
     appearance face (`aiic` → `pl1o`/`pl2o`), frame 0, `+0xd4` = 0, position (208, 330) solo / (104 | 312, 330) multi,
     velocity 0, **state 2 at now**, appear fade (0, 100, 2.0) (flli 163–165), crosshair visibility (0, 100, flli 149 = 6),
     then exactly one `rng.range(400, 2000)` (result stored for P1 only, §9).
-  - ◇ `Player.updatePhase1(now:input:scroll:)` in `FUN_10028170`'s order (§2): life-state step (state 2: after `now > enter
+  - ◇ `Player.updatePhase1(now:input:scroll:scoreBar:)` (⚑ as built: `scoreBar` inout keeps `FUN_10031710` at its call
+    site `1002a1dc`; orchestrator ruling) in `FUN_10028170`'s order (§2): life-state step (state 2: after `now > enter
     + 55` → respawn path `FUN_10029cc0` subset: frame 0, `+0xd4` 0, position, velocity 0, appear fade reset, crosshair reset,
-    **state 4 at now**; else score-bar shield display forced 0); input bytes from `input` in state 4 only (cleared
-    otherwise); `FUN_10012750` step — **[HIGH, listing `10012750..10012838`]**: if cur > req: cur −= δ, < 0 → 0, < req → req;
+    **state 4 at now**; else score-bar shield display forced 0); input bytes from `input` in state 4 only (⚑ as built + C4 spec review: untouched otherwise —
+    `1002a3c4 lbz 0xc6; cmplwi 4; bne exit`); `FUN_10012750` step — **[HIGH, listing `10012750..10012838`]**: if cur > req: cur −= δ, < 0 → 0, < req → req;
     else if cur < req: cur += δ, > req → req; same rule for the glow triple +0x58/+0x5c/+0x60; clear `+0xc5` when cur ==
     req; size refresh (53×43 → half 26×21); state 4 only: crosshair flag = 1 and one crosshair visibility step, banking
     (`now > +0xd4 + 1` → `+0xd4` = now, then the three 7-entry tables of §2.4), view shift (left → `scroll.shift(false)`,
@@ -437,7 +438,7 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   a different seed gives the same outputs — the one Phase-1 draw has no visible effect).
 - **Gate:** G2 = **146/0**. **Commit:** `DeimosCore: DeimosSession.pass — level start + loop pass in FUN_100051a0 order (Phase-1 subset); 7 tests`.
 
-### R1 — minor — Render buffers, CopyBits, presents, fades, RGBA (→ +8) — ∥ lane C after C1
+### R1 — minor — Render buffers, CopyBits, presents, fade from black, RGBA (→ +7) — ∥ lane C after C1
 - **Files:** `Package.swift` (library + target `DeimosRender`, test target `DeimosRenderTests`);
   `Sources/DeimosRender/{Pixmap555,Blend555,CopyBits,Presents,Fades,ScreenRGBA}.swift`; `Tests/DeimosRenderTests/BufferTests.swift`.
 - **Contract (display-window-present §1–§5, loose-ends-session §6, blit-pixel-rules §2; HIGH):** buffers black at
@@ -472,12 +473,13 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   `sy` likewise; unclipped scaled leaves (clip == {0,0,480,416}) clamp to x ∈ [0, 416), y ∈ [0, 480); other clips test per
   pixel; mode ≥ 4 → nothing. `COST` per the precondition reading. Fade to black (`FUN_1000b9a0`, moved from R1 — review
   M2): a = 32 … 0, back scaled in place toward 0 by the `FUN_1001ec80` kernel as read, present — compounding.
-- **Tests (10):** `testDispatchSelection` · `testUnscaledMode0` · `testUnscaledMode1Additive` · `testMode2AlphaTables`
+- **Tests (11):** `testDispatchSelection` · `testUnscaledMode0` · `testUnscaledMode1Additive` · `testMode2AlphaTables`
   (a = 20: p 1…19 → 20 20 20 20 20 21 21 22 22 23 23 24 25 26 27 28 29 30 31, p ≥ 20 skipped; a = 0: 0 0 0 0 0 1 1 2 2 3 3 4 5
   6 7 8 9 10 11 12 14 15 16 18 20 21 23 25 26 28 30; §3.1) · `testMode3Tint` · `testClippedTwinsMatchUnclipped` (randomised,
   seeded; a frame ending exactly on the clip edge takes the twin with identical pixels) · `testScaledHalfShipShadow`
   (`pl1o` frame 0 at (184, 382), scale 0.5 → 26 × 21 at left 170, top 371) · `testScaledClampVersusClip` ·
-  `testCostRect` (meter darkening at blend 8; clipped to the command clip) · `testCentreAnchorOddWidth` ·
+  `testCostRect` (meter darkening at blend 8; ⚑ as built + R2 spec review: the command clip only REJECTS a COST rect wholly
+  outside it (`100197ac..100197c8`); `FUN_1001ec80` clips to the PORT bounds and addresses from the unclamped top/left) · `testCentreAnchorOddWidth` ·
   `testFadeToBlackCompounds` (33 steps; after step a the buffer is the product of the factors so far, per the kernel read).
 - **Gate:** G2 = previous + **11** (canonical **164**). **Commit:** `DeimosRender: sprite blitters — dispatcher, 4 unscaled modes + clipped twins, 16 scaled leaves, COST, fade to black; 11 tests`.
 
