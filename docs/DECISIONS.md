@@ -667,6 +667,44 @@ three cooperative threads as real threads taking strict turns (rejected: re-entr
 HectorShell gains a resizable 1:1 canvas (Phase 1); data in git by the D24 shape; deviations list §8 (no monitor
 picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Apple glyphs per D16.4/D20).
 **Approved by:** Ben (1–9, in his words, 2026-10-06); seat rulings recorded, Ben shown the design.
+**As built — C0, data in git (2026-10-07):** `Resources/Cythera/` holds the installed Cythera 1.0.4 folder's game data
+byte-identical (`cp -p`, `cmp` clean) from the archive mirror's `RPG/Cythera/Cythera (installed)/files`, 20 files,
+**11,570,723 B**, largest 5,608,688 B (under GitHub's 50 MB warning); SHA-256 re-measured with `shasum -a 256`, equal to
+the planner's p01 list (plan Research note 1; its abbreviated suffixes for `Attack Weakest.ai` and `Dummy.ai` are typos):
+- `Cythera Data` 5,608,688 B `8f45758d8f3024f3ee0bd7bd16717803fae43874b56bf27472e2cef2ccbefa59`
+- `Cythera Data.rsrc` 1,247,331 B `824d8a1d532419b7d2cddf97e93fba753645435e57bbaeabff01f7593cee35e7`
+- `Cythera.rsrc` 1,008,484 B `333416124a74a18bd07ee19c1fb8a602c014046220a3324491e0449875f170f1`
+- `Cythera Documentation.rsrc` 2,420,779 B `00fe7c752206f3d7d78e0aa21362d1841b90d487d46677f178ea5348a9382726`
+- `AI Scripting Document` 10,331 B `66456bf781731508bf40acdb5fe81c01f254e353745d76e2ba45d81446d6103d`
+- `Attack Nearest.ai` 428 B `46331b2b5f6dcf8a9ed3b2c6eb3ff22b1bfb8f2b6ea9242ce337ae7581474976`
+- `Attack Strongest.ai` 437 B `6a01b1914196b3d041add32be516ee078df80e11f3b4d5b9ee34cb611b04178a`
+- `Attack Weakest.ai` 432 B `4123411c92096832de032381ec4186a360d7fe3f6178c358538d8fb8fe634be5`
+- `Beserk.ai` 317 B `95472845dfcf75e58639df2a1617bd3af2bfbaafc8c998bd5d331c488e827a14`
+- `Defend.ai` 712 B `532cbbe7c2dcf8b05d70d0df4945e237284fd3b1c709176700edd2048a2537d5`
+- `Dummy.ai` 310 B `b56a7a70e93057b5082dc1fc6e0d2a184ce376e502e730018fb0602a1fc7c3a7`
+- `Healer.ai` 526 B `ccbb73a3363e47b2a4227c53e41a609f0c9f6561221386712baa2f75fc18a281`
+- `Missile User.ai` 715 B `3111734a8b1082e930d523f4522be29836a2cf7088ca342646c4d6cd3ca7dc00`
+- `Catamarca screenshot.pict` 397,738 B `bcdafd33fabfb487382fec0ffb866d12784764815a7bed64cf56a37e37802f86`
+- `Land King Hall screenshot.pict` 164,900 B `73f0d1306ffe03e6a166714f6b1abe12681bb6125eee879456f649e25369149b`
+- `Odemia screenshot.pict` 250,384 B `092bd628eb19cfd04e8f57c6aa8157b2bac99d72a4f44e6c31bf9e6f4be9db6b`
+- `Pnyx screenshot.pict` 210,220 B `30b01e83d99229b127737cfd982900d14540e93c0166e08dd380080342330234`
+- `Unicorn screenshot.pict` 240,490 B `f44862d61f897223b23de79a959e2cd237d75a19e7a3e030cdc01d7885a739cf`
+- `Cythera 1.0.4 Notes.text` 5,056 B `57c7ad31d96c7b41dc3fb3c8c86beb8a53c77f962768918d3c922fb6cc685910`
+- `Cythera License.text` 2,445 B `2d129e3c8de301348ae2885178218fba8d938b592b305c7a7852d96f472fa250`
+
+`.gitignore` adds `!/Resources/Cythera/` after `!/Resources/Ferazel/` (other games' data stays ignored);
+`.gitattributes` adds `Resources/Cythera/** binary`. Tests read the committed folder and never skip; `CYTHERA_DATA`
+overrides its location (D24.3 shape). Kit decisions (plan Architecture paragraph):
+- `clut` → CytheraCore `ColorTableRecord` (the kit's `ColorTable` is PICT-internal; promote when a third game parses `clut`).
+- `NFNT`/`FOND`/`sfnt` → CytheraRender `BitmapFont` / CytheraCore `FontFamily` / sfnt table directory only (one game ships them).
+- `Lite`, `FILT`, `nrct`, `Pref`, `TxSt` → CytheraCore records (Delver-engine private layouts).
+- `DLOG`/`DITL`/`WIND`/`CNTL`/`ALRT`/`MENU`/`MBAR` → CytheraCore records; `HectorGraphics.Ditl` is a test-only oracle.
+- `snd ` → HectorAudio `SndSound` (exists); the `'asnd'` form and the snd→asnd rule → CytheraRender `SoundSegment`.
+- Segment file, XOR, LZ, maps/props/globals/CharEntry, the script decoder → CytheraCore; tiles/portraits/sky/pix/macro
+  icons/compo tiles/PICT-as-indices/QTMA → CytheraRender.
+
+**Rejected (C0):** Git LFS (breaks anonymous clones of the public repo past the free quota) · data out of git behind
+symlinks (D24 reasons) · committing the PEF `Cythera`, the InputSprocket files or the `*.ai.rsrc` editor-state forks.
 
 ## D29 — Deimos Rising build: design + Phase 1 rulings (seat) (2026-10-06)
 

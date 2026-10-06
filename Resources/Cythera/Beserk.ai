@@ -1,0 +1,1 @@
+NAME "Beserk"; only switch target if we don't have oneIF NOT Exists(target) THEN; pick the closest, strongest thing#100	SetTarget(enemy.ByStrongest.ByRange.Pick)		DoAttack()IF Exists(target) THEN ; just attack until dead	#100	DoAttack(); no enemy exists at this point...IF True() THEN	#100	FinishCombat()

@@ -4,6 +4,7 @@
 /Resources/*
 !/Resources/Deimos/
 !/Resources/Ferazel/
+!/Resources/Cythera/
 /Resources/Deimos/Data/HID.bundle/
 /Resources/Deimos/**/Icon?
 /ghidra/*
