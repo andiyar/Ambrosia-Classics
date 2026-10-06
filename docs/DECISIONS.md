@@ -675,3 +675,20 @@ picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Ap
    crosshair, banking, view shift — no velocity, firing, power-ups); no entities (`plen`, multiplier unit, `no01`).
 7. **Kit:** `ShellView.scalingPolicy` (`.integerFit` for D27.3) landed as HectorKit D13 (522feb8, floor 316).
 **Approved by:** seat (orchestrator); Ben told.
+
+**As built — Phase 1 (2026-10-07; seat rulings from the per-wave Fable reviews):**
+- **`KeyTable` lives in DeimosCore**, not DeimosHost: the LOCKED `pass(keys: HeldKeys)` maps inside Core (C6 review).
+- **`Player.updatePhase1(…, scoreBar: inout)`** keeps `FUN_10031710` at its original call site (`1002a1dc`); input bytes
+  are untouched outside state 4 (`1002a3c4`) — the plan text was corrected to the listing (C4 review).
+- **`COST` rects** are only rejected by the command clip; `FUN_1001ec80` clips to the port and addresses from the
+  unclamped top/left (R2 review; plan corrected). The same unclipped-addressing quirk is reproduced in the blend
+  kernel `FUN_1001e9d0`, and the interlaced copy clips the last field row (`100450e0`) — bank ⚑ note added.
+- **`TextFormat` defaults = the runtime template** (spacing 1, strip 3/3/16, colourise 0x7fff); no shipped `tefo` changes.
+- **Driver (◇ Phase-1 stand-in):** Esc restarts level 1 with seed = ticks; the Esc that ended a session is latched
+  until released, and each `idle` call does bounded work (one restart, one present, one limiter release) — the H1 review
+  found a hang on a held Esc and at tick wrap, both fixed with regression tests. `.hideCursor` is emitted on a session's
+  first pass (the original hid it in the front end, `10023550`, before the game call).
+- **App:** `Deimos/DeimosCore → Core` symlink (SwiftPM identity clash with `Aki/Core`; BTX D13.8 shape). Window
+  `[.titled, .miniaturizable]` (the original's windowed variant: title bar, no close box, collapsible — `FUN_1000a640`).
+  **Suspends while in the background or miniaturised** (display-window-present §7); on resume it shows the held screen
+  rather than the original's black window until the next present (disclosed).
