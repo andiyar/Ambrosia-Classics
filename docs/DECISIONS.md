@@ -353,3 +353,27 @@ native Win32 menus/dialogs (less faithful) · user-supplied data.
 4. **Font licence (Ben, 2026-10-06):** ship the baked Apple Geneva / SF glyphs in the Windows build (private copy);
    swap for an open font only if it is ever shared wider.
 **Approved by:** Ben (4); orchestrator rulings (1–3) under D15's "seat may settle" list.
+
+---
+
+## D17 — Aki Remaster mode: Ben's gate passed; smooth backgrounds, grain-free tile body, ⌘G (2026-10-06)
+
+**Decided (Ben, after playing the staged Mac app and the iPad mini):**
+- **Gate: PASSED** — "Looks right — done"; ⌘G "works" both ways (map, mid-level, paused, fullscreen).
+- **Backgrounds:** the de-dithered set ("smooth background looks better in level") — Gaussian 0.7 before remacri; the plain
+  remacri backgrounds (diagonal hatching from the 1990s dither) are dropped from the tool (plan C3).
+- **Tiles:** "the remaster does look the best but the grain is a bit much" → option A1: `tile_pictures.png` faces stay remacri;
+  `tiles.png`'s body/selected/hint/grey rows use a plain Lanczos 4× (remacri invented wood grain on them). Faint grain inside
+  each face's own rectangle remains (reviewer note; Ben passed it).
+- **⌘G** on the "Remastered Art" item (Mac menu + iPad menu bar): in fullscreen the menu bar is hidden (as in the original),
+  so the toggle needs a key equivalent; ⌘G is free in both nibs.
+- **Merge order:** the code lives on branch `aki-remaster` (cut from `aki-ipad`, Ben: "build on the iPad branch") and merges to
+  main only after `aki-ipad` lands.
+
+**Seat rulings during the build (within D11):** colour back-projection on every AI region (remacri lightened art, e.g. the pause
+scroll); the live switch draws only — no game/clock writes ("pixels only" over the plan's full-redraw sketch) and discounts its
+decode time from a running clock; hd art validated as exactly 4× and any bad file falls back to its original; HectorShell
+presents k > 1 frames through triple-buffered IOSurfaces (k = 4 present ~0.4 ms; the CGImage path cost ~20 ms); masks stay
+nearest (bit-exact) — tile outlines show 1-logical-pixel steps as in the original.
+**Rejected:** plain backgrounds; full-AI tiles (A); AI tiles softened first (B); no-AI tiles (C); half-and-half tiles (A3).
+**Approved by:** Ben 2026-10-06, in his words above.

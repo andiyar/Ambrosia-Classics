@@ -61,8 +61,12 @@
    delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
    **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
-   **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
-   `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
+   **Remaster mode — Ben's gate PASSED 2026-10-06 (DECISIONS D17)**, code on branch `aki-remaster` (pushed; built on
+   `aki-ipad` + a merge of main) — **merges to main only after the iPad branch `aki-ipad` lands** (Ben's call). Art tool
+   `tools/upscale-aki-art.py` + region map + `ArtRegionsTests` already on main (regenerate `Resources/Aki/hd-4x/`, 207 MB,
+   git-ignored). HectorKit scale factor + IOSurface present merged to HectorKit main 465200a (floor then 201). Toggle: Aki ▸
+   Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Branch gates: AkiCore 123/0/0, Aki + AkiPad +
+   BubbleTroubleX BUILD SUCCEEDED. Staged: ~/Desktop/Aki.app + Ben's iPad mini. Handoff `docs/handoff-2026-10-06-aki-remaster.md`.
 2. **Bubble Trouble X — Ben's play gate (sound is in):** take his playtest verdicts; then the rest of his gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. **Windows port** (Ben 2026-10-06, "windows port!") — design-first chip queued (games, shell tech, how Ben tests).
