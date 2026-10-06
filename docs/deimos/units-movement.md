@@ -351,7 +351,11 @@ Helpers: `FUN_100161c0(e)` = heading of the current frame: `NumDirections == 1 ?
 : max(frame/FPD, 0)·(360/NumDirections)` (integer divisions); `FUN_10016230(e, h)` = frame for
 heading h: `n = h / (360/NumDir)` rounded half-up (0.5 = `*(double*)(0x100d6ca4+16)`), `n < 0 →
 NumDir−1`, `n > NumDir−1 → 0`, × FPD. Quirk: §8.1 truncates, §8.2 rounds. [HIGH listing for
-`FUN_100172d0` gates; MED for the helper arithmetic (dump)]
+`FUN_100172d0` gates; HIGH for the helper arithmetic] ⚑ corrected (micro-wave, 2026-10-06) #§3.2:
+`FUN_10016230` read in the listing (`10016230..100162f4`): NumDir ≤ 0 → 1; `step = 360/NumDir` is C
+integer division (n = 7 → 51); the quotient `(float)h / (float)step` is **single precision**
+(`fdivs`), `k = trunc` (`fctiwz`), +1 if `q − k ≥ 0.5`; for h < 0 the fraction is ≤ 0, so negatives
+truncate toward 0 (micro-wave-2026-10-06.md §3.2) — was "MED for the helper arithmetic (dump)".
 
 ## 9. Spawn-set emitter `FUN_10015b40(entity, gameTime) @ 10015b40` (handoff → spawn reader)
 This is the per-tick executor of the state's spawn sets (INDEX #20 names `FUN_10036cf0`; see
@@ -388,7 +392,7 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_100125b0` | static init of a 2-word global (`0x100e6194`) | HIGH | dump — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; = TU init writing only the `"nonenone"` pair `0x100e618c` +8/+0xc ← 0 (`100125b0..100125c8`), static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_100125d0` | G_GameObject ctor (`+8 = 1234567890` magic, `FUN_10012650`) | MED | dump, callers ctor-shaped |
 | `FUN_10012610` | G_GameObject dtor (free if flag > 0) | MED | dump |
-| `FUN_10012650` | G_GameObject reset (pos/vel 0, air=1, sprite none, layer `defa`, vis/tint/scale defaults) | MED | dump |
+| `FUN_10012650` | G_GameObject reset (pos/vel 0, air=1, sprite none, layer `defa`, vis/tint/scale defaults) | HIGH | dump — ⚑ corrected (micro-wave, 2026-10-06) #§3.6: listing in micro-wave-2026-10-06.md §3.6 (function-roles.md row). Was MED |
 | `FUN_10012750` | step visibility (+0x68→+0x6c by +0x70) and tint (+0x58→+0x5c by +0x60), floor at table[0] | MED | dump |
 | `FUN_10012840` | step scale +0x84→+0x88 by +0x8c, sets dirty | MED | dump |
 | `FUN_100128c0` | empty stub | HIGH | dump `return;` |
@@ -411,14 +415,14 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_100142f0` | G_Entity reset (§3 init values) | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_100144a0` | bind unit def; allocate per-state spawn runtime lists (0x18 each, "newSpawnInfoPtr"); `drawLayer hud ` → +0x18 = 0 | MED | dump strings G_Entity.cc — ⚑ label audit (review wave 1) |
 | `FUN_10014650` | current state pointer | HIGH | bank |
-| `FUN_10014670` | enter first state flagged `UseThisStateOnWeaponPowerupRelease` (+0x355) | MED | dump `0x835` = 0x4e0+0x355 — ⚑ label audit (review wave 1) |
+| `FUN_10014670` | enter first state flagged `UseThisStateOnWeaponPowerupRelease` (+0x355) | HIGH | dump `0x835` = 0x4e0+0x355 — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§3.3: listing in micro-wave-2026-10-06.md §3.3 (function-roles.md row). The state is entered **by its name** (`stateName_STR`) via `FUN_100146f0`; duplicate names would pick the last match (none in shipped data). Was MED |
 | `FUN_100146f0` | change state by name + velocity set-up (§4) | HIGH | listing |
 | `FUN_10015280` | **motion controller** (§5) | HIGH | listing |
 | `FUN_10015550` | evaluate 5 rules | — | bank row stands |
 | `FUN_10015930` | **animation step** (§8.1) | HIGH | listing |
 | `FUN_10015b40` | **rotate gate + spawn-set emitter** (§9) | HIGH | listing |
 | `FUN_100161c0` | heading of current frame | MED | dump |
-| `FUN_10016230` | frame for heading | MED | dump |
+| `FUN_10016230` | frame for heading | HIGH | dump — ⚑ corrected (micro-wave, 2026-10-06) #§3.2: listing in micro-wave-2026-10-06.md §3.2 (function-roles.md row). Rounding is single precision; negative quotients truncate toward 0. Was MED |
 | `FUN_10016bd0` | centre on screen | HIGH | listing |
 | `FUN_10016cc0` | seek target (hunt/flee) | HIGH | listing |
 | `FUN_10016da0` | constrain/bounce in game area | HIGH | listing |
@@ -506,11 +510,11 @@ offset, which of timer/range fires first for a given member) is constructed, not
 | `FUN_10012910` | G_GameObject (span) | set position (x,y) | MED | dump; callers `FUN_10037930`, `FUN_10028170` — ⚑ label audit (review wave 1) |
 | `FUN_100128d0` | G_GameObject (span) | get position | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_10012ad0` | G_GameObject (span) | bounding box from centre ± half size | HIGH | dump — ⚑ label audit (review wave 1): HIGH kept — listing evidence in damage-health-death.md role rows |
-| `FUN_10012650` | G_GameObject (span) | object reset (air=1, layer `defa`, sprite none) | MED | dump |
+| `FUN_10012650` | G_GameObject (span) | object reset (air=1, layer `defa`, sprite none) | HIGH | dump — ⚑ corrected (micro-wave, 2026-10-06) #§3.6: listing in micro-wave-2026-10-06.md §3.6 (function-roles.md row). Was MED |
 | `FUN_100142f0` | G_Entity.cc (span) | entity reset (target none `+0x118=−1`, velocities 0) | MED | dump — ⚑ label audit (review wave 1) |
 | `FUN_100144a0` | G_Entity.cc | bind unit def; allocate per-state spawn runtime lists | MED | strings `newSpawnInfoPtr`, `G_Entity.cc` — ⚑ label audit (review wave 1) |
 | ⚑ corrected `FUN_100146f0` | G_Entity.cc | change state by name (last match wins) + velocity ramp set-up (accel = s1·dir − v, desired = MaxSpeed·dir) + flee start/stop | HIGH | listing `10014bac..10014db4`; was MED "change state by name" |
-| `FUN_10014670` | G_Entity.cc (span) | enter `UseThisStateOnWeaponPowerupRelease` state | MED | dump `+0x835` — ⚑ label audit (review wave 1) |
+| `FUN_10014670` | G_Entity.cc (span) | enter `UseThisStateOnWeaponPowerupRelease` state | HIGH | dump `+0x835` — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§3.3: listing in micro-wave-2026-10-06.md §3.3 (function-roles.md row). The state is entered **by its name** (`stateName_STR`) via `FUN_100146f0`; duplicate names would pick the last match (none in shipped data). Was MED |
 | `FUN_10017e70` | G_Entity.cc (span) | enter `UseThisStateOnShieldDepletion` state | HIGH | dump `+0x836`; caller `FUN_10014f10` — ⚑ label audit (review wave 1): HIGH kept — listing evidence in damage-health-death.md role rows |
 | `FUN_10015280` | G_Entity.cc (span) | motion controller: nearest player, no-player actions, cyclic, constrain, OnRange trigger, hold/hunt/ramp | HIGH | listing `10015280..1001554c` |
 | `FUN_10015930` | G_Entity.cc (span) | sprite animation step (row from heading, loop/ping-pong/stop, random frames) | HIGH | listing `10015930..10015b20` |
@@ -527,7 +531,7 @@ offset, which of timer/range fires first for a given member) is constructed, not
 | `FUN_10017ef0` | G_Entity.cc (span) | nearest active player within range (strict <) | HIGH | listing |
 | `FUN_10016bd0` | G_Entity.cc (span) | entity centre on screen | HIGH | listing |
 | `FUN_100161c0` | G_Entity.cc (span) | heading of current frame | MED | dump |
-| `FUN_10016230` | G_Entity.cc (span) | frame for heading (rounded) | MED | dump |
+| `FUN_10016230` | G_Entity.cc (span) | frame for heading (rounded) | HIGH | dump — ⚑ corrected (micro-wave, 2026-10-06) #§3.2: listing in micro-wave-2026-10-06.md §3.2 (function-roles.md row). Rounding is single precision; negative quotients truncate toward 0. Was MED |
 | `FUN_10005d40` | G_Game (span) | nearest active player: pos, distance, player number (ties → player 1) | HIGH | listing `10005d40..10005ec0` |
 | ⚑ corrected `FUN_10026c90` | G_Player.cc (span) | get player number (`+0xcc`) | HIGH | dump one-liner; `FUN_10026410` "Setting Up Player %i"; was described as "player hit" in waves §3 step 8 / INDEX #24 — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | `FUN_10042920` | trig (span) | build atan/sqrt/sin/cos tables | HIGH | listing; glue `cos`/`sin`/`atan`/`sqrt` |

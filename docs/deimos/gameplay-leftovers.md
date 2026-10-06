@@ -447,11 +447,16 @@ Data: `$W/data/Game/wede/Air - Bacta Gun[aibg].wede.txt` line 11 `#player1Appear
 Player 2 reads +0x148 (`pl2g`). A player index outside 0/1 keeps the previous sprite.
 
 ## NOT RESOLVED (this file)
-1. Film +0xc/+0x10 (`FUN_10009400` free loop): writers outside `0x10009390–0x10009980` were not
+1. ~~Film +0xc/+0x10 (`FUN_10009400` free loop): writers outside `0x10009390–0x10009980` were not
    searched. Settle with a whole-image scan for stores at +0xc/+0x10 off the `gameFilmPtr` register in
-   `FUN_100051a0` and G_Film callers.
-2. The flash state fields the stepper `FUN_1002fcc0` uses (+4 alpha toward 32, +8 scale between 1.0
-   and flli 45/47) were read from the dump only. Front-end O15 owns them.
+   `FUN_100051a0` and G_Film callers.~~ → ⚑ corrected (micro-wave, 2026-10-06) #60: micro-wave-2026-10-06.md §7 — the film
+   pointer (`10005624 bl 0x1004d320`, size 0x9d7c) lives only in `r25` and is only passed to calls; every
+   consumer is inside `0x10009390–0x10009980`, and its only +0xc/+0x10 stores (ctor `100093d8`/`100093e0`,
+   loader `100094f0`, dtor `10009450`) store 0. Vestigial NULL fields; both free loops are no-ops (INDEX #60).
+2. ~~The flash state fields the stepper `FUN_1002fcc0` uses (+4 alpha toward 32, +8 scale between 1.0
+   and flli 45/47) were read from the dump only. Front-end O15 owns them.~~ → ⚑ corrected (micro-wave, 2026-10-06): micro-wave-2026-10-06.md
+   §3.8 — fields and arithmetic listing-read (`1002fce4..1002fe18`; state `0x1010332c`). Residue (the
+   starting alpha = text format 27/28 BlendAmount, set by `FUN_1002fe40`) → front-end.md NR 9, INDEX #62.
 3. The same-pass processing of +0xcb entities (§7.4 d) is code-certain. Whether any shipped pausing
    controller is ever destroyed before its own update in list order needs a boss/controller list-order
    check (bosses.md).

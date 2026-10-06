@@ -396,7 +396,7 @@ score/money/lives are only initialised (§9.3) and every score add is one of the
 | `FUN_1002f7a0` | 242 | draw one preview button; mouse-over `COST` rect; zoom/blend of the selected one | MED (read; existing row) |
 | `FUN_1002fc60` | 10 | list item 1 (middle preview) | MED (read) |
 | `FUN_1002fc90` | 21 | reset selection flash | MED (read) |
-| `FUN_1002fcc0` | 59 | selection flash animation (accept flli 44/45, fail 46/47) | MED (existing; read) |
+| `FUN_1002fcc0` | 59 | selection flash animation (accept flli 44/45, fail 46/47) | HIGH — ⚑ corrected (micro-wave, 2026-10-06) #§3.8: listing in micro-wave-2026-10-06.md §3.8 (function-roles.md row). Was MED (existing; read) |
 | `FUN_1002fe40` | 47 | start flash: 0 reset, 1 accept (text style 0x1b), 2 fail (0x1c) | MED (read) |
 | `FUN_1002ff30` | 36 | mouse-in-rect test for a button + rollover sound gaso 11 | MED (read) |
 | `FUN_10030020` | 36 | static initialiser of level-select globals | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; listing `10030020..1003012c`, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
@@ -490,7 +490,7 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
 | ⚑ corrected `FUN_10027930` | G_Player.cc | coin-bonus tally state machine (8 states, pays step×multiplier every 3rd frame) | HIGH | listing `10027c70..10027c90` + decompile; was "money counter display MED" |
 | `FUN_10027630` | G_Player.cc | reset coin-tally fields | MED | read |
 | `FUN_10027db0` | G_Player.cc | coin tally started (+0xd8 ≠ 0) | MED | read |
-| `FUN_100298c0` | G_Player.cc | draw ship + coin-tally text while alpha < 32 | MED | read |
+| `FUN_100298c0` | G_Player.cc | draw ship + coin-tally text while alpha < 32 | HIGH | read — ⚑ corrected (micro-wave, 2026-10-06) #§3.9: listing in micro-wave-2026-10-06.md §3.9 (function-roles.md row). Was MED |
 | `FUN_100061e0` / `FUN_10006200` | G_Game.cc (span) | ground-accuracy created / destroyed += 1 (G+0x3c / G+0x40) | HIGH | hand-decoded words `100061e4`, `10006204` |
 | `FUN_10007150` / `FUN_10007280` | G_Game.cc (span) | reset accuracy counts / reset accuracy tally | MED | read |
 | ⚑ corrected `FUN_100072c0` | G_Game.cc (span) | accuracy tier: pct float ≥100/95/90/85/80 → flli189–194 × sector; step max(trunc(b·0.02f),100); sets 100 % flag G+0xb | HIGH | listing `100072c0..100075dc`; was MED |

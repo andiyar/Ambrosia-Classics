@@ -167,7 +167,7 @@ pix  = FUN_10010bd0(rgb16) = (R>>1 & 0x7c00) | (G>>6 & 0x3e0) | (B>>11)
 Values go through u16 stores (`sth`/`lhz`) between steps. Quirk: c = 31 gives c16 = 63487, which
 packs back to 30, so even variant 0 is one step darker. Variant factors are 1.0, 0.88, 0.76, 0.64,
 0.52. Each particle takes the variant `R(0,4)`, and its core and fringe come from the same i.
-`FUN_10010bd0` is MED (decompile only, one line).
+`FUN_10010bd0` is HIGH: listing `10010bd0..10010bf0` (`lhz` +0/+2/+4, `rlwimi`/`rlwinm` 0x7c00/0x3e0, `srawi 0xb`), called at `1004370c` (core) and `1004371c` (fringe) — ⚑ corrected (micro-wave, 2026-10-06) #40: was "MED (decompile only, one line)". The data side is listing-backed too: `unde` RRGGBB → pix16 via `FUN_10010990` packs as exactly `c >> 3` per channel for all 256 c (micro-wave-2026-10-06.md §4).
 
 ### 2.8 Update — `FUN_100438c0 @ 100438c0` (world update, `FUN_10006b50` `10006be0`) [HIGH listing `100438c0..10043b9c`]
 It runs once per logic tick, after debris scroll and before motion blur, players and entities
@@ -361,9 +361,11 @@ down with the terrain scroll. psbh's burst (FALSE → `'air '`) does not [HIGH f
 derivation is from unit-def-struct.md].
 
 ## NOT RESOLVED (this file)
-1. `FUN_10043340`'s request colour: whether the unde `RRGGBB` reader packs 8-bit channels into
+1. ~~`FUN_10043340`'s request colour: whether the unde `RRGGBB` reader packs 8-bit channels into
    555 by `>>3` (assumed in the worked example). Settle: listing of the COLOR reader in
-   G_UnitDefinitions (unit-def-struct.md P@ rows).
+   G_UnitDefinitions (unit-def-struct.md P@ rows).~~ → ⚑ corrected (micro-wave, 2026-10-06) #40: micro-wave-2026-10-06.md §4 —
+   COLOR reader `FUN_1002cbd0` → `FUN_10010990` (c16 = trunc(65535·c/255), float32) → `FUN_10010c00`
+   (`>> 11`): exactly `c >> 3` for all 256 c (brute force); the worked example stands (INDEX #40).
 2. ~~Whether `FUN_100009e0` appends at the list tail. It decides whether an entity spawned during
    `FUN_10033850` (e.g. psbh) emits its state particles in the same tick, and so where its 10 draws
    fall relative to the remaining entities' draws. Settle: listing of `FUN_100009e0`/`FUN_10000e10`.~~

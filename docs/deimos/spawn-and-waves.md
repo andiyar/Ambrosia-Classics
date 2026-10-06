@@ -448,7 +448,7 @@ its own shields; only ramming reaches the owner (bosses.md §3.5). ⚑ corrected
 | `FUN_100377f0` | debug "Tracked Entity … Spawned [by …]" notice when the spawned unit == `_DAT_100e020c` | MED |
 | `FUN_100380e0` | entry notice: if `entryNotice_STR ≠ none` and (not `displayNoticeOnceOnly` (0x120) or not yet shown) → queue with `entryNoticeDelay` (0x1b8) and `entryNoticeSound` block (0x424..) via `FUN_100181e0` | MED |
 | `FUN_10038230` / `FUN_100382f0` | notice-shown list lookup / add (63-char copy) | MED |
-| `FUN_10038390` / `FUN_10038450` / `FUN_10038540` / `FUN_100385d0` / `FUN_10038810` | entity pool: build / reset / dispose / allocate / free (§1.3) | MED |
+| `FUN_10038390` / `FUN_10038450` / `FUN_10038540` / `FUN_100385d0` / `FUN_10038810` | entity pool: build / reset / dispose / allocate / free (§1.3) | MED — ⚑ corrected (micro-wave, 2026-10-06) #§3.7: `FUN_100385d0` / `FUN_10038810` are now HIGH (listing, micro-wave-2026-10-06.md §3.7: 1000 slots × 12 B at `0x101038a8`, count ≥ 1000 → NULL, free hint = last freed slot, else first free); build / reset / dispose stay MED |
 | `FUN_10039100` | static init of the level request template `0x100eb41c` (⚑ corrected #M3: was `0x100eb420`) and other templates (caller `FUN_10000000`) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; TU init, R `0x100eb41c` +0x24 ← −1, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
 | `FUN_100391f0` / `FUN_10039230` | load / unload "Player Definition" (`FUN_1003a870`/`FUN_1003a900`, `FUN_10039280`/`FUN_10039c00`) — start of the G_PlayerDefinitions span, not EntityGroup | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; module init/teardown, callers `100005b8`/`100006dc` (gameplay-leftovers.md §4.3)) |
 | `FUN_10033090`, `FUN_10033850`, `FUN_100345f0` | excluded (other readers) | not read |
@@ -584,8 +584,8 @@ of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 | `FUN_10038390` | G_EntityGroup.cc | build entity pool (1000 × 0x1ec) | MED | read |
 | `FUN_10038450` | G_EntityGroup.cc | reset entity pool flags | MED | read |
 | `FUN_10038540` | G_EntityGroup.cc | dispose entity pool | MED | read |
-| `FUN_100385d0` | G_EntityGroup.cc | allocate pooled entity | MED | read |
-| `FUN_10038810` | G_EntityGroup.cc (span) | free pooled entity | MED | read |
+| `FUN_100385d0` | G_EntityGroup.cc | allocate pooled entity | HIGH | read — ⚑ corrected (micro-wave, 2026-10-06) #§3.7: listing in micro-wave-2026-10-06.md §3.7 (function-roles.md row). Was MED |
+| `FUN_10038810` | G_EntityGroup.cc (span) | free pooled entity | HIGH | read — ⚑ corrected (micro-wave, 2026-10-06) #§3.7: listing in micro-wave-2026-10-06.md §3.7 (function-roles.md row). Was MED |
 | `FUN_10039100` | ~after G_EntityGroup | static init of request templates | HIGH | read — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on read; static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_100391f0` | ~after G_EntityGroup | load Player Definition | HIGH | strings — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on strings; gameplay-leftovers.md §4.3 |
 | `FUN_10039230` | ~after G_EntityGroup | unload Player Definition | HIGH | strings — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on strings; gameplay-leftovers.md §4.3 |

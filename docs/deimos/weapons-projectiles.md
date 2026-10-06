@@ -236,7 +236,8 @@ What this means:
   max: it comes on the first tick after T0+OverloadTime.
 - On release (state 1 or 2) the activation entity is told to switch (`FUN_10034ce0` finds the entity with
   `+0x9c == serial` → `FUN_10014670` puts it in its first state flagged
-  `stateUseThisStateOnWeaponPowerupRelease` (+0x355; `unit+0x835+s·0x5e0`)). In the same tick the release
+  `stateUseThisStateOnWeaponPowerupRelease` (+0x355; `unit+0x835+s·0x5e0`), entering it **by name** via
+  `FUN_100146f0` — ⚑ corrected (micro-wave, 2026-10-06) #§3.3: a later state of the same name would win; none in shipped data). In the same tick the release
   stream begins. **`level` release spawns** follow, one every TBRS+1 ticks, then the weapon returns to idle. Releasing
   at level 0 gives no release spawn. [HIGH]
 - Quirk: `+0x2c` keeps counting while fireAir is held during state 3. If the button is still (or again)
@@ -320,7 +321,7 @@ Every launcher copies the template, then fills the fields. Runtime template (ima
 | `FUN_1003c7a0 @ 1003c7a0` (**air**, only if `+0x68 > 0`) | every spawn record of `+0x58` whose unit ≠ none: x = h.x + XLoc, y = h.y + YLoc, `+0x0d` = SetHeading, `+0x10` = Angle, owner = `+0x122` | HIGH (listing: request at `r1+0x40`, `1003c8e0 stfs →0x44`, `1003c900 stfs →0x48`, `1003c908 stb →0x4d`, `1003c910 stw →0x50`, `1003c8bc stb r7,0x54(r1)` from `0x122(r27)`) |
 | `FUN_1003c4f0 @ 1003c4f0` (**ground**; role was "launch weapon") | each spawn record of `+0x74` likewise, plus speed multiplier `+0x28 = (float)max(0, trunc(h.y − crosshair.y)) / (float)abs(crosshairYOffset)`. Then, if `crosshairSpawnOnActivation_ID` ≠ none, that unit at the **crosshair** position | HIGH (listing `1003c658 lfs f1,0x4(r27); lfs f0,0x3c(r1); fsubs; fctiwz; …bge; li r21,0` · `1003c680 lwz r3,0x17c(r3); bl 0x1004ee30 (abs)` · `1003c6cc fdivs; stfs f0,0x9c(r1)` = request+0x28) |
 | `FUN_1003c940 @ 1003c940` (**aux**) | spawn records of every aux weapon with count > 0 | MED (read; unreachable in shipped data) |
-| `FUN_1003bff0 @ 1003bff0` | aux fire timing (same rule as `FUN_1003bf80`, per record) | MED (read) |
+| `FUN_1003bff0 @ 1003bff0` | aux fire timing (same rule as `FUN_1003bf80`, per record; every passing record fires; returns any-fired) | HIGH (listing `1003c054..1003c0a8`, micro-wave-2026-10-06.md §3.4) — ⚑ corrected (micro-wave, 2026-10-06) #§3.4: was MED (read) |
 Effect of the bomb multiplier: with the crosshair at its default (adj 0) the ratio is 121/121 = 1.0. Dropping
 the crosshair by adj gives (121−adj)/121, so bombs fly slower and shorter and come down nearer the ship. [HIGH
 arithmetic; MED for the gameplay reading]
@@ -460,7 +461,7 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 | `FUN_1003bd40` | G_WeaponHandler.cc | debug log of handler (no caller) | MED | read |
 | ⚑ corrected `FUN_1003beb0` | G_WeaponHandler.cc | start bomb salvo: n = min(sector + F151 − 1, F152) | HIGH | listing `1003beec…1003bf58` (was "bomb count default/max", MED) |
 | `FUN_1003bf80` | G_WeaponHandler.cc | air fire timing (cooldown + edge unless autoRepeat) | HIGH | listing |
-| `FUN_1003bff0` | G_WeaponHandler.cc | aux fire timing | MED | read |
+| `FUN_1003bff0` | G_WeaponHandler.cc | aux fire timing | HIGH | read — ⚑ corrected (micro-wave, 2026-10-06) #§3.4: listing in micro-wave-2026-10-06.md §3.4 (function-roles.md row). Was MED |
 | ⚑ corrected `FUN_1003c0d0` | G_WeaponHandler.cc | air power-up machine (activation on held ≥ +0x1c8; step every +0x1d0+1 ticks; overload at activation + +0x1d8 → return 1; release spawns every +0x1e0+1) | HIGH | listing `1003c148…1003c4d4` (was MED) |
 | ⚑ corrected `FUN_1003c4f0` | G_WeaponHandler.cc | GROUND weapon launch (spawn records + speed ratio to crosshair) + crosshairSpawnOnActivation | HIGH | listing `1003c578…1003c784` (was "launch weapon", MED) |
 | `FUN_1003c7a0` | G_WeaponHandler.cc | AIR weapon launch (spawn records at pos + XLoc/YLoc) | HIGH | listing |
@@ -474,7 +475,7 @@ needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs
 | `FUN_1003cf10` | G_UnitDefinitions.cc | unit-defs module init (console cmds, cache or build) | MED | read |
 | `FUN_1003d030` | G_UnitDefinitions.cc | unit-defs module teardown | MED | read |
 | `FUN_10034ce0` | G_EntityGroup.cc | find entity by serial → `FUN_10014670(entity, now)` | HIGH | read; listing `10034d8c lwz r0,0x9c(r3); cmpw r0,r25`, `10034d98 or r4,r24,r24; bl 0x10014670` (arg 1 = time, passed on as `FUN_100146f0` param_4 → +0xa4); callers `FUN_1003b3c0`, `FUN_1003c0d0` — ⚑ label audit (review wave 1): HIGH kept, listing added in the fix pass; this reading wins the spawn-and-waves.md conflict |
-| `FUN_10014670` | G_Entity (span) | switch entity to its UseThisStateOnWeaponPowerupRelease state | MED | read (+0x835 = 0x4e0+0x355) — ⚑ label audit (review wave 1) |
+| `FUN_10014670` | G_Entity (span) | switch entity to its UseThisStateOnWeaponPowerupRelease state | HIGH | read (+0x835 = 0x4e0+0x355) — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§3.3: listing in micro-wave-2026-10-06.md §3.3 (function-roles.md row). The state is entered **by its name** (`stateName_STR`) via `FUN_100146f0`; duplicate names would pick the last match (none in shipped data). Was MED |
 | `FUN_10037580` | G_EntityGroup.cc | apply pickup by pickup_Type_ID (coin/exli/shie/mult; air/grnd only check player+0xce) | HIGH | listing |
 | `FUN_10026ee0` | G_Player.cc | overload warning pulse; 8th warning → player death | HIGH | read + plde offsets — ⚑ label audit (review wave 1): HIGH kept — listing evidence in player-physics.md role rows |
 | ⚑ corrected `FUN_10027e50` | G_Player.cc | player death: death spawn, coin spill (MoneyUnit 50/10/5/1), state 3 | MED | read (was "coin unit selection") |

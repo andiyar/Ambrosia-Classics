@@ -485,9 +485,12 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
    while the pointer is inside it, inclusive (INDEX #53).
 3. ~~Direction of `FUN_1000ba70`'s blend (`FUN_1001e9d0` unread): assumed black → image.~~ →
    ⚑ corrected (review wave 2, 2026-10-03) #S: loose-ends-session.md §6 (listing; black → image).
-4. Music after a demo/replay: `FUN_100234d0` neither stops `inmu` nor sets `b6` in modes 1/2;
+4. ~~Music after a demo/replay: `FUN_100234d0` neither stops `inmu` nor sets `b6` in modes 1/2;
    whether level music keeps playing on the menu afterwards depends on `FUN_100051a0`'s music
-   calls.
+   calls.~~ → ⚑ corrected (micro-wave, 2026-10-06) #54: micro-wave-2026-10-06.md §6 — in film modes no stream-changing music
+   call runs (`FUN_100234d0` `1002350c`/`10023598`/`1002376c`, `FUN_100064d0` `10006754`/`100067bc`,
+   `FUN_100051a0` `10005960`/`10005ad4`, `FUN_10007170` `100071e8`), and `b6` is not set, so the menu's
+   `inmu` plays on uninterrupted through the film and back; no level music or `ammu` is heard (INDEX #54).
 5. ~~Semantics of the sound args (0x4b|0x32, 100, 0|1) — INDEX #11.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S:
    sound-music.md §2.3 (priority, volume, allowMultiple).
 6. Developer-logo draw (`FUN_10044c30(1000)` in boot) and `FUN_100476a0` (pause sound halt) not
@@ -500,8 +503,12 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
 8. ~~Item labels/command-keys of menu 128/2000 (resource fork MENU not parsed); only item 1 of each
    is acted on.~~ → ⚑ corrected (review wave 2, 2026-10-03) #M7d #S: MENU 128 item 1 = "About Deimos Rising…", MENU 2000 =
    File ▸ Quit (resource fork, read by the review).
-9. Accept/fail flash durations in level select (F44–F47 arithmetic in `FUN_1002fcc0`, owned by
-   scoring-bonuses §10).
+9. ~~Accept/fail flash durations in level select (F44–F47 arithmetic in `FUN_1002fcc0`, owned by
+   scoring-bonuses §10).~~ → ⚑ corrected (micro-wave, 2026-10-06) narrowed: micro-wave-2026-10-06.md §3.8 — the stepper is
+   listing-read (alpha +1 → 32; scale ± rate between 1.0 and 2.0; accept 6 up + 6 down, fail 4 + 4; ends
+   when scale == 1.0 and alpha == 32). The starter `FUN_1002fe40` (listing `1002fea8..1002ff14`) sets
+   scale 1.0, growing 1, colour = text format 0x1b/0x1c +0x122 and alpha = that format's
+   `BlendAmount` (+0x114). Residue → INDEX #62 (which `tefo` files formats 27/28 are).
 
 ## Role-table rows (for merge)
 | `FUN_100229a0` | G_Interface.cc | main menu loop: copyright flip F68, hover, event dispatch, button actions | HIGH | listing `10022ab4…10022cb8`; front-end.md §2 |

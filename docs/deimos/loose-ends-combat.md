@@ -521,7 +521,7 @@ Delete" (timer 20, still collidable) → `Delete`, so it can be taken for 185 ti
 ## Role-table rows (for merge)
 | `FUN_10042cd0` | U_Math | heading (internal h') of a float vector: axis cases 0/180/90/270, quadrant atan formulas, trunc, ≥360→0; exact inverse of `FUN_10042b80` | HIGH | full listing `10042cd0..10042e8c` (loose-ends-combat.md §1.2) — ⚑ corrected (was MED, decompile) |
 | `FUN_10005cf0` | G_Game | game `+0x39` "level end reached" (set `10006db4`, cleared `10007248`/`10005524`/`10005828`) | HIGH | listing + raw store scan (§2) |
-| `FUN_10007170` | G_Game | level transition: when +0x09 and a player is alive → sound, fade, clear +0x09/**+0x39**, `FUN_100302e0`, `FUN_100064d0` next level; otherwise +0x08 = 0 (session ends) | MED | decompile + `10007248` (§2.1) |
+| `FUN_10007170` | G_Game | level transition: when +0x09 and a player is alive → sound, fade, clear +0x09/**+0x39**, `FUN_100302e0`, `FUN_100064d0` next level; otherwise +0x08 = 0 (session ends) | HIGH | decompile + `10007248` (§2.1) — ⚑ corrected (micro-wave, 2026-10-06) #§6: listing in micro-wave-2026-10-06.md §6 (function-roles.md row). Was MED |
 | `FUN_10037580` | G_EntityGroup | pickup switch: grnd/air (refuse if invulnerable), coin, exli, mult, shie, **spec (no-op, consumed)**, default consumed | HIGH | listing `10037580..100376f0` (§3.1) — ⚑ corrected (spec case) |
 | `FUN_10027490` | G_Player | shield += value, clamp [0,100], skip if 0 or not in game | HIGH | listing (§3.2) |
 | `FUN_10027de0` | G_Player | set/clear invulnerable `+0xce` with sticky `+0xcf` (sticky only from console GOD) | HIGH | listing `10027de0..10027e40` + raw call `10008518` (§3.3) |

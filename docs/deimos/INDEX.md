@@ -38,7 +38,10 @@ listings, 2 HIGH → MED; function-roles.md header).
 covers every one of the 979 `FUN_` functions in `0x10000000–0x1004b400` with a HIGH or MED row;
 unions still not re-run. ⚑ corrected (review wave 3, 2026-10-06): after the review-wave-3 fix pass the hand table is still
 **938 rows = 698 HIGH / 240 MED / 0 LOW** (addresses added, no label changed; function-roles.md header), and no
-bank file keeps a LOW row for any game function (35 stale LOW rows re-labelled).
+bank file keeps a LOW row for any game function (35 stale LOW rows re-labelled). ⚑ micro-wave (2026-10-06): after the listing micro-wave fold-in the hand table is
+**938 rows = 716 HIGH / 222 MED / 0 LOW** (18 MED → HIGH on `$W/disasm-micro*.txt` listings, one of them,
+`FUN_10014670`, also corrected in meaning; 4 new non-`FUN_` rows for the slider procs and AppleEvent
+handlers, not counted; function-roles.md header).
 
 ## Topical files
 | file | lines | sections | labels present (`grep -o '\[HIGH'` etc.: H/M/L) |
@@ -75,6 +78,7 @@ bank file keeps a LOW row for any game function (35 stale LOW rows re-labelled).
 | `sprite-manager-resource-image.md` | 525 | 0 constants; 1 sprite manager init/teardown, blitter buffers; 2 group list queries; 3 debug commands + switch writers; 4 Sprite Groups Cache (load policy, layout, reader, writer); 5 resource registry G_Resource; 6 U_Image import + TGA orientation; 7 two NRs closed; worked `bocr` (wave 3+4) | 20/4/2 |
 | `file-pict-alerts-manager.md` | 346 | 1 alerts (`FUN_10045ab0` never quits, two-button, confirm); 2 memory reserve, string/memory helpers; 3 FSSpec/catalog helpers; 4 QuickDraw/screen helpers (PICT draw, port validator); 5 dialog/menu helpers; 6 U_Manager registry; 7 weapon-handler ctor/dtor; 8 NUMBLURS readout; worked ` Data:Paks` lookup (wave 3+4) | 19/6/0 |
 | `gameplay-leftovers.md` | 516 | 1 game counters, film object, pixel-buffer lifetime; 2 GameObject/Entity helpers (ramps, hit glow, accessors, ctors); 3 player accessors; 4 debris/level-select/score-bar/plde modules; 5 unit-def leftovers; 6 reachability; 7 critic O4–O7 closed (air launch ×1.0, scale tolerance, orphan orbiter, water codes, crosshair rect, hit factor, countdown vs pause, destroy census); worked Bacta Gun sprite (wave 3+4) | 22/2/0 |
+| `micro-wave-2026-10-06.md` | 451 | listing micro-wave: 1 prefs slider action procs; 2 AppleEvent handlers; 3 listing addresses for 13 replay-critical MED rows (rule conditions, heading → frame, power-up release by name, aux fire, FLOAT reader, object reset, entity pool, level-select flash, player draw, load by sector); 4–7 INDEX #40 #47 #54 #60 closed; fold-in notes (2026-10-06) | 12/1/0 |
 Label counts per file: `cd docs/deimos; for f in *.md; do grep -o '\[HIGH' $f | wc -l; …` (counts the
 first label of each bracket; compound brackets such as "[HIGH for X; MED for Y]" count once).
 Line and label counts in this table are as of the implementer session; the 2026-10-03 fix pass
@@ -300,8 +304,11 @@ Wave 2 additions (2026-10-03)
     the unpacked pidata (pre-execution) and no pre-`main` code writes the LCG `0x100e032c`; residue =
     indirect calls inside MSL stream constructors (its NR 1) and anything in `FUN_100000e0` before the
     first draw.
-40. Particle colour packing: whether the `unde` `RRGGBB` reader packs 8-bit channels into 555 by
-    `>>3` — particles-debris-blur.md NR 1.
+40. ~~Particle colour packing: whether the `unde` `RRGGBB` reader packs 8-bit channels into 555 by
+    `>>3` — particles-debris-blur.md NR 1.~~ → ⚑ corrected (micro-wave, 2026-10-06) #40 closed → micro-wave-2026-10-06.md §4: COLOR
+    reader `FUN_1002cbd0` → `FUN_10010990` (c16 = trunc(65535·c/255) in float32, `10010b34..10010b6c`) →
+    `FUN_10010c00` (`>> 11`): exactly `c >> 3` for every c (brute force over 256); `FUN_10010bd0` read at
+    its call sites `1004370c`/`1004371c`; particles-debris-blur.md NR 1 struck, §2.7 `FUN_10010bd0` HIGH [HIGH].
 41. `hitParticleDoCircularBurst_BOOL` (+0x131) has no reader at the hit site (inert?) —
     particles-debris-blur.md NR 7.
 42. Exact TickCount rate on the target OS / Ben's machine (60.15 Hz assumed → 30.07 vs 30.00
@@ -321,8 +328,14 @@ Wave 2 additions (2026-10-03)
     ground launcher known to change +0x28, MED) — loose-ends-combat.md NR 4.~~ → ⚑ closed (wave 3+4, 2026-10-04) →
     gameplay-leftovers.md §7.1: both copy template +0x28/+0x2a (`1003c874/78`, `1003ca54/58`) = 1.0, so
     air/aux shots always have multiplier 1.0 (critic O4).
-47. Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
-    and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.
+47. ~~Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
+    and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.~~ →
+    ⚑ corrected (micro-wave, 2026-10-06) #47 closed → micro-wave-2026-10-06.md §5: `noal` is requested owner-less at `10006ee4`
+    before `1000702c bl 0x10033850`, lands at the PERM tail with countdown 0 (→ −1 ≤ 0, `10033a54..10033a70`)
+    and is processed on T0; `12gc` likewise on T0+90. `aieg` = per-member cumulative countdown `R(5,6)`
+    (`10035fb8..10035fe0`, sum zeroed in `FUN_10035bf0` at `10035c20`): member k first processed at
+    R + S_k − 1, last ∈ [R+249, R+299] — was "≈ T0+95…T0+370" in loose-ends-session.md §5.3 (corrected
+    there; timeline now HIGH). Residue: R = the `12gc` S2 spawn-set delay → #64 [HIGH].
 48. ~~In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
     unrecovered jump table at `0x10048fc8`) — loose-ends-session.md NR 1. ⚑ corrected (review wave 2, 2026-10-03) #C10
     narrowed: event code 8 = the Quit AppleEvent (high-level event 23 at `100490ec`, front-end.md
@@ -344,8 +357,11 @@ Wave 2 additions (2026-10-03)
     front-end.md NR 2.~~ → ⚑ closed (wave 3+4, 2026-10-04) → display-window-present.md §4, §7: (top, left, MBarHeight, right)
     of the DSp screen rect = the menu-bar strip; hover is suppressed while the pointer is inside it
     (inclusive). MBarHeight is OS-dependent (its NR 3).
-54. Music state after a demo/replay returns to the menu (`inmu` not restarted in modes 1/2?) —
-    front-end.md NR 4.
+54. ~~Music state after a demo/replay returns to the menu (`inmu` not restarted in modes 1/2?) —
+    front-end.md NR 4.~~ → ⚑ corrected (micro-wave, 2026-10-06) #54 closed → micro-wave-2026-10-06.md §6: in film modes no
+    stream-changing music call runs (every stop / `ammu` / level `#music_ID` site is skipped on the film
+    flag; the resume at `1000669c` is a no-op unless paused) and `b6` is not set, so the menu's `inmu` plays
+    on uninterrupted from the menu through the film and back; front-end.md NR 4 struck [HIGH].
 55. ~~Whether erasing high scores (Option+SCORES) is saved immediately (`FUN_10004ae0` writes the
     live prefs; prefs are written at quit by `FUN_100045f0`) — front-end.md NR 7.~~ → ⚑ corrected (review wave 2, 2026-10-03)
     #C7: not immediately — saved at quit (`FUN_10000630 → FUN_100045f0`, loose-ends-session.md
@@ -382,11 +398,30 @@ Wave 3+4 additions (2026-10-04)
     to x < 416, y < 480 [HIGH — text half closed]. `FUN_1002f7a0`'s level-select `COST` strip always keeps
     it (`1002fb94..1002fc10`, no store to cmd+0x20..+0x2c). Still open: whether that strip rect reaches
     x ≥ 416 / y ≥ 480 on the 640-wide level-select screen, and whether the `COST` leaf honours the clip.
-60. Film object +0xc/+0x10 writers outside `0x10009390–0x10009980` not searched (`FUN_10009400` frees
-    them) — gameplay-leftovers.md NR 1.
+60. ~~Film object +0xc/+0x10 writers outside `0x10009390–0x10009980` not searched (`FUN_10009400` frees
+    them) — gameplay-leftovers.md NR 1.~~ → ⚑ corrected (micro-wave, 2026-10-06) #60 closed → micro-wave-2026-10-06.md §7: the film
+    pointer is never stored to memory (`r25` only, passed into calls); all consumers lie in
+    `0x10009390–0x10009980`, whose only +0xc/+0x10 stores (ctor `100093d8`/`100093e0`, loader `100094f0`,
+    dtor `10009450`) store 0 — vestigial NULL fields, both free loops no-ops; gameplay-leftovers.md NR 1
+    struck [HIGH].
 61. Same-pass processing of entities flagged deleted earlier in the pass (no `+0xcb` test at the loop
     head): whether any shipped pausing controller is destroyed before its own update in list order —
     gameplay-leftovers.md NR 3 (§7.4d).
+
+Micro-wave additions (2026-10-06)
+62. Level-select flash start values: the starter `FUN_1002fe40` (listing `1002fea8..1002ff14`) sets scale
+    1.0, growing 1, colour = text format 0x1b (accept) / 0x1c (fail) +0x122 and alpha = that format's
+    `BlendAmount` (+0x114); the stepper then walks alpha +1/tick to 32 and the flash ends when scale is
+    back at 1.0 and alpha is 32 (micro-wave-2026-10-06.md §3.8). Open: which `tefo` files formats 27/28
+    are (likely `lsca` / `lscf`, BlendAmount 16 → a 16-tick flash; MED until the format index → tag
+    order is read). Decides the exact flash length — front-end.md NR 9, gameplay-leftovers.md NR 2,
+    micro-wave NR 1. (The micro-wave named the caller `FUN_1002e310`; the fold-in found the stores in
+    `FUN_1002fe40`.)
+63. Entity-pool slot pre-allocation: who fills each slot's entity pointer (slot +0x10) before
+    `FUN_100385d0` hands it out (micro-wave-2026-10-06.md §3.7, NR 2). Not replay-relevant (fixes object
+    addresses only).
+64. `12gc` S2 spawn-set delay (the tick R at which the `aieg` group is requested; R = T0+95 only if that
+    set's delay is 0) — loose-ends-session.md §5.3, micro-wave NR 4. Settle by decoding `12gc`'s spawn set.
 
 ## Append rule
 New findings append to the topical file they belong to (or a new topical file of ≤ ~600 lines)
@@ -561,3 +596,24 @@ reconciliation, T = table repair; plus `#48`, `#58`). Wave 3+4 fix pass (2026-10
 | S | — | stale file-level NRs struck with pointers (critic §3): bosses 4–8; damage 2–4; level 2, 3, 5, 6 (residue), 7, 9; combat 5; spawn 1, 2, 4, 6, 7; player 1, 2, 6, 8; scoring 1, 2, 5, 7; unit-def 3–6; units 1, 4, 6; weapons 1, 2, 5–8; particles 6; sound 3; text 1, 2, 3, 5; static 2, 3, 4; sprite-mgr 2, 5, 6; blit 4; display 5; app-pak 4; file-pict 4; inline: data-tags §5/§6 (3), engine-loop §5/§8 (#14 narrowed), sprite-sound-containers §2 (`0x100df188` = 1.0), timing §5 (listing), hud §9 (format flags, steps 2–3, `FUN_1000d260` → HIGH) | the files named |
 | L | — | 35 stale LOW role rows in nine older files re-labelled to this table's label (32 HIGH, 3 MED; scoring combined row split); 40 "listing, no address" HIGH rows: 24 static-initialiser rows kept (backed by static-init §3 data bytes, as the critic ruled), 16 rows given listing addresses — **the three gameplay-leftovers §5.1/§5.2 rows kept HIGH with addresses instead of lowered to MED** (reversal of the handoff's instruction; FIXPASS record) | units-movement, messages, sprite-geometry, front-end, player-physics, particles, scoring, spawn, damage role rows; function-roles.md + owning-file rows |
 | T | — | `FUN_10000000` row moved below the §1 header; new_handler `0x10001000` is not a function | function-roles.md; display-window-present.md, loose-ends-session.md §8.2 |
+
+**2026-10-06 — Micro-wave fold-in** (`micro-wave-2026-10-06.md`: role rows for the no-function slider procs
+and AppleEvent handlers, listing addresses for 13 replay-critical MED rows, INDEX #40 #47 #54 #60). Every
+HIGH claim was spot-checked against its cited lines in `$W/disasm-micro.txt`, `disasm-micro2.txt`,
+`disasm-micro3.txt` and `critic3-work/gaps.txt` (TV slots and constants re-read from `$W/mem/*.bin`; the
+#15/#16 compare idioms and the `>>3` packing re-run in Python): all confirmed, **none downgraded**. Marked
+inline `⚑ corrected (micro-wave, 2026-10-06) #<id>` (ids = micro-wave sections `§1`–`§7`, or the INDEX
+number). Table 938 = 698/240/0 → **938 = 716/222/0**.
+| # | sev | finding | landed in |
+|---|---|---|---|
+| §1 | — | slider action procs `0x10011750` (Sound, item 12 → label 13) / `0x100118e0` (Music, item 15 → label 16): ±1 / ±10 by part, `SetControlValue` pins, live `"%i%%"` relabel; prefs written only by `FUN_10010fc0` | function-roles.md 2 new `(undefined)` rows |
+| §2 | — | AE handlers `oapp`/`odoc` → noErr, `pdoc` → −1708, `quit` → set `b8`; installer `FUN_10049aa0` MED → HIGH | function-roles.md 2 new `(undefined)` rows + `FUN_10049aa0` |
+| §3.1 | — | rule conditions #4/#5/#14–16 listing-read (`FUN_100352f0`, `FUN_100353e0`, `FUN_100351f0`; #15/#16 signed) | function-roles.md; bosses.md §3.1 rows 4, 5, 14 and role rows → HIGH |
+| §3.2 | — | heading → frame `FUN_10016230`: single precision, negatives truncate | function-roles.md; units-movement.md §8.2, §10 rows |
+| §3.3 | — | `FUN_10014670` enters the release state **by name** (was "switch to its state") | function-roles.md (corrected); units-movement.md §10 rows; weapons-projectiles.md §2.5 and role row |
+| §3.4–§3.10 | — | `FUN_1003bff0`, `FUN_1002c960`, `FUN_10012650`, `FUN_100385d0`/`FUN_10038810` (pool: 1000 slots, last-freed reuse), `FUN_1002fcc0`, `FUN_100298c0`, `FUN_10011fd0` MED → HIGH | function-roles.md; weapons-projectiles.md, units-movement.md, spawn-and-waves.md, scoring-bonuses.md, player-physics.md, level-scroll-objects.md role rows |
+| #40 | — | closed: `unde` RRGGBB → 555 = exactly `>>3`; `FUN_10010990` → HIGH | INDEX #40 struck; particles-debris-blur.md §2.7, NR 1 |
+| #47 | — | closed: finale same-tick order; `aieg` = cumulative per-member `R(5,6)` countdown — the "T0+95…T0+370" row corrected | INDEX #47 struck; loose-ends-session.md §5.3 (timeline → HIGH), NR 3 |
+| #54 | — | closed: `inmu` plays on through a film; `FUN_10007170` → HIGH | INDEX #54 struck; front-end.md NR 4; loose-ends-combat.md, level-scroll-objects.md role rows |
+| #60 | — | closed: film +0xc/+0x10 are always NULL; `FUN_100094a0`, `FUN_10009680` → HIGH | INDEX #60 struck; gameplay-leftovers.md NR 1 |
+| new | — | #62 flash start values (narrowed by the fold-in: starter `FUN_1002fe40`, not `FUN_1002e310`), #63 pool pre-allocation, #64 `12gc` S2 spawn-set delay; micro-wave NR 3 (`FUN_10000f30`/`f80` return) is already covered by loose-ends-session.md §8.2 (they end in the non-fatal `FUN_10000fd0`) and gets no new number; NR 5 = existing #13, #59 | INDEX #62–#64; front-end.md NR 9, gameplay-leftovers.md NR 2 struck/narrowed |

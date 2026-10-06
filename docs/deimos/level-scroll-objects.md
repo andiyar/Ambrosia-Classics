@@ -449,13 +449,13 @@ Reading:
 | `FUN_10011de0` | G_Level.cc | level count (list length, 12) | MED | read (`FUN_10000ce0` = count) — was LOW — ⚑ label audit (review wave 1) |
 | `FUN_10011e30` | G_Level.cc | tag → sector (0 if absent) | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_10011f00` | G_Level.cc | sector → tag (`none` if absent) | MED | read — ⚑ label audit (review wave 1) |
-| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | HIGH | read — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§3.10: listing in micro-wave-2026-10-06.md §3.10 (function-roles.md row). Was MED |
 | `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_10012170` | G_Level.cc | free a level-object list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_100121c0` | G_Level.cc | free the order list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_100064d0` | G_Game.cc (span) | level start: next sector, per-level resets, scroll init, load spawns, Notice_Level_NN | HIGH | read + listing |
-| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | HIGH | read — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§6: listing in micro-wave-2026-10-06.md §6 (function-roles.md row). Role as in function-roles.md: when +0x09 and a player is alive → film: +0x08 = 0, else stop music, `tran`, fade, clear +0x09/+0x39, `FUN_100302e0`, `FUN_100064d0` next level. Was MED |
 | `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10007130` / `FUN_10007150` / `FUN_10007280` | G_Game.cc (span) | per-level counter resets (game struct +0x16c…, +0x3c/40, +0x48…) | MED | read |
 | ⚑ corrected `FUN_10033090` | G_EntityGroup.cc (span) | spawn pending level objects whose yLoc == row; request y flagged "map row"; record always removed (was HIGH "spawn level objects at a scroll row") | HIGH | listing |

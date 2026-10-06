@@ -437,7 +437,7 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 | `FUN_10027dd0` | G_Player.cc | invulnerable flag +0xce | HIGH | disasm |
 | `FUN_10027de0` | G_Player.cc | set/clear invulnerability (+sticky) | MED | dump |
 | ⚑ corrected `FUN_10028170` | G_Player.cc | player update: accel/decay/cap movement, banking frames F166, view shift, area clamp F54/55/183, crosshair F185–187, defence bonus F184 | HIGH | disasm §2; was MED "perm F183-187" |
-| `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, money text | MED | dump; caller `FUN_10007070` |
+| `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, money text | HIGH | dump; caller `FUN_10007070` — ⚑ corrected (micro-wave, 2026-10-06) #§3.9: listing in micro-wave-2026-10-06.md §3.9 (function-roles.md row). Was MED |
 | `FUN_100299c0` / `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | reset / get / set score (obfuscated +0x5532a3e) | HIGH | disasm |
 | `FUN_10029b20` | G_Player.cc | step score multiplier 1→2→3→4→5→10 | HIGH | jump table `0x100e93c0` |
 | `FUN_10029bd0` / `FUN_10029fd0` | G_Player.cc | get / reset(1) multiplier | MED | dump — ⚑ label audit (review wave 1) |
