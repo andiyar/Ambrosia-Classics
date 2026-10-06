@@ -1,9 +1,9 @@
 #!/bin/sh
 # Regenerate the three Ferazel dumps from the existing Ghidra project (no re-import).
-# Usage: ghidra/regen-ferazel.sh   (project: ~/Developer/ghidra-proj/ferazel-rhodes)
+# Usage: ghidra/regen-ferazel.sh   (project: ~/Developer/Ghidra/ferazel/proj — Ben 2026-10-06: all decompile work lives under ~/Developer/Ghidra/<game>/)
 set -x
 AH=/opt/homebrew/Cellar/ghidra/12.1.3/libexec/support/analyzeHeadless
-PROJ=$HOME/Developer/ghidra-proj/ferazel-rhodes
+PROJ=$HOME/Developer/Ghidra/ferazel/proj
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/ferazel"   # committed copy (Ben 2026-10-06); mkdir -p "$OUT"
 mkdir -p "$OUT"
@@ -19,4 +19,5 @@ $AH "$PROJ" Ferazel_pef -process Ferazel_pef -noanalysis -readOnly \
 echo "disasm rc=$?"
 wc -l "$OUT"/Ferazel_pef.decompiled.c "$OUT"/Ferazel_handlers.decompiled.c "$OUT"/Ferazel_pef.disasm.txt
 grep -h 'wrote\|REPORT' "$OUT"/analyze-*.log
+cp -p "$OUT"/Ferazel_pef.decompiled.c "$OUT"/Ferazel_handlers.decompiled.c "$OUT"/Ferazel_pef.disasm.txt "$OUT"/analyze-*.log "$HOME/Developer/Ghidra/ferazel/"   # keep the root copy current
 echo REGEN-DONE

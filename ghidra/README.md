@@ -1,5 +1,7 @@
 # ghidra/ — decompile recipe (everything but the scripts is git-ignored)
 
+**Where everything lives (Ben 2026-10-06):** `~/Developer/Ghidra/<game>/` — binary, Ghidra project (`proj/`), every dump and log, for ferazel, cythera, deimos, aki, btx, ev-nova, ev-override (its README has the table). This directory keeps the scripts; `proj`, `deimos-proj` and the Cythera files here are symlinks into that folder; `ferazel/` is a committed copy of the Ferazel text dumps + binary (the exception to the rule below).
+
 The originals are copyrighted; binaries, Ghidra projects, logs and `*.decompiled.c` dumps never
 enter git. Only `*.py`, `*.java`, `*.sh` and this README are tracked.
 
