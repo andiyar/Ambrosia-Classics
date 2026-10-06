@@ -105,6 +105,36 @@ applied as overriding SDL hints; the test bundle also forces `dummy` in-process)
 `run-in-crossover.sh` exits 64 unless `HECTOR_SDL_AUDIO_DRIVER` is set (to anything non-empty), for every
 program — non-SDL ones too — so no run reaches a real device by forgetting it. `proof-b.sh` exports `dummy`.
 
+## The game: `BubbleTroubleXWin` (W4)
+
+`BubbleTroubleX/Windows` product `BubbleTroubleXWin` — `WinGameDriver` (BTXWinKit, the port of the Mac
+`BTXController` + `BTXAudio`) on HectorSDL. It loads `Data/` beside the `.exe` (or `--data DIR`): the five
+`.rsrc` files, `Fonts/*.btxfont` (copied from `BubbleTroubleX/Windows/Resources/Fonts`) and, for Windows,
+`Decoded/*.rgba` (`btx-predecode <BTX Contents/Resources> Data/Decoded`). Prefs: `%APPDATA%\Ambrosia
+Classics\Bubble Trouble X\Prefs.bin` (Mac SDL build: `~/Library/Application Support/Ambrosia Classics/Bubble
+Trouble X (SDL)/Prefs.bin`; `--prefs FILE` overrides) — never `UserDefaults`, never the Mac app's domain.
+
+```sh
+tools/windows/build.sh BubbleTroubleX/Windows BubbleTroubleXWin --sdl
+HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy tools/windows/run-in-crossover.sh \
+  <build>/BubbleTroubleXWin.exe --data 'Z:\…\Data' --frames 600 --dump 'Z:\…\win.ppm'
+# Mac SDL build (same flags; the dump must be byte-identical — cmp):
+SDL_AUDIO_DRIVER=dummy SDL_VIDEO_DRIVER=dummy swift run --package-path BubbleTroubleX/Windows \
+  BubbleTroubleXWin --data <Data> --frames 600 --dump mac.ppm
+```
+
+**Headless smoke mode** (`--frames N`): N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s,
+each), then the last presented 640×500 canvas → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio
+driver in-process, keeps prefs in memory (unless `--prefs`), uses the name "Player" and 3 March, and ignores
+focus events — so a dump depends only on N, the script and the data. `--keys FILE` plays timed input, one
+command per line (`#` comments): `<frame> press|down|up <key> [cmd|shift|option|control]`, `<frame> click <x>
+<y>` (canvas pixels; the menu strip is rows 0–19), `<frame> caps on|off`, `<frame> quit`. Keys: a–z, 0–9, space,
+return, enter, tab, delete, esc, left/right/up/down, command/shift/capslock/option/control, or `0x..`
+(Carbon key codes). Ctrl+Q on Windows is `press q cmd`. Example: `620 press return` starts a game from the menu.
+
+W4 results (2026-10-06): `--frames 600` reaches the main menu; `--frames 900` with `620 press return` is in
+level 1 (its JPEG background from `Decoded/`); both CrossOver dumps `cmp`-identical to the Mac SDL build's.
+
 ## Results (W0, 2026-10-06)
 
 **Proof A** (`hello`, CrossOver, `--skip-userdefaults`): exit 0 —
