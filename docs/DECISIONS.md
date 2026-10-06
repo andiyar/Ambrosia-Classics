@@ -594,6 +594,21 @@ Windows build was played to level 20 with sound on a real PC (D19 lane), and its
 **Rejected:** the Aki two-layer shape (no headless pixel tests, Windows would duplicate the compositor) · one engine
 target with pixels in Core (D6) · data out of git behind symlinks (superseded by D24).
 **Approved by:** Ben (items 1–5, in his words, 2026-10-06); seat rulings recorded for the executors, Ben told.
+**As built (C0, 2026-10-06):** `Resources/Ferazel/` holds Ferazel's Wand 1.0.3 byte-identical (`cp -p`, `cmp` clean)
+from the archive mirror's installed `files/`: six resource forks as data-fork `.rsrc` — `Ferazel's Wand.rsrc` 264,712 B
+`5d1165339d64b4dd360043e62e1baa888762bac69d3555e985a9ce54ec7b401a` · `World Data.rsrc` 5,511,430 B
+`c1b208543ee501219a631ce0a5a0151c818ff15f9aa41090afb5586c8500d541` · `Backgrounds.rsrc` 15,821,213 B
+`110db531084f970473497f25541736906fa621970c654758b46a28d2ffcf9b1b` · `Sprites.rsrc` 10,028,422 B
+`795ac20d2a5a61ac2f18a31802a76ebd871e028f4bacd1e5bdaa38493e6608f4` · `Sounds.rsrc` 2,448,841 B
+`39cd36d5bd56908afa6bc607d360592db2172e140be231bbfeaecb8c61c5893f` · `Titles.rsrc` 4,005,325 B
+`b1d30e7720f8b30d782824216fea52527a78c2bff761ba744a227d98d210df9b` (SHA-256 re-measured, equal to the plan's Research
+note 1) — and `Ferazel's Wand Music/` with the 28 extensionless AIFC tracks `01`..`30` minus `21` and `27`. Totals
+38,079,943 + 47,201,968 = 85,281,911 B; largest file 15,821,213 B (under GitHub's 50 MB warning). Stays out: the PEF
+binary `Ferazel's Wand`, the `Ferazel's Wand Documentation` app, the 28 `NN.rsrc` SoundEdit leftovers, the 1.0.3
+Notes / License / Ambrosia FAQ texts, the web-site link files, `Icon_*`, the InputSprocket / USBHID files, the `.pict`
+files, `.DS_Store`. `.gitignore` re-includes `!/Resources/Ferazel/` (other games' data stays ignored);
+`.gitattributes` `Resources/Ferazel/** binary`. `FERAZEL_DATA` overrides the folder. Rejected as in D24: Git LFS
+(breaks anonymous clones of the public repo past the free quota) · data out of git behind symlinks.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
