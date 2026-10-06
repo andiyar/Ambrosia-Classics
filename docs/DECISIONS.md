@@ -594,3 +594,16 @@ Windows build was played to level 20 with sound on a real PC (D19 lane), and its
 **Rejected:** the Aki two-layer shape (no headless pixel tests, Windows would duplicate the compositor) · one engine
 target with pixels in Core (D6) · data out of git behind symlinks (superseded by D24).
 **Approved by:** Ben (items 1–5, in his words, 2026-10-06); seat rulings recorded for the executors, Ben told.
+
+## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
+
+**Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**
+1. **Done = the whole game, Mac + Windows** — every level, title/menus, high scores, demo films, Options/controls
+   dialogs, every weapon and boss; Mac on HectorShell, Windows on the SDL shell BTX proved. Built in gated phases.
+2. **First gate = level 1 look, no gameplay** — level 1's scrolling background, the ship drawn in place, HUD/score bar,
+   drawn exactly in the original's frame order; Ben judges "does it look like Deimos".
+3. **Screen = 640×480 at whole-number scale**, window and full screen the largest whole multiple with a black border
+   (the original: DrawSprocket 640×480×16 full screen). Rejected: smooth fit (Aki's rule).
+4. **Feel oracle = YouTube longplays + Ben's eyes at each gate**; the RE bank is the logic oracle. Rejected: running the
+   original in an emulator; eyes only.
+**Approved by:** Ben.
