@@ -34,7 +34,9 @@
 #   tools/package-aki-release.sh --version 1.0 --sign "Developer ID Application: …"   # sign + verify, no DMG
 #   tools/package-aki-release.sh --version 1.0 --sign "Developer ID Application: …" --notarize <profile>
 #
-#   --version X.Y[.Z]     required; names the output (out/release/Aki-<version>.dmg)
+#   --version X.Y[.Z]     required; names the output (out/release/Aki-<version>.dmg) and must equal the
+#                         built app's CFBundleVersion (the release number; CFBundleShortVersionString stays
+#                         1.2.0, the version of Aki this rebuilds — the About panel reads "1.2.0 (1.0)")
 #   --sign "<identity>"   the FULL Developer ID Application identity name as `security find-identity -v -p
 #                         codesigning` prints it, e.g. "Developer ID Application: Name (TEAMID)" (not a
 #                         hash, not a prefix); required unless --dry-run
@@ -317,6 +319,9 @@ EXE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BUILT_APP/C
     || die "the built app's Info.plist has no CFBundleExecutable"
 ARCHS="$(lipo -archs "$BUILT_APP/Contents/MacOS/$EXE_NAME")" || die "lipo cannot read the Aki executable"
 BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
+BUNDLE_BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
+[[ "$BUNDLE_BUILD" == "$VERSION" ]] \
+    || die "the built app's CFBundleVersion is “$BUNDLE_BUILD”, but --version is $VERSION (set it in Aki/App/Mac/Info.plist)"
 # The app icon (Icon Composer AppIcon.icon → Assets.car + AppIcon.icns); the DMG volume icon uses the .icns.
 ICON_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
 [[ "$ICON_NAME" == "AppIcon" ]] || die "the built app's CFBundleIconName is “$ICON_NAME”, expected AppIcon (stale build?)"
@@ -325,7 +330,7 @@ for f in Assets.car AppIcon.icns; do
 done
 info "app: $BUILT_APP"
 info "icon: CFBundleIconName AppIcon · Assets.car + AppIcon.icns present"
-info "archs: $ARCHS · Info.plist CFBundleShortVersionString $BUNDLE_VERSION"
+info "archs: $ARCHS · Info.plist CFBundleShortVersionString $BUNDLE_VERSION, CFBundleVersion $BUNDLE_BUILD"
 
 # ── 3. Assemble ─────────────────────────────────────────────────────────────────────────────────
 step "assemble"
@@ -469,7 +474,7 @@ NEXT=""
 cat <<SUMMARY
 
 === GATE SUMMARY — Aki $VERSION ===
-version         $VERSION (Info.plist CFBundleShortVersionString $BUNDLE_VERSION)
+version         $VERSION — Info.plist CFBundleShortVersionString $BUNDLE_VERSION, CFBundleVersion $BUNDLE_BUILD (About: "Version $BUNDLE_VERSION ($BUNDLE_BUILD)")
 git sha         $GIT_SHA ($TREE)
 hectorkit       $HK_SHA ($HK_TREE)
 build           $BUILD_LINE
