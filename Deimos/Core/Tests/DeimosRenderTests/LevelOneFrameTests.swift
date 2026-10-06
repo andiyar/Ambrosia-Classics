@@ -13,10 +13,10 @@ struct HeadlessRun {
     let label: String
     let dumpPasses: Set<Int>
 
-    init(label: String, dump: Set<Int> = [], seed: UInt32 = 0x469c2) throws {
+    init(label: String, dump: Set<Int> = [], seed: UInt32 = 0x469c2,
+         start: SessionStart = SessionStart(sector: 1, players: 1, film: nil), prefs: DeimosPrefs = .fresh) throws {
         let assets = try ShippedAssets.get()
-        session = try DeimosSession(assets: assets, prefs: .fresh,
-                                    start: SessionStart(sector: 1, players: 1, film: nil), seed: seed)
+        session = try DeimosSession(assets: assets, prefs: prefs, start: start, seed: seed)
         renderer = DeimosRenderer(assets: assets)
         self.label = label
         dumpPasses = dump

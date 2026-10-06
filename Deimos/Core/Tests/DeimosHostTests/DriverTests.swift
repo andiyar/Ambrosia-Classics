@@ -78,8 +78,8 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertEqual(changes.count, 9, "nine fade steps, each one yield")
         for (b, a) in zip(changes.dropFirst(), changes) { XCTAssertGreaterThanOrEqual(b &- a, 1) }
-        // The pass resumed after the ninth step's wait: pass 2 ticked and presented, and pass 3 began (and ticked)
-        // in the same poll, stopping at its limiter.
+        // The pass resumed after the ninth step's wait: pass 2's remaining ops ran (its limiter, its present), and
+        // pass 3 began in the same poll — its logic ran as it began (game time 4) — and stopped at its limiter.
         XCTAssertEqual(driver.passCount, 4)
         XCTAssertEqual(driver.session.gameTime, 4)
         XCTAssertTrue(driver.session.appeared)
@@ -152,7 +152,7 @@ final class DriverTests: XCTestCase {
         XCTAssertEqual(driver.session.sector, 1)
         XCTAssertEqual(driver.session.rng, reference.rng)
         XCTAssertFalse(driver.session.appeared)
-        XCTAssertEqual(driver.lastPresent, try XCTUnwrap(restartTicks), "the new controller's stamp starts at 0")
+        XCTAssertEqual(driver.lastPresent, try XCTUnwrap(restartTicks), "the new controller's stamp starts at 0, so its first limiter releases at once and stamps the restart's ticks")
         // Game time restarted from 0: it counts the new session's passes.
         XCTAssertEqual(driver.session.gameTime, Int32(driver.passCount - passesAtRestart + 2))
 
@@ -169,5 +169,79 @@ final class DriverTests: XCTestCase {
         }
         XCTAssertEqual(changes, 9)
         XCTAssertTrue(driver.session.appeared)
+    }
+
+    /// Hang regression (review of e259561): Esc held for 2 s used to restart forever inside one `idle` (each new
+    /// session's first pass quit on the still-held Esc, its limiter released against stamp 0, and the loop never
+    /// yielded). Now each `idle` returns after bounded work, and one hold restarts once: the new session ignores Esc
+    /// until a pass samples it released (the front end's end-session FlushEvents; front-end.md §2 — a new game
+    /// needs a fresh press).
+    func testEscHeldRestartsOnceAndIdleReturns() throws {
+        var driver = try makeDriver()
+        var clock = FakeClock(rate: .classic)
+        while driver.presentCount < 20 {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+            if clock.seconds > 60 { return XCTFail("no presents") }
+        }
+        let esc = HeldKeys(held: [Self.escKey])
+        let holdEnd = clock.seconds + 2.0
+        var calls = 0
+        var hidesAfterRestart = 0
+        while clock.seconds < holdEnd {
+            let passes = driver.passCount, presents = driver.presentCount, restarts = driver.restarts
+            let out = driver.idle(seconds: clock.seconds, keys: esc)
+            XCTAssertLessThanOrEqual(driver.restarts - restarts, 1, "at most one restart per idle")
+            XCTAssertLessThanOrEqual(driver.passCount - passes, 2, "bounded passes per idle")
+            XCTAssertLessThanOrEqual(driver.presentCount - presents, 1, "at most one present per idle")
+            if driver.restarts > restarts { hidesAfterRestart += out.requests.filter { $0 == .hideCursor }.count }
+            clock.seconds += Self.poll
+            calls += 1
+            if calls > 2_000 || driver.restarts > 1 { break }
+        }
+        XCTAssertEqual(driver.restarts, 1, "one hold, one restart")
+        XCTAssertEqual(hidesAfterRestart, 1, "the new session hides the cursor")
+        XCTAssertTrue(driver.session.running, "the held Esc is latched: the new session keeps running")
+
+        // Release, then a fresh press ends the new session.
+        for _ in 0..<10 {
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            clock.seconds += Self.poll
+        }
+        XCTAssertEqual(driver.restarts, 1)
+        calls = 0
+        while driver.restarts == 1 {
+            _ = driver.idle(seconds: clock.seconds, keys: esc)
+            clock.seconds += Self.poll
+            calls += 1
+            if calls > 2_000 { return XCTFail("a fresh Esc press did not end the session") }
+        }
+        XCTAssertEqual(driver.restarts, 2)
+    }
+
+    /// The limiter's add + `cmplw` wrap (`10030d08..10030d24`, replicated): with the stamp at 0xFFFFFFFE or
+    /// 0xFFFFFFFF the target wraps to 0 or 1 and the wait never blocks, as in the original — but each `idle` still
+    /// returns after at most one limiter release and one present, and after the wrap the 2-tick rhythm resumes.
+    func testTickWrapNeverSpins() throws {
+        var driver = try makeDriver()
+        let start: UInt32 = 0xFFFF_FFF0
+        var clock = FakeClock(seconds: (Double(start) + 0.5) / TickRate.classic.perSecond, rate: .classic)
+        XCTAssertEqual(clock.ticks, start)
+        var stamps: [UInt32] = []
+        var calls = 0
+        while stamps.count < 40 {
+            let passes = driver.passCount, presents = driver.presentCount
+            _ = driver.idle(seconds: clock.seconds, keys: HeldKeys())
+            XCTAssertLessThanOrEqual(driver.passCount - passes, 2, "bounded passes per idle at ticks \(clock.ticks)")
+            XCTAssertLessThanOrEqual(driver.presentCount - presents, 1, "at most one present per idle")
+            if driver.presentCount > presents { stamps.append(clock.ticks) }
+            clock.seconds += Self.poll
+            calls += 1
+            if calls > 10_000 { return XCTFail("no presents") }
+        }
+        XCTAssertTrue(stamps.contains { $0 >= 0xFFFF_FFFE }, "presents ran at the wrap")
+        let after = stamps.filter { $0 < 0x8000_0000 && $0 >= 2 }
+        XCTAssertGreaterThan(after.count, 10)
+        XCTAssertEqual(Set(zip(after.dropFirst(), after).map { $0 &- $1 }), [2], "the rhythm resumes after the wrap")
     }
 }

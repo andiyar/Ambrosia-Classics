@@ -64,7 +64,8 @@ public enum CopyBits {
         let df = Field(rect: dstRect, height: dst.height, parity: p)
         let width = Int(srcRect.rectWidth), srcLeft = Int(srcRect.left), dstLeft = Int(dstRect.left)
         withRows(src, &dst) { s, d in
-            for k in 0..<max(min(sf.y1 - sf.y0, df.y1 - df.y0), 0) {
+            // Equal rect heights (checked) made even by step 2 halve to equal field heights.
+            for k in 0..<max(sf.y1 - sf.y0, 0) {
                 let ys = sf.y0 + k, yd = df.y0 + k
                 guard ys >= sf.boundsTop, ys < sf.boundsBottom, yd >= df.boundsTop, yd < df.boundsBottom else { continue }
                 copyRow(s, d, srcY: sf.row(ys), dstY: df.row(yd), srcLeft: srcLeft, dstLeft: dstLeft, width: width)

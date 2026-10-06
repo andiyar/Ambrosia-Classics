@@ -154,6 +154,19 @@ final class DeimosSessionTests: XCTestCase {
         XCTAssertFalse(after.ticked)
     }
 
+    /// The cursor: the front end hides it just before the game (`FUN_100234d0` step 2, `10023550 bl FUN_1000b6e0`
+    /// → `HideCursor`); `FUN_100051a0` itself never touches it. The session's first pass carries `.hideCursor`; no
+    /// later pass carries a request — not even the Esc pass (the front end's `InitCursor` after the game,
+    /// `100238b4` / `10023ad0`, belongs to the menu, which Phase 1 replaces with an immediate new session).
+    func testCursorHiddenAtSessionStart() throws {
+        var s = try session()
+        XCTAssertEqual(s.pass(keys: HeldKeys()).requests, [.hideCursor])
+        for _ in 0..<10 { XCTAssertEqual(s.pass(keys: HeldKeys()).requests, []) }
+        let end = s.pass(keys: HeldKeys(held: [0x35]))
+        XCTAssertTrue(end.sessionEnded)
+        XCTAssertEqual(end.requests, [])
+    }
+
     /// Same seed + key script → identical outputs; another seed → the same outputs (the one Phase-1 draw, the
     /// P1 integrity tick, has no visible effect).
     func testDeterministicReplay() throws {

@@ -12,7 +12,9 @@ import DeimosCore
 ///   terrain buffer to the image — when the size differs it frees the old one, zeroes the object (the interlace
 ///   parity `+0x2c` included, `10009e00`) and creates a fresh black one (`FUN_10009bd0`); the same size keeps
 ///   it (`10009d9c…10009dbc`) — then `FUN_10009fd0(image, terrain, &bounds, &bounds, 0)` copies the image
-///   (`1000fcc0…1000fcf0`). The original asserts image size == the level's background RECT (line 0xe7).
+///   (`1000fcc0…1000fcf0`). The original asserts image size == the level's background RECT (line 0xe7,
+///   "Background image dimensions do not match Level data": width == RECT right, height == RECT bottom —
+///   data-tags.md); replicated as a precondition against every `leve` whose `#backgroundImage_ID` is the image.
 /// - `.fill(id, colour)` — `FUN_10009f00`: PaintRect(portRect).
 /// - `.loadImage(id, into, dst)` — `FUN_10031400`: the TGA (`TGAImage`, row 0 = visual top) copied srcCopy to
 ///   `dst` (equal size: `scor` 160×480 into {0,416,480,576} and {0,0,480,160}).
@@ -25,7 +27,10 @@ import DeimosCore
 /// - `.screenBlit(src, dst)` — `FUN_1000bbd0` (`1000bbd0…1000bc5c`): one CopyBits srcCopy, back → window.
 /// - `.present(kind)` — `Presents`.
 ///
-/// Image decodes are cached per process (`ImageCache`); sprite groups through the assets' own cache.
+/// Image decodes are cached per process (`ImageCache`); sprite groups through the assets' own cache. Missing data
+/// stops the renderer the same way for both: an `im16` that is missing or not a 16-bit TGA, and a sprite group
+/// that is missing or does not decode, are precondition failures naming the tag and the data directory (the
+/// original's loaders assert). A frame index outside an existing group draws nothing.
 public final class DeimosRenderer {
     public let assets: DeimosAssets
     public private(set) var buffers = DisplayBuffers()
@@ -90,6 +95,12 @@ public final class DeimosRenderer {
 
     private func loadTerrain(_ image: FourCC) {
         let img = self.image(image)
+        for level in assets.definitions.levels where level.backgroundImage == image {
+            precondition(img.width == Int(level.background.right) && img.height == Int(level.background.bottom),
+                         "DeimosRenderer: Background image dimensions do not match Level data — im16 '\(image)' is "
+                         + "\(img.width)×\(img.height), leve '\(level.id)' #background_RECT \(level.background) "
+                         + "(data: \(dataDirectory))")
+        }
         if buffers.terrain.width != img.width || buffers.terrain.height != img.height {
             buffers.terrain = Pixmap555(width: img.width, height: img.height)       // 10009dc0…10009e1c
         }
@@ -100,9 +111,14 @@ public final class DeimosRenderer {
     /// The decoded image; a missing or undecodable tag stops here as the original's loader asserts.
     private func image(_ id: FourCC) -> Pixmap555 {
         guard let img = ImageCache.shared.image(id, index: assets.index) else {
-            preconditionFailure("DeimosRenderer: im16 '\(id)' is missing or not a 16-bit TGA")
+            preconditionFailure("DeimosRenderer: im16 '\(id)' is missing or not a 16-bit TGA (data: \(dataDirectory))")
         }
         return img
+    }
+
+    /// The folder holding the paks, for failure messages.
+    private var dataDirectory: String {
+        assets.index.paks.first?.deletingLastPathComponent().deletingLastPathComponent().path ?? "?"
     }
 
     /// `FUN_10019570`'s entry: refuse, queue, or blit.
@@ -122,7 +138,12 @@ public final class DeimosRenderer {
         if let cached = groups[face] {
             group = cached
         } else {
-            group = try? assets.spriteGroup(face)
+            do {
+                group = try assets.spriteGroup(face)
+            } catch {
+                preconditionFailure("DeimosRenderer: sprite group '\(face)' is missing or does not decode: \(error) "
+                                    + "(data: \(dataDirectory))")
+            }
             groups[face] = .some(group)
         }
         guard let g = group, g.frames.indices.contains(index) else { return nil }

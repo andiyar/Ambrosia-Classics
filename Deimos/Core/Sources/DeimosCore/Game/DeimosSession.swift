@@ -78,6 +78,14 @@ public struct DeimosSession: Sendable {
     public private(set) var restoreInterlace = false
     /// The level start's ops, handed out by the first `pass`.
     private var pendingOps: [RenderOp] = []
+    /// The shell requests handed out by the first `pass`: `.hideCursor` — ◇ the front end's `HideCursor` just
+    /// before the game (`FUN_100234d0` step 2, `10023550 bl FUN_1000b6e0`; front-end.md §3). `FUN_100051a0` itself
+    /// never touches the cursor; the session stands in for the front end's start-game path in Phase 1. The
+    /// matching `InitCursor` after the game (`100238b4` / `10023ad0`) belongs to the menu, which Phase 1 replaces
+    /// with an immediate new session (which hides it again), so no pass emits `.showCursor`.
+    private var pendingRequests: [ShellRequest] = [.hideCursor]
+    /// The prefs' key table (`KeyTable`), built once — `setBytePref` never changes it.
+    private let keyTable: KeyTable
     private let scoreBarDraw: ScoreBarDraw
     /// `fctiwz(PermFloat 18)`: the game time at which the game appears (`10005930..1000595c`).
     private let appearTime: Int32
@@ -97,6 +105,7 @@ public struct DeimosSession: Sendable {
         self.start = start
         scoreBarDraw = try ScoreBarDraw(assets: assets)
         appearTime = EntityDraw.fctiwz(f[18])
+        keyTable = KeyTable(prefs: prefs)
 
         let tag = assets.levelOrder.level(sector: start.sector)
         guard tag != .none, let info = assets.definitions.levels.first(where: { $0.id == tag }) else {
@@ -170,18 +179,22 @@ public struct DeimosSession: Sendable {
     ///
     /// The loop condition (game +0x08) is tested after the pass; once it is clear, `pass` returns an empty
     /// output with `sessionEnded` set.
+    ///
+    /// The first pass also returns the level start's ops (before its own) and `.hideCursor` (`pendingRequests`).
     public mutating func pass(keys: HeldKeys) -> PassOutput {
         guard running else { return PassOutput(sessionEnded: true) }
         var ops = pendingOps
         pendingOps = []
+        let requests = pendingRequests
+        pendingRequests = []
         let escDown = keys.held.contains(Self.escKey)
         let begin = beginFrame(escDown: escDown, ops: &ops)
         if begin.tick {
-            tick(inputs: KeyTable(prefs: prefs).inputs(keys), ops: &ops)
+            tick(inputs: keyTable.inputs(keys), ops: &ops)
         }
         drawWorld(ops: &ops)
         endFrame(escDown: escDown, ops: &ops)
-        return PassOutput(ops: ops, ticked: begin.tick, sessionEnded: !running)
+        return PassOutput(ops: ops, requests: requests, ticked: begin.tick, sessionEnded: !running)
     }
 
     /// 1. Begin frame `FUN_10030360`, the Phase-1 subset. Input is read (step 2's `inputs`) only on a tick.

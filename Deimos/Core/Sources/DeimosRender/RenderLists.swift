@@ -24,7 +24,7 @@ public struct RenderLists: Sendable {
 
     /// `FUN_1001a450`. The caller (the dispatcher) has already refused face `none` and alpha 32.
     public mutating func append(_ cmd: DrawCommand) {
-        let l = Int(cmd.layer & 0xff)
+        let l = Int(cmd.layer)                              // the layer byte (UInt8)
         precondition(l < Self.layerCount, "RenderLists: layer \(l) ≥ 16")   // the original indexes past the arrays
         var c = cmd
         c.drawNow = true                                    // 1001a628
@@ -49,9 +49,13 @@ public struct RenderLists: Sendable {
         for l in 0..<Self.layerCount { counts[l] = 0 }
     }
 
-    /// The live count of `layer`.
-    public func count(layer: Int) -> Int { counts[layer] }
+    /// The live count of `layer`; 0 outside 0…15 (as `flush` ignores such a layer).
+    public func count(layer: Int) -> Int {
+        (0..<Self.layerCount).contains(layer) ? counts[layer] : 0
+    }
 
-    /// The live entries of `layer`, in insertion order.
-    public func commands(layer: Int) -> [DrawCommand] { Array(lists[layer].prefix(counts[layer])) }
+    /// The live entries of `layer`, in insertion order; none outside 0…15 (as `flush` ignores such a layer).
+    public func commands(layer: Int) -> [DrawCommand] {
+        (0..<Self.layerCount).contains(layer) ? Array(lists[layer].prefix(counts[layer])) : []
+    }
 }

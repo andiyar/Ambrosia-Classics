@@ -291,7 +291,7 @@ final class BlitTests: XCTestCase {
         }
     }
 
-    // a > 32 (reachable through COST's `cmd.alpha` and the public CostRect/Blend555 API): the original kernel
+    // a > 32 (reachable through COST's `cmd.alpha` and the internal CostRect and the public Blend555 API): the original kernel
     // computes `subfic r4,a,0x20` (32 − a as a 32-bit word) and `mullw`, wrapping mod 2³², then unpacks with
     // `rlwinm …,0x1b,0x5,0x1f` / `andi. 0x7c1f` / `rlwimi …,0xc,0x16,0x1a` (FUN_1001ec80 `1001edc4…1001edf0`; the same
     // sequence in FUN_1001e9d0 `1001eb80…1001ebb4`). Only a == 32 returns early (`1001ec8c`). Hand-computed:
