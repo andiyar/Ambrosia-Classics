@@ -525,4 +525,4 @@ plan's "D23.n" references mean D24.n.)
 
 **Rejected:** Git LFS (breaks anonymous clones of the public repo past the free quota; no hard limit forces it) · data out
 of git behind symlinks (the Aki/BTX pattern — superseded for new games by Ben's ruling) · keeping ` Data` with the space.
-**Approved by:** Ben (standing ruling, data in git; D22 scene); layering per the orchestrator's Phase 0 brief.
+**Approved by:** Ben (standing ruling, data in git; D22 scene); layering per the orchestrator's Phase 0 brief (plan Q2: orchestrator's call — Ben, 2026-10-06, left it to us; not his ruling). Plan Q1 (app resource fork: 12 PICT, 6 DITL incl. the config dialog) → **yes, C8 runs** — orchestrator's call, Ben told.
