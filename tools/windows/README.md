@@ -198,6 +198,13 @@ from the unzipped zip: `--frames 600` = main menu, `--frames 900` + `620 press r
 to the Mac SDL build's; missing data → the box text captured, exit 1; a plain launch (dummy drivers) opens the window
 and writes the log under the bottle's `%APPDATA%`.
 
+W7 review restage (2026-10-06, stamp `83febbe, HectorKit 0467025`): folder 87 MB, zip 37.1 MB (files at the root, 22
+top-level entries: the exe, 19 DLLs, `Data/`, `WHAT-TO-EXPECT.txt`). From the freshly extracted zip in a fresh
+`hector-win-clean`: main menu and level 1 `cmp`-identical to the Mac SDL build; the dialog sweep (About, Prefs + Keys +
+Misc areas, DLOG 200, ALRT 201/202, DLOG 160 high-score name, 290/291, 1001, the "Bé" name entry, the `uni` script)
+exits 0 with every dump `cmp`-identical to the Mac's; missing data names each file (all four fonts, the band
+manifest or each absent band), exit 1.
+
 **Finding (W7 review): Foundation-on-Windows' `String.replacingOccurrences(of:with:)` traps** (`ud2` in Foundation.dll)
 on non-ASCII strings past a few dozen UTF-8 bytes — reproduced by a small probe in CrossOver (`"é\r\n\n^0 "` × k traps
 at k ≥ 4; the game's ALRT 132 "©" text, 194 UTF-8 bytes, is that shape). The same probe passes
