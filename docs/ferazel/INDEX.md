@@ -14,6 +14,7 @@ The project owner's eyes are the only behaviour oracle.
 | main dump | `ghidra/Ferazel_pef.decompiled.c`, 64,189 lines; log: `DumpDecompile: wrote 1082/1085 functions` (regenerated for the deepening wave 2026-10-03 with the same recipe: same counts, same line total); `find_func.py '.' --names` → `[1082 function(s) matched]`; 731 dot-names (PEF traceback tables), 58 `FUN_`, rest import glue + `entry` |
 | **gap found** | 154 functions reached only through transition vectors (sprite Setup/Handle/Hit/Kill callbacks, AppleEvent handlers, sleep/timer procs) have **no block in the main dump** — Ghidra folded their bodies into the preceding named function and the decompiler never reached them. Found by scanning the data section for `{code offset, TOC 0x8000}` pairs: 161 TVectors, 154 targets without a function (`tools/targets.txt`, names from the next traceback name after each entry point; one has none → `.anon_10060c78`) |
 | supplementary dump | `tools/FzDecompTargets.java` (Ghidra post-script) creates functions at the 154 targets, sets r2 = 0x100a7840 over their bodies, decompiles: log `FzDecompTargets: wrote 154/154`; output ~~22k lines~~ **23,917 lines** (`ghidra/Ferazel_handlers.decompiled.c`, regenerated 2026-10-03: `FzDecompTargets: wrote 154/154`) ⚑ corrected (deepening 2026-10-03) (kept out of git like the other dumps; regenerate with the recipe below). Biggest: `.HandlePlayerSprite @ 1004d5fc` (2,257 lines), `.HitPlayerSprite @ 100556f4`, `.HandleBoxSprite`, `.SetupBoxSprite`, `.HandleWalkerSprite`, `.SetupBackgroundSprite`, `.HandlePlatformSprite` |
+| regeneration (wave 2) | ⚑ wave 2 (2026-10-04): `ghidra/regen-ferazel.sh` rebuilds all three dumps from the saved Ghidra project `~/Developer/ghidra-proj/ferazel-rhodes` (no re-import, ~6 min; dumps stay git-ignored). The project now holds the 154 TVector functions, so the **main dump contains the handlers**: log `DumpDecompile: wrote 1236/1239 functions`, 88,106 lines; handlers dump `FzDecompTargets: wrote 154/154`, 23,917 lines; disasm 163,345 lines (`ghidra/analyze-*.log`, `wc -l`, this pass). Main-dump line numbers cited by wave-1 files refer to the 64,189-line dump; wave-2 files cite raw addresses first |
 | raw disasm | `tools/FzDisasm.java` (Ghidra post-script, ranges → listing) — used for `.FindFPS`, `.MTNewSprite`. ⚑ corrected (deepening 2026-10-03): the **whole code section** is now listed: `ghidra/Ferazel_pef.disasm.txt` (FzDisasm over `10000000:1009f83c`, 163,345 lines, `<addr>  <mnemonic> <operands>`; `.word` lines are traceback tables / data; git-ignored). It is the evidence for every raw address cited by the deepening files |
 | constants | `tools/const.py <hexaddr>…` reads f32/f64/i32/i16 from the unpacked data section (`tools/pef.py` implements PEF pattern-data unpacking, opcodes 0–4) |
 | data files | `$FW = /Users/andiyar/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Ferazel's Wand/Ferazel's Wand (installed)/files`; resource forks parsed with `tools/rsrc_census.py` (own map walker) |
@@ -41,27 +42,38 @@ manual / a PICT name). `[LOW]` pattern inference, string evidence, guesswork fro
 |---|---|---|
 | `engine.md` | 1 identity ("Mascot", Monitor Tool, runtime libs, Sound Tool; out-of-scope list) · 2 startup · 3 screen/buffers/coordinates/parallax · 4 main loop, frame cap, FPS · 5 camera · 6 state machine, death/continue, chapters, victory · 7 input (actions, defaults, ISp, pause/caps lock, debug keys) · 8 prefs record · 9 saved games + game-globals layout | HIGH, MED, LOW, NOT RESOLVED |
 | `world-data-format.md` | 1 numbered files = AIFC music (+ why 21/27 absent) · 2 World Data resources, `Mwld` · 3 `Mlvl`: layout, 70-row header table, tile-cell encodings, sprite placement record, type→class table · 4 progression, `Mmap` graph + unlock rule, CalcPercent/FillPercent · 5 `Mcnv` · 6 open items | HIGH, MED, LOW, NOT RESOLVED |
+| `conversations-mcnv.md` (wave 2) | 1 who starts a conversation (call sites, talker census) · 2 `Mcnv` record format (line record, target encoding) · 3 interpreter (`.Conversation`, `.HandleConvLine`, responses, conditions/actions) · 4 the 29 conversations decoded, item/spell grant answer · 5 implemented vs used · 6 on-screen conversation (geometry, typing, keys) · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
 | `sprites-backgrounds-sounds.md` | 1 PICT-only assets · 2 loaders, face record, RLE encoding · 3 tile sets, FG draw rule, blend faces, overlay · 4 CLUTs, AltClutMod, cooling map/flame · 5 sprite sheets, hot rects, kick rects · 6 `snd ` format, Sound Tool mixer, positional audio · 7 Titles | HIGH, MED, LOW, NOT RESOLVED |
+| `lighting-tables.md` (wave 2) | 1 source colours, screen CLUT, `Color2Index`, build timing, `.AnimateCLUT`, `.AltClutMod` · 2 `+0xb8` mode word → table · 3 tint bank (algorithm, computed colours) · 4 water tables · 5 hurt-flash tables · 6 two-colour/translucency tables · 7 lighting (darkness, `.CalcAmbientDarken`, tables, lights, fake light) · 8 FG blend faces · 9 flame layer + cooling map · 10 gamma fades, screen tint · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `draw-effects.md` (wave 2) | 1 per-sprite draw pipeline (`.WrapDrawSprites`, `.BlitEncFaceX` dispatch, mask buffer) · 2 every `+0xb8` mode as pixels (table modes, diffuse, ripple, behind-tiles, 0xa squash, 0xb translucency, rotation/scale) · 3 `+0x88` light gate per mode · 4 burn-away (`.HandleBurn`, `.BurnFaceRow`) · 5 `.ExplodeFaceIntoParticles` · 6 INDEX 15 map · NR · corrections | HIGH, MED, NOT RESOLVED |
+| `particles.md` (wave 2) | 1 pool, record, allocation, count drift · 2 `.NewParticle` arguments, motion, collision modes · 3 drawing (shapes, clipping, erase) · 4 colour rows (sources, recipes, resolved colours, geyser kinds 200–202) · 5 every emitter (direct sites, explode, `.BloodSpray`, `.Splash`, burn, `.ParticleGlow`) · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `rendering-omnipx-titles.md` (wave 2) | 1 backdrop compositor (where drawn, pixel rules, row state machine, shipped levels, Fire variant) · 2 PxMid cell −1 · 3 OmniPx hdr+0x26c7 (life cycle, setup per mode, update, composition, rain) · 4 Titles use sites (PICT, clut, gamma fades) · 5 PICT 1026 · 6 CD volume, `Installer Data`, music 21/27 · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
 | `physics.md` | 0 sprite fields (+ 0.1 fields merged from the deepening) · 1 LoadLevelPhysics (vestigial) · 2 integration helpers · 3 tile collision (neighbourhood, hot rects, kinds, wall cling) · 4 player constants table · 5 health/breath/hazards/death · 6 wind/currents · 7 enemy classes (HP, gravity, hot rects; 7.1 HP selection rules + pointers) · ~~8~~ → `physics-sprites.md` ⚑ corrected (deepening 2026-10-03) | HIGH, MED, LOW, NOT RESOLVED |
 | `physics-sprites.md` | physics §8 moved, numbering and text kept (2026-10-03 split at ~650 lines): 8.1 sprite solids/PlatformBounce · 8.2 ropes · 8.3 springs · 8.4 FootPressure · 8.5 programmed paths · 8.6 flotation + quicksand · 8.7 landing effects · 8.8 panting · 8.9 platform modes — with deepening corrections in place | HIGH, MED, LOW, NOT RESOLVED |
 | `spells-items.md` | 1 inventory model · 2 casting + spell table · 3 pickups · 4 items · 5 power-ups · 6 HUD, WandGlow | HIGH, MED, LOW, NOT RESOLVED |
 | `enemies-ground.md` (deepening) | 1 census · 2 shared (contact damage, Statue spell + `.HandleStatueSprite`, hit tests, liquids, death bookkeeping, sounds) · 3 Walker 1700/1705/1750/1760 (setup by p3 tier, states, hits, death, coins) · 4 Crawler · 5 Roach · 6 Dillo · 7 projectiles · 8 unplaced variants · NR · §0 proposals · corrections | HIGH, MED, LOW, NOT RESOLVED |
-| `enemies-flyers.md` (deepening) | 1 shared (helpers, enemy counting / stat, contact damage, sounds) · 2 census · 3 Bat class (setup by sub-range, chaser AI, path bats, swarm, insects, damage, variants) · 4 Gremlin (body, rider) · 5 Floater = Wraith · 6 placement params · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
-| `enemies-water-cave.md` (deepening) | 0 census · 0.1 shared · 0.2 `+0xb8` tints · 0.3 `.HandleBurn` · 1 Frog (p1 variants, states, spit) · 2 Salamander · 3 Blob · 4 Crab · 5 Statue on these · 6 contact damage · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
+| `enemies-ground-2.md` (wave 2) | 1 Walker corpse platform floats (conversion, frame, flotation arithmetic, edges) · 2 Crawler/Roach `+0xa6` · 3 `FUN_100916dc`/`FUN_10091504` voice count/stop · 4 `_DAT_1009fe8c` · 5 Walker/Dillo projectiles (pointer) · 6 enemy pipes · 7 Dillo crush write · NR · corrections | HIGH, MED, NOT RESOLVED |
+| `enemies-flyers.md` (deepening) | 1 shared (helpers, enemy counting / stat, contact damage, sounds) · 2 census · 3 Bat class (setup by sub-range, chaser AI, path bats, swarm, insects, damage, variants) · 4 Gremlin (body, rider) · 5 Floater = Wraith · 6 placement params · NR · §0 · corrections · 7 wave 2 loose ends (`+0x84/+0x86`, Rand pitch, `+0xa6` guards, `+0x1b2`, idle children, Statue) ⚑ wave 2 | HIGH, MED, LOW, NOT RESOLVED |
+| `enemies-water-cave.md` (deepening) | 0 census · 0.1 shared · 0.2 `+0xb8` tints · 0.3 `.HandleBurn` · 1 Frog (p1 variants, states, spit) · 2 Salamander · 3 Blob · 4 Crab · 5 Statue on these · 6 contact damage · NR · §0 · corrections · 7 wave 2 loose ends (Salamander `+0xa6`, crush `+0x150`, `.GetBGTile`, demo build, `.AddIdleSprite`) ⚑ wave 2 | HIGH, MED, NOT RESOLVED |
 | `bosses.md` (deepening) | 1 shared boss framework (params, spawn timing, "no boss alive" flag, arena lock/camera, what a kill triggers, what hurts each boss, damage dealt, sounds) · 2 Warrior · 3 Wizard · 4 Goblin Chief | HIGH, MED, LOW |
 | `bosses-2.md` (deepening) | 5 Fire Guardians (Demon) · 6 Xichra (phases, states, damage, kill) · 7 boss projectiles · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `bosses-3.md` (wave 2; numbering continues) | 8 Xichra's lair (L67 census, the three cannons, cannon-launched seeds, phase-0 minions, 2940 gates) · 9 CLUT animation hdr+0x2730..0x2736 / `.AnimateCLUT` · 10 vestigial fields + type-write idiom · 11 level 55 never locks its arena · 12 sound rate units, boss projectiles vs tiles · NR · corrections (rows live in bosses-2 W1..W5) | HIGH, MED, LOW, NOT RESOLVED |
 | `enemy-shots-and-damage.md` (deepening) | 1 EnemyShot class (lifecycle, type table, collisions, spawn sites, homing, kill effects) · 2 cannons, statues, trails, shadow double · 3 the player's damage intake (`.HitPlayerSprite` dispatch order, Box/hazard/generic arms, `.ShieldBlock`, `.HurtPlayer`, stun/death) · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `enemy-shots-and-damage-2.md` (wave 2; numbering continues) | 4 spawn set and dead fields · collision passes + active-list order rule · bombs/0x6a9/shards · `_DAT_100a0570` boss-landing stagger · Gremlin spit `+0x1aa` · `.WallBounce` restitution arg · shadow-double flags · names | HIGH, MED, LOW, NOT RESOLVED |
 | `pickups-boxes.md` (deepening) | 1 Bonus class (setup, pickup gate, type table, containers, spheres, scrolls, items, drops, persistence, census) · 2 Box class (type table, talkers, crates, chests, doors, gates, switch blocks, ledges, teleporters, save point, Tree Trunk, geysers, trampoline) · 3 held item, thrown seeds, non-spell shot ids · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `pickups-boxes-2.md` (wave 2) | 1 `snd ` ids behind all 144 TOC sound handles · 2 Bonus `+0x168` · 3 the three gate globals · 4 faces/purposes (spiked balls, 2932/2933 stalactites, 1080/1081 magic carpet) · 5 falling boulders · 6 door `+0xa0` · 7 explosion 0x4b7 vs enemies/boxes · 8 conversation grants · 9 decoration rows 2805..2889 per type · NR · corrections | HIGH, MED, NOT RESOLVED |
 | `triggers-background.md` (deepening) | 0 census · 1 Button · 2 Background (common setup, cannons, springs, fire, bars/spiked balls, spikes, urchins, arrow traps, plants, clouds, passages, wall tunnels, rotating sword, trees, level exit) · 3 triggers outside the class | HIGH, MED, LOW |
-| `triggers-background-2.md` (deepening) | 1 chains + see-saw segments · 2 Effect class (effect-id table, crumble overlay) · 3 countdown timer + digits · 4 parallax strip sprites (hdr 0x2716/18/1a) · 5 NR (both parts) · 6 §0 · 7 corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `triggers-background-2.md` (deepening) | 1 chains + see-saw segments · 2 Effect class (effect-id table, crumble overlay) · 3 countdown timer + digits · 4 parallax strip sprites (hdr 0x2716/18/1a) · 5 NR (both parts) · 6 §0 · 7 corrections · 8 wave-2 closures (cannon leftovers + type 90, passage globals, idle (de)activation rule, wind, record-p4 linkage + p1 = 0 gates, no-spawner effects, Buttons 1323..1329) ⚑ wave 2 | HIGH, MED, LOW, NOT RESOLVED |
 | `spells-detail.md` (deepening) | 1 spell ids → names (HUD art) · 2 casting trigger, wand animation, `.CastSpell`, power · 3 player-shot flight per id, tile hits, Ice Wall floes/ledges, Tree Trunk, spell 7, sprite hits, non-spell shots · 4 MP regeneration · 5 hang glider · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
-| `save-continue.md` (deepening) | 1 New Game · 2 save points (the only save writer) · 3 saved-game file + layout (supersedes engine §9 table) · 4 Resume/Continue · 5 death → continue · 6 Esc/abort/menus · 7 what is not persisted · 8 INDEX items 8, 9, 2, 13 · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `spells-detail-2.md` (wave 2) | 1 `.HandleKeys` gate globals + item latch · 2 the "on-screen" test = wall-tunnel visibility · 3 Boomerang steering `FUN_1003f218` · 4 same-frame handling of new sprites · 5 follower lifecycle (kills, orphans, slot reuse) · 6 part-1 rows closed elsewhere · NR · corrections | HIGH, MED, LOW, NOT RESOLVED |
+| `save-continue.md` (deepening) | 1 New Game · 2 save points (the only save writer) · 3 saved-game file + layout (supersedes engine §9 table) · 4 Resume/Continue · 5 death → continue · 6 Esc/abort/menus · 7 what is not persisted · 8 INDEX items 8, 9, 2, 13 · NR · corrections · 9 wave 2: save-point faces, hold timing, `OpenDefaultWorldLevel` failure in ContinueGame ⚑ wave 2 | HIGH, MED, LOW, NOT RESOLVED |
 | `platforms-ropes-radial.md` (deepening) | 1 radial geometry (tables, block, per-frame, wheels, wall bounce, spokes) · 2 platforms (setup per type, radial modes, mode-4 floes, corpse platform, Hit/HitTile, visual stages, census) · 3 ropes (types, span, sag curves, census, rope bridge) · 4 springs leftovers + `_DAT_100a0678`/`0718` · 5 player `+0x19e` · 6 crunch arg order · 7 hot-rect tables · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
-| `player-states.md` (deepening) | 0 conventions · 1 per-frame order of `.HandlePlayerSprite` · 2 state globals · 3 state selection (glider, dying, spirit, boss grab, stun, doors, rope, swim, cling, melee, grounded, airborne) · 4 inputs · 5 jump/spin/swim/wall jump · 6 facing · 7 face sets, hot rects · 8 initial state | HIGH, MED, LOW |
-| `player-states-2.md` (deepening) | 9 `.WallBounce` (pre-processing, full kind table, composites) · 10 `.HitPlayerTileSprite`, `.WallBounceBG` · 11 kind census of the 24 levels · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
+| `platforms-ropes-radial-2.md` (wave 2; numbering continues) | 8 one game frame and the active list (order, list, the two collision passes, layers) · 9 sibling wheel/see-saw order · 10 globals `_DAT_1009fd30` (frame parity), `_DAT_100a067c`, J-reset climb flag · 11 platform `+0x190`, Statue on a platform · 12 wall-ice face 1 vs 2 · NR · corrections | HIGH, MED, NOT RESOLVED |
+| `player-states.md` (deepening) | 0 conventions · 1 per-frame order of `.HandlePlayerSprite` · 2 state globals · 3 state selection (glider, dying, spirit, boss grab, stun, doors, rope, swim, cling, melee, grounded, airborne) · 4 inputs · 5 jump/spin/swim/wall jump · 6 facing · 7 face sets, hot rects · 8 initial state · 9 wave 2: the player in the frame, dead globals ⚑ wave 2 | HIGH, MED, LOW |
+| `player-states-2.md` (deepening) | 9 `.WallBounce` (pre-processing, full kind table, composites) · 10 `.HitPlayerTileSprite`, `.WallBounceBG` · 11 kind census of the 24 levels · NR · §0 · corrections · 12–15 wave 2: readers of FG 0x4e/0x4f and BG 400..495, `.CrunchTile` return, as-written oddities (intent UNDETERMINABLE), remaining NR rows ⚑ wave 2 | HIGH, MED, NOT RESOLVED |
 | `geysers.md` (deepening gap file, review 1a #4) | 1 census + type map (1440..1449 → 0x5a0 / 0x5a5 triple / 0x5a9 head) · 2 setup (params, caches, children) · 3 eruption cycle (level-frame phase, rise/fall rules, worked table) · 4 `.HandleGeyserColumn` (segments, head, solidity, tints, particles, idle) · 5 triple re-targeting · 6 sound (none played) · 7 contacts (player, enemies, boxes) · NR · §0 · corrections | HIGH, MED, LOW, NOT RESOLVED |
-| `held-item-melee.md` (deepening gap file, review 1b #11) | 1 held-item sprite (creation, swing start, the 10-frame swing, `.SetHeldItemPos`, hit geometry, state interactions, what a strike does — c = 3..5, `+0xa6` never set, seeds in hand, no carrying) · 2 Shadow Double 0x1b39 · 3 Double-Speed trail · NR · §0 · corrections | HIGH, MED, NOT RESOLVED |
-| `coverage.md` (deepening synthesis) | 1 the 154 targets → file § (140 covered, 1 partial, 13 uncovered system callbacks) · 2 cited helpers, name-only list · 3 placed-type census vs explanation (243 types) · 4 inheritance | coverage only (no readings) |
+| `held-item-melee.md` (deepening gap file, review 1b #11) | 1 held-item sprite (creation, swing start, the 10-frame swing, `.SetHeldItemPos`, hit geometry, state interactions, what a strike does — c = 3..5, `+0xa6` never set, seeds in hand, no carrying) · 2 Shadow Double 0x1b39 · 3 Double-Speed trail · NR · §0 · corrections · 4 wave 2: list order, mirroring, `+0x11c`, door `+0xa0`, crunch kinds, revive ⚑ wave 2 | HIGH, MED, NOT RESOLVED |
+| `coverage.md` (deepening synthesis; ⚑ wave 2 (2026-10-04) updated) | 1 the 154 targets → file § (141 covered, 1 partial, 12 uncovered system callbacks) · 2 cited helpers (wave-2 closures, routine map of the blitters/compositor/particles, residual list) · 3 placed-type census vs explanation (243 types) · 4 what the next lane inherits | coverage only (no readings) |
 | `tools/` | `pef.py`, `const.py`, `tocrefs.py`, `rsrc_census.py`, `gensprite_map.py`, `FzDecompTargets.java`, `FzDisasm.java`, `targets.txt`, `fer_names.txt` | scripts only (no game data) |
 
 **Append rule:** new findings go into the topical file they belong to, plus one line in this
@@ -124,28 +136,48 @@ AppleEvent handlers · movie capture (`.HandleMovieCapture`) · resolution switc
 the deepening wave answered (reviewed — legs 1a/1b/1c below, all fixes applied), "narrowed" keeps what remains. New
 sub-items from the deepening files are items 15–29 (⚑ corrected (review 1d, 2026-10-03) #2). Contradictions between files:
 `coverage.md` §4 and the review ledger.
+
+⚑ corrected (wave 2, 2026-10-04): the wave-2 readers (lanes L1–L10) and the eight Fable legs A–H
+(`REVIEW-2026-10-04-wave2.md`) settle every item below. Convention: the text a wave-2 file answers is
+struck (`~~…~~`), followed by **→ closed: file §** (replica-implementable as written),
+**→ UNDETERMINABLE (evidence: file §)** (the facts are read; what is missing is not in the binary or the
+data — usually designer intent), or **→ narrowed: … Left: …**. Each verdict follows that item's review
+scorecard (leg letter in brackets). Item numbers never change. What is still open is summarised after
+item 29.
+
 1. ~~Per-class meaning of sprite placement params 1–4 and record byte +1 (world-data §3.4).~~
    → closed: per-class table in world-data §3.4 (every placed class; the readings live in the class
-   files); byte +1 is 0 in every active record and read by no class (coverage.md §3). Left: the
-   decoration rows 2805..2889 are range-level only (pickups-boxes §2.2).
-2. Header fields 0x26c7 (OmniPx modes), 0x26c8 (copied to G+0x16), 0xb270..0xb276; PxMid cell
-   0xFFFF handling (world-data §3.2/3.3). → **narrowed**: 0x26c8 closed (player starts facing
-   left), 0xb270..0xb276 closed (zero, unread; the bank misread them) — save-continue §8.3,
-   world-data §3.2. Left: 0x26c7 draw composition per mode; what the blitter draws for PxMid −1
-   (the code reads entry [−1] of the PxMid tables, no test) — save-continue §8.3, NR 3–4.
-3. `Mcnv` response/action encoding (world-data §5). Unchanged; also whether conversations grant
-   items or spells (pickups-boxes NR 7).
-4. Why music 21/27 were not shipped (only "never referenced" is established). Unchanged.
+   files); byte +1 is 0 in every active record and read by no class (coverage.md §3). ~~Left: the
+   decoration rows 2805..2889 are range-level only (pickups-boxes §2.2).~~ → closed (wave 2): per-type
+   table pickups-boxes-2 §9 [leg H].
+2. ~~Header fields 0x26c7 (OmniPx modes), 0x26c8 (copied to G+0x16), 0xb270..0xb276; PxMid cell
+   0xFFFF handling (world-data §3.2/3.3).~~ 0x26c8 and 0xb270..0xb276 closed by the deepening
+   (save-continue §8.3, world-data §3.2). → closed (wave 2) [leg E]: OmniPx = rendering-omnipx-titles §3
+   (life cycle §3.2, the 0x26c7 composition per mode §3.3–§3.5); PxMid −1 = §2 (§2.2 bytes read: the
+   code reads entry [−1] with no test; §2.4 never reached with shipped data [MED simulation]).
+3. ~~`Mcnv` response/action encoding (world-data §5); also whether conversations grant items or spells
+   (pickups-boxes NR 7).~~ → closed (wave 2) [leg A, leg H ruling 3]: conversations-mcnv §2.2 (line
+   format), §2.3 (target encoding), §3 (interpreter), §6 (on-screen conversation); items granted and
+   removed §4–§5 (also pickups-boxes-2 §8): Mcnv 205 gives the Platinum Key and removes a Health
+   Potion, Mcnv 207 sells the Ice Pick for 500 coins and removes a Steel Key; conversations never grant
+   spells. (Intent of condition/action type 3 UNDETERMINABLE, code certain: conversations-mcnv NR 1.)
+4. ~~Why music 21/27 were not shipped (only "never referenced" is established).~~ → UNDETERMINABLE
+   (evidence: rendering-omnipx-titles §6.4) [leg E]: the facts are HIGH — never catalogued by the
+   installer, never requested, the player falls back to track n−1; the reason is not in the binary or
+   the data.
 5. ~~`.WallBounce` cases 0xc..0x1f, 0x24..0x2f, 0x32..0x3b; `.WallBounceBG`; the unused-looking
    hot-rect tables at `DAT_100a4794+0xc` and `DAT_100a4314` (physics §3).~~ → closed:
    player-states-2 §9–§11 (every kind, composites, `.WallBounceBG`, census); tables:
    platforms-ropes-radial §7 and player-states-2 corrections (`+0xc` only in a dead loop; the
-   per-tile rect is indexed by kind). Left: readers of FG kinds 0x4e/0x4f and BG kinds 400..495;
-   `.CrunchTile`'s return value (player-states-2 NR 1–2).
+   per-tile rect is indexed by kind). ~~Left: readers of FG kinds 0x4e/0x4f and BG kinds 400..495;
+   `.CrunchTile`'s return value (player-states-2 NR 1–2).~~ → closed (wave 2) [leg G]: FG 0x4e/0x4f
+   are draw-only blend shapes and BG kinds 400..495 have no reader at all — player-states-2 §12 (their
+   intent honestly UNDETERMINABLE); `.CrunchTile` returns the kind, at strength 0 unless falling fast —
+   player-states-2 §13.
 6. ~~Enemy behaviour patterns (22 Handle routines), variant selection of enemy HP (physics §7).~~
    → closed for all 16 enemy and boss classes: enemies-ground, enemies-flyers,
    enemies-water-cave, bosses, bosses-2; HP selection rules physics §7.1; projectiles and contact
-   damage enemy-shots-and-damage. Left: items 15–20.
+   damage enemy-shots-and-damage. Left: items 15–20 (wave 2: all closed or narrowed below).
 7. ~~Glider physics in detail (physics §4).~~ → closed: spells-detail §5. (The deep-liquid factor
    `dRam100a1a30` = 0.65, physics §4 ⚑ corrected (review 2026-10-03) #6.)
 8. ~~`G+0x12` (= 3 at new game) reader; whether any lives concept exists (engine §6).~~ → closed:
@@ -153,17 +185,24 @@ sub-items from the deepening files are items 15–29 (⚑ corrected (review 1d, 
 9. ~~Prefs +0x142 block; exact meaning of prefs +0x02/+0x04/+0x06 levels (engine §8).~~ → closed:
    +0x02 Graphics, +0x04 Parallax (no shipped control), +0x06 Effects, +0x32/+0x34 resolution
    switch, +0x142 write-only (save-continue §8.2; engine §8).
-10. Lighting/tint table algorithms (`.CalcLightingTable`, `.Build*Table`), blend mixing
-    arithmetic, flame rule (sprites §3.2, §4). Unchanged — and now the blocker of every tint colour
-    the class files name (item 15).
+10. ~~Lighting/tint table algorithms (`.CalcLightingTable`, `.Build*Table`), blend mixing
+    arithmetic, flame rule (sprites §3.2, §4).~~ → closed (wave 2) [leg C, after its fixes]:
+    lighting-tables §1–§9 (sources §1, mode word → table §2, tint bank §3, water §4, hurt flash §5,
+    pair/translucency tables §6, lighting §7), blend mixing §8, flame rule §9. Leg C's two Criticals are
+    applied by the fix pass: the water-table loops are `ble`, so entry 0xff is written and maps to
+    black (not white); mode 0xa is draw-effects §2.6's vertical squash (lighting-tables defers).
 11. ~~Spells 2 and 7 (unnamed, never granted by the debug kit): whether any shipped scroll
     grants them; item ids 0x12 (Hammer?) and 0x14 names (spells-items §2.1, §4).~~ → closed:
     scrolls grant 1, 5, 4, 2→3, 6; 2 and 7 are never granted (pickups-boxes §1.7); names from the
     HUD art — 2 "Ice Crystals", 7 a second "Ice Wall"; 0x12 Ice Pick, 8 Hammer, 0x14 Light Orb
     [MED names] (spells-detail §1, pickups-boxes §1.8).
-12. Use sites of most Titles PICTs (sprites §7). Unchanged.
+12. ~~Use sites of most Titles PICTs (sprites §7).~~ → closed (wave 2) [leg E]:
+    rendering-omnipx-titles §4 (§4.1 every PICT id mapped, §4.2 every clut); PICT 137, 4951..4955,
+    4961..4965 and cluts 288..290 / 729 have no reference at all (purpose LOW, rendering NR 5).
 13. ~~Resource-chain winner for `PICT 7000` (app fork vs World Data).~~ → closed [MED]: the app
-    fork's copy (save-continue §8.4). Left: contents of the CD's `Installer Data`.
+    fork's copy (save-continue §8.4). ~~Left: contents of the CD's `Installer Data`.~~ → closed
+    (wave 2) [leg E]: an RTF plot write-up plus a tiny fork with no PICT 7000, so the app's copy wins
+    unconditionally — rendering-omnipx-titles §6.2.
 14. ~~Non-enemy sprite physics remainder (physics §8, added by the review fix pass): radial
     geometry `.MakeRadial` / `.UpdateRadialPos` / `.UpdateRadiusSprites` / `.RadialWheelStep`;
     `.HitPlatformSprite`; rope types 3023..3039 (no parameters set); the `.glue::pow` exponent of
@@ -179,63 +218,129 @@ sub-items from the deepening files are items 15–29 (⚑ corrected (review 1d, 
     `_DAT_100a0678` = jump base J (§4), `_DAT_100a0718` = air-animation counter (player-states
     §3.12; the platforms file's "launch latch" was withdrawn — review 1b #1, Critical), floe mode 4 set by
     the shot code (spells-detail §3.4), `+0x88`/`+0xb8` writes (platforms §2.8), crunch-pair order
-    (y,x) HIGH (§6). Left: item 25.
-15. Draw effects (shared by six files): `+0xb8` modes 1, 3/4, 7, 8, 9, 0xb, 0xc, 0x10..0x13 as
-    pixels; ~~the `+0x88` draw gate~~ (closed: light-overlay gate, physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5); colours of remap /
-    tint tables 2/3/4/0xb/0xc/0xf/0x10..0x15/0x17/0x18; `.HandleBurn` row arithmetic and styles
-    1 vs 0xd; `.BloodSpray` / `.NewParticle` arguments (enemies-ground NR 1–2, enemies-flyers NR 1/6,
-    enemies-water-cave NR 3–4, bosses-2 NR 1, platforms NR 1, triggers-background-2 NR 1/5,
-    spells-detail NR 1).
-16. enemies-ground: Walker corpse used as a platform — floats or sinks; Crawler/Roach `+0xa6`
-    consumers; `FUN_100916dc`/`FUN_10091504` sound helpers [MED].
-17. enemies-flyers: `+0x84/+0x86` purpose; `.STPlay3DSoundRand` pitch; the `+0xa6 += 0x45` guard;
+    (y,x) HIGH (§6). Left: item 25 (wave 2: closed).
+15. Draw effects (shared by six files). → **narrowed, NOT fully closed** (wave 2) [legs A, C]:
+    ~~`+0xb8` modes 1, 3/4, 7, 8, 9, 0xb, 0xc, 0x10..0x13 as pixels~~ → closed: draw-effects §2 (7 and
+    0x10..0x13 are mode-1 table numbers, not modes; mode 0xa = §2.6 vertical squash; mode 8's word-add
+    identity is MED, draw-effects NR 4); ~~the `+0x88` draw gate~~ (closed: light-overlay gate,
+    physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5; per mode draw-effects §3);
+    ~~`.HandleBurn` row arithmetic and styles 1 vs 0xd~~ → closed: draw-effects §4;
+    ~~`.BloodSpray` / `.NewParticle` arguments~~ → closed: particles §2, §5.3; ~~colours of remap /
+    tint tables 2/3/4/0xb/0xc/0xf/0x10..0x15/0x17/0x18~~ → rendered: lighting-tables §3 (requested RGB
+    exact). **Left:** the palette index QuickDraw picks for each requested colour is LOW — the Color
+    Manager `Color2Index` inverse table is ROM code, not in the binary; particles §4.3 owns the model
+    (lighting-tables §1.2 and NR 1–2, particles NR 1). (Cited NR rows: enemies-ground NR 1–2,
+    enemies-flyers NR 1/6, enemies-water-cave NR 3–4, bosses-2 NR 1, platforms NR 1,
+    triggers-background-2 NR 1/5, spells-detail NR 1.)
+16. ~~enemies-ground: Walker corpse used as a platform — floats or sinks; Crawler/Roach `+0xa6`
+    consumers; `FUN_100916dc`/`FUN_10091504` sound helpers [MED].~~ → closed (wave 2) [leg D;
+    enemies-ground-2 corrections row 4]: the corpse floats permanently (enemies-ground-2 §1), Crawler
+    `+0xa6` = first-leap delay, Roach write-only (§2), voice count / voice stop HIGH (§3).
+17. ~~enemies-flyers: `+0x84/+0x86` purpose; `.STPlay3DSoundRand` pitch; the `+0xa6 += 0x45` guard;
     `+0x1b2` setter (narrowed: `.HandleBoxSprite`, enemies-water-cave NR 8); visibility of children
-    left active while a parent is idle.
-18. enemies-water-cave: Salamander `+0xa6 = 21` and crush `+0x150 = 0x16` readers; `.GetBGTile`
+    left active while a parent is idle.~~ → closed (wave 2) [leg D; enemies-flyers corrections W5]:
+    enemies-flyers §7.1 (`+0x84/+0x86` always 0), §7.2 (pitch randomised), §7.3 (the guard never
+    fires), §7.4 (`+0x1b2` = emerging from an enemy pipe), §7.5 (idle children: HIGH code, MED geometry).
+18. ~~enemies-water-cave: Salamander `+0xa6 = 21` and crush `+0x150 = 0x16` readers; `.GetBGTile`
     argument order (Crab water test); whether the dead Frog/Salamander water blocks were live in
-    another build.
-19. bosses / bosses-2: Xichra cannons (Background 0x442..0x44a values); hdr+0x2730 modes 3..7 on
-    screen; ~~whether a player shot ever has `+0xa6 ≠ 0`~~ (closed: no code writes a non-zero `+0xa6`
-    on the held item, and the strike frames are c = 3..5 — held-item-melee §1.3, §1.7; ⚑ corrected (review 1c, 2026-10-03) #10); 0x6d6 minions with p3 = 4; vestigial fields (Wizard state 11, Chief `+0xb2`,
-    Warrior `+0x154`, p2 = 150); level-55 reach beyond x 15940; the Demon type write.
-20. enemy-shots-and-damage: spawner of 0x46b/0x46c; writer of 0x77b's `+0x14c`; setter of the
+    another build.~~ → closed (wave 2) [leg D; enemies-water-cave corrections W1]:
+    enemies-water-cave §7.1 (write-only), §7.2 (read only by Crawler/Roach), §7.3 (`(col,row)`; no
+    shipped crab in water); the "another build" question → UNDETERMINABLE beyond the demo (evidence:
+    §7.4 — the demo's routines are identical).
+19. ~~bosses / bosses-2: Xichra cannons (Background 0x442..0x44a values); hdr+0x2730 modes 3..7 on
+    screen; whether a player shot ever has `+0xa6 ≠ 0` (closed by held-item-melee §1.3, §1.7,
+    ⚑ corrected (review 1c, 2026-10-03) #10); 0x6d6 minions with p3 = 4; vestigial fields (Wizard
+    state 11, Chief `+0xb2`, Warrior `+0x154`, p2 = 150); level-55 reach beyond x 15940; the Demon
+    type write.~~ → closed (wave 2) [leg B]: cannons bosses-3 §8.2–§8.3; CLUT animation per mode §9;
+    minions = tier-4 Ax goblins §8.4; vestigial fields proven unread §10.1–§10.3 (their intent
+    UNDETERMINABLE, bosses-3 NR 4); level 55 never locks its arena §11; the Demon type write is a
+    no-op §10.4.
+20. ~~enemy-shots-and-damage: spawner of 0x46b/0x46c; writer of 0x77b's `+0x14c`; setter of the
     input lock `_DAT_100a0570` (also spells-detail NR 3); `+0x1aa` on the Gremlin spit; active-list
     order (bomb splitting twice; 0x6a9 collidable twice); `.WallBounce`'s 0xa0 argument;
-    shadow-double flags `PTR_DAT_100a0674`, `_DAT_100a06d0/06d4`.
-21. pickups-boxes: `snd ` ids behind several TOC handles; readers of Bonus `+0x168` (p4 = 1 on five
-    1291); gate byte 0x100a53d6, `_DAT_100a069c`, `PTR_DAT_100a0708`; ~~`.HandleGeyserColumn`
-    geometry and liquids, 0x5a9 creation~~ (closed: geysers.md §1, §4; ⚑ corrected (review 1c, 2026-10-03) #10); spiked-ball PICT, the 2932 object, 1080's 1-px rect;
-    falling-rock `+0x160 < 0` setter; door `+0xa0`; effect 0x4b7 against enemies.
-22. triggers-background(-2): cannon `+0x154 = 6` and sprite type 90 (re-entry itself closed:
+    shadow-double flags `PTR_DAT_100a0674`, `_DAT_100a06d0/06d4`.~~ → closed (wave 2) [leg H]:
+    enemy-shots-and-damage-2 §4 (§4.1 spawn set and dead fields, §4.2 collision passes and list order,
+    §4.3 bombs/0x6a9, §4.4 `_DAT_100a0570` = boss-landing stagger, §4.5 spit `+0x1aa` = draw rotation,
+    §4.6 restitution, §4.7 shadow-double flags).
+21. ~~pickups-boxes: `snd ` ids behind several TOC handles; readers of Bonus `+0x168` (p4 = 1 on five
+    1291); gate byte 0x100a53d6, `_DAT_100a069c`, `PTR_DAT_100a0708`; `.HandleGeyserColumn`
+    geometry and liquids, 0x5a9 creation (closed: geysers.md §1, §4; ⚑ corrected (review 1c,
+    2026-10-03) #10); spiked-ball PICT, the 2932 object, 1080's 1-px rect; falling-rock `+0x160 < 0`
+    setter; door `+0xa0`; effect 0x4b7 against enemies.~~ → closed (wave 2) [leg H]: pickups-boxes-2
+    §1 (all 144 sound handles), §2 (`+0x168` read by the cannon), §3 (gate globals), §4.1 (spiked balls
+    = PICT 1487), §4.2 (2932/2933 = stalactites), §4.3 (1080/1081 = magic carpet, the 1-px rect is its
+    trigger strip), §5 (boulder setter), §6 (door `+0xa0` dead write; also held-item-melee §4.4), §7
+    (0x4b7 vs enemies and crates); per-type decoration table §9.
+22. ~~triggers-background(-2): cannon `+0x154 = 6` and sprite type 90 (re-entry itself closed:
     `.StandardSpriteHandles` counts a negative `+0x130` up, raw 10036894..100368a4); passage
     globals `*_DAT_100a06f0`, `_DAT_100a05f8`, `_DAT_100a0680`, `PTR_DAT_100a05f0`; spawners of
     effects 1202..1205, 1251, −1; Button 1323..1329 rects; gate-link search completeness; gate
-    2940 with p1 = 0 reading record 0 (intent; 2941 is a destructible wall that ignores p1 — ⚑ corrected
+    2940 with p1 = 0 reading record 0 (2941 is a destructible wall that ignores p1 — ⚑ corrected
     (review 1b, 2026-10-03) #2, triggers-background §1); idle activation rule; wind orientation (no
-    sprite emits wind — physics §6 stays MED).
-23. spells-detail: on-screen test fields `+0x1b6/+0x1b8` (narrowed: left/right draw-clip edges, physics
-    §0.1) and face `+0xa/+0xe`; `_DAT_100a06f0`,
+    sprite emits wind — physics §6 stays MED).~~ → closed (wave 2) [leg F]: triggers-background-2 §8
+    (§8.1 cannon leftovers, type 90 = shot id 0x5a — also bosses-3 §8.3; §8.2 passage globals; §8.3 idle
+    (de)activation rule; §8.4 wind; §8.5 record-p4 linkage and the p1 = 0 gates — level 67 in
+    bosses-3 §8.5; §8.6 no-spawner effects, Buttons 1323..1329); spells-detail-2 §6 (part-1 rows closed
+    by reference). The p1 = 0 gate's **intent** is UNDETERMINABLE; the as-written rule is replicable.
+23. ~~spells-detail: on-screen test fields `+0x1b6/+0x1b8` and face `+0xa/+0xe`; `_DAT_100a06f0`,
     `PTR_DAT_100a0700`, `PTR_DAT_100a04cc`, `_DAT_100a075c`; Boomerang steering `FUN_1003f218`;
-    same-frame handling of new shots; orphaned followers and slot reuse [LOW].
-24. save-continue: save-point face for p1 = 1 vs 2; exact hold-frame timing; OmniPx composition
-    and PxMid −1 (item 2); CD `Installer Data`; `OpenDefaultWorldLevel` failure inside ContinueGame.
-25. platforms-ropes-radial: `_DAT_1009fd30`, `_DAT_100a067c`, `*psVar26` in the J reset; platform
-    `+0x190`; within-frame order of sibling wheel/see-saw updates; wall-ice face 1 vs 2. (Its NR 5
-    play check on `_DAT_100a0718` is answered from raw — review 1b #1; closed in that file.)
-26. player-states(-2): PICT 1026 loader; the 5 type-1 trail sprites and `PTR_DAT_100a06bc`; intent of
+    same-frame handling of new shots; orphaned followers~~ → closed (wave 2) [leg F]: spells-detail-2
+    §1 (gate globals, item latch), §2 (wall-tunnel visibility test; face `+0xa/+0xe` = opaque bounds),
+    §3 (Boomerang steering), §4 (same-frame rule: a new sprite is handled in its creation frame iff it
+    sorts after the player — holds only while no sprite *before* the player carries layer > 11, leg F
+    caveat), §5 (orphaned followers). **Left:** how often follower-slot reuse happens in play [LOW] —
+    spells-detail-2 NR 3 (the code permits it, §5).
+24. save-continue. → **closed in part** (wave 2) [leg G]: ~~save-point face for p1 = 1 vs 2; exact
+    hold-frame timing~~ → closed: save-continue §9.1 (faces), §9.2 (15th consecutive landing frame;
+    platforms-ropes-radial-2 §8.1 frame order); ~~OmniPx composition and PxMid −1 (item 2)~~ → closed
+    with item 2; ~~CD `Installer Data`~~ → closed with item 13. **Left:** `OpenDefaultWorldLevel`
+    failure inside ContinueGame — a file failure is an alert + `ExitToShell`, but a missing level is a
+    silent nil dereference whose outcome is UNDETERMINABLE (evidence: save-continue §9.3).
+25. ~~platforms-ropes-radial: `_DAT_1009fd30`, `_DAT_100a067c`, `*psVar26` in the J reset; platform
+    `+0x190`; within-frame order of sibling wheel/see-saw updates; wall-ice face 1 vs 2.~~ (Its NR 5
+    play check on `_DAT_100a0718` was answered from raw — review 1b #1.) → closed (wave 2) [leg G]:
+    platforms-ropes-radial-2 §10 (frame parity, write-only byte, climb flag), §11 (`+0x190`, Statue on a
+    platform), §9 (sibling order), §12 (wall-ice faces).
+26. ~~player-states(-2): PICT 1026 loader; the 5 type-1 trail sprites and `PTR_DAT_100a06bc`; intent of
     the as-written oddities a replica copies anyway (kind-indexed tile rect, kind 0x13's absolute-y
-    test, BG 0xc's vy-for-vx, the 0x2c..0x2f ice rules).
+    test, BG 0xc's vy-for-vx, the 0x2c..0x2f ice rules).~~ → closed (wave 2) [legs E, G]: PICT 1026 is
+    never loaded — rendering-omnipx-titles §5; the trail sprites are held-item-melee §3 and
+    `PTR_DAT_100a06bc` has no reader — player-states-2 §15; the oddities are stated exactly in
+    player-states-2 §14 and their **intent** is UNDETERMINABLE (the replica copies them).
 27. ~~Field semantics from the synthesis ledger: `+0x1b6..+0x1bc` (edges vs extents), the order of
     `+0x1be..+0x1c4`, `+0x1a2` reuse on reflected shots, and whether other classes read `+0x11c`
     before their own tile pass (physics §0/§0.1).~~ → closed by review 1c from raw (physics §0/§0.1,
     ⚑ corrected (review 1c, 2026-10-03) #3/#4/#6/#7): edges in face-local px; xmin/xmax/ymax/ymin; `+0x1a2` is the burn row and a
     Magical-Shield-reflected shot burns away; the Gremlin's water block is dead too, Walker/Platform lag
     one frame, the Bat copies the previous frame's value.
-28. geysers: `.NewParticle` arg 4; colours of particle kinds 200–202; whether idle→active re-runs
-    Setup for a collapsed geyser; intent of kinds 3/4 and of the inert p4 (geysers.md NR 1–4).
-29. held-item-melee: face mirroring within 32 px (§1.5); active-list order player vs held sprite; door
-    `+0xa0`; whether conversations/drops grant Ice Pick / Vorpal Dirk / Hammer; revive vs a frozen
-    swing (held-item-melee.md NR 1–4, 6).
+28. geysers. → **narrowed, NOT closed** (wave 2) [leg A]: ~~`.NewParticle` arg 4; colours of particle
+    kinds 200–202~~ → closed: arg 4 = shape code (particles §3.2), kinds 200–202 colours particles §4.4
+    (index pick MED, see item 15) — geysers NR 1. **Left (untouched by wave 2):** whether idle→active
+    re-runs Setup for a collapsed geyser; intent of kinds 3/4; the inert p4 (geysers.md NR 2–4).
+29. held-item-melee. → **closed except part of NR 4** (wave 2) [legs A, G, H]: ~~face mirroring within
+    32 px (§1.5)~~ → closed: held-item-melee §4.2; ~~active-list order player vs held sprite~~ → closed:
+    held-item-melee §4.1, platforms-ropes-radial-2 §8; ~~door `+0xa0`~~ → closed: dead write,
+    pickups-boxes-2 §6 / held-item-melee §4.4; ~~revive vs a frozen swing~~ → closed: held-item-melee
+    §4.6; conversation half of "whether conversations/drops grant Ice Pick / Vorpal Dirk / Hammer" →
+    closed: the Ice Pick is sold by Elber (Mcnv 207, L30), no conversation grants the Dirk or the Hammer
+    (conversations-mcnv §4.3). **Left:** the enemy-drop half of held-item-melee NR 4 and the Hammer's
+    intent — chests, crates and containers are checked (pickups-boxes §1.8–§1.9), but no wave-2 file
+    re-checked enemy drops for items 8/21 (synthesis note: the brief expected pickups-boxes-2 to carry
+    it; it does not).
+
+**Still genuinely open after wave 2.** (a) Item 15: the palette index QuickDraw's `Color2Index`
+picks for each requested tint/particle colour [LOW; particles §4.3, lighting-tables §1.2, NR 1–2] —
+settling it needs a Color Manager inverse-table reimplementation or a capture from the original.
+(b) Item 28: geysers NR 2–4 (Setup re-run on idle→active for a collapsed geyser; kinds 3/4; inert p4).
+(c) Slot reuse: item 23 / spells-detail-2 NR 3 (frequency of follower-slot reuse in play, LOW); and
+item 29's remainder (enemy drops of items 8/21, held-item-melee NR 4). (d) Item 24: the nil-handle
+outcome of a missing level inside ContinueGame (save-continue §9.3). (e) Intent-only questions, facts
+read and replicable as written: item 4 (why music 21/27 — rendering-omnipx-titles §6.4), item 19
+vestigial boss fields (bosses-3 §10, NR 4), item 22 the 2940 p1 = 0 gate (triggers-background-2 §8.5),
+item 26 the as-written oddities (player-states-2 §14); likewise conversations-mcnv NR 1 (type 3),
+player-states-2 §12 (BG 400..495), enemies-water-cave §7.4 (earlier builds). Per-file NR lists keep
+their smaller residues (e.g. lighting-tables NR 3 undefined-memory colours, draw-effects NR 3/6 MED
+blitter details); `coverage.md` §2–§4 lists them by routine.
 
 ## Reviewer notes (attack first)
 - Decompiler trap met once already: 8-byte copy loops written as `p[2] = q[2]` after
@@ -333,3 +438,11 @@ ledger as its appendix; fix summary `FIXPASS-2026-10-03-deepening.md`):
   player shot breaks 2941 (not only the Ice Pick); `+0x1a2` is one field — reflected shots burn; the
   Gremlin's water block is dead code. Marked `⚑ corrected (review 1c, 2026-10-03) #n` or
   `(adjudication An/Bn)`.
+
+**2026-10-04 — Review ledger, wave 2.** Full texts `REVIEW-2026-10-04-wave2.md` (eight Fable legs
+A–H over the 11 new files and the in-place edits; verdicts ACCEPT / ACCEPT_WITH_FIXES throughout;
+**2 Critical, both in leg C** — water tables write entry 0xff, mode 0xa is a vertical squash;
+Important findings in legs A, B, C, F, G and H; legs D and E Minor only). Fix-pass summary
+`FIXPASS-2026-10-04-wave2.md` (written by the wave-2 fix agent); fixes are marked
+`⚑ corrected (review 2a..2h, 2026-10-04) #n` at their place. The NOT RESOLVED verdicts above follow
+each leg's INDEX scorecard.
