@@ -1,7 +1,7 @@
 # Plan — Ferazel's Wand Phase 0 + Phase 1: data, decoders, census, level 1 look-and-feel — 2026-10-06
 
-> Status: **DRAFT** (planner Opus 5.5, 2026-10-06; awaiting the orchestrator's adversarial review and Ben's answer to
-> the one open question). Implements `docs/plans/2026-10-06-ferazel-design.md` (APPROVED) **§8 Phases 0 and 1 only**.
+> Status: **REVIEWED — ACCEPT_WITH_FIXES applied (Fable review 2026-10-06, 3 Important / 12 Minor); ready to execute**
+> (planner Opus 5.5, 2026-10-06; fixes listed in "Review ledger" at the end). Implements `docs/plans/2026-10-06-ferazel-design.md` (APPROVED) **§8 Phases 0 and 1 only**.
 > **Format (Ben, 2026-10-03): CONTRACTS, not code.** Files, public names (signatures only where they pin a seam),
 > behaviour with bank anchors, test names verbatim with the number each checks and where it came from, gate commands,
 > commit messages. No implementations.
@@ -17,6 +17,10 @@ for. Phase 1: a staged `Ferazel's Wand.app` shows level 1 "A Scent Of Peril" dra
 tiles, blend, overlay, parallax, ambient darkness, water tint, every placed sprite in its Setup face, the status bar at
 its start values, through the level CLUT — with the camera driven by the keys and Ferazel standing at his start point,
 walking/running in place on left/right. **No physics.** Ben's gate: "does it look like Ferazel".
+
+**Scope.** Design §8 Phases 0 and 1, plus one seat addition: `ferazel-census --render` (PNGs of the level-1 start frame
+and two sheets for Ben to look at before the app exists, C6) — not in the design, kept as the seat's addition. Not in
+scope: physics, sounds, front end, Caps Lock pause and the Esc abort dialog (all Phase 2–3).
 
 **Architecture (design §3).** Three layers plus the kit. HectorKit (game-agnostic) gains one decoder surface: PICT
 pixels as stored (indices + the PICT's own 16-bit colour table, all depths 1/2/4/8, PICT v1 BitMaps) and DirectBits RGB
@@ -55,14 +59,14 @@ DUMPS   = /Users/andiyar/Developer/Ambrosia-Classics/.claude/worktrees/ferazel-w
 | G4 | data = archive (C0 on) | `cd "$WT/Resources/Ferazel" && for f in *.rsrc; do cmp "$f" "$FW/$f"; done; for f in "Ferazel's Wand Music"/*; do cmp "$f" "$FW/$(basename "$f")"; done; ls *.rsrc \| wc -l; ls "Ferazel's Wand Music" \| wc -l` | no `cmp` output, `6`, `28` |
 | G5 | apps build (A1 on; Aki + BTX from C0 on) | `cd "$WT" && xcodegen generate && for s in Ferazel Aki BubbleTroubleX; do xcodebuild -scheme "$s" build 2>&1 \| tail -n 1; done` | `** BUILD SUCCEEDED **` ×3 (Ferazel absent before A1) |
 | G6 | scope fence | `git -C "$WT" diff --name-only <task base>..HEAD` | ⊆ the task's **Files** list (+ `docs/DECISIONS.md` where the task says so) |
-| G7 | layering (every Ferazel task) | `grep -rnE "^import (AppKit\|UIKit\|SwiftUI\|CoreGraphics\|CoreText\|ImageIO\|AVFoundation\|QuartzCore)" "$WT/Ferazel/Core/Sources"`; `grep -rnE "^import (HectorGraphics\|HectorAudio)" "$WT/Ferazel/Core/Sources/FerazelCore"` | both empty (the census executable may import ImageIO behind `#if canImport(ImageIO)` for `--render`, Invariant 1) |
+| G7 | layering (every Ferazel task) | `grep -rnE --exclude-dir=ferazel-census "^import (AppKit\|UIKit\|SwiftUI\|CoreGraphics\|CoreText\|ImageIO\|AVFoundation\|QuartzCore)" "$WT/Ferazel/Core/Sources"`; `grep -rnE "^import (HectorGraphics\|HectorAudio)" "$WT/Ferazel/Core/Sources/FerazelCore"` | both empty. The one exception, excluded from the first grep: `Sources/ferazel-census` may import ImageIO (behind `#if canImport(ImageIO)`) for `--render`, as the Deimos census does (Invariant 1) |
 | G8 | kit game-agnostic (K1) | `grep -rniE "ferazel\|ambrosia" "$HKWT/Sources" --include=*.swift \| grep -v HectorTestSupport` | empty |
 | G9 | staged app boots (A2) | `open "$WT/out/Ferazel/Ferazel's Wand.app"; sleep 6; pgrep -x "Ferazel's Wand"; osascript -e 'quit app "Ferazel'"'"'s Wand"'; ls -t ~/Library/Logs/DiagnosticReports \| head -3` | a pid; clean quit; no new crash report naming the app |
 | G10 | clean tree per commit | `git -C "$WT" status --porcelain \| grep -v '^??'` | empty after every commit |
 
 **Test ladder (`Ferazel/Core`, cumulative, canonical merge order; STOP if different):**
-C1 **6** → C2 **21** → C3 **28** → C4 **43** → C5 **55** → C6 **59** → R1 **68** → R2 **73** → R3 **80** → R4 **87**
-→ R5 **93** → R6 **99**. If lanes merge in another order the expected total is the previous total + the merged task's N.
+C1 **6** → C2 **21** → C3 **28** → C4 **43** → C5 **56** → C6 **60** → R1 **69** → R2 **74** → R3 **81** → R4 **88**
+→ R5 **94** → R6 **100**. If lanes merge in another order the expected total is the previous total + the merged task's N.
 HectorKit: 289 → K1 **301**.
 
 **Honesty gate (Ben only):** the Phase 1 gate card (A2, "What Ben checks"). Completion is phrased "machine gates
@@ -79,7 +83,9 @@ the 326 32-bit PICTs (LOW, Research note 10); every MED surface on the gate card
 1. **Layering (HectorKit D6, Classics D12, design §3).** `FerazelCore` imports Foundation + HectorResources only.
    `FerazelRender` adds FerazelCore, HectorGraphics, HectorAudio — no Apple UI/graphics/audio framework. `Ferazel/App`
    is the only code importing AppKit/HectorShell (CoreText only inside its `TextRasterizer`). Tests may use Apple
-   frameworks as oracles; `ferazel-census --render` may use ImageIO behind `#if canImport(ImageIO)`. Windows traps
+   frameworks as oracles. **The only exception:** the `ferazel-census` executable target may import ImageIO behind
+`#if canImport(ImageIO)` for `--render` (Deimos census precedent; G7 excludes `Sources/ferazel-census`; `FerazelCensus`
+in FerazelRender stays framework-free and hands the executable indexed frames + CLUTs). Windows traps
    (D18/W0.5): no `String.Encoding.macOSRoman` (use `HectorResources.MacRoman`), resolve symlinks before enumerating.
 2. **Kit stays game-agnostic.** No type, symbol or doc comment under `$HKWT/Sources` (outside `HectorTestSupport`)
    says "Ferazel" or "Ambrosia" (G8). Game names live in test files and the `HectorData+Ferazel.swift` locator only.
@@ -110,9 +116,10 @@ the 326 32-bit PICTs (LOW, Research note 10); every MED surface on the gate card
 11. ⚠️ **LANDMINES.** (a) `swift test` has no package-wide total: count `^Test Case` lines (G2). (b) `swift run` mixes
     build output into stdout: run the built binary (G3). (c) SwiftPM rejects a declared target with no sources:
     `Package.swift` grows task by task. (d) Names with apostrophes and spaces (`Ferazel's Wand Music`, the app) — quote
-    every path in scripts and tests. (e) D-numbers collide across sessions: the design's "D25" is **taken** on
-    `origin/main` (BTX 1.0 release, `b7560ab`) and D24 by the Deimos branch — use the next free number on `main` at
-    commit time (expected **D26**) and renumber references in the same commit.
+    every path in scripts and tests. (e) D-numbers collide across sessions: the design's rulings are **D26**
+    (D25 is taken on `origin/main` by the BTX 1.0 release, `b7560ab`; D24 by the Deimos branch). Confirm D26 is still
+    the next free number on `main` at commit time; if not, take the next free one and renumber every reference in the
+    same commit.
 
 ---
 
@@ -253,7 +260,7 @@ carries the same tree under `Contents/Resources/Ferazel/` (D10); `FerazelAssets`
 Legend: ⚑ MAJOR = two review legs (spec compliance, then quality; Fable reviewers, report everything with
 confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6, G7, G10; the gates named per task.
 
-### K1 — minor — HectorKit: PICT pixels as stored, public 16-bit ColorTable, v1 BitMaps (+12, kit)
+### K1 — ⚑ MAJOR (new public kit API + refusals; two review legs) — HectorKit: PICT pixels as stored, public 16-bit ColorTable, v1 BitMaps (+12, kit)
 - **Files ($HKWT):** new `Sources/HectorGraphics/PICT+Pixels.swift`; `Sources/HectorGraphics/PixMapRecord.swift`
   (ColorTable public + 16-bit channels, additive); new `Sources/HectorTestSupport/HectorData+Ferazel.swift`; new
   `Tests/HectorGraphicsTests/PICTPixelsTests.swift`, `Tests/HectorGraphicsTests/FerazelPICTCensusTests.swift`;
@@ -305,10 +312,10 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   `!/Resources/Ferazel/`. `.gitattributes`: add `Resources/Ferazel/** binary`. `git status --porcelain --ignored
   Resources` must show `Resources/Aki/` still ignored and exactly 34 new files under `Resources/Ferazel/`. Not
   committed: the PEF binary, `Ferazel's Wand Documentation*`, the 28 `NN.rsrc` SoundEdit leftovers, the Notes/License
-  texts, `Icon_*`, InputSprocket files, the `.pict` files, `.DS_Store` (design §4). DECISIONS (next free number,
-  expected D26, Landmine e): **"Ferazel's Wand build: Ben's five rulings; data in git; layering"** — the design §10
+  texts, `Icon_*`, InputSprocket files, the `.pict` files, `.DS_Store` (design §4). DECISIONS (**D26**, Landmine e): **"Ferazel's Wand build: Ben's five rulings; data in git; layering"** — the design §10
   rulings 1–5 verbatim; the seat rulings (three layers §3, data-in-git D24 shape, Color2Index model §6, deviations §7,
-  phase scoping §8); the committed tree with sizes and SHA-256 (Research note 1; total 85,281,911 B, largest file
+  phase scoping §8; **PICT 257's short last row reads 0** — seat ruling, alternative named and rejected: design §11's
+"whatever the port held" (undefined, not reproducible); the census flags the sheet, C5); the committed tree with sizes and SHA-256 (Research note 1; total 85,281,911 B, largest file
   15,821,213 B — no GitHub size warning); `FERAZEL_DATA` override; rejected: LFS, symlinked data (D24 reasons).
 - **Gate:** G4; G5 (Aki + BubbleTroubleX only); G10. **Commit:** `Resources/Ferazel: original Ferazel's Wand 1.0.3 data (6 resource files + 28 music tracks) in git; .gitignore/.gitattributes; DECISIONS D<n>`.
 - **Seat alone:** the `.gitignore` comment wording. **Ben's:** none (standing ruling).
@@ -343,7 +350,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   {0: 20 levels, 1: L15, 2: L5, 5: L25, 6: L70}; PxMid enabled in exactly 10,15,21,22,30,31,40,45,50,51,52,55,62,70;
   strip PICTs L10 265 · L30 275 · L40/L45 315 · L62 345 · L67 385; start-left (0x26c8 = 1) in 3,5,11,18,40,45; flame
   L52 = 1, L55 = 2; CLUT animation L50/L51 mode 1, L67 mode 3; chapters 1→1, 10→2, 40→3, 50→4, 22→5, 30→6, 62→7;
-  0x26cc = 1 in 62 and 70 (p02) · `testLevel1Maps` — BG: 8,353 cells with no tile, 74 distinct tiles, light bytes
+  0x26cc = 1 in 62 and 70 (p02) · `testLevel1Maps` — BG: 8,353 cells with no tile, 73 distinct tiles (74 counted the none value), light bytes
   {1:1931, 2:472, 3:491, 4:449, 5:511, 6:656, 7:880, 8:1166, 9:1048, 10:1060, 11:1293, 12:43}; FG: 7,274 non-zero
   cells (world-data §3.3), 7,270 with a tile, 5,710 pattern-tile (95) cells, crunch kind set in 3, crunch-dir nibble set
   in 225; map #5 all zero; overlay 20 non-zero, all o1 = 100 (12 × o2 95, 3 × 0, 2 × 2, 1 each × 8, 9, 10); PxMid 256
@@ -407,7 +414,8 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   e.g. k1 @00 ff0000, k2 @00 ffff9c, k0xe @2a 3f1f00, k0x16 @06 bf5f5f · `testFixedIndexTables` — 0xf, 0x12, 0x13,
   0x14, 0x15, 0x17, 0x18 rows of §3.1 (e.g. 0x17 @31 → 0xff) · `testWaterRequestsCLUT202` — §4 table (w0 @00 7f7fff,
   w1 @00 c7ff71, w3 @00 ff3fff, w5 @00 b5a068) · `testReddenRequestsWrap` — A7 @06 → 540000, A0 @00 ffdfdf, B14 @00
-  ffff87 (§5) · `testAmbientDarkenFloat32` — white at D 1/5/10/15 → f1f1f1 / b7b7b7 / 6f6f6f / 272727; L 10, D 15 on
+  ffff87 (§5) · `testAmbientDarkenFloat32` — white at D 1/5/10/15 → f1f1f1 / b7b7b7 / 6f6f6f / 272727
+  (high bytes; exact 16-bit per channel 0xf198 / 0xb7ff / 0x6fff / 0x27ff); L 10, D 15 on
   white → 0x17fe per channel (§7.2–§7.3) · `testPairTableRequests` — 0154/015c/0158/0160/0150 formulas on (src, dst)
   = (0xffff, 0) and (0x8000, 0x8000) (§6.1 arithmetic) · `testLightGroupRequests` — white k 0/5/10 at D 0 = §7.3's
   listed row (group 1: ffffff 8c8c8c 191919; group 6: ffffff ff1dfa ff3af4), D 5 group 0 k 10 = 525252, group 3 k 10 =
@@ -427,7 +435,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
 - **Gate:** G2 = **43/0**. **Commit:** `Ferazel/Core: TableRequests (tint/water/redden/pair/ambient/light), ColorSearch (exact, inverse 4/5-bit, ruled); Color2Index measured; 15 tests`.
 - **Seat alone:** caching strategy; vectorisation. **Ben's:** none (the model is ruled; Ben sees it at the gate).
 
-### C5 — ⚑ MAJOR — Faces: PICT → indices under a CLUT, RLE encoder, loaders with the original cell arguments (→ 55)
+### C5 — ⚑ MAJOR — Faces: PICT → indices under a CLUT, RLE encoder, loaders with the original cell arguments (→ 56)
 - **Precondition:** K1 on HectorKit main and pulled into `~/Developer/HectorKit`; C4 merged.
 - **Files:** `Sources/FerazelRender/Faces/{PictureSource,ConvertedPicture,Dither,EncodedFace,FaceEncoder,FaceSheet,PlainFaceSheet,WaterFaceSheet,BlendFaces,TileSets}.swift`;
   `Tests/FerazelRenderTests/FaceTests.swift`.
@@ -436,8 +444,12 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   `ColorSearch`** (indexed PICTs: once per table entry, 16-bit RGB from the PICT's own table; DirectBits: per pixel,
   8-bit components × 257); a DirectBits PICT (transfer mode 64 = ditherCopy, all 326) is additionally dithered by
   `DitherModel` (default `.errorDiffusion`: Floyd–Steinberg 7/16 · 3/16 · 5/16 · 1/16 in 16-bit RGB, rows top-down,
-  left-to-right — LOW, Research note 10); a v1 BitMap's set bits become 0xff (black = the last entry) and clear bits 0
-  (white) [MED]. Sheets that fit 640×416 go through the shared back port, whose CLUT copies entries 0..254 only
+  left-to-right — LOW, Research note 10). **A 1-bit v1 BitMap bypasses `ColorSearch`:** set bits → 0xff, clear bits →
+  0x00, fixed, under every model (the FG water mask 183 and the PxMid mask sheets 319/329/339/350 need K == 0xFF
+  exactly, rendering-omnipx-titles §1.2). ⚠️ **Hazard (why the model is selectable):** `DrawPicture` into the non-GWorld
+  back port may match colours through the current **GDevice's** inverse table rather than the port's CLUT
+  (sprites-backgrounds §2 conversion path) — the replica cannot tell which; `ColorSearch.Model` stays a parameter and
+  the surface is on the gate card (item 1). Sheets that fit 640×416 go through the shared back port, whose CLUT copies entries 0..254 only
   (`.ChangeBlitPortClut`, lighting-tables §1.2) — entry 0xff is black in every conversion CLUT used (p06), so no effect;
   record it in a doc comment. Conversion CLUTs: sprite sheets 200; BG tileset level+base (202 for L1; sprites §3 HIGH);
   PxBack/PxMid the level CLUT `hdr+0x285c` (201 for L1) unless `hdr+0x26cc` (bosses-3 §8 HIGH); **FG, FG-water and
@@ -452,7 +464,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   §7 (29 sheets 1003..1039 except 1026; 1022 is 150×120, 1023 120×120, glider 1050..1053 cached 160×160 not needed in
   Phase 1). A cell reaching past the frame (PICT 257: 768×708, cells 30..35 lose 60 of 128 rows) reads 0 there and the
   sheet is flagged `shortRows` (design §11; sprites §3 MED).
-- **Tests (12):** `testIndexedConversionWalkSheet1020` — 51 colours, 6 exact in clut 200, `.ruled` ≠ `.exactNearest` on
+- **Tests (13):** `testIndexedConversionWalkSheet1020` — 51 colours, 6 exact in clut 200, `.ruled` ≠ `.exactNearest` on
   5 colours / 1,333 pixels; transparent pixels 169,957 under both (p10, p11) · `testPxBack207AllExact` — 52 colours,
   all exact in clut 201, 0 differ (p10) · `testTileSheetConversionExposure` — under 202: FG 200 239 colours / 30 exact
   / 62 differ / 7,193 px; BG 203 234 / 28 / 67 / 13,898; pattern 206 200 / 30 / 73 / 8,606 (p10) ·
@@ -463,11 +475,13 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   `testFaceSetCellGeometry` (1020: 16 cells 100×120, 4 cols; cell 5 = x 100..199, y 120..239) ·
   `testPlayerFaceSetsTable` (29 sheets, cell counts and sizes of player-states §7) · `testWaterMask183` (96 cells,
   29,595 set bits, p16) · `testBlendFaceWeights` (185: weight counts per value self-derived; the §8 mapping 0/0x97/0x98
-  → 3, 0x99..0x9b → 2, 0x9c..0x9e → 1, else 0) · `testShortSheet257Flagged` (768×708; cells 30..35 flagged; 60 rows).
-- **Gate:** G2 = **55/0**. **Commit:** `FerazelRender: PICT → indices through ColorSearch (+ ditherCopy model), EncodeRect RLE faces, face/plain/water/blend sheets, tile sets; 12 tests`.
+  → 3, 0x99..0x9b → 2, 0x9c..0x9e → 1, else 0) · `testShortSheet257Flagged` (768×708; cells 30..35 flagged; 60 rows) ·
+  `testOneBitBitMapsBypassColorSearch` (183 and 319 under `.ruled`, `.exactNearest`, `.inverseTable(bits: 5)`: every
+  pixel 0x00 or 0xff, 0xff count 29,595 / 44,880 = the set bits, identical under all three; p16).
+- **Gate:** G2 = **56/0**. **Commit:** `FerazelRender: PICT → indices through ColorSearch (+ ditherCopy model, 1-bit bypass), EncodeRect RLE faces, face/plain/water/blend sheets, tile sets; 13 tests`.
 - **Seat alone:** memory layout of tokens. **Ben's:** none (dither and FG conversion CLUT are on the gate card).
 
-### C6 — minor — `ferazel-census` + `docs/ferazel/data-census.md` (→ 59)
+### C6 — minor — `ferazel-census` + `docs/ferazel/data-census.md` (→ 60)
 - **Files:** `Package.swift` (executable); `Sources/FerazelRender/Census/FerazelCensus.swift`; `Sources/ferazel-census/main.swift`;
   `Tests/FerazelRenderTests/CensusTests.swift`; `docs/ferazel/data-census.md` (new); `docs/ferazel/INDEX.md` (one
   pointer row); `docs/DECISIONS.md` (as-built paragraph on C0's entry: census Totals, test total, HectorKit sha).
@@ -475,7 +489,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   machine paths; exit 0 / 1 (any failure, each named) / 2 (bad args). Sections: files · resources per file · one line per
   item (770 PICT with path/size/depth, 79 clut, 172 snd, 24 Mlvl, 29 Mcnv, 28 music, Mwld, Mmap, 4 STR#) · Color2Index
   per level CLUT (16 lines) · Phase-1 face conversion exposure · Totals. `--render` writes `level1-start.png`,
-  `pict-1020.png`, `pict-207.png` (ImageIO, census only).
+  `pict-1020.png`, `pict-207.png` (ImageIO in `Sources/ferazel-census` only; the seat's addition, see Scope).
 - **Exact summary lines** (each a whole stdout line, in this order, Totals last; numbers p01–p21):
   ```
   # Ferazel's Wand 1.0.3 — data census
@@ -500,22 +514,41 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
 - **Tests (4):** `testSummaryLinesExact` (the 15 lines above verbatim, in order) · `testStdoutEqualsCommittedCensus`
   (stdout byte-equals the doc body below its rule, via `#filePath`) · `testExitCodes` (bad args → 2; a temp folder
   with one truncated PICT → 1 and the line names it) · `testOneLinePerItem` (1,108 item lines).
-- **Gate:** G2 = **59/0**, G3. **Commit:** `Ferazel/Core: ferazel-census + data-census.md (1,108 items, 0 failures, Color2Index measured); D<n> as built`.
+- **Gate:** G2 = **60/0**, G3. **Commit:** `Ferazel/Core: ferazel-census + data-census.md (1,108 items, 0 failures, Color2Index measured); D<n> as built`.
 
-### R1 — ⚑ MAJOR — Seams, level tables, frame ports, tile grid (→ 68)
-- **Precondition:** read `.RedrawScrollGrid`, `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`, `.SetScrollLocation` in
-  `$DUMPS` (Invariant 3): record in the commit body whether `.RedrawScrollGrid` refills the whole 20×13(+1) cell window
-  or only newly exposed strips, and transcribe that. If it is strip-incremental, build it incrementally (the third port
-  `0004` and `.WrapEraseSprites` then belong to R4); if whole, say so.
+### Hazards for every R implementer (read before any dump reading in R1–R6)
+Quoted from `docs/ferazel/INDEX.md` "Reviewer notes"; every R task's precondition points here.
+- **`lwzu`/`stwu` +8 copy loops.** 8-byte copy loops written as `p[2] = q[2]` after `p = base−8` / `base+0x10` hide a
+  +8 offset (pre-increment); re-check any offset derived from such a loop against the raw disassembly.
+- **A TOC-load count is not a write count.** A slot loaded once into a callee-saved register may be stored through
+  many times; follow the loaded register through the function before claiming "no writer".
+- **`.StandardSpriteHandles` zeroes per-frame fields** (`+0x11c`, the clips `+0x1b6..+0x1bc`, the latch `+0x180`) every
+  frame, so a read of those fields depends on **call order** relative to SSH.
+- **Signed-compare idiom.** Ghidra renders `eqv; subfc; rlwinm; addze; rlwinm` (= `rB < rA` signed) as
+  `(uint)(x <= y) - (~(int)(x ^ y) >> 0x1f) & 1`; the first term alone gives the opposite answer when the operands
+  share a sign.
+Dumps: if `$WT/ghidra/Ferazel_pef.decompiled.c` is absent, copy from `$DUMPS` or regenerate with
+`ghidra/regen-ferazel.sh` (~6 min from the saved Ghidra project named in INDEX provenance). Cite raw addresses.
+
+### R1 — ⚑ MAJOR — Seams, level tables, frame ports, tile grid (→ 69)
+- **Precondition (read Hazards first):** read `.RedrawScrollGrid`, `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`,
+  `.SetScrollLocation`, `.BlitEncBoolTile` in the dumps (Invariant 3): (a) record in the commit body whether
+  `.RedrawScrollGrid` refills the whole 20×13(+1) cell window or only newly exposed strips, and transcribe that. If it
+  is strip-incremental, build it incrementally (the third port `0004` and `.WrapEraseSprites` then belong to R4); if
+  whole, say so. (b) **Mask-port values (the bank does not say):** who fills mask port `0008` per frame and with what
+  value (`.RedrawScrollGrid`), and what value the FG boolean stamp writes (`.PlainWrapFGTile` step 4 →
+  `.BlitEncBoolTile`). Write both values into this plan's "Bank corrections to append" as a ⚑ note with raw
+  addresses **before** writing `testMaskPortTransparencyRule`; the test pins what was read.
 - **Files:** `Sources/FerazelCore/Seams/{FrameOps,DrawOp,SpriteDraw,FaceRef,SoundCue,MusicCue,ShellRequest,StatusBarState}.swift`,
   `Sources/FerazelCore/Input/{InputActions,KeyState,FerazelPrefs}.swift`; `Sources/FerazelRender/Frame/{LevelTables,FramePorts,TileGridRenderer,TileBlitters}.swift`;
-  `Tests/FerazelCoreTests/SeamTests.swift`; `Tests/FerazelRenderTests/TileGridTests.swift`.
+  `Tests/FerazelCoreTests/SeamTests.swift`; `Tests/FerazelRenderTests/TileGridTests.swift`;
+  `docs/plans/2026-10-06-ferazel-phase1.md` ("Bank corrections to append", the ⚑ mask-port note only).
 - **Contract:** S3 types verbatim. `FerazelPrefs` = engine §8 record with `.InitPrefs` defaults (Graphics 1, Parallax 2,
   Effects 1 — a modern Mac passes the `cput ≥ 0x108` test, save-continue §8.2; sound/music on; keys of engine §7.1).
   `LevelTables` resolves C4's requests for the level's working CLUT through the chosen model (tint bank, water incl.
   table 4 = 0, redden A/B, ambient, pair tables, light) — built at the original's moment (lighting-tables §1.3). Frame
-  ports per rendering §1.1–§1.2: frame `000c` (tiles+sprites, empty = 0), mask `0008` (0xff where the backdrop may
-  show), ring addressing. `TileGridRenderer` = `.RedrawScrollGrid` for the cell window of scroll (h, v): BG face, then
+  ports per rendering §1.1–§1.2: frame `000c` (tiles+sprites, empty = 0), mask `0008` (backdrop gate; its per-frame
+  fill and stamp values are the precondition (b) reading), ring addressing. `TileGridRenderer` = `.RedrawScrollGrid` for the cell window of scroll (h, v): BG face, then
   the FG rule of sprites-backgrounds §3.1 (steps 1–4: FG face, FG-water face + water table w when the BG kind is
   200..209 and `hdr+0x26c6 == 0`, tinted face when ≠ 0; blend face `k = FGkind mod 100` (0..94) mixed with the pattern
   tile through pair tables 0154/015c/0158 by weight (lighting-tables §8); tile 95 = pattern tile; FG boolean mask into
@@ -529,11 +562,13 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   `testFGWaterCellRule` (an L1 kind-0 water cell inside cols 4..193 × rows 19..49 draws the FG-water face through water
   table 0; p18) · `testBlendCellMix` (one blend cell: weights 0..3 map to pattern / ¾p / ½ / ¼p as §8) ·
   `testOverlayCellsLevel1` (the 20 overlay cells draw FG face o2 over the cell; 12 draw the pattern) ·
-  `testMaskPortTransparencyRule` (`0008` = 0xff exactly where nothing opaque was drawn).
-- **Gate:** G2 = **68/0**. **Commit:** `Ferazel: LOCKED seam types, prefs defaults; LevelTables, frame/mask ports, RedrawScrollGrid (FG rule, blend, overlay, pattern); 9 tests`.
+  `testMaskPortTransparencyRule` (`0008` holds the precondition-(b) fill value where nothing opaque was drawn and the
+  read stamp value under the FG boolean stamp — the values recorded in the ⚑ note, nothing assumed).
+- **Gate:** G2 = **69/0**. **Commit:** `Ferazel: LOCKED seam types, prefs defaults; LevelTables, frame/mask ports, RedrawScrollGrid (FG rule, blend, overlay, pattern); 9 tests`.
 
-### R2 — minor — Darkness and lights on tiles, water tint (→ 73) — ∥ R3
-- **Precondition:** read in `$DUMPS` how per-cell darkness reaches **tiles** (`.RedrawScrollGrid`'s tile blitters vs
+### R2 — minor — Darkness and lights on tiles, water tint (→ 74) — ∥ R3
+- **Review:** the reviewer MUST re-read the dump readings this task records, not just the diff.
+- **Precondition (read Hazards first):** read in `$DUMPS` how per-cell darkness reaches **tiles** (`.RedrawScrollGrid`'s tile blitters vs
   `.DrawLightsOntoTiles`/`.DrawLightOps` — the bank documents only the sprite path, draw-effects §3, and the light-op
   path, lighting-tables §7.4); append the reading to `docs/ferazel/lighting-tables.md` §7.4 as a ⚑ Phase-1 note
   [MED unless every link is raw-read].
@@ -542,16 +577,17 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
 - **Contract:** lighting-tables §7: D = BG light byte − 1, enabled by `hdr+0x2706 ≠ 0` (L1 = 5); ambient table
   `[D·0x100 + i]`; light faces (PICTs 801.., CLUT 801, `.Load1LightFaceFromPICT`); `.DrawLightsOntoTiles` (op grid
   20×13, `.CalcLightOps`, `.DrawLightOps`, ambient fallback) as read; skipped when prefs+6 == 3. Water tint on tiles is
-  R1's FG rule; R2 adds nothing there beyond tests. No lights exist at level-1 start (none of the 41 placed types adds
+  R1's FG rule; R2 adds nothing there beyond tests. No lights exist at level-1 start (none of the 42 placed types adds
   one in its Setup per the class files [MED]; Effect explosions add them later, triggers-background-2 §2.1).
 - **Tests (5):** `testAmbientTilesLevel1Start` — light bytes in the start window {1:16, 2:27, 3:33, 4:28, 5:28, 6:29,
   7:29, 8:29, 9:27, 10:25, 11:9} (p17) and the darkened frame FNV self-derived · `testAmbientEnableGate`
   (`hdr+0x2706 = 0` → untouched) · `testEffectsReducedSkipsLights` (prefs+6 = 3) · `testWaterTable0Entry0xFFIsBlack`
   (→ 0x60, lighting-tables §4) · `testLightTablesCensusLine` (light-table disagreement count, ruled vs exact, CLUT 202
   — self-derived, recorded in the commit body; planner did not measure the light groups).
-- **Gate:** G2 = **73/0**. **Commit:** `FerazelRender: per-cell darkness and lights on tiles (ambient/light tables, light faces); 5 tests`.
+- **Gate:** G2 = **74/0**. **Commit:** `FerazelRender: per-cell darkness and lights on tiles (ambient/light tables, light faces); 5 tests`.
 
-### R3 — ⚑ MAJOR — Parallax as written: PxBack/PxMid rows, ring split, strip sprites (→ 80) — ∥ R2
+### R3 — ⚑ MAJOR — Parallax as written: PxBack/PxMid rows, ring split, strip sprites (→ 81) — ∥ R2
+- **Precondition:** read Hazards first wherever the dumps are consulted.
 - **Files:** `Sources/FerazelRender/Frame/ParallaxBlitter.swift`, `Sources/FerazelCore/Sprites/PxSprites.swift`;
   `Tests/FerazelRenderTests/ParallaxTests.swift`.
 - **Contract:** rendering-omnipx-titles §1.1–§1.5 **literally**: the copy-to-screen composites the backdrop
@@ -570,37 +606,42 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   1392..1536 draws PxMid cell rows 16 and 17 (rendering §1.5 table, MED simulation) · `testGraphicsModeRowSteps`
   (prefs+2 = 2 doubles rows, = 3 skips alternate rows) · `testStripSpriteCopies` — N = 8 (L10), 11 (L30), 11 (L40),
   2 (L45), 8 (L62), 1 (L67); L1 none (p02 header + T2 §4 formula).
-- **Gate:** G2 = **80/0**. **Commit:** `FerazelRender: DoubleBlitPPCParallaxOneLayer as written (row state machine, ring split, byte/word rules), Px strip sprites; 7 tests`.
+- **Gate:** G2 = **81/0**. **Commit:** `FerazelRender: DoubleBlitPPCParallaxOneLayer as written (row state machine, ring split, byte/word rules), Px strip sprites; 7 tests`.
 
-### R4 — ⚑ MAJOR — Placed sprites in their Setup faces, active list, idle activation, WrapDrawSprites (→ 87)
+### R4 — ⚑ MAJOR — Placed sprites in their Setup faces, active list, idle activation, WrapDrawSprites (→ 88)
+- **Precondition:** read Hazards first (the `.StandardSpriteHandles` call-order trap applies to every Setup field).
 - **Files:** `Sources/FerazelCore/Sprites/{SpriteSlot,ActiveList,IdleSprites,SetupFaces}.swift`;
   `Sources/FerazelRender/Frame/SpriteBlitter.swift`; `Tests/FerazelCoreTests/SpriteListTests.swift`;
   `Tests/FerazelRenderTests/SpriteDrawTests.swift`.
-- **Contract:** ◇ `SetupFaces` — for each of the **41 placed types of level 1** (Research note 15), what the class
+- **Contract:** ◇ `SetupFaces` — for each of the **42 placed types of level 1** (Research note 15), what the class
   Setup leaves: sheet + cell arguments, face index (params p1..p4 honoured where Setup reads them), layer `+0x80`,
   `+0xb8`, `+0x17e`, `+0x88`/`+0x89`, position adjustment, idle margins `+0x1c8..+0x1ce`; transcribed from the class
   file named per type in Research note 15 (coverage §3 index). No Handle runs. A type whose Setup face depends on
   state Phase 1 lacks is drawn with the Setup's first face and listed on the gate card. `ActiveList`: ascending signed
   layer, a new sprite after every sprite of equal or lower layer (physics §0 `+0x80`, platforms-ropes-radial-2 §8);
   spawn order world-data §3.4. `IdleSprites` (triggers-background-2 §8.3): window = view origin h −24..+632, v −24..+408
-  ∪ player hot rect, outset 96, per-sprite margins, 511 of 512 entries scanned, one rule both ways. `SpriteBlitter` =
+  ∪ player hot rect, the mandatory outset 96, per-sprite margins, 511 of 512 entries scanned, one rule both ways. `SpriteBlitter` =
   `.WrapDrawSprites` steps 1–8 (draw-effects §1.1) for the modes Setup stores in level 1 — 0, 1 (tint table), 9 (water
   table 0), 0xc via `+0x89` (ambient/light table), 0xb arg from the D = −1 case — through `.BlitEncFaceX` dispatch
   (§1.2: NoClip/Clip, Flip, Special) + the mask pass (silhouette 0 into `0008`) + the `+0x88` light-overlay pass
   (`.BlitAmbDarkenOverFace*`, draw-effects §3); hurt flash, burn, rotation/scale, diffuse, ripple and squash are not
   reached in Phase 1 (refused with a named error if asked).
-- **Tests (7):** Core (5): `testSetupFacesLevel1Types` (41 types resolve; none unmapped) · `testActiveListLayerOrder`
+- **Tests (7):** Core (5): `testSetupFacesLevel1Types` (42 types resolve; none unmapped) · `testActiveListLayerOrder`
   (ties after existing; negative layers first) · `testSpawnOrderLevel1` (the 22 type-1307 records, then the 7 platform
   records (types 1400..1403) in record order, then the rest in record order; world-data §3.4) · `testIdleActivationRule` (synthetic margins, both directions) ·
   `testIdleWindowAtStartLevel1` (count of sprites active at scroll (0, 10) — self-derived from the transcribed margins;
-  the planner's margin-free window holds 8 records of types 1059, 2842, 2924, 2927, 2951, 3204, p17).
+  the window includes the mandatory 96-px outset (triggers-background-2 §8.3), with which the point test without
+  per-sprite margins gives **13** records (Fable review; p17's 8 omitted the outset); the margins can only add).
   Render (2): `testWrapDrawSpritesClipAndMaskPass` · `testSpecialTableModes` (modes 1, 9, 0xc remap through
   LevelTables).
-- **Gate:** G2 = **87/0**. **Commit:** `Ferazel: level-1 placed sprites in their Setup faces, active list, idle activation, WrapDrawSprites (modes 0/1/9/0xb/0xc + light overlay); 7 tests`.
+- **Gate:** G2 = **88/0**. **Commit:** `Ferazel: level-1 placed sprites in their Setup faces, active list, idle activation, WrapDrawSprites (modes 0/1/9/0xb/0xc + light overlay); 7 tests`.
 
-### R5 — minor — Player pose, camera, session step (→ 93)
+### R5 — minor — Player pose, camera, session step (→ 94)
+- **Precondition (read Hazards first):** read the focus base in `.GameLoop` / `.PlayerScroll` (below) and record it in
+  this plan's "Bank corrections to append" as a ⚑ note with raw addresses.
 - **Files:** `Sources/FerazelCore/Player/PlayerPose.swift`, `Sources/FerazelCore/Camera/{Camera,CameraFocusDriver}.swift`,
-  `Sources/FerazelCore/Session/{FerazelSession,GameGlobals}.swift`; `Tests/FerazelCoreTests/SessionTests.swift`.
+  `Sources/FerazelCore/Session/{FerazelSession,GameGlobals}.swift`; `Tests/FerazelCoreTests/SessionTests.swift`;
+  `docs/plans/2026-10-06-ferazel-phase1.md` (the ⚑ focus-base note only).
 - **Contract:** `FerazelSession.step(keys:)` = one `.GameLoop` iteration in `.PaintFrameWrap` order (engine §3–§4):
   if drawing this iteration → `redrawScrollGrid`, `drawLightsOntoTiles` (unless prefs+6 = 3), `wrapDrawSprites`,
   `copyToScreen`, then logic (idle sprites, the stubbed player), then `statusBar`; prefs[0] "Reduce frame rate"
@@ -613,18 +654,23 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   4 → `1030[0]`, `[1]`, `[2]` mirrored, `[1]`, `[0]`; fidget after 150 idle frames per §3.11.4. No physics, no sound.
   `Camera` = `.FindUpperLeftCorner` (engine §5): target = focus − (304, 192) + (`0x270a`, `0x270c`), 16-px x-snap rule,
   ease `max(|Δ|/6, 1)` per axis, clamp `0 ≤ h ≤ 32·W − 640`, `0 ≤ v ≤ 32·H − 384` (L1: 5,760 / 1,216). ◇
-  `CameraFocusDriver`: focus starts at (sprite x + 50, sprite y + 59) = (133, 202) (engine §5 "start+50/start+59");
-  held left/right/up/down move the focus 1900/256 px per frame (walk max, physics §4), 3200/256 with run held; the
-  first frame's scroll is the clamped target (no pan-in — the bank does not say, MED, gate card) = **(h 0, v 10)** (p17).
+  `CameraFocusDriver`: focus starts at base + (50, 59) (engine §5 "start+50/start+59") — **the base is a reading
+  [MED]**: on the sprite origin (x − 32) it gives (133, 202) → first scroll **(0, 10)** (p17); on the header start
+  (115, 175) it gives (165, 234) → first scroll **(0, 42)**. The implementer uses whichever `.GameLoop` /
+  `.PlayerScroll` shows (precondition). Held left/right/up/down — **arrow keys or keypad 4/6/8/5** (stub only; replaced
+  by `.PlayerScroll` in Phase 2) — move the focus 1900/256 px per frame (walk max, physics §4), 3200/256 with run
+  held; the first frame's scroll is the clamped target (no pan-in — the bank does not say, MED, gate card).
 - **Tests (6):** `testPlayerStartPose` ((83, 143), facing right, face 1003[3], layer 10) · `testWalkCycleFaces`
   (first walking frame sets phase 0xc, then +2 per frame in the order player-states §3.11.3 states; face = phase >> 1
   of 1020's 16; wrap past 0x1f) · `testRunCycleFaces` (12 faces, wrap past 0x17) ·
-  `testTurnSequence` (5 frames, first three mirrored) · `testCameraStartScroll` ((0, 10); clamps 5,760 / 1,216; p17) ·
+  `testTurnSequence` (5 frames, first three mirrored) · `testCameraStartScroll` (the first scroll of the read base —
+  (0, 10) or (0, 42) [MED], as the ⚑ note records; clamps 5,760 / 1,216; p17) ·
   `testStepOrderAndSkippedDraw` (the DrawOp order above; prefs[0] = 1 alternates `drawn`).
-- **Gate:** G2 = **93/0**. **Commit:** `FerazelCore: FerazelSession.step (PaintFrameWrap order), Camera (FindUpperLeftCorner), Phase-1 player pose and focus driver stubs; 6 tests`.
+- **Gate:** G2 = **94/0**. **Commit:** `FerazelCore: FerazelSession.step (PaintFrameWrap order), Camera (FindUpperLeftCorner), Phase-1 player pose and focus driver stubs; 6 tests`.
 
-### R6 — minor — Status bar, game-screen frame, CLUT → RGBA, frame goldens (→ 99)
-- **Precondition:** read `.UpdateTextStats`, `.UpdateItemStat` and `.UpdateHealthMagic` in `$DUMPS` for text size,
+### R6 — minor — Status bar, game-screen frame, CLUT → RGBA, frame goldens (→ 100)
+- **Review:** the reviewer MUST re-read the dump readings this task records, not just the diff.
+- **Precondition (read Hazards first):** read `.UpdateTextStats`, `.UpdateItemStat` and `.UpdateHealthMagic` in `$DUMPS` for text size,
   colour, transfer mode and the empty-inventory drawing (spells-items §6 gives positions and font id 20 only); append
   the reading to `docs/ferazel/spells-items.md` §6 as a ⚑ Phase-1 note.
 - **Files:** `Sources/FerazelRender/Frame/{StatusBar,TextRasterizer,FrameRenderer,IndexedFrame}.swift`;
@@ -640,10 +686,10 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
 - **Tests (6):** `testStatusBarStartValues` (bars 70 px; text origins as above; stub rasterizer calls recorded) ·
   `testGameScreenFrame129` (4-bit PICT through its own table into the level CLUT; view rect (16,8)–(624,392) left for
   the copy) · `testIndexedFrameToRGBA` (entry 0 → 0xFFFFFFFF, 0xff → 0xFF000000 under 202) ·
-  `testFirstFrameGoldenLevel1` (step 1 at scroll (0, 10): FNV-1a of the 640×480 indices self-derived and recorded; PNG
+  `testFirstFrameGoldenLevel1` (step 1 at R5's first scroll: FNV-1a of the 640×480 indices self-derived and recorded; PNG
   to `$FERAZEL_PNG_OUT` when set, ImageIO in the test only) · `testPanFrameGoldens` (60 frames of right held: scroll and
   FNV self-derived) · `testFirstFrameOpsOrder` (the R5 order, as executed).
-- **Gate:** G2 = **99/0**. **Commit:** `FerazelRender: status bar at start values, Game Screen frame, FrameRenderer, CLUT → RGBA; level-1 frame goldens; 6 tests`.
+- **Gate:** G2 = **100/0**. **Commit:** `FerazelRender: status bar at start values, Game Screen frame, FrameRenderer, CLUT → RGBA; level-1 frame goldens; 6 tests`.
 
 ### A1 — ⚑ MAJOR — App target `Ferazel` on HectorShell
 - **Files:** `project.yml` (S6, merged); `Ferazel/App/{FerazelMain,FerazelController,FerazelAssets,FerazelAudio,CoreTextRasterizer}.swift`,
@@ -653,9 +699,15 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   1280×960, else 1 — crisp integer scale (Ben's ruling 4, design §5; HectorShell D3/D7 R3); full screen = the shell's
   `enterFullscreen()` (largest whole multiple, black border) on ⌃⌘F. Clock: a 1/60 s `ShellIdleTimer` runs one
   `session.step` when `ShellClock.ticks() − lastStepStart ≥ 2` (the 2-tick cap, engine §4; missed steps dropped, never
-  caught up), then `renderer.apply`, `IndexedFrame.rgba` into a `ShellBitmap`, `present`. Keys: `ShellView.pollKeyState()`
+  caught up), then `renderer.apply`, `IndexedFrame.rgba` into a `ShellBitmap`, `present`. **Both arms of the clock**
+  (design §3.2, engine §4): prefs[0] "Reduce frame rate" = 0 → every step draws, 2-tick cap; prefs[0] set → even
+  iterations skip the screen copy (`drawn = false`) and the draw/skip **pair** is capped at 4 ticks. Phase 1 ships
+  prefs at their defaults (prefs[0] = 0), but the clock implements both. Keys: `ShellView.pollKeyState()`
   → `KeyState` each step; actions via `FerazelPrefs` key codes (engine §7.1 defaults: keypad 4/6/8/5, Shift, Option,
-  ⌘, keypad 7/9 — **subject to Open question Q1**). ⌘Q quits. `MusicCue.play` → `FerazelAudio`: one `ShellMixer` music
+  ⌘, keypad 7/9). **Q1 ruled by the seat:** the Phase 1 camera/pose stub accepts the arrow keys **and** the keypad
+  (it is a stub, replaced in Phase 2); from Phase 2 on the game proper ships the original defaults only, and the
+  original Options dialog (Phase 3) rebinds them. ⌘Q quits. Caps Lock (pause) and Esc (abort dialog) do **nothing**
+  in Phase 1 (design §3.3; both arrive in Phase 3). `MusicCue.play` → `FerazelAudio`: one `ShellMixer` music
   voice, track decoded by `MusicTrack`, looped, volume prefs+0x10 (9 → 256/256). `.hideMenuBar` honoured in full screen
   only (windowed macOS keeps the bar — design §7.4). Info.plist: `CFBundleName`/display "Ferazel's Wand",
   `CFBundleShortVersionString` 1.0.3 (the replicated game, D23(b)), `CFBundleVersion` 0.1, `LSMinimumSystemVersion`
@@ -664,7 +716,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   (D22/D23 practice: previews go to Ben on the gate card). A DEBUG-only "data missing → run tools/stage-ferazel.sh"
   alert (design §7.8).
 - **Gate:** G5 ×3. **Commit:** `Ferazel app: window (whole-number scale), 2-tick step clock, keys, music voice, CoreText status text, Info.plist, icon; project.yml target`.
-- **Seat alone:** controller structure, the icon document layout. **Ben's:** Q1; the icon pick.
+- **Seat alone:** controller structure, the icon document layout. **Ben's:** the icon pick.
 
 ### A2 — minor — Stage script, WHAT-TO-EXPECT, the Phase 1 gate card
 - **Files:** `tools/stage-ferazel.sh`, `Ferazel/WHAT-TO-EXPECT.md`.
@@ -674,7 +726,7 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
   WHAT-TO-EXPECT → `ditto` both to `~/Desktop/` unless `FERAZEL_STAGE_NO_DESKTOP=1`. Every path quoted (Landmine d).
   WHAT-TO-EXPECT = what Phase 1 is and is not (no physics, no front end, no sounds, chapter screen skipped), the keys,
   the known deviations (design §7 + the three stubs), and the gate card below verbatim.
-- **Gate:** G2 = 99/0, G1 on HK main, G3, G4, G5, G9. **STOP for Ben.**
+- **Gate:** G2 = 100/0, G1 on HK main, G3, G4, G5, G9. **STOP for Ben.**
 - **Commit:** `tools/stage-ferazel.sh + WHAT-TO-EXPECT (Phase 1 gate card)`.
 
 ---
@@ -684,25 +736,31 @@ confidence); minor = one leg doing both. "+N" = new `Test Case`s. Every task: G6
 Compare with the longplays and Ben's Let's Play link. Each line names the surface, its label, and where to look.
 1. **Colours of every tile and sprite** — LOW: every face is converted through the colour search (Color2Index model,
    design §6); e.g. under CLUT 202 the FG sheet has 62 of 239 colours where the two models disagree. If colours look
-   off, the exact and 5-bit models are a one-line switch.
+   off, the exact and 5-bit models are a one-line switch. (The original may even have matched colours through the
+   screen's colour table rather than the sheet's — another reason the model is switchable.)
 2. **Dithered 32-bit art** — LOW: barrel 2922, chair 2924, table 2927, Geroditus 2951, merchant 2952, book pile 2842,
    sign 2902, moss 2713, Walker 1700, Roach 1720, the HUD piece 133 are 32-bit PICTs the original dithered into 8 bits;
    the replica's dither is Floyd–Steinberg. Look for dot patterns on those sprites.
 3. **Grass/edge blending** (FG blend faces through the pattern texture, 1,335 FG cells in level 1) — the pair tables
    are where the two colour models disagree most (35 % of entries).
 4. **Water** — kind 0 water in level 1 spans x 128..6208, y 608..1600; **acid** (kind 1) 24 cells at x 6016..6272,
-   y 544..640: tint colours LOW; the FG-water mask stamping MED.
+   y 544..640. Wrong would look like: the water or acid the wrong colour, or the ground at the water's edge cut off
+   with a hard square edge / the far background showing through where solid ground should be (colour LOW, edges MED).
 5. **Darkness per cell** (light bytes 1..12 everywhere in level 1) — MED for tiles (R2's reading).
-6. **Parallax** — PxBack 207 at 74/256 of the vertical scroll; the band at virtual rows 276..412 moves at ¼ speed
-   horizontally instead of ½ — look at the backdrop while panning down/up.
+6. **Parallax** — the far background scrolls slower than the level, and one horizontal band of it moves even slower
+   sideways than the rest (as the original does). Wrong would look like: the background hills jumping, tearing or
+   repeating a strip while you scroll, or the background showing through things it shouldn't.
 7. **Status bar** — text font/size/colour (MED, R6's reading); bars full (70 px).
-8. **Camera** — the level opens already on Ferazel (no pan-in) — MED. Panning with the keys is a Phase-1 stub.
+8. **Camera** — the level opens already on Ferazel (no pan-in) — MED; his exact height in the view is a reading
+   (MED). Arrows or keypad scroll; this is Phase 1 only (Phase 2 brings the original keys and real movement).
 9. **Ferazel** — stands at the start, breathes, turns, walks/runs in place on left/right (stub; Phase 2 makes him move).
 10. **Placed sprites** — every sprite in its Setup face; any listed as "first face only" in WHAT-TO-EXPECT is deferred.
-11. **Conversion CLUT of FG/pattern tiles** (MED: level+base assumed, the bank does not say).
+11. **Ground and wall tile colours** (MED: which palette the original used for them is assumed). Wrong would look
+    like: the ground tiles' colours off or banded compared with the longplays, while the background looks right.
 12. **Music** — track 1 loops.
 13. **Icon** — previews of the original 32×32 icon scaled to a modern icon; pick one.
-Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no sounds, window scaled ×2/×3.
+Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no sounds, window scaled ×2/×3; Caps Lock
+(pause) and Esc (abort dialog) do nothing until Phase 3 — ⌘Q quits.
 
 ---
 
@@ -710,7 +768,7 @@ Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no s
 
 | wave | HectorKit (`$HKWT`) | Classics lane A | Classics lane B | review legs (Fable) |
 |---|---|---|---|---|
-| 0.1 | K1 (push, pull --ff-only) | C0 → C1 | — | K1 (minor); C0+C1 (minor, one leg) |
+| 0.1 | K1 ⚑ (push, pull --ff-only) | C0 → C1 | — | K1 two; C0+C1 (minor, one leg) |
 | 0.2 | — | C2 ⚑ | C3 → C4 ⚑ | C2 two legs; C3 one; C4 two |
 | 0.3 | — | C5 ⚑ (needs K1 + C4) → C6 | — | C5 two; C6 one |
 | 1.1 | — | R1 ⚑ | — | two |
@@ -737,13 +795,15 @@ Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no s
    HectorShell, staged to ~/Desktop (A1, A2) ✅; seam types LOCKED (R1) ✅; Windows-twin portability (Invariant 1) ✅.
 2. **Placeholder scan.** Self-derived numbers are named as such (FNV goldens, dither pixel counts, blend weight counts,
    idle window count, light-table census) and each is recorded by its first green run, reviewed by a second leg.
-   No "TBD". The three dump readings (R1, R2, R6) are preconditions with a written output, not guesses.
+   No "TBD". The dump readings (R1 ×2, R2, R5, R6) are preconditions with a written output, not guesses.
 3. **Type-name consistency.** `FrameOps/DrawOp/SpriteDraw/FaceRef/SoundCue/MusicCue/ShellRequest/StatusBarState`
    (S3) are created in R1 and only used after; `ColorSearch.Model` cases `.exactNearest/.ruled/.inverseTable(bits:)`
-   are the same in C4, C5, R1, A1; `DitherModel` `.none/.errorDiffusion` in C5 and A1; `ResourceChain.frontEnd/.level`
-   in C1 and R5; `TableRequests` (Core) → `LevelTables` (Render).
-4. **Ladder arithmetic** re-added from the named tests: C1 6, C2 8+4+3, C3 4+3, C4 7+8, C5 12, C6 4, R1 1+8, R2 5,
-   R3 7, R4 5+2, R5 6, R6 6 → 6, 21, 28, 43, 55, 59, 68, 73, 80, 87, 93, 99 ✅. K1 8+4 = 12 → 301 ✅.
+   are the same in C4, C5, R1, A1; the new test `testOneBitBitMapsBypassColorSearch` names no new type; `DitherModel` `.none/.errorDiffusion` in C5 and A1; `ResourceChain.frontEnd/.level`
+   in C1 and R5; `TableRequests` (Core) → `LevelTables` (Render). Every ruling reference is D26; "D25" appears only as the taken number (Landmine e).
+4. **Ladder arithmetic** re-added from the named tests (after the review fixes): C1 6, C2 8+4+3, C3 4+3, C4 7+8,
+   C5 13 (+ `testOneBitBitMapsBypassColorSearch`), C6 4, R1 1+8, R2 5, R3 7, R4 5+2, R5 6, R6 6 → 6, 21, 28, 43, 56,
+   60, 69, 74, 81, 88, 94, 100 ✅ (the 13-record idle window changes a number inside a test, not the count). K1 8+4 =
+   12 → 301 ✅. Placed types in level 1: 42 everywhere (R2, R4, Research note 15) ✅.
 5. **Census-line arithmetic.** 427 + 11 + 1 + 326 = 765, + 5 = 770 ✅; 6 + 57 + 16 = 79 ✅; 211,731 × 16 = 3,387,696 ✅;
    items 1,108 ✅; class totals sum 5,641 ✅.
 6. **The brief's suggested split, adjusted with evidence:** ColorSearch moved before faces (C4 before C5) because p05/p10
@@ -753,20 +813,22 @@ Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no s
 7. **Things the brief named that Phase 1 does not need:** PxMid draws (level 1 has none — built and tested on level 10
    data anyway, R3); `.AnimateCLUT`, flame, OmniPx (level 1 off) — not built; `Mcnv` interpreter (Phase 3).
 8. **Risk carried from design §11:** line numbers (dumps regenerated or copied, raw addresses preferred) ✅; decompiler
-   traps (INDEX reviewer notes) quoted to R-task implementers ✅; PICT 257 (C5) ✅; ring split (R3) ✅; AIFFAudio on main
+   traps (INDEX reviewer notes) quoted in "Hazards for every R implementer", pointed at by R1–R6 ✅; PICT 257 (C5) ✅; ring split (R3) ✅; AIFFAudio on main
    ✅; D-number collision (Landmine e) ✅.
 
 ---
 
 ## Open questions for Ben (real forks only)
 
-| Q | question | default in force | blocks |
-|---|---|---|---|
-| Q1 | The original's movement keys are the **numeric keypad** (4/6/8/5; Shift run; Option jump; ⌘ use; keypad 7/9 items — engine §7.1). The Options dialog that rebinds them arrives in Phase 3. If your Mac has no keypad, may the Phase 1 build also accept the arrow keys until then (removed when Options lands)? | keypad only (100 % rule) | nothing — A1 ships the default; a yes is a two-line change |
+None. (Q1, arrow keys, was ruled by the seat in the review fix pass: the Phase 1 stub takes arrows and keypad; the
+game proper ships the original defaults — A1.)
 
 ---
 
 ## Bank corrections to append (each as a ⚑ planner-probe note in the named file; no file is edited by this plan)
+
+R1 (mask-port fill and stamp values) and R5 (focus base) add their ⚑ dump readings at the end of this list, with raw
+addresses, before writing the tests that pin them.
 
 1. **sprites-backgrounds §1–§2 (conversion path) and design §6's "sprite source pixels copy through exactly":** the
    sheets are not authored in the conversion CLUT. Indexed PICTs carry their own colour tables (walk sheet 1020: 51
@@ -868,7 +930,7 @@ Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no s
 14. **Constants (p13, `tools/const.py` with `FZ_PEF=$FW/Ferazel's Wand`):** 0x100a1728 1.5, 16a8 2.5, 16b0 0.75, 16a0 1.7,
     1698 1.2, 1708 0.15, 1700 0.85, 16f8 0.7, 16f0 0.25, 16e8 29998.08, 16e0 24760.32, 16d8 10475.52 — all **f64**;
     1670 1.0f, 1674 10.0f, 1678 0.0625f — **f32** (ambient darken).
-15. **Level-1 placed types (p02) → bank section for the Setup face (coverage §3):** Background 1090 ×3 (cannon,
+15. **Level-1 placed types (p02; 42 distinct) → bank section for the Setup face (coverage §3):** Background 1090 ×3 (cannon,
     triggers-background §2.2), 1485 ×2 (bars/spiked balls §2.5, "now"), 2710/2713/2714 ×2/3/4 (plants §2.9), 3002 ×1
     (wall tunnel §2.12), 3249 ×1 (level exit, §2.x / world-data §3.4); Bonus 1055 ×43, 1059 ×10, 1292, 1303 ×3, 1307
     ×22, 1335 (now), 3204 (pickups-boxes §1.3–§1.11); Box 1062 ×3, 1065 ×2 (save point, save-continue §2/§9.1), 1308 ×5,
@@ -878,9 +940,37 @@ Deviations Ben will see by design: no chapter-1 screen, no menus/front end, no s
     §2.2); Walker 1700 ×2, 1705 ×4, 1760 (enemies-ground §3.1); Crawler 1712 ×3 (§4); Roach 1720 ×5 (§5). PICTs named
     by type exist for most (p03 list in `out03`); 1401..1403 and 3249 have no same-numbered PICT.
 16. **Level-1 start view (p17):** sprite top-left (83, 143); focus (133, 202); target (−176 after the snap, 10) → scroll
-    (0, 10); cell window cols 0..19, rows 0..13; 8 placed records inside the margin-free window.
+    (0, 10); cell window cols 0..19, rows 0..13; 8 placed records inside the margin-free window **without** the
+    mandatory 96-px outset, **13 with it** (Fable review; triggers-background-2 §8.3). The focus base is a reading (R5):
+    header-based gives focus (165, 234) → scroll (0, 42) [MED].
 17. **Probe index:** p01 census · p02 Mlvl · p03 PICT sizes/paths · p04 PICT tables vs CLUTs · p05 used indices ·
     p06 CLUTs · p07 snd · p08 AIFC · p09 Color2Index (A/B/C) · p10 face exposure · p11 transparency · p12 world ·
     p13 constants · p14 per-CLUT disagreement · p15 opcode census · p16 v1 BitMaps · p17 L1 start view · p18 water extent
     · p19 L1 factor tables · p20 SHA-256 / sizes · p20b app icon resources · p21 all-level placements. Libraries:
     `fwlib.py`, `pictlib.py`, `colorsearch.py`, `tables.py`, `gensprite_map.py` (bank copy).
+
+---
+
+## Review ledger
+
+**2026-10-06 — Fable review, verdict ACCEPT_WITH_FIXES (3 Important / 12 Minor); fix pass applied the orchestrator's
+rulings.** One line per finding, where it landed:
+1. Level 1 has 42 placed types, not 41 → R2 contract, R4 contract + `testSetupFacesLevel1Types`, Research note 15.
+2. 1-bit BitMaps bypass `ColorSearch` (0xff / 0x00 fixed) → C5 contract + `testOneBitBitMapsBypassColorSearch`; ladder
+   +1 from C5 on (C5 56 … R6 100), self-audit 4.
+3. Mask-port fill/stamp values unknown → R1 precondition (b) + ⚑ note in "Bank corrections" before
+   `testMaskPortTransparencyRule`; R1 Files.
+4. 74 → 73 distinct BG tiles → C2 `testLevel1Maps`.
+5. Ambient values are high bytes; 16-bit 0xf198/0xb7ff/0x6fff/0x27ff → C4 `testAmbientDarkenFloat32`.
+6. Census may import ImageIO for `--render` → G7 excludes `Sources/ferazel-census`; Invariant 1 names the exception.
+7. Activation window includes the 96-px outset → 13 records → R4 `testIdleWindowAtStartLevel1`, Research note 16.
+8. "Reduce frame rate" arm (skip on even iterations, pair capped at 4 ticks) → A1 clock contract.
+9. Caps Lock / Esc not in Phase 1; Esc does nothing, ⌘Q quits → A1 contract, gate card deviations, Scope.
+10. Decompiler traps quoted → "Hazards for every R implementer" block before R1; R1–R6 point at it; self-audit 8.
+11. K1 ⚑ MAJOR (two legs) → K1 heading, execution table; R2/R6 reviewer must re-read the dump readings.
+12. Gate card items 4, 6, 11 in plain English (what Ben would see if wrong) → gate card.
+13. `--render` is the seat's addition → Scope, C6; PICT 257 reads 0 as a seat ruling with the alternative → C0 D26.
+14. Focus base is a MED reading; (0, 10) vs (0, 42) → R5 precondition, contract, `testCameraStartScroll`; R6 golden;
+    gate card 8; Research note 16.
+15. `DrawPicture` may match through the GDevice inverse table → C5 contract hazard; gate card item 1.
+Also: every D25 → D26 (Landmine e, C0); Q1 ruled and removed from Open questions (A1, gate card 8); status line.
