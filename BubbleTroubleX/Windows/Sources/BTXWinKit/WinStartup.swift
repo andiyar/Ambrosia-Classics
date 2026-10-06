@@ -5,19 +5,33 @@ import Foundation
 /// failure to start must be said in a message box (the executable shows `message` through HectorSDL) and written to
 /// `BubbleTroubleX.log` (`WinLog`) — the tester can send that file back.
 public enum WinStartup {
-    /// What the game needs in `Data/` (D10, D16.1): the five original `.rsrc` files, the baked fonts, and — off Apple,
-    /// where there is no QuickTime-JPEG decoder — the pre-decoded level backgrounds.
+    /// The baked font faces the game draws with (`btx-bake-font`'s list): menus and dialogs in System 12 / System
+    /// Bold 12, the About panel in Geneva 9 and 10.
+    public static let requiredFonts = ["Geneva-9", "Geneva-10", "System-12", "System-Bold-12"].map { "\($0).btxfont" }
+
+    /// What the game needs in `Data/` (D10, D16.1): the five original `.rsrc` files, every baked font face
+    /// (`requiredFonts`), and — off Apple, where there is no QuickTime-JPEG decoder — every pre-decoded band
+    /// `btx-predecode` wrote, as its `Decoded/manifest.txt` lists them (`BTXPredecode.manifestName`). Names are
+    /// relative to `dataDirectory`, Windows-style; more than four missing bands are summed up in one entry.
     public static func missingData(in dataDirectory: URL, needsDecoded: Bool = !canDecodeJPEG) -> [String] {
         let fm = FileManager.default
-        var missing = BTXGameData.allFileNames.filter {
-            !fm.fileExists(atPath: dataDirectory.appendingPathComponent($0).path)
+        func exists(_ parts: String...) -> Bool {
+            fm.fileExists(atPath: parts.reduce(dataDirectory) { $0.appendingPathComponent($1) }.path)
         }
-        func hasFiles(_ name: String, suffix: String) -> Bool {
-            let dir = dataDirectory.appendingPathComponent(name, isDirectory: true)
-            return ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).contains { $0.hasSuffix(suffix) }
+        var missing = BTXGameData.allFileNames.filter { !exists($0) }
+        missing += requiredFonts.filter { !exists("Fonts", $0) }.map { "Fonts\\\($0)" }
+        if needsDecoded {
+            let manifest = dataDirectory.appendingPathComponent("Decoded", isDirectory: true)
+                .appendingPathComponent(BTXPredecode.manifestName)
+            let keys = ((try? String(contentsOf: manifest, encoding: .utf8)) ?? "")
+                .split(whereSeparator: \.isNewline).map(String.init).filter { !$0.isEmpty }
+            if keys.isEmpty {
+                missing.append("Decoded\\\(BTXPredecode.manifestName)")
+            } else {
+                let absent = keys.filter { !exists("Decoded", "\($0).rgba") }.map { "Decoded\\\($0).rgba" }
+                missing += absent.count > 4 ? ["Decoded\\*.rgba (\(absent.count) of \(keys.count))"] : absent
+            }
         }
-        if !hasFiles("Fonts", suffix: ".btxfont") { missing.append("Fonts\\*.btxfont") }
-        if needsDecoded && !hasFiles("Decoded", suffix: ".rgba") { missing.append("Decoded\\*.rgba") }
         return missing
     }
 
@@ -91,16 +105,16 @@ public final class WinLog: @unchecked Sendable {
 
     /// One line, stamped with the local time (CRLF on Windows, so Notepad shows the lines).
     public func write(_ line: String) {
-        let stamp = Self.stamp(Date())
         #if os(Windows)
         let eol = "\r\n"
         #else
         let eol = "\n"
         #endif
-        let data = Data("\(stamp) \(line)\(eol)".utf8)
+        let now = Date()
         lock.lock()
         defer { lock.unlock() }
         guard let handle else { return }
+        let data = Data("\(Self.stamp(now)) \(line)\(eol)".utf8)
         do {
             try handle.write(contentsOf: data)
         } catch {
@@ -108,10 +122,13 @@ public final class WinLog: @unchecked Sendable {
         }
     }
 
-    static func stamp(_ date: Date) -> String {
+    /// Made once; used only under `lock` (by `write`) or from a test.
+    nonisolated(unsafe) private static let formatter: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
         f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        return f.string(from: date)
-    }
+        return f
+    }()
+
+    static func stamp(_ date: Date) -> String { formatter.string(from: date) }
 }

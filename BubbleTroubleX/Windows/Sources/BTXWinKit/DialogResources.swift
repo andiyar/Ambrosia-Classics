@@ -170,9 +170,10 @@ public enum DialogResources {
         return out
     }
 
-    /// MacRoman text with the Mac line break (CR) as a newline.
+    /// MacRoman text with the Mac line break (CR) as a newline. (`replacingEvery`, not Foundation's
+    /// `replacingOccurrences`, which traps on Windows for non-ASCII text — W7 review.)
     public static func macRoman(_ bytes: [UInt8]) -> String {
-        MacRoman.decode(bytes).replacingOccurrences(of: "\r", with: "\n")
+        MacRoman.decode(bytes).replacingEvery("\r", with: "\n")
     }
 
     /// The text as the original's C/Pascal buffers hold it: its MacRoman byte count (`strlen`).

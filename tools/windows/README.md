@@ -18,9 +18,9 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 | `build.sh <pkg> <product\|all> [--tests] [--release] [--sdl] [-- args]` | SwiftPM cross-build; test bundles are copied to `…PackageTests.exe`. `--sdl` writes a Windows `sdl3.pc` for the SDL3 VC zip. The Mac's pkg-config/brew search paths are always hidden (shims on `PATH`), so an SDL package built without `--sdl` fails loudly (`'SDL3/SDL.h' file not found`) rather than reaching brew's Mac SDL. `WIN_SWIFT_FLAGS` is appended to **every** build that inherits it (proof-b unsets it); prefer `-- …` for one build |
 | `run-in-crossover.sh [--clean] <exe> [args]` | `--clean` (W7): bottle `hector-win-clean` (or `$HECTOR_BOTTLE`), nothing on `WINEPATH` — a staged build must find every DLL beside its exe. Otherwise: runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through **truncated to 8 bits** (see below), watchdog `WIN_RUN_TIMEOUT` (default 900 s). **Refuses to run (exit 64) unless `HECTOR_SDL_AUDIO_DRIVER` is set** — see "SDL drivers under CrossOver" |
 | `proof-b.sh` | Copies `BubbleTrouble/Core` (laid out like the repo; its sources unmodified, but the copy's test-only `PNGWriter.swift` is patched — see the end of this file) + a symlinked HectorKit, cross-builds the tests, runs each test class in CrossOver, tallies verdicts; exits 1 if `--list-tests` finds no tests |
-| `stage-btx.sh [--package DIR] [--resources DIR] [--out DIR] [--no-desktop] [--no-icon]` | W7: the shippable Windows folder — see "Staging for a tester (W7)" |
+| `stage-btx.sh [--package DIR] [--resources DIR] [--out DIR] [--no-desktop] [--no-icon] [--allow-dirty]` | W7: the shippable Windows folder — see "Staging for a tester (W7)" |
 | `hello/` | Proof A package |
-| `btx-predecode` (`BubbleTroubleX/Windows`, Mac-only) | Decodes BTX's QuickTime-JPEG PICT bands with ImageIO into `<key>.rgba` files (D16.1); `proof-b.sh` runs it first into `$WIN_CROSS/work/proof-b/decoded` |
+| `btx-predecode` (`BubbleTroubleX/Windows`, Mac-only) | Decodes BTX's QuickTime-JPEG PICT bands with ImageIO into `<key>.rgba` files (D16.1) + `manifest.txt` (every key, one per line — the shipped build's start-up check); `proof-b.sh` runs it first into `$WIN_CROSS/work/proof-b/decoded` |
 | `HECTORKIT_DECODED_DIR` (env) | Off Apple, the core's data-gated render/census tests register this directory of `.rgba` files once (`CodecImage.registerPrecomputed`); unset there → XCTSkip. Ignored on the Mac |
 
 ## Pinned versions (2026-10-06)
@@ -158,33 +158,53 @@ SDL build's.
 ## Staging for a tester (W7)
 
 `tools/windows/stage-btx.sh` → `out/Windows/Bubble Trouble X/` (git-ignored), copied to `~/Desktop/Bubble Trouble X
-(Windows)/` + `~/Desktop/Bubble Trouble X (Windows).zip` (the zip holds the folder; `zip -X`, no `__MACOSX`). No
-installer, no signing, nothing uploaded.
+(Windows)/` + `~/Desktop/Bubble Trouble X (Windows).zip`. The game files sit at the **zip root** (`zip -X`, no
+`__MACOSX`): Windows' "Extract All" names its folder after the zip, so unzipping gives exactly one `Bubble Trouble X
+(Windows)\` level. No installer, no signing, nothing uploaded. Only those two Desktop items are replaced.
+
+- **Committed content only:** the script refuses (exit 65) when the repo or the HectorKit checkout the package builds
+  against has uncommitted or untracked changes; the stamp in the version info is `<classics sha>, HectorKit <sha>`.
+  `--allow-dirty` stages anyway and stamps `<sha>-dirty`.
+- **`--out` is deleted first,** so it must lie inside `<repo>/out/` or be a folder named `Bubble Trouble X` (never
+  `/`, `$HOME`, the Desktop, the repo, …).
 
 - **Exe:** release cross-build, linked `/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup` (the CRT's console entry calls
   Swift's `main`; only the PE subsystem changes — the script checks it is 2, Windows GUI), renamed `Bubble Trouble
-  X.exe`. Icon (the 2008 `BubbleTrouble.icns` → 16/32/48/256 `.ico`) + version info via mingw's `windres` (brew
-  `mingw-w64`; skipped with a warning if absent) linked as a `.res`.
+  X.exe`. Resources via mingw's `windres` (brew `mingw-w64`, required) linked as a `.res`: the **application
+  manifest** (always: Per-Monitor-V2 DPI awareness + `dpiAware true/pm`, Windows 10/11 `supportedOS`, `asInvoker`),
+  the icon (the 2008 `BubbleTrouble.icns` → 16/32/48/256 `.ico`) and version info (both skipped with `--no-icon`).
+  SDL3 itself asks for Per-Monitor-V2 at video init (`SetProcessDpiAwarenessContext`), so the manifest only makes it
+  hold from process start: window sizes (pixels on Windows) and the integer fit are unchanged.
 - **DLLs:** the PE import tables (`llvm-objdump -p`) walked recursively from the exe, each import resolved from
   `$WIN_RUNTIME` (Swift runtime + Microsoft's redistributable `vcruntime140*`/`msvcp140*`, D15) or SDL3; API sets
   (`api-ms-win-*`) and Windows' own DLLs (kernel32, user32, ucrtbase — part of Windows 10+, …) are listed and not
-  shipped; any other unresolved import stops the staging. 2026-10-06: 19 shipped (`_FoundationICU`, BlocksRuntime,
+  shipped — checked before the search, so a copy of one in a search dir is never shipped; any other unresolved import
+  stops the staging. 2026-10-06: 19 shipped (`_FoundationICU`, BlocksRuntime,
   dispatch, Foundation, FoundationEssentials, FoundationInternationalization, msvcp140, SDL3, swift_Concurrency,
   swift_RegexParser, swift_StringProcessing, swiftCore, swiftCRT, swiftDispatch, swiftObservation,
   swiftSynchronization, swiftWinSDK, vcruntime140, vcruntime140_1).
-- **Data/:** the five `.rsrc` files, `Fonts/*.btxfont`, `Decoded/*.rgba` regenerated by `btx-predecode` (D18.3).
+- **Data/:** the five `.rsrc` files, `Fonts/*.btxfont`, `Decoded/*.rgba` + `manifest.txt` regenerated by
+  `btx-predecode` (D18.3).
 - **`WHAT-TO-EXPECT.txt`:** `docs/bubble-trouble/WINDOWS-WHAT-TO-EXPECT.md`, markup stripped, UTF-8 BOM + CRLF.
+- **Start-up check** (`WinStartup.missingData`): the five `.rsrc` files, all four fonts the game draws with
+  (Geneva 9/10, System 12, System Bold 12) and every band `Decoded/manifest.txt` lists; the message names what is
+  missing.
 - **Start-up failures** are visible without a console: a message box (HectorSDL `SDLMessageBox`; never in `--frames`
   mode; `HECTOR_SDL_MESSAGEBOX_CAPTURE=<file>` writes it to a file instead) and `BubbleTroubleX.log` beside the prefs
   (`%APPDATA%\Ambrosia Classics\Bubble Trouble X\`, rewritten each launch: OS, paths, drivers, every report).
-- Until HectorKit's `w7-stage` (SDLMessageBox) is on HectorKit main, stage with `--package` pointing at a mirror whose
-  HectorKit resolves to that branch.
 
 W7 results (2026-10-06): folder 87 MB, zip 36 MB. Fresh bottle `hector-win-clean`, nothing on `WINEPATH`, the exe run
 from the unzipped zip: `--frames 600` = main menu, `--frames 900` + `620 press return` = level 1, both `cmp`-identical
 to the Mac SDL build's; missing data → the box text captured, exit 1; a plain launch (dummy drivers) opens the window
-and writes the log under the bottle's `%APPDATA%`. Finding: Foundation's `replacingOccurrences(of: "\n\n", …)` trapped
-(ud2 in Foundation.dll) in the game's process on Windows, not in a small probe; start-up code avoids it.
+and writes the log under the bottle's `%APPDATA%`.
+
+**Finding (W7 review): Foundation-on-Windows' `String.replacingOccurrences(of:with:)` traps** (`ud2` in Foundation.dll)
+on non-ASCII strings past a few dozen UTF-8 bytes — reproduced by a small probe in CrossOver (`"é\r\n\n^0 "` × k traps
+at k ≥ 4; the game's ALRT 132 "©" text, 194 UTF-8 bytes, is that shape). The same probe passes
+`components(separatedBy:)` (string and `CharacterSet`), `range(of:)` (forward and backwards), `contains`,
+`trimmingCharacters` and `hasPrefix` up to 300 repeats. BTXWinKit therefore never calls `replacingOccurrences`: its
+run-time replaces go through `String.replacingEvery` (`TextReplace.swift`, pure Swift, scalar matching like Foundation's
+UTF-16 search; tested against Foundation on the Mac). The core's only use is the Mac-only `btx-census` tool.
 
 ## Results (W0, 2026-10-06)
 

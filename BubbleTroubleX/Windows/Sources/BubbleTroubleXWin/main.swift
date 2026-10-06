@@ -114,8 +114,8 @@ startupLog?.write("prefs: \(prefsURL.map(WinStartup.displayPath) ?? "in memory")
 
 /// A failure to start: reported (stderr + log) and, unless headless, shown in a message box; exit 1.
 func startupFailure(_ message: String) -> Never {
-    // One line for stderr and the log. Not Foundation's replacingOccurrences: on Windows it traps on "\n\n" (W7,
-    // measured in CrossOver: ud2 inside Foundation.dll).
+    // One line for stderr and the log (pure Swift: Foundation's replacingOccurrences traps on Windows for non-ASCII
+    // text — W7, see TextReplace.swift).
     report(message.split(separator: "\n").joined(separator: " — "))
     if !headless { SDLMessageBox.show(.error, title: "Bubble Trouble X", message: message) }
     exit(1)

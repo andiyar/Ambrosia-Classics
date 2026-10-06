@@ -5,7 +5,8 @@ original game's own data. Thank you for trying it.
 
 ## Starting it
 1. Unzip "Bubble Trouble X (Windows).zip" anywhere (Desktop is fine). Right-click it, Extract All. Do not run the
-   game from inside the zip: it needs the whole folder.
+   game from inside the zip: it needs the whole folder. (If you double-click the .exe inside the zip, Windows itself
+   says it cannot find a .dll file or cannot find the program — that means: extract first.)
 2. Open the folder "Bubble Trouble X (Windows)" and double-click **Bubble Trouble X.exe**. Keep the "Data" folder and
    the .dll files next to it.
 3. Windows will probably say **"Windows protected your PC"** (this build is not signed, it is a private build).
@@ -16,7 +17,7 @@ purpose: the Mac-style menu bar is drawn at the top of the game window, and the 
 
 ## Window size
 The window opens at the biggest whole-number size that fits your screen. On a typical 1080p laptop that is the
-original size (640×480, small). **Ctrl+F** switches to full screen with a bigger, sharp picture; Ctrl+F again
+original size (640×500: the 640×480 game plus the menu bar — small). **Ctrl+F** switches to full screen with a bigger, sharp picture; Ctrl+F again
 goes back. The game remembers which you used.
 
 ## Keys

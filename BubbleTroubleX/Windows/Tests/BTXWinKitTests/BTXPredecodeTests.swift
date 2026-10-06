@@ -63,6 +63,10 @@ final class BTXPredecodeTests: XCTestCase {
         let files = try FileManager.default.contentsOfDirectory(atPath: out.path).filter { $0.hasSuffix(".rgba") }
         XCTAssertEqual(Set(files), Set(keys.map { "\($0).rgba" }))
         XCTAssertEqual(try CodecImage.registerPrecomputed(directory: out), keys.count)
+        // The manifest lists every key in stream order — what the shipped build's start-up check reads.
+        let manifest = try String(contentsOf: out.appendingPathComponent(BTXPredecode.manifestName), encoding: .utf8)
+        XCTAssertEqual(manifest, report.flatMap(\.keys).map { "\($0)\n" }.joined())
+        XCTAssertEqual(Set(manifest.split(separator: "\n").map(String.init)), keys)
 
         for payload in payloads {
             let decoded = try CodecImage.decode(payload)
@@ -90,6 +94,7 @@ final class BTXPredecodeTests: XCTestCase {
         XCTAssertEqual(first, second)
         XCTAssertFalse(first.contains("stale.rgba"))
         XCTAssertTrue(first.contains("keep.txt"))
+        XCTAssertTrue(first.contains(BTXPredecode.manifestName))
         XCTAssertEqual(first.filter { $0.hasSuffix(".rgba") }.count, 20)
     }
 }

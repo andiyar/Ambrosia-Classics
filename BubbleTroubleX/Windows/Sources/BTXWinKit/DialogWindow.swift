@@ -274,7 +274,7 @@ public final class DialogWindow {
 
     private func substituted(_ s: String) -> String {
         var out = s
-        for (i, p) in params.enumerated() { out = out.replacingOccurrences(of: "^\(i)", with: p) }
+        for (i, p) in params.enumerated() { out = out.replacingEvery("^\(i)", with: p) }
         return out
     }
 

@@ -75,9 +75,14 @@ public enum BTXPredecode {
         }
     }
 
+    /// The list of every key written (one per line, stream order, UTF-8), beside the `.rgba` files: what the shipped
+    /// build's start-up check (`WinStartup.missingData`) expects to find.
+    public static let manifestName = "manifest.txt"
+
     /// Decode every band of every `quickTimePictures` picture with `CodecImage.decode` and write it to
-    /// `outputDirectory` with `CodecImage.writePrecomputed` (created if missing). Idempotent: every existing `*.rgba`
-    /// in `outputDirectory` is removed first, so the directory holds exactly this data's results; other files are left.
+    /// `outputDirectory` with `CodecImage.writePrecomputed` (created if missing), then `manifestName` listing every key.
+    /// Idempotent: every existing `*.rgba` in `outputDirectory` is removed first, so the directory holds exactly this
+    /// data's results; other files are left (the manifest is rewritten).
     public static func run(resourcesDirectory: URL, outputDirectory: URL) throws -> [Written] {
         let pictures = try quickTimePictures(resourcesDirectory: resourcesDirectory)
         let fm = FileManager.default
@@ -85,7 +90,7 @@ public enum BTXPredecode {
         for name in try fm.contentsOfDirectory(atPath: outputDirectory.path) where name.hasSuffix(".rgba") {
             try fm.removeItem(at: outputDirectory.appendingPathComponent(name))
         }
-        return try pictures.map { picture in
+        let written = try pictures.map { picture in
             let keys = try picture.payloads.map { payload in
                 let key = CodecImage.precomputedKey(payload)
                 try CodecImage.writePrecomputed(CodecImage.decode(payload), key: key, to: outputDirectory)
@@ -93,5 +98,8 @@ public enum BTXPredecode {
             }
             return Written(file: picture.file, id: picture.id, keys: keys)
         }
+        let manifest = written.flatMap(\.keys).map { "\($0)\n" }.joined()
+        try Data(manifest.utf8).write(to: outputDirectory.appendingPathComponent(manifestName), options: .atomic)
+        return written
     }
 }
