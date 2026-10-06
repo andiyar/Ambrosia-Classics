@@ -7,6 +7,8 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "BubbleTroubleCore", targets: ["BubbleTroubleCore"]),
+        // Pixels and PCM (plan 2026-10-04-btx-playable Invariant 1): Foundation + the kit's decoder layer only.
+        .library(name: "BubbleTroubleRender", targets: ["BubbleTroubleRender"]),
         .executable(name: "btx-replay", targets: ["btx-replay"]),
         .executable(name: "btx-census", targets: ["btx-census"]),
     ],
@@ -14,6 +16,17 @@ let package = Package(
     targets: [
         .target(name: "BubbleTroubleCore",
                 dependencies: [.product(name: "HectorResources", package: "HectorKit")]),
+        .target(name: "BubbleTroubleRender", dependencies: [
+            "BubbleTroubleCore",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
+        .testTarget(name: "BubbleTroubleRenderTests", dependencies: [
+            "BubbleTroubleRender", "BubbleTroubleCore",
+            .product(name: "HectorGraphics", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
         .executableTarget(name: "btx-replay", dependencies: ["BubbleTroubleCore"]),
         .testTarget(name: "BubbleTroubleCoreTests",
                     dependencies: ["BubbleTroubleCore", .product(name: "HectorResources", package: "HectorKit")]),

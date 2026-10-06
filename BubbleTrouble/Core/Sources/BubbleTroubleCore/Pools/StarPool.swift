@@ -45,6 +45,10 @@ public struct StarPool: Sendable {
     public internal(set) var locationLookup: [Int16]
     /// `gStarsLocationIndex` (wraps at 21).
     public internal(set) var locationIndex: Int
+    /// `gOrbit_Table`: `SPIN 1` as i386 reads it — raw big-endian bytes taken as native shorts, so byte-swapped
+    /// (`_LoadOrbitData @ 000031a6`; data-formats §5). 60 (dv, dh) pairs; set when the star-burst cheat creates
+    /// orbit stars (motion 2), the only stars that read it.
+    public internal(set) var orbitTable: [Int16] = []
 
     public init() {
         slots = Array(repeating: Star(), count: Self.capacity)
@@ -136,8 +140,8 @@ public struct StarPool: Sendable {
 
     /// `_NewStarGroup(x, y, group) @ 000035b5`. Pref 0x35 off → return for every group but 0xf / 0x10.
     /// Each row is one `_NewStar(x + dx, y + dy, kind, delay, motion, −1)` in call order; the last row of each
-    /// group is the shared tail call at `LAB_00004af8`. Group 10 (orbit burst, pause cheat `SPIN 1`) is deferred
-    /// to the BTX play-loop plan; groups ≥ 0x11 do nothing.
+    /// group is the shared tail call at `LAB_00004af8`. Group 10 is the star-burst pause cheat's orbit ring (its only
+    /// caller, `_PauseGame`); groups ≥ 0x11 do nothing.
     public mutating func newGroup(x: Int16, y: Int16, group: Int, hero: HeroAnchor, frame: UInt16,
                                   prefs: CosmeticPrefs, rng: inout GameRandom) {
         if group != 0xf && group != 0x10 && !prefs.stars { return }
@@ -171,8 +175,10 @@ public struct StarPool: Sendable {
             case 8: star(left &+ 0x1e, top &+ 6 &+ jitter, 2, 0, 0)
             default: star(left &- 0x11, top &+ 6 &+ jitter, 2, 0, 0)
             }
-        case 10:
-            preconditionFailure("_NewStarGroup group 10 (orbit burst, pause cheat SPIN 1) is deferred to the BTX play-loop plan")
+        case 10:    // star-burst cheat: six orbit stars (motion 2) at (x+6, y+6), orbit indices 0, 10, …, 50
+            for index in stride(from: Int16(0), through: 0x32, by: 10) {
+                newStar(x: x &+ 6, y: y &+ 6, kind: 2, delay: 0, motion: 2, orbitIndex: index, frame: frame, rng: &rng)
+            }
         case 0xb, 0xc, 0xd:     // no callers (C3): kinds 4 / 5 / 6
             let kind = Int16(group - 7)
             at(-8, -8, kind, 0, 0xb); at(6, 6, kind, 3, 0xb); at(-16, 20, kind, 0, 0xb); at(6, 20, kind, 3, 0xb)
@@ -216,8 +222,14 @@ public struct StarPool: Sendable {
                 continue
             }
             switch slots[i].motion {
-            case 2:
-                preconditionFailure("_ProcessStars motion 2 (orbit, gOrbit_Table) is deferred to the BTX play-loop plan")
+            case 2:     // orbit: rect = origin + gOrbit_Table[index] (dv, dh), 26×26; index += 2, past 59 → 2
+                let k = Int(slots[i].orbitIndex) * 2
+                let (dv, dh) = k + 1 < orbitTable.count ? (orbitTable[k], orbitTable[k + 1]) : (0, 0)
+                let o = slots[i].orbitOrigin
+                slots[i].rect = QDRect(top: dv &+ o.top, left: dh &+ o.left,
+                                       bottom: dv &+ o.top &+ 0x1a, right: dh &+ o.left &+ 0x1a)
+                let next = slots[i].orbitIndex &+ 2
+                slots[i].orbitIndex = 0x3b < next ? 2 : next
             case 3: slots[i].rect.offset(dx: 0, dy: -4)
             case 4: slots[i].rect.offset(dx: 3, dy: -3)
             case 5: slots[i].rect.offset(dx: 4, dy: 0)
@@ -259,7 +271,7 @@ public struct StarPool: Sendable {
         }
     }
 
-    /// The freeing half of `_DrawStarsToComp @ 00004de0` (drawing itself is the shell's): skipped when
+    /// The freeing half of `_DrawStarsToComp @ 00004de0` (its plots are recorded by `GameState.runDrawPass`, C3): skipped when
     /// `gNumActiveStars == 0`; per active slot 0…59, a live star copies rect → prevRect, a dead one is freed and
     /// `gNumActiveStars -= 1`.
     public mutating func drawPassFree() {

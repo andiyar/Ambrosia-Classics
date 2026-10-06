@@ -141,10 +141,29 @@ public struct GameState: Sendable {
     public internal(set) var playing: Bool
     /// `_gLevelForEffect` — 50 (process start) until the first state-2 `_ProcessHero` latches `_Get13To22()`.
     public internal(set) var levelForEffect: Int
+    /// `gHero_Up/Down/Left/Right/PushKeyPressed` — written only by `_CheckHeroMovement`, persisting across frames
+    /// (`gHero_MoveKeyDown` = any direction held; computed in `Input.swift`).
+    public internal(set) var heroKeys: FilmSample
     /// Set by `_HeroCaught` during a frame; the frame step clears it at the top of each frame (Task 10 report).
     public internal(set) var heroCaughtThisFrame: Bool
     /// Every stop reason that fired (Invariant 14).
     public internal(set) var pendingStops: Set<StopReason>
+    /// `_gShowWhichNotice` / `_gLastNoticeShown` / `_gEraseNotice` (`Session/NoticeBoard.swift`, C4's transcription).
+    public internal(set) var notices: NoticeBoard
+
+    // MARK: Sound (`Sounds.swift`; plan 2026-10-04 btx-playable C2)
+
+    /// `_delayedSound` — the 5-entry delayed-sound queue of `_PlayMySnd @ 00026a7b` /
+    /// `_Sounds_CheckDelayedSounds @ 000268a1`; emptied only by `_Sounds_InitDelayedSounds` (`_NewLevel`).
+    var delayedSounds: [DelayedSound]
+    /// This frame's `ST_PlaySound` calls in order — cleared at the top of `stepFrame`, copied into `FrameReport.sounds`.
+    var soundsThisFrame: [SoundCue]
+
+    // MARK: Presentation (`DrawOps.swift`, `HUD.swift`; plan 2026-10-04 btx-playable C3) — draw-only, no RNG
+
+    /// The draw-side globals the frame's QuickDraw calls read and write (dirty list, HUD flags, reserve-hero
+    /// animation, "Erk!" rect) and this frame's recorded `DrawOp`s.
+    public internal(set) var presentation: Presentation
 
     /// An empty world: all slots free, zero tables, RNG seeded with `seed` through `config.rngStep`, frame 0.
     init(config: SessionConfig, mode: GameMode, seed: UInt32) {
@@ -205,8 +224,13 @@ public struct GameState: Sendable {
         firstAppearance = true
         playing = false
         levelForEffect = 50          // `__data` 0x34254 = 0x32
+        heroKeys = FilmSample(up: false, down: false, left: false, right: false, push: false)
         heroCaughtThisFrame = false
         pendingStops = []
+        delayedSounds = Array(repeating: DelayedSound(), count: Self.delayedSoundCapacity)
+        soundsThisFrame = []
+        presentation = Presentation()
+        notices = NoticeBoard()
     }
 
     /// What the cosmetic pools read from the hero record (`HeroAnchor`); `_Bubbles` writes `lastBubbleFrame` back.

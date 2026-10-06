@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-03 (night)
+# STATE — Ambrosia Classics — 2026-10-06 (BTX playable with sound; Ben playtesting; BTX for Windows staged)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -23,25 +23,54 @@
 - **Local-path dependency:** `Aki/Core` → `../../../HectorKit`; a worktree needs the untracked symlink
   `.claude/worktrees/HectorKit → ~/Developer/HectorKit` (Classics DECISIONS D1).
 
-- **Bubble Trouble X core lane (2026-10-03 night, Fable orchestrator, cap lifted by Ben):** plans LOCKED
-  (`docs/plans/2026-10-03-btx-core-and-film-harness.md` 18 tasks; `2026-10-03-hectorkit-btx-decoders.md`);
-  core Tasks 0–3b + T12 bank corrections merged (44 tests green at 48e29db); HectorKit main 5a33384 = BTX locator,
-  snd census, `CIcon`, `PixelPattern` (renamed from PixPat: SDK collision), docs D5, floor 160, **tag v0.2.0 pending**.
-  In flight on lane branches when the session hit its usage limit: core `btx-t4` (Task 4 level build), kit `btx-pict`
-  (Task 4a masked PICT), Classics `btx-census` (kit Task 7). Lane worktrees under `.claude/worktrees/btx-*` and
-  `~/Developer/HectorKit-btx*`. Honest bar: FILM oracle = replay to count exhaustion + golden freeze (bank derives no
-  end state); hero-balloon pop reads outside the enemy array (NR-6, level ≥ 6 only) carried as an open quirk.
+- **Aki Phase 1 DONE — Ben's verdict 2026-10-04: "yes it absolutely is Aki"** (splash + map gate passed). Plan
+  `docs/plans/2026-10-03-aki-phases-1-3.md` (contracts not code). P1.2–P1.13 all reviewed MERGEABLE (Opus
+  implementers, Opus/Fable reviews; fix round for P1.9/P1.10 at 5da2bf0); merged to main this session. AkiCore 31
+  tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
+  `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
+  5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
+- **Bubble Trouble X PLAYABLE WITH SOUND (2026-10-04/06, Opus 5.5 orchestrators, plan `docs/plans/2026-10-04-btx-playable.md`,
+  DECISIONS D12/D13/D14):** every plan task merged and Opus-reviewed (T0, C1–C8, R1, A1–A4), then 2026-10-06: K3
+  `ShellMixer` merged to HectorKit main d9fdfa4 (kit gate floor **222**, zero skips; C1 off-main-thread regression test
+  proven to trap pre-fix), A5 wires it in (4 effect voices + music, silent fallback without a device), A6 effects at the
+  Sound Tool's 0x80-unity law + `_StartMusic` carries on (sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md`: all
+  146 registered effect sites and music per level set match the original). Gates at Classics main (seat-run): core
+  **258 / 0 / 0**; BubbleTroubleX + Aki BUILD SUCCEEDED, 0 warnings in our code; FILM replay traces 1–4 = baseline.
+  Staged **~/Desktop/Bubble Trouble X.app** (Release, with sound) — Ben: "feels so close", speed right; he is playtesting
+  "for a while"; unsure about music per set / missing effects (audit says both right; effects were half as loud — fixed
+  in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
+
+- **Bubble Trouble X on Windows — PLAYABLE, STAGED FOR TESTING (2026-10-06, Opus 5.5 orchestrator; plan
+  `docs/plans/2026-10-06-btx-windows.md` W0–W7 all done; DECISIONS D15/D16/D18/D19/D21).** Cross-compiled on this Mac
+  (`tools/windows/`, cache `~/Developer/Toolchains/windows-cross`), Mac app untouched. `BubbleTroubleX/Windows`:
+  BTXWinKit (driver port, baked fonts, in-window Carbon dialogs, prefs file under `%APPDATA%\Ambrosia
+  Classics\Bubble Trouble X\`) + `BubbleTroubleXWin` on HectorKit `SDL/` (HectorSDL). Tests: Windows package 113/0/0;
+  BTX core 261/0/0 on the Mac and 260/0/0 in CrossOver; HectorSDL 38/0; kit floor 252. **Staged:**
+  `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (37 MB; `tools/windows/stage-btx.sh`; stamp 83febbe) — Ben sends it
+  to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. Never
+  verified: a real PC's display/DPI/SmartScreen. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
+  (CrossOver strips `SDL_*`).** **D21 (Ben): no menu bar — game-only 640×480 window (2× on 1080p), Ctrl shortcuts kept, About gone; on branch `worktree-btx-win-no-menubar`, restage owed.** Next: the brother's report → fixes; then Aki on Windows.
 
 ## Open, ordered
+- **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
-1. **Phase 1 — HectorShell + Aki static screens** (Trigger C in `docs/RESUME.md`): brainstorm → plan → build.
-   800x600 logical canvas, integer-crisp / fit-smooth scaling (design §4a), Metal vs CALayer decided by
-   measuring (§7); splash (`welcome.png`), map (`map.png` + lanterns), prefs dialog from the 1.2 nibs' strings.
-   First staged `.app` for Ben: gate "that is Aki's map screen".
-2. ~~RE-bank lane~~ done. **Chips issued 2026-10-03 evening (Ben's call, parallel sessions):** Bubble Trouble X build
-   (core + FILM replay oracle first, shell last); RE deepening ×3 — Deimos gameplay code, Ferazel open items, Cythera
-   script disassembly → rules. All Opus 5.5 subagents, wide fan-out authorised, Fable-grade review per wave.
-3. Phases 2–3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit (re-export shim): separate task.
+1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
+   as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
+   per frame (plan Q24 ⚑; ~22/60 s fade). Gates from main (seat-run): M1 **107 / 0**, M2 BUILD SUCCEEDED (0 our
+   warnings), M3 floor **167**. Staged build on **~/Desktop/Aki.app** (+ WHAT-TO-EXPECT.md) — Ben plays that copy; never
+   delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
+   **Aki on iPad + Remaster mode — both on main 2026-10-06** (Ben: iPad first, then Remaster). iPad (plan
+   `docs/plans/2026-10-04-aki-ipad.md`, rulings D7; AkiPad target, Aki/App split shared/Mac/iOS) merged 5e6755d; no formal
+   iPad gate is recorded in DECISIONS — Ben has been playing it on his iPad mini. **Remaster (D11, gate PASSED D17)** merged
+   on top. Toggle: Aki ▸ Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Art: regenerate
+   `Resources/Aki/hd-4x/` per worktree with `python3 tools/upscale-aki-art.py` (~2.5 min cold, Upscayl; then `--check`;
+   207 MB, git-ignored) — without it Remastered Art shows disabled. Gates from main (seat-run): AkiCore **123/0/0**; Aki,
+   AkiPad (sim), BubbleTroubleX BUILD SUCCEEDED, 0 our warnings; HectorKit floor **252**. Staged copies (~/Desktop/Aki.app,
+   Ben's mini) are the 2026-10-06 Remaster builds. **Next: Aki Phase 3** (editor, `.aki`).
+2. **Bubble Trouble X — Ben's play gate (sound is in):** Ben 2026-10-06 played 3 levels: sound + music right, Q1/Q3/Q4/Q5/Q8/Q12/Q16/Q18 + text all yes (D14 addendum); NR-10 waived ("who cares about demos?"). Still open: his longer playtest; Q2 cheat memories, Q9/Q13/Q15 if he notices anything. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
+3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
+4. **Windows port** (Ben 2026-10-06) — BTX staged for his brother (above); await his report.
+5. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
 ## Carried (not blockers)
 
@@ -51,4 +80,13 @@
   "rename prefixes only" rule; trim only with a ruling. Only data-gated tests cover `snd` format 1.
 - `quickTimeBands` returns a tuple, not a struct (API polish for v0.2). No dimension cap on codec images.
 - Ambrosia's 1996 installer format unreversed. HD-art packs late polish. Licence at the very end (EV D65).
+- **Aki, for Ben's HectorKit session:** (a) `ShellSoundBank.start` on a track at its end replays from 0; QuickTime left
+  `IsMovieDone` true for `_LoopMusic` — Phase-2 effect only (theme alternation window); (b) quitting from fullscreen:
+  `exitFullscreen()` re-shows the windowed window, so `windowDidBecomeMain` → `unpause` fires at quit — the original's
+  deferred step never ran; HectorShell needs an exit that only orders out (P1.12 review Minor 1); (c)
+  `ShellFullscreenWindow.canBecomeMain` true where the original allowed key only (no visible effect yet).
+- **Aki carried from Phase 1 reviews (not blockers):** Release Notes — Ben wants the replica's own notes at the very
+  end (with the licence); ASWAboutBox/ASWTextViewer-faithful windows after P3 (Q10); the Carbon dialog centres on the
+  MAIN display, not the game window's display (as the Carbon code did — Q6, multi-display);  one `fullscreen` accessor (ivar vs `shell.isFullscreen`); the Osaka-Mono guard's Menlo branch is only provable offline on this Mac
+  (the font is now installed system-wide); bundling Apple's font is for Ben's machine only (licence).
 - **Ferazel RE deepening (2026-10-03, CLOSED 2026-10-04):** 11 Opus readers + 2 gap readers wrote 17 new `docs/ferazel/` files (~6,400 lines: enemies ×3, bosses ×2, enemy-shots-and-damage, pickups-boxes, triggers-background ×2, spells-detail, save-continue, platforms-ropes-radial, player-states ×2, geysers, held-item-melee, coverage, physics-sprites); three Fable review legs all ACCEPT_WITH_FIXES (1a 0/4/6, 1b 1 Critical/3/9, 1c 0/4/11; `REVIEW-2026-10-03-deepening.md`); fix passes 1a/1b landed; consolidated fix pass landed (`FIXPASS-2026-10-03-deepening.md`; labels HIGH 727 / MED 228 / LOW 27); merged to main at 5b15177. Fable spot-review 1d of the fix-pass diff (2026-10-04): ACCEPT_WITH_FIXES, 0 Critical / 0 Important / 6 Minor, 66/66 markers + 76 raw addresses confirmed; fixes + the held-item-melee carries (rows 3, 4, 6–8) landed at 02f29cc. Worktree and branch `recursing-rhodes-932ac0` removed. Still open in the bank: INDEX NOT-RESOLVED items 15–29 (`+0xb8` draw modes, tint/remap colours, NewParticle args, Xichra cannons, OmniPx/PxMid, Mcnv item 3, lighting item 10, Titles item 12). Nothing needs Ben's play check. Handoff `docs/handoff-2026-10-03-ferazel-re.md`.

@@ -1,0 +1,519 @@
+{
+ "notes": [
+  "Aki 1.2.0 art region map for tools/upscale-aki-art.py (docs/DECISIONS.md D11 Remaster).",
+  "Rects are QuickDraw-style [left, top, right, bottom], right/bottom exclusive. Regions never overlap.",
+  "picture = 4x per region (edge-replicate padded) by its \"method\": \"remacri\" (default, AI) or \"lanczos\" (plain enlarge; tiles.png body rows, Ben's U4 ruling A1); mask = nearest 4x, bit-exact; pixels in no region = nearest 4x (unknown/unused sheet areas).",
+  "\"dedither\": true = that file's only treatment is de-dithered (Gaussian 0.7 before remacri; the backgrounds, Ben's U4 ruling).",
+  "misc.png y 87..117 at x 155..204 (pairsHundredsDigit(0), reachable only at >= 1000 open pairs) lies inside the time-bar stone-mask strip (3,78,428,117); it is not a digit region.",
+  "layer_buttons.png has zero regions: Phase-3 editor art, its cell grid is not read yet.",
+  "Coverage is enforced by Aki/Core/Tests/AkiCoreTests/ArtRegionsTests.swift against AkiGameArt / AkiMap.",
+  "Every other top-level key is a PNG file name of Resources/Aki/1.2.0.app/Contents/Resources."
+ ],
+ "arrow.png": {
+  "size": [132,144],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,85,33,113],"kind":"picture","note":"leftArrowSprite"},
+   {"rect":[33,85,66,113],"kind":"picture","note":"rightArrowSprite"},
+   {"rect":[0,113,33,141],"kind":"mask","note":"leftArrowMask"},
+   {"rect":[33,113,66,141],"kind":"mask","note":"rightArrowMask"}
+  ]
+ },
+ "background1.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background10.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background11.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background12.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background13.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background14.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background15.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background16.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background17.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background2.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background3.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background4.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background5.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background6.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background7.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background8.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "background9.png": {
+  "size": [800,600],
+  "dedither": true,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "buyaki.png": {
+  "size": [800,600],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "guide.png": {
+  "size": [440,503],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,440,503],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "layer_buttons.png": {
+  "size": [224,260],
+  "dedither": false,
+  "regions": []
+ },
+ "map.png": {
+  "size": [800,600],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,800,600],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "misc.png": {
+  "size": [467,468],
+  "dedither": false,
+  "regions": [
+   {"rect":[3,39,453,78],"kind":"picture","note":"time-bar stone strip: full stones (3,39,25k+3,78) k<=17 + cap (25k+3..25k+28)"},
+   {"rect":[3,78,428,117],"kind":"mask","note":"time-bar full-stone mask strip"},
+   {"rect":[3,117,28,156],"kind":"mask","note":"capCell c=0"},
+   {"rect":[28,117,53,156],"kind":"mask","note":"capCell c=1"},
+   {"rect":[53,117,78,156],"kind":"mask","note":"capCell c=2"},
+   {"rect":[78,117,103,156],"kind":"mask","note":"capCell c=3"},
+   {"rect":[103,117,128,156],"kind":"mask","note":"capCell c=4"},
+   {"rect":[128,117,153,156],"kind":"mask","note":"capCell c=5"},
+   {"rect":[3,156,28,195],"kind":"mask","note":"capCell c=6"},
+   {"rect":[28,156,53,195],"kind":"mask","note":"capCell c=7"},
+   {"rect":[53,156,78,195],"kind":"mask","note":"capCell c=8"},
+   {"rect":[78,156,103,195],"kind":"mask","note":"capCell c=9"},
+   {"rect":[103,156,128,195],"kind":"mask","note":"capCell c=10"},
+   {"rect":[128,156,153,195],"kind":"mask","note":"capCell c=11"},
+   {"rect":[3,195,28,234],"kind":"mask","note":"capCell c=12"},
+   {"rect":[28,195,53,234],"kind":"mask","note":"capCell c=13"},
+   {"rect":[53,195,78,234],"kind":"mask","note":"capCell c=14"},
+   {"rect":[78,195,103,234],"kind":"mask","note":"capCell c=15"},
+   {"rect":[103,195,128,234],"kind":"mask","note":"capCell c=16"},
+   {"rect":[128,195,153,234],"kind":"mask","note":"capCell c=17"},
+   {"rect":[3,234,28,273],"kind":"mask","note":"capCell c=18"},
+   {"rect":[28,234,53,273],"kind":"mask","note":"capCell c=19"},
+   {"rect":[53,234,78,273],"kind":"mask","note":"capCell c=20"},
+   {"rect":[78,234,103,273],"kind":"mask","note":"capCell c=21"},
+   {"rect":[103,234,128,273],"kind":"mask","note":"capCell c=22"},
+   {"rect":[128,234,153,273],"kind":"mask","note":"capCell c=23"},
+   {"rect":[155,117,179,147],"kind":"picture","note":"digit(1)/pairsHundredsDigit(1)"},
+   {"rect":[155,147,179,177],"kind":"picture","note":"digit(2)/pairsHundredsDigit(2)"},
+   {"rect":[155,177,179,207],"kind":"picture","note":"digit(3)/pairsHundredsDigit(3)"},
+   {"rect":[155,207,179,237],"kind":"picture","note":"digit(4)/pairsHundredsDigit(4)"},
+   {"rect":[155,237,179,267],"kind":"picture","note":"digit(5)/pairsHundredsDigit(5)"},
+   {"rect":[155,267,179,297],"kind":"picture","note":"digit(6)/pairsHundredsDigit(6)"},
+   {"rect":[155,297,179,327],"kind":"picture","note":"digit(7)/pairsHundredsDigit(7)"},
+   {"rect":[155,327,179,357],"kind":"picture","note":"digit(8)/pairsHundredsDigit(8)"},
+   {"rect":[155,357,179,387],"kind":"picture","note":"digit(9)/pairsHundredsDigit(9)"},
+   {"rect":[155,387,179,417],"kind":"picture","note":"digit(0)"},
+   {"rect":[180,117,204,147],"kind":"mask","note":"digit(1) mask"},
+   {"rect":[180,147,204,177],"kind":"mask","note":"digit(2) mask"},
+   {"rect":[180,177,204,207],"kind":"mask","note":"digit(3) mask"},
+   {"rect":[180,207,204,237],"kind":"mask","note":"digit(4) mask"},
+   {"rect":[180,237,204,267],"kind":"mask","note":"digit(5) mask"},
+   {"rect":[180,267,204,297],"kind":"mask","note":"digit(6) mask"},
+   {"rect":[180,297,204,327],"kind":"mask","note":"digit(7) mask"},
+   {"rect":[180,327,204,357],"kind":"mask","note":"digit(8) mask"},
+   {"rect":[180,357,204,387],"kind":"mask","note":"digit(9) mask"},
+   {"rect":[180,387,204,417],"kind":"mask","note":"digit(0) mask"},
+   {"rect":[155,417,179,447],"kind":"picture","note":"colon"},
+   {"rect":[180,417,204,447],"kind":"mask","note":"colonMask"},
+   {"rect":[296,241,379,264],"kind":"picture","note":"difficultyWord(0)"},
+   {"rect":[296,264,379,287],"kind":"picture","note":"difficultyWord(1)"},
+   {"rect":[296,287,379,310],"kind":"picture","note":"difficultyWord(2)"},
+   {"rect":[296,310,379,333],"kind":"picture","note":"difficultyWord(3)"},
+   {"rect":[379,241,462,264],"kind":"mask","note":"difficultyWordMask(0)"},
+   {"rect":[379,264,462,287],"kind":"mask","note":"difficultyWordMask(1)"},
+   {"rect":[379,287,462,310],"kind":"mask","note":"difficultyWordMask(2)"},
+   {"rect":[379,310,462,333],"kind":"mask","note":"difficultyWordMask(3)"},
+   {"rect":[205,411,230,436],"kind":"picture","note":"buttonSprite(3) hint"},
+   {"rect":[230,411,255,436],"kind":"picture","note":"buttonSprite(4) reshuffle"},
+   {"rect":[255,411,280,436],"kind":"picture","note":"buttonSprite(5) pause"},
+   {"rect":[280,411,305,436],"kind":"picture","note":"pressedSprite(3)"},
+   {"rect":[305,411,330,436],"kind":"picture","note":"pressedSprite(4)"},
+   {"rect":[330,411,355,436],"kind":"picture","note":"pressedSprite(5) / pausedSprite"},
+   {"rect":[355,411,380,436],"kind":"mask","note":"buttonMask"},
+   {"rect":[233,149,258,174],"kind":"picture","note":"flash glow"},
+   {"rect":[233,174,258,199],"kind":"mask","note":"flash glowMask(1)"},
+   {"rect":[233,199,258,224],"kind":"mask","note":"flash glowMask(2)"},
+   {"rect":[233,224,258,249],"kind":"mask","note":"flash glowMask(3)"},
+   {"rect":[233,249,258,274],"kind":"mask","note":"flash glowMask(4)"},
+   {"rect":[233,274,258,299],"kind":"mask","note":"flash glowMask(5)"},
+   {"rect":[233,299,258,324],"kind":"mask","note":"flash glowMask(6)"},
+   {"rect":[205,336,280,409],"kind":"picture","note":"lanternSprite (lit lantern)"},
+   {"rect":[280,336,355,409],"kind":"mask","note":"lanternStaticMask / blinkMasks[0]"},
+   {"rect":[355,336,430,409],"kind":"mask","note":"blinkMasks[1]"},
+   {"rect":[281,149,356,222],"kind":"mask","note":"blinkMasks[2]"},
+   {"rect":[356,149,431,222],"kind":"mask","note":"blinkMasks[3]"}
+  ]
+ },
+ "nopairs.png": {
+  "size": [416,480],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,208,480],"kind":"picture","note":"overlaySource"},
+   {"rect":[208,0,416,480],"kind":"mask","note":"overlaySourceMask"}
+  ]
+ },
+ "notavail.png": {
+  "size": [240,150],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,240,50],"kind":"picture","note":"demo-unavailable strip (unused by the replica, art)"},
+   {"rect":[0,50,240,100],"kind":"mask","note":"lockedOverlayMask"},
+   {"rect":[0,100,240,150],"kind":"picture","note":"lockedOverlay"}
+  ]
+ },
+ "paper.png": {
+  "size": [420,338],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,420,338],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "pause.png": {
+  "size": [416,480],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,208,480],"kind":"picture","note":"overlaySource"},
+   {"rect":[208,0,416,480],"kind":"mask","note":"overlaySourceMask"}
+  ]
+ },
+ "plate.png": {
+  "size": [2358,68],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,786,68],"kind":"picture","note":"plateSource (and every plate restore source)"},
+   {"rect":[786,0,1572,68],"kind":"mask","note":"plateMask"}
+  ]
+ },
+ "preview1.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview10.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview11.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview12.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview13.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview14.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview15.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview16.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview17.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview2.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview3.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview4.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview5.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview6.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview7.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview8.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "preview9.png": {
+  "size": [237,181],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,237,181],"kind":"picture","note":"whole-file picture"}
+  ]
+ },
+ "previews.png": {
+  "size": [237,2172],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,236,180],"kind":"picture","note":"previewStrip(0)"},
+   {"rect":[0,181,236,361],"kind":"picture","note":"previewStrip(1)"},
+   {"rect":[0,362,236,542],"kind":"picture","note":"previewStrip(2)"},
+   {"rect":[0,543,236,723],"kind":"picture","note":"previewStrip(3)"},
+   {"rect":[0,724,236,904],"kind":"picture","note":"previewStrip(4)"},
+   {"rect":[0,905,236,1085],"kind":"picture","note":"previewStrip(5)"},
+   {"rect":[0,1086,236,1266],"kind":"picture","note":"previewStrip(6)"},
+   {"rect":[0,1267,236,1447],"kind":"picture","note":"previewStrip(7)"},
+   {"rect":[0,1448,236,1628],"kind":"picture","note":"previewStrip(8)"},
+   {"rect":[0,1629,236,1809],"kind":"picture","note":"previewStrip(9)"},
+   {"rect":[0,1810,236,1990],"kind":"picture","note":"previewStrip(10)"},
+   {"rect":[0,1991,236,2171],"kind":"picture","note":"previewStrip(11)"}
+  ]
+ },
+ "proverbs.png": {
+  "size": [392,1727],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,392,157],"kind":"picture","note":"proverb strip 0 (AkiSplash.randomProverb)"},
+   {"rect":[0,157,392,314],"kind":"picture","note":"proverb strip 1 (AkiSplash.randomProverb)"},
+   {"rect":[0,314,392,471],"kind":"picture","note":"proverb strip 2 (AkiSplash.randomProverb)"},
+   {"rect":[0,471,392,628],"kind":"picture","note":"proverb strip 3 (AkiSplash.randomProverb)"},
+   {"rect":[0,628,392,785],"kind":"picture","note":"proverb strip 4 (AkiSplash.randomProverb)"},
+   {"rect":[0,785,392,942],"kind":"picture","note":"proverb strip 5 (AkiSplash.randomProverb)"},
+   {"rect":[0,942,392,1099],"kind":"picture","note":"proverb strip 6 (AkiSplash.randomProverb)"},
+   {"rect":[0,1099,392,1256],"kind":"picture","note":"proverb strip 7 (AkiSplash.randomProverb)"},
+   {"rect":[0,1256,392,1413],"kind":"picture","note":"proverb strip 8 (AkiSplash.randomProverb)"},
+   {"rect":[0,1413,392,1570],"kind":"picture","note":"proverb strip 9 (AkiSplash.randomProverb)"},
+   {"rect":[0,1570,392,1727],"kind":"picture","note":"proverb strip 10 (AkiSplash.randomProverb)"}
+  ]
+ },
+ "tile_pictures.png": {
+  "size": [39,2100],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,38,50],"kind":"picture","note":"facePicture(200)"},
+   {"rect":[0,50,38,100],"kind":"picture","note":"facePicture(201)"},
+   {"rect":[0,100,38,150],"kind":"picture","note":"facePicture(202)"},
+   {"rect":[0,150,38,200],"kind":"picture","note":"facePicture(203)"},
+   {"rect":[0,200,38,250],"kind":"picture","note":"facePicture(204)"},
+   {"rect":[0,250,38,300],"kind":"picture","note":"facePicture(205)"},
+   {"rect":[0,300,38,350],"kind":"picture","note":"facePicture(206)"},
+   {"rect":[0,350,38,400],"kind":"picture","note":"facePicture(207)"},
+   {"rect":[0,400,38,450],"kind":"picture","note":"facePicture(208)"},
+   {"rect":[0,450,38,500],"kind":"picture","note":"facePicture(209)"},
+   {"rect":[0,500,38,550],"kind":"picture","note":"facePicture(210)"},
+   {"rect":[0,550,38,600],"kind":"picture","note":"facePicture(211)"},
+   {"rect":[0,600,38,650],"kind":"picture","note":"facePicture(212)"},
+   {"rect":[0,650,38,700],"kind":"picture","note":"facePicture(213)"},
+   {"rect":[0,700,38,750],"kind":"picture","note":"facePicture(214)"},
+   {"rect":[0,750,38,800],"kind":"picture","note":"facePicture(215)"},
+   {"rect":[0,800,38,850],"kind":"picture","note":"facePicture(216)"},
+   {"rect":[0,850,38,900],"kind":"picture","note":"facePicture(217)"},
+   {"rect":[0,900,38,950],"kind":"picture","note":"facePicture(218)"},
+   {"rect":[0,950,38,1000],"kind":"picture","note":"facePicture(219)"},
+   {"rect":[0,1000,38,1050],"kind":"picture","note":"facePicture(220)"},
+   {"rect":[0,1050,38,1100],"kind":"picture","note":"facePicture(221)"},
+   {"rect":[0,1100,38,1150],"kind":"picture","note":"facePicture(222)"},
+   {"rect":[0,1150,38,1200],"kind":"picture","note":"facePicture(223)"},
+   {"rect":[0,1200,38,1250],"kind":"picture","note":"facePicture(224)"},
+   {"rect":[0,1250,38,1300],"kind":"picture","note":"facePicture(225)"},
+   {"rect":[0,1300,38,1350],"kind":"picture","note":"facePicture(226)"},
+   {"rect":[0,1350,38,1400],"kind":"picture","note":"facePicture(227)"},
+   {"rect":[0,1400,38,1450],"kind":"picture","note":"facePicture(228)"},
+   {"rect":[0,1450,38,1500],"kind":"picture","note":"facePicture(229)"},
+   {"rect":[0,1500,38,1550],"kind":"picture","note":"facePicture(230)"},
+   {"rect":[0,1550,38,1600],"kind":"picture","note":"facePicture(231)"},
+   {"rect":[0,1600,38,1650],"kind":"picture","note":"facePicture(232)"},
+   {"rect":[0,1650,38,1700],"kind":"picture","note":"facePicture(233)"},
+   {"rect":[0,1700,38,1750],"kind":"picture","note":"facePicture(234)"},
+   {"rect":[0,1750,38,1800],"kind":"picture","note":"facePicture(235)"},
+   {"rect":[0,1800,38,1850],"kind":"picture","note":"facePicture(236)"},
+   {"rect":[0,1850,38,1900],"kind":"picture","note":"facePicture(237)"},
+   {"rect":[0,1900,38,1950],"kind":"picture","note":"facePicture(238)"},
+   {"rect":[0,1950,38,2000],"kind":"picture","note":"facePicture(239)"},
+   {"rect":[0,2000,38,2050],"kind":"picture","note":"facePicture(240)"},
+   {"rect":[0,2050,38,2100],"kind":"picture","note":"facePicture(241)"}
+  ]
+ },
+ "tiles.png": {
+  "size": [53,1104],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,53,69],"kind":"picture","method":"lanczos","note":"tileBlank"},
+   {"rect":[0,69,53,138],"kind":"picture","method":"lanczos","note":"tileSelected"},
+   {"rect":[0,138,53,207],"kind":"picture","method":"lanczos","note":"tileHint"},
+   {"rect":[0,207,53,276],"kind":"picture","method":"lanczos","note":"tileGrey"},
+   {"rect":[0,276,53,345],"kind":"mask","note":"fadeMask(0)"},
+   {"rect":[0,345,53,414],"kind":"mask","note":"fadeMask(1)"},
+   {"rect":[0,414,53,483],"kind":"mask","note":"fadeMask(2)"},
+   {"rect":[0,483,53,552],"kind":"mask","note":"fadeMask(3)"},
+   {"rect":[0,552,53,621],"kind":"mask","note":"fadeMask(4)"},
+   {"rect":[0,621,53,690],"kind":"mask","note":"fadeMask(5)"},
+   {"rect":[0,690,53,759],"kind":"mask","note":"fadeMask(6)"},
+   {"rect":[0,759,53,828],"kind":"mask","note":"fadeMask(7)"},
+   {"rect":[0,828,53,897],"kind":"mask","note":"fadeMask(8)"},
+   {"rect":[0,897,53,966],"kind":"mask","note":"fadeMask(9)"},
+   {"rect":[0,966,53,1035],"kind":"mask","note":"fadeMask(10)"},
+   {"rect":[0,1035,53,1104],"kind":"mask","note":"overlayMask"}
+  ]
+ },
+ "welcome.png": {
+  "size": [523,338],
+  "dedither": false,
+  "regions": [
+   {"rect":[0,0,523,338],"kind":"picture","note":"whole-file picture"}
+  ]
+ }
+}

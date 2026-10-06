@@ -34,6 +34,7 @@
 | `replay-oracle.md` | 1 determinism inventory (all clock reads) · 2 input stream · 3 demo start sequence with RNG draw counts · 4 replay hazards · 5 per-frame order · 6 validation plan | HIGH, MED, LOW |
 | `tools/rsrc_census.py` | resource-fork census / extractor used for every table and decode in this bank | — |
 | `data-census.md` | `btx-census` stdout (BubbleTrouble/Core): every cicn/ppat/PICT/snd through HectorKit; its ⚑ corrections (plan 2026-10-03 hectorkit-btx-decoders) are in `data-formats.md` §4 §6 §7 | HIGH, MED |
+| `front-end.md` | front-end / shell inventory (Opus research 2026-10-04, filed by the playable plan's T0; cited FI §n): 0 bundle contents · 1 startup, menus, dialogs, window/full screen · 2 attract/demo · 3 play shell (level flow, pause, death) · 4 keys · 5 timing · 6 HUD/notices/draw order/sprite sets/fonts · 7 sound & music · 8 prefs · UNRESOLVED U1–U12 | H, M, UNRESOLVED |
 | `REVIEW-2026-10-03.md` · `FIXPASS-2026-10-03.md` | Fable review and the fix-pass summary (ledger at the end of this file) | — |
 
 Append rule: new findings append to the topical file (new numbered subsection, with `name @ addr`,
@@ -157,7 +158,7 @@ ics4 1, ics# 1, BNDL 1, BteD 1, FREF 1, ALRT 3, icl8 1, PICT 6, carb 1, plst 1, 
 - NR-7 `_FigureEnemyMove` homing with `old dir == 0`: `back` is uninitialised after `LocationErrorInt`. → RESOLVED by C11 (`_LocationErrorInt` → `_DoLocationError` → `_StopAlert` + `_CleanUp` → `_ExitToShell`: the original quits; `back` is never read. enemies-ai.md §4d).
 - NR-8 Editor "Balloon time" ↔ LEVL word: code uses w15 (flash) and w16 (release); w17 (always 300) is never read.
 - NR-9 Conditions the FILMs were recorded under (prefs 0x35/0x36, license state).
-- NR-10 Whether the shipped FILMs (possibly recorded with the 2002 engine) replay in sync in X 1.1 itself — needs Ben's eyes on the original demo.
+- NR-10 Whether the shipped FILMs (possibly recorded with the 2002 engine) replay in sync in X 1.1 itself — needs Ben's eyes on the original demo. → evidence 2026-10-04: the FILM headers' 16-bit level field shows an older recording build (`data-formats.md` §3 ⚑); the replica desyncs on FILMs 2–4 with no 1.1 code discrepancy found (Classics DECISIONS D8).
 - NR-11 Delivered frame rate of the original on real hardware (code: 0.033 s timer = 30.3 Hz nominal).
 - NR-12 `_openApplicationAEHandler` tail (InitMac/Interface invocation) not read line by line.
 (NR-5 was resolved this session: all shipped mazes have (7,6) empty.)
@@ -221,3 +222,5 @@ marked `⚑ corrected (plan 2026-10-03 btx-core)` at the place below.
     `_environment`, so the original `_PopEnemy(-1)` may award +100 once per process (effect open).
 - Note (not a correction; from the plan's Research note 6 [derived], not re-checked here): registration
   is RNG-neutral for levels 1–4, so FILMs 1–4 cannot discriminate Decision 2.
+- 2026-10-04 — BTX Diagnosis protocol (Classics DECISIONS D8): `data-formats.md` §3 ⚑ — FILM level field is a 16-bit store,
+  so FILMs 1–4 predate X 1.1 [HIGH]; NR-10 evidence appended.
