@@ -610,6 +610,20 @@ Ambrosia Products FAQ texts, the web-site link files, `Icon_*`, the InputSprocke
 files, `.DS_Store`. `.gitignore` re-includes `!/Resources/Ferazel/` (other games' data stays ignored);
 `.gitattributes` `Resources/Ferazel/** binary`. `FERAZEL_DATA` overrides the folder. Rejected as in D24: Git LFS
 (breaks anonymous clones of the public repo past the free quota) · data out of git behind symlinks.
+**As built (C4, 2026-10-06) — Color2Index measured:** `FerazelCore.TableRequests` computes every table's requested
+16-bit RGB (lighting-tables §3–§7, HIGH) and `FerazelRender.ColorSearch` maps it: `.exactNearest` (least squared
+distance, ties → lowest; black in CLUT 202 → 0x60), `.inverseTable(bits:)` (bit-replicated cells), `.ruled` (exact
+match → lowest, else 4-bit; the default). Measured by `ColorSearchTests` on the committed data: `.ruled` and
+`.exactNearest` disagree on **75,461 of 211,731** requests on CLUT 202 (tint 1,168/3,603 · water 397/1,280 · redden
+1,885/6,144 · ambient 1,887/4,096 · pairs 0154+015c+0158 70,124/196,608) and on **1,178,143 of 3,387,696** over all
+sixteen level CLUTs (202 75,461 · 210 77,037 · 212 73,640 · 214 72,846 · 216 78,302 · 218 74,681 · 220 71,105 · 222 63,107
+· 224 68,551 · 228 67,848 · 236 79,478 · 238 73,737 · 240 78,219 · 242 73,025 · 246 77,463 · 248 73,643) — about a third,
+dominated by the blend pair tables. The bit-replicated inverse table reproduces lighting-tables §1.2 exactly (agreement
+with exact over sprite indices 0..0x9f: 39..153 of 160 at 4 bits, 66..157 at 5) and §1.4's level spread (1:138 … 0x16:71),
+and water table 0 @0x9e = 0x84 exact / 0x49 4-bit. Every chosen index stays LOW. **Dither ruling (plan Research note 10):**
+every 32-bit PICT says `ditherCopy` (mode 64), so the conversion uses `.errorDiffusion` — Floyd–Steinberg, top-down,
+left-to-right, in 16-bit RGB, quantised by the active `ColorSearch` model — as the default, `.none` selectable; LOW; on
+the gate card. Rejected: silently ignoring mode 64 (would drop a visible property of 290 sprite sheets).
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
