@@ -101,8 +101,9 @@ state 4, `+0x46 = +0xa6 = 0`, plays snd 703 (vol 0x100). State 4 animates the de
 class-specific frame sets `+0x1a2 = 1`, which starts `.HandleBurn @ 10043cd8` (called from
 `.StandardSpriteCleanup` while `+0x1a2 ≠ 0`, main l. 32436): the face burns away row by row
 (`.BurnFaceRow`, `+0x8d + 1` rows/frame; first row plays the burn sound `PTR_DAT_100a01ec`);
-negative `+0x1a2` is a delay that counts up to 1. When the burnt row passes the face height the
-**Kill callback `+0x50`** is called (else `+0xe9 = 1`) (main l. 38598–38608).
+negative `+0x1a2` is a delay that counts up to 1. When ~~the burnt row passes the face height~~
+`+0x1a2 >` face+0xc (the opaque-bounds bottom, not the frame height; `10043e84`, draw-effects §4.2) ⚑ wave 2
+corr (2026-10-04) DE #8 the **Kill callback `+0x50`** is called (else `+0xe9 = 1`) (main l. 38598–38608).
 Kill routines (`.KillWarrior` l. 20464–20496, `.KillWizard` 22510, `.KillChief` 21897,
 `.KillDemon` 21430, `.KillXichra` 23654):
 1. Enemy count/defeated stats (§1.2). `+0xe9 = 1`, `+0xea = 1` — `.UpdateSprites` clears the

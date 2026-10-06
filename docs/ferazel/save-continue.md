@@ -78,7 +78,7 @@ account and pickups-boxes §2.4.8 now describe the same path; the step table her
 |---|---|---|
 | gate 1 | `DAT_100a53d6 != 0` — the "no async gamma fade running" flag (cleared by `GammaFadeIn/OutAsync`, set when the fade ends, l. 31650–31745; initial 1 at `const.py 100a53d6` → `01`) [MED for the name] | 0x1005771c |
 | gate 2 | placement **param 1** of the save point's record (`hdr + idx·16 + 8`, idx = sprite `+0x48`) == 0 | 0x10057740 |
-| hold | counter `*_DAT_100a0684 += 2`; fire only when it exceeds 15. `.HandlePlayerSprite` moves the counter 1 toward 0 every frame (0x1004de68..0x1004de98), so ≈15 consecutive landing frames (standing on the point) are needed ~~[MED: frame order]~~ ⚑ wave 2 (2026-10-04): HIGH — fires on the 15th consecutive landing frame (§9.2) | 0x10057754, 0x10057768 |
+| hold | counter `*_DAT_100a0684 += 2`; fire only when it exceeds 15. `.HandlePlayerSprite` moves the counter 1 toward 0 every frame (0x1004de68..0x1004de98), so ≈15 consecutive landing frames (standing on the point) are needed ~~[MED: frame order]~~ ⚑ wave 2 (2026-10-04): HIGH — fires on the 15th consecutive landing frame (§9.2) — HIGH for the counter arithmetic; "standing still lands every frame" (§9.2, RectBounce l. 36297) is MED, so the frame count while standing is MED ⚑ corrected (review 2g, 2026-10-04) #8 | 0x10057754, 0x10057768 |
 | fire | counter ← −150 (0x10057774); record param 1 ← player `+0x17e` (facing-left) + 1, i.e. 1 = faced right, 2 = faced left (0x1005778c..0x100577a0); `G+0x16 ← player +0x17e` (0x100577b0); `SavePointSave()` (0x100577b4) | |
 | success | `snd 420` "teleport in" + `snd 421` "teleport out" (handles `_DAT_100a03e0/03dc` ← `FUN_10091748(0x1a4/0x1a5)`, l. 39562–39564), `GammaFadeOutAsync(2, …, 0xc, 0x10)`, three `HandleAsyncGammaFade`, `GammaFadeInAsync(0x2d)` — a short flash [MED: visual] | 0x100577c4.. |
 | failure / cancel | record param 1 ← 0 — the point stays usable | 0x1005783c |
@@ -327,7 +327,7 @@ items) [HIGH]:
 | +0x01 | item 8 "Reuse saved game files" | bool | `SaveSG(prefs[1]==0)` |
 | +0x08 | item 9 "Allow background tasks" | bool | (engine.md §8) |
 | +0x02 | item 10, `CNTL 602` → `MENU 602` | 1 High Detail, 2 Low Detail, 3 Line-skipped | 3 → black-line mode (`RestoreWindowBackground`, `AbortGame`, `RedrawGameArea`, `GameLoop`, `PaintFrameWrap`…); 2/3 → even camera y (engine.md §8) |
-| +0x06 | item 11, `CNTL 603` → `MENU 603` | 1 Enhanced, 2 Normal, 3 Reduced; default 2 if Gestalt `cput` < 0x108 (pre-G3) else 1 | effect level: e.g. `.HitPlayerSprite` death burst `ExplodeFaceIntoParticles(…,1,1,1,…)` when 1 and the count `*_DAT_100a019c` < 1000 [MED: count = live particles], `(…,2,1,7,…)` when 2 and < 1500, else `(…,2,2,7,…)` (handler l. 3363–3370); `.WrapDrawWaterEffects` draws an extra water face only when 1 and `hdr+0x26c6 == 0` (l. 8790); the `.AnimateCLUT` block at l. 8956 runs never when 3, every 4th frame when 2, and when 1 only while `*_DAT_1009fd30 == 0`; 3 skips `DrawLightsOntoTiles` (engine.md §8). Other readers: `RedrawScrollGrid`, `WrapDrawSprites`, `DrawParticles`, `HandleBurn`, Bonus/Effect/Bat/Gremlin handlers [HIGH for list; per-site effects not all read] |
+| +0x06 | item 11, `CNTL 603` → `MENU 603` | 1 Enhanced, 2 Normal, 3 Reduced; default 2 if Gestalt `cput` < 0x108 (pre-G3) else 1 | effect level: e.g. `.HitPlayerSprite` death burst `ExplodeFaceIntoParticles(…,1,1,1,…)` when 1 and the count `*_DAT_100a019c` < 1000 [~~MED: count = live particles~~ ⚑ wave 2 corr (2026-10-04) PA #6: it is the live-particle counter, but it is never reset per level and colour-0 deaths decrement it twice (`10031ba8`, `10031bc8`; no other writer), so it drifts negative (and can wrap) — the < 1000 / < 1500 gates are not a live-count test in practice (particles §1.4)], `(…,2,1,7,…)` when 2 and < 1500, else `(…,2,2,7,…)` (handler l. 3363–3370); `.WrapDrawWaterEffects` draws an extra water face only when 1 and `hdr+0x26c6 == 0` (l. 8790); the `.AnimateCLUT` block at l. 8956 runs never when 3, every 4th frame when 2, and when 1 only while `*_DAT_1009fd30 == 0`; 3 skips `DrawLightsOntoTiles` (engine.md §8). Other readers: `RedrawScrollGrid`, `WrapDrawSprites`, `DrawParticles`, `HandleBurn`, Bonus/Effect/Bat/Gremlin handlers [HIGH for list; per-site effects not all read] |
 | +0x04 | none in the shipped DITL (item 12 is the static text "Graphics:"; the item-12 branch that writes +4 is dead) — the orphan `CNTL 604 "Px popup"` / `MENU 604` (1 Super Parallax, 2 Parallax, 3 No Parallax) is its UI | default 2 | `.DoubleBlitUniversal` (l. 18917): value 3 skips the parallax back layer unless `hdr+0x2722 > 0`. Unreachable from the shipped UI → always 2 [HIGH] |
 | +0x32 | item 14 "Resolution switching" (the click handler updates item 16 — a slip, harmless) | bool | `.ResSwitch` (l. 8010): switch the monitor to 640×480 when set; set by the first-run `DLOG 1300` (OK → 1, "Don't Switch" → 0) |
 | +0x34 | — | 1 | "ask the resolution question" (`.ResSwitchDialog` shows `DLOG 1300` while ≠ 0, then clears it) |
@@ -357,7 +357,9 @@ items) [HIGH]:
   same velocities and frame animation as 2 — level 25; mode 3 — no faces loaded, no port animation; mode 6 — `InterlaceBlit128`
   of 29 frames (table 0x100a4f18, counter 0..57, odd/even rows alternate) — level 70; mode 7 —
   ping-pong 29 frames from 0x100a4f14 (unused in data). Census values: 0, 1 (15), 2 (5), 5 (25),
-  6 (70). Exact draw composition NOT RESOLVED.
+  6 (70). ~~Exact draw composition NOT RESOLVED.~~ Closed: rendering-omnipx-titles §3.3–§3.5; the mode-1
+  writes to layers 3..5 (`uRam100a3742..3766`) and to 0x100a3802 are dead — faces 3..5 are never loaded
+  (`1001a048..1001a068`, `1001a640..1001a648`) ⚑ wave 2 corr (2026-10-04) RO #7.
 - **PxMid cell 0xFFFF** — narrowed. Both fetch sites in `.DoubleBlitPPCParallaxOneLayer` use the
   returned i16 directly as an index (raw 0x10017bac..0x10017bc0 and 0x10018a80..0x10018aa8:
   `extsh; rlwinm 2; lwzx; addi 0x60`) — **no −1 test**. −1 therefore reads entry [−1] of the PxMid
@@ -365,9 +367,10 @@ items) [HIGH]:
   image port 11 of 0x100a4fa4) [HIGH for the arithmetic]. Every level has −1 cells (all-−1 PxMid maps
   in the 12 levels without a PxMid tileset). What the blitter draws for such a pair, and how it skips
   the layer when no PxMid tileset is loaded (`_DAT_1009ff68` is written by `LoadPxMidTileset` but has
-  no reader) — NOT RESOLVED.
+  no reader) — ~~NOT RESOLVED~~ closed: rendering-omnipx-titles §2 (never reached with shipped data;
+  "no PxMid tileset" path §2.5) ⚑ wave 2 corr (2026-10-04) RO #7.
 
-### 8.4 Item 13 — `PICT 7000` resource-chain winner: **closed — the application's copy** [MED]
+### 8.4 Item 13 — `PICT 7000` resource-chain winner: **closed — the application's copy** [HIGH — ⚑ wave 2 corr (2026-10-04) RO #8; was MED]
 `.ShowWorldMap` draws `PICT 7000` through `.MTGetandDrawPICTResInRect` = `GetPicture` (l. 51542;
 the chain, not `Get1Resource`). Resource-file life cycle traced: the app fork is open at launch;
 `.OpenResourceFiles` opens Titles, Sounds, Sprites (Sprites current) and keeps them; the prefs file
@@ -383,6 +386,9 @@ in 3,618 pixels inside x 46..108, y 176..261 (map coords; near nodes 45 The Dig 
 Fire In The Hole (h 51, v 265)) [HIGH, Python decode]. Caveat [LOW]: the CD check in `.main` opens
 "Ferazel's Wand:Installer Data" (only when the machine hash ≠ prefs+0x3a) and never closes it; its
 contents are unknown — if it held a `PICT 7000` it would sit above the app in the chain.
+⚑ wave 2 corr (2026-10-04) RO #8: decoded — an RTF plot write-up ("Plot Writeup 1", 10,934 B) with a tiny
+resource fork (PICT 32000, STR 128, STR# 128, vers 128) and **no PICT 7000**, so the app's copy wins
+unconditionally (rendering-omnipx-titles §6.2) [HIGH].
 
 ## 9. Wave 2 (2026-10-04): save-point faces, hold timing, a missing level on resume
 
@@ -467,10 +473,11 @@ A replica cannot reproduce undefined behaviour; refusing such a file is the only
    → closed: §9.1 — ⚑ wave 2 (2026-10-04)
 2. ~~Exact frame timing of the save-point hold (call order of HandlePlayerSprite vs HitPlayerSprite
    within a frame; ≈15 frames).~~ → closed: §9.2 (15th consecutive landing frame) — ⚑ wave 2 (2026-10-04)
-3. OmniPx composition (how the 16 overlay faces and the animated port combine with PxMid/FG) and
-   the role of `uRam100a3742..3766` values set only in mode 1.
-4. PxMid −1 drawing semantics and the "no PxMid tileset" skip path (§8.3).
-5. Contents of the CD's `Installer Data` (affects item 13 only if it carries `PICT 7000`).
+3. ~~OmniPx composition (how the 16 overlay faces and the animated port combine with PxMid/FG) and
+   the role of `uRam100a3742..3766` values set only in mode 1.~~ → closed (§8.3) ⚑ wave 2 corr (2026-10-04) RO #7
+4. ~~PxMid −1 drawing semantics and the "no PxMid tileset" skip path (§8.3).~~ → closed (§8.3) ⚑ wave 2 corr (2026-10-04) RO #7
+5. ~~Contents of the CD's `Installer Data` (affects item 13 only if it carries `PICT 7000`).~~ → closed
+   (§8.4: no PICT 7000) ⚑ wave 2 corr (2026-10-04) RO #8
 6. ~~Behaviour when `OpenDefaultWorldLevel` fails inside the ContinueGame default branch (return value
    ignored) — only reachable with a corrupt/foreign save.~~ → closed: §9.3 — file failure = alert +
    `ExitToShell`; missing level = silent nil dereference, CLOSED AS UNDETERMINABLE past it — ⚑ wave 2 (2026-10-04)

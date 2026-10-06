@@ -42,7 +42,9 @@ HandlePlayerShot, `0x100a01f8` HandleStatue, `0x100a0484` HandleBox, `0x1009ff38
 - `.FastRand(n)` (main dump l. 31106): returns `(n · (seed & 0xffff)) >> 16` ⇒ 0..n−1; `n = 0`
   reseeds from `LMGetTime + LMGetTicks` and returns an undefined register (matters only for the
   unplaced Floater variant, §4.4).
-- `FUN_1003f218(s, dir, m)` (main dump l. 36374) [name proposal: AddDirImpulse]: adds a vector of
+- `FUN_1003f218(s, dir, m)` (main dump l. 36374) [name proposal: AddDirImpulse; ⚑ wave 2 corr (2026-10-04)
+  SD2 #S4: confirmed from raw — jump table `0x100a5694`, null/range guards `1003f218..1003f228`, cases
+  0/9/18/27 at `1003fb60`/`1003fff0`/`1003f240`/`1003f6d0` (spells-detail-2 §3)]: adds a vector of
   magnitude `m` in 10°-step direction `dir` 0..35 to `(vx, vy)`: dir 0 → `vx −= m`; dir k →
   `vx −= cos(10k)·m`, `vy += sin(10k)·m` (cos/sin as doubles 0.985/0.174, 0.94/0.342, … at
   0x100a18b0..0x100a18c8, `const.py`). So 0 = left, 9 = down, 18 = right, 27 = up (screen y down) —
@@ -68,7 +70,8 @@ HandlePlayerShot, `0x100a01f8` HandleStatue, `0x100a0484` HandleBox, `0x1009ff38
   insect body) are ordinary active sprites and are **not** idled with their parent
   (`.ActiveToIdleSprite` only calls the parent's `+0x54`, unset here) ~~[MED: consequence not traced]~~
   ⚑ wave 2 (2026-10-04): traced — §7.5 (they keep running and are drawn like any active sprite, but
-  sit ≥ 120 px outside the view by construction).
+  sit ≈ 120 px outside the view by construction — 120 px is the centre's margin; members orbit tens of
+  px from it, §7.5 MED ⚑ corrected (review 2d, 2026-10-04) #2).
 
 ### 1.2 Enemy counting and the level "enemies" stat  [HIGH]
 During `.SetupLevelSprites` the flag `*_DAT_1009fe8c` is 1 (`.SetupLevel`, main dump l. 2521–2527).
@@ -94,8 +97,11 @@ woken bat comes back awake as 1745 [HIGH].
 
 ### 1.3 Contact damage to the player (`.HitPlayerSprite`)  [HIGH]
 `.MTCollideSprites @ 100326cc` (main dump l. 30210ff.) calls A's `+0x5c` with B for every hot-rect
-overlap where A has a hit callback, neither has `+0xe9`, and not (`A+0x184` and same `+0x4c`) — the
-player's callback runs whatever B's own `+0x5c` is. `.HurtPlayer` itself gates on the attacker's
+overlap where A has a hit callback, neither has `+0xe9`, and not (`A+0x184` and same `+0x4c`) —
+~~the player's callback runs whatever B's own `+0x5c` is~~ ⚑ wave 2 corr (2026-10-04) ES2 #W2: the
+player's callback never runs there (player `+0x5c` = 0); the player pass `.MTCollideSpecialSprite`
+calls `HitPlayerSprite(player, B)`, then B's own callback (`10032bdc..10032ed8`; enemy-shots-and-damage-2
+§4.2). `.HurtPlayer` itself gates on the attacker's
 HP: raw `10054768–10054798` — `lha r0,0xa4(attacker); cmpwi r0,0; bgt` → proceed; otherwise proceed
 only if the attacker's handler `+0x4c` is EnemyShot (TOC −0x73b8) or Box (TOC −0x73bc), else
 `li r3,0; b 10054c74` (returns 0, no damage). So a dead/dying flyer (HP < 1: a falling, burning
@@ -263,7 +269,9 @@ Bat's own `.StandardSpriteHandles`, so it carries the previous frame's `+0x11c` 
   coins: `rand(3) + 1` × `MTNewSprite(0x516, centre − 4, layer 2, SetupBonus)` with `vy = −0x578 −
   rand(0x640)`, `vx = rand(1000) − 500` (coin pickup = 1 coin, 5 score, spells-items.md §3); blood:
   N = 170 if prefs+6 == 1 else 100 (`*(_DAT_1009fe44+6)`, [MED] prefs pointer), N × `NewParticle(2,
-  0x78, …)` + N/8 larger ones. Total score: bat 600, insect 700 (body +100).
+  0x78, …)` + N/8 more of the **same 1×2 shape**, faster: vx R(900) − 450, vy −850 − R(900) − R(300)
+  (vs R(650) − 325, −850 − R(700) − R(200)) (`li r6,0x4` `1007f148` / `10080144`; handler l. 17074–17083)
+  ⚑ wave 2 corr (2026-10-04) PA #2. Total score: bat 600, insect 700 (body +100).
 - Tiles (`.HitBatTileSprite`): kind < 100 → `.WallBounce(…, 0, rect, 0, 0)`, < 200 →
   `.WallBounceBG`, water kinds → `.HandleUnderWater` unless `+0x140`.
 - Unexplained tail (l. 17141): if the face is the placeholder face of PICT 151 (`*_DAT_100a007c`,
@@ -422,10 +430,12 @@ Store scan of `+0x84`/`+0x86` (and of word stores at 0x80..0x87 that could overl
 (`1003d494/1003d49c`) and every class Setup store 0; `.RectBounceFake2 @ 1003ecc0` and
 `.HandleBatSprite` (`1007ea14/1007ea24/1007ea44/1007ea48`) only rescale or zero them —
 `.RectBounceFake2` multiplies by its 5th argument (its only caller, `.HitPlayerTileSprite`, h. l.
-3095, passes 0) and only when the component is already non-zero; the Bat's state 5 multiplies by
-`+0x15c`. The two remaining stores at these offsets are into globals, not sprites
+3095, passes 0) and only when the component is > 0 (`1003edf4`/`1003ee3c` gate with `ble`; 0 stays 0
+either way — ⚑ corrected (review 2d, 2026-10-04) #4); the Bat's state 5 multiplies by
+`+0x15c`. The remaining stores at these offsets are not into sprites: two into globals
 (`.SetupPlayerSprite` `1004b274` via `r26 = *TOC−0x732c`; `.HandleKeys` `10052e28` via
-`r30 = *TOC−0x7880`). So both halves are 0 for every sprite all game. Shape (from
+`r30 = *TOC−0x7880`) and `.DrawBlackLines` `1001fb60 stw r0,0x84(r3)` (−1 into a local struct,
+harmless) ⚑ corrected (review 2d, 2026-10-04) #3. So both halves are 0 for every sprite all game. Shape (from
 `.RectBounceFake2`): `+0x86` is paired with x, `+0x84` with y — a vestigial i16 "bounce velocity".
 Consequences: the §3.2 thrust gates always pass; state 6 always drops to 7 at once; state 5's
 rescale keeps 0; the player-shot particle offsets that subtract them (h. l. 5135–5225) subtract 0.
@@ -468,7 +478,9 @@ child and its interval runs out, `.GenerateSprite(x, y, type = p1, rec 0x200, no
 child 3 px out of the mouth (0x5d2 up, 0x5d3 down, 0x5d4 right, 0x5d5 left), sets the child's draw
 clip edge (`+0x1ba`/`+0x1bc`/`+0x1b6`/`+0x1b8` respectively, physics §0.1) so only the part outside
 the pipe shows, and plays a random-pitch sound at frame 3; when its step counter `+0x150` exceeds
-`+0x154` = (child length)/3 + 4 it clears **`child+0x1b2 = 0`** (`1006f040`) and resets the clip
+`+0x154` = (child length)/3 + 4 — two of the four arms use the child's hot-rect far edge
+(`+0x38`/3 + 4, `+0x3a`/3 + 4, h. l. 12875, 12904), not its height/width ⚑ corrected (review 2d,
+2026-10-04) #6 — it clears **`child+0x1b2 = 0`** (`1006f040`) and resets the clip
 edges to 32000/32000/0/0 (`1006f01c..1006f060`) (h. l. 12842–12975). While set:
 - every class handler returns at once (one `lbz 0x1b2` in each of 26 `Handle*` routines in the load
   scan; the other two loads are `.MTCollideSprites` and `.HitEnemyShotSprite`) —
@@ -485,9 +497,12 @@ Shipped pipes (enemies-ground-2 §6): level 21 only — children 1730 Blob ×2, 
 Only sprites created through `.AddIdleSprite` have an idle slot; `.HandleIdleSprites @ 100081ac`
 idles a slot's sprite (`.ActiveToIdleSprite`, which snapshots it, sets `+0x4c = 0` and calls only its
 `+0x54`) when its face rect (+ margins `+0x1c8..+0x1ce`, 0 for bats) leaves the activity rect = view
-(`−0x18 .. +0x278` × `−0x18 .. +0x198` around the scroll origin) grown by 0x60 on every side (m. l.
+(`−0x18 .. +0x278` × `−0x18 .. +0x198` around the scroll origin), **united with the player's hot rect**
+(m. l. 4304–4309, ⚑ corrected (review 2d, 2026-10-04) #1), grown by 0x60 on every side (m. l.
 4299–4317). Swarm members and the insect body are `MTNewSprite` children (record 0x200), never in the
-idle table, and no Bat-class routine stores `+0x54` (store scan: only `.SetupRopeSprite`), so they
+idle table, and no Bat-class routine stores `+0x54` (store scan: `.SetupRopeSprite`; also
+`.HandleXichraSprite` `1008eedc`/`1008ef50`/`1008ef8c`/`1008f004` `stw …,0x54(r31)`, r31 identity not
+checked [LOW] — ⚑ corrected (review 2d, 2026-10-04) #5), so they
 stay active. Re-activation (`.IdleToActiveSprite`) restores the snapshot without Setup, re-linking
 the same children through `+0x9c`/`+0x1d4`.
 - **Swarm members** keep homing on the centre's last `+0x14c/+0x150` (the centre stopped updating
@@ -524,7 +539,7 @@ updated only by the suspended handler, so they freeze in place for the 120 frame
    (pointer + flyer specifics; the no-damage reading is MED).
 8. ~~What sets `+0x1b2` (every handler returns early on it).~~ → closed: §7.4 (enemy pipes 1490..1493).
 9. ~~Whether children left active while a parent is idle (swarm members, insect body) are visible.~~
-   → closed: §7.5 (drawn by the normal pass, but parked ≥ 120 px off-screen; geometry MED).
+   → closed: §7.5 (drawn by the normal pass, but parked ≈ 120 px off-screen (the centre's margin) ⚑ corrected (review 2d, 2026-10-04) #2; geometry MED).
 10. (wave 2) What a swarm centre reads through a member pointer freed while the centre was idle (§7.5).
 
 ## Proposed additions to physics.md §0

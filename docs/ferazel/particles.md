@@ -206,10 +206,20 @@ Notation below: `t` = age (0..119), `s = t >> 1`; "e" = clut-801 entry; RGB 16-b
 | 222 | `0x6810` | s ≤ 5: ((5−s)·0x1900 + 32000, 0, 0); else 0 | 100316c0–10031728 |
 | 223 | `0x6888` | s ≤ 10: r = b = s ≤ 5 ? (5−s)·0x1900 + 32000 : 32000, g = s ≤ 2 ? (2−s)·0x1900 : 0; else 0 | 1003173c–100317bc |
 
-### 4.3 Resolved colours on the default CLUT 202  [MED]
-Python model of the recipes above + nearest-RGB (Euclidean, 16-bit) Color2Index against `clut` 202.
-MED because QuickDraw's Color2Index goes through the device inverse table (default 4-bit resolution);
-a 4-/5-bit-cell model gives the same index except where noted in §4.4. "life" = first age whose
+### 4.3 Resolved colours on the default CLUT 202  [recipes HIGH; index choice LOW]
+**The bank's one `Color2Index` model** (lighting-tables §1.2 points here) ⚑ corrected (review 2a,
+2026-10-04) #2 and (review 2c, 2026-10-04) #4: every builder maps a computed RGB with the Color
+Manager's `Color2Index` (import glue `1009f1ac`), which goes through the device inverse table
+(`MakeITable(c, nil, 0)`, default resolution); that ROM result is **not derivable from the binary**.
+Model: exact nearest RGB (Euclidean on the 16-bit channels, ties → lowest index) against the level
+CLUT. Review 2a's rerun of this model reproduced every sampled index (k1 → 1/2, k4 → 151, k2 → 76/221,
+k200 → 29/59/69, k202 on 220 → 194/24/198/199/106, on 214 → 135/24/105/106). It is a **model;
+several steps may differ** on the real machine — the specific index is LOW everywhere in the bank,
+the requested RGB HIGH. Where a naive 4-bit inverse-table model (request quantised to 4 bits per
+channel) picks differently, both are listed: k200 e 0x78 → 29 exact / **26** 4-bit; k202 on CLUT 220
+age 20 → 106 exact / **175** 4-bit (bit-replicated, review 2a) or 188 (cell-centre, this lane);
+water table 0 on source 0x9e → **84** exact / 49 4-bit (lighting-tables §4, review 2c).
+"life" = first age whose
 colour is 0 (the particle is drawn at ages 1..life−1; 120 = runs to the age limit). "level-dependent"
 = some other "+ base" CLUT resolves differently (the recipe is fixed; the screen index is not).
 
@@ -250,17 +260,17 @@ geysers: kind 0 on level 10 (screen `clut` 214 "forest 1 new + base"); kind 2 on
 
 | kind | level CLUT | ages | requested RGB | index → on-screen RGB |
 |---|---|---|---|---|
-| 200 | 214 (and 202, 220) | 1–7 | e 0x78 (6666/9999/FFFF) | 29 = (32639, 32639, 65535) #7F7FFF |
+| 200 | 214 (and 202, 220) | 1–7 | e 0x78 (6666/9999/FFFF) | 29 = (32639, 32639, 65535) #7F7FFF (4-bit model: 26, §4.3) |
 | | | 8–15 | e 0x7e (6666/6666/FFFF) | 29 #7F7FFF |
 | | | 16–23 | e 0xa8 (3333/3333/FFFF) | 59 = (16448, 16448, 65535) #4040FF |
-| | | 24–119 | e 0xeb + 10000 (0/0/EEEE) | **69 = (0, 0, 65535) #0000FF** by nearest RGB; 70 = (0, 0, 56173) #0000DB under a 4-/5-bit inverse-table model |
+| | | 24–119 | e 0xeb (0/0/EEEE = 61166 ≥ 55000, so nothing is added: `cmplwi r3,0xd6d8` `10030f8c`) ⚑ corrected (review 2a, 2026-10-04) #3 | **69 = (0, 0, 65535) #0000FF** by nearest RGB; 70 = (0, 0, 56173) #0000DB under a 4-/5-bit inverse-table model |
 | 201 | any (base entries) | 1–4 / 5–9 / 10–14 / 15–119 | — (indices) | 113 #6B9C30 / 114 #5F8C2B / 115 #537C26 / 116 #476C21 |
 | 202 | 220 (levels 50/51) | 1 | (60000, 24000, 0) | 194 = (61423, 21074, 0) #EF5200 |
 | | | 2–7 | (57200..51600, ·0.4, 0) | 197 = (54998, 21074, 0) #D65200 |
 | | | 8–9 | (48800, 19520, 0) | 24 = (49087, 16448, 0) #BF4000 |
 | | | 10–13 | (46000..43200, ·0.4, 0) | 198 = (44461, 16962, 0) #AD4200 (4-bit model: 24 at ages 10–11) |
 | | | 14–19 | (40400..34800, ·0.4, 0) | 199 = (38036, 14649, 0) #943900 (4-/5-bit model: 188 #8C3110 at 18–19) |
-| | | 20–119 | (32000, 12800, 0) | 106 = (33153, 8738, 0) #812200 (4-bit model: 188) |
+| | | 20–119 | (32000, 12800, 0) | 106 = (33153, 8738, 0) #812200 (4-bit models: 175 bit-replicated / 188 cell-centre, §4.3) |
 | 202 | 214 (for comparison) | 1 / 2–13 / 14–17 / 18+ | as above | 135 #FF3F00 / 24 #BF4000 / 105 #9C2900 / 106 #812200 |
 
 So 202 is **orange** (green = 0.4·red), not pure red; geyser spray lives the full 120 frames unless it
@@ -390,15 +400,18 @@ their previous values (handler l. 2509–2564) [MED for the flag/counter meaning
    cell-centre models (Python). Settling it needs a Color Manager `MakeITable` reimplementation or a
    capture from the original running on 8-bit Mac OS.
 2. Contents of the ambient light table `_DAT_100a0130` (what negative kinds look like on levels with
-   hdr+0x2706 ≠ 0) — `.CalcLightingTable` not transcribed (engine NR).
+   hdr+0x2706 ≠ 0) — `.CalcLightingTable` not transcribed (engine NR). Tried: not attempted in this lane
+   (scope); lighting-tables §7.3 (lane L1) now transcribes the table's arithmetic, colours LOW. ⚑ corrected (review 2a, 2026-10-04) #9
 3. What the off-screen buffers 0004/0008 hold between frames (the mask rule in §3.2 is mechanical);
-   engine-side.
+   engine-side. Tried: the reads/writes of `.DrawParticles`/`.EraseParticles` only. ⚑ corrected (review 2a, 2026-10-04) #9
 4. `.WrapDrawWaterEffects` cell-record fields (+0x8, +0xc, +0x10, +0x14, +0x24, +0x28 from
    `.FillCachedTileArray`) are named by offset only; the bubble/mote conditions are HIGH as arithmetic,
-   MED as meaning.
+   MED as meaning. Tried: the field reads in `.WrapDrawWaterEffects`; `.FillCachedTileArray` was not
+   read. ⚑ corrected (review 2a, 2026-10-04) #9
 5. The initial value of the wind-dust shape stack short (§5.1 row `1001167c`) before the first
    diagonal emission — uninitialised stack; on a level whose wind cells are all horizontal/vertical it
-   is whatever the frame left there (0 or > 7 draws nothing).
+   is whatever the frame left there (0 or > 7 draws nothing). Tried: the main dump l. 8840–8873 and the
+   stack slot's writers in that routine; it cannot be settled from code. ⚑ corrected (review 2a, 2026-10-04) #9
 
 ## Proposed additions to physics.md §0
 | field | type | meaning | evidence |

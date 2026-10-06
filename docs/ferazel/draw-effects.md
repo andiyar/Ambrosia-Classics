@@ -32,7 +32,8 @@ For each sprite on the active list:
      (`10036880..10036890`), so a flash of N frames shows tables 7,7,…,6,5,…,1.
    - **dynamic light** (`+0x89 ≠ 0`, face present): `L = .GetLightTile(cx>>5, cy>>5)` (cx = `+0x10`,
      cy = `+0xe`), `F` = `.GetFakeLight(…)`; if `L < 1 ∧ F < 1` then `m = +0xb8 = 0`, else
-     `m = +0xb8 = 0xc0000 + L·0x100 + F` (`1001472c..100147bc`). This runs **after** the hurt flash
+     `m = +0xb8 = 0xc0000 + L·0x100 + F` (`1001472c..100147bc`; L = −1 with F ≥ 1 gives `0xbff00 + F`,
+     i.e. mode 0xb, not 0xc — ⚑ corrected (review 2a, 2026-10-04) #4). This runs **after** the hurt flash
      and overwrites it: a `+0x89` sprite never shows a hurt flash [HIGH].
 5. **Water split** by `+0x11c` (rows of the face above the water surface; 1 = fully submerged,
    physics §0) — tested on the stored `+0xb8`, not on `m` (`100147c0..1001491c`):
@@ -108,11 +109,11 @@ in `.DrawBlackLines` on a non-sprite record, 229 on sprites) and the decompiled 
 | `0x4000n` (draw time only) | 4 → Special | `d = T4[n][s]`, `T4[k] = *_DAT_100a0174 + k·0x100` (`.BuildReddenTable`) | n = 2·min(`+0xaa`,7) ∈ 2..14 | hurt flash when `+0x1b4` (Warrior, Wizard, Demon, ice wall 2941) [HIGH rule; writer list from the decompile scan, MED] |
 | `0x5000n` | 5 → Diffuse | with probability n/30: `d = 0x99 + rand(6)`; else `d = s` | n 0..15 | player teleporter charge (`100510ec`) [HIGH rule; writer list from the decompile scan, MED] |
 | `0x6000k` (draw time only) | 6 → WaterRipple | row shifted by −1/0/+1 px (§2.4); `d = T6[k][s]`, `T6[k] = *_DAT_100a0170 + k·0x100` (`.BuildWaterTintTable`) | k = `+0x128` water kind | the submerged rows of any sprite (§1.1 step 5) [HIGH rule; writer list from the decompile scan, MED] |
-| `0x80000` | 8 → BehindTiles | `d = s` only where mask ≠ 0 (§2.5) | — | parallax strip sprites `.SetupPxSprite` (`10033480`, with `+0x88 = 0`) [HIGH rule; writer list from the decompile scan, MED] |
+| `0x80000` | 8 → BehindTiles | `d = s` only where mask ≠ 0 (§2.5) | — | parallax strip sprites `.SetupPxSprite` (`10033480`, with `+0x88 = 0`) [MED rule: the raw is a word add `and r9,r9,r24; add r23,r23,r9` (`10026be4..10026bec`), equal to a copy only if the destination holds 0 under each 0xff mask byte (§2.5, NR 4) — ⚑ corrected (review 2a, 2026-10-04) #1; writer list from the decompile scan, MED] |
 | `0x90000` | 9 → Special | `d = T6[0][s]` — the water tint **without** ripple | sub always 0 | Crab, spikes and teleporters placed in water (`.SetupCrabSprite`, `.SetupBackgroundSprite`, `.SetupBoxSprite`) [HIGH rule; writer list from the decompile scan, MED] |
 | `0xa0000 + q` | 0xa → SpecialClip | raw copy, rows squashed vertically by q/256 (§2.6) | q < 0xfb | springboard gauge (`10064914`) [HIGH rule; writer list from the decompile scan, MED] |
 | `0xb0000 + a` | 0xb → Trans | `d = B[a][s·256 + bg]` (§2.7) | a ∈ {0,1,2,4,5} written | fades/blinks: crumble/blink platforms, floes, trails, dead Blob, Floater fade-in, Demon/Xichra shots, Bonus/Box blinks, Gremlin back layer, spirit (0xb0001/0xb0005), parallax decor 0xb0004 [HIGH rule; writer list from the decompile scan, MED] |
-| `0xc0000 + L·0x100 + F` | 0xc → Special | F = 0: `d = *_DAT_100a0130 + L·0x100`[s]; F ≠ 0: `d = (*_DAT_100a0134 + L·0x6e00 + F·0x100)[s]` (`.CalcLightingTable` / `.InitLighting`) | L = signed high byte, F = low byte | `+0x89` dynamic light (§1.1); radial spokes and depth-mode pendulums (`.UpdateRadiusSprites` `1003dbd0`, `.UpdateRadialPos` `1003e264`) [HIGH rule; writer list from the decompile scan, MED] |
+| `0xc0000 + L·0x100 + F` | 0xc → Special | F = 0: `d = *_DAT_100a0130 + L·0x100`[s]; F ≠ 0: `d = (*_DAT_100a0134 + L·0x6e00 + F·0x100)[s]` (`.CalcLightingTable` / `.InitLighting`) | L = signed high byte, F = low byte; a negative D never reaches this blitter from the `+0x89` writer: D = −1 turns the word into `0xbff00 + F`, mode **0xb** (D = 254, level 30, arrives here as signed −2) (`rlwinm 8; addis 0xc`, `100147a4..100147b0`; lighting-tables §2.2) ⚑ corrected (review 2a, 2026-10-04) #4 | `+0x89` dynamic light (§1.1); radial spokes and depth-mode pendulums (`.UpdateRadiusSprites` `1003dbd0`, `.UpdateRadialPos` `1003e264`) [HIGH rule; writer list from the decompile scan, MED] |
 
 No sprite writer stores modes 2, 3, 4, 6, 7, 0xd, 0xe, 0xf, 0x10..0x13 or ≥ 0x14 in `+0xb8` (scan
 above; 3/4/6 exist only as draw-time values). The INDEX's "modes 7, 0x10..0x13" are **mode-1 table
@@ -184,6 +185,8 @@ and the image is about `2 + ⌊(h−1)·q/256⌋` rows tall, top-anchored. The s
 read an undefined table — no flipped gauge is known.]
 
 ### 2.7 Mode 0xb — translucency (`.BlitEncFaceTransClip @ 10027d04`)  [HIGH]
+At entry `li r15,0xd` (`10027d0c`) and `stb r15,0(r7)` (`10027d74`) store 0x0d into the 512-byte
+buffer at `0x100a39b6` (meaning: lighting-tables §6.2 / NR 5) ⚑ corrected (review 2a, 2026-10-04) #5.
 Blend table by `a` (`10027d28..10027dfc`): a = 0 → `*_DAT_100a015c` (`−0x76e4`), 1 → `0158`
 (`−0x76e8`), 2 → `0154` (`−0x76ec`), 3 → `0150` (`−0x76f0`), 4 → `014c` (`−0x76f4`), 5 → `0160`
 (`−0x76e0`); any other a → `*_DAT_100a0144 + (short)(a − 0x80) · 0x1000` (`10027de4..10027df8`,
@@ -348,16 +351,20 @@ L3: its particles take the **raw face pixel** as colour (`kind = −(pixel + 0x1
    Not attempted here by brief.
 2. Particle kinds 1, 4, 0xd and `.NewParticle` arguments 2, 4, 6, 7 — lane L3. Raw values given (§4.3).
 3. `.BlitEncFaceRot` exact rounding and the `_DAT_100a1680` scale constant — read in the decompile
-   only; the two-pixel-wide write and forward mapping are MED.
+   only; the two-pixel-wide write and forward mapping are MED. Tried: decompile of `.BlitEncFaceRot`
+   (§2.9); the raw loop was not read. ⚑ corrected (review 2a, 2026-10-04) #9
 4. Mode 8's word-add identity needs the draw buffer to hold 0 under each 0xff mask byte; the FG tile
    drawers' handling of transparent pixels was not traced (only sprites §3.1 rule 4 and the reads here).
 5. Data-driven mode-1 indices (`0x10000 + p` from Box p1 / Background and decoration p2 / Box `+0x150` /
    `.HandleEffectSprite`'s variable sub)
    can exceed the number of tables `.BuildTintTable` builds — the bound belongs with L1's table count.
+   Tried: the writer scan of §2.1 only (values, not their data ranges). ⚑ corrected (review 2a, 2026-10-04) #9
 6. Flipped twins (`TransFlipClip`, `FlipDiffuse`, `FlipWaterRipple`, `Flip*Special`) checked by slot loads
-   and constants only, not loop-by-loop (MED).
+   and constants only, not loop-by-loop (MED). Tried: `tocrefs.py` slot loads and the constants named
+   in §2.3/§2.4/§2.7. ⚑ corrected (review 2a, 2026-10-04) #9
 7. Whether any shipped sprite combines rotation/scale with mode 5/6/8/0xb (would hit the undefined-table
    branch, §2.9): writers were scanned by value, not cross-checked against every `+0x1aa`/`+0x1ae` writer.
+   Tried: the 241-store `+0xb8` scan (§2.1). ⚑ corrected (review 2a, 2026-10-04) #9
 
 ## Proposed additions to physics.md §0
 | off | type | meaning |

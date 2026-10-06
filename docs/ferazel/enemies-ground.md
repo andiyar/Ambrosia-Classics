@@ -62,9 +62,11 @@ Records with flag 0 but these types: level 1 rec 28 (1712), level 45 recs 272/27
 ## 2. Shared machinery
 
 ### 2.1 Damage dealt to the player (contact)  [HIGH]
-`.MTCollideSprites` calls both hit callbacks for intersecting hot rects (a null `+0x5c` on one side
-still lets the other's callback run). The damage is applied by **`.HitPlayerSprite`**, keyed on the
-other sprite's handler `+0x4c`, then `.HurtPlayer(P, S, dmg, blood, invul, coinsLost)`, which does
+~~`.MTCollideSprites` calls both hit callbacks for intersecting hot rects … The damage is applied by
+`.HitPlayerSprite`~~ ⚑ wave 2 corr (2026-10-04) ES2 #W1: the player's `+0x5c` is 0 (`1004af44`/`1004afd4`),
+so `.MTCollideSprites` only calls the other sprite's callback; **`.HitPlayerSprite`** runs only in the
+later `.MTCollideSpecialSprite` pass (no distance gate, list order; `10007c38`/`10007c64`,
+`10032bdc..10032ed8`; enemy-shots-and-damage-2 §4.2), keyed on the other sprite's handler `+0x4c`, then `.HurtPlayer(P, S, dmg, blood, invul, coinsLost)`, which does
 nothing if `S.hp < 1` (except enemy shots/boxes; m. l. 45076) — so dead or dying enemies never hurt.
 
 | attacker | dmg | invul frames | coins lost | evidence |
@@ -129,9 +131,11 @@ Score (`G+0`): Walker 1700 +500, 1705 +600, 1750 +800, 1760 +400 (at the moment 
 10069b70/10069cbc/10069d68/10069e88); Crawler +500; Roach +500 + 100 (`.KillRoach`) = 600;
 Dillo +1500 (`.KillDillo`, at the end of the burn).
 **Burn-away**: Walker (after its death animation) and Dillo set `+0x1a2 = 1`; the engine's
-`.HandleBurn` (from `.StandardSpriteCleanup`, m. l. 32435/38539) erases one face row per frame from
-the face rect's top and calls the class Kill proc `+0x50` (KillWalker / KillDillo) when it passes the
-bottom [MED: HandleBurn read only for this path].
+`.HandleBurn` (from `.StandardSpriteCleanup`, m. l. 32435/38539) ~~erases one face row per frame~~
+⚑ wave 2 corr (2026-10-04) DE #7: hides the face by a top clip (`+0x1bc = row`) advancing `+0x8d + 1` rows
+per frame from the opaque top, while `.BurnFaceRow` spawns particles along each consumed row (it erases
+nothing; `10043e5c..10043e64`, `100438c4..10043974`), and calls the class Kill proc `+0x50` (KillWalker /
+KillDillo) when `+0x1a2` passes the opaque bottom `face+0xc` (draw-effects §4.2) [HIGH].
 **Idle margins**: `+0x1c8/+0x1ca/+0x1cc/+0x1ce` widen the rect `.HandleIdleSprites` tests before
 returning an active sprite to idle (m. l. 4302–4311) [MED: names].
 
@@ -502,7 +506,7 @@ FastRand(5)`, gravity 0xaf, `+0x90 = 0x100`, `+0x8c = 1`, `+0xa6 = 0` then +1 pe
 | 0 / 1 | 1700 | rect (8,8,0x10,0x10), gravity 0xaf; face PICT 1703 (8 × 24×24), `+0x46` ++ (0) / −− (1): spin | 0x38, invul 60 |
 | 0x6a9 | 1705 | layer 0x14, rect (0,0,0x5a,0xe), gravity 0, life `+0x14c = 2` frames, no face | 0x70, invul 60 |
 | 0x6d6 | 1750 | rect (0,0,0x3c,0x18), no face, `+0xa6 = 3` (held: +1 then −1 per frame), HP 0x70, gravity 0xaf | 0x70, invul **36** |
-| 0x6e1 / 0x6e2 | 1760 (p1 0/1) | rect (8,8,0x18,0x18), gravity 300, HP 200, `+0x150 = −2 − FastRand(2)` (13 %: further −(3 − FastRand(5))), `+0xeb = 1`; faces PICT 1761 / 1762 (8 × 32×32) | 0x38 |
+| 0x6e1 / 0x6e2 | 1760 (p1 0/1) | rect (8,8,0x18,0x18), gravity 300, HP 200, `+0x150 = −2 − FastRand(2)` (13 %: further −(3 − FastRand(5))), `+0xeb = 1`; faces PICT 1761 / 1762 (8 × 32×32) | ~~0x38~~ none on contact: `.HitEnemyShotSprite` kills the bomb in the main pass (`1005c9dc..1005caac` → `1005cd28`/`1005cd7c`) before the player pass; the hurt comes from shards 0x6e6 (0x38) / explosion 0x4b7 (0x70) (enemy-shots-and-damage-2 §4.3) ⚑ wave 2 corr (2026-10-04) ES2 #W3 |
 | 0x753 | Dillo egg | rect (4,0,0x14,0xe), `+0x46 = 6`, flip random, `+0x15c = 0xf0` (240) | its `+0xa4` (224/448), coins 5 |
 | 0x754 | spines | rect (8,3,10,8), layer 0xc, gravity 0; face PICT 1876 (8 × 18×18) by `+0x46` | its `+0xa4` (56/224); none while its gravity > 0; coins 5 if 224 |
 
@@ -519,8 +523,11 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
 1. Colours of remap tables 0x10..0x15 (Walker tiers), 2/3/0xf (Crawler tiers) and 0xb (statue,
    Dillo 1871): `.BuildTintTable` builds luminance-based remaps over selected CLUT indices; not
    decoded. ⚑ wave 2 (2026-10-04): INDEX item 15, another lane — not attempted by L7.
-2. `.BloodSpray` argument meaning; `.HandleBurn` rate details beyond "one row per frame".
-   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.
+2. ~~`.BloodSpray` argument meaning; `.HandleBurn` rate details beyond "one row per frame".
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.~~ → closed: `.BloodSpray` = (victim, attacker,
+   count, speed, spread, kind), the spray aims back toward the attacker (particles §5.3, `100425f8..10042828`)
+   ⚑ wave 2 corr (2026-10-04) PA #7; burn rate `+0x8d + 1` rows/frame (draw-effects §4.2) ⚑ wave 2 corr
+   (2026-10-04) DE #7.
 3. ~~EnemyShot flight, tile and expiry behaviour for 0/1, 0x6a9, 0x6d6, 0x6e1/0x6e2 (bomb), 0x753
    (egg hatching? `+0x15c = 240`), 0x754.~~ → closed: enemies-ground-2 §5 (pointer to
    enemy-shots-and-damage §1.2–§1.6; 0x753 is a 240-frame bomb, not an egg).
@@ -532,7 +539,8 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
 6. ~~`FUN_100916dc` / `FUN_10091504` = "sound playing" / "stop sound" [MED].~~ → closed:
    enemies-ground-2 §3 (voice count / voice stop, HIGH).
 7. ~~Crawler/Roach `+0xa6` initial 3 and Roach `+0xa6` countdown have no consumer in state 2.~~ →
-   closed: enemies-ground-2 §2 (Crawler: live cooldown incl. the initial 3; Roach: write-only).
+   closed: enemies-ground-2 §2 (Crawler: live cooldown incl. the initial 3; Roach: write-only)
+   ⚑ wave 2 (2026-10-04) (EG2 corr #1, own row; marker added by the fix pass).
 8. (wave 2) Further open rows for this file live in enemies-ground-2.md NOT RESOLVED.
 
 ## Proposed additions to physics.md §0

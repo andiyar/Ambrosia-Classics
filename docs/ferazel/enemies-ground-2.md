@@ -35,7 +35,7 @@ only Walker store to `+0x1f8` is Setup's `1006737c`; store scan), and the buoyan
 | 2 | `1006361c..10063654` | mode dispatch on `+0xb0`: 4 is `< 0x1e`, `< 0xc`, `≠ 2`, `≥ 2`, `< 0xa` → `b 10064968` (no mode code at all) |
 | 3 | `10064968..10064988` | `+0xb0 == 3`? no; `== 4`? **yes** → shared raft/floe/corpse block (`+4 == 0x6a4` would also enter) |
 | 4 | `10064988..100649c0` | type 0x6a4 and `+0x19e < 0x50` → `if FastRand(2) == 1: +0x19e += 1` — buoyancy ramps 0 → 80, +½ per frame on average (≈ 160 frames to full) |
-| 5 | `100649c4..100649e8` | gravity `vy += +0x110` **only if** `+0x11c == 0 ∧ +0x120 == 0` — i.e. only when the previous frame had no water contact; `+0x110` is the Walker's 0x151 (`100673dc`, `100684e4`, `10069140`; the Platform handler's own `+0x110` stores `10063f14..10063f8c` lie in other mode branches) |
+| 5 | `100649c4..100649e8` | gravity `vy += +0x110` **only if** `+0x11c == 0 ∧ +0x120 == 0` — i.e. only when the previous frame had no water contact; `+0x110` is the Walker's 0x151 (`li r0,0x151` at `100673dc`, `100684e4`, `10069140`; the stores are the `sth r0,0x110(…)` at `100673e4`, `100684e8`, `10069144` — ⚑ corrected (review 2d, 2026-10-04) #9; the Platform handler's own `+0x110` stores `10063f14..10063f8c` lie in other mode branches) |
 | 6 | `100649ec..100649f4` | raft tilt block is mode 3 only — skipped |
 | 7 | `10064ac0..10064ac8` | `.ApplyFriction(s, 100)`: vx moves 100 toward 0, no overshoot (vy untouched) |
 | 8 | `10064ad0..10064ad8` | `+0xa6 ≤ 0` → no lifetime countdown, no melt: the corpse raft is **permanent** |

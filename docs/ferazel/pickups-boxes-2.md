@@ -43,7 +43,7 @@ A play call passes `*slot` (e.g. `lwz r3,-0x756c(r2); lwz r3,0(r3)`); the routin
 802 `9fe4c` · 803 `9fe5c` · 804 `9fe58` · 805 `9fe48` · 4704 `a0264` · 4705 `a0260`.
 (Script over the raw `li r3 / lwz r4,slot(r2) / stw r3,0(r4)` triples of 10045838–10046374. The only
 other `bl 0x10091748` sites are `.InitAppGlobals` 10000b14–10000b58: 198 'pause', 4801, 4803, 4804; ids
-602, 705 and the "old" variants are loaded by nobody.) Names: `snd ` resource names (sprites-backgrounds §6).
+602, 705 and the "old" variants are loaded by nobody.) Names: `snd ` resource names (sprites-backgrounds-sounds.md §6 — ⚑ corrected (review 2h, 2026-10-04) #6).
 
 ### 1.3 The sounds of pickups and boxes (raw call site → handle → id 'name')
 Volume = arg 3 (0x100 full); "pitched" = rate arg. Handles held in prologue registers were followed
@@ -190,8 +190,11 @@ a, b times; 4 / 6: set a placement-param word to 1 (own record / record a param 
 (36,936 B = 0x100 + 20·0x72a) with these offsets gives action-2 grants: Mcnv 200 (L1 merchant 2952):
 items 4, 5 · 205 (L3 'Sitting Habnabit' 2954): **item 3, Platinum Key** · 206 (L11 'Nimbo' 2955): 6 ×99,
 26 ×99 · 207 (L30 merchant 2952): **18 Ice Pick**, 17 Green Ring · 211 (L31 2965): 6 ×5 / ×20 · 204
-(no NPC, sign or grave placement has p1 = 204): 6 ×3 / ×10. Whether each line is reached depends on the condition and
-response encoding (INDEX item 3).
+(no NPC, sign or grave placement has p1 = 204): 6 ×3 / ×10. ~~Whether each line is reached depends on the condition and
+response encoding (INDEX item 3).~~ Reachability is decoded in conversations-mcnv §4.2–§4.3 (review 2h ruling 3, ⚑ corrected
+(review 2h, 2026-10-04) ruling 3): 205 #8 gives the Platinum Key and #5 removes a Health Potion (not a key); 207 #7 sells
+the Ice Pick (500 coins) and #9 removes a Steel Key (#n 1-based = 0-based line n−1; table `0x100a6cd0` [2] = `1007a364`,
+[3] = `1007a438`).
 
 ## 9. Decoration rows 2805..2889, per type (closes the remainder of INDEX item 1)  [HIGH]
 All three ranges: no hit or tile callback, gravity 0, not pushable; re-faced every frame from a cache
@@ -240,9 +243,12 @@ Unplaced: 2805..2807 (no PICT), 2810, 2814, 2815, 2819, 2823..2825, 2835, 2844, 
 
 ## NOT RESOLVED
 1. What `.KillPlayerShot`'s `+0xa6 = −6` does to an Effect 0x4b7 after it touches a crate (§7) —
-   Effect-class reader.
-2. Reachability of the conversation item grants (§8) — the condition/response encoding is INDEX item 3.
+   Effect-class reader. Tried: the `.KillPlayerShot` write only (§7). ⚑ corrected (review 2h, 2026-10-04) #6
+2. ~~Reachability of the conversation item grants (§8) — the condition/response encoding is INDEX item 3.~~
+   Tried: the action decode of §8 only. → closed by conversations-mcnv.md §4.2–§4.3 (wave 2, L5)
+   ⚑ corrected (review 2h, 2026-10-04) #6
 3. Whether an enemy can take two 100-point explosion hits (§7) depends on the Effect frame rate.
+   Tried: the damage arms of §7; the Effect frame advance was not read. ⚑ corrected (review 2h, 2026-10-04) #6
 
 ## Proposed additions to physics.md §0
 | off | type | meaning (this file) |
@@ -260,7 +266,7 @@ Unplaced: 2805..2807 (no PICT), 2810, 2814, 2815, 2819, 2823..2825, 2835, 2844, 
 | P3 | pickups-boxes §2.2 (own; in place) | 2932 "child 0xb74 with a 0xb75 face" | the placed body has the 0xb75 (PICT 2933) face; the child has the 0xb74 (PICT 2932) stub | 1006c5a4 vs 1006c680 |
 | P4 | pickups-boxes §2.4.7 (own; in place) | `PTR_DAT_100a0708` "presumably UP" | teleport-fire pulse at charge 80 | §3 |
 | P5 | pickups-boxes §2.4.3 (own; in place) | key 3 sources "crate L62 only" | also Mcnv 205 (L3 Sitting Habnabit), action 2 [MED reachability] | §8 |
-| P6 | held-item-melee §1 "Ice Pick (3218) … never placed nor held … [MED unobtainable: … conversations not checked]" | unobtainable | Mcnv 207 (L30 merchant) line 6 grants item 18 (Ice Pick) and line 7 item 17 [MED reachability] | §8 |
+| P6 | held-item-melee §1 "Ice Pick (3218) … never placed nor held … [MED unobtainable: … conversations not checked]" | unobtainable | Mcnv 207 (L30 merchant) line 6 (0-based; = #7) grants item 18 (Ice Pick) and line 7 (= #8) item 17 [~~MED~~ HIGH reachability, conversations-mcnv §4.2] — merged with CM #6 (fix pass) | §8 |
 | P7 | physics §0 `+0xa0` "a door's `+0xa0` is cleared by `.HitBoxSprite` (PB NR 8)" | open | dead write, no reader | §6 |
 | P8 | triggers-background-2 §2 effect table, 1207 (0x4b7) | hurts the player while frame ≤ 7 | add: hurts Crawler/Walker/Roach/Frog 100 (frame ≤ 7) and crates −10 on any frame; other classes immune | §7 |
 | P9 | world-data §5 (`Mcnv`) | action encoding unresolved | action triples at line + 0x81c / + 0x822, codes 1..6, 9, 10 as §8 | 1007a2dc, 1007a300, 0x100a6cd0 |

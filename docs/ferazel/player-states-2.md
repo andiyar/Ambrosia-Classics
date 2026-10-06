@@ -253,7 +253,9 @@ Ice Pick 4, Vorpal Dirk 1), break = immediate `.DestroyCrunchTile` + rock sound 
 | 4 | s ≥ 4 | s = 0: nothing; 1 ≤ s < 4: resist sound only |
 
 A grounded player calls the crunch pass every frame (`+0xeb = spin ∨ grounded`, §10 item 4) with
-strength 0 unless falling fast, so kind 3 is the cell that collapses under a player standing on it.
+strength 0 unless falling fast, so kind 3 is the cell that collapses under a player standing on it
+(confirmed by review 2g: `+0xeb` is rewritten from the vy > 0x9c4 test at `100552a0`/`100552ac` before
+`lbz r4,0xeb` at `100552b4` — ⚑ corrected (review 2g, 2026-10-04) #9).
 The tiles' art is level data; a name for each kind is UNDETERMINABLE from code — the table above is
 what a replica implements.
 
@@ -305,7 +307,8 @@ shipped data never exercises the odd part (§11). A replica copies these rules e
 2. ~~`.CrunchTile`'s return value meaning (break vs bounce) — only its use is read here.~~ → closed: §13 — ⚑ wave 2 (2026-10-04)
 3. ~~`PTR_DAT_100a06e8` (second cast-start flag): no writer in either dump.~~ → closed: §15, never
    non-zero, the branch is dead — ⚑ wave 2 (2026-10-04)
-4. PICT 1026 (0x402): no loader found.
+4. ~~PICT 1026 (0x402): no loader found.~~ → closed: unused, as is PICT 1054 (rendering-omnipx-titles §5)
+   ⚑ wave 2 corr (2026-10-04) RO #11
 5. ~~Cannon launch geometry (`.HandleCannonedSprite` arms, the cannon's `+0x46/+0x164`) — cannon reader.~~
    → closed elsewhere: triggers-background §2 "Firing" — ⚑ wave 2 (2026-10-04)
 6. ~~Glider internals (`_DAT_100a05d0/05d4/05d8/05dc/05c8`, faces 1050–1053) — spells reader.~~ → closed

@@ -67,7 +67,8 @@ Layer 11, Handle `.HandleEffectSprite` (TOC 0x100a0460), hit `.HitEffectSprite` 
 (x+16, y+24); big explosion (x+32, y+48)); then a smoke plume (id 1206) 90 px above if prefs+0x06
 == 1 and fewer than 3 plumes exist (not for 1207, 1090, −1); then a light
 (`.AddLight(light face PICT 813, centre, …, 0x16)` → `+0x9a`) unless id 1090 [HIGH reading;
-MED for the `NewParticle` argument names; prefs+0x06 = the detail popup of engine §8, so plumes
+~~MED for the `NewParticle` argument names~~ argument names HIGH, kind 1 = fire ramp (24 frames),
+4 = grey smoke (16), 9 = yellow-orange spark (13) (particles §2, §4.2–§4.4) ⚑ wave 2 corr (2026-10-04) PA #4; prefs+0x06 = the detail popup of engine §8, so plumes
 are a high-detail feature, MED].
 
 `.HitEffectTileSprite` (param 4 = tile layer class [MED]): class 1 and id 3099 → `.WallBounce(…,
@@ -104,7 +105,8 @@ start 813; frame 2 → 812, 4 → 811, 6 → 810, 14 → 811, 17 → 812, 20 →
 the glow swells and fades [HIGH].
 
 **Effect damage** (`.HitPlayerSprite` l. 4473–4500): (a) id 1207 (handler Effect) while
-`+0x46 ≤ 7`; (b) ~~**any**~~ any **non-Box** sprite of type 1440 with `+0x14c ≥ 1` — geyser segments copy `+0x14c`
+`+0x46 ≤ 7` (⚑ wave 2 corr (2026-10-04) PB2 #P8: 1207 also hurts Crawler/Walker/Roach/Frog 100 while frame
+≤ 7 and crates −10 on any frame; other classes are immune — pickups-boxes-2 §7); (b) ~~**any**~~ any **non-Box** sprite of type 1440 with `+0x14c ≥ 1` — geyser segments copy `+0x14c`
 from their column. ⚑ corrected (review 1c, 2026-10-03) (adjudication A2; synthesis ledger A2): the Box/SeeSaw arm of `.HitPlayerSprite` (`10056b2c..10057860`, entered at `10056b18` on TOC −0x73bc / −0x7678) leaves by 25 branches, all to the epilogue `1005855c`; this hazard arm (`10058458..10058494`) is entered only from `10057e00` on the non-Box path, so a Box-class 1440
 never reaches the test (enemy-shots-and-damage §3.4 was right) [HIGH]. Damage `0x70`, or `0x150` when `+0x14c == 2`; skipped for kind 1 if the
 walk-on power-up 1 is active, for kind 2 if power-up 2 is active or the Fire Charm (item 0x18)
@@ -373,8 +375,9 @@ and p4 stays 1) [HIGH arithmetic, part 1 §1 rules].
 4. ~~Spawners of effects 1202..1205, 1251 and −1 (none via the `.SetupEffectSprite` TOC slot —
    could be passed in by a caller through a register).~~ → closed: §8.6 — none exist (all 181
    `.MTNewSprite` sites traced); dead in 1.0.3, intent UNDETERMINABLE ⚑ wave 2 (2026-10-04)
-5. `.NewParticle` argument meanings; particle kinds 1/4/9 and geyser kinds 200+. ⚑ wave 2 (2026-10-04): belongs to
-   INDEX items 15/28; not worked by this lane.
+5. ~~`.NewParticle` argument meanings; particle kinds 1/4/9 and geyser kinds 200+.~~ ⚑ wave 2 (2026-10-04): belongs to
+   INDEX items 15/28; not worked by this lane. → closed by particles §2/§4 (200+ = liquids, §4.4)
+   ⚑ wave 2 corr (2026-10-04) PA #4
 6. ~~Button types 1323..1329 hot-rect source (allocator state) — moot for the shipped data.~~ →
    closed: §8.6 (cleared by `.MTNewSprite`, empty rect, never pressed) ⚑ wave 2 (2026-10-04)
 7. ~~Gate linkage completeness: only `* 0x10 + 0xe` read patterns were searched.~~ → closed: §8.5

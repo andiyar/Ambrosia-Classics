@@ -214,7 +214,9 @@ them. World flags and inventory live in `G` (saved). Action 10 is effective only
 
 ### 4.1 Summary table  [HIGH: data decode + code semantics of §3]
 "Lines" = lines that carry content; "dead" = unreachable under the shipped code. Item names per
-pickups-boxes §1.8 (ids 0..11 from PICT 702 captions [HIGH], higher ids PICT 3200+id names [MED]).
+pickups-boxes §1.8 (ids 0..11 from PICT 702 captions [HIGH], higher ids PICT 3200+id names [MED];
+items 17 and 18 are HIGH here: 207's own response strings read "Buy Escape Ring (80 coins)" / "Buy Ice
+Pick (500 coins)" — ⚑ corrected (review 2a, 2026-10-04) #8).
 
 | id (name) | lines / portraits | menu(s) | conditions | actions (decoded) |
 |---|---|---|---|---|
@@ -341,7 +343,9 @@ characters 1..len−1 of the chunk (the trailing space is dropped). The typer ke
 only on **odd** ages and not for spaces (`10079314..10079328`), then ages every slot; a slot older than
 9 is freed. A glyph is thus overdrawn at 36000, 28000, 20000, 12000, 4000 (of 65535) — it fades in
 from light grey to near black. Per character `.CharByCharDelay(2, start)` waits **2 ticks**
-(`addi r3,r24` = delay arg 2, `10079364..1007936c`; loop `100790d0..100790e8`) ≈ 30 chars/s; while any
+(`addi r3,r24` = delay arg 2, `10079364..1007936c`; loop `100790d0..100790e8`; r24 = the caller's r6,
+`10079228 addi r24,r6,0`, and both text callers pass `li r6,0x2` at `100795fc`/`100796f0`, the
+10-space pass `li r6,0x0` at `10079784` — ⚑ corrected (review 2a, 2026-10-04) #6) ≈ 30 chars/s; while any
 input key is held the delay ends at once (fast-forward). After the last chunk a 10-space pass with
 delay 0 finishes the fade. A `DeadTime` follows each wrapped line. Escape aborts mid-text.
 
@@ -364,11 +368,14 @@ delay 0 finishes the fade. A `DeadTime` follows each wrapped line. Escape aborts
    build mapped 3 to the own-record flag cannot be settled from 1.0.3 → **CLOSED AS UNDETERMINABLE**
    (intent only).
 2. Readers of `0x1024b4ca` / `0x1024b4cc` (written by action 2): none via any TOC slot; an offset
-   access from another base is not excluded (§3.4).
+   access from another base is not excluded (§3.4). Tried: `tocrefs.py` over both slots and the
+   writer at action 2 (§3.4). ⚑ corrected (review 2a, 2026-10-04) #9
 3. Whether a talker that stays in contact really re-opens every 150 frames (contact/`+0xb0` handling
-   of NPC sprites not traced here).
+   of NPC sprites not traced here). Tried: the cooldown writer/decrement only (§1.1, `10056d44`,
+   `1004e560..1004e578`). ⚑ corrected (review 2a, 2026-10-04) #9
 4. The exact on-screen origin assumes a 640×480 screen port (`_MTSetPortScreen`); the redraw
-   arguments of `_WrapCopyToScreen` on exit were not decoded.
+   arguments of `_WrapCopyToScreen` on exit were not decoded. Tried: the geometry constants of §6.1
+   only. ⚑ corrected (review 2a, 2026-10-04) #9
 
 ## Proposed additions to physics.md §0
 None (sprite fields used here: `+0x48` record index, `+0xb0` talk gate, `+0xe9` kill request — all
@@ -384,4 +391,4 @@ already in the bank).
 | 5 | pickups-boxes.md §1.8 | "Keys 3201..3203 are never placed loose: they come only from chests and crates" | the Platinum Key (item 3) is also given by Mcnv 205 (L3, Wounded Habnabit, for a Health Potion); conversations also **remove** Steel/Gold Keys (action 3, §5) | §4.2, `1007a364`/`1007a438` |
 | 6 | held-item-melee.md §1.9 and NR 4 | Ice Pick/Vorpal Dirk "MED 'unobtainable': enemy drops and conversations not checked" | Ice Pick **obtainable** from Elber (Mcnv 207 #7, L30); no conversation grants the Vorpal Dirk (21) or the Hammer (8) — the conversation half of NR 4 is closed (drops remain) | §4.3 |
 | 7 | spells-items.md §1 | slot `+8` "1 = spell slot" (writers listed: pickups) | add: conversation action 2 also fills item slots (flag 0, count cap 99) and `RemoveItem` is reachable from conversations | `1007a3e0..1007a408` |
-| 8 | triggers-background.md §3 (l. 418) | "every talker/plaque p1 > 100 is an existing `Mcnv` id (… 2951..2965 ×20 …)" | 18 spawned NPC talkers + L11 rec 283 (flag 99, Mcnv 220) + L4 rec 88 (flag 0, p1 = 0 — would fail if spawned); Mcnv 204 is never placed | §1.2 census |
+| 8 | triggers-background.md §3 (l. 446; row cited l. 418 — ⚑ corrected (review 2a, 2026-10-04) #7) | "every talker/plaque p1 > 100 is an existing `Mcnv` id (… 2951..2965 ×20 …)" | 18 spawned NPC talkers + L11 rec 283 (flag 99, Mcnv 220) + L4 rec 88 (flag 0, p1 = 0 — would fail if spawned); Mcnv 204 is never placed | §1.2 census |

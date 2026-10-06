@@ -100,13 +100,15 @@ every `* 0x10 +` record access inside the four classes' handler ranges finds exa
   `+0x17e = 1` means **facing right** (Frog spit spawns at `+90 px` with `vx = +2000` when set,
   §1.4) [HIGH for these classes].
 
-### 0.2 Draw mode `+0xb8` and the variant tints  [HIGH for the dispatch; MED for colours]
+### 0.2 Draw mode `+0xb8` and the variant tints  [HIGH for the dispatch; colours: requested HIGH, index LOW]
 `+0xb8 = mode<<16 | sub` is the `.BlitEncFaceX` mode argument (`.WrapDrawSprites` main dump
-l. 10246–10351; the hurt flash `+0xaa` overrides it with mode 3/4 while it runs). Mode 1 =
-per-pixel remap through the 256-byte table `_DAT_100a0140 + sub·0x100`
-(`.BlitEncFaceSpecialClipX`, case 1), built by `.BuildTintTable @ 10020a5c` from the current
-palette. Tables used here (formula from `.BuildTintTable`, colours via CLUT 200 "base sprite
-clut"):
+l. 10246–10351). Mode 1 = per-pixel remap through the 256-byte table `_DAT_100a0140 + sub·0x100`
+(`.BlitEncFaceSpecialClipX`, case 1), built by `.BuildTintTable @ 10020a5c`. ⚑ wave 2 corr (2026-10-04)
+DE #10, LT #8: the hurt flash replaces the tint for the flash's frames (`100146f0..10014728`), and a
+fully submerged sprite (`+0x11c == 1`) is drawn with the water table instead of its tint
+(`100148f0..1001491c`); the tables are built from the level+base **working copy** (indices 0..0x9f
+equal CLUT 200 in every level), colours rendered in lighting-tables §3.2 (chosen index LOW,
+particles §4.3). Tables used here:
 
 | sub | `.BuildTintTable` formula (per palette entry, lum = (R+G+B)/3) | reads as |
 |---|---|---|
@@ -117,18 +119,20 @@ clut"):
 | 0x17 | (2·lum − 32000)>>12 → 0xff, 0x35, 0x76..0x71, 0x2a (0x71 = (6b,9c,30) … 0x76 = (2f,4c,17)) | olive green |
 
 Other modes met: 9 (water tint table `_DAT_100a0170`, Crab in water), 0xb (translucent,
-dead-blob fade), 0xe, 6 (submerged part drawn with `0x60000 + water kind`). [MED: the palette in
-force when `.BuildTintTable` runs is assumed to be CLUT 200; table colours not rendered.]
+dead-blob fade), 6 (submerged part drawn with `0x60000 + water kind`); ~~0xe~~ no code writes mode
+0xe to `+0xb8` — it is only tested in `.WrapDrawSprites` (store scan) ⚑ wave 2 corr (2026-10-04) DE #3.
 
 ### 0.3 Death dissolve `.HandleBurn @ 10043cd8` (Frog, Salamander)  [HIGH]
 Started by `+0x1a2 = 1`. First call: sound **462 "enemyconsumed"** (`PTR_DAT_100a01ec`, loaded
 from id 0x1ce in `.InitSounds`) at volume 0xab via `.STPlay3DSoundRand` (pitched 110000 +
 `FastRand(15000)` vol 0x41 if `+0x8c`, never set here). `+0x1a2` jumps to the face's opaque top
-(`face+8`) and then advances `+0x8d + 1` (= 1) rows per frame, each row erased by
-`.BurnFaceRow(face, pos, 2, row, flip, style)` (style 1, or 0xd when `+0x8e` is set — Frog only,
-on levels with hdr+0x26cd ≠ 0, i.e. the freezing-water levels 30/31); `+0x1bc = row` clips the
-drawn face from the top. When the row passes the face's opaque bottom (`face+0xc`) the kill
-proc `+0x50` is called (else `+0xe9 = 1`). So the dissolve lasts (opaque height) frames.
+(`face+8`) and then advances `+0x8d + 1` (= 1) rows per frame. ⚑ wave 2 corr (2026-10-04) DE #1, #2:
+`.BurnFaceRow(face, pos, 2, row, flip, style)` **erases nothing** — it spawns particles along the
+row's opaque pixels (particle kind 1, or 0xd when `+0x8e` is set — Frog only, on levels with
+hdr+0x26cd ≠ 0, i.e. the freezing-water levels 30/31; `100438c4..10043974`); the face is hidden by the
+top clip `+0x1bc = row` (`10043e5c..10043e64`). When `+0x1a2 >` the opaque bottom (`face+0xc`) the
+kill proc `+0x50` is called (else `+0xe9 = 1`). The dissolve lasts `⌊(face+0xc − max(face+8,1))/k⌋ + 1`
+frames, k = `+0x8d + 1` (opaque height + 1 at k = 1; `10043e7c..10043e8c`; draw-effects §4.2).
 
 ## 1. Frog (types 1800..1809)
 
@@ -355,7 +359,9 @@ submerged in kind 0 or kind > 0): kind 3 → HP += 4 up to 500; kind 2 → −10
 Player shot while blob HP > 0: `.KillPlayerShot(shot,0,0)`; Statue spell → statue; else
 `.HurtSprite(shot+0xa4, shot vx>>1, **−1000**, invul 2, flash 8)` (`li r6,-0x3e8 @1007d760`;
 the hit pops it up); on a hit: state 5, `.BloodSpray(…, 40, 400, 150, kind 0xc9)` (different
-particle kind from Frog's 2 [MED: slime-coloured]), sound 702 if HP < 201 else 701. Statue/Box
+particle kind from Frog's 2; ~~[MED: slime-coloured]~~ kind 201 = palette indices 113–116, olive green
+#6B9C30 → #476C21, identical on every level — `10030fc0..10030ffc`, particles §4.1 ⚑ wave 2 corr
+(2026-10-04) PA #5), sound 702 if HP < 201 else 701. Statue/Box
 crush as Frog. No explosion branch.
 
 ## 4. Crab (types 1890..1899; only 1892 shipped) — an invulnerable claw on a chain
@@ -474,9 +480,9 @@ water cells, all in rows 20..49.
 
 | rec | type | x, y | cell (col, row) | BG tile → kind | nearest water cell |
 |---|---|---|---|---|---|
-| 97 | 1892 | 7620, 1655 | (238, 51) | none (−1) → −1 | (231, 28), 30 cells away |
-| 98 | 1892 | 8098, 1655 | (253, 51) | none → −1 | 45 cells |
-| 99 | 1892 | 8556, 1629 | (267, 50) | none → −1 | 58 cells |
+| 97 | 1892 | 7620, 1655 | (238, 51) | none (−1) → −1 | (231, 28), 30 cells away (Manhattan; Chebyshev 23 — ⚑ corrected (review 2d, 2026-10-04) #7) |
+| 98 | 1892 | 8098, 1655 | (253, 51) | none → −1 | 45 cells (Chebyshev 23) |
+| 99 | 1892 | 8556, 1629 | (267, 50) | none → −1 | 58 cells (Chebyshev 36) |
 
 All three get `+0x16c = 0`: the in-water `+0xb8 = 0x90000` tint (§4.1) never appears in 1.0.3.
 (With the arguments swapped the cells would be kind 495, also not water — the shipped outcome does
@@ -487,7 +493,9 @@ The archive holds exactly two Ferazel builds (ARCHIVE-INDEX rows 22–23): this 
 2000-03-21 12:57) and the demo (`Ferazel's Wand Demo`, PEF timestamp 2000-03-13 12:41; both
 `vers 2` = "1.0.3"). (The lane prompt's `$FW/../../ferazelswand/` is one level short: the demo is
 `$FW/../../../ferazelswand/`.) Locating each routine in the demo by its traceback name and diffing
-instruction words with branch displacements and r2-relative offsets masked:
+instruction words with branch displacements and r2-relative load/store offsets masked (the two `addi
+rX,r2,…` hits below are the only unmasked r2 forms; masking them too gives **0** differing words in all
+seven routines — ⚑ corrected (review 2d, 2026-10-04) #8):
 
 | routine | full / demo words | differing words after masking |
 |---|---|---|
@@ -522,7 +530,8 @@ Writer = enemy pipes 1490..1493 (level 21 only; a Blob 1730 comes out of two of 
 3. Exact rendered colours of tint tables 0x4/0xb/0xc/0xf/0x17 (assumes CLUT 200 is current
    when `.BuildTintTable` runs) and of `.BurnFaceRow` styles 1 vs 0xd.
    ⚑ wave 2 (2026-10-04): INDEX item 15, another lane — not attempted by L7.
-4. BloodSpray particle kinds 2 vs 0xc9 (colours); Effect type 0 appearance.
+4. ~~BloodSpray particle kinds 2 vs 0xc9 (colours);~~ (closed: kind 2 blood red, 201 olive green,
+   particles §4.3 / §5.3 ⚑ wave 2 corr (2026-10-04) PA #5) Effect type 0 appearance.
    ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.
 5. ~~`.GetBGTile` argument order (Crab water test) and whether any level-62 crab sits in water.~~ →
    closed: §7.3 (col, row; none in water).

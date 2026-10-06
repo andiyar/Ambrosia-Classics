@@ -68,7 +68,9 @@ p2 = 15, p3 = 2 (`+0x158 = 16 / |step|` = 8, handler l. 14077–14100) — a 180
 
 **Rotation from phase 3** (Handle raw 10073c98..10073d0c, l. 14718–14733): while `+0xa6 == 0`:
 `aim += +0x15c`, `+0x160 −= 1`, at < 1 → `+0x160 = +0x158`, `+0xa6 = p2` (15); while `+0xa6 ≠ 0`:
-`+0xa6 −= 1`, and when it reaches 0 snd 485 'cannon shift' (vol 0x41) unless already playing.
+`+0xa6 −= 1`, and when it reaches 0 snd 485 'cannon shift' (vol 0x41) unless already playing — via
+`.STPlay3DSoundRand` (`bl 0x10047d44` at `10073d3c`), rate 60535 + FastRand(10000) (`10047d60..10047d90`)
+⚑ corrected (review 2b, 2026-10-04) #4.
 Aim wraps into 0..31 (l. 14755–14760). One cycle = 8 moving frames + 15 still frames = 23 frames:
 
 | cannon | rests at (aim, launch direction) | sweeps through while moving |
@@ -98,7 +100,9 @@ player shot of spell id 0x5a — the thrown fire / Ziridium seeds (`MTNewSprite(
 `.HandleItemUse`, main l. 44265; spells-detail §3.8) and the Ring-of-Smiting bolt (`.SmiteEnemies`, main l. 47036);
 no `Mlvl` record has type 90 (census of all 24 levels). Player shots are captured by any cannon whose
 record p1 is not 0x69/0x6a (`.HitBackgroundSprite` l. 15326–15350), so all three lair cannons
-capture seeds. Id 0x5a is the only shot that lowers Xichra's phase counter (bosses-2 §6.5), so the
+capture seeds — but only a shot with `+0x130 ≥ 0` (`-1 < *(int *)(param_2 + 0x130)`, handler l. 15324;
+negative = post-launch block, physics §0.1), so a just-fired seed cannot be re-captured at once
+⚑ corrected (review 2b, 2026-10-04) #2. Id 0x5a is the only shot that lowers Xichra's phase counter (bosses-2 §6.5), so the
 lair's cannons can lob it — LOW that this is the intended way to reach a Xichra swaying 220 px either
 side of x 325 at y ≈ 72.
 
@@ -138,7 +142,8 @@ in the file. The only code that stores a record's p4 field stores its **own** re
 (main l. 61805/61808, `iVar4 = own +0x48`), `.HitBonusSprite` (l. 53487, containers 0x51b / 0xc1c..0xc25),
 `.HandleBoxSprite` (l. 60866) and the sign arm of `.HitPlayerSprite` (l. 49287) (grep of
 `* 0x10 + 0xe) =` and of direct `hdr + 0xe` stores over the main dump; the only direct one, l. 7730,
-is a prefs handle). A Background 1208 runs none of these, so record 0's p4 stays 0 and **the seven
+is a prefs handle). The list is a decompile grep; review 2b's grep over both dumps found the same five
+lines; no raw scan was made by either ⚑ corrected (review 2b, 2026-10-04) #7. A Background 1208 runs none of these, so record 0's p4 stays 0 and **the seven
 gates never open**: they hold at their base y and form the left and right walls of the lair
 [HIGH for the reading; MED for completeness of the writer grep; "intended as walls" LOW]. For the
 other p1 = 0 gates of triggers-background §1 (levels 18, 25, 62: record 0 is itself a 2940 gate;
@@ -212,7 +217,8 @@ Called once at level start (`bl` 10009fb8 in `.GameLoop`) and every painted fram
 
 ### 9.3 Level 67 on screen  [HIGH for the data; MED where noted]
 Entries 239..254 of CLUT 248 (and of the level CLUT 247, identical there) are a **magenta ramp**
-(R = B, G = 0): 239 (0xffff, 0, 0xffff), 240 0xdeb0/0xdeb7, 241 0xc6c6 … 253 0x2929, 254 black.
+(R ≈ B, G ≈ 0): 239 (0xffff, 0, 0xffff), 240 (0xdeb0, 0x0001, 0xdeb7), 241 0xc6c6 … 253 0x2929, 254
+black ⚑ corrected (review 2b, 2026-10-04) #5.
 CLUT 200 ('base sprite clut') is black at 160..255, so converted sprites carry none of these
 colours. Pixel census (Python decode of the PICTs' own colour tables; a pixel counts when its RGB
 equals one of entries 239..253):
@@ -226,8 +232,10 @@ equals one of entries 239..253):
 
 The PxBack set is converted with the level CLUT 247 (`.LoadLevelTilesets` sets the conversion
 CLUT to `PTR_DAT_1009ff4c` = `GetCTable(hdr+0x285c)`, main l. 1576–1584, because `hdr+0x26cc = 0`),
-whose 239..253 hold the same magentas, so the ramp pixels keep indices 241..253 [MED: assumes the
-Color Manager maps an exact colour to its own entry]. **So the animation recolours ~15 % of the
+whose 239..253 hold the same magentas, so the ramp pixels keep indices 241..253 [HIGH — ⚑ corrected
+(review 2b, 2026-10-04) #6: the loader is `NewGWorld(8-bit, ctab = level CLUT)` + `DrawPicture`
+(main l. 28571–28593); CLUT 247 holds no duplicate of any ramp colour and all 15 differ in their top
+5 bits, so even an inverse-table lookup returns the exact entries; the census hit exactly 241..253]. **So the animation recolours ~15 % of the
 throne-room backdrop and nothing else** (black at 254 stays black except in mode 4, below).
 
 Per Xichra phase (bosses-2 §6.3; phase 1 writes nothing, so mode 3 stays), with base A = 12000,
@@ -358,7 +366,8 @@ higher and shorter, 36000 at 0.55×; `.STPlay3DSoundRand` uses 60535 + FastRand(
 ---------------------------------------------------------------------------------------------
 
 ## NOT RESOLVED
-1. `+0xb8` draw modes 1, 0xb, 0xc and the flash buffer `*_DAT_100a0008` (bosses-2 NR 1) — not
+1. ~~`+0xb8` draw modes 1, 0xb, 0xc and the flash buffer `*_DAT_100a0008` (bosses-2 NR 1)~~ → closed by
+   draw-effects §1.3/§2 (mask buffer, not a flash buffer) ⚑ wave 2 corr (2026-10-04) DE #9 — not
    attempted here; it is INDEX item 15 (draw effects), whose lane owns the blitter
    (`.WrapDrawSprites` passes `+0xb8`, overridden by the hurt flash `0x30000+min(n,7)` /
    `0x40000+2n`, to `.WrapDrawFace` → `_BlitEncFaceX`, main l. 10308–10364).
@@ -371,7 +380,8 @@ higher and shorter, 36000 at 0.55×; `.STPlay3DSoundRand` uses 60535 + FastRand(
 
 ## Proposed additions to physics.md §0
 None new. The cannon fields used in §8.2 (`+0x158` frames per move, `+0x15c` aim step, `+0x160`
-frames left, `+0x164` launch speed, `+0xa6` pause) are already in triggers-background-2 §0.
+frames left, `+0x164` launch speed, `+0xa6` pause) are already in triggers-background-2 §6 (field
+rows, l. 399 ff.; no §0 exists there) ⚑ corrected (review 2b, 2026-10-04) #3.
 
 ## Corrections to the existing bank
 In the wave-2 table at the end of `bosses-2.md` (Corrections to the existing bank, rows W1..W5):

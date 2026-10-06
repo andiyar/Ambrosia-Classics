@@ -397,7 +397,9 @@ else 0 (1004b2d0): the level's **start facing** (closes the meaning half of INDE
 | 1050–1053 | 6/4/6/4 (160×160, cached) | `_DAT_100a0778/0774/0770/076c` | glider | → spells reader |
 | 750..776 | 27 single faces | `_DAT_100a5f68` array | held-item faces (index = item id) | — |
 1026 (0x402, 400×152) is not loaded by `.InitPlayerSprite` and no `0x402` literal occurs in
-either dump [NOT RESOLVED: unused or loaded by computed id]. Labels:
+either dump ~~[NOT RESOLVED: unused or loaded by computed id]~~ — **unused**: no `0x402` immediate and no
+computed site can yield it; PICT 1054 is also unused (rendering-omnipx-titles §5) [HIGH for the search]
+⚑ wave 2 corr (2026-10-04) RO #11. Labels:
 PICT/global/use [HIGH]; state names [MED, from the selecting code, the PICTs are unnamed].
 
 Hot rects (`SetRect(s+0x34, l,t,r,b)`): standard `(0x26,0x22,0x3e,0x55)` reset every frame
@@ -449,7 +451,8 @@ Order of one frame and the active list: platforms-ropes-radial-2 §8. For the pl
   (`1004e57c..1004e588`) — write-only (platforms-ropes-radial-2 §10.2).
 
 ## NOT RESOLVED
-1. `PICT 1026` (0x402, 400×152): no loader found (§7) — not this lane's (wave 2: lane L4).
+1. ~~`PICT 1026` (0x402, 400×152): no loader found (§7) — not this lane's (wave 2: lane L4).~~ → closed:
+   unused (§7; rendering-omnipx-titles §5) ⚑ wave 2 corr (2026-10-04) RO #11
 
 ## Proposed additions to physics.md §0
 - `+0x5c` (player) = 0 always: the player's sprite-contact logic is `.HitPlayerSprite`, called only by
@@ -458,4 +461,4 @@ Order of one frame and the active list: platforms-ropes-radial-2 §8. For the pl
 ## Corrections to the existing bank
 | # | file § | old | new | evidence |
 |---|---|---|---|---|
-| W1 | enemy-shots-and-damage / spells-detail notes on "same-frame handling of new shots" | open | rule: a sprite created inside a handler is handled in the same frame only if its insertion point (layer, then insertion order) lies after the creator's successor as saved before the call; a Double (layer 9, created by the layer-10 player) never is | §9.1; platforms-ropes-radial-2 §8.2 (raw `100325b8..100325d8`, `10032f1c..10032fd0`) | §9.1; platforms-ropes-radial-2 §8.2 |
+| W1 | enemy-shots-and-damage / spells-detail notes on "same-frame handling of new shots" | open | rule: a sprite created inside a handler is handled in the same frame only if its insertion point (layer, then insertion order) lies after the creator's successor as saved before the call; a Double (layer 9, created by the layer-10 player) never is | §9.1; platforms-ropes-radial-2 §8.2 (raw `100325b8..100325d8`, `10032f1c..10032fd0`) ⚑ corrected (review 2g, 2026-10-04) #7: duplicate sixth cell removed |

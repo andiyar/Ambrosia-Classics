@@ -47,7 +47,8 @@ handlers only in the next frame.
 `.MTCollideSprites` (raw `100326cc..10032a90`): clears every `+0x44` (hot-rect-computed flag); for
 each sprite A **in list order** with `+0x5c ≠ 0`, `+0x1b2 == 0`, `+0xe9 == 0`, scans every B **from the
 head** (`10032714`) with B ≠ A, `+0xe9 == 0`, `|ΔA+0xc| < R` and `|ΔA+0xa| < R` (R = `*(_DAT_1009ff58+0x1c)`,
-`100326e8`), the `+0x184` same-handler exclusion, and `.CalcHotRect` rects `+0x3c` intersecting.
+`100326e8`) = **360 px** (`li r0,0x168; sth r0,0x1c(r31)` at `10032274`/`10032278`; ⚑ corrected (review
+2g, 2026-10-04) #1), the `+0x184` same-handler exclusion, and `.CalcHotRect` rects `+0x3c` intersecting.
 - Contacts 1..6 are collected; a 7th and later are dispatched at once, `A.hit(A,B)` then `B.hit(B,A)`
   if B has one (`10032848..10032870`).
 - 1 contact: `A.hit(A,B)`, `B.hit(B,A)` (`10032898..100328c8`).
@@ -57,7 +58,13 @@ head** (`10032714`) with B ≠ A, `+0xe9 == 0`, `|ΔA+0xc| < R` and `|ΔA+0xa| <
   `10032990..100329bc`), then the others in list order (`10032a2c..10032a80`). The x term uses B's
   near edge and the y term its far edge — as written.
 - Every **ordered** pair is visited: when A and B both have hit callbacks, each callback runs **twice**
-  per frame (once with A outer, once with B outer).
+  per frame (once with A outer, once with B outer) — unless the first visit kills one of them: the
+  outer and inner `+0xe9` tests (`10032750`, `1003276c`) then skip the second visit; and there is **no**
+  `+0xe9` re-test between `A.hit` and `B.hit` of one visit, so B's callback runs even if `A.hit` just
+  killed B (enemy-shots-and-damage-2 §4.2) ⚑ corrected (review 2g, 2026-10-04) #2. The main pass
+  intersects with `.TheSectRect` (`10032688`), the player pass with `.SectRectFast` (`10034db4`); "twice"
+  assumes both agree on rects that only touch at an edge — not verified [MED] ⚑ corrected (review 2g,
+  2026-10-04) #3.
 
 `.MTCollideSpecialSprite(player, HitPlayerSprite)` (raw `10032ac8..10032eec`; TOC `_DAT_1009fdd4` → TV
 `0x100a21b4` → `100556f4`): the player has **no** hit callback (`.SetupPlayerSprite` `s+0x5c = 0`,
@@ -191,12 +198,13 @@ Face set 0x2c7 = `PICT 711 'frozen water platform'` (40×72 → 3 faces 40×24 s
 | face | art | used when |
 |---|---|---|
 | 0 | free floe: flat slab, icicles below, both ends rounded | `+0x16c = 0` (shot entering water) |
-| 1 | ledge whose **right** end rises and dissolves into a wall (dithered right edge) | `R`: solid right-half wall (kinds 2, 6, 7) hit while moving right; the ledge spans X−23..X+17, its right end on the wall face at X+16 |
-| 2 | mirror image: **left** end merges into a wall | `L`: solid left-half wall (kinds 0, 4, 5) hit while moving left; spans X+15..X+55 from the wall face at X+16 |
+| 1 | ledge whose **right** end rises and dissolves into a wall (dithered right edge) | `R`: solid right-half wall (kinds 2, 6, 7) hit while moving right; the ledge spans X−23..X+16 (40 px), its right end on the wall face at X+16 ⚑ corrected (review 2g, 2026-10-04) #5 |
+| 2 | mirror image: **left** end merges into a wall | `L`: solid left-half wall (kinds 0, 4, 5) hit while moving left; spans X+15..X+54 (40 px) from the wall face at X+16 ⚑ corrected (review 2g, 2026-10-04) #5 |
 
 ## NOT RESOLVED
-1. (Unchanged from platforms NR 1, not this lane) pixel semantics of draw effects 1..4, 7, 9, 0xc,
-   0x10..0x13 and which blend operand is the sprite pixel.
+1. ~~(Unchanged from platforms NR 1, not this lane) pixel semantics of draw effects 1..4, 7, 9, 0xc,
+   0x10..0x13 and which blend operand is the sprite pixel.~~ → closed by draw-effects §2 / §2.7
+   ⚑ wave 2 corr (2026-10-04) DE #5, #6
 2. The visual meaning of the `.MTCollideSprites` dispatch key (far-y / near-x edge mix, §8.3) — the
    rule is exact; whether it was meant as "nearest first" cannot be settled from code (UNDETERMINABLE
    intent; copy as written).

@@ -90,7 +90,7 @@ time); the PICT pixel data itself is standard QuickDraw PackBits.
 | FG water | `.LoadFGWaterTileset @ 10002008` | 96 | same id as FG | 181 | §2 water stamping |
 | FG pattern | `.LoadFGPatternTileset @ 100020ec` | 64 | 256×256 | 206 | loaded twice: encoded set (`_DAT_1009ff84`) **and** plain faces (`DAT_100a5004[64]`) |
 | PxBack | `.LoadPxBackTileset @ 1000224c` | 36 of 128×128, 6 per row | 768×768 | 5000 (512×768 in Sprites) | plain; uses sprite CLUT if hdr+0x26cc |
-| PxMid | `.LoadPxMidTileset @ 10002344` | 12 of 128×128, 6 per row, **two sheets** id and id+1 | 768×256 each | none (0) | plain, into `DAT_100a4fa4[12]` and `DAT_100a4fd4[12]` |
+| PxMid | `.LoadPxMidTileset @ 10002344` | 12 of 128×128, 6 per row, **two sheets** id and id+1 | 768×256 each | none (0) | plain; sheet id = image (0 = transparent) into `DAT_100a4fa4[12]`, id+1 = mask (0 = opaque, 0xFF = clear) into `DAT_100a4fd4[12]` (rendering-omnipx-titles §1.2) ⚑ wave 2 corr (2026-10-04) RO #10 |
 
 Fixed sets loaded once (`.InitGameGlobals @ 10001498`):
 - FG water mask: `PICT 183` (0xb7), 96 cells 32×32 (Sprites file, 256×384) → `_DAT_1009ff98`.
@@ -123,8 +123,10 @@ or `(x mod 6) + 8·(y mod 6)` when hdr+0x26cb ≠ 0; > 63 is a fatal "bad FGPatt
 Walks the encoded tokens of each of the 96 blend faces and rewrites every copied pixel value
 `v` to a 2-bit weight: `v == 0 || 0x97 ≤ v ≤ 0x98 → 3`; `1 ≤ v ≤ 0x96 → 0`; `0x99..0x9b → 2`;
 `0x9c..0x9e → 1`; `v ≥ 0x9f → 0`. (`v` are indices in the CLUT current at load time.) The
-blend blitter `.BlitEncFaceTileBlend` mixes the pattern tile through these weights [MED: the
-mixing arithmetic not read].
+blend blitter `.BlitEncFaceTileBlend` mixes the pattern tile through these weights: ~~[MED: the
+mixing arithmetic not read]~~ weight 0 → pattern, 1 → ¼ screen + ¾ pattern, 2 → ½/½, 3 → ¾ screen +
+¼ pattern, via the pair tables `0154/015c/0158` (raw `1002a8cc..1002a944`; lighting-tables §8) [HIGH]
+⚑ wave 2 corr (2026-10-04) LT #1.
 
 ### 3.3 Overlay tiles (`.PlainWrapFGOverlayTile @ 10012f84`)  [HIGH]
 Overlay cell o1 = 100 → FG face o2; o1 = 101 → BG face o2; o2 ≥ 95 → pattern tile; drawn tinted
@@ -146,18 +148,26 @@ when the cell is water. (o1 < 100 is the wind field, physics.md §6.)
   entries 0xa0..0xfe of the level+base CLUT, `lum = (r+g+b)/3 >> 8` (clamped 1..0xfe), then each
   channel `c' = clamp(c + 2·alt[lum].c − 0x8000, 0, 0xffff)` (overlay-style tint), then
   `SetScreenClut` [HIGH].
-- `.AnimateCLUT` (hdr+0x2730..0x2736) cycles a CLUT range [MED].
-- Lighting: `.CalcLightingTable` builds 8-bit remap tables (ambient darkness hdr+0x2706, light
-  faces from `Load1LightFaceFromPICT`), `.BuildTintTable`, `.BuildWaterTintTable`,
-  `.BuildReddenTable`, `.BuildTranslucTable`, `.BuildPosterizationTable` — all index→index
-  tables [MED: built from CLUT colour search; algorithms not transcribed — NOT RESOLVED].
+- `.AnimateCLUT` (hdr+0x2730..0x2736) ~~cycles a CLUT range [MED]~~ is not a cycle: a sine-wave
+  recolour of entries `255 − count .. 254` (`0xff−n..0xfe`) of the level+sprite working CLUT by a
+  per-mode formula, pushed to the screen with `SetEntries`, rate-gated by the Effects level (raw
+  `1001180c..10011cd4`; lighting-tables §1.5, bosses-3 §9.2) [HIGH] ⚑ wave 2 corr (2026-10-04) LT #3 =
+  B3 #W2.
+- Lighting: `.CalcLightingTable` builds 8-bit remap tables (light faces from
+  `Load1LightFaceFromPICT`), `.BuildTintTable`, `.BuildWaterTintTable`, `.BuildReddenTable`,
+  `.BuildTranslucTable`, `.BuildPosterizationTable`. ⚑ wave 2 corr (2026-10-04) LT #2: per-cell
+  darkness = BG-map cell high byte − 1, `hdr+0x2706` only **enables** it (`1003c2b4..1003c340`); the
+  algorithms are transcribed in lighting-tables §3–§7 (chosen indices LOW, particles §4.3); the
+  posterization table yields levels 0..15, not indices, and the posterization, transluc, `0138` and
+  `013c` tables have **no reader** (tocrefs) [HIGH].
 
 ### 4.1 Cooling map / flame layer  [HIGH for the load]
 `.LoadCoolingMap @ 10000924`: draws `PICT 198` (Sprites, 608×96) through CLUT 198 "cooling map
 clut" into a 640×100 port and copies it into the flame engine's cooling buffer
 (`_DAT_100a0070 + 0x1c`). The flame engine (`.FlameCreate(…, 640×100, 0xce, 0xfe)`,
 `.FlameAddLine`, `.FlameAddSpark`, `.FlameUpdate`, `.FlameUp`) is a classic "fire" cellular
-effect drawn on levels with hdr+0x2722 ≠ 0 (52, 55) [MED: per-pixel rule not transcribed].
+effect drawn on levels with hdr+0x2722 ≠ 0 (52, 55) — per-pixel rule (`.FlameUp @ 100857e0`) in
+lighting-tables §9 ⚑ wave 2 corr (2026-10-04) LT #4.
 
 ## 5. Sprite sheets (Sprites file)
 
@@ -215,6 +225,9 @@ the header's rate, then the samples **minus 0x80** (signed 8-bit) [HIGH]. Playba
 (+0x18) and right (+0x1a) volume clamped to 0x80}; a new sound displaces the first voice whose
 priority is ≤ its own and whose summed volume is ≤ its own; pitch = `FixMul(soundRate /
 outputRate, req.rate)` [MED: mixer output path (`SndPlayDoubleBuffer`) not transcribed].
+Helpers ⚑ wave 2 corr (2026-10-04) EG2 #2: `FUN_100916dc(x)` = number of voices playing sound/voice `x`
+(0 = all) (`100916dc..10091744`); `FUN_10091504(x)` = stop all voices matching `x`, calling each
+voice's completion proc (`10091504..100916c8`) (enemies-ground-2 §3) [HIGH].
 Volume knob: `iRam100a510c` (global volume) × per-call volume >> 8 [HIGH].
 
 ### 6.3 Positional sound  [HIGH]
@@ -236,6 +249,8 @@ splash/publisher logo, 136 loading screen at 640×480, 132 status bar (640×88),
 (196×45), 138 death/continue screen (`.AskToContinue` draws 0x8a), 140 (320×110),
 141 (stats bar strip 52×714, world-data-format.md §4.3), 142 (320×64), 159/161/162 victory, 4921 pause
 banner, 4985 (`0x1379`, 32×28, continue-dialog cursor) [HIGH for each `GetPicture`/`DrawPICT`
-call cited; the remaining ids' use sites NOT RESOLVED]. CLUTs 281..287 are the chapter
-screens, 288..290 interstitials, 260 victory, 132 death, 128/729 splash, 130 main menu, 131
-preview (names in census).
+call cited]. ⚑ wave 2 corr (2026-10-04) RO #9: every id is now mapped (rendering-omnipx-titles §4.1/§4.2):
+140 = stage-complete panel, 142 = loading popup, 133 = health/magic HUD; PICT 137, 4951..4955,
+4961..4965 and CLUTs 288..290 and 729 have **no reference**; CLUT 131 is loaded twice and never read.
+CLUTs 281..287 are the chapter screens, 260 victory, 132 death, 128 splash, 130 main menu (names in
+census).

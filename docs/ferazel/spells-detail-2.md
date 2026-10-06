@@ -38,7 +38,8 @@ The test `face+0xe ≤ s+0x1b6 || s+0x1b8 ≤ face+0xa` (part 1 §3.2, §3.7) re
   (top, left, bottom, right; sprites-backgrounds-sounds §2.1 [HIGH there]); the same Rect is what
   `.ActiveToIdleSprite` copies into an idle entry (`10007f20..10007f3c`, triggers-background-2 §8.3).
 - `s+0x1b6`, `s+0x1b8` = left-skip / right-edge draw clip (physics §0.1). For a player shot only two
-  routines write them (raw scan of every `sth …,0x1b6(`/`0x1b8(`): `.StandardSpriteHandles` resets them to
+  routines write them after creation (raw scan of every `sth …,0x1b6(`/`0x1b8(`; `.InitSprite` also stores
+  them at creation, `1003d56c`/`1003d584` — ⚑ corrected (review 2f, 2026-10-04) #2): `.StandardSpriteHandles` resets them to
   0 / 32000 at the top of every handler call (`100368a8..100368bc`), and `.StandardSpriteCleanup` sets them
   only inside a **wall-tunnel window** (`+0x1be..+0x1c4`, InitSprite 32000 = no window; `10036f20..10036ff0`,
   triggers-background §2.12). The other writers (`.HandleBoxSprite` `1006efa0`, `1006efe0`, `1006f048`,
@@ -103,6 +104,12 @@ their Setups set 11 —, or a layer-10 sprite created after the player). Otherwi
 followers sit directly between the player and its cached successor and are first handled next frame.
 (Handlers that store `+0x80` directly — Walker, Crawler, Roach set 11 in their Handle — do not re-sort;
 only `.MTChangeSpriteLayer @ 10033288` removes and re-inserts, main l. 30727–30735.)
+⚑ corrected (review 2f, 2026-10-04) #1 — **assumption**: `.MTInsertSprite` walks from the **head**
+(`10032f68..10032f9c`), so the rule above holds only while no sprite *before* the player in the list
+carries a current `+0x80` > 11. Direct `+0x80` stores exist and do not re-sort (raw `10066500→10066518`,
+`100632d8`, `10063400`); a sprite left before the player with a current layer > 11 would take the new
+shot in front of itself, i.e. before the player, and the shot would then first be handled next frame
+whatever the player's successor is.
 
 Consequences for part 1 §2.4:
 - In the creation frame the shot always takes part in `.MTCollideSprites` (which runs after all handlers,
@@ -168,8 +175,10 @@ allows it; LOW how often it occurs in play].
   (triggers-background §1); Bonus 0x517 = rock pile 1303, 0x51b = torch 1307 — for 1307 `+0xb0` = "not yet
   opened" (1 when p4 = 0, pickups-boxes §1.5); 1303's Setup writes no `+0xb0` (its arm, handler l. 6792–6794,
   is only `SetRect(2,−8,0x1c,0xb)`) and InitSprite zeroes it, so the `0x517` arm of `.HitPlayerShotSprite` (part 1
-  §3.7 row "Bonus types 0x517/0x51b") never fires for a placed rock pile [MED: no other `+0xb0` writer
-  for 0x517 was searched beyond the Setup].
+  §3.7 row "Bonus types 0x517/0x51b") never fires for a placed rock pile [HIGH — ⚑ corrected (review 2f,
+  2026-10-04) #3: review 2f classified all 212 `st? …,0xb0(` sites; the Bonus writers are the 0x51b Setup
+  arm (`1005e0d4..1005e0e0`), the `.HitBonusSprite` 0x51b/0xc1c arm (`1005fe0c`, writes 0) and the
+  `.HandleBonusSprite` decrement (`1005f808..1005f818`); none for 0x517].
 - NR 6: no shipped scroll grants spell 7 (INDEX 11 → pickups-boxes §1.7).
 - NR 7: trunk `+0xa6` = lifetime with blink and kill (pickups-boxes §2.4.9); `.TurnIntoStatue(s)` takes no
   power argument — duration 120 frames and thaw damage 200 are fixed (enemy-shots-and-damage §2.2), so
@@ -178,9 +187,11 @@ allows it; LOW how often it occurs in play].
 ## NOT RESOLVED
 
 1. (Part 1 NR 1, carried) `.NewParticle` arguments and effect-sprite visuals — INDEX items 15/28, not
-   this lane.
+   this lane. Tried: nothing (hand-off by brief). Since closed for the arguments and kinds by
+   particles.md §2/§4 (wave 2, L3). ⚑ corrected (review 2f, 2026-10-04) #6
 2. The byte `0x100a5114` cleared by the camera look-ahead decay and read by `.FindUpperLeftCorner`
-   (triggers-background-2 NR 12) — camera owner.
+   (triggers-background-2 NR 12) — camera owner. Tried: only the two writers met in §1's look-ahead
+   reading (`10051488..10051490` set, decay arms clear). ⚑ corrected (review 2f, 2026-10-04) #6
 3. How often follower-slot reuse (§5) happens in real play — needs a behaviour run; the code permits it.
    Tried: allocator arithmetic only.
 

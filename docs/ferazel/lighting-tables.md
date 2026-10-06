@@ -22,18 +22,21 @@ TOC words resolved with `pef.py` (word + 0x1009f840):
 
 `clut` 198/199/200/801 are byte-identical in the app fork and the Backgrounds file (Python compare) [HIGH].
 
-### 1.2 Screen CLUT and the colour search  [HIGH for the calls; LOW for the metric]
+### 1.2 Screen CLUT and the colour search  [HIGH for the calls; LOW for the index chosen]
 `.SetScreenClut(c) @ 1000faa8`: rewrites every entry's value field to its index, `SetEntries(−1,0xff)`,
 `CTabChanged`, **`MakeITable(c, nil, 0)`**, `.CopyScreenClut`, `.ChangeBlitPortClut`. Every table
 builder maps a computed `RGBColor` with **`Color2Index`** (glue `1009f1ac`, e.g. `10020c48`), i.e. the
 QuickDraw inverse table of the current device built from the level+base CLUT by that `MakeITable`.
 The search rule lives in ROM: resolution `res = 0` means the device's preferred resolution, and the
-nearest-colour rule inside `MakeITable` is not in this binary → NOT RESOLVED 1. **Model used for
-every computed colour below**: 4-bit inverse table (request quantised to the top 4 bits of each
-channel, bit-replicated), nearest CLUT entry by squared RGB distance, ties → lowest index [LOW].
-Agreement of this model with an exact (unquantised) nearest search over sprite indices 0..0x9f: 39/160
-(table 0xe, dark) to 153/160 (table 0xc); a 5-bit table agrees 66..157/160. Treat every "→idx"
-cell as LOW; the requested RGB beside it is the exact formula output.
+nearest-colour rule inside `MakeITable` is not in this binary → NOT RESOLVED 1. ⚑ corrected (review
+2c, 2026-10-04) #4: **the bank's one `Color2Index` model is stated in particles §4.3** — exact nearest
+RGB, ties → lowest index; it is a **model; several steps may differ**, and every chosen index is
+[LOW]; the requested RGB beside it is the exact formula output [HIGH]. The "→idx" cells of this file
+were computed before that ruling with a 4-bit inverse-table model (request quantised to 4 bits per
+channel, bit-replicated); its agreement with the exact search over sprite indices 0..0x9f is 39/160
+(table 0xe, dark) to 153/160 (table 0xc) (a 5-bit table: 66..157/160). Review 2c's spot re-runs
+agree under both (tint 1 @06 → 4c, 0xc @2a → 87, 3 @61 → 32) except water table 0 @9e: 49 under
+4-bit, **84** exact — both are given in §4; the other cells were not re-run.
 
 `.CopyScreenClut @ 1000fa10` copies `(ctSize+1)·8` bytes from the main device's CLUT handle start
 (header + entries 0..254) into the window port CLUT [HIGH, `1000fa4c..1000fa5c`].
@@ -105,16 +108,19 @@ dedicated blitters and **every other mode** to `.BlitEncFaceSpecial{NoClipX,Clip
 | 4 | `_DAT_100a0174` (−0x76cc) | `arg·0x100`, arg 0..14 even | `.BuildReddenTable` B (§5) | hurt flash, `+0x1b4 ≠ 0` |
 | 6, 9 | `_DAT_100a0170` (−0x76d0) | `arg·0x100` (water kind) | `.BuildWaterTintTable` (§4) | 9 = whole sprite, 6 = submerged part (ripple blitter) |
 | 0xc | `_DAT_100a0130` (−0x7710) if `arg&0xff == 0`, else `_DAT_100a0134` (−0x770c) | `(char)(arg>>8)·0x100` / `(char)(arg>>8)·0x6e00 + (arg&0xff)·0x100` | `.CalcLightingTable` (§7) | dynamic light |
-| 0, 2, 5, 7, 8, 0xa, 0xb, > 0xc | **none** | — | — | the table register keeps the caller's r7 (the width argument) |
+| 0, 2, 5, 7, 8, 0xb, > 0xc | **none** | — | — | the table register keeps the caller's r7 (the width argument) |
+| 0xa | none — **vertical squash**, pixels copied raw: explicit `sVar9 == 10` arms in `.BlitEncFaceSpecialClipX` (`100275d4 cmpwi r25,0xa`; accumulator `li r6,0x100` `100271f0`; `10027614..10027630`); draw-effects §2.6 is authoritative ⚑ corrected (review 2c, 2026-10-04) #2 | — | — | springboard gauge, platform child |
 
 The same switch is in `.BlitEncFaceRot`, `.BlitEncFaceScale` and the flip variants (decompile)
-[MED for those three]. So modes 2, 7, 0xa, 0xf..0x13 would remap through whatever the table register
-holds (NoClipX: r7 = width; ClipX, jump table `100a3d64`, entry 10 → default: r5 = the caller's
-source-offset Point). Census of every `+0xb8` store in both dumps: constants are modes 1, 8, 9, 0xb;
+[MED for those three]. So modes 2, 7, 0xf..0x13 would remap through whatever the table register
+holds (NoClipX: r7 = width; ClipX, jump table `100a3d64`, default: r5 = the caller's source-offset
+Point). Mode 0xa does not: its jump-table entry is the default, but ClipX handles it in its own
+arms as a vertical squash (draw-effects §2.6) ⚑ corrected (review 2c, 2026-10-04) #2. Census of every `+0xb8` store in both dumps: constants are modes 1, 8, 9, 0xb;
 computed values are 3/4 (§2.2), 5 (`sparkle + 0x50000`, handlers l. 2591), 6, 0xc (§2.2 and
 `.UpdateRadiusSprites` `…·0x100 + 0xc0000`, main l. 35903), `0x10000 + var` (tier tables), and
 **`0xa0000 + d`, d = 11..250, on the platform child `+0x1d8`** (`.HandlePlatformSprite`, handlers
-l. 9010) — the only stored mode without a table (NOT RESOLVED 9) [HIGH census]. Modes 2, 7,
+l. 9010) — ~~the only stored mode without a table (NOT RESOLVED 9)~~ a vertical squash by d/256
+(draw-effects §2.6) ⚑ corrected (review 2c, 2026-10-04) #2, #6 [HIGH census]. Modes 2, 7,
 0xf..0x13 are never stored; "0x10..0x13 blends" in physics §0 are mode-1 *table* numbers.
 `.SetRadiusSpritesEffect(s, 0x10018)` gives radial spokes tint table 0x18 (main l. 54626 ff.).
 
@@ -216,8 +222,8 @@ table 0x10 does not bite on them; it would for lum > 0x9696.) Generator: the ari
 in Python on `clut 202` from `Ferazel's Wand Backgrounds.rsrc` (scratchpad model, not committed).
 
 ## 4. Water tables — modes 6/9, `_DAT_100a0170 + w·0x100` (global `101e1fc2`)  [HIGH]
-`.BuildWaterTintTable @ 100203dc`, entries **0..0xfe only** (`cmpwi 0xff; blt` at `100204b8`,
-`10020694`, `10020774`, `10020844`, `10020a04`). w = liquid kind (`+0x128`): 0 water, 1 acid,
+`.BuildWaterTintTable @ 100203dc`, entries **0..0xff** (`cmpwi r0,0xff; ble` at `100204bc`,
+`10020698`, `10020778`, `10020848`, `10020a08`) ⚑ corrected (review 2c, 2026-10-04) #1. w = liquid kind (`+0x128`): 0 water, 1 acid,
 2 lava, 3 healing brine, 5 quicksand (physics §5).
 
 | w | rule (per channel, then `Color2Index`) | raw |
@@ -229,17 +235,19 @@ in Python on `clut 202` from `Ferazel's Wand Backgrounds.rsrc` (scratchpad model
 | 4 | **never written** | — |
 | 5 | (trunc(0.25·R)+29998.08, trunc(0.25·G)+24760.32, trunc(0.25·B)+10475.52) truncated, clamped 0..0xffff | `1002084c..10020a04` (`100a16f0/16e8/16e0/16d8`) |
 
-Entry **0xff of every water table and all of table 4 are never written**: the globals lie in the
-zero-filled part of the data section (offset 0x142782 > initialised 0x8169, INDEX provenance), so
-they map to index 0 (white) — a black (0xff) sprite pixel drawn in water tint turns white [HIGH
-arithmetic; whether any face uses 0xff NOT RESOLVED 4]. Kind 4 does not occur in the shipped maps
+⚑ corrected (review 2c, 2026-10-04) #1: ~~entry 0xff of every water table … turns white~~ — every
+water loop is `ble`, so entry 0xff **is** written like the others: `clut[0xff]` = 000000, so table 0
+maps 0xff → **0x60 black** (lowest of the duplicate blacks, NR 2); a black sprite pixel stays black
+under water tint 0 [HIGH]. Only **table 4 is never written**: the globals lie in the zero-filled part
+of the data section (offset 0x142782 > initialised 0x8169, INDEX provenance), so all of table 4 maps
+to index 0 (white). Kind 4 does not occur in the shipped maps
 (physics §5 census) [HIGH by reference].
 
 Computed, CLUT 202 (requested → idx RGB) [requested HIGH; chosen LOW]:
 
 | w | 00 `ffffff` | 06 `ff7f7f` | 0e `bfff00` | 1d `7f7fff` | 31 `007f00` | 61 `cf9b00` | 71 `6b9c30` | 88 `ffaefe` | 9a `999999` | 9e `333333` |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 0 | 7f7fff→1d 7f7fff | 7f3fff→20 7f40ff | 5f7fff→36 407fff | 3f3fff→3b 4040ff | 003f54→fd 003e61 | 674df2→20 | 354ed0→3c 4040bf | 7f57ff→20 | 4c4cff→3b | 191966→49 00006d |
+| 0 | 7f7fff→1d 7f7fff | 7f3fff→20 7f40ff | 5f7fff→36 407fff | 3f3fff→3b 4040ff | 003f54→fd 003e61 | 674df2→20 | 354ed0→3c 4040bf | 7f57ff→20 | 4c4cff→3b | 191966→49 00006d (4-bit) / **84** 11114c (exact, §1.2) |
 | 1 | c7ff71→01 ffff7f | 91b244→10 bfbf40 | 7ab22b→71 6b9c30 | 7eb258→71 | 1a3a0c→35 004000 | 6b8823→72 5f8c2b | 517825→73 537c26 | b6ef68→0f bfbf7f | 77a643→71 | 273716→cd 2d2d1c |
 | 2 | b33f1f→18 bf4000 | b31f0f→a8 b50e00 | b33f00→18 | b31f1f→a8 | 3b1f00→6d 2e0c00 | a92600→69 9c2900 | 912706→69 | b32b1f→a8 | b32613→a8 | 470c06→44 400000 |
 | 3 | ff3fff→89 fe0bfa | ff1fff→89 | ff3fff→89 | ff1fff→89 | 641f64→8d 540353 | ff26ff→89 | df27df→8a d409d0 | ff2bff→89 | ff26ff→89 | 760c76→8c 7f057d |
@@ -394,7 +402,12 @@ first/after blitters and an ambient fallback) [MED].
 First active light (slot order) whose radius `+0x14 > 32` and whose face rect contains the sprite's
 centre: `v = 11 − (PEDistance(dx,dy)·11)/radius` (`1001d864..1001d86c`), accepted if 0 ≤ v ≤ 11
 (`1001d874..1001d880`), result `v + colour`. **v = 11 (distance < radius/11) indexes the next
-group's k = 0 entry** (for colour 0: the g 1 "×1.0" table, i.e. no light at the very centre). The
+group's k = 0 entry** (for colour 0: the g 1 "×1.0" table, i.e. no light at the very centre).
+⚑ corrected (review 2c, 2026-10-04) #3: colour **99** (`li r8,0x63` at `1005dea4`, `1005e50c`,
+`1005e5b4`) with v = 11 gives t = 110 = 0x6e00/0x100, i.e. the **next D slab's** t = 0 (group 0,
+k 0 = `darken(c, 0, D+1)`, the ambient look of D+1); at D = 15 that is slab 16 = `0x100fbd6c +
+0x6e000` = `0x10169d6c`, the start of the ambient table `_DAT_100a0130` (its D = 0 slab) — defined
+memory, not undefined [HIGH arithmetic]. The
 bounding pre-test compares |c − light.x| with `light.x + radius + w/2` (adds the light's own
 coordinate) and so almost never rejects [MED].
 
@@ -476,6 +489,7 @@ black; cleared with `TintScreen(nil)` when `+0x11c` is 0 or > 10.
 1. **Exact index chosen by `Color2Index`.** The inverse-table resolution (`MakeITable(c, nil, 0)` →
    device preference) and the nearest rule are ROM code. Tried: res-4, res-5 and exact-nearest
    models (agreement figures §1.2); every "→idx" cell is LOW. The requested RGB values are exact.
+   The bank's single model and label live in particles §4.3 ⚑ corrected (review 2c, 2026-10-04) #4.
 2. Ties between duplicate CLUT colours (00ff00 at 0x4e..0x5f and 0x8f..0x96; three blacks 0x60,
    0xa0 (202), 0xff): the model takes the lowest index; QuickDraw's choice is not in the binary.
 3. What a `+0x89` sprite looks like when D = −1 (mode 0xb, arg 0xff00+F → table pointer
@@ -483,28 +497,33 @@ black; cleared with `TintScreen(nil)` when `+0x11c` is 0 or > 10.
    Trans blitter reads ~1.5 MB before the table; for rotated faces (`.BlitEncFaceRot`) the mode is
    outside its switch and the table register is uninitialised. Arithmetic HIGH; the pixels are
    undefined memory — not determinable from code (CLOSED AS UNDETERMINABLE for the colours).
-4. Whether any sprite face contains index 0xff (turns white under water tint, §4). Not checked:
-   needs a census of every converted face, beyond this lane.
+4. ~~Whether any sprite face contains index 0xff (turns white under water tint, §4). Not checked:
+   needs a census of every converted face, beyond this lane.~~ Moot: entry 0xff of the water tables
+   is written (all five loops `ble`, `100204bc`, `10020698`, `10020778`, `10020848`, `10020a08`); table
+   0 maps it to 0x60 black (§4) ⚑ corrected (review 2c, 2026-10-04) #1.
 5. The 512-byte 0x0d fill at `0x100a39b6` (§6.2): readers are `.CalcPxRowContents` and the Trans
    blitters; its meaning (a row-cache tag?) was not traced.
-6. `PEDistance @ 10047648` metric (used by the fake-light falloff) — not read.
-7. Flag at TOC −0x7b10 that suppresses `.AnimateCLUT` when Effects = 1 — not identified.
+6. `PEDistance @ 10047648` metric (used by the fake-light falloff) — not read. Tried: only its call
+   site in `.GetFakeLight` (`1001d864..1001d86c`). ⚑ corrected (review 2c, 2026-10-04) #5
+7. Flag at TOC −0x7b10 that suppresses `.AnimateCLUT` when Effects = 1 — not identified. Tried: its
+   test inside `.AnimateCLUT` (§1.5) only. ⚑ corrected (review 2c, 2026-10-04) #5
 8. Monitor Tool gamma-ramp integer details (8- vs 16-bit device ramps, rounding of decreases) —
-   library code, read only at decompile level.
-9. Mode 0xa (`.HandlePlatformSprite` child `+0x1d8`, arg = distance·256/45 clamped 11..250; 0 below
-   11): `.BlitEncFaceX` forces the clipped path and passes arg to the second-buffer mask blit
-   (`iVar11`), but `.BlitEncFaceSpecialClipX` has no case 10, so the face pixels are looked up at
-   `r5 + pixel` with r5 = the source-offset argument (0 for an unclipped face → low memory).
-   Tried: both jump tables (`100a3d98`, `100a3d64`) and the decompile of the four Special
-   blitters. What the original showed is not determinable from code; a replica should treat the
-   colour as unknown and ask the owner's eyes.
+   library code, read only at decompile level. Tried: the decompile of `MT_FadeToColor` (§10).
+   ⚑ corrected (review 2c, 2026-10-04) #5
+9. ~~Mode 0xa (`.HandlePlatformSprite` child `+0x1d8`, arg = distance·256/45 clamped 11..250; 0 below
+   11): … `.BlitEncFaceSpecialClipX` has no case 10 … not determinable from code.~~ → closed:
+   ClipX has explicit `sVar9 == 10` arms (`100275d4 cmpwi r25,0xa`; `li r6,0x100` `100271f0`;
+   `10027614..10027630`): a vertical squash by arg/256 with pixels copied raw — draw-effects §2.6
+   ⚑ corrected (review 2c, 2026-10-04) #2. (Tried before the review: both jump tables and the
+   decompile of the four Special blitters; the jump-table default hid the explicit arms.)
 10. `.UpdateRadiusSprites` stores mode 0xc with a computed darkness byte (main l. 35903); its range
-   (whether it exceeds the 16 ambient slabs) was not evaluated.
+   (whether it exceeds the 16 ambient slabs) was not evaluated. Tried: the store itself (§2.1
+   census); its inputs were not bounded. ⚑ corrected (review 2c, 2026-10-04) #5
 
 ## Proposed additions to physics.md §0
 | field | type | meaning | label |
 |---|---|---|---|
-| +0xb8 | i32 | `mode<<16 | arg`; modes with a remap table: 1 tint bank k, 3/4 hurt flash, 6/9 water kind, 0xc light (`D<<8 | t`); 0xb translucent (arg 0 ½, 1 ¾, 2 ¼, 3 grey-avg, 4 glow, 5 additive, ≥ 0x80 grey-pull); 8 behind tiles; 0xe solid colour arg&0xff; 5 diffuse; 0xd ripple-translucent; ≥ 0x14 tile blend; 0xa (platform child, arg 11..250) reaches the remap blitter with no table (NR 9). Modes 2, 7, 0xf..0x13 are never stored | HIGH (§2, §6.1) |
+| +0xb8 | i32 | `mode<<16 | arg`; modes with a remap table: 1 tint bank k, 3/4 hurt flash, 6/9 water kind, 0xc light (`D<<8 | t`); 0xb translucent (arg 0 ½, 1 ¾, 2 ¼, 3 grey-avg, 4 glow, 5 additive, ≥ 0x80 grey-pull); 8 behind tiles; 0xe solid colour arg&0xff; 5 diffuse; 0xd ripple-translucent; ≥ 0x14 tile blend; 0xa (platform child, arg 11..250) = vertical squash, raw copy — ⚑ corrected (review 2c, 2026-10-04) #2: defer to draw-effects §2 for the mode list (merged into physics §0.1). Modes 2, 7, 0xf..0x13 are never stored | HIGH (§2, §6.1) |
 | +0x89 | u8 | sample the light map each draw: `+0xb8 = D·0x100 + 0xc0000 + fakeLight`, D = BG-cell light byte − 1 (signed; −1 turns the word into mode 0xb) | HIGH (§2.2) |
 
 ## Corrections to the existing bank

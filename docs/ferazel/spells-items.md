@@ -27,6 +27,11 @@ therefore at most [MED], with the evidence named. `G` = game globals (engine.md 
   the count; at 0 the slot is removed and later slots shift down, selection adjusted [HIGH].
 - Picking up an item id that is already held adds to its count; otherwise the first empty slot
   is used (`.HitPlayerSprite`); scrolls (§3) add spell slots the same way [HIGH].
+- ⚑ wave 2 corr (2026-10-04) CM #7: conversation action 2 also fills item slots (first slot empty or
+  holding item A with flag 0; flag 0, count += B, cap 99; `1007a3e0..1007a408`), and `.RemoveItem` is
+  reachable from conversations (action 3). Conversations grant items only, never spells (review 2h
+  ruling 3: 205 #8 Platinum Key, #5 removes a Health Potion; 207 #7 Ice Pick, #9 removes a Steel Key;
+  conversations-mcnv §3.4, §4.3) [HIGH].
 
 ## 2. Casting (`.HandleKeys @ 10052ac0`, `.HandlePlayerSprite`, `.CastSpell @ 10051d1c`)  [HIGH]
 

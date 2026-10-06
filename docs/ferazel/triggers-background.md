@@ -128,7 +128,10 @@ record 0's p4 for any of those record-0 types** (2940 ×3 levels, 1055, 1208; th
 is part 2 §8.5), so all 19 are permanently shut solids; 18 of them have their placement x at or within
 32 px beyond the level's left or right boundary (L18/L25 x −32/−31 and 2047/2048 of a 2048-px level, L45 x −30, L67 x −29..−28 and 893..900 of an
 896-px level), the 19th is L62 rec 0 reading itself. Intent (edge walls?) is UNDETERMINABLE from code
-[HIGH as-written; LOW intent]. The 10 type-2941 records (L30 ×2, L31 ×5,
+[HIGH as-written; LOW intent]. Level 67 settled independently by bosses-3 §8.5 (record 0 is a 1208 floor
+fire; every record-p4 writer writes only its own record — Button, Bonus containers, Box, sign — so its
+seven gates never open) [HIGH reading, MED completeness of that lane's decompile grep] ⚑ wave 2 corr
+(2026-10-04) B3 #W4. The 10 type-2941 records (L30 ×2, L31 ×5,
 L62 ×3) also carry p1 = 0, but 2941 ignores p1 (row above): they are shoot-to-destroy ice walls.
 ⚑ corrected (review 1b, 2026-10-03) #2 (was "every 2941 reads record 0 and stays shut unless record 0's
 p4 is 1").
@@ -225,7 +228,8 @@ launched flag, cleared on landing, physics §8.7), climb/other state globals cle
 re-centred. A captive of type 90 gets gravity 0x15e [HIGH; ~~identity of type 90 not resolved~~
 ⚑ wave 2 (2026-10-04): type 90 = player-shot id 0x5a (thrown fire/Ziridium seeds and Ring-of-Smiting blasts; Setup
 stores `+4 = (char)(type >> 8)`, handler l. 4931) — seeds launched by a cannon fall at 350 instead of
-250 (`10058da4..10058db4`); part 2 §8.1].
+250 (`10058da4..10058db4`); part 2 §8.1; no `Mlvl` record in any of the 24 levels has type 90 (bosses-3
+§8.3) — bosses-2 W3 merged here, ⚑ wave 2 corr (2026-10-04) B3 #W3].
 
 ### 2.3 Springs 1150..1159 (extends physics §8.3)  [HIGH]
 Faces: PICTs 1150, 1151, 1152 (240×60, 4 cells 60×60); 1153 reuses the 1152 sheet mirrored
@@ -233,7 +237,9 @@ Faces: PICTs 1150, 1151, 1152 (240×60, 4 cells 60×60); 1153 reuses the 1152 sh
 1153 `(10,4,60,46)`. `s+0x1ba = 32000` (no clip). Hit = Background hit callback.
 - **Cooldown resolved:** `.HandleBackgroundSprite` (l. 14805–14834) does `s+0x46 −= 1` every
   frame, clamped to 0..3, and shows face `s+0x46`. The hit sets 4 → faces 3,2,1,0 over the next
-  four frames, the spring re-arms when 0.
+  four frames, the spring re-arms when 0. ⚑ wave 2 corr (2026-10-04) PR2 #2: handlers run before hits
+  within a frame (platforms-ropes-radial-2 §8.1), so a spring fired in frame n can fire again in frame
+  n+4's collision pass.
 - **Excluded hitter class resolved:** `PTR_PTR_100a0460` = TOC slot 0x100a0460 → TVector
   0x100a229c → `.HandleEffectSprite @ 10061160` — effects never trigger springs.
 - **1154..1159 are inert**: no Setup branch (no rect, no face, no hit callback), no Handle branch
@@ -444,7 +450,9 @@ cooldown `PTR_DAT_100a06cc`, sets p4 = 1; 2902 shows `STR# 500` string p1, other
 `.Conversation(Mcnv p1, …)` when p1 > 100 (l. 3990–4012); **NPC talkers 2951..2969** call
 `.Conversation(Mcnv p1)` unconditionally (no > 100 test) when `s+0xb0 == 0`, cooldown 150
 (l. 3910–3920). Census: every talker/plaque p1 > 100 is an existing `Mcnv` id (2906 ×4, 2951..2965
-×20, 2833/2834) [HIGH]. The boss calls `.Conversation(250/251/252)` itself (`.HandleXichraSprite`).
+×20, 2833/2834) [HIGH]. ⚑ wave 2 corr (2026-10-04) CM #8: precisely — 18 spawned NPC talkers + L11 rec
+283 (flag 99, Mcnv 220) + L4 rec 88 (flag 0, p1 = 0 — would fail if spawned); Mcnv 204 is never placed
+(conversations-mcnv §1.2 census). The boss calls `.Conversation(250/251/252)` itself (`.HandleXichraSprite`).
 2907 = countdown timer start (part 2 §4). Teleporters 1060..1062 use the passage mechanism above
 (destination = idle entry with record index = p1; mosaic transition, 120 camera passes;
 l. 4117–4180). Save point 1065 (l. 4181–). Nothing in the Background or Button class acts as a

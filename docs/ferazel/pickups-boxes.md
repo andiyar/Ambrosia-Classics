@@ -165,7 +165,8 @@ No placement of 2001..2049, and no record of any class carries 2000..2049 as a c
 param (census: values 2000..2099 appear only as Platform/Background motion params). **Spell 2 is
 never granted as 2** (the only 2-scroll becomes Ice Wall) and **spell 7 is never granted** by any
 shipped scroll or drop. ~~Conversations (`Mcnv`) were not checked as a grant path (out of scope).~~ No
-conversation action can grant a spell (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04)).
+conversation action can grant a spell (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04); conversations-mcnv §4.3
+⚑ wave 2 corr (2026-10-04) CM #4 = PB2 #P5/#P6).
 
 ### 1.8 Items 3200..3248 (item id = type − 3200)  [HIGH arithmetic; names MED, ids 0..11 HIGH for the art (PICT 702)]
 `.HitPlayerSprite` l. 3688–3739: 3221 first `RemoveItem(0)` (one dagger), 3215 first
@@ -194,10 +195,15 @@ ids 12..26 keep the PICT 3200+id names, MED] ⚑ corrected (review 1a, 2026-10-0
 Placed items (type: count, levels): 3204 magic potion 2 (1,3); 3205 health potion 2 (2,40); 3206
 fire seeds 28 (20,21,22,45,52); 3214 wooden shield 1 (5); 3215 magic shield 1 (25); 3216 gold ring
 15; 3217 green ring 2 (10,51); 3219 multiplier crystal 35; 3223 rez necklace 11; 3224 fire charm 1
-(55); 3226 ziridium seeds 2 (30). Keys 3201..3203 are never placed loose: they come only from chests
-and crates (§2.4.1–2.4.2). Items 7..13, 18, 20, 22 are not placed and not dropped by any shipped
+(55); 3226 ziridium seeds 2 (30). Keys 3201..3203 are never placed loose: they come from chests
+and crates (§2.4.1–2.4.2), and the **Platinum Key (item 3)** also from Mcnv 205 #8 (L3, Wounded Habnabit,
+in exchange for a Health Potion, which #5 removes); conversations also **remove** keys (action 3: a
+Steel Key at 207 #9 and 202 #7/211 #9, a Gold Key at 200 #13) ⚑ wave 2 corr (2026-10-04) CM #5 (review 2h
+ruling 3; conversations-mcnv §4.2–§4.3, `1007a364`/`1007a438`). Items 7..13, 18, 20, 22 are not placed and not dropped by any shipped
 chest/crate ~~(conversations not checked)~~; conversations grant items 3, 4, 5, 6, 17, 18, 26 — among them
-the otherwise unobtainable 18 Ice Pick (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04), reachability MED).
+the otherwise unobtainable **18 Ice Pick, sold by Elber (Mcnv 207 #7, L30, 500 coins)**; items 7, 9–13,
+20 and 22 are granted by no conversation (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04); ~~reachability MED~~
+reachability HIGH per conversations-mcnv §4.2–§4.3 ⚑ wave 2 corr (2026-10-04) CM #4 = PB2 #P6).
 
 ### 1.9 Dropped bonuses  [HIGH]
 - Player hurt (`.HurtPlayer`, main dump l. 45175–45200): coins lost `n` = min(param, `G+0x10`);
@@ -277,7 +283,7 @@ one-way/surface-function box); only crates (§2.4.1), 2932 and 2941 take shot da
 | 1460..1467 (0x5b4..0x5bb) | bridges ('Bridge - Wooden - Full', '… Left half', 'Bridge - Stone', …, 'Bridge - Rope') | gravity 0, layer 0, no hit callback; 1462/1465 are flipped halves; 1466 rope bridge has surface fn `+0x1e8 = .GetRopeBridgeHeight`; 1467 a layer-50 decoration | static solids; rect per type (l. 11704–11751) |
 | 1470 (0x5be) | trampoline (PICT 1470, 4 frames 56×54) | layer 0x3c, gravity 0, one-way, rect 7,0x10,0x2c,0x37 | §2.4.11 |
 | 1475 / 1476 (0x5c3/0x5c4) | spiked balls (face from cache `PTR_DAT_100a09f4+0x70`, ~~PICT NOT RESOLVED~~ **PICT 1487**, pickups-boxes-2 §4.1 ⚑ wave 2 (2026-10-04)) | rect 0x16,0x16,0x4e,0x4e; gravity 0x100; one-way; `+0x14c = 1`; 1475 `+0xa6 = 30` | touch: `HurtPlayer(p, ball, 0xa8, 1, 0x3c, coins 0 (51 %) or 5)` (l. 3899–3908). Tile bounce f = 0x40; a hard landing (\|vy\| > 0x300 for 1475) costs a bounce `+0x14c`; 1476 with no bounces left passes through tiles and is killed 0x1a0 px below the camera when vy > 0x5dc |
-| 1490..1493 (0x5d2..0x5d5) | '!Enemy pipe facing up/down/right/left' | layer 1, gravity 0, no callbacks; spawned type `+0x15c = p1`; interval `+0xa6 = Deviation(p2)` (p2 = 0 → 100 written back); Setup generates one p1 sprite and kills it at once (face preload) [MED for purpose] | when no child is out: `GenerateSprite(p1, …, rec 0x200, now)`; the child slides out 3 px/frame with a clip edge (`+0x1b6..+0x1bc`) until its own length/3+4 frames, sound at frame 3; when it dies a new interval starts (l. 12842–12987) |
+| 1490..1493 (0x5d2..0x5d5) | '!Enemy pipe facing up/down/right/left' | layer 1, gravity 0, no callbacks; spawned type `+0x15c = p1`; interval `+0xa6 = Deviation(p2)` (p2 = 0 → 100 written back); Setup generates one p1 sprite and kills it at once (face preload) ~~[MED for purpose]~~ | ⚑ wave 2 corr (2026-10-04) EG2 #5: purpose settled [HIGH] — enemy pipes: all six shipped in level 21 with p1 = 1730/1705/1705/1700/1860/1730 (enemies-ground-2 §6); child `+0x1b2` = emerging (enemies-flyers §7.4; `1006ecdc`, `1006f040`). When no child is out: `GenerateSprite(p1, …, rec 0x200, now)`; the child slides out 3 px/frame with a clip edge (`+0x1b6..+0x1bc`) until its own length/3+4 frames, sound at frame 3; when it dies a new interval starts (l. 12842–12987) |
 | 2805..2849 (0xaf5..0xb21) | decorations ('*Ziridium Mine Stuff' … '*Scraggly Vines 2') | no callbacks; rect 0 (except 2827, 2832..2836 graves/pedestal); one-way (not 2827); layer −1 (`p3 ≠ 0` → 10000, foreground); `p1 ≠ 0` → flipped; `p2 ≠ 0` → `+0xb8 = p2 + 0x10000` | static; graves 2833..2836 talk (§2.3); per-type reading and census: pickups-boxes-2 §9 ⚑ wave 2 (2026-10-04) |
 | 2850..2869 (0xb22..0xb35) | ~~unnamed statues/props~~ rock outcrops, standable; no param read (pickups-boxes-2 §9 ⚑ wave 2 (2026-10-04)) | layer 0x96, rect 0x15,0x14,0x47,0x54, one-way; `+0xb8` 0x10006 / 0x10007 by ambient darkness > 4 / > 7; 2856: 0xb0005 | static |
 | 2870..2889 (0xb36..0xb49) | ~~small props~~ mushroom clusters, intangible (pickups-boxes-2 §9 ⚑ wave 2 (2026-10-04)) | layer 0x78, rect 0, one-way | static |
@@ -360,7 +366,7 @@ open in its facing direction. `.HandleBoxSprite` l. 13022–13088: face frame `|
 closed and locked the key balloon shows within 0x4b px; `+0x46` +1 per frame; at 7 the hot rect is
 zeroed (passable); at ≥ 11 it stays 10 and **record p4 = 1**; p4 = 1 at load → open at once.
 Key placements vs doors (key id: door levels / key sources): 1: L2, 4, 11, 21, 31 / chests L1, 2, 4,
-11, 21, crate L31 · 2: L1, 2, 21, 50 / chests L1, 2, 21, crate L50 · 3: L3, 62 / crate L62 ~~only~~ and conversation `Mcnv` 205 in L3 (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04), reachability MED).
+11, 21, crate L31 · 2: L1, 2, 21, 50 / chests L1, 2, 21, crate L50 · 3: L3, 62 / crate L62 ~~only~~ and conversation `Mcnv` 205 #8 in L3 (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04); reachability HIGH, conversations-mcnv §4.2 — ⚑ wave 2 corr (2026-10-04) PB2 #P5 = CM #5).
 Keys are global inventory, so a key can be spent in a later level. Selecting a key shows the
 "You don't need to select keys" hint (spells-items §4).
 
@@ -413,10 +419,12 @@ reverts to 0; on success two sounds and a gamma flash. A lit save point (p1 ≠ 
 
 #### 2.4.9 Tree Trunk (spell 4)  [HIGH]
 A spell-4 shot landing on an FG floor spawns 712 at (centreX−8, centreY−6), layer 2, lifetime
-`+0xa6 = byte _DAT_1009fd30 + 120` (on a BG ledge: 120), plus effect 2 with light 0x42
+`+0xa6 = byte _DAT_1009fd30 + 120` (on a BG ledge: 120) — that byte is the frame-parity flag
+(platforms-ropes-radial-2 §10.1; read `1005b374`), so the lifetime is **120 or 121** by parity
+⚑ corrected (review 2g, 2026-10-04) #6, plus effect 2 with light 0x42
 (`.HitPlayerShotTileSprite` l. 5792–5845). A spell-4 shot hitting a trunk sprite walks the
 `+0x1d4` chain to the top segment, spawns 713 at (x, y−16) linked as its `+0x1d4`, lifetime
-`byte + 120` (`addi r0,r3,0x78` at `1005a9d4`), and raises the previous top's lifetime to ≥ 35
+`byte + 120` = 120/121 by parity (`addi r0,r3,0x78` at `1005a9d4`), and raises the previous top's lifetime to ≥ 35
 (l. 5631–5655). `.HandleBoxSprite` l. 12416–12440: lifetime −1 per frame, blink `+0xb8` 0xb0001
 (< 23), 0xb0000 (< 21), 0xb0002 (< 11), killed at < 1. A 713 that lands on ground becomes 712 with
 gravity 0 (`.HitBoxTileSprite`). Trunks are ordinary solids for the player (Box arm).
@@ -491,7 +499,8 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
    hanging object and whether it hurts when it falls; 1080's 1-px dormant rect intent.~~ → closed: pickups-boxes-2 §4 ⚑ wave 2 (2026-10-04)
 6. ~~Who sets a falling rock's `+0x160 < 0` (1075/1076 are never placed; spawner not found here).~~ → closed: pickups-boxes-2 §5 ⚑ wave 2 (2026-10-04)
 7. ~~Whether `Mcnv` conversations grant spells or items (merchants sell potions per the manual).~~ → narrowed: pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04)
-   (items yes, spells never; line reachability stays with INDEX item 3)
+   (items yes, spells never) → **closed**: line reachability decoded in conversations-mcnv §4 ⚑ wave 2 corr
+   (2026-10-04) CM #4
 8. ~~Door `+0xa0` cleared by `.HitBoxSprite` for non-pickup contacts.~~ → closed: dead write, pickups-boxes-2 §6 ⚑ wave 2 (2026-10-04)
 9. ~~Effect 0x4b7's damage to enemies~~ ~~/player~~ ~~(Effect class reader).~~ → closed: pickups-boxes-2 §7 ⚑ wave 2 (2026-10-04) (Player side closed:
    enemy-shots-and-damage §3.4, triggers-background-2 §2.2 — 0x70 while frame ≤ 7.)

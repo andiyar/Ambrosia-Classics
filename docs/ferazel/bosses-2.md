@@ -266,7 +266,10 @@ when `+0x1f8 == 0` (1003c86c..1003c874) [HIGH] (bosses-3 §12.2).
 ## NOT RESOLVED
 1. `+0xb8` draw modes 1, 0xb and 0xc (`0x10008/0x10009/0x1000c`, `0xb0000..0xb0002`) and what
    `.WrapDrawSprites` does with them; the flash buffer `*_DAT_100a0008`. ⚑ wave 2 (2026-10-04): still open — carried
-   by INDEX item 15 (draw effects); not attempted by the boss lane (bosses-3 NR 1).
+   by INDEX item 15 (draw effects); not attempted by the boss lane (bosses-3 NR 1). ⚑ wave 2 corr
+   (2026-10-04) DE #9: → closed by draw-effects §2 (modes 1, 0xb, 0xc); `*_DAT_100a0008` is not a flash
+   buffer but the sprite/parallax **mask buffer** (draw-effects §1.3) — every non-rotated sprite writes 0
+   under its silhouette (`1002d18c..1002d2c0`).
 2. ~~Xichra's cannons: Background types 0x442..0x44a with p1 0x67/0x68, p2 15 and the
    `+0x158/+0x15c/+0x160/+0x164` values written by `.UpdateXichraCannons`.~~ → closed: bosses-3 §8.2 (and §8.1 census, §8.3 cannon-fired seeds)
 3. ~~`.HitEnemyShotTileSprite` for 0x46a/0x71f; whether 0x77b ignores tiles.~~ → closed: bosses-3 §12.2

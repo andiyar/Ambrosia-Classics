@@ -122,7 +122,10 @@ Collision timing [HIGH]: ~~`.GameLoop` runs `.MTHandleSprites` then `.MTCollideS
 4006–4007)~~ (⚑ wave 2 (2026-10-04): `.PaintFrameWrap` → `.HandleSprites` runs them, after the draw — platforms-ropes-radial-2 §8.1); the strike state set during the player's handler is live in the same frame's collision
 pass. In strike frames the held item's own HandleHeldItem does not run, so its rect is the one set on
 its last inert frame (same face) ~~[MED: active-list order]~~ (⚑ wave 2 (2026-10-04): HIGH — the player (layer 10) precedes the
-held item (0x14), §4.1).
+held item (0x14), §4.1; rule merged from ES2 corr #W5 — the list is sorted by layer at insertion (Setup
+first), ties by creation time; the handle pass pre-loads `next`; nothing is unlinked during the passes,
+`10032f1c..10032fcc`, `100325b8`/`100325bc`, `10033210..1003322c`, enemy-shots-and-damage-2 §4.2 —
+⚑ wave 2 corr (2026-10-04) ES2 #W5).
 
 ### 1.6 Interaction with other states  [HIGH reading]
 `.HandleItemUse` is reached only from the swim branch and the generic `c ≠ 0` test (handler l. 1984,
@@ -198,7 +201,10 @@ case that attaches a Box or Bonus to the player. Shot ids 0x3c,
 0x50, 0x5a are the V Blade lower half, Pentashield orb and seeds (spells-detail §3.8).
 Shipped availability (record census, all Box/Bonus records and params): **Ice Pick (3218) and Vorpal
 Dirk (3221) are never placed nor held by any crate, chest, candelabra or pile**; Ziridium seeds 3226
-×2 in L30 [HIGH census; MED "unobtainable": enemy drops and conversations not checked].
+×2 in L30 [HIGH census; ~~MED "unobtainable": enemy drops and conversations not checked~~]. ⚑ wave 2 corr
+(2026-10-04) CM #6 = PB2 #P6 (review 2h ruling 3): the Ice Pick is **obtainable** — Elber sells it (Mcnv 207
+#7, L30, 500 coins; 0-based "line 6" in pickups-boxes-2 §8); no conversation grants the Vorpal Dirk (21) or
+the Hammer (8) (conversations-mcnv §4.3). The enemy-drop half stays open (NR 4).
 
 ## 2. The Shadow Double (sprite type 0x1b39 = 6969)  [HIGH unless noted]
 Manual: "It will make a double to shadow Ferazel." Power-up sphere 1330: `.HitPlayerSprite` case
@@ -300,7 +306,9 @@ rect, the left-facing offsets of §1.5 (dagger 10, Dirk 8, Ice Pick 2 px) stand.
 `subf r5,r6,r5` = p.y − held.y, `subf r0,r5,r0`). Its only reader is the draw: `.WrapDrawSprites`
 (raw `100147c0..1001486c`, main l. 10336ff) — `< 1` plain face; `== 1` whole face with effect
 `0x60000 + +0x128` (water ripple); `> 1` the top `+0x11c` rows plain and the rest with the water
-effect; it is also the light-overlay argument (`100149f4`). For a sprite `+0x11c` counts face rows
+effect — the water split also needs `+0x18c == 0` and stored mode ≠ 0xe (`100147cc..100147e4`); it is
+also the light-overlay argument (`1001493c..1001499c`, draw-effects §3; `100149f4` is the last-frame
+copy `lwz +0x11c; stw +0x124`) ⚑ corrected (review 2g, 2026-10-04) #4. For a sprite `+0x11c` counts face rows
 above the surface (physics §0), which for the item would be `p+0x11c − (held.y − p.y)`; the code adds
 `(held.y − p.y)` (always > 0: `dy + 0x16`), so the item's water line falls `2·(dy + 0x16)` rows lower
 than the surface and the item is drawn dry unless the player is deep. In strike frames the shot
@@ -342,7 +350,9 @@ kind is UNDETERMINABLE from code; the behaviour table is what a replica needs.
    → closed: §4.1 — ⚑ wave 2 (2026-10-04)
 3. ~~Door `+0xa0` (zeroed by non-exempt touchers) — no reader found. Crunch kinds 0..4 as art.~~
    → closed: §4.4 (write-only), §4.5 (behaviour; art UNDETERMINABLE) — ⚑ wave 2 (2026-10-04)
-4. Whether conversations/enemy drops grant Ice Pick, Vorpal Dirk, Hammer; the Hammer's intent.
+4. Whether ~~conversations/~~enemy drops grant Ice Pick, Vorpal Dirk, Hammer; the Hammer's intent. (The
+   conversation half is closed: Ice Pick from Mcnv 207 #7, never the Dirk or Hammer — conversations-mcnv
+   §4.3 ⚑ wave 2 corr (2026-10-04) CM #6 = PB2 #P6.)
 5. ~~Lead (Box/shot reader): Pentashield orbs (0x50, `+0xa4` 300) also pass the 2941 `== 300` test.~~
    Confirmed (⚑ corrected (review 1c, 2026-10-03) #2): `li r3,0x12c; sth r3,0xa4` `10059494..1005949c`, arm
    `cmpwi 0x50` `10059384`; the Ice Wall spell at power 1 qualifies too (spells-items §4 row 0x12).

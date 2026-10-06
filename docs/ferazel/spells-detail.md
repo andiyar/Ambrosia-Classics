@@ -154,7 +154,9 @@ Power affects **only damage and the visual stack**; not speed, size, range, hit 
    first frame deals the base damage ~~[MED: depends on whether a shot spawned during the player's
    handler is handled that same frame]~~ [HIGH] ⚑ wave 2 (2026-10-04): creation-frame hits always deal base damage;
    a frame-2 hit is multiplied only if the shot was already handled in its creation frame, which
-   happens iff the sprite after the player in the active list has layer ≤ 11 (spells-detail-2 §4).
+   happens iff the sprite after the player in the active list has layer ≤ 11 (spells-detail-2 §4) —
+   assuming no sprite *before* the player carries a current layer > 11 (insertion walks from the
+   head, `10032f68..10032f9c`; direct `+0x80` stores do not re-sort) ⚑ corrected (review 2f, 2026-10-04) #1.
 2. **Follower stack**: Setup spawns `p − 1` followers (≤ 4) of type `id << 8` (power 0). Power-0
    sprites get no sprite-hit callback, no tile callback, gravity 0 (Setup l. 4991–4996). Each frame
    the main shot places follower k (k = 1..4, pointers `+0x1d4/+0x1d8/+0x1dc/+0x1e0`; the decompile's
@@ -218,8 +220,10 @@ Light face is `PICT 810` (72×72) except ids 6/0x3c; lights are added only if th
 on-screen test (`face+0xe ≤ s+0x1b6 || s+0x1b8 ≤ face+0xa` → skip) ~~[MED: fields not decoded] and
 removed when the shot leaves it~~ ⚑ wave 2 (2026-10-04): it is a **wall-tunnel** test, not an on-screen test — face
 `+0xa/+0xe` = opaque-bounds left/right, `+0x1b6/+0x1b8` = the tunnel clip; the light is skipped at age 1
-or removed at frame end (for good) only while the shot is entirely hidden in a tunnel (spells-detail-2 §2) [HIGH]. `NewParticle(a, b, pos, size, vx, vy, c, f)`: the meanings of
-`a`/`b` (colour/kind? gravity?) are not decoded here [LOW]; `s+0x84/+0x86` are zeroed in Setup.
+or removed at frame end (for good) only while the shot is entirely hidden in a tunnel (spells-detail-2 §2) [HIGH]. `NewParticle(a, b, pos, size, vx, vy, c, f)`: ~~the meanings of
+`a`/`b` (colour/kind? gravity?) are not decoded here [LOW]~~ a = colour kind, b = gravity per frame, size =
+shape code, c = delay, f = collision mode (`10031ed4..10031f18`, `10031898..100318a4`; particles §2, §4)
+[HIGH] ⚑ wave 2 corr (2026-10-04) PA #3; `s+0x84/+0x86` are zeroed in Setup.
 `FUN_1003f218` is an unnamed callee (accelerate along a 36-step direction) ~~[MED]~~ [HIGH] ⚑ wave 2 (2026-10-04): adds an
 impulse of 800 to the velocity in 10° direction `dir` (0 left, 9 down, 18 right, 27 up; raw jump table
 `0x100a5694`), aimed at 4 px above the player's centre, then per-axis cap 0x1450 (spells-detail-2 §3).
@@ -417,8 +421,8 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 - `.PlayerScroll` treats the glider like a jump/rope state for the camera (main l. 43151–43166) [MED].
 
 ## NOT RESOLVED
-1. The meaning of `NewParticle` args 1/2 (colour? gravity?) and of `s+0x84/+0x86` offsets in shot
-   particles; effect-sprite types 0/2/5/0x442 visuals (effects reader). ⚑ wave 2 (2026-10-04): INDEX items 15/28
+1. ~~The meaning of `NewParticle` args 1/2 (colour? gravity?)~~ (closed: particles §2 ⚑ wave 2 corr
+   (2026-10-04) PA #3) and of `s+0x84/+0x86` offsets in shot particles (always 0, enemies-flyers §7.1); effect-sprite types 0/2/5/0x442 visuals (effects reader). ⚑ wave 2 (2026-10-04): INDEX items 15/28
    (carried as spells-detail-2 NR 1); not this lane.
 2. ~~On-screen test fields `s+0x1b6/+0x1b8` and face `+0xa/+0xe` that gate lights and impact effects.
    (Narrowed: `+0x1b6/+0x1b8` are the left/right draw-clip edges in face-local px, physics §0.1 —

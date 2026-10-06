@@ -205,7 +205,10 @@ setup proc immediately — `.MTNewSprite @ 10033060`, main l. 30596; the record 
 death timer passes 0x32 gets handler `_DAT_100a0200` (Platform), rect (0x10,0x35,0x42,0x47), float
 offset `+0x1a0 = −6`, one-way, `+0x17c = 1` (no Platform setup), `+0x13a = 0x20`, `+0x138 = 0x3c`. Its
 `+0xb0` is already 4, so it runs the mode-4 branch with no lifetime (`+0xa6 = 0`); buoyancy grows +1
-with probability ½ per frame to 0x50 (physics §8.6). ⚑ corrected (review 1d, 2026-10-03) #5: its
+with probability ½ per frame to 0x50 (physics §8.6). ⚑ wave 2 corr (2026-10-04) EG2 #3: water reaches it
+through the Walker tile callback kept in `+0x1f8` → `.HandleUnderWater` → `.HandleFlotation`;
+equilibrium `y = surface − 68` (hot rect 3 px submerged); no lifetime — the corpse floats permanently
+(`1006a9ec..1006aa10`, `10043070..10043084`, `10064ad0`; enemies-ground-2 §1). ⚑ corrected (review 1d, 2026-10-03) #5: its
 gravity test (`100649c4`, `+0x11c == 0 ∧ +0x120 == 0`, previous-frame water contact) is the one
 branch shared with raft mode 3 and floe mode 4 (`1006496c`/`10064974`/`10064980` → `10064988`) —
 physics-sprites §8.9.
@@ -239,14 +242,15 @@ from `.SeparateFromTiles2`).
 |---|---|
 | `+0x88` u8 | draw the light overlay (`.WrapLightFace`) after the face when set, unless the effect mode is 0xe (`.WrapDrawSprites @ 100144c8`, main l. 10334). `.InitSprite` sets 1. |
 | `+0x89` u8 | per-frame dynamic lighting: `+0xb8 = light·256 + 0xc0000 + fakeLight` (l. 10286–10297) — set by the raft (mode 3) together with `+0x88 = 0` |
-| `+0xb8` i32 | **draw-effect word** `mode<<16 | arg` passed to `.WrapDrawFace` → `.BlitEncFaceX @ 1002c908` (main l. 26913–27050): 0 plain; 5 diffuse; 6 water ripple; 8 behind tiles; 0xa clipped draw (arg = clip); 0xb **translucent**, arg selects the blend table 0 → `_DAT_100a015c`, 1 → `0158`, 2 → `0154`, 3 → `0150`, 4 → `014c`, 5 → `0160`, ≥0x80 → `0144 + (arg−0x80)·0x1000`; 0xd translucent ripple; 0xe mask-only; ≥0x14 tile blend; other modes (1..4, 7, 9, 0xc, 0x10..0x13) → `.BlitEncFaceSpecial*`. Hurt flash overrides it with `0x30000 + n` / `0x40000 + 2n` (l. 10272–10281). |
+| `+0xb8` i32 | **draw-effect word** `mode<<16 | arg` passed to `.WrapDrawFace` → `.BlitEncFaceX @ 1002c908` (main l. 26913–27050): 0 plain; 5 diffuse; 6 water ripple; 8 behind tiles; ~~0xa clipped draw (arg = clip)~~ 0xa **vertical squash** by arg/256, raw copy (`10027614..10027630`); 0xb **translucent**, arg selects the blend table 0 → `_DAT_100a015c`, 1 → `0158`, 2 → `0154`, 3 → `0150`, 4 → `014c`, 5 → `0160`, ≥0x80 → `0144 + (arg−0x80)·0x1000`; 0xd translucent ripple; ~~0xe mask-only~~ 0xe solid silhouette in palette index arg; ≥0x14 tile blend; `.BlitEncFaceSpecial*` implements only 1, 3, 4, 6/9, 0xc (jump table `0x100a3d64`); 2, 7, 0xf, 0x10..0x13 read an undefined table and are never written (draw-effects §2) ⚑ wave 2 corr (2026-10-04) DE #5. Hurt flash overrides it with `0x30000 + n` / `0x40000 + 2n` (l. 10272–10281). |
 | `+0x1ba` / `+0x1bc` i16 | bottom / top draw clip in face rows (32000 = none, 0 = invisible) |
 | `+0x1ae` / `+0x1aa` i16 | draw scale /256 / rotation degrees (`.BlitEncFaceScale`/`Rot`) |
 
 Blend tables (`.BuildTintTable`, main l. 17743–17815): 0x015c = ½·A + ½·B, 0x0158 = ¾·A + ¼·B,
-0x0154 = ¼·A + ¾·B per RGB channel (A = row colour, B = column colour) [MED: which operand is the
-sprite pixel not traced; the crumble/reform order below implies level 1 is the most opaque and level 2
-the most transparent].
+0x0154 = ¼·A + ¾·B per RGB channel (A = row colour, B = column colour). ~~[MED: which operand is the
+sprite pixel not traced …]~~ ⚑ wave 2 corr (2026-10-04) DE #6: row = sprite pixel, column = background
+(or the parallax pixel where the mask is 0xff) (`10027fe0..10028054`; draw-effects §2.7) [HIGH] — so
+level 1 is the most opaque and level 2 the most transparent, as the crumble/reform order implies.
 
 Stage sequences (handler l. 8670–8810, 9055–9073, 8990–9008):
 - mode 51 crumble, counter `+0x46`: > 2 → `+0x88 = 0`; > 6 → `0xb0001`; > 10 → `0xb0000`; > 14 →
@@ -447,8 +451,10 @@ Readers (every r2-relative reference, `subi rX,r2,0x30ac` / `0x352c`; no TOC slo
 ---
 
 ## NOT RESOLVED
-1. Pixel semantics of draw-effect modes 1..4, 7, 9, 0xc, 0x10..0x13 (`.BlitEncFaceSpecial*`), so what
-   `0x10018` on 0x57c spokes looks like; which blend operand is the sprite pixel (§2.8).
+1. ~~Pixel semantics of draw-effect modes 1..4, 7, 9, 0xc, 0x10..0x13 (`.BlitEncFaceSpecial*`), so what
+   `0x10018` on 0x57c spokes looks like; which blend operand is the sprite pixel (§2.8).~~ → closed:
+   draw-effects §2 (pixel rules; 0x10018 = mode 1, table 0x18, colours lighting-tables §3) and §2.7
+   (row = sprite) ⚑ wave 2 corr (2026-10-04) DE #5, #6
 2. ~~`_DAT_1009fd30` (floe flash phase?), `_DAT_100a067c` (set when the player touches a see-saw
    segment; reader not traced), `*psVar26` in the J reset (handler l. 915).~~ → closed: platforms-ropes-radial-2
    §10 (frame parity; write-only; climb flag) — ⚑ wave 2 (2026-10-04)
@@ -514,13 +520,13 @@ Readers (every r2-relative reference, `subi rX,r2,0x30ac` / `0x352c`; no TOC slo
    grounded/rope/swim/cling frame (raw 100500c4/10050250/100505d4/1005073c through r27 loaded once at
    1004d648). ⚑ corrected (review 1b, 2026-10-03) #1 — the earlier "launch latch, never decays" reading
    came from counting TOC loads and is withdrawn.
-13. physics.md §8.3/§8.4 (for the consolidated pass): name `_DAT_100a0718` "air animation counter";
-    `.FootPressure` runs whenever it is 0, i.e. on every grounded frame except the first landing frame —
-    slope-hugging is never disabled for good. (Review 1b #1.)
 10. physics.md §8.6 last sentence: the player's `+0x19e` is written only by the death/revive sequence
     (3 stores), §5.
 11. engine.md §9 crunch pairs: "(y,x)" upgrade to HIGH (§6).
-14. ⚑ wave 2 (2026-10-04): further corrections (frame order, layers, `.HitPlayerSprite` reached only through
-    `.MTCollideSpecialSprite`) are in platforms-ropes-radial-2 "Corrections to the existing bank".
 12. physics.md §3.2 last paragraph / INDEX NOT-RESOLVED 5 (tables part): resolved per §7, including that
     `.WallBounce`/`.WallBounceBG` index the per-tile rect by kind.
+13. physics.md §8.3/§8.4 (for the consolidated pass): name `_DAT_100a0718` "air animation counter";
+    `.FootPressure` runs whenever it is 0, i.e. on every grounded frame except the first landing frame —
+    slope-hugging is never disabled for good. (Review 1b #1.)
+14. ⚑ wave 2 (2026-10-04) (moved after 13 — ⚑ corrected (review 2g, 2026-10-04) #7): further corrections (frame order, layers, `.HitPlayerSprite` reached only through
+    `.MTCollideSpecialSprite`) are in platforms-ropes-radial-2 "Corrections to the existing bank".

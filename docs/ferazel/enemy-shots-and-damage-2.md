@@ -38,13 +38,15 @@ layer written by the Setup counts. Later direct `+0x80` writes (e.g. `.HandleWal
 frame at 10068470, `.HandleCannonedSprite` 2 at 10058888–10058890) do **not** re-sort; only
 `.MTChangeSpriteLayer` re-inserts (callers: Chain, Box, Background, Dillo, Xichra). Nodes are unlinked
 only by `.MTKillSprite`, whose callers are `.UpdateSprites`, `.AddIdleSprite`, `.IdleToActiveSprite`,
-`.KillAllSprites` — never during the handle/collide passes.
+`.KillAllSprites` and `.MTKillPxSprites` (`100334ec`; ⚑ corrected (review 2h, 2026-10-04) #4) — never
+during the handle/collide passes.
 **Frame order** (`.HandleSprites` 10007c24): (1) `.MTHandleSprites`, (2) `.MTCollideSprites`,
 (3) `.MTCollideSpecialSprite(player, HitPlayerSprite)` unless `*_DAT_1009ffa8` (player died) or no player.
 1. **Handle pass** (1003259c): walks the list, loading `next` **before** calling `+0x4c`
    (100325b8/100325bc). A sprite created inside a handler runs its Handle in the same frame iff it is
    inserted after that pre-loaded `next` node, i.e. iff some sprite of layer ≤ the new layer already
-   follows the creator.
+   follows the creator — assuming no sprite *before* the creator carries a current layer above the new
+   one (insertion walks from the head; direct `+0x80` writes do not re-sort; spells-detail-2 §4; ⚑ corrected (review 2h, 2026-10-04) #5).
 2. **Main pass** (100326cc): clears every `+0x44` (hot-rect-built flag); for each outer sprite A with
    `+0x5c ≠ 0`, `+0x1b2 == 0`, `+0xe9 == 0` (10032738–10032758), scans the whole list for partners
    B ≠ A with `+0xe9 == 0`, `|ΔA.x|, |ΔA.y| < 360` (top-left integers; `li 0x168` stored by
@@ -52,7 +54,8 @@ only by `.MTKillSprite`, whose callers are `.UpdateSprites`, `.AddIdleSprite`, `
    (`.CalcHotRect`: `+0x34` offset by (x,y) into `+0x3c`, 10032628–10032650) intersecting
    (`.TheSectRect` 10032820). Up to 6 partners are buffered; a 7th+ is processed at once (A(B), then
    B(A) if B`+0x5c`). One partner: A(B), B(A) (10032898–100328c8). Several: the partner with the
-   **largest** key |far vertical edge − A.cy| + |near horizontal edge − A.cx| goes first (keys stored
+   **largest** key |B's far edge in y − A.cy| + |B's near edge in x − A.cx| goes first (⚑ corrected
+   (review 2h, 2026-10-04) ruling 2: axis wording as platforms-ropes-radial-2 §8.3; keys stored
    negated, 10032950, then a strict-minimum search, 1003299c), then the rest in list order; each pair
    A(B) then B(A). No `+0xe9` re-test between the two calls. A pair of two callback sprites is
    therefore visited twice per frame (once from each end) unless the first visit kills one.
@@ -67,7 +70,8 @@ only by `.MTKillSprite`, whose callers are `.UpdateSprites`, `.AddIdleSprite`, `
    segment, only HitPlayerSprite runs, in list order (10032e9c–10032ed8).
 Consequences: every other sprite's hit callback sees the player twice per frame (main pass as A,
 player pass as B) unless it killed itself in the first; `.HitPlayerSprite` sees each partner once.
-Layers that matter: player 10 (`li r5,0xa` 1004af88; `MTNewSprite(0,…,10,…)` 10009ec4), held item
+Layers that matter: player 10 (`.SetupPlayerSprite` `li r5,0xa` 1004af88 → `stw r5,0x80(r23)` 1004afac;
+spawn arg `li r6,0xa` 10009e4c → `MTNewSprite` `bl` 10009ec4 — ⚑ checked (review 2h, 2026-10-04) #3), held item
 0x14, Walkers 11 (each frame), Walker-thrown shots Walker+1 = 12, spout shots the spout's 10
 (`lwz r6,0x80` 1006e988), Pentashield orbs player+1 (`addi r6,r4,1` 1004cef4), 0x6a9 0x14
 (1005badc), Effect 0x4b7 0xc.
@@ -85,7 +89,9 @@ Layers that matter: player 10 (`li r5,0xa` 1004af88; `MTNewSprite(0,…,10,…)`
   passes test the same absolute rects; the main pass adds only the 360-px top-left gate, which a
   16×16 bomb overlapping the player always meets, so the main pass always sees the contact first.)
 - **Double split.** Two `.KillEnemyShot` calls on one bomb need two killing callbacks in one visit with
-  the bomb's own first. Killers besides the bomb's own arm (`.KillEnemyShot` callers): Pentashield
+  the bomb's own first. Killers besides the bomb's own arm (`.KillEnemyShot` callers; not relevant to the
+  main pass and omitted: `.ShieldBlock` 1005567c, `.HitPlayerSprite` 10057c6c, `.HitEnemyShotTileSprite`
+  1005d214/1005d350/1005d46c — ⚑ corrected (review 2h, 2026-10-04) #4): Pentashield
   orb arm of `.HitPlayerShotSprite` (no `+0xe9` test, 1005a944), `.HitWalkerSprite` (shot age > 2,
   other type; 1006a36c/1006a468), `.HitBackgroundSprite` 10075134, `.HitFloaterSprite` (same type only).
   The bomb's own arm kills only against the player, a player shot (0x6e1/0x6e2/0x753), a solid
@@ -100,7 +106,8 @@ Layers that matter: player 10 (`li r5,0xa` 1004af88; `MTNewSprite(0,…,10,…)`
   is then collidable in that frame's two passes (its own callback never kills it: `cmpwi 0x6a9` 1005ca98
   exempts it); on player contact `.HitPlayerSprite` kills it; the next
   frame's Handle takes `+0x14c` to 0 and kills it before any pass [HIGH; MED that the held item is
-  always present].
+  always present; MED also because it assumes the Walker's **insertion-time** layer is ≤ 0x14 — its
+  direct 11 writes do not re-sort (§4.2) — ⚑ corrected (review 2h, 2026-10-04) #5].
 
 ### 4.4 `_DAT_100a0570` = boss-landing stagger  [HIGH]
 Setters: `.HandleChiefSprite` `li r0,0x18; sth` 1008bbc8–1008bbd0 and `.HandleXichraSprite`

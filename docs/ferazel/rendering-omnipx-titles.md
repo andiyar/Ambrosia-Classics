@@ -76,8 +76,13 @@ Inputs: dst rect top `T` (screen y; view row = T − 8), scroll `(V,H)` = `PTR_D
      then `s = (T−8 + v0m + n) & 0x7f` (`10018b1c..10018bdc`). Because `GetPxMidTile` → `.ConstrainXY`
      sign-extends to 16 bits (`1003be0c..1003be6c`), the y is effectively `qm + floor((n−qm)/128)`
      (floor division, also for `n < qm`), then clamped to `[0, h1−1]`.
-   - back: I[t] only (current row) refilled with PxBack at `y = qb + t` and `s = (T−8+v0b+n) & 0x7f`.
+   - back: I[t] only (current row) refilled with PxBack at `y = qb + t` and `s = (T−8+v0b+n) & 0x7f`;
+     its x adds the row's ripple, `x = col + trunc((L + H·xb[r] >> 8 + ripple[r] − 16)/128)` (`10018974
+     add`, array through TOC `−0x682c` at `10018938`; non-zero only on levels 11/18) ⚑ corrected (review 2e, 2026-10-04) #3.
    Table rows `t+2..5` keep whatever the initial fill or an earlier refill put there.
+   - extra refill trigger: a stack flag `0x86` (`100187c4 stb r0,0x86(r1)`, set when stack `0xe0 ≠ 0` and stack `0xb0 > 0x280`,
+     `100187a8..100187c4`) also forces the re-decision; likely dead in the shipped modes [MED] ⚑ corrected
+     (review 2e, 2026-10-04) #4.
 
 ### 1.4 Consequences a replica must copy  [HIGH arithmetic; MED where noted]
 - A call that starts inside the mid region with constant factors draws **PxBack**, not PxMid, until a
@@ -93,7 +98,8 @@ Inputs: dst rect top `T` (screen y; view row = T − 8), scroll `(V,H)` = `PTR_D
 ### 1.5 What the shipped levels actually show (Python transcription of §1.3, all `V ∈ [0, 32·H − 384]`)  [MED]
 PxMid is enabled (hdr+0x3268 = 1) in exactly the 14 levels that name a PxMid sheet (hdr+0x284e ≠ 0):
 10, 15, 21, 22, 30, 31, 40, 45, 50, 51, 52, 55, 62, 70 [HIGH, census]. In every one the mid factor
-table is 0 up to a start row, then 384 (×1.5), then 128 from row 5001; `ym` ≈ 1.25–1.31 (320..335)
+table is 0 up to a start row, then 384 (×1.5), then 128 from row 5001 (level 22: from row **6001**,
+census — ⚑ corrected (review 2e, 2026-10-04) #2; LOW that the §1.5 simulation was affected); `ym` ≈ 1.25–1.31 (320..335)
 except level 45 (`ym` = 1) [HIGH, census]. The ×1.5 horizontal rate and the >1 vertical rate make the
 PxMid a **near-foreground band** at the bottom of the level [LOW: intent].
 
@@ -190,7 +196,7 @@ tiling backdrop (rain sheets, drifting particles) instead of a map.
 | port | `10019e34` `NewBlitPort(128,128, *_DAT_1009ff8c)` (level+sprite CLUT); fail → `ReportError`, off | also sets the load CLUT `*_DAT_1009ff94 = *_DAT_1009ff8c` and never restores it [MED] |
 | layer arrays | zeroes fx 0x100a373c, fy 0x100a375c, vx 0x100a377c, vy 0x100a379c, accX 0x100a37bc, accY 0x100a37dc (16 i16 each) | |
 | per mode | `10019f88..1001a148` (§3.3) | faces + parameters |
-| `.TurnOnOmniPx` | `1001a14c` → `10019ac4..10019b88` | if `G+0x174` already set: return. Set it; **for modes ∉ {4,5,6,7}** back up and zero all 8192 PxBack x-factors (hdr+0x326c) and `yb` (hdr+0xb26c) into 0x100f00b0 / 0x100f40b0 (`10019b04..10019b54`); save PxBack slot 0 to 0x100f97e0 and store the port there (`10019b70..10019b84`) |
+| `.TurnOnOmniPx` | `1001a14c` → `10019ac4..10019b88` | if `G+0x174` already set: return. Set it; **for modes ∉ {4,5,6,7}** back up and zero all 8192 PxBack x-factors (hdr+0x326c) and `yb` (hdr+0xb26c) into 0x100f00a8 / 0x100f40a8 (TOC slots `0x100a00c0`/`0x100a00bc`, loaded `10019ae4`/`10019acc`; ⚑ corrected (review 2e, 2026-10-04) #1) (`10019b04..10019b54`); save PxBack slot 0 to 0x100f97e0 and store the port there (`10019b70..10019b84`) |
 | level end | `.GameLoop` exit `1000a46c` `TurnOffOmniPx`, `1000a474` `KillOmniPx` | TurnOff restores slot 0 and **always** copies the backup buffer back into hdr+0x326c/0xb26c (also after modes 4..7, whose buffer is stale/BSS zero) — harmless because every level start re-reads `Mlvl` from disk (`.OpenDefaultWorldLevel` `DetachResource`, 10048ac0) [MED: harmless]; Kill disposes faces and port |
 
 ### 3.3 Setup per mode (raw `10019f88..1001a148`; registers r31 faces, r30 fx, r29 fy, r28 vx, r27 vy)  [HIGH]
@@ -258,8 +264,11 @@ Sheet check (Python, per-cell non-zero coverage): sheets 600 and 601 have **exac
   `GammaFadeOutAsync(2, …, 0xc, 0x10)`, three `HandleAsyncGammaFade`, `GammaFadeInAsync(0x6e)`, `T = −3`.
   `T < −2`: `T = 210 + FastRand(150)` (`10010ae8..10010af4`).
 - Drops: x from `H + FastRand(50)` stepping `50 + FastRand(200)` while `< H + 660`; y = `V` (top of
-  view); per drop 3 `NewParticle`s 2 px apart; style `FastRand(2)`: kinds 7,6,5 with (5, vx −1200, vy 3600)
-  or kinds 7,7,6 with (4, −700, 2100) (`10010b28..10010c14`). Particle kinds → geysers/particles files.
+  view); per drop 3 `NewParticle`s; style `0x4b3 + FastRand(2)`: 0x4b3 = kinds 7,6,5 with (5, vx −1200,
+  vy 3600), each next particle **4 px lower and 1 px left**; 0x4b4 = kinds 7,7,6 with (4, −700, 2100),
+  each next 2 px lower and 1 px left only when `FastRand(100) > 50` (`10010bb4`, `10010c3c`)
+  (`10010b28..10010ca0`; particles §5.1) ⚑ corrected (review 2e, 2026-10-04) #5. Particle kinds →
+  particles.md §4.
 
 ### 3.7 Counter/side notes
 - The flash buffer shown during `_DAT_100a00fc` is the mask port itself (`10012754 lwz r5,-0x7838(r2)` is
@@ -404,7 +413,10 @@ names' (99 slots, 27 non-empty). Music files' own forks: SoundEdit 16 leftovers 
 3. Colour of palette index 0 in each level CLUT, needed to describe the lightning-flash silhouettes and
    the transparency of the DirectBits OmniPx faces 6200/6201/6300 after QuickDraw remapping (white → 0
    assumed, MED). Tried: 8-bit faces decoded exactly; DirectBits faces measured as "pure white"
-   fraction only.
+   fraction only. ⚑ corrected (review 2e, 2026-10-04) #6: cross-reference lighting-tables §1.4 —
+   entries 0x00..0x9f of every "+ base" level CLUT equal `clut 200`, whose entry 0 is ffffff (white),
+   and lighting-tables §4 (unwritten table 4 → index 0, white); the palette half is therefore settled
+   [HIGH data]; the QuickDraw remapping of the DirectBits faces stays MED.
 4. Why tracks 21/27 (and 5 others) are unused — undeterminable from code/data (§6.4).
 5. Intended use of Titles PICT 137, 4951..4965 and cluts 288..290, 729 — no reference; purpose LOW.
 
