@@ -208,7 +208,7 @@ Map body at `0x20 + 16*0x80` = segment offset 0x820; segment length 0x2820 = 0x2
 |---|---|---|---|
 | 0–11 | tile index (0..0xFFF; 0..0x9FF have pixels) | `SetStage`: `& 0x1fff`; `MaskAnyTile`: `PTR_DAT_100cdc28 + (t&0x1fff)*4 + frame*0x2800` (0x2800 = 0xA00 ptrs) | HIGH |
 | 12 (0x1000) | **compo tile**: low 12 bits index a CompoTileRecord (§3.4) | `MaskAnyTile__7TViewerFUsll @ 10063b9c`: `if ((t & 0x1000) == 0) … else BuildCompoTile(…, PTR_DAT_100cdc58 + (t&0xfff)*0x20)` | HIGH |
-| 13 (0x2000) | draw with the transparent mask variant (`TMaskTile`) | same function | MED (flag only seen on the `MaskAnyTile` argument; not checked whether map cells carry it) |
+| 13 (0x2000) | ~~draw with the transparent mask variant (`TMaskTile`)~~ ⚑ corrected (review wave 3 2026-10-06): superseded — 0x2000 selects the **transposed** copy (a diagonal flip), not a mask variant: `TCopyTile @ 10062de4` / `TMaskTile @ 10063534` write destination row k from source column k; `Render` draws ground words with 0x2000 through `TCopyTile` (`100675f8`) and XORs 0x2000 into every mirrored prop tile (`10067e80: xori r4,r25,0x2000`) — render.md §2.3/§2.5 | same function | MED (flag only seen on the `MaskAnyTile` argument; not checked whether map cells carry it) → ⚑ corrected (review wave 3 2026-10-06): HIGH (render.md §2.3) |
 | 15 (0x8000) | "seen" (automap) — runtime only, from segment 0x8200+L | `LoadLevelMap`: `*puVar16 |= 0x8000` for each set bit | HIGH |
 
 Out-of-map cells on non-wrapping edges render tile 0xFF (`SetStage`: `if (bVar3) uVar6 = 0xff`). [HIGH]
@@ -289,7 +289,7 @@ everything whose parent is it. [HIGH]
 | 1..3 | 24 | on map: x = bits 12–23, y = bits 0–11 (each signed 12-bit); contained: parent index in the low 16 bits | `SetStage`: `((u32>>8)<<16>>16)>>4`, `(short)(u16@2 <<20)>>20`; `GetPropParent__FP8PropItem @ 10055d4c` returns `(short)u32` | HIGH |
 | 4..5 | 0–9 | object **type** (0..0x3FF) | `& 0x3ff` everywhere | HIGH |
 | 4 | bits 2–6 of byte 4 (= bits 10–14 of the u16) | **frame / state** 0..31 (tile = base[type] + frame) | `(byte[4]>>2)&0x1f` + `PTR_DAT_100cdbf4[type]` | HIGH |
-| 4 | bit 7 of byte 4 | mirror: swaps multi-tile extension direction 0x40↔0x80 | `SetStage`: `if ((char)pbVar16[4] < 0) swap` | MED |
+| 4 | bit 7 of byte 4 | mirror: swaps multi-tile extension direction 0x40↔0x80 ⚑ corrected (review wave 3 2026-10-06): right for `SetStage` (`10065b74: cmpwi r4,64` … `10065b94: li r4,64`) but incomplete for drawing — in `Render` the same bit transposes every tile (t ^ 0x2000) and swaps the up/left extension cells (render.md §2.5) | `SetStage`: `if ((char)pbVar16[4] < 0) swap` | MED |
 | 6 | 8 | quality / letter / timer / sub-position (type-flag dependent, §4.4) | `GetItemQuality`, `GetItemLetter`, `DoTicks` countdown, `SetStage` sub-offset `byte6 & 3`, `byte6>>4 & 3` | HIGH per accessor |
 | 6..7 | 16 or 8 | **count** (u16 at +6 if type flag 0x200; u8 at +7 if flag 0x100; else 1; 0 reads as 1) | `GetItemCount__FP8PropItem @ 1005577c` | HIGH |
 | 7 | 8 | facing/activity copy for characters | `RepositionChar` writes `param_2+7` | MED |
@@ -307,10 +307,10 @@ Census over all 40 shipped prop segments (`kind byte census`): `0:12104, 1:116, 
 | 0x00 | object on the map at (x,y) | `SetStage` `LAB_100656bc` path | HIGH |
 | 0x01 | on map, alternate draw path (`bVar1 < 2` → same as 0) | `SetStage` | MED |
 | 0x02, 0x03, 0x22, 0x23 | on map + tile-flag 0x800 "blocker" marking | `SetStage` `LAB_100655e8` | MED |
-| 0x04, 0x24 | on map, drawn as roof layer (priority 7) | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED |
+| 0x04, 0x24 | ~~on map, drawn as roof layer (priority 7)~~ ⚑ corrected (review wave 3 2026-10-06): superseded — 0x04/0x24 are **creature bodies** (`HatchEgg` `1004f484: li r0,4` / `1004f48c: stb r0,0(r4)` and `1004f8c4: li r3,36` / `1004f8d8: stb r3,0(r24)`), drawn in Render pass 4 above every object layer except tile-flag-0x10 props; roofs are kind 0x44 (`'D'`) via `ApplyRoof`. Priority 7 feeds the 124×124 occupant grid (+0x15FF4), not drawing (p:31634 `&& (local_5e != 7)`) — render.md §2.4, §5 | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED → ⚑ corrected (review wave 3 2026-10-06): HIGH (render.md §2.4) |
 | 0x08–0x0B | **inside a container prop** (parent = low 16 bits) | `GetPropParent` (`7 < b < 0xc`), `GetCurInvEncumb` walks `\t`/`\b` chains | HIGH |
 | 0x10 | in a character's **inventory** (parent = char index) | `GetCurInvEncumb__Fs` | HIGH |
-| 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5) | — | NOT RESOLVED |
+| 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5). ⚑ corrected (review wave 2 2026-10-06): closed — 55 NPC weapon/armour/clothing records, owner = character index in the low 16 bits (21 owners, 7 levels); no code or script selects kind 0x11, so they are inert (open-items-2026-10-06.md §4) | — | NOT RESOLVED → ⚑ corrected (review wave 2 2026-10-06): HIGH (no reader) / MED ("leftover equipment") |
 | 0x18 | **equipped/wielded** by a character | `GetCurEquEncumb__Fs` | HIGH |
 | 0x1C | a character's **skill** (type = skill id) | `FindSkill__Fss @ 10056100` | HIGH |
 | bit 0x20 | "transient" — freed by `ChainFreeProps(1)` on level load | `ChainFreeProps`: `(*puVar5 & 0x20000000) != 0` | HIGH |
@@ -363,7 +363,7 @@ the tile-name join is a tool join, not a game display.]
 | 0xF001 | var | (temp) | tile animation records (§3.4) | HIGH |
 | 0xF002 | 0x8000 | `PTR_DAT_100cdc14` | u32 **tile flags** per tile (0x2000) — passability/LOS/draw-layer bits; render priority logic in `SetStage` reads 0x10000000, 0x100000, 0x800, 0x20000, 0x200, 0x30, 0xC0 (multi-tile extension, `SetStage`: 0x80 → tile−1 also drawn one cell left (`puVar12[-2]`); 0x40 → tile−1 one cell up (`puVar12[-0x3e]`, row stride 0xF8); 0xC0 → tile−1 up, tile−2 left, tile−3 up-left (`puVar12[-0x40]`); bit 7 of the prop's byte 4 swaps 0x40↔0x80) | HIGH ids / MED per-bit meaning |
 | 0xF004 | var | (cached) | **tile names**: {u16 last-tile-of-range, C string}…, terminated by an id > 0x2000 (0x7FFF). A tile without its own entry takes the next higher entry's name. `/` = plural-only text, `\` = singular-only text, reset at space (`SingPlur__FPcPcUc`). 547 names (tool). | HIGH |
-| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits). ⚑ corrected (wave 1 2026-10-03): no `li/ori/addi` immediate use either (HIGH); 0xF00A = all zero; 0xF014/0xF015 = {u16, C string} symbol tables of frame-variable / object names [HIGH decode; MED/LOW role]; 0xF005/0xF007 content still open — open-items §6 | HIGH (no reader) / NOT RESOLVED (F005/F007 content) |
+| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits). ⚑ corrected (wave 1 2026-10-03): no `li/ori/addi` immediate use either (HIGH); 0xF00A = all zero; 0xF014/0xF015 = {u16, C string} symbol tables of frame-variable / object names [HIGH decode; MED/LOW role]; 0xF005/0xF007 content still open — open-items §6. ⚑ corrected (review wave 2 2026-10-06): closed as "data present, no reader" — F005 = five {first, count, 1} palette ranges 0xD0–0xEB (colour-cycling table; `ColorCycle` is a bare `blr`), F007 = count 33 + 33 × 5-byte records (open-items-2026-10-06.md §5) | HIGH (no reader) / NOT RESOLVED (F005/F007 content) → ⚑ corrected (review wave 2 2026-10-06): MED (F005 role) / LOW (F007 role) |
 | 0xF008 | 2048 | `PTR_DAT_100cdbd8` | ⚑ corrected (wave 1 2026-10-03): **128 × 16-byte creature-species records keyed by u16 +0xC (object type), 50 used**; field map combat.md §4; tail list after +0x800 empty (`(size−0x800)>>4` = 0 → `PTR_DAT_100cdc30/38`). Reader `ObjToMonst__Fs @ 10044a60` (`if (0x7f < sVar1) return 0; … if (*(short *)(iVar2 + 0xc) == param_1) return iVar2;`); `tools/seg.py` this session: length 2048, first zero key at record 50, 50 non-zero records, 0 tail records. Script class 0x48 = these records (script-vm.md §2.1) | HIGH |
 | 0xF009 | 0x2000 (0x4000 in saves) | `PTR_DAT_100cdbf0` | **CharEntry[256]** (§6); saved back with 0x4000 | HIGH |
 | 0xF00B | var | `PTR_DAT_100cdbe0/dc` | **schedules** (§6.3) | HIGH |
@@ -506,3 +506,59 @@ one remembered position, so chunks do not nest. Segment 0x0400 = `'Char'` then `
 nodes `bhhl`), `'FXQ '` (`hhh` per FX entry), `'Wind'` (per open inventory window: `l` class id +
 virtual Marshal), `'Grem'` (raw 0x400 bytes = 256 × {u16 flags, u16 heap frame}) [HIGH layout; MED
 field names; subclass extras MED].
+
+---------------------------------------------------------------------------------------------
+## 8. Preferences file and the "UI Prefs" word — ⚑ wave 2 (2026-10-06)
+Code: `TPrefs` (main dump p:3837–4140), `TDelverApp::PostInitMac @ 1001215c`, `DefaultMenu @
+10015b10`, `TApPrefWindow::SaveSettings @ 100a23e8`; the shell around them is `app-shell.md` §1.3/§7.
+
+### 8.1 Container [HIGH]
+A resource file named by `STR 128` "Cythera Preferences" in the Preferences folder
+(`FindFolder(0xffff8000, 'pref', …)`; created `FSpCreateResFile(…, '????' (data 0x100d4264), 'pref')`).
+Each setting is a **named `'Pref'` resource** (id = first `UniqueID('Pref') ≥ 0x80`). `LoadPrefs` /
+`GetOrdinal` use `GetNamedResource`, so the application's own `Pref 128 "Volume"` (4 B, `00000005`)
+and `Pref 129 "Music"` (`00000002`) answer when the prefs file lacks the key (`rsrc.parse` of
+`$G/Cythera.rsrc`).
+⚑ corrected (review wave 2 2026-10-06) — review N5, unreconciled: `TAudio::Init` reads "Music" with
+code default **8** (p:6948 `_GetOrdinal__6TPrefsFPCUcsl(uVar2,PTR_DAT_100ce430,0,8);`) while the
+menu writes music 0..3 (app-shell.md §4.3). In practice `Pref 129 "Music"` = 2 answers first, so the
+8 is reached only if that resource is missing. What `SetMusicVolume(8)` would do was not read. [HIGH
+the default; consequence NOT RESOLVED]
+
+| name | size | content | written by |
+|---|---|---|---|
+| UI Prefs | 4 | the word at 0x100d3e20 (§8.2) | PostInitMac (default), DefaultMenu 0x88, SaveSettings |
+| Volume / Music / Ambient | 4 | u32 ordinal: sound 0..8 (−1 = system), music 0..3, ambient 0/1; code defaults 5 / 8 / 1 | `TAudio::SetSoundVolume/SetMusicVolume/EnableAmbient` (`SetOrdinal`, p:7026–7106) |
+| Backdrop | 4 | ordinal, default 0 (MENU 138: Default Pattern / Black) | `TBackdropWind` (p:16695 reads) |
+| Map Window Loc | 8 | Rect (global) of the map window | `TDelverApp::DoQuit`; read by the `TMapWindow` ctor (p:19092) |
+| CurPlayer | alias | last saved game | `SetFile` in OpenFromFS, DoItemHit, NewGame paths |
+| CurScen | alias | scenario file | `OpenScenFile` (p:5263) |
+
+### 8.2 The "UI Prefs" word (big-endian; bytes at 0x100d3e20..23) [HIGH unless marked]
+Readers/writers: `grep -n 'd3e2[0-3]'` over the four dumps (pef, extra, missing, builtins).
+| byte.bit | meaning | evidence |
+|---|---|---|
+| 0.7 + 0.1 | movement / Graphics Quality: none = Fastest (Better Performance), 0.7 = Faster, 0.7+0.1 = Smoother (Better Quality) — sub-tile steps (engine-classes §3.4) | DefaultMenu 0x88 items 6/7/8 `& 0x7d \| 0x82 / 0x80 / –`; SaveSettings same; readers `HandleMove`, `HandleSubMove`, `SetStage`, `DrawRoutine`, `MoveAll`, `Render`, `TBark::Draw` |
+| 0.6 | Manually Place Containers (0 = auto-place) | items 1/2; `TInventoryWindow::RandomPlace` |
+| 0.5–0.2 | anim-frame spacing F in ticks (4/6/8 = 15/10/7.5 frames/s) | items 10/11/12 `& 0xc3 \| 0x10/0x18/0x20`; read only by `MyScheduler` ⚑ corrected (review wave 2 2026-10-06): and by `PostInitMac` (m:4384 `bVar1 = DAT_100d3e20 >> 2 & 0xf;` → check marks on items 10/11/12), inside the `GetMenuHandle(0x88)` block that never runs (app-shell.md §4.3) |
+| 0.0 | Live Dragging (copied to app +0x67/+0x68/+0x69) | item 4; SaveSettings |
+| 1.7 | Use 'ZoomRects' | SaveSettings; `TCharacterWindow::PostInit`, `TInventoryWindow::CloseRoutine/RandomPlace` |
+| 1.6 | Walk around obstacles | SaveSettings; `TGameSys::MoveCommand` |
+| 1.5 | switch the game monitor to 256 colours at startup | PostInitMac DLOG 140 item 1; `TryAMonitor` |
+| 1.4 | don't ask about 256 colours again | PostInitMac DLOG 140 item 3 |
+| 1.3 | Motion Filters (displacement filters) | SaveSettings; `DisplacementFilterTile`, `CopyTile`, `TCopyTile`, `MaskAnyTile` |
+| 1.2 | multi-button mouse → modifier mapping | read by `MyGetEvent`; **no writer** [HIGH scan] |
+| 3.0 | skip the 2-s splash wait; also gates one `TMapWindow::KeyRoutine` branch (x:375) [MED: branch purpose] | read by `main`, x:375; **no writer** |
+Other bits: no reader or writer found; byte 2 is 0 in every default word (§8.3).
+
+### 8.3 First-run defaults by CPU [HIGH words; CPU names MED (Apple Gestalt constants)]
+`PostInitMac` (m:4333–4356): `Gestalt('cput')`, else `Gestalt('proc') − 1`; words from
+`python3 -c "import sys;sys.path.insert(0,'docs/cythera/tools');import toc;print([hex(w) for w in toc.data_u32(0x100d426c,4)])"`.
+| `cput` | word | decode |
+|---|---|---|
+| < 4 (68000–68030) | 0x18800000 | Fastest, auto-place, F = 6, ZoomRects; **also `SetMusicVolume(0, 1)`** |
+| = 4 (68040) | 0x18800000 | as above, music untouched |
+| 0x101–0x105 (601/603/604) | 0x99800000 | Faster, Live Dragging, F = 6, ZoomRects |
+| ≥ 0x106 (603e, 750, 604e, …) | 0xDBC80000 | Smoother, manual containers, Live Dragging, F = 6, ZoomRects, walk around obstacles, motion filters |
+The static initial value of the word (`toc.data_u32(0x100d3e20,1)` = 0x98C00000) is always replaced
+by the loaded or default word before use. [HIGH]

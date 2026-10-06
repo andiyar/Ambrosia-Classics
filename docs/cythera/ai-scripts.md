@@ -277,6 +277,10 @@ code — NOT RESOLVED beyond identification.
   (`script-builtins.md`): **no builtin calls `PerformAI` or `CompileAIFile`**, so the scripts are
   not the route; `PerformAI`'s caller remains NOT RESOLVED (a TVector/vtable entry is the likely
   path).
+  ⚑ wave 2 (2026-10-06): superseded — every caller is a direct `bl`; no TVector/vtable route exists
+  (scan in §9.1). `PerformAI` ← `DoMove__14TActiveMonsterFss` ×6, `CompileAIFile` ←
+  `TEditUserBehavior::DialogItemRoutine` (Import), `EditUserBehaviors` ← `TCharacterWindow::
+  MouseRoutine`. Item 14 CLOSED. [HIGH]
 - Debugging: slots 0xB0..0xCE with a non-zero byte in a per-slot table (`_DAT_100cf0fc`) open the
   `TAIDebug` window, which single-steps entries (`SetCurrentLine`). [MED]
 
@@ -310,3 +314,65 @@ metadata only; the game never reads them. [HIGH: `rsrc.py` census; MPSR bytes `0
 - **Missile User ("Missile Script")** — equip ranged if not using one (Continue); the out-of-ammo
   retreat is inert (§4); back off to 5 if nearest enemy within 3; retarget if target beyond 7 and
   an enemy within 4; close to 5 on a far target; else attack. [HIGH]
+
+---------------------------------------------------------------------------------------------
+## 9. Callers, the behaviour editor and the AI debugger — ⚑ wave 2 (2026-10-06)
+
+### 9.1 Item 14 (indirect `CompileAIFile`/`PerformAI` callers) — CLOSED [HIGH]
+TVector words hold code-section offsets (control: `RangeIter` 0x83CA8 is found at 0x100D05C8). Scan of
+every data word for the three entry offsets **and** their absolute addresses (re-run this session):
+```sh
+python3 -c "import sys,struct;sys.path.insert(0,'docs/cythera/tools');import toc;D=toc.D;[print(hex(toc.DB+o),hex(v)) for o in range(0,len(D)-3,4) for v in [struct.unpack('>I',D[o:o+4])[0]] if v in (0x83ca8,0xb0ba4,0xb0ef8,0xb1b38,0x100b0ba4,0x100b0ef8,0x100b1b38)]"
+# → 0x100d05c8 0x83ca8          (control only: no TVector for PerformAI / CompileAIFile / EditUserBehaviors)
+python3 docs/cythera/tools/ppcdis.py 10000000 100cd280 > all.dis          # 212,074 lines
+grep -c -E '0x100b0ba4|0x100b0ef8|0x100b1b38' all.dis                     # 8 — all of them `bl`
+grep -E 'bl 0x100b0ba4|bl 0x100b0ef8|bl 0x100b1b38' all.dis   # + tb.py --at on each site:
+1002f390: bl 0x100b1b38 EditUserBehaviors  :: MouseRoutine__16TCharacterWindowF5Points
+1004c51c / 1004c57c / 1004c5a8 / 1004c608 / 1004c688 / 1004d5bc: bl 0x100b0ba4 PerformAI :: DoMove__14TActiveMonsterFss
+100b1854: bl 0x100b0ef8 CompileAIFile      :: DialogItemRoutine__17TEditUserBehaviorFs
+```
+So `PerformAI` runs only from `DoMove` (combat turns), `.ai` source enters the game only through the
+editor's Import button, and the editor opens from the character window's behaviour popup (popup
+value 1, census §2 / ui-play.md). §6's "NOT RESOLVED … TVector" is superseded.
+
+### 9.2 `TEditUserBehavior` — "Edit User Strategies" (DLOG/DITL 141) [HIGH unless marked]
+`EditUserBehaviors__Fv @ 100b1b38` news a 0x18-byte `TEditUserBehavior` and runs it with app
+vslot +0x2C (MoveableModal), then deletes it and redraws (vslot +0x40). Ctor (p:55644): `TDialog(0x8d)`,
+a `TAIList` in item 3 with data bounds (0, 0, 0x20, 1) — **32 rows = slots 0xB0..0xCF** (data
+`toc.data_u32(0x100d85e0,1)` = 0 for top/left; bottom/right `0x200001` in the code) — and items 2
+and 4 disabled (`HiliteControl(…, 0xff)`). DITL 141 texts: 1 Done, 2 Import, 3 (list), 4 Debug.
+- `TAIList::LDEFDraw @ 100b1290`: row r shows `GetCombatAIName(r + 0xb0)`; if the slot's debug byte
+  `_DAT_100cf0fc[r]` is set, a 2-char marker (code bytes `02 20 2d`, TOC 0x100cf020) is drawn first
+  in colour 0xCD; selected rows inverted.
+- `MouseRoutine @ 100b19e4`: clicks in item 3 go to the list (`TListBox::Click`, slot +0x30); Import
+  and Debug are enabled only while a row is selected.
+- `DialogItemRoutine @ 100b1780` (m:23478–23519): **1 Done** → end modal (app +0x1D). **2 Import**
+  → with a selected row r: app vslot +0x68 GetOneFile(spec, 1 type `'TEXT'`, preview on, prompt
+  "Import AI source file" (TOC 0x100cf014)), redraw, then `CompileAIFile(spec, r + 0xb0)`
+  (m:23502) — which saves segment 0x360 + slot into the current save (§3) and logs "Combat AI #%d
+  compiled." (TOC 0x100cf024) — and invalidates the dialog. **4 Debug** → toggles
+  `_DAT_100cf0fc[r]` (m:23512).
+- `DialogDrawRoutine @ 100b1928`: list update + frame for item 3; `DrawRoutine` fills tile pattern
+  0x1A4 then `TDialog::DrawRoutine`. The debug table (TOC 0x100cf0fc → data 0x77BC4) is zero at
+  load (`toc.D[0x77bc4:0x77be4]`) and is not saved by any code read here [MED].
+
+### 9.3 `TAIDebug` — single-step debugger (DLOG/DITL 142) [HIGH unless marked]
+`PerformAI @ 100b0ba4` (p:55421): slot s with `0xaf < s < 0xcf` and `_DAT_100cf0fc[s − 0xb0] ≠ 0` →
+`new TAIDebug(monster, s, header, header + 0x20 (entries), count)` (`__ct__8TAIDebug… @ 100ad584`: `TDialog(0x8e)`,
+disables MENU 0x81, a list of the disassembled entries (`Disassemble`)), made the app's modal window,
+`BeginModal`, then `EvaluateAI` runs with the debugger live. (So slot 0xCF can be flagged in the
+editor but never stops — the bound is `< 0xcf`.) In `EvaluateAI` (p:55318–55340), before an entry
+runs: `SetCurrentLine(index)` selects its row, **app vslot +0x18 MEL runs a nested event loop** until
+a button ends it, then by the clicked item (stored at +0xC by `DialogItemRoutine @ 100ada10`):
+| DITL 142 item | `DialogItemRoutine` | effect in `EvaluateAI` |
+|---|---|---|
+| 1 Step | +0xC = 1, end modal | execute this entry, stop again at the next |
+| 2 Clear Debug | clear `_DAT_100cf0fc[s − 0xb0]`, +0xC = 2, end modal | close the debugger (Hide, `EndModal`, delete), finish without stopping |
+| 4 Go | +0xC = 4, end modal | as 2 but the flag stays set |
+| 3 (list) | ignored | — |
+`DialogDrawRoutine @ 100ada9c`: item 3 `LUpdate` + frame; item 5 three lines — "Character:" +
+`GetCharacterName((CharEntry − table)/0x20)`, "Target:" + the target monster's name or "None"
+(monster +0x1C), "AI:" + `GetCombatAIName(s)`; item 6 `DrawPortrait(…, 0x24)`. `MouseRoutine @
+100add5c`: `LClick` in item 3, else `TDialog::MouseRoutine`. `dt @ 100ad774`: `LDispose`, re-enable
+MENU 0x81. [HIGH as code; "Step stops at the next entry" MED — the loop guard `iVar8`/`bVar2` in
+`EvaluateAI` not re-read]

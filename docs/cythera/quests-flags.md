@@ -115,6 +115,8 @@ behind `jf ((random(0, 40) == 1) && !R0F02(A30, 4))` (1834@0012) or `jf ((random
 !R0F02(A30, 5))` (1834@008E, 1837@0012, 1865@0018). For other characters bits 4/5 are ordinary
 story bits (Crito 4, Apis 4/5, Halos 4, Sacas 4).
 
+⚑ wave 2 (2026-10-06): **N2 narrowed.** 0C80 chooses whom to serve by customer bit **6** (party; then 167 clears bit 4) or bit **7** (name known; then 167 clears bit 5) — `001D jf R0F02(L00, 6)`, `00B1 jf R0F02(L00, 7)` — not by the latch bits 4/5. So a waiting patron is released only once it is in the party (bit 4) or the player knows its name (bit 5). Dares (182D) serves eleven patrons who never wait. Latch half HIGH; "served" fits 0C80's actions; the bit-6/7 choice as intent is MED — open-items-2026-10-06.md §9.
+
 ### 2.4 Schedules that read story state (0xF00B, all 617 entries scanned)
 | cond, arg | reading (rules.md §3.3) | characters gated | conf |
 |---|---|---|---|
@@ -315,7 +317,7 @@ HIGH per step]
 | 9 | pick up crystal frame 3 (1025@013A) with 120.1 set and 120.2 clear | bit 120.2; `done_to_do(7)`; karma +10 |
 | 10 | Pelagon 180D@0A4D (var 3 == 3, fight path) | `give_item(1, 2085, 0, 0)` = crystal frame 2 |
 | 11 | combine (1025 use_on @0223): frames 0+1 → 4 (vision 8), 4+2 → 5, 5+3 → 6 (vision 3) | `setfield A30.f03:frame = 4/5/6`, `delete_prop(A31)` |
-| 12 | use the frame-6 crystal on prop type 34 (1025@0396–045E) | `done_to_do(0)`; var 0 := 2 if crystal quality ≠ 0 else 1; **setbit(2, 1)**; exp 100; Alaric's activity := 150 |
+| 12 | use the frame-6 crystal on prop type 34 (1025@0396–045E) | `done_to_do(0)`; var 0 := 2 if crystal quality ≠ 0 else 1; **setbit(2, 1)**; exp 100; Alaric's activity := 150 ⚑ wave 2 (2026-10-06): superseded — inverted: `0445 jf (A30.f06:quality == 0) -> 0458` gives var 0 := **2 for quality 0** and 1 otherwise |
 | 13 | talk to Alaric (1802@02C4–06E3) | bit 2.1 set → ending by var 0 |
 
 **Dead crystal checks** [HIGH]: 184A@0748 `jf (who_in_party_has(37, 0) == -1) -> 07CD` and
@@ -340,6 +342,7 @@ worked decode `0x2422 & 0x3FF = 34`). [HIGH]
 What gives the frame-6 crystal a non-zero quality (the damned ending) was **not found**: no
 script writes `.f06` on a type-37 prop, all shipped type-37 map props (0x8107 #2, 0x8113 #23,
 0x8108 #1226) have quality 0, and every `give_item` of a piece passes quality 0. [MED — open]
+⚑ wave 2 (2026-10-06): **INDEX 22 closed [HIGH].** Superseded — quality ≠ 0 is the **saved** ending and quality 0 (the default) the damned one (step 12 above was inverted). The writer: Charax 184F@05DA/@05E2 turns the distiller at (7,5) into type 234 with quality 1 (after the Sabinate spores, item 271). The distiller 10EA use_on@00CE then does `setfield A31.f06:quality = 1` when A31 is item 6181 (the joined crystal); Omen's vision follows. The hintbook (documentation) gives the same step — open-items-2026-10-06.md §7.
 
 ---------------------------------------------------------------------------------------------
 ## 6. Story beats: visions, teleports, time
@@ -443,6 +446,13 @@ never lives in the journal.
    char bit — §2.3, §4.1, schedules-npcs.md §3.2); 66 (0x42 pass), 68 (0x44 bark), 160 (0xA0 walk)
    are schedules-npcs.md §3.2–§3.3.
 2. What makes the frame-6 crystal's quality non-zero (damned ending), §5.
+   ⚑ corrected (review wave 2 2026-10-06): closed, and the parenthesis is inverted — non-zero quality
+   is the **saved** ending. Re-read this session (`grep -nE '(0445|044F|0458)' ghidra/cythera-scripts/1025.txt`,
+   `grep -nE '(02F8|050A|06E3)' ghidra/cythera-scripts/1802.txt`): 1025 `0445 jf (A30.f06:quality == 0) -> 0458`,
+   `044F set_variable(0, 2)`, `0458 set_variable(0, 1)`; 1802 `02F8 jf (get_variable(0) == 2) -> 0539`
+   with the damned `end_game` at 050A and the saved one at 06E3. So quality 0 → variable 2 → damned;
+   quality ≠ 0 → variable 1 → saved. The writer is the distiller (§5 wave-2 paragraph,
+   open-items-2026-10-06.md §7). [HIGH]
 3. Hero signal `256`: sent by `TakeCommand` (§4.3) ⚑ corrected (wave 1 2026-10-03). The countdown
    that fires the vision props (frame-9 byte-6 timer) is `DoTicks` per schedules-npcs.md §7.1 — not
    re-read here.

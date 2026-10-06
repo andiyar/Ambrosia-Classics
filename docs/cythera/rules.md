@@ -100,6 +100,14 @@ visible* likewise (both forced false if the prop's bit 31 is set).
   monster's waypoint to the destination (walks in from off-screen).
 - old visible (monster exists): keep position, set waypoint (walks there); activity → 0x80
   ("walking") with the target activity stored in prop byte 7.
+  ⚑ corrected (review wave 2 2026-10-06): superseded — the condition above is backwards. Re-read
+  this session (`ppcdis.py 10006540 100065c0`, `ppcdis.py 10006690 10006730`; r19 = old visible from
+  `IsVisibleAbs` at 10006564, r23 = new visible from 1000659c): old visible → `100066a4: stb r25,22(r31)`
+  (activity := the target directly, `100066ac: stb r25,7(r30)`, then `SetWaypoint`); old **not**
+  visible, new visible, active monster → `10006724: li r0,128 / 10006728: stb r0,22(r31)` (0x80). So
+  0x80 marks only an off-screen NPC walking on-screen; nothing reads byte 7 back and the next
+  ScheduleTime pass restores the activity. Full reading: open-items-2026-10-06.md §3.2,
+  schedules-npcs.md §10 item 4. [HIGH]
 
 ## 4. Status effects and regeneration (native) [HIGH unless marked]
 

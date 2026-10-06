@@ -396,3 +396,75 @@ is deleted after the `use_on` (`104B @00E4`).
    from saved games or native code — `ReadFXQueue` only).
 9. `Ctor` result of `as_char(spell)` (Resist Blows text test).
 10. Mystic Arrow / Fireball's stale 8th `missile_burst` argument — which slot it reads.
+
+---------------------------------------------------------------------------------------------
+## 11. Missile and spell FX classes ⚑ wave 2 (2026-10-06)
+Reader R1, census group G (13 bodies of `ghidra/Cythera_missing.decompiled.c`, list in
+ui-play.md §0). Visual only: none of these bodies changes CharEntry or prop state except the
+hit table of §11.2. `m:NNNN` = line of the missing dump. Vtables decoded with `toc.data_u32` +
+`tb.py --at` (recipe ui-play.md §0).
+
+### 11.1 Shape [HIGH]
+- A missile is a `TBres` line walker (vtable slot +8 = `DoBresPixel(long)`, called once per
+  pixel) with a `TTileShower` sub-object at +0xC (its vtable slot +8 = `Show(char*)`). Vtables:
+  thrower 0x100D5F18 / shower 0x100D5F24, spinner 0x100D5EDC / 0x100D5EE8, stream 0x100D5E88 /
+  0x100D5E94, plain `TBres` 0x100D640C, `TLineEffect` 0x100D76BC, `TStraightBres` 0x100D6058. The
+  stream's shower slot +8 is the thunk `10061a90: addi r3,r3,-12 ; b 0x1005ef84` (→
+  `TMissileStream::Show`).
+- Built by `DoMissile__11TGameViewerFsssssssss @ 1005f234` (main dump, context) from builtin E2
+  `cbMissileFX` (script-builtins.md): style = `flags & 7` — **0 thrower** (one rotated tile, sound
+  tracker), **1 spinner** (8 rotations of the tile, `RotateTile` ×8), **2 stream**. The walk runs over
+  pixel coordinates (cell × 32) clipped to the view; while it runs `viewer +0x20C44` points at the
+  shower sub-object, and is 0 again afterwards.
+
+### 11.2 Per-pixel callbacks [HIGH]
+| body | every pixel | every Nth pixel |
+|---|---|---|
+| `TMissileThrower::DoBresPixel @ 1005ead0` | sound tracker follows the cell `pos / 32` (`MoveTo__13TSoundTrackerFss`) | N = 16 (static counter `PTR_DAT_100cea5c`, `… % 16`): store `pos` in shower +0xC and `DrawRoutine__11TGameViewerFs(viewer, 2)` |
+| `TMissileSpinner::DoBresPixel @ 1005ecc8` | as thrower | N = 16: as thrower, plus frame `+0x20 = (+0x20 + 1) mod +0x22` and image `+0x14 = frames[+0x24][frame]` |
+| `TMissileStream::DoBresPixel @ 1005eea4` | — | N = 12 (`PTR_DAT_100cea4c`, `/ 0xc`): `MaskAMissile(viewer, image, pos)` — stamped into the view buffer, no redraw, no sound |
+| `TBres::DoBresPixel @ 10074a54` | `return 1` (continue) | — |
+| `TStraightBres::DoBresPixel @ 1006bdbc` | stage cell *i* (8-byte cells): `if ((*(uint *)(*(int *)(param_1 + 0xc) + param_2 * 8) & 4) != 0) { **(undefined1 **)(param_1 + 0x10) = 0; return 0; }` — tile flag 4 stops the walk and clears the result | — |
+| `TLineEffect::DoBresPixel @ 1009930c` | cell within ±15 of the view centre → `GetBestProp(x·4, y·4)`; if that prop is an active monster's, `PTR_DAT_100cee00[charIndex] = 1` (m:19361–19368); always continues | — |
+
+All return 1 except the blocked `TStraightBres` case; **no body waits on the clock**
+(no `TickCount`/`Delay` in any of them) — a thrown or spinning missile advances one redraw per 16
+px (half a cell), at whatever speed `DrawRoutine(…, 2)` runs.
+- `Show` bodies: `TTileShower::Show @ 1005e9a0` → `MaskAMissile(viewer +4, image +8, pos +0xC)`;
+  `TMissileStream::Show @ 1005ef84` → `DrawBres` again with the stored line (+0x18…+0x30), i.e. the
+  whole trail is re-stamped every frame; `TCircleShower::Show @ 1005f8cc` → `ShowCircle`;
+  `TBurstShower::Show @ 1005f920` → `ShowCircle` at radii `r & 1, (r & 1) + 2, …, r` (`for (uVar2 =
+  uVar1 & 1; (short)uVar2 <= *(short *)(param_1 + 8); uVar2 = uVar2 + 2)`), then restores `r` —
+  concentric rings.
+- **Hit table** `PTR_DAT_100cee00` (0x200 bytes, one per CharEntry): E2 clears it, then — unless
+  `flags & 8` — walks a `TLineEffect` from (x0,y0) to (x1,y1) (cell steps, `0x10000`) and clears the
+  caster's own byte (`puVar3[*(short *)puVar1] = 0;`, builtins dump); builtin CF `cbAreaOfEffect`
+  iterates the set bytes (script-builtins.md). So **a line missile marks every creature on the
+  cells it crosses**, not only the target.
+- `TStraightBres` is the straight-line test: `IsStraightRel__7TViewerFss @ 1006b904` (target within
+  `±viewer+2` and its view-cell byte at +0xC0C8 `& 3` non-zero, then the walk from the stage centre
+  +0x150EC with row stride 0x1F cells) and `IsStraightAbs__7TViewerFssss @ 1006bafc` (both ends in
+  view, walk from the source cell). Its users: target bit 0x4000 (§2.3) and throws (ui-play.md §5.2).
+
+### 11.3 `TGameViewer::RenderMissiles @ 1005e4f8` and draw order — INDEX 16 (narrowed) [HIGH]
+- Body: if `viewer +0x20C44` is set → its slot +8 `Show(viewer +0xB0)` (`ppcdis.py --func
+  RenderMissiles__11TGameViewer`: `lwz r12,8(r12)`), and if the monster being ticked
+  (`*PTR_DAT_100cdd98 + 8`) is not the leader → `PTR_DAT_100cdc40[leader] = 1` (the array of
+  schedules-npcs.md §4.3); then `PostProcessSounds`, `ResetAmbient`, every ambient entry (count
+  `+0x1DC14`, 8 bytes from `+0x1D814`: dx, dy, sound, flag) → `Ambient(sound, dx, dy)` (flag 0) or
+  `PlayAmbientSound(sound, dx, dy, 0)`, then `CalcAmbient` — despite its name it is also the
+  per-frame ambient-sound placement. `TViewer::RenderMissiles @ 100693b0` is empty.
+- **Where it runs**: slot +0x10 of the `TGameViewer` vtable (0x100D5F64 + 0x10 →
+  `RenderMissiles__11TGameViewerFv`), called once, from `Render__7TViewerFssss @ 10066ac0` inside
+  its pass loop: `100676ec: lha r13,162(r1)` / `cmpwi r13,5` / `bne` / `lwz r12,16(r12)` / `bl
+  0x100c50e8`, loop end `10068788: cmpwi r13,6 ; blt 0x100676ec` (pass counter at 162(r1) from 0).
+  The tile copies (`CopyTile`, `CopyCompoTile`, `MaskAnyTile(…ll)`) come before the loop
+  (10067054–10067654) and twelve `MaskAnyTile(…lls)` prop draws inside it. So: **ground tiles →
+  passes 0–4 → in-flight FX → pass 5**; whatever pass 5 draws covers a missile. What each pass
+  holds (the priority mapping of engine-classes §5) is still NOT RESOLVED. [HIGH for the call site
+  and loop bounds; MED for "pass 5 draws props"]
+  ⚑ wave 3 (2026-10-06): settled — pass 5 draws non-creature props (kinds 0/1/0x20/0x21/0x40) whose
+  tile has flag 0x10 (trees, archways, doors, hydra heads…); creatures (kinds 4/0x24) are pass 4, so
+  a missile flies **over creatures and under 0x10 tiles**, and the 'B' backdrop post-pass and roofs
+  (`ApplyRoof`) cover it too. Pass tables and full order: render.md §1, §2.4. [HIGH]
+- `TGameViewer` dtor @ 10061a04 resets the sub-object vtable at +0x10 and calls `TViewer`'s dtor.

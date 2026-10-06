@@ -353,7 +353,7 @@ that crosses the hour. Builtin BD `pass_time(n)` = `DoTicks(n,0)` — shipped ca
 property 41 (`_GetProperty__7TInterpFs5VAddrs(&local_54,0x29,local_4c,(int)(short)param_1)`).
 `RepositionChar` (rules.md §3.4) sets activity 0x80 while a visible NPC walks; **nothing native
 restores the target activity it parks in prop byte 7** (grep of the dump and DoMove) — the NPC idles
-(0x80 → busy 20) until the next hourly pass. [MED: absence]
+(0x80 → busy 20) until the next hourly pass. [MED: absence] ⚑ wave 2 (2026-10-06): absence now HIGH (whole-section `stb …,22(` × `lbz …,7(` scan; DoMove has no byte-7 load). The 0x80 case is old-**not**-visible → new-visible with an active monster (`10006724: li r0,128`). A visible NPC gets its target activity directly (`100066a4`) — open-items-2026-10-06.md §3.2.
 
 ---------------------------------------------------------------------------------------------
 ## 5. Party follow, leader busy (A3), join/leave [HIGH]
@@ -393,6 +393,8 @@ bit 0x100; timer props, §7.2), `TSpellFX::PassTime/RemoveAllAbility`.
 | 0x101 | `DoTicks` | hourly chime |
 | 1, 34, 35, 100+frame, 129–135 | 0x1864 (Gate Guard), bell 0x10C1, half disk 0x10E8, panpipes/lyre/crystal/zone 0x1417 | scenario-specific — not traced |
 | A31 | 0x0C48 (queued activity 0x48) | scripted |
+
+⚑ wave 2 (2026-10-06): **INDEX 23 (script side) closed [HIGH].** Senders: 1 = Gate Guard 1864 ×3; 34/35 = bell 10C1 ring sequences 0x3241 / 0x1243; 100+frame = half disk 10E8 (sel26/27); 129 = panpipes 1099 sel10 tune 0xF79C3 (quality-1 pipes); 130 = zone 1417 first entry; 131 = lyre 109A sel10 tune 0xFC6; 132–134 = strange device 1175; 135 = crystal 1025@05D7. Receivers: props of the same quality on the leader's level (portcullises, secret doors, hidden floors/walls, stone doors, stepping stones), zone 1419 (100/101), 1428 (1, no-op), and Myus/Naxos/Darius/Pelagon (130). Full table: open-items-2026-10-06.md §8.
 
 ### 6.3 Theft and assault — the reaction chain [HIGH]
 - `3015` (default selector 21 for characters): on 256, if the current zone has property 36 → ignore;
@@ -486,7 +488,7 @@ come only from 'B' frame-0 eggs and character bodies (§8).
   §2.3, monster +0x14 := template, then selector 32 to the new character and selector 0 to the prop.
 - Placement: random walk of up to 16 steps from the egg, each step `CanMove`-checked, kept within ±15
   of (x, y) and on a cell whose quarter-grid owner (viewer +0x15FF4) is empty. After the loop the egg
-  is disabled (kind |= 0x80). Who re-arms eggs is NOT traced.
+  is disabled (kind |= 0x80). Who re-arms eggs is NOT traced. ⚑ wave 2 (2026-10-06): **nothing re-arms them** [HIGH] — the only native 0x80 clears are FollowLeader and frame-7 groups (which cover no egg); no script clear targets an egg type; level props are saved and reloaded verbatim. Each egg is one-shot, and the Die/LeaveLevel template refunds are inert — open-items-2026-10-06.md §3.1.
 - Runtime characters: for a body prop ≥ 0x100 the `TActiveMonster` ctor takes the first free
   CharEntry 0x100–0x1FF and rolls a strength percentage by `_DAT_100d73f2` (0: 10–49, 1: 25–99, 2:
   50–149, 3: 100–199, 4: 150–299, else 100) applied to the monster record's Body/Reflex/Mind/Health
@@ -545,10 +547,11 @@ re-plans on arrival at each waypoint.
 3. Per-frame wall-clock wait in `DrawRoutine` / `HandleMove` (what Ben's "feel" pacing is).
 4. Who re-arms spent 'B' eggs (kind bit 0x80); 'B' frame 3; what restores an NPC's activity after a
    visible walk (prop byte 7).
+   ⚑ wave 2 (2026-10-06): closed — nothing re-arms eggs; nothing reads byte 7 back, and the next ScheduleTime pass restores the activity (open-items-2026-10-06.md §3). 'B' frame 3 was resolved in wave 1 (AddSound).
 5. Party mode values (`cdbe8`): 1 = formation follow, 2 = snap (rules.md); 0 not traced.
 6. `_DAT_100d73f2` (strength roll) — writer settled (restore stream only, §8.1 ⚑ corrected (wave 1
    2026-10-03)); no menu or UI writer found (absence of a reference, MED).
 7. Routines 0x0C86 (work animation), 0x0EB7 (equip), 0x0C00 callers; 0x3042 (selector 66) fully.
-8. Signal numbers 1, 34, 35, 100+frame, 129–135: receivers.
+8. Signal numbers 1, 34, 35, 100+frame, 129–135: receivers. ⚑ wave 2 (2026-10-06): closed (script side) — §6.2 note, open-items-2026-10-06.md §8.
 9. Confirm in play (Ben's eyes): Missile-Script monsters wandering toward the map's top-left corner
    (098A), OutOfAmmo never firing, SetProtecting freezing a monster (unused in shipped AIs).

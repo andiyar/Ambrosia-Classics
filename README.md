@@ -7,6 +7,7 @@
 ![macOS](https://img.shields.io/badge/macOS-15%2B%20Sequoia-blue) &nbsp;
 ![arch](https://img.shields.io/badge/arch-Apple%20Silicon-blue) &nbsp;
 ![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
+![status](https://img.shields.io/badge/Bubble%20Trouble%20X-1.0-green) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
@@ -27,7 +28,7 @@ I just played my first game of Aki in a decade. I am so happy!
 
 ### Aki — Mahjong Solitaire
 ![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
-![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
+[![Mac](https://img.shields.io/badge/Mac-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg) &nbsp;
 ![iPad](https://img.shields.io/badge/iPad-build%20from%20source-lightgrey) &nbsp;
 ![Remastered Art](https://img.shields.io/badge/Remastered%20Art-⌘G-blueviolet)
 
@@ -36,29 +37,29 @@ I just played my first game of Aki in a decade. I am so happy!
 There's also an **iPad version** (same game, same data, touch in place of the mouse). It's in the source, not in the download: you build it yourself for now. And there's a **Remastered Art** mode: every picture redrawn 4× sharper, with smooth de-dithered backgrounds, grain-free tile bodies and sharp tile faces. Same game underneath. Turn it on with **Aki ▸ Remastered Art** (⌘G); off is the original 2008 pixels. Next for Aki is Phase 3: the Level Editor and custom `.aki` level packs.
 
 ### Bubble Trouble X
-![status](https://img.shields.io/badge/status-playable-green) &nbsp;
-![Mac](https://img.shields.io/badge/Mac-playtesting-yellow) &nbsp;
-![Windows](https://img.shields.io/badge/Windows-test%20build-yellow)
+![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
+[![Mac](https://img.shields.io/badge/Mac-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg) &nbsp;
+[![Windows](https://img.shields.io/badge/Windows-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0-Windows.zip)
 
-Playable on the Mac, with sound and music, and I'm playtesting it now. Every sound effect and each level set's music matches the original. It also runs on Windows 10/11: there's a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1), cross-compiled from the same Swift code. A proper release comes once my playtest is done.
+**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
 ### Deimos Rising
-![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
+![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
 ![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%25%20read-green)
 
-Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). It's the next one to be built: first the decoders for its data files, then the game.
+Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). Building has started: the shared kit can now read its data files (the zipped paks and its AIFF/WAVE sounds), and a census proving every original file opens is under way. Then the game.
 
 ### Ferazel's Wand
-![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
-![code](https://img.shields.io/badge/code-not%20started-lightgrey)
+![status](https://img.shields.io/badge/status-planning%20the%20build-yellow) &nbsp;
+![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
-The reverse-engineering notes are written (rules, formats, enemies, bosses, spells, physics) and a second deeper pass is under way. No code yet.
+The reverse-engineering notes are done, two passes deep (rules, formats, enemies, bosses, spells, physics, lighting, particles). The build plan is being written now. No code yet.
 
 ### Cythera
 ![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
 ![code](https://img.shields.io/badge/code-not%20started-lightgrey)
 
-The rules notes are written and the whole binary is decompiled; the next pass reads the rest of it. No code yet.
+The whole binary is decompiled and read: rules notes plus a second pass through every newly decompiled function. A final check pass is next. No code yet.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
@@ -118,9 +119,15 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ### Download
 
-**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (242 MB). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
+**Aki — Mahjong Solitaire: [Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (242 MB). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
 
 Open the DMG, drag Aki to Applications, double-click. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block. The game data is already inside. The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
+
+**Bubble Trouble X: [BubbleTroubleX-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)** (12.6 MB). Same requirements, same testing: macOS 15 or later, universal, tested on Apple Silicon, macOS 27.
+
+Open the DMG, drag Bubble Trouble X to Applications, double-click. Signed and notarized the same way; the game data is already inside. The About box says 1.1.0 (1.0): 1.1.0 is the version of Bubble Trouble X this rebuilds, 1.0 is this release.
+
+**Bubble Trouble X for Windows: [BubbleTroubleX-1.0-Windows.zip](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0-Windows.zip)** (36.9 MB). Windows 10/11, 64-bit. Extract All, then double-click Bubble Trouble X.exe; it isn't code-signed for Windows, so click "More info" → "Run anyway" once.
 
 ### Build from source
 
@@ -143,7 +150,7 @@ For the iPad version (the `AkiPad` target), set your own development team in `pr
 
 ## The data, and copyright
 
-Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside, and the Aki 1.0 download already does (Apple's Osaka-Mono font isn't included). Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
+Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside, and the Aki 1.0 and Bubble Trouble X 1.0 downloads already do (Apple's Osaka-Mono font isn't included). Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
 
 ---
 

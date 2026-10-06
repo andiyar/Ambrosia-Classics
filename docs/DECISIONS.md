@@ -320,6 +320,15 @@ speed, full-screen fill, info texts, first demo = FILM 1, pattern-4 overlay, Q18
 **Because:** sound audit `docs/bubble-trouble/sound-audit-2026-10-06.md` (151 `_PlayMySnd` sites: 146 match, 5 unregistered-
 only by ruling, 0 missing/wrong; music per level set matches for every level).
 **Approved by:** orchestrator rulings from the decompile; Ben 2026-10-06 playtesting ("feels so close", speed right).
+**Ben's playtest verdicts (2026-10-06, after 3 levels with sound):** effects good; music right and changes at level 4;
+Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand cursor — all yes (Q1, Q3, Q12, Q16, text);
+⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
+demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
+on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
+**App icon (Ben 2026-10-06, "can we get the icon macos27 compliant - so it's not in squiqle jail"):** the original goldfish
+(BubbleTrouble.icns 512 px) as an Icon Composer document `BubbleTroubleX/App/AppIcon.icon` — Ben's pick from three previews:
+light tile, bigger fish (scale 1.75); macOS renders the dark/clear variants itself. A shell-level exception to the 100 %
+rule, by Ben's ask.
 
 ## D15 — Bubble Trouble X on Windows: cross-compiled, drawn Mac UI, bundled data, Mac app untouched (2026-10-06)
 
@@ -452,11 +461,6 @@ shortcut; Preferences ▸ Keys still chooses the set); the check marks.
 **Carried:** Geneva 10 and System Bold 12 (drawn only by the bar and About) are still baked, shipped and checked at
 start-up — read by nothing; dropping them is a staging change for another day.
 **Approved by:** Ben (the removal); orchestrator brief (shortcut list, About's fate).
-**Ben's playtest verdicts (2026-10-06, after 3 levels with sound):** effects good; music right and changes at level 4;
-Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand cursor — all yes (Q1, Q3, Q12, Q16, text);
-⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
-demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
-on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
 
 ## D22 — Deimos Rising builds next, ahead of Ferazel's Wand (2026-10-06)
 
@@ -467,10 +471,6 @@ decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and 
 original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
 RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
 **Approved by:** Ben.
-**App icon (Ben 2026-10-06, "can we get the icon macos27 compliant - so it's not in squiqle jail"):** the original goldfish
-(BubbleTrouble.icns 512 px) as an Icon Composer document `BubbleTroubleX/App/AppIcon.icon` — Ben's pick from three previews:
-light tile, bigger fish (scale 1.75); macOS renders the dark/clear variants itself. A shell-level exception to the 100 %
-rule, by Ben's ask.
 
 ## D23 — Aki 1.0 public release: notarized DMG, Remaster art in, macOS 26+ icon; iPad merged first (2026-10-06)
 
@@ -543,3 +543,54 @@ executable and the test target only, never of the Foundation-only `DeimosCore` l
 invariant 4's one deliberate exception (plan As built). MED items carried to Phase 1: 24→16 truncation and the 8-bit
 inverse-table mapping (plan note 15), the game's own continuous-IMA effect decode + mixer (note 21); Ben's eyes: INDEX
 #10 — `deimos-census --render out/deimos-render` → `menu.png` upright.
+
+## D25 — Bubble Trouble X 1.0 public release: Mac (notarized DMG) + Windows (zip) in one release (2026-10-06)
+
+(D24 is taken on the unmerged `deimos-phase0` branch.)
+**Decided (Ben in chat, 2026-10-06):** "BTX - done for now. V1.0. notarise as per notarise kit process, and get it on
+github, with a readme update" and "should publish windows as download not test build right? it's done?" — yes: the
+Windows build was played to level 20 with sound on a real PC (D19 lane), and its source carries the D14 volume law.
+1. One GitHub release `btx-1.0` (tag on 47d7c98, the commit the DMG was built from) with both downloads:
+   `BubbleTroubleX-1.0.dmg` (`tools/package-btx-release.sh`, the Aki script's shape — pinned 7-file data manifest checked
+   before signing and inside the mounted DMG, universal, Developer ID + hardened runtime, notarize-kit notarize + DMG) and
+   `BubbleTroubleX-1.0-Windows.zip` (`tools/windows/stage-btx.sh`, stamp 6832da1, not code-signed — SmartScreen asks once).
+2. Versions as Aki (D23 b): `CFBundleShortVersionString` 1.1.0 (the game), `CFBundleVersion` 1.0 → About "1.1.0 (1.0)".
+3. Created as a **draft**; Ben downloads and tries it, then it is published (D23 c). The `btx-windows-test-1`
+   pre-release is superseded (its notes point to btx-1.0 once published).
+4. The Windows WHAT-TO-EXPECT drops "private test build" / "we could not listen to it" wording.
+**Approved by:** Ben (1, 3); seat (2, 4). Ben tried the downloaded DMG and said "publish" — published 2026-10-06;
+`btx-windows-test-1` notes now point to btx-1.0.
+
+---
+
+## D26 — Ferazel's Wand build: Ben's five brainstorm rulings + the seat's design rulings (2026-10-06)
+
+**Decided (Ben, in the brainstorm of 2026-10-06, orchestrator Claude Fable 5.1; design `docs/plans/2026-10-06-ferazel-design.md`):**
+1. **Done = the whole game, Windows included** — all 24 levels, map, chapters, saves, bosses, Xichra, victory; on the Mac
+   (HectorShell) and Windows (the SDL shell BTX proved). Not a first slice.
+2. **First gate = level 1 "A Scent Of Peril" look-and-feel** — drawn exactly as the original's frame order, camera on the
+   keys, Ferazel standing/walking in place, **no physics**; Ben judges "does it look like Ferazel".
+3. **Gate order = front end early:** look → Ferazel moves → title/menus/world map/saves/conversations → spells and items →
+   enemies → bosses → Windows + notarized release. One plan per phase, written when its turn comes.
+4. **Screen = 640×480 at whole-number scale**, fullscreen the largest whole multiple with a black border (D3/D7 R3 shape);
+   the 8-bit palette, parallax strips and lighting tables reproduced as computed. Rejected: smooth fit (Aki's rule),
+   widescreen view.
+5. **Feel oracle = YouTube longplays + a Let's Play of part one Ben will link + his eyes at each gate.** Rejected:
+   running the original in SheepShaver, the demo build.
+**Seat's rulings under the standing 100 % rule (design §3–§7, plan `docs/plans/2026-10-06-ferazel-phase1.md`):**
+- Three layers (BTX D12 shape): `FerazelCore` (Foundation + HectorResources), `FerazelRender` (+ HectorGraphics/Audio,
+  headless 8-bit compositor, frame goldens), `Ferazel/App` on HectorShell; later `Ferazel/Windows` on HectorSDL. The
+  kit gains only PICT pixels-as-stored + a public ColorTable (K1) and uses the Deimos session's `AIFFAudio`.
+- Original data in git at `Resources/Ferazel/` by the Deimos D24 shape (six `.rsrc` forks + 28 AIFC tracks; the PEF
+  binary, the Documentation app and the SoundEdit leftovers stay out); tests never skip; `FERAZEL_DATA` overrides.
+- **Colour search (the bank's one LOW, widened by the planner's probes):** every face pixel AND every computed table
+  goes through QuickDraw's `Color2Index` at load time (the sheets carry their own palettes; 326 are 32-bit with
+  `ditherCopy`). Ruled model: exact match → that entry (ties → lowest), else the 4-bit inverse-table rule;
+  32-bit sheets Floyd–Steinberg-dithered through the same search; 1-bit masks bypass it (0/0xff). Both the exact and
+  5-bit searches and "no dither" stay selectable in tests; measured disagreement on CLUT 202: 75,461 of 211,731 table
+  entries, ~1 % of the player's pixels. On every gate card until Ben's eyes or a capture from a real Mac settle it.
+- PICT 257's short last row reads 0 (design §11 said "whatever the port held" — the alternative). Phase 1's camera stub
+  accepts arrow keys as well as the keypad (a stub; the game proper keeps the original defaults + Options dialog).
+**Rejected:** the Aki two-layer shape (no headless pixel tests, Windows would duplicate the compositor) · one engine
+target with pixels in Core (D6) · data out of git behind symlinks (superseded by D24).
+**Approved by:** Ben (items 1–5, in his words, 2026-10-06); seat rulings recorded for the executors, Ben told.
