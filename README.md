@@ -7,6 +7,7 @@
 ![macOS](https://img.shields.io/badge/macOS-15%2B%20Sequoia-blue) &nbsp;
 ![arch](https://img.shields.io/badge/arch-Apple%20Silicon-blue) &nbsp;
 ![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
+![status](https://img.shields.io/badge/Bubble%20Trouble%20X-1.0-green) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
@@ -36,11 +37,11 @@ I just played my first game of Aki in a decade. I am so happy!
 There's also an **iPad version** (same game, same data, touch in place of the mouse). It's in the source, not in the download: you build it yourself for now. And there's a **Remastered Art** mode: every picture redrawn 4× sharper, with smooth de-dithered backgrounds, grain-free tile bodies and sharp tile faces. Same game underneath. Turn it on with **Aki ▸ Remastered Art** (⌘G); off is the original 2008 pixels. Next for Aki is Phase 3: the Level Editor and custom `.aki` level packs.
 
 ### Bubble Trouble X
-![status](https://img.shields.io/badge/status-playable-green) &nbsp;
-![Mac](https://img.shields.io/badge/Mac-playtesting-yellow) &nbsp;
+![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
+![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
 ![Windows](https://img.shields.io/badge/Windows-test%20build-yellow)
 
-Playable on the Mac, with sound and music, and I'm playtesting it now. Every sound effect and each level set's music matches the original. It also runs on Windows 10/11: there's a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1), cross-compiled from the same Swift code. A proper release comes once my playtest is done.
+**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11: there's a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1), cross-compiled from the same Swift code. That one stays a test build for now.
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
@@ -118,9 +119,13 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ### Download
 
-**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (242 MB). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
+**Aki — Mahjong Solitaire: [Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (242 MB). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
 
 Open the DMG, drag Aki to Applications, double-click. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block. The game data is already inside. The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
+
+**Bubble Trouble X: [BubbleTroubleX-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)** (<SIZE>). Same requirements, same testing: macOS 15 or later, universal, tested on Apple Silicon, macOS 27.
+
+Open the DMG, drag Bubble Trouble X to Applications, double-click. Signed and notarized the same way; the game data is already inside. The About box says 1.1.0 (1.0): 1.1.0 is the version of Bubble Trouble X this rebuilds, 1.0 is this release.
 
 ### Build from source
 
@@ -143,7 +148,7 @@ For the iPad version (the `AkiPad` target), set your own development team in `pr
 
 ## The data, and copyright
 
-Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside, and the Aki 1.0 download already does (Apple's Osaka-Mono font isn't included). Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
+Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside, and the Aki 1.0 and Bubble Trouble X 1.0 downloads already do (Apple's Osaka-Mono font isn't included). Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
 
 ---
 
