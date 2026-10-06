@@ -40,6 +40,17 @@
   "for a while"; unsure about music per set / missing effects (audit says both right; effects were half as loud — fixed
   in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
 
+- **Bubble Trouble X on Windows — foundations landed, NOT PLAYABLE YET (2026-10-06, Opus 5.5 orchestrator; plan
+  `docs/plans/2026-10-06-btx-windows.md`, DECISIONS D15/D16).** Ben: BTX first, cross-compiled on this Mac, Mac UI drawn
+  in-window, data bundled, **Mac app untouched**. W0 toolchain proven: swift.org 6.4.0 + its Windows SDK + xwin
+  (MSVC 14.44 / SDK 10.0.26100) + SDL3 3.4.16 cached in `~/Developer/Toolchains/windows-cross` (`tools/windows/`:
+  setup, build, run-in-crossover, proof-b); hello runs in CrossOver; BTX core tests on Windows 250/258 — the 8 misses =
+  JPEG without ImageIO, Foundation-on-Windows MacRoman table wrong, UserDefaults crash under Wine → ruled in D16, task
+  **W0.5 next**. W1 `HectorAudio.PCMMixer` (HectorKit main bc216d8, oracle = ShellMixer bit-exact, floor 233); HectorKit
+  guards 90f1611 (floor 233). W2 `BubbleTroubleX/Windows` package: `BTXWinKit` + `BitmapFontRasterizer` + baked
+  Geneva 9/10, System 12 (+bold) `.btxfont` (Apple glyphs — Ben OK'd for a private copy), 22 tests, pixel-identical
+  except CoreText's contextual colon. Remaining: W0.5 → W3 HectorSDL → W4 playable → W5 menu bar → W6 dialogs → W7 stage.
+
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
 
