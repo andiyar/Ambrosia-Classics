@@ -37,8 +37,12 @@ final class FerazelDataTests: XCTestCase {
                                       withDestinationURL: real.appendingPathComponent(name))
         }
 
+        let previous = ProcessInfo.processInfo.environment[FerazelData.environmentVariable]
         setenv(FerazelData.environmentVariable, temp.path, 1)
-        defer { unsetenv(FerazelData.environmentVariable) }
+        defer {   // restore an outside override for the tests that run after this one
+            if let previous { setenv(FerazelData.environmentVariable, previous, 1) }
+            else { unsetenv(FerazelData.environmentVariable) }
+        }
         let overridden = try FerazelData.dataDirectory()
         XCTAssertEqual(overridden.path, temp.resolvingSymlinksInPath().path)
 
