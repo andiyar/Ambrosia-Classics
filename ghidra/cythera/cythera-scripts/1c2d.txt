@@ -1,0 +1,38 @@
+; segment 1C2D  page 1C  class 0x58 (room) id 301
+; kind class  length 449 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01AD  methods: sel7/first_visit@0002, sel20/enter@0080
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 ad                                        .hdr      dictionary offset = 01AD
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 61 72 65 20 69 6e 20 61 …+107    text      "You are in a small dwelling, tastefully decorated, but the layer of dust indicates that nobody has been here recently.\n"
+007C: 8b 41 00 40                                  return    0
+
+; ==== method sel20/enter @0080 ====
+0080: 81 01 00                                     frame     args=1 locals=0
+0083: 8d dc 41 07 40 41 03 4f 40 01 30             jf        (get_variable(7) < 3) -> 0130
+008E: 8d bc 42 00 4a 40 9f 0f 02 42 00 4a …+8      jf        (leader_can_see(74) && !R0F02(74, 2)) -> 012D  ; R0F02 = tstbit [from 0x0101 symtab]
+00A2: e8 40                                        builtin   begin_talking()
+00A4: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+00AB: a4 42 00 4a 41 00 40                         builtin   show_portrait(74, 0)
+00B2: 22 54 68 69 73 20 69 73 20 77 68 65 …+100    text      "\"This is where my sister Larisa lives, when she isn't out exporing.  She must still be at Khalkis Swamp ruins.\"*"
+0122: e9 40                                        builtin   end_talking()
+0124: 9f 0f 00 42 00 4a 41 02 40                   call      R0F00(74, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+012D:>88 01 a9                                     goto      -> 01A9
+0130:>8d bc 42 00 4a 40 9f 0f 02 42 00 4a …+8      jf        (leader_can_see(74) && !R0F02(74, 3)) -> 01A9  ; R0F02 = tstbit [from 0x0101 symtab]
+0144: e8 40                                        builtin   begin_talking()
+0146: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+014D: a4 42 00 4a 41 00 40                         builtin   show_portrait(74, 0)
+0154: 22 48 6d 20 2d 20 4c 61 72 69 73 61 …+62     text      "\"Hm - Larisa should be back be now.  I hope nothing has happened to her.\"*"
+019E: e9 40                                        builtin   end_talking()
+01A0: 9f 0f 00 42 00 4a 41 02 40                   call      R0F00(74, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+01A9:>8b 41 00 40                                  return    0
+01AD: a0 03 50 00 ff ff 61 74 9c 2d 00 02 …+8      .dict     dict[3] {7/first_visit: @0002, 20/enter: @0080}

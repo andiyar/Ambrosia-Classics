@@ -1,0 +1,24 @@
+; segment 101A  page 10  class 0x00 (prop) type 26 tile-name "book" (tool join F000/F004)
+; kind class  length 100 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0038  methods: sel8/search@0008, sel9/use@0013
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 38                                        .hdr      dictionary offset = 0038
+0002: 90 01 00 00 00 0a                            .array    array[1] = [10]
+
+; ==== method sel8/search @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 9d 09 30 40                                  send      A30.sel9/use()
+000F: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0013 ====
+0013: 81 01 00                                     frame     args=1 locals=0
+0016: 9f 0e 65 30 43 30 00 02 1b 30 62 06 …+18     call      R0E65(A30, (str[021B:0]"Exploration of Seldane Ruins\n\nby Timon\n My focus is upon …" + A30.f06:quality), 7, 5, 23, 175, 227)  ; R0E65 = DisplayScroll [from 0x0101 symtab]
+0034: 8b 41 00 40                                  return    0
+0038: a0 07 50 00 ff ff 00 0e 90 1a 00 02 …+32     .dict     dict[7] {8/search: @0008, 9/use: @0013, 36/p_weight: @0002}

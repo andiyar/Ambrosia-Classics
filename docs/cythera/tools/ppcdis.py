@@ -253,7 +253,7 @@ def main():
     ap.add_argument('end', nargs='?', help='end address (hex, exclusive) or +N instructions')
     ap.add_argument('--func', metavar='REGEX', help='disassemble every tb-named body matching REGEX')
     ap.add_argument('--hex', action='store_true', help='print all immediates in hex')
-    ap.add_argument('--bin', default=tb.DEFAULT_BIN, help='PEF binary (default ghidra/Cythera_pef)')
+    ap.add_argument('--bin', default=tb.DEFAULT_BIN, help='PEF binary (default ghidra/cythera/Cythera_pef)')
     ap.add_argument('--no-names', action='store_true', help='no traceback names on bl targets')
     a = ap.parse_args()
     HEX = a.hex

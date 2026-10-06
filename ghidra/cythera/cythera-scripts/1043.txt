@@ -1,0 +1,59 @@
+; segment 1043  page 10  class 0x00 (prop) type 67 tile-name "crate" (tool join F000/F004)
+; kind class  length 458 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @017A  methods: sel23@0008, sel8/search@0016, sel9/use@003C, sel65@0075
+; properties: sel22, sel37/p25
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 7a                                        .hdr      dictionary offset = 017A
+0002: 90 01 00 00 00 ff                            .array    array[1] = [255]
+
+; ==== method sel23 @0008 ====
+0008: 81 02 00                                     frame     args=2 locals=0
+000B: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0016 ====
+0016: 81 01 00                                     frame     args=1 locals=0
+0019: 8d 30 62 03 41 00 54 40 00 38                jf        (A30.f03:frame == 0) -> 0038
+0023: 9f 0e 66 30 41 09 41 24 41 24 43 00 …+9      call      R0E66(A30, 9, 36, 36, 178, 178)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+0038:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @003C ====
+003C: 81 01 00                                     frame     args=1 locals=0
+003F: 9f 0e 41 30 41 00 41 01 43 00 00 00 …+7      call      R0E41(A30, 0, 1, 255, 255)  ; R0E41 = DoToggle [from 0x0101 symtab]
+0052: 8d 30 62 03 41 00 54 40 00 71                jf        (A30.f03:frame == 0) -> 0071
+005C: 9f 0e 66 30 41 09 41 24 41 24 43 00 …+9      call      R0E66(A30, 9, 36, 36, 178, 178)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+0071:>8b 41 00 40                                  return    0
+
+; ==== method sel65 @0075 ====
+0075: 81 03 04                                     frame     args=3 locals=4
+0078: e3 30 62 01 30 62 02 43 00 00 01 b2 …+1      builtin   show_hit(A30.f01:x, A30.f02:y, 434)
+0085: 8d 30 62 07 41 00 54 40 00 96                jf        (A30.f07:byte7 == 0) -> 0096
+008F: 86 07 30 40 41 05 40                         setfield  A30.f07:byte7 = 5
+0096:>8d 32 41 04 56 40 00 a8                      jf        (A32 & 4) -> 00A8
+009E: 82 31 31 41 02 4c 40                         set       A31 = (A31 * 2)
+00A5: 88 00 c9                                     goto      -> 00C9
+00A8:>8d 32 41 01 56 40 00 ba                      jf        (A32 & 1) -> 00BA
+00B0: 82 31 31 41 02 4d 40                         set       A31 = (A31 / 2)
+00B7: 88 00 c9                                     goto      -> 00C9
+00BA:>8d 32 41 02 56 40 00 c9                      jf        (A32 & 2) -> 00C9
+00C2: 82 31 31 41 04 4d 40                         set       A31 = (A31 / 4)
+00C9:>8d 31 30 62 07 51 40 01 76                   jf        (A31 > A30.f07:byte7) -> 0176
+00D2: 49 74 20 73 68 61 74 74 65 72 73 20 …+24     text      "It shatters into small fragments...\n"
+00F6: 82 00 a0 43 10 00 00 01 41 00 41 00 …+8      set       L00 = iterate_range(&L01, 0, 0, random(2, 4))
+010A:>8c a0 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_range(&L01, 1) -> 015B
+0117: 82 03 ad 30 62 00 41 20 57 30 62 01 …+18     set       L03 = create_prop((A30.f00:kind | 32), A30.f01:x, A30.f02:y, random(0, 4), 387, 0, 0)
+0135: 8d ac 41 00 41 02 40 41 00 54 40 01 …+1      jf        (random(0, 2) == 0) -> 014C
+0142: 86 0d 03 40 43 50 00 00 01 40                setfield  L03.f0D:mirror = True
+014C:>82 00 a0 43 10 00 00 01 41 02 40 40          set       L00 = iterate_range(&L01, 2)
+0158: 88 01 0a                                     goto      -> 010A
+015B:>9f 0e 48 30 44 49 74 20 63 6f 6e 74 …+12     call      R0E48(A30, "It contained", True)  ; R0E48 = SpillOut [from 0x0101 symtab]
+0173: a7 30 40                                     builtin   delete_prop(A30)
+0176:>8b 41 00 40                                  return    0
+017A: a0 0d 90 43 00 3c 00 09 90 43 00 75 …+68     .dict     dict[13] {8/search: @0016, 9/use: @003C, 22: @0002, 23: @0008, 37/p25: True, 65: @0075}

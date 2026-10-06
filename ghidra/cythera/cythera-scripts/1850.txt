@@ -1,0 +1,203 @@
+; segment 1850  page 18  class 0x40 (char) id 80 name "Lindus" (string table 0201)
+; kind class  length 5462 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @1542  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 15 42                                        .hdr      dictionary offset = 1542
+0002: 90 01 98 50 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 06                                     frame     args=1 locals=6
+003D: 8d 9f 0f 02 42 00 50 41 07 40 5e 40 …+2      jf        !R0F02(80, 7) -> 00C1  ; R0F02 = tstbit [from 0x0101 symtab]
+004B: 22 57 65 6c 63 6f 6d 65 20 73 74 72 …+94     text      "\"Welcome stranger.  Alaric said you'd be by sooner or later.  I am Lindus, Headmaster of the Magisterium.\""
+00B5: 9f 0f 00 42 00 50 41 07 40                   call      R0F00(80, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00BE: 88 00 d1                                     goto      -> 00D1
+00C1:>22 57 65 6c 63 6f 6d 65 20 61 67 61 …+5      text      "\"Welcome again.\"*"  ; shares its tail with text @00D1
+00D1:>2a                                           text      "*"
+00D2: 8d de 41 01 40 5e 40 02 de                   jf        !test_flag(1) -> 02DE
+00DB: 22 59 6f 75 20 68 61 76 65 20 63 6f …+38     text      "\"You have come to learn the Ways of the Mage, no?\""
+010D: 8f 79 6e 00                                  prompt    "yn"
+0111: 90 79 00 02 a8                               match     y else -> 02A8
+0116: 82 00 43 40 40 00 01 40                      set       L00 = char#1"Hero"
+011E: 82 01 9f 0e ac 48 05 42 00 c2 40 9f …+10     set       L01 = (R0EAC(G05:leader, 194) + R0EAC(G05:leader, 195))
+0134: 82 00 43 40 40 00 01 40                      set       L00 = char#1"Hero"
+013C: 82 02 45 00 2b 90 02 98 50 01 4b 98 …+37     set       L02 = blk@0141
+      ; 0x45 inline block 0141-016C (43 bytes):
+      0141: 90 02                            .array[2]
+        [0] @014B ->
+          014B: 90 02                            .array[2]
+            [0] @0155 "Mana"
+            [1] 194
+        [1] @015A ->
+          015A: 90 02                            .array[2]
+            [0] @0164 "Casting"
+            [1] 195
+016D: 82 03 c0 44 57 68 61 74 20 77 6f 75 …+48     set       L03 = pick_item("What would you like to train on?", "%s", L02, blk@019A)
+      ; 0x45 inline block 019A-01A7 (13 bytes):
+      019A: 90 01                            .array[1]
+        [0] @01A0 "Cancel"
+01A9: 8d 03 41 00 52 40 02 a8                      jf        (L03 >= 0) -> 02A8
+01B1: 82 03 02 03 46 40                            set       L03 = L02[L03]
+01B7: 9f 0e b1 00 44 4c 69 6e 64 75 73 00 …+10     call      R0EB1(L00, "Lindus", L03[1], True)
+01CD: 8d 01 41 00 54 40 02 a8                      jf        (L01 == 0) -> 02A8
+01D5: 8d 9f 0e ac 48 05 42 00 c2 40 9f 0e …+14     jf        ((R0EAC(G05:leader, 194) + R0EAC(G05:leader, 195)) > 0) -> 02A8
+01EF: df 41 01 43 50 00 00 01 40                   builtin   set_flag(1, True)
+01F8: f3 41 02 40                                  builtin   done_to_do(2)
+01FC: 2a 22 54 68 65 20 6d 6f 73 74 20 70 …+150    text      "*\"The most prized possession of a Mage is their grimoire, and so I proudly present you with yours...\"*\"You may now use it to learn spells (use it on the scroll)\"*"
+029E: a8 00 42 00 4c 41 00 41 00 40                builtin   give_item(L00, 76, 0, 0)
+02A8:>90 6e 00 02 de                               match     n else -> 02DE
+02AD: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+37     text      "\"Very well, I see you have matter more pressing.\""
+02DE:>82 04 dc 41 02 40 40                         set       L04 = get_variable(2)
+02E5: 82 05 ae 41 25 41 00 40 41 ff 53 40          set       L05 = (who_in_party_has(37, 0) != -1)
+02F1:>8e                                           input       ; read a line into the input buffer
+02F2: 90 6e 61 6d 65 2c 6c 69 6e 64 00 03 …+1      match     name,lind else -> 0335
+02FF: 22 49 20 61 6d 20 4c 69 6e 64 75 73 …+32     text      "\"I am Lindus, Headmaster of the Magisterium\""
+032B: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0332: 88 02 f1                                     goto      -> 02F1
+0335:>90 6a 6f 62 00 03 8f                         match     job else -> 038F
+033C: 22 49 20 61 6d 20 74 68 65 20 48 65 …+68     text      "\"I am the Headmaster of the Magisterium, a thankless job if there ever was one.\""
+038C: 88 02 f1                                     goto      -> 02F1
+038F:>90 6d 65 74 69 00 04 eb                      match     meti else -> 04EB
+0397: 22 4d 65 74 69 63 20 61 72 65 20 61 …+50     text      "\"Metic are a race of mystical beings who inhabit this world.\"*"
+03D5: 8d 04 41 0b 54 40 04 01                      jf        (L04 == 11) -> 0401
+03DD: 22 54 68 65 20 70 65 72 73 6f 6e 20 …+21     text      "\"The person to talk to is @Timon\""
+03FE: 88 04 e8                                     goto      -> 04E8
+0401:>8d 04 41 0c 54 40 04 5e                      jf        (L04 == 12) -> 045E
+0409: 22 48 61 76 65 20 79 6f 75 20 74 72 …+70     text      "\"Have you tracked @Timon down?  I believe he is in the ruins to the north east...\""
+045B: 88 04 e8                                     goto      -> 04E8
+045E:>8d 04 41 0c 51 40 04 95                      jf        (L04 > 12) -> 0495
+0466: 22 41 73 20 79 6f 75 20 6b 6e 6f 77 …+32     text      "\"As you know, Timon has been studying them.\""
+0492: 88 04 e8                                     goto      -> 04E8
+0495:>22 57 68 69 6c 65 20 49 27 76 65 20 …+71     text      "\"While I've never seen them, they certainly do exist, despite what others may say.\""
+04E8:>88 02 f1                                     goto      -> 02F1
+04EB:>90 74 72 61 69 2c 74 65 61 63 00 06 …+1      match     trai,teac else -> 0678
+04F8: 82 01 9f 0e ac 48 05 42 00 c2 40 9f …+10     set       L01 = (R0EAC(G05:leader, 194) + R0EAC(G05:leader, 195))
+050E: 82 00 43 40 40 00 01 40                      set       L00 = char#1"Hero"
+0516: 82 02 45 00 2b 90 02 98 50 05 25 98 …+37     set       L02 = blk@051B
+      ; 0x45 inline block 051B-0546 (43 bytes):
+      051B: 90 02                            .array[2]
+        [0] @0525 ->
+          0525: 90 02                            .array[2]
+            [0] @052F "Mana"
+            [1] 194
+        [1] @0534 ->
+          0534: 90 02                            .array[2]
+            [0] @053E "Casting"
+            [1] 195
+0547: 82 03 c0 44 57 68 61 74 20 77 6f 75 …+48     set       L03 = pick_item("What would you like to train on?", "%s", L02, blk@0574)
+      ; 0x45 inline block 0574-0581 (13 bytes):
+      0574: 90 01                            .array[1]
+        [0] @057A "Cancel"
+0583: 8d 03 41 00 52 40 06 75                      jf        (L03 >= 0) -> 0675
+058B: 82 03 02 03 46 40                            set       L03 = L02[L03]
+0591: 9f 0e b1 00 44 4c 69 6e 64 75 73 00 …+10     call      R0EB1(L00, "Lindus", L03[1], True)
+05A7: 8d 01 41 00 54 40 06 75                      jf        (L01 == 0) -> 0675
+05AF: 8d 9f 0e ac 48 05 42 00 c2 40 9f 0e …+14     jf        ((R0EAC(G05:leader, 194) + R0EAC(G05:leader, 195)) > 0) -> 0675
+05C9: 2a 22 54 68 65 20 6d 6f 73 74 20 70 …+150    text      "*\"The most prized possession of a Mage is their grimoire, and so I proudly present you with yours...\"*\"You may now use it to learn spells (use it on the scroll)\"*"
+066B: a8 00 42 00 4c 41 00 41 00 40                builtin   give_item(L00, 76, 0, 0)
+0675:>88 02 f1                                     goto      -> 02F1
+0678:>90 73 65 6c 64 00 06 c9                      match     seld else -> 06C9
+0680: 22 48 6d 2c 20 49 27 76 65 20 68 65 …+58     text      "\"Hm, I've heard that name before, but I don't remember quite where...\""
+06C6: 88 02 f1                                     goto      -> 02F1
+06C9:>90 63 72 79 73 2c 67 6c 6f 77 2c 63 …+6      match     crys,glow,crol else -> 0907
+06DB: 8d 04 41 0b 54 40 08 9b                      jf        (L04 == 11) -> 089B
+06E3: 8d 05 40 08 6e                               jf        L05 -> 086E
+06E8: 22 48 6d 2c 20 79 65 73 2c 20 74 68 …+75     text      "\"Hm, yes, that is an interesting crystal.  It is just like the one that @Timon found.\"*"
+073F: 8d 48 0d 43 50 00 00 01 54 40 08 0c          jf        (G0D:g0D == True) -> 080C
+074B: 22 49 20 77 6f 75 6c 64 20 73 75 67 …+151    text      "\"I would suggest that you go talk to him about it, perhaps he can shed some light on the topic.\"*\"He is currently working in the @ruins to the north east of here.\""
+07EE: dd 41 02 41 0c 40                            builtin   set_variable(2, 12)
+07F4: f3 41 05 40                                  builtin   done_to_do(5)
+07F8: f2 41 06 43 30 00 02 1a 41 06 4a 40          builtin   add_to_do(6, (str[021A:0]"Cure Alaric" + 6))
+0804: 82 04 41 0c 40                               set       L04 = 12
+0809: 88 08 6b                                     goto      -> 086B
+080C:>22 49 66 20 79 6f 75 20 77 6f 75 6c …+83     text      "\"If you would @register, I'd see to it that he'd make time in his busy studies to talk to you.\""
+086B:>88 08 98                                     goto      -> 0898
+086E:>22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+30     text      "\"I don't know what you are talking about.\""
+0898:>88 09 04                                     goto      -> 0904
+089B:>8d 04 41 0b 51 40 08 da                      jf        (L04 > 11) -> 08DA
+08A3: 22 40 54 69 6d 6f 6e 20 6b 6e 6f 77 …+40     text      "\"@Timon knows more about it than I do, talk to him.\""
+08D7: 88 09 04                                     goto      -> 0904
+08DA:>22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+30     text      "\"I don't know what you are talking about.\""
+0904:>88 02 f1                                     goto      -> 02F1
+0907:>90 72 65 67 69 00 09 5a                      match     regi else -> 095A
+090F: 22 59 65 73 2c 20 6a 75 73 74 20 72 …+60     text      "\"Yes, just run the 'Register Cythera' program - it has all the details.\""
+0957: 88 02 f1                                     goto      -> 02F1
+095A:>90 74 69 6d 6f 00 0b 95                      match     timo else -> 0B95
+0962: 8d 04 41 0b 54 40 0a d6                      jf        (L04 == 11) -> 0AD6
+096A: 8d 05 40 0a ab                               jf        L05 -> 0AAB
+096F: 22 48 65 20 68 61 73 20 62 65 65 6e …+108    text      "\"He has been studying the Metic @ruins and an artifact that he found, much like that glowing green @crystal you carry.\"*"
+09E7: 8d 48 0d 43 50 00 00 01 54 40 0a 49          jf        (G0D:g0D == True) -> 0A49
+09F3: 22 50 65 72 68 61 70 73 20 79 6f 75 …+44     text      "\"Perhaps you should talk to him, and see what he knows.\""
+0A2B: dd 41 02 41 0c 40                            builtin   set_variable(2, 12)
+0A31: f3 41 05 40                                  builtin   done_to_do(5)
+0A35: f2 41 06 43 30 00 02 1a 41 06 4a 40          builtin   add_to_do(6, (str[021A:0]"Cure Alaric" + 6))
+0A41: 82 04 41 0c 40                               set       L04 = 12
+0A46: 88 0a a8                                     goto      -> 0AA8
+0A49:>22 49 66 20 79 6f 75 20 77 6f 75 6c …+83     text      "\"If you would @register, I'd see to it that he'd make time in his busy studies to talk to you.\""
+0AA8:>88 0a d3                                     goto      -> 0AD3
+0AAB:>22 48 65 20 68 61 73 20 62 65 65 6e …+28     text      "\"He has been studying the Metic @ruins.\""
+0AD3:>88 0b 92                                     goto      -> 0B92
+0AD6:>8d 04 41 0c 54 40 0b 34                      jf        (L04 == 12) -> 0B34
+0ADE: 22 48 61 76 65 6e 27 74 20 79 6f 75 …+71     text      "\"Haven't you tracked him down yet?  He's probably in the @ruins to the north east.\""
+0B31: 88 0b 92                                     goto      -> 0B92
+0B34:>8d 04 41 0c 51 40 0b 65                      jf        (L04 > 12) -> 0B65
+0B3C: 22 57 65 20 61 72 65 20 61 6c 6c 20 …+26     text      "\"We are all quite proud of his works.\""
+0B62: 88 0b 92                                     goto      -> 0B92
+0B65:>22 48 65 20 69 73 20 6f 6e 65 20 6f …+33     text      "\"He is one of our Freemages, doing research.\""
+0B92:>88 02 f1                                     goto      -> 02F1
+0B95:>90 65 69 6f 6e 00 0d 93                      match     eion else -> 0D93
+0B9D: 22 41 68 20 79 65 73 2c 20 79 6f 75 …+475    text      "\"Ah yes, you've heard of Eioneus then.  He's a Freemage, researching magically enhancing weapons.\"*\"He might prove to be quite useful to you, all things considered.  You might want to seek him out.\"*\"I haven't seen him in a while, but from what I remember of his work, it requires a source of lava.\"*\"There are a couple of sources of it, from the volcano at Lands End, to a number of caves in the mountains.\"*\"His younger sister Semele is a student here - you might want to talk to her.\""
+0D84: f2 41 1e 43 30 00 02 1a 41 1e 4a 40          builtin   add_to_do(30, (str[021A:0]"Cure Alaric" + 30))
+0D90: 88 02 f1                                     goto      -> 02F1
+0D93:>90 72 75 69 6e 00 0e 03                      match     ruin else -> 0E03
+0D9B: 22 54 68 65 72 65 20 61 72 65 20 72 …+89     text      "\"There are ruins to the north east - just follow the River Tirynth upstream and you can't miss them.\""
+0E00: 88 02 f1                                     goto      -> 02F1
+0E03:>90 62 79 65 00 0e a4                         match     bye else -> 0EA4
+0E0A: 8d de 41 01 40 40 0e 3b                      jf        test_flag(1) -> 0E3B
+0E12: 22 4d 79 20 64 6f 6f 72 20 69 73 20 …+26     text      "\"My door is always open to a student.\""
+0E38: 88 0e 9d                                     goto      -> 0E9D
+0E3B:>22 50 6c 65 61 73 65 20 63 6f 6d 65 …+86     text      "\"Please come back, there is some training that we can give you that will help you on your trials.\""
+0E9D:>8b 41 00 40                                  return    0
+; ---- dead code 0EA1-0EA4: no dictionary entry, jump, pointer or call reaches it ----
+0EA1:x88 02 f1                                     goto      -> 02F1
+0EA4:>90 6b 65 73 68 00 0f 4d                      match     kesh else -> 0F4D
+0EAC: 8d 9f 0f 02 42 00 46 41 01 40 5e 40 …+2      jf        !R0F02(70, 1) -> 0EE6  ; R0F02 = tstbit [from 0x0101 symtab]
+0EBA: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+29     text      "\"I don't know what you're talking about.\""
+0EE3: 88 0f 4a                                     goto      -> 0F4A
+0EE6:>22 53 61 63 61 73 20 69 73 20 69 6e …+88     text      "\"Sacas is in charge of investigating that.  You should travel to Odemia and report to her directly.\""
+0F4A:>88 02 f1                                     goto      -> 02F1
+0F4D:>90 73 70 79 00 10 03                         match     spy else -> 1003
+0F54: 8d 9f 0f 02 42 00 46 41 02 40 40 0f …+1      jf        R0F02(70, 2) -> 0FB1  ; R0F02 = tstbit [from 0x0101 symtab]
+0F61: 22 59 65 73 2c 20 49 20 68 65 61 72 …+65     text      "\"Yes, I heard.  A spy using that nasty kesh stuff - this does not bode well.\""
+0FAE: 88 10 00                                     goto      -> 1000
+0FB1:>22 4f 75 72 20 6d 61 67 69 63 61 6c …+67     text      "\"Our magical powers would easily detect spies involved in any matter of state.\""
+1000:>88 02 f1                                     goto      -> 02F1
+1003:>90 63 69 70 68 00 11 0c                      match     ciph else -> 110C
+100B: 22 54 68 65 20 43 69 70 68 65 72 20 …+242    text      "\"The Cipher Manuscript is one of greatest secret.  A translation can be found in the Eigth Degree Hall.\"*\"As for what it means, and its implications, even I do not know much beyond what can be read there.\"*\"I beg you not to speak to others about this...\""
+1109: 88 02 f1                                     goto      -> 02F1
+110C:>90 61 6c 61 72 00 12 4f                      match     alar else -> 124F
+1114: 22 4f 62 76 69 6f 75 73 6c 79 2c 20 …+300    text      "\"Obviously, as Headmaster, I'm closer to Alaric than any others, save perhaps his personal staff.\"*\"Publicly, I must present a unified facade 'everything is going to be fine', but privately, I'm deeply concerned.\"*\"We are trying to make plans for all eventuallities, but it looks dicey, no matter how things go.\""
+124C: 88 02 f1                                     goto      -> 02F1
+124F:>90 6d 61 67 70 2c 66 6f 6f 6c 00 12 …+1      match     magp,fool else -> 12DC
+125C: 22 49 6e 20 74 72 75 74 68 2c 20 49 …+113    text      "\"In truth, I don't trust him - I know that Alaric often turns to him for council, but I still get a funny feeling about him.\""
+12D9: 88 02 f1                                     goto      -> 02F1
+12DC:>90 74 75 6e 6e 00 14 e0                      match     tunn else -> 14E0
+12E4: 22 49 27 6d 20 73 75 72 65 20 79 6f …+493    text      "\"I'm sure you've heard the rumors, about treasure or failed experiments, but well, they aren't exactly true.\"*\"The tunnels below Pnyx were used for storage, but unfortunately, there's a loose golem in them.\"*\"We just keep people out of them for their own safety.  Nothing more sinister than that.\"*\"Nobody's been down there for ages - least ways not since I was made Headmaster.\"*\"The secrets of how to get down there are a well guarded - don't want any accidents to happen to overly inqusitive students.\""
+14DD: 88 02 f1                                     goto      -> 02F1
+14E0:>90 2a 00 15 3b                               match     * else -> 153B
+14E5: 8d 9f 08 08 30 40 5e 40 15 38                jf        !R0808(A30) -> 1538
+14EF: 8d 9f 08 0c 30 40 5e 40 15 38                jf        !R080C(A30) -> 1538
+14F9: 8d 9f 08 01 30 40 5e 40 15 38                jf        !R0801(A30) -> 1538
+1503: 22 49 27 6d 20 61 66 72 61 69 64 20 …+41     text      "\"I'm afraid I don't know what you are talking about.\""
+1538:>88 02 f1                                     goto      -> 02F1
+153B:>88 02 f1                                     goto      -> 02F1
+; ---- dead code 153E-1542: no dictionary entry, jump, pointer or call reaches it ----
+153E:x8b 41 00 40                                  return    0
+1542: a0 03 98 50 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

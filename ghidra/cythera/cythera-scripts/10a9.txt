@@ -1,0 +1,44 @@
+; segment 10A9  page 10  class 0x00 (prop) type 169 tile-name "dough" (tool join F000/F004)
+; kind class  length 304 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0104  methods: sel15/take_drop_15@003D, sel9/use@004B, sel10/use_on@00A5
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 04                                        .hdr      dictionary offset = 0104
+0002: 90 02 90 a9 00 0c 90 a9 00 31                .array    array[2] = [@000C, @0031]
+000C: 59 6f 75 20 6d 69 67 68 74 20 77 61 …+25     .string   "You might want to bake that first..."
+0031: 90 01 00 00 00 61                            .array    array[1] = [97]
+0037: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @003D ====
+003D: 81 01 00                                     frame     args=1 locals=0
+0040: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0047-004B: no dictionary entry, jump, pointer or call reaches it ----
+0047:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @004B ====
+004B: 81 01 00                                     frame     args=1 locals=0
+004E: 8d f5 48 05 42 00 d0 40 40 00 7b             jf        find_skill(G05:leader, 208) -> 007B
+0059: 8d 48 13 40 00 71                            jf        G13:g13_bool -> 0071
+005F: 42 61 6b 65 20 62 72 65 61 64 20 77 …+6      text      "Bake bread where?\n"
+0071:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0078-007B: no dictionary entry, jump, pointer or call reaches it ----
+0078:x88 00 a1                                     goto      -> 00A1
+007B:>59 6f 75 20 64 6f 6e 27 74 20 6b 6e …+26     text      "You don't know how long to cook it...\n"
+00A1:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A5 ====
+00A5: 81 02 00                                     frame     args=2 locals=0
+00A8: 8d 31 62 04 42 00 39 54 40 00 d9             jf        (A31.f04:type == 57) -> 00D9
+00B3: 59 6f 75 20 62 61 6b 65 20 74 68 65 …+8      text      "You bake the bread.\n"
+00C7: 86 04 30 40 42 00 e7 40                      setfield  A30.f04:type = 231
+00CF: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+00D6: 88 01 00                                     goto      -> 0100
+00D9:>59 6f 75 20 6e 65 65 64 20 74 6f 20 …+27     text      "You need to bake the bread on a stove.\n"
+0100:>8b 41 00 40                                  return    0
+0104: a0 07 50 00 ff ff 31 31 90 a9 00 37 …+32     .dict     dict[7] {9/use: @004B, 10/use_on: @00A5, 15/take_drop_15: @003D, 36/p_weight: @0037, 51: @0002}

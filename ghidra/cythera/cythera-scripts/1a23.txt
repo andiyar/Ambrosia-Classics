@@ -1,0 +1,46 @@
+; segment 1A23  page 1A  class 0x50 (spell) type 35
+; kind class  length 310 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00E6  methods: sel2/name@0008, sel8/search@0025, sel9/use@0073, sel10/use_on@00AD
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 e6                                        .hdr      dictionary offset = 00E6
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 50 61 72 61 6c 79 7a 65 00 40          return    "Paralyze"
+; ---- dead code 0017-001B: no dictionary entry, jump, pointer or call reaches it ----
+0017:x8b 41 00 40                                  return    0
+001B: 90 02 00 00 00 05 50 00 ff ff                .array    array[2] = [5, Nil]
+
+; ==== method sel8/search @0025 ====
+0025: 81 01 00                                     frame     args=1 locals=0
+0028: 54 68 69 73 20 73 70 65 6c 6c 20 70 …+59     text      "This spell prevents the target from being able to move for a duration.\n"
+006F: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0073 ====
+0073: 81 01 00                                     frame     args=1 locals=0
+0076: 8d 9f 0e a1 30 62 0b 41 05 41 0f 40 …+3      jf        R0EA1(A30.f0B:loc16, 5, 15) -> 00A9
+0085: 8d 48 13 40 00 a2                            jf        G13:g13_bool -> 00A2
+008B: 43 61 73 74 20 27                            text      "Cast '"
+0091: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0097: 27 20 6f 6e 20 77 68 6f 6d 3f 0a             text      "' on whom?\n"
+00A2:>8b 43 00 00 80 04 40                         return    32772
+00A9:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00AD ====
+00AD: 81 02 00                                     frame     args=2 locals=0
+00B0: e1 48 09 43 00 00 00 f0 40                   builtin   show_magic(G09:speaker, 240)
+00B9: d3 41 2c 48 09 62 01 48 09 62 02 40          builtin   positional_sound(44, G09:speaker.f01:x, G09:speaker.f02:y)
+00C5: 5e                                           text      "^"
+00C6: 8a 31 40                                     print     A31
+00C9: 20 69 73 20 70 61 72 61 6c 79 7a 65 …+3      text      " is paralyzed.\n"
+00D8: c3 31 41 0e 43 00 00 01 f4 40                builtin   temp_ability(A31, 14, 500)
+00E2: 8b 41 00 40                                  return    0
+00E6: a0 0d 50 00 ff ff 07 c3 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0025, 9/use: @0073, 10/use_on: @00AD, 51: @001B, 54: @0002}

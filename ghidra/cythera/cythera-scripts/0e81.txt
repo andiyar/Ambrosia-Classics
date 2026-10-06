@@ -1,0 +1,29 @@
+; segment 0E81  page 0E  routine
+; kind routine  length 163 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 04                                     frame     args=2 locals=4
+0003: 82 00 41 00 40                               set       L00 = 0
+0008: 82 01 cc 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_equipped(&L02, 0, A30)
+0015:>8c cc 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_equipped(&L02, 1) -> 0085
+0022: 8d 01 60 2c 40 00 76                         jf        has(L01, sel44) -> 0076
+0029: 8d 31 43 00 00 10 00 56 40 00 4b             jf        (A31 & 4096) -> 004B
+0034: 8d 01 61 26 00 41 08 56 40 00 48             jf        (prop(L01, sel38/p26, 0) & 8) -> 0048
+003F: 82 00 00 01 61 2c 00 4a 40                   set       L00 = (L00 + prop(L01, sel44, 0))
+0048:>88 00 76                                     goto      -> 0076
+004B:>8d 31 43 00 00 08 00 56 40 00 6d             jf        (A31 & 2048) -> 006D
+0056: 8d 01 61 26 00 41 00 56 40 00 6a             jf        (prop(L01, sel38/p26, 0) & 0) -> 006A
+0061: 82 00 00 01 61 2c 00 4a 40                   set       L00 = (L00 + prop(L01, sel44, 0))
+006A:>88 00 76                                     goto      -> 0076
+006D:>82 00 00 01 61 2c 00 4a 40                   set       L00 = (L00 + prop(L01, sel44, 0))
+0076:>82 01 cc 43 10 00 00 02 41 02 40 40          set       L01 = iterate_equipped(&L02, 2)
+0082: 88 00 15                                     goto      -> 0015
+0085:>8d c4 30 41 14 40 40 00 9c                   jf        has_ability(A30, 20) -> 009C
+008E: 82 00 00 41 01 4a ac 41 00 41 04 40 …+2      set       L00 = ((L00 + 1) + random(0, 4))
+009C:>8b 00 40                                     return    L00
+; ---- dead code 009F-00A3: no dictionary entry, jump, pointer or call reaches it ----
+009F:x8b 41 00 40                                  return    0

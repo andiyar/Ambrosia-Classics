@@ -1,0 +1,46 @@
+; segment 1A18  page 1A  class 0x50 (spell) type 24
+; kind class  length 292 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00D4  methods: sel2/name@0008, sel8/search@0028, sel9/use@004F, sel10/use_on@0086
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 d4                                        .hdr      dictionary offset = 00D4
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 44 69 73 70 65 6c 20 52 75 6e …+3      return    "Dispel Rune"
+; ---- dead code 001A-001E: no dictionary entry, jump, pointer or call reaches it ----
+001A:x8b 41 00 40                                  return    0
+001E: 90 02 00 00 00 02 00 00 00 d3                .array    array[2] = [2, 211]
+
+; ==== method sel8/search @0028 ====
+0028: 81 01 00                                     frame     args=1 locals=0
+002B: 54 68 69 73 20 73 70 65 6c 6c 20 65 …+20     text      "This spell erases a given Rune.\n"
+004B: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @004F ====
+004F: 81 01 00                                     frame     args=1 locals=0
+0052: 8d 9f 0e a1 30 62 0b 41 02 41 06 40 …+3      jf        R0EA1(A30.f0B:loc16, 2, 6) -> 0082
+0061: 8d 48 13 40 00 7e                            jf        G13:g13_bool -> 007E
+0067: 43 61 73 74 20 27                            text      "Cast '"
+006D: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0073: 27 20 6f 6e 20 77 68 61 74 3f 0a             text      "' on what?\n"
+007E:>8b 41 01 40                                  return    1
+0082:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0086 ====
+0086: 81 02 00                                     frame     args=2 locals=0
+0089: 8d 42 00 f5 31 62 04 50 31 62 04 42 …+7      jf        ((245 <= A31.f04:type) && (A31.f04:type <= 248)) -> 00BC
+009C: 59 6f 75 20 72 65 6d 6f 76 65 20 74 …+9      text      "You remove the rune.\n"
+00B1: a7 31 40                                     builtin   delete_prop(A31)
+00B4: e6 41 01 40                                  builtin   set_arrival_byte(1)
+00B8: 8b 41 00 40                                  return    0
+00BC:>54 68 61 74 20 69 73 20 6e 6f 74 20 …+8      text      "That is not a rune.\n"
+00D0: 8b 41 00 40                                  return    0
+00D4: a0 0d 50 00 ff ff 07 c3 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0028, 9/use: @004F, 10/use_on: @0086, 51: @001E, 54: @0002}

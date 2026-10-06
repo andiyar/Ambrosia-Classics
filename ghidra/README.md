@@ -1,5 +1,7 @@
 # ghidra/ — decompile recipe (everything but the scripts is git-ignored)
 
+**Where everything lives (Ben 2026-10-06):** `~/Developer/Ghidra/<game>/` — binary, Ghidra project (`proj/`), every dump and log, for ferazel, cythera, deimos, aki, btx, ev-nova, ev-override (its README has the table). This directory keeps the scripts; `proj`, `deimos-proj` and the Cythera files here are symlinks into that folder; `ferazel/` is a committed copy of the Ferazel text dumps + binary (the exception to the rule below).
+
 The originals are copyrighted; binaries, Ghidra projects, logs and `*.decompiled.c` dumps never
 enter git. Only `*.py`, `*.java`, `*.sh` and this README are tracked.
 
@@ -34,6 +36,9 @@ mostly) get no block in the dump, so the dump's block count is the "ok" number, 
 
 Hazards: Ghidra refuses a project path with a dot-prefixed element (`.claude/worktrees/…`), hence
 `GHIDRA_PROJ`; running several headless instances at once is fine (separate project names).
+Parallel readers need their own project copy (Ghidra locks a project): make it under `~/Developer/Ghidra/<game>/`,
+never in `~` itself, and delete the copies when the wave closes (Deimos's 31 reader copies are zipped in
+`~/Developer/Ghidra/deimos/proj/project-copies-backup.zip`).
 
 ## Reading the dumps
 - `python3 ghidra/find_func.py '<regex>' [--names] [--file <dump>]` — whole functions that match.

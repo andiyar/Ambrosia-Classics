@@ -1,0 +1,182 @@
+; segment 1036  page 10  class 0x00 (prop) type 54 tile-name "fountain" (tool join F000/F004)
+; kind class  length 4103 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0FF3  methods: sel9/use@0008
+; properties: sel59/p3B
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0f f3                                        .hdr      dictionary offset = 0FF3
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 05                                     frame     args=1 locals=5
+000B: 82 00 30 62 06 40                            set       L00 = A30.f06:quality
+0011: 8d 00 41 06 54 40 00 55                      jf        (L00 == 6) -> 0055
+0019: 8d dc 41 02 40 41 0a 4f 40 00 3e             jf        (get_variable(2) < 10) -> 003E
+0024: 82 00 41 01 40                               set       L00 = 1
+0029: 8d ac 41 00 41 04 40 41 01 54 40 00 …+1      jf        (random(0, 4) == 1) -> 003B
+0036: 82 00 41 03 40                               set       L00 = 3
+003B:>88 00 55                                     goto      -> 0055
+003E:>82 00 41 00 40                               set       L00 = 0
+0043: 8d ac 41 00 41 04 40 41 01 54 40 00 …+1      jf        (random(0, 4) == 1) -> 0055
+0050: 82 00 41 05 40                               set       L00 = 5
+0055:>8d 00 41 00 54 40 00 9f                      jf        (L00 == 0) -> 009F
+005D: 54 68 65 20 77 61 74 65 72 20 69 73 …+23     text      "The water is tasty and refreshing.\n"
+0080: 82 01 48 09 63 40 40                         set       L01 = as_char(G09:speaker)
+0087: 8d 01 62 28 41 64 4f 40 00 9c                jf        (L01.f28:food < 100) -> 009C
+0091: 86 28 01 40 01 62 28 41 01 4a 40             setfield  L01.f28:food = (L01.f28:food + 1)
+009C:>88 0f ef                                     goto      -> 0FEF
+009F:>8d 00 41 01 54 40 00 ca                      jf        (L00 == 1) -> 00CA
+00A7: 54 68 65 20 77 61 74 65 72 20 69 73 …+20     text      "The water is warm and brackish.\n"
+00C7: 88 0f ef                                     goto      -> 0FEF
+00CA:>8d 00 41 02 54 40 01 06                      jf        (L00 == 2) -> 0106
+00D2: 41 63 6b 21 20 54 68 65 20 77 61 74 …+17     text      "Ack! The water tastes awful.\n"
+00EF: 9f 30 41 48 09 ac 41 00 41 02 40 41 …+8      call      R3041(G09:speaker, (random(0, 2) + 1), 512)
+0103: 88 0f ef                                     goto      -> 0FEF
+0106:>8d 00 41 03 54 40 01 39                      jf        (L00 == 3) -> 0139
+010E: 41 63 6b 21 20 20 54 68 65 20 77 61 …+22     text      "Ack!  The water tastes poisonous!\n"
+0130: c1 48 09 41 09 40                            builtin   add_ability(G09:speaker, 9)
+0136: 88 0f ef                                     goto      -> 0FEF
+0139:>8d 00 41 04 54 40 02 c7                      jf        (L00 == 4) -> 02C7
+0141: 8d ac 41 00 41 06 40 41 01 54 40 02 …+1      jf        (random(0, 6) == 1) -> 029C
+014E: e8 40                                        builtin   begin_talking()
+0150: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+0156: 9f 0f 00 42 00 bd 41 07 40                   call      R0F00(189, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+015F: a4 42 00 bd 41 00 40                         builtin   show_portrait(189, 0)
+0166: 41 20 76 6f 69 63 65 20 73 65 65 6d …+59     text      "A voice seems to speak in your mind from the fountain.*\"Name your wish\""
+01AD: 8f 2a 00                                     prompt    "*"
+01B0: 90 70 6f 6e 79 00 01 f0                      match     pony else -> 01F0
+01B8: 22 54 68 61 74 27 73 20 72 65 61 6c …+44     text      "\"That's really original.  I wish I had a pony.  Sheesh.\""
+01F0:>90 33 2c 74 68 72 65 00 02 25                match     3,thre else -> 0225
+01FA: 22 59 6f 75 20 77 61 6e 74 20 74 68 …+31     text      "\"You want three wishes?  I don't think so.\""
+0225:>90 63 6f 66 66 00 02 3f                      match     coff else -> 023F
+022D: 22 53 65 65 6b 20 79 65 20 43 61 72 …+6      text      "\"Seek ye Caribou.\""
+023F:>90 74 65 71 75 00 02 6a                      match     tequ else -> 026A
+0247: 22 47 61 6c 61 72 64 6f 6e 20 2d 20 …+23     text      "\"Galardon - 100% blue agave Anejo.\""
+026A:>90 2a 00 02 90                               match     * else -> 0290
+026F: 22 59 6f 75 72 20 77 69 73 68 20 69 …+21     text      "\"Your wish is found elsewhere...\""
+0290:>e9 40                                        builtin   end_talking()
+0292: 86 06 30 40 41 09 40                         setfield  A30.f06:quality = 9
+0299: 88 02 c4                                     goto      -> 02C4
+029C:>48 6d 20 2d 20 74 68 65 20 77 61 74 …+28     text      "Hm - the water tastes odd and tingling.\n"
+02C4:>88 0f ef                                     goto      -> 0FEF
+02C7:>8d 00 41 09 54 40 0e fb                      jf        (L00 == 9) -> 0EFB
+02CF: e8 40                                        builtin   begin_talking()
+02D1: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+02D7: 9f 0f 00 42 00 bd 41 07 40                   call      R0F00(189, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02E0: a4 42 00 bd 41 00 40                         builtin   show_portrait(189, 0)
+02E7: 41 20 76 6f 69 63 65 20 73 65 65 6d …+97     text      "A voice seems to speak in your mind from the fountain.*\"Sorry - only one wish per customer.  No exceptions.*\""
+0354: 82 02 45 0b 68 90 4d 90 36 04 8f 90 …+2914   set       L02 = blk@0359
+      ; 0x45 inline block 0359-0EC1 (2920 bytes):
+      0359: 90 4d                            .array[77]
+        [0] @048F "Any resemblance to real persons, living or dead, is purely coincidental."
+        [1] @04D8 "Apply only to affected area."
+        [2] @04F5 "As seen on TV."
+        [3] @0504 "At participating locations only."
+        [4] @0525 "Avoid contact with skin."
+        [5] @053E "Batteries not included."
+        [6] @0556 "Beware of dog."
+        [7] @0565 "California residents add appropriate sales tax."
+        [8] @0595 "Call toll free before digging."
+        [9] @05B4 "Causes cancer in laboratory animals."
+        [10] @05D9 "Collect all 9."
+        [11] @05E8 "Colors may, in time, fade."
+        [12] @0603 "Do not use near open flame."
+        [13] @061F "Do not use while operating a motor vehicle or heavy equipment."
+        [14] @065E "Do not write below this line."
+        [15] @067C "Driver does not carry cash."
+        [16] @0698 "Edited for television."
+        [17] @06AF "Employees and their families are not eligible."
+        [18] @06DE "For a limited time only."
+        [19] @06F7 "For external use only."
+        [20] @070E "For off-road use only."
+        [21] @0725 "For office use only."
+        [22] @073A "For recreational use only."
+        [23] @0755 "Freshest if eaten before date on carton."
+        [24] @077E "If condition persists, consult your physician."
+        [25] @07AD "Keep away from fire or flame."
+        [26] @07CB "Keep hands and feet away from moving parts."
+        [27] @07F7 "Limited time offer, call now to insure prompt delivery."
+        [28] @082F "List at least two alternate dates."
+        [29] @0852 "List was current at time of printing."
+        [30] @0878 "Lost ticket pays maximum rate."
+        [31] @0897 "May be too intense for some viewers."
+        [32] @08BC "May cause drowsiness."
+        [33] @08D2 "No Canadian coins."
+        [34] @08E5 "Noncomedogenic."
+        [35] @08F5 "No other warranty expressed or implied."
+        [36] @091D "No passes accepted for this engagement."
+        [37] @0945 "No postage necessary if mailed in the United States."
+        [38] @097A "No purchase necessary."
+        [39] @0991 "No user-serviceable parts inside."
+        [40] @09B3 "Not available in stores!"
+        [41] @09CC "Not recommended for children under ten."
+        [42] @09F4 "Now playing at a theater near you."
+        [43] @0A17 "One size fits all."
+        [44] @0A2A "Operators are standing by."
+        [45] @0A45 "Penalty for private use."
+        [46] @0A5E "Please add 3 obolio for postage and handling."
+        [47] @0A8C "Post office will not deliver without postage."
+        [48] @0ABA "Postage will be paid by addressee."
+        [49] @0ADD "Prerecorded for this time zone."
+        [50] @0AFD "Price does not include tax, license, dealer-prep or options."
+        [51] @0B3A "Prices subject to change without notice."
+        [52] @0B63 "Remove all remaining paper before reloading."
+        [53] @0B90 "Replace with same type."
+        [54] @0BA8 "Reproduction strictly prohibited."
+        [55] @0BCA "Restaurant package, not for resale."
+        [56] @0BEE "Sanitized for your protection."
+        [57] @0C0D "Should be taken with plenty of food."
+        [58] @0C32 "Simulated picture."
+        [59] @0C45 "Slightly higher west of the Mississippi."
+        [60] @0C6E "Slippery when wet."
+        [61] @0C81 "Some assembly required."
+        [62] @0C99 "Some equipment shown is optional."
+        [63] @0CBB "Some settling of contents may have occurred during shipment."
+        [64] @0CF8 "Subject to change without notice."
+        [65] @0D1A "Subject to prior sale."
+        [66] @0D31 "Substantial penalty for early withdrawal."
+        [67] @0D5B "The Surgeon General has determined that this is hazardous to your health."
+        [68] @0DA5 "This product is meant for educational purposes only."
+        [69] @0DDA "This supersedes all previous notices."
+        [70] @0E00 "Times approximate."
+        [71] @0E13 "Use only as directed."
+        [72] @0E29 "Use only in well-ventilated area."
+        [73] @0E4B "Void where prohibited by law."
+        [74] @0E69 "You must be present to win."
+        [75] @0E85 "Your canceled check is your receipt."
+        [76] @0EAA "Your mileage may vary."
+0EC2: 82 03 ac 41 00 02 5f 40 40                   set       L03 = random(0, len(L02))
+0ECB: 82 04 ac 41 00 02 5f 40 40                   set       L04 = random(0, len(L02))
+0ED4:>8d 04 03 54 40 0e e7                         jf        (L04 == L03) -> 0EE7
+0EDB: 82 04 ac 41 00 02 5f 40 40                   set       L04 = random(0, len(L02))
+0EE4: 88 0e d4                                     goto      -> 0ED4
+0EE7:>22                                           text      "\""
+0EE8: 8a 02 03 46 40                               print     L02[L03]
+0EED: 20 20                                        text      "  "
+0EEF: 8a 02 04 46 40                               print     L02[L04]
+0EF4: 2a 22                                        text      "*\""
+0EF6: e9 40                                        builtin   end_talking()
+0EF8: 88 0f ef                                     goto      -> 0FEF
+0EFB:>8d 00 41 05 54 40 0f 4d                      jf        (L00 == 5) -> 0F4D
+0F03: 54 68 65 20 77 61 74 65 72 20 69 73 …+37     text      "The water is cold and brisk, quite revitalizing.\n"
+0F34: 82 01 48 09 63 40 40                         set       L01 = as_char(G09:speaker)
+0F3B: 86 1c 01 40 01 62 1c ac 41 01 41 05 …+3      setfield  L01.f1C:health = (L01.f1C:health + random(1, 5))
+0F4A: 88 0f ef                                     goto      -> 0FEF
+0F4D:>8d 00 41 07 54 40 0f 70                      jf        (L00 == 7) -> 0F70
+0F55: 59 75 63 6b 21 20 20 49 74 27 73 20 …+12     text      "Yuck!  It's salt water!\n"
+0F6D: 88 0f ef                                     goto      -> 0FEF
+0F70:>8d 00 41 08 54 40 0f ef                      jf        (L00 == 8) -> 0FEF
+0F78: 54 68 65 20 77 61 74 65 72 20 69 73 …+65     text      "The water is very cold, with a heavy taste of minerals, but very refreshing.\n"
+0FC5: 82 01 48 09 63 40 40                         set       L01 = as_char(G09:speaker)
+0FCC: 86 1c 01 40 01 62 1c ac 41 01 41 05 …+3      setfield  L01.f1C:health = (L01.f1C:health + random(1, 5))
+0FDB: c2 01 41 09 40                               builtin   remove_ability(L01, 9)
+0FE0: c2 01 41 16 40                               builtin   remove_ability(L01, 22)
+0FE5: c2 01 41 0e 40                               builtin   remove_ability(L01, 14)
+0FEA: c2 01 41 15 40                               builtin   remove_ability(L01, 21)
+0FEF:>8b 41 00 40                                  return    0
+0FF3: a0 03 90 36 00 08 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0008, 59/p3B: @0002}

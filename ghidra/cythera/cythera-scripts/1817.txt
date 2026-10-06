@@ -1,0 +1,71 @@
+; segment 1817  page 18  class 0x40 (char) id 23 name "Amphidamas" (string table 0201)
+; kind class  length 1779 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @06DF  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 df                                        .hdr      dictionary offset = 06DF
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 68 …+36     text      "You see a short, stocky man, with an ugly grin.*"
+0035: 8d 9f 0f 02 30 41 07 40 40 00 6b             jf        R0F02(A30, 7) -> 006B  ; R0F02 = tstbit [from 0x0101 symtab]
+0040: 22 47 6f 6f 64 20 5e                         text      "\"Good ^"
+0047: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+004E: 20 2d 20 77 68 61 74 20 63 61 6e 20 …+14     text      " - what can I do for you?\""
+0068: 88 00 c4                                     goto      -> 00C4
+006B:>22 49 66 20 79 6f 75 20 61 72 65 20 …+77     text      "\"If you are here for a job, we're not hiring until certain @problems have been resolved.\""
+00C4:>8e                                           input       ; read a line into the input buffer
+00C5: 90 6e 61 6d 65 2c 61 6d 70 68 00 00 …+1      match     name,amph else -> 00EE
+00D2: 22 49 20 61 6d 20 41 6d 70 68 69 64 …+6      text      "\"I am Amphidamas.\""
+00E4: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00EB: 88 00 c4                                     goto      -> 00C4
+00EE:>90 6a 6f 62 00 01 22                         match     job else -> 0122
+00F5: 22 49 27 6d 20 74 68 65 20 66 6f 72 …+30     text      "\"I'm the foreman here at the @iron @mine.\""
+011F: 88 00 c4                                     goto      -> 00C4
+0122:>90 69 72 6f 6e 00 01 a5                      match     iron else -> 01A5
+012A: 22 49 74 73 20 61 20 70 72 65 74 74 …+108    text      "\"Its a pretty interesting metal, but too hard to be able to forge like bronze, though the Mages must know some @tricks.\""
+01A2: 88 00 c4                                     goto      -> 00C4
+01A5:>90 74 72 69 63 00 02 25                      match     tric else -> 0225
+01AD: 22 59 65 61 68 2c 20 68 6f 77 20 65 …+105    text      "\"Yeah, how else do you think our coins could be made of iron.  A blacksmith can work it into a plow, but not a coin.\""
+0222: 88 00 c4                                     goto      -> 00C4
+0225:>90 62 79 65 00 02 3e                         match     bye else -> 023E
+022C: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+0237: 8b 41 00 40                                  return    0
+; ---- dead code 023B-023E: no dictionary entry, jump, pointer or call reaches it ----
+023B:x88 00 c4                                     goto      -> 00C4
+023E:>90 61 74 74 69 00 02 c2                      match     atti else -> 02C2
+0246: 22 54 68 69 73 20 6d 69 6e 65 20 69 …+109    text      "\"This mine is owned by House Attis.  Decent enough folks to work for, if they can figure out what to do with the @ghost.\""
+02BF: 88 00 c4                                     goto      -> 00C4
+02C2:>90 70 72 6f 62 00 02 f8                      match     prob else -> 02F8
+02CA: 22 59 6f 75 27 76 65 20 6e 6f 74 20 …+31     text      "\"You've not heard the story of the @ghost?\""
+02F5: 88 00 c4                                     goto      -> 00C4
+02F8:>90 74 68 75 72 00 03 db                      match     thur else -> 03DB
+0300: 8d 9f 0f 02 42 00 14 41 01 40 40 03 …+1      jf        R0F02(20, 1) -> 03A5  ; R0F02 = tstbit [from 0x0101 symtab]
+030D: 8d 9f 0f 02 30 41 01 40 40 03 72             jf        R0F02(A30, 1) -> 0372  ; R0F02 = tstbit [from 0x0101 symtab]
+0318: 22 49 27 76 65 20 74 6f 6c 64 20 79 …+75     text      "\"I've told you my report - you can take that back to Thuria, or delve deeper yourself.\""
+036F: 88 03 a2                                     goto      -> 03A2
+0372:>22 54 68 75 72 69 61 20 73 65 6e 74 …+36     text      "\"Thuria sent you to look into @ghost story, eh?\""
+03A2:>88 03 d8                                     goto      -> 03D8
+03A5:>22 4d 61 74 72 6f 6e 20 54 68 75 72 …+39     text      "\"Matron Thuria is a difficult, but fair, employer.\""
+03D8:>88 00 c4                                     goto      -> 00C4
+03DB:>90 67 68 6f 73 00 06 ab                      match     ghos else -> 06AB
+03E3: 22 41 62 6f 75 74 20 61 20 77 65 65 …+670    text      "\"About a week back, Atymnius, one of my men, is digging a new tunnel and discovers a bit of a cave.\"*\"This would normally be good - less to dig, you know.  But this cave isn't empty.  There's something in it.\"*\"It seemed to be sort of man shaped, but not quite.  And it seemed to glow with a whitish light, and spoke a tongue we'd never heard.\"*\"Atymnius hauls out of there, scared, so myself and a couple of others go back and check it out.\"*\"Sure enough, he was right.  Never seen anything like that in my life, and never hope to again.\"*\"I sent Atymnius to Cademia to talk with Thuria and see what she says, but let me tell you, until that thing is gone, we ain't going back in.\""
+068D: 8d 9f 0f 02 30 41 01 40 5e 40 06 a8          jf        !R0F02(A30, 1) -> 06A8  ; R0F02 = tstbit [from 0x0101 symtab]
+0699: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+06A1: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+06A8:>88 00 c4                                     goto      -> 00C4
+06AB:>90 2a 00 06 d8                               match     * else -> 06D8
+06B0: 8d 9f 08 11 30 40 5e 40 06 d5                jf        !R0811(A30) -> 06D5
+06BA: 8d 9f 08 01 30 40 5e 40 06 d5                jf        !R0801(A30) -> 06D5
+06C4: 22 43 61 6e 27 74 20 68 65 6c 70 20 …+5      text      "\"Can't help you.\""
+06D5:>88 00 c4                                     goto      -> 00C4
+06D8:>88 00 c4                                     goto      -> 00C4
+; ---- dead code 06DB-06DF: no dictionary entry, jump, pointer or call reaches it ----
+06DB:x8b 41 00 40                                  return    0
+06DF: a0 03 98 17 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

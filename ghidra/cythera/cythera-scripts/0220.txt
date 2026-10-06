@@ -1,0 +1,16 @@
+; segment 0220  page 02  string table
+; kind strtab  length 223 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 07 82 20 00 1e 82 20 00 1f 82 20 …+18     .strtab   string table, 7 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8220×7)
+001E: 00                                           .string   [0] ""
+001F: 48 65 72 65 20 6c 69 65 73 20 43 68 …+41     .string   [1] "Here lies Chrysothemis, Beloved Wife, Mother\n158-201"
+0054: 41 6e 64 72 6f 6d 61 63 68 65 0a 46 …+23     .string   [2] "Andromache\nFriend and Wife\n882-918"
+0077: 48 61 70 6d 6f 6e 69 64 65 73 0a 46 …+26     .string   [3] "Hapmonides\nFriend and Husband\n878-918"
+009D: 41 6e 64 72 61 0a 42 65 6c 6f 76 65 …+17     .string   [4] "Andra\nBeloved Mother\n873-917"
+00BA: 4c 79 63 75 73 0a 46 61 74 68 65 72 …+21     .string   [5] "Lycus\nFather and Husband\n870-910"
+00DB: 4a 48 43 00                                  .string   [6] "JHC"

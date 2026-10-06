@@ -1,0 +1,54 @@
+; segment 080F  page 08  routine
+; kind routine  length 917 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 73 61 62 69 00 00 2b                      match     sabi else -> 002B
+000B: 22 53 61 62 69 6e 61 74 65 20 69 73 …+13     text      "\"Sabinate is our leader.\""
+0024: 8b 43 50 00 00 01 40                         return    True
+002B:>90 6a 68 69 61 00 00 58                      match     jhia else -> 0058
+0033: 22 57 65 20 64 6f 20 6e 6f 74 20 73 …+18     text      "\"We do not speak of that one.\""
+0051: 8b 43 50 00 00 01 40                         return    True
+0058:>90 61 6c 61 72 2c 62 6f 6e 64 00 00 …+1      match     alar,bond else -> 009C
+0065: 22 54 68 65 20 62 6f 6e 64 20 6f 66 …+36     text      "\"The bond of Alaric is the bond of the Seldane.\""
+0095: 8b 43 50 00 00 01 40                         return    True
+009C:>90 6d 61 67 70 2c 62 61 68 6f 00 00 …+1      match     magp,baho else -> 00C6
+00A9: 22 44 61 6e 67 65 72 6f 75 73 2c 20 …+10     text      "\"Dangerous, and lost.\""
+00BF: 8b 43 50 00 00 01 40                         return    True
+00C6:>90 63 72 6f 6c 2c 20 63 6f 72 72 00 …+2      match     crol, corr else -> 0140
+00D4: 22 54 68 65 20 43 72 6f 6c 6e 61 20 …+89     text      "\"The Crolna is a green glowing gem.  Corruption was our enemy.  The Corruption drove us from Maayti.\""
+0139: 8b 43 50 00 00 01 40                         return    True
+0140:>90 65 6e 65 6d 00 01 ae                      match     enem else -> 01AE
+0148: 22 54 68 6f 73 65 20 77 68 6f 20 61 …+83     text      "\"Those who are one of us, but not of us they are.\"*\"As the Sea and the Earth are one, but not.\""
+01A7: 8b 43 50 00 00 01 40                         return    True
+01AE:>90 73 65 61 00 01 d2                         match     sea else -> 01D2
+01B5: 22 4f 75 72 73 20 69 73 20 6e 6f 74 …+10     text      "\"Ours is not the Sea.\""
+01CB: 8b 43 50 00 00 01 40                         return    True
+01D2:>90 65 61 72 74 00 01 f5                      match     eart else -> 01F5
+01DA: 22 4f 75 72 73 20 69 73 20 74 68 65 …+8      text      "\"Ours is the Earth.\""
+01EE: 8b 43 50 00 00 01 40                         return    True
+01F5:>90 61 69 72 00 02 19                         match     air else -> 0219
+01FC: 22 4f 75 72 73 20 69 73 20 6e 6f 74 …+10     text      "\"Ours is not the Air.\""
+0212: 8b 43 50 00 00 01 40                         return    True
+0219:>90 66 69 72 65 00 02 3f                      match     fire else -> 023F
+0221: 22 4f 75 72 73 20 69 73 20 6e 6f 74 …+11     text      "\"Ours is not the Fire.\""
+0238: 8b 43 50 00 00 01 40                         return    True
+023F:>90 61 79 72 69 00 02 62                      match     ayri else -> 0262
+0247: 22 48 65 72 65 20 69 73 20 6f 75 72 …+8      text      "\"Here is our Ayrit.\""
+025B: 8b 43 50 00 00 01 40                         return    True
+0262:>90 6d 6f 72 74 00 02 bb                      match     mort else -> 02BB
+026A: 22 4f 75 72 73 20 69 73 20 74 68 65 …+62     text      "\"Ours is the everlasting, 120 eternities.  Yours is not, mortal, limited.\""
+02B4: 8b 43 50 00 00 01 40                         return    True
+02BB:>90 6d 61 61 79 00 03 36                      match     maay else -> 0336
+02C3: 22 4d 61 61 79 74 69 2c 20 63 69 74 …+96     text      "\"Maayti, city of Truth, was our home.\"*\"Now we are here, and around Maayti the land sank, becoming a swamp.\""
+032F: 8b 43 50 00 00 01 40                         return    True
+0336:>90 69 67 6e 61 00 03 8a                      match     igna else -> 038A
+033E: 22 49 67 6e 61 65 20 69 73 20 6b 6e …+57     text      "\"Ignae is known to us, but not trusted to us, for he is alien to us.\""
+0383: 8b 43 50 00 00 01 40                         return    True
+038A:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0391-0395: no dictionary entry, jump, pointer or call reaches it ----
+0391:x8b 41 00 40                                  return    0

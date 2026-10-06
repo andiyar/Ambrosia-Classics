@@ -1,0 +1,30 @@
+; segment 1012  page 10  class 0x00 (prop) type 18 tile-name "dresser" (tool join F000/F004)
+; kind class  length 116 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0048  methods: sel9/use@0008, sel23@0021, sel8/search@002F
+; properties: sel22
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 48                                        .hdr      dictionary offset = 0048
+0002: 90 01 00 00 00 ff                            .array    array[1] = [255]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 9f 0e 66 30 41 0e 41 0f 41 26 43 00 …+6      call      R0E66(A30, 14, 15, 38, 223, 100)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+001D: 8b 41 00 40                                  return    0
+
+; ==== method sel23 @0021 ====
+0021: 81 02 00                                     frame     args=2 locals=0
+0024: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 002B-002F: no dictionary entry, jump, pointer or call reaches it ----
+002B:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @002F ====
+002F: 81 01 00                                     frame     args=1 locals=0
+0032: 9f 0e 66 30 41 0e 41 0f 41 26 43 00 …+6      call      R0E66(A30, 14, 15, 38, 223, 100)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+0044: 8b 41 00 40                                  return    0
+0048: a0 07 50 00 ff ff 05 46 90 12 00 02 …+32     .dict     dict[7] {8/search: @002F, 9/use: @0008, 22: @0002, 23: @0021}

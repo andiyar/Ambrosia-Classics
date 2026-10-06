@@ -1,0 +1,110 @@
+; segment 1812  page 18  class 0x40 (char) id 18 name "Ariethous" (string table 0201)
+; kind class  length 1242 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @04C6  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 c6                                        .hdr      dictionary offset = 04C6
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 20 68 61 …+60     text      "You see a handsome but vain looking man, with long flowing hair.\n*\"Good "
+004D: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0054: 20 2d 20 77 65 6c 63 6f 6d 65 21 22          text      " - welcome!\""
+0060: 82 00 41 00 40                               set       L00 = 0
+0065:>8e                                           input       ; read a line into the input buffer
+0066: 90 6e 61 6d 65 00 00 b2                      match     name else -> 00B2
+006E: 22 49 27 6d 20 63 61 6c 6c 65 64 20 …+46     text      "\"I'm called Areithous, owner of this fine @establishment.\""
+00A8: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00AF: 88 00 65                                     goto      -> 0065
+00B2:>90 65 73 74 61 00 00 f7                      match     esta else -> 00F7
+00BA: 22 57 68 79 2c 20 74 68 65 20 27 52 …+46     text      "\"Why, the 'Roasted Haunch'!  Finest @meat in all Cythera!\""
+00F4: 88 00 65                                     goto      -> 0065
+00F7:>90 6a 6f 62 00 01 45                         match     job else -> 0145
+00FE: 22 49 20 72 75 6e 20 74 68 69 73 20 …+56     text      "\"I run this fine @establishment - can I @interest you in something?\""
+0142: 88 00 65                                     goto      -> 0065
+0145:>90 62 79 65 00 01 6c                         match     bye else -> 016C
+014C: 22 50 6c 65 61 73 65 20 63 6f 6d 65 …+13     text      "\"Please come back again.\""
+0165: 8b 41 00 40                                  return    0
+; ---- dead code 0169-016C: no dictionary entry, jump, pointer or call reaches it ----
+0169:x88 00 65                                     goto      -> 0065
+016C:>90 61 72 65 69 2c 69 6e 74 65 00 01 …+1      match     arei,inte else -> 01CD
+0179: 22 59 65 73 20 2d 20 61 72 65 20 79 …+69     text      "\"Yes - are you interested in some @meat, or just a @drink and good conversation?\""
+01CA: 88 00 65                                     goto      -> 0065
+01CD:>90 64 72 69 6e 00 02 8d                      match     drin else -> 028D
+01D5: 22 41 20 72 6f 75 6e 64 20 6f 66 20 …+10     text      "\"A round of drinks is "
+01EB: 8a 48 06 40                                  print     G06:party_size
+01EF: 20 6f 62 6f 6c                               text      " obol"
+01F4: 8d 48 06 41 01 51 40 01 ff                   jf        (G06:party_size > 1) -> 01FF
+01FD: 6f 69 2e 22 2a 22 57 68 61 74 20 64 …+11     text      "oi.\"*\"What do you say?\""
+01FF:>2e 22 2a 22 57 68 61 74 20 64 6f 20 …+9      text      ".\"*\"What do you say?\""  ; shares its tail with text @01FD
+0214: 8f 79 6e 00                                  prompt    "yn"
+0218: 90 79 00 02 71                               match     y else -> 0271
+021D: 8d 9f 0d 04 40 48 06 52 40 02 43             jf        (R0D04() >= G06:party_size) -> 0243
+0228: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+022F: 9f 0e a2 00 40                               call      R0EA2(L00)
+0234: 9f 0d 05 48 06 40                            call      R0D05(G06:party_size)
+023A: 9f 08 13 30 00 40                            call      R0813(A30, L00)
+0240: 88 02 71                                     goto      -> 0271
+0243:>22 59 6f 75 20 73 65 65 6d 20 61 20 …+34     text      "\"You seem a bit short - sorry, but no credit.\""
+0271:>90 6e 00 02 8a                               match     n else -> 028A
+0276: 22 41 6e 6f 74 68 65 72 20 74 69 6d …+8      text      "\"Another time then.\""
+028A:>88 00 65                                     goto      -> 0065
+028D:>90 62 75 79 2c 62 75 79 69 2c 6d 65 …+5      match     buy,buyi,meat else -> 0346
+029E: 86 27 30 40 9f 0e a5 44 46 69 6e 65 …+153    setfield  A30.f27:ce17 = R0EA5("Finest Meats", blk@02B6, A30.f27:ce17, blk@032F)
+      ; 0x45 inline block 02B6-0329 (115 bytes):
+      02B6: 90 04                            .array[4]
+        [0] @02C8 ->
+          02C8: 90 04                            .array[4]
+            [0] 6213
+            [1] @02DA "Skewer"
+            [2] 3
+            [3] 1
+        [1] @02E1 ->
+          02E1: 90 04                            .array[4]
+            [0] 8261
+            [1] @02F3 "Haunch"
+            [2] 6
+            [3] 1
+        [2] @02FA ->
+          02FA: 90 04                            .array[4]
+            [0] 10309
+            [1] @030C "Ribs"
+            [2] 9
+            [3] 1
+        [3] @0311 ->
+          0311: 90 04                            .array[4]
+            [0] 12357
+            [1] @0323 "Steak"
+            [2] 8
+            [3] 1
+      ; 0x45 inline block 032F-0341 (18 bytes):
+      032F: 90 04                            .array[4]
+        [0] 5
+        [1] 7
+        [2] 5
+        [3] 3
+0343: 88 00 65                                     goto      -> 0065
+0346:>90 6c 61 6f 64 00 03 c4                      match     laod else -> 03C4
+034E: 22 53 68 65 20 69 73 20 61 6c 6c 20 …+103    text      "\"She is all I've ever wanted - the perfect mate!\"*\"We've had our problems in the past, but I've changed this time.\""
+03C1: 88 00 65                                     goto      -> 0065
+03C4:>90 77 69 66 65 2c 6d 61 72 72 00 03 …+1      match     wife,marr else -> 03FB
+03D1: 22 4f 6e 65 20 64 61 79 20 73 6f 6f …+27     text      "\"One day soon Laodice will be my wife.\""
+03F8: 88 00 65                                     goto      -> 0065
+03FB:>90 73 74 65 6e 00 04 88                      match     sten else -> 0488
+0403: 22 53 74 65 6e 74 6f 72 20 77 61 73 …+118    text      "\"Stentor was one of my best customers - rumor is that he went a bit off the deep end.\"*\"He's somewhere in Cademia now, I believe.\""
+0485: 88 00 65                                     goto      -> 0065
+0488:>90 2a 00 04 bf                               match     * else -> 04BF
+048D: 8d 9f 08 0d 30 40 5e 40 04 bc                jf        !R080D(A30) -> 04BC
+0497: 8d 9f 08 01 30 40 5e 40 04 bc                jf        !R0801(A30) -> 04BC
+04A1: 22 49 20 64 6f 6e 27 74 20 71 75 69 …+15     text      "\"I don't quite understand.\""
+04BC:>88 00 65                                     goto      -> 0065
+04BF:>88 00 65                                     goto      -> 0065
+; ---- dead code 04C2-04C6: no dictionary entry, jump, pointer or call reaches it ----
+04C2:x8b 41 00 40                                  return    0
+04C6: a0 03 98 12 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

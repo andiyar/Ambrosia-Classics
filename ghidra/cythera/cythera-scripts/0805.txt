@@ -1,0 +1,51 @@
+; segment 0805  page 08  routine
+; kind routine  length 1197 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 70 61 72 69 00 00 62                      match     pari else -> 0062
+000B: 22 4d 79 20 63 6f 75 73 69 6e 20 50 …+68     text      "\"My cousin Parium runs the Green Goat Tavern and Inn in Catamarca - fine place.\""
+005B: 8b 43 50 00 00 01 40                         return    True
+0062:>90 61 70 69 73 00 00 a4                      match     apis else -> 00A4
+006A: 22 4d 79 20 63 6f 75 73 69 6e 20 41 …+39     text      "\"My cousin Apis runs the Two-Taled Rat in Cademia.\""
+009D: 8b 43 50 00 00 01 40                         return    True
+00A4:>90 63 72 69 74 00 00 e5                      match     crit else -> 00E5
+00AC: 22 4d 79 20 63 6f 75 73 69 6e 20 43 …+38     text      "\"My cousin Crito runs the Titan's Head in Odemia.\""
+00DE: 8b 43 50 00 00 01 40                         return    True
+00E5:>90 68 65 6c 65 00 01 22                      match     hele else -> 0122
+00ED: 22 4d 79 20 63 6f 75 73 69 6e 20 48 …+34     text      "\"My cousin Helen runs the Study Hall in Pnyx.\""
+011B: 8b 43 50 00 00 01 40                         return    True
+0122:>90 70 61 72 69 00 01 57                      match     pari else -> 0157
+012A: 22 50 61 72 69 73 20 69 73 20 6d 61 …+26     text      "\"Paris is married to my cousin Helen.\""
+0150: 8b 43 50 00 00 01 40                         return    True
+0157:>90 6e 69 6f 62 00 01 a7                      match     niob else -> 01A7
+015F: 22 4e 69 6f 62 65 20 69 73 20 74 68 …+53     text      "\"Niobe is the daughter of my cousin Helen and her husband Paris.\""
+01A0: 8b 43 50 00 00 01 40                         return    True
+01A7:>90 64 61 72 65 00 02 0b                      match     dare else -> 020B
+01AF: 22 43 6f 75 73 69 6e 20 44 61 72 65 …+73     text      "\"Cousin Dares runs Dares Eatery, one of the finest eating establishments in Cademia.\""
+0204: 8b 43 50 00 00 01 40                         return    True
+020B:>90 64 69 6f 6d 00 02 43                      match     diom else -> 0243
+0213: 22 44 69 6f 6d 65 64 65 20 69 73 20 …+29     text      "\"Diomede is the wife of my cousin Dares.\""
+023C: 8b 43 50 00 00 01 40                         return    True
+0243:>90 64 6f 64 6f 00 02 97                      match     dodo else -> 0297
+024B: 22 48 6f 75 73 65 20 44 6f 64 6f 6e …+57     text      "\"House Dodona happens to run the finest inns and taverns in Cythera.\""
+0290: 8b 43 50 00 00 01 40                         return    True
+0297:>90 77 69 6e 65 00 03 53                      match     wine else -> 0353
+029F: 22 57 65 20 73 65 72 76 65 20 62 6f …+161    text      "\"We serve both vintages from the North Shore Vineyard, as well as the Southland Vineyard.\"*\"Unfortunately, our shipment from the North Shore Vineyard is running a bit late.\""
+034C: 8b 43 50 00 00 01 40                         return    True
+0353:>90 62 6f 72 75 2c 62 72 69 73 2c 73 …+6      match     boru,bris,sout else -> 03CD
+0365: 22 42 6f 72 75 73 20 61 6e 64 20 68 …+85     text      "\"Borus and his wife Briseis run the Southland Vineyard.  It is pretty much due south of Cademia.\""
+03C6: 8b 43 50 00 00 01 40                         return    True
+03CD:>90 67 6c 61 75 2c 6e 6f 72 74 00 04 …+1      match     glau,nort else -> 043D
+03DA: 22 47 6c 61 75 63 75 73 20 72 75 6e …+80     text      "\"Glaucus runs the North Shore Vineyard.  It lies on the road between Cademia and Catamarca.\""
+0436: 8b 43 50 00 00 01 40                         return    True
+043D:>90 76 69 6e 79 00 04 a2                      match     viny else -> 04A2
+0445: 22 54 68 65 72 65 20 61 72 65 20 74 …+74     text      "\"There are two major vineyards, the Southland Vineyard, and the North Shore Vineyard.\""
+049B: 8b 43 50 00 00 01 40                         return    True
+04A2:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 04A9-04AD: no dictionary entry, jump, pointer or call reaches it ----
+04A9:x8b 41 00 40                                  return    0

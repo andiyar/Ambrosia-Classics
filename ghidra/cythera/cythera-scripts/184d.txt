@@ -1,0 +1,149 @@
+; segment 184D  page 18  class 0x40 (char) id 77 name "Anisa" (string table 0201)
+; kind class  length 7320 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @1C84  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 1c 84                                        .hdr      dictionary offset = 1C84
+0002: 90 01 98 4d 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 59 6f 75 20 73 65 65 20 61 20 6d 69 …+43     text      "You see a middle aged woman, who seems lost in thought."
+0074: 8d 9f 0f 02 30 41 07 40 5e 40 01 22          jf        !R0F02(A30, 7) -> 0122  ; R0F02 = tstbit [from 0x0101 symtab]
+0080: 22 41 68 21 20 59 6f 75 20 6d 75 73 …+140    text      "\"Ah! You must be the one Alaric summoned.  Yes, you shall change history.\"*\"This, of course, matters greatly to me, since history is my field, my love.\""
+0118: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+011F: 88 01 48                                     goto      -> 0148
+0122:>22 47 72 65 65 74 69 6e 67 73 20 61 …+26     text      "\"Greetings again, changer of history.\""
+0148:>8e                                           input       ; read a line into the input buffer
+0149: 90 6e 61 6d 65 00 01 7a                      match     name else -> 017A
+0151: 22 49 20 61 6d 20 41 6e 69 73 61 2c …+19     text      "\"I am Anisa, Master Historian.\""
+0170: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0177: 88 01 48                                     goto      -> 0148
+017A:>90 61 6e 69 73 00 01 8b                      match     anis else -> 018B
+0182: 22 59 65 73 3f 22                            text      "\"Yes?\""
+0188: 88 01 48                                     goto      -> 0148
+018B:>90 6a 6f 62 00 01 be                         match     job else -> 01BE
+0192: 22 49 20 61 6d 20 61 20 4d 61 73 74 …+29     text      "\"I am a Master, in the field of History.\""
+01BB: 88 01 48                                     goto      -> 0148
+01BE:>90 68 69 73 74 00 02 8f                      match     hist else -> 028F
+01C6: 22 49 20 68 61 76 65 20 73 74 75 64 …+74     text      "\"I have studied as much as I can find - perhaps you have some questions I can answer?\""
+021C: 8f 79 6e 00                                  prompt    "yn"
+0220: 90 79 00 02 4a                               match     y else -> 024A
+0225: 22 46 65 65 6c 20 66 72 65 65 20 74 …+25     text      "\"Feel free to ask me about anything.\""
+024A:>90 6e 00 02 8c                               match     n else -> 028C
+024F: 22 4f 68 20 77 65 6c 6c 2c 20 69 66 …+49     text      "\"Oh well, if you have any questions about history, just ask.\""
+028C:>88 01 48                                     goto      -> 0148
+028F:>90 74 79 72 61 00 03 e2                      match     tyra else -> 03E2
+0297: 22 54 68 65 20 54 79 72 61 6e 74 73 …+316    text      "\"The Tyrants were our earliest rulers.  Their absolute power corrupted them.\"*\"The First Tyrant @exiled the Mages in 152.\"*\"It was during the rule of the Third Tyrant that Alaric appeared in 216.  He ended the their rule.\"*\"It wasn't until 219 that our current system of government was established, with the return of us Mages.\""
+03DF: 88 01 48                                     goto      -> 0148
+03E2:>90 65 78 69 6c 00 04 a5                      match     exil else -> 04A5
+03EA: 22 54 68 65 20 46 69 72 73 74 20 54 …+172    text      "\"The First Tyrant of Cademia feared the unknown powers of Mages, so had them exiled in 152.\"*\"While some found shelter in Odemia, most fled west, over the mountains, and founded Pnyx.\""
+04A2: 88 01 48                                     goto      -> 0148
+04A5:>90 70 6e 79 78 00 05 0b                      match     pnyx else -> 050B
+04AD: 22 54 68 65 20 63 69 74 79 20 6f 66 …+79     text      "\"The city of Pnyx was founded in 153 by the exiled Mages, and established the Magisterium.\""
+0508: 88 01 48                                     goto      -> 0148
+050B:>90 63 61 64 65 00 05 7e                      match     cade else -> 057E
+0513: 22 43 61 64 65 6d 69 61 20 69 73 20 …+92     text      "\"Cademia is our oldest city, which is I why I live here.  It was founded after our arrival from @Thera.\""
+057B: 88 01 48                                     goto      -> 0148
+057E:>90 74 68 65 72 00 05 e7                      match     ther else -> 05E7
+0586: 22 4e 6f 77 20 74 68 61 74 27 73 20 …+82     text      "\"Now that's an old name.  Our original home was the island of Thera, before it was destroyed.\""
+05E4: 88 01 48                                     goto      -> 0148
+05E7:>90 63 61 74 61 00 06 9b                      match     cata else -> 069B
+05EF: 22 43 61 74 61 6d 61 72 63 61 20 77 …+157    text      "\"Catamarca was founded in 113 as retreat for the first Tyrant.  A defendable cliff with a good source of water.\"*\"Since then, Catamarca has become famous for its water.\""
+0698: 88 01 48                                     goto      -> 0148
+069B:>90 6f 64 65 6d 00 07 20                      match     odem else -> 0720
+06A3: 22 4f 64 65 6d 69 61 20 77 61 73 20 …+110    text      "\"Odemia was founded 5 years after our arrival from @Thera, but it was little more than a permanent hunting camp for year.\""
+071D: 88 01 48                                     goto      -> 0148
+0720:>90 6b 6f 73 68 00 07 6f                      match     kosh else -> 076F
+0728: 22 4b 6f 73 68 61 20 69 73 20 61 20 …+56     text      "\"Kosha is a more recent settlement, founded by House Comana in 303.\""
+076C: 88 01 48                                     goto      -> 0148
+076F:>90 68 6f 75 73 2c 66 6f 75 6e 00 08 …+1      match     hous,foun else -> 0808
+077C: 22 48 6f 75 73 65 73 20 77 65 72 65 …+125    text      "\"Houses were the decendants of the first six powerful leaders that helped to pull society together after the destruction of the Tyrants.\""
+0805: 88 01 48                                     goto      -> 0148
+0808:>90 6e 69 63 61 00 08 56                      match     nica else -> 0856
+0810: 22 46 6f 75 6e 64 65 72 20 4e 69 63 …+55     text      "\"Founder Nicander was originally the leader of a group of hunters.\""
+0853: 88 01 48                                     goto      -> 0148
+0856:>90 64 6f 64 6f 00 08 9e                      match     dodo else -> 089E
+085E: 22 46 6f 75 6e 64 65 72 20 44 6f 64 …+49     text      "\"Founder Dodona was originally an innkeeper here in Cademia.\""
+089B: 88 01 48                                     goto      -> 0148
+089E:>90 73 74 72 79 00 09 34                      match     stry else -> 0934
+08A6: 22 46 6f 75 6e 64 65 72 20 53 74 72 …+127    text      "\"Founder Strymon was actually just a simple farmer, until he acted to help pull together our society after the destruction of the Tyrants.\""
+0931: 88 01 48                                     goto      -> 0148
+0934:>90 61 74 75 73 00 09 7f                      match     atus else -> 097F
+093C: 22 46 6f 75 6e 64 65 72 20 41 74 75 …+52     text      "\"Founder Atusa was originally a leader of a group of craftsmen.\""
+097C: 88 01 48                                     goto      -> 0148
+097F:>90 61 74 74 69 00 09 ef                      match     atti else -> 09EF
+0987: 22 46 6f 75 6e 64 65 72 20 41 74 74 …+89     text      "\"Founder Attis was originally a page in court of the Tyrants, whose quick wit lead him to his power.\""
+09EC: 88 01 48                                     goto      -> 0148
+09EF:>90 63 6f 6d 61 00 0a 2e                      match     coma else -> 0A2E
+09F7: 22 46 6f 75 6e 64 65 72 20 43 6f 6d …+40     text      "\"Founder Comana was originally a powerful merchant.\""
+0A2B: 88 01 48                                     goto      -> 0148
+0A2E:>90 67 6f 6c 65 00 0c 32                      match     gole else -> 0C32
+0A36: 22 59 6f 75 27 76 65 20 70 72 6f 62 …+493    text      "\"You've probably heard the basic story from other Mages.\"*\"Basically, the first golem was created in 663 A.T. by a mage whose name is obscured in history.\"*\"It wasn't until some twenty years later when basic problem with them was discovered.\"*\"Even as late as 700 A.T., golems were still being created.\"*\"By 720 A.T., however, they had been outlawed, and an attempt to destroy existing 'wild' golems was begun.\"*\"The most famous of these attempt was by @Semius, who disappeared here in Cademiain 742 A.T.\""
+0C2F: 88 01 48                                     goto      -> 0148
+0C32:>90 73 65 6d 69 00 0e 0f                      match     semi else -> 0E0F
+0C3A: 22 53 65 6d 69 75 73 2c 20 74 68 65 …+454    text      "\"Semius, the self styled 'Golem Hunter', disappears here in Cademia in 742 A.T.\"*\"Legend has it that he found one of the secret workrooms of Mage @Machaon, and was defeated by the golem there.\"*\"Then again, he may have simply slipped in the sewers and broke his neck - you know how stories get.\"*\"If I remember correctly, the predecessor of Judge Metopes in Catamarca was a bit of a Semius buff.\"*\"You might be able to find some of his old books still in Catamarca.\""
+0E0C: 88 01 48                                     goto      -> 0148
+0E0F:>90 62 79 65 00 0e 35                         match     bye else -> 0E35
+0E16: 22 57 65 20 73 68 61 6c 6c 20 6d 65 …+12     text      "\"We shall meet again...\""
+0E2E: 8b 41 00 40                                  return    0
+; ---- dead code 0E32-0E35: no dictionary entry, jump, pointer or call reaches it ----
+0E32:x88 01 48                                     goto      -> 0148
+0E35:>90 61 62 79 64 00 0f d1                      match     abyd else -> 0FD1
+0E3D: 22 49 6e 20 31 38 34 20 73 65 74 74 …+389    text      "\"In 184 settlers from Pnyx tried to form a second, Mage-friend community south down the coast from Pnyx.\"*\"Everything went well until 192 when all communication from there was cut off.\"*\"When an expedition was sent, they discovered everbody gone from the settlement, but no sign of violence.\"*\"It has since fallen to the elements, and some say it is haunted.  Nobody knows what happened its citizens.\""
+0FCE: 88 01 48                                     goto      -> 0148
+0FD1:>90 74 61 76 61 00 10 24                      match     tava else -> 1024
+0FD9: 22 49 20 62 65 6c 69 65 76 65 20 54 …+60     text      "\"I believe Tavara was the Mayor of the ill-fated settlement of @Abydos.\""
+1021: 88 01 48                                     goto      -> 0148
+1024:>90 73 61 70 70 00 19 e4                      match     sapp else -> 19E4
+102C: 8d 9f 0f 02 30 41 02 40 40 10 7e             jf        R0F02(A30, 2) -> 107E  ; R0F02 = tstbit [from 0x0101 symtab]
+1037: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+56     text      "\"I'm sorry, but I've told you all I learned about their location...\""
+107B: 88 19 e1                                     goto      -> 19E1
+107E:>8d 9f 0f 02 30 41 01 40 40 16 7b             jf        R0F02(A30, 1) -> 167B  ; R0F02 = tstbit [from 0x0101 symtab]
+1089: 22 48 61 76 65 20 79 6f 75 20 66 6f …+32     text      "\"Have you found out who Alaric's mother is?\""
+10B5: 8f 79 6e 00                                  prompt    "yn"
+10B9: 90 79 00 16 4d                               match     y else -> 164D
+10BE: 8d 9f 0f 02 42 00 02 41 02 40 5e 40 …+2      jf        !R0F02(2, 2) -> 110D  ; R0F02 = tstbit [from 0x0101 symtab]
+10CC: 22 49 20 62 65 6c 69 65 76 65 20 79 …+50     text      "\"I believe you are mistaken - please stick to your promise...\""
+110A: 88 16 4d                                     goto      -> 164D
+110D:>a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+1114: 22 59 65 73 2c 20 68 65 72 20 6e 61 …+56     text      "\"Yes, her name was Chrysothemis, and she died in 201 in Catamarca.\"*"
+1158: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+115D: f3 41 20 40                                  builtin   done_to_do(32)
+1161: 22 48 6d 2c 20 66 61 63 69 6e 61 74 …+1241   text      "\"Hm, facinating.  I shall have to investigate this further when I've got more time...\"*\"Now, here's what I found out about the Sapphire Books of Wisdom.\"*\"Nobody is quite sure who wrote them, except that they date back to the earliest days of the Magisterium, if not before.\"*\"There are ten of them, but I'm sure you've heard all that before.\"*\"Anyway, the Sapphire Book of Power was in the possession of Mage @Machaon, who lived here in Cademia.\"*\"That, however, was some 200 years ago, and it is unclear where he lived, but is probably in the northwest corner of the Maze.\"*\"The Sapphire Book of Wisdom was given to Tavara to help him lead the colony of Abydos, but we all know what happened there...\"*\"The Sapphire Book of Splendor was last mentioned as being in the possession of a long forgotten Judge in Catamarca.\"*\"You're not going to like this, but the Sapphire Book of Victory was said to belong to an ancestor in House Nicander.\"*\"Unfortunately, so the story goes, one day he threw it into the ocean off Odemia.\"*\"The Sapphire Book of Foundation is the strangest story of them all.\"*\"It is said to have been traded to some sort of Earth Spirit in return for knowlege of some sort nearly 750 years ago.\"*\"Beauty appears to be completely lost.\""
+1646: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+164D:>90 6e 00 16 78                               match     n else -> 1678
+1652: 22 57 65 6c 6c 2c 20 63 6f 6d 65 20 …+26     text      "\"Well, come back when you find out...\""
+1678:>88 19 e1                                     goto      -> 19E1
+167B:>22 49 27 76 65 20 68 65 61 72 64 20 …+163    text      "\"I've heard of the Sapphire Books of Knowledge, but I have no idea where they are...\"*\"I'd be willing to research them a bit, if you'll in turn do a task for me - interested?\""
+172A: 8f 79 6e 00                                  prompt    "yn"
+172E: 90 79 00 19 a4                               match     y else -> 19A4
+1733: 22 45 78 65 63 65 6c 6c 65 6e 74 21 …+594    text      "\"Execellent!  I've been doing some research on Alaric and learn some interesting things.\"*\"While he doesn't remember ever meeting is father, he grew up with his mother in Catamarca.\"*\"Unfortunately, I've no idea of when exactly this was, or what her name was.\"*\"Since it was in 216 that he appeared before the Third Tyrant to destroy him, we can know it was before then.\"*\"Beyond that, there isn't much else we know.  I understand, however, that you are on close terms with him.\"*\"Perhaps you can clear this matter up for me, in return I shall endevour to find what I can about the Sapphire Books for you.\""
+1991: f2 41 20 43 30 00 02 1a 41 20 4a 40          builtin   add_to_do(32, (str[021A:0]"Cure Alaric" + 32))
+199D: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+19A4:>90 6e 00 19 e1                               match     n else -> 19E1
+19A9: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+44     text      "\"Very well, but if you change your mind, let me know...\""
+19E1:>88 01 48                                     goto      -> 0148
+19E4:>90 6d 61 63 68 00 1a e6                      match     mach else -> 1AE6
+19EC: 22 4d 61 67 65 20 4d 61 63 68 61 6f …+235    text      "\"Mage Machaon use to live here in Cademia some 200 years ago.\"*\"He use to have a number of secret workrooms and libraries.  Nobody in the city really knew where he lived.\"*\"There are probably still hidden chambers of his undiscovered to this day.\""
+1AE3: 88 01 48                                     goto      -> 0148
+1AE6:>90 6e 65 6c 65 00 1c 32                      match     nele else -> 1C32
+1AEE: 22 59 65 73 2c 20 49 27 6d 20 66 61 …+309    text      "\"Yes, I'm familiar with the Neleneus Prophesies - I believe I've got a copy of one of them among my books.\"*\"As a historian, it is easy enough to match the first prophesy with the fall of the Tyrants.\"*\"Unfortunately, nothing much useful is in the third, least as far as I can tell.\"*\"And the second is lost to the ages.\""
+1C2F: 88 01 48                                     goto      -> 0148
+1C32:>90 2a 00 1c 7d                               match     * else -> 1C7D
+1C37: 8d 9f 08 08 30 40 5e 40 1c 7a                jf        !R0808(A30) -> 1C7A
+1C41: 8d 9f 08 0e 30 40 5e 40 1c 7a                jf        !R080E(A30) -> 1C7A
+1C4B: 8d 9f 08 01 30 40 5e 40 1c 7a                jf        !R0801(A30) -> 1C7A
+1C55: 22 53 6f 72 72 79 20 2d 20 49 27 6d …+25     text      "\"Sorry - I'm not familiar with that.\""
+1C7A:>88 01 48                                     goto      -> 0148
+1C7D:>88 01 48                                     goto      -> 0148
+; ---- dead code 1C80-1C84: no dictionary entry, jump, pointer or call reaches it ----
+1C80:x8b 41 00 40                                  return    0
+1C84: a0 03 98 4d 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

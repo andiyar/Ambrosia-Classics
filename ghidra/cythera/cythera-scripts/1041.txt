@@ -1,0 +1,19 @@
+; segment 1041  page 10  class 0x00 (prop) type 65 tile-name "ruins" (tool join F000/F004)
+; kind class  length 44 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0018  methods: sel9/use@0008
+; properties: sel58/p3A
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 18                                        .hdr      dictionary offset = 0018
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: bf 41 0d 30 62 08 41 01 40                   builtin   teleport(13, A30.f08:u16_6, 1)
+0014: 8b 41 00 40                                  return    0
+0018: a0 03 90 41 00 08 00 09 90 41 00 02 …+8      .dict     dict[3] {9/use: @0008, 58/p3A: @0002}

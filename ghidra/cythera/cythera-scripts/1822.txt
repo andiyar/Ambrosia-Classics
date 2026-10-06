@@ -1,0 +1,205 @@
+; segment 1822  page 18  class 0x40 (char) id 34 name "Meleager" (string table 0201)
+; kind class  length 3640 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0E0C  methods: sel21/signal@0002, sel32/spawned@0075, sel12/talk@00B4
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0e 0c                                        .hdr      dictionary offset = 0E0C
+
+; ==== method sel21/signal @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 31 64 00 40 00 6b                         jf        is_prop(A31) -> 006B
+000C: e8 40                                        builtin   begin_talking()
+000E: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0015: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+001A: 8d 31 60 2a 40 00 2a                         jf        has(A31, sel42) -> 002A
+0021: 9f 0e b2 30 31 40                            call      R0EB2(A30, A31)
+0027: 88 00 66                                     goto      -> 0066
+002A:>8d 31 60 2c 40 00 3a                         jf        has(A31, sel44) -> 003A
+0031: 9f 0e b3 30 31 40                            call      R0EB3(A30, A31)
+0037: 88 00 66                                     goto      -> 0066
+003A:>8d 31 60 2f 40 00 4a                         jf        has(A31, sel47) -> 004A
+0041: 9f 0e b4 30 31 40                            call      R0EB4(A30, A31)
+0047: 88 00 66                                     goto      -> 0066
+004A:>8d 9f 0e b6 30 31 40 5e 40 00 66             jf        !R0EB6(A30, A31) -> 0066
+0055: 22 4c 6f 6f 6b 73 20 6c 69 6b 65 20          text      "\"Looks like "
+0061: 8a 31 40                                     print     A31
+0064: 2e 22                                        text      ".\""
+0066:>e9 40                                        builtin   end_talking()
+0068: 88 00 71                                     goto      -> 0071
+006B:>9f 0d 06 30 31 40                            call      R0D06(A30, A31)
+0071:>8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @0075 ====
+0075: 81 01 00                                     frame     args=1 locals=0
+0078: 8d 30 62 15 41 01 54 ac 41 01 41 20 …+16     jf        (((A30.f15:activity == 1) && (random(1, 32) == 1)) && R0F13(97)) -> 00A9  ; R0F13 = inparty [from 0x0101 symtab]
+0094: 86 26 30 40 44 57 61 74 63 68 20 69 …+9      setfield  A30.f26:f26 = "Watch it, punk"
+00A9:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 00B0-00B4: no dictionary entry, jump, pointer or call reaches it ----
+00B0:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @00B4 ====
+00B4: 81 01 01                                     frame     args=1 locals=1
+00B7: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+94     text      "You see an old man, whose hands shake, yet fire still burns in his eyes though his face appears tranquil.*"
+0121: 8d 9f 0f 13 30 40 9f 0f 02 30 41 01 …+20     jf        ((R0F13(A30) && R0F02(A30, 1)) && R0EAE(G05:leader, 205, False)) -> 025B  ; R0F13 = inparty, R0F02 = tstbit [from 0x0101 symtab]
+0141: 22 59 6f 75 20 6b 6e 6f 77 2c 20 73 …+167    text      "\"You know, some of the things that we've seen really make me worry about you...\"*\"Let me teach an important skill - the skill of awareness, one of my greatest tricks of survival.\""
+01F4: 8f 79 6e 00                                  prompt    "yn"
+01F8: 90 79 00 02 15                               match     y else -> 0215
+01FD: 9f 0e b1 48 05 44 4d 65 6c 65 61 67 …+12     call      R0EB1(G05:leader, "Meleager", 205, False)
+0215:>90 6e 00 02 58                               match     n else -> 0258
+021A: 22 57 65 6c 6c 2c 20 69 66 20 79 6f …+50     text      "\"Well, if you change your mind, just ask be about @awareness.\""
+0258:>88 02 6a                                     goto      -> 026A
+025B:>22 47 6f 6f 64 20                            text      "\"Good "
+0261: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0268: 2e 22                                        text      ".\""
+026A:>8d 9f 0f 13 42 00 22 40 40 02 86             jf        R0F13(34) -> 0286  ; R0F13 = inparty [from 0x0101 symtab]
+0275: f4 44 4c 65 61 76 65 00 40                   builtin   add_answer("Leave")
+027E: f4 44 57 61 69 74 00 40                      builtin   add_answer("Wait")
+0286:>8d 30 62 15 41 70 54 40 02 9a                jf        (A30.f15:activity == 112) -> 029A
+0290: f4 44 46 6f 6c 6c 6f 77 00 40                builtin   add_answer("Follow")
+029A:>8e                                           input       ; read a line into the input buffer
+029B: 90 6e 61 6d 65 00 02 c4                      match     name else -> 02C4
+02A3: 22 49 20 61 6d 20 63 61 6c 6c 65 64 …+11     text      "\"I am called Meleager.\""
+02BA: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02C1: 88 02 9a                                     goto      -> 029A
+02C4:>90 6a 6f 62 00 03 0c                         match     job else -> 030C
+02CB: 22 49 20 68 61 76 65 6e 27 74 20 68 …+50     text      "\"I haven't had a job in many years, but that's a long @story.\""
+0309: 88 02 9a                                     goto      -> 029A
+030C:>90 73 74 6f 72 00 04 28                      match     stor else -> 0428
+0314: 22 49 20 75 73 65 64 20 74 6f 20 62 …+170    text      "\"I used to be a personal bodyguard - not that there is much need for that, back then, especially.\"*\"However, I grew old, and my client eventually did not need my @services any more.\""
+03CA: 8d bc 42 00 61 40 9f 0f 13 42 00 61 …+5      jf        (leader_can_see(97) && R0F13(97)) -> 0425  ; R0F13 = inparty [from 0x0101 symtab]
+03DB: 2a                                           text      "*"
+03DC: a4 42 00 61 41 01 40                         builtin   show_portrait(97, 1)
+03E3: 22 4f 6c 64 20 69 73 20 61 6e 20 75 …+16     text      "\"Old is an understatement.\"*"
+03FF: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0404: 22 59 6f 75 20 73 68 6f 75 6c 64 20 …+21     text      "\"You should respect your elders.\""
+0425:>88 02 9a                                     goto      -> 029A
+0428:>90 61 65 74 68 00 05 0b                      match     aeth else -> 050B
+0430: 8d bc 42 00 61 40 9f 0f 13 42 00 61 …+5      jf        (leader_can_see(97) && R0F13(97)) -> 04D5  ; R0F13 = inparty [from 0x0101 symtab]
+0441: 22 48 65 27 73 20 61 20 72 6f 67 75 …+20     text      "\"He's a rogue and a scoundrel.\"*"
+0461: a4 42 00 61 41 01 40                         builtin   show_portrait(97, 1)
+0468: 22 54 68 61 74 27 73 20 74 68 65 20 …+38     text      "\"That's the nicest thing you've ever said to me.\"*"
+049A: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+049F: 22 53 6f 20 73 61 64 20 77 68 65 6e …+39     text      "\"So sad when the young think they know everything.\""
+04D2: 88 05 08                                     goto      -> 0508
+04D5:>22 59 6f 75 27 64 20 64 6f 20 62 65 …+39     text      "\"You'd do best to not have anything to do with him\""
+0508:>88 02 9a                                     goto      -> 029A
+050B:>90 63 6c 69 65 00 05 65                      match     clie else -> 0565
+0513: 22 49 20 68 61 76 65 20 6e 6f 74 68 …+67     text      "\"I have nothing further to say on that subject, respecting my oath of service.\""
+0562: 88 02 9a                                     goto      -> 029A
+0565:>90 73 65 72 76 00 06 75                      match     serv else -> 0675
+056D: 22 54 68 6f 75 67 68 20 49 20 61 6d …+181    text      "\"Though I am old, I am still able to perform the basic function of being a bodyguard.\"*\"I also have the advantage of not needing any weapons to perform this skill, for my hands are my weapons.\""
+062E: 8d 9f 0f 13 42 00 22 40 5e 40 06 72          jf        !R0F13(34) -> 0672  ; R0F13 = inparty [from 0x0101 symtab]
+063A: 2a 22 50 65 72 68 61 70 73 20 79 6f …+44     text      "*\"Perhaps you'd be interested in having me @join you...\""
+0672:>88 02 9a                                     goto      -> 029A
+0675:>90 6a 6f 69 6e 00 0a 29                      match     join else -> 0A29
+067D: 8d 9f 0f 02 30 41 07 40 5e 40 06 ba          jf        !R0F02(A30, 7) -> 06BA  ; R0F02 = tstbit [from 0x0101 symtab]
+0689: 22 49 20 64 6f 6e 27 74 20 64 6f 20 …+34     text      "\"I don't do business with complete strangers.\""
+06B7: 88 0a 26                                     goto      -> 0A26
+06BA:>8d 9f 0f 13 42 00 22 40 40 06 e7             jf        R0F13(34) -> 06E7  ; R0F13 = inparty [from 0x0101 symtab]
+06C5: 22 49 20 61 6d 20 61 6c 72 65 61 64 …+19     text      "\"I am already in your service.\""
+06E4: 88 0a 26                                     goto      -> 0A26
+06E7:>8d 9f 0f 02 42 00 22 41 00 40 40 07 …+1      jf        R0F02(34, 0) -> 073D  ; R0F02 = tstbit [from 0x0101 symtab]
+06F4: 22 59 6f 75 20 68 61 76 65 20 70 61 …+53     text      "\"You have paid me for service, and I will rejoin you with honor.\""
+0735: b9 42 00 22 40                               builtin   join_party(34)
+073A: 88 0a 26                                     goto      -> 0A26
+073D:>22 46 69 72 73 74 2c 20 74 68 65 72 …+160    text      "\"First, there is a matter of my fee.  Normally, I'd ask more, but I can sense your need is great.\"*\"Thus, I will only charge 50 oboloi for my services.  Do we have a deal?\""
+07E9: 82 00 43 50 00 00 00 40                      set       L00 = False
+07F1: 8f 79 6e 00                                  prompt    "yn"
+07F5: 90 79 00 08 61                               match     y else -> 0861
+07FA: 8d 9f 0d 04 40 41 32 4f 40 08 53             jf        (R0D04() < 50) -> 0853
+0805: 22 50 65 72 68 61 70 73 20 79 6f 75 …+63     text      "\"Perhaps you should first come up with the money - I don't work on credit.\""
+0850: 88 08 61                                     goto      -> 0861
+0853:>9f 0d 05 41 32 40                            call      R0D05(50)
+0859: 82 00 43 50 00 00 01 40                      set       L00 = True
+0861:>90 6e 00 09 d7                               match     n else -> 09D7
+0866: 8d f5 48 05 42 00 cc 40 40 09 95             jf        find_skill(G05:leader, 204) -> 0995
+0871: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0878: 22 4e 6f 20 64 69 73 72 65 70 65 73 …+42     text      "\"No disrepest, but you don't seem up for the task...\"*"
+08AE: a4 42 00 22 41 00 40                         builtin   show_portrait(34, 0)
+08B5: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+26     text      "\"Very well, how does 35 oboloi sound?\""
+08DB: 8f 79 6e 00                                  prompt    "yn"
+08DF: 90 79 00 09 4b                               match     y else -> 094B
+08E4: 8d 9f 0d 04 40 41 23 4f 40 09 3d             jf        (R0D04() < 35) -> 093D
+08EF: 22 50 65 72 68 61 70 73 20 79 6f 75 …+63     text      "\"Perhaps you should first come up with the money - I don't work on credit.\""
+093A: 88 09 4b                                     goto      -> 094B
+093D:>9f 0d 05 41 23 40                            call      R0D05(35)
+0943: 82 00 43 50 00 00 01 40                      set       L00 = True
+094B:>90 6e 00 09 92                               match     n else -> 0992
+0950: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+54     text      "\"Very well, I understand.  If you reconsider, please seek me out.\""
+0992:>88 09 d7                                     goto      -> 09D7
+0995:>22 56 65 72 79 20 77 65 6c 6c 2c 20 …+54     text      "\"Very well, I understand.  If you reconsider, please seek me out.\""
+09D7:>8d 00 40 0a 26                               jf        L00 -> 0A26
+09DC: 22 49 74 20 73 68 61 6c 6c 20 62 65 …+48     text      "\"It shall be my honor to accompany you, and serve you well.\""
+0A18: b9 42 00 22 40                               builtin   join_party(34)
+0A1D: 9f 0f 00 42 00 22 41 00 40                   call      R0F00(34, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0A26:>88 02 9a                                     goto      -> 029A
+0A29:>90 62 79 65 00 0a 49                         match     bye else -> 0A49
+0A30: 22 47 6f 6f 64 20 64 61 79 20 74 6f …+6      text      "\"Good day to you.\""
+0A42: 8b 41 00 40                                  return    0
+; ---- dead code 0A46-0A49: no dictionary entry, jump, pointer or call reaches it ----
+0A46:x88 02 9a                                     goto      -> 029A
+0A49:>90 6c 65 61 76 00 0a c7                      match     leav else -> 0AC7
+0A51: 8d 9f 0f 13 30 40 40 0a 78                   jf        R0F13(A30) -> 0A78  ; R0F13 = inparty [from 0x0101 symtab]
+0A5A: 22 42 79 20 79 6f 75 72 20 63 6f 6d …+6      text      "\"By your command.\""
+0A6C: ba 42 00 22 40                               builtin   leave_party(34)
+0A71: 8b 41 00 40                                  return    0
+; ---- dead code 0A75-0A78: no dictionary entry, jump, pointer or call reaches it ----
+0A75:x88 0a c4                                     goto      -> 0AC4
+0A78:>22 49 20 61 6d 20 75 6e 61 62 6c 65 …+64     text      "\"I am unable to do that, seeing as that I am not currently in your @service\""
+0AC4:>88 02 9a                                     goto      -> 029A
+0AC7:>90 77 61 69 74 00 0b 5d                      match     wait else -> 0B5D
+0ACF: 8d 9f 0f 13 30 40 40 0b 0d                   jf        R0F13(A30) -> 0B0D  ; R0F13 = inparty [from 0x0101 symtab]
+0AD8: 22 49 20 73 68 61 6c 6c 20 77 61 69 …+26     text      "\"I shall wait here until your return.\""
+0AFE: ba 42 00 22 40                               builtin   leave_party(34)
+0B03: 86 15 30 40 41 70 40                         setfield  A30.f15:activity = 112
+0B0A: 88 0b 5a                                     goto      -> 0B5A
+0B0D:>22 49 20 61 6d 20 75 6e 61 62 6c 65 …+65     text      "\"I am unable to do that, seeing as that I am not currently in your @service.\""
+0B5A:>88 02 9a                                     goto      -> 029A
+0B5D:>90 66 6f 6c 6c 00 0b d9                      match     foll else -> 0BD9
+0B65: 8d 30 62 15 41 70 54 40 0b 89                jf        (A30.f15:activity == 112) -> 0B89
+0B6F: 22 42 79 20 79 6f 75 72 20 63 6f 6d …+6      text      "\"By your command.\""
+0B81: b9 42 00 22 40                               builtin   join_party(34)
+0B86: 88 0b d6                                     goto      -> 0BD6
+0B89:>22 49 20 61 6d 20 75 6e 61 62 6c 65 …+65     text      "\"I am unable to do that, seeing as that I am not currently in your @service.\""
+0BD6:>88 02 9a                                     goto      -> 029A
+0BD9:>90 74 72 61 69 00 0c 94                      match     trai else -> 0C94
+0BE1: 8d 9f 0f 02 30 41 00 40 40 0c 64             jf        R0F02(A30, 0) -> 0C64  ; R0F02 = tstbit [from 0x0101 symtab]
+0BEC: 22 49 20 63 61 6e 20 69 6e 73 74 72 …+55     text      "\"I can instruct you in the ways of barehanded combat, if you wish.\""
+0C2F: 8f 79 6e 00                                  prompt    "yn"
+0C33: 90 79 00 0c 50                               match     y else -> 0C50
+0C38: 9f 0e b1 48 05 44 4d 65 6c 65 61 67 …+12     call      R0EB1(G05:leader, "Meleager", 199, True)
+0C50:>90 6e 00 0c 61                               match     n else -> 0C61
+0C55: 22 56 65 72 79 20 77 65 6c 6c 2e 22          text      "\"Very well.\""
+0C61:>88 0c 91                                     goto      -> 0C91
+0C64:>22 50 65 72 68 61 70 73 20 79 6f 75 …+33     text      "\"Perhaps you'd be interested in my @service?\""
+0C91:>88 02 9a                                     goto      -> 029A
+0C94:>8d 9f 0f 13 30 40 9f 0f 02 30 41 01 …+5      jf        (R0F13(A30) && R0F02(A30, 1)) -> 0D6B  ; R0F13 = inparty, R0F02 = tstbit [from 0x0101 symtab]
+0CA5: 90 61 77 61 72 00 0d 6b                      match     awar else -> 0D6B
+0CAD: 8d f5 48 05 42 00 cd 40 40 0c dc             jf        find_skill(G05:leader, 205) -> 0CDC
+0CB8: 22 59 6f 75 20 6b 6e 6f 77 20 61 6c …+21     text      "\"You know all I can teach you...\""
+0CD9: 88 0d 68                                     goto      -> 0D68
+0CDC:>22 44 65 63 69 64 65 64 20 74 6f 20 …+28     text      "\"Decided to take me up on my offer, eh?\""
+0D04: 8f 79 6e 00                                  prompt    "yn"
+0D08: 90 79 00 0d 25                               match     y else -> 0D25
+0D0D: 9f 0e b1 48 05 44 4d 65 6c 65 61 67 …+12     call      R0EB1(G05:leader, "Meleager", 205, False)
+0D25:>90 6e 00 0d 68                               match     n else -> 0D68
+0D2A: 22 57 65 6c 6c 2c 20 69 66 20 79 6f …+50     text      "\"Well, if you change your mind, just ask be about @awareness.\""
+0D68:>88 02 9a                                     goto      -> 029A
+0D6B:>90 77 68 65 72 00 0d da                      match     wher else -> 0DDA
+0D73: 8d 9f 08 01 30 40 5e 40 0d d7                jf        !R0801(A30) -> 0DD7
+0D7D: 22 49 27 6d 20 75 73 65 20 74 6f 20 …+78     text      "\"I'm use to travelling out in the world at large, perhaps asking a local might be better.\""
+0DD7:>88 02 9a                                     goto      -> 029A
+0DDA:>90 2a 00 0e 05                               match     * else -> 0E05
+0DDF: 8d 9f 08 01 30 40 5e 40 0e 02                jf        !R0801(A30) -> 0E02
+0DE9: 22 50 65 72 68 61 70 73 20 49 20 6d …+13     text      "\"Perhaps I misheard you?\""
+0E02:>88 02 9a                                     goto      -> 029A
+0E05:>88 02 9a                                     goto      -> 029A
+; ---- dead code 0E08-0E0C: no dictionary entry, jump, pointer or call reaches it ----
+0E08:x8b 41 00 40                                  return    0
+0E0C: a0 07 98 22 00 02 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @00B4, 21/signal: @0002, 32/spawned: @0075}

@@ -1,0 +1,20 @@
+; segment 0E80  page 0E  routine
+; kind routine  length 80 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 04                                     frame     args=1 locals=4
+0003: 82 00 41 01 40                               set       L00 = 1
+0008: 82 01 cc 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_equipped(&L02, 0, A30)
+0015:>8c cc 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_equipped(&L02, 1) -> 0049
+0022: 8d 01 60 2a 40 00 3a                         jf        has(L01, sel42) -> 003A
+0029: 8d 01 61 2a 00 00 51 40 00 3a                jf        (prop(L01, sel42, 0) > L00) -> 003A
+0033: 82 00 01 61 2a 00 40                         set       L00 = prop(L01, sel42, 0)
+003A:>82 01 cc 43 10 00 00 02 41 02 40 40          set       L01 = iterate_equipped(&L02, 2)
+0046: 88 00 15                                     goto      -> 0015
+0049:>8b 00 40                                     return    L00
+; ---- dead code 004C-0050: no dictionary entry, jump, pointer or call reaches it ----
+004C:x8b 41 00 40                                  return    0

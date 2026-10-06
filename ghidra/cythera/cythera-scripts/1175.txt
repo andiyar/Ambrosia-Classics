@@ -1,0 +1,139 @@
+; segment 1175  page 11  class 0x00 (prop) type 373 tile-name "strange device" (tool join F000/F004)
+; kind class  length 1097 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @041D  methods: sel9/use@0225, sel8/search@03CA
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 1d                                        .hdr      dictionary offset = 041D
+0002: 90 02 91 75 00 0c 91 75 00 51                .array    array[2] = [@000C, @0051]
+000C: 46 61 73 63 69 6e 61 74 69 6e 67 2e …+57     .string   "Fascinating.  Clearly of Seldane construction, but for what purpose?"
+0051: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0057: 90 01 00 00 00 04                            .array    array[1] = [4]
+005D: 90 01 00 00 00 08                            .array    array[1] = [8]
+; ---- local subroutine @0063 ----
+0063: 81 03 04                                     frame     args=3 locals=4
+0066: 82 00 30 62 12 43 00 00 01 00 46 40          set       L00 = A30.f12:frame_dict[256]
+0072: 82 01 a0 43 10 00 00 02 41 00 41 00 …+4      set       L01 = iterate_range(&L02, 0, 0, 8)
+0082:>8c a0 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_range(&L02, 1) -> 00AD
+008F: 8d 31 01 46 00 01 46 53 40 00 9e             jf        (A31[L01] != L00[L01]) -> 009E
+009A: 8b 41 00 40                                  return    0
+009E:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+00AA: 88 00 82                                     goto      -> 0082
+00AD:>d3 41 2c 30 62 01 30 62 02 40                builtin   positional_sound(44, A30.f01:x, A30.f02:y)
+00B7: c5 32 40                                     builtin   send_signal(A32)
+00BA: 8b 41 00 40                                  return    0
+; ---- local subroutine @00BE ----
+00BE: 81 02 05                                     frame     args=2 locals=5
+00C1: 82 00 30 62 12 43 00 00 01 00 46 40          set       L00 = A30.f12:frame_dict[256]
+00CD: 82 01 30 62 12 43 00 00 01 01 46 40          set       L01 = A30.f12:frame_dict[257]
+00D9: 82 02 45 00 22 90 08 00 00 00 05 00 …+28     set       L02 = blk@00DE
+      ; 0x45 inline block 00DE-0100 (34 bytes):
+      00DE: 90 08                            .array[8]
+        [0] 5
+        [1] 3
+        [2] 4
+        [3] 5
+        [4] 6
+        [5] Nil
+        [6] Nil
+        [7] Nil
+0101: 82 03 45 00 22 90 08 00 00 00 03 00 …+28     set       L03 = blk@0106
+      ; 0x45 inline block 0106-0128 (34 bytes):
+      0106: 90 08                            .array[8]
+        [0] 3
+        [1] 4
+        [2] 7
+        [3] 6
+        [4] 7
+        [5] Nil
+        [6] Nil
+        [7] Nil
+0129:>8d 31 43 50 00 ff ff 53 40 01 6a             jf        (A31 != Nil) -> 016A
+0134: 84 00 40 31 40 41 01 00 31 46 4b 40          atput     L00[A31] = (1 - L00[A31])
+0140: 82 04 01 31 46 40                            set       L04 = L01[A31]
+0146: 86 37 04 40 00 31 46 41 35 4a 40             setfield  L04.f37 = (L00[A31] + 53)
+0151: 8d 00 31 46 40 01 61                         jf        L00[A31] -> 0161
+0158: 82 31 02 31 46 40                            set       A31 = L02[A31]
+015E: 88 01 67                                     goto      -> 0167
+0161:>82 31 03 31 46 40                            set       A31 = L03[A31]
+0167:>88 01 29                                     goto      -> 0129
+016A:>9e 00 63 30 45 00 22 90 08 00 00 00 …+35     callsub   sub_0063(A30, blk@0171, 132)
+      ; 0x45 inline block 0171-0193 (34 bytes):
+      0171: 90 08                            .array[8]
+        [0] 1
+        [1] 0
+        [2] 1
+        [3] 0
+        [4] 0
+        [5] 1
+        [6] 0
+        [7] 1
+0199: 9e 00 63 30 45 00 22 90 08 00 00 00 …+35     callsub   sub_0063(A30, blk@01A0, 133)
+      ; 0x45 inline block 01A0-01C2 (34 bytes):
+      01A0: 90 08                            .array[8]
+        [0] 0
+        [1] 0
+        [2] 0
+        [3] 0
+        [4] 0
+        [5] 0
+        [6] 0
+        [7] 0
+01C8: 9e 00 63 30 45 00 22 90 08 00 00 00 …+35     callsub   sub_0063(A30, blk@01CF, 134)
+      ; 0x45 inline block 01CF-01F1 (34 bytes):
+      01CF: 90 08                            .array[8]
+        [0] 1
+        [1] 1
+        [2] 1
+        [3] 1
+        [4] 1
+        [5] 1
+        [6] 1
+        [7] 1
+01F7: 8b 41 00 40                                  return    0
+01FB: 81 02 00                                     frame     args=2 locals=0
+01FE: 9e 00 be 30 41 00 40                         callsub   sub_00BE(A30, 0)
+0205: 8b 41 00 40                                  return    0
+0209: 81 02 00                                     frame     args=2 locals=0
+020C: 9e 00 be 30 41 01 40                         callsub   sub_00BE(A30, 1)
+0213: 8b 41 00 40                                  return    0
+0217: 81 02 00                                     frame     args=2 locals=0
+021A: 9e 00 be 30 41 02 40                         callsub   sub_00BE(A30, 2)
+0221: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0225 ====
+0225: 81 01 04                                     frame     args=1 locals=4
+0228: 8d db 30 40 40 02 33                         jf        scripted_window_shown(A30) -> 0233
+022F: 8b 41 00 40                                  return    0
+0233:>82 00 9b 04 30 41 34 41 1d 41 04 41 …+5      set       L00 = sysnew_window(A30, 52, 29, 4, 99, 124)
+0244: 8d 30 62 12 43 00 00 01 00 46 43 50 …+7      jf        (A30.f12:frame_dict[256] == Nil) -> 02AD
+0257: 84 30 62 12 40 43 00 00 01 00 40 9b …+19     atput     A30.f12:frame_dict[256] = sysnew_01(0, 1, 0, 1, 1, 0, 1, 0)
+0276: 84 30 62 12 40 43 00 00 01 01 40 9b …+43     atput     A30.f12:frame_dict[257] = sysnew_01(Nil, Nil, Nil, Nil, Nil, Nil, Nil, Nil)
+02AD:>82 01 30 62 12 43 00 00 01 01 46 40          set       L01 = A30.f12:frame_dict[257]
+02B9: 82 02 30 62 12 43 00 00 01 00 46 40          set       L02 = A30.f12:frame_dict[256]
+02C5: 84 01 40 41 00 40 9b 09 00 41 35 02 …+10     atput     L01[0] = sysnew_09(L00, (53 + L02[0]), 0, 25)
+02DB: 84 01 40 41 01 40 9b 09 00 41 35 02 …+10     atput     L01[1] = sysnew_09(L00, (53 + L02[1]), 25, 25)
+02F1: 84 01 40 41 02 40 9b 09 00 41 35 02 …+10     atput     L01[2] = sysnew_09(L00, (53 + L02[2]), 50, 25)
+0307: 84 01 40 41 03 40 9b 09 00 41 35 02 …+10     atput     L01[3] = sysnew_09(L00, (53 + L02[3]), 12, 50)
+031D: 84 01 40 41 04 40 9b 09 00 41 35 02 …+10     atput     L01[4] = sysnew_09(L00, (53 + L02[4]), 37, 50)
+0333: 84 01 40 41 05 40 9b 09 00 41 35 02 …+10     atput     L01[5] = sysnew_09(L00, (53 + L02[5]), 0, 75)
+0349: 84 01 40 41 06 40 9b 09 00 41 35 02 …+10     atput     L01[6] = sysnew_09(L00, (53 + L02[6]), 25, 75)
+035F: 84 01 40 41 07 40 9b 09 00 41 35 02 …+10     atput     L01[7] = sysnew_09(L00, (53 + L02[7]), 50, 75)
+0375: 82 03 9b 0a 00 41 37 41 38 41 00 41 …+5      set       L03 = sysnew_0A(L00, 55, 56, 0, 0, 10)
+0386: 86 39 03 40 43 91 75 01 fb 40                setfield  L03.f39 = @01FB
+0390: 82 03 9b 0a 00 41 37 41 38 41 00 41 …+5      set       L03 = sysnew_0A(L00, 55, 56, 0, 25, 10)
+03A1: 86 39 03 40 43 91 75 02 09 40                setfield  L03.f39 = @0209
+03AB: 82 03 9b 0a 00 41 37 41 38 41 00 41 …+5      set       L03 = sysnew_0A(L00, 55, 56, 0, 50, 10)
+03BC: 86 39 03 40 43 91 75 02 17 40                setfield  L03.f39 = @0217
+03C6: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @03CA ====
+03CA: 81 01 00                                     frame     args=1 locals=0
+03CD: 59 6f 75 20 73 65 65 20 61 20 72 6f …+64     text      "You see a round disk, with what appear to be three buttons and eight holes.\n"
+0419: 8b 41 00 40                                  return    0
+041D: a0 07 50 00 ff ff 00 27 91 75 00 57 …+32     .dict     dict[7] {8/search: @03CA, 9/use: @0225, 36/p_weight: @0057, 39/p_typeflags27: @005D, 51: @0002}

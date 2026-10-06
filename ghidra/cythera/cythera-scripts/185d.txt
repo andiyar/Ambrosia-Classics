@@ -1,0 +1,79 @@
+; segment 185D  page 18  class 0x40 (char) id 93 name "Eumelus" (string table 0201)
+; kind class  length 1180 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0488  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 88                                        .hdr      dictionary offset = 0488
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+45     text      "You see an old, smelly, drunkard\n*\"Got any spare change?\""
+003E: 8f 79 6e 00                                  prompt    "yn"
+0042: 90 79 00 04 5d                               match     y else -> 045D
+0047: 82 00 9f 0d 04 40 40                         set       L00 = R0D04()
+004E: 8d 00 41 00 54 40 00 97                      jf        (L00 == 0) -> 0097
+0056: 22 59 65 72 20 61 73 20 62 75 73 74 …+43     text      "\"Yer as busted as I am - not nice to tease an old man.\""
+008D: 9f 0f 11 41 01 40                            call      R0F11(1)  ; R0F11 = deckarma [from 0x0101 symtab]
+0093: 8b 41 00 40                                  return    0
+0097:>82 01 b4 44 47 69 76 65 20 68 6f 77 …+19     set       L01 = how_many("Give how many oboloi?", 0, L00)
+00B6: 8d 01 41 00 54 40 00 d0                      jf        (L01 == 0) -> 00D0
+00BE: 22 42 65 20 74 68 61 74 20 77 61 79 …+2      text      "\"Be that way.\""
+00CC: 8b 41 00 40                                  return    0
+00D0:>9f 0d 05 01 40                               call      R0D05(L01)
+00D5: 8d 01 41 0a 51 40 00 e5                      jf        (L01 > 10) -> 00E5
+00DD: 9f 0f 12 01 41 0a 4d 40                      call      R0F12((L01 / 10))  ; R0F12 = inckarma [from 0x0101 symtab]
+00E5:>22 54 68 61 6e 6b 20 79 6f 75 20             text      "\"Thank you "
+00F0: 8d 49 05 00 00 10 40 01 08                   jf        seg0500[0010] -> 0108
+00F9: 6c 6f 76 65 6c 79 20 6d 61 27 61 6d          text      "lovely ma'am"
+0105: 88 01 10                                     goto      -> 0110
+0108:>6b 69 6e 64 20 73 69 72 20 20 4d 61 …+31     text      "kind sir  May the @plague never catch you.\""  ; shares its tail with text @0110
+0110:>20 20 4d 61 79 20 74 68 65 20 40 70 …+23     text      "  May the @plague never catch you.\""
+0133: 82 02 dc 41 02 40 41 0a 4f 40                set       L02 = (get_variable(2) < 10)
+013D:>8e                                           input       ; read a line into the input buffer
+013E: 90 6e 61 6d 65 00 01 84                      match     name else -> 0184
+0146: 22 49 20 61 6d 20 45 75 6d 65 6c 75 …+40     text      "\"I am Eumelus, though I usually answer to 'Hey You'\""
+017A: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0181: 88 01 3d                                     goto      -> 013D
+0184:>90 6a 6f 62 00 01 df                         match     job else -> 01DF
+018B: 22 49 20 6f 6e 63 65 20 68 61 64 20 …+69     text      "\"I once had a job, but my weakness for drink destroyed me, or perhaps @saved me.\""
+01DC: 88 01 3d                                     goto      -> 013D
+01DF:>90 73 61 76 65 00 02 34                      match     save else -> 0234
+01E7: 22 49 27 76 65 20 79 65 74 20 74 6f …+62     text      "\"I've yet to catch the @plague, and the only sickness I get is from @wine\""
+0231: 88 01 3d                                     goto      -> 013D
+0234:>90 77 61 74 65 00 02 bf                      match     wate else -> 02BF
+023C: 8d 02 40 02 88                               jf        L02 -> 0288
+0241: 22 42 61 68 21 20 20 4e 65 76 65 72 …+56     text      "\"Bah!  Never touched the stuff.  Can't trust it like you can @wine.\""
+0285: 88 02 bc                                     goto      -> 02BC
+0288:>22 49 74 20 77 61 73 20 74 68 65 20 …+40     text      "\"It was the @water making people sick, wasn't it...\""
+02BC:>88 01 3d                                     goto      -> 013D
+02BF:>90 77 69 6e 65 00 03 2c                      match     wine else -> 032C
+02C7: 22 54 6f 6f 20 6d 75 63 68 20 77 69 …+86     text      "\"Too much wine can make you sick, but you never catch the plague from it - at least I never have.\""
+0329: 88 01 3d                                     goto      -> 013D
+032C:>90 70 6c 61 67 00 03 cf                      match     plag else -> 03CF
+0334: 8d 02 40 03 a5                               jf        L02 -> 03A5
+0339: 22 49 66 20 79 6f 75 20 61 73 6b 20 …+93     text      "\"If you ask me, and you did, it's the @water making people sick.  Eumelus drinks only @wine, not @water.\""
+03A2: 88 03 cc                                     goto      -> 03CC
+03A5:>22 49 20 77 61 73 20 72 69 67 68 74 …+27     text      "\"I was right about the water, wasn't I\""
+03CC:>88 01 3d                                     goto      -> 013D
+03CF:>90 62 79 65 00 04 14                         match     bye else -> 0414
+03D6: 22 59 6f 75 20 77 61 6e 74 20 74 6f …+43     text      "\"You want to buy me a round?  Hah, I'm just kidding...\""
+040D: 8b 41 00 40                                  return    0
+; ---- dead code 0411-0414: no dictionary entry, jump, pointer or call reaches it ----
+0411:x88 01 3d                                     goto      -> 013D
+0414:>90 2a 00 04 5a                               match     * else -> 045A
+0419: 8d 9f 08 0b 30 40 5e 40 04 57                jf        !R080B(A30) -> 0457
+0423: 8d 9f 08 01 30 40 5e 40 04 57                jf        !R0801(A30) -> 0457
+042D: 22 45 69 74 68 65 72 20 49 27 6d 20 …+30     text      "\"Either I'm too drunk or you're too sober\""
+0457:>88 01 3d                                     goto      -> 013D
+045A:>88 01 3d                                     goto      -> 013D
+045D:>90 6e 00 04 84                               match     n else -> 0484
+0462: 22 48 6f 70 65 20 79 6f 75 20 63 61 …+18     text      "\"Hope you catch the plague...\""
+0480: 8b 41 00 40                                  return    0
+0484:>8b 41 00 40                                  return    0
+0488: a0 03 98 5d 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

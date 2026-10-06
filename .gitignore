@@ -1,5 +1,6 @@
 # game data: Deimos (D24) and Ferazel (D26) are committed under Resources/; the other games' data stays local.
-# Archive mirrors and decompiles are never committed.
+# Archive mirrors stay local. Decompiles: Ferazel's are COMMITTED under /ghidra/ferazel/ (Ben 2026-10-06: losing them is a real risk),
+# Cythera's under /ghidra/cythera/ (Ben 2026-10-07, same reason); the other games' dumps are still regenerated locally.
 /Resources/*
 !/Resources/Deimos/
 !/Resources/Ferazel/
@@ -8,6 +9,8 @@
 /ghidra/*
 !/ghidra/*.py
 !/ghidra/*.java
+!/ghidra/ferazel/
+!/ghidra/cythera/
 /out/
 .build/
 .swiftpm/

@@ -1,0 +1,18 @@
+; segment 1BA9  page 1B  class 0x58 (room) id 169
+; kind class  length 95 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @004B  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 4b                                        .hdr      dictionary offset = 004B
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 69 73 20 72 6f 6f 6d 20 61 70 …+54     text      "This room appears to be used to help the guards stay in practice.\n"
+0047: 8b 41 00 40                                  return    0
+004B: a0 03 50 00 ff ff 6f 69 9b a9 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

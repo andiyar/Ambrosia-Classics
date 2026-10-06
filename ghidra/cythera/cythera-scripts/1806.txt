@@ -1,0 +1,180 @@
+; segment 1806  page 18  class 0x40 (char) id 6 name "Hector" (string table 0201)
+; kind class  length 4341 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @10E1  methods: sel21/signal@0002, sel12/talk@00CB
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 10 e1                                        .hdr      dictionary offset = 10E1
+
+; ==== method sel21/signal @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 31 64 00 40 00 c1                         jf        is_prop(A31) -> 00C1
+000C: e8 40                                        builtin   begin_talking()
+000E: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0015: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+001A: 8d 31 60 2a 40 00 80                         jf        has(A31, sel42) -> 0080
+0021: 8d 31 61 2a 02 41 01 56 40 00 35             jf        (prop(A31, sel42, 2) & 1) -> 0035
+002C: 9f 0e b2 30 31 40                            call      R0EB2(A30, A31)
+0032: 88 00 7d                                     goto      -> 007D
+0035:>22 49 74 27 6c 6c 20 77 6f 72 6b 20 …+60     text      "\"It'll work as a weapon, but I've only been trained in edged weapons...\""
+007D:>88 00 bc                                     goto      -> 00BC
+0080:>8d 31 60 2c 40 00 90                         jf        has(A31, sel44) -> 0090
+0087: 9f 0e b3 30 31 40                            call      R0EB3(A30, A31)
+008D: 88 00 bc                                     goto      -> 00BC
+0090:>8d 31 60 2f 40 00 a0                         jf        has(A31, sel47) -> 00A0
+0097: 9f 0e b4 30 31 40                            call      R0EB4(A30, A31)
+009D: 88 00 bc                                     goto      -> 00BC
+00A0:>8d 9f 0e b6 30 31 40 5e 40 00 bc             jf        !R0EB6(A30, A31) -> 00BC
+00AB: 22 4c 6f 6f 6b 73 20 6c 69 6b 65 20          text      "\"Looks like "
+00B7: 8a 31 40                                     print     A31
+00BA: 2e 22                                        text      ".\""
+00BC:>e9 40                                        builtin   end_talking()
+00BE: 88 00 c7                                     goto      -> 00C7
+00C1:>9f 0d 06 30 31 40                            call      R0D06(A30, A31)
+00C7:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @00CB ====
+00CB: 81 01 00                                     frame     args=1 locals=0
+00CE: 59 6f 75 20 73 65 65 20 61 20 79 6f …+46     text      "You see a young warrior, with a look of fire in his eyes.*"
+0108: 8d 9f 0f 02 42 00 06 41 07 40 5e 40 …+2      jf        !R0F02(6, 7) -> 0186  ; R0F02 = tstbit [from 0x0101 symtab]
+0116: 22 41 68 2c 20 79 6f 75 20 61 72 65 …+88     text      "\"Ah, you are the one that was summoned by Alaric - my name is Hector, and I am honored to meet you!\""
+017A: 9f 0f 00 42 00 06 41 07 40                   call      R0F00(6, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0183: 88 01 e0                                     goto      -> 01E0
+0186:>8d 9f 0f 13 42 00 06 40 40 01 bc             jf        R0F13(6) -> 01BC  ; R0F13 = inparty [from 0x0101 symtab]
+0191: 22 59 65 73 2c 20 6d 79 20 6c 65 61 …+28     text      "\"Yes, my leader, what can I do for you?\""
+01B9: 88 01 e0                                     goto      -> 01E0
+01BC:>22 5e                                        text      "\"^"
+01BE: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+01C5: 2c 20 68 6f 77 20 63 61 6e 20 49 20 …+15     text      ", how can I be of service?\""
+01E0:>8d 9f 0f 13 42 00 06 40 40 01 fc             jf        R0F13(6) -> 01FC  ; R0F13 = inparty [from 0x0101 symtab]
+01EB: f4 44 4c 65 61 76 65 00 40                   builtin   add_answer("Leave")
+01F4: f4 44 57 61 69 74 00 40                      builtin   add_answer("Wait")
+01FC:>8d 30 62 15 41 70 54 40 02 10                jf        (A30.f15:activity == 112) -> 0210
+0206: f4 44 46 6f 6c 6c 6f 77 00 40                builtin   add_answer("Follow")
+0210:>8d 48 12 42 00 0f 54 40 02 24                jf        (G12:room == 15) -> 0224
+021A: f4 44 44 61 6d 61 67 65 00 40                builtin   add_answer("Damage")
+0224:>8e                                           input       ; read a line into the input buffer
+0225: 8d 48 12 42 00 0f 54 40 03 50                jf        (G12:room == 15) -> 0350
+022F: 90 64 61 6d 61 00 02 91                      match     dama else -> 0291
+0237: 22 54 68 69 73 20 69 73 20 6f 75 72 …+75     text      "\"This is our training room, but with the damage done by that @earthquake, I don't know\""
+028E: 88 02 24                                     goto      -> 0224
+0291:>90 65 61 72 74 00 03 50                      match     eart else -> 0350
+0299: 22 54 68 69 73 20 61 72 65 61 20 68 …+168    text      "\"This area has always had minor tremors, but this is the first one that caused major damage.\"*\"Come to think of it, there have been more tremors here since Alaric began to weaken.\""
+034D: 88 02 24                                     goto      -> 0224
+0350:>90 6e 61 6d 65 00 04 28                      match     name else -> 0428
+0358: 22 49 20 61 6d 20 63 61 6c 6c 65 64 …+186    text      "\"I am called Hector - our legends tell of a great @warrior named Hector, and I hope to follow in his, and my @father's footsteps.\"*\"So you're the @stranger that Alaric has summoned here to aid him?\""
+041E: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0425: 88 02 24                                     goto      -> 0224
+0428:>90 6a 6f 62 00 04 6c                         match     job else -> 046C
+042F: 22 49 20 61 6d 20 61 20 77 61 72 72 …+46     text      "\"I am a warrior, or at least will be one, like my father.\""
+0469: 88 02 24                                     goto      -> 0224
+046C:>90 66 61 74 68 2c 68 61 64 72 00 04 …+1      match     fath,hadr else -> 04D2
+0479: 22 4d 79 20 66 61 74 68 65 72 20 48 …+74     text      "\"My father Hadrian is the head of Alaric's guards - it is a very honorable profession\""
+04CF: 88 02 24                                     goto      -> 0224
+04D2:>90 73 74 72 61 00 05 8c                      match     stra else -> 058C
+04DA: 22 57 65 6c 6c 2c 20 49 20 68 6f 70 …+163    text      "\"Well, I hope Alaric knows what he's doing.  No offense, but you don't look like much of a hero to me...\"*\"However I suppose looks can be deceiving, as my @mother always says\""
+0589: 88 02 24                                     goto      -> 0224
+058C:>90 6d 6f 74 68 00 06 89                      match     moth else -> 0689
+0594: 22 4d 79 20 6d 6f 74 68 65 72 27 73 …+230    text      "\"My mother's right around the corner in the kitchen, usually.\"*\"She's a kind-hearted soul, and it kills me to see her working at such a menial job.\"*\"She's here mostly to be close to my @father, I think, and she does seem to enjoy her @work.\""
+0686: 88 02 24                                     goto      -> 0224
+0689:>90 77 6f 72 6b 00 07 49                      match     work else -> 0749
+0691: 22 57 65 6c 6c 2c 20 73 68 65 20 70 …+169    text      "\"Well, she prepares all of the meals for folks in the Land King Hall, including @Alaric himself!\"*\"Say, I bet if you asked her, she'd be more than willing to cook you a hot meal...\""
+0746: 88 02 24                                     goto      -> 0224
+0749:>90 61 6c 61 72 00 08 37                      match     alar else -> 0837
+0751: 22 41 6c 61 72 69 63 20 69 73 20 6d …+215    text      "\"Alaric is more than just our ruler, he binds the land together in some strange way that I don't understand.\"*\"I may not know exactly what is going on, but I do know that as Alaric has weakened, the land has @suffered as well.\""
+0834: 88 02 24                                     goto      -> 0224
+0837:>90 73 75 66 66 00 09 00                      match     suff else -> 0900
+083F: 22 4d 75 63 68 20 68 61 73 20 68 61 …+178    text      "\"Much has happened in Cythera that would be unthinkable just a few scant years ago...\"*\"It's as if the land is stricken with a disease, and can no longer fight back against agents of @evil,\""
+08FD: 88 02 24                                     goto      -> 0224
+0900:>90 65 76 69 6c 00 09 71                      match     evil else -> 0971
+0908: 22 49 27 76 65 20 68 65 61 72 64 20 …+90     text      "\"I've heard stories of @criminals roaming rapant, and stranger still, of odd creatures roaming about.\""
+096E: 88 02 24                                     goto      -> 0224
+0971:>90 63 72 69 6d 00 0a 05                      match     crim else -> 0A05
+0979: 22 48 6f 77 20 49 27 64 20 6c 6f 76 …+125    text      "\"How I'd love to give them a taste of their own medicine!  Dark-hearted cowards!\"*\"Cythera should return to the just land it once was...\""
+0A02: 88 02 24                                     goto      -> 0224
+0A05:>90 77 61 72 72 00 0a 93                      match     warr else -> 0A93
+0A0D: 22 59 65 73 2c 20 49 20 68 6f 70 65 …+119    text      "\"Yes, I hope to honor my @father, and as well as make a name for myself.\"*\"I've been @training and studying the ways of a warrior.\""
+0A90: 88 02 24                                     goto      -> 0224
+0A93:>90 74 72 61 69 00 0b 54                      match     trai else -> 0B54
+0A9B: 22 4d 79 20 66 61 74 68 65 72 20 68 …+170    text      "\"My father helped me out with that; he's a great warrior in his own right, as well as a patient teacher.\"*\"I think I've passed the point where training alone can help me, however...\""
+0B51: 88 02 24                                     goto      -> 0224
+0B54:>90 68 6f 6e 6f 00 0b d8                      match     hono else -> 0BD8
+0B5C: 22 57 69 74 68 6f 75 74 20 68 6f 6e …+109    text      "\"Without honor, there is no meaning to life.  Most citizens of Cythera value honor highly, but myself more so than most.\""
+0BD5: 88 02 24                                     goto      -> 0224
+0BD8:>90 6a 6f 69 6e 2c 63 6f 6d 65 00 0e …+1      match     join,come else -> 0E02
+0BE5: 8d 9f 0f 13 42 00 06 40 40 0c 15             jf        R0F13(6) -> 0C15  ; R0F13 = inparty [from 0x0101 symtab]
+0BF0: 22 42 75 74 20 49 27 6d 20 61 6c 72 …+22     text      "\"But I'm already following you...\""
+0C12: 88 0d ff                                     goto      -> 0DFF
+0C15:>8d 9f 0f 02 42 00 04 41 00 40 5e 40 …+2      jf        !R0F02(4, 0) -> 0D4A  ; R0F02 = tstbit [from 0x0101 symtab]
+0C23: 22 49 20 77 6f 75 6c 64 20 62 65 20 …+74     text      "\"I would be honored, but I have my duty to my @father - you'll need to ask him first.\""
+0C79: 9f 0f 00 42 00 04 41 01 40                   call      R0F00(4, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0C82: 8d bc 42 00 04 40 40 0d 47                   jf        leader_can_see(4) -> 0D47
+0C8B: a4 42 00 04 41 01 40                         builtin   show_portrait(4, 1)
+0C92: 2a 22 44 6f 6e 27 74 20 62 65 20 73 …+80     text      "*\"Don't be silly - it would honor me if you would allow my son to serve you in your quest!\"*"
+0CEE: a4 42 00 06 41 00 40                         builtin   show_portrait(6, 0)
+0CF5: 22 54 68 61 6e 6b 20 79 6f 75 20 76 …+41     text      "\"Thank you very much, Father.  I will do you proud.\"*"
+0D2A: 9f 0f 00 42 00 06 41 00 40                   call      R0F00(6, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0D33: 9f 0f 00 42 00 04 41 00 40                   call      R0F00(4, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0D3C: b9 42 00 06 40                               builtin   join_party(6)
+0D41: a4 41 ff 41 01 40                            builtin   show_portrait(-1, 1)
+0D47:>88 0d ff                                     goto      -> 0DFF
+0D4A:>8d 9f 0f 02 42 00 06 41 00 40 5e 40 …+2      jf        !R0F02(6, 0) -> 0DC6  ; R0F02 = tstbit [from 0x0101 symtab]
+0D58: 22 4d 79 20 66 61 74 68 65 72 20 73 …+81     text      "\"My father said yes?  That is wonderful.  I am honored to join you on your most noble quest.\""
+0DB5: b9 42 00 06 40                               builtin   join_party(6)
+0DBA: 9f 0f 00 42 00 06 41 00 40                   call      R0F00(6, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0DC3: 88 0d ff                                     goto      -> 0DFF
+0DC6:>22 49 74 20 77 6f 75 6c 64 20 62 65 …+40     text      "\"It would be the highest honor to re-accompany you!\""
+0DFA: b9 42 00 06 40                               builtin   join_party(6)
+0DFF:>88 02 24                                     goto      -> 0224
+0E02:>90 6c 65 61 76 00 0f 3a                      match     leav else -> 0F3A
+0E0A: 8d 9f 0f 13 30 40 40 0e f9                   jf        R0F13(A30) -> 0EF9  ; R0F13 = inparty [from 0x0101 symtab]
+0E13: 22 48 61 76 65 20 49 20 73 65 72 76 …+15     text      "\"Have I served you poorly?\""
+0E2E: 8f 79 6e 00                                  prompt    "yn"
+0E32: 90 79 00 0e 85                               match     y else -> 0E85
+0E37: 22 57 6f 65 20 69 73 20 6d 65 21 20 …+57     text      "\"Woe is me!  If you would give me another chance, I'll prove myself.\""
+0E7C: ba 42 00 06 40                               builtin   leave_party(6)
+0E81: 8b 41 00 40                                  return    0
+0E85:>90 6e 00 0e f6                               match     n else -> 0EF6
+0E8A: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+87     text      "\"Very well, you have your own destiny to follow - please seek me out if you ever need a companion.\""
+0EED: ba 42 00 06 40                               builtin   leave_party(6)
+0EF2: 8b 41 00 40                                  return    0
+0EF6:>88 0f 37                                     goto      -> 0F37
+0EF9:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+50     text      "\"I'm not currently in the party.  Perhaps I should @join you.\""
+0F37:>88 02 24                                     goto      -> 0224
+0F3A:>90 77 61 69 74 00 0f c1                      match     wait else -> 0FC1
+0F42: 8d 9f 0f 13 30 40 40 0f 80                   jf        R0F13(A30) -> 0F80  ; R0F13 = inparty [from 0x0101 symtab]
+0F4B: 22 49 20 73 68 61 6c 6c 20 77 61 69 …+26     text      "\"I shall wait here until your return.\""
+0F71: ba 42 00 06 40                               builtin   leave_party(6)
+0F76: 86 15 30 40 41 70 40                         setfield  A30.f15:activity = 112
+0F7D: 88 0f be                                     goto      -> 0FBE
+0F80:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+50     text      "\"I'm not currently in the party.  Perhaps I should @join you.\""
+0FBE:>88 02 24                                     goto      -> 0224
+0FC1:>90 66 6f 6c 6c 00 10 2e                      match     foll else -> 102E
+0FC9: 8d 30 62 15 41 70 54 40 0f e4                jf        (A30.f15:activity == 112) -> 0FE4
+0FD3: 22 47 6c 61 64 6c 79 2e 22                   text      "\"Gladly.\""
+0FDC: b9 42 00 06 40                               builtin   join_party(6)
+0FE1: 88 10 2b                                     goto      -> 102B
+0FE4:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+59     text      "\"I'm not currently waiting to rejoin you.  Perhaps I should @join you.\""
+102B:>88 02 24                                     goto      -> 0224
+102E:>90 62 79 65 00 10 9d                         match     bye else -> 109D
+1035: 8d 9f 0f 13 42 00 06 40 40 10 7e             jf        R0F13(6) -> 107E  ; R0F13 = inparty [from 0x0101 symtab]
+1040: 22 4c 65 74 20 6d 65 20 6b 6e 6f 77 …+47     text      "\"Let me know if there is anything else I can do for you...\""
+107B: 88 10 96                                     goto      -> 1096
+107E:>22 55 6e 74 69 6c 20 77 65 20 6d 65 …+12     text      "\"Until we meet again...\""
+1096:>8b 41 00 40                                  return    0
+; ---- dead code 109A-109D: no dictionary entry, jump, pointer or call reaches it ----
+109A:x88 02 24                                     goto      -> 0224
+109D:>90 2a 00 10 da                               match     * else -> 10DA
+10A2: 8d 9f 08 09 30 40 5e 40 10 d7                jf        !R0809(A30) -> 10D7
+10AC: 8d 9f 08 01 30 40 5e 40 10 d7                jf        !R0801(A30) -> 10D7
+10B6: 22 59 6f 75 20 63 6f 6e 66 75 73 65 …+21     text      "\"You confuse me with your words.\""
+10D7:>88 02 24                                     goto      -> 0224
+10DA:>88 02 24                                     goto      -> 0224
+; ---- dead code 10DD-10E1: no dictionary entry, jump, pointer or call reaches it ----
+10DD:x8b 41 00 40                                  return    0
+10E1: a0 03 98 06 00 02 00 15 98 06 00 cb …+8      .dict     dict[3] {12/talk: @00CB, 21/signal: @0002}

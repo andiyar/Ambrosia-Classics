@@ -1,0 +1,134 @@
+; segment 1837  page 18  class 0x40 (char) id 55 name "Tlepolemus" (string table 0201)
+; kind class  length 2379 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0937  methods: sel32/spawned@0002, sel12/talk@0081
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 09 37                                        .hdr      dictionary offset = 0937
+
+; ==== method sel32/spawned @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 15 43 00 00 00 93 54 40 00 …+1      jf        (A30.f15:activity == 147) -> 0076
+0012: 8d ac 41 00 41 0a 40 41 01 54 9f 0f …+10     jf        ((random(0, 10) == 1) && !R0F02(A30, 5)) -> 0076  ; R0F02 = tstbit [from 0x0101 symtab]
+0028: 8b 9f 0c 85 30 45 00 17 90 02 98 37 …+66     return    R0C85(A30, blk@0030, blk@004A)
+      ; 0x45 inline block 0030-0047 (23 bytes):
+      0030: 90 02                            .array[2]
+        [0] @003A "Crito!"
+        [1] @0041 "Food!"
+      ; 0x45 inline block 004A-0074 (42 bytes):
+      004A: 90 03                            .array[3]
+        [0] @0058 "Excellent"
+        [1] @0062 "Thanks"
+        [2] @0069 "Looks good"
+0076:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 007D-0081: no dictionary entry, jump, pointer or call reaches it ----
+007D:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0081 ====
+0081: 81 01 00                                     frame     args=1 locals=0
+0084: 8d 30 62 15 43 00 00 00 8a 54 30 62 …+11     jf        ((A30.f15:activity == 138) || (A30.f15:activity == 135)) -> 00D2
+009B: 22 59 6f 75 20 6b 6e 6f 77 2c 20 6e …+40     text      "\"You know, not much more satifying than @fishing...\""
+00CF: 88 00 f0                                     goto      -> 00F0
+00D2:>22 59 65 61 68 2c 20 77 68 61 74 20 …+18     text      "\"Yeah, what can I do for you?\""
+00F0:>8e                                           input       ; read a line into the input buffer
+00F1: 90 6e 61 6d 65 00 01 10                      match     name else -> 0110
+00F9: 22 54 6c 65 70 6f 6c 65 6d 75 73 2e …+1      text      "\"Tlepolemus.\""
+0106: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+010D: 88 00 f0                                     goto      -> 00F0
+0110:>90 6a 6f 62 00 01 3b                         match     job else -> 013B
+0117: 22 4d 6f 73 74 6c 79 20 40 66 69 73 …+21     text      "\"Mostly @fishing, some @hunting.\""
+0138: 88 00 f0                                     goto      -> 00F0
+013B:>90 66 69 73 68 00 02 02                      match     fish else -> 0202
+0143: 22 48 6f 75 73 65 73 20 72 69 73 65 …+176    text      "\"Houses rise and fall, tyrants come and go, but the @sea is always there.\"*\"And where there is the sea, there are fish.  Where there's fish, there's me.\"*\"Perhaps you'd like to @buy some?\""
+01FF: 88 00 f0                                     goto      -> 00F0
+0202:>90 62 75 79 00 02 a6                         match     buy else -> 02A6
+0209: 22 57 61 6e 74 20 74 6f 20 62 75 79 …+12     text      "\"Want to buy some fish?\""
+0221: 8f 79 6e 00                                  prompt    "yn"
+0225: 90 79 00 02 77                               match     y else -> 0277
+022A: 86 27 30 40 9f 0e a5 44 46 72 65 73 …+65     setfield  A30.f27:ce17 = R0EA5("Fresh Fish", blk@0240, A30.f27:ce17, blk@0263)
+      ; 0x45 inline block 0240-025D (29 bytes):
+      0240: 90 01                            .array[1]
+        [0] @0246 ->
+          0246: 90 04                            .array[4]
+            [0] 9285
+            [1] @0258 "Fish"
+            [2] 4
+            [3] 1
+      ; 0x45 inline block 0263-0275 (18 bytes):
+      0263: 90 04                            .array[4]
+        [0] 5
+        [1] 7
+        [2] 3
+        [3] 5
+0277:>90 6e 00 02 a3                               match     n else -> 02A3
+027C: 22 54 6f 6f 20 62 61 64 20 2d 20 63 …+27     text      "\"Too bad - caught it myself, ya' know.\""
+02A3:>88 00 f0                                     goto      -> 00F0
+02A6:>90 68 75 6e 74 00 03 16                      match     hunt else -> 0316
+02AE: 22 55 73 65 20 74 6f 20 68 75 6e 74 …+89     text      "\"Use to hunt, but I'd rather fish - especially with all them @bandits and the like out in the woods.\""
+0313: 88 00 f0                                     goto      -> 00F0
+0316:>90 62 61 6e 64 00 03 9c                      match     band else -> 039C
+031E: 22 49 27 76 65 20 6d 6f 73 74 6c 79 …+111    text      "\"I've mostly seen them in the woods to the northwest of the road between Odemia and Cademia, but they could be anywhere...\""
+0399: 88 00 f0                                     goto      -> 00F0
+039C:>90 73 65 61 00 03 dd                         match     sea else -> 03DD
+03A3: 22 54 68 65 72 65 20 6d 69 67 68 74 …+43     text      "\"There might be @monsters out there, but there's fish.\""
+03DA: 88 00 f0                                     goto      -> 00F0
+03DD:>90 6d 6f 6e 73 00 04 69                      match     mons else -> 0469
+03E5: 22 53 65 61 20 6d 6f 6e 73 74 65 72 …+117    text      "\"Sea monsters - will sink any ship that leaves shore...\"*\"Why do you think I fish from shore?  Them sea monster stories is true.\""
+0466: 88 00 f0                                     goto      -> 00F0
+0469:>90 62 79 65 00 04 7e                         match     bye else -> 047E
+0470: 22 48 6d 70 68 2e 22                         text      "\"Hmph.\""
+0477: 8b 41 00 40                                  return    0
+; ---- dead code 047B-047E: no dictionary entry, jump, pointer or call reaches it ----
+047B:x88 00 f0                                     goto      -> 00F0
+047E:>90 61 72 69 61 2c 6b 69 64 6e 00 04 …+1      match     aria,kidn else -> 04DD
+048B: 22 54 68 65 72 65 20 6d 69 67 68 74 …+67     text      "\"There might be sea @monster out there, but fish ain't never kidnapped nobody.\""
+04DA: 88 00 f0                                     goto      -> 00F0
+04DD:>90 6e 69 63 61 00 05 37                      match     nica else -> 0537
+04E5: 22 53 75 72 65 20 49 20 73 75 70 70 …+67     text      "\"Sure I support House Nicander - used to hunt with Elder @Philinus years back.\""
+0534: 88 00 f0                                     goto      -> 00F0
+0537:>90 70 68 69 6c 00 07 29                      match     phil else -> 0729
+053F: 8d 9f 0f 02 30 41 01 40 40 06 96             jf        R0F02(A30, 1) -> 0696  ; R0F02 = tstbit [from 0x0101 symtab]
+054A: 22 49 27 76 65 20 6e 6f 20 68 61 72 …+53     text      "\"I've no hard feelings against him, he's a busy man after all...\""
+058B: 8d 9f 0f 02 42 00 32 41 01 40 40 06 …+1      jf        R0F02(50, 1) -> 0693  ; R0F02 = tstbit [from 0x0101 symtab]
+0598: 2a                                           text      "*"
+0599: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+05A0: 22 49 20 74 61 6c 6b 65 64 20 74 6f …+83     text      "\"I talked to him, and he said that he was sorry to let business get in the way of friendship.\"*"
+05FF: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0604: 22 52 65 61 6c 6c 79 3f 20 20 54 68 …+124    text      "\"Really?  That's great - perhaps I should give him a visit and talk about old times.\"*\"Thanks for your help - you've helped an old man.\""
+068C: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0693:>88 07 26                                     goto      -> 0726
+0696:>22 57 65 20 75 73 65 20 74 6f 20 62 …+125    text      "\"We use to be pretty good friends, back then, but lately we've drifted apart - he's been too busy to deal with the likes of me, I guess.\""
+071F: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0726:>88 00 f0                                     goto      -> 00F0
+0729:>90 6d 69 6c 63 2c 61 74 75 73 00 07 …+1      match     milc,atus else -> 079C
+0736: 22 4d 69 6c 63 6f 6d 20 69 73 20 61 …+87     text      "\"Milcom is a good man - followed his heart and took up blacksmithy instead of troubles of a House.\""
+0799: 88 00 f0                                     goto      -> 00F0
+079C:>90 70 61 6e 2c 70 61 6e 70 2c 70 69 …+5      match     pan,panp,pipe else -> 08C2
+07AD: 8d 9f 0f 02 30 41 00 40 40 07 fc             jf        R0F02(A30, 0) -> 07FC  ; R0F02 = tstbit [from 0x0101 symtab]
+07B8: 22 49 20 68 6f 70 65 20 79 6f 75 20 …+53     text      "\"I hope you enjoyed them - I wasn't getting any use out of them.\""
+07F9: 88 08 bf                                     goto      -> 08BF
+07FC:>22 49 20 75 73 65 20 74 6f 20 70 6c …+86     text      "\"I use to play the pan pipes, but stopped a while back - are you interested in buying an old set?\""
+085E: 8f 79 6e 00                                  prompt    "yn"
+0862: 90 79 00 08 9e                               match     y else -> 089E
+0867: 22 53 74 6f 70 20 62 79 20 73 6f 6d …+43     text      "\"Stop by some evening and I'll see if I can find them.\""
+089E:>90 6e 00 08 bf                               match     n else -> 08BF
+08A3: 22 49 66 20 79 6f 75 20 63 68 61 6e …+16     text      "\"If you change your mind...\""
+08BF:>88 00 f0                                     goto      -> 00F0
+08C2:>90 74 72 61 69 2c 74 65 61 63 00 08 …+1      match     trai,teac else -> 08F8
+08CF: 8d 9f 0e b1 48 05 44 54 6c 65 70 6f …+18     jf        R0EB1(G05:leader, "Tlepolemus", 206, False) -> 08F5
+08ED: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+08F5:>88 00 f0                                     goto      -> 00F0
+08F8:>90 2a 00 09 30                               match     * else -> 0930
+08FD: 8d 9f 08 0a 30 40 5e 40 09 2d                jf        !R080A(A30) -> 092D
+0907: 8d 9f 08 01 30 40 5e 40 09 2d                jf        !R0801(A30) -> 092D
+0911: 22 49 73 20 74 68 61 74 20 73 6f 6d …+16     text      "\"Is that some kind of fish?\""
+092D:>88 00 f0                                     goto      -> 00F0
+0930:>88 00 f0                                     goto      -> 00F0
+; ---- dead code 0933-0937: no dictionary entry, jump, pointer or call reaches it ----
+0933:x8b 41 00 40                                  return    0
+0937: a0 03 98 37 00 81 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0081, 32/spawned: @0002}

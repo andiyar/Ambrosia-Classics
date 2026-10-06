@@ -1,0 +1,14 @@
+; segment 1075  page 10  class 0x00 (prop) type 117 tile-name "hunter" (tool join F000/F004)
+; kind class  length 32 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @000C  methods: -
+; properties: sel55/p37
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 0c                                        .hdr      dictionary offset = 000C
+0002: 90 02 00 00 00 04 00 00 00 09                .array    array[2] = [4, 9]
+000C: a0 03 50 00 ff ff 00 44 90 75 00 02 …+8      .dict     dict[3] {55/p37: @0002}

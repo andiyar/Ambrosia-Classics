@@ -1,0 +1,59 @@
+; segment 0E0A  page 0E  routine
+; kind routine  length 631 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 7   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 8d 30 62 04 42 00 a7 54 40 00 bb             jf        (A30.f04:type == 167) -> 00BB
+000E: 8d f5 48 05 42 00 d0 40 40 00 66             jf        find_skill(G05:leader, 208) -> 0066
+0019: 59 6f 75 20 61 64 64 65 64 20 77 61 …+40     text      "You added water to the flour to make a sticky mess.\n"
+004D: 86 04 30 40 42 00 a8 40                      setfield  A30.f04:type = 168
+0055: 86 07 30 40 41 01 40                         setfield  A30.f07:byte7 = 1
+005C: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0063-0066: no dictionary entry, jump, pointer or call reaches it ----
+0063:x88 00 b8                                     goto      -> 00B8
+0066:>59 6f 75 20 65 6e 64 20 75 70 20 77 …+60     text      "You end up washing the flour away - perhaps if you had some training...\n"
+00AE: a7 30 40                                     builtin   delete_prop(A30)
+00B1: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 00B8-00BB: no dictionary entry, jump, pointer or call reaches it ----
+00B8:x88 02 4f                                     goto      -> 024F
+00BB:>8d 30 62 04 42 00 a0 54 40 01 24             jf        (A30.f04:type == 160) -> 0124
+00C6: 8d 30 62 06 40 00 ed                         jf        A30.f06:quality -> 00ED
+00CD: 54 68 65 20 70 69 74 63 68 65 72 20 …+17     text      "The pitcher is already full.\n"
+00EA: 88 01 21                                     goto      -> 0121
+00ED:>54 68 65 20 70 69 74 63 68 65 72 20 …+26     text      "The pitcher is now filled with water.\n"
+0113: 86 06 30 40 41 01 40                         setfield  A30.f06:quality = 1
+011A: 8b 43 50 00 00 01 40                         return    True
+0121:>88 02 4f                                     goto      -> 024F
+0124:>8d 30 62 04 42 00 78 54 40 01 62             jf        (A30.f04:type == 120) -> 0162
+012F: 54 68 65 20 62 75 63 6b 65 74 20 69 …+21     text      "The bucket is now full of water.\n"
+0150: 86 04 30 40 42 00 79 40                      setfield  A30.f04:type = 121
+0158: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 015F-0162: no dictionary entry, jump, pointer or call reaches it ----
+015F:x88 02 4f                                     goto      -> 024F
+0162:>8d 30 62 04 42 00 7a 54 30 62 04 42 …+7      jf        ((A30.f04:type == 122) || (A30.f04:type == 121)) -> 019B
+0175: 54 68 65 20 62 75 63 6b 65 74 20 69 …+16     text      "The bucket is already full.\n"
+0191: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0198-019B: no dictionary entry, jump, pointer or call reaches it ----
+0198:x88 02 4f                                     goto      -> 024F
+019B:>8d 30 62 04 42 00 e9 54 40 02 1b             jf        (A30.f04:type == 233) -> 021B
+01A6: 8d f5 48 05 42 00 d2 40 40 01 e6             jf        find_skill(G05:leader, 210) -> 01E6
+01B1: 59 6f 75 20 66 69 6c 6c 20 74 68 65 …+23     text      "You fill the Distiller with water.\n"
+01D4: 86 04 30 40 42 00 ea 40                      setfield  A30.f04:type = 234
+01DC: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 01E3-01E6: no dictionary entry, jump, pointer or call reaches it ----
+01E3:x88 02 18                                     goto      -> 0218
+01E6:>59 6f 75 20 61 72 65 6e 27 74 20 73 …+31     text      "You aren't sure how to pour water into it.\n"
+0211: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0218-021B: no dictionary entry, jump, pointer or call reaches it ----
+0218:x88 02 4f                                     goto      -> 024F
+021B:>8d 30 62 04 42 00 ea 54 40 02 4f             jf        (A30.f04:type == 234) -> 024F
+0226: 49 74 20 61 6c 72 65 61 64 79 20 61 …+22     text      "It already appears full of water.\n"
+0248: 8b 43 50 00 00 00 40                         return    False
+024F:>59 6f 75 20 63 61 6e 27 74 20 75 73 …+17     text      "You can't use water there...\n"
+026C: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0273-0277: no dictionary entry, jump, pointer or call reaches it ----
+0273:x8b 41 00 40                                  return    0

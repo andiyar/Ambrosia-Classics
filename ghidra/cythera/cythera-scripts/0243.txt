@@ -1,0 +1,11 @@
+; segment 0243  page 02  string table
+; kind strtab  length 390 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 02 82 43 00 0a 82 43 00 ee                .strtab   string table, 2 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8243×2)
+000A: 59 6f 75 20 61 77 61 6b 65 2c 20 77 …+216    .string   [0] "You awake, with a start, back in your bed.  It is morning - was all that just a dream, or something more?  You get up, and look in the mirror, your face reflecting something in you that makes you think it was more than a dream."
+00EE: 59 6f 75 20 6c 6f 6f 6b 20 6f 75 74 …+140    .string   [1] "You look out the window, the rain from last night gone.  In a nearby tree, a magpie caws twice, as if trying to tell you something, and then flys away."

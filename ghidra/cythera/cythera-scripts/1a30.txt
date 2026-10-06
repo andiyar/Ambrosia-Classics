@@ -1,0 +1,59 @@
+; segment 1A30  page 1A  class 0x50 (spell) type 48
+; kind class  length 520 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01B8  methods: sel2/name@0008, sel8/search@002D, sel9/use@006C, sel10/use_on@00A6
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 b8                                        .hdr      dictionary offset = 01B8
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 52 65 6d 6f 76 65 20 4d 61 67 …+8      return    "Remove Mage Lock"
+; ---- dead code 001F-0023: no dictionary entry, jump, pointer or call reaches it ----
+001F:x8b 41 00 40                                  return    0
+0023: 90 02 00 00 00 05 50 00 ff ff                .array    array[2] = [5, Nil]
+
+; ==== method sel8/search @002D ====
+002D: 81 01 00                                     frame     args=1 locals=0
+0030: 54 68 69 73 20 73 70 65 6c 6c 20 72 …+44     text      "This spell removes a Mage Lock from where it is placed.\n"
+0068: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @006C ====
+006C: 81 01 00                                     frame     args=1 locals=0
+006F: 8d 9f 0e a1 30 62 0b 41 05 41 14 40 …+3      jf        R0EA1(A30.f0B:loc16, 5, 20) -> 00A2
+007E: 8d 48 13 40 00 9b                            jf        G13:g13_bool -> 009B
+0084: 43 61 73 74 20 27                            text      "Cast '"
+008A: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0090: 27 20 6f 6e 20 77 68 61 74 3f 0a             text      "' on what?\n"
+009B:>8b 43 00 00 80 01 40                         return    32769
+00A2:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A6 ====
+00A6: 81 02 00                                     frame     args=2 locals=0
+00A9: e1 48 09 43 00 00 00 f0 40                   builtin   show_magic(G09:speaker, 240)
+00B2: d3 41 30 48 09 62 01 48 09 62 02 40          builtin   positional_sound(48, G09:speaker.f01:x, G09:speaker.f02:y)
+00BE: 8d 31 62 04 42 00 03 54 31 62 04 42 …+15     jf        (((A31.f04:type == 3) || (A31.f04:type == 7)) || (A31.f04:type == 11)) -> 010E
+00D9: 86 03 31 40 31 62 03 41 03 56 41 04 …+2      setfield  A31.f03:frame = ((A31.f03:frame & 3) | 4)
+00E7: 54 68 65 20 64 6f 6f 72 20 69 73 20 …+23     text      "The door is no longer mage locked.\n"
+010A: 8b 41 00 40                                  return    0
+010E:>8d 31 62 04 42 00 8d 54 31 62 04 42 …+14     jf        (((A31.f04:type == 141) || (A31.f04:type == 142)) && (A31.f03:frame == 3)) -> 0155
+0128: 86 03 31 40 41 01 40                         setfield  A31.f03:frame = 1
+012F: 54 68 65 20                                  text      "The "
+0133: 8a 31 40                                     print     A31
+0136: 20 69 73 20 6e 6f 20 6c 6f 6e 67 65 …+15     text      " is no longer mage locked.\n"
+0151: 8b 41 00 40                                  return    0
+0155:>8d 31 62 04 42 00 2b 54 40 01 96             jf        (A31.f04:type == 43) -> 0196
+0160: 86 03 31 40 41 00 40                         setfield  A31.f03:frame = 0
+0167: 54 68 65 20 74 72 61 70 20 64 6f 6f …+31     text      "The trap door is no no longer mage locked.\n"
+0192: 8b 41 00 40                                  return    0
+0196:>54 68 65 72 65 20 69 73 20 6e 6f 20 …+13     text      "There is no mage lock on "
+01AF: 8a 31 40                                     print     A31
+01B2: 2e 0a                                        text      ".\n"
+01B4: 8b 41 00 40                                  return    0
+01B8: a0 0d 50 00 ff ff 06 95 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @002D, 9/use: @006C, 10/use_on: @00A6, 51: @0023, 54: @0002}

@@ -1,5 +1,5 @@
 import struct,sys
-P='ghidra/Cythera_pef'
+P='ghidra/cythera/Cythera_pef'
 d=open(P,'rb').read()
 hdr=struct.unpack('>4s4s4sIIIIIHHI',d[:40])
 nsec=hdr[8]

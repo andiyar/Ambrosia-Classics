@@ -1,0 +1,13 @@
+; segment 0A01  page 0A  routine
+; kind routine  length 55 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 86 1c 30 40 30 62 1c 41 0a 4a ac 41 …+6      setfield  A30.f1C:health = ((A30.f1C:health + 10) + random(1, 10))
+0015: 8d 30 48 05 54 40 00 33                      jf        (A30 == G05:leader) -> 0033
+001D: 54 61 73 74 79 20 61 6e 64 20 72 65 …+10     text      "Tasty and refreshing.\n"
+0033:>8b 41 00 40                                  return    0

@@ -1,0 +1,37 @@
+; segment 111B  page 11  class 0x00 (prop) type 283 tile-name "corpse" (tool join F000/F004)
+; kind class  length 226 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0092  methods: sel9/use@0014, sel23@0030, sel8/search@003E, sel12/talk@005A
+; properties: sel22, sel30, sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 92                                        .hdr      dictionary offset = 0092
+0002: 90 01 00 00 00 a0                            .array    array[1] = [160]
+0008: 90 01 00 00 00 ff                            .array    array[1] = [255]
+000E: 90 01 00 00 00 00                            .array    array[1] = [0]
+
+; ==== method sel9/use @0014 ====
+0014: 81 01 00                                     frame     args=1 locals=0
+0017: 9f 0e 66 30 41 0f 41 24 41 24 43 00 …+9      call      R0E66(A30, 15, 36, 36, 178, 178)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+002C: 8b 41 00 40                                  return    0
+
+; ==== method sel23 @0030 ====
+0030: 81 02 00                                     frame     args=2 locals=0
+0033: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 003A-003E: no dictionary entry, jump, pointer or call reaches it ----
+003A:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @003E ====
+003E: 81 01 00                                     frame     args=1 locals=0
+0041: 9f 0e 66 30 41 0f 41 24 41 24 43 00 …+9      call      R0E66(A30, 15, 36, 36, 178, 178)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+0056: 8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @005A ====
+005A: 81 01 00                                     frame     args=1 locals=0
+005D: 54 61 6c 6b 69 6e 67 20 74 6f 20 61 …+37     text      "Talking to a corpse is a one sided conversation.\n"
+008E: 8b 41 00 40                                  return    0
+0092: a0 0d 50 00 ff ff 00 15 50 00 ff ff …+68     .dict     dict[13] {8/search: @003E, 9/use: @0014, 12/talk: @005A, 22: @0008, 23: @0030, 30: @000E, 36/p_weight: @0002}

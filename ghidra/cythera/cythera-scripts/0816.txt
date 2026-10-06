@@ -1,0 +1,72 @@
+; segment 0816  page 08  routine
+; kind routine  length 452 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 0c                                     frame     args=3 locals=12
+0003: f4 44 57 68 65 72 65 20 49 73 00 40          builtin   add_answer("Where Is")
+000F: 82 00 45 00 0d 90 01 88 16 00 1a 43 …+7      set       L00 = blk@0014
+      ; 0x45 inline block 0014-0021 (13 bytes):
+      0014: 90 01                            .array[1]
+        [0] @001A "Cancel"
+0022: 82 30 30 63 40 40                            set       A30 = as_char(A30)
+0028: 82 01 9b 01 40 40                            set       L01 = sysnew_01()
+002E: 82 02 43 50 00 00 00 40                      set       L02 = False
+0036: 82 03 48 12 63 58 40                         set       L03 = as_room(G12:room)
+003D: 82 04 a0 43 10 00 00 05 41 00 41 00 …+4      set       L04 = iterate_range(&L05, 0, 0, len(A31))
+004D:>8c a0 43 10 00 00 05 41 01 40 40 01 …+1      jt        iterate_range(&L05, 1) -> 0118
+005A: 82 07 31 04 46 40                            set       L07 = A31[L04]
+0060: 82 08 07 41 00 46 40                         set       L08 = L07[0]
+0067: 8d 08 43 50 00 00 00 54 02 5c 40 00 …+1      jf        ((L08 == False) && L02) -> 007C
+0074: 9d 06 01 07 40                               send      L01.sel6(L07)
+0079: 88 01 09                                     goto      -> 0109
+007C:>82 08 9c ff ff 08 40 30 40 40                set       L08 = callx[L08](A30)
+0086: 82 02 43 50 00 00 00 40                      set       L02 = False
+008E: 8d 08 43 50 00 ff ff 54 40 00 a1             jf        (L08 == Nil) -> 00A1
+0099: 9d 06 01 07 40                               send      L01.sel6(L07)
+009E: 88 01 09                                     goto      -> 0109
+00A1:>8d 08 43 50 00 00 01 54 40 00 b4             jf        (L08 == True) -> 00B4
+00AC: 9d 06 01 07 40                               send      L01.sel6(L07)
+00B1: 88 01 09                                     goto      -> 0109
+00B4:>8d 08 43 50 00 00 00 54 40 00 ca             jf        (L08 == False) -> 00CA
+00BF: 82 02 43 50 00 00 01 40                      set       L02 = True
+00C7: 88 01 09                                     goto      -> 0109
+00CA:>8d 08 64 40 40 00 eb                         jf        is_char(L08) -> 00EB
+00D1: 8d 30 08 54 40 00 e3                         jf        (A30 == L08) -> 00E3
+00D8: 82 02 43 50 00 00 01 40                      set       L02 = True
+00E0: 88 00 e8                                     goto      -> 00E8
+00E3:>9d 06 01 07 40                               send      L01.sel6(L07)
+00E8:>88 01 09                                     goto      -> 0109
+00EB:>8d 08 64 58 40 01 09                         jf        is_room(L08) -> 0109
+00F2: 8d 03 08 54 40 01 04                         jf        (L03 == L08) -> 0104
+00F9: 82 02 43 50 00 00 01 40                      set       L02 = True
+0101: 88 01 09                                     goto      -> 0109
+0104:>9d 06 01 07 40                               send      L01.sel6(L07)
+0109:>82 04 a0 43 10 00 00 05 41 02 40 40          set       L04 = iterate_range(&L05, 2)
+0115: 88 00 4d                                     goto      -> 004D
+0118:>82 09 c0 44 44 69 72 65 63 74 69 6f …+23     set       L09 = pick_item("Directions to Where?", "%p%s", L01, L00)
+013B: 8d 09 41 ff 54 40 01 4a                      jf        (L09 == -1) -> 014A
+0143: 93 01 40                                     release   L01
+0146: 8b 41 00 40                                  return    0
+014A:>82 09 01 09 46 40                            set       L09 = L01[L09]
+0150: 22                                           text      "\""
+0151: 82 0a 43 50 00 ff ff 40                      set       L0A = Nil
+0159: 82 04 a0 43 10 00 00 05 41 00 41 02 …+4      set       L04 = iterate_range(&L05, 0, 2, len(L09))
+0169:>8c a0 43 10 00 00 05 41 01 40 40 01 …+1      jt        iterate_range(&L05, 1) -> 01BC
+0176: 82 0b 09 04 46 40                            set       L0B = L09[L04]
+017C: 8d 0b 5f 41 00 51 40 01 8b                   jf        (len(L0B) > 0) -> 018B
+0185: 8a 0b 40                                     print     L0B
+0188: 88 01 ad                                     goto      -> 01AD
+018B:>8d 0a 43 50 00 ff ff 53 40 01 a9             jf        (L0A != Nil) -> 01A9
+0196: 9f 0e aa 30 0a 0b 32 40                      call      R0EAA(A30, L0A, L0B, A32)
+019E: 82 0a 43 50 00 ff ff 40                      set       L0A = Nil
+01A6: 88 01 ad                                     goto      -> 01AD
+01A9:>82 0a 0b 40                                  set       L0A = L0B
+01AD:>82 04 a0 43 10 00 00 05 41 02 40 40          set       L04 = iterate_range(&L05, 2)
+01B9: 88 01 69                                     goto      -> 0169
+01BC:>22                                           text      "\""
+01BD: 93 01 40                                     release   L01
+01C0: 8b 41 00 40                                  return    0

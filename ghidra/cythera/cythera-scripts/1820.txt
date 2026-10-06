@@ -1,0 +1,126 @@
+; segment 1820  page 18  class 0x40 (char) id 32 name "Ake" (string table 0201)
+; kind class  length 2152 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0854  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 08 54                                        .hdr      dictionary offset = 0854
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6c …+20     text      "You see a slight nervous woman.*"
+0025: 8d 9f 0f 02 30 41 02 40 30 62 15 43 …+9      jf        (R0F02(A30, 2) && (A30.f15:activity == 151)) -> 0139  ; R0F02 = tstbit [from 0x0101 symtab]
+003A: 9f 0f 01 30 41 02 40                         call      R0F01(A30, 2)  ; R0F01 = clrbit [from 0x0101 symtab]
+0041: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0048: 22 47 6f 6f 64 2c 20 79 6f 75 27 76 …+173    text      "\"Good, you've come.  This might just be a rumor, but I've heard that House Comana was behind Ariadne's kidnapping.\"*\"I can't say anymore, but seek out Halos of House Strymon in Cademia\""
+0101: f2 41 0a 43 30 00 02 1a 41 72 4a 40          builtin   add_to_do(10, (str[021A:0]"Cure Alaric" + 114))
+010D: 2a 22 50 6c 65 61 73 65 2c 20 49 27 …+20     text      "*\"Please, I've said too much...\""
+012D: 9f 0e 8b 48 05 41 19 40                      call      R0E8B(G05:leader, 25)
+0135: 8b 41 00 40                                  return    0
+0139:>8d 9f 0f 02 30 41 07 40 5e 40 01 cf          jf        !R0F02(A30, 7) -> 01CF  ; R0F02 = tstbit [from 0x0101 symtab]
+0145: 8d 30 62 15 43 00 00 00 90 53 40 01 …+1      jf        (A30.f15:activity != 144) -> 01A0
+0152: 22 49 66 20 79 6f 75 27 76 65 20 63 …+63     text      "\"If you've come for cloth - please, visit me when I am working in my shop.\""
+019D: 88 01 cf                                     goto      -> 01CF
+01A0:>22 48 6f 77 20 63 61 6e 20 49 20 68 …+35     text      "\"How can I help you - perhaps some fine cloth?\""
+01CF:>8e                                           input       ; read a line into the input buffer
+01D0: 90 6e 61 6d 65 00 02 22                      match     name else -> 0222
+01D8: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+18     text      "\"My name is Ake, and you are?\""
+01F6: 8f 2a 00                                     prompt    "*"
+01F9: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+10     text      "\"Pleased to meet you ^"
+020F: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+0216: 2e 22                                        text      ".\""
+0218: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+021F: 88 01 cf                                     goto      -> 01CF
+0222:>90 6a 6f 62 00 02 6f                         match     job else -> 026F
+0229: 22 49 20 61 6d 20 61 20 77 65 61 76 …+55     text      "\"I am a weaver here in Odemia - would you like to @buy some cloth?\""
+026C: 88 01 cf                                     goto      -> 01CF
+026F:>90 62 79 65 00 02 98                         match     bye else -> 0298
+0276: 22 46 61 72 65 77 65 6c 6c 2c 20 61 …+15     text      "\"Farewell, and be careful.\""
+0291: 8b 41 00 40                                  return    0
+; ---- dead code 0295-0298: no dictionary entry, jump, pointer or call reaches it ----
+0295:x88 01 cf                                     goto      -> 01CF
+0298:>90 62 75 79 2c 63 6c 6f 74 00 03 2e          match     buy,clot else -> 032E
+02A4: 86 27 30 40 9f 0e a5 44 46 69 6e 65 …+123    setfield  A30.f27:ce17 = R0EA5("Finest Cloth", blk@02BC, A30.f27:ce17, Nil)
+      ; 0x45 inline block 02BC-0321 (101 bytes):
+      02BC: 90 03                            .array[3]
+        [0] @02CA ->
+          02CA: 90 04                            .array[4]
+            [0] 151
+            [1] @02DC "Blue Cloth"
+            [2] 10
+            [3] 1
+        [1] @02E7 ->
+          02E7: 90 04                            .array[4]
+            [0] 1175
+            [1] @02F9 "Red Cloth"
+            [2] 10
+            [3] 1
+        [2] @0303 ->
+          0303: 90 04                            .array[4]
+            [0] 2199
+            [1] @0315 "Green Cloth"
+            [2] 10
+            [3] 1
+032B: 88 01 cf                                     goto      -> 01CF
+032E:>90 74 72 61 69 2c 74 65 61 63 00 03 …+1      match     trai,teac else -> 035D
+033B: 8d 9f 0e b1 48 05 44 41 6b 65 00 42 …+11     jf        R0EB1(G05:leader, "Ake", 209, False) -> 035A
+0352: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+035A:>88 01 cf                                     goto      -> 01CF
+035D:>90 73 65 6c 6c 2c 74 68 72 65 61 64 …+3      match     sell,thread else -> 03A0
+036C: 22 53 6f 72 72 79 2c 20 62 75 74 20 …+37     text      "\"Sorry, but I buy my thread directly from @Hebe.\""
+039D: 88 01 cf                                     goto      -> 01CF
+03A0:>90 68 6f 75 73 00 03 d6                      match     hous else -> 03D6
+03A8: 22 4d 79 20 40 68 75 73 62 61 6e 64 …+31     text      "\"My @husband is the head of House @Atussa.\""
+03D3: 88 01 cf                                     goto      -> 01CF
+03D6:>90 68 75 73 62 00 03 fa                      match     husb else -> 03FA
+03DE: 22 4d 69 6c 63 6f 6d 2c 20 74 68 65 …+13     text      "\"Milcom, the Blacksmith.\""
+03F7: 88 01 cf                                     goto      -> 01CF
+03FA:>90 67 61 72 64 00 04 55                      match     gard else -> 0455
+0402: 22 4d 79 20 40 68 75 73 62 61 6e 64 …+68     text      "\"My @husband and I like to work in our garden behind our house in the evenings.\""
+0452: 88 01 cf                                     goto      -> 01CF
+0455:>90 61 74 75 73 00 04 a5                      match     atus else -> 04A5
+045D: 22 41 74 75 73 73 61 20 77 61 73 20 …+57     text      "\"Atussa was the ruling House here, until my @husband gave it all up.\""
+04A2: 88 01 cf                                     goto      -> 01CF
+04A5:>90 6b 69 64 6e 2c 61 72 69 61 00 05 …+1      match     kidn,aria else -> 0580
+04B2: 8d bc 42 00 1e 40 bc 42 00 23 40 5d …+3      jf        (leader_can_see(30) || leader_can_see(35)) -> 0503
+04C1: 53 68 65 20 6c 6f 6f 6b 73 20 61 72 …+51     text      "She looks around nervously...*\"Ah, it was terrible, wasn't it.\""
+0500: 88 05 7d                                     goto      -> 057D
+0503:>8d 9f 0f 02 30 41 01 40 40 05 32             jf        R0F02(A30, 1) -> 0532  ; R0F02 = tstbit [from 0x0101 symtab]
+050E: 22 59 6f 75 20 6b 6e 6f 77 20 6d 79 …+21     text      "\"You know my feelings on that...\""
+052F: 88 05 7d                                     goto      -> 057D
+0532:>22 49 20 66 65 61 72 20 74 68 61 74 …+63     text      "\"I fear that the there is @more to the kidnapping of Ariadne than appears.\""
+057D:>88 01 cf                                     goto      -> 01CF
+0580:>90 6d 6f 72 65 00 08 08                      match     more else -> 0808
+0588: 8d 9f 0f 02 30 41 01 40 40 05 b1             jf        R0F02(A30, 1) -> 05B1  ; R0F02 = tstbit [from 0x0101 symtab]
+0593: 22 59 6f 75 20 6b 6e 6f 77 2c 20 48 …+15     text      "\"You know, House Comana...\""
+05AE: 88 08 05                                     goto      -> 0805
+05B1:>8d bc 42 00 1e 40 bc 42 00 23 40 5d …+3      jf        (leader_can_see(30) || leader_can_see(35)) -> 060E
+05C0: 53 68 65 20 6c 6f 6f 6b 73 20 61 72 …+63     text      "She looks around nervously...*\"Ah, I don't know what you're talking about.\""
+060B: 88 08 05                                     goto      -> 0805
+060E:>22 49 20 63 61 6e 27 74 20 73 70 65 …+93     text      "\"I can't speak of that now - meet me in our @garden after dark - wait until after my husband goes to bed\""
+0677: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+067E: 8d f5 48 05 42 00 cb 40 40 08 05             jf        find_skill(G05:leader, 203) -> 0805
+0689: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0690: 22 49 20 75 6e 64 65 72 73 74 61 6e …+65     text      "\"I understand your reluctance, but I'm not sure if I can make that meeting.\"*"
+06DD: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+06E2: 9f 0f 01 30 41 02 40                         call      R0F01(A30, 2)  ; R0F01 = clrbit [from 0x0101 symtab]
+06E9: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+06F0: 41 6b 65 20 6c 6f 77 65 72 73 20 68 …+221    text      "Ake lowers her voice to a whisper, glancing nervously around.*\"Well, this might just be a rumor, but I've heard that House Comana was behind Ariadne's kidnapping.\"*\"I can't say anymore, but seek out Halos of House Strymon in Cademia\""
+07D9: f2 41 0a 43 30 00 02 1a 41 0a 4a 40          builtin   add_to_do(10, (str[021A:0]"Cure Alaric" + 10))
+07E5: 2a 22 50 6c 65 61 73 65 2c 20 49 27 …+20     text      "*\"Please, I've said too much...\""
+0805:>88 01 cf                                     goto      -> 01CF
+0808:>90 2a 00 08 4d                               match     * else -> 084D
+080D: 8d 9f 08 03 30 40 5e 40 08 4a                jf        !R0803(A30) -> 084A
+0817: 8d 9f 08 0a 30 40 5e 40 08 4a                jf        !R080A(A30) -> 084A
+0821: 8d 9f 08 01 30 40 5e 40 08 4a                jf        !R0801(A30) -> 084A
+082B: 22 49 27 64 20 72 61 74 68 65 72 20 …+19     text      "\"I'd rather not speak of that.\""
+084A:>88 01 cf                                     goto      -> 01CF
+084D:>88 01 cf                                     goto      -> 01CF
+; ---- dead code 0850-0854: no dictionary entry, jump, pointer or call reaches it ----
+0850:x8b 41 00 40                                  return    0
+0854: a0 03 98 20 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

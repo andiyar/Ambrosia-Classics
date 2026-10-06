@@ -1,0 +1,45 @@
+; segment 1874  page 18  class 0x40 (char) id 116 name "Danae" (string table 0201)
+; kind class  length 329 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0135  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 35                                        .hdr      dictionary offset = 0135
+0002: 90 01 98 74 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 59 6f 75 20 73 65 65 20 61 20 73 74 …+24     text      "You see a stressed female student.\n*"
+0061:>8e                                           input       ; read a line into the input buffer
+0062: 90 6e 61 6d 65 00 00 87                      match     name else -> 0087
+006A: 22 49 27 6d 20 63 61 6c 6c 65 64 20 …+7      text      "\"I'm called Danae.\""
+007D: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0084: 88 00 61                                     goto      -> 0061
+0087:>90 6a 6f 62 00 00 ba                         match     job else -> 00BA
+008E: 22 49 27 6d 20 61 20 73 74 75 64 65 …+29     text      "\"I'm a student, specializing in healing.\""
+00B7: 88 00 61                                     goto      -> 0061
+00BA:>90 64 61 6e 61 00 00 cb                      match     dana else -> 00CB
+00C2: 22 59 65 73 3f 22                            text      "\"Yes?\""
+00C8: 88 00 61                                     goto      -> 0061
+00CB:>90 62 79 65 00 00 e4                         match     bye else -> 00E4
+00D2: 22 47 6f 6f 64 20 62 79 65 2e 22             text      "\"Good bye.\""
+00DD: 8b 41 00 40                                  return    0
+; ---- dead code 00E1-00E4: no dictionary entry, jump, pointer or call reaches it ----
+00E1:x88 00 61                                     goto      -> 0061
+00E4:>90 2a 00 01 2e                               match     * else -> 012E
+00E9: 8d 9f 08 10 30 40 5e 40 01 2b                jf        !R0810(A30) -> 012B
+00F3: 8d 9f 08 0c 30 40 5e 40 01 2b                jf        !R080C(A30) -> 012B
+00FD: 8d 9f 08 08 30 40 5e 40 01 2b                jf        !R0808(A30) -> 012B
+0107: 8d 9f 08 01 30 40 5e 40 01 2b                jf        !R0801(A30) -> 012B
+0111: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+14     text      "\"I don't know about that.\""
+012B:>88 00 61                                     goto      -> 0061
+012E:>88 00 61                                     goto      -> 0061
+; ---- dead code 0131-0135: no dictionary entry, jump, pointer or call reaches it ----
+0131:x8b 41 00 40                                  return    0
+0135: a0 03 98 74 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

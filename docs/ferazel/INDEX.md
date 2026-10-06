@@ -7,6 +7,7 @@ The project owner's eyes are the only behaviour oracle.
 
 | item | value (tool output, this session) |
 |---|---|
+| **committed copy** | ⚑ 2026-10-06 (Ben: "otherwise we have significant risk"): the binary and all three dumps + analyze logs are now IN GIT at `ghidra/ferazel/` (`Ferazel_pef`, `Ferazel_pef.decompiled.c`, `Ferazel_handlers.decompiled.c`, `Ferazel_pef.disasm.txt`); `ghidra/regen-ferazel.sh` writes there. Every `ghidra/Ferazel_*` path below now means `ghidra/ferazel/Ferazel_*`. The Ghidra project and a second copy of everything live at `~/Developer/Ghidra/ferazel/` (Ben's root decompile folder, one dir per game; not in git) |
 | binary | `…/Ferazel's Wand/Ferazel's Wand (installed)/files/Ferazel's Wand` (data fork), 680,718 B, sha256 `968bbc67…a7ef4811c6` — byte-identical to `ghidra/Ferazel_pef` (`shasum -a 256`) |
 | form | PEF `Joy!peffpwpc`, 3 sections (`tools/pef.py`): code 0x9f83c B (container 0x1500); data = pattern-packed `pidata` 0x55ce B → 0x8169 initialised / 0x239f74 total; loader 0x147c B |
 | address map | Ghidra code base 0x10000000; data base **0x1009f840** (code end rounded to 16 — verified by decoding the file-name pstrs at `0x100a31d9` etc.); TOC register r2 = data + 0x8000 = **0x100a7840**; TOC words are unrelocated section offsets (pointer = word + 0x1009f840) |

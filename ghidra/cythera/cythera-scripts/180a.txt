@@ -1,0 +1,94 @@
+; segment 180A  page 18  class 0x40 (char) id 10 name "Myus" (string table 0201)
+; kind class  length 1849 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0725  methods: sel12/talk@0002, sel21/signal@070C
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 07 25                                        .hdr      dictionary offset = 0725
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 82 00 c4 48 05 41 1d 40 40                   set       L00 = has_ability(G05:leader, 29)
+000E: 82 01 44 2a 48 65 20 61 70 70 65 61 …+52     set       L01 = "*He appears to be lying, or at least not telling the truth."
+004E: 59 6f 75 20 73 65 65 20 61 20 63 6f …+45     text      "You see a confident young man, with an air of leadership."
+0087: 82 02 43 50 00 00 00 40                      set       L02 = False
+008F: 8d 9f 0f 02 30 41 07 40 40 00 c3             jf        R0F02(A30, 7) -> 00C3  ; R0F02 = tstbit [from 0x0101 symtab]
+009A: 22 41 68 2c 20 6d 79 20 66 72 69 65 …+26     text      "\"Ah, my friend, what brings you back?\""
+00C0: 88 02 ac                                     goto      -> 02AC
+00C3:>22 41 68 2c 20 79 6f 75 20 6d 75 73 …+24     text      "\"Ah, you must be the mysterious hero"
+00E7: 8d 49 05 00 00 10 40 00 f3                   jf        seg0500[0010] -> 00F3
+00F0: 69 6e 65 20 49 27 76 65 20 68 65 61 …+432    text      "ine I've heard so much of.\"*\"And you couldn't have picked a better time to arrive - never has the land known such strife!\"*\"Bandits kidnapping noblewomen, a mysterious plague, why I even hear there are problems with this year's wine!\"*\"Such unrest is a clear sign that the peace of Alaric is slipping, and that we must look elsewhere for leadership.\"*\"No matter, welcome to Kosha.  If there is anything you need, don't hesitate to let me know.\""
+00F3:>20 49 27 76 65 20 68 65 61 72 64 20 …+429    text      " I've heard so much of.\"*\"And you couldn't have picked a better time to arrive - never has the land known such strife!\"*\"Bandits kidnapping noblewomen, a mysterious plague, why I even hear there are problems with this year's wine!\"*\"Such unrest is a clear sign that the peace of Alaric is slipping, and that we must look elsewhere for leadership.\"*\"No matter, welcome to Kosha.  If there is anything you need, don't hesitate to let me know.\""  ; shares its tail with text @00F0
+02AC:>8e                                           input       ; read a line into the input buffer
+02AD: 90 6e 61 6d 65 00 02 cb                      match     name else -> 02CB
+02B5: 22 49 20 61 6d 20 4d 79 75 73 2e 22          text      "\"I am Myus.\""
+02C1: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02C8: 88 02 ac                                     goto      -> 02AC
+02CB:>90 6a 6f 62 00 03 32                         match     job else -> 0332
+02D2: 22 54 68 6f 75 67 68 20 49 20 61 6d …+65     text      "\"Though I am Elder of House Comana, I view myself more as a leader of Kosha.\""
+031F: 8d 00 40 03 2f                               jf        L00 -> 032F
+0324: 82 02 43 50 00 00 01 40                      set       L02 = True
+032C: 8a 01 40                                     print     L01
+032F:>88 02 ac                                     goto      -> 02AC
+0332:>90 6d 79 75 73 00 03 4e                      match     myus else -> 034E
+033A: 22 59 65 73 2c 20 6d 79 20 66 72 69 …+5      text      "\"Yes, my friend?\""
+034B: 88 02 ac                                     goto      -> 02AC
+034E:>90 62 79 65 00 03 7d                         match     bye else -> 037D
+0355: 22 55 6e 74 69 6c 20 77 65 20 6d 65 …+21     text      "\"Until we meet again, my friend.\""
+0376: 8b 41 00 40                                  return    0
+; ---- dead code 037A-037D: no dictionary entry, jump, pointer or call reaches it ----
+037A:x88 02 ac                                     goto      -> 02AC
+037D:>90 63 61 6e 61 00 03 c8                      match     cana else -> 03C8
+0385: 22 4e 6f 74 20 61 20 64 61 79 20 67 …+36     text      "\"Not a day goes by that I don't miss my father.\""
+03B5: 8d 00 40 03 c5                               jf        L00 -> 03C5
+03BA: 82 02 43 50 00 00 01 40                      set       L02 = True
+03C2: 8a 01 40                                     print     L01
+03C5:>88 02 ac                                     goto      -> 02AC
+03C8:>90 73 74 65 6e 00 04 93                      match     sten else -> 0493
+03D0: 22 59 65 73 2c 20 49 20 72 65 6d 65 …+164    text      "\"Yes, I remember him - he was a friend of Pelagon, until he took too much to the wine, I understand.\"*\"It is a pity, I seem to remember he actually had some sort of breakdown.\""
+0480: 8d 00 40 04 90                               jf        L00 -> 0490
+0485: 82 02 43 50 00 00 01 40                      set       L02 = True
+048D: 8a 01 40                                     print     L01
+0490:>88 02 ac                                     goto      -> 02AC
+0493:>90 70 65 6c 61 00 04 df                      match     pela else -> 04DF
+049B: 22 50 65 6c 61 67 6f 6e 20 69 73 20 …+53     text      "\"Pelagon is my most trusted aide - and my late Father's as well.\""
+04DC: 88 02 ac                                     goto      -> 02AC
+04DF:>90 64 65 61 64 00 05 45                      match     dead else -> 0545
+04E7: 22 44 65 61 64 3f 20 20 4e 6f 62 6f …+63     text      "\"Dead?  Nobody has died recently that I know of.  Probably some bad rumor.\""
+0532: 8d 00 40 05 42                               jf        L00 -> 0542
+0537: 82 02 43 50 00 00 01 40                      set       L02 = True
+053F: 8a 01 40                                     print     L01
+0542:>88 02 ac                                     goto      -> 02AC
+0545:>90 63 72 79 73 00 05 c7                      match     crys else -> 05C7
+054D: 22 41 20 67 6c 6f 77 69 6e 67 20 67 …+91     text      "\"A glowing green crystal, you say?  Perhaps you should find a Mage and ask - that is more their realm.\""
+05B4: 8d 00 40 05 c4                               jf        L00 -> 05C4
+05B9: 82 02 43 50 00 00 01 40                      set       L02 = True
+05C1: 8a 01 40                                     print     L01
+05C4:>88 02 ac                                     goto      -> 02AC
+05C7:>90 6c 69 65 00 06 b4                         match     lie else -> 06B4
+05CE: 8d 02 40 06 5c                               jf        L02 -> 065C
+05D3: 41 20 73 6c 69 67 68 74 20 70 61 75 …+122    text      "A slight pause goes across his face, his eyes narrowing.*\"If you wish to accuse me with something, you'll need to take it to a Judge.\""
+0659: 88 06 b1                                     goto      -> 06B1
+065C:>22 45 78 63 75 73 65 20 6d 65 3f 20 …+73     text      "\"Excuse me?  That's not a very polite thing to say - a lesser man would be insulted!\""
+06B1:>88 02 ac                                     goto      -> 02AC
+06B4:>90 2a 00 07 05                               match     * else -> 0705
+06B9: 8d 9f 08 04 30 40 5e 40 07 02                jf        !R0804(A30) -> 0702
+06C3: 8d 9f 08 0d 30 40 5e 40 07 02                jf        !R080D(A30) -> 0702
+06CD: 8d 9f 08 01 30 40 5e 40 07 02                jf        !R0801(A30) -> 0702
+06D7: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+31     text      "\"I'm sorry, my friend, could you speak up?\""
+0702:>88 02 ac                                     goto      -> 02AC
+0705:>88 02 ac                                     goto      -> 02AC
+; ---- dead code 0708-070C: no dictionary entry, jump, pointer or call reaches it ----
+0708:x8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @070C ====
+070C: 81 02 00                                     frame     args=2 locals=0
+070F: 8d 31 43 00 00 00 82 54 40 07 21             jf        (A31 == 130) -> 0721
+071A: 86 1c 30 40 41 00 40                         setfield  A30.f1C:health = 0
+0721:>8b 41 00 40                                  return    0
+0725: a0 03 98 0a 00 02 00 0c 98 0a 07 0c …+8      .dict     dict[3] {12/talk: @0002, 21/signal: @070C}

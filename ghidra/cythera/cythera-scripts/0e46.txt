@@ -1,0 +1,42 @@
+; segment 0E46  page 0E  routine "DoFood" [from 0x0101 symtab: key 1646; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 441 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 05                                     frame     args=3 locals=5
+0003: 82 00 48 05 63 40 40                         set       L00 = as_char(G05:leader)
+000A: 82 01 00 62 1d 40                            set       L01 = L00.f1D:health_max
+0010: 82 02 00 62 1c 40                            set       L02 = L00.f1C:health
+0016: 8d 02 01 52 40 00 33                         jf        (L02 >= L01) -> 0033
+001D: 59 6f 75 20 61 72 65 6e 27 74 20 68 …+7      text      "You aren't hungry.\n"
+0030: 88 01 b5                                     goto      -> 01B5
+0033:>82 32 32 ac 41 00 41 01 40 4a ac 41 …+6      set       A32 = ((A32 + random(0, 1)) - random(0, 1))
+0045: 8d 32 43 0f ff ff ff 54 40 00 5d             jf        (A32 == -1) -> 005D
+0050: 82 31 31 41 03 4c 41 02 4d 40                set       A31 = ((A31 * 3) / 2)
+005A: 88 00 6a                                     goto      -> 006A
+005D:>8d 32 41 04 54 40 00 6a                      jf        (A32 == 4) -> 006A
+0065: 82 31 41 00 40                               set       A31 = 0
+006A:>82 03 45 01 0c 90 07 8e 46 00 8d 8e …+262    set       L03 = blk@006F
+      ; 0x45 inline block 006F-017B (268 bytes):
+      006F: 90 07                            .array[7]
+        [0] @008D "That was amazingly tasty.\n"
+        [1] @00A8 "That was very good.\n"
+        [2] @00BD "That was tasty.\n"
+        [3] @00CE "You've tasted better.\n"
+        [4] @00E5 "Yuck, that wasn't very good.\n"
+        [5] @0103 "It is all you can do to keep it down.\n"
+        [6] @012A "You start retching, and it was no better coming back up than it was going down.\n"
+017C: 8a 03 32 46 40                               print     L03[A32]
+0181: 82 02 02 31 4a 40                            set       L02 = (L02 + A31)
+0187: 8d 02 01 51 40 01 92                         jf        (L02 > L01) -> 0192
+018E: 82 02 01 40                                  set       L02 = L01
+0192:>86 1c 00 40 02 40                            setfield  L00.f1C:health = L02
+0198: 82 04 30 62 09 40                            set       L04 = A30.f09:count
+019E: 8d 04 41 01 54 40 01 ac                      jf        (L04 == 1) -> 01AC
+01A6: a7 30 40                                     builtin   delete_prop(A30)
+01A9: 88 01 b5                                     goto      -> 01B5
+01AC:>86 09 30 40 04 41 01 4b 40                   setfield  A30.f09:count = (L04 - 1)
+01B5:>8b 41 00 40                                  return    0

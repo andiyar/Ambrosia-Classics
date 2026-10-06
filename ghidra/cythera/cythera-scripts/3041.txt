@@ -1,0 +1,64 @@
+; segment 3041  page 30  routine: default handler for selector 65
+; kind routine  length 362 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 04                                     frame     args=3 locals=4
+0003: 82 00 30 63 40 40                            set       L00 = as_char(A30)
+0009: 8d 00 40 01 66                               jf        L00 -> 0166
+000E: e3 30 62 01 30 62 02 43 00 00 01 b2 …+1      builtin   show_hit(A30.f01:x, A30.f02:y, 434)
+001B: c2 00 41 16 40                               builtin   remove_ability(L00, 22)
+0020: 8d c4 00 41 0e 40 40 00 3a                   jf        has_ability(L00, 14) -> 003A
+0029: 8d ac 31 41 14 4a 40 31 4f 40 00 3a          jf        (random((A31 + 20)) < A31) -> 003A
+0035: c2 00 41 0e 40                               builtin   remove_ability(L00, 14)
+003A:>82 01 30 63 48 40                            set       L01 = as_cls48(A30)
+0040: 82 02 43 50 00 ff ff 40                      set       L02 = Nil
+0048: 8d 30 60 3b 40 00 59                         jf        has(A30, sel59/p3B) -> 0059
+004F: 82 02 30 61 3b 00 40                         set       L02 = prop(A30, sel59/p3B, 0)
+0056: 88 00 8e                                     goto      -> 008E
+0059:>8d 01 60 3b 40 00 6a                         jf        has(L01, sel59/p3B) -> 006A
+0060: 82 02 01 61 3b 00 40                         set       L02 = prop(L01, sel59/p3B, 0)
+0067: 88 00 8e                                     goto      -> 008E
+006A:>82 02 45 00 1e 90 07 00 00 00 00 00 …+24     set       L02 = blk@006F
+      ; 0x45 inline block 006F-008D (30 bytes):
+      006F: 90 07                            .array[7]
+        [0] 0
+        [1] 16
+        [2] 17
+        [3] 19
+        [4] 20
+        [5] 21
+        [6] 22
+008E:>8d 31 00 62 1c 52 40 00 c9                   jf        (A31 >= L00.f1C:health) -> 00C9
+0097: 2d 2d 20 5e                                  text      "-- ^"
+009B: 8a 00 40                                     print     L00
+009E: 20 6b 69 6c 6c 65 64 21 20 2d 2d 0a          text      " killed! --\n"
+00AA: 82 03 02 41 06 46 40                         set       L03 = L02[6]
+00B1: 8d 03 40 00 bf                               jf        L03 -> 00BF
+00B6: d3 03 30 62 01 30 62 02 40                   builtin   positional_sound(L03, A30.f01:x, A30.f02:y)
+00BF:>86 1c 00 40 41 00 40                         setfield  L00.f1C:health = 0
+00C6: 88 01 66                                     goto      -> 0166
+00C9:>86 1c 00 40 00 62 1c 31 4b 40                setfield  L00.f1C:health = (L00.f1C:health - A31)
+00D3: 8d 00 62 1c 00 62 1d 41 04 4d 50 40 …+2      jf        (L00.f1C:health <= (L00.f1D:health_max / 4)) -> 0109
+00E1: 82 03 02 41 05 46 40                         set       L03 = L02[5]
+00E8: 2d 2d 20 5e                                  text      "-- ^"
+00EC: 8a 00 40                                     print     L00
+00EF: 20 43 72 69 74 69 63 61 6c 6c 79 20 …+11     text      " Critically wounded!--\n"
+0106: 88 01 3b                                     goto      -> 013B
+0109:>8d 00 62 1c 00 62 1d 41 02 4d 50 40 …+2      jf        (L00.f1C:health <= (L00.f1D:health_max / 2)) -> 0134
+0117: 82 03 02 41 04 46 40                         set       L03 = L02[4]
+011E: 2d 2d 20 5e                                  text      "-- ^"
+0122: 8a 00 40                                     print     L00
+0125: 20 57 6f 75 6e 64 65 64 20 2d 2d 0a          text      " Wounded --\n"
+0131: 88 01 3b                                     goto      -> 013B
+0134:>82 03 02 41 03 46 40                         set       L03 = L02[3]
+013B:>8d 03 40 01 49                               jf        L03 -> 0149
+0140: d3 03 30 62 01 30 62 02 40                   builtin   positional_sound(L03, A30.f01:x, A30.f02:y)
+0149:>8d 32 43 00 00 01 00 56 40 01 66             jf        (A32 & 256) -> 0166
+0154: 8d 01 62 32 41 40 56 40 01 61                jf        (L01.f32 & 64) -> 0161
+015E: 88 01 66                                     goto      -> 0166
+0161:>c1 30 41 09 40                               builtin   add_ability(A30, 9)
+0166:>8b 41 00 40                                  return    0

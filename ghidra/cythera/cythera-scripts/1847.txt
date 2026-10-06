@@ -1,0 +1,123 @@
+; segment 1847  page 18  class 0x40 (char) id 71 name "Metopes" (string table 0201)
+; kind class  length 3783 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0E9B  methods: sel12/talk@003A, sel21/signal@0D07:0000 (shared method: code in routine 0D07)
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0e 9b                                        .hdr      dictionary offset = 0E9B
+0002: 90 01 98 47 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 8d dc 41 02 40 41 0a 54 40 04 57             jf        (get_variable(2) == 10) -> 0457
+0048: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+64     text      "\"I don't know what you did, but everybody reports suddenly feeling better.\"*"
+0094: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+009A: 22 57 65 6c 6c 2c 20 49 20 66 6f 75 …+154    text      "\"Well, I found a strange green glowing crystal in the underground spring.\"*\"When I picked it up, I felt a wash of sickness which then passed as suddenly as it came.\"*"
+0140: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0145: 22 48 6d 2c 20 63 75 72 69 6f 75 73 …+350    text      "\"Hm, curious.  I vaguely remember hearing about a green glowing crystal during my days at the Magisterium.\"*\"Yes, I remember now, it was found in the ruins outside of Pnyx, the same place that legend has it that @Metics appeared to my ancestors.\"*\"I'd take it to Pnyx and show it to Headmaster Lindus.  Perhaps he has further clues as to it's origin and power.\"*"
+02AF: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+02B5: 22 54 68 65 72 65 20 77 65 72 65 20 …+74     text      "\"There were also these strange tentacled monsters that seemed to protect the spring.\"*"
+030B: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0310: 22 42 61 72 72 65 6c 20 73 68 61 70 …+33     text      "\"Barrel shaped?  With tentacles at the top?\"*"
+033D: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0343: 22 59 65 73 2c 20 74 68 6f 73 65 20 …+15     text      "\"Yes, those are the ones.\"*"
+035E: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0363: 22 49 27 76 65 20 68 65 61 72 64 20 …+207    text      "\"I've heard of them before, but I can't imagine that they could be found in a cave below my very bed!\"*\"They are called polyps. I believe that they are somehow related to the sea monsters that are found off the coast.\"*"
+043E: dd 41 02 41 0b 40                            builtin   set_variable(2, 11)
+0444: f3 41 03 40                                  builtin   done_to_do(3)
+0448: f2 41 05 43 30 00 02 1a 41 05 4a 40          builtin   add_to_do(5, (str[021A:0]"Cure Alaric" + 5))
+0454: 88 05 fb                                     goto      -> 05FB
+0457:>82 00 dc 41 02 40 41 0a 4f 40                set       L00 = (get_variable(2) < 10)
+0461: 8d 9f 0f 02 30 41 07 40 5e 40 05 a6          jf        !R0F02(A30, 7) -> 05A6  ; R0F02 = tstbit [from 0x0101 symtab]
+046D: 22 41 68 2c 20 79 6f 75 20 6d 75 73 …+171    text      "\"Ah, you must be the stranger that Alaric sent to investigate matters.\"*\"Well, let me tell you, this @plague has us all puzzled.  Nearly everbody has come down with it to some degree\""
+0524: f2 41 03 43 30 00 02 1a 41 03 4a 40          builtin   add_to_do(3, (str[021A:0]"Cure Alaric" + 3))
+0530: 2a 22 49 27 76 65 20 62 65 65 6e 20 …+96     text      "*\"I've been lucky - I can still function.  Others have died.\"*\"Please, look around - I am at your disposal.\""
+059C: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+05A3: 88 05 fb                                     goto      -> 05FB
+05A6:>22 48 65 6c 6c 6f 20 61 67 61 69 6e …+3      text      "\"Hello again.  "
+05B5: 8d 00 40 05 e7                               jf        L00 -> 05E7
+05BA: 48 61 76 65 20 79 6f 75 20 6d 61 64 …+30     text      "Have you made any progress on the plague?\""
+05E4: 88 05 fb                                     goto      -> 05FB
+05E7:>57 68 61 74 20 62 72 69 6e 67 73 20 …+8      text      "What brings you by?\""
+05FB:>8e                                           input       ; read a line into the input buffer
+05FC: 90 6e 61 6d 65 2c 6d 65 74 6f 00 06 …+1      match     name,meto else -> 064B
+0609: 22 4f 68 2c 20 64 69 64 20 49 20 66 …+44     text      "\"Oh, did I forget to mention that?  I'm called Metopes.\""
+0641: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0648: 88 05 fb                                     goto      -> 05FB
+064B:>90 6a 6f 62 00 06 75                         match     job else -> 0675
+0652: 22 49 20 61 6d 20 74 68 65 20 40 4a …+20     text      "\"I am the @Judge of @Catamarca.\""
+0672: 88 05 fb                                     goto      -> 05FB
+0675:>90 70 6f 6c 79 00 06 b5                      match     poly else -> 06B5
+067D: 22 50 6f 6c 79 64 61 6d 61 73 20 69 …+41     text      "\"Polydamas is the faithful majordomo of the Citadel.\""
+06B2: 88 05 fb                                     goto      -> 05FB
+06B5:>90 6c 69 6e 64 00 07 10                      match     lind else -> 0710
+06BD: 22 4c 69 6e 64 75 73 20 69 73 20 74 …+68     text      "\"Lindus is the Headmaster of the Magisterium.  I learned a great deal from him.\""
+070D: 88 05 fb                                     goto      -> 05FB
+0710:>90 73 74 72 79 00 07 9b                      match     stry else -> 079B
+0718: 22 48 6f 75 73 65 20 53 74 72 79 6d …+39     text      "\"House Strymon is current ruling house of Catamarca"
+074B: 8d 00 40 07 96                               jf        L00 -> 0796
+0750: 2c 20 62 75 74 20 74 68 65 20 70 6c …+55     text      ", but the plague is wearing on their popularity, to say the least.\""
+0793: 88 07 98                                     goto      -> 0798
+0796:>2e 22                                        text      ".\""
+0798:>88 05 fb                                     goto      -> 05FB
+079B:>90 6a 75 64 67 00 08 47                      match     judg else -> 0847
+07A3: 22 41 20 6a 75 64 67 65 20 69 73 20 …+149    text      "\"A judge is a mage who performs civic @duty settling disputes and the like.\"*\"Eventually I may return to @Pnyx to become a @Freemage, but I enjoy being a Judge.\""
+0844: 88 05 fb                                     goto      -> 05FB
+0847:>90 63 61 74 61 00 09 0e                      match     cata else -> 090E
+084F: 8d 00 40 08 ae                               jf        L00 -> 08AE
+0854: 22 43 61 74 61 6d 61 72 63 61 20 77 …+75     text      "\"Catamarca was a quiet resort city, famous for it's @water, until the @plague started.\""
+08AB: 88 09 0b                                     goto      -> 090B
+08AE:>22 43 61 74 61 6d 61 72 63 61 20 69 …+81     text      "\"Catamarca is once again a quiet resort city, now that the deal with that plague is resolved\""
+090B:>88 05 fb                                     goto      -> 05FB
+090E:>90 66 72 65 65 00 09 bb                      match     free else -> 09BB
+0916: 22 42 65 69 6e 67 20 61 20 46 72 65 …+150    text      "\"Being a Freemage the next step if I want to become a @Master, but I'm not sure I'm ready for that.\"*\"Especially not the part about having to live as a hermit...\""
+09B8: 88 05 fb                                     goto      -> 05FB
+09BB:>90 6d 61 73 74 00 09 f8                      match     mast else -> 09F8
+09C3: 22 42 65 69 6e 67 20 61 20 4d 61 73 …+38     text      "\"Being a Master is a dream I'm not sure I hold...\""
+09F5: 88 05 fb                                     goto      -> 05FB
+09F8:>90 70 6e 79 78 00 0a 46                      match     pnyx else -> 0A46
+0A00: 22 50 6e 79 78 20 69 73 20 74 68 65 …+55     text      "\"Pnyx is the home of the Magisterium, where all mages are trained.\""
+0A43: 88 05 fb                                     goto      -> 05FB
+0A46:>90 70 6c 61 67 00 0b 75                      match     plag else -> 0B75
+0A4E: 8d 00 40 0b 1c                               jf        L00 -> 0B1C
+0A53: 22 49 74 20 61 6c 6c 20 73 74 61 72 …+186    text      "\"It all started about a month ago.  We though it was just the flu, for that was the initial symptoms.\"*\"Unfortunately, anybody who came down with it only gets worse.\"*\"A number of people have died.\""
+0B19: 88 0b 72                                     goto      -> 0B72
+0B1C:>22 49 20 73 74 69 6c 6c 20 64 6f 6e …+74     text      "\"I still don't know what that crystal had to do with it or how it worked, but it did.\""
+0B72:>88 05 fb                                     goto      -> 05FB
+0B75:>90 6b 65 79 2c 6c 6f 63 6b 00 0b fd          match     key,lock else -> 0BFD
+0B81: 22 57 65 6c 6c 2c 20 77 68 65 6e 20 …+109    text      "\"Well, when I started this job, I was given a ceremonial key to the @Citadel.  I believe it is in a drawer in my desk...\""
+0BFA: 88 05 fb                                     goto      -> 05FB
+0BFD:>90 73 70 72 69 2c 77 61 74 65 00 0c …+1      match     spri,wate else -> 0C68
+0C0A: 22 43 61 74 61 6d 61 72 63 61 20 69 …+79     text      "\"Catamarca is know for the quality of it's water, which comes from a spring under the city\""
+0C65: 88 05 fb                                     goto      -> 05FB
+0C68:>90 62 79 65 00 0c 80                         match     bye else -> 0C80
+0C6F: 22 46 61 72 65 77 65 6c 6c 22                text      "\"Farewell\""
+0C79: 8b 41 00 40                                  return    0
+; ---- dead code 0C7D-0C80: no dictionary entry, jump, pointer or call reaches it ----
+0C7D:x88 05 fb                                     goto      -> 05FB
+0C80:>90 63 69 74 61 00 0c cb                      match     cita else -> 0CCB
+0C88: 22 54 68 65 20 43 69 74 61 64 65 6c …+52     text      "\"The Citadel is this fortress, once built for military reasons.\""
+0CC8: 88 05 fb                                     goto      -> 05FB
+0CCB:>90 6d 65 74 69 00 0d bd                      match     meti else -> 0DBD
+0CD3: 22 4d 65 74 69 63 73 20 61 72 65 20 …+219    text      "\"Metics are a legendary race of creatures that supposedly lived here before us.\"*\"Of course, I've seen the ruins outside Pnyx, and there are no signs of their builders.\"*\"Perhaps there is some truth to the old legends after all...\""
+0DBA: 88 05 fb                                     goto      -> 05FB
+0DBD:>90 73 61 70 70 00 0e 38                      match     sapp else -> 0E38
+0DC5: 22 49 27 76 65 20 68 65 61 72 64 20 …+100    text      "\"I've heard of the Sapphire Books, but I've never seen them - I'm guessing Librarian Selinus would know best...\""
+0E35: 88 05 fb                                     goto      -> 05FB
+0E38:>90 2a 00 0e 94                               match     * else -> 0E94
+0E3D: 8d 9f 08 17 30 40 5e 40 0e 91                jf        !R0817(A30) -> 0E91
+0E47: 8d 9f 08 08 30 40 5e 40 0e 91                jf        !R0808(A30) -> 0E91
+0E51: 8d 9f 08 0b 30 40 5e 40 0e 91                jf        !R080B(A30) -> 0E91
+0E5B: 8d 9f 08 01 30 40 5e 40 0e 91                jf        !R0801(A30) -> 0E91
+0E65: 22 48 6d 2c 20 61 66 72 61 69 64 20 …+32     text      "\"Hm, afraid I can't help you with that one.\""
+0E91:>88 05 fb                                     goto      -> 05FB
+0E94:>88 05 fb                                     goto      -> 05FB
+; ---- dead code 0E97-0E9B: no dictionary entry, jump, pointer or call reaches it ----
+0E97:x8b 41 00 40                                  return    0
+0E9B: a0 07 8d 07 00 00 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @003A, 21/signal: @0D07:0000, 68: @0002}

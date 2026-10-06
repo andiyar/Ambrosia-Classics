@@ -1,0 +1,30 @@
+; segment 1061  page 10  class 0x00 (prop) type 97 tile-name "axe" (tool join F000/F004)
+; kind class  length 383 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0153  methods: -
+; properties: sel36/p_weight, sel38/p26, sel42, sel51, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 53                                        .hdr      dictionary offset = 0153
+0002: 90 02 90 61 00 0c 90 61 00 57                .array    array[2] = [@000C, @0057]
+000C: 90 03 90 61 00 1a 90 61 00 2b 90 61 …+2      .array    array[3] = [@001A, @002B, @0042]
+001A: 2d 20 49 74 20 6c 6f 6f 6b 73 20 64 …+5      .string   "- It looks dull."
+002B: 2d 20 54 68 65 20 77 65 69 67 68 74 …+11     .string   "- The weight is wrong."
+0042: 2d 20 49 73 20 74 68 69 73 20 72 75 …+9      .string   "- Is this rust here?"
+0057: 90 04 90 61 00 69 90 61 00 7e 90 61 …+6      .array    array[4] = [@0069, @007E, @0094, @00B1]
+0069: 54 68 65 20 62 61 6c 61 6e 63 65 20 …+9      .string   "The balance is true."
+007E: 54 68 65 72 65 20 69 73 20 61 20 66 …+10     .string   "There is a fine edge."
+0094: 49 74 27 73 20 67 6f 74 20 73 6f 6c …+17     .string   "It's got solid construction."
+00B1: 46 65 65 6c 20 74 68 61 74 20 68 65 …+4      .string   "Feel that heft."
+00C1: 90 02 90 61 00 cb 90 61 01 09                .array    array[2] = [@00CB, @0109]
+00CB: 41 6e 20 61 78 65 20 74 61 6b 65 73 …+50     .string   "An axe takes two hands but delivers more damage than a sword."
+0109: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+0113: 90 01 00 00 00 2f                            .array    array[1] = [47]
+0119: 90 01 00 00 00 05                            .array    array[1] = [5]
+011F: 90 07 00 00 00 16 00 00 00 01 00 00 …+18     .array    array[7] = [22, 1, 1, 197, 16, 17, @013D]
+013D: 90 05 00 00 00 00 00 00 08 ac 00 00 …+10     .array    array[5] = [0, 2220, 2221, 2222, 0]
+0153: a0 07 90 61 01 1f 00 2a 90 61 01 13 …+32     .dict     dict[7] {36/p_weight: @0113, 38/p26: @0119, 42: @011F, 51: @00C1, 69: @0002}

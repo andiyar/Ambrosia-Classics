@@ -1,0 +1,30 @@
+; segment 1402  page 14  class 0x20 (zone) id 2
+; kind class  length 136 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0074  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 74                                        .hdr      dictionary offset = 0074
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: d9 41 02 40                                  builtin   set_outdoor_sky(2)
+0009: da 44 4f 64 65 6d 69 61 00 40                builtin   set_map_title("Odemia")
+0013: fd 41 01 40                                  builtin   set_erase_colour(1)
+0017: d8 41 40 40                                  builtin   set_zone_light_minimum(64)
+001B: d6 41 04 40                                  builtin   play_music2(4)
+001F: 8d dc 41 01 40 41 06 54 40 00 70             jf        (get_variable(1) == 6) -> 0070
+002A: 82 00 cb 43 10 00 00 01 41 00 41 24 …+4      set       L00 = iterate_props_at(&L01, 0, 36, 30)
+003A:>8c cb 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_props_at(&L01, 1) -> 006A
+0047: 8d 00 62 05 43 00 00 24 07 54 40 00 …+1      jf        (L00.f05:item == 9223) -> 005B
+0054: 86 03 00 40 41 07 40                         setfield  L00.f03:frame = 7
+005B:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+0067: 88 00 3a                                     goto      -> 003A
+006A:>dd 41 01 41 07 40                            builtin   set_variable(1, 7)
+0070:>8b 41 00 40                                  return    0
+0074: a0 03 50 00 ff ff 00 00 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

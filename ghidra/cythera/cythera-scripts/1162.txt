@@ -1,0 +1,21 @@
+; segment 1162  page 11  class 0x00 (prop) type 354 tile-name "loose board" (tool join F000/F004)
+; kind class  length 56 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0024  methods: sel10/use_on@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 24                                        .hdr      dictionary offset = 0024
+
+; ==== method sel10/use_on @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 31 48 05 54 40 00 20                      jf        (A31 == G05:leader) -> 0020
+000D: 43 6c 69 63 6b 21 0a                         text      "Click!\n"
+0014: 8d 30 62 06 40 00 20                         jf        A30.f06:quality -> 0020
+001B: c5 30 62 06 40                               builtin   send_signal(A30.f06:quality)
+0020:>8b 41 00 40                                  return    0
+0024: a0 03 50 00 ff ff 00 27 91 62 00 02 …+8      .dict     dict[3] {10/use_on: @0002}

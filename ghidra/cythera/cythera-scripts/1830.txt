@@ -1,0 +1,54 @@
+; segment 1830  page 18  class 0x40 (char) id 48 name "Thetis" (string table 0201)
+; kind class  length 593 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @023D  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 3d                                        .hdr      dictionary offset = 023D
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 64 6f …+28     text      "You see a dour faced older woman.*\"Yes?\""
+002D:>8e                                           input       ; read a line into the input buffer
+002E: 90 6e 61 6d 65 00 00 54                      match     name else -> 0054
+0036: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+8      text      "\"My name is Thetis.\""
+004A: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0051: 88 00 2d                                     goto      -> 002D
+0054:>90 6a 6f 62 00 00 7e                         match     job else -> 007E
+005B: 22 49 20 61 6d 20 61 20 73 65 72 76 …+20     text      "\"I am a servant of House Attis.\""
+007B: 88 00 2d                                     goto      -> 002D
+007E:>90 62 79 65 00 00 ab                         match     bye else -> 00AB
+0085: 22 49 20 77 69 6c 6c 20 72 65 74 75 …+19     text      "\"I will return to my work now.\""
+00A4: 8b 41 00 40                                  return    0
+; ---- dead code 00A8-00AB: no dictionary entry, jump, pointer or call reaches it ----
+00A8:x88 00 2d                                     goto      -> 002D
+00AB:>90 74 68 75 72 00 00 f1                      match     thur else -> 00F1
+00B3: 22 49 20 68 61 76 65 20 77 6f 72 6b …+47     text      "\"I have worked for Matron Thuria since I was a young girl.\""
+00EE: 88 00 2d                                     goto      -> 002D
+00F1:>90 62 69 61 73 2c 68 75 73 62 00 01 …+1      match     bias,husb else -> 012D
+00FE: 22 49 20 6d 65 74 20 61 6e 64 20 6d …+32     text      "\"I met and married Bias while working here.\""
+012A: 88 00 2d                                     goto      -> 002D
+012D:>90 63 79 62 65 00 01 73                      match     cybe else -> 0173
+0135: 22 53 68 65 20 69 73 20 61 20 67 6f …+47     text      "\"She is a good child, but some of the friends she keeps...\""
+0170: 88 00 2d                                     goto      -> 002D
+0173:>90 66 72 69 65 00 01 97                      match     frie else -> 0197
+017B: 22 4c 69 6b 65 20 74 68 61 74 20 68 …+13     text      "\"Like that horrid Halos.\""
+0194: 88 00 2d                                     goto      -> 002D
+0197:>90 6d 61 6c 69 00 01 e1                      match     mali else -> 01E1
+019F: 22 59 6f 75 6e 67 20 4d 61 6c 69 73 …+51     text      "\"Young Malis will make a fine House Elder when his time comes.\""
+01DE: 88 00 2d                                     goto      -> 002D
+01E1:>90 2a 00 02 36                               match     * else -> 0236
+01E6: 8d 9f 08 02 30 40 5e 40 02 33                jf        !R0802(A30) -> 0233
+01F0: 8d 9f 08 0e 30 40 5e 40 02 33                jf        !R080E(A30) -> 0233
+01FA: 8d 9f 08 01 30 40 5e 40 02 33                jf        !R0801(A30) -> 0233
+0204: 22 49 20 64 6f 6e 27 74 20 65 6e 67 …+35     text      "\"I don't engage in idle gossip with strangers.\""
+0233:>88 00 2d                                     goto      -> 002D
+0236:>88 00 2d                                     goto      -> 002D
+; ---- dead code 0239-023D: no dictionary entry, jump, pointer or call reaches it ----
+0239:x8b 41 00 40                                  return    0
+023D: a0 03 98 30 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

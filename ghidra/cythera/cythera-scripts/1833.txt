@@ -1,0 +1,90 @@
+; segment 1833  page 18  class 0x40 (char) id 51 name "Opheltius" (string table 0201)
+; kind class  length 1292 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @04F8  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 f8                                        .hdr      dictionary offset = 04F8
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 6c …+27     text      "You see a plain, ordinary looking man.*"
+002C: 8d dc 41 01 40 41 03 4f 40 00 93             jf        (get_variable(1) < 3) -> 0093
+0037: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+76     text      "\"I'm sorry, but I am too distraught about some family news I've heard recently to talk.\""
+008F: 8b 41 00 40                                  return    0
+0093:>8d 9f 0f 02 30 41 01 40 de 41 03 40 …+4      jf        (R0F02(A30, 1) && test_flag(3)) -> 00DE  ; R0F02 = tstbit [from 0x0101 symtab]
+00A3: 22 49 20 68 61 76 65 20 6e 6f 74 68 …+43     text      "\"I have nothing to say to you - please leave me alone.\""
+00DA: 8b 41 00 40                                  return    0
+00DE:>22 47 6f 6f 64 20                            text      "\"Good "
+00E4: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+00EB: 2c 20                                        text      ", "
+00ED: 8d 9f 0f 02 30 41 01 40 40 00 fe             jf        R0F02(A30, 1) -> 00FE  ; R0F02 = tstbit [from 0x0101 symtab]
+00F8: 66 72 69 65 6e 64                            text      "friend"
+00FE:>8d 9f 0f 02 30 41 07 40 40 01 13             jf        R0F02(A30, 7) -> 0113  ; R0F02 = tstbit [from 0x0101 symtab]
+0109: 63 69 74 69 7a 65 6e                         text      "citizen"
+0110: 88 01 1b                                     goto      -> 011B
+0113:>73 74 72 61 6e 67 65 72 2e 20 20 57 …+22     text      "stranger.  What can I do for you?\""  ; shares its tail with text @011B
+011B:>2e 20 20 57 68 61 74 20 63 61 6e 20 …+14     text      ".  What can I do for you?\""
+0135:>8e                                           input       ; read a line into the input buffer
+0136: 90 6e 61 6d 65 00 01 6a                      match     name else -> 016A
+013E: 22 49 20 61 6d 20 4f 70 68 65 6c 74 …+22     text      "\"I am Opheltius, son of Philinus.\""
+0160: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0167: 88 01 35                                     goto      -> 0135
+016A:>90 6a 6f 62 00 01 9c                         match     job else -> 019C
+0171: 22 49 20 72 65 70 72 65 73 65 6e 74 …+28     text      "\"I represent House Nicander in Cademia.\""
+0199: 88 01 35                                     goto      -> 0135
+019C:>90 6f 70 68 65 00 01 b7                      match     ophe else -> 01B7
+01A4: 22 59 65 73 3f 20 20 49 20 61 6d 20 …+4      text      "\"Yes?  I am he.\""
+01B4: 88 01 35                                     goto      -> 0135
+01B7:>90 70 68 69 6c 00 01 fa                      match     phil else -> 01FA
+01BF: 22 50 68 69 6c 69 6e 75 73 20 69 73 …+44     text      "\"Philinus is my honored father, head of House Nicander.\""
+01F7: 88 01 35                                     goto      -> 0135
+01FA:>90 61 72 69 61 00 03 be                      match     aria else -> 03BE
+0202: 8d 9f 0f 02 30 41 01 40 40 02 5c             jf        R0F02(A30, 1) -> 025C  ; R0F02 = tstbit [from 0x0101 symtab]
+020D: 22 57 65 20 61 72 65 20 6d 6f 73 74 …+64     text      "\"We are most relieved at our mother's safe return, and the role you played.\""
+0259: 88 03 bb                                     goto      -> 03BB
+025C:>8d de 41 03 40 40 03 1a                      jf        test_flag(3) -> 031A
+0264: 22 57 61 69 74 21 20 59 6f 75 20 6d …+156    text      "\"Wait! You must be that incompetant twit responsible for botching my mother's rescue.\"*\"You cost her her life!  Begone - I will have naught to do with such scoundrels.\""
+030C: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0313: 8b 41 00 40                                  return    0
+; ---- dead code 0317-031A: no dictionary entry, jump, pointer or call reaches it ----
+0317:x88 03 bb                                     goto      -> 03BB
+031A:>22 53 61 79 2c 20 79 6f 75 20 6d 75 …+14     text      "\"Say, you must be the hero"
+0334: 8d 49 05 00 00 10 40 03 40                   jf        seg0500[0010] -> 0340
+033D: 69 6e 65 20 77 68 6f 20 72 69 73 6b …+107    text      "ine who risked their life to save my mother!\"*\"I am honored to know such people walk this land, with all its troubles.\""
+0340:>20 77 68 6f 20 72 69 73 6b 65 64 20 …+104    text      " who risked their life to save my mother!\"*\"I am honored to know such people walk this land, with all its troubles.\""  ; shares its tail with text @033D
+03B4: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+03BB:>88 01 35                                     goto      -> 0135
+03BE:>90 62 79 65 00 04 07                         match     bye else -> 0407
+03C5: 22 46 61 72 65 77 65 6c 6c 2c 20             text      "\"Farewell, "
+03D0: 8d 9f 0f 02 30 41 01 40 40 03 e1             jf        R0F02(A30, 1) -> 03E1  ; R0F02 = tstbit [from 0x0101 symtab]
+03DB: 66 72 69 65 6e 64                            text      "friend"
+03E1:>8d 9f 0f 02 30 41 07 40 40 03 f6             jf        R0F02(A30, 7) -> 03F6  ; R0F02 = tstbit [from 0x0101 symtab]
+03EC: 63 69 74 69 7a 65 6e                         text      "citizen"
+03F3: 88 03 fe                                     goto      -> 03FE
+03F6:>73 74 72 61 6e 67 65 72 2e 22                text      "stranger.\""  ; shares its tail with text @03FE
+03FE:>2e 22                                        text      ".\""
+0400: 8b 41 00 40                                  return    0
+; ---- dead code 0404-0407: no dictionary entry, jump, pointer or call reaches it ----
+0404:x88 01 35                                     goto      -> 0135
+0407:>90 61 73 63 61 00 04 58                      match     asca else -> 0458
+040F: 22 59 65 73 2c 20 41 73 63 61 6c 6f …+58     text      "\"Yes, Ascalon is my brother, though at times it pains me to admit it.\""
+0455: 88 01 35                                     goto      -> 0135
+0458:>90 61 74 74 69 00 04 af                      match     atti else -> 04AF
+0460: 22 4d 79 20 70 72 69 6d 61 72 79 20 …+64     text      "\"My primary duty in Cademia is to maintain good relations with House Attis.\""
+04AC: 88 01 35                                     goto      -> 0135
+04AF:>90 2a 00 04 f1                               match     * else -> 04F1
+04B4: 8d 9f 08 06 30 40 5e 40 04 ee                jf        !R0806(A30) -> 04EE
+04BE: 8d 9f 08 0e 30 40 5e 40 04 ee                jf        !R080E(A30) -> 04EE
+04C8: 8d 9f 08 01 30 40 5e 40 04 ee                jf        !R0801(A30) -> 04EE
+04D2: 22 59 6f 75 20 6d 75 73 74 20 6c 6f …+16     text      "\"You must look elsewhere...\""
+04EE:>88 01 35                                     goto      -> 0135
+04F1:>88 01 35                                     goto      -> 0135
+; ---- dead code 04F4-04F8: no dictionary entry, jump, pointer or call reaches it ----
+04F4:x8b 41 00 40                                  return    0
+04F8: a0 03 98 33 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

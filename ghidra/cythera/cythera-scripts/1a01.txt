@@ -1,0 +1,38 @@
+; segment 1A01  page 1A  class 0x50 (spell) type 1
+; kind class  length 293 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00F9  methods: sel2/name@0008, sel8/search@0030, sel9/use@0097
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 f9                                        .hdr      dictionary offset = 00F9
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 56 69 73 69 6f 6e 20 6f 66 20 …+11     return    "Vision of the Night"
+; ---- dead code 0022-0026: no dictionary entry, jump, pointer or call reaches it ----
+0022:x8b 41 00 40                                  return    0
+0026: 90 02 00 00 00 03 50 00 ff ff                .array    array[2] = [3, Nil]
+
+; ==== method sel8/search @0030 ====
+0030: 81 01 00                                     frame     args=1 locals=0
+0033: 54 68 69 73 20 73 70 65 6c 6c 20 67 …+84     text      "This spell gives the caster the ability to see things in the dark as plainly as during the day.\n"
+0093: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0097 ====
+0097: 81 01 00                                     frame     args=1 locals=0
+009A: 8d 9f 0e a1 30 62 0b 41 03 41 08 40 …+3      jf        R0EA1(A30.f0B:loc16, 3, 8) -> 00F5
+00A9: e1 48 09 63 00 43 00 00 00 f0 40             builtin   show_magic(as_prop(G09:speaker), 240)
+00B4: d3 41 2f 48 09 62 01 48 09 62 02 40          builtin   positional_sound(47, G09:speaker.f01:x, G09:speaker.f02:y)
+00C0: 8d 30 62 0b 40 00 e8                         jf        A30.f0B:loc16 -> 00E8
+00C7: c3 48 09 41 12 43 00 00 04 00 9f 0e …+18     builtin   temp_ability(G09:speaker, 18, (1024 + ((R0E85(as_char(A30.f0B:loc16)) - 3) * 256)))
+00E5: 88 00 f3                                     goto      -> 00F3
+00E8:>c3 48 09 41 12 43 00 00 04 00 40             builtin   temp_ability(G09:speaker, 18, 1024)
+00F3:>be 40                                        builtin   refresh_light()
+00F5:>8b 41 00 40                                  return    0
+00F9: a0 07 50 00 ff ff 06 95 9a 01 00 30 …+32     .dict     dict[7] {2/name: @0008, 8/search: @0030, 9/use: @0097, 51: @0026, 54: @0002}

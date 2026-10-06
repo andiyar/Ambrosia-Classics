@@ -1,0 +1,85 @@
+; segment 1849  page 18  class 0x40 (char) id 73 name "Itanos" (string table 0201)
+; kind class  length 3340 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0CE0  methods: sel12/talk@003A, sel21/signal@0D07:0000 (shared method: code in routine 0D07)
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0c e0                                        .hdr      dictionary offset = 0CE0
+0002: 90 01 98 49 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 59 6f 75 20 73 65 65 20 61 20 64 69 …+15     text      "You see a disorganized man."
+0058:>8e                                           input       ; read a line into the input buffer
+0059: 90 6e 61 6d 65 00 00 79                      match     name else -> 0079
+0061: 22 49 20 61 6d 20 49 74 61 6e 6f 73 …+2      text      "\"I am Itanos.\""
+006F: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0076: 88 00 58                                     goto      -> 0058
+0079:>90 62 79 65 00 00 92                         match     bye else -> 0092
+0080: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+008B: 8b 41 00 40                                  return    0
+; ---- dead code 008F-0092: no dictionary entry, jump, pointer or call reaches it ----
+008F:x88 00 58                                     goto      -> 0058
+0092:>90 69 74 61 6e 00 00 b1                      match     itan else -> 00B1
+009A: 22 59 65 73 3f 20 20 49 20 61 6d 20 …+8      text      "\"Yes?  I am Itanos.\""
+00AE: 88 00 58                                     goto      -> 0058
+00B1:>90 6a 6f 62 00 01 49                         match     job else -> 0149
+00B8: 22 49 20 61 6d 20 74 68 65 20 4a 75 …+130    text      "\"I am the Judge of Kosha, for what little good that does.\"*\"There hasn't been the need for my @services since @Canachus died three years ago.\""
+0146: 88 00 58                                     goto      -> 0058
+0149:>90 69 64 6f 6d 00 02 4d                      match     idom else -> 024D
+0151: 22 46 72 65 65 6d 61 67 65 20 49 64 …+228    text      "\"Freemage Idomeneus was here a couple of months back - said he was going to follow the sea.\"*\"He had some strange theory about time and the sea - I don't remember it exactly.\"*\"He headed south, saying something about 'earth meets the sea'.\""
+0241: df 41 42 43 50 00 00 01 40                   builtin   set_flag(66, True)
+024A: 88 00 58                                     goto      -> 0058
+024D:>90 63 61 6e 61 00 03 62                      match     cana else -> 0362
+0255: 22 43 61 6e 61 63 68 75 73 20 77 61 …+254    text      "\"Canachus was a fine man, and his sons seem to carry that trait, but something...\"*\"I don't know, I guess I'm just rambling.  Anyway, Canachus passed away three years ago.\"*\"I investigated, but it appeared to be natural causes.  Still something wasn't quite @right.\""
+035F: 88 00 58                                     goto      -> 0058
+0362:>90 72 69 67 68 2c 77 72 6f 6e 00 04 …+1      match     righ,wron else -> 043D
+036F: 22 4f 6e 20 74 68 65 20 73 75 72 66 …+191    text      "\"On the surface, things have never been better in Kosha, but...\"*\"I don't know, something just doesn't seem right, like a hollow facade of some sort.\"*\"Maybe @Stentor was right in leaving, and @Prusa...\""
+043A: 88 00 58                                     goto      -> 0058
+043D:>90 73 74 65 6e 00 07 02                      match     sten else -> 0702
+0445: 22 40 53 74 65 6e 74 6f 72 20 77 61 …+346    text      "\"@Stentor was my majordomo.  He left Kosha for Cademia about four years ago.\"*\"Said something about fearing death - I was never able to get a straight answer out of him.\"*\"Strange, that, considering my training.  It was like some deep primal fear had grabbed his soul.\"*\"If you ever get to Cademia, you should ask him yourself, and tell him I wish him well.\""
+05AB: 8d 9f 0f 02 30 41 01 40 5e 40 06 f8          jf        !R0F02(A30, 1) -> 06F8  ; R0F02 = tstbit [from 0x0101 symtab]
+05B7: 2a 22 49 27 76 65 20 62 65 65 6e 20 …+149    text      "*\"I've been meaning to get up there some time, but just haven't gotten around to it.\"*\"He left behind one of his fishing nets - could you take it to him for me?\""
+0658: 8f 79 6e 00                                  prompt    "yn"
+065C: 90 79 00 06 9b                               match     y else -> 069B
+0661: 22 45 78 63 65 6c 6c 65 6e 74 20 2d …+23     text      "\"Excellent - here you go.  Thanks.\""
+0684: f2 41 23 43 30 00 02 1a 41 23 4a 40          builtin   add_to_do(35, (str[021A:0]"Cure Alaric" + 35))
+0690: a8 48 05 42 00 d6 41 01 41 01 40             builtin   give_item(G05:leader, 214, 1, 1)
+069B:>90 6e 00 06 f8                               match     n else -> 06F8
+06A0: 22 57 65 6c 6c 2c 20 49 27 6c 6c 20 …+76     text      "\"Well, I'll get around to it one of these days - I'm sure he's gotten a new one anyway.\""
+06F8:>9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+06FF: 88 00 58                                     goto      -> 0058
+0702:>90 70 72 75 73 00 0a 30                      match     prus else -> 0A30
+070A: 22 50 72 75 73 61 20 77 61 73 20 61 …+770    text      "\"Prusa was a Freemage who lived here in Kosha - it was nice to have a fellow Mage here.\"*\"Anyway, she was studying visions, divination and some sort of 'true seeing' she called.\"*\"I still remember her waking me that night.  It was shortly after Stentor left for Cademia, and she came bursting in.\"*\"I could tell from her eyes that something was wrong - very wrong.  She was repeating the same thing over, and over.\"*\"Something about the sea coming to get her - she wasn't making much sense.  Anyway, she left Kosha then.\"*\"The last I heard, she was living somewhere around the source of the River Styx - northwest of here.\"*\"I hear she's lost touch with reality, but people occasionally seek her out for some sort of divine wisdom or some such.\"*\"Perhaps you should seek her out...\""
+0A18: f2 41 0f 43 30 00 02 1a 41 0f 4a 40          builtin   add_to_do(15, (str[021A:0]"Cure Alaric" + 15))
+0A24: 9f 0f 00 42 00 4b 41 01 40                   call      R0F00(75, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0A2D: 88 00 58                                     goto      -> 0058
+0A30:>90 73 61 70 70 2c 77 69 73 64 00 0c …+1      match     sapp,wisd else -> 0C87
+0A3D: 8d 9f 0f 02 30 41 02 40 5e 40 0c 36          jf        !R0F02(A30, 2) -> 0C36  ; R0F02 = tstbit [from 0x0101 symtab]
+0A49: 22 49 27 6d 20 73 6f 72 72 79 20 74 …+175    text      "\"I'm sorry to admit that I walked off with one of the Sapphire Books of Wisdom from the Library in Pnyx.\"*\"I'll give you it to take back if you promise to not mention this to Selinus...\"*"
+0B04: 8d 30 62 15 43 00 00 00 90 54 40 0b …+1      jf        (A30.f15:activity == 144) -> 0BD7
+0B11: 48 65 20 73 65 61 72 63 68 65 73 20 …+165    text      "He searches around in the nearby bookcase for a minute.*\"Ah! Here it is.  Hm, 'The Sapphire Book of Mercy'.  I never could make much of, but here you go.\"*He gives you the book."
+0BC2: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0BC9: a8 48 05 42 00 1a 41 0e 41 00 40             builtin   give_item(G05:leader, 26, 14, 0)
+0BD4: 88 0c 33                                     goto      -> 0C33
+0BD7:>22 53 74 6f 70 20 62 79 20 74 68 69 …+80     text      "\"Stop by this evening when I'm working in my study - I'll see if I can dig it up for you...\""
+0C33:>88 0c 84                                     goto      -> 0C84
+0C36:>22 53 6f 72 72 79 2c 20 49 20 6a 75 …+66     text      "\"Sorry, I just had the one book - I don't know where any of the others are...\""
+0C84:>88 00 58                                     goto      -> 0058
+0C87:>90 2a 00 0c d9                               match     * else -> 0CD9
+0C8C: 8d 9f 08 17 30 40 5e 40 0c d6                jf        !R0817(A30) -> 0CD6
+0C96: 8d 9f 08 08 30 40 5e 40 0c d6                jf        !R0808(A30) -> 0CD6
+0CA0: 8d 9f 08 0d 30 40 5e 40 0c d6                jf        !R080D(A30) -> 0CD6
+0CAA: 8d 9f 08 01 30 40 5e 40 0c d6                jf        !R0801(A30) -> 0CD6
+0CB4: 22 50 65 72 68 61 70 73 20 49 20 63 …+22     text      "\"Perhaps I could research that...\""
+0CD6:>88 00 58                                     goto      -> 0058
+0CD9:>88 00 58                                     goto      -> 0058
+; ---- dead code 0CDC-0CE0: no dictionary entry, jump, pointer or call reaches it ----
+0CDC:x8b 41 00 40                                  return    0
+0CE0: a0 07 8d 07 00 00 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @003A, 21/signal: @0D07:0000, 68: @0002}

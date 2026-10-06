@@ -1,0 +1,82 @@
+; segment 1157  page 11  class 0x00 (prop) type 343 tile-name "staff" (tool join F000/F004)
+; kind class  length 935 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0357  methods: sel9/use@00BD, sel8/search@0104, sel10/use_on@01E4
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel42, sel50, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 57                                        .hdr      dictionary offset = 0357
+0002: 90 02 91 57 00 0c 91 57 00 81                .array    array[2] = [@000C, @0081]
+000C: 49 74 20 69 73 20 61 20 6d 61 67 69 …+105    .string   "It is a magical staff - quite rare.  It can be used as a simple weapon, or it can cast some sort of spell when used."
+0081: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0087: 90 01 00 00 00 19                            .array    array[1] = [25]
+008D: 90 01 00 00 00 05                            .array    array[1] = [5]
+0093: 90 01 00 00 00 08                            .array    array[1] = [8]
+0099: 90 07 00 00 00 04 00 00 00 01 00 00 …+18     .array    array[7] = [4, 1, 132, 198, 16, 18, Nil]
+00B7: 90 01 00 00 00 64                            .array    array[1] = [100]
+
+; ==== method sel9/use @00BD ====
+00BD: 81 01 00                                     frame     args=1 locals=0
+00C0: 8d 30 62 03 41 03 54 40 00 eb                jf        (A30.f03:frame == 3) -> 00EB
+00CA: 49 74 20 61 70 70 65 61 72 73 20 74 …+18     text      "It appears to be burned out..."
+00E8: 88 01 00                                     goto      -> 0100
+00EB:>55 73 65 20 73 74 61 66 66 20 6f 6e …+2      text      "Use staff on?\n"
+00F9: 8b 43 00 00 80 04 40                         return    32772
+0100:>8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0104 ====
+0104: 81 01 00                                     frame     args=1 locals=0
+0107: 8d 30 62 03 41 03 54 40 01 74                jf        (A30.f03:frame == 3) -> 0174
+0111: 54 68 65 20 73 74 61 66 66 27 73 20 …+84     text      "The staff's crystal is gray, but the whole thing still does give off a glowing light when held.\n"
+0171: 88 01 e0                                     goto      -> 01E0
+0174:>59 6f 75 20 73 65 65 20 61 20 67 6c …+96     text      "You see a glow crystal mounted on the end of a wooden staff, and the whole thing gives off light when held.\n"
+01E0:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @01E4 ====
+01E4: 81 02 02                                     frame     args=2 locals=2
+01E7: 8d 30 62 06 41 00 54 40 02 06                jf        (A30.f06:quality == 0) -> 0206
+01F1: 86 06 30 40 41 04 ac 41 00 41 04 40 …+9      setfield  A30.f06:quality = ((4 + random(0, 4)) + random(0, 4))
+0206:>8d 30 62 03 41 00 54 40 02 2b                jf        (A30.f03:frame == 0) -> 022B
+0210: 82 00 31 63 40 40                            set       L00 = as_char(A31)
+0216: 86 1c 00 40 00 62 1c 41 0a 4a ac 41 …+6      setfield  L00.f1C:health = ((L00.f1C:health + 10) + random(1, 10))
+0228: 88 02 f6                                     goto      -> 02F6
+022B:>8d 30 62 03 41 01 54 40 02 4c                jf        (A30.f03:frame == 1) -> 024C
+0235: c2 31 41 09 40                               builtin   remove_ability(A31, 9)
+023A: c2 31 41 16 40                               builtin   remove_ability(A31, 22)
+023F: c2 31 41 0e 40                               builtin   remove_ability(A31, 14)
+0244: c2 31 41 15 40                               builtin   remove_ability(A31, 21)
+0249: 88 02 f6                                     goto      -> 02F6
+024C:>8d 30 62 03 41 02 54 40 02 f6                jf        (A30.f03:frame == 2) -> 02F6
+0256: 82 01 ac 41 00 41 04 40 40                   set       L01 = random(0, 4)
+025F: 8d 01 41 00 54 40 02 87                      jf        (L01 == 0) -> 0287
+0267: 5e                                           text      "^"
+0268: 8a 31 40                                     print     A31
+026B: 20 66 61 6c 6c 73 20 61 73 6c 65 65 …+3      text      " falls asleep.\n"
+027A: c3 31 41 16 43 00 00 10 00 40                builtin   temp_ability(A31, 22, 4096)
+0284: 88 02 f6                                     goto      -> 02F6
+0287:>8d 01 41 01 54 40 02 b2                      jf        (L01 == 1) -> 02B2
+028F: 5e                                           text      "^"
+0290: 8a 31 40                                     print     A31
+0293: 20 73 63 72 65 61 6d 73 20 69 6e 20 …+6      text      " screams in fear.\n"
+02A5: c3 31 41 0d 43 00 00 05 00 40                builtin   temp_ability(A31, 13, 1280)
+02AF: 88 02 f6                                     goto      -> 02F6
+02B2:>8d 01 41 02 54 40 02 d9                      jf        (L01 == 2) -> 02D9
+02BA: 5e                                           text      "^"
+02BB: 8a 31 40                                     print     A31
+02BE: 20 69 73 20 63 6f 6e 66 75 73 65 64 …+2      text      " is confused.\n"
+02CC: c3 31 41 15 43 00 00 05 00 40                builtin   temp_ability(A31, 21, 1280)
+02D6: 88 02 f6                                     goto      -> 02F6
+02D9:>5e                                           text      "^"
+02DA: 8a 31 40                                     print     A31
+02DD: 20 69 73 20 70 61 72 61 6c 79 7a 65 …+3      text      " is paralyzed.\n"
+02EC: c3 31 41 0e 43 00 00 01 f4 40                builtin   temp_ability(A31, 14, 500)
+02F6:>86 06 30 40 30 62 06 41 01 4b 40             setfield  A30.f06:quality = (A30.f06:quality - 1)
+0301: 8d 30 62 06 41 00 54 40 03 53                jf        (A30.f06:quality == 0) -> 0353
+030B: 54 68 65 20 63 72 79 73 74 61 6c 20 …+53     text      "The crystal on the end of the staff stops glowing, turning gray.\n"
+034C: 86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+0353:>8b 41 00 40                                  return    0
+0357: a0 0d 91 57 00 93 00 27 50 00 ff ff …+68     .dict     dict[13] {8/search: @0104, 9/use: @00BD, 10/use_on: @01E4, 36/p_weight: @0087, 38/p26: @008D, 39/p_typeflags27: @0093, 42: @0099, 50: @00B7, 51: @0002}

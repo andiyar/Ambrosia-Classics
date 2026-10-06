@@ -1,0 +1,31 @@
+; segment 113F  page 11  class 0x00 (prop) type 319 tile-name "brazier" (tool join F000/F004)
+; kind class  length 250 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00E6  methods: sel9/use@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 e6                                        .hdr      dictionary offset = 00E6
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 03 41 00 54 40 00 bd                jf        (A30.f03:frame == 0) -> 00BD
+000F: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+0016: 49 74 20 69 73 20 6e 6f 77 20 6c 69 …+3      text      "It is now lit.\n"
+0025: 8d 30 62 06 dc 41 0a 40 41 01 4a 54 …+3      jf        (A30.f06:quality == (get_variable(10) + 1)) -> 00B4
+0034: 8d 30 62 06 41 0a 54 40 00 aa                jf        (A30.f06:quality == 10) -> 00AA
+003E: e7 41 01 40                                  builtin   screen_effect(1)
+0042: 49 74 20 69 73 20 6e 6f 74 20 69 6e …+92     text      "It is not in the lightning bolt that one finds knowledge, but the tortuous serpent path that returns...\n"
+00AA:>dd 41 0a 30 62 06 40                         builtin   set_variable(10, A30.f06:quality)
+00B1: 88 00 ba                                     goto      -> 00BA
+00B4:>dd 41 0a 41 00 40                            builtin   set_variable(10, 0)
+00BA:>88 00 e2                                     goto      -> 00E2
+00BD:>86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+00C4: 49 74 20 69 73 20 6e 6f 77 20 65 78 …+12     text      "It is now extinguished.\n"
+00DC: dd 41 0a 41 00 40                            builtin   set_variable(10, 0)
+00E2:>8b 41 00 40                                  return    0
+00E6: a0 03 91 3f 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0002}

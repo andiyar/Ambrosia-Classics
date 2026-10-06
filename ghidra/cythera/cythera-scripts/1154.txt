@@ -1,0 +1,33 @@
+; segment 1154  page 11  class 0x00 (prop) type 340 tile-name "belt" (tool join F000/F004)
+; kind class  length 281 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C9  methods: sel13/wield@005B, sel14/take_drop_14@009E
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c9                                        .hdr      dictionary offset = 00C9
+0002: 90 02 91 54 00 0c 91 54 00 43                .array    array[2] = [@000C, @0043]
+000C: 41 70 70 65 61 72 73 20 74 6f 20 62 …+43     .string   "Appears to be some sort of magical belt, of great age."
+0043: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0049: 90 01 00 00 00 0a                            .array    array[1] = [10]
+004F: 90 01 00 00 00 07                            .array    array[1] = [7]
+0055: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel13/wield @005B ====
+005B: 81 02 00                                     frame     args=2 locals=0
+005E: 86 17 31 40 31 62 17 41 05 4a 40             setfield  A31.f17:body = (A31.f17:body + 5)
+0069: 8d 31 48 05 54 40 00 9a                      jf        (A31 == G05:leader) -> 009A
+0071: 59 6f 75 20 67 65 74 20 61 20 66 65 …+29     text      "You get a feeling of power and strength.\n"
+009A:>8b 41 00 40                                  return    0
+
+; ==== method sel14/take_drop_14 @009E ====
+009E: 81 02 00                                     frame     args=2 locals=0
+00A1: 86 17 31 40 31 62 17 41 05 4b 40             setfield  A31.f17:body = (A31.f17:body - 5)
+00AC: 8d 31 48 05 54 40 00 c5                      jf        (A31 == G05:leader) -> 00C5
+00B4: 59 6f 75 20 66 65 65 6c 20 77 65 61 …+5      text      "You feel weaker.\n"
+00C5:>8b 41 00 40                                  return    0
+00C9: a0 0d 91 54 00 55 00 27 91 54 00 5b …+68     .dict     dict[13] {13/wield: @005B, 14/take_drop_14: @009E, 36/p_weight: @0049, 38/p26: @004F, 39/p_typeflags27: @0055, 51: @0002}

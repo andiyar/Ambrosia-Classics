@@ -1,0 +1,53 @@
+; segment 100A  page 10  class 0x00 (prop) type 10 tile-name "stone door" (tool join F000/F004)
+; kind class  length 353 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0111  methods: sel0/init@0002, sel9/use@0027, sel65@0079, sel21/signal@00EB
+; properties: sel39/p_typeflags27, sel52
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 11                                        .hdr      dictionary offset = 0111
+
+; ==== method sel0/init @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 30 62 06 41 00 54 40 00 17                jf        (A30.f06:quality == 0) -> 0017
+000F: 86 03 30 40 31 62 03 40                      setfield  A30.f03:frame = A31.f03:frame
+0017:>8b 41 00 40                                  return    0
+001B: 90 01 00 00 00 ff                            .array    array[1] = [255]
+0021: 90 01 00 00 02 80                            .array    array[1] = [640]
+
+; ==== method sel9/use @0027 ====
+0027: 81 01 00                                     frame     args=1 locals=0
+002A: 8d 30 62 06 43 00 00 00 80 4f 40 00 …+1      jf        (A30.f06:quality < 128) -> 0059
+0037: d3 41 09 30 62 01 30 62 02 40                builtin   positional_sound(9, A30.f01:x, A30.f02:y)
+0041: 9f 0e 40 30 41 01 41 03 41 05 41 07 …+9      call      R0E40(A30, 1, 3, 5, 7, 9, 11, 13, 15)  ; R0E40 = DoDoor [from 0x0101 symtab]
+0056: 88 00 75                                     goto      -> 0075
+0059:>d3 41 19 30 62 01 30 62 02 40                builtin   positional_sound(25, A30.f01:x, A30.f02:y)
+0063: 49 74 20 64 6f 65 73 6e 27 74 20 62 …+6      text      "It doesn't budge.\n"
+0075:>8b 41 00 40                                  return    0
+
+; ==== method sel65 @0079 ====
+0079: 81 03 00                                     frame     args=3 locals=0
+007C: 8d 30 62 06 43 00 00 00 80 4f 40 00 …+1      jf        (A30.f06:quality < 128) -> 00D5
+0089: 8d 32 41 04 56 40 00 9b                      jf        (A32 & 4) -> 009B
+0091: 82 31 31 41 02 4c 40                         set       A31 = (A31 * 2)
+0098: 88 00 bc                                     goto      -> 00BC
+009B:>8d 32 41 01 56 40 00 ad                      jf        (A32 & 1) -> 00AD
+00A3: 82 31 31 41 02 4d 40                         set       A31 = (A31 / 2)
+00AA: 88 00 bc                                     goto      -> 00BC
+00AD:>8d 32 41 02 56 40 00 bc                      jf        (A32 & 2) -> 00BC
+00B5: 82 31 31 41 04 4d 40                         set       A31 = (A31 / 4)
+00BC:>9f 0e 49 30 31 41 01 41 03 41 05 41 …+10     call      R0E49(A30, A31, 1, 3, 5, 7, 9, 11, 13, 15)
+00D2: 88 00 e7                                     goto      -> 00E7
+00D5:>49 74 20 64 6f 65 73 6e 27 74 20 62 …+6      text      "It doesn't budge.\n"
+00E7:>8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @00EB ====
+00EB: 81 02 00                                     frame     args=2 locals=0
+00EE: d3 41 09 30 62 01 30 62 02 40                builtin   positional_sound(9, A30.f01:x, A30.f02:y)
+00F8: 9f 0e 40 30 41 01 41 03 41 05 41 07 …+9      call      R0E40(A30, 1, 3, 5, 7, 9, 11, 13, 15)  ; R0E40 = DoDoor [from 0x0101 symtab]
+010D: 8b 41 00 40                                  return    0
+0111: a0 0d 90 0a 00 02 00 00 90 0a 00 1b …+68     .dict     dict[13] {0/init: @0002, 9/use: @0027, 21/signal: @00EB, 39/p_typeflags27: @0021, 52: @001B, 65: @0079}

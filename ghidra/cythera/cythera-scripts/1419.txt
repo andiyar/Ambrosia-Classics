@@ -1,0 +1,45 @@
+; segment 1419  page 14  class 0x20 (zone) id 25
+; kind class  length 292 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00F8  methods: sel20/enter@0008, sel21/signal@0026
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 f8                                        .hdr      dictionary offset = 00F8
+0002: 90 01 50 00 00 01                            .array    array[1] = [True]
+
+; ==== method sel20/enter @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: d9 43 0f ff ff f7 40                         builtin   set_outdoor_sky(-9)
+0012: da 44 54 6f 6d 62 00 40                      builtin   set_map_title("Tomb")
+001A: d8 41 fb 40                                  builtin   set_zone_light_minimum(-5)
+001E: d6 41 05 40                                  builtin   play_music2(5)
+0022: 8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @0026 ====
+0026: 81 02 03                                     frame     args=2 locals=3
+0029: 8d 31 41 64 54 40 00 82                      jf        (A31 == 100) -> 0082
+0031: 82 00 c7 43 10 00 00 01 41 00 40 40          set       L00 = iterate_all_props(&L01, 0)
+003D:>8c c7 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_all_props(&L01, 1) -> 007F
+004A: 8d 00 62 04 42 01 0b 54 40 00 70             jf        (L00.f04:type == 267) -> 0070
+0055: 8d 00 62 00 43 00 00 00 80 54 40 00 …+1      jf        (L00.f00:kind == 128) -> 0070
+0062: 86 00 00 40 00 62 00 43 0f ff ff 7f …+2      setfield  L00.f00:kind = (L00.f00:kind & -129)
+0070:>82 00 c7 43 10 00 00 01 41 02 40 40          set       L00 = iterate_all_props(&L01, 2)
+007C: 88 00 3d                                     goto      -> 003D
+007F:>88 00 f4                                     goto      -> 00F4
+0082:>8d 31 41 65 54 40 00 f4                      jf        (A31 == 101) -> 00F4
+008A: d3 41 18 41 1f 41 29 40                      builtin   positional_sound(24, 31, 41)
+0092: e7 41 00 40                                  builtin   screen_effect(0)
+0096: 82 00 c7 43 10 00 00 01 41 00 40 40          set       L00 = iterate_all_props(&L01, 0)
+00A2:>8c c7 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_all_props(&L01, 1) -> 00F4
+00AF: 8d 00 62 00 43 00 00 00 80 54 40 00 …+1      jf        (L00.f00:kind == 128) -> 00E5
+00BC: 8d 00 62 04 42 00 c8 54 00 62 04 42 …+15     jf        (((L00.f04:type == 200) || (L00.f04:type == 201)) || (L00.f04:type == 202)) -> 00E5
+00D7: 86 00 00 40 00 62 00 43 0f ff ff 7f …+2      setfield  L00.f00:kind = (L00.f00:kind & -129)
+00E5:>82 00 c7 43 10 00 00 01 41 02 40 40          set       L00 = iterate_all_props(&L01, 2)
+00F1: 88 00 a2                                     goto      -> 00A2
+00F4:>8b 41 00 40                                  return    0
+00F8: a0 07 94 19 00 26 00 15 94 19 00 02 …+32     .dict     dict[7] {20/enter: @0008, 21/signal: @0026, 36/p_weight: @0002}

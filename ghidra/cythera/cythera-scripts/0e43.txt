@@ -1,0 +1,33 @@
+; segment 0E43  page 0E  routine "DoKey" [from 0x0101 symtab: key 1643; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 240 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 05                                     frame     args=3 locals=5
+0003: 8d 32 60 34 40 00 d6                         jf        has(A32, sel52) -> 00D6
+000A: 82 00 43 50 00 00 00 40                      set       L00 = False
+0012: 82 01 43 50 00 00 00 40                      set       L01 = False
+001A: 8d 31 43 00 00 00 ff 54 40 00 65             jf        (A31 == 255) -> 0065
+0025: 82 00 43 50 00 00 01 40                      set       L00 = True
+002D: 82 02 48 05 63 40 40                         set       L02 = as_char(G05:leader)
+0034: 82 03 02 62 18 40                            set       L03 = L02.f18:reflex
+003A: 8d 03 ac 41 00 41 13 40 4a 41 14 ac …+23     jf        ((L03 + random(0, 19)) < ((20 + random(0, 19)) + (((A32.f06:quality + 19) / 20) * 5))) -> 0065
+005D: 82 01 43 50 00 00 01 40                      set       L01 = True
+0065:>8d 32 62 06 30 62 06 31 4a 54 00 01 …+11     jf        ((A32.f06:quality == (A30.f06:quality + A31)) || (L00 && (L01 == False))) -> 0083
+007C: 9d 35 32 40                                  send      A32.sel53()
+0080: 88 00 d3                                     goto      -> 00D3
+0083:>8d 00 01 5c 40 00 be                         jf        (L00 && L01) -> 00BE
+008A: 54 68 65 20 6c 6f 63 6b 70 69 63 6b …+8      text      "The lockpick broke.\n"
+009E: 82 04 30 62 09 40                            set       L04 = A30.f09:count
+00A4: 8d 04 41 01 54 40 00 b2                      jf        (L04 == 1) -> 00B2
+00AC: a7 30 40                                     builtin   delete_prop(A30)
+00AF: 88 00 bb                                     goto      -> 00BB
+00B2:>86 09 30 40 04 41 01 4b 40                   setfield  A30.f09:count = (L04 - 1)
+00BB:>88 00 d3                                     goto      -> 00D3
+00BE:>54 68 65 20 6b 65 79 20 64 6f 65 73 …+9      text      "The key doesn't fit.\n"
+00D3:>88 00 ec                                     goto      -> 00EC
+00D6:>54 68 65 72 65 20 69 73 6e 27 74 20 …+10     text      "There isn't any lock.\n"
+00EC:>8b 41 00 40                                  return    0

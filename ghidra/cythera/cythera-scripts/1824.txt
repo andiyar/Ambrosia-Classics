@@ -1,0 +1,92 @@
+; segment 1824  page 18  class 0x40 (char) id 36 name "Antenor" (string table 0201)
+; kind class  length 1559 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0603  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 03                                        .hdr      dictionary offset = 0603
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 59 6f 75 20 73 65 65 20 61 20 71 75 …+24     text      "You see a quiet, introspective man.*"
+0029:>8e                                           input       ; read a line into the input buffer
+002A: 90 62 79 65 00 00 42                         match     bye else -> 0042
+0031: 22 47 6f 6f 64 62 79 65 2e 22                text      "\"Goodbye.\""
+003B: 8b 41 00 40                                  return    0
+; ---- dead code 003F-0042: no dictionary entry, jump, pointer or call reaches it ----
+003F:x88 00 29                                     goto      -> 0029
+0042:>90 6e 61 6d 65 00 00 76                      match     name else -> 0076
+004A: 22 49 20 61 6d 20 41 6e 74 65 6e 6f …+22     text      "\"I am Antenor, formerly of Odemia\""
+006C: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0073: 88 00 29                                     goto      -> 0029
+0076:>90 6a 6f 62 00 00 b4                         match     job else -> 00B4
+007D: 22 49 27 6d 20 61 20 73 69 6d 70 6c …+40     text      "\"I'm a simple merchant, trading in household goods.\""
+00B1: 88 00 29                                     goto      -> 0029
+00B4:>90 62 75 79 2c 73 65 6c 6c 00 01 24          match     buy,sell else -> 0124
+00C0: 22 49 20 62 75 79 20 66 72 6f 6d 20 …+85     text      "\"I buy from local artisans, and sell mostly to households - probably nothing of interest to you.\""
+0121: 88 00 29                                     goto      -> 0029
+0124:>90 6f 64 65 6d 00 01 61                      match     odem else -> 0161
+012C: 22 54 68 61 74 20 69 73 20 69 6e 20 …+38     text      "\"That is in my past - I'd rather not speak of it.\""
+015E: 88 00 29                                     goto      -> 0029
+0161:>90 68 65 62 65 00 02 73                      match     hebe else -> 0273
+0169: 8d 9f 0f 02 30 41 01 40 40 01 ad             jf        R0F02(A30, 1) -> 01AD  ; R0F02 = tstbit [from 0x0101 symtab]
+0174: 22 49 74 20 77 61 73 20 61 6c 6c 20 …+42     text      "\"It was all my fault, and I must deal with it myself.\""
+01AA: 88 02 70                                     goto      -> 0270
+01AD:>22 53 68 65 20 77 61 73 20 74 6f 20 …+12     text      "\"She was to be my wife.\""
+01C5: 8d 9f 0f 02 42 00 23 41 01 40 40 02 …+1      jf        R0F02(35, 1) -> 0270  ; R0F02 = tstbit [from 0x0101 symtab]
+01D2: 2a                                           text      "*"
+01D3: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+01D9: 22 53 68 65 20 74 6f 6c 64 20 6d 65 …+36     text      "\"She told me to tell you that she forgive you.\"*"
+0209: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+020E: 22 49 20 74 68 61 6e 6b 20 79 6f 75 …+79     text      "\"I thank you for the message, but I must forgive myself before I can seek her forgiveness.\""
+0269: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0270:>88 00 29                                     goto      -> 0029
+0273:>90 62 75 69 6c 2c 73 61 6c 65 00 05 …+1      match     buil,sale else -> 05BE
+0280: 8d 9f 0f 02 30 41 02 40 40 02 b4             jf        R0F02(A30, 2) -> 02B4  ; R0F02 = tstbit [from 0x0101 symtab]
+028B: 22 49 20 68 6f 70 65 20 79 6f 75 20 …+26     text      "\"I hope you like your new building...\""
+02B1: 88 05 bb                                     goto      -> 05BB
+02B4:>22 59 65 73 2c 20 61 72 65 20 79 6f …+41     text      "\"Yes, are you interested in purchasing the building?\""
+02E9: 8f 79 6e 00                                  prompt    "yn"
+02ED: 90 79 00 05 7a                               match     y else -> 057A
+02F2: 22 49 20 72 65 70 72 65 73 65 6e 74 …+87     text      "\"I represent the late owner's family in this deal.  If you are interested, it costs 10,000 oboloi.\""
+0355: 8f 79 6e 00                                  prompt    "yn"
+0359: 90 79 00 05 3a                               match     y else -> 053A
+035E: 8d 9f 0d 04 40 43 00 00 27 10 52 40 …+2      jf        (R0D04() >= 10000) -> 0517
+036C: 22 59 6f 75 20 72 65 61 6c 6c 79 20 …+143    text      "\"You really shouldn't carry that sort of cash around, but anyway, here...\"*He digs through some papers, makes you sign a few things, and takes your money.*"
+0407: 9f 0d 05 43 00 00 27 10 40                   call      R0D05(10000)
+0410: 82 00 cb 43 10 00 00 01 41 00 41 33 …+4      set       L00 = iterate_props_at(&L01, 0, 51, 59)
+0420:>8c cb 43 10 00 00 01 41 01 40 40 04 …+1      jt        iterate_props_at(&L01, 1) -> 045C
+042D: 8d 00 62 04 42 00 c5 54 00 62 06 41 …+6      jf        ((L00.f04:type == 197) && (L00.f06:quality == 27)) -> 044D
+043F: 86 00 00 40 00 62 00 43 00 00 00 80 …+2      setfield  L00.f00:kind = (L00.f00:kind | 128)
+044D:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+0459: 88 04 20                                     goto      -> 0420
+045C:>82 00 cb 43 10 00 00 01 41 00 41 2b …+4      set       L00 = iterate_props_at(&L01, 0, 43, 54)
+046C:>8c cb 43 10 00 00 01 41 01 40 40 04 …+1      jt        iterate_props_at(&L01, 1) -> 049A
+0479: 8d 00 62 04 42 00 03 54 40 04 8b             jf        (L00.f04:type == 3) -> 048B
+0484: 86 06 00 40 41 05 40                         setfield  L00.f06:quality = 5
+048B:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+0497: 88 04 6c                                     goto      -> 046C
+049A:>22 48 65 72 65 27 73 20 61 20 6b 65 …+93     text      "\"Here's a key to the place, I hope you enjoy your new building.\"*He shakes your hand and gives you a key."
+0503: a8 41 01 41 42 41 05 41 00 40                builtin   give_item(1, 66, 5, 0)
+050D: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0514: 88 05 3a                                     goto      -> 053A
+0517:>22 42 75 74 20 79 6f 75 20 64 6f 6e …+23     text      "\"But you don't have 10,000 oboloi!\""
+053A:>90 6e 00 05 7a                               match     n else -> 057A
+053F: 22 49 20 75 6e 64 65 72 73 74 61 6e …+47     text      "\"I understand - no many can afford such prime real estate.\""
+057A:>90 6e 00 05 bb                               match     n else -> 05BB
+057F: 22 57 65 6c 6c 2c 20 74 68 61 74 27 …+48     text      "\"Well, that's probably for the best - it's quite expensive.\""
+05BB:>88 00 29                                     goto      -> 0029
+05BE:>90 2a 00 05 fc                               match     * else -> 05FC
+05C3: 8d 9f 08 0e 30 40 5e 40 05 f9                jf        !R080E(A30) -> 05F9
+05CD: 8d 9f 08 01 30 40 5e 40 05 f9                jf        !R0801(A30) -> 05F9
+05D7: 48 65 20 64 6f 65 73 6e 27 74 20 73 …+22     text      "He doesn't seem to understand you."
+05F9:>88 00 29                                     goto      -> 0029
+05FC:>88 00 29                                     goto      -> 0029
+; ---- dead code 05FF-0603: no dictionary entry, jump, pointer or call reaches it ----
+05FF:x8b 41 00 40                                  return    0
+0603: a0 03 98 24 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

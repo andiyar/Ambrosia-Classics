@@ -1,0 +1,21 @@
+; segment 0C49  page 0C  routine
+; kind routine  length 86 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 01                                     frame     args=4 locals=1
+0003: 8d 33 40 00 13                               jf        A33 -> 0013
+0008: 82 00 9d 1c 30 33 40 40                      set       L00 = A30.sel28/attack(A33)
+0010: 88 00 1d                                     goto      -> 001D
+0013:>82 00 9d 1c 30 30 62 22 40 40                set       L00 = A30.sel28/attack(A30.f22:target)
+001D:>8d 00 5e 40 00 4b                            jf        !L00 -> 004B
+0023: 8d 33 40 00 3a                               jf        A33 -> 003A
+0028: f0 30 43 00 00 00 aa 33 63 00 41 00 …+3      builtin   queue_activity(A30, 170, as_prop(A33), 0, 0)
+0037: 88 00 4b                                     goto      -> 004B
+003A:>f0 30 43 00 00 00 aa 30 62 22 63 00 …+5      builtin   queue_activity(A30, 170, as_prop(A30.f22:target), 0, 0)
+004B:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0052-0056: no dictionary entry, jump, pointer or call reaches it ----
+0052:x8b 41 00 40                                  return    0

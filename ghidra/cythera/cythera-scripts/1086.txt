@@ -1,0 +1,42 @@
+; segment 1086  page 10  class 0x00 (prop) type 134 tile-name "paper" (tool join F000/F004)
+; kind class  length 292 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00F8  methods: sel8/search@0008, sel9/use@0013
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 f8                                        .hdr      dictionary offset = 00F8
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel8/search @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 9d 09 30 40                                  send      A30.sel9/use()
+000F: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0013 ====
+0013: 81 01 02                                     frame     args=1 locals=2
+0016: 8d 30 62 06 41 00 54 40 00 71                jf        (A30.f06:quality == 0) -> 0071
+0020: 82 00 43 50 00 ff ff 40                      set       L00 = Nil
+0028: 8d 30 62 11 40 00 3b                         jf        A30.f11:has_frame -> 003B
+002F: 82 00 30 62 12 43 00 00 01 02 46 40          set       L00 = A30.f12:frame_dict[258]
+003B:>8d 00 43 50 00 ff ff 53 40 00 61             jf        (L00 != Nil) -> 0061
+0046: 9f 0e 64 30 00 41 21 41 03 41 26 41 …+12     call      R0E64(A30, L00, 33, 3, 38, 44, 182, 184)  ; R0E64 = DisplaySign [from 0x0101 symtab]
+005E: 88 00 6e                                     goto      -> 006E
+0061:>49 74 20 69 73 20 62 6c 61 6e 6b 2e …+1      text      "It is blank.\n"
+006E:>88 00 f4                                     goto      -> 00F4
+0071:>8d 30 62 06 43 00 00 00 ff 54 40 00 …+1      jf        (A30.f06:quality == 255) -> 00A9
+007E: 8d db 30 40 40 00 89                         jf        scripted_window_shown(A30) -> 0089
+0085: 8b 41 00 40                                  return    0
+0089:>82 01 9b 04 30 30 62 07 41 32 41 32 …+6      set       L01 = sysnew_window(A30, A30.f07:byte7, 50, 50, 1, 1)
+009B: 8a 43 30 00 02 21 30 62 07 4a 40             print     (str[0221:0]<Nil entry: index base> + A30.f07:byte7)
+00A6: 88 00 f4                                     goto      -> 00F4
+00A9:>8d 30 62 03 41 02 4f 40 00 d6                jf        (A30.f03:frame < 2) -> 00D6
+00B3: 9f 0e 64 30 43 30 00 02 19 30 62 06 …+20     call      R0E64(A30, (str[0219:0]"" + A30.f06:quality), 33, 3, 38, 44, 182, 184)  ; R0E64 = DisplaySign [from 0x0101 symtab]
+00D3: 88 00 f4                                     goto      -> 00F4
+00D6:>9f 0e 65 30 43 30 00 02 19 30 62 06 …+18     call      R0E65(A30, (str[0219:0]"" + A30.f06:quality), 17, 39, 52, 188, 149)  ; R0E65 = DisplayScroll [from 0x0101 symtab]
+00F4:>8b 41 00 40                                  return    0
+00F8: a0 07 50 00 ff ff 00 0e 90 86 00 02 …+32     .dict     dict[7] {8/search: @0008, 9/use: @0013, 36/p_weight: @0002}

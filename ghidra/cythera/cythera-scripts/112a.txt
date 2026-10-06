@@ -1,0 +1,64 @@
+; segment 112A  page 11  class 0x00 (prop) type 298 tile-name "liquid" (tool join F000/F004)
+; kind class  length 560 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01E0  methods: sel15/take_drop_15@0046, sel16/take_drop_16@0116, sel8/search@0122, sel9/use@016D
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 e0                                        .hdr      dictionary offset = 01E0
+0002: 90 02 91 2a 00 0c 91 2a 00 3a                .array    array[2] = [@000C, @003A]
+000C: 4e 6f 74 20 73 75 72 65 20 77 68 61 …+34     .string   "Not sure what it is, but it sure seems nasty."
+003A: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0040: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @0046 ====
+0046: 81 01 00                                     frame     args=1 locals=0
+0049: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0050-0054: no dictionary entry, jump, pointer or call reaches it ----
+0050:x8b 41 00 40                                  return    0
+; ---- local subroutine @0054 ----
+0054: 81 01 00                                     frame     args=1 locals=0
+0057: 8d 30 62 06 41 01 54 40 00 81                jf        (A30.f06:quality == 1) -> 0081
+0061: 8d dc 41 0c 40 5e 40 00 75                   jf        !get_variable(12) -> 0075
+006A: 9f 0e 8b 43 40 40 00 01 41 0a 40             call      R0E8B(char#1"Hero", 10)
+0075:>dd 41 0c 43 50 00 00 01 40                   builtin   set_variable(12, True)
+007E: 88 01 12                                     goto      -> 0112
+0081:>8d 30 62 06 41 02 54 40 00 ab                jf        (A30.f06:quality == 2) -> 00AB
+008B: 8d dc 41 0d 40 5e 40 00 9f                   jf        !get_variable(13) -> 009F
+0094: 9f 0e 8b 43 40 40 00 01 41 0a 40             call      R0E8B(char#1"Hero", 10)
+009F:>dd 41 0d 43 50 00 00 01 40                   builtin   set_variable(13, True)
+00A8: 88 01 12                                     goto      -> 0112
+00AB:>8d 30 62 06 41 03 54 40 00 c1                jf        (A30.f06:quality == 3) -> 00C1
+00B5: dd 41 0e 43 50 00 00 01 40                   builtin   set_variable(14, True)
+00BE: 88 01 12                                     goto      -> 0112
+00C1:>8d 30 62 06 41 04 54 40 00 eb                jf        (A30.f06:quality == 4) -> 00EB
+00CB: 8d dc 41 0f 40 5e 40 00 df                   jf        !get_variable(15) -> 00DF
+00D4: 9f 0e 8b 43 40 40 00 01 41 28 40             call      R0E8B(char#1"Hero", 40)
+00DF:>dd 41 0f 43 50 00 00 01 40                   builtin   set_variable(15, True)
+00E8: 88 01 12                                     goto      -> 0112
+00EB:>8d 30 62 06 41 05 54 40 01 12                jf        (A30.f06:quality == 5) -> 0112
+00F5: 8d dc 41 10 40 5e 40 01 09                   jf        !get_variable(16) -> 0109
+00FE: 9f 0e 8b 43 40 40 00 01 41 32 40             call      R0E8B(char#1"Hero", 50)
+0109:>dd 41 10 43 50 00 00 01 40                   builtin   set_variable(16, True)
+0112:>8b 41 00 40                                  return    0
+
+; ==== method sel16/take_drop_16 @0116 ====
+0116: 81 01 00                                     frame     args=1 locals=0
+0119: 9e 00 54 30 40                               callsub   sub_0054(A30)
+011E: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0122 ====
+0122: 81 01 00                                     frame     args=1 locals=0
+0125: 54 68 65 20 76 69 61 6c 20 73 65 65 …+51     text      "The vial seems to be slowly bubbling, or flowing, as if alive.\n"
+0164: 9e 00 54 30 40                               callsub   sub_0054(A30)
+0169: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @016D ====
+016D: 81 01 00                                     frame     args=1 locals=0
+0170: 59 6f 75 20 75 6e 63 6f 72 6b 20 74 …+96     text      "You uncork the vial, but the smell and a general sense of wrongness prevents you from taking a taste of it.\n"
+01DC: 8b 41 00 40                                  return    0
+01E0: a0 0d 50 00 ff ff 20 65 50 00 ff ff …+68     .dict     dict[13] {8/search: @0122, 9/use: @016D, 15/take_drop_15: @0046, 16/take_drop_16: @0116, 36/p_weight: @0040, 51: @0002}

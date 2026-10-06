@@ -1,0 +1,83 @@
+; segment 104C  page 10  class 0x00 (prop) type 76 tile-name "grimoire" (tool join F000/F004)
+; kind class  length 977 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0381  methods: sel9/use@0086, sel10/use_on@012A, sel8/search@02B2
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 81                                        .hdr      dictionary offset = 0381
+0002: 90 02 90 4c 00 0c 90 4c 00 74                .array    array[2] = [@000C, @0074]
+000C: 42 79 20 75 73 69 6e 67 20 74 68 65 …+92     .string   "By using the tables of correspondances and the like in a grimoire, one can learn a spell from a scroll."
+0074: 90 01 00 00 00 4a                            .array    array[1] = [74]
+007A: 90 01 00 00 00 02                            .array    array[1] = [2]
+0080: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel9/use @0086 ====
+0086: 81 01 01                                     frame     args=1 locals=1
+0089: 82 00 9f 0e ac 48 05 42 00 c3 40 40          set       L00 = R0EAC(G05:leader, 195)
+0095: 8d 00 5e 40 01 03                            jf        !L00 -> 0103
+009B: 59 6f 75 20 68 61 76 65 20 6e 6f 74 …+85     text      "You have not learned even the fundamentals of magic - attempting to learn a spell is beyond you.\n"
+00FC: 8b 43 50 00 ff ff 40                         return    Nil
+0103:>8d 48 13 40 01 1f                            jf        G13:g13_bool -> 011F
+0109: 55 73 65 20 67 72 69 6d 6f 69 72 65 …+10     text      "Use grimoire on what?\n"
+011F:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0126-012A: no dictionary entry, jump, pointer or call reaches it ----
+0126:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @012A ====
+012A: 81 02 06                                     frame     args=2 locals=6
+012D: 8d 31 62 04 42 00 4b 53 40 01 69             jf        (A31.f04:type != 75) -> 0169
+0138: 59 6f 75 20 63 61 6e 20 6f 6e 6c 79 …+34     text      "You can only learn new spells from scrolls...\n"
+0166: 88 02 ae                                     goto      -> 02AE
+0169:>8d f5 48 05 31 62 06 40 40 01 94             jf        find_skill(G05:leader, A31.f06:quality) -> 0194
+0174: 59 6f 75 20 61 6c 72 65 61 64 79 20 …+17     text      "You already know that spell.\n"
+0191: 88 02 ae                                     goto      -> 02AE
+0194:>82 00 ad 41 1c 41 00 41 00 41 00 31 …+8      set       L00 = create_prop(28, 0, 0, 0, A31.f06:quality, 0, 0)
+01A8: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+01AE: 82 01 48 05 63 40 40                         set       L01 = as_char(G05:leader)
+01B5: 8d 9d 1a 00 01 40 40 02 8f                   jf        L00.sel26(L01) -> 028F
+01BE: 86 0b 00 40 48 05 40                         setfield  L00.f0B:loc16 = G05:leader
+01C5: 82 02 41 00 40                               set       L02 = 0
+01CA: 82 03 a0 43 10 00 00 04 41 00 41 00 …+7      set       L03 = iterate_range(&L04, 0, 0, 128)
+01DD:>8c a0 43 10 00 00 04 41 01 40 40 02 …+1      jt        iterate_range(&L04, 1) -> 0208
+01EA: 8d f5 01 03 40 40 01 f9                      jf        find_skill(L01, L03) -> 01F9
+01F2: 82 02 02 41 01 4a 40                         set       L02 = (L02 + 1)
+01F9:>82 03 a0 43 10 00 00 04 41 02 40 40          set       L03 = iterate_range(&L04, 2)
+0205: 88 01 dd                                     goto      -> 01DD
+0208:>a7 31 40                                     builtin   delete_prop(A31)
+020B: 59 6f 75 20 6e 6f 77 20 6b 6e 6f 77 …+12     text      "You now know the spell '"
+0223: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+0229: 27 2c 20 67 69 76 69 6e 67 20 79 6f …+2      text      "', giving you "
+0237: 8a 02 40                                     print     L02
+023A: 20 6f 66 20                                  text      " of "
+023E: 8a 9f 0e b5 01 40 40                         print     R0EB5(L01)
+0245: 20 73 70 65 6c 6c 73 20 70 6f 73 73 …+59     text      " spells possible.\nTo cast it, select it from the character skill list.\n"
+028C: 88 02 ae                                     goto      -> 02AE
+028F:>59 6f 75 20 66 61 69 6c 20 74 6f 20 …+7      text      "You fail to learn '"
+02A2: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+02A8: 27 2e 0a                                     text      "'.\n"
+02AB: a7 00 40                                     builtin   delete_prop(L00)
+02AE:>8b 41 00 40                                  return    0
+
+; ==== method sel8/search @02B2 ====
+02B2: 81 01 05                                     frame     args=1 locals=5
+02B5: 59 6f 75 20 63 61 6e 20 75 73 65 20 …+69     text      "You can use the grimoire to attempt to learn new spells by using it on a scroll.\n"
+0306: 82 00 41 00 40                               set       L00 = 0
+030B: 82 01 48 05 63 40 40                         set       L01 = as_char(G05:leader)
+0312: 82 02 a0 43 10 00 00 03 41 00 41 00 …+7      set       L02 = iterate_range(&L03, 0, 0, 128)
+0325:>8c a0 43 10 00 00 03 41 01 40 40 03 …+1      jt        iterate_range(&L03, 1) -> 0350
+0332: 8d f5 01 02 40 40 03 41                      jf        find_skill(L01, L02) -> 0341
+033A: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+0341:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+034D: 88 03 25                                     goto      -> 0325
+0350:>59 6f 75 20 6e 6f 77 20 6b 6e 6f 77 …+1      text      "You now know "
+035D: 8a 00 40                                     print     L00
+0360: 20 6f 66 20                                  text      " of "
+0364: 8a 9f 0e b5 01 40 40                         print     R0EB5(L01)
+036B: 20 73 70 65 6c 6c 73 20 70 6f 73 73 …+6      text      " spells possible.\n"
+037D: 8b 41 00 40                                  return    0
+0381: a0 0d 90 4c 00 80 00 27 50 00 ff ff …+68     .dict     dict[13] {8/search: @02B2, 9/use: @0086, 10/use_on: @012A, 36/p_weight: @007A, 39/p_typeflags27: @0080, 51: @0002}

@@ -1,0 +1,133 @@
+; segment 180D  page 18  class 0x40 (char) id 13 name "Pelagon" (string table 0201)
+; kind class  length 3414 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0D42  methods: sel12/talk@019E, sel21/signal@0D28
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0d 42                                        .hdr      dictionary offset = 0D42
+; ---- local subroutine @0002 ----
+0002: 81 02 03                                     frame     args=2 locals=3
+0005: d6 41 05 40                                  builtin   play_music2(5)
+0009: 22 4f 68 2c 20 77 65 20 61 72 65 20 …+115    text      "\"Oh, we are sorry, we overestimated you.  The fool is in the mirror, not before you.\"*Magpie's features waver in front of you.*"
+0088: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+008D: 86 04 30 40 42 00 52 40                      setfield  A30.f04:type = 82
+0095: 22 59 6f 75 20 61 72 65 20 75 6e 70 …+11     text      "\"You are unprotected - "
+00AC: 8a 31 40                                     print     A31
+00AF: 2e 22 2a 22 59 6f 75 20 77 69 6c 6c …+76     text      ".\"*\"You will die not knowing the truth.  No matter.  Victory is ours - foolish mortal.\"*"
+0107: ea 40                                        builtin   conversation_cue_2()
+0109: e7 41 03 40                                  builtin   screen_effect(3)
+010D: ec 40                                        builtin   open_curtain()
+010F: ee 43 00 00 02 00 43 50 00 ff ff 40          builtin   curtain_picture(512, Nil)
+011B: 82 00 a0 43 10 00 00 01 41 00 41 00 …+4      set       L00 = iterate_range(&L01, 0, 0, 4)
+012B:>8c a0 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_range(&L01, 1) -> 015C
+0138: 8d ee 43 00 00 02 00 43 30 00 02 42 …+6      jf        curtain_picture(512, (str[0242:0]"Your will is not left in your body - and images of the futur…" + L00)) -> 014D
+014A: 88 01 5c                                     goto      -> 015C
+014D:>82 00 a0 43 10 00 00 01 41 02 40 40          set       L00 = iterate_range(&L01, 2)
+0159: 88 01 2b                                     goto      -> 012B
+015C:>e7 41 03 40                                  builtin   screen_effect(3)
+0160: ed 40                                        builtin   close_curtain()
+0162: a2 44 59 6f 75 20 67 61 76 65 20 74 …+44     builtin   end_game("You gave the only hope to the enemy, who killed you.")
+019A: 8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @019E ====
+019E: 81 01 06                                     frame     args=1 locals=6
+01A1: 8d dc 41 03 40 41 03 54 9f 0f 02 30 …+8      jf        ((get_variable(3) == 3) && !R0F02(A30, 0)) -> 0A79  ; R0F02 = tstbit [from 0x0101 symtab]
+01B5: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+01BC: a4 42 00 03 41 00 40                         builtin   show_portrait(3, 0)
+01C3: 59 6f 75 20 73 65 65 20 61 20 68 75 …+160    text      "You see a hunchback dressed in motley, with a pleasant demeanor.\n*\"Alaric's justice has been done!  House Comana is no more - they plotted treason, death is their reward.\"*"
+026F: 82 00 ae 43 00 00 10 25 41 00 40 40          set       L00 = who_in_party_has(4133, 0)
+027B: 82 01 ae 43 00 00 0c 25 41 00 40 40          set       L01 = who_in_party_has(3109, 0)
+0287: 82 02 43 40 40 00 01 40                      set       L02 = char#1"Hero"
+028F: 8d 00 02 53 01 02 53 5d 40 03 09             jf        ((L00 != L02) || (L01 != L02)) -> 0309
+029A: 9e 00 02 30 44 57 65 20 73 68 61 6c …+92     callsub   sub_0002(A30, "We shall have to search elsewhere for the Crolna shards you once bore, but it is no matter to you")
+0302: 8b 41 00 40                                  return    0
+; ---- dead code 0306-0309: no dictionary entry, jump, pointer or call reaches it ----
+0306:x88 0a 76                                     goto      -> 0A76
+0309:>22 57 65 20 68 61 76 65 20 72 65 63 …+169    text      "\"We have recovered the fourth shard of the Crolna, with it we can heal Alaric.\"*\"Completing it is dangerous - it would be best if we did that.  Give us the three shards you have...\""
+03BE: 82 03 a0 43 10 00 00 04 41 00 41 00 …+4      set       L03 = iterate_range(&L04, 0, 0, 3)
+03CE:>8c a0 43 10 00 00 04 41 01 40 40 05 …+1      jt        iterate_range(&L04, 1) -> 0584
+03DB: 2a 47 69 76 65 20 4d 61 67 70 69 65 …+18     text      "*Give Magpie the three shards?"
+03F9: 8f 79 6e 00                                  prompt    "yn"
+03FD: 90 79 00 04 63                               match     y else -> 0463
+0402: 9e 00 02 30 44 73 75 72 72 65 6e 64 …+81     callsub   sub_0002(A30, "surrendering the only thing that stayed my hand, and now the Crolna is complete again!")
+045F: 8b 41 00 40                                  return    0
+0463:>90 6e 00 05 75                               match     n else -> 0575
+0468: 8d 03 41 00 54 40 04 cd                      jf        (L03 == 0) -> 04CD
+0470: 22 49 74 73 20 66 75 6c 6c 20 70 6f …+78     text      "\"Its full power would surely destroy where you stand - it would be best to give it to us.\""
+04CA: 88 05 75                                     goto      -> 0575
+04CD:>8d 03 41 01 54 40 05 16                      jf        (L03 == 1) -> 0516
+04D5: 22 46 6f 72 20 79 6f 75 72 20 6f 77 …+50     text      "\"For your own safety, we command you to surrender the shards!\""
+0513: 88 05 75                                     goto      -> 0575
+0516:>8d 03 41 02 54 40 05 75                      jf        (L03 == 2) -> 0575
+051E: 22 57 65 20 77 69 6c 6c 20 73 6d 69 …+75     text      "\"We will smite you if need be - you emperil the world if you continue this obstinance.\""
+0575:>82 03 a0 43 10 00 00 04 41 02 40 40          set       L03 = iterate_range(&L04, 2)
+0581: 88 03 ce                                     goto      -> 03CE
+0584:>2a 22 4d 75 73 74 20 77 65 20 74 61 …+18     text      "*\"Must we take them by force?\""
+05A2: 8f 79 6e 00                                  prompt    "yn"
+05A6: 90 6e 00 06 0c                               match     n else -> 060C
+05AB: 9e 00 02 30 44 73 75 72 72 65 6e 64 …+81     callsub   sub_0002(A30, "surrendering the only thing that stayed my hand, and now the Crolna is complete again!")
+0608: 8b 41 00 40                                  return    0
+060C:>22 59 6f 75 20 74 68 69 6e 6b 20 74 …+106    text      "\"You think to call our bluff.  Very well.\"*\"You have passed the final test.\"*Magpie]s features waver in front of you.*"
+0682: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0687: 86 04 30 40 42 00 52 40                      setfield  A30.f04:type = 82
+068F: 50 65 6c 61 67 6f 6e 20 6c 61 75 67 …+946    text      "Pelagon laughs heartily.*\"You aren't the fools that those of House Comana were.  But still you've been played the fool.\"*\"But not by me, but by our enemies, the Seldane.  They are the cause of Alaric's madness.\"*\"That creature that calls himself Magpie especially.  The Seldane want Alaric dead, for he usurps their powers as his own.\"*\"LandKing Hall was once a place of power for the Seldane, until we drove them from it, and others.\"*\"Now they would regain their power, to wage war with us - and you humans would be caught between the two sides.\"*\"We would avoid that if possible, and to that end, we shall give you what you seek, the fourth shard of the Crolna.\"*\"With this, you may cure Alaric, and return the balance - but beware the Seldane, especially Magpie.\"*\"They may yet attempt to stop you, but so long as you retain control of the Crolna, they can not harm you.\"*Pelagon hands you the fourth shard, and then fades away like mist before the wind."
+0A4D: a8 42 00 01 43 00 00 08 25 41 00 41 …+2      builtin   give_item(1, 2085, 0, 0)
+0A5B: 86 00 30 40 30 62 00 41 02 57 40             setfield  A30.f00:kind = (A30.f00:kind | 2)
+0A66: e0 40                                        builtin   reschedule()
+0A68: 86 15 30 40 43 00 00 00 86 40                setfield  A30.f15:activity = 134
+0A72: 8b 41 00 40                                  return    0
+; ---- dead code 0A76-0A79: no dictionary entry, jump, pointer or call reaches it ----
+0A76:x88 0a b2                                     goto      -> 0AB2
+0A79:>59 6f 75 20 73 65 65 20 61 20 76 65 …+45     text      "You see a very tidy, organized man.*\"How can I help you?\""
+0AB2:>8e                                           input       ; read a line into the input buffer
+0AB3: 90 6e 61 6d 65 00 0a d4                      match     name else -> 0AD4
+0ABB: 22 49 20 61 6d 20 50 65 6c 61 67 6f …+3      text      "\"I am Pelagon.\""
+0ACA: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0AD1: 88 0a b2                                     goto      -> 0AB2
+0AD4:>90 6a 6f 62 00 0b 03                         match     job else -> 0B03
+0ADB: 22 49 20 61 6d 20 74 68 65 20 6d 61 …+25     text      "\"I am the majordomo of House Comana.\""
+0B00: 88 0a b2                                     goto      -> 0AB2
+0B03:>90 62 79 65 00 0b 22                         match     bye else -> 0B22
+0B0A: 22 56 65 72 79 20 77 65 6c 6c 20 74 …+5      text      "\"Very well then.\""
+0B1B: 8b 41 00 40                                  return    0
+; ---- dead code 0B1F-0B22: no dictionary entry, jump, pointer or call reaches it ----
+0B1F:x88 0a b2                                     goto      -> 0AB2
+0B22:>90 73 74 65 6e 00 0c 35                      match     sten else -> 0C35
+0B2A: 22 53 74 65 6e 74 6f 72 20 61 6e 64 …+69     text      "\"Stentor and I were good friends.  Quite a shame that drink got the best of him.\""
+0B7B: 8d 9f 0f 02 42 00 6c 41 02 40 40 0c …+1      jf        R0F02(108, 2) -> 0C32  ; R0F02 = tstbit [from 0x0101 symtab]
+0B88: 8d 9f 0f 02 30 41 01 40 5e 40 0c 32          jf        !R0F02(A30, 1) -> 0C32  ; R0F02 = tstbit [from 0x0101 symtab]
+0B94: 2a                                           text      "*"
+0B95: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0B9C: 22 49 20 72 65 63 65 6e 74 6c 79 20 …+62     text      "\"I recently talked to Stentor - he told me a story about you being dead!\"*"
+0BE6: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0BEB: 22 57 68 79 2c 20 74 68 61 74 20 69 …+52     text      "\"Why, that is ridiculous - as you can tell, I am quite healthy.\""
+0C2B: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0C32:>88 0a b2                                     goto      -> 0AB2
+0C35:>90 64 65 61 64 2c 64 72 6f 77 00 0c …+1      match     dead,drow else -> 0CCF
+0C42: 8d 9f 0f 02 42 00 6c 41 02 40 40 0c …+1      jf        R0F02(108, 2) -> 0C99  ; R0F02 = tstbit [from 0x0101 symtab]
+0C4F: 22 57 68 79 2c 20 74 68 61 74 20 69 …+52     text      "\"Why, that is ridiculous - as you can tell, I am quite healthy.\""
+0C8F: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0C96: 88 0c cc                                     goto      -> 0CCC
+0C99:>22 45 78 63 75 73 65 20 6d 65 3f 20 …+39     text      "\"Excuse me?  Nobody has died around here recently.\""
+0CCC:>88 0a b2                                     goto      -> 0AB2
+0CCF:>90 2a 00 0d 21                               match     * else -> 0D21
+0CD4: 8d 9f 08 04 30 40 5e 40 0d 1e                jf        !R0804(A30) -> 0D1E
+0CDE: 8d 9f 08 0d 30 40 5e 40 0d 1e                jf        !R080D(A30) -> 0D1E
+0CE8: 8d 9f 08 01 30 40 5e 40 0d 1e                jf        !R0801(A30) -> 0D1E
+0CF2: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+32     text      "\"I'm sorry, but I can't help you with that.\""
+0D1E:>88 0a b2                                     goto      -> 0AB2
+0D21:>88 0a b2                                     goto      -> 0AB2
+; ---- dead code 0D24-0D28: no dictionary entry, jump, pointer or call reaches it ----
+0D24:x8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @0D28 ====
+0D28: 81 02 00                                     frame     args=2 locals=0
+0D2B: 8d 31 43 00 00 00 82 54 40 0d 3e             jf        (A31 == 130) -> 0D3E
+0D36: 86 04 30 40 42 00 23 40                      setfield  A30.f04:type = 35
+0D3E:>8b 41 00 40                                  return    0
+0D42: a0 03 98 0d 01 9e 00 0c 98 0d 0d 28 …+8      .dict     dict[3] {12/talk: @019E, 21/signal: @0D28}

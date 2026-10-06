@@ -1,0 +1,18 @@
+; segment 1BD1  page 1B  class 0x58 (room) id 209
+; kind class  length 119 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0063  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 63                                        .hdr      dictionary offset = 0063
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 65 20 70 72 69 76 61 74 65 20 …+78     text      "The private area off the kitchen is home to two people, probably the staff of the castle.\n"
+005F: 8b 41 00 40                                  return    0
+0063: a0 03 50 00 ff ff 41 6c 9b d1 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

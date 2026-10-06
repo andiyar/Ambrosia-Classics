@@ -1,0 +1,28 @@
+; segment 117F  page 11  class 0x00 (prop) type 383 tile-name "bust" (tool join F000/F004)
+; kind class  length 305 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @011D  methods: sel8/search@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 1d                                        .hdr      dictionary offset = 011D
+
+; ==== method sel8/search @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 06 41 00 54 40 00 57                jf        (A30.f06:quality == 0) -> 0057
+000F: 54 68 65 20 63 72 61 66 74 73 6d 61 …+57     text      "The craftsmanship is excellent, but you don't recognize the subject.\n"
+0054: 88 01 19                                     goto      -> 0119
+0057:>8d 30 62 07 41 01 54 40 00 ac                jf        (A30.f07:byte7 == 1) -> 00AC
+0061: 54 68 65 20 63 72 61 66 74 73 6d 61 …+60     text      "The craftsmanship isn't very good, and you don't recognize the subject.\n"
+00A9: 88 01 19                                     goto      -> 0119
+00AC:>8d 30 62 08 41 02 54 40 00 d1                jf        (A30.f08:u16_6 == 2) -> 00D1
+00B6: 49 74 20 69 73 20 61 20 62 75 73 74 …+12     text      "It is a bust of Alaric.\n"
+00CE: 88 01 19                                     goto      -> 0119
+00D1:>8d 30 62 08 41 02 54 40 01 19                jf        (A30.f08:u16_6 == 2) -> 0119
+00DB: 49 74 20 68 61 73 20 61 6e 20 69 6e …+50     text      "It has an inscription:\n'Here lies the Great Tyrant'\n'79 A.T.'\n"
+0119:>8b 41 00 40                                  return    0
+011D: a0 03 50 00 ff ff 00 27 50 00 ff ff …+8      .dict     dict[3] {8/search: @0002}

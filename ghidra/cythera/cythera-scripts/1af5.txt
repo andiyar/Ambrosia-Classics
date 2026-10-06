@@ -1,0 +1,42 @@
+; segment 1AF5  page 1A  class 0x50 (spell) type 245
+; kind class  length 138 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @005E  methods: sel2/name@0002, sel4/index@0016, sel9/use@0023, sel10/use_on@0049
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 5e                                        .hdr      dictionary offset = 005E
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 41 73 6b 20 41 62 6f 75 74 00 …+1      return    "Ask About"
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0016 ====
+0016: 81 02 00                                     frame     args=2 locals=0
+0019: 8b 31 41 01 53 40                            return    (A31 != 1)
+; ---- dead code 001F-0023: no dictionary entry, jump, pointer or call reaches it ----
+001F:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0023 ====
+0023: 81 01 01                                     frame     args=1 locals=1
+0026: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+002D: 41 73 6b 20                                  text      "Ask "
+0031: 8a 00 40                                     print     L00
+0034: 20 61 62 6f 75 74 20 77 68 61 74 3f …+1      text      " about what?\n"
+0041: 8b 41 01 40                                  return    1
+; ---- dead code 0045-0049: no dictionary entry, jump, pointer or call reaches it ----
+0045:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0049 ====
+0049: 81 02 01                                     frame     args=2 locals=1
+004C: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+0053: 8b 9d 15 00 31 40 40                         return    L00.sel21/signal(A31)
+; ---- dead code 005A-005E: no dictionary entry, jump, pointer or call reaches it ----
+005A:x8b 41 00 40                                  return    0
+005E: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0002, 4/index: @0016, 9/use: @0023, 10/use_on: @0049}

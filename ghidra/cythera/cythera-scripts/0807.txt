@@ -1,0 +1,35 @@
+; segment 0807  page 08  routine
+; kind routine  length 634 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 73 74 72 79 2c 68 6f 75 73 00 00 …+1      match     stry,hous else -> 002E
+0010: 22 57 65 20 61 72 65 20 48 6f 75 73 …+11     text      "\"We are House Strymon.\""
+0027: 8b 43 50 00 00 01 40                         return    True
+002E:>90 6e 69 63 61 00 00 6e                      match     nica else -> 006E
+0036: 22 48 6f 75 73 65 20 4e 69 63 61 6e …+37     text      "\"House Nicander is full of simpletons and fools.\""
+0067: 8b 43 50 00 00 01 40                         return    True
+006E:>90 6f 64 65 6d 00 00 cb                      match     odem else -> 00CB
+0076: 22 49 74 20 69 73 20 73 75 72 70 72 …+66     text      "\"It is surprising there aren't more troubles in Odemia, with Nicander ruling.\""
+00C4: 8b 43 50 00 00 01 40                         return    True
+00CB:>90 61 74 75 73 00 01 08                      match     atus else -> 0108
+00D3: 22 48 6f 75 73 65 20 41 74 75 73 73 …+41     text      "\"House Atussa is still a noble house, in my opinion.\""
+0108:>90 61 6b 65 00 01 57                         match     ake else -> 0157
+010F: 22 4c 61 64 79 20 41 6b 65 20 69 73 …+53     text      "\"Lady Ake is an honorable and noble woman, fitting House Atussa.\""
+0150: 8b 43 50 00 00 01 40                         return    True
+0157:>90 6d 69 6c 63 00 01 d1                      match     milc else -> 01D1
+015F: 22 4d 69 6c 63 6f 6d 20 69 73 20 61 …+95     text      "\"Milcom is an honorable and noble man, fitting House Atussa....\"*\"And a quite good blacksmith too, I hear.\""
+01CA: 8b 43 50 00 00 01 40                         return    True
+01D1:>90 61 6e 64 72 00 02 21                      match     andr else -> 0221
+01D9: 22 41 6e 64 72 6f 6d 61 63 68 65 20 …+53     text      "\"Andromache was one of our servants, who died due to the Plague.\""
+021A: 8b 43 50 00 00 01 40                         return    True
+0221:>90 68 61 70 6d 00 02 6f                      match     hapm else -> 026F
+0229: 22 48 61 70 6d 6f 6e 69 64 65 73 20 …+51     text      "\"Hapmonides was one of our servants, who died from the Plague.\""
+0268: 8b 43 50 00 00 01 40                         return    True
+026F:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0276-027A: no dictionary entry, jump, pointer or call reaches it ----
+0276:x8b 41 00 40                                  return    0

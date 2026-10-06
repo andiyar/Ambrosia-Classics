@@ -1,0 +1,124 @@
+; segment 1852  page 18  class 0x40 (char) id 82 name "Palaestra" (string table 0201)
+; kind class  length 2811 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0ACF  methods: sel32/spawned@0122, sel12/talk@0147
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0a cf                                        .hdr      dictionary offset = 0ACF
+0002: 90 01 98 52 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 8d ac 41 00 41 04 40 41 01 54 40 01 …+1      jf        (random(0, 4) == 1) -> 0117
+004A: 82 00 45 00 ba 90 06 98 52 00 69 98 …+180    set       L00 = blk@004F
+      ; 0x45 inline block 004F-0109 (186 bytes):
+      004F: 90 06                            .array[6]
+        [0] @0069 "...so form Elemental bonds..."
+        [1] @0087 "The primary attribute..."
+        [2] @00A0 "...reverse the structure..."
+        [3] @00BC "...secondary field property..."
+        [4] @00DB "...find the left pair..."
+        [5] @00F4 "...and so distill..."
+010A: 86 26 30 40 00 ac 41 00 00 5f 40 46 …+1      setfield  A30.f26:f26 = L00[random(0, len(L00))]
+0117:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 011E-0122: no dictionary entry, jump, pointer or call reaches it ----
+011E:x8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @0122 ====
+0122: 81 01 00                                     frame     args=1 locals=0
+0125: 8b 9f 0c 00 30 45 00 14 a0 03 50 00 …+18     return    R0C00(A30, blk@012D)
+      ; 0x45 inline block 012D-0141 (20 bytes):
+      012D: a0 03                            .dict[3 slots, 1 used]
+        key 139 @003A (code)
+; ---- dead code 0143-0147: no dictionary entry, jump, pointer or call reaches it ----
+0143:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0147 ====
+0147: 81 01 01                                     frame     args=1 locals=1
+014A: 59 6f 75 20 73 65 65 20 61 20 70 69 …+61     text      "You see a pinch faced quiet woman, whose gaze seems to bore through you.*"
+0193: 8d 30 62 15 43 00 00 00 8b 54 40 01 …+1      jf        (A30.f15:activity == 139) -> 01D4
+01A0: 22 50 6c 65 61 73 65 21 20 49 27 6d …+36     text      "\"Please! I'm in the middle of trying to teach!\"*"
+01D0: 8b 41 00 40                                  return    0
+01D4:>22 59 65 73 3f 22                            text      "\"Yes?\""
+01DA:>8e                                           input       ; read a line into the input buffer
+01DB: 90 6e 61 6d 65 2c 70 61 6c 61 00 02 …+1      match     name,pala else -> 021A
+01E8: 22 49 20 61 6d 20 50 61 6c 61 65 73 …+26     text      "\"I am Palaestra, teacher of @Alchemy.\""
+020E: 9f 0f 00 42 00 52 41 07 40                   call      R0F00(82, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0217: 88 01 da                                     goto      -> 01DA
+021A:>90 6a 6f 62 00 02 80                         match     job else -> 0280
+0221: 22 49 20 40 74 72 61 69 6e 20 79 6f …+80     text      "\"I @train young minds on how @alchemy works, though few seem to grasp it's higher concepts.\""
+027D: 88 01 da                                     goto      -> 01DA
+0280:>90 61 6c 63 68 00 02 df                      match     alch else -> 02DF
+0288: 22 41 6c 63 68 65 6d 79 20 69 73 20 …+72     text      "\"Alchemy is the process of distilling various @element to extract basic properties.\""
+02DC: 88 01 da                                     goto      -> 01DA
+02DF:>90 74 72 61 69 2c 74 65 61 63 00 06 …+1      match     trai,teac else -> 0631
+02EC: 82 00 9f 0e ac 48 05 42 00 c2 40 40          set       L00 = R0EAC(G05:leader, 194)
+02F8: 8d 00 5e 40 03 33                            jf        !L00 -> 0333
+02FE: 22 59 6f 75 20 64 6f 6e 27 74 20 65 …+38     text      "\"You don't even know the first thing about Magic!\""
+0330: 88 06 2e                                     goto      -> 062E
+0333:>8d f5 48 05 42 00 d2 40 40 03 91             jf        find_skill(G05:leader, 210) -> 0391
+033E: 22 59 6f 75 27 76 65 20 61 6c 72 65 …+68     text      "\"You've already got the basics down, I don't expect you'd understand much more.\""
+038E: 88 06 2e                                     goto      -> 062E
+0391:>8d 48 0d 43 50 00 00 01 54 40 05 d8          jf        (G0D:g0D == True) -> 05D8
+039D: 8d 9f 0e ae 48 05 42 00 d2 40 40 05 …+1      jf        R0EAE(G05:leader, 210) -> 0598
+03AA: 22 48 6d 2c 20 49 20 73 75 70 70 6f …+465    text      "\"Hm, I suppose so, but I'll just give you the basics - you wouldn't understand much more.\"*\"Alchemy is the process of distillation, using a device called a distiller.\"*\"One fills the distiller with water, and the places certain elements into it.\"*\"You then concentrate, passing your power into the distiller.\"*\"It then extracts the vital essence out of the element, and creates a potion.\"*\"You should search the library - we've got a book on what elements create what potions.\""
+0587: 9f 0e af 48 05 42 00 d2 43 50 00 00 …+2      call      R0EAF(G05:leader, 210, False)
+0595: 88 05 d5                                     goto      -> 05D5
+0598:>22 59 6f 75 20 6e 65 65 64 20 73 6f …+49     text      "\"You need some more experience before you can learn alchemy.\""
+05D5:>88 06 2e                                     goto      -> 062E
+05D8:>22 53 6f 72 72 79 20 2d 20 74 68 61 …+74     text      "\"Sorry - that is right out of the question.  Perhaps if you @registered for a course.\""
+062E:>88 01 da                                     goto      -> 01DA
+0631:>90 63 68 61 72 00 06 db                      match     char else -> 06DB
+0639: 22 43 68 61 72 61 78 20 77 61 73 20 …+147    text      "\"Charax was my best student - he's now a Freemage doing research on alchemy.\"*\"I understand he's secluded himself in the wood north of here and a little west.\""
+06D8: 88 01 da                                     goto      -> 01DA
+06DB:>90 72 65 67 69 00 07 2e                      match     regi else -> 072E
+06E3: 22 59 65 73 2c 20 6a 75 73 74 20 72 …+60     text      "\"Yes, just run the 'Register Cythera' program - it has all the details.\""
+072B: 88 01 da                                     goto      -> 01DA
+072E:>90 65 6c 65 6d 00 07 89                      match     elem else -> 0789
+0736: 22 45 6c 65 6d 65 6e 74 73 20 61 72 …+68     text      "\"Elements are the basis for potions - things like the poison sacks from snakes.\""
+0786: 88 01 da                                     goto      -> 01DA
+0789:>90 62 79 65 00 07 a8                         match     bye else -> 07A8
+0790: 22 59 65 73 2c 20 76 65 72 79 20 77 …+5      text      "\"Yes, very well.\""
+07A1: 8b 41 00 40                                  return    0
+; ---- dead code 07A5-07A8: no dictionary entry, jump, pointer or call reaches it ----
+07A5:x88 01 da                                     goto      -> 01DA
+07A8:>90 77 69 6e 65 00 08 80                      match     wine else -> 0880
+07B0: 22 57 69 6e 65 6d 61 6b 69 6e 67 20 …+32     text      "\"Winemaking is somewhat similar to alchemy.\""
+07DC: 8d 9f 0f 02 42 00 66 41 07 40 40 08 …+1      jf        R0F02(102, 7) -> 087D  ; R0F02 = tstbit [from 0x0101 symtab]
+07E9: 2a                                           text      "*"
+07EA: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+07F1: 22 43 6f 75 6c 64 20 41 6c 63 68 65 …+23     text      "\"Could Alchemy make it turn sour?\"*"
+0814: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0819: 22 49 20 64 6f 75 62 74 20 69 74 20 …+79     text      "\"I doubt it - but you might want to ask @Charax - I understand he even makes his own wine.\""
+0874: 9f 0f 00 42 00 52 41 00 40                   call      R0F00(82, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+087D:>88 01 da                                     goto      -> 01DA
+0880:>90 73 6f 75 72 00 09 50                      match     sour else -> 0950
+0888: 22 57 69 6e 65 20 77 69 6c 6c 20 74 …+25     text      "\"Wine will turn sour if it goes bad.\""
+08AD: 8d 9f 0f 02 42 00 66 41 07 40 40 09 …+1      jf        R0F02(102, 7) -> 094D  ; R0F02 = tstbit [from 0x0101 symtab]
+08BA: 2a                                           text      "*"
+08BB: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+08C2: 22 43 6f 75 6c 64 20 41 6c 63 68 65 …+22     text      "\"Could Alchemy make it turn bad?\"*"
+08E4: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+08E9: 22 49 20 64 6f 75 62 74 20 69 74 20 …+79     text      "\"I doubt it - but you might want to ask @Charax - I understand he even makes his own wine.\""
+0944: 9f 0f 00 42 00 52 41 00 40                   call      R0F00(82, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+094D:>88 01 da                                     goto      -> 01DA
+0950:>90 6b 65 73 68 00 0a 8c                      match     kesh else -> 0A8C
+0958: 8d 9f 0f 02 42 00 46 41 01 40 5e 40 …+2      jf        !R0F02(70, 1) -> 0992  ; R0F02 = tstbit [from 0x0101 symtab]
+0966: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+29     text      "\"I don't know what you're talking about.\""
+098F: 88 0a 89                                     goto      -> 0A89
+0992:>22 48 6d 2c 20 79 65 73 2c 20 49 20 …+235    text      "\"Hm, yes, I see you've heard of it.  Well, my analysis shows a number of interesting things.\"*\"It appears to be addictive and probably, in the long run, fatal.\"*\"It also appears to alter the magic flux of a person - to what extent, we don't know.\""
+0A89:>88 01 da                                     goto      -> 01DA
+0A8C:>90 2a 00 0a c8                               match     * else -> 0AC8
+0A91: 8d 9f 08 08 30 40 5e 40 0a c5                jf        !R0808(A30) -> 0AC5
+0A9B: 8d 9f 08 0c 30 40 5e 40 0a c5                jf        !R080C(A30) -> 0AC5
+0AA5: 8d 9f 08 01 30 40 5e 40 0a c5                jf        !R0801(A30) -> 0AC5
+0AAF: 22 50 6c 65 61 73 65 2c 20 73 70 65 …+10     text      "\"Please, speak sense.\""
+0AC5:>88 01 da                                     goto      -> 01DA
+0AC8:>88 01 da                                     goto      -> 01DA
+; ---- dead code 0ACB-0ACF: no dictionary entry, jump, pointer or call reaches it ----
+0ACB:x8b 41 00 40                                  return    0
+0ACF: a0 07 98 52 01 47 00 0c 50 00 ff ff …+32     .dict     dict[7] {12/talk: @0147, 32/spawned: @0122, 68: @0002}

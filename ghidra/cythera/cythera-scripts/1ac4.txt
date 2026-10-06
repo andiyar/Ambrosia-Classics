@@ -1,0 +1,29 @@
+; segment 1AC4  page 1A  class 0x50 (spell) type 196
+; kind class  length 118 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0062  methods: sel2/name@0002, sel8/search@0012
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 62                                        .hdr      dictionary offset = 0062
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 53 77 6f 72 64 00 40                   return    "Sword"
+; ---- dead code 000E-0012: no dictionary entry, jump, pointer or call reaches it ----
+000E:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0012 ====
+0012: 81 01 00                                     frame     args=1 locals=0
+0015: 54 68 69 73 20 73 6b 69 6c 6c 20 69 …+6      text      "This skill is the "
+0027: 8d 30 62 03 41 10 56 40 00 3c                jf        (A30.f03:frame & 16) -> 003C
+0031: 61 70 74 69 74 75 64 65                      text      "aptitude"
+0039: 88 00 43                                     goto      -> 0043
+003C:>61 62 69 6c 69 74 79 20 74 6f 20 75 …+22     text      "ability to use a sword in combat.\n"  ; shares its tail with text @0043
+0043:>20 74 6f 20 75 73 65 20 61 20 73 77 …+15     text      " to use a sword in combat.\n"
+005E: 8b 41 00 40                                  return    0
+0062: a0 03 9a c4 00 12 00 08 50 00 ff ff …+8      .dict     dict[3] {2/name: @0002, 8/search: @0012}

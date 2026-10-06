@@ -1,0 +1,59 @@
+; segment 118A  page 11  class 0x00 (prop) type 394 tile-name "unguent" (tool join F000/F004)
+; kind class  length 494 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01C2  methods: sel8/search@0008, sel9/use@0091, sel10/use_on@00CA
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 c2                                        .hdr      dictionary offset = 01C2
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel8/search @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8d 30 62 06 41 00 54 40 00 1c                jf        (A30.f06:quality == 0) -> 001C
+0015: 86 06 30 40 41 0a 40                         setfield  A30.f06:quality = 10
+001C:>59 6f 75 20 73 65 65 20 61 20 68 65 …+24     text      "You see a heavy stoneware container "
+0040: 8d 30 62 06 41 07 51 40 00 54                jf        (A30.f06:quality > 7) -> 0054
+004A: 66 75 6c 6c 20 6f 66                         text      "full of"
+0051: 88 00 58                                     goto      -> 0058
+0054:>77 69 74 68 20 73 6f 6d 65 20 73 6d …+21     text      "with some smelly unguent.\nIt has "  ; shares its tail with text @0058
+0058:>20 73 6f 6d 65 20 73 6d 65 6c 6c 79 …+17     text      " some smelly unguent.\nIt has "
+0075: 8a 30 62 06 40                               print     A30.f06:quality
+007A: 20 64 6f 73 65 73 20 6c 65 66 74 20 …+7      text      " doses left in it.\n"
+008D: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0091 ====
+0091: 81 01 00                                     frame     args=1 locals=0
+0094: 8d 30 62 06 41 00 54 40 00 a5                jf        (A30.f06:quality == 0) -> 00A5
+009E: 86 06 30 40 41 0a 40                         setfield  A30.f06:quality = 10
+00A5:>8d 48 13 40 00 c2                            jf        G13:g13_bool -> 00C2
+00AB: 41 70 70 6c 79 20 75 6e 67 75 65 6e …+11     text      "Apply unguent to whom?\n"
+00C2:>8b 41 08 40                                  return    8
+; ---- dead code 00C6-00CA: no dictionary entry, jump, pointer or call reaches it ----
+00C6:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00CA ====
+00CA: 81 02 01                                     frame     args=2 locals=1
+00CD: 82 00 31 63 40 40                            set       L00 = as_char(A31)
+00D3: 86 1c 00 40 00 62 1c ac 41 01 41 04 …+3      setfield  L00.f1C:health = (L00.f1C:health + random(1, 4))
+00E2: 8d c4 00 41 09 40 ac 41 01 41 06 40 …+7      jf        (has_ability(L00, 9) && (random(1, 6) == 1)) -> 0142
+00F5: c2 00 41 09 40                               builtin   remove_ability(L00, 9)
+00FA: 8d 00 48 05 54 40 01 3f                      jf        (L00 == G05:leader) -> 013F
+0102: 59 6f 75 72 20 77 6f 75 6e 64 73 20 …+49     text      "Your wounds are soothed and you can feel poison leeched out.\n"
+013F:>88 01 63                                     goto      -> 0163
+0142:>8d 00 48 05 54 40 01 63                      jf        (L00 == G05:leader) -> 0163
+014A: 59 6f 75 72 20 77 6f 75 6e 64 73 20 …+13     text      "Your wounds are soothed.\n"
+0163:>8d 30 62 06 41 01 54 40 01 93                jf        (A30.f06:quality == 1) -> 0193
+016D: 59 6f 75 27 76 65 20 75 73 65 64 20 …+20     text      "You've used up all the unguent.\n"
+018D: a7 30 40                                     builtin   delete_prop(A30)
+0190: 88 01 be                                     goto      -> 01BE
+0193:>86 06 30 40 30 62 06 41 01 4b 40             setfield  A30.f06:quality = (A30.f06:quality - 1)
+019E: 54 68 65 72 65 20 61 72 65 20 6e 6f …+2      text      "There are now "
+01AC: 8a 30 62 06 40                               print     A30.f06:quality
+01B1: 20 64 6f 73 65 73 20 6c 65 66 74 2e …+1      text      " doses left.\n"
+01BE:>8b 41 00 40                                  return    0
+01C2: a0 07 50 00 ff ff 20 65 91 8a 00 02 …+32     .dict     dict[7] {8/search: @0008, 9/use: @0091, 10/use_on: @00CA, 36/p_weight: @0002}

@@ -1,0 +1,174 @@
+; segment 0801  page 08  routine
+; kind routine  length 3149 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 61 74 74 69 00 00 46                      match     atti else -> 0046
+000B: 22 48 6f 75 73 65 20 41 74 74 69 73 …+40     text      "\"House Attis is the former ruling House of @Cademia\""
+003F: 8b 43 50 00 00 01 40                         return    True
+0046:>90 74 68 75 72 00 00 76                      match     thur else -> 0076
+004E: 22 4d 61 74 72 6f 6e 20 54 68 75 72 …+21     text      "\"Matron Thuria runs House Attis.\""
+006F: 8b 43 50 00 00 01 40                         return    True
+0076:>90 69 72 6f 6e 2c 6d 69 6e 65 00 00 …+1      match     iron,mine else -> 00C3
+0083: 22 48 6f 75 73 65 20 41 74 74 69 73 …+45     text      "\"House Attis controls an iron mine southwest of Cademia.\""
+00BC: 8b 43 50 00 00 01 40                         return    True
+00C3:>90 61 74 75 73 00 01 06                      match     atus else -> 0106
+00CB: 22 48 6f 75 73 65 20 41 74 75 73 73 …+40     text      "\"House Atussa is the former ruling House of @Odemia\""
+00FF: 8b 43 50 00 00 01 40                         return    True
+0106:>90 6d 69 6c 63 00 01 46                      match     milc else -> 0146
+010E: 22 4d 69 6c 63 6f 6d 20 77 61 73 20 …+37     text      "\"Milcom was the head of the former House Atussa.\""
+013F: 8b 43 50 00 00 01 40                         return    True
+0146:>90 63 6f 6d 61 00 01 81                      match     coma else -> 0181
+014E: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+32     text      "\"House Comana is the ruling House of @Kosha\""
+017A: 8b 43 50 00 00 01 40                         return    True
+0181:>90 6d 79 75 73 00 01 b1                      match     myus else -> 01B1
+0189: 22 48 6f 73 75 65 20 43 6f 6d 61 6e …+21     text      "\"Hosue Comana is headed by Myus.\""
+01AA: 8b 43 50 00 00 01 40                         return    True
+01B1:>90 64 6f 64 6f 00 01 ed                      match     dodo else -> 01ED
+01B9: 22 48 6f 75 73 65 20 44 6f 64 6f 6e …+33     text      "\"House Dodona is a minor power in @Catamarca\""
+01E6: 8b 43 50 00 00 01 40                         return    True
+01ED:>90 6e 69 63 61 00 02 2b                      match     nica else -> 022B
+01F5: 22 48 6f 75 73 65 20 4e 69 63 61 6e …+35     text      "\"House Nicander is the ruling House of @Odemia\""
+0224: 8b 43 50 00 00 01 40                         return    True
+022B:>90 70 68 69 6c 00 02 69                      match     phil else -> 0269
+0233: 22 45 6c 64 65 72 20 50 68 69 6c 69 …+35     text      "\"Elder Philinus is the head of House Nicander.\""
+0262: 8b 43 50 00 00 01 40                         return    True
+0269:>90 73 74 72 79 00 02 a9                      match     stry else -> 02A9
+0271: 22 48 6f 75 73 65 20 53 74 72 79 6d …+37     text      "\"House Strymon is the ruling House of @Catamarca\""
+02A2: 8b 43 50 00 00 01 40                         return    True
+02A9:>90 70 72 6f 70 00 02 dd                      match     prop else -> 02DD
+02B1: 22 45 6c 64 65 72 20 50 72 6f 70 6f …+25     text      "\"Elder Propontis runs House Strymon.\""
+02D6: 8b 43 50 00 00 01 40                         return    True
+02DD:>90 63 61 64 65 00 03 37                      match     cade else -> 0337
+02E5: 22 43 61 64 65 6d 69 61 20 69 73 20 …+63     text      "\"Cademia is oldest city in Cythera, where River @Sitia flows into the sea.\""
+0330: 8b 43 50 00 00 01 40                         return    True
+0337:>90 73 69 74 69 00 03 83                      match     siti else -> 0383
+033F: 22 52 69 76 65 72 20 53 69 74 69 61 …+49     text      "\"River Sitia flows from LandKing Hall to the sea at @Cademia\""
+037C: 8b 43 50 00 00 01 40                         return    True
+0383:>90 6f 64 65 6d 00 03 d2                      match     odem else -> 03D2
+038B: 22 4f 64 65 6d 69 61 20 69 73 20 61 …+52     text      "\"Odemia is a rustic town along the coast north east of @Cademia\""
+03CB: 8b 43 50 00 00 01 40                         return    True
+03D2:>90 63 61 74 61 00 04 1c                      match     cata else -> 041C
+03DA: 22 43 61 74 61 6d 61 72 63 61 20 69 …+47     text      "\"Catamarca is a resort town on a penisula east of @Cademia\""
+0415: 8b 43 50 00 00 01 40                         return    True
+041C:>90 70 6e 79 78 00 04 75                      match     pnyx else -> 0475
+0424: 22 50 6e 79 78 20 69 73 20 61 20 63 …+62     text      "\"Pnyx is a city on the eastern coast of Cythera, home of the @Magisterium\""
+046E: 8b 43 50 00 00 01 40                         return    True
+0475:>90 6d 61 67 65 00 04 b3                      match     mage else -> 04B3
+047D: 22 4d 61 67 65 73 20 61 72 65 20 74 …+35     text      "\"Mages are trained at the Magisterium in @Pnyx\""
+04AC: 8b 43 50 00 00 01 40                         return    True
+04B3:>90 6b 6f 73 68 00 04 fd                      match     kosh else -> 04FD
+04BB: 22 4b 6f 73 68 61 20 69 73 20 61 20 …+47     text      "\"Kosha is a fairly new town on the coast south of @Cademia\""
+04F6: 8b 43 50 00 00 01 40                         return    True
+04FD:>90 61 6c 61 72 2c 6c 61 6e 64 2c 6b …+6      match     alar,land,king else -> 0573
+050F: 22 41 6c 61 72 69 63 20 69 73 20 74 …+81     text      "\"Alaric is the LandKing, who rules from his stronghold at the northern end of the mountains.\""
+056C: 8b 43 50 00 00 01 40                         return    True
+0573:>90 63 79 74 68 00 05 af                      match     cyth else -> 05AF
+057B: 22 43 79 74 68 65 72 61 20 69 73 20 …+33     text      "\"Cythera is the name of the land you are on.\""
+05A8: 8b 43 50 00 00 01 40                         return    True
+05AF:>90 6d 65 74 69 00 06 08                      match     meti else -> 0608
+05B7: 22 4d 65 74 69 63 73 20 61 72 65 20 …+62     text      "\"Metics are a legendary race who, according to legend, used to live here.\""
+0601: 8b 43 50 00 00 01 40                         return    True
+0608:>90 73 63 79 6c 00 06 55                      match     scyl else -> 0655
+0610: 22 53 63 79 6c 6c 61 20 61 72 65 20 …+50     text      "\"Scylla are the sea monsters that are the terrors of the sea.\""
+064E: 8b 43 50 00 00 01 40                         return    True
+0655:>90 64 65 6d 6f 00 06 96                      match     demo else -> 0696
+065D: 22 57 68 6f 20 68 61 73 20 6e 6f 74 …+38     text      "\"Who has not heard of Demodocus, the famous bard?\""
+068F: 8b 43 50 00 00 01 40                         return    True
+0696:>90 6d 75 73 69 00 06 ec                      match     musi else -> 06EC
+069E: 22 54 68 65 20 62 65 73 74 20 6d 75 …+59     text      "\"The best musician is certainly Demodocus, the famous travelling bard.\""
+06E5: 8b 43 50 00 00 01 40                         return    True
+06EC:>90 6f 62 6f 6c 00 07 2c                      match     obol else -> 072C
+06F4: 22 47 65 74 74 69 6e 67 20 61 20 6a …+37     text      "\"Getting a job is better than begging for money.\""
+0725: 8b 43 50 00 00 01 40                         return    True
+072C:>90 61 6d 62 72 00 07 4e                      match     ambr else -> 074E
+0734: 22 46 6f 6f 64 20 6f 66 20 74 68 65 …+7      text      "\"Food of the gods.\""
+0747: 8b 43 50 00 00 01 40                         return    True
+074E:>90 6a 6f 62 73 00 07 83                      match     jobs else -> 0783
+0756: 22 41 79 65 2c 20 6e 6f 77 20 74 68 …+26     text      "\"Aye, now there's a dangerous savior.\""
+077C: 8b 43 50 00 00 01 40                         return    True
+0783:>90 66 75 63 6b 2c 73 75 63 6b 2c 73 …+51     match     fuck,suck,shit,cock,cunt,piss,damn,kiss,bite,pric,dick,bitc else -> 07E4
+07C2: 22 52 75 64 65 6e 65 73 73 20 69 73 …+15     text      "\"Rudeness is not rewarded.\""
+07DD: 8b 43 50 00 00 01 40                         return    True
+07E4:>90 67 65 6e 65 00 08 27                      match     gene else -> 0827
+07EC: 22 41 20 67 72 65 61 74 20 6d 61 6e …+40     text      "\"A great man, taken before his time.  He is missed.\""
+0820: 8b 43 50 00 00 01 40                         return    True
+0827:>90 61 62 79 64 00 08 56                      match     abyd else -> 0856
+082F: 22 41 62 79 64 6f 73 20 69 73 20 74 …+20     text      "\"Abydos is the Lost Settlement.\""
+084F: 8b 43 50 00 00 01 40                         return    True
+0856:>90 68 61 72 70 00 08 af                      match     harp else -> 08AF
+085E: 22 48 61 72 70 69 65 73 20 61 72 65 …+62     text      "\"Harpies are strange dark flying creatures - quite strange and dangerous.\""
+08A8: 8b 43 50 00 00 01 40                         return    True
+08AF:>90 74 79 72 61 00 09 34                      match     tyra else -> 0934
+08B7: 22 54 68 65 20 54 79 72 61 6e 74 73 …+106    text      "\"The Tyrants were the earliest rulers of Cythera.  It was Alaric that overthrew the Third Tyrant, ending their reign.\""
+092D: 8b 43 50 00 00 01 40                         return    True
+0934:>90 73 6f 62 65 00 09 6c                      match     sobe else -> 096C
+093C: 22 48 65 61 6c 74 68 79 20 52 65 66 …+29     text      "\"Healthy Refreshment - Drain the Lizard!\""
+0965: 8b 43 50 00 00 01 40                         return    True
+096C:>90 70 6f 69 73 2c 61 6e 74 69 00 0a …+1      match     pois,anti else -> 0A77
+0979: 22 54 68 65 72 65 20 61 72 65 20 61 …+235    text      "\"There are a number of poisonous snakes and other creatures that you need to watch out for.\"*\"Fortunately, the Mages have developed an antidote potion which can save your life.\"*\"There is also a folk remedy, unguent, though it's rarely effective.\""
+0A70: 8b 43 50 00 00 01 40                         return    True
+0A77:>90 75 6e 67 75 00 0a d6                      match     ungu else -> 0AD6
+0A7F: 22 46 6f 6c 6b 20 72 65 6d 65 64 79 …+68     text      "\"Folk remedy unguent is better for healing minor scratches than anything major.\""
+0ACF: 8b 43 50 00 00 01 40                         return    True
+0AD6:>8d 48 10 41 01 54 40 0c 42                   jf        (G10:zone == 1) -> 0C42
+0ADF: 90 77 68 65 72 00 0c 42                      match     wher else -> 0C42
+0AE7: 9f 08 16 30 45 01 4a 90 06 88 01 0b …+328    call      R0816(A30, blk@0AEE, 10)
+      ; 0x45 inline block 0AEE-0C38 (330 bytes):
+      0AEE: 90 06                            .array[6]
+        [0] @0B08 ->
+          0B08: 90 06                            .array[6]
+            [0] Nil
+            [1] @0B22 "LandKing Hall"
+            [2] @0B30 "LandKing Hall lies "
+            [3] 163
+            [4] 20
+            [5] @0B44 "."
+        [1] @0B46 ->
+          0B46: 90 06                            .array[6]
+            [0] Nil
+            [1] @0B60 "Odemia"
+            [2] @0B67 "Odemia lies "
+            [3] 200
+            [4] 59
+            [5] @0B74 "."
+        [2] @0B76 ->
+          0B76: 90 06                            .array[6]
+            [0] Nil
+            [1] @0B90 "Catamarca"
+            [2] @0B9A "Catamarca lies "
+            [3] 220
+            [4] 115
+            [5] @0BAA "."
+        [3] @0BAC ->
+          0BAC: 90 06                            .array[6]
+            [0] Nil
+            [1] @0BC6 "Cademia"
+            [2] @0BCE "Cademia lies "
+            [3] 171
+            [4] 97
+            [5] @0BDC "."
+        [4] @0BDE ->
+          0BDE: 90 06                            .array[6]
+            [0] Nil
+            [1] @0BF8 "Pnyx"
+            [2] @0BFD "Pnyx lies "
+            [3] 101
+            [4] 103
+            [5] @0C08 "."
+        [5] @0C0A ->
+          0C0A: 90 06                            .array[6]
+            [0] Nil
+            [1] @0C24 "Kosha"
+            [2] @0C2A "Kosha lies "
+            [3] 200
+            [4] 176
+            [5] @0C36 "."
+0C3B: 8b 43 50 00 00 01 40                         return    True
+0C42:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0C49-0C4D: no dictionary entry, jump, pointer or call reaches it ----
+0C49:x8b 41 00 40                                  return    0

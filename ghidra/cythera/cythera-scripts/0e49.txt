@@ -1,0 +1,52 @@
+; segment 0E49  page 0E  routine
+; kind routine  length 554 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 0a 05                                     frame     args=10 locals=5
+0003: 82 00 c8 43 10 00 00 01 41 00 30 40 …+1      set       L00 = iterate_children(&L01, 0, A30)
+0010:>8c c8 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_children(&L01, 1) -> 0045
+001D: 8d 00 62 00 41 02 56 40 00 36                jf        (L00.f00:kind & 2) -> 0036
+0027: 82 03 00 63 00 40                            set       L03 = as_prop(L00)
+002D: 9d 0a 03 48 09 40                            send      L03.sel10/use_on(G09:speaker)
+0033: a7 00 40                                     builtin   delete_prop(L00)
+0036:>82 00 c8 43 10 00 00 01 41 02 40 40          set       L00 = iterate_children(&L01, 2)
+0042: 88 00 10                                     goto      -> 0010
+0045:>e3 30 62 01 30 62 02 43 00 00 01 b2 …+1      builtin   show_hit(A30.f01:x, A30.f02:y, 434)
+0052: 82 04 30 62 03 40                            set       L04 = A30.f03:frame
+0058: 8d 04 36 54 04 37 54 5d 04 38 54 04 …+17     jf        (((L04 == A36) || (L04 == A37)) || (((L04 == A38) || (L04 == A39)) && (A31 > (prop(A30, sel52, 0) * 5)))) -> 0134
+0075: 8d 30 62 07 41 00 54 40 00 88                jf        (A30.f07:byte7 == 0) -> 0088
+007F: 86 07 30 40 30 61 34 00 40                   setfield  A30.f07:byte7 = prop(A30, sel52, 0)
+0088:>8d 31 30 61 34 00 41 05 4c 51 40 00 …+1      jf        (A31 > (prop(A30, sel52, 0) * 5)) -> 00BA
+0095: 54 68 65 20 64 6f 6f 72 20 69 73 20 …+11     text      "The door is destroyed!\n"
+00AC: 86 00 30 40 30 62 00 41 02 57 40             setfield  A30.f00:kind = (A30.f00:kind | 2)
+00B7: 88 01 31                                     goto      -> 0131
+00BA:>8d 31 30 62 07 51 40 01 00                   jf        (A31 > A30.f07:byte7) -> 0100
+00C3: 54 68 65 20 64 6f 6f 72 20 69 73 20 …+17     text      "The door is now bashed open!\n"
+00E0: 8d 04 36 54 40 00 f0                         jf        (L04 == A36) -> 00F0
+00E7: 86 03 30 40 32 40                            setfield  A30.f03:frame = A32
+00ED: 88 00 f6                                     goto      -> 00F6
+00F0:>86 03 30 40 33 40                            setfield  A30.f03:frame = A33
+00F6:>86 07 30 40 41 00 40                         setfield  A30.f07:byte7 = 0
+00FD: 88 01 31                                     goto      -> 0131
+0100:>8d 31 30 62 07 41 02 4d 51 40 01 17          jf        (A31 > (A30.f07:byte7 / 2)) -> 0117
+010C: 86 07 30 40 30 62 07 41 01 4b 40             setfield  A30.f07:byte7 = (A30.f07:byte7 - 1)
+0117:>54 68 65 20 64 6f 6f 72 20 64 6f 65 …+14     text      "The door doesn't budge...\n"
+0131:>88 02 26                                     goto      -> 0226
+0134:>8d 04 38 54 04 39 54 5d 40 01 54             jf        ((L04 == A38) || (L04 == A39)) -> 0154
+013F: 4d 61 67 69 63 61 6c 6c 79 20 4c 6f …+6      text      "Magically Locked!\n"
+0151: 88 02 26                                     goto      -> 0226
+0154:>8d 04 32 54 04 33 54 5d 40 01 a5             jf        ((L04 == A32) || (L04 == A33)) -> 01A5
+015F: 54 68 65 20 64 6f 6f 72 20 69 73 20 …+55     text      "The door is already open - bashing it again only wastes your time.\n"
+01A2: 88 02 26                                     goto      -> 0226
+01A5:>8d 04 34 54 40 01 e7                         jf        (L04 == A34) -> 01E7
+01AC: 86 03 30 40 32 40                            setfield  A30.f03:frame = A32
+01B2: 54 68 65 20 64 6f 6f 72 20 77 61 73 …+38     text      "The door was unlocked - no need to be so violent.\n"
+01E4: 88 02 26                                     goto      -> 0226
+01E7:>8d 04 35 54 40 02 26                         jf        (L04 == A35) -> 0226
+01EE: 86 03 30 40 33 40                            setfield  A30.f03:frame = A33
+01F4: 54 68 65 20 64 6f 6f 72 20 77 61 73 …+38     text      "The door was unlocked - no need to be so violent.\n"
+0226:>8b 41 00 40                                  return    0

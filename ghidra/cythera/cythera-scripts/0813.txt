@@ -1,0 +1,70 @@
+; segment 0813  page 08  routine
+; kind routine  length 2369 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 06                                     frame     args=2 locals=6
+0003: 8d ac 41 00 41 04 40 41 02 54 40 02 …+1      jf        (random(0, 4) == 2) -> 0225
+0010: 8d 48 06 41 01 54 40 00 8b                   jf        (G06:party_size == 1) -> 008B
+0019: 22 59 6f 75 20 73 65 65 6d 20 74 6f …+98     text      "\"You seem to be on a difficult journey, my friend.  Perhaps you should ask others to @join you in your quest.\""
+0087: 8b 41 00 40                                  return    0
+008B:>8d 48 10 42 00 06 54 40 01 49                jf        (G10:zone == 6) -> 0149
+0095: 8d dc 41 02 40 41 0a 4f 40 00 cb             jf        (get_variable(2) < 10) -> 00CB
+00A0: 22 54 68 69 73 20 70 6c 61 67 75 65 …+27     text      "\"This plague really has hurt business.\""
+00C7: 8b 41 00 40                                  return    0
+00CB:>8d ac 41 00 41 02 40 41 00 54 9f 0f …+12     jf        ((random(0, 2) == 0) && !R0F02(61, 1)) -> 0149  ; R0F02 = tstbit [from 0x0101 symtab]
+00E3: 22 53 6f 6d 65 20 70 65 6f 70 6c 65 …+86     text      "\"Some people aren't very fond of Darius - especially Mantinea, but he's always been polite to me.\""
+0145: 8b 41 00 40                                  return    0
+0149:>8d 48 10 42 00 08 54 40 02 25                jf        (G10:zone == 8) -> 0225
+0153: 8d ac 41 00 41 02 40 41 00 54 9f 0f …+12     jf        ((random(0, 2) == 0) && !R0F02(29, 1)) -> 01D6  ; R0F02 = tstbit [from 0x0101 symtab]
+016B: 22 53 6f 6d 65 20 6f 6c 64 20 6d 69 …+91     text      "\"Some old miner staying at House Attis was here the other night claiming he'd seen some sort of ghost!\""
+01D2: 8b 41 00 40                                  return    0
+01D6:>8d dc 41 03 40 41 01 54 40 02 25             jf        (get_variable(3) == 1) -> 0225
+01E1: 22 54 68 61 74 20 6d 75 72 64 65 72 …+52     text      "\"That murder in the council chambers has the town in an uproar.\""
+0221: 8b 41 00 40                                  return    0
+0225:>8d ac 41 00 41 04 40 41 00 54 9f 0f …+12     jf        ((random(0, 4) == 0) && !R0F02(102, 7)) -> 029F  ; R0F02 = tstbit [from 0x0101 symtab]
+023D: 22 4f 75 72 20 64 65 6c 69 76 65 72 …+82     text      "\"Our delivery of wine from the North Shore Vineyard is running late - I hope I don't run low.\""
+029B: 8b 41 00 40                                  return    0
+029F:>82 00 43 50 00 ff ff 40                      set       L00 = Nil
+02A7: 8d ac 41 00 41 01 40 41 00 54 40 06 …+1      jf        (random(0, 1) == 0) -> 0630
+02B4: 8d 48 10 42 00 08 54 40 04 d7                jf        (G10:zone == 8) -> 04D7
+02BE: 82 00 45 02 13 90 05 88 13 02 d9 88 …+525    set       L00 = blk@02C3
+      ; 0x45 inline block 02C3-04D6 (531 bytes):
+      02C3: 90 05                            .array[5]
+        [0] @02D9 "There was a drunk in here the other night, claimed to know the location of the Second Tyrant's Tomb - and would tell anybody, for a price, of course."
+        [1] @036F "It's amazing the things you can overhear while crawling through the sewers looking for rats..."
+        [2] @03CE "I've heard there's a problem with people getting sick in Catamarca."
+        [3] @0412 "You'd better be careful if you're going to roam around in the old part of the city after dark - all those dark and twisty alleys..."
+        [4] @0496 "House Attis has been having some problems with their iron mine."
+04D7:>8d 48 10 42 00 0d 54 40 06 30                jf        (G10:zone == 13) -> 0630
+04E1: 82 00 45 01 49 90 03 88 13 04 f4 88 …+323    set       L00 = blk@04E6
+      ; 0x45 inline block 04E6-062F (329 bytes):
+      04E6: 90 03                            .array[3]
+        [0] @04F4 "Some have whispered that the Comana boys had something to do with the death of their father."
+        [1] @0551 "It's kind of strange, but you can really smell the sea indoors in the Comana Manorhouse."
+        [2] @05AA "Perhaps if you get to Cademia, you could check up on how Stentor is.  I was worried about him when he left - he was a good customer."
+0630:>8d 00 5e 40 08 f2                            jf        !L00 -> 08F2
+0636: 82 00 45 02 b6 90 06 88 13 06 55 88 …+688    set       L00 = blk@063B
+      ; 0x45 inline block 063B-08F1 (694 bytes):
+      063B: 90 06                            .array[6]
+        [0] @0655 "A traveller was by here a month ago or so, claimed to have seen 	some sort of white ghost in the woods."
+        [1] @06BD "I've heard that House Comana has made some investments in wine stocks - hopefully the price doesn't go up."
+        [2] @0728 "With all the unrest going on, it seems that our underlying political system is failing."
+        [3] @0780 "They say that a bunch of those old ruins were found down in a swamp to the south."
+        [4] @07D2 "I've heard that there are a bunch of tunnels under the Magisterium in Pnyx, dug by the mages to keep their failed experiments in."
+        [5] @0854 "Some guy the other day was talking about how he once saw a Mage walk through a wall - and it wasn't even like there was some sort of secret door or nothing."
+08F2:>82 01 41 00 40                               set       L01 = 0
+08F7: 82 02 a0 43 10 00 00 03 41 00 41 00 …+3      set       L02 = iterate_range(&L03, 0, 0, A31)
+0906:>8c a0 43 10 00 00 03 41 01 40 40 09 …+1      jt        iterate_range(&L03, 1) -> 0936
+0913: 82 05 ac 41 00 00 5f 40 40                   set       L05 = random(0, len(L00))
+091C: 8d 05 01 51 40 09 27                         jf        (L05 > L01) -> 0927
+0923: 82 01 05 40                                  set       L01 = L05
+0927:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+0933: 88 09 06                                     goto      -> 0906
+0936:>22                                           text      "\""
+0937: 8a 00 01 46 40                               print     L00[L01]
+093C: 22                                           text      "\""
+093D: 8b 41 00 40                                  return    0

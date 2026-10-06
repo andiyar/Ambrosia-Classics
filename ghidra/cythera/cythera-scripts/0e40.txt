@@ -1,0 +1,36 @@
+; segment 0E40  page 0E  routine "DoDoor" [from 0x0101 symtab: key 1640; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 194 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 09 05                                     frame     args=9 locals=5
+0003: 82 00 c8 43 10 00 00 01 41 00 30 40 …+1      set       L00 = iterate_children(&L01, 0, A30)
+0010:>8c c8 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_children(&L01, 1) -> 0045
+001D: 8d 00 62 00 41 02 56 40 00 36                jf        (L00.f00:kind & 2) -> 0036
+0027: 82 03 00 63 00 40                            set       L03 = as_prop(L00)
+002D: 9d 0a 03 48 09 40                            send      L03.sel10/use_on(G09:speaker)
+0033: a7 00 40                                     builtin   delete_prop(L00)
+0036:>82 00 c8 43 10 00 00 01 41 02 40 40          set       L00 = iterate_children(&L01, 2)
+0042: 88 00 10                                     goto      -> 0010
+0045:>82 04 30 62 03 40                            set       L04 = A30.f03:frame
+004B: 8d 04 35 54 04 36 54 5d 40 00 61             jf        ((L04 == A35) || (L04 == A36)) -> 0061
+0056: 4c 6f 63 6b 65 64 21 0a                      text      "Locked!\n"
+005E: 88 00 be                                     goto      -> 00BE
+0061:>8d 04 37 54 04 38 54 5d 40 00 81             jf        ((L04 == A37) || (L04 == A38)) -> 0081
+006C: 4d 61 67 69 63 61 6c 6c 79 20 4c 6f …+6      text      "Magically Locked!\n"
+007E: 88 00 be                                     goto      -> 00BE
+0081:>8d 04 31 54 40 00 91                         jf        (L04 == A31) -> 0091
+0088: 86 03 30 40 33 40                            setfield  A30.f03:frame = A33
+008E: 88 00 be                                     goto      -> 00BE
+0091:>8d 04 33 54 40 00 a1                         jf        (L04 == A33) -> 00A1
+0098: 86 03 30 40 31 40                            setfield  A30.f03:frame = A31
+009E: 88 00 be                                     goto      -> 00BE
+00A1:>8d 04 32 54 40 00 b1                         jf        (L04 == A32) -> 00B1
+00A8: 86 03 30 40 34 40                            setfield  A30.f03:frame = A34
+00AE: 88 00 be                                     goto      -> 00BE
+00B1:>8d 04 34 54 40 00 be                         jf        (L04 == A34) -> 00BE
+00B8: 86 03 30 40 32 40                            setfield  A30.f03:frame = A32
+00BE:>8b 41 00 40                                  return    0

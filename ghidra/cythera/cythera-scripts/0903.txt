@@ -1,0 +1,33 @@
+; segment 0903  page 09  routine: combat-AI scenario test 3 (ai-scripts.md 5)
+; kind routine  length 206 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 06                                     frame     args=3 locals=6
+0003: 82 00 c9 43 10 00 00 01 41 00 31 40 …+1      set       L00 = iterate_descendants(&L01, 0, A31)
+0010:>8c c9 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_descendants(&L01, 1) -> 00C3
+001D: 8d 00 60 2b 40 00 35                         jf        has(L00, sel43) -> 0035
+0024: 8d 00 61 2b 01 32 52 40 00 35                jf        (prop(L00, sel43, 1) >= A32) -> 0035
+002E: 8b 43 50 00 00 01 40                         return    True
+0035:>8d 00 60 31 40 00 4d                         jf        has(L00, sel49) -> 004D
+003C: 8d 00 61 31 02 32 52 40 00 4d                jf        (prop(L00, sel49, 2) >= A32) -> 004D
+0046: 8b 43 50 00 00 01 40                         return    True
+004D:>8d 00 60 2e 40 00 b4                         jf        has(L00, sel46) -> 00B4
+0054: 8d 00 61 2e 01 32 52 40 00 b4                jf        (prop(L00, sel46, 1) >= A32) -> 00B4
+005E: 8d 00 61 2e 00 41 00 54 40 00 70             jf        (prop(L00, sel46, 0) == 0) -> 0070
+0069: 8b 43 50 00 00 01 40                         return    True
+0070:>82 03 c9 43 10 00 00 04 41 00 31 40 …+1      set       L03 = iterate_descendants(&L04, 0, A31)
+007D:>8c c9 43 10 00 00 04 41 01 40 40 00 …+1      jt        iterate_descendants(&L04, 1) -> 00B4
+008A: 8d 03 60 2d 40 00 a5                         jf        has(L03, sel45) -> 00A5
+0091: 8d 03 61 2d 00 00 61 2e 00 54 40 00 …+1      jf        (prop(L03, sel45, 0) == prop(L00, sel46, 0)) -> 00A5
+009E: 8b 43 50 00 00 01 40                         return    True
+00A5:>82 03 c9 43 10 00 00 04 41 02 40 40          set       L03 = iterate_descendants(&L04, 2)
+00B1: 88 00 7d                                     goto      -> 007D
+00B4:>82 00 c9 43 10 00 00 01 41 02 40 40          set       L00 = iterate_descendants(&L01, 2)
+00C0: 88 00 10                                     goto      -> 0010
+00C3:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 00CA-00CE: no dictionary entry, jump, pointer or call reaches it ----
+00CA:x8b 41 00 40                                  return    0

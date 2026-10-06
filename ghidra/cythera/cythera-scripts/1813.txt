@@ -1,0 +1,68 @@
+; segment 1813  page 18  class 0x40 (char) id 19 name "Laodice" (string table 0201)
+; kind class  length 907 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0377  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 77                                        .hdr      dictionary offset = 0377
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 61 …+51     text      "You see an attractive young lady, who looks tired, but content."
+0044: 8d 9f 0f 02 30 41 07 40 40 00 6a             jf        R0F02(A30, 7) -> 006A  ; R0F02 = tstbit [from 0x0101 symtab]
+004F: 22 48 65 6c 6c 6f 20 61 67 61 69 6e …+3      text      "\"Hello again, ^"
+005E: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0065: 2e 22                                        text      ".\""
+0067: 88 00 82                                     goto      -> 0082
+006A:>22 47 6f 6f 64 20                            text      "\"Good "
+0070: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0077: 2c 20 63 69 74 69 7a 65 6e 2e 22             text      ", citizen.\""
+0082:>8e                                           input       ; read a line into the input buffer
+0083: 90 6e 61 6d 65 00 00 d4                      match     name else -> 00D4
+008B: 22 49 20 61 6d 20 4c 61 6f 64 69 63 …+17     text      "\"I am Laodice - and you are?\""
+00A8: 8f 2a 00                                     prompt    "*"
+00AB: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+10     text      "\"Pleased to meet you ^"
+00C1: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+00C8: 2e 22                                        text      ".\""
+00CA: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00D1: 88 00 82                                     goto      -> 0082
+00D4:>90 6a 6f 62 00 01 2c                         match     job else -> 012C
+00DB: 22 49 20 61 6d 20 74 68 65 20 63 6f …+66     text      "\"I am the cook here in House Comana, though that might @change in the future.\""
+0129: 88 00 82                                     goto      -> 0082
+012C:>90 63 6f 6f 6b 00 01 a4                      match     cook else -> 01A4
+0134: 22 42 65 69 6e 67 20 61 20 63 6f 6f …+97     text      "\"Being a cook is what I've always wanted to do, which is one the reasons Ariethous and I are so well suited.\""
+01A1: 88 00 82                                     goto      -> 0082
+01A4:>90 66 6f 6f 64 00 01 ef                      match     food else -> 01EF
+01AC: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+52     text      "\"You'll have to go to the pub and talk to Areithous about that.\""
+01EC: 88 00 82                                     goto      -> 0082
+01EF:>90 62 79 65 00 02 0e                         match     bye else -> 020E
+01F6: 22 47 6f 6f 64 20 62 79 65 2c 20 74 …+5      text      "\"Good bye, then.\""
+0207: 8b 41 00 40                                  return    0
+; ---- dead code 020B-020E: no dictionary entry, jump, pointer or call reaches it ----
+020B:x88 00 82                                     goto      -> 0082
+020E:>90 63 68 61 6e 00 02 3e                      match     chan else -> 023E
+0216: 22 41 66 74 65 72 20 49 20 67 65 74 …+25     text      "\"After I get @married to @Areithous.\""
+023B: 88 00 82                                     goto      -> 0082
+023E:>90 6d 61 72 72 00 02 a3                      match     marr else -> 02A3
+0246: 22 57 68 79 20 79 65 73 2c 20 40 41 …+78     text      "\"Why yes, @Areithous and I are to be married next summer.  It is what I've always wanted.\""
+02A0: 88 00 82                                     goto      -> 0082
+02A3:>90 61 72 65 69 00 02 cb                      match     arei else -> 02CB
+02AB: 22 48 65 20 69 73 20 74 68 65 20 6d …+17     text      "\"He is the man of my dreams.\""
+02C8: 88 00 82                                     goto      -> 0082
+02CB:>90 61 74 72 65 00 03 2b                      match     atre else -> 032B
+02D3: 22 41 74 72 65 75 73 20 69 73 20 61 …+73     text      "\"Atreus is a dear man, and my most trusted friend, but he worries too much about me.\""
+0328: 88 00 82                                     goto      -> 0082
+032B:>90 2a 00 03 70                               match     * else -> 0370
+0330: 8d 9f 08 0d 30 40 5e 40 03 6d                jf        !R080D(A30) -> 036D
+033A: 8d 9f 08 01 30 40 5e 40 03 6d                jf        !R0801(A30) -> 036D
+0344: 22 49 27 6d 20 61 66 72 61 69 64 20 …+29     text      "\"I'm afraid I don't understand, citizen.\""
+036D:>88 00 82                                     goto      -> 0082
+0370:>88 00 82                                     goto      -> 0082
+; ---- dead code 0373-0377: no dictionary entry, jump, pointer or call reaches it ----
+0373:x8b 41 00 40                                  return    0
+0377: a0 03 98 13 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

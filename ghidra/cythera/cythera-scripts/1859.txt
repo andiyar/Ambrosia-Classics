@@ -1,0 +1,73 @@
+; segment 1859  page 18  class 0x40 (char) id 89 name "Niobe" (string table 0201)
+; kind class  length 1184 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @048C  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 8c                                        .hdr      dictionary offset = 048C
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 68 …+56     text      "You see a shy little girl, with long blond hair and large blue eyes."
+0049: 8d 9f 0f 02 30 41 07 40 5e 40 00 bf          jf        !R0F02(A30, 7) -> 00BF  ; R0F02 = tstbit [from 0x0101 symtab]
+0055: 22 4d 79 20 6d 6f 6d 6d 79 20 74 6f …+32     text      "\"My mommy told me not to talk to strangers.\""
+0081: 8d bc 42 00 58 40 9f 0f 02 42 00 58 …+7      jf        (leader_can_see(88) && R0F02(88, 7)) -> 00BB  ; R0F02 = tstbit [from 0x0101 symtab]
+0094: a4 42 00 58 41 01 40                         builtin   show_portrait(88, 1)
+009B: 22 49 74 27 73 20 4f 4b 2c 20 4e 69 …+5      text      "\"It's OK, Niobe.\""
+00AC: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00B3: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+00B8: 88 00 bf                                     goto      -> 00BF
+00BB:>8b 41 00 40                                  return    0
+00BF:>8d 9f 0f 02 30 41 01 40 5e 40 01 3f          jf        !R0F02(A30, 1) -> 013F  ; R0F02 = tstbit [from 0x0101 symtab]
+00CB: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+00D0: 22 49 20 72 65 63 6f 67 6e 69 7a 65 …+21     text      "\"I recognize you from my @dream!\""
+00F1: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+00F8: 2a                                           text      "*"
+00F9: a4 42 00 58 41 01 40                         builtin   show_portrait(88, 1)
+0100: 22 44 6f 6e 27 74 20 62 6f 74 68 65 …+11     text      "\"Don't bother the nice "
+0117: 8d 49 05 00 00 10 40 01 27                   jf        seg0500[0010] -> 0127
+0120: 6c 61 64 79                                  text      "lady"
+0124: 88 01 2a                                     goto      -> 012A
+0127:>6d 61 6e 20 77 69 74 68 20 79 6f 75 …+12     text      "man with your nonsense.\""  ; shares its tail with text @012A
+012A:>20 77 69 74 68 20 79 6f 75 72 20 6e …+9      text      " with your nonsense.\""
+013F:>8e                                           input       ; read a line into the input buffer
+0140: 90 6e 61 6d 65 00 01 57                      match     name else -> 0157
+0148: 22 49 27 6d 20 4e 69 6f 62 65 2e 22          text      "\"I'm Niobe.\""
+0154: 88 01 3f                                     goto      -> 013F
+0157:>90 6a 6f 62 00 01 be                         match     job else -> 01BE
+015E: 22 53 69 6c 6c 79 20 2d 20 49 27 6d …+81     text      "\"Silly - I'm just a little girl, though sometimes I help my @mommy out at the 'Study @Hall'.\""
+01BB: 88 01 3f                                     goto      -> 013F
+01BE:>90 68 61 6c 6c 00 01 f6                      match     hall else -> 01F6
+01C6: 22 4c 6f 74 73 20 6f 66 20 6e 69 63 …+33     text      "\"Lots of nice people come to the Study Hall.\""
+01F3: 88 01 3f                                     goto      -> 013F
+01F6:>90 6d 6f 6d 2c 6d 6f 6d 6d 2c 6d 6f …+5      match     mom,momm,moth else -> 022B
+0207: 22 42 69 67 20 70 65 6f 70 6c 65 20 …+21     text      "\"Big people call my mommy Helen.\""
+0228: 88 01 3f                                     goto      -> 013F
+022B:>90 64 61 64 2c 64 61 64 64 2c 66 61 …+5      match     dad,dadd,fath else -> 025A
+023C: 22 4d 79 20 64 61 64 64 79 20 69 73 …+15     text      "\"My daddy is called Paris.\""
+0257: 88 01 3f                                     goto      -> 013F
+025A:>90 64 72 65 61 00 04 21                      match     drea else -> 0421
+0262: 22 49 20 64 72 65 61 6d 74 20 74 68 …+223    text      "\"I dreamt that I was playing at the beach, near the water.  My mommy doesn't let me do that - which is why I know it was a dream.\"*\"A big wave then came in, and when it went back, there was a person lying there.\"*\"I went to go look at "
+034D: 8d 49 05 00 00 10 40 03 5c                   jf        seg0500[0010] -> 035C
+0356: 68 65 72                                     text      "her"
+0359: 88 03 5f                                     goto      -> 035F
+035C:>68 69 6d 20 61 6e 64 20 49 20 73 61 …+182    text      "him and I saw that it was you.\"*\"I heard a noise behind me, but there was nothing there.\"*\"When I turned back again, it wasn't a person, but a big fish that swam away.\"*\"That was a weird dream.\""  ; shares its tail with text @035F
+035F:>20 61 6e 64 20 49 20 73 61 77 20 74 …+179    text      " and I saw that it was you.\"*\"I heard a noise behind me, but there was nothing there.\"*\"When I turned back again, it wasn't a person, but a big fish that swam away.\"*\"That was a weird dream.\""
+041E: 88 01 3f                                     goto      -> 013F
+0421:>90 62 79 65 00 04 51                         match     bye else -> 0451
+0428: 22 43 6f 6d 65 20 62 79 20 61 6e 64 …+22     text      "\"Come by and play again sometime!\""
+044A: 8b 41 00 40                                  return    0
+; ---- dead code 044E-0451: no dictionary entry, jump, pointer or call reaches it ----
+044E:x88 01 3f                                     goto      -> 013F
+0451:>90 2a 00 04 85                               match     * else -> 0485
+0456: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+32     text      "\"I don't know - maybe a grown-up will know.\""
+0482: 88 01 3f                                     goto      -> 013F
+0485:>88 01 3f                                     goto      -> 013F
+; ---- dead code 0488-048C: no dictionary entry, jump, pointer or call reaches it ----
+0488:x8b 41 00 40                                  return    0
+048C: a0 03 98 59 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

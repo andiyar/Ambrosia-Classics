@@ -1,0 +1,49 @@
+; segment 0218  page 02  string table
+; kind strtab  length 1118 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 28 82 18 00 a2 82 18 00 a3 82 18 …+150    .strtab   string table, 40 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8218×40)
+00A2: 00                                           .string   [0] ""
+00A3: 3c 45 52 49 20 41 59 20 4e 20 55 53 …+46     .string   [1] "<ERI AY N USXT WN>&The guardian of the door of hall this&"
+00DD: 3c 41 52 49 54 20 41 42 54 20 4e 54 …+37     .string   [2] "<ARIT ABT NT SBY PN>&The post left of door this&"
+010E: 3c 41 52 49 54 20 55 4e 4d 20 4e 54 …+38     .string   [3] "<ARIT UNM NT SBY PN>&The post right of door this&"
+0140: 3c 53 59 54 49 20 4e 20 53 42 59 20 …+32     .string   [4] "<SYTI N SBY PN>&The threshold of door this&"
+016C: 3c 45 52 49 20 41 59 20 4e 20 53 50 …+44     .string   [5] "<ERI AY N SPY PN>&The dweller at the door of door this&"
+01A4: 3c 48 50 54 55 20 4e 20 53 42 41 20 …+28     .string   [6] "<HPTU N SBA PN>&The posts of door this&"
+01CC: 3c 42 4e 56 20 4e 20 53 42 41 20 50 …+26     .string   [7] "<BNV N SBA PN>&The bolt of door this&"
+01F2: 57 65 6c 63 6f 6d 65 20 74 6f 20 4f …+6      .string   [8] "Welcome to Odemia"
+0204: 43 61 74 61 6d 61 72 63 61 20 2d 20 …+16     .string   [9] "Catamarca - City of Springs"
+0220: 4e 6f 72 74 68 20 53 68 6f 72 65 20 …+18     .string   [10] "North Shore Vineyard, est 817"
+023E: 43 61 64 65 6d 69 61 00                      .string   [11] "Cademia"
+0246: 54 69 74 61 6e 27 73 20 48 65 61 64 …+1      .string   [12] "Titan's Head"
+0253: 47 72 65 65 6e 20 47 6f 61 74 00             .string   [13] "Green Goat"
+025E: 54 68 65 20 54 77 6f 2d 54 61 6c 65 …+6      .string   [14] "The Two-Taled Rat"
+0270: 49 72 6f 6e 20 4d 69 6e 65 73 00             .string   [15] "Iron Mines"
+027B: 54 6f 20 43 61 64 65 6d 69 61 00             .string   [16] "To Cademia"
+0286: 54 6f 20 43 61 74 61 6d 61 72 63 61 …+1      .string   [17] "To Catamarca"
+0293: 54 6f 20 4f 64 65 6d 69 61 00                .string   [18] "To Odemia"
+029D: 54 6f 20 50 6e 79 78 00                      .string   [19] "To Pnyx"
+02A5: 54 6f 20 4b 6f 73 68 61 00                   .string   [20] "To Kosha"
+02AE: 57 65 6c 63 6f 6d 65 20 54 6f 20 41 …+6      .string   [21] "Welcome To Abydos"
+02C0: 4d 61 6b 65 20 4f 62 6f 6c 6f 69 20 …+101    .string   [22] "Make Oboloi Fast!\nJust send 1 obol to each of the names below and then add your name to the end of this list...\n"
+0331: 48 65 61 64 6d 61 73 74 65 72 20 4c …+6      .string   [23] "Headmaster Lindus"
+0343: 4c 69 62 72 61 72 69 61 6e 20 53 65 …+6      .string   [24] "Librarian Selinus"
+0355: 4d 61 73 74 65 72 20 50 68 65 72 65 …+2      .string   [25] "Master Pheres"
+0363: 4d 61 73 74 65 72 20 54 72 6f 73 00          .string   [26] "Master Tros"
+036F: 4d 61 73 74 65 72 20 50 61 6c 61 65 …+5      .string   [27] "Master Palaestra"
+0380: 46 6f 75 72 74 68 20 44 65 67 72 65 …+7      .string   [28] "Fourth Degree Hall"
+0393: 46 69 66 74 68 20 44 65 67 72 65 65 …+6      .string   [29] "Fifth Degree Hall"
+03A5: 53 69 78 74 68 20 44 65 67 72 65 65 …+6      .string   [30] "Sixth Degree Hall"
+03B7: 53 65 76 65 6e 74 68 20 44 65 67 72 …+8      .string   [31] "Seventh Degree Hall"
+03CB: 45 69 67 68 74 20 44 65 67 72 65 65 …+6      .string   [32] "Eight Degree Hall"
+03DD: 48 6f 75 73 65 20 4e 69 63 61 6e 64 …+3      .string   [33] "House Nicander"
+03EC: 48 6f 75 73 65 20 44 6f 64 6f 6e 61 …+1      .string   [34] "House Dodona"
+03F9: 48 6f 75 73 65 20 41 74 74 69 73 00          .string   [35] "House Attis"
+0405: 48 6f 75 73 65 20 53 74 72 79 6d 6f …+2      .string   [36] "House Strymon"
+0413: 48 6f 75 73 65 20 41 74 75 73 73 61 …+1      .string   [37] "House Atussa"
+0420: 48 6f 75 73 65 20 43 6f 6d 61 6e 61 …+1      .string   [38] "House Comana"
+042D: 42 75 69 6c 64 69 6e 67 20 46 6f 72 …+37     .string   [39] "Building For Sale\nSee Antenor for more details.\n"

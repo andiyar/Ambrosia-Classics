@@ -1,0 +1,22 @@
+; segment 1178  page 11  class 0x00 (prop) type 376 tile-name "mystic spear" (tool join F000/F004)
+; kind class  length 275 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C3  methods: -
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel42, sel43, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c3                                        .hdr      dictionary offset = 00C3
+0002: 90 02 91 78 00 0c 91 78 00 61                .array    array[2] = [@000C, @0061]
+000C: 54 68 61 74 27 73 20 61 6e 20 6f 64 …+73     .string   "That's an odd weapon - seems to be like a sword, but without an edge.  Most curious."
+0061: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+006B: 90 01 00 00 00 14                            .array    array[1] = [20]
+0071: 90 01 00 00 00 08                            .array    array[1] = [8]
+0077: 90 01 00 00 00 05                            .array    array[1] = [5]
+007D: 90 07 00 00 00 23 00 00 00 01 00 00 …+18     .array    array[7] = [35, 1, 130, 196, 16, 18, @009B]
+009B: 90 05 00 00 00 00 00 00 02 cc 00 00 …+10     .array    array[5] = [0, 716, 716, 716, 0]
+00B1: 90 04 00 00 00 19 00 00 00 08 50 00 …+6      .array    array[4] = [25, 8, False, 13]
+00C3: a0 0d 91 78 00 71 00 27 50 00 ff ff …+68     .dict     dict[13] {36/p_weight: @006B, 38/p26: @0077, 39/p_typeflags27: @0071, 42: @007D, 43: @00B1, 51: @0002}

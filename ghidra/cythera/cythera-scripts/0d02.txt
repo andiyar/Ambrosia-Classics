@@ -1,0 +1,26 @@
+; segment 0D02  page 0D  routine
+; kind routine  length 119 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 05                                     frame     args=2 locals=5
+0003: 82 00 41 00 40                               set       L00 = 0
+0008: 82 01 c9 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_descendants(&L02, 0, A30)
+0015:>8c c9 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_descendants(&L02, 1) -> 0073
+0022: 8d 01 60 3c 40 00 64                         jf        has(L01, sel60) -> 0064
+0029: 82 04 01 61 3c 00 01 62 09 4c 40             set       L04 = (prop(L01, sel60, 0) * L01.f09:count)
+0034: 8d 04 31 51 40 00 4f                         jf        (L04 > A31) -> 004F
+003B: 86 09 01 40 04 31 01 61 3c 00 4d 4b …+1      setfield  L01.f09:count = (L04 - (A31 / prop(L01, sel60, 0)))
+0048: 8b 41 00 40                                  return    0
+; ---- dead code 004C-004F: no dictionary entry, jump, pointer or call reaches it ----
+004C:x88 00 64                                     goto      -> 0064
+004F:>82 31 31 04 4b 40                            set       A31 = (A31 - L04)
+0055: a7 01 40                                     builtin   delete_prop(L01)
+0058: 8d 31 41 00 54 40 00 64                      jf        (A31 == 0) -> 0064
+0060: 8b 41 00 40                                  return    0
+0064:>82 01 c9 43 10 00 00 02 41 02 40 40          set       L01 = iterate_descendants(&L02, 2)
+0070: 88 00 15                                     goto      -> 0015
+0073:>8b 41 00 40                                  return    0

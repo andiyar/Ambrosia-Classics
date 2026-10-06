@@ -1,0 +1,43 @@
+; segment 1084  page 10  class 0x00 (prop) type 132 tile-name "butter" (tool join F000/F004)
+; kind class  length 383 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0153  methods: sel15/take_drop_15@006B, sel9/use@0079, sel10/use_on@009A
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 53                                        .hdr      dictionary offset = 0153
+0002: 90 02 90 84 00 0c 90 84 00 5f                .array    array[2] = [@000C, @005F]
+000C: 4d 6d 6d 2c 20 62 75 74 74 65 72 20 …+71     .string   "Mmm, butter - reminds me of this one night, well, that's a story for another time."
+005F: 90 01 00 00 00 61                            .array    array[1] = [97]
+0065: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @006B ====
+006B: 81 01 00                                     frame     args=1 locals=0
+006E: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0075-0079: no dictionary entry, jump, pointer or call reaches it ----
+0075:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0079 ====
+0079: 81 01 00                                     frame     args=1 locals=0
+007C: 8d 48 13 40 00 8f                            jf        G13:g13_bool -> 008F
+0082: 42 75 74 74 65 72 20 77 68 61 74 3f …+1      text      "Butter what?\n"
+008F:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0096-009A: no dictionary entry, jump, pointer or call reaches it ----
+0096:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @009A ====
+009A: 81 02 00                                     frame     args=2 locals=0
+009D: 8d 31 62 04 42 00 e7 54 31 62 05 41 …+16     jf        (((A31.f04:type == 231) || (A31.f05:item == 69)) || (A31.f05:item == 1093)) -> 00DA
+00B9: 4d 6d 6d 2c 20 68 6f 74 20 62 75 74 …+15     text      "Mmm, hot buttered bread...\n"
+00D4: a7 30 40                                     builtin   delete_prop(A30)
+00D7: 88 01 4f                                     goto      -> 014F
+00DA:>8d 31 62 04 42 00 45 54 31 62 04 42 …+7      jf        ((A31.f04:type == 69) || (A31.f04:type == 213)) -> 0120
+00ED: 53 6f 6d 65 20 66 6f 6f 64 73 20 61 …+36     text      "Some foods aren't better with butter on them...\n"
+011D: 88 01 4f                                     goto      -> 014F
+0120:>54 68 61 74 20 77 6f 75 6c 64 20 62 …+35     text      "That would be a waste of perfectly good butter."
+014F:>8b 41 00 40                                  return    0
+0153: a0 07 50 00 ff ff 00 28 90 84 00 65 …+32     .dict     dict[7] {9/use: @0079, 10/use_on: @009A, 15/take_drop_15: @006B, 36/p_weight: @0065, 51: @0002}

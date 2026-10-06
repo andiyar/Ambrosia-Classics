@@ -1,0 +1,58 @@
+; segment 1A04  page 1A  class 0x50 (spell) type 4
+; kind class  length 419 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0177  methods: sel2/name@0008, sel8/search@001F, sel9/use@0061
+; properties: sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 77                                        .hdr      dictionary offset = 0177
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 44 65 74 65 63 74 20 54 72 61 …+4      return    "Detect Traps"
+; ---- dead code 001B-001F: no dictionary entry, jump, pointer or call reaches it ----
+001B:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @001F ====
+001F: 81 01 00                                     frame     args=1 locals=0
+0022: 54 68 69 73 20 73 70 65 6c 6c 20 77 …+47     text      "This spell will determine if there are any hidden dangers.\n"
+005D: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0061 ====
+0061: 81 01 06                                     frame     args=1 locals=6
+0064: 8d 9f 0e a1 30 62 0b 41 02 41 0a 40 …+3      jf        R0EA1(A30.f0B:loc16, 2, 10) -> 0173
+0073: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+007A: 82 01 43 50 00 00 00 40                      set       L01 = False
+0082: 82 02 d1 43 10 00 00 03 41 00 00 62 …+8      set       L02 = iterate_props_near(&L03, 0, L00.f01:x, L00.f02:y, 5)
+0096:>8c d1 43 10 00 00 03 41 01 40 40 01 …+1      jt        iterate_props_near(&L03, 1) -> 014A
+00A3: 82 05 43 50 00 00 00 40                      set       L05 = False
+00AB: 8d 02 62 00 41 03 57 41 03 54 40 01 …+1      jf        ((L02.f00:kind | 3) == 3) -> 010D
+00B8: 8d 02 62 04 42 01 60 54 40 00 ce             jf        (L02.f04:type == 352) -> 00CE
+00C3: 82 05 43 50 00 00 01 40                      set       L05 = True
+00CB: 88 01 0d                                     goto      -> 010D
+00CE:>8d 02 62 04 42 01 61 54 40 00 e4             jf        (L02.f04:type == 353) -> 00E4
+00D9: 82 05 43 50 00 00 01 40                      set       L05 = True
+00E1: 88 01 0d                                     goto      -> 010D
+00E4:>8d 02 62 04 42 01 63 54 40 00 fa             jf        (L02.f04:type == 355) -> 00FA
+00EF: 82 05 43 50 00 00 01 40                      set       L05 = True
+00F7: 88 01 0d                                     goto      -> 010D
+00FA:>8d 02 62 04 42 00 e6 54 40 01 0d             jf        (L02.f04:type == 230) -> 010D
+0105: 82 05 43 50 00 00 01 40                      set       L05 = True
+010D:>8d 05 40 01 3b                               jf        L05 -> 013B
+0112: e1 02 43 00 00 00 f4 40                      builtin   show_magic(L02, 244)
+011A: 8d 48 09 48 05 54 40 01 3b                   jf        (G09:speaker == G05:leader) -> 013B
+0123: 59 6f 75 20 64 65 74 65 63 74 20             text      "You detect "
+012E: 8a 02 40                                     print     L02
+0131: 21 0a                                        text      "!\n"
+0133: 82 01 43 50 00 00 01 40                      set       L01 = True
+013B:>82 02 d1 43 10 00 00 03 41 02 40 40          set       L02 = iterate_props_near(&L03, 2)
+0147: 88 00 96                                     goto      -> 0096
+014A:>8d 01 5e 48 09 48 05 54 5c 40 01 73          jf        (!L01 && (G09:speaker == G05:leader)) -> 0173
+0156: 59 6f 75 20 66 61 69 6c 20 74 6f 20 …+17     text      "You fail to detect anything.\n"
+0173:>8b 41 00 40                                  return    0
+0177: a0 07 50 00 ff ff 06 95 9a 04 00 1f …+32     .dict     dict[7] {2/name: @0008, 8/search: @001F, 9/use: @0061, 54: @0002}

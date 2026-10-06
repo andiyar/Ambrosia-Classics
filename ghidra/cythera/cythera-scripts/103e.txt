@@ -1,0 +1,35 @@
+; segment 103E  page 10  class 0x00 (prop) type 62 tile-name "hole" (tool join F000/F004)
+; kind class  length 217 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00AD  methods: sel9/use@0008, sel57@0040
+; properties: sel58/p3A
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 ad                                        .hdr      dictionary offset = 00AD
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 01                                     frame     args=1 locals=1
+000B: 8d 30 62 03 41 00 51 40 00 1d                jf        (A30.f03:frame > 0) -> 001D
+0015: 82 00 41 04 40                               set       L00 = 4
+001A: 88 00 34                                     goto      -> 0034
+001D:>82 00 41 03 40                               set       L00 = 3
+0022: 86 01 48 05 40 30 62 01 40                   setfield  G05:leader.f01:x = A30.f01:x
+002B: 86 02 48 05 40 30 62 02 40                   setfield  G05:leader.f02:y = A30.f02:y
+0034:>bf 00 30 62 08 41 02 40                      builtin   teleport(L00, A30.f08:u16_6, 2)
+003C: 8b 41 00 40                                  return    0
+
+; ==== method sel57 @0040 ====
+0040: 81 01 00                                     frame     args=1 locals=0
+0043: 8d 30 62 00 43 00 00 00 80 56 40 00 …+1      jf        (A30.f00:kind & 128) -> 008D
+0050: 59 6f 75 20 64 69 73 63 6f 76 65 72 …+24     text      "You discover a tunnel of some sort!\n"
+0074: 86 00 30 40 30 62 00 43 0f ff ff 7f …+2      setfield  A30.f00:kind = (A30.f00:kind & -129)
+0082: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+008A: 88 00 a9                                     goto      -> 00A9
+008D:>59 6f 75 20 63 61 6e 27 74 20 66 69 …+16     text      "You can't fill in the hole.\n"
+00A9:>8b 41 00 40                                  return    0
+00AD: a0 07 50 00 ff ff 00 00 90 3e 00 40 …+32     .dict     dict[7] {9/use: @0008, 57: @0040, 58/p3A: @0002}

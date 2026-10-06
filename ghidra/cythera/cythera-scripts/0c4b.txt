@@ -1,0 +1,21 @@
+; segment 0C4B  page 0C  routine
+; kind routine  length 84 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 02                                     frame     args=4 locals=2
+0003: 8d 9f 09 01 30 43 50 00 ff ff 31 40 …+3      jf        R0901(A30, Nil, A31) -> 0049
+0012: 82 00 ad 41 1c 41 00 30 41 00 31 41 …+7      set       L00 = as_spell(create_prop(28, 0, A30, 0, A31, 0, 0))
+0025: 82 01 9d 09 00 40 40                         set       L01 = L00.sel9/use()
+002C: 8d 9f 0f 13 30 40 40 00 46                   jf        R0F13(A30) -> 0046  ; R0F13 = inparty [from 0x0101 symtab]
+0035: 8a 30 40                                     print     A30
+0038: 20 63 61 73 74 73 20                         text      " casts "
+003F: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+0045: 0a                                           text      "\n"
+0046:>a7 00 40                                     builtin   delete_prop(L00)
+0049:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0050-0054: no dictionary entry, jump, pointer or call reaches it ----
+0050:x8b 41 00 40                                  return    0

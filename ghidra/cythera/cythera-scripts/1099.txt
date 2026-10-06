@@ -1,0 +1,46 @@
+; segment 1099  page 10  class 0x00 (prop) type 153 tile-name "panpipes" (tool join F000/F004)
+; kind class  length 231 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00BB  methods: sel9/use@000E, sel10/use_on@0095
+; properties: sel36/p_weight, sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 bb                                        .hdr      dictionary offset = 00BB
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+0008: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel9/use @000E ====
+000E: 81 01 01                                     frame     args=1 locals=1
+0011: 8d db 30 40 40 00 1c                         jf        scripted_window_shown(A30) -> 001C
+0018: 8b 41 00 40                                  return    0
+001C:>82 00 9b 04 30 41 12 41 00 41 16 43 …+8      set       L00 = sysnew_window(A30, 18, 0, 22, 160, 97)
+0030: 8d 30 62 06 41 01 54 40 00 67                jf        (A30.f06:quality == 1) -> 0067
+003A: 9b 0f 00 41 00 41 00 43 00 00 00 a0 …+30     sysnew    sysnew_0F(L00, 0, 0, 160, 97, 76, blk@004D)
+      ; 0x45 inline block 004D-0063 (22 bytes):
+      004D: 90 05                            .array[5]
+        [0] 15
+        [1] 12
+        [2] 9
+        [3] 7
+        [4] 3
+0064: 88 00 91                                     goto      -> 0091
+0067:>9b 0f 00 41 00 41 00 43 00 00 00 a0 …+30     sysnew    sysnew_0F(L00, 0, 0, 160, 97, 76, blk@007A)
+      ; 0x45 inline block 007A-0090 (22 bytes):
+      007A: 90 05                            .array[5]
+        [0] 15
+        [1] 12
+        [2] 9
+        [3] 6
+        [4] 3
+0091:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0095 ====
+0095: 81 02 00                                     frame     args=2 locals=0
+0098: 8d 31 43 00 0f ff ff 56 43 00 0f 79 …+12     jf        (((A31 & 1048575) == 1014211) && (A30.f06:quality == 1)) -> 00B7
+00B0: c5 43 00 00 00 81 40                         builtin   send_signal(129)
+00B7:>8b 41 00 40                                  return    0
+00BB: a0 07 50 00 ff ff 00 2a 90 99 00 02 …+32     .dict     dict[7] {9/use: @000E, 10/use_on: @0095, 36/p_weight: @0002, 39/p_typeflags27: @0008}

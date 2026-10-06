@@ -12,7 +12,7 @@ stored word was loaded from). Then: a sweep of every bank claim that took a valu
 image (table B), and a check that no post-`main` code writes the same objects. OUT: anything after
 `main` except the writer/reader scans in §4; the prefs defaults `FUN_100050f0`; the MSL library
 internals below `FUN_1005a350`/`FUN_1005a8a0` (only their destinations are bounded, §1.4).
-`$W` = `/Users/andiyar/ghidra-proj-deimos`; TOC r2 = `0x100e6330`; all scratch scripts are `$W/w3s2-*`.
+`$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`; TOC r2 = `0x100e6330`; all scratch scripts are `$W/w3s2-*`.
 
 **Bottom line.** Static initialisation changes exactly **three kinds of value** in the data image,
 each identically in every translation unit that includes the header defining it:

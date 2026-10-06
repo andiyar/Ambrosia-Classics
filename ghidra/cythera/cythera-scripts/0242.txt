@@ -1,0 +1,16 @@
+; segment 0242  page 02  string table
+; kind strtab  length 2166 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 07 82 42 00 1e 82 42 01 2d 82 42 …+18     .strtab   string table, 7 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8242×7)
+001E: 59 6f 75 72 20 77 69 6c 6c 20 69 73 …+259    .string   [0] "Your will is not left in your body - and images of the future, of the results of your failure, come flooding in.  You don't not know how you are seeing what you see, as if the being that was Pelagon has hold of your mind, to torture you with the results of your failure."
+012D: 59 6f 75 20 73 65 65 20 41 6c 61 72 …+722    .string   [1] "You see Alaric, with trusty Magpie at his side, sitting in the throne room of LandKing Hall.  Pelagon strides forward, a hideous creature you know as Omen by his side, a green glow coming from his hand.  Alaric rises, as if to stop him, when a bolt of energy lances out.  At the last momemt, Magpie dives in front of Alaric, his body reduced to ash.  But even that last heroic effort does not save Alaric, for a second bolt flies from Pelagon's hand, consuming Alaric.  Pelagon climbs Alaric's throne, pausing to brush away the ash that remains.  'We have done well, master,' says Omen, whose shape wavers, becoming that of Magpie.  Pelagon smiles, his shape wavers, becoming that of Alaric, but with an evil green gleam in his eyes."
+040B: 53 61 62 69 6e 61 74 65 20 6c 6f 6f …+121    .string   [2] "Sabinate looks up from his meditation, alarm in his eyes.  Just as suddenly, his face dims, and tears begin streaming down his face."
+0490: 41 20 73 6d 61 6c 6c 20 63 68 69 6c …+293    .string   [3] "A small child plays with a toy on a dusty street.  She drops the toy, and beginning crying.  Her mother picks her up, but is unable to stop the tears, unable to soothe the pain.  For what is wrong with the child is something that will not go away, something that will only get worse as the years go by..."
+05C1: 57 68 61 74 20 79 6f 75 20 68 61 76 …+246    .string   [4] "What you have done is uncertain, but you know now that the being that was Pelagon has won, and, with your help, has defeated Alaric.  You feel your will leave your body, and held by the being that was Pelagon, forced to see the consequences of your actions."
+06C3: 53 61 62 69 6e 61 74 65 20 6c 6f 6f …+121    .string   [5] "Sabinate looks up from his meditation, alarm in his eyes.  Just as suddenly, his face dims, and tears begin streaming down his face."
+0748: 41 20 73 6d 61 6c 6c 20 63 68 69 6c …+290    .string   [6] "A small child plays with a toy on a dusty street.  She drops the toy, and begins crying.  Her mother picks her up, but is unable to stop the tears, unable to soothe the pain.  For what is wrong with the child is something that will not go away, something that will only get worse as the years go by..."

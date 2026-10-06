@@ -1,0 +1,26 @@
+; segment 1146  page 11  class 0x00 (prop) type 326 tile-name "broken sword" (tool join F000/F004)
+; kind class  length 128 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0054  methods: sel15/take_drop_15@001E, sel9/use@002C
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 54                                        .hdr      dictionary offset = 0054
+0002: 90 01 91 46 00 08                            .array    array[1] = [@0008]
+0008: 90 05 00 00 00 22 00 00 00 0e 00 00 …+10     .array    array[5] = [34, 14, 47, 10, 25]
+
+; ==== method sel15/take_drop_15 @001E ====
+001E: 81 01 00                                     frame     args=1 locals=0
+0021: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0028-002C: no dictionary entry, jump, pointer or call reaches it ----
+0028:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @002C ====
+002C: 81 01 00                                     frame     args=1 locals=0
+002F: 49 74 20 69 73 20 62 72 6f 6b 65 6e …+21     text      "It is broken, and beyond repair.\n"
+0050: 8b 41 00 40                                  return    0
+0054: a0 07 50 00 ff ff 00 15 91 46 00 02 …+32     .dict     dict[7] {9/use: @002C, 15/take_drop_15: @001E, 36/p_weight: @0002}

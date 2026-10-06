@@ -1,0 +1,32 @@
+; segment 0E48  page 0E  routine "SpillOut" [from 0x0101 symtab: key 1648; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 144 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 04                                     frame     args=3 locals=4
+0003: 82 00 43 50 00 00 00 40                      set       L00 = False
+000B: 82 01 c8 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_children(&L02, 0, A30)
+0018:>8c c8 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_children(&L02, 1) -> 0075
+0025: 8d 00 5e 40 00 3a                            jf        !L00 -> 003A
+002B: 8a 31 40                                     print     A31
+002E: 20                                           text      " "
+002F: 82 00 43 50 00 00 01 40                      set       L00 = True
+0037: 88 00 3c                                     goto      -> 003C
+003A:>2c 20                                        text      ", "
+003C:>c6 01 40                                     builtin   short_name(L01)
+003F: 8d 32 40 00 66                               jf        A32 -> 0066
+0044: 86 01 01 40 30 62 01 40                      setfield  L01.f01:x = A30.f01:x
+004C: 86 02 01 40 30 62 02 40                      setfield  L01.f02:y = A30.f02:y
+0054: 86 00 01 40 01 62 00 43 0f ff ff f7 …+2      setfield  L01.f00:kind = (L01.f00:kind & -9)
+0062: a6 41 01 40                                  builtin   show_tile_animate(1)
+0066:>82 01 c8 43 10 00 00 02 41 02 40 40          set       L01 = iterate_children(&L02, 2)
+0072: 88 00 18                                     goto      -> 0018
+0075:>8d 00 5e 40 00 8b                            jf        !L00 -> 008B
+007B: 8a 31 40                                     print     A31
+007E: 20 6e 6f 74 68 69 6e 67 2e 0a                text      " nothing.\n"
+0088: 88 00 8c                                     goto      -> 008C
+008B:>0a                                           text      "\n"
+008C:>8b 41 00 40                                  return    0

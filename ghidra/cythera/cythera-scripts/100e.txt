@@ -1,0 +1,98 @@
+; segment 100E  page 10  class 0x00 (prop) type 14 tile-name "bed" (tool join F000/F004)
+; kind class  length 965 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @03B1  methods: sel9/use@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 b1                                        .hdr      dictionary offset = 03B1
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 13                                     frame     args=1 locals=19
+0005: 82 00 41 00 40                               set       L00 = 0
+000A: 8d 48 12 42 00 02 54 40 00 19                jf        (G12:room == 2) -> 0019
+0014: 82 00 41 04 40                               set       L00 = 4
+0019:>8d 30 62 06 40 00 bd                         jf        A30.f06:quality -> 00BD
+0020: 8d 30 62 06 43 00 00 00 ff 54 40 00 …+1      jf        (A30.f06:quality == 255) -> 0079
+002D: 49 74 20 6c 6f 6f 6b 73 20 6c 69 6b …+57     text      "It looks like somebody else is staying here - perhaps another bed...\n"
+0072: 8b 41 00 40                                  return    0
+; ---- dead code 0076-0079: no dictionary entry, jump, pointer or call reaches it ----
+0076:x88 00 af                                     goto      -> 00AF
+0079:>8d 30 62 06 49 03 01 00 16 53 40 00 …+1      jf        (A30.f06:quality != seg0301[0016]) -> 00AF
+0086: 59 6f 75 20 6e 65 65 64 20 74 6f 20 …+25     text      "You need to pay the innkeeper first.\n"
+00AB: 8b 41 00 40                                  return    0
+00AF:>82 00 49 03 01 00 12 49 03 01 00 16 …+2      set       L00 = seg0301[0012][seg0301[0016]]
+00BD:>82 01 30 62 01 40                            set       L01 = A30.f01:x
+00C3: 82 02 30 62 02 40                            set       L02 = A30.f02:y
+00C9: 8d 30 62 03 41 03 54 40 00 dd                jf        (A30.f03:frame == 3) -> 00DD
+00D3: 82 02 02 41 01 4b 40                         set       L02 = (L02 - 1)
+00DA: 88 00 e4                                     goto      -> 00E4
+00DD:>82 01 01 41 01 4b 40                         set       L01 = (L01 - 1)
+00E4:>82 03 cb 43 10 00 00 04 41 00 01 02 …+2      set       L03 = iterate_props_at(&L04, 0, L01, L02)
+00F2:>8c cb 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_props_at(&L04, 1) -> 0144
+00FF: 8d 03 63 40 03 63 40 48 09 63 40 53 …+4      jf        (as_char(L03) && (as_char(L03) != as_char(G09:speaker))) -> 0135
+010F: 53 6f 6d 65 62 6f 64 79 20 69 73 20 …+22     text      "Somebody is already asleep there!\n"
+0131: 8b 41 00 40                                  return    0
+0135:>82 03 cb 43 10 00 00 04 41 02 40 40          set       L03 = iterate_props_at(&L04, 2)
+0141: 88 00 f2                                     goto      -> 00F2
+0144:>82 06 9b 04 43 00 00 01 2c 43 00 00 …+4      set       L06 = sysnew_window(300, 320)
+0154: 82 07 9b 06 06 44 53 6c 65 65 70 20 …+23     set       L07 = sysnew_06(L06, "Sleep how long?", 0, 0, 300, 32)
+0177: 82 08 9b 08 06 44 55 6e 74 69 6c 20 …+20     set       L08 = sysnew_08(L06, "Until Dawn/d", 0, 40, 300, 32)
+0197: 82 09 9b 08 06 44 55 6e 74 69 6c 20 …+23     set       L09 = sysnew_08(L06, "Until Morning/o", 0, 80, 300, 32)
+01BA: 82 0a 9b 08 06 44 55 6e 74 69 6c 20 …+20     set       L0A = sysnew_08(L06, "Until Noon/n", 0, 120, 300, 32)
+01DA: 82 0b 9b 08 06 44 55 6e 74 69 6c 20 …+25     set       L0B = sysnew_08(L06, "Until Sunset/s", 0, 160, 300, 32)
+01FF: 82 0c 9b 08 06 44 55 6e 74 69 6c 20 …+27     set       L0C = sysnew_08(L06, "Until Midnight/m", 0, 200, 300, 32)
+0226: 82 0d 9b 11 06 43 00 00 00 96 43 00 …+12     set       L0D = sysnew_11(L06, 150, 240, 150, 32)
+023E: 86 3e 0d 40 41 01 40                         setfield  L0D.f3E = 1
+0245: 86 3f 0d 40 41 0c 40                         setfield  L0D.f3F = 12
+024C: 86 37 0d 40 41 01 40                         setfield  L0D.f37 = 1
+0253: 82 0e 9b 08 06 44 48 6f 75 72 73 00 …+16     set       L0E = sysnew_08(L06, "Hours", 0, 240, 150, 32)
+026F: 82 0f 9b 08 06 44 43 61 6e 63 65 6c …+21     set       L0F = sysnew_08(L06, "Cancel/c/", 0, 280, 300, 32)
+0290: 82 10 43 50 00 ff ff 40                      set       L10 = Nil
+0298: 82 11 43 50 00 ff ff 40                      set       L11 = Nil
+02A0:>8d 41 01 40 03 59                            jf        1 -> 0359
+02A6: 82 12 06 62 37 40                            set       L12 = L06.f37
+02AC: 8d 12 0f 54 40 02 b6                         jf        (L12 == L0F) -> 02B6
+02B3: 88 03 59                                     goto      -> 0359
+02B6:>8d 12 0e 54 40 02 c6                         jf        (L12 == L0E) -> 02C6
+02BD: 82 10 0d 62 37 40                            set       L10 = L0D.f37
+02C3: 88 03 59                                     goto      -> 0359
+02C6:>8d 12 08 54 40 02 e1                         jf        (L12 == L08) -> 02E1
+02CD: 82 11 44 64 61 77 6e 00 40                   set       L11 = "dawn"
+02D6: 82 10 41 06 48 00 4b 40                      set       L10 = (6 - G00:hour)
+02DE: 88 03 59                                     goto      -> 0359
+02E1:>8d 12 0a 54 40 02 fc                         jf        (L12 == L0A) -> 02FC
+02E8: 82 11 44 6e 6f 6f 6e 00 40                   set       L11 = "noon"
+02F1: 82 10 41 0c 48 00 4b 40                      set       L10 = (12 - G00:hour)
+02F9: 88 03 59                                     goto      -> 0359
+02FC:>8d 12 0b 54 40 03 19                         jf        (L12 == L0B) -> 0319
+0303: 82 11 44 73 75 6e 73 65 74 00 40             set       L11 = "sunset"
+030E: 82 10 41 12 48 00 4b 40                      set       L10 = (18 - G00:hour)
+0316: 88 03 59                                     goto      -> 0359
+0319:>8d 12 0c 54 40 03 38                         jf        (L12 == L0C) -> 0338
+0320: 82 11 44 6d 69 64 6e 69 67 68 74 00 …+1      set       L11 = "midnight"
+032D: 82 10 41 18 48 00 4b 40                      set       L10 = (24 - G00:hour)
+0335: 88 03 59                                     goto      -> 0359
+0338:>8d 12 09 54 40 03 56                         jf        (L12 == L09) -> 0356
+033F: 82 11 44 6d 6f 72 6e 69 6e 67 00 40          set       L11 = "morning"
+034B: 82 10 41 08 48 00 4b 40                      set       L10 = (8 - G00:hour)
+0353: 88 03 59                                     goto      -> 0359
+0356:>88 02 a0                                     goto      -> 02A0
+0359:>93 06 40                                     release   L06
+035C: 8d 10 41 00 4f 40 03 6b                      jf        (L10 < 0) -> 036B
+0364: 82 10 10 41 18 4a 40                         set       L10 = (L10 + 24)
+036B:>8d 10 41 00 54 40 03 86                      jf        (L10 == 0) -> 0386
+0373: 49 74 20 69 73 20 61 6c 72 65 61 64 …+2      text      "It is already "
+0381: 8a 11 40                                     print     L11
+0384: 2e 0a                                        text      ".\n"
+0386:>8d 10 5e 40 03 90                            jf        !L10 -> 0390
+038C: 8b 41 00 40                                  return    0
+0390:>8d 30 62 06 49 03 01 00 16 54 40 03 …+1      jf        (A30.f06:quality == seg0301[0016]) -> 03A5
+039D: 85 03 01 00 16 41 00 40                      gstore    seg0301[0016] = 0  ; re-saved encrypted
+03A5:>9f 0e 93 10 01 02 00 40                      call      R0E93(L10, L01, L02, L00)
+03AD: 8b 41 00 40                                  return    0
+03B1: a0 03 90 0e 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0002}

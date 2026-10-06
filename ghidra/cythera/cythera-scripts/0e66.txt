@@ -1,0 +1,22 @@
+; segment 0E66  page 0E  routine "DisplayContainer" [from 0x0101 symtab: key 1666; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 106 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 06 05                                     frame     args=6 locals=5
+0003: 8d db 30 40 40 00 0e                         jf        scripted_window_shown(A30) -> 000E
+000A: 8b 41 00 40                                  return    0
+000E:>82 00 c8 43 10 00 00 01 41 00 30 40 …+1      set       L00 = iterate_children(&L01, 0, A30)
+001B:>8c c8 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_children(&L01, 1) -> 0050
+0028: 8d 00 62 00 41 02 56 40 00 41                jf        (L00.f00:kind & 2) -> 0041
+0032: 82 03 00 63 00 40                            set       L03 = as_prop(L00)
+0038: 9d 0a 03 48 09 40                            send      L03.sel10/use_on(G09:speaker)
+003E: a7 00 40                                     builtin   delete_prop(L00)
+0041:>82 00 c8 43 10 00 00 01 41 02 40 40          set       L00 = iterate_children(&L01, 2)
+004D: 88 00 1b                                     goto      -> 001B
+0050:>82 04 9b 04 30 31 32 33 34 35 40 40          set       L04 = sysnew_window(A30, A31, A32, A33, A34, A35)
+005C: 9b 0b 04 41 00 41 00 34 35 40                sysnew    sysnew_0B(L04, 0, 0, A34, A35)
+0066: 8b 41 00 40                                  return    0

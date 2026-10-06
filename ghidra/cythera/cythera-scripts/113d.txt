@@ -1,0 +1,48 @@
+; segment 113D  page 11  class 0x00 (prop) type 317 tile-name "archery target" (tool join F000/F004)
+; kind class  length 410 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0186  methods: sel65@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 86                                        .hdr      dictionary offset = 0186
+
+; ==== method sel65 @0002 ====
+0002: 81 03 03                                     frame     args=3 locals=3
+0005: 8d 32 43 00 00 04 02 54 40 01 82             jf        (A32 == 1026) -> 0182
+0010: 82 00 41 ff 40                               set       L00 = -1
+0015: 82 01 48 09 63 40 40                         set       L01 = as_char(G09:speaker)
+001C: 8d 30 62 0d 40 00 43                         jf        A30.f0D:mirror -> 0043
+0023: 8d 01 62 01 30 62 01 54 01 62 02 30 …+7      jf        ((L01.f01:x == A30.f01:x) && (L01.f02:y > A30.f02:y)) -> 0040
+0036: 82 00 01 62 02 30 62 02 4b 40                set       L00 = (L01.f02:y - A30.f02:y)
+0040:>88 00 60                                     goto      -> 0060
+0043:>8d 01 62 02 30 62 02 54 01 62 01 30 …+7      jf        ((L01.f02:y == A30.f02:y) && (L01.f01:x > A30.f01:x)) -> 0060
+0056: 82 00 01 62 01 30 62 01 4b 40                set       L00 = (L01.f01:x - A30.f01:x)
+0060:>8d 00 41 ff 54 40 00 b5                      jf        (L00 == -1) -> 00B5
+0068: 59 6f 75 27 6c 6c 20 6e 65 65 64 20 …+61     text      "You'll need to line up in front of the target if you expect to hit it...\n"
+00B1: 8b 41 00 40                                  return    0
+00B5:>d3 41 28 30 62 01 30 62 02 40                builtin   positional_sound(40, A30.f01:x, A30.f02:y)
+00BF: 8d 00 41 03 4f 40 01 04                      jf        (L00 < 3) -> 0104
+00C7: 86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+00CE: 49 74 27 73 20 65 61 73 79 20 74 6f …+38     text      "It's easy to hit a bullseye at point blank range!\n"
+0100: 8b 41 00 40                                  return    0
+0104:>82 02 ac 41 00 41 04 00 4a 40 ac 41 …+15     set       L02 = (random(0, (4 + L00)) - random(0, (R0EAC(L01, 200) + 1)))
+011F: 8d 02 41 00 50 40 01 57                      jf        (L02 <= 0) -> 0157
+0127: 42 75 6c 6c 73 65 79 65 21 0a                text      "Bullseye!\n"
+0131: 86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+0138: 8d 30 62 06 41 0a 4f 40 01 54                jf        (A30.f06:quality < 10) -> 0154
+0142: 9f 0e 8b 01 41 01 40                         call      R0E8B(L01, 1)
+0149: 86 06 30 40 30 62 06 41 01 4a 40             setfield  A30.f06:quality = (A30.f06:quality + 1)
+0154:>88 01 82                                     goto      -> 0182
+0157:>8d 02 41 03 51 40 01 71                      jf        (L02 > 3) -> 0171
+015F: 4d 69 73 73 65 64 21 0a                      text      "Missed!\n"
+0167: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+016E: 88 01 82                                     goto      -> 0182
+0171:>4e 6f 74 20 62 61 64 2e 2e 2e 0a             text      "Not bad...\n"
+017C: 86 03 30 40 02 40                            setfield  A30.f03:frame = L02
+0182:>8b 41 00 40                                  return    0
+0186: a0 03 50 00 ff ff 00 09 50 00 ff ff …+8      .dict     dict[3] {65: @0002}

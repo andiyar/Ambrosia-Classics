@@ -1,0 +1,67 @@
+; segment 0810  page 08  routine
+; kind routine  length 1470 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 74 68 72 61 00 00 33                      match     thra else -> 0033
+000B: 22 54 68 72 61 73 79 6d 65 64 65 73 …+21     text      "\"Thrasymedes is another student.\""
+002C: 8b 43 50 00 00 01 40                         return    True
+0033:>90 70 72 6f 74 00 00 63                      match     prot else -> 0063
+003B: 22 50 72 6f 74 65 73 69 6c 61 75 73 …+21     text      "\"Protesilaus is another student.\""
+005C: 8b 43 50 00 00 01 40                         return    True
+0063:>90 6d 65 6e 65 00 00 90                      match     mene else -> 0090
+006B: 22 4d 65 6e 65 6c 61 75 73 20 69 73 …+18     text      "\"Menelaus is another student.\""
+0089: 8b 43 50 00 00 01 40                         return    True
+0090:>90 6c 79 63 61 00 00 bb                      match     lyca else -> 00BB
+0098: 22 4c 79 63 61 6f 6e 20 69 73 20 61 …+16     text      "\"Lycaon is another student.\""
+00B4: 8b 43 50 00 00 01 40                         return    True
+00BB:>90 65 69 6f 6e 00 01 11                      match     eion else -> 0111
+00C3: 22 45 69 6f 6e 65 75 73 20 69 73 20 …+59     text      "\"Eioneus is Semele's older brother - she is always bragging about him.\""
+010A: 8b 43 50 00 00 01 40                         return    True
+0111:>90 70 65 6c 65 00 01 3c                      match     pele else -> 013C
+0119: 22 50 65 6c 65 75 73 20 69 73 20 61 …+16     text      "\"Peleus is another student.\""
+0135: 8b 43 50 00 00 01 40                         return    True
+013C:>90 70 65 69 73 00 01 8c                      match     peis else -> 018C
+0144: 22 50 65 69 73 61 6e 64 65 72 20 69 …+53     text      "\"Peisander is another student - just started a month or so back.\""
+0185: 8b 43 50 00 00 01 40                         return    True
+018C:>90 64 61 6e 61 00 01 b6                      match     dana else -> 01B6
+0194: 22 44 61 6e 61 65 20 69 73 20 61 6e …+15     text      "\"Danae is another student.\""
+01AF: 8b 43 50 00 00 01 40                         return    True
+01B6:>90 73 65 6d 65 00 01 e1                      match     seme else -> 01E1
+01BE: 22 53 65 6d 65 6c 65 20 69 73 20 61 …+16     text      "\"Semele is another student.\""
+01DA: 8b 43 50 00 00 01 40                         return    True
+01E1:>90 61 6c 63 79 00 02 0d                      match     alcy else -> 020D
+01E9: 22 41 6c 63 79 6f 6e 65 20 69 73 20 …+17     text      "\"Alcyone is another student.\""
+0206: 8b 43 50 00 00 01 40                         return    True
+020D:>90 63 6c 79 74 00 02 8a                      match     clyt else -> 028A
+0215: 22 43 6c 79 74 65 6d 6e 65 73 74 72 …+98     text      "\"Clytemnestra is another student - she's been here longer than the rest of us.\"*\"She should be Freemage soon.\""
+0283: 8b 43 50 00 00 01 40                         return    True
+028A:>90 6c 69 6e 64 00 02 cf                      match     lind else -> 02CF
+0292: 22 48 65 61 64 6d 61 73 74 65 72 20 …+42     text      "\"Headmaster Lindus seems like a decent enough person.\""
+02C8: 8b 43 50 00 00 01 40                         return    True
+02CF:>90 73 65 6c 69 00 03 1e                      match     seli else -> 031E
+02D7: 22 4c 69 62 72 61 72 69 61 6e 20 53 …+52     text      "\"Librarian Selinus has probably been here since it was founded.\""
+0317: 8b 43 50 00 00 01 40                         return    True
+031E:>90 70 61 6c 61 00 03 6f                      match     pala else -> 036F
+0326: 22 4d 61 73 74 65 72 20 50 61 6c 61 …+54     text      "\"Master Palaestra isn't the friendliest, but she knows her stuff.\""
+0368: 8b 43 50 00 00 01 40                         return    True
+036F:>90 70 68 65 72 00 03 ce                      match     pher else -> 03CE
+0377: 22 4d 61 73 74 65 72 20 50 68 65 72 …+68     text      "\"Master Pheres is one of the best instructors - probably from teaching healing.\""
+03C7: 8b 43 50 00 00 01 40                         return    True
+03CE:>90 74 72 6f 73 00 04 17                      match     tros else -> 0417
+03D6: 22 4d 61 73 74 65 72 20 54 72 6f 73 …+46     text      "\"Master Tros is probably the most boring instructor here.\""
+0410: 8b 43 50 00 00 01 40                         return    True
+0417:>90 67 6f 6c 65 00 04 73                      match     gole else -> 0473
+041F: 9f 08 08 30 40                               call      R0808(A30)
+0424: 2a 22 52 75 6d 6f 72 20 68 61 73 20 …+60     text      "*\"Rumor has it that there are golems in the @tunnels hidden below Pnyx.\""
+046C: 8b 43 50 00 00 01 40                         return    True
+0473:>90 74 75 6e 6e 00 05 b3                      match     tunn else -> 05B3
+047B: 22 45 76 65 72 20 73 65 65 6e 20 74 …+293    text      "\"Ever seen that magically locked door along the outer southern edge of Pnyx?\"*\"Well, depending on what rumor you believe, they lead to either hidden treasures that the Mages have collected.\"*\"Or to some sort of prision where all the failures of their experiments are kept, and it is swarming with golems.\""
+05AC: 8b 43 50 00 00 01 40                         return    True
+05B3:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 05BA-05BE: no dictionary entry, jump, pointer or call reaches it ----
+05BA:x8b 41 00 40                                  return    0

@@ -1,0 +1,65 @@
+; segment 1868  page 18  class 0x40 (char) id 104 name "Briseis" (string table 0201)
+; kind class  length 1044 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0400  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 00                                        .hdr      dictionary offset = 0400
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 75 …+23     text      "You see a pudgy, round faced woman."
+0028: 8d 9f 0f 02 30 41 07 40 40 00 49             jf        R0F02(A30, 7) -> 0049  ; R0F02 = tstbit [from 0x0101 symtab]
+0033: 22 41 68 2c 20 77 65 6c 63 6f 6d 65 …+7      text      "\"Ah, welcome back!\""
+0046: 88 00 6c                                     goto      -> 006C
+0049:>22 57 65 6c 63 6f 6d 65 20 74 6f 20 …+23     text      "\"Welcome to the Southland Vineyard\""
+006C:>8e                                           input       ; read a line into the input buffer
+006D: 90 6e 61 6d 65 00 00 8d                      match     name else -> 008D
+0075: 22 49 27 6d 20 42 72 69 73 65 69 73 …+2      text      "\"I'm Briseis.\""
+0083: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+008A: 88 00 6c                                     goto      -> 006C
+008D:>90 6a 6f 62 00 01 0f                         match     job else -> 010F
+0094: 22 57 69 74 68 20 6d 79 20 68 75 73 …+108    text      "\"With my husband Borus, I run the Southland Vineyard.\"*\"Actually, I do most of the running, and he focuses on the wine.\""
+010C: 88 00 6c                                     goto      -> 006C
+010F:>90 62 6f 72 75 2c 77 69 6e 65 00 01 …+1      match     boru,wine else -> 0159
+011C: 22 42 6f 72 75 73 20 69 73 20 61 20 …+46     text      "\"Borus is a master winemaker, and a good husband as well.\""
+0156: 88 00 6c                                     goto      -> 006C
+0159:>90 67 6c 61 75 2c 6e 6f 72 74 00 02 …+1      match     glau,nort else -> 0216
+0166: 8d 9f 0f 02 30 41 01 40 40 01 ca             jf        R0F02(A30, 1) -> 01CA  ; R0F02 = tstbit [from 0x0101 symtab]
+0171: 22 49 20 77 61 73 20 73 61 64 64 65 …+74     text      "\"I was saddened by your news - hopefully we'll be OK, especially with the big @order.\""
+01C7: 88 02 13                                     goto      -> 0213
+01CA:>22 47 6c 61 75 63 75 73 2c 20 66 69 …+61     text      "\"Glaucus, fine man, but he doesn't hold a candle to Borus in winemaking.\""
+0213:>88 00 6c                                     goto      -> 006C
+0216:>90 63 6f 6e 74 00 02 6f                      match     cont else -> 026F
+021E: 22 49 20 63 61 6e 27 74 20 63 6f 6e …+66     text      "\"I can't contract out any of my stores since house Comana ordered it all out.\""
+026C: 88 00 6c                                     goto      -> 006C
+026F:>90 6f 72 64 65 00 03 3a                      match     orde else -> 033A
+0277: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+77     text      "\"House Comana recently ordered nearly all of our available stock, which is great for us.\""
+02D0: 8d 9f 0f 02 30 41 01 40 40 03 37             jf        R0F02(A30, 1) -> 0337  ; R0F02 = tstbit [from 0x0101 symtab]
+02DB: 2a 22 4f 66 20 63 6f 75 72 73 65 2c …+80     text      "*\"Of course, with the problems Glaucus had, it might turn into some very smart speculation.\""
+0337:>88 00 6c                                     goto      -> 006C
+033A:>90 73 6f 75 72 00 03 84                      match     sour else -> 0384
+0342: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+51     text      "\"You'll have to talk to Borus about that - he's the winemaker.\""
+0381: 88 00 6c                                     goto      -> 006C
+0384:>90 62 79 65 00 03 ba                         match     bye else -> 03BA
+038B: 22 54 61 6b 65 20 63 61 72 65 20 79 …+5      text      "\"Take care young "
+039C: 8d 49 05 00 00 10 40 03 ae                   jf        seg0500[0010] -> 03AE
+03A5: 6c 61 64 79 2e 22                            text      "lady.\""
+03AB: 88 03 b3                                     goto      -> 03B3
+03AE:>6d 61 6e 2e 22                               text      "man.\""
+03B3:>8b 41 00 40                                  return    0
+; ---- dead code 03B7-03BA: no dictionary entry, jump, pointer or call reaches it ----
+03B7:x88 00 6c                                     goto      -> 006C
+03BA:>90 2a 00 03 f9                               match     * else -> 03F9
+03BF: 8d 9f 08 01 30 40 5e 40 03 f6                jf        !R0801(A30) -> 03F6
+03C9: 22 53 6f 72 72 79 2c 20 70 65 72 68 …+33     text      "\"Sorry, perhaps Borus might be able to help.\""
+03F6:>88 00 6c                                     goto      -> 006C
+03F9:>88 00 6c                                     goto      -> 006C
+; ---- dead code 03FC-0400: no dictionary entry, jump, pointer or call reaches it ----
+03FC:x8b 41 00 40                                  return    0
+0400: a0 03 98 68 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

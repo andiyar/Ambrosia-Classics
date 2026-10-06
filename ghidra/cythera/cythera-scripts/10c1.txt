@@ -1,0 +1,34 @@
+; segment 10C1  page 10  class 0x00 (prop) type 193 tile-name "bell" (tool join F000/F004)
+; kind class  length 177 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @009D  methods: sel9/use@000C
+; properties: sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 9d                                        .hdr      dictionary offset = 009D
+0002: 90 01 00 00 00 10                            .array    array[1] = [16]
+0008: 00 00 00 00                                  .word     word 0x00000000
+
+; ==== method sel9/use @000C ====
+000C: 81 01 03                                     frame     args=1 locals=3
+000F: d3 41 08 30 62 01 30 62 02 40                builtin   positional_sound(8, A30.f01:x, A30.f02:y)
+0019: 82 00 a0 43 10 00 00 01 41 00 41 00 …+4      set       L00 = iterate_range(&L01, 0, 0, 8)
+0029:>8c a0 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_range(&L01, 1) -> 004F
+0036: 86 03 30 40 00 40                            setfield  A30.f03:frame = L00
+003C: a6 41 02 40                                  builtin   show_tile_animate(2)
+0040: 82 00 a0 43 10 00 00 01 41 02 40 40          set       L00 = iterate_range(&L01, 2)
+004C: 88 00 29                                     goto      -> 0029
+004F:>86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+0056: 8d 30 62 06 41 00 51 40 00 99                jf        (A30.f06:quality > 0) -> 0099
+0060: 83 00 08 47 00 08 41 10 4c 30 62 06 …+8      store     seg[0008] = (((seg[0008] * 16) + A30.f06:quality) & 65535)  ; not persisted
+0074: 8d 47 00 08 43 00 00 32 41 54 40 00 …+1      jf        (seg[0008] == 12865) -> 0088
+0081: c5 41 22 40                                  builtin   send_signal(34)
+0085: 88 00 99                                     goto      -> 0099
+0088:>8d 47 00 08 43 00 00 12 43 54 40 00 …+1      jf        (seg[0008] == 4675) -> 0099
+0095: c5 41 23 40                                  builtin   send_signal(35)
+0099:>8b 41 00 40                                  return    0
+009D: a0 03 90 c1 00 02 00 27 90 c1 00 0c …+8      .dict     dict[3] {9/use: @000C, 39/p_typeflags27: @0002}

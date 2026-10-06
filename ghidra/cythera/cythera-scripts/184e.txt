@@ -1,0 +1,128 @@
+; segment 184E  page 18  class 0x40 (char) id 78 name "Pheres" (string table 0201)
+; kind class  length 3250 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0C86  methods: sel32/spawned@010C, sel12/talk@0131
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 5   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0c 86                                        .hdr      dictionary offset = 0C86
+0002: 90 01 98 4e 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 8d ac 41 00 41 04 40 41 01 54 40 01 …+1      jf        (random(0, 4) == 1) -> 0101
+004A: 82 00 45 00 a4 90 06 98 4e 00 69 98 …+158    set       L00 = blk@004F
+      ; 0x45 inline block 004F-00F3 (164 bytes):
+      004F: 90 06                            .array[6]
+        [0] @0069 "...align the humors..."
+        [1] @0080 "The body's ability..."
+        [2] @0096 "...repairing damage..."
+        [3] @00AD "...regeneration of the..."
+        [4] @00C7 "...steady pressure..."
+        [5] @00DD "...a natural rythm..."
+00F4: 86 26 30 40 00 ac 41 00 00 5f 40 46 …+1      setfield  A30.f26:f26 = L00[random(0, len(L00))]
+0101:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0108-010C: no dictionary entry, jump, pointer or call reaches it ----
+0108:x8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @010C ====
+010C: 81 01 00                                     frame     args=1 locals=0
+010F: 8b 9f 0c 00 30 45 00 14 a0 03 50 00 …+18     return    R0C00(A30, blk@0117)
+      ; 0x45 inline block 0117-012B (20 bytes):
+      0117: a0 03                            .dict[3 slots, 1 used]
+        key 140 @003A (code)
+; ---- dead code 012D-0131: no dictionary entry, jump, pointer or call reaches it ----
+012D:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0131 ====
+0131: 81 01 01                                     frame     args=1 locals=1
+0134: 59 6f 75 20 70 65 61 63 65 66 75 6c …+34     text      "You peaceful looking man, with an inner glow.*"
+0162: 8d 9f 0f 02 30 41 01 40 9f 0f 02 30 …+16     jf        ((R0F02(A30, 1) && !R0F02(A30, 2)) && who_in_party_has(301, 0)) -> 024C  ; R0F02 = tstbit [from 0x0101 symtab]
+017E: 8d 30 62 15 43 00 00 00 8c 54 40 01 …+1      jf        (A30.f15:activity == 140) -> 01D8
+018B: 22 2e 2e 2e 61 6e 64 20 73 6f 20 61 …+143    text      "\"...and so applying pressure, say, class, would you excuse me for a second?\"*\"Ah, execellent!  You've found a harpy egg!  I thank you greatly for this...\"*"
+01D8:>22 41 68 2c 20 65 78 65 63 65 6c 6c …+66     text      "\"Ah, execellent!  You've found a harpy egg!  I thank you greatly for this...\"*"  ; shares its tail with text @018B
+0226: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+022D: b1 ae 42 01 2d 41 00 40 42 01 2d 41 …+4      builtin   remove_items(who_in_party_has(301, 0), 301, 0, 1)
+023D: 9f 0e 8b 48 05 41 14 40                      call      R0E8B(G05:leader, 20)
+0245: f3 41 1d 40                                  builtin   done_to_do(29)
+0249: 88 02 ac                                     goto      -> 02AC
+024C:>8d 30 62 15 43 00 00 00 8c 54 40 02 …+1      jf        (A30.f15:activity == 140) -> 0294
+0259: 22 49 66 20 79 6f 75 20 64 6f 6e 27 …+40     text      "\"If you don't mind, I'm in the middle of teaching.\"*"
+028D: 8b 41 00 40                                  return    0
+; ---- dead code 0291-0294: no dictionary entry, jump, pointer or call reaches it ----
+0291:x88 02 ac                                     goto      -> 02AC
+0294:>22 57 68 61 74 20 63 61 6e 20 49 20 …+12     text      "\"What can I do for you?\""
+02AC:>8e                                           input       ; read a line into the input buffer
+02AD: 90 6e 61 6d 65 2c 70 68 65 72 00 02 …+1      match     name,pher else -> 02F2
+02BA: 22 49 20 61 6d 20 50 68 65 72 65 73 …+32     text      "\"I am Pheres, teacher of the @Healing Arts.\""
+02E6: 9f 0f 00 42 00 4e 41 07 40                   call      R0F00(78, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02EF: 88 02 ac                                     goto      -> 02AC
+02F2:>90 6a 6f 62 00 03 42                         match     job else -> 0342
+02F9: 22 49 20 40 74 72 61 69 6e 20 73 74 …+58     text      "\"I @train students in the @Healing Arts, and there is nothing nobler.\""
+033F: 88 02 ac                                     goto      -> 02AC
+0342:>90 68 65 61 6c 00 03 7d                      match     heal else -> 037D
+034A: 22 48 65 61 6c 69 6e 67 20 69 73 20 …+36     text      "\"Healing is about repairing damage to the body.\""
+037A: 88 02 ac                                     goto      -> 02AC
+037D:>90 74 72 61 69 2c 74 65 61 63 00 07 …+1      match     trai,teac else -> 0755
+038A: 82 00 f5 48 05 42 00 c2 40 40                set       L00 = find_skill(G05:leader, 194)
+0394: 8d 00 5e 40 03 d2                            jf        !L00 -> 03D2
+039A: 22 59 6f 75 20 6c 61 63 6b 20 74 68 …+41     text      "\"You lack the basic understanding of magic required.\""
+03CF: 88 07 52                                     goto      -> 0752
+03D2:>8d f5 48 05 42 00 d4 40 40 04 30             jf        find_skill(G05:leader, 212) -> 0430
+03DD: 22 59 6f 75 27 76 65 20 61 6c 72 65 …+68     text      "\"You've already got the basics down, I don't expect you'd understand much more.\""
+042D: 88 07 52                                     goto      -> 0752
+0430:>8d 48 0d 43 50 00 00 01 54 40 07 2c          jf        (G0D:g0D == True) -> 072C
+043C: 8d 9f 0e ae 48 05 42 00 d4 40 40 06 …+1      jf        R0EAE(G05:leader, 212) -> 06E6
+0449: 22 49 20 63 61 6e 20 67 69 76 65 20 …+640    text      "\"I can give the basics - enough to be of help.  You don't have the time for detailed study, my you.\"*\"Healing Magic involves repairing damaged done to a living thing by reharmonizing effected area with the rest of the body.\"*\"That's for simple cases of things such as simple wounds and the like.  More complex situations aren't as simple.\"*\"A severe wound, for example, has too much damage to be able to reharmonize easily with the undamage body.\"*\"Once could either take small step to repair the damage, in phases, or apply an external pattern of harmonization.\"*\"Thus, a higher healing spell requires thorough understanding of a basic healing spell.\""
+06D5: 9f 0e af 48 05 42 00 d4 43 50 00 00 …+2      call      R0EAF(G05:leader, 212, False)
+06E3: 88 07 29                                     goto      -> 0729
+06E6:>22 59 6f 75 20 6e 65 65 64 20 73 6f …+55     text      "\"You need some more experience before you can learn healing magic.\""
+0729:>88 07 52                                     goto      -> 0752
+072C:>22 53 6f 72 72 79 2c 20 62 75 74 20 …+26     text      "\"Sorry, but you must @register first.\""
+0752:>88 02 ac                                     goto      -> 02AC
+0755:>90 72 65 67 69 00 07 a8                      match     regi else -> 07A8
+075D: 22 59 65 73 2c 20 6a 75 73 74 20 72 …+60     text      "\"Yes, just run the 'Register Cythera' program - it has all the details.\""
+07A5: 88 02 ac                                     goto      -> 02AC
+07A8:>90 62 79 65 00 0a 27                         match     bye else -> 0A27
+07AF: 8d 9f 0f 02 30 41 02 40 40 07 d5             jf        R0F02(A30, 2) -> 07D5  ; R0F02 = tstbit [from 0x0101 symtab]
+07BA: 22 4d 61 79 20 79 6f 75 20 67 6f 20 …+12     text      "\"May you go in harmony.\""
+07D2: 88 0a 20                                     goto      -> 0A20
+07D5:>8d 9f 0f 02 30 41 01 40 40 08 21             jf        R0F02(A30, 1) -> 0821  ; R0F02 = tstbit [from 0x0101 symtab]
+07E0: 22 44 6f 6e 27 74 20 66 6f 72 67 65 …+50     text      "\"Don't forget, you promised to retrieve a harpy egg for me...\""
+081E: 88 0a 20                                     goto      -> 0A20
+0821:>22 49 20 72 65 61 6c 69 7a 65 20 74 …+78     text      "\"I realize that you've got work of your own, but if could you do a favor while exploring?\""
+087B: 8f 79 6e 00                                  prompt    "yn"
+087F: 90 79 00 09 d8                               match     y else -> 09D8
+0884: 22 45 78 65 63 65 6c 6c 65 6e 74 2e …+33     text      "\"Execellent.  Are you familiar with harpies?\""
+08B1: 8f 79 6e 00                                  prompt    "yn"
+08B5: 90 79 00 08 c8                               match     y else -> 08C8
+08BA: 22 45 78 65 63 65 6c 6c 65 6e 74 2e …+2      text      "\"Execellent.  "
+08C8:>90 6e 00 09 23                               match     n else -> 0923
+08CD: 22 54 68 65 79 20 61 72 65 20 74 68 …+236    text      "\"They are those strange flying creatures, not all that common, but quite dangerous.\"*\"In my studies, I have need to examine, in detail, an egg of such a creature.\"*\"If you come across one, could you please retreive it for me?  I'd appreciate it...\""
+0923:>49 6e 20 6d 79 20 73 74 75 64 69 65 …+150    text      "In my studies, I have need to examine, in detail, an egg of such a creature.\"*\"If you come across one, could you please retreive it for me?  I'd appreciate it...\""  ; shares its tail with text @08CD
+09C5: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+09CC: f2 41 1d 43 30 00 02 1a 41 1d 4a 40          builtin   add_to_do(29, (str[021A:0]"Cure Alaric" + 29))
+09D8:>90 6e 00 0a 20                               match     n else -> 0A20
+09DD: 22 49 20 75 6e 64 65 72 73 74 61 6e …+55     text      "\"I understand, but if you change your mind, please get back to me.\""
+0A20:>8b 41 00 40                                  return    0
+; ---- dead code 0A24-0A27: no dictionary entry, jump, pointer or call reaches it ----
+0A24:x88 02 ac                                     goto      -> 02AC
+0A27:>90 68 61 72 70 2c 65 67 67 00 0b 6e          match     harp,egg else -> 0B6E
+0A33: 22 57 65 6c 6c 2c 20 72 75 6d 6f 72 …+300    text      "\"Well, rumor has it that harpy eggs can be stored for years, and then hatch into the vile creatures.\"*\"It is as if harpy eggs can withstand the passage of time unnoticed.\"*\"If some essense can be extracted, it might allow one to slow down the body, preventing the ravages of time.\"*\"Its just a theory, mind you.\""
+0B6B: 88 02 ac                                     goto      -> 02AC
+0B6E:>90 61 6c 61 72 00 0c 30                      match     alar else -> 0C30
+0B76: 22 49 20 61 6d 20 77 65 6c 6c 20 61 …+171    text      "\"I am well aware of the state of Alaric, but his problems are far beyond my skills.\"*\"He is beyond the reference harmony pattern of normal humans - I couldn't even begin to help him.\""
+0C2D: 88 02 ac                                     goto      -> 02AC
+0C30:>90 2a 00 0c 7f                               match     * else -> 0C7F
+0C35: 8d 9f 08 08 30 40 5e 40 0c 7c                jf        !R0808(A30) -> 0C7C
+0C3F: 8d 9f 08 0c 30 40 5e 40 0c 7c                jf        !R080C(A30) -> 0C7C
+0C49: 8d 9f 08 01 30 40 5e 40 0c 7c                jf        !R0801(A30) -> 0C7C
+0C53: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+29     text      "\"I'm sorry, but that is beyond my field.\""
+0C7C:>88 02 ac                                     goto      -> 02AC
+0C7F:>88 02 ac                                     goto      -> 02AC
+; ---- dead code 0C82-0C86: no dictionary entry, jump, pointer or call reaches it ----
+0C82:x8b 41 00 40                                  return    0
+0C86: a0 07 98 4e 01 31 00 0c 50 00 ff ff …+32     .dict     dict[7] {12/talk: @0131, 32/spawned: @010C, 68: @0002}

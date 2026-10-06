@@ -1,0 +1,215 @@
+; segment 0EA5  page 0E  routine
+; kind routine  length 2602 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 19                                     frame     args=4 locals=25
+0003: 8d 32 41 09 4f 40 00 10                      jf        (A32 < 9) -> 0010
+000B: 82 32 41 14 40                               set       A32 = 20
+0010:>82 00 32 40                                  set       L00 = A32
+0014: 82 01 9b 01 40 40                            set       L01 = sysnew_01()
+001A: 82 02 a1 43 10 00 00 03 41 00 31 40 …+1      set       L02 = iterate_list(&L03, 0, A31)
+0027:>8c a1 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_list(&L03, 1) -> 0071
+0034: 82 05 02 41 03 46 40                         set       L05 = L02[3]
+003B: 82 05 9c ff ff 05 40 02 40 40                set       L05 = callx[L05](L02)
+0045: 8d 05 40 00 62                               jf        L05 -> 0062
+004A: 9d 06 01 9b 01 02 41 00 46 02 41 01 …+12     send      L01.sel6(sysnew_01(L02[0], L02[1], L02[2], L05, L02[2]))
+0062:>82 02 a1 43 10 00 00 03 41 02 40 40          set       L02 = iterate_list(&L03, 2)
+006E: 88 00 27                                     goto      -> 0027
+0071:>82 06 45 00 0b 90 01 8e a5 00 7c 44 …+5      set       L06 = blk@0076
+      ; 0x45 inline block 0076-0081 (11 bytes):
+      0076: 90 01                            .array[1]
+        [0] @007C "Done"
+0082:>8d 41 01 40 0a 20                            jf        1 -> 0A20
+0088: 82 02 a1 43 10 00 00 03 41 00 01 40 …+1      set       L02 = iterate_list(&L03, 0, L01)
+0095:>8c a1 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_list(&L03, 1) -> 00C4
+00A2: 84 02 40 41 02 40 02 41 04 46 32 4c …+7      atput     L02[2] = (((L02[4] * A32) + 9) / 10)
+00B5: 82 02 a1 43 10 00 00 03 41 02 40 40          set       L02 = iterate_list(&L03, 2)
+00C1: 88 00 95                                     goto      -> 0095
+00C4:>8d 01 5f 41 01 54 40 00 d7                   jf        (len(L01) == 1) -> 00D7
+00CD: 82 07 01 41 00 46 40                         set       L07 = L01[0]
+00D4: 88 01 03                                     goto      -> 0103
+00D7:>82 07 c0 30 44 7c 25 69 7c 25 73 7c …+15     set       L07 = pick_item(A30, "|%i|%s|-100%d ob|", L01, L06)
+00F2: 8d 07 41 ff 54 40 00 fd                      jf        (L07 == -1) -> 00FD
+00FA: 88 0a 20                                     goto      -> 0A20
+00FD:>82 07 01 07 46 40                            set       L07 = L01[L07]
+0103:>8d 9f 0d 04 40 41 00 54 40 01 57             jf        (R0D04() == 0) -> 0157
+010E: 22 59 6f 75 20 68 61 76 65 6e 27 74 …+58     text      "\"You haven't got a single obol on you - why are you wasting my time?\"*"
+0154: 88 0a 20                                     goto      -> 0A20
+0157:>82 08 9b 04 43 00 00 01 5e 43 00 00 …+4      set       L08 = sysnew_window(350, 300)
+0167: 82 09 9b 06 08 44 49 74 65 6d 20 46 …+21     set       L09 = sysnew_06(L08, "Item For Sale", 0, 0, 150, 32)
+0188: 86 3c 09 40 43 00 00 ff ff 40                setfield  L09.f3C = 65535
+0192: 82 0a 9b 10 08 07 41 00 46 43 00 00 …+6      set       L0A = sysnew_10(L08, L07[0], 150, 0)
+01A4: 82 09 9b 06 08 07 41 01 46 43 00 00 …+13     set       L09 = sysnew_06(L08, L07[1], 184, 0, 150, 32)
+01BD: 82 09 9b 06 08 44 43 75 72 72 65 6e …+21     set       L09 = sysnew_06(L08, "Current Price", 0, 40, 150, 32)
+01DE: 86 3c 09 40 43 00 00 ff ff 40                setfield  L09.f3C = 65535
+01E8: 82 0b 9b 08 08 44 41 63 63 65 70 74 …+17     set       L0B = sysnew_08(L08, "Accept", 152, 268, 96, 32)
+0205: 82 0c 9b 08 08 44 43 61 6e 63 65 6c …+17     set       L0C = sysnew_08(L08, "Cancel", 254, 268, 96, 32)
+0222: 82 0d 9b 12 08 43 00 00 00 96 41 28 …+6      set       L0D = sysnew_12(L08, 150, 40, 100, 32)
+0234: 82 0e 07 41 04 46 32 4c 41 09 4a 41 …+3      set       L0E = (((L07[4] * A32) + 9) / 10)
+0243: 86 37 0d 40 0e 40                            setfield  L0D.f37 = L0E
+0249: 82 0f 9b 11 08 43 00 00 00 96 41 50 …+6      set       L0F = sysnew_11(L08, 150, 80, 100, 32)
+025B: 86 37 0f 40 41 01 40                         setfield  L0F.f37 = 1
+0262: 86 3e 0f 40 41 01 40                         setfield  L0F.f3E = 1
+0269: 86 3f 0f 40 41 64 40                         setfield  L0F.f3F = 100
+0270: 82 09 9b 06 08 44 51 75 61 6e 74 69 …+16     set       L09 = sysnew_06(L08, "Quantity", 0, 80, 150, 32)
+028C: 86 3c 09 40 43 00 00 ff ff 40                setfield  L09.f3C = 65535
+0296: 8d 33 43 50 00 ff ff 53 40 08 0c             jf        (A33 != Nil) -> 080C
+02A1: 82 09 9b 06 08 44 00 41 00 43 00 00 …+11     set       L09 = sysnew_06(L08, "", 0, 136, 350, 32)
+02B8: 82 10 45 00 0e 90 03 00 00 00 00 00 …+8      set       L10 = blk@02BD
+      ; 0x45 inline block 02BD-02CB (14 bytes):
+      02BD: 90 03                            .array[3]
+        [0] 0
+        [1] 0
+        [2] 0
+02CC: 84 10 40 41 00 40 9b 06 08 44 00 41 …+15     atput     L10[0] = sysnew_06(L08, "", 20, 168, 330, 30)
+02E7: 84 10 40 41 01 40 9b 06 08 44 00 41 …+15     atput     L10[1] = sysnew_06(L08, "", 20, 198, 330, 30)
+0302: 84 10 40 41 02 40 9b 06 08 44 00 41 …+15     atput     L10[2] = sysnew_06(L08, "", 20, 228, 330, 30)
+031D: 82 11 45 01 53 90 04 8e a5 03 34 50 …+333    set       L11 = blk@0322
+      ; 0x45 inline block 0322-0475 (339 bytes):
+      0322: 90 04                            .array[4]
+        [0] @0334 ->
+          0334: 90 03                            .array[3]
+            [0] @0342 "- I can't afford this."
+            [1] @0359 "- It's more than I've got."
+            [2] @0374 "- I don't have that much."
+        [1] Nil
+        [2] @038E ->
+          038E: 90 03                            .array[3]
+            [0] @039C "- I can get a better price elsewhere."
+            [1] @03C2 "- I've seen it cheaper."
+            [2] @03DA "- I'm on a budget."
+        [3] @03ED ->
+          03ED: 90 05                            .array[5]
+            [0] @0403 "- I don't know."
+            [1] @0413 "- I don't really need it."
+            [2] @042D "- This is just a whim."
+            [3] @0444 "- I'm just looking."
+            [4] @0458 "- I'm not really interested."
+0476: 82 12 45 02 44 90 06 8e a5 04 95 50 …+574    set       L12 = blk@047B
+      ; 0x45 inline block 047B-06BF (580 bytes):
+      047B: 90 06                            .array[6]
+        [0] @0495 ->
+          0495: 90 03                            .array[3]
+            [0] @04A3 "For you, I'll lower my price"
+            [1] @04C0 "You take food out of my family's mouth, but..."
+            [2] @04EF "You'll bankrupt me, but..."
+        [1] Nil
+        [2] @050A ->
+          050A: 90 05                            .array[5]
+            [0] @0520 "I always try to make the customer happy."
+            [1] @0549 "I've got the best prices."
+            [2] @0563 "Nobody has a better deal."
+            [3] @057D "You'll not find it for less."
+            [4] @059A "You drive a hard bargain."
+        [3] @05B4 ->
+          05B4: 90 03                            .array[3]
+            [0] @05C2 "Perhaps this will sway your mind."
+            [1] @05E4 "Maybe you'd reconsider."
+            [2] @05FC "Please, take your time."
+        [4] @0614 ->
+          0614: 90 03                            .array[3]
+            [0] @0622 "Take it or leave it."
+            [1] @0637 "That's my best offer."
+            [2] @064D "I can't go any lower."
+        [5] @0663 ->
+          0663: 90 04                            .array[4]
+            [0] @0675 "Bah! Ingrate!"
+            [1] @0683 "You insult me!"
+            [2] @0692 "You are uncouth!"
+            [3] @06A3 "I don't want your business!"
+06C0: 82 02 43 40 00 00 00 40                      set       L02 = prop#0
+06C8: 86 00 02 40 41 18 40                         setfield  L02.f00:kind = 24
+06CF: 86 0b 02 40 41 00 40                         setfield  L02.f0B:loc16 = 0
+06D6: 86 05 02 40 07 41 00 46 40                   setfield  L02.f05:item = L07[0]
+06DF: 8d 02 60 45 40 06 ff                         jf        has(L02, sel69) -> 06FF
+06E6: 84 11 40 41 01 40 02 61 45 00 40             atput     L11[1] = prop(L02, sel69, 0)
+06F1: 84 12 40 41 01 40 02 61 45 01 40             atput     L12[1] = prop(L02, sel69, 1)
+06FC: 88 07 ef                                     goto      -> 07EF
+06FF:>84 11 40 41 01 40 45 00 57 90 03 8e …+85     atput     L11[1] = blk@0708
+      ; 0x45 inline block 0708-075F (87 bytes):
+      0708: 90 03                            .array[3]
+        [0] @0716 "- I've seen better."
+        [1] @072A "- It seems, oh, I don't know."
+        [2] @0748 "- Its nothing special."
+0760: 84 12 40 41 01 40 45 00 85 90 04 8e …+131    atput     L12[1] = blk@0769
+      ; 0x45 inline block 0769-07EE (133 bytes):
+      0769: 90 04                            .array[4]
+        [0] @077B "You have a good eye."
+        [1] @0790 "You are right - perhaps this is better."
+        [2] @07B8 "The customer is always right."
+        [3] @07D6 "You'll not find better."
+07EF:>82 13 45 00 0e 90 03 00 00 00 00 00 …+8      set       L13 = blk@07F4
+      ; 0x45 inline block 07F4-0802 (14 bytes):
+      07F4: 90 03                            .array[3]
+        [0] 0
+        [1] 0
+        [2] 0
+0803: 9f 0e a8 10 11 13 41 ff 40                   call      R0EA8(L10, L11, L13, -1)
+080C:>8d 41 01 40 0a 0e                            jf        1 -> 0A0E
+0812: 82 14 08 62 37 40                            set       L14 = L08.f37
+0818: 8d 14 0f 54 40 08 29                         jf        (L14 == L0F) -> 0829
+081F: 86 37 0d 40 0e 0f 62 37 4c 40                setfield  L0D.f37 = (L0E * L0F.f37)
+0829:>8d 14 0b 54 40 08 80                         jf        (L14 == L0B) -> 0880
+0830: 82 15 0e 0f 62 37 4c 40                      set       L15 = (L0E * L0F.f37)
+0838: 8d 15 9f 0d 04 40 51 40 08 66                jf        (L15 > R0D04()) -> 0866
+0842: 86 3d 09 40 44 59 6f 75 20 64 6f 6e …+21     setfield  L09.f3D = "You don't have the oboloi!"
+0863: 88 08 80                                     goto      -> 0880
+0866:>9f 0d 05 15 40                               call      R0D05(L15)
+086B: a8 48 05 07 41 00 46 41 00 07 41 03 …+6      builtin   give_item(G05:leader, L07[0], 0, (L07[3] * L0F.f37))
+087D: 88 0a 0e                                     goto      -> 0A0E
+0880:>8d 14 0c 54 40 08 8a                         jf        (L14 == L0C) -> 088A
+0887: 88 0a 0e                                     goto      -> 0A0E
+088A:>8d 33 43 50 00 ff ff 53 40 0a 0b             jf        (A33 != Nil) -> 0A0B
+0895: 82 16 43 50 00 ff ff 40                      set       L16 = Nil
+089D: 82 02 a0 43 10 00 00 03 41 00 41 00 …+4      set       L02 = iterate_range(&L03, 0, 0, 3)
+08AD:>8c a0 43 10 00 00 03 41 01 40 40 08 …+1      jt        iterate_range(&L03, 1) -> 08D6
+08BA: 8d 14 10 02 46 54 40 08 c7                   jf        (L14 == L10[L02]) -> 08C7
+08C3: 82 16 02 40                                  set       L16 = L02
+08C7:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+08D3: 88 08 ad                                     goto      -> 08AD
+08D6:>8d 16 43 50 00 ff ff 53 40 0a 0b             jf        (L16 != Nil) -> 0A0B
+08E1: 82 16 13 16 46 40                            set       L16 = L13[L16]
+08E7: 82 17 33 16 46 40                            set       L17 = A33[L16]
+08ED: 82 17 17 ac 41 00 41 0a 40 4b 32 00 …+6      set       L17 = ((L17 - random(0, 10)) - ((A32 - L00) / 2))
+08FF: 8d f5 48 05 42 00 cc 40 40 09 15             jf        find_skill(G05:leader, 204) -> 0915
+090A: 82 17 17 ac 41 00 41 05 40 4b 40             set       L17 = (L17 - random(0, 5))
+0915:>8d 09 41 00 54 9f 0d 04 40 07 41 04 …+20     jf        ((L09 == 0) && (R0D04() > (((((L07[4] * A32) + 9) / 10) * 3) / 2))) -> 0947
+0935: 82 17 17 ac 41 01 41 04 40 4a ac 41 …+6      set       L17 = ((L17 + random(1, 4)) + random(1, 4))
+0947:>8d 17 41 00 50 40 09 c4                      jf        (L17 <= 0) -> 09C4
+094F: 8d 32 41 0a 50 40 09 7a                      jf        (A32 <= 10) -> 097A
+0957: 86 3d 09 40 44 54 68 69 73 20 69 73 …+20     setfield  L09.f3D = "This is the best I can do"
+0977: 88 09 c1                                     goto      -> 09C1
+097A:>82 32 32 41 01 4b 40                         set       A32 = (A32 - 1)
+0981: 8d 17 41 fb 4f 32 41 0a 51 5c 40 09 …+1      jf        ((L17 < -5) && (A32 > 10)) -> 0995
+098E: 82 32 32 41 01 4b 40                         set       A32 = (A32 - 1)
+0995:>82 0e 07 41 04 46 32 4c 41 09 4a 41 …+3      set       L0E = (((L07[4] * A32) + 9) / 10)
+09A4: 86 37 0d 40 0e 0f 62 37 4c 40                setfield  L0D.f37 = (L0E * L0F.f37)
+09AE: 82 18 12 16 46 40                            set       L18 = L12[L16]
+09B4: 86 3d 09 40 18 ac 41 00 18 5f 40 46 …+1      setfield  L09.f3D = L18[random(0, len(L18))]
+09C1:>88 0a 03                                     goto      -> 0A03
+09C4:>8d 17 41 05 51 40 09 ef                      jf        (L17 > 5) -> 09EF
+09CC: 93 08 40                                     release   L08
+09CF: 93 01 40                                     release   L01
+09D2: 82 18 12 41 05 46 40                         set       L18 = L12[5]
+09D9: 22                                           text      "\""
+09DA: 8a 18 ac 41 00 18 5f 40 46 40                print     L18[random(0, len(L18))]
+09E4: 22 2a                                        text      "\"*"
+09E6: 8b 00 41 01 4a 40                            return    (L00 + 1)
+; ---- dead code 09EC-09EF: no dictionary entry, jump, pointer or call reaches it ----
+09EC:x88 0a 03                                     goto      -> 0A03
+09EF:>82 18 12 41 04 46 40                         set       L18 = L12[4]
+09F6: 86 3d 09 40 18 ac 41 00 18 5f 40 46 …+1      setfield  L09.f3D = L18[random(0, len(L18))]
+0A03:>9f 0e a8 10 11 13 16 40                      call      R0EA8(L10, L11, L13, L16)
+0A0B:>88 08 0c                                     goto      -> 080C
+0A0E:>93 08 40                                     release   L08
+0A11: 8d 01 5f 41 01 54 40 0a 1d                   jf        (len(L01) == 1) -> 0A1D
+0A1A: 88 0a 20                                     goto      -> 0A20
+0A1D:>88 00 82                                     goto      -> 0082
+0A20:>93 01 40                                     release   L01
+0A23: 8b 32 40                                     return    A32
+; ---- dead code 0A26-0A2A: no dictionary entry, jump, pointer or call reaches it ----
+0A26:x8b 41 00 40                                  return    0

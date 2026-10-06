@@ -1,0 +1,50 @@
+; segment 1003  page 10  class 0x00 (prop) type 3 tile-name "metal door" (tool join F000/F004)
+; kind class  length 302 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00DE  methods: sel0/init@0002, sel53@002F, sel9/use@0051, sel65@008E
+; properties: sel39/p_typeflags27, sel52
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 de                                        .hdr      dictionary offset = 00DE
+
+; ==== method sel0/init @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 31 62 03 41 09 4f 40 00 1a                jf        (A31.f03:frame < 9) -> 001A
+000F: 86 03 30 40 31 62 03 40                      setfield  A30.f03:frame = A31.f03:frame
+0017: 88 00 25                                     goto      -> 0025
+001A:>86 03 30 40 30 62 03 41 04 57 40             setfield  A30.f03:frame = (A30.f03:frame | 4)
+0025:>8b 41 00 40                                  return    0
+0029: 90 01 00 00 00 0f                            .array    array[1] = [15]
+
+; ==== method sel53 @002F ====
+002F: 81 01 00                                     frame     args=1 locals=0
+0032: 9f 0e 44 30 41 01 41 03 41 05 41 07 …+9      call      R0E44(A30, 1, 3, 5, 7, 9, 11, 13, 15)  ; R0E44 = DoToggleLock [from 0x0101 symtab]
+0047: 8b 41 00 40                                  return    0
+004B: 90 01 00 00 02 80                            .array    array[1] = [640]
+
+; ==== method sel9/use @0051 ====
+0051: 81 01 00                                     frame     args=1 locals=0
+0054: 8d 30 62 03 41 09 4f 40 00 6b                jf        (A30.f03:frame < 9) -> 006B
+005E: d3 41 01 30 62 01 30 62 02 40                builtin   positional_sound(1, A30.f01:x, A30.f02:y)
+0068: 88 00 75                                     goto      -> 0075
+006B:>d3 41 19 30 62 01 30 62 02 40                builtin   positional_sound(25, A30.f01:x, A30.f02:y)
+0075:>9f 0e 40 30 41 01 41 03 41 05 41 07 …+9      call      R0E40(A30, 1, 3, 5, 7, 9, 11, 13, 15)  ; R0E40 = DoDoor [from 0x0101 symtab]
+008A: 8b 41 00 40                                  return    0
+
+; ==== method sel65 @008E ====
+008E: 81 03 00                                     frame     args=3 locals=0
+0091: 8d 32 41 04 56 40 00 a3                      jf        (A32 & 4) -> 00A3
+0099: 82 31 31 41 02 4c 40                         set       A31 = (A31 * 2)
+00A0: 88 00 c4                                     goto      -> 00C4
+00A3:>8d 32 41 01 56 40 00 b5                      jf        (A32 & 1) -> 00B5
+00AB: 82 31 31 41 02 4d 40                         set       A31 = (A31 / 2)
+00B2: 88 00 c4                                     goto      -> 00C4
+00B5:>8d 32 41 02 56 40 00 c4                      jf        (A32 & 2) -> 00C4
+00BD: 82 31 31 41 04 4d 40                         set       A31 = (A31 / 4)
+00C4:>9f 0e 49 30 31 41 01 41 03 41 05 41 …+10     call      R0E49(A30, A31, 1, 3, 5, 7, 9, 11, 13, 15)
+00DA: 8b 41 00 40                                  return    0
+00DE: a0 0d 90 03 00 02 00 00 90 03 00 4b …+68     .dict     dict[13] {0/init: @0002, 9/use: @0051, 39/p_typeflags27: @004B, 52: @0029, 53: @002F, 65: @008E}

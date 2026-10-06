@@ -1,0 +1,64 @@
+; segment 10EA  page 10  class 0x00 (prop) type 234 tile-name "distiller" (tool join F000/F004)
+; kind class  length 1669 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0659  methods: sel9/use@0055, sel10/use_on@00A5
+; properties: sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 59                                        .hdr      dictionary offset = 0659
+0002: 90 02 90 ea 00 0c 90 ea 00 4f                .array    array[2] = [@000C, @004F]
+000C: 49 74 27 73 20 74 68 65 20 6d 61 69 …+55     .string   "It's the main object of alchemical distillation, and ready to use."
+004F: 90 01 00 00 00 4a                            .array    array[1] = [74]
+
+; ==== method sel9/use @0055 ====
+0055: 81 01 00                                     frame     args=1 locals=0
+0058: 8d f5 48 05 42 00 d2 40 40 00 83             jf        find_skill(G05:leader, 210) -> 0083
+0063: 44 69 73 74 69 6c 6c 20 77 68 61 74 …+10     text      "Distill what element?\n"
+0079: 8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0080-0083: no dictionary entry, jump, pointer or call reaches it ----
+0080:x88 00 a1                                     goto      -> 00A1
+0083:>59 6f 75 20 64 6f 6e 27 74 20 6b 6e …+18     text      "You don't know how to use it.\n"
+00A1:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A5 ====
+00A5: 81 02 01                                     frame     args=2 locals=1
+00A8: 8d 30 62 06 41 01 54 40 05 69                jf        (A30.f06:quality == 1) -> 0569
+00B2: 8d 31 62 05 43 00 00 18 25 54 40 05 …+1      jf        (A31.f05:item == 6181) -> 0548
+00BF: 86 06 30 40 41 00 40                         setfield  A30.f06:quality = 0
+00C6: 86 04 30 40 42 00 e9 40                      setfield  A30.f04:type = 233
+00CE: 86 06 31 40 41 01 40                         setfield  A31.f06:quality = 1
+00D5: 9f 0e 8b 48 05 41 32 40                      call      R0E8B(G05:leader, 50)
+00DD: 59 6f 75 20 73 65 65 6d 20 74 6f 20 …+70     text      "You seem to hear a faint, muted scream, and suddenly the crystal seems different.\n"
+012F: e8 40                                        builtin   begin_talking()
+0131: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0138: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+013F: 41 6e 20 61 6e 78 69 6f 75 73 20 76 …+1016   text      "An anxious vision of Omen suddenly appears*\"No!!!! You've ruined it all!!!  My master!!!  You've destroyed my master!!!\"*\"Filthy human, think you're so clever, spoil our plans, and destroy my master.\"*\"How you were able to detect the essence of my master hidden in the Crolna, I don't know.\"*\"But know you this - you've seen through the shadows of my master's plans, for we have underestimated you.\"*\"We won't make that mistake again.  You've not seen the last of us.\"*\"Our battle with the forces of Earth continue, and we will be victorious.\"*\"The seeds of the destruction of that abomination Alaric have been sown, and with his destruction, so must Earth fall.\"*\"Our agents are everywhere, appearing as you do, and there is no way for you to know who is true and who is false.\"*\"This day's battle might go to you, but we are the Sea, and time is ours to command.\"*\"We will endure, we will sow chaos and dissent among your people, and we will destroy you all.\"*Omen disappears, but somehow you doubt this is the last of him...*"
+0543: e9 40                                        builtin   end_talking()
+0545: 88 05 66                                     goto      -> 0566
+0548:>48 6d 2c 20 6e 6f 74 68 69 6e 67 20 …+18     text      "Hm, nothing seemed to happen.\n"
+0566:>88 06 55                                     goto      -> 0655
+0569:>82 00 48 05 63 40 40                         set       L00 = as_char(G05:leader)
+0570: 8d 00 62 1e 41 0a 4f 40 05 d1                jf        (L00.f1E:magic < 10) -> 05D1
+057A: 59 6f 75 20 63 6f 6e 63 65 6e 74 72 …+56     text      "You concentrate, but end up feeling drained, accomplishing nothing.\n"
+05BE: 86 1e 00 40 41 00 40                         setfield  L00.f1E:magic = 0
+05C5: 86 04 30 40 42 00 e9 40                      setfield  A30.f04:type = 233
+05CD: 8b 41 00 40                                  return    0
+05D1:>86 1e 00 40 00 62 1e 41 0a 4b 40             setfield  L00.f1E:magic = (L00.f1E:magic - 10)
+05DC: 86 04 30 40 42 00 e9 40                      setfield  A30.f04:type = 233
+05E4: 8d 31 60 30 40 06 37                         jf        has(A31, sel48) -> 0637
+05EB: 8d 31 62 09 41 01 50 40 05 fb                jf        (A31.f09:count <= 1) -> 05FB
+05F5: a7 31 40                                     builtin   delete_prop(A31)
+05F8: 88 06 06                                     goto      -> 0606
+05FB:>86 09 31 40 31 62 09 41 01 4b 40             setfield  A31.f09:count = (A31.f09:count - 1)
+0606:>9f 0e 8b 00 41 01 40                         call      R0E8B(L00, 1)
+060D: ad 41 01 30 62 01 41 01 4a 30 62 02 …+12     builtin   create_prop(1, (A30.f01:x + 1), A30.f02:y, prop(A31, sel48, 0), 31, 0, 0)
+0625: e6 41 01 40                                  builtin   set_arrival_byte(1)
+0629: 49 74 20 77 6f 72 6b 65 64 21 0a             text      "It worked!\n"
+0634: 88 06 55                                     goto      -> 0655
+0637:>48 6d 2c 20 6e 6f 74 68 69 6e 67 20 …+18     text      "Hm, nothing seemed to happen.\n"
+0655:>8b 41 00 40                                  return    0
+0659: a0 07 50 00 ff ff 00 2a 50 00 ff ff …+32     .dict     dict[7] {9/use: @0055, 10/use_on: @00A5, 51: @0002}

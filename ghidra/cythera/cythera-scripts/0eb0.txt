@@ -1,0 +1,19 @@
+; segment 0EB0  page 0E  routine
+; kind routine  length 73 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 03                                     frame     args=2 locals=3
+0003: 8d 30 40 00 45                               jf        A30 -> 0045
+0008: 82 00 a1 43 10 00 00 01 41 00 30 40 …+1      set       L00 = iterate_list(&L01, 0, A30)
+0015:>8c a1 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_list(&L01, 1) -> 0045
+0022: 8d 00 43 50 00 ff ff 54 40 00 33             jf        (L00 == Nil) -> 0033
+002D: 8a 31 40                                     print     A31
+0030: 88 00 36                                     goto      -> 0036
+0033:>8a 00 40                                     print     L00
+0036:>82 00 a1 43 10 00 00 01 41 02 40 40          set       L00 = iterate_list(&L01, 2)
+0042: 88 00 15                                     goto      -> 0015
+0045:>8b 41 00 40                                  return    0

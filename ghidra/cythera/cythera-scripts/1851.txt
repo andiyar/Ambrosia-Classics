@@ -1,0 +1,157 @@
+; segment 1851  page 18  class 0x40 (char) id 81 name "Selinus" (string table 0201)
+; kind class  length 2819 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0AEF  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0a ef                                        .hdr      dictionary offset = 0AEF
+0002: 90 01 98 51 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 07                                     frame     args=1 locals=7
+003D: 59 6f 75 20 73 65 65 20 61 20 64 69 …+79     text      "You see a disheveled old man, looking older than dirt itself.*\"Eh?  What can I do for you?\""
+0098:>8e                                           input       ; read a line into the input buffer
+0099: 90 73 65 6c 69 00 00 a9                      match     seli else -> 00A9
+00A1: 22 45 68 3f 22                               text      "\"Eh?\""
+00A6: 88 00 98                                     goto      -> 0098
+00A9:>90 6e 61 6d 65 00 01 08                      match     name else -> 0108
+00B1: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+23     text      "\"My name is Selinus - what's your?\""
+00D4: 9f 0f 00 42 00 51 41 07 40                   call      R0F00(81, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00DD: 8f 2a 00                                     prompt    "*"
+00E0: 22 49 27 6c 6c 20 72 65 6d 65 6d 62 …+10     text      "\"I'll remember that, ^"
+00F6: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+00FD: 22                                           text      "\""
+00FE: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0105: 88 00 98                                     goto      -> 0098
+0108:>90 6a 6f 62 00 01 5b                         match     job else -> 015B
+010F: 22 49 27 6d 20 74 68 65 20 4c 69 62 …+61     text      "\"I'm the Librarian here at the Magisterium.  I know every @book in here!\""
+0158: 88 00 98                                     goto      -> 0098
+015B:>90 62 6f 6f 6b 00 01 9a                      match     book else -> 019A
+0163: 22 54 68 65 20 72 65 61 6c 20 6d 61 …+40     text      "\"The real magic here is the books, yeah, the books.\""
+0197: 88 00 98                                     goto      -> 0098
+019A:>90 62 79 65 00 02 13                         match     bye else -> 0213
+01A1: 22 49 27 76 65 20 67 6f 74 20 62 6f …+65     text      "\"I've got books to care for - stop back again, um, what was your name again?\""
+01EE: 8f 2a 00                                     prompt    "*"
+01F1: 22 5e                                        text      "\"^"
+01F3: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+01FA: 2c 20 79 65 73 2c 20 74 68 61 74 27 …+6      text      ", yes, that's it.\""
+020C: 8b 41 00 40                                  return    0
+; ---- dead code 0210-0213: no dictionary entry, jump, pointer or call reaches it ----
+0210:x88 00 98                                     goto      -> 0098
+0213:>90 70 61 73 73 00 05 b1                      match     pass else -> 05B1
+021B: 8d 9f 0f 02 30 41 02 40 40 04 57             jf        R0F02(A30, 2) -> 0457  ; R0F02 = tstbit [from 0x0101 symtab]
+0226: 82 00 41 00 40                               set       L00 = 0
+022B: 82 01 a0 43 10 00 00 02 41 00 41 0b …+4      set       L01 = iterate_range(&L02, 0, 11, 21)
+023B:>8c a0 43 10 00 00 02 41 01 40 40 02 …+1      jt        iterate_range(&L02, 1) -> 0268
+0248: 8d ae 42 00 1a 01 40 40 02 59                jf        who_in_party_has(26, L01) -> 0259
+0252: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+0259:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+0265: 88 02 3b                                     goto      -> 023B
+0268:>8d 00 40 03 fd                               jf        L00 -> 03FD
+026D: 22 49 20 73 65 65 20 79 6f 75 20 66 …+5      text      "\"I see you found "
+027E: 8a 43 30 00 02 1e 00 4a 40                   print     (str[021E:0]"zero" + L00)
+0287: 20 42 6f 6f 6b                               text      " Book"
+028C: 8d 00 41 02 51 40 02 95                      jf        (L00 > 2) -> 0295
+0294: 73 20 2d 20 74 68 69 73 20 69 73 20 …+6      text      "s - this is good.\""
+0295:>20 2d 20 74 68 69 73 20 69 73 20 67 …+5      text      " - this is good.\""  ; shares its tail with text @0294
+02A6: 82 04 45 00 39 90 05 98 51 02 c1 98 …+51     set       L04 = blk@02AB
+      ; 0x45 inline block 02AB-02E4 (57 bytes):
+      02AB: 90 05                            .array[5]
+        [0] @02C1 "Pakana"
+        [1] @02C8 "Torake"
+        [2] @02CF "Tiripo"
+        [3] @02D6 "Karuke"
+        [4] @02DD "Koruto"
+02E5: 82 05 45 00 37 90 05 98 51 03 00 98 …+49     set       L05 = blk@02EA
+      ; 0x45 inline block 02EA-0321 (55 bytes):
+      02EA: 90 05                            .array[5]
+        [0] @0300 "Fourth"
+        [1] @0307 "Fifth"
+        [2] @030D "Sixth"
+        [3] @0313 "Seventh"
+        [4] @031B "Eigth"
+0322: 82 01 a0 43 10 00 00 02 41 00 41 0b …+4      set       L01 = iterate_range(&L02, 0, 11, 21)
+0332:>8c a0 43 10 00 00 02 41 01 40 40 03 …+1      jt        iterate_range(&L02, 1) -> 0365
+033F: 82 06 ae 42 00 1a 01 40 40                   set       L06 = who_in_party_has(26, L01)
+0348: 8d 06 40 03 56                               jf        L06 -> 0356
+034D: b1 06 42 00 1a 01 41 01 40                   builtin   remove_items(L06, 26, L01, 1)
+0356:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+0362: 88 03 32                                     goto      -> 0332
+0365:>8d 00 40 03 da                               jf        L00 -> 03DA
+036A: dd 41 05 dc 41 05 40 41 01 4a 40             builtin   set_variable(5, (get_variable(5) + 1))
+0375: 9f 0e 8b 48 05 41 19 40                      call      R0E8B(G05:leader, 25)
+037D: 8d dc 41 05 40 41 02 4e 41 00 54 40 …+2      jf        ((get_variable(5) % 2) == 0) -> 03D0
+038B: 2a 22 54 68 65 20 70 61 73 73 77 6f …+10     text      "*\"The password to the "
+03A1: 8a 05 dc 41 06 40 46 40                      print     L05[get_variable(6)]
+03A9: 20 44 65 67 72 65 65 20 48 61 6c 6c …+5      text      " Degree Hall is '"
+03BA: 8a 04 dc 41 06 40 46 40                      print     L04[get_variable(6)]
+03C2: dd 41 06 dc 41 06 40 41 01 4a 40             builtin   set_variable(6, (get_variable(6) + 1))
+03CD: 27 2e 22                                     text      "'.\""
+03D0:>82 00 00 41 01 4b 40                         set       L00 = (L00 - 1)
+03D7: 88 03 65                                     goto      -> 0365
+03DA:>f2 41 12 43 30 00 02 1a 41 12 dc 41 …+5      builtin   add_to_do(18, (str[021A:0]"Cure Alaric" + (18 + get_variable(5))))
+03EB: 8d dc 41 05 40 41 05 54 40 03 fa             jf        (get_variable(5) == 5) -> 03FA
+03F6: f3 41 12 40                                  builtin   done_to_do(18)
+03FA:>88 04 54                                     goto      -> 0454
+03FD:>22 53 65 65 6b 20 6f 75 74 20 74 68 …+75     text      "\"Seek out the Books of Sapphire Knowledge and return them here, and then we'll talk...\""
+0454:>88 05 ae                                     goto      -> 05AE
+0457:>22 4e 6f 72 6d 61 6c 6c 79 20 70 61 …+312    text      "\"Normally passwords to higher degree halls are handed out based on years of study, but for you we can make an exception.\"*\"Instead, you can perform a service for the Library.  Over the years, our ten volume Book of @Sapphire Wisdom has disappeared.\"*\"For every two books you find and return, I'll give you another password.\""
+059B: f2 41 12 43 30 00 02 1a 41 12 4a 40          builtin   add_to_do(18, (str[021A:0]"Cure Alaric" + 18))
+05A7: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+05AE:>88 00 98                                     goto      -> 0098
+05B1:>8d 9f 0f 02 30 41 02 40 40 08 aa             jf        R0F02(A30, 2) -> 08AA  ; R0F02 = tstbit [from 0x0101 symtab]
+05BC: 90 73 61 70 70 00 06 5b                      match     sapp else -> 065B
+05C4: 22 54 68 65 72 65 20 61 72 65 20 74 …+136    text      "\"There are ten Sapphire books of Knowledge - The Crown, Wisdom, Understanding, Mercy, Power, Beauty, Victory, Splendor, Foundation, and the Kingdom\""
+0658: 88 00 98                                     goto      -> 0098
+065B:>90 63 72 6f 77 00 06 9a                      match     crow else -> 069A
+0663: 22 49 20 74 68 69 6e 6b 20 41 6c 61 …+40     text      "\"I think Alaric has the Sapphire Book of the Crown.\""
+0697: 88 00 98                                     goto      -> 0098
+069A:>90 77 69 73 64 00 06 e7                      match     wisd else -> 06E7
+06A2: 22 54 68 65 20 53 61 70 70 68 69 72 …+54     text      "\"The Sapphire Book of Wisdom was lost when @Abydos was destroyed.\""
+06E4: 88 00 98                                     goto      -> 0098
+06E7:>90 75 6e 64 65 00 07 3a                      match     unde else -> 073A
+06EF: 22 49 20 74 68 69 6e 6b 20 73 6f 6d …+60     text      "\"I think some student years ago had the Sapphire Book of Understanding.\""
+0737: 88 00 98                                     goto      -> 0098
+073A:>90 6d 65 72 63 00 07 b7                      match     merc else -> 07B7
+0742: 22 49 27 6d 20 6e 6f 74 20 73 75 72 …+102    text      "\"I'm not sure where that was, but we had a copy when I started here, so somebody walked off with it since then...\""
+07B4: 88 00 98                                     goto      -> 0098
+07B7:>90 62 65 61 75 2c 76 69 63 74 2c 73 …+11     match     beau,vict,sple,foun else -> 0804
+07CE: 22 49 27 6d 20 6e 6f 74 20 73 75 72 …+39     text      "\"I'm not sure what happened to that Sapphire Book.\""
+0801: 88 00 98                                     goto      -> 0098
+0804:>90 70 6f 77 65 00 08 4c                      match     powe else -> 084C
+080C: 22 54 68 65 20 6c 61 73 74 20 49 20 …+49     text      "\"The last I heard the Sapphire Book of Power was in Cademia.\""
+0849: 88 00 98                                     goto      -> 0098
+084C:>90 6b 69 6e 67 00 08 aa                      match     king else -> 08AA
+0854: 22 54 68 65 20 53 61 70 70 68 69 72 …+71     text      "\"The Sapphire Book of Kingdom is somewhere in the Castle of the Tyrant in Cademia.\""
+08A7: 88 00 98                                     goto      -> 0098
+08AA:>90 74 69 6d 65 00 09 2c                      match     time else -> 092C
+08B2: 8d 9f 0f 02 42 00 4f 41 07 40 40 09 …+1      jf        R0F02(79, 7) -> 0924  ; R0F02 = tstbit [from 0x0101 symtab]
+08BF: 22 48 6d 2c 20 77 65 20 68 61 64 20 …+86     text      "\"Hm, we had a copy on that, but Freemage @Idomeneus took our only copy, and has yet to return it!\""
+0921: 88 09 29                                     goto      -> 0929
+0924:>22 45 68 3f 22                               text      "\"Eh?\""
+0929:>88 00 98                                     goto      -> 0098
+092C:>90 6e 65 6c 65 00 09 f8                      match     nele else -> 09F8
+0934: 22 57 65 20 73 68 6f 75 6c 64 20 68 …+181    text      "\"We should have a couple of copies Neleneus' Prophesies in the general hall.\"*\"Well, only the First and Third - the Second has long since been lost - not that I put much stock in them anyway.\"*"
+09F5: 88 00 98                                     goto      -> 0098
+09F8:>90 69 64 6f 6d 00 0a 66                      match     idom else -> 0A66
+0A00: 22 46 72 65 65 6d 61 67 65 20 49 64 …+87     text      "\"Freemage Idomeneus was studying some sort of nonsense.  The last I heard, he was headed to Kosha.\""
+0A63: 88 00 98                                     goto      -> 0098
+0A66:>90 63 69 70 68 00 0a bd                      match     ciph else -> 0ABD
+0A6E: 22 59 6f 75 20 6e 65 65 64 20 74 6f …+64     text      "\"You need to talk to Lindus about that - I am not allowed to speak of it...\""
+0ABA: 88 00 98                                     goto      -> 0098
+0ABD:>90 2a 00 0a e8                               match     * else -> 0AE8
+0AC2: 8d 9f 08 08 30 40 5e 40 0a e5                jf        !R0808(A30) -> 0AE5
+0ACC: 8d 9f 08 0c 30 40 5e 40 0a e5                jf        !R080C(A30) -> 0AE5
+0AD6: 8d 9f 08 01 30 40 5e 40 0a e5                jf        !R0801(A30) -> 0AE5
+0AE0: 22 45 68 3f 22                               text      "\"Eh?\""
+0AE5:>88 00 98                                     goto      -> 0098
+0AE8:>88 00 98                                     goto      -> 0098
+; ---- dead code 0AEB-0AEF: no dictionary entry, jump, pointer or call reaches it ----
+0AEB:x8b 41 00 40                                  return    0
+0AEF: a0 03 98 51 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

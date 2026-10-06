@@ -1,0 +1,44 @@
+; segment 1091  page 10  class 0x00 (prop) type 145 tile-name "fishing pole" (tool join F000/F004)
+; kind class  length 487 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01BB  methods: sel9/use@0008, sel11@00BE
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 bb                                        .hdr      dictionary offset = 01BB
+0002: 90 01 00 00 00 03                            .array    array[1] = [3]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8d f5 48 05 42 00 ce 40 5e 40 00 a2          jf        !find_skill(G05:leader, 206) -> 00A2
+0017: 49 74 20 61 70 70 65 61 72 73 20 74 …+117    text      "It appears to be similar to a flyrod of sorts, but you were never able to manage a traditional flyrod, so this seems beyond you.\n"
+0098: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 009F-00A2: no dictionary entry, jump, pointer or call reaches it ----
+009F:x88 00 ba                                     goto      -> 00BA
+00A2:>43 61 73 74 20 74 68 65 20 66 6c 79 …+8      text      "Cast the fly where?\n"
+00B6: 8b 41 02 40                                  return    2
+; ---- dead code 00BA-00BE: no dictionary entry, jump, pointer or call reaches it ----
+00BA:x8b 41 00 40                                  return    0
+
+; ==== method sel11 @00BE ====
+00BE: 81 03 01                                     frame     args=3 locals=1
+00C1: 82 00 a9 31 32 40 40                         set       L00 = map_cell(A31, A32)
+00C8: 8d 00 41 08 4f 00 41 0f 51 5d 40 00 …+1      jf        ((L00 < 8) || (L00 > 15)) -> 00FB
+00D5: 59 6f 75 20 6e 65 65 64 20 74 6f 20 …+22     text      "You need to cast into deep water.\n"
+00F7: 8b 41 00 40                                  return    0
+00FB:>8d 48 10 42 00 01 54 40 01 87                jf        (G10:zone == 1) -> 0187
+0105: 59 6f 75 20 66 69 73 68 20 66 6f 72 …+12     text      "You fish for a while...\n"
+011D: bd 43 00 00 04 00 40                         builtin   pass_time(1024)
+0124: 8d ac 41 00 41 08 40 31 41 07 4c 32 …+14     jf        (random(0, 8) > ((((A31 * 7) + (A32 * 13)) + G00:hour) % 11)) -> 0164
+013E: 59 6f 75 20 63 61 75 67 68 74 20 73 …+10     text      "You caught something!\n"
+0154: a8 48 05 43 00 00 24 45 41 00 41 01 …+1      builtin   give_item(G05:leader, 9285, 0, 1)
+0161: 88 01 84                                     goto      -> 0184
+0164:>4e 6f 74 20 65 76 65 6e 20 73 6f 20 …+20     text      "Not even so much as a nibble...\n"
+0184:>88 01 b7                                     goto      -> 01B7
+0187:>48 6d 20 2d 20 64 6f 65 73 6e 27 74 …+36     text      "Hm - doesn't seem to be any fish around here...\n"
+01B7:>8b 41 00 40                                  return    0
+01BB: a0 07 50 00 ff ff 00 2a 90 91 00 02 …+32     .dict     dict[7] {9/use: @0008, 11: @00BE, 36/p_weight: @0002}

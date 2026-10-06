@@ -1,0 +1,27 @@
+; segment 1424  page 14  class 0x20 (zone) id 36
+; kind class  length 146 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @007E  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 7e                                        .hdr      dictionary offset = 007E
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d c4 48 05 41 1c 40 5e 40 00 5c             jf        !has_ability(G05:leader, 28) -> 005C
+0010: a6 41 01 40                                  builtin   show_tile_animate(1)
+0014: 41 73 20 79 6f 75 20 61 70 70 72 6f …+46     text      "As you approach the building, it shimmers and then fades.\n"
+004E: bf 41 01 43 00 00 00 8d 41 00 40             builtin   teleport(1, 141, 0)
+0059: 88 00 7a                                     goto      -> 007A
+005C:>d9 41 07 40                                  builtin   set_outdoor_sky(7)
+0060: da 44 53 74 72 6f 6e 67 68 6f 6c 64 …+2      builtin   set_map_title("Stronghold")
+006E: fd 41 01 40                                  builtin   set_erase_colour(1)
+0072: d8 41 20 40                                  builtin   set_zone_light_minimum(32)
+0076: d6 41 05 40                                  builtin   play_music2(5)
+007A:>8b 41 00 40                                  return    0
+007E: a0 03 50 00 ff ff 00 00 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

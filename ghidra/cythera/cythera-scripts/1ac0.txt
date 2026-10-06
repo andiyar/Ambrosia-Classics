@@ -1,0 +1,48 @@
+; segment 1AC0  page 1A  class 0x50 (spell) type 192
+; kind class  length 710 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @029A  methods: sel2/name@0002, sel8/search@0240
+; properties: sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 9a                                        .hdr      dictionary offset = 029A
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 41 74 74 61 63 6b 00 40                return    "Attack"
+; ---- dead code 000F-0013: no dictionary entry, jump, pointer or call reaches it ----
+000F:x8b 41 00 40                                  return    0
+0013: 90 01 9a c0 00 19                            .array    array[1] = [@0019]
+0019: 90 05 9a c0 00 2f 9a c0 00 75 9a c0 …+10     .array    array[5] = [@002F, @0075, @00DE, @0171, @0211]
+002F: 90 03 50 00 ff ff 9a c0 00 3d 9a c0 …+2      .array    array[3] = [Nil, @003D, @0073]
+003D: 20 72 75 6e 73 20 79 6f 75 20 74 68 …+42     .string   " runs you through some exercises to see your ability."
+0073: 2a 00                                        .string   "*"
+0075: 90 04 9a c0 00 87 9a c0 00 b1 50 00 …+6      .array    array[4] = [@0087, @00B1, Nil, @00B3]
+0087: 22 57 65 6c 6c 2c 20 68 65 72 65 27 …+30     .string   "\"Well, here's the basics of attacking...\""
+00B1: 2a 00                                        .string   "*"
+00B3: 20 73 68 6f 77 73 20 79 6f 75 20 73 …+31     .string   " shows you some simple moves and strategy."
+00DE: 90 04 9a c0 00 f0 9a c0 01 3e 50 00 …+6      .array    array[4] = [@00F0, @013E, Nil, @0140]
+00F0: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+66     .string   "\"You've got the basics, now here are some more advanced attack techinques...\""
+013E: 2a 00                                        .string   "*"
+0140: 20 73 68 6f 77 73 20 79 6f 75 20 73 …+37     .string   " shows you some more complex moves and strategy."
+0171: 90 04 9a c0 01 83 9a c0 01 d9 50 00 …+6      .array    array[4] = [@0183, @01D9, Nil, @01DB]
+0183: 22 48 6d 20 2d 20 79 6f 75 27 72 65 …+74     .string   "\"Hm - you're quite the student, now here are some real advanced attack techinques...\""
+01D9: 2a 00                                        .string   "*"
+01DB: 20 73 68 6f 77 73 20 79 6f 75 20 73 …+42     .string   " shows you some even more complex moves and strategy."
+0211: 90 01 9a c0 02 17                            .array    array[1] = [@0217]
+0217: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+29     .string   "\"You've got complete mastery of attack.\""
+
+; ==== method sel8/search @0240 ====
+0240: 81 01 00                                     frame     args=1 locals=0
+0243: 54 68 69 73 20 73 6b 69 6c 6c 20 69 …+9      text      "This skill indicates "
+0258: 8d 30 62 03 41 10 56 40 02 6d                jf        (A30.f03:frame & 16) -> 026D
+0262: 61 70 74 69 74 75 64 65                      text      "aptitude"
+026A: 88 02 75                                     goto      -> 0275
+026D:>74 72 61 69 6e 69 6e 67 20 69 6e 20 …+29     text      "training in offensive combat techniques.\n"  ; shares its tail with text @0275
+0275:>20 69 6e 20 6f 66 66 65 6e 73 69 76 …+21     text      " in offensive combat techniques.\n"
+0296: 8b 41 00 40                                  return    0
+029A: a0 07 50 00 ff ff ff ff 9a c0 02 40 …+32     .dict     dict[7] {2/name: @0002, 8/search: @0240, 54: @0013}

@@ -1,0 +1,219 @@
+; segment 1821  page 18  class 0x40 (char) id 33 name "Neoptolemus" (string table 0201)
+; kind class  length 4241 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @107D  methods: sel32/spawned@0002, sel12/talk@003A
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 10 7d                                        .hdr      dictionary offset = 107D
+
+; ==== method sel32/spawned @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 15 43 00 00 00 92 54 40 00 …+1      jf        (A30.f15:activity == 146) -> 0036
+0012: 8d ac 41 00 41 04 40 41 01 54 40 00 …+1      jf        (random(0, 4) == 1) -> 0036
+001F: 86 26 30 40 44 47 65 74 20 6f 66 66 …+11     setfield  A30.f26:f26 = "Get off my yard!"
+0036:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 06                                     frame     args=1 locals=6
+003D: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+33     text      "You see an old man, looking cranky and mean.*"
+006A: 82 00 43 50 00 00 01 40                      set       L00 = True
+0072: 82 01 41 00 40                               set       L01 = 0
+0077: 8d 30 62 15 43 00 00 00 92 54 40 00 …+1      jf        (A30.f15:activity == 146) -> 00BC
+0084: 22 47 65 74 20 6f 66 66 20 6d 79 20 …+6      text      "\"Get off my yard!\""
+0096: 8d 9f 0f 02 30 41 07 40 40 00 b9             jf        R0F02(A30, 7) -> 00B9  ; R0F02 = tstbit [from 0x0101 symtab]
+00A1: 2a 22 4f 68 2c 20 69 74 27 73 20 79 …+4      text      "*\"Oh, it's you.\""
+00B1: 82 00 43 50 00 00 00 40                      set       L00 = False
+00B9:>88 00 f7                                     goto      -> 00F7
+00BC:>22 57 68 61 74 20 64 6f 20 79 6f 75 …+39     text      "\"What do you want - can't you see I'm busy eating?\""
+00EF: 82 00 43 50 00 00 00 40                      set       L00 = False
+00F7:>8e                                           input       ; read a line into the input buffer
+00F8: 8d 00 40 03 17                               jf        L00 -> 0317
+00FD: 90 6e 61 6d 65 2c 6a 6f 62 00 01 24          match     name,job else -> 0124
+0109: 22 4e 6f 6e 65 20 6f 66 20 79 6f 75 …+12     text      "\"None of your business!\""
+0121: 88 00 f7                                     goto      -> 00F7
+0124:>90 74 72 61 69 2c 74 65 61 63 00 01 …+1      match     trai,teac else -> 0174
+0131: 22 59 6f 75 20 69 6d 70 75 64 65 6e …+52     text      "\"You impudent punk - never showing any @respect to your @elders\""
+0171: 88 00 f7                                     goto      -> 00F7
+0174:>90 72 65 73 70 00 01 97                      match     resp else -> 0197
+017C: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+12     text      "\"You've got no respect!\""
+0194: 88 00 f7                                     goto      -> 00F7
+0197:>90 65 6c 64 65 00 01 e0                      match     elde else -> 01E0
+019F: 22 49 20 75 73 65 20 74 6f 20 62 65 …+50     text      "\"I use to be a successful merchant before you were even born!\""
+01DD: 88 00 f7                                     goto      -> 00F7
+01E0:>90 6d 65 72 63 2c 62 6f 72 6e 00 02 …+1      match     merc,born else -> 020D
+01ED: 22 42 61 68 2c 20 79 6f 75 27 72 65 …+17     text      "\"Bah, you're not interested.\""
+020A: 88 00 f7                                     goto      -> 00F7
+020D:>90 6e 65 6f 70 00 02 e1                      match     neop else -> 02E1
+0215: 22 57 68 6f 20 74 6f 6c 64 20 79 6f …+11     text      "\"Who told you my name!\""
+022C: 82 02 43 50 00 00 00 40                      set       L02 = False
+0234: 8f 2a 00                                     prompt    "*"
+0237: 90 64 65 6d 6f 00 02 90                      match     demo else -> 0290
+023F: 22 48 6d 2c 20 6d 61 79 62 65 20 49 …+46     text      "\"Hm, maybe I was wrong about you.\"*\"Yes, I'm Neoptolemus.\""
+0279: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0280: 82 00 43 50 00 00 00 40                      set       L00 = False
+0288: 82 02 43 50 00 00 01 40                      set       L02 = True
+0290:>90 61 6c 61 72 00 02 c2                      match     alar else -> 02C2
+0298: 22 59 65 61 68 2c 20 72 69 67 68 74 …+22     text      "\"Yeah, right, like I believe you.\""
+02BA: 82 02 43 50 00 00 01 40                      set       L02 = True
+02C2:>8d 02 5e 40 02 de                            jf        !L02 -> 02DE
+02C8: 22 4e 65 76 65 72 20 68 65 61 72 64 …+10     text      "\"Never heard of them.\""
+02DE:>88 00 f7                                     goto      -> 00F7
+02E1:>90 62 79 65 00 02 fa                         match     bye else -> 02FA
+02E8: 22 48 75 72 6d 70 68 2e 2e 2e 22             text      "\"Hurmph...\""
+02F3: 8b 41 00 40                                  return    0
+; ---- dead code 02F7-02FA: no dictionary entry, jump, pointer or call reaches it ----
+02F7:x88 00 f7                                     goto      -> 00F7
+02FA:>90 2a 00 03 14                               match     * else -> 0314
+02FF: 22 47 65 74 20 6f 66 66 20 6d 79 20 …+6      text      "\"Get off my yard!\""
+0311: 88 00 f7                                     goto      -> 00F7
+0314:>88 10 76                                     goto      -> 1076
+0317:>90 6e 61 6d 65 00 03 63                      match     name else -> 0363
+031F: 22 4e 65 6f 70 74 6f 6c 65 6d 75 73 …+46     text      "\"Neoptolemus - and show a little @respect to your elders!\""
+0359: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0360: 88 00 f7                                     goto      -> 00F7
+0363:>90 6a 6f 62 00 03 9b                         match     job else -> 039B
+036A: 22 49 6e 20 6d 79 20 79 6f 75 6e 67 …+34     text      "\"In my younger days, I use to be a @merchant.\""
+0398: 88 00 f7                                     goto      -> 00F7
+039B:>90 6d 65 72 63 00 04 4d                      match     merc else -> 044D
+03A3: 22 59 65 70 2c 20 49 20 72 65 6d 65 …+155    text      "\"Yep, I remember back when I was younger, I was a prosperous merchant.\"*\"And we knew how to make money back then - @haggling and @persuasion is a lost art now a days.\""
+044A: 88 00 f7                                     goto      -> 00F7
+044D:>90 68 61 67 67 00 05 29                      match     hagg else -> 0529
+0455: 8d 9f 0f 02 30 41 00 40 40 04 b7             jf        R0F02(A30, 0) -> 04B7  ; R0F02 = tstbit [from 0x0101 symtab]
+0460: 22 49 20 75 73 65 20 74 6f 20 62 65 …+72     text      "\"I use to be a merchant, you know.  I could @teach you a few things about haggling.\""
+04B4: 88 05 26                                     goto      -> 0526
+04B7:>22 59 6f 75 6e 67 20 70 75 6e 6b 73 …+99     text      "\"Young punks, don't know nothing about respect - I could teach you to haggle, but you wouldn't be @interested.\""
+0526:>88 00 f7                                     goto      -> 00F7
+0529:>90 70 65 72 73 00 05 e8                      match     pers else -> 05E8
+0531: 8d 9f 0f 02 30 41 00 40 40 05 95             jf        R0F02(A30, 0) -> 0595  ; R0F02 = tstbit [from 0x0101 symtab]
+053C: 22 49 20 75 73 65 20 74 6f 20 62 65 …+74     text      "\"I use to be a merchant, you know.  I could @teach you a few things about persuasion.\""
+0592: 88 05 e5                                     goto      -> 05E5
+0595:>22 49 6d 70 75 64 65 6e 74 20 6b 69 …+68     text      "\"Impudent kids - I could teach you persuasion, but you wouldn't be @interested.\""
+05E5:>88 00 f7                                     goto      -> 00F7
+05E8:>90 69 6e 74 65 00 06 8f                      match     inte else -> 068F
+05F0: 8d 9f 0f 02 30 41 00 40 40 06 47             jf        R0F02(A30, 0) -> 0647  ; R0F02 = tstbit [from 0x0101 symtab]
+05FB: 22 59 6f 75 27 76 65 20 62 65 65 6e …+61     text      "\"You've been nice to an old man, sitting and listening to his stories...\""
+0644: 88 06 8c                                     goto      -> 068C
+0647:>22 49 66 20 79 6f 75 20 77 6f 75 6c …+57     text      "\"If you would show some @respect, maybe I'd be more willing to chat.\""
+068C:>88 00 f7                                     goto      -> 00F7
+068F:>90 72 65 73 70 00 07 70                      match     resp else -> 0770
+0697: 8d 9f 0f 02 30 41 07 40 5e 40 06 ef          jf        !R0F02(A30, 7) -> 06EF  ; R0F02 = tstbit [from 0x0101 symtab]
+06A3: 22 48 61 68 20 2d 20 77 68 61 74 20 …+61     text      "\"Hah - what do you know about respect!  We haven't even been introduced!\""
+06EC: 88 07 6d                                     goto      -> 076D
+06EF:>22 59 6f 75 20 63 6f 6d 65 20 62 61 …+114    text      "\"You come barging in here, demanding I answer your foolish questions - no respect.\"*\"In my @days, we did things @differently.\""
+076D:>88 00 f7                                     goto      -> 00F7
+0770:>90 64 69 66 66 2c 64 61 79 73 2c 73 …+6      match     diff,days,stor else -> 0820
+0782: 8d 01 41 00 54 9f 0f 02 30 41 07 40 …+4      jf        ((L01 == 0) && R0F02(A30, 7)) -> 07F4  ; R0F02 = tstbit [from 0x0101 symtab]
+0792: 22 57 65 6c 6c 2c 20 49 20 72 65 6d …+78     text      "\"Well, I remember one time, I needed to go to @Odemia, to buy some @cloth, for a @client.\""
+07EC: 82 01 41 01 40                               set       L01 = 1
+07F1: 88 08 1d                                     goto      -> 081D
+07F4:>22 59 75 70 2c 20 74 68 69 6e 67 73 …+29     text      "\"Yup, things were different back then...\""
+081D:>88 00 f7                                     goto      -> 00F7
+0820:>8d 01 41 01 54 40 09 a4                      jf        (L01 == 1) -> 09A4
+0828: 90 63 6c 69 65 00 08 93                      match     clie else -> 0893
+0830: 22 57 68 6f 20 74 68 65 20 63 6c 69 …+79     text      "\"Who the client was isn't important - stop interrupting my stories, and show some respect!\""
+088B: 82 01 41 00 40                               set       L01 = 0
+0890: 88 00 f7                                     goto      -> 00F7
+0893:>90 63 6c 6f 74 00 08 ec                      match     clot else -> 08EC
+089B: 22 59 65 61 68 2c 20 63 6c 6f 74 68 …+61     text      "\"Yeah, cloth - what your, dense or something?  Show some respect here...\""
+08E4: 82 01 41 00 40                               set       L01 = 0
+08E9: 88 00 f7                                     goto      -> 00F7
+08EC:>90 6f 64 65 6d 00 09 a4                      match     odem else -> 09A4
+08F4: 22 4f 64 65 6d 69 61 20 77 61 73 20 …+156    text      "\"Odemia was always known for making @cloth - I guess there wasn't much else to do there.\"*\"So, anyway, I was heading up to Odemia, but first I had to get some @grapes.\""
+099C: 82 01 41 02 40                               set       L01 = 2
+09A1: 88 00 f7                                     goto      -> 00F7
+09A4:>8d 01 41 02 54 40 0a 84                      jf        (L01 == 2) -> 0A84
+09AC: 90 6f 64 65 6d 00 0a 1c                      match     odem else -> 0A1C
+09B4: 22 59 6f 75 20 73 75 72 65 20 61 72 …+84     text      "\"You sure are dense - I already said I was going to Odemia.  Now you made me forget my story...\""
+0A14: 82 01 41 00 40                               set       L01 = 0
+0A19: 88 00 f7                                     goto      -> 00F7
+0A1C:>90 67 72 61 70 00 0a 84                      match     grap else -> 0A84
+0A24: 22 59 6f 75 20 73 65 65 2c 20 69 74 …+76     text      "\"You see, it was the @fashion at the time to wear a bunch of grapes tied to your @belt.\""
+0A7C: 82 01 41 03 40                               set       L01 = 3
+0A81: 88 00 f7                                     goto      -> 00F7
+0A84:>8d 01 41 03 54 40 0b 86                      jf        (L01 == 3) -> 0B86
+0A8C: 90 66 61 73 68 00 0a f5                      match     fash else -> 0AF5
+0A94: 22 57 68 61 74 20 64 6f 20 49 20 6b …+77     text      "\"What do I know about fashion - I'm an old man.  Stop asking me these foolish questions.\""
+0AED: 82 01 41 00 40                               set       L01 = 0
+0AF2: 88 00 f7                                     goto      -> 00F7
+0AF5:>90 62 65 6c 74 00 0b 86                      match     belt else -> 0B86
+0AFD: 22 4f 66 20 63 6f 75 72 73 65 2c 20 …+117    text      "\"Of course, everybody wore a @belt back then - they were @cheap too.  Nowadays, can't even get a @cape for less than 15 @oboloi.\""
+0B7E: 82 01 41 04 40                               set       L01 = 4
+0B83: 88 00 f7                                     goto      -> 00F7
+0B86:>8d 01 41 04 54 40 0c da                      jf        (L01 == 4) -> 0CDA
+0B8E: 90 63 68 65 61 00 0b f5                      match     chea else -> 0BF5
+0B96: 22 59 6f 75 20 63 61 6c 6c 69 6e 67 …+75     text      "\"You calling me cheap?  You little whippersnappers - show some respect to your elders!\""
+0BED: 82 01 41 00 40                               set       L01 = 0
+0BF2: 88 00 f7                                     goto      -> 00F7
+0BF5:>90 63 61 70 65 00 0c 63                      match     cape else -> 0C63
+0BFD: 22 49 20 77 61 73 6e 27 74 20 74 61 …+82     text      "\"I wasn't talking about capes, now, where was I?  Stop trying to confuse me - I'm an old man!\""
+0C5B: 82 01 41 00 40                               set       L01 = 0
+0C60: 88 00 f7                                     goto      -> 00F7
+0C63:>90 6f 62 6f 6c 00 0c da                      match     obol else -> 0CDA
+0C6B: 22 42 61 63 6b 20 74 68 65 6e 2c 20 …+91     text      "\"Back then, oboloi weren't as @fancy as they are now - but they use to have pictures of @bees on them.\""
+0CD2: 82 01 41 05 40                               set       L01 = 5
+0CD7: 88 00 f7                                     goto      -> 00F7
+0CDA:>8d 01 41 05 54 40 0d a9                      jf        (L01 == 5) -> 0DA9
+0CE2: 90 66 61 6e 63 00 0d 49                      match     fanc else -> 0D49
+0CEA: 22 57 68 61 74 20 64 6f 20 79 6f 75 …+75     text      "\"What do you know - you're just a punk who won't even let an old man tell him a story!\""
+0D41: 82 01 41 00 40                               set       L01 = 0
+0D46: 88 00 f7                                     goto      -> 00F7
+0D49:>90 62 65 65 73 00 0d a9                      match     bees else -> 0DA9
+0D51: 22 59 75 70 2c 20 27 47 72 61 70 65 …+68     text      "\"Yup, 'Grapes, Two bees' we use to say, because that was how much @grapes cost.\""
+0DA1: 82 01 41 06 40                               set       L01 = 6
+0DA6: 88 00 f7                                     goto      -> 00F7
+0DA9:>8d 01 41 06 54 40 0e f6                      jf        (L01 == 6) -> 0EF6
+0DB1: 90 67 72 61 70 00 0d ed                      match     grap else -> 0DED
+0DB9: 22 48 6d 2c 20 67 72 61 70 65 73 20 …+32     text      "\"Hm, grapes - that reminds me of a story...\""
+0DE5: 82 01 41 00 40                               set       L01 = 0
+0DEA: 88 00 f7                                     goto      -> 00F7
+0DED:>90 62 65 6c 74 00 0e f6                      match     belt else -> 0EF6
+0DF5: 22 54 68 61 74 27 73 20 72 69 67 68 …+235    text      "\"That's right - we use to tie grapes to our belts.  It was the fashion, you know.\"*\"Hm, maybe I was wrong about you - you've been nice to let an old man tell you his stories.\"*\"Shown respect and everything.  Maybe I can @teach you a few things...\""
+0EEC: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0EF3: 88 00 f7                                     goto      -> 00F7
+0EF6:>90 74 65 61 63 2c 74 72 61 69 00 0f …+1      match     teac,trai else -> 0FEE
+0F03: 8d 9f 0f 02 30 41 00 40 40 0f ba             jf        R0F02(A30, 0) -> 0FBA  ; R0F02 = tstbit [from 0x0101 symtab]
+0F0E: 82 03 43 40 40 00 01 40                      set       L03 = char#1"Hero"
+0F16: 82 04 45 00 32 90 02 98 21 0f 25 98 …+44     set       L04 = blk@0F1B
+      ; 0x45 inline block 0F1B-0F4D (50 bytes):
+      0F1B: 90 02                            .array[2]
+        [0] @0F25 ->
+          0F25: 90 02                            .array[2]
+            [0] @0F2F "Haggling"
+            [1] 204
+        [1] @0F38 ->
+          0F38: 90 02                            .array[2]
+            [0] @0F42 "Persuasion"
+            [1] 203
+0F4E: 82 05 c0 44 57 68 61 74 20 77 6f 75 …+52     set       L05 = pick_item("What would you like me to teach you?", "%s", L04, blk@0F7F)
+      ; 0x45 inline block 0F7F-0F8C (13 bytes):
+      0F7F: 90 01                            .array[1]
+        [0] @0F85 "Cancel"
+0F8E: 8d 05 41 00 52 40 0f b7                      jf        (L05 >= 0) -> 0FB7
+0F96: 82 05 04 05 46 40                            set       L05 = L04[L05]
+0F9C: 9f 0e b1 03 44 4e 65 6f 70 74 6f 6c …+15     call      R0EB1(L03, "Neoptolemus", L05[1], False)
+0FB7:>88 0f eb                                     goto      -> 0FEB
+0FBA:>22 49 20 77 6f 75 6c 64 6e 27 74 20 …+37     text      "\"I wouldn't teach you how to tie your sandals...\""
+0FEB:>88 00 f7                                     goto      -> 00F7
+0FEE:>90 62 79 65 00 10 07                         match     bye else -> 1007
+0FF5: 22 48 75 72 6d 70 68 2e 2e 2e 22             text      "\"Hurmph...\""
+1000: 8b 41 00 40                                  return    0
+; ---- dead code 1004-1007: no dictionary entry, jump, pointer or call reaches it ----
+1004:x88 00 f7                                     goto      -> 00F7
+1007:>90 2a 00 10 76                               match     * else -> 1076
+100C: 8d 9f 08 0e 30 40 5e 40 10 73                jf        !R080E(A30) -> 1073
+1016: 8d 9f 08 01 30 40 5e 40 10 73                jf        !R0801(A30) -> 1073
+1020: 8d 01 41 00 53 40 10 54                      jf        (L01 != 0) -> 1054
+1028: 22 57 68 79 20 61 72 65 20 79 6f 75 …+24     text      "\"Why are you interrupting my story?\""
+104C: 82 01 41 00 40                               set       L01 = 0
+1051: 88 10 73                                     goto      -> 1073
+1054:>22 57 68 61 74 20 61 72 65 20 79 6f …+19     text      "\"What are you yammering about?\""
+1073:>88 00 f7                                     goto      -> 00F7
+1076:>88 00 f7                                     goto      -> 00F7
+; ---- dead code 1079-107D: no dictionary entry, jump, pointer or call reaches it ----
+1079:x8b 41 00 40                                  return    0
+107D: a0 03 98 21 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 32/spawned: @0002}

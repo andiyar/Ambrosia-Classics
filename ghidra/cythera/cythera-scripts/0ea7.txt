@@ -1,0 +1,62 @@
+; segment 0EA7  page 0E  routine
+; kind routine  length 501 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 05                                     frame     args=4 locals=5
+0003: 82 00 45 00 12 90 04 00 00 00 05 00 …+12     set       L00 = blk@0008
+      ; 0x45 inline block 0008-001A (18 bytes):
+      0008: 90 04                            .array[4]
+        [0] 5
+        [1] 6
+        [2] 4
+        [3] 5
+001B: 82 01 31 40                                  set       L01 = A31
+001F:>8d 41 01 40 01 f1                            jf        1 -> 01F1
+0025: 82 02 c0 44 48 61 67 67 6c 65 00 44 …+111    set       L02 = pick_item("Haggle", "%s", blk@0037)
+      ; 0x45 inline block 0037-009E (103 bytes):
+      0037: 90 04                            .array[4]
+        [0] @0049 ->
+          0049: 90 01                            .array[1]
+            [0] @004F "Can't Afford"
+        [1] @005C ->
+          005C: 90 01                            .array[1]
+            [0] @0062 "Poor Quality"
+        [2] @006F ->
+          006F: 90 01                            .array[1]
+            [0] @0075 "Better Price Elsewhere"
+        [3] @008C ->
+          008C: 90 01                            .array[1]
+            [0] @0092 "Indifferent"
+00A0: 8d 02 41 ff 54 40 00 af                      jf        (L02 == -1) -> 00AF
+00A8: 8b 43 50 00 00 00 40                         return    False
+00AF:>82 03 00 02 46 40                            set       L03 = L00[L02]
+00B5: 82 03 03 ac 41 00 41 0a 40 4b 31 41 …+7      set       L03 = ((L03 - random(0, 10)) - ((A31 - 12) / 2))
+00C8: 8d 02 41 00 54 9f 0d 04 40 30 31 4c …+17     jf        ((L02 == 0) && (R0D04() > (((((A30 * A31) + 9) / 10) * 15) / 10))) -> 00F0
+00E5: 82 03 03 ac 41 01 41 04 40 4a 40             set       L03 = (L03 + random(1, 4))
+00F0:>8d 03 41 00 50 40 01 b6                      jf        (L03 <= 0) -> 01B6
+00F8: 8d 31 41 0a 51 40 01 07                      jf        (A31 > 10) -> 0107
+0100: 82 31 31 41 01 4b 40                         set       A31 = (A31 - 1)
+0107:>8d 03 41 fb 4f 31 41 0a 51 5c 40 01 …+1      jf        ((L03 < -5) && (A31 > 10)) -> 011B
+0114: 82 31 31 41 01 4b 40                         set       A31 = (A31 - 1)
+011B:>82 04 45 00 8c 90 04 8e a7 01 32 8e …+134    set       L04 = blk@0120
+      ; 0x45 inline block 0120-01AC (140 bytes):
+      0120: 90 04                            .array[4]
+        [0] @0132 "For you, I'll lower my price"
+        [1] @014F "You have a good eye"
+        [2] @0163 "I always try to make the customer happy"
+        [3] @018B "Perhaps this will sway your mind"
+01AD: 8a 04 02 46 40                               print     L04[L02]
+01B2: 2a                                           text      "*"
+01B3: 88 01 ee                                     goto      -> 01EE
+01B6:>8d 03 41 05 51 40 01 d7                      jf        (L03 > 5) -> 01D7
+01BE: 22 42 61 68 21 20 49 6e 67 72 61 74 …+4      text      "\"Bah! Ingrate!\"*"
+01CE: 8b 01 41 01 4a 40                            return    (L01 + 1)
+; ---- dead code 01D4-01D7: no dictionary entry, jump, pointer or call reaches it ----
+01D4:x88 01 ee                                     goto      -> 01EE
+01D7:>22 54 61 6b 65 20 69 74 20 6f 72 20 …+11     text      "\"Take it or leave it.\"*"
+01EE:>88 00 1f                                     goto      -> 001F
+01F1:>8b 41 00 40                                  return    0

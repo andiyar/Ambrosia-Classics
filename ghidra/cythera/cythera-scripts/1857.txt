@@ -1,0 +1,93 @@
+; segment 1857  page 18  class 0x40 (char) id 87 name "Paris" (string table 0201)
+; kind class  length 904 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0374  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 74                                        .hdr      dictionary offset = 0374
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 67 72 …+52     text      "You see a gruff, but handsome looking man in his early thirties."
+0045: 8d 30 62 15 43 00 00 00 8b 53 40 00 …+1      jf        (A30.f15:activity != 139) -> 00F6
+0052: 22 53 6f 72 72 79 20 2d 20 79 6f 75 …+47     text      "\"Sorry - you'll have to come back during business hours...\""
+008D: 8d f5 48 05 42 00 cb 40 40 00 ef             jf        find_skill(G05:leader, 203) -> 00EF
+0098: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+009F: 22 42 75 74 20 70 6c 65 61 73 65 20 …+32     text      "\"But please sir, it'll only take a minute.\"*"
+00CB: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+00D0: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+16     text      "\"Very well, but be quick...\""
+00EC: 88 00 f3                                     goto      -> 00F3
+00EF:>8b 41 00 40                                  return    0
+00F3:>88 01 13                                     goto      -> 0113
+00F6:>22 59 65 73 2c 20 77 68 61 74 20 63 …+17     text      "\"Yes, what can I do for you?\""
+0113:>8e                                           input       ; read a line into the input buffer
+0114: 90 6e 61 6d 65 00 01 40                      match     name else -> 0140
+011C: 22 49 27 6d 20 50 61 72 69 73 2c 20 …+21     text      "\"I'm Paris, owner of this @shop.\""
+013D: 88 01 13                                     goto      -> 0113
+0140:>90 6a 6f 62 00 01 66                         match     job else -> 0166
+0147: 22 49 20 72 75 6e 20 74 68 65 20 70 …+16     text      "\"I run the provision @shop.\""
+0163: 88 01 13                                     goto      -> 0113
+0166:>90 62 79 65 00 01 8d                         match     bye else -> 018D
+016D: 22 50 6c 65 61 73 65 20 73 74 6f 70 …+13     text      "\"Please stop by again...\""
+0186: 8b 41 00 40                                  return    0
+; ---- dead code 018A-018D: no dictionary entry, jump, pointer or call reaches it ----
+018A:x88 01 13                                     goto      -> 0113
+018D:>90 73 68 6f 70 2c 62 75 79 00 02 9c          match     shop,buy else -> 029C
+0199: 8d 30 62 15 43 00 00 00 8b 53 40 01 …+1      jf        (A30.f15:activity != 139) -> 01EA
+01A6: 22 49 74 27 73 20 61 20 66 69 6e 65 …+53     text      "\"It's a fine little shop - please stop by during business hours.\""
+01E7: 88 02 99                                     goto      -> 0299
+01EA:>86 27 30 40 9f 0e a5 44 57 68 61 74 …+163    setfield  A30.f27:ce17 = R0EA5("What is your interest?", blk@020C, A30.f27:ce17, blk@0285)
+      ; 0x45 inline block 020C-027F (115 bytes):
+      020C: 90 04                            .array[4]
+        [0] @021E ->
+          021E: 90 04                            .array[4]
+            [0] 38
+            [1] @0230 "Torch"
+            [2] 6
+            [3] 1
+        [1] @0236 ->
+          0236: 90 04                            .array[4]
+            [0] 137
+            [1] @0248 "Sandals"
+            [2] 3
+            [3] 1
+        [2] @0250 ->
+          0250: 90 04                            .array[4]
+            [0] 136
+            [1] @0262 "Cloak"
+            [2] 5
+            [3] 1
+        [3] @0268 ->
+          0268: 90 04                            .array[4]
+            [0] 139
+            [1] @027A "Sack"
+            [2] 4
+            [3] 1
+      ; 0x45 inline block 0285-0297 (18 bytes):
+      0285: 90 04                            .array[4]
+        [0] 3
+        [1] 5
+        [2] 7
+        [3] 5
+0299:>88 01 13                                     goto      -> 0113
+029C:>90 68 65 6c 65 00 02 e0                      match     hele else -> 02E0
+02A4: 22 4d 79 20 62 65 61 75 74 69 66 75 …+45     text      "\"My beautiful bride Helen runs the cafe across the hall.\""
+02DD: 88 01 13                                     goto      -> 0113
+02E0:>90 6e 69 6f 62 00 03 17                      match     niob else -> 0317
+02E8: 22 48 61 76 65 20 79 6f 75 20 65 76 …+32     text      "\"Have you ever seen a more beautiful child.\""
+0314: 88 01 13                                     goto      -> 0113
+0317:>90 2a 00 03 6d                               match     * else -> 036D
+031C: 8d 9f 08 0c 30 40 5e 40 03 6a                jf        !R080C(A30) -> 036A
+0326: 8d 9f 08 05 30 40 5e 40 03 6a                jf        !R0805(A30) -> 036A
+0330: 8d 9f 08 01 30 40 5e 40 03 6a                jf        !R0801(A30) -> 036A
+033A: 22 49 20 72 65 61 6c 6c 79 20 64 6f …+36     text      "\"I really don't know what you're talking about.\""
+036A:>88 01 13                                     goto      -> 0113
+036D:>88 01 13                                     goto      -> 0113
+; ---- dead code 0370-0374: no dictionary entry, jump, pointer or call reaches it ----
+0370:x8b 41 00 40                                  return    0
+0374: a0 03 98 57 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

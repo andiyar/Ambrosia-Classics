@@ -1,0 +1,23 @@
+; segment 10DE  page 10  class 0x00 (prop) type 222 tile-name "bell stand" (tool join F000/F004)
+; kind class  length 90 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0046  methods: sel9/use@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 46                                        .hdr      dictionary offset = 0046
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 82 00 cb 43 10 00 00 01 41 00 30 62 …+6      set       L00 = iterate_props_at(&L01, 0, A30.f01:x, A30.f02:y)
+0017:>8c cb 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_props_at(&L01, 1) -> 0042
+0024: 8d 00 62 04 42 00 c1 54 40 00 33             jf        (L00.f04:type == 193) -> 0033
+002F: 9d 09 00 40                                  send      L00.sel9/use()
+0033:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+003F: 88 00 17                                     goto      -> 0017
+0042:>8b 41 00 40                                  return    0
+0046: a0 03 90 de 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0002}

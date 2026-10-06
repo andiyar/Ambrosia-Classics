@@ -1,0 +1,111 @@
+; segment 0EAB  page 0E  routine
+; kind routine  length 929 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 05 05                                     frame     args=5 locals=5
+0003: 82 00 32 30 4b 40                            set       L00 = (A32 - A30)
+0009: 82 01 33 31 4b 40                            set       L01 = (A33 - A31)
+000F: 82 02 00 00 4c 01 01 4c 4a 40                set       L02 = ((L00 * L00) + (L01 * L01))
+0019: 82 03 41 01 40                               set       L03 = 1
+001E:>8d 03 03 4c 02 4f 40 00 31                   jf        ((L03 * L03) < L02) -> 0031
+0027: 82 03 03 41 01 4a 40                         set       L03 = (L03 + 1)
+002E: 88 00 1e                                     goto      -> 001E
+0031:>82 03 03 34 4c 41 0a 4d 40                   set       L03 = ((L03 * A34) / 10)
+003A: 8d 03 41 01 4f 40 00 59                      jf        (L03 < 1) -> 0059
+0042: 8a 44 6a 75 73 74 20 6f 76 65 72 20 …+8      print     "just over there "
+0056: 88 01 4a                                     goto      -> 014A
+0059:>8d 03 41 0a 50 40 00 f9                      jf        (L03 <= 10) -> 00F9
+0061: 82 04 45 00 75 90 0b 8e ab 00 94 8e …+111    set       L04 = blk@0066
+      ; 0x45 inline block 0066-00DB (117 bytes):
+      0066: 90 0b                            .array[11]
+        [0] @0094 ""
+        [1] @0095 "ten"
+        [2] @0099 "twenty"
+        [3] @00A0 "thirty"
+        [4] @00A7 "forty"
+        [5] @00AD "fifty"
+        [6] @00B3 "sixty"
+        [7] @00B9 "seventy"
+        [8] @00C1 "eighty"
+        [9] @00C8 "ninety"
+        [10] @00CF "one hundred"
+00DC: 8a 44 61 62 6f 75 74 20 00 40                print     "about "
+00E6: 8a 04 03 46 40                               print     L04[L03]
+00EB: 8a 44 20 70 61 63 65 73 20 00 40             print     " paces "
+00F6: 88 01 4a                                     goto      -> 014A
+00F9:>8d 03 41 0f 50 40 01 1f                      jf        (L03 <= 15) -> 011F
+0101: 8a 44 6f 76 65 72 20 6f 6e 65 20 68 …+15     print     "over one hundred paces "
+011C: 88 01 4a                                     goto      -> 014A
+011F:>8d 03 43 00 00 01 2c 50 40 01 4a             jf        (L03 <= 300) -> 014A
+012A: 8a 44 61 72 6f 75 6e 64 20 74 77 6f …+17     print     "around two hundred paces "
+0147: 88 01 4a                                     goto      -> 014A
+014A:>8a 44 74 6f 20 74 68 65 20 00 40             print     "to the "
+0155: 8d 01 41 00 4f 40 02 7a                      jf        (L01 < 0) -> 027A
+015D: 8d 00 41 00 4f 40 01 f3                      jf        (L00 < 0) -> 01F3
+0165: 82 00 41 ff 00 4c 40                         set       L00 = (-1 * L00)
+016C: 82 01 41 ff 01 4c 40                         set       L01 = (-1 * L01)
+0173: 8d 01 00 41 05 4c 51 40 01 89                jf        (L01 > (L00 * 5)) -> 0189
+017D: 8a 44 6e 6f 72 74 68 00 40                   print     "north"
+0186: 88 01 f0                                     goto      -> 01F0
+0189:>8d 01 41 0a 4c 00 41 0f 4c 51 40 01 …+1      jf        ((L01 * 10) > (L00 * 15)) -> 01AC
+0196: 8a 44 6e 6f 72 74 68 20 6e 6f 72 74 …+7      print     "north northwest"
+01A9: 88 01 f0                                     goto      -> 01F0
+01AC:>8d 01 41 03 4c 00 41 02 4c 51 40 01 …+1      jf        ((L01 * 3) > (L00 * 2)) -> 01C9
+01B9: 8a 44 6e 6f 72 74 68 77 65 73 74 00 …+1      print     "northwest"
+01C6: 88 01 f0                                     goto      -> 01F0
+01C9:>8d 01 41 05 4c 00 51 40 01 e8                jf        ((L01 * 5) > L00) -> 01E8
+01D3: 8a 44 77 65 73 74 20 6e 6f 72 74 68 …+6      print     "west northwest"
+01E5: 88 01 f0                                     goto      -> 01F0
+01E8:>8a 44 77 65 73 74 00 40                      print     "west"
+01F0:>88 02 77                                     goto      -> 0277
+01F3:>82 01 41 ff 01 4c 40                         set       L01 = (-1 * L01)
+01FA: 8d 00 01 41 05 4c 51 40 02 10                jf        (L00 > (L01 * 5)) -> 0210
+0204: 8a 44 6e 6f 72 74 68 00 40                   print     "north"
+020D: 88 02 77                                     goto      -> 0277
+0210:>8d 00 41 0a 4c 01 41 0f 4c 51 40 02 …+1      jf        ((L00 * 10) > (L01 * 15)) -> 0233
+021D: 8a 44 6e 6f 72 74 68 20 6e 6f 72 74 …+7      print     "north northeast"
+0230: 88 02 77                                     goto      -> 0277
+0233:>8d 00 41 03 4c 01 41 02 4c 51 40 02 …+1      jf        ((L00 * 3) > (L01 * 2)) -> 0250
+0240: 8a 44 6e 6f 72 74 68 65 61 73 74 00 …+1      print     "northeast"
+024D: 88 02 77                                     goto      -> 0277
+0250:>8d 00 41 05 4c 01 51 40 02 6f                jf        ((L00 * 5) > L01) -> 026F
+025A: 8a 44 65 61 73 74 20 6e 6f 72 74 68 …+6      print     "east northeast"
+026C: 88 02 77                                     goto      -> 0277
+026F:>8a 44 65 61 73 74 00 40                      print     "east"
+0277:>88 03 86                                     goto      -> 0386
+027A:>8d 00 41 00 4f 40 03 09                      jf        (L00 < 0) -> 0309
+0282: 82 00 41 ff 00 4c 40                         set       L00 = (-1 * L00)
+0289: 8d 00 01 41 05 4c 51 40 02 9e                jf        (L00 > (L01 * 5)) -> 029E
+0293: 8a 44 77 65 73 74 00 40                      print     "west"
+029B: 88 03 06                                     goto      -> 0306
+029E:>8d 00 41 0a 4c 01 41 0f 4c 51 40 02 …+1      jf        ((L00 * 10) > (L01 * 15)) -> 02C0
+02AB: 8a 44 77 65 73 74 20 73 6f 75 74 68 …+6      print     "west southwest"
+02BD: 88 03 06                                     goto      -> 0306
+02C0:>8d 00 41 03 4c 01 41 02 4c 51 40 02 …+1      jf        ((L00 * 3) > (L01 * 2)) -> 02DD
+02CD: 8a 44 73 6f 75 74 68 77 65 73 74 00 …+1      print     "southwest"
+02DA: 88 03 06                                     goto      -> 0306
+02DD:>8d 00 41 05 4c 01 51 40 02 fd                jf        ((L00 * 5) > L01) -> 02FD
+02E7: 8a 44 73 6f 75 74 68 20 73 6f 75 74 …+7      print     "south southwest"
+02FA: 88 03 06                                     goto      -> 0306
+02FD:>8a 44 73 6f 75 74 68 00 40                   print     "south"
+0306:>88 03 86                                     goto      -> 0386
+0309:>8d 01 00 41 05 4c 51 40 03 1f                jf        (L01 > (L00 * 5)) -> 031F
+0313: 8a 44 73 6f 75 74 68 00 40                   print     "south"
+031C: 88 03 86                                     goto      -> 0386
+031F:>8d 01 41 0a 4c 00 41 0f 4c 51 40 03 …+1      jf        ((L01 * 10) > (L00 * 15)) -> 0342
+032C: 8a 44 73 6f 75 74 68 20 73 6f 75 74 …+7      print     "south southeast"
+033F: 88 03 86                                     goto      -> 0386
+0342:>8d 01 41 03 4c 00 41 02 4c 51 40 03 …+1      jf        ((L01 * 3) > (L00 * 2)) -> 035F
+034F: 8a 44 73 6f 75 74 68 65 61 73 74 00 …+1      print     "southeast"
+035C: 88 03 86                                     goto      -> 0386
+035F:>8d 01 41 05 4c 00 51 40 03 7e                jf        ((L01 * 5) > L00) -> 037E
+0369: 8a 44 65 61 73 74 20 73 6f 75 74 68 …+6      print     "east southeast"
+037B: 88 03 86                                     goto      -> 0386
+037E:>8a 44 65 61 73 74 00 40                      print     "east"
+0386:>8d 03 43 00 00 01 2c 51 40 03 9d             jf        (L03 > 300) -> 039D
+0391: 8a 44 20 6f 66 20 68 65 72 65 00 40          print     " of here"
+039D:>8b 41 00 40                                  return    0

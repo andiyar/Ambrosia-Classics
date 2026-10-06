@@ -1,0 +1,30 @@
+; segment 1064  page 10  class 0x00 (prop) type 100 tile-name "spear" (tool join F000/F004)
+; kind class  length 435 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0163  methods: -
+; properties: sel36/p_weight, sel38/p26, sel42, sel43, sel51, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 63                                        .hdr      dictionary offset = 0163
+0002: 90 02 90 64 00 0c 90 64 00 68                .array    array[2] = [@000C, @0068]
+000C: 90 03 90 64 00 1a 90 64 00 32 90 64 …+2      .array    array[3] = [@001A, @0032, @004D]
+001A: 2d 20 54 68 65 20 70 6f 69 6e 74 20 …+12     .string   "- The point looks dull."
+0032: 2d 20 54 68 65 20 68 61 6e 64 6c 65 …+15     .string   "- The handle looks warped."
+004D: 2d 20 54 68 65 20 62 61 6c 61 6e 63 …+15     .string   "- The balance seems wrong."
+0068: 90 03 90 64 00 76 90 64 00 8b 90 64 …+2      .array    array[3] = [@0076, @008B, @009C]
+0076: 54 68 65 20 62 61 6c 61 6e 63 65 20 …+9      .string   "The balance is true."
+008B: 46 65 65 6c 20 74 68 61 74 20 70 6f …+5      .string   "Feel that point!"
+009C: 54 68 65 20 73 68 61 66 74 20 69 73 …+22     .string   "The shaft is straight and strong."
+00BE: 90 02 90 64 00 c8 90 64 01 07                .array    array[2] = [@00C8, @0107]
+00C8: 53 70 65 61 72 73 20 61 72 65 20 6e …+51     .string   "Spears are nice simple weapons, though they do take two hands."
+0107: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+0111: 90 01 00 00 00 0c                            .array    array[1] = [12]
+0117: 90 01 00 00 00 05                            .array    array[1] = [5]
+011D: 90 07 00 00 00 0a 00 00 00 02 00 00 …+18     .array    array[7] = [10, 2, 2, 196, 16, 18, @013B]
+013B: 90 05 00 00 00 00 00 00 02 06 00 00 …+10     .array    array[5] = [0, 518, 518, 518, 0]
+0151: 90 04 00 00 00 0a 00 00 00 04 50 00 …+6      .array    array[4] = [10, 4, False, 13]
+0163: a0 0d 50 00 ff ff 74 20 50 00 ff ff …+68     .dict     dict[13] {36/p_weight: @0111, 38/p26: @0117, 42: @011D, 43: @0151, 51: @00BE, 69: @0002}

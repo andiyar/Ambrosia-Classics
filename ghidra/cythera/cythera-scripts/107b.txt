@@ -1,0 +1,38 @@
+; segment 107B  page 10  class 0x00 (prop) type 123 tile-name "bellows" (tool join F000/F004)
+; kind class  length 217 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C5  methods: sel9/use@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c5                                        .hdr      dictionary offset = 00C5
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 82 00 e5 30 40 40                            set       L00 = next_sibling(A30)
+000B: 8d 00 62 04 42 00 7c 54 40 00 8a             jf        (L00.f04:type == 124) -> 008A
+0016: d3 41 21 30 62 01 30 62 02 40                builtin   positional_sound(33, A30.f01:x, A30.f02:y)
+0020: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+0027: a6 41 04 40                                  builtin   show_tile_animate(4)
+002B: 86 03 00 40 41 07 40                         setfield  L00.f03:frame = 7
+0032: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+0039: a6 41 04 40                                  builtin   show_tile_animate(4)
+003D: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+0044: a6 41 04 40                                  builtin   show_tile_animate(4)
+0048: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+004F: a6 41 0c 40                                  builtin   show_tile_animate(12)
+0053: 8d 48 09 48 05 54 40 00 80                   jf        (G09:speaker == G05:leader) -> 0080
+005C: 54 68 65 20 66 69 72 65 2d 70 69 74 …+24     text      "The fire-pit briefly glows red hot.\n"
+0080:>86 03 00 40 41 03 40                         setfield  L00.f03:frame = 3
+0087: 88 00 c1                                     goto      -> 00C1
+008A:>86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+0091: a6 41 04 40                                  builtin   show_tile_animate(4)
+0095: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+009C: 8d 48 09 48 05 54 40 00 c1                   jf        (G09:speaker == G05:leader) -> 00C1
+00A5: 59 6f 75 20 70 72 6f 64 75 63 65 20 …+16     text      "You produce a burst of air.\n"
+00C1:>8b 41 00 40                                  return    0
+00C5: a0 03 90 7b 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0002}

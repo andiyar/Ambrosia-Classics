@@ -1,0 +1,26 @@
+; segment 0D06  page 0D  routine
+; kind routine  length 165 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 02                                     frame     args=2 locals=2
+0003: 82 00 30 63 40 40                            set       L00 = as_char(A30)
+0009: 8d 31 43 00 00 01 00 54 40 00 81             jf        (A31 == 256) -> 0081
+0014: 8d bc 30 40 40 00 7e                         jf        leader_can_see(A30) -> 007E
+001B: 82 01 45 00 49 90 03 8d 06 00 2e 8d …+67     set       L01 = blk@0020
+      ; 0x45 inline block 0020-0069 (73 bytes):
+      0020: 90 03                            .array[3]
+        [0] @002E "Hey! Stop that!"
+        [1] @003E "What do you think your doing?"
+        [2] @005C "Put it back!"
+006A: 86 26 00 40 01 ac 41 00 01 5f 40 46 …+1      setfield  L00.f26:f26 = L01[random(0, len(L01))]
+0077: c5 43 00 00 01 40 40                         builtin   send_signal(320)
+007E:>88 00 a1                                     goto      -> 00A1
+0081:>8d 31 43 00 00 01 41 54 40 00 a1             jf        (A31 == 321) -> 00A1
+008C: 8d bc 30 40 40 00 a1                         jf        leader_can_see(A30) -> 00A1
+0093: 86 22 00 40 48 05 40                         setfield  L00.f22:target = G05:leader
+009A: 86 15 00 40 41 06 40                         setfield  L00.f15:activity = 6
+00A1:>8b 41 00 40                                  return    0

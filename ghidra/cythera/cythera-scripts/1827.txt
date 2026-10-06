@@ -1,0 +1,157 @@
+; segment 1827  page 18  class 0x40 (char) id 39 name "Eioneus" (string table 0201)
+; kind class  length 2558 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @09D2  methods: sel0/init@003A, sel12/talk@0050
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 09 d2                                        .hdr      dictionary offset = 09D2
+0002: 90 01 98 27 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel0/init @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 8d c4 30 41 17 40 5e 40 00 4c                jf        !has_ability(A30, 23) -> 004C
+0047: c1 30 41 17 40                               builtin   add_ability(A30, 23)
+004C:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0050 ====
+0050: 81 01 0f                                     frame     args=1 locals=15
+0053: 59 6f 75 20 73 65 65 20 61 20 73 77 …+46     text      "You see a sweaty, dirty, muscular man, with eyes of fire.*"
+008D: 8d 9f 0f 02 30 41 07 40 5e 40 01 04          jf        !R0F02(A30, 7) -> 0104  ; R0F02 = tstbit [from 0x0101 symtab]
+0099: 22 57 65 6c 63 6f 6d 65 20 73 74 72 …+85     text      "\"Welcome stranger!  I don't get many visitors here - my name is Eioneus.  What can I do for you?\""
+00FA: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0101: 88 01 44                                     goto      -> 0144
+0104:>22 57 65 6c 63 6f 6d 65 20 62 61 63 …+52     text      "\"Welcome back friend - it's nice to have occasional visitors...\""
+0144:>f3 41 1e 40                                  builtin   done_to_do(30)
+0148: 9f 0f 01 30 41 01 40                         call      R0F01(A30, 1)  ; R0F01 = clrbit [from 0x0101 symtab]
+014F:>8e                                           input       ; read a line into the input buffer
+0150: 90 6e 61 6d 65 00 01 8a                      match     name else -> 018A
+0158: 22 41 73 20 49 27 76 65 20 6d 65 6e …+35     text      "\"As I've mentioned before, my name is Eioneus.\""
+0187: 88 01 4f                                     goto      -> 014F
+018A:>90 6a 6f 62 00 01 d1                         match     job else -> 01D1
+0191: 22 49 27 6d 20 61 20 46 72 65 65 6d …+49     text      "\"I'm a Freemage, studying how to magically improve @weapons.\""
+01CE: 88 01 4f                                     goto      -> 014F
+01D1:>8d 30 62 15 43 00 00 00 8a 53 40 02 …+1      jf        (A30.f15:activity != 138) -> 024D
+01DE: 90 77 65 61 70 00 02 4d                      match     weap else -> 024D
+01E6: 22 59 65 73 2c 20 49 20 63 61 6e 20 …+88     text      "\"Yes, I can improve the edge of a weapon, but you'll have to stop by while I'm working at my forge.\""
+024A: 88 01 4f                                     goto      -> 014F
+024D:>90 77 65 61 70 2c 69 6d 70 72 00 08 …+1      match     weap,impr else -> 0819
+025A: 22 49 27 6d 20 67 65 74 74 69 6e 67 …+178    text      "\"I'm getting pretty good at it, now that I'm using a combination of lava heat and obsidian.\"*\"Do you have a weapon you'd like me to try to improve?  I can only do edged weapons like swords.\""
+0318: 8f 79 6e 00                                  prompt    "yn"
+031C: 90 79 00 07 ce                               match     y else -> 07CE
+0321: 82 00 45 00 0d 90 01 98 27 03 2c 43 …+7      set       L00 = blk@0326
+      ; 0x45 inline block 0326-0333 (13 bytes):
+      0326: 90 01                            .array[1]
+        [0] @032C "Cancel"
+0334: 82 01 43 50 00 ff ff 40                      set       L01 = Nil
+033C: 82 02 45 00 b1 90 08 98 27 03 63 98 …+171    set       L02 = blk@0341
+      ; 0x45 inline block 0341-03F2 (177 bytes):
+      0341: 90 08                            .array[8]
+        [0] @0363 "Unimproved"
+        [1] @036E "Minor Improvement"
+        [2] @0380 "Some Improvement"
+        [3] @0391 "Improvement"
+        [4] @039D "Major Improvement"
+        [5] @03AF "Very Major Improvement"
+        [6] @03C6 "Legendary Improvement"
+        [7] @03DC "Legendary Improvement"
+03F3:>8d 41 01 40 07 cb                            jf        1 -> 07CB
+03F9: 82 01 9b 01 40 40                            set       L01 = sysnew_01()
+03FF: 82 03 ca 43 10 00 00 04 41 00 43 50 …+5      set       L03 = iterate_party(&L04, 0, False)
+0410:>8c ca 43 10 00 00 04 41 01 40 40 04 …+1      jt        iterate_party(&L04, 1) -> 048E
+041D: 82 06 c9 43 10 00 00 07 41 00 03 40 …+1      set       L06 = iterate_descendants(&L07, 0, L03)
+042A:>8c c9 43 10 00 00 07 41 01 40 40 04 …+1      jt        iterate_descendants(&L07, 1) -> 047F
+0437: 8d 06 62 04 42 00 62 54 06 62 04 42 …+23     jf        ((((L06.f04:type == 98) || (L06.f04:type == 95)) || (L06.f04:type == 99)) || (L06.f04:type == 281)) -> 0470
+045A: 9d 06 01 9b 01 06 62 04 02 06 62 06 …+10     send      L01.sel6(sysnew_01(L06.f04:type, L02[L06.f06:quality], (10 << L06.f06:quality), L06))
+0470:>82 06 c9 43 10 00 00 07 41 02 40 40          set       L06 = iterate_descendants(&L07, 2)
+047C: 88 04 2a                                     goto      -> 042A
+047F:>82 03 ca 43 10 00 00 04 41 02 40 40          set       L03 = iterate_party(&L04, 2)
+048B: 88 04 10                                     goto      -> 0410
+048E:>8d 01 5f 41 00 54 40 04 c9                   jf        (len(L01) == 0) -> 04C9
+0497: 22 53 6f 72 72 79 2c 20 79 6f 75 27 …+35     text      "\"Sorry, you've got nothing I can work with...\"*"
+04C6: 88 07 cb                                     goto      -> 07CB
+04C9:>82 09 c0 44 49 6d 70 72 6f 76 65 20 …+43     set       L09 = pick_item("Improve which weapon", "|%i|(%s)|-100%d obsidian", L01, L00)
+0500: 8d 09 41 ff 54 40 05 0b                      jf        (L09 == -1) -> 050B
+0508: 88 07 cb                                     goto      -> 07CB
+050B:>82 09 01 09 46 40                            set       L09 = L01[L09]
+0511: 82 0a 09 41 03 46 40                         set       L0A = L09[3]
+0518: 8d 0a 62 06 41 06 52 40 05 65                jf        (L0A.f06:quality >= 6) -> 0565
+0522: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+52     text      "\"I'm sorry, but this is beyond my skill to do anything with it.\""
+0562: 88 07 c4                                     goto      -> 07C4
+0565:>22 54 68 69 73 20 72 65 71 75 69 72 …+3      text      "\"This requires "
+0574: 8a 09 41 02 46 40                            print     L09[2]
+057A: 20 70 69 65 63 65 73 20 6f 66 20 6f …+44     text      " pieces of obsidian to improve it - are you interested?\""
+05B2: 8f 79 6e 00                                  prompt    "yn"
+05B6: 90 79 00 07 a4                               match     y else -> 07A4
+05BB: 82 0b 41 00 40                               set       L0B = 0
+05C0: 82 0c ca 43 10 00 00 0d 41 00 43 50 …+5      set       L0C = iterate_party(&L0D, 0, True)
+05D1:>8c ca 43 10 00 00 0d 41 01 40 40 06 …+1      jt        iterate_party(&L0D, 1) -> 0629
+05DE: 82 06 c9 43 10 00 00 07 41 00 0c 40 …+1      set       L06 = iterate_descendants(&L07, 0, L0C)
+05EB:>8c c9 43 10 00 00 07 41 01 40 40 06 …+1      jt        iterate_descendants(&L07, 1) -> 061A
+05F8: 8d 06 62 04 42 00 ee 54 40 06 0b             jf        (L06.f04:type == 238) -> 060B
+0603: 82 0b 0b 06 62 09 4a 40                      set       L0B = (L0B + L06.f09:count)
+060B:>82 06 c9 43 10 00 00 07 41 02 40 40          set       L06 = iterate_descendants(&L07, 2)
+0617: 88 05 eb                                     goto      -> 05EB
+061A:>82 0c ca 43 10 00 00 0d 41 02 40 40          set       L0C = iterate_party(&L0D, 2)
+0626: 88 05 d1                                     goto      -> 05D1
+0629:>8d 0b 09 41 02 46 4f 40 06 85                jf        (L0B < L09[2]) -> 0685
+0633: 22 59 6f 75 27 6c 6c 20 6e 65 65 64 …+60     text      "\"You'll need to collect more obsidian before I can improve this weapon.\""
+067B: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0682: 88 07 a4                                     goto      -> 07A4
+0685:>82 0b 09 41 02 46 40                         set       L0B = L09[2]
+068C: 82 0c ca 43 10 00 00 0d 41 00 43 50 …+5      set       L0C = iterate_party(&L0D, 0, True)
+069D:>8c ca 43 10 00 00 0d 41 01 40 40 07 …+1      jt        iterate_party(&L0D, 1) -> 071E
+06AA: 8d 0b 41 00 51 40 07 0f                      jf        (L0B > 0) -> 070F
+06B2: 82 06 c9 43 10 00 00 07 41 00 0c 40 …+1      set       L06 = iterate_descendants(&L07, 0, L0C)
+06BF:>8c c9 43 10 00 00 07 41 01 40 40 07 …+1      jt        iterate_descendants(&L07, 1) -> 070F
+06CC: 8d 06 62 04 42 00 ee 54 40 07 00             jf        (L06.f04:type == 238) -> 0700
+06D7: 8d 06 62 09 0b 50 40 06 ee                   jf        (L06.f09:count <= L0B) -> 06EE
+06E0: 82 0b 0b 06 62 09 4b 40                      set       L0B = (L0B - L06.f09:count)
+06E8: a7 06 40                                     builtin   delete_prop(L06)
+06EB: 88 07 00                                     goto      -> 0700
+06EE:>86 09 06 40 06 62 09 0b 4b 40                setfield  L06.f09:count = (L06.f09:count - L0B)
+06F8: 82 0b 41 00 40                               set       L0B = 0
+06FD: 88 07 0f                                     goto      -> 070F
+0700:>82 06 c9 43 10 00 00 07 41 02 40 40          set       L06 = iterate_descendants(&L07, 2)
+070C: 88 06 bf                                     goto      -> 06BF
+070F:>82 0c ca 43 10 00 00 0d 41 02 40 40          set       L0C = iterate_party(&L0D, 2)
+071B: 88 06 9d                                     goto      -> 069D
+071E:>45 69 6f 6e 65 75 73 20 77 6f 72 6b …+111    text      "Eioneus works over the weapon with his blacksmith tools, combining the obsidian in the lava.*\"There - another perfect job!\""
+0799: 86 06 0a 40 0a 62 06 41 01 4a 40             setfield  L0A.f06:quality = (L0A.f06:quality + 1)
+07A4:>90 6e 00 07 c4                               match     n else -> 07C4
+07A9: 22 50 65 72 68 61 70 73 20 61 6e 6f …+16     text      "\"Perhaps another weapon...\"*"  ; shares its tail with text @07C4
+07C4:>2a                                           text      "*"
+07C5: 93 01 40                                     release   L01
+07C8: 88 03 f3                                     goto      -> 03F3
+07CB:>93 01 40                                     release   L01
+07CE:>90 6e 00 08 16                               match     n else -> 0816
+07D3: 22 57 65 6c 6c 2c 20 69 66 20 79 6f …+55     text      "\"Well, if you have the need in the future, you know where to come.\""
+0816:>88 01 4f                                     goto      -> 014F
+0819:>90 6c 61 76 61 00 08 63                      match     lava else -> 0863
+0821: 22 4f 6e 6c 79 20 74 68 65 20 68 65 …+51     text      "\"Only the heat of lava is enough to magically improve an edge.\""
+0860: 88 01 4f                                     goto      -> 014F
+0863:>90 6f 62 73 69 00 08 e3                      match     obsi else -> 08E3
+086B: 22 4f 62 73 69 64 69 61 6e 20 69 73 …+105    text      "\"Obsidian is the perfect source of a razor sharp edge, and with it's alchemical properties, it is a perfect element.\""
+08E0: 88 01 4f                                     goto      -> 014F
+08E3:>90 62 79 65 00 09 7d                         match     bye else -> 097D
+08EA: 8d 9f 0f 02 30 41 01 40 40 09 1e             jf        R0F02(A30, 1) -> 091E  ; R0F02 = tstbit [from 0x0101 symtab]
+08F5: 22 43 6f 6d 65 20 62 61 63 6b 20 77 …+26     text      "\"Come back when you get the obsidian.\""
+091B: 88 09 76                                     goto      -> 0976
+091E:>22 53 74 6f 70 20 62 61 63 6b 20 69 …+76     text      "\"Stop back if you get a chance - and watch out for that slime that plagues these caves!\""
+0976:>8b 41 00 40                                  return    0
+; ---- dead code 097A-097D: no dictionary entry, jump, pointer or call reaches it ----
+097A:x88 01 4f                                     goto      -> 014F
+097D:>90 2a 00 09 cb                               match     * else -> 09CB
+0982: 8d 9f 08 08 30 40 5e 40 09 c8                jf        !R0808(A30) -> 09C8
+098C: 8d 9f 08 01 30 40 5e 40 09 c8                jf        !R0801(A30) -> 09C8
+0996: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+38     text      "\"I'm sorry, but the heat must be getting to me...\""
+09C8:>88 01 4f                                     goto      -> 014F
+09CB:>88 01 4f                                     goto      -> 014F
+; ---- dead code 09CE-09D2: no dictionary entry, jump, pointer or call reaches it ----
+09CE:x8b 41 00 40                                  return    0
+09D2: a0 07 98 27 00 3a 00 00 50 00 ff ff …+32     .dict     dict[7] {0/init: @003A, 12/talk: @0050, 68: @0002}

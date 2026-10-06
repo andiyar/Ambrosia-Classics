@@ -1,0 +1,98 @@
+; segment 0812  page 08  routine
+; kind routine  length 1686 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 07                                     frame     args=1 locals=7
+0003: 82 00 9f 0d 04 40 40                         set       L00 = R0D04()
+000A: 8d 00 41 00 54 40 00 63                      jf        (L00 == 0) -> 0063
+0012: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+96     text      "\"I'm sorry, but we don't give credit here - come back when you've got the oboloi\"\"Do you need instructions?\""
+0063:>22 44 6f 20 79 6f 75 20 6e 65 65 64 …+15     text      "\"Do you need instructions?\""  ; shares its tail with text @0012
+007E: 8f 79 6e 00                                  prompt    "yn"
+0082: 90 79 00 03 a6                               match     y else -> 03A6
+0087: 22 49 74 27 73 20 76 65 72 79 20 73 …+700    text      "\"It's very simple - we've got three dice.  My two are black and your one is white.  I throw out the first one, and then you throw your one die.  If they match you win 2:1\"*\"If they don't match, I roll my second die.  If your white die is 'trapped' between my two black dice, I win.  By trapped, I mean if the number on your die is between my two - this includes equalling my second die.\"*\"For every point higher or lower than my highest or lowest die is, that's how much you win.  For example, if I roll a 5 and 6, then if you had rolled a 1 you'd get 4:1!\"*\"We've got a special rule - if your payback were 1:1, it just means we automatically play again - no need to redo your bet or anything.\"*\"Sound like fun?\""
+034F: 8f 79 6e 00                                  prompt    "yn"
+0353: 90 6e 00 03 7e                               match     n else -> 037E
+0358: 22 57 65 6c 6c 2c 20 70 65 72 68 61 …+22     text      "\"Well, perhaps another time then.\""
+037A: 8b 41 00 40                                  return    0
+037E:>90 79 00 03 a6                               match     y else -> 03A6
+0383: 22 47 6f 6f 64 20 2d 20 6c 65 74 27 …+23     text      "\"Good - let's get on with it then.\""
+03A6:>90 6e 00 03 cb                               match     n else -> 03CB
+03AB: 22 41 68 2c 20 77 65 27 76 65 20 67 …+20     text      "\"Ah, we've got an expert here!\"*"
+03CB:>82 01 43 50 00 00 00 40                      set       L01 = False
+03D3: 82 02 45 00 36 90 06 88 12 03 f2 88 …+48     set       L02 = blk@03D8
+      ; 0x45 inline block 03D8-040E (54 bytes):
+      03D8: 90 06                            .array[6]
+        [0] @03F2 "one"
+        [1] @03F6 "two"
+        [2] @03FA "three"
+        [3] @0400 "four"
+        [4] @0405 "five"
+        [5] @040A "six"
+040F:>8d 9f 0d 04 40 41 00 54 40 04 58             jf        (R0D04() == 0) -> 0458
+041A: 22 53 6f 72 72 79 20 2d 20 6c 6f 6f …+46     text      "\"Sorry - looks like you're broke.  Better luck next time.\""
+0454: 8b 41 00 40                                  return    0
+0458:>82 03 ac 41 00 41 06 40 40                   set       L03 = random(0, 6)
+0461: 82 04 ac 41 00 41 06 40 40                   set       L04 = random(0, 6)
+046A: 82 05 ac 41 00 41 06 40 40                   set       L05 = random(0, 6)
+0473: 8d f5 48 05 42 00 cf 40 40 04 98             jf        find_skill(G05:leader, 207) -> 0498
+047E: 8d 03 04 54 40 04 88                         jf        (L03 == L04) -> 0488
+0485: 88 04 98                                     goto      -> 0498
+0488:>8d ac 41 00 41 06 40 03 54 40 04 98          jf        (random(0, 6) == L03) -> 0498
+0494: 82 04 03 40                                  set       L04 = L03
+0498:>82 06 41 00 40                               set       L06 = 0
+049D: d3 41 2a 30 62 01 30 62 02 40                builtin   positional_sound(42, A30.f01:x, A30.f02:y)
+04A7: 22 49 20 72 6f 6c 6c 20 61 20                text      "\"I roll a "
+04B1: 8a 02 03 46 40                               print     L02[L03]
+04B6: 20 61 6e 64 20 79 6f 75 20 72 6f 6c …+4      text      " and you roll a "
+04C6: 8a 02 04 46 40                               print     L02[L04]
+04CB: 2e 20 20                                     text      ".  "
+04CE: 8d 03 04 54 40 05 0b                         jf        (L03 == L04) -> 050B
+04D5: 59 6f 75 27 76 65 20 67 6f 74 20 61 …+34     text      "You've got a match, and so you win 2 oboloi!\"*"
+0503: 82 06 41 02 40                               set       L06 = 2
+0508: 88 05 65                                     goto      -> 0565
+050B:>49 20 74 68 65 6e 20 72 6f 6c 6c 20 …+2      text      "I then roll a "
+0519: 8a 02 05 46 40                               print     L02[L05]
+051E: 2e 22 2a                                     text      ".\"*"
+0521: 8d 03 05 4f 40 05 48                         jf        (L03 < L05) -> 0548
+0528: 8d 04 03 4f 40 05 38                         jf        (L04 < L03) -> 0538
+052F: 82 06 03 04 4b 40                            set       L06 = (L03 - L04)
+0535: 88 05 45                                     goto      -> 0545
+0538:>8d 04 05 51 40 05 45                         jf        (L04 > L05) -> 0545
+053F: 82 06 04 05 4b 40                            set       L06 = (L04 - L05)
+0545:>88 05 65                                     goto      -> 0565
+0548:>8d 04 05 4f 40 05 58                         jf        (L04 < L05) -> 0558
+054F: 82 06 05 04 4b 40                            set       L06 = (L05 - L04)
+0555: 88 05 65                                     goto      -> 0565
+0558:>8d 04 03 51 40 05 65                         jf        (L04 > L03) -> 0565
+055F: 82 06 04 03 4b 40                            set       L06 = (L04 - L03)
+0565:>8d 06 41 00 54 40 05 b5                      jf        (L06 == 0) -> 05B5
+056D: 9f 0d 05 41 01 40                            call      R0D05(1)
+0573: 22 55 6e 66 6f 72 74 75 6e 61 74 65 …+43     text      "\"Unfortunately, that means I win.  You are now down to "
+05AA: 8a 9f 0d 04 40 40                            print     R0D04()
+05B0: 22 2a                                        text      "\"*"
+05B2: 88 06 04                                     goto      -> 0604
+05B5:>8d 06 41 01 51 40 06 04                      jf        (L06 > 1) -> 0604
+05BD: 9f 0d 09 48 05 06 41 01 4b 40                call      R0D09(G05:leader, (L06 - 1))
+05C7: 22 41 68 20 2d 20 61 20 77 69 6e 6e …+13     text      "\"Ah - a winner.  You win "
+05E0: 8a 06 40                                     print     L06
+05E3: 2c 20 77 68 69 63 68 20 62 72 69 6e …+13     text      ", which brings you up to "
+05FC: 8a 9f 0d 04 40 40                            print     R0D04()
+0602: 22 2a                                        text      "\"*"
+0604:>8d 06 41 01 54 40 06 3e                      jf        (L06 == 1) -> 063E
+060C: 22 54 68 61 74 20 77 61 73 20 61 20 …+27     text      "\"That was a push, so we play again...\"*"
+0633: 82 01 43 50 00 00 00 40                      set       L01 = False
+063B: 88 06 8d                                     goto      -> 068D
+063E:>22 50 6c 61 79 20 61 67 61 69 6e 3f …+1      text      "\"Play again?\""
+064B: 8f 79 6e 00                                  prompt    "yn"
+064F: 90 79 00 06 74                               match     y else -> 0674
+0654: 22 41 6c 6c 20 72 69 67 68 74 20 2d …+12     text      "\"All right - let's go.\"*"
+066C: 82 01 43 50 00 00 00 40                      set       L01 = False
+0674:>90 6e 00 06 8d                               match     n else -> 068D
+0679: 22 56 65 72 79 20 77 65 6c 6c 2e 22          text      "\"Very well.\""
+0685: 82 01 43 50 00 00 01 40                      set       L01 = True
+068D:>8d 01 40 04 0f                               jf        L01 -> 040F
+0692: 8b 41 00 40                                  return    0

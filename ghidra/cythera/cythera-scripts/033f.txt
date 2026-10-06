@@ -1,0 +1,5 @@
+; segment 033F  page 03  data
+; kind data (no code structure; read/written as words by 0x49 / 0x85)  length 4 bytes
+; referenced by 0x49 reads/0x85 writes: 0 (0 writes)
+; unknown opcodes: 0 (not code)
+0000:  00 00 00 00

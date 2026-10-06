@@ -1,0 +1,48 @@
+; segment 0E4A  page 0E  routine
+; kind routine  length 472 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 07 04                                     frame     args=7 locals=4
+0003: 82 00 c8 43 10 00 00 01 41 00 30 40 …+1      set       L00 = iterate_children(&L01, 0, A30)
+0010:>8c c8 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_children(&L01, 1) -> 0045
+001D: 8d 00 62 00 41 02 56 40 00 36                jf        (L00.f00:kind & 2) -> 0036
+0027: 82 03 00 63 00 40                            set       L03 = as_prop(L00)
+002D: 9d 0a 03 48 09 40                            send      L03.sel10/use_on(G09:speaker)
+0033: a7 00 40                                     builtin   delete_prop(L00)
+0036:>82 00 c8 43 10 00 00 01 41 02 40 40          set       L00 = iterate_children(&L01, 2)
+0042: 88 00 10                                     goto      -> 0010
+0045:>e3 30 62 01 30 62 02 43 00 00 01 b2 …+1      builtin   show_hit(A30.f01:x, A30.f02:y, 434)
+0052: 8d 30 62 07 41 00 54 40 00 62                jf        (A30.f07:byte7 == 0) -> 0062
+005C: 86 07 30 40 36 40                            setfield  A30.f07:byte7 = A36
+0062:>8d 31 36 41 03 4c 51 40 00 a8                jf        (A31 > (A36 * 3)) -> 00A8
+006C: 5e                                           text      "^"
+006D: 8a 30 40                                     print     A30
+0070: 20 69 73 20 64 65 73 74 72 6f 79 65 …+3      text      " is destroyed!\n"
+007F: 86 00 30 40 30 62 00 43 00 00 00 80 …+2      setfield  A30.f00:kind = (A30.f00:kind | 128)
+008D: 9f 0e 48 30 44 49 74 20 63 6f 6e 74 …+12     call      R0E48(A30, "It contained", True)  ; R0E48 = SpillOut [from 0x0101 symtab]
+00A5: 88 01 d4                                     goto      -> 01D4
+00A8:>8d 30 62 03 32 54 40 00 e7                   jf        (A30.f03:frame == A32) -> 00E7
+00B1: 49 74 20 69 73 20 61 6c 72 65 61 64 …+39     text      "It is already open - are you trying to destroy it?\n"
+00E4: 88 01 d4                                     goto      -> 01D4
+00E7:>8d 30 62 03 33 54 40 01 23                   jf        (A30.f03:frame == A33) -> 0123
+00F0: 86 03 30 40 32 40                            setfield  A30.f03:frame = A32
+00F6: 4e 6f 20 6e 65 65 64 20 74 6f 20 62 …+30     text      "No need to be violent - it wasn't locked.\n"
+0120: 88 01 d4                                     goto      -> 01D4
+0123:>8d 30 62 03 34 54 40 01 b3                   jf        (A30.f03:frame == A34) -> 01B3
+012C: 8d 31 30 62 07 51 40 01 55                   jf        (A31 > A30.f07:byte7) -> 0155
+0135: 49 74 20 69 73 20 6e 6f 77 20 62 75 …+11     text      "It is now busted open.\n"
+014C: 86 03 30 40 32 40                            setfield  A30.f03:frame = A32
+0152: 88 01 b0                                     goto      -> 01B0
+0155:>8d 31 30 62 07 41 02 4d 51 40 01 98          jf        (A31 > (A30.f07:byte7 / 2)) -> 0198
+0161: 86 07 30 40 30 62 07 41 01 4b 40             setfield  A30.f07:byte7 = (A30.f07:byte7 - 1)
+016C: 49 74 20 69 73 20 73 6c 69 67 68 74 …+29     text      "It is slightly dented, but still intact.\n"
+0195: 88 01 b0                                     goto      -> 01B0
+0198:>49 74 20 77 69 74 68 73 74 61 6e 64 …+12     text      "It withstands the blow.\n"
+01B0:>88 01 d4                                     goto      -> 01D4
+01B3:>8d 30 62 03 35 54 40 01 d4                   jf        (A30.f03:frame == A35) -> 01D4
+01BC: 49 74 20 69 73 20 6d 61 67 69 63 61 …+12     text      "It is magically locked!\n"
+01D4:>8b 41 00 40                                  return    0

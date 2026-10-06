@@ -1,0 +1,51 @@
+; segment 0EB2  page 0E  routine
+; kind routine  length 339 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 03                                     frame     args=2 locals=3
+0003: 82 00 31 61 2a 00 40                         set       L00 = prop(A31, sel42, 0)
+000A: 82 01 44 00 40                               set       L01 = ""
+000F: 8d 00 41 03 4f 40 00 24                      jf        (L00 < 3) -> 0024
+0017: 82 02 44 67 72 61 7a 65 00 40                set       L02 = "graze"
+0021: 88 01 31                                     goto      -> 0131
+0024:>8d 00 41 06 4f 40 00 37                      jf        (L00 < 6) -> 0037
+002C: 82 02 44 68 69 74 00 40                      set       L02 = "hit"
+0034: 88 01 31                                     goto      -> 0131
+0037:>8d 00 41 09 4f 40 00 54                      jf        (L00 < 9) -> 0054
+003F: 82 02 44 68 69 74 00 40                      set       L02 = "hit"
+0047: 82 01 44 20 68 61 72 64 00 40                set       L01 = " hard"
+0051: 88 01 31                                     goto      -> 0131
+0054:>8d 00 41 0c 4f 40 00 76                      jf        (L00 < 12) -> 0076
+005C: 82 02 44 68 69 74 00 40                      set       L02 = "hit"
+0064: 82 01 44 20 76 65 72 79 20 68 61 72 …+3      set       L01 = " very hard"
+0073: 88 01 31                                     goto      -> 0131
+0076:>8d 00 41 10 4f 40 00 9d                      jf        (L00 < 16) -> 009D
+007E: 82 02 44 68 69 74 00 40                      set       L02 = "hit"
+0086: 82 01 44 20 65 78 74 72 65 6d 65 6c …+8      set       L01 = " extremely hard"
+009A: 88 01 31                                     goto      -> 0131
+009D:>8d 00 41 14 4f 40 00 c1                      jf        (L00 < 20) -> 00C1
+00A5: 82 02 44 63 72 75 73 68 00 40                set       L02 = "crush"
+00AF: 82 01 44 20 76 65 72 79 20 68 61 72 …+3      set       L01 = " very hard"
+00BE: 88 01 31                                     goto      -> 0131
+00C1:>8d 00 41 19 4f 40 00 f6                      jf        (L00 < 25) -> 00F6
+00C9: 82 02 44 73 6d 61 73 68 00 40                set       L02 = "smash"
+00D3: 82 01 44 20 77 69 74 68 20 61 20 62 …+20     set       L01 = " with a bonecrunching sound"
+00F3: 88 01 31                                     goto      -> 0131
+00F6:>8d 00 41 23 4f 40 01 18                      jf        (L00 < 35) -> 0118
+00FE: 82 02 44 67 72 69 6e 64 00 40                set       L02 = "grind"
+0108: 82 01 44 20 74 6f 20 64 75 73 74 00 …+1      set       L01 = " to dust"
+0115: 88 01 31                                     goto      -> 0131
+0118:>82 02 44 73 68 72 65 64 00 40                set       L02 = "shred"
+0122: 82 01 44 20 74 6f 20 70 69 65 63 65 …+3      set       L01 = " to pieces"
+0131:>22 5e                                        text      "\"^"
+0133: 8a 31 40                                     print     A31
+0136: 20 63 61 6e 20                               text      " can "
+013B: 8a 02 40                                     print     L02
+013E: 20 61 6e 20 6f 70 70 6f 6e 65 6e 74          text      " an opponent"
+014A: 8a 01 40                                     print     L01
+014D: 2e 22                                        text      ".\""
+014F: 8b 41 00 40                                  return    0

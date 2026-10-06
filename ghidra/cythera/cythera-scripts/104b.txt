@@ -1,0 +1,68 @@
+; segment 104B  page 10  class 0x00 (prop) type 75 tile-name "scroll" (tool join F000/F004)
+; kind class  length 444 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @016C  methods: sel2/name@0041, sel9/use@007E, sel10/use_on@00BF, sel11@00EB, sel8/search@0118
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 6c                                        .hdr      dictionary offset = 016C
+0002: 90 02 90 4b 00 0c 90 4b 00 35                .array    array[2] = [@000C, @0035]
+000C: 49 74 27 73 20 61 20 6d 61 67 69 63 …+29     .string   "It's a magic scroll, containing a spell."
+0035: 90 01 00 00 00 4a                            .array    array[1] = [74]
+003B: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel2/name @0041 ====
+0041: 81 01 02                                     frame     args=1 locals=2
+0044: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0058: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+005E: 82 01 9b 03 44 53 63 72 6f 6c 6c 20 …+10     set       L01 = sysnew_03("Scroll of ", L00.sel2/name())
+0074: a7 00 40                                     builtin   delete_prop(L00)
+0077: 8b 01 40                                     return    L01
+; ---- dead code 007A-007E: no dictionary entry, jump, pointer or call reaches it ----
+007A:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @007E ====
+007E: 81 01 02                                     frame     args=1 locals=2
+0081: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0095: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+009B: 82 01 9d 09 00 40 40                         set       L01 = L00.sel9/use()
+00A2: a7 00 40                                     builtin   delete_prop(L00)
+00A5: 8d 01 43 50 00 ff ff 54 01 41 00 54 …+4      jf        ((L01 == Nil) || (L01 == 0)) -> 00B8
+00B5: a7 30 40                                     builtin   delete_prop(A30)
+00B8:>8b 01 40                                     return    L01
+; ---- dead code 00BB-00BF: no dictionary entry, jump, pointer or call reaches it ----
+00BB:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00BF ====
+00BF: 81 02 01                                     frame     args=2 locals=1
+00C2: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+00D6: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+00DC: 9d 0a 00 31 40                               send      L00.sel10/use_on(A31)
+00E1: a7 00 40                                     builtin   delete_prop(L00)
+00E4: a7 30 40                                     builtin   delete_prop(A30)
+00E7: 8b 41 00 40                                  return    0
+
+; ==== method sel11 @00EB ====
+00EB: 81 03 01                                     frame     args=3 locals=1
+00EE: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0102: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+0108: 9d 0b 00 31 32 40                            send      L00.sel11(A31, A32)
+010E: a7 00 40                                     builtin   delete_prop(L00)
+0111: a7 30 40                                     builtin   delete_prop(A30)
+0114: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0118 ====
+0118: 81 01 01                                     frame     args=1 locals=1
+011B: 49 74 20 69 73 20 61 20 73 63 72 6f …+24     text      "It is a scroll containing the spell "
+013F: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0153: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+0159: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+015F: 2e 0a                                        text      ".\n"
+0161: 9d 08 00 40                                  send      L00.sel8/search()
+0165: a7 00 40                                     builtin   delete_prop(L00)
+0168: 8b 41 00 40                                  return    0
+016C: a0 0d 50 00 ff ff 00 15 50 00 ff ff …+68     .dict     dict[13] {2/name: @0041, 8/search: @0118, 9/use: @007E, 10/use_on: @00BF, 11: @00EB, 36/p_weight: @003B, 51: @0002}

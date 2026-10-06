@@ -1,0 +1,68 @@
+; segment 184B  page 18  class 0x40 (char) id 75 name "Prusa" (string table 0201)
+; kind class  length 2508 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @09B8  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 09 b8                                        .hdr      dictionary offset = 09B8
+0002: 90 01 98 4b 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 02                                     frame     args=1 locals=2
+003D: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+48     text      "You see an old woman, hair wild, with insanity in her eyes.*"
+0079: f3 41 0f 40                                  builtin   done_to_do(15)
+007D: 82 00 ac 41 00 41 04 40 40                   set       L00 = random(0, 4)
+0086: 8d 00 41 00 54 40 03 96                      jf        (L00 == 0) -> 0396
+008E: 22 59 65 73 2c 20 79 6f 75 20 68 61 …+95     text      "\"Yes, you have come to learn?  Perhaps to teach?  But the world you were sent to reach has no future now.\"*"
+00F9: 82 01 45 02 8b 90 06 98 4b 01 18 98 …+645    set       L01 = blk@00FE
+      ; 0x45 inline block 00FE-0389 (651 bytes):
+      00FE: 90 06                            .array[6]
+        [0] @0118 "\"There are two enemies - Earth and Sea.  The Sea would destroy us, the Earth would let us drown.\""
+        [1] @017A "\"Powers of the elements can be manifest in beings of powers - these beings walk among us, unseen.\""
+        [2] @01DD "\"Green and glowing, it is a tool which can bend and hold - enforcing powers, and straightening as well.\""
+        [3] @0246 "\"The Bond of the Land is derived from the Powers of the Earth, but it is beyond the powers of a mortal.\""
+        [4] @02AF "\"The Sea calls to me, the Earth calls to me.  Between these two extremes I am drawn.\""
+        [5] @0305 "\"Why were we brought here?  To be pawns, to advance one side or another?  Or to be outside the game, perhaps even ending the game?\""
+038A: 8a 01 48 0f 41 06 4e 46 40                   print     L01[(G0F:day % 6)]
+0393: 88 09 b4                                     goto      -> 09B4
+0396:>8d 00 41 01 54 40 06 a5                      jf        (L00 == 1) -> 06A5
+039E: 22 48 61 76 65 20 79 6f 75 20 68 65 …+64     text      "\"Have you heard of a word that will stop us going wrong?  The time is now.\"*"
+03EA: 82 01 45 01 e1 90 06 98 4b 04 09 98 …+475    set       L01 = blk@03EF
+      ; 0x45 inline block 03EF-05D0 (481 bytes):
+      03EF: 90 06                            .array[6]
+        [0] @0409 "\"Truth is not absolute, for it, like beauty, is in the eye of the beholder.\""
+        [1] @0456 "\"Oil and wine do not readily mix, and will break apart unless bonded.\""
+        [2] @049D "\"Those that are not human do not have the values of humans.\""
+        [3] @04DA "\"To a mighty oak, a single insect does not exist.\""
+        [4] @050D "\"To accept both that which is true and that which is false as equal, that is the greatest of gifts.\""
+        [5] @0572 "\"Some struggles are eternal, but the cycle can be broken by those of great resolve and will.\""
+05D1: 8a 01 48 0f 41 06 4e 46 40                   print     L01[(G0F:day % 6)]
+05DA: 8d 9f 0f 02 30 41 02 40 5e 48 0f 41 …+9      jf        (!R0F02(A30, 2) && ((G0F:day % 6) == 1)) -> 06A2  ; R0F02 = tstbit [from 0x0101 symtab]
+05EF: 2a 22 49 20 68 61 76 65 20 73 6f 6d …+149    text      "*\"I have something for you that might help your understanding.\"*She hands you a book bound in a blue cover, and for a second, it seems as if the insanity fades.\n"
+0690: a8 48 05 42 00 1a 41 10 41 00 40             builtin   give_item(G05:leader, 26, 16, 0)
+069B: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+06A2:>88 09 b4                                     goto      -> 09B4
+06A5:>8d 00 41 02 54 40 08 19                      jf        (L00 == 2) -> 0819
+06AD: 82 01 45 01 59 90 08 98 4b 06 d4 98 …+339    set       L01 = blk@06B2
+      ; 0x45 inline block 06B2-080B (345 bytes):
+      06B2: 90 08                            .array[8]
+        [0] @06D4 "\"I will carry your white feather, I will carry your white flag.\""
+        [1] @0715 "\"What do you want from me!\""
+        [2] @0731 "\"What do we permit?  What do we allow?\""
+        [3] @0759 "\"It doesn't have to be like this.\""
+        [4] @077C "\"He knows, you know.\""
+        [5] @0792 "\"Thus all things are presented by shadows.\""
+        [6] @07BE "\"Just another comic actor behind a tragic mask.\""
+        [7] @07EF "\"Where do we go from here?\""
+080C: 8a 01 ac 41 00 41 08 40 46 40                print     L01[random(0, 8)]
+0816: 88 09 b4                                     goto      -> 09B4
+0819:>8d 00 41 03 54 40 09 b4                      jf        (L00 == 3) -> 09B4
+0821: 22 57 68 61 74 20 6f 6e 63 65 20 77 …+391    text      "\"What once was elusive is calling me now.\"*\"You must leave here - it is not safe.  The horrors I have seen with my eyes.\"*\"There is a terror, a war going on, and we are all but unaware.  Yet we are pawns, and we die in this war.\"*\"The sides of the war use us, abuse us.  We suffer.  Alaric alone can save us - remove us from the struggle.\"*\"He must be cured.  You must save him, save us, save yourself.\""
+09B4:>8b 41 00 40                                  return    0
+09B8: a0 03 98 4b 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

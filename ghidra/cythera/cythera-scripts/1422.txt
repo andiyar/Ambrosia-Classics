@@ -1,0 +1,22 @@
+; segment 1422  page 14  class 0x20 (zone) id 34
+; kind class  length 56 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0024  methods: sel20/enter@0008
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 24                                        .hdr      dictionary offset = 0024
+0002: 90 01 50 00 00 01                            .array    array[1] = [True]
+
+; ==== method sel20/enter @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: d9 41 09 40                                  builtin   set_outdoor_sky(9)
+000F: da 44 43 61 76 65 73 00 40                   builtin   set_map_title("Caves")
+0018: d8 41 eb 40                                  builtin   set_zone_light_minimum(-21)
+001C: d6 41 02 40                                  builtin   play_music2(2)
+0020: 8b 41 00 40                                  return    0
+0024: a0 03 94 22 00 02 00 24 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0008, 36/p_weight: @0002}

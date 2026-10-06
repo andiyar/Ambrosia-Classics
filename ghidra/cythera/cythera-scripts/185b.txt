@@ -1,0 +1,67 @@
+; segment 185B  page 18  class 0x40 (char) id 91 name "Joppa" (string table 0201)
+; kind class  length 773 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02F1  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 f1                                        .hdr      dictionary offset = 02F1
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 77 69 …+73     text      "You see a wide faced, narrow eyed middle aged man with a wide mouth and narrow lips.*"
+005A: 8d 9f 0f 02 30 41 07 40 5e 40 01 3b          jf        !R0F02(A30, 7) -> 013B  ; R0F02 = tstbit [from 0x0101 symtab]
+0066: 8d bc 42 00 4a 40 40 00 f7                   jf        leader_can_see(74) -> 00F7
+006F: 22 57 68 79 2c 20 54 69 6d 6f 6e 2c …+45     text      "\"Why, Timon, good to see you again.  Who's your friend?\"*"
+00A8: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+00AF: 22 4a 6f 70 70 61 2e 20 20 41 6c 6c …+20     text      "\"Joppa.  Allow me to introduce ^"
+00CF: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+00D6: 2e 22 2a                                     text      ".\"*"
+00D9: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+00DE: 22 44 65 6c 69 67 68 74 65 64 2c 20 …+10     text      "\"Delighted, I'm sure.\""
+00F4: 88 01 31                                     goto      -> 0131
+00F7:>22 57 68 6f 20 61 72 65 20 79 6f 75 …+24     text      "\"Who are you, skulking around here?\""
+011B: 8f 2a 00                                     prompt    "*"
+011E: 22 48 6d 2c 20 6c 69 6b 65 6c 79 20 …+7      text      "\"Hm, likely story.\""
+0131:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0138: 88 01 53                                     goto      -> 0153
+013B:>22 47 6f 6f 64 20                            text      "\"Good "
+0141: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0148: 2c 20 5e                                     text      ", ^"
+014B: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0152: 22                                           text      "\""
+0153:>8e                                           input       ; read a line into the input buffer
+0154: 90 6e 61 6d 65 00 01 8e                      match     name else -> 018E
+015C: 22 49 20 61 6c 72 65 61 64 79 20 74 …+28     text      "\"I already told you - I'm called Joppa.\""
+0184: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+018B: 88 01 53                                     goto      -> 0153
+018E:>90 6a 6f 62 00 01 d9                         match     job else -> 01D9
+0195: 22 49 20 61 73 73 69 73 74 20 4d 69 …+53     text      "\"I assist Mistress Larisa, and help protect her in these @ruins.\""
+01D6: 88 01 53                                     goto      -> 0153
+01D9:>90 6c 61 72 69 00 02 16                      match     lari else -> 0216
+01E1: 22 4c 6f 72 64 20 4d 79 75 73 20 61 …+38     text      "\"Lord Myus assigned me to assist and protect her.\""
+0213: 88 01 53                                     goto      -> 0153
+0216:>90 62 79 65 00 02 35                         match     bye else -> 0235
+021D: 22 59 65 61 68 2c 20 77 68 61 74 65 …+5      text      "\"Yeah, whatever.\""
+022E: 8b 41 00 40                                  return    0
+; ---- dead code 0232-0235: no dictionary entry, jump, pointer or call reaches it ----
+0232:x88 01 53                                     goto      -> 0153
+0235:>90 6d 79 75 73 00 02 7a                      match     myus else -> 027A
+023D: 22 4c 6f 72 64 20 4d 79 75 73 20 69 …+46     text      "\"Lord Myus is a fine ruler, and very nice person as well.\""
+0277: 88 01 53                                     goto      -> 0153
+027A:>90 72 75 69 6e 00 02 a7                      match     ruin else -> 02A7
+0282: 22 4c 6f 6f 6b 20 61 72 6f 75 6e 64 …+22     text      "\"Look around you - are you blind?\""
+02A4: 88 01 53                                     goto      -> 0153
+02A7:>90 2a 00 02 ea                               match     * else -> 02EA
+02AC: 8d 9f 08 04 30 40 5e 40 02 e7                jf        !R0804(A30) -> 02E7
+02B6: 8d 9f 08 01 30 40 5e 40 02 e7                jf        !R0801(A30) -> 02E7
+02C0: 48 65 20 6c 6f 6f 6b 73 20 61 74 20 …+27     text      "He looks at you as if you are an idiot."
+02E7:>88 01 53                                     goto      -> 0153
+02EA:>88 01 53                                     goto      -> 0153
+; ---- dead code 02ED-02F1: no dictionary entry, jump, pointer or call reaches it ----
+02ED:x8b 41 00 40                                  return    0
+02F1: a0 03 98 5b 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

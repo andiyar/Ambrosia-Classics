@@ -1,0 +1,34 @@
+; segment 1079  page 10  class 0x00 (prop) type 121 tile-name "pail of water" (tool join F000/F004)
+; kind class  length 130 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0056  methods: sel15/take_drop_15@0008, sel9/use@0016, sel10/use_on@003E
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 56                                        .hdr      dictionary offset = 0056
+0002: 90 01 00 00 00 30                            .array    array[1] = [48]
+
+; ==== method sel15/take_drop_15 @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0016 ====
+0016: 81 01 00                                     frame     args=1 locals=0
+0019: 8d 48 13 40 00 33                            jf        G13:g13_bool -> 0033
+001F: 50 6f 75 72 20 77 61 74 65 72 20 6f …+8      text      "Pour water on what?\n"
+0033:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 003A-003E: no dictionary entry, jump, pointer or call reaches it ----
+003A:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @003E ====
+003E: 81 02 00                                     frame     args=2 locals=0
+0041: 8d 9f 0e 0a 31 40 40 00 52                   jf        R0E0A(A31) -> 0052
+004A: 86 04 30 40 42 00 78 40                      setfield  A30.f04:type = 120
+0052:>8b 41 00 40                                  return    0
+0056: a0 07 50 00 ff ff 00 27 90 79 00 02 …+32     .dict     dict[7] {9/use: @0016, 10/use_on: @003E, 15/take_drop_15: @0008, 36/p_weight: @0002}

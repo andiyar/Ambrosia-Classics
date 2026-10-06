@@ -1,0 +1,46 @@
+; segment 1A27  page 1A  class 0x50 (spell) type 39
+; kind class  length 333 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00FD  methods: sel2/name@0008, sel8/search@0022, sel9/use@0071, sel10/use_on@00A8
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 fd                                        .hdr      dictionary offset = 00FD
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 43 68 61 72 6d 00 40                   return    "Charm"
+; ---- dead code 0014-0018: no dictionary entry, jump, pointer or call reaches it ----
+0014:x8b 41 00 40                                  return    0
+0018: 90 02 00 00 00 06 50 00 ff ff                .array    array[2] = [6, Nil]
+
+; ==== method sel8/search @0022 ====
+0022: 81 01 00                                     frame     args=1 locals=0
+0025: 54 68 69 73 20 73 70 65 6c 6c 20 77 …+60     text      "This spell will cause another person to consider you a friend and ally.\n"
+006D: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0071 ====
+0071: 81 01 00                                     frame     args=1 locals=0
+0074: 8d 9f 0e a1 30 62 0b 41 06 41 12 40 …+3      jf        R0EA1(A30.f0B:loc16, 6, 18) -> 00A4
+0083: 8d 48 13 40 00 a0                            jf        G13:g13_bool -> 00A0
+0089: 43 61 73 74 20 27                            text      "Cast '"
+008F: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0095: 27 20 6f 6e 20 77 68 6f 6d 3f 0a             text      "' on whom?\n"
+00A0:>8b 41 04 40                                  return    4
+00A4:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A8 ====
+00A8: 81 02 00                                     frame     args=2 locals=0
+00AB: 8d 9f 0f 13 31 40 40 00 d8                   jf        R0F13(A31) -> 00D8  ; R0F13 = inparty [from 0x0101 symtab]
+00B4: 54 68 65 79 20 61 72 65 20 61 6c 72 …+21     text      "They are already on your side...\n"
+00D5: 88 00 f9                                     goto      -> 00F9
+00D8:>e1 48 09 63 00 43 00 00 00 f0 40             builtin   show_magic(as_prop(G09:speaker), 240)
+00E3: d3 41 2c 48 09 62 01 48 09 62 02 40          builtin   positional_sound(44, G09:speaker.f01:x, G09:speaker.f02:y)
+00EF: c3 31 41 11 43 00 00 01 f4 40                builtin   temp_ability(A31, 17, 500)
+00F9:>8b 41 00 40                                  return    0
+00FD: a0 0d 50 00 ff ff 07 c3 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0022, 9/use: @0071, 10/use_on: @00A8, 51: @0018, 54: @0002}

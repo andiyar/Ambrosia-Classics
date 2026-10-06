@@ -1,0 +1,26 @@
+; segment 0EB8  page 0E  routine
+; kind routine  length 115 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 03                                     frame     args=4 locals=3
+0003: 82 31 9d 40 30 31 32 40 40                   set       A31 = A30.sel64(A31, A32)
+000C: 8d 31 41 00 50 40 00 17                      jf        (A31 <= 0) -> 0017
+0014: 88 00 6f                                     goto      -> 006F
+0017:>82 00 33 63 40 40                            set       L00 = as_char(A33)
+001D: 82 01 30 63 40 40                            set       L01 = as_char(A30)
+0023: 82 02 01 62 1b 00 62 1b 4b 41 01 4a …+1      set       L02 = ((L01.f1B:level - L00.f1B:level) + 1)
+0030: 9d 41 30 31 32 40                            send      A30.sel65(A31, A32)
+0036: 8d 00 01 5c 40 00 6f                         jf        (L00 && L01) -> 006F
+003D: 8d 02 41 00 51 40 00 5e                      jf        (L02 > 0) -> 005E
+0045: 8d 31 02 50 40 00 55                         jf        (A31 <= L02) -> 0055
+004C: 9f 0e 8b 00 31 40                            call      R0E8B(L00, A31)
+0052: 88 00 5b                                     goto      -> 005B
+0055:>9f 0e 8b 00 02 40                            call      R0E8B(L00, L02)
+005B:>88 00 6f                                     goto      -> 006F
+005E:>8d 31 41 00 02 4b 51 40 00 6f                jf        (A31 > (0 - L02)) -> 006F
+0068: 9f 0e 8b 00 41 01 40                         call      R0E8B(L00, 1)
+006F:>8b 41 00 40                                  return    0

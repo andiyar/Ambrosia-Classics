@@ -1,0 +1,24 @@
+; segment 0981  page 09  routine: combat-AI scenario action 1 (ai-scripts.md 5)
+; kind routine  length 122 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 02                                     frame     args=3 locals=2
+0003: 8d 9f 09 01 30 31 32 40 40 00 76             jf        R0901(A30, A31, A32) -> 0076
+000E: 82 00 ad 41 1c 41 00 30 41 00 32 41 …+7      set       L00 = as_spell(create_prop(28, 0, A30, 0, A32, 0, 0))
+0021: 82 01 00 61 36 00 40                         set       L01 = prop(L00, sel54, 0)
+0028: 8d 01 41 03 54 01 41 05 54 5d 40 00 …+1      jf        ((L01 == 3) || (L01 == 5)) -> 0042
+0035: f0 30 41 4b 32 41 00 41 00 40                builtin   queue_activity(A30, 75, A32, 0, 0)
+003F: 88 00 73                                     goto      -> 0073
+0042:>8d 01 41 01 54 40 00 6a                      jf        (L01 == 1) -> 006A
+004A: 8d 9f 0e 8c 30 31 40 41 02 51 40 00 …+1      jf        (R0E8C(A30, A31) > 2) -> 005E
+0057: a7 00 40                                     builtin   delete_prop(L00)
+005A: 8b 41 00 40                                  return    0
+005E:>f0 30 41 4c 32 41 00 31 40                   builtin   queue_activity(A30, 76, A32, 0, A31)
+0067: 88 00 73                                     goto      -> 0073
+006A:>f0 30 41 4c 32 41 00 31 40                   builtin   queue_activity(A30, 76, A32, 0, A31)
+0073:>a7 00 40                                     builtin   delete_prop(L00)
+0076:>8b 41 00 40                                  return    0

@@ -1,0 +1,22 @@
+; segment 0219  page 02  string table
+; kind strtab  length 2879 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 0d 82 19 00 36 82 19 00 37 82 19 …+42     .strtab   string table, 13 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8219×13)
+0036: 00                                           .string   [0] ""
+0037: 44 20 2d 0a 4b 69 64 6e 61 70 70 69 …+65     .string   [1] "D -\nKidnapping successful\nWill send ransom note when you say we are ready\n-E"
+0084: 54 72 65 61 73 75 72 65 20 69 73 20 …+100    .string   [2] "Treasure is safe - buried near bend in river.  Trees planted 4 paces E, 7 paces W, 8 paces N and 4 paces south."
+00F4: 4d 79 20 4c 69 65 67 65 3a 0a 48 6f …+143    .string   [3] "My Liege:\nHouse Comana has gained popular support in Cademia - House Attis not happy, but I detect no foul play.  Will continue to investigate.\n--Berrosus"
+018F: 4e 6f 74 65 20 74 6f 20 73 65 6c 66 …+54     .string   [4] "Note to self - Take steps to stop nosy people from reading notes."
+01D1: 2d 2d 57 69 6e 65 20 43 6f 6e 74 72 …+163    .string   [5] "--Wine Contract--\nApis agrees to buy from .................... wine in the quantity of ......... barrels, at a price of 100 oboloi per barrel, to be deliverable upon payment."
+0280: 41 65 61 63 75 73 2c 20 4f 2e 54 2e …+138    .string   [6] "Aeacus, O.T.H.\nDanger to the Outer Temple - Tyrant moves!  The OT can fall, but we must preserve the Inner Brotherhood at all costs.\n--Tavara, I.B.H."
+0316: 48 65 72 65 27 73 20 79 6f 75 72 20 …+626    .string   [7] "Here's your latest supply of kesh, but we need more, so increase harvesting of harpy eggs - you must make your weekly quotas.  Keep rationing your men, even when they are in camp - we don't want Alaric or the Mages to detect us.  Once they are addicted, however, you can reduce to quarter doses to extend the supply yet maintain the protection.  Despite minor setbacks of late (especially that idiot Antiphus), our plan still moves ahead.  Make sure to impress that the price of failure is worse than any nightmare they can have (our allies will see to that), but success will reward them with more wealth than they know what to do with."
+0594: 57 65 6c 63 6f 6d 65 2c 20 48 75 6d …+521    .string   [8] "Welcome, Human, to my little test for you.  It is not hard to pass, and will give you some of the skills you need to survive (though you may feel like a creature in a cage) - I hope that Omen did not startle you.  His appearance is strange, but don't let that deceive you. \n\nYou have already passed the first part of the test - you have read this note.  Next, you must pull that nearby lever to open the gate, leading you to the next room.  There you will find a locked trapdoor.  Find the key, open it, and then go down the ladder."
+07A9: 53 6f 72 72 79 2c 20 74 68 65 20 6b …+251    .string   [9] "Sorry, the key is not in this chest, but good try.  Look to your south - notice anything interesting about the wall?  Try using it...\n\nOh, you might want to use one of the torches in this chest, it will provide some light for you if you wield it in your hands..."
+08B0: 41 68 2c 20 76 65 72 79 20 67 6f 6f …+145    .string   [10] "Ah, very good - very observant, finding that second secret door, but not all discoveries like this lead to reward, unfortunately.  However, this one does..."
+094D: 54 68 69 73 20 72 6f 6f 6d 20 69 73 …+273    .string   [11] "This room is trickier - the door is locked by a spell.  You have but once chance to get this one open - take that strange looking object, what you would call a bomb.  Pick it up, use it to light it, and then toss it so it lands right next to the door.  Stand back and let time pass..."
+0A6A: 4e 6f 74 20 61 6c 6c 20 6c 65 76 65 …+201    .string   [12] "Not all levers are easily found - perhaps if you re-arranged things a bit here... (don't worry - all the crates are empty so it is easy for you to move them, and you don't need to waste your time searching them!)"

@@ -1,0 +1,18 @@
+; segment 0904  page 09  routine: combat-AI scenario test 4 (ai-scripts.md 5)
+; kind routine  length 69 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 03                                     frame     args=3 locals=3
+0003: 82 00 cc 43 10 00 00 01 41 00 31 40 …+1      set       L00 = iterate_equipped(&L01, 0, A31)
+0010:>8c cc 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_equipped(&L01, 1) -> 003A
+001D: 8d 00 60 2a 40 00 2b                         jf        has(L00, sel42) -> 002B
+0024: 8b 43 50 00 00 01 40                         return    True
+002B:>82 00 cc 43 10 00 00 01 41 02 40 40          set       L00 = iterate_equipped(&L01, 2)
+0037: 88 00 10                                     goto      -> 0010
+003A:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0041-0045: no dictionary entry, jump, pointer or call reaches it ----
+0041:x8b 41 00 40                                  return    0

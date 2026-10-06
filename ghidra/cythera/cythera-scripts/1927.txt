@@ -1,0 +1,54 @@
+; segment 1927  page 19  class 0x48 (cls48) id 39
+; kind class  length 296 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0114  methods: sel0/init@0002
+; properties: sel59/p3B
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 14                                        .hdr      dictionary offset = 0114
+
+; ==== method sel0/init @0002 ====
+0002: 81 02 02                                     frame     args=2 locals=2
+0005: 8d ac 41 00 41 02 40 41 01 54 40 00 …+1      jf        (random(0, 2) == 1) -> 0042
+0012: 82 00 45 00 12 90 04 00 00 00 6c 00 …+12     set       L00 = blk@0017
+      ; 0x45 inline block 0017-0029 (18 bytes):
+      0017: 90 04                            .array[4]
+        [0] 108
+        [1] 108
+        [2] 109
+        [3] 110
+002A: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+0042:>8d ac 41 00 41 03 40 41 01 54 40 00 …+1      jf        (random(0, 3) == 1) -> 007B
+004F: 82 00 45 00 0e 90 03 00 00 00 70 00 …+8      set       L00 = blk@0054
+      ; 0x45 inline block 0054-0062 (14 bytes):
+      0054: 90 03                            .array[3]
+        [0] 112
+        [1] 112
+        [2] 113
+0063: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+007B:>8d ac 41 00 41 02 40 41 00 54 40 00 …+1      jf        (random(0, 2) == 0) -> 00B4
+0088: 82 00 45 00 0e 90 03 00 00 00 6a 00 …+8      set       L00 = blk@008D
+      ; 0x45 inline block 008D-009B (14 bytes):
+      008D: 90 03                            .array[3]
+        [0] 106
+        [1] 106
+        [2] 107
+009C: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+00B4:>82 00 45 00 1a 90 06 00 00 00 61 00 …+20     set       L00 = blk@00B9
+      ; 0x45 inline block 00B9-00D3 (26 bytes):
+      00B9: 90 06                            .array[6]
+        [0] 97
+        [1] 98
+        [2] 95
+        [3] 99
+        [4] 99
+        [5] 99
+00D4: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+00EC: 8b 41 00 40                                  return    0
+00F0: 90 01 99 27 00 f6                            .array    array[1] = [@00F6]
+00F6: 90 07 00 00 00 00 00 00 00 00 00 00 …+18     .array    array[7] = [0, 0, 0, 0, 0, 0, 0]
+0114: a0 03 99 27 00 02 00 00 50 00 ff ff …+8      .dict     dict[3] {0/init: @0002, 59/p3B: @00F0}

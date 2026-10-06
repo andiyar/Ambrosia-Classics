@@ -1,0 +1,50 @@
+; segment 1856  page 18  class 0x40 (char) id 86 name "Asius" (string table 0201)
+; kind class  length 441 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01A5  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 a5                                        .hdr      dictionary offset = 01A5
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 41 20 76 65 72 79 20 74 69 6e 79 20 …+37     text      "A very tiny man, with a grating voice greets you."
+0036: 8d 9f 0f 02 30 41 07 40 40 00 5d             jf        R0F02(A30, 7) -> 005D  ; R0F02 = tstbit [from 0x0101 symtab]
+0041: 22 47 6f 6f 64 20                            text      "\"Good "
+0047: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+004E: 2c 20 5e                                     text      ", ^"
+0051: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0058: 21 22                                        text      "!\""
+005A: 88 00 98                                     goto      -> 0098
+005D:>22 41 68 21 20 59 6f 75 20 6d 75 73 …+6      text      "\"Ah! You must be ^"
+006F: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0076: 20 2d 20 49 27 6d 20 41 73 69 75 73 …+22     text      " - I'm Asius, the majordomo here.\""
+0098:>8e                                           input       ; read a line into the input buffer
+0099: 90 6e 61 6d 65 00 00 f8                      match     name else -> 00F8
+00A1: 22 46 6f 72 67 6f 74 20 61 6c 72 65 …+65     text      "\"Forgot already?  Well, I'm a minor character, after all.  My name is Asius.\""
+00EE: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00F5: 88 00 98                                     goto      -> 0098
+00F8:>90 6a 6f 62 00 01 36                         match     job else -> 0136
+00FF: 22 4d 61 6a 6f 72 64 6f 6d 6f 20 74 …+40     text      "\"Majordomo to Judge Berossus, a most honorable job.\""
+0133: 88 00 98                                     goto      -> 0098
+0136:>90 62 79 65 00 01 59                         match     bye else -> 0159
+013D: 22 46 61 72 65 77 65 6c 6c 2c 20 5e          text      "\"Farewell, ^"
+0149: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0150: 2e 22                                        text      ".\""
+0152: 8b 41 00 40                                  return    0
+; ---- dead code 0156-0159: no dictionary entry, jump, pointer or call reaches it ----
+0156:x88 00 98                                     goto      -> 0098
+0159:>90 2a 00 01 9e                               match     * else -> 019E
+015E: 8d 9f 08 0e 30 40 5e 40 01 9b                jf        !R080E(A30) -> 019B
+0168: 8d 9f 08 01 30 40 5e 40 01 9b                jf        !R0801(A30) -> 019B
+0172: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+29     text      "\"You'll have to look elsewhere for that.\""
+019B:>88 00 98                                     goto      -> 0098
+019E:>88 00 98                                     goto      -> 0098
+; ---- dead code 01A1-01A5: no dictionary entry, jump, pointer or call reaches it ----
+01A1:x8b 41 00 40                                  return    0
+01A5: a0 03 98 56 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

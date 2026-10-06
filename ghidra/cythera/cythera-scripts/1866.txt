@@ -1,0 +1,68 @@
+; segment 1866  page 18  class 0x40 (char) id 102 name "Glaucus" (string table 0201)
+; kind class  length 1772 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @06D8  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 d8                                        .hdr      dictionary offset = 06D8
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 77 6f …+45     text      "You see a worn and broken looking man, staring vacently.*"
+003E: 8d 9f 0f 02 30 41 07 40 40 00 5f             jf        R0F02(A30, 7) -> 005F  ; R0F02 = tstbit [from 0x0101 symtab]
+0049: 22 52 75 69 6e 65 64 2e 20 20 49 27 …+10     text      "\"Ruined.  I'm ruined.\""
+005F:>8e                                           input       ; read a line into the input buffer
+0060: 90 6e 61 6d 65 00 00 81                      match     name else -> 0081
+0068: 22 49 20 61 6d 20 47 6c 61 75 63 75 …+3      text      "\"I am Glaucus.\""
+0077: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+007E: 88 00 5f                                     goto      -> 005F
+0081:>90 62 79 65 00 00 9a                         match     bye else -> 009A
+0088: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+0093: 8b 41 00 40                                  return    0
+; ---- dead code 0097-009A: no dictionary entry, jump, pointer or call reaches it ----
+0097:x88 00 5f                                     goto      -> 005F
+009A:>90 63 6f 6e 74 00 00 e8                      match     cont else -> 00E8
+00A2: 22 49 20 63 61 6e 27 74 20 63 6f 6e …+55     text      "\"I can't contract out any of my stores since they are all @ruined.\""
+00E5: 88 00 5f                                     goto      -> 005F
+00E8:>90 6a 6f 62 00 01 3e                         match     job else -> 013E
+00EF: 22 49 20 72 75 6e 20 74 68 65 20 4e …+64     text      "\"I run the North Shore @Vineyard - I used to make the best @wine in Cythera\""
+013B: 88 00 5f                                     goto      -> 005F
+013E:>90 77 69 6e 65 00 01 be                      match     wine else -> 01BE
+0146: 22 49 20 75 73 65 20 74 6f 20 6d 61 …+105    text      "\"I use to make the best in Cythera, but all my stores are @ruined.\"*\"Now I guess @Borus get's the profits this year.\""
+01BB: 88 00 5f                                     goto      -> 005F
+01BE:>90 62 6f 72 75 00 02 9f                      match     boru else -> 029F
+01C6: 22 42 6f 72 75 73 20 72 75 6e 73 20 …+202    text      "\"Borus runs the Southland Vineyard - it is between Cademia and Kosha.\"*\"We might be rivals, but we're on good enough terms.\"*\"I hope whatever happened here doesn't strike there as well - it would be a catastrophe!\""
+029C: 88 00 5f                                     goto      -> 005F
+029F:>90 76 69 6e 79 00 02 f9                      match     viny else -> 02F9
+02A7: 22 54 68 69 73 20 79 65 61 72 73 20 …+67     text      "\"This years crop looks good, but I don't know if I'll be able to make @wine...\""
+02F6: 88 00 5f                                     goto      -> 005F
+02F9:>90 72 75 69 6e 00 03 5e                      match     ruin else -> 035E
+0301: 22 49 20 64 6f 6e 27 74 20 75 6e 64 …+78     text      "\"I don't understand it - but all my stores have gone @sour - as well as this years @must.\""
+035B: 88 00 5f                                     goto      -> 005F
+035E:>90 6d 75 73 74 00 03 f3                      match     must else -> 03F3
+0366: 22 4d 75 73 74 20 69 73 20 66 65 72 …+126    text      "\"Must is fermenting wine - it sits in large vats for the initial fermentation.\"*\"The wine is then transfered to small urns while it ages.\""
+03F0: 88 00 5f                                     goto      -> 005F
+03F3:>90 73 6f 75 72 00 04 b6                      match     sour else -> 04B6
+03FB: 22 53 6f 75 72 20 61 73 20 76 69 6e …+172    text      "\"Sour as vinegar.  Now it's not worth squat.\"*\"I don't know what happened - wine can turn sour, but must?  That never happens.\"*\"One day fine - next @morning - sour.  As if by @magic.\""
+04B3: 88 00 5f                                     goto      -> 005F
+04B6:>90 6d 6f 72 6e 00 05 73                      match     morn else -> 0573
+04BE: 22 49 27 6c 6c 20 61 6c 77 61 79 73 …+166    text      "\"I'll always remember it, the smell of wine gone sour...\"*\"And, of course, salt air from a breeze off the coast.\"*\"My grapes seem to thrive on that sea air, surprisingly enough.\""
+0570: 88 00 5f                                     goto      -> 005F
+0573:>90 62 72 65 65 2c 61 69 72 00 06 18          match     bree,air else -> 0618
+057F: 22 4e 6f 77 20 74 68 61 74 20 79 6f …+138    text      "\"Now that you mention it, I don't remember a breeze so much as the smell, but I can't be sure.\"*\"Of course, the sea breeze usually comes in at night.\""
+0615: 88 00 5f                                     goto      -> 005F
+0618:>90 6d 61 67 69 00 06 bd                      match     magi else -> 06BD
+0620: 22 49 74 20 64 6f 65 73 6e 27 74 20 …+142    text      "\"It doesn't make any sense - the Magisterium is one of my best customers.\"*\"I've got nothing but respect for the Mages, but what else could explain this?\""
+06BA: 88 00 5f                                     goto      -> 005F
+06BD:>90 2a 00 06 d1                               match     * else -> 06D1
+06C2: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+06CE: 88 00 5f                                     goto      -> 005F
+06D1:>88 00 5f                                     goto      -> 005F
+; ---- dead code 06D4-06D8: no dictionary entry, jump, pointer or call reaches it ----
+06D4:x8b 41 00 40                                  return    0
+06D8: a0 03 98 66 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

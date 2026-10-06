@@ -1,0 +1,78 @@
+; segment 1869  page 18  class 0x40 (char) id 105 name "Pelops" (string table 0201)
+; kind class  length 866 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @034E  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 4e                                        .hdr      dictionary offset = 034E
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 6f …+35     text      "You see a poor but content looking man.\n*\"Good "
+0034: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+003B: 2c 20                                        text      ", "
+003D: 8d 9f 0f 02 30 41 07 40 40 00 51             jf        R0F02(A30, 7) -> 0051  ; R0F02 = tstbit [from 0x0101 symtab]
+0048: 66 72 69 65 6e 64                            text      "friend"
+004E: 88 00 59                                     goto      -> 0059
+0051:>73 74 72 61 6e 67 65 72 2e 22                text      "stranger.\""  ; shares its tail with text @0059
+0059:>2e 22                                        text      ".\""
+005B:>8e                                           input       ; read a line into the input buffer
+005C: 90 6e 61 6d 65 00 00 c8                      match     name else -> 00C8
+0064: 22 49 20 61 6d 20 50 65 6c 6f 70 73 …+3      text      "\"I am Pelops.  "
+0073: 8d 9f 0f 02 30 41 07 40 40 00 93             jf        R0F02(A30, 7) -> 0093  ; R0F02 = tstbit [from 0x0101 symtab]
+007E: 57 65 27 76 65 20 6d 65 74 20 62 65 …+6      text      "We've met before.\""
+0090: 88 00 be                                     goto      -> 00BE
+0093:>41 6e 64 20 79 6f 75 72 20 6e 61 6d …+6      text      "And your name is?\""
+00A5: 8f 2a 00                                     prompt    "*"
+00A8: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+10     text      "\"Pleased to meet you.\""
+00BE:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00C5: 88 00 5b                                     goto      -> 005B
+00C8:>90 70 65 6c 6f 00 00 d9                      match     pelo else -> 00D9
+00D0: 22 59 65 73 3f 22                            text      "\"Yes?\""
+00D6: 88 00 5b                                     goto      -> 005B
+00D9:>90 6a 6f 62 00 01 2c                         match     job else -> 012C
+00E0: 22 49 27 6d 20 61 20 66 61 72 6d 65 …+61     text      "\"I'm a farmer - mostly I grow @flax.  My @wife takes care of the @goats.\""
+0129: 88 00 5b                                     goto      -> 005B
+012C:>90 67 6f 61 74 00 01 65                      match     goat else -> 0165
+0134: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+34     text      "\"You'll have to talk to Alcmena about them...\""
+0162: 88 00 5b                                     goto      -> 005B
+0165:>90 62 79 65 00 01 7e                         match     bye else -> 017E
+016C: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+0177: 8b 41 00 40                                  return    0
+; ---- dead code 017B-017E: no dictionary entry, jump, pointer or call reaches it ----
+017B:x88 00 5b                                     goto      -> 005B
+017E:>90 66 6c 61 78 00 02 7d                      match     flax else -> 027D
+0186: 22 46 6c 61 78 20 69 73 20 61 20 70 …+122    text      "\"Flax is a plant whose fibers are used to make thread and thus cloth.\"*\"You interested in buying a bale?  It is only 7 oboloi a bale.\""
+020C: 8f 79 6e 00                                  prompt    "yn"
+0210: 90 79 00 02 46                               match     y else -> 0246
+0215: 9f 0e a5 44 46 6c 61 78 00 45 00 1d …+37     call      R0EA5("Flax", blk@0221, 10, Nil)
+      ; 0x45 inline block 0221-023E (29 bytes):
+      0221: 90 01                            .array[1]
+        [0] @0227 ->
+          0227: 90 04                            .array[4]
+            [0] 162
+            [1] @0239 "Flax"
+            [2] 7
+            [3] 1
+0246:>90 6e 00 02 7a                               match     n else -> 027A
+024B: 22 57 65 6c 6c 2c 20 69 66 20 79 6f …+35     text      "\"Well, if you change your mind, let me know...\""
+027A:>88 00 5b                                     goto      -> 005B
+027D:>90 61 6c 63 6d 2c 77 69 66 65 00 02 …+1      match     alcm,wife else -> 02B0
+028A: 22 4d 79 20 77 69 66 65 20 41 6c 63 …+23     text      "\"My wife Alcmena is quite a catch.\""
+02AD: 88 00 5b                                     goto      -> 005B
+02B0:>90 73 6f 6e 2c 63 68 69 6c 00 02 ff          match     son,chil else -> 02FF
+02BC: 22 4f 75 72 20 73 6f 6e 20 41 73 74 …+52     text      "\"Our son Asteropaeus is a quiet child, but farm life is lonely.\""
+02FC: 88 00 5b                                     goto      -> 005B
+02FF:>90 2a 00 03 47                               match     * else -> 0347
+0304: 8d 9f 08 01 30 40 5e 40 03 44                jf        !R0801(A30) -> 0344
+030E: 22 53 6f 72 72 79 2c 20 6d 79 20 6b …+42     text      "\"Sorry, my knowlege doesn't go much beyond this farm.\""
+0344:>88 00 5b                                     goto      -> 005B
+0347:>88 00 5b                                     goto      -> 005B
+; ---- dead code 034A-034E: no dictionary entry, jump, pointer or call reaches it ----
+034A:x8b 41 00 40                                  return    0
+034E: a0 03 98 69 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

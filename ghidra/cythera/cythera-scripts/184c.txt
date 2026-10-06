@@ -1,0 +1,90 @@
+; segment 184C  page 18  class 0x40 (char) id 76 name "Bryaxis" (string table 0201)
+; kind class  length 1867 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0737  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 07 37                                        .hdr      dictionary offset = 0737
+0002: 90 01 98 4c 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 59 6f 75 20 73 65 65 20 61 20 6b 69 …+50     text      "You see a kind looking elderly man, with a surene expression.*"
+007B: 8d 9f 0f 02 42 00 4c 41 07 40 40 00 …+1      jf        R0F02(76, 7) -> 00B0  ; R0F02 = tstbit [from 0x0101 symtab]
+0088: 22 41 68 2c 20 67 6f 6f 64 20 74 6f …+16     text      "\"Ah, good to see you again, "
+00A4: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+00AB: 2e 22                                        text      ".\""
+00AD: 88 00 f7                                     goto      -> 00F7
+00B0:>22 49 20 61 6d 20 42 72 79 61 78 69 …+16     text      "\"I am Bryaxis, and you are?\""
+00CC: 8f 2a 00                                     prompt    "*"
+00CF: 22 50 6c 65 61 73 65 20 74 6f 20 6d …+10     text      "\"Please to meet you, ^"
+00E5: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+00EC: 2e 22                                        text      ".\""
+00EE: 9f 0f 00 42 00 4c 41 07 40                   call      R0F00(76, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00F7:>82 00 41 00 40                               set       L00 = 0
+00FC:>8e                                           input       ; read a line into the input buffer
+00FD: 90 6a 6f 62 00 01 57                         match     job else -> 0157
+0104: 22 49 20 61 6d 20 61 20 4d 61 73 74 …+68     text      "\"I am a Master Mage - I am researching the connection between @music and magic.\""
+0154: 88 00 fc                                     goto      -> 00FC
+0157:>90 6e 61 6d 65 00 01 7f                      match     name else -> 017F
+015F: 22 49 20 61 6d 20 4d 61 73 74 65 72 …+10     text      "\"I am Master Bryaxis.\""
+0175: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+017C: 88 00 fc                                     goto      -> 00FC
+017F:>90 62 72 79 61 00 01 90                      match     brya else -> 0190
+0187: 22 59 65 73 3f 22                            text      "\"Yes?\""
+018D: 88 00 fc                                     goto      -> 00FC
+0190:>90 6d 75 73 69 00 02 38                      match     musi else -> 0238
+0198: 22 4d 75 73 69 63 20 69 73 20 6d 61 …+140    text      "\"Music is magic, or at least so I say.\"*\"Seriously though, I've been working on integrating music into magic, though I've only had one @success so far.\""
+0230: 82 00 41 01 40                               set       L00 = 1
+0235: 88 00 fc                                     goto      -> 00FC
+0238:>8d 00 41 00 51 40 04 af                      jf        (L00 > 0) -> 04AF
+0240: 90 73 75 63 63 00 03 ee                      match     succ else -> 03EE
+0248: 22 49 74 20 69 73 20 61 20 73 70 65 …+402    text      "\"It is a special music recognition spell.  Sort of an accident, really, but it is usefull when combined with something like a lock.\"*\"Basically, it allows one to create a @lock that you open by playing a certain tune.\"*\"There were some problems, however.  The biggest problem was that you needed to play the exact tune with a specific instrument.\"*\"However, despite those problems, I still managed to @sell a few.\""
+03E6: 82 00 41 02 40                               set       L00 = 2
+03EB: 88 00 fc                                     goto      -> 00FC
+03EE:>90 6c 6f 63 6b 00 04 51                      match     lock else -> 0451
+03F6: 22 49 74 20 61 70 70 65 61 72 73 20 …+76     text      "\"It appears like an ordinary lock, except you have to play a specific @tune to open it.\""
+044E: 88 00 fc                                     goto      -> 00FC
+0451:>90 74 75 6e 65 00 04 af                      match     tune else -> 04AF
+0459: 22 49 74 20 63 61 6e 20 62 65 20 61 …+71     text      "\"It can be anything of a few notes - something simple, perhaps ones favorite song.\""
+04AC: 88 00 fc                                     goto      -> 00FC
+04AF:>8d 00 41 01 51 40 05 a8                      jf        (L00 > 1) -> 05A8
+04B7: 90 73 65 6c 6c 00 05 a8                      match     sell else -> 05A8
+04BF: 22 49 20 68 61 76 65 6e 27 74 20 6d …+201    text      "\"I haven't made any in years.  The last one I sold was Myus of House Kosha, who was going to give to his now late father as a present.\"*\"Even got my friend, the famous bard @Demodocus, to encode the opening tune.\""
+0594: 8d dc 41 04 40 41 07 54 40 05 a5             jf        (get_variable(4) == 7) -> 05A5
+059F: dd 41 04 41 06 40                            builtin   set_variable(4, 6)
+05A5:>88 00 fc                                     goto      -> 00FC
+05A8:>90 62 79 65 00 05 d5                         match     bye else -> 05D5
+05AF: 22 50 6c 65 61 73 65 20 73 74 6f 70 …+19     text      "\"Please stop back again later!\""
+05CE: 8b 41 00 40                                  return    0
+; ---- dead code 05D2-05D5: no dictionary entry, jump, pointer or call reaches it ----
+05D2:x88 00 fc                                     goto      -> 00FC
+05D5:>90 64 65 6d 6f 00 06 e7                      match     demo else -> 06E7
+05DD: 22 44 65 6d 6f 64 6f 63 75 73 20 69 …+52     text      "\"Demodocus is one of my best friends, and a master of the lyre.\""
+061D: 8d dc 41 04 40 41 03 54 40 06 6d             jf        (get_variable(4) == 3) -> 066D
+0628: 2a 22 48 65 20 6a 75 73 74 20 72 65 …+54     text      "*\"He just recently left Cademia, I believe he was going to Kosha.\""
+066A: 88 06 e4                                     goto      -> 06E4
+066D:>8d dc 41 04 40 41 05 54 40 06 e4             jf        (get_variable(4) == 5) -> 06E4
+0678: 8d bc 42 00 6d 40 40 06 c1                   jf        leader_can_see(109) -> 06C1
+0681: a4 42 00 6d 41 01 40                         builtin   show_portrait(109, 1)
+0688: 22 50 65 72 68 61 70 73 20 6d 61 73 …+37     text      "\"Perhaps master is a bit too much, good friend.\"*"
+06B9: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+06BE: 88 06 e4                                     goto      -> 06E4
+06C1:>2a 22 48 65 27 73 20 61 63 74 75 61 …+23     text      "*\"He's actually in town currently.\""
+06E4:>88 00 fc                                     goto      -> 00FC
+06E7:>90 2a 00 07 30                               match     * else -> 0730
+06EC: 8d 9f 08 08 30 40 5e 40 07 2d                jf        !R0808(A30) -> 072D
+06F6: 8d 9f 08 0e 30 40 5e 40 07 2d                jf        !R080E(A30) -> 072D
+0700: 8d 9f 08 01 30 40 5e 40 07 2d                jf        !R0801(A30) -> 072D
+070A: 22 50 65 72 68 61 70 73 20 61 6e 6f …+23     text      "\"Perhaps another can help on that.\""
+072D:>88 00 fc                                     goto      -> 00FC
+0730:>88 00 fc                                     goto      -> 00FC
+; ---- dead code 0733-0737: no dictionary entry, jump, pointer or call reaches it ----
+0733:x8b 41 00 40                                  return    0
+0737: a0 03 98 4c 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

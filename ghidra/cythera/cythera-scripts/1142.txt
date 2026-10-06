@@ -1,0 +1,63 @@
+; segment 1142  page 11  class 0x00 (prop) type 322 tile-name "bomb" (tool join F000/F004)
+; kind class  length 572 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0210  methods: sel21/signal@0074, sel9/use@0174
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 10                                        .hdr      dictionary offset = 0210
+0002: 90 02 91 42 00 0c 91 42 00 62                .array    array[2] = [@000C, @0062]
+000C: 54 68 6f 73 65 20 61 72 65 20 6b 69 …+74     .string   "Those are kind of dangerous, so be careful with them, lest they blow up in your hand."
+0062: 90 01 00 00 00 06                            .array    array[1] = [6]
+0068: 90 01 00 00 00 1e                            .array    array[1] = [30]
+006E: 90 01 00 00 08 00                            .array    array[1] = [2048]
+
+; ==== method sel21/signal @0074 ====
+0074: 81 02 0c                                     frame     args=2 locals=12
+0077: 8d 31 43 00 00 01 04 54 40 01 70             jf        (A31 == 260) -> 0170
+0082: 82 00 30 62 01 40                            set       L00 = A30.f01:x
+0088: 82 01 30 62 02 40                            set       L01 = A30.f02:y
+008E: d3 41 27 00 01 40                            builtin   positional_sound(39, L00, L01)
+0094: e2 00 01 00 01 43 00 00 01 b3 41 10 …+5      builtin   missile_burst(L00, L01, L00, L01, 435, 16, 4, 0)
+00A5: 82 02 a0 43 10 00 00 03 41 00 41 00 …+4      set       L02 = iterate_range(&L03, 0, 0, 3)
+00B5:>8c a0 43 10 00 00 03 41 01 40 40 01 …+1      jt        iterate_range(&L03, 1) -> 016D
+00C2: 82 05 a0 43 10 00 00 06 41 00 41 00 …+4      set       L05 = iterate_range(&L06, 0, 0, 3)
+00D2:>8c a0 43 10 00 00 06 41 01 40 40 01 …+1      jt        iterate_range(&L06, 1) -> 015E
+00DF: 8d 02 41 01 54 05 41 01 54 5c 40 00 …+1      jf        ((L02 == 1) && (L05 == 1)) -> 00F4
+00EC: 82 08 41 64 40                               set       L08 = 100
+00F1: 88 01 0e                                     goto      -> 010E
+00F4:>8d 02 41 01 54 05 41 01 54 5d 40 01 …+1      jf        ((L02 == 1) || (L05 == 1)) -> 0109
+0101: 82 08 41 50 40                               set       L08 = 80
+0106: 88 01 0e                                     goto      -> 010E
+0109:>82 08 41 32 40                               set       L08 = 50
+010E:>82 09 cb 43 10 00 00 0a 41 00 00 02 …+12     set       L09 = iterate_props_at(&L0A, 0, ((L00 + L02) - 1), ((L01 + L05) - 1))
+0126:>8c cb 43 10 00 00 0a 41 01 40 40 01 …+1      jt        iterate_props_at(&L0A, 1) -> 014F
+0133: 9f 0e b8 09 08 41 08 43 50 00 ff ff …+1      call      R0EB8(L09, L08, 8, Nil)
+0140: 82 09 cb 43 10 00 00 0a 41 02 40 40          set       L09 = iterate_props_at(&L0A, 2)
+014C: 88 01 26                                     goto      -> 0126
+014F:>82 05 a0 43 10 00 00 06 41 02 40 40          set       L05 = iterate_range(&L06, 2)
+015B: 88 00 d2                                     goto      -> 00D2
+015E:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+016A: 88 00 b5                                     goto      -> 00B5
+016D:>a7 30 40                                     builtin   delete_prop(A30)
+0170:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0174 ====
+0174: 81 01 00                                     frame     args=1 locals=0
+0177: 8d 30 62 03 41 00 54 40 01 c1                jf        (A30.f03:frame == 0) -> 01C1
+0181: 54 68 65 20 66 75 73 65 20 69 73 20 …+11     text      "The fuse is now lit...\n"
+0198: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+019F: 8d 30 62 06 41 00 54 40 01 b3                jf        (A30.f06:quality == 0) -> 01B3
+01A9: 86 06 30 40 41 04 40                         setfield  A30.f06:quality = 4
+01B0: 88 01 be                                     goto      -> 01BE
+01B3:>86 06 30 40 30 62 06 41 7f 56 40             setfield  A30.f06:quality = (A30.f06:quality & 127)
+01BE:>88 02 0c                                     goto      -> 020C
+01C1:>86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+01C8: 54 68 65 20 66 75 73 65 20 69 73 20 …+42     text      "The fuse is extinguished, but is now a bit shorter...\n"
+01FE: 86 06 30 40 30 62 06 43 00 00 00 80 …+2      setfield  A30.f06:quality = (A30.f06:quality | 128)
+020C:>8b 41 00 40                                  return    0
+0210: a0 07 91 42 00 74 00 15 91 42 00 68 …+32     .dict     dict[7] {9/use: @0174, 21/signal: @0074, 36/p_weight: @0068, 39/p_typeflags27: @006E, 51: @0002}

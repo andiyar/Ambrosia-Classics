@@ -1,0 +1,23 @@
+; segment 0EB4  page 0E  routine
+; kind routine  length 96 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 02                                     frame     args=2 locals=2
+0003: 22 5e                                        text      "\"^"
+0005: 8a 31 40                                     print     A31
+0008: 20 63 61 6e 20 70 61 72 72 79 20 61 …+1      text      " can parry a "
+0015: 82 00 31 61 2f 00 40                         set       L00 = prop(A31, sel47, 0)
+001C: 82 01 45 00 2b 90 04 8e b4 00 33 8e …+37     set       L01 = blk@0021
+      ; 0x45 inline block 0021-004C (43 bytes):
+      0021: 90 04                            .array[4]
+        [0] @0033 "minor"
+        [1] @0039 "small"
+        [2] @003F "medium"
+        [3] @0046 "large"
+004D: 8a 01 00 41 01 4b 46 40                      print     L01[(L00 - 1)]
+0055: 20 62 6c 6f 77 2e 22                         text      " blow.\""
+005C: 8b 41 00 40                                  return    0

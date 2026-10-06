@@ -1,0 +1,35 @@
+; segment 1165  page 11  class 0x00 (prop) type 357 tile-name "fine wire" (tool join F000/F004)
+; kind class  length 316 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0128  methods: sel10/use_on@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 28                                        .hdr      dictionary offset = 0128
+
+; ==== method sel10/use_on @0002 ====
+0002: 81 02 03                                     frame     args=2 locals=3
+0005: 8d 31 48 05 54 40 01 24                      jf        (A31 == G05:leader) -> 0124
+000D: 8d 30 62 00 41 02 56 40 00 e6                jf        (A30.f00:kind & 2) -> 00E6
+0017: 43 6c 69 63 6b 21 0a 59 6f 75 27 76 …+53     text      "Click!\nYou've stepped on a fine wire that runs across the floor.\n"
+0058: 8d 30 62 06 40 00 64                         jf        A30.f06:quality -> 0064
+005F: c5 30 62 06 40                               builtin   send_signal(A30.f06:quality)
+0064:>82 00 c7 43 10 00 00 01 41 00 40 40          set       L00 = iterate_all_props(&L01, 0)
+0070:>8c c7 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_all_props(&L01, 1) -> 00E3
+007D: 8d 30 62 04 00 62 04 54 30 62 0d 00 …+15     jf        (((A30.f04:type == L00.f04:type) && (A30.f0D:mirror == L00.f0D:mirror)) && (A30.f06:quality == L00.f06:quality)) -> 00D4
+0098: 8d 30 62 0d 40 00 bb                         jf        A30.f0D:mirror -> 00BB
+009F: 8d 30 62 01 00 62 01 54 40 00 b8             jf        (A30.f01:x == L00.f01:x) -> 00B8
+00AA: 86 00 00 40 00 62 00 43 0f ff ff fd …+2      setfield  L00.f00:kind = (L00.f00:kind & -3)
+00B8:>88 00 d4                                     goto      -> 00D4
+00BB:>8d 30 62 02 00 62 02 54 40 00 d4             jf        (A30.f02:y == L00.f02:y) -> 00D4
+00C6: 86 00 00 40 00 62 00 43 0f ff ff fd …+2      setfield  L00.f00:kind = (L00.f00:kind & -3)
+00D4:>82 00 c7 43 10 00 00 01 41 02 40 40          set       L00 = iterate_all_props(&L01, 2)
+00E0: 88 00 70                                     goto      -> 0070
+00E3:>88 01 24                                     goto      -> 0124
+00E6:>59 6f 75 20 73 74 65 70 20 63 61 72 …+50     text      "You step carefully over a fine wire running across the floor.\n"
+0124:>8b 41 00 40                                  return    0
+0128: a0 03 50 00 ff ff 00 15 91 65 00 02 …+8      .dict     dict[3] {10/use_on: @0002}

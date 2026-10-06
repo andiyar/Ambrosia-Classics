@@ -1,0 +1,90 @@
+; segment 186A  page 18  class 0x40 (char) id 106 name "Alcmena" (string table 0201)
+; kind class  length 1250 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @04CE  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 ce                                        .hdr      dictionary offset = 04CE
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 6f …+36     text      "You see a poor, but content looking woman.\"Good "
+0035: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+003C: 2c 20                                        text      ", "
+003E: 8d 9f 0f 02 30 41 07 40 40 00 52             jf        R0F02(A30, 7) -> 0052  ; R0F02 = tstbit [from 0x0101 symtab]
+0049: 66 72 69 65 6e 64                            text      "friend"
+004F: 88 00 5a                                     goto      -> 005A
+0052:>73 74 72 61 6e 67 65 72 2e 22                text      "stranger.\""  ; shares its tail with text @005A
+005A:>2e 22                                        text      ".\""
+005C:>8e                                           input       ; read a line into the input buffer
+005D: 90 6e 61 6d 65 00 00 c9                      match     name else -> 00C9
+0065: 22 49 27 6d 20 41 6c 63 6d 65 6e 61          text      "\"I'm Alcmena"
+0071: 8d 9f 0f 02 30 41 07 40 40 00 96             jf        R0F02(A30, 7) -> 0096  ; R0F02 = tstbit [from 0x0101 symtab]
+007C: 20 2d 20 64 6f 6e 27 74 20 79 6f 75 …+11     text      " - don't you remember?\""
+0093: 88 00 c6                                     goto      -> 00C6
+0096:>2e 20 20 41 6e 64 20 79 6f 75 20 61 …+4      text      ".  And you are?\""
+00A6: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00AD: 8f 2a 00                                     prompt    "*"
+00B0: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+10     text      "\"Pleased to meet you.\""
+00C6:>88 00 5c                                     goto      -> 005C
+00C9:>90 62 79 65 00 00 f3                         match     bye else -> 00F3
+00D0: 22 47 6f 6f 64 20 6c 75 63 6b 2c 20 …+16     text      "\"Good luck, and be careful.\""
+00EC: 8b 41 00 40                                  return    0
+; ---- dead code 00F0-00F3: no dictionary entry, jump, pointer or call reaches it ----
+00F0:x88 00 5c                                     goto      -> 005C
+00F3:>90 6a 6f 62 00 01 3f                         match     job else -> 013F
+00FA: 22 41 20 66 61 72 6d 2d 77 69 66 65 …+54     text      "\"A farm-wife's job is never done, but I do look after the @goats.\""
+013C: 88 00 5c                                     goto      -> 005C
+013F:>90 66 61 72 6d 00 01 9a                      match     farm else -> 019A
+0147: 22 4d 79 20 40 68 75 73 62 61 6e 64 …+68     text      "\"My @husband does most of the farm work, though our @son helps out when he can.\""
+0197: 88 00 5c                                     goto      -> 005C
+019A:>90 68 75 73 62 00 01 ea                      match     husb else -> 01EA
+01A2: 22 4d 79 20 68 75 73 62 61 6e 64 20 …+57     text      "\"My husband @Pelops does the heavy farm work, like harvesting @flax.\""
+01E7: 88 00 5c                                     goto      -> 005C
+01EA:>90 66 6c 61 78 00 02 17                      match     flax else -> 0217
+01F2: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+22     text      "\"You'll have to ask him about it.\""
+0214: 88 00 5c                                     goto      -> 005C
+0217:>90 70 65 6c 6f 00 02 59                      match     pelo else -> 0259
+021F: 22 57 65 20 6d 61 79 20 6e 6f 74 20 …+43     text      "\"We may not have much, but Pelops and I have our love.\""
+0256: 88 00 5c                                     goto      -> 005C
+0259:>90 73 6f 6e 00 02 8e                         match     son else -> 028E
+0260: 22 41 73 74 65 72 6f 70 61 65 75 73 …+31     text      "\"Asteropaeus is a good boy, but a bit shy.\""
+028B: 88 00 5c                                     goto      -> 005C
+028E:>90 67 6f 61 74 00 02 cb                      match     goat else -> 02CB
+0296: 22 49 20 6d 61 6b 65 20 62 6f 74 68 …+38     text      "\"I make both @butter and @cheese from goat @milk.\""
+02C8: 88 00 5c                                     goto      -> 005C
+02CB:>90 6d 69 6c 6b 00 03 47                      match     milk else -> 0347
+02D3: 22 4d 69 6c 6b 69 6e 67 20 67 6f 61 …+101    text      "\"Milking goats is pretty simple, actually - give it a try - there should be an empty pail outside near the pens.\""
+0344: 88 00 5c                                     goto      -> 005C
+0347:>90 62 75 74 74 00 03 c0                      match     butt else -> 03C0
+034F: 22 42 75 74 74 65 72 20 6d 61 6b 69 …+98     text      "\"Butter making is just a matter of churning goat milk - take a pail of goat milk and churn it with the churn.\""
+03BD: 88 00 5c                                     goto      -> 005C
+03C0:>90 63 68 65 65 00 04 7f                      match     chee else -> 047F
+03C8: 22 43 68 65 65 73 65 20 6d 61 6b 69 …+78     text      "\"Cheese making takes quite a while - perhaps you'd like to purchase some - only 4 oboloi?\""
+0422: 8f 79 6e 00                                  prompt    "yn"
+0426: 90 6e 00 04 42                               match     n else -> 0442
+042B: 22 50 65 72 68 61 70 73 20 61 6e 6f …+11     text      "\"Perhaps another time.\""
+0442:>90 79 00 04 7c                               match     y else -> 047C
+0447: 9f 0e a5 44 43 68 65 65 73 65 00 45 …+41     call      R0EA5("Cheese", blk@0455, 10, Nil)
+      ; 0x45 inline block 0455-0474 (31 bytes):
+      0455: 90 01                            .array[1]
+        [0] @045B ->
+          045B: 90 04                            .array[4]
+            [0] 2117
+            [1] @046D "Cheese"
+            [2] 4
+            [3] 1
+047C:>88 00 5c                                     goto      -> 005C
+047F:>90 2a 00 04 c7                               match     * else -> 04C7
+0484: 8d 9f 08 01 30 40 5e 40 04 c4                jf        !R0801(A30) -> 04C4
+048E: 22 57 65 27 72 65 20 73 69 6d 70 6c …+42     text      "\"We're simple folk, and don't know much about that...\""
+04C4:>88 00 5c                                     goto      -> 005C
+04C7:>88 00 5c                                     goto      -> 005C
+; ---- dead code 04CA-04CE: no dictionary entry, jump, pointer or call reaches it ----
+04CA:x8b 41 00 40                                  return    0
+04CE: a0 03 98 6a 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

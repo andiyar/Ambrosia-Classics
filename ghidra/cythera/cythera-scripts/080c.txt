@@ -1,0 +1,242 @@
+; segment 080C  page 08  routine
+; kind routine  length 4034 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 74 68 72 61 2c 70 72 6f 74 2c 6d …+41     match     thra,prot,mene,lyca,pele,peis,dana,seme,alcy,clyt else -> 0071
+0038: 22 54 68 65 79 20 61 72 65 20 6f 6e …+38     text      "\"They are one of the students in the Magisterium.\""
+006A: 8b 43 50 00 00 01 40                         return    True
+0071:>90 64 65 6d 6f 00 01 0d                      match     demo else -> 010D
+0079: 8d dc 41 04 40 41 04 54 40 00 8a             jf        (get_variable(4) == 4) -> 008A
+0084: dd 41 04 41 06 40                            builtin   set_variable(4, 6)
+008A:>8d dc 41 04 40 41 06 54 40 00 d2             jf        (get_variable(4) == 6) -> 00D2
+0095: 22 44 65 6d 6f 64 6f 63 75 73 20 70 …+46     text      "\"Demodocus performed here recently, but I believe he left\""
+00CF: 88 01 06                                     goto      -> 0106
+00D2:>22 57 65 20 68 61 76 65 6e 27 74 20 …+40     text      "\"We haven't seen Demodocus around here for a while.\""
+0106:>8b 43 50 00 00 01 40                         return    True
+010D:>90 70 68 65 72 00 01 4a                      match     pher else -> 014A
+0115: 22 50 68 65 72 65 73 20 69 73 20 61 …+34     text      "\"Pheres is a Master Mage who teaches Healing.\""
+0143: 8b 43 50 00 00 01 40                         return    True
+014A:>90 6c 69 6e 64 00 01 87                      match     lind else -> 0187
+0152: 22 4c 69 6e 64 75 73 20 69 73 20 74 …+34     text      "\"Lindus is the Headmaster at the Magisterium.\""
+0180: 8b 43 50 00 00 01 40                         return    True
+0187:>90 73 65 6c 69 00 01 ce                      match     seli else -> 01CE
+018F: 22 53 65 6c 69 6e 75 73 20 69 73 20 …+44     text      "\"Selinus is a Master, the librarian at the Magisterium.\""
+01C7: 8b 43 50 00 00 01 40                         return    True
+01CE:>90 70 61 6c 61 00 02 1e                      match     pala else -> 021E
+01D6: 22 50 61 6c 61 65 73 74 72 61 20 69 …+53     text      "\"Palaestra is a Master, a teacher of Alchemy at the Magisterium.\""
+0217: 8b 43 50 00 00 01 40                         return    True
+021E:>90 74 72 6f 73 00 02 6d                      match     tros else -> 026D
+0226: 22 54 72 6f 73 20 69 73 20 61 20 4d …+52     text      "\"Tros is a Master, a teacher of Runic Magic at the Magisterium.\""
+0266: 8b 43 50 00 00 01 40                         return    True
+026D:>90 72 75 6e 65 2c 72 75 6e 69 2c 74 …+16     match     rune,runi,trai,pass,hist else -> 02BF
+0289: 22 41 20 4d 61 67 65 20 77 6f 75 6c …+35     text      "\"A Mage would better be able to answer that...\""
+02B8: 8b 43 50 00 00 01 40                         return    True
+02BF:>90 74 75 6e 6e 00 03 5a                      match     tunn else -> 035A
+02C7: 22 59 6f 75 27 76 65 20 62 65 65 6e …+128    text      "\"You've been listening to the wild student rumors.\"*\"They are nothing but some old storage tunnels, which are no longer safe, nothing more.\""
+0353: 8b 43 50 00 00 01 40                         return    True
+035A:>8d 48 10 41 0c 54 40 09 92                   jf        (G10:zone == 12) -> 0992
+0363: 90 77 68 65 72 00 09 8f                      match     wher else -> 098F
+036B: 9f 08 16 30 45 06 13 90 10 88 0c 03 …+1553   call      R0816(A30, blk@0372, 1)
+      ; 0x45 inline block 0372-0985 (1555 bytes):
+      0372: 90 10                            .array[16]
+        [0] @03B4 ->
+          03B4: 90 06                            .array[6]
+            [0] char#87"Paris"
+            [1] @03CE "Paris the Provisioner"
+            [2] @03E4 "Paris the Provisioner is "
+            [3] 22
+            [4] 52
+            [5] @03FE "."
+        [1] @0400 ->
+          0400: 90 06                            .array[6]
+            [0] char#80"Lindus"
+            [1] @041A "Headmaster Lindus"
+            [2] @042C "Headmaster Lindus is normally found in the great hall "
+            [3] 11
+            [4] 44
+            [5] @0463 "."
+        [2] @0465 ->
+          0465: 90 06                            .array[6]
+            [0] char#81"Selinus"
+            [1] @047F "Librarian Selinus"
+            [2] @0491 "Selinus has quaters are "
+            [3] 18
+            [4] 31
+            [5] @04AA ", but is normally upstairs in the library somewhere."
+        [3] @04DF ->
+          04DF: 90 06                            .array[6]
+            [0] char#82"Palaestra"
+            [1] @04F9 "Master Palaestra"
+            [2] @050A "Her quarters are "
+            [3] 18
+            [4] 11
+            [5] @051C ", but teaches in the alchemy lab."
+        [4] @053E ->
+          053E: 90 06                            .array[6]
+            [0] char#83"Tros"
+            [1] @0558 "Master Tros"
+            [2] @0564 "His quarters are "
+            [3] 18
+            [4] 18
+            [5] @0576 ", but teaches in the primary lecture hall."
+        [5] @05A1 ->
+          05A1: 90 06                            .array[6]
+            [0] char#78"Pheres"
+            [1] @05BB "Master Pheres"
+            [2] @05C9 "His quaters are "
+            [3] 18
+            [4] 28
+            [5] @05DA ", but teaches in the secondary lecture hall."
+        [6] @0607 ->
+          0607: 90 06                            .array[6]
+            [0] room#165
+            [1] @0621 "Alchemy Lab"
+            [2] @062D "The Alchemy Lab is "
+            [3] 38
+            [4] 44
+            [5] @0641 "."
+        [7] @0643 ->
+          0643: 90 06                            .array[6]
+            [0] room#166
+            [1] @065D "Primary Lecture Hall"
+            [2] @0672 "The primary lecture hall is "
+            [3] 43
+            [4] 35
+            [5] @068F "."
+        [8] @0691 ->
+          0691: 90 06                            .array[6]
+            [0] room#167
+            [1] @06AB "Secondary Lecture Hall"
+            [2] @06C2 "The secondary lecture hall is "
+            [3] 45
+            [4] 26
+            [5] @06E1 "."
+        [9] @06E3 ->
+          06E3: 90 06                            .array[6]
+            [0] room#155
+            [1] @06FD "Tavern"
+            [2] @0704 "The 'Study Hall' is "
+            [3] 26
+            [4] 43
+            [5] @0719 "."
+        [10] @071B ->
+          071B: 90 03                            .array[3]
+            [0] False
+            [1] @0729 "Tavern"
+            [2] @0730 "You are in the 'Study Hall'"
+        [11] @074C ->
+          074C: 90 03                            .array[3]
+            [0] Nil
+            [1] @075A "LandKing Hall"
+            [2] @0768 "Head east from Pnyx, past Cademia, northwest, past Odemia, and then follow the road into the woods."
+        [12] @07CC ->
+          07CC: 90 03                            .array[3]
+            [0] Nil
+            [1] @07DA "Odemia"
+            [2] @07E1 "Head east from Pnyx, past Cademia, and then northwest along the road to the coast."
+        [13] @0834 ->
+          0834: 90 03                            .array[3]
+            [0] Nil
+            [1] @0842 "Catamarca"
+            [2] @084C "Head east from Pnyx, past Cademia and cross the Sitia, and then southeast along the coast."
+        [14] @08A7 ->
+          08A7: 90 03                            .array[3]
+            [0] Nil
+            [1] @08B5 "Cademia"
+            [2] @08BD "Head east from Pnyx, through the Titan's Spine Mountains, and you'll come to Cademia."
+        [15] @0913 ->
+          0913: 90 03                            .array[3]
+            [0] Nil
+            [1] @0921 "Kosha"
+            [2] @0927 "Head east from Pnyx, through the Titan's Spine Mountains, and then overland to the southeast."
+0988: 8b 43 50 00 00 01 40                         return    True
+098F:>88 0f b7                                     goto      -> 0FB7
+0992:>8d 48 10 41 0e 54 40 0f b7                   jf        (G10:zone == 14) -> 0FB7
+099B: 90 77 68 65 72 00 0f b7                      match     wher else -> 0FB7
+09A3: 9f 08 16 30 45 06 03 90 0f 88 0c 09 …+1537   call      R0816(A30, blk@09AA, 1)
+      ; 0x45 inline block 09AA-0FAD (1539 bytes):
+      09AA: 90 0f                            .array[15]
+        [0] @09E8 ->
+          09E8: 90 03                            .array[3]
+            [0] char#87"Paris"
+            [1] @09F6 "Paris the Provisioner"
+            [2] @0A0C "Paris the Provisioner is downstairs in the southwest corner of Pnyx."
+        [1] @0A51 ->
+          0A51: 90 03                            .array[3]
+            [0] char#80"Lindus"
+            [1] @0A5F "Headmaster Lindus"
+            [2] @0A71 "Headmaster Lindus is normally found in the great hall downstairs."
+        [2] @0AB3 ->
+          0AB3: 90 03                            .array[3]
+            [0] char#81"Selinus"
+            [1] @0AC1 "Librarian Selinus"
+            [2] @0AD3 "Selinus has quaters downstairs, but is normally upstairs in the library somewhere."
+        [3] @0B26 ->
+          0B26: 90 03                            .array[3]
+            [0] char#82"Palaestra"
+            [1] @0B34 "Master Palaestra"
+            [2] @0B45 "She has quarters downstairs with the rest of the faculty, but teaches in the alchemy lab."
+        [4] @0B9F ->
+          0B9F: 90 03                            .array[3]
+            [0] char#83"Tros"
+            [1] @0BAD "Master Tros"
+            [2] @0BB9 "He has quarters downstairs with the rest of the faculty, but teaches in the primary lecture hall."
+        [5] @0C1B ->
+          0C1B: 90 03                            .array[3]
+            [0] char#78"Pheres"
+            [1] @0C29 "Master Pheres"
+            [2] @0C37 "He has quarters downstairs with the rest of the faculty, but teaches in the secondary lecture hall."
+        [6] @0C9B ->
+          0C9B: 90 03                            .array[3]
+            [0] Nil
+            [1] @0CA9 "Alchemy Lab"
+            [2] @0CB5 "The Alchemy Lab is downstairs, southeast of the central gardens."
+        [7] @0CF6 ->
+          0CF6: 90 03                            .array[3]
+            [0] Nil
+            [1] @0D04 "Primary Lecture Hall"
+            [2] @0D19 "The primary lecture hall is downstairs, east of the central gardens."
+        [8] @0D5E ->
+          0D5E: 90 03                            .array[3]
+            [0] Nil
+            [1] @0D6C "Secondary Lecture Hall"
+            [2] @0D83 "The secondary lecture hall downstairs, northeast of the central gardens."
+        [9] @0DCC ->
+          0DCC: 90 03                            .array[3]
+            [0] Nil
+            [1] @0DDA "Tavern"
+            [2] @0DE1 "The 'Study Hall' is downstairs, southwest of the central gardens."
+        [10] @0E23 ->
+          0E23: 90 03                            .array[3]
+            [0] Nil
+            [1] @0E31 "LandKing Hall"
+            [2] @0E3F "Well, first you need to go downstairs, and head east..."
+        [11] @0E77 ->
+          0E77: 90 03                            .array[3]
+            [0] Nil
+            [1] @0E85 "Odemia"
+            [2] @0E8C "Well, first you need to go downstairs, and head east..."
+        [12] @0EC4 ->
+          0EC4: 90 03                            .array[3]
+            [0] Nil
+            [1] @0ED2 "Catamarca"
+            [2] @0EDC "Well, first you need to go downstairs, and head east..."
+        [13] @0F14 ->
+          0F14: 90 03                            .array[3]
+            [0] Nil
+            [1] @0F22 "Cademia"
+            [2] @0F2A "Well, first you need to go downstairs, and head east..."
+        [14] @0F62 ->
+          0F62: 90 03                            .array[3]
+            [0] Nil
+            [1] @0F70 "Pnyx"
+            [2] @0F75 "Well, first you need to go downstairs, and head east..."
+0FB0: 8b 43 50 00 00 01 40                         return    True
+0FB7:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0FBE-0FC2: no dictionary entry, jump, pointer or call reaches it ----
+0FBE:x8b 41 00 40                                  return    0

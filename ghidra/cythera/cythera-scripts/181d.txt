@@ -1,0 +1,63 @@
+; segment 181D  page 18  class 0x40 (char) id 29 name "Atymnius" (string table 0201)
+; kind class  length 2712 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0A84  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0a 84                                        .hdr      dictionary offset = 0A84
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 6f …+56     text      "You see a powerful miner, but his face belies a horror in his mind.*"
+0049: 8d 9f 0f 02 30 41 07 40 5e 40 01 63          jf        !R0F02(A30, 7) -> 0163  ; R0F02 = tstbit [from 0x0101 symtab]
+0055: 22 4c 65 61 76 65 20 6d 65 20 61 6c …+37     text      "\"Leave me alone - I don't want to talk about it!\""
+0086: 8d 9f 0f 02 42 00 14 41 01 40 40 01 …+1      jf        R0F02(20, 1) -> 015C  ; R0F02 = tstbit [from 0x0101 symtab]
+0093: 2a                                           text      "*"
+0094: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+009A: 22 45 78 63 75 73 65 20 6d 65 2c 20 …+106    text      "\"Excuse me, sir, but are you Atymnius?  Thuria sent me to talk to you...\"*He looks you up and down, pausing a second.*"
+0110: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0115: 22 59 65 61 68 2c 20 74 68 61 74 27 …+49     text      "\"Yeah, that's me.  I already gave my @story to her though...\""
+0152: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0159: 88 01 60                                     goto      -> 0160
+015C:>8b 41 00 40                                  return    0
+0160:>88 01 9c                                     goto      -> 019C
+0163:>22 49 27 76 65 20 74 6f 6c 64 20 79 …+45     text      "\"I've told you what I know - what else can I do for you?\""
+019C:>8e                                           input       ; read a line into the input buffer
+019D: 90 6e 61 6d 65 00 01 ee                      match     name else -> 01EE
+01A5: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+51     text      "\"My name is Atymnius, but I thought I already told you that...\""
+01E4: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+01EB: 88 01 9c                                     goto      -> 019C
+01EE:>90 61 74 79 6d 00 02 00                      match     atym else -> 0200
+01F6: 22 57 68 61 74 3f 22                         text      "\"What?\""
+01FD: 88 01 9c                                     goto      -> 019C
+0200:>90 6a 6f 62 00 02 55                         match     job else -> 0255
+0207: 22 49 20 77 61 73 20 61 20 6d 69 6e …+63     text      "\"I was a miner down in the Attis iron mine - don't know if I'll go back...\""
+0252: 88 01 9c                                     goto      -> 019C
+0255:>90 73 74 6f 72 2c 67 68 6f 73 00 0a …+1      match     stor,ghos else -> 0A2D
+0262: 8d 9f 0f 02 30 41 01 40 40 02 a8             jf        R0F02(A30, 1) -> 02A8  ; R0F02 = tstbit [from 0x0101 symtab]
+026D: 22 49 20 74 6f 6c 64 20 79 6f 75 20 …+44     text      "\"I told you before, I don't like thinking about that...\""
+02A5: 88 0a 2a                                     goto      -> 0A2A
+02A8:>22 49 20 61 6c 72 65 61 64 79 20 74 …+96     text      "\"I already told Thuria, but I suppose I could tell it one more time - I don't much like thinking about it.\"*"
+0314: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+031B: 22 41 6e 79 77 61 79 2c 20 49 20 77 …+1791   text      "\"Anyway, I was working deep, extending the tunnels.  It's hard work, but I like it better than shuffling through dirt.\"*\"So, as I was saying, I'm in the deep back part of the tunnels, and sudden I feel the earth start to move.\"*\"Nothing worse than a cave-in, so I run back to the older tunnels as fast as I can, dodging some large rocks as I go.\"*\"But then one of them hit me on the head, and I'm out - don't know how long, but my torch burned out.\"*\"I had a strange dream, to - something about sorrow and loss, only more intense than a man should ever feel.\"*\"Anyway, I come to, and manage to strike up one of my spare torches.  Always carry spare torches that hope you never need.\"*\"I look, expecting to be trapped, but no, just some large rocks disturbed in the new tunnel.\"*\"Not that you can always tell, mind you, since a rough tunnel can look like it's been collapse, and that's normal.\"*\"Anyway, I looked to see how much work I lost - and turns out not only was it in pretty good shape, but there's this opening.\"*\"This is pretty good normally, since a small cave pocket can save weeks of digging.\"*\"So just when I think my luck has changed - not only did I survive the cave-in, but I'm ahead, I climb down the opening.\"*\"And there I saw it.  All sort of white and glowing in the torchlight, sitting on a rock.\"*\"Never seen anything like it - it just turns to me, with its dead eyes, and says something I don't understand.\"*\"Didn't know that the dead spoke a different language, but there's lots I don't know.\"*\"This was too much for me - seeing the agony on its face.  A tortured soul, it was, I know now.\"*\"I nearly dropped my torch fleeing - it was too much for me.\"*He buries his head in his hands and sobs a bit, his shoulders shaking.*\"Please - give me a minute to pull myself together...\"*"
+0A26: 8b 41 00 40                                  return    0
+0A2A:>88 01 9c                                     goto      -> 019C
+0A2D:>90 62 79 65 00 0a 55                         match     bye else -> 0A55
+0A34: 22 47 6f 6f 64 62 79 65 2c 20 61 6e …+14     text      "\"Goodbye, and be careful.\""
+0A4E: 8b 41 00 40                                  return    0
+; ---- dead code 0A52-0A55: no dictionary entry, jump, pointer or call reaches it ----
+0A52:x88 01 9c                                     goto      -> 019C
+0A55:>90 2a 00 0a 7d                               match     * else -> 0A7D
+0A5A: 8d 9f 08 11 30 40 5e 40 0a 7a                jf        !R0811(A30) -> 0A7A
+0A64: 8d 9f 08 01 30 40 5e 40 0a 7a                jf        !R0801(A30) -> 0A7A
+0A6E: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+0A7A:>88 01 9c                                     goto      -> 019C
+0A7D:>88 01 9c                                     goto      -> 019C
+; ---- dead code 0A80-0A84: no dictionary entry, jump, pointer or call reaches it ----
+0A80:x8b 41 00 40                                  return    0
+0A84: a0 03 98 1d 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

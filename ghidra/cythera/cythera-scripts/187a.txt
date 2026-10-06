@@ -1,0 +1,60 @@
+; segment 187A  page 18  class 0x40 (char) id 122 name "Unhayt" (string table 0201)
+; kind class  length 892 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0368  methods: sel12/talk@002A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 68                                        .hdr      dictionary offset = 0368
+0002: 90 01 98 7a 00 08                            .array    array[1] = [@0008]
+0008: 90 08 00 00 00 14 00 00 00 06 00 00 …+22     .array    array[8] = [20, 6, 20, 11, 40, 38, 20, 45]
+
+; ==== method sel12/talk @002A ====
+002A: 81 01 00                                     frame     args=1 locals=0
+002D: 8d 48 0e 41 01 56 41 00 54 40 00 c5          jf        ((G0E:g0E & 1) == 0) -> 00C5
+0039: 22 41 6e 20 64 61 79 61 20 61 79 71 …+7      text      "\"An daya ayqk hera\""
+004C: 8d bc 42 00 4a 40 40 00 c1                   jf        leader_can_see(74) -> 00C1
+0055: 2a                                           text      "*"
+0056: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+005D: 22 49 27 6d 20 61 66 72 61 69 64 20 …+88     text      "\"I'm afraid I can't help - this doesn't correspond to any of the phoneme I've assigned to carvings.\""
+00C1:>8b 41 00 40                                  return    0
+00C5:>8d 48 0c 41 28 4f 40 01 02                   jf        (G0C:g0C_0to100 < 40) -> 0102
+00CE: 22 59 6f 75 20 68 61 76 65 20 73 74 …+36     text      "\"You have stopped the flow of water.  Be gone.\n\""
+00FE: 8b 41 00 40                                  return    0
+0102:>8e                                           input       ; read a line into the input buffer
+0103: 90 62 79 65 00 01 39                         match     bye else -> 0139
+010A: 22 4d 61 79 20 74 68 65 20 44 6f 6f …+28     text      "\"May the Door of Truth never be barred.\""
+0132: 8b 41 00 40                                  return    0
+; ---- dead code 0136-0139: no dictionary entry, jump, pointer or call reaches it ----
+0136:x88 01 02                                     goto      -> 0102
+0139:>90 6e 61 6d 65 2c 75 6e 68 61 00 01 …+1      match     name,unha else -> 015F
+0146: 22 57 65 20 61 72 65 20 55 6e 68 61 …+3      text      "\"We are Unhayt\""
+0155: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+015C: 88 01 02                                     goto      -> 0102
+015F:>90 6a 6f 62 2c 64 6f 6f 72 00 01 93          match     job,door else -> 0193
+016B: 22 57 65 20 61 72 65 20 74 68 65 20 …+25     text      "\"We are the Doorkeeper of the Ayrit.\""
+0190: 88 01 02                                     goto      -> 0102
+0193:>90 6d 61 61 79 00 02 48                      match     maay else -> 0248
+019B: 22 57 65 20 62 6f 75 6e 64 20 74 68 …+158    text      "\"We bound the Door of Maayti when corruption overcame us, and to us forever it is lost.\"*\"With the power of the Crolna, the Enemy overwhelmed us, driving us from Maayti.\""
+0245: 88 01 02                                     goto      -> 0102
+0248:>90 62 6f 6f 6b 2c 73 61 70 70 00 03 …+1      match     book,sapp else -> 0301
+0255: 8d 9f 0f 02 30 41 01 40 40 02 85             jf        R0F02(A30, 1) -> 0285  ; R0F02 = tstbit [from 0x0101 symtab]
+0260: 22 57 65 20 68 61 76 65 20 75 6e 74 …+22     text      "\"We have unto you given the book.\""
+0282: 88 02 fe                                     goto      -> 02FE
+0285:>22 57 65 20 73 68 61 6c 6c 20 67 72 …+41     text      "\"We shall grant you possession of the book you seek.\""
+02BA: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+02C1: 2a 48 65 20 68 61 6e 64 73 20 79 6f …+38     text      "*He hands you a blue book, seemingly from nowhere."
+02F3: a8 48 05 42 00 1a 41 13 41 00 40             builtin   give_item(G05:leader, 26, 19, 0)
+02FE:>88 01 02                                     goto      -> 0102
+0301:>90 2a 00 03 61                               match     * else -> 0361
+0306: 8d 9f 08 0f 30 40 5e 40 03 5e                jf        !R080F(A30) -> 035E
+0310: 48 65 20 73 74 61 72 65 73 20 69 6e …+66     text      "He stares intently at you, as if attempting to understand what you are saying."
+035E:>88 01 02                                     goto      -> 0102
+0361:>88 01 02                                     goto      -> 0102
+; ---- dead code 0364-0368: no dictionary entry, jump, pointer or call reaches it ----
+0364:x8b 41 00 40                                  return    0
+0368: a0 03 98 7a 00 2a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @002A, 68: @0002}

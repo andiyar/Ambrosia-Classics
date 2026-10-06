@@ -12,7 +12,7 @@ Evidence: decompile dump `ghidra/Deimos_pef.decompiled.c`; raw listing `$W/disas
 (project copy `$W/work-w2s4`, `DisasmFuncs.java` on the 28 functions above); data from
 `$W/data/Game/{flli,reli,idli,tefo,plde,wede}` and `$W/data/{Game,Interface}/im08` (decoded paks);
 constants from `$W/mem/10000000.bin` / `100de330.bin` (Python `struct.unpack('>…')` at the
-address minus the image base). `$W` = `/Users/andiyar/ghidra-proj-deimos`.
+address minus the image base). `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`.
 
 ## 1. Coordinate frames and display rects
 

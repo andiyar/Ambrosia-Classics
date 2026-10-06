@@ -1,0 +1,208 @@
+; segment 1801  page 18  class 0x40 (char) id 1 name "Hero" (string table 0201)
+; kind class  length 6490 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @192E  methods: sel0/init@0002, sel29/death@0133, sel21/signal@039C, sel12/talk@18F9
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 19 2e                                        .hdr      dictionary offset = 192E
+
+; ==== method sel0/init @0002 ====
+0002: 81 03 04                                     frame     args=3 locals=4
+0005: 87 11 41 02 40                               setglobal G11:g11_unhandled = 2
+000A: 85 05 00 00 10 31 40                         gstore    seg0500[0010] = A31  ; re-saved encrypted
+0011: 8d 49 05 00 00 10 40 00 35                   jf        seg0500[0010] -> 0035
+001A: 86 24 30 40 42 00 21 40                      setfield  A30.f24:typeframe = 33
+0022: 86 25 30 40 42 00 21 40                      setfield  A30.f25:home = 33
+002A: 86 05 30 40 42 00 21 40                      setfield  A30.f05:item = 33
+0032: 88 00 4d                                     goto      -> 004D
+0035:>86 24 30 40 42 00 20 40                      setfield  A30.f24:typeframe = 32
+003D: 86 25 30 40 42 00 20 40                      setfield  A30.f25:home = 32
+0045: 86 05 30 40 42 00 20 40                      setfield  A30.f05:item = 32
+004D:>86 1a 30 40 41 00 40                         setfield  A30.f1A:exp = 0
+0054: 86 1b 30 40 41 01 40                         setfield  A30.f1B:level = 1
+005B: 86 20 30 40 41 00 40                         setfield  A30.f20:ce1D = 0
+0062: 82 00 49 05 01 01 10 32 46 40                set       L00 = seg0501[0110][A32]
+006C: 86 17 30 40 00 41 00 46 40                   setfield  A30.f17:body = L00[0]
+0075: 86 18 30 40 00 41 01 46 40                   setfield  A30.f18:reflex = L00[1]
+007E: 86 19 30 40 00 41 02 46 40                   setfield  A30.f19:mind = L00[2]
+0087: 86 15 30 40 41 02 40                         setfield  A30.f15:activity = 2
+008E: 86 16 30 40 41 02 40                         setfield  A30.f16:behaviour = 2
+0095: 86 1d 30 40 9f 0e 82 30 40 40                setfield  A30.f1D:health_max = R0E82(A30)
+009F: 86 1c 30 40 30 62 1d 40                      setfield  A30.f1C:health = A30.f1D:health_max
+00A7: 86 1f 30 40 9f 0e 83 30 40 40                setfield  A30.f1F:magic_max = R0E83(A30)
+00B1: 86 1e 30 40 30 62 1f 40                      setfield  A30.f1E:magic = A30.f1F:magic_max
+00B9: 86 21 30 40 41 04 40                         setfield  A30.f21:training = 4
+00C0: 86 20 30 40 32 40                            setfield  A30.f20:ce1D = A32
+00C6: 86 28 30 40 41 18 40                         setfield  A30.f28:food = 24
+00CD: 87 0c 41 37 40                               setglobal G0C:g0C_0to100 = 55
+00D2: e7 41 03 40                                  builtin   screen_effect(3)
+00D6: ec 40                                        builtin   open_curtain()
+00D8: ee 43 00 00 02 01 43 50 00 ff ff 40          builtin   curtain_picture(513, Nil)
+00E4: e7 41 04 40                                  builtin   screen_effect(4)
+00E8: 82 01 a0 43 10 00 00 02 41 00 41 00 …+4      set       L01 = iterate_range(&L02, 0, 0, 8)
+00F8:>8c a0 43 10 00 00 02 41 01 40 40 01 …+1      jt        iterate_range(&L02, 1) -> 0129
+0105: 8d ee 43 00 00 02 01 43 30 00 02 40 …+6      jf        curtain_picture(513, (str[0240:0]"It was another hot summer evening, where the humidity was hi…" + L01)) -> 011A
+0117: 88 01 29                                     goto      -> 0129
+011A:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+0126: 88 00 f8                                     goto      -> 00F8
+0129:>e7 41 03 40                                  builtin   screen_effect(3)
+012D: ed 40                                        builtin   close_curtain()
+012F: 8b 41 00 40                                  return    0
+
+; ==== method sel29/death @0133 ====
+0133: 81 01 05                                     frame     args=1 locals=5
+0136: e7 41 04 40                                  builtin   screen_effect(4)
+013A: 8d 43 20 00 00 02 44 4b 65 6e 6e 79 …+5      jf        (globstr(2:player_name) == "Kenny") -> 017A
+014B: 0a 4f 68 20 6d 79 20 67 6f 64 21 20 …+35     text      "\nOh my god!  They killed Kenny!  You bastards!\n"
+017A:>8d 9f 0f 02 30 41 00 40 40 01 8e             jf        R0F02(A30, 0) -> 018E  ; R0F02 = tstbit [from 0x0101 symtab]
+0185: 9f 30 1d 30 40                               call      R301D(A30)
+018A: 8b 41 00 40                                  return    0
+018E:>82 00 43 50 00 00 00 40                      set       L00 = False
+0196: 82 01 43 50 00 00 00 40                      set       L01 = False
+019E: 82 02 cc 43 10 00 00 03 41 00 30 40 …+1      set       L02 = iterate_equipped(&L03, 0, A30)
+01AB:>8c cc 43 10 00 00 03 41 01 40 40 02 …+1      jt        iterate_equipped(&L03, 1) -> 0207
+01B8: 8d 02 62 04 42 00 f4 54 40 01 f8             jf        (L02.f04:type == 244) -> 01F8
+01C3: 8d 02 62 06 41 00 51 40 01 f5                jf        (L02.f06:quality > 0) -> 01F5
+01CD: 82 00 43 50 00 00 01 40                      set       L00 = True
+01D5: 86 06 02 40 02 62 06 41 01 4b 40             setfield  L02.f06:quality = (L02.f06:quality - 1)
+01E0: 8d 02 62 06 41 00 54 40 01 f5                jf        (L02.f06:quality == 0) -> 01F5
+01EA: 82 01 43 50 00 00 01 40                      set       L01 = True
+01F2: a7 02 40                                     builtin   delete_prop(L02)
+01F5:>88 02 07                                     goto      -> 0207
+01F8:>82 02 cc 43 10 00 00 03 41 02 40 40          set       L02 = iterate_equipped(&L03, 2)
+0204: 88 01 ab                                     goto      -> 01AB
+0207:>8d 00 40 03 0f                               jf        L00 -> 030F
+020C: 8d 48 0c 41 2d 51 40 02 ad                   jf        (G0C:g0C_0to100 > 45) -> 02AD
+0215: 86 1c 30 40 30 62 1d 41 03 4d 41 01 …+2      setfield  A30.f1C:health = ((A30.f1D:health_max / 3) + 1)
+0223: e1 30 43 00 00 00 f0 40                      builtin   show_magic(A30, 240)
+022B: 8d 01 40 02 72                               jf        L01 -> 0272
+0230: 54 68 65 20 61 6d 75 6c 65 74 20 66 …+51     text      "The amulet feels warm at your neck, and then crumbles to dust.\n"
+026F: 88 02 96                                     goto      -> 0296
+0272:>54 68 65 20 61 6d 75 6c 65 74 20 66 …+24     text      "The amulet feels warm at your neck.\n"
+0296:>bf 41 01 41 01 41 00 40                      builtin   teleport(1, 1, 0)
+029E: 92 00 43 50 00 ff ff 40                      raise     0, Nil  ; non-local exit
+; ---- dead code 02A6-02AD: no dictionary entry, jump, pointer or call reaches it ----
+02A6:x8b 41 00 40                                  return    0
+02AA:x88 03 0f                                     goto      -> 030F
+02AD:>59 6f 75 20 66 65 65 6c 20 61 20 62 …+86     text      "You feel a brief twinge of pain from the amulet around your neck, and then the darkness of death.\n"
+030F:>e7 41 03 40                                  builtin   screen_effect(3)
+0313: ec 40                                        builtin   open_curtain()
+0315: ee 43 00 00 02 00 43 50 00 ff ff 40          builtin   curtain_picture(512, Nil)
+0321: e7 41 04 40                                  builtin   screen_effect(4)
+0325: 82 02 a0 43 10 00 00 03 41 00 41 00 …+4      set       L02 = iterate_range(&L03, 0, 0, 2)
+0335:>8c a0 43 10 00 00 03 41 01 40 40 03 …+1      jt        iterate_range(&L03, 1) -> 0366
+0342: 8d ee 43 00 00 02 00 43 30 00 02 41 …+6      jf        curtain_picture(512, (str[0241:0]"Your body collapses to the ground, all life flowing out of i…" + L02)) -> 0357
+0354: 88 03 66                                     goto      -> 0366
+0357:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+0363: 88 03 35                                     goto      -> 0335
+0366:>e7 41 03 40                                  builtin   screen_effect(3)
+036A: ed 40                                        builtin   close_curtain()
+036C: a2 44 59 6f 75 20 64 69 65 2c 20 6e …+32     builtin   end_game("You die, not knowing the fate of Alaric.")
+0398: 8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @039C ====
+039C: 81 02 01                                     frame     args=2 locals=1
+039F: 8d 31 64 00 40 18 b4                         jf        is_prop(A31) -> 18B4
+03A6: 8d 31 62 00 41 42 54 31 62 03 41 09 …+5      jf        ((A31.f00:kind == 66) && (A31.f03:frame == 9)) -> 18B4
+03B7: 8d 31 62 04 41 00 54 40 09 eb                jf        (A31.f04:type == 0) -> 09EB
+03C1: e8 40                                        builtin   begin_talking()
+03C3: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+03CA: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+03D1: 41 20 73 74 72 61 6e 67 65 20 6c 6f …+604    text      "A strange looking face suddenly fades into view before you...*\"Poor little human - so far from home, and so far from the truth...\"*\"You do know, don't you, that Alaric is not all he says he is.  True, he is bound to the land, but as a usurper.\"*\"He does not belong in the position of power, and he upsets the balance of the world by being there.\"*\"And you, my friend, are just another puppet of his.  Now is the time of change, and you are at the pivot point.\"*\"But which way will the balance swing?  To the East? Or to the West?\"*\"And myself?  I am Omen, and my master has instructed me to watch for one like you.\"*"
+0639: 9f 0f 00 42 00 7e 41 07 40                   call      R0F00(126, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0642: 22 41 74 20 67 72 65 61 74 20 70 72 …+894    text      "\"At great price to myself I come to you, as a vision, to warn and guide you, protect and teach you.\"*\"Know you this - there is more going on here than meets the eye, a power struggle as old as the world itself.\"*\"And in this struggle, you are trapped.  If you ever expect to be free, heed my advice well.\"*\"Alaric must be destroyed to restore the land, and in the end, you will do this.\"*\"To aid you in your destiny, we have a small gift, to prove our word.\"*\"But first, you must learn the ways of the land, and to this end my master has prepared a small test of your abilities.\"*\"For you must hone your skills.  As a sword is tempered, so must you be.\"*\"Seek your way out of this proving grounds, and along the way you might find your reward.\"*\"Follow our counsel, and you will be well rewarded - ignore it at your own peril.\"*\"Until we meet again, be on your guard, and trust not what your eyes behold.\"*"
+09CC: e9 40                                        builtin   end_talking()
+09CE: a7 31 40                                     builtin   delete_prop(A31)
+09D1: bf 41 01 43 00 00 00 94 41 00 40             builtin   teleport(1, 148, 0)
+09DC: 92 00 43 50 00 ff ff 40                      raise     0, Nil  ; non-local exit
+; ---- dead code 09E4-09EB: no dictionary entry, jump, pointer or call reaches it ----
+09E4:x8b 41 00 40                                  return    0
+09E8:x88 18 b1                                     goto      -> 18B1
+09EB:>8d 31 62 04 41 01 54 40 0a d4                jf        (A31.f04:type == 1) -> 0AD4
+09F5: e8 40                                        builtin   begin_talking()
+09F7: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+09FE: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+0A05: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+190    text      "The vision of Omen re-appears before you...*\"Excellent!  You've found the first piece of the Crolna!\"*\"It will be most useful, trust me.  Seek out the rest of it...\"*Just as suddenly, the vision fades.*"
+0ACF: e9 40                                        builtin   end_talking()
+0AD1: 88 18 b1                                     goto      -> 18B1
+0AD4:>8d 31 62 04 41 02 54 40 0c 96                jf        (A31.f04:type == 2) -> 0C96
+0ADE: e8 40                                        builtin   begin_talking()
+0AE0: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0AE7: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+0AEE: 41 67 61 69 6e 2c 20 4f 6d 65 6e 20 …+407    text      "Again, Omen appears before your eyes...*\"Ah, I see you have begun to reform the Crolna as a whole!  Excellent!\"*\"Now you are on to the heart of the mystery.  Once completed, the Crolna will be able to cure the land.\"*\"Of course, you'll need the courage to wield it, but we have faith in you and your judgement.\"*\"Beware your enemy, though, for they will ensnare you with lies hidden in half truths.\"*Omen fades away...*"
+0C91: e9 40                                        builtin   end_talking()
+0C93: 88 18 b1                                     goto      -> 18B1
+0C96:>8d 31 62 04 41 03 54 40 0d 8e                jf        (A31.f04:type == 3) -> 0D8E
+0CA0: e8 40                                        builtin   begin_talking()
+0CA2: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0CA9: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+0CB0: 4f 6d 65 6e 20 61 70 70 65 61 72 73 …+205    text      "Omen appears in a vision again...*\"You have done well, and we are proud of your accomplishments.  Now is the time for you to complete your destiny.\"*\"You know what you need to do - do not fail us!\"*Omen fades away...*"
+0D89: e9 40                                        builtin   end_talking()
+0D8B: 88 18 b1                                     goto      -> 18B1
+0D8E:>8d 31 62 04 41 04 54 40 12 07                jf        (A31.f04:type == 4) -> 1207
+0D98: e8 40                                        builtin   begin_talking()
+0D9A: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0DA1: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+0DA8: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+81     text      "The vision of Omen appears before you...*\"Welcome to the wide world of Cythera!  A ready hero"
+0E05: 8d 49 05 00 00 10 40 0e 11                   jf        seg0500[0010] -> 0E11
+0E0E: 69 6e 65 2c 20 6f 75 74 20 74 6f 20 …+17     text      "ine, out to save the world.\"*"
+0E11:>2c 20 6f 75 74 20 74 6f 20 73 61 76 …+14     text      ", out to save the world.\"*"  ; shares its tail with text @0E0E
+0E2B: 8d 48 06 41 01 51 40 0e dd                   jf        (G06:party_size > 1) -> 0EDD
+0E34: 22 4f 68 2c 20 62 79 20 74 68 65 20 …+154    text      "\"Oh, by the way, don't worry, none of your fellow adventurers can see me.\"*\"They don't even notice what's going on - they aren't quick enough to catch this instant.\"*"
+0EDA: 88 10 3b                                     goto      -> 103B
+0EDD:>22 41 64 76 65 6e 74 75 72 69 6e 67 …+90     text      "\"Adventuring alone can be hazardous - perhaps you should have recruited somebody from LandKing Hall.\"*"
+0F43: 8d 9f 0f 02 42 00 06 41 07 40 40 0f …+1      jf        R0F02(6, 7) -> 0FC6  ; R0F02 = tstbit [from 0x0101 symtab]
+0F50: 22 50 65 72 68 61 70 73 20 74 68 61 …+103    text      "\"Perhaps that eager young Hector might want to come along.  Might be worth asking if his father lets him grow up.\"*"
+0FC3: 88 10 3b                                     goto      -> 103B
+0FC6:>22 50 65 72 68 61 70 73 20 73 6f 6d …+554    text      "\"Perhaps some eager young warrior living in LandKing Hall might want to come along, if his father lets him grow up.\"*\"There are basically two important things you need to investigate right away - a plague in Catamarca, and a kidnapping in Odemia.\"*\"Either way, just follow the road down along the coast - Odemia is the first city you'll find, Catamarca the second.\"*\"Good luck - and to start out, you might want to only travel during daytime, since some dangerous creatures come out at night.\"*\"And whatever you do, stay away from the shoreline!\"*Omen fades away...*"  ; shares its tail with text @103B
+103B:>22 54 68 65 72 65 20 61 72 65 20 62 …+437    text      "\"There are basically two important things you need to investigate right away - a plague in Catamarca, and a kidnapping in Odemia.\"*\"Either way, just follow the road down along the coast - Odemia is the first city you'll find, Catamarca the second.\"*\"Good luck - and to start out, you might want to only travel during daytime, since some dangerous creatures come out at night.\"*\"And whatever you do, stay away from the shoreline!\"*Omen fades away...*"
+11FC: e9 40                                        builtin   end_talking()
+11FE: dd 41 0b 41 02 40                            builtin   set_variable(11, 2)
+1204: 88 18 b1                                     goto      -> 18B1
+1207:>8d 31 62 04 41 05 54 40 13 7f                jf        (A31.f04:type == 5) -> 137F
+1211: e8 40                                        builtin   begin_talking()
+1213: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+121A: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+1221: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+327    text      "The vision of Omen returns before you...*\"Cademia.  Mother City.  Once you've lived in Cademia, no other place can be home.\"*\"Keep your wits here - there are various miscreants that roam the back alleys, especially at night\"*\"Much lies buried beneath its ancient buildings - the city has much history that is now lost.\"*Omen fades away...*"
+1374: e9 40                                        builtin   end_talking()
+1376: dd 41 0b 41 04 40                            builtin   set_variable(11, 4)
+137C: 88 18 b1                                     goto      -> 18B1
+137F:>8d 31 62 04 41 06 54 40 15 7a                jf        (A31.f04:type == 6) -> 157A
+1389: e8 40                                        builtin   begin_talking()
+138B: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+1392: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+1399: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+464    text      "The vision of Omen returns before you...*\"Danger!  You are in great danger!\"*\"Beware what lies buried here - some things are best left undisturbed!\"*\"You must choose your own path, but what is here would destroy the world if unleashed!\"*\"And not even Alaric in his full powers would be able to stop this abomination!\"*\"It will tell you anything to get you to do its bidding - you must not even stoop to talk to it!\"*\"I beg you to leave well enough alone...\"Omen fades away...*"
+1575: e9 40                                        builtin   end_talking()
+1577: 88 18 b1                                     goto      -> 18B1
+157A:>8d 31 62 04 41 07 54 40 17 72                jf        (A31.f04:type == 7) -> 1772
+1584: e8 40                                        builtin   begin_talking()
+1586: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+158D: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+1594: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+461    text      "The vision of Omen returns before you...*\"Lost Abydos - now just a reminder of a great failure...\"*\"None of the Mages dare admit it, but Abydos was destroyed by their leader.\"*\"The Mage Tavara destroyed the city when the people rejected his leadership.\"*\"If you enter the tunnels below the city, you'll even find his workroom - but be careful.\"*\"That place is guarded by a fearsome magical being that you'd call a daemon.\"*\"Don't say you weren't warned.\"Omen fades away...*"
+176D: e9 40                                        builtin   end_talking()
+176F: 88 18 b1                                     goto      -> 18B1
+1772:>8d 31 62 04 41 08 54 40 18 b1                jf        (A31.f04:type == 8) -> 18B1
+177C: e8 40                                        builtin   begin_talking()
+177E: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+1785: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+178C: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+279    text      "The vision of Omen returns before you...*\"You are doing well - reforming the Crolna is most important to your success.\"*\"But there are more parts to be found - a total of four.\"*\"Getting the first two was the easy part - the next two will be a true test of your prowess.\"*Omen fades away...*"
+18AF: e9 40                                        builtin   end_talking()
+18B1:>a7 31 40                                     builtin   delete_prop(A31)
+18B4:>8d 31 43 00 00 01 00 54 40 18 f5             jf        (A31 == 256) -> 18F5
+18BF: 82 00 48 10 63 20 40                         set       L00 = as_zone(G10:zone)
+18C6: 8d 00 60 24 40 18 d1                         jf        has(L00, sel36/p_weight) -> 18D1
+18CD: 8b 41 00 40                                  return    0
+18D1:>87 0c 48 0c 41 01 4b 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 - 1)
+18D9: 59 6f 75 72 20 64 65 65 64 73 20 73 …+16     text      "Your deeds stain your soul.\n"
+18F5:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @18F9 ====
+18F9: 81 01 00                                     frame     args=1 locals=0
+18FC: 54 61 6c 6b 69 6e 67 20 74 6f 20 79 …+34     text      "Talking to yourself is a sign of instability.\n"
+192A: 8b 41 00 40                                  return    0
+192E: a0 07 98 01 00 02 00 00 98 01 01 33 …+32     .dict     dict[7] {0/init: @0002, 12/talk: @18F9, 21/signal: @039C, 29/death: @0133}

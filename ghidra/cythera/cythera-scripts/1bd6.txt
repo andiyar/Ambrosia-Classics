@@ -1,0 +1,23 @@
+; segment 1BD6  page 1B  class 0x58 (room) id 214
+; kind class  length 212 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C0  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c0                                        .hdr      dictionary offset = 00C0
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 61 72 65 20 69 6e 20 61 …+84     text      "You are in a tidy private house, with some sort of scent of spices in the air, perhaps cinammon."
+0065: 82 00 43 40 40 00 4c 40                      set       L00 = char#76"Bryaxis"
+006D: 8d 00 62 15 43 00 00 00 90 54 40 00 …+1      jf        (L00.f15:activity == 144) -> 00BB
+007A: 20 20 54 68 72 6f 75 67 68 20 74 68 …+50     text      "  Through the arch to the east you hear random musical notes.\n"
+00B8: 88 00 bc                                     goto      -> 00BC
+00BB:>0a                                           text      "\n"
+00BC:>8b 41 00 40                                  return    0
+00C0: a0 03 50 00 ff ff 61 74 9b d6 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

@@ -1,0 +1,29 @@
+; segment 108A  page 10  class 0x00 (prop) type 138 tile-name "boots" (tool join F000/F004)
+; kind class  length 204 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00A0  methods: sel13/wield@0069, sel14/take_drop_14@0094
+; properties: sel36/p_weight, sel38/p26, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 a0                                        .hdr      dictionary offset = 00A0
+0002: 90 02 90 8a 00 0c 90 8a 00 57                .array    array[2] = [@000C, @0057]
+000C: 4e 69 63 65 20 77 6f 72 6b 6d 61 6e …+63     .string   "Nice workmanship - I wouldn't want to explore without a pair on my feet..."
+0057: 90 01 00 00 00 61                            .array    array[1] = [97]
+005D: 90 01 00 00 00 03                            .array    array[1] = [3]
+0063: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel13/wield @0069 ====
+0069: 81 02 00                                     frame     args=2 locals=0
+006C: c1 31 41 1f 40                               builtin   add_ability(A31, 31)
+0071: 54 68 61 74 20 73 68 6f 75 6c 64 20 …+19     text      "That should keep the feet dry!\n"
+0090: 8b 41 00 40                                  return    0
+
+; ==== method sel14/take_drop_14 @0094 ====
+0094: 81 02 00                                     frame     args=2 locals=0
+0097: c2 31 41 1f 40                               builtin   remove_ability(A31, 31)
+009C: 8b 41 00 40                                  return    0
+00A0: a0 07 90 8a 00 94 00 0e 90 8a 00 5d …+32     .dict     dict[7] {13/wield: @0069, 14/take_drop_14: @0094, 36/p_weight: @005D, 38/p26: @0063, 51: @0002}

@@ -1,0 +1,23 @@
+; segment 114D  page 11  class 0x00 (prop) type 333 tile-name "easel" (tool join F000/F004)
+; kind class  length 79 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @003B  methods: sel21/signal@0008
+; properties: sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 3b                                        .hdr      dictionary offset = 003B
+0002: 90 01 00 00 01 00                            .array    array[1] = [256]
+
+; ==== method sel21/signal @0008 ====
+0008: 81 02 01                                     frame     args=2 locals=1
+000B: 82 00 48 0f 41 01 56 40                      set       L00 = (G0F:day & 1)
+0013: 82 00 00 41 02 4c 40                         set       L00 = (L00 * 2)
+001A: 8d 48 00 41 0c 52 40 00 2a                   jf        (G00:hour >= 12) -> 002A
+0023: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+002A:>86 03 30 40 00 30 62 06 4a 41 03 56 …+1      setfield  A30.f03:frame = ((L00 + A30.f06:quality) & 3)
+0037: 8b 41 00 40                                  return    0
+003B: a0 03 91 4d 00 02 00 27 91 4d 00 08 …+8      .dict     dict[3] {21/signal: @0008, 39/p_typeflags27: @0002}

@@ -1,0 +1,69 @@
+; segment 183D  page 18  class 0x40 (char) id 61 name "Mantinea" (string table 0201)
+; kind class  length 1185 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @048D  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 8d                                        .hdr      dictionary offset = 048D
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 8d dc 41 02 40 41 0a 4f 40 00 4d             jf        (get_variable(2) < 10) -> 004D
+0010: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+45     text      "You see an older and distraught woman.*\"He must not die!\""
+0049: 8b 41 00 40                                  return    0
+004D:>82 00 43 50 00 00 00 40                      set       L00 = False
+0055: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+22     text      "You see an older, dignified woman."
+0077:>8e                                           input       ; read a line into the input buffer
+0078: 90 62 79 65 00 00 91                         match     bye else -> 0091
+007F: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+008A: 8b 41 00 40                                  return    0
+; ---- dead code 008E-0091: no dictionary entry, jump, pointer or call reaches it ----
+008E:x88 00 77                                     goto      -> 0077
+0091:>90 6e 61 6d 65 00 00 cb                      match     name else -> 00CB
+0099: 22 49 20 61 6d 20 4c 61 64 79 20 4d …+28     text      "\"I am Lady Mantinea, wife of Propontis.\""
+00C1: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00C8: 88 00 77                                     goto      -> 0077
+00CB:>90 6a 6f 62 00 00 f8                         match     job else -> 00F8
+00D2: 22 49 20 68 65 6c 70 20 6d 79 20 68 …+23     text      "\"I help my husband rule Catamarca.\""
+00F5: 88 00 77                                     goto      -> 0077
+00F8:>90 70 6c 61 67 00 01 47                      match     plag else -> 0147
+0100: 22 50 72 6f 70 6f 6e 74 69 73 20 63 …+56     text      "\"Propontis came down with it early on, it is a miracle he survived.\""
+0144: 88 00 77                                     goto      -> 0077
+0147:>90 63 6f 6d 61 00 01 96                      match     coma else -> 0196
+014F: 22 49 20 73 68 61 72 65 20 6d 79 20 …+56     text      "\"I share my husbands distrust of House Comana - especially @Darius.\""
+0193: 88 00 77                                     goto      -> 0077
+0196:>90 64 61 72 69 00 01 f4                      match     dari else -> 01F4
+019E: 22 54 68 65 72 65 27 73 20 73 6f 6d …+63     text      "\"There's something about him - I don't know.  And the @company he keeps...\""
+01E9: 82 00 43 50 00 00 01 40                      set       L00 = True
+01F1: 88 00 77                                     goto      -> 0077
+01F4:>90 63 6f 6d 70 00 02 cc                      match     comp else -> 02CC
+01FC: 8d 00 40 02 ac                               jf        L00 -> 02AC
+0201: 22 50 65 6f 70 6c 65 20 68 61 76 65 …+149    text      "\"People have seen him wandering around in the middle of the night.\"*\"Recently I even saw him meeting with some ruffians - I couldn't hear what they said though.\""
+02A2: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+02A9: 88 02 c9                                     goto      -> 02C9
+02AC:>22 49 20 64 6f 6e 27 74 20 71 75 69 …+17     text      "\"I don't quite follow you...\""
+02C9:>88 00 77                                     goto      -> 0077
+02CC:>90 70 72 6f 70 2c 68 75 73 62 00 03 …+1      match     prop,husb else -> 037A
+02D9: 22 4d 79 20 68 75 73 62 61 6e 64 20 …+146    text      "\"My husband Propontis was quite ill from the plague, but he'll recover nicely, if he'd just rest.\"*\"But he always seems to keep himself @busy with something.\""
+0377: 88 00 77                                     goto      -> 0077
+037A:>90 62 75 73 79 00 03 f4                      match     busy else -> 03F4
+0382: 22 49 74 27 73 20 68 61 72 64 20 77 …+99     text      "\"It's hard work running House Strymon - especially watching out for the likes of Houses @Nicander and @Comana.\""
+03F1: 88 00 77                                     goto      -> 0077
+03F4:>90 68 61 6c 6f 00 04 54                      match     halo else -> 0454
+03FC: 22 48 61 6c 6f 73 20 69 73 20 50 72 …+73     text      "\"Halos is Propontis' younger brother - he lives in Cademia - he's quite resourceful.\""
+0451: 88 00 77                                     goto      -> 0077
+0454:>90 2a 00 04 86                               match     * else -> 0486
+0459: 8d 9f 08 07 30 40 5e 40 04 83                jf        !R0807(A30) -> 0483
+0463: 8d 9f 08 0b 30 40 5e 40 04 83                jf        !R080B(A30) -> 0483
+046D: 8d 9f 08 01 30 40 5e 40 04 83                jf        !R0801(A30) -> 0483
+0477: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+0483:>88 00 77                                     goto      -> 0077
+0486:>88 00 77                                     goto      -> 0077
+; ---- dead code 0489-048D: no dictionary entry, jump, pointer or call reaches it ----
+0489:x8b 41 00 40                                  return    0
+048D: a0 03 98 3d 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

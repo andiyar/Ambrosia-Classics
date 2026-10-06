@@ -1,0 +1,34 @@
+; segment 1808  page 18  class 0x40 (char) id 8 name "Cademia Guard" (string table 0201)
+; kind class  length 231 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00D3  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 d3                                        .hdr      dictionary offset = 00D3
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 76 65 …+26     text      "You see a very serious looking guard.*"
+002B:>8e                                           input       ; read a line into the input buffer
+002C: 90 6a 6f 62 00 00 58                         match     job else -> 0058
+0033: 22 49 20 67 75 61 72 64 20 74 68 65 …+22     text      "\"I guard the citizens of Cademia.\""
+0055: 88 00 2b                                     goto      -> 002B
+0058:>90 62 79 65 00 00 7a                         match     bye else -> 007A
+005F: 22 47 6f 6f 64 62 79 65 2c 20 73 74 …+8      text      "\"Goodbye, stranger.\""
+0073: 8b 41 00 40                                  return    0
+; ---- dead code 0077-007A: no dictionary entry, jump, pointer or call reaches it ----
+0077:x88 00 2b                                     goto      -> 002B
+007A:>90 2a 00 00 cc                               match     * else -> 00CC
+007F: 8d 9f 08 0e 30 40 5e 40 00 c9                jf        !R080E(A30) -> 00C9
+0089: 8d 9f 08 01 30 40 5e 40 00 c9                jf        !R0801(A30) -> 00C9
+0093: 22 49 20 61 6d 20 6a 75 73 74 20 61 …+42     text      "\"I am just a guard, and not permitted to talk of such\""
+00C9:>88 00 2b                                     goto      -> 002B
+00CC:>88 00 2b                                     goto      -> 002B
+; ---- dead code 00CF-00D3: no dictionary entry, jump, pointer or call reaches it ----
+00CF:x8b 41 00 40                                  return    0
+00D3: a0 03 98 08 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

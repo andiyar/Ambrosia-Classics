@@ -16,7 +16,7 @@ debug-label part of `FUN_100345f0`, the collision tests themselves (damage-healt
 terrain drawing (level-scroll-objects.md §5, §9). This is a code reading. None of it has been
 checked against the running game.
 Raw listings: `$W/disasm-w2s1.txt`, `$W/disasm-w2s1b.txt`, `$W/disasm-w2s1c.txt`
-(DisasmFuncs.java against the private copy `$W/work-w2s1`; `$W` = `/Users/andiyar/ghidra-proj-deimos`).
+(DisasmFuncs.java against the private copy `$W/work-w2s1`; `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`).
 
 **Short answers.**
 - **(1)** An entity's position is the centre of its *trimmed* sprite frame, in both the unscaled

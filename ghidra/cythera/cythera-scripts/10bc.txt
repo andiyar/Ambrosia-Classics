@@ -1,0 +1,37 @@
+; segment 10BC  page 10  class 0x00 (prop) type 188 tile-name "sundial" (tool join F000/F004)
+; kind class  length 370 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0146  methods: sel9/use@0064, sel8/search@006F
+; properties: sel41
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 46                                        .hdr      dictionary offset = 0146
+0002: 90 18 00 00 00 00 00 00 00 00 00 00 …+86     .array    array[24] = [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 8, 0, 0, 0, 0, 0, 0]
+
+; ==== method sel9/use @0064 ====
+0064: 81 01 00                                     frame     args=1 locals=0
+0067: 9d 08 30 40                                  send      A30.sel8/search()
+006B: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @006F ====
+006F: 81 01 00                                     frame     args=1 locals=0
+0072: 8d 48 00 41 06 4f 48 00 41 11 51 5d …+3      jf        ((G00:hour < 6) || (G00:hour > 17)) -> 00C1
+0081: 41 20 73 75 6e 64 69 61 6c 20 6f 6e …+49     text      "A sundial only works when the sun is visible, thus the name.\n"
+00BE: 88 01 42                                     goto      -> 0142
+00C1:>8d 48 00 41 0c 54 40 00 e1                   jf        (G00:hour == 12) -> 00E1
+00CA: 49 74 20 73 61 79 73 20 69 74 20 69 …+8      text      "It says it is noon.\n"
+00DE: 88 01 42                                     goto      -> 0142
+00E1:>8d 48 00 41 0c 4f 40 01 15                   jf        (G00:hour < 12) -> 0115
+00EA: 49 74 20 73 61 79 73 20 74 68 61 74 …+7      text      "It says that it is "
+00FD: 8a 48 00 40                                  print     G00:hour
+0101: 20 69 6e 20 74 68 65 20 6d 6f 72 6e …+5      text      " in the morning.\n"
+0112: 88 01 42                                     goto      -> 0142
+0115:>49 74 20 73 61 79 73 20 74 68 61 74 …+7      text      "It says that it is "
+0128: 8a 48 00 41 0c 4b 40                         print     (G00:hour - 12)
+012F: 20 69 6e 20 74 68 65 20 61 66 74 65 …+7      text      " in the afternoon.\n"
+0142:>8b 41 00 40                                  return    0
+0146: a0 07 50 00 ff ff 04 eb 90 bc 00 6f …+32     .dict     dict[7] {8/search: @006F, 9/use: @0064, 41: @0002}

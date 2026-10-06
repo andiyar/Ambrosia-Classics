@@ -1,0 +1,165 @@
+; segment 1861  page 18  class 0x40 (char) id 97 name "Aethon" (string table 0201)
+; kind class  length 2184 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @085C  methods: sel4/index@0002, sel32/spawned@0030, sel21/signal@0075, sel12/talk@012D
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 6   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 08 5c                                        .hdr      dictionary offset = 085C
+
+; ==== method sel4/index @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 8d 31 42 00 f8 54 40 00 15                   jf        (A31 == 248) -> 0015
+000E: 8b 43 50 00 00 01 40                         return    True
+0015:>8d 31 42 00 f2 54 40 00 25                   jf        (A31 == 242) -> 0025
+001E: 8b 43 50 00 00 01 40                         return    True
+0025:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 002C-0030: no dictionary entry, jump, pointer or call reaches it ----
+002C:x8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @0030 ====
+0030: 81 01 00                                     frame     args=1 locals=0
+0033: 8d 30 62 15 41 01 54 ac 41 01 41 20 …+16     jf        (((A30.f15:activity == 1) && (random(1, 32) == 1)) && R0F13(34)) -> 006A  ; R0F13 = inparty [from 0x0101 symtab]
+004F: 86 26 30 40 44 4d 6f 76 69 6e 67 20 …+15     setfield  A30.f26:f26 = "Moving slow, old man"
+006A:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 0071-0075: no dictionary entry, jump, pointer or call reaches it ----
+0071:x8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @0075 ====
+0075: 81 02 04                                     frame     args=2 locals=4
+0078: 8d 31 64 50 40 01 22                         jf        is_spell(A31) -> 0122
+007F: 8d 31 62 04 42 00 f8 54 40 01 0a             jf        (A31.f04:type == 248) -> 010A
+008A: 82 00 43 50 00 00 00 40                      set       L00 = False
+0092: 82 01 c9 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_descendants(&L02, 0, A30)
+009F:>8c c9 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_descendants(&L02, 1) -> 00CE
+00AC: 8d 01 62 04 42 01 09 54 40 00 bf             jf        (L01.f04:type == 265) -> 00BF
+00B7: 82 00 43 50 00 00 01 40                      set       L00 = True
+00BF:>82 01 c9 43 10 00 00 02 41 02 40 40          set       L01 = iterate_descendants(&L02, 2)
+00CB: 88 00 9f                                     goto      -> 009F
+00CE:>8d 00 5e 40 00 f5                            jf        !L00 -> 00F5
+00D4: 86 26 30 40 44 4f 75 74 20 6f 66 20 …+14     setfield  A30.f26:f26 = "Out of lockpicks..."
+00EE: 8b 43 50 00 ff ff 40                         return    Nil
+00F5:>86 0b 31 40 30 40                            setfield  A31.f0B:loc16 = A30
+00FB: 86 04 31 40 42 00 d5 40                      setfield  A31.f04:type = 213
+0103: 8b 43 00 00 80 01 40                         return    32769
+010A:>8d 31 62 04 42 00 f2 54 40 01 22             jf        (A31.f04:type == 242) -> 0122
+0115: 86 0b 31 40 30 40                            setfield  A31.f0B:loc16 = A30
+011B: 8b 43 00 00 80 02 40                         return    32770
+0122:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0129-012D: no dictionary entry, jump, pointer or call reaches it ----
+0129:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @012D ====
+012D: 81 01 00                                     frame     args=1 locals=0
+0130: 59 6f 75 20 73 65 65 20 61 20 73 68 …+44     text      "You see a short, rat faced man with a mischevious grin.*"
+0168:>8e                                           input       ; read a line into the input buffer
+0169: 90 6e 61 6d 65 00 01 9c                      match     name else -> 019C
+0171: 22 41 65 74 68 6f 6e 20 2d 20 74 68 …+21     text      "\"Aethon - that's as good as any.\""
+0192: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0199: 88 01 68                                     goto      -> 0168
+019C:>90 61 65 74 68 2c 62 61 6c 69 2c 70 …+6      match     aeth,bali,poda else -> 01B7
+01AE: 22 59 65 73 3f 22                            text      "\"Yes?\""
+01B4: 88 01 68                                     goto      -> 0168
+01B7:>90 62 79 65 00 01 cf                         match     bye else -> 01CF
+01BE: 22 4c 61 74 65 72 2e 2e 2e 22                text      "\"Later...\""
+01C8: 8b 41 00 40                                  return    0
+; ---- dead code 01CC-01CF: no dictionary entry, jump, pointer or call reaches it ----
+01CC:x88 01 68                                     goto      -> 0168
+01CF:>90 6a 6f 62 00 02 13                         match     job else -> 0213
+01D6: 22 49 27 6d 20 62 65 74 77 65 65 6e …+46     text      "\"I'm between jobs, so I'm doing things like @ratcatching.\""
+0210: 88 01 68                                     goto      -> 0168
+0213:>90 72 61 74 63 00 02 63                      match     ratc else -> 0263
+021B: 22 43 61 74 63 68 69 6e 67 20 72 61 …+57     text      "\"Catching rats is a very useful service, though it doesn't pay well.\""
+0260: 88 01 68                                     goto      -> 0168
+0263:>90 72 61 74 2c 72 61 74 73 00 02 8b          match     rat,rats else -> 028B
+026F: 22 46 6f 75 6c 20 73 69 78 20 6c 65 …+13     text      "\"Foul six legged vermin.\""
+0288: 88 01 68                                     goto      -> 0168
+028B:>90 64 65 6d 6f 00 02 d1                      match     demo else -> 02D1
+0293: 8d 9f 0f 13 30 40 40 02 c9                   jf        R0F13(A30) -> 02C9  ; R0F13 = inparty [from 0x0101 symtab]
+029C: 22 49 27 6d 20 61 20 62 69 67 20 66 …+30     text      "\"I'm a big fan of his - he is quite good.\""
+02C6: 88 02 ce                                     goto      -> 02CE
+02C9:>9f 08 0e 30 40                               call      R080E(A30)
+02CE:>88 01 68                                     goto      -> 0168
+02D1:>90 6d 65 6c 65 00 03 96                      match     mele else -> 0396
+02D9: 8d bc 42 00 22 40 9f 0f 13 42 00 22 …+5      jf        (leader_can_see(34) && R0F13(34)) -> 0364  ; R0F13 = inparty [from 0x0101 symtab]
+02EA: 22 48 65 27 73 20 61 20 68 61 73 2d …+7      text      "\"He's a has-been.\"*"
+02FD: a4 42 00 22 41 01 40                         builtin   show_portrait(34, 1)
+0304: 22 49 20 73 68 6f 75 6c 64 20 62 65 …+52     text      "\"I should beat some respect into you, but that's a lost cause.\"*"
+0344: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0349: 22 4a 75 73 74 20 74 72 79 20 69 74 …+12     text      "\"Just try it old man...\""
+0361: 88 03 93                                     goto      -> 0393
+0364:>22 44 6f 6e 27 74 20 6c 65 74 20 68 …+35     text      "\"Don't let him know, but I really respect him.\""
+0393:>88 01 68                                     goto      -> 0168
+0396:>90 68 61 6c 6f 00 04 87                      match     halo else -> 0487
+039E: 8d 9f 0f 02 42 00 3e 41 03 40 40 04 …+1      jf        R0F02(62, 3) -> 045E  ; R0F02 = tstbit [from 0x0101 symtab]
+03AB: 8d dc 41 03 40 41 01 54 40 03 e4             jf        (get_variable(3) == 1) -> 03E4
+03B6: 22 49 20 63 61 6e 27 74 20 62 65 6c …+31     text      "\"I can't believe he'd be guilty of murder!\""
+03E1: 88 04 54                                     goto      -> 0454
+03E4:>8d dc 41 03 40 41 02 52 40 04 0b             jf        (get_variable(3) >= 2) -> 040B
+03EF: 22 49 20 6b 6e 65 77 20 68 65 20 77 …+13     text      "\"I knew he was innocent.\""
+0408: 88 04 54                                     goto      -> 0454
+040B:>22 4c 65 74 27 73 20 73 61 79 20 74 …+61     text      "\"Let's say that we've done business before - I don't mean catching rats.\""
+0454:>9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+045B: 88 04 84                                     goto      -> 0484
+045E:>22 41 20 53 74 72 79 6d 6f 6e 20 62 …+26     text      "\"A Strymon businessman, I understand.\""
+0484:>88 01 68                                     goto      -> 0168
+0487:>90 6a 6f 69 6e 2c 63 6f 6d 65 00 05 …+1      match     join,come else -> 0530
+0494: 8d 9f 0f 13 30 40 40 04 c9                   jf        R0F13(A30) -> 04C9  ; R0F13 = inparty [from 0x0101 symtab]
+049D: 22 42 75 74 20 77 65 27 72 65 20 61 …+29     text      "\"But we're already adventuring together.\""
+04C6: 88 05 2d                                     goto      -> 052D
+04C9:>8d 9f 0f 02 30 41 01 40 40 05 05             jf        R0F02(A30, 1) -> 0505  ; R0F02 = tstbit [from 0x0101 symtab]
+04D4: 22 41 6e 79 20 66 72 69 65 6e 64 20 …+29     text      "\"Any friend of Halos is a friend of mine\""
+04FD: b9 42 00 61 40                               builtin   join_party(97)
+0502: 88 05 2d                                     goto      -> 052D
+0505:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+28     text      "\"I'm sorry, but I've got rats to catch.\""
+052D:>88 01 68                                     goto      -> 0168
+0530:>90 6b 65 73 68 00 05 c9                      match     kesh else -> 05C9
+0538: 8d 9f 0f 02 30 41 01 40 40 05 95             jf        R0F02(A30, 1) -> 0595  ; R0F02 = tstbit [from 0x0101 symtab]
+0543: 22 49 27 76 65 20 68 65 61 72 64 20 …+67     text      "\"I've heard of it, but not much more than that - I'd ask Guildmaster Eteocles.\""
+0592: 88 05 c6                                     goto      -> 05C6
+0595:>22 44 6f 6e 27 74 20 6b 6e 6f 77 20 …+37     text      "\"Don't know what you're talking about, stranger.\""
+05C6:>88 01 68                                     goto      -> 0168
+05C9:>90 65 74 65 6f 00 06 04                      match     eteo else -> 0604
+05D1: 22 45 74 65 6f 63 6c 65 73 20 69 73 …+36     text      "\"Eteocles is the head of the Ratcatching Guild.\""
+0601: 88 01 68                                     goto      -> 0168
+0604:>90 67 75 69 6c 00 06 3f                      match     guil else -> 063F
+060C: 22 54 68 65 20 52 61 74 63 61 74 63 …+36     text      "\"The Ratcatching Guild is an honorable society.\""
+063C: 88 01 68                                     goto      -> 0168
+063F:>90 74 72 61 69 2c 74 65 61 63 2c 6d …+6      match     trai,teac,miss else -> 06FE
+0651: 22 49 27 6d 20 61 20 62 69 67 20 66 …+61     text      "\"I'm a big fan of using missiles in combat - want to learn a few tricks?\""
+069A: 8f 79 6e 00                                  prompt    "yn"
+069E: 90 79 00 06 b9                               match     y else -> 06B9
+06A3: 9f 0e b1 48 05 44 41 65 74 68 6f 6e …+10     call      R0EB1(G05:leader, "Aethon", 200, True)
+06B9:>90 6e 00 06 fb                               match     n else -> 06FB
+06BE: 22 57 65 6c 6c 2c 20 69 66 20 79 6f …+49     text      "\"Well, if you change your mind, just ask be about @missiles.\""
+06FB:>88 01 68                                     goto      -> 0168
+06FE:>90 6c 65 61 76 00 07 68                      match     leav else -> 0768
+0706: 8d 9f 0f 13 30 40 5e 40 07 2b                jf        !R0F13(A30) -> 072B  ; R0F13 = inparty [from 0x0101 symtab]
+0710: 22 46 69 6e 65 2c 20 62 65 20 74 68 …+8      text      "\"Fine, be that way.\""
+0724: 8b 41 00 40                                  return    0
+; ---- dead code 0728-072B: no dictionary entry, jump, pointer or call reaches it ----
+0728:x88 07 65                                     goto      -> 0765
+072B:>22 4d 61 79 62 65 20 69 74 20 69 73 …+46     text      "\"Maybe it is time for me to catch some rats for myself...\""
+0765:>88 01 68                                     goto      -> 0168
+0768:>90 63 6f 6d 61 00 07 9a                      match     coma else -> 079A
+0770: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+27     text      "\"House Comana isn't fit to sweep dung.\""
+0797: 88 01 68                                     goto      -> 0168
+079A:>90 73 74 72 79 2c 61 74 75 73 2c 61 …+16     match     stry,atus,atti,dodo,nica else -> 07E1
+07B6: 22 49 27 76 65 20 64 6f 6e 65 20 62 …+28     text      "\"I've done business with them before...\""
+07DE: 88 01 68                                     goto      -> 0168
+07E1:>90 2a 00 08 55                               match     * else -> 0855
+07E6: 8d 9f 08 0e 30 40 5e 40 08 52                jf        !R080E(A30) -> 0852
+07F0: 8d 9f 08 01 30 40 5e 40 08 52                jf        !R0801(A30) -> 0852
+07FA: 8d 9f 0f 02 30 41 01 40 40 08 21             jf        R0F02(A30, 1) -> 0821  ; R0F02 = tstbit [from 0x0101 symtab]
+0805: 22 49 20 63 61 6e 20 6c 6f 6f 6b 20 …+13     text      "\"I can look into that...\""
+081E: 88 08 52                                     goto      -> 0852
+0821:>22 44 6f 6e 27 74 20 6b 6e 6f 77 20 …+37     text      "\"Don't know what you're talking about, stranger.\""
+0852:>88 01 68                                     goto      -> 0168
+0855:>88 01 68                                     goto      -> 0168
+; ---- dead code 0858-085C: no dictionary entry, jump, pointer or call reaches it ----
+0858:x8b 41 00 40                                  return    0
+085C: a0 07 98 61 00 75 00 15 50 00 ff ff …+32     .dict     dict[7] {4/index: @0002, 12/talk: @012D, 21/signal: @0075, 32/spawned: @0030}

@@ -1,0 +1,61 @@
+; segment 0802  page 08  routine
+; kind routine  length 1296 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 69 72 6f 6e 2c 6d 69 6e 65 00 00 …+1      match     iron,mine else -> 0055
+0010: 22 54 68 65 20 69 72 6f 6e 20 6d 69 …+50     text      "\"The iron mine has proved to be quite useful for House Attis.\""
+004E: 8b 43 50 00 00 01 40                         return    True
+0055:>90 6f 70 68 65 00 01 4b                      match     ophe else -> 014B
+005D: 8d dc 41 03 40 41 00 54 40 00 a5             jf        (get_variable(3) == 0) -> 00A5
+0068: 22 48 65 20 69 73 20 74 68 65 20 72 …+46     text      "\"He is the representative of House Nicander we deal with.\""
+00A2: 88 01 44                                     goto      -> 0144
+00A5:>8d dc 41 03 40 41 01 54 40 01 01             jf        (get_variable(3) == 1) -> 0101
+00B0: 22 48 65 20 77 61 73 20 6d 75 72 64 …+66     text      "\"He was murdered in cold blood by that Halos of Strymon!  This is an outrage!\""
+00FE: 88 01 44                                     goto      -> 0144
+0101:>22 41 63 63 65 70 74 69 6e 67 20 68 …+55     text      "\"Accepting his death is hard - he was a good friend of the family.\""
+0144:>8b 43 50 00 00 01 40                         return    True
+014B:>90 68 61 6c 6f 00 02 3f                      match     halo else -> 023F
+0153: 8d dc 41 03 40 41 00 54 40 01 95             jf        (get_variable(3) == 0) -> 0195
+015E: 22 48 65 20 61 6e 64 20 74 68 61 74 …+40     text      "\"He and that crowd he runs with can not be trusted.\""
+0192: 88 02 38                                     goto      -> 0238
+0195:>8d dc 41 03 40 41 01 54 40 01 fb             jf        (get_variable(3) == 1) -> 01FB
+01A0: 22 54 68 61 74 20 76 69 6c 6c 69 61 …+76     text      "\"That villian kills Opheltius, and then tries to blame our Cybele - this is an outrage!\""
+01F8: 88 02 38                                     goto      -> 0238
+01FB:>22 48 65 20 6d 61 79 20 68 61 76 65 …+49     text      "\"He may have been found innocent, but he is still a villian.\""
+0238:>8b 43 50 00 00 01 40                         return    True
+023F:>8d dc 41 03 40 40 02 ea                      jf        get_variable(3) -> 02EA
+0247: 90 6d 75 72 64 00 02 ea                      match     murd else -> 02EA
+024F: 8d dc 41 03 40 41 01 54 40 02 b5             jf        (get_variable(3) == 1) -> 02B5
+025A: 22 54 68 61 74 20 76 69 6c 6c 69 61 …+76     text      "\"That villian kills Opheltius, and then tries to blame our Cybele - this is an outrage!\""
+02B2: 88 02 e3                                     goto      -> 02E3
+02B5:>22 41 20 73 68 61 70 65 73 68 69 66 …+34     text      "\"A shapeshifter - we just can't believe that!\""
+02E3:>8b 43 50 00 00 01 40                         return    True
+02EA:>90 61 74 74 69 00 03 0e                      match     atti else -> 030E
+02F2: 22 57 65 20 61 72 65 20 48 6f 75 73 …+9      text      "\"We are House Attis.\""
+0307: 8b 43 50 00 00 01 40                         return    True
+030E:>90 63 61 64 65 00 03 b5                      match     cade else -> 03B5
+0316: 22 57 69 74 68 20 74 68 65 20 73 75 …+140    text      "\"With the support of House Strymon and Dodona, we are still the most powerful House in Cademia...\"*\"...despite what supporters of House Comana may say.\""
+03AE: 8b 43 50 00 00 01 40                         return    True
+03B5:>90 63 6f 6d 61 00 03 f4                      match     coma else -> 03F4
+03BD: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+36     text      "\"House Comana is a house of villany and deceit.\""
+03ED: 8b 43 50 00 00 01 40                         return    True
+03F4:>90 6e 69 63 61 00 04 2f                      match     nica else -> 042F
+03FC: 22 48 6f 75 73 65 20 4e 69 63 61 6e …+32     text      "\"House Nicander is a valuable ally of ours.\""
+0428: 8b 43 50 00 00 01 40                         return    True
+042F:>90 64 6f 64 6f 00 04 7c                      match     dodo else -> 047C
+0437: 22 48 6f 75 73 65 20 44 6f 64 6f 6e …+50     text      "\"House Dodona is an honorable House, though a bit pedestrian.\""
+0475: 8b 43 50 00 00 01 40                         return    True
+047C:>90 61 74 75 73 00 04 b5                      match     atus else -> 04B5
+0484: 22 48 6f 75 73 65 20 41 74 75 73 73 …+30     text      "\"House Atussa is no longer of importance.\""
+04AE: 8b 43 50 00 00 01 40                         return    True
+04B5:>90 73 74 72 79 00 05 05                      match     stry else -> 0505
+04BD: 22 48 6f 75 73 65 20 53 74 72 79 6d …+53     text      "\"House Strymon has all it can do to retain control of Catamarca.\""
+04FE: 8b 43 50 00 00 01 40                         return    True
+0505:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 050C-0510: no dictionary entry, jump, pointer or call reaches it ----
+050C:x8b 41 00 40                                  return    0

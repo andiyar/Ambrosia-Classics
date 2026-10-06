@@ -1,0 +1,93 @@
+; segment 10A0  page 10  class 0x00 (prop) type 160 tile-name "pitcher" (tool join F000/F004)
+; kind class  length 832 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02F0  methods: sel15/take_drop_15@003A, sel8/search@0048, sel9/use@00B0, sel10/use_on@012D
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 f0                                        .hdr      dictionary offset = 02F0
+0002: 90 02 90 a0 00 0c 90 a0 00 2e                .array    array[2] = [@000C, @002E]
+000C: 41 20 67 72 65 61 74 20 64 65 76 69 …+22     .string   "A great device to fill with wine!"
+002E: 90 01 00 00 00 61                            .array    array[1] = [97]
+0034: 90 01 00 00 00 0a                            .array    array[1] = [10]
+
+; ==== method sel15/take_drop_15 @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0044-0048: no dictionary entry, jump, pointer or call reaches it ----
+0044:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0048 ====
+0048: 81 01 01                                     frame     args=1 locals=1
+004B: 82 00 45 00 4c 90 04 90 a0 00 62 90 …+70     set       L00 = blk@0050
+      ; 0x45 inline block 0050-009C (76 bytes):
+      0050: 90 04                            .array[4]
+        [0] @0062 "Empty"
+        [1] @0068 "filled with water"
+        [2] @007A "filled with milk"
+        [3] @008B "filled with wine"
+009D: 49 74 20 69 73 20                            text      "It is "
+00A3: 8a 00 30 62 06 46 40                         print     L00[A30.f06:quality]
+00AA: 2e 0a                                        text      ".\n"
+00AC: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @00B0 ====
+00B0: 81 01 01                                     frame     args=1 locals=1
+00B3: 8d 48 13 40 01 22                            jf        G13:g13_bool -> 0122
+00B9: 8d 30 62 06 41 00 54 40 00 de                jf        (A30.f06:quality == 0) -> 00DE
+00C3: 46 69 6c 6c 20 70 69 74 63 68 65 72 …+12     text      "Fill pitcher with what?\n"
+00DB: 88 01 22                                     goto      -> 0122
+00DE:>82 00 45 00 28 90 04 90 a0 00 f5 90 …+34     set       L00 = blk@00E3
+      ; 0x45 inline block 00E3-010B (40 bytes):
+      00E3: 90 04                            .array[4]
+        [0] @00F5 "Empty"
+        [1] @00FB "water"
+        [2] @0101 "milk"
+        [3] @0106 "wine"
+010C: 50 6f 75 72 20                               text      "Pour "
+0111: 8a 00 30 62 06 46 40                         print     L00[A30.f06:quality]
+0118: 20 6f 6e 20 77 68 61 74 3f 0a                text      " on what?\n"
+0122:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0129-012D: no dictionary entry, jump, pointer or call reaches it ----
+0129:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @012D ====
+012D: 81 02 00                                     frame     args=2 locals=0
+0130: 8d 30 62 06 41 00 54 40 02 17                jf        (A30.f06:quality == 0) -> 0217
+013A: 8d 31 62 04 42 00 77 54 31 62 04 42 …+7      jf        ((A31.f04:type == 119) || (A31.f04:type == 118)) -> 016A
+014D: 59 6f 75 20 6e 65 65 64 20 74 6f 20 …+14     text      "You need to use a bucket.\n"
+0167: 88 02 13                                     goto      -> 0213
+016A:>8d 31 62 04 42 00 37 54 31 62 04 42 …+15     jf        (((A31.f04:type == 55) || (A31.f04:type == 54)) || (A31.f04:type == 218)) -> 01B1
+0185: 86 06 30 40 41 01 40                         setfield  A30.f06:quality = 1
+018C: 54 68 65 20 70 69 74 63 68 65 72 20 …+22     text      "The pitcher is now full of water.\n"
+01AE: 88 02 13                                     goto      -> 0213
+01B1:>8d 31 62 04 42 00 5a 54 40 01 fd             jf        (A31.f04:type == 90) -> 01FD
+01BC: 41 20 70 69 74 63 68 65 72 20 69 73 …+50     text      "A pitcher is not wide enough for milking - you need a bucket.\n"
+01FA: 88 02 13                                     goto      -> 0213
+01FD:>54 68 65 20 70 69 74 63 68 65 72 20 …+10     text      "The pitcher is empty.\n"
+0213:>8b 41 00 40                                  return    0
+0217:>8d 31 62 04 42 00 a0 54 40 02 98             jf        (A31.f04:type == 160) -> 0298
+0222: 8d 31 62 06 41 00 54 40 02 76                jf        (A31.f06:quality == 0) -> 0276
+022C: 59 6f 75 20 68 61 76 65 20 70 6f 75 …+44     text      "You have poured the liquid from one pitcher to another.\n"
+0264: 86 06 31 40 30 62 06 40                      setfield  A31.f06:quality = A30.f06:quality
+026C: 86 06 30 40 41 00 40                         setfield  A30.f06:quality = 0
+0273: 88 02 94                                     goto      -> 0294
+0276:>54 68 61 74 20 70 69 74 63 68 65 72 …+18     text      "That pitcher is already full.\n"
+0294:>8b 41 00 40                                  return    0
+0298:>8d 30 62 06 41 01 54 40 02 b5                jf        (A30.f06:quality == 1) -> 02B5
+02A2: 8d 9f 0e 0a 31 40 40 02 b2                   jf        R0E0A(A31) -> 02B2
+02AB: 86 06 30 40 41 00 40                         setfield  A30.f06:quality = 0
+02B2:>88 02 ec                                     goto      -> 02EC
+02B5:>8d 30 62 06 41 02 54 40 02 d2                jf        (A30.f06:quality == 2) -> 02D2
+02BF: 8d 9f 0e 0b 31 40 40 02 cf                   jf        R0E0B(A31) -> 02CF
+02C8: 86 06 30 40 41 00 40                         setfield  A30.f06:quality = 0
+02CF:>88 02 ec                                     goto      -> 02EC
+02D2:>8d 30 62 06 41 03 54 40 02 ec                jf        (A30.f06:quality == 3) -> 02EC
+02DC: 8d 9f 0e 0d 31 40 40 02 ec                   jf        R0E0D(A31) -> 02EC
+02E5: 86 06 30 40 41 00 40                         setfield  A30.f06:quality = 0
+02EC:>8b 41 00 40                                  return    0
+02F0: a0 0d 50 00 ff ff 61 70 50 00 ff ff …+68     .dict     dict[13] {8/search: @0048, 9/use: @00B0, 10/use_on: @012D, 15/take_drop_15: @003A, 36/p_weight: @0034, 51: @0002}

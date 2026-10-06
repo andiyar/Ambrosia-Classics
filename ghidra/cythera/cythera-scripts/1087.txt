@@ -1,0 +1,60 @@
+; segment 1087  page 10  class 0x00 (prop) type 135 tile-name "inkwell" (tool join F000/F004)
+; kind class  length 554 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01FE  methods: sel8/search@0008, sel9/use@0045, sel10/use_on@0062
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 fe                                        .hdr      dictionary offset = 01FE
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+
+; ==== method sel8/search @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 49 74 20 69 73 20 61 20 73 6d 61 6c …+42     text      "It is a small inkwell, complete with ink (of course).\n"
+0041: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0045 ====
+0045: 81 01 00                                     frame     args=1 locals=0
+0048: 57 72 69 74 65 20 6f 6e 20 77 68 61 …+3      text      "Write on what?\n"
+0057: 8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 005E-0062: no dictionary entry, jump, pointer or call reaches it ----
+005E:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0062 ====
+0062: 81 02 06                                     frame     args=2 locals=6
+0065: 8d 31 62 04 42 00 1a 54 40 00 97             jf        (A31.f04:type == 26) -> 0097
+0070: 44 65 66 61 63 69 6e 67 20 62 6f 6f …+24     text      "Defacing books isn't very sociable.\n"
+0094: 88 01 fa                                     goto      -> 01FA
+0097:>8d 31 62 04 42 00 86 54 40 01 ce             jf        (A31.f04:type == 134) -> 01CE
+00A2: 8d 31 62 06 41 00 54 40 01 9f                jf        (A31.f06:quality == 0) -> 019F
+00AC: 82 00 9b 04 43 00 00 01 5e 43 00 00 …+4      set       L00 = sysnew_window(350, 200)
+00BC: 82 01 9b 06 00 44 57 68 61 74 20 64 …+34     set       L01 = sysnew_06(L00, "What do you want to write?", 20, 20, 300, 32)
+00EA: 82 02 43 50 00 ff ff 40                      set       L02 = Nil
+00F2: 8d 31 62 11 40 01 05                         jf        A31.f11:has_frame -> 0105
+00F9: 82 02 31 62 12 43 00 00 01 02 46 40          set       L02 = A31.f12:frame_dict[258]
+0105:>8d 02 43 50 00 ff ff 54 40 01 24             jf        (L02 == Nil) -> 0124
+0110: 82 02 44 57 72 69 74 65 20 53 6f 6d …+8      set       L02 = "Write Something"
+0124:>82 03 9b 08 00 44 57 72 69 74 65 20 …+19     set       L03 = sysnew_08(L00, "Write it", 270, 168, 70, 32)
+0143: 82 01 9b 14 00 02 41 14 41 3c 43 00 …+7      set       L01 = sysnew_14(L00, L02, 20, 60, 300, 96)
+0156:>8d 41 01 40 01 6f                            jf        1 -> 016F
+015C: 82 04 00 62 37 40                            set       L04 = L00.f37
+0162: 8d 04 03 54 40 01 6c                         jf        (L04 == L03) -> 016C
+0169: 88 01 6f                                     goto      -> 016F
+016C:>88 01 56                                     goto      -> 0156
+016F:>82 02 01 62 37 40                            set       L02 = L01.f37
+0175: 93 00 40                                     release   L00
+0178: 82 05 31 62 12 40                            set       L05 = A31.f12:frame_dict
+017E: 84 05 40 43 00 00 01 02 40 02 40             atput     L05[258] = L02
+0189: 49 74 20 6e 6f 77 20 73 61 79 73 3a …+2      text      "It now says: '"
+0197: 8a 02 40                                     print     L02
+019A: 27 0a                                        text      "'\n"
+019C: 88 01 cb                                     goto      -> 01CB
+019F:>50 6c 65 61 73 65 20 66 69 6e 64 20 …+32     text      "Please find a clean piece of paper first...\n"
+01CB:>88 01 fa                                     goto      -> 01FA
+01CE:>47 72 61 66 66 69 74 69 20 69 73 20 …+32     text      "Graffiti is enough of a problem as it is...\n"
+01FA:>8b 41 00 40                                  return    0
+01FE: a0 07 50 00 ff ff 00 0e 90 87 00 02 …+32     .dict     dict[7] {8/search: @0008, 9/use: @0045, 10/use_on: @0062, 36/p_weight: @0002}

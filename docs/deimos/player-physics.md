@@ -7,7 +7,7 @@ bracketed neighbours `10026100–100263a0` and `1002a4f0–1002a610`; see `$W/in
 only its player-side writes: state, invulnerability, lives; §5), `FUN_10029fe0` (scoring reader),
 `FUN_10026c90`/`FUN_10026c10` (damage reader; I read them because the update calls them, §8 ⚑),
 the weapon handler at player `+0x240` (`FUN_1003a…–1003c…`), and the registration check.
-`$W` = `/Users/andiyar/ghidra-proj-deimos`. Raw listings: `$W/disasm-player2.txt` (every function
+`$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`. Raw listings: `$W/disasm-player2.txt` (every function
 in scope + `FUN_10029a10`, `FUN_10005cd0/cf0`), `$W/disasm-player.txt` (`FUN_10039e70`),
 `$W/disasm-player3.txt` (`FUN_10027e50`, `FUN_10006b50`, `FUN_10012750`), all made with
 `DisasmFuncs.java` against the copy `$W/work-player`. Constants come from the memory image through

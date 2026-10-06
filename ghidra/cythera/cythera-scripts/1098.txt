@@ -1,0 +1,29 @@
+; segment 1098  page 10  class 0x00 (prop) type 152 tile-name "lute" (tool join F000/F004)
+; kind class  length 102 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0052  methods: sel9/use@0008
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 52                                        .hdr      dictionary offset = 0052
+0002: 90 01 00 00 00 06                            .array    array[1] = [6]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 01                                     frame     args=1 locals=1
+000B: 8d db 30 40 40 00 16                         jf        scripted_window_shown(A30) -> 0016
+0012: 8b 41 00 40                                  return    0
+0016:>82 00 9b 04 30 41 12 41 01 41 18 41 …+5      set       L00 = sysnew_window(A30, 18, 1, 24, 90, 52)
+0027: 9b 0f 00 41 00 41 00 41 5a 41 34 41 …+27     sysnew    sysnew_0F(L00, 0, 0, 90, 52, 25, blk@0037)
+      ; 0x45 inline block 0037-004D (22 bytes):
+      0037: 90 05                            .array[5]
+        [0] 15
+        [1] 12
+        [2] 9
+        [3] 6
+        [4] 3
+004E: 8b 41 00 40                                  return    0
+0052: a0 03 90 98 00 02 00 24 90 98 00 08 …+8      .dict     dict[3] {9/use: @0008, 36/p_weight: @0002}

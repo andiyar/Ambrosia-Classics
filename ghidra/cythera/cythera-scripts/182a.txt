@@ -1,0 +1,209 @@
+; segment 182A  page 18  class 0x40 (char) id 42 name "Apis" (string table 0201)
+; kind class  length 2811 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0AE7  methods: sel12/talk@00B2
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0a e7                                        .hdr      dictionary offset = 0AE7
+; ---- local subroutine @0002 ----
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 41 70 69 73 20 73 65 72 76 65 73 20 …+74     text      "Apis serves you a fine meal of cheese, bread, and meat.*You eat until you are stuffed."
+005B: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+006C:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 00A7
+0079: 8d 00 62 28 41 14 4f 40 00 8d                jf        (L00.f28:food < 20) -> 008D
+0083: 86 28 00 40 41 14 40                         setfield  L00.f28:food = 20
+008A: 88 00 98                                     goto      -> 0098
+008D:>86 28 00 40 00 62 28 41 01 4a 40             setfield  L00.f28:food = (L00.f28:food + 1)
+0098:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+00A4: 88 00 6c                                     goto      -> 006C
+00A7:>9f 0f 01 30 41 02 40                         call      R0F01(A30, 2)  ; R0F01 = clrbit [from 0x0101 symtab]
+00AE: 8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @00B2 ====
+00B2: 81 01 02                                     frame     args=1 locals=2
+00B5: 8d 9f 0f 02 30 41 02 40 40 01 04             jf        R0F02(A30, 2) -> 0104  ; R0F02 = tstbit [from 0x0101 symtab]
+00C0: 22 48 75 6e 67 72 79 20 66 6f 72 20 …+22     text      "\"Hungry for that meal I promised?\""
+00E2: 8f 79 6e 00                                  prompt    "yn"
+00E6: 90 79 00 00 f0                               match     y else -> 00F0
+00EB: 9e 00 02 30 40                               callsub   sub_0002(A30)
+00F0:>90 6e 00 01 04                               match     n else -> 0104
+00F5: 22 44 6f 6e 27 74 20 66 6f 72 67 65 …+3      text      "\"Don't forget!\""
+0104:>8d 9f 0f 02 30 41 05 40 40 01 bf             jf        R0F02(A30, 5) -> 01BF  ; R0F02 = tstbit [from 0x0101 symtab]
+010F: 22 41 6e 79 20 6c 75 63 6b 20 77 69 …+27     text      "\"Any luck with that wine contract yet?\""
+0136: 8f 79 6e 00                                  prompt    "yn"
+013A: 90 79 00 01 8b                               match     y else -> 018B
+013F: 22 48 6d 20 2d 20 69 74 20 64 6f 65 …+64     text      "\"Hm - it doesn't appear to be signed - perhaps you should go over it again?\""
+018B:>90 6e 00 01 bf                               match     n else -> 01BF
+0190: 22 57 65 6c 6c 2c 20 6b 65 65 70 20 …+35     text      "\"Well, keep working on it if you get a chance.\""
+01BF:>8d 9f 0f 02 30 41 03 40 9f 0f 02 30 …+8      jf        (R0F02(A30, 3) && !R0F02(A30, 4)) -> 0422  ; R0F02 = tstbit [from 0x0101 symtab]
+01D3: 22 44 69 64 20 79 6f 75 20 67 65 74 …+43     text      "\"Did you get a chance to get that flour from Periphas?\""
+020A: 82 00 ae 42 00 a6 41 01 40 40                set       L00 = who_in_party_has(166, 1)
+0214: 8d 00 40 03 dc                               jf        L00 -> 03DC
+0219: 2a                                           text      "*"
+021A: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0221: 22 59 65 73 20 49 20 64 69 64 20 2d …+16     text      "\"Yes I did - here you go...\""
+023D: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+0245: f3 41 10 40                                  builtin   done_to_do(16)
+0249: 2a 59 6f 75 20 67 69 76 65 20 68 65 …+12     text      "*You give her the flour."
+0261: b1 00 42 00 a6 41 01 41 01 40                builtin   remove_items(L00, 166, 1, 1)
+026B: 2a                                           text      "*"
+026C: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0271: 22 54 68 61 6e 6b 73 2c 20 49 20 61 …+75     text      "\"Thanks, I appreciate that - perhaps you might be interested in a business oportunity?\""
+02C8: 9f 0f 00 30 41 04 40                         call      R0F00(A30, 4)  ; R0F00 = setbit [from 0x0101 symtab]
+02CF: 8f 79 6e 00                                  prompt    "yn"
+02D3: 90 79 00 03 82                               match     y else -> 0382
+02D8: 9f 0f 00 30 41 05 40                         call      R0F00(A30, 5)  ; R0F00 = setbit [from 0x0101 symtab]
+02DF: 22 48 65 72 65 27 73 20 6d 79 20 77 …+126    text      "\"Here's my wine contract - for every barrel you can get a vineyard to commit to, I'll give you 10 oboloi.\"*She hands you a piece of paper."
+0369: a8 48 05 43 00 00 0c 86 41 05 41 01 …+1      builtin   give_item(G05:leader, 3206, 5, 1)
+0376: f2 41 11 43 30 00 02 1a 41 11 4a 40          builtin   add_to_do(17, (str[021A:0]"Cure Alaric" + 17))
+0382:>90 6e 00 03 d9                               match     n else -> 03D9
+0387: 22 57 65 6c 6c 2c 20 74 68 61 6e 6b …+63     text      "\"Well, thanks anyway - your next @meal is on the house for your trouble...\""
+03D2: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+03D9:>88 04 22                                     goto      -> 0422
+03DC:>2a                                           text      "*"
+03DD: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+03E4: 22 4e 6f 2c 20 49 20 64 69 64 6e 27 …+8      text      "\"No, I didn't yet.\"*"
+03F8: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+03FD: 22 57 65 6c 6c 2c 20 77 68 65 6e 20 …+25     text      "\"Well, when you get a chance then...\""
+0422:>82 01 41 00 40                               set       L01 = 0
+0427:>8e                                           input       ; read a line into the input buffer
+0428: 90 6e 61 6d 65 00 04 5a                      match     name else -> 045A
+0430: 22 49 27 6d 20 79 6f 75 72 20 68 75 …+20     text      "\"I'm your humble hostess, Apis.\""
+0450: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0457: 88 04 27                                     goto      -> 0427
+045A:>90 6a 6f 62 00 04 89                         match     job else -> 0489
+0461: 22 49 20 72 75 6e 20 74 68 69 73 20 …+25     text      "\"I run this @inn, the Two-Taled Rat.\""
+0486: 88 04 27                                     goto      -> 0427
+0489:>90 62 79 65 00 05 96                         match     bye else -> 0596
+0490: 8d 9f 0f 02 30 41 07 40 9f 0f 02 30 …+8      jf        (R0F02(A30, 7) && !R0F02(A30, 3)) -> 057C  ; R0F02 = tstbit [from 0x0101 symtab]
+04A4: 22 49 20 6b 6e 6f 77 20 79 6f 75 20 …+39     text      "\"I know you are busy, but you could do me a favor?\""
+04D7: 8f 79 6e 00                                  prompt    "yn"
+04DB: 90 79 00 05 4e                               match     y else -> 054E
+04E0: 9f 0f 00 30 41 03 40                         call      R0F00(A30, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+04E7: 22 50 65 72 69 70 68 61 73 2c 20 74 …+79     text      "\"Periphas, the baker, agreed to sell me some flour - you could pick it up for me?  Thanks!\""
+0542: f2 41 10 43 30 00 02 1a 41 10 4a 40          builtin   add_to_do(16, (str[021A:0]"Cure Alaric" + 16))
+054E:>90 6e 00 05 79                               match     n else -> 0579
+0553: 22 49 20 75 6e 64 65 72 73 74 61 6e …+26     text      "\"I understand - perhaps another time.\""
+0579:>88 05 8f                                     goto      -> 058F
+057C:>22 50 6c 65 61 73 65 20 63 6f 6d 65 …+7      text      "\"Please come back.\""
+058F:>8b 41 00 40                                  return    0
+; ---- dead code 0593-0596: no dictionary entry, jump, pointer or call reaches it ----
+0593:x88 04 27                                     goto      -> 0427
+0596:>90 69 6e 6e 2c 20 61 70 69 73 00 06 …+1      match     inn, apis else -> 0628
+05A3: 22 59 65 73 20 2d 20 61 72 65 20 79 …+118    text      "\"Yes - are you interested in a @room, a game of @dice, or perhaps some @food, or perhaps an entire @meal, or maybe just a @drink?\""
+0625: 88 04 27                                     goto      -> 0427
+0628:>90 64 69 63 65 2c 67 61 6d 65 00 06 …+1      match     dice,game else -> 063D
+0635: 9f 08 12 30 40                               call      R0812(A30)
+063A: 88 04 27                                     goto      -> 0427
+063D:>90 64 72 69 6e 00 06 fd                      match     drin else -> 06FD
+0645: 22 41 20 72 6f 75 6e 64 20 6f 66 20 …+10     text      "\"A round of drinks is "
+065B: 8a 48 06 40                                  print     G06:party_size
+065F: 20 6f 62 6f 6c                               text      " obol"
+0664: 8d 48 06 41 01 51 40 06 6f                   jf        (G06:party_size > 1) -> 066F
+066D: 6f 69 2e 22 2a 22 57 68 61 74 20 64 …+11     text      "oi.\"*\"What do you say?\""
+066F:>2e 22 2a 22 57 68 61 74 20 64 6f 20 …+9      text      ".\"*\"What do you say?\""  ; shares its tail with text @066D
+0684: 8f 79 6e 00                                  prompt    "yn"
+0688: 90 79 00 06 e1                               match     y else -> 06E1
+068D: 8d 9f 0d 04 40 48 06 52 40 06 b3             jf        (R0D04() >= G06:party_size) -> 06B3
+0698: 82 01 01 41 01 4a 40                         set       L01 = (L01 + 1)
+069F: 9f 0e a2 01 40                               call      R0EA2(L01)
+06A4: 9f 0d 05 48 06 40                            call      R0D05(G06:party_size)
+06AA: 9f 08 13 30 01 40                            call      R0813(A30, L01)
+06B0: 88 06 e1                                     goto      -> 06E1
+06B3:>22 59 6f 75 20 73 65 65 6d 20 61 20 …+34     text      "\"You seem a bit short - sorry, but no credit.\""
+06E1:>90 6e 00 06 fa                               match     n else -> 06FA
+06E6: 22 41 6e 6f 74 68 65 72 20 74 69 6d …+8      text      "\"Another time then.\""
+06FA:>88 04 27                                     goto      -> 0427
+06FD:>90 72 6f 6f 6d 00 08 49                      match     room else -> 0849
+0705: 22 41 20 72 6f 6f 6d 20 66 6f 72 20 …+57     text      "\"A room for the night, with one of my finest meals to boot, will run "
+074A: 8a 48 06 41 05 4c 40                         print     (G06:party_size * 5)
+0751: 20 6f 62 6f 6c 6f 69                         text      " oboloi"
+0758: 8d 48 06 41 01 51 40 07 74                   jf        (G06:party_size > 1) -> 0774
+0761: 20 66 6f 72 20 74 68 65 20 6c 6f 74 …+23     text      " for the lot of you.\"*\"Interested?\""
+0774:>2e 22 2a 22 49 6e 74 65 72 65 73 74 …+4      text      ".\"*\"Interested?\""  ; shares its tail with text @0761
+0784: 8f 79 6e 00                                  prompt    "yn"
+0788: 90 79 00 08 27                               match     y else -> 0827
+078D: 8d 9f 0d 04 40 48 06 41 05 4c 52 40 …+2      jf        (R0D04() >= (G06:party_size * 5)) -> 07F6
+079B: 22 45 6e 6a 6f 79 20 79 6f 75 72 20 …+52     text      "\"Enjoy your stay.  You can have your @meal either now or later.\""
+07DB: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+07E2: 85 03 01 00 16 41 03 40                      gstore    seg0301[0016] = 3  ; re-saved encrypted
+07EA: 9f 0d 05 48 06 41 05 4c 40                   call      R0D05((G06:party_size * 5))
+07F3: 88 08 27                                     goto      -> 0827
+07F6:>22 50 65 72 68 61 70 73 20 79 6f 75 …+37     text      "\"Perhaps you'd better recount your change first.\""
+0827:>90 6e 00 08 46                               match     n else -> 0846
+082C: 22 50 65 72 68 61 70 73 20 73 6f 6d …+14     text      "\"Perhaps some other time.\""
+0846:>88 04 27                                     goto      -> 0427
+0849:>90 6d 65 61 6c 00 09 04                      match     meal else -> 0904
+0851: 8d 9f 0f 02 30 41 02 40 40 08 64             jf        R0F02(A30, 2) -> 0864  ; R0F02 = tstbit [from 0x0101 symtab]
+085C: 9e 00 02 30 40                               callsub   sub_0002(A30)
+0861: 88 09 01                                     goto      -> 0901
+0864:>22 4d 65 61 6c 73 20 61 72 65 20 33 …+7      text      "\"Meals are 3 oboloi"
+0877: 8d 48 06 41 01 51 40 08 8b                   jf        (G06:party_size > 1) -> 088B
+0880: 20 70 65 72 20 70 65 72 73 6f 6e 2e …+14     text      " per person.  Interested?\""
+088B:>2e 20 20 49 6e 74 65 72 65 73 74 65 …+3      text      ".  Interested?\""  ; shares its tail with text @0880
+089A: 8f 79 6e 00                                  prompt    "yn"
+089E: 90 79 00 08 d5                               match     y else -> 08D5
+08A3: 8d 9f 0d 04 40 48 06 41 03 4c 52 40 …+2      jf        (R0D04() >= (G06:party_size * 3)) -> 08C2
+08B1: 9f 0d 05 48 06 41 03 4c 40                   call      R0D05((G06:party_size * 3))
+08BA: 9e 00 02 30 40                               callsub   sub_0002(A30)
+08BF: 88 08 d5                                     goto      -> 08D5
+08C2:>22 53 6f 72 72 79 2c 20 6e 6f 20 63 …+7      text      "\"Sorry, no credit.\""
+08D5:>90 6e 00 09 01                               match     n else -> 0901
+08DA: 22 59 6f 75 20 64 6f 6e 27 74 20 6b …+27     text      "\"You don't know what you're missing...\""
+0901:>88 04 27                                     goto      -> 0427
+0904:>90 64 65 6d 6f 00 09 86                      match     demo else -> 0986
+090C: 22 55 6e 66 6f 72 74 75 6e 61 74 65 …+107    text      "\"Unfortunately, Demodocus doesn't play here, even when he is in the area.  Perhaps you should ask his friend @Bryaxis.\""
+0983: 88 04 27                                     goto      -> 0427
+0986:>90 66 6f 6f 64 2c 62 75 79 2c 62 75 …+5      match     food,buy,buyi else -> 0A49
+0997: 86 27 30 40 9f 0e a5 44 57 68 61 74 …+163    setfield  A30.f27:ce17 = R0EA5("What are your interests?", blk@09BB, A30.f27:ce17, blk@0A32)
+      ; 0x45 inline block 09BB-0A2C (113 bytes):
+      09BB: 90 04                            .array[4]
+        [0] @09CD ->
+          09CD: 90 04                            .array[4]
+            [0] 2117
+            [1] @09DF "Cheese"
+            [2] 5
+            [3] 1
+        [1] @09E6 ->
+          09E6: 90 04                            .array[4]
+            [0] 1093
+            [1] @09F8 "Bread"
+            [2] 3
+            [3] 1
+        [2] @09FE ->
+          09FE: 90 04                            .array[4]
+            [0] 9285
+            [1] @0A10 "Fish"
+            [2] 3
+            [3] 1
+        [3] @0A15 ->
+          0A15: 90 04                            .array[4]
+            [0] 10309
+            [1] @0A27 "Ribs"
+            [2] 9
+            [3] 1
+      ; 0x45 inline block 0A32-0A44 (18 bytes):
+      0A32: 90 04                            .array[4]
+        [0] 7
+        [1] 5
+        [2] 3
+        [3] 5
+0A46: 88 04 27                                     goto      -> 0427
+0A49:>90 72 61 74 2c 72 61 74 63 2c 67 75 …+5      match     rat,ratc,guil else -> 0AA1
+0A5A: 22 4d 65 6d 62 65 72 73 20 66 72 6f …+56     text      "\"Members from the Ratcatchers Guild do frequent the 'Two-Taled Rat'\""
+0A9E: 88 04 27                                     goto      -> 0427
+0AA1:>90 2a 00 0a e0                               match     * else -> 0AE0
+0AA6: 8d 9f 08 05 30 40 5e 40 0a dd                jf        !R0805(A30) -> 0ADD
+0AB0: 8d 9f 08 0e 30 40 5e 40 0a dd                jf        !R080E(A30) -> 0ADD
+0ABA: 8d 9f 08 01 30 40 5e 40 0a dd                jf        !R0801(A30) -> 0ADD
+0AC4: 22 49 27 6d 20 61 66 72 61 69 64 20 …+13     text      "\"I'm afraid I can't say.\""
+0ADD:>88 04 27                                     goto      -> 0427
+0AE0:>88 04 27                                     goto      -> 0427
+; ---- dead code 0AE3-0AE7: no dictionary entry, jump, pointer or call reaches it ----
+0AE3:x8b 41 00 40                                  return    0
+0AE7: a0 03 98 2a 00 b2 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @00B2}

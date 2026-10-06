@@ -1,0 +1,62 @@
+; segment 1105  page 11  class 0x00 (prop) type 261 tile-name "tome" (tool join F000/F004)
+; kind class  length 654 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0262  methods: sel8/search@0047, sel9/use@009D
+; properties: sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 62                                        .hdr      dictionary offset = 0262
+0002: 90 02 91 05 00 0c 91 05 00 41                .array    array[2] = [@000C, @0041]
+000C: 4d 61 6e 79 20 61 20 73 70 65 6c 6c …+41     .string   "Many a spell has been learned from a tome like that."
+0041: 90 01 00 00 00 4a                            .array    array[1] = [74]
+
+; ==== method sel8/search @0047 ====
+0047: 81 01 01                                     frame     args=1 locals=1
+004A: 49 74 20 69 73 20 61 20 74 6f 6d 65 …+25     text      "It is a tome that teaches the spell '"
+006F: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0083: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+0089: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+008F: 27 2e 0a                                     text      "'.\n"
+0092: 9d 08 00 40                                  send      L00.sel8/search()
+0096: a7 00 40                                     builtin   delete_prop(L00)
+0099: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @009D ====
+009D: 81 01 06                                     frame     args=1 locals=6
+00A0: 82 00 9f 0e ac 48 05 42 00 c3 40 40          set       L00 = R0EAC(G05:leader, 195)
+00AC: 8d 00 5e 40 01 1a                            jf        !L00 -> 011A
+00B2: 59 6f 75 20 68 61 76 65 20 6e 6f 74 …+85     text      "You have not even learned the fundamentals of magic - attempting to learn a spell is beyond you.\n"
+0113: 8b 43 50 00 ff ff 40                         return    Nil
+011A:>8d f5 48 05 30 62 06 40 40 01 45             jf        find_skill(G05:leader, A30.f06:quality) -> 0145
+0125: 59 6f 75 20 61 6c 72 65 61 64 79 20 …+17     text      "You already know that spell.\n"
+0142: 88 02 5e                                     goto      -> 025E
+0145:>82 00 ad 41 1c 41 00 41 00 41 00 30 …+8      set       L00 = create_prop(28, 0, 0, 0, A30.f06:quality, 0, 0)
+0159: 82 00 00 63 50 40                            set       L00 = as_spell(L00)
+015F: 82 01 48 05 63 40 40                         set       L01 = as_char(G05:leader)
+0166: 8d 9d 1a 00 01 40 40 02 3f                   jf        L00.sel26(L01) -> 023F
+016F: 86 0b 00 40 48 05 40                         setfield  L00.f0B:loc16 = G05:leader
+0176: 82 02 41 00 40                               set       L02 = 0
+017B: 82 03 a0 43 10 00 00 04 41 00 41 00 …+7      set       L03 = iterate_range(&L04, 0, 0, 128)
+018E:>8c a0 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_range(&L04, 1) -> 01B9
+019B: 8d f5 01 03 40 40 01 aa                      jf        find_skill(L01, L03) -> 01AA
+01A3: 82 02 02 41 01 4a 40                         set       L02 = (L02 + 1)
+01AA:>82 03 a0 43 10 00 00 04 41 02 40 40          set       L03 = iterate_range(&L04, 2)
+01B6: 88 01 8e                                     goto      -> 018E
+01B9:>59 6f 75 20 6e 6f 77 20 6b 6e 6f 77 …+12     text      "You now know the spell '"
+01D1: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+01D7: 27 2c 20 67 69 76 69 6e 67 20 79 6f …+2      text      "', giving you "
+01E5: 8a 02 40                                     print     L02
+01E8: 20 6f 66 20                                  text      " of "
+01EC: 8a 9f 0e b5 01 40 40                         print     R0EB5(L01)
+01F3: 20 73 70 65 6c 6c 73 20 70 6f 73 73 …+61     text      " spells possible.\nTo cast it, select it from the character's skill list.\n"
+023C: 88 02 5e                                     goto      -> 025E
+023F:>59 6f 75 20 66 61 69 6c 20 74 6f 20 …+7      text      "You fail to learn '"
+0252: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+0258: 27 2e 0a                                     text      "'.\n"
+025B: a7 00 40                                     builtin   delete_prop(L00)
+025E:>8b 41 00 40                                  return    0
+0262: a0 07 50 00 ff ff 00 15 91 05 00 47 …+32     .dict     dict[7] {8/search: @0047, 9/use: @009D, 51: @0002}

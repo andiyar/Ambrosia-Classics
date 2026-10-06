@@ -1,0 +1,46 @@
+; segment 0E47  page 0E  routine "DoClock" [from 0x0101 symtab: key 1647; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 334 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 02                                     frame     args=2 locals=2
+0003: 8d 31 41 04 56 48 00 41 06 4f 48 00 …+8      jf        ((A31 & 4) && ((G00:hour < 6) || (G00:hour >= 18))) -> 0050
+0017: 54 68 65 20 77 6f 72 64 20 27 73 75 …+45     text      "The word 'sundial' implies that the sun is up to use it.\n"
+0050:>8d 31 41 01 56 40 00 af                      jf        (A31 & 1) -> 00AF
+0058: 82 00 48 00 40                               set       L00 = G00:hour
+005D: 8d 00 41 0c 51 40 00 6c                      jf        (L00 > 12) -> 006C
+0065: 82 00 00 41 0c 4b 40                         set       L00 = (L00 - 12)
+006C:>8d 00 41 00 54 40 00 79                      jf        (L00 == 0) -> 0079
+0074: 82 00 41 0c 40                               set       L00 = 12
+0079:>82 01 48 04 43 00 00 0f ff 56 41 44 …+2      set       L01 = ((G04:clock & 4095) / 68)
+0087: 8d 01 41 3b 51 40 00 94                      jf        (L01 > 59) -> 0094
+008F: 82 01 41 3b 40                               set       L01 = 59
+0094:>49 74 20 69 73 20                            text      "It is "
+009A: 8a 00 40                                     print     L00
+009D: 3a                                           text      ":"
+009E: 8d 01 41 0a 4f 40 00 a7                      jf        (L01 < 10) -> 00A7
+00A6: 30                                           text      "0"
+00A7:>8a 01 40                                     print     L01
+00AA: 2e 0a                                        text      ".\n"
+00AC: 88 01 4a                                     goto      -> 014A
+00AF:>8d 48 00 41 00 54 40 00 cb                   jf        (G00:hour == 0) -> 00CB
+00B8: 49 74 20 69 73 20 6d 69 64 6e 69 67 …+4      text      "It is midnight.\n"
+00C8: 88 01 4a                                     goto      -> 014A
+00CB:>8d 48 00 41 0c 54 40 00 e3                   jf        (G00:hour == 12) -> 00E3
+00D4: 49 74 20 69 73 20 6e 6f 6f 6e 2e 0a          text      "It is noon.\n"
+00E0: 88 01 4a                                     goto      -> 014A
+00E3:>8d 48 00 41 0c 4f 40 01 0a                   jf        (G00:hour < 12) -> 010A
+00EC: 49 74 20 69 73 20                            text      "It is "
+00F2: 8a 48 00 40                                  print     G00:hour
+00F6: 20 69 6e 20 74 68 65 20 6d 6f 72 6e …+5      text      " in the morning.\n"
+0107: 88 01 4a                                     goto      -> 014A
+010A:>8d 48 00 41 12 4f 40 01 2f                   jf        (G00:hour < 18) -> 012F
+0113: 49 74 20 69 73 20 20 69 6e 20 74 68 …+13     text      "It is  in the afternoon.\n"
+012C: 88 01 4a                                     goto      -> 014A
+012F:>49 74 20 69 73 20                            text      "It is "
+0135: 8a 48 00 40                                  print     G00:hour
+0139: 20 69 6e 20 74 68 65 20 65 76 65 6e …+5      text      " in the evening.\n"
+014A:>8b 41 00 40                                  return    0

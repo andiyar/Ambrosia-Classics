@@ -1,0 +1,116 @@
+; segment 1141  page 11  class 0x00 (prop) type 321 tile-name "crystal ball" (tool join F000/F004)
+; kind class  length 1062 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @03FA  methods: sel9/use@0067
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 fa                                        .hdr      dictionary offset = 03FA
+0002: 90 01 00 00 00 14                            .array    array[1] = [20]
+0008: 90 02 91 41 00 12 91 41 00 61                .array    array[2] = [@0012, @0061]
+0012: 49 74 20 69 73 20 61 20 6d 61 67 69 …+67     .string   "It is a magical crystal ball - quite rare.  One gazes into and can see beyond."
+0061: 90 01 00 00 00 4a                            .array    array[1] = [74]
+
+; ==== method sel9/use @0067 ====
+0067: 81 01 0a                                     frame     args=1 locals=10
+006A: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+0071: 8d 30 62 03 41 00 54 40 00 ee                jf        (A30.f03:frame == 0) -> 00EE
+007B: 8d 00 62 1e 41 05 4f 40 00 b0                jf        (L00.f1E:magic < 5) -> 00B0
+0085: 59 6f 75 20 67 65 74 20 61 20 68 65 …+27     text      "You get a headache from staring at it.\n"
+00AC: 8b 41 00 40                                  return    0
+00B0:>86 1e 00 40 00 62 1e 41 05 4b 40             setfield  L00.f1E:magic = (L00.f1E:magic - 5)
+00BB: 59 6f 75 20 73 65 65 20 65 76 65 72 …+32     text      "You see everything as if from high above...\n"
+00E7: e7 41 02 40                                  builtin   screen_effect(2)
+00EB: 88 03 bb                                     goto      -> 03BB
+00EE:>8d 30 62 03 41 01 54 40 01 ce                jf        (A30.f03:frame == 1) -> 01CE
+00F8: 82 01 41 00 40                               set       L01 = 0
+00FD: 82 02 41 00 40                               set       L02 = 0
+0102: 8d 00 62 03 41 04 4f 40 01 14                jf        (L00.f03:frame < 4) -> 0114
+010C: 82 02 41 ff 40                               set       L02 = -1
+0111: 88 01 3d                                     goto      -> 013D
+0114:>8d 00 62 03 41 08 4f 40 01 26                jf        (L00.f03:frame < 8) -> 0126
+011E: 82 01 41 01 40                               set       L01 = 1
+0123: 88 01 3d                                     goto      -> 013D
+0126:>8d 00 62 03 41 0c 4f 40 01 38                jf        (L00.f03:frame < 12) -> 0138
+0130: 82 02 41 01 40                               set       L02 = 1
+0135: 88 01 3d                                     goto      -> 013D
+0138:>82 01 41 ff 40                               set       L01 = -1
+013D:>8d 00 62 1e 41 05 4f 40 01 72                jf        (L00.f1E:magic < 5) -> 0172
+0147: 59 6f 75 20 67 65 74 20 61 20 68 65 …+27     text      "You get a headache from staring at it.\n"
+016E: 8b 41 00 40                                  return    0
+0172:>86 1e 00 40 00 62 1e 41 05 4b 40             setfield  L00.f1E:magic = (L00.f1E:magic - 5)
+017D: 82 03 00 62 01 40                            set       L03 = L00.f01:x
+0183: 82 04 00 62 02 40                            set       L04 = L00.f02:y
+0189: 82 05 a0 43 10 00 00 06 41 00 41 01 …+10     set       L05 = iterate_range(&L06, 0, 1, (R0E85(L00) * 10))
+019F:>8c a0 43 10 00 00 06 41 01 40 40 01 …+1      jt        iterate_range(&L06, 1) -> 01CB
+01AC: 82 03 03 01 4a 40                            set       L03 = (L03 + L01)
+01B2: 82 04 04 02 4a 40                            set       L04 = (L04 + L02)
+01B8: f6 03 04 40                                  builtin   view_at(L03, L04)
+01BC: 82 05 a0 43 10 00 00 06 41 02 40 40          set       L05 = iterate_range(&L06, 2)
+01C8: 88 01 9f                                     goto      -> 019F
+01CB:>88 03 bb                                     goto      -> 03BB
+01CE:>8d 30 62 03 41 02 54 40 03 90                jf        (A30.f03:frame == 2) -> 0390
+01D8: 8d 00 62 1e 41 05 4f 40 02 0d                jf        (L00.f1E:magic < 5) -> 020D
+01E2: 59 6f 75 20 67 65 74 20 61 20 68 65 …+27     text      "You get a headache from staring at it.\n"
+0209: 8b 41 00 40                                  return    0
+020D:>86 1e 00 40 00 62 1e 41 05 4b 40             setfield  L00.f1E:magic = (L00.f1E:magic - 5)
+0218: 82 08 43 50 00 00 00 40                      set       L08 = False
+0220: 82 05 d1 43 10 00 00 06 41 00 00 62 …+8      set       L05 = iterate_props_near(&L06, 0, L00.f01:x, L00.f02:y, 12)
+0234:>8c d1 43 10 00 00 06 41 01 40 40 03 …+1      jt        iterate_props_near(&L06, 1) -> 0376
+0241: 82 09 43 50 00 00 00 40                      set       L09 = False
+0249: 8d 05 62 04 42 01 60 54 40 02 5f             jf        (L05.f04:type == 352) -> 025F
+0254: 82 09 43 50 00 00 01 40                      set       L09 = True
+025C: 88 03 3a                                     goto      -> 033A
+025F:>8d 05 62 04 42 01 61 54 40 02 75             jf        (L05.f04:type == 353) -> 0275
+026A: 82 09 43 50 00 00 01 40                      set       L09 = True
+0272: 88 03 3a                                     goto      -> 033A
+0275:>8d 05 62 04 42 01 63 54 40 02 8b             jf        (L05.f04:type == 355) -> 028B
+0280: 82 09 43 50 00 00 01 40                      set       L09 = True
+0288: 88 03 3a                                     goto      -> 033A
+028B:>8d 05 62 04 42 00 e6 54 40 02 a1             jf        (L05.f04:type == 230) -> 02A1
+0296: 82 09 43 50 00 00 01 40                      set       L09 = True
+029E: 88 03 3a                                     goto      -> 033A
+02A1:>8d 05 62 00 43 00 00 00 80 56 40 02 …+1      jf        (L05.f00:kind & 128) -> 02B9
+02AE: 82 09 43 50 00 00 00 40                      set       L09 = False
+02B6: 88 03 3a                                     goto      -> 033A
+02B9:>8d 05 62 04 42 01 64 54 40 02 cf             jf        (L05.f04:type == 356) -> 02CF
+02C4: 82 09 43 50 00 00 01 40                      set       L09 = True
+02CC: 88 03 3a                                     goto      -> 033A
+02CF:>8d 05 62 04 42 00 33 54 40 02 e5             jf        (L05.f04:type == 51) -> 02E5
+02DA: 82 09 43 50 00 00 01 40                      set       L09 = True
+02E2: 88 03 3a                                     goto      -> 033A
+02E5:>8d 05 62 04 42 00 35 54 40 02 fb             jf        (L05.f04:type == 53) -> 02FB
+02F0: 82 09 43 50 00 00 01 40                      set       L09 = True
+02F8: 88 03 3a                                     goto      -> 033A
+02FB:>8d 05 62 04 42 00 fd 54 40 03 11             jf        (L05.f04:type == 253) -> 0311
+0306: 82 09 43 50 00 00 01 40                      set       L09 = True
+030E: 88 03 3a                                     goto      -> 033A
+0311:>8d 05 62 04 42 01 62 54 40 03 27             jf        (L05.f04:type == 354) -> 0327
+031C: 82 09 43 50 00 00 01 40                      set       L09 = True
+0324: 88 03 3a                                     goto      -> 033A
+0327:>8d 05 62 04 42 01 65 54 40 03 3a             jf        (L05.f04:type == 357) -> 033A
+0332: 82 09 43 50 00 00 01 40                      set       L09 = True
+033A:>8d 09 40 03 67                               jf        L09 -> 0367
+033F: e1 05 43 00 00 00 f4 40                      builtin   show_magic(L05, 244)
+0347: 5e                                           text      "^"
+0348: 8a 05 40                                     print     L05
+034B: 20 6d 6f 6d 65 6e 74 61 72 69 6c 79 …+8      text      " momentarily glows!\n"
+035F: 82 08 43 50 00 00 01 40                      set       L08 = True
+0367:>82 05 d1 43 10 00 00 06 41 02 40 40          set       L05 = iterate_props_near(&L06, 2)
+0373: 88 02 34                                     goto      -> 0234
+0376:>8d 08 5e 40 03 8d                            jf        !L08 -> 038D
+037C: 4e 6f 74 68 69 6e 67 20 68 61 70 70 …+5      text      "Nothing happens.\n"
+038D:>88 03 bb                                     goto      -> 03BB
+0390:>59 6f 75 20 67 65 74 20 61 20 68 65 …+27     text      "You get a headache from staring at it.\n"
+03B7: 8b 41 00 40                                  return    0
+03BB:>8d 30 62 06 41 00 54 40 03 da                jf        (A30.f06:quality == 0) -> 03DA
+03C5: 86 06 30 40 41 0a ac 41 00 41 05 40 …+9      setfield  A30.f06:quality = ((10 + random(0, 5)) + random(0, 5))
+03DA:>86 06 30 40 30 62 06 41 01 4b 40             setfield  A30.f06:quality = (A30.f06:quality - 1)
+03E5: 8d 30 62 06 41 00 54 40 03 f6                jf        (A30.f06:quality == 0) -> 03F6
+03EF: 86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+03F6:>8b 41 00 40                                  return    0
+03FA: a0 07 50 00 ff ff 64 75 91 41 00 02 …+32     .dict     dict[7] {9/use: @0067, 36/p_weight: @0002, 51: @0008}

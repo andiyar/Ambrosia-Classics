@@ -1,0 +1,103 @@
+; segment 0EA9  page 0E  routine
+; kind routine  length 911 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 17                                     frame     args=3 locals=23
+0003: 82 00 45 00 0b 90 01 8e a9 00 0e 44 …+5      set       L00 = blk@0008
+      ; 0x45 inline block 0008-0013 (11 bytes):
+      0008: 90 01                            .array[1]
+        [0] @000E "Done"
+0014: 8d 32 41 00 54 40 00 21                      jf        (A32 == 0) -> 0021
+001C: 82 32 41 0a 40                               set       A32 = 10
+0021:>82 01 43 50 00 00 00 40                      set       L01 = False
+0029:>8d 41 01 40 03 85                            jf        1 -> 0385
+002F: 82 02 9b 01 40 40                            set       L02 = sysnew_01()
+0035: 82 03 a1 43 10 00 00 04 41 00 31 40 …+1      set       L03 = iterate_list(&L04, 0, A31)
+0042:>8c a1 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_list(&L04, 1) -> 0113
+004F: 82 06 9b 01 41 00 40 40                      set       L06 = sysnew_01(0)
+0057: 82 07 ca 43 10 00 00 08 41 00 43 50 …+5      set       L07 = iterate_party(&L08, 0, False)
+0068:>8c ca 43 10 00 00 08 41 01 40 40 00 …+1      jt        iterate_party(&L08, 1) -> 00CD
+0075: 82 0a c9 43 10 00 00 0b 41 00 07 40 …+1      set       L0A = iterate_descendants(&L0B, 0, L07)
+0082:>8c c9 43 10 00 00 0b 41 01 40 40 00 …+1      jt        iterate_descendants(&L0B, 1) -> 00BE
+008F: 8d 0a 62 05 03 41 00 46 54 40 00 af          jf        (L0A.f05:item == L03[0]) -> 00AF
+009B: 9d 06 06 0a 40                               send      L06.sel6(L0A)
+00A0: 84 06 40 41 00 40 06 41 00 46 0a 62 …+3      atput     L06[0] = (L06[0] + L0A.f09:count)
+00AF:>82 0a c9 43 10 00 00 0b 41 02 40 40          set       L0A = iterate_descendants(&L0B, 2)
+00BB: 88 00 82                                     goto      -> 0082
+00BE:>82 07 ca 43 10 00 00 08 41 02 40 40          set       L07 = iterate_party(&L08, 2)
+00CA: 88 00 68                                     goto      -> 0068
+00CD:>8d 06 41 00 46 40 01 01                      jf        L06[0] -> 0101
+00D5: 9d 06 02 9b 01 03 41 00 46 03 41 01 …+29     send      L02.sel6(sysnew_01(L03[0], L03[1], L06[0], ((((L03[2] * L06[0]) * 10) + 5) / A32), L03[2], L06))
+00FE: 88 01 04                                     goto      -> 0104
+0101:>93 06 40                                     release   L06
+0104:>82 03 a1 43 10 00 00 04 41 02 40 40          set       L03 = iterate_list(&L04, 2)
+0110: 88 00 42                                     goto      -> 0042
+0113:>8d 02 5f 41 00 54 40 01 59                   jf        (len(L02) == 0) -> 0159
+011C: 8d 01 40 01 27                               jf        L01 -> 0127
+0121: 8b 32 40                                     return    A32
+; ---- dead code 0124-0127: no dictionary entry, jump, pointer or call reaches it ----
+0124:x88 01 59                                     goto      -> 0159
+0127:>22 53 6f 72 72 79 2c 20 79 6f 75 27 …+35     text      "\"Sorry, you've got nothing I'm interested in.\"*"
+0156: 8b 32 40                                     return    A32
+0159:>82 0d c0 30 44 7c 25 69 7c 25 73 20 …+20     set       L0D = pick_item(A30, "|%i|%s (%d)|-100%d ob|", L02, L00)
+0179: 8d 0d 41 ff 54 40 01 84                      jf        (L0D == -1) -> 0184
+0181: 88 03 85                                     goto      -> 0385
+0184:>82 0d 02 0d 46 40                            set       L0D = L02[L0D]
+018A: 82 06 0d 41 05 46 40                         set       L06 = L0D[5]
+0191: 82 0e 9b 04 43 00 00 01 5e 43 00 00 …+4      set       L0E = sysnew_window(350, 300)
+01A1: 82 0f 9b 06 0e 44 49 74 65 6d 20 46 …+21     set       L0F = sysnew_06(L0E, "Item For Sale", 0, 0, 150, 32)
+01C2: 86 3c 0f 40 43 00 00 ff ff 40                setfield  L0F.f3C = 65535
+01CC: 82 10 9b 10 0e 0d 41 00 46 43 00 00 …+6      set       L10 = sysnew_10(L0E, L0D[0], 150, 0)
+01DE: 82 0f 9b 06 0e 0d 41 01 46 43 00 00 …+13     set       L0F = sysnew_06(L0E, L0D[1], 184, 0, 150, 32)
+01F7: 82 0f 9b 06 0e 44 54 6f 74 61 6c 20 …+19     set       L0F = sysnew_06(L0E, "Total Price", 0, 40, 150, 32)
+0216: 86 3c 0f 40 43 00 00 ff ff 40                setfield  L0F.f3C = 65535
+0220: 82 11 9b 08 0e 44 41 63 63 65 70 74 …+17     set       L11 = sysnew_08(L0E, "Accept", 152, 268, 96, 32)
+023D: 82 12 9b 08 0e 44 43 61 6e 63 65 6c …+17     set       L12 = sysnew_08(L0E, "Cancel", 254, 268, 96, 32)
+025A: 82 13 9b 12 0e 43 00 00 00 96 41 28 …+6      set       L13 = sysnew_12(L0E, 150, 40, 100, 32)
+026C: 82 14 9b 11 0e 43 00 00 00 96 41 50 …+6      set       L14 = sysnew_11(L0E, 150, 80, 100, 32)
+027E: 86 3e 14 40 41 01 40                         setfield  L14.f3E = 1
+0285: 86 3f 14 40 06 41 00 46 40                   setfield  L14.f3F = L06[0]
+028E: 86 37 14 40 06 41 00 46 40                   setfield  L14.f37 = L06[0]
+0297: 86 37 13 40 06 41 00 46 0d 41 04 46 …+10     setfield  L13.f37 = ((((L06[0] * L0D[4]) * 10) + 5) / A32)
+02AD: 82 0f 9b 06 0e 44 51 75 61 6e 74 69 …+16     set       L0F = sysnew_06(L0E, "Quantity", 0, 80, 150, 32)
+02C9: 86 3c 0f 40 43 00 00 ff ff 40                setfield  L0F.f3C = 65535
+02D3:>8d 41 01 40 03 68                            jf        1 -> 0368
+02D9: 82 15 0e 62 37 40                            set       L15 = L0E.f37
+02DF: 8d 15 11 54 40 03 3c                         jf        (L15 == L11) -> 033C
+02E6: 82 16 14 62 37 40                            set       L16 = L14.f37
+02EC: 9f 0d 0a 13 62 37 40                         call      R0D0A(L13.f37)
+02F3: 82 03 41 01 40                               set       L03 = 1
+02F8:>8d 16 41 00 51 40 03 36                      jf        (L16 > 0) -> 0336
+0300: 82 0a 06 03 46 40                            set       L0A = L06[L03]
+0306: 8d 16 0a 62 09 52 40 03 24                   jf        (L16 >= L0A.f09:count) -> 0324
+030F: 82 16 16 0a 62 09 4b 40                      set       L16 = (L16 - L0A.f09:count)
+0317: a7 0a 40                                     builtin   delete_prop(L0A)
+031A: 82 03 03 41 01 4a 40                         set       L03 = (L03 + 1)
+0321: 88 03 33                                     goto      -> 0333
+0324:>86 09 0a 40 0a 62 09 16 4b 40                setfield  L0A.f09:count = (L0A.f09:count - L16)
+032E: 82 16 41 00 40                               set       L16 = 0
+0333:>88 02 f8                                     goto      -> 02F8
+0336:>88 03 68                                     goto      -> 0368
+; ---- dead code 0339-033C: no dictionary entry, jump, pointer or call reaches it ----
+0339:x88 03 65                                     goto      -> 0365
+033C:>8d 15 12 54 40 03 49                         jf        (L15 == L12) -> 0349
+0343: 88 03 68                                     goto      -> 0368
+; ---- dead code 0346-0349: no dictionary entry, jump, pointer or call reaches it ----
+0346:x88 03 65                                     goto      -> 0365
+0349:>8d 15 14 54 40 03 65                         jf        (L15 == L14) -> 0365
+0350: 86 37 13 40 14 62 37 0d 41 04 46 4c …+9      setfield  L13.f37 = ((((L14.f37 * L0D[4]) * 10) + 5) / A32)
+0365:>88 02 d3                                     goto      -> 02D3
+0368:>93 0e 40                                     release   L0E
+036B: 82 01 43 50 00 00 01 40                      set       L01 = True
+0373: 93 02 40                                     release   L02
+0376: 8d 02 5f 41 01 54 40 03 82                   jf        (len(L02) == 1) -> 0382
+037F: 88 03 85                                     goto      -> 0385
+0382:>88 00 29                                     goto      -> 0029
+0385:>93 02 40                                     release   L02
+0388: 8b 32 40                                     return    A32
+; ---- dead code 038B-038F: no dictionary entry, jump, pointer or call reaches it ----
+038B:x8b 41 00 40                                  return    0

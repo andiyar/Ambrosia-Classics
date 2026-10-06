@@ -22,7 +22,7 @@ The whole-game design + Phase 1 plan are written and pushed on branch **`deimos-
 3. Stage `~/Desktop/Deimos Rising.app` + WHAT-TO-EXPECT; Ben's gate 1.
 
 ## Machine hazards
-- **No Deimos decompile on this machine** (`ghidra/Deimos_pef.decompiled.c` absent). Oracle = `~/ghidra-proj-deimos/
+- **No Deimos decompile on this machine** (`ghidra/Deimos_pef.decompiled.c` absent). Oracle = `~/Developer/Ambrosia-Classics/ghidra/deimos-proj/
   disasm-review3-all.txt` + `mem/10000000.bin` / `mem/100de330.bin` (r2 0x100e6330). Tell every reviewer.
 - **Ferazel build is running in parallel** (session "Ferazel Phase 0: K1 + C0 + C1"). Its A1 also wants integer full
   screen; told it Deimos K1 (`ShellView.scalingPolicy`) is the one implementation — whoever lands first, the other

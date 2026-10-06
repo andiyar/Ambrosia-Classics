@@ -1,0 +1,21 @@
+; segment 10B3  page 10  class 0x00 (prop) type 179 tile-name "standing stone" (tool join F000/F004)
+; kind class  length 123 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0067  methods: sel8/search@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 67                                        .hdr      dictionary offset = 0067
+
+; ==== method sel8/search @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 06 41 00 53 40 00 2f                jf        (A30.f06:quality != 0) -> 002F
+000F: 9f 0e 64 30 43 30 00 02 18 30 62 06 …+17     call      R0E64(A30, (str[0218:0]"" + A30.f06:quality), 33, 11, 9, 9, 171, 79)  ; R0E64 = DisplaySign [from 0x0101 symtab]
+002C: 88 00 63                                     goto      -> 0063
+002F:>49 74 20 69 73 20 61 20 6c 61 72 67 …+40     text      "It is a large stone monolith or pylon of some sort.\n"
+0063:>8b 41 00 40                                  return    0
+0067: a0 03 50 00 ff ff 00 09 50 00 ff ff …+8      .dict     dict[3] {8/search: @0002}

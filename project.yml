@@ -11,6 +11,10 @@ packages:
     path: Aki/Core
   BubbleTroubleCore:
     path: BubbleTrouble/BubbleTroubleCore
+  # Through the `Deimos/DeimosCore → Core` symlink: SwiftPM names a local package after its directory, and
+  # Aki/Core is already "core" (BTX precedent, DECISIONS D13.8).
+  DeimosCore:
+    path: Deimos/DeimosCore
   HectorKit:
     path: ../HectorKit
 settings:
@@ -131,6 +135,30 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_APP_SANDBOX: NO
+  # Deimos Rising (plan 2026-10-06-deimos-phase1 S7, A1): the original's own OS X icon (`icns 128`, verbatim) as
+  # AppIcon.icns; the 1.0.6 Data folder is staged into Contents/Resources/Deimos/Data by tools/stage-deimos.sh.
+  Deimos:
+    type: application
+    platform: macOS
+    sources:
+      - path: Deimos/App
+        excludes: ["Info.plist"]
+    dependencies:
+      - package: DeimosCore
+        product: DeimosCore
+      - package: DeimosCore
+        product: DeimosRender
+      - package: DeimosCore
+        product: DeimosHost
+      - package: HectorKit
+        product: HectorShell
+    settings:
+      base:
+        PRODUCT_NAME: "Deimos Rising"
+        PRODUCT_BUNDLE_IDENTIFIER: com.ambrosiaclassics.deimos
+        INFOPLIST_FILE: Deimos/App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
 schemes:
   Aki:
     build:
@@ -144,3 +172,7 @@ schemes:
     build:
       targets:
         BubbleTroubleX: all
+  Deimos:
+    build:
+      targets:
+        Deimos: all

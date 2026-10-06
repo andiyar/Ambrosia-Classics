@@ -1,0 +1,18 @@
+; segment 0206  page 02  string table
+; kind strtab  length 319 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 09 82 06 00 26 82 06 00 51 82 06 …+26     .strtab   string table, 9 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8206×9)
+0026: 41 74 74 61 63 6b 5b 32 5d 2c 20 44 …+31     .string   [0] "Attack[2], Defense[2], Mana[2], Casting[2]"
+0051: 41 74 74 61 63 6b 5b 34 5d 2c 20 44 …+10     .string   [1] "Attack[4], Defense[4]"
+0067: 41 74 74 61 63 6b 5b 32 5d 2c 20 44 …+31     .string   [2] "Attack[2], Defense[2], Sword[2], Shield[2]"
+0092: 41 74 74 61 63 6b 5b 36 5d 2c 20 42 …+11     .string   [3] "Attack[6], Barehand[2]"
+00A9: 4d 61 6e 61 5b 34 5d 2c 20 43 61 73 …+8      .string   [4] "Mana[4], Casting[4]"
+00BD: 4d 61 6e 61 5b 32 5d 2c 20 43 61 73 …+8      .string   [5] "Mana[2], Casting[6]"
+00D1: 4d 61 6e 61 5b 36 5d 2c 20 43 61 73 …+8      .string   [6] "Mana[6], Casting[2]"
+00E5: 41 74 74 61 63 6b 5b 31 5d 2c 20 44 …+44     .string   [7] "Attack[1], Defense[2], Missile[1], Persuasion, Haggling"
+011D: 41 74 74 61 63 6b 5b 32 5d 2c 20 54 …+22     .string   [8] "Attack[2], Trap, Awareness, Locks"

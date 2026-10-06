@@ -15,7 +15,7 @@ Evidence: listing `$W/disasm-w3s3.txt` (project copy `$W/work-w3s3`, `DisasmFunc
 r2 = `0x100e6330`; constants by Python `struct.unpack('>…')` over `$W/mem/100de330.bin` (data,
 base `0x100de330`) and `$W/mem/10000000.bin` (code-image records `0x100d…`); glyph sizes from
 `$W/w3s3-tesm.py` over `$W/data/Interface/im08/Text - Small IA[TESM].gif`. The decompile census
-script is `$W/w3s3-census.py`. `$W` = `/Users/andiyar/ghidra-proj-deimos`.
+script is `$W/w3s3-census.py`. `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`.
 
 ## 0. Globals and TOC slots (resolved; image vs runtime checked)
 

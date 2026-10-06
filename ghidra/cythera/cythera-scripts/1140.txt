@@ -1,0 +1,22 @@
+; segment 1140  page 11  class 0x00 (prop) type 320 tile-name "lamp post" (tool join F000/F004)
+; kind class  length 67 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @002F  methods: sel21/signal@0008
+; properties: sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 2f                                        .hdr      dictionary offset = 002F
+0002: 90 01 00 00 01 00                            .array    array[1] = [256]
+
+; ==== method sel21/signal @0008 ====
+0008: 81 02 00                                     frame     args=2 locals=0
+000B: 8d 48 00 41 07 4f 48 00 41 10 51 5d …+3      jf        ((G00:hour < 7) || (G00:hour > 16)) -> 0024
+001A: 86 03 30 40 41 07 40                         setfield  A30.f03:frame = 7
+0021: 88 00 2b                                     goto      -> 002B
+0024:>86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+002B:>8b 41 00 40                                  return    0
+002F: a0 03 91 40 00 02 00 27 91 40 00 08 …+8      .dict     dict[3] {21/signal: @0008, 39/p_typeflags27: @0002}

@@ -1,0 +1,256 @@
+; segment 184A  page 18  class 0x40 (char) id 74 name "Timon" (string table 0201)
+; kind class  length 5486 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @1542  methods: sel32/spawned@003A, sel4/index@0079, sel21/signal@0097, sel12/talk@03B1
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 5   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 15 42                                        .hdr      dictionary offset = 1542
+0002: 90 01 98 4a 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel32/spawned @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 8d dc 41 07 40 41 02 54 bc 42 00 5a …+20     jf        ((((get_variable(7) == 2) && !leader_can_see(90)) && !leader_can_see(9)) && !leader_can_see(91)) -> 006E
+005D: 86 15 30 40 43 00 00 00 96 40                setfield  A30.f15:activity = 150
+0067: 8b 9f 30 20 30 40 40                         return    R3020(A30)
+006E:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 0075-0079: no dictionary entry, jump, pointer or call reaches it ----
+0075:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0079 ====
+0079: 81 02 00                                     frame     args=2 locals=0
+007C: 8d 31 42 00 f9 54 40 00 8c                   jf        (A31 == 249) -> 008C
+0085: 8b 43 50 00 00 01 40                         return    True
+008C:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0093-0097: no dictionary entry, jump, pointer or call reaches it ----
+0093:x8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @0097 ====
+0097: 81 02 04                                     frame     args=2 locals=4
+009A: 8d 31 64 50 40 01 c1                         jf        is_spell(A31) -> 01C1
+00A1: 8d 31 62 04 42 00 f9 54 40 01 be             jf        (A31.f04:type == 249) -> 01BE
+00AC: 82 00 45 00 b4 90 08 98 4a 00 d3 98 …+174    set       L00 = blk@00B1
+      ; 0x45 inline block 00B1-0165 (180 bytes):
+      00B1: 90 08                            .array[8]
+        [0] @00D3 ->
+          00D3: 90 02                            .array[2]
+            [0] @00DD "Healing"
+            [1] 10
+        [1] @00E5 ->
+          00E5: 90 02                            .array[2]
+            [0] @00EF "Sleep"
+            [1] 13
+        [2] @00F5 ->
+          00F5: 90 02                            .array[2]
+            [0] @00FF "Fear"
+            [1] 14
+        [3] @0104 ->
+          0104: 90 02                            .array[2]
+            [0] @010E "Rally"
+            [1] 25
+        [4] @0114 ->
+          0114: 90 02                            .array[2]
+            [0] @011E "Mystic Arrow"
+            [1] 18
+        [5] @012B ->
+          012B: 90 02                            .array[2]
+            [0] @0135 "Paralyze"
+            [1] 35
+        [6] @013E ->
+          013E: 90 02                            .array[2]
+            [0] @0148 "Confusion"
+            [1] 15
+        [7] @0152 ->
+          0152: 90 02                            .array[2]
+            [0] @015C "Nutrient"
+            [1] 17
+0166: 82 01 45 00 0d 90 01 98 4a 01 71 43 …+7      set       L01 = blk@016B
+      ; 0x45 inline block 016B-0178 (13 bytes):
+      016B: 90 01                            .array[1]
+        [0] @0171 "Cancel"
+0179: 82 02 c0 44 43 61 73 74 20 77 68 69 …+18     set       L02 = pick_item("Cast which spell?", "%s", L00, L01)
+0197: 8d 02 41 ff 54 40 01 a3                      jf        (L02 == -1) -> 01A3
+019F: 8b 41 00 40                                  return    0
+01A3:>82 02 00 02 46 40                            set       L02 = L00[L02]
+01A9: 86 0b 31 40 30 40                            setfield  A31.f0B:loc16 = A30
+01AF: 86 04 31 40 02 41 01 46 40                   setfield  A31.f04:type = L02[1]
+01B8: 8b 9d 09 31 40 40                            return    A31.sel9/use()
+01BE:>88 03 a6                                     goto      -> 03A6
+01C1:>8d 31 64 00 40 03 a0                         jf        is_prop(A31) -> 03A0
+01C8: e8 40                                        builtin   begin_talking()
+01CA: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+01D1: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+01D6: 8d 31 62 04 42 00 25 54 40 03 3a             jf        (A31.f04:type == 37) -> 033A
+01E1: 8d 31 62 03 41 00 54 40 02 1e                jf        (A31.f03:frame == 0) -> 021E
+01EB: 22 49 74 20 69 73 20 73 6f 6d 65 20 …+36     text      "\"It is some sort of glowing, triangular crystal."
+021B: 88 02 d8                                     goto      -> 02D8
+021E:>8d 31 62 03 41 04 52 40 02 ab                jf        (A31.f03:frame >= 4) -> 02AB
+0228: 22 49 74 20 69 73 20 73 6f 6d 65 20 …+116    text      "\"It is some sort of glowing, triangular crystal, obviously made of several pieces joined together to form something more potent."
+02A8: 88 02 d8                                     goto      -> 02D8
+02AB:>22 49 74 20 6c 6f 6f 6b 73 20 6c 69 …+128    text      "\"It looks like a fragment of a larger object.  The exact nature of it is a mystery to me, but it must have something to do with the Metics.\""  ; shares its tail with text @02D8
+02D8:>20 20 54 68 65 20 65 78 61 63 74 20 …+83     text      "  The exact nature of it is a mystery to me, but it must have something to do with the Metics.\""
+0337: 88 03 9b                                     goto      -> 039B
+033A:>8d 31 60 30 40 03 7c                         jf        has(A31, sel48) -> 037C
+0341: 22 5e                                        text      "\"^"
+0343: 8a 31 40                                     print     A31
+0346: 20 69 73 20 75 73 65 64 20 69 6e 20 …+7      text      " is used in making "
+0359: 82 03 43 40 00 00 00 40                      set       L03 = prop#0
+0361: 86 03 03 40 31 61 30 00 40                   setfield  L03.f03:frame = prop(A31, sel48, 0)
+036A: 86 04 03 40 42 00 1f 40                      setfield  L03.f04:type = 31
+0372: 8a 9d 02 03 40 40                            print     L03.sel2/name()
+0378: 22                                           text      "\""
+0379: 88 03 9b                                     goto      -> 039B
+037C:>8d 9f 0e b6 30 31 40 5e 40 03 9b             jf        !R0EB6(A30, A31) -> 039B
+0387: 22 49 27 64 20 73 61 79 20 69 74 20 …+3      text      "\"I'd say it is "
+0396: 8a 31 40                                     print     A31
+0399: 2e 22                                        text      ".\""
+039B:>e9 40                                        builtin   end_talking()
+039D: 88 03 a6                                     goto      -> 03A6
+03A0:>9f 0d 06 30 31 40                            call      R0D06(A30, A31)
+03A6:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 03AD-03B1: no dictionary entry, jump, pointer or call reaches it ----
+03AD:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @03B1 ====
+03B1: 81 01 01                                     frame     args=1 locals=1
+03B4: 8d dc 41 07 40 41 02 54 30 62 15 43 …+9      jf        ((get_variable(7) == 2) && (A30.f15:activity == 151)) -> 06A1
+03C9: 22 45 78 63 75 73 65 20 6d 65 2c 20 …+89     text      "\"Excuse me, but if you've got a minute, you must be wondering why I lied to my sister back there...\"*"
+042E: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0435: 22 59 65 73 2c 20 49 20 77 61 73 20 …+16     text      "\"Yes, I was a bit puzzled.\"*"
+0451: a4 42 00 4a 41 00 40                         builtin   show_portrait(74, 0)
+0458: 22 49 20 72 65 61 6c 6c 79 20 77 61 …+41     text      "\"I really wanted to tell her what we've been up to - "
+048D: 8d 9f 0f 02 30 41 01 40 40 04 c2             jf        R0F02(A30, 1) -> 04C2  ; R0F02 = tstbit [from 0x0101 symtab]
+0498: 65 73 70 65 63 69 61 6c 6c 79 20 61 …+27     text      "especially about meeting a real Seldane"
+04BF: 88 04 e0                                     goto      -> 04E0
+04C2:>77 68 61 74 20 77 69 74 68 20 74 68 …+450    text      "what with that crystal and all, but it is better if that waits until we are all safe.\"*\"She is my sister, after all, and I wouldn't want to involve her in anything dangerous.\"*\"More than that, though, since after all, she can obviously handle herself in this swap and all, is her assistent Joppa.\"*\"I've never liked him - I get a bad feeling about him, and I just flat out don't trust him.\"*\"I hope you understand, though Larisa might not forgive me as readily.\""  ; shares its tail with text @04E0
+04E0:>2c 20 62 75 74 20 69 74 20 69 73 20 …+420    text      ", but it is better if that waits until we are all safe.\"*\"She is my sister, after all, and I wouldn't want to involve her in anything dangerous.\"*\"More than that, though, since after all, she can obviously handle herself in this swap and all, is her assistent Joppa.\"*\"I've never liked him - I get a bad feeling about him, and I just flat out don't trust him.\"*\"I hope you understand, though Larisa might not forgive me as readily.\""
+0690: dd 41 07 41 03 40                            builtin   set_variable(7, 3)
+0696: 86 15 30 40 41 01 40                         setfield  A30.f15:activity = 1
+069D: 8b 41 00 40                                  return    0
+06A1:>8d dc 41 02 40 41 0c 4f 40 06 f8             jf        (get_variable(2) < 12) -> 06F8
+06AC: 22 50 6c 65 61 73 65 2c 20 49 20 61 …+60     text      "\"Please, I am quite busy and in no mood to talk to strangers.  Go away.\""
+06F4: 8b 41 00 40                                  return    0
+06F8:>82 00 43 50 00 00 00 40                      set       L00 = False
+0700: 8d 9f 0f 02 30 41 07 40 5e 40 0a 07          jf        !R0F02(A30, 7) -> 0A07  ; R0F02 = tstbit [from 0x0101 symtab]
+070C: 22 41 68 2c 20 79 6f 75 20 6d 75 73 …+43     text      "\"Ah, you must be the one that Lindus sent!  I am Timon\""
+0743: f3 41 06 40                                  builtin   done_to_do(6)
+0747: 2a                                           text      "*"
+0748: 8d ae 41 25 41 00 40 41 ff 54 40 07 …+1      jf        (who_in_party_has(37, 0) == -1) -> 07CD
+0755: 22 54 68 61 74 27 73 20 6f 64 64 2c …+104    text      "\"That's odd, I was told that you would have a glowing green @crystal\"*\"Perhaps you are not who I was waiting for...\""
+07C9: 8b 41 00 40                                  return    0
+07CD:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+07D4: 22 4d 61 79 20 49 20 73 65 65 20 74 …+27     text      "\"May I see the glowing green crystal?\"*"
+07FB: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0801: 22 59 65 73 2c 20 49 20 73 75 70 70 …+11     text      "\"Yes, I suppose so...\"*"
+0818: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+081D: 22 48 6d 2c 20 79 65 73 20 69 6e 64 …+107    text      "\"Hm, yes indeed.  Most interesting.  It is very much like the one that I found, only smaller.\"*\"Where did you get it?\"*"
+0894: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+089A: 22 49 20 77 61 73 20 69 6e 20 61 20 …+125    text      "\"I was in a spring below the Citadel of Catamarca.  I believe that it was connected with a plague-like illness that had swept the city.\"*"
+0923: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0928: 22 52 65 61 6c 6c 79 2c 20 68 6f 77 …+181    text      "\"Really, how facinating.  I found this one buried in the ruins here.  Perhaps there is a connection somehow.\"*\"Hm....\"*\"Well, here, let me give them to you.  Perhaps you can make some headway.\""
+09E9: a8 41 01 43 00 00 04 25 41 00 41 00 …+1      builtin   give_item(1, 1061, 0, 0)
+09F6: dd 41 02 41 0d 40                            builtin   set_variable(2, 13)
+09FC: 9f 0e 8b 48 05 41 32 40                      call      R0E8B(G05:leader, 50)
+0A04: 88 0a 1f                                     goto      -> 0A1F
+0A07:>22 57 68 61 74 20 63 61 6e 20 49 20 …+12     text      "\"What can I do for you?\""
+0A1F:>8d 9f 0f 13 30 40 40 0a 39                   jf        R0F13(A30) -> 0A39  ; R0F13 = inparty [from 0x0101 symtab]
+0A28: f4 44 4c 65 61 76 65 00 40                   builtin   add_answer("Leave")
+0A31: f4 44 57 61 69 74 00 40                      builtin   add_answer("Wait")
+0A39:>8d 30 62 15 41 70 54 40 0a 4d                jf        (A30.f15:activity == 112) -> 0A4D
+0A43: f4 44 46 6f 6c 6c 6f 77 00 40                builtin   add_answer("Follow")
+0A4D:>8e                                           input       ; read a line into the input buffer
+0A4E: 90 6e 61 6d 65 2c 74 69 6d 6f 00 0a …+1      match     name,timo else -> 0A7F
+0A5B: 22 49 20 61 6d 20 54 69 6d 6f 6e 2c …+14     text      "\"I am Timon, a @Freemage.\""
+0A75: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0A7C: 88 0a 4d                                     goto      -> 0A4D
+0A7F:>90 6a 6f 62 2c 66 72 65 65 00 0a e6          match     job,free else -> 0AE6
+0A8B: 22 49 20 61 6d 20 61 20 46 72 65 65 …+76     text      "\"I am a Freemage, one who spends his time learning, in preparation to become a @Master.\""
+0AE3: 88 0a 4d                                     goto      -> 0A4D
+0AE6:>90 77 61 69 74 00 0b 6b                      match     wait else -> 0B6B
+0AEE: 8d 9f 0f 13 30 40 40 0b 2a                   jf        R0F13(A30) -> 0B2A  ; R0F13 = inparty [from 0x0101 symtab]
+0AF7: 22 49 20 73 68 61 6c 6c 20 77 61 69 …+26     text      "\"I shall wait here until your return.\""
+0B1D: ba 30 40                                     builtin   leave_party(A30)
+0B20: 86 15 30 40 41 70 40                         setfield  A30.f15:activity = 112
+0B27: 88 0b 68                                     goto      -> 0B68
+0B2A:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+50     text      "\"I'm not currently in the party.  Perhaps I should @join you.\""
+0B68:>88 0a 4d                                     goto      -> 0A4D
+0B6B:>90 66 6f 6c 6c 00 0b d6                      match     foll else -> 0BD6
+0B73: 8d 30 62 15 41 70 54 40 0b 8c                jf        (A30.f15:activity == 112) -> 0B8C
+0B7D: 22 47 6c 61 64 6c 79 2e 22                   text      "\"Gladly.\""
+0B86: b9 30 40                                     builtin   join_party(A30)
+0B89: 88 0b d3                                     goto      -> 0BD3
+0B8C:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+59     text      "\"I'm not currently waiting to rejoin you.  Perhaps I should @join you.\""
+0BD3:>88 0a 4d                                     goto      -> 0A4D
+0BD6:>90 6a 6f 69 6e 2c 63 6f 6d 65 00 0d …+1      match     join,come else -> 0D8A
+0BE3: 8d 9f 0f 13 42 00 4a 40 40 0c 2b             jf        R0F13(74) -> 0C2B  ; R0F13 = inparty [from 0x0101 symtab]
+0BEE: 22 59 65 73 2c 20 69 74 20 69 73 20 …+46     text      "\"Yes, it is an honor to accompany you on your adventures!\""
+0C28: 88 0d 87                                     goto      -> 0D87
+0C2B:>22 57 65 6c 6c 2c 20 61 73 20 61 20 …+331    text      "\"Well, as a Freemage, I should be spending my time learning, but if truth be told, and Lindus can back me up on this, I will certainly learn a great deal going with you.\"*\"I have a feeling that you'll be able to discern the purposes of the crystals, at the very least, which would be to my best interests.\"*\"I'd be honored to join your quest!\""
+0D82: b9 42 00 4a 40                               builtin   join_party(74)
+0D87:>88 0a 4d                                     goto      -> 0A4D
+0D8A:>90 6c 65 61 76 00 0e 40                      match     leav else -> 0E40
+0D92: 8d 9f 0f 13 42 00 4a 40 40 0e 28             jf        R0F13(74) -> 0E28  ; R0F13 = inparty [from 0x0101 symtab]
+0D9D: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+119    text      "\"Very well, if you think it is best, but I think there is still much that I can learn, and much that I can be of service to you...\""
+0E20: ba 42 00 4a 40                               builtin   leave_party(74)
+0E25: 88 0e 3d                                     goto      -> 0E3D
+0E28:>22 4e 6f 20 6e 65 65 64 20 74 6f 20 …+9      text      "\"No need to be rude.\""
+0E3D:>88 0a 4d                                     goto      -> 0A4D
+0E40:>90 6d 61 73 74 00 0e 9f                      match     mast else -> 0E9F
+0E48: 22 4f 6e 65 20 64 61 79 20 49 20 68 …+72     text      "\"One day I hope to become a Master, and my research on the @Metic is my speciality.\""
+0E9C: 88 0a 4d                                     goto      -> 0A4D
+0E9F:>90 6d 65 74 69 2c 73 65 6c 64 00 10 …+1      match     meti,seld else -> 1095
+0EAC: 22 57 65 6c 6c 2c 20 61 63 74 75 61 …+219    text      "\"Well, actually there is an interesting topic.  My field of research, you know.\"*\"'Metic' is actually a name we've given them - they call themselves @Seldane.\"*\"Some say they are a myth, or extinct, but neither is true, you know.\"*"
+0F93: 8d de 41 02 40 40 0f da                      jf        test_flag(2) -> 0FDA
+0F9B: 22 4f 66 20 63 6f 75 72 73 65 20 79 …+48     text      "\"Of course you all know that, we've met them, haven't we...\""
+0FD7: 88 10 92                                     goto      -> 1092
+0FDA:>22 49 27 64 20 72 65 61 6c 6c 79 20 …+172    text      "\"I'd really like to find them someday, and talk with them.  Most facinating.\"*\"Anyway, there are at least two sets of @ruins made by them.  I've been studying what I call '@Headwater'\""
+1092:>88 0a 4d                                     goto      -> 0A4D
+1095:>90 68 65 61 64 00 10 f4                      match     head else -> 10F4
+109D: 22 27 48 65 61 64 77 61 74 65 72 27 …+72     text      "\"'Headwater' is my name for the Seldane ruins at the headwater of the River Tirynth\""
+10F1: 88 0a 4d                                     goto      -> 0A4D
+10F4:>90 72 75 69 6e 00 11 61                      match     ruin else -> 1161
+10FC: 22 57 65 6c 6c 2c 20 74 68 65 72 65 …+86     text      "\"Well, there is the '@Headwater' ruins, and a newly discovered set found in the @Swamp of Khalkis\""
+115E: 88 0a 4d                                     goto      -> 0A4D
+1161:>90 73 77 61 6d 2c 6b 68 61 6c 00 11 …+1      match     swam,khal else -> 11B7
+116E: 22 40 4c 61 72 69 73 61 20 66 6f 75 …+58     text      "\"@Larisa found a set of ruins in the Swamp of Khalkis, west of @Kosha\""
+11B4: 88 0a 4d                                     goto      -> 0A4D
+11B7:>90 6c 61 72 69 00 12 3e                      match     lari else -> 123E
+11BF: 22 4c 61 72 69 73 61 20 69 73 20 61 …+112    text      "\"Larisa is an explorer.  She is also my sister, by the way, which makes the fact that she found Seldane ruins quite ironic.\""
+123B: 88 0a 4d                                     goto      -> 0A4D
+123E:>90 6b 6f 73 68 00 12 a7                      match     kosh else -> 12A7
+1246: 22 4b 6f 73 68 61 20 69 73 20 74 68 …+82     text      "\"Kosha is the city of my birth.  It used to be a nice city until House @Comana rose to power.\""
+12A4: 88 0a 4d                                     goto      -> 0A4D
+12A7:>90 63 6f 6d 61 00 13 62                      match     coma else -> 1362
+12AF: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+164    text      "\"House Comana, well, something about those three brothers that bothers me.\"*\"They were a minor House until their father died, and then @Myus, @Naxos, and @Darius took control.\""
+135F: 88 0a 4d                                     goto      -> 0A4D
+1362:>90 6d 79 75 73 00 13 be                      match     myus else -> 13BE
+136A: 22 4d 79 75 73 20 69 73 20 74 68 65 …+69     text      "\"Myus is the leader of House Comana, being the eldest brother.  He rules @Kosha.\""
+13BB: 88 0a 4d                                     goto      -> 0A4D
+13BE:>90 6e 61 78 6f 00 14 1c                      match     naxo else -> 141C
+13C6: 22 4e 61 78 6f 73 20 69 73 20 74 68 …+71     text      "\"Naxos is the middle brother.  The last I heard he was causing trouble in Cademia.\""
+1419: 88 0a 4d                                     goto      -> 0A4D
+141C:>90 64 61 72 69 00 14 79                      match     dari else -> 1479
+1424: 22 44 61 72 69 75 73 20 69 73 20 74 …+70     text      "\"Darius is the youngest brother.  He lives in Catamarca - perhaps you've met him?\""
+1476: 88 0a 4d                                     goto      -> 0A4D
+1479:>90 63 72 79 73 2c 67 6c 6f 77 2c 63 …+6      match     crys,glow,crol else -> 14CE
+148B: 22 43 6c 65 61 72 6c 79 2c 20 74 68 …+52     text      "\"Clearly, they are magical, but for what purpose, I don't know.\""
+14CB: 88 0a 4d                                     goto      -> 0A4D
+14CE:>90 62 79 65 00 14 e6                         match     bye else -> 14E6
+14D5: 22 41 6e 79 74 69 6d 65 2e 22                text      "\"Anytime.\""
+14DF: 8b 41 00 40                                  return    0
+; ---- dead code 14E3-14E6: no dictionary entry, jump, pointer or call reaches it ----
+14E3:x88 0a 4d                                     goto      -> 0A4D
+14E6:>90 2a 00 15 3b                               match     * else -> 153B
+14EB: 8d 9f 08 08 30 40 5e 40 15 38                jf        !R0808(A30) -> 1538
+14F5: 8d 9f 08 01 30 40 5e 40 15 38                jf        !R0801(A30) -> 1538
+14FF: 22 44 6f 6e 27 74 20 6b 6e 6f 77 20 …+45     text      "\"Don't know much about that, perhaps I can look into it.\""
+1538:>88 0a 4d                                     goto      -> 0A4D
+153B:>88 0a 4d                                     goto      -> 0A4D
+; ---- dead code 153E-1542: no dictionary entry, jump, pointer or call reaches it ----
+153E:x8b 41 00 40                                  return    0
+1542: a0 07 98 4a 00 97 00 15 50 00 ff ff …+32     .dict     dict[7] {4/index: @0079, 12/talk: @03B1, 21/signal: @0097, 32/spawned: @003A, 68: @0002}

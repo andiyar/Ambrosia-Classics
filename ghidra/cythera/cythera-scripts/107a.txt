@@ -1,0 +1,37 @@
+; segment 107A  page 10  class 0x00 (prop) type 122 tile-name "pail of milk" (tool join F000/F004)
+; kind class  length 189 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0091  methods: sel15/take_drop_15@003E, sel9/use@0052, sel10/use_on@0079
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 91                                        .hdr      dictionary offset = 0091
+0002: 90 02 90 7a 00 0c 90 7a 00 38                .array    array[2] = [@000C, @0038]
+000C: 4d 69 6c 6b 3f 20 20 57 68 6f 20 69 …+32     .string   "Milk?  Who in their right mind drinks milk!"
+0038: 90 01 00 00 00 61                            .array    array[1] = [97]
+
+; ==== method sel15/take_drop_15 @003E ====
+003E: 81 01 00                                     frame     args=1 locals=0
+0041: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0048-004C: no dictionary entry, jump, pointer or call reaches it ----
+0048:x8b 41 00 40                                  return    0
+004C: 90 01 00 00 00 30                            .array    array[1] = [48]
+
+; ==== method sel9/use @0052 ====
+0052: 81 01 00                                     frame     args=1 locals=0
+0055: 8d 48 13 40 00 6e                            jf        G13:g13_bool -> 006E
+005B: 50 6f 75 72 20 6d 69 6c 6b 20 6f 6e …+7      text      "Pour milk on what?\n"
+006E:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0075-0079: no dictionary entry, jump, pointer or call reaches it ----
+0075:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0079 ====
+0079: 81 02 00                                     frame     args=2 locals=0
+007C: 8d 9f 0e 0b 31 40 40 00 8d                   jf        R0E0B(A31) -> 008D
+0085: 86 04 30 40 42 00 78 40                      setfield  A30.f04:type = 120
+008D:>8b 41 00 40                                  return    0
+0091: a0 07 50 00 ff ff 00 27 90 7a 00 3e …+32     .dict     dict[7] {9/use: @0052, 10/use_on: @0079, 15/take_drop_15: @003E, 36/p_weight: @004C, 51: @0002}

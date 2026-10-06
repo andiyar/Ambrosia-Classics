@@ -1,0 +1,22 @@
+; segment 140F  page 14  class 0x20 (zone) id 15
+; kind class  length 63 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @002B  methods: sel20/enter@0008
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 2b                                        .hdr      dictionary offset = 002B
+0002: 90 01 50 00 00 01                            .array    array[1] = [True]
+
+; ==== method sel20/enter @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: d9 43 0f ff ff f4 40                         builtin   set_outdoor_sky(-12)
+0012: da 44 49 72 6f 6e 20 4d 69 6e 65 00 …+1      builtin   set_map_title("Iron Mine")
+001F: d8 41 e0 40                                  builtin   set_zone_light_minimum(-32)
+0023: d6 41 02 40                                  builtin   play_music2(2)
+0027: 8b 41 00 40                                  return    0
+002B: a0 03 94 0f 00 02 00 24 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0008, 36/p_weight: @0002}

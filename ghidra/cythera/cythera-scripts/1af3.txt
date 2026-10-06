@@ -1,0 +1,86 @@
+; segment 1AF3  page 1A  class 0x50 (spell) type 243
+; kind class  length 568 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @020C  methods: sel2/name@0008, sel4/index@0021, sel9/use@004F
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 0c                                        .hdr      dictionary offset = 020C
+0002: 90 01 00 00 00 73                            .array    array[1] = [115]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 44 65 74 65 63 74 20 53 65 63 …+6      return    "Detect Secrets"
+; ---- dead code 001D-0021: no dictionary entry, jump, pointer or call reaches it ----
+001D:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0021 ====
+0021: 81 02 01                                     frame     args=2 locals=1
+0024: 8d f5 31 42 00 ca 40 f5 31 42 00 cd …+5      jf        (find_skill(A31, 202) || find_skill(A31, 205)) -> 003C
+0035: 8b 43 50 00 00 01 40                         return    True
+003C:>82 00 31 63 40 40                            set       L00 = as_char(A31)
+0042: 8b 9d 04 00 30 62 04 40 40                   return    L00.sel4/index(A30.f04:type)
+; ---- dead code 004B-004F: no dictionary entry, jump, pointer or call reaches it ----
+004B:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @004F ====
+004F: 81 01 07                                     frame     args=1 locals=7
+0052: 3e 20 44 65 74 65 63 74 20 53 65 63 …+6      text      "> Detect Secrets.\n"
+0064: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+006B: 82 01 43 50 00 00 00 40                      set       L01 = False
+0073: 82 02 41 02 40                               set       L02 = 2
+0078: 8d f5 48 09 42 00 cd 40 40 00 88             jf        find_skill(G09:speaker, 205) -> 0088
+0083: 82 02 41 05 40                               set       L02 = 5
+0088:>82 03 d1 43 10 00 00 04 41 00 00 62 …+7      set       L03 = iterate_props_near(&L04, 0, L00.f01:x, L00.f02:y, L02)
+009B:>8c d1 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_props_near(&L04, 1) -> 01EA
+00A8: 82 06 43 50 00 00 00 40                      set       L06 = False
+00B0: 8d 03 62 00 41 03 57 41 03 54 40 01 …+1      jf        ((L03.f00:kind | 3) == 3) -> 01DB
+00BD: 8d 03 62 04 42 01 60 54 40 00 d3             jf        (L03.f04:type == 352) -> 00D3
+00C8: 82 06 43 50 00 00 01 40                      set       L06 = True
+00D0: 88 01 ae                                     goto      -> 01AE
+00D3:>8d 03 62 04 42 01 61 54 40 00 e9             jf        (L03.f04:type == 353) -> 00E9
+00DE: 82 06 43 50 00 00 01 40                      set       L06 = True
+00E6: 88 01 ae                                     goto      -> 01AE
+00E9:>8d 03 62 04 42 01 63 54 40 00 ff             jf        (L03.f04:type == 355) -> 00FF
+00F4: 82 06 43 50 00 00 01 40                      set       L06 = True
+00FC: 88 01 ae                                     goto      -> 01AE
+00FF:>8d 03 62 04 42 00 e6 54 40 01 15             jf        (L03.f04:type == 230) -> 0115
+010A: 82 06 43 50 00 00 01 40                      set       L06 = True
+0112: 88 01 ae                                     goto      -> 01AE
+0115:>8d 03 62 00 43 00 00 00 80 56 40 01 …+1      jf        (L03.f00:kind & 128) -> 012D
+0122: 82 06 43 50 00 00 00 40                      set       L06 = False
+012A: 88 01 ae                                     goto      -> 01AE
+012D:>8d 03 62 04 42 01 64 54 40 01 43             jf        (L03.f04:type == 356) -> 0143
+0138: 82 06 43 50 00 00 01 40                      set       L06 = True
+0140: 88 01 ae                                     goto      -> 01AE
+0143:>8d 03 62 04 42 00 33 54 40 01 59             jf        (L03.f04:type == 51) -> 0159
+014E: 82 06 43 50 00 00 01 40                      set       L06 = True
+0156: 88 01 ae                                     goto      -> 01AE
+0159:>8d 03 62 04 42 00 35 54 40 01 6f             jf        (L03.f04:type == 53) -> 016F
+0164: 82 06 43 50 00 00 01 40                      set       L06 = True
+016C: 88 01 ae                                     goto      -> 01AE
+016F:>8d 03 62 04 42 00 fd 54 40 01 85             jf        (L03.f04:type == 253) -> 0185
+017A: 82 06 43 50 00 00 01 40                      set       L06 = True
+0182: 88 01 ae                                     goto      -> 01AE
+0185:>8d 03 62 04 42 01 62 54 40 01 9b             jf        (L03.f04:type == 354) -> 019B
+0190: 82 06 43 50 00 00 01 40                      set       L06 = True
+0198: 88 01 ae                                     goto      -> 01AE
+019B:>8d 03 62 04 42 01 65 54 40 01 ae             jf        (L03.f04:type == 357) -> 01AE
+01A6: 82 06 43 50 00 00 01 40                      set       L06 = True
+01AE:>8d 06 40 01 db                               jf        L06 -> 01DB
+01B3: e1 03 43 00 00 00 f4 40                      builtin   show_magic(L03, 244)
+01BB: 8d 48 09 48 05 54 40 01 db                   jf        (G09:speaker == G05:leader) -> 01DB
+01C4: 5e                                           text      "^"
+01C5: 8a 03 40                                     print     L03
+01C8: 20 64 65 74 65 63 74 65 64 21 0a             text      " detected!\n"
+01D3: 82 01 43 50 00 00 01 40                      set       L01 = True
+01DB:>82 03 d1 43 10 00 00 04 41 02 40 40          set       L03 = iterate_props_near(&L04, 2)
+01E7: 88 00 9b                                     goto      -> 009B
+01EA:>8d 01 5e 48 09 48 05 54 5c 40 02 08          jf        (!L01 && (G09:speaker == G05:leader)) -> 0208
+01F6: 4e 6f 74 68 69 6e 67 20 64 65 74 65 …+6      text      "Nothing detected.\n"
+0208:>8b 41 00 40                                  return    0
+020C: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @0021, 9/use: @004F, 40/p_typeflags28: @0002}

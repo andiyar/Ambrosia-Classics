@@ -1,0 +1,23 @@
+; segment 301A  page 30  routine: default handler for selector 26
+; kind routine  length 154 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 01                                     frame     args=2 locals=1
+0003: 8d 30 64 50 40 00 96                         jf        is_spell(A30) -> 0096
+000A: 8d 30 61 33 01 40 00 77                      jf        prop(A30, sel51, 1) -> 0077
+0012: 8d f5 31 30 61 33 01 40 5e 40 00 77          jf        !find_skill(A31, prop(A30, sel51, 1)) -> 0077
+001E: 8d 31 48 05 54 40 00 70                      jf        (A31 == G05:leader) -> 0070
+0026: 82 00 ad 41 1c 41 00 41 00 41 00 30 …+11     set       L00 = as_spell(create_prop(28, 0, 0, 0, prop(A30, sel51, 1), 0, 0))
+003D: 59 6f 75 20 68 61 76 65 6e 27 74 20 …+28     text      "You haven't mastered the prerequisites ("
+0065: 8a 9d 02 00 40 40                            print     L00.sel2/name()
+006B: 29 0a                                        text      ")\n"
+006D: a7 00 40                                     builtin   delete_prop(L00)
+0070:>8b 43 50 00 00 00 40                         return    False
+0077:>8d 30 62 04 43 00 00 00 c0 4f 40 00 …+1      jf        (A30.f04:type < 192) -> 008F
+0084: 8b 9f 0e 8a 31 30 61 33 00 40 40             return    R0E8A(A31, prop(A30, sel51, 0))
+008F:>8b 43 50 00 00 01 40                         return    True
+0096:>8b 41 00 40                                  return    0

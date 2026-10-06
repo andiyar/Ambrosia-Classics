@@ -1,0 +1,223 @@
+; segment 080E  page 08  routine
+; kind routine  length 3360 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 88 00 35                                     goto      -> 0035
+0006: 81 01 00                                     frame     args=1 locals=0
+0009: 8d 30 43 40 40 00 33 54 40 00 1b             jf        (A30 == char#51"Opheltius") -> 001B
+0014: 8b 43 50 00 00 00 40                         return    False
+001B:>8d dc 41 03 40 40 00 2a                      jf        get_variable(3) -> 002A
+0023: 8b 43 50 00 00 00 40                         return    False
+002A:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0031-0035: no dictionary entry, jump, pointer or call reaches it ----
+0031:x8b 41 00 40                                  return    0
+0035:>90 62 65 72 6f 2c 6a 75 64 67 00 00 …+1      match     bero,judg else -> 0071
+0042: 22 42 65 72 6f 73 73 75 73 20 69 73 …+28     text      "\"Berossus is our Judge here in Cademia.\""
+006A: 8b 43 50 00 00 01 40                         return    True
+0071:>90 62 72 79 61 00 00 b0                      match     brya else -> 00B0
+0079: 22 42 72 79 61 78 69 73 20 69 73 20 …+36     text      "\"Bryaxis is a Master Mage who lives in Cademia.\""
+00A9: 8b 43 50 00 00 01 40                         return    True
+00B0:>90 72 61 74 2c 72 61 74 73 2c 72 61 …+5      match     rat,rats,ratc else -> 011F
+00C1: 22 41 20 63 69 74 79 20 74 68 65 20 …+75     text      "\"A city the size of Cademia at times has problems with rats, thus we need ratcatchers.\""
+0118: 8b 43 50 00 00 01 40                         return    True
+011F:>90 68 61 6c 6f 00 02 98                      match     halo else -> 0298
+0127: 8d dc 41 03 40 41 00 54 40 01 86             jf        (get_variable(3) == 0) -> 0186
+0132: 22 48 61 6c 6f 73 20 72 65 70 72 65 …+69     text      "\"Halos represents House Strymon in Cademia.  Claims to be an honest businessman.\""
+0183: 88 02 91                                     goto      -> 0291
+0186:>8d dc 41 03 40 41 01 54 40 02 2c             jf        (get_variable(3) == 1) -> 022C
+0191: 22 48 61 72 64 20 74 6f 20 73 61 79 …+140    text      "\"Hard to say if he did it or not - Berossus says he's telling the truth when he claims innocence, but there are a bunch of witnesses who say otherwise.\""
+0229: 88 02 91                                     goto      -> 0291
+022C:>8d dc 41 03 40 41 02 52 40 02 91             jf        (get_variable(3) >= 2) -> 0291
+0237: 22 54 68 61 74 20 77 61 73 20 61 20 …+78     text      "\"That was a close one for Halos, wasn't it - but still, a shapechanger?  Hard to believe.\""
+0291:>8b 43 50 00 00 01 40                         return    True
+0298:>90 73 68 61 70 00 02 e2                      match     shap else -> 02E2
+02A0: 8d dc 41 03 40 41 02 52 40 02 db             jf        (get_variable(3) >= 2) -> 02DB
+02AB: 22 48 61 72 64 20 74 6f 20 62 65 6c …+29     text      "\"Hard to believe such a thing can exist.\""
+02D4: 8b 43 50 00 00 01 40                         return    True
+02DB:>8b 43 50 00 00 00 40                         return    False
+02E2:>90 6f 70 68 65 00 03 88                      match     ophe else -> 0388
+02EA: 8d dc 41 03 40 40 03 28                      jf        get_variable(3) -> 0328
+02F2: 22 54 68 65 20 63 72 69 6d 65 20 77 …+39     text      "\"The crime was shocking - imagine, being murdered!\""
+0325: 88 03 81                                     goto      -> 0381
+0328:>22 4f 70 68 65 6c 74 75 69 73 20 72 …+77     text      "\"Opheltuis represents House Nicander in Cademia, and will be the next Elder of Nicander.\""
+0381:>8b 43 50 00 00 01 40                         return    True
+0388:>90 63 72 69 6d 2c 6d 75 72 64 00 04 …+1      match     crim,murd else -> 0418
+0395: 8d dc 41 03 40 40 04 11                      jf        get_variable(3) -> 0411
+039D: 22 53 75 72 65 2c 20 74 68 65 72 65 …+94     text      "\"Sure, there is crime in Cademia, but never a murder like that.\"*\"Right in the middle of Council and all.\""
+0407: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 040E-0411: no dictionary entry, jump, pointer or call reaches it ----
+040E:x88 04 18                                     goto      -> 0418
+0411:>8b 43 50 00 00 00 40                         return    False
+0418:>90 62 72 79 61 00 04 76                      match     brya else -> 0476
+0420: 22 42 72 79 61 78 69 73 20 69 73 20 …+67     text      "\"Bryaxis is a Mage who teaches music.  Lives east of the jail, near the river.\""
+046F: 8b 43 50 00 00 01 40                         return    True
+0476:>8d 48 10 41 08 54 40 0c 72                   jf        (G10:zone == 8) -> 0C72
+047F: 90 77 68 65 72 00 0c 72                      match     wher else -> 0C72
+0487: 9f 08 16 30 45 07 da 90 17 88 0e 04 …+2008   call      R0816(A30, blk@048E, 1)
+      ; 0x45 inline block 048E-0C68 (2010 bytes):
+      048E: 90 17                            .array[23]
+        [0] @04EC ->
+          04EC: 90 06                            .array[6]
+            [0] room#203
+            [1] @0506 "Tyrants' Castle"
+            [2] @0516 "The front hall of the Tyrant's Castle is "
+            [3] 52
+            [4] 27
+            [5] @0540 "."
+        [1] @0542 ->
+          0542: 90 03                            .array[3]
+            [0] room#220
+            [1] @0550 "Commons"
+            [2] @0558 "The Commons is an open park area near the center of town."
+        [2] @0592 ->
+          0592: 90 03                            .array[3]
+            [0] False
+            [1] @05A0 "Commons"
+            [2] @05A8 "Your standing in them."
+        [3] @05BF ->
+          05BF: 90 06                            .array[6]
+            [0] room#218
+            [1] @05D9 "House Comana"
+            [2] @05E6 "Naxos of House Comana has a holding "
+            [3] 31
+            [4] 49
+            [5] @060B "."
+        [4] @060D ->
+          060D: 90 06                            .array[6]
+            [0] room#219
+            [1] @0627 "House Strymon"
+            [2] @0635 "Halos of House Strymon lives and works "
+            [3] 19
+            [4] 111
+            [5] @065D ", though stops for lunch at the 'Two Tailed Rat'."
+        [5] @068F ->
+          068F: 90 06                            .array[6]
+            [0] @0006 (code)
+            [1] @06A9 "House Nicander"
+            [2] @06B8 "Opheltius of House Nicander lives "
+            [3] 92
+            [4] 77
+            [5] @06DB "."
+        [6] @06DD ->
+          06DD: 90 06                            .array[6]
+            [0] Nil
+            [1] @06F7 "House Attis"
+            [2] @0703 "The home of House Attis is "
+            [3] 100
+            [4] 103
+            [5] @071F "."
+        [7] @0721 ->
+          0721: 90 06                            .array[6]
+            [0] Nil
+            [1] @073B "The 'Two Tailed Rat'"
+            [2] @0750 "The Two Tailed Rat is at the edge of the Maze, "
+            [3] 18
+            [4] 98
+            [5] @0780 "."
+        [8] @0782 ->
+          0782: 90 06                            .array[6]
+            [0] char#45"Dares"
+            [1] @079C "Dares' Eatery"
+            [2] @07AA "Dares runs a fine eating establishment, complete with outdoor patio, "
+            [3] 81
+            [4] 50
+            [5] @07F0 "."
+        [9] @07F2 ->
+          07F2: 90 06                            .array[6]
+            [0] room#202
+            [1] @080C "Mint"
+            [2] @0811 "The official mint is "
+            [3] 23
+            [4] 34
+            [5] @0827 "."
+        [10] @0829 ->
+          0829: 90 03                            .array[3]
+            [0] char#76"Bryaxis"
+            [1] @0837 "Mage Bryaxis"
+            [2] @0844 "He has a small private house at the northeast end of town."
+        [11] @087F ->
+          087F: 90 03                            .array[3]
+            [0] char#72"Berossus"
+            [1] @088D "Judge Berossus"
+            [2] @089C "Judge Berossus lives in the Tyrants' Castle at the north end of town."
+        [12] @08E2 ->
+          08E2: 90 03                            .array[3]
+            [0] char#77"Anisa"
+            [1] @08F0 "Magess Anisa"
+            [2] @08FD "She lives in a small house just southeast of the Commons."
+        [13] @0937 ->
+          0937: 90 06                            .array[6]
+            [0] char#68"Thoas"
+            [1] @0951 "Thoas the Blacksmith"
+            [2] @0966 "Thoas' smithy is "
+            [3] 68
+            [4] 92
+            [5] @0978 "."
+        [14] @097A ->
+          097A: 90 06                            .array[6]
+            [0] char#64"Oeneus"
+            [1] @0994 "Oeneus the Fletcher"
+            [2] @09A8 "He has a workshop "
+            [3] 108
+            [4] 57
+            [5] @09BB "."
+        [15] @09BD ->
+          09BD: 90 06                            .array[6]
+            [0] char#37"Alastor"
+            [1] @09D7 "Alastor the Tanner"
+            [2] @09EA "His tannery is "
+            [3] 114
+            [4] 60
+            [5] @09FA " - just follow the smell."
+        [16] @0A14 ->
+          0A14: 90 03                            .array[3]
+            [0] char#67"Hypsenor"
+            [1] @0A22 "Hypsenor the Tailor"
+            [2] @0A36 "Hypsenor has a small shop north of the Commons."
+        [17] @0A66 ->
+          0A66: 90 03                            .array[3]
+            [0] char#36"Antenor"
+            [1] @0A74 "Antenor the Trader"
+            [2] @0A87 "Trader Antenor has a small shop northwest of the Commons."
+        [18] @0AC1 ->
+          0AC1: 90 03                            .array[3]
+            [0] Nil
+            [1] @0ACF "LandKing Hall"
+            [2] @0ADD "LandKing Hall lies north through the forest - you should follow the road from Odemia."
+        [19] @0B33 ->
+          0B33: 90 03                            .array[3]
+            [0] Nil
+            [1] @0B41 "Catamarca"
+            [2] @0B4B "Catamarca lies southeast, across the Sitia and then down the coast."
+        [20] @0B8F ->
+          0B8F: 90 03                            .array[3]
+            [0] Nil
+            [1] @0B9D "Odemia"
+            [2] @0BA4 "Odemia lies up the road northeast from town."
+        [21] @0BD1 ->
+          0BD1: 90 03                            .array[3]
+            [0] Nil
+            [1] @0BDF "Pnyx"
+            [2] @0BE4 "Pnyx lies on the western shore, on the road west from town."
+        [22] @0C20 ->
+          0C20: 90 03                            .array[3]
+            [0] Nil
+            [1] @0C2E "Kosha"
+            [2] @0C34 "Kosha lies further south along the shore from town."
+0C6B: 8b 43 50 00 00 01 40                         return    True
+0C72:>90 64 65 6d 6f 00 0d 15                      match     demo else -> 0D15
+0C7A: 8d dc 41 04 40 41 02 54 40 0c 8b             jf        (get_variable(4) == 2) -> 0C8B
+0C85: dd 41 04 41 03 40                            builtin   set_variable(4, 3)
+0C8B:>8d dc 41 04 40 41 03 54 40 0c de             jf        (get_variable(4) == 3) -> 0CDE
+0C96: 22 44 65 6d 6f 64 6f 63 75 73 20 77 …+57     text      "\"Demodocus was just playing in one of the public houses around here.\""
+0CDB: 88 0d 0e                                     goto      -> 0D0E
+0CDE:>22 44 65 6d 6f 64 6f 63 75 73 20 68 …+36     text      "\"Demodocus hasn't been around here for a while.\""
+0D0E:>8b 43 50 00 00 01 40                         return    True
+0D15:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0D1C-0D20: no dictionary entry, jump, pointer or call reaches it ----
+0D1C:x8b 41 00 40                                  return    0

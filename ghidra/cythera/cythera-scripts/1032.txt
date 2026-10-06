@@ -1,0 +1,22 @@
+; segment 1032  page 10  class 0x00 (prop) type 50 tile-name "beggar" (tool join F000/F004)
+; kind class  length 80 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @003C  methods: sel32/spawned@000C
+; properties: sel55/p37
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 3c                                        .hdr      dictionary offset = 003C
+0002: 90 02 00 00 00 04 00 00 00 09                .array    array[2] = [4, 9]
+
+; ==== method sel32/spawned @000C ====
+000C: 81 01 00                                     frame     args=1 locals=0
+000F: 8d ac 41 00 41 08 40 41 01 54 40 00 …+1      jf        (random(0, 8) == 1) -> 0031
+001C: 86 26 30 40 44 53 70 61 72 65 20 61 …+9      setfield  A30.f26:f26 = "Spare an obol?"
+0031:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0038-003C: no dictionary entry, jump, pointer or call reaches it ----
+0038:x8b 41 00 40                                  return    0
+003C: a0 03 50 00 ff ff 00 15 90 32 00 02 …+8      .dict     dict[3] {32/spawned: @000C, 55/p37: @0002}

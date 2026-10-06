@@ -1,0 +1,30 @@
+; segment 021E  page 02  string table
+; kind strtab  length 223 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 15 82 1e 00 56 82 1e 00 5b 82 1e …+74     .strtab   string table, 21 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 821E×21)
+0056: 7a 65 72 6f 00                               .string   [0] "zero"
+005B: 6f 6e 65 00                                  .string   [1] "one"
+005F: 74 77 6f 00                                  .string   [2] "two"
+0063: 74 68 72 65 65 00                            .string   [3] "three"
+0069: 66 6f 75 72 00                               .string   [4] "four"
+006E: 66 69 76 65 00                               .string   [5] "five"
+0073: 73 69 78 00                                  .string   [6] "six"
+0077: 73 65 76 65 6e 00                            .string   [7] "seven"
+007D: 65 69 67 68 74 00                            .string   [8] "eight"
+0083: 6e 69 6e 65 00                               .string   [9] "nine"
+0088: 74 65 6e 00                                  .string   [10] "ten"
+008C: 65 6c 65 76 65 6e 00                         .string   [11] "eleven"
+0093: 74 77 65 6c 76 65 00                         .string   [12] "twelve"
+009A: 74 68 69 72 74 65 65 6e 00                   .string   [13] "thirteen"
+00A3: 66 6f 75 72 74 65 65 6e 00                   .string   [14] "fourteen"
+00AC: 66 69 66 74 65 65 6e 00                      .string   [15] "fifteen"
+00B4: 73 69 78 74 65 65 6e 00                      .string   [16] "sixteen"
+00BC: 73 65 76 65 6e 74 65 65 6e 00                .string   [17] "seventeen"
+00C6: 65 69 67 68 74 65 65 6e 00                   .string   [18] "eighteen"
+00CF: 6e 69 6e 65 74 65 65 6e 00                   .string   [19] "nineteen"
+00D8: 74 77 65 6e 74 79 00                         .string   [20] "twenty"

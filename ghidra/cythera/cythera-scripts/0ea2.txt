@@ -1,0 +1,17 @@
+; segment 0EA2  page 0E  routine
+; kind routine  length 93 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 04                                     frame     args=1 locals=4
+0003: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+0014:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 0059
+0021: 82 03 00 63 40 40                            set       L03 = as_char(L00)
+0027: 8d ac 41 00 41 06 40 41 03 30 4c 4a …+11     jf        ((random(0, 6) + (3 * A30)) > (L00.f17:body + L00.f1B:level)) -> 004A
+003E: c3 00 41 15 30 41 02 4a 41 03 4c 40          builtin   temp_ability(L00, 21, ((A30 + 2) * 3))
+004A:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+0056: 88 00 14                                     goto      -> 0014
+0059:>8b 41 00 40                                  return    0

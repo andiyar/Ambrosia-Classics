@@ -1,0 +1,34 @@
+; segment 0E8D  page 0E  routine
+; kind routine  length 216 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 06                                     frame     args=1 locals=6
+0003: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0009: 8d 00 62 32 43 00 00 40 00 56 40 00 …+1      jf        (L00.f32 & 16384) -> 0030
+0016: 82 01 ad 41 21 30 62 01 30 62 02 ac …+14     set       L01 = create_prop(33, A30.f01:x, A30.f02:y, random(0, 4), 77, 0, 0)
+0030:>8d 00 62 32 43 00 00 20 00 56 40 00 …+1      jf        (L00.f32 & 8192) -> 00A5
+003D: 82 02 d0 43 10 00 00 03 41 00 30 40 …+1      set       L02 = iterate_same_group(&L03, 0, A30)
+004A:>8c d0 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_same_group(&L03, 1) -> 006D
+0057: 86 0c 02 40 41 1f 40                         setfield  L02.f0C:tblC40 = 31
+005E: 82 02 d0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_same_group(&L03, 2)
+006A: 88 00 4a                                     goto      -> 004A
+006D:>a6 41 10 40                                  builtin   show_tile_animate(16)
+0071: 82 02 d0 43 10 00 00 03 41 00 30 40 …+1      set       L02 = iterate_same_group(&L03, 0, A30)
+007E:>8c d0 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_same_group(&L03, 1) -> 00A5
+008B: 86 00 02 40 02 62 00 41 02 57 40             setfield  L02.f00:kind = (L02.f00:kind | 2)
+0096: 82 02 d0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_same_group(&L03, 2)
+00A2: 88 00 7e                                     goto      -> 007E
+00A5:>8d 48 09 43 40 40 00 01 54 40 00 d4          jf        (G09:speaker == char#1"Hero") -> 00D4
+00B1: 82 05 45 00 12 90 04 00 00 00 01 00 …+12     set       L05 = blk@00B6
+      ; 0x45 inline block 00B6-00C8 (18 bytes):
+      00B6: 90 04                            .array[4]
+        [0] 1
+        [1] 4
+        [2] -10
+        [3] 0
+00C9: 87 0c 48 0c 05 00 62 35 46 4a 40             setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + L05[L00.f35])
+00D4:>8b 41 00 40                                  return    0

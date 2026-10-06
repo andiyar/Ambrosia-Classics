@@ -1,0 +1,18 @@
+; segment 1B7A  page 1B  class 0x58 (room) id 122
+; kind class  length 229 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00D1  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 d1                                        .hdr      dictionary offset = 00D1
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 69 73 20 72 6f 6f 6d 20 63 6f …+188    text      "This room contains the focal point of the stronghold.  A central table serves as meeting space.  A single large chair along the southern edge of the table is clearly for the person running the place.\n"
+00CD: 8b 41 00 40                                  return    0
+00D1: a0 03 50 00 ff ff 6f 63 9b 7a 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

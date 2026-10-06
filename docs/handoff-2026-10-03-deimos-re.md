@@ -12,7 +12,7 @@ Session stopped by usage limit, not by the token cap (Ben lifted the cap in chat
 - `docs/deimos/` now has 23 topical files. Role table after wave 1: 510 rows = 240 HIGH / 256 MED /
   14 LOW (verified by grep). Wave-2 synthesis landed on the branch after the cut-off: role table 678 rows = 392 HIGH /
   271 MED / 15 LOW (synthesis agent's count, not re-verified by the seat); INDEX #36–#55 added.
-- Wave-2 critic (`/Users/andiyar/ghidra-proj-deimos/critic-wave2.md`, also to be copied into the repo
+- Wave-2 critic (`/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic-wave2.md`, also to be copied into the repo
   as `docs/deimos/CRITIC-wave2-2026-10-03.md`): gameplay range 92.7 % labelled by lines, whole game
   code 84.1 %. What remains: 19 blitter pixel loops (fade blend, clipped/scaled variants), 6 static
   initialisers (one of them, `FUN_10014120`, overwrites a draw template sprite-geometry §3.1 read from
@@ -33,7 +33,7 @@ Session stopped by usage limit, not by the token cap (Ben lifted the cap in chat
 3. Then: commit, merge `origin/main`, push `HEAD:main`, remove the worktree, delete the branch.
 
 ## Evidence kit (regenerable; lives outside the repo)
-`/Users/andiyar/ghidra-proj-deimos/`: `brief.md` (reader brief), `review.md` (reviewer brief),
+`/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/`: `brief.md` (reader brief), `review.md` (reviewer brief),
 `work/` (Ghidra project — copy before running post-scripts), `mem/` (memory image), `profile.txt`,
 `callers.txt`, `sizes.txt`, `inventory.txt`, `data/` (all pak entries decoded), `disasm-*.txt`,
 `review-wave1.md`, `critic-wave1.md`, `critic-wave2.md`. Recreate with `ghidra/README.md` +

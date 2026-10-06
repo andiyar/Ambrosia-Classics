@@ -25,7 +25,7 @@ functions named above), `$W/w3s1-ranges.txt` (DisasmRange over the two unnamed h
 `1001afc0..1001b030` and `1001f040..1001f0c0`), `$W/w3s1-extra.txt` (`FUN_1001d5e0`,
 `FUN_100000e0`), `$W/w3s1-extra2.txt` (`FUN_100189f0`). Scans: `$W/w3s1-stbscan.py`,
 `$W/w3s1-basescan.py`, `$W/w3s1-slotscan.py`, `$W/w3s1-blscan.py`, `$W/w3s1-slot7198.py`.
-Worked example: `$W/w3s1-worked.py`. `$W` = `/Users/andiyar/ghidra-proj-deimos`.
+Worked example: `$W/w3s1-worked.py`. `$W` = `/Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj`.
 
 **Short answers.**
 - **Kernel.** Every blending leaf uses one packed RGB555 kernel:

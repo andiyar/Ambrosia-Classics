@@ -1,0 +1,94 @@
+; segment 1825  page 18  class 0x40 (char) id 37 name "Alastor" (string table 0201)
+; kind class  length 2259 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @08BF  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 08 bf                                        .hdr      dictionary offset = 08BF
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6d …+44     text      "You see a small, pudgy man, with stained hands and arms."
+003D: 8d 30 62 15 43 00 00 00 90 54 40 07 …+1      jf        (A30.f15:activity == 144) -> 0790
+004A: 8d dc 41 08 40 48 0f 51 40 00 a8             jf        (get_variable(8) > G0F:day) -> 00A8
+0055: 22 49 27 6d 20 73 74 69 6c 6c 20 77 …+67     text      "\"I'm still working on the gator skin - perhaps you could come back tomorrow...\""
+00A4: 8b 41 00 40                                  return    0
+00A8:>8d dc 41 08 40 40 02 10                      jf        get_variable(8) -> 0210
+00B0: 22 57 65 6c 6c 2c 20 49 20 6d 75 73 …+323    text      "\"Well, I must say I'm a bit disappointed with the results.\"*\"Not only has this taken longer than expected, but the results, while they perform as promised, aren't the most comfortable.\"*\"I thank you, however, for the opportunity, and, as promised, here are boots.  May they serve you well.\"*He hands you a pair of stiff leather boots.*"
+01FF: dd 41 08 41 00 40                            builtin   set_variable(8, 0)
+0205: a8 48 05 42 01 35 41 00 41 01 40             builtin   give_item(G05:leader, 309, 0, 1)
+0210:>8d 9f 0f 02 30 41 07 40 5e 40 02 a7          jf        !R0F02(A30, 7) -> 02A7  ; R0F02 = tstbit [from 0x0101 symtab]
+021C: 22 47 6f 6f 64 20                            text      "\"Good "
+0222: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0229: 2e 20 20 49 20 61 6d 20 41 6c 61 73 …+107    text      ".  I am Alastor, one of the finest leather workers in the land.\"*\"Perhaps you'd be interested in some leathergoods...\"*"
+02A0: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02A7:>8d 9f 0f 02 30 41 02 40 40 03 9b             jf        R0F02(A30, 2) -> 039B  ; R0F02 = tstbit [from 0x0101 symtab]
+02B2: 82 00 ae 43 00 00 08 d2 41 00 40 40          set       L00 = who_in_party_has(2258, 0)
+02BE: 8d 00 40 03 9b                               jf        L00 -> 039B
+02C3: 22 45 78 63 65 6c 6c 65 6e 74 21 20 …+69     text      "\"Excellent!  You've brought the gator skin.  I shall begin work on it instantly!\""
+0314: 9f 0f 01 30 41 02 40                         call      R0F01(A30, 2)  ; R0F01 = clrbit [from 0x0101 symtab]
+031B: f3 41 1f 40                                  builtin   done_to_do(31)
+031F: b1 00 43 00 00 08 d2 41 00 41 01 40          builtin   remove_items(L00, 2258, 0, 1)
+032B: 2a 22 48 6d 20 2d 20 74 68 69 73 20 …+80     text      "*\"Hm - this might take me a couple of days.  Perhaps you could come back in a day or two...\""
+0387: dd 41 08 48 0f 41 01 4a ac 41 01 41 …+4      builtin   set_variable(8, ((G0F:day + 1) + random(1, 3)))
+0397: 8b 41 00 40                                  return    0
+039B:>86 27 30 40 9f 0e a5 44 46 69 6e 65 …+150    setfield  A30.f27:ce17 = R0EA5("Finest leathergoods for sale!", blk@03C4, A30.f27:ce17, blk@0429)
+      ; 0x45 inline block 03C4-0423 (95 bytes):
+      03C4: 90 03                            .array[3]
+        [0] @03D2 ->
+          03D2: 90 04                            .array[4]
+            [0] 105
+            [1] @03E4 "Sling"
+            [2] 10
+            [3] 1
+        [1] @03EA ->
+          03EA: 90 04                            .array[4]
+            [0] 106
+            [1] @03FC "Cuirass"
+            [2] 40
+            [3] 1
+        [2] @0404 ->
+          0404: 90 04                            .array[4]
+            [0] 112
+            [1] @0416 "Leather Helm"
+            [2] 7
+            [3] 1
+      ; 0x45 inline block 0429-043B (18 bytes):
+      0429: 90 04                            .array[4]
+        [0] 5
+        [1] 7
+        [2] 3
+        [3] 5
+043D: 8d 9f 0f 02 30 41 01 40 5e 40 07 8d          jf        !R0F02(A30, 1) -> 078D  ; R0F02 = tstbit [from 0x0101 symtab]
+0449: 22 49 66 20 79 6f 75 20 64 6f 6e 27 …+18     text      "\"If you don't mind me asking, "
+0467: 8d 49 05 00 00 10 40 04 78                   jf        seg0500[0010] -> 0478
+0470: 6d 61 27 61 6d                               text      "ma'am"
+0475: 88 04 7b                                     goto      -> 047B
+0478:>73 69 72 2c 20 62 75 74 20 79 6f 75 …+279    text      "sir, but you seem like sort that might be able to help me on something.\"*\"I'm curious to try out some new techniques and materials in my craft, and I have a propisition that might interest you.\"*\"Might you be interested in obtaining some material for me, in exchange for some special goods?\""  ; shares its tail with text @047B
+047B:>2c 20 62 75 74 20 79 6f 75 20 73 65 …+276    text      ", but you seem like sort that might be able to help me on something.\"*\"I'm curious to try out some new techniques and materials in my craft, and I have a propisition that might interest you.\"*\"Might you be interested in obtaining some material for me, in exchange for some special goods?\""
+059B: 8f 79 6e 00                                  prompt    "yn"
+059F: 90 79 00 07 24                               match     y else -> 0724
+05A4: 22 45 78 65 63 65 6c 6c 65 6e 74 2e …+346    text      "\"Execellent.  I'm am looking for the skin, or whole carcas, of a large swamp gator.\"*\"I understand they are quite mean and dangerous, but were you to obtain one, I'd be quite interested.\"*\"I will in turn, make a pair of boots the likes of which you've never seen.\"*\"If my theories are true, they should not only be waterproof, but resistant to heat as well.\""
+070A: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0711: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0718: f2 41 1f 43 30 00 02 1a 41 1f 4a 40          builtin   add_to_do(31, (str[021A:0]"Cure Alaric" + 31))
+0724:>90 6e 00 07 8d                               match     n else -> 078D
+0729: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+81     text      "\"Very well, I understand you have your own tasks to do.  I won't bother you again on this...\""
+0786: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+078D:>88 08 bb                                     goto      -> 08BB
+0790:>8d dc 41 08 40 40 08 02                      jf        get_variable(8) -> 0802
+0798: 22 49 27 6d 20 73 74 69 6c 6c 20 77 …+90     text      "\"I'm still working on that gator skin - perhaps if you stopped back tomorrow when I was in my shop...\""
+07FE: 8b 41 00 40                                  return    0
+0802:>8d 9f 0f 02 30 41 02 40 40 08 87             jf        R0F02(A30, 2) -> 0887  ; R0F02 = tstbit [from 0x0101 symtab]
+080D: 82 00 ae 43 00 00 08 d2 41 00 40 40          set       L00 = who_in_party_has(2258, 0)
+0819: 8d 00 40 08 87                               jf        L00 -> 0887
+081E: 22 41 68 2c 20 49 20 73 65 65 20 79 …+89     text      "\"Ah, I see you've got the gator carcass.  Could you please bring it by the shop later when I'm open?\""
+0883: 8b 41 00 40                                  return    0
+0887:>22 50 6c 65 61 73 65 20 63 6f 6d 65 …+40     text      "\"Please come back later when I'm open for business.\""
+08BB:>8b 41 00 40                                  return    0
+08BF: a0 03 98 25 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

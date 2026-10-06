@@ -1,0 +1,11 @@
+; segment 300C  page 30  routine: default handler for selector 12 (talk)
+; kind routine  length 39 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 59 6f 75 20 61 72 65 20 6d 65 74 20 …+20     text      "You are met with stony silence.\n"
+0023: 8b 41 00 40                                  return    0

@@ -1,0 +1,37 @@
+; segment 1AF6  page 1A  class 0x50 (spell) type 246
+; kind class  length 152 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @006C  methods: sel2/name@0002, sel4/index@0011, sel9/use@003E
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 6c                                        .hdr      dictionary offset = 006C
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 57 61 69 74 00 40                      return    "Wait"
+; ---- dead code 000D-0011: no dictionary entry, jump, pointer or call reaches it ----
+000D:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0011 ====
+0011: 81 02 01                                     frame     args=2 locals=1
+0014: 8d 31 41 01 53 40 00 33                      jf        (A31 != 1) -> 0033
+001C: 82 00 31 63 40 40                            set       L00 = as_char(A31)
+0022: 8d 00 62 15 41 70 53 40 00 33                jf        (L00.f15:activity != 112) -> 0033
+002C: 8b 43 50 00 00 01 40                         return    True
+0033:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 003A-003E: no dictionary entry, jump, pointer or call reaches it ----
+003A:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @003E ====
+003E: 81 01 01                                     frame     args=1 locals=1
+0041: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+0048: 86 26 00 40 44 49 27 6c 6c 20 77 61 …+9      setfield  L00.f26:f26 = "I'll wait here"
+005D: ba 48 09 40                                  builtin   leave_party(G09:speaker)
+0061: 86 15 00 40 41 70 40                         setfield  L00.f15:activity = 112
+0068: 8b 41 00 40                                  return    0
+006C: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0002, 4/index: @0011, 9/use: @003E}

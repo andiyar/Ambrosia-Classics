@@ -1,0 +1,42 @@
+; segment 1187  page 11  class 0x00 (prop) type 391 tile-name "odd helmet" (tool join F000/F004)
+; kind class  length 353 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0111  methods: sel15/take_drop_15@005F, sel8/search@007F, sel13/wield@00C2, sel14/take_drop_14@0105
+; properties: sel36/p_weight, sel38/p26, sel44, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 11                                        .hdr      dictionary offset = 0111
+0002: 90 02 91 87 00 0c 91 87 00 55                .array    array[2] = [@000C, @0055]
+000C: 54 68 61 74 27 73 20 61 6e 20 6f 64 …+61     .string   "That's an odd looking helmet - probably not the most comfortable either."
+0055: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+
+; ==== method sel15/take_drop_15 @005F ====
+005F: 81 01 00                                     frame     args=1 locals=0
+0062: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0069-006D: no dictionary entry, jump, pointer or call reaches it ----
+0069:x8b 41 00 40                                  return    0
+006D: 90 01 00 00 00 12                            .array    array[1] = [18]
+0073: 90 01 00 00 00 00                            .array    array[1] = [0]
+0079: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel8/search @007F ====
+007F: 81 01 00                                     frame     args=1 locals=0
+0082: 49 74 20 69 73 20 73 6f 6d 65 20 73 …+48     text      "It is some sort of helmet, but made of an unknown material.\n"
+00BE: 8b 41 00 40                                  return    0
+
+; ==== method sel13/wield @00C2 ====
+00C2: 81 02 00                                     frame     args=2 locals=0
+00C5: c1 31 41 1b 40                               builtin   add_ability(A31, 27)
+00CA: 8d 31 48 09 54 40 01 01                      jf        (A31 == G09:speaker) -> 0101
+00D2: 49 74 20 66 65 65 6c 73 20 71 75 69 …+35     text      "It feels quite uncomfortable, and distracting.\n"
+0101:>8b 41 00 40                                  return    0
+
+; ==== method sel14/take_drop_14 @0105 ====
+0105: 81 02 00                                     frame     args=2 locals=0
+0108: c2 31 41 1b 40                               builtin   remove_ability(A31, 27)
+010D: 8b 41 00 40                                  return    0
+0111: a0 0d 91 87 00 c2 00 0d 91 87 01 05 …+68     .dict     dict[13] {8/search: @007F, 13/wield: @00C2, 14/take_drop_14: @0105, 15/take_drop_15: @005F, 36/p_weight: @006D, 38/p26: @0073, 44: @0079, 51: @0002}

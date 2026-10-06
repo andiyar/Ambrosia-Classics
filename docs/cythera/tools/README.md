@@ -1,5 +1,7 @@
 # docs/cythera/tools — Cythera 1.0.4 RE tools
 
+⚑ 2026-10-07: the binary, dumps and listings are committed at `ghidra/cythera/` (regenerate with `ghidra/regen-cythera.sh`); read `ghidra/Cythera_*` below as `ghidra/cythera/Cythera_*`.
+
 Run everything from the repo root. Inputs: `ghidra/Cythera_pef` (copy of `…/files/Cythera`, PEF),
 `Cythera Data` (path `$G` in the banks, default in `seg.py`). Outputs go to git-ignored `ghidra/`.
 Address map used everywhere: code = PEF section 0, file offset 0x3470, loaded at 0x10000000; data

@@ -1,0 +1,24 @@
+; segment 10E9  page 10  class 0x00 (prop) type 233 tile-name "distiller" (tool join F000/F004)
+; kind class  length 170 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0096  methods: sel9/use@0043
+; properties: sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 96                                        .hdr      dictionary offset = 0096
+0002: 90 02 90 e9 00 0c 90 e9 00 3d                .array    array[2] = [@000C, @003D]
+000C: 49 74 27 73 20 74 68 65 20 6d 61 69 …+37     .string   "It's the main object of alchemical distillation."
+003D: 90 01 00 00 00 4a                            .array    array[1] = [74]
+
+; ==== method sel9/use @0043 ====
+0043: 81 01 00                                     frame     args=1 locals=0
+0046: 8d f5 48 05 42 00 d2 40 40 00 74             jf        find_skill(G05:leader, 210) -> 0074
+0051: 59 6f 75 20 6e 65 65 64 20 74 6f 20 …+20     text      "You need to fill it with water.\n"
+0071: 88 00 92                                     goto      -> 0092
+0074:>59 6f 75 20 64 6f 6e 27 74 20 6b 6e …+18     text      "You don't know how to use it.\n"
+0092:>8b 41 00 40                                  return    0
+0096: a0 03 90 e9 00 02 00 33 90 e9 00 43 …+8      .dict     dict[3] {9/use: @0043, 51: @0002}

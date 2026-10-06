@@ -1,0 +1,335 @@
+; segment 1802  page 18  class 0x40 (char) id 2 name "Alaric" (string table 0201)
+; kind class  length 10426 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @288E  methods: sel32/spawned@002A, sel12/talk@0292
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 28 8e                                        .hdr      dictionary offset = 288E
+0002: 90 01 98 02 00 08                            .array    array[1] = [@0008]
+0008: 90 08 00 00 00 14 00 00 00 06 00 00 …+22     .array    array[8] = [20, 6, 20, 11, 40, 38, 20, 45]
+
+; ==== method sel32/spawned @002A ====
+002A: 81 01 00                                     frame     args=1 locals=0
+002D: 8d 30 62 15 43 00 00 00 93 54 ac 41 …+11     jf        ((A30.f15:activity == 147) && (random(0, 4) == 1)) -> 005C
+0044: 86 26 30 40 44 59 75 6d 00 40                setfield  A30.f26:f26 = "Yum"
+004E: 86 23 30 40 41 64 40                         setfield  A30.f23:busy = 100
+0055: 8b 43 50 00 00 01 40                         return    True
+005C:>8b 41 00 40                                  return    0
+; ---- local subroutine @0060 ----
+0060: 81 01 00                                     frame     args=1 locals=0
+0063: 22 59 6f 75 27 76 65 20 64 6f 6e 65 …+543    text      "\"You've done it!  It is remarkable - amazing.  I feel, I lack words for it.\"*\"It is as if a fog has lifted, as if I have gained sight.  Every blade of grass, I sense.\"*\"The land has suffered, but you have helped to cure it, and with it, me.\"*\"I shall keep this artifact safe - its powers have re-tuned my senses.\"*\"I don't know how to repay you for the service you've done, not only for myself, but the land as well.\"*\"I shall return you to your own land, as I promised.  Thank you again.\"*Alaric waves his hands before you, and your vision grows dark...*"
+028E: 8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0292 ====
+0292: 81 01 11                                     frame     args=1 locals=17
+0295: 42 65 66 6f 72 65 20 79 6f 75 20 73 …+35     text      "Before you stands an older, dignified gentleman"
+02C4: 82 00 9f 0f 02 30 41 01 40 40                set       L00 = R0F02(A30, 1)  ; R0F02 = tstbit [from 0x0101 symtab]
+02CE: 8d 00 5e 40 02 f8                            jf        !L00 -> 02F8
+02D4: 2c 20 62 75 74 20 77 69 74 68 20 61 …+21     text      ", but with a look of desperation."
+02F5: 88 07 1c                                     goto      -> 071C
+02F8:>8d dc 41 00 40 41 02 54 40 05 39             jf        (get_variable(0) == 2) -> 0539
+0303: 2c 20 77 69 74 68 20 61 20 6c 6f 6f …+18     text      ", with a look of satisfaction."
+0321: d6 41 05 40                                  builtin   play_music2(5)
+0325: 2a                                           text      "*"
+0326: 9e 00 60 30 40                               callsub   sub_0060(A30)
+032B: 4a 75 73 74 20 62 65 66 6f 72 65 20 …+57     text      "Just before your vision fades completely, the face of Alaric wavers.*"
+0370: a4 42 00 0d 41 00 40                         builtin   show_portrait(13, 0)
+0377: 22 59 65 73 2c 20 74 68 61 6e 6b 20 …+298    text      "\"Yes, thank you foolish mortal - without you, we never would have gained control of he who was once Alaric.\"*\"With the powers of the Crolna, LandKing Hall and all humanity behind us, we shall make short work of the Seldane.\"*\"And then we can rid ourselves of the humans as well - our victory has been sealed.\"*"
+04AD: e7 41 03 40                                  builtin   screen_effect(3)
+04B1: ec 40                                        builtin   open_curtain()
+04B3: ee 43 00 00 02 00 43 50 00 ff ff 40          builtin   curtain_picture(512, Nil)
+04BF: e7 41 04 40                                  builtin   screen_effect(4)
+04C3: 82 01 a0 43 10 00 00 02 41 00 41 04 …+4      set       L01 = iterate_range(&L02, 0, 4, 7)
+04D3:>8c a0 43 10 00 00 02 41 01 40 40 05 …+1      jt        iterate_range(&L02, 1) -> 0504
+04E0: 8d ee 43 00 00 02 00 43 30 00 02 42 …+6      jf        curtain_picture(512, (str[0242:0]"Your will is not left in your body - and images of the futur…" + L01)) -> 04F5
+04F2: 88 05 04                                     goto      -> 0504
+04F5:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+0501: 88 04 d3                                     goto      -> 04D3
+0504:>e7 41 03 40                                  builtin   screen_effect(3)
+0508: ed 40                                        builtin   close_curtain()
+050A: a2 44 59 6f 75 20 68 61 76 65 20 64 …+28     builtin   end_game("You have damned Cythera to darkness.")
+0532: 8b 41 00 40                                  return    0
+; ---- dead code 0536-0539: no dictionary entry, jump, pointer or call reaches it ----
+0536:x88 07 1c                                     goto      -> 071C
+0539:>2c 20 77 69 74 68 20 61 20 6c 6f 6f …+21     text      ", with a look of relief and calm."
+055A: d6 41 00 40                                  builtin   play_music2(0)
+055E: 2a                                           text      "*"
+055F: 9e 00 60 30 40                               callsub   sub_0060(A30)
+0564: 4a 75 73 74 20 62 65 66 6f 72 65 20 …+58     text      "Just before it fades completely, the vision Magpie appears before you."
+05AA: a4 42 00 03 41 01 40                         builtin   show_portrait(3, 1)
+05B1: 2a 22 42 61 68 6f 75 64 69 6e 20 74 …+201    text      "*\"Bahoudin thanks you for curing Alaric.  Were Alaric's mother, Chrysothemis, alive today, she would thank you.\"*\"Alas, she is not.  Still, her husband, father of Alaric, Bahoudin, thanks you for saving his son.\"*"
+0686: e7 41 03 40                                  builtin   screen_effect(3)
+068A: ec 40                                        builtin   open_curtain()
+068C: ee 43 00 00 02 00 43 50 00 ff ff 40          builtin   curtain_picture(512, Nil)
+0698: e7 41 04 40                                  builtin   screen_effect(4)
+069C: 82 01 a0 43 10 00 00 02 41 00 41 00 …+4      set       L01 = iterate_range(&L02, 0, 0, 2)
+06AC:>8c a0 43 10 00 00 02 41 01 40 40 06 …+1      jt        iterate_range(&L02, 1) -> 06DD
+06B9: 8d ee 43 00 00 02 00 43 30 00 02 43 …+6      jf        curtain_picture(512, (str[0243:0]"You awake, with a start, back in your bed.  It is morning - …" + L01)) -> 06CE
+06CB: 88 06 dd                                     goto      -> 06DD
+06CE:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+06DA: 88 06 ac                                     goto      -> 06AC
+06DD:>e7 41 03 40                                  builtin   screen_effect(3)
+06E1: ed 40                                        builtin   close_curtain()
+06E3: a2 44 59 6f 75 20 68 61 76 65 20 73 …+41     builtin   end_game("You have saved the land of Cythera from darkness.")
+0718: 8b 41 00 40                                  return    0
+071C:>2a                                           text      "*"
+071D: 82 04 43 50 00 00 00 40                      set       L04 = False
+0725: 8d 9f 0f 02 30 41 07 40 5e 40 0c 46          jf        !R0F02(A30, 7) -> 0C46  ; R0F02 = tstbit [from 0x0101 symtab]
+0731: 82 05 49 05 01 01 10 48 05 62 20 46 …+1      set       L05 = seg0501[0110][G05:leader.f20:ce1D]
+073E: 86 20 48 05 40 41 00 40                      setfield  G05:leader.f20:ce1D = 0
+0746: 82 01 a0 43 10 00 00 02 41 00 41 03 …+4      set       L01 = iterate_range(&L02, 0, 3, len(L05))
+0756:>8c a0 43 10 00 00 02 41 01 40 40 07 …+1      jt        iterate_range(&L02, 1) -> 0790
+0763: ad 41 1c 41 00 48 05 05 01 46 41 0a …+18     builtin   create_prop(28, 0, G05:leader, ((L05[L01] >> 10) | 16), (L05[L01] & 1023), 0, 0)
+0781: 82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+078D: 88 07 56                                     goto      -> 0756
+0790:>df 41 00 43 50 00 00 01 40                   builtin   set_flag(0, True)
+0799: 82 04 43 50 00 00 01 40                      set       L04 = True
+07A1: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+07A8: 22 41 68 20 2d 20 67 6f 6f 64 2c 20 …+1158   text      "\"Ah - good, you are about.  We were worried that you were harmed.\"*\"I suppose I should explain what happened.  My name is Alaric and you are now in the land of @Cythera.\"*\"You were summoned in a final, desperate attempt to save Cythera and its ruler from chaos and madness.\"*\"I am that ruler, and I have a special @bond with the land and the people of Cythera.  For over two hundred years I have used my magic to keep it prosperous.\"*\"Unfortunately, over the past couple of years, my power has waned, and with it, Cythera has started slipping into chaos.\"*\"It is as if that bond were dissolving, the land somehow changing. I do not understand it.\"*\"The more impotent I become, the more frustrating it is to see it all slipping away, like waking from a dream...\"*\"I have trusted the fates to summon an outsider, from @Mater Theia herself, for only an outsider will be able to see through this cloud that blocks my vision.\"*\"You, of course, are that outsider.  Do not think that I did this on a whim - it has cost me most of my remaining power to do so.\"*\"I must trust you to help me.  I am sorry for the danger this costs you, but you are my, and Cythera's, last chance.\""
+0C3A: f2 41 00 43 30 00 02 1a 41 00 4a 40          builtin   add_to_do(0, (str[021A:0]"Cure Alaric" + 0))
+0C46:>f4 44 48 65 6c 70 00 40                      builtin   add_answer("Help")
+0C4E: 8d 48 05 62 21 40 0c 5f                      jf        G05:leader.f21:training -> 0C5F
+0C56: f4 44 54 72 61 69 6e 00 40                   builtin   add_answer("Train")
+0C5F:>8e                                           input       ; read a line into the input buffer
+0C60: 90 6e 61 6d 65 2c 61 6c 61 72 00 0c …+1      match     name,alar else -> 0CBB
+0C6D: 22 49 20 61 6d 20 41 6c 61 72 69 63 …+56     text      "\"I am Alaric - did I tell you before?  I am sorry, how rude of me.\n\""
+0CB1: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0CB8: 88 0c 5f                                     goto      -> 0C5F
+0CBB:>90 6a 6f 62 00 0d 2a                         match     job else -> 0D2A
+0CC2: 22 49 20 61 6d 20 6b 65 65 70 65 72 …+24     text      "\"I am keeper of the land of Cythera,"
+0CE6: 8d 00 40 0c fe                               jf        L00 -> 0CFE
+0CEB: 20 74 68 61 6e 6b 73 20 74 6f 20 79 …+4      text      " thanks to you.\""
+0CFB: 88 0d 27                                     goto      -> 0D27
+0CFE:>20 74 68 6f 75 67 68 20 61 74 20 74 …+29     text      " though at times I feel like a stranger.\""
+0D27:>88 0c 5f                                     goto      -> 0C5F
+0D2A:>90 68 65 6c 70 00 0f 09                      match     help else -> 0F09
+0D32: 8d 48 0d 43 50 00 00 01 54 40 0e c9          jf        (G0D:g0D == True) -> 0EC9
+0D3E: 8d 48 0c 41 32 51 40 0e 7c                   jf        (G0C:g0C_0to100 > 50) -> 0E7C
+0D47: 22 48 6d 2c 20 6c 65 74 27 73 20 6c …+17     text      "\"Hm, let's look you over...\"*"
+0D64: 82 06 43 50 00 00 00 40                      set       L06 = False
+0D6C: 82 07 ca 43 10 00 00 08 41 00 43 50 …+5      set       L07 = iterate_party(&L08, 0, True)
+0D7D:>8c ca 43 10 00 00 08 41 01 40 40 0e …+1      jt        iterate_party(&L08, 1) -> 0E2C
+0D8A: 8d 07 62 1c 07 62 1d 53 40 0d a5             jf        (L07.f1C:health != L07.f1D:health_max) -> 0DA5
+0D95: 82 06 43 50 00 00 01 40                      set       L06 = True
+0D9D: 86 1c 07 40 07 62 1d 40                      setfield  L07.f1C:health = L07.f1D:health_max
+0DA5:>8d 07 62 1e 07 62 1f 53 40 0d c0             jf        (L07.f1E:magic != L07.f1F:magic_max) -> 0DC0
+0DB0: 82 06 43 50 00 00 01 40                      set       L06 = True
+0DB8: 86 1e 07 40 07 62 1f 40                      setfield  L07.f1E:magic = L07.f1F:magic_max
+0DC0:>82 0a a1 43 10 00 00 0b 41 00 45 00 …+33     set       L0A = iterate_list(&L0B, 0, blk@0DCD)
+      ; 0x45 inline block 0DCD-0DEB (30 bytes):
+      0DCD: 90 07                            .array[7]
+        [0] 9
+        [1] 13
+        [2] 14
+        [3] 17
+        [4] 19
+        [5] 21
+        [6] 22
+0DED:>8c a1 43 10 00 00 0b 41 01 40 40 0e …+1      jt        iterate_list(&L0B, 1) -> 0E1D
+0DFA: 8d c4 07 0a 40 40 0e 0e                      jf        has_ability(L07, L0A) -> 0E0E
+0E02: 82 06 43 50 00 00 01 40                      set       L06 = True
+0E0A: c2 07 0a 40                                  builtin   remove_ability(L07, L0A)
+0E0E:>82 0a a1 43 10 00 00 0b 41 02 40 40          set       L0A = iterate_list(&L0B, 2)
+0E1A: 88 0d ed                                     goto      -> 0DED
+0E1D:>82 07 ca 43 10 00 00 08 41 02 40 40          set       L07 = iterate_party(&L08, 2)
+0E29: 88 0d 7d                                     goto      -> 0D7D
+0E2C:>8d 06 40 0e 50                               jf        L06 -> 0E50
+0E31: 22 54 68 65 72 65 2c 20 74 68 61 74 …+16     text      "\"There, that should help...\""
+0E4D: 88 0e 79                                     goto      -> 0E79
+0E50:>22 59 6f 75 20 6c 6f 6f 6b 20 69 6e …+29     text      "\"You look in pretty good shape as it is.\""
+0E79:>88 0e c6                                     goto      -> 0EC6
+0E7C:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+62     text      "\"I'm sorry, but your soul is too stained for me to be able to cleanse it.\""
+0EC6:>88 0f 06                                     goto      -> 0F06
+0EC9:>22 53 6f 72 72 79 2c 20 49 20 63 61 …+49     text      "\"Sorry, I can't help you until you registered this software.\""
+0F06:>88 0c 5f                                     goto      -> 0C5F
+0F09:>90 74 72 61 69 00 10 63                      match     trai else -> 1063
+0F11: 8d 48 05 62 21 41 04 52 40 10 28             jf        (G05:leader.f21:training >= 4) -> 1028
+0F1C: 82 0d c0 44 54 72 61 69 6e 20 77 68 …+106    set       L0D = pick_item("Train what part of your basic identity?", "%s", blk@0F4F, blk@0F83)
+      ; 0x45 inline block 0F4F-0F80 (49 bytes):
+      0F4F: 90 03                            .array[3]
+        [0] @0F5D ->
+          0F5D: 90 01                            .array[1]
+            [0] @0F63 "Mind"
+        [1] @0F68 ->
+          0F68: 90 01                            .array[1]
+            [0] @0F6E "Body"
+        [2] @0F73 ->
+          0F73: 90 01                            .array[1]
+            [0] @0F79 "Reflex"
+      ; 0x45 inline block 0F83-0F90 (13 bytes):
+      0F83: 90 01                            .array[1]
+        [0] @0F89 "Cancel"
+0F92: 8d 0d 41 00 52 40 10 25                      jf        (L0D >= 0) -> 1025
+0F9A: 86 21 48 05 40 48 05 62 21 41 04 4b …+1      setfield  G05:leader.f21:training = (G05:leader.f21:training - 4)
+0FA7: 59 6f 75 72 20                               text      "Your "
+0FAC: 8d 0d 41 00 54 40 0f cc                      jf        (L0D == 0) -> 0FCC
+0FB4: 86 19 48 05 40 48 05 62 19 41 01 4a …+1      setfield  G05:leader.f19:mind = (G05:leader.f19:mind + 1)
+0FC1: 6d 69 6e 64 20 68 61 73                      text      "mind has"
+0FC9: 88 10 0e                                     goto      -> 100E
+0FCC:>8d 0d 41 01 54 40 0f ec                      jf        (L0D == 1) -> 0FEC
+0FD4: 86 17 48 05 40 48 05 62 17 41 01 4a …+1      setfield  G05:leader.f17:body = (G05:leader.f17:body + 1)
+0FE1: 62 6f 64 79 20 68 61 73                      text      "body has"
+0FE9: 88 10 0e                                     goto      -> 100E
+0FEC:>8d 0d 41 02 54 40 10 0e                      jf        (L0D == 2) -> 100E
+0FF4: 86 18 48 05 40 48 05 62 18 41 01 4a …+1      setfield  G05:leader.f18:reflex = (G05:leader.f18:reflex + 1)
+1001: 72 65 66 6c 65 78 65 73 20 68 61 76 …+16     text      "reflexes have been improved."  ; shares its tail with text @100E
+100E:>20 62 65 65 6e 20 69 6d 70 72 6f 76 …+3      text      " been improved."
+101D: 9f 0e 86 48 05 41 00 40                      call      R0E86(G05:leader, 0)
+1025:>88 10 60                                     goto      -> 1060
+1028:>22 59 6f 75 20 64 6f 6e 27 74 20 68 …+44     text      "\"You don't have enough experience for further training.\""
+1060:>88 0c 5f                                     goto      -> 0C5F
+1063:>90 6e 6f 72 6d 00 10 96                      match     norm else -> 1096
+106B: 53 65 74 74 69 6e 67 20 64 69 66 66 …+23     text      "Setting difficulty level to normal."
+108E: 87 11 41 02 40                               setglobal G11:g11_unhandled = 2
+1093: 88 0c 5f                                     goto      -> 0C5F
+1096:>90 76 65 72 79 20 65 61 73 79 00 10 …+1      match     very easy else -> 10D1
+10A3: 53 65 74 74 69 6e 67 20 64 69 66 66 …+26     text      "Setting difficulty level to very easy."
+10C9: 87 11 41 00 40                               setglobal G11:g11_unhandled = 0
+10CE: 88 0c 5f                                     goto      -> 0C5F
+10D1:>90 65 61 73 79 00 11 02                      match     easy else -> 1102
+10D9: 53 65 74 74 69 6e 67 20 64 69 66 66 …+21     text      "Setting difficulty level to easy."
+10FA: 87 11 41 01 40                               setglobal G11:g11_unhandled = 1
+10FF: 88 0c 5f                                     goto      -> 0C5F
+1102:>90 68 61 72 64 00 11 33                      match     hard else -> 1133
+110A: 53 65 74 74 69 6e 67 20 64 69 66 66 …+21     text      "Setting difficulty level to hard."
+112B: 87 11 41 03 40                               setglobal G11:g11_unhandled = 3
+1130: 88 0c 5f                                     goto      -> 0C5F
+1133:>90 76 65 72 79 20 68 61 72 64 00 11 …+1      match     very hard else -> 116E
+1140: 53 65 74 74 69 6e 67 20 64 69 66 66 …+26     text      "Setting difficulty level to very hard."
+1166: 87 11 41 04 40                               setglobal G11:g11_unhandled = 4
+116B: 88 0c 5f                                     goto      -> 0C5F
+116E:>90 62 79 65 00 19 df                         match     bye else -> 19DF
+1175: 8d 04 40 19 ad                               jf        L04 -> 19AD
+117A: 22 48 65 72 65 2c 20 74 61 6b 65 20 …+264    text      "\"Here, take this amulet - it has my symbol on it.  When worn around your neck, it will save your life if you die.\"*\"You can also use it to bring back a companion from the halls of death, but be warned, it has a limited number of uses.\"*He gives you an amulet on a gold chain.*"
+128E: a8 42 00 01 42 00 f4 41 0a 41 00 40          builtin   give_item(1, 244, 10, 0)
+129A: 82 0e 43 40 40 00 01 40                      set       L0E = char#1"Hero"
+12A2: 82 0f 45 01 7c 90 04 98 02 12 b9 98 …+374    set       L0F = blk@12A7
+      ; 0x45 inline block 12A7-1423 (380 bytes):
+      12A7: 90 04                            .array[4]
+        [0] @12B9 "\"Despite your lack of magical abilities, the scrolls will still be useful to you.\""
+        [1] @130C "\"Though your magical powers are weak, a visit to the Magisterium in Pnyx will bring them out to their fullest.\""
+        [2] @137C "\"You should visit the Magisterium in Pnyx to learn to use your magical powers.\""
+        [3] @13CC "\"You've got a knack for magic - a trip to the Magisterium in Pnyx will be worthwhile.\""
+1424: 8d 9f 0e ad 0e 42 00 c3 40 40 14 5d          jf        R0EAD(L0E, 195) -> 145D
+1430: f2 41 02 43 30 00 02 1a 41 02 4a 40          builtin   add_to_do(2, (str[021A:0]"Cure Alaric" + 2))
+143C: 82 10 0f 9f 0e ad 0e 42 00 c3 40 46 …+1      set       L10 = L0F[R0EAD(L0E, 195)]
+1449: 8d 10 40 14 54                               jf        L10 -> 1454
+144E: 8a 10 40                                     print     L10
+1451: 88 14 5a                                     goto      -> 145A
+1454:>8a 0f 41 03 46 40                            print     L0F[3]
+145A:>88 14 63                                     goto      -> 1463
+145D:>8a 0f 41 00 46 40                            print     L0F[0]
+1463:>2a 22 49 27 76 65 20 67 6f 74 20 73 …+60     text      "*\"I've got some quarters set up for you - Magpie will show you around.\"*"
+14AB: ea 40                                        builtin   conversation_cue_2()
+14AD: f0 42 00 03 43 00 00 00 a0 41 18 41 …+7      builtin   queue_activity(3, 160, 24, 23, Nil)
+14C0: f0 42 00 03 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(3, 165, 255, 1, Nil)
+14D6: f0 42 00 01 43 00 00 00 a4 43 00 00 …+10     builtin   queue_activity(1, 164, 255, 0, Nil)
+14EC: f0 42 00 01 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(1, 165, 254, 1, Nil)
+1502: f1 43 00 00 00 fe 40                         builtin   wait_for_flag(254)
+1509: a4 42 00 03 41 00 40                         builtin   show_portrait(3, 0)
+1510: eb 40                                        builtin   conversation_cue_1()
+1512: 22 46 6f 6c 6c 6f 77 20 4d 61 67 70 …+17     text      "\"Follow Magpie, you should.\"*"
+152F: ea 40                                        builtin   conversation_cue_2()
+1531: f0 42 00 03 43 00 00 00 a0 41 1b 41 …+7      builtin   queue_activity(3, 160, 27, 23, Nil)
+1544: f0 42 00 03 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(3, 165, 255, 1, Nil)
+155A: f0 42 00 01 43 00 00 00 a0 41 1a 41 …+7      builtin   queue_activity(1, 160, 26, 23, Nil)
+156D: f0 42 00 01 43 00 00 00 a4 43 00 00 …+10     builtin   queue_activity(1, 164, 255, 0, Nil)
+1583: f0 42 00 01 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(1, 165, 254, 1, Nil)
+1599: f1 43 00 00 00 fe 40                         builtin   wait_for_flag(254)
+15A0: eb 40                                        builtin   conversation_cue_1()
+15A2: 4d 61 67 70 69 65 20 70 6f 69 6e 74 …+186    text      "Magpie points to the end of the hall to the north.*\"At the end of the hall, the Library is.\"*\"Much learning can be found in there, from the books written by elders.  Do you well it might to learn.\"*"
+1668: ea 40                                        builtin   conversation_cue_2()
+166A: f0 42 00 03 43 00 00 00 a0 41 1a 41 …+7      builtin   queue_activity(3, 160, 26, 25, Nil)
+167D: f0 42 00 03 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(3, 165, 255, 1, Nil)
+1693: f0 42 00 03 43 00 00 00 a0 41 12 41 …+7      builtin   queue_activity(3, 160, 18, 39, Nil)
+16A6: f0 42 00 03 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(3, 165, 254, 1, Nil)
+16BC: f0 42 00 01 43 00 00 00 a4 43 00 00 …+10     builtin   queue_activity(1, 164, 255, 0, Nil)
+16D2: f0 42 00 01 43 00 00 00 a0 41 12 41 …+7      builtin   queue_activity(1, 160, 18, 38, Nil)
+16E5: f0 42 00 01 43 00 00 00 a4 43 00 00 …+10     builtin   queue_activity(1, 164, 254, 0, Nil)
+16FB: f0 42 00 01 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(1, 165, 253, 1, Nil)
+1711: f1 43 00 00 00 fd 40                         builtin   wait_for_flag(253)
+1718: eb 40                                        builtin   conversation_cue_1()
+171A: 22 54 68 65 73 65 20 61 72 65 20 71 …+630    text      "\"These are quarters for you.  Provisions in there are.\"*\"The things in your quarters are yours, serve you well they shall.\"*\"But be careful not to steal from others.  Cythera is an honorable land, and such deeds will serve you ill.\"*Magpie looks around quickly.*\"Magpie is the fool, but even Magpie knows your journey will be dangerous, young one.\"*\"Good it would do you to learn what you can.  Important visitors come and go, but you are unique.\"*\"Demodocus stays across the hall, for the nonce.  Talk with him, Magpie would, would that Magpie be you.\"*\"Also, one might ask around to see if somebody would like to @join you on your quest...\""
+199C: 9f 0f 15 42 00 01 41 00 41 02 41 00 …+1      call      R0F15(1, 0, 2, 0)
+19A9: 8b 41 00 40                                  return    0
+19AD:>8d 00 5e 40 19 d8                            jf        !L00 -> 19D8
+19B3: 22 50 6c 65 61 73 65 2c 20 64 6f 20 …+25     text      "\"Please, do what you can to help me.\""
+19D8:>8b 41 00 40                                  return    0
+; ---- dead code 19DC-19DF: no dictionary entry, jump, pointer or call reaches it ----
+19DC:x88 0c 5f                                     goto      -> 0C5F
+19DF:>90 6f 64 65 6d 00 1a 2e                      match     odem else -> 1A2E
+19E7: 22 4f 64 65 6d 69 61 20 69 73 20 74 …+56     text      "\"Odemia is the closest city - travel east, staying along the coast.\""
+1A2B: 88 0c 5f                                     goto      -> 0C5F
+1A2E:>90 63 79 74 68 00 1a 54                      match     cyth else -> 1A54
+1A36: 22 59 65 73 2c 20 43 79 74 68 65 72 …+15     text      "\"Yes, Cythera is the land.\""
+1A51: 88 0c 5f                                     goto      -> 0C5F
+1A54:>90 62 6f 6e 64 00 1b 93                      match     bond else -> 1B93
+1A5C: 8d 00 40 1a 95                               jf        L00 -> 1A95
+1A61: 22 49 20 61 6d 20 61 73 20 6f 6e 65 …+37     text      "\"I am as one with the land again, thanks to you.\""
+1A92: 88 1b 90                                     goto      -> 1B90
+1A95:>22 49 20 61 6d 2c 20 6f 72 20 77 61 …+239    text      "\"I am, or was, at one with the land and its people.  I have provided all the basic needs of its people - a bountiful land, mild weather, and peace for its people.\"*\"But now it all seems to be slipping away - a void where I can neither see nor affect.\""
+1B90:>88 0c 5f                                     goto      -> 0C5F
+1B93:>90 6d 61 74 65 2c 74 68 65 69 00 1c …+1      match     mate,thei else -> 1C25
+1BA0: 22 4d 61 74 65 72 20 54 68 65 69 61 …+118    text      "\"Mater Theia, Earthmother, at least before the @Journey brought us here.  Now we are without Mater Theia, but there are @stories.\""
+1C22: 88 0c 5f                                     goto      -> 0C5F
+1C25:>90 73 74 6f 72 00 1c ea                      match     stor else -> 1CEA
+1C2D: 22 53 74 6f 72 69 65 73 20 74 65 6c …+174    text      "\"Stories tell of a power, formed of Earth, which still walks the land, whom we call Metics.\"*\"However, I doubt that they still live, or I should have been able to detect their presence.\""
+1CE7: 88 0c 5f                                     goto      -> 0C5F
+1CEA:>90 6a 6f 75 72 00 1f 2b                      match     jour else -> 1F2B
+1CF2: 22 57 65 20 61 72 65 20 6e 6f 74 20 …+554    text      "\"We are not from this place, but from the same Earth that you are. We lived on an island called Thera, until Enesidaone reclaimed it.\"*\"But that was not without warning, for a stranger, in the form of the Holy Bull appeared, telling us to flee.  We saw Thera destroyed from the safety of our ships at sea.\"*\"That night a storm such as has never been before tossed us about, until in the morning when we woke up, tossed aside at the beach near what would become the city of Cademia.\"*\"Or so goes the legend.  I am not a @historian - perhaps you should ask another...\""
+1F28: 88 0c 5f                                     goto      -> 0C5F
+1F2B:>90 68 69 73 74 00 23 f0                      match     hist else -> 23F0
+1F33: 8d 9f 0f 02 30 41 02 40 40 20 03             jf        R0F02(A30, 2) -> 2003  ; R0F02 = tstbit [from 0x0101 symtab]
+1F3E: 22 54 68 65 72 65 20 61 72 65 20 64 …+182    text      "\"There are days I don't remember what happened the day before, much less more ancient history.\"*\"For some reason, though, the number 201 seems important.  If you find out why, please tell me...\""
+2000: 88 23 ed                                     goto      -> 23ED
+2003:>22 4d 79 20 68 69 73 74 6f 72 79 2c …+990    text      "\"My history, I remember a few parts.  Living with my mother, as a child in Catamarca.  When she died, I left Catamarca, to roam.\"*\"How I survived, I don't know.  I think I was seeking out the exiled Mages, for I felt I had powers beyond those of normals, and I would learn of them.\"*\"Instead of finding them, I wandered into a cave, but it was not a cave. I crossed a bridge of stars, and found an abandoned hall or temple of some sort.\"*\"Who built this place, I knew not.  It was empty and abandoned, but great power called to me.\"*\"I remember standing on the edge of the Abyss, and felt myself surrender to it, becoming one with it, with the Land.\"*\"It was then that I became the LandKing.  I know not how long I stood there - for years, it was certain.  And in the end, I had completed the bond.\"*\"I knew then that rule of the Tyrants must be ended.  And thus I ended it - and from that came the current system of Houses and Judges.\"*\"All that seems to be failing now - perhaps my time has ended...\""
+23ED:>88 0c 5f                                     goto      -> 0C5F
+23F0:>90 32 30 31 00 24 6f                         match     201 else -> 246F
+23F7: 8d 9f 0f 02 30 41 02 40 40 24 32             jf        R0F02(A30, 2) -> 2432  ; R0F02 = tstbit [from 0x0101 symtab]
+2402: 22 59 65 73 2c 20 74 68 61 74 20 69 …+33     text      "\"Yes, that is the day my mother passed away.\""
+242F: 88 24 6c                                     goto      -> 246C
+2432:>22 54 68 61 74 20 6e 75 6d 62 65 72 …+46     text      "\"That number seems important to me, but I don't know why.\""
+246C:>88 0c 5f                                     goto      -> 0C5F
+246F:>90 6d 65 74 69 2c 73 65 6c 64 00 25 …+1      match     meti,seld else -> 2560
+247C: 22 4d 65 74 69 63 73 20 61 72 65 20 …+213    text      "\"Metics are those who lived in Cythera before we arrived.  Their ruins can be found outside Pnyx, and I hear more have been discoved in the Swamp of Khalkis\"*\"You should seek out a Freemage named Timon - he has studied them.\""
+255D: 88 0c 5f                                     goto      -> 0C5F
+2560:>90 65 6e 65 73 00 25 e2                      match     enes else -> 25E2
+2568: 22 45 6e 65 73 69 64 61 6f 6e 65 2c …+107    text      "\"Enesidaone, Mater Theia, the old gods.  They no longer guide our fate. Sadly, I'm the closest thing to a deity now...\""
+25DF: 88 0c 5f                                     goto      -> 0C5F
+25E2:>90 63 68 72 79 00 26 fd                      match     chry else -> 26FD
+25EA: 8d 9f 0f 02 30 41 02 40 40 26 2b             jf        R0F02(A30, 2) -> 262B  ; R0F02 = tstbit [from 0x0101 symtab]
+25F5: 22 43 68 72 79 73 6f 74 68 65 6d 69 …+39     text      "\"Chrysothemis was my mother - her I remember well.\""
+2628: 88 26 fa                                     goto      -> 26FA
+262B:>9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+2632: 9f 0e 8b 48 05 41 19 40                      call      R0E8B(G05:leader, 25)
+263A: 22 59 65 73 2c 20 73 68 65 20 77 61 …+180    text      "\"Yes, she was my mother - I remember now.  It was in 201 that she passed away.  Yes, that was the start of it.\"*\"I can remember parts of my @history again.  Who knows for how long, though...\"*"
+26FA:>88 0c 5f                                     goto      -> 0C5F
+26FD:>90 6d 6f 74 68 00 27 a4                      match     moth else -> 27A4
+2705: 8d 9f 0f 02 30 41 02 40 5e 40 27 64          jf        !R0F02(A30, 2) -> 2764  ; R0F02 = tstbit [from 0x0101 symtab]
+2711: 22 4d 79 20 6d 6f 74 68 65 72 2c 20 …+68     text      "\"My mother, I remember, but not quite - a part of my memory is missing there...\""
+2761: 88 27 a1                                     goto      -> 27A1
+2764:>22 43 68 72 79 73 6f 74 68 65 6d 69 …+49     text      "\"Chrysothemis was my mother - her I remember quite well now.\""
+27A1:>88 0c 5f                                     goto      -> 0C5F
+27A4:>90 66 61 74 68 00 27 f6                      match     fath else -> 27F6
+27AC: 22 4f 66 20 6d 79 20 66 61 74 68 65 …+59     text      "\"Of my father, I remember nothing - perhaps I once did, but not now...\""
+27F3: 88 0c 5f                                     goto      -> 0C5F
+27F6:>90 6d 61 67 70 00 28 38                      match     magp else -> 2838
+27FE: 22 4d 61 67 70 69 65 20 6d 69 67 68 …+43     text      "\"Magpie might be my fool, but he is a trusted advisor.\""
+2835: 88 0c 5f                                     goto      -> 0C5F
+2838:>90 2a 00 28 87                               match     * else -> 2887
+283D: 8d 00 40 28 51                               jf        L00 -> 2851
+2842: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+284E: 88 28 84                                     goto      -> 2884
+2851:>8d 9f 08 09 30 40 5e 40 28 84                jf        !R0809(A30) -> 2884
+285B: 8d 9f 08 01 30 40 5e 40 28 84                jf        !R0801(A30) -> 2884
+2865: 48 65 20 6a 75 73 74 20 73 74 61 72 …+19     text      "He just stares off into space.\n"
+2884:>88 0c 5f                                     goto      -> 0C5F
+2887:>88 0c 5f                                     goto      -> 0C5F
+; ---- dead code 288A-288E: no dictionary entry, jump, pointer or call reaches it ----
+288A:x8b 41 00 40                                  return    0
+288E: a0 07 98 02 02 92 00 0c 50 00 ff ff …+32     .dict     dict[7] {12/talk: @0292, 32/spawned: @002A, 68: @0002}

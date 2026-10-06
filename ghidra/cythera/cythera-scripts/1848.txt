@@ -1,0 +1,180 @@
+; segment 1848  page 18  class 0x40 (char) id 72 name "Berossus" (string table 0201)
+; kind class  length 6168 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @17EC  methods: sel12/talk@01F0, sel21/signal@0D07:0000 (shared method: code in routine 0D07)
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 17 ec                                        .hdr      dictionary offset = 17EC
+0002: 90 01 98 48 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+; ---- local subroutine @003A ----
+003A: 81 02 00                                     frame     args=2 locals=0
+003D: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0042: 22 49 27 6d 20 6c 69 73 74 65 6e 69 …+5      text      "\"I'm listening.\"*"
+0053: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+005A: 22 53 74 65 6e 74 6f 72 20 63 6c 61 …+69     text      "\"Stentor claimed to have seen Pelagon in Cademia just before Opheltius' murder.\"*"
+00AB: 8d bc 42 00 0b 40 40 01 3e                   jf        leader_can_see(11) -> 013E
+00B4: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+00BB: 22 54 68 69 73 20 69 73 20 71 75 69 …+79     text      "\"This is quite enough!  I won't stand by while a trusted servant is slandered by a drunk!\"*"
+0116: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+011B: 22 54 68 61 74 20 69 73 20 65 6e 6f …+20     text      "\"That is enough from you Naxos!\""
+013B: 88 01 8e                                     goto      -> 018E
+013E:>a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0143: 22 56 65 72 79 20 69 6e 74 65 72 65 …+142    text      "\"Very interesting.  Did he truely see Pelagon, or was it just his madness?\"*\"If Stentor were of sound mind, this would be one thing, but unfortunately...\""  ; shares its tail with text @018E
+018E:>2a 22 49 66 20 53 74 65 6e 74 6f 72 …+67     text      "*\"If Stentor were of sound mind, this would be one thing, but unfortunately...\""
+01DD: dd 41 03 41 03 40                            builtin   set_variable(3, 3)
+01E3: 8d 31 40 01 ec                               jf        A31 -> 01EC
+01E8: f3 41 25 40                                  builtin   done_to_do(37)
+01EC:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @01F0 ====
+01F0: 81 01 00                                     frame     args=1 locals=0
+01F3: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+52     text      "You see an out of shape older man, seeming to be out of breath.*"
+0233: 8d dc 41 03 40 41 01 54 40 0e f8             jf        (get_variable(3) == 1) -> 0EF8
+023E: 22 59 6f 75 27 76 65 20 63 6f 6d 65 …+48     text      "\"You've come to talk to me about the @murder of @Opheltius?\""
+027A: 8d 9f 0f 13 42 00 62 40 40 0e f5             jf        R0F13(98) -> 0EF5  ; R0F13 = inparty [from 0x0101 symtab]
+0285: 2a                                           text      "*"
+0286: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+028D: 22 59 65 73 2c 20 79 6f 75 72 20 48 …+32     text      "\"Yes, your Honor, and I brought a witness.\"*"
+02B9: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+02BE: 22 41 20 77 69 74 6e 65 73 73 3f 20 …+19     text      "\"A witness?  That waif there?\"*"
+02DD: a4 42 00 62 41 01 40                         builtin   show_portrait(98, 1)
+02E4: 22 59 65 73 2c 20 79 6f 75 72 20 48 …+118    text      "\"Yes, your Honor.  I am Dryas - I am employed by the Ratcatcher's Guild, and I saw something that proves that Halos is innocent.\"*"
+0366: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+036B: 22 48 6d 2c 20 76 65 72 79 20 69 6e …+23     text      "\"Hm, very interesting.  Do go on.\"*"
+038E: 8d bc 42 00 0b 40 40 04 cb                   jf        leader_can_see(11) -> 04CB
+0397: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+039E: 22 59 6f 75 72 20 48 6f 6e 6f 72 2c …+114    text      "\"Your Honor, with all due respect, but he is but a child.  Can you really trust his testimony?  He's a Ratcatcher sewer-rat!\"*"
+041C: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0421: 22 4e 61 78 6f 73 2c 20 64 6f 20 79 …+95     text      "\"Naxos, do you doubt my judgement or abilities?  Truth knows no age or profession.  We will hear him out.\"*"
+048C: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+0493: 22 59 65 73 2c 20 79 6f 75 72 20 48 …+20     text      "\"Yes, your Honor.  I am sorry.\"*"
+04B3: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+04B8: 22 50 6c 65 61 73 65 20 63 6f 6e 74 …+7      text      "\"Please continue.\"*"
+04CB:>a4 42 00 62 41 01 40                         builtin   show_portrait(98, 1)
+04D2: 22 57 65 6c 6c 2c 20 49 20 77 61 73 …+381    text      "\"Well, I was on my way to visit Halos on Guild business, when I saw Cybele enter his shop - she didn't see me.\"*\"I saw her wave her hand and Halos collapsed, like he fainted or something.\"*\"This may seem hard to believe, but then Cybele kind of wavered and then suddenly she was Halso.\"*\"There were two of them there.  The fake Halos then leaves the shop - I guess to go kill Opheltius then.\"*"
+065B: 8d bc 42 00 0b 40 40 06 ae                   jf        leader_can_see(11) -> 06AE
+0664: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+066B: 22 54 68 61 74 20 69 73 20 75 6e 62 …+12     text      "\"That is unbelievable!\"*"
+0683: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0688: 22 4e 61 78 6f 73 21 20 20 54 68 61 …+19     text      "\"Naxos!  That will be enough!\"*"
+06A7: a4 42 00 62 41 01 40                         builtin   show_portrait(98, 1)
+06AE:>a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+06B3: 22 57 65 6c 6c 2c 20 79 6f 75 6e 67 …+584    text      "\"Well, young man, you tell the Truth, at least so far as you know it.  You are leaving out some minor details not germaine to the case, but you tell the truth.\"*\"I've never seen anything like this, but since all parties concerned have been truthful we have two options.\"*\"Either somebody is lieing, which goes contrary to the very fabric of our judicial system, which is quite disturbing.\"*\"Or equally disturbing, something with the power to change shape killed Opheltius and tried to frame Halos.\"*\"By all our laws and honor, we must rule that the second case is true.  Halos must be released.\"*"
+0907: 8d bc 42 00 0b 40 40 09 97                   jf        leader_can_see(11) -> 0997
+0910: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+0917: 22 41 20 73 68 61 70 65 63 68 61 6e …+27     text      "\"A shapechanger!  That is ridiculous!\"*"
+093E: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0943: 22 4e 6f 20 4e 61 78 6f 73 2c 20 6e …+136    text      "\"No Naxos, not ridiculous, but very disturbing.  None the less, that is my ruling.\"*\"Thank you young man.  With your testimony, Halos is now free.\"*"
+0997:>22 54 68 61 6e 6b 20 79 6f 75 20 79 …+52     text      "\"Thank you young man.  With your testimony, Halos is now free.\"*"  ; shares its tail with text @0943
+09D7: a4 42 00 62 41 01 40                         builtin   show_portrait(98, 1)
+09DE: 22 59 65 73 2c 20 61 6e 64 20 49 20 …+30     text      "\"Yes, and I will now return to the Guild.\""
+0A08: ba 42 00 62 40                               builtin   leave_party(98)
+0A0D: 9f 0e 8b 48 05 43 00 00 00 c8 40             call      R0E8B(G05:leader, 200)
+0A18: f3 41 0b 40                                  builtin   done_to_do(11)
+0A1C: dd 41 03 41 02 40                            builtin   set_variable(3, 2)
+0A22: e0 40                                        builtin   reschedule()
+0A24: 2a                                           text      "*"
+0A25: a4 43 50 00 ff ff 41 01 40                   builtin   show_portrait(Nil, 1)
+0A2E: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0A33: 22 49 20 77 6f 75 6c 64 20 74 68 61 …+173    text      "\"I would thank you for solving this matter, but in truth, the result worries me to no end.\"*\"A shapeshifter - is it a single being, or perhaps a whole race, walking unknow amongst us.\"*"
+0AEC: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0AF3: 22 53 74 65 6e 74 6f 72 2c 20 66 6f …+96     text      "\"Stentor, former majordomo of Itanos, claimed that something took the shape of his former friend, Pelagon.\"*"
+0B5F: 8d bc 42 00 0b 40 40 0c 8d                   jf        leader_can_see(11) -> 0C8D
+0B68: a4 42 00 0b 41 01 40                         builtin   show_portrait(11, 1)
+0B6F: 22 54 68 61 74 20 64 72 75 6e 6b 21 …+99     text      "\"That drunk!  I've known Pelagon all my life, and he's no shape changer!  Please, your honor, this is enough!\"*"
+0BDE: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0BE3: 22 57 65 6c 6c 2c 20 4e 61 78 6f 73 …+155    text      "\"Well, Naxos, I'll grant you that this seems far fetched, to say the least.\"*\"Perhaps you should seek out Stentor and see if anymore can be learned about this matter.\""
+0C8A: 88 0d 4e                                     goto      -> 0D4E
+0C8D:>a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0C92: 22 49 20 68 61 64 20 68 65 61 72 64 …+408    text      "\"I had heard that it was some form of madness or drunkness.  Be that as it may, however...\"*\"Perhaps this Stentor is worth seeking out, and see if you can learn anymore about this matter.\"*\"It all seems a bit unlikely that the ravings of a madman would have any bearing on our current situation.\"*\"Still, all leads must be investigated.  I've got my hands full with the current situation - would you interview Stentor?\"*"  ; shares its tail with text @0D4E
+0D4E:>2a 22 49 74 20 61 6c 6c 20 73 65 65 …+220    text      "*\"It all seems a bit unlikely that the ravings of a madman would have any bearing on our current situation.\"*\"Still, all leads must be investigated.  I've got my hands full with the current situation - would you interview Stentor?\"*"
+0E36: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0E3D: 8d 9f 0f 02 42 00 6c 41 03 40 40 0e …+1      jf        R0F02(108, 3) -> 0EA4  ; R0F02 = tstbit [from 0x0101 symtab]
+0E4A: 22 41 63 74 75 61 6c 6c 79 2c 20 49 …+65     text      "\"Actually, I already have, my lord.  And you won't believe what he told me.\"*"
+0E97: 9e 00 3a 30 43 50 00 00 00 40                callsub   sub_003A(A30, False)
+0EA1: 88 0e f5                                     goto      -> 0EF5
+0EA4:>22 43 65 72 74 61 69 6e 6c 79 2c 20 …+10     text      "\"Certainly, my lord.\"*"
+0EBA: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0EBF: 22 47 6f 6f 64 20 2d 20 72 65 70 6f …+30     text      "\"Good - report back when you know more...\""
+0EE9: f2 41 25 43 30 00 02 1a 41 25 4a 40          builtin   add_to_do(37, (str[021A:0]"Cure Alaric" + 37))
+0EF5:>88 0f 79                                     goto      -> 0F79
+0EF8:>8d dc 41 03 40 41 02 54 9f 0f 02 42 …+9      jf        ((get_variable(3) == 2) && R0F02(108, 3)) -> 0F79  ; R0F02 = tstbit [from 0x0101 symtab]
+0F0D: 22 48 61 76 65 20 79 6f 75 20 74 61 …+23     text      "\"Have you talked to this Stentor?\"*"
+0F30: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0F37: 22 59 65 73 2c 20 6d 79 20 6c 6f 72 …+44     text      "\"Yes, my lord.  And you won't believe what he told me.\"*"
+0F6F: 9e 00 3a 30 43 50 00 00 01 40                callsub   sub_003A(A30, True)
+0F79:>8e                                           input       ; read a line into the input buffer
+0F7A: 90 6e 61 6d 65 00 0f 9c                      match     name else -> 0F9C
+0F82: 22 49 20 61 6d 20 42 65 72 6f 73 73 …+4      text      "\"I am Berossus.\""
+0F92: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0F99: 88 0f 79                                     goto      -> 0F79
+0F9C:>90 62 65 72 6f 00 0f be                      match     bero else -> 0FBE
+0FA4: 22 59 65 73 2c 20 79 6f 75 20 77 65 …+11     text      "\"Yes, you were saying?\""
+0FBB: 88 0f 79                                     goto      -> 0F79
+0FBE:>90 6a 6f 62 00 10 0d                         match     job else -> 100D
+0FC5: 22 49 27 76 65 20 67 6f 74 20 74 68 …+57     text      "\"I've got the unfortunate job of trying to be the @Judge in Cademia.\""
+100A: 88 0f 79                                     goto      -> 0F79
+100D:>90 6a 75 64 67 00 10 76                      match     judg else -> 1076
+1015: 22 42 65 69 6e 67 20 74 68 65 20 4a …+82     text      "\"Being the Judge didn't use to be such a problem, despite our many @duties, but as of late...\""
+1073: 88 0f 79                                     goto      -> 0F79
+1076:>90 62 79 65 00 10 8f                         match     bye else -> 108F
+107D: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+1088: 8b 41 00 40                                  return    0
+; ---- dead code 108C-108F: no dictionary entry, jump, pointer or call reaches it ----
+108C:x88 0f 79                                     goto      -> 0F79
+108F:>90 6d 75 72 64 2c 63 72 69 6d 00 14 …+1      match     murd,crim else -> 1486
+109C: 8d dc 41 03 40 41 01 54 40 14 7b             jf        (get_variable(3) == 1) -> 147B
+10A7: 22 54 68 69 73 20 63 72 69 6d 65 20 …+958    text      "\"This crime puzzles me - with mine own eyes I saw @Halos kill @Opheltius.\"*\"He came storming into Council, shouting that Opheltius had raped @Cybele.\"*\"Next thing I know, he stabs Opheltius and manages to run off in the confusion.\"*\"Opheltius died, despite my attempts to heal him.\"*\"We found @Halos in his office, seemingly asleep.\"*\"But when I questioned him, he remembers none of it, and the Truth Spell says he is truthful.\"*\"We never found the murder @weapon either, so we can't do anything with that.\"*\"And to top it off, Cybele is fine - she never went to tell, and she certainly wasn't raped by Opheltius.\"*\"I can't imagine that Cybele would do anything to frame or harm House Nicander - they are allies.\"*\"And as for Halos, he's an old family friend of theirs.  It just makes no sense.\"*\"We all saw him kill Opheltius, but all my training also says he's telling the truth.\"*\"Can I not trust my own eyes?  Can I not trust my training?  It is a no win situation.\""
+1471: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+1478: 88 14 83                                     goto      -> 1483
+147B:>22 53 6f 72 72 79 2e 22                      text      "\"Sorry.\""
+1483:>88 0f 79                                     goto      -> 0F79
+1486:>90 73 74 65 6e 00 15 a8                      match     sten else -> 15A8
+148E: 8d dc 41 03 40 41 02 4f 40 15 2b             jf        (get_variable(3) < 2) -> 152B
+1499: 22 49 20 62 65 6c 69 65 76 65 20 68 …+131    text      "\"I believe he was Itanos' majordomo - he lives somewhere here in Cademia now.\"*\"It is a sad story - but such happens when one drinks too much.\""
+1528: 88 15 a5                                     goto      -> 15A5
+152B:>22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+110    text      "\"I don't know what to think about him - he may be mad, but he may be on to something.\"*\"Still, Pelagon is above reproach.\""
+15A5:>88 0f 79                                     goto      -> 0F79
+15A8:>90 70 65 6c 61 00 16 2d                      match     pela else -> 162D
+15B0: 8d dc 41 03 40 41 02 4f 40 15 ec             jf        (get_variable(3) < 2) -> 15EC
+15BB: 22 49 20 74 68 69 6e 6b 20 68 65 20 …+34     text      "\"I think he is the majordomo of House Comana.\""
+15E9: 88 16 2a                                     goto      -> 162A
+15EC:>22 57 65 6c 6c 2c 20 64 65 73 70 69 …+50     text      "\"Well, despite claims of Stentor, he is still above reproach.\""
+162A:>88 0f 79                                     goto      -> 0F79
+162D:>90 68 61 6c 6f 00 16 9a                      match     halo else -> 169A
+1635: 8d 9f 0f 02 30 41 01 40 dc 41 03 40 …+4      jf        (R0F02(A30, 1) && get_variable(3)) -> 1692  ; R0F02 = tstbit [from 0x0101 symtab]
+1645: 22 48 61 6c 6f 73 20 6d 69 67 68 74 …+62     text      "\"Halos might be a bit of a rogue, but he's not the type to be a murderer.\""
+168F: 88 16 97                                     goto      -> 1697
+1692:>9f 08 0e 30 40                               call      R080E(A30)
+1697:>88 0f 79                                     goto      -> 0F79
+169A:>90 77 65 61 70 00 17 3e                      match     weap else -> 173E
+16A2: 8d 9f 0f 02 30 41 01 40 dc 41 03 40 …+4      jf        (R0F02(A30, 1) && get_variable(3)) -> 1718  ; R0F02 = tstbit [from 0x0101 symtab]
+16B2: 22 50 65 72 68 61 70 73 20 69 66 20 …+64     text      "\"Perhaps if we could find the murder weapon, some truth could be discerned.\""
+16FE: 8d dc 41 03 40 41 01 54 40 17 15             jf        (get_variable(3) == 1) -> 1715
+1709: f2 41 0b 43 30 00 02 1a 41 6f 4a 40          builtin   add_to_do(11, (str[021A:0]"Cure Alaric" + 111))
+1715:>88 17 3b                                     goto      -> 173B
+1718:>22 53 6f 72 72 79 20 2d 20 49 27 6d …+23     text      "\"Sorry - I'm not much for weapons.\""
+173B:>88 0f 79                                     goto      -> 0F79
+173E:>90 63 79 62 65 00 17 ad                      match     cybe else -> 17AD
+1746: 8d 9f 0f 02 30 41 01 40 dc 41 03 40 …+4      jf        (R0F02(A30, 1) && get_variable(3)) -> 17A5  ; R0F02 = tstbit [from 0x0101 symtab]
+1756: 22 43 79 62 65 6c 65 20 69 73 20 61 …+64     text      "\"Cybele is a good girl.  Hard to believe she is involved in this in anyway.\""
+17A2: 88 17 aa                                     goto      -> 17AA
+17A5:>9f 08 0e 30 40                               call      R080E(A30)
+17AA:>88 0f 79                                     goto      -> 0F79
+17AD:>90 2a 00 17 e5                               match     * else -> 17E5
+17B2: 8d 9f 08 17 30 40 5e 40 17 e2                jf        !R0817(A30) -> 17E2
+17BC: 8d 9f 08 08 30 40 5e 40 17 e2                jf        !R0808(A30) -> 17E2
+17C6: 8d 9f 08 0e 30 40 5e 40 17 e2                jf        !R080E(A30) -> 17E2
+17D0: 8d 9f 08 01 30 40 5e 40 17 e2                jf        !R0801(A30) -> 17E2
+17DA: 22 53 6f 72 72 79 2e 22                      text      "\"Sorry.\""
+17E2:>88 0f 79                                     goto      -> 0F79
+17E5:>88 0f 79                                     goto      -> 0F79
+; ---- dead code 17E8-17EC: no dictionary entry, jump, pointer or call reaches it ----
+17E8:x8b 41 00 40                                  return    0
+17EC: a0 07 8d 07 00 00 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @01F0, 21/signal: @0D07:0000, 68: @0002}

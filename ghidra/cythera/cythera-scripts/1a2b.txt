@@ -1,0 +1,49 @@
+; segment 1A2B  page 1A  class 0x50 (spell) type 43
+; kind class  length 384 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0130  methods: sel2/name@0008, sel8/search@0026, sel9/use@005D, sel10/use_on@0097
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 30                                        .hdr      dictionary offset = 0130
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 52 65 70 6c 69 63 61 74 65 00 …+1      return    "Replicate"
+; ---- dead code 0018-001C: no dictionary entry, jump, pointer or call reaches it ----
+0018:x8b 41 00 40                                  return    0
+001C: 90 02 00 00 00 07 50 00 ff ff                .array    array[2] = [7, Nil]
+
+; ==== method sel8/search @0026 ====
+0026: 81 01 00                                     frame     args=1 locals=0
+0029: 54 68 69 73 20 73 70 65 6c 6c 20 63 …+36     text      "This spell creates a duplicate of a small item.\n"
+0059: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @005D ====
+005D: 81 01 00                                     frame     args=1 locals=0
+0060: 8d 9f 0e a1 30 62 0b 41 07 41 15 40 …+3      jf        R0EA1(A30.f0B:loc16, 7, 21) -> 0093
+006F: 8d 48 13 40 00 8c                            jf        G13:g13_bool -> 008C
+0075: 43 61 73 74 20 27                            text      "Cast '"
+007B: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0081: 27 20 6f 6e 20 77 68 61 74 3f 0a             text      "' on what?\n"
+008C:>8b 43 00 00 80 01 40                         return    32769
+0093:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0097 ====
+0097: 81 02 00                                     frame     args=2 locals=0
+009A: e1 48 09 63 00 43 00 00 00 f0 40             builtin   show_magic(as_prop(G09:speaker), 240)
+00A5: d3 41 30 48 09 62 01 48 09 62 02 40          builtin   positional_sound(48, G09:speaker.f01:x, G09:speaker.f02:y)
+00B1: 8d 31 62 00 41 00 54 31 62 00 41 01 …+5      jf        ((A31.f00:kind == 0) || (A31.f00:kind == 1)) -> 0111
+00C2: 8d 31 61 27 00 41 08 56 40 00 f7             jf        (prop(A31, sel39/p_typeflags27, 0) & 8) -> 00F7
+00CD: 54 68 65 20 73 70 65 6c 6c 20 69 73 …+27     text      "The spell is too weak to replicate it.\n"
+00F4: 88 01 0e                                     goto      -> 010E
+00F7:>ad 31 62 00 31 62 01 31 62 02 31 62 …+11     builtin   create_prop(A31.f00:kind, A31.f01:x, A31.f02:y, A31.f03:frame, A31.f04:type, A31.f06:quality, A31.f07:byte7)
+010E:>88 01 2c                                     goto      -> 012C
+0111:>49 74 20 69 73 20 74 6f 6f 20 6c 61 …+15     text      "It is too large and heavy.\n"
+012C:>8b 41 00 40                                  return    0
+0130: a0 0d 50 00 ff ff 07 c3 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0026, 9/use: @005D, 10/use_on: @0097, 51: @001C, 54: @0002}

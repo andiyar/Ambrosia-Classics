@@ -1,0 +1,143 @@
+; segment 1805  page 18  class 0x40 (char) id 5 name "Emesa" (string table 0201)
+; kind class  length 4507 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @1187  methods: sel32/spawned@0002, sel12/talk@0131
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 11 87                                        .hdr      dictionary offset = 1187
+
+; ==== method sel32/spawned @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 8d 30 62 15 43 00 00 00 90 54 40 01 …+1      jf        (A30.f15:activity == 144) -> 0126
+0012: 8d ac 41 00 41 02 40 41 01 54 40 00 …+1      jf        (random(0, 2) == 1) -> 0044
+001F: f0 30 43 00 00 00 a0 41 22 41 24 43 …+5      builtin   queue_activity(A30, 160, 34, 36, Nil)
+0030: f0 30 43 00 00 00 a0 41 20 41 28 43 …+5      builtin   queue_activity(A30, 160, 32, 40, Nil)
+0041: 88 01 23                                     goto      -> 0123
+0044:>f0 30 43 00 00 00 a0 41 21 41 2c 43 …+5      builtin   queue_activity(A30, 160, 33, 44, Nil)
+0055: f0 30 43 00 00 00 87 41 01 41 00 43 …+5      builtin   queue_activity(A30, 135, 1, 0, Nil)
+0066: 82 00 ad 41 10 41 00 41 00 41 00 42 …+8      set       L00 = create_prop(16, 0, 0, 0, 167, 0, 0)
+007A: f0 30 41 41 41 22 41 2c 00 40                builtin   queue_activity(A30, 65, 34, 44, L00)
+0084: f0 30 41 42 41 28 41 00 43 50 00 ff …+2      builtin   queue_activity(A30, 66, 40, 0, Nil)
+0092: f0 30 41 47 42 00 a8 41 00 00 40             builtin   queue_activity(A30, 71, 168, 0, L00)
+009D: f0 30 41 42 41 28 41 00 43 50 00 ff …+2      builtin   queue_activity(A30, 66, 40, 0, Nil)
+00AB: f0 30 41 47 42 00 a9 41 00 00 40             builtin   queue_activity(A30, 71, 169, 0, L00)
+00B6: f0 30 41 42 41 28 41 00 43 50 00 ff …+2      builtin   queue_activity(A30, 66, 40, 0, Nil)
+00C4: f0 30 41 40 41 00 41 00 00 40                builtin   queue_activity(A30, 64, 0, 0, L00)
+00CE: f0 30 43 00 00 00 a0 41 20 41 2d 43 …+5      builtin   queue_activity(A30, 160, 32, 45, Nil)
+00DF: f0 30 41 41 41 1f 41 2d 00 40                builtin   queue_activity(A30, 65, 31, 45, L00)
+00E9: f0 30 41 42 41 28 41 00 43 50 00 ff …+2      builtin   queue_activity(A30, 66, 40, 0, Nil)
+00F7: f0 30 41 47 41 45 41 00 00 40                builtin   queue_activity(A30, 71, 69, 0, L00)
+0101: f0 30 41 42 41 28 41 00 43 50 00 ff …+2      builtin   queue_activity(A30, 66, 40, 0, Nil)
+010F: f0 30 41 40 41 00 41 00 00 40                builtin   queue_activity(A30, 64, 0, 0, L00)
+0119: f0 30 41 46 41 00 41 00 00 40                builtin   queue_activity(A30, 70, 0, 0, L00)
+0123:>88 01 2d                                     goto      -> 012D
+0126:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+012D:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0131 ====
+0131: 81 01 01                                     frame     args=1 locals=1
+0134: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+35     text      "You see an older woman, a bit weary but happy.*"
+0163: 8d 9f 0f 02 42 00 05 41 07 40 5e 40 …+2      jf        !R0F02(5, 7) -> 0225  ; R0F02 = tstbit [from 0x0101 symtab]
+0171: 22 47 72 65 65 74 69 6e 67 73 2c 20 …+156    text      "\"Greetings, and welcome to our world, stranger.  I am Emesa, Alaric's @cook.\"*\"If there's @anything I can do for you to help you in your @journeys, please, just ask...\""
+0219: 9f 0f 00 42 00 05 41 07 40                   call      R0F00(5, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0222: 88 02 40                                     goto      -> 0240
+0225:>22 47 72 65 65 74 69 6e 67 73 20 61 …+15     text      "\"Greetings again, stranger."
+0240:>8e                                           input       ; read a line into the input buffer
+0241: 90 6e 61 6d 65 00 02 78                      match     name else -> 0278
+0249: 22 49 20 61 6d 20 45 6d 65 73 61 2c …+1      text      "\"I am Emesa, "
+0256: 8d 49 05 00 00 10 40 02 69                   jf        seg0500[0010] -> 0269
+025F: 6d 61 27 61 6d 2e 22                         text      "ma'am.\""
+0266: 88 02 6e                                     goto      -> 026E
+0269:>73 69 72 2e 22                               text      "sir.\""
+026E:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0275: 88 02 40                                     goto      -> 0240
+0278:>90 6a 6f 62 00 02 b7                         match     job else -> 02B7
+027F: 22 49 20 61 6d 20 74 68 65 20 40 63 …+41     text      "\"I am the @cook for @Alaric - my specialty is bread.\""
+02B4: 88 02 40                                     goto      -> 0240
+02B7:>90 68 75 73 62 00 03 a4                      match     husb else -> 03A4
+02BF: 22 59 65 73 2c 20 6d 79 20 68 75 73 …+214    text      "\"Yes, my husband is Hadrian, the captain of the guards here...\"*\"A loving father, and a strong man, although a Alaric's ailing health has him troubled.\"*\"You'll find him at the Land King's side most of the time these days....\""
+03A1: 88 02 40                                     goto      -> 0240
+03A4:>90 68 61 64 72 00 04 38                      match     hadr else -> 0438
+03AC: 22 59 65 73 2c 20 48 61 64 72 69 61 …+125    text      "\"Yes, Hadrian is my beloved husband...\"*\"He works so hard to protect and care for Alaric in these times of strife, I @worry about him...\""
+0435: 88 02 40                                     goto      -> 0240
+0438:>90 77 6f 72 72 00 05 95                      match     worr else -> 0595
+0440: 22 48 65 20 72 61 72 65 6c 79 20 73 …+326    text      "\"He rarely sleeps, and has become quite withdrawn of late...\"*\"I think his @concern for Alaric is overpowering the man I love; it's quite a burden for him to bear.\"*\"You see, Hadrian's sworn duty is to protect Alaric, and Land King Hall, but now that an unseen force has afflicted his liege, he is left powerless to do anything about it.\""
+0592: 88 02 40                                     goto      -> 0240
+0595:>90 63 6f 6e 63 00 06 63                      match     conc else -> 0663
+059D: 22 48 61 64 72 69 61 6e 27 73 20 63 …+183    text      "\"Hadrian's concern for Alaric has in turn led to my concern for my husband.\"*\"He hasn't even had time to properly @mourn the passing of his mother, let alone tend to his family that still lives.\""
+0660: 88 02 40                                     goto      -> 0240
+0663:>90 6d 6f 75 72 00 07 24                      match     mour else -> 0724
+066B: 22 48 61 64 72 69 61 6e 27 73 20 6b …+170    text      "\"Hadrian's kindly mother passed away recently in Catamarca.\"*\"She was such a kindly old woman, but one with much life left within her.\"*\"A terrible shame to have it stolen from her.\""
+0721: 88 02 40                                     goto      -> 0240
+0724:>90 61 6c 61 72 00 08 2e                      match     alar else -> 082E
+072C: 22 49 20 74 6f 6f 20 61 6d 20 63 6f …+243    text      "\"I too am concerned for Alaric...\"*\"I do what I can providing him with nourishing food to ease his weary bones and troubled brow.\"*\"These are troubled times, stranger.  I do hope you can help him, and by doing so, help us, and all of the land of Cythera.\""
+082B: 88 02 40                                     goto      -> 0240
+082E:>90 73 6f 6e 2c 68 65 63 74 00 08 6c          match     son,hect else -> 086C
+083A: 22 48 65 63 74 6f 72 20 69 73 20 6f …+35     text      "\"Hector is our son - we are very proud of him.\""
+0869: 88 02 40                                     goto      -> 0240
+086C:>90 70 65 72 6d 00 08 a3                      match     perm else -> 08A3
+0874: 22 59 6f 75 27 6c 6c 20 68 61 76 65 …+32     text      "\"You'll have to talk to Hadrian about that.\""
+08A0: 88 02 40                                     goto      -> 0240
+08A3:>90 61 6c 61 72 2c 6b 69 6e 67 00 08 …+1      match     alar,king else -> 08DD
+08B0: 22 49 74 20 69 73 20 61 6e 20 68 6f …+30     text      "\"It is an honor to cook @food for Alaric.\""
+08DA: 88 02 40                                     goto      -> 0240
+08DD:>90 6d 61 67 70 2c 66 6f 6f 6c 00 09 …+1      match     magp,fool else -> 0914
+08EA: 22 4d 61 67 70 69 65 20 69 73 20 71 …+27     text      "\"Magpie is quite the jester, isn't he?\""
+0911: 88 02 40                                     goto      -> 0240
+0914:>90 6a 6f 75 72 00 0a a1                      match     jour else -> 0AA1
+091C: 22 4f 68 2c 20 49 27 64 20 69 6d 61 …+374    text      "\"Oh, I'd imagine you'll be travelling far and wide soon.  Be careful, keep your eyes open, and perhaps see if you can get some people to help you along the way.\"*\"Nothing like having friends to help you out of a rough spot...\"*\"I don't travel much myself, so I don't know much about the goings on in the land, but my @husband is quite worldly.\"*\"Perhaps he can tell you a thing or two?\""
+0A9E: 88 02 40                                     goto      -> 0240
+0AA1:>90 61 6e 79 74 00 0b ea                      match     anyt else -> 0BEA
+0AA9: 22 57 65 6c 6c 2c 20 49 20 63 61 6e …+306    text      "\"Well, I can offer you some @food if you like, but what we have around here won't keep you nourished for too long while off on travels...\"*\"Who knows how long it will be before you're able to find another place to @catch a meal?\"*\"You'll be able to get a something to eat at various @Inns, of course, but for a price.\""
+0BE7: 88 02 40                                     goto      -> 0240
+0BEA:>90 63 61 74 63 00 0d 1a                      match     catc else -> 0D1A
+0BF2: 22 41 6e 69 6d 61 6c 73 20 72 6f 61 …+281    text      "\"Animals roaming in the wilds of Cythera are a good source of meat, but be careful not to wantonly slaughter animals in town.\"*\"They invariably belong to someone, and they'll be none too pleased with you.\"*\"Please... if you do kill such wild animals for food, do so quickly and mericifully...\""
+0D17: 88 02 40                                     goto      -> 0240
+0D1A:>90 69 6e 6e 73 00 0e 89                      match     inns else -> 0E89
+0D22: 22 4f 68 2c 20 6a 75 73 74 20 61 62 …+344    text      "\"Oh, just about every village in Cythera has an Inn... a place where you can get a hot meal, and a good night's sleep.\"*\"I don't condone many of the sort who hang about there for the drink, however...\"*\"And of course, you're always welcome to come back here instead, where I can give you something to eat before you turn in at your quarters for the night.\""
+0E86: 88 02 40                                     goto      -> 0240
+0E89:>90 63 6f 6f 6b 2c 66 6f 6f 64 00 0f …+1      match     cook,food else -> 0F4B
+0E96: 22 41 72 65 20 79 6f 75 20 68 75 6e …+26     text      "\"Are you hungry, and in need of food?\""
+0EBC: 8f 79 6e 00                                  prompt    "yn"
+0EC0: 90 79 00 0f 15                               match     y else -> 0F15
+0EC5: 22 4c 65 74 20 6d 65 20 67 65 74 20 …+47     text      "\"Let me get you something to eat.\"*She gives you some food\n"
+0F00: a8 41 01 ac 41 00 41 05 40 41 0a 5a …+9      builtin   give_item(1, ((random(0, 5) << 10) | 69), 0, 0)
+0F15:>90 6e 00 0f 48                               match     n else -> 0F48
+0F1A: 22 57 65 6c 6c 2c 20 6d 61 6b 65 20 …+34     text      "\"Well, make sure to ask me if you are hungry.\""
+0F48:>88 02 40                                     goto      -> 0240
+0F4B:>90 62 72 65 61 2c 74 72 61 69 2c 74 …+6      match     brea,trai,teac else -> 111F
+0F5D: 8d f5 48 05 42 00 d0 40 40 0f c6             jf        find_skill(G05:leader, 208) -> 0FC6
+0F68: 22 4e 65 65 64 20 61 20 72 65 66 72 …+71     text      "\"Need a refresher?  I can understand - you've more important things on your mind.\"*"
+0FBB: 82 00 43 50 00 00 01 40                      set       L00 = True
+0FC3: 88 10 47                                     goto      -> 1047
+0FC6:>22 57 6f 75 6c 64 20 79 6f 75 20 6c …+32     text      "\"Would you like to learn how to make bread?\""
+0FF2: 8f 79 6e 00                                  prompt    "yn"
+0FF6: 90 6e 00 10 1d                               match     n else -> 101D
+0FFB: 22 50 65 72 68 61 70 73 20 73 6f 6d …+14     text      "\"Perhaps some other time.\""
+1015: 82 00 43 50 00 00 00 40                      set       L00 = False
+101D:>90 79 00 10 47                               match     y else -> 1047
+1022: 82 00 9f 0e b1 48 05 44 45 6d 65 73 …+12     set       L00 = R0EB1(G05:leader, "Emesa", 208, False)
+103A: 8d 00 40 10 47                               jf        L00 -> 1047
+103F: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+1047:>8d 00 40 11 1c                               jf        L00 -> 111C
+104C: 22 42 61 6b 69 6e 67 20 62 72 65 61 …+196    text      "\"Baking bread isn't that hard - Take some flour and spread it out.\"*\"Take some water and add to the flour.\"*\"Take a rolling pin and roll out the dough.\"*\"Take the finished dough and bake it, and you're done!\""
+111C:>88 02 40                                     goto      -> 0240
+111F:>90 62 79 65 00 11 38                         match     bye else -> 1138
+1126: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+1131: 8b 41 00 40                                  return    0
+; ---- dead code 1135-1138: no dictionary entry, jump, pointer or call reaches it ----
+1135:x88 02 40                                     goto      -> 0240
+1138:>90 2a 00 11 80                               match     * else -> 1180
+113D: 8d 9f 08 09 30 40 5e 40 11 7d                jf        !R0809(A30) -> 117D
+1147: 8d 9f 08 01 30 40 5e 40 11 7d                jf        !R0801(A30) -> 117D
+1151: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+32     text      "\"I'm sorry, but I'm not familiar with that.\""
+117D:>88 02 40                                     goto      -> 0240
+1180:>88 02 40                                     goto      -> 0240
+; ---- dead code 1183-1187: no dictionary entry, jump, pointer or call reaches it ----
+1183:x8b 41 00 40                                  return    0
+1187: a0 03 98 05 01 31 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0131, 32/spawned: @0002}

@@ -1,0 +1,18 @@
+; segment 098C  page 09  routine: combat-AI scenario action 12 (ai-scripts.md 5)
+; kind routine  length 70 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 00                                     frame     args=3 locals=0
+0003: 86 22 30 40 41 00 40                         setfield  A30.f22:target = 0
+000A: 8d 9f 0f 13 30 40 40 00 37                   jf        R0F13(A30) -> 0037  ; R0F13 = inparty [from 0x0101 symtab]
+0013: 8d 30 48 05 54 40 00 29                      jf        (A30 == G05:leader) -> 0029
+001B: f0 30 41 52 41 02 41 00 41 00 40             builtin   queue_activity(A30, 82, 2, 0, 0)
+0026: 88 00 34                                     goto      -> 0034
+0029:>f0 30 41 52 41 01 41 00 41 00 40             builtin   queue_activity(A30, 82, 1, 0, 0)
+0034:>88 00 42                                     goto      -> 0042
+0037:>f0 30 41 52 41 71 41 00 41 00 40             builtin   queue_activity(A30, 82, 113, 0, 0)
+0042:>8b 41 00 40                                  return    0

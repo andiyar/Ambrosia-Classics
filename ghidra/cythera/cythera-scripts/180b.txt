@@ -1,0 +1,94 @@
+; segment 180B  page 18  class 0x40 (char) id 11 name "Naxos" (string table 0201)
+; kind class  length 1642 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0656  methods: sel12/talk@0002, sel21/signal@063D
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 56                                        .hdr      dictionary offset = 0656
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 82 00 c4 48 05 41 1d 40 40                   set       L00 = has_ability(G05:leader, 29)
+000E: 82 01 44 2a 48 65 20 61 70 70 65 61 …+52     set       L01 = "*He appears to be lying, or at least not telling the truth."
+004E: 82 02 43 50 00 00 00 40                      set       L02 = False
+0056: 8d 9f 0f 02 30 41 07 40 40 00 a7             jf        R0F02(A30, 7) -> 00A7  ; R0F02 = tstbit [from 0x0101 symtab]
+0061: 22 57 65 6c 63 6f 6d 65 20 61 67 61 …+8      text      "\"Welcome again, hero"
+0075: 8d 49 05 00 00 10 40 00 81                   jf        seg0500[0010] -> 0081
+007E: 69 6e 65 2e 20 20 54 6f 20 77 68 61 …+26     text      "ine.  To what do I owe this pleasure?\""
+0081:>2e 20 20 54 6f 20 77 68 61 74 20 64 …+23     text      ".  To what do I owe this pleasure?\""  ; shares its tail with text @007E
+00A4: 88 00 e0                                     goto      -> 00E0
+00A7:>22 41 68 2c 20 61 74 20 6c 61 73 74 …+45     text      "\"Ah, at last we meet - I've been so anxious to meet you!\""
+00E0:>8e                                           input       ; read a line into the input buffer
+00E1: 90 62 79 65 00 01 0f                         match     bye else -> 010F
+00E8: 22 49 27 6d 20 73 75 72 65 20 77 65 …+20     text      "\"I'm sure we will meet again...\""
+0108: 8b 41 00 40                                  return    0
+; ---- dead code 010C-010F: no dictionary entry, jump, pointer or call reaches it ----
+010C:x88 00 e0                                     goto      -> 00E0
+010F:>90 6e 61 6d 65 00 01 3b                      match     name else -> 013B
+0117: 22 4e 61 78 6f 73 2c 20 6f 66 20 48 …+14     text      "\"Naxos, of House @Comana.\""
+0131: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0138: 88 00 e0                                     goto      -> 00E0
+013B:>90 6e 61 78 6f 00 01 57                      match     naxo else -> 0157
+0143: 22 59 65 73 2c 20 6d 79 20 66 72 69 …+5      text      "\"Yes, my friend?\""
+0154: 88 00 e0                                     goto      -> 00E0
+0157:>90 6a 6f 62 00 01 c0                         match     job else -> 01C0
+015E: 22 49 20 72 65 70 72 65 73 65 6e 74 …+83     text      "\"I represent House Comana in Cademia, which now has the highest popular support of all Houses.\""
+01BD: 88 00 e0                                     goto      -> 00E0
+01C0:>90 63 61 64 65 00 02 11                      match     cade else -> 0211
+01C8: 22 54 68 6f 75 67 68 20 49 20 77 61 …+58     text      "\"Though I was born and raised in Kosha, I love Cademia like a native.\""
+020E: 88 00 e0                                     goto      -> 00E0
+0211:>90 77 69 6e 65 00 02 73                      match     wine else -> 0273
+0219: 22 59 65 73 2c 20 48 6f 75 73 65 20 …+75     text      "\"Yes, House Comana has gotten into the wine trade - I expect it to be quite lucrative.\""
+0270: 88 00 e0                                     goto      -> 00E0
+0273:>90 67 6c 61 75 00 02 d6                      match     glau else -> 02D6
+027B: 22 49 27 6d 20 6e 6f 74 20 61 20 62 …+76     text      "\"I'm not a big fan of Glaucus' wine - Northshore Vineyards doesn't quite cut it for me.\""
+02D3: 88 00 e0                                     goto      -> 00E0
+02D6:>90 62 6f 72 75 00 03 22                      match     boru else -> 0322
+02DE: 22 4e 6f 77 20 42 6f 72 75 73 2c 20 …+53     text      "\"Now Borus, there's a master wine maker if ever there was one...\""
+031F: 88 00 e0                                     goto      -> 00E0
+0322:>8d dc 41 03 40 40 05 06                      jf        get_variable(3) -> 0506
+032A: 90 6d 75 72 64 00 04 61                      match     murd else -> 0461
+0332: 8d dc 41 03 40 41 01 54 40 03 f6             jf        (get_variable(3) == 1) -> 03F6
+033D: 22 49 20 73 61 77 20 74 68 65 20 77 …+154    text      "\"I saw the whole thing - and I'll never forget it.  I don't know what's wrong with @Berossus.\"*\"Halos did it - Halos has been captured.  They should just end it now!\""
+03E3: 8d 00 40 03 f3                               jf        L00 -> 03F3
+03E8: 82 02 43 50 00 00 01 40                      set       L02 = True
+03F0: 8a 01 40                                     print     L01
+03F3:>88 04 5e                                     goto      -> 045E
+03F6:>22 49 20 6b 6e 6f 77 20 77 68 61 74 …+76     text      "\"I know what I saw - I and still say I saw Halos kill him, despite what that brat said!\""
+044E: 8d 00 40 04 5e                               jf        L00 -> 045E
+0453: 82 02 43 50 00 00 01 40                      set       L02 = True
+045B: 8a 01 40                                     print     L01
+045E:>88 00 e0                                     goto      -> 00E0
+0461:>90 62 65 72 6f 00 05 06                      match     bero else -> 0506
+0469: 22 44 65 73 70 69 74 65 20 77 68 61 …+126    text      "\"Despite what Berossus says about Halos claiming innocence to be true, I don't buy it.\"*\"This is a clear a failure of the Mages' Justice.\""
+04F3: 8d 00 40 05 03                               jf        L00 -> 0503
+04F8: 82 02 43 50 00 00 01 40                      set       L02 = True
+0500: 8a 01 40                                     print     L01
+0503:>88 00 e0                                     goto      -> 00E0
+0506:>90 6c 69 65 00 05 f3                         match     lie else -> 05F3
+050D: 8d 02 40 05 9b                               jf        L02 -> 059B
+0512: 41 20 73 6c 69 67 68 74 20 70 61 75 …+122    text      "A slight pause goes across his face, his eyes narrowing.*\"If you wish to accuse me with something, you'll need to take it to a Judge.\""
+0598: 88 05 f0                                     goto      -> 05F0
+059B:>22 45 78 63 75 73 65 20 6d 65 3f 20 …+73     text      "\"Excuse me?  That's not a very polite thing to say - a lesser man would be insulted!\""
+05F0:>88 00 e0                                     goto      -> 00E0
+05F3:>90 2a 00 06 36                               match     * else -> 0636
+05F8: 8d 9f 08 04 30 40 5e 40 06 33                jf        !R0804(A30) -> 0633
+0602: 8d 9f 08 0e 30 40 5e 40 06 33                jf        !R080E(A30) -> 0633
+060C: 8d 9f 08 01 30 40 5e 40 06 33                jf        !R0801(A30) -> 0633
+0616: 22 44 6f 6e 27 74 20 66 6f 6c 6c 6f …+17     text      "\"Don't follow you on that...\""
+0633:>88 00 e0                                     goto      -> 00E0
+0636:>88 00 e0                                     goto      -> 00E0
+; ---- dead code 0639-063D: no dictionary entry, jump, pointer or call reaches it ----
+0639:x8b 41 00 40                                  return    0
+
+; ==== method sel21/signal @063D ====
+063D: 81 02 00                                     frame     args=2 locals=0
+0640: 8d 31 43 00 00 00 82 54 40 06 52             jf        (A31 == 130) -> 0652
+064B: 86 1c 30 40 41 00 40                         setfield  A30.f1C:health = 0
+0652:>8b 41 00 40                                  return    0
+0656: a0 03 98 0b 00 02 00 0c 98 0b 06 3d …+8      .dict     dict[3] {12/talk: @0002, 21/signal: @063D}

@@ -640,3 +640,81 @@ the gate card. Rejected: silently ignoring mode 64 (would drop a visible propert
 4. **Feel oracle = YouTube longplays + Ben's eyes at each gate**; the RE bank is the logic oracle. Rejected: running the
    original in an emulator; eyes only.
 **Approved by:** Ben.
+
+## D28 — Cythera build: Ben's brainstorm rulings + the seat's design rulings (2026-10-06)
+
+**Decided (Ben, brainstorm of 2026-10-06, orchestrator Claude Opus 5.5; design `docs/plans/2026-10-06-cythera-design.md`
+APPROVED "merge, and chip."):**
+1. **Done = the whole game, Mac + Windows** — every level, both endings, start screen, saves, prefs, the party-AI
+   strategy editor + debugger; Mac on HectorShell, Windows on the SDL shell BTX proved.
+2. **First gate = walking Catamarca** — full desktop, Map window drawing a new game's Catamarca exactly, Alaric walks,
+   roofs lift; no talk, no scripts; side by side with the 1999 Catamarca screenshot.
+3. **Screen = like the original** — backdrop fills the display, the game's own windows float on it, drawn by the
+   replica, one original pixel per point; windowed mode treats the window as the monitor. Rejected: a fixed 1999
+   monitor at whole-number scale; real macOS windows.
+4. **Feel oracle = longplays + Ben's memory + his eyes**; the five 1999 screenshots for the look. Rejected: emulator.
+5. **Gate order = world → talk → start/saves → items/shops → fights/magic → whole story → Windows + docs viewer +
+   release.** Rejected: front end first; fights early.
+6. **Extras IN: cheat/debug keys, the Cythera Documentation viewer.** Out: registration screens, InputSprocket.
+7. **Saves = the original format both ways.**
+8. **Music = Apple's General-MIDI synth live on the Mac; each tune recorded once from it for Windows.** Rejected: a
+   bundled SoundFont; deciding later.
+9. **Process:** the Phase 0 plan is written by a Fable planner directly from the design, no separate review (Ben:
+   "seems token silly" to have Opus write and Fable review). Done: `docs/plans/2026-10-06-cythera-phase0.md`, 14 tasks.
+**Seat's rulings under the 100 % rule (design §5–§10):** three layers (CytheraCore Foundation-only incl. the VM and the
+window-system model; CytheraRender composites the whole desktop to one 8-bit screen; thin shells); the original's
+three cooperative threads as real threads taking strict turns (rejected: re-entrant VM state machines, Swift async);
+HectorShell gains a resizable 1:1 canvas (Phase 1); data in git by the D24 shape; deviations list §8 (no monitor
+picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Apple glyphs per D16.4/D20).
+**Approved by:** Ben (1–9, in his words, 2026-10-06); seat rulings recorded, Ben shown the design.
+
+## D29 — Deimos Rising build: design + Phase 1 rulings (seat) (2026-10-06)
+
+**Decided (seat, under D27 and the 100 % rule; design `docs/plans/2026-10-06-deimos-design.md`, plan
+`docs/plans/2026-10-06-deimos-phase1.md`, Fable review ACCEPT_WITH_FIXES, fixes applied):**
+1. **Layers (design §3):** `DeimosCore` (Foundation + HectorResources + HectorAudio: rules, seams, session) →
+   `DeimosRender` (Foundation + Core: RGB555 buffers, blitters, presents, fades) → `DeimosHost` (Foundation + Core +
+   Render: the shell-neutral driver — Mac-tick clock, limiter, fade/blocking waits, key table) → thin shells
+   (`Deimos/App` AppKit + HectorShell; `Deimos/Windows` HectorSDL later). Rejected: the Aki two-layer shape, pixels in
+   Core, a per-shell controller (the BTX Windows re-port cost, D15). Seam types (`HeldKeys` … `DeimosPrefs`) are LOCKED
+   once Phase 1 lands: cases may be added, never renamed.
+2. **Render model (design §5):** 16-bit RGB555 persistent buffers; Core records the original's draw calls in order as
+   `RenderOp`s, Render executes them (artefacts included). To the display by bit replication `(c << 3) | (c >> 2)` (the
+   kit's PICT rule); **whole-frame presents** — the original's tearing is not reproduced.
+3. **Disclosed deviations (design §7):** whole-frame presents, no OS volume writes, no InputSprocket (keys from the
+   prefs key table — the input source), registered build, prefs file in Application Support with the 0x34f0 layout
+   (never `UserDefaults`), `Last Film` in the user's Local override folder, DEBUG-only data-missing alert.
+4. **Phases (design §8)** 1 look → 2 level 1 plays → 3 campaign → 4 front end → 5 Windows + release: a proposal,
+   pending Ben's Q7.
+5. **TickCount rate (Q1):** default **60.15 Hz** (classic Mac OS; Deimos 1.0.6 is an InterfaceLib app), pending Ben;
+   the build proceeds on the default (`TickRate.classic`; `.osx` 60.0 kept).
+6. **Phase-1 stubs (plan S2 ◇, on the gate card):** `Player.updatePhase1` (life states 2 → 4, appear/glow, size refresh,
+   crosshair, banking, view shift — no velocity, firing, power-ups); no entities (`plen`, multiplier unit, `no01`).
+7. **Kit:** `ShellView.scalingPolicy` (`.integerFit` for D27.3) landed as HectorKit D13 (522feb8, floor 316).
+**Approved by:** seat (orchestrator); Ben told.
+
+**As built — Phase 1 (2026-10-07; seat rulings from the per-wave Fable reviews):**
+- **`KeyTable` lives in DeimosCore**, not DeimosHost: the LOCKED `pass(keys: HeldKeys)` maps inside Core (C6 review).
+- **`Player.updatePhase1(…, scoreBar: inout)`** keeps `FUN_10031710` at its original call site (`1002a1dc`); input bytes
+  are untouched outside state 4 (`1002a3c4`) — the plan text was corrected to the listing (C4 review).
+- **`COST` rects** are only rejected by the command clip; `FUN_1001ec80` clips to the port and addresses from the
+  unclamped top/left (R2 review; plan corrected). The same unclipped-addressing quirk is reproduced in the blend
+  kernel `FUN_1001e9d0`, and the interlaced copy clips the last field row (`100450e0`) — bank ⚑ note added.
+- **`TextFormat` defaults = the runtime template** (spacing 1, strip 3/3/16, colourise 0x7fff); no shipped `tefo` changes.
+- **Driver (◇ Phase-1 stand-in):** Esc restarts level 1 with seed = ticks; the Esc that ended a session is latched
+  until released, and each `idle` call does bounded work (one restart, one present, one limiter release) — the H1 review
+  found a hang on a held Esc and at tick wrap, both fixed with regression tests. `.hideCursor` is emitted on a session's
+  first pass (the original hid it in the front end, `10023550`, before the game call).
+- **App:** `Deimos/DeimosCore → Core` symlink (SwiftPM identity clash with `Aki/Core`; BTX D13.8 shape). Window
+  `[.titled, .miniaturizable]` (the original's windowed variant: title bar, no close box, collapsible — `FUN_1000a640`).
+  **Suspends while in the background or miniaturised** (display-window-present §7); on resume it shows the held screen
+  rather than the original's black window until the next present (disclosed).
+
+## D30 — Deimos Rising gate 1 PASSED; TickCount 60 Hz (2026-10-07)
+
+**Decided (Ben, in chat, after playing the staged Phase 1 build):** "it looks okay!" — **gate 1 ("level 1 look", D27.2)
+passed.** Q1 (design §11.1, INDEX #42): "i'm playing on osx. let's try 60" → the replica runs at **Mac OS X's 60 Hz
+TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic 60.15 Hz default D29.5 proceeded on.
+`TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
+widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
+**Approved by:** Ben.

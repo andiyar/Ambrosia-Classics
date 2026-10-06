@@ -1,0 +1,178 @@
+; segment 186D  page 18  class 0x40 (char) id 109 name "Demodocus" (string table 0201)
+; kind class  length 6372 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @18D0  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 18 d0                                        .hdr      dictionary offset = 18D0
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 20 6a 6f …+35     text      "You see a jovial man, with thinning curly hair."
+0034: 8d 9f 0f 02 30 41 07 40 5e 40 01 ea          jf        !R0F02(A30, 7) -> 01EA  ; R0F02 = tstbit [from 0x0101 symtab]
+0040: 8d dc 41 04 40 41 00 54 40 01 5a             jf        (get_variable(4) == 0) -> 015A
+004B: 22 41 68 21 20 59 6f 75 20 6d 75 73 …+256    text      "\"Ah! You must be the newcomer.  I've heard rumors about Alaric summoning you...\"*\"If @rumors I hear are true, you've come none-too-soon.  Much is wrong, and Alaric seems unable to deal with it.\"*\"Oh, I'm sorry, allow me to introduce myself.  I am Demodocus, the Bard.\""
+0157: 88 01 e0                                     goto      -> 01E0
+015A:>22 41 68 21 20 59 6f 75 20 6d 75 73 …+20     text      "\"Ah! You must be that great hero"
+017A: 8d 49 05 00 00 10 40 01 86                   jf        seg0500[0010] -> 0186
+0183: 69 6e 65 20 74 68 61 74 20 49 27 76 …+73     text      "ine that I've heard so much about!\"*\"I am Demodocus, the Bard - pleased to meet you.\""
+0186:>20 74 68 61 74 20 49 27 76 65 20 68 …+70     text      " that I've heard so much about!\"*\"I am Demodocus, the Bard - pleased to meet you.\""  ; shares its tail with text @0183
+01D8: 9f 0e 8b 48 05 41 14 40                      call      R0E8B(G05:leader, 20)
+01E0:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+01E7: 88 02 85                                     goto      -> 0285
+01EA:>8d 9f 0f 02 42 00 14 41 01 40 5e dc …+10     jf        (!R0F02(20, 1) && (get_variable(4) == 7)) -> 0246  ; R0F02 = tstbit [from 0x0101 symtab]
+0200: 22 57 65 6c 6c 20 6d 65 74 20 61 67 …+55     text      "\"Well met again, friend.  @Strange things are afoot in the land...\""
+0243: 88 02 85                                     goto      -> 0285
+0246:>22 57 65 6c 6c 20 6d 65 74 20 61 67 …+52     text      "\"Well met again, friend.  Perhaps you'll tell me your story...\"*"  ; shares its tail with text @0285
+0285:>2a                                           text      "*"
+0286:>8e                                           input       ; read a line into the input buffer
+0287: 90 6e 61 6d 65 00 02 c8                      match     name else -> 02C8
+028F: 22 49 20 61 6d 20 44 65 6d 6f 64 6f …+35     text      "\"I am Demodocus - you've heard of me, perhaps.\""
+02BE: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02C5: 88 02 86                                     goto      -> 0286
+02C8:>90 6a 6f 62 2c 62 61 72 64 00 03 2f          match     job,bard else -> 032F
+02D4: 22 49 20 6d 61 6b 65 20 6c 65 67 65 …+76     text      "\"I make legends out of the follies of man, and @entertain people with ballad and fable.\""
+032C: 88 02 86                                     goto      -> 0286
+032F:>90 73 74 72 61 00 04 2d                      match     stra else -> 042D
+0337: 8d 9f 0f 02 42 00 14 41 01 40 5e dc …+10     jf        (!R0F02(20, 1) && (get_variable(4) == 7)) -> 03F3  ; R0F02 = tstbit [from 0x0101 symtab]
+034D: 22 49 20 68 61 76 65 20 68 65 61 72 …+139    text      "\"I have heard that House Attis' iron mine is haunted - now how's that for strange!\"*\"Perhaps you should go have a visit with Matron Thuria in Cademia?\""
+03E4: f2 41 0e 43 30 00 02 1a 41 72 4a 40          builtin   add_to_do(14, (str[021A:0]"Cure Alaric" + 114))
+03F0: 88 04 2a                                     goto      -> 042A
+03F3:>22 54 68 65 73 65 20 61 72 65 20 73 …+43     text      "\"These are strange times we live in, that is for sure.\""
+042A:>88 02 86                                     goto      -> 0286
+042D:>90 72 75 6d 6f 00 05 84                      match     rumo else -> 0584
+0435: 8d dc 41 04 40 41 00 54 40 05 35             jf        (get_variable(4) == 0) -> 0535
+0440: 22 54 68 6f 75 67 68 20 49 27 76 65 …+230    text      "\"Though I've not been there recently, I heard from a friend that something is very wrong in @Catamarca.\"*\"People have been getting sick, a few have even died.  It may be just a rumor, but my instinct tells me a great story could start there.\""
+0532: 88 05 81                                     goto      -> 0581
+0535:>22 52 75 6d 6f 72 73 20 61 72 65 20 …+64     text      "\"Rumors are everywhere, but in my experience, they are almost always false.\""
+0581:>88 02 86                                     goto      -> 0286
+0584:>90 6a 6f 69 6e 00 06 14                      match     join else -> 0614
+058C: 22 57 65 6c 6c 2c 20 77 68 69 6c 65 …+121    text      "\"Well, while you are bound to have some great stories to live, I've got commitments to perform.\"*\"I'm sure we'll meet again, though.\""
+0611: 88 02 86                                     goto      -> 0286
+0614:>90 74 72 61 69 00 06 c9                      match     trai else -> 06C9
+061C: 22 53 6f 72 72 79 2c 20 62 75 74 20 …+158    text      "\"Sorry, but training in songwriting takes years - you'll have to seek elsewhere.\"*\"If there's anything in particular that you'd like to study, I might know who to ask...\""
+06C6: 88 02 86                                     goto      -> 0286
+06C9:>90 64 65 6d 6f 00 06 f3                      match     demo else -> 06F3
+06D1: 22 49 20 61 6d 20 44 65 6d 6f 64 6f …+19     text      "\"I am Demodocus, that is true.\""
+06F0: 88 02 86                                     goto      -> 0286
+06F3:>90 70 61 72 72 00 07 40                      match     parr else -> 0740
+06FB: 22 50 61 72 72 6f 74 73 3f 20 20 49 …+54     text      "\"Parrots?  I'm afraid you're confused - too much time in the sun.\""
+073D: 88 02 86                                     goto      -> 0286
+0740:>90 63 6f 6d 61 00 07 93                      match     coma else -> 0793
+0748: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+60     text      "\"House Comana hasn't been the same since Old Man @Canachus passed away.\""
+0790: 88 02 86                                     goto      -> 0286
+0793:>90 6b 6f 73 68 00 07 ec                      match     kosh else -> 07EC
+079B: 22 49 20 64 6f 6e 27 74 20 67 65 74 …+66     text      "\"I don't get down to Kosha as much as I used to when Old Man @Canachus ruled.\""
+07E9: 88 02 86                                     goto      -> 0286
+07EC:>90 63 61 6e 61 00 09 ab                      match     cana else -> 09AB
+07F4: 22 43 61 6e 61 63 68 75 73 20 77 61 …+136    text      "\"Canachus was a good man, better than all his sons put together.  He was also a big fan.\"*\"I remember his favorite song of mine - went like this...\""
+0888: d2 41 2f 41 4f 41 0f 40                      builtin   play_note(47, 79, 15)
+0890: d2 41 2f 41 47 41 0f 40                      builtin   play_note(47, 71, 15)
+0898: d2 41 2f 41 49 41 0f 40                      builtin   play_note(47, 73, 15)
+08A0: d2 41 2f 41 4c 41 0f 40                      builtin   play_note(47, 76, 15)
+08A8: d2 41 2f 41 43 41 0f 40                      builtin   play_note(47, 67, 15)
+08B0: 48 65 20 70 6c 61 79 73 20 74 68 65 …+229    text      "He plays the notes PHJMD.*\"Of course, that's with this lyre - to be done right, it needs to be played on pan-pipes.\"*\"Unfortunately, nobody makes pan-pipes that play all those notes anymore, though some people might still have a set around.\""
+09A1: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+09A8: 88 02 86                                     goto      -> 0286
+09AB:>90 70 69 70 65 00 0a 51                      match     pipe else -> 0A51
+09B3: 8d 9f 0f 02 30 41 00 40 40 0a 21             jf        R0F02(A30, 0) -> 0A21  ; R0F02 = tstbit [from 0x0101 symtab]
+09BE: 22 59 6f 75 20 73 68 6f 75 6c 64 20 …+84     text      "\"You should ask around - perhaps some of House Elder might still have an old set laying around.\""
+0A1E: 88 0a 4e                                     goto      -> 0A4E
+0A21:>22 49 20 61 6d 20 61 20 6d 61 73 74 …+33     text      "\"I am a master of the pan-pipes, it is true.\""
+0A4E:>88 02 86                                     goto      -> 0286
+0A51:>90 6c 75 74 65 00 0a 93                      match     lute else -> 0A93
+0A59: 22 42 61 68 2c 20 74 68 65 73 65 20 …+43     text      "\"Bah, these new fangled lutes - no good sound quality.\""
+0A90: 88 02 86                                     goto      -> 0286
+0A93:>90 6c 79 72 65 00 0a f2                      match     lyre else -> 0AF2
+0A9B: 22 54 68 65 20 6c 79 72 65 20 69 73 …+72     text      "\"The lyre is my instrument of choice - light, and yet versatile, with a full sound.\""
+0AEF: 88 02 86                                     goto      -> 0286
+0AF2:>90 62 79 65 00 0b 76                         match     bye else -> 0B76
+0AF9: 22 4f 66 66 20 6f 6e 20 73 6f 6d 65 …+89     text      "\"Off on some adventure?  Well, sometime you'll have to tell them all to me so I can make a ballad...\""
+0B5E: 8d dc 41 04 40 41 00 54 40 0b 6f             jf        (get_variable(4) == 0) -> 0B6F
+0B69: dd 41 04 41 07 40                            builtin   set_variable(4, 7)
+0B6F:>8b 41 00 40                                  return    0
+; ---- dead code 0B73-0B76: no dictionary entry, jump, pointer or call reaches it ----
+0B73:x88 02 86                                     goto      -> 0286
+0B76:>90 65 6e 74 65 00 0c 69                      match     ente else -> 0C69
+0B7E: 22 4f 68 2c 20 77 68 79 20 79 65 73 …+220    text      "\"Oh, why yes, I often travel from city to city, playing at @Inns to delight the patrons, and occasionally I am honored to perform for the Land King.\"*\"Of late, I come to play for the Land King more often, to lift @Alaric's spirits.\""
+0C66: 88 02 86                                     goto      -> 0286
+0C69:>90 69 6e 6e 73 00 0d 26                      match     inns else -> 0D26
+0C71: 22 54 68 65 20 62 65 73 74 20 73 6f …+166    text      "\"The best sorts don't often frequent them, but most folks are decent enough, and idle chatter can often be quite informative.\"*\"This life suits me well, despite the @travelling.\""
+0D23: 88 02 86                                     goto      -> 0286
+0D26:>90 74 72 61 76 00 0e 1a                      match     trav else -> 0E1A
+0D2E: 22 49 20 73 70 65 6e 64 20 6d 75 63 …+221    text      "\"I spend much of my time travelling, and this advice I'll give you: travel at night only with an alert eye, and a drawn sword.\"*\"There have been @bandits about, running amuck in the land as @Alaric's power to stop them has weakened.\""
+0E17: 88 02 86                                     goto      -> 0286
+0E1A:>90 62 61 6e 64 00 0e d8                      match     band else -> 0ED8
+0E22: 22 4e 61 73 74 79 20 73 6f 72 74 73 …+167    text      "\"Nasty sorts.  Cythera used to be a peaceful land...\"*\"I don't know what is behind their appearance, be it just vultures feasting on the decaying land, or a more @organized plot.\""
+0ED5: 88 02 86                                     goto      -> 0286
+0ED8:>90 6f 72 67 61 00 0f 8a                      match     orga else -> 0F8A
+0EE0: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+155    text      "\"I don't know for sure, but it's certainly possible that there are unseen forces at work...\"*\"...or it could just be another sort of @plague descending upon the land.\""
+0F87: 88 02 86                                     goto      -> 0286
+0F8A:>90 70 6c 61 67 00 0f f2                      match     plag else -> 0FF2
+0F92: 8d dc 41 04 40 41 00 54 40 0f bc             jf        (get_variable(4) == 0) -> 0FBC
+0F9D: 22 57 65 6c 6c 2c 20 74 68 65 72 65 …+16     text      "\"Well, there are @rumors...\""
+0FB9: 88 0f ef                                     goto      -> 0FEF
+0FBC:>22 54 68 65 20 70 6c 61 67 75 65 20 …+39     text      "\"The plague in Catamarca was most odd, was it not?\""
+0FEF:>88 02 86                                     goto      -> 0286
+0FF2:>90 61 6c 61 72 00 10 99                      match     alar else -> 1099
+0FFA: 22 41 6c 61 73 2c 20 41 6c 61 72 69 …+144    text      "\"Alas, Alaric is not well, and the @land not well with him.\"*\"I do what I can to make him feel better with my arts of song, but perhaps you can do @more...\""
+1096: 88 02 86                                     goto      -> 0286
+1099:>90 6c 61 6e 64 00 11 35                      match     land else -> 1135
+10A1: 22 43 79 74 68 65 72 61 20 77 61 73 …+133    text      "\"Cythera was once a proud land, with little @crime, and beautiful prospering villages, from the mighty @Cademia, to the quaint village of Odemia\""
+1132: 88 02 86                                     goto      -> 0286
+1135:>90 63 72 69 6d 00 11 cb                      match     crim else -> 11CB
+113D: 22 57 69 74 68 20 74 68 65 20 40 62 …+127    text      "\"With the @bandits roaming about, there is much mischief afoot, but the honorable folk in town do not condone such stealing and pillaging.\""
+11C8: 88 02 86                                     goto      -> 0286
+11CB:>90 6d 6f 72 65 00 12 66                      match     more else -> 1266
+11D3: 22 41 6c 61 72 69 63 20 68 61 73 20 …+132    text      "\"Alaric has been wanning, and is further drained from summoning you here.\"*\"Much depends on you, hero.  I hope to sing about your tale one day.\""
+1263: 88 02 86                                     goto      -> 0286
+1266:>90 6d 65 74 69 00 13 0e                      match     meti else -> 130E
+126E: 22 54 68 65 20 6d 65 74 69 63 73 20 …+145    text      "\"The metics are mythical beings of which I know little more than their name, but things of that kind make the best for a song.\"*\"Would you like to @hear it?\""
+130B: 88 02 86                                     goto      -> 0286
+130E:>90 73 6f 6e 67 2c 6d 65 74 69 00 14 …+1      match     song,meti else -> 140A
+131B: 22 41 68 2c 20 79 6f 75 27 64 20 6c …+224    text      "\"Ah, you'd like to hear a song, then... well, here we are...\"*Demodocus begins to sing, but the words seem to be lost to you.*Instead, your mind is filled with images of Earth and Sea, and the constant battle between those two elements."
+1407: 88 02 86                                     goto      -> 0286
+140A:>90 77 65 61 76 2c 61 6b 65 00 14 3c          match     weav,ake else -> 143C
+1416: 22 41 6b 65 20 69 6e 20 4f 64 65 6d …+23     text      "\"Ake in Odemia is a master weaver.\""
+1439: 88 02 86                                     goto      -> 0286
+143C:>90 63 6f 6d 62 2c 61 74 74 61 2c 64 …+21     match     comb,atta,defe,swor,shie,hadr else -> 1489
+145D: 22 4f 6c 64 20 48 61 64 72 69 61 6e …+29     text      "\"Old Hadrian has trained many a warrior.\""
+1486: 88 02 86                                     goto      -> 0286
+1489:>90 63 6f 6f 6b 2c 65 6d 65 73 00 14 …+1      match     cook,emes else -> 14E0
+1496: 22 57 68 69 6c 65 20 6d 61 6e 79 20 …+59     text      "\"While many an innkeeper can cook, none can match Alaric's cook Emesa.\""
+14DD: 88 02 86                                     goto      -> 0286
+14E0:>90 6c 69 6e 64 2c 6d 61 67 69 2c 73 …+6      match     lind,magi,spel else -> 155F
+14F2: 22 41 6c 6c 20 77 68 6f 20 77 69 73 …+94     text      "\"All who wish to learn the art of magic must be approved by Headmaster Lindus at the Magisterium in Pnyx.\""
+155C: 88 02 86                                     goto      -> 0286
+155F:>90 66 69 73 68 2c 20 74 6c 65 70 00 …+2      match     fish, tlep else -> 15E0
+156D: 22 4e 6f 62 6f 64 79 20 6b 6e 6f 77 …+100    text      "\"Nobody knows fishing like old Tlepolemus - the shores off Odemia are rich in fish and he knows all the tricks.\""
+15DD: 88 02 86                                     goto      -> 0286
+15E0:>90 61 78 65 2c 6d 61 63 65 00 16 62          match     axe,mace else -> 1662
+15EC: 22 54 68 65 72 73 69 74 65 73 2c 20 …+103    text      "\"Thersites, head of the Guard in Odemia is the master of the Axe, though he trains his men in the use of the Mace.\""
+165F: 88 02 86                                     goto      -> 0286
+1662:>90 67 75 69 6c 2c 74 68 69 65 2c 6c …+16     match     guil,thie,lock,gamb,trap else -> 16E4
+167E: 22 54 68 65 20 52 61 74 63 61 74 63 …+87     text      "\"The Ratcatcher's Guild in Cademia is home to much antisocial knowlege, and I'll leave it at that.\""
+16E1: 88 02 86                                     goto      -> 0286
+16E4:>90 61 77 61 72 2c 6d 65 6c 65 2c 62 …+6      match     awar,mele,bare else -> 1750
+16F6: 22 4f 6c 64 20 4d 65 6c 65 61 67 65 …+75     text      "\"Old Meleager is a sly one - knows many a thing about survival and keeping one's wits.\""
+174D: 88 02 86                                     goto      -> 0286
+1750:>90 68 61 67 67 2c 70 65 72 73 2c 6e …+6      match     hagg,pers,neop else -> 1848
+1762: 22 4d 61 6e 79 20 61 20 73 68 6f 70 …+215    text      "\"Many a shopkeeper knows how to persuade his customer to part with their oboloi, but none was as good as Neoptolemus.\"*\"However, he's a bit crazy now, and tells the most boring stories I've ever heard - which says quite a bit!\""
+1845: 88 02 86                                     goto      -> 0286
+1848:>90 2a 00 18 c9                               match     * else -> 18C9
+184D: 82 00 43 50 00 00 00 40                      set       L00 = False
+1855: 8d 48 10 42 00 08 54 40 18 67                jf        (G10:zone == 8) -> 1867
+185F: 82 00 9f 08 0e 30 40 40                      set       L00 = R080E(A30)
+1867:>8d 00 5e 40 18 c6                            jf        !L00 -> 18C6
+186D: 8d 9f 08 01 30 40 5e 40 18 c6                jf        !R0801(A30) -> 18C6
+1877: 22 49 20 74 68 69 6e 6b 20 49 20 6f …+67     text      "\"I think I once wrote a song about that, but now it's just echoes of the past.\""
+18C6:>88 02 86                                     goto      -> 0286
+18C9:>88 02 86                                     goto      -> 0286
+; ---- dead code 18CC-18D0: no dictionary entry, jump, pointer or call reaches it ----
+18CC:x8b 41 00 40                                  return    0
+18D0: a0 03 98 6d 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}
