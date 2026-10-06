@@ -10,6 +10,7 @@ final class PrefsTests: XCTestCase {
 
     // MARK: helpers
 
+    #if canImport(Darwin)
     /// A throw-away UserDefaults suite — never the replica's real domain.
     private func scratchDefaults() -> UserDefaults {
         let name = "btx-prefs-tests-\(UUID().uuidString)"
@@ -17,6 +18,29 @@ final class PrefsTests: XCTestCase {
         addTeardownBlock { UserDefaults(suiteName: name)?.removePersistentDomain(forName: name) }
         return defaults
     }
+
+    /// The Mac app's call (`init(defaults:…)`).
+    private func makeStore(_ defaults: UserDefaults, legacyFileURL: URL?,
+                           factoryScores: HighScoreTable) -> BTXPrefsStore {
+        BTXPrefsStore(defaults: defaults, legacyFileURL: legacyFileURL, factoryScores: factoryScores)
+    }
+    #else
+    /// Off Apple `UserDefaults` crashes under Wine (D16.3; it is the Mac's backing only): the same store paths run
+    /// over an in-memory `BTXPrefsBacking`, with the same assertions.
+    private final class MemoryBacking: BTXPrefsBacking {
+        var store: [String: Data] = [:]
+        func data(forKey key: String) -> Data? { store[key] }
+        func set(_ value: Data, forKey key: String) { store[key] = value }
+        func removeObject(forKey key: String) { store[key] = nil }
+    }
+
+    private func scratchDefaults() -> MemoryBacking { MemoryBacking() }
+
+    private func makeStore(_ backing: MemoryBacking, legacyFileURL: URL?,
+                           factoryScores: HighScoreTable) -> BTXPrefsStore {
+        BTXPrefsStore(backing: backing, legacyFileURL: legacyFileURL, factoryScores: factoryScores)
+    }
+    #endif
 
     private func scratchFile(_ data: Data?) throws -> URL {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("btx-prefs-\(UUID().uuidString)")
@@ -132,7 +156,7 @@ final class PrefsTests: XCTestCase {
         XCTAssertNil(HighScoreTable(data: Data(count: 0x89)))
         // Through the store: one Data under key "Prefs" = 0x800 prefs then the 0x8a block.
         let defaults = scratchDefaults()
-        let store = BTXPrefsStore(defaults: defaults, legacyFileURL: nil, factoryScores: table(1))
+        let store = makeStore(defaults, legacyFileURL: nil, factoryScores: table(1))
         var scores = t
         store.save(prefs: p, scores: &scores)              // first save = file creation → factory scores
         XCTAssertEqual(scores, table(1))
@@ -247,7 +271,7 @@ final class PrefsTests: XCTestCase {
         // 1. Version 0x17, scores already flagged → imported as is, copied into UserDefaults; file untouched.
         let good = try scratchFile(legacyPrefs.data + legacyScores.data)
         let d1 = scratchDefaults()
-        let s1 = BTXPrefsStore(defaults: d1, legacyFileURL: good, factoryScores: factory)
+        let s1 = makeStore(d1, legacyFileURL: good, factoryScores: factory)
         let l1 = s1.load()
         XCTAssertEqual(l1.prefs, legacyPrefs); XCTAssertEqual(l1.scores, legacyScores)
         XCTAssertEqual(d1.data(forKey: BTXPrefsStore.key), legacyPrefs.data + legacyScores.data)
@@ -259,7 +283,7 @@ final class PrefsTests: XCTestCase {
         // 2. Version 0x17, bool 0x3e clear → flag set, factory scores loaded, saved.
         var unflagged = legacyPrefs; unflagged.defaultScoresLoaded = false
         let d2 = scratchDefaults()
-        let l2 = BTXPrefsStore(defaults: d2, legacyFileURL: try scratchFile(unflagged.data + legacyScores.data),
+        let l2 = makeStore(d2, legacyFileURL: try scratchFile(unflagged.data + legacyScores.data),
                                factoryScores: factory).load()
         XCTAssertEqual(l2.prefs, legacyPrefs); XCTAssertEqual(l2.scores, factory)
         XCTAssertEqual(d2.data(forKey: BTXPrefsStore.key), legacyPrefs.data + factory.data)
@@ -268,14 +292,14 @@ final class PrefsTests: XCTestCase {
         var old = legacyPrefs; old.version = 0x16
         let bad = try scratchFile(old.data + legacyScores.data)
         let d3 = scratchDefaults()
-        let l3 = BTXPrefsStore(defaults: d3, legacyFileURL: bad, factoryScores: factory).load()
+        let l3 = makeStore(d3, legacyFileURL: bad, factoryScores: factory).load()
         XCTAssertEqual(l3.prefs, .defaults); XCTAssertEqual(l3.scores, factory)
         XCTAssertNil(d3.data(forKey: BTXPrefsStore.key))
         XCTAssertEqual(try Data(contentsOf: bad), old.data + legacyScores.data)
 
         // 4. No file, nothing stored → defaults, nothing stored.
         let d4 = scratchDefaults()
-        let l4 = BTXPrefsStore(defaults: d4, legacyFileURL: try scratchFile(nil), factoryScores: factory).load()
+        let l4 = makeStore(d4, legacyFileURL: try scratchFile(nil), factoryScores: factory).load()
         XCTAssertEqual(l4.prefs, .defaults); XCTAssertEqual(l4.scores, factory)
         XCTAssertNil(d4.data(forKey: BTXPrefsStore.key))
 
@@ -283,7 +307,7 @@ final class PrefsTests: XCTestCase {
         let d5 = scratchDefaults()
         var mine = BTXPrefs.defaults; mine.defaultScoresLoaded = true; mine.sfxVolume = 2
         d5.set(mine.data + table(77).data, forKey: BTXPrefsStore.key)
-        let l5 = BTXPrefsStore(defaults: d5, legacyFileURL: good, factoryScores: factory).load()
+        let l5 = makeStore(d5, legacyFileURL: good, factoryScores: factory).load()
         XCTAssertEqual(l5.prefs, mine); XCTAssertEqual(l5.scores, table(77))
 
         // 6. Default legacy location is ~/Library/Preferences/Bubble Trouble X Prefs.
@@ -382,6 +406,7 @@ final class PrefsBackingTests: XCTestCase {
         XCTAssertEqual(BTXPrefsStore(backing: b5, legacyFileURL: nil, factoryScores: table(1)).load().scores, table(1))
     }
 
+    #if canImport(Darwin)   // D16.3: UserDefaults is the Mac's backing only (it crashes under Wine)
     /// The Mac app's call: `UserDefaults` still conforms and stores real `Data` (not an archived object).
     func testUserDefaultsInitStillRoundTrips() throws {
         let name = "btx-backing-tests-\(UUID().uuidString)"
@@ -406,4 +431,5 @@ final class PrefsBackingTests: XCTestCase {
         let reread = BTXPrefsStore(defaults: defaults, legacyFileURL: nil, factoryScores: table(1)).load()
         XCTAssertEqual(reread.prefs, p); XCTAssertEqual(reread.scores, table(321))
     }
+    #endif
 }
