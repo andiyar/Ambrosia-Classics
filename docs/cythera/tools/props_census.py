@@ -12,15 +12,17 @@ Expected output (3 lines):
   [3, 6, 8, 11, 13, 17, 24] Counter({0: 55}) Counter({0: 55})
 i.e. 40 levels; the kind census of data-format §4.3; kind 0x11: 21 owners, 7 levels, byte 6 and
 frame all 0. Stdlib only; reads `Cythera Data` through seg.py (its default path).
+⚑ corrected (review wave 3 2026-10-06): argparse — `--help` prints this text and exits 0;
+`--data PATH` overrides the `Cythera Data` path; a missing file is a one-line error.
 """
-import os, sys, struct, collections as C
+import argparse, os, sys, struct, collections as C
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import seg  # noqa: E402
 
 
-def main():
-    d, s, _ = seg.toc()
+def main(data=seg.DATA):
+    d, s, _ = seg.toc(data)
     K = C.Counter(); own = set(); lv = set(); b6 = C.Counter(); fr = C.Counter()
     L = [k for k in s if 0x8100 <= k < 0x8200]
     for sid in L:
@@ -36,5 +38,14 @@ def main():
     print(sorted(lv), b6, fr)
 
 
+def cli(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--data', default=seg.DATA, help='path of `Cythera Data` (default: seg.py DATA)')
+    a = ap.parse_args(argv)
+    if not os.path.isfile(a.data):
+        sys.exit('%s: error: no such file: %s' % (ap.prog, a.data))
+    main(a.data)
+
+
 if __name__ == '__main__':
-    main()
+    cli()

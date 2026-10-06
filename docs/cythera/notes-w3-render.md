@@ -1,6 +1,6 @@
 # notes — wave 3 reader: Render layer order + recipes A–D (2026-10-06)
 
-Status: DONE. Task A = this commit; Task B = the next commit ("bank open-items recipes A–D").
+Status: DONE (Task A; Task B = next commit). ⚑ corrected (review wave 3 2026-10-06): trimmed to ≤ 200 words.
 
 Pass table (render.md §2.4): pre-pass (+0xB8): clear + 'B' frame-10 backdrops, sext6(E) < 0 ·
 ground: unseen → tile 0xFF, flag 0x10000000 masked · P0 objects (kinds 0/1/0x20/0x21/0x40), tile
@@ -14,8 +14,8 @@ flag meanings (names LOW).
 
 Item 16: CLOSED; THood order (overlap within a pass) NOT RESOLVED.
 
-Tools match heredocs: A yes, B yes, C yes, D yes (diff empty; C/D also with built-in listing).
+Tools match heredocs A–D (diff empty; C/D also with built-in listing).
 
 Hit hardest: pass-2 dead test (`10067a4c`/`10067a74`); SetStage 0xC0 up/left vs Render
-left/up; Render never touching +0x141EC.
+left/up; Render ignoring +0x141EC.
 Follow-ups: data-format §3.2 (0x2000 = transposed), §4.2 mirror bit, §4.3 kind 4/0x24 not "roof".

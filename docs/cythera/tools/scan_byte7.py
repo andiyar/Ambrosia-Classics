@@ -10,10 +10,12 @@ Banked from recipe D of open-items-2026-10-06.md (review wave 2 m7).
 Run (repo root):  python3 docs/cythera/tools/scan_byte7.py [all.dis]
   all.dis = `python3 docs/cythera/tools/ppcdis.py 10000000 100cd280 > all.dis`; when omitted the
   listing is generated in-process (listing.py).
+  ⚑ corrected (review wave 3 2026-10-06): argparse — `--help` prints this text and exits 0; a missing
+  all.dis is a one-line error.
 Expected output (1 line):
   {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
 """
-import os, re, sys, collections as C
+import argparse, os, re, sys, collections as C
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import listing  # noqa: E402
@@ -34,5 +36,15 @@ def main(argv):
     print({k: h[k] for k in (5, 6, 7, 8, 14)})
 
 
+def cli(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('listing', nargs='?', metavar='all.dis',
+                    help='whole-code ppcdis listing (default: generate it in-process)')
+    a = ap.parse_args(argv)
+    if a.listing is not None and not os.path.isfile(a.listing):
+        sys.exit('%s: error: no such file: %s' % (ap.prog, a.listing))
+    main([a.listing] if a.listing is not None else [])
+
+
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    cli()

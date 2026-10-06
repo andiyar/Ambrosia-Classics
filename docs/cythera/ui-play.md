@@ -305,8 +305,9 @@ then 7, class 6 fills 8 then 9, and **class 5 writes slot 6 = prop, slot 7 = −
   @ 1006b904` (main dump) requires before its line walk, i.e. "the cell is visible" [MED name];
   otherwise the window closes
   (slot +0x24). Visible and **adjacent** (Chebyshev ≤ 1) → full height 0x110 and redraw; visible but
-  farther → shrunk to **0x42** (66 px: portrait + stats strip only) — you see a stranger's
-  belongings only while standing next to them.
+  farther → shrunk to **0x42** (66 px: portrait + stats strip only) — ~~you see a stranger's
+  belongings only while standing next to them~~ ⚑ corrected (review wave 3 2026-10-06): (code: the
+  window shrinks to the portrait strip unless the character is adjacent).
 - `CloseRoutine @ 1002b2d4`: hide + delete both lists (slots +0x10, +0x3C), then the base close.
 - `Marshal @ 100309c4`: tag `'ChrW'` (`0x43687257`, written with format "l"), the base window,
   then format "hhh" = window origin h, v (global) and the pane (`toc.py`-resolved formats at TOC

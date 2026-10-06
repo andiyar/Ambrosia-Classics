@@ -43,7 +43,7 @@ offset; engine-classes.md §5). Call chain in `DrawRoutine` (p:27923–27957; `b
 | 2 | `InteractProps`, `CalcLighting`, `DimOffLevel` | `1005cd78`, `1005cd8c`, `1005cda0` | nothing drawn; light map computed (bodies not read) |
 | 3 | **`Render(viewer, x, y, subX, subY)`** | `1005cdbc`; p:27932 | §2: backdrop pre-pass → ground → passes 0–5 (FX at the top of pass 5) → backdrop post-pass |
 | 4 | `ApplyRoof(x, y, +0x20C2C)` (LOS mode only) | `1005ce04`; p:27933–27934 | roofs over everything Render drew (§1.1) |
-| 5 | `ApplyFilter(*(viewer +0x18 + frame·4))` (a per-frame LUT pointer) | `1005ce34`; p:27938 | whole-buffer colour lookup `*p = lut[*p]` (p:31292 `*pbVar5 = *(byte *)(param_2 + (uint)*pbVar5);`) |
+| 5 | `ApplyFilter(*(viewer +0x18 + frame·4))` (a per-frame LUT pointer) | `1005ce34`; p:27938 | whole-buffer colour lookup `*p = lut[*p]` (p:31292 ⚑ corrected (review wave 3 2026-10-06): p:31295 — `*pbVar5 = *(byte *)(param_2 + (uint)*pbVar5);`) |
 | 6 | `ApplyLight()` (LOS mode, leader CharEntry +6 bit 0x400 clear) — else `ApplyFilter(viewer +0x20C8C)` | `1005cec8` / `1005ce8c`; p:27940–27946 | per 4×4-pixel block of the light map at viewer +0x80BC: level 0 → filled with 0xFF, 1..31 → `SubLightSolid`/`SubLightDither` (odd/even), ≥32 untouched |
 | 7 | vtable hook `*_DAT_100cea80` (+ offscreen base) | `1005cef4` | NOT RESOLVED |
 | 8 | in the window GWorld (viewer +0x78): `ShowBarks`, then tile 0x186 (`PTR_DAT_100cdc28 + 0x618`) via `MaskTile` at (+0x20C32, +0x20C34)+h when byte +0x20C30 is set | `1005cf2c`, `1005cf70`; p:27954–27959 | speech barks, a one-tile marker [MED: marker's purpose not traced] |
@@ -66,7 +66,7 @@ post-pass, so they cover creatures, FX and tall props.
 ---------------------------------------------------------------------------------------------
 ## 2. Inside `Render__7TViewerFssss`
 
-### 2.1 Viewer fields Render touches [HIGH: census of every `r31`-relative operand in the listing]
+### 2.1 Viewer fields Render touches [HIGH: census of every `r31`-relative operand in the listing — ⚑ corrected (review wave 3 2026-10-06): every viewer-relative operand (r31, and r3, which still holds the viewer in the prologue after `10066acc: mr r31,r3`); +0xB8/+0xBA (and +4 once) are read off r3 there, `10066b08: lbz r14,184(r3)`, `10066adc: lha r14,186(r3)`, `10066ae8: lha r14,4(r3)`]
 +0 N; +2 h; +4 view-cell row stride (N+2); +0xC redraw byte (cleared on exit, `10068ce4: stb
 r13,12(r31)`); +0xD "mark seen" byte; +0x10 vtable; +0x78 window GWorld; +0xB0 offscreen base;
 +0xB4 rowBytes; +0xB8 "stage has a 0x10000000 tile"; +0xB9 erase colour; +0xBA animation frame
@@ -265,7 +265,14 @@ match:
 - Priority **7 is never stored as best prop for the main cell** (`&& (local_5e != 7)`, p:31634); instead
   the prop index is written into the 124×124 quarter-tile grid (+0x15FF4): a 4×4 block offset by the
   byte-6 sub-position when prefs bit 7 is set, else one quarter cell (p:31640–31661). Readers:
-  `HatchEgg`, `SwitchParty`, `InteractProps` (grep `0x15ff4`). So that grid is an **occupant grid for
+  `HatchEgg`, `SwitchParty`, `InteractProps` (grep `0x15ff4`). ⚑ corrected (review wave 3 2026-10-06): incomplete — `awk
+  '/^\/\/ ==== /{fn=$0} /0x15ff4/{print fn}'` over the three code dumps → `BuildStageEntry` ×2
+  (`1006b76c`, `1006b4c8`), `ClearMonstStage @ 1006ac14`, `GetBestPropRel @ 1006b2e0`, `GetBestProp
+  @ 1006b188`, `HatchEgg`, `InteractProps`, `SetMonstStage @ 1006aed8`, `SetStage`, `SwitchParty`.
+  `GetBestProp`/`GetBestPropRel` test the quarter cell **before** the stage's best-prop word
+  (`GetBestPropRel`: `if (*(short *)(param_1 + (param_3 + 0x3c) * 0xf8 + (param_2 + 0x3c) * 2 +
+  0x15ff4) != 0) return …`, else `+0x141f2 & 0x7fff`), so priority-7 props are found through this
+  grid. So that grid is an **occupant grid for
   creatures and property-0x37 objects**, not roof ownership (roofs use +0x20C1A and the 'D' chunks,
   §1.1). Extension cells of a creature have no `!= 7` guard (p:31680ff.). [HIGH code; "occupant" MED]
 - Pass ↔ priority, where they meet: pass 0's 0x100000 tiles are priority 1 (row 6); pass 5's 0x10
@@ -280,6 +287,12 @@ match:
   left cells therefore carry each other's tile flags/best tile (walls, LOS, targeting) relative to what
   is drawn; mirrored ones agree. 79 tiles have 0xC0 (`tileflag_census.py --eq 0xc0`: mountains,
   snowcaps, titan, tree, cities…). [Whether any shipped prop or map content is affected: NOT RESOLVED]
+  ⚑ corrected (review wave 3 2026-10-06): the single-extension cases agree with Render — SetStage's dispatch on the (mirror-swapped)
+  ext flags, `ppcdis.py 10065ba0 10065c10` / `10065dc0 10065df0`: `10065bb4: cmpwi r0,128` / `beq
+  0x10065dc0` → `10065dc8: addi r0,r4,-1` … `10065de4: stwu r0,-8(r19)` (t−1 **left**, as Render's
+  0x80 site `10068584`); `10065bc0: cmpwi r0,64` / `beq 0x10065be4` → `10065bec: addi r4,r5,-1` …
+  `10065c08: stwu r3,-248(r19)` (t−1 **up**, as Render's 0x40 site `100684e4`); `10065bd8: cmpwi
+  r0,192` / `beq 0x10065f98` → the three-store chain above. So only 0xC0 disagrees. [HIGH]
 
 ---------------------------------------------------------------------------------------------
 ## 6. The two staged lists [HIGH unless marked]

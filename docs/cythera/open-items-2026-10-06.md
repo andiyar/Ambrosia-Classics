@@ -321,6 +321,10 @@ and decode to 4096 B, the size of a 64×64 8-bit portrait (`0x8800+n`) [HIGH].
   0x88BC).
 - PORT 1: 204 distinct values. It renders as noise, and its first words look like pointers
   (`00 0b 5d e8 01 3e 75 40 …`) — not image data. Role LOW (an editor buffer).
+  ⚑ corrected (review wave 3 2026-10-06): those bytes are not the head — `rsrc.parse` + `lz.unlz` (returns `(bytes, consumed)`):
+  raw head `c3 b2 80 01 3e 75 30 28 22 24`, decoded head `b2 80 01 3e 75 30 28 22 24 20 00 13`
+  (4096 B, consumed 2351); the quoted run sits at decoded offset 0xE (`… 13 ee 64 | 00 0b 5d e8 01 3e
+  75 40 …`, once), so "first words" is wrong; whether any of it is pointers is not shown. Role stays LOW.
 No reader [HIGH]: `grep -c -i -E "0x504f5254|1347375700|'PORT'|0x504f[^0-9a-f]"` = 0 in all four
 dumps (control: `'Lite'` is found as `GetResource(0x4c697465,…)`, m:30899). `grep -E 'lis
 r[0-9]+,20559$' $S/r5all.dis` (0x504F) = 0. `toc.D.count(b'PORT')` = 0.
@@ -350,8 +354,9 @@ pitcher 10A0@0264 copies between pitchers (A31 type 160), 1136@01BD needs A31 ty
 (type 234, quality 0, filled with water by 0E0A@01D4) only takes the "distil an element" path
 (@0569).
 Documentation agrees — hintbook (documentation): the walkthrough says to bring the spores to
-Charax and "Use the spell in the Distiller on the joined Crolna." (`pdftotext -layout
-Cythera_Hintbook.pdf`, line 1611). It calls Charax responsible for purifying the corrupted Crolna
+Charax and cast the spell through the Distiller onto the joined Crolna (⚑ corrected (review wave 3
+2026-10-06): paraphrased — the verbatim sentence was a second prose quote here; the `end_game` line
+above is this section's one) (`pdftotext -layout Cythera_Hintbook.pdf`, line 1611). It calls Charax responsible for purifying the corrupted Crolna
 (line 563) and names Omen as Pelagon's alias (line 1959). That fits Omen's protest in 10EA@013F and
 Pelagon's thanks in the damned ending.
 
@@ -361,7 +366,7 @@ Receivers follow `SendSignal @ 10053794` (schedules-npcs §6.1): the zone and cu
 on-map props of the **leader's level** with `kind & 0x5D ∈ {0,1}`, type flag 0x10000 and
 **byte 6 == n**, then the characters on that level. Type flag 0x10000 = the type has property
 0x15 (= selector 21) (data-format §4.4). Hidden kind-0x80 props qualify (0x80 & 0x5D = 0).
-Senders: `grep -n 'send_signal(' ghidra/cythera-scripts/*.txt` (25 sites). Wired props:
+Senders: `grep -n 'send_signal(' ghidra/cythera-scripts/*.txt` (25 sites; ⚑ corrected (review wave 3 2026-10-06): **26** — `grep -o 'send_signal(' … | wc -l` = 26, 19 files). Wired props:
 `$S/r5props.py` rows with quality n whose type has a `sel21/signal` method (types 10, 38, 39, 46,
 51, 143, 144, 253, 257–259, 311, 320, 322, 333, 355, 356, 392 — `grep -l 'sel21/signal'`, 40 files).
 | n | sender (bytes) | receivers |

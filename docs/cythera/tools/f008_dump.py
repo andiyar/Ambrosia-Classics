@@ -14,15 +14,17 @@ Expected output (5 lines):
   0x507905 16 d0 08 01 d8 08 01 e0 04 01 e4 04 01 e8 04 01 00
   0x507915 167 33
 Stdlib only; reads `Cythera Data` through seg.py (its default path).
+⚑ corrected (review wave 3 2026-10-06): argparse — `--help` prints this text and exits 0;
+`--data PATH` overrides the `Cythera Data` path; a missing file is a one-line error.
 """
-import os, sys, struct, collections as C
+import argparse, os, sys, struct, collections as C
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import seg  # noqa: E402
 
 
-def main():
-    d, s, _ = seg.toc()
+def main(data=seg.DATA):
+    d, s, _ = seg.toc(data)
     o, l = s[0xF008]
     R = [d[o + i:o + i + 16] for i in range(0, 0x800, 16)]
     R = [r for r in R if struct.unpack('>H', r[12:14])[0]]
@@ -39,5 +41,14 @@ def main():
     o, l = s[0xF007]; print(hex(o), l, struct.unpack('>H', d[o:o + 2])[0])
 
 
+def cli(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--data', default=seg.DATA, help='path of `Cythera Data` (default: seg.py DATA)')
+    a = ap.parse_args(argv)
+    if not os.path.isfile(a.data):
+        sys.exit('%s: error: no such file: %s' % (ap.prog, a.data))
+    main(a.data)
+
+
 if __name__ == '__main__':
-    main()
+    cli()

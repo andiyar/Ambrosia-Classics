@@ -208,7 +208,7 @@ Map body at `0x20 + 16*0x80` = segment offset 0x820; segment length 0x2820 = 0x2
 |---|---|---|---|
 | 0–11 | tile index (0..0xFFF; 0..0x9FF have pixels) | `SetStage`: `& 0x1fff`; `MaskAnyTile`: `PTR_DAT_100cdc28 + (t&0x1fff)*4 + frame*0x2800` (0x2800 = 0xA00 ptrs) | HIGH |
 | 12 (0x1000) | **compo tile**: low 12 bits index a CompoTileRecord (§3.4) | `MaskAnyTile__7TViewerFUsll @ 10063b9c`: `if ((t & 0x1000) == 0) … else BuildCompoTile(…, PTR_DAT_100cdc58 + (t&0xfff)*0x20)` | HIGH |
-| 13 (0x2000) | draw with the transparent mask variant (`TMaskTile`) | same function | MED (flag only seen on the `MaskAnyTile` argument; not checked whether map cells carry it) |
+| 13 (0x2000) | ~~draw with the transparent mask variant (`TMaskTile`)~~ ⚑ corrected (review wave 3 2026-10-06): superseded — 0x2000 selects the **transposed** copy (a diagonal flip), not a mask variant: `TCopyTile @ 10062de4` / `TMaskTile @ 10063534` write destination row k from source column k; `Render` draws ground words with 0x2000 through `TCopyTile` (`100675f8`) and XORs 0x2000 into every mirrored prop tile (`10067e80: xori r4,r25,0x2000`) — render.md §2.3/§2.5 | same function | MED (flag only seen on the `MaskAnyTile` argument; not checked whether map cells carry it) → ⚑ corrected (review wave 3 2026-10-06): HIGH (render.md §2.3) |
 | 15 (0x8000) | "seen" (automap) — runtime only, from segment 0x8200+L | `LoadLevelMap`: `*puVar16 |= 0x8000` for each set bit | HIGH |
 
 Out-of-map cells on non-wrapping edges render tile 0xFF (`SetStage`: `if (bVar3) uVar6 = 0xff`). [HIGH]
@@ -289,7 +289,7 @@ everything whose parent is it. [HIGH]
 | 1..3 | 24 | on map: x = bits 12–23, y = bits 0–11 (each signed 12-bit); contained: parent index in the low 16 bits | `SetStage`: `((u32>>8)<<16>>16)>>4`, `(short)(u16@2 <<20)>>20`; `GetPropParent__FP8PropItem @ 10055d4c` returns `(short)u32` | HIGH |
 | 4..5 | 0–9 | object **type** (0..0x3FF) | `& 0x3ff` everywhere | HIGH |
 | 4 | bits 2–6 of byte 4 (= bits 10–14 of the u16) | **frame / state** 0..31 (tile = base[type] + frame) | `(byte[4]>>2)&0x1f` + `PTR_DAT_100cdbf4[type]` | HIGH |
-| 4 | bit 7 of byte 4 | mirror: swaps multi-tile extension direction 0x40↔0x80 | `SetStage`: `if ((char)pbVar16[4] < 0) swap` | MED |
+| 4 | bit 7 of byte 4 | mirror: swaps multi-tile extension direction 0x40↔0x80 ⚑ corrected (review wave 3 2026-10-06): right for `SetStage` (`10065b74: cmpwi r4,64` … `10065b94: li r4,64`) but incomplete for drawing — in `Render` the same bit transposes every tile (t ^ 0x2000) and swaps the up/left extension cells (render.md §2.5) | `SetStage`: `if ((char)pbVar16[4] < 0) swap` | MED |
 | 6 | 8 | quality / letter / timer / sub-position (type-flag dependent, §4.4) | `GetItemQuality`, `GetItemLetter`, `DoTicks` countdown, `SetStage` sub-offset `byte6 & 3`, `byte6>>4 & 3` | HIGH per accessor |
 | 6..7 | 16 or 8 | **count** (u16 at +6 if type flag 0x200; u8 at +7 if flag 0x100; else 1; 0 reads as 1) | `GetItemCount__FP8PropItem @ 1005577c` | HIGH |
 | 7 | 8 | facing/activity copy for characters | `RepositionChar` writes `param_2+7` | MED |
@@ -307,7 +307,7 @@ Census over all 40 shipped prop segments (`kind byte census`): `0:12104, 1:116, 
 | 0x00 | object on the map at (x,y) | `SetStage` `LAB_100656bc` path | HIGH |
 | 0x01 | on map, alternate draw path (`bVar1 < 2` → same as 0) | `SetStage` | MED |
 | 0x02, 0x03, 0x22, 0x23 | on map + tile-flag 0x800 "blocker" marking | `SetStage` `LAB_100655e8` | MED |
-| 0x04, 0x24 | on map, drawn as roof layer (priority 7) | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED |
+| 0x04, 0x24 | ~~on map, drawn as roof layer (priority 7)~~ ⚑ corrected (review wave 3 2026-10-06): superseded — 0x04/0x24 are **creature bodies** (`HatchEgg` `1004f484: li r0,4` / `1004f48c: stb r0,0(r4)` and `1004f8c4: li r3,36` / `1004f8d8: stb r3,0(r24)`), drawn in Render pass 4 above every object layer except tile-flag-0x10 props; roofs are kind 0x44 (`'D'`) via `ApplyRoof`. Priority 7 feeds the 124×124 occupant grid (+0x15FF4), not drawing (p:31634 `&& (local_5e != 7)`) — render.md §2.4, §5 | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED → ⚑ corrected (review wave 3 2026-10-06): HIGH (render.md §2.4) |
 | 0x08–0x0B | **inside a container prop** (parent = low 16 bits) | `GetPropParent` (`7 < b < 0xc`), `GetCurInvEncumb` walks `\t`/`\b` chains | HIGH |
 | 0x10 | in a character's **inventory** (parent = char index) | `GetCurInvEncumb__Fs` | HIGH |
 | 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5). ⚑ corrected (review wave 2 2026-10-06): closed — 55 NPC weapon/armour/clothing records, owner = character index in the low 16 bits (21 owners, 7 levels); no code or script selects kind 0x11, so they are inert (open-items-2026-10-06.md §4) | — | NOT RESOLVED → ⚑ corrected (review wave 2 2026-10-06): HIGH (no reader) / MED ("leftover equipment") |

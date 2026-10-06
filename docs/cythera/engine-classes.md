@@ -181,6 +181,12 @@ FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (
   when early, m:5756 `= uVar11 + (…)` otherwise) and runs a frame only when no event, redraw, task
   slice, conversation or background state takes precedence (app-shell.md §3.3), so 10 fps is an
   upper bound, not a rate. [HIGH]
+  ⚑ corrected (review wave 3 2026-10-06, N3 sharpening): in mode 3 the scheduler spins **to** the
+  deadline and then runs the frame (m:5740 `if ((*psVar1 == 3) && (uVar11 < *(uint *)puVar8))` →
+  spin on `TickCount`; m:5753/5756 deadline := deadline + F or now + F, now ≈ the deadline after the
+  spin; m:5762 mode := 2), so a leader sub-step's frame starts
+  at the deadline, not merely after it: while each sub-step arrives before its deadline, those frames
+  are exactly F ticks apart. [HIGH code; "arrives before" MED]
 - **Which game events wait for a frame.** `DoTick__14TActiveMonsterFUc @ 1004ded8` (p:21418,
   p:21461–21467) and `Guide__14TActiveMonsterFv @ 1004dbc0` (p:21320) set the mode word to 3 and
   `YieldToAnyThread()` around a visible move of the party leader — p:21461 `if (*(short *)(param_1 +
