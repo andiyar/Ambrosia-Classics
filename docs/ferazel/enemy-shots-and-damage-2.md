@@ -73,7 +73,7 @@ during the handle/collide passes.
 Consequences: every other sprite's hit callback sees the player twice per frame (main pass as A,
 player pass as B) unless it killed itself in the first; `.HitPlayerSprite` sees each partner once.
 Layers that matter: player 10 (`.SetupPlayerSprite` `li r5,0xa` 1004af88 → `stw r5,0x80(r23)` 1004afac;
-spawn arg `li r6,0xa` 10009e4c → `MTNewSprite` `bl` 10009ec4 — ⚑ checked (review 2h, 2026-10-04) #3), held item
+spawn arg `li r6,0xa` 10009e4c → `MTNewSprite` `bl` 10009ec4 — ⚑ corrected (review 2h, 2026-10-04) #3 — reviewer's cite adjudicated wrong, both cites kept), held item
 0x14, Walkers 11 (each frame), Walker-thrown shots Walker+1 = 12, spout shots the spout's 10
 (`lwz r6,0x80` 1006e988), Pentashield orbs player+1 (`addi r6,r4,1` 1004cef4), 0x6a9 0x14
 (1005badc), Effect 0x4b7 0xc.
@@ -180,6 +180,6 @@ Frog spit tint `+0x15c` = **placement p1** (`.SetupFrogSprite` `lha r0,0x8(rec);
 | W2 | enemies-flyers §1.3 | "`.MTCollideSprites` … the player's callback runs whatever B's own `+0x5c` is" | the player's callback never runs there; the player pass calls HitPlayerSprite(player, B), then B's own callback | as W1 |
 | W3 | enemies-ground §7 table, row 0x6e1/0x6e2 | damage 0x38 | none on contact: `.HitEnemyShotSprite` kills the bomb in the main pass (1005c9dc–1005caac → 1005cd28/1005cd7c) before the player pass; the hurt comes from shards 0x6e6 (0x38) / explosion 0x4b7 (0x70) | §4.3 |
 | W4 | engine §4 loop sketch | "MTCollideSprites; player special collisions" | add: the special pass is the only caller of `.HitPlayerSprite` (slot 0x1009fdd4 loaded only at 10007c60) and is skipped while `*_DAT_1009ffa8` (player died) | 10007c40–10007c64 |
-| W5 | held-item-melee §1 "Collision timing … [MED: active-list order]" | active-list order unresolved | rule in §4.2: sorted by layer at insertion (Setup first), ties by creation time; the handle pass pre-loads `next`; nothing is unlinked during the passes | 10032f1c–10032fcc, 100325b8/100325bc, 10033210–1003322c |
+| W5 (merged into L10's ⚑ wave 2 text, FIXPASS; ⚑ corrected (review 2i, 2026-10-04) #4) | held-item-melee §1 "Collision timing … [MED: active-list order]" | active-list order unresolved | rule in §4.2: sorted by layer at insertion (Setup first), ties by creation time; the handle pass pre-loads `next`; nothing is unlinked during the passes | 10032f1c–10032fcc, 100325b8/100325bc, 10033210–1003322c |
 | W6 | enemy-shots-and-damage §3.1 (own; applied in place) | "with several partners the nearest is processed first" | main pass: largest edge-distance key first, then list order; player pass: list order only | 10032950, 1003299c; 10032e30 |
-| W7 | spells-detail NR 3 (`_DAT_100a0570`) | open | Chief/Xichra landing stagger (already player-states §3.4) | §4.4: 1008bbc8–1008bbd0, 1008f3e4–1008f3ec |
+| W7 (stale — already closed by spells-detail-2 §1, not re-applied; ⚑ corrected (review 2i, 2026-10-04) #4) | spells-detail NR 3 (`_DAT_100a0570`) | open | Chief/Xichra landing stagger (already player-states §3.4) | §4.4: 1008bbc8–1008bbd0, 1008f3e4–1008f3ec |

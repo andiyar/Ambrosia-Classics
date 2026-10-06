@@ -172,3 +172,16 @@ Marker `⚑ wave 2 corr (2026-10-04) <SRC> W<n>`. Every raw cite re-read in `ghi
 ## Label counts
 `ls docs/ferazel/*.md | grep -v -E 'REVIEW-|FIXPASS-|REPORT-' | xargs grep -o "\[HIGH" | wc -l` (and
 `\[MED`, `\[LOW`): **HIGH 1100 · MED 291 · LOW 41** (after round 2; round 1 was HIGH 1096).
+
+## Leg 2i (0 C / 0 I / 5 M + 1 note) — Fable spot-review of this pass (eff804b, b58f34d, f2bb93a)
+Verdicts ACCEPT_WITH_FIXES / ACCEPT_WITH_FIXES / ACCEPT. Adjudications: the fix agents were right on all
+three "reviewer wrong" calls (2f #4 tracebacks 1008c0c0 / 1008fdd0; 2h #3 `1004afac stw r5,0x80`; 2a #6
+`li r6,0x2` 100795fc/100796f0). Marker census: every A–H finding accounted for; 100 `⚑ wave 2 corr` markers,
+40+ spot-checked; 125/125 INDEX+coverage pointers resolve; labels HIGH 1100 / MED 291 / LOW 41 reproduce.
+- #1 index-pick label MED → LOW → particles §4.4 header, INDEX item 28.
+- #2 lighting-tables §2.1 store census: 3/4 and 6 are draw-time substitutes, never stored (no `+0xb8` store in
+  `100146f0..10014728`) → reworded to match draw-effects §2.1 / physics §0.1.
+- #3 pickups-boxes-2 P5 "[MED reachability]" → HIGH (with P6 / pickups-boxes §2.4.3).
+- #4 rows ES2 W5 (merged), ES2 W7 (stale), bosses-2 W3 (merged) now say so in their tables.
+- #5 enemies-ground §2.5 `_DAT_1009fe8c` window → HIGH with the raw (EW W3).
+- note: ES2 §4.2 "⚑ checked" → standard `⚑ corrected (review 2h …) #3` marker.

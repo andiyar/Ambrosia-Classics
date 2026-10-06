@@ -265,7 +265,7 @@ Unplaced: 2805..2807 (no PICT), 2810, 2814, 2815, 2819, 2823..2825, 2835, 2844, 
 | P2 | pickups-boxes §2.2 / §2.4.6 (own; in place) | 1080/1081 "crumbling ledge [MED purpose]" | magic carpet (dormant / flying) | §4.3 |
 | P3 | pickups-boxes §2.2 (own; in place) | 2932 "child 0xb74 with a 0xb75 face" | the placed body has the 0xb75 (PICT 2933) face; the child has the 0xb74 (PICT 2932) stub | 1006c5a4 vs 1006c680 |
 | P4 | pickups-boxes §2.4.7 (own; in place) | `PTR_DAT_100a0708` "presumably UP" | teleport-fire pulse at charge 80 | §3 |
-| P5 | pickups-boxes §2.4.3 (own; in place) | key 3 sources "crate L62 only" | also Mcnv 205 (L3 Sitting Habnabit), action 2 [MED reachability] | §8 |
+| P5 | pickups-boxes §2.4.3 (own; in place) | key 3 sources "crate L62 only" | also Mcnv 205 (L3 Sitting Habnabit), action 2 [HIGH — raised with P6 / pickups-boxes §2.4.3; ⚑ corrected (review 2i, 2026-10-04) #3] | §8 |
 | P6 | held-item-melee §1 "Ice Pick (3218) … never placed nor held … [MED unobtainable: … conversations not checked]" | unobtainable | Mcnv 207 (L30 merchant) line 6 (0-based; = #7) grants item 18 (Ice Pick) and line 7 (= #8) item 17 [~~MED~~ HIGH reachability, conversations-mcnv §4.2] — merged with CM #6 (fix pass) | §8 |
 | P7 | physics §0 `+0xa0` "a door's `+0xa0` is cleared by `.HitBoxSprite` (PB NR 8)" | open | dead write, no reader | §6 |
 | P8 | triggers-background-2 §2 effect table, 1207 (0x4b7) | hurts the player while frame ≤ 7 | add: hurts Crawler/Walker/Roach/Frog 100 (frame ≤ 7) and crates −10 on any frame; other classes immune | §7 |

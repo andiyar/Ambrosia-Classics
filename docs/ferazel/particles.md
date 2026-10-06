@@ -252,7 +252,7 @@ colour is 0 (the particle is drawn at ages 1..life−1; 120 = runs to the age li
 | 223 | magenta glow | 22 | t1 137 #FE0BFA · t2 138 · t8 139 · t12+ 140 #7F057D | 248 |
 | ≥ 256 | fixed index `kind − 256` | 120 | (face pixels in §5.2) | — |
 
-### 4.4 Geyser kinds 200–202 (closes geysers.md NR 1)  [HIGH for recipe and data bytes; MED for the index pick]
+### 4.4 Geyser kinds 200–202 (closes geysers.md NR 1)  [HIGH for recipe and data bytes; LOW for the index pick — one model, §4.3; ⚑ corrected (review 2i, 2026-10-04) #1]
 Geyser liquid kind 0 water → particle kind 200, 1 acid → 201, 2 lava → 202 (geysers.md §4). Shipped
 geysers: kind 0 on level 10 (screen `clut` 214 "forest 1 new + base"); kind 2 on levels 50/51 (`clut`
 220 "Upper Fire Caverns + base"); kind 1 unplaced. Ages are those on which the particle is drawn

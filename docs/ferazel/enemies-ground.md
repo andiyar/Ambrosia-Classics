@@ -125,7 +125,7 @@ hard 500 regardless of the class's starting HP.
 
 ### 2.5 Death bookkeeping  [HIGH]
 `+0x1b5` = "counts for the enemies-defeated stat", set in every Setup here when the global
-`*_DAT_1009fe8c` is non-zero (it is set around `.SetupLevelSprites`, m. l. 2521–2527 [MED]), which
+`*_DAT_1009fe8c` is non-zero (it is set around `.SetupLevelSprites`, m. l. 2521–2527; raw `10004da4..10004dc0` `stb 1` / `bl .SetupLevelSprites` / `stb 0` [HIGH], enemies-water-cave W3; ⚑ corrected (review 2i, 2026-10-04) #5), which
 also increments the live-enemy count `*_DAT_1009ffb4`. The Kill routines (once, `+0xe9 == 0`):
 count −1, `G + 0x306 + 2·level += 1` (world-data §4.3), `+0xe9 = 1`; Crawler/Roach/Dillo also set
 `+0xea = 1` (`.UpdateSprites` then clears the placement record's active byte, m. l. 4936).

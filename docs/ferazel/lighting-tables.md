@@ -116,8 +116,8 @@ The same switch is in `.BlitEncFaceRot`, `.BlitEncFaceScale` and the flip varian
 holds (NoClipX: r7 = width; ClipX, jump table `100a3d64`, default: r5 = the caller's source-offset
 Point). Mode 0xa does not: its jump-table entry is the default, but ClipX handles it in its own
 arms as a vertical squash (draw-effects §2.6) ⚑ corrected (review 2c, 2026-10-04) #2. Census of every `+0xb8` store in both dumps: constants are modes 1, 8, 9, 0xb;
-computed values are 3/4 (§2.2), 5 (`sparkle + 0x50000`, handlers l. 2591), 6, 0xc (§2.2 and
-`.UpdateRadiusSprites` `…·0x100 + 0xc0000`, main l. 35903), `0x10000 + var` (tier tables), and
+computed values are 5 (`sparkle + 0x50000`, handlers l. 2591), 0xc (§2.2 and
+`.UpdateRadiusSprites` `…·0x100 + 0xc0000`, main l. 35903), `0x10000 + var` (tier tables), and — 3/4 (hurt flash) and 6 (submerged rows) are draw-time substitutes, never stored (`100146f0..10014728` has no `+0xb8` store; draw-effects §2.1, physics §0.1; ⚑ corrected (review 2i, 2026-10-04) #2) —
 **`0xa0000 + d`, d = 11..250, on the platform child `+0x1d8`** (`.HandlePlatformSprite`, handlers
 l. 9010) — ~~the only stored mode without a table (NOT RESOLVED 9)~~ a vertical squash by d/256
 (draw-effects §2.6) ⚑ corrected (review 2c, 2026-10-04) #2, #6 [HIGH census]. Modes 2, 7,

@@ -315,7 +315,7 @@ item 29.
     one frame, the Bat copies the previous frame's value.
 28. geysers. → **narrowed, NOT closed** (wave 2) [leg A]: ~~`.NewParticle` arg 4; colours of particle
     kinds 200–202~~ → closed: arg 4 = shape code (particles §3.2), kinds 200–202 colours particles §4.4
-    (index pick MED, see item 15) — geysers NR 1. **Left (untouched by wave 2):** whether idle→active
+    (index pick LOW, see item 15; ⚑ corrected (review 2i, 2026-10-04) #1) — geysers NR 1. **Left (untouched by wave 2):** whether idle→active
     re-runs Setup for a collapsed geyser; intent of kinds 3/4; the inert p4 (geysers.md NR 2–4).
 29. held-item-melee. → **closed except part of NR 4** (wave 2) [legs A, G, H]: ~~face mirroring within
     32 px (§1.5)~~ → closed: held-item-melee §4.2; ~~active-list order player vs held sprite~~ → closed:
