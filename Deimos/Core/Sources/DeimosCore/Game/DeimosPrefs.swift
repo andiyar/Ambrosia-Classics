@@ -2,7 +2,7 @@ import Foundation
 
 /// The fields of the 0x34f0-byte prefs record (`_DAT_100def40`; engine-loop §10, timing-frame §6) the build
 /// uses so far, with the original's fresh-prefs defaults. File I/O (the on-disk layout and obfuscation) is
-/// Phase 4. ★ LOCKED seam (plan S3 / design §3).
+/// Phase 4. ★ LOCKED seam (plan S2 / design §3).
 public struct DeimosPrefs: Equatable, Sendable {
     /// +0x0000: 0x2714 (10004).
     public var version: UInt32

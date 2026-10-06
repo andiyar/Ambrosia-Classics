@@ -117,6 +117,8 @@ public struct ScoreBarState: Equatable, Sendable {
         for (i, p) in players.prefix(2).enumerated() {
             var r = records[i]
             r.dirty = []                                             // 10031818..10031830
+            // Not in game (`FUN_10026c10` = +0xc4) or out of lives (`FUN_10026c20` = +0xc4 && +0xc6 == 1,
+            // `10026c20..10026c44` — read; the +0xc4 half is implied by the first test).
             if !p.inGame || p.lifeState == 1 {                         // 10031848 FUN_10026c10, 1003185c FUN_10026c20
                 if r.pendingRetire {                                 // 10031a6c..10031a74
                     r.drawActive = false

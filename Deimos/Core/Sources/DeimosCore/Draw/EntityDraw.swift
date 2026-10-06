@@ -2,7 +2,8 @@ import Foundation
 import HectorResources
 
 /// The per-entity draw-command builders of G_GameObject.cc (sprite-geometry-draw.md §3–§6, HIGH): the draw
-/// entry `FUN_10012f20`, the sprite command `FUN_10012fa0` (+ its tint and hit passes), the shadow command
+/// entry `FUN_10012f20`, the sprite command `FUN_10012fa0` (+ its tint pass for the glow triple and its
+/// hit-glow pass), the shadow command
 /// `FUN_10013460`, visibility → alpha `FUN_10010c20`, and the player's draw `FUN_100298c0`. ★ LOCKED name
 /// (plan S2). Every builder returns the commands in call order; a command with `drawNow` false is the
 /// original's queue call `FUN_10018a40` (→ `FUN_1001a450`), with `drawNow` true its direct `FUN_10019570`.
@@ -48,31 +49,37 @@ public enum EntityDraw {
         return UInt32(d.rounded(.towardZero))
     }
 
-    /// `fctiwz` of a single: truncation toward zero, saturating like the PPC instruction.
+    /// `fctiwz` of a single: truncation toward zero, saturating like the PPC instruction (NaN → 0x80000000;
+    /// ≥ 2^31 → Int32.max; < −2^31 → Int32.min; −2^31 itself converts exactly).
     static func fctiwz(_ f: Float) -> Int32 {
         if f.isNaN { return Int32.min }
         if f >= 2_147_483_648 { return .max }
-        if f <= -2_147_483_649 { return .min }
+        if f < -2_147_483_648 { return .min }
         return Int32(f.rounded(.towardZero))
     }
+
+    /// The draw-layer 4CCs of `FUN_10012fa0` / `FUN_10013460` (compared as 4CC values, no string building).
+    static let defa = FourCC("defa")!, grou = FourCC("grou")!, grhi = FourCC("grhi")!, ailo = FourCC("ailo")!,
+               aihi = FourCC("aihi")!, plwe = FourCC("plwe")!, play = FourCC("play")!, plsh = FourCC("plsh")!,
+               plef = FourCC("plef")!, plui = FourCC("plui")!, atmo = FourCC("atmo")!, hud = FourCC("hud ")!
 
     /// The sprite-layer table of `FUN_10012fa0` (`100130e8..10013260`): `defa` → 7 air / 3 ground; `grou` 3,
     /// `grhi` 5, `ailo` 7, `aihi` 8, `plwe` 9, `play` 10, `plsh` 11, `plef` 12, `plui` 13, `atmo` 14, `hud ` 15;
     /// any other 4CC keeps the template's 7.
     public static func spriteLayer(_ layer: FourCC, air: Bool) -> UInt8 {
-        switch layer.description {
-        case "defa": return air ? 7 : 3
-        case "grou": return 3
-        case "grhi": return 5
-        case "ailo": return 7
-        case "aihi": return 8
-        case "plwe": return 9
-        case "play": return 10
-        case "plsh": return 11
-        case "plef": return 12
-        case "plui": return 13
-        case "atmo": return 14
-        case "hud ": return 15
+        switch layer {
+        case defa: return air ? 7 : 3
+        case grou: return 3
+        case grhi: return 5
+        case ailo: return 7
+        case aihi: return 8
+        case plwe: return 9
+        case play: return 10
+        case plsh: return 11
+        case plef: return 12
+        case plui: return 13
+        case atmo: return 14
+        case hud: return 15
         default: return 7
         }
     }
@@ -80,7 +87,7 @@ public enum EntityDraw {
     /// An empty or `none` +0x4c becomes `defa` (written back to the entity: `100130c4..100130e4`,
     /// `100135b0..100135d0`).
     static func normaliseLayer(_ e: inout GameObject) {
-        if e.layer.rawValue == 0 || e.layer == .none { e.layer = FourCC("defa")! }
+        if e.layer.rawValue == 0 || e.layer == .none { e.layer = defa }
     }
 
     /// The fields both builders copy from the entity into the runtime template (`0x100e63e4`, layer 7,
@@ -94,13 +101,13 @@ public enum EntityDraw {
         return c
     }
 
-    /// `FUN_10012fa0 @ 10012fa0(e)` — the sprite command and its tint / hit passes [HIGH]:
+    /// `FUN_10012fa0 @ 10012fa0(e)` — the sprite command, its tint pass and its hit-glow pass [HIGH]:
     /// x = `fctiwz(+0x00)` − hOffset (when +0x18; `1001305c..10013074`), y = `fctiwz(+0x04)`, scale +0x84,
     /// layer from `spriteLayer`; +0x68 ≠ 100.0 (`fcmpu` vs the double 100.0) → flags |1, alpha =
-    /// `visibilityAlpha(fctiwz(+0x68))` (`100132a8..100132d8`). Main pass unless +0x54. Tint pass when
-    /// +0x58 > 0.0 (`10013310..100133d0`): flags = 4, colour +0x64, alpha = |32·(g/100)·(1 − a0/32) − 32| with
-    /// the listing's mixed precision. Hit pass when +0x74 (`100133d8..10013438`): flags = 4, alpha +0x78,
-    /// colour +0x80.
+    /// `visibilityAlpha(fctiwz(+0x68))` (`100132a8..100132d8`). Main pass unless +0x54. Tint pass when the
+    /// glow triple's current value g = +0x58 > 0.0 (`10013310..100133d0`): flags = 4, colour +0x64, alpha =
+    /// |32·(g/100)·(1 − a0/32) − 32| with the listing's mixed precision. Hit-glow pass when +0x74
+    /// (`100133d8..10013438`): flags = 4, alpha +0x78, colour +0x80.
     public static func spriteCommands(_ e: inout GameObject, hOffset: Int32) -> [DrawCommand] {
         let off = e.pansWithView ? hOffset : 0                       // 10012fe0..10012ff8
         var c = base(e)
@@ -115,8 +122,8 @@ public enum EntityDraw {
         }
         var out: [DrawCommand] = []
         if !e.hideSprite { out.append(c) }                           // 100132dc..10013308
-        if e.tint > 0 {                                              // 10013310..1001331c (+0x58)
-            let t1 = Float(32.0 * (Double(e.tint) / 100.0))          // fdiv, fmul, frsp
+        if e.glow > 0 {                                              // 10013310..1001331c (+0x58)
+            let t1 = Float(32.0 * (Double(e.glow) / 100.0))          // fdiv, fmul, frsp
             let t2 = Float(c.alpha) * Float(0.03125)                 // fsubs bias, fmuls
             let t3 = Float(1.0 - Double(t2))                         // fsub, frsp
             var r = t1 * t3                                          // fmuls
@@ -125,15 +132,15 @@ public enum EntityDraw {
             var tc = c
             tc.alpha = toUnsigned(Double(r))
             tc.flags = 4                                             // 10013380..100133a4
-            tc.colour = e.tintColour                                 // 100133a8 (+0x64)
+            tc.colour = e.glowTintColour                             // 100133a8 (+0x64)
             out.append(tc)
             c = tc
         }
-        if e.glowOn {                                                // 100133d8 (+0x74)
+        if e.hitGlowOn {                                             // 100133d8 (+0x74)
             var hc = c
             hc.flags = 4
-            hc.alpha = UInt32(bitPattern: e.glowLevel)               // 10013408 (+0x78)
-            hc.colour = e.glowColour                                 // 10013410 (+0x80)
+            hc.alpha = UInt32(bitPattern: e.hitGlowLevel)            // 10013408 (+0x78)
+            hc.colour = e.hitGlowColour                              // 10013410 (+0x80)
             out.append(hc)
         }
         return out
@@ -162,11 +169,11 @@ public enum EntityDraw {
         }
         let airRow: Bool
         var layer: UInt8? = nil
-        switch e.layer.description {
-        case "defa": airRow = e.air; layer = e.air ? 6 : 2
-        case "grou": airRow = false; layer = 2
-        case "grhi": airRow = false; layer = 4
-        case "ailo", "aihi", "plwe", "play", "plsh", "plef", "plui", "atmo", "hud ": airRow = true; layer = 6
+        switch e.layer {
+        case defa: airRow = e.air; layer = e.air ? 6 : 2
+        case grou: airRow = false; layer = 2
+        case grhi: airRow = false; layer = 4
+        case ailo, aihi, plwe, play, plsh, plef, plui, atmo, hud: airRow = true; layer = 6
         default: airRow = e.air                                      // 10013950: template layer 7
         }
         let dx: Int32, dy: Int32

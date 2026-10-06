@@ -12,7 +12,7 @@ import HectorResources
 /// - `FUN_10029cc0` (`10029d00..10029e34`): if in game — `FUN_10029f10` (ship sprite, frame 0, `+0xd4` 0,
 ///   layer `play`), `FUN_10012940`, position solo (`+0x90/+0x94` when `+0xcd == 1`) or multi
 ///   (`+0x98/+0x9c`) via `FUN_10012930`, velocity (0, 0) from `0x100d6ec8`, `+0x20c` = 0, overload and
-///   tint cleared inline (`10029dd0..10029dfc`, = `FUN_10026ea0`), `+0xc5` = 1, **state 4, enter = now**
+///   glow triple cleared inline (`10029dd0..10029dfc`, = `FUN_10026ea0`), `+0xc5` = 1, **state 4, enter = now**
 ///   (`10029e04`/`10029e08`), appear fade flli 163/164/165 (`10029e0c..10029e34`); then the `entry_Spawn_ID`
 ///   spawn (`plen`), `FUN_10029fe0` (multiplier unit) — not built in Phase 1 — and `FUN_1003af90(h, 0)`.
 /// - `FUN_10012750` (`10012750..10012838`): see `GameObject.stepRamps` — agrees with the contract.
@@ -87,16 +87,7 @@ extension Player {
         guard inGame else { return }                                 // 10029ce0..10029ce8
         resetShipSprite()                                            // 10029cec FUN_10029f10
         refreshSize()                                                // 10029cf8 FUN_10012940
-        if playerCount == 1 {                                        // 10029d00..10029d50
-            object.x = Float(definition.entrySoloStartX)
-            object.y = Float(definition.entrySoloStartY)
-        } else {                                                     // 10029d5c..10029da0
-            object.x = Float(definition.entryMultiStartX)
-            object.y = Float(definition.entryMultiStartY)
-        }
-        object.vx = 0; object.vy = 0                                 // 10029da8..10029dc4
-        crosshairAdjust = 0                                          // 10029dd0
-        clearOverload()                                              // 10029dd4..10029dfc
+        placeAtStart()                                               // 10029d00..10029dfc (FUN_10026b10's body inline)
         appearing = true                                             // 10029e00
         setLifeState(4, now: now)                                    // 10029e04..10029e08
         setAppearFade()                                              // 10029e0c..10029e34
@@ -111,7 +102,8 @@ extension Player {
         handler.crosshair.frame = handler.ground.crosshairFrame      // 1003b9fc..1003ba04
         handler.crosshairLocked = false                              // 1003ba08
         handler.crosshair.drawShadow = false                         // 1003ba0c (+0xc4 = +0x8c + 0x38)
-        handler.crosshair.refreshSize(frameSize)                     // 1003ba10
+        let a = assets
+        handler.crosshair.refreshSize { Self.frameSize(a, $0, $1, $2) }   // 1003ba10
         if handler.crosshair.face != .none {                         // 1003ba18..1003ba24
             handler.crosshair.stepRamps()                            // 1003ba2c
         }

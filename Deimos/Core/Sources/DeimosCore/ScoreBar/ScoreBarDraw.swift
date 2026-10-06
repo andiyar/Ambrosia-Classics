@@ -82,10 +82,10 @@ public struct ScoreBarDraw: Sendable {
                 }
             }
             if r.dirty.contains(.shield) {                                         // 10031cf0..10031d14
-                element(6, meter(p, r, value: r.shownShield, icon: r.shieldMeter, fmt: 41, flli: 116))
+                element(6, meter(p, r, element: 6, value: r.shownShield, icon: r.shieldMeter, fmt: 41, flli: 116))
             }
             if r.dirty.contains(.power) {                                          // 10031d18..10031d3c
-                element(7, meter(p, r, value: r.shownPower, icon: r.powerMeter, fmt: 42, flli: 122))
+                element(7, meter(p, r, element: 7, value: r.shownPower, icon: r.powerMeter, fmt: 42, flli: 122))
             }
         }
         return ops
@@ -175,8 +175,9 @@ public struct ScoreBarDraw: Sendable {
         return c
     }
 
-    /// `FUN_10032250` / `FUN_10032500` — a meter and its darkening `COST` rect.
-    func meter(_ p: Int, _ r: ScoreBarState.Record, value: Float, icon: ScoreBarState.Icon, fmt: Int,
+    /// `FUN_10032250` / `FUN_10032500` — a meter and its darkening `COST` rect over buffer rect `element`
+    /// (6 shield, 7 power).
+    func meter(_ p: Int, _ r: ScoreBarState.Record, element: Int, value: Float, icon: ScoreBarState.Icon, fmt: Int,
                flli base: Int) -> [DrawCommand] {
         var c = Self.hudCommand
         c.face = icon.face
@@ -187,7 +188,7 @@ public struct ScoreBarDraw: Sendable {
         var v = value
         if Double(v) > 100.0 { v = 100 } else if Double(v) < 0.0 { v = 0 }   // 100323a8..100323c8
         guard Double(v) < 100.0 else { return out }                  // 100323cc..100323d4
-        let b = r.bufferRects[fmt == 41 ? 6 : 7]
+        let b = r.bufferRects[element]
         let f = formats[fmt]
         let ratio = v / Float(100)                                   // fdivs
         let width = Float(b.right &- b.left)                         // fsubs (int → single)

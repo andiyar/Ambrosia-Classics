@@ -3,8 +3,10 @@ import HectorResources
 
 /// The shared G_GameObject part of the player, of every entity and of the crosshair sprite object
 /// (sprite-geometry-draw.md §2.1, player-physics.md §1). Defaults are `FUN_10012650`'s reset
-/// (micro-wave-2026-10-06.md §3.6, listing `10012650..10012748`); +0x64 (tint colour) and the glow
+/// (micro-wave-2026-10-06.md §3.6, listing `10012650..10012748`); +0x64 (glow-tint colour) and the hit-glow
 /// level/step/colour (+0x78/+0x7c/+0x80) are not reset by it and start at the constructor's zero here.
+/// Two distinct effects (sprite-geometry-draw §4.2–§4.3): the **glow triple** +0x58/+0x5c/+0x60 (ramped by
+/// `FUN_10012750`, drawn as the second, **tint pass** in colour +0x64) and the **hit glow** +0x74 (third pass).
 public struct GameObject: Equatable, Sendable {
     /// +0x00 / +0x04: centre x, y in game-area coordinates (single precision).
     public var x: Float = 0
@@ -41,20 +43,20 @@ public struct GameObject: Equatable, Sendable {
     public var layer: FourCC = FourCC("defa")!
     /// +0x54: hide the normal sprite pass.
     public var hideSprite = false
-    /// +0x58 / +0x5c / +0x60: the tint ("glow") ramp — current / target / step (%).
-    public var tint: Float = 0
-    public var tintTarget: Float = 0
-    public var tintStep: Float = 0
-    /// +0x64: tint colour (x1R5G5B5).
-    public var tintColour: UInt16 = 0
+    /// +0x58 / +0x5c / +0x60: the glow triple — current / target / step (%), drawn by the tint pass.
+    public var glow: Float = 0
+    public var glowTarget: Float = 0
+    public var glowStep: Float = 0
+    /// +0x64: the tint pass's colour (x1R5G5B5).
+    public var glowTintColour: UInt16 = 0
     /// +0x68 / +0x6c / +0x70: the visibility ramp — current / target / step (%).
     public var visibility: Float = 100
     public var visibilityTarget: Float = 100
     public var visibilityStep: Float = 0
-    /// +0x74 / +0x78 / +0x80: hit glow on / level (alpha) / colour.
-    public var glowOn = false
-    public var glowLevel: Int32 = 0
-    public var glowColour: UInt16 = 0
+    /// +0x74 / +0x78 / +0x80: the hit glow (not the glow triple) — on / level (alpha) / colour.
+    public var hitGlowOn = false
+    public var hitGlowLevel: Int32 = 0
+    public var hitGlowColour: UInt16 = 0
     /// +0x84 / +0x88 / +0x8c: scale current / target / step.
     public var scale: Float = 1
     public var scaleTarget: Float = 1
@@ -62,13 +64,13 @@ public struct GameObject: Equatable, Sendable {
 
     public init() {}
 
-    /// `FUN_10012750 @ 10012750` — the visibility ramp then the tint ramp, per tick [HIGH, listing
+    /// `FUN_10012750 @ 10012750` — the visibility ramp then the glow-triple ramp, per tick [HIGH, listing
     /// `10012750..10012838`; gameplay-leftovers.md §2.1]. Each: `fcmpo cur, target`; cur > target →
     /// cur −= step (`fsubs`), cur < 0.0 → 0.0 (floor `r2−0x7248` → 0.0), cur < target → target;
     /// cur < target → cur += step (`fadds`), cur > target → target; equal → unchanged. Single precision.
     public mutating func stepRamps() {
         Self.ramp(&visibility, visibilityTarget, visibilityStep)     // 10012750..100127c4
-        Self.ramp(&tint, tintTarget, tintStep)                       // 100127c8..10012838
+        Self.ramp(&glow, glowTarget, glowStep)                       // 100127c8..10012838
     }
 
     private static func ramp(_ cur: inout Float, _ target: Float, _ step: Float) {
@@ -131,13 +133,10 @@ public struct WeaponHandler: Equatable, Sendable {
     public var air = WeaponDefinition()
     /// +0x74: current ground weapon.
     public var ground = WeaponDefinition()
-    /// +0x8c…: the crosshair sprite object (its +0x4c layer = handler +0xd8 = `plui`, `1003ae64`).
-    /// Its construction is not read (C5 reads `FUN_1003ade0`); it starts from the GameObject reset here.
-    public var crosshair: GameObject = {
-        var c = GameObject()
-        c.layer = FourCC("plui")!
-        return c
-    }()
+    /// +0x8c…: the crosshair sprite object. Constructed by the handler constructor `FUN_1003acc0`
+    /// (`FUN_100125d0` → the `FUN_10012650` reset: layer `defa`); its +0x4c layer (handler +0xd8) becomes
+    /// `plui` only in setup (`1003ae64`, `Player.setupHandler`).
+    public var crosshair = GameObject()
     /// +0x120: crosshair shown — set on every handler tick (`1003b9ec`), never cleared (loose-ends-combat §6.2).
     public var crosshairShown = false
     /// +0x121: crosshair locked (over a ground target).
@@ -222,7 +221,8 @@ public struct Player: Sendable {
     /// +0x240: the weapon handler.
     public var handler = WeaponHandler()
     /// Game +0x14, the sector (`FUN_10005cd0`), read by the handler reset and the icon builder. Kept on
-    /// the player because Phase 1 has one level; set by `setup`.
+    /// the player because Phase 1 has one level; set by `setup`. A per-player copy of one game field (C4
+    /// review m4): when the session gains level advance (Phase 2) the game's sector should be passed in instead.
     public var sector: Int32 = 1
 
     /// pf[2] (`0x100d6fc8` + 8): the shield obfuscation bias.
@@ -255,6 +255,7 @@ public struct Player: Sendable {
         playerCount = UInt8(truncatingIfNeeded: players)             // 10026434
         self.index = Int8(truncatingIfNeeded: index)                 // 10026438
         self.sector = Int32(sector)
+        guard assets.objects.indices.contains(index) else { throw PlayerError.invalidIndex(index) }
         let id = assets.objects[index]                               // 1002645c / 1002646c: PermObjectID 0 / 1
         guard let plde = assets.definitions.players.first(where: { $0.id == id }) else {
             throw PlayerError.missingDefinition(type: "plde", id: id.description)
@@ -301,7 +302,7 @@ public struct Player: Sendable {
         refreshSize()                                                // 10026a04 FUN_10012940
         placeAtStart()                                               // 10026a10 FUN_10026b10
         setLifeState(2, now: now)                                    // 10026a24
-        object.glowOn = false                                        // 10026a30 FUN_10012c00
+        object.hitGlowOn = false                                     // 10026a30 FUN_10012c00
         money = 0                                                    // 10026a3c FUN_10027580
         resetShield(full: true)                                      // 10026a58 FUN_10027400(p, 1)
         clearOverload()                                              // 10026a64 FUN_10026ea0
@@ -334,13 +335,13 @@ public struct Player: Sendable {
         shieldWarningShown = false
     }
 
-    /// `FUN_10026ea0`: overload cleared, `+0x54` = 0, tint triple 0.0, tint colour 0x7fff.
+    /// `FUN_10026ea0`: overload cleared, `+0x54` = 0, glow triple 0.0, glow-tint colour 0x7fff.
     mutating func clearOverload() {
         overloadActive = false; overloadPhase = 0; overloadGlow = 0
         overloadLast = 0; overloadInterval = 0; overloadCount = 0
         object.hideSprite = false
-        object.tint = 0; object.tintTarget = 0; object.tintStep = 0
-        object.tintColour = 0x7fff
+        object.glow = 0; object.glowTarget = 0; object.glowStep = 0
+        object.glowTintColour = 0x7fff
     }
 
     /// `FUN_10029f10` → `FUN_10029f60`: face = the effective air weapon's appearance for this index
@@ -382,19 +383,18 @@ public struct Player: Sendable {
 
     /// `FUN_10012940` on the ship.
     mutating func refreshSize() {
-        object.refreshSize(frameSize)
+        let a = assets
+        object.refreshSize { Self.frameSize(a, $0, $1, $2) }
     }
 
     /// `FUN_10019ca0(face, frame, scale)` as far as Phase 1 needs it: the decoded frame's size at scale 1.0
     /// (the scaled rule `trunc(w·s)` is sprite-geometry-draw §3.3). A group that fails to decode, or a frame
-    /// out of range, gives 0 × 0.
-    var frameSize: (FourCC, Int32, Float) -> (Int32, Int32) {
-        { [assets] face, frame, scale in
-            guard let g = try? assets.spriteGroup(face), g.frames.indices.contains(Int(frame)) else { return (0, 0) }
-            let f = g.frames[Int(frame)]
-            if scale == 1 { return (Int32(f.width), Int32(f.height)) }
-            return (Int32(Float(f.width) * scale), Int32(Float(f.height) * scale))
-        }
+    /// out of range, gives 0 × 0. Passed as a non-escaping closure (no per-tick closure allocation).
+    static func frameSize(_ assets: DeimosAssets, _ face: FourCC, _ frame: Int32, _ scale: Float) -> (Int32, Int32) {
+        guard let g = try? assets.spriteGroup(face), g.frames.indices.contains(Int(frame)) else { return (0, 0) }
+        let f = g.frames[Int(frame)]
+        if scale == 1 { return (Int32(f.width), Int32(f.height)) }
+        return (Int32(Float(f.width) * scale), Int32(Float(f.height) * scale))
     }
 
     /// `FUN_1003ade0 @ 1003ade0(h, playerIdx, now, sector)` subset (weapons-projectiles §2.1): pending
@@ -500,4 +500,6 @@ public struct Player: Sendable {
 
 public enum PlayerError: Error, Equatable, Sendable {
     case missingDefinition(type: String, id: String)
+    /// `setup` index outside the PermObjectID list (the original indexes it unchecked).
+    case invalidIndex(Int)
 }

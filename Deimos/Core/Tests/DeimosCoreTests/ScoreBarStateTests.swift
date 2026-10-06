@@ -6,8 +6,8 @@ import HectorResources
 /// part), per-tick update `FUN_100317e0`, icons `FUN_1003bb40`.
 final class ScoreBarStateTests: XCTestCase {
     func testScoreBarFollowersAndIcons() throws {
-        let a = try PlayerPhase1Tests.loaded.get()
-        var w = try PlayerPhase1Tests.World(assets: a, players: 1)
+        let a = try TestAssets.loaded.get()
+        var w = try TestWorld(assets: a, players: 1)
 
         // Level start: P1 drawn active, P2 (not in game) drawn dimmed once — all six dirty for both.
         let p1 = w.bar.records[0], p2 = w.bar.records[1]

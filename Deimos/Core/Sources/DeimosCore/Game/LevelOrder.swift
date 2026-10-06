@@ -11,7 +11,9 @@ public struct LevelOrder: Sendable, Equatable {
     /// Level tag IDs, sector 1 first; `none` where no level carries the identifier.
     public let levels: [FourCC]
 
-    /// Each identifier against the levels in master-list order; the first exact match wins.
+    /// Each identifier against the levels in master-list order; the first exact match wins. An identifier no
+    /// level carries becomes `.none` here; the original treats it as fatal (`10011da4`: `FUN_10000f30` with
+    /// error 0x110) — `DeimosSession` throws `SessionError.noLevel` when such a sector is started.
     public init(levels definitions: [LevelDefinition]) {
         levels = Self.identifiers.map { ident in definitions.first { $0.indentifier == ident }?.id ?? .none }
     }

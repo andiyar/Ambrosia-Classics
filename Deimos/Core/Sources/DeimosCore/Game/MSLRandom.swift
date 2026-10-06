@@ -18,9 +18,10 @@ public struct MSLRandom: Equatable, Sendable {
     }
 
     /// `FUN_10046580 @ 10046580` — `min == max ? min : min + rand() % (max − min + 1)`; no draw when
-    /// `min == max` (`100465a0 bne` skips the `bl rand`). `subf/addi/divw/mullw/subf/add` = wrapping
-    /// 32-bit arithmetic with a truncating (signed) remainder. Precondition (as the original, whose
-    /// `divw` by zero is undefined): `max − min + 1 ≠ 0`.
+    /// `min == max` (`100465a0 bne` skips the `bl rand`). `subf/addi` (span) and `add` wrap (`&-`, `&+`);
+    /// `divw/mullw/subf` = a truncating signed remainder `r − (r / span)·span`. Swift's `/` is NOT wrapping:
+    /// it traps when span == 0 (e.g. `range(Int32.min, Int32.max)`), where the original's `divw` by zero is
+    /// undefined — a precondition, not a modelled case (`r` ≥ 0, so `Int32.min / −1` cannot arise).
     public mutating func range(_ min: Int32, _ max: Int32) -> Int32 {
         if min == max { return min }
         let r = rand()
@@ -30,7 +31,9 @@ public struct MSLRandom: Equatable, Sendable {
 
     /// `FUN_100465e0 @ 100465e0` — float RandomRange, every operation single precision
     /// (`100465fc…1004665c`): `lo == hi ? lo` (no draw, `fcmpu`/`bne`) `: m + (hi − lo)·rand() / 32767.0f`
-    /// with `m = lo > hi ? hi : lo` (`fcmpo`/`ble` → `lo`; otherwise — including unordered — `hi`).
+    /// with `m = lo > hi ? hi : lo` (`fcmpo`/`ble`: not greater → `lo`, and `ble` is taken on unordered too,
+    /// so the original picks `lo` when either is NaN; this port's `lo <= hi` picks `hi` then — a divergence
+    /// for NaN inputs only, which no shipped PermFloat holds).
     /// `fsubs f1,f30,f29` = hi − lo; the int→double conversion of `rand()` is exact and narrowed by
     /// `fsubs`; `fmuls`; `fdivs` by K = 32767.0 (`*(float*)0x100d73f4`, via r2−0x6dd8); `fadds` m.
     /// Quirk kept: with lo > hi the result is `hi + (hi − lo)·r`, i.e. ≤ hi.

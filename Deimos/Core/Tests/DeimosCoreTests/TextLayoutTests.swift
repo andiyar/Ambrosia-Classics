@@ -4,7 +4,7 @@ import HectorResources
 
 /// G_Text glyph map, digit cache and layout (text-metrics-lists.md §1–§2, hud-scorebar.md §9).
 final class TextLayoutTests: XCTestCase {
-    static let layout: Result<TextLayout, Error> = Result { try TextLayout(assets: PlayerPhase1Tests.loaded.get()) }
+    static let layout: Result<TextLayout, Error> = Result { try TextLayout(assets: TestAssets.loaded.get()) }
 
     func testGlyphMap() {
         let cases: [(UInt8, Int)] = [
@@ -33,14 +33,73 @@ final class TextLayoutTests: XCTestCase {
         f.locX = 10; f.locY = 20
         let cmds = t.draw(TextRequest(format: f, text: "1 1"))
         XCTAssertEqual(cmds.count, 2)
-        // LEFT, spacing 0: '1' (5 px) at 10, space 4 px, '1' at 19.
-        XCTAssertEqual(cmds.map { $0.x - Int32(5 / 2) }, [10, 19])
+        // LEFT, template spacing 1 (+0x11c), added before every char (`1000e598 add r28,r28,r27`): '1' (5 px)
+        // at 10 + 1 = 11, space 4 px at 16 + 1 = 17, '1' at 21 + 1 = 22.
+        XCTAssertEqual(cmds.map { $0.x - Int32(5 / 2) }, [11, 22])
+    }
+
+    /// RIGH / CEBU / CEGA (`FUN_1000e270`, hud-scorebar §9, text-metrics-lists §1.5): W = Σ (spacing + w) in
+    /// single precision; RIGH start = fctiwz(X − W), CEBU fctiwz((F52 640 − W)·0.5), CEGA fctiwz((F54 416 − W)·0.5)
+    /// (X ignored); bounds = (Y, start, Y + max h, x + 1).
+    func testRightAndCentredAlignments() throws {
+        let t = try Self.layout.get()
+        XCTAssertEqual(t.floats[52], 640)
+        XCTAssertEqual(t.floats[54], 416)
+        var f = TextFormat(text: [])                                 // template: spacing 1
+        f.locX = 100; f.locY = 20
+        // "11": W = (1 + 5) + (1 + 5) = 12 → start 88; cells 89, 95; x ends at 100.
+        f.format = .right
+        let right = t.layout(TextRequest(format: f, text: "11"), draw: true)
+        XCTAssertEqual(right.bounds, MacRect(top: 20, left: 88, bottom: 33, right: 101))
+        XCTAssertEqual(right.commands.map(\.x), [89 + 2, 95 + 2])
+        // "123": W = (1 + 5) + (1 + 6) + (1 + 7) = 21.
+        f.format = .centerInBuffer                                   // (640 − 21)·0.5 = 309.5 → 309
+        XCTAssertEqual(t.layout(TextRequest(format: f, text: "123"), draw: false).bounds,
+                       MacRect(top: 20, left: 309, bottom: 33, right: 331))
+        f.format = .centerInGameArea                                 // (416 − 21)·0.5 = 197.5 → 197
+        XCTAssertEqual(t.layout(TextRequest(format: f, text: "123"), draw: false).bounds,
+                       MacRect(top: 20, left: 197, bottom: 33, right: 219))
+        f.format = .center                                           // 100 − 0.5·21 = 89.5 → 89
+        XCTAssertEqual(t.layout(TextRequest(format: f, text: "123"), draw: false).bounds.left, 89)
+    }
+
+    /// The colour strip's grow and minimum width (text-metrics-lists §2.3, `1000d56c…1000d68c`): left −= H,
+    /// right += H, top −= V, bottom += V; narrower than minW → LEFT right = left + minW, RIGH left = right − minW,
+    /// CENT/CEBU/CEGA left = **Loc X** − minW/2; lower than minH → bottom = top + minH. Always queued.
+    func testColourStripMinWidth() throws {
+        let a = try TestAssets.loaded.get()
+        let t = try Self.layout.get()
+        // `meno` (format 35): LEFT at 30,10, H/V 3/3, minW 126, blend 16. "11" measures (10, 30, 23, 41).
+        XCTAssertEqual(a.formatIDs[35], FourCC("meno"))
+        let meno = t.draw(TextRequest(format: a.formats[35], text: "11"))
+        XCTAssertEqual(meno.count, 3)
+        XCTAssertEqual(meno[0].face, FourCC("COST"))
+        XCTAssertEqual(meno[0].costRect, MacRect(top: 7, left: 27, bottom: 26, right: 27 + 126))
+        XCTAssertEqual(meno[0].alpha, 16)
+        XCTAssertFalse(meno[0].drawNow)
+        // `brpr` (format 52): LEFT at 416,87, no grow, minW 0, blend 14 — the strip is the bounds.
+        XCTAssertEqual(a.formatIDs[52], FourCC("brpr"))
+        let brpr = t.draw(TextRequest(format: a.formats[52], text: "11"))
+        XCTAssertEqual(brpr.first?.costRect, MacRect(top: 87, left: 416, bottom: 100, right: 427))
+        XCTAssertEqual(brpr.first?.alpha, 14)
+        // Template strip (H/V 3/3), minW 50, minH 20, "11" at X 100, Y 20 (W 12).
+        var f = TextFormat(text: [])
+        f.locX = 100; f.locY = 20
+        f.colorStripDo = true
+        f.colorStripMinWidth = 50
+        f.colorStripMinHeight = 20
+        f.format = .right                                            // (20, 88, 33, 101) → (17, 85, 36, 104)
+        XCTAssertEqual(t.draw(TextRequest(format: f, text: "11")).first?.costRect,
+                       MacRect(top: 17, left: 54, bottom: 37, right: 104))
+        f.format = .centerInBuffer                                   // text at 314, strip at X − 25
+        XCTAssertEqual(t.draw(TextRequest(format: f, text: "11")).first?.costRect,
+                       MacRect(top: 17, left: 75, bottom: 37, right: 125))
     }
 
     func testScoreAndLivesLayout() throws {
-        let a = try PlayerPhase1Tests.loaded.get()
+        let a = try TestAssets.loaded.get()
         let draw = try ScoreBarDraw(assets: a)
-        let w = try PlayerPhase1Tests.World(assets: a, players: 1)
+        let w = try TestWorld(assets: a, players: 1)
         let t = try Self.layout.get()
         func left(_ c: DrawCommand) -> Int32 { c.x - t.frameSizes[c.frame].width / 2 }
         func top(_ c: DrawCommand) -> Int32 { c.y - t.frameSizes[c.frame].height / 2 }

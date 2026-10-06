@@ -7,8 +7,8 @@ final class ScoreBarDrawTests: XCTestCase {
     /// The exact level-start op list of a solo game (screen blits off), in the listing's order: P1 score,
     /// symbol, count, weapon slots 0–2, shield, power; then P2 the same, dimmed (no icons).
     func testScoreBarLevelStartOps() throws {
-        let a = try PlayerPhase1Tests.loaded.get()
-        let w = try PlayerPhase1Tests.World(assets: a, players: 1)
+        let a = try TestAssets.loaded.get()
+        let w = try TestWorld(assets: a, players: 1)
         let ops = try ScoreBarDraw(assets: a).levelStartOps(state: w.bar)
 
         func rect(_ t: Int32, _ l: Int32, _ b: Int32, _ r: Int32) -> MacRect { MacRect(top: t, left: l, bottom: b, right: r) }

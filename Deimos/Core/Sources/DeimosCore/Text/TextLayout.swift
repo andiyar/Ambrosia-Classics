@@ -83,7 +83,10 @@ public struct TextLayout: Sendable {
         self.floats = floats
         func size(_ frame: Int) -> Size { frameSizes.indices.contains(frame) ? frameSizes[frame] : .zero }
         cache = (0..<128).map { size(GlyphMap.frame(UInt8($0))) }   // 1000ec70..1000ece4
-        // FUN_1000d380 first call (1000d3e8..1000d474).
+        // FUN_1000d380 first call (1000d3e8..1000d474, verified): measure '1' at the constant scale 1.0
+        // (`r26` = TOC−0x72f8 → 0x100d63f0 = 1.0f) → max h = h('1'); max w starts from the cached w (0 on the
+        // only fill); then frames f('1') + 0…9 by `FUN_10019ca0`, each strictly wider (`cmpw; ble`) setting w and
+        // the label '0' + i, each strictly taller setting h.
         let one = GlyphMap.frame(0x31)
         var maxW: Int32 = 0
         var maxH = cache[0x31].height

@@ -5,8 +5,11 @@ import HectorResources
 /// the original reads, each by a fresh search from the start of the text (order-independent). `#Size_INT`,
 /// present in every shipped file, is never read (the string does not exist in the binary).
 ///
-/// Fields keep the format template's defaults (`0x100e52e4`: LEFT, everything else 0/false) when a key is
-/// missing or malformed; such keys are listed in `errors`. `#Format_ID`: the strings "0"–"4" map to LEFT CENT
+/// Fields keep the format template's defaults when a key is missing or malformed; such keys are listed in
+/// `errors`. The template (`0x100e52e4`, copied at `1000f01c`; text-metrics-lists §2.1, data image read): Loc
+/// 0, 0, LEFT, not monospaced, no shadows, blend 0, spacing **1** (+0x11c), colourise off with colour
+/// **0x7fff** (+0x122), strip off, strip H/V offset **3 / 3** (+0x130/+0x134), strip blend **16** (+0x138),
+/// strip colour 0, min W/H 0. Every shipped `tefo` sets every key, so the defaults only reach hand-made formats. `#Format_ID`: the strings "0"–"4" map to LEFT CENT
 /// RIGH CEBU CEGA (`<3>` = CEBU, `<4>` = CEGA: the value is cut at `>` by strtok, INDEX #5); otherwise its
 /// first 4 characters are the 4CC (`RIGHT` → `RIGH`), and anything not among the five logs "Unknown Text
 /// Format Flag" and becomes LEFT. BlendAmount (0 opaque … 32 invisible) is kept as read; the original asserts
@@ -24,13 +27,13 @@ public struct TextFormat: Sendable, Equatable {
     public var monospaced = false
     public var drawShadows = false
     public var blendAmount: Int32 = 0
-    public var spaceBetweenChars: Int32 = 0
+    public var spaceBetweenChars: Int32 = 1
     public var coloriseDo = false
-    public var coloriseColor: UInt16 = 0
+    public var coloriseColor: UInt16 = 0x7fff
     public var colorStripDo = false
-    public var colorStripHOffset: Int32 = 0
-    public var colorStripVOffset: Int32 = 0
-    public var colorStripBlendAmount: Int32 = 0
+    public var colorStripHOffset: Int32 = 3
+    public var colorStripVOffset: Int32 = 3
+    public var colorStripBlendAmount: Int32 = 16
     public var colorStripColor: UInt16 = 0
     public var colorStripMinWidth: Int32 = 0
     public var colorStripMinHeight: Int32 = 0

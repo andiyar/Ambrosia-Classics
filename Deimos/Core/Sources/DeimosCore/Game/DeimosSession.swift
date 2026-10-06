@@ -20,6 +20,11 @@ public struct SessionStart: Equatable, Sendable {
 public enum SessionError: Error, Equatable, Sendable {
     /// `LevelOrder` has no level for the sector, or no `leve` definition carries the tag.
     case noLevel(sector: Int)
+    /// PermFloats 54/55 (VisibleGameWidth/Height) are not the 416 × 480 that `ScrollState` hard-codes, or the
+    /// float list is too short to hold them (reported as 0).
+    case visibleArea(width: Float, height: Float)
+    /// The prefs' byte-pref block is shorter than `DeimosPrefs.bytePrefCount`.
+    case shortBytePrefs(count: Int)
 }
 
 /// One game session of G_Game.cc (`FUN_100051a0`, engine-loop §3, level-scroll-objects §8) — the Phase-1
@@ -74,16 +79,24 @@ public struct DeimosSession: Sendable {
     /// The level start's ops, handed out by the first `pass`.
     private var pendingOps: [RenderOp] = []
     private let scoreBarDraw: ScoreBarDraw
+    /// `fctiwz(PermFloat 18)`: the game time at which the game appears (`10005930..1000595c`).
+    private let appearTime: Int32
 
     /// `FUN_100051a0`'s set-up subset, then the level start `FUN_100064d0` (see the type's comment).
     public init(assets: DeimosAssets, prefs: DeimosPrefs, start: SessionStart, seed: UInt32) throws {
-        // ScrollState hard-codes PermFloats 54/55 (VisibleGameWidth/Height).
-        precondition(assets.floats[54] == 416 && assets.floats[55] == 480,
-                     "PermFloats 54/55 must be 416/480 (ScrollState)")
+        // ScrollState hard-codes PermFloats 54/55 (VisibleGameWidth/Height); the pass reads 18 and 32 too.
+        let f = assets.floats
+        guard f.count > 55, f[54] == Float(ScrollState.visibleWidth), f[55] == Float(ScrollState.visibleHeight) else {
+            throw SessionError.visibleArea(width: f.count > 54 ? f[54] : 0, height: f.count > 55 ? f[55] : 0)
+        }
+        guard prefs.bytePrefs.count >= DeimosPrefs.bytePrefCount else {
+            throw SessionError.shortBytePrefs(count: prefs.bytePrefs.count)
+        }
         self.assets = assets
         self.prefs = prefs
         self.start = start
         scoreBarDraw = try ScoreBarDraw(assets: assets)
+        appearTime = EntityDraw.fctiwz(f[18])
 
         let tag = assets.levelOrder.level(sector: start.sector)
         guard tag != .none, let info = assets.definitions.levels.first(where: { $0.id == tag }) else {
@@ -93,11 +106,10 @@ public struct DeimosSession: Sendable {
         sector = start.sector
 
         // Frame controller: FUN_10030190 + FUN_10030210(ctrl, film, 1, 1).
-        controller = FrameController(fpsMaxRate: EntityDraw.fctiwz(assets.floats[32]))
+        controller = FrameController(fpsMaxRate: EntityDraw.fctiwz(f[32]))
         controller.startSession(filmPlayback: start.film != nil, gameScreenLayout: true, autoInterlaceAllowed: true)
 
-        rng = MSLRandom(seed: seed)
-        rng.srand(seed)                                              // 100057d4
+        rng = MSLRandom(seed: seed)                                  // 100057d4 srand(TickCount())
 
         var made: [Player] = []
         for i in 0..<2 {                                             // 10005860..10005888 FUN_10026410
@@ -107,8 +119,11 @@ public struct DeimosSession: Sendable {
         }
         players = made
         scoreBar = ScoreBarState(assets: assets)
+        pendingOps = levelStart(info)
+    }
 
-        // FUN_100064d0 (level start).
+    /// `FUN_100064d0` (level start), the Phase-1 subset (see the type's comment); returns its ops.
+    private mutating func levelStart(_ info: LevelDefinition) -> [RenderOp] {
         var ops: [RenderOp] = []
         gameTime = 0                                                 // 10006500
         appeared = false                                             // 10006510
@@ -127,7 +142,7 @@ public struct DeimosSession: Sendable {
             restoreInterlace = false                                 // 1000696c..10006970
         }
         ops.append(scroll.terrainBlit(interlaced: bytePref(5)))      // 10006974 FUN_10010120
-        pendingOps = ops
+        return ops
     }
 
     /// One iteration of the `FUN_100051a0` loop (`100058f8..10005ab0`), Phase-1 subset, in this order:
@@ -135,7 +150,7 @@ public struct DeimosSession: Sendable {
     /// 1. Begin frame `FUN_10030360` (`10030360..10030564`): [music service `FUN_10047f50`] → `FUN_100189f0`
     ///    (`10030388`, `.clearLayers`) → [console open/update/aging, `FUN_10030910` volume and F6, `GetMouse`,
     ///    Caps Lock — Phase 2] → Esc `FUN_100307c0` (`100304f4`) → if the tick flag: input read (`1003052c..
-    ///    10030544`, here `keys` through the prefs key table). Quit → `FUN_100064c0` (`1000591c`: game +0x08 =
+    ///    10030544`, here `keys` through the prefs `KeyTable`). Quit → `FUN_100064c0` (`1000591c`: game +0x08 =
     ///    0 only) — this pass still runs to the end and reports `sessionEnded`.
     /// 2. If the tick flag (`10005920..10005928`): appear check (`10005930..100059b8`: not appeared and game
     ///    time == `fctiwz(flli 18)` → [music `FUN_10047f90`], `FUN_1000ba70(display, 1)` = `.fade(.fromBlack,
@@ -159,68 +174,67 @@ public struct DeimosSession: Sendable {
         guard running else { return PassOutput(sessionEnded: true) }
         var ops = pendingOps
         pendingOps = []
-
-        // 1. Begin frame.
-        ops.append(.clearLayers)                                     // 10030388 FUN_100189f0
         let escDown = keys.held.contains(Self.escKey)
-        let begin = controller.beginFrame(escDown: escDown, escHoldPref: bytePref(8))
-        if begin.quit { running = false }                            // 1000591c FUN_100064c0
-        let inputs: [PlayerInput] = begin.tick ? (0..<2).map { Self.input(keys, prefs.keyTable, player: $0) }
-                                               : [[], []]
-
-        // 2. Tick.
+        let begin = beginFrame(escDown: escDown, ops: &ops)
         if begin.tick {
-            if !appeared && gameTime == EntityDraw.fctiwz(assets.floats[18]) {   // 10005930..1000595c
-                ops.append(.fade(.fromBlack, .gameLayout))           // 10005984 FUN_1000ba70(display, 1)
-                if restoreInterlace {                                // 10005990..100059b0
-                    setBytePref(5, true)
-                    restoreInterlace = false
-                }
-                appeared = true                                      // 100059b4..100059b8
-            }
-            for i in 0..<2 {                                         // FUN_10006b50: FUN_10028170 P1, P2
-                players[i].updatePhase1(now: gameTime, input: inputs[i], scroll: &scroll, scoreBar: &scoreBar)
-            }
-            scoreBar.update(players: players)                        // FUN_100317e0
-            _ = scroll.step()                                        // FUN_10010000
-            gameTime &+= 1                                           // 100059e0..100059f0
+            tick(inputs: KeyTable(prefs: prefs).inputs(keys), ops: &ops)
         }
+        drawWorld(ops: &ops)
+        endFrame(escDown: escDown, ops: &ops)
+        return PassOutput(ops: ops, ticked: begin.tick, sessionEnded: !running)
+    }
 
-        // 3. Draw world FUN_10007070.
+    /// 1. Begin frame `FUN_10030360`, the Phase-1 subset. Input is read (step 2's `inputs`) only on a tick.
+    private mutating func beginFrame(escDown: Bool, ops: inout [RenderOp]) -> FrameController.Begin {
+        ops.append(.clearLayers)                                     // 10030388 FUN_100189f0
+        let begin = controller.beginFrame(escDown: escDown, escHoldPref: bytePref(8))   // 100304f4 FUN_100307c0
+        if begin.quit { running = false }                            // 1000591c FUN_100064c0
+        return begin
+    }
+
+    /// 2. The tick: appear check, update world `FUN_10006b50` subset, game time + 1.
+    private mutating func tick(inputs: [PlayerInput], ops: inout [RenderOp]) {
+        if !appeared && gameTime == appearTime {                     // 10005930..1000595c
+            ops.append(.fade(.fromBlack, .gameLayout))               // 10005984 FUN_1000ba70(display, 1)
+            if restoreInterlace {                                    // 10005990..100059b0
+                setBytePref(5, true)
+                restoreInterlace = false
+            }
+            appeared = true                                          // 100059b4..100059b8
+        }
+        for i in 0..<2 {                                             // FUN_10006b50: FUN_10028170 P1, P2
+            players[i].updatePhase1(now: gameTime, input: inputs[i], scroll: &scroll, scoreBar: &scoreBar)
+        }
+        scoreBar.update(players: players)                            // FUN_100317e0
+        _ = scroll.step()                                            // FUN_10010000
+        gameTime &+= 1                                               // 100059e0..100059f0
+    }
+
+    /// 3. Draw world `FUN_10007070`.
+    private mutating func drawWorld(ops: inout [RenderOp]) {
         for i in 0..<2 {                                             // 100070a8..100070c0 FUN_100298c0
             ops += EntityDraw.playerOps(&players[i], hOffset: scroll.offset, floats: assets.floats)
         }
         ops += scoreBarDraw.drawOps(state: scoreBar, blitToScreen: appeared)   // 100070d0..10007108
+    }
 
-        // 4. End frame FUN_10030570 → FUN_10030bc0.
+    /// 4. End frame `FUN_10030570` → `FUN_10030bc0`, then the wrapper's second Esc check.
+    private mutating func endFrame(escDown: Bool, ops: inout [RenderOp]) {
         ops.append(.flushLayers(0...1))                              // 10030ca4
         ops.append(scroll.terrainBlit(interlaced: bytePref(5)))      // 10030cb4
         ops.append(.flushLayers(2...5))                              // 10030cc0
         ops.append(.flushLayers(6...15))                             // 10030cdc
         if bytePref(10) { ops.append(.limit) }                       // 10030ce4..10030d30
-        controller.endFrame()                                        // 10030d34..10030d8c
         if appeared { ops.append(.present(.gameScreen)) }            // 10030d94..10030dc4
-        _ = controller.escCheck(escDown: escDown, escHoldPref: bytePref(8))   // 10030590
-
-        return PassOutput(ops: ops, ticked: begin.tick, sessionEnded: !running)
+        // 10030d34..10030d8c counters/divider, then 10030590 Esc (result discarded). The counters are
+        // arithmetic only, so running them after the present op is emitted keeps the op order.
+        controller.endFrameWrapper(escDown: escDown, escHoldPref: bytePref(8))
     }
 
     /// Mac virtual key code of Esc (`FUN_100307c0`).
     static let escKey: UInt16 = 0x35
 
-    /// The prefs key table → one player's input: slots up, left, right, down, then the three buttons (fire
-    /// air, fire ground, select — LOW, design §7.3). A stand-in for DeimosHost's `KeyTable` (H1).
-    static func input(_ keys: HeldKeys, _ table: [UInt16], player: Int) -> PlayerInput {
-        let bits: [PlayerInput] = [.up, .left, .right, .down, .fireAir, .fireGround, .select]
-        var out: PlayerInput = []
-        for (slot, bit) in bits.enumerated() {
-            let k = 7 * player + slot
-            if k < table.count && keys.held.contains(table[k]) { out.insert(bit) }
-        }
-        return out
-    }
-
-    /// `FUN_10004ef0(n)`.
+    /// `FUN_10004ef0(n)`. `n` < `DeimosPrefs.bytePrefCount`, which `init` guarantees the block holds.
     func bytePref(_ n: Int) -> Bool { prefs.bytePrefs[n] != 0 }
 
     /// `FUN_10004ab0(n, v)`.

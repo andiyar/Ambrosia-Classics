@@ -5,10 +5,10 @@ import HectorResources
 /// `DeimosSession` (plan C6): the session set-up + level start (`FUN_100051a0` set-up, `FUN_100064d0`) and one
 /// pass of the loop in the original's order (engine-loop §3, timing-frame §2.1–§2.4).
 final class DeimosSessionTests: XCTestCase {
-    private func assets() throws -> DeimosAssets { try PlayerPhase1Tests.loaded.get() }
+    private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
 
-    private func session(seed: UInt32 = 0x469c2, players: Int = 1) throws -> DeimosSession {
-        try DeimosSession(assets: assets(), prefs: .fresh, start: SessionStart(sector: 1, players: players, film: nil),
+    private func session(seed: UInt32 = 0x469c2, players: Int = 1, prefs: DeimosPrefs = .fresh) throws -> DeimosSession {
+        try DeimosSession(assets: assets(), prefs: prefs, start: SessionStart(sector: 1, players: players, film: nil),
                           seed: seed)
     }
 
@@ -55,7 +55,7 @@ final class DeimosSessionTests: XCTestCase {
         let first = out.ops.firstIndex(of: .clearLayers)!
         let initOps = Array(out.ops[..<first])
 
-        let w = try PlayerPhase1Tests.World(assets: a, players: 1)
+        let w = try TestWorld(assets: a, players: 1)
         var expected: [RenderOp] = [.loadTerrain(image: FourCC("jum2")!), .fill(.back, colour: 0)]
         expected += try ScoreBarDraw(assets: a).levelStartOps(state: w.bar)
         expected.append(Self.terrainBlit(top: 3120))
@@ -178,5 +178,57 @@ final class DeimosSessionTests: XCTestCase {
             if case .copy(from: .terrain, to: .back, let src?, _, _) = op { return src.left != 32 }
             return false
         } })
+    }
+    /// Byte pref 5 (interlacing) set: the level start suspends it (`1000693c..10006968`: game +0x0f = 1, pref 5
+    /// cleared), so the first terrain blits are progressive; the appear (`10005990..100059b0`, pass 2) restores
+    /// it before that pass's end-frame blit, which is interlaced from then on.
+    func testInterlacePrefSuspendedUntilAppear() throws {
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[5] = 1
+        var s = try session(prefs: prefs)
+        XCTAssertTrue(s.restoreInterlace)
+        XCTAssertEqual(s.prefs.bytePrefs[5], 0)
+        func blits(_ out: PassOutput) -> [Bool] {
+            out.ops.compactMap { if case .copy(from: .terrain, to: .back, _, _, let i) = $0 { return i } else { return nil } }
+        }
+        XCTAssertEqual(blits(s.pass(keys: HeldKeys())), [false, false])   // init blit + pass 0
+        XCTAssertEqual(blits(s.pass(keys: HeldKeys())), [false])
+        XCTAssertEqual(blits(s.pass(keys: HeldKeys())), [true])           // pass 2: appear, pref 5 back
+        XCTAssertFalse(s.restoreInterlace)
+        XCTAssertEqual(s.prefs.bytePrefs[5], 1)
+        XCTAssertEqual(blits(s.pass(keys: HeldKeys())), [true])
+    }
+
+    /// P2's seven key-table slots (`+0x14b8` + 7…13: kp8 kp4 kp6 kp5 End Fwd-Del PgDn) reach player 2 only, and
+    /// P1's reach player 1 only — copied in life state 4 (after `entry_InitialDelay`).
+    func testPlayerTwoKeySlots() throws {
+        var s = try session(players: 2)
+        for _ in 0..<60 { _ = s.pass(keys: HeldKeys()) }
+        XCTAssertEqual(s.players.map(\.lifeState), [4, 4])
+        _ = s.pass(keys: HeldKeys(held: [0x5B, 0x56, 0x58, 0x57, 0x77, 0x75, 0x79]))
+        XCTAssertEqual(s.players[1].input.rawValue, 0x7F)
+        XCTAssertEqual(s.players[0].input, [])
+        _ = s.pass(keys: HeldKeys(held: [0x5B, 0x77]))
+        XCTAssertEqual(s.players[1].input, [.up, .fireAir])
+        _ = s.pass(keys: HeldKeys(held: [0x7E, 0x31]))
+        XCTAssertEqual(s.players[0].input, [.up, .select])
+        XCTAssertEqual(s.players[1].input, [])
+    }
+
+    /// Byte pref 8 (Esc-hold) on: `FUN_100307c0` runs twice per pass (begin frame, then the end-frame wrapper
+    /// `10030590`), so the hold counter reaches 2k − 1 at pass k's begin and quits when it exceeds PermFloat 32
+    /// (30): on the 16th held pass. Releasing Esc resets it.
+    func testEscHoldPrefQuitsOnSixteenthHeldPass() throws {
+        var prefs = DeimosPrefs.fresh
+        prefs.bytePrefs[8] = 1
+        var s = try session(prefs: prefs)
+        let esc = HeldKeys(held: [0x35])
+        for _ in 0..<10 { XCTAssertFalse(s.pass(keys: esc).sessionEnded) }
+        XCTAssertFalse(s.pass(keys: HeldKeys()).sessionEnded)
+        for k in 1...15 { XCTAssertFalse(s.pass(keys: esc).sessionEnded, "held pass \(k)") }
+        let out = s.pass(keys: esc)
+        XCTAssertTrue(out.sessionEnded)
+        XCTAssertTrue(out.ticked)
+        XCTAssertEqual(out.ops.last, .present(.gameScreen))
     }
 }

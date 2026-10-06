@@ -5,8 +5,8 @@ import HectorResources
 /// Draw-command builders (sprite-geometry-draw.md §3–§6; micro-wave §3.9): `FUN_10010c20`, `FUN_10012f20`,
 /// `FUN_10012fa0`, `FUN_10013460`, `FUN_100298c0`.
 final class EntityDrawTests: XCTestCase {
-    typealias World = PlayerPhase1Tests.World
-    private func assets() throws -> DeimosAssets { try PlayerPhase1Tests.loaded.get() }
+    typealias World = TestWorld
+    private func assets() throws -> DeimosAssets { try TestAssets.loaded.get() }
     static let gameArea = MacRect(top: 0, left: 0, bottom: 480, right: 416)
 
     /// A solo level-1 world after the tick at `t` (so the player has been updated at 0…t).

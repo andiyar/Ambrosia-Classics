@@ -107,6 +107,14 @@ MED for the row arithmetic]:
 
 That confirms timing-frame.md §5's reading: every other row, alternating per call.
 
+⚑ as built (Deimos Phase 1 render fix pass b59b751, 2026-10-06; Fable spot review): the row arithmetic
+above is incomplete. Step 1 first subtracts 2 rows from the bounds and the base
+(`100453ac…10045410`), then pads/trims for parity and, when the rect top is odd, steps the base
+back one row (−rowBytes), before the `srawi` halving (`100454f8…100455dc`). Net effect: the halved
+bounds are [−1, 239) for a 480-row buffer, so the **last field row of each field (478 even / 479
+odd) is clipped** — an interlaced blit never writes it. `DeimosRender`'s `CopyBits` transcribes
+this. [HIGH — listing, verified by the fix pass and its review]
+
 ### 2.2 `FUN_1000a3b0(src, dst, srcRect*, interlaced)`: copy centred [HIGH, listing `1000a3b0…1000a444`]
 w = srcRect.right − srcRect.left and h = bottom − top. The destination rect is centred in the
 dst bounds:

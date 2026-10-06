@@ -5,9 +5,10 @@ import Foundation
 /// [−32, 31]. Field comments name the original globals (r2 displacement, TOC r2 = 0x100e6330).
 /// The console-only globals (`0x100e012c` spawning disabled, `0x100e013c` unread byte) are not kept.
 public struct ScrollState: Equatable, Sendable {
-    /// PermFloat 54 VisibleGameWidth (`gafl` item 54).
+    /// PermFloat 54 VisibleGameWidth (`gafl` item 54) — a literal here; `DeimosSession.init` throws
+    /// `SessionError.visibleArea` when the data's value differs.
     static let visibleWidth: Int32 = 416
-    /// PermFloat 55 VisibleGameHeight (`gafl` item 55).
+    /// PermFloat 55 VisibleGameHeight (`gafl` item 55), checked the same way.
     static let visibleHeight: Int32 = 480
 
     /// `0x100e0128` (−0x6208): px per tick; 1 running, 0 paused.
