@@ -24,7 +24,7 @@ extension DisplayBuffers {
             black.fill(0)
             fadeBlack = black
         case .toBlack:
-            fatalError("FadeKind.toBlack (FUN_1000b9a0) lands with R2")   // R2 replaces this line (FadeToBlack.swift)
+            fadeToBlackBegin()   // FUN_1000b9a0: no set-up (FadeToBlack.swift)
         }
     }
 
@@ -41,7 +41,7 @@ extension DisplayBuffers {
             let level = min(max(a, 0), 32)
             Blend555.blend(snapshot, black, into: &back, rect: back.bounds, a: level)
         case .toBlack:
-            fatalError("FadeKind.toBlack (FUN_1000b9a0) lands with R2")   // R2 replaces this line (FadeToBlack.swift)
+            fadeToBlackStep(a: a)   // FUN_1000b9a0: back scaled in place toward 0 by FUN_1001ec80 (FadeToBlack.swift)
         }
         present(kind2)
     }
