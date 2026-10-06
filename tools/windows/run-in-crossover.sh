@@ -8,8 +8,14 @@
 # Environment:
 #   WIN_RUN_TIMEOUT  seconds before the run is killed (default 900); exit 124 on timeout
 #   WINEDEBUG        defaults to -all (quiet); set e.g. WINEDEBUG=err+all to see Wine's complaints
+#   HECTOR_SDL_AUDIO_DRIVER  REQUIRED (the script exits 64 without it). CrossOver's wine launcher STRIPS every
+#            SDL_* variable, so SDL_AUDIO_DRIVER=dummy never reaches the program; HectorSDL reads
+#            HECTOR_SDL_AUDIO_DRIVER / HECTOR_SDL_VIDEO_DRIVER instead (SDLHost.applyDriverOverridesFromEnvironment).
+#            Automation: HECTOR_SDL_AUDIO_DRIVER=dummy (and HECTOR_SDL_VIDEO_DRIVER=dummy for headless runs).
+#            A human playing with sound names SDL's Windows driver: HECTOR_SDL_AUDIO_DRIVER=wasapi (or
+#            directsound). There is no "default" value: an unknown name makes SDL's audio init fail.
+#            Required even for non-SDL programs, so no run can reach a real audio device by forgetting it.
 #   Any other variable (e.g. HECTORKIT_DATA_BTX="Z:\…") is passed through to the program by Wine.
-#   Automated SDL runs must set SDL_AUDIO_DRIVER=dummy (no real-time audio from automation).
 set -euo pipefail
 here="${0:A:h}"
 . "$here/env.sh"
@@ -19,6 +25,13 @@ if (( $# < 1 )); then
     exit 64
 fi
 exe="$1"; shift
+if [[ -z "${HECTOR_SDL_AUDIO_DRIVER:-}" ]]; then
+    print -u2 "run-in-crossover: set HECTOR_SDL_AUDIO_DRIVER explicitly (CrossOver strips SDL_* variables):"
+    print -u2 "  automation:  HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy $0 …"
+    print -u2 "  a human playing with sound:  HECTOR_SDL_AUDIO_DRIVER=wasapi $0 …"
+    exit 64
+fi
+export HECTOR_SDL_AUDIO_DRIVER
 [[ -f "$exe" ]] || { print -u2 "run-in-crossover: no such file: $exe"; exit 66; }
 [[ -x "$CX_BIN/wine" ]] || { print -u2 "run-in-crossover: CrossOver not found at $CX_BIN"; exit 69; }
 

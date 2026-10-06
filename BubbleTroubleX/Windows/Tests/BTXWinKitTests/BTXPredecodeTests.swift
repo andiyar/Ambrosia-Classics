@@ -33,6 +33,23 @@ final class BTXPredecodeTests: XCTestCase {
         XCTAssertEqual(pictures.map(\.payloads.count), [3, 3, 3, 3, 3, 3, 1, 1])
     }
 
+    /// The classifier, on synthetic streams (no data needed): a raster PICT is skipped; a picture that reaches a
+    /// 0x8200 band the walk refuses (here truncated) fails loudly, naming the file and id.
+    func testClassifierSkipsRasterAndFailsLoudlyOnABrokenQuickTimePicture() throws {
+        // picSize, picFrame (0, 0, 10, 10), VersionOp v2, HeaderOp (24 bytes)
+        let head: [UInt8] = [0, 0, 0, 0, 0, 0, 0, 10, 0, 10, 0x00, 0x11, 0x02, 0xFF, 0x0C, 0x00]
+            + [UInt8](repeating: 0, count: 24)
+        let raster = Data(head + [0x00, 0x98] + [UInt8](repeating: 0, count: 8))   // PackBitsRect: a raster picture
+        XCTAssertNil(try BTXPredecode.picture(file: "f", id: 128, data: raster))
+        let noBands = Data(head + [0x00, 0xFF])                                    // ends with no band
+        XCTAssertNil(try BTXPredecode.picture(file: "f", id: 129, data: noBands))
+        let brokenBand = Data(head + [0x82, 0x00, 0x00, 0x00])                    // 0x8200, truncated record
+        XCTAssertThrowsError(try BTXPredecode.picture(file: "BT Levels.rsrc", id: 13000, data: brokenBand)) { error in
+            let text = String(describing: error)
+            XCTAssertTrue(text.contains("BT Levels.rsrc") && text.contains("13000"), text)
+        }
+    }
+
     /// Every written file registers, and its bytes are exactly `CodecImage.decode` of the payload it is keyed by.
     func testWrittenFilesRegisterAndEqualTheDecode() throws {
         let data = try resources()

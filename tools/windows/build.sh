@@ -9,7 +9,12 @@
 #              it first on PKG_CONFIG_PATH, so SwiftPM takes -I/-L/-lSDL3 for Windows, not brew's Mac copy.
 #              No unsafeFlags anywhere, so it also works when the SDL package is a path dependency.
 #   -- …       everything after `--` is appended verbatim to each `swift build` (e.g. -Xcc -DFOO -Xlinker …).
-#              WIN_SWIFT_FLAGS (whitespace-split) is appended the same way, before the `--` args.
+#              WIN_SWIFT_FLAGS (whitespace-split) is appended the same way, before the `--` args. It LEAKS into
+#              every build that inherits it (proof-b.sh unsets it); prefer `--` for one build.
+# pkg-config: a cross-build never sees the Mac's (brew's) .pc files — PKG_CONFIG_PATH/LIBDIR are the
+#              generated Windows dir (with --sdl) or an empty one, and a pkg-config shim hides brew's search path
+#              (and brew) from SwiftPM. So a package needing CSDL3/sdl3 built without --sdl fails loudly (no SDL3 headers),
+#              never against the Mac's SDL.
 # Build dir: $WIN_BUILD_ROOT/<package-dir-name> (default ~/Developer/Toolchains/windows-cross/build).
 #
 # Why `--build-system native`: SwiftPM 6.4's default (swift-build) refuses a Windows destination from a
@@ -40,21 +45,41 @@ done
     print -u2 "build: toolchain not set up — run tools/windows/setup-toolchain.sh"; exit 69; }
 
 scratch="${WIN_BUILD_ROOT:-$WIN_CROSS/build}/${pkg:t}"
+pcdir="$scratch/pkgconfig-windows"
+rm -rf "$pcdir"; mkdir -p "$pcdir"
 if (( sdl )); then
     [[ -f "$WIN_SDL3/lib/x64/SDL3.lib" && -f "$WIN_SDL3/include/SDL3/SDL.h" ]] || {
         print -u2 "build: no SDL3 dev zip at $WIN_SDL3 — run tools/windows/setup-toolchain.sh"; exit 69; }
-    pcdir="$scratch/pkgconfig-windows"
-    mkdir -p "$pcdir"
+    # SwiftPM parses .pc files itself: it takes quotes literally but honours backslash-escaped spaces.
     cat > "$pcdir/sdl3.pc" <<PC
-prefix=$WIN_SDL3
+prefix=${WIN_SDL3// /\\ }
 Name: sdl3
 Description: SDL3 $SDL3_VERSION VC dev zip (x64) for the Windows cross-build (tools/windows/build.sh --sdl)
 Version: $SDL3_VERSION
 Cflags: -I\${prefix}/include
 Libs: -L\${prefix}/lib/x64 -lSDL3
 PC
-    export PKG_CONFIG_PATH="$pcdir${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 fi
+# SwiftPM reads .pc files itself, from PKG_CONFIG_PATH plus the search path it asks `pkg-config --variable
+# pc_path pkg-config` for (brew's, on this Mac) and from `brew --prefix` for a .brew provider. Shims first on
+# PATH answer the first with $pcdir only and fail the second, so the Mac's sdl3.pc is never in reach.
+shimdir="$scratch/pkgconfig-shim"
+mkdir -p "$shimdir"
+cat > "$shimdir/pkg-config" <<'SH'
+#!/bin/sh
+# tools/windows/build.sh: cross-builds see only the generated Windows .pc dir, never the host's.
+if [ "$1" = "--variable" ] && [ "$2" = "pc_path" ]; then printf '%s\n' "$PKG_CONFIG_LIBDIR"; exit 0; fi
+echo "pkg-config (cross-build shim): host pkg-config disabled; use build.sh --sdl for sdl3" >&2
+exit 1
+SH
+# SwiftPM also asks `brew --prefix` for a .brew provider's pkgconfig dir: hide brew the same way.
+cat > "$shimdir/brew" <<'SH'
+#!/bin/sh
+echo "brew (cross-build shim): hidden from Windows cross-builds" >&2
+exit 1
+SH
+chmod +x "$shimdir/pkg-config" "$shimdir/brew"
+export PKG_CONFIG_LIBDIR="$pcdir" PKG_CONFIG_PATH="$pcdir" PATH="$shimdir:$PATH"
 swift=("$WIN_TOOLCHAIN/usr/bin/swift" build --package-path "$pkg" --scratch-path "$scratch" -c "$config"
        --build-system native --swift-sdks-path "$WIN_SWIFT_SDKS" --swift-sdk "$WIN_TRIPLE" $extra)
 # SwiftPM won't take --product with --build-tests, so a named product and the tests are two builds.

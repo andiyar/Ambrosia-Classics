@@ -7,7 +7,7 @@ disk). The two exceptions are listed under "What it writes where" below.
 ```sh
 tools/windows/setup-toolchain.sh                     # idempotent; first run ~4.2 GB of downloads
 tools/windows/build.sh tools/windows/hello hello     # → …/windows-cross/build/hello/x86_64-unknown-windows-msvc/debug/hello.exe
-tools/windows/run-in-crossover.sh <that exe> --skip-userdefaults
+HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy tools/windows/run-in-crossover.sh <that exe> --skip-userdefaults
 HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 ```
 
@@ -15,8 +15,8 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 |---|---|
 | `env.sh` | Pins + paths (sourced by the others). `win_path` maps a Mac path to `Z:\…` |
 | `setup-toolchain.sh` | Fetches, verifies (SHA-256) and extracts everything below; writes the Swift SDK bundle |
-| `build.sh <pkg> <product\|all> [--tests] [--release]` | SwiftPM cross-build; test bundles are copied to `…PackageTests.exe` |
-| `run-in-crossover.sh <exe> [args]` | Runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through **truncated to 8 bits** (see below), watchdog `WIN_RUN_TIMEOUT` (default 900 s) |
+| `build.sh <pkg> <product\|all> [--tests] [--release] [--sdl] [-- args]` | SwiftPM cross-build; test bundles are copied to `…PackageTests.exe`. `--sdl` writes a Windows `sdl3.pc` for the SDL3 VC zip. The Mac's pkg-config/brew search paths are always hidden (shims on `PATH`), so an SDL package built without `--sdl` fails loudly (`'SDL3/SDL.h' file not found`) rather than reaching brew's Mac SDL. `WIN_SWIFT_FLAGS` is appended to **every** build that inherits it (proof-b unsets it); prefer `-- …` for one build |
+| `run-in-crossover.sh <exe> [args]` | Runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through **truncated to 8 bits** (see below), watchdog `WIN_RUN_TIMEOUT` (default 900 s). **Refuses to run (exit 64) unless `HECTOR_SDL_AUDIO_DRIVER` is set** — see "SDL drivers under CrossOver" |
 | `proof-b.sh` | Copies `BubbleTrouble/Core` (laid out like the repo; its sources unmodified, but the copy's test-only `PNGWriter.swift` is patched — see the end of this file) + a symlinked HectorKit, cross-builds the tests, runs each test class in CrossOver, tallies verdicts; exits 1 if `--list-tests` finds no tests |
 | `hello/` | Proof A package |
 | `btx-predecode` (`BubbleTroubleX/Windows`, Mac-only) | Decodes BTX's QuickTime-JPEG PICT bands with ImageIO into `<key>.rgba` files (D16.1); `proof-b.sh` runs it first into `$WIN_CROSS/work/proof-b/decoded` |
@@ -87,8 +87,23 @@ read the log for crashes; a non-zero code's exact value is not reliable. 124 = t
   msvc; and SwiftPM 6.4's default build system (swift-build) says `unable to find platform for 'windows'`, so
   `build.sh` passes `--build-system native` (deprecated warning, works).
 - **CrossOver.** `wine --bottle hector-win --cx-app <Z:\ path>`; Wine maps `/` to `Z:`. Environment variables
-  pass through (`HECTORKIT_DATA_BTX="Z:\…"`, `SDL_AUDIO_DRIVER=dummy` for every automated SDL run). Wine
+  pass through (`HECTORKIT_DATA_BTX="Z:\…"`) — **except `SDL_*`, which CrossOver strips** (next section). Wine
   intercepts some argument spellings (`--help`) before the program sees them. Output lines end in CRLF.
+
+## SDL drivers under CrossOver
+
+CrossOver's wine launcher **strips every `SDL_*` environment variable** (measured 2026-10-06:
+`SDL_VIDEO_DRIVER=dummy` never reaches the program, an unrelated `FOO=bar` does). So `SDL_AUDIO_DRIVER=dummy`
+does nothing under CrossOver, and an automated run would open the real audio device. HectorSDL reads
+`HECTOR_SDL_AUDIO_DRIVER` / `HECTOR_SDL_VIDEO_DRIVER` instead (`SDLHost.applyDriverOverridesFromEnvironment`,
+applied as overriding SDL hints; the test bundle also forces `dummy` in-process).
+
+- **Automation (every scripted run):** `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy`.
+- **A human playing with sound:** name SDL's Windows audio driver, `HECTOR_SDL_AUDIO_DRIVER=wasapi` (or
+  `directsound`). There is no `default` value — an unknown driver name makes SDL's audio init fail.
+
+`run-in-crossover.sh` exits 64 unless `HECTOR_SDL_AUDIO_DRIVER` is set (to anything non-empty), for every
+program — non-SDL ones too — so no run reaches a real device by forgetting it. `proof-b.sh` exports `dummy`.
 
 ## Results (W0, 2026-10-06)
 

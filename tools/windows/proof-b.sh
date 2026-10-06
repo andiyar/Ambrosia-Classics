@@ -12,6 +12,10 @@
 # One CrossOver run per test class (a crash only loses its class); a class that dies is re-run test by test
 # so every test gets a verdict. Prints per-class lines and a final "passed / failed / skipped / crashed" tally.
 set -euo pipefail
+# The test exe is not SDL, but run-in-crossover.sh requires an explicit audio driver (CrossOver strips SDL_*);
+# and WIN_SWIFT_FLAGS (build.sh appends it to every build) must not leak an unrelated package's flags in here.
+export HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy
+unset WIN_SWIFT_FLAGS
 here="${0:A:h}"
 repo="${here:h:h}"
 . "$here/env.sh"
