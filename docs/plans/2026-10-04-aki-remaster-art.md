@@ -25,7 +25,9 @@
   paste at 4× position (no bleeding across sprites). `mask` regions and alpha: nearest-neighbour 4× (bit-exact: a 4×4
   box-downsample of the result equals the original). Backgrounds additionally get a variant `hd-4x-dedither/` (light
   de-dither — e.g. a small median/bilateral pass — before remacri) for Ben to compare against the diagonal hatching remacri
-  shows on the dithered photos; Ben picks at U4, the loser is dropped from the tool.
+  shows on the dithered photos; Ben picks at U4, the loser is dropped from the tool. **As built (D17):** Ben picked the
+  de-dithered backgrounds (Gaussian 0.7 before remacri) — the only background treatment now; tiles.png's body rows use plain
+  Lanczos 4× (no AI grain); every picture region gets a low-frequency colour back-projection.
 - **C4 — Runtime scale (HectorShell, via a HectorKit branch merged back as in D7 R6).** `ShellBitmap` gains a scale factor
   `k`: backing pixels = logical size × k; every copy/mask/draw API keeps LOGICAL coordinates and multiplies by k
   internally (nearest-neighbour stays the copy rule — at k = 4 the art is already 4×). Text drawing scales its CTM by k.
@@ -52,7 +54,7 @@
 | **U1** asset tool | `tools/upscale-aki-art.py` (+ `tools/aki-art-regions.json`): C2, C3; idempotent, caches by input hash; prints per-file timings and totals. Classics only — can run in parallel with the iPad session. | A coverage check (script or AkiCore test reading the JSON) proves every rect the game draws from lies inside a declared region; every mask region round-trips bit-exact; the full set generates; the seat eyeballs `hd-4x/` contact sheets. |
 | **U2** HectorShell scale factor | C4 on HectorKit branch `remaster` (worktree inside the Classics worktree's `.build/`), reviewed, ff-merged to HectorKit main. **Starts only after the iPad session's HectorKit merge.** | M3 floor (167 or the iPad session's new floor) unchanged at k = 1; new tests for k = 4 rect math, mask alignment, text CTM. |
 | **U3** ⚑ Aki wiring | C5, C6 on Mac and iPad; staging scripts copy `hd-4x/`; WHAT-TO-EXPECT notes. **After the iPad session merges to Classics main.** | M1/M2 (+ AkiPad build); Original mode identical (review leg diffs against main); remaster screenshots at 4× read by the seat (map, a level, fade frames, pause/no-pairs sheets, time-bar stones, proverb). |
-| **U4** Ben's eyes | Staged Mac app on ~/Desktop (ask before replacing) + iPad install; Ben toggles both ways, picks dedither vs plain backgrounds. | Ben only; verdict in STATE + DECISIONS. |
+| **U4** Ben's eyes | Staged Mac app on ~/Desktop (ask before replacing) + iPad install; Ben toggles both ways, picks dedither vs plain backgrounds. | Ben only; verdict in STATE + DECISIONS. **PASSED 2026-10-06 (D17).** |
 
 ## 4. Risks
 1. Remacri's diagonal hatching on the dithered background photos (seen in the samples) — C3's de-dither variant; Ben decides.

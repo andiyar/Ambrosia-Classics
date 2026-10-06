@@ -41,15 +41,15 @@
   in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
 
 - **Bubble Trouble X on Windows — engine side DONE, NOT PLAYABLE YET (2026-10-06, Opus 5.5 orchestrators; plan
-  `docs/plans/2026-10-06-btx-windows.md`, DECISIONS D15/D16/D17).** Ben: BTX first, cross-compiled on this Mac, Mac UI
+  `docs/plans/2026-10-06-btx-windows.md`, DECISIONS D15/D16/D18).** Ben: BTX first, cross-compiled on this Mac, Mac UI
   drawn in-window, data bundled, **Mac app untouched**. Landed: W0 toolchain (`tools/windows/`, cache
   `~/Developer/Toolchains/windows-cross`, swift.org 6.4.0 + xwin + SDL3 3.4.16, CrossOver bottle `hector-win`); W1
   `HectorAudio.PCMMixer`; W2 baked fonts (`BubbleTroubleX/Windows`, BTXWinKit); **W0.5** parity — HectorKit `MacRoman`
   table + `CodecImage` precomputed RGBA, `btx-predecode` (8 JPEG PICTs → 20 `.rgba`), `BTXPrefsBacking` → **BTX core
-  tests in CrossOver 260 / 0 / 0 / 0** (Mac 261; one UserDefaults test is Mac-only, D17.1); **W3** `HectorKit/SDL`
+  tests in CrossOver 260 / 0 / 0 / 0** (Mac 261; one UserDefaults test is Mac-only, D18.1); **W3** `HectorKit/SDL`
   package (`HectorSDL`: window + integer-scale present, Mac-keycode input, clock, `SDLAudioOut` over PCMMixer) — smoke
   in CrossOver byte-identical to the Mac. HectorKit main gate floor **252**. **CrossOver strips `SDL_*` env vars —
-  automation uses `HECTOR_SDL_AUDIO_DRIVER=dummy`** (D17.4). Next: **W4 ⚑ WinGameDriver + BubbleTroubleXWin = PLAYABLE**,
+  automation uses `HECTOR_SDL_AUDIO_DRIVER=dummy`** (D18.4). Next: **W4 ⚑ WinGameDriver + BubbleTroubleXWin = PLAYABLE**,
   then W5 menu bar, W6 dialogs, W7 stage.
 
 ## Open, ordered
@@ -62,8 +62,12 @@
    delete prefs domain `com.ambrosiaclassics.aki`. Handoff `docs/handoff-2026-10-04-aki-q24-gate.md`.
    **Next: Aki on iPad** (Ben: before Phase 3) — plan `docs/plans/2026-10-04-aki-ipad.md`, rulings DECISIONS D7, chip
    queued (Opus seat, cap lifted, one shot; HectorKit fork-and-merge-back on branch `ipad`). Then Phase 3 (editor, `.aki`).
-   **Remaster mode** (DECISIONS D11: remacri-4× art behind a menu + Preferences toggle, Original by default) — plan
-   `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
+   **Remaster mode — Ben's gate PASSED 2026-10-06 (DECISIONS D17)**, code on branch `aki-remaster` (pushed; built on
+   `aki-ipad` + a merge of main) — **merges to main only after the iPad branch `aki-ipad` lands** (Ben's call). Art tool
+   `tools/upscale-aki-art.py` + region map + `ArtRegionsTests` already on main (regenerate `Resources/Aki/hd-4x/`, 207 MB,
+   git-ignored). HectorKit scale factor + IOSurface present merged to HectorKit main 465200a (floor then 201). Toggle: Aki ▸
+   Remastered Art (⌘G, works in fullscreen) + Preferences checkbox; Mac + iPad. Branch gates: AkiCore 123/0/0, Aki + AkiPad +
+   BubbleTroubleX BUILD SUCCEEDED. Staged: ~/Desktop/Aki.app + Ben's iPad mini. Handoff `docs/handoff-2026-10-06-aki-remaster.md`.
 2. **Bubble Trouble X — Ben's play gate (sound is in):** take his playtest verdicts; then the rest of his gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
 4. **Windows port** (Ben 2026-10-06) — BTX engine side done (above); **W4 playable next** (chip queued).
