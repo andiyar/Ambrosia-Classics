@@ -537,3 +537,28 @@ black; cleared with `TintScreen(nil)` when `+0x11c` is 0 or > 10.
 | 6 | world-data-format §3.2 row 0x2730..0x2736 | "(mode, first index, count?, period 12000)" | (mode, count n of entries before 0xff, period P frames, amplitude A = 12000) | `10011850..10011860`; §1.5 |
 | 7 | physics §0 `+0xb8` row | "0xb fade/blink … 0x10..0x13 blends"; "Pixel semantics NOT RESOLVED" | 0x10..0x13 are mode-1 table numbers, not modes; mode 0xb = translucent with arg-selected pair table; pixel semantics in this file §2–§6 | §2.1 census; `10027d3c..10027df8` |
 | 8 | enemies-water-cave §0.2 | "[MED: the palette in force when `.BuildTintTable` runs is assumed to be CLUT 200; table colours not rendered]" | built from the level+base working copy (indices 0..0x9f equal CLUT 200 in every level); colours rendered in this file §3.2 | §1.3, §1.4 |
+
+## ⚑ Corrections (C4 review, 2026-10-07; Ben: follow the binary)
+The text above stands; these notes override it where they differ. Transcribed in `FerazelCore.TableRequests` [HIGH].
+1. **§4 water 1 — 32-bit overflow.** L·m is a 32-bit product (`10020548 mulli 0x5f00`, `1002054c mullw r7,r5,r28`
+   with r28 = 0x8d00, `10020554 mulli 0x2c00`) divided by 0xffff **signed** (`mulhw` 0x80008001; `add`; `srawi 0xf`;
+   add the sign bit — `10020550`, `10020558`, `1002055c`; = truncating signed division for every 32-bit operand).
+   L·0x8d00 wraps negative for **L ≥ 59,494**; the `cmpw ≤ 0xffff` clamps (`10020594..100205bc`) do not fire, the
+   negative t is converted signed (`xoris 0x8000`), and `fctiwz` + `sth` keep the low 16 bits. CLUT 202 w1 @00
+   (white) = `c7e6 62e5 7133`, high bytes **c76271** (§4's table prints c7ff71).
+2. **§6.1 glow `014c` — 32-bit overflow.** `100210e0 mullw` (L>>1 + 0x7d00)·w wraps for **lum(src) ≥ 40,932**;
+   `100210ec`, `100210f0`, `10021148 mullw` dst·(0xffff−w) wrap when the product ≥ 2^31 (w = 1, i.e. black-ish src: dst ≥ 0x8002).
+   Each quotient is signed (`100210f4..10021160`), the sums are `sth`'d unclamped: white src → `fcfe` on every
+   channel (unwrapped `fcff`); black src over white → `fffd` (unwrapped `fffe`). Note L>>1 is taken from L, not w.
+3. **§6.1 grey-pull `0144` — 32-bit overflow.** `100212bc mullw r23,r5` = b·0x1000·a·0x1000 = a·b·2^24 wraps for
+   **a·b ≥ 128**; `100212cc..100212d4 mullw` c·(0xffff−w) also wrap for a ≤ 7 and a large channel (a = 0 → w = 1: c ≥ 0x8002; a = 1: c ≥ 0x888a; a = 7: c ≥ 0xe390).
+   The signed quotients are summed and then clamped 0..0xffff (`1002132c..10021378`), so wrapped cells clamp to 0 (or land low):
+   (a, b) = (15, 15) on white → 0 (unwrapped `f0ff`); (0, 15) on white → 0 (unwrapped `fffe`).
+4. **Fused multiply-adds.** Water 1 is `fmul` 0.85·t then `fmadd` 0.15·c + that (`10020620`, `1002063c`,
+   `1002064c`; f28 = 0.15 @`100a1708`, f31 = 0.85 @`100a1700`). Light groups: 1 `fnmsub` m = 1 − 0.09·k
+   (`1001aef8`); 5 `fmadd` multipliers (`1001b454..1001b45c`) and integer terms (`1001b4dc`, `1001b508`); 7
+   multipliers (`1001b794..1001b79c`) and terms (`1001b81c`, `1001b858`); 9 multiplier (`1001ba2c`); f64 constants
+   `100a1628` 0.1, `1630` 0.01, `1638` 0.05, `1640` 0.025, `1650` 0.09. A single rounding, not two.
+5. **§7.3 group 1 — `frsp` before truncation.** v·m is rounded to single (`1001af78`, `1001af90`, `1001af94`),
+   compared with 0, and the single is truncated (`fctiwz 1001af9c`). Over every v 0..0xffff and k 0..10 this changes
+   no output against truncating the double (measured, 0 differences).

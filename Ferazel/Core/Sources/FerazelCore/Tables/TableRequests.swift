@@ -230,8 +230,11 @@ public enum TableRequests {
             return RGB16(UInt16(R >> 1), UInt16(G >> 1), UInt16(min(2 * L, 0xffff)))
         case 1:
             // t = 2·⌊L·m/0xffff⌋ ≤ 0xffff; out = trunc(0.15·c + 0.85·t) — the raw is `fmul 0.85·t` then
-            // `fmadd 0.15·c + that` (100a1708 0.15, 100a1700 0.85; 10020620..1002064c).
-            func t(_ m: Int) -> Double { Double(min(2 * ((L * m) / 0xffff), 0xffff)) }
+            // `fmadd 0.15·c + that` (100a1708 0.15, 100a1700 0.85; 10020620..1002064c). L·m is a 32-bit product
+            // (`10020548 mulli`, `1002054c mullw`, `10020554 mulli`) divided signed (`mulhw 0x80008001`): L·0x8d00
+            // wraps negative for L ≥ 59,494, the `cmpw ≤ 0xffff` clamp lets it through, and the signed t reaches
+            // `fctiwz`/`sth` (Ben 2026-10-07: follow the binary; lighting-tables ⚑ Corrections).
+            func t(_ m: Int) -> Double { Double(min(div0xffff(mullw(L, m)) &<< 1, 0xffff)) }
             func out(_ ch: Int, _ m: Int) -> UInt16 { wrap16(Int((0.85 * t(m)).addingProduct(0.15, Double(ch)))) }
             return RGB16(out(R, 0x5f00), out(G, 0x8d00), out(B, 0x2c00))
         case 2:   // 100a16f8 0.7
@@ -290,11 +293,38 @@ public enum TableRequests {
         case quarterSprite
         /// `_DAT_100a0150`: (dst + lum(src)) >> 1 [MED].
         case spriteGreyAverage
+        /// `_DAT_100a014c` "glow" (`1002103c..1002119c`): L = lum(src), w = max(L, 1),
+        /// ⌊(L>>1 + 0x7d00)·w/0xffff⌋ + ⌊dst·(0xffff−w)/0xffff⌋ in 32-bit wrapping arithmetic, stored mod 0x10000.
+        case glow
+        /// `_DAT_100a0144` grey-pull (`10021250..100213d8`), 16×16×256 `[a·0x1000 + b·0x100 + i]`: the row byte is
+        /// a·16 + b, not a colour (see `greyPull(weight:level:color:)`).
+        case greyPull
     }
 
-    /// One pair-table request.
+    /// `mullw`: the low 32 bits of a product, signed.
+    @inline(__always) static func mullw(_ a: Int, _ b: Int) -> Int32 { Int32(truncatingIfNeeded: a &* b) }
+
+    /// The compiler's signed /0xffff: `mulhw 0x80008001; add; srawi 15; add the sign bit` (`10020550..`,
+    /// `100210f4..`, `100212d8..`) — truncating signed division of the (possibly wrapped) 32-bit product.
+    @inline(__always) static func div0xffff(_ p: Int32) -> Int32 {
+        let hi = Int32(truncatingIfNeeded: (Int64(Int32(bitPattern: 0x8000_8001)) * Int64(p)) >> 32)
+        let q = (hi &+ p) >> 15
+        return q &+ Int32(bitPattern: UInt32(bitPattern: q) >> 31)
+    }
+
+    /// One pair-table request (every case but `.greyPull`, whose row is not a colour).
     public static func pair(_ p: Pair, src: RGB16, dst: RGB16) -> RGB16 {
-        func ch(_ s: UInt16, _ d: UInt16, _ ls: Int) -> UInt16 {
+        precondition(p != .greyPull, "grey-pull rows are a·16 + b: use greyPull(weight:level:color:)")
+        let ls = lum(src)
+        if p == .glow {
+            // 100210c8 `or.; bgt` w = max(L, 1); 100210d8 `addi 0x7d00` on L>>1 (L, not w); 100210e0/ec/f0/1148
+            // `mullw`; each quotient signed; the sums are `sth`'d unclamped.
+            let w = max(ls, 1)
+            let k = div0xffff(mullw((ls >> 1) + 0x7d00, w))
+            func g(_ d: UInt16) -> UInt16 { UInt16(truncatingIfNeeded: k &+ div0xffff(mullw(Int(d), 0xffff - w))) }
+            return RGB16(g(dst.red), g(dst.green), g(dst.blue))
+        }
+        func ch(_ s: UInt16, _ d: UInt16) -> UInt16 {
             let s = Int(s), d = Int(d)
             switch p {
             case .additive: return UInt16(min(s + d, 0xffff))
@@ -302,18 +332,36 @@ public enum TableRequests {
             case .threeQuarterSprite: return UInt16((s >> 1) + (s >> 2) + (d >> 2))
             case .quarterSprite: return UInt16((s >> 2) + (d >> 1) + (d >> 2))
             case .spriteGreyAverage: return UInt16((d + ls) >> 1)
+            case .glow, .greyPull: preconditionFailure("handled above")
             }
         }
-        let ls = lum(src)
-        return RGB16(ch(src.red, dst.red, ls), ch(src.green, dst.green, ls), ch(src.blue, dst.blue, ls))
+        return RGB16(ch(src.red, dst.red), ch(src.green, dst.green), ch(src.blue, dst.blue))
     }
 
-    /// The 65,536 requests of pair table `p`, entry `src·0x100 + dst`.
+    /// One grey-pull (`0144`) request, entry `a·0x1000 + b·0x100 + i`: colour `c` = clut[i] pulled toward grey level
+    /// b·0x1000 by a/16. w = max(a·0x1000, 1); clamp(⌊b·0x1000·w/0xffff⌋ + ⌊c·(0xffff−w)/0xffff⌋, 0, 0xffff) in 32-bit
+    /// wrapping arithmetic: `100212bc mullw` (a·b·2^24) wraps for a·b ≥ 128, and `100212cc..d4 mullw` c·(0xffff−w)
+    /// wraps for a large channel when a ≤ 7 — the clamps (`1002132c..10021378`) then see the wrapped sums.
+    public static func greyPull(weight a: Int, level b: Int, color c: RGB16) -> RGB16 {
+        precondition((0..<16).contains(a) && (0..<16).contains(b), "grey-pull a \(a) b \(b)")
+        let w = max(a * 0x1000, 1)
+        let k = div0xffff(mullw(b * 0x1000, w))
+        func g(_ v: UInt16) -> UInt16 { UInt16(max(0, min(0xffff, k &+ div0xffff(mullw(Int(v), 0xffff - w))))) }
+        return RGB16(g(c.red), g(c.green), g(c.blue))
+    }
+
+    /// The 65,536 requests of pair table `p`, entry `row·0x100 + i`: row = sprite pixel (src), i = screen pixel
+    /// (dst); for `.greyPull` row = a·16 + b and i is the pixel pulled.
     public static func pair(_ p: Pair, clut: ColorLUT) -> [RGB16] {
         let colors = clut.entries.map(RGB16.init)
         var out: [RGB16] = []
         out.reserveCapacity(0x10000)
-        for s in colors { for d in colors { out.append(pair(p, src: s, dst: d)) } }
+        for row in 0..<256 {
+            for d in colors {
+                out.append(p == .greyPull ? greyPull(weight: row >> 4, level: row & 15, color: d)
+                                          : pair(p, src: colors[row], dst: d))
+            }
+        }
         return out
     }
 
@@ -360,9 +408,9 @@ public enum TableRequests {
             return RGB16(addClamp(R, 1900 * k), addClamp(G, 1900 * k), addClamp(B, 1900 * k))
         case 1:
             let m = (1.0).addingProduct(-0.09, kd)
-            func ch(_ v: Int) -> UInt16 {
-                let x = Double(v) * m
-                return Double(Float(x)) <= 0 ? 0 : wrap16(Int(x))
+            func ch(_ v: Int) -> UInt16 {   // `fmul`, `frsp` (1001af78/90/94), compare, `fctiwz` the single
+                let x = Double(Float(Double(v) * m))
+                return x <= 0 ? 0 : wrap16(Int(x))
             }
             return RGB16(ch(R), ch(G), ch(B))
         case 2:

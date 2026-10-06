@@ -166,6 +166,7 @@ final class ColorSearchTests: XCTestCase {
         XCTAssertEqual(perTable["redden"].map { [$0[..<8].reduce(0, +), $0[8...].reduce(0, +)] }, [843, 1_042])
         XCTAssertEqual(perTable["pairs"], [23_561, 23_002, 23_561])
         XCTAssertEqual(groups["tint"].map { [$0.0, $0.1] }, [1_168, 3_603])
+        // Measured unchanged under Ben's ruling (2026-10-07; water 1 overflow `1002054c`): 397 of 1,280.
         XCTAssertEqual(groups["water"].map { [$0.0, $0.1] }, [397, 1_280])
         XCTAssertEqual(groups["redden"].map { [$0.0, $0.1] }, [1_885, 6_144])
         XCTAssertEqual(groups["ambient"].map { [$0.0, $0.1] }, [1_887, 4_096])
@@ -185,10 +186,12 @@ final class ColorSearchTests: XCTestCase {
             requests += all.count
             totals[id] = disagreements(all, c, exact, ruled)
         }
-        XCTAssertEqual(totals, [202: 75_461, 210: 77_037, 212: 73_640, 214: 72_846, 216: 78_302, 218: 74_681,
-                                220: 71_105, 222: 63_107, 224: 68_551, 228: 67_848, 236: 79_478, 238: 73_737,
-                                240: 78_219, 242: 73_025, 246: 77_463, 248: 73_643])
-        XCTAssertEqual(totals.values.reduce(0, +), 1_178_143)
+        // Ben's ruling (2026-10-07), follow the binary: water 1's L·0x8d00 overflow (`1002054c mullw`) moves
+        // 218 +3, 222 −3, 224 +1, 228 +1, 242 +1 (CLUT 202 unchanged) — grand total 1,178,143 → 1,178,146.
+        XCTAssertEqual(totals, [202: 75_461, 210: 77_037, 212: 73_640, 214: 72_846, 216: 78_302, 218: 74_684,
+                                220: 71_105, 222: 63_104, 224: 68_552, 228: 67_849, 236: 79_478, 238: 73_737,
+                                240: 78_219, 242: 73_026, 246: 77_463, 248: 73_643])
+        XCTAssertEqual(totals.values.reduce(0, +), 1_178_146)
         XCTAssertEqual(requests, 3_387_696)
     }
 }
