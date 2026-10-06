@@ -49,6 +49,9 @@
 #   --skip-build          reuse the existing Release build in .build/xcode-aki-release; it may be stale
 #                         against the current sha, so it is refused unless --allow-dirty is also given,
 #                         and the summary says REUSED BUILD
+#   --replace             allow a real run when out/release/Aki-<version>.dmg already exists (it may be
+#                         a released artifact): it is overwritten on success, removed if the run fails.
+#                         Without it such a run is refused — bump --version instead
 #   --dry-run             print the plan; build, copy, sign and write nothing
 #
 #   AKI_DATA_12           the original 1.2.0 Contents/Resources (default
@@ -76,6 +79,7 @@ NOTARIZE=""
 ALLOW_DIRTY=0
 SKIP_BUILD=0
 DRY_RUN=0
+REPLACE=0
 
 die()   { printf '\npackage-aki-release: FAIL — %s\n' "$*" >&2; exit 1; }
 step()  { printf '\n== %s\n' "$*"; }
@@ -91,6 +95,7 @@ while (( $# )); do
         --notarize)    need_value "$@"; NOTARIZE="$2"; shift 2 ;;
         --allow-dirty) ALLOW_DIRTY=1; shift ;;
         --skip-build)  SKIP_BUILD=1; shift ;;
+        --replace)     REPLACE=1; shift ;;
         --dry-run)     DRY_RUN=1; shift ;;
         -h|--help)     usage; exit 0 ;;
         *)             die "unknown argument “$1” (see --help)" ;;
@@ -162,6 +167,14 @@ no_fonts() {
 step "inputs"
 PROBLEMS=()
 problem() { if (( DRY_RUN )); then info "PROBLEM (a real run would stop): $*"; PROBLEMS+=("$*"); else die "$*"; fi; }
+
+if [[ -e "$DMG" ]]; then
+    if (( REPLACE )); then
+        info "--replace: the existing $DMG (+ .sha256) will be overwritten on success, removed on failure"
+    else
+        problem "Aki-$VERSION.dmg already exists (a released artifact?) — bump --version or pass --replace"
+    fi
+fi
 
 DATA="${AKI_DATA_12:-$ROOT/Resources/Aki/1.2.0.app/Contents/Resources}"
 DATA_OK=0
@@ -296,14 +309,36 @@ fi
 MNT=""
 WDMG="$REL/Aki.dmg"   # package-dmg.sh's output; renamed to $DMG only after the final check passes
 SCRUB_ON_EXIT=0
-# On failure leave no plausible-looking unfinished artefact behind (half-made or unchecked DMG, notary
-# zip, create-dmg's rw.*.dmg temporaries and any /Volumes/dmg.* mount it left — as notarize-kit's
-# package-dmg.sh dmg_cleanup does).
+# On failure leave no plausible-looking unfinished DMG-shaped artefact behind: the half-made or unchecked
+# DMG, the notary zip, create-dmg's rw.*.dmg temporaries and the /Volumes/dmg.XXXXXX mounts THIS run's
+# create-dmg left (as notarize-kit's package-dmg.sh dmg_cleanup does). The signed $REL/Aki.app and
+# $MANIFEST are deliberately KEPT on failure — they are verified intermediate output, useful for
+# diagnosis, and wiped at the start of the next run anyway.
+#
+# run_dmg_mounts <image-path prefix> — reads `hdiutil info` on stdin and prints the mount point of every
+# /Volumes/dmg.XXXXXX volume whose backing image path starts with the prefix. Only those are detached:
+# a blanket /Volumes/dmg.* detach could hit a parallel create-dmg run from another session.
+run_dmg_mounts() {
+    local prefix="$1" line img="" mp
+    while IFS= read -r line; do
+        case "$line" in
+            =*)          img="" ;;
+            image-path*) img="${line#*: }" ;;
+            /dev/*)
+                [[ -n "$img" && "$img" == "$prefix"* ]] || continue
+                line="${line%"${line##*[![:space:]]}"}"   # drop trailing whitespace
+                mp="${line##*$'\t'}"                        # last tab-separated field
+                [[ "$mp" =~ ^/Volumes/dmg\.[A-Za-z0-9]{6}$ ]] && printf '%s\n' "$mp"
+                ;;
+        esac
+    done
+    return 0
+}
 scrub_artefacts() {
     local v
-    for v in /Volumes/dmg.*; do
-        [[ -d "$v" ]] && { hdiutil detach "$v" -force >/dev/null 2>&1 || true; }
-    done
+    while IFS= read -r v; do
+        hdiutil detach "$v" -force >/dev/null 2>&1 || true
+    done < <(hdiutil info 2>/dev/null | run_dmg_mounts "$REL/rw.")
     rm -f "$WDMG" "$REL"/rw.*.dmg "$REL"/*-notarize.zip "$DMG" "$DMG.sha256"
 }
 cleanup() {
