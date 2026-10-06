@@ -467,3 +467,31 @@ decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and 
 original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
 RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
 **Approved by:** Ben.
+
+## D24 — Deimos Rising data in git; Phase 0 layering (2026-10-06)
+
+(Planned as D23; D23 was taken on main by the Aki 1.0 release while this branch was cut, so this is D24. The Phase 0
+plan's "D23.n" references mean D24.n.)
+
+**Decided:**
+1. **Deimos original data is committed** at `Resources/Deimos/Data/{Paks,Local}` (Ben's standing "shareware data goes in
+   git" ruling, over D10's "unchanged for now"; D20 public repo). Exactly five files, byte-identical to the archive copy
+   (`Deimos Rising 1.0.6 (volume)/Deimos Rising/ Data`), SHA-256:
+   - `Paks/Audio.pak` 1,702,614 B `b46ce0711faca7ce0cd33c850c41e88bd3be7f7289eee9d80fe03c7013bb1039`
+   - `Paks/Game.pak` 54,956,985 B `3ae865a9ee3b005dc10368de847e4a3dea402dc1a911bbd09f0728153aceee09`
+   - `Paks/Interface.pak` 2,849,896 B `de7d2dd349f208f72eae156820c48c791f06e46b24ec5816e1a1bed0dfea0d93`
+   - `Paks/Music.pak` 13,601,894 B `3ee906a6f885ba466645ea53bab6aebba54840d756a63212f895364cebadc455`
+   - `Local/film/Last Film[last].film` 40,296 B `cf5f42cc475c011e750d3fe268e06f890ee0aac4b1678d79bcf2dca5b3e1b897`
+
+   The original folder ` Data` (leading space) is renamed `Data` — the space is a Windows/shell hazard. Not committed:
+   `HID.bundle`, `Icon\r`, `.DS_Store`, the PEF binaries. GitHub's 50 MiB warning on `Game.pak` is accepted (below the
+   100 MB hard limit). `.gitignore` `/Resources/` → `/Resources/*` + `!/Resources/Deimos/` (Aki's `Resources/Aki/*.app`
+   symlinks and anything else under `Resources/` stay ignored); `.gitattributes` `Resources/Deimos/** binary`.
+2. **Layering** (refines D22's parenthetical; plan Q2): STORED-ZIP + AIFF/AIFC/WAVE decoders go in HectorKit (generic);
+   GIF/TGA, tag naming/index, text, film, sprite plates in `Deimos/Core` — no other Ambrosia title ships GIF/TGA (kit
+   two-game rule). Promote GIF/TGA to the kit only if a second game needs them.
+3. **DeimosCore tests read the committed data** — no env var needed, never skip; `DEIMOS_DATA` overrides the location.
+
+**Rejected:** Git LFS (breaks anonymous clones of the public repo past the free quota; no hard limit forces it) · data out
+of git behind symlinks (the Aki/BTX pattern — superseded for new games by Ben's ruling) · keeping ` Data` with the space.
+**Approved by:** Ben (standing ruling, data in git; D22 scene); layering per the orchestrator's Phase 0 brief.

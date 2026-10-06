@@ -1,5 +1,6 @@
-# game data, mirrors, decompiles — all derived from copyrighted originals, never committed
-/Resources/
+# game data: see DECISIONS D24 — Deimos is committed; other games via symlinks. Mirrors, decompiles never committed
+/Resources/*
+!/Resources/Deimos/
 /ghidra/*
 !/ghidra/*.py
 !/ghidra/*.java
