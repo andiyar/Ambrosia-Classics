@@ -28,7 +28,7 @@ I just played my first game of Aki in a decade. I am so happy!
 
 ### Aki — Mahjong Solitaire
 ![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
-![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
+[[![Mac](https://img.shields.io/badge/Mac-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg) &nbsp;
 ![iPad](https://img.shields.io/badge/iPad-build%20from%20source-lightgrey) &nbsp;
 ![Remastered Art](https://img.shields.io/badge/Remastered%20Art-⌘G-blueviolet)
 
@@ -39,7 +39,7 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 ### Bubble Trouble X
 ![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
 ![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
-![Windows](https://img.shields.io/badge/Windows-download-blue)
+[![Windows](https://img.shields.io/badge/Windows-download-blue)](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0-Windows.zip)
 
 **Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
