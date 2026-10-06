@@ -49,17 +49,33 @@ final class BufferTests: XCTestCase {
                 }
             }
         }
-        // The buffer form, clipped to the dst bounds (rect partly outside).
+        // The buffer form. FUN_1001e9d0 shrinks w × h to the rect clipped by the dst bounds but starts all three
+        // buffers at the UNCLIPPED top/left (`1001eac8/ead8`, `1001eb0c/eb14`, `1001eb44/eb48`: base + top·rowBytes
+        // + 2·left), stepping rowBytes − 2w per row. So a rect hanging off the top/left lands earlier in linear
+        // memory; the replica walks the same linear indices and drops those outside the buffer.
         let a = pattern(width: 6, height: 5, seed: 1)
         let b = pattern(width: 6, height: 5, seed: 2)
-        var d = Pixmap555(width: 6, height: 5)
-        Blend555.blend(a, b, into: &d, rect: MacRect(top: -2, left: 3, bottom: 3, right: 9), a: 12)
-        for y in 0..<5 {
-            for x in 0..<6 {
-                let inside = y < 3 && x >= 3
-                XCTAssertEqual(d[x, y], inside ? Blend555.blend(a[x, y], b[x, y], a: 12) : 0, "(\(x),\(y))")
+        func blended(_ rect: MacRect) -> Pixmap555 {
+            var d = Pixmap555(width: 6, height: 5)
+            Blend555.blend(a, b, into: &d, rect: rect, a: 12)
+            return d
+        }
+        func check(_ d: Pixmap555, written: (Int, Int) -> Bool, _ what: String) {
+            for y in 0..<5 {
+                for x in 0..<6 {
+                    XCTAssertEqual(d[x, y], written(x, y) ? Blend555.blend(a[x, y], b[x, y], a: 12) : 0,
+                                   "\(what) (\(x),\(y))")
+                }
             }
         }
+        // Off the top: clipped w 3 (x 3…5), h 3 (y 0…2); start index −2·6 + 3 = −9 → rows at −9, −3 (outside), 3 →
+        // only (3…5, 0) is written.
+        check(blended(MacRect(top: -2, left: 3, bottom: 3, right: 9)), written: { x, y in y == 0 && x >= 3 }, "top")
+        // Off the left: clipped w 2, h 2; start 1·6 − 2 = 4 → (4…5, 0) and (4…5, 1), not (0…1, 1…2).
+        check(blended(MacRect(top: 1, left: -2, bottom: 3, right: 2)),
+              written: { x, y in x >= 4 && (y == 0 || y == 1) }, "left")
+        // Off the right/bottom only: the start is inside, so this is the plain clipped rect.
+        check(blended(MacRect(top: 3, left: 4, bottom: 9, right: 9)), written: { x, y in x >= 4 && y >= 3 }, "right")
     }
 
     // FUN_10009fd0: src rect nil → src bounds; dst rect nil → the SRC bounds (dst's never consulted);
@@ -108,9 +124,10 @@ final class BufferTests: XCTestCase {
     }
 
     // FUN_100450e0: rows rt + p, rt + p + 2, … of the rect (p = the src buffer's parity, +0x2c); parity ^= 1.
+    // (12 rows: the rects stay clear of the halved-bounds clip pinned in testInterlacedCopyClipsLastFieldRow.)
     func testInterlacedCopyParity() {
-        var src = pattern(width: 5, height: 9)
-        var dst = Pixmap555(width: 5, height: 9)
+        var src = pattern(width: 5, height: 12)
+        var dst = Pixmap555(width: 5, height: 12)
         dst.fill(0x7C00)
         let sr = MacRect(top: 1, left: 0, bottom: 8, right: 5)   // 7 rows: 1…7
         let dr = MacRect(top: 2, left: 0, bottom: 9, right: 5)   // 7 rows: 2…8
@@ -135,7 +152,7 @@ final class BufferTests: XCTestCase {
             }
         }
         // Odd parity on a fresh dst copies only the odd rect rows.
-        var dst2 = Pixmap555(width: 5, height: 9)
+        var dst2 = Pixmap555(width: 5, height: 12)
         src.interlaceParity = 1
         CopyBits.copyBuffer(from: &src, to: &dst2, srcRect: sr, dstRect: dr, interlaced: true)
         for y in 0..<9 {
@@ -143,6 +160,62 @@ final class BufferTests: XCTestCase {
             let copied = k >= 0 && k < 7 && k % 2 == 1
             XCTAssertEqual(dst2[0, y], copied ? src[0, 1 + k] : 0, "odd pass row \(y)")
         }
+    }
+
+    // FUN_100450e0's halving: both bitmaps get top/bottom − 2 (`100453ac`, `100453c0`, `100453d8`, `100453e0`),
+    // then bounds and rects are halved (`srawi`, `1004550c…100455dc`) with the rowBytes doubled. A 480-row buffer's
+    // halved bounds are [−1, 239) while the full rect halves to [0, 240), so CopyBits clips the last field row: row 478
+    // on an even pass, 479 on an odd one. Halved row Y addresses original row 2Y + parity − (rect.top & 1).
+    func testInterlacedCopyClipsLastFieldRow() {
+        var src = pattern(width: 4, height: 480, seed: 5)
+        var dst = Pixmap555(width: 4, height: 480)
+        dst.fill(0x7C00)
+        CopyBits.copyBuffer(from: &src, to: &dst, srcRect: nil, dstRect: nil, interlaced: true)   // parity 0
+        for y in 0..<480 {
+            let copied = y % 2 == 0 && y < 478
+            XCTAssertEqual(dst[1, y], copied ? src[1, y] : 0x7C00, "even pass row \(y)")
+        }
+        CopyBits.copyBuffer(from: &src, to: &dst, srcRect: nil, dstRect: nil, interlaced: true)   // parity 1
+        for y in 0..<480 {
+            XCTAssertEqual(dst[2, y], y < 478 ? src[2, y] : 0x7C00, "both passes row \(y)")
+        }
+        XCTAssertEqual(src.interlaceParity, 0)
+        // A 9-row buffer: halved bounds [−1, 3) → only halved rows 1 and 2 survive. src rect rows 1…7 (top odd),
+        // dst rect rows 2…8. Even pass (h 7 padded to 8): src Y 1…4 → rows 1, 3, (5, 7 clipped); dst rows 2, 4.
+        // Odd pass (h 7 trimmed to 6): src Y 1…3 → rows 2, 4, (6 clipped); dst rows 3, 5.
+        var s9 = pattern(width: 3, height: 9, seed: 6)
+        var d9 = Pixmap555(width: 3, height: 9)
+        d9.fill(0x7C00)
+        let sr = MacRect(top: 1, left: 0, bottom: 8, right: 3), dr = MacRect(top: 2, left: 0, bottom: 9, right: 3)
+        CopyBits.copyBuffer(from: &s9, to: &d9, srcRect: sr, dstRect: dr, interlaced: true)
+        let evenRows: [Int: Int] = [2: 1, 4: 3]                 // dst row ← src row
+        for y in 0..<9 { XCTAssertEqual(d9[0, y], evenRows[y].map { s9[0, $0] } ?? 0x7C00, "9-row even \(y)") }
+        d9.fill(0x7C00)
+        CopyBits.copyBuffer(from: &s9, to: &d9, srcRect: sr, dstRect: dr, interlaced: true)
+        let oddRows: [Int: Int] = [3: 2, 5: 4]
+        for y in 0..<9 { XCTAssertEqual(d9[0, y], oddRows[y].map { s9[0, $0] } ?? 0x7C00, "9-row odd \(y)") }
+    }
+
+    // FUN_10009fd0 between two buffers of ONE DisplayBuffers (R3's terrain → back): no overlapping inout access
+    // (dynamic exclusivity), the src parity still toggles, the dst gets the pixels.
+    func testCopyBufferBetweenDisplayBuffers() {
+        final class Owner { var buffers = DisplayBuffers() }
+        let owner = Owner()
+        owner.buffers.terrain = pattern(width: 640, height: 480, seed: 8)
+        owner.buffers.copyBuffer(from: .terrain, to: .back, srcRect: nil, dstRect: nil, interlaced: false)
+        XCTAssertEqual(owner.buffers.back.pixels, owner.buffers.terrain.pixels)
+        XCTAssertEqual(owner.buffers.terrain.interlaceParity, 0)
+        owner.buffers.back.fill(0)
+        owner.buffers.copyBuffer(from: .terrain, to: .back, srcRect: nil, dstRect: nil, interlaced: true)
+        XCTAssertEqual(owner.buffers.terrain.interlaceParity, 1, "the src buffer's parity is written back")
+        XCTAssertEqual(owner.buffers.back.interlaceParity, 0)
+        XCTAssertEqual(owner.buffers.back[7, 10], owner.buffers.terrain[7, 10])
+        XCTAssertEqual(owner.buffers.back[7, 11], 0)
+        // Same buffer as src and dst: a no-op on the pixels; the parity toggles once.
+        let before = owner.buffers.back.pixels
+        owner.buffers.copyBuffer(from: .back, to: .back, srcRect: nil, dstRect: nil, interlaced: true)
+        XCTAssertEqual(owner.buffers.back.pixels, before)
+        XCTAssertEqual(owner.buffers.back.interlaceParity, 1)
     }
 
     private func screenAndBack() -> (screen: Pixmap555, back: Pixmap555) {

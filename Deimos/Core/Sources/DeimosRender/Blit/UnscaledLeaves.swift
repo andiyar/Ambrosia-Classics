@@ -30,33 +30,40 @@ enum UnscaledLeaves {
             cl = Int(c.left); ct = Int(c.top); cr = Int(c.right); cb = Int(c.bottom)
             if left > cr || left + w < cl || top > cb || top + h < ct { return }
         }
-        let pw = port.width, ph = port.height
-        port.pixels.withUnsafeMutableBufferPointer { dst in
-            for r in 0..<h {
-                let y = top + r
-                let row = r * w
-                if let map = f.alphaMap {
-                    if map[row] == 1000 { continue }
-                    for c in 0..<w {
-                        let x = left + c
-                        guard x >= cl, x < cr, y >= ct, y < cb else { continue }
-                        guard x >= 0, x < pw, y >= 0, y < ph else { continue }   // replica guard (SpriteBlitter)
-                        let i = y * pw + x
-                        if let v = SpriteBlitter.mapPixel(mode: mode, p: Int(map[row + c]), a: alpha,
-                                                          src: f.pixels[row + c], dst: dst[i], colour: colour,
-                                                          scaledClamp: false) {
-                            dst[i] = v
+        // The per-pixel masks — the twin's clip and the replica guard (SpriteBlitter) — are rectangles, so they are
+        // hoisted to one column range and one row range (no pixel outside them is read or written either way).
+        let xLo = max(cl, 0), xHi = min(cr, port.width)
+        let yLo = max(ct, 0), yHi = min(cb, port.height)
+        let c0 = max(0, xLo - left), c1 = min(w, xHi - left)
+        let r0 = max(0, yLo - top), r1 = min(h, yHi - top)
+        guard c0 < c1, r0 < r1 else { return }
+        let pw = port.width
+        f.pixels.withUnsafeBufferPointer { src in
+            port.pixels.withUnsafeMutableBufferPointer { dst in
+                if let alphaMap = f.alphaMap {
+                    alphaMap.withUnsafeBufferPointer { map in
+                        for r in r0..<r1 {
+                            let row = r * w
+                            if map[row] == 1000 { continue }       // `1001da50`: a first entry of 1000 skips the row
+                            let d = (top + r) * pw + left
+                            for c in c0..<c1 {
+                                if let v = SpriteBlitter.mapPixel(mode: mode, p: Int(map[row + c]), a: alpha,
+                                                                  src: src[row + c], dst: dst[d + c], colour: colour,
+                                                                  scaledClamp: false) {
+                                    dst[d + c] = v
+                                }
+                            }
                         }
                     }
                 } else {
-                    for c in 0..<w {
-                        let x = left + c
-                        guard x >= cl, x < cr, y >= ct, y < cb else { continue }
-                        guard x >= 0, x < pw, y >= 0, y < ph else { continue }
-                        let i = y * pw + x
-                        if let v = SpriteBlitter.keyPixel(mode: mode, a: alpha, src: f.pixels[row + c], key: f.key,
-                                                          dst: dst[i], colour: colour) {
-                            dst[i] = v
+                    for r in r0..<r1 {
+                        let row = r * w
+                        let d = (top + r) * pw + left
+                        for c in c0..<c1 {
+                            if let v = SpriteBlitter.keyPixel(mode: mode, a: alpha, src: src[row + c], key: f.key,
+                                                              dst: dst[d + c], colour: colour) {
+                                dst[d + c] = v
+                            }
                         }
                     }
                 }

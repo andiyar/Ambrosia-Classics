@@ -23,14 +23,14 @@ import DeimosCore
 /// ones except that modes 1/3 clamp `a + p` to 32 and blend instead of skipping (§5.4) — `SpriteBlitter.mapPixel`
 /// with `scaledClamp`. The alpha reaches the leaves as `(float)alpha` and back through `FUN_1004d5c0` (truncate),
 /// exact for 0…31.
-public enum ScaledLeaves {
+enum ScaledLeaves {
 
-    public struct Geometry: Equatable, Sendable {
-        public var left: Int32
-        public var top: Int32
-        public var width: Int32
-        public var height: Int32
-        public init(left: Int32, top: Int32, width: Int32, height: Int32) {
+    struct Geometry: Equatable, Sendable {
+        var left: Int32
+        var top: Int32
+        var width: Int32
+        var height: Int32
+        init(left: Int32, top: Int32, width: Int32, height: Int32) {
             self.left = left; self.top = top; self.width = width; self.height = height
         }
     }
@@ -40,7 +40,7 @@ public enum ScaledLeaves {
     static let clampBottom = 480
 
     /// The anchor/size arithmetic of `1001a738…1001a7f4`.
-    public static func geometry(x: Int32, y: Int32, width: Int, height: Int, scale: Float) -> Geometry {
+    static func geometry(x: Int32, y: Int32, width: Int, height: Int, scale: Float) -> Geometry {
         let half = Float(0.5)                       // `lfs f5,0x8(r10)` → 0x100d6d3c
         let fw = Float(width) * scale               // `1001a77c fmuls`
         let fh = Float(height) * scale              // `1001a794 fmuls`
@@ -75,32 +75,49 @@ public enum ScaledLeaves {
             x0 = max(left, 0); y0 = max(top, 0)
             x1 = min(right, clampRight); y1 = min(bottom, clampBottom)
         }
-        guard x1 > x0, y1 > y0 else { return }
+        // The clipped leaves' per-pixel clip mask and the replica guard (SpriteBlitter) are rectangles: hoisted to
+        // one column range and one row range (nothing outside them is read or written either way).
+        let xa = max(x0, cl, 0), xb = min(x1, cr, port.width)
+        let ya = max(y0, ct, 0), yb = min(y1, cb, port.height)
+        guard xb > xa, yb > ya else { return }
         let sw = f.width, sh = f.height
-        let pw = port.width, ph = port.height
-        // The column table (`1001b864…1001b880`): sx per absolute dx.
-        let columns = (x0..<x1).map { (sw * ($0 - left)) / dstW }
-        port.pixels.withUnsafeMutableBufferPointer { dst in
-            for dy in y0..<y1 {
-                guard dy >= ct, dy < cb else { continue }
-                guard dy >= 0, dy < ph else { continue }                       // replica guard (SpriteBlitter)
-                let sRow = ((sh * (dy - top)) / dstH) * sw                      // `1001b970…1001b980`
-                for (k, sx) in columns.enumerated() {
-                    let dx = x0 + k
-                    guard dx >= cl, dx < cr else { continue }
-                    guard dx >= 0, dx < pw else { continue }
-                    let i = dy * pw + dx
-                    let src = f.pixels[sRow + sx]
-                    let v: UInt16?
-                    if let map = f.alphaMap {
-                        let p = Int(map[sRow + sx])
-                        v = p == 1000 ? nil
-                            : SpriteBlitter.mapPixel(mode: mode, p: p, a: alpha, src: src, dst: dst[i], colour: colour,
-                                                     scaledClamp: true)
+        let pw = port.width
+        let n = xb - xa
+        // The column table (`1001b864…1001b880`): sx per dx, from the unclamped left.
+        withUnsafeTemporaryAllocation(of: Int.self, capacity: n) { columns in
+            for k in 0..<n { columns[k] = (sw * (xa + k - left)) / dstW }
+            f.pixels.withUnsafeBufferPointer { src in
+                port.pixels.withUnsafeMutableBufferPointer { dst in
+                    if let alphaMap = f.alphaMap {
+                        alphaMap.withUnsafeBufferPointer { map in
+                            for dy in ya..<yb {
+                                let sRow = ((sh * (dy - top)) / dstH) * sw              // `1001b970…1001b980`
+                                let d = dy * pw + xa
+                                for k in 0..<n {
+                                    let si = sRow + columns[k]
+                                    let p = Int(map[si])
+                                    if p == 1000 { continue }
+                                    if let v = SpriteBlitter.mapPixel(mode: mode, p: p, a: alpha, src: src[si],
+                                                                      dst: dst[d + k], colour: colour,
+                                                                      scaledClamp: true) {
+                                        dst[d + k] = v
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        v = SpriteBlitter.keyPixel(mode: mode, a: alpha, src: src, key: f.key, dst: dst[i], colour: colour)
+                        for dy in ya..<yb {
+                            let sRow = ((sh * (dy - top)) / dstH) * sw
+                            let d = dy * pw + xa
+                            for k in 0..<n {
+                                let si = sRow + columns[k]
+                                if let v = SpriteBlitter.keyPixel(mode: mode, a: alpha, src: src[si], key: f.key,
+                                                                  dst: dst[d + k], colour: colour) {
+                                    dst[d + k] = v
+                                }
+                            }
+                        }
                     }
-                    if let v { dst[i] = v }
                 }
             }
         }

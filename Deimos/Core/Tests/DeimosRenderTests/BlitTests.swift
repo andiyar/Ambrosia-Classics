@@ -252,6 +252,59 @@ final class BlitTests: XCTestCase {
         XCTAssertNotEqual(viaTwin, back)
     }
 
+    // A twin with the frame crossing the port's left/top edge (negative origin) and a clip that reaches past the
+    // port: the clip mask passes x, y < 0, the replica guard drops them. Oracle computed here, pixel by pixel.
+    func testClippedTwinNegativeOrigin() {
+        let base = pattern(width: 10, height: 8, seed: 21)
+        let key: UInt16 = 0x0421
+        let w = 6, h = 4, left = -3, top = -2
+        let pixels = (0..<(w * h)).map { i in i % 5 == 0 ? key : UInt16(truncatingIfNeeded: (0x1111 &* (i + 1)) & 0x7fff) }
+        let mapRows: [[UInt16]] = (0..<h).map { r in (0..<w).map { c in [0, 32, 7, 0, 19, 32][(c + r) % 6] } }
+        let clip = MacRect(top: -5, left: -5, bottom: 7, right: 9)
+        for mapped in [false, true] {
+            let f = frame(w, h, key: key, pixels: pixels, map: mapped ? mapRows : nil)
+            var port = base
+            UnscaledLeaves.blit(f, into: &port, left: left, top: top, mode: 0, alpha: 0, colour: 0, clip: clip)
+            for y in 0..<8 {
+                for x in 0..<10 {
+                    let c = x - left, r = y - top
+                    var want = base[x, y]
+                    if c >= 0, c < w, r >= 0, r < h, x < 9, y < 7 {
+                        let src = pixels[r * w + c]
+                        if mapped {
+                            let p = Int(mapRows[r][c])
+                            if p == 0 { want = src } else if p != 32 {
+                                // ⌊(dst·p + src·(32 − p))/32⌋ per channel, computed here
+                                func ch(_ v: UInt16, _ s: UInt16) -> UInt16 { (v >> s) & 31 }
+                                let d = base[x, y]
+                                want = [10, 5, 0].reduce(UInt16(0)) { acc, sh in
+                                    acc | UInt16((Int(ch(d, UInt16(sh))) * p + Int(ch(src, UInt16(sh))) * (32 - p)) / 32) << UInt16(sh)
+                                }
+                            }
+                        } else if src != key {
+                            want = src
+                        }
+                    }
+                    XCTAssertEqual(port[x, y], want, "mapped \(mapped) (\(x), \(y))")
+                }
+            }
+        }
+    }
+
+    // a > 32 (reachable through COST's `cmd.alpha` and the public CostRect/Blend555 API): the original kernel
+    // computes `subfic r4,a,0x20` (32 − a as a 32-bit word) and `mullw`, wrapping mod 2³², then unpacks with
+    // `rlwinm …,0x1b,0x5,0x1f` / `andi. 0x7c1f` / `rlwimi …,0xc,0x16,0x1a` (FUN_1001ec80 `1001edc4…1001edf0`; the same
+    // sequence in FUN_1001e9d0 `1001eb80…1001ebb4`). Only a == 32 returns early (`1001ec8c`). Hand-computed:
+    // 0x7FFF·40: packed 0x01F07C1F × 40 = 0x4D9364D8 → 0x1806 | 0x00C0 = 0x18C6;
+    // 0x7FFF·(32 − 40): 0x01F07C1F × 0xFFFFFFF8 = 0xF07C1F08 → 0x6018 | 0x0300 = 0x6318.
+    func testBlendAlphaAboveThirtyTwoWraps() {
+        XCTAssertEqual(Blend555.blend(0x7FFF, 0x0000, a: 40), 0x18C6)
+        XCTAssertEqual(Blend555.blend(0x0000, 0x7FFF, a: 40), 0x6318)
+        var port = Pixmap555(width: 3, height: 2)
+        CostRect.fill(&port, rect: MacRect(top: 0, left: 1, bottom: 1, right: 3), colour: 0x7FFF, a: 40)
+        XCTAssertEqual(port.pixels, [0, 0x6318, 0x6318, 0, 0, 0])
+    }
+
     // MARK: - Scaled path (blit-pixel-rules §5)
 
     func testScaledHalfShipShadow() throws {

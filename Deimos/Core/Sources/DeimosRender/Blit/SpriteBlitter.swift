@@ -64,8 +64,16 @@ public enum SpriteBlitter {
     /// The dispatcher's decision for `cmd` (its frame already resolved; nil for `COST` or a missing frame — the
     /// original asserts on a missing frame, `100196a8`, and the replica draws nothing).
     public static func select(_ cmd: DrawCommand, frame: SpriteFrame?) -> Selection {
+        decide(cmd, frame: frame).selection
+    }
+
+    /// `select` plus the unscaled top-left it classified (meaningful for `.unscaled` only), so `draw` does not
+    /// recompute it.
+    static func decide(_ cmd: DrawCommand, frame: SpriteFrame?) -> (selection: Selection, left: Int32, top: Int32) {
         let target: BufferID = cmd.flags & 8 != 0 ? .terrain : .back
-        func sel(_ p: Path) -> Selection { Selection(path: p, target: target) }
+        func sel(_ p: Path, _ left: Int32 = 0, _ top: Int32 = 0) -> (selection: Selection, left: Int32, top: Int32) {
+            (Selection(path: p, target: target), left, top)
+        }
         if cmd.face == .none || cmd.alpha == 32 { return sel(.nothing) }
         if cmd.face == costFace {
             let r = cmd.costRect ?? MacRect(top: 0, left: 0, bottom: 0, right: 0)
@@ -80,7 +88,7 @@ public enum SpriteBlitter {
         let (left, top) = unscaledTopLeft(cmd, f)
         guard let clipped = classify(left: left, top: top, width: Int32(f.width), height: Int32(f.height),
                                      clip: cmd.clip) else { return sel(.nothing) }
-        return sel(.unscaled(mode: mode, clipped: clipped))
+        return sel(.unscaled(mode: mode, clipped: clipped), left, top)
     }
 
     /// Execute `cmd` on its port (`.terrain` with flag 8, else `.back`) inside `buffers`.
@@ -94,7 +102,7 @@ public enum SpriteBlitter {
 
     /// Execute `cmd` on `port` (the caller has picked the port by flag 8).
     public static func draw(_ cmd: DrawCommand, frame: SpriteFrame?, into port: inout Pixmap555) {
-        let s = select(cmd, frame: frame)
+        let (s, left, top) = decide(cmd, frame: frame)
         let alpha = Int(cmd.alpha)
         switch s.path {
         case .nothing:
@@ -104,7 +112,6 @@ public enum SpriteBlitter {
                           colour: cmd.costColour, a: alpha)
         case let .unscaled(mode, clipped):
             guard let f = frame else { return }
-            let (left, top) = unscaledTopLeft(cmd, f)
             UnscaledLeaves.blit(f, into: &port, left: Int(left), top: Int(top), mode: mode, alpha: alpha,
                                 colour: cmd.colour, clip: clipped ? cmd.clip : nil)
         case let .scaled(mode, clipped):

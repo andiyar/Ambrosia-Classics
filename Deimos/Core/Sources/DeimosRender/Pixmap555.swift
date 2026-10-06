@@ -32,16 +32,17 @@ public struct Pixmap555: Equatable, Sendable {
 
     /// `FUN_10009f00`: `RGBForeColor` + `PaintRect(portRect)` — every pixel becomes `colour`.
     public mutating func fill(_ colour: UInt16) {
-        for i in pixels.indices { pixels[i] = colour }
+        pixels.withUnsafeMutableBufferPointer { $0.update(repeating: colour) }
     }
 
     /// `PaintRect(rect)` in `colour`, clipped to the bounds.
     public mutating func fill(_ rect: MacRect, colour: UInt16) {
         let r = rect.clipped(to: bounds)
         guard r.right > r.left, r.bottom > r.top else { return }
-        for y in Int(r.top)..<Int(r.bottom) {
-            let row = y * width
-            for x in Int(r.left)..<Int(r.right) { pixels[row + x] = colour }
+        let w = width, x0 = Int(r.left), n = Int(r.right) - x0
+        pixels.withUnsafeMutableBufferPointer { px in
+            guard let base = px.baseAddress else { return }
+            for y in Int(r.top)..<Int(r.bottom) { (base + y * w + x0).update(repeating: colour, count: n) }
         }
     }
 }

@@ -20,8 +20,8 @@ import DeimosCore
 /// - Kernel per pixel (`1001edc4…1001edf8`, 2-unrolled + tail `1001ee40…1001ee70`): the packed-RGB555 blend with
 ///   the destination weighted `a` and the colour `32 − a`: `out_c = ⌊(dst_c·a + col_c·(32 − a))/32⌋`
 ///   (= `Blend555.blend(dst, colour, a)`; bit 15 cleared).
-public enum CostRect {
-    public static func fill(_ port: inout Pixmap555, rect: MacRect, colour: UInt16, a: Int) {
+enum CostRect {
+    static func fill(_ port: inout Pixmap555, rect: MacRect, colour: UInt16, a: Int) {
         if a == 32 { return }
         let b = port.bounds
         if rect.left > b.right || rect.right < b.left || rect.top > b.bottom || rect.bottom < b.top { return }

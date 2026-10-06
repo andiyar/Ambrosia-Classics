@@ -32,7 +32,7 @@ extension DisplayBuffers {
     /// 1 → `FUN_1000bd80` game layout; `1000bb2c…1000bb48`). From black: `back = blend(snapshot, black, a)` over the
     /// back buffer's bounds (`FUN_1001e9d0(snapshot, black, back, &back.bounds, a)` at `1000bb18`) — A = snapshot
     /// weighted by a, so a = 0 is black and a = 32 is the snapshot.
-    public mutating func fadeStep(_ kind: FadeKind, a: Int, present kind2: PresentKind) {
+    public mutating func fadeStep(_ kind: FadeKind, a: Int, present presentKind: PresentKind) {
         switch kind {
         case .fromBlack:
             guard let snapshot = fadeSnapshot, let black = fadeBlack else {
@@ -43,7 +43,7 @@ extension DisplayBuffers {
         case .toBlack:
             fadeToBlackStep(a: a)   // FUN_1000b9a0: back scaled in place toward 0 by FUN_1001ec80 (FadeToBlack.swift)
         }
-        present(kind2)
+        present(presentKind)
     }
 
     /// End the fade: free both clones (`FUN_10009a60(…,1)` ×2, `1000bb80…1000bbac`).
