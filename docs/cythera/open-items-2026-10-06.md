@@ -16,52 +16,30 @@ Evidence base (all run this session from the worktree root; `$S` = the session s
 - ⚑ corrected (review wave 2 2026-10-06) — review m7: the session scripts (`$S/r5props.py`,
   `$S/r5scan7.py`, `$S/clr80.txt`) and the elided `python3 -c "…"` dumps are not banked; their
   equivalents, re-run this session from the worktree root, are inlined here.
+  ⚑ wave 3 (2026-10-06): the four heredocs are banked as tools (stdlib, headers carry purpose, run
+  line and expected output; `tools/README.md`); each tool's output was diffed against its heredoc's
+  run this session — identical. C and D take the listing path, or build it themselves when omitted.
   ```
   # A. prop census (r5props equivalent) → 40 levels; kinds = data-format §4.3; 0x11: 21 owners, levels [3,6,8,11,13,17,24], byte 6 {0:55}, frame {0:55}
-  python3 - <<'EOF'
-  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
-  d,s,_=seg.toc(); K=C.Counter(); own=set(); lv=set(); b6=C.Counter(); fr=C.Counter(); L=[k for k in s if 0x8100<=k<0x8200]
-  for sid in L:
-    o,l=s[sid]
-    for i in range(0,l,16):
-      r=d[o+i:o+i+16]; K[r[0]]+=1
-      if r[0]==0x11: own.add(struct.unpack('>H',r[2:4])[0]); lv.add(sid-0x8100); b6[r[6]]+=1; fr[(r[4]>>2)&0x1f]+=1
-  print(len(L),sorted(K.items())); print(len(own),sorted(own)); print(sorted(lv),b6,fr)
-  EOF
+  python3 docs/cythera/tools/props_census.py
+  40 [(0, 12104), (1, 116), (2, 46), (8, 618), (9, 241), (10, 7), (16, 32), (17, 55), (24, 31), (28, 1), (66, 879), (68, 298), (128, 52), (255, 5)]
+  21 [4, 9, 10, 11, 12, 13, 14, 16, 23, 24, 31, 56, 59, 62, 64, 71, 72, 73, 79, 91, 95]
+  [3, 6, 8, 11, 13, 17, 24] Counter({0: 55}) Counter({0: 55})
   # B. F008 / F005 / F007 (the §2.1 and §5 dumps) → records 50, byte7 {0: 50}, the f33/f32 lists of §2.1; F005 at 0x507905 (16 B), F007 at 0x507915 (167 B, count 33)
-  python3 - <<'EOF'
-  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
-  d,s,_=seg.toc(); o,l=s[0xF008]; R=[d[o+i:o+i+16] for i in range(0,0x800,16)]; R=[r for r in R if struct.unpack('>H',r[12:14])[0]]
-  f33=C.Counter(); f32=C.Counter()
-  for r in R:
-    a,b=struct.unpack('>HH',r[8:12])
-    for k in range(16): f33[1<<k]+=a>>k&1; f32[1<<k]+=b>>k&1
-  print('records',len(R),'byte7',dict(C.Counter(r[7] for r in R))); print(sorted(i for i in f33.items() if i[1])); print(sorted(i for i in f32.items() if i[1]))
-  o,l=s[0xF005]; print(hex(o),l,d[o:o+l].hex(' ')); o,l=s[0xF007]; print(hex(o),l,struct.unpack('>H',d[o:o+2])[0])
-  EOF
-  # C. 0x80-clear store scan (clr80 equivalent) over all.dis = ppcdis.py 10000000 100cd280 → 1004f188 (FollowLeader), 1005caf0 (DrawRoutine)
-  python3 - all.dis <<'EOF'
-  import re,sys
-  L=open(sys.argv[1]).read().split('\n'); pat=re.compile(r'(rlwinm (r\d+),(r\d+),0,25,(23|31)$|andi\. (r\d+),(r\d+),0x7f$|xori (r\d+),(r\d+),0x80$)')
-  for i,ln in enumerate(L):
-    m=pat.search(ln)
-    if not m: continue
-    dst=[g for g in (m.group(2),m.group(5),m.group(7)) if g][0]
-    for j in range(i+1,min(i+5,len(L))):
-      if re.search(r'stb '+dst+r',0\(|stbx '+dst+',',L[j]): print(ln.strip(),'|',L[j].strip()); break
-  EOF
+  python3 docs/cythera/tools/f008_dump.py
+  records 50 byte7 {0: 50}
+  [(1, 21), (2, 6), (8, 5), (4096, 5), (8192, 2), (16384, 2), (32768, 1)]
+  [(1, 9), (2, 5), (4, 23), (16, 16), (32, 10), (64, 15), (128, 8), (256, 5), (512, 5), (1024, 1), (2048, 2), (4096, 3), (8192, 8), (16384, 30), (32768, 3)]
+  0x507905 16 d0 08 01 d8 08 01 e0 04 01 e4 04 01 e8 04 01 00
+  0x507915 167 33
+  # C. 0x80-clear store scan (clr80 equivalent) → 1004f188 (FollowLeader), 1005caf0 (DrawRoutine)
+  python3 docs/cythera/tools/ppcdis.py 10000000 100cd280 > all.dis   # optional: both scanners build it when omitted
+  python3 docs/cythera/tools/scan_clr80.py all.dis
+  1004f188: 5400066e  rlwinm r0,r0,0,25,23 | 1004f18c: 98070000  stb r0,0(r7)
+  1005caf0: 5400066e  rlwinm r0,r0,0,25,23 | 1005caf4: 981c0000  stb r0,0(r28)
   # D. byte-7 read heuristic (r5scan7 equivalent) → {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
-  python3 - all.dis <<'EOF'
-  import re,sys,collections as C
-  L=open(sys.argv[1]).read().split('\n'); h=C.Counter()
-  for i,ln in enumerate(L):
-    m=re.search(r'lwz (r\d+),4\(r\d+\)$',ln); A=m.group(1) if m else ('r3' if 'bl 0x10044a60' in ln else None)
-    if not A: continue
-    for j in range(i+1,min(i+9,len(L))):
-      n=re.search(r'(lbz|lhz|lha|lwz) r\d+,(\d+)\('+A+r'\)$',L[j])
-      if n: h[int(n.group(2))]+=1
-  print({k:h[k] for k in (5,6,7,8,14)})
-  EOF
+  python3 docs/cythera/tools/scan_byte7.py all.dis
+  {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
   ```
   A–C reproduce §2.1, §3.1, §4 and §5 exactly. D reproduces **N = 7 → 0**; its control total is 41,
   not §2.2's 38 (this version does not stop the 8-instruction window when rA is redefined), which

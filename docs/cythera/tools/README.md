@@ -21,6 +21,11 @@ section loaded at 0x100CD280; TOC r2 = 0x100D5280. Python tools are stdlib only.
 | `scriptdis.py` | script-bytecode disassembler + census for segment pages 0x01–0x3F | `python3 docs/cythera/tools/scriptdis.py --out ghidra/cythera-scripts --census` (`--help`) |
 | `demangle.py` | Metrowerks C++ demangler over a `NAME @ ADDR` list | `grep -o '^// ==== .* @ [0-9a-f]*' ghidra/Cythera_pef.decompiled.c \| sed 's,^// ==== ,,' > names.txt; python3 docs/cythera/tools/demangle.py names.txt [counts\|full]` |
 | `tileflag_census.py` | ⚑ wave 3 (2026-10-06): count tiles 0..0x9FF by 0xF002 flag mask, with the commonest 0xF004 tile names (`--eq` = all mask bits set); used by render.md §2.4/§5 | `python3 docs/cythera/tools/tileflag_census.py 0x10 0x200 0x100000 0x10000000`; `… --eq 0xc0` |
+| `props_census.py` | ⚑ wave 3 (2026-10-06): kind census of all 40 prop segments 0x8100+L; kind 0x11 owners/levels/byte 6/frame (open-items-2026-10-06 recipe A) | `python3 docs/cythera/tools/props_census.py` → `40 [(0, 12104), …]` / `21 [4, 9, …]` / `[3, 6, 8, 11, 13, 17, 24] …` |
+| `f008_dump.py` | ⚑ wave 3 (2026-10-06): 0xF008 creature records (count, byte 7, f33/f32 bit counts) + 0xF005 bytes + 0xF007 count (recipe B) | `python3 docs/cythera/tools/f008_dump.py` → `records 50 byte7 {0: 50}` … `0x507915 167 33` |
+| `scan_clr80.py` | ⚑ wave 3 (2026-10-06): byte stores that clear bit 0x80 (`rlwinm …,0,25,23/31`, `andi. 0x7f`, `xori 0x80` then `stb/stbx` within 4) over the whole code listing (recipe C) | `python3 docs/cythera/tools/scan_clr80.py [all.dis]` → hits `1004f188`, `1005caf0` |
+| `scan_byte7.py` | ⚑ wave 3 (2026-10-06): loads at offsets 5/6/7/8/14 within 8 instructions of a creature-record pointer (`lwz rA,4(…)` or r3 after `bl 0x10044a60`) (recipe D) | `python3 docs/cythera/tools/scan_byte7.py [all.dis]` → `{5: 1, 6: 10, 7: 0, 8: 27, 14: 3}` |
+| `listing.py` | ⚑ wave 3 (2026-10-06): helper for the two scanners — reads `all.dis` (`ppcdis.py 10000000 100cd280 > all.dis`) or generates it in a subprocess | library only |
 | `gen_classmap.py` | writes `engine-classmap-{1,2,3}.md` from `names.txt` via `demangle.py` | run inside `docs/cythera/tools` with `names.txt` there; **edit its hard-coded `D=` output dir** (points at the focused-darwin worktree) first |
 
 Ghidra: 12.1.3 Homebrew `analyzeHeadless`; the project path must not contain a dot-prefixed element
