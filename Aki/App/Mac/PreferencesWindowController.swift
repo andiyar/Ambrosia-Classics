@@ -16,12 +16,20 @@ import AkiCore
     private let animationCheckbox: NSButton                    // _animationCheckbox (ivar 0x30)
     private let musicCheckbox: NSButton                        // _musicCheckbox (ivar 0x34)
     private let descriptionCheckbox: NSButton                  // _descriptionCheckbox (ivar 0x38)
+    /// "Remastered art" (D11, not in the nib): one row below the nib's checkboxes; the window is one row taller.
+    private let remasterCheckbox: NSButton
+    private let content: PaperBackgroundView
+    /// The art scale `content`'s paper was loaded at (reloaded after a Remaster switch).
+    private var paperScale: Int
     private var isSheet = false                                // ivar 0x3c: 1 in a sheet, 0 when modal
 
     /// The window and its controls from `Preferences.nib` XML: title, content size and style mask;
     /// `PaperBackgroundView` content (the nib's custom class); the five checkbox outlets and the buttons
     /// wired to `save:` / `cancel:`, with their nib frames, titles, fonts and key equivalents, added in the
     /// nib's subview order (OK, Cancel, Sound, Fullscreen, Tile Animation, Music, Display Level Description).
+    /// D11 adds "Remastered art" last: `RemasterSetting.preferencesRow` grows the window by the nib's checkbox
+    /// pitch, moves the five checkboxes up by it (same distance from the window top) and leaves OK / Cancel at
+    /// their nib frames (same distance from the bottom).
     init(app: AkiAppDelegate) throws {
         self.app = app
         let controller = app.controller
@@ -33,27 +41,31 @@ import AkiCore
               let description = nib.control(outlet: "_descriptionCheckbox"),
               let ok = nib.control(action: "save:"), let cancel = nib.control(action: "cancel:")
         else { throw AkiAssets.AssetError.missing("Preferences.nib") }
+        let row = RemasterSetting.preferencesRow(window: w, checkboxes: [sound, fullscreen, animation, music, description],
+                                                 title: "Remastered art")
 
-        let size = NSRect(x: 0, y: 0, width: w.contentWidth, height: w.contentHeight)
+        let size = NSRect(x: 0, y: 0, width: row.window.contentWidth, height: row.window.contentHeight)
         window = NSWindow(contentRect: size, styleMask: NSWindow.StyleMask(rawValue: UInt(w.styleMask)),
                           backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.title = w.title
-        let content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        paperScale = controller.artScale
         window.contentView = content
 
-        soundCheckbox = Self.checkbox(sound)
-        fullscreenCheckbox = Self.checkbox(fullscreen)
-        animationCheckbox = Self.checkbox(animation)
-        musicCheckbox = Self.checkbox(music)
-        descriptionCheckbox = Self.checkbox(description)
+        soundCheckbox = Self.checkbox(row.checkboxes[0])
+        fullscreenCheckbox = Self.checkbox(row.checkboxes[1])
+        animationCheckbox = Self.checkbox(row.checkboxes[2])
+        musicCheckbox = Self.checkbox(row.checkboxes[3])
+        descriptionCheckbox = Self.checkbox(row.checkboxes[4])
+        remasterCheckbox = Self.checkbox(row.remaster)
 
         super.init()
 
         let okButton = Self.pushButton(ok, target: self, action: #selector(save(_:)))
         let cancelButton = Self.pushButton(cancel, target: self, action: #selector(cancel(_:)))
         for view in [okButton, cancelButton, soundCheckbox, fullscreenCheckbox, animationCheckbox,
-                     musicCheckbox, descriptionCheckbox] {
+                     musicCheckbox, descriptionCheckbox, remasterCheckbox] {
             content.addSubview(view)
         }
     }
@@ -67,6 +79,11 @@ import AkiCore
         animationCheckbox.state = p.tileAnimation != 0 ? .on : .off
         descriptionCheckbox.state = p.showDescription != 0 ? .on : .off
         fullscreenCheckbox.state = p.fullscreen != 0 ? .on : .off
+        remasterCheckbox.state = controller.remasterActive ? .on : .off   // D11: the effective setting
+        remasterCheckbox.isEnabled = controller.remasterAvailable
+        controller.refreshArt(loadedAt: &paperScale) {         // a Remaster switch since the window was built
+            content.paper = controller.assets.image("paper")
+        }
     }
 
     /// `-[Preferences runModal]` @ 0x64fc (DC:2337): `_updateUI`, ivar 0x3c = 0, `scheduleSetShieldingLevel`
@@ -102,7 +119,8 @@ import AkiCore
     /// `-[Preferences save:]` @ 0x62ee (DC:2271): `cancel:`, then p+0x210 / p+0x20e = old % 2 + 2 · box
     /// (Sound, Music), p+0x213 = Tile Animation, p+0x214 = Display Level Description; a changed Fullscreen
     /// box → p+0x212 = box and `toggleFullscreen:` after delay 0; `_SavePrefs`; `_PlayMovie` (args lost →
-    /// 0x80, Q15) — which stops or resumes Theme 3 by the new Music bit.
+    /// 0x80, Q15) — which stops or resumes Theme 3 by the new Music bit. Then (D11) the Remastered art box,
+    /// applied live (`setRemastered`; a no-op without the art set).
     @objc func save(_ sender: Any?) {
         cancel(sender)
         controller.p.setSoundCheckbox(soundCheckbox.state == .on)
@@ -116,6 +134,9 @@ import AkiCore
         }
         controller.savePrefs()
         controller.music.playMovie(0x80)
+        if remasterCheckbox.isEnabled {
+            controller.setRemastered(remasterCheckbox.state == .on)
+        }
     }
 
     // MARK: Nib conversion (IB3 frames are already AppKit's, bottom-left)

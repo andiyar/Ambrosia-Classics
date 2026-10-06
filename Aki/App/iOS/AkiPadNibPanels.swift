@@ -87,6 +87,8 @@ import UIKit
     private var titleField: TopAlignedLabel!                       // _titleTextField
     private var descriptionField: TopAlignedLabel!                 // _descriptionTextField
     private var checkboxView: AquaCheckbox!                        // _checkbox
+    /// The art scale the paper was loaded at (Remaster, D11: reloaded when it changes).
+    private var paperScale = 1
 
     init(controller: AkiController) {
         self.controller = controller
@@ -102,6 +104,7 @@ import UIKit
               let cancel = nib.control(action: "cancel:")
         else { fatalError("Aki: LevelDescription.nib lacks its window or controls") }
         super.init(window: w, titled: (w.styleMask & 1) != 0, paper: controller.assets.image("paper"))
+        paperScale = controller.artScale
 
         imageView = UIImageView(frame: frame(image))
         imageView.contentMode = .center                               // NSScaleProportionallyDown, centred
@@ -121,6 +124,9 @@ import UIKit
         titleField.text = title
         descriptionField.text = description
         imageView.image = image
+        controller.refreshArt(loadedAt: &paperScale) {                 // a Remaster switch since it was built (D11)
+            content.image = controller.assets.image("paper")
+        }
         if let image, image.size.width > imageView.bounds.width || image.size.height > imageView.bounds.height {
             imageView.contentMode = .scaleAspectFit
         } else {
@@ -148,11 +154,16 @@ import UIKit
 /// Fullscreen, Tile Animation, Music and Display Level Description over the parchment, OK / Cancel — shown
 /// as the Mac's windowed path shows it (a sheet: no title bar; the game paused while it is up, `unpause` when
 /// it ends). OK writes the `_p` bytes and the `GameSettings` blob. The Fullscreen box is shown and saved
-/// (p+0x212) but has no effect on iPad: there is no window to swap.
+/// (p+0x212) but has no effect on iPad: there is no window to swap. D11 adds "Remastered art" below the nib's
+/// checkboxes exactly as the Mac does (`RemasterSetting.preferencesRow`: the panel one checkbox row taller, the
+/// checkboxes keep their distance from the top, OK / Cancel theirs from the bottom).
 @MainActor final class PreferencesOverlay: CocoaPanelOverlay {
     private unowned let controller: AkiController
     private var sound: AquaCheckbox!, fullscreen: AquaCheckbox!, animation: AquaCheckbox!
     private var music: AquaCheckbox!, levelDescription: AquaCheckbox!
+    private var remaster: AquaCheckbox!
+    /// The art scale the paper was loaded at (reloaded after a Remaster switch).
+    private var paperScale = 1
 
     init(controller: AkiController) throws {
         self.controller = controller
@@ -163,17 +174,21 @@ import UIKit
               let description = nib.control(outlet: "_descriptionCheckbox"),
               let ok = nib.control(action: "save:"), let cancel = nib.control(action: "cancel:")
         else { throw AkiAssets.AssetError.missing("Preferences.nib") }
-        super.init(window: w, titled: false, paper: controller.assets.image("paper"))
-        self.sound = checkbox(sound)
-        self.fullscreen = checkbox(fullscreen)
-        self.animation = checkbox(animation)
-        self.music = checkbox(music)
-        self.levelDescription = checkbox(description)
+        let row = RemasterSetting.preferencesRow(window: w, checkboxes: [sound, fullscreen, animation, music, description],
+                                                 title: "Remastered art")
+        super.init(window: row.window, titled: false, paper: controller.assets.image("paper"))
+        paperScale = controller.artScale
+        self.sound = checkbox(row.checkboxes[0])
+        self.fullscreen = checkbox(row.checkboxes[1])
+        self.animation = checkbox(row.checkboxes[2])
+        self.music = checkbox(row.checkboxes[3])
+        self.levelDescription = checkbox(row.checkboxes[4])
+        self.remaster = checkbox(row.remaster)
         let okButton = pushButton(ok, action: #selector(save))
         let cancelButton = pushButton(cancel, action: #selector(cancelPreferences))
         for view in [okButton, cancelButton, self.sound!, self.fullscreen!, self.animation!, self.music!,
-                     self.levelDescription!] as [UIView] {
-            content.addSubview(view)                                  // nib subview order
+                     self.levelDescription!, self.remaster!] as [UIView] {
+            content.addSubview(view)                                  // nib subview order, then D11's box
         }
     }
 
@@ -185,6 +200,12 @@ import UIKit
         animation.isOn = p.tileAnimation != 0
         levelDescription.isOn = p.showDescription != 0
         fullscreen.isOn = p.fullscreen != 0
+        remaster.isOn = controller.remasterActive                      // D11: the effective setting
+        remaster.isEnabled = controller.remasterAvailable
+        remaster.alpha = controller.remasterAvailable ? 1 : 0.4        // AquaCheckbox has no disabled look of its own
+        controller.refreshArt(loadedAt: &paperScale) {                 // a Remaster switch since it was built
+            content.image = controller.assets.image("paper")
+        }
     }
 
     /// `-[Preferences cancel:]` @ 0x6264: the sheet ends (its end sends `unpause` — the host's `onClose`).
@@ -195,7 +216,7 @@ import UIKit
 
     /// `-[Preferences save:]` @ 0x62ee (DC:2271): `cancel:`, then p+0x210 / p+0x20e from Sound / Music,
     /// p+0x213 Tile Animation, p+0x214 Display Level Description, p+0x212 Fullscreen (no toggle on iPad);
-    /// `_SavePrefs`; `_PlayMovie(0x80)`.
+    /// `_SavePrefs`; `_PlayMovie(0x80)`; then (D11) the Remastered art box, applied live.
     @objc private func save() {
         guard isTopOverlay else { return }
         close()
@@ -209,5 +230,8 @@ import UIKit
         }
         controller.savePrefs()
         controller.music.playMovie(0x80)
+        if remaster.isEnabled {
+            controller.setRemastered(remaster.isOn)
+        }
     }
 }

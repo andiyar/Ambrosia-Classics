@@ -256,6 +256,10 @@ import UIKit
         let view = UIImageView(image: image)
         view.layer.magnificationFilter = .nearest
         view.layer.minificationFilter = .nearest
+        if image.scale > 1 {                                    // Remaster art (D11): smooth, as the canvas presents it
+            view.layer.magnificationFilter = .linear
+            view.layer.minificationFilter = .trilinear
+        }
         super.init(panel: view, logicalSize: image.size)
         if timeout > 0 {
             schedule(after: TimeInterval(timeout))

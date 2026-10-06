@@ -28,6 +28,24 @@ import HectorShell
     /// (it is set by the game's events and cleared here on the way back to the map); the launch and the
     /// difficulty arrows (`selectMenuOptions`) always see it false, so their `next` runs before this returns.
     func redrawMapScreen(then next: @escaping () -> Void) {
+        composeMapBuffers()
+
+        let g = controller.g
+        let finish = {
+            g.lost = false
+            // The customLost / tryAgainOK tail (`_CreateNewDialog(0x53)`, `_LoadCustomLevel`) is P3.6's.
+            next()
+        }
+        if g.lost {
+            controller.host.showRandomProverb(completion: finish)   // _RandomProverbScreen (g.lost is set from Phase 2 on)
+        } else {
+            finish()
+        }
+    }
+
+    /// The drawing half of `_RedrawMapScreen` (no state, no window draw): map, arrows, lit lanterns and the
+    /// difficulty word into scratch2c, then scratch2c → scratch30.
+    private func composeMapBuffers() {
         let gw = controller.gworlds!
         let p = controller.p
         let full = Self.full
@@ -44,18 +62,30 @@ import HectorShell
         QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc, srcRect: AkiMap.difficultyWord(d),
                         dstRect: AkiMap.difficultyWordDestination, maskRect: AkiMap.difficultyWordMask(d), mode: 1)
         QD.drawToGWorld(gw.scratch2c, gw.scratch30, mask: gw.scratch2c, srcRect: full, dstRect: full, maskRect: full, mode: -9)
+    }
 
-        let g = controller.g
-        let finish = {
-            g.lost = false
-            // The customLost / tryAgainOK tail (`_CreateNewDialog(0x53)`, `_LoadCustomLevel`) is P3.6's.
-            next()
+    /// A Remaster switch on the map (D11, `AkiController.setRemastered`): the new GWorlds hold no frame yet, so
+    /// the map is recomposed as `_RedrawMapScreen` composes it (without its proverb / continuation — `g.lost` is
+    /// never set on the map), then the state the idle loop has drawn over it since is redrawn as it stands — the
+    /// blinking lantern at its CURRENT phase (no step) and the current hover preview (no Preview.aiff, no
+    /// `lastPreview` change) — and the frame is presented. The next idle tick carries on from here unchanged.
+    func redrawForArtChange() {
+        composeMapBuffers()
+        let gw = controller.gworlds!
+        let p = controller.p
+        let blinkRect = AkiMap.blinkDestination(AkiMap.blinkingLantern(settings: p))
+        QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc, srcRect: AkiMap.lanternSprite,
+                        dstRect: blinkRect, maskRect: AkiMap.blinkMasks[blink.phase], mode: 1)
+        if let preview = lastPreview {
+            let strip = AkiMap.previewStrip(preview)
+            QD.drawToGWorld(gw.previews, gw.scratch2c, mask: gw.previews, srcRect: strip,
+                            dstRect: AkiMap.previewDestination, maskRect: strip, mode: -9)
+            if !p.isUnlocked(preview) {
+                QD.drawToGWorld(gw.notavail, gw.scratch2c, mask: gw.notavail, srcRect: AkiMap.lockedOverlay,
+                                dstRect: AkiMap.lockedOverlayDestination, maskRect: AkiMap.lockedOverlayMask, mode: 1)
+            }
         }
-        if g.lost {
-            controller.host.showRandomProverb(completion: finish)   // _RandomProverbScreen (g.lost is set from Phase 2 on)
-        } else {
-            finish()
-        }
+        controller.drawToWindow(gw.scratch2c, srcRect: Self.full, dstRect: Self.full, flush: true)
     }
 
     // MARK: _MapScreen (one idle tick)

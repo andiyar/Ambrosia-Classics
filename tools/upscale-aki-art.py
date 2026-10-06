@@ -2,13 +2,18 @@
 """Aki Remaster art (docs/DECISIONS.md D11): the original 1.2.0 PNGs upscaled 4x with Upscayl's remacri-4x.
 
 Region map: tools/aki-art-regions.json (coverage enforced by Aki/Core/Tests/AkiCoreTests/ArtRegionsTests.swift).
-  picture region -> crop, 8 px edge-replicate pad, remacri 4x, low-frequency colour back-projection on the
+  picture region, "method": "remacri" (the default)
+                 -> crop, 8 px edge-replicate pad, remacri 4x, low-frequency colour back-projection on the
                     padded 4x (hd += bicubic4x(blur(orig) - blur(box4(hd))), Gaussian 1.5 original px),
                     crop the 4x interior back, paste at (4l, 4t)
+  picture region, "method": "lanczos"
+                 -> crop, 8 px edge-replicate pad, PIL Lanczos 4x (no AI, no back-projection), crop back, paste.
+                    Ben's U4 ruling A1: the tile body rows of tiles.png (smooth body, AI faces stay remacri)
+  file "dedither": true -> that file's ONLY treatment is de-dithered: Gaussian 0.7 on the padded crop before
+                    remacri (Ben's U4 ruling: the smooth backgrounds won; the plain-remacri set was dropped, C3)
   mask region and every pixel in no region -> nearest-neighbour 4x from the original (bit-exact)
 Outputs (git-ignored, derived from copyrighted originals — D10):
   Resources/Aki/hd-4x/<name>.png            every file, exactly 4x, RGB 8-bit
-  Resources/Aki/hd-4x-dedither/<name>.png   "dedither" files only: Gaussian 0.7 on the padded crop before remacri
   Resources/Aki/.upscale-cache/<sha256>.png  raw remacri output of the whole PADDED crop, keyed by (padded PNG
                                              bytes, model, scale, de-dither method + radius, layout tag, and a
                                              hash of upscayl-bin + remacri-4x.bin/.param so an Upscayl update
@@ -19,7 +24,8 @@ Outputs (git-ignored, derived from copyrighted originals — D10):
 Usage (from the repo root):
   python3 tools/upscale-aki-art.py [--only a.png,b.png]   generate (idempotent; cached crops cost no upscayl call)
   python3 tools/upscale-aki-art.py --check                verify map + outputs (incl. picture-region colour MAE
-                                                          <= 2.0 after Gaussian 1.5); non-zero exit on any failure
+                                                          <= 2.0 after Gaussian 1.5, both methods); non-zero exit
+                                                          on any failure
   python3 tools/upscale-aki-art.py --sheets [DIR]         contact sheets (default out/remaster-sheets/)
   python3 tools/upscale-aki-art.py --prune-cache          delete cache entries no current crop/tool/model refers to
 Pillow + numpy.
@@ -40,14 +46,14 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(REPO, "Resources/Aki/1.2.0.app/Contents/Resources")
-OUT = {"plain": os.path.join(REPO, "Resources/Aki/hd-4x"),
-       "dedither": os.path.join(REPO, "Resources/Aki/hd-4x-dedither")}
+OUT = os.path.join(REPO, "Resources/Aki/hd-4x")
 CACHE = os.path.join(REPO, "Resources/Aki/.upscale-cache")
 REGIONS = os.path.join(REPO, "tools/aki-art-regions.json")
 BIN = "/Applications/Upscayl.app/Contents/Resources/bin/upscayl-bin"
 MODELS = "/Applications/Upscayl.app/Contents/Resources/models"
 MODEL, SCALE, PAD = "remacri-4x", 4, 8
-DEDITHER = ("gaussian", 0.7)   # (method, radius in original px) for the "dedither" variant, before remacri
+DEDITHER = ("gaussian", 0.7)   # (method, radius in original px) for "dedither" files, before remacri
+METHODS = ("remacri", "lanczos")  # per picture region "method"; remacri when absent
 BACKPROJ = ("on", 1.5)         # low-frequency colour back-projection after remacri (Gaussian radius, original px)
 COLOUR_MAE_MAX = 2.0           # --check: per-channel MAE of blur(box4(hd)) vs blur(orig), picture regions
 CACHE_LAYOUT = "padded-full"   # cache holds the whole padded 4x output (back-projection needs the pad)
@@ -140,11 +146,16 @@ def edge_pad(img, pad):
     return p
 
 
-def padded_input(img, rect, variant):
+def method_of(reg):
+    return reg.get("method", "remacri")
+
+
+def padded_input(img, rect, dedither):
+    """(cache key, padded PNG bytes) of one remacri crop; dedither = the file's de-dither pre-blur."""
     crop = img.crop(tuple(rect))
     p = edge_pad(crop, PAD)
     vtag = "plain"
-    if variant == "dedither":
+    if dedither:
         method, radius = DEDITHER
         assert method == "gaussian"
         p = p.filter(ImageFilter.GaussianBlur(radius))
@@ -185,8 +196,12 @@ def finished_interior(img, rect, key):
     return hd.crop((PAD * SCALE, PAD * SCALE, (PAD + r - l) * SCALE, (PAD + b - t) * SCALE))
 
 
-def variants_for(entry):
-    return ["plain", "dedither"] if entry.get("dedither") else ["plain"]
+def lanczos_interior(img, rect):
+    """method "lanczos": the padded crop enlarged 4x with Lanczos (no AI), the 4x interior cropped back."""
+    l, t, r, b = rect
+    p = edge_pad(img.crop(tuple(rect)), PAD)
+    up = p.resize((p.width * SCALE, p.height * SCALE), Image.LANCZOS)
+    return up.crop((PAD * SCALE, PAD * SCALE, (PAD + r - l) * SCALE, (PAD + b - t) * SCALE))
 
 
 def run_upscayl(in_path, out_path):
@@ -248,12 +263,16 @@ def generate(only):
     regions = load_map()
     names = check_names(regions, only)
     tool_tag()  # fail fast (exit 2) when Upscayl or the model is missing
-    stats = {"upscayl_calls": 0, "upscayl_seconds": 0.0, "cache_hits": 0, "regions": 0, "fallback": False}
+    stats = {"upscayl_calls": 0, "upscayl_seconds": 0.0, "cache_hits": 0, "regions": 0, "lanczos": 0,
+             "fallback": False}
     t0 = time.time()
     # pass 1: every padded crop; collect the uncached ones
     plan, jobs = {}, {}
     for name in names:
         entry = regions[name]
+        for reg in entry["regions"]:
+            if reg["kind"] == "picture" and method_of(reg) not in METHODS:
+                die(f"{name}: region {reg['note']} method {method_of(reg)!r} (valid: {', '.join(METHODS)})")
         img = original(name)
         items = []
         for reg in entry["regions"]:
@@ -261,53 +280,51 @@ def generate(only):
                 continue
             stats["regions"] += 1
             l, t, r, b = reg["rect"]
-            for v in variants_for(entry):
-                key, data = padded_input(img, reg["rect"], v)
-                items.append((v, reg["rect"], key))
-                if cache_valid(key, reg["rect"]):
-                    stats["cache_hits"] += 1
-                elif key not in jobs:
-                    jobs[key] = (data, (r - l, b - t))
+            if method_of(reg) == "lanczos":
+                stats["lanczos"] += 1
+                items.append((reg["rect"], None))
+                continue
+            key, data = padded_input(img, reg["rect"], bool(entry.get("dedither")))
+            items.append((reg["rect"], key))
+            if cache_valid(key, reg["rect"]):
+                stats["cache_hits"] += 1
+            elif key not in jobs:
+                jobs[key] = (data, (r - l, b - t))
         plan[name] = items
-    print(f"{len(names)} files, {stats['regions']} picture regions, {stats['cache_hits']} cache hits, "
-          f"{len(jobs)} crops to upscale", flush=True)
+    print(f"{len(names)} files, {stats['regions']} picture regions ({stats['lanczos']} lanczos), "
+          f"{stats['cache_hits']} cache hits, {len(jobs)} crops to upscale", flush=True)
     # pass 2: one upscayl call for everything uncached
     upscale_jobs(jobs, stats)
     # pass 3: compose
-    written = {"plain": 0, "dedither": 0}
-    for v in OUT.values():
-        os.makedirs(v, exist_ok=True)
+    written = 0
+    os.makedirs(OUT, exist_ok=True)
     for name in names:
         t = time.time()
-        entry = regions[name]
         img = original(name)
-        base = nearest4(img)
-        for v in variants_for(entry):
-            out = base.copy()
-            for (vv, rect, key) in plan[name]:
-                if vv == v:
-                    out.paste(finished_interior(img, rect, key), (rect[0] * SCALE, rect[1] * SCALE))
-            path = os.path.join(OUT[v], name)
-            save_atomic(out, path)
-            written[v] += os.path.getsize(path)
+        out = nearest4(img)
+        for (rect, key) in plan[name]:
+            interior = lanczos_interior(img, rect) if key is None else finished_interior(img, rect, key)
+            out.paste(interior, (rect[0] * SCALE, rect[1] * SCALE))
+        path = os.path.join(OUT, name)
+        save_atomic(out, path)
+        written += os.path.getsize(path)
         print(f"  {name:22s} {len(plan[name]):3d} upscaled crops  {time.time() - t:6.2f} s", flush=True)
     print(f"TOTAL {time.time() - t0:.1f} s: {len(names)} files, {stats['regions']} picture regions, "
           f"{stats['upscayl_calls']} upscayl calls ({stats['upscayl_seconds']:.1f} s), "
           f"{stats['cache_hits']} cache hits{', PER-FILE FALLBACK USED' if stats['fallback'] else ''}")
-    print(f"bytes written: hd-4x {written['plain']:,}  hd-4x-dedither {written['dedither']:,}")
+    print(f"bytes written: hd-4x {written:,}")
 
 
 def prune_cache():
-    """Delete cache entries not referenced by any current (file, picture region, variant) key."""
+    """Delete cache entries not referenced by any current (file, remacri picture region) key."""
     regions = load_map()
     keep = set()
     for name in sorted(regions):
         entry = regions[name]
         img = original(name)
         for reg in entry["regions"]:
-            if reg["kind"] == "picture":
-                for v in variants_for(entry):
-                    keep.add(padded_input(img, reg["rect"], v)[0] + ".png")
+            if reg["kind"] == "picture" and method_of(reg) == "remacri":
+                keep.add(padded_input(img, reg["rect"], bool(entry.get("dedither")))[0] + ".png")
     n, freed, kept = 0, 0, 0
     for f in sorted(os.listdir(CACHE)) if os.path.isdir(CACHE) else []:
         path = os.path.join(CACHE, f)
@@ -347,6 +364,10 @@ def check():
                 fails.append(f"{name}: region {a['note']} {a['rect']} out of bounds")
             if a["kind"] not in ("picture", "mask"):
                 fails.append(f"{name}: region {a['note']} kind {a['kind']}")
+            if a["kind"] == "picture" and method_of(a) not in METHODS:
+                fails.append(f"{name}: region {a['note']} method {method_of(a)!r}")
+            if a["kind"] == "mask" and "method" in a:
+                fails.append(f"{name}: mask region {a['note']} has a method (masks are always nearest)")
             for bb in regs[i + 1:]:
                 if overlaps(a["rect"], bb["rect"]):
                     fails.append(f"{name}: {a['note']} overlaps {bb['note']}")
@@ -358,49 +379,49 @@ def check():
                 l, t, r, b = a["rect"]
                 d.rectangle((l * SCALE, t * SCALE, r * SCALE - 1, b * SCALE - 1), fill=0)
         expect = nearest4(img)
-        for v in variants_for(entry):
-            path = os.path.join(OUT[v], name)
-            if not os.path.exists(path):
-                fails.append(f"{v}/{name}: missing")
+        v = "hd-4x"
+        path = os.path.join(OUT, name)
+        if not os.path.exists(path):
+            fails.append(f"{v}/{name}: missing")
+            continue
+        out = Image.open(path)
+        if out.mode != "RGB" or out.size != (w * SCALE, h * SCALE):
+            fails.append(f"{v}/{name}: {out.mode} {out.size}, expected RGB {(w * SCALE, h * SCALE)}")
+            continue
+        # bit-exact at 4x (implies the 4x4 box-downsample of those blocks equals the original exactly)
+        diff = ImageChops.difference(out, expect).convert("L").point(lambda x: 255 if x else 0)
+        bad = ImageChops.multiply(diff, keep).getbbox()
+        if bad:
+            fails.append(f"{v}/{name}: mask/undeclared pixels not bit-exact in 4x box {bad}")
+        # and the explicit 4x4 box-downsample of the kept area
+        down = out.resize((w, h), Image.BOX)
+        keep1 = keep.resize((w, h), Image.NEAREST)
+        bad1 = ImageChops.multiply(ImageChops.difference(down, img).convert("L").point(lambda x: 255 if x else 0),
+                                   keep1).getbbox()
+        if bad1:
+            fails.append(f"{v}/{name}: box-downsample differs from the original in box {bad1}")
+        # colour fidelity of picture regions: blur(box4(hd)) vs blur(orig), per-channel MAE. Measured the way
+        # generation corrects: both crops edge-replicate padded by PAD before the blur, then cropped back, so
+        # the region border sees the same edge handling the back-projection was computed with.
+        worst = None
+        for a in regs:
+            if a["kind"] != "picture":
                 continue
-            out = Image.open(path)
-            if out.mode != "RGB" or out.size != (w * SCALE, h * SCALE):
-                fails.append(f"{v}/{name}: {out.mode} {out.size}, expected RGB {(w * SCALE, h * SCALE)}")
-                continue
-            # bit-exact at 4x (implies the 4x4 box-downsample of those blocks equals the original exactly)
-            diff = ImageChops.difference(out, expect).convert("L").point(lambda x: 255 if x else 0)
-            bad = ImageChops.multiply(diff, keep).getbbox()
-            if bad:
-                fails.append(f"{v}/{name}: mask/undeclared pixels not bit-exact in 4x box {bad}")
-            # and the explicit 4x4 box-downsample of the kept area
-            down = out.resize((w, h), Image.BOX)
-            keep1 = keep.resize((w, h), Image.NEAREST)
-            bad1 = ImageChops.multiply(ImageChops.difference(down, img).convert("L").point(lambda x: 255 if x else 0),
-                                       keep1).getbbox()
-            if bad1:
-                fails.append(f"{v}/{name}: box-downsample differs from the original in box {bad1}")
-            # colour fidelity of picture regions: blur(box4(hd)) vs blur(orig), per-channel MAE. Measured the way
-            # generation corrects: both crops edge-replicate padded by PAD before the blur, then cropped back, so
-            # the region border sees the same edge handling the back-projection was computed with.
-            worst = None
-            for a in regs:
-                if a["kind"] != "picture":
-                    continue
-                rect = tuple(a["rect"])
-                rw, rh = rect[2] - rect[0], rect[3] - rect[1]
-                inner = (PAD, PAD, PAD + rw, PAD + rh)
-                blur = ImageFilter.GaussianBlur(BACKPROJ[1])
-                bo = np.asarray(edge_pad(img.crop(rect), PAD).filter(blur).crop(inner), np.float64)
-                bd = np.asarray(edge_pad(down.crop(rect), PAD).filter(blur).crop(inner), np.float64)
-                mae = np.abs(bo - bd).reshape(-1, 3).mean(axis=0)
-                if worst is None or mae.max() > worst[1].max():
-                    worst = (a["note"], mae)
-            if worst:
-                colour.append((f"{v}/{name}", worst[0], worst[1]))
-                if worst[1].max() > COLOUR_MAE_MAX:
-                    fails.append(f"{v}/{name}: colour MAE {np.round(worst[1], 2).tolist()} > {COLOUR_MAE_MAX} "
-                                 f"in region {worst[0]}")
-    n_out = sum(len(variants_for(regions[n])) for n in regions)
+            rect = tuple(a["rect"])
+            rw, rh = rect[2] - rect[0], rect[3] - rect[1]
+            inner = (PAD, PAD, PAD + rw, PAD + rh)
+            blur = ImageFilter.GaussianBlur(BACKPROJ[1])
+            bo = np.asarray(edge_pad(img.crop(rect), PAD).filter(blur).crop(inner), np.float64)
+            bd = np.asarray(edge_pad(down.crop(rect), PAD).filter(blur).crop(inner), np.float64)
+            mae = np.abs(bo - bd).reshape(-1, 3).mean(axis=0)
+            if worst is None or mae.max() > worst[1].max():
+                worst = (a["note"], mae)
+        if worst:
+            colour.append((f"{v}/{name}", worst[0], worst[1]))
+            if worst[1].max() > COLOUR_MAE_MAX:
+                fails.append(f"{v}/{name}: colour MAE {np.round(worst[1], 2).tolist()} > {COLOUR_MAE_MAX} "
+                             f"in region {worst[0]}")
+    n_out = len(regions)
     print(f"colour MAE (blur {BACKPROJ[1]} of box4(hd) vs original; worst picture region per output, R G B):")
     for out_name, note, mae in colour:
         print(f"  {out_name:34s} {mae[0]:5.2f} {mae[1]:5.2f} {mae[2]:5.2f}  {note}")
@@ -428,10 +449,34 @@ def sheets(outdir):
         l, t, r, b = rect
         s = SCALE
         ps = [("original nearest 4x", nearest4(img.crop(rect)))]
-        for v, label in (("plain", "hd-4x"), ("dedither", "hd-4x-dedither")):
-            p = os.path.join(OUT[v], name)
-            if os.path.exists(p):
-                ps.append((label, Image.open(p).convert("RGB").crop((l * s, t * s, r * s, b * s))))
+        p = os.path.join(OUT, name)
+        if os.path.exists(p):
+            ps.append(("hd-4x", Image.open(p).convert("RGB").crop((l * s, t * s, r * s, b * s))))
+        return ps
+
+    def composited_tiles(sheet_png, bg_rect, faces):
+        """Tiles as the game stacks them (AkiGameArt): body row 0, face 38x50 stretched into (8,5,46,54), copied
+        through fadeMask(0) (black = opaque) onto a background crop, one tile per face, 60 px apart."""
+        ts, fs, bs = (Image.open(os.path.join(sheet_png, n)).convert("RGB")
+                      for n in ("tiles.png", "tile_pictures.png", "background1.png"))
+        k = 1 if ts.width == 53 else SCALE   # originals vs hd-4x
+        bg = bs.crop(tuple(c * k for c in bg_rect))
+        body = ts.crop((0, 0, 53 * k, 69 * k))
+        mask = ImageChops.invert(ts.crop((0, 276 * k, 53 * k, 345 * k)).convert("L"))
+        for i, face in enumerate(faces):
+            tile = body.copy()
+            top = 50 * face - 10000
+            pic = fs.crop((0, top * k, 38 * k, (top + 50) * k)).resize((38 * k, 49 * k), Image.LANCZOS)
+            tile.paste(pic, (8 * k, 5 * k))
+            bg.paste(tile, ((12 + i * 60) * k, 12 * k), mask)
+        return bg
+
+    def tiles_panels(faces):
+        bg_rect = (300, 200, 300 + 24 + 60 * len(faces), 293)
+        orig = composited_tiles(SRC, bg_rect, faces)
+        ps = [("original nearest 4x", nearest4(orig))]
+        if all(os.path.exists(os.path.join(OUT, n)) for n in ("tiles.png", "tile_pictures.png", "background1.png")):
+            ps.append(("hd-4x (body lanczos, faces remacri, bg de-dithered)", composited_tiles(OUT, bg_rect, faces)))
         return ps
 
     def save(sheet_name, panels, title):
@@ -472,6 +517,8 @@ def sheets(outdir):
         c.paste(b, (t.width + 12, a.height + 12))
         combo.append((label, c))
     save("04-tiles-faces", combo, "tiles.png rows 0-276 + faces 0, 10")
+    save("04b-tiles-composited", tiles_panels([200, 210, 222, 236]),
+         "composited tiles: body + face + fadeMask(0) over background1")
     save("05-misc", panels_for("misc.png", (0, 30, 467, 468)), "misc.png (0,30,467,468)")
     save("06-plate", panels_for("plate.png", (0, 0, 786, 68)), "plate.png (0,0,786,68)")
     save("07-pause", panels_for("pause.png", (0, 0, 208, 480)), "pause.png left half")

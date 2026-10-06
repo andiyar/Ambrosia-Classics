@@ -3,7 +3,8 @@ import AkiCore
 
 /// The menu bar of the shipped `MainMenu.nib` (Research note 7), built from its `designable.nib` XML in
 /// the preferred localization (English or Japanese) — the 1.2 app loaded the same nib as `NSMainNibFile`.
-/// Every title, key equivalent, modifier mask, tag and action comes from the nib; nothing is added.
+/// Every title, key equivalent, modifier mask, tag and action comes from the nib; one item is added: the
+/// checkable "Remastered Art" (DECISIONS D11), directly after the nib's Preferences item in the same menu.
 /// The three out-of-scope items (Known delta 1, Q11) are dropped: "Register Aki…" (`showRegistration:`),
 /// "Check for Updates…" (`checkForUpdates:`) and "Download Levels…" (tag 15), then the separators left
 /// leading, trailing or doubled are collapsed. An item the nib wires to no action (the Japanese
@@ -32,6 +33,7 @@ import AkiCore
             submenu.items.contains { $0.action == #selector(NSText.copy(_:)) }
         }
         nibEditItems = editMenu?.items ?? []
+        insertRemasteredArt(into: menu, app: app)
         // Runs after the caller's `NSApp.mainMenu =` (an immediate re-set does not stick, measured).
         app.perform(#selector(AkiAppDelegate.restoreNibMenu), with: nil, afterDelay: 0)
         return menu
@@ -49,6 +51,24 @@ import AkiCore
         guard let editMenu else { return }
         for item in editMenu.items where !nibEditItems.contains(where: { $0 === item }) {
             editMenu.removeItem(item)
+        }
+    }
+
+    /// The one item the nib lacks (D11): "Remastered Art", after the `showPreferences:` item, targeting the app
+    /// delegate (`toggleRemasteredArt:`); its check and enabling are `validateMenuItem`'s. Key equivalent ⌘G (Ben's
+    /// U4 ruling; neither MainMenu.nib uses G): fullscreen covers the menu bar, and a ⌘-key down reaches
+    /// `NSApp.mainMenu.performKeyEquivalent` there exactly as the nib's ⌘F and ⌘P do (ShellView has no
+    /// `performKeyEquivalent` of its own), so the toggle works in both modes.
+    private static func insertRemasteredArt(into menu: NSMenu, app: AkiAppDelegate) {
+        for submenu in menu.items.compactMap(\.submenu) {
+            guard let index = submenu.items.firstIndex(where: { $0.action == #selector(AkiAppDelegate.showPreferences(_:)) })
+            else { continue }
+            let item = NSMenuItem(title: "Remastered Art", action: #selector(AkiAppDelegate.toggleRemasteredArt(_:)),
+                                  keyEquivalent: "g")
+            item.keyEquivalentModifierMask = .command
+            item.target = app
+            submenu.insertItem(item, at: index + 1)
+            return
         }
     }
 

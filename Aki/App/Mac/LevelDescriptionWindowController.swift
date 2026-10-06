@@ -16,6 +16,9 @@ import AkiCore
     private let titleTextField: NSTextField                    // _titleTextField (ivar 0x30)
     private let descriptionTextField: NSTextField              // _descriptionTextField (ivar 0x34)
     private let checkbox: NSButton                             // _checkbox (ivar 0x28)
+    private let content: PaperBackgroundView
+    /// The art scale `content`'s paper was loaded at (Remaster, D11: reloaded when it changes).
+    private var paperScale: Int
 
     /// `+[LevelDescriptionWindowController runModalWithLayout:custom:]` @ 0x29d40 (levels.md §3, read
     /// from `otool`): n = layout + 1; title `level%d_custom_title` when `custom`, else `level%d_title`;
@@ -40,6 +43,9 @@ import AkiCore
         instance.titleTextField.stringValue = title
         instance.descriptionTextField.stringValue = description
         instance.imageView.image = image
+        controller.refreshArt(loadedAt: &instance.paperScale) {   // a Remaster switch since the window was built (D11)
+            instance.content.paper = assets.image("paper")
+        }
         if app.shell.isFullscreen {
             instance.window.scheduleShieldingLevel()
         }
@@ -70,7 +76,8 @@ import AkiCore
                           backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.title = w.title
-        let content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        paperScale = controller.artScale
         window.contentView = content
 
         imageView = NSImageView(frame: Self.frame(image))

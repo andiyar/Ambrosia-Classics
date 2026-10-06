@@ -6,6 +6,8 @@
 # out/, .build/ and *.xcodeproj are git-ignored.
 #   AKI_DATA_12     the Aki 1.2.0 Contents/Resources (default Resources/Aki/1.2.0.app/Contents/Resources)
 #   AKI_IPAD_DEVICE devicectl device identifier or name (default: Ben's iPad mini)
+# Remaster (D11): the same build phase mirrors Resources/Aki/hd-4x/ into <bundle>/hd-4x/ (no hd-4x → Remastered
+# Art disabled).
 # Exit: 1 build/bundle failure, 2 no data, 3 install failed (device locked / unavailable / not paired).
 set -euo pipefail
 
@@ -46,12 +48,17 @@ mkdir -p "$OUT"
 ditto "$APP" "$OUT/Aki.app"
 cp "$ROOT/Aki/WHAT-TO-EXPECT-iPad.md" "$OUT/WHAT-TO-EXPECT-iPad.md"
 
-PNGS="$(find "$OUT/Aki.app" -name '*.png' | wc -l | tr -d ' ')"
+PNGS="$(find "$OUT/Aki.app" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')"
 if [ ! -f "$OUT/Aki.app/English.lproj/Aki.nib/objects.xib" ]; then
     echo "stage-aki-ipad: English.lproj/Aki.nib/objects.xib missing from the built bundle" >&2
     exit 1
 fi
 echo "staged: $OUT/Aki.app ($PNGS PNG, expect 50; Aki.nib/objects.xib present)"
+if [ -d "$OUT/Aki.app/hd-4x" ]; then
+    echo "remaster: hd-4x $(find "$OUT/Aki.app/hd-4x" -name '*.png' | wc -l | tr -d ' ') PNG, $(du -sh "$OUT/Aki.app/hd-4x" | cut -f1)"
+else
+    echo "stage-aki-ipad: warning: no hd-4x/ in the bundle (Resources/Aki/hd-4x absent); Remastered Art will show disabled" >&2
+fi
 echo "notes:  $OUT/WHAT-TO-EXPECT-iPad.md"
 
 if [ "$INSTALL" -eq 0 ]; then

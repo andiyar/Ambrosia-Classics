@@ -7,7 +7,10 @@ import AkiCore
 /// Level Description and every Carbon dialog's image view 200. The replica stretches it into `bounds`
 /// on every draw (Q7).
 @MainActor final class PaperBackgroundView: NSView {
-    private let paper: NSImage?
+    /// Replaced only by a window built once (Preferences, Level Description) after a Remaster switch (D11).
+    var paper: NSImage? {
+        didSet { needsDisplay = true }
+    }
 
     init(frame: NSRect, paper: NSImage?) {
         self.paper = paper

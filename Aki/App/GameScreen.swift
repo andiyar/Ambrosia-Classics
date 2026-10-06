@@ -49,7 +49,8 @@ import QuartzCore
         let g = controller.g
         let gw = controller.gworlds!
         do {
-            gw.background = try controller.assets.png("background\(g.background)")
+            // gw's art scale (D11); a bad hd file falls back to the original at k = 1 (U3 review)
+            gw.background = try controller.assets.artPNG("background\(g.background)", scale: gw.scale)
         } catch {
             fatalError("Aki: cannot load background\(g.background).png: \(error)")   // _CreateGWorld
         }
@@ -374,6 +375,28 @@ import QuartzCore
     func keyDown(_ key: ShellKey) {                                                       // P2.11
         guard key.characters.utf16.first == 0x1B else { return }
         abortGame { _ in }                                         // nothing follows
+    }
+
+    /// A Remaster switch in the game (D11, `AkiController.setRemastered`): the new GWorlds hold no board and no
+    /// frame. The board buffer (scratch3c) is rebuilt by `_DrawGameTiles` — inside the recompose when unpaused;
+    /// explicitly first when paused, where the screen leaves the tiles off but later partial redraws
+    /// (`_RedrawTile`, the fade) copy from it — with the greyed look read as `_RedrawCustomGameScreen` reads it
+    /// (g+0x60 == 0). Then `composeCustomGameScreen(tiles: !g+0x67)`: `_redrawWindow`'s draws exactly — the pause
+    /// scroll, the "no more pairs" scroll over greyed tiles, the selected and hinted tiles, the plate, the time
+    /// bar, the open pairs and the elapsed clock as they were — with NO game or clock writes (U3 review, pixels
+    /// only: the full redraw's `enterNoMorePairs`, Practice a8 reset and cap penalty would change the game).
+    func redrawForArtChange() {
+        guard let game else { return }
+        if controller.g.paused {
+            drawGameTiles(greyed: game.openPairs == 0)
+        }
+        composeCustomGameScreen(tiles: !controller.g.paused)
+    }
+
+    /// The switch's synchronous art decode ran on wall time: `ticks` of it are discounted from a running level
+    /// clock (`AkiGame.discountTicks`), so the remaining / elapsed time read as if the switch took no time.
+    func discountArtSwitch(ticks: UInt32) {
+        updateGame { $0.discountTicks(ticks) }
     }
 
     /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932, R6): `_RedrawCustomGameScreen(!g+0x67)`.
