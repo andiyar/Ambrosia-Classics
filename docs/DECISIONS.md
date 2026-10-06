@@ -401,3 +401,26 @@ in CrossOver byte-identical to the Mac.
 6. `HectorAudio` depends on `HectorResources` (both Foundation-only, no cycle) so `SndSound` can use `MacRoman`.
    HectorSDL declares macOS 26 (brew's SDL3 dylib); only Windows-port packages depend on it.
 **Approved by:** orchestrator rulings under D15's "seat may settle" list.
+
+## D19 — Windows port W4–W7: playable, staged for Ben's brother; rulings closed during the build (2026-10-06)
+
+**Facts:** W4 `WinGameDriver` + `BubbleTroubleXWin` (attract demo = FILM 1 trace; Mac SDL and CrossOver dumps
+identical), W5 in-window menu bar, W6 in-window DLOG/DITL dialogs + prefs, W4.5 integration (text input, full screen,
+live resize, idle sleep), W7 `tools/windows/stage-btx.sh` → `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (87 MB /
+37 MB; exe + 19 DLLs + `Data/`; GUI subsystem, icon, DPI manifest; stamp 83febbe / HectorKit 0467025). Fresh CrossOver
+bottle: main menu, level 1, every dialog reachable by script — no crash, all dumps = the Mac SDL build.
+**Decided (orchestrator, Opus 5.5; Ben lifted the cap and asked for a bundle his brother can test):**
+1. **Window ▸ Minimize/Zoom stay greyed as on the Mac** (the Windows title bar has its own buttons).
+2. **Menu shortcuts match the physical key only** (D18.5); typed text comes only from SDL text input while a field is
+   focused (dead keys/AltGr/IME compose; no US fallback then).
+3. **Omitted macOS-only menu items:** Services, Hide/Hide Others/Show All, Edit ▸ Special Characters…, AppKit
+   additions, the Window menu's window list. About stays open behind a dialog as on the Mac.
+4. **Window opens at integer-fit scale** (HectorShell D7): 1× on a Windows 11 1080p screen (taskbar), Ctrl+F gives 2×
+   full screen. Non-integer windowed scaling would be Ben's call.
+5. **Foundation on Windows traps in `String.replacingOccurrences`** on non-ASCII strings ≳64 bytes (probe-proven;
+   `components`/`range(of:)` fine): Windows code uses a pure-Swift replace. The core's only use is the Mac-only census tool.
+6. **The zip holds the files at its root** (Windows "Extract All" adds the folder). Unsigned private build; SmartScreen
+   "Run anyway" documented. No installer, no signing (standing).
+**Carried:** M5 (mouse in the same poll as a resize uses the old layout), M6 (menu shortcuts ignore key repeat),
+DLOG 3000/3001 not script-reachable (date-gated), the missing-data box says "unzip the whole folder".
+**Approved by:** orchestrator rulings under D15's "seat may settle" list; sound and feel are Ben's (and his brother's).
