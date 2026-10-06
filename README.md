@@ -44,22 +44,22 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 **Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
 ### Deimos Rising
-![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
+![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
 ![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%25%20read-green)
 
-Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). It's the next one to be built: first the decoders for its data files, then the game.
+Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). Building has started: the shared kit can now read its data files (the zipped paks and its AIFF/WAVE sounds), and a census proving every original file opens is under way. Then the game.
 
 ### Ferazel's Wand
-![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
-![code](https://img.shields.io/badge/code-not%20started-lightgrey)
+![status](https://img.shields.io/badge/status-planning%20the%20build-yellow) &nbsp;
+![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
-The reverse-engineering notes are written (rules, formats, enemies, bosses, spells, physics) and a second deeper pass is under way. No code yet.
+The reverse-engineering notes are done, two passes deep (rules, formats, enemies, bosses, spells, physics, lighting, particles). The build plan is being written now. No code yet.
 
 ### Cythera
 ![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
 ![code](https://img.shields.io/badge/code-not%20started-lightgrey)
 
-The rules notes are written and the whole binary is decompiled; the next pass reads the rest of it. No code yet.
+The whole binary is decompiled and read: rules notes plus a second pass through every newly decompiled function. A final check pass is next. No code yet.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>

@@ -498,3 +498,19 @@ RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order 
 - (e) Noted, not changed: the iPad build scales to fill the height, smoothed (WHAT-TO-EXPECT-iPad, Ben on the mini), which
   supersedes D7 R3's integer scaling — recorded here as as-built.
 **Approved by:** Ben (1–3); seat (a)–(e).
+
+## D25 — Bubble Trouble X 1.0 public release: Mac (notarized DMG) + Windows (zip) in one release (2026-10-06)
+
+(D24 is taken on the unmerged `deimos-phase0` branch.)
+**Decided (Ben in chat, 2026-10-06):** "BTX - done for now. V1.0. notarise as per notarise kit process, and get it on
+github, with a readme update" and "should publish windows as download not test build right? it's done?" — yes: the
+Windows build was played to level 20 with sound on a real PC (D19 lane), and its source carries the D14 volume law.
+1. One GitHub release `btx-1.0` (tag on 47d7c98, the commit the DMG was built from) with both downloads:
+   `BubbleTroubleX-1.0.dmg` (`tools/package-btx-release.sh`, the Aki script's shape — pinned 7-file data manifest checked
+   before signing and inside the mounted DMG, universal, Developer ID + hardened runtime, notarize-kit notarize + DMG) and
+   `BubbleTroubleX-1.0-Windows.zip` (`tools/windows/stage-btx.sh`, stamp 6832da1, not code-signed — SmartScreen asks once).
+2. Versions as Aki (D23 b): `CFBundleShortVersionString` 1.1.0 (the game), `CFBundleVersion` 1.0 → About "1.1.0 (1.0)".
+3. Created as a **draft**; Ben downloads and tries it, then it is published (D23 c). The `btx-windows-test-1`
+   pre-release is superseded (its notes point to btx-1.0 once published).
+4. The Windows WHAT-TO-EXPECT drops "private test build" / "we could not listen to it" wording.
+**Approved by:** Ben (1, 3); seat (2, 4).

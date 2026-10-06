@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (Aki 1.0 released; BTX playable with sound; Ben playtesting; BTX for Windows staged)
+# STATE — Ambrosia Classics — 2026-10-06 (Aki 1.0 released; Bubble Trouble X 1.0 Mac + Windows release drafted)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -29,6 +29,11 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
+- **Bubble Trouble X 1.0 — RELEASE (draft until Ben tries the download; DECISIONS D25):** GitHub release `btx-1.0`
+  (tag on 47d7c98) carries `BubbleTroubleX-1.0.dmg` (12.6 MB, Developer ID + notarized + stapled, universal, built by
+  `tools/package-btx-release.sh`) and `BubbleTroubleX-1.0-Windows.zip` (36.9 MB, stamp 6832da1, unsigned) + .sha256s;
+  README + `docs/release/btx-1.0.md`. Next releases: bump `CFBundleVersion` in BubbleTroubleX/App/Info.plist, then
+  `tools/package-btx-release.sh --version X.Y --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize`.
 - **Bubble Trouble X PLAYABLE WITH SOUND (2026-10-04/06, Opus 5.5 orchestrators, plan `docs/plans/2026-10-04-btx-playable.md`,
   DECISIONS D12/D13/D14):** every plan task merged and Opus-reviewed (T0, C1–C8, R1, A1–A4), then 2026-10-06: K3
   `ShellMixer` merged to HectorKit main d9fdfa4 (kit gate floor **222**, zero skips; C1 off-main-thread regression test
@@ -74,7 +79,7 @@
    --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize` (bump `CFBundleVersion`
    in `Aki/App/Mac/Info.plist` first; the script asserts it). Ben verified the notarized DMG 2026-10-06: sound, music, ⌘G all work. Untested: Intel, macOS 15/26. **Next: Aki Phase 3** (editor, `.aki`).
 2. **Bubble Trouble X — Ben's play gate (sound is in):** Ben 2026-10-06 played 3 levels: sound + music right, Q1/Q3/Q4/Q5/Q8/Q12/Q16/Q18 + text all yes (D14 addendum); NR-10 waived ("who cares about demos?"). Still open: his longer playtest; Q2 cheat memories, Q9/Q13/Q15 if he notices anything. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
-3. RE deepening chains (Deimos CLOSED 2026-10-06; Ferazel wave 2 fix+merge owed; Cythera wave 2 DONE 2026-10-06, Render layer order + Fable revision pass remain) — separate chips.
+3. RE chains: Deimos CLOSED; Ferazel wave 2 CLOSED (build planning session running 2026-10-06); Cythera wave 2 DONE, wave 3 (Fable revision pass + Render layer order) chipped, not started. Deimos Phase 0 on branch `deimos-phase0` (HectorKit v0.3.0 format layer landed; DeimosCore census in progress, unmerged).
 4. **Windows port** (Ben 2026-10-06) — BTX staged for his brother (above); await his report.
 5. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
