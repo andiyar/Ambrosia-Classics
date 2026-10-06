@@ -24,6 +24,7 @@ let package = Package(
         ]),
         .testTarget(name: "BubbleTroubleRenderTests", dependencies: [
             "BubbleTroubleRender", "BubbleTroubleCore",
+            .product(name: "HectorGraphics", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
         ]),
         .executableTarget(name: "btx-replay", dependencies: ["BubbleTroubleCore"]),

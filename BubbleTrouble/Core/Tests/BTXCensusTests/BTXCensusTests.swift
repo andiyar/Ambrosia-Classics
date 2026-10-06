@@ -18,6 +18,7 @@ private func btxResources() throws -> URL {
     guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
         throw XCTSkip("\(variable)=\(value) is not a directory")
     }
+    try DecodedImages.ensureRegistered()               // off Apple only: the QuickTime-JPEG bands (D16.1)
     return url
 }
 
