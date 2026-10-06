@@ -74,7 +74,8 @@ HectorKit (generic, game-agnostic)                Classics: Deimos/Core (one Swi
 - `DeimosRender` imports Foundation + DeimosCore (+ HectorAudio from Phase 2 for the mixer). It owns every pixel and
   every PCM sample: the 640×480×16 back buffer `D+0x68`, the terrain buffer `D+0x6c` (the level map), the 160×480
   score-bar save buffer `D+0x70`, the 30 sprite-blit leaves, CopyBits/blend/fade arithmetic, and (Phase 2) the game's
-  own software mixer and music streamer. Its output is a 640×480 RGB555 "screen" (the DrawSprocket window) and a PCM
+  own software mixer and music streamer. (Phase 2 plan to consider a separate `DeimosAudio` target so a "Render" library does not own
+  audio — Fable plan review M6, 2026-10-06.) Its output is a 640×480 RGB555 "screen" (the DrawSprocket window) and a PCM
   stream. **No HectorGraphics in Phase 1** — every in-game pixel comes from DeimosCore's own TGA/GIF decoders.
 - `DeimosHost` (new, Foundation-only) is the driver both shells call: it turns a monotonic seconds clock into Mac
   ticks, runs one `DeimosSession.pass` when the original would, waits where the original spun on `TickCount` (FPS

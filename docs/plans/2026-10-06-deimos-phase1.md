@@ -1,6 +1,8 @@
 # Plan — Deimos Rising Phase 1: level 1 look (gate 1) — 2026-10-06
 
-> Status: **DRAFT — awaiting review** (planner: Claude Opus 5.5, 2026-10-06). Implements
+> Status: **REVIEWED — ACCEPT_WITH_FIXES, fixes applied** (planner: Claude Opus 5.5, 2026-10-06; Fable 5.1 review
+> 2026-10-06: 0 Critical / 4 Important / 9 Minor, 61 claims PASS; I1–I4 and M1–M4, M7–M9 applied here, M5 moot, M6 is a
+> Phase 2 design note). Implements
 > `docs/plans/2026-10-06-deimos-design.md` §8 **Phase 1 only** under Ben's rulings **D27** (first gate = level 1 look, no
 > gameplay; 640×480 whole-number scale; feel oracle = longplays + his eyes).
 > **Format (Ben, 2026-10-03): CONTRACTS, not code** — files, public names (signatures only where they pin a seam),
@@ -35,7 +37,7 @@ Python 3 only as the planner's probe tool (never a build or test dependency).
 **Paths:**
 ```
 WT      = /Users/andiyar/Developer/Ambrosia-Classics/.claude/worktrees/<lane worktree>  (branched from Classics main)
-HK      = /Users/andiyar/Developer/HectorKit        (main 33d4dee, zero-skip FLOOR 301 at plan time; ferazel-k1 branch = main)
+HK      = /Users/andiyar/Developer/HectorKit        (main 522feb8 = K1 landed, zero-skip FLOOR 316, HectorKit D13 — review fix I1)
 HKWT    = /Users/andiyar/Developer/HectorKit-worktrees/deimos-k1   (branch deimos-k1, for K1 only)
 LISTING = /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/disasm-review3-all.txt  (+ mem/10000000.bin code, mem/100de330.bin data; r2 = 0x100e6330)
 SCRATCH = the executing session's scratchpad directory (logs, dumps; never the repo)
@@ -49,7 +51,7 @@ SCRATCH = the executing session's scratchpad directory (logs, dumps; never the r
 
 | # | gate | command | expected |
 |---|---|---|---|
-| G1 | HectorKit zero-skip (K1) | `HECTORKIT_TEST_LOG="$SCRATCH/hk.log" "$HKWT/tools/check-zero-skip.sh" 2>&1 \| tail -n 1` | `PASS: zero skips, zero failures, executed 304 == floor 304` (301 + K1's 3; floor-delta rule, Invariant 8) |
+| G1 | HectorKit zero-skip (K1) | `HECTORKIT_TEST_LOG="$SCRATCH/hk.log" "$HKWT/tools/check-zero-skip.sh" 2>&1 \| tail -n 1` | `PASS: zero skips, zero failures, executed 316 == floor 316` (K1 landed at 522feb8; re-run at every merge head) |
 | G2 | `Deimos/Core` suite | `cd "$WT/Deimos/Core" && swift test > "$SCRATCH/dm.log" 2>&1; grep -cE "^Test Case '.*' (passed\|failed\|skipped) \(" "$SCRATCH/dm.log"; grep -cE "^Test Case '.*' (failed\|skipped) \(" "$SCRATCH/dm.log"` | the task's ladder total, then `0` |
 | G3 | census unchanged | `testStdoutEqualsCommittedCensus` inside G2 is green; `git -C "$WT" diff --stat main -- docs/deimos/data-census.md` | empty (Phase 1 does not touch the census) |
 | G5 | apps build (A1 on; Aki + BTX always) | `cd "$WT" && xcodegen generate && for s in Deimos Aki BubbleTroubleX; do xcodebuild -scheme "$s" build 2>&1 \| tail -n 1; done` | `** BUILD SUCCEEDED **` ×3 (Deimos absent before A1) |
@@ -60,9 +62,9 @@ SCRATCH = the executing session's scratchpad directory (logs, dumps; never the r
 | G10 | clean tree per commit | `git -C "$WT" status --porcelain \| grep -v '^??'` | empty after every commit |
 
 **Test ladder (`Deimos/Core`, cumulative, canonical merge order; STOP if different):** baseline **104** (Phase 0, D24) →
-C1 **110** → C2 **116** → C3 **122** → C4 **130** → C5 **139** → C6 **146** → R1 **154** → R2 **164** → R3 **171** →
+C1 **110** → C2 **116** → C3 **122** → C4 **130** → C5 **139** → C6 **146** → R1 **153** → R2 **164** → R3 **171** →
 H1 **177**. Lanes may merge in another order (R1/R2 run beside C2–C6): expected total = previous total + the task's N.
-HectorKit: 301 → K1 **304**.
+HectorKit: K1 **DONE** — main 522feb8, floor **316** (313 + 3), D13.
 
 **Honesty gate (Ben only):** the gate card (A2). Completion is phrased "machine gates green; Ben's gate pending".
 
@@ -88,7 +90,9 @@ the replica presents whole frames — design §7.1); every MED surface on the ga
 5. **Data in git, tests never skip.** Tests read the committed `Resources/Deimos/Data` through Phase 0's
    `DeimosData.dataDirectory()` (`DEIMOS_DATA` overrides). A missing file is a FAILURE naming the path.
 6. **Every RNG draw at its original site and order.** Phase 1 has exactly one per in-game player per level start
-   (`FUN_100269a0` `10026a9c`: `R(400, 2000)`, player-physics §4.2) after `srand(seed)` (`100057d4`). No other draw.
+   (`FUN_100269a0` `10026a9c`: `R(400, 2000)`, player-physics §4.2) after `srand(seed)` (`100057d4`). No other draw. (Before `srand` the session set-up makes one pre-seed
+   `FUN_10046580(400, 2000)` draw — the unregistered cut-off, engine-loop §3; it does not affect the seeded sequence; a
+   Phase-2 replay implementer must not move it after the seed — review M8.)
 7. **Commits:** explicit paths only (never `git add -A` / `.`, never `git stash`); trailer on every commit, both repos:
    `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. G10 after each.
 8. **HectorKit floor-delta rule.** K1 works in `$HKWT` (branch `deimos-k1`), rebases onto `origin/main` immediately
@@ -99,7 +103,7 @@ the replica presents whole frames — design §7.1); every MED surface on the ga
 10. ⚠️ **Landmines.** (a) `swift test` has no package total: count `^Test Case` lines (G2). (b) SwiftPM rejects a
     declared target with no sources — `Package.swift` grows task by task. (c) Quote every path (`Deimos Rising.app`,
     `Deimos Rising.rsrc`). (d) **D-numbers collide** (D23/D24 did; a Ferazel session is active): the next free number on
-    `main` at plan time is **D28**; confirm at commit and renumber every reference in the same commit if taken. (e) Decoding
+    `main` at plan time was D28, taken by Cythera — Phase 1 uses **D29** (review I2); confirm at commit and renumber every reference in the same commit if taken. (e) Decoding
     all 2,554 frames per test is slow: cache sprite groups per test process (static), load only what a test needs.
 
 ---
@@ -107,6 +111,9 @@ the replica presents whole frames — design §7.1); every MED surface on the ga
 ## Hazards for every implementer reading the listing (from the bank; read before any listing work)
 
 - **No decompile exists** (`ghidra/Deimos_pef.decompiled.c` was never produced for 1.0.6). Cite listing addresses only.
+  Some bank lines (e.g. hud-scorebar's header) cite "the dump" from an earlier partial pass: re-read those in the listing
+  when a test pins them (review M7). Listing + memory images: `~/Developer/Ghidra/deimos/proj/` (symlinked as
+  `ghidra/deimos-proj` in the main checkout).
 - **Static initialisers rewrite templates before `main`** (INDEX #56): the runtime draw-command template is
   `0x100e63e4` with clip {0,0,480,416}, layer 7, scale 1.0, colour 0x7fff (sprite-geometry-draw §3.1) — not the data
   image bytes. HUD template `0x100eb228` (hud-scorebar §4; the `subi r5,r7,0x4` copy loop hides +4/+8 — the
@@ -159,7 +166,7 @@ public enum BufferID: Sendable { case back /* D+0x68 640×480 */, terrain /* D+0
 public enum PresentKind: Sendable { case gameScreen /* FUN_1000beb0 */, gameLayout /* FUN_1000bd80 */, fullScreen /* FUN_1000bc60 */ }
 public enum FadeKind: Sendable { case fromBlack /* FUN_1000ba70, 9 steps */, toBlack /* FUN_1000b9a0, 33 steps */ }
 public struct DrawCommand: Equatable, Sendable {      // the 0x4c-byte command (sprite-geometry-draw §3.1, runtime template)
-    public var face: FourCC; public var frame: Int; public var x: Int32; public var y: Int32   // centre (+0x0c/+0x10, +0x04/+0x08)
+    public var face: FourCC; public var frame: Int; public var x: Int32; public var y: Int32   // face/frame +0x0c/+0x10; centre x/y +0x04/+0x08
     public var flags: UInt32                         // 1 fade, 2 shadow, 4 tint, 8 terrain buffer (+0x14)
     public var scale: Float; public var alpha: UInt32 // +0x18, +0x1c (0..32; 32 = not drawn)
     public var clip: MacRect; public var layer: UInt8; public var drawNow: Bool; public var colour: UInt16   // +0x20, +0x30, +0x31, +0x34
@@ -168,6 +175,7 @@ public struct DrawCommand: Equatable, Sendable {      // the 0x4c-byte command (
 }
 public enum RenderOp: Equatable, Sendable {           // one per original call site, in pass order
     case loadTerrain(image: FourCC)                                        // FUN_1000fbc0: terrain buffer ← im16, resized
+    case fill(BufferID, colour: UInt16)                                    // FUN_10009f00: PaintRect portRect (level start: back ← 0, 1000690c; review I4)
     case loadImage(image: FourCC, into: BufferID, dst: MacRect)            // FUN_10031400 'scor'
     case copy(from: BufferID, to: BufferID, src: MacRect?, dst: MacRect?, interlaced: Bool)   // FUN_10009fd0
     case draw(DrawCommand)                                                 // FUN_10019570 (drawNow) or the queue FUN_1001a450
@@ -258,19 +266,19 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
 - **Tests (3):** `testDefaultPolicyIsAspectFitUnchanged` (view 3024×1964 px → the existing smooth rect (202, 0, 2619, 1964))
   · `testIntegerFitFullscreenPanel` (640×480 canvas in 3024×1964 px → k 4, rect (232, 22, 2560, 1920), integerScale 4)
   · `testIntegerFitExactWindow` (1280×960 px → k 2, the whole view).
-- **Gate:** G1 = **304**, G8; Classics G5 (Aki + BTX) against the pushed kit. **Commit:** `HectorShell: ShellView.scalingPolicy on macOS (.aspectFit default, .integerFit); floor 304`.
+- **DONE (2026-10-06):** HectorKit 522feb8 (D13, floor 316), Fable review MERGEABLE (3 Minor: test seam `backingPixelSizeOverride` ships un-gated, harmless; one doc rewrap); Classics Aki + BTX BUILD SUCCEEDED against it. Ferazel's session told.
   Rebase, re-gate, `git push origin HEAD:main`, clean `pull --ff-only` in `~/Developer/HectorKit`.
 - **Shared with Ferazel:** Ferazel's A1 assumes integer full screen (`docs/plans/2026-10-06-ferazel-phase1.md` A1) but
   has no kit task for it. Whichever session lands first, the other reuses it — the orchestrator tells the Ferazel session.
 
-### C1 — minor — Seams, assets, prefs defaults, level order, D28 (→ 110)
+### C1 — minor — Seams, assets, prefs defaults, level order, D29 (→ 110)
 - **Files:** `Sources/DeimosCore/Seams/{HeldKeys,PlayerInput,DrawCommand,RenderOp,PassOutput,SoundCue,MusicCue,ShellRequest}.swift`,
   `Sources/DeimosCore/Game/{DeimosAssets,LevelOrder,DeimosPrefs}.swift`; `Tests/DeimosCoreTests/{SeamTests,AssetsTests}.swift`;
   `docs/DECISIONS.md`.
 - **Contract:** S2/S3 verbatim. `DrawCommand.template` = the runtime template (Hazards). `DeimosPrefs.fresh` = timing-frame
   §6 table (byte 2 = 0, 4 = 1, 5 = 0, 6 = 0, 7 = 0, 8 = 0, 9 = 0, 10 = 1; int 0 = 50, 1 = 100, 2 = 50, 3 = 1; key table
   0x7E 0x7B 0x7C 0x7D 0x37 0x3A 0x31 | 0x5B 0x56 0x58 0x57 0x77 0x75 0x79) + engine-loop §10 defaults (scores 15000…1000;
-  names Mars … Electrofryer; player names "Player 1/2"; sector name "New Atlantis"). DECISIONS **D28** "Deimos Rising build:
+  names Mars … Electrofryer; player names "Player 1/2"; sector name "New Atlantis"). DECISIONS **D29** "Deimos Rising build:
   design + Phase 1 rulings (seat)": design §3 layers incl. DeimosHost (rejected: per-shell controllers, D15 cost), §5 render
   model incl. RGB555→RGBA bit replication (`(c<<3)|(c>>2)`, the kit's PICT rule) and whole-frame presents, §7 deviations,
   §8 phase proposal pending Q7, Q1 default 60.15 Hz pending Ben, the Phase-1 stubs (S2 ◇), key table as the input source.
@@ -281,7 +289,7 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   "Mariner Valley": map `jum2`, mask `jut2`, music `mu03`, rect (0, 0, 3600, 480), 38 objects, none with yLoc ≥ 3056 — so
   no load-time spawns; p01) · `testSectorOneWeapons` (PEAA defs containing sector 1 = `aiic` only; P1 face `pl1o`, P2 `pl2o`;
   preview `wesy` 0; p02).
-- **Gate:** G2 = **110/0**. **Commit:** `DeimosCore: LOCKED seam types, DeimosAssets, LevelOrder, fresh prefs; DECISIONS D28; 6 tests`.
+- **Gate:** G2 = **110/0**. **Commit:** `DeimosCore: LOCKED seam types, DeimosAssets, LevelOrder, fresh prefs; DECISIONS D29; 6 tests`.
 
 ### C2 — minor — RNG and the frame controller (→ 116) — ∥ C3
 - **Files:** `Sources/DeimosCore/Game/{MSLRandom,FrameController}.swift`; `Tests/DeimosCoreTests/{RandomTests,FrameControllerTests}.swift`.
@@ -294,7 +302,7 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   monitor and auto-interlace are Phase 2 (they show only with pref 9 / never with stock prefs).
 - **Tests (6):** `testRandSeedOne` (16838, 5758, 10113; p08) · `testRandSeedDemo01` (seed 0x469c2 → 26662, 28174, 2951;
   p08) · `testIntRange` (after `srand(0x469c2)`: `range(400, 2000)` = 1446; `range(5, 5)` = 5 and the state is unchanged)
-  · `testFloatRange` (after `srand(1)`: `range(1.0, 2.0)` = 1.5138707 (float32 bits exact); `range(2.0, 1.0)` = 0.48612934;
+  · `testFloatRange` (each call after its OWN fresh `srand(1)` — review I3; sequential after one `srand(1)` the triple is 1.5138707, 0.8242744, 0.9234535, also pinned: `range(1.0, 2.0)` = 1.5138707 (float32 bits exact); `range(2.0, 1.0)` = 0.48612934;
   `range(0.8, 1.2)` = 1.0055482; `range(1.5, 1.5)` = 1.5 with no draw; p08) · `testTickEveryPass` · `testEscRule`.
 - **Gate:** G2 = **116/0**. **Commit:** `DeimosCore: MSL rand + int/float RandomRange (float32), frame controller tick/Esc arithmetic; 6 tests`.
 
@@ -405,9 +413,13 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   - `init` = `FUN_100051a0` set-up subset: `srand(seed)` (`100057d4`); both player objects, `setup` for index 0 and 1;
     frame-controller start; then level start `FUN_100064d0` subset (level-scroll-objects §8): game time 0, appeared 0,
     level = `LevelOrder.level(sector:)`, each player `levelStart` (P1 then P2), `ScrollState.levelStart`, ops
-    `loadTerrain(jum2)`, the score-bar level-start ops, the first terrain blit. Init ops are returned by the first `pass`.
+    `loadTerrain(jum2)`, `fill(.back, colour: 0)` (`1000690c`, after the (absent) notice spawn — review I4), the score-bar
+    level-start ops (bracketed `FUN_10031ad0(0)`/`(1)`), the first terrain blit. Doc-comment (review M3): `FUN_100189f0`
+    clears the layer lists at level start (`10006824`, a no-op at init); if byte pref 5 is set at level start, `game+0xf`
+    = 1 and pref 5 is cleared, restored at appear (`1000693c..10006970`, `10005990..100059b0`) — moot with fresh prefs. Init ops are returned by the first `pass`.
   - `pass(keys:)` — one loop iteration (engine-loop §3, timing-frame §2.1–§2.4):
-    1. Begin frame: `clearLayers`; Esc rule (C2) — quit → `sessionEnded`, no further ops; Caps Lock, console, volume
+    1. Begin frame: `clearLayers`; Esc rule (C2) — quit clears the run flag only (`FUN_100064c0` = `stb 0, 0x8(game)`): the pass still ticks, draws and
+       presents, and its output carries `sessionEnded = true` (the `while` exits before the next pass; review M1); Caps Lock, console, volume
        and F6 are not acted on (Phase 2; gate card); input from `keys` through the prefs key table.
     2. Tick (always): if not appeared and game time == flli 18 (2): `fade(.fromBlack, .gameLayout)`, appeared = 1 (music
        is Phase 2). Update world subset in `FUN_10006b50` order: players (P1, P2) → score-bar update → `scroll.step()`
@@ -417,7 +429,7 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
     4. End frame `FUN_10030bc0`: [messages, FPS, console — none] → `flushLayers(0...1)` → terrain blit (pref 5) →
        `flushLayers(2...5)` → [particles — none] → `flushLayers(6...15)` → `limit` (pref 10) → `present(.gameScreen)` only
        when appeared.
-- **Tests (7):** `testInitOps` (loadTerrain jum2, two scor loads + P1/P2 elements, terrain blit top 3120, no present) ·
+- **Tests (7):** `testInitOps` (loadTerrain jum2, `fill(.back, 0)`, two scor loads + P1/P2 elements, terrain blit top 3120, no present) ·
   `testPassesZeroAndOneUnpresented` (`limit` but no `present`) · `testFadeAtTick2` (pass 2 begins `clearLayers`,
   `fade(.fromBlack, .gameLayout)` before the tick's updates; ends `present(.gameScreen)`) · `testSteadyPassOrder` (pass 200:
   the op-kind sequence above exactly) · `testTerrainTopPerPass` (pass t blits top 3119 − t for t ≤ 3118, then 1 forever)
@@ -435,21 +447,21 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   back (0,0,480,416) → screen (0,32,480,448); back (0,416,480,576) → screen (0,448,480,608)), game layout (back
   (0,0,480,608) → screen (0,32,480,640); screen x 0..31 untouched), full screen (1:1); `Blend555` kernel
   `⌊(A·a + B·(32 − a))/32⌋` per 5-bit channel (`FUN_1001e9d0`); fades: from black (`1000ba70..1000bbc0`: snapshot of
-  back, black clone; for a = 0, 4, …, 32: back = blend(snapshot, black, a), present) and to black (`FUN_1000b9a0`: a = 32 … 0,
-  back scaled in place toward 0 by a/32, present — compounding); `ScreenRGBA` per channel `(c<<3)|(c>>2)`, alpha 0xFF.
-- **Tests (8):** `testBlendKernelFloor` (per-channel floor, no carry between fields; 0x7FFF·a 16 with 0 = 0x3DEF) ·
+  back, black clone; for a = 0, 4, …, 32: back = blend(snapshot, black, a), present) (fade to black, `FUN_1000b9a0`, uses the MED
+  `FUN_1001ec80` kernel and moves to R2 after its reading — review M2; `Fades` exposes the from-black half only here); `ScreenRGBA` per channel `(c<<3)|(c>>2)`, alpha 0xFF.
+- **Tests (7):** `testBlendKernelFloor` (per-channel floor, no carry between fields; 0x7FFF·a 16 with 0 = 0x3DEF) ·
   `testCopyBitsRectDefaults` · `testInterlacedCopyParity` · `testGameScreenPresent` · `testGameLayoutPresent` ·
   `testFadeFromBlackSteps` (9 steps; step a = 0 is black, a = 32 equals the snapshot; mid step = ⌊c·a/32⌋) ·
-  `testFadeToBlackCompounds` (33 steps; after step a the buffer is the product of the factors so far) · `testRGBAConversion`
+  `testRGBAConversion`
   (0x4B7C → 0xFF94DEE7, 0x7FFF → 0xFFFFFFFF, 0 → 0xFF000000).
-- **Gate:** G2 = previous + **8** (canonical **154**). **Commit:** `DeimosRender: RGB555 buffers, CopyBits (double/interlaced), presents, fades, blend kernel, RGBA; 8 tests`.
+- **Gate:** G2 = previous + **7** (canonical **153**). **Commit:** `DeimosRender: RGB555 buffers, CopyBits (double/interlaced), presents, fade from black, blend kernel, RGBA; 7 tests`.
 
-### R2 — ⚑ MAJOR — The sprite blitters (→ +10)
+### R2 — ⚑ MAJOR — The sprite blitters + fade to black (→ +11)
 - **Precondition (read Hazards):** read `FUN_1001ec80` (`COST` rect / in-place scale toward a colour) in `$LISTING` — the
   bank has only usage (hud-scorebar §5 MED) — and record its kernel and clipping; re-read the dispatcher
   `10019570..10019ab4`.
-- **Files:** `Sources/DeimosRender/Blit/{SpriteBlitter,UnscaledLeaves,ScaledLeaves,CostRect}.swift`;
-  `Tests/DeimosRenderTests/BlitTests.swift`.
+- **Files:** `Sources/DeimosRender/Blit/{SpriteBlitter,UnscaledLeaves,ScaledLeaves,CostRect}.swift`,
+  `Sources/DeimosRender/FadeToBlack.swift` (extends R1's `Fades`); `Tests/DeimosRenderTests/BlitTests.swift`.
 - **Contract (blit-pixel-rules §1–§5, sprite-geometry-draw §3.3; HIGH):** dispatch: alpha 32 → nothing; mode = 1 if flags
   &1, 2 if &2, 3 if &4, else 0; port = terrain if &8 else back; unscaled: left = X − w/2, top = Y − h/2 (C division);
   inside / reject / clipped classification exactly as §1.1 (strict `X + w < clipR`); map path when the frame has a map
@@ -458,14 +470,16 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   skip ≥ 32, dst·α/32; mode 3 colour for src); 1000 = empty row (unscaled) / pixel (scaled); clipped twins = same kernel +
   per-pixel clip; scaled: W = w·s (float32), w′ = trunc(W), left = trunc(X − 0.5·W), sampling `sx = (w·(dx − left)) div w′`,
   `sy` likewise; unclipped scaled leaves (clip == {0,0,480,416}) clamp to x ∈ [0, 416), y ∈ [0, 480); other clips test per
-  pixel; mode ≥ 4 → nothing. `COST` per the precondition reading.
+  pixel; mode ≥ 4 → nothing. `COST` per the precondition reading. Fade to black (`FUN_1000b9a0`, moved from R1 — review
+  M2): a = 32 … 0, back scaled in place toward 0 by the `FUN_1001ec80` kernel as read, present — compounding.
 - **Tests (10):** `testDispatchSelection` · `testUnscaledMode0` · `testUnscaledMode1Additive` · `testMode2AlphaTables`
   (a = 20: p 1…19 → 20 20 20 20 20 21 21 22 22 23 23 24 25 26 27 28 29 30 31, p ≥ 20 skipped; a = 0: 0 0 0 0 0 1 1 2 2 3 3 4 5
   6 7 8 9 10 11 12 14 15 16 18 20 21 23 25 26 28 30; §3.1) · `testMode3Tint` · `testClippedTwinsMatchUnclipped` (randomised,
   seeded; a frame ending exactly on the clip edge takes the twin with identical pixels) · `testScaledHalfShipShadow`
   (`pl1o` frame 0 at (184, 382), scale 0.5 → 26 × 21 at left 170, top 371) · `testScaledClampVersusClip` ·
-  `testCostRect` (meter darkening at blend 8; clipped to the command clip) · `testCentreAnchorOddWidth`.
-- **Gate:** G2 = previous + **10** (canonical **164**). **Commit:** `DeimosRender: sprite blitters — dispatcher, 4 unscaled modes + clipped twins, 16 scaled leaves, COST; 10 tests`.
+  `testCostRect` (meter darkening at blend 8; clipped to the command clip) · `testCentreAnchorOddWidth` ·
+  `testFadeToBlackCompounds` (33 steps; after step a the buffer is the product of the factors so far, per the kernel read).
+- **Gate:** G2 = previous + **11** (canonical **164**). **Commit:** `DeimosRender: sprite blitters — dispatcher, 4 unscaled modes + clipped twins, 16 scaled leaves, COST, fade to black; 11 tests`.
 
 ### R3 — ⚑ MAJOR — `DeimosRenderer.apply`, render lists, level-1 frame goldens (→ +7) — needs C6 + R2
 - **Files:** `Sources/DeimosRender/DeimosRenderer.swift`, `Sources/DeimosRender/RenderLists.swift`;
@@ -556,7 +570,8 @@ and what would be wrong.
 5. **The ship** — nothing for about 1.9 s, then the orange ship fades in (~1.7 s) at the bottom-centre, with a half-size
    dark shadow down and to the left (ground under it at 62.5 % brightness). Wrong: a hard pop-in, a full-size shadow, a
    shadow on the wrong side.
-6. **The crosshair** — the plasma-bomb target fades in quickly ~121 px ahead of the ship. *Its layer and whether it casts
+6. **The crosshair** — the plasma-bomb target fades in ~121 px ahead of the ship, 0 → 100 at 6 per tick from the ship's
+   first active tick (~0.6 s; loose-ends-combat §6.2, `1003b148..1003b15c`) — a quick fade, not a pop. *Its layer and whether it casts
    a shadow are read from the code in this phase (C5) — any item still MED is listed below.*
 7. **Left / right** — the ship banks (3 frames each way, one step every 2 frames) and the whole map pans up to 32 px;
    **the ship itself does not move** (that is Phase 2). Up/down, fire and select do nothing yet.
@@ -593,8 +608,8 @@ Known by design: whole frames, no tearing (the original could tear); a window in
 1. **D27.2 coverage.** Scrolling background (C3, C6, R1, R3) ✅; ship drawn in place (C4, C5, R2, R3) ✅; HUD/score bar
    (C4, C5, R3) ✅; original frame order (C6 from the `FUN_100051a0`/`FUN_10007070`/`FUN_10030bc0` listings) ✅; 640×480
    integer scale + black border (K1, A1) ✅; staged to `~/Desktop` with WHAT-TO-EXPECT (A2) ✅; no gameplay (S2 ◇) ✅.
-2. **Ladder arithmetic** from the named tests: C1 6, C2 6, C3 6, C4 8, C5 9, C6 7, R1 8, R2 10, R3 7, H1 6 = 73 →
-   104 + 73 = **177** ✅; K1 3 → 304 ✅.
+2. **Ladder arithmetic** from the named tests: C1 6, C2 6, C3 6, C4 8, C5 9, C6 7, R1 7, R2 11, R3 7, H1 6 = 73 →
+   104 + 73 = **177** ✅; K1 landed, 316 ✅.
 3. **Type names:** `HeldKeys`, `PlayerInput`, `DrawCommand`, `RenderOp`, `BufferID`, `PresentKind`, `FadeKind`,
    `PassOutput`, `SoundCue`, `MusicCue`, `ShellRequest`, `DeimosPrefs` created in C1 and used unchanged in C3–A1 ✅.
 4. **Numbers re-derived by probe** (Research notes): level order and le07 header, sector-1 weapon, flli/tefo values, frame
@@ -650,7 +665,7 @@ Everything else the design lists (Q2–Q8) belongs to later phases.
 - **p07** TGA (descriptor bit 5 honoured): `jum2` 480×3600, top-down (32, 3120) = 0x1040, (447, 3599) = 0x22C4, (0, 0) =
   0x314A; `scor` 160×480, (0, 0) = 0x0021; `jut2` 96×720.
 - **p08** MSL rand: srand(1) → 16838, 5758, 10113; srand(0x469c2) → 26662, 28174, 2951 and R(400, 2000) = 1446; float32
-  RandomRange after srand(1): (1, 2) 1.5138707, (2, 1) 0.48612934, (0.8, 1.2) 1.0055482.
+  RandomRange, each after a fresh srand(1): (1, 2) 1.5138707, (2, 1) 0.48612934, (0.8, 1.2) 1.0055482; sequential after one srand(1): 1.5138707, 0.8242744, 0.9234535 (review I3).
 - **p09** `Deimos Rising.rsrc` `icns 128`: 63,938 B, elements ICN# icl4 icl8 il32 l8mk ich# ich4 ich8 ih32 h8mk ics# ics4
   ics8 is32 s8mk icm# icm4 icm8 it32 t8mk; `sips` reads it as 128 px.
 - **p10** listing reads: `FUN_10007070` order (Bank corrections 2); `FUN_1000ba70` (Bank corrections 3); `FUN_10012750`
