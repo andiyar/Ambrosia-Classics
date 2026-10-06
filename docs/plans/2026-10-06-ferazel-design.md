@@ -1,7 +1,7 @@
 # Design — Ferazel's Wand 1.0.3, native Apple Silicon (and Windows) replica — 2026-10-06
 
 > Status: **APPROVED by Ben in the brainstorm of 2026-10-06** (orchestrator: Claude Fable 5.1). His five answers
-> are the rulings in §10 (recorded as DECISIONS D25). Everything else here is the seat's design under the standing
+> are the rulings in §10 (recorded as DECISIONS D26 — D25 was taken on main by the Bubble Trouble X 1.0 release). Everything else here is the seat's design under the standing
 > ruling: replicate the original 100 %, no modern affordances, no per-element commissioning questions (CLAUDE.md).
 > **Spec:** the RE bank `docs/ferazel/` (INDEX.md provenance + topical table; ~14.7k lines, Fable-reviewed in three
 > waves). **This document is the architecture; plans carry contracts, not code** (Ben, 2026-10-03).
@@ -130,13 +130,19 @@ honoured as read (rendering-omnipx-titles §1.1 gates).
 ## 6. The one LOW item: which palette slot a computed colour lands on
 
 Every tint/water/redden/lighting table asks QuickDraw's `Color2Index` for the nearest CLUT entry to a computed RGB
-(lighting-tables §1.2). The ROM search is not in the binary. Facts that bound the risk (lighting-tables §1.4, HIGH,
-data): every "+ base" level CLUT's entries 0x00..0x9f equal `clut 200`, so **sprite source pixels copy through
-exactly**; only the computed table outputs can differ, and their requested RGB is HIGH.
+(lighting-tables §1.2). The ROM search is not in the binary. **Corrected by the planner's probes (2026-10-06, plan
+"Bank corrections" 1–2):** the sheets are NOT authored in the conversion CLUT — indexed PICTs carry their own colour
+tables and 326 PICTs are 32-bit drawn with `ditherCopy` — so every face pixel also goes through the colour search at
+load time, and QuickDraw's dither is a second undocumented step. Measured size of the risk: the two search models
+disagree on 4–5 of the player walk sheet's colours, about 1 % of its pixels (probe p10: 452 of 48,000 on PICT 1003);
+more on the 32-bit decoration sheets. What stays true (lighting-tables §1.4, HIGH): every "+ base" level CLUT's entries
+0x00..0x9f equal `clut 200`, so a face index means the same colour on every level.
 
-Seat's ruling for the build (to confirm in Phase 0 by measurement, record in D25): **exact match → that entry
-(lowest index on ties); otherwise QuickDraw's documented inverse-table rule at the device's default resolution (4
-bits per channel), implemented as `ColorSearch` in FerazelRender with both models selectable in tests.** Phase 0's
+Seat's ruling for the build (measured in Phase 0, record in D26): **exact match → that entry (lowest index on
+ties); otherwise QuickDraw's documented inverse-table rule at the device's default resolution (4 bits per channel),
+implemented as `ColorSearch` in FerazelRender with both models selectable in tests; 32-bit `ditherCopy` sheets are
+error-diffused (Floyd–Steinberg) through the same search, with "no dither" selectable.** Both are LOW and both sit on
+every gate card until Ben's eyes or a capture from a real Mac settle them. Phase 0's
 census prints, per shipped CLUT, how many requested colours the two models disagree on. Ben's gate card for Phase 1
 names the tinted surfaces (water, lit areas) to compare against the Let's Play; if they look wrong, the 5-bit and
 exact models are one line away. A SheepShaver capture was offered and declined (Ben: video + his eyes).
@@ -185,7 +191,7 @@ and 1 only** (`docs/plans/2026-10-06-ferazel-phase1.md`). Orchestrator sessions 
 | (d) nil level handle in ContinueGame | not reachable with shipped data; the replica refuses with a dialog (a crash is not behaviour) — Phase 3, recorded |
 | (e) intent-only questions (music 21/27, vestigial boss fields, 2940 p1 = 0, as-written oddities) | copied as written, no change |
 
-## 10. Rulings from the brainstorm (→ DECISIONS D25)
+## 10. Rulings from the brainstorm (→ DECISIONS D26)
 
 1. **Done = the whole game, Windows included** (§1).
 2. **First gate = level 1 look-and-feel**, no physics (§8 Phase 1).
