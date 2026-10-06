@@ -15,7 +15,7 @@
 
 The little brother of [EV ARM](https://github.com/andiyar/ambrosia). Escape Velocity wasn't the only Ambrosia game that died with 32-bit Carbon: so did the smaller ones, the ones you'd leave open in a corner of the screen for "one more go". Same approach as EV: no source code, so the original binaries go through [Ghidra](https://ghidra-sre.org/), the behaviour gets read out of the decompile function by function, and each game is rebuilt clean in Swift on a small shared kit (HectorKit: QuickDraw-style buffers, the old resource formats, QuickTime-era sound).
 
-The rule for every game is the same: **replicate the original 100%**. Each app loads the original pictures, sounds, strings and dialogs by their original file names, and reproduces the original's timings, rules and quirks, oddities included. No modern extras.
+The rule for every game is the same: **replicate the original 100%**. Each app loads the original pictures, sounds, strings and dialogs by their original file names, and reproduces the original's timings, rules and quirks, oddities included. No modern extras — apart from the optional Remastered Art and a modern app icon.
 
 The list, in order: **Aki — Mahjong Solitaire** (first), **Bubble Trouble X**, then **Ferazel's Wand**, **Deimos Rising** and **Cythera**.
 
@@ -89,9 +89,9 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ### Download
 
-**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (about 225 MB). macOS 15 or later. <!-- ARCH -->
+**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (<!-- SIZE -->). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build is untested.
 
-Open the DMG, drag Aki to Applications, double-click. It's signed and notarized, so it opens with no warnings. The game data is already inside.
+Open the DMG, drag Aki to Applications, double-click. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block. The game data is already inside. The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
 
 ### Build from source
 
@@ -100,10 +100,15 @@ You need macOS 15+, a full Xcode install, [XcodeGen](https://github.com/yonaskol
 ```sh
 cd Aki/Core && swift test                          # the rules engine
 xcodegen generate && xcodebuild -scheme Aki build  # the app (project.yml is the truth; never edit the pbxproj)
+python3 tools/upscale-aki-art.py                   # the Remastered Art → Resources/Aki/hd-4x (optional, see below)
 tools/stage-aki.sh                                 # builds Release and copies your Aki data in → out/Aki/Aki.app
 ```
 
 `stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). The game data isn't in the repo itself (yet); the staged app carries it.
+
+`upscale-aki-art.py` needs [Upscayl](https://upscayl.org/) (plus Pillow and numpy) and writes about 207 MB of git-ignored pictures. Without it the app still builds and plays; **Remastered Art** is just greyed out.
+
+For the iPad version (the `AkiPad` target), set your own development team in `project.yml` first.
 
 ---
 
