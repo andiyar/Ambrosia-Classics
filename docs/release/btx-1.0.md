@@ -18,7 +18,7 @@ Every picture, sound, level and piece of music comes from the original 1.1 data,
 ## Differences from the 2008 original
 - A macOS 26+ style app icon: the original goldfish on a light tile.
 - The About box is the standard macOS About panel (with the original credits).
-- Full screen doesn't switch your display to 640×480; the game is scaled up, sharp, to fill the screen instead.
+- Full screen doesn't switch your display to 640×480; the game is scaled to fill the screen instead.
 - The dialogs (Preferences, high scores and the rest) are today's Mac controls, laid out where the original put them.
 - In the attract-mode demos, demos 2, 3 and 4 end with the hero caught partway through. The demo recordings were made with an earlier version of the game and replay differently under 1.1's rules.
 
