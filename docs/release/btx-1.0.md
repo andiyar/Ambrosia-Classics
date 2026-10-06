@@ -35,4 +35,4 @@ Something wrong or different from how you remember it? [Open an issue](https://g
 
 <sub><em>Bubble Trouble X © Ambrosia Software & its authors. Unofficial, non-commercial preservation, not affiliated with or endorsed by any rights holder.</em></sub>
 
-SHA-256 (BubbleTroubleX-1.0.dmg): `<SHA256>` · size `<SIZE>`
+SHA-256 (BubbleTroubleX-1.0.dmg): `8eb541c7dfd2ff2025a27dd9f24cfcec8fbc5dec651274e6231f1f07e5d5c2b3` · size 12.6 MB

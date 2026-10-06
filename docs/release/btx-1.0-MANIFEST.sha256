@@ -1,5 +1,5 @@
 # Bubble Trouble X 1.0 — shipped original data, sha256, paths relative to Bubble Trouble X.app
-# made by tools/package-btx-release.sh at git b7cf832 (clean) from /Users/andiyar/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Bubble Trouble X/BubbleTroubleX_1.1_UB/Bubble Trouble X.app/Contents/Resources
+# made by tools/package-btx-release.sh at git 47d7c98 (clean) from /Users/andiyar/Developer/Ambrosia/Resources/ambrosia-extracted/Action-Adventure/Bubble Trouble X/BubbleTroubleX_1.1_UB/Bubble Trouble X.app/Contents/Resources
 # hectorkit ae01c65 (clean) at /Users/andiyar/Developer/HectorKit
 1349b10b4452d15dfb02d7d20523e60b7c8910cc4cc546b1adb3991b8e0c660d  Contents/Resources/BT Levels.rsrc
 c6d9d93d78c4e82b19d06d577cca972d002a34a41e4b7107e2213604a579e0b2  Contents/Resources/BT Sounds.rsrc

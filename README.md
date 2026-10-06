@@ -123,7 +123,7 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 Open the DMG, drag Aki to Applications, double-click. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block. The game data is already inside. The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
 
-**Bubble Trouble X: [BubbleTroubleX-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)** (<SIZE>). Same requirements, same testing: macOS 15 or later, universal, tested on Apple Silicon, macOS 27.
+**Bubble Trouble X: [BubbleTroubleX-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)** (12.6 MB). Same requirements, same testing: macOS 15 or later, universal, tested on Apple Silicon, macOS 27.
 
 Open the DMG, drag Bubble Trouble X to Applications, double-click. Signed and notarized the same way; the game data is already inside. The About box says 1.1.0 (1.0): 1.1.0 is the version of Bubble Trouble X this rebuilds, 1.0 is this release.
 
