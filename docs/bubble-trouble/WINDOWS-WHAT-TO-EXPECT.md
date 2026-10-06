@@ -17,7 +17,7 @@ purpose: the window is just the game, and the dialogs (preferences, high scores)
 
 ## Window size
 The game is 640×480. The window opens at the biggest whole-number multiple of that which fits your screen: on a
-typical 1080p screen that is double size (1280×960); on a smaller 1366×768 laptop screen it is the original size.
+typical 1080p screen that is double size (1280×960); on a smaller 1366×768 laptop screen, or a laptop with Windows display scaling at 125–150 %, it may be the original size.
 **Ctrl+F** switches to full screen with the biggest sharp picture that fits; Ctrl+F again goes back. The game
 remembers which you used.
 
