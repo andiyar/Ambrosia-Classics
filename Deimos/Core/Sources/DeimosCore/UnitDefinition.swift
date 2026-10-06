@@ -206,24 +206,35 @@ public struct UnitDefinition: Sendable, Equatable {
     /// `#name_STR` is not found in them (plan Research note 11). Strict mode (`FUN_1002c4d0(…, 1)`) is
     /// on: any non-STR token error is the original's fatal load error ("A Unit Definition file
     /// contained incorrect or missing data." + shutdown) — reported in `errors` (the keys, then that
-    /// line), never thrown. A `numStates` outside 0…20 adds the original's log line and assert text
-    /// (`FUN_1003d0a0`). Post-parse fix-ups in the original's order (§2.6):
+    /// line), never thrown. A `numStates` outside 0…20 adds the original's log line — naming the tag
+    /// FILE (`FUN_10002420('unde', id)` = record +0x110, passed in as `tagName`), not `#name_STR` — and
+    /// assert text (`FUN_1003d0a0`, `1003d1d0–1003d218`).
+    ///
+    /// Post-parse fix-ups (§2.6). In the original each sits at a point in the read sequence; this port
+    /// applies some of them later, which is observationally identical because no later read depends on
+    /// them:
     /// - `editorPreviewSpriteFace` / each `stateSpriteFace` naming no sprite group → `none` (logged);
-    /// - `shieldsMaxAmount < shieldsBaseAmount` → max = base;
-    /// - per state `stateOnTimerMax < stateOnTimerMin` → max = min; then max > 0 with an empty
-    ///   `stateOnTimerChangeTo` → note + both timers 0;
+    /// - `shieldsMaxAmount < shieldsBaseAmount` → max = base (the original: right after
+    ///   `shields_BaseAmount`, `100403a8`; here after `numStates`);
+    /// - per state `stateOnTimerMax < stateOnTimerMin` → max = min (the original: right after the
+    ///   `stateOnTimerMax` read and BEFORE `stateOnTimerChangeTo`, `10040a18–10040a28`; here after
+    ///   `stateOnTimerChangeTo`); then max > 0 with an empty `stateOnTimerChangeTo` → note + both timers 0
+    ///   (`10040a48–10040aa0`);
     /// - any owner bool (state +0x324…+0x330) TRUE in any read state → `hasOwnerLinkedState`;
     /// - `layer` from `isGroundBased`.
+    /// `notes` also carries the original's two FYI lines: destroy-children without delete-children
+    /// (right after `destructCreateObstacle`, `10040318–10040358`) and delete/destroy-children with no
+    /// state that spawns (after the state loop, `10040844–100408fc`). Each NOTE/FYI line is followed in
+    /// the original by `    Unit File:  "<tag file>"` (`0x100ee29e`); those second lines are dropped here.
     /// `numRules > 5` is read as the original does (the cursor advances through every rule) but rules
     /// past slot 4 — which the original writes over state+0x2d0… — are not stored; reported in
-    /// `errors` as this port's own line.
-    public static func parse(id: FourCC, text raw: [UInt8], spriteExists: (FourCC) -> Bool)
-        -> (UnitDefinition, errors: [String]) {
+    /// `notes` as this port's own line (not a token error).
+    public static func parse(id: FourCC, text raw: [UInt8], spriteExists: (FourCC) -> Bool,
+                             tagName: String = "") -> (UnitDefinition, errors: [String]) {
         let text = DefinitionReader.plainText(raw, unlessContains: "#name_STR")
         var p = DefinitionReader(text)
         var u = UnitDefinition()
         var notes: [String] = []
-        var extra: [String] = []
         u.id = id
 
         p.str(&u.name, "#name_STR", maxLength: 0x40)
@@ -274,6 +285,10 @@ public struct UnitDefinition: Sendable, Equatable {
         p.bool(&u.destructDrawToTerrain, "#destructDrawToTerrain_BOOL")
         p.bool(&u.destructReleaseRandomBonus, "#destructReleaseRandomBonus_BOOL")
         p.bool(&u.destructCreateObstacle, "#destructCreateObstacle_BOOL")
+        if u.destructDestroyChildren && !u.destructDeleteChildren {
+            notes.append("\n    FYI: A Unit Definition wishes to destroy Children on destruction, but NOT delete "
+                         + "willing Children on deletion.")
+        }
         p.float(&u.shieldsMaxAmount, "#shields_MaxAmount_FLOAT")
         p.float(&u.shieldsLevelIncrement, "#shields_LevelIncrement_FLOAT")
         p.float(&u.shieldsBaseAmount, "#shields_BaseAmount_FLOAT")
@@ -312,17 +327,21 @@ public struct UnitDefinition: Sendable, Equatable {
         u.numStates = p.count("#numStates_INT")
 
         // Unit fix-ups placed by the listing: the preview face check follows its read (P@100400ec), the
-        // shields clamp follows shields_BaseAmount (100403a8). Applied here; no later read depends on them.
+        // shields clamp follows shields_BaseAmount (100403a8). Moved here; no later read depends on them.
         DefinitionReader.checkSprite(&u.editorPreviewSpriteFace, spriteExists, notes: &notes)
         if u.shieldsMaxAmount < u.shieldsBaseAmount { u.shieldsMaxAmount = u.shieldsBaseAmount }
 
         var s = 0
         while s < Int(u.numStates) {
             var state = UnitState.defaults(index: s)
-            UnitState.parse(&state, &p, spriteExists: spriteExists, notes: &notes, extra: &extra)
+            UnitState.parse(&state, &p, spriteExists: spriteExists, notes: &notes)
             if state.hasOwnerBool { u.hasOwnerLinkedState = true }
             u.states.append(state)
             s += 1
+        }
+
+        if (u.destructDestroyChildren || u.destructDeleteChildren) && !u.states.contains(where: { !$0.spawnSets.isEmpty }) {
+            notes.append("\n    FYI: A Unit Definition wishes to delete and/or destroy willing Children, but does not spawn.")
         }
 
         u.layer = u.isGroundBased ? ground : air
@@ -332,10 +351,9 @@ public struct UnitDefinition: Sendable, Equatable {
             errors.append("A Unit Definition file contained incorrect or missing data.")
         }
         if u.numStates < 0 || u.numStates > Int32(maxNumStates) {
-            errors.append("ERROR:  incorrect number of states (\(u.numStates)) in Unit Def \"\(u.name)\"")
+            errors.append("\nERROR:  incorrect number of states (\(u.numStates)) in Unit Def \"\(tagName)\"")
             errors.append("unitPtr->fileData.numStatesUsed > 0 and unitPtr->fileData.numStatesUsed <= kG_UnitDef_MaxNumStates")
         }
-        errors += extra
         u.notes = notes
         return (u, errors)
     }
@@ -546,7 +564,7 @@ public struct UnitState: Sendable, Equatable {
     }
 
     static func parse(_ s: inout UnitState, _ p: inout DefinitionReader, spriteExists: (FourCC) -> Bool,
-                      notes: inout [String], extra: inout [String]) {
+                      notes: inout [String]) {
         p.str(&s.stateName, "#stateName_STR", maxLength: 0x40)
         p.float(&s.stateOnRange, "#stateOnRange_FLOAT")
         p.str(&s.stateOnRangeChangeTo, "#stateOnRangeChangeTo_STR", maxLength: 0x40)
@@ -555,10 +573,11 @@ public struct UnitState: Sendable, Equatable {
         p.int(&s.stateOnTimerMin, "#stateOnTimerMin_INT")
         p.int(&s.stateOnTimerMax, "#stateOnTimerMax_INT")
         p.str(&s.stateOnTimerChangeTo, "#stateOnTimerChangeTo_STR", maxLength: 0x40)
-        // 10040a18: max < min → max = min; 10040a98: a running timer with no target → note, both 0.
+        // 10040a18 (before the ChangeTo read in the original): max < min → max = min;
+        // 10040a48–10040aa0: a running timer with no target → note, both 0.
         if s.stateOnTimerMax < s.stateOnTimerMin { s.stateOnTimerMax = s.stateOnTimerMin }
         if s.stateOnTimerMax > 0 && s.stateOnTimerChangeTo.isEmpty {
-            notes.append("    NOTE: A Unit Definition has an unused State Change Timer.")
+            notes.append("\n    NOTE: A Unit Definition has an unused State Change Timer.")
             s.stateOnTimerMin = 0
             s.stateOnTimerMax = 0
         }
@@ -616,7 +635,7 @@ public struct UnitState: Sendable, Equatable {
             var set = SpawnSet()
             SpawnSet.parse(&set, &p)
             if set.stateSpawnSetSpawn == .none {
-                notes.append("    NOTE: A Unit Spawn Set has an unused Unit ID.  Suggest you delete the Spawn Set.")
+                notes.append("\n    NOTE: A Unit Spawn Set has an unused Unit ID.  Suggest you delete the Spawn Set.")
             }
             s.spawnSets.append(set)
             k += 1
@@ -662,7 +681,7 @@ public struct UnitState: Sendable, Equatable {
             r += 1
         }
         if s.numRules > Int32(ruleSlots) {
-            extra.append("numRules \(s.numRules) > 5: rules 5… overrun state+0x2d0 in the original (not replicated)")
+            notes.append("numRules \(s.numRules) > 5: rules 5… overrun state+0x2d0 in the original (not replicated)")
         }
     }
 }

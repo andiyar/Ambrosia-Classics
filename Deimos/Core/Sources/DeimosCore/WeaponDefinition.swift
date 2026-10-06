@@ -122,10 +122,12 @@ public struct WeaponDefinition: Sendable, Equatable {
 
     public init() {}
 
-    /// Parse one `wede` tag: de-obfuscated only if `#type_ID` is not found in the raw bytes. Token
-    /// errors are reported in `errors` (the keys, then the original's "A Weapon Definition file
-    /// contained incorrect or missing data."); whether strict mode is on for `wede` was not read
-    /// (bank MED) — the port reports either way and never throws.
+    /// Parse one `wede` tag: de-obfuscated only if `#type_ID` is not found in the raw bytes. Strict mode
+    /// is ON for `wede` (`FUN_1002b8e0`: `1002b994 li r4,1; bl 0x1002c4d0`), so any non-STR token error is
+    /// the original's fatal "A Weapon Definition file contained incorrect or missing data."
+    /// (`1002b9bc–1002b9d4`, string `0x100ea3e9`) — reported in `errors` (the keys, then that line), never
+    /// thrown. Strict mode is a sticky global (`FUN_1002c4d0` sets it; nothing here clears it); `leve`
+    /// neither sets nor checks it.
     public static func parse(id: FourCC, text raw: [UInt8], spriteExists: (FourCC) -> Bool)
         -> (WeaponDefinition, errors: [String]) {
         var p = DefinitionReader(DefinitionReader.plainText(raw, unlessContains: "#type_ID"))

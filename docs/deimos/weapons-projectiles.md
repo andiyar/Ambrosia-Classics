@@ -22,7 +22,7 @@ in the bank (data-tags.md §1) and were not re-read here. One tick = one logic f
 | function | role | label / evidence |
 |---|---|---|
 | `FUN_1002ab20 @ 1002ab20` | build master weapon list `_DAT_100e01d4`: free old (`FUN_1002b590`), then `FUN_1002b8e0(i)` for i = 0,1,… until 0, append each; logs "Weapon Definitions Loaded: %i"; with `param_1` it also logs through `inte` strings 12/13 | MED (read; caller `FUN_1002aa90`) — ⚑ label audit (review wave 1) |
-| `FUN_1002b8e0 @ 1002b8e0` | load the i-th `wede` tag (`FUN_10002be0(i,'wede',&id)`), alloc 0x208, zero, defaults `FUN_1002b2a0`, parse `FUN_1002ba00`; "A Weapon Definition file contain…" if the parse-error flag is set | MED (read) — ⚑ label audit (review wave 1) |
+| `FUN_1002b8e0 @ 1002b8e0` | load the i-th `wede` tag (`FUN_10002be0(i,'wede',&id)`), alloc 0x208, zero, defaults `FUN_1002b2a0`, parse `FUN_1002ba00`; "A Weapon Definition file contain…" if the parse-error flag is set | MED (read) — ⚑ label audit (review wave 1) ⚑ corrected (Phase 0 review, 2026-10-06): strict mode is ON — `1002b984 bl 0x10002420` (tag file name), `1002b994 li r4,0x1; bl 0x1002c4d0` (token reader strict mode, a sticky global), parse, then `1002b9bc bl 0x1002c540` (error flag) → `1002b9cc addi r3,r31,0x971` "A Weapon Definition file contained incorrect or missing data." (`0x100ea3e9`) `li r4,0x1; bl 0x10001040` = the **fatal** alert, as for unde/plde [HIGH] |
 | `FUN_1002b2a0 @ 1002b2a0` | defaults: `+0x000` magic `0x499602d2`, ID fields `+0x130 +0x144 +0x148 +0x168 +0x170 +0x180 +0x1cc +0x1dc +0x1ec +0x1fc` = `none`, selection-sound block `+0x150..+0x164` ← `{none,100,100,100,1.0,1.0}` (table `0x100d7014`), frees spawn list `+0x1c4` | HIGH (read + image: `0x100df324 → 0x100d7014` = `6e6f6e65 64 64 64 3f800000 3f800000`) |
 | `FUN_1002ba00 @ 1002ba00` | the parser (table §1.2). Stores the tag ID at `+0x004`. Decodes the text only if `strstr(buf,"#type_ID")` fails | MED (read) — ⚑ label audit (review wave 1) |
 | `FUN_1002c490 @ 1002c490` | spawn record init: name "", unit `none`, XLoc/YLoc ← `{0,0}` (`_DAT_100df320`), SetHeading 0, Angle 0 | MED (read; sole caller `FUN_1002ba00`) — ⚑ label audit (review wave 1) |
@@ -68,7 +68,7 @@ data-tags.md §6 and adds the spawn-record layout, the power-up offsets one by o
 | 0x1dc | 4CC | `#powerup_Air_ReleaseSpawn_ID` | `FUN_1003c0d0` |
 | 0x1e0 | int | `#powerup_Air_TimeBetweenReleaseSpawns_INT` | `FUN_1003c0d0` |
 | 0x1e4 | bool | `#powerup_Air_DoReleaseOnMaxPowerLevel_BOOL` | `FUN_1003c0d0` |
-| 0x1e8..0x204 | same 8 | `#powerup_Ground_*` (0x1f4 = MaxPowerLevel, dump prints `param_3 + 500`) | `FUN_1003b3c0` (ground copy, §2.3); **0x1f8 OverloadTime has no reader** |
+| 0x1e8..0x204 | same 8 | `#powerup_Ground_*` (0x1f4 = MaxPowerLevel, dump prints `param_3 + 500`) | `FUN_1003b3c0` (ground copy, §2.3); **0x1f8 OverloadTime has no reader** ⚑ corrected (Phase 0 review, 2026-10-06): `#powerup_Ground_OverloadTime_INT` IS parsed into `+0x1f8` by `FUN_1002ba00` (same 8-key block as the air copy); "no reader" means no run-time consumer — the per-tick ground copy never reads it (§2.3 step 4) [HIGH] |
 Spawn record (0x34 bytes, `FUN_1004d320(0x34)`): `Name_STR +0x00 (32) · Unit_ID +0x20 · XLoc_INT +0x24 ·
 YLoc_INT +0x28 · SetHeading_BOOL +0x2c (byte) · Angle_INT +0x30`. At parse the angle is brought into [0, 360):
 +360 if negative, −360 if > 359, then 0 if still out of range. Missing sprite IDs (preview, both appearances, both

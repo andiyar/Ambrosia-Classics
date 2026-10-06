@@ -24,7 +24,8 @@ final class UnitDefinitionTests: XCTestCase {
     private let allSprites: (FourCC) -> Bool = { _ in true }
 
     private func parsePlain(_ s: String) -> (UnitDefinition, errors: [String]) {
-        UnitDefinition.parse(id: FourCC("test")!, text: Array(s.utf8), spriteExists: allSprites)
+        UnitDefinition.parse(id: FourCC("test")!, text: Array(s.utf8), spriteExists: allSprites,
+                             tagName: "Level 3 - Pause 1[03p1].unde")
     }
 
     func testAll386UnitsParseStrictWithZeroErrors() throws {
@@ -200,17 +201,42 @@ final class UnitDefinitionTests: XCTestCase {
         let plain = try plain03p1()
         let (u21, e21) = parsePlain(plain.replacingOccurrences(of: "#numStates_INT <5>", with: "#numStates_INT <21>"))
         XCTAssertEqual(u21.states.count, 21) // no cap: the parse loops as read
-        XCTAssertTrue(e21.contains("ERROR:  incorrect number of states (21) in Unit Def \"Level 3 - Pause 1\""))
+        XCTAssertTrue(e21.contains("\nERROR:  incorrect number of states (21) in Unit Def \"Level 3 - Pause 1[03p1].unde\""),
+                      "the tag FILE name (FUN_10002420), not #name_STR")
         XCTAssertTrue(e21.contains("unitPtr->fileData.numStatesUsed > 0 and unitPtr->fileData.numStatesUsed <= kG_UnitDef_MaxNumStates"))
         let (u20, e20) = parsePlain(plain.replacingOccurrences(of: "#numStates_INT <5>", with: "#numStates_INT <20>"))
         XCTAssertEqual(u20.states.count, 20)
-        XCTAssertFalse(e20.contains { $0.hasPrefix("ERROR:  incorrect number of states") })
+        XCTAssertFalse(e20.contains { $0.hasPrefix("\nERROR:  incorrect number of states") })
         // 0 is accepted silently (the check fires only for < 0 or > 20).
         let (u0, e0) = parsePlain(plain.replacingOccurrences(of: "#numStates_INT <5>", with: "#numStates_INT <0>"))
         XCTAssertEqual(u0.states.count, 0)
         XCTAssertEqual(e0, [])
         let (_, eNeg) = parsePlain(plain.replacingOccurrences(of: "#numStates_INT <5>", with: "#numStates_INT <-1>"))
-        XCTAssertTrue(eNeg.contains("ERROR:  incorrect number of states (-1) in Unit Def \"Level 3 - Pause 1\""))
+        XCTAssertTrue(eNeg.contains("\nERROR:  incorrect number of states (-1) in Unit Def \"Level 3 - Pause 1[03p1].unde\""))
+    }
+
+    /// The two FYI lines (`10040318–10040358`, `10040844–100408fc`) and the port's numRules > 5 line
+    /// all go to `notes`, never `errors`. No shipped unit triggers any of them (testNoMissingSpriteResets).
+    func testFYINotesAndRuleOverflowAreNotes() throws {
+        let plain = try plain03p1()
+        let destroyOnly = "\n    FYI: A Unit Definition wishes to destroy Children on destruction, but NOT delete willing Children on deletion."
+        let noSpawn = "\n    FYI: A Unit Definition wishes to delete and/or destroy willing Children, but does not spawn."
+        let destroy = plain.replacingOccurrences(of: "#destructDestroyChildren_BOOL <FALSE>",
+                                                 with: "#destructDestroyChildren_BOOL <TRUE>")
+        let (a, ea) = parsePlain(destroy)
+        XCTAssertEqual(a.notes, [destroyOnly], "03p1 spawns, so only the first FYI")
+        XCTAssertEqual(ea, [])
+        let neverSpawns = destroy.replacingOccurrences(of: "stateNumSpawnSets_INT <1>", with: "stateNumSpawnSets_INT <0>")
+        XCTAssertEqual(parsePlain(neverSpawns).0.notes, [destroyOnly, noSpawn])
+        let deleteOnly = plain.replacingOccurrences(of: "#destructDeleteChildren_BOOL <FALSE>",
+                                                    with: "#destructDeleteChildren_BOOL <TRUE>")
+            .replacingOccurrences(of: "stateNumSpawnSets_INT <1>", with: "stateNumSpawnSets_INT <0>")
+        XCTAssertEqual(parsePlain(deleteOnly).0.notes, [noSpawn])
+        // numRules 6 in the last state: read on (the cursor runs past the rules), reported as a note.
+        let r = plain.range(of: "stateNumRules_INT <5>", options: .backwards)!
+        let (c, ec) = parsePlain(plain.replacingCharacters(in: r, with: "stateNumRules_INT <6>"))
+        XCTAssertTrue(c.notes.contains { $0.hasPrefix("numRules 6 > 5") }, "\(c.notes)")
+        XCTAssertFalse(ec.contains { $0.hasPrefix("numRules") })
     }
 
     func testUnusedStateTimerZeroed() throws {
@@ -221,7 +247,7 @@ final class UnitDefinitionTests: XCTestCase {
         let (u, errors) = parsePlain(noTarget)
         XCTAssertEqual(errors, [])
         XCTAssertEqual([u.states[0].stateOnTimerMin, u.states[0].stateOnTimerMax], [0, 0])
-        XCTAssertEqual(u.notes, ["    NOTE: A Unit Definition has an unused State Change Timer."])
+        XCTAssertEqual(u.notes, ["\n    NOTE: A Unit Definition has an unused State Change Timer."])
         XCTAssertEqual([u.states[1].stateOnTimerMin, u.states[1].stateOnTimerMax], [400, 400])
         // max < min → max = min (state 2: 150/140 → 150/150).
         let swapped = plain.replacingOccurrences(of: "#stateOnTimerMin_INT <140>\n#stateOnTimerMax_INT <150>",

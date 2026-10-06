@@ -393,7 +393,7 @@ enum DeimosCensus {
                 errs = e
                 leve.append((r.id, l.objects.count)); summary = "level \"\(l.name)\" · \(l.objects.count) objects"
             default: // unde
-                let (u, e) = UnitDefinition.parse(id: r.id, text: raw, spriteExists: spriteExists)
+                let (u, e) = UnitDefinition.parse(id: r.id, text: raw, spriteExists: spriteExists, tagName: r.tagName)
                 errs = e
                 unde.append(u)
                 summary = "unit \"\(u.name)\" · \(u.states.count) states"

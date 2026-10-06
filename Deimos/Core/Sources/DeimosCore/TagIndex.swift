@@ -52,6 +52,15 @@ public struct TagIndex: Sendable {
         public let isLocal: Bool
         public let source: Source
         public let size: Int
+
+        /// The record's tag file name (record +0x110, what `FUN_10002420` returns for log lines): the
+        /// Local file name, or the pak entry name after its last `/`.
+        public var tagName: String {
+            switch source {
+            case .local(let url): return url.lastPathComponent
+            case .pak(_, let entry): return TagIndex.lastComponent(entry.name)
+            }
+        }
     }
 
     public let records: [Record]

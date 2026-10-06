@@ -39,7 +39,10 @@ struct DefinitionReader {
     mutating func rect(_ dst: inout MacRect, _ key: String) { if let v = r.rect(key) { dst = v } }
 
     /// A count read into an uninitialised stack local in the original (§2.4): a miss leaves garbage
-    /// there — already a load error — and this port loops zero times.
+    /// there — already a load error (strict mode, unde/wede) — and this port loops zero times. Used for
+    /// `#numStates_INT`, `stateNumSpawnSets_INT`, `#stateNumRules_INT`, `#spawn_NumUnitsToSpawn_INT`.
+    /// The exception is `leve`'s `#numObjects_INT`: it is read straight into the level struct (+0x278,
+    /// default 0, re-read every object iteration), with no strict mode — `LevelDefinition` uses `int`.
     mutating func count(_ key: String) -> Int32 { r.int(key) ?? 0 }
 
     mutating func sound(_ dst: inout SoundRecord, _ stem: String) {
@@ -98,7 +101,8 @@ public struct DefinitionLists: Sendable {
 
         var units: [UnitDefinition] = []
         for r in index.records(ofType: unde) {
-            let (u, e) = UnitDefinition.parse(id: r.id, text: try raw(r), spriteExists: spriteExists)
+            let (u, e) = UnitDefinition.parse(id: r.id, text: try raw(r), spriteExists: spriteExists,
+                                              tagName: r.tagName)
             collect("unde", r.id, e, u.notes)
             units.append(u)
         }
