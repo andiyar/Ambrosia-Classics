@@ -13,6 +13,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "DeimosCore", targets: ["DeimosCore"]),
+        .executable(name: "deimos-census", targets: ["deimos-census"]),
     ],
     dependencies: [
         .package(path: Context.environment["HECTORKIT_PATH"] ?? "../../../HectorKit"),
@@ -22,6 +23,14 @@ let package = Package(
             .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
         ]),
+        // The census tool (Task C7): Markdown on stdout = docs/deimos/data-census.md below its rule.
+        // `--render` alone uses ImageIO (PNG writer, census-only; plan invariant 2).
+        .executableTarget(name: "deimos-census", dependencies: [
+            "DeimosCore",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
+        .testTarget(name: "DeimosCensusTests", dependencies: ["deimos-census", "DeimosCore"]),
         .testTarget(name: "DeimosCoreTests", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),
