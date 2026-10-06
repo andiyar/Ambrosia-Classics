@@ -5,7 +5,7 @@ Ambrosia's **Aki — Mahjong Solitaire 1.2.0**, rebuilt natively for today's Mac
 2. Drag **Aki** to **Applications**.
 3. Double-click Aki in Applications. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block.
 
-Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build is untested.
+Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
 
 The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
 
@@ -22,7 +22,7 @@ Every picture redrawn 4× sharper: smooth backgrounds, grain-free tiles, sharp t
 
 ## Differences from the 2008 original
 - No registration, Check for Updates or Download Levels: it behaves as registered, and those servers are long gone.
-- A macOS 27-style app icon: the original tiles on a green squircle.
+- A macOS 26+ style app icon: the original tiles on a green squircle.
 - The About box is the standard macOS About panel (with the original credits).
 - Fullscreen doesn't switch your display to 800×600; the game is scaled to fill the screen instead.
 - The Level Editor isn't in yet (see above).
@@ -40,4 +40,4 @@ Something wrong or different from how you remember it? [Open an issue](https://g
 
 <sub><em>Aki — Mahjong Solitaire © Ambrosia Software & its authors. Unofficial, non-commercial preservation, not affiliated with or endorsed by any rights holder.</em></sub>
 
-SHA-256: <!-- SHA256 -->
+SHA-256 (Aki-1.0.dmg): `bd12e9d4f15c50ba77af6cb74928e4cb9f4d8cf6fabc75ffee4409ea3d92a6b5`

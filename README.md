@@ -89,7 +89,7 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ### Download
 
-**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (<!-- SIZE -->). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build is untested.
+**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (242 MB). Needs macOS 15 or later. Universal app (Apple Silicon and Intel); tested on Apple Silicon, macOS 27 — the Intel build and macOS 15/26 are untested.
 
 Open the DMG, drag Aki to Applications, double-click. It's signed and notarized by Apple: macOS asks once to confirm you want to open an app downloaded from the internet — no "unidentified developer" block. The game data is already inside. The About box says 1.2.0 (1.0): 1.2.0 is the version of Aki this rebuilds, 1.0 is this release.
 

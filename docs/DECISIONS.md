@@ -468,7 +468,7 @@ original file opens), then **step 3** = the build plan (contracts from the bank 
 RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
 **Approved by:** Ben.
 
-## D23 — Aki 1.0 public release: notarized DMG, Remaster art in, macOS 27 icon; iPad merged first (2026-10-06)
+## D23 — Aki 1.0 public release: notarized DMG, Remaster art in, macOS 26+ icon; iPad merged first (2026-10-06)
 
 **Decided (Ben in chat, 2026-10-06):**
 1. Merge order "iPad first, then Remaster" — both on main (5e6755d, then 9bd0e56).
