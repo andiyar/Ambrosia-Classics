@@ -463,4 +463,8 @@ px (half a cell), at whatever speed `DrawRoutine(…, 2)` runs.
   passes 0–4 → in-flight FX → pass 5**; whatever pass 5 draws covers a missile. What each pass
   holds (the priority mapping of engine-classes §5) is still NOT RESOLVED. [HIGH for the call site
   and loop bounds; MED for "pass 5 draws props"]
+  ⚑ wave 3 (2026-10-06): settled — pass 5 draws non-creature props (kinds 0/1/0x20/0x21/0x40) whose
+  tile has flag 0x10 (trees, archways, doors, hydra heads…); creatures (kinds 4/0x24) are pass 4, so
+  a missile flies **over creatures and under 0x10 tiles**, and the 'B' backdrop post-pass and roofs
+  (`ApplyRoof`) cover it too. Pass tables and full order: render.md §1, §2.4. [HIGH]
 - `TGameViewer` dtor @ 10061a04 resets the sub-object vtable at +0x10 and calls `TViewer`'s dtor.

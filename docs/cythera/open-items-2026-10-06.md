@@ -16,52 +16,30 @@ Evidence base (all run this session from the worktree root; `$S` = the session s
 - ⚑ corrected (review wave 2 2026-10-06) — review m7: the session scripts (`$S/r5props.py`,
   `$S/r5scan7.py`, `$S/clr80.txt`) and the elided `python3 -c "…"` dumps are not banked; their
   equivalents, re-run this session from the worktree root, are inlined here.
+  ⚑ wave 3 (2026-10-06): the four heredocs are banked as tools (stdlib, headers carry purpose, run
+  line and expected output; `tools/README.md`); each tool's output was diffed against its heredoc's
+  run this session — identical. C and D take the listing path, or build it themselves when omitted.
   ```
   # A. prop census (r5props equivalent) → 40 levels; kinds = data-format §4.3; 0x11: 21 owners, levels [3,6,8,11,13,17,24], byte 6 {0:55}, frame {0:55}
-  python3 - <<'EOF'
-  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
-  d,s,_=seg.toc(); K=C.Counter(); own=set(); lv=set(); b6=C.Counter(); fr=C.Counter(); L=[k for k in s if 0x8100<=k<0x8200]
-  for sid in L:
-    o,l=s[sid]
-    for i in range(0,l,16):
-      r=d[o+i:o+i+16]; K[r[0]]+=1
-      if r[0]==0x11: own.add(struct.unpack('>H',r[2:4])[0]); lv.add(sid-0x8100); b6[r[6]]+=1; fr[(r[4]>>2)&0x1f]+=1
-  print(len(L),sorted(K.items())); print(len(own),sorted(own)); print(sorted(lv),b6,fr)
-  EOF
+  python3 docs/cythera/tools/props_census.py
+  40 [(0, 12104), (1, 116), (2, 46), (8, 618), (9, 241), (10, 7), (16, 32), (17, 55), (24, 31), (28, 1), (66, 879), (68, 298), (128, 52), (255, 5)]
+  21 [4, 9, 10, 11, 12, 13, 14, 16, 23, 24, 31, 56, 59, 62, 64, 71, 72, 73, 79, 91, 95]
+  [3, 6, 8, 11, 13, 17, 24] Counter({0: 55}) Counter({0: 55})
   # B. F008 / F005 / F007 (the §2.1 and §5 dumps) → records 50, byte7 {0: 50}, the f33/f32 lists of §2.1; F005 at 0x507905 (16 B), F007 at 0x507915 (167 B, count 33)
-  python3 - <<'EOF'
-  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
-  d,s,_=seg.toc(); o,l=s[0xF008]; R=[d[o+i:o+i+16] for i in range(0,0x800,16)]; R=[r for r in R if struct.unpack('>H',r[12:14])[0]]
-  f33=C.Counter(); f32=C.Counter()
-  for r in R:
-    a,b=struct.unpack('>HH',r[8:12])
-    for k in range(16): f33[1<<k]+=a>>k&1; f32[1<<k]+=b>>k&1
-  print('records',len(R),'byte7',dict(C.Counter(r[7] for r in R))); print(sorted(i for i in f33.items() if i[1])); print(sorted(i for i in f32.items() if i[1]))
-  o,l=s[0xF005]; print(hex(o),l,d[o:o+l].hex(' ')); o,l=s[0xF007]; print(hex(o),l,struct.unpack('>H',d[o:o+2])[0])
-  EOF
-  # C. 0x80-clear store scan (clr80 equivalent) over all.dis = ppcdis.py 10000000 100cd280 → 1004f188 (FollowLeader), 1005caf0 (DrawRoutine)
-  python3 - all.dis <<'EOF'
-  import re,sys
-  L=open(sys.argv[1]).read().split('\n'); pat=re.compile(r'(rlwinm (r\d+),(r\d+),0,25,(23|31)$|andi\. (r\d+),(r\d+),0x7f$|xori (r\d+),(r\d+),0x80$)')
-  for i,ln in enumerate(L):
-    m=pat.search(ln)
-    if not m: continue
-    dst=[g for g in (m.group(2),m.group(5),m.group(7)) if g][0]
-    for j in range(i+1,min(i+5,len(L))):
-      if re.search(r'stb '+dst+r',0\(|stbx '+dst+',',L[j]): print(ln.strip(),'|',L[j].strip()); break
-  EOF
+  python3 docs/cythera/tools/f008_dump.py
+  records 50 byte7 {0: 50}
+  [(1, 21), (2, 6), (8, 5), (4096, 5), (8192, 2), (16384, 2), (32768, 1)]
+  [(1, 9), (2, 5), (4, 23), (16, 16), (32, 10), (64, 15), (128, 8), (256, 5), (512, 5), (1024, 1), (2048, 2), (4096, 3), (8192, 8), (16384, 30), (32768, 3)]
+  0x507905 16 d0 08 01 d8 08 01 e0 04 01 e4 04 01 e8 04 01 00
+  0x507915 167 33
+  # C. 0x80-clear store scan (clr80 equivalent) → 1004f188 (FollowLeader), 1005caf0 (DrawRoutine)
+  python3 docs/cythera/tools/ppcdis.py 10000000 100cd280 > all.dis   # optional: both scanners build it when omitted
+  python3 docs/cythera/tools/scan_clr80.py all.dis
+  1004f188: 5400066e  rlwinm r0,r0,0,25,23 | 1004f18c: 98070000  stb r0,0(r7)
+  1005caf0: 5400066e  rlwinm r0,r0,0,25,23 | 1005caf4: 981c0000  stb r0,0(r28)
   # D. byte-7 read heuristic (r5scan7 equivalent) → {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
-  python3 - all.dis <<'EOF'
-  import re,sys,collections as C
-  L=open(sys.argv[1]).read().split('\n'); h=C.Counter()
-  for i,ln in enumerate(L):
-    m=re.search(r'lwz (r\d+),4\(r\d+\)$',ln); A=m.group(1) if m else ('r3' if 'bl 0x10044a60' in ln else None)
-    if not A: continue
-    for j in range(i+1,min(i+9,len(L))):
-      n=re.search(r'(lbz|lhz|lha|lwz) r\d+,(\d+)\('+A+r'\)$',L[j])
-      if n: h[int(n.group(2))]+=1
-  print({k:h[k] for k in (5,6,7,8,14)})
-  EOF
+  python3 docs/cythera/tools/scan_byte7.py all.dis
+  {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
   ```
   A–C reproduce §2.1, §3.1, §4 and §5 exactly. D reproduces **N = 7 → 0**; its control total is 41,
   not §2.2's 38 (this version does not stop the 8-instruction window when rA is redefined), which
@@ -343,6 +321,10 @@ and decode to 4096 B, the size of a 64×64 8-bit portrait (`0x8800+n`) [HIGH].
   0x88BC).
 - PORT 1: 204 distinct values. It renders as noise, and its first words look like pointers
   (`00 0b 5d e8 01 3e 75 40 …`) — not image data. Role LOW (an editor buffer).
+  ⚑ corrected (review wave 3 2026-10-06): those bytes are not the head — `rsrc.parse` + `lz.unlz` (returns `(bytes, consumed)`):
+  raw head `c3 b2 80 01 3e 75 30 28 22 24`, decoded head `b2 80 01 3e 75 30 28 22 24 20 00 13`
+  (4096 B, consumed 2351); the quoted run sits at decoded offset 0xE (`… 13 ee 64 | 00 0b 5d e8 01 3e
+  75 40 …`, once), so "first words" is wrong; whether any of it is pointers is not shown. Role stays LOW.
 No reader [HIGH]: `grep -c -i -E "0x504f5254|1347375700|'PORT'|0x504f[^0-9a-f]"` = 0 in all four
 dumps (control: `'Lite'` is found as `GetResource(0x4c697465,…)`, m:30899). `grep -E 'lis
 r[0-9]+,20559$' $S/r5all.dis` (0x504F) = 0. `toc.D.count(b'PORT')` = 0.
@@ -372,8 +354,9 @@ pitcher 10A0@0264 copies between pitchers (A31 type 160), 1136@01BD needs A31 ty
 (type 234, quality 0, filled with water by 0E0A@01D4) only takes the "distil an element" path
 (@0569).
 Documentation agrees — hintbook (documentation): the walkthrough says to bring the spores to
-Charax and "Use the spell in the Distiller on the joined Crolna." (`pdftotext -layout
-Cythera_Hintbook.pdf`, line 1611). It calls Charax responsible for purifying the corrupted Crolna
+Charax and cast the spell through the Distiller onto the joined Crolna (⚑ corrected (review wave 3
+2026-10-06): paraphrased — the verbatim sentence was a second prose quote here; the `end_game` line
+above is this section's one) (`pdftotext -layout Cythera_Hintbook.pdf`, line 1611). It calls Charax responsible for purifying the corrupted Crolna
 (line 563) and names Omen as Pelagon's alias (line 1959). That fits Omen's protest in 10EA@013F and
 Pelagon's thanks in the damned ending.
 
@@ -383,7 +366,7 @@ Receivers follow `SendSignal @ 10053794` (schedules-npcs §6.1): the zone and cu
 on-map props of the **leader's level** with `kind & 0x5D ∈ {0,1}`, type flag 0x10000 and
 **byte 6 == n**, then the characters on that level. Type flag 0x10000 = the type has property
 0x15 (= selector 21) (data-format §4.4). Hidden kind-0x80 props qualify (0x80 & 0x5D = 0).
-Senders: `grep -n 'send_signal(' ghidra/cythera-scripts/*.txt` (25 sites). Wired props:
+Senders: `grep -n 'send_signal(' ghidra/cythera-scripts/*.txt` (25 sites; ⚑ corrected (review wave 3 2026-10-06): **26** — `grep -o 'send_signal(' … | wc -l` = 26, 19 files). Wired props:
 `$S/r5props.py` rows with quality n whose type has a `sel21/signal` method (types 10, 38, 39, 46,
 51, 143, 144, 253, 257–259, 311, 320, 322, 333, 355, 356, 392 — `grep -l 'sel21/signal'`, 40 files).
 | n | sender (bytes) | receivers |

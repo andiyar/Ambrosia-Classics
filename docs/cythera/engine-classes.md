@@ -181,6 +181,12 @@ FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (
   when early, m:5756 `= uVar11 + (…)` otherwise) and runs a frame only when no event, redraw, task
   slice, conversation or background state takes precedence (app-shell.md §3.3), so 10 fps is an
   upper bound, not a rate. [HIGH]
+  ⚑ corrected (review wave 3 2026-10-06, N3 sharpening): in mode 3 the scheduler spins **to** the
+  deadline and then runs the frame (m:5740 `if ((*psVar1 == 3) && (uVar11 < *(uint *)puVar8))` →
+  spin on `TickCount`; m:5753/5756 deadline := deadline + F or now + F, now ≈ the deadline after the
+  spin; m:5762 mode := 2), so a leader sub-step's frame starts
+  at the deadline, not merely after it: while each sub-step arrives before its deadline, those frames
+  are exactly F ticks apart. [HIGH code; "arrives before" MED]
 - **Which game events wait for a frame.** `DoTick__14TActiveMonsterFUc @ 1004ded8` (p:21418,
   p:21461–21467) and `Guide__14TActiveMonsterFv @ 1004dbc0` (p:21320) set the mode word to 3 and
   `YieldToAnyThread()` around a visible move of the party leader — p:21461 `if (*(short *)(param_1 +
@@ -220,11 +226,11 @@ FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (
   .glue::TickCount(); } while (uVar7 < iVar9 + 5U);`), then cleared (p:28153). `HandleMove`,
   `HandleSubMove`, `Render__7TViewerFssss`: no `TickCount`, `Delay`, `Yield` or `WaitNextEvent`
   (scan of their bodies for those names: only prefs-bit tests). [HIGH]
-- **Still open in item 16:** the layer / priority order inside `Render__7TViewerFssss @ 10066ac0`
-  (p:32113–33454, 1,342 lines). Not read this wave; outline only (LOW): an optional first pass over
-  the staged-object list (`param_1[0xfe0c]` count) when viewer byte +0xB8 is set, a `(−r … r+1)²`
-  cell loop, a loop testing tile flags 0x10000000/0x1000/0x2000, a second staged-list pass, and a
-  prop pass calling `AdjustPropFX` then `MaskAnyTile` ×5 (`grep -n -o` of call names over that range).
+- ⚑ wave 3 (2026-10-06): **item 16 layer half CLOSED** — the wave-2 LOW outline of
+  `Render__7TViewerFssss @ 10066ac0` is replaced by a full reading in `render.md`: backdrop pre-pass
+  (+0xB8) → ground cells → passes 0, 1, (2 dead), 3, creatures (4), FX, 5 → backdrop post-pass, then
+  `ApplyRoof`, colour filter and lighting in `DrawRoutine`; pass selection = per-pass kind mask + tile-flag
+  mask tables at 0x100D5FA4–0x100D6003 (render.md §2.4). [HIGH]
 
 ---------------------------------------------------------------------------------------------
 ## 4. Party, schedules, movement (pointers)
@@ -245,9 +251,17 @@ Schedules and `EvalCondition`: rules.md §3. `MovePartyBetweenLevels`, `Repositi
   tile flags and type flags (the ladder in `SetStage`; data-format.md §4–5); multi-tile objects
   extend left (tile flag 0x80: tile−1 at x−1), up (0x40: tile−1 at y−1) or both (0xC0: tile−1 up, −2 left, −3 up-left). [HIGH as code;
   priority semantics MED]
+  ⚑ wave 3 (2026-10-06): the priority does **not** order drawing — `Render` never reads the stage;
+  the ladder picks each cell's best prop for `GetBestProp`/`GetBestPropRel`/`GetBestTile` (look,
+  search, use-on, cursor, keyboard target, missiles) [HIGH]. Priority 7 (kinds 4/0x24, type flag
+  0x400000) is never a cell's best prop: it goes into the 124×124 quarter grid, which is a
+  **creature/occupant grid** (readers `HatchEgg`, `SwitchParty`, `InteractProps`), not roof
+  ownership [HIGH code; name MED]. `Render` draws 0xC0 objects as tile−1 **left**, −2 **up** (unmirrored),
+  the transpose of this stage layout (render.md §2.5, §5). Ladder table: render.md §5.
 - Lighting per stage cell (`CalcLighting`, `ApplyLight`, `DimOffLevel`, `BuildFilters`,
   `ApplyFilter`), line of sight (`LOS`, `NoLOS`, `IsStraightAbs/Rel`), roofs (`ApplyRoof`),
-  displacement filters (data-format.md §3.4). Rendering `Render__7TViewerFssss` (8.8 KB) not
-  read in detail — NOT RESOLVED beyond the inputs above.
+  displacement filters (data-format.md §3.4). ⚑ wave 3 (2026-10-06): rendering
+  `Render__7TViewerFssss` (8.8 KB) and its place in `DrawRoutine` are read in `render.md` (layer
+  order, pass tables, sprite offsets, prop FX byte, staged lists, roofs/filter/light after it).
 - Portraits 64×64; macro icons 32×16; sky strip 288×32; inventory icons are the 32×32 tile
   centred, with a count (≥2) or letter (A + n) outlined in the corner (`DrawInventoryIcon`). [HIGH]
