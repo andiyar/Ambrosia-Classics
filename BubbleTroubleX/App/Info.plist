@@ -11,7 +11,9 @@
 	<key>CFBundleGetInfoString</key>
 	<string>1.1.0 © 1995-2008 Ambrosia Software, Inc.</string>
 	<key>CFBundleIconFile</key>
-	<string>BubbleTrouble</string>
+	<string>AppIcon</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
