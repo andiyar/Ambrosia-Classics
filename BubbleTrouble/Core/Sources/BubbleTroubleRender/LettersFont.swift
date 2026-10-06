@@ -1,5 +1,6 @@
 import BubbleTroubleCore
 import Foundation
+import HectorResources
 
 /// The "Letters" bitmap font of the high-score table: PICT 9001 (normal) and 9002 (highlighted), each a 546×46
 /// strip — letters on rows 0…23, digits/punctuation on rows 23…46 — drawn into the sprite GWorld by
@@ -63,7 +64,7 @@ public struct LettersFont: Equatable, Sendable {
 
     /// The bytes `_DrawCustomString` walks: the text as MacRoman (C string, unconvertible characters → '?').
     public static func bytes(_ text: String) -> [UInt8] {
-        if let d = text.data(using: .macOSRoman, allowLossyConversion: true) { return [UInt8](d) }
+        if let bytes = MacRoman.encode(text, lossy: true) { return bytes }
         return Array(text.utf8)
     }
 

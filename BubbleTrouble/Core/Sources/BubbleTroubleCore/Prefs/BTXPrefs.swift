@@ -1,4 +1,5 @@
 import Foundation
+import HectorResources
 
 /// The original's prefs blob `gPrefsData`: 0x800 bytes, big-endian, exactly as `_SaveGamePrefs @ 00026b36`
 /// writes it to the data fork of "Bubble Trouble X Prefs" (data-formats §9):
@@ -192,11 +193,11 @@ public struct BTXPrefs: Equatable, Sendable {
 /// Mac Roman C/Pascal string fields in fixed-size slots.
 enum MacText {
     static func bytes(_ s: String) -> [UInt8] {
-        [UInt8](s.data(using: .macOSRoman, allowLossyConversion: true) ?? Data())
+        MacRoman.encode(s, lossy: true) ?? []
     }
 
     static func string(_ bytes: some Collection<UInt8>) -> String {
-        String(data: Data(bytes), encoding: .macOSRoman) ?? ""
+        MacRoman.decode(bytes)
     }
 
     /// C string in `capacity` bytes (terminator included).

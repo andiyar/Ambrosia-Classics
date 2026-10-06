@@ -117,7 +117,7 @@ public final class BTXGameData {
             let length = Int(data[data.startIndex + offset])
             guard offset + 1 + length <= data.count else { throw bad }
             let bytes = BigEndian.bytes(data, at: offset + 1, count: length)
-            out.append(String(bytes: bytes, encoding: .macOSRoman) ?? "")
+            out.append(MacRoman.decode(bytes))
             offset += 1 + length
         }
         return out

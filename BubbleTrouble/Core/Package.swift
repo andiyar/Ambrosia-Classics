@@ -18,6 +18,7 @@ let package = Package(
                 dependencies: [.product(name: "HectorResources", package: "HectorKit")]),
         .target(name: "BubbleTroubleRender", dependencies: [
             "BubbleTroubleCore",
+            .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorGraphics", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
         ]),

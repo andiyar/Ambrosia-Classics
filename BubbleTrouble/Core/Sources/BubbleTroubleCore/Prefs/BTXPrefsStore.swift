@@ -18,8 +18,9 @@ extension UserDefaults: BTXPrefsBacking {
 }
 
 /// Persists the prefs blob + high-score block as one `Data` (0x800 + 0x8a bytes, the original file's data-fork
-/// image) under the UserDefaults key `Prefs` (plan Known delta 6). The App passes `UserDefaults.standard`, whose
-/// domain is the replica's bundle id; tests pass a scratch suite.
+/// image) under the key `Prefs` of its `BTXPrefsBacking` (plan Known delta 6). On the Mac the backing is
+/// `UserDefaults`: the App passes `UserDefaults.standard`, whose domain is the replica's bundle id; tests pass a
+/// scratch suite. The Windows shell passes a file-backed store (D16.3).
 ///
 /// "The stored entry exists" plays the part of "the prefs file exists", so the original's load/save quirks are
 /// kept:
@@ -52,6 +53,10 @@ public final class BTXPrefsStore {
     }
 
     /// As `init(defaults:…)`, over any backing (D16.3; the Windows shell's file store).
+    /// - Parameters:
+    ///   - legacyFileURL: the Mac's pre-OS X prefs file to import on first run (`BTXPrefsStore.legacyFileURL`, a
+    ///     Mac path), or nil. Windows passes nil — there is no original prefs file to import there.
+    ///   - factoryScores: `SCOR 128` (`HighScoreTable.factory(from:)`).
     public init(backing: any BTXPrefsBacking, legacyFileURL: URL?, factoryScores: HighScoreTable) {
         self.backing = backing
         self.legacyFileURL = legacyFileURL
