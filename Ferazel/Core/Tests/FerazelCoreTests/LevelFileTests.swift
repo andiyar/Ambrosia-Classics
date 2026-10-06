@@ -52,6 +52,16 @@ final class LevelFileTests: XCTestCase {
         }
         XCTAssertThrowsError(try LevelFile(id: 1, data: one + Data([0])))
         XCTAssertThrowsError(try LevelFile(id: 1, data: Data(count: 100)))
+        // A forged negative dimension is refused by name (no layout length is derivable).
+        let h1 = try LevelFile(id: 1, data: one).header
+        var forged = one
+        forged[forged.startIndex + 0xb278] = 0xff; forged[forged.startIndex + 0xb279] = 0xff   // pxBackWidth = −1
+        XCTAssertThrowsError(try LevelFile(id: 1, data: forged)) { error in
+            XCTAssertEqual(error as? WorldDataError,
+                           .badDimensions(type: "Mlvl", id: 1,
+                                          widths: [-1, Int(h1.pxMidWidth), Int(h1.gridWidth)],
+                                          heights: [Int(h1.pxBackHeight), Int(h1.pxMidHeight), Int(h1.gridHeight)]))
+        }
     }
 
     func testLevel1Header() throws {
@@ -258,5 +268,10 @@ final class LevelFileTests: XCTestCase {
         XCTAssertEqual(others.count, 1)
         XCTAssertEqual(others.first?.0, 11); XCTAssertEqual(others.first?.1, 283)
         XCTAssertEqual(others.first?.2, 99); XCTAssertEqual(others.first?.3, 2956)
+        // A record with p2, p3, p4 all non-zero and distinct, so a field swap cannot pass (Mlvl 55 record 5;
+        // bytes 01 00 057b 0034 001e 005a 003c 010c 032a, checked with xxd).
+        let r5 = levels[55]!.placements[5]
+        XCTAssertEqual([Int(r5.flag), Int(r5.byte1), Int(r5.type), Int(r5.p1), Int(r5.p2), Int(r5.p3), Int(r5.p4),
+                        Int(r5.y), Int(r5.x)], [1, 0, 1403, 52, 30, 90, 60, 268, 810])
     }
 }

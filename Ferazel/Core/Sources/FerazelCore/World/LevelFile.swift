@@ -9,6 +9,8 @@ public enum WorldDataError: Error, Equatable {
     case wrongLength(type: String, id: Int16, expected: Int, actual: Int)
     /// A read ran past the end of the resource (a malformed `STR#` count or Pascal string).
     case truncated(type: String, id: Int16, offset: Int)
+    /// A header width or height is negative (a forged `Mlvl`; no layout length can be derived).
+    case badDimensions(type: String, id: Int16, widths: [Int], heights: [Int])
 }
 
 /// One `Mlvl` resource — a level (world-data §3; resource id = level number). Layout §3.1
@@ -16,7 +18,7 @@ public enum WorldDataError: Error, Equatable {
 /// map #5 and overlay at w2×h2 (u16 big-endian, row-major). The six runtime pointers at 0xb284..0xb298 are
 /// stale in the file and ignored. A resource whose length is not exactly
 /// `0xb29c + 2(w0h0 + w1h1) + 8·w2h2` is refused.
-public struct LevelFile: Sendable {
+public struct LevelFile: Sendable, Equatable {
     public static let headerSize = 0xb29c
     public static let placementCount = 511
     public static let factorRows = 8192
@@ -49,7 +51,7 @@ public struct LevelFile: Sendable {
         let w1 = Int(header.pxMidWidth), h1 = Int(header.pxMidHeight)
         let w2 = Int(header.gridWidth), h2 = Int(header.gridHeight)
         guard w0 >= 0, h0 >= 0, w1 >= 0, h1 >= 0, w2 >= 0, h2 >= 0 else {
-            throw WorldDataError.wrongLength(type: "Mlvl", id: id, expected: -1, actual: b.count)
+            throw WorldDataError.badDimensions(type: "Mlvl", id: id, widths: [w0, w1, w2], heights: [h0, h1, h2])
         }
         let expected = Self.headerSize + 2 * (w0 * h0 + w1 * h1) + 8 * w2 * h2
         guard b.count == expected else {
@@ -95,14 +97,15 @@ public struct LevelFile: Sendable {
     /// Records with flag 1 (`.SetupLevelSprites` spawns `*(char*)(rec+4) == 1` only; §3.4).
     public var activePlacements: [Placement] { placements.filter { $0.flag == 1 } }
 
-    /// The `.SetupLevelSprites` order (§3.4): every active record of type 0x51b first, then types 0x578..0x595
-    /// (platforms), then everything else — record order within each pass.
+    /// The `.SetupLevelSprites @ 10003cd0` order (§3.4): three passes over records 0..<0x1ff, each gated on flag
+    /// == 1 exactly — every active record of type 0x51b first, then types 0x578..0x595 (platforms), then
+    /// everything else; passes 2–3 also require `type != 0` (pass 2 by its range). Record order within each pass.
     public var spawnOrder: [Placement] {
         let active = activePlacements
         let isPlatform: (Placement) -> Bool = { (0x578...0x595).contains($0.type) }
         return active.filter { $0.type == 0x51b }
             + active.filter(isPlatform)
-            + active.filter { $0.type != 0x51b && !isPlatform($0) }
+            + active.filter { $0.type != 0 && $0.type != 0x51b && !isPlatform($0) }
     }
 
     // MARK: Cell decodes (world-data §3.3; (column, row), clamped by `.ConstrainXY`)

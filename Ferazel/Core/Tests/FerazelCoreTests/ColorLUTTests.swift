@@ -33,6 +33,14 @@ final class ColorLUTTests: XCTestCase {
             XCTAssertEqual(lut.entries.map(\.value), (0...255).map(UInt16.init), "clut \(lut.id) values")
             XCTAssertEqual(lut.storedValues, lut.entries.map(\.value), "clut \(lut.id) stored values")
         }
+        // A non-zero ctFlags is outside the census and refused (plan invariant 6).
+        var blob = Data(count: 8 + 256 * 8)
+        blob[6] = 0x00; blob[7] = 0xff                                  // ctSize 255 → 256 entries
+        XCTAssertNoThrow(try ColorLUT(id: 9, name: nil, data: blob))
+        blob[4] = 0x80                                                  // ctFlags 0x8000 (device clut bit)
+        XCTAssertThrowsError(try ColorLUT(id: 9, name: nil, data: blob)) { error in
+            XCTAssertEqual(error as? ColorLUTError, .unexpectedFlags(id: 9, flags: 0x8000))
+        }
     }
 
     func testDuplicateCLUTIdsIdentical() throws {

@@ -15,7 +15,7 @@ public struct StringList: Sendable, Equatable {
         strings.reserveCapacity(count)
         for _ in 0..<count {
             strings.append(try b.pascalString(at: offset))
-            offset += 1 + Int(b.bytes[offset])
+            offset += 1 + Int(try b.u8(offset))
         }
         self.strings = strings
     }

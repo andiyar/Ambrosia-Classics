@@ -8,6 +8,8 @@ public enum ColorLUTError: Error, Equatable {
     case entryCount(id: Int16, count: Int)
     /// No `clut` of that id on the chain.
     case missing(id: Int16)
+    /// A non-zero `ctFlags` (every shipped `clut` has 0; plan invariant 6).
+    case unexpectedFlags(id: Int16, flags: UInt16)
 }
 
 /// A `clut` resource (QuickDraw ColorTable, big-endian): `ctSeed` u32, `ctFlags` u16, `ctSize` i16 (count − 1),
@@ -50,6 +52,7 @@ public struct ColorLUT: Sendable, Equatable {
         guard b.count >= 8 else { throw ColorLUTError.truncated(id: id, bytes: b.count) }
         let count = Int(Int16(bitPattern: u16(6))) + 1
         guard count == Self.entryCount else { throw ColorLUTError.entryCount(id: id, count: count) }
+        guard u16(4) == 0 else { throw ColorLUTError.unexpectedFlags(id: id, flags: u16(4)) }
         guard b.count >= 8 + count * 8 else { throw ColorLUTError.truncated(id: id, bytes: b.count) }
         self.id = id
         self.name = name

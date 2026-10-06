@@ -5,8 +5,10 @@ import HectorAudio
 public enum SoundBankError: Error, Equatable {
     /// HectorAudio's `SndSound(data:)` could not parse the resource.
     case unparsable(id: Int16)
-    /// A shape outside the census (plan invariant 6): every shipped `snd ` is format 1 with one command.
+    /// A shape outside the census (plan invariant 6): every shipped `snd ` is format 1 with one modifier
+    /// and one command.
     case unexpectedFormat(id: Int16, format: Int)
+    case unexpectedModifierCount(id: Int16, count: Int)
     case unexpectedCommandCount(id: Int16, count: Int)
     /// The sound header is not 8-bit offset binary (encode 0).
     case notOffsetBinary(id: Int16)
@@ -43,10 +45,18 @@ public struct SoundBank: Sendable {
         let id = resource.id
         guard let snd = SndSound(data: resource.data) else { throw SoundBankError.unparsable(id: id) }
         guard snd.format == 1 else { throw SoundBankError.unexpectedFormat(id: id, format: snd.format) }
+        let modifiers = modifierCount(format1: resource.data)
+        guard modifiers == 1 else { throw SoundBankError.unexpectedModifierCount(id: id, count: modifiers) }
         let commands = commandCount(format1: resource.data)
         guard commands == 1 else { throw SoundBankError.unexpectedCommandCount(id: id, count: commands) }
         guard case .pcm8 = snd.payload else { throw SoundBankError.notOffsetBinary(id: id) }
         return Sound(id: id, name: resource.name, format: snd.format, pcm: try snd.linearPCM())
+    }
+
+    /// Format 1 `modCount` (u16 at offset 2); −1 if the resource is too short.
+    private static func modifierCount(format1 data: Data) -> Int {
+        let b = [UInt8](data.prefix(4))
+        return b.count == 4 ? Int(b[2]) << 8 | Int(b[3]) : -1
     }
 
     /// Format 1 layout: [u16 format][u16 modCount][modCount × 6 B][u16 cmdCount] (SndSound parsed it already).
