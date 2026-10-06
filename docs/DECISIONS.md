@@ -457,3 +457,13 @@ Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand c
 ⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
 demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
 on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
+
+## D22 — Deimos Rising builds next, ahead of Ferazel's Wand (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "my assumption is deimos will be 'Easier' than ferazel … let's let ferazel do
+its own thing in its own session and move on to steps 2 and then 3 for deimos." The Deimos RE bank is closed (100 % of
+game code read, 938 rows = 716/222/0), so Deimos goes straight to build work: **step 2** = Phase 0 for Deimos (HectorKit
+decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and a `Deimos/Core` census proving every
+original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
+RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
+**Approved by:** Ben.
