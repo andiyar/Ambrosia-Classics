@@ -514,7 +514,7 @@ Delete" (timer 20, still collidable) → `Delete`, so it can be taken for 185 ti
    they hold the template halves (same pattern as the other sites) but did not trace the loads → MED for "only the
    ground launcher changes +0x28".~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O4): traced — `1003c874/78`, `1003ca54/58` load
    template +0x28/+0x2a (1.0); air/aux shots always pass 1.0 [HIGH] (gameplay-leftovers.md §7.1; INDEX #46).
-5. `FUN_10015550` (second caller of `FUN_10006110`) not read.
+5. ~~`FUN_10015550` (second caller of `FUN_10006110`) not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: `FUN_10015550` is read: HIGH in function-roles.md (cases `100156dc…` decompiled and listed) (critic wave 3 §3).
 6. Pulse Tank timing (§1.4) assumes the scroll state and the on-screen gate definition of B §3.
    The 83–95-tick figure is for the x-crossing of the centre only.
 

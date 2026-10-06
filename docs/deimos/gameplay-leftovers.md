@@ -243,7 +243,7 @@ listing): `addi r3,r2,0x36bc; addi r3,r3,0x7c` ("Num Debris:  ", `0x100e9a68`), 
 
 ## 5. Unit-definition leftovers (G_UnitDefinitions.cc)
 
-### 5.1 Copy-assignment helpers of `fileData` (Units Cache writer only) [HIGH — listings]
+### 5.1 Copy-assignment helpers of `fileData` (Units Cache writer only) [HIGH — listings; ⚑ corrected (review wave 3, 2026-10-06) #L: every function now carries its address range in the role rows below / function-roles.md]
 These are all leaves called from `FUN_1003d650` (copy-assignment of unit+0xc, 0x7a54 bytes), whose
 only caller is the cache writer `FUN_10041e40`. The offsets agree with unit-def-struct.md §1/§3/§4
 (no conflict). Each copies field by field: holes are not copied, bytes are `lbz/stb`, floats
@@ -263,7 +263,7 @@ only caller is the cache writer `FUN_10041e40`. The offsets agree with unit-def-
 (already HIGH in unit-def-struct.md). Reachability: the Units Cache writer runs at shutdown only
 when the cache flag `DAT_100e024c` is set (unit-def-struct.md §8).
 
-### 5.2 List and module frees [HIGH — listings]
+### 5.2 List and module frees [HIGH — listings; ⚑ corrected (review wave 3, 2026-10-06) #L: every function now carries its address range in the role rows below / function-roles.md]
 - `FUN_1003f410(list) @ 1003f410` frees a state's spawn-set list (`state+0x5dc`): pop → delete, then
   the list dtor. Callers: `1003e210` (`FUN_1003e1e0` unit defaults), `1003e3f8` (`FUN_1003e3d0` state
   defaults) and `1003f3b8` (`FUN_1003f360` free master list).
@@ -466,10 +466,10 @@ Player 2 reads +0x148 (`pl2g`). A player index outside 0/1 keeps the previous sp
 | `FUN_10009400` | G_Film (span ⚑) | film-object dtor: free +0xc/+0x10 via `FUN_1000cc00`, valid +0 ← 0, delete | HIGH | listing `10009400–10009494`; caller `10005b30` (§1.2) |
 | `FUN_10009970` | G_Film | reset replay cursors P1 +4 / P2 +8 | HIGH | listing; callers `100093cc`, `100096dc` (§1.2) |
 | `FUN_10009980` / `FUN_10009a20` / `FUN_10009a60` | M_PixelBuffer (span ⚑) | pixel-buffer default ctor / clear 12 words (+0 GWorld) / dtor (`FUN_10009d00` DisposeGWorld + delete) | HIGH | listings; callers §1.3 |
-| `FUN_10012610` | G_GameObject (span) | GameObject dtor (owns nothing; delete if flag > 0) | HIGH | listing; 8 callers (§2.4) |
+| `FUN_10012610` | G_GameObject (span) | GameObject dtor (owns nothing; delete if flag > 0) | HIGH | listing; 8 callers (§2.4) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `10012618 or. r31,r3,r3; 10012628 extsh. r0,r4; 1001262c ble; 10012630 bl 0x1004d3b0` |
 | `FUN_10012750` | G_GameObject (span) | per-tick ramps: visibility +0x68 → +0x6c by +0x70, tint +0x58 → +0x5c by +0x60; clamp at target, floor 0.0 | HIGH | listing `10012750–10012838`; constants `0x100d67c4`/`0x100d67a8` = 0.0; callers `10029080`, `10033e98`, `1003ba2c` (§2.1) |
-| `FUN_100128c0` | G_GameObject (span) | identity (`blr`): entity → its position pointer | HIGH | listing; 12 callers in EntityGroup (§2.3) |
-| `FUN_100128f0` / `FUN_10012930` | G_GameObject (span) | get x,y into two floats / set x = f1, y = f2 | HIGH | listings; callers §2.3 |
+| `FUN_100128c0` | G_GameObject (span) | identity (`blr`): entity → its position pointer | HIGH | listing; 12 callers in EntityGroup (§2.3) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `100128c0 blr` (sole instruction) |
+| `FUN_100128f0` / `FUN_10012930` | G_GameObject (span) | get x,y into two floats / set x = f1, y = f2 | HIGH | listings; callers §2.3 — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `100128f0..10012900` (`lfs/stfs 0x0`, `0x4`), `10012930 stfs f1,0x0(r3); 10012934 stfs f2,0x4(r3)` |
 | `FUN_10012ba0` | G_GameObject (span) | get scaled frame w′,h′ (+0x24/+0x28) | HIGH | listing; caller `10029838` (crosshair) |
 | `FUN_10012c00` / `FUN_10012c10` | G_GameObject (span) | hit glow off / tick: falling by +0x7c until (unsigned) < 4 → 4, rising until > 32 → 32 and off; speed 6 ⇒ 10 ticks | HIGH | listings `10012c00–10012c9c`; callers `10016330`, `10026a30` / `100290bc`, `10033f08` (§2.2) |
 | `FUN_100141a0` | G_Entity.cc (span) | entity ctor: GameObject ctor, +0x94/+0x98 ← 0, 20 spawn-record list ptrs +0x19c…+0x1e8 ← 0, field reset | HIGH | listing `100141a0–1001428c`; caller `100383f4` (§2.4) — was MED in the `FUN_100125d0` shared row |
@@ -477,9 +477,9 @@ Player 2 reads +0x148 (`pl2g`). A player index outside 0/1 keeps the previous sp
 | `FUN_10017e10` | G_Entity.cc (span) | free one spawn-record list (pop/delete, list dtor) | HIGH | listing; callers `1001437c`, `10014504` |
 | `FUN_10026d60` | G_Player.cc | lives set (stored + 0x1524DCEF) | HIGH | `10026d60 addis r4,r4,0x1525; subi r0,r4,0x2311; stw r0,0x98(r3)` |
 | `FUN_10027560` | G_Player.cc | shield set (stored + 1324366.0) | HIGH | `10027560..1002756c`; 5 call sites (§3) |
-| `FUN_10027610` / `FUN_10027620` | G_Player.cc | money get / set (± 0xB2CCE) | HIGH | listings (§3) |
-| `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | score get / set (± 0x05532A3E) | HIGH | listings (§3) |
-| `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | cheated flag `+0xbd` get / set; set 1 by the 6 registered cheats (and 10 unreachable PLAYER sites), 0 at setup; read into the session result | HIGH | listings; 17 raw call sites with `li r4` (§3) |
+| `FUN_10027610` / `FUN_10027620` | G_Player.cc | money get / set (± 0xB2CCE) | HIGH | listings (§3) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `10027610 lwz r3,0xac(r3); subis 0xb; subi 0x2cce` / `10027620 addis r4,r4,0xb; addi 0x2cce; stw r0,0xac(r3)` |
+| `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | score get / set (± 0x05532A3E) | HIGH | listings (§3) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `100299f0 lwz r3,0xb0(r3); subis 0x553; subi 0x2a3e` / `10029a00 addis 0x553; addi 0x2a3e; stw r0,0xb0(r3)` |
+| `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | cheated flag `+0xbd` get / set; set 1 by the 6 registered cheats (and 10 unreachable PLAYER sites), 0 at setup; read into the session result | HIGH | listings; 17 raw call sites with `li r4` (§3) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `10029be0 lbz r3,0xbd(r3)` / `10029bf0 stb r4,0xbd(r3)` |
 | `FUN_10029f60` | G_Player.cc | ship sprite +0x1c ← displayed air weapon's `player1/2AppearanceFace_ID` (+0x144 / +0x148) by index; +0x34 dirty | HIGH | listing `10029f60–10029fcc` (§3.1) |
 | `FUN_10029fd0` | G_Player.cc | score multiplier `+0xb4` ← 1 | HIGH | listing; callers `10026898`, `10028150` |
 | `FUN_1002a920` | G_Debris.cc (span) | NUMDEBRIS readout value = debris-list count; called via TV `0x100e0940` from handler `0x1002aa30`; **unreachable** (debug-only command) | HIGH | listing + raw range `1002aa30–1002aa68` (§4.1) — was LOW |
@@ -492,10 +492,10 @@ Player 2 reads +0x148 (`pl2g`). A player index outside 0/1 keeps the previous sp
 | `FUN_100399a0` | G_PlayerDefinitions.cc | preload a `plde`'s 4 sprites, overload sound, 7 units | HIGH | listing `100399a0–10039a7c` (§4.4) |
 | `FUN_10039a80` | G_PlayerDefinitions.cc | collect `plde` sprite IDs (mode 1) or sounds (mode 0) into a list; LOGUNUSEDSPRITES/SOUNDS only → **unreachable** | HIGH | listing; raw callers `10020814`, `10020aec` (§4.4) |
 | `FUN_10039c00` | G_PlayerDefinitions.cc | free the `plde` list (magic-checked cells) | HIGH | listing `10039c00–10039ce8` (§4.4) |
-| `FUN_1003dd60` `FUN_1003ddc0` `FUN_1003de00` `FUN_1003de30` `FUN_1003de70` `FUN_1003dfb0` | G_UnitDefinitions.cc | copy-assign state sub-blocks +0x300 anim / +0x2ec blur / +0x2e0 collision / +0x2d0 particles / +0x024 rules (0x2ac) / +0x000 sound | HIGH | listings (§5.1) |
-| `FUN_1003e040` `FUN_1003e120` `FUN_1003e1a0` | G_UnitDefinitions.cc | copy-assign unit destruct block (0x5c) / shields block (0x3c) / sound record (0x18) | HIGH | listings (§5.1) |
+| `FUN_1003dd60` `FUN_1003ddc0` `FUN_1003de00` `FUN_1003de30` `FUN_1003de70` `FUN_1003dfb0` | G_UnitDefinitions.cc | copy-assign state sub-blocks +0x300 anim / +0x2ec blur / +0x2e0 collision / +0x2d0 particles / +0x024 rules (0x2ac) / +0x000 sound | HIGH | listings (§5.1) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, addresses cited (fix-pass listing) — dd60 `1003dd60..1003ddb8` (4 `lbz/stb` +0..+3, 7 `lwz/stw` +4..+0x1c); ddc0 `1003ddc0..1003ddf0` (2 bytes, 2 words, `lfs/stfs 0xc/0x10`); de00 `1003de00..1003de20`; de30 `1003de30..1003de60` (`lhz/sth 0x4`, bytes 6/7); de70 `1003de7c stw r0,0x0(r3)`, `1003de80 addi r0,r3,0x2ac`, loop `1003de88..1003dfa4` stride `0x88`; dfb0 `1003dfb0..1003e010` (`lfs 0x10/0x14`, `lbz 0x18..0x1b`, words 0x1c/0x20) |
+| `FUN_1003e040` `FUN_1003e120` `FUN_1003e1a0` | G_UnitDefinitions.cc | copy-assign unit destruct block (0x5c) / shields block (0x3c) / sound record (0x18) | HIGH | listings (§5.1) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, addresses cited (fix-pass listing) — e040 `1003e050 lhz r0,0x8(r4)` … `1003e0dc stb r0,0x3d(r3)`, `1003e108 lfs f0,0x54(r4)`; e120 `1003e120..1003e198` (`lfs 0/4/8`, sound records +0xc..+0x23 and +0x24..+0x3b); e1a0 `1003e1a0..1003e1d0` (4 words, `lfs 0x10/0x14`) |
 | `FUN_1003f410` | G_UnitDefinitions.cc | free a state's spawn-set list (+0x5dc) | HIGH | listing; callers `1003e210`, `1003e3f8`, `1003f3b8` |
-| `FUN_1003f830` / `FUN_1003fa10` | G_UnitDefinitions.cc | zero family counters + free family list / free one family (embedded list +0x40) | HIGH | listings (§5.2) |
+| `FUN_1003f830` / `FUN_1003fa10` | G_UnitDefinitions.cc | zero family counters + free family list / free one family (embedded list +0x40) | HIGH | listings (§5.2) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, addresses cited (fix-pass listing) — `1003f844 stw r3,-0x60dc(r2)`, `1003f84c stw r3,-0x60e0(r2)`, `1003f840 lbz r0,-0x60cc(r2)`, pop loop `1003f860..1003f878` (`bl 0x1003fa10`), `1003f884 bl 0x100008b0`, `1003f890 stw r0,-0x60d4(r2)` / `1003fa28..1003fa44` (pop → delete), `1003fa54 li r4,-0x1; bl 0x100008b0`, `1003fa64 bl 0x1004d3b0` |
 | `FUN_1003fa80` | G_UnitDefinitions.cc | free the loaded-resources list `0x100e0258` | HIGH | listing `1003fa80–1003fb58` (§5.2) |
 | `FUN_100417d0` / `FUN_100418a0` | G_UnitDefinitions.cc | sound / sprite presence check: load → on failure log "… RESOURCE MISSING" (sound: only if sound available) and set the field `'none'` | HIGH | listings `100417d0–10041954`; strings `0x100ef19c`/`0x100ef1f2` (§5.3) — was MED |
 | ⚑ corrected `FUN_1000fee0` | G_Background.cc (span) | water test: returns **only 0/1**; 1 iff mask16[row][col] == 0x001f, col/row = map/e by `divw` (−(e−1)…−1 → 0) | HIGH | listing `1000fee0–1000ffb4` (§7.4a) — was MED |

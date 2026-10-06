@@ -93,8 +93,8 @@ In order:
    - free the old list;
    - allocate **0x251c0 bytes** cleared (`10018824 addi r3,r31,0x51c0` with `r31 = 0x20000`,
      `li r4,0x1`; `bl 0x1000cb60`). 0x251c0 / 0x4c = **2000 draw commands** per layer to start
-     with [MED for "2000 commands": the size divided by the 0x4c command size, §3.1 of
-     sprite-geometry-draw.md];
+     with [HIGH — ⚑ corrected (review wave 3, 2026-10-06) #M6: was MED; `100187f8 lis r31,0x2; 10018824 addi r3,r31,0x51c0` =
+     0x251c0 = 2000 × 0x4c, as blit-pixel-rules.md §7.1 states];
    - on failure it asserts `sPriv_RenderListPtrs[i]` (line 0xac).
 7. `FUN_1001d5e0()`, the blitter init (§1.3).
 8. Registers `LOGSPRITE` and `FX` with `FUN_1002d080(name, help, TV, 1, **1**, 0)`
@@ -292,7 +292,8 @@ Cache's `FUN_100426e0`.
 
 Error logs: "Could not create new file", "Could not open newly created file", "Could not write to
 file". All of them return; none quits. The M_File helpers `FUN_10001200/1570/13a0/1430/14b0/13f0/10f0/11a0`
-were read by call pattern only [MED for the mode semantics].
+were read by call pattern only [HIGH for the mode semantics — ⚑ corrected (review wave 3, 2026-10-06) #M4: was MED; app-pak-music-library.md
+§1.2 reads them by listing: `0x11` = "rb", `0x0f` = "a+t", `0x17` = "a+b" (`10001238..1000131c`)].
 
 ## 5. Resource registry (G_Resource.cc)
 
@@ -319,7 +320,11 @@ The resource record is 0xc bytes, kept in the list `0x100e0198` [HIGH]. Writes: 
 | `FUN_100203e0(kind, id) @ 100203e0` | find record (kind, id) → pointer or 0 | HIGH | `1002044c lbz r0,0x4(r3); cmplw r0,r31; 10020458 lwz r0,0x8(r3); cmpw r0,r27` |
 | `FUN_10020270(usage) @ 10020270` | RESLOG body: "\n    Sprites:" then "    %s" (tag display name `FUN_10002420`) for each sprite record with that usage, then the same for "Sounds:". No direct caller: only the unregistered RESLOG handler `100206a0` reaches it | HIGH | `100202e4 lbz r3,0x5(r4)`; `100202f4 lbz r0,0x4(r4); cmplwi r0,0x1`; `10020388 cmplwi r0,0x0`; handler `100206cc li r3,0x0; bl 0x10020270` |
 
-**Usage levels by caller** (from the dump):
+**Usage levels by caller** (from the dump; ⚑ corrected (review wave 3, 2026-10-06) #M5: now listing-cited — the `li r5,N` before each
+`bl 0x1001f950` in the fix-pass listing `$W/disasm-review3-all.txt`: usage 0 at `1000d0a0`, `1001ff00`,
+`10020078`, `10024068`, `10024098`, `100240c8`; usage 1 at `1002b798…1002b814` (6), `1002beb0`, `1002bfac`,
+`100399b0…10039a0c` (5), `10039fac`, `1003a0a8`, `1003a1a4`, `1003a2a0`, `1004180c`, `100418dc`; usage 2 at
+`10019d48`, `10047ce4` — 27 call sites in 11 functions):
 
 | usage | callers |
 |---|---|
@@ -327,7 +332,7 @@ The resource record is 0xc bytes, kept in the list `0x100e0198` [HIGH]. Writes: 
 | 1 (level) | `FUN_1002b790`/`FUN_1002ba00` (weapons), `FUN_100399a0`/`FUN_10039e70` (player definitions), `FUN_100417d0`/`FUN_100418a0` |
 | 2 (temporary, load on miss) | `FUN_10019ca0` (`(1, id, 2)`), `FUN_10047bf0` (`(0, id, 2)`) |
 
-[HIGH for the arguments; MED for the caller roles of `FUN_1000d010`/`100417d0`/`100418a0`, which I
+[HIGH for the arguments (listing, above); MED for the caller roles of `FUN_1000d010`/`100417d0`/`100418a0`, which I
 did not read]
 
 **Replica consequence** [HIGH, direct callers only]: nothing unloads a resource by usage during a
@@ -459,17 +464,17 @@ the alpha-map rule of `FUN_1001eec0` (sprite-sound-containers.md §2.3a). Colour
    enumerated by the load-all path. This decides the cache's group order and whether the 125
    upper-case pseudo-groups really appear. Settles: read `FUN_10002340`/tag-index build by listing,
    or inspect a cache file written by the OS X build.
-2. Mode semantics of `FUN_10001200` (0x11 read, 0x17 / 0xf create-write) and of the other M_File
-   helpers. Read here by call pattern only. Settles: M_File listing (another reader's range).
+2. ~~Mode semantics of `FUN_10001200` (0x11 read, 0x17 / 0xf create-write) and of the other M_File
+   helpers. Read here by call pattern only. Settles: M_File listing (another reader's range).~~ → ⚑ corrected (review wave 3, 2026-10-06) #M4: app-pak-music-library.md §1.2: `0x11` = "rb", `0x0f` = "a+t", `0x17` = "a+b" (`10001238..1000131c`) (#M4).
 3. The collectors `FUN_1003f0b0`, `FUN_10039a80`, `FUN_1002b400` used by LOGUNUSEDSPRITES/SOUNDS.
    They are unreachable debug code. Settles: read them, if anyone wants the "unused resource" list.
 4. INDEX #10's last link: that QuickTime's TGA importer honours descriptor bit 5. It is inferred
    from the upright title screen; nothing in the binary shows it. Settles: Ben's eyes on the menu
    screen, or one screenshot.
-5. The capacity rule of the render lists after the initial 2000 commands. `FUN_1001a450` grows ×2
-   (bank MED); the exact compare against 0x251c0 / 0x4c was not re-read here.
-6. The `stb …,0x1a(` sites `100126f0`, `1003dff4`, `1004688c` (reset / copy paths of entity `+0x1a`)
-   were not traced to their functions.
+5. ~~The capacity rule of the render lists after the initial 2000 commands. `FUN_1001a450` grows ×2
+   (bank MED); the exact compare against 0x251c0 / 0x4c was not re-read here.~~ → ⚑ corrected (review wave 3, 2026-10-06) #C6: blit-pixel-rules.md `FUN_1001a450` (HIGH, `1001a56c..`): the capacity compare and ×2 growth are listing-read (#C6).
+6. ~~The `stb …,0x1a(` sites `100126f0`, `1003dff4`, `1004688c` (reset / copy paths of entity `+0x1a`)
+   were not traced to their functions.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: only four `stb …,0x1a(` exist in the code range (fix-pass listing): `100126f0` (GameObject reset `FUN_10012650`, `10012668 li r12,0x0` → 0; reached from the player ctor via `FUN_100125d0`), `10035fb0` (entity creation `FUN_10035cd0`), `1003dff4` (state copy-assign `FUN_1003dfb0`, a state byte) and `1004688c` (`FUN_10046840`, blur) (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | function | module | role | conf | evidence |
@@ -500,7 +505,7 @@ the alpha-map rule of `FUN_1001eec0` (sprite-sound-containers.md §2.3a). Colour
 | `FUN_1001f8d0` | G_Resource.cc | resource manager teardown: unload all sprites, then all sounds, delete list | HIGH | listing `1001f8f0–1001f92c` (§5) |
 | `FUN_1001faf0` | G_Resource.cc | unload every registered resource of a kind (no usage filter; shutdown only) | HIGH | listing `1001fb5c–1001fbb0` (§5) |
 | `FUN_1001fbe0` | G_Resource.cc | resource tag exists? (kind 1/other → im08, 0 → soun) | HIGH | listing `1001fbe0–1001fc2c` (§5) |
-| `FUN_1001fc30` | G_Resource.cc | resource registered? (kind, id) → 1/0; draw-dispatcher error triage | HIGH | listing; caller `FUN_10019570` (§5) |
+| `FUN_1001fc30` | G_Resource.cc | resource registered? (kind, id) → 1/0; draw-dispatcher error triage | HIGH | listing; caller `FUN_10019570` (§5) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1001fc9c lbz r0,0x4(r3); cmplw r0,r31`, `1001fca8 lwz r0,0x8(r3); cmpw r0,r27`, `1001fcb4 li r29,0x1` |
 | `FUN_10020270` | G_Resource.cc | RESLOG body: list sprite then sound records of one usage level; unreachable | HIGH | `100202e4`, `100202f4`, `10020388` (§5) |
 | `FUN_100203e0` | G_Resource.cc | find resource record (kind, id) → ptr/0 | HIGH | `1002044c`, `10020458` (§5) |
 | `100206a0` / `10020740` / `10020a20` (no Ghidra functions) | G_Resource.cc | handlers RESLOG / LOGUNUSEDSPRITES (8 perm ids + collectors) / LOGUNUSEDSOUNDS (24 perm ids, skips "Music"); unregistered | HIGH (role) / LOW (collector callees) | range listing `100206a0–10020ce0` (§3.1) |

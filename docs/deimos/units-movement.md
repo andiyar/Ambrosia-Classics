@@ -385,7 +385,7 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 ## 10. Every function in range (role table input)
 | function | role | conf | evidence |
 |---|---|---|---|
-| `FUN_100125b0` | static init of a 2-word global (`0x100e6194`) | LOW | dump |
+| `FUN_100125b0` | static init of a 2-word global (`0x100e6194`) | HIGH | dump — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; = TU init writing only the `"nonenone"` pair `0x100e618c` +8/+0xc ← 0 (`100125b0..100125c8`), static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_100125d0` | G_GameObject ctor (`+8 = 1234567890` magic, `FUN_10012650`) | MED | dump, callers ctor-shaped |
 | `FUN_10012610` | G_GameObject dtor (free if flag > 0) | MED | dump |
 | `FUN_10012650` | G_GameObject reset (pos/vel 0, air=1, sprite none, layer `defa`, vis/tint/scale defaults) | MED | dump |
@@ -438,7 +438,7 @@ runtime words not initialised here (`FUN_10017cb0`, spawn reader)]
 | `FUN_100181e0` | post / clear a notice (text ≤ 0x3f, sound block, fade flags) | MED | dump; callers destroy/console |
 | `FUN_10018320` | notice tick: sound on first show, PermFloat 71/72/73 appearance time, fade in/out | MED | dump |
 | `FUN_100184b0` | draw current notice text | MED | dump (`FUN_1000d130(0x31)`, `FUN_1000d380`) |
-| `FUN_10018670` | static init (notice globals) | LOW | dump |
+| `FUN_10018670` | static init (notice globals) | HIGH | dump — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; TU init of the notice module (D/P/T/S templates), static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 
 ## Worked example — Shuriken (`shur`, 17 placements; 10–11 per group)
 Data (`grep -nE '#(initial|state(Name|OnRange|OnTimer|MaxSpeed|Delta|Flee|Hunts|NumDir|FramesPer|FrameDel|DoLoop))' "$W/data/Game/unde/Shuriken[shur].unde.txt"`):
@@ -479,8 +479,8 @@ point (208, 330), speed draw = 6.0.
 offset, which of timer/range fires first for a given member) is constructed, not observed]
 
 ## NOT RESOLVED (this file)
-1. `FUN_10042cd0` (heading of a vector) not listing-checked: the octant constants are resolved
-   but the branch directions are from the dump (MED). Settles: read `10042cd0..` listing.
+1. ~~`FUN_10042cd0` (heading of a vector) not listing-checked: the octant constants are resolved
+   but the branch directions are from the dump (MED). Settles: read `10042cd0..` listing.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §1.2: full branch walk of `FUN_10042cd0` (listing `10042cd0..10042e8c`) (critic wave 3 §3).
 2. Writer of entity `+0xc3` (spawn-set gate) and initial values of the 0x18-byte spawn runtime
    record — presumably `FUN_10017cb0` (spawn reader's scope).
 3. No-player fall-through in `FUN_10015280`: the target written to `+0x11c/+0x120` is read from
@@ -490,11 +490,11 @@ offset, which of timer/range fires first for a given member) is constructed, not
    player exists), so believed harmless. A replica can store (0,0). → ⚑ corrected (wave 3+4, 2026-10-04) (critic O6): closed —
    the stale target is never read (only readers `FUN_10016cc0`/`FUN_100172d0`, both gated); the next tick with a
    player overwrites it (gameplay-leftovers.md §7.3).
-4. Which spawn record supplies `+8` for the air flag in `FUN_10035cd0` (`param_2`): level object
-   group vs unit def (`FUN_10033850` also tests `unit+8 == 'grnd'`). Spawn reader.
+4. ~~Which spawn record supplies `+8` for the air flag in `FUN_10035cd0` (`param_2`): level object
+   group vs unit def (`FUN_10033850` also tests `unit+8 == 'grnd'`). Spawn reader.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §7.4 (which record supplies the air flag) (critic wave 3 §3).
 5. `FUN_10012940` frame size source `FUN_10019ca0`/`FUN_10019c10` (U_Sprite, not read) — half
    sizes assumed = frame cell size / 2.
-6. Exact per-second speeds: depend on the game-speed divider whose writer is unresolved (INDEX #12).
+6. ~~Exact per-second speeds: depend on the game-speed divider whose writer is unresolved (INDEX #12).~~ → ⚑ corrected (review wave 3, 2026-10-06) #C8: timing-frame.md §3: there is no divider writer — the game always runs at "Normal"; per-second speeds follow from 30.07 ticks/s (timing-frame.md §4) (#C8, critic wave 3 §3).
 7. Owner lock/link/orbit (`FUN_10037130/7230/7350`) overwrite position after integration; their
    use of `vx` as orbit rate (§5.6) and of `+0xe0` (§4) — spawn reader.
 8. Notice module (`FUN_10018070…FUN_100184b0`) read only at MED; fade arithmetic not checked.

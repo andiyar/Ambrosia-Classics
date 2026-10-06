@@ -211,7 +211,8 @@ Both functions below do the same steps:
    the app volume, `ioFDirIndex` (+0x1c) = 0, `ioDirID` (+0x30) = the app's parent directory. This
    resolves the folder and returns its directory ID in +0x30.
 4. Second `PBGetCatInfoSync` with `ioFDirIndex = n`. This gets item n of that folder. Item order
-   is HFS catalog order, i.e. alphabetical.
+   is HFS catalog order, i.e. alphabetical [MED — ⚑ corrected (review wave 3, 2026-10-06) #M7: OS behaviour, not in the binary;
+   file-pict-alerts-manager.md labels the same point MED].
 
 Glue addresses: `100d3d2c` GetCurrentProcess, `100d3d44` GetProcessInformation, `100d48b4`
 PBGetCatInfoSync, `100d3a2c` BlockMoveData.
@@ -421,9 +422,9 @@ artefact), `Icon\r` (0 bytes), and `Last Film[last].film` (40296 bytes).
    dump line ~44865 and the PEF loader sections. Compiler runtime only.
 3. Registration-library internals `FUN_100805f0`, `FUN_1007ef10`, `FUN_1007ede0`, `FUN_1006bfd0`
    (above `0x1004b400`). Out of the 100 % range; only the call shape is recorded.
-4. `FUN_10045c60`/`FUN_10045ef0` (the confirm alert under `FUN_100498e0`) are w4s4's.
+4. ~~`FUN_10045c60`/`FUN_10045ef0` (the confirm alert under `FUN_100498e0`) are w4s4's.
    `FUN_10044f00`/`FUN_10044f70`/`FUN_10044e80` were read here only from the dump (mod date,
-   SetFInfo) and are w4s4's to label.
+   SetFInfo) and are w4s4's to label.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: file-pict-alerts-manager.md §1.2–§1.3 (`FUN_10045c60`/`FUN_10045ef0` confirm alerts) and §3 (`FUN_10044f00`/`FUN_10044f70`/`FUN_10044e80` catalog helpers, HIGH) (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | `FUN_10000890` | U_LinkedList.cc (span) | list ctor: count/head/tail = 0 | HIGH | listing `10000894–1000089c` |

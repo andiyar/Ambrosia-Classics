@@ -364,18 +364,18 @@ spawned tank's entry path (movement executor not read), "both overlapping victim
 3. ~~B-side `passHitsToOwner` in `FUN_10036cf0` uses **A's** owner — does the redirect ever
    succeed?~~ → closed: never for player shots (no owner: template `0x100ecd14` +0x20 = 0, +0x24 = −1 [⚑ corrected (wave 3+4, 2026-10-04): was "+0x20/+0x24 = 0"; static-init-audit.md §5.2],
    neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` sets them), so the turret absorbs the hit; §3.5. ⚑ corrected (review wave 1, 2026-10-03) #I1
-4. Whether ground-placed spawn-set children get the −32 x shift (`FUN_10035900` applies it to
+4. ~~Whether ground-placed spawn-set children get the −32 x shift (`FUN_10035900` applies it to
    level objects; spawn requests via `FUN_10033220` not checked) — decides whether the sector-1
-   tank appears at screen x 480 or 448.
-5. Movement of the Pulse Tanks (heading 285° convention, `FUN_10042b30`; executors
-   `FUN_10015930`/`FUN_10015280`) — decides when they enter the on-screen gate.
-6. Plasma Bomb launches per press and `WepHandler_Default/MaxNumBombs` (flli 151/152,
+   tank appears at screen x 480 or 448.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §5.1: the −32 x shift applies to level objects only; spawn requests via `FUN_10033220` get no shift (critic wave 3 §3).
+5. ~~Movement of the Pulse Tanks (heading 285° convention, `FUN_10042b30`; executors
+   `FUN_10015930`/`FUN_10015280`) — decides when they enter the on-screen gate.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §1.2–§1.4 (heading convention settled; Pulse Tank vector HIGH, timing MED) (critic wave 3 §3).
+6. ~~Plasma Bomb launches per press and `WepHandler_Default/MaxNumBombs` (flli 151/152,
    `FUN_1003beb0`) — the guide's "automatically increases in power as you progress" is not in the
-   `wede`/`unde` damage numbers (0.4 in every sector); likely bomb count. Needed for time-to-kill.
-7. `FUN_10034ee0` "Is Tracking Player" (rule #0) not read — no boss uses it (2773 uses, all with
-   unit `none` except two), low priority.
-8. End-of-level tally (`FUN_100072c0`, `FUN_100075e0`, `FUN_10027670`, `FUN_10027930`) and the
-   sector-12 finale (`noal`, `Spawn Game Completion` state) — INDEX NR #26/#27, not read here.
+   `wede`/`unde` damage numbers (0.4 in every sector); likely bomb count. Needed for time-to-kill.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §6.6: the bomb count per press is what "increases in power" (listings `1003beb0..1003bf74`, `1003b964..1003b9d0`); bomb damage stays 0.4 (critic wave 3 §3).
+7. ~~`FUN_10034ee0` "Is Tracking Player" (rule #0) not read — no boss uses it (2773 uses, all with
+   unit `none` except two), low priority.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: spawn-and-waves.md §6 (rule callees, `FUN_10034ee0` read) (critic wave 3 §3).
+8. ~~End-of-level tally (`FUN_100072c0`, `FUN_100075e0`, `FUN_10027670`, `FUN_10027930`) and the
+   sector-12 finale (`noal`, `Spawn Game Completion` state) — INDEX NR #26/#27, not read here.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §5 (finale sequence) and scoring-bonuses.md §6/§8 (tally, INDEX #26/#27 closed) (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | function | module | role | conf | evidence |

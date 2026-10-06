@@ -249,7 +249,7 @@ Format struct (from `FUN_1000ef90` stores and the default template at `0x100e52e
 | +0x11c | extra spacing | `#SpaceBetweenChars_INT` |
 | +0x120/+0x122 | colourise / colour | `#Colorise_Do_BOOL`, `#ColoriseColor_RGB` |
 | +0x12c, +0x130/+0x134, +0x138, +0x13c, +0x140/+0x144 | colour strip: on, H/V offset, blend, colour, min W/H | `#ColorStrip_*` |
-[HIGH for the stores (decompile) and template bytes; MED for +0x10c/+0x110 meanings]
+[HIGH for the stores (decompile) and template bytes; ~~MED for +0x10c/+0x110 meanings~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: HIGH — +0x10c = render layer, +0x10d = clip select (0 buffer bounds, 1 template clip 480/416), +0x110 = draw-now (text-metrics-lists.md §2.2, `1000e72c…1000e794`, `100195ac`)]
 ⚑ conflict data-tags.md §5: `#Size_INT` is never read — the string "Size_INT" does not occur in
 the data image and `FUN_1000ef90` reads only the 16 keys above. Every format uses the one font
 `*(0x100e0120)` (Fonts[tesp] lists only `tesm`). [HIGH for the absence; MED for the font]
@@ -273,9 +273,12 @@ HUD formats (decoded files): | idx | tag | Loc | align | mono | spacing | colour
    digit is frame 58 ('7'), not 57 ('6'); outcome unchanged; text-metrics-lists.md §1.4) the widest-first is
    frame 54 ('3', 7 px) but `DAT_100e0124` = '2', whose glyph is 6 px. **Monospaced cells are 6 px,
    not 7** — an original quirk the replica must copy. [HIGH for the code; MED for the frame widths]
-2. If shadows: one pass with shadows (`FUN_1000e670`: offset F19/F20, blend max(F21, blend)). [MED]
+2. If shadows: one pass with shadows (`FUN_1000e670`: offset F19/F20, blend max(F21, blend)). [HIGH; was MED]
 3. If colour strip: measure, grow by H/V offsets, apply min width by alignment and min height,
-   draw a `COST` rect (strip blend/colour). [MED]
+   draw a `COST` rect (strip blend/colour). [HIGH; was MED] ⚑ corrected (review wave 3, 2026-10-06) #S: both steps are listing-read in
+   text-metrics-lists.md §2.2–§2.3 (`1000e6c4…1000e8ac` shadow variant; strip `1000d528…1000d55c`,
+   grow/min `1000d56c…1000d68c`; the strip is always queued, cmd+0x31 = 0); the shadow pass
+   is dead in 1.0.6 (no `tefo` sets `#DrawShadows_BOOL`).
 4. Draw the text (shadows off). [HIGH for the call order]
 
 `FUN_1000e270 @ 1000e270(font, fmt, rectOut, draw)` = layout (+ draw if `draw`); returns
@@ -289,7 +292,7 @@ frame centred at `(cell + w/2, y + h/2)`, so **Y = glyph top**; colourise → fl
 blend > 0 → flag 1. [HIGH for the alignment arithmetic (listing `1000e39c…1000e4fc`, `r30` →
 `0x100d63f0` floats {1.0, 0.0, 0.5}); MED for the per-glyph draw (decompile)]
 `FUN_1000d260 @ 1000d260(fmt, rectOut)` = the same digit-cache step, then `FUN_1000e270(…, 0)`:
-measure only. Not called by the HUD. [MED]
+measure only. Not called by the HUD. [HIGH — ⚑ corrected (review wave 3, 2026-10-06) #S: was MED; listing `1000d260…1000d368`, text-metrics-lists.md §4]
 Glyph order: the HUD prints only `0`–`9`; frames 52–61 (`1`…`9`,`0`) of `tesm` (data-tags.md §5).
 
 Side finding — INDEX #5 (`#Format_ID <3>`/`<4>`): `FUN_1002c630` returns the value via
@@ -373,7 +376,7 @@ for the slot-1/2 contents (cycle order)]
 | `FUN_10032df0` | G_EntityGroup.cc | "Entity Group" module teardown | MED | strings |
 | `FUN_1003bb40` | G_WeaponHandler.cc | score-bar icons: {face,frame} of cur(pending)/next/next-after air weapon; repeats (by face+frame) → none | HIGH | listing `1003bb70…1003bcb4` — ⚑ corrected: was MED |
 | `FUN_1000d130` | G_Text.cc | copy text format i (0x148 B) | MED | read — ⚑ label audit (review wave 2): was HIGH on read only |
-| `FUN_1000d260` | G_Text.cc | measure formatted text (digit cache, no draw) | MED | read |
+| `FUN_1000d260` | G_Text.cc | measure formatted text (digit cache, no draw) | HIGH | listing `1000d260…1000d368` (text-metrics-lists.md §4) — ⚑ corrected (review wave 3, 2026-10-06) #S: was MED on read |
 | `FUN_1000d380` | G_Text.cc | draw formatted text: digit cache (`DAT_100e0124` off-by-one), shadow pass, colour strip, text | HIGH | listing `1000d3e8…1000d474` + decompile |
 | `FUN_1000e270` | G_Text.cc | text layout/draw per alignment (CENT X−W/2, RIGH X−W, CEBU/CEGA centred in 640/416), returns bounds | HIGH | listing `1000e304…1000e4fc` |
 | ⚑ corrected `FUN_1000e670` | G_Text.cc | measure/draw one glyph (centre x+w/2, y+h/2; shadow offset F19/F20, blend F21; colourise flag 4) | MED | decompile — was "text shadow settings" MED |

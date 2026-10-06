@@ -440,16 +440,16 @@ faded in when `fadeIn`, else drawn; present. `FUN_100232d0` (boot end) fades the
 | `FUN_100258e0` | 14 | draw element list | HIGH |
 | `FUN_10025920` | 15 | volume keys 0x9D / 0x8A | HIGH (keys NR) |
 | `FUN_10025970` | 51 | advertisement | HIGH |
-| `FUN_10025b00` | 25 | static init (credits globals) | LOW |
+| `FUN_10025b00` | 25 | static init (credits globals) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; TU init D/T/S, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
 | `FUN_10025b90` | 185 | credits | HIGH |
 | `FUN_100260b0` | 16 | free list items | MED ⚑ label audit (review wave 2) |
 | `FUN_10006240` | 110 | video-grid overlay | HIGH |
-| `FUN_10030020`, `FUN_10030e70` | 36/43 | static inits (level-select / score-bar globals) | LOW (read) |
+| `FUN_10030020`, `FUN_10030e70` | 36/43 | static inits (level-select / score-bar globals) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; TU inits, static-init-audit.md §3 table A (listing + interpreter); function-roles.md rows) |
 | `FUN_100301d0`, `FUN_100302b0`, `FUN_10030350`, `FUN_10030900` | | controller destructor / end session (FlushEvents) / frame counter / paused byte | MED (read) |
 | `FUN_100302e0` | 15 | between-level reset (scoring-bonuses §10.4) | MED (read) |
 | `FUN_10030df0` | 25 | **frame-controller state reset** (see rows) | HIGH |
 | `FUN_10030f40` | 135 | score-bar init: resource group "Score Bar", 2×0x14c, reli 0–7/8–15 + screen-offset copies, faces `none` | MED (read) |
-| `FUN_100313b0` | 13 | release "Score Bar" group | LOW (read) |
+| `FUN_100313b0` | 13 | release "Score Bar" group | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; ScoreBar teardown, gameplay-leftovers.md §4.3) |
 | `FUN_10030190…FUN_10030bc0` (frame controller) | | engine-loop.md §4 | not re-read (only `FUN_10030870` read) |
 
 ## Worked example — cold start → main menu → 1-player game at sector 1
@@ -529,7 +529,7 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
 | `FUN_10025920` | G_Interface.cc | volume −10 / +10 on charCode 0x9D / 0x8A | HIGH | listing `1002592c` |
 | `FUN_10025970` | G_Interface.cc | advert `adve`; F67 minimum when after a cut-off game; click/key exit | HIGH | `10025a2c li r3,0x43` |
 | `FUN_10025b90` | G_Credits.cc | paged credits: `<page N>` ticks, `<title>`, F74/F75, 60-tick gap | HIGH | listing `10025d50 li r3,0x3c` |
-| `FUN_10025b00` / `FUN_100228d0` | | static initialisers | LOW | caller `FUN_10000000` |
+| `FUN_10025b00` / `FUN_100228d0` | | static initialisers | HIGH | caller `FUN_10000000` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; static-init-audit.md §3 table A (listing + interpreter); function-roles.md rows |
 | `FUN_10021950` | G_Scores.cc | scores screen: 600 ticks (F78), click/key exit, `N` → 1P game | HIGH | `10021ab4 li r3,0x4e` |
 | `FUN_10021bd0` | G_Scores.cc | name entry: 20 chars, ctype 0xdc, Return, BS, blink F82/F83, linger F79, easter eggs, save prefs | HIGH | listing `10021d90…100221f4` |
 | `FUN_100222f0` | G_Scores.cc | scores layout: headers FMT 10–12, 15 rows y F77+F76·r, ship symbol F80/F81, FMT 13–21 | HIGH | listing indices |

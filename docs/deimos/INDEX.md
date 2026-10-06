@@ -36,7 +36,9 @@ listings, 2 HIGH → MED; function-roles.md header).
 ⚑ wave 3+4 (2026-10-04): the hand table is now **938 rows = 698 HIGH / 240 MED / 0 LOW** (+259 rows,
 54 corrected, 1 proposed-HIGH row lowered to MED by the label rule; function-roles.md header) and
 covers every one of the 979 `FUN_` functions in `0x10000000–0x1004b400` with a HIGH or MED row;
-unions still not re-run.
+unions still not re-run. ⚑ corrected (review wave 3, 2026-10-06): after the review-wave-3 fix pass the hand table is still
+**938 rows = 698 HIGH / 240 MED / 0 LOW** (addresses added, no label changed; function-roles.md header), and no
+bank file keeps a LOW row for any game function (35 stale LOW rows re-labelled).
 
 ## Topical files
 | file | lines | sections | labels present (`grep -o '\[HIGH'` etc.: H/M/L) |
@@ -86,7 +88,10 @@ role rows (plus a few matching body-table rows) from HIGH to MED (`… | MED | �
 wave 2)`), raised four back to HIGH on quoted listings and added text to every wave-2 file, so the
 nine wave-2 per-file counts above are pre-fix-pass. The eight wave-3+4 rows (marked "(wave 3+4)") were
 counted on 2026-10-04 at commit 2ff0756 (same commands), before their Fable review; function-roles.md is
-now 1284 lines.
+now 1284 lines. The review-wave-3 fix pass (`FIXPASS-wave3-2026-10-06.md`) changed only a few labels in
+the wave-3+4 files (sprite-manager §1.1/§4.4 → HIGH, app-pak §3.2 step → MED, text §2.4 → HIGH) and re-labelled
+35 stale LOW role rows in nine older files; it added text and struck NRs in most files, so the per-file counts
+above are pre-fix-pass.
 
 Tools (`docs/deimos/tools/`, all run in this session):
 `list_paks.py` (pak census/listing/decode/audio/images), `StringXrefs.java` (Ghidra post-script:
@@ -304,7 +309,9 @@ Wave 2 additions (2026-10-03)
 43. ~~Whether `tefo` `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px
     border) — messages-notices-console.md NR 2.~~ → ⚑ closed (wave 3+4, 2026-10-04) → text-metrics-lists.md §2.4: Loc =
     buffer coordinates, no offset added — in game that is game-area-relative (screen = +32), overlays
-    clipped to the game area (MED residue: which buffer the flush targets, its NR 2).
+    clipped to the game area (MED residue: which buffer the flush targets, its NR 2). ⚑ corrected (review wave 3, 2026-10-06) #M3:
+    residue closed — normal draws use port index `0x100e0179` = 0 → `D+0x68` (`10019728 bl 0x1000ad90`),
+    text-metrics-lists.md NR 2 struck, §2.4 HIGH.
 44. Mac OS X volume path: the volume keys skip the hardware call and the message under OS X;
     whether the replica reproduces the OS 9 messages is a ruling for Ben —
     messages-notices-console.md NR 6, sound-music.md §4.
@@ -316,10 +323,15 @@ Wave 2 additions (2026-10-03)
     air/aux shots always have multiplier 1.0 (critic O4).
 47. Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
     and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.
-48. In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
+48. ~~In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
     unrecovered jump table at `0x10048fc8`) — loose-ends-session.md NR 1. ⚑ corrected (review wave 2, 2026-10-03) #C10
     narrowed: event code 8 = the Quit AppleEvent (high-level event 23 at `100490ec`, front-end.md
-    §2.5, HIGH); still open: whether that event is pumped during play.
+    §2.5, HIGH); still open: whether that event is pumped during play.~~ → ⚑ corrected (review wave 3, 2026-10-06) #48 closed →
+    loose-ends-session.md §2.3: none. `b8` has 11 accesses; its writers are `FUN_100229a0`,
+    `FUN_10022ed0`, `FUN_10023330`, `FUN_10023b00`; `FUN_10022ed0` is reached only from the menu loop
+    (`10022ce8`) and the Quit-AppleEvent handler `0x10049c50` (`10049c70`), dispatched only by the menu
+    pump `FUN_10048f30` (sole caller `10022cac`). Play and the pause loop poll keys only, so a Quit
+    AppleEvent waits for the menu and the pause loop's quit branch is dead (critic wave 3 §3) [HIGH].
 49. Pitch direction by ear: the code makes `pitch` a duration multiplier (speed 1/p) — Ben listens
     to `exsl` at 0.5 or `icbu` — sound-music.md NR 1.
 50. `ampCmd` full scale on a sampled-sound channel (255 or 256): decides whether music at pref 100
@@ -352,13 +364,24 @@ Review wave 2 fix pass (2026-10-03)
 Wave 3+4 additions (2026-10-04)
 57. RGB8 → RGB555 conversion of the GIF plates by QuickTime (the worked examples assume `c >> 3`);
     decides every source colour and alpha-map value — blit-pixel-rules.md NR 1.
-58. Whether any shipped scale walk ends at a value ≠ 1.0 and so takes the scaled path at w′ = w with a
+58. ~~Whether any shipped scale walk ends at a value ≠ 1.0 and so takes the scaled path at w′ = w with a
     1-px anchor shift (`stateRequiredScalePercent` / `stateScaleDeltaPercent` census) —
-    blit-pixel-rules.md NR 3.
+    blit-pixel-rules.md NR 3.~~ → ⚑ corrected (review wave 3, 2026-10-06) #58 closed: a walk cannot drift — `FUN_10012840` stores the
+    target exactly on overshoot in both directions (`10012870 fcmpo; bgelr; 10012878 stfs f1,0x84(r3)` /
+    `100128a4 fcmpo; blelr; 100128ac stfs`), and the target is percent / 100.0f (`FUN_1001a260`
+    `1001a288 fdivs`, 100.0 at `0x100d6d34`+4), so a walk to 100 % ends at exactly 1.0f and takes the
+    unscaled path (critic wave 3 §3). Residue (data, MED): a state whose own target is a percent near
+    100 (e.g. 101) is a genuine scale with w′ = w for small sprites — blit-pixel-rules.md NR 3 (narrowed).
 59. Clip source not traced in five draw builders (`FUN_1002f7a0`, `FUN_1000d7f0`, `FUN_1000db90`,
     `FUN_1000df00`, `FUN_1000e670`): only if one keeps the template clip does the static-init 480/416
     reach the screen — static-init-audit.md NR 2 (text-metrics-lists.md §2.2 shows `FUN_1000e670` keeps
-    it when +0x10d ≠ 0).
+    it when +0x10d ≠ 0). ⚑ corrected (review wave 3, 2026-10-06) #C2 narrowed → static-init-audit.md §4.3: all five traced. The
+    text builders `FUN_1000d380`, `FUN_1000e670`, `FUN_1000d7f0`, `FUN_1000db90`, `FUN_1000df00` keep the
+    template clip whenever format +0x10d ≠ 0 (`1000d538`, `1000e734`, `1000d9b8`, `1000de64`, `1000e1d4`
+    `bne` past `bl 0x1000a530`), so queued overlays (messages, notices, console, FPS, tallies) are clipped
+    to x < 416, y < 480 [HIGH — text half closed]. `FUN_1002f7a0`'s level-select `COST` strip always keeps
+    it (`1002fb94..1002fc10`, no store to cmd+0x20..+0x2c). Still open: whether that strip rect reaches
+    x ≥ 416 / y ≥ 480 on the 640-wide level-select screen, and whether the `COST` leaf honours the clip.
 60. Film object +0xc/+0x10 writers outside `0x10009390–0x10009980` not searched (`FUN_10009400` frees
     them) — gameplay-leftovers.md NR 1.
 61. Same-pass processing of entities flagged deleted earlier in the pass (no `+0xcb` test at the loop
@@ -506,4 +529,35 @@ sprite-manager-resource-image.md §3.2 put the stores in no-function handler cod
 (`FUN_1001aec0` = list drain, `FUN_1001eec0` = alpha-map builder) — likely nearest-function attribution
 in the w3s2 scan; both cite listings. Big results: static init changes only three value kinds; the game
 is always DrawSprocket 640×480×16 with no VBL; scaled sprites are nearest-neighbour; the zip reader never
-inflates; the alert routine never quits. Pending Fable review.
+inflates; the alert routine never quits. (Was "Pending Fable review"; reviewed below.)
+**Verdict: ACCEPT_WITH_FIXES** — Fable review of commit 2ff0756 (0 Critical, 1 Important, 7 Minor; 135 HIGH
+claims re-derived: 135 confirmed / 0 wrong; full text `REVIEW-wave3-2026-10-04.md`; critic
+`CRITIC-wave3-2026-10-04.md`; fix-pass summary `FIXPASS-wave3-2026-10-06.md`). Every fix is marked inline
+with `⚑ corrected (review wave 3, 2026-10-06) #id` (ids I1, M1–M7, C1–C9, S = stale-NR strike, L = label
+reconciliation, T = table repair; plus `#48`, `#58`). Wave 3+4 fix pass (2026-10-06): table unchanged at
+938 = 698/240/0.
+| # | sev | finding | landed in |
+|---|---|---|---|
+| I1 | Imp | merge rows missing for `FUN_1000d380`, `FUN_1000e270`, `FUN_1000e8d0`, `FUN_1000ef90`; `e8d0`/`ef90` HIGH on "read" only; jump table at `0x100e542c` (r2 − 0xf04), not `…30` | text-metrics-lists.md §1.1 + role rows (4 added); function-roles.md rows `FUN_1000e8d0`, `FUN_1000ef90` (listing cited), `FUN_1000d380`, `FUN_1000e270` |
+| M1 | Min | table B #3 named `FUN_1001aec0`/`FUN_1001eec0` as switch writers; the stores `1001afdc`/`1001f060` are in the no-function FX/ALPHA handlers | static-init-audit.md table B #3; function-roles.md `FUN_1001aec0` row + wave-3+4 note (conflict closed) |
+| M2 | Min | `FUN_10045f70` walks the low-memory PortList (`10045f80 lwz r28,0xd66(0)`), not the GDevice list | display-window-present.md §6.2 |
+| M3 | Min | text NR 1 / NR 5 closed by display (`D+0x68` = 640×480×16, `1000b320`; `FUN_1000c3b0` `1000c3b0..e4`; `FUN_1000bbd0` one CopyBits); §2.4 target buffer HIGH (normal draws → port 0 → `D+0x68`, `10019728 bl 0x1000ad90`) | text-metrics-lists.md §2.4, NR 1, 2, 5 struck; INDEX #43 residue closed |
+| M4 | Min | M_File modes are read in app-pak §1.2 (`0x11` rb, `0x0f` a+t, `0x17` a+b) | sprite-manager-resource-image.md §4.4 → HIGH, NR 2 struck |
+| M5 | Min | usage levels "HIGH" on the decompile | sprite-manager-resource-image.md §5 — kept HIGH with the 27 `li r5,N` call sites cited (fix-pass listing) |
+| M6 | Min | "2000 draw commands" MED vs blit HIGH | sprite-manager-resource-image.md §1.1 → HIGH (`100187f8`, `10018824`) |
+| M7 | Min | HFS catalog order is OS behaviour | app-pak-music-library.md §3.2 step 4 → MED |
+| C1 | LOW | = M1 | as M1 |
+| C2 | MED | static-init §4.3 "no builder keeps the template clip" wrong: the text builders keep it when +0x10d ≠ 0 (`1000d538`, `1000e734`, `1000d9b8`, `1000de64`, `1000e1d4`), the level-select `COST` strip of `FUN_1002f7a0` always (`1002fb94..1002fc10`) → overlays clipped to x < 416, y < 480 | static-init-audit.md bottom line, §4.3, conflict-list note, NR 2 struck; INDEX #59 narrowed |
+| C3 | MED | `DAT_100e01b8` = quit requested, not a film/demo gate | scoring-bonuses.md NR 2 struck |
+| C4 | LOW | text NR 1 / NR 3 closed (display §1; blit §1.2/§3: the tint leaf takes α) | text-metrics-lists.md NR 1, NR 3 struck |
+| C5 | LOW | static NR 3 / NR 4 closed (display §4/§7 `+0x4c` = cursor visible; app-pak §6 Registration object) | static-init-audit.md NR 3, NR 4 struck (MSL residue LOW) |
+| C6 | LOW | sprite-mgr NR 5 closed by blit `FUN_1001a450` | sprite-manager-resource-image.md NR 5 struck |
+| C7 | LOW | per-frame order: messages → console → layers 0–1 → background → 2–5 → particles → 6–15 → limiter only if pref 10 → present | display-window-present.md §5.6 |
+| C8 | LOW | no divider writer exists (timing §3) | units-movement.md NR 6 struck |
+| C9 | LOW | the pause loop's quit branch is dead (#48) | loose-ends-session.md §2.3, NR 1 struck; timing-frame.md §1 +0x02 row |
+| #48 | — | closed from the listing: `b8` writers only `FUN_100229a0/10022ed0/10023330/10023b00`; `FUN_10022ed0` only from the menu loop and the Quit-AE handler `0x10049c50`, pumped only by `FUN_10048f30` (menu) | INDEX #48 struck; loose-ends-session.md §2.3, NR 1 |
+| #58 | — | closed: `FUN_10012840` clamps exactly to the target, `FUN_1001a260` = percent/100.0f → a walk to 100 % ends at exactly 1.0f | INDEX #58 struck; blit-pixel-rules.md NR 3 narrowed |
+| #59 | — | text half closed (C2); residue = the level-select `COST` strip rect | INDEX #59 narrowed |
+| S | — | stale file-level NRs struck with pointers (critic §3): bosses 4–8; damage 2–4; level 2, 3, 5, 6 (residue), 7, 9; combat 5; spawn 1, 2, 4, 6, 7; player 1, 2, 6, 8; scoring 1, 2, 5, 7; unit-def 3–6; units 1, 4, 6; weapons 1, 2, 5–8; particles 6; sound 3; text 1, 2, 3, 5; static 2, 3, 4; sprite-mgr 2, 5, 6; blit 4; display 5; app-pak 4; file-pict 4; inline: data-tags §5/§6 (3), engine-loop §5/§8 (#14 narrowed), sprite-sound-containers §2 (`0x100df188` = 1.0), timing §5 (listing), hud §9 (format flags, steps 2–3, `FUN_1000d260` → HIGH) | the files named |
+| L | — | 35 stale LOW role rows in nine older files re-labelled to this table's label (32 HIGH, 3 MED; scoring combined row split); 40 "listing, no address" HIGH rows: 24 static-initialiser rows kept (backed by static-init §3 data bytes, as the critic ruled), 16 rows given listing addresses — **the three gameplay-leftovers §5.1/§5.2 rows kept HIGH with addresses instead of lowered to MED** (reversal of the handoff's instruction; FIXPASS record) | units-movement, messages, sprite-geometry, front-end, player-physics, particles, scoring, spawn, damage role rows; function-roles.md + owning-file rows |
+| T | — | `FUN_10000000` row moved below the §1 header; new_handler `0x10001000` is not a function | function-roles.md; display-window-present.md, loose-ends-session.md §8.2 |

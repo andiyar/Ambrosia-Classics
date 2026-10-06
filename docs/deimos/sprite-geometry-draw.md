@@ -537,9 +537,9 @@ sector 1 is the Ion Cannon (weapons-projectiles.md §2.4) → `pl1o`.
 | ⚑ corrected `FUN_10012840` | G_GameObject (span) | scale step +0x84 → +0x88 by +0x8c, clamp, dirty +0x34 | HIGH | listing `10012840–100128b0` (was MED dump) |
 | `FUN_1000a530` | M_Display.cc (span) | copy a port's bounds rect (+0x1c..+0x28) | MED | dump only |
 | `FUN_1000ad90` | M_Display.cc | display port by index 0/1/2 → +0x68/+0x6c/+0x70 | MED | dump |
-| `FUN_10019ee0` | U_Sprite.cc | frame count of a group (error message only) | LOW | caller context, not read — ⚑ corrected (wave 3+4, 2026-10-04): read — HIGH in sprite-manager-resource-image.md §2 / function-roles.md |
+| `FUN_10019ee0` | U_Sprite.cc | frame count of a group (error message only) | HIGH | caller context, not read — ⚑ corrected (wave 3+4, 2026-10-04): read — HIGH in sprite-manager-resource-image.md §2 / function-roles.md — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; listing `10019f54–10019f60` (sprite-manager-resource-image.md §2) |
 | `FUN_10043ba0` | G_Particle (span) | particle draw, between layer bands 1 and 2 | HIGH | particles-debris-blur.md §2.9 listing `10043ba0..10044500` — ⚑ corrected (review wave 2, 2026-10-03) #C5: was LOW "not read" |
-| `FUN_1001c270` `FUN_1001c480` `FUN_1001c6c0` `FUN_1001c8f0` `FUN_1001b7d0` `FUN_1001ba40` `FUN_1001bcf0` `FUN_1001bfd0` | U_SpriteBlit.cc | scaled blit modes 0–3 without / with alpha map | LOW | callers in `FUN_1001a6f0` only, not read — ⚑ corrected (wave 3+4, 2026-10-04): all eight read — HIGH rows in blit-pixel-rules.md / function-roles.md (§5 sampling rule) |
+| `FUN_1001c270` `FUN_1001c480` `FUN_1001c6c0` `FUN_1001c8f0` `FUN_1001b7d0` `FUN_1001ba40` `FUN_1001bcf0` `FUN_1001bfd0` | U_SpriteBlit.cc | scaled blit modes 0–3 without / with alpha map | HIGH | callers in `FUN_1001a6f0` only, not read — ⚑ corrected (wave 3+4, 2026-10-04): all eight read — HIGH rows in blit-pixel-rules.md / function-roles.md (§5 sampling rule) — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; each leaf HIGH on listing in blit-pixel-rules.md §5 and its own function-roles.md row |
 Also touched, not read (roles stand in the bank or are generic): `FUN_10014060` (4CC → text),
 `FUN_10049550` (log), `FUN_1001f950` (G_Res_Load), `FUN_1001fc30`, `FUN_10002420`,
 `FUN_10000ce0`/`FUN_10000e10` (list count / iterate), `FUN_10000ed0`/`FUN_10000f80`/`FUN_10000e70`

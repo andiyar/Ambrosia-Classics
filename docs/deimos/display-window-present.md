@@ -316,7 +316,7 @@ that path always picks `FUN_1000bc60`.
 | when | calls |
 |---|---|
 | boot, once (`FUN_100000e0`) | `FUN_1000ca90` (memory) → `FUN_1000ae20(D, 640, 480, 16, pref 4)` → `FUN_1000c470` (DSp) → `FUN_1000a640`/`FUN_1000ab50`/`FUN_1000aa30` → 3 × (`FUN_100099c0` + `FUN_10009f00` black) → `FUN_1000c2a0`; publisher logo via `FUN_1000a3b0` |
-| every game frame | background `FUN_10009fd0` (terrain `+0x6c` → `+0x68`; 2 CopyBits, or 1 interlaced) → sprites → `FUN_10030bc0` limiter → `FUN_1000beb0` |
+| every game frame | end frame `FUN_10030bc0`: messages/FPS text → console → render layers 0–1 (`FUN_10018b20(0)`) → background `FUN_10010120` → `FUN_10009fd0` (terrain `+0x6c` → `+0x68`; 2 CopyBits, or 1 interlaced) → layers 2–5 → particles `FUN_10043ba0` → layers 6–15 → limiter **only if byte pref 10** → `FUN_1000beb0` — ⚑ corrected (review wave 3, 2026-10-06) #C7: was "background → sprites → limiter → present"; order per timing-frame.md §2.3 (listing) |
 | every menu frame | `FUN_1000bc60` (via `FUN_10024810`, `FUN_10024e70`, …); score-bar and text partials via `FUN_1000bbd0` |
 | fades | `FUN_1000bc60` or `FUN_1000bd80` once per step |
 | suspend/resume, collapse, alerts | `FUN_1000b7d0` / `FUN_1000b8b0` |
@@ -371,7 +371,9 @@ The 5th argument (r7) is **never read**: it is not among the saved registers
 ### 6.2 `FUN_1000ae20` paths that feed it (rereading the hud-scorebar.md §1 function)
 - `FUN_10045f70()` false → alert "System Level Error" / "Sorry but this application cannot
   continue safely… (bad Graphics Port)…" with flag 1 (fatal), then return (`1000ae78`, `1000ae80`).
-  `FUN_10045f70` walks the GDevice list and validates the pixmaps; it is w4s4's to label.
+  `FUN_10045f70` walks the low-memory **PortList** (`10045f80 lwz r28,0xd66(0)`, loop
+  `10046188..10046194`) and validates every GrafPort (file-pict-alerts-manager.md §4) — ⚑ corrected (review wave 3, 2026-10-06) #M2: was
+  "walks the GDevice list and validates the pixmaps".
 - The main-device rect from `gdRect` (`1000aec0 lwz r0,0x26(r3); lwz r3,0x22(r3)`) is used only
   for: the r7 arg, forced to 0 unless the monitor is strictly larger than 640×480 (`1000af4c cmpw;
   1000af50 ble; 1000af78 li r28,0x0`), which is then dropped by `FUN_1000c470`; and the windowed
@@ -506,7 +508,7 @@ Pixel 100,50 of the game area (buffer x = 100, y = 50) lands at screen (132, 50)
 4. What DSp does when 640×480×16 is unavailable: `DSpFindBestContext` may return a larger mode.
    The code centres the display rect and paints only the top band (§5.5). Behaviour depends on
    the DSp version.
-5. `FUN_10045f70` and `FUN_10044b80` are labelled by w4s4. I used their decompile only.
+5. ~~`FUN_10045f70` and `FUN_10044b80` are labelled by w4s4. I used their decompile only.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: file-pict-alerts-manager.md §4 (`FUN_10045f70` = PortList validator, listing `10045f80..10046198`) (`FUN_10044b80` = active-screen GDevice finder, same §4 table) (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | `FUN_10009bd0` | M_PixelBuffer.cc | create pixel buffer: NewGWorld(depth, 0,0,w,h, no ctab/device, useTempMem if MaxBlock < est+256K), LockPixels, SetGWorld, EraseRect; fields +0..+0x2c (§1) | HIGH | listing `10009bf8…10009ce4`, `10045088…10045094` |
@@ -551,14 +553,14 @@ Pixel 100,50 of the game area (buffer x = 100, y = 50) lands at screen (132, 50)
 | `FUN_1000bbd0` | M_Display.cc | present a rect of a buffer to the window (one CopyBits, srcCopy, no offset) | HIGH | `1000bbfc…1000bc38` |
 | `FUN_1000bd80` | M_Display.cc | fade present (game layout): buffer (0,0,480,608) → screen (0,32,480,640), no borders | HIGH | `1000bd8c…1000be84` |
 | `FUN_1000c2a0` | M_Display.cc | make display window current | HIGH | `1000c2ac…1000c2d8` |
-| `FUN_1000c2f0` / `FUN_1000c320` / `FUN_1000c350` | M_Display.cc | display rect (+0xc) / buffer score-bar rect (+0x3c) / screen score-bar rect (+0x2c) getters | HIGH | listings |
+| `FUN_1000c2f0` / `FUN_1000c320` / `FUN_1000c350` | M_Display.cc | display rect (+0xc) / buffer score-bar rect (+0x3c) / screen score-bar rect (+0x2c) getters | HIGH | listings — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1000c2f0..1000c30c` (lwz/stw +0xc..+0x18), `1000c320..1000c33c` (+0x3c..+0x48), `1000c350..1000c36c` (+0x2c..+0x38) |
 | `FUN_1000c380` | M_Display.cc | window collapsed? (menu suspend/resume poll) | HIGH | `1000c390` |
-| `FUN_1000c3b0` | M_Display.cc | offset rect by display origin (+0x10, +0xc) | HIGH | decompile + listing |
+| `FUN_1000c3b0` | M_Display.cc | offset rect by display origin (+0x10, +0xc) | HIGH | decompile + listing — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1000c3b0..1000c3e4` (+0x10 added to left/right, +0xc to top/bottom) |
 | `FUN_1000c3f0` | M_Display.cc | game start: window refresh + in-game byte 1 | HIGH | `1000c408`, `1000c418` |
 | `FUN_1000c440` | M_Display.cc | game end: in-game byte 0 | HIGH | `1000c454` |
 | `FUN_1000c470` | M_Display.cc | DrawSprocket set-up: DSp ≥ 1.7.2 gate (fatal alerts), Startup, FindBestContext(640×480, colorNeeds Require, depth 16, 1 page, options 0), Reserve, black blanking, Active, front-buffer rect; 5th arg unused | HIGH | `1000c4a4…1000c8b0` |
 | `FUN_1000c8d0` | M_Display.cc | DrawSprocket teardown: Inactive, Release, DSpShutdown (all non-fatal) | HIGH | `1000c920…1000c9e8` |
-| `FUN_1000ca90` | M_Memory.cc | memory module init: register "Memory", zero the 4 counters, tracking on, `set_new_handler(FUN_10001000)` (TV `0x100e07c0`) | HIGH | `1000caa4…1000cacc` |
+| `FUN_1000ca90` | M_Memory.cc | memory module init: register "Memory", zero the 4 counters, tracking on, `set_new_handler(0x10001000)` (TV `0x100e07c0`; ⚑ corrected (review wave 3, 2026-10-06) (critic wave 3 §1): no `FUN_10001000` exists — the handler is no-function code at `0x10001000`, a fatal alert via `1000101c bl 0x1000ced0` with `r5 = 1`) | HIGH | `1000caa4…1000cacc` |
 | `FUN_1000caf0` | M_Memory.cc | memory module shutdown: leak report if allocs ≠ frees | HIGH | `1000cb14…1000cb48` |
 | `FUN_1000cc00` | M_Memory.cc | free pointer: GetPtrSize → freed bytes/count, DisposePtr | HIGH | `1000cc18…1000cc3c` |
 | `FUN_1000cc60` | M_Memory.cc | GetPtrSize (0 for NULL) | HIGH | `1000cc78` |

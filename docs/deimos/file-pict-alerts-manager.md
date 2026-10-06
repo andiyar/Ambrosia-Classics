@@ -291,9 +291,9 @@ Replica rule distilled: every data path is `<app folder>/ Data/...` (note the le
 3. `0xa80a` (kWindowCenterParentWindow), the ControlFontStyleRec / TERec / CInfoPBRec field
    names, and AlertType numbers are taken from Universal Interfaces layouts, not from this binary
    (the offsets and values themselves are listing-checked).
-4. `FUN_1000c2a0` / `FUN_1000b620` (display suspend/flag used around both alerts) — w4s1's scope;
+4. ~~`FUN_1000c2a0` / `FUN_1000b620` (display suspend/flag used around both alerts) — w4s1's scope;
    whether `FUN_10045ef0` leaving the display suspended matters is decided by its callers'
-   resume (`FUN_10023e10`, front-end.md).
+   resume (`FUN_10023e10`, front-end.md).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: display-window-present.md §4 table (`FUN_1000b620` = is-initialised `lbz r3,0x8(r3)`; `FUN_1000c2a0` = make the window current) and §7 (suspend/resume), HIGH (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | `FUN_10044930` | — (Mac utility span) | C string → Pascal in place (no 255 clamp) | HIGH | listing `10044938..10044a48`; callers `FUN_10048610`, `FUN_10048810` (file-pict-alerts-manager.md §2.2) |
@@ -306,13 +306,13 @@ Replica rule distilled: every data path is `<app folder>/ Data/...` (note the le
 | `FUN_10044f00` | — (Mac utility span) | file modification date (PBHGetFInfoSync ioFlMdDat) or 0 | HIGH | listing `10044f10..10044f4c`; callers `FUN_100420f0`, `FUN_1001b040`, `FUN_10048610` (§3) |
 | `FUN_10044f70` | — (Mac utility span) | folder modification date (PBGetCatInfoSync, dir bit 0x10 → ioDrMdDat) or 0 | HIGH | listing `10044f8c..10044fe8`; caller `FUN_10048610` (§3) |
 | `FUN_10045010` | — (Mac utility span) | NewGWorld(depth, rect, ctab, no device); useTempMem when MaxBlock < depth·(w+8)·h/8 + 256 KB | HIGH | listing `10045038..10045094`; caller `FUN_10009bd0` (§4) |
-| `FUN_10045610` / `FUN_10045640` | — (Mac utility span) | ShowWindow / SetGWorld(port, NULL) | HIGH | listing; caller `FUN_10010fc0` (§4–5) |
+| `FUN_10045610` / `FUN_10045640` | — (Mac utility span) | ShowWindow / SetGWorld(port, NULL) | HIGH | listing; caller `FUN_10010fc0` (§4–5) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1004561c bl 0x100d3dbc` (ShowWindow), `10045644 li r4,0x0; 10045650 bl 0x100d492c` (SetGWorld) |
 | `FUN_10045670` | — (Mac utility span) | dialog item font = Geneva 9 plain via SetControlFontStyle (bold arg is a dead store) | HIGH | listing `10045698..100456fc`; caller `FUN_10010fc0` (§5) |
-| `FUN_10045720` / `FUN_10045770` / `FUN_100457b0` | — (Mac utility span) | dialog item IsControlActive / ActivateControl / DeactivateControl | HIGH | listing; callers `FUN_10010fc0`, `FUN_10011590` (§5) |
-| `FUN_100457f0` / `FUN_10045820` / `FUN_10045870` | — (Mac utility span) | GetDialogItem handle / GetControlValue / SetControlValue | HIGH | listing; caller `FUN_10010fc0` (§5) |
+| `FUN_10045720` / `FUN_10045770` / `FUN_100457b0` | — (Mac utility span) | dialog item IsControlActive / ActivateControl / DeactivateControl | HIGH | listing; callers `FUN_10010fc0`, `FUN_10011590` (§5) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1004573c bl 0x100d5394`, `10045794 bl 0x100d537c`, `100457c0 bl 0x100d52d4; 100457d4 bl 0x100d52ec` |
+| `FUN_100457f0` / `FUN_10045820` / `FUN_10045870` | — (Mac utility span) | GetDialogItem handle / GetControlValue / SetControlValue | HIGH | listing; caller `FUN_10010fc0` (§5) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `10045808 bl 0x100d528c`, `1004584c bl 0x100d435c`, `100458a0 bl 0x100d3f54` |
 | `FUN_100458c0` | — (Mac utility span) | set dialog port font/size and poke its TEHandle (font 1, size 9, line height, ascent) | HIGH | listing `100458e8..10045960`; caller `FUN_10010fc0` (§5) |
 | `FUN_10045980` | — (Mac utility span) | set dialog item text (≤255) and redraw the control | HIGH | listing `100459a8..10045a20`; caller `FUN_10011590` (§5) |
-| `FUN_10045a50` / `FUN_10045a80` | — (Mac utility span) | DisableItem / EnableItem | HIGH | listing; callers `FUN_100491d0`, `FUN_10049320` (§5) |
+| `FUN_10045a50` / `FUN_10045a80` | — (Mac utility span) | DisableItem / EnableItem | HIGH | listing; callers `FUN_100491d0`, `FUN_10049320` (§5) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `10045a5c bl 0x100d3fcc` / `10045a8c bl 0x100d3fe4` |
 | `FUN_10045ab0` | — (Mac utility span) | one-button StandardAlert(title, msg): fatal → Stop "Quit", else Caution "OK"; centred on parent; **always returns** (never quits) | HIGH | listing `10045ab0..10045c54` (single exit); callers `FUN_1000ced0` `1000cfa4`, `FUN_10048330` `10048454` (§1.1) |
 | `FUN_10045c60` | — (Mac utility span) | two-button Note StandardAlert(title, msg, default, cancel) → itemHit | HIGH | listing `10045c60..10045ee8`; caller `FUN_10045ef0` (§1.2) |
 | `FUN_10045ef0` | — (Mac utility span) | suspend fullscreen display if active, ask `FUN_10045c60`, return itemHit == 1 | HIGH | listing `10045ef0..10045f68`; caller `FUN_100498e0` (§1.3) |
@@ -326,7 +326,7 @@ Replica rule distilled: every data path is `<app folder>/ Data/...` (note the le
 | `FUN_1003a810` | U_Manager.cc | registry teardown ("Manager God" unregister, free list) | HIGH | listing `1003a820..1003a854`; caller `FUN_10000630` (§6) |
 | `FUN_1003a870` / `FUN_1003a900` | U_Manager.cc | register / unregister a module name (log only; duplicate init = log, no guard) | HIGH | listing `1003a870..1003a984`; every module init/teardown (§6) |
 | `FUN_1003a990` | U_Manager.cc | free every record and the list | HIGH | listing `1003a9a8..1003aa44` (§6) |
-| `FUN_1003aa70` / `FUN_1003ab30` / `FUN_1003abe0` | U_Manager.cc | find by name / add 0x88-byte record {magic, name[128], log} / remove by name | HIGH | listing (§6) |
+| `FUN_1003aa70` / `FUN_1003ab30` / `FUN_1003abe0` | U_Manager.cc | find by name / add 0x88-byte record {magic, name[128], log} / remove by name | HIGH | listing (§6) — ⚑ corrected (review wave 3, 2026-10-06) #L: label audit, address cited — `1003aad8 … bl 0x10057820` (strcmp), `1003ab50 li r3,0x88; bl 0x1004d320`, `1003abac bl 0x100009e0`, `1003ac54 bl 0x10057820; 1003ac70 bl 0x10000c00` (file-pict-alerts-manager.md §6 table) |
 | `FUN_1003acc0` / `FUN_1003ad40` | G_WeaponHandler.cc (span) | weapon-handler ctor / dtor (embedded at player+0x240) | HIGH | listing `1003acc0..1003ad30`, `1003ad40..1003add0`; callers `FUN_10026260` `1002628c`, `FUN_100263a0` `100263c8` (§7) |
 | ⚑ corrected `FUN_10046b70` | G_MotionBlur.cpp | NUMBLURS readout: return live blur count (TV `0x100e0a18`, used only by the debug-only NUMBLURS handler at undefined `0x10047120`; unreachable in 1.0.6) | HIGH | listing `10046b7c..10046b94`; TOC `0x100dea70` loaded at `0x10047130` (§8); was LOW "blur count (NUMBLURS callback?)" |
 

@@ -169,7 +169,7 @@ Draw dispatcher `FUN_10019570 @ 10019570` (U_Sprite.cc, "Sprite Draw: encoded da
 picks the blitter from the draw command's flag word (`&1`, `&2`, `&4` → modes 1/2/3, each with a
 visibility/blend argument `param_1[7]`, 32 = invisible → nothing drawn), the clipped variant when
 the frame crosses the clip rect, the `FUN_1001a6f0/aa90` path when the command's float `+0x18` ≠
-`*_DAT_100df188` (presumably a scale ≠ 1.0 — constant not resolved); draw type `COST`
+`*_DAT_100df188` (presumably a scale ≠ 1.0 — ~~constant not resolved~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: the TOC slot `0x100df188` points to `0x100d6d34` = f32 1.0 (then 100.0, 0.5), so the test is scale ≠ 1.0 (`100195d0`; blit-pixel-rules.md §0, §1.1)); draw type `COST`
 (0x434f5354) is not a sprite but a translucent solid-colour rectangle (`FUN_1001ec80`, same
 `(dst·a + colour·(32−a))/32` blend). [HIGH for the dispatch; MED for the per-flag names]
 ~~Still open: who sets `DAT_100e0181` (alpha drawing on/off; no named write in the dump).~~ → ⚑ corrected (wave 3+4, 2026-10-04):

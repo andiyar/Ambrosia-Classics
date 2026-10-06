@@ -449,8 +449,8 @@ its own shields; only ramming reaches the owner (bosses.md §3.5). ⚑ corrected
 | `FUN_100380e0` | entry notice: if `entryNotice_STR ≠ none` and (not `displayNoticeOnceOnly` (0x120) or not yet shown) → queue with `entryNoticeDelay` (0x1b8) and `entryNoticeSound` block (0x424..) via `FUN_100181e0` | MED |
 | `FUN_10038230` / `FUN_100382f0` | notice-shown list lookup / add (63-char copy) | MED |
 | `FUN_10038390` / `FUN_10038450` / `FUN_10038540` / `FUN_100385d0` / `FUN_10038810` | entity pool: build / reset / dispose / allocate / free (§1.3) | MED |
-| `FUN_10039100` | static init of the level request template `0x100eb41c` (⚑ corrected #M3: was `0x100eb420`) and other templates (caller `FUN_10000000`) | LOW |
-| `FUN_100391f0` / `FUN_10039230` | load / unload "Player Definition" (`FUN_1003a870`/`FUN_1003a900`, `FUN_10039280`/`FUN_10039c00`) — start of the G_PlayerDefinitions span, not EntityGroup | LOW |
+| `FUN_10039100` | static init of the level request template `0x100eb41c` (⚑ corrected #M3: was `0x100eb420`) and other templates (caller `FUN_10000000`) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; TU init, R `0x100eb41c` +0x24 ← −1, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
+| `FUN_100391f0` / `FUN_10039230` | load / unload "Player Definition" (`FUN_1003a870`/`FUN_1003a900`, `FUN_10039280`/`FUN_10039c00`) — start of the G_PlayerDefinitions span, not EntityGroup | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; module init/teardown, callers `100005b8`/`100006dc` (gameplay-leftovers.md §4.3)) |
 | `FUN_10033090`, `FUN_10033850`, `FUN_100345f0` | excluded (other readers) | not read |
 | `FUN_100351f0`, `FUN_100352f0`, `FUN_100353e0`, `FUN_10035900`, `FUN_10037930` | as in the bank (glanced: 352f0 tests `includeInAirAccuracyCount` 0x133, 353e0 0x134) | unchanged |
 "Not read" in range: none beyond the three excluded functions.
@@ -518,26 +518,26 @@ state 0 "Move South, Wait Range, RULE" timer 50–60, frames 0–5, scale tol 0,
 of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 
 ## NOT RESOLVED (this file)
-1. Possible double bookkeeping: entities removed by a direct remover (`FUN_100363c0`,
+1. ~~Possible double bookkeeping: entities removed by a direct remover (`FUN_100363c0`,
    `FUN_100364f0`, `FUN_10034b90`, `FUN_10034de0`, `FUN_10036be0`) get `FUN_10036120` once
    immediately and — since it sets +0xcb — again in the reaper `FUN_10036610`, which would
    double the kill count, coin requests and the `+0xa8` decrement. Settle by checking whether
-   `FUN_10016880`/`FUN_10038810` or list removal guards it, or by a runtime trace.
-2. `FUN_10042ee0`/`FUN_10042f00`/`FUN_10042b30`/`FUN_10042b80` trig tables: which is cos/sin and
+   `FUN_10016880`/`FUN_10038810` or list removal guards it, or by a runtime trace.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §4.1: the double `FUN_10036120` is real code but inert in the census (INDEX #29 closed) (critic wave 3 §3).
+2. ~~`FUN_10042ee0`/`FUN_10042f00`/`FUN_10042b30`/`FUN_10042b80` trig tables: which is cos/sin and
    the heading axis convention (0° = north? 180° = south?). Settle by dumping the table the
-   helpers index (code image) and one call with a known heading.
+   helpers index (code image) and one call with a known heading.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §1.1–§1.3 (trig tables and heading convention, listing `10042cd0..10042e8c`) (critic wave 3 §3).
 3. Entity +0x10/+0x14 (velocity vs speed/heading pair) — needed for the orbit angular speed
    (§4). Owned by the movement reader (`FUN_10015930`/`FUN_10015280`).
-4. Same-tick processing of entities spawned during `FUN_10033850` (groups appended to the active
+4. ~~Same-tick processing of entities spawned during `FUN_10033850` (groups appended to the active
    list are reached in the same pass since the loop re-reads the count; PERM-group children are
-   appended behind the current index). Exact effect on the first update tick is unverified.
+   appended behind the current index). Exact effect on the first update tick is unverified.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §4.5 (same-tick processing, HIGH) and INDEX #38 (`FUN_100009e0` appends at the tail, listing) (critic wave 3 §3).
 5. ~~`FUN_100146f0` internal draw order (timer → frame → scale tol → flee → spawn sets) is from the
    decompile only~~ → listing-confirmed (§3.2 step 6) ⚑ corrected (review wave 1, 2026-10-03) #M10. Still open: the
    scale-tolerance draw's arguments are dropped by the decompiler (presumably `R(−tol/2, …)`).
    → ⚑ corrected (wave 3+4, 2026-10-04) (critic O5): `R(−(tol/2), tol/2)` (C division), scale% = max(0, initial + R), once at
    spawn; 17 shipped units have tol ≠ 0 (all even) — gameplay-leftovers.md §7.2.
-6. `FUN_10005ed0` (closest active player) and `FUN_10005d40` (nearest-player distance) bodies.
-7. Consumer of entity +0x13d (terrain-effects option) and `FUN_10016880` (deletion-spawn gate).
+6. ~~`FUN_10005ed0` (closest active player) and `FUN_10005d40` (nearest-player distance) bodies.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §7.2 (`FUN_10005ed0`, HIGH) and §7.3 (`FUN_10005d40`) (critic wave 3 §3).
+7. ~~Consumer of entity +0x13d (terrain-effects option) and `FUN_10016880` (deletion-spawn gate).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §4.2 (`+0x13d` every access, raw scan); `FUN_10016880` = media gate, HIGH in function-roles.md (critic wave 3 §3).
 8. ~~`req+0x28` speed multiplier: which callers pass a value ≠ 1.0 (weapon launcher `FUN_1003c4f0`?).~~ →
    ⚑ corrected (wave 3+4, 2026-10-04) (critic O4): only the ground launcher `FUN_1003c4f0` (`1003c6d0`, distance ratio); air/aux
    launchers copy the template 1.0 (gameplay-leftovers.md §7.1).
@@ -586,9 +586,9 @@ of each on the entry tick, each group 10–11 Shurikens staggered 9–16 ticks.
 | `FUN_10038540` | G_EntityGroup.cc | dispose entity pool | MED | read |
 | `FUN_100385d0` | G_EntityGroup.cc | allocate pooled entity | MED | read |
 | `FUN_10038810` | G_EntityGroup.cc (span) | free pooled entity | MED | read |
-| `FUN_10039100` | ~after G_EntityGroup | static init of request templates | LOW | read |
-| `FUN_100391f0` | ~after G_EntityGroup | load Player Definition | LOW | strings |
-| `FUN_10039230` | ~after G_EntityGroup | unload Player Definition | LOW | strings |
+| `FUN_10039100` | ~after G_EntityGroup | static init of request templates | HIGH | read — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on read; static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
+| `FUN_100391f0` | ~after G_EntityGroup | load Player Definition | HIGH | strings — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on strings; gameplay-leftovers.md §4.3 |
+| `FUN_10039230` | ~after G_EntityGroup | unload Player Definition | HIGH | strings — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on strings; gameplay-leftovers.md §4.3 |
 | `FUN_100369f0` | G_EntityGroup.cc | ⚑ corrected — size draw args confirmed `R(min',max)` (was "arguments dropped … MED" in waves §4) | HIGH | disasm §3.1 |
 
 ## INDEX updates (for merge)

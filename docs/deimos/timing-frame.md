@@ -42,7 +42,7 @@ zeroing constructor `FUN_10030df0` and every reader/writer in the range:
 |---|---|---|---|---|
 | +0x00 | u8 | paused (Caps Lock) | `FUN_10030360` set, `FUN_10030870` clear | dump |
 | +0x01 | u8 | film playback (no pause allowed) | `FUN_10030210` param_2 | game loop passes `bVar2` = film flag (`param_1+5`) |
-| +0x02 | u8 | quit chosen on pause screen | `FUN_10030870` | `FUN_10022ef0` return |
+| +0x02 | u8 | quit chosen on pause screen — ⚑ corrected (review wave 3, 2026-10-06) #C9: always 0 in 1.0.6, the pause loop's quit return needs `DAT_100e01b8`, which nothing sets during play (loose-ends-session.md §2.3, INDEX #48) | `FUN_10030870` | `FUN_10022ef0` return |
 | +0x03 | u8 | auto-interlace allowed | `FUN_10030210` param_4 (game 1, level select 0) | `FUN_10030640` gate |
 | +0x04 | u8 | **game-screen layout** (1 = game area + borders + score bar, 0 = full screen) | `FUN_10030210` param_3 (game 1, level select 0) | present choice §2.4; pause notice 4CC `CEGA`/`CEBU` |
 | +0x08 | i32 | frames presented | `FUN_10030bc0` `+1` | `10030d34..d3c`; returned by `FUN_10030360`/`FUN_10030350`; game stores it at game `+0x30` (`10005910 stw r3,0x30(r29)`) |
@@ -248,12 +248,15 @@ TickCount = the Mac 60.15 Hz tick (brief value). One logic tick per presented fr
   function reads it → **interlacing has no effect on the simulation.** [HIGH]
 - **Rendering effect:** `FUN_10010120` passes pref 5 as the last argument of `FUN_10009fd0`
   (terrain picture `+0x6c` → work buffer `+0x68`). Off: two identical `CopyBits` of the whole
-  visible terrain (dump; listing not checked). On: `FUN_100450e0` doubles both rowBytes, halves
+  visible terrain (~~dump; listing not checked~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: listing-confirmed, display-window-present.md §2.1, `10009fd0…1000a184`). On: `FUN_100450e0` doubles both rowBytes, halves
   the rectangles, offsets the start by one row when the parity word `*param_5` (picture `+0x2c`)
   is odd, does one `CopyBits`, then `*param_5 ^= 1` — i.e. **only every other terrain row is
   refreshed per frame, alternating fields**; the other half keeps the previous frame's composited
   pixels (moving sprites leave one-frame combing). Sprites, HUD and the present are unaffected.
-  [MED — decompile arithmetic read; the field semantics are the natural reading]
+  [MED — decompile arithmetic read; the field semantics are the natural reading] ⚑ corrected (review wave 3, 2026-10-06) #S: the call shape is
+  listing-confirmed (display-window-present.md §2.1 cross-check of `FUN_100450e0`: rowBytes doubled,
+  rects halved, odd parity starts one row lower, one CopyBits srcCopy, parity ^= 1; `10045588…10045590`,
+  `100455c8…100455f4`) [HIGH for the copy]; the visual combing stays MED.
 - Level start (`FUN_100064d0`): if pref 5 is on, save it in game `+0xf`, force pref 5 = 0, draw
   the full background once; the game loop restores pref 5 = 1 at the appear tick
   (`1000599c li r3,0x5 ; li r4,0x1 ; bl 0x10004ab0`, then `stb 0,0xf(r29)`). [HIGH]

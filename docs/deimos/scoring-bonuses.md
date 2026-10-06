@@ -399,10 +399,10 @@ score/money/lives are only initialised (§9.3) and every score add is one of the
 | `FUN_1002fcc0` | 59 | selection flash animation (accept flli 44/45, fail 46/47) | MED (existing; read) |
 | `FUN_1002fe40` | 47 | start flash: 0 reset, 1 accept (text style 0x1b), 2 fail (0x1c) | MED (read) |
 | `FUN_1002ff30` | 36 | mouse-in-rect test for a button + rollover sound gaso 11 | MED (read) |
-| `FUN_10030020` | 36 | static initialiser of level-select globals | LOW (read) |
+| `FUN_10030020` | 36 | static initialiser of level-select globals | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; listing `10030020..1003012c`, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
 | `FUN_10030190`, `FUN_10030210` | | frame controller construct / start | existing, not re-read |
-| `FUN_100301d0` | 12 | frame-controller destructor (free if flag > 0) | LOW (read) |
-| `FUN_100302b0` | 10 | frame-controller end session → `FUN_10048e30` | LOW (read) |
+| `FUN_100301d0` | 12 | frame-controller destructor (free if flag > 0) | MED (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; = timing-frame.md §1 / function-roles.md (MED)) |
+| `FUN_100302b0` | 10 | frame-controller end session → `FUN_10048e30` | MED (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; = timing-frame.md §1 / function-roles.md (MED)) |
 | `FUN_100302e0` | 15 | between-level reset: messages, console, FPS monitor init, speed divider | MED (read) |
 | `FUN_10030350` | 9 | frame counter getter (+8) | MED (read) |
 | `FUN_10030360`–`FUN_10030bc0` | | frame loop rows (engine-loop.md) | existing, not re-read |
@@ -414,11 +414,11 @@ score/money/lives are only initialised (§9.3) and every score add is one of the
 | `FUN_100307c0` | 31 | Esc quit (bank: HIGH, disasm; callers `FUN_10030360`, `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
 | `FUN_10030870` | 22 | pause handling (bank: MED; caller `FUN_10030570`) | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
 | `FUN_10030910` | 95 | −/= volume, F6 interlace keys (bank: HIGH; caller `FUN_10030360`) — the heaviest function in this range, owned by a future timing/frame reader | not re-read ⚑ corrected (review wave 1, 2026-10-03) #M7 |
-| `FUN_10030900` | 9 | frame-controller byte 0 getter (used as "redraw" gate in `FUN_1002e310`) | LOW (read) |
-| `FUN_10030df0` | 25 | zero-init of a 0x35-byte struct (score-bar state?) | LOW (read) |
-| `FUN_10030e70` | 43 | static initialiser of score-bar globals (writes `0x100eb03c`/`0x100eb184`/`0x100eb1d8`) — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: those templates' data-image bytes are pre-initialiser values (INDEX #56) | LOW (read) |
+| `FUN_10030900` | 9 | frame-controller byte 0 getter (used as "redraw" gate in `FUN_1002e310`) | MED (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; = paused-flag getter, timing-frame.md §1 / function-roles.md (MED)) |
+| `FUN_10030df0` | 25 | zero-init of a 0x35-byte struct (score-bar state?) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "zero-init of a 0x35-byte struct (score-bar state?)" LOW (read); = frame-controller state reset, zero +0…+0x34, listing stores `10030e0c…10030e54` (timing-frame.md §1, function-roles.md)) |
+| `FUN_10030e70` | 43 | static initialiser of score-bar globals (writes `0x100eb03c`/`0x100eb184`/`0x100eb1d8`) — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: those templates' data-image bytes are pre-initialiser values (INDEX #56) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; TU init, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
 | `FUN_10030f40` | 135 | score bar rects | existing, not re-read |
-| `FUN_100313b0` | 13 | release "Score Bar" resource group, clear `DAT_100e0200` | LOW (read) |
+| `FUN_100313b0` | 13 | release "Score Bar" resource group, clear `DAT_100e0200` | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; gameplay-leftovers.md §4.3) |
 
 ## 11. Console cheats that touch scoring (player-facing per the guide) [HIGH — listings]
 All refuse during a film ("Not During a Film, Buddy!"), need byte pref 11 (cheats enabled), and
@@ -454,11 +454,11 @@ Variants: unhit → score 7000 after step 2, 7300 after 3, life at coin tick k =
 accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520); final 44 600.
 
 ## NOT RESOLVED (this file)
-1. `FUN_100214c0` insertion details were read from the decompile only (two-player index
-   adjustment, name/sector string copies); a listing check of the adjust block would make it HIGH.
-2. `FUN_100234d0` pref-3 update and high-score gate: decompile only (the `best − 1` rule matches
+1. ~~`FUN_100214c0` insertion details were read from the decompile only (two-player index
+   adjustment, name/sector string copies); a listing check of the adjust block would make it HIGH.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §3.1 (`FUN_100214c0` listing `100214c0..10021940`, simulated) (critic wave 3 §3).
+2. ~~`FUN_100234d0` pref-3 update and high-score gate: decompile only (the `best − 1` rule matches
    the guide); listing of `0x100235xx..0x100236f0` would settle it at HIGH. `DAT_100e01b8`
-   (an extra gate, likely film/demo playback) not identified.
+   (an extra gate, likely film/demo playback) not identified.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §2.2 (gates after the game, listing `10023640..100238a8`) and §2.3: `DAT_100e01b8` = **quit requested**, not a film/demo gate (#C3; INDEX #48 closed: nothing sets it during play) (critic wave 3 §3, C3).
 3. ~~`FUN_10037580` 'shie'/'spec' cases~~ → closed: the switch is not mis-recovered; both are
    compared — `100375f4 lis r4,0x7368; addi r0,r4,0x6965` ('shie') `beq 0x100376ac` → shields +=
    `pickup_Value` (+0x4dc, int→float, `100376d0 bl 0x10027490`); `1003761c lis r3,0x7370; addi
@@ -466,15 +466,15 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
    §6 had it right. ⚑ corrected (review wave 1, 2026-10-03) #M9
 4. Text alpha/fade arithmetic of both tallies (`+0x50`, `+0xe0`) and the money-counter draw
    `FUN_100298c0` were not checked against listings (visual only).
-5. The `noal`/`12gc` finale unit chain is data-driven; its state order and the moment the game
+5. ~~The `noal`/`12gc` finale unit chain is data-driven; its state order and the moment the game
    actually ends relative to the 1200-frame wait are not traced (needs the entity state machine,
-   waves-and-enemies.md §3, applied to those unit files).
+   waves-and-enemies.md §3, applied to those unit files).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §5 (the `noal`/`12gc` finale timeline, §5.3) (critic wave 3 §3).
 6. ~~Which non-player destroy paths can hit counted units in shipped levels (accuracy can only rise
    from those) — needs a level/unit census of `Destroy` actions on counted units.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
    none — a counted unit is destroyed only by player damage in 1.0.6 (census of the 36 counted units,
    gameplay-leftovers.md §7.4e).
-7. Console handler at `0x1000827c` (`FUN_10029a10(p, 9000, 0)`) and the death call at
-   `0x10008380` belong to the `PLAYER` debug command family (strings at r31+0x33a…); not read.
+7. ~~Console handler at `0x1000827c` (`FUN_10029a10(p, 9000, 0)`) and the death call at
+   `0x10008380` belong to the `PLAYER` debug command family (strings at r31+0x33a…); not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: messages-notices-console.md §5.5 (the unregistered `PLAYER` debug family; unreachable in 1.0.6) (critic wave 3 §3).
 
 ## Role-table rows (for merge)
 | `FUN_10029a10` | G_Player.cc | add score: ×multiplier unless raw; strict `> threshold` → 1 life, threshold += AdditionalRequired + step, step += flli 182; raw (mission bonus only) sets step = score + flli 182; score stored + 0x05532A3E | HIGH | listing `10029a10..10029af8`; 7 call sites (raw bl-scan) |
@@ -505,7 +505,8 @@ accuracy pays 600 → 10 600; coin ticks of 680: second life at k = 44 (40 520);
 | `FUN_1002fe40` / `FUN_1002fc90` / `FUN_1002ff30` / `FUN_1002fc60` | G_LevelSelection.cc | flash start / reset / button hit-test + rollover sound / middle preview | MED | read |
 | `FUN_100302e0` | ~after G_LevelSelection | between-level frame-controller reset | MED | read |
 | `FUN_10030350` | ~after G_LevelSelection | frame counter getter | MED | read |
-| `FUN_10030020` / `FUN_10030e70` / `FUN_10030df0` / `FUN_100313b0` / `FUN_100301d0` / `FUN_100302b0` / `FUN_10030900` | ~after G_LevelSelection | static inits / struct zero / Score Bar release / destructor / end-session / byte getter | LOW | read |
+| `FUN_10030020` / `FUN_10030e70` / `FUN_10030df0` / `FUN_100313b0` | ~after G_LevelSelection | static inits (TU inits) / frame-controller state reset / Score Bar teardown | HIGH | static-init-audit.md §3 table A; listing stores `10030e0c…10030e54` (timing-frame.md §1); gameplay-leftovers.md §4.3 — ⚑ corrected (review wave 3, 2026-10-06) #L: row split; was one LOW row "static inits / struct zero / Score Bar release / destructor / end-session / byte getter" on read |
+| `FUN_100301d0` / `FUN_100302b0` / `FUN_10030900` | frame controller | destructor / end session (FlushEvents) / paused-flag getter | MED | dump (timing-frame.md §1; function-roles.md, MED) — ⚑ corrected (review wave 3, 2026-10-06) #L: split from the LOW row above |
 
 ## INDEX updates (for merge)
 - **#26 closed**: initial threshold = `life_InitialRequiredScore` 10 000, step 0, step += 10 000

@@ -58,13 +58,14 @@ This applies the C1 rule (runs before `main`). Single-word copies, no 8-byte loo
 ### 1.1 Character → frame `FUN_1000e8d0 @ 1000e8d0` [HIGH]
 ```
 1000e8d0 extsb r3,r3 ; 1000e8d4 subi r0,r3,0x21 ; 1000e8d8 cmplwi r0,0x5d ; 1000e8dc bgt 0x1000ebc4
-1000e8e0 subi r3,r2,0xf04    ; jump table 0x100e5430, 0x5e entries (chars 0x21..0x7e)
+1000e8e0 subi r3,r2,0xf04    ; jump table 0x100e542c (= 0x100e6330 − 0xf04), 0x5e entries (chars 0x21..0x7e)
 1000ebc4 li r3,0x5a ; blr    ; default frame 90
 ```
 I resolved the jump table from the image: every target is `li r3,N; blr`. The result equals the
 data-tags.md §5 table. Space (0x20), control bytes, DEL and **every byte ≥ 0x80** fall through to
 frame **90**. A byte ≥ 0x80 is sign-extended, so `c − 0x21` is negative and fails the unsigned
-compare.
+compare. ⚑ corrected (review wave 3, 2026-10-06) #I1: the table base is `0x100e542c` (r2 `0x100e6330` − `0xf04`), was
+`0x100e5430` (the frame values above were resolved from the right base; review wave 3 hazard).
 
 ### 1.2 The cache filler `FUN_1000ec70 @ 1000ec70` (caller: module init `FUN_1000d010`, once) [HIGH]
 ```
@@ -194,7 +195,7 @@ top + minH. Order in `FUN_1000d380`: shadow pass (if +0x10f) → strip → text 
 therefore lies under its text. Shipped strips that use immediate text: none found. `brpr` (index
 52) has a strip, but no caller passes index 50–52 as a literal (census) [LOW].
 
-### 2.4 Where `Loc_X/Y` land — messages NR 2 / INDEX #43 closed [HIGH for "no offset"; MED for the target buffer]
+### 2.4 Where `Loc_X/Y` land — messages NR 2 / INDEX #43 closed [HIGH] ⚑ corrected (review wave 3, 2026-10-06) #M3: was "[HIGH for \"no offset\"; MED for the target buffer]" — the target is settled: normal draws go to port index `0x100e0179` = 0 → `FUN_1000ad90` → `D+0x68` (`10019728 lbz r4,-0x61b7(r2); bl 0x1000ad90`, blit-pixel-rules.md §1), the 640×480×16 back buffer (`1000b320`, display-window-present.md §1, §8.2)
 No code between the format and the draw command adds an offset. Cell x = start x (`Loc_X` for
 LEFT, hud §9 for the others) + spacing. The command gets `cell + w/2`, `Loc_Y + h/2`
 (`1000e758…1000e770`). `FUN_10019570` then subtracts w/2, h/2 (sprite-geometry-draw.md §3.3). So
@@ -316,24 +317,36 @@ Passes 21–32 hold it at 12. For a plain alpha-blended pixel (sprite-sound-cont
 blit-pixel-rules.md's [MED].
 
 ## NOT RESOLVED (this file)
-1. Identity and size of the buffer `D+0x68` that the clip-select 0 path uses (`FUN_1000a530`
+1. ~~Identity and size of the buffer `D+0x68` that the clip-select 0 path uses (`FUN_1000a530`
    copies its port bounds). Its width (576 vs 640) decides where buffer-bounds-clipped HUD text
-   could be cut. Settle with `FUN_100099c0`/`FUN_1000ae20` (+0x68 creation).
-2. Which buffer the end-frame layer flush draws queued overlays into (assumed `D+0x68`, so the
+   could be cut. Settle with `FUN_100099c0`/`FUN_1000ae20` (+0x68 creation).~~ → ⚑ corrected (review wave 3, 2026-10-06) #M3 / S:
+   display-window-present.md §1/§4: `D+0x68` is the 640×480×16 work/back buffer (F52×F53×F56,
+   `1000b320`), so the buffer-bounds clip is {0,0,480,640}.
+2. ~~Which buffer the end-frame layer flush draws queued overlays into (assumed `D+0x68`, so the
    game-area-relative reading of §2.4 holds). Settle with `FUN_1001a650` → `FUN_10019570`
-   immediate path (target port selection).
-3. Whether the tint blitter (flag 4, colourised text) applies cmd alpha +0x1c. If not, colourised
+   immediate path (target port selection).~~ → ⚑ corrected (review wave 3, 2026-10-06) #M3: every non-terrain draw resolves port
+   index `0x100e0179` = 0 → `FUN_1000ad90` → `D+0x68` (`10019728 lbz r4,-0x61b7(r2); bl
+   0x1000ad90`, blit-pixel-rules.md §1; the index is written only by `FUN_10019c00(0, 1)`,
+   sprite-manager-resource-image.md §0), so §2.4 holds [HIGH].
+3. ~~Whether the tint blitter (flag 4, colourised text) applies cmd alpha +0x1c. If not, colourised
    messages (`meer`, `mest`) and colourised fades would not fade. This is blit-pixel-rules.md's
-   question.
+   question.~~ → ⚑ corrected (review wave 3, 2026-10-06) #C4 / S: blit-pixel-rules.md §1.2, §3 (mode 3 row `1001df00`): the tint leaf
+   blends with α = a (cmd alpha) and skips at α ≥ 32, so colourised text does fade.
 4. Formats 50–52 (`brti`/`brno`/`brpr`): no literal `FUN_1000d130` index in the census. They may
    be unused, or reached by a computed index [LOW].
-5. `FUN_1000c3b0` offsets D+0x0c/D+0x10 = buffer → window origin (decompile only) and
-   `FUN_1000bbd0` (window copy, hud NR 4) [MED].
+5. ~~`FUN_1000c3b0` offsets D+0x0c/D+0x10 = buffer → window origin (decompile only) and
+   `FUN_1000bbd0` (window copy, hud NR 4) [MED].~~ → ⚑ corrected (review wave 3, 2026-10-06) #M3 / S:
+   display-window-present.md §5.2: `FUN_1000c3b0` adds `+0x10` to left/right and `+0xc` to
+   top/bottom (`1000c3b0..1000c3e4`); `FUN_1000bbd0` = one CopyBits srcCopy (`1000bbd0…1000bc5c`).
 6. The 8-bit-index frame scan (§1.4) is a re-implementation. A runtime dump of
    `FUN_10019ca0(tesm, 52..61/90)` would make the widths HIGH.
 
 ## Role-table rows (for merge)
 | `FUN_1000d010` | G_Text.cc | module init: register "Text", digit cache {0,0}, live = 1, mono char ' ', font = tesp[0] + load, formats, glyph cache | HIGH | listing `1000d010…1000d0e8` |
+| `FUN_1000d380` | G_Text.cc | draw formatted text: digit cache (labels `'0'+i` on strict increase), shadow pass if +0x10f, `COST` colour strip (always queued), text | HIGH | listing `1000d3c4..1000d474` (digit cache, `1000d3f4 li r4,0x31`, `1000d434 ble`), strip `1000d528..1000d55c` (§1.5, §2.3) — ⚑ corrected (review wave 3, 2026-10-06) #I1: merge row was missing |
+| `FUN_1000e270` | G_Text.cc | layout + per-glyph draw per alignment; glyph record `r1+0x48` carries +0x10c/+0x10d/+0x110 | HIGH | listing `1000e328..1000e398` (width pass), `1000e524…1000e574` (record), `1000e598…1000e650` (§2.2, §4) — ⚑ corrected (review wave 3, 2026-10-06) #I1: merge row was missing |
+| `FUN_1000e8d0` | G_Text.cc | character → font frame: 0x21..0x7e via jump table `0x100e542c`, all else (space, ≥ 0x80) → 90 | HIGH | listing `1000e8d4..1000e8e8` (`subi r0,r3,0x21; cmplwi 0x5d; bgt 0x1000ebc4; subi r3,r2,0xf04`) + table `0x100e542c` (§1.1) — ⚑ corrected (review wave 3, 2026-10-06) #I1: merge row was missing |
+| `FUN_1000ef90` | G_Text.cc | parse a `tefo` text format into a zeroed local (template copy), unknown alignment → log + LEFT | HIGH | listing `1000f01c subi r3,r2,0x104c` (template copy, `li r0,0x29` CTR) + store census (§4) — ⚑ corrected (review wave 3, 2026-10-06) #I1: merge row was missing |
 | `FUN_1000d0f0` | G_Text.cc | module shutdown: unregister, live = 0, formats-loaded = 0 | HIGH | listing `1000d0f0…1000d128` |
 | ⚑ corrected `FUN_1000d130` | G_Text.cc | copy text format i (0x148 B) | HIGH | listing `1000d130…1000d228` — was MED (no listing) |
 | `FUN_1000d230` | G_Text.cc | is the font sprite loaded | HIGH | listing `1000d23c` → `FUN_10019530` |
@@ -356,7 +369,7 @@ blit-pixel-rules.md's [MED].
   otherwise, never drawn. The cache filler is `FUN_1000ec70`.
 - **#43 closed** → §2.4. Loc = buffer coordinates, with no offset added. In game it is
   game-area-relative (screen = +32), and overlays are clipped to the game area.
-  (MED residue: §NR 2.)
+  (MED residue: §NR 2 — ⚑ corrected (review wave 3, 2026-10-06) #M3: closed, NR 2 struck.)
 - hud-scorebar.md NR 3 closed (§2.2), NR 5 confirmed 6 px (§1.4–§1.5, ⚑ widths list order), NR 6
   closed. messages-notices-console.md NR 1, NR 2 closed. front-end.md §5.2 → HIGH (§3.1).
 - New: `FUN_1000f720` writes the G_Text draw-template clip before main (for the INDEX #56 audit

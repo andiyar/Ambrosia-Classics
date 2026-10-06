@@ -24,6 +24,9 @@ each identically in every translation unit that includes the header defining it:
    +0x0c..+0x23 = `'none'`, 100, 100, 100, 1.0, 1.0 (image all zero).
 Every other word written before `main` already equals its image value (0). No post-`main` code
 stores into any of these templates (§4), so the runtime values hold for the whole session.
+⚑ corrected (review wave 3, 2026-10-06) #C2: the 480/416 clip **does** reach the screen — every text builder keeps it when format
++0x10d ≠ 0 (messages, notices, console, FPS counter, tallies), and the level-select `COST` strip
+always keeps it (§4.3).
 Of the 49 bank claims swept, **41 are right** (runtime = what the bank states) and **8 are wrong**
 (`## ⚑ conflicts`): six state request +0x24 = 0 (it is −1; behaviour-neutral, §5.2) and two
 misidentify what an initialiser fills.
@@ -221,7 +224,17 @@ the interpreter's store log).
   through a pointer derived some other way (e.g. `addis`) is not excluded — none was seen]
 
 ### 4.3 Where the D-template clip could survive into a draw [HIGH for the lines quoted]
-The template clip only matters if a builder keeps it. Every builder read keeps **no** template clip:
+The template clip only matters if a builder keeps it. ⚑ corrected (review wave 3, 2026-10-06) #C2: was "Every builder read keeps **no**
+template clip" — wrong for the text builders: `FUN_1000d380` (`1000d504 lbz r0,0x1a1(r1)` = format
++0x10d; `1000d538 bne 0x1000d550` skips `bl 0x1000a530`), `FUN_1000e670` (`1000e72c lbz r0,0x22(r26)`;
+`1000e734 bne 0x1000e74c`) and the list draws/fades `FUN_1000d7f0`/`1000db90`/`1000df00` (`1000d9b0
+lbz r0,0x10d(r26)`; `1000d9b8 bne 0x1000d9cc`; `1000de64`/`1000e1d4 bne` past `bl 0x1000a530`) keep the
+template clip {0,0,480,416} whenever format +0x10d ≠ 0. Messages, notices, the console, the FPS
+counter and the tallies set +0x10d = 1 (text-metrics-lists.md §2.2), so **the 480/416 clip reaches the
+screen: queued overlay glyphs and strips are clipped to buffer x < 416, y < 480**. The level-select
+`COST` strip of `FUN_1002f7a0` also keeps it (template `0x100eaddc` copied at `1002fb94..1002fbd8`, no
+store to cmd+0x20..+0x2c (r1+0x108..0x114) before `1002fc10 bl 0x10019570`). The rows below keep no
+template clip:
 | builder | template | clip source | evidence |
 |---|---|---|---|
 | `FUN_10012fa0` entity draw | `0x100e63e4` | entity +0x3c..+0x48 | `10013098 lwz r0,0x3c(r25); 1001309c stw r0,0x58(r1)` … `100130b4 stw r0,0x64(r1)` (cmd at r1+0x38) |
@@ -229,8 +242,9 @@ The template clip only matters if a builder keeps it. Every builder read keeps *
 | `FUN_10031ea0 10032050 10032250 10032500 100327b0` HUD | `0x100eb228` | `FUN_1000a530` (buffer bounds) | `10031f28 addi r4,r1,0x58; 10031f3c bl 0x1000a530` (cmd r1+0x38); `10032110`→`10032124`; `100322e0 addi r4,r1,0xa4`→`100322f4`, `10032590`→`100325a4` (cmd r1+0x84); `10032808`→`10032820` |
 | `FUN_1002f3c0` level-select previews (3 sites) | `0x100eaddc` | `FUN_1000a530` | cmd r1+0xd8/+0x8c/+0x40 (`1002f590`/`1002f644`/`1002f6ec addi r6,r1,…`); `1002f5b0 addi r4,r1,0xf8; 1002f5cc bl`, `1002f668 addi r4,r1,0xac; 1002f67c bl`, `1002f710 addi r4,r1,0x60; 1002f724 bl 0x1000a530` |
 | `FUN_10006240` video grid | `0x100e3ad0` | rect argument r29 | `100063bc stw r7,0x60(r1)` … `100063f8 stw r5,0x6c(r1)` (cmd r1+0x40) |
-| `FUN_1000d380` text | `0x100e5298` | `FUN_1000a530` | `1000d540 addi r4,r1,0x68; 1000d548 bl 0x1000a530` (cmd r1+0x48); whether this is conditional on format +0x10d is text-metrics-lists.md's scope |
-`FUN_1002f7a0`, `FUN_1000d7f0/db90/df00/e670` were not traced to their clip store (NR 2).
+| `FUN_1000d380` text | `0x100e5298` | `FUN_1000a530` **only when format +0x10d = 0** | `1000d540 addi r4,r1,0x68; 1000d548 bl 0x1000a530` (cmd r1+0x48), skipped by `1000d538 bne 0x1000d550` when +0x10d ≠ 0 — ⚑ corrected (review wave 3, 2026-10-06) #C2 |
+~~`FUN_1002f7a0`, `FUN_1000d7f0/db90/df00/e670` were not traced to their clip store (NR 2).~~ ⚑ corrected (review wave 3, 2026-10-06) #C2:
+traced above (fix-pass listing `$W/disasm-review3-all.txt`).
 
 ## 5. Table B — the sweep of bank claims that took a value from the data image
 
@@ -247,7 +261,7 @@ bounded to MSL objects, §1.4) and, for the named globals, the r2-based writer s
 |---|---|---|---|---|---|---|
 | 1 | sprite-geometry-draw.md §0 row r2+0xb4 (61) + §3.1 (171–199) | `0x100e63e4` draw template, clip | 0,0,0,0 | `FUN_10014120` | {0,0,480,416}; rest = image | right (already corrected #C1) |
 | 2 | sprite-geometry-draw.md §0 (60, 59) | `0x100d6788`, `0x100d6d0c` Rects | code image | none (code) | {0,0,480,416} | right |
-| 3 | sprite-geometry-draw.md §0 (66–67) | `0x100e0170/71/72/79/81` switches | 1,1,1,0,1 | no pre-main writer (writers `FUN_10019c00`, `FUN_1001a290`, `FUN_1001aec0`, `FUN_1001eec0` are post-main) | = image at `main` | right |
+| 3 | sprite-geometry-draw.md §0 (66–67) | `0x100e0170/71/72/79/81` switches | 1,1,1,0,1 | no pre-main writer (writers `FUN_10019c00`, `FUN_1001a290` and the no-function FX/ALPHA handlers at `0x1001afc0` (`1001afdc stb r0,-0x61bf(r2)`) / `0x1001f040` (`1001f060 stb r3,-0x61af(r2)`) are post-main) — ⚑ corrected (review wave 3, 2026-10-06) #M1: was "`FUN_1001aec0`, `FUN_1001eec0`" (nearest-function attribution; `FUN_1001aec0` ends at `1001af08 blr`, `FUN_1001eec0` = alpha-map builder) | = image at `main` | right |
 | 4 | hud-scorebar.md §4 (132–136) | `0x100eb228` template: scale +0x18 1.0, clip | 1.0; 0 | `FUN_10032b20` (clip only) | 1.0; clip then overwritten by `FUN_1000a530` | right |
 | 5 | hud-scorebar.md §4 (141–142) + function-roles.md `FUN_10032b20` (564) + hud role row (357) | "fill draw-command templates `0x100eb228`, `0x100eb374`, `0x100eb3c8`" | — | `FUN_10032b20` | `0x100eb374` = T `0x100eb274`+0x100 ← 0; `0x100eb3c8` = sound record of P `0x100eb3bc` | **wrong** (identification) |
 | 6 | hud-scorebar.md NR 7 (335–340) | `0x100eb228` x = y = 0, face `none`, scale 1.0 | 0,0,`none`,1.0 | `FUN_10032b20` writes x,y ← 0 | 0, 0, `none`, 1.0 | right — NR 7 closes |
@@ -350,8 +364,8 @@ Exact sentences for the fix pass (this file does not edit them):
    caution can be removed.
 Not conflicts but refinements: units-movement.md `FUN_100125b0` row (it writes +8/+0xc of the
 `"nonenone"` object `0x100e618c`); damage-health-death.md NR 2 addresses (`0x100e64b0`, `0x100eb41c`);
-sprite-geometry-draw.md §3.1 "any command builder that keeps the template clip" — no builder read
-keeps it (§4.3).
+sprite-geometry-draw.md §3.1 "any command builder that keeps the template clip" — ⚑ corrected (review wave 3, 2026-10-06) #C2: was "no
+builder read keeps it"; the text builders and the level-select strip keep it when +0x10d ≠ 0 (§4.3).
 
 ## Worked example — the sprite draw template, image → `FUN_10014120` → entity draw
 1. **Image** (`b(0x100e63e4,0x4c)` from `100de330.bin`):
@@ -405,14 +419,22 @@ keeps it (§4.3).
    r2-based writer scan (none touches a game global). Indirect (virtual) calls in them are not
    covered by callers.txt — the only residue on INDEX #39. Settle: read `FUN_1005cf20` and
    `FUN_1005e0d0` listings for `bctrl`.
-2. Clip source not traced in `FUN_1002f7a0` (template `0x100eaddc`) and in the text functions
+2. ~~Clip source not traced in `FUN_1002f7a0` (template `0x100eaddc`) and in the text functions
    `FUN_1000d7f0`, `FUN_1000db90`, `FUN_1000df00`, `FUN_1000e670` (template `0x100e5298`). Only if one
    of them keeps the template clip does the 480/416 change reach the screen. Settle: find the store to
-   cmd+0x20..+0x2c or the `addi rX,r1,cmd+0x20; bl 0x1000a530` in each (text: text-metrics-lists.md).
-3. Who reads display-object D+0x4c (set to 1 by `FUN_1000ad00`, image 0). Settle: r31-relative
-   `lbz …,0x4c(` scan in the display functions `FUN_1000ae20…FUN_1000b9a0`.
-4. The 0x1-byte object `0x100f7be8` (`FUN_10010ca0` ctor, dtor TVector `0x100e08e0` → `0x10010cb0`)
-   and the guarded MSL objects of `FUN_10061b30`/`FUN_100623e0` are not identified.
+   cmd+0x20..+0x2c or the `addi rX,r1,cmd+0x20; bl 0x1000a530` in each (text: text-metrics-lists.md).~~ →
+   ⚑ corrected (review wave 3, 2026-10-06) #C2 / INDEX #59: §4.3 — all five traced; the four text functions keep the clip iff +0x10d ≠ 0,
+   the `FUN_1002f7a0` `COST` strip always keeps it. Residue (INDEX #59): whether that level-select
+   strip rect reaches x ≥ 416 or y ≥ 480 (and whether the `COST` leaf honours the clip) [open].
+3. ~~Who reads display-object D+0x4c (set to 1 by `FUN_1000ad00`, image 0). Settle: r31-relative
+   `lbz …,0x4c(` scan in the display functions `FUN_1000ae20…FUN_1000b9a0`.~~ → ⚑ corrected (review wave 3, 2026-10-06) #C5 / S:
+   display-window-present.md §4 table and §7: D+0x4c = cursor visible, read/written by
+   `FUN_1000b6e0` (HideCursor if set), `FUN_1000b730` (ShowCursor if clear), `FUN_1000b780`.
+4. ~~The 0x1-byte object `0x100f7be8` (`FUN_10010ca0` ctor, dtor TVector `0x100e08e0` → `0x10010cb0`)
+   and the guarded MSL objects of `FUN_10061b30`/`FUN_100623e0` are not identified.~~ → ⚑ corrected (review wave 3, 2026-10-06) #C5 / S:
+   app-pak-music-library.md §6: `0x100f7be8` is the Registration object (`FUN_10010ca0` ctor,
+   `10010ca0 li r0,0; stb r0,0(r3)`: +0 initialised = 0). Residue: the two guarded MSL objects stay
+   unidentified (library, no game effect) [LOW].
 5. A store into a template through a pointer formed without `addi rX,r2,…` or a TOC slot (e.g.
    `addis`) is not excluded by §4.2's scan; none was seen in the 40 functions read.
 

@@ -520,7 +520,11 @@ columns of each row.
 3. Whether any shipped scale walk ends at a value ≠ 1.0 and so takes the scaled path at w' = w
    with a 1-px anchor shift (§5.5). Settles: enumerate `stateRequiredScalePercent` /
    `stateScaleDeltaPercent` pairs in `$W/data/Game/unde`.
-4. The player's `+0x1a` writer (`FUN_100146f0` / player constructors): not searched (§7.2).
+   ⚑ corrected (review wave 3, 2026-10-06) #58 narrowed: walks cannot drift — `FUN_10012840` clamps exactly to the target
+   (`10012878`/`100128ac stfs f1,0x84(r3)`) and the target is percent/100.0f (`FUN_1001a260`), so a walk to
+   100 % ends at exactly 1.0f (INDEX #58 closed). Left: the data census of states whose target percent is
+   itself near 100 (a genuine scale with w′ = w for small sprites) [MED].
+4. ~~The player's `+0x1a` writer (`FUN_100146f0` / player constructors): not searched (§7.2).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: the player's `+0x1a` = 0 from the GameObject reset `FUN_10012650` (`100126f0 stb r12,0x1a(r3)`, r12 = 0 at `10012668`), called by `FUN_100125d0` from the player ctor `FUN_10026260`; no other player store (only four `stb …,0x1a(` in the code range: `100126f0`, `10035fb0`, `1003dff4`, `1004688c`) (critic wave 3 §3).
 5. `FUN_1001d1b0`'s caller arguments in `FUN_1002f7a0` (preview scale and clip) — not read.
    Only the leaf body was read.
 

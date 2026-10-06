@@ -156,8 +156,8 @@ map to `LEFT CENT RIGH CEBU CEGA`; anything else not among those five logs "Unkn
 Flag" and becomes `LEFT`. Shipped values: LEFT ×28, CENT ×8, RIGHT ×4 (→`RIGH`), CEBU ×5,
 `3` ×7, `4` ×2 (`grep -h '#Format_ID'` census). Comments in the files: CEBU = "Centre in
 buffer", CEGA = "Centre in game area", CENT = "Centered around location". Whether "3"/"4" really
-match (the 4 copied bytes are `3>` + 2 more chars, compared to "3") is NOT RESOLVED
-(`FUN_10014060` 4CC→string not read). [MED]
+match (the 4 copied bytes are `3>` + 2 more chars, compared to "3") is ~~NOT RESOLVED
+(`FUN_10014060` 4CC→string not read)~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: INDEX #5 closed — `<3>` = CEBU, `<4>` = CEGA (strtok writes NUL over `>`; hud-scorebar.md §9). [MED]
 BlendAmount scale: 0 = opaque, 32 = invisible (`kU_Pixel16_Visible` … `kU_Pixel16_Invisible`,
 assert text) [MED — names only].
 
@@ -171,7 +171,7 @@ frame 0-25  A-Z      26-51 a-z      52-61 1 2 3 4 5 6 7 8 9 0
 default (any other byte) 90
 ```
 Space is handled outside this table (`FUN_1000ebd0` branches on a float compare before calling
-it; the space advance is NOT RESOLVED). [HIGH for the table]
+it; the space advance is ~~NOT RESOLVED~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: INDEX #6 closed — frame 90, invisible, 4 px at scale 1.0, never drawn (text-metrics-lists.md §1.3–§1.5)). [HIGH for the table]
 
 ## 6. Weapon / player definition key tables
 
@@ -192,5 +192,5 @@ chars by Ghidra's labels). `wede` parser `FUN_1002ba00` (G_WeaponDefinitions.cc)
 #spawn_SetHeading_BOOL +0x2c, #spawn_Angle_INT +0x30} · #powerup_Air_* +0x1c8..0x1e4 ·
 #powerup_Ground_* +0x1e8..0x204`. [HIGH — tool output from the reader calls]
 The `plde` parser is `FUN_10039e70` (G_PlayerDefinitions.cc); its reader calls use a form the
-tool regex does not match (0 rows) — its key→offset table is NOT RESOLVED (keys themselves:
+tool regex does not match (0 rows) — its key→offset table is ~~NOT RESOLVED~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: INDEX #7 closed — unit-def-struct.md §9 (0x108 bytes, 57 keys, HIGH) (keys themselves:
 see waves-and-enemies.md §5).

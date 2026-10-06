@@ -414,20 +414,20 @@ y−121, then enters "Dwindle & Delete". With adj = 40 the ratio is 81/121 = 0.6
 needs a press after t+8+4. Nothing in this weapon powers up (all `powerup_*` IDs none).
 
 ## NOT RESOLVED (this file)
-1. Game flag `+0x39` (`FUN_10005cf0`) that suppresses the overload warning (and gates
-   `canBeSpawnedOnlyWhenPlayersActive`): its writer was not found. A grep for stores at game `+0x39` would settle it.
-2. Player `+0xce/+0xcf` (`FUN_10027de0`), the flag that makes `air `/`grnd` pickups untakeable: read its callers.
+1. ~~Game flag `+0x39` (`FUN_10005cf0`) that suppresses the overload warning (and gates
+   `canBeSpawnedOnlyWhenPlayersActive`): its writer was not found. A grep for stores at game `+0x39` would settle it.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: INDEX #30: writers of game `+0x39` (loose-ends-combat.md §2.1, loose-ends-session.md §8.8) (critic wave 3 §3).
+2. ~~Player `+0xce/+0xcf` (`FUN_10027de0`), the flag that makes `air `/`grnd` pickups untakeable: read its callers.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §3.3 (player `+0xce/+0xcf`, `FUN_10027de0` callers) (critic wave 3 §3).
 3. Consumers of `numAmmoInPack`, `ammoWarnAtCount`, `ammoWarning_STR`, `shieldIncrease`, `livesIncrease`,
    `invulnerableForTime`, `maxAllowed`, `playerGlow_COLOR`, `name/description` (none found). A data
    xref of the definition pointer, or the editor code, would settle it.
 4. ~~`FUN_10047670(snd, 0x4b, 100, 1)` argument meaning for the select sound (INDEX #11).~~ → ⚑ corrected (review wave 2, 2026-10-03)
    #S: sound-music.md §2.3 (priority 0x4b = 75, volume 100, allowMultiple 1).
-5. Whether handler `+0x08` is ever cleared after a select (score-bar refresh flag). Only setup clears it.
-6. `bVar17` in the crosshair adjustment (which vertical limit pins the ship). Needs the listing of
-   `FUN_10028170` around `0x100293xx`.
-7. The movement that turns heading 0 + speed into motion (`FUN_10043040`/`FUN_10042b80`) and the
-   north = 0 convention (movement reader).
-8. Tag-index order vs pak order once `FUN_10004300` (override) runs. This affects the cycle order of §2.4.
+5. ~~Whether handler `+0x08` is ever cleared after a select (score-bar refresh flag). Only setup clears it.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: hud-scorebar.md §6.1 and loose-ends-combat.md §6.4 (handler `+0x08`) (critic wave 3 §3).
+6. ~~`bVar17` in the crosshair adjustment (which vertical limit pins the ship). Needs the listing of
+   `FUN_10028170` around `0x100293xx`.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §6.3 (the unresolved branch in the crosshair code) (critic wave 3 §3).
+7. ~~The movement that turns heading 0 + speed into motion (`FUN_10043040`/`FUN_10042b80`) and the
+   north = 0 convention (movement reader).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §1.3 (heading convention, north = 0) (critic wave 3 §3).
+8. ~~Tag-index order vs pak order once `FUN_10004300` (override) runs. This affects the cycle order of §2.4.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.7 (tag order after `Data:Local` overrides; INDEX #2) (critic wave 3 §3).
 9. Handler `+0x6c/+0x6d` and aux `+0x14/+0x15` meanings (ammo/infinite flags?): unused by shipped data.
 
 ## Role-table rows (for merge)

@@ -344,11 +344,11 @@ Map y grows downward (row 0 = top, the scroll window top decreases, engine-loop 
 [1]=right. With neither horizontal (resp. vertical) byte set, vx (resp. vy) decays toward 0 by
 one step per tick (same block, `pdVar4[2]` = 0.0). The playerDef offsets `+0xd8`/`+0xa4` are
 presumably `active_VelocityDelta` 1.6 / `active_DefaultMaxSpeed` 7.8 (the `plde` key→offset
-table is still NOT RESOLVED, INDEX #7) [MED for that naming only].
+table is ~~still NOT RESOLVED, INDEX #7~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: INDEX #7 closed, unit-def-struct.md §9 / player-physics.md `plde` table) [MED for that naming only].
 Defaults (guide, cite only): arrows move, Command fire air, Space select weapon, Option fire
 ground, Esc quit, Caps Lock pause, F6 interlace, ~ console. The resource fork `STR#` 130 is a
 key-name table indexed by virtual key code ("A","S","D","F","H","G","Z","X",…) used by a key
-configurator. The OS X key/HID mapping code and the default key table are NOT RESOLVED.
+configurator. The OS X key/HID mapping code and the default key table are NOT RESOLVED. ⚑ corrected (review wave 3, 2026-10-06) #S: narrowed — the default key codes (2 × 7) are listed in timing-frame.md §6, and a `0x14b8` D-form scan finds no consumer in the PEF beyond the defaults writer and the prefs copy routines `FUN_100047f0`/`FUN_10004c30` (critic wave 3 §3); what is left is a ruling for Ben (INDEX #14).
 
 ## 9. RNG
 `FUN_100553e0 @ 100553e0` (MSL `rand`):

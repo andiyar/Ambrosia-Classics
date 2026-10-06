@@ -27,7 +27,7 @@ In listings, r2 = `0x100e6330`, and `subi rX,r2,0x2634` = `0x100e3cfc`, the base
 | `FUN_1002e190` | free the message list | HIGH: listing |
 | `FUN_10018070` / `FUN_100180e0` | Notice module init ("Notice"; registers the debug-only NOTICE command, so it is not added) / teardown | HIGH: listing `10018070..` |
 | `FUN_10018130` | notice reset (§4.1). Callers: init, level start `FUN_100064d0` (`1000681c`), level select | HIGH |
-| `FUN_1002da40`, `FUN_1002e280`, `FUN_10018670` | static initialisers: copy constant records (`'none'` sound blocks etc.) into module statics | LOW: listing shape only |
+| `FUN_1002da40`, `FUN_1002e280`, `FUN_10018670` | static initialisers: copy constant records (`'none'` sound blocks etc.) into module statics | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW: listing shape only"; TU inits — D + T only for `FUN_1002da40`/`FUN_1002e280`, D/P/T/S for `FUN_10018670`; static-init-audit.md §3 table A (listing + interpreter); function-roles.md rows) |
 
 Timebases [HIGH]:
 - Messages and the console count **presented frames**. They use the frame-controller counter `fc+0x8`, which is
@@ -403,7 +403,7 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
 | `FUN_1002d5d0` | G_Console.cc | free command list | HIGH | listing |
 | `FUN_1002d6c0` | G_Console.cc | find command by name | HIGH | listing |
 | ⚑ corrected `FUN_1002d770` | G_Console.cc | execute console line: first token upper, lookup, "Unknown Command", call handler TV, save last line, gaso[4]/[5] by result if +0x128 | HIGH | listing `1002d770..1002d940`; was MED "console command result sound" |
-| `FUN_1002da40` / `FUN_1002e280` | G_Console.cc / G_Message.cc | static initialisers | LOW | listing shape |
+| `FUN_1002da40` / `FUN_1002e280` | G_Console.cc / G_Message.cc | static initialisers | HIGH | listing shape — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on listing shape; static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_1002dac0` / `FUN_1002db00` | G_Message.cc | message module init / teardown | HIGH | listing |
 | `FUN_1002db50` | G_Message.cc | message-queue reset (level start, frame-controller init/reset) | HIGH | listing + callers |
 | ⚑ corrected `FUN_1002dbd0` | G_Message.cc | post message (text, type 0/1/2, upper, sticky readout TV); max flli 24 = 20, dropped when full; re-post of a readout un-sticks it | HIGH | listing `1002dbd0..1002dd88`; was MED "show game message" |
@@ -418,7 +418,7 @@ solid + ~1.0 s fade. A second `life` this game → `Tut tut!  What a greedy pigg
 | `FUN_100181e0` | Notice | post / clear the single notice slot (hold, fade-in, delay, sound, alignment) | HIGH | listing |
 | `FUN_10018320` | Notice | notice tick per game tick: delay, sound, auto-clear after flli 71 = 60, fade-in −flli 72 = 2, fade-out +flli 73 = 4 | HIGH | listing `10018320..100184ac` |
 | `FUN_100184b0` | Notice | draw notice with format 49, alpha, alignment N+0x68 | HIGH | listing |
-| `0x10018580` (no function) / `FUN_10018670` | Notice | NOTICE debug handler (unreachable) / static init | HIGH / LOW | raw listing |
+| `0x10018580` (no function) / `FUN_10018670` | Notice | NOTICE debug handler (unreachable) / static init | HIGH / HIGH | raw listing — ⚑ corrected (review wave 3, 2026-10-06) #L: static-init half was LOW; static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_10007d60` | G_Game.cc (span) | draw accuracy-tally text (format 53, alpha G+0x50) | HIGH | listing `10007d60..10007df8` |
 | `0x10007e00`…`0x100090d0` (no functions; `FUN_10008820` is GAMETIME) | G_Game.cc (span) | 18 console handlers (§5.5): FPS, VERSION, supermunki, 6 cheats reachable; the rest debug-only | HIGH | raw listing + TVs `0x100defc8…0x100def84` |
 | ⚑ corrected `FUN_10009230` | G_Game.cc (span) | post "Please Register Deimos Rising!" (de-obfuscated `0x100e447c`), type 1 | HIGH | listing; was LOW "show decoded notice text" |
