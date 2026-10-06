@@ -138,6 +138,12 @@ final class TableRequestsTests: XCTestCase {
         // 0x8cff7300 wraps negative in `1002054c mullw`; the signed /0xffff (`10020558 mulhw 0x80008001`) gives
         // −29,441, t = −58,882 (no clamp fires); 0.15·0xffff + 0.85·t = −40,219.45 → `fctiwz` −40,219 → `sth` 0x62e5.
         XCTAssertEqual(TableRequests.water(1, clut: clut)[0x00], .request(RGB16(0xc7e6, 0x62e5, 0x7133)))
+        // The overflow boundary (grey L, so lum = L): L·0x8d00 = 2,147,459,328 < 2^31 at L = 59,493 — t = 2·32,768
+        // clamps to 0xffff, 0.15·L + 0.85·0xffff = 64,628.7 → 0xfc74; at L = 59,494 it is 2,147,495,424, wrapped
+        // −2,147,471,872 → −32,768, t = −65,536, 0.15·L − 55,705.6 = −46,781.5 → −46,781 → `sth` 0x4943. R (·0x5f00)
+        // and B (·0x2c00) never wrap.
+        XCTAssertEqual(TableRequests.waterRequest(1, RGB16(59_493, 59_493, 59_493)), RGB16(0xb576, 0xfc74, 0x66c2))
+        XCTAssertEqual(TableRequests.waterRequest(1, RGB16(59_494, 59_494, 59_494)), RGB16(0xb578, 0x4943, 0x66c2))
         // Table 4 is never written: zero-filled storage → index 0 everywhere.
         XCTAssertEqual(TableRequests.water(4, clut: clut), Array(repeating: .index(0), count: 256))
         // Entry 0xff (black) is written like the others.
@@ -228,12 +234,21 @@ final class TableRequestsTests: XCTestCase {
         // Glow, src white: L = w = 0xffff, (L>>1 + 0x7d00)·w = 0xfcff·0xffff = 0xfcfe0301 (`100210e0`) wraps to
         // −50,462,975 → −770; the dst term is ·0 → each channel −770, `sth` 0xfcfe (unwrapped: 0xfcff).
         XCTAssertEqual(TableRequests.pair(.glow, src: w, dst: z), grey(0xfcfe))
+        XCTAssertEqual(TableRequests.Pair.allCases, [.additive, .average, .threeQuarterSprite, .quarterSprite,
+                                                     .spriteGreyAverage, .glow])   // no member is refused
         XCTAssertEqual(TableRequests.pair(.glow, src: w, dst: w), grey(0xfcfe))
         // Glow, src black: L = 0 → w = 1, 0x7d00·1/0xffff = 0; dst 0xffff·0xfffe = 0xfffd0002 (`100210ec`) wraps to
         // −196,606 → −3 → 0xfffd (unwrapped: 0xfffe).
         XCTAssertEqual(TableRequests.pair(.glow, src: z, dst: w), grey(0xfffd))
         // No overflow: (0x4000 + 0x7d00)·0x8000 → 24,192; 0x8000·0x7fff → 16,383; sum 0x9e7f.
         XCTAssertEqual(TableRequests.pair(.glow, src: h, dst: h), grey(0x9e7f))
+        // The glow overflow boundary (grey src, so L = w = lum): (L>>1 + 0x7d00)·w = 52,465·40,931 = 2,147,444,915
+        // < 2^31 → 32,767 (0x7fff) at L = 40,931; 52,466·40,932 = 2,147,538,312 wraps to −2,147,428,984 → −32,767,
+        // `sth` 0x8001 at L = 40,932. Over white the dst term 0xffff·(0xffff − w)/0xffff (no wrap) adds 24,604 / 24,603.
+        XCTAssertEqual(TableRequests.pair(.glow, src: grey(40_931), dst: z), grey(0x7fff))
+        XCTAssertEqual(TableRequests.pair(.glow, src: grey(40_932), dst: z), grey(0x8001))
+        XCTAssertEqual(TableRequests.pair(.glow, src: grey(40_931), dst: w), grey(0xe01b))
+        XCTAssertEqual(TableRequests.pair(.glow, src: grey(40_932), dst: w), grey(0xe01c))
         // Grey-pull [a·0x1000 + b·0x100 + i]: w = max(a·0x1000, 1); clamp(b·0x1000·w/0xffff + c·(0xffff−w)/0xffff).
         // a = 15, b = 15: 0xf000·0xf000 = 0xe1000000 (`100212bc`) wraps to −520,093,696 → −7,936; white's
         // 0xffff·0x0fff → 4,095; −3,841 clamps to 0 (unwrapped: 0xf0ff).
@@ -244,12 +259,12 @@ final class TableRequestsTests: XCTestCase {
         XCTAssertEqual(TableRequests.greyPull(weight: 8, level: 15, color: z), grey(0x7800))
         XCTAssertEqual(TableRequests.greyPull(weight: 8, level: 15, color: w), grey(0xf7ff))
         XCTAssertEqual(TableRequests.greyPull(weight: 8, level: 8, color: h), grey(0x7fff))
-        // Table layout: glow is row = sprite pixel like the others; grey-pull's row byte is a·16 + b.
+        // Table layout: glow is row = sprite pixel like the others; grey-pull (not a `Pair`) has row byte a·16 + b.
         let glow = TableRequests.pair(.glow, clut: clut)
         XCTAssertEqual(glow.count, 0x10000)
         XCTAssertEqual(glow[0x00 * 0x100 + 0x60], grey(0xfcfe))
         XCTAssertEqual(glow[0x60 * 0x100 + 0x00], grey(0xfffd))
-        let pull = TableRequests.pair(.greyPull, clut: clut)
+        let pull = TableRequests.greyPullTable(clut: clut)
         XCTAssertEqual(pull.count, 0x10000)
         XCTAssertEqual(pull[0xff * 0x100 + 0x00], grey(0))
         XCTAssertEqual(pull[0x8f * 0x100 + 0x60], grey(0x7800))

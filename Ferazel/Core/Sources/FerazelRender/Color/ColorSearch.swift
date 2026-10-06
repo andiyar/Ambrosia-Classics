@@ -7,9 +7,10 @@ import FerazelCore
 /// request → the lowest such index, else the 4-bit inverse table. `.exactNearest` and `.inverseTable(bits:)` stay
 /// selectable; every caller takes the model as a parameter (plan invariant 7). Every chosen index is [LOW].
 ///
-/// Caches (per CLUT, built on first use): the exact-nearest result per distinct request, the exact-match map,
-/// and the inverse tables per bit count. A CLUT is keyed by (id, seed) and confirmed by its entries — every
-/// shipped `clut` stores seed 0, so the seed alone would not tell them apart.
+/// Per-pixel callers (the face conversion) take a `Prepared` searcher once per CLUT and call it without a lock;
+/// `index(of:in:)` answers through the same `Prepared` (cached per CLUT, keyed by (id, seed) and confirmed by its
+/// entries — every shipped `clut` stores seed 0, so the seed alone would not tell them apart). No per-request memo
+/// outlives a call: exact-nearest is computed directly over flat channel arrays.
 public final class ColorSearch: @unchecked Sendable {
 
     public enum Model: Hashable, Sendable {
@@ -30,61 +31,124 @@ public final class ColorSearch: @unchecked Sendable {
 
     /// The index `Color2Index` is modelled to return for `rgb` with `clut` as the device's colour table.
     public func index(of rgb: RGB16, in clut: ColorLUT) -> UInt8 {
-        lock.lock()
-        defer { lock.unlock() }
-        return palette(for: clut).index(of: rgb, model: model)
+        prepared(for: clut).index(of: rgb)
     }
 
-    /// `index(of:in:)` for many requests against one CLUT (one cache lookup).
+    /// `index(of:in:)` for many requests against one CLUT (one cache lookup). `.exactNearest` answers each distinct
+    /// request once per call (a memo that lives only for the call).
     public func indices(of requests: [RGB16], in clut: ColorLUT) -> [UInt8] {
-        lock.lock()
-        defer { lock.unlock() }
-        let p = palette(for: clut)
-        return requests.map { p.index(of: $0, model: model) }
+        let p = prepared(for: clut)
+        guard case .exactNearest = model else { return requests.map(p.index(of:)) }
+        var memo: [RGB16: UInt8] = [:]
+        return requests.map { rq in
+            if let hit = memo[rq] { return hit }
+            let v = p.index(of: rq)
+            memo[rq] = v
+            return v
+        }
     }
 
-    // MARK: - caches
+    /// This search's model prepared on `clut` (cached): the lock-free per-pixel fast path.
+    public func prepared(for clut: ColorLUT) -> Prepared {
+        lock.lock()
+        defer { lock.unlock() }
+        let key = Key(id: clut.id, seed: clut.seed)
+        if let found = cache[key]?.first(where: { $0.entries == clut.entries }) { return found.prepared }
+        let p = Prepared(clut: clut, model: model)
+        cache[key, default: []].append((clut.entries, p))
+        return p
+    }
+
+    // MARK: - cache
 
     private let lock = NSLock()
-    private var palettes: [Key: [Palette]] = [:]
+    private var cache: [Key: [(entries: [ColorLUT.Entry], prepared: Prepared)]] = [:]
 
     private struct Key: Hashable {
         let id: Int16
         let seed: UInt32
     }
 
-    private func palette(for clut: ColorLUT) -> Palette {
-        let key = Key(id: clut.id, seed: clut.seed)
-        if let found = palettes[key]?.first(where: { $0.entries == clut.entries }) { return found }
-        let p = Palette(clut)
-        palettes[key, default: []].append(p)
-        return p
-    }
+    /// One model on one CLUT, everything precomputed: the flat channels (exact-nearest), the inverse table
+    /// (`.inverseTable`, and 4 bits for `.ruled`), and for `.ruled` the palette entries bucketed by their own
+    /// 4-bit cell in ascending index order, so an exact match is a scan of the request's cell (lowest index first).
+    public struct Prepared: Sendable {
+        public let model: Model
+        let channels: Channels
+        let table: InverseTable?
+        /// `.ruled`: bucket `cell` is `bucketEntries[bucketStart[cell] ..< bucketStart[cell + 1]]`.
+        private let bucketStart: [Int32]
+        private let bucketEntries: [UInt8]
+        private let packed: [UInt64]
 
-    /// One CLUT's flattened channels and its search caches.
-    final class Palette {
-        let entries: [ColorLUT.Entry]
-        private let red: [Int]
-        private let green: [Int]
-        private let blue: [Int]
-        private var exact: [UInt64: UInt8] = [:]
-        private let exactMatch: [UInt64: UInt8]
-        private var inverse: [Int: InverseTable] = [:]
-
-        init(_ clut: ColorLUT) {
-            entries = clut.entries
-            red = clut.entries.map { Int($0.red) }
-            green = clut.entries.map { Int($0.green) }
-            blue = clut.entries.map { Int($0.blue) }
-            var match: [UInt64: UInt8] = [:]
-            for (i, e) in clut.entries.enumerated() where match[Self.key(RGB16(e))] == nil {
-                match[Self.key(RGB16(e))] = UInt8(i)   // first = lowest index
+        public init(clut: ColorLUT, model: Model) {
+            self.model = model
+            channels = Channels(clut)
+            switch model {
+            case .exactNearest:
+                table = nil
+            case .inverseTable(let bits):
+                table = InverseTable(channels: channels, bits: bits)
+            case .ruled:
+                table = InverseTable(channels: channels, bits: 4)
             }
-            exactMatch = match
+            guard case .ruled = model, let t = table else {
+                bucketStart = []; bucketEntries = []; packed = []
+                return
+            }
+            let colors = clut.entries.map(RGB16.init)
+            packed = colors.map(Self.key)
+            var counts = [Int32](repeating: 0, count: t.cells.count + 1)
+            for c in colors { counts[t.cell(of: c) + 1] += 1 }
+            for i in 1..<counts.count { counts[i] += counts[i - 1] }
+            var fill = counts
+            var entries = [UInt8](repeating: 0, count: colors.count)
+            for (i, c) in colors.enumerated() {   // ascending i: each bucket lists its lowest index first
+                let cell = t.cell(of: c)
+                entries[Int(fill[cell])] = UInt8(i)
+                fill[cell] += 1
+            }
+            bucketStart = counts
+            bucketEntries = entries
         }
 
         @inline(__always) static func key(_ c: RGB16) -> UInt64 {
             UInt64(c.red) << 32 | UInt64(c.green) << 16 | UInt64(c.blue)
+        }
+
+        /// The index `Color2Index` is modelled to return for `rgb` on this CLUT.
+        @inline(__always) public func index(of rgb: RGB16) -> UInt8 {
+            switch model {
+            case .exactNearest:
+                return channels.nearest(Int(rgb.red), Int(rgb.green), Int(rgb.blue))
+            case .inverseTable:
+                return table.unsafelyUnwrapped.index(of: rgb)
+            case .ruled:
+                let t = table.unsafelyUnwrapped
+                let cell = t.cell(of: rgb)
+                let k = Self.key(rgb)
+                var j = Int(bucketStart[cell])
+                let end = Int(bucketStart[cell + 1])
+                while j < end {
+                    let i = bucketEntries[j]
+                    if packed[Int(i)] == k { return i }
+                    j += 1
+                }
+                return t.cells[cell]
+            }
+        }
+    }
+
+    /// A CLUT's channels as flat arrays.
+    struct Channels: Sendable {
+        let red: [Int]
+        let green: [Int]
+        let blue: [Int]
+
+        init(_ clut: ColorLUT) {
+            red = clut.entries.map { Int($0.red) }
+            green = clut.entries.map { Int($0.green) }
+            blue = clut.entries.map { Int($0.blue) }
         }
 
         /// Exact nearest by least squared distance, ties → lowest index (strict `<`).
@@ -102,33 +166,6 @@ public final class ColorSearch: @unchecked Sendable {
                         return UInt8(bi)
                     }
                 }
-            }
-        }
-
-        func exactNearest(_ c: RGB16) -> UInt8 {
-            let k = Self.key(c)
-            if let hit = exact[k] { return hit }
-            let v = nearest(Int(c.red), Int(c.green), Int(c.blue))
-            exact[k] = v
-            return v
-        }
-
-        func inverseTable(bits: Int) -> InverseTable {
-            if let t = inverse[bits] { return t }
-            let t = InverseTable(palette: self, bits: bits)
-            inverse[bits] = t
-            return t
-        }
-
-        func index(of c: RGB16, model: Model) -> UInt8 {
-            switch model {
-            case .exactNearest:
-                return exactNearest(c)
-            case .inverseTable(let bits):
-                return inverseTable(bits: bits).index(of: c)
-            case .ruled:
-                if let i = exactMatch[Self.key(c)] { return i }
-                return inverseTable(bits: 4).index(of: c)
             }
         }
     }

@@ -294,11 +294,11 @@ public enum TableRequests {
         /// `_DAT_100a0150`: (dst + lum(src)) >> 1 [MED].
         case spriteGreyAverage
         /// `_DAT_100a014c` "glow" (`1002103c..1002119c`): L = lum(src), w = max(L, 1),
-        /// ⌊(L>>1 + 0x7d00)·w/0xffff⌋ + ⌊dst·(0xffff−w)/0xffff⌋ in 32-bit wrapping arithmetic, stored mod 0x10000.
+        /// trunc((L>>1 + 0x7d00)·w/0xffff) + trunc(dst·(0xffff−w)/0xffff), each product a wrapped 32-bit `mullw` and
+        /// each quotient truncated toward zero (signed), the sum stored mod 0x10000.
         case glow
-        /// `_DAT_100a0144` grey-pull (`10021250..100213d8`), 16×16×256 `[a·0x1000 + b·0x100 + i]`: the row byte is
-        /// a·16 + b, not a colour (see `greyPull(weight:level:color:)`).
-        case greyPull
+        // `_DAT_100a0144` grey-pull (`10021250..100213d8`) is not a `Pair`: its row byte is a·16 + b, not a colour —
+        // see `greyPull(weight:level:color:)` and `greyPullTable(clut:)`.
     }
 
     /// `mullw`: the low 32 bits of a product, signed.
@@ -312,9 +312,8 @@ public enum TableRequests {
         return q &+ Int32(bitPattern: UInt32(bitPattern: q) >> 31)
     }
 
-    /// One pair-table request (every case but `.greyPull`, whose row is not a colour).
+    /// One pair-table request.
     public static func pair(_ p: Pair, src: RGB16, dst: RGB16) -> RGB16 {
-        precondition(p != .greyPull, "grey-pull rows are a·16 + b: use greyPull(weight:level:color:)")
         let ls = lum(src)
         if p == .glow {
             // 100210c8 `or.; bgt` w = max(L, 1); 100210d8 `addi 0x7d00` on L>>1 (L, not w); 100210e0/ec/f0/1148
@@ -332,7 +331,7 @@ public enum TableRequests {
             case .threeQuarterSprite: return UInt16((s >> 1) + (s >> 2) + (d >> 2))
             case .quarterSprite: return UInt16((s >> 2) + (d >> 1) + (d >> 2))
             case .spriteGreyAverage: return UInt16((d + ls) >> 1)
-            case .glow, .greyPull: preconditionFailure("handled above")
+            case .glow: preconditionFailure("handled above")
             }
         }
         return RGB16(ch(src.red, dst.red), ch(src.green, dst.green), ch(src.blue, dst.blue))
@@ -351,16 +350,25 @@ public enum TableRequests {
     }
 
     /// The 65,536 requests of pair table `p`, entry `row·0x100 + i`: row = sprite pixel (src), i = screen pixel
-    /// (dst); for `.greyPull` row = a·16 + b and i is the pixel pulled.
+    /// (dst).
     public static func pair(_ p: Pair, clut: ColorLUT) -> [RGB16] {
         let colors = clut.entries.map(RGB16.init)
         var out: [RGB16] = []
         out.reserveCapacity(0x10000)
         for row in 0..<256 {
-            for d in colors {
-                out.append(p == .greyPull ? greyPull(weight: row >> 4, level: row & 15, color: d)
-                                          : pair(p, src: colors[row], dst: d))
-            }
+            for d in colors { out.append(pair(p, src: colors[row], dst: d)) }
+        }
+        return out
+    }
+
+    /// The 65,536 requests of the grey-pull table `0144`, entry `a·0x1000 + b·0x100 + i` (row byte a·16 + b, i the
+    /// pixel pulled).
+    public static func greyPullTable(clut: ColorLUT) -> [RGB16] {
+        let colors = clut.entries.map(RGB16.init)
+        var out: [RGB16] = []
+        out.reserveCapacity(0x10000)
+        for row in 0..<256 {
+            for d in colors { out.append(greyPull(weight: row >> 4, level: row & 15, color: d)) }
         }
         return out
     }
@@ -397,6 +405,7 @@ public enum TableRequests {
     /// add their integer term with `fmadd` (1001b4dc/b508, 1001b81c/b858).
     public static func light(group g: Int, intensity k: Int, darkness D: Int, color c: RGB16) -> RGB16 {
         precondition((0..<lightGroups).contains(g) && (0..<lightIntensities).contains(k), "light group \(g) k \(k)")
+        precondition((0..<darknessLevels).contains(D), "darkness \(D)")
         let d = darken(c, light: k, darkness: D)
         let R = Int(d.red), G = Int(d.green), B = Int(d.blue)
         let kd = Double(k)

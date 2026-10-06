@@ -547,7 +547,8 @@ The text above stands; these notes override it where they differ. Transcribed in
    negative t is converted signed (`xoris 0x8000`), and `fctiwz` + `sth` keep the low 16 bits. CLUT 202 w1 @00
    (white) = `c7e6 62e5 7133`, high bytes **c76271** (§4's table prints c7ff71).
 2. **§6.1 glow `014c` — 32-bit overflow.** `100210e0 mullw` (L>>1 + 0x7d00)·w wraps for **lum(src) ≥ 40,932**;
-   `100210ec`, `100210f0`, `10021148 mullw` dst·(0xffff−w) wrap when the product ≥ 2^31 (w = 1, i.e. black-ish src: dst ≥ 0x8002).
+   `100210ec`, `100210f0`, `10021148 mullw` dst·(0xffff−w) wrap when the product ≥ 2^31, i.e. dst ≥ ⌈2^31/(0xffff−w)⌉ —
+   possible for **every lum(src) ≤ 32,766** (w ≤ 32,766; at w = 32,766 only dst = 0xffff wraps, at w = 1 every dst ≥ 0x8002).
    Each quotient is signed (`100210f4..10021160`), the sums are `sth`'d unclamped: white src → `fcfe` on every
    channel (unwrapped `fcff`); black src over white → `fffd` (unwrapped `fffe`). Note L>>1 is taken from L, not w.
 3. **§6.1 grey-pull `0144` — 32-bit overflow.** `100212bc mullw r23,r5` = b·0x1000·a·0x1000 = a·b·2^24 wraps for

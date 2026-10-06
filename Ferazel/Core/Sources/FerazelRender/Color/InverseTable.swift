@@ -12,10 +12,10 @@ public struct InverseTable: Sendable {
     public let cells: [UInt8]
 
     public init(clut: ColorLUT, bits: Int) {
-        self.init(palette: ColorSearch.Palette(clut), bits: bits)
+        self.init(channels: ColorSearch.Channels(clut), bits: bits)
     }
 
-    init(palette: ColorSearch.Palette, bits: Int) {
+    init(channels: ColorSearch.Channels, bits: Int) {
         precondition((1...6).contains(bits), "inverse table bits \(bits)")
         self.bits = bits
         let n = 1 << bits
@@ -25,7 +25,7 @@ public struct InverseTable: Sendable {
         for r in levels {
             for g in levels {
                 for b in levels {
-                    out[cell] = palette.nearest(r, g, b)
+                    out[cell] = channels.nearest(r, g, b)
                     cell += 1
                 }
             }

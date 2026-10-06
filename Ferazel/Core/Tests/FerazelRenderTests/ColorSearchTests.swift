@@ -98,6 +98,40 @@ final class ColorSearchTests: XCTestCase {
         XCTAssertNil(c.entries.first { RGB16($0) == rq })
         XCTAssertEqual(ruled.index(of: rq, in: c), four.index(of: rq, in: c))
         XCTAssertEqual(ruled.index(of: rq, in: c), 0x49)
+        // The per-pixel fast path answers exactly like `index(of:in:)` for every model: every palette colour, the
+        // tint 6 / water 0 requests, and a 4,096-colour lattice off the cell corners.
+        var sample = c.entries.map(RGB16.init) + t6 + [rq]
+        for r in stride(from: 0x0101, to: 0x10000, by: 0x1003) {
+            for g in stride(from: 0x0207, to: 0x10000, by: 0x1003) {
+                for b in stride(from: 0x0011, to: 0x10000, by: 0x1003) { sample.append(RGB16(UInt16(r), UInt16(g), UInt16(b))) }
+            }
+        }
+        // Independent references: brute-force nearest (strict <), the InverseTable, lowest exact match else 4-bit.
+        let entries = c.entries.map(RGB16.init)
+        func brute(_ q: RGB16) -> UInt8 {
+            func d(_ e: RGB16) -> Int {
+                let dr = Int(e.red) - Int(q.red), dg = Int(e.green) - Int(q.green), db = Int(e.blue) - Int(q.blue)
+                return dr * dr + dg * dg + db * db
+            }
+            var bi = 0
+            for i in 1..<256 where d(entries[i]) < d(entries[bi]) { bi = i }
+            return UInt8(bi)
+        }
+        let t4 = InverseTable(clut: c, bits: 4), t5 = InverseTable(clut: c, bits: 5)
+        let reference: [ColorSearch.Model: (RGB16) -> UInt8] = [
+            .exactNearest: brute, .inverseTable(bits: 4): t4.index(of:), .inverseTable(bits: 5): t5.index(of:),
+            .ruled: { q in entries.firstIndex(of: q).map(UInt8.init) ?? t4.index(of: q) },
+        ]
+        for model in [ColorSearch.Model.exactNearest, .ruled, .inverseTable(bits: 4), .inverseTable(bits: 5)] {
+            let search = ColorSearch(model: model)
+            let prepared = search.prepared(for: c)
+            XCTAssertEqual(prepared.model, model)
+            XCTAssertEqual(sample.map { prepared.index(of: $0) }, sample.map { search.index(of: $0, in: c) }, "\(model)")
+            XCTAssertEqual(sample.map { prepared.index(of: $0) }, sample.map(reference[model]!), "\(model) reference")
+            let uncached = ColorSearch.Prepared(clut: c, model: model)
+            XCTAssertEqual(sample.map { uncached.index(of: $0) },
+                           sample.map { prepared.index(of: $0) }, "\(model) uncached")
+        }
     }
 
     func testBankAgreementFiguresCLUT202() throws {
