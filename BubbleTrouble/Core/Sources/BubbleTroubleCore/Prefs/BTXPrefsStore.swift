@@ -1,5 +1,22 @@
 import Foundation
 
+/// Where `BTXPrefsStore` keeps its one blob (D16.3). Additive seam for the Windows port, where `UserDefaults`
+/// crashes under Wine: the Mac app keeps passing `UserDefaults` (via `init(defaults:…)`); a Windows shell supplies
+/// a file-backed store holding the same bytes. Only these three calls are ever made.
+public protocol BTXPrefsBacking {
+    func data(forKey key: String) -> Data?
+    func set(_ value: Data, forKey key: String)
+    func removeObject(forKey key: String)
+}
+
+extension UserDefaults: BTXPrefsBacking {
+    /// Witnesses the `Data` requirement (UserDefaults only has `set(_: Any?, forKey:)`); stores the `Data` itself as
+    /// a property-list data value, exactly what `set(data as Any?, forKey:)` did before the seam existed.
+    public func set(_ value: Data, forKey key: String) {
+        set(value as Any?, forKey: key)
+    }
+}
+
 /// Persists the prefs blob + high-score block as one `Data` (0x800 + 0x8a bytes, the original file's data-fork
 /// image) under the UserDefaults key `Prefs` (plan Known delta 6). The App passes `UserDefaults.standard`, whose
 /// domain is the replica's bundle id; tests pass a scratch suite.
@@ -23,29 +40,34 @@ public final class BTXPrefsStore {
             .appendingPathComponent("Library/Preferences/Bubble Trouble X Prefs")
     }
 
-    private let defaults: UserDefaults
+    private let backing: any BTXPrefsBacking
     private let legacyFileURL: URL?
     private let factoryScores: HighScoreTable
 
     /// - Parameters:
     ///   - legacyFileURL: the original prefs file to import on first run (`BTXPrefsStore.legacyFileURL`), or nil.
     ///   - factoryScores: `SCOR 128` (`HighScoreTable.factory(from:)`).
-    public init(defaults: UserDefaults, legacyFileURL: URL?, factoryScores: HighScoreTable) {
-        self.defaults = defaults
+    public convenience init(defaults: UserDefaults, legacyFileURL: URL?, factoryScores: HighScoreTable) {
+        self.init(backing: defaults, legacyFileURL: legacyFileURL, factoryScores: factoryScores)
+    }
+
+    /// As `init(defaults:…)`, over any backing (D16.3; the Windows shell's file store).
+    public init(backing: any BTXPrefsBacking, legacyFileURL: URL?, factoryScores: HighScoreTable) {
+        self.backing = backing
         self.legacyFileURL = legacyFileURL
         self.factoryScores = factoryScores
     }
 
     public func load() -> (prefs: BTXPrefs, scores: HighScoreTable) {
-        if defaults.data(forKey: Self.key) == nil, let url = legacyFileURL,
+        if backing.data(forKey: Self.key) == nil, let url = legacyFileURL,
            let legacy = try? Data(contentsOf: url) {
-            defaults.set(legacy, forKey: Self.key)
+            backing.set(legacy, forKey: Self.key)
         }
-        guard let blob = defaults.data(forKey: Self.key) else { return (.defaults, factoryScores) }
+        guard let blob = backing.data(forKey: Self.key) else { return (.defaults, factoryScores) }
         guard blob.count >= BTXPrefs.size,
               var prefs = BTXPrefs(data: blob.prefix(BTXPrefs.size)),
               prefs.version == BTXPrefs.currentVersion else {
-            defaults.removeObject(forKey: Self.key)
+            backing.removeObject(forKey: Self.key)
             return (.defaults, factoryScores)
         }
         let tail = blob.dropFirst(BTXPrefs.size).prefix(HighScoreTable.size)
@@ -60,11 +82,11 @@ public final class BTXPrefsStore {
 
     /// Saves both; `scores` becomes the factory table when nothing was stored before (see type doc).
     public func save(prefs: BTXPrefs, scores: inout HighScoreTable) {
-        if defaults.data(forKey: Self.key) == nil { scores = factoryScores }
+        if backing.data(forKey: Self.key) == nil { scores = factoryScores }
         write(prefs, scores)
     }
 
     private func write(_ prefs: BTXPrefs, _ scores: HighScoreTable) {
-        defaults.set(prefs.data + scores.data, forKey: Self.key)
+        backing.set(prefs.data + scores.data, forKey: Self.key)
     }
 }

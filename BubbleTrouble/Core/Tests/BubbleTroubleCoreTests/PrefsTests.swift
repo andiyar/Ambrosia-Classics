@@ -291,3 +291,119 @@ final class PrefsTests: XCTestCase {
         XCTAssertEqual(BTXPrefsStore.legacyFileURL.deletingLastPathComponent().lastPathComponent, "Preferences")
     }
 }
+
+/// D16.3 — the additive `BTXPrefsBacking` seam (Windows W0.5). An in-memory backing drives the same load / save /
+/// legacy-import / corrupt-blob paths the UserDefaults tests drive; the UserDefaults init must behave as before.
+final class PrefsBackingTests: XCTestCase {
+
+    /// Records every call so the tests can prove the store goes through the backing and nowhere else.
+    private final class MemoryBacking: BTXPrefsBacking {
+        var store: [String: Data] = [:]
+        var log: [String] = []
+        func data(forKey key: String) -> Data? { log.append("get \(key)"); return store[key] }
+        func set(_ value: Data, forKey key: String) { log.append("set \(key)"); store[key] = value }
+        func removeObject(forKey key: String) { log.append("remove \(key)"); store[key] = nil }
+    }
+
+    private func table(_ base: Int32) -> HighScoreTable {
+        var t = HighScoreTable.empty
+        for i in 0..<7 { t.setEntry(i, name: "M\(base)-\(i)", score: base - Int32(i) * 10, level: 7 - i) }
+        t.defaultName = "D\(base)"
+        return t
+    }
+
+    private func scratchFile(_ data: Data?) throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("btx-backing-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("Bubble Trouble X Prefs")
+        if let data { try data.write(to: url) }
+        return url
+    }
+
+    func testMemoryBackingSaveLoad() {
+        let backing = MemoryBacking()
+        let store = BTXPrefsStore(backing: backing, legacyFileURL: nil, factoryScores: table(1))
+        // Nothing stored → defaults + factory, nothing written.
+        let empty = store.load()
+        XCTAssertEqual(empty.prefs, .defaults); XCTAssertEqual(empty.scores, table(1))
+        XCTAssertTrue(backing.store.isEmpty)
+        var p = BTXPrefs.defaults
+        p.sfxVolume = 1
+        var scores = table(500)
+        store.save(prefs: p, scores: &scores)                         // first save → factory scores
+        XCTAssertEqual(scores, table(1))
+        XCTAssertEqual(backing.store[BTXPrefsStore.key], p.data + table(1).data)
+        scores = table(500)
+        store.save(prefs: p, scores: &scores)                         // exists now → kept
+        XCTAssertEqual(scores, table(500))
+        XCTAssertEqual(backing.store[BTXPrefsStore.key], p.data + table(500).data)
+        // First load sets bool 0x3e, swaps in the factory table and writes at once.
+        var flagged = p; flagged.defaultScoresLoaded = true
+        let first = store.load()
+        XCTAssertEqual(first.prefs, flagged); XCTAssertEqual(first.scores, table(1))
+        XCTAssertEqual(backing.store[BTXPrefsStore.key], flagged.data + table(1).data)
+        var mine = table(900)
+        store.save(prefs: first.prefs, scores: &mine)
+        XCTAssertEqual(store.load().scores, table(900))
+        XCTAssertEqual(Set(backing.store.keys), [BTXPrefsStore.key])
+    }
+
+    func testMemoryBackingLegacyImportAndCorruptBlob() throws {
+        var legacy = BTXPrefs.defaults
+        legacy.defaultScoresLoaded = true; legacy.currentKeySetIndex = 4
+        let file = try scratchFile(legacy.data + table(5000).data)
+        // Legacy import: copied into the backing, file untouched.
+        let b1 = MemoryBacking()
+        let l1 = BTXPrefsStore(backing: b1, legacyFileURL: file, factoryScores: table(1)).load()
+        XCTAssertEqual(l1.prefs, legacy); XCTAssertEqual(l1.scores, table(5000))
+        XCTAssertEqual(b1.store[BTXPrefsStore.key], legacy.data + table(5000).data)
+        XCTAssertEqual(try Data(contentsOf: file), legacy.data + table(5000).data)
+        // A stored blob wins over the legacy file.
+        let b2 = MemoryBacking()
+        b2.store[BTXPrefsStore.key] = legacy.data + table(77).data
+        XCTAssertEqual(BTXPrefsStore(backing: b2, legacyFileURL: file, factoryScores: table(1)).load().scores, table(77))
+        // Corrupt (short) blob → removed, defaults.
+        let b3 = MemoryBacking()
+        b3.store[BTXPrefsStore.key] = Data(count: 0x7ff)
+        let l3 = BTXPrefsStore(backing: b3, legacyFileURL: nil, factoryScores: table(1)).load()
+        XCTAssertEqual(l3.prefs, .defaults); XCTAssertEqual(l3.scores, table(1))
+        XCTAssertNil(b3.store[BTXPrefsStore.key])
+        XCTAssertTrue(b3.log.contains("remove \(BTXPrefsStore.key)"))
+        // Wrong version → removed, defaults.
+        var old = legacy; old.version = 0x16
+        let b4 = MemoryBacking()
+        b4.store[BTXPrefsStore.key] = old.data + table(77).data
+        XCTAssertEqual(BTXPrefsStore(backing: b4, legacyFileURL: nil, factoryScores: table(1)).load().prefs, .defaults)
+        XCTAssertNil(b4.store[BTXPrefsStore.key])
+        // Prefs present but score block missing → the factory table stands in.
+        let b5 = MemoryBacking()
+        b5.store[BTXPrefsStore.key] = legacy.data
+        XCTAssertEqual(BTXPrefsStore(backing: b5, legacyFileURL: nil, factoryScores: table(1)).load().scores, table(1))
+    }
+
+    /// The Mac app's call: `UserDefaults` still conforms and stores real `Data` (not an archived object).
+    func testUserDefaultsInitStillRoundTrips() throws {
+        let name = "btx-backing-tests-\(UUID().uuidString)"
+        XCTAssertFalse(name.hasPrefix("com.ambrosiaclassics"))
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        addTeardownBlock { UserDefaults(suiteName: name)?.removePersistentDomain(forName: name) }
+        let viaProtocol: any BTXPrefsBacking = defaults
+        viaProtocol.set(Data([1, 2, 3]), forKey: "probe")
+        XCTAssertEqual(defaults.object(forKey: "probe") as? Data, Data([1, 2, 3]))
+        XCTAssertEqual(viaProtocol.data(forKey: "probe"), Data([1, 2, 3]))
+        viaProtocol.removeObject(forKey: "probe")
+        XCTAssertNil(defaults.object(forKey: "probe"))
+
+        let store = BTXPrefsStore(defaults: defaults, legacyFileURL: nil, factoryScores: table(1))
+        var p = BTXPrefs.defaults
+        p.defaultScoresLoaded = true; p.musicVolume = 2
+        var scores = table(1)
+        store.save(prefs: p, scores: &scores)
+        var mine = table(321)
+        store.save(prefs: p, scores: &mine)
+        XCTAssertEqual(defaults.object(forKey: BTXPrefsStore.key) as? Data, p.data + table(321).data)
+        let reread = BTXPrefsStore(defaults: defaults, legacyFileURL: nil, factoryScores: table(1)).load()
+        XCTAssertEqual(reread.prefs, p); XCTAssertEqual(reread.scores, table(321))
+    }
+}
