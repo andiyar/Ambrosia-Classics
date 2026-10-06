@@ -47,7 +47,7 @@
   Classics\Bubble Trouble X\`) + `BubbleTroubleXWin` on HectorKit `SDL/` (HectorSDL). Tests: Windows package 113/0/0;
   BTX core 261/0/0 on the Mac and 260/0/0 in CrossOver; HectorSDL 38/0; kit floor 252. **Staged:**
   `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (37 MB; `tools/windows/stage-btx.sh`; stamp 83febbe) — Ben sends it
-  to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. **Real PC verified 2026-10-06 by Ben's brother** (played to level 20, high-score entry, idle attract demo all work). Not yet reported from the real PC: sound, display scaling. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
+  to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. **Real PC verified 2026-10-06 by Ben's brother** (played to level 20, high-score entry, idle attract demo all work). Sound fine on the real PC (Ben, 2026-10-06). Esc ends the game with no "are you sure?" — original behaviour, kept. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
   (CrossOver strips `SDL_*`).** **D21 (Ben): no menu bar — game-only 640×480 window (2× on 1080p), Ctrl shortcuts kept, About gone; merged f482270, restaged and the release asset replaced in place.** Next: any fixes from the brother's play; then Aki on Windows.
 
 ## Open, ordered
