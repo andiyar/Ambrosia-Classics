@@ -5,6 +5,8 @@ import HectorGraphics
 public enum ConvertedPictureError: Error, Equatable {
     /// An indexed pixel whose value no entry of the picture's colour table claims.
     case noColorTableEntry(id: Int16, value: Int)
+    /// `pixels.count` ≠ `width × height`, or a negative dimension.
+    case pixelCountMismatch(id: Int16, count: Int, width: Int, height: Int)
 }
 
 /// A `PICT` as the loaders leave it in their 8-bit port: one index per frame pixel under the conversion CLUT
@@ -35,8 +37,10 @@ public struct ConvertedPicture: Sendable, Equatable {
     public let frameLeft: Int16
 
     public init(id: Int16, width: Int, height: Int, pixels: [UInt8], clutId: Int16, frameTop: Int16 = 0,
-                frameLeft: Int16 = 0) {
-        precondition(pixels.count == width * height, "pixels \(pixels.count) ≠ \(width)×\(height)")
+                frameLeft: Int16 = 0) throws {
+        guard width >= 0, height >= 0, pixels.count == width * height else {
+            throw ConvertedPictureError.pixelCountMismatch(id: id, count: pixels.count, width: width, height: height)
+        }
         self.id = id; self.width = width; self.height = height; self.pixels = pixels; self.clutId = clutId
         self.frameTop = frameTop; self.frameLeft = frameLeft
     }
@@ -46,7 +50,7 @@ public struct ConvertedPicture: Sendable, Equatable {
         switch source.pixels {
         case .indexed(let p):
             guard let table = p.colorTable else {
-                self.init(id: source.id, width: p.width, height: p.height,
+                try self.init(id: source.id, width: p.width, height: p.height,
                           pixels: p.pixels.map { $0 == 0 ? 0x00 : 0xff }, clutId: clut.id,
                           frameTop: source.frameTop, frameLeft: source.frameLeft)
                 return
@@ -62,12 +66,12 @@ public struct ConvertedPicture: Sendable, Equatable {
             if let bad = p.pixels.first(where: { !known[Int($0)] }) {
                 throw ConvertedPictureError.noColorTableEntry(id: source.id, value: Int(bad))
             }
-            self.init(id: source.id, width: p.width, height: p.height, pixels: p.pixels.map { map[Int($0)] },
+            try self.init(id: source.id, width: p.width, height: p.height, pixels: p.pixels.map { map[Int($0)] },
                       clutId: clut.id, frameTop: source.frameTop, frameLeft: source.frameLeft)
         case .direct(let p):
             let out = Dither.convert(rgb: p.rgb, width: p.width, height: p.height, clut: clut,
                                      search: search.prepared(for: clut), model: dither)
-            self.init(id: source.id, width: p.width, height: p.height, pixels: out, clutId: clut.id,
+            try self.init(id: source.id, width: p.width, height: p.height, pixels: out, clutId: clut.id,
                       frameTop: source.frameTop, frameLeft: source.frameLeft)
         }
     }

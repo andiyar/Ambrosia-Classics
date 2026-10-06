@@ -11,17 +11,37 @@ public enum BlendFaces {
         return v < 0x9c ? 2 : 1
     }
 
-    /// The face with its copied bytes rewritten to weights (token structure, frame and bounds unchanged).
-    /// - Throws: `FaceDecodeError.badToken` for an op ≥ 4 (the original `DebugStr`s and returns).
+    /// The face with its copied bytes rewritten to weights (token structure, frame and bounds unchanged), walked
+    /// as the original walks it (decompile l. 25377–25444): op 0 ends; ops 1 and 3 are passed over (no row-length
+    /// check); op 2 rewrites its n bytes in place and steps over the padding to 4. At a token with op ≥ 4 the
+    /// original `DebugStr`s "bad token" and **returns** (l. 25409–25411): the face is kept, its copies before the
+    /// bad token already rewritten, the bad token and everything after it untouched — so is this.
+    /// - Throws: `FaceDecodeError.truncated` when the stream ends before an end token or a literal's padded bytes
+    ///   (the original would read past its handle; not modelled).
     public static func process(_ face: EncodedFace) throws -> EncodedFace {
         var out = face
-        var offset = 0
-        try face.walk(position: { offset = $0 }) { token in
-            if case .copy(let bytes) = token {
-                for k in 0..<bytes.count { out.data[offset + 4 + k] = weight(bytes[k]) }
+        var p = 0
+        while true {
+            guard p + 4 <= out.data.count else { throw FaceDecodeError.truncated(offset: p) }
+            let t = UInt32(out.data[p]) << 24 | UInt32(out.data[p + 1]) << 16 | UInt32(out.data[p + 2]) << 8
+                | UInt32(out.data[p + 3])
+            let op = t >> 24, n = Int(t & 0xffffff)
+            let at = p
+            p += 4
+            switch op {
+            case 0:
+                return out
+            case 1, 3:
+                continue
+            case 2:
+                let padded = n + (n & 3 == 0 ? 0 : 4 - (n & 3))
+                guard p + padded <= out.data.count else { throw FaceDecodeError.truncated(offset: at) }
+                for k in p ..< p + n { out.data[k] = weight(out.data[k]) }
+                p += padded
+            default:
+                return out          // `DebugStr` + return: rewritten up to the bad token
             }
         }
-        return out
     }
 
     /// `.ProcessFGBlendTileFaces @ 10001400`: every face of the sheet.

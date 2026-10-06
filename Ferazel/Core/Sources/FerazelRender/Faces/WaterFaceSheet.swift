@@ -23,7 +23,7 @@ public struct WaterFaceSheet: Sendable, Equatable {
         var faces: [EncodedFace] = []
         var stamped: [Int?] = []
         for i in 0..<a.count {
-            let rect = FaceSheet.cellRect(i, a)
+            let rect = a.rect(ofCell: i)
             let k = kind(i)
             if k >= 0, k < 0x60, k < mask.faces.count {
                 try Self.stamp(mask.faces[k], into: &port, width: picture.width, height: picture.height,
@@ -35,7 +35,7 @@ public struct WaterFaceSheet: Sendable, Equatable {
             // +0x30: `.LoadEncWaterFaceSetFromPICT` never writes it (record writes l. 28460–28471 stop at +0x2c; the
             // set loader's `+0x30 = pict` at l. 28277 has no counterpart here). The record is `NewPtr` (l. 28365,
             // not cleared), so the original holds whatever the heap held; built as 0, a fresh record's value.
-            faces.append(FaceEncoder.encode(pixels: port, width: picture.width, height: picture.height, rect: rect,
+            faces.append(try FaceEncoder.encode(pixels: port, width: picture.width, height: picture.height, rect: rect,
                                             sourceId: 0))
         }
         sheet = FaceSheet(arguments: a, faces: faces, shortCells: FaceSheet.shortCells(a, in: picture),

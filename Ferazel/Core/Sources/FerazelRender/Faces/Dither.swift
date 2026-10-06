@@ -43,13 +43,11 @@ enum Dither {
                     let index = search.index(of: RGB16(UInt16(r), UInt16(g), UInt16(b)))
                     out[i] = index
                     let chosen = entries[Int(index)]
-                    let err = [r - Int(chosen.red), g - Int(chosen.green), b - Int(chosen.blue)]
-                    for c in 0..<3 {
-                        cur[e + 3 + c] += err[c] * 7 / 16
-                        next[e - 3 + c] += err[c] * 3 / 16
-                        next[e + c] += err[c] * 5 / 16
-                        next[e + 3 + c] += err[c] * 1 / 16
-                    }
+                    let er = r - Int(chosen.red), eg = g - Int(chosen.green), eb = b - Int(chosen.blue)
+                    cur[e + 3] += er * 7 / 16; cur[e + 4] += eg * 7 / 16; cur[e + 5] += eb * 7 / 16
+                    next[e - 3] += er * 3 / 16; next[e - 2] += eg * 3 / 16; next[e - 1] += eb * 3 / 16
+                    next[e] += er * 5 / 16; next[e + 1] += eg * 5 / 16; next[e + 2] += eb * 5 / 16
+                    next[e + 3] += er / 16; next[e + 4] += eg / 16; next[e + 5] += eb / 16
                 }
                 swap(&cur, &next)
             }

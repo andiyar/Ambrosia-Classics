@@ -17,7 +17,7 @@ public struct PlainFaceSheet: Sendable, Equatable {
 
     public init(picture: ConvertedPicture, arguments a: FaceSheet.Arguments) {
         arguments = a
-        faces = (0..<a.count).map { picture.cell(FaceSheet.cellRect($0, a)) }
+        faces = (0..<a.count).map { picture.cell(a.rect(ofCell: $0)) }
         shortCells = FaceSheet.shortCells(a, in: picture)
         clutId = picture.clutId
     }

@@ -6,6 +6,11 @@ public enum FaceSheetError: Error, Equatable {
     /// (decompile l. 28041–28042, 28075, 28078); every shipped frame starts at (0, 0), and any other origin is
     /// refused rather than modelled.
     case singleFrameNotAtOrigin(pict: Int16, top: Int16, left: Int16)
+    /// Cell arguments no loader call passes and the replica would trap or wrap on: columns < 1, count < 0, a
+    /// cell size outside 1…0x7fff, or a cell edge past the Int16 range of a QuickDraw `Rect`.
+    case invalidArguments(pict: Int16, String)
+    /// `cellRect` asked for a cell outside `0 ..< count`.
+    case cellOutOfRange(index: Int, count: Int)
 }
 
 /// An encoded face set: `.LoadEncFaceSetFromPICT @ 1002ef2c` (pict, count, cellW, cellH, cols, maskFirst,
@@ -16,17 +21,43 @@ public enum FaceSheetError: Error, Equatable {
 /// A cell reaching past the frame reads 0 there and is listed in `shortCells` (PICT 257: 768×708, PxBack cells
 /// 30..35 lose 60 of 128 rows — design §11; sprites §3 [MED: the original reads past its GWorld there]).
 public struct FaceSheet: Sendable, Equatable {
-    /// The loader's cell arguments.
+    /// The loader's cell arguments, validated once at construction: every cell `0 ..< count` has a rect whose
+    /// edges fit Int16, so the sheet code never divides by zero, builds a negative range or wraps.
     public struct Arguments: Hashable, Sendable {
-        public var pict: Int16
-        public var count: Int
-        public var cellWidth: Int
-        public var cellHeight: Int
-        public var columns: Int
+        public let pict: Int16
+        public let count: Int
+        public let cellWidth: Int
+        public let cellHeight: Int
+        public let columns: Int
 
-        public init(pict: Int16, count: Int, cellWidth: Int, cellHeight: Int, columns: Int) {
+        /// - Throws: `FaceSheetError.invalidArguments` for columns < 1, count < 0, a cell size outside
+        ///   1…0x7fff, or a cell edge past 0x7fff.
+        public init(pict: Int16, count: Int, cellWidth: Int, cellHeight: Int, columns: Int) throws {
+            func refuse(_ why: String) -> FaceSheetError { .invalidArguments(pict: pict, why) }
+            let limit = Int(Int16.max)
+            guard columns >= 1 else { throw refuse("columns \(columns) < 1") }
+            guard count >= 0 else { throw refuse("count \(count) < 0") }
+            guard (1...limit).contains(cellWidth) else { throw refuse("cell width \(cellWidth) outside 1…\(limit)") }
+            guard (1...limit).contains(cellHeight) else { throw refuse("cell height \(cellHeight) outside 1…\(limit)") }
+            if count > 0 {
+                let rows = (count - 1) / columns + 1, cols = min(count, columns)
+                guard rows <= limit / cellHeight else { throw refuse("bottom edge \(rows) × \(cellHeight) past \(limit)") }
+                guard cols <= limit / cellWidth else { throw refuse("right edge \(cols) × \(cellWidth) past \(limit)") }
+            }
+            self.init(unchecked: pict, count: count, cellWidth: cellWidth, cellHeight: cellHeight, columns: columns)
+        }
+
+        /// For the original's literal call arguments (all valid by inspection).
+        init(unchecked pict: Int16, count: Int, cellWidth: Int, cellHeight: Int, columns: Int) {
             self.pict = pict; self.count = count; self.cellWidth = cellWidth; self.cellHeight = cellHeight
             self.columns = columns
+        }
+
+        /// Cell `i`'s rect, `i` in `0 ..< count` (in Int16 range by construction).
+        func rect(ofCell i: Int) -> EncodedFace.Rect {
+            let col = i % columns, row = i / columns
+            return EncodedFace.Rect(top: Int16(row * cellHeight), left: Int16(col * cellWidth),
+                                    bottom: Int16((row + 1) * cellHeight), right: Int16((col + 1) * cellWidth))
         }
     }
 
@@ -61,32 +92,31 @@ public struct FaceSheet: Sendable, Equatable {
     }
 
     /// Cell `i`'s rect in the sheet.
-    public static func cellRect(_ i: Int, _ a: Arguments) -> EncodedFace.Rect {
-        let col = i % a.columns, row = i / a.columns
-        return EncodedFace.Rect(top: Int16(truncatingIfNeeded: row * a.cellHeight),
-                                left: Int16(truncatingIfNeeded: col * a.cellWidth),
-                                bottom: Int16(truncatingIfNeeded: (row + 1) * a.cellHeight),
-                                right: Int16(truncatingIfNeeded: (col + 1) * a.cellWidth))
+    /// - Throws: `FaceSheetError.cellOutOfRange` for `i` outside `0 ..< a.count`.
+    public static func cellRect(_ i: Int, _ a: Arguments) throws -> EncodedFace.Rect {
+        guard i >= 0, i < a.count else { throw FaceSheetError.cellOutOfRange(index: i, count: a.count) }
+        return a.rect(ofCell: i)
     }
 
     /// Cells → rows past the frame, for any grid over `picture`.
     static func shortCells(_ a: Arguments, in picture: ConvertedPicture) -> [Int: Int] {
         var out: [Int: Int] = [:]
         for i in 0..<a.count {
-            let rows = picture.rowsPastFrame(cellRect(i, a))
+            let rows = picture.rowsPastFrame(a.rect(ofCell: i))
             if rows > 0 { out[i] = rows }
         }
         return out
     }
 
     /// The loader run over an already converted picture.
-    /// - Throws: `FaceSheetError.singleFrameNotAtOrigin` for a `.single` picture whose frame is not at (0, 0).
+    /// - Throws: `FaceSheetError.singleFrameNotAtOrigin` for a `.single` picture whose frame is not at (0, 0);
+    ///   `.invalidArguments` for a `.single` picture with an empty frame.
     public init(picture: ConvertedPicture, loader: Loader) throws {
         switch loader {
         case .set(let a):
-            let faces = (0..<a.count).map { i in
-                FaceEncoder.encode(pixels: picture.pixels, width: picture.width, height: picture.height,
-                                   rect: Self.cellRect(i, a), sourceId: a.pict)
+            let faces = try (0..<a.count).map { i in
+                try FaceEncoder.encode(pixels: picture.pixels, width: picture.width, height: picture.height,
+                                       rect: a.rect(ofCell: i), sourceId: a.pict)
             }
             self.init(arguments: a, faces: faces, shortCells: Self.shortCells(a, in: picture), clutId: picture.clutId)
         case .single(let pict):
@@ -94,9 +124,9 @@ public struct FaceSheet: Sendable, Equatable {
             guard picture.frameTop == 0, picture.frameLeft == 0 else {
                 throw FaceSheetError.singleFrameNotAtOrigin(pict: pict, top: picture.frameTop, left: picture.frameLeft)
             }
-            let a = Arguments(pict: pict, count: 1, cellWidth: picture.width, cellHeight: picture.height, columns: 1)
-            let face = FaceEncoder.encode(pixels: picture.pixels, width: picture.width, height: picture.height,
-                                          rect: Self.cellRect(0, a), sourceId: pict)
+            let a = try Arguments(pict: pict, count: 1, cellWidth: picture.width, cellHeight: picture.height, columns: 1)
+            let face = try FaceEncoder.encode(pixels: picture.pixels, width: picture.width, height: picture.height,
+                                              rect: a.rect(ofCell: 0), sourceId: pict)
             self.init(arguments: a, faces: [face], shortCells: [:], clutId: picture.clutId)
         }
     }
@@ -110,12 +140,12 @@ public struct FaceSheet: Sendable, Equatable {
     }
 
     /// The player's face sets in `.InitPlayerSprite` call order (player-states §7; main dump l. 42427–42484):
-    /// 29 sheets, 1003..1039 except 1026 (unused) — all with cell 100×120 except 1022 (150×120) and 1023
+    /// 29 sheets, 1003..1039 except 1005–1009, 1018, 1019 and 1026 — all with cell 100×120 except 1022 (150×120) and 1023
     /// (120×120); 1004 through `.Load1EncFaceFromPICT`. Converted under the sprite CLUT 200. The glider sets
     /// 1050..1053 (cached 160×160) are not Phase 1.
     public static let playerSheets: [Loader] = {
         func s(_ pict: Int16, _ count: Int, _ w: Int, _ cols: Int, h: Int = 120) -> Loader {
-            .set(Arguments(pict: pict, count: count, cellWidth: w, cellHeight: h, columns: cols))
+            .set(Arguments(unchecked: pict, count: count, cellWidth: w, cellHeight: h, columns: cols))
         }
         return [
             s(1003, 4, 100, 4), .single(pict: 1004), s(1010, 10, 100, 10), s(1011, 4, 100, 4), s(1012, 6, 100, 6),

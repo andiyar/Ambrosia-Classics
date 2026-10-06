@@ -1,5 +1,12 @@
 import Foundation
 
+public enum FaceEncodeError: Error, Equatable {
+    /// `pixels.count` ≠ `width × height`, or a negative dimension.
+    case pixelCountMismatch(count: Int, width: Int, height: Int)
+    /// The rect's height or width is outside Int16 (the face frame is an Int16 `Rect`).
+    case rectTooLarge(EncodedFace.Rect)
+}
+
 /// `.EncodeRect @ 1002dd70` (sprites-backgrounds §2.2, main dump l. 27455–27624) transcribed: one rect of an
 /// 8-bit port encoded row by row.
 ///
@@ -17,10 +24,16 @@ import Foundation
 public enum FaceEncoder {
     /// Encodes `rect` of a `width × height` index buffer (pixels outside the buffer read 0 — a cell reaching
     /// past the frame, design §11). The face's frame is (0,0,h,w) as the set loaders write it.
+    /// - Throws: `FaceEncodeError.pixelCountMismatch` when the buffer is not `width × height`;
+    ///   `.rectTooLarge` when the rect's height or width is outside Int16.
     public static func encode(pixels: [UInt8], width: Int, height: Int, rect: EncodedFace.Rect,
-                              sourceId: Int16) -> EncodedFace {
-        precondition(pixels.count == width * height, "pixels \(pixels.count) ≠ \(width)×\(height)")
+                              sourceId: Int16) throws -> EncodedFace {
+        guard width >= 0, height >= 0, pixels.count == width * height else {
+            throw FaceEncodeError.pixelCountMismatch(count: pixels.count, width: width, height: height)
+        }
         let h = Int(rect.bottom) - Int(rect.top), w = Int(rect.right) - Int(rect.left)
+        let int16 = Int(Int16.min)...Int(Int16.max)
+        guard int16.contains(h), int16.contains(w) else { throw FaceEncodeError.rectTooLarge(rect) }
         var out: [UInt8] = []
         out.reserveCapacity(max(0x1000, 4 * h + 3 * w * h + 0x14))
         var sawZero = false
@@ -88,8 +101,8 @@ public enum FaceEncoder {
         bottom = bottom &+ 1
         if left < 0 { left = 0 }
         if top < 0 { top = 0 }
-        return EncodedFace(frame: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(truncatingIfNeeded: h),
-                                                   right: Int16(truncatingIfNeeded: w)),
+        return EncodedFace(frame: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(h),
+                                                   right: Int16(w)),
                            bounds: EncodedFace.Rect(top: top, left: left, bottom: bottom, right: right),
                            data: out, hasTransparentPixel: sawZero, scale: 0x100, sourceId: sourceId)
     }

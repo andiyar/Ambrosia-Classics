@@ -177,7 +177,7 @@ final class FaceTests: XCTestCase {
             [1, 2, 3, 4, 5, 6, 7, 8, 9],
             [0, 0, 0, 0, 0, 9, 9, 9, 9],
         ]
-        let face = FaceEncoder.encode(pixels: rows.flatMap { $0 }, width: w, height: rows.count,
+        let face = try FaceEncoder.encode(pixels: rows.flatMap { $0 }, width: w, height: rows.count,
                                       rect: EncodedFace.Rect(top: 0, left: 0, bottom: 4, right: 9), sourceId: 77)
         func t(_ op: UInt32, _ n: UInt32) -> [UInt8] {
             let v = op << 24 | n
@@ -204,7 +204,28 @@ final class FaceTests: XCTestCase {
             XCTAssertThrowsError(try bad.decode()) { error in
                 XCTAssertEqual(error as? FaceDecodeError, .badToken(op: Int(op), offset: 4))
             }
-            XCTAssertThrowsError(try BlendFaces.process(bad))
+            // `.ProcessFGBlendTileFace` (decompile l. 25377–25444) rewrites in place up to the bad token, then
+            // `DebugStr`s and returns: copies before it are weights, everything from it on is untouched.
+            var blendBad = face
+            blendBad.data = t(1, 8) + t(2, 2) + [0x99, 0x9c, 0, 0] + t(op, 2) + [0x99, 0x9c, 0, 0] + t(0, 0)
+            var blended = blendBad
+            blended.data = t(1, 8) + t(2, 2) + [2, 1, 0, 0] + t(op, 2) + [0x99, 0x9c, 0, 0] + t(0, 0)
+            XCTAssertEqual(try BlendFaces.process(blendBad), blended)
+        }
+        // Forged streams the decoder refuses: no end token / a literal past the data (truncated); a skip before
+        // the first row token, a row token whose length disagrees with what follows (malformed).
+        var forged = face
+        forged.data = t(1, 0)
+        XCTAssertThrowsError(try forged.decode()) { XCTAssertEqual($0 as? FaceDecodeError, .truncated(offset: 4)) }
+        forged.data = t(1, 8) + t(2, 5) + [1, 2, 3, 4]
+        XCTAssertThrowsError(try forged.decode()) { XCTAssertEqual($0 as? FaceDecodeError, .truncated(offset: 4)) }
+        forged.data = t(3, 1) + t(0, 0)
+        XCTAssertThrowsError(try forged.decode()) {
+            XCTAssertEqual($0 as? FaceDecodeError, .malformed(offset: 0, "skip before a row"))
+        }
+        forged.data = t(1, 4) + t(2, 1) + [1, 0, 0, 0] + t(0, 0)
+        XCTAssertThrowsError(try forged.decode()) {
+            XCTAssertEqual($0 as? FaceDecodeError, .malformed(offset: 0, "row length 4 ≠ 8"))
         }
     }
 
@@ -213,7 +234,7 @@ final class FaceTests: XCTestCase {
         var pixels = [UInt8](repeating: 0, count: 40 * 30)
         for (x, y) in [(23, 12), (26, 15), (24, 13)] { pixels[y * 40 + x] = 9 }
         let rect = EncodedFace.Rect(top: 10, left: 20, bottom: 18, right: 30)
-        let face = FaceEncoder.encode(pixels: pixels, width: 40, height: 30, rect: rect, sourceId: 1234)
+        let face = try FaceEncoder.encode(pixels: pixels, width: 40, height: 30, rect: rect, sourceId: 1234)
         XCTAssertEqual(face.frame, EncodedFace.Rect(top: 0, left: 0, bottom: 8, right: 10))
         XCTAssertEqual(face.bounds, EncodedFace.Rect(top: 2, left: 2, bottom: 6, right: 8))   // top, left−1, bottom+1, right+2
         XCTAssertTrue(face.hasTransparentPixel)          // +0x18
@@ -223,17 +244,25 @@ final class FaceTests: XCTestCase {
         XCTAssertEqual(face.height, 8)
         // An opaque pixel in column 0 / row 0: left−1 clamps to 0; right+2 may pass the frame (not clamped).
         var full = [UInt8](repeating: 3, count: 4 * 2)
-        let solid = FaceEncoder.encode(pixels: full, width: 4, height: 2,
+        let solid = try FaceEncoder.encode(pixels: full, width: 4, height: 2,
                                        rect: EncodedFace.Rect(top: 0, left: 0, bottom: 2, right: 4), sourceId: 1)
         XCTAssertEqual(solid.bounds, EncodedFace.Rect(top: 0, left: 0, bottom: 2, right: 5))
         XCTAssertFalse(solid.hasTransparentPixel)
         // No opaque pixel: left = 0x7fff − 1, right = 0 + 2; top/bottom come from the record's unwritten memory,
         // modelled as 0 (→ 0, 1).
         full = [UInt8](repeating: 0, count: 4 * 2)
-        let empty = FaceEncoder.encode(pixels: full, width: 4, height: 2,
+        let empty = try FaceEncoder.encode(pixels: full, width: 4, height: 2,
                                        rect: EncodedFace.Rect(top: 0, left: 0, bottom: 2, right: 4), sourceId: 1)
         XCTAssertEqual(empty.bounds, EncodedFace.Rect(top: 0, left: 0x7ffe, bottom: 1, right: 2))
         XCTAssertTrue(empty.hasTransparentPixel)
+        // Refusals instead of traps / Int16 wraps.
+        XCTAssertThrowsError(try FaceEncoder.encode(pixels: [1, 2, 3], width: 2, height: 2, rect: rect, sourceId: 1)) {
+            XCTAssertEqual($0 as? FaceEncodeError, .pixelCountMismatch(count: 3, width: 2, height: 2))
+        }
+        let huge = EncodedFace.Rect(top: -20_000, left: 0, bottom: 20_000, right: 4)
+        XCTAssertThrowsError(try FaceEncoder.encode(pixels: full, width: 4, height: 2, rect: huge, sourceId: 1)) {
+            XCTAssertEqual($0 as? FaceEncodeError, .rectTooLarge(huge))
+        }
     }
 
     func testEncodeRoundTripPhase1Faces() throws {
@@ -250,18 +279,18 @@ final class FaceTests: XCTestCase {
                 checked += 1
             }
         }
-        func cells(_ p: ConvertedPicture, _ a: FaceSheet.Arguments) -> [[UInt8]] {
-            (0..<a.count).map { p.cell(FaceSheet.cellRect($0, a)) }
+        func cells(_ p: ConvertedPicture, _ a: FaceSheet.Arguments) throws -> [[UInt8]] {
+            try (0..<a.count).map { p.cell(try FaceSheet.cellRect($0, a)) }
         }
         try roundTrip(sets.bg, cells(sets.pictures.bg, sets.bg.arguments), "BG 203")
         try roundTrip(sets.fg, cells(sets.pictures.fg, sets.fg.arguments), "FG 200")
         try roundTrip(sets.pattern, cells(sets.pictures.pattern, sets.pattern.arguments), "pattern 206")
-        XCTAssertEqual(sets.patternPlain.faces, cells(sets.pictures.pattern, sets.patternPlain.arguments))
+        XCTAssertEqual(sets.patternPlain.faces, try cells(sets.pictures.pattern, sets.patternPlain.arguments))
         XCTAssertEqual(sets.pxBack.faces.count, 36)
         XCTAssertNil(sets.pxMid)
         // FG water: each cell of 200 with the 183 mask face of its FG kind stamped to 0 (`.BlitEncBoolTile`).
         let mask = fixed.waterMask
-        var water = cells(sets.pictures.fg, sets.fgWater.sheet.arguments)
+        var water = try cells(sets.pictures.fg, sets.fgWater.sheet.arguments)
         for i in 0..<96 {
             let kind = level.fgKind(tile: i)
             XCTAssertEqual(sets.fgWater.stampedKinds[i], (0..<96).contains(kind) ? kind : nil)
@@ -294,10 +323,29 @@ final class FaceTests: XCTestCase {
     // MARK: - Sheets
 
     func testFaceSetCellGeometry() throws {
-        let a = FaceSheet.Arguments(pict: 1020, count: 16, cellWidth: 100, cellHeight: 120, columns: 4)
-        XCTAssertEqual(FaceSheet.cellRect(5, a), EncodedFace.Rect(top: 120, left: 100, bottom: 240, right: 200))
-        XCTAssertEqual(FaceSheet.cellRect(0, a), EncodedFace.Rect(top: 0, left: 0, bottom: 120, right: 100))
-        XCTAssertEqual(FaceSheet.cellRect(15, a), EncodedFace.Rect(top: 360, left: 300, bottom: 480, right: 400))
+        let a = try FaceSheet.Arguments(pict: 1020, count: 16, cellWidth: 100, cellHeight: 120, columns: 4)
+        XCTAssertEqual(try FaceSheet.cellRect(5, a), EncodedFace.Rect(top: 120, left: 100, bottom: 240, right: 200))
+        XCTAssertEqual(try FaceSheet.cellRect(0, a), EncodedFace.Rect(top: 0, left: 0, bottom: 120, right: 100))
+        XCTAssertEqual(try FaceSheet.cellRect(15, a), EncodedFace.Rect(top: 360, left: 300, bottom: 480, right: 400))
+        // Arguments that would trap (÷ 0 columns, negative ranges) or wrap Int16 are refused at construction;
+        // a cell index outside the sheet is refused by `cellRect`.
+        func refused(_ count: Int, _ w: Int, _ h: Int, _ cols: Int) -> Bool {
+            do { _ = try FaceSheet.Arguments(pict: 7, count: count, cellWidth: w, cellHeight: h, columns: cols); return false }
+            catch FaceSheetError.invalidArguments(pict: 7, _) { return true } catch { return false }
+        }
+        XCTAssertTrue(refused(4, 100, 120, 0), "columns 0")
+        XCTAssertTrue(refused(-1, 100, 120, 4), "negative count")
+        XCTAssertTrue(refused(4, 0, 120, 4), "zero width")
+        XCTAssertTrue(refused(4, 100, -120, 4), "negative height")
+        XCTAssertTrue(refused(4, 10_000, 120, 4), "right edge past Int16")
+        XCTAssertTrue(refused(400, 100, 120, 1), "bottom edge past Int16")
+        XCTAssertFalse(refused(0, 100, 120, 4), "an empty set is a set")
+        XCTAssertThrowsError(try FaceSheet.cellRect(16, a)) {
+            XCTAssertEqual($0 as? FaceSheetError, .cellOutOfRange(index: 16, count: 16))
+        }
+        XCTAssertThrowsError(try ConvertedPicture(id: 5, width: 2, height: 2, pixels: [1, 2, 3], clutId: 200)) {
+            XCTAssertEqual($0 as? ConvertedPictureError, .pixelCountMismatch(id: 5, count: 3, width: 2, height: 2))
+        }
         let r = try resources()
         let picture = try ConvertedPicture(source: try PictureSource.load(id: 1020, from: r, chain: .frontEnd),
                                            clut: try clut(200, r), search: ColorSearch(model: .ruled))
@@ -316,7 +364,7 @@ final class FaceTests: XCTestCase {
         }
         // `.Load1EncFaceFromPICT` keeps the unshifted picFrame (decompile l. 28041–28042, 28075, 28078): a frame not at
         // (0, 0) is refused rather than assumed.
-        let shifted = ConvertedPicture(id: 4_242, width: 2, height: 2, pixels: [1, 2, 3, 4], clutId: 200,
+        let shifted = try ConvertedPicture(id: 4_242, width: 2, height: 2, pixels: [1, 2, 3, 4], clutId: 200,
                                        frameTop: 0, frameLeft: 7)
         XCTAssertThrowsError(try FaceSheet(picture: shifted, loader: .single(pict: 4_242))) { error in
             XCTAssertEqual(error as? FaceSheetError, .singleFrameNotAtOrigin(pict: 4_242, top: 0, left: 7))
@@ -349,9 +397,9 @@ final class FaceTests: XCTestCase {
             let source = try PictureSource.load(id: loader.pict, from: r, chain: .frontEnd)
             switch loader {
             case .set(let a):
-                let last = FaceSheet.cellRect(a.count - 1, a)
+                let last = try FaceSheet.cellRect(a.count - 1, a)
                 XCTAssertLessThanOrEqual(Int(last.bottom), source.height, "\(a.pict)")
-                XCTAssertLessThanOrEqual((0..<a.count).map { Int(FaceSheet.cellRect($0, a).right) }.max()!, source.width, "\(a.pict)")
+                XCTAssertLessThanOrEqual(try (0..<a.count).map { Int(try FaceSheet.cellRect($0, a).right) }.max()!, source.width, "\(a.pict)")
             case .single:
                 XCTAssertEqual([source.width, source.height], [100, 120])
             }
@@ -362,7 +410,7 @@ final class FaceTests: XCTestCase {
         let r = try resources()
         let fixed = try TileSets.Fixed(resources: r, search: ColorSearch(model: .ruled))
         let mask = fixed.waterMask
-        XCTAssertEqual(mask.arguments, FaceSheet.Arguments(pict: 183, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
+        XCTAssertEqual(mask.arguments, try FaceSheet.Arguments(pict: 183, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
         XCTAssertEqual(mask.faces.count, 96)
         var set = 0
         for face in mask.faces {
@@ -392,7 +440,7 @@ final class FaceTests: XCTestCase {
             let fixed = try TileSets.Fixed(resources: r, search: ColorSearch(model: model))
             XCTAssertEqual(fixed.blend.clutId, 199)
             XCTAssertEqual(fixed.blend.faces.count, 96)
-            XCTAssertEqual(fixed.blend.arguments, FaceSheet.Arguments(pict: 185, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
+            XCTAssertEqual(fixed.blend.arguments, try FaceSheet.Arguments(pict: 185, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
             var weights = [Int](repeating: 0, count: 4), transparent = 0
             for (face, source) in zip(fixed.blend.faces, fixed.blendSource.faces) {
                 // Same token structure; only copied bytes change.
@@ -414,14 +462,14 @@ final class FaceTests: XCTestCase {
         XCTAssertEqual([source.width, source.height], [768, 708])
         let picture = try ConvertedPicture(source: source, clut: try clut(201, r), search: ColorSearch(model: .ruled))
         let a = TileSets.pxBackArguments(pict: 257)
-        XCTAssertEqual(a, FaceSheet.Arguments(pict: 257, count: 36, cellWidth: 128, cellHeight: 128, columns: 6))
+        XCTAssertEqual(a, try FaceSheet.Arguments(pict: 257, count: 36, cellWidth: 128, cellHeight: 128, columns: 6))
         let plain = PlainFaceSheet(picture: picture, arguments: a)
         XCTAssertTrue(plain.shortRows)
         XCTAssertEqual(plain.shortCells, Dictionary(uniqueKeysWithValues: (30...35).map { ($0, 60) }))
         for i in 30...35 {
             let face = plain.faces[i]
             XCTAssertTrue(face[(128 - 60) * 128 ..< 128 * 128].allSatisfy { $0 == 0 }, "cell \(i) rows past the frame read 0")
-            XCTAssertEqual(Array(face[0 ..< 68 * 128]), Array(picture.cell(FaceSheet.cellRect(i, a)).prefix(68 * 128)))
+            XCTAssertEqual(Array(face[0 ..< 68 * 128]), Array(picture.cell(try FaceSheet.cellRect(i, a)).prefix(68 * 128)))
         }
         let encoded = try FaceSheet(picture: picture, loader: .set(a))
         XCTAssertTrue(encoded.shortRows)
