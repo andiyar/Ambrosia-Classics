@@ -604,8 +604,9 @@ from the archive mirror's installed `files/`: six resource forks as data-fork `.
 `b1d30e7720f8b30d782824216fea52527a78c2bff761ba744a227d98d210df9b` (SHA-256 re-measured, equal to the plan's Research
 note 1) — and `Ferazel's Wand Music/` with the 28 extensionless AIFC tracks `01`..`30` minus `21` and `27`. Totals
 38,079,943 + 47,201,968 = 85,281,911 B; largest file 15,821,213 B (under GitHub's 50 MB warning). Stays out: the PEF
-binary `Ferazel's Wand`, the `Ferazel's Wand Documentation` app, the 28 `NN.rsrc` SoundEdit leftovers, the 1.0.3
-Notes / License / Ambrosia FAQ texts, the web-site link files, `Icon_*`, the InputSprocket / USBHID files, the `.pict`
+binary `Ferazel's Wand`, the `Ferazel's Wand Documentation` app, the 28 `NN.rsrc` SoundEdit leftovers, the five zero-byte data-fork stubs
+(`Ferazel's Wand Backgrounds` etc. — the resources live in the `.rsrc` forks), the 1.0.3 Notes / License / Ambrosia FAQ /
+Ambrosia Products FAQ texts, the web-site link files, `Icon_*`, the InputSprocket / USBHID files, the `.pict`
 files, `.DS_Store`. `.gitignore` re-includes `!/Resources/Ferazel/` (other games' data stays ignored);
 `.gitattributes` `Resources/Ferazel/** binary`. `FERAZEL_DATA` overrides the folder. Rejected as in D24: Git LFS
 (breaks anonymous clones of the public repo past the free quota) · data out of git behind symlinks.
