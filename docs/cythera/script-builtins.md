@@ -99,7 +99,7 @@ loop that drives them was not traced (how scripts order modes 0/1/2 is inferred 
 | D1 | 100978F0 | iterate props near | (slot, mode, x, y, r) | props from 1, kind `& 0x1A == 0` or kind 2, with dx² + dy² ≤ r² (r signed byte) | HIGH |
 | D2 | 1009851C | play note | (a, b, c) → Nil | `TAudio::PlayNote(a, b, c)` | HIGH call |
 | D3 | 100985C0 | positional sound | (id, x, y) → Nil | integer id only: `TAudio::PlaySound(id, x−leaderX, y−leaderY, 0, far)`, far = 1 when (x, y) is outside the view radius or hidden in the visibility grid | HIGH |
-| D4 | 1009874C | positional sound (variant) | (id, x, y) → Nil | as D3 with 4th argument 1 | HIGH code / MED flag meaning |
+| D4 | 1009874C | positional sound (variant) | (id, x, y) → Nil | as D3 with 4th argument 1. ⚑ wave 2 (2026-10-06): = `cbPlaySoundSync` — the flag makes `PlaySound` wait until the started voice has left the mixer table (§4) | HIGH code / MED flag meaning → ⚑ wave 2: HIGH name + wait loop, MED "until the sound ends" |
 | D5 | 100988DC | play music | (n or Nil) → Nil | `TAudio::PlayMusic(n, 1)`; Nil → `PlayMusic(−1, 1)` (stop) | HIGH call |
 | D6 | 10098994 | play music (variant) | (n or Nil) → Nil | as D5 with flag 0 | HIGH call |
 | D7 | 10098A54 | ambient sound | (id, x, y) → Nil | only when (x, y) is visible: `PlayAmbientSound(id, dx, dy, 0)` | HIGH |
@@ -146,6 +146,65 @@ loop that drives them was not traced (how scripts order modes 0/1/2 is inferred 
 
 Counts: 95 bodies read; **HIGH 77** (5 of them — A4, BC, C8, D4, F7 — carry a MED qualifier on an argument's meaning; the stubs AA, B6, FB, FE are included) · **MED 15** · **LOW 3**.
 
+## 2.1 Traceback names of the 95 builtins — ⚑ wave 2 (2026-10-06)
+
+Every builtin body is a traceback-named function in the missing dump at the same address (orchestrator
+probe, census §4). Reproduced this session:
+```sh
+grep '^// ==== Builtin_' ghidra/Cythera_builtins.decompiled.c | sed -E 's/^\/\/ ==== (Builtin_..) @ ([0-9a-f]+).*/\2 \1/' | sort > bi
+grep -v '^#' docs/cythera/tools/missing-addrs.txt | awk '{print $1, $3}' | sort > ma
+join bi ma | wc -l        # 95; mangled suffix __FP5VAddr dropped below, addresses as in §2
+```
+The "name (ours)" column of §2 stays as the wave-1 reading; this table adds Ambrosia's names. [HIGH, mechanical]
+
+| op | traceback name | op | traceback name | op | traceback name |
+|---|---|---|---|---|---|
+| A0 | `RangeIter` | A1 | `EachIter` | A2 | `cbEndGame` |
+| A3 | `cbHeartBeat` | A4 | `cbsetportrait` | A5 | `cbanimatetiles` |
+| A6 | `cbrender` | A7 | `cbdeleteprop` | A8 | `cbaddinv` |
+| A9 | `cbgetmap` | AA | `cbsetmap` | AB | `cbsetpropowner` |
+| AC | `cbrnd` | AD | `cbcreateprop` | AE | `cbwhohas` |
+| AF | `cbgetinv` | B0 | `cbcountinv` | B1 | `cbsubinv` |
+| B2 | `cbpartychar` | B3 | `cbwhowill` | B4 | `cbhowmany` |
+| B5 | `cbgetdigit` | B6 | `cbwhosaid` | B7 | `cbinvspace` |
+| B8 | `cbgetweight` | B9 | `cbpartyjoin` | BA | `cbpartyleave` |
+| BB | `cbwhichofyou` | BC | `cbnearby` | BD | `cbpasstime` |
+| BE | `cbRecalcLight` | BF | `cbteleport` | C0 | `cbPickItem` |
+| C1 | `cbAddAbility` | C2 | `cbRemoveAbility` | C3 | `cbTempAbility` |
+| C4 | `cbHasAbility` | C5 | `cbSendSignal` | C6 | `cbShortName` |
+| C7 | `cbAllProps` | C8 | `cbInventory` | C9 | `cbWithin` |
+| CA | `cbInParty` | CB | `cbPropsAt` | CC | `cbWorn` |
+| CD | `cbPropsOf` | CE | `cbEnemies` | CF | `cbAreaOfEffect` |
+| D0 | `cbMonsterParts` | D1 | `cbInRange` | D2 | `cbPlayNote` |
+| D3 | `cbPlaySound` | D4 | `cbPlaySoundSync` | D5 | `cbPlayMusic` |
+| D6 | `cbPlayAmbientMusic` | D7 | `cbPlayAmbientSound` | D8 | `cbSetAmbientLight` |
+| D9 | `cbSetZonePic` | DA | `cbSetZoneName` | DB | `cbShowWindow` |
+| DC | `cbGetQV` | DD | `cbSetQV` | DE | `cbGetQF` |
+| DF | `cbSetQF` | E0 | `cbReschedule` | E1 | `cbCastSpellFX` |
+| E2 | `cbMissileFX` | E3 | `cbHitFX` | E4 | `cbAttackFX` |
+| E5 | `cbNext` | E6 | `cbFadeFX` | E7 | `cbScreenFX` |
+| E8 | `cbBeginConversation` | E9 | `cbEndConversation` | EA | `cbHideConversation` |
+| EB | `cbShowConversation` | EC | `cbBeginCutScene` | ED | `cbEndCutScene` |
+| EE | `cbScrollText` | EF | `cbSetWaypoint` | F0 | `cbQueueAction` |
+| F1 | `cbWaitForFlag` | F2 | `cbAddToDo` | F3 | `cbDoneToDo` |
+| F4 | `cbAddKeyword` | F5 | `cbGetSkill` | F6 | `cbRenderAt` |
+| F7 | `cbIsLOS` | F8 | `cbCD_Tool` | F9 | `cbNewUniqueName` |
+| FA | `cbGetNamedProp` | FB | `cbGetNamedProxy` | FC | `cbEnableAutoMap` |
+| FD | `cbSetFillColor` | FE | `cbDebugStr` |  |  |
+
+Names that sharpen or contradict a wave-1 reading (the reading stands; the name is LOW evidence of intent):
+- **AA `cbsetmap`**, **B6 `cbwhosaid`**, **FB `cbGetNamedProxy`**, **FE `cbDebugStr`** are the four
+  "return Nil" stubs — features compiled out of 1.0.4 (set map cell, who-said, named proxy, debug print).
+- **A3 `cbHeartBeat`** reads as "leader busy byte += n" (§2): the name says it is the scripts' way to
+  spend the leader's turn time. **A6 `cbrender`**, **F6 `cbRenderAt`** = redraw / view-at.
+- **E6 `cbFadeFX`** — the wave-1 reading "set viewer +0x20C28 (the 0xF00F arrival byte)" gets a name:
+  that byte selects a fade effect (LOW: name only; meaning of the values still open).
+- **D8 `cbSetAmbientLight`**, **D9 `cbSetZonePic`**, **DA `cbSetZoneName`** (zone light minimum, outdoor
+  picture, map-window title); **EC/ED `cbBegin/EndCutScene`**, **EE `cbScrollText`** (the "curtain"
+  builtins); **BC `cbnearby`**; **B3 `cbwhowill`** / **BB `cbwhichofyou`**; **CF `cbAreaOfEffect`**,
+  **D0 `cbMonsterParts`** (confirms the "body segments" reading of §4); **F9 `cbNewUniqueName`**,
+  **FA `cbGetNamedProp`**; **F4 `cbAddKeyword`** (the chip list, dialogue.md §5).
+
 ## 3. What the table settles
 - **Inventory** scripting is native-assisted: give (A8), create (AD), delete (A7), transfer (AB),
   find/count/remove (AE, AF, B0, B1), capacity (B7, B8). Item identity in scripts = `type | frame<<10`
@@ -182,6 +241,23 @@ Counts: 95 bodies read; **HIGH 77** (5 of them — A4, BC, C8, D4, F7 — carry 
   asking; else the name menu plus a `None` chip mapped to 0; all four BB call sites are in never-called
   routines [HIGH] — dialogue.md §7.2.
 - D4's flag (4th argument 1 to the D3 path) — meaning still open.
+  ⚑ wave 2 (2026-10-06): **closed (NOT RESOLVED item 19).** Name: 0xD4 = `cbPlaySoundSync__FP5VAddr`
+  (§2.1). Body (`find_func.py 'cbPlaySound' --file ghidra/Cythera_missing.decompiled.c`): identical to D3
+  except the 5th `PlaySound` argument — D3 `…,iVar6,iVar4,0,uVar2);`, D4 `…,iVar6,iVar4,1,uVar2);` (uVar2 = 1
+  when (x, y) is outside the view radius or its visibility cell `& 3` is 0). `PlaySound__6TAudioFUsssUcUc
+  @ 1001BE98` (main dump): `iVar4 = FUN_100b7a58(&local_38); if (iVar4 == 0) { _Unlock… } else if (param_5 != '\0')
+  { do { sVar5 = FUN_100b7f40(iVar4); } while (sVar5 != 0); }`, and `param_6` halves both stereo levels. The
+  two helpers have no traceback name (`python3 docs/cythera/tools/tb.py --at 100b7f40` prints nothing — a
+  sound-mixer library) but were read whole: `FUN_100b7a58` inserts a 0x34-byte voice record into a
+  16-entry table (`_DAT_100cf178`, count `*_DAT_100cf174`, volumes clamped to 0x80) and returns its id
+  (word 0); `FUN_100b7f40` counts the table entries whose word 0 or word 1 equals its argument
+  (`if (((param_1 == *(int *)(_DAT_100cf178 + sVar2 * 0x34)) || (*(int *)(_DAT_100cf178 + sVar2 * 0x34 + 4) == param_1)) || (param_1 == 0)) iVar1 = iVar1 + 1;`);
+  the same count gates `MoveSpotSound` ("still playing?"), and `FUN_100b7d60` removes entries (the stop
+  path, completion callback code 2). So D4 = **play the positional sound and busy-wait until its voice is
+  gone**, i.e. the script stalls for the length of the sound. [HIGH for the wait loop and the name; MED
+  that removal happens exactly at end of sample — the mixer's end-of-sample path was not read]
+  Shipped calls: 3 — 1027 portcullis @0005 sound 10, 1033 secret door @0056 and 10FD secret passage @0056
+  sound 9 (`grep -n 'positional_sound2' ghidra/cythera-scripts/*.txt`); D3 has 83.
 - ~~How compiled `for` loops sequence the iterator modes~~ — ⚑ corrected (wave 1 2026-10-03): mode 0
   init → first, mode 1 done-test (`jt … -> exit`), body, mode 2 next, `goto` the test (listing `0ea5`
   0x001A–0x006E; `1802` 0x0746–0x078D for `iterate_range`) [HIGH] — open-items §19.
