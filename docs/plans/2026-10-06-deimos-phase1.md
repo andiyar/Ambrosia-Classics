@@ -216,7 +216,7 @@ PresentKind)`, `func fadeEnd()`; `var screen: Pixmap555`; `func buffer(_ id: Buf
 ```yaml
 packages:
   DeimosCore:
-    path: Deimos/Core
+    path: Deimos/DeimosCore   # ⚑ as built: symlink → Core (SwiftPM identity clash with Aki/Core; BTX D13.8 shape)
 targets:
   Deimos:
     type: application

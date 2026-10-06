@@ -21,7 +21,8 @@ The question for you is one line: **does it look like Deimos?**
 
 ## Keys
 - **← / →** — the ship banks and the whole map pans sideways.
-- **Esc** — starts level 1 again (a stand-in for the main menu, which comes later).
+- **Esc** — starts level 1 again (a stand-in for the main menu, which comes later). Let go of Esc before pressing it
+  again — the new start ignores Esc until you release it.
 - **⌃⌘F** — full screen on and off.
 - **⌘Q** — quit.
 - Nothing else does anything yet.
@@ -36,8 +37,8 @@ The question for you is one line: **does it look like Deimos?**
 5. **Settings and films** will live in their own folder under Application Support (later phases).
 
 Things that are missing on purpose for now (they come in Phase 2):
-- **The ship stays where it is**, at the bottom centre. Left/right bank it and pan the map; it does not move, speed up
-  or shoot. Up, down, fire and select do nothing.
+- **The ship doesn't fly around.** Left/right bank it and pan the whole view (the ship slides with the map, as in the
+  original, but never steers); it does not move on its own, speed up or shoot. Up, down, fire and select do nothing.
 - **No enemies or objects.** Nothing is spawned — not the entry wave, not the score multiplier.
 - **No sound or music.**
 
@@ -55,17 +56,18 @@ and what would be wrong.
    black around it in the window and in full screen (⌃⌘F).
 4. **The score bar** — `0000000` in pale cyan monospaced digits, reserve lives "2", the ship symbol, the Ion Cannon icon
    (no second/third icon — at sector 1 the Ion Cannon is the only air weapon), both meters dark; the shield meter fills
-   from empty in about 1.7 s once the ship is in; Player 2's block below is drawn dimmed and never changes. Wrong: digits
+   from empty in about 1.7 s once the ship is in; Player 2's block below is drawn dimmed (its digits look smaller and fainter — that is the dimming) and never changes. Wrong: digits
    spaced unevenly (the original uses a 6-px cell even though most digits are 7 px — a quirk we copy), wrong colours.
 5. **The ship** — nothing for about 1.9 s, then the orange ship fades in (~1.7 s) at the bottom-centre, with a half-size
    dark shadow down and to the left (ground under it at 62.5 % brightness). Wrong: a hard pop-in, a full-size shadow, a
    shadow on the wrong side.
 6. **The crosshair** — the plasma-bomb target fades in ~121 px ahead of the ship, 0 → 100 at 6 per tick from the ship's
-   first active tick (~0.6 s) — a quick fade, not a pop. It is drawn on the player-interface layer (`plui`, 13), it
-   pans sideways with the map when you bank, and it **casts no shadow**. All three were read from the original code
+   first active tick (~0.6 s) — a quick fade, not a pop. It is drawn on the player-interface layer (`plui`, 13 — above
+   the ship's layer 10), it pans sideways with the map when you bank, and it **casts no shadow**. All three were read from the original code
    this phase. Wrong: a pop-in, a shadow under it, or it staying put while the map pans.
-7. **Left / right** — the ship banks (3 frames each way, one step every 2 frames) and the whole map pans up to 32 px;
-   **the ship itself does not move** (that is Phase 2). Up/down, fire and select do nothing yet.
+7. **Left / right** — the ship banks (3 frames each way, one step every 2 frames) and the whole view pans up to 32 px —
+   the ship and crosshair slide with the map, because the pan moves everything drawn in the game area; the ship never
+   steers on its own (flying is Phase 2). Up/down, fire and select do nothing yet.
 8. **Colours of the sprites** (ship, shadow, HUD art) — the plates are 24-bit GIFs the game drew into 16-bit, which keeps
    the top 5 bits of each channel (not fully certain). If the ship or HUD look a shade dark or off against the video,
    this is the suspect.
@@ -75,6 +77,8 @@ and what would be wrong.
 11. **Keys** — Esc starts level 1 again (stand-in for the main menu); ⌘Q quits. Caps Lock, `-`/`=`, F6 and `~` do nothing yet.
 12. **Silence** — no sound or music yet (Phase 2).
 13. **The icon** — the original OS X icon (`icns 128`), unchanged.
+14. **Minimise or switch away** — the game pauses, as the original did when its window was collapsed; it carries on
+    when you come back.
 Known by design: whole frames, no tearing (the original could tear); a window instead of a screen switch.
 
 ## Not yet certain — where your eyes help most
