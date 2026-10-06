@@ -11,6 +11,12 @@
 > fact is listed under "Bank corrections to append". No review follows: an executor who finds a number wrong STOPS and
 > reports (Invariant 10) — never edits the expectation.
 
+> **Execution corrections (2026-10-07, tranche 1 orchestrator — read before any task):** WT/branch names here are
+> stale (each session uses its own worktree). Decompiles are committed at `ghidra/cythera/` (Invariant 10 / Hazard 1's
+> "absent" no longer holds). HectorKit after K1: main `4ca2e18`, floor **322**, D14. Direct PICT modes are {0, 36, 64}
+> (129 = 36, 133–138 = 0), not "mode 64" (contract 3 / note 11 wrong). D28 already existed: C0 appended an as-built.
+> AI segments 0x0410–0x0436 are plaintext — C8/C9 read them via `segment(_:)`. C2 `segment(_:)` returns a zero-based copy.
+
 **Goal.** The installed Cythera 1.0.4 folder's game data is in git byte-identical to the archive; `Cythera/Core` exists
 with `CytheraCore` (Foundation + HectorResources) and `CytheraRender` (+ HectorGraphics/HectorAudio); every one of the
 1,558 segments of `Cythera Data` is classified and decoded to typed values or indexed pixels (one stray segment has no

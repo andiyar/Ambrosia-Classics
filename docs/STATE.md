@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C2 done; Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -93,6 +93,12 @@
   `docs/plans/2026-10-06-cythera-design.md` (APPROVED); Phase 0 plan `docs/plans/2026-10-06-cythera-phase0.md` (Fable
   planner, 14 tasks K1/C0–C12, ladder Cythera/Core → 84 tests, HK floor 313 → 319, census `failures 0`). **Nothing
   built.** Next: Phase 0 (chip issued).
+  **Phase 0 tranche 1 DONE (2026-10-07, Opus 5.5 orchestrator, all-Opus implementers + reviewers): K1 + C0 + C1 + C2.**
+  K1 on HectorKit main **4ca2e18** (HK D14; `decodePixels` takes 0x0099/0x009B regions as `maskRegion` + 16-bit DirectBits;
+  direct modes {0, 36, 64} as stored — plan's "mode 64" was wrong; floor **322**, plan said 319 from a stale 313 base).
+  Classics: `Resources/Cythera/` 20 files (D28 as-built), `Cythera/Core` CytheraData/CytheraResources + SegmentFile/
+  Cipher/Overlay, suite **14/0/0** (ladder on track). Next: C3 → C4/C5 + C8 → C9 (chip). Handoff
+  `docs/handoff-2026-10-07-cythera-phase0-t1.md`.
 
 1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
    as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents

@@ -706,6 +706,14 @@ overrides its location (D24.3 shape). Kit decisions (plan Architecture paragraph
 **Rejected (C0):** Git LFS (breaks anonymous clones of the public repo past the free quota) · data out of git behind
 symlinks (D24 reasons) · committing the PEF `Cythera`, the InputSprocket files or the `*.ai.rsrc` editor-state forks.
 
+**As built — Phase 0 tranche 1 (2026-10-07, K1 + C0–C2):** K1 on HectorKit main `4ca2e18`, HectorKit **D14**
+(floor 316 → **322**; the plan's 313 → 319 and "D13" were stale). **Plan correction (seat, re-measured):** the direct-colour
+PICTs do not all carry mode 64 — PICT 129 (16-bit paper doll) = 36 `transparent`, 133–138 and the Catamarca screenshot =
+0 `srcCopy`; `decodePixels` returns the mode as stored and accepts exactly {0, 36, 64}. What `transparent` did to the paper
+doll is a Phase 1 gate-card item. Research note 1's abbreviated hash tails for `Attack Weakest.ai` / `Dummy.ai` are typos
+(full hashes + `cmp` agree). Script-band AI segments 0x0410–0x0436 are stored unencrypted (`PerformAI` →
+`GetSegment(0x360+n)`): read them with `segment(_:)`, never `scriptSegment(_:)` — C8/C9 route them.
+
 ## D29 — Deimos Rising build: design + Phase 1 rulings (seat) (2026-10-06)
 
 **Decided (seat, under D27 and the 100 % rule; design `docs/plans/2026-10-06-deimos-design.md`, plan
