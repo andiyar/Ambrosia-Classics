@@ -73,7 +73,7 @@ ruling (memory `feedback-shareware-data-goes-in-git`; Deimos D24 is the preceden
 `!/Resources/Cythera/`, `Resources/Cythera/** binary`). Resource forks are already sibling `.rsrc` files in the
 archive (digest of INDEX resource census; `rsrc.py` parses them).
 
-| committed (≈ 16 MB) | not committed |
+| committed (11,570,723 B — planner probe, phase0 plan) | not committed |
 |---|---|
 | `Cythera Data` (5,608,688 B) · `Cythera Data.rsrc` · `Cythera.rsrc` (app fork: menus, dialogs, WIND/CNTL, `Lite`, `clut`, `snd `, `STR#`, cursors) · the 8 `*.ai` sources · `AI Scripting Document` (TEXT) · `Cythera Documentation.rsrc` (the doc viewer's content, Phase 8) · the 5 `* screenshot.pict` (oracles) · `Cythera 1.0.4 Notes.text`, `Cythera License.text` | the PEF binary `Cythera` (the game itself; stays in `ghidra/`, git-ignored), `Register Cythera`, 17 InputSprocket drivers + `USBHIDUniversalModule`, the `*.ai.rsrc` editor-state forks (ai-scripts.md §7, HIGH), `Icon_*`, web-link and FAQ files |
 
@@ -206,9 +206,11 @@ precedent), ruled when Phase 8 is planned.
    original did. Windows: ruled in Phase 8 (BTX D21 has no bar; Cythera's commands live there, so it is a real fork).
 8. **Text** uses the fonts the code asks for: the game's own `NFNT`/`sfnt` from `Cythera Data.rsrc` decoded by the
    replica; Apple system fonts (Geneva 10, font 3 size 9; ui-toolkit.md §1, ui-play.md §4.3, HIGH) through baked
-   glyphs, the BTX precedent (D16.4 → D20, Ben's licence call). Which ids/sizes the game requests is not in the bank
-   (digest §2.3) — Phase 0's census lists them; the anti-aliased path (`AADrawText`, `TDisableAntiAliasText`) is read
-   in Phase 1.
+   glyphs, the BTX precedent (D16.4 → D20, Ben's licence call). The ids/sizes come from the `TxSt` resources
+   (ArgosANouveau 14/18/22/24, Geneva 9/10, Seldane 10/12/18) plus literal TextFont 0/1/3 / TextSize 0/9/10 sites
+   (Phase 0 planner probe; both shipped NFNTs are one owTable entry short and the app's FOND 128 names a missing NFNT
+   — the phase0 plan's bank corrections); the anti-aliased path (`AADrawText`, `TDisableAntiAliasText`) is read in
+   Phase 1.
 9. **One display**; the original's backdrop spanned all screens with device attribute 13 (ui-play.md §6.2, HIGH).
 10. **DEBUG-only** "data missing" alert, compiled out of Release (Aki/BTX precedent). Nothing else the original lacks.
 
@@ -276,7 +278,6 @@ list (§8), phase scoping (§9), the open-item treatments (§10).
   corrected sections, never the struck text.
 - **Encryption covers script pages only** ("all of pages 0x01–0x30" is MED; data-format.md §1.3), and 0x0101/0x0210
   ship plaintext (NR 3) — the segment reader must not decrypt them.
-- **Ferazel K1** (`PICT.decodePixels`, public 16-bit ColorTable) is on HectorKit branch `ferazel-k1` (21b8632, floor
-  313), not on main at the time of writing; Cythera's few PICTs (splash, start screen, paper doll) need it or the
-  RGBA path — check `git -C ~/Developer/HectorKit log` first.
+- **Ferazel K1** (`PICT.decodePixels`, public 16-bit ColorTable) is on HectorKit main (d38a541, floor 313); Cythera's
+  PICTs also need PackBitsRgn/DirectBitsRgn/16-bit DirectBits in that path — the phase0 plan's K1.
 - **D-numbers collide** across parallel sessions: read DECISIONS on main at merge time and renumber.
