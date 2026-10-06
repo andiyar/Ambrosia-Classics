@@ -526,3 +526,11 @@ plan's "D23.n" references mean D24.n.)
 **Rejected:** Git LFS (breaks anonymous clones of the public repo past the free quota; no hard limit forces it) · data out
 of git behind symlinks (the Aki/BTX pattern — superseded for new games by Ben's ruling) · keeping ` Data` with the space.
 **Approved by:** Ben (standing ruling, data in git; D22 scene); layering per the orchestrator's Phase 0 brief (plan Q2: orchestrator's call — Ben, 2026-10-06, left it to us; not his ruling). Plan Q1 (app resource fork: 12 PICT, 6 DITL incl. the config dialog) → **yes, C8 runs** — orchestrator's call, Ben told.
+
+**Addendum — C8, the app resource fork (2026-10-06):** Q1 yes — orchestrator's call, Ben told. The application's
+resource fork is committed as the data-fork file `Resources/Deimos/Deimos Rising.rsrc` (151,602 B, SHA-256
+`9fb61088c4d97d1b35117c82a44a0f1f848fb78eb7561b6e3964df623410d3f5`, = the archive's `Deimos Rising/..namedfork/rsrc`;
+binary per `.gitattributes`). Census section 9: 39 types · 140 resources · PICT 12 (decoded 12) · DITL 6 (decoded 6,
+items 76). Nine PICTs (130 135 190–193 195–197) are 0x009B DirectBitsRgn, 16-bit packType 3/1 — decoded since
+HectorKit `c4a8866` (HectorKit D11; doc minors + floor 301 at `33d4dee`). HectorGraphics is a dependency of the census
+executable and the test target only, never of the Foundation-only `DeimosCore` library.

@@ -63,6 +63,7 @@ im16 45 · 480×3600 12 · 96×720 12 · 146×306 12 · 640×480 5 · other 4 ·
 soun 99 · effects 96 mono ima4 44100 Hz (frames 3,133,376) · music 3 stereo ima4 (packets 134,892 · 23,966 · 41,153)
 text 473 · stli 173 lines · flli 220 · idli 130 · reli 22 · coli 1 · tefo 54 · plde 2 · wede 5 (spawns 15) · leve 12 (objects 565) · unde 386 (states 1,167) · token errors 0
 film 5 · version 10005 · de01 le07 4809 · de02 le06 8357 · de03 le02 10058 · de04 le08 5649 · last le07 4809
+rsrc 39 types · 140 resources · PICT 12 (decoded 12) · DITL 6 (decoded 6, items 76)
 ```
 
 ## 1. Files
@@ -1147,5 +1148,75 @@ Overridden pak records: 0. Alerts: 0.
 | `de03` | 10005 | 0x54c83 | `le02` | 1 | 10058 | 57520 | 0x4a | `none` | yes |
 | `de04` | 10005 | 0x5afed | `le08` | 1 | 5649 | 24670 | 0x48 | `none` | yes |
 | `last` | 10005 | 0x469c2 | `le07` | 1 | 4809 | 25050 | 0x3a | `none` | yes |
+
+## 9. Application resource fork
+
+`Deimos Rising.rsrc` · 151,602 bytes · SHA-256 `9fb61088c4d97d1b35117c82a44a0f1f848fb78eb7561b6e3964df623410d3f5` · 39 types · 140 resources
+
+| type | count | IDs |
+| --- | ---: | --- |
+| `CHNK` | 1 | 950 |
+| `STR ` | 5 | 950 951 952 -16397 132 |
+| `BNDL` | 1 | 128 |
+| `CNTL` | 9 | 128 135 191 192 200 201 202 1000 1001 |
+| `DITL` | 6 | 190 191 192 193 900 901 |
+| `DLGX` | 3 | 190 191 192 |
+| `DLOG` | 5 | 190 191 192 193 900 |
+| `Deim` | 1 | 0 |
+| `FREF` | 3 | 128 129 130 |
+| `ICN#` | 8 | 128 129 130 200 201 202 203 204 |
+| `MBAR` | 2 | 128 129 |
+| `MENU` | 5 | 128 1000 1001 2000 2001 |
+| `Mcmd` | 1 | 1 |
+| `PICT` | 12 | 128 130 135 190 191 192 193 195 196 197 900 1000 |
+| `STR#` | 5 | 130 131 900 901 990 |
+| `TEXT` | 3 | 900 901 902 |
+| `cicn` | 2 | 128 200 |
+| `crsr` | 3 | 128 200 201 |
+| `dctb` | 1 | 190 |
+| `dftb` | 2 | 190 191 |
+| `dlgx` | 4 | 190 191 192 193 |
+| `icl4` | 8 | 128 129 130 200 201 202 203 204 |
+| `icl8` | 8 | 128 129 130 200 201 202 203 204 |
+| `ics#` | 8 | 128 129 130 200 201 202 203 204 |
+| `ics4` | 8 | 128 129 130 200 201 202 203 204 |
+| `ics8` | 8 | 128 129 130 200 201 202 203 204 |
+| `ictb` | 2 | 190 192 |
+| `isap` | 1 | 0 |
+| `setl` | 1 | 3558 |
+| `styl` | 3 | 900 901 902 |
+| `tab#` | 1 | 6000 |
+| `tset` | 2 | 493 2558 |
+| `vers` | 2 | 1 2 |
+| `icns` | 1 | 128 |
+| `Mngl` | 1 | 128 |
+| `SIZE` | 1 | -1 |
+| `carb` | 1 | 0 |
+| `plst` | 1 | 0 |
+| `cfrg` | 1 | 0 |
+
+| PICT | name | bytes | size | decode path | dropped paint ops |
+| ---: | --- | ---: | --- | --- | --- |
+| 128 | Game | 3046 | 32×32 | raster | — |
+| 130 |  | 158 | 317×2 | raster | — |
+| 135 |  | 216 | 2×20 | raster | — |
+| 190 | Up Arrow | 390 | 13×13 | raster | — |
+| 191 | Left Arrow | 382 | 13×13 | raster | — |
+| 192 | Right Arrow | 382 | 13×13 | raster | — |
+| 193 | Down Arrow | 390 | 13×13 | raster | — |
+| 195 | Fire Air Weapon | 932 | 115×16 | raster | — |
+| 196 | Fire Ground Weapon | 1106 | 115×16 | raster | — |
+| 197 | Select Special Weapon | 1084 | 115×16 | raster | — |
+| 900 | -Ambrosia Logo | 11154 | 99×151 | raster | — |
+| 1000 | Swoop Software Logo | 25340 | 640×480 | raster | — |
+
+| DITL | name | items | item types | bounds (t,l,b,r) |
+| ---: | --- | ---: | --- | --- |
+| 190 | Game - Preferences | 20 | 04 04 04 04 07 07 07 05 05 05 88 07 88 88 07 88 05 04 04 88 | 17,14,364,361 |
+| 191 | Game - Controls | 17 | 04 04 07 c0 10 c0 10 c0 10 c0 10 c0 10 c0 10 c0 10 | 20,18,311,285 |
+| 192 | Game - HID Controls | 17 | 04 04 07 04 88 04 88 04 88 04 88 04 88 04 88 04 88 | 20,18,351,405 |
+| 193 | Game - HID Calibration | 13 | 04 04 88 88 88 88 88 88 88 88 88 88 88 | 20,20,220,390 |
+| 900 | -Main Reg Alert | 6 | 04 04 80 c0 80 80 | 10,10,265,485 |
+| 901 | -Reg Error | 3 | 04 a0 88 | 10,10,128,361 |
 
 Totals: entries 872 (pak 871 + local 1), decoded 872, failures 0

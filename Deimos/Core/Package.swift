@@ -24,17 +24,22 @@ let package = Package(
             .product(name: "HectorAudio", package: "HectorKit"),
         ]),
         // The census tool (Task C7): Markdown on stdout = docs/deimos/data-census.md below its rule.
-        // `--render` alone uses ImageIO (PNG writer, census-only; plan invariant 2).
+        // `--render` uses ImageIO (PNG writer, census-only; plan invariant 2). Section 9 (Task C8, the
+        // app resource fork) decodes PICT/DITL with HectorGraphics, whose QuickTime-in-PICT path uses
+        // ImageIO — so HectorGraphics is a dependency of the census and the tests ONLY, never of the
+        // Foundation-only DeimosCore library (portability, HectorKit D6).
         .executableTarget(name: "deimos-census", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
         .testTarget(name: "DeimosCensusTests", dependencies: ["deimos-census", "DeimosCore"]),
         .testTarget(name: "DeimosCoreTests", dependencies: [
             "DeimosCore",
             .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
     ]
 )

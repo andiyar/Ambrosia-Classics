@@ -1,6 +1,7 @@
 import DeimosCore
 import Foundation
 import HectorAudio
+import HectorGraphics
 import HectorResources
 #if canImport(ImageIO)
 import CoreGraphics
@@ -281,11 +282,15 @@ enum DeimosCensus {
             + Set(films.map { Int($0.film.version) }).sorted().map(String.init).joined(separator: "/") + " · "
             + films.map { "\($0.id) \($0.film.level) \($0.film.players[0].frames)" }.joined(separator: " · ")
 
+        // 9. The application's resource fork (Task C8), committed as a data-fork file next to `Data`.
+        let rsrc = AppResourceFork.census(dataDirectory: dataDirectory)
+        failures += rsrc.failures
+
         // Print.
         out.line("## Summary")
         out.line("")
         out.line("```")
-        for l in [filesLine, tagsLine, im08Line, im16Line, sounLine, textLine, filmLine] { out.line(l) }
+        for l in [filesLine, tagsLine, im08Line, im16Line, sounLine, textLine, filmLine, rsrc.summaryLine] { out.line(l) }
         out.line("```")
         out.line("")
 
@@ -356,6 +361,11 @@ enum DeimosCensus {
                           "\(f.players[0].frames)", "\(f.players[0].score)", "0x" + String(maxInput, radix: 16),
                           "`\(f.players[1].level)`", f.trailingBytesAreZero ? "yes" : "no"]))
         }
+        out.line("")
+
+        out.line("## 9. Application resource fork")
+        out.line("")
+        rsrc.section.forEach { out.line($0) }
         out.line("")
 
         let local = index.records.filter(\.isLocal).count

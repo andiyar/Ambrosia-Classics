@@ -36,8 +36,8 @@ private func runCensus(_ binary: URL, _ arguments: [String]) throws -> (status: 
 /// `deimos-census` (plan Task C7): the tool's stdout is `docs/deimos/data-census.md` below its rule.
 final class DeimosCensusTests: XCTestCase {
 
-    /// The nine summary lines (plan Task C7 "Exact summary lines"), each a whole stdout line, in this
-    /// order, Totals last.
+    /// The nine summary lines (plan Task C7 "Exact summary lines") plus Task C8's `rsrc` line, each a whole
+    /// stdout line, in this order, Totals last.
     static let summaryLines = [
         "# Deimos Rising 1.0.6 — data census",
         "files 5 · paks 4 (Audio.pak 96 · Game.pak 763 · Interface.pak 9 · Music.pak 3) · local 1 · CRC ok 871",
@@ -51,6 +51,7 @@ final class DeimosCensusTests: XCTestCase {
         "text 473 · stli 173 lines · flli 220 · idli 130 · reli 22 · coli 1 · tefo 54 · plde 2 · wede 5 (spawns 15) · "
             + "leve 12 (objects 565) · unde 386 (states 1,167) · token errors 0",
         "film 5 · version 10005 · de01 le07 4809 · de02 le06 8357 · de03 le02 10058 · de04 le08 5649 · last le07 4809",
+        "rsrc 39 types · 140 resources · PICT 12 (decoded 12) · DITL 6 (decoded 6, items 76)",
         "Totals: entries 872 (pak 871 + local 1), decoded 872, failures 0",
     ]
 
