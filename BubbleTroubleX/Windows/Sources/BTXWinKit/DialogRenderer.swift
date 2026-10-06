@@ -23,6 +23,8 @@ public final class DialogRenderer {
     static let accentPressed: UInt32 = 0x0062CC
     static let fieldBorder: UInt32 = 0xD9D9D9
     static let selection: UInt32 = 0xB3D7FF
+    /// The selection of a window that is not key (Aqua's unemphasized selection).
+    static let inactiveSelection: UInt32 = 0xDCDCDC
     static let chevron: UInt32 = 0x262626
     static let menuFill: UInt32 = 0xF9F9F9
     static let menuBorder: UInt32 = 0xC4C4C4
@@ -87,7 +89,7 @@ public final class DialogRenderer {
         switch item.kind {
         case .button:
             let pressed = w.flashItem == item.number || w.tracking == .control(item: item.number, inside: true)
-            let isDefault = w.defaultItem == item.number && active
+            let isDefault = w.defaultItem == item.number && active && w.isFrontmost
             let fill = isDefault ? (pressed ? Self.accentPressed : Self.accent)
                                  : (pressed ? Self.buttonPressed : Self.buttonFill)
             Self.fillRoundRect(&img, Self.box(r), radius: 5, rgb: fill)
@@ -136,7 +138,7 @@ public final class DialogRenderer {
         let r = item.rect
         let focused = w.focusedEditItem == item.number
         let bezel = r.insetBy(-3, -3)
-        if focused {
+        if focused && w.isFrontmost {
             // The Aqua focus ring around the first responder.
             Self.strokeRoundRect(&img, Self.box(bezel.insetBy(-3, -3)), radius: 8, width: 3.5, rgb: Self.accent,
                                  alpha: 0.5)
@@ -152,7 +154,7 @@ public final class DialogRenderer {
             let b = x0 + width(String(chars[0..<sel.upperBound]))
             let left = max(a, clip.x), right = min(b, clip.maxX)
             if right > left { Self.fill(&img, DialogRect(x: left, y: r.y, width: right - left, height: r.height),
-                                        Self.selection) }
+                                        w.isFrontmost ? Self.selection : Self.inactiveSelection) }
         }
         text(String(chars), x: x0, baseline: centredBaseline(r.y, r.height), Self.textColour, clip: clip,
              into: &img)

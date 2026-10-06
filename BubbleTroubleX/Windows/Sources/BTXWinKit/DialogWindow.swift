@@ -170,6 +170,13 @@ public final class DialogWindow {
     /// The field's horizontal scroll (px) so the caret stays visible.
     var scroll: [Int: Int] = [:]
 
+    /// The front (active) window: only it draws its default button in the accent colour, its focus ring and caret —
+    /// a dialog behind another (DLOG 190 under DLOG 200 or an alert) draws inactive, as an Aqua window does when it
+    /// is not key. `DialogSystem` keeps it in step with the stack.
+    public internal(set) var isFrontmost = true {
+        didSet { if isFrontmost != oldValue { touch() } }
+    }
+
     /// The mouse in dialog coordinates (`GetMouse` in the dialog port); nil before the first move.
     public internal(set) var mouseLocation: (x: Int, y: Int)?
 
@@ -394,23 +401,26 @@ public final class DialogWindow {
         }
     }
 
-    /// The caret is drawn (focused field, empty selection, on-phase of the blink).
+    /// The caret is drawn (front window, focused field, empty selection, on-phase of the blink).
     var caretVisible: Bool {
-        focusedEditItem != nil && selStart == selEnd && (caretTicks / Self.caretPeriod) % 2 == 0
+        isFrontmost && focusedEditItem != nil && selStart == selEnd && (caretTicks / Self.caretPeriod) % 2 == 0
     }
 
     // MARK: - Mouse (dialog coordinates)
 
     /// The item a click at (x, y) goes to: the topmost shown item that takes clicks — buttons, checkboxes, radios,
     /// popups and edit fields while active, enabled user / icon items. Static text, pictures and disabled items pass
-    /// the click to the item under them (`FindDialogItem`).
+    /// the click to the item under them (`FindDialogItem`). An edit field takes the click (focus, caret) while active
+    /// whatever its DITL enable bit; only an enabled one is reported as hit (`mouseUp`) — the Mac replica's
+    /// `DialogEditField`: always editable, `onMouseDown` → hit only when `item.enabled`; a deactivated one is a
+    /// disabled NSTextField, which takes no click.
     func clickTarget(_ x: Int, _ y: Int) -> DialogItem? {
         for item in items.reversed() where !hidden.contains(item.number) && item.rect.contains(x, y) {
             switch item.kind {
             case .button, .checkBox, .radio, .control:
                 if !inactive.contains(item.number) { return item }
             case .editText:
-                return item
+                if !inactive.contains(item.number) { return item }
             case .user, .icon, .other:
                 if item.enabled { return item }
             case .staticText, .picture:
@@ -500,7 +510,7 @@ public final class DialogWindow {
             if inside { hit(n) }
         case .editDrag(let n, _):
             tracking = .none
-            hit(n)
+            if item(n)?.enabled == true { hit(n) }
         case .popup(var m):
             if let r = m.highlighted {
                 tracking = .none

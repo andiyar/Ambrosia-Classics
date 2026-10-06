@@ -308,13 +308,20 @@ public final class DialogSystem {
         d.measure = { [unowned renderer] in renderer.width($0) }
         if let m = mouse { d.mouseLocation = (m.x - o.x, m.y - o.y) }
         stack.append(d)
+        updateFrontmost()
         delegate?.dialogModalStateChanged()
+    }
+
+    /// Only the front dialog draws active.
+    private func updateFrontmost() {
+        for d in stack { d.isFrontmost = d === stack.last }
     }
 
     /// Disposes `d` (and anything in front of it).
     private func pop(_ d: DialogWindow) {
         guard let i = stack.firstIndex(where: { $0 === d }) else { return }
         stack.removeSubrange(i...)
+        updateFrontmost()
         if pendingClose.map({ c in !stack.contains { $0 === c } }) == true { pendingClose = nil }
         delegate?.dialogModalStateChanged()
     }
