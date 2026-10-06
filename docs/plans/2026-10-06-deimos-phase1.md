@@ -205,7 +205,7 @@ PresentKind)`, `func fadeEnd()`; `var screen: Pixmap555`; `func buffer(_ id: Buf
 
 ### S5. DeimosHost public surface
 `MacTicks` (`static func ticks(seconds: Double, rate: Double) -> UInt32`), `TickRate` (`.classic` 60.15 — default per Q1,
-`.osx` 60.0), `KeyTable` (prefs key table → `PlayerInput` per player), `DeimosDriver` (`init(assets:prefs:rate:start:)`,
+`.osx` 60.0), `DeimosDriver` (`init(assets:prefs:rate:start:)`,
 `mutating func idle(seconds: Double, keys: HeldKeys) -> DriverOutput`, `var screen: Pixmap555`), `DriverOutput`
 (`screenChanged: Bool`, `requests: [ShellRequest]`).
 
@@ -508,7 +508,8 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
 
 ### H1 — minor — `DeimosHost`: the driver (→ +6)
 - **Files:** `Package.swift` (library + target `DeimosHost`, test target `DeimosHostTests`);
-  `Sources/DeimosHost/{MacTicks,KeyTable,DeimosDriver}.swift`; `Tests/DeimosHostTests/DriverTests.swift`.
+  `Sources/DeimosHost/{MacTicks,DeimosDriver}.swift` (⚑ as built: `KeyTable` is a public DeimosCore type — the LOCKED
+  `pass(keys: HeldKeys)` maps inside Core; C6 quality review, orchestrator ruling); `Tests/DeimosHostTests/DriverTests.swift`.
 - **Contract:** `MacTicks.ticks(seconds:rate:)` = `UInt32(truncatingIfNeeded: UInt64((seconds · rate).rounded(.down)))`;
   rate `.classic` 60.15 (default, Q1) / `.osx` 60. `DeimosDriver.idle` runs the session's ops sequentially and yields where
   the original waited: **`.limit`** — continue only when `ticks ≥ lastPresent + 2` (unsigned compare), then `lastPresent
@@ -517,7 +518,7 @@ minor = one leg. "+N" = new `Test Case`s. Every task: G6, G7, G10, plus the gate
   changed. A pass begins only after the previous pass's ops finished; keys are sampled at the pass start (begin frame).
   No catch-up: a stall yields exactly one late pass. `sessionEnded` (Esc) → ◇ a new session at sector 1 with seed =
   current ticks (the original's `srand(TickCount())`, `100057c8`) — the Phase-1 stand-in for "back to the menu".
-  `KeyTable` maps `HeldKeys` through the prefs key table (P1: 0x7B left, 0x7C right, 0x7E up, 0x7D down, 0x37/0x3A/0x31
+  Core's `KeyTable` maps `HeldKeys` through the prefs key table (P1: 0x7B left, 0x7C right, 0x7E up, 0x7D down, 0x37/0x3A/0x31
   the buttons; P2 keypad) to `PlayerInput`.
 - **Tests (6):** `testTicksAtRate` (60.15: 1 s → 60, 10 s → 601, 100 s → 6015; 60: 10 s → 600) ·
   `testLimiterTwoTicksPolledEvery4ms` (fake clock: present stamps exactly 2 ticks apart over 300 passes) ·
