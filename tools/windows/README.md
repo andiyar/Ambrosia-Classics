@@ -1,7 +1,8 @@
 # tools/windows — Swift → Windows x86_64 from this Mac, tested in CrossOver
 
-Plan: `docs/plans/2026-10-06-btx-windows.md` (W0). Rulings: DECISIONS D15. Nothing here installs anything;
-everything big is cached in `~/Developer/Toolchains/windows-cross/` (outside git, ~12 GB on disk).
+Plan: `docs/plans/2026-10-06-btx-windows.md` (W0). Rulings: DECISIONS D15. Nothing here installs anything
+into the system; everything big is cached in `~/Developer/Toolchains/windows-cross/` (outside git, ~12 GB on
+disk). The two exceptions are listed under "What it writes where" below.
 
 ```sh
 tools/windows/setup-toolchain.sh                     # idempotent; first run ~4.2 GB of downloads
@@ -15,8 +16,8 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 | `env.sh` | Pins + paths (sourced by the others). `win_path` maps a Mac path to `Z:\…` |
 | `setup-toolchain.sh` | Fetches, verifies (SHA-256) and extracts everything below; writes the Swift SDK bundle |
 | `build.sh <pkg> <product\|all> [--tests] [--release]` | SwiftPM cross-build; test bundles are copied to `…PackageTests.exe` |
-| `run-in-crossover.sh <exe> [args]` | Runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through, watchdog `WIN_RUN_TIMEOUT` (default 900 s) |
-| `proof-b.sh` | Copies `BubbleTrouble/Core` (unmodified, laid out like the repo) + a symlinked HectorKit, cross-builds the tests, runs each test class in CrossOver, tallies verdicts |
+| `run-in-crossover.sh <exe> [args]` | Runs in bottle `hector-win` (win10_64, created on first use, crash dialog off), DLLs via `WINEPATH`, exit code passed through **truncated to 8 bits** (see below), watchdog `WIN_RUN_TIMEOUT` (default 900 s) |
+| `proof-b.sh` | Copies `BubbleTrouble/Core` (laid out like the repo; its sources unmodified, but the copy's test-only `PNGWriter.swift` is patched — see the end of this file) + a symlinked HectorKit, cross-builds the tests, runs each test class in CrossOver, tallies verdicts; exits 1 if `--list-tests` finds no tests |
 | `hello/` | Proof A package |
 
 ## Pinned versions (2026-10-06)
@@ -31,8 +32,35 @@ HECTORKIT_DIR=<HectorKit checkout with the W0 guards> tools/windows/proof-b.sh
 | SDL3 | 3.4.16 (= brew `sdl3` on the Mac) | github.com/libsdl-org `SDL3-devel-3.4.16-VC.zip` (17 MB) | `1a784cb2a5c64d56fe7a62090fe9d242d9865f235e4ea9678f1a6ba4e693e7de` |
 | CrossOver | /Applications/CrossOver.app (installed) | — | — |
 
-Total download ≈ 4.2 GB (swift.org 3.7 GB, xwin 0.4 GB, UCRT 0.1 GB, SDL 17 MB). The Xcode Swift
+Total download ≈ 4.2 GB, decimal units, measured from the cache 2026-10-06: swift.org 3.69 GB
+(3,688,745,265 bytes = 3.44 GiB), xwin 0.42 GB, UCRT 0.11 GB, SDL 17 MB. (`du -sh downloads` prints `3.6G`:
+that is GiB and includes the UCRT and SDL files.) The Xcode Swift
 (`swiftlang-6.4.0.27.1`) cannot be used: its module format does not load swift.org's Windows SDK modules.
+
+## What it writes where
+
+- `$WIN_CROSS` (`~/Developer/Toolchains/windows-cross/`): every download, extraction, the Swift SDK bundle,
+  build products (`build/`, `work/`). Deleting it undoes everything except the Homebrew and bottle items below.
+- **Homebrew (opt-in only):** `setup-toolchain.sh` needs `7z`, `msiextract` and `xwin` on `PATH`. If one is
+  missing it stops and names the formula (`sevenzip`, `msitools`, `xwin`); with `WIN_SETUP_BREW=1` it runs
+  `brew install` itself instead, which writes into Homebrew's prefix, outside the cache.
+- **CrossOver bottle:** `run-in-crossover.sh` creates `~/Library/Application Support/CrossOver/Bottles/hector-win`
+  on first use (and sets one registry value in it: crash dialog off). Nothing else is installed into it.
+- Nothing is written to the repo (`proof-b.sh` works on a copy under `$WIN_CROSS/work/`).
+
+## Trust boundaries
+
+- swift.org and SDL downloads are checked against SHA-256 digests pinned in `setup-toolchain.sh`.
+- The MSVC CRT / Windows SDK (xwin) and the UCRT msi + cabs are **not** pinned by us: they are verified against
+  the SHA-256 values in Microsoft's VS package manifest, which xwin fetches over HTTPS and caches
+  (`xwin-cache/dl/pkg_manifest_*.vsman`). So their integrity rests on TLS to Microsoft and on xwin itself; a
+  changed manifest would be accepted silently. Pinning the manifest's own digest would close that (not done).
+
+## Exit codes under Wine
+
+`run-in-crossover.sh` passes the program's exit status through as a Unix status, which is 8 bits: a Windows
+exit code is reported modulo 256 (e.g. `0xC0000005` access violation → 5, 256 → 0). Treat only 0 as success and
+read the log for crashes; a non-zero code's exact value is not reliable. 124 = the watchdog fired.
 
 ## How it fits together (and why)
 
@@ -91,10 +119,13 @@ is byte-identical on Windows.
 3. **`.macOSRoman` is wrong in Foundation on Windows** (1 test: `FrontEndShellTests.testPausedCheatBufferTakesKeyDownsOnly`,
    é → 0xBC instead of 0x8E). Decoding byte 0x80…0xFF gives the Mac Roman repertoire *sorted by Unicode
    value* (0x80 → U+00A0, 0x81 → U+00A1, … 0x8E → U+00B1) — a Foundation table bug, not Wine: Wine's own
-   code page 10000 (`MultiByteToWideChar`) is correct (0x80 → U+00C4, 0x8E → U+00E9). Encoding is equally
+   code page 10000 (`MultiByteToWideChar`) gets those right (0x80 → U+00C4, 0x8E → U+00E9) but is *also* wrong
+   at 0xBD: it follows Microsoft's cp10000 table, 0xBD → U+2126 OHM SIGN, where Apple's table (since Mac OS 8.5)
+   gives U+03A9 GREEK CAPITAL OMEGA. So it is no fallback either. Encoding is equally
    wrong, and decomposed input (`e` + U+0301) fails outright. Real Windows will do the same. Affects every
    `.macOSRoman` use in the core (`MacText` prefs strings, `STR#` lists, `LettersFont`) and HectorKit's
-   `MacRoman.bytes`; ASCII is unaffected. Fix = a table-driven MacRoman in HectorKit (core change → ruling).
+   `MacRoman.bytes`; ASCII is unaffected. Fix = HectorKit owns the table (`MacRoman`), ruled in D16.2 — neither
+   Foundation's nor the OS's code page is trusted.
 
 Mac-side W0 code changes: HectorKit `CodecImage.swift` + `Ditl.swift` portability guards only (`#if
 canImport`), Mac behaviour byte-identical. `proof-b.sh` adds one test-only shim to its *copy* of the core:

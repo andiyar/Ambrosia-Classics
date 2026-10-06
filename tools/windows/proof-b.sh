@@ -54,8 +54,13 @@ export HECTORKIT_DATA_BTX="$(win_path "$data")"
 export WIN_RUN_TIMEOUT="${WIN_RUN_TIMEOUT:-900}"
 logs="$work/logs"; rm -rf "$logs"; mkdir -p "$logs"
 "$here/run-in-crossover.sh" "$exe" --list-tests > "$logs/list.txt" 2>&1 || true
-tests=(${(f)"$(tr -d '\r' < "$logs/list.txt" | grep -E '^[A-Za-z0-9_]+\.[A-Za-z0-9_]+/[A-Za-z0-9_]+$')"})
+tests=(${(f)"$(tr -d '\r' < "$logs/list.txt" | grep -E '^[A-Za-z0-9_]+\.[A-Za-z0-9_]+/[A-Za-z0-9_]+$' || true)"})
 classes=(${(u)${tests%%/*}})
+if (( ${#tests} == 0 )); then
+    print -u2 "proof-b: --list-tests yielded 0 tests (build or CrossOver problem?) — see $logs/list.txt"
+    tail -n 20 "$logs/list.txt" >&2 || true
+    exit 1
+fi
 print -r -- "proof-b: ${#tests} tests in ${#classes} classes; data $HECTORKIT_DATA_BTX"
 
 verdicts="$logs/verdicts.txt"; : > "$verdicts"

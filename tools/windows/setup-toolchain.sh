@@ -25,7 +25,20 @@ SDL3_SHA="1a784cb2a5c64d56fe7a62090fe9d242d9865f235e4ea9678f1a6ba4e693e7de"
 SWIFT_BASE="https://download.swift.org/swift-${SWIFT_WIN_VERSION}-release"
 
 say() { print -P "%B[setup]%b $*" >&2; }
-need() { command -v "$1" >/dev/null || { say "installing $2 (brew)"; brew install "$2"; }; }
+# Host tools. Missing ones are NOT installed silently: `brew install` writes outside $WIN_CROSS (into Homebrew's
+# prefix), so it only happens when WIN_SETUP_BREW=1 is set; otherwise the script stops and names the formula.
+need() {
+    command -v "$1" >/dev/null && return
+    if [[ "${WIN_SETUP_BREW:-0}" == 1 ]]; then
+        say "WARNING: $1 missing — running 'brew install $2' (writes into Homebrew's prefix, OUTSIDE $WIN_CROSS)"
+        brew install "$2"
+    else
+        say "missing host tool '$1' (Homebrew formula '$2')."
+        say "Install it yourself (brew install $2), or re-run with WIN_SETUP_BREW=1 to let this script brew it."
+        say "Either way it lands in Homebrew's prefix, outside $WIN_CROSS."
+        exit 69
+    fi
+}
 sha_ok() { [[ "$(shasum -a 256 "$1" | cut -d' ' -f1)" == "$2" ]]; }
 fetch() {   # fetch <url> <file> <sha256>
     local url="$1" file="$2" sha="$3"
