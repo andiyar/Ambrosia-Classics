@@ -83,8 +83,8 @@ func bake(name: String, size: Int) -> BTXFont {
     var index: [BTXFont.Bitmap: UInt16] = [:]
     var maxPhases = 0
     /// One drawing unit (a character, or a ligature pair): its line metrics and its phase segments. Sampled at 64
-    /// fractions, then each change between neighbouring samples is bisected to the exact Double where CoreGraphics
-    /// switches bitmap.
+    /// fractions plus 1⁻, then each change between neighbouring samples is bisected to the exact Double where
+    /// CoreGraphics switches bitmap.
     func unit(_ l: CTLine) -> BTXFont.Glyph {
         let m = advance(l)
         func draw(_ t: Double) -> BTXFont.Bitmap? {
@@ -109,14 +109,17 @@ func bake(name: String, size: Int) -> BTXFont {
             if c == b { return switches(lo, a, mid, b) }
             return switches(lo, a, mid, c) + switches(mid, c, hi, b)
         }
+        // The last sample is the largest Double below 1: CoreGraphics also switches just short of the next pixel
+        // (≈ 0.999, to that pixel's phase 0 — the bitmap one column right), which 63/64 would miss.
         let samples = 64
+        let at = (0...samples).map { k in k == samples ? (1.0).nextDown : Double(k) / Double(samples) }
         var previous = draw(0)
         var phases = [BTXFont.Phase(start: 0, bitmap: id(previous))]
-        for k in 1..<samples {
-            let t = Double(k) / Double(samples)
+        for k in 1...samples {
+            let t = at[k]
             let next = draw(t)
             guard next != previous else { continue }
-            for (start, b) in switches(Double(k - 1) / Double(samples), previous, t, next) {
+            for (start, b) in switches(at[k - 1], previous, t, next) {
                 phases.append(BTXFont.Phase(start: start, bitmap: id(b)))
             }
             previous = next

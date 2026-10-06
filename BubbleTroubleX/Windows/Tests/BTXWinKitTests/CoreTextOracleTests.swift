@@ -80,6 +80,9 @@ final class CoreTextOracle: TextRasterizer {
     }
 }
 
+/// The oracle is live CoreText on the machine running the tests, while the faces were baked on one macOS version:
+/// a later macOS that changes the system font (SF revisions) or CoreGraphics' rasterizer makes these tests fail
+/// until the faces are re-baked (`swift run btx-bake-font Resources/Fonts`) — a re-bake signal, not a regression (M4).
 final class CoreTextOracleTests: XCTestCase {
     static let faces: [(String, Int)] = [("Geneva", 9), ("Geneva", 10), ("System", 12), ("System-Bold", 12)]
     /// The info box's and the FPS readout's strings, every digit, a kerned pair, and the printable ASCII range.
@@ -125,6 +128,68 @@ final class CoreTextOracleTests: XCTestCase {
                 XCTAssertEqual(baked.width(s, font: font, size: size), oracle.width(s, font: font, size: size), s)
             }
             XCTAssertEqual(mismatched, [], "\(font) \(size)")
+        }
+    }
+
+    /// Every character at every phase it has: each phase segment is reached by drawing the character after a
+    /// one- or two-character prefix whose pen lands in that segment (M7). Segments no prefix reaches are reported.
+    func testEveryCharacterAtEveryReachablePhaseMatches() {
+        var report: [String] = []
+        for (font, size) in Self.faces {
+            let f = baked.face(font, size: size)!
+            let printable = (0x20...0xFF).filter { $0 != 0x7F }.map { String(bytes: [UInt8($0)], encoding: .macOSRoman)! }
+            let prefixes = printable + ["i", "l", "1", "m", "W"].flatMap { a in printable.map { a + $0 } }
+            // Each prefix's pen fraction for a following character, ignoring the pair's own kerning (checked below).
+            var mismatched: [String] = [], reached = 0, segments = 0
+            for c in printable {
+                let g = f.glyphs[c.unicodeScalars.first!.value]!
+                for (k, phase) in g.phases.enumerated() {
+                    segments += 1
+                    let end = k + 1 < g.phases.count ? g.phases[k + 1].start : 1
+                    let hit = prefixes.lazy.map { $0 + c }.first { s in
+                        let l = self.baked.layout(s, in: f)
+                        guard l.glyphs.count == s.unicodeScalars.count, let x = l.glyphs.last?.x else { return false }
+                        let fraction = x - x.rounded(.down)
+                        return fraction >= phase.start && fraction < end
+                    }
+                    guard let s = hit else { continue }
+                    reached += 1
+                    if compare(s, font: font, size: size, at: (10, 20)).0 != 0 { mismatched.append(s) }
+                }
+            }
+            report.append("\(font) \(size): \(reached)/\(segments) segments")
+            XCTAssertEqual(mismatched, [], "\(font) \(size)")
+        }
+        print("W2 phase coverage — " + report.joined(separator: "; "))
+    }
+
+    /// CoreGraphics snaps a pen fraction ≥ 0.999 to the next pixel's phase 0 (I1): strings whose last pen lands there
+    /// (found by search; the reviewer's "M 3x", "Wijx" among them) draw as CoreText does. System 12 has none: its pens
+    /// are multiples of 1/512, so the nearest below 1 is 511/512 ≈ 0.998.
+    func testPenJustBelowTheNextPixelMatches() {
+        let probes: [(String, Int, [String])] = [
+            ("Geneva", 9, ["ABsyx", "ABysx", "ARsdx", "ARspx"]),
+            ("Geneva", 10, ["FGKsx", "FGsKx", "FKsGx", "Fmstx"]),
+            ("System-Bold", 12, ["EVx", "Osx", "AMRx", "ANvx", "M 3x", "Wijx"]),
+        ]
+        for (font, size, strings) in probes {
+            let f = baked.face(font, size: size)!
+            for s in strings {
+                let x = baked.layout(s, in: f).glyphs.last!.x
+                XCTAssertGreaterThanOrEqual(x - x.rounded(.down), 0.999, "\(font) \(size) \(s): probe pen")
+                XCTAssertEqual(compare(s, font: font, size: size, at: (10, 20)).0, 0, "\(font) \(size) \(s)")
+            }
+        }
+    }
+
+    /// Control characters: C0 and DEL take no width and draw nothing; a tab moves to the next 28 px stop (M2).
+    func testControlCharactersMatchCoreText() {
+        for (font, size) in Self.faces {
+            for s in ["\u{0}", "A\u{0}V", "A\u{1}V\u{7F}", "\t", "\t\t", "AB\tx", "Score:\t12", "A\nB"] {
+                XCTAssertEqual(baked.width(s, font: font, size: size), oracle.width(s, font: font, size: size),
+                               "\(font) \(size) \(s.debugDescription)")
+                XCTAssertEqual(compare(s, font: font, size: size, at: (10, 20)).0, 0, "\(font) \(size) \(s.debugDescription)")
+            }
         }
     }
 

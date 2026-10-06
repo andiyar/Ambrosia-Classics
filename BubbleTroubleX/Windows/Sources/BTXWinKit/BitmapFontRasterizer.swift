@@ -9,19 +9,30 @@ import Foundation
 /// (source-over with CoreGraphics' truncating A8 arithmetic), then blended toward `rgb` with every touched pixel written opaque.
 ///
 /// Measured against CoreText (BTXWinKitTests.CoreTextOracleTests): every MacRoman character and every game string
-/// pixel-identical. Known residue: contextual forms (the System font raises the colon between digits, "12:30") are
-/// not modelled, nor kerning across a ligature's inner edge; characters the faces lack draw as `?`.
+/// pixel-identical. Known residue: contextual forms are not modelled — the System faces' raised colon between digits
+/// ("12:30") and their other contextual alternates (none of which a game string reaches) — nor kerning across a
+/// ligature's inner edge; characters the faces lack draw as `?`. Control characters follow CoreText: C0 controls and
+/// DEL draw nothing, take no width and are transparent to kerning; a tab moves the pen to the next 28 px stop
+/// (CoreText's default tab interval).
 public final class BitmapFontRasterizer: TextRasterizer {
     private var faces: [String: BTXFont] = [:]
 
-    /// Loads every `*.btxfont` in `fontsDirectory`.
+    public enum LoadError: Error, Equatable {
+        /// The fonts directory holds no `*.btxfont` — every string would draw invisibly, so it is refused.
+        case noFonts(String)
+    }
+
+    /// Loads every `*.btxfont` in `fontsDirectory`; throws if the directory is missing or holds none.
     public convenience init(fontsDirectory: URL) throws {
         let names = try FileManager.default.contentsOfDirectory(atPath: fontsDirectory.path)
             .filter { $0.hasSuffix(".btxfont") }.sorted()
-        try self.init(fonts: names.map { try BTXFont(data: Data(contentsOf: fontsDirectory.appendingPathComponent($0))) })
+        guard !names.isEmpty else { throw LoadError.noFonts(fontsDirectory.path) }
+        self.init(fonts: try names.map { try BTXFont(data: Data(contentsOf: fontsDirectory.appendingPathComponent($0))) })
     }
 
+    /// `fonts` must not be empty.
     public init(fonts: [BTXFont]) {
+        precondition(!fonts.isEmpty, "BitmapFontRasterizer needs at least one face")
         for f in fonts { faces[Self.key(f.name, f.size)] = f }
     }
 
@@ -43,18 +54,28 @@ public final class BitmapFontRasterizer: TextRasterizer {
         var ascent: Double, descent: Double
     }
 
-    private static let question: UInt32 = 0x3F
+    private static let question: UInt32 = 0x3F, tab: UInt32 = 0x09
+    /// CoreText's default tab interval (no paragraph style): a tab advances the pen to the next multiple.
+    static let tabInterval = 28.0
 
     func layout(_ s: String, in f: BTXFont) -> Layout {
         var out = Layout(ascent: 0, descent: 0)
         var pen = 0.0
         let scalars = s.precomposedStringWithCanonicalMapping.unicodeScalars.compactMap { u -> UInt32? in
-            f.glyphs[u.value] != nil ? u.value : (f.glyphs[Self.question] != nil ? Self.question : nil)
+            if u.value == Self.tab { return Self.tab }
+            if u.value < 0x20 || u.value == 0x7F { return nil }        // drawn as nothing, transparent to kerning
+            return f.glyphs[u.value] != nil ? u.value : (f.glyphs[Self.question] != nil ? Self.question : nil)
         }
         var previous: UInt32?
         var i = 0
         while i < scalars.count {
             let scalar = scalars[i]
+            if scalar == Self.tab {
+                pen = ((pen / Self.tabInterval).rounded(.down) + 1) * Self.tabInterval
+                previous = nil
+                i += 1
+                continue
+            }
             var g = f.glyphs[scalar]!, last = scalar, step = 1
             if i + 1 < scalars.count, let lig = f.ligatures[BTXFont.Pair(scalar, scalars[i + 1])] {
                 g = lig; last = scalars[i + 1]; step = 2                  // drawn as one unit, as CoreText does

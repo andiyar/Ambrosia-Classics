@@ -122,6 +122,31 @@ final class BitmapFontRasterizerTests: XCTestCase {
         XCTAssertEqual(r.width("A", font: "Nope", size: 9), 6, "any face")
     }
 
+    func testControlCharactersAreInvisibleAndTabsStopEvery28() {
+        XCTAssertEqual(r.width("\u{0}", font: "Test", size: 9), 0)
+        XCTAssertEqual(r.width("A\u{0}A", font: "Test", size: 9), 11, "transparent to kerning")
+        XCTAssertEqual(r.width("A\u{1F}\u{7F}", font: "Test", size: 9), 6)
+        XCTAssertEqual(r.width("\t", font: "Test", size: 9), 28)
+        XCTAssertEqual(r.width("A\tA", font: "Test", size: 9), 34)
+        XCTAssertEqual(r.width("\t\t", font: "Test", size: 9), 56)
+        var a = RGBAImage(width: 20, height: 12), b = a
+        r.rasterize("\u{0}\u{7}", font: "Test", size: 9, rgb: 0xFFFFFF, into: &a, at: (3, 8), centredIn: nil)
+        XCTAssertEqual(a, b, "nothing drawn")
+        r.rasterize("A\u{0}", font: "Test", size: 9, rgb: 0xFFFFFF, into: &a, at: (3, 8), centredIn: nil)
+        r.rasterize("A", font: "Test", size: 9, rgb: 0xFFFFFF, into: &b, at: (3, 8), centredIn: nil)
+        XCTAssertEqual(a, b)
+    }
+
+    func testEmptyOrMissingFontsDirectoryThrows() throws {
+        let empty = FileManager.default.temporaryDirectory.appendingPathComponent("btx-empty-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: empty) }
+        XCTAssertThrowsError(try BitmapFontRasterizer(fontsDirectory: empty)) {
+            XCTAssertEqual($0 as? BitmapFontRasterizer.LoadError, .noFonts(empty.path))
+        }
+        XCTAssertThrowsError(try BitmapFontRasterizer(fontsDirectory: empty.appendingPathComponent("absent")))
+    }
+
     func testLoadsTheFontsDirectory() throws {
         let loaded = try BitmapFontRasterizer(fontsDirectory: fontsDirectory)
         XCTAssertNotNil(loaded.face("Geneva", size: 9).flatMap { $0.size == 9 ? $0 : nil })
