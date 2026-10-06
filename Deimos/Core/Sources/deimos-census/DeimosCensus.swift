@@ -21,7 +21,9 @@ enum DeimosCensus {
     static func main() {
         let args = Array(CommandLine.arguments.dropFirst())
         let usage = "usage: deimos-census <Data dir> [--render <out dir>]\n"
-        guard args.count == 1 || (args.count == 3 && args[1] == "--render") else {
+        var isDirectory: ObjCBool = false
+        guard args.count == 1 || (args.count == 3 && args[1] == "--render"),
+              FileManager.default.fileExists(atPath: args[0], isDirectory: &isDirectory), isDirectory.boolValue else {
             FileHandle.standardError.write(Data(usage.utf8))
             exit(2)
         }
@@ -129,6 +131,13 @@ enum DeimosCensus {
         var byType: [FourCC: Int] = [:]
         for r in index.records { byType[r.type, default: 0] += 1 }
         let overridden = index.alerts.filter { $0.contains("Tag Overridden") }.count
+        // An empty index, or the original's "Tag Index Incomplete!" (fewer than 100 tags), is a failed census.
+        var indexFailure: String? = nil
+        if index.records.isEmpty || index.alerts.contains(where: { $0.contains("Tag Index Incomplete!") }) {
+            indexFailure = "FAIL: the tag index is incomplete (\(index.records.count) records, the original needs "
+                + "\(TagIndex.minimumTagCount))"
+            failures += 1
+        }
         let tagsLine = "tags \(index.records.count) · "
             + byType.sorted { $0.key.description < $1.key.description }.map { "\($0.key) \($0.value)" }
                 .joined(separator: " · ")
@@ -173,27 +182,37 @@ enum DeimosCensus {
                     if r.displayName.hasSuffix(" Media") { water += tga.pixels.filter { $0 == 0x001F }.count }
                     result = "TGA \(tga.width)×\(tga.height)"
                 case soun:
-                    let header = try AIFFAudio(data: data)
-                    let fileDelta = (data.count - 8) - header.declaredFormSize
-                    if fileDelta != 0 { formDeltas.append("`\(r.id)` FORM size \(fileDelta) bytes short of the file") }
+                    // The game's gate first (`DeimosSound`, which dispatches on the signature: an effect
+                    // may be AIFF/AIFC or RIFF/WAVE, music AIFF/AIFC only); the header line after it.
                     let isMusic = pak == "Music.pak"
-                    let pcm: SndPCM
-                    if isMusic {
-                        let info = try DeimosSound.musicInfo(data)
-                        pcm = try info.linearPCM()
-                        music.append((r.id, info.channels, info.frameCount, pcm.frames, info.encoding == .ima4))
+                    let pcm = try isMusic ? DeimosSound.musicInfo(data).linearPCM() : DeimosSound.effectPCM(data)
+                    let packets: Int
+                    if !isMusic && DeimosSound.isRIFFWAVE(data) {
+                        let wave = try WAVEAudio(data: data)
+                        packets = wave.frameCount
+                        result = "WAVE PCM \(wave.bitsPerSample)-bit · \(wave.channels) ch · "
+                            + "\(grouped(wave.frameCount)) packets · \(grouped(pcm.frames)) frames"
                     } else {
-                        pcm = try DeimosSound.effectPCM(data)
+                        let header = try AIFFAudio(data: data)
+                        let fileDelta = (data.count - 8) - header.declaredFormSize
+                        if fileDelta != 0 { formDeltas.append("`\(r.id)` FORM size \(fileDelta) bytes short of the file") }
+                        packets = header.frameCount
+                        if isMusic {
+                            music.append((r.id, header.channels, header.frameCount, pcm.frames, header.encoding == .ima4))
+                        } else if header.encoding == .ima4 {
+                            effects.ima4 += 1
+                        }
+                        result = "\(header.form == .aifc ? "AIFC" : "AIFF") \(encodingName(header.encoding)) · "
+                            + "\(header.channels) ch · \(grouped(header.frameCount)) packets · \(grouped(pcm.frames)) frames"
+                            + (isMusic ? " · music" : "")
+                    }
+                    if !isMusic {
                         effects.count += 1
                         if pcm.channels == 1 { effects.mono += 1 }
-                        effects.packets += header.frameCount
+                        effects.packets += packets
                         effects.frames += pcm.frames
                         effects.rates.insert(pcm.sampleRate)
-                        if header.encoding == .ima4 { effects.ima4 += 1 }
                     }
-                    result = "\(header.form == .aifc ? "AIFC" : "AIFF") \(encodingName(header.encoding)) · "
-                        + "\(header.channels) ch · \(grouped(header.frameCount)) packets · \(grouped(pcm.frames)) frames"
-                        + (isMusic ? " · music" : "")
                 case film:
                     let f = try Film(data: data)
                     films.append((r.id, f, r.isLocal))
@@ -294,6 +313,7 @@ enum DeimosCensus {
         out.line("")
         out.line("Overridden pak records: \(overridden). Alerts: \(index.alerts.count).")
         for a in index.alerts { out.line("- `\(a.trimmingCharacters(in: .whitespacesAndNewlines))`") }
+        if let indexFailure { out.line(""); out.line(indexFailure) }
         out.line("")
 
         out.line("## 4. Every entry (index order)")

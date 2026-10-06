@@ -98,6 +98,13 @@ final class DeimosCensusTests: XCTestCase {
         XCTAssertEqual(try runCensus(binary, []).status, 2)
         XCTAssertEqual(try runCensus(binary, ["a", "b"]).status, 2)
         XCTAssertEqual(try runCensus(binary, ["/nonexistent", "--render"]).status, 2)
+        XCTAssertEqual(try runCensus(binary, ["/nonexistent"]).status, 2)
+
+        // An empty Data folder: no tags is a failed census, not an empty success.
+        let empty = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("deimos-census-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: empty) }
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        XCTAssertEqual(try runCensus(binary, [empty.path]).status, 1)
 
         // A Data folder holding one corrupt GIF → exit 1, and the failure line names the entry.
         let dir = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("deimos-census-\(UUID().uuidString)")

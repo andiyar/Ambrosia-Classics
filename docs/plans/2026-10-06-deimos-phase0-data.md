@@ -765,6 +765,9 @@ The research notes above keep the planner's text; ⚑ marks the corrected spots.
   failure). BOOL value census = TRUE 4,201 / FALSE 64,203 (the probe missed the apostrophe key).
 - wede strict mode is ON (`1002b994 li r4,1; bl 0x1002c4d0`), fatal like unde/plde; `leve` has none.
 - Note 16: shipped GIF global tables are 8–256 entries.
+- Invariant 4, one deliberate exception (R-D fix pass, kept by R-E): `GIFImage`'s LZW loop accepts a stream whose
+  codes end at exactly width × height pixels with no end code (`GIFImage.swift` "data ended at the last pixel"); a
+  stream ending short of w × h still throws `truncatedLZW`. Lenient where browsers and QuickTime are, never inventing pixels.
 - Note 19 / Known delta 3: the stray mask pixel is in `int3`; the TGA stray is header byte 7 (colour-map entry size)
   = 0x18 with colour-map type 0.
 - Tag index (R-B, listings `100016c0–10001f14`): duplicates are counted per Local flag after all records and before

@@ -32,20 +32,22 @@
    24→16 keeps the high 5 bits (`c >> 3`); the 8-bit draw maps through a 4-bit inverse table to the system CLUT.
 9. **(Research note 21, MED)** Sound PCM here is the kit's decode (= CoreAudio `ima4`, sample-exact vs
    `afconvert`); the game's own effect mixer decodes one continuous nibble stream — Phase 1's job.
+10. **(Plan Known delta 8)** D22 names "im08/im16 images" among the kit decoders; GIF/TGA live in `DeimosCore` (D24.2).
+11. **(Plan Known delta 9)** Pushing the data prints GitHub's large-file warning for `Game.pak` (52.4 MiB > 50 MiB); accepted, no LFS.
 
 Plan literals the bytes corrected (each pinned by a test; the tool output below is authoritative):
 
-10. Token values: **BOOL TRUE 4,201 / FALSE 64,203**, not 4,149 / 63,723 — the planner's probe skipped the one
+12. Token values: **BOOL TRUE 4,201 / FALSE 64,203**, not 4,149 / 63,723 — the planner's probe skipped the one
     key with an apostrophe, `#stateSpawnSetDon'tSpawnOffscreen_BOOL` (532 items: 52 TRUE + 480 FALSE).
-11. The one `stli` with Mac Roman bytes ≥ 0x80 is **`edit`**, not `cred` (note 11).
-12. The one stray media-mask pixel (`0x256b`) is in **`int3`** (Industrial 3 Media), not `ist3` (note 19).
-13. GIF global colour tables are **8–256 entries** (8: 5 files · 16: 4 · 32: 3 · 64: 3 · 256: 235), not "2–256".
-14. `leve` index (master-list) order is **le01–le08, le11, le12, le09, le10** (Game.pak central-directory
+13. The one `stli` with Mac Roman bytes ≥ 0x80 is **`edit`**, not `cred` (note 11).
+14. The one stray media-mask pixel (`0x256b`) is in **`int3`** (Industrial 3 Media), not `ist3` (note 19).
+15. GIF global colour tables are **8–256 entries** (8: 5 files · 16: 4 · 32: 3 · 64: 3 · 256: 235), not "2–256".
+16. `leve` index (master-list) order is **le01–le08, le11, le12, le09, le10** (Game.pak central-directory
     order; le09/le10 were added last) — the play order comes from the level-order table, not this list.
-15. The `Interface.pak:decr` TGA header's byte 7 is `0x18` (delta 3), not the plan's `00`.
-16. `idli gaso` (24 slots) holds **3 `none` slots** (indices 9, 17, 19): 21 name a `soun` tag. Of the 1,553 unit
+17. The `Interface.pak:decr` TGA header's byte 7 is `0x18` (delta 3), not the plan's `00`.
+18. `idli gaso` (24 slots) holds **3 `none` slots** (indices 9, 17, 19): 21 name a `soun` tag. Of the 1,553 unit
     sprite faces 675 are `none` (878 name a group); of the 2,711 unit sound IDs 2,320 are `none` (391 name a tag).
-17. Pak entry counts in the files line are FILE entries (871); the central directories hold 886 (15 folders).
+19. Pak entry counts in the files line are FILE entries (871); the central directories hold 886 (15 folders).
 
 ---
 

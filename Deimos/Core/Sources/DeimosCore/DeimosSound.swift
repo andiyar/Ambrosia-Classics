@@ -8,7 +8,8 @@ public enum DeimosSoundError: Error, Equatable, Sendable {
     case stereoEffect(channels: Int)
     /// The stored rate is not a positive finite number (the kit reports the COMM / `fmt ` rate as
     /// stored, so ±inf, NaN, ±0 and negative rates reach here). Refused rather than played at a
-    /// rate nothing in the data shows (plan invariant 4; R-B review carry).
+    /// rate nothing in the data shows (plan invariant 4; R-B review carry). NaN is not `==` itself, so
+    /// `invalidSampleRate(.nan)` never equals a thrown one — match it with `if case .invalidSampleRate(let r)`.
     case invalidSampleRate(Double)
 }
 
@@ -58,7 +59,7 @@ public enum DeimosSound {
     }
 
     /// `SoundFile`'s WAVE test: `RIFF` at 0 and `WAVE` at 8 (a shorter RIFF is not a WAVE → `notAIFF`).
-    private static func isRIFFWAVE(_ data: Data) -> Bool {
+    public static func isRIFFWAVE(_ data: Data) -> Bool {
         guard data.count >= 12 else { return false }
         let b = data.startIndex
         return data[b..<b + 4].elementsEqual("RIFF".utf8) && data[b + 8..<b + 12].elementsEqual("WAVE".utf8)
