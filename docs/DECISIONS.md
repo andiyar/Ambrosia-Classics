@@ -424,3 +424,14 @@ bottle: main menu, level 1, every dialog reachable by script — no crash, all d
 **Carried:** M5 (mouse in the same poll as a resize uses the old layout), M6 (menu shortcuts ignore key repeat),
 DLOG 3000/3001 not script-reachable (date-gated), the missing-data box says "unzip the whole folder".
 **Approved by:** orchestrator rulings under D15's "seat may settle" list; sound and feel are Ben's (and his brother's).
+
+## D20 — Ambrosia-Classics is public; Windows test build shared as a GitHub release (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "let's just make ambrosia-classic a public repo instead and leave it there."
+The repo `andiyar/Ambrosia-Classics` is PUBLIC (history scanned first: no secrets, no font files). The Windows zip is the
+pre-release `btx-windows-test-1` (tag on 859ee35):
+https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-windows-test-1/Bubble-Trouble-X-Windows.zip —
+anonymous download verified byte-identical to the staged zip. **Supersedes D16.4's "private copy":** the four baked
+Apple-glyph `.btxfont` files (menu bar/dialog text only) now ship publicly, Ben's call knowing it. Original game data
+public per D10. Ben reports the Windows build **plays with sound in CrossOver** (first ear check).
+**Approved by:** Ben.

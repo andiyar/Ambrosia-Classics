@@ -47,8 +47,8 @@
   Classics\Bubble Trouble X\`) + `BubbleTroubleXWin` on HectorKit `SDL/` (HectorSDL). Tests: Windows package 144/0/0;
   BTX core 261/0/0 on the Mac and 260/0/0 in CrossOver; HectorSDL 38/0; kit floor 252. **Staged:**
   `~/Desktop/Bubble Trouble X (Windows)/` + `.zip` (37 MB; `tools/windows/stage-btx.sh`; stamp 83febbe) — Ben sends it
-  to his brother; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. Never
-  verified: sound by ear, a real PC's display/DPI/SmartScreen. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
+  to his brother — **public link: GitHub pre-release `btx-windows-test-1` (repo now PUBLIC, D20)**; Ben heard it play with sound in CrossOver; fresh CrossOver bottle reaches the menu, level 1 and every dialog, dumps = the Mac SDL build. Never
+  verified: a real PC's display/DPI/SmartScreen. **Automation: `HECTOR_SDL_AUDIO_DRIVER=dummy`
   (CrossOver strips `SDL_*`).** Next: the brother's report → fixes; then Aki on Windows.
 
 ## Open, ordered
