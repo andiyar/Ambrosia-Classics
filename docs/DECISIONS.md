@@ -651,3 +651,27 @@ HectorShell gains a resizable 1:1 canvas (Phase 1); data in git by the D24 shape
 picker/depth dialog, host file dialogs, real Mac menu bar, one display, baked Apple glyphs per D16.4/D20).
 **Approved by:** Ben (1–9, in his words, 2026-10-06); seat rulings recorded, Ben shown the design.
 
+## D29 — Deimos Rising build: design + Phase 1 rulings (seat) (2026-10-06)
+
+**Decided (seat, under D27 and the 100 % rule; design `docs/plans/2026-10-06-deimos-design.md`, plan
+`docs/plans/2026-10-06-deimos-phase1.md`, Fable review ACCEPT_WITH_FIXES, fixes applied):**
+1. **Layers (design §3):** `DeimosCore` (Foundation + HectorResources + HectorAudio: rules, seams, session) →
+   `DeimosRender` (Foundation + Core: RGB555 buffers, blitters, presents, fades) → `DeimosHost` (Foundation + Core +
+   Render: the shell-neutral driver — Mac-tick clock, limiter, fade/blocking waits, key table) → thin shells
+   (`Deimos/App` AppKit + HectorShell; `Deimos/Windows` HectorSDL later). Rejected: the Aki two-layer shape, pixels in
+   Core, a per-shell controller (the BTX Windows re-port cost, D15). Seam types (`HeldKeys` … `DeimosPrefs`) are LOCKED
+   once Phase 1 lands: cases may be added, never renamed.
+2. **Render model (design §5):** 16-bit RGB555 persistent buffers; Core records the original's draw calls in order as
+   `RenderOp`s, Render executes them (artefacts included). To the display by bit replication `(c << 3) | (c >> 2)` (the
+   kit's PICT rule); **whole-frame presents** — the original's tearing is not reproduced.
+3. **Disclosed deviations (design §7):** whole-frame presents, no OS volume writes, no InputSprocket (keys from the
+   prefs key table — the input source), registered build, prefs file in Application Support with the 0x34f0 layout
+   (never `UserDefaults`), `Last Film` in the user's Local override folder, DEBUG-only data-missing alert.
+4. **Phases (design §8)** 1 look → 2 level 1 plays → 3 campaign → 4 front end → 5 Windows + release: a proposal,
+   pending Ben's Q7.
+5. **TickCount rate (Q1):** default **60.15 Hz** (classic Mac OS; Deimos 1.0.6 is an InterfaceLib app), pending Ben;
+   the build proceeds on the default (`TickRate.classic`; `.osx` 60.0 kept).
+6. **Phase-1 stubs (plan S2 ◇, on the gate card):** `Player.updatePhase1` (life states 2 → 4, appear/glow, size refresh,
+   crosshair, banking, view shift — no velocity, firing, power-ups); no entities (`plen`, multiplier unit, `no01`).
+7. **Kit:** `ShellView.scalingPolicy` (`.integerFit` for D27.3) landed as HectorKit D13 (522feb8, floor 316).
+**Approved by:** seat (orchestrator); Ben told.
