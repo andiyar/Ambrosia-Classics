@@ -3,7 +3,7 @@ import Foundation
 /// A shipped Interface Builder 3 `designable.nib` (plain XML, `com.apple.InterfaceBuilder3.Cocoa.XIB`)
 /// read as data: the window, the controls behind outlets/actions, and the main menu (plan Research
 /// notes 4–7). The 2008 keyed archives are never loaded — their classes are not ours.
-/// Frames are AppKit's (bottom-left origin). Holds `XMLElement`s: deliberately not `Sendable`.
+/// Frames are AppKit's (bottom-left origin). Holds `NibElement`s: deliberately not `Sendable`.
 public struct CocoaNib {
     public struct Window: Equatable, Sendable {
         public var title: String; public var contentWidth: Int; public var contentHeight: Int; public var styleMask: Int
@@ -19,37 +19,34 @@ public struct CocoaNib {
     }
     public enum ParseError: Error, Equatable { case notIB3Archive }
 
-    private let document: XMLDocument          // owns the tree the elements below live in
-    private let root: XMLElement
-    private let ids: [String: XMLElement]
+    private let root: NibElement
+    private let ids: [String: NibElement]
     /// Outlet label → destination element (first record wins).
-    private let outlets: [String: XMLElement]
+    private let outlets: [String: NibElement]
     /// Action records in file order: label, destination element, target class name.
-    private let actions: [(label: String, destination: XMLElement, target: String?)]
+    private let actions: [(label: String, destination: NibElement, target: String?)]
 
     public init(data: Data) throws {
-        guard let document = try? XMLDocument(data: data, options: [.nodePreserveWhitespace]),
-              let root = document.rootElement(), root.name == "archive",
-              root.attribute(forName: "type")?.stringValue == "com.apple.InterfaceBuilder3.Cocoa.XIB"
+        guard let root = NibElement.parse(data), root.name == "archive",
+              root.attribute(forName: "type") == "com.apple.InterfaceBuilder3.Cocoa.XIB"
         else { throw ParseError.notIB3Archive }
-        self.document = document
         self.root = root
-        var ids: [String: XMLElement] = [:]
-        func index(_ e: XMLElement) {
-            if let id = e.attribute(forName: "id")?.stringValue, ids[id] == nil { ids[id] = e }
-            for child in e.children ?? [] { if let c = child as? XMLElement { index(c) } }
+        var ids: [String: NibElement] = [:]
+        func index(_ e: NibElement) {
+            if let id = e.attribute(forName: "id"), ids[id] == nil { ids[id] = e }
+            for c in e.elements { index(c) }
         }
         index(root)
         self.ids = ids
 
-        var outlets: [String: XMLElement] = [:]
-        var actions: [(label: String, destination: XMLElement, target: String?)] = []
+        var outlets: [String: NibElement] = [:]
+        var actions: [(label: String, destination: NibElement, target: String?)] = []
         let resolver = Resolver(ids: ids)
-        for case let record as XMLElement in (try? root.nodes(forXPath: ".//object[@class='IBConnectionRecord']")) ?? [] {
+        for record in Self.objects(root, class: "IBConnectionRecord") {
             guard let connection = resolver.child(record, "connection"),
                   let label = resolver.string(resolver.child(connection, "label")),
                   let destination = resolver.object(resolver.child(connection, "destination")) else { continue }
-            switch connection.attribute(forName: "class")?.stringValue {
+            switch connection.attribute(forName: "class") {
             case "IBOutletConnection":
                 if outlets[label] == nil { outlets[label] = destination }
             case "IBActionConnection":
@@ -66,7 +63,7 @@ public struct CocoaNib {
     /// The first `NSWindowTemplate`: title, `NSWindowRect` size (= content size), style mask.
     public var window: Window? {
         let r = resolver
-        guard let w = (try? root.nodes(forXPath: ".//object[@class='NSWindowTemplate']"))?.first as? XMLElement else { return nil }
+        guard let w = Self.objects(root, class: "NSWindowTemplate").first else { return nil }
         let rect = Self.numbers(r.string(r.child(w, "NSWindowRect")))
         return Window(title: r.string(r.child(w, "NSWindowTitle")) ?? "",
                       contentWidth: rect.count == 4 ? rect[2] : 0, contentHeight: rect.count == 4 ? rect[3] : 0,
@@ -78,15 +75,15 @@ public struct CocoaNib {
 
     /// The first view (not menu item) wired to `action`.
     public func control(action: String) -> Control? {
-        actions.first { $0.label == action && $0.destination.attribute(forName: "class")?.stringValue != "NSMenuItem" }
+        actions.first { $0.label == action && $0.destination.attribute(forName: "class") != "NSMenuItem" }
             .flatMap { makeControl($0.destination) }
     }
 
     /// The items of the `NSMenu` titled "AMainMenu", recursively.
     public var mainMenu: [MenuItem] {
         let r = resolver
-        let menus = (try? root.nodes(forXPath: ".//object[@class='NSMenu']")) ?? []
-        guard let main = menus.compactMap({ $0 as? XMLElement }).first(where: { r.string(r.child($0, "NSTitle")) == "AMainMenu" })
+        let menus = Self.objects(root, class: "NSMenu")
+        guard let main = menus.first(where: { r.string(r.child($0, "NSTitle")) == "AMainMenu" })
         else { return [] }
         return menuItems(main)
     }
@@ -105,9 +102,9 @@ public struct CocoaNib {
 
     private var resolver: Resolver { Resolver(ids: ids) }
 
-    private func makeControl(_ e: XMLElement) -> Control? {
+    private func makeControl(_ e: NibElement) -> Control? {
         let r = resolver
-        guard let className = e.attribute(forName: "class")?.stringValue else { return nil }
+        guard let className = e.attribute(forName: "class") else { return nil }
         var frame = Self.numbers(r.string(r.child(e, "NSFrame")))
         if frame.count != 4 { frame = [0, 0] + Self.numbers(r.string(r.child(e, "NSFrameSize"))) }
         if frame.count != 4 { frame = [0, 0, 0, 0] }
@@ -123,12 +120,12 @@ public struct CocoaNib {
                        isOn: UInt32(truncatingIfNeeded: flags) & 0x8000_0000 != 0)
     }
 
-    private func menuItems(_ menu: XMLElement) -> [MenuItem] {
+    private func menuItems(_ menu: NibElement) -> [MenuItem] {
         let r = resolver
         guard let list = r.object(r.child(menu, "NSMenuItems")) else { return [] }
-        return (list.children ?? []).compactMap { node -> MenuItem? in
-            guard let element = node as? XMLElement, let item = r.object(element),
-                  item.attribute(forName: "class")?.stringValue == "NSMenuItem" else { return nil }
+        return list.elements.compactMap { element -> MenuItem? in
+            guard let item = r.object(element),
+                  item.attribute(forName: "class") == "NSMenuItem" else { return nil }
             let action = actions.first { $0.destination === item }
             return MenuItem(title: r.string(r.child(item, "NSTitle")) ?? "",
                             keyEquivalent: r.string(r.child(item, "NSKeyEquiv")) ?? "",
@@ -140,6 +137,11 @@ public struct CocoaNib {
         }
     }
 
+    /// XPath `.//object[@class='…']` from `root`: matching descendants, document order.
+    private static func objects(_ root: NibElement, class className: String) -> [NibElement] {
+        root.descendants { $0.name == "object" && $0.attribute(forName: "class") == className }
+    }
+
     /// Every integer in an IB geometry string ("{{300, 12}, {96, 32}}" → [300, 12, 96, 32]), truncated.
     private static func numbers(_ text: String?) -> [Int] {
         guard let text else { return [] }
@@ -148,31 +150,31 @@ public struct CocoaNib {
 
     /// Value lookup over the IB3 XML: children by `key`, `<reference ref>` resolution, typed values.
     private struct Resolver {
-        let ids: [String: XMLElement]
+        let ids: [String: NibElement]
 
-        func child(_ e: XMLElement, _ key: String) -> XMLElement? {
-            (e.children ?? []).lazy.compactMap { $0 as? XMLElement }.first { $0.attribute(forName: "key")?.stringValue == key }
+        func child(_ e: NibElement, _ key: String) -> NibElement? {
+            e.elements.first { $0.attribute(forName: "key") == key }
         }
         /// `<reference ref="…"/>` → the referenced element; any other element → itself; `<nil>`/dangling → nil.
-        func object(_ e: XMLElement?) -> XMLElement? {
+        func object(_ e: NibElement?) -> NibElement? {
             guard let e else { return nil }
-            if e.name == "reference" { return e.attribute(forName: "ref")?.stringValue.flatMap { ids[$0] } }
+            if e.name == "reference" { return e.attribute(forName: "ref").flatMap { ids[$0] } }
             return e.name == "nil" ? nil : e
         }
-        func string(_ e: XMLElement?) -> String? {
+        func string(_ e: NibElement?) -> String? {
             guard let e = object(e), e.name == "string" else { return nil }
             let text = e.stringValue ?? ""
-            return e.attribute(forName: "type")?.stringValue == "base64-UTF8" ? CocoaNib.decodeIBBase64(text) : text
+            return e.attribute(forName: "type") == "base64-UTF8" ? CocoaNib.decodeIBBase64(text) : text
         }
-        func int(_ e: XMLElement?) -> Int? {
+        func int(_ e: NibElement?) -> Int? {
             guard let e = object(e) else { return nil }
-            let text = e.attribute(forName: "value")?.stringValue ?? e.stringValue ?? ""
+            let text = e.attribute(forName: "value") ?? e.stringValue ?? ""
             return Int(text.trimmingCharacters(in: .whitespacesAndNewlines))
         }
-        func double(_ e: XMLElement?) -> Double? {
+        func double(_ e: NibElement?) -> Double? {
             guard let text = object(e)?.stringValue else { return nil }
             return Double(text.trimmingCharacters(in: .whitespacesAndNewlines))
         }
-        func bool(_ e: XMLElement?) -> Bool { object(e)?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) == "YES" }
+        func bool(_ e: NibElement?) -> Bool { object(e)?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) == "YES" }
     }
 }

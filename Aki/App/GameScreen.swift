@@ -1,6 +1,7 @@
-import AppKit
 import AkiCore
+import Foundation
 import HectorShell
+import QuartzCore
 
 /// The game screen: `_CustomGameScreen` @ 0x12dbc (DC:7422) and the game branches of the controller's
 /// mouse / key / redraw / pause entry points (method-map §1). P2.9 lands the stored state and the drawing
@@ -48,7 +49,8 @@ import HectorShell
         let g = controller.g
         let gw = controller.gworlds!
         do {
-            gw.background = try controller.assets.png("background\(g.background)")
+            // gw's art scale (D11); a bad hd file falls back to the original at k = 1 (U3 review)
+            gw.background = try controller.assets.artPNG("background\(g.background)", scale: gw.scale)
         } catch {
             fatalError("Aki: cannot load background\(g.background).png: \(error)")   // _CreateGWorld
         }
@@ -80,7 +82,8 @@ import HectorShell
     /// DC:5605–5631); then g+100 = 0, g+0x66 = 0 (map), g+0x68 = 0 (DC:5636–5638) and `_RedrawMapScreen`
     /// (DC:5663; the proverb when g.lost, P1.7). Not transcribed: g+0xc4 (the demo timer, Known delta 1), the
     /// level-2 demo alert (DC:7540–7583), the "Replay" retitle (Phase 3), the menu enabling (`validateMenuItem`).
-    func leaveLevel() {                                                                   // P2.10
+    /// The proverb is a modal (C2): `next` — what the caller runs after the leave — runs once it closes.
+    func leaveLevel(then next: @escaping () -> Void) {                                    // P2.10
         game = nil
         let g = controller.g
         let gw = controller.gworlds!
@@ -103,7 +106,7 @@ import HectorShell
         g.quitRequested = false
         g.mode = .map
         g.endLevel = false
-        controller.mapScreen.redrawMapScreen()
+        controller.mapScreen.redrawMapScreen(then: next)
     }
 
     /// The slide loops of `_AnimationMapScreenToCustom` (DC:6597–6623) and `_AnimationCustomGameScreenToMap`
@@ -138,10 +141,16 @@ import HectorShell
     /// Executes an `AkiGame` method's events in order. Re-entrant: the drawing routines call it
     /// (`redrawTimeBar`, `redrawNoMorePairs`), and `.redrawGameScreen` / `.pauseGame` reach those again. The
     /// game is always mutated in place (`self.game?.…`) and never held across a nested call or a modal run.
+    /// A `.dialog` STOPS the run: the events after it (`events[i+1...]`) resume in the dialog's completion
+    /// (C2) — on the Mac before `runDialog` returns, so the order is the straight-through one.
     func perform(_ events: [GameEvent]) {                                                 // P2.10
+        perform(events[...])
+    }
+
+    private func perform(_ events: ArraySlice<GameEvent>) {
         let g = controller.g
-        for event in events {
-            switch event {
+        for i in events.indices {
+            switch events[i] {
             case .playSound(let id, let volume): controller.sound.play(id, volume: volume)
             case .stopSound(let id): controller.sound.stop(id)
             case .stopMusic: controller.music.stopCurrent()
@@ -156,9 +165,15 @@ import HectorShell
             case .pressButton(let k): pressButton(k)
             case .pauseGame(let on): pauseGame(on)
             case .dialog(let id):
-                // `_CreateNewDialog(0x47)` (DC:8005), "Tile Stacked" — the only dialog AkiGame emits.
+                // `_CreateNewDialog(0x47)` (DC:8005), "Tile Stacked" — the only dialog AkiGame emits, only from
+                // `selectTile` (followed by `.setLost, .setEndLevel[, .setCustomLost]`), whose events are only
+                // ever run by the top-level `perform` in `selectTile(at:)` ← `mouseDown`, never a nested one.
                 if id == 0x47 {
-                    _ = CarbonDialog.run("Stacked", controller: controller)
+                    let rest = events[(i + 1)...]
+                    controller.host.runDialog("Stacked", texts: [:]) { [self] _ in
+                        perform(rest)
+                    }
+                    return
                 } else {
                     assertionFailure("unexpected dialog id \(id)")
                 }
@@ -195,19 +210,21 @@ import HectorShell
     /// you sure you want to end this game?"); `ok  ` (g+0x81) → g+0x81 = 0, g+0x68 = 1, the current music track
     /// stops, give-ups[g+0x90] += 1 (built-in levels only, in `Stats`; g+0x90 survives a leave, DC:990–993),
     /// `_SavePrefs`, YES; else NO. The game is not paused under the dialog (Q25) and no proverb follows
-    /// (rules §14); the next game tick leaves the level (`idle`'s g+0x68 branch).
-    func abortGame() -> Bool {                                                            // P2.11
+    /// (rules §14); the next game tick leaves the level (`idle`'s g+0x68 branch). Everything after the dialog
+    /// runs in its completion (C2); `completion` gets the YES / NO.
+    func abortGame(completion: @escaping (Bool) -> Void) {                               // P2.11
         let g = controller.g
-        _ = CarbonDialog.run("LoadLevel", controller: controller)
-        guard g.dialogOK else { return false }
-        g.dialogOK = false
-        g.endLevel = true
-        controller.music.stopCurrent()
-        if let level = g.levelIndex {
-            Stats.recordGiveUp(&controller.p, level: level)
+        controller.host.runDialog("LoadLevel", texts: [:]) { [self] _ in
+            guard g.dialogOK else { completion(false); return }
+            g.dialogOK = false
+            g.endLevel = true
+            controller.music.stopCurrent()
+            if let level = g.levelIndex {
+                Stats.recordGiveUp(&controller.p, level: level)
+            }
+            controller.savePrefs()
+            completion(true)
         }
-        controller.savePrefs()
-        return true
     }
 
     // MARK: - Menu commands (P2.11)
@@ -245,6 +262,8 @@ import HectorShell
     /// leave the level. A win therefore leaves in the same call, a time-out (ended by the bar's events) on the
     /// next game tick. Then `_LoopSound` while b8 < 15 (DC:7585; b8 survives the leave, so its last value is
     /// read) and `_LoopMusic(0)` (DC:7588). The leading `_GetMouseLocation` (DC:7446) has an unused result.
+    /// The leave can show the proverb (a modal, C2): the `_LoopSound` / `_LoopMusic` tail then runs in its
+    /// continuation, after the proverb closes — as on the Mac, where the modal ran inside the leave.
     func idle() {                                                                         // P2.10
         guard game != nil else { return }
         let g = controller.g
@@ -264,7 +283,6 @@ import HectorShell
             }
             controller.flash = ShellClock.ticks()
         }
-        var leftRemaining: Int?                    // g+0xb8 as the leave left it
         if AkiGame.gameTickDue(now: ShellClock.ticks(), last: controller.updateTimeCount) {
             if game?.tilesLeft == 0, let level = game?.levelIndex, let elapsed = game?.clock.elapsed {
                 controller.music.stopCurrent()
@@ -286,11 +304,19 @@ import HectorShell
                     redrawTimeBar(now: t, flush: true)
                 }
             } else {
-                leftRemaining = game?.clock.remaining
-                leaveLevel()
+                let leftRemaining = game?.clock.remaining              // g+0xb8 as the leave left it
+                leaveLevel { [self] in
+                    idleTail(remaining: leftRemaining)
+                }
+                return
             }
         }
-        if let remaining = leftRemaining ?? game?.clock.remaining, remaining < 15 {
+        idleTail(remaining: game?.clock.remaining)
+    }
+
+    /// `_CustomGameScreen`'s tail (DC:7585–7588): `_LoopSound` while b8 < 15, then `_LoopMusic(0)`.
+    private func idleTail(remaining: Int?) {
+        if let remaining, remaining < 15 {
             controller.sound.loopTick()
         }
         controller.music.loopMusic()
@@ -303,7 +329,7 @@ import HectorShell
     /// when it moved > 1 px in both v and h from the remembered point and there are pairs, and is not
     /// remembered (DC:1372–1378); any other click is remembered — ivar 0x44 = now, select when there are pairs,
     /// then ivar 0x50 = the point (DC:1381–1386). The editor's `_CreateTile` / `_SelectLevelButton` arms are P3.4's.
-    func mouseDown(at point: ShellPoint, event: NSEvent) {                                // P2.11
+    func mouseDown(at point: ShellPoint, click: ShellClick) {                             // P2.11
         guard game != nil else { return }
         let g = controller.g
         if self.game?.noteClick(now: ShellClock.ticks()) == true {
@@ -315,7 +341,7 @@ import HectorShell
                                                       using: &rng) else { return }
             perform(events)
         } else if !g.paused {
-            let doubleClickTicks = Int(NSEvent.doubleClickInterval * 60)                  // GetDblTime (Q29)
+            let doubleClickTicks = controller.host.doubleClickTicks                       // GetDblTime (Q29)
             if AkiGame.isRepeatClick(now: ShellClock.ticks(), lastTick: controller.lastTick,
                                      doubleClickTicks: doubleClickTicks) {
                 let last = controller.lastMouse
@@ -328,6 +354,10 @@ import HectorShell
                 if (game?.openPairs ?? 0) > 0 {
                     selectTile(at: point)
                 }
+                // Left after `selectTile` although its run can stop at the Stacked dialog (C2): the write is
+                // independent of the dialog (a fixed point) and unobservable while it is up — ivar 0x50 is read
+                // only by this method, and no click reaches a screen under a modal (AkiHost) — so on a host
+                // that returns before the dialog closes the state the next click sees is the same.
                 controller.lastMouse = point
             }
         }
@@ -342,9 +372,31 @@ import HectorShell
 
     /// The game branch of `-[Controller keyDown:]` @ 0x42eb (DC:1265–1285): the first character U+001B (Esc)
     /// → `abortGame`; every other key does nothing (menu key equivalents arrive through the menu).
-    func keyDown(_ event: NSEvent) {                                                      // P2.11
-        guard event.characters?.utf16.first == 0x1B else { return }
-        _ = abortGame()
+    func keyDown(_ key: ShellKey) {                                                       // P2.11
+        guard key.characters.utf16.first == 0x1B else { return }
+        abortGame { _ in }                                         // nothing follows
+    }
+
+    /// A Remaster switch in the game (D11, `AkiController.setRemastered`): the new GWorlds hold no board and no
+    /// frame. The board buffer (scratch3c) is rebuilt by `_DrawGameTiles` — inside the recompose when unpaused;
+    /// explicitly first when paused, where the screen leaves the tiles off but later partial redraws
+    /// (`_RedrawTile`, the fade) copy from it — with the greyed look read as `_RedrawCustomGameScreen` reads it
+    /// (g+0x60 == 0). Then `composeCustomGameScreen(tiles: !g+0x67)`: `_redrawWindow`'s draws exactly — the pause
+    /// scroll, the "no more pairs" scroll over greyed tiles, the selected and hinted tiles, the plate, the time
+    /// bar, the open pairs and the elapsed clock as they were — with NO game or clock writes (U3 review, pixels
+    /// only: the full redraw's `enterNoMorePairs`, Practice a8 reset and cap penalty would change the game).
+    func redrawForArtChange() {
+        guard let game else { return }
+        if controller.g.paused {
+            drawGameTiles(greyed: game.openPairs == 0)
+        }
+        composeCustomGameScreen(tiles: !controller.g.paused)
+    }
+
+    /// The switch's synchronous art decode ran on wall time: `ticks` of it are discounted from a running level
+    /// clock (`AkiGame.discountTicks`), so the remaining / elapsed time read as if the switch took no time.
+    func discountArtSwitch(ticks: UInt32) {
+        updateGame { $0.discountTicks(ticks) }
     }
 
     /// `-[Controller _redrawWindow]` @ 0x3bde (DC:932, R6): `_RedrawCustomGameScreen(!g+0x67)`.
@@ -376,7 +428,7 @@ import HectorShell
     }
 
     /// The game branch of `-[Controller applicationShouldTerminate:]` (DC:226): `abortGame` decides.
-    func shouldTerminate() -> Bool {                                                      // P2.11
-        abortGame()
+    func shouldTerminate(_ completion: @escaping (Bool) -> Void) {                        // P2.11
+        abortGame(completion: completion)
     }
 }

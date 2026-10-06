@@ -3,6 +3,9 @@
 # Contents/Resources into the built app unchanged (original names, no re-encoding — the app loads
 # everything from its own bundle), strip quarantine/xattrs, ad-hoc re-sign, and place
 # out/Aki/Aki.app + out/Aki/WHAT-TO-EXPECT.md. out/, .build/ and *.xcodeproj are git-ignored.
+# Remaster (DECISIONS D11): Resources/Aki/hd-4x/ (the U1 art set, git-ignored; de-dithered backgrounds and a
+# plain-Lanczos tile body per Ben's U4 rulings) is mirrored to Contents/Resources/hd-4x/. No hd-4x/ → a warning;
+# the app then shows Remastered Art disabled.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,6 +15,7 @@ if [ ! -f "$DATA/map.png" ]; then
     exit 2
 fi
 DATA="$(cd "$DATA" && pwd -P)"
+HD="$ROOT/Resources/Aki/hd-4x"
 cd "$ROOT"
 
 mkdir -p .build
@@ -31,6 +35,11 @@ mkdir -p "$OUT"
 ditto "$APP" "$OUT/Aki.app"
 mkdir -p "$OUT/Aki.app/Contents/Resources"
 rsync -a --exclude '.DS_Store' "$DATA/" "$OUT/Aki.app/Contents/Resources/"
+if [ -d "$HD" ]; then
+    rsync -a --delete --exclude '.DS_Store' "$HD/" "$OUT/Aki.app/Contents/Resources/hd-4x/"
+else
+    echo "stage-aki: warning: no $HD (run the U1 upscale tool); Remastered Art will show disabled" >&2
+fi
 # Release Notes.rtf is set in Osaka-Mono, a downloadable asset on current macOS: bundle Apple's copy
 # (registered by Info.plist ATSApplicationFontsPath = Fonts) so the notes never prompt for a download.
 OSAKA="$(find /System/Library/AssetsV2 -name OsakaMono.ttf -print -quit 2>/dev/null || true)"
@@ -46,5 +55,9 @@ codesign --force --deep --sign - "$OUT/Aki.app"
 codesign --verify --deep "$OUT/Aki.app"
 cp "$ROOT/Aki/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
 
-echo "staged: $OUT/Aki.app ($(find "$OUT/Aki.app/Contents/Resources" -name '*.png' | wc -l | tr -d ' ') PNG)"
+echo "staged: $OUT/Aki.app ($(find "$OUT/Aki.app/Contents/Resources" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ') PNG)"
+if [ -d "$OUT/Aki.app/Contents/Resources/hd-4x" ]; then
+    echo "remaster: Contents/Resources/hd-4x $(find "$OUT/Aki.app/Contents/Resources/hd-4x" -name '*.png' | wc -l | tr -d ' ') PNG," \
+         "$(du -sh "$OUT/Aki.app/Contents/Resources/hd-4x" | cut -f1)"
+fi
 echo "notes:  $OUT/WHAT-TO-EXPECT.md"

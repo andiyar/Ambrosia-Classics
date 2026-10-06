@@ -8,7 +8,7 @@ import PackageDescription
 // symlink — docs/DECISIONS.md D1).
 let package = Package(
     name: "AkiCore",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v15), .iOS("26.0")],   // iPadOS 26 floor (D7)
     products: [
         .library(name: "AkiCore", targets: ["AkiCore"]),
         .executable(name: "aki-census", targets: ["aki-census"]),

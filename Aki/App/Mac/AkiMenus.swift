@@ -3,7 +3,8 @@ import AkiCore
 
 /// The menu bar of the shipped `MainMenu.nib` (Research note 7), built from its `designable.nib` XML in
 /// the preferred localization (English or Japanese) — the 1.2 app loaded the same nib as `NSMainNibFile`.
-/// Every title, key equivalent, modifier mask, tag and action comes from the nib; nothing is added.
+/// Every title, key equivalent, modifier mask, tag and action comes from the nib; one item is added: the
+/// checkable "Remastered Art" (DECISIONS D11), directly after the nib's Preferences item in the same menu.
 /// The three out-of-scope items (Known delta 1, Q11) are dropped: "Register Aki…" (`showRegistration:`),
 /// "Check for Updates…" (`checkForUpdates:`) and "Download Levels…" (tag 15), then the separators left
 /// leading, trailing or doubled are collapsed. An item the nib wires to no action (the Japanese
@@ -20,11 +21,11 @@ import AkiCore
     private static var nibEditItems: [NSMenuItem] = []
 
     /// The main menu: `AMainMenu` of `MainMenu.nib/designable.nib`. Items the nib targets at "Controller"
-    /// get `controller` as target; the rest (FirstResponder) target nil. Also sets `NSApp.windowsMenu` to
+    /// get the app delegate (the nib's `Controller`) as target; the rest (FirstResponder) target nil. Also sets `NSApp.windowsMenu` to
     /// the submenu holding `arrangeInFront:` (the nib's Window menu).
-    static func build(controller: AkiController) throws -> NSMenu {
-        let nib = try CocoaNib(data: controller.assets.lproj("MainMenu.nib/designable.nib"))
-        let menu = makeMenu(title: "AMainMenu", items: nib.mainMenu, controller: controller)
+    static func build(app: AkiAppDelegate) throws -> NSMenu {
+        let nib = try CocoaNib(data: app.controller.assets.lproj("MainMenu.nib/designable.nib"))
+        let menu = makeMenu(title: "AMainMenu", items: nib.mainMenu, controller: app)
         NSApp.windowsMenu = menu.items.compactMap(\.submenu).first { submenu in
             submenu.items.contains { $0.action == #selector(NSApplication.arrangeInFront(_:)) }
         }
@@ -32,8 +33,9 @@ import AkiCore
             submenu.items.contains { $0.action == #selector(NSText.copy(_:)) }
         }
         nibEditItems = editMenu?.items ?? []
+        insertRemasteredArt(into: menu, app: app)
         // Runs after the caller's `NSApp.mainMenu =` (an immediate re-set does not stick, measured).
-        controller.perform(#selector(AkiController.restoreNibMenu), with: nil, afterDelay: 0)
+        app.perform(#selector(AkiAppDelegate.restoreNibMenu), with: nil, afterDelay: 0)
         return menu
     }
 
@@ -43,7 +45,7 @@ import AkiCore
     /// alternates, the Window menu's tiling items and Clear Current Layer's dropped ⌘X are left alone.
     static func restoreNibItems() {
         if let title = preferencesTitle, let item = NSApp.mainMenu?.items.lazy.compactMap(\.submenu)
-            .compactMap({ $0.items.first { $0.action == #selector(AkiController.showPreferences(_:)) } }).first {
+            .compactMap({ $0.items.first { $0.action == #selector(AkiAppDelegate.showPreferences(_:)) } }).first {
             item.title = title
         }
         guard let editMenu else { return }
@@ -52,7 +54,25 @@ import AkiCore
         }
     }
 
-    private static func makeMenu(title: String, items: [CocoaNib.MenuItem], controller: AkiController) -> NSMenu {
+    /// The one item the nib lacks (D11): "Remastered Art", after the `showPreferences:` item, targeting the app
+    /// delegate (`toggleRemasteredArt:`); its check and enabling are `validateMenuItem`'s. Key equivalent ⌘G (Ben's
+    /// U4 ruling; neither MainMenu.nib uses G): fullscreen covers the menu bar, and a ⌘-key down reaches
+    /// `NSApp.mainMenu.performKeyEquivalent` there exactly as the nib's ⌘F and ⌘P do (ShellView has no
+    /// `performKeyEquivalent` of its own), so the toggle works in both modes.
+    private static func insertRemasteredArt(into menu: NSMenu, app: AkiAppDelegate) {
+        for submenu in menu.items.compactMap(\.submenu) {
+            guard let index = submenu.items.firstIndex(where: { $0.action == #selector(AkiAppDelegate.showPreferences(_:)) })
+            else { continue }
+            let item = NSMenuItem(title: "Remastered Art", action: #selector(AkiAppDelegate.toggleRemasteredArt(_:)),
+                                  keyEquivalent: "g")
+            item.keyEquivalentModifierMask = .command
+            item.target = app
+            submenu.insertItem(item, at: index + 1)
+            return
+        }
+    }
+
+    private static func makeMenu(title: String, items: [CocoaNib.MenuItem], controller: AkiAppDelegate) -> NSMenu {
         let menu = NSMenu(title: title)
         for item in collapsingSeparators(items.filter(isInScope)) {
             menu.addItem(makeItem(item, controller: controller))
@@ -75,7 +95,7 @@ import AkiCore
         return result
     }
 
-    private static func makeItem(_ item: CocoaNib.MenuItem, controller: AkiController) -> NSMenuItem {
+    private static func makeItem(_ item: CocoaNib.MenuItem, controller: AkiAppDelegate) -> NSMenuItem {
         if item.isSeparator { return .separator() }
         let menuItem = NSMenuItem(title: item.title, action: item.action.map(NSSelectorFromString),
                                   keyEquivalent: item.keyEquivalent)

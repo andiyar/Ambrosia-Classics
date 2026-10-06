@@ -1,4 +1,3 @@
-import AppKit
 import AkiCore
 import HectorShell
 
@@ -24,8 +23,29 @@ import HectorShell
 
     /// `_RedrawMapScreen`: map → scratch2c; both bar arrows at rest; the static lit lanterns below the
     /// blinking one (75×73 sprite into 74×72, QuickDraw stretch); the difficulty word; scratch2c →
-    /// scratch30. No window draw.
-    func redrawMapScreen() {
+    /// scratch30. No window draw. Then the proverb when `g.lost` (a modal, C2): `g.lost = false` and `next` — the
+    /// caller's following code — run once it closes. Only `GameScreen.leaveLevel` can arrive with `g.lost` set
+    /// (it is set by the game's events and cleared here on the way back to the map); the launch and the
+    /// difficulty arrows (`selectMenuOptions`) always see it false, so their `next` runs before this returns.
+    func redrawMapScreen(then next: @escaping () -> Void) {
+        composeMapBuffers()
+
+        let g = controller.g
+        let finish = {
+            g.lost = false
+            // The customLost / tryAgainOK tail (`_CreateNewDialog(0x53)`, `_LoadCustomLevel`) is P3.6's.
+            next()
+        }
+        if g.lost {
+            controller.host.showRandomProverb(completion: finish)   // _RandomProverbScreen (g.lost is set from Phase 2 on)
+        } else {
+            finish()
+        }
+    }
+
+    /// The drawing half of `_RedrawMapScreen` (no state, no window draw): map, arrows, lit lanterns and the
+    /// difficulty word into scratch2c, then scratch2c → scratch30.
+    private func composeMapBuffers() {
         let gw = controller.gworlds!
         let p = controller.p
         let full = Self.full
@@ -42,13 +62,30 @@ import HectorShell
         QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc, srcRect: AkiMap.difficultyWord(d),
                         dstRect: AkiMap.difficultyWordDestination, maskRect: AkiMap.difficultyWordMask(d), mode: 1)
         QD.drawToGWorld(gw.scratch2c, gw.scratch30, mask: gw.scratch2c, srcRect: full, dstRect: full, maskRect: full, mode: -9)
+    }
 
-        let g = controller.g
-        if g.lost {
-            AkiSplash.randomProverb(controller: controller)   // _RandomProverbScreen (g.lost is set from Phase 2 on)
+    /// A Remaster switch on the map (D11, `AkiController.setRemastered`): the new GWorlds hold no frame yet, so
+    /// the map is recomposed as `_RedrawMapScreen` composes it (without its proverb / continuation — `g.lost` is
+    /// never set on the map), then the state the idle loop has drawn over it since is redrawn as it stands — the
+    /// blinking lantern at its CURRENT phase (no step) and the current hover preview (no Preview.aiff, no
+    /// `lastPreview` change) — and the frame is presented. The next idle tick carries on from here unchanged.
+    func redrawForArtChange() {
+        composeMapBuffers()
+        let gw = controller.gworlds!
+        let p = controller.p
+        let blinkRect = AkiMap.blinkDestination(AkiMap.blinkingLantern(settings: p))
+        QD.drawToGWorld(gw.misc, gw.scratch2c, mask: gw.misc, srcRect: AkiMap.lanternSprite,
+                        dstRect: blinkRect, maskRect: AkiMap.blinkMasks[blink.phase], mode: 1)
+        if let preview = lastPreview {
+            let strip = AkiMap.previewStrip(preview)
+            QD.drawToGWorld(gw.previews, gw.scratch2c, mask: gw.previews, srcRect: strip,
+                            dstRect: AkiMap.previewDestination, maskRect: strip, mode: -9)
+            if !p.isUnlocked(preview) {
+                QD.drawToGWorld(gw.notavail, gw.scratch2c, mask: gw.notavail, srcRect: AkiMap.lockedOverlay,
+                                dstRect: AkiMap.lockedOverlayDestination, maskRect: AkiMap.lockedOverlayMask, mode: 1)
+            }
         }
-        g.lost = false
-        // The customLost / tryAgainOK tail (`_CreateNewDialog(0x53)`, `_LoadCustomLevel`) is P3.6's.
+        controller.drawToWindow(gw.scratch2c, srcRect: Self.full, dstRect: Self.full, flush: true)
     }
 
     // MARK: _MapScreen (one idle tick)
@@ -95,17 +132,18 @@ import HectorShell
 
     // MARK: Input
 
-    /// The map branch of `-[Controller mouseDown:]`: the bottom bar → `_SelectMenuOptions`, else `_SelectMapArea`.
-    func mouseDown(at point: ShellPoint, event: NSEvent) {
+    /// The map branch of `-[Controller mouseDown:]`: the bottom bar → `_SelectMenuOptions`, else `_SelectMapArea`
+    /// (with the click's modifiers: the Option key the original polled). Nothing follows either call.
+    func mouseDown(at point: ShellPoint, click: ShellClick) {
         if AkiMap.isBarClick(v: point.v) {
             selectMenuOptions(point)
         } else {
-            selectMapArea(point)
+            selectMapArea(point, optionDown: click.modifiers.contains(.option))
         }
     }
 
     /// `-[Controller keyDown:]` has no map branch (method-map §1): menu key equivalents arrive through the menu.
-    func keyDown(_ event: NSEvent) {}
+    func keyDown(_ key: ShellKey) {}
 
     /// `_SelectMapArea` @ 0x78c2 (DC:2782, Research note 13): one "Unavailable" dialog
     /// (`_CreateNewDialog(0x28)`) per locked lantern hit; the chosen level is the last unlocked hit (Option
@@ -113,44 +151,61 @@ import HectorShell
     /// g+0x22b is set; the Practice alert (`alertWithMessageText:…`, Cancel → g+0x7c); the Level
     /// Description when p+0x214 is set; and `_LoadLayout` unless one of them cancelled — else g+0x7c is
     /// cleared. The trailing `_g`+0xc4 bookkeeping is not replicated (INDEX NOT RESOLVED #3, never read).
-    func selectMapArea(_ point: ShellPoint) {
+    /// Every modal is completion style (C2), so the steps are one continuation chain — the same order, the same
+    /// `g.levelIndex` / `g.cancelStart` writes and `p` reads at the same points.
+    func selectMapArea(_ point: ShellPoint, optionDown: Bool) {
         let g = controller.g
         g.levelIndex = nil
-        let selection = AkiMap.select(h: point.h, v: point.v, optionDown: NSEvent.modifierFlags.contains(.option),
-                                      settings: controller.p)
-        for _ in 0..<selection.unavailableDialogs {
-            _ = CarbonDialog.run("Unavailable", controller: controller)
-        }
-        guard let chosen = selection.chosen else { return }
-        g.levelIndex = chosen
-        if AkiMap.showsGuide(settings: controller.p, guideFlag: g.guideFlag) {
-            AkiSplash.show(named: "guide", timeout: 0, controller: controller)
-        }
-        if AkiMap.needsPracticeAlert(level: chosen, settings: controller.p) {
-            // NSAlert alertWithMessageText:"Practice Mode" defaultButton:"Practice Level"
-            // alternateButton:"Cancel" otherButton:nil informativeTextWithFormat:…; g+0x7c = (alternate).
-            let assets = controller.assets!
-            let alert = NSAlert()
-            alert.messageText = assets.localized("Practice Mode")
-            alert.informativeText = assets.localized(
-                "You will not be able to progress to the next level when playing in practice mode.")
-            alert.addButton(withTitle: assets.localized("Practice Level"))
-            alert.addButton(withTitle: assets.localized("Cancel"))
-            if controller.shell.isFullscreen {
-                alert.window.scheduleShieldingLevel()
-            }
-            g.cancelStart = alert.runModal() == .alertSecondButtonReturn
-        }
-        if !g.cancelStart {
-            if controller.p.showDescription != 0 {
-                LevelDescriptionWindowController.runModal(layout: chosen, custom: false, controller: controller)
-            }
-            if !g.cancelStart {
-                controller.loadLayout()
-                return
+        let selection = AkiMap.select(h: point.h, v: point.v, optionDown: optionDown, settings: controller.p)
+        runUnavailableDialogs(selection.unavailableDialogs) { [self] in
+            guard let chosen = selection.chosen else { return }
+            g.levelIndex = chosen
+            showGuideIfNeeded { [self] in
+                practiceAlertIfNeeded(level: chosen) { [self] in
+                    guard !g.cancelStart else {
+                        g.cancelStart = false
+                        return
+                    }
+                    levelDescriptionIfNeeded(level: chosen) { [self] in
+                        if !g.cancelStart {
+                            controller.loadLayout()
+                            return
+                        }
+                        g.cancelStart = false
+                    }
+                }
             }
         }
-        g.cancelStart = false
+    }
+
+    /// `_SelectMapArea`: one "Unavailable" dialog (`_CreateNewDialog(0x28)`) per locked lantern hit, in turn.
+    private func runUnavailableDialogs(_ count: Int, then next: @escaping () -> Void) {
+        guard count > 0 else { return next() }
+        controller.host.runDialog("Unavailable", texts: [:]) { [self] _ in
+            runUnavailableDialogs(count - 1, then: next)
+        }
+    }
+
+    /// `_SelectMapArea`: the "guide" splash while level 2 is locked and g+0x22b is set.
+    private func showGuideIfNeeded(then next: @escaping () -> Void) {
+        guard AkiMap.showsGuide(settings: controller.p, guideFlag: controller.g.guideFlag) else { return next() }
+        controller.host.showSplash(named: "guide", timeout: 0, completion: next)
+    }
+
+    /// `_SelectMapArea`: the Practice alert when the level needs it; g+0x7c = (alternate) — Cancel.
+    private func practiceAlertIfNeeded(level: Int, then next: @escaping () -> Void) {
+        guard AkiMap.needsPracticeAlert(level: level, settings: controller.p) else { return next() }
+        let g = controller.g
+        controller.host.runPracticeAlert { cancelled in
+            g.cancelStart = cancelled
+            next()
+        }
+    }
+
+    /// `_SelectMapArea`: the Level Description when p+0x214 is set (its Cancel sets g+0x7c).
+    private func levelDescriptionIfNeeded(level: Int, then next: @escaping () -> Void) {
+        guard controller.p.showDescription != 0 else { return next() }
+        controller.host.runLevelDescription(layout: level, custom: false, completion: next)
     }
 
     /// `_SelectMenuOptions`: Preferences, Quit, or a difficulty arrow (flash the pressed arrow into the
@@ -160,10 +215,12 @@ import HectorShell
         let up: Bool
         switch AkiMap.barAction(h: point.h) {
         case .preferences:
-            controller.showPreferences(nil)
+            controller.host.showPreferences()
             return
         case .quit:
-            NSApp.terminate(nil)
+            // On the Mac `terminate:` on the map does not return (the map's `shouldTerminate` is YES); the flag
+            // write is kept after it, as in the original.
+            controller.host.quit()
             controller.g.quitRequested = true
             return
         case .difficultyPrevious:
@@ -178,8 +235,9 @@ import HectorShell
             return
         }
         controller.p.difficultyRaw = AkiMap.cycleDifficulty(controller.p.difficultyRaw, up: up)
-        redrawMapScreen()
-        controller.savePrefs()
+        redrawMapScreen { [self] in                     // g.lost is false on the map: no proverb, runs inline
+            controller.savePrefs()
+        }
     }
 
     private func flashArrow(rest: QDRect, sprite: QDRect, mask: QDRect, pressed: QDRect) {
@@ -198,5 +256,5 @@ import HectorShell
     func pause() {}
     func unpause() {}
     /// `applicationShouldTerminate:` on the map: terminate now.
-    func shouldTerminate() -> Bool { true }
+    func shouldTerminate(_ completion: @escaping (Bool) -> Void) { completion(true) }
 }

@@ -7,7 +7,10 @@ import AkiCore
 /// Level Description and every Carbon dialog's image view 200. The replica stretches it into `bounds`
 /// on every draw (Q7).
 @MainActor final class PaperBackgroundView: NSView {
-    private let paper: NSImage?
+    /// Replaced only by a window built once (Preferences, Level Description) after a Remaster switch (D11).
+    var paper: NSImage? {
+        didSet { needsDisplay = true }
+    }
 
     init(frame: NSRect, paper: NSImage?) {
         self.paper = paper
@@ -32,12 +35,11 @@ import AkiCore
 /// loop on a button's HICommand; `'ok  '` also sets `g.dialogOK` (g+0x81).
 @MainActor enum CarbonDialog {
     /// Builds `name` from Aki.nib/objects.xib, runs it app-modal; returns the HICommand of the button
-    /// that closed it ("ok  ", "not!"). `configure` fills dynamic controls by controlID (Stats, P2.11).
-    /// P2.11 semantics (no signature change): `controlsByID` keeps the FIRST control per ID in nib subview
-    /// order (GetControlByID); callers' `configure` writes only to static texts
-    /// (`run` does not enforce it; `showStatistics` casts to `NSTextField`).
-    static func run(_ name: String, controller: AkiController,
-                    configure: ((_ controlsByID: [Int: NSView]) -> Void)? = nil) -> String? {
+    /// that closed it ("ok  ", "not!"). `texts` fills dynamic controls by controlID (Stats, P2.11):
+    /// `controlsByID` keeps the FIRST control per ID in nib subview order (GetControlByID), and only static
+    /// texts take the text (the `NSTextField` cast) — so ID 2, the OK button first in nib order, keeps its title.
+    static func run(_ name: String, app: AkiAppDelegate, texts: [Int: String] = [:]) -> String? {
+        let controller = app.controller
         let nibWindow: CarbonNib.Window
         do {
             guard let window = try CarbonNib(data: controller.assets.lproj("Aki.nib/objects.xib")).window(named: name) else {
@@ -67,17 +69,19 @@ import AkiCore
                 controlsByID[id] = view                             // GetControlByID: the first match in nib order
             }
         }
-        configure?(controlsByID)
+        for (id, text) in texts {
+            (controlsByID[id] as? NSTextField)?.stringValue = text
+        }
 
         panel.center()                                              // centerWithCGDisplaySize
-        if controller.shell.isFullscreen {
+        if app.shell.isFullscreen {
             panel.level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
             panel.scheduleShieldingLevel()                          // re-applied inside the modal session
         }
         panel.makeKeyAndOrderFront(nil)
         NSApp.runModal(for: panel)
         panel.orderOut(nil)                                         // HideWindow / DisposeWindow
-        controller.shell.currentWindow.makeKeyAndOrderFront(nil)
+        app.shell.currentWindow.makeKeyAndOrderFront(nil)
         return runner.command
     }
 

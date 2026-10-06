@@ -2,7 +2,7 @@ import Foundation
 
 /// The shipped Carbon `Aki.nib/objects.xib` (Interface Builder 2.x XML, `NSIBObjectData`): the
 /// dialog windows `_CreateNewDialog` opens by name through the `nameTable` (plan Research note 20).
-/// Frames are `viewFrame` "x y w h", top-left origin. Holds `XMLElement`s: deliberately not `Sendable`.
+/// Frames are `viewFrame` "x y w h", top-left origin. Holds `NibElement`s: deliberately not `Sendable`.
 public struct CarbonNib {
     public struct Window: Equatable, Sendable {
         public var title: String; public var width: Int; public var height: Int; public var windowClass: Int; public var controls: [Control]
@@ -14,26 +14,23 @@ public struct CarbonNib {
     }
     public enum ParseError: Error, Equatable { case notCarbonNib }
 
-    private let document: XMLDocument          // owns the tree the elements below live in
-    private let ids: [String: XMLElement]
-    private let names: [String: XMLElement]
+    private let ids: [String: NibElement]
+    private let names: [String: NibElement]
 
     public init(data: Data) throws {
-        guard let document = try? XMLDocument(data: data, options: [.nodePreserveWhitespace]),
-              let root = document.rootElement(), root.name == "object",
-              root.attribute(forName: "class")?.stringValue == "NSIBObjectData"
+        guard let root = NibElement.parse(data), root.name == "object",
+              root.attribute(forName: "class") == "NSIBObjectData"
         else { throw ParseError.notCarbonNib }
-        self.document = document
-        var ids: [String: XMLElement] = [:]
-        func index(_ e: XMLElement) {
-            if let id = e.attribute(forName: "id")?.stringValue, ids[id] == nil { ids[id] = e }
-            for child in e.children ?? [] { if let c = child as? XMLElement { index(c) } }
+        var ids: [String: NibElement] = [:]
+        func index(_ e: NibElement) {
+            if let id = e.attribute(forName: "id"), ids[id] == nil { ids[id] = e }
+            for c in e.elements { index(c) }
         }
         index(root)
         self.ids = ids
-        var names: [String: XMLElement] = [:]
+        var names: [String: NibElement] = [:]
         if let table = Self.child(root, "nameTable") {
-            let entries = (table.children ?? []).compactMap { $0 as? XMLElement }
+            let entries = table.elements
             for pair in stride(from: 0, to: entries.count - 1, by: 2) {
                 if let name = entries[pair].stringValue, let target = Self.object(entries[pair + 1], ids) { names[name] = target }
             }
@@ -43,12 +40,12 @@ public struct CarbonNib {
 
     /// The `IBCarbonWindow` the nib's `nameTable` maps `name` to; nil for unknown names / non-windows.
     public func window(named name: String) -> Window? {
-        guard let w = names[name], w.attribute(forName: "class")?.stringValue == "IBCarbonWindow" else { return nil }
+        guard let w = names[name], w.attribute(forName: "class") == "IBCarbonWindow" else { return nil }
         let rootControl = Self.object(Self.child(w, "rootControl"), ids)
         let size = Self.numbers(rootControl.flatMap { Self.child($0, "viewFrame") }?.stringValue)
         let subviews = rootControl.flatMap { Self.child($0, "subviews") }
-        let controls = (subviews?.children ?? []).compactMap { node -> Control? in
-            guard let e = node as? XMLElement, let view = Self.object(e, ids) else { return nil }
+        let controls = (subviews?.elements ?? []).compactMap { e -> Control? in
+            guard let view = Self.object(e, ids) else { return nil }
             return makeControl(view)
         }
         return Window(title: Self.child(w, "title")?.stringValue ?? "",
@@ -58,8 +55,8 @@ public struct CarbonNib {
 
     // MARK: - Private
 
-    private func makeControl(_ e: XMLElement) -> Control {
-        var kind = e.attribute(forName: "class")?.stringValue ?? ""
+    private func makeControl(_ e: NibElement) -> Control {
+        var kind = e.attribute(forName: "class") ?? ""
         if kind.hasPrefix("IBCarbon") { kind.removeFirst("IBCarbon".count) }
         var frame = Self.numbers(Self.child(e, "viewFrame")?.stringValue)
         if frame.count != 4 { frame = [0, 0, 0, 0] }
@@ -70,14 +67,14 @@ public struct CarbonNib {
                        contentResID: Self.int(Self.child(e, "contentResID")))
     }
 
-    private static func child(_ e: XMLElement, _ name: String) -> XMLElement? {
-        (e.children ?? []).lazy.compactMap { $0 as? XMLElement }.first { $0.attribute(forName: "name")?.stringValue == name }
+    private static func child(_ e: NibElement, _ name: String) -> NibElement? {
+        e.elements.first { $0.attribute(forName: "name") == name }
     }
-    private static func object(_ e: XMLElement?, _ ids: [String: XMLElement]) -> XMLElement? {
+    private static func object(_ e: NibElement?, _ ids: [String: NibElement]) -> NibElement? {
         guard let e else { return nil }
-        if e.name == "reference" { return e.attribute(forName: "idRef")?.stringValue.flatMap { ids[$0] } }
+        if e.name == "reference" { return e.attribute(forName: "idRef").flatMap { ids[$0] } }
         return e
     }
-    private static func int(_ e: XMLElement?) -> Int? { e?.stringValue.flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } }
+    private static func int(_ e: NibElement?) -> Int? { e?.stringValue.flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } }
     private static func numbers(_ text: String?) -> [Int] { (text ?? "").split(separator: " ").compactMap { Int($0) } }
 }

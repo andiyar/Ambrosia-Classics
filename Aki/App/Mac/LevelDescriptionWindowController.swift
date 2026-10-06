@@ -16,13 +16,17 @@ import AkiCore
     private let titleTextField: NSTextField                    // _titleTextField (ivar 0x30)
     private let descriptionTextField: NSTextField              // _descriptionTextField (ivar 0x34)
     private let checkbox: NSButton                             // _checkbox (ivar 0x28)
+    private let content: PaperBackgroundView
+    /// The art scale `content`'s paper was loaded at (Remaster, D11: reloaded when it changes).
+    private var paperScale: Int
 
     /// `+[LevelDescriptionWindowController runModalWithLayout:custom:]` @ 0x29d40 (levels.md §3, read
     /// from `otool`): n = layout + 1; title `level%d_custom_title` when `custom`, else `level%d_title`;
     /// description `level%d_description`; image `preview%d`; then `+runModalWithTitle:description:image:`
     /// @ 0x29e86 (DC:11369): the shared instance, `_setupWithTitle:description:image:` @ 0x2a0a7 (DC:11446),
     /// `scheduleSetShieldingLevel` when fullscreen, `runModalForWindow:` (AppKit centres it — Q6).
-    static func runModal(layout: Int, custom: Bool, controller: AkiController) {
+    static func runModal(layout: Int, custom: Bool, app: AkiAppDelegate) {
+        let controller = app.controller
         let n = layout + 1
         let assets = controller.assets!
         let title = assets.localized(custom ? "level\(n)_custom_title" : "level\(n)_title")
@@ -39,7 +43,10 @@ import AkiCore
         instance.titleTextField.stringValue = title
         instance.descriptionTextField.stringValue = description
         instance.imageView.image = image
-        if controller.shell.isFullscreen {
+        controller.refreshArt(loadedAt: &instance.paperScale) {   // a Remaster switch since the window was built (D11)
+            instance.content.paper = assets.image("paper")
+        }
+        if app.shell.isFullscreen {
             instance.window.scheduleShieldingLevel()
         }
         NSApp.runModal(for: instance.window)
@@ -69,7 +76,8 @@ import AkiCore
                           backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.title = w.title
-        let content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        content = PaperBackgroundView(frame: size, paper: controller.assets.image("paper"))
+        paperScale = controller.artScale
         window.contentView = content
 
         imageView = NSImageView(frame: Self.frame(image))
