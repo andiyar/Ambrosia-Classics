@@ -1,7 +1,7 @@
 # Bubble Trouble X for Windows — what to expect
 
-A private test build of Ambrosia's Bubble Trouble X (2008), rebuilt to run on Windows 10 and 11 (64-bit) from the
-original game's own data. Thank you for trying it.
+Bubble Trouble X 1.0 for Windows: Ambrosia's Bubble Trouble X (2008), rebuilt to run on Windows 10 and 11 (64-bit)
+from the original game's own data. Unofficial, non-commercial preservation.
 
 ## Starting it
 1. Unzip "Bubble Trouble X (Windows).zip" anywhere (Desktop is fine). Right-click it, Extract All. Do not run the
@@ -9,7 +9,7 @@ original game's own data. Thank you for trying it.
    says it cannot find a .dll file or cannot find the program — that means: extract first.)
 2. Open the folder "Bubble Trouble X (Windows)" and double-click **Bubble Trouble X.exe**. Keep the "Data" folder and
    the .dll files next to it.
-3. Windows will probably say **"Windows protected your PC"** (this build is not signed, it is a private build).
+3. Windows will probably say **"Windows protected your PC"** (this build is not code-signed for Windows).
    Click **More info**, then **Run anyway**. You only need to do this once.
 
 You should see the Ambrosia logo, a loading screen, then the title screen. It looks like the 2008 Mac game on
@@ -35,15 +35,14 @@ remembers which you used.
 - You can choose other keys in Preferences → Keys → New Set….
 
 ## Sound
-Sound effects and music should play. We could not listen to this build ourselves (our test machine has no
-Windows sound), so please tell us if it is silent, crackly, too loud or too quiet.
+Sound effects and music play through your default sound device, at the original's levels (checked on a real
+Windows PC). The Preferences volume settings and Ctrl+M / Ctrl+Shift+A apply.
 
 ## Where it keeps things
 Preferences, high scores and a log file live in `%APPDATA%\Ambrosia Classics\Bubble Trouble X\`
 (paste that into the File Explorer address bar). The log, **BubbleTroubleX.log**, is rewritten every time the
 game starts. If the game cannot start it shows a message saying why.
 
-## What to tell us
-- Did it start? If not: what you saw, a screenshot, and the BubbleTroubleX.log file.
-- Does it play right — speed, controls, sound, music, dialogs, full screen?
-- Anything odd: what you did just before, a screenshot (Windows+Shift+S), and the log file.
+## Something wrong?
+Open an issue at https://github.com/andiyar/Ambrosia-Classics/issues with what you did just before, a screenshot
+(Windows+Shift+S) and the BubbleTroubleX.log file.
