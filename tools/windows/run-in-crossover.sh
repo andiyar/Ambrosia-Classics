@@ -1,9 +1,12 @@
 #!/bin/zsh
-# tools/windows/run-in-crossover.sh <exe> [args…]
+# tools/windows/run-in-crossover.sh [--clean] <exe> [args…]
 # Runs a cross-built Windows executable in the dedicated CrossOver bottle (hector-win, Windows 10 64-bit,
 # created on first use, command line only). The Swift runtime DLLs (+ ICU, Foundation, dispatch, vcruntime),
 # XCTest/Testing and SDL3 are put on the DLL search path via WINEPATH — nothing is installed into the bottle.
 # Prints the program's stdout/stderr and exits with its exit code.
+#
+# --clean  a shipped build's check (plan W7): run in a separate bottle (`hector-win-clean`, or $HECTOR_BOTTLE if
+#          set; created on first use the same way) with NOTHING on WINEPATH — the exe must find every DLL beside it.
 #
 # Environment:
 #   WIN_RUN_TIMEOUT  seconds before the run is killed (default 900); exit 124 on timeout
@@ -18,10 +21,19 @@
 #   Any other variable (e.g. HECTORKIT_DATA_BTX="Z:\…") is passed through to the program by Wine.
 set -euo pipefail
 here="${0:A:h}"
+user_bottle="${HECTOR_BOTTLE:-}"
 . "$here/env.sh"
 
+clean=0
+if [[ "${1:-}" == --clean ]]; then
+    clean=1; shift
+    if [[ -z "$user_bottle" ]]; then
+        HECTOR_BOTTLE=hector-win-clean
+        HECTOR_BOTTLE_DIR="$HOME/Library/Application Support/CrossOver/Bottles/$HECTOR_BOTTLE"
+    fi
+fi
 if (( $# < 1 )); then
-    print -u2 "usage: $0 <exe> [args…]"
+    print -u2 "usage: $0 [--clean] <exe> [args…]"
     exit 64
 fi
 exe="$1"; shift
@@ -49,6 +61,7 @@ fi
 dll_dirs=("$WIN_RUNTIME" "$WIN_XCTEST/usr/bin64" "$WIN_TESTING/usr/bin64")
 [[ -d "$WIN_SDL3/lib/x64" ]] && dll_dirs+=("$WIN_SDL3/lib/x64")
 winepath=""
+(( clean )) && dll_dirs=()
 for d in $dll_dirs; do
     [[ -d "$d" ]] || continue
     winepath+="${winepath:+;}$(win_path "$d")"

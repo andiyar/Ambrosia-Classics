@@ -21,14 +21,23 @@
 //
 // SDL drivers: SDL_VIDEO_DRIVER / SDL_AUDIO_DRIVER, or HECTOR_SDL_VIDEO_DRIVER / HECTOR_SDL_AUDIO_DRIVER (which win;
 // CrossOver strips SDL_* — tools/windows/README.md). Exit 0 on a normal quit, 1 on a failure, 64 on bad arguments.
+//
+// Shipped as a GUI-subsystem .exe (W7, tools/windows/stage-btx.sh): no console, so a failure to start (missing data,
+// no window) is shown in a message box (HectorSDL `SDLMessageBox`; never in headless mode — and
+// HECTOR_SDL_MESSAGEBOX_CAPTURE=<file> writes it to a file instead), and every report also goes to BubbleTroubleX.log
+// beside the prefs file (`WinLog`; none while the prefs are in memory). stderr is written with C stdio, which simply
+// drops the text when there is no console (Foundation's FileHandle.standardError would trap on the missing handle).
 import BTXWinKit
 import BubbleTroubleCore
 import Foundation
 import HectorAudio
 import HectorSDL
 
+nonisolated(unsafe) var startupLog: WinLog?
+
 func report(_ message: String) {
-    FileHandle.standardError.write(Data("Bubble Trouble X: \(message)\n".utf8))
+    fputs("Bubble Trouble X: \(message)\n", stderr)
+    startupLog?.write(message)
 }
 
 func fail(_ message: String, code: Int32 = 1) -> Never {
@@ -88,15 +97,28 @@ let dataDir = dataPath.map { URL(fileURLWithPath: $0, isDirectory: true) }
     ?? executableDir.appendingPathComponent("Data", isDirectory: true)
 
 let prefsBacking: any BTXPrefsBacking
-if let prefsPath {
-    prefsBacking = WinPrefsFile(fileURL: URL(fileURLWithPath: prefsPath), log: report)
-} else if headless {
-    prefsBacking = WinMemoryPrefs()
-} else if let url = WinPrefsFile.defaultURL() {
-    prefsBacking = WinPrefsFile(fileURL: url, log: report)
+let prefsURL: URL? = prefsPath.map { URL(fileURLWithPath: $0) } ?? (headless ? nil : WinPrefsFile.defaultURL())
+if let prefsURL {
+    startupLog = WinLog(besidePrefs: prefsURL)
+    prefsBacking = WinPrefsFile(fileURL: prefsURL, log: report)
 } else {
-    report("no APPDATA: the prefs will not be kept")
+    if !headless { report("no APPDATA: the prefs will not be kept") }
     prefsBacking = WinMemoryPrefs()
+}
+startupLog?.write("Bubble Trouble X for Windows (Ambrosia Classics) starting")
+startupLog?.write("os: \(ProcessInfo.processInfo.operatingSystemVersionString)")
+startupLog?.write("executable: \(WinStartup.displayPath(Bundle.main.executableURL ?? executableDir))")
+startupLog?.write("arguments: \(CommandLine.arguments.dropFirst().joined(separator: " "))")
+startupLog?.write("data: \(WinStartup.displayPath(dataDir))")
+startupLog?.write("prefs: \(prefsURL.map(WinStartup.displayPath) ?? "in memory")")
+
+/// A failure to start: reported (stderr + log) and, unless headless, shown in a message box; exit 1.
+func startupFailure(_ message: String) -> Never {
+    // One line for stderr and the log. Not Foundation's replacingOccurrences: on Windows it traps on "\n\n" (W7,
+    // measured in CrossOver: ud2 inside Foundation.dll).
+    report(message.split(separator: "\n").joined(separator: " — "))
+    if !headless { SDLMessageBox.show(.error, title: "Bubble Trouble X", message: message) }
+    exit(1)
 }
 
 // MARK: SDL
@@ -222,11 +244,16 @@ final class SDLWinHost: WinHost {
 
 // MARK: Launch
 
+let missing = WinStartup.missingData(in: dataDir)
+if !missing.isEmpty {
+    startupFailure(WinStartup.dataMissingMessage(dataDirectory: dataDir, missing: missing, logURL: startupLog?.url))
+}
 let assets: WinGameAssets
 do {
     assets = try WinGameAssets(dataDirectory: dataDir)
 } catch {
-    fail("cannot load the original data from \(dataDir.path): \(error)")
+    startupFailure(WinStartup.failureMessage("cannot load the original data from \(WinStartup.displayPath(dataDir))",
+                                             error: error, logURL: startupLog?.url))
 }
 
 let windowScale = scale ?? (headless ? 1 : SDLHost.initialScale(logicalWidth: WinCanvas.width,
@@ -236,7 +263,7 @@ do {
     sdl = try SDLHost(title: "Bubble Trouble X", logicalWidth: WinCanvas.width, logicalHeight: WinCanvas.height,
                       scale: windowScale)
 } catch {
-    fail("cannot open the window: \(error)")
+    startupFailure(WinStartup.failureMessage("cannot open the window", error: error, logURL: startupLog?.url))
 }
 let host = SDLWinHost(sdl: sdl, scripted: headless ? WinScriptedInput(script: script) : nil)
 
@@ -265,9 +292,11 @@ do {
     driver = try WinGameDriver(assets: assets, host: host, audioOutput: output, prefsBacking: prefsBacking,
                                dialogs: autoDialogs ? WinAutoDialogs() : nil, options: options)
 } catch {
-    fail("cannot start: \(error)")
+    startupFailure(WinStartup.failureMessage("cannot start the game", error: error, logURL: startupLog?.url))
 }
 driver.start()
+startupLog?.write("window: scale \(windowScale), video=\(SDLHost.currentVideoDriver) "
+                  + "audio=\(audioOut != nil ? SDLHost.currentAudioDriver : "none")")
 
 // MARK: The loop
 
@@ -310,4 +339,5 @@ if let frames {
     sdl.setLiveRedrawHandler(nil)
 }
 audioOut?.stop()
+startupLog?.write("quit normally")
 exit(0)
