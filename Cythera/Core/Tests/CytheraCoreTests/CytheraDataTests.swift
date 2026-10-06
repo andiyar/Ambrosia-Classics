@@ -1,5 +1,7 @@
 import XCTest
+#if canImport(CryptoKit)
 import CryptoKit
+#endif
 import HectorResources
 @testable import CytheraCore
 
@@ -13,9 +15,11 @@ final class CytheraDataTests: XCTestCase {
         try CytheraResources(directory: try CytheraData.dataDirectory())
     }
 
+    #if canImport(CryptoKit)                    // hash oracle only (Deimos AppResourceForkTests precedent)
     private func sha256(_ data: Data) -> String {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
+    #endif
 
     func testDataDirectoryResolvesCommittedFolder() throws {
         let dir = try CytheraData.dataDirectory()
@@ -52,7 +56,10 @@ final class CytheraDataTests: XCTestCase {
         XCTAssertEqual(overridden.path, temp.resolvingSymlinksInPath().path)
 
         XCTAssertThrowsError(try CytheraResources(directory: overridden)) { error in
-            XCTAssertEqual(error as? CytheraDataError, .notFound("Cythera Data.rsrc"))
+            guard case .notFound(let path)? = error as? CytheraDataError else {
+                return XCTFail("expected notFound, got \(error)")
+            }
+            XCTAssertEqual(path, overridden.appendingPathComponent("Cythera Data.rsrc").path)
         }
     }
 
@@ -90,11 +97,13 @@ final class CytheraDataTests: XCTestCase {
         // Two different `clut 256` (Research note 12): the data file's wins (app-shell.md §1.3).
         let dataClut = try XCTUnwrap(r.data.resource(type: "clut", id: 256), "data clut 256")
         let appClut = try XCTUnwrap(r.app.resource(type: "clut", id: 256), "app clut 256")
+        XCTAssertNotEqual(dataClut.data, appClut.data)
+        #if canImport(CryptoKit)
         XCTAssertTrue(sha256(dataClut.data).hasPrefix("e7fe2eef"), sha256(dataClut.data))
         XCTAssertTrue(sha256(appClut.data).hasPrefix("f3373625"), sha256(appClut.data))
+        #endif
         let found = try XCTUnwrap(r.resource(type: "clut", id: 256))
         XCTAssertEqual(found, dataClut)
-        XCTAssertTrue(sha256(found.data).hasPrefix("e7fe2eef"))
         // `Lite 140` is only in the app: the lookup falls through (65 B).
         XCTAssertNil(r.data.resource(type: "Lite", id: 140))
         let lite = try XCTUnwrap(r.resource(type: "Lite", id: 140), "Lite 140")

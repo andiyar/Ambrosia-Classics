@@ -12,21 +12,24 @@ public struct CytheraResources {
     public let segmentFileURL: URL
 
     /// Opens the three resource maps through `ResourceReader.read(fileAt:)`. Every file (the segment file
-    /// included) is checked before any is parsed, so a missing one is named, not masked.
+    /// included) is checked before any is parsed, so a missing one is named by its full path, not masked;
+    /// one that is present but does not parse throws `unreadable`.
     public init(directory: URL) throws {
         let fm = FileManager.default
         let dir = directory.resolvingSymlinksInPath()
         for name in [CytheraData.appFile, CytheraData.dataResourceFile, CytheraData.documentationFile,
                      CytheraData.segmentFile]
         where !CytheraData.isFile(dir.appendingPathComponent(name).resolvingSymlinksInPath(), fm) {
-            throw CytheraDataError.notFound(name)
+            throw CytheraDataError.notFound(dir.appendingPathComponent(name).path)
         }
 
         func load(_ name: String) throws -> ResourceCollection {
             let url = dir.appendingPathComponent(name).resolvingSymlinksInPath()
-            guard let collection = try ResourceReader.read(fileAt: url) else {
-                throw CytheraDataError.notFound("\(name) (not a resource map)")
+            let collection: ResourceCollection?
+            do { collection = try ResourceReader.read(fileAt: url) } catch {
+                throw CytheraDataError.unreadable(url.path, String(describing: error))
             }
+            guard let collection else { throw CytheraDataError.unreadable(url.path, "not a resource map") }
             return collection
         }
         app = try load(CytheraData.appFile)

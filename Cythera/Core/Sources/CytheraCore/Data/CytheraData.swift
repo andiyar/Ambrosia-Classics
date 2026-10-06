@@ -3,6 +3,8 @@ import Foundation
 public enum CytheraDataError: Error, Equatable {
     /// The named data file (or the data directory itself) is not there.
     case notFound(String)
+    /// The file at this path is there but is not a readable resource map: (path, what went wrong).
+    case unreadable(String, String)
 }
 
 /// Where the original Cythera 1.0.4 data lives (DECISIONS D28, D24.3 shape): the repo's committed copy
