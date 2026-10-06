@@ -44,6 +44,42 @@ arithmetic; **MED** = an unnamed glue callee or an inferred meaning; **LOW** = f
 - Colour numbers passed to `ForeColor`/`DrawTextOutlined` are classic QuickDraw constants
   (0x21 = 33 black, 0x1E = 30 white, 0x45 = 69 yellow, 0xCD = 205 red, 0x199 = 409 blue). The numbers
   are HIGH; the colour names are MED (standard QuickDraw values, `DrawTextOutlined` not read).
+- ⚑ corrected (review wave 2 2026-10-06) — review m9, the covered list by address (class :: method @ addr,
+  length in bytes). Re-derived this session with the census §0 classifier with one `print(a,int(n,16),k,s)` per row (see app-shell.md §0 correction),
+filtered by class `TConversation|TInteraction|TSimpleInteraction|TConvResponseMode|
+  TPickMode|TScriptPickItemDrawer|THowManyMode|TConvMoreMode|TConvMode|TModalMode|TTextOut|TBark` → **71 rows /
+  15,788 B** (= census). Every row was read whole (§0 above); rows not named elsewhere in this file are
+  the 4–8 B stubs and dtors.
+```
+TBark:: dt @10061e74 84
+TConvMode:: DrawRoutine @1003bf68 4 · MouseRoutine @1003c028 4 · IdleRoutine @1003c0e8 4
+  CursorRoutine @1003c1c8 4 · KeyRoutine @1003c29c 4 · WantAutoKey @1003cb6c 8 · dt @1003cfd8 84
+TConvMoreMode:: CursorRoutine @1003cbdc 140 · MouseRoutine @1003cce4 224 · KeyRoutine @1003ce34 76
+  dt @10042670 100 · WantAutoKey @10042700 8
+TConvResponseMode:: DrawRoutine @1003e17c 452 · MouseRoutine @1003e378 844
+  IdleRoutine @1003e700 64 · CursorRoutine @1003e778 308 · KeyRoutine @1003e8ec 780
+  dt @100425dc 100
+TConversation:: dt @1003b1fc 220 · CloseRoutine @1003b304 228 · OffsetOrigin @1003b4a8 36
+  Show @1003b9f0 424 · ClearData @1003c398 284 · IsJournalable @1003c4e4 268
+  WriteJournal @1003c628 508 · GetInteractRect @1003c858 60 · GetWorkRect @1003c944 96
+  myprintstr @1003d054 436 · ForceOut @1003dfd4 100 · mygets @1003f314 408 · mygetch @1003f4dc 324
+  mygetnum @1003f650 160
+THowManyMode:: dt @10041500 156 · DrawRoutine @100415c8 76 · MouseRoutine @10041644 664
+  CursorRoutine @10041914 140 · KeyRoutine @10041a78 428
+TInteraction:: Hide @1003bbc4 288 · NeedsRedraw @1003bd10 8 · DrawRoutine @1003bd48 496
+  MouseRoutine @1003bf98 88 · IdleRoutine @1003c060 88 · CursorRoutine @1003c118 120
+  KeyRoutine @1003c200 108 · EraseArea @1003c2cc 100 · ClearData @1003c364 4
+  GetWorkRect @1003c8d0 60 · IsJournalable @1003cca4 8 · WriteJournal @1003cdfc 4
+  ForceOut @1003f878 4 · GetField @10042330 284 · DispatchCommand @1004247c 64
+  HandleDragWindow @1004259c 4
+TModalMode:: dt @10041fec 124 · DrawRoutine @10042090 60 · MouseRoutine @100420fc 64
+  CursorRoutine @10042174 64 · KeyRoutine @100421ec 56
+TPickMode:: dt @1003faf0 172 · DrawRoutine @1003fd3c 660 · KeyRoutine @1003fffc 472
+  MouseRoutine @10040200 1672
+TScriptPickItemDrawer:: GetItemHeight @10096118 80 · DrawItem @100961a4 1460 · ct @10096cf0 48
+TSimpleInteraction:: GetInteractRect @10041088 76 · dt @1004250c 96
+TTextOut:: LDEFDraw @10039480 544 · LDEFHilite @100396d8 4 · dt @1003a238 100
+```
 
 ## 1. Class shape
 
@@ -216,6 +252,10 @@ Fields (ctor `__ct__12THowManyModeFP12TInteractionRssss @ 100412C0`, main dump, 
 +0x14 → short value (starts at max) · +0x18 slider control (`NewControl(…, value, min, max, 0x3e91, …)`) ·
 +0x20 **OK** button (`\x02OK`) · +0x24 **Cancel** button (`\x06Cancel`), both proc 16000.
 `SetValue__12THowManyModeFs` writes the control value, its refCon, and the short; no clamping.
+⚑ corrected (review wave 2 2026-10-06) — review N1(d): proc 0x3E91 = 16017 = CDEF 1001 × 16 + variant 1
+= `TProgBarCDEF` (ui-toolkit.md §1 class map: horizontal track, 32×16 knob, the control's **refCon**
+printed on the knob with `NumToString(contrlRfCon)`). So `SetValue` writing the refCon is what puts
+the current number on the slider knob. [HIGH: procID arithmetic + both bodies as banked]
 `DrawRoutine @ 100415C8` draws the three controls; `CursorRoutine @ 10041914` = cursor 0x2A or the journal
 cursor/label (as §6).
 
@@ -231,6 +271,10 @@ cursor/label (as §6).
 
 **KeyRoutine @ 10041A78** (428 B) [HIGH; key codes 0x1C–0x1F are the Mac arrow characters, 0x110/0x113 are
 engine key codes whose source was not traced — MED]:
+⚑ corrected (review wave 2 2026-10-06) — review N1(a): the source is traced. `TApp::TranslateKey @
+1000d030` (p:3153–3166): `case 0x73: param_2 = 0x110;` … `case 0x77: param_2 = 0x113;` — Mac key
+codes 0x73 / 0x77 = **Home / End** (ui-toolkit.md §3.1). So Home → min, End → max. [HIGH codes; key
+names MED from the Mac virtual key table]
 
 | key | effect |
 |---|---|
@@ -291,6 +335,9 @@ compare the key with the **last** byte (`1004010c: 38610038 addi r3,r1,56` / `10
 Unreached in 1.0.4: the only script strings with a `/x` tail are scripted-window buttons in 100E, 300F
 (scripted-windows.md §4.1), none is a pick_item button
 (`grep -h -o '"[^"]*/[^"]*"' ghidra/cythera-scripts/*.txt | sort -u`). [HIGH code; reachability HIGH by the grep]
+⚑ corrected (review wave 2 2026-10-06): reachability is **MED**, not HIGH — the grep sees string
+literals only; a pick_item button list built at run time (e.g. `sysnew_03` concatenation) could carry a
+`/x` tail without a literal. The code reading stays HIGH.
 
 ### 9.1 The row format language — `DrawItem__21TScriptPickItemDrawerFRC4RectUc @ 100961A4`
 

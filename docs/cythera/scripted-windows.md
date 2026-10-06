@@ -27,6 +27,62 @@ Register: **code reading only**; HIGH / MED / LOW as in dialogue-ui.md. Script l
   HandleDragWindow**, +0x98 CanSearch, +0x9C–+0xA8 drop family, +0xC4 `Invalidate__16TInventoryWindowFs`,
   **+0xD0 RenumberParent, +0xD4 RenumberChild**, +0xD8 Marshal, +0xE0 DispatchWindowMethod,
   **+0xE4 GetField**, +0xE8 SetField, **+0xEC OffsetOrigin, +0xF0 DispatchCommand**). [HIGH]
+- ⚑ corrected (review wave 2 2026-10-06) — review m9, the covered list by address (class :: method @ addr,
+  length in bytes). Re-derived this session with the census §0 classifier with one `print(a,int(n,16),k,s)` per row (see app-shell.md §0 correction),
+filtered by class `TScriptedWindow|TScriptedWindow::TWidget|TWText|TWScrollText|
+  TWTextEntry|TWPixButton|TWPix|TWIcon|TWButton|TWControl|TWList|TWListList|TWInvent|TWMusicBox|TWAutoMap|
+  TWNumberEntry|TWNumber|TRegistrar` → **128 rows / 18,292 B** (= census). All read whole; the small
+  `Marshal` / `Draw` / `GetField` / stub bodies not discussed below have no rule beyond their name.
+```
+TRegistrar:: CreateFromStream<TCharacterWindow> @100129cc 80
+  CreateFromStream<TScriptedWindow> @10012a6c 80 · CreateFromStream<TWAutoMap> @1008ee68 76
+  CreateFromStream<TWPixButton> @1008eefc 76 · CreateFromStream<TWPix> @1008ef94 76
+  CreateFromStream<TWNumberEntry> @1008f024 76 · CreateFromStream<TWNumber> @1008f0bc 76
+  CreateFromStream<TWButton> @1008f150 76 · CreateFromStream<TWIcon> @1008f1e4 76
+  CreateFromStream<TWInvent> @1008f274 76 · CreateFromStream<TWList> @1008f308 76
+  CreateFromStream<TWMusicBox> @1008f398 76 · CreateFromStream<TWScrollText> @1008f430 76
+  CreateFromStream<TWTextEntry> @1008f4c8 76 · CreateFromStream<TWText> @1008f560 76
+TScriptedWindow:: dt @1003ac48 172 · OffsetOrigin @10084730 4 · CloseRoutine @10086340 208
+  PointToProp @10086e54 160 · PropToPoint @10086f2c 192 · CanSearch @10087028 8
+  CanDrop @10087068 188 · HiliteDrop @1008715c 184 · UnhiliteDrop @1008724c 184
+  DoDrop @10087340 184 · RenumberParent @1008742c 144 · RenumberChild @100874f4 136
+  DispatchWindowMethod @10087f34 176 · SetField @1008826c 4 · DispatchCommand @100882a8 4
+  Marshal @1008f5f0 328
+TScriptedWindow::TWidget:: dt @1003b41c 84 · FocusRoutine @1008674c 8 · WantsFocus @10086a38 8
+  IsPoint @100876d4 76 · CursorRoutine @10087760 8 · KeyRoutine @10087854 168 · Flash @10087938 4
+  PointToProp @10087974 8 · PropToPoint @100879c0 8 · CanDrop @10087a0c 52 · HiliteDrop @10087a80 4
+  UnhiliteDrop @10087ac8 4 · DoDrop @10087b10 4 · RebuildInv @10087b54 4
+  RenumberParent @10087b94 4 · RenumberChild @10087bdc 4 · DispatchWidgetMethod @10087c20 16
+TWAutoMap:: dt @1008c6b4 132 · Marshal @1008c760 132 · Draw @1008c814 252
+  MouseRoutine @1008c9d0 248
+TWButton:: Marshal @1008ac0c 88 · Flash @1008ac94 216 · dt @1008fbfc 96
+TWControl:: Draw @1008a6e8 48 · GetField @1008a748 184 · SetField @1008a82c 308
+  MouseRoutine @1008a990 204 · CursorRoutine @1008aa90 44
+TWIcon:: Marshal @1008aef0 128 · Draw @1008afa0 216 · dt @1008fb74 100
+TWInvent:: Marshal @1008d798 128 · dt @1008d848 184 · RebuildInv @1008d928 80
+  RenumberChild @1008d9a4 64 · RenumberParent @1008da14 24 · Draw @1008da5c 84
+  CanDrop @1008dae0 344 · HiliteDrop @1008dc68 4 · UnhiliteDrop @1008dc9c 4 · DoDrop @1008dcd4 112
+  PointToProp @1008dd70 140 · PropToPoint @1008de2c 100 · MouseRoutine @1008dec4 112
+TWList:: Marshal @1008e3bc 120 · dt @1008e464 132 · Draw @1008e50c 100 · CanDrop @1008e59c 344
+  DoDrop @1008e720 112 · PointToProp @1008e7bc 8 · MouseRoutine @1008e7f4 372
+  AddItem @1008e998 248
+TWListList:: LDEFDraw @1008e030 228 · LDEFHilite @1008e150 64 · dt @1008f94c 100
+TWMusicBox:: Marshal @1008d128 144 · Draw @1008d1ec 268 · MouseRoutine @1008d328 576
+  dt @1008f9d8 100
+TWNumber:: Marshal @1008cedc 88 · dt @1008fa64 96
+TWNumberEntry:: Marshal @1008cc20 88 · MouseRoutine @1008ccb0 204 · dt @1008fae8 96
+TWPix:: dt @1008b3f4 120 · Marshal @1008b490 128 · Draw @1008b53c 116 · GetField @1008b5dc 116
+  SetField @1008b678 236
+TWPixButton:: dt @1008bb6c 160 · Marshal @1008bc34 140 · Draw @1008bcf4 244 · GetField @1008be1c 284
+  SetField @1008bf64 520 · MouseRoutine @1008c1a0 448
+TWScrollText:: Marshal @100899a4 136 · dt @10089cec 148 · Draw @10089dac 272
+  ScrollTextTrack @10089fd4 200 · MouseRoutine @1008a0e4 488
+TWText:: Marshal @10088664 152 · Draw @1008872c 1020 · MouseRoutine @10088b54 360
+  GetField @10088cec 168 · SetField @10088dbc 360 · dt @1008fcb8 116
+TWTextEntry:: dt @100891cc 124 · Marshal @10089270 140 · Draw @10089330 88 · GetField @100893bc 276
+  SetField @100894fc 184 · MouseRoutine @100895e8 104 · CursorRoutine @10089688 44
+  KeyRoutine @100896ec 84 · FocusRoutine @10089770 156 · WantsFocus @1008fc80 8
+```
 
 ## 1. Object ids and dispatch
 
@@ -186,6 +242,8 @@ Shipped titles: 100E sleep dialog `Until Dawn/d`, `…/o`, `…/n`, `…/s`, `�
 `Take/s`, `Steal/s` (`grep -n -E '"(Until [A-Za-z]+/.|Take/s|Steal/s)"' ghidra/cythera-scripts/*.txt`).
 ⚑ `Cancel/c/` (100E @026F) and `Leave/l/` (300F @010C) end in `/`, so the byte before the last is a letter,
 **no shortcut is parsed and the title is shown with the slashes**. [HIGH code + bytes; not observed]
+⚑ corrected (review wave 2 2026-10-06) — review m8: the titles above are quoted as byte evidence for the
+parse (UI button labels, not prose); they stay verbatim because the slash positions are the claim.
 
 ## 5. Widget kinds
 
@@ -345,6 +403,8 @@ schedules-npcs.md): [HIGH bytes, `sed -n … ghidra/cythera-scripts/<seg>.txt`]
 - No other new body sends a signal: the only native `SendSignal` callers are the main-dump ones and
   `cbSendSignal` (`grep -B3 'bl 0x10053794' all.dis`, census §2 item 23). Signals 1, 34, 35, 130, 135 come
   from scripts only (1864, 10C1, 1417, 1025 — R5).
+  ⚑ corrected (review wave 2 2026-10-06) — review N4: **100+frame** is script-only as well (sender: half
+  disk 10E8 sel26/sel27; open-items-2026-10-06.md §8 table).
 
 ## 8. Selectors widgets send into scripts (subset of the N3 scan, script-library §9) [HIGH]
 
@@ -370,5 +430,9 @@ schedules-npcs.md): [HIGH bytes, `sed -n … ghidra/cythera-scripts/<seg>.txt`]
 ## 10. Open
 
 - The 0x3E90 WDEF's use of the picture-window refCon bytes (ui-toolkit.md).
+  ⚑ corrected (review wave 2 2026-10-06) — review N1(b): answered. 0x3E90 = 16016 = WDEF 1001 variant 0
+  = `TPixsWDEF` (ui-toolkit.md §1: refCon hi word = pix id via `LoadPix`, byte 1 = content x offset,
+  byte 0 = y offset). `DisplayPicture @ 1008476C` builds exactly that shape (`… << 0x10 | … << 8`, §2.3
+  above), so a1 = pix id, a2 = x, a3 = y. [HIGH arithmetic; the a1/a2/a3 roles rest on the WDEF row]
 - When `RenumberProp` runs while a scripted window is open (level load / prop copy timing).
 - `Scrolled__12TWScrollTextFv` and the scroll-text maximum formula (main dump, not read in full here).

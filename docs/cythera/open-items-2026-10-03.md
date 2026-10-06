@@ -360,6 +360,7 @@ session) shows editor/build-tool resources:
   W,H of levels 1–3 (256², 64², 64²) [MED].
 - `RMAP` 128 (`'TxSt' 0000 0001 03e7 'TxCl' 0000`) = a ResEdit type→template map (TMPL 129 is `TxCl`)
   [MED]. `PORT` 0/1 (413/2351 B) — not decoded [LOW, STILL OPEN as content].
+  ⚑ corrected (review wave 2 2026-10-06): decoded — open-items-2026-10-06.md §6.
 
 **`Lite` 128–133 = tile light sources [HIGH].** `CalcLighting__7TViewerFss @ 100641f8`, per cell with
 vis state 1 whose tile flags have bits 0–1 set:
@@ -509,7 +510,7 @@ r12,100(r12)` for A2) ⚑ corrected (wave 1 2026-10-03).
 | 7 CharEntry +0x12/17/18/1D/1F | RESOLVED | HIGH (+0x1D name MED) |
 | 8 save stream | RESOLVED (hhhh = karma, G0E, difficulty (name MED), serial; chunk + format encodings; Mons/FXQ/Wind/Grem) | HIGH (subclass extras MED) |
 | 9 music / sound formats | RESOLVED (asnd fully; music = QT MusicDescription + QTMA tune, events not decoded) | HIGH |
-| 10 resource types; Lite 128–133 | RESOLVED (editor-only, no reader; Lite = tile light emitters); PORT content open | HIGH / MED |
+| 10 resource types; Lite 128–133 | RESOLVED (editor-only, no reader; Lite = tile light emitters); PORT content open ⚑ corrected (review wave 2 2026-10-06): PORT closed — two LZ streams of 4096 B (PORT 0 a 64×64 line-art face placeholder, PORT 1 non-image), no reader (open-items-2026-10-06.md §6) | HIGH / MED |
 | 12 class 0x28, 0x48 | RESOLVED (0x48 species; 0x28 unused, 0x15xx = zones 0x100+) | HIGH |
 | 16 pacing; Render; sky | PARTIAL: pacing and sky resolved (leader states Afraid/Paralysed/Confused/Asleep ⚑ corrected (wave 1 2026-10-03)); Render layer order open | HIGH / MED |
 | 18 all-ally override writer | RESOLVED (cheat toggle key 0xFA under cheat mode) | HIGH |
@@ -521,9 +522,13 @@ whole items; open sub-points in the next section.
 ---------------------------------------------------------------------------------------------
 ## Open items ⚑ corrected (wave 1 2026-10-03)
 1. Prop kind 0x11 (55 records): no reader found (§5).
+   ⚑ corrected (review wave 2 2026-10-06): closed — open-items-2026-10-06.md §4.
 2. 0xF005 / 0xF007 content (§6).
+   ⚑ corrected (review wave 2 2026-10-06): closed as "data present, no reader" — open-items-2026-10-06.md §5.
 3. 0xF008 byte 7: no reader found (§6; combat.md §4 covers the other fields).
+   ⚑ corrected (review wave 2 2026-10-06): closed — open-items-2026-10-06.md §2.2.
 4. `PORT` 0/1 content; QTMA event stream of the music segments (§9, §10).
+   ⚑ corrected (review wave 2 2026-10-06): PORT half closed (open-items-2026-10-06.md §6); QTMA still open.
 5. `Render` layer/priority order and `TMaskTile` use; the per-frame wall-clock wait, if any (§16).
 6. Script global 0x0E meaning beyond bit 0 (§8).
 7. Who sets the pref bit 0x100D3E23 that arms cheat mode (§18).

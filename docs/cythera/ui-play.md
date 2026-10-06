@@ -108,7 +108,8 @@ mouse-down point, the down time `TickCount()` and the modifiers. Plays interface
 | **2** drag | while held, the mouse leaves ±3 px of the down point: `(int)sStack_44 < (short)param_2 + -3 … sVar9 + 3 < (int)sStack_46) break;` → `uVar4 = 2` | — |
 
 While waiting it yields (`YieldToAnyThread`) with `_DAT_100cdd84` zeroed and bumps a re-entry
-counter at app +0x24. What `(param_4 & 3)` carries is not resolved (MED). The consumer (main dump,
+counter at app +0x24. What `(param_4 & 3)` carries is not resolved (MED). ⚑ corrected (review wave 2 2026-10-06): very likely
+TaskThread's mouse-coalesce mark — §10 item 3 (MED). The consumer (main dump,
 context): 0 → Look, 1 → the prop's default command (`PropToCommand`: Talk / Use / Attack / Look),
 2 → drag with `TBaseDragger`, 3 → popup MENU 134 (title Commands; items Examine, Use, Talk,
 Attack, Take). [MED for the consumer]
@@ -508,6 +509,13 @@ line; `TStraightBres` is the straight-line test used by throws and targeting bit
    this window). NOT RESOLVED.
 2. `TInventoryList +0x10` (framed-cell count) — only writer seen is `RebuildInventory`'s 0.
 3. What `GetGesture`'s `(param_4 & 3) >= 2` carries (a click count from the task queue?) — MED.
+   ⚑ corrected (review wave 2 2026-10-06) — review N1(c), narrowed: `TaskThread @ 1001d334` coalesces
+   queued mouse events and forces the argument's low bits to 2 (m:5869 `uStack_90 = uStack_90 &
+   0xfffffffc | 2;`, then `MouseRoutine__16TDroppableWindowF5Points(uStack_8c,uStack_88,(int)uStack_90._2_2_)`;
+   app-shell.md §3.2). `TDroppableWindow::MouseRoutine` passes its `param_3` on as the last argument of
+   a vtable call with GetGesture's shape (Point, ticks, short): `local_84 = FUN_100c50e8(param_1,param_2,
+   uVar16,(int)(short)param_3);`. So `(param_4 & 3) >= 2` is very likely "a second click was already
+   queued" → double. [MED: that vtable slot was not resolved to `GetGesture`]
 4. The meaning of `CanSearch` result 2's tile bits 0x200/0x400/0x2000/0x4000 (wall edges and doors?)
    — code HIGH, names MED; data-format.md §5 lists the tile-flag table without these per-bit names.
 5. The view-cell byte at viewer +0xC0C8 used by `TCharacterWindow::CloseAtDistance` (seen / lit) —

@@ -99,7 +99,7 @@ loop that drives them was not traced (how scripts order modes 0/1/2 is inferred 
 | D1 | 100978F0 | iterate props near | (slot, mode, x, y, r) | props from 1, kind `& 0x1A == 0` or kind 2, with dx² + dy² ≤ r² (r signed byte) | HIGH |
 | D2 | 1009851C | play note | (a, b, c) → Nil | `TAudio::PlayNote(a, b, c)` | HIGH call |
 | D3 | 100985C0 | positional sound | (id, x, y) → Nil | integer id only: `TAudio::PlaySound(id, x−leaderX, y−leaderY, 0, far)`, far = 1 when (x, y) is outside the view radius or hidden in the visibility grid | HIGH |
-| D4 | 1009874C | positional sound (variant) | (id, x, y) → Nil | as D3 with 4th argument 1. ⚑ wave 2 (2026-10-06): = `cbPlaySoundSync` — the flag makes `PlaySound` wait until the started voice has left the mixer table (§4) | HIGH code / MED flag meaning → ⚑ wave 2: HIGH name + wait loop, MED "until the sound ends" |
+| D4 | 1009874C | positional sound (variant) | (id, x, y) → Nil | as D3 with 4th argument 1 (⚑ corrected (review wave 2 2026-10-06): = `PlaySound`'s `param_5`, the 4th argument after `this`; §3). ⚑ wave 2 (2026-10-06): = `cbPlaySoundSync` — the flag makes `PlaySound` wait until the started voice has left the mixer table (§4) | HIGH code / MED flag meaning → ⚑ wave 2: HIGH name + wait loop, MED "until the sound ends" |
 | D5 | 100988DC | play music | (n or Nil) → Nil | `TAudio::PlayMusic(n, 1)`; Nil → `PlayMusic(−1, 1)` (stop) | HIGH call |
 | D6 | 10098994 | play music (variant) | (n or Nil) → Nil | as D5 with flag 0 | HIGH call |
 | D7 | 10098A54 | ambient sound | (id, x, y) → Nil | only when (x, y) is visible: `PlayAmbientSound(id, dx, dy, 0)` | HIGH |
@@ -241,6 +241,11 @@ Names that sharpen or contradict a wave-1 reading (the reading stands; the name 
   asking; else the name menu plus a `None` chip mapped to 0; all four BB call sites are in never-called
   routines [HIGH] — dialogue.md §7.2.
 - D4's flag (4th argument 1 to the D3 path) — meaning still open.
+  ⚑ corrected (review wave 2 2026-10-06) — review m2: "4th" (wave 1) and "5th" (below) are the same
+  argument. Signature `PlaySound__6TAudioFUsssUcUc(int param_1 = this, uint param_2 = id, short
+  param_3 = dx, short param_4 = dy, char param_5, char param_6)` (`find_func.py
+  'PlaySound__6TAudioFUsssUcUc' --file ghidra/Cythera_pef.decompiled.c`): the flag is **param_5, the 4th
+  argument after `this`** (wait flag: D3 passes 0, D4 1); param_6 = far (halves both stereo levels).
   ⚑ wave 2 (2026-10-06): **closed (NOT RESOLVED item 19).** Name: 0xD4 = `cbPlaySoundSync__FP5VAddr`
   (§2.1). Body (`find_func.py 'cbPlaySound' --file ghidra/Cythera_missing.decompiled.c`): identical to D3
   except the 5th `PlaySound` argument — D3 `…,iVar6,iVar4,0,uVar2);`, D4 `…,iVar6,iVar4,1,uVar2);` (uVar2 = 1
@@ -258,6 +263,12 @@ Names that sharpen or contradict a wave-1 reading (the reading stands; the name 
   that removal happens exactly at end of sample — the mixer's end-of-sample path was not read]
   Shipped calls: 3 — 1027 portcullis @0005 sound 10, 1033 secret door @0056 and 10FD secret passage @0056
   sound 9 (`grep -n 'positional_sound2' ghidra/cythera-scripts/*.txt`); D3 has 83.
+  ⚑ corrected (review wave 2 2026-10-06) — review N2: the stall is **the whole program**, not only the
+  script. The wait loop `do { sVar5 = FUN_100b7f40(iVar4); } while (sVar5 != 0);` has no yield, and
+  `FUN_100b7f40`'s body calls nothing (`find_func.py 'FUN_100b7f40' --file ghidra/Cythera_pef.decompiled.c`
+  → no `.glue::` call in that block); under the cooperative Thread Manager the event loop and the
+  animation thread do not run until the voice leaves the table (removal happens outside this thread,
+  in the mixer's completion path). [MED: the removal path was not read]
 - ~~How compiled `for` loops sequence the iterator modes~~ — ⚑ corrected (wave 1 2026-10-03): mode 0
   init → first, mode 1 done-test (`jt … -> exit`), body, mode 2 next, `goto` the test (listing `0ea5`
   0x001A–0x006E; `1802` 0x0746–0x078D for `iterate_range`) [HIGH] — open-items §19.

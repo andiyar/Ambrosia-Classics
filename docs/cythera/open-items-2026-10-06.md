@@ -13,6 +13,59 @@ Evidence base (all run this session from the worktree root; `$S` = the session s
   kind = byte 0, x = bits 12–23 / y = bits 0–11 of the u32 at +0, type = u16@4 & 0x3FF, frame =
   (byte 4 >> 2) & 0x1F, quality = byte 6. Control: the kind census it prints
   (`0:12104, 0x11:55, 0x42:879, 0x80:52 …`, 40 levels) equals data-format.md §4.3.
+- ⚑ corrected (review wave 2 2026-10-06) — review m7: the session scripts (`$S/r5props.py`,
+  `$S/r5scan7.py`, `$S/clr80.txt`) and the elided `python3 -c "…"` dumps are not banked; their
+  equivalents, re-run this session from the worktree root, are inlined here.
+  ```
+  # A. prop census (r5props equivalent) → 40 levels; kinds = data-format §4.3; 0x11: 21 owners, levels [3,6,8,11,13,17,24], byte 6 {0:55}, frame {0:55}
+  python3 - <<'EOF'
+  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
+  d,s,_=seg.toc(); K=C.Counter(); own=set(); lv=set(); b6=C.Counter(); fr=C.Counter(); L=[k for k in s if 0x8100<=k<0x8200]
+  for sid in L:
+    o,l=s[sid]
+    for i in range(0,l,16):
+      r=d[o+i:o+i+16]; K[r[0]]+=1
+      if r[0]==0x11: own.add(struct.unpack('>H',r[2:4])[0]); lv.add(sid-0x8100); b6[r[6]]+=1; fr[(r[4]>>2)&0x1f]+=1
+  print(len(L),sorted(K.items())); print(len(own),sorted(own)); print(sorted(lv),b6,fr)
+  EOF
+  # B. F008 / F005 / F007 (the §2.1 and §5 dumps) → records 50, byte7 {0: 50}, the f33/f32 lists of §2.1; F005 at 0x507905 (16 B), F007 at 0x507915 (167 B, count 33)
+  python3 - <<'EOF'
+  import sys,struct,collections as C;sys.path.insert(0,'docs/cythera/tools');import seg
+  d,s,_=seg.toc(); o,l=s[0xF008]; R=[d[o+i:o+i+16] for i in range(0,0x800,16)]; R=[r for r in R if struct.unpack('>H',r[12:14])[0]]
+  f33=C.Counter(); f32=C.Counter()
+  for r in R:
+    a,b=struct.unpack('>HH',r[8:12])
+    for k in range(16): f33[1<<k]+=a>>k&1; f32[1<<k]+=b>>k&1
+  print('records',len(R),'byte7',dict(C.Counter(r[7] for r in R))); print(sorted(i for i in f33.items() if i[1])); print(sorted(i for i in f32.items() if i[1]))
+  o,l=s[0xF005]; print(hex(o),l,d[o:o+l].hex(' ')); o,l=s[0xF007]; print(hex(o),l,struct.unpack('>H',d[o:o+2])[0])
+  EOF
+  # C. 0x80-clear store scan (clr80 equivalent) over all.dis = ppcdis.py 10000000 100cd280 → 1004f188 (FollowLeader), 1005caf0 (DrawRoutine)
+  python3 - all.dis <<'EOF'
+  import re,sys
+  L=open(sys.argv[1]).read().split('\n'); pat=re.compile(r'(rlwinm (r\d+),(r\d+),0,25,(23|31)$|andi\. (r\d+),(r\d+),0x7f$|xori (r\d+),(r\d+),0x80$)')
+  for i,ln in enumerate(L):
+    m=pat.search(ln)
+    if not m: continue
+    dst=[g for g in (m.group(2),m.group(5),m.group(7)) if g][0]
+    for j in range(i+1,min(i+5,len(L))):
+      if re.search(r'stb '+dst+r',0\(|stbx '+dst+',',L[j]): print(ln.strip(),'|',L[j].strip()); break
+  EOF
+  # D. byte-7 read heuristic (r5scan7 equivalent) → {5: 1, 6: 10, 7: 0, 8: 27, 14: 3}
+  python3 - all.dis <<'EOF'
+  import re,sys,collections as C
+  L=open(sys.argv[1]).read().split('\n'); h=C.Counter()
+  for i,ln in enumerate(L):
+    m=re.search(r'lwz (r\d+),4\(r\d+\)$',ln); A=m.group(1) if m else ('r3' if 'bl 0x10044a60' in ln else None)
+    if not A: continue
+    for j in range(i+1,min(i+9,len(L))):
+      n=re.search(r'(lbz|lhz|lha|lwz) r\d+,(\d+)\('+A+r'\)$',L[j])
+      if n: h[int(n.group(2))]+=1
+  print({k:h[k] for k in (5,6,7,8,14)})
+  EOF
+  ```
+  A–C reproduce §2.1, §3.1, §4 and §5 exactly. D reproduces **N = 7 → 0**; its control total is 41,
+  not §2.2's 38 (this version does not stop the 8-instruction window when rA is redefined), which
+  does not change the conclusion. [HIGH]
 
 | item | verdict | label |
 |---|---|---|
@@ -72,6 +125,10 @@ leaves its frame. It does grow inside a loop until the routine returns. Nothing 
 | 0C43 @0003 `return callx[A33](A30, A31, A32)` | same | same |
 | 0816 @007C `set L08 = callx[L08](A30)` | expr inside 0x82 (pops exactly one: `*psVar7 = sVar14 + -1;` then the store) | +1 slot per loop pass with a non-routine entry (the `iterate_range` loop @004D–@0115) — 113 of 114 entries (script-library §10.1) |
 | 0EA5 @003B `set L05 = callx[L05](L02)` | same | +1 per stock entry (`iterate_list` loop @0027–@006E) |
+
+⚑ corrected (review wave 2 2026-10-06) — review N8: the offsets above are the listing's **statement**
+offsets (`0C00@0010`, `0C43@0003`, `0816@007C`, `0EA5@003B`); script-vm.md §8 cites the same four sites
+by the **0x9C opcode** offset inside each statement (@0011 / @0004 / @007E / @003D). Same sites.
 
 L08 and L05 get the right value (the top slot is T). The stray slots sit above the frame's locals
 and below every later argument base, so no later call or builtin reads them. Neither site is
@@ -260,6 +317,12 @@ black, E0–E3 red → orange, E4–E7 orange → yellow, E8–EB blue. So F005 
 **colour-cycling table** (fire/water cycling) [MED]. Consistent with that, `ColorCycle__FP8GrafPort
 @ 10008694` is a bare `10008694: 4e800020 blr` with no `bl` caller and no TVector word
 (`toc.D` scan for 0x8694 / 0x10008694 → none). The engine ships with colour cycling stubbed out.
+⚑ corrected (review wave 2 2026-10-06) — review m1: "with no `bl` caller" is wrong. `grep 'bl
+0x10008694'` over the whole-code listing → `100432c4: 4bfc53d1 bl 0x10008694 ; .ColorCycle__FP8GrafPort`,
+inside `AnimThread__10TMapWindowFPv` (`tb.py --at 100432c4` → `10043280 cc`), i.e. it is called every
+animation frame (app-shell.md §3.1, ui-play.md §5.3). The body is still the bare `10008694: 4e800020
+blr` (`ppcdis.py 10008694 +1`), so the conclusion stands: cycling is stubbed out and F005 has no
+reader. [HIGH]
 **0xF007** (167 B at 0x507915): u16 count 0x21 = 33, then 33 × 5-byte records `{u8 a, u8 b, 00 05 00}`
 (`(167−2)/5 = 33.0`). Pairs (a,b): (0,0) (1,0x1A) (4,0x01) (4,0x30) (4,0x40) (4,0x0E) (4,0x45)
 (4,0x20) (4,0x48) (4,0x4C) (4,0x50) (4,0x10) (3,0x02) (3,0x06) (3,0x10) (3,0x20) (3,0x30) (3,0x07)
@@ -331,7 +394,7 @@ Senders: `grep -n 'send_signal(' ghidra/cythera-scripts/*.txt` (25 sites). Wired
 | 129 | panpipes 1099 sel10 (use_on) `((A31 & 1048575) == 1014211) && (A30.f06:quality == 1)` | L12 hidden wall (41,51), L13 secret doors (47,28) (47,26) |
 | 130 | zone 1417 "Kosha Grotto" enter, once (`!test_flag(15)` → `set_flag(15)`) | L12 hidden wall (52,52); Myus 180A@070F, Naxos 180B@0640, Darius 180C@0676 `health = 0`; Pelagon 180D@0D2B `type = 35` |
 | 131 | lyre 109A sel10 `(A31 & 4095) == 4038` | L21 secret door (53,43) |
-| 132–134 | strange device 1175 use → `sub_0063(A30, pattern, 132/133/134)`: sends when all 8 entries of `A30.f12:frame_dict[256]` match the pattern | stone doors (type 10, 100A: `R0E40` DoDoor) L9 (34,64), L34 (53,9), L27 (50,15) |
+| 132–134 | strange device 1175 use → `sub_0063(A30, pattern, 132/133/134)`: sends when all 8 entries of `A30.f12:frame_dict[256]` match the pattern ⚑ corrected (review wave 2 2026-10-06) — review m11: not from `use` itself. `use@0225` builds the window and sets `L03.f39 = @01FB / @0209 / @0217` (1175 @0386/@03A1/@03BC); the sends come from those button handlers (`01FE callsub sub_00BE(A30, 0)` …, which reach `sub_0063(…, 132/133/134)` at @016A/@0199/@01C8) when `TWPixButton::MouseRoutine` runs them — scripted-windows.md §7 | stone doors (type 10, 100A: `R0E40` DoDoor) L9 (34,64), L34 (53,9), L27 (50,15) |
 | 135 | glowing crystal 1025@05D7, used on a type-179 prop of quality 4 | L1 hidden stepping stones (type 392) (152–154,170) |
 Instrument input (the native side, `TWMusicBox::MouseRoutine`, is R2's): the instrument's selector
 10 gets `A31` = the running note word (`<<4 | note`, missing-census §2). The panpipes test the
@@ -373,3 +436,6 @@ meant to be 4/5 is MED.
 - rules.md §3.4 (not R5's file): the 0x80 "walking" condition is old-not-visible / new-visible (§3.2).
 - data-format.md §4.3 (not R5's file): kind 0x11 row (§4); §5 F005/F007 rows (§5); open-items-2026-10-03
   §10 PORT row (§6).
+⚑ corrected (review wave 2 2026-10-06): all of the above applied by the wave-2 fix pass (rules.md §3.4,
+combat.md §16 item 4, data-format.md §4.3/§5, open-items-2026-10-03.md §10 + open list) — see
+FIXPASS-wave2-2026-10-06.md.

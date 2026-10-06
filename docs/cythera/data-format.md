@@ -310,7 +310,7 @@ Census over all 40 shipped prop segments (`kind byte census`): `0:12104, 1:116, 
 | 0x04, 0x24 | on map, drawn as roof layer (priority 7) | `SetStage`: `if (*pbVar16 == 4 || == 0x24) local_72 = 7` | MED |
 | 0x08–0x0B | **inside a container prop** (parent = low 16 bits) | `GetPropParent` (`7 < b < 0xc`), `GetCurInvEncumb` walks `\t`/`\b` chains | HIGH |
 | 0x10 | in a character's **inventory** (parent = char index) | `GetCurInvEncumb__Fs` | HIGH |
-| 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5) | — | NOT RESOLVED |
+| 0x11 | (present in data, 55×) — not decoded; ⚑ corrected (wave 1 2026-10-03): no parent in `GetPropParent`, not staged by `SetStage`, no kind-0x11 compare found, no script sets/tests kind 17 — still open (INDEX NOT RESOLVED 5, open-items §5). ⚑ corrected (review wave 2 2026-10-06): closed — 55 NPC weapon/armour/clothing records, owner = character index in the low 16 bits (21 owners, 7 levels); no code or script selects kind 0x11, so they are inert (open-items-2026-10-06.md §4) | — | NOT RESOLVED → ⚑ corrected (review wave 2 2026-10-06): HIGH (no reader) / MED ("leftover equipment") |
 | 0x18 | **equipped/wielded** by a character | `GetCurEquEncumb__Fs` | HIGH |
 | 0x1C | a character's **skill** (type = skill id) | `FindSkill__Fss @ 10056100` | HIGH |
 | bit 0x20 | "transient" — freed by `ChainFreeProps(1)` on level load | `ChainFreeProps`: `(*puVar5 & 0x20000000) != 0` | HIGH |
@@ -363,7 +363,7 @@ the tile-name join is a tool join, not a game display.]
 | 0xF001 | var | (temp) | tile animation records (§3.4) | HIGH |
 | 0xF002 | 0x8000 | `PTR_DAT_100cdc14` | u32 **tile flags** per tile (0x2000) — passability/LOS/draw-layer bits; render priority logic in `SetStage` reads 0x10000000, 0x100000, 0x800, 0x20000, 0x200, 0x30, 0xC0 (multi-tile extension, `SetStage`: 0x80 → tile−1 also drawn one cell left (`puVar12[-2]`); 0x40 → tile−1 one cell up (`puVar12[-0x3e]`, row stride 0xF8); 0xC0 → tile−1 up, tile−2 left, tile−3 up-left (`puVar12[-0x40]`); bit 7 of the prop's byte 4 swaps 0x40↔0x80) | HIGH ids / MED per-bit meaning |
 | 0xF004 | var | (cached) | **tile names**: {u16 last-tile-of-range, C string}…, terminated by an id > 0x2000 (0x7FFF). A tile without its own entry takes the next higher entry's name. `/` = plural-only text, `\` = singular-only text, reset at space (`SingPlur__FPcPcUc`). 547 names (tool). | HIGH |
-| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits). ⚑ corrected (wave 1 2026-10-03): no `li/ori/addi` immediate use either (HIGH); 0xF00A = all zero; 0xF014/0xF015 = {u16, C string} symbol tables of frame-variable / object names [HIGH decode; MED/LOW role]; 0xF005/0xF007 content still open — open-items §6 | HIGH (no reader) / NOT RESOLVED (F005/F007 content) |
+| 0xF005, 0xF007, 0xF00A, 0xF014, 0xF015 | 16, 167, 1024, 123, 179 | — | no PPC reader found (`grep 0xf005` etc. = 0 hits). ⚑ corrected (wave 1 2026-10-03): no `li/ori/addi` immediate use either (HIGH); 0xF00A = all zero; 0xF014/0xF015 = {u16, C string} symbol tables of frame-variable / object names [HIGH decode; MED/LOW role]; 0xF005/0xF007 content still open — open-items §6. ⚑ corrected (review wave 2 2026-10-06): closed as "data present, no reader" — F005 = five {first, count, 1} palette ranges 0xD0–0xEB (colour-cycling table; `ColorCycle` is a bare `blr`), F007 = count 33 + 33 × 5-byte records (open-items-2026-10-06.md §5) | HIGH (no reader) / NOT RESOLVED (F005/F007 content) → ⚑ corrected (review wave 2 2026-10-06): MED (F005 role) / LOW (F007 role) |
 | 0xF008 | 2048 | `PTR_DAT_100cdbd8` | ⚑ corrected (wave 1 2026-10-03): **128 × 16-byte creature-species records keyed by u16 +0xC (object type), 50 used**; field map combat.md §4; tail list after +0x800 empty (`(size−0x800)>>4` = 0 → `PTR_DAT_100cdc30/38`). Reader `ObjToMonst__Fs @ 10044a60` (`if (0x7f < sVar1) return 0; … if (*(short *)(iVar2 + 0xc) == param_1) return iVar2;`); `tools/seg.py` this session: length 2048, first zero key at record 50, 50 non-zero records, 0 tail records. Script class 0x48 = these records (script-vm.md §2.1) | HIGH |
 | 0xF009 | 0x2000 (0x4000 in saves) | `PTR_DAT_100cdbf0` | **CharEntry[256]** (§6); saved back with 0x4000 | HIGH |
 | 0xF00B | var | `PTR_DAT_100cdbe0/dc` | **schedules** (§6.3) | HIGH |
@@ -519,6 +519,11 @@ Each setting is a **named `'Pref'` resource** (id = first `UniqueID('Pref') ≥ 
 `GetOrdinal` use `GetNamedResource`, so the application's own `Pref 128 "Volume"` (4 B, `00000005`)
 and `Pref 129 "Music"` (`00000002`) answer when the prefs file lacks the key (`rsrc.parse` of
 `$G/Cythera.rsrc`).
+⚑ corrected (review wave 2 2026-10-06) — review N5, unreconciled: `TAudio::Init` reads "Music" with
+code default **8** (p:6948 `_GetOrdinal__6TPrefsFPCUcsl(uVar2,PTR_DAT_100ce430,0,8);`) while the
+menu writes music 0..3 (app-shell.md §4.3). In practice `Pref 129 "Music"` = 2 answers first, so the
+8 is reached only if that resource is missing. What `SetMusicVolume(8)` would do was not read. [HIGH
+the default; consequence NOT RESOLVED]
 
 | name | size | content | written by |
 |---|---|---|---|
@@ -535,7 +540,7 @@ Readers/writers: `grep -n 'd3e2[0-3]'` over the four dumps (pef, extra, missing,
 |---|---|---|
 | 0.7 + 0.1 | movement / Graphics Quality: none = Fastest (Better Performance), 0.7 = Faster, 0.7+0.1 = Smoother (Better Quality) — sub-tile steps (engine-classes §3.4) | DefaultMenu 0x88 items 6/7/8 `& 0x7d \| 0x82 / 0x80 / –`; SaveSettings same; readers `HandleMove`, `HandleSubMove`, `SetStage`, `DrawRoutine`, `MoveAll`, `Render`, `TBark::Draw` |
 | 0.6 | Manually Place Containers (0 = auto-place) | items 1/2; `TInventoryWindow::RandomPlace` |
-| 0.5–0.2 | anim-frame spacing F in ticks (4/6/8 = 15/10/7.5 frames/s) | items 10/11/12 `& 0xc3 \| 0x10/0x18/0x20`; read only by `MyScheduler` |
+| 0.5–0.2 | anim-frame spacing F in ticks (4/6/8 = 15/10/7.5 frames/s) | items 10/11/12 `& 0xc3 \| 0x10/0x18/0x20`; read only by `MyScheduler` ⚑ corrected (review wave 2 2026-10-06): and by `PostInitMac` (m:4384 `bVar1 = DAT_100d3e20 >> 2 & 0xf;` → check marks on items 10/11/12), inside the `GetMenuHandle(0x88)` block that never runs (app-shell.md §4.3) |
 | 0.0 | Live Dragging (copied to app +0x67/+0x68/+0x69) | item 4; SaveSettings |
 | 1.7 | Use 'ZoomRects' | SaveSettings; `TCharacterWindow::PostInit`, `TInventoryWindow::CloseRoutine/RandomPlace` |
 | 1.6 | Walk around obstacles | SaveSettings; `TGameSys::MoveCommand` |

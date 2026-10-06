@@ -446,6 +446,13 @@ never lives in the journal.
    char bit — §2.3, §4.1, schedules-npcs.md §3.2); 66 (0x42 pass), 68 (0x44 bark), 160 (0xA0 walk)
    are schedules-npcs.md §3.2–§3.3.
 2. What makes the frame-6 crystal's quality non-zero (damned ending), §5.
+   ⚑ corrected (review wave 2 2026-10-06): closed, and the parenthesis is inverted — non-zero quality
+   is the **saved** ending. Re-read this session (`grep -nE '(0445|044F|0458)' ghidra/cythera-scripts/1025.txt`,
+   `grep -nE '(02F8|050A|06E3)' ghidra/cythera-scripts/1802.txt`): 1025 `0445 jf (A30.f06:quality == 0) -> 0458`,
+   `044F set_variable(0, 2)`, `0458 set_variable(0, 1)`; 1802 `02F8 jf (get_variable(0) == 2) -> 0539`
+   with the damned `end_game` at 050A and the saved one at 06E3. So quality 0 → variable 2 → damned;
+   quality ≠ 0 → variable 1 → saved. The writer is the distiller (§5 wave-2 paragraph,
+   open-items-2026-10-06.md §7). [HIGH]
 3. Hero signal `256`: sent by `TakeCommand` (§4.3) ⚑ corrected (wave 1 2026-10-03). The countdown
    that fires the vision props (frame-9 byte-6 timer) is `DoTicks` per schedules-npcs.md §7.1 — not
    re-read here.

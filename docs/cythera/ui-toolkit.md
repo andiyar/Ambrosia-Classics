@@ -178,6 +178,14 @@ procID = 16·WDEF + var): [HIGH]
 - **Quirk:** the scan stops one short — `cmpw r3,r0; blt` at 10073264 compares the index with the
   title length, so the title's **last character never matches** (in `oO;qQ;nN;lL`, `L` is dead, `l`
   works) (`ppcdis.py 100731c0 10073280`). [HIGH]
+- ⚑ corrected (review wave 2 2026-10-06) — review N6: the "DLOG 128–139, 141" range is over-broad. The
+  filter UPP is stored once by `InitInterface__Fv @ 10073810` (p:36817 `*_DAT_100cdde8 = uVar2;`, from
+  `NewRoutineDescriptor(PTR_PTR_100ceba4,0xfd0,1)`) and read only by `MyAlert__Fs @ 1007028c`
+  (`GetNewDialog(param_1,0,0xffffffff)`), `DefineFKey__13TStatusWindowFs` and `MakeNote__8TJournalFv`
+  (`grep -n 'cdde8'` over the main and missing dumps → those four sites). Dialogs run by their own
+  classes are probably outside it: DLOG 133 (`TCreatePlayerDialog`) title `;;Mm;Fm` would map M → item
+  3 and F → item 4, not its Male/Female radios 5/6, and DLOG 141's title is empty (`rsrc.parse` of
+  `$G/Cythera.rsrc`). [HIGH for the four sites; which DLOG ids reach `MyAlert` LOW, not enumerated]
 
 ## 4. std template instantiations (group B, 41 rows) ⚑ wave 2 (2026-10-06)
 Names demangled with `python3 docs/cythera/tools/demangle.py std.txt full`; owner = traceback

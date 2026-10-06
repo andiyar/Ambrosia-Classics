@@ -578,6 +578,10 @@ Reflex 12, Health 20, Level `((200/15 + 270)/10·100 + 50)/100 = 28`, +0x1D = 0,
 4. ⚑ corrected (wave 1 2026-10-03): creature-record **byte 7** has no reader (§4) — open; bytes 14–15 are the corpse word
    (§12.2). f32 bits 1, 2, 4, 16, 32 and f33 bits 0x1000–0x8000 have no reader in the combat
    routines read here.
+   ⚑ corrected (review wave 2 2026-10-06): closed — byte 7 is 0 in all 50 records and has no reader
+   anywhere; f32 1/2/4 and f33 0x1000–0x8000 **are** read natively as movement attributes
+   (`GetMonstAttrs`, `HandleMove`, `TActiveMonster::CanMove`); only f32 16/32 have no reader
+   (open-items-2026-10-06.md §2.2–§2.3).
 5. R0EA3 spell selection (weights, sel 54 target classes) — belongs with the spells bank.
 6. The A31-aliasing reading of 0x301D for record-less characters (§12.3) — trace the stack layout
    of `DoInterp0` → `DoInterpAt` for a 1-value send with a 2-arg frame.

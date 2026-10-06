@@ -5,6 +5,11 @@ numbers `m:NNNN` are lines of `ghidra/Cythera_missing.decompiled.c`, `p:NNNN` of
 `ghidra/Cythera_pef.decompiled.c` (main dump), `x:NNNN` of `Cythera_extra.decompiled.c`. Labels:
 HIGH / MED / LOW / NOT RESOLVED as in the brief. Related banks: pacing → `engine-classes.md` §3.4;
 behaviour editor / AI debugger → `ai-scripts.md` §9; prefs word layout → `data-format.md` §8.
+⚑ corrected (review wave 2 2026-10-06) — review m8 (quote density): the strings quoted in §1.1, §1.3,
+§4.2 and §5.1–§5.2 are engine identifiers — resource/file/pref names, error and status messages, menu
+and button labels — quoted so the reader can find them in the binary (`toc.py`, `rsrc.py`); none is
+game prose. The one-game-text-quote rule is read as not covering them; the orchestrator may rule
+otherwise (FIXPASS-wave2-2026-10-06.md).
 
 ---------------------------------------------------------------------------------------------
 ## 0. Provenance and covered functions
@@ -33,6 +38,13 @@ vtable (TVector recipe of dialogue.md §0); the app vtable is `PTR_PTR_100d4358`
 +0x0C DrawRoutine, +0x1C MenuRoutine, +0x20 CommandRoutine, +0x24 CloseRoutine, +0x2C KeyRoutine,
 +0x3C CursorRoutine, +0x40 IdleRoutine, +0x44 LoopTask, +0x54 HandleMonitorChanged, +0x68 Select,
 +0x6C Show, +0x70 Hide, +0x74 HandleDeactivate, +0x78 HandleActivate. [HIGH: vtable words]
+⚑ corrected (review wave 2 2026-10-06) — review m7, the two elided recipes made reproducible:
+- the classifier heredoc body is missing-census.md §0's python with the final two `print` loops
+  replaced by one `print(a,int(n,16),k,s)` per row; re-run this session with the `grep -E` above →
+  `125` / `30876`.
+- the slot "helper" is dialogue.md §0's TVector one-liner applied per slot (`vt` = the vtable, `s` =
+  N from `lwz r12,N(r12)`); control this session: `vt,s=0x100d4358,0x44` → word 0x2810 → code
+  0x10012c24 = `MyGetEvent__10TDelverAppFsP11EventRecordUc` (`tb.py --at 10012c24`).
 
 Covered (name @ addr, length in bytes):
 ```
@@ -226,11 +238,25 @@ keyDown; 6 update → +0xA4; 8 activate → +0xA0; 15 OS event → +0xA8; 23 hig
   So **turn-based is the default; in "real-time" mode an idle player passes a turn every 20 ticks**.
   [HIGH as code; 0xCA = Option-Space in MacRoman is MED; what the space key does is the map
   window's (ui-play.md)]
+  ⚑ corrected (review wave 2 2026-10-06): the pointer dangled — ui-play.md does not cover
+  `KeyRoutine__10TMapWindowFs` (extra dump). The space chain (TMapWindow::KeyRoutine →
+  `ScheduleKeyDown` → TaskThread kind 2 → `TDroppableWindow::KeyRoutine @ 1002a07c` `LAB_1002a3a4` →
+  `XDirection(win, 8)` → `HeartBeat(game, 10)`) is quoted in engine-classes.md §3.4: space spends ten
+  busy units standing still, so "passes a turn" holds. [HIGH as code]
 - `TApp::HandleKeyDown @ 1000ea34` (m:3542–3577): vslot +0xB4 TranslateKey(message, +0x20); with
   Appearance, `MenuEvent` → HandleCommand; keys without ⌘, arrows 0x1C–0x1F and translated codes
   > 0xFF go to the modal (+0x30) / target (+0x70) / front-layer window's KeyRoutine (+0x2C); ⌘-keys →
   `MenuKey` → HandleCommand. `TDelverApp::TranslateKey @ 10012b0c`: ⌘ + '1'..'9' → 0x100..0x108,
   ⌘ + '0' → 0x109.
+  ⚑ corrected (review wave 2 2026-10-06) — review N7 (the overlap of ⌘-digit and F-key codes):
+  `TDelverApp::TranslateKey` first calls `TApp::TranslateKey` (m: `iVar1 =
+  .debug::_TranslateKey__4TAppFlUc(param_1,param_2,param_3);`) and remaps only results 0x30–0x39 with
+  the ⌘ bit (`iVar1 + 0xcf`; '0' → 0x109), so F1–F4 (0x100–0x103 from `TApp::TranslateKey`) and
+  ⌘1–⌘4 arrive as the same codes. In the map window both go to `PerformMacro(n − 0x100)` (x:746,
+  `KeyRoutine__10TMapWindowFs`: `else if (sVar16 < 0x10a) { if (0xff < sVar16) {
+  …PerformMacro__13TStatusWindowFs(…,param_2 - 0x100);`); in other windows `TWindow::KeyRoutine`
+  treats 0x100–0x103 as undo/cut/copy/paste (ui-toolkit.md §1, `TWindow` row). Which window gets the key follows
+  the HandleKeyDown routing above. [HIGH for both mappings; the "same command" reading MED]
 - `TDelverApp::HandleMouseDown @ 10015668`: during a conversation (0x100cdd00) a click on a window
   that is neither kind-1 (`(*(ushort *)(win + 8) & 7) != 1`) nor the front layer plays
   interface sound 0 and is dropped.
@@ -309,6 +335,8 @@ The field is read with `lbz r0,0(r26)` (r26 = 0x100d3e20) and `rlwinm r0,r0,30,2
 1001cb94 1001ced8`), i.e. byte 0 bits 2–5. Consequence and per-speed numbers: engine-classes.md
 §3.4. `TAdjustTaskMaster::dt @ 1001cb0c` restores the saved mode word (`*_DAT_100cdd84 = *param_1`)
 — an RAII mode guard.
+⚑ corrected (review wave 2 2026-10-06): not "first call" only — m:5709 `if (*(int *)puVar8 == 0) {
+… = .glue::TickCount(); }` re-tests `next == 0` on every call; harmless, as `next` never returns to 0.
 
 ---------------------------------------------------------------------------------------------
 ## 4. Menus and commands
@@ -318,6 +346,13 @@ The field is read with `lbz r0,0(r26)` (r26 = 0x100d3e20) and `rlwinm r0,r0,30,2
 `TCommandMenu::CreateMenu(id, 0)`; `MBAR 129` = [135] → `CreateMenu(id, -1)` (hierarchical); Apple
 menu (id 1 or 0x80) item count → +0x38, `AppendResMenu('DRVR')` when < 5 items. Resources: MENU 128
 Apple (About Cythera…), CMNU 129 File, MENU 135 Strategy (Edit User Strategies…).
+⚑ corrected (review wave 2 2026-10-06): MENU 135 is **not** a menu-bar title. MBAR 129's [135] goes
+in with `CreateMenu(id, -1)`, and `CreateMenu__12TCommandMenuFss @ 1000f6e4` (p:3641) passes that
+argument straight on — `.glue::InsertMenu(iVar1,param_2);` — so −1 = hierarchical/popup list, not
+the bar. MENU 135 is the character window's popup menu (CNTL 135, ui-toolkit.md §1). The only call
+of `EditUserBehaviors__Fv @ 100b1b38` is `1002f390: bl 0x100b1b38` in
+`MouseRoutine__16TCharacterWindowF5Points` (`grep 'bl 0x100b1b38'` over the whole-code
+`ppcdis.py 10000000 100cd280` listing; `tb.py --at 1002f390`). [HIGH]
 
 ### 4.2 Commands — `TApp::HandleCommand` → window → `TDelverApp::DefaultCommand @ 10015888` [HIGH]
 A command word is (menu << 16 | item); `TCommandMenu::GetCommand` maps it to a command number via
@@ -346,6 +381,10 @@ There is **no New Game command**; a new game starts only from the start screen (
   8 FPS"); every branch then `SavePrefs("UI Prefs", word, 4)`.
 - 200 Party: item 1 "Party Mode" → party flag (0x100cdbe8) = 1, leader (0x100cdbec) = 1; item n ≥ 3 →
   flag 0, leader = party slot table (0x100cdbe4)[n − 3]; then `RebuildParty`, viewer redraw.
+  ⚑ corrected (review wave 2 2026-10-06): the code tests only `sVar8 == 1` (m:4970); **any** other
+  item takes `*(undefined2 *)(puVar3 + (sVar8 + -3) * 2)` (m:4976). Item 2 is unreachable because
+  MENU 200 item 2 is the `-` separator (`rsrc.parse` of `$G/Cythera.rsrc`, MENU 200: "Party Mode",
+  "-", then eight "None" items). [HIGH]
 - 0x83 = MENU 131 "Audio": 1 System Volume → `SetSoundVolume(-1)`; 2..10 → volume 0..8; 12
   ambient toggle by its mark; 14..17 → `SetMusicVolume(0..3)`.
 - else `TApp::DefaultMenu` (desk accessories for Apple-menu items past +0x38; Edit → `SystemEdit`).
@@ -383,6 +422,10 @@ track with `StillDown` drawing PICT 139+n (pressed) or the background, sound 7, 
 else one of 7 jokes at 0x100d4280 (`toc.cstr_code`). `CloseRoutine @ 10017180` releases the
 background PICT seven times and never the frames — the loop tests `+0x98+i*4` but loads
 `lwz r3,148(r30)` (= +0x94) (`ppcdis.py 100171c0 1001722c`). [HIGH; harmless]
+⚑ corrected (review wave 2 2026-10-06): not always seven. `ppcdis.py 100171c0 10017214`: one release
+(`100171cc: lwz r3,148(r30)` / `bl 0x100c3f90`), then i = 0..5 (`1001720c: cmpwi r0,6` / `blt`)
+tests slot `+0x98+i*4` (`100171e8: addi r0,r3,152` / `lwzx` / `cmplwi r0,0x0` / `beq` skip) and
+releases +0x94 again only for a **non-NULL** slot — so 1 + (number of loaded frames), up to seven. [HIGH]
 
 ### 5.2 New game and character creation [HIGH unless marked]
 `NewGame @ 100152a4` (p:5458): vslot +0x6C **PutOneFile**("Create Player:", default name
@@ -483,6 +526,8 @@ caller passes idx 0, so harmless). `SaveSettings` writes the UI bits listed in d
 `EditUserBehaviors` (Strategy menu / character-window popup) runs `TEditUserBehavior` (DITL 141:
 Done, Import, list, Debug); `PerformAI` opens `TAIDebug` (DITL 142: Step, Clear Debug, list, Go)
 when the slot's debug flag is set.
+⚑ corrected (review wave 2 2026-10-06): "Strategy menu" here means the character window's
+Strategy **popup** (MENU 135 via CNTL 135), the only route — see the §4.1 correction. [HIGH]
 
 ## 9. Open
 - Who inserts MENU 200 "Party" (only `GetMenu(200)` reads at p:764/p:1964 were seen). [NOT RESOLVED]

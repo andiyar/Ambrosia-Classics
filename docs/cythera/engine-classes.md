@@ -176,6 +176,11 @@ FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (
   (`& 0x7d`, `& 0xbf`, `& 0xfe`). MENU 0x88 is never inserted into the 1.0.4 menu bar
   (app-shell.md §4.3, MED absence scan), so **in practice F = 6: 10 frames/s**, unless a prefs file
   already holds another value. [HIGH arithmetic; "in practice" MED]
+  ⚑ corrected (review wave 2 2026-10-06): read "**at most** 10 frames/s". `MyScheduler` only
+  enforces a minimum spacing (m:5753 `*(uint *)puVar8 = *(int *)puVar8 + (DAT_100d3e20 >> 2 & 0xf);`
+  when early, m:5756 `= uVar11 + (…)` otherwise) and runs a frame only when no event, redraw, task
+  slice, conversation or background state takes precedence (app-shell.md §3.3), so 10 fps is an
+  upper bound, not a rate. [HIGH]
 - **Which game events wait for a frame.** `DoTick__14TActiveMonsterFUc @ 1004ded8` (p:21418,
   p:21461–21467) and `Guide__14TActiveMonsterFv @ 1004dbc0` (p:21320) set the mode word to 3 and
   `YieldToAnyThread()` around a visible move of the party leader — p:21461 `if (*(short *)(param_1 +
@@ -192,6 +197,24 @@ FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (
   event loop first). In "real-time" mode (flag TOC 0x100cdd04, off by default, toggled by
   `TMapWindow::KeyRoutine` key 0xCA) `MyGetEvent__10TDelverAppFsP11EventRecordUc @ 10012c24`
   fabricates a space keyDown after 0x14 idle ticks (m:4569–4578) — an idle turn every 1/3 s. [HIGH]
+  ⚑ corrected (review wave 2 2026-10-06): the "idle turn" meaning is now traced, so the HIGH stands
+  on this chain (all read this session):
+  1. `KeyRoutine__10TMapWindowFs @ 100437b8` (x:759–762; `find_func.py
+     'KeyRoutine__10TMapWindowFs' --file ghidra/Cythera_extra.decompiled.c`, last statement): `if (((sVar16 == 0x20) || (… PerformDoKey
+     … == '\0')) && (*(short *)(*(int *)puVar1 + 4) == 3)) { …ScheduleKeyDown…(param_1,param_2); }`.
+  2. `ScheduleKeyDown__11TTaskMasterFP16TDroppableWindows @ 1001d05c` (p:7783):
+     `_QueueTaskEvent__FssP16TDroppableWindow5Points(2,0,param_1,…,(int)param_2);` then
+     `YieldToAnyThread()`; `TaskThread__11TTaskMasterFPv @ 1001d334` (m:5876) runs a kind-2 event as
+     `.debug::_KeyRoutine__16TDroppableWindowFs(uStack_8c,(int)(short)uStack_84._0_2_);`.
+  3. `KeyRoutine__16TDroppableWindowFs @ 1002a07c` (p:12430; label p:12559, call p:12566): 0x20 falls through to `LAB_1002a3a4`
+     (`if (0x20 < param_2) return;` just above it): key target active → `FUN_100c50e8(target, 8)` and
+     return; else mode word := 0, `KeyboardMode(status, 0)`, `XDirection…(param_1,8);`.
+  4. `XDirection__16TDroppableWindowFQ28TGameSys10EDirection @ 10028ff4` (p:11966): `bVar1 = param_2
+     != 8;` (p:12026) so modifier actions are skipped; the hold loop (p:12137–12138) does `if (param_2 == 8) {
+     _HeartBeat__8TGameSysFs(*puVar10,10); }` (else `MoveCommand`), re-reads `GetKeys` and repeats
+     with 8 while KeyMap byte 6 bit 1 (`local_7a & 2`, p:12167, Mac key code 0x31 = space) is held.
+  So space = `HeartBeat(10)`: ten busy units, the same as a successful step (§3.2) — a turn spent
+  standing still. [HIGH as code; "key code 0x31 = space" is the standard Mac KeyMap, MED]
 - **Other waits.** `DrawRoutine__11TGameViewerFs`: only while a screen transition is pending
   (viewer +0x20C28 kinds 1–8), 5 ticks per transition step (p:28009 `do { uVar7 =
   .glue::TickCount(); } while (uVar7 < iVar9 + 5U);`), then cleared (p:28153). `HandleMove`,
