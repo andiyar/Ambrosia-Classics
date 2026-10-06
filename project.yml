@@ -44,6 +44,9 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
+        # macOS 26+ app icon (Ben 2026-10-06): Icon Composer document Aki/App/Mac/AppIcon.icon — the original
+        # aki.icns tile art on green felt, so the system draws the squircle instead of jailing the 2008 icon.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   # The iPad app (plan C6, D7): the same shared Aki/App code over HectorShell's iOS shell, host in Aki/App/iOS.
   AkiPad:
     type: application

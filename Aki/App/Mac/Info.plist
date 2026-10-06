@@ -10,8 +10,6 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleGetInfoString</key>
 	<string>1.2.0 © 2003-2008 Ambrosia Software, Inc. &amp; Liquid Metal Software</string>
-	<key>CFBundleIconFile</key>
-	<string>aki</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
