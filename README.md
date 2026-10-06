@@ -44,7 +44,7 @@ Playable on the Mac, with sound and music, and I'm playtesting it now. Every sou
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
-![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%%20read-green)
+![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%25%20read-green)
 
 Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). It's the next one to be built: first the decoders for its data files, then the game.
 
