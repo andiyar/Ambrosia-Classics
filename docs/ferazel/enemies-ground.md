@@ -8,6 +8,8 @@ matching each sound TOC slot's global against the `FUN_10091748(id)` stores in `
 (`.InitSounds @ 10045838`, m. l. 39508; 129 id↔global pairs matched by regex, every id cited here among them), level census over all 24 `Mlvl` placement blocks (Python,
 this session, world-data §3.4 layout). Labels per INDEX. Units per physics.md (px; velocities
 1/256 px/frame; frames ≈ 1/30 s). `S` = the enemy sprite, `P` = the player.
+⚑ wave 2 (2026-10-04): continued in **`enemies-ground-2.md`** (corpse raft, Crawler/Roach `+0xa6`,
+sound-voice helpers, `_DAT_1009fe8c`, enemy-pipe Walkers, Dillo crush mark).
 
 **Scope.** Class Walker (types 1700..1709, 1750..1769), Crawler (1712), Roach (1720), Dillo
 (1870..1879). Handlers: `.SetupWalkerSprite @ 10067318` (h. l. 10055–10257),
@@ -60,9 +62,11 @@ Records with flag 0 but these types: level 1 rec 28 (1712), level 45 recs 272/27
 ## 2. Shared machinery
 
 ### 2.1 Damage dealt to the player (contact)  [HIGH]
-`.MTCollideSprites` calls both hit callbacks for intersecting hot rects (a null `+0x5c` on one side
-still lets the other's callback run). The damage is applied by **`.HitPlayerSprite`**, keyed on the
-other sprite's handler `+0x4c`, then `.HurtPlayer(P, S, dmg, blood, invul, coinsLost)`, which does
+~~`.MTCollideSprites` calls both hit callbacks for intersecting hot rects … The damage is applied by
+`.HitPlayerSprite`~~ ⚑ wave 2 corr (2026-10-04) ES2 #W1: the player's `+0x5c` is 0 (`1004af44`/`1004afd4`),
+so `.MTCollideSprites` only calls the other sprite's callback; **`.HitPlayerSprite`** runs only in the
+later `.MTCollideSpecialSprite` pass (no distance gate, list order; `10007c38`/`10007c64`,
+`10032bdc..10032ed8`; enemy-shots-and-damage-2 §4.2), keyed on the other sprite's handler `+0x4c`, then `.HurtPlayer(P, S, dmg, blood, invul, coinsLost)`, which does
 nothing if `S.hp < 1` (except enemy shots/boxes; m. l. 45076) — so dead or dying enemies never hurt.
 
 | attacker | dmg | invul frames | coins lost | evidence |
@@ -91,7 +95,9 @@ on these classes: the shot's own `+0xa4` (200) is never applied (the Hit routine
 
 ### 2.3 Common hit tests  [HIGH]
 A **player shot** counts only when its `+0xa6 == 0` (melee = the held-item sprite temporarily
-given `.HandlePlayerShotSprite`, id 100, dmg 100/200/300 by weapon — m. l. 43547ff). Crushing:
+given `.HandlePlayerShotSprite`, id 100, dmg 100/200/300 by weapon — m. l. 43547ff). A stab lands once per
+target although the target's Hit routine runs **twice** per strike frame (the pair is visited both ways): the
+second call is the one refused by the invulnerability the first set (held-item-melee §4.1, ⚑ wave 2 corr (2026-10-04) HM W2). Crushing:
 when `S` is the mover against a Statue or Box sprite and `.PlatformBounce` returns 2 (contact from
 below, physics §8.1): Crawler/Roach/Dillo die if the solid's `vy > 0` or `S` stands on ground
 (`hp = 0`, `+0x150 = 0x16`); Walker dies if the solid is not one-way (`+0x185 == 0`) and its type is
@@ -119,7 +125,7 @@ hard 500 regardless of the class's starting HP.
 
 ### 2.5 Death bookkeeping  [HIGH]
 `+0x1b5` = "counts for the enemies-defeated stat", set in every Setup here when the global
-`*_DAT_1009fe8c` is non-zero (it is set around `.SetupLevelSprites`, m. l. 2521–2527 [MED]), which
+`*_DAT_1009fe8c` is non-zero (it is set around `.SetupLevelSprites`, m. l. 2521–2527; raw `10004da4..10004dc0` `stb 1` / `bl .SetupLevelSprites` / `stb 0` [HIGH], enemies-water-cave W3; ⚑ corrected (review 2i, 2026-10-04) #5), which
 also increments the live-enemy count `*_DAT_1009ffb4`. The Kill routines (once, `+0xe9 == 0`):
 count −1, `G + 0x306 + 2·level += 1` (world-data §4.3), `+0xe9 = 1`; Crawler/Roach/Dillo also set
 `+0xea = 1` (`.UpdateSprites` then clears the placement record's active byte, m. l. 4936).
@@ -127,9 +133,11 @@ Score (`G+0`): Walker 1700 +500, 1705 +600, 1750 +800, 1760 +400 (at the moment 
 10069b70/10069cbc/10069d68/10069e88); Crawler +500; Roach +500 + 100 (`.KillRoach`) = 600;
 Dillo +1500 (`.KillDillo`, at the end of the burn).
 **Burn-away**: Walker (after its death animation) and Dillo set `+0x1a2 = 1`; the engine's
-`.HandleBurn` (from `.StandardSpriteCleanup`, m. l. 32435/38539) erases one face row per frame from
-the face rect's top and calls the class Kill proc `+0x50` (KillWalker / KillDillo) when it passes the
-bottom [MED: HandleBurn read only for this path].
+`.HandleBurn` (from `.StandardSpriteCleanup`, m. l. 32435/38539) ~~erases one face row per frame~~
+⚑ wave 2 corr (2026-10-04) DE #7: hides the face by a top clip (`+0x1bc = row`) advancing `+0x8d + 1` rows
+per frame from the opaque top, while `.BurnFaceRow` spawns particles along each consumed row (it erases
+nothing; `10043e5c..10043e64`, `100438c4..10043974`), and calls the class Kill proc `+0x50` (KillWalker /
+KillDillo) when `+0x1a2` passes the opaque bottom `face+0xc` (draw-effects §4.2) [HIGH].
 **Idle margins**: `+0x1c8/+0x1ca/+0x1cc/+0x1ce` widen the rect `.HandleIdleSprites` tests before
 returning an active sprite to idle (m. l. 4302–4311) [MED: names].
 
@@ -152,11 +160,13 @@ returning an active sprite to idle (m. l. 4302–4311) [MED: names].
 Goblin voice: `+0xf0 = 2·FastRand(0x5fff) + 0xbfff` per goblin (Setup, raw 1006740c–10067424);
 `.STPlay3DSoundPitchedGob(S, snd, prio, vol, pos, p)` plays at pitch `+0xf0 + p − 0xffff`
 (0x10000 = 1.0) [HIGH]. `.GoblinRandomCry` (every frame unless dying): if `FastRand(500) == 50`
-and none of 465/466/467 is playing (`FUN_100916dc` [MED: "is playing"]): r = FastRand(100) drawn
+and none of 465/466/467 is playing (`FUN_100916dc` ~~[MED: "is playing"]~~ ⚑ wave 2 (2026-10-04):
+HIGH, voice count, global over all goblins — enemies-ground-2 §3): r = FastRand(100) drawn
 first — r < 41 → 467 vol 0xab; 41..70 → 466 vol 0x55; ≥ 71 → 465 vol 0x55; pitch 55000 +
 FastRand(10000). `.GoblinHurtCry`: r ≥ 86 → 465, 71..85 → 466, 56..70 → 468, else silent; vol
 0xab; pitch 65000+/65000+/55000+ FastRand(10000); stops 465/466/468 first (`FUN_10091504`
-[MED: "stop"]).
+~~[MED: "stop"]~~ ⚑ wave 2 (2026-10-04): HIGH, stops every voice of that sound in the level —
+enemies-ground-2 §3).
 
 ## 3. Walker (types 1700..1709, 1750..1769)
 
@@ -333,7 +343,9 @@ b2 == 20, same friction. Once `+0xb2 > 50` (1700 path) / `> 60` (1750): if `S` i
 — the previous frame's contact, a harmless one-frame lag) the corpse **becomes a floating platform**: counted as killed,
 `+0x4c = .HandlePlatformSprite`, rect (0x10,0x35,0x42,0x47), float line `+0x1a0 = −6`, one-way
 `+0x185 = 1`, `+0x13a = 0x20`, `+0x138 = 0x3c` (§8.1 fields) — the player can ride it (h. l.
-10541–10552). Otherwise `+0x15c++` per frame, at > 2 burn starts (`+0x1a2 = 1`), the record's
+10541–10552). ⚑ wave 2 (2026-10-04): it **floats**, permanently, hot rect 3 px under the surface
+(`y = surface − 68`); water reaches it through the kept tile callback `.HitWalkerTileSprite` →
+`.HandleUnderWater` → `.HandleFlotation` — enemies-ground-2 §1 [HIGH]. Otherwise `+0x15c++` per frame, at > 2 burn starts (`+0x1a2 = 1`), the record's
 active byte is cleared, and if the player is ≥ 451 px (x) or ≥ 351 px (y) away the sprite is
 killed at once (`.KillWalker`), else it burns away (§2.5).
 **`.PopupGoblinCoins`** fires once when the burn row `+0x1a2 == face.rect.top + 18` (raw
@@ -355,7 +367,8 @@ Pickups: layer 0x14, re-centred, vy −2000 − FastRand(1000), multiples vx Fas
 
 ## 4. Crawler (type 1712)  [HIGH: raw 100659a0–10065b98, 10065c00–10066470]
 
-Setup: layer 11, `+0xa6 = 3`, `+0xb2 = −1`, `+0x15c = 300` (flee HP), `+0x150 = −1`, rect
+Setup: layer 11, `+0xa6 = 3` (⚑ wave 2 (2026-10-04): first-leap delay — enemies-ground-2 §2),
+`+0xb2 = −1`, `+0x15c = 300` (flee HP), `+0x150 = −1`, rect
 (0x14,0xc,0x2c,0x21). **Param 1 = 0** → state 0 (ceiling), gravity −0x151, face slot 0 of
 `PTR_DAT_100a09b0`; ≠ 0 → state 2 (floor), gravity 0x151, slot 1. Those slots are loaded from
 PICT 1500..1503, which exist in **no** shipped resource file (Sprites/Backgrounds/Titles/app/World
@@ -410,7 +423,8 @@ Setup: layer 11, `+0xa6 = 3`, state 2, gravity 0x151, HP 200, face PICT 1720 fra
 - **State 2 (patrol)**, on ground: w = p3/2 (85). `S.cx < home − w` → accelerate +100 (cap 1200),
   `+0x17e = 1`; `S.cx > home + w` → −100, `+0x17e = 0`; inside the band: flag 0 and vx > −1200 →
   −100; flag 1 and vx > 1200 → +100 (clamps to 1200) — rightward travel coasts inside the band,
-  leftward travel keeps accelerating [HIGH as code]. `+0xa6` counts down (no reader).
+  leftward travel keeps accelerating [HIGH as code]. `+0xa6` counts down (no reader; ⚑ wave 2
+(2026-10-04): its only readers are in unreachable state 3 — enemies-ground-2 §2).
 - State 3 (hop-flee, same arithmetic as the Crawler's) is entered only from state 3 itself (HP <
   3) — **unreachable** [HIGH].
 - Death and crush exactly as the Crawler (death sheet 1721), score +500, plus +100 in
@@ -494,7 +508,7 @@ FastRand(5)`, gravity 0xaf, `+0x90 = 0x100`, `+0x8c = 1`, `+0xa6 = 0` then +1 pe
 | 0 / 1 | 1700 | rect (8,8,0x10,0x10), gravity 0xaf; face PICT 1703 (8 × 24×24), `+0x46` ++ (0) / −− (1): spin | 0x38, invul 60 |
 | 0x6a9 | 1705 | layer 0x14, rect (0,0,0x5a,0xe), gravity 0, life `+0x14c = 2` frames, no face | 0x70, invul 60 |
 | 0x6d6 | 1750 | rect (0,0,0x3c,0x18), no face, `+0xa6 = 3` (held: +1 then −1 per frame), HP 0x70, gravity 0xaf | 0x70, invul **36** |
-| 0x6e1 / 0x6e2 | 1760 (p1 0/1) | rect (8,8,0x18,0x18), gravity 300, HP 200, `+0x150 = −2 − FastRand(2)` (13 %: further −(3 − FastRand(5))), `+0xeb = 1`; faces PICT 1761 / 1762 (8 × 32×32) | 0x38 |
+| 0x6e1 / 0x6e2 | 1760 (p1 0/1) | rect (8,8,0x18,0x18), gravity 300, HP 200, `+0x150 = −2 − FastRand(2)` (13 %: further −(3 − FastRand(5))), `+0xeb = 1`; faces PICT 1761 / 1762 (8 × 32×32) | ~~0x38~~ none on contact: `.HitEnemyShotSprite` kills the bomb in the main pass (`1005c9dc..1005caac` → `1005cd28`/`1005cd7c`) before the player pass; the hurt comes from shards 0x6e6 (0x38) / explosion 0x4b7 (0x70) (enemy-shots-and-damage-2 §4.3) ⚑ wave 2 corr (2026-10-04) ES2 #W3 |
 | 0x753 | Dillo egg | rect (4,0,0x14,0xe), `+0x46 = 6`, flip random, `+0x15c = 0xf0` (240) | its `+0xa4` (224/448), coins 5 |
 | 0x754 | spines | rect (8,3,10,8), layer 0xc, gravity 0; face PICT 1876 (8 × 18×18) by `+0x46` | its `+0xa4` (56/224); none while its gravity > 0; coins 5 if 224 |
 
@@ -510,15 +524,26 @@ sprites. 1751..1759 additionally get the 1750 sheets/rect and state 1. Dillo 187
 ## NOT RESOLVED
 1. Colours of remap tables 0x10..0x15 (Walker tiers), 2/3/0xf (Crawler tiers) and 0xb (statue,
    Dillo 1871): `.BuildTintTable` builds luminance-based remaps over selected CLUT indices; not
-   decoded.
-2. `.BloodSpray` argument meaning; `.HandleBurn` rate details beyond "one row per frame".
-3. EnemyShot flight, tile and expiry behaviour for 0/1, 0x6a9, 0x6d6, 0x6e1/0x6e2 (bomb), 0x753
-   (egg hatching? `+0x15c = 240`), 0x754.
-4. `HandlePlatformSprite` behaviour for a 1700-type corpse (no platform mode set; `+0x19e`
-   buoyancy left 0) — does it float or sink?
-5. Which global `_DAT_1009fe8c` is exactly (set non-zero during level setup [MED]).
-6. `FUN_100916dc` / `FUN_10091504` = "sound playing" / "stop sound" [MED].
-7. Crawler/Roach `+0xa6` initial 3 and Roach `+0xa6` countdown have no consumer in state 2.
+   decoded. ⚑ wave 2 (2026-10-04): INDEX item 15, another lane — not attempted by L7.
+2. ~~`.BloodSpray` argument meaning; `.HandleBurn` rate details beyond "one row per frame".
+   ⚑ wave 2 (2026-10-04): INDEX item 15, another lane.~~ → closed: `.BloodSpray` = (victim, attacker,
+   count, speed, spread, kind), the spray aims back toward the attacker (particles §5.3, `100425f8..10042828`)
+   ⚑ wave 2 corr (2026-10-04) PA #7; burn rate `+0x8d + 1` rows/frame (draw-effects §4.2) ⚑ wave 2 corr
+   (2026-10-04) DE #7.
+3. ~~EnemyShot flight, tile and expiry behaviour for 0/1, 0x6a9, 0x6d6, 0x6e1/0x6e2 (bomb), 0x753
+   (egg hatching? `+0x15c = 240`), 0x754.~~ → closed: enemies-ground-2 §5 (pointer to
+   enemy-shots-and-damage §1.2–§1.6; 0x753 is a 240-frame bomb, not an egg).
+4. ~~`HandlePlatformSprite` behaviour for a 1700-type corpse (no platform mode set; `+0x19e`
+   buoyancy left 0) — does it float or sink?~~ → closed: enemies-ground-2 §1 (floats; buoyancy ramps
+   0 → 0x50 from conversion).
+5. ~~Which global `_DAT_1009fe8c` is exactly (set non-zero during level setup [MED]).~~ → closed:
+   enemies-ground-2 §4 (load-time counting window, raw `10004da4..10004dc0`).
+6. ~~`FUN_100916dc` / `FUN_10091504` = "sound playing" / "stop sound" [MED].~~ → closed:
+   enemies-ground-2 §3 (voice count / voice stop, HIGH).
+7. ~~Crawler/Roach `+0xa6` initial 3 and Roach `+0xa6` countdown have no consumer in state 2.~~ →
+   closed: enemies-ground-2 §2 (Crawler: live cooldown incl. the initial 3; Roach: write-only)
+   ⚑ wave 2 (2026-10-04) (EG2 corr #1, own row; marker added by the fix pass).
+8. (wave 2) Further open rows for this file live in enemies-ground-2.md NOT RESOLVED.
 
 ## Proposed additions to physics.md §0
 - `+0x30` i32 previous-frame vy (copied with +0x18/+0x20/+0x28 in `.WrapDrawSprites`, m. l. 10348).

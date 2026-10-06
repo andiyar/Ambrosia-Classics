@@ -97,7 +97,9 @@ The rise is capped at 6 px/frame until half height, then closes 12 %/frame; it s
    (PICT 1441: 6 faces 48×32). Head **solid on all sides** (`+0x185 = 0`) when `h ≤ 0x1000` (16 px)
    and `v > 0` (rising), else one-way top (1006d048–1006d074). Position `(x − 12, y − h_px − 4)`;
    kind copied; if head y > base y − 8 (h_px < 4) face 0 (hidden). Tint `+0xb8`: kind 1 → `0x10017`,
-   kind 0 → 0, kind 2 → `0x1000c` (1006d108/1006d11c), kinds 3/4 unchanged [MED "tint"].
+   kind 0 → 0, kind 2 → `0x1000c` (1006d108/1006d11c), kinds 3/4 unchanged — ~~[MED "tint"]~~ a mode-1
+   remap through tint table 0x17 / 0xc, copied to the segments (`1006d200..1006d208`) [HIGH dispatch;
+   draw-effects §2.2, colours lighting-tables §3.2] ⚑ wave 2 corr (2026-10-04) DE #11 (merged with PA #1).
    Head setup (Box arm, handler l. 11624–11631): rect `SetRect(8, 8, 40, 32)`, one-way, no tile
    callback, gravity 0, push mass and sag 0; no Box handle arm, so only the common tail runs.
 3. If the head face is 0 (or no head) `n = 0`.
@@ -121,10 +123,13 @@ The rise is capped at 6 px/frame until half height, then closes 12 %/frame; it s
    The RNG order above is the raw order (1006d2a4–1006d394, 1006d3f8–1006d4e0).
    `.NewParticle`/`.HandleParticles` (main l. 29860, 29611): arg 2 = gravity added to vy per frame
    (190), start age = −FastRand(10) (delay), mode 1 = dies on a solid FG tile (≥ 0x51) or on entering
-   water with vy ≥ 0x2ef; any particle dies at age > 120 [HIGH]; arg 4 = 4 [NOT RESOLVED meaning].
+   water with vy ≥ 0x2ef; any particle dies at age > 120 [HIGH]; ~~arg 4 = 4 [NOT RESOLVED meaning]~~
+   arg 4 is the **shape code: 4 = 1 px wide × 2 px tall** (`10015b60` jump-table case 4; particles §3.2).
    Colour rows (`.InitParticleColors`, main l. 29291/29301/29320): kind 200 a CLUT ramp
-   (entries 0x78/0x7e/0xa8/0xeb, blue +10000), 201 CLUT 0x71 + min(age/5, 3), 202 RGB red
-   `(10 − age/2)·0xaf0 + 32000`, blue 0 [HIGH indices; MED "water/acid/lava" look].
+   (entries 0x78/0x7e/0xa8/0xeb, blue +10000 while < 55000), switching **by age>>1** at ages 8/16/24 (the
+   by-age first write is overwritten, `10030994` vs `10030fa8`); 201 CLUT 0x71 + min(age/5, 3); 202 red
+   `(10 − age/2)·0xaf0 + 32000` with **green = 0.4·red** (orange; `10031048..10031098`, `lfd 100a17a8` =
+   0.4), blue 0. Exact colours particles §4.4 (chosen index LOW) ⚑ wave 2 corr (2026-10-04) PA #1.
 
 `.KillBox` (main l. 47950–47962) kills all 16 segments and the head of a dying 0x5a0..0x5a8 base.
 No other caller of `.HandleGeyserColumn` exists (`bl 0x1006cf7c` only at 1006e27c), and the three
@@ -164,7 +169,8 @@ indirect load of those handles was not seen].
   Box/Statue the geyser piece is always the solid (the other lands on it).
 
 ## NOT RESOLVED
-1. `.NewParticle` arg 4 (= 4) meaning; exact on-screen colours of particle kinds 200–202.
+1. ~~`.NewParticle` arg 4 (= 4) meaning; exact on-screen colours of particle kinds 200–202.~~ → closed:
+   particles §3.2/§4.4 (the index pick stays LOW, particles NR 1) ⚑ wave 2 corr (2026-10-04) PA #1
 2. Whether `.ActiveToIdleSprite`/`.IdleToActiveSprite` re-run Setup (a second `AllocateGameMem(0x44)`)
    for a collapsed geyser that leaves and re-enters the screen.
 3. Visual intent of kinds 3/4 (unplaced; base face index past the 12-entry cache).

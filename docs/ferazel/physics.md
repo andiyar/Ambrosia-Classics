@@ -12,6 +12,7 @@ below means that file ⚑ corrected (deepening 2026-10-03).
 
 | off | type | meaning (writer/reader) |
 |---|---|---|
+| +0x00 | u8 | slot in use: `.MTNewSprite` 1, `.MTKillSprite` 0 (`100331c8..100331cc`) [HIGH] ⚑ wave 2 (2026-10-04) (SD2 §Proposed) |
 | +0x04 | i16 | type — **except player shots**: `.SetupPlayerShotSprite` rewrites it to the spell id (`(char)(type>>8)`) and moves the power to +0x170 for the shot's whole life (§7; spells-items.md §2) ⚑ corrected (review 2026-10-03) #3 |
 | +0x06/+0x08 | i16 | y/x copy (old position; set with +0xa/+0xc each integration step) |
 | +0x0a/+0x0c | i16 | y/x integer position (top-left of the face cell) |
@@ -23,15 +24,15 @@ below means that file ⚑ corrected (deepening 2026-10-03).
 | +0x48 | i16 | placement-record index (written `*(short *)(s+0x48) = recIndex` at the end of `.GenerateSprite`; −1 = no record, the sentinel `.SetupProgrammedPath`/`.DoSetupPlatformSprite` test; read by the `.UpdateSprites` write-back and by the `.HitPlayerSprite` sign/trigger param reads — world-data §3.4 "records are live" depends on it) ⚑ corrected (review 2026-10-03) #7 |
 | +0x4c | proc | per-frame handler (Setup replaces itself with Handle) |
 | +0x5c | proc | sprite-sprite hit callback; +0x1f8 tile-hit callback |
-| +0x68 | ptr | next in active list |
-| +0x80 | i32 | layer (MTNewSprite arg) [MED] |
+| +0x68 / +0x6c | ptr | active list **next / previous** (`.MTInsertSprite` `10032f54`/`10032f8c`, `.MTRemoveSprite`, `.MTKillSprite`); head `*(_DAT_1009ff58)+0x5c` [HIGH] ⚑ wave 2 (2026-10-04) (SD2, PR2, ES2 §Proposed merged) |
+| +0x80 | i32 | layer ~~(MTNewSprite arg) [MED]~~ = the **active-list sort key**, ascending, signed (`cmpw`); a new sprite goes after every sprite of equal or lower layer (ties after existing sprites, `bge` `10032f44`/`10032f80`). Read **at insertion only**: `.MTNewSprite` stores the argument (`10033200`), runs the Setup (`1003321c`) and then inserts (`1003322c`), so the effective value is whatever the Setup leaves; direct `+0x80` writes later do **not** re-sort (e.g. `10066518`, `1004beb0`, `100632d8`, `10063400`), only `.MTChangeSpriteLayer` re-inserts. Draw, handle and collision passes all walk this **one** list (platforms-ropes-radial-2 §8.2, enemy-shots-and-damage-2 §4.2). Caveat (review 2f #1): the same-frame rule for sprites created inside a handler (spells-detail-2 §4) assumes no sprite *before* the creator carries a current layer above the new one, since insertion walks from the head (`10032f68..10032f9c`) [HIGH] ⚑ wave 2 (2026-10-04) corr SD2 #S3 = PR2 #3 (+ SD2, PR2, ES2 §Proposed merged) |
 | +0xa4 | i16 | hit points (`.HurtSprite`) |
 | +0xaa | i16 | hurt-flash frames; +0x116 invulnerability frames |
 | +0xce | u8 | ground/surface kind under the sprite this frame (0 = airborne) |
 | +0xcf | u8 | ceiling kind hit this frame |
 | +0xd8 | i16 | surface material = FG kind / 100 of the tile stood on (1..), 0 = plain (`.WallBounce`) |
 | +0xdc | ptr | platform sprite being ridden |
-| +0xe9 | u8 | kill request (handled by `.UpdateSprites`) |
+| +0xe9 | u8 | kill request (handled by `.UpdateSprites`) — ⚑ wave 2 (2026-10-04) (SD2 §Proposed): `.UpdateSprites` advances it 1→2→3→4 (procs, face, light cleared, type negated) and unlinks/frees the sprite at 4 (`1000996c..10009a74`) [HIGH] |
 | +0x110 | i16 | gravity per frame |
 | +0x112 | i16 | slipperiness value (ice) |
 | +0x11c/+0x120 | i32 | water contact: `surfaceY − y − face top inset`, clamped ≥ 1 while in water (so 1 = fully submerged, larger = visible top that far above the surface), 0 = not in water / previous frame's (fix-pass reading of `.HandleUnderWater`, §5.1) [MED]. ⚑ corrected (deepening 2026-10-03): `.StandardSpriteHandles` copies `+0x11c` into `+0x120` (when non-zero) and **zeroes `+0x11c` every frame** while `+0x118 < 0x1d` (raw `10036990..100369ac`), so `+0x11c` is valid only after the frame's own tile pass ran `.HandleUnderWater`; handlers that test it earlier never see water (Frog/Salamander water blocks are dead code — enemies-water-cave §0.1) [HIGH]. ⚑ corrected (review 1c, 2026-10-03) #4 (adjudication B4 tail): readers between that zeroing and their own tile pass — Frog `10082198/b8`, Salamander `100830c4/e4` and **Gremlin `10080628/48`** (a second `.StandardSpriteHandles` on the gremlin itself at `1008061c` precedes the read) are dead; Walker `10068adc` and Platform `100649c4` test `+0x11c == 0 ∧ +0x120 == 0`, so they degrade to a one-frame lag (previous frame via `+0x120`, harmless); the Bat reads at `1007e744` **before** its SSH (previous-frame value, copied to a child); every other class reads after `bl 0x100375b0` [HIGH] |
@@ -42,7 +43,7 @@ below means that file ⚑ corrected (deepening 2026-10-03).
 | +0x185 | u8 | one-way top: `.RectBounce` skips side/underside resolution and lands a mover only if its previous-frame bottom was above the top (+8 px slack, +0x20 on sloped tops) (§8.1) ⚑ corrected (review 2026-10-03) #2. Writers ⚑ corrected (deepening 2026-10-03) (synthesis scan of every `stb …,0x185(`): `.InitSprite` (0), Platform setup (**every platform one-way by default**, platforms-ropes-radial §2.1), see-saw segments, the Walker corpse (enemies-ground §3.8), `.SetupBoxSprite` per type (pickups-boxes §2.2 table), geyser column, Background setup, `.SetupTree`; **not** the statue (enemies-ground §2.2). ⚑ corrected (review 1c, 2026-10-03) #9: also `.DoSetupPlatformSprite` (3 stores), `.HandleBoxSprite` (4) and `.HitBoxSprite` (`10070570`: the magic carpet 0x438 → 0x439 **clears** it) (60 `stb …,0x185(` sites in all) |
 | +0x186 | u8 | "ridden this frame" (set by `.PlatformBounce`/`.RopeCollide`, cleared by the owner's handler) ⚑ corrected (review 2026-10-03) #2 |
 | +0x194 | i32 | jump bonus lent to a rider: `.HandleKeys` copies the ridden sprite's +0x194 into the jump base J of §4 (`*piVar12 = *(int *)(platform + 0x194)`, main dump l. 44901/44937) ⚑ corrected (review 2026-10-03) #2 |
-| +0x19e / +0x1a0 | i16 | buoyancy strength (0 = sinks) / float-line offset (`.HandleFlotation`, §8.6) ⚑ corrected (review 2026-10-03) #7; the player's `+0x19e` is written only by the death/revive sequence (3 stores, platforms-ropes-radial §5) ⚑ corrected (deepening 2026-10-03) |
+| +0x19e / +0x1a0 | i16 | buoyancy strength (0 = sinks) / float-line offset (`.HandleFlotation`, §8.6) ⚑ corrected (review 2026-10-03) #7; the player's `+0x19e` is written only by the death/revive sequence (3 stores, platforms-ropes-radial §5) ⚑ corrected (deepening 2026-10-03) — ⚑ wave 2 (2026-10-04) (EG2 §Proposed): type 0x6a4 (Walker corpse) under the Platform handler ramps `+0x19e` +1 w.p. ½ per frame to 0x50 (`10064988..100649c0`); every other class leaves it 0 (store scan) [HIGH] |
 | +0x1e8 | proc | surface-height function of a ridable non-flat top, called through ptr-glue `FUN_1009f80c` with (sprite, x offset); ropes get TOC slot `_DAT_100a0ce4` (→ `.GetRopeHeight` [MED: TVector→name link not decoded]) (§8.2) ⚑ corrected (review 2026-10-03) #2; link now HIGH and Box type 1466 (rope bridge) installs `.GetRopeBridgeHeight` (platforms-ropes-radial §3.3, §3.7) ⚑ corrected (deepening 2026-10-03) |
 
 ### 0.1 Fields added by the deepening  ⚑ corrected (deepening 2026-10-03)
@@ -52,25 +53,30 @@ File keys as in `coverage.md` (EG enemies-ground, EF enemies-flyers, EW enemies-
 bosses-2, ES enemy-shots-and-damage, PB pickups-boxes, T2 triggers-background-2, SD spells-detail,
 PR platforms-ropes-radial, P2 player-states-2). **⚠** = the readers named the offset differently;
 both readings are kept.
+⚑ wave 2 (2026-10-04): the wave-2 "Proposed additions" (LT lighting-tables, DE draw-effects, PA particles,
+EG2 enemies-ground-2, SD2 spells-detail-2, PR2 platforms-ropes-radial-2, ES2 enemy-shots-and-damage-2,
+PB2 pickups-boxes-2) are merged into the existing rows here and in §0 (`+0x00`, `+0x68/+0x6c`, `+0x80`,
+`+0xe9`, `+0x19e`), one row per field; new rows `+0x3c..+0x44`, `+0x1b3`.
 
 | off | type | meaning (source) |
 |---|---|---|
 | +0x18/+0x20/+0x28/+0x30 | i32 | previous-frame copies (vx `+0x28`, vy `+0x30` per EF/EG; x/y by analogy) written by `.WrapDrawSprites` (EG, EF) [MED for +0x18/+0x20] |
+| +0x3c..+0x42 / +0x44 | Rect / u8 | absolute hot rect = `+0x34` offset by (x, y), built by `.CalcHotRect` (`10032628..10032650`) for `.MTCollideSprites` / "built this pass" flag, cleared for every sprite at the start of `.MTCollideSprites` (`100326f4`), set by `.CalcHotRect` (`10032650`) [HIGH] ⚑ wave 2 (2026-10-04) (ES2, PR2 §Proposed merged) |
 | +0x50 | proc | Kill callback, called by `.HandleBurn` when the burn-away ends (EF, EW, B2; EG `.KillWalker`) |
 | +0x54 / +0x58 | proc | active→idle / idle→active callbacks; ropes `.RopeIdleize` / `.RopeDeIdleize` (EF, PR) |
-| +0x84 / +0x86 | i16 | zeroed for bats, written by the player's `.RectBounceFake2` (EF: looks vestigial); shot-particle offsets (SD) — NOT RESOLVED |
+| +0x84 / +0x86 | i16 | ~~zeroed for bats … NOT RESOLVED~~ ⚑ wave 2 corr (2026-10-04) EF W1: i16 pair (`+0x86` x, `+0x84` y) of a vestigial bounce velocity, **0 in every sprite all game** — every writer stores 0 or rescales 0 (`.RectBounceFake2`'s only caller passes 0, h. l. 3095); the shot-particle offsets that subtract them (SD) subtract 0 (enemies-flyers §7.1) [HIGH] |
 | +0x88 | u8 | ~~**⚠** "lit / draw the light overlay, default 1" (EF, PR) vs "draw-normal flag" (P2) vs "[draw/collide flag?]" (ES)~~ ⚑ corrected (review 1c, 2026-10-03) #5 (adjudication A8): **light-overlay gate** — its only reader, `.WrapDrawSprites` `1001493c..1001499c`, selects the **second** pass `.WrapLightFace @ 100156c8` after the unconditional `.WrapDrawFace @ 100151c4` (`100148e4`/`1001491c`); that pass is also skipped when prefs (`−0x79fc`) +6 == 3 (Effects = Reduced) or draw mode 0xe; its arg r4 = `+0x11c` unless `+0x18c`. Default 1 (`.InitSprite` `1003d3d0 li r5,0x1` → `1003d444 stb r5,0x88`); boss Setups clear it (B2). EF/PR right, P2 wrong [HIGH] |
-| +0x89 | u8 | dynamic lighting: `.WrapDrawSprites` samples the light map and writes `+0xb8 = 0xc0000 + …` (PR, T2) |
+| +0x89 | u8 | dynamic lighting: `.WrapDrawSprites` samples the light map and writes `+0xb8 = 0xc0000 + …` (PR, T2) — ⚑ wave 2 (2026-10-04) (LT, DE §Proposed merged): `+0xb8 = D·0x100 + 0xc0000 + F`, D = BG-cell light byte − 1 (signed; D = −1 with F ≥ 1 turns the word into **mode 0xb**); runs after and so overrides the hurt flash; writes `+0xb8 = 0` when unlit (`100147b8`) (lighting-tables §2.2, draw-effects §1.1) [HIGH] |
 | +0x8a | u8 | water current applies (= not clinging for the player) (EW, P2; §2) |
-| +0x8c / +0x8d / +0x8e | u8 | burn sound variant (sole reader `.HandleBurn`, synthesis `10043d3c`) / extra burn rows per frame / burn style 0xd (EW, B2); `.SetupEnemyShotSprite` writes `+0x8c = 1` (ES) |
+| +0x8c / +0x8d / +0x8e | u8 | burn sound variant (sole reader `.HandleBurn`, synthesis `10043d3c`) / extra burn rows per frame / burn style 0xd (EW, B2); `.SetupEnemyShotSprite` writes `+0x8c = 1` (ES) — ⚑ wave 2 (2026-10-04) (DE, PA §Proposed merged): confirmed — `+0x8c` pitched burn sound (vol 0x41, 110000 + rand(15000)); `+0x8d` = burn rows per frame − 1 (`.HandleBurn` loop bound `10043e68..10043e78`; Chief = 1); `+0x8e ≠ 0` → main burn particle kind 0xd (blue flame) instead of 1 (`10043db8..10043dcc`) [HIGH] |
 | +0x90 | i16 | wind/current scale /256: ≤ 0 immune, ≥ 0xff full (player 0x100, 0 while dying, glider by pitch) (EW, SD §5.3, P2; §6) |
 | +0x92 | u8 | in-wind flag (§6); holds the player's fall animation (P2) |
 | +0x9a | i16 | light handle from `.AddLight` (−1 none) (SD, T2) |
 | +0x9c | ptr | per-class block: rope sag block 0x4130 B, Crab links, Demon segments, Wizard 7×i16, Xichra 0x374, swarm table, timer digits (PR, EW, B2, EF, T2) |
-| +0xa0 | i32 | previous frame's `+0x46` (button release sound) (T2); a door's `+0xa0` is cleared by `.HitBoxSprite` (PB NR 8) |
-| +0xa6 | i16 | per-class counter: bat awake/anim, Wraith hidden countdown, Gremlin wing index, Blob pause, Crab strike, enemy-shot age, Bonus sphere respawn timer / shard life, Box per-type timer; **player shot: 0 = live** (boss Hit gate) (EF, EW, ES, PB, B1 §1.5) |
+| +0xa0 | i32 | previous frame's `+0x46` (button release sound) (T2); a door's `+0xa0` is cleared by `.HitBoxSprite` (PB NR 8) — ⚑ wave 2 (2026-10-04) corr PB2 #P7: the door write is **dead**, no reader (pickups-boxes-2 §6) [HIGH] |
+| +0xa6 | i16 | per-class counter: bat awake/anim, Wraith hidden countdown, Gremlin wing index, Blob pause, Crab strike, enemy-shot age, Bonus sphere respawn timer / shard life, Box per-type timer; **player shot: 0 = live** (boss Hit gate) (EF, EW, ES, PB, B1 §1.5) — ⚑ wave 2 (2026-10-04) (EG2 §Proposed): Crawler leap / flee-hop cooldown (initial 3 live, consumer `10065f48`); Roach write-only (its only reader, state 3, is unreachable) [HIGH] |
 | +0xb0 / +0xb2 / +0xb4 / +0xb6 | i16 | AI state / sub-state / per-class counters (EG, EF, EW, B2); platform mode (PR); radial angle written into chain/see-saw links (T2); Bonus pickup delay (PB) |
-| +0xb8 / +0xbc | i32 | draw-effect word `mode<<16 \| arg` read by `.WrapDrawSprites` / `.WrapDrawFace` (1 = colour-remap table `arg`, 3/4 hurt flash, 5 teleporter sparkle, 9 underwater, 0xb fade/blink, 0xc lighting, 0x10..0x13 blends) / last frame's copy (all readers; T2 for `+0xbc`). Pixel semantics NOT RESOLVED |
+| +0xb8 / +0xbc | i32 | draw-effect word `mode<<16 \| sub` read by `.WrapDrawSprites` / `.WrapDrawFace` → `.BlitEncFaceX` / last frame's copy (`.WrapEraseSprites` forces an erase when its mode was 0xb or 5, `10014d08..10014d1c`). ~~(… 0xb fade/blink, 0xc lighting, 0x10..0x13 blends) … Pixel semantics NOT RESOLVED~~ ⚑ wave 2 (2026-10-04) corr DE #4 = LT #7 (+ LT, DE §Proposed merged; draw-effects' semantics): **written modes 0, 1, 5, 8, 9, 0xa, 0xb, 0xc** only; 3/4 (hurt flash) and 6 (submerged rows) are draw-time substitutes; 2, 7, 0xd, 0xe, 0xf never written (0xe is only tested); **0x10..0x15 are mode-1 table indices** (Walker tiers, `10067638..10067758`), not modes. 1 = remap through tint table sub; 5 = diffuse sparkle; 8 = behind tiles (word add, MED); 9 = water table 0; **0xa = vertical squash** by sub/256, raw copy (`10027614..10027630`); 0xb = translucent through a pair table chosen by sub (0 ½, 1 ¾, 2 ¼, 3 grey-avg, 4 glow, 5 additive, ≥ 0x80 grey-pull); 0xc = light (`D<<8 \| F`). Per-pixel rules draw-effects §2, table colours lighting-tables §2–§6 (chosen indices LOW, particles §4.3) [HIGH] |
 | +0xc0 | ptr | current face record (0 = not drawn; `+6` = width) (EF, EW, P2, T2) |
 | +0xcd | u8 | **⚠** "previous-frame ground flag" (EG) vs "standing on a sprite" (EW, B2). Synthesis: both — `.StandardSpriteHandles` copies `+0xce` into it at frame start (`100368c4..c8`) and `.PlatformBounce` sets 1 on a landing (`100379c4`) |
 | +0xd0 | u8 | on a one-way top: `.WallBounceBG` 1, `.WallBounce` 0, `.PlatformBounce` on a one-way solid (P2; §8.1) |
@@ -83,24 +89,25 @@ both readings are kept.
 | +0x112 / +0x114 | i16 | (refines "slipperiness") also a one-shot `vx += 7.07·(+0x112)` kick in `.WallBounce` latched by `+0x181` [MED] / friction (Bonus decay, Box `.ApplyFriction`) (PB) |
 | +0x130 / +0x134 | i32 | statue frames left (120) / saved `+0xb8` while a statue (EG §2.2, ES §2.2); cannon hold timer, negative = post-launch re-entry block counted up by `.StandardSpriteHandles` (ES, T2; synthesis `10036894..100368a4`) |
 | +0x140 | u8 | water handled this frame / skip water (EW, P2) |
-| +0x14c..+0x174 | i32 | per-class scratch — see the class files (EG §Proposed, EF §3–5, EW table, B2, PB, PR, T2, SD); player `+0x14c` = catapult launch request (P2, §8.9); player shot `+0x14c` age, `+0x158` crunch strength, `+0x160..+0x16c` follower step / stack offset (SD); enemy shot `+0x14c` lifetime, `+0x150` bounce counter, `+0x154` bounce lockout, `+0x16c` pass walls (ES) |
+| +0x14c..+0x174 | i32 | per-class scratch — see the class files (EG §Proposed, EF §3–5, EW table, B2, PB, PR, T2, SD); player `+0x14c` = catapult launch request (P2, §8.9); player shot `+0x14c` age, `+0x158` crunch strength, `+0x160..+0x16c` follower step / stack offset (SD); enemy shot `+0x14c` lifetime, `+0x150` bounce counter, `+0x154` bounce lockout, `+0x16c` pass walls (ES) — ⚑ wave 2 (2026-10-04) (EG2, PB2 §Proposed): `+0x150` Crawler/Roach death counter (crush writes 0x16 → dies next frame), write-only crush mark for Dillo, Frog, Salamander, Blob, Bat, Gremlin, Floater; `+0x154` stalactite home x for the shake; `+0x160` falling-boulder hover counter (Wizard writes −52); `+0x168` Bonus p4 copy = "no cannon" (`.TurnIntoCannoned` refuses `== 1`, `100585f0..100585f8`), containers: spent |
 | +0x17c | u8 | first-frame setup done (Platform, PR) / tree branches built (T2) |
 | +0x180 / +0x181 / +0x182 | u8 | radial wall-bounce latch (PR; cleared each frame by `.StandardSpriteHandles`, synthesis `100368cc`) / ice-slide latch (P2, PB) / Box-box contact handled (PB) |
 | +0x184 | u8 | no collision with sprites of the same handler (`.MTCollideSprites`) (EF) |
 | +0x187 / +0x198 | u8 / ptr | has radial block / the 0xa4-byte radial block (PR §1.2, T2) |
 | +0x188 / +0x189 / +0x18a / +0x18b | u8 | placement write-back gates in `.UpdateSprites` (synthesis reads `10009880`, `1000988c`, `10009898`, `10009a00`, `10009ac4`): type/x/y copied back only when 188, 189 and 18a are all 0; 188 also keeps the record on death; 18b keeps it on the final kill frame (EG, EF, PB, B2) |
-| +0x18c | u8 | effect-active flag (P2); tested next to `+0x88` in `.WrapDrawSprites` |
-| +0x190 | ? | platform: cleared before `.TurnIntoStatue` — NOT RESOLVED (PR) |
-| +0x1a2 | i16 | burn-away row (≠ 0 → `.HandleBurn`; < 0 delay) (EG, EF, EW, B2). ~~vs enemy shots: reflected by the Magical Shield (ES). Per-class reuse — NOT RESOLVED whether a reflected shot can burn~~ ⚑ corrected (review 1c, 2026-10-03) #3 (adjudication A12): **one field, one meaning**. `.ShieldBlock` stores 1 (`10055550`, gated by `.HasItem(0xf)` `bl 0x1004c0e0`); `.HandleEnemyShotSprite` calls `.StandardSpriteCleanup` (`1005c844`), the **only** caller of `.HandleBurn` (`10036ed0 lha 0x1a2; cmpwi 0; beq` → `10036ee0 bl 0x10043cd8`). A shield-reflected enemy shot therefore starts the burn-away from row 1 and dies through its `+0x50` Kill callback — a replica with a mere "reflected" flag draws it wrong [HIGH] |
-| +0x1a6 / +0x1a8 | i16 | draw-effect parameters (P2) |
-| +0x1aa / +0x1ae | i16 | draw rotation in degrees (copied to face +0x1a) / draw scale, 0x100 = 1.0 (EF, EW, PB, PR, T2) |
-| +0x1b2 | u8 | handler skip — every handler returns at once; writer `.HandleBoxSprite` (inside a container) (EW, P2, B2) |
+| +0x18c | u8 | effect-active flag (P2); tested next to `+0x88` in `.WrapDrawSprites` — ⚑ wave 2 (2026-10-04) (DE §Proposed): disables the water split and passes water row 0 to the light pass (`100147dc`, `10014964`) [HIGH] |
+| +0x190 | i32 | platform: ~~cleared before `.TurnIntoStatue` — NOT RESOLVED (PR)~~ **dead** — written 0 only (three stores), never read (platforms-ropes-radial-2 §11) [HIGH] ⚑ wave 2 (2026-10-04) (PR2 §Proposed) |
+| +0x1a2 | i16 | burn-away row (≠ 0 → `.HandleBurn`; < 0 delay) (EG, EF, EW, B2). ~~vs enemy shots: reflected by the Magical Shield (ES). Per-class reuse — NOT RESOLVED whether a reflected shot can burn~~ ⚑ corrected (review 1c, 2026-10-03) #3 (adjudication A12): **one field, one meaning**. `.ShieldBlock` stores 1 (`10055550`, gated by `.HasItem(0xf)` `bl 0x1004c0e0`); `.HandleEnemyShotSprite` calls `.StandardSpriteCleanup` (`1005c844`), the **only** caller of `.HandleBurn` (`10036ed0 lha 0x1a2; cmpwi 0; beq` → `10036ee0 bl 0x10043cd8`). A shield-reflected enemy shot therefore starts the burn-away from row 1 and dies through its `+0x50` Kill callback — a replica with a mere "reflected" flag draws it wrong [HIGH] — ⚑ wave 2 (2026-10-04) (DE §Proposed): token-row counter; the burn starts at max(face+8, 1) and kills when `+0x1a2 >` face+0xc; `+0x1bc = +0x1a2` hides the consumed rows (draw-effects §4.2) [HIGH] |
+| +0x1a6 / +0x1a8 | i16 | ~~draw-effect parameters (P2)~~ glow particle kind / glow chance per outline pixel per frame in % (0 = off), read by `.ParticleGlow` from `.StandardSpriteCleanup` (`10036f0c`; particles §5.6); only the player sets them [HIGH] ⚑ wave 2 (2026-10-04) (PA §Proposed) |
+| +0x1aa / +0x1ae | i16 | draw rotation in degrees (copied to face +0x1a) / draw scale, 0x100 = 1.0 (EF, EW, PB, PR, T2) — ⚑ wave 2 (2026-10-04) (ES2 §Proposed): also set on the Gremlin's 0x712 spit (220° / 320°, enemy-shots-and-damage-2 §4.5) |
+| +0x1b2 | u8 | handler skip — every handler returns at once; ~~writer `.HandleBoxSprite` (inside a container)~~ ⚑ wave 2 corr (2026-10-04) EF W2: set on the child of an enemy pipe (Box 1490..1493) while it is pushed out (3 px/frame), cleared on release (`1006ecdc`, `1006f040`); still drawn, never the outer sprite of `.MTCollideSprites` (`10032744`) but still collidable as the inner one (enemies-flyers §7.4) (EW, P2, B2) |
+| +0x1b3 | u8 | burning: set every `.HandleBurn` call (`10043d10`), cleared by `.StandardSpriteHandles` (`100368c0`), read by `.WrapEraseSprites` [HIGH] ⚑ wave 2 (2026-10-04) (DE §Proposed) |
 | +0x1b4 | u8 | hurt flash uses mode 4 instead of 3 (B2; 2941 ice wall, PB) |
 | +0x1b5 | u8 | counted in the level totals (enemies, Xichrons, secrets) (EG, EF, EW, PB, B2) |
 | +0x1b6 / +0x1b8 / +0x1ba / +0x1bc | i16 | draw clips **left, right, bottom, top as edges in face-local px** (PR) — ⚑ corrected (review 1c, 2026-10-03) #6 (adjudication A10): T2's "visible width / visible height" is wrong; `.WrapDrawSprites` `1001461c..10014684` draws rows `min(+0x1ba, h) − +0x1bc` and cols `min(+0x1b8, w) − +0x1b6`; `.StandardSpriteCleanup` writes `+0x1b8 = occluder xmin − x` or `+0x1b6 = occluder xmax − x`, clamped 0..w (`10036f74..10036ff0`); reset each frame to 0 / 32000 / 32000 / 0 (`100368a8..100368bc`); `+0x1bc` = burn row clip (EF, EW) [HIGH] |
 | +0x1be / +0x1c0 / +0x1c2 / +0x1c4 | i16 | occluder rect in world px (PR) = wall-tunnel window **xmin / xmax / ymax / ymin** (T2) — ⚑ corrected (review 1c, 2026-10-03) #7 (adjudication A11): order settled, `10036f20..10036f58` tests `x+w+8 ≥ +0x1be`, `x−8 ≤ +0x1c0`, `cy ≥ +0x1c4`, `cy ≤ +0x1c2`, then clips only horizontally (row above); InitSprite 32000; consumed by `.StandardSpriteCleanup` [HIGH] |
-| +0x1c6 / +0x1c8..+0x1ce | u8 / i16 | may go idle off-screen / idle-test margins left, right, top, bottom (EG, PR, T2) |
-| +0x1d4..+0x1e0 | ptr | linked sprites: children, siblings, parent, followers, trunk chain (EF, B2, PB, PR, T2, SD) |
+| +0x1c6 / +0x1c8..+0x1ce | u8 / i16 | may go idle off-screen / idle-test margins left, right, top, bottom (EG, PR, T2); ⚑ wave 2 corr (2026-10-04) T2 W3: the margins serve activation (from the idle entry's copy at `+0x1ec..+0x1f2`) and deactivation (live sprite, `+0x1c6 ≠ 0`) alike, one rule, no hysteresis; window = view origin h −24..+632, v −24..+408, ∪ player hot rect, outset 96; `.HandleIdleSprites` scans 511 of the 512 entries (`100081b4..100083f0`, triggers-background-2 §8.3) |
+| +0x1d4..+0x1e0 | ptr | linked sprites: children, siblings, parent, followers, trunk chain (EF, B2, PB, PR, T2, SD) — ⚑ wave 2 (2026-10-04) (SD2 §Proposed): shot followers are never cleared by the main shot, so they dangle after a follower dies (spells-detail-2 §5) |
 | +0x1e4 | ptr | the cannon holding this sprite (ES, T2, P2) |
 | +0x1ec / +0x1f0 / +0x1f4 | proc | saved Handle / Hit / HitTile while a statue or cannoned (EG, EW, ES, T2, P2) |
 
@@ -215,8 +222,10 @@ kind**, a quirk a replica must copy (player-states-2 §9.1, platforms-ropes-radi
   "one-way"]; `200..209` → water of kind `kind−200` (`.IsWaterTile`, `.GetWaterTileKind`) →
   `.HandleUnderWater`; `600, 601` ignored [HIGH for dispatch].
 - Crunch tiles (`param_4 == 2`, `.CrunchTile`): the player breaks them when falling faster than
-  0x9c4 (2500 → 9.8 px/frame) with the spin flag; bounce if not broken (`.RectBounceFake2`) and
-  stay in spin while DOWN is held [HIGH].
+  0x9c4 (2500 → 9.8 px/frame) with the spin flag; ~~bounce if not broken (`.RectBounceFake2`)~~ the bounce
+  (below) follows whenever it falls fast onto a crunch cell, **broken or not** — `.CrunchTile` returns 1 for
+  every processed cell when the strength is non-zero (`10044c18`; tested `100552c0..100552fc`;
+  player-states-2 §13) ⚑ wave 2 corr (2026-10-04) P2 W1; stay in spin while DOWN is held [HIGH].
 - ⚑ corrected (deepening 2026-10-03): the **complete** `.WallBounce` kind table (0..0x3c, composites 0x10..0x1f, the
   0x30/0x31/0x3a/0x3b no-case kinds), `.WallBounceBG` (one-way floors from above with +1/+3 px
   slack, two-way ceilings; `+0xd0 = 1`; was [LOW]), `.HitPlayerTileSprite` and the per-level kind
@@ -352,13 +361,19 @@ held, not on the glider, not killed by the debug key, and inside the map → rev
 to 30, revive animation, at the end HP = breath = max, necklace removed, 60 invulnerability
 frames; otherwise `DAT_100a5106 = 1` ends `.GameLoop` → `.DeathEffect` (engine.md §6).
 
-## 6. Wind and currents  [HIGH for arithmetic; [MED] for orientation]
+## 6. Wind and currents  [HIGH] ⚑ wave 2 corr (2026-10-04) T2 W1 (orientation was [MED])
 Overlay layer o1 in 0..15 at the sprite's centre cell with strength o2 > 0 (`.StandardSpriteHandles`):
 `dir = (o1 + 18) mod 36`; `.LookupModedImpulse(dir, o2·15)` gives a vector from a 36-entry
 10°-step table (dir 0 = (−m, 0), dir 1 = (−0.985m, +0.174m), …; doubles at 0x100a1890..18c8);
 if the sprite is not already moving faster than the impulse in that direction, a second
 lookup with `o2·14` (scaled by `s+0x90/256` when < 255) is applied: x += ramped (over 33 frames)
 horizontal part, vy += vertical part; flag `s+0x92` set. Water current: §2.
+⚑ wave 2 corr (2026-10-04) T2 W1: orientation **HIGH** — o1 = k blows toward k·10° counter-clockwise from screen-right (0 right,
+9 straight up, 12 up-left, 15 = 150°; nothing downward); the h part moves the **x position** (33-frame
+ramp), the v part is added to vy (`10036b78..10036c14`; axis cases via jump table `0x100a5724` →
+`10040e2c`/`100412dc`/`100404cc`/`1004097c`). The overlay drives wind only — water currents are
+`hdr+0x2714` (§2) — in or out of liquid. Shipped wind: levels 10 and 20 only, 96 % o1 = 9 updrafts
+(triggers-background-2 §8.4).
 
 ## 7. Enemies (classes from world-data-format.md §3.5)  [MED]
 

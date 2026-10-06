@@ -40,7 +40,8 @@ Track numbers the code/data reference [HIGH, from the call sites + `Mlvl+0x284a`
 Why 21 and 27 are missing: **no code path or shipped level references them** (the level table
 never names 21/27; the constants above are 24/25/29/30) [HIGH for "not referenced by the 24
 shipped levels or by any constant SetAIFFMusic argument"; the commercial reason is unknown —
-NOT RESOLVED]. Tracks 7, 11, 14, 19, 20 exist but are likewise unreferenced by any constant
+~~NOT RESOLVED~~ facts closed (never catalogued by the installer, never requested, fallback n−1), the
+reason UNDETERMINABLE — rendering-omnipx-titles §6.4 ⚑ wave 2 corr (2026-10-04) RO #12]. Tracks 7, 11, 14, 19, 20 exist but are likewise unreferenced by any constant
 or by the 24 levels [HIGH, same evidence]. (The CD volume dump has no AIFC files of its own;
 its 66 whitespace-named entries are 0-byte — checked with a Python listing in this session.)
 
@@ -127,7 +128,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x25c4 | pstr[256] | level display name | written by `.ShowWorldMap` from `STR# 1000`; drawn by `.UpdateTextStats` | [HIGH] |
 | 0x26c4 | i16 | map-node level number (= own id in all 24) | `.ShowWorldMap`: `FindCurrNode(hdr+0x26c4)` | [HIGH] |
 | 0x26c6 | u8 | "draw submerged tiles as tinted faces" flag (=1 only in 11) | `.PlainWrapFGTile`, `.PlainWrapFGOverlayTile`, `.RedrawScrollGrid` | [MED] |
-| 0x26c7 | u8 | OmniPx mode (0,1,2,5,6) | `.SetupOmniPx`, `.TurnOnOmniPx`, `.UpdateOmniPx`, `.PaintFrameWrap` | [MED] meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): narrowed per mode (1 rain + overlay faces 6000/6001, level 15; 2/5 faces 6200/6201 and 6300/6301 with an animated port; 6 interlaced 29 frames, level 70); draw composition still open (save-continue §8.3) |
+| 0x26c7 | u8 | OmniPx mode (0,1,2,5,6) | `.SetupOmniPx`, `.TurnOnOmniPx`, `.UpdateOmniPx`, `.PaintFrameWrap` | [MED] meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): narrowed per mode (1 rain + overlay faces 6000/6001, level 15; 2/5 faces 6200/6201 and 6300/6301 with an animated port; 6 interlaced 29 frames, level 70); ~~draw composition still open (save-continue §8.3)~~ closed: rendering-omnipx-titles §3.3–§3.5 (raw `10019f88..1001a148`, `1001a434..1001a834`) ⚑ wave 2 corr (2026-10-04) RO #6 |
 | 0x26c8 | u8 | copied to game-globals +0x16 at level start | `.NewGame`, `.ContinueGame` | [HIGH] copy; meaning NOT RESOLVED — ⚑ corrected (deepening 2026-10-03): **player starts facing left** (`.SetupPlayerSprite` sets `+0x17e = G+0x16 ≠ 0`); 1 in levels 3, 5, 11, 18, 40, 45, the six that start at the map's right edge [HIGH]; a resumed session never refreshes it from the header (save-continue §8.3, player-states §6). ⚑ corrected (review 1b, 2026-10-03) #13: raw — `lbz 0x26c8` at `1000b3d8` (`.NewGame`) and `1000d684` (`.ContinueGame`) → `G+0x16`; read by `.SetupPlayerSprite` `1004b2b0..1004b2d0` (`≠ 0 → +0x17e = 1`) [HIGH, re-derived by review 1c] |
 | 0x26c9 | u8 | water-surface effect flag | `.WrapDrawWaterEffects` | [MED] |
 | 0x26ca | u8 | parallax ripple flag | `.RipplePxBackOffsets`, `.DoubleBlitPPCParallaxOneLayer` | [MED] |
@@ -135,7 +136,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x26cc | u8/i16 | px tilesets use sprite CLUT (`_DAT_1009ff94 ← _DAT_1009ff8c`) when ≠0 | `.LoadPxBackTileset`, `.LoadPxMidTileset`, `.MTAddPxSprite` | [MED] |
 | 0x26cd | u8 | level-wide "in liquid" behaviour flag (=1 in 30,31) | `.HandlePlayerSprite`, `.SetupBackgroundSprite`, `.SetupBoxSprite`, `.SetupFrogSprite` | [LOW] |
 | 0x26d0 | u8 | level has its own `snd ` set in the world file | `.LoadLevelSounds @ 100333d4` | [HIGH] (0 in all levels) |
-| 0x2706 | i16 | ambient darkness (0..5) | `.GetAmbDarkVal`, `.DrawLightOverFace`, `.DrawParticles`, copied to globals+0x22 in `.SetupLevel` | [MED] |
+| 0x2706 | i16 | ~~ambient darkness (0..5)~~ **enable flag** for per-cell darkness (values 1, 2, 5 all just enable; the darkness is the BG-cell high byte − 1) ⚑ wave 2 corr (2026-10-04) LT #5 | `.GetAmbDarkVal @ 1001aaf8`, `.DrawLightOverFace`, `.DrawParticles`, copied to globals+0x22 in `.SetupLevel` | [HIGH] (lighting-tables §7.1) |
 | 0x270a/0x270c | i16 | camera target offsets x/y added to the player-centred target (x: 0 everywhere; y: −30 in 11, −108 in 18, 36 in 25, −80 in 67) | `.FindUpperLeftCorner` | [HIGH] |
 | 0x270e | i16 | landing/"hard-ground" damage (112,150,56,100; 0 → 0x70) | `.HandlePlayerSprite` (`+0xd8 == 2` branch) | [MED] |
 | 0x2710 | i16 | ice slipperiness: ground friction = (256−v)·800>>8 (100 in 1,2; 80 in 11,18; 220 in 30,31) | `.HandlePlayerSprite` (`+0xd8 == 3`) | [HIGH] |
@@ -151,7 +152,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x272a | i16 | auto-scroll enable | `.SetupLevelSprites` | [HIGH] |
 | 0x272c | i16 | constant side push on the player (−320 in 15, Storm Valley): airborne vx drifts toward 5·v, grounded x += v/4 per frame (physics.md §4) | `.HandlePlayerSprite` | [HIGH] |
 | 0x272e | i16 | second arena bound (−640 in 18, 1384 in 25, −448 in 55) | `.FindUpperLeftCorner` | [MED] — ⚑ corrected (deepening 2026-10-03): applied only after the lock; arithmetic in bosses §1.3 [HIGH there] |
-| 0x2730..0x2736 | i16×4 | CLUT animation (mode, first index, count?, period 12000) | `.AnimateCLUT` | [MED] |
+| 0x2730..0x2736 | i16×4 | CLUT animation ⚑ wave 2 corr (2026-10-04) LT #6 = B3 #W1: 0x2730 **mode** 1..7 · 0x2732 **count** n of animated entries (indices 255 − n .. 254) · 0x2734 **period** P in frames · 0x2736 **amplitude** A (12000 in the data); non-zero only in L50 (1, 48, 180, 12000), L51 (1, 48, 56, 12000), L67 (3, 16, 75, 12000) | only reader `.AnimateCLUT` (`10011850..10011860`); only writer `.HandleXichraSprite` (`1008e6d0..1008ebcc`) | [HIGH] (lighting-tables §1.5, bosses-3 §9.1–§9.2) |
 | 0x273c | i16 | chapter-screen number shown on entry (1..7) | `.GameLoop → .ChapterScreen` while `G+0x176+2·L == 0`, i.e. no checkpoint save **or** completion recorded for the level yet (engine.md §9) ⚑ corrected (review 2026-10-03) #1 | [HIGH] |
 | 0x2846 | i16 | player start y (px) | `.NewGame`: `GameLoop(x−32, y−32, …)` | [HIGH] |
 | 0x2848 | i16 | player start x (px) | same | [HIGH] |
@@ -167,9 +168,9 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x2862..0x286a | i16×5 | physics values (see physics.md §1: written, never read) | same | [HIGH] |
 | 0x28e0 | i16[96] | FG tile → kind table | `.LoadTileDefinitions @ 10041dcc` | [HIGH] |
 | 0x29a0 | i16[96] | BG tile → kind table | same | [HIGH] |
-| 0x3268 | i16 | parallax enable (1 in 16 levels) | `.DoubleBlitPPCParallaxOneLayer` | [MED] |
+| 0x3268 | i16 | ~~parallax enable (1 in 16 levels)~~ **PxMid enable**: 1 in **14** levels, exactly those with hdr+0x284e ≠ 0 (10, 15, 21, 22, 30, 31, 40, 45, 50, 51, 52, 55, 62, 70) ⚑ wave 2 corr (2026-10-04) RO #3 | `.DoubleBlitPPCParallaxOneLayer` (`1001890c lha r3,0x3268(r3); cmpwi r3,0x1`) | [HIGH] |
 | 0x326c | i16[8192] | PxBack per-scanline x-parallax factor (/256) | `.DoubleBlitPPCParallaxOneLayer`, `.CalcPxRowContents`, `.TurnOnOmniPx` | [HIGH] |
-| 0x726c | i16[8192] | PxMid per-scanline x-parallax factor (/256) | same | [HIGH] |
+| 0x726c | i16[8192] | PxMid per-scanline x-parallax factor (/256); also the row-mode selector: 0 = back row, ≠ 0 = mid row (if 0x3268 = 1); shipped values 0 / 384 / 128 ⚑ wave 2 corr (2026-10-04) RO #4 (rendering-omnipx-titles §1.3 step 6, §1.5) | same | [HIGH] |
 | 0xb26c | i16 | PxBack y-parallax factor (/256) | same | [HIGH] |
 | 0xb26e | i16 | PxMid y-parallax factor (/256) | same | [HIGH] |
 | 0xb270..0xb276 | | ~~0x20,8,0x20,8 in level 1~~ ⚑ corrected (deepening 2026-10-03): **zero in all 24 levels**, no access in the code; the quoted values are 0xb278..0xb27e (this file's own xxd below: `004f4f8d` = +0xb270 starts with 8 zero bytes) (save-continue §8.3) | no reader found | [HIGH] unused |
@@ -204,15 +205,17 @@ $ xxd -s $((0x4e9d1d+0xb260)) -l 0x40 "$FW/Ferazel's Wand World Data.rsrc"
 ### 3.3 Tile maps — per-cell encoding  [HIGH]
 
 All maps are row-major u16 big-endian, `cell = map[y*w + x]`. Getters clamp `x,y` into the map
-with `.ConstrainXY @ 1003be0c` (no wrap) [HIGH].
+with `.ConstrainXY @ 1003be0c` (no wrap) [HIGH]. ⚑ wave 2 corr (2026-10-04) EW W2: every `.Get*Tile(a, b)` that goes through
+`.ConstrainXY` takes **(column, row)** — raw-shown for `.GetBGTile` (`1003c204..1003c27c`: cell = b·w + a)
+[HIGH]; the other getters not re-checked (enemies-water-cave §7.3).
 
 | map | getter @ addr | decode |
 |---|---|---|
 | PxBack (`hdr+0xb284`, w0×h0, 128-px tiles) | `.GetPxBackTile @ 1003c4d8` | whole u16 = tile index into the 36-tile PxBack set; returns 0 while globals+0x174 (OmniPx active) |
-| PxMid (`hdr+0xb288`, w1×h1) | `.GetPxMidTile @ 1003c59c` | whole u16 = index into the 12-tile PxMid set (0xFFFF present in every level; how −1 is handled at draw time NOT RESOLVED) |
+| PxMid (`hdr+0xb288`, w1×h1) | `.GetPxMidTile @ 1003c59c` | whole u16 = index into the 12-tile PxMid set (0xFFFF present in every level; ~~how −1 is handled at draw time NOT RESOLVED~~ no test: reads entries [−1] (PxBack port 35 / PxMid image port 11); never reached with shipped data; harmless on back rows — rendering-omnipx-titles §2 ⚑ wave 2 corr (2026-10-04) RO #5) |
 | BG (`hdr+0xb28c`) | `.GetBGTile @ 1003c204` / `.GetLightTile @ 1003c2b4` | low byte −1 = BG tile 0..95 (−1 = none); high byte −1 = light level (data: 0..11) |
 | FG (`hdr+0xb290`) | `.GetFGTile @ 1003be90`, `.GetFGCrunchKindTile @ 1003bffc`, `.GetFGCrunchDirTile @ 1003bf40` | bits 0-7 −1 = FG tile 0..95 (−1 none; 95 = "pattern" tile); bits 8-11 crunch kind; bits 12-15 crunch dir/state (written by `.SetFGCrunchDirTile`, clamped 0..15) |
-| overlay (`hdr+0xb298`) | `.GetFGOverlay1Tile @ 1003c368` / `.GetFGOverlay2Tile @ 1003c420` | low byte −1 = o1, high byte −1 = o2. o1 0..15 → wind/current direction with strength o2 (`.StandardSpriteHandles`); o1 = 100 → draw FG-tileset tile o2 over sprites; o1 = 101 → BG-tileset tile o2; o2 ≥ 95 → draw the pattern tile (`.PlainWrapFGOverlayTile`) |
+| overlay (`hdr+0xb298`) | `.GetFGOverlay1Tile @ 1003c368` / `.GetFGOverlay2Tile @ 1003c420` | low byte −1 = o1, high byte −1 = o2. o1 0..15 → ~~wind/current direction with strength o2~~ **wind** (no current meaning) toward o1·10° counter-clockwise from right (9 = up), magnitude o2·14 per frame (×`+0x90`/256), test threshold o2·15 (`.StandardSpriteHandles`; ⚑ wave 2 corr (2026-10-04) T2 W2, triggers-background-2 §8.4); o1 = 100 → draw FG-tileset tile o2 over sprites; o1 = 101 → BG-tileset tile o2; o2 ≥ 95 → draw the pattern tile (`.PlainWrapFGOverlayTile`) |
 
 `.SetFGTile` writes `(cell & 0xff00) + (tile+1)` [HIGH]. FG/BG tile → collision kind via the
 header tables (`.LookupFGTileKind`/`.LookupBGTileKind`, index 0..95, else −1); after
@@ -419,7 +422,7 @@ increments 0x306 — enemies-flyers §1.2, enemies-water-cave §0.1), `G+0x3ce/0
 the Wraith are counted but never credited, so the enemies stat of levels 10, 11, 21, 62 cannot
 reach 100 % (enemies-flyers §1.2).
 
-## 5. `Mcnv` — conversations  [MED]
+## 5. `Mcnv` — conversations  [MED framing; HIGH for the wave-2 decode below]
 
 29 resources × 36,936 B = 0x100 header (pstr conversation name, e.g. `\x0cRojinko Conv`) + 20
 lines × 0x72a. From `.HandleConvLine @ 1007a624` the code computes `Mcnv + i·0x72a` and then
@@ -429,14 +432,27 @@ spans `[0x100 + i·0x72a, 0x82a + i·0x72a)` with pstr text at +0, pstr speaker 
 i16 picture id at +0x70a (0 = no line) ⚑ corrected (review 2026-10-03) #10 [MED]. Reviewer's
 decode of `Mcnv 200` with these offsets works for lines 0..19 (line 0 "Suspicious
 Character"; lines 9/10/14/15/16 are picture-0 logic nodes titled "[magic 30 coin check]",
-"[been here check]" — leads for the action encoding below). `.Conversation`
-starts at line index 0x13 and loops while the index is < 0x14; `.HandleLineResponses` /
-`.HandleLineActions` choose the next line and fire actions (they read `+0x81c..0x826` and the
-save-game block). Response/action encoding: **NOT RESOLVED**.
+"[been here check]"). ⚑ wave 2 corr (2026-10-04) CM #1–#6 = PB2 #P9 (one merged text; full decode
+conversations-mcnv.md §2–§4) [HIGH]:
+- **Line record** (record-relative): responses `+0x200 + 0x100k` (k = 0..4), response targets
+  `+0x700 + 2k`, condition `+0x70c..+0x712`, two actions `+0x71c` / `+0x722` (type, A, B — i.e.
+  `Mcnv + i·0x72a + 0x81c / + 0x822`, `lha 0x81c` `1007a2dc`, `lha 0x822` `1007a300`), next `+0x728`;
+  `+0x714..+0x71b` and the header pstr are unread. Target encoding conversations-mcnv §2.3.
+- **Entry**: index 19 = line #20 is the entry/logic node; an empty #20 falls through to #1
+  (`i = 19 → 0`, `1007a5d0..1007a5e8`); the loop also stops on the abort flag `*0x100a0c14`
+  (`1007a888..1007a8b4`).
+- **Readers** (offsets in the `Mcnv + i·0x72a` framing): `.HandleLineResponses` reads `+0x300..+0x80a` only; `.HandleLineActions` reads
+  `+0x80c..+0x828`, `G` (coins, inventory, flags `+0xad8`), the live level header (`100a0058`) and the
+  save block only for action 10. Action codes 1..6, 9, 10 through the table at `0x100a6cd0` (0, 7, 8 =
+  no-op `1007a55c`): 1 coins −= A, 2 give item A × B, 3 remove item A × B, 4/6 set a record param to 1,
+  5 set flag, 9 kill a sprite, 10 set a per-level byte.
+- **What conversations grant** (review 2h ruling 3): items only, never spells; Mcnv 205 #8 gives the
+  **Platinum Key** and #5 removes a Health Potion; 207 #7 sells the **Ice Pick** (500 coins) and #9
+  removes a Steel Key (#n 1-based; PB2 §8's "line 6/7" are 0-based for #7/#8).
 
 ## 6. Open items (also in INDEX)
 - ~~Per-class meaning of record params 1–4.~~ ⚑ corrected (deepening 2026-10-03): closed for every placed class (§3.4 table).
 - ~~0x26c7/0x26c8/0x272c/0xb270..0xb276 header fields.~~ ⚑ corrected (deepening 2026-10-03): 0x26c8 and 0xb270..0xb276
-  closed (§3.2); 0x272c was already HIGH; 0x26c7 OmniPx composition and PxMid −1 drawing remain
-  (save-continue §8.3).
-- Mcnv response/action encoding; `STR# 500` sign reader.
+  closed (§3.2); 0x272c was already HIGH; ~~0x26c7 OmniPx composition and PxMid −1 drawing remain
+  (save-continue §8.3)~~ both closed by rendering-omnipx-titles §2/§3 ⚑ wave 2 corr (2026-10-04) RO #5, #6.
+- ~~Mcnv response/action encoding~~ (closed, §5, ⚑ wave 2 corr (2026-10-04) CM #1); `STR# 500` sign reader.
