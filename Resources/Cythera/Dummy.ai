@@ -1,0 +1,1 @@
+; Dummy AINAME "Test AI";;; retreat if hurt (Critical, Serious)IF HealthLessThan(myself,Wounded) THEN#100	Retreat(); otherwise pick between most damaged, least damaged, and closestIF True() THEN#20		SetTarget(enemy.ByDamage.Pick)#10 	SetTarget(enemy.ByHealth.Pick)#70 	SetTarget(enemy.ByRange.Pick)
