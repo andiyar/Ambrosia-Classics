@@ -169,7 +169,6 @@ final class WinGameDriverTests: XCTestCase {
         startGame(d, h)
         XCTAssertTrue(out.calls.contains(.play(id: 9002, voice: 0, volume: 0x80, loops: 1)), "Get Ready! (snd 9002)")
         XCTAssertFalse(d.playMenusEnabled, "Preferences / Full Screen off in play")
-        XCTAssertTrue(d.aboutDisabled)
         XCTAssertFalse(h.cursorVisible, "cursor hidden in play")
         XCTAssertTrue(h.captured, "mouse captured once frames run")
     }

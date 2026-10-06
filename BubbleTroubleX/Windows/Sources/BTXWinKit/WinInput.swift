@@ -61,7 +61,7 @@ public enum WinKeyNames {
 ///     <frame> press <key> [mods…]     key down at <frame>, key up at <frame>+1
 ///     <frame> down <key> [mods…]      key down (held until an `up`)
 ///     <frame> up <key> [mods…]
-///     <frame> click <x> <y>           mouse down at <frame>, up at <frame>+1 (window canvas pixels, menu strip = 0…19)
+///     <frame> click <x> <y>           mouse down at <frame>, up at <frame>+1 (canvas pixels, the 640×480 game screen)
 ///     <frame> move <x> <y>            the pointer moves there (no button change)
 ///     <frame> text <string…>          layout-aware typed text (SDL text input), as after a key: `press a` then
 ///                                     `text é` on the same frame types "é" with the A key

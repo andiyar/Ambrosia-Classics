@@ -6,13 +6,13 @@ import Foundation
 /// `DLOG`/`DITL`) is the implementation; `WinAutoDialogs` is the scripted policy that answers at once.
 ///
 /// Host contract (`DialogSystem`'s): while `isShowing` every key and mouse event goes here (canvas coordinates — the
-/// 640×480 game screen's; the menu strip above it is negative y), `tick(heldKeys:)` runs once per 1/60 s, and `draw`
+/// 640×480 game screen's; the full-screen letterbox maps outside it), `tick(heldKeys:)` runs once per 1/60 s, and `draw`
 /// paints after the game frame. While `isModal` the game clocks stop. Answers go to the front end through
 /// `DialogSystem.deliver(_:to:)`; the calls back into the game while a dialog is up go to `delegate`.
 public protocol WinDialogs: AnyObject {
     /// Set by the driver before any request (held weakly).
     var delegate: DialogSystemDelegate? { get set }
-    /// A dialog is on screen (the menu bar is disabled then — Carbon `ModalDialog` is app-modal).
+    /// A dialog is on screen (the Ctrl shortcuts are off then — Carbon `ModalDialog` is app-modal).
     var isShowing: Bool { get }
     /// A dialog waits for the user: the driver's clocks stop.
     var isModal: Bool { get }

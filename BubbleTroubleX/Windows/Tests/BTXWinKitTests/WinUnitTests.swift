@@ -80,24 +80,23 @@ final class WinUnitTests: XCTestCase {
                                      limitFrames: nil), .tick)
     }
 
-    /// The frame: the canvas as composed, any size; the fade darkens everything; PPM header + RGB.
+    /// The frame: the 640×480 canvas as composed; the fade darkens everything; PPM header + RGB.
     func testFrameBytesFadeAndPPM() {
-        var canvas = RGBAImage(width: 640, height: 500, fill: 0xFF10_2030)
+        XCTAssertEqual(WinCanvas.width, 640)
+        XCTAssertEqual(WinCanvas.height, 480, "D21: no menu strip")
+        var canvas = RGBAImage(width: 640, height: 480, fill: 0xFF10_2030)
         canvas.pixels[0] = 0xFFFF_0000
         let rgba = WinFrame(canvas: canvas).rgba
-        XCTAssertEqual(rgba.count, 640 * 500 * 4)
+        XCTAssertEqual(rgba.count, 640 * 480 * 4)
         XCTAssertEqual(Array(rgba[0..<8]), [0xFF, 0, 0, 0xFF, 0x10, 0x20, 0x30, 0xFF])
         let black: [UInt8] = WinFrame(canvas: canvas, fade: 255).rgba
         var allBlack = true
         for i in stride(from: 0, to: black.count, by: 4) where black[i] != 0 || black[i + 3] != 0xFF { allBlack = false }
         XCTAssertTrue(allBlack)
         let ppm = WinFrame(canvas: canvas).ppm
-        let header = Array("P6\n640 500\n255\n".utf8)
+        let header = Array("P6\n640 480\n255\n".utf8)
         XCTAssertEqual(Array(ppm[0..<header.count]), header)
-        XCTAssertEqual(ppm.count, header.count + 640 * 500 * 3)
-        // Full screen: the game screen alone.
-        let full = WinFrame(canvas: RGBAImage(width: 640, height: 480)).ppm
-        XCTAssertEqual(Array(full[0..<15]), Array("P6\n640 480\n255\n".utf8))
+        XCTAssertEqual(ppm.count, header.count + 640 * 480 * 3)
     }
 
     func testKeyScriptParses() throws {
