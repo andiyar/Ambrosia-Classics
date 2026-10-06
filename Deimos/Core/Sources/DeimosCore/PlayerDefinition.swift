@@ -128,7 +128,7 @@ public struct PlayerDefinition: Sendable, Equatable {
     /// is read (`FUN_1001fbe0`): unknown → logged + `none` (the original also loads it at once; not here).
     public static func parse(id: FourCC, text raw: [UInt8], spriteExists: (FourCC) -> Bool)
         -> (PlayerDefinition, errors: [String]) {
-        var p = DefinitionReader(DeimosText.decode(raw))
+        var p = DefinitionReader(DeimosText.decodeCString(raw))
         var d = PlayerDefinition()
         d.id = id
         p.str(&d.name, "#name_STR", maxLength: 0x20)

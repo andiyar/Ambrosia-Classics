@@ -75,6 +75,17 @@ final class TagIndexTests: XCTestCase {
         XCTAssertEqual(dupe.displayName, "Dupe Local")
         XCTAssertEqual(Array(try index.data(for: dupe)), [4, 4])
         XCTAssertEqual(index.alerts.filter { $0.hasPrefix("    Tag Overridden:  ") }.count, 2, "\(index.alerts)")
+        // Duplicates are counted per Local flag before the override pass: the two pak copies are a
+        // pair (each logs "(2)"); the Local copy is not a duplicate of them.
+        let dupes = index.alerts.filter { $0.hasPrefix("Pak Error (non fatal): Duplicate (") }
+        XCTAssertEqual(dupes.count, 2, "\(index.alerts)")
+        XCTAssertTrue(dupes.allSatisfy { $0.hasPrefix("Pak Error (non fatal): Duplicate (2) tags found. Path: \"") })
+        XCTAssertTrue(dupes[0].contains("A.pak\", Tag ID: 'dupe', Tag Type: 'film'"), dupes[0])
+        XCTAssertTrue(dupes[1].contains("B.pak\", Tag ID: 'dupe', Tag Type: 'film'"), dupes[1])
+        XCTAssertTrue(index.alerts.firstIndex { $0.contains("Duplicate") }!
+                      < index.alerts.firstIndex { $0.contains("Tag Overridden") }!, "duplicates are logged first")
+        XCTAssertTrue(index.alerts.contains("    Tag Overridden:  \"\(root.path)/Paks/A.pak:Dupe A[dupe].film\""),
+                      "\(index.alerts)")
     }
 
     func testPakDuplicatesFirstWins() throws {
@@ -84,9 +95,12 @@ final class TagIndexTests: XCTestCase {
         XCTAssertEqual(index.records.count, 2, "pak duplicates are kept")
         XCTAssertEqual(index.records(ofType: film).map(\.displayName), ["Dupe A", "Dupe B"])
         XCTAssertEqual(index.record(type: film, id: FourCC("dupe")!)?.displayName, "Dupe A")
-        XCTAssertTrue(index.alerts.contains {
-            $0.hasPrefix(" ZPak Error (non fatal): Duplicate (1) tags found.") && $0.contains("Tag ID: 'dupe', Tag Type: 'film'")
-        }, "\(index.alerts)")
+        let pakPath = root.appendingPathComponent("Paks").path
+        XCTAssertEqual(index.alerts, [
+            "Pak Error (non fatal): Duplicate (2) tags found. Path: \"\(pakPath)/A.pak\", Tag ID: 'dupe', Tag Type: 'film'",
+            "Pak Error (non fatal): Duplicate (2) tags found. Path: \"\(pakPath)/B.pak\", Tag ID: 'dupe', Tag Type: 'film'",
+            "\n    Tag Index Incomplete!  Aborting.",
+        ])
         XCTAssertFalse(index.alerts.contains { $0.contains("Tag Overridden") })
     }
 
@@ -96,14 +110,20 @@ final class TagIndexTests: XCTestCase {
         let lost = try XCTUnwrap(index.record(type: film, id: FourCC("lost")!))
         XCTAssertTrue(lost.isLocal)
         XCTAssertEqual(lost.type, film, "typed by its SUFFIX, not its folder")
-        XCTAssertTrue(index.alerts.contains(
-            "\nFILE ALERT. Incorrect file location.  The file should be placed in the \"film\" folder!"), "\(index.alerts)")
+        let path = root.appendingPathComponent("Local/im08/Lost Film[lost].film").path
+        XCTAssertEqual(Array(index.alerts.prefix(2)), [
+            "\nFILE ALERT. Incorrect file location.  The file should be placed in the \"film\" folder!\n"
+                + "Offending File: \"\(path)\"\n",
+            "\n\nFILE ERROR: Failed operation:  FALSE\nIn file:    U_Pak.cc\nAt line:  402",
+        ])
     }
 
     func testZeroSizeAndNonZipSkipped() throws {
+        // The compressed entry ENDS A.pak's enumeration (FUN_10049ca0 returns false): "After" is never indexed.
         try writePak("A.pak", [("film/", []), ("film/Empty[empt].film", []), ("film/Good[good].film", [1]),
-                               ("film/Squashed[sqsh].film", [1, 2, 3]),
-                               ("film/No Id.film", [1]), ("film/Bad Suffix[bads].xyz", [1])],
+                               ("film/No Id.film", [1]), ("film/Short[abc].film", [1]), ("film/Bad Suffix[bads].xyz", [1]),
+                               ("film/Nested.zip[nest].film", [1]),
+                               ("film/Squashed[sqsh].film", [1, 2, 3]), ("film/After[aftr].film", [1])],
                      compressed: ["film/Squashed[sqsh].film"])
         try writeRaw("Paks/Readme.txt", [1, 2, 3])
         try writeRaw("Paks/.DS_Store", [1])
@@ -113,25 +133,49 @@ final class TagIndexTests: XCTestCase {
         try writeLocal("film", ".DS_Store", [1, 2])
         try writeLocal("film", "Local Pak.zip", [1, 2])
         try writeLocal("film", "Header[head].film.tag", [1, 2])
+        try writeLocal("film", "Some icon.film", [1])
         let index = try TagIndex(dataDirectory: root)
         XCTAssertEqual(index.records.map(\.id.description), ["good"])
         XCTAssertEqual(index.paks.map(\.lastPathComponent), ["A.pak", "Broken.zip"])
+        let paks = root.appendingPathComponent("Paks").path
         let expected = [
-            "FILE ALERT.  Skipping file.  (Zip files are not supported in the Local directory)",
             "FILE ALERT.  Skipping file.  (.tag header files are not supported)",
-            "FILE ERROR: Compressed Zip files are not supported!",
-            "FILE ALERT.  Could not find Tag ID in file:  film/No Id.film",
-            "FILE ALERT.  Could not find a valid suffix in file:  film/Bad Suffix[bads].xyz",
-            "FILE ALERT.  Skipping a file, as it could not be opened.  It may be an empty Zip file.  (Only Zip files are supported in the Paks directory)",
-            "FILE ALERT.  Skipping file.  (Only Zip files are supported in the Paks directory)",
-            "    Tag Index Incomplete!  Aborting.",
+            "\nFILE ALERT.  Skipping file.  (Zip files are not supported in the Local directory)\n"
+                + "Offending file:  \"Local Pak.zip\"\n",
+            "\nFILE ALERT.  Skipping file, as no valid information was found in filename:  \"No Id.film\"",
+            "\nFILE ALERT.  Could not find Tag ID in file:  Short[abc].film",
+            "\nFILE ALERT.  Could not find a valid suffix in file:  Bad Suffix[bads].xyz",
+            "\nFILE ALERT.  Skipping file.  (Zip files are not supported in the Local directory)\n"
+                + "Offending file:  \"Nested.zip[nest].film\"\n",
+            "\nFILE ERROR: Compressed Zip files are not supported!\n(NOTE: All files must be archived using the "
+                + "Stored method only)\nOffending Zip Entry:  'film/Squashed[sqsh].film'\nOffending File:       '\(paks)/A.pak'",
+            "\n\nFILE ERROR: Failed operation:  FALSE\nIn file:    unzip.c\nAt line:  216",
+            "\nFILE ALERT.  Skipping a file, as it could not be opened.  It may be an empty Zip file.  (Only Zip files "
+                + "are supported in the Paks directory)\nOffending File:  \"Broken.zip\"\n",
+            "\nFILE ALERT.  Skipping file.  (Only Zip files are supported in the Paks directory)\n"
+                + "Offending File:  \"Readme.txt\"\nPath:  \"\(paks)/Readme.txt\"",
+            "\n    Tag Index Incomplete!  Aborting.",
         ]
-        for line in expected { XCTAssertTrue(index.alerts.contains(line), "missing alert: \(line)\nhave: \(index.alerts)") }
-        XCTAssertEqual(index.alerts.count, expected.count, "\(index.alerts)")
+        XCTAssertEqual(index.alerts, expected)
+    }
+
+    func testZipNamesAreCaseInsensitiveSubstrings() throws {
+        // FUN_100040c0 lower-cases, then strstr(".zip") / strstr(".pak"): GAME.PAK is a pak.
+        try writePak("GAME.PAK", [("film/Pak One[pak1].film", [1])])
+        try writeLocal("film", "Thing.ZIP", [1, 2])
+        let index = try TagIndex(dataDirectory: root)
+        XCTAssertEqual(index.records.map(\.id.description), ["pak1"])
+        XCTAssertEqual(index.paks.map(\.lastPathComponent), ["GAME.PAK"])
+        XCTAssertEqual(index.alerts.first,
+                       "\nFILE ALERT.  Skipping file.  (Zip files are not supported in the Local directory)\n"
+                       + "Offending file:  \"Thing.ZIP\"\n")
+        XCTAssertTrue(TagName.isZipName("my.pak.backup"))
+        XCTAssertTrue(TagName.isZipName("X.Zip"))
+        XCTAssertFalse(TagName.isZipName("Zip.film"))
     }
 
     func testIncompleteIndexAlertBelow100() throws {
-        let incomplete = "    Tag Index Incomplete!  Aborting."
+        let incomplete = "\n    Tag Index Incomplete!  Aborting."
         try writePak("A.pak", (0..<99).map { (String(format: "film/F%02d[f%03d].film", $0, $0), [UInt8(1)]) })
         let ninetyNine = try TagIndex(dataDirectory: root)
         XCTAssertEqual(ninetyNine.records.count, 99)

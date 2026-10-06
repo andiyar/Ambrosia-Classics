@@ -73,7 +73,7 @@ public struct LevelDefinition: Sendable, Equatable {
 
     private static func parse(id: FourCC, text raw: [UInt8], objects buildObjects: Bool,
                               unitExists: (FourCC) -> Bool) -> (LevelDefinition, errors: [String]) {
-        var p = DefinitionReader(DeimosText.decode(raw))
+        var p = DefinitionReader(DeimosText.decodeCString(raw))
         var l = LevelDefinition()
         l.id = id
         p.str(&l.name, "#name_STR", maxLength: 0x20)

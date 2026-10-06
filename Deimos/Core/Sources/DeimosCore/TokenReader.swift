@@ -12,13 +12,24 @@ import HectorResources
 /// from one block is taken from the next: the original's misparse, reproduced). A miss leaves the cursor.
 ///
 /// Readers: STR (missing key silent, nil = default kept; at most `maxLength − 1` bytes; `<>` → "") ·
-/// ID (exactly 4 bytes) · INT (`sscanf "%i"`, 1…31 chars) · FLOAT (`sscanf "%f"`, float32, 1…31 chars) ·
-/// BOOL (`strcmp(v, "TRUE") == 0`) · COLOR (`RRGGBB` → x1R5G5B5 `c >> 3`, `"0"` → 0) · RECT (`strtok ","`
-/// + 4 × `%i`, text l,t,r,b). Every non-STR miss or malformation returns nil and counts an error (the
-/// original's error flag `DAT_100e01e1`; strict mode is the caller's). Port choices where the original's
-/// tail was not read: an INT/FLOAT with no digits is an error (`sscanf` matched nothing; dest untouched);
-/// a value longer than 31 chars is scanned on its first 31; a malformed COLOR returns nil (dest
-/// untouched, bank unit-def-struct.md §2.2 — the converter itself yields 0, plan note 12).
+/// ID (exactly 4 bytes) · INT (`sscanf "%i"` on the first 31 chars) · FLOAT (`sscanf "%f"`, float32, first
+/// 31 chars) · BOOL (`strcmp(v, "TRUE") == 0`) · COLOR (`RRGGBB` → x1R5G5B5 `c >> 3`) · RECT (`strtok ","`
+/// + 4 × `%i`, text l,t,r,b). A reader returns nil when it does not store (dest untouched, the caller's
+/// default kept); which nils also raise the original's error flag (`DAT_100e01e1`; strict mode is the
+/// caller's) follows the listings:
+/// - INT/FLOAT (`1002c880–1002c950`, `1002c960–1002ca30`): a missing key ("Couldn't find KEY for an
+///   Integer/a Float") and a zero-length value ("Invalid Integer/Floating Point Length") flag; a value
+///   with no digits does NOT — `sscanf`'s return is unchecked (`1002c924–1002c92c`, `1002ca04–1002ca0c`),
+///   so the destination is simply not written. A value over 31 chars is scanned on its first 31.
+/// - COLOR (`FUN_10010990`, `100109c0–100109f0`; wrapper `FUN_1002cbd0`): anything but six hex digits —
+///   including the string `"0"` — makes the converter return false without its own log; the wrapper logs
+///   "Invalid COLOR.", flags, and leaves the destination untouched.
+/// - RECT is the one reader that WRITES on failure: the original zeroes all four destination words before
+///   the lookup (`1002ccbc–1002ccd4`), so a missing RECT key leaves a zero rect (and flags); a value with
+///   fewer than 4 tokens ends its loop with the words read so far and no flag. This port returns nil +
+///   flag for any malformed RECT (no shipped RECT is malformed, and no RECT default is non-zero — C3), and
+///   `DefinitionReader.rect` keeps the caller's (zero) default.
+/// - ID: missing key or length ≠ 4 flags.
 ///
 /// `orderIndependent = true` (and `findAnywhere`) is the G_Text style (`FUN_1002c630`, used by `tefo`):
 /// a fresh search from the start for every key.
@@ -78,6 +89,11 @@ public struct TokenReader {
 
     /// The generic walk (`FUN_1002c700(buf, cursor, "#", …, "<", ">")`): find `#`, then `<`, then `>`;
     /// key = the bytes between `#` and `<` with surrounding white space trimmed (Mac Roman).
+    /// The original is `strstr(buf + cursor, "#")`, then `strtok(hit, "<")` and `strtok(NULL, ">")`, with the
+    /// cursor set to the value's start (`1002c724–1002c7b0`). `strtok` skips leading delimiters, so an
+    /// empty `<>` value there would read the text after the `>` instead of "" (and its NUL writes cut the
+    /// buffer); this find-based walk returns "". No shipped positional list (flli/idli/reli/coli) or
+    /// `tefo` has an empty value, so the two walks agree on every shipped file.
     public static func items(_ bytes: [UInt8]) -> [(key: String, value: [UInt8])] {
         let text = bytes.firstIndex(of: 0).map { Array(bytes[..<$0]) } ?? bytes
         var out: [(String, [UInt8])] = []
@@ -126,14 +142,16 @@ public struct TokenReader {
         return id
     }
 
+    /// nil + error for a missing key or an empty value; nil WITHOUT an error when `%i` matches nothing.
     public mutating func int(_ key: String) -> Int32? {
-        guard let v = value(key), let n = Self.parseInt(v) else { return fail(key) }
-        return n
+        guard let v = value(key), !v.isEmpty else { return fail(key) }
+        return Self.parseInt(v)
     }
 
+    /// nil + error for a missing key or an empty value; nil WITHOUT an error when `%f` matches nothing.
     public mutating func float(_ key: String) -> Float? {
-        guard let v = value(key), let f = Self.parseFloat(v) else { return fail(key) }
-        return f
+        guard let v = value(key), !v.isEmpty else { return fail(key) }
+        return Self.parseFloat(v)
     }
 
     public mutating func bool(_ key: String) -> Bool? {
@@ -157,7 +175,7 @@ public struct TokenReader {
 
     static func parseBool(_ v: [UInt8]) -> Bool { v == Array("TRUE".utf8) }
 
-    /// INT: length ≥ 1 ("Invalid Integer Length"), first 31 chars, `%i`.
+    /// INT: first 31 chars, `%i`; nil for an empty value or no match (the caller decides what flags).
     static func parseInt(_ v: [UInt8]) -> Int32? {
         guard !v.isEmpty else { return nil }
         return scanInt(Array(v.prefix(31)))
@@ -219,9 +237,9 @@ public struct TokenReader {
     }
 
     /// COLOR ("HTML RGB", `FUN_10010990`): exactly six hex digits `RRGGBB` → `(r>>3)<<10 | (g>>3)<<5 | b>>3`
-    /// (≡ the original's `trunc(65535·c/255)` path for every c, INDEX #40); the string "0" → 0; else nil.
+    /// (≡ the original's `trunc(65535·c/255)` path for every c, INDEX #40); anything else — `"0"` too —
+    /// is nil (an error, `100109c0–100109f0`).
     static func parseColor(_ v: [UInt8]) -> UInt16? {
-        if v == [UInt8(ascii: "0")] { return 0 }
         guard v.count == 6 else { return nil }
         var c: [UInt16] = []
         for k in stride(from: 0, to: 6, by: 2) {

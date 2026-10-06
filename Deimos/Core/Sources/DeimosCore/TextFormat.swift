@@ -10,7 +10,9 @@ import HectorResources
 /// RIGH CEBU CEGA (`<3>` = CEBU, `<4>` = CEGA: the value is cut at `>` by strtok, INDEX #5); otherwise its
 /// first 4 characters are the 4CC (`RIGHT` → `RIGH`), and anything not among the five logs "Unknown Text
 /// Format Flag" and becomes LEFT. BlendAmount (0 opaque … 32 invisible) is kept as read; the original asserts
-/// the colour-strip blend lies in 0…32.
+/// the colour-strip blend lies in 0…32. The original scans the two BlendAmount keys with `%u` (unsigned);
+/// this port uses the shared `%i` reader — identical for the shipped values (all plain non-negative
+/// decimals ≤ 32); a negative or `0x`/leading-`0` value would differ.
 public struct TextFormat: Sendable, Equatable {
     public enum Alignment: String, Sendable, Equatable, Hashable {
         case left = "LEFT", center = "CENT", right = "RIGH", centerInBuffer = "CEBU", centerInGameArea = "CEGA"

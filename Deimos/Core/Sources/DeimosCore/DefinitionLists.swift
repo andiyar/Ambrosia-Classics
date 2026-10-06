@@ -18,7 +18,8 @@ public struct SoundRecord: Sendable, Equatable {
 
 /// The definition parsers' view of `TokenReader`: every reader stores into its destination only on
 /// success, so a miss keeps the default already there (STR misses are silent; every other miss or
-/// malformation raises the reader's error flag — bank unit-def-struct.md §2.1–§2.2). The cursor is
+/// malformation raises the reader's error flag — bank unit-def-struct.md §2.1–§2.2 — except an INT/FLOAT
+/// value with no digits, which is silently not stored; see `TokenReader`). The cursor is
 /// forward-only, so the call order of these methods IS the parse (§2.3).
 struct DefinitionReader {
     var r: TokenReader
@@ -59,10 +60,11 @@ struct DefinitionReader {
     }
 
     /// The conditional de-obfuscation of `unde` (`#name_STR`) and `wede` (`#type_ID`): decode only when
-    /// `strstr(raw, marker)` fails (bank pak-format.md §3; plan Research note 11).
+    /// `strstr(raw, marker)` fails (bank pak-format.md §3; plan Research note 11). Either way only the
+    /// bytes before the first raw NUL count (`strlen`, then decode — `DeimosText.decodeCString`).
     static func plainText(_ raw: [UInt8], unlessContains marker: String) -> [UInt8] {
         let visible = raw.firstIndex(of: 0).map { Array(raw[..<$0]) } ?? raw
-        return TokenReader.find(Array(marker.utf8), in: visible, from: 0) == nil ? DeimosText.decode(raw) : raw
+        return TokenReader.find(Array(marker.utf8), in: visible, from: 0) == nil ? DeimosText.decode(visible) : visible
     }
 }
 

@@ -44,13 +44,34 @@ final class TagNameTests: XCTestCase {
     }
 
     func testRejects() {
-        XCTAssertNil(TagName(entryName: "im08/.DS_Store"))
-        XCTAssertNil(TagName(entryName: ".DS_Store[abcd].gif"))
-        XCTAssertNil(TagName(entryName: "im08/Bomb Crater.gif"))        // no '['
+        XCTAssertEqual(TagName.parse("im08/.DS_Store"), .failure(.ignored))
+        XCTAssertEqual(TagName.parse("im08/Bomb Crater.gif"), .failure(.noValidInformation))   // no '['
+        XCTAssertEqual(TagName.parse("im08/Bomb[BOC].gif"), .failure(.noTagID))
+        XCTAssertEqual(TagName.parse("im08/Bomb[BOCR].xyz"), .failure(.noValidSuffix))
+        XCTAssertEqual(TagName.parse("im08/Bomb[BOCR].PAK"), .failure(.zipFile))
         XCTAssertNil(TagName(entryName: "im08/Bomb[BOC].gif"))          // 3-char ID
         XCTAssertNil(TagName(entryName: "im08/Bomb[BOCRX].gif"))        // 5-char ID
         XCTAssertNil(TagName(entryName: "im08/Bomb[BOCR.gif"))          // no ']'
         XCTAssertNil(TagName(entryName: "im08/Bomb[BOCR]"))             // no suffix
         XCTAssertNil(TagName(entryName: "im08/"))                       // folder
+    }
+
+    /// `.DS_Store` / `icon` (case-sensitive) are silent only when the name has no `[`
+    /// (`10002264–1000229c`); `strtok` ID parse (`10003a8c–10003ac4`).
+    func testSilentWordsAndStrtokID() throws {
+        XCTAssertEqual(TagName.parse("Some icon.gif"), .failure(.ignored))
+        XCTAssertEqual(TagName.parse("Icon.gif"), .failure(.noValidInformation), "strstr is case-sensitive")
+        let icon = try XCTUnwrap(TagName(entryName: "im08/Big icon[icon].gif"))
+        XCTAssertEqual(icon.id, FourCC("icon"))
+        XCTAssertEqual(icon.displayName, "Big icon")
+        // With a '[', .DS_Store is not silent: the first '.' starts the suffix ".DS_Store[abcd]".
+        XCTAssertEqual(TagName.parse(".DS_Store[abcd].gif"), .failure(.noValidSuffix))
+        // strtok skips leading delimiters.
+        XCTAssertEqual(TagName.parse("[abcd].gif"), .failure(.noTagID))
+        let skip = try XCTUnwrap(TagName(entryName: "X[]abcd].gif"))
+        XCTAssertEqual(skip.id, FourCC("abcd"))
+        XCTAssertEqual(skip.displayName, "X")
+        XCTAssertEqual(TagName.parse("X[[abcd].gif"), .failure(.noTagID))   // second token "[abcd"
+        XCTAssertEqual(TagName.strtokID("Name[abcd"), "abcd")
     }
 }

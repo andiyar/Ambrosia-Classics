@@ -48,16 +48,17 @@ final class TokenReaderTests: XCTestCase {
         XCTAssertEqual(r.int("#d"), -1000)
         XCTAssertEqual(r.int("#e"), 7, "leading white space skipped, '+' accepted")
         XCTAssertNil(r.int("#f"), "length 0 is an error")
-        XCTAssertNil(r.int("#g"), "no digits is an error")
+        XCTAssertNil(r.int("#g"), "no digits: not stored, but NOT an error (sscanf return unchecked)")
         XCTAssertEqual(r.int("#h"), 15)
         XCTAssertEqual(r.int("#i"), 255)
-        XCTAssertEqual(r.errors, ["#f", "#g"])
+        XCTAssertNil(r.int("#zzz"), "missing key")
+        XCTAssertEqual(r.errors, ["#f", "#zzz"])
         XCTAssertEqual(TokenReader.scanInt(Array("09".utf8)), 0, "%i octal stops at 9")
         XCTAssertEqual(TokenReader.scanInt(Array("0x".utf8)), 0, "bare 0x reads the 0")
     }
 
     func testFloatAndBool() {
-        var r = reader("#f <0.96> #g <-1000> #h <1.5e2> #a <TRUE> #b <True> #c < TRUE> #d <FALSE> #e <x>")
+        var r = reader("#f <0.96> #g <-1000> #h <1.5e2> #a <TRUE> #b <True> #c < TRUE> #d <FALSE> #e <x> #k <>")
         XCTAssertEqual(r.float("#f"), Float(0.96))
         XCTAssertEqual(r.float("#g"), -1000)
         XCTAssertEqual(r.float("#h"), 150)
@@ -65,19 +66,20 @@ final class TokenReaderTests: XCTestCase {
         XCTAssertEqual(r.bool("#b"), false)
         XCTAssertEqual(r.bool("#c"), false, "exact strcmp, no trimming")
         XCTAssertEqual(r.bool("#d"), false)
-        XCTAssertEqual(r.float("#e"), nil, "malformed float")
+        XCTAssertEqual(r.float("#e"), nil, "no digits: not stored, no error")
+        XCTAssertNil(r.float("#k"), "length 0 is an error")
         XCTAssertNil(r.bool("#zzz"))
-        XCTAssertEqual(r.errors, ["#e", "#zzz"])
+        XCTAssertEqual(r.errors, ["#k", "#zzz"])
     }
 
     func testColorPacksHighFiveBits() {
         var r = reader("#a <52c594> #b <0> #c <52c59> #d <FFFFFF> #e <000000>")
         XCTAssertEqual(r.color("#a"), 0x2B12)
-        XCTAssertEqual(r.color("#b"), 0)
+        XCTAssertNil(r.color("#b"), "\"0\" is an error (FUN_10010990 returns false)")
         XCTAssertNil(r.color("#c"))
         XCTAssertEqual(r.color("#d"), 0x7FFF)
         XCTAssertEqual(r.color("#e"), 0)
-        XCTAssertEqual(r.errors, ["#c"])
+        XCTAssertEqual(r.errors, ["#b", "#c"])
         // trunc(65535·c/255) >> 11 ≡ c >> 3 for every c (INDEX #40).
         for c in 0...255 { XCTAssertEqual((65535 * c / 255) >> 11, c >> 3) }
     }

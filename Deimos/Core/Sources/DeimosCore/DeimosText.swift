@@ -8,4 +8,11 @@ public enum DeimosText {
     public static func decode(_ bytes: [UInt8]) -> [UInt8] {
         bytes.map { ~($0 >> 4 | $0 << 4) }
     }
+
+    /// The definition loaders' form (`unde`/`plde`/`wede`/`leve`): `strlen` of the RAW buffer first,
+    /// then decode that many bytes — a raw NUL ends the text (bank R-C finding 5). Decoded NULs (raw
+    /// `0xFF`) still end it later, at the token reader. No shipped text has either.
+    public static func decodeCString(_ bytes: [UInt8]) -> [UInt8] {
+        decode(bytes.firstIndex(of: 0).map { Array(bytes[..<$0]) } ?? bytes)
+    }
 }
