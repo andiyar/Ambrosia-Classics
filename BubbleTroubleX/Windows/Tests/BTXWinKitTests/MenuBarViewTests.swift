@@ -88,9 +88,11 @@ final class MenuBarViewTests: XCTestCase {
         var image = canvas()
         view.draw(bar, tracker: t, into: &image)
         let ppm = Self.ppm(image)
+        #if canImport(ImageIO)                          // the eye copy: Mac runs only (no /private/tmp off Apple)
         let out = URL(fileURLWithPath: "/private/tmp/claude-504/w5")
         try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
         try? Self.png(image).write(to: out.appendingPathComponent("options-menu.png"))
+        #endif
         let golden = Self.goldens.appendingPathComponent("Menu-Options.ppm")
         if ProcessInfo.processInfo.environment["BTX_RECORD_GOLDENS"] == "1" {
             try FileManager.default.createDirectory(at: Self.goldens, withIntermediateDirectories: true)

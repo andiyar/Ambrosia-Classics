@@ -222,10 +222,13 @@ final class MenuTrackerTests: XCTestCase {
     func testAltShowsTheAlternates() {
         down(title(window))
         move(row(window, 0))
-        XCTAssertNil(t.highlighted, "Minimize is disabled")
+        XCTAssertEqual(t.highlighted, 0, "Minimize is enabled on Windows (W4.5)")
         t.modifiersChanged(.option, bar: bar, geometry: g)
-        XCTAssertEqual(t.highlighted, 0, "Minimize All is enabled")
+        XCTAssertEqual(t.highlighted, 0, "Minimize All in its place")
         XCTAssertEqual(up(row(window, 0), .option), .minimizeAll)
+        down(title(window))
+        move(row(window, 0))
+        XCTAssertEqual(up(row(window, 0)), .minimize)
         down(title(window))
         move(row(window, 3))
         XCTAssertEqual(up(row(window, 3)), .bringAllToFront)
@@ -238,5 +241,36 @@ final class MenuTrackerTests: XCTestCase {
         XCTAssertFalse(down((300, 200)))
         XCTAssertTrue(down((630, 10)), "the empty strip is still the bar's")
         XCTAssertFalse(t.isOpen)
+    }
+}
+
+/// W4.5: the release tells the driver whether it was the bar's (W5 review minor 3).
+final class MenuTrackerReleaseTests: XCTestCase {
+    func testReleaseConsumption() throws {
+        let view = MenuBarView(text: try BitmapFontRasterizer(fontsDirectory: fontsDirectory))
+        let bar = MenuBar()
+        let g = view.geometry(for: bar, width: 640, height: 500)
+        var t = MenuTracker()
+        // A press and release on the game screen with no menu open: not the bar's.
+        XCTAssertFalse(t.mouseDown(x: 300, y: 300, bar: bar, geometry: g))
+        XCTAssertEqual(t.release(x: 300, y: 300, bar: bar, geometry: g), .init(consumed: false, command: nil))
+        // Press on Options, drag to Music, release: the bar's, Music chosen.
+        let title = g.titles[2]
+        XCTAssertTrue(t.mouseDown(x: title.x + 4, y: 10, bar: bar, geometry: g))
+        let music = g.dropdowns[2].rows[3].frame
+        t.mouseMoved(x: music.x + 10, y: music.y + 5, bar: bar, geometry: g)
+        XCTAssertEqual(t.release(x: music.x + 10, y: music.y + 5, bar: bar, geometry: g),
+                       .init(consumed: true, command: .music))
+        // Click on a title: sticky open; the release is the bar's, nothing chosen.
+        _ = t.mouseDown(x: title.x + 4, y: 10, bar: bar, geometry: g)
+        XCTAssertEqual(t.release(x: title.x + 4, y: 10, bar: bar, geometry: g), .init(consumed: true, command: nil))
+        XCTAssertTrue(t.isOpen)
+        // A click outside closes it; both halves are the bar's.
+        XCTAssertTrue(t.mouseDown(x: 300, y: 300, bar: bar, geometry: g))
+        XCTAssertFalse(t.isOpen)
+        XCTAssertEqual(t.release(x: 300, y: 300, bar: bar, geometry: g), .init(consumed: true, command: nil))
+        // The next game click is the game's again.
+        XCTAssertFalse(t.mouseDown(x: 300, y: 300, bar: bar, geometry: g))
+        XCTAssertFalse(t.release(x: 300, y: 300, bar: bar, geometry: g).consumed)
     }
 }

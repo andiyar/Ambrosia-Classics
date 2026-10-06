@@ -130,7 +130,8 @@ public struct MenuBarView {
         return w
     }
 
-    private func dropdown(_ menu: BarMenu, x: Int, y: Int, windowWidth: Int, windowHeight: Int,
+    /// A drop-down at (`x`, `y`) — or, for a submenu, beside its `parent` row (then `x` is not used).
+    private func dropdown(_ menu: BarMenu, x: Int = 0, y: Int, windowWidth: Int, windowHeight: Int,
                           parent: MenuRect? = nil) -> MenuDropdown {
         let w = dropdownWidth(menu)
         var h = Self.topPad + Self.bottomPad
@@ -159,7 +160,7 @@ public struct MenuBarView {
         for (i, e) in menu.entries.enumerated() {
             guard let sub = e.item?.submenu else { continue }
             let row = rows[i].frame
-            subs[i] = dropdown(sub, x: 0, y: row.y - Self.topPad, windowWidth: windowWidth,
+            subs[i] = dropdown(sub, y: row.y - Self.topPad, windowWidth: windowWidth,
                                windowHeight: windowHeight,
                                parent: MenuRect(x: fx, y: row.y, width: w, height: row.height))
         }

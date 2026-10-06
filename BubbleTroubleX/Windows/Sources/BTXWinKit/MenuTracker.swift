@@ -39,9 +39,18 @@ public struct MenuTracker: Equatable, Sendable {
     public private(set) var optionHeld = false
     /// The button went down inside a drop-down (sticky mode): a release over nothing keeps the menu open.
     private var pressBeganInMenu = false
+    /// The last press belonged to the bar (`mouseDown` returned true): its release does too.
+    private var pressOwned = false
     private var pointer: (x: Int, y: Int)?
 
     public init() {}
+
+    /// What a button release did: whether it belonged to the menu bar (the driver must then not pass it to the game —
+    /// the press was the bar's, or a menu was open), and the command chosen, if any.
+    public struct Release: Equatable, Sendable {
+        public var consumed: Bool
+        public var command: MenuCommand?
+    }
 
     public static func == (a: MenuTracker, b: MenuTracker) -> Bool {
         a.openMenu == b.openMenu && a.highlighted == b.highlighted && a.openSubmenu == b.openSubmenu
@@ -72,6 +81,11 @@ public struct MenuTracker: Equatable, Sendable {
                                    geometry: MenuGeometry) -> Bool {
         optionHeld = modifiers.contains(.option)
         pointer = (x, y)
+        pressOwned = press(x: x, y: y, bar: bar, geometry: geometry)
+        return pressOwned
+    }
+
+    private mutating func press(x: Int, y: Int, bar: MenuBar, geometry: MenuGeometry) -> Bool {
         if let t = geometry.title(at: x, y) {
             if openMenu == t && mode == .sticky {
                 close()
@@ -105,6 +119,20 @@ public struct MenuTracker: Equatable, Sendable {
     /// Button up: the chosen command, if any (the menu then closes).
     public mutating func mouseUp(x: Int, y: Int, modifiers: MenuModifiers = [], bar: MenuBar,
                                  geometry: MenuGeometry) -> MenuCommand? {
+        release(x: x, y: y, modifiers: modifiers, bar: bar, geometry: geometry).command
+    }
+
+    /// Button up, with whether the release belonged to the bar (W5 review minor 3).
+    public mutating func release(x: Int, y: Int, modifiers: MenuModifiers = [], bar: MenuBar,
+                                 geometry: MenuGeometry) -> Release {
+        let consumed = pressOwned || isOpen
+        pressOwned = false
+        return Release(consumed: consumed,
+                       command: up(x: x, y: y, modifiers: modifiers, bar: bar, geometry: geometry))
+    }
+
+    private mutating func up(x: Int, y: Int, modifiers: MenuModifiers, bar: MenuBar,
+                             geometry: MenuGeometry) -> MenuCommand? {
         optionHeld = modifiers.contains(.option)
         pointer = (x, y)
         guard let open = openMenu, mode == .pressed else { return nil }

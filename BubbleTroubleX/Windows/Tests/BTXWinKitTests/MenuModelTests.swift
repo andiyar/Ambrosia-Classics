@@ -39,8 +39,8 @@ final class MenuModelTests: XCTestCase {
         r("Options", "Music", "m", .command, .music, checked: true),
         sep("Options"),
         r("Options", "Key Sets", nil, .command, nil),
-        r("Window", "Minimize", "m", .command, .minimize, .never),
-        r("Window", "Zoom", nil, .command, .zoom, .never),
+        r("Window", "Minimize", "m", .command, .minimize, .always),
+        r("Window", "Zoom", nil, .command, .zoom, .always),
         sep("Window"),
         r("Window", "Bring All to Front", nil, .command, .bringAllToFront),
     ]
@@ -195,25 +195,27 @@ final class MenuModelTests: XCTestCase {
     func testShortcuts() {
         var bar = MenuBar()
         let ctrl: MenuModifiers = .command
-        XCTAssertEqual(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: ctrl), .quit)
-        XCTAssertEqual(bar.command(forKeyCode: 0x2B, characters: ",", modifiers: ctrl), .preferences)
-        XCTAssertEqual(bar.command(forKeyCode: 0x03, characters: "f", modifiers: ctrl), .fullScreen)
-        XCTAssertEqual(bar.command(forKeyCode: 0x00, characters: "A", modifiers: [.command, .shift]), .soundEffects)
-        XCTAssertNil(bar.command(forKeyCode: 0x00, characters: "a", modifiers: ctrl), "Select All: disabled")
-        XCTAssertEqual(bar.command(forKeyCode: 0x2E, characters: "m", modifiers: ctrl), .music, "Music before Minimize")
-        XCTAssertEqual(bar.command(forKeyCode: 0x2E, characters: "m", modifiers: [.command, .option]), .minimizeAll)
-        XCTAssertNil(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: []), "no Ctrl")
-        XCTAssertNil(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: [.command, .shift]), "exact modifiers")
-        XCTAssertNil(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: [.command, .control]))
-        XCTAssertNil(bar.command(forKeyCode: 0x01, characters: "s", modifiers: ctrl))
-        // By position even when the characters differ (a non-US layout or Ctrl-mangled characters).
-        XCTAssertEqual(bar.command(forKeyCode: 0x0C, characters: "\u{11}", modifiers: ctrl), .quit)
+        XCTAssertEqual(bar.command(forKeyCode: 0x0C, modifiers: ctrl), .quit)
+        XCTAssertEqual(bar.command(forKeyCode: 0x2B, modifiers: ctrl), .preferences)
+        XCTAssertEqual(bar.command(forKeyCode: 0x03, modifiers: ctrl), .fullScreen)
+        XCTAssertEqual(bar.command(forKeyCode: 0x00, modifiers: [.command, .shift]), .soundEffects)
+        XCTAssertNil(bar.command(forKeyCode: 0x00, modifiers: ctrl), "Select All: disabled")
+        XCTAssertEqual(bar.command(forKeyCode: 0x2E, modifiers: ctrl), .music, "Music before Minimize")
+        XCTAssertEqual(bar.command(forKeyCode: 0x2E, modifiers: [.command, .option]), .minimizeAll)
+        XCTAssertNil(bar.command(forKeyCode: 0x0C, modifiers: []), "no Ctrl")
+        XCTAssertNil(bar.command(forKeyCode: 0x0C, modifiers: [.command, .shift]), "exact modifiers")
+        XCTAssertNil(bar.command(forKeyCode: 0x0C, modifiers: [.command, .control]))
+        XCTAssertNil(bar.command(forKeyCode: 0x01, modifiers: ctrl))
+        // By physical key only: the key that types "q" on AZERTY (A's position, 0x00) is Select All, not Quit;
+        // the Q key is Quit whatever it types. The old "h" (Hide) code is gone.
+        XCTAssertNil(bar.command(forKeyCode: 0x00, modifiers: ctrl))
+        XCTAssertNil(bar.command(forKeyCode: 0x04, modifiers: ctrl))
         bar.setEnabled(menusEnabled: false)
-        XCTAssertNil(bar.command(forKeyCode: 0x03, characters: "f", modifiers: ctrl), "Full Screen off in play")
-        XCTAssertNil(bar.command(forKeyCode: 0x2B, characters: ",", modifiers: ctrl))
-        XCTAssertEqual(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: ctrl), .quit, "Quit stays on")
+        XCTAssertNil(bar.command(forKeyCode: 0x03, modifiers: ctrl), "Full Screen off in play")
+        XCTAssertNil(bar.command(forKeyCode: 0x2B, modifiers: ctrl))
+        XCTAssertEqual(bar.command(forKeyCode: 0x0C, modifiers: ctrl), .quit, "Quit stays on")
         bar.dialogUp = true
-        XCTAssertNil(bar.command(forKeyCode: 0x0C, characters: "q", modifiers: ctrl))
+        XCTAssertNil(bar.command(forKeyCode: 0x0C, modifiers: ctrl))
     }
 
     func testShortcutLabels() {

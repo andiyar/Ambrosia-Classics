@@ -47,7 +47,9 @@ public enum MenuCommand: Equatable, Hashable, Sendable {
     case music
     /// Options ▸ Key Sets ▸ set n (1…20) — `BTXMenus.keySet`: see `MenuBar.apply(_:to:)`.
     case keySet(Int)
-    /// Window ▸ Minimize / Zoom — validate disabled (the window is titled only, R5); never produced.
+    /// Window ▸ Minimize / Zoom. On the Mac they validate disabled (the window is titled only, R5); the Windows window
+    /// is resizable and minimizable (W4.5), so here they work: Minimize minimizes it, Zoom toggles between 1× and the
+    /// largest integer scale that fits the screen.
     case minimize, zoom
     /// Window ▸ Minimize All (⌥ alternate of Minimize) — `miniaturizeAll`: the only window cannot miniaturize, so
     /// nothing happens on the Mac.
@@ -66,7 +68,7 @@ public enum MenuEnableRule: Equatable, Sendable {
     case playMenus
     /// `playMenusEnabled && preferencesHandler != nil` (Preferences…).
     case preferences
-    /// Never (Edit's first-responder items; Minimize / Zoom on a titled-only window).
+    /// Never (Edit's first-responder items).
     case never
 }
 
@@ -182,10 +184,10 @@ public struct MenuBar: Equatable, Sendable {
                 .item(MenuItem("Key Sets", command: nil, submenu: keySetsMenu)),
             ]),
             BarMenu(title: "Window", bold: false, entries: [
-                .item(MenuItem("Minimize", key: "m", command: .minimize, rule: .never,
+                .item(MenuItem("Minimize", key: "m", command: .minimize,
                                alternate: MenuAlternate(title: "Minimize All", key: "m", modifiers: [.command, .option],
                                                         command: .minimizeAll, rule: .always))),
-                .item(MenuItem("Zoom", command: .zoom, rule: .never)),
+                .item(MenuItem("Zoom", command: .zoom)),
                 .separator,
                 .item(MenuItem("Bring All to Front", command: .bringAllToFront,
                                alternate: MenuAlternate(title: "Arrange in Front", key: nil,
@@ -228,21 +230,19 @@ public struct MenuBar: Equatable, Sendable {
 
     /// Carbon `kVK_ANSI_*` codes of the keys the bar uses (HectorSDL reports physical US positions, D18.5).
     static let keyCodes: [Character: UInt16] = [
-        "a": 0x00, "f": 0x03, "h": 0x04, "z": 0x06, "x": 0x07, "c": 0x08, "v": 0x09, "q": 0x0C, "m": 0x2E, ",": 0x2B,
+        "a": 0x00, "f": 0x03, "z": 0x06, "x": 0x07, "c": 0x08, "v": 0x09, "q": 0x0C, "m": 0x2E, ",": 0x2B,
     ]
 
     /// The command a key press chooses (Ctrl arrives as `.command`): the first item in bar order whose key
     /// equivalent and exact modifiers match (⌘M is both Music and Minimize — Music comes first, the Mac's Q4), the ⌥
-    /// alternates included. Nil when nothing matches or the matching item is disabled (the key then belongs to the
-    /// game, as an unhandled key equivalent does on the Mac).
-    public func command(forKeyCode keyCode: UInt16, characters: String?, modifiers: MenuModifiers) -> MenuCommand? {
+    /// alternates included. Matched by the PHYSICAL key only (D18.5: the key the US/ANSI layout labels so — the typed
+    /// character never chooses, so a non-US layout cannot move or double a shortcut). Nil when nothing matches or the
+    /// matching item is disabled (the key then belongs to the game, as an unhandled key equivalent does on the Mac).
+    public func command(forKeyCode keyCode: UInt16, modifiers: MenuModifiers) -> MenuCommand? {
         guard modifiers.contains(.command), !modifiers.contains(.control) else { return nil }
         func matches(_ key: Character?, _ needed: MenuModifiers) -> Bool {
             guard let key else { return false }
-            let lower = Character(key.lowercased())
-            let byCode = Self.keyCodes[lower] == keyCode
-            let byChar = characters.map { $0.lowercased() == String(lower) } ?? false
-            return (byCode || byChar) && modifiers.subtracting(.control) == needed
+            return Self.keyCodes[Character(key.lowercased())] == keyCode && modifiers == needed
         }
         func search(_ entries: [MenuEntry]) -> (MenuCommand?, Bool)? {
             for case let .item(item) in entries {
