@@ -6,7 +6,7 @@
 
 ![macOS](https://img.shields.io/badge/macOS-15%2B%20Sequoia-blue) &nbsp;
 ![arch](https://img.shields.io/badge/arch-Apple%20Silicon-blue) &nbsp;
-![status](https://img.shields.io/badge/Aki-playable-green) &nbsp;
+![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
@@ -25,9 +25,11 @@ I just played my first game of Aki in a decade. I am so happy!
 
 ## Status
 
-**Aki is playable.** Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. Phase 2 passed my hands-on check on 2026-10-04: it plays like Aki, on every difficulty. Next up is an **iPad version** (same game, same data, touch in place of the mouse), then Phase 3: the Level Editor and custom `.aki` level packs.
+**Aki 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/aki-1.0): a signed, notarized Mac app with the original Aki 1.2.0 data inside. Pick a lantern on the map, the map slides apart onto the level's photo, 144 tiles are dealt onto the real layout, and the stone time bar starts draining. Matching, Tip, Reshuffle, Undo, Pause, "no more pairs", the stacked ending, running out of time (with the proverb), Give Up, winning to light the next lantern, Level Statistics, and the game themes alternating are all in, on all four difficulties. It passed my hands-on check on 2026-10-04: it plays like Aki, on every difficulty.
 
-**Bubble Trouble X** is next: its game logic is being rebuilt against recordings of the original. **Ferazel's Wand, Deimos Rising and Cythera** have their reverse-engineering notes written (rules, formats, the decompiled functions mapped); no code yet.
+There's also an **iPad version** (same game, same data, touch in place of the mouse). It's in the source, not in the download: you build it yourself for now. And there's a **Remastered Art** mode: every picture redrawn 4× sharper, with smooth de-dithered backgrounds, grain-free tile bodies and sharp tile faces. Same game underneath. Turn it on with **Aki ▸ Remastered Art** (⌘G); off is the original 2008 pixels. Next for Aki is Phase 3: the Level Editor and custom `.aki` level packs.
+
+**Bubble Trouble X** is playable on the Mac, with sound, and I'm playtesting it now. There's also a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1). **Ferazel's Wand, Deimos Rising and Cythera** have their reverse-engineering notes written (rules, formats, the decompiled functions mapped); no code yet.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
@@ -52,8 +54,13 @@ I just played my first game of Aki in a decade. I am so happy!
 - [x] The match fade, paced the way a 2008 Mac's display drew it
 - [x] Owner's gate: a level start to finish on each difficulty — "it plays like Aki"
 
-### Next: Aki on iPad
-- [ ] The same app on iPadOS: crisp integer scaling, tap-to-preview lanterns, the original menus in the iPad menu bar
+### Aki on iPad ✅
+- [x] The same game on iPadOS 26+: the 800×600 screen scaled to fill the height, tap a lantern to preview and again to enter, the original menus in the iPad menu bar, Give Up as an X in the left border
+
+### Remastered Art ✅
+- [x] Every picture AI-upscaled 4×: smooth de-dithered backgrounds, grain-free tile bodies, sharp tile faces
+- [x] One toggle (Aki ▸ Remastered Art, ⌘G, or the Preferences checkbox), Original by default, switches live, even mid-level and in fullscreen
+- [x] Owner's gate: "Looks right — done"
 
 ### Phase 3: Level Editor and custom levels
 - [ ] Level Editor, `.aki` files, Play Custom Level, Replay
@@ -80,7 +87,13 @@ Aki 1.2.0's own art, running natively on Apple Silicon.
 
 ## Get it running
 
-**No public build yet.** When there is one it'll be a double-click `.app` with the game data already inside. For now it's source only, and you point it at a copy of Aki 1.2.
+### Download
+
+**[Aki-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/aki-1.0/Aki-1.0.dmg)** (about 225 MB). macOS 15 or later. <!-- ARCH -->
+
+Open the DMG, drag Aki to Applications, double-click. It's signed and notarized, so it opens with no warnings. The game data is already inside.
+
+### Build from source
 
 You need macOS 15+, a full Xcode install, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and HectorKit checked out next to this repo (it's a local package dependency during the build-out).
 
@@ -96,7 +109,7 @@ tools/stage-aki.sh                                 # builds Release and copies y
 
 ## The data, and copyright
 
-Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside. Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
+Every picture, sound, string and dialog the apps show comes from the original games, loaded unmodified. Ambrosia's games were full shareware downloads (registration only unlocked them), and Ambrosia released a key unlock for them, so there's no issue distributing the files. The plan is **plug-and-play**: each app ships with its game's original data inside, and the Aki 1.0 download already does (Apple's Osaka-Mono font isn't included). Content copyright stays with **Ambrosia Software** and the games' authors. The Swift code is mine; its licence file is still to come, decided at the end, as with EV ARM.
 
 ---
 
