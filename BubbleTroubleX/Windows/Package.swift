@@ -10,18 +10,28 @@ let package = Package(
         .library(name: "BTXWinKit", targets: ["BTXWinKit"]),
         // Mac-only: bakes the system-font faces into Resources/Fonts/*.btxfont with CoreText (W2).
         .executable(name: "btx-bake-font", targets: ["btx-bake-font"]),
+        // Mac-only: decodes the QuickTime-JPEG PICT bands once with ImageIO into Data/Decoded/*.rgba (W0.5, D16.1).
+        .executable(name: "btx-predecode", targets: ["btx-predecode"]),
     ],
-    dependencies: [.package(path: "../../BubbleTrouble/Core")],
+    dependencies: [
+        .package(path: "../../BubbleTrouble/Core"),
+        // The same path identity as the core's own HectorKit dependency (../../../HectorKit from either package).
+        .package(path: "../../../HectorKit"),
+    ],
     targets: [
         .target(name: "BTXWinKit", dependencies: [
             .product(name: "BubbleTroubleCore", package: "Core"),
             .product(name: "BubbleTroubleRender", package: "Core"),
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
         .executableTarget(name: "btx-bake-font", dependencies: ["BTXWinKit"]),
+        .executableTarget(name: "btx-predecode", dependencies: ["BTXWinKit"]),
         .testTarget(name: "BTXWinKitTests", dependencies: [
             "BTXWinKit",
             .product(name: "BubbleTroubleCore", package: "Core"),
             .product(name: "BubbleTroubleRender", package: "Core"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
     ]
 )
