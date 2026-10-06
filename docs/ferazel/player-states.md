@@ -71,8 +71,8 @@ player sprite. Face sets are pointers to arrays of 0x34-byte face records; "set[
 | `_DAT_100a0578` | spirit-form timer (600 frames; −1 after returning) | HIGH |
 | `_DAT_100a0570` | boss-grab counter (Chief writes 0x18, Xichra 0x14; −1/frame) | HIGH |
 | `_DAT_100a0748` | hurt-stun counter (set 1 by `.HurtPlayer` and two `.HitPlayerSprite` sites; runs 1..10) | HIGH |
-| `_DAT_100a05f8` | door walk-in (+1..) / walk-out (−15..0) counter | HIGH |
-| `_DAT_100a06f0` | door transit counter (input lock; 1..0x16, then −0x16) | HIGH |
+| `_DAT_100a05f8` | door walk-in (+1..) / walk-out (−15..0) counter; the walk-out ends 7 frames before input returns (triggers-background-2 §8.2, ⚑ wave 2 corr (2026-10-04) T2 W5) | HIGH |
+| `_DAT_100a06f0` | door transit counter (input lock; 1..0x16, then −0x16; the climb back to 0 is **not timed**: +1 only on frames the player overlaps a passage, normally the destination — triggers-background-2 §8.2, ⚑ wave 2 corr (2026-10-04) T2 W5) | HIGH |
 | `PTR_DAT_100a0700` / `PTR_DAT_100a070c` / `PTR_DAT_100a0708` | teleporter charge / touching-teleporter-this-frame / fire request | HIGH |
 | `_DAT_100a0588` / `_DAT_100a0584` / `_DAT_100a0580` / `_DAT_100a058c` | on rope now / last frame / rope sprite / rope-walk frame (0..15) | HIGH |
 | `_DAT_100a0714` | swim counter (0 = not swimming, 1 idle, 3..12 stroke) | HIGH |

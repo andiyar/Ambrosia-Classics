@@ -111,7 +111,8 @@ w = kind−200, else −1):
 1. `t < 95`: draw FG face `t`; if the cell is water and hdr+0x26c6 == 0 also draw the FG-water
    face `t` with water tint `w`; if hdr+0x26c6 ≠ 0 draw face `t` tinted instead.
 2. Then if `k = FGkind(t) mod 100` is in 0..94: draw **blend** face `k` combined with the
-   **pattern** tile at (x,y) — mode `(w+0x15)<<16 | patternIndex`.
+   **pattern** tile at (x,y) — mode `(w+0x15)<<16 | patternIndex`. ⚑ wave 2 corr (2026-10-04) P2 W3: FG kinds 0x4e/0x4f exist
+   only for this blend step (no collision); BG kinds 400..495 have no reader (player-states-2 §12).
 3. `t == 95`: draw the pattern tile for (x,y) (plain, or tinted if submerged and 0x26c6).
 4. If the BG tile's face has transparency (`face+0x18`), the FG face is also blitted as a
    boolean mask into the second buffer (`_DAT_100a0008`).
@@ -239,6 +240,11 @@ two "ears" at view (scrollX+200, scrollY+192) and (scrollX+408, scrollY+192);
 request. Sound off (prefs+0xb == 0) → no play.
 `.STPlayRegSound(snd, prio, vol)` plays centred: both channels `(vol·globalVol>>8)>>1` [HIGH].
 `.UpdateDynamicSounds`/`.STPlayLoopedSound` keep looping sounds positioned [MED].
+⚑ wave 2 corr (2026-10-04) EF W3: `.STPlay3DSoundPitched(snd, prio, vol, pos, rate)` differs from `.STPlay3DSound`: the stereo
+pair is **not halved**, a position of exactly (0,0) plays centred at 0x80/0x80 without attenuation, and
+the request is dropped when L + R < 0x14 (`10047b8c..10047c5c`). `.STPlay3DSoundRand @ 10047d44` =
+Pitched with rate `FastRand(10000) + 0x10000 − 0x1389` = 60535..70534 in 16.16 (×0.924..×1.076;
+`10047d60..10047d90`) — enemies-flyers §7.2 [HIGH].
 
 ### 6.4 Music
 Separate QuickTime AIFC files — world-data-format.md §1.

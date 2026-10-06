@@ -205,7 +205,9 @@ $ xxd -s $((0x4e9d1d+0xb260)) -l 0x40 "$FW/Ferazel's Wand World Data.rsrc"
 ### 3.3 Tile maps — per-cell encoding  [HIGH]
 
 All maps are row-major u16 big-endian, `cell = map[y*w + x]`. Getters clamp `x,y` into the map
-with `.ConstrainXY @ 1003be0c` (no wrap) [HIGH].
+with `.ConstrainXY @ 1003be0c` (no wrap) [HIGH]. ⚑ wave 2 corr (2026-10-04) EW W2: every `.Get*Tile(a, b)` that goes through
+`.ConstrainXY` takes **(column, row)** — raw-shown for `.GetBGTile` (`1003c204..1003c27c`: cell = b·w + a)
+[HIGH]; the other getters not re-checked (enemies-water-cave §7.3).
 
 | map | getter @ addr | decode |
 |---|---|---|
@@ -213,7 +215,7 @@ with `.ConstrainXY @ 1003be0c` (no wrap) [HIGH].
 | PxMid (`hdr+0xb288`, w1×h1) | `.GetPxMidTile @ 1003c59c` | whole u16 = index into the 12-tile PxMid set (0xFFFF present in every level; ~~how −1 is handled at draw time NOT RESOLVED~~ no test: reads entries [−1] (PxBack port 35 / PxMid image port 11); never reached with shipped data; harmless on back rows — rendering-omnipx-titles §2 ⚑ wave 2 corr (2026-10-04) RO #5) |
 | BG (`hdr+0xb28c`) | `.GetBGTile @ 1003c204` / `.GetLightTile @ 1003c2b4` | low byte −1 = BG tile 0..95 (−1 = none); high byte −1 = light level (data: 0..11) |
 | FG (`hdr+0xb290`) | `.GetFGTile @ 1003be90`, `.GetFGCrunchKindTile @ 1003bffc`, `.GetFGCrunchDirTile @ 1003bf40` | bits 0-7 −1 = FG tile 0..95 (−1 none; 95 = "pattern" tile); bits 8-11 crunch kind; bits 12-15 crunch dir/state (written by `.SetFGCrunchDirTile`, clamped 0..15) |
-| overlay (`hdr+0xb298`) | `.GetFGOverlay1Tile @ 1003c368` / `.GetFGOverlay2Tile @ 1003c420` | low byte −1 = o1, high byte −1 = o2. o1 0..15 → wind/current direction with strength o2 (`.StandardSpriteHandles`); o1 = 100 → draw FG-tileset tile o2 over sprites; o1 = 101 → BG-tileset tile o2; o2 ≥ 95 → draw the pattern tile (`.PlainWrapFGOverlayTile`) |
+| overlay (`hdr+0xb298`) | `.GetFGOverlay1Tile @ 1003c368` / `.GetFGOverlay2Tile @ 1003c420` | low byte −1 = o1, high byte −1 = o2. o1 0..15 → ~~wind/current direction with strength o2~~ **wind** (no current meaning) toward o1·10° counter-clockwise from right (9 = up), magnitude o2·14 per frame (×`+0x90`/256), test threshold o2·15 (`.StandardSpriteHandles`; ⚑ wave 2 corr (2026-10-04) T2 W2, triggers-background-2 §8.4); o1 = 100 → draw FG-tileset tile o2 over sprites; o1 = 101 → BG-tileset tile o2; o2 ≥ 95 → draw the pattern tile (`.PlainWrapFGOverlayTile`) |
 
 `.SetFGTile` writes `(cell & 0xff00) + (tile+1)` [HIGH]. FG/BG tile → collision kind via the
 header tables (`.LookupFGTileKind`/`.LookupBGTileKind`, index 0..95, else −1); after

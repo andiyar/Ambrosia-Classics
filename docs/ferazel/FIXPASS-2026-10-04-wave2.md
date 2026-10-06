@@ -142,7 +142,33 @@ leg F caveat); `+0xe9` (SD2); `+0x19e` (EG2). §0.1: `+0x89`, `+0x8c/8d/8e` (LT,
   player-states-2 W1–W3, save-continue W1–W3, player-states W1, triggers-background-2 W1–W6 (e.g. physics
   §6 orientation and the `+0x84/+0x86` row still read as before).
 
+## Round 2 — W-rows of the in-place lanes
+Marker `⚑ wave 2 corr (2026-10-04) <SRC> W<n>`. Every raw cite re-read in `ghidra/Ferazel_pef.disasm.txt`
+(all present and agreeing; `.GetBGTile` arg order and `.SafeReportStr`'s r3 overwrite re-derived).
+- EF W1 → physics §0 `+0x84 / +0x86` (row replaced) · W2 → physics §0 `+0x1b2` (outer-skip `10032744` added)
+  · W3 → sprites-backgrounds-sounds §6.3 · W4/W5 done by the INDEX agent · W6 already in place (§3.6 carries
+  `⚑ wave 2 (2026-10-04)`).
+- EW W1 done (INDEX) · W2 → world-data §3.3 getter sentence · W3 → bosses §1.2 and pickups-boxes §1.10 Stats
+  (raw `10004da4..10004dc0`). Not touched: enemies-ground l. 126 still says "[MED]" for the same window.
+- HM W1 → pickups-boxes NR 8 (already closed by PB2 §6; write-only clause added, consistent with physics
+  `+0xa0` P7) · W2 → enemies-ground §2.3 (the only "melee" hit-test note; no "hits once"/"once per" sentence
+  exists in enemies-*/bosses*; bosses §4.3's 15 invul frames needed no change).
+- P2 W1 → physics §3.3 crunch bullet (struck "bounce if not broken") · W2 → spells-detail §3 crunch line ·
+  W3 → sprites-backgrounds-sounds §3.1 step 2 · W4 done (own lane).
+- SC W1 → pickups-boxes §2.4.8 ("lit face" struck; "lit" → "used") · W2 → engine §6 · W3 already in place
+  (save-continue §9.3 said "shows nothing"; marker added). Bank grep: `.SafeReportStr` appears only there; its
+  other five callers (`.EncodeRect`, `.OpenDefaultWorldConv/Map/World`) have no "message shown" sentence.
+- P1 W1 → enemy-shots-and-damage-2 §4.2 item 1 (the rule's one statement, cites player-states §9.1 and
+  platforms-ropes-radial-2 §8.2 + raw) and spells-detail §2.4 item 1 (cite only). The rule sits in §4.2,
+  not §4.3.
+- T2 W1 → physics §6 (header [HIGH], orientation paragraph) · W2 → world-data §3.3 overlay row · W3 →
+  physics §0 `+0x1c6 / +0x1c8..+0x1ce` · W4 → engine §5 · W5 → player-states §2 rows `_DAT_100a05f8`,
+  `_DAT_100a06f0` · W6 → pickups-boxes §2.2 row 1450..1453 (census) + enemy-shots-and-damage §1.4 (pointer).
+- Not applied: none. Line counts after: physics 452, pickups-boxes 576, enemies-ground 585, engine 340,
+  sprites 262, world-data 458, spells-detail 479, save-continue 517, player-states 464, bosses 372,
+  enemy-shots-and-damage 504, enemy-shots-and-damage-2 185 (enemies-flyers 586 / enemies-water-cave 617
+  untouched).
+
 ## Label counts
 `ls docs/ferazel/*.md | grep -v -E 'REVIEW-|FIXPASS-|REPORT-' | xargs grep -o "\[HIGH" | wc -l` (and
-`\[MED`, `\[LOW`): **HIGH 1096 · MED 291 · LOW 41** (includes the other agent's uncommitted INDEX.md
-and coverage.md edits).
+`\[MED`, `\[LOW`): **HIGH 1100 · MED 291 · LOW 41** (after round 2; round 1 was HIGH 1096).

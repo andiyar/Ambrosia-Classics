@@ -154,7 +154,8 @@ Power affects **only damage and the visual stack**; not speed, size, range, hit 
    first frame deals the base damage ~~[MED: depends on whether a shot spawned during the player's
    handler is handled that same frame]~~ [HIGH] ⚑ wave 2 (2026-10-04): creation-frame hits always deal base damage;
    a frame-2 hit is multiplied only if the shot was already handled in its creation frame, which
-   happens iff the sprite after the player in the active list has layer ≤ 11 (spells-detail-2 §4) —
+   happens iff the sprite after the player in the active list has layer ≤ 11 (spells-detail-2 §4; rule:
+   enemy-shots-and-damage-2 §4.2 item 1, player-states §9.1, ⚑ wave 2 corr (2026-10-04) P1 W1) —
    assuming no sprite *before* the player carries a current layer > 11 (insertion walks from the
    head, `10032f68..10032f9c`; direct `+0x80` stores do not re-sort) ⚑ corrected (review 2f, 2026-10-04) #1.
 2. **Follower stack**: Setup spawns `p − 1` followers (≤ 4) of type `id << 8` (power 0). Power-0
@@ -249,7 +250,8 @@ dying. Others:
 - BG kind 100..199: `.WallBounceBG(kind−100)`; on contact id 4 on ground spawns a trunk bottom
   0x2c8 at (cx−8, cy−6) with `+0xa6 = 0x78` (no sparkle/sound), then kill (all ids, seeds slow rule).
 - BG kind ≥ 200 that `.IsWaterTile`: `.HandleUnderWater` (if `+0x140 == 0`) → liquid rule §3.2.
-- crunch cell (`param_4 == 2`): `.CrunchTile(pos, +0x158)`; if it broke → kill (not 6/0x3c).
+- crunch cell (`param_4 == 2`): `.CrunchTile(pos, +0x158)`; ~~if it broke~~ if the cell was processed (return ≠ 0:
+  broke, cracked or resisted; `1005b5f8..1005b62c`, player-states-2 §13 ⚑ wave 2 corr (2026-10-04) P2 W2) → kill (not 6/0x3c).
   Crunch strength: spells 1, seeds 2 (held Ice Pick 4 — items reader).
 
 ### 3.4 Ice Wall (id 3): floes and wall ledges — who sets platform mode 4  [HIGH]

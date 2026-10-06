@@ -155,6 +155,10 @@ y when the player is on ground/rope/swimming or leaves the band (view rect inset
 bottom): downward it moves `max(Δ/6, 6)` px/frame, upward `max((focus − limit)/7, 5)`
 [HIGH for the arithmetic; the exact list of gating flags is long and quoted in the function].
 `playerX/Y` here are `_DAT_1009fd94/_DAT_1009fd90` (set to start+50/start+59 by `.GameLoop`).
+⚑ wave 2 corr (2026-10-04) T2 W4 — look-ahead L (`_DAT_100a0680`, 24.8 px), updated in `.HandlePlayerSprite` just before
+`.PlayerScroll` (`10051494..1005158c`): vx > 0x100 → L += vx>>2, a second time while L < 0; cap +0x5000
+(80 px); vx < −0x100 mirrored, floor −0x5000; |vx| ≤ 0x100 → L decays 0x200/frame only while it points
+against the facing; zeroed by passages at transit counts 21/22 (triggers-background-2 §8.2) [HIGH].
 
 `.FindUpperLeftCorner @ 1000b5ec`:
 - target h = focusX − 0x130 (304) + hdr+0x270a; target v = focusY − 0xc0 (192) + hdr+0x270c;
@@ -188,6 +192,10 @@ saves; the Esc dialog's Save branch is dead (DITL 202 has no item 5); level comp
 updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a adjudication 6 / B18,
 2026-10-03) (label ⚑ corrected (review 1d, 2026-10-03) #1): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
 (`100071d0..100071e4`); `.ContinueGame` copies G from save+0x18 (`1000d0cc`) [HIGH].
+⚑ wave 2 corr (2026-10-04) SC W2: on resume, a world file that cannot be reopened shows the `.ReportError` alert and quits the
+application (`ExitToShell`, `10048bb0`); a save naming a missing level dereferences a nil level handle
+with no visible message (`.SafeReportStr` ignores its string, `100359c8..10035a04`) — undefined past
+that (save-continue §9.3).
 - There is **no lives counter**: death ends the run unless the player resumes from a save
   (`.AskToContinue @ 10007190` buttons via `TrackClickOnCommandButtonDeath`) [MED: no other
   decrement of a life-like field found; `G+0x12 = 3` is set in `.InitGameGlobals` but its

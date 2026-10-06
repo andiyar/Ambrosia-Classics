@@ -457,7 +457,7 @@ second at 30 frames/s). A frame without a landing costs one step of decay and no
    (`10048bf4`), `DetachResource` / `HLock` get nil, and **`.SetupLevelTilemapPtrs` dereferences it**
    (`bl 0x1004913c` at `10048c34`; main l. 41774: `*(int *)*handle + 0xb29c`, then five stores into
    `+0xb284..+0xb298` of whatever address 0 holds). Then `.SafeReportStr(0x100a5af7 "Tried to open a
-   level that wasn't there!")` — which **shows nothing**: it overwrites r3 at its first instruction
+   level that wasn't there!")` — which **shows nothing** (⚑ wave 2 corr (2026-10-04) SC W3: true of every call site): it overwrites r3 at its first instruction
    pair (raw `100359c8..10035a04`: fade in if `*_DAT_1009fde8`, `InputActivate(0,0)`, return). The
    routine returns false (`10048c50`).
 3. `.ContinueGame` **ignores the result** at all three calls (`1000d19c`, `1000d714`, `1000d90c`: r3

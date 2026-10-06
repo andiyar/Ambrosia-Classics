@@ -95,7 +95,9 @@ on these classes: the shot's own `+0xa4` (200) is never applied (the Hit routine
 
 ### 2.3 Common hit tests  [HIGH]
 A **player shot** counts only when its `+0xa6 == 0` (melee = the held-item sprite temporarily
-given `.HandlePlayerShotSprite`, id 100, dmg 100/200/300 by weapon — m. l. 43547ff). Crushing:
+given `.HandlePlayerShotSprite`, id 100, dmg 100/200/300 by weapon — m. l. 43547ff). A stab lands once per
+target although the target's Hit routine runs **twice** per strike frame (the pair is visited both ways): the
+second call is the one refused by the invulnerability the first set (held-item-melee §4.1, ⚑ wave 2 corr (2026-10-04) HM W2). Crushing:
 when `S` is the mover against a Statue or Box sprite and `.PlatformBounce` returns 2 (contact from
 below, physics §8.1): Crawler/Roach/Dillo die if the solid's `vy > 0` or `S` stands on ground
 (`hp = 0`, `+0x150 = 0x16`); Walker dies if the solid is not one-way (`+0x185 == 0`) and its type is

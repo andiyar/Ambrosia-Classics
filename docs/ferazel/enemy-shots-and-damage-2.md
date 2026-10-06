@@ -47,6 +47,8 @@ during the handle/collide passes.
    inserted after that pre-loaded `next` node, i.e. iff some sprite of layer ≤ the new layer already
    follows the creator — assuming no sprite *before* the creator carries a current layer above the new
    one (insertion walks from the head; direct `+0x80` writes do not re-sort; spells-detail-2 §4; ⚑ corrected (review 2h, 2026-10-04) #5).
+   ⚑ wave 2 corr (2026-10-04) P1 W1: the one statement of this rule (player-states §9.1, platforms-ropes-radial-2 §8.2; raw `100325b8..100325d8`,
+   `10032f1c..10032fd0`); e.g. a Shadow Double (layer 9, created by the layer-10 player) is never handled in its creation frame.
 2. **Main pass** (100326cc): clears every `+0x44` (hot-rect-built flag); for each outer sprite A with
    `+0x5c ≠ 0`, `+0x1b2 == 0`, `+0xe9 == 0` (10032738–10032758), scans the whole list for partners
    B ≠ A with `+0xe9 == 0`, `|ΔA.x|, |ΔA.y| < 360` (top-left integers; `li 0x168` stored by

@@ -66,7 +66,7 @@ range behaves identically to the placed one [HIGH, grep of `param_1 + 4)` over l
 - `PTR_DAT_1009fed4` (u8, "arena locked"): cleared by `.SetupLevelSprites` (l. 2016), set by
   `.PlayerConstraints` (§1.3).
 - Enemy count: each boss Setup, if `_DAT_1009fe8c` (set 1 only around `SetupLevelSprites`, main
-  l. 2524–2528) is set, sets `+0x1b5 = 1` and increments `_DAT_1009ffb4`; `.SetupLevel` copies that
+  l. 2524–2528; raw `10004da4..10004dc0`: `stb 1`, `bl .SetupLevelSprites`, `stb 0` — ⚑ wave 2 corr (2026-10-04) EW W3) is set, sets `+0x1b5 = 1` and increments `_DAT_1009ffb4`; `.SetupLevel` copies that
   count into the level's enemy total `G+0x6ee+2L`. A Kill routine with `+0x1b5` set and `+0xe9`
   still clear decrements the count and increments `G+0x306+2L` (enemies defeated) (e.g.
   `.KillWarrior` l. 20477–20482). The 16 Demon neck segments are counted too (part 2 §5.5).

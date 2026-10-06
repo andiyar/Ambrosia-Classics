@@ -225,7 +225,8 @@ checkpoint or level end); a fallen pickup keeps its fallen position. Exceptions:
 never killed (§1.6); the **hang glider** (`+0x188 = +0x18b = 1`) keeps its record and original
 position, so it is back after any reload; the **air bubble** (`+0x188` only) keeps its original
 position but its record is cleared at the final kill.
-Stats: during `.SetupLevelSprites` the flag `*_DAT_1009fe8c = 1` (main dump l. 2521–2527); Setup
+Stats: during `.SetupLevelSprites` the flag `*_DAT_1009fe8c = 1` (main dump l. 2521–2527; raw `10004da4..10004dc0`:
+`stb 1`, `bl .SetupLevelSprites`, `stb 0` — ⚑ wave 2 corr (2026-10-04) EW W3); Setup
 then marks 1055/1056 (`_DAT_1009ffb0`++) and 1059 (`_DAT_1009ffac`++) with `+0x1b5 = 1`; on a first
 visit `.SetupLevel` copies those counts into `G+0x7b6+2L` and `G+0x87e+2L` (l. 2533–2535).
 `.KillBonus` (main dump l. 45777–45808), when the sprite is not already dying and `+0x1b5`, moves one
@@ -279,7 +280,7 @@ one-way/surface-function box); only crates (§2.4.1), 2932 and 2941 take shot da
 | 1250..1279 (0x4e2..0x4ff) | switch blocks (PICT 1250, 21 frames 36×36; off face PICT 1252) | snapped to 8 px; rect 1,1,0x23,0x23; HP 1; gravity 0; no sprite/tile callbacks; layer `−(2y + x)`; `+0x14c = p1`; 1270 animated | §2.4.5 |
 | 1308 (0x51c) | chest (PICT 1308, 4 frames 33×31) | layer 0, gravity 0, one-way, rect 0,7,0x1c,0x1e, no hit callback, `+0xa6 = 4` | §2.4.2 |
 | 1440..1449 (0x5a0..0x5a9) | geysers (PICT 1440..1442 face caches) | 1440..1444 → type 0x5a0 with kind `+0x14c = type−1440`; ~~1445..1449~~ 1445..1448 → 0x5a5 (+ two 0x5a0 children at x+0x48, x+0x90; 1449 = 0x5a9 takes the head arm first — ⚑ corrected (review 1c, 2026-10-03) #11, geysers.md §1); height `+0x154 = p1<<8` (default 0x6400), on `+0x158 = p2` (60), off `+0x15c = p3` (60), phase `+0xa6 = p4` (⚑ corrected (deepening 2026-10-03, geysers.md corr.): p4 is overwritten every frame by `C mod (p2+p3+1)` before any read — inert; raw 1006bcf4 vs 1006df90); 0x44-byte column buffer `+0x9c` | `HandleGeyserColumn` (not read here). Column pieces 0x5a9 hurt a lander (§2.4.10) [MED]. → geysers.md (§3 cycle, §4 column, §7 contacts) |
-| 1450..1453 (0x5aa..0x5ad) | boulder spouts (PICT 1450, 4 frames 32×32) | layer 10, gravity 0 | when record[p1].p4 = 1 or record[p2].p4 = 1 (Button records, §2.4.5): every 50+rand(30) frames `MTNewSprite(0x6e1 + p4, …, SetupEnemyShotSprite)` — 0x6e1 'goblin boulders', 0x6e2 'bomb boulder' — with vx/vy: 1450 rand(300)−150 / rand(400); 1451 same / −3000−rand(300); 1452 +(0xaf0+rand(600)) / −(500+rand(700)); 1453 mirrored (l. 12706–12770) |
+| 1450..1453 (0x5aa..0x5ad) | boulder spouts (PICT 1450, 4 frames 32×32) | layer 10, gravity 0 | when record[p1].p4 = 1 or record[p2].p4 = 1 (Button records, §2.4.5): every 50+rand(30) frames `MTNewSprite(0x6e1 + p4, …, SetupEnemyShotSprite)` — 0x6e1 'goblin boulders', 0x6e2 'bomb boulder' — with vx/vy: 1450 rand(300)−150 / rand(400); 1451 same / −3000−rand(300); 1452 +(0xaf0+rand(600)) / −(500+rand(700)); 1453 mirrored (l. 12706–12770). ⚑ wave 2 corr (2026-10-04) T2 W6: census L4 spouts rec 28 (p1 30, p2 31), 67/70 (63, 0), 68 (57, 0), 183 (0, 0); L4 record 0 is a 1401 with p4 0 and no writer, so the p = 0 keys are inert and spout 183 never fires (triggers-background-2 §8.5) |
 | 1460..1467 (0x5b4..0x5bb) | bridges ('Bridge - Wooden - Full', '… Left half', 'Bridge - Stone', …, 'Bridge - Rope') | gravity 0, layer 0, no hit callback; 1462/1465 are flipped halves; 1466 rope bridge has surface fn `+0x1e8 = .GetRopeBridgeHeight`; 1467 a layer-50 decoration | static solids; rect per type (l. 11704–11751) |
 | 1470 (0x5be) | trampoline (PICT 1470, 4 frames 56×54) | layer 0x3c, gravity 0, one-way, rect 7,0x10,0x2c,0x37 | §2.4.11 |
 | 1475 / 1476 (0x5c3/0x5c4) | spiked balls (face from cache `PTR_DAT_100a09f4+0x70`, ~~PICT NOT RESOLVED~~ **PICT 1487**, pickups-boxes-2 §4.1 ⚑ wave 2 (2026-10-04)) | rect 0x16,0x16,0x4e,0x4e; gravity 0x100; one-way; `+0x14c = 1`; 1475 `+0xa6 = 30` | touch: `HurtPlayer(p, ball, 0xa8, 1, 0x3c, coins 0 (51 %) or 5)` (l. 3899–3908). Tile bounce f = 0x40; a hard landing (\|vy\| > 0x300 for 1475) costs a bounce `+0x14c`; 1476 with no bounces left passes through tiles and is killed 0x1a0 px below the camera when vy > 0x5dc |
@@ -414,8 +415,9 @@ type test `cmpwi r3,0x429` at `10057714`. No `+0xa6`/`+0xb0` gate applies (`.Set
 `+0xa6 = 3`; that gate is the Bonus pickup gate, §1.2) — merged with save-continue §2.1, which
 carries the step table with raw addresses ⚑ corrected (review 1a, 2026-10-03) #3, #9. Then only if the byte `0x100a53d6` ≠ 0 (also tested by
 `.Pause` and `.CheckGameLoopKeys`; ~~meaning NOT RESOLVED~~ = no asynchronous gamma fade running, pickups-boxes-2 §3 ⚑ wave 2 (2026-10-04)) and p1 == 0: `_DAT_100a0684 += 2`; at
-≥ 16 it becomes −150; p1 = facing+1 (lit face), `G+0x16` = facing, `.SavePointSave`; on failure p1
-reverts to 0; on success two sounds and a gamma flash. A lit save point (p1 ≠ 0) never saves again.
+≥ 16 it becomes −150; p1 = facing+1 (~~lit face~~ face 1 = stone statue facing right, 2 = facing left; face 0 =
+the empty pedestal with a green check — save-continue §9.1, ⚑ wave 2 corr (2026-10-04) SC W1), `G+0x16` = facing, `.SavePointSave`;
+on failure p1 reverts to 0; on success two sounds and a gamma flash. A used save point (p1 ≠ 0) never saves again.
 
 #### 2.4.9 Tree Trunk (spell 4)  [HIGH]
 A spell-4 shot landing on an FG floor spawns 712 at (centreX−8, centreY−6), layer 2, lifetime
@@ -501,7 +503,8 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
 7. ~~Whether `Mcnv` conversations grant spells or items (merchants sell potions per the manual).~~ → narrowed: pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04)
    (items yes, spells never) → **closed**: line reachability decoded in conversations-mcnv §4 ⚑ wave 2 corr
    (2026-10-04) CM #4
-8. ~~Door `+0xa0` cleared by `.HitBoxSprite` for non-pickup contacts.~~ → closed: dead write, pickups-boxes-2 §6 ⚑ wave 2 (2026-10-04)
+8. ~~Door `+0xa0` cleared by `.HitBoxSprite` for non-pickup contacts.~~ → closed: dead write, pickups-boxes-2 §6 ⚑ wave 2 (2026-10-04);
+   write-only — no reader anywhere (held-item-melee §4.4 field scan; physics §0 `+0xa0`) ⚑ wave 2 corr (2026-10-04) HM W1
 9. ~~Effect 0x4b7's damage to enemies~~ ~~/player~~ ~~(Effect class reader).~~ → closed: pickups-boxes-2 §7 ⚑ wave 2 (2026-10-04) (Player side closed:
    enemy-shots-and-damage §3.4, triggers-background-2 §2.2 — 0x70 while frame ≤ 7.)
 
