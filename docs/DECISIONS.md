@@ -452,3 +452,8 @@ shortcut; Preferences ▸ Keys still chooses the set); the check marks.
 **Carried:** Geneva 10 and System Bold 12 (drawn only by the bar and About) are still baked, shipped and checked at
 start-up — read by nothing; dropping them is a staging change for another day.
 **Approved by:** Ben (the removal); orchestrator brief (shortcut list, About's fate).
+**Ben's playtest verdicts (2026-10-06, after 3 levels with sound):** effects good; music right and changes at level 4;
+Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand cursor — all yes (Q1, Q3, Q12, Q16, text);
+⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
+demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
+on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
