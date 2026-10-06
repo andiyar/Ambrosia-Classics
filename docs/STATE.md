@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (Aki 1.0 released; Bubble Trouble X 1.0 Mac + Windows release drafted)
+# STATE — Ambrosia Classics — 2026-10-06 (Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -29,7 +29,7 @@
   tests / 0 skips; `xcodegen generate && xcodebuild -scheme Aki build` BUILD SUCCEEDED; `tools/stage-aki.sh` →
   `out/Aki/Aki.app` (50 PNG + bundled `Fonts/OsakaMono.ttf`). HectorShell is the HectorKit session's (main
   5a33384+, floor 167 at the gate). Rulings this session: DECISIONS D4. Handoff `docs/handoff-2026-10-04-aki-phase1-done.md`.
-- **Bubble Trouble X 1.0 — RELEASE (draft until Ben tries the download; DECISIONS D25):** GitHub release `btx-1.0`
+- **Bubble Trouble X 1.0 — RELEASED 2026-10-06 (Ben tried the downloaded DMG, said "publish"; DECISIONS D25):** GitHub release `btx-1.0`
   (tag on 47d7c98) carries `BubbleTroubleX-1.0.dmg` (12.6 MB, Developer ID + notarized + stapled, universal, built by
   `tools/package-btx-release.sh`) and `BubbleTroubleX-1.0-Windows.zip` (36.9 MB, stamp 6832da1, unsigned) + .sha256s;
   README + `docs/release/btx-1.0.md`. Next releases: bump `CFBundleVersion` in BubbleTroubleX/App/Info.plist, then

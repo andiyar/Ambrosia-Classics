@@ -513,4 +513,5 @@ Windows build was played to level 20 with sound on a real PC (D19 lane), and its
 3. Created as a **draft**; Ben downloads and tries it, then it is published (D23 c). The `btx-windows-test-1`
    pre-release is superseded (its notes point to btx-1.0 once published).
 4. The Windows WHAT-TO-EXPECT drops "private test build" / "we could not listen to it" wording.
-**Approved by:** Ben (1, 3); seat (2, 4).
+**Approved by:** Ben (1, 3); seat (2, 4). Ben tried the downloaded DMG and said "publish" — published 2026-10-06;
+`btx-windows-test-1` notes now point to btx-1.0.
