@@ -24,8 +24,8 @@ public struct LevelHeader: Sendable, Equatable {
     public let parallaxRipple: UInt8
     /// 0x26cb — FG pattern tile period: 0 → 8×8, ≠ 0 → 6×6.
     public let patternPeriodSix: UInt8
-    /// 0x26cc — px tilesets use the sprite CLUT when ≠ 0.
-    public let pxUsesSpriteClut: UInt8
+    /// 0x26cc — px tilesets convert under the level+base CLUT `0x285e` when ≠ 0 (`.LoadPxBackTileset`/`.LoadPxMidTileset`; bosses-3 "level+sprite").
+    public let pxUsesLevelBaseClut: UInt8
     /// 0x26cd — level-wide "in liquid" behaviour flag.
     public let inLiquid: UInt8
     /// 0x26d0 — level has its own `snd ` set (0 in all levels).
@@ -120,7 +120,7 @@ public struct LevelHeader: Sendable, Equatable {
         waterSurfaceEffect = try b.u8(0x26c9)
         parallaxRipple = try b.u8(0x26ca)
         patternPeriodSix = try b.u8(0x26cb)
-        pxUsesSpriteClut = try b.u8(0x26cc)
+        pxUsesLevelBaseClut = try b.u8(0x26cc)
         inLiquid = try b.u8(0x26cd)
         levelSounds = try b.u8(0x26d0)
         darknessEnable = try b.i16(0x2706)

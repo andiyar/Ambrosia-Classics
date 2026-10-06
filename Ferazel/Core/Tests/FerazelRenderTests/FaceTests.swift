@@ -66,13 +66,16 @@ final class FaceTests: XCTestCase {
 
     func testTileSheetConversionExposure() throws {
         let r = try resources()
-        let c = try clut(202, r)
-        let expected: [(Int16, Exposure)] = [
-            (200, Exposure(colours: 239, exact: 30, differ: 62, pixelsDiffer: 7_193)),   // FG
-            (203, Exposure(colours: 234, exact: 28, differ: 67, pixelsDiffer: 13_898)),  // BG
-            (206, Exposure(colours: 200, exact: 30, differ: 73, pixelsDiffer: 8_606)),   // pattern
+        let expected: [(Int16, Int16, Exposure)] = [
+            // FG under the level CLUT 201, not level+base 202 — Ben 2026-10-07 follow-the-binary precedent;
+            // decompile l. 1576–1577 (`.LoadLevelTilesets` ff94 ← level CLUT), l. 970–988 (`.LoadFGTileset`
+            // leaves ff94 alone).
+            (200, 201, Exposure(colours: 239, exact: 30, differ: 44, pixelsDiffer: 5_400)),   // FG
+            (203, 202, Exposure(colours: 234, exact: 28, differ: 67, pixelsDiffer: 13_898)),  // BG
+            (206, 202, Exposure(colours: 200, exact: 30, differ: 73, pixelsDiffer: 8_606)),   // pattern
         ]
-        for (id, want) in expected {
+        for (id, clutId, want) in expected {
+            let c = try clut(clutId, r)
             let source = try PictureSource.load(id: id, from: r, chain: .level)
             XCTAssertEqual(try exposure(source, c), want, "PICT \(id)")
             let ruled = try ConvertedPicture(source: source, clut: c, search: ColorSearch(model: .ruled))
@@ -137,6 +140,29 @@ final class FaceTests: XCTestCase {
             }
             XCTAssertEqual(Set(outputs).count, 1, "PICT \(id): identical under every model")
         }
+        // Invariant 6: the shapes the census has not shown are refused by name (synthetic pictures; K1's own
+        // decoder already refuses them from data, so these guard the decoded forms directly).
+        let gray = ColorTable(seed: 0, flags: 0, entries: [ColorSpec(value: 0, r: 0xffff, g: 0xffff, b: 0xffff),
+                                                           ColorSpec(value: 1, r: 0, g: 0, b: 0)])
+        let refused: [(PICTPixels, String)] = [
+            (.indexed(IndexedPICT(width: 2, height: 1, depth: 1, pixels: [0, 1], colorTable: nil, transferMode: 1,
+                                  version: 1)), "v1 depth 1 mode 1"),
+            (.indexed(IndexedPICT(width: 2, height: 1, depth: 8, pixels: [0, 1], colorTable: nil, transferMode: 0,
+                                  version: 1)), "v1 depth 8 mode 0"),
+            (.indexed(IndexedPICT(width: 2, height: 1, depth: 8, pixels: [0, 1], colorTable: nil, transferMode: 0,
+                                  version: 2)), "PixMap without a colour table"),
+            (.indexed(IndexedPICT(width: 2, height: 1, depth: 8, pixels: [0, 1], colorTable: gray, transferMode: 36,
+                                  version: 2)), "indexed mode 36"),
+            (.direct(DirectPICT(width: 1, height: 1, rgb: [1, 2, 3], transferMode: 0)), "DirectBits mode 0"),
+        ]
+        for (pixels, why) in refused {
+            XCTAssertThrowsError(try PictureSource.check(pixels, id: 9_999)) { error in
+                XCTAssertEqual(error as? PictureSourceError, .unsupported(id: 9_999, why))
+            }
+        }
+        XCTAssertNoThrow(try PictureSource.check(.indexed(IndexedPICT(width: 2, height: 1, depth: 8, pixels: [0, 1],
+                                                                      colorTable: gray, transferMode: 0, version: 2)),
+                                                 id: 9_999))
     }
 
     // MARK: - Encoder
@@ -244,6 +270,11 @@ final class FaceTests: XCTestCase {
             for p in 0..<m.count where m[p] != 0 { water[i][p] = 0 }
         }
         try roundTrip(sets.fgWater.sheet, water, "FG water 200")
+        // `.LoadEncWaterFaceSetFromPICT` never writes +0x30 (decompile l. 28365 NewPtr, uncleared; its record
+        // writes l. 28460–28471 stop at +0x2c, where the set loader writes +0x30 at l. 28277) — built as 0.
+        // Ben 2026-10-07 follow-the-binary precedent.
+        XCTAssertTrue(sets.fgWater.sheet.faces.allSatisfy { $0.sourceId == 0 })
+        XCTAssertTrue(sets.fg.faces.allSatisfy { $0.sourceId == 200 })
         try roundTrip(mask, cells(fixed.pictures.waterMask, mask.arguments), "water mask 183")
         try roundTrip(fixed.blendSource, cells(fixed.pictures.blend, fixed.blendSource.arguments), "blend 185")
         // The 29 player sheets under CLUT 200.
@@ -251,7 +282,7 @@ final class FaceTests: XCTestCase {
         for loader in FaceSheet.playerSheets {
             let source = try PictureSource.load(id: loader.pict, from: r, chain: .frontEnd)
             let picture = try ConvertedPicture(source: source, clut: c200, search: search)
-            let sheet = FaceSheet(picture: picture, loader: loader)
+            let sheet = try FaceSheet(picture: picture, loader: loader)
             switch loader {
             case .set(let a): try roundTrip(sheet, cells(picture, a), "player \(loader.pict)")
             case .single: try roundTrip(sheet, [picture.pixels], "player \(loader.pict)")
@@ -270,7 +301,7 @@ final class FaceTests: XCTestCase {
         let r = try resources()
         let picture = try ConvertedPicture(source: try PictureSource.load(id: 1020, from: r, chain: .frontEnd),
                                            clut: try clut(200, r), search: ColorSearch(model: .ruled))
-        let sheet = FaceSheet(picture: picture, loader: .set(a))
+        let sheet = try FaceSheet(picture: picture, loader: .set(a))
         XCTAssertEqual(sheet.faces.count, 16)
         XCTAssertFalse(sheet.shortRows)
         for face in sheet.faces {
@@ -283,6 +314,15 @@ final class FaceTests: XCTestCase {
         for y in 0..<120 {
             for x in 0..<100 { XCTAssertEqual(five[y * 100 + x], picture.pixel(x: 100 + x, y: 120 + y)) }
         }
+        // `.Load1EncFaceFromPICT` keeps the unshifted picFrame (decompile l. 28041–28042, 28075, 28078): a frame not at
+        // (0, 0) is refused rather than assumed.
+        let shifted = ConvertedPicture(id: 4_242, width: 2, height: 2, pixels: [1, 2, 3, 4], clutId: 200,
+                                       frameTop: 0, frameLeft: 7)
+        XCTAssertThrowsError(try FaceSheet(picture: shifted, loader: .single(pict: 4_242))) { error in
+            XCTAssertEqual(error as? FaceSheetError, .singleFrameNotAtOrigin(pict: 4_242, top: 0, left: 7))
+        }
+        let single = try FaceSheet(picture: picture, loader: .single(pict: 1020))
+        XCTAssertEqual(single.faces[0].frame, EncodedFace.Rect(top: 0, left: 0, bottom: 480, right: 400))
     }
 
     func testPlayerFaceSetsTable() throws {
@@ -333,9 +373,11 @@ final class FaceTests: XCTestCase {
         XCTAssertEqual(set, 29_595)
     }
 
-    /// PICT 185 under CLUT 200 (`.ruled`), copied pixels by weight. Self-derived 2026-10-07 by an independent
-    /// Python run (probe `colorsearch.exact_first` + `ITab(…, 4)` over 185's own colour table, then the §8
-    /// mapping): weight 0 → 29,184, 1 → 1,698, 2 → 5,601, 3 → 1,528; 60,293 transparent (= p11's ruled figure).
+    /// PICT 185 under clut 199 (`.ruled` and `.exactNearest`), copied pixels by weight. The conversion CLUT is
+    /// 199, not the plan's 200 — Ben 2026-10-07 follow-the-binary precedent; decompile l. 412–413
+    /// (`_DAT_100a001c` ← `GetCTable(199)`), l. 827/840 (`.InitGameGlobals` ff94 ← it before 183 and 185).
+    /// Leg-1 measurement (C5 review) and the seat's prediction agree: `.ruled` 27,701 / 3,181 / 5,601 / 1,528,
+    /// 60,293 transparent; `.exactNearest` 27,659 / 3,253 / 5,571 / 1,538, 60,283 transparent.
     func testBlendFaceWeights() throws {
         XCTAssertEqual(BlendFaces.weight(0), 3)
         XCTAssertEqual(BlendFaces.weight(0x97), 3)
@@ -344,21 +386,26 @@ final class FaceTests: XCTestCase {
         for v: UInt8 in [0x9c, 0x9d, 0x9e] { XCTAssertEqual(BlendFaces.weight(v), 1) }
         for v: UInt8 in [1, 0x50, 0x96, 0x9f, 0xa0, 0xfe, 0xff] { XCTAssertEqual(BlendFaces.weight(v), 0) }
         let r = try resources()
-        let fixed = try TileSets.Fixed(resources: r, search: ColorSearch(model: .ruled))
-        XCTAssertEqual(fixed.blend.faces.count, 96)
-        XCTAssertEqual(fixed.blend.arguments, FaceSheet.Arguments(pict: 185, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
-        var weights = [Int](repeating: 0, count: 4), transparent = 0
-        for (face, source) in zip(fixed.blend.faces, fixed.blendSource.faces) {
-            // Same token structure; only copied bytes change.
-            XCTAssertEqual(face.data.count, source.data.count)
-            XCTAssertEqual(face.bounds, source.bounds)
-            let before = try source.decode(), after = try face.decode()
-            for (b, a) in zip(before, after) {
-                if b == 0 { transparent += 1; XCTAssertEqual(a, 0) } else { XCTAssertEqual(a, BlendFaces.weight(b)); weights[Int(a)] += 1 }
+        XCTAssertEqual(TileSets.Fixed.conversionClut, 199)
+        for (model, want, wantTransparent) in [(ColorSearch.Model.ruled, [27_701, 3_181, 5_601, 1_528], 60_293),
+                                               (.exactNearest, [27_659, 3_253, 5_571, 1_538], 60_283)] {
+            let fixed = try TileSets.Fixed(resources: r, search: ColorSearch(model: model))
+            XCTAssertEqual(fixed.blend.clutId, 199)
+            XCTAssertEqual(fixed.blend.faces.count, 96)
+            XCTAssertEqual(fixed.blend.arguments, FaceSheet.Arguments(pict: 185, count: 96, cellWidth: 32, cellHeight: 32, columns: 8))
+            var weights = [Int](repeating: 0, count: 4), transparent = 0
+            for (face, source) in zip(fixed.blend.faces, fixed.blendSource.faces) {
+                // Same token structure; only copied bytes change.
+                XCTAssertEqual(face.data.count, source.data.count)
+                XCTAssertEqual(face.bounds, source.bounds)
+                let before = try source.decode(), after = try face.decode()
+                for (b, a) in zip(before, after) {
+                    if b == 0 { transparent += 1; XCTAssertEqual(a, 0) } else { XCTAssertEqual(a, BlendFaces.weight(b)); weights[Int(a)] += 1 }
+                }
             }
+            XCTAssertEqual(weights, want, "\(model)")
+            XCTAssertEqual(transparent, wantTransparent, "\(model)")
         }
-        XCTAssertEqual(weights, [29_184, 1_698, 5_601, 1_528])
-        XCTAssertEqual(transparent, 60_293)
     }
 
     func testShortSheet257Flagged() throws {
@@ -376,7 +423,7 @@ final class FaceTests: XCTestCase {
             XCTAssertTrue(face[(128 - 60) * 128 ..< 128 * 128].allSatisfy { $0 == 0 }, "cell \(i) rows past the frame read 0")
             XCTAssertEqual(Array(face[0 ..< 68 * 128]), Array(picture.cell(FaceSheet.cellRect(i, a)).prefix(68 * 128)))
         }
-        let encoded = FaceSheet(picture: picture, loader: .set(a))
+        let encoded = try FaceSheet(picture: picture, loader: .set(a))
         XCTAssertTrue(encoded.shortRows)
         XCTAssertEqual(encoded.shortCells, plain.shortCells)
         XCTAssertEqual(try encoded.faces[30].decode(), plain.faces[30])

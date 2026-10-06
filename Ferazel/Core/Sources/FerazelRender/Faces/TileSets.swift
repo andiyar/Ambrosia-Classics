@@ -10,9 +10,16 @@ import FerazelCore
 /// | PxBack | plain | 36 of 128×128, 6 cols | `0x284c` < 1 → 5000 | level CLUT `0x285c` (0 → 201); level+base if `0x26cc` |
 /// | PxMid | plain ×2 | 12 + 12 of 128×128, 6 cols, ids id / id+1 | `0x284e` > 0 only | as PxBack |
 /// | BG | encoded | 96 of 32×32, 8 cols | `0x2852` 0 → 180 | level+base `0x285e` (0 → 202) |
-/// | FG | encoded | 96 of 32×32, 8 cols | `0x2850` 0 → 181 | see `ConversionCLUTs.fg` |
-/// | FG water | `WaterFaceSheet` | as FG, same id | — | as FG |
+/// | FG | encoded | 96 of 32×32, 8 cols | `0x2850` 0 → 181 | level CLUT |
+/// | FG water | `WaterFaceSheet` | as FG, same id | — | level CLUT |
 /// | pattern | encoded **and** plain | 64 of 32×32, 8 cols | `0x2856` < 1 → 206 | level+base |
+///
+/// Decompile (`ghidra/Ferazel_pef.decompiled.c`): `.SetupLevel` l. 2287–2297 (`PTR_DAT_1009ff4c` ←
+/// `GetCTable(0x285c)`, 0 → 201) and l. 2301–2318 (`_DAT_1009ff8c` ← `GetCTable(0x285e)`, 0 → 202);
+/// `.LoadLevelTilesets` l. 1576–1577 sets the conversion CLUT `*_DAT_1009ff94` to the level CLUT on entry;
+/// `.LoadBGTileset` switches to `ff8c` and restores (l. 950–955); `.LoadFGTileset`/`.LoadFGWaterTileset` leave
+/// `ff94` alone (l. 970–1031); `.LoadFGPatternTileset` switches to `ff8c` (l. 1049); `.LoadPxBackTileset`/
+/// `.LoadPxMidTileset` use `ff8c` when header `0x26cc` is set (l. 1094–1096, 1128–1130).
 ///
 /// The fixed sets (`.InitGameGlobals`, loaded once) are `Fixed`.
 public struct TileSets: Sendable {
@@ -21,14 +28,16 @@ public struct TileSets: Sendable {
     public struct ConversionCLUTs: Hashable, Sendable {
         public var pxBack: Int16
         public var pxMid: Int16
+        /// Level+base `0x285e` (`.LoadBGTileset` l. 950–955).
         public var bg: Int16
-        /// The plan's ruling (C5 contract, gate card item): "FG, FG-water and pattern: the bank does not say —
-        /// use level+base like BG [MED]". ⚑ Seat reading for review: `.LoadLevelTilesets` sets `*_DAT_1009ff94 =
-        /// *PTR_DAT_1009ff4c` (= `GetCTable(0x285c)`, the level CLUT; `.SetupLevel` l. 2284–2299) on entry, and
-        /// `.LoadBGTileset` restores it after BG, so `.LoadFGTileset`/`.LoadFGWaterTileset` run under the level
-        /// CLUT (201 for level 1); only `.LoadFGPatternTileset` switches to level+base (l. 1049).
+        /// The level CLUT `0x285c` (201 for level 1): `.LoadLevelTilesets` sets it on entry (l. 1576–1577),
+        /// `.LoadBGTileset` restores it (l. 955), and `.LoadFGTileset`/`.LoadFGWaterTileset` do not touch it
+        /// (l. 970–1031). Seat ruling under Ben's 2026-10-07 follow-the-binary precedent (the plan's "level+base
+        /// like BG [MED]" was wrong).
         public var fg: Int16
+        /// As `fg` (`.LoadFGWaterTileset` l. 1001–1031).
         public var fgWater: Int16
+        /// Level+base `0x285e` (`.LoadFGPatternTileset` l. 1049).
         public var pattern: Int16
 
         public init(pxBack: Int16, pxMid: Int16, bg: Int16, fg: Int16, fgWater: Int16, pattern: Int16) {
@@ -38,8 +47,8 @@ public struct TileSets: Sendable {
 
         public static func forLevel(_ header: LevelHeader) -> ConversionCLUTs {
             let level = TileSets.levelClutId(header), base = ColorLUT.screenClutId(header)
-            let px = header.pxUsesSpriteClut != 0 ? base : level   // `.LoadPxBackTileset`/`.LoadPxMidTileset`
-            return ConversionCLUTs(pxBack: px, pxMid: px, bg: base, fg: base, fgWater: base, pattern: base)
+            let px = header.pxUsesLevelBaseClut != 0 ? base : level   // `.LoadPxBackTileset`/`.LoadPxMidTileset`
+            return ConversionCLUTs(pxBack: px, pxMid: px, bg: base, fg: level, fgWater: level, pattern: base)
         }
     }
 
@@ -69,13 +78,13 @@ public struct TileSets: Sendable {
 
     /// `.InitGameGlobals @ 10001498` (main dump l. 826–852): the FG water mask `PICT 183` and the FG blend
     /// `PICT 185`, both `.LoadEncFaceSetFromPICT(id, 0x60, 0x20, 0x20, 8, 0, 0, 0, 0)` from the Sprites file;
-    /// 185 then `.ProcessFGBlendTileFaces`. Conversion CLUT: the plan's 200 (lighting-tables §8 reads the
-    /// weights in CLUT 200 terms). ⚑ Seat reading for review: both calls are preceded by `*_DAT_1009ff94 =
-    /// *_DAT_100a001c`, which lighting-tables §1.1 identifies as clut 199 "base sprite clut grays"
-    /// (`.InitAppGlobals` l. 412); 199 shares 200's greys 0x97..0x9f but not 1..0x96. 183 is a 1-bit BitMap (the
+    /// 185 then `.ProcessFGBlendTileFaces`. Conversion CLUT: clut **199** — `_DAT_100a001c` ← `GetCTable(199)`
+    /// (`.InitAppGlobals` l. 412–413), and `.InitGameGlobals` sets `*_DAT_1009ff94 = *_DAT_100a001c` before both
+    /// loads (l. 827, 840); the lighting-tables §8 weight mapping is therefore in CLUT-199 indices. Seat ruling
+    /// under Ben's 2026-10-07 follow-the-binary precedent (the plan said 200). 183 is a 1-bit BitMap (the
     /// bypass), so only 185 depends on it.
     public struct Fixed: Sendable {
-        public static let conversionClut: Int16 = 200
+        public static let conversionClut: Int16 = 199
         public static let waterMaskArguments = FaceSheet.Arguments(pict: 183, count: 0x60, cellWidth: 0x20,
                                                                    cellHeight: 0x20, columns: 8)
         public static let blendArguments = FaceSheet.Arguments(pict: 185, count: 0x60, cellWidth: 0x20,
@@ -103,8 +112,8 @@ public struct TileSets: Sendable {
             }
             let mask = try convert(183), blend = try convert(185)
             pictures = Pictures(waterMask: mask, blend: blend)
-            waterMask = FaceSheet(picture: mask, loader: .set(Self.waterMaskArguments))
-            blendSource = FaceSheet(picture: blend, loader: .set(Self.blendArguments))
+            waterMask = try FaceSheet(picture: mask, loader: .set(Self.waterMaskArguments))
+            blendSource = try FaceSheet(picture: blend, loader: .set(Self.blendArguments))
             self.blend = try BlendFaces.process(blendSource)
         }
     }
@@ -167,14 +176,14 @@ public struct TileSets: Sendable {
             pxMid = nil
         }
         let bgPicture = try convert(ids.bg, cluts.bg)
-        bg = FaceSheet(picture: bgPicture, loader: .set(Self.tileArguments(pict: ids.bg)))
+        bg = try FaceSheet(picture: bgPicture, loader: .set(Self.tileArguments(pict: ids.bg)))
         let fgPicture = try convert(ids.fg, cluts.fg)
-        fg = FaceSheet(picture: fgPicture, loader: .set(Self.tileArguments(pict: ids.fg)))
+        fg = try FaceSheet(picture: fgPicture, loader: .set(Self.tileArguments(pict: ids.fg)))
         let fgWaterPicture = cluts.fgWater == cluts.fg ? fgPicture : try convert(ids.fg, cluts.fgWater)
         fgWater = try WaterFaceSheet(picture: fgWaterPicture, arguments: Self.tileArguments(pict: ids.fg),
                                      mask: fixed.waterMask, kind: level.fgKind(tile:))
         let patternPicture = try convert(ids.pattern, cluts.pattern)
-        pattern = FaceSheet(picture: patternPicture, loader: .set(Self.patternArguments(pict: ids.pattern)))
+        pattern = try FaceSheet(picture: patternPicture, loader: .set(Self.patternArguments(pict: ids.pattern)))
         patternPlain = PlainFaceSheet(picture: patternPicture, arguments: Self.patternArguments(pict: ids.pattern))
         pictures = Pictures(pxBack: pxBackPicture, bg: bgPicture, fg: fgPicture, pattern: patternPicture)
     }

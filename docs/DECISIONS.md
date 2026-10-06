@@ -628,6 +628,21 @@ every 32-bit PICT says `ditherCopy` (mode 64), so the conversion uses `.errorDif
 left-to-right, in 16-bit RGB, quantised by the active `ColorSearch` model — as the default, `.none` selectable; LOW; on
 the gate card. Rejected: silently ignoring mode 64 (would drop a visible property of 290 sprite sheets).
 
+**As built (C5, 2026-10-07):** `FerazelRender` faces (PICT → indices through `ColorSearch`, `.EncodeRect` RLE, face /
+plain / water / blend sheets, tile sets). Two conversion-CLUT corrections to the plan, seat ruling under Ben's
+follow-the-binary precedent (bank ⚑ Corrections in sprites-backgrounds-sounds): **FG and FG-water convert under the
+level CLUT `0x285c`** (201 for level 1), not level+base — `.LoadLevelTilesets` sets it on entry and only BG and pattern
+switch to `0x285e` (decompile l. 1576–1577, 950–955, 970–1031, 1049); **the fixed sets 183/185 convert under clut
+199** (`.InitAppGlobals` l. 412–413, `.InitGameGlobals` l. 827/840), so the §8 blend mapping is in CLUT-199 indices.
+Measured: FG 200 under 201 — 239 colours, 30 exact, `.ruled`/`.exactNearest` differ on 44 colours / 5,400 px; BG 203
+and pattern 206 under 202 — 234/28/67/13,898 and 200/30/73/8,606; blend 185 under 199, weights 0/1/2/3 =
+27,701 / 3,181 / 5,601 / 1,528 with 60,293 transparent (`.ruled`), 27,659 / 3,253 / 5,571 / 1,538 with 60,283
+(`.exactNearest`). The ditherCopy model as built: `.errorDiffusion` default, `.none` selectable; PICT 2922 under 200
+`.ruled` — the two models differ on 704 of 3,360 px. The water loader leaves face +0x30 unwritten (built 0); the
+`.single` loader refuses a picFrame not at (0, 0). **Open hazard (gate card):** the plain loader's reused
+`NewBlitPort` may hold stale bytes where a cell reaches past the frame (PICT 257 PxBack cells 30..35); built as 0
+(design §11).
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**

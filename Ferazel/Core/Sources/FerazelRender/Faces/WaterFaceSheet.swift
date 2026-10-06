@@ -32,8 +32,11 @@ public struct WaterFaceSheet: Sendable, Equatable {
             } else {
                 stamped.append(nil)
             }
+            // +0x30: `.LoadEncWaterFaceSetFromPICT` never writes it (record writes l. 28460–28471 stop at +0x2c; the
+            // set loader's `+0x30 = pict` at l. 28277 has no counterpart here). The record is `NewPtr` (l. 28365,
+            // not cleared), so the original holds whatever the heap held; built as 0, a fresh record's value.
             faces.append(FaceEncoder.encode(pixels: port, width: picture.width, height: picture.height, rect: rect,
-                                            sourceId: a.pict))
+                                            sourceId: 0))
         }
         sheet = FaceSheet(arguments: a, faces: faces, shortCells: FaceSheet.shortCells(a, in: picture),
                           clutId: picture.clutId)

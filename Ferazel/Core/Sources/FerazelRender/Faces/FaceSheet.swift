@@ -1,6 +1,13 @@
 import Foundation
 import FerazelCore
 
+public enum FaceSheetError: Error, Equatable {
+    /// `.Load1EncFaceFromPICT` keeps the picture's unshifted picFrame as the face frame and the encoded rect
+    /// (decompile l. 28041–28042, 28075, 28078); every shipped frame starts at (0, 0), and any other origin is
+    /// refused rather than modelled.
+    case singleFrameNotAtOrigin(pict: Int16, top: Int16, left: Int16)
+}
+
 /// An encoded face set: `.LoadEncFaceSetFromPICT @ 1002ef2c` (pict, count, cellW, cellH, cols, maskFirst,
 /// maskLast, cacheId, flip) with flip 0 and no cache id (no `McSp` ships), or `.Load1EncFaceFromPICT @ 1002eafc`
 /// (one face = the whole picture frame). Cell `i` = rect (`(i % cols)·w`, `(i / cols)·h`, +w, +h) of the
@@ -73,7 +80,8 @@ public struct FaceSheet: Sendable, Equatable {
     }
 
     /// The loader run over an already converted picture.
-    public init(picture: ConvertedPicture, loader: Loader) {
+    /// - Throws: `FaceSheetError.singleFrameNotAtOrigin` for a `.single` picture whose frame is not at (0, 0).
+    public init(picture: ConvertedPicture, loader: Loader) throws {
         switch loader {
         case .set(let a):
             let faces = (0..<a.count).map { i in
@@ -82,7 +90,10 @@ public struct FaceSheet: Sendable, Equatable {
             }
             self.init(arguments: a, faces: faces, shortCells: Self.shortCells(a, in: picture), clutId: picture.clutId)
         case .single(let pict):
-            // `.Load1EncFaceFromPICT` stores the picFrame as the frame; every shipped frame starts at (0, 0).
+            // `.Load1EncFaceFromPICT` stores the unshifted picFrame as the frame; at (0, 0) that is the cell.
+            guard picture.frameTop == 0, picture.frameLeft == 0 else {
+                throw FaceSheetError.singleFrameNotAtOrigin(pict: pict, top: picture.frameTop, left: picture.frameLeft)
+            }
             let a = Arguments(pict: pict, count: 1, cellWidth: picture.width, cellHeight: picture.height, columns: 1)
             let face = FaceEncoder.encode(pixels: picture.pixels, width: picture.width, height: picture.height,
                                           rect: Self.cellRect(0, a), sourceId: pict)
@@ -95,7 +106,7 @@ public struct FaceSheet: Sendable, Equatable {
                             search: ColorSearch, dither: DitherModel = .errorDiffusion) throws -> FaceSheet {
         let source = try PictureSource.load(id: loader.pict, from: resources, chain: chain)
         let picture = try ConvertedPicture(source: source, clut: clut, search: search, dither: dither)
-        return FaceSheet(picture: picture, loader: loader)
+        return try FaceSheet(picture: picture, loader: loader)
     }
 
     /// The player's face sets in `.InitPlayerSprite` call order (player-states §7; main dump l. 42427–42484):

@@ -260,3 +260,22 @@ call cited]. ⚑ wave 2 corr (2026-10-04) RO #9: every id is now mapped (renderi
 4961..4965 and CLUTs 288..290 and 729 have **no reference**; CLUT 131 is loaded twice and never read.
 CLUTs 281..287 are the chapter screens, 260 victory, 132 death, 128 splash, 130 main menu (names in
 census).
+
+## ⚑ Corrections (C5 review, 2026-10-07; follow the binary)
+
+Read against `ghidra/Ferazel_pef.decompiled.c` (Ferazel 1.0 PEF) by the C5 review and applied under Ben's
+2026-10-07 "follow the binary" precedent. Existing text above is left as written; these supersede it.
+
+1. **FG and FG-water convert under the level CLUT `0x285c` (0 → 201), not level+base.** `.SetupLevel`
+   l. 2287–2297 loads `PTR_DAT_1009ff4c` ← `GetCTable(0x285c)` (0 → 201) and l. 2301–2318 `_DAT_1009ff8c` ←
+   `GetCTable(0x285e)` (0 → 202). `.LoadLevelTilesets` sets the conversion CLUT `*_DAT_1009ff94` to the level
+   CLUT on entry (l. 1576–1577); `.LoadBGTileset` switches to `ff8c` and restores it (l. 950–955);
+   `.LoadFGTileset` and `.LoadFGWaterTileset` never touch `ff94` (l. 970–1031); `.LoadFGPatternTileset` switches
+   to `ff8c` (l. 1049). So BG and pattern are level+base (202 for level 1), FG and FG-water the level CLUT (201).
+2. **The fixed sets 183 (FG water mask) and 185 (FG blend) convert under clut 199.** `.InitAppGlobals`
+   l. 412–413 loads `_DAT_100a001c` ← `GetCTable(199)`; `.InitGameGlobals` sets `*_DAT_1009ff94 = *_DAT_100a001c`
+   before both loads (l. 827, l. 840). The lighting-tables §8 blend-weight mapping (0x97/0x98 → 3, 0x99..0x9b → 2,
+   0x9c..0x9e → 1) is therefore in CLUT-199 indices. 183 is a 1-bit BitMap and bypasses the search either way.
+3. **PxBack/PxMid with header `0x26cc` set use the `0x285e` level+base CLUT** (`*_DAT_1009ff8c`;
+   `.LoadPxBackTileset` l. 1094–1096, `.LoadPxMidTileset` l. 1128–1130), otherwise the level CLUT. "Sprite CLUT"
+   for this flag (§3, bosses-3 "level+sprite") is loose wording for the level+base CLUT.

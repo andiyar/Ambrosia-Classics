@@ -21,6 +21,10 @@ public enum PictureSourceError: Error, Equatable {
 public struct PictureSource: Sendable, Equatable {
     public let id: Int16
     public let pixels: PICTPixels
+    /// The picFrame's top-left as stored (`*(pic + 2)`): every shipped sheet's is (0, 0); `.Load1EncFaceFromPICT`
+    /// keeps it unshifted, so `FaceSheet`'s `.single` path checks it.
+    public let frameTop: Int16
+    public let frameLeft: Int16
 
     public init(id: Int16, data: Data) throws {
         let decoded: PICTPixels
@@ -29,6 +33,17 @@ public struct PictureSource: Sendable, Equatable {
         } catch {
             throw PictureSourceError.undecodable(id: id, String(describing: error))
         }
+        try Self.check(decoded, id: id)
+        self.id = id
+        pixels = decoded
+        let b = [UInt8](data.prefix(6))   // decodePixels has read the frame, so 6 bytes are there
+        frameTop = Int16(bitPattern: UInt16(b[2]) << 8 | UInt16(b[3]))
+        frameLeft = Int16(bitPattern: UInt16(b[4]) << 8 | UInt16(b[5]))
+    }
+
+    /// The census checks over K1's decoded form (invariant 6). K1 itself refuses these shapes from data today
+    /// (as `.undecodable`); the checks pin the game's contract should K1 ever widen.
+    static func check(_ decoded: PICTPixels, id: Int16) throws {
         switch decoded {
         case .indexed(let p):
             if p.version == 1 {
@@ -42,8 +57,6 @@ public struct PictureSource: Sendable, Equatable {
         case .direct(let p):
             guard p.transferMode == 64 else { throw PictureSourceError.unsupported(id: id, "DirectBits mode \(p.transferMode)") }
         }
-        self.id = id
-        pixels = decoded
     }
 
     public init(resource: Resource) throws {

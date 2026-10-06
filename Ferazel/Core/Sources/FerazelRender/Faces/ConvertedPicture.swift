@@ -30,10 +30,15 @@ public struct ConvertedPicture: Sendable, Equatable {
     public let pixels: [UInt8]
     /// The conversion CLUT's id.
     public let clutId: Int16
+    /// The source picFrame's top-left (`PictureSource.frameTop`/`frameLeft`).
+    public let frameTop: Int16
+    public let frameLeft: Int16
 
-    public init(id: Int16, width: Int, height: Int, pixels: [UInt8], clutId: Int16) {
+    public init(id: Int16, width: Int, height: Int, pixels: [UInt8], clutId: Int16, frameTop: Int16 = 0,
+                frameLeft: Int16 = 0) {
         precondition(pixels.count == width * height, "pixels \(pixels.count) ≠ \(width)×\(height)")
         self.id = id; self.width = width; self.height = height; self.pixels = pixels; self.clutId = clutId
+        self.frameTop = frameTop; self.frameLeft = frameLeft
     }
 
     public init(source: PictureSource, clut: ColorLUT, search: ColorSearch,
@@ -42,7 +47,8 @@ public struct ConvertedPicture: Sendable, Equatable {
         case .indexed(let p):
             guard let table = p.colorTable else {
                 self.init(id: source.id, width: p.width, height: p.height,
-                          pixels: p.pixels.map { $0 == 0 ? 0x00 : 0xff }, clutId: clut.id)
+                          pixels: p.pixels.map { $0 == 0 ? 0x00 : 0xff }, clutId: clut.id,
+                          frameTop: source.frameTop, frameLeft: source.frameLeft)
                 return
             }
             let prepared = search.prepared(for: clut)
@@ -57,11 +63,12 @@ public struct ConvertedPicture: Sendable, Equatable {
                 throw ConvertedPictureError.noColorTableEntry(id: source.id, value: Int(bad))
             }
             self.init(id: source.id, width: p.width, height: p.height, pixels: p.pixels.map { map[Int($0)] },
-                      clutId: clut.id)
+                      clutId: clut.id, frameTop: source.frameTop, frameLeft: source.frameLeft)
         case .direct(let p):
             let out = Dither.convert(rgb: p.rgb, width: p.width, height: p.height, clut: clut,
                                      search: search.prepared(for: clut), model: dither)
-            self.init(id: source.id, width: p.width, height: p.height, pixels: out, clutId: clut.id)
+            self.init(id: source.id, width: p.width, height: p.height, pixels: out, clutId: clut.id,
+                      frameTop: source.frameTop, frameLeft: source.frameLeft)
         }
     }
 

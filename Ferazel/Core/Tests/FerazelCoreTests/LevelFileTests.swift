@@ -76,7 +76,7 @@ final class LevelFileTests: XCTestCase {
         XCTAssertEqual(h.waterSurfaceEffect, 0)
         XCTAssertEqual(h.parallaxRipple, 0)
         XCTAssertEqual(h.patternPeriodSix, 0)
-        XCTAssertEqual(h.pxUsesSpriteClut, 0)
+        XCTAssertEqual(h.pxUsesLevelBaseClut, 0)
         XCTAssertEqual(h.darknessEnable, 5)
         XCTAssertEqual(h.cameraOffsetX, 0); XCTAssertEqual(h.cameraOffsetY, 0)
         XCTAssertEqual(h.stripPict, 0); XCTAssertEqual(h.stripFactor, 0); XCTAssertEqual(h.stripBaseY, 0)
@@ -121,8 +121,8 @@ final class LevelFileTests: XCTestCase {
         XCTAssertEqual(ids { $0.clutAnimMode != 0 }, [50, 51, 67])
         let chapters = Dictionary(uniqueKeysWithValues: ids { $0.chapter != 0 }.map { ($0, levels[$0]!.header.chapter) })
         XCTAssertEqual(chapters, [1: 1, 10: 2, 40: 3, 50: 4, 22: 5, 30: 6, 62: 7])
-        XCTAssertEqual(ids { $0.pxUsesSpriteClut == 1 }, [62, 70])
-        XCTAssertEqual(ids { $0.pxUsesSpriteClut != 0 }, [62, 70])
+        XCTAssertEqual(ids { $0.pxUsesLevelBaseClut == 1 }, [62, 70])
+        XCTAssertEqual(ids { $0.pxUsesLevelBaseClut != 0 }, [62, 70])
         // The map-node level number equals the own id in all 24 (§3.2).
         XCTAssertEqual(Self.levelIds.filter { levels[$0]!.header.mapNodeLevel != $0 }, [])
     }
