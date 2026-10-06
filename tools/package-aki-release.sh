@@ -19,8 +19,12 @@
 # hd-4x/ is checked the same way against Resources/Aki/hd-4x/ (50 PNGs). .DS_Store is never shipped.
 #
 # NOT SHIPPED. Apple's OsakaMono.ttf (stage-aki.sh bundles it for Ben's machine only; it is not
-# redistributable — the app falls back to Menlo, DECISIONS D4). The script asserts no *.ttf / *.otf
-# anywhere in the bundle, on the assembled copy and on the final artifact.
+# redistributable — the app falls back to Menlo, DECISIONS D4). The script asserts no font file
+# (*.ttf *.otf *.ttc *.otc *.dfont) anywhere in the bundle and no Contents/Resources/Fonts directory,
+# on the assembled copy and on the final artifact.
+#
+# HECTORKIT. The app links HectorKit from <repo>/../HectorKit (a symlink during build-out). The script
+# resolves it, records its commit, and refuses a dirty HectorKit exactly like a dirty tree.
 #
 # SIGNING happens on the assembled copy only (project.yml stays ad-hoc). No --deep for signing and
 # no entitlements: nothing in the app needs one (audio playback is not a hardened-runtime exception).
@@ -31,11 +35,18 @@
 #   tools/package-aki-release.sh --version 1.0 --sign "Developer ID Application: …" --notarize <profile>
 #
 #   --version X.Y[.Z]     required; names the output (out/release/Aki-<version>.dmg)
-#   --sign "<identity>"   Developer ID Application identity; required unless --dry-run
+#   --sign "<identity>"   the FULL Developer ID Application identity name as `security find-identity -v -p
+#                         codesigning` prints it, e.g. "Developer ID Application: Name (TEAMID)" (not a
+#                         hash, not a prefix); required unless --dry-run
 #   --notarize <profile>  `xcrun notarytool` keychain profile; without it the script stops after signing +
-#                         local verification (the app is NOT notarized and no DMG is made)
-#   --allow-dirty         package from a dirty working tree (refused otherwise); the summary says DIRTY
-#   --skip-build          reuse the existing Release build in .build/xcode-aki-release
+#                         local verification (the app is NOT notarized and no DMG is made). Needs
+#                         System Settings → Privacy & Security → Automation → (your terminal) → Finder:
+#                         create-dmg drives Finder over AppleScript; the script checks this BEFORE building.
+#   --allow-dirty         package from a dirty working tree or dirty HectorKit (refused otherwise); the
+#                         summary says DIRTY
+#   --skip-build          reuse the existing Release build in .build/xcode-aki-release; it may be stale
+#                         against the current sha, so it is refused unless --allow-dirty is also given,
+#                         and the summary says REUSED BUILD
 #   --dry-run             print the plan; build, copy, sign and write nothing
 #
 #   AKI_DATA_12           the original 1.2.0 Contents/Resources (default
@@ -118,19 +129,31 @@ manifest_of() {
         done
 }
 
-# check_manifest <app> <label> — every manifest line must hash identically at <app>/<path>.
+# check_manifest <app> <label> — every manifest line must be well-formed and hash identically at
+# <app>/<path>, and the number of files verified OK must equal the manifest's entry count (so an empty
+# or truncated check can never pass).
 check_manifest() {
-    local app="$1" label="$2" out
-    if ! out="$(cd "$app" && grep -v '^#' "$MANIFEST" | shasum -a 256 -c --quiet 2>&1)"; then
-        printf '%s\n' "$out" | head -n 40 >&2
+    local app="$1" label="$2" out expect bad ok
+    expect="$(grep -c -v '^#' "$MANIFEST" || true)"
+    [[ "$expect" -gt 0 ]] || die "VERBATIM CHECK FAILED ($label) — the manifest has no entries"
+    bad="$(grep -v '^#' "$MANIFEST" | grep -c -v -E '^[0-9a-f]{64}  ' || true)"
+    [[ "$bad" == 0 ]] || die "VERBATIM CHECK FAILED ($label) — $bad malformed manifest line(s)"
+    if ! out="$(cd "$app" && grep -v '^#' "$MANIFEST" | shasum -a 256 -c --strict 2>&1)"; then
+        printf '%s\n' "$out" | grep -v ': OK$' | head -n 40 >&2 || true
         die "VERBATIM CHECK FAILED ($label) — the bundle's data is not a byte-identical, complete copy"
     fi
+    ok="$(printf '%s\n' "$out" | grep -c ': OK$' || true)"
+    [[ "$ok" == "$expect" ]] \
+        || die "VERBATIM CHECK FAILED ($label) — $ok file(s) verified OK, the manifest lists $expect"
 }
 
 no_fonts() {
     local hit
-    hit="$(find "$1" -type f \( -iname '*.ttf' -o -iname '*.otf' \) -print -quit)"
+    hit="$(find -L "$1" -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' -o -iname '*.otc' \
+            -o -iname '*.dfont' \) -print -quit)"
     [[ -z "$hit" ]] || die "a font file is in the bundle ($hit) — Apple's fonts are not redistributable (D4)"
+    [[ ! -e "$1/Contents/Resources/Fonts" ]] \
+        || die "the bundle has a Contents/Resources/Fonts directory — no fonts ship in the release (D4)"
 }
 
 # ── 1. Inputs ───────────────────────────────────────────────────────────────────────────────────
@@ -148,7 +171,9 @@ else
     problem "no Aki 1.2.0 Contents/Resources at $DATA (no map.png; set AKI_DATA_12)"
 fi
 if (( DATA_OK )); then
-    RSRC="$(find "$DATA" -type f ! -name .DS_Store -exec sh -c 'for f; do if [ -s "$f/..namedfork/rsrc" ]; then echo "$f"; fi; done' _ {} + | head -n 1)"
+    # (no `| head` here: under pipefail its early exit can SIGPIPE the find and kill the script silently)
+    RSRC="$(find "$DATA" -type f ! -name .DS_Store -exec sh -c 'for f; do if [ -s "$f/..namedfork/rsrc" ]; then echo "$f"; fi; done' _ {} +)"
+    RSRC="${RSRC%%$'\n'*}"
     [[ -z "$RSRC" ]] || problem "a data file carries a resource fork ($RSRC); xattr -cr / codesign would drop it"
     DATA_MANIFEST="$(manifest_of "$DATA" "")"
     DATA_FILES="$(printf '%s\n' "$DATA_MANIFEST" | wc -l | tr -d ' ')"
@@ -187,15 +212,51 @@ if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
 fi
 info "git $GIT_SHA · tree $TREE"
 
+HK_LINK="$ROOT/../HectorKit"
+if HK="$(cd "$HK_LINK" 2>/dev/null && pwd -P)" && HK_SHA="$(git -C "$HK" rev-parse --short HEAD 2>/dev/null)"; then
+    HK_TREE="clean"
+    if [[ -n "$(git -C "$HK" status --porcelain)" ]]; then
+        if (( ALLOW_DIRTY )); then
+            HK_TREE="DIRTY, allowed by --allow-dirty"
+        elif (( DRY_RUN )); then
+            HK_TREE="DIRTY — a real run would REFUSE (commit HectorKit first, or pass --allow-dirty)"
+        else
+            git -C "$HK" status --short >&2
+            die "HectorKit ($HK) is dirty — commit it first, or pass --allow-dirty"
+        fi
+    fi
+else
+    HK="$HK_LINK"; HK_SHA="?"; HK_TREE="?"
+    problem "HectorKit not found as a git checkout at $HK_LINK (the app links it from there)"
+fi
+info "hectorkit $HK_SHA ($HK_TREE) at $HK"
+
+if (( SKIP_BUILD )); then
+    if (( ALLOW_DIRTY )); then
+        info "--skip-build: REUSING the existing build — it may not match git $GIT_SHA (allowed by --allow-dirty)"
+    else
+        problem "--skip-build reuses $BUILT_APP, which may be stale against git $GIT_SHA — refused unless --allow-dirty is also given"
+    fi
+fi
+
 if [[ -n "$NOTARIZE" ]]; then
     for s in notarize-bundle.sh package-dmg.sh; do
         [[ -x "$KIT/$s" ]] || problem "notarize-kit script missing or not executable: $KIT/$s"
     done
     command -v create-dmg >/dev/null 2>&1 || problem "create-dmg missing (brew install create-dmg)"
+    # create-dmg lays the DMG window out by driving Finder over AppleScript; without the Automation grant
+    # it fails AFTER the app's notary round-trip. Ask now, before anything is built.
+    osascript -e 'tell application "Finder" to get name of startup disk' >/dev/null 2>&1 \
+        || problem "cannot script Finder — grant System Settings → Privacy & Security → Automation → (your terminal app) → Finder (create-dmg drives Finder), then re-run"
+fi
+SPCTL_STATUS="$(spctl --status 2>&1 || true)"
+if [[ "$SPCTL_STATUS" != *"assessments enabled"* ]]; then
+    problem "Gatekeeper is not enabled on this Mac (spctl --status: $SPCTL_STATUS) — its assessments would prove nothing"
 fi
 if [[ -n "$SIGN" ]] && (( ! DRY_RUN )); then
-    security find-identity -v -p codesigning | grep -q -F "\"$SIGN\"" \
-        || die "signing identity not found in the keychain: $SIGN"
+    IDENTITIES="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+    grep -q -F "\"$SIGN\"" <<<"$IDENTITIES" \
+        || die "signing identity not found in the keychain: $SIGN (pass the full name, see --help)"
 fi
 
 # ── Dry run stops here ──────────────────────────────────────────────────────────────────────────
@@ -209,14 +270,14 @@ if (( DRY_RUN )); then
     would "report lipo -archs of the Aki executable"
     would "wipe $REL/; ditto the app to $APP"
     would "rsync the data (no .DS_Store) into Contents/Resources/; rsync --delete hd-4x into Contents/Resources/hd-4x/"
-    would "assert no *.ttf/*.otf (OsakaMono is NOT shipped, D4); xattr -cr"
+    would "assert no *.ttf/*.otf/*.ttc/*.otc/*.dfont and no Contents/Resources/Fonts (OsakaMono is NOT shipped, D4); xattr -cr"
     would "verbatim check #1: data + hd-4x sha256 vs the assembled copy → $MANIFEST"
     would "codesign --force --options runtime --timestamp --sign \"${SIGN:-<identity>}\" — nested code first, then the app (no --deep, no entitlements)"
     would "codesign --verify --deep --strict --verbose=2; codesign -dv (Authority, flags=runtime, Timestamp)"
     if [[ -n "$NOTARIZE" ]]; then
         would "$KIT/notarize-bundle.sh \"$APP\" \"$NOTARIZE\""
-        would "$KIT/package-dmg.sh \"$APP\" \"${SIGN:-<identity>}\" \"$NOTARIZE\" \"<data>/aki.icns\" → $DMG (+ .sha256)"
-        would "mount the DMG read-only: stapler validate, spctl execute, codesign verify, verbatim check #3, no fonts; stapler + spctl open on the DMG"
+        would "$KIT/package-dmg.sh \"$APP\" \"${SIGN:-<identity>}\" \"$NOTARIZE\" \"$APP/Contents/Resources/AppIcon.icns\" → $DMG (+ .sha256)"
+        would "mount the DMG read-only: stapler validate, spctl execute (source=Notarized Developer ID), codesign verify, verbatim check #3, no fonts; stapler + spctl open on the DMG"
     else
         would "stop after signing: NOT notarized, no DMG (pass --notarize <profile>)"
     fi
@@ -241,7 +302,7 @@ trap cleanup EXIT
 step "build"
 mkdir -p "$ROOT/.build"
 if (( SKIP_BUILD )); then
-    info "reusing $BUILT_APP (--skip-build)"
+    info "REUSING $BUILT_APP (--skip-build --allow-dirty) — not rebuilt from git $GIT_SHA"
 else
     ( cd "$ROOT" && xcodegen generate --quiet ) || die "xcodegen generate failed"
     info "building Release (log: $BUILD_LOG) …"
@@ -256,7 +317,14 @@ EXE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$BUILT_APP/C
     || die "the built app's Info.plist has no CFBundleExecutable"
 ARCHS="$(lipo -archs "$BUILT_APP/Contents/MacOS/$EXE_NAME")" || die "lipo cannot read the Aki executable"
 BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
+# The app icon (Icon Composer AppIcon.icon → Assets.car + AppIcon.icns); the DMG volume icon uses the .icns.
+ICON_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$BUILT_APP/Contents/Info.plist" 2>/dev/null || echo '?')"
+[[ "$ICON_NAME" == "AppIcon" ]] || die "the built app's CFBundleIconName is “$ICON_NAME”, expected AppIcon (stale build?)"
+for f in Assets.car AppIcon.icns; do
+    [[ -f "$BUILT_APP/Contents/Resources/$f" ]] || die "the built app has no Contents/Resources/$f (stale build?)"
+done
 info "app: $BUILT_APP"
+info "icon: CFBundleIconName AppIcon · Assets.car + AppIcon.icns present"
 info "archs: $ARCHS · Info.plist CFBundleShortVersionString $BUNDLE_VERSION"
 
 # ── 3. Assemble ─────────────────────────────────────────────────────────────────────────────────
@@ -277,7 +345,8 @@ info "$APP — no font files; xattrs cleared"
 step "verbatim check #1 (source → assembled copy)"
 {
     printf '# Aki %s — shipped original data + Remaster art, sha256, paths relative to Aki.app\n' "$VERSION"
-    printf '# made by tools/package-aki-release.sh at git %s from %s and Resources/Aki/hd-4x\n' "$GIT_SHA" "$DATA"
+    printf '# made by tools/package-aki-release.sh at git %s (%s) from %s and Resources/Aki/hd-4x\n' "$GIT_SHA" "$TREE" "$DATA"
+    printf '# hectorkit %s (%s) at %s\n' "$HK_SHA" "$HK_TREE" "$HK"
     printf '%s\n' "$DATA_MANIFEST" | sed 's#  #  Contents/Resources/#'
     manifest_of "$HD" "Contents/Resources/hd-4x/"
 } > "$MANIFEST"
@@ -310,7 +379,7 @@ loose_macho() {
         [[ "$f" == "$MAIN_EXE" ]] && continue
         if [[ "$f" == *.framework/* || "$f" == *.appex/* || "$f" == *.xpc/* || "$f" == *.bundle/* \
               || "$f" == */Contents/*.app/* ]]; then continue; fi
-        file -b "$f" | grep -q 'Mach-O' || continue
+        [[ "$(file -b "$f")" == *Mach-O* ]] || continue
         slashes="${f//[^\/]/}"
         printf '%d\t%s\n' "${#slashes}" "$f"
     done
@@ -330,10 +399,13 @@ else
     info "nested code: none (SwiftPM packages are linked statically into the executable)"
 fi
 sign "$APP"
-codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 | sed 's/^/   /' \
-    || die "codesign --verify --deep --strict failed on $APP"
+VERIFY_OUT="$(codesign --verify --deep --strict --verbose=2 "$APP" 2>&1)" || {
+    printf '%s\n' "$VERIFY_OUT" | sed 's/^/   /' >&2
+    die "codesign --verify --deep --strict failed on $APP"
+}
+printf '%s\n' "$VERIFY_OUT" | sed 's/^/   /' || true
 SIG="$(codesign -dv --verbose=4 "$APP" 2>&1)"
-printf '%s\n' "$SIG" | grep -E '^(Identifier=|Format=|CodeDirectory |Authority=|Timestamp=|TeamIdentifier=|Runtime Version=)' | sed 's/^/   /'
+printf '%s\n' "$SIG" | grep -E '^(Identifier=|Format=|CodeDirectory |Authority=|Timestamp=|TeamIdentifier=|Runtime Version=)' | sed 's/^/   /' || true
 printf '%s\n' "$SIG" | grep -q '^Authority=Developer ID Application' || die "not signed by a Developer ID Application identity"
 printf '%s\n' "$SIG" | grep -E '^CodeDirectory' | grep -q 'runtime' || die "the hardened runtime flag is missing"
 printf '%s\n' "$SIG" | grep -q '^Timestamp=' || die "no secure timestamp in the signature"
@@ -347,9 +419,14 @@ DMG_LINE="(none — not notarized; pass --notarize <profile>)"
 DMG_SHA="-"
 if [[ -n "$NOTARIZE" ]]; then
     step "notarize (notarize-kit)"
-    "$KIT/notarize-bundle.sh" "$APP" "$NOTARIZE" || die "notarize-bundle.sh failed"
+    # On failure leave no plausible-looking unnotarized artefact behind (half-made DMG, notary zip).
+    scrub_artefacts() { rm -f "$REL/Aki.dmg" "$REL"/*-notarize.zip "$DMG" "$DMG.sha256"; }
+    "$KIT/notarize-bundle.sh" "$APP" "$NOTARIZE" || { scrub_artefacts; die "notarize-bundle.sh failed"; }
     step "dmg (notarize-kit)"
-    "$KIT/package-dmg.sh" "$APP" "$SIGN" "$NOTARIZE" "$DATA/aki.icns" || die "package-dmg.sh failed"
+    VOLICON="$APP/Contents/Resources/AppIcon.icns"
+    [[ -f "$VOLICON" ]] || { scrub_artefacts; die "no $VOLICON (the app icon compiled from AppIcon.icon) for the DMG volume icon"; }
+    "$KIT/package-dmg.sh" "$APP" "$SIGN" "$NOTARIZE" "$VOLICON" || { scrub_artefacts; die "package-dmg.sh failed"; }
+    rm -f "$REL"/*-notarize.zip
     [[ -f "$REL/Aki.dmg" ]] || die "package-dmg.sh produced no $REL/Aki.dmg"
     mv "$REL/Aki.dmg" "$DMG"
     ( cd "$OUT" && shasum -a 256 "Aki-$VERSION.dmg" ) > "$DMG.sha256"
@@ -358,12 +435,18 @@ if [[ -n "$NOTARIZE" ]]; then
 
     step "final check (the DMG players download)"
     MNT="$(mktemp -d "${TMPDIR:-/tmp}/aki-release-mnt.XXXXXX")"
+    # NOTE: `hdiutil attach -mountpoint` is deprecated as of macOS 27 (it still works); revisit when removed.
     hdiutil attach -nobrowse -readonly -noautoopen -mountpoint "$MNT" "$DMG" >/dev/null || die "hdiutil attach failed"
     FAPP="$MNT/Aki.app"
     [[ -d "$FAPP" ]] || die "the DMG has no Aki.app at its root"
     xcrun stapler validate "$FAPP" >/dev/null || die "stapler validate failed on the app inside the DMG"
-    spctl --assess --type execute -vv "$FAPP" 2>&1 | sed 's/^/   /'
-    spctl --assess --type execute "$FAPP" 2>/dev/null || die "Gatekeeper rejects the app inside the DMG"
+    SPCTL_APP="$(spctl --assess --type execute -vv "$FAPP" 2>&1)" || {
+        printf '%s\n' "$SPCTL_APP" | sed 's/^/   /' >&2 || true
+        die "Gatekeeper rejects the app inside the DMG"
+    }
+    printf '%s\n' "$SPCTL_APP" | sed 's/^/   /' || true
+    grep -q 'source=Notarized Developer ID' <<<"$SPCTL_APP" \
+        || die "Gatekeeper accepts the app but not as source=Notarized Developer ID"
     codesign --verify --deep --strict "$FAPP" || die "codesign --verify failed on the app inside the DMG"
     check_manifest "$FAPP" "#3, app inside the DMG"
     no_fonts "$FAPP"
@@ -371,7 +454,7 @@ if [[ -n "$NOTARIZE" ]]; then
     [[ "$FINAL_HD" == "$HD_EXPECT" ]] || die "the DMG's app holds $FINAL_HD hd-4x PNGs, expected $HD_EXPECT"
     cleanup; MNT=""
     xcrun stapler validate "$DMG" >/dev/null || die "stapler validate failed on the DMG"
-    spctl --assess --type open --context context:primary-signature -vv "$DMG" 2>&1 | sed 's/^/   /'
+    spctl --assess --type open --context context:primary-signature -vv "$DMG" 2>&1 | sed 's/^/   /' || true
     spctl --assess --type open --context context:primary-signature "$DMG" 2>/dev/null \
         || die "Gatekeeper rejects the DMG"
     DMG_LINE="$DMG ($(du -h "$DMG" | cut -f 1 | tr -d ' '))"
@@ -379,6 +462,8 @@ if [[ -n "$NOTARIZE" ]]; then
 fi
 
 # ── 8. Gate summary ─────────────────────────────────────────────────────────────────────────────
+if (( SKIP_BUILD )); then BUILD_LINE="REUSED BUILD (--skip-build; not rebuilt from git $GIT_SHA)"
+else BUILD_LINE="fresh Release build from git $GIT_SHA"; fi
 NEXT=""
 [[ -n "$NOTARIZE" ]] || NEXT="NOT NOTARIZED — signed + verified locally only; no DMG was made"
 cat <<SUMMARY
@@ -386,6 +471,8 @@ cat <<SUMMARY
 === GATE SUMMARY — Aki $VERSION ===
 version         $VERSION (Info.plist CFBundleShortVersionString $BUNDLE_VERSION)
 git sha         $GIT_SHA ($TREE)
+hectorkit       $HK_SHA ($HK_TREE)
+build           $BUILD_LINE
 archs           $ARCHS
 signed as       $SIGN (hardened runtime, secure timestamp)
 notarized       $NOTARIZED
