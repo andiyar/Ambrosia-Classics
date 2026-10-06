@@ -1,6 +1,8 @@
-# game data: see DECISIONS D24 — Deimos is committed; other games via symlinks. Mirrors, decompiles never committed
+# game data: Deimos (D24) and Ferazel (D26) are committed under Resources/; the other games' data stays local.
+# Archive mirrors and decompiles are never committed.
 /Resources/*
 !/Resources/Deimos/
+!/Resources/Ferazel/
 /Resources/Deimos/Data/HID.bundle/
 /Resources/Deimos/**/Icon?
 /ghidra/*
