@@ -120,6 +120,10 @@ DayTimeChanged(this, forced || (clock >> 10) != oldQuarter);                    
 - Real-time throttle in `MoveAll`: frame budget `TickCount` 0x10 or 0x20 ticks (≈ 0.27 / 0.53 s)
   depending on the sign bit of preference byte `DAT_100d3e20`; a 0x3C-tick (1 s) loop guard.
   Exact wall-clock pacing NOT RESOLVED (several unnamed calls in the loop).
+  ⚑ wave 2 (2026-10-06): superseded — the 0x10/0x20 "frame budget" (TOC 0x100ce898, its only TOC
+  alias) is clamped in `MoveAll` and **never read anywhere**, so it delays nothing; the 0x3C guard
+  only sets a per-character flag that makes `MoveAll` flush queued mouse/key events on exit. The
+  real wall clock is the thread scheduler — §3.4. [HIGH]
 
 ### 3.3 Day/night and sky [HIGH unless marked]
 - Sunrise/sunset constants `DAT_100d60b4 = 20480` (5:00) and `DAT_100d60b8 = 77824` (19:00) —
@@ -147,6 +151,80 @@ by script builtin 0xD8 (`script-builtins.md`).
   (12..21 → "evening"). ⚑ corrected (review 2026-10-03): confirmed by disassembly — `GetGlobStr` 0x10093D60: `cmpwi
   r31,0xc; bge 0x10093d70; … cmpwi r31,6; bge → "evening"`; 12–21 always yields "evening" and
   "afternoon" (100cee40) is unreachable. [HIGH]
+
+### 3.4 Wall-clock pacing — ⚑ wave 2 (2026-10-06); item 16, wall-clock half: CLOSED
+Source: `app-shell.md` §3 (threads, scheduler, task queue). Bodies: `MyScheduler__11TTaskMaster
+FP16SchedulerInfoRec @ 1001cb94` and `TaskThread__11TTaskMasterFPv @ 1001d334` (missing dump),
+`AnimThread__10TMapWindowFPv @ 10043280` (missing dump), `MoveAll`, `DoTick`, `Guide`,
+`HandleMove`, `HandleSubMove`, `DrawRoutine__11TGameViewerFs` (main dump).
+- **What is paced: the animation thread.** `AnimThread` loops `DrawRoutine__11TGameViewerFs(viewer,
+  1)`, frame counter viewer+0xBA = (+1) mod 8, `AdvanceDisplacementFilters`, `YieldToAnyThread()`
+  (m:10843–10857). It has no wait of its own; the Thread-Manager scheduler decides when it runs. [HIGH]
+- **The pace.** Before choosing the anim thread, `MyScheduler` spins on `TickCount` (m:5715 `while
+  (uVar11 < *(uint *)puVar7) { uVar11 = .glue::TickCount(); }`; m:5742 the same up to the deadline in
+  mode 3) and then re-arms the deadline: m:5756 `*(uint *)puVar8 = uVar11 + (DAT_100d3e20 >> 2 &
+  0xf);` (m:5753 adds to the old deadline when early). The read is the prefs **byte** at 0x100d3e20:
+  `881a0000 lbz r0,0(r26)` / `5400f73e rlwinm r0,r0,30,28,31` with r26 = 0x100d3e20 (`ppcdis.py
+  1001cb94 1001ced8`). So anim frames are ≥ F ticks apart, F = byte-0 bits 2–5. [HIGH]
+- **Per setting.** `DefaultMenu__10TDelverAppFss @ 10015b10` menu 0x88 items 10/11/12 set
+  `DAT_100d3e20 & 0xc3 | 0x10` / `| 0x18` / `| 0x20` (m:4949/4955/4961) → **F = 4 / 6 / 8 ticks =
+  15 / 10 / 7.5 frames per second** at 60 ticks/s (MENU 136 labels them 16 / 10 / 8 FPS). The four
+  CPU-class defaults (`python3 -c "…toc.data_u32(0x100d426c,4)"` → 0x18800000, 0x18800000,
+  0x99800000, 0xDBC80000) all have byte 0 bits 2–5 = 6. A census of every read/write of
+  0x100d3e20–23 in the four dumps (`grep -n 'd3e2[0-3]'`) finds bits 2–5 written only by those menu
+  items and the PostInitMac default; `SaveSettings__13TApPrefWindowFv` masks preserve them
+  (`& 0x7d`, `& 0xbf`, `& 0xfe`). MENU 0x88 is never inserted into the 1.0.4 menu bar
+  (app-shell.md §4.3, MED absence scan), so **in practice F = 6: 10 frames/s**, unless a prefs file
+  already holds another value. [HIGH arithmetic; "in practice" MED]
+  ⚑ corrected (review wave 2 2026-10-06): read "**at most** 10 frames/s". `MyScheduler` only
+  enforces a minimum spacing (m:5753 `*(uint *)puVar8 = *(int *)puVar8 + (DAT_100d3e20 >> 2 & 0xf);`
+  when early, m:5756 `= uVar11 + (…)` otherwise) and runs a frame only when no event, redraw, task
+  slice, conversation or background state takes precedence (app-shell.md §3.3), so 10 fps is an
+  upper bound, not a rate. [HIGH]
+- **Which game events wait for a frame.** `DoTick__14TActiveMonsterFUc @ 1004ded8` (p:21418,
+  p:21461–21467) and `Guide__14TActiveMonsterFv @ 1004dbc0` (p:21320) set the mode word to 3 and
+  `YieldToAnyThread()` around a visible move of the party leader — p:21461 `if (*(short *)(param_1 +
+  2) == *(short *)puVar7) { … *puVar8 = 3; .glue::YieldToAnyThread(); …` after a sub-move step —
+  so each displayed leader sub-step costs one paced frame. Sub-steps per tile come from the movement
+  bits (byte 0 bit 7 = sub-tile movement on, bit 1 = finer): `HandleSubMove @ 10048fb0` advances the
+  phase by 2 up to 2, or by 1 up to 3, and divides the busy counter by 2 or 4 (p:20576–20592) —
+  about **1 / 2 / 4 frames per tile** for Fastest / Faster / Smoother (= Graphics Quality
+  Performance … Quality), i.e. ≥ 6 / 12 / 24 ticks per leader step at F = 6. [MED: starting phase
+  `param_6` of HandleMove not traced; non-leader steps do not yield]
+- **The player turn itself** is not clocked: keys/clicks are queued to the task thread
+  (`TaskThread`, kinds 1/2) and processed when the scheduler runs it (mode 2 alternates one task
+  slice per anim frame; mouseDown/keyDown pending or a window needing redraw hands the CPU to the
+  event loop first). In "real-time" mode (flag TOC 0x100cdd04, off by default, toggled by
+  `TMapWindow::KeyRoutine` key 0xCA) `MyGetEvent__10TDelverAppFsP11EventRecordUc @ 10012c24`
+  fabricates a space keyDown after 0x14 idle ticks (m:4569–4578) — an idle turn every 1/3 s. [HIGH]
+  ⚑ corrected (review wave 2 2026-10-06): the "idle turn" meaning is now traced, so the HIGH stands
+  on this chain (all read this session):
+  1. `KeyRoutine__10TMapWindowFs @ 100437b8` (x:759–762; `find_func.py
+     'KeyRoutine__10TMapWindowFs' --file ghidra/Cythera_extra.decompiled.c`, last statement): `if (((sVar16 == 0x20) || (… PerformDoKey
+     … == '\0')) && (*(short *)(*(int *)puVar1 + 4) == 3)) { …ScheduleKeyDown…(param_1,param_2); }`.
+  2. `ScheduleKeyDown__11TTaskMasterFP16TDroppableWindows @ 1001d05c` (p:7783):
+     `_QueueTaskEvent__FssP16TDroppableWindow5Points(2,0,param_1,…,(int)param_2);` then
+     `YieldToAnyThread()`; `TaskThread__11TTaskMasterFPv @ 1001d334` (m:5876) runs a kind-2 event as
+     `.debug::_KeyRoutine__16TDroppableWindowFs(uStack_8c,(int)(short)uStack_84._0_2_);`.
+  3. `KeyRoutine__16TDroppableWindowFs @ 1002a07c` (p:12430; label p:12559, call p:12566): 0x20 falls through to `LAB_1002a3a4`
+     (`if (0x20 < param_2) return;` just above it): key target active → `FUN_100c50e8(target, 8)` and
+     return; else mode word := 0, `KeyboardMode(status, 0)`, `XDirection…(param_1,8);`.
+  4. `XDirection__16TDroppableWindowFQ28TGameSys10EDirection @ 10028ff4` (p:11966): `bVar1 = param_2
+     != 8;` (p:12026) so modifier actions are skipped; the hold loop (p:12137–12138) does `if (param_2 == 8) {
+     _HeartBeat__8TGameSysFs(*puVar10,10); }` (else `MoveCommand`), re-reads `GetKeys` and repeats
+     with 8 while KeyMap byte 6 bit 1 (`local_7a & 2`, p:12167, Mac key code 0x31 = space) is held.
+  So space = `HeartBeat(10)`: ten busy units, the same as a successful step (§3.2) — a turn spent
+  standing still. [HIGH as code; "key code 0x31 = space" is the standard Mac KeyMap, MED]
+- **Other waits.** `DrawRoutine__11TGameViewerFs`: only while a screen transition is pending
+  (viewer +0x20C28 kinds 1–8), 5 ticks per transition step (p:28009 `do { uVar7 =
+  .glue::TickCount(); } while (uVar7 < iVar9 + 5U);`), then cleared (p:28153). `HandleMove`,
+  `HandleSubMove`, `Render__7TViewerFssss`: no `TickCount`, `Delay`, `Yield` or `WaitNextEvent`
+  (scan of their bodies for those names: only prefs-bit tests). [HIGH]
+- **Still open in item 16:** the layer / priority order inside `Render__7TViewerFssss @ 10066ac0`
+  (p:32113–33454, 1,342 lines). Not read this wave; outline only (LOW): an optional first pass over
+  the staged-object list (`param_1[0xfe0c]` count) when viewer byte +0xB8 is set, a `(−r … r+1)²`
+  cell loop, a loop testing tile flags 0x10000000/0x1000/0x2000, a second staged-list pass, and a
+  prop pass calling `AdjustPropFX` then `MaskAnyTile` ×5 (`grep -n -o` of call names over that range).
 
 ---------------------------------------------------------------------------------------------
 ## 4. Party, schedules, movement (pointers)

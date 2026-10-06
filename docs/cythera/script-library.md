@@ -19,7 +19,8 @@ combat, magic, dialogue, trade, schedules and quests cite this file for helper s
   30: 20). "calls (segs)" = call sites (distinct calling segments). Liveness was closed transitively
   (§11). Native reach was measured with a raw-PEF scan (code section at file offset 0x3470, base
   0x10000000) for `bl` to the four `DoInterp` wrappers, taking the nearest preceding `li r4,imm` as
-  the selector (§9) — a heuristic, so native-only claims built on it are MED.
+  the selector (§9) — a heuristic, so native-only claims built on it are MED. ⚑ wave 2 (2026-10-06): lifted —
+  the scan is now reproducible and shown complete (§9.1); native-only reach claims built on it are HIGH.
 - Arg slots: **A30 = first argument (receiver for methods)**, A31.. next; L00.. locals (script-vm §3).
   `jf c -> X` jumps when `c` is **false**. `random(lo,hi)` returns lo..hi−1 (script-builtins AC).
 - **Not read**: the bodies of the ~600 class segments that call into the library (only their call
@@ -297,6 +298,52 @@ Native senders from the raw `bl`+`li r4` scan (count of sites): 0 (2), 1 (1), 2 
 18, 19, 61, 62 have **no** sender of either kind; every shipped `sel6` receiver is a `sysnew_01` list
 (handled natively), so 3006 is unreached too.
 
+### 9.1 The native-sender scan, reproduced — ⚑ wave 2 (2026-10-06) (review note N3 lifted)
+
+Command (census §2 N3, re-run this session; `all.dis` = `python3 docs/cythera/tools/ppcdis.py 10000000 100cd280`,
+212,074 lines; the four entries are `grep DoInterp ghidra/Cythera_pef.tb.txt`):
+```sh
+python3 -c "
+import re,collections;T={0x10082658,0x100826f4,0x100827c8,0x100828c4};h=[];C=collections.Counter()
+for l in open('all.dis'):
+    m=re.match(r'([0-9a-f]{8}):\s+\S+\s+(.*)',l)
+    if not m: continue
+    h=(h+[m.group(2)])[-14:];b=re.match(r'bl 0x([0-9a-f]+)',m.group(2))
+    if b and int(b.group(1),16) in T:
+        s=[re.match(r'li r4,(-?\d+)',x).group(1) for x in h[:-1] if re.match(r'li r4,(-?\d+)',x)];C[s[-1] if s else '?']+=1
+print(sorted(C.items()))"
+```
+Result, 89 sites: −1 (5), 0 (3), 1 (1), 2 (9), 3 (1), 4 (3), 5 (1), 7 (1), 8 (4), 9 (3), 10 (3), 11 (1),
+12 (2), 13 (1), 14 (3), 15–17 (1 each), 20 (4), 21 (20), 23 (2), 24 (1), 25 (1), 26 (2), 27 (3), 28 (3),
+29 (2), 31 (4), 32 (2), 33 (1). Differences from the wave-1 list above: **0 has 3** (`LoadLevelProps` @1000767C,
+`HatchEgg` @1004FABC, `CreatePlayer` @100A1A28 — the three senders script-vm §2.3 already names) and
+**−1 (5)** is new (below).
+Why the scan is now HIGH: (1) every site's r4 is the `li` immediate — a second pass that walks back from
+each `bl` to the last instruction writing r4 finds `li r4,N` at 88 sites and, at `CreatePlayer`, a `b`
+over two TOC loads into r6 with `100a1a00: 38800000 li r4,0` before it; (2) the set of sites is complete
+— `DoInterp0` (0x10082B34) is called only from the four wrappers (`grep -E 'bl 0x10082b34' all.dis`; the
+two `SCombatAIEntry` hits of `bl 0x10082a0c` are `DoInterpRoutine`, routine segments 0x0880+/0x0900+, not
+selector sends), and no data word holds a TVector to any wrapper or to `DoInterp0` (`toc.D` word scan
+for 0x82658/0x826F4/0x827C8/0x828C4/0x82B34 and their absolute forms → only the control hit
+`0x100d05c8 0x83ca8` = `RangeIter`). [HIGH]
+**Senders in the wave-2 bodies** (function = traceback range holding the site; reading in
+scripted-windows.md §8 / ui-play.md):
+
+| sel | site → function | reading |
+|---|---|---|
+| −1 | 10088C68 `TWText::MouseRoutine`, 1008AA1C `TWControl::MouseRoutine`, 1008AD30 `TWButton::Flash`, 1008C30C `TWPixButton::MouseRoutine`, 1008CD3C `TWNumberEntry::MouseRoutine` | not a selector: the receiver is the widget's f39 code pointer, which DoInterp0 runs directly with (f38, widget) — scripted-windows.md §4 [HIGH] |
+| 1 | 10086380 `TScriptedWindow::CloseRoutine` | window closed → its owning prop; no shipped receiver → 3001 [HIGH] |
+| 2 | 1002ACD0 `TAbilityList::LDEFDraw`, 10035198 `TStatusWindow::CursorRoutine`, 100355C8 `TStatusWindow::MouseRoutine` | name (R1, ui-play.md) [HIGH site] |
+| 8 | 1002F748 `TCharacterWindow::MouseRoutine`; 1008E8F8 `TWList::MouseRoutine` | search/look; TWList single click on a row's object (class unused by shipped scripts) [HIGH] |
+| 10 | 1008D538 `TWMusicBox::MouseRoutine`; 1008E930 `TWList::MouseRoutine` | use_on: instrument prop ← 28-bit note history; container ← row object on double click [HIGH] |
+| 23 | 1008DBC4 `TWInvent::CanDrop`, 1008E680 `TWList::CanDrop` | container ← dragged prop: "does it fit?" — truthy accepts (shipped receivers: 10 container classes, default 3017 `False`) [HIGH] |
+
+Relabels from the scan [HIGH]: **3001 sel 1** = *window closed* (named here); **3017 sel 23** = *fits*
+(named here; the reach "native 2" = the two `CanDrop` sites); **3012, 3013, 303D, 303E unreached → HIGH**:
+no native site and no script send (`grep -h -E '^[0-9A-F]{4}:[ >]' ghidra/cythera-scripts/*.txt | grep -c -E '\.sel(18|19|61|62)(/[a-z_0-9]+)?\('`
+→ 0, and no dictionary key 18/19/61/62). 3006 stays MED (11 script `sel6` sends; "they all hit
+lists" is the wave-1 script reading). §12 item 5 is updated (1 and 23 named); §11's dead list is unchanged.
+
 | id | selector (name) | sig | behaviour | reach | conf |
 |---|---|---|---|---|---|
 | 3000 | 0 init | A30 | forwards `init(A30)` to the object's class-0x48 record if any | native 2 + script 3 | HIGH |
@@ -515,5 +562,7 @@ Roots: all class segments (pages 0x10–0x1E), page 0x09, the 35 0x30 handlers w
 3. ⚑ corrected (wave 1 2026-10-03) **Closed**: 0F15's location is 1 (the Hero) at every site (§8).
 4. ⚑ corrected (wave 1 2026-10-03) **Closed**: `6 − G11` = 6 (DoExpr case 0x4b, §7b row 0E86).
 5. Selector names left `[unnamed]` (1, 18, 19, 23, 61, 62) and the role of selector 7 for non-rooms.
+   ⚑ wave 2 (2026-10-06): **1 = scripted window closed** (sent to the window's prop) and **23 = container
+   "fits?"** are named from their native senders (§9.1); 18, 19, 61, 62 have no sender of any kind (HIGH).
 6. ⚑ corrected (wave 1 2026-10-03) **Closed** for names (1AC0–1AD6 `name` methods, §7b); the roles of
    202–214 beyond their use sites in this library stay MED.

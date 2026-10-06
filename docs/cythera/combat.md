@@ -578,8 +578,43 @@ Reflex 12, Health 20, Level `((200/15 + 270)/10·100 + 50)/100 = 28`, +0x1D = 0,
 4. ⚑ corrected (wave 1 2026-10-03): creature-record **byte 7** has no reader (§4) — open; bytes 14–15 are the corpse word
    (§12.2). f32 bits 1, 2, 4, 16, 32 and f33 bits 0x1000–0x8000 have no reader in the combat
    routines read here.
+   ⚑ corrected (review wave 2 2026-10-06): closed — byte 7 is 0 in all 50 records and has no reader
+   anywhere; f32 1/2/4 and f33 0x1000–0x8000 **are** read natively as movement attributes
+   (`GetMonstAttrs`, `HandleMove`, `TActiveMonster::CanMove`); only f32 16/32 have no reader
+   (open-items-2026-10-06.md §2.2–§2.3).
 5. R0EA3 spell selection (weights, sel 54 target classes) — belongs with the spells bank.
 6. The A31-aliasing reading of 0x301D for record-less characters (§12.3) — trace the stack layout
    of `DoInterp0` → `DoInterpAt` for a 1-value send with a 2-arg frame.
 7. Behaviour-verify the to-hit/damage numbers against play (Ben) — every number above is a code
    reading.
+
+---------------------------------------------------------------------------------------------
+## 17. What the play windows settle for combat — cross-reference ⚑ wave 2 (2026-10-06)
+Readings banked in **ui-play.md** (missing-dump bodies, reader R1); only the combat-relevant
+conclusions are listed here.
+- **Equip slots by p26** (§3's sel 38 `[0]`): ten slots — 0 head (p26 0), 1 neck (1), 2 armour
+  (2), 3 waist (7), 4 feet (8), 5 cloak (9), 6/7 the two hands (3, 4, 5), 8/9 rings (6)
+  (`CanDrop__16TCharacterWindowFsR5Point @ 1002dcf8`, `RecalcWieldList`; ui-play.md §2.2–§2.3).
+  With §3's shipped values: shields (p26 3) and one-handed weapons (4: dagger, club, mace, short
+  sword, sling) each take **one hand**, and either hand accepts either — two weapons or two shields
+  pass the window's test; p26 **5** (axe, long sword, spear, mystic spear, bow, gauntlets) needs
+  **both hands empty** and blocks the second hand. At most two rings. The window does no weight
+  test; `WieldCommand`'s Body × 10 limit applies (§14). [HIGH for the window rules]
+- **Strategy (CharEntry +0x1E)** is written by the character window's tactic radios (refcons 3, 4,
+  5, 6, 7, 8, 13 and a user-AI value) and the strategy popup (item n ≥ 3 → `0xAD + n`, i.e. 0xB0 +
+  …); the leader's window shows no tactics. ui-play.md §2.5, §6.1; schedules-npcs.md §2.3.
+- **Reach for search / take** = the leader's cell and its eight neighbours, with a wall-edge rule on
+  the east and south neighbours (`CanSearch__16TDroppableWindowF5Point @ 10025c84`; ui-play.md §1.2).
+- **Throwing** an item from the map window (`CanDrop__10TMapWindowFsR5Point`): any visible cell is
+  accepted (drop when adjacent, throw farther); `DropCommand` then requires a clear straight line
+  (`IsStraightRel`: in view, visible, no tile flag 4 on the line) — the native range limit is the
+  view; sel 43's `[1]` is not read on this path (whether the selector-17/25 scripts add one was not
+  read) (ui-play.md §5.2). Selector 25 is sent when the item's outermost owner is more than √2 from
+  the leader (`if (2 < dx*dx + dy*dy)`) [HIGH, main-dump context].
+- **Missile visuals** (`TMissile*`, `TLineEffect`): animation only, plus E2's hit table that marks
+  every creature on a line missile's path (magic.md §11.2) — §0's "not read" is now read; no
+  arithmetic there.
+- §16.1's "identity of `PTR_DAT_100cdbec`": every play window uses it as the acting character —
+  F-keys schedule for it, the map window is centred on it, its character window alone shows the
+  skill buttons and no tactics (ui-play.md §2.1, §4.3, §5.1) — consistent with "leader" (MED → HIGH
+  for the UI's use; ai-scripts.md §4.1 names it the current party leader).
