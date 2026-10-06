@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (BTX playable with sound; Ben playtesting)
+# STATE — Ambrosia Classics — 2026-10-06 (BTX playable with sound; Ben playtesting; Windows engine side done)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -40,16 +40,17 @@
   "for a while"; unsure about music per set / missing effects (audit says both right; effects were half as loud — fixed
   in the restaged build). Prefs domain `com.ambrosiaclassics.bubbletroublex` holds his play since Oct 5 — never clear it.
 
-- **Bubble Trouble X on Windows — foundations landed, NOT PLAYABLE YET (2026-10-06, Opus 5.5 orchestrator; plan
-  `docs/plans/2026-10-06-btx-windows.md`, DECISIONS D15/D16).** Ben: BTX first, cross-compiled on this Mac, Mac UI drawn
-  in-window, data bundled, **Mac app untouched**. W0 toolchain proven: swift.org 6.4.0 + its Windows SDK + xwin
-  (MSVC 14.44 / SDK 10.0.26100) + SDL3 3.4.16 cached in `~/Developer/Toolchains/windows-cross` (`tools/windows/`:
-  setup, build, run-in-crossover, proof-b); hello runs in CrossOver; BTX core tests on Windows 250/258 — the 8 misses =
-  JPEG without ImageIO, Foundation-on-Windows MacRoman table wrong, UserDefaults crash under Wine → ruled in D16, task
-  **W0.5 next**. W1 `HectorAudio.PCMMixer` (HectorKit main bc216d8, oracle = ShellMixer bit-exact, floor 233); HectorKit
-  guards 90f1611 (floor 233). W2 `BubbleTroubleX/Windows` package: `BTXWinKit` + `BitmapFontRasterizer` + baked
-  Geneva 9/10, System 12 (+bold) `.btxfont` (Apple glyphs — Ben OK'd for a private copy), 22 tests, pixel-identical
-  except CoreText's contextual colon. Remaining: W0.5 → W3 HectorSDL → W4 playable → W5 menu bar → W6 dialogs → W7 stage.
+- **Bubble Trouble X on Windows — engine side DONE, NOT PLAYABLE YET (2026-10-06, Opus 5.5 orchestrators; plan
+  `docs/plans/2026-10-06-btx-windows.md`, DECISIONS D15/D16/D17).** Ben: BTX first, cross-compiled on this Mac, Mac UI
+  drawn in-window, data bundled, **Mac app untouched**. Landed: W0 toolchain (`tools/windows/`, cache
+  `~/Developer/Toolchains/windows-cross`, swift.org 6.4.0 + xwin + SDL3 3.4.16, CrossOver bottle `hector-win`); W1
+  `HectorAudio.PCMMixer`; W2 baked fonts (`BubbleTroubleX/Windows`, BTXWinKit); **W0.5** parity — HectorKit `MacRoman`
+  table + `CodecImage` precomputed RGBA, `btx-predecode` (8 JPEG PICTs → 20 `.rgba`), `BTXPrefsBacking` → **BTX core
+  tests in CrossOver 260 / 0 / 0 / 0** (Mac 261; one UserDefaults test is Mac-only, D17.1); **W3** `HectorKit/SDL`
+  package (`HectorSDL`: window + integer-scale present, Mac-keycode input, clock, `SDLAudioOut` over PCMMixer) — smoke
+  in CrossOver byte-identical to the Mac. HectorKit main gate floor **252**. **CrossOver strips `SDL_*` env vars —
+  automation uses `HECTOR_SDL_AUDIO_DRIVER=dummy`** (D17.4). Next: **W4 ⚑ WinGameDriver + BubbleTroubleXWin = PLAYABLE**,
+  then W5 menu bar, W6 dialogs, W7 stage.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
@@ -65,7 +66,7 @@
    `docs/plans/2026-10-04-aki-remaster-art.md`, chip queued ("just do it all now"); U3 waits for the iPad app split on main.
 2. **Bubble Trouble X — Ben's play gate (sound is in):** take his playtest verdicts; then the rest of his gates: "plays like Bubble Trouble X", plan Questions Q1–Q18, NR-10 (watch the ORIGINAL's demo 4: hero caught ~15 s in? yes → goldens freeze, core Task 11.5), FILM 1 flag. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
 3. RE deepening chains (Deimos wave 2 fix pass landed; Cythera wave 1 review owed) — separate chips.
-4. **Windows port** (Ben 2026-10-06, "windows port!") — design-first chip queued (games, shell tech, how Ben tests).
+4. **Windows port** (Ben 2026-10-06) — BTX engine side done (above); **W4 playable next** (chip queued).
 5. Aki iPad (chip), Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
 ## Carried (not blockers)

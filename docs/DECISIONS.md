@@ -353,3 +353,27 @@ native Win32 menus/dialogs (less faithful) · user-supplied data.
 4. **Font licence (Ben, 2026-10-06):** ship the baked Apple Geneva / SF glyphs in the Windows build (private copy);
    swap for an open font only if it is ever shared wider.
 **Approved by:** Ben (4); orchestrator rulings (1–3) under D15's "seat may settle" list.
+
+## D17 — Windows port W0.5 + W3: parity landed, Proof B 260/0/0, HectorSDL; rulings closed during the build (2026-10-06)
+
+**Facts:** HectorKit owns MacRoman (`MacRoman.decode/encode`, 7622be6) and a precomputed-RGBA registry in `CodecImage`;
+the BTX core routes its four MacRoman sites through it; `btx-predecode` (Mac) decodes the 8 QuickTime-JPEG PICTs (20
+bands) once; `BTXPrefsBacking` keeps the Mac's `UserDefaults` call. BTX core tests cross-built and run in CrossOver:
+**260 passed / 0 failed / 0 skipped / 0 crashed**; Mac 261/0/0. HectorSDL (separate package `HectorKit/SDL`) smoke
+in CrossOver byte-identical to the Mac.
+**Decided (orchestrator, Opus 5.5 — none changes how the game plays or looks):**
+1. **Windows test bar is 260, not 261:** the one test that exercises `UserDefaults` itself is Mac-only (D16.3); the two
+   prefs tests that used a `UserDefaults` suite run over the in-memory backing off Apple, same assertions.
+2. **MacRoman lossy encode** matches macOS Foundation exactly (checked over every scalar, ~1.2M combining sequences,
+   ~4M random strings) except where Foundation itself raises (unencodable base + trailing combining marks) — ours
+   returns `?`. No game string reaches it.
+3. **Pre-decoded JPEG RGBA matches the Mac that ran `btx-predecode`** (ImageIO output is not promised identical across
+   macOS versions); staging always regenerates it.
+4. **CrossOver strips every `SDL_*` environment variable.** SDL drivers are chosen with `HECTOR_SDL_AUDIO_DRIVER` /
+   `HECTOR_SDL_VIDEO_DRIVER`; automated runs must pass `dummy` (no real-time audio from automation — standing rule).
+5. **HectorSDL key map = physical US/ANSI positions → Carbon `kVK_*`** (Ctrl→⌘ 0x37, Alt→⌥ 0x3A, Windows key→⌃
+   0x3B, right-hand modifiers → the Mac's right-hand codes). Typed characters follow the US layout; layout-aware text
+   for high-score name entry is W6's (SDL text input).
+6. `HectorAudio` depends on `HectorResources` (both Foundation-only, no cycle) so `SndSound` can use `MacRoman`.
+   HectorSDL declares macOS 26 (brew's SDL3 dylib); only Windows-port packages depend on it.
+**Approved by:** orchestrator rulings under D15's "seat may settle" list.
