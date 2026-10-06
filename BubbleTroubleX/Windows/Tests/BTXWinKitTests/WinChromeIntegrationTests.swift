@@ -140,22 +140,33 @@ final class WinChromeIntegrationTests: XCTestCase {
         XCTAssertEqual(dlg.text(2), "é@")
         XCTAssertFalse(d.finished)
         XCTAssertFalse(d.quitPending)
-        // No text event in the poll: the US layout from the key (B).
+        // While text input is on, a key without its text in the poll types nothing itself — no US-layout fallback;
+        // its text arriving in the next poll is typed once (B).
         step(d, h, [key(0x0B, "b")])
+        XCTAssertEqual(dlg.text(2), "é@")
+        step(d, h, [.textInput("b")])
         XCTAssertEqual(dlg.text(2), "é@b")
-        // Text with no key before it (a dead key's composition) types too.
+        // A dead key (´ on the ' key) types nothing; the composed "é" that follows the next key is typed once.
+        step(d, h, [key(0x27, "'")])
+        XCTAssertEqual(dlg.text(2), "é@b")
+        step(d, h, [key(0x0E, "e"), .textInput("é")])
+        XCTAssertEqual(dlg.text(2), "é@bé")
+        // AltGr whose text comes a poll later: the key alone does nothing, the text types.
+        step(d, h, [key(0x0C, "q", [.command, .option])])
+        XCTAssertEqual(dlg.text(2), "é@bé")
+        XCTAssertFalse(d.finished)
         step(d, h, [.textInput("ü")])
-        XCTAssertEqual(dlg.text(2), "é@bü")
+        XCTAssertEqual(dlg.text(2), "é@béü")
         // Ctrl+Q under the dialog: the menu is disabled, the filter ignores it — no quit.
         step(d, h, [key(0x0C, "q", .command)])
         XCTAssertFalse(d.finished)
-        XCTAssertEqual(dlg.text(2), "é@bü")
+        XCTAssertEqual(dlg.text(2), "é@béü")
         // Delete, then Return: OK! flashes for 8 ticks (the driver's dialog tick), then the answer.
         step(d, h, [key(0x33, "\u{7F}")])
         step(d, h, [key(0x24, "\r")])
         XCTAssertNil(answer)
         XCTAssertTrue(WinTestData.run(d, h, limit: 30) { answer != nil }, "answered after the flash")
-        XCTAssertEqual(answer, .highScoreName("é@b"))
+        XCTAssertEqual(answer, .highScoreName("é@bé"))
         step(d, h)
         XCTAssertFalse(h.textInput, "text input off once the field is gone")
         XCTAssertEqual(h.textInputChanges, [true, false])
@@ -186,6 +197,102 @@ final class WinChromeIntegrationTests: XCTestCase {
         XCTAssertNotNil(d.about)
         step(d, h, [key(0x35, "\u{1B}")])
         XCTAssertNil(d.about)
+    }
+
+    func testClickOutsideAboutClosesItAndIsSwallowed() throws {
+        let (d, h) = try realDriver()
+        toMenu(d, h)
+        try choose(d, h, menu: 0, row: 0)
+        let about = try XCTUnwrap(d.about)
+        // A point on the main menu's Demo button outside the panel.
+        let demo = try XCTUnwrap(try WinTestData.assets().data.rects.rect(2), "Rect 2: the Demo button")
+        var point: (x: Int, y: Int)?
+        for y in Int(demo.top) + 2 ..< Int(demo.bottom) - 2 {
+            for x in Int(demo.left) + 2 ..< Int(demo.right) - 2 where point == nil && !about.contains(x: x, y: y) {
+                point = (x, y)
+            }
+        }
+        let (x, y) = try XCTUnwrap(point)
+        click(d, h, x, strip + y)
+        XCTAssertNil(d.about, "the click closes the panel")
+        WinTestData.run(d, h, limit: 10)
+        XCTAssertNil(d.session, "the click and its release never reached the game: no demo")
+        XCTAssertEqual(d.frontEnd.phase, .menu)
+        // The next click is the game's again.
+        click(d, h, x, strip + y)
+        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.session != nil }, "Demo pressed and released")
+    }
+
+    func testPreferencesOverAboutDrawsTheDialogInFront() throws {
+        let (d, h) = try realDriver()
+        toMenu(d, h)
+        try choose(d, h, menu: 0, row: 0)
+        XCTAssertNotNil(d.about)
+        step(d, h, [key(0x2B, ",", .command)])                         // Ctrl+, while About is up
+        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.dialogs.isShowing }, "DLOG 190 up")
+        let about = try XCTUnwrap(d.about, "About stays open behind (a window of its own on the Mac)")
+        let both = d.currentFrame.canvas
+        d.closeAbout()
+        let dialogOnly = d.currentFrame.canvas
+        let screen = d.compositor.screen
+        var dialogPixels = 0, overAbout = 0
+        for y in 0..<480 {
+            for x in 0..<640 {
+                let p = dialogOnly[x, strip + y]
+                if p != screen[x, y] {                                  // the dialog's pixel
+                    dialogPixels += 1
+                    XCTAssertEqual(both[x, strip + y], p, "About drawn over the dialog at (\(x), \(y))")
+                    if both[x, strip + y] != p { return }
+                    if about.contains(x: x, y: y) { overAbout += 1 }
+                }
+            }
+        }
+        XCTAssertGreaterThan(dialogPixels, 10_000)
+        XCTAssertGreaterThan(overAbout, 1_000, "the dialog and the panel overlap")
+    }
+
+    // MARK: Focus
+
+    func testFocusLostClosesAnOpenMenuWithoutACommand() throws {
+        let (d, h) = try realDriver()
+        toMenu(d, h)
+        let g = try geometry(d)
+        click(d, h, g.titles[2].x + 4, 10)                             // Options, sticky open
+        XCTAssertEqual(d.tracker.openMenu, 2)
+        let prefs = d.currentPrefs
+        step(d, h, [.focusLost])
+        XCTAssertFalse(d.tracker.isOpen)
+        XCTAssertEqual(d.currentPrefs, prefs, "nothing chosen")
+        step(d, h, [.focusGained])
+        XCTAssertFalse(d.tracker.isOpen)
+    }
+
+    // MARK: Live move / resize (Windows' modal loop)
+
+    func testLiveStepKeepsTheGameRunningWhileThePollIsBlocked() throws {
+        let (d, h) = try realDriver()
+        toMenu(d, h)
+        step(d, h, [key(0x24, "\r")])                                  // Return: a game
+        XCTAssertTrue(WinTestData.run(d, h, limit: 600) { d.clock == .frame }, "frames run")
+        var frames = 0
+        d.frameObserver = { _ in frames += 1 }
+        // Outside a poll, liveStep does nothing (the driver could be mid-event).
+        for _ in 0..<4 { h.input.advance() }
+        d.liveStep()
+        XCTAssertEqual(frames, 0)
+        // A poll blocked for 60 TickCounts (one second of dragging): the live exposes keep the 0.033 s clock firing.
+        let presents = h.presents
+        h.duringPoll = { [unowned h] in
+            h.duringPoll = nil
+            for _ in 0..<60 {
+                h.input.advance()
+                d.liveStep()
+            }
+        }
+        step(d, h)
+        XCTAssertGreaterThanOrEqual(frames, 29, "≈ 30 frames in the second")
+        XCTAssertLessThanOrEqual(frames, 31)
+        XCTAssertGreaterThan(h.presents, presents)
     }
 
     // MARK: Full screen
@@ -254,11 +361,16 @@ final class WinChromeIntegrationTests: XCTestCase {
         step(d, h, [key(0x00, "A", [.command, .shift])])
         XCTAssertEqual(d.currentPrefs.sfxVolume, 1)
         XCTAssertFalse(d.menuBar.soundChecked)
-        // Window ▸ Minimize and Zoom go to the host.
-        try choose(d, h, menu: 3, row: 0)
-        XCTAssertEqual(h.minimizes, 1)
-        try choose(d, h, menu: 3, row: 1)
-        XCTAssertEqual(h.zooms, 1)
+        // Window ▸ Minimize and Zoom are disabled, as on the Mac (the window is titled only): nothing is chosen.
+        for row in 0...1 {
+            let g = try geometry(d)
+            let item = g.dropdowns[3].rows[row].frame
+            click(d, h, g.titles[3].x + 4, 10)
+            click(d, h, item.x + 20, item.y + 5)
+            XCTAssertTrue(d.tracker.isOpen, "a disabled item leaves the menu open")
+            step(d, h, [key(0x35, "\u{1B}")])
+            XCTAssertFalse(d.tracker.isOpen)
+        }
         // Edit is disabled: choosing Undo does nothing and the menu stays open (sticky).
         let g = try geometry(d)
         click(d, h, g.titles[1].x + 4, 10)

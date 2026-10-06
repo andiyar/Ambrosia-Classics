@@ -7,8 +7,8 @@
 // --data    the folder with the five .rsrc files, Fonts/ and Decoded/ (default: Data/ beside the executable).
 // --prefs   the prefs file (default: %APPDATA%\Ambrosia Classics\Bubble Trouble X\Prefs.bin on Windows;
 //           ~/Library/Application Support/Ambrosia Classics/Bubble Trouble X (SDL)/Prefs.bin on the Mac).
-// --scale   window size multiple of the 640×500 canvas (default: the largest that fits the screen — 2 on 1080p;
-//           the window is resizable, integer-fit; Window ▸ Zoom toggles 1× / the largest).
+// --scale   window size multiple of the 640×500 canvas (default: the largest integer scale whose window fits the
+//           screen's usable area — 1× windowed on a 1080p Windows 11 screen; the window is resizable, integer-fit).
 // --name    info message 2's "Registered To:" name (default: the account's full name).
 // --auto-dialogs  every dialog answers at once with its default (Cancel, prefs unchanged, the default name) instead
 //           of showing — the scripted dialog policy (`WinAutoDialogs`).
@@ -115,8 +115,9 @@ final class SDLWinHost: WinHost {
     var scripted: WinScriptedInput?
     var lastFrame: WinFrame?
     var quitRequested = false
-    /// When the window was last drawn (present or redraw), host nanoseconds.
+    /// When the window was last drawn (present or redraw), host nanoseconds, and how many times it has been.
     private(set) var lastDrawn: UInt64 = 0
+    private(set) var draws = 0
 
     init(sdl: SDLHost, scripted: WinScriptedInput?) {
         self.sdl = sdl
@@ -155,12 +156,14 @@ final class SDLWinHost: WinHost {
         }
         sdl.present(rgba: frame.rgba)
         lastDrawn = nanoseconds
+        draws += 1
     }
 
     /// The last frame again (the window was uncovered, resized or restored — or nothing was drawn for a while).
     func redraw() {
         sdl.redraw()
         lastDrawn = nanoseconds
+        draws += 1
     }
 
     func setCursorVisible(_ visible: Bool) { sdl.setCursorVisible(visible) }
@@ -182,17 +185,6 @@ final class SDLWinHost: WinHost {
     func setFullScreen(_ on: Bool) -> Bool {
         sdl.setFullscreen(on)
         return sdl.isFullscreen
-    }
-
-    func minimize() { sdl.minimize() }
-
-    /// Window ▸ Zoom: 1× ↔ the largest integer scale that fits the screen.
-    func zoom() {
-        guard !sdl.isFullscreen else { return }
-        let best = SDLHost.initialScale(logicalWidth: WinCanvas.width, logicalHeight: WinCanvas.height)
-        let current = sdl.windowSize.width / WinCanvas.width
-        sdl.setWindowScale(current > 1 ? 1 : best)
-        redraw()
     }
 
     func setTextInput(_ on: Bool) {
@@ -297,18 +289,25 @@ if let frames {
           + "video=\(SDLHost.currentVideoDriver) audio=\(SDLHost.currentAudioDriver)"
           + "\(dumpPath.map { ", wrote \($0)" } ?? "")")
 } else {
+    // While the window is dragged or resized, Windows' modal move/size loop blocks the poll inside `step()`; SDL's
+    // live-resize exposes come from inside it, and the game keeps its time and its picture from there.
+    sdl.setLiveRedrawHandler {
+        let drawn = host.draws
+        driver.liveStep()
+        if host.draws == drawn { host.redraw() }        // nothing new: the last frame at the window's new size
+    }
     while !driver.finished {
         driver.step()
         let now = host.nanoseconds
         // Never leave the window undrawn for long (an expose the platform did not report).
         if now &- host.lastDrawn > 250_000_000 { host.redraw() }
-        // Sleep until the next fire, at most 1 ms at a time so input stays prompt.
-        if let next = driver.nextDeadline, next > now {
-            SDLClock.sleep(nanoseconds: min(next - now, 1_000_000))
-        } else if driver.nextDeadline == nil {
-            SDLClock.sleep(nanoseconds: 1_000_000)
-        }
+        // Sleep until the next timer is due — TickCount's 1/60 s, the 0.033 s frame timer, or 0.001 s with the
+        // frame-limit cheat (and the dialogs' 1/60 s while one is up); with none running, a TickCount. Input that
+        // arrives meanwhile waits for that fire, as the game reads it there. Missed fires stay dropped (`WinTimer`).
+        let wait = driver.nextDeadline.map { $0 > now ? $0 - now : 0 } ?? WinClock.nanosPerSecond / 60
+        if wait > 0 { SDLClock.sleepPrecise(nanoseconds: wait) }
     }
+    sdl.setLiveRedrawHandler(nil)
 }
 audioOut?.stop()
 exit(0)

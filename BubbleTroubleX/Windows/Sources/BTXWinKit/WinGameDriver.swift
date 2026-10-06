@@ -200,10 +200,32 @@ public final class WinGameDriver: DialogSystemDelegate {
     /// changed and the host's text input follows the dialogs.
     public func step() {
         guard !finished else { return }
-        for (event, typed) in Self.pairTypedText(host.pollEvents()) {
+        polling = true
+        let events = host.pollEvents()
+        polling = false
+        for (event, typed) in Self.pairTypedText(events) {
             handleEvent(event, typed: typed)
             if finished { return }
         }
+        fireDueTimers()
+    }
+
+    /// The window is being dragged or resized and the host's event poll is blocked inside `step()` (Windows' modal
+    /// move/size loop; HectorSDL's live-redraw handler calls this from inside `pollEvents`): the dialogs' tick and the
+    /// running clock's fire if due, then the chrome — as `step()` after its events, so the game keeps its time and the
+    /// window its picture. Does nothing outside `step()`'s poll (the driver is then mid-event) or when re-entered.
+    public func liveStep() {
+        guard polling, !inLiveStep, !finished else { return }
+        inLiveStep = true
+        defer { inLiveStep = false }
+        fireDueTimers()
+    }
+
+    /// Inside `step()`'s host poll (`liveStep` may run) / inside `liveStep`.
+    private var polling = false
+    private var inLiveStep = false
+
+    private func fireDueTimers() {
         let now = host.nanoseconds
         if dialogTimer.poll(now: now) {
             dialogs.tick(heldKeys: keys.held)
@@ -338,7 +360,7 @@ public final class WinGameDriver: DialogSystemDelegate {
     private func tickFired() {
         guard let frontEnd else { return }
         let now = ticksNow()
-        var dirty = fade != nil                                        // the fade animates on the tick clock
+        var dirty = fadeAnimating                                      // the fade animates on the tick clock
         if var w = wipe, w.lastTick < now {
             w.row += 1
             w.lastTick = now
@@ -476,21 +498,23 @@ public final class WinGameDriver: DialogSystemDelegate {
     /// The frame as it would be presented now (dumps).
     public var currentFrame: WinFrame { WinFrame(canvas: composeCanvas(), fade: fadeLevel()) }
 
-    /// Windowed: the menu bar's strip, the game screen under it, the dialogs and the About panel over the screen,
-    /// the open menu over everything. Full screen: the game screen, the dialogs and the About panel.
+    /// Windowed: the menu bar's strip, the game screen under it, the About panel and the dialogs over the screen,
+    /// the open menu over everything. Full screen: the game screen, the About panel and the dialogs. A dialog opened
+    /// while About is up comes in front of it (the Mac's About panel is a window of its own; a modal dialog is
+    /// frontmost) — About stays open behind and takes the keys again when the dialog is gone.
     private func composeCanvas() -> RGBAImage {
         let screen = compositor.screen
         if isFullScreen {
             var img = screen
-            dialogs.draw(into: &img, canvasX: 0, canvasY: 0)
             about?.draw(into: &img, canvasX: 0, canvasY: 0)
+            dialogs.draw(into: &img, canvasX: 0, canvasY: 0)
             return img
         }
         let strip = WinCanvas.menuStripHeight * WinCanvas.width
         var img = RGBAImage(width: WinCanvas.width, height: WinCanvas.height)
         img.pixels.replaceSubrange(strip..<img.pixels.count, with: screen.pixels.prefix(img.pixels.count - strip))
-        dialogs.draw(into: &img, canvasX: 0, canvasY: WinCanvas.menuStripHeight)
         about?.draw(into: &img, canvasX: 0, canvasY: WinCanvas.menuStripHeight)
+        dialogs.draw(into: &img, canvasX: 0, canvasY: WinCanvas.menuStripHeight)
         if tracker.isOpen {
             menuView.draw(menuBar, tracker: tracker, into: &img)
         } else {
@@ -550,6 +574,9 @@ public final class WinGameDriver: DialogSystemDelegate {
         fade = (current, toBlack ? 255 : 0, now, UInt64(max(0, seconds) * 1e9))
         present()
     }
+
+    /// The fade is still moving (a fade held at black presents nothing new — only a change or an expose redraws).
+    private var fadeAnimating: Bool { fade.map { $0.duration > 0 } ?? false }
 
     private func fadeLevel() -> Int {
         guard let f = fade else { return 0 }
@@ -721,18 +748,14 @@ public final class WinGameDriver: DialogSystemDelegate {
             var p = currentPrefs
             menuBar.apply(command, to: &p)
             menuChangedPrefs(p, updateMusicVolume: command == .music)
-        case .minimize:
-            host.minimize()
-        case .zoom:
-            host.zoom()
-        case .undo, .redo, .cut, .copy, .paste, .delete, .selectAll:
-            break                                                       // no responder takes them (always disabled)
+        case .minimize, .zoom, .undo, .redo, .cut, .copy, .paste, .delete, .selectAll:
+            break                                   // always disabled: no responder takes them / a titled-only window
         case .minimizeAll, .bringAllToFront, .arrangeInFront:
             break                                                       // the only window: nothing happens
         }
     }
 
-    /// The About panel's close button (or Esc, or a click elsewhere).
+    /// The About panel's close button (or Esc, or a click elsewhere — swallowed).
     public func closeAbout() { about = nil }
 
     private static func menuModifiers(_ m: WinModifiers) -> MenuModifiers {
@@ -816,6 +839,9 @@ public final class WinGameDriver: DialogSystemDelegate {
             quitChosen()
             if quitPending && !finished { closeRequestPending = true }
         case .focusLost:
+            // Another application came forward: an open menu closes without a command (a menu's tracking ends when
+            // the app deactivates), and every key is up.
+            tracker.close()
             keys.releaseAll()
             guard let frontEnd else { return }
             handle(frontEnd.appDeactivated(), now: ticksNow())
@@ -853,9 +879,17 @@ public final class WinGameDriver: DialogSystemDelegate {
         }
         keys.keyDown(code)
         if dialogs.isShowing {
+            let command = mods.contains(.command) && !altGr
+            // While layout-aware text input is on, text comes only from text-input events: a typing key without its
+            // text in this poll types nothing itself (a dead key composes, an IME commits, text that arrives in a
+            // later poll is typed once, by its own event). Keys that are not text (Return, Enter, Esc, Delete, Tab,
+            // the arrows) and Ctrl shortcuts still act from the key — but not Ctrl+Alt, which may be AltGr whose text
+            // comes later. With text input off, the US layout's character.
+            let maybeAltGr = mods.contains(.command) && mods.contains(.option)
+            if textInputOn, typed == nil, !command || maybeAltGr, DialogKeyEvent.typesText(keyCode: code) { return }
             let text = typed ?? (DialogKeyEvent.typesText(keyCode: code) ? chars : "")
             dialogs.keyDown(DialogKeyEvent(keyCode: code, characters: text,
-                                           command: mods.contains(.command) && !altGr, shift: mods.contains(.shift),
+                                           command: command, shift: mods.contains(.shift),
                                            option: mods.contains(.option) && !altGr,
                                            control: mods.contains(.control)))
             return
@@ -892,7 +926,11 @@ public final class WinGameDriver: DialogSystemDelegate {
                 if a.isOnCloseButton(x: x, y: cy) { closeAbout() }
                 return
             }
-            closeAbout()                                                // the game window comes forward
+            // The game window comes forward and the About panel goes (behind it on the Mac): the click only
+            // activates the window — it and its release never reach the game.
+            closeAbout()
+            mouseTarget = .about
+            return
         }
         guard y >= WinCanvas.menuStripHeight, let frontEnd else { return }
         mouseTarget = .game

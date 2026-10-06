@@ -115,10 +115,6 @@ public protocol WinHost: AnyObject {
     func beep()
     /// Full screen on / off (`_GoFullScreenMode` / `_GoWindowMode`); returns the state the window is in afterwards.
     func setFullScreen(_ on: Bool) -> Bool
-    /// Window ▸ Minimize.
-    func minimize()
-    /// Window ▸ Zoom: the window between 1× and the largest integer scale that fits the screen.
-    func zoom()
     /// Layout-aware text input on / off (on while a dialog's edit field has the keyboard focus).
     func setTextInput(_ on: Bool)
     /// The driver has finished (prefs saved or not, by the quit rules): close the window and leave the loop.

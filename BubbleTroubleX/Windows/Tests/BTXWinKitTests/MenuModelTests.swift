@@ -39,8 +39,8 @@ final class MenuModelTests: XCTestCase {
         r("Options", "Music", "m", .command, .music, checked: true),
         sep("Options"),
         r("Options", "Key Sets", nil, .command, nil),
-        r("Window", "Minimize", "m", .command, .minimize, .always),
-        r("Window", "Zoom", nil, .command, .zoom, .always),
+        r("Window", "Minimize", "m", .command, .minimize, .never),
+        r("Window", "Zoom", nil, .command, .zoom, .never),
         sep("Window"),
         r("Window", "Bring All to Front", nil, .command, .bringAllToFront),
     ]

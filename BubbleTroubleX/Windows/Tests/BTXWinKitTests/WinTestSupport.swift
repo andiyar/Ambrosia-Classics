@@ -19,8 +19,6 @@ final class ScriptedHost: WinHost {
     /// Full screen as the host reports it; `refuseFullScreen` makes the switch fail (no screen).
     private(set) var fullScreen = false
     var refuseFullScreen = false
-    private(set) var minimizes = 0
-    private(set) var zooms = 0
     private(set) var textInput = false
     private(set) var textInputChanges: [Bool] = []
 
@@ -33,7 +31,11 @@ final class ScriptedHost: WinHost {
     /// The iteration being run.
     var frame: Int { input.frame }
 
+    /// Runs inside `pollEvents` (a blocked poll — Windows' modal move/size loop — calling the driver back).
+    var duringPoll: (() -> Void)?
+
     func pollEvents() -> [WinEvent] {
+        duringPoll?()
         let events = injected + input.events()
         injected = []
         return events
@@ -54,8 +56,6 @@ final class ScriptedHost: WinHost {
         if !refuseFullScreen { fullScreen = on }
         return fullScreen
     }
-    func minimize() { minimizes += 1 }
-    func zoom() { zooms += 1 }
     func setTextInput(_ on: Bool) {
         textInput = on
         textInputChanges.append(on)

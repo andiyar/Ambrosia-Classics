@@ -124,11 +124,17 @@ SDL_AUDIO_DRIVER=dummy SDL_VIDEO_DRIVER=dummy swift run --package-path BubbleTro
 ```
 
 **Window (W4.5):** the in-window menu bar in the 20 px strip, the original dialogs drawn over the game (DLOG/DITL),
-the About panel; resizable, opening at the largest integer scale that fits the screen (2× on 1080p; `--scale N`
-overrides); Options ▸ Full Screen (Ctrl+F, saved in the prefs and restored at launch) hides the strip and
-integer-fits the game screen on black; Window ▸ Zoom toggles 1× / the largest scale. Layout-aware text (SDL text
+the About panel; resizable, opening at the largest integer scale whose window fits the screen's usable area
+(`--scale N` overrides); Options ▸ Full Screen (Ctrl+F, saved in the prefs and restored at launch) hides the strip
+and integer-fits the game screen on black; Window ▸ Minimize and Zoom are disabled, as on the Mac (its window is
+titled only). While the window is dragged or resized (Windows' modal move/size loop blocks the event poll) the game
+keeps its clocks and picture through HectorSDL's live-redraw handler (`WinGameDriver.liveStep`). The loop sleeps
+until the next timer is due (`SDLClock.sleepPrecise`). Layout-aware text (SDL text
 input, AltGr) while a dialog's edit field has the focus. `--auto-dialogs` answers every dialog at once with its
 default instead (the old W4 behaviour).
+
+**Window scale on a 1080p Windows 11 screen:** the initial scale stays integer-fit (HectorShell D7), so 2× (1280×1000
+plus the title bar) does not fit above the taskbar and the window opens at 1× — Full Screen (Ctrl+F) gives 2×.
 
 **Headless smoke mode** (`--frames N`): N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s,
 each), then the last presented canvas (640×500; 640×480 in full screen) → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio

@@ -47,9 +47,7 @@ public enum MenuCommand: Equatable, Hashable, Sendable {
     case music
     /// Options ▸ Key Sets ▸ set n (1…20) — `BTXMenus.keySet`: see `MenuBar.apply(_:to:)`.
     case keySet(Int)
-    /// Window ▸ Minimize / Zoom. On the Mac they validate disabled (the window is titled only, R5); the Windows window
-    /// is resizable and minimizable (W4.5), so here they work: Minimize minimizes it, Zoom toggles between 1× and the
-    /// largest integer scale that fits the screen.
+    /// Window ▸ Minimize / Zoom — validate disabled (the window is titled only, R5), as on the Mac; never produced.
     case minimize, zoom
     /// Window ▸ Minimize All (⌥ alternate of Minimize) — `miniaturizeAll`: the only window cannot miniaturize, so
     /// nothing happens on the Mac.
@@ -68,7 +66,7 @@ public enum MenuEnableRule: Equatable, Sendable {
     case playMenus
     /// `playMenusEnabled && preferencesHandler != nil` (Preferences…).
     case preferences
-    /// Never (Edit's first-responder items).
+    /// Never (Edit's first-responder items; Minimize / Zoom on a titled-only window).
     case never
 }
 
@@ -184,10 +182,10 @@ public struct MenuBar: Equatable, Sendable {
                 .item(MenuItem("Key Sets", command: nil, submenu: keySetsMenu)),
             ]),
             BarMenu(title: "Window", bold: false, entries: [
-                .item(MenuItem("Minimize", key: "m", command: .minimize,
+                .item(MenuItem("Minimize", key: "m", command: .minimize, rule: .never,
                                alternate: MenuAlternate(title: "Minimize All", key: "m", modifiers: [.command, .option],
                                                         command: .minimizeAll, rule: .always))),
-                .item(MenuItem("Zoom", command: .zoom)),
+                .item(MenuItem("Zoom", command: .zoom, rule: .never)),
                 .separator,
                 .item(MenuItem("Bring All to Front", command: .bringAllToFront,
                                alternate: MenuAlternate(title: "Arrange in Front", key: nil,
