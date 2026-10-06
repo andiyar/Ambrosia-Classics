@@ -1,0 +1,21 @@
+; segment 192E  page 19  class 0x48 (cls48) id 46
+; kind class  length 129 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0055  methods: sel0/init@004E
+; properties: sel59/p3B, sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 55                                        .hdr      dictionary offset = 0055
+0002: 90 01 99 2e 00 08                            .array    array[1] = [@0008]
+0008: 90 08 00 00 00 05 00 00 00 0e 00 00 …+22     .array    array[8] = [5, 14, 10, 18, 5, 38, 3, 34]
+002A: 90 01 99 2e 00 30                            .array    array[1] = [@0030]
+0030: 90 07 00 00 00 00 00 00 00 00 00 00 …+18     .array    array[7] = [0, 0, 0, 0, 0, 0, 0]
+
+; ==== method sel0/init @004E ====
+004E: 81 02 00                                     frame     args=2 locals=0
+0051: 8b 41 00 40                                  return    0
+0055: a0 07 99 2e 00 4e 00 00 50 00 ff ff …+32     .dict     dict[7] {0/init: @004E, 59/p3B: @002A, 68: @0002}

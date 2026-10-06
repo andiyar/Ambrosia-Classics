@@ -1,0 +1,80 @@
+; segment 1840  page 18  class 0x40 (char) id 64 name "Oeneus" (string table 0201)
+; kind class  length 577 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @022D  methods: sel32/spawned@0002, sel12/talk@0053
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 2d                                        .hdr      dictionary offset = 022D
+
+; ==== method sel32/spawned @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 15 43 00 00 00 8b 54 40 00 …+1      jf        (A30.f15:activity == 139) -> 0048
+0012: 8d 30 62 01 41 6b 54 40 00 3e                jf        (A30.f01:x == 107) -> 003E
+001C: 8d 30 62 03 41 08 4f 40 00 3e                jf        (A30.f03:frame < 8) -> 003E
+0026: e2 30 62 01 30 62 02 41 74 30 62 02 …+12     builtin   missile_burst(A30.f01:x, A30.f02:y, 116, A30.f02:y, 2296, 0, 0, 0)
+003E:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0045-0048: no dictionary entry, jump, pointer or call reaches it ----
+0045:x88 00 4f                                     goto      -> 004F
+0048:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 004F-0053: no dictionary entry, jump, pointer or call reaches it ----
+004F:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0053 ====
+0053: 81 01 00                                     frame     args=1 locals=0
+0056: 59 6f 75 20 73 65 65 20 61 20 77 69 …+13     text      "You see a wiry older man."
+006F: 8d 30 62 15 43 00 00 00 8b 54 40 00 …+1      jf        (A30.f15:activity == 139) -> 00AC
+007C: 2a 22 48 65 79 21 20 20 4c 6f 6f 6b …+36     text      "*\"Hey!  Look out - you need to be more careful!\""
+00AC:>8e                                           input       ; read a line into the input buffer
+00AD: 90 6e 61 6d 65 00 00 cd                      match     name else -> 00CD
+00B5: 22 49 20 61 6d 20 4f 65 6e 65 75 73 …+2      text      "\"I am Oeneus.\""
+00C3: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00CA: 88 00 ac                                     goto      -> 00AC
+00CD:>90 6f 65 6e 65 00 00 f6                      match     oene else -> 00F6
+00D5: 22 59 65 73 3f 20 20 57 68 61 74 20 …+18     text      "\"Yes?  What can I do for you?\""
+00F3: 88 00 ac                                     goto      -> 00AC
+00F6:>90 6a 6f 62 00 01 45                         match     job else -> 0145
+00FD: 22 49 20 61 6d 20 61 20 62 6f 77 79 …+57     text      "\"I am a bowyer and fletcher.  Interested in @buying some of my work?\""
+0142: 88 00 ac                                     goto      -> 00AC
+0145:>90 62 75 79 2c 62 75 79 69 00 01 e0          match     buy,buyi else -> 01E0
+0151: 86 27 30 40 9f 0e a5 44 48 61 6e 64 …+114    setfield  A30.f27:ce17 = R0EA5("Handcrafted bows & arrows!", blk@0177, A30.f27:ce17, blk@01BB)
+      ; 0x45 inline block 0177-01B5 (62 bytes):
+      0177: 90 02                            .array[2]
+        [0] @0181 ->
+          0181: 90 04                            .array[4]
+            [0] 103
+            [1] @0193 "Bow"
+            [2] 30
+            [3] 1
+        [1] @0197 ->
+          0197: 90 04                            .array[4]
+            [0] 102
+            [1] @01A9 "Arrows (12)"
+            [2] 4
+            [3] 12
+      ; 0x45 inline block 01BB-01CD (18 bytes):
+      01BB: 90 04                            .array[4]
+        [0] 5
+        [1] 5
+        [2] 3
+        [3] 7
+01CF: 22 54 68 61 6e 6b 20 79 6f 75 2e 2e …+2      text      "\"Thank you...\""
+01DD: 88 00 ac                                     goto      -> 00AC
+01E0:>90 62 79 65 00 01 f9                         match     bye else -> 01F9
+01E7: 22 47 6f 6f 64 20 62 79 65 2e 22             text      "\"Good bye.\""
+01F2: 8b 41 00 40                                  return    0
+; ---- dead code 01F6-01F9: no dictionary entry, jump, pointer or call reaches it ----
+01F6:x88 00 ac                                     goto      -> 00AC
+01F9:>90 2a 00 02 26                               match     * else -> 0226
+01FE: 8d 9f 08 0e 30 40 5e 40 02 23                jf        !R080E(A30) -> 0223
+0208: 8d 9f 08 01 30 40 5e 40 02 23                jf        !R0801(A30) -> 0223
+0212: 22 43 61 6e 27 74 20 68 65 6c 70 20 …+5      text      "\"Can't help you.\""
+0223:>88 00 ac                                     goto      -> 00AC
+0226:>88 00 ac                                     goto      -> 00AC
+; ---- dead code 0229-022D: no dictionary entry, jump, pointer or call reaches it ----
+0229:x8b 41 00 40                                  return    0
+022D: a0 03 98 40 00 53 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0053, 32/spawned: @0002}

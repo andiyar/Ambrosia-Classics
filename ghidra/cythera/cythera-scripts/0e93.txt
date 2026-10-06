@@ -1,0 +1,80 @@
+; segment 0E93  page 0E  routine
+; kind routine  length 626 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 0a                                     frame     args=4 locals=10
+0003: 82 00 45 00 22 90 08 00 00 00 00 00 …+28     set       L00 = blk@0008
+      ; 0x45 inline block 0008-002A (34 bytes):
+      0008: 90 08                            .array[8]
+        [0] 0
+        [1] 0
+        [2] 0
+        [3] 0
+        [4] 0
+        [5] 0
+        [6] 0
+        [7] 0
+002B: 82 01 45 00 22 90 08 00 00 00 00 00 …+28     set       L01 = blk@0030
+      ; 0x45 inline block 0030-0052 (34 bytes):
+      0030: 90 08                            .array[8]
+        [0] 0
+        [1] 0
+        [2] 0
+        [3] 0
+        [4] 0
+        [5] 0
+        [6] 0
+        [7] 0
+0053: 82 02 41 00 40                               set       L02 = 0
+0058: 82 03 ca 43 10 00 00 04 41 00 43 50 …+5      set       L03 = iterate_party(&L04, 0, True)
+0069:>8c ca 43 10 00 00 04 41 01 40 40 00 …+1      jt        iterate_party(&L04, 1) -> 009E
+0076: 84 00 40 02 40 03 62 1c 40                   atput     L00[L02] = L03.f1C:health
+007F: 84 01 40 02 40 03 62 1e 40                   atput     L01[L02] = L03.f1E:magic
+0088: 82 02 02 41 01 4a 40                         set       L02 = (L02 + 1)
+008F: 82 03 ca 43 10 00 00 04 41 02 40 40          set       L03 = iterate_party(&L04, 2)
+009B: 88 00 69                                     goto      -> 0069
+009E:>e7 41 03 40                                  builtin   screen_effect(3)
+00A2: 82 03 a0 43 10 00 00 04 41 00 41 00 …+6      set       L03 = iterate_range(&L04, 0, 0, (A30 * 4))
+00B4:>8c a0 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_range(&L04, 1) -> 0160
+00C1: bd 43 00 00 04 00 40                         builtin   pass_time(1024)
+00C8: 82 06 cb 43 10 00 00 07 41 00 31 32 …+2      set       L06 = iterate_props_at(&L07, 0, A31, A32)
+00D6:>8c cb 43 10 00 00 07 41 01 40 40 01 …+1      jt        iterate_props_at(&L07, 1) -> 0151
+00E3: 8d 06 63 40 06 63 40 48 05 63 40 53 …+4      jf        (as_char(L06) && (as_char(L06) != as_char(G05:leader))) -> 0142
+00F3: 82 09 06 63 40 40                            set       L09 = as_char(L06)
+00F9: 86 26 09 40 44 48 65 79 21 20 4f 75 …+14     setfield  L09.f26:f26 = "Hey! Out of my bed!"
+0113: 59 6f 75 20 67 65 74 20 6b 69 63 6b …+27     text      "You get kicked out of bed by its owner\n"
+013A: e7 41 04 40                                  builtin   screen_effect(4)
+013E: 8b 41 00 40                                  return    0
+0142:>82 06 cb 43 10 00 00 07 41 02 40 40          set       L06 = iterate_props_at(&L07, 2)
+014E: 88 00 d6                                     goto      -> 00D6
+0151:>82 03 a0 43 10 00 00 04 41 02 40 40          set       L03 = iterate_range(&L04, 2)
+015D: 88 00 b4                                     goto      -> 00B4
+0160:>8d 33 41 00 54 40 01 9e                      jf        (A33 == 0) -> 019E
+0168: e7 41 04 40                                  builtin   screen_effect(4)
+016C: 59 6f 75 20 74 6f 73 73 20 61 6e 64 …+34     text      "You toss and turn, but never get a good rest.\n"
+019A: 8b 41 00 40                                  return    0
+019E:>59 6f 75 20 73 6c 65 65 70 20 73 6f …+7      text      "You sleep soundly.\n"
+01B1: 82 02 41 00 40                               set       L02 = 0
+01B6: 82 03 ca 43 10 00 00 04 41 00 43 50 …+5      set       L03 = iterate_party(&L04, 0, True)
+01C7:>8c ca 43 10 00 00 04 41 01 40 40 02 …+1      jt        iterate_party(&L04, 1) -> 026A
+01D4: 8d 03 62 1c 03 62 1d 4f 03 62 1c 00 …+7      jf        ((L03.f1C:health < L03.f1D:health_max) && (L03.f1C:health > L00[L02])) -> 0214
+01E7: 82 31 03 62 1c 03 62 1c 00 02 46 4b …+7      set       A31 = (L03.f1C:health + (((L03.f1C:health - L00[L02]) * A33) / 2))
+01FA: 8d 31 03 62 1d 51 40 02 0e                   jf        (A31 > L03.f1D:health_max) -> 020E
+0203: 86 1c 03 40 03 62 1d 40                      setfield  L03.f1C:health = L03.f1D:health_max
+020B: 88 02 14                                     goto      -> 0214
+020E:>86 1c 03 40 31 40                            setfield  L03.f1C:health = A31
+0214:>8d 03 62 1e 03 62 1d 4f 03 62 1e 01 …+7      jf        ((L03.f1E:magic < L03.f1D:health_max) && (L03.f1E:magic > L01[L02])) -> 0254
+0227: 82 31 03 62 1e 03 62 1e 01 02 46 4b …+7      set       A31 = (L03.f1E:magic + (((L03.f1E:magic - L01[L02]) * A33) / 2))
+023A: 8d 31 03 62 1f 51 40 02 4e                   jf        (A31 > L03.f1F:magic_max) -> 024E
+0243: 86 1e 03 40 03 62 1d 40                      setfield  L03.f1E:magic = L03.f1D:health_max
+024B: 88 02 54                                     goto      -> 0254
+024E:>86 1e 03 40 31 40                            setfield  L03.f1E:magic = A31
+0254:>82 02 02 41 01 4a 40                         set       L02 = (L02 + 1)
+025B: 82 03 ca 43 10 00 00 04 41 02 40 40          set       L03 = iterate_party(&L04, 2)
+0267: 88 01 c7                                     goto      -> 01C7
+026A:>e7 41 04 40                                  builtin   screen_effect(4)
+026E: 8b 41 00 40                                  return    0

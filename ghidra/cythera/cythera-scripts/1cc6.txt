@@ -1,0 +1,32 @@
+; segment 1CC6  page 1C  class 0x58 (room) id 454
+; kind class  length 179 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @009F  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 9f                                        .hdr      dictionary offset = 009F
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 04                                     frame     args=1 locals=4
+0005: 8d de 41 42 40 40 00 9b                      jf        test_flag(66) -> 009B
+000D: 82 00 43 50 00 ff ff 40                      set       L00 = Nil
+0015: 82 01 cb 43 10 00 00 02 41 00 41 19 …+4      set       L01 = iterate_props_at(&L02, 0, 25, 13)
+0025:>8c cb 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_props_at(&L02, 1) -> 0050
+0032: 8d 01 62 04 42 00 ca 54 40 00 41             jf        (L01.f04:type == 202) -> 0041
+003D: 82 00 01 40                                  set       L00 = L01
+0041:>82 01 cb 43 10 00 00 02 41 02 40 40          set       L01 = iterate_props_at(&L02, 2)
+004D: 88 00 25                                     goto      -> 0025
+0050:>8d 00 40 00 9b                               jf        L00 -> 009B
+0055: 8d 00 62 00 43 00 00 00 80 56 40 00 …+1      jf        (L00.f00:kind & 128) -> 0065
+0062: 88 00 9b                                     goto      -> 009B
+0065:>50 61 72 74 20 6f 66 20 74 68 65 20 …+16     text      "Part of the cave collapses!\n"
+0081: d3 41 18 41 19 41 0d 40                      builtin   positional_sound(24, 25, 13)
+0089: e7 41 00 40                                  builtin   screen_effect(0)
+008D: 86 00 00 40 00 62 00 43 00 00 00 80 …+2      setfield  L00.f00:kind = (L00.f00:kind | 128)
+009B:>8b 41 00 40                                  return    0
+009F: a0 03 50 00 ff ff 6f 63 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

@@ -1,0 +1,51 @@
+; segment 1A14  page 1A  class 0x50 (spell) type 20
+; kind class  length 380 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @012C  methods: sel2/name@0008, sel8/search@0028, sel9/use@004E, sel11@0083
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 2c                                        .hdr      dictionary offset = 012C
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 44 65 74 65 63 74 20 52 75 6e …+3      return    "Detect Rune"
+; ---- dead code 001A-001E: no dictionary entry, jump, pointer or call reaches it ----
+001A:x8b 41 00 40                                  return    0
+001E: 90 02 00 00 00 01 00 00 00 d3                .array    array[2] = [1, 211]
+
+; ==== method sel8/search @0028 ====
+0028: 81 01 00                                     frame     args=1 locals=0
+002B: 54 68 69 73 20 73 70 65 6c 6c 20 66 …+19     text      "This spell finds hidden runes.\n"
+004A: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @004E ====
+004E: 81 01 00                                     frame     args=1 locals=0
+0051: 8d 9f 0e a1 30 62 0b 41 01 41 02 40 …+3      jf        R0EA1(A30.f0B:loc16, 1, 2) -> 007F
+0060: 8d 48 13 40 00 7b                            jf        G13:g13_bool -> 007B
+0066: 43 61 73 74 20 27                            text      "Cast '"
+006C: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0072: 27 20 77 68 65 72 65 3f 0a                   text      "' where?\n"
+007B:>8b 41 02 40                                  return    2
+007F:>8b 41 00 40                                  return    0
+
+; ==== method sel11 @0083 ====
+0083: 81 03 03                                     frame     args=3 locals=3
+0086: 82 00 cb 43 10 00 00 01 41 00 31 32 …+2      set       L00 = iterate_props_at(&L01, 0, A31, A32)
+0094:>8c cb 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_props_at(&L01, 1) -> 010C
+00A1: 8d 00 62 00 41 02 56 40 00 fd                jf        (L00.f00:kind & 2) -> 00FD
+00AB: 8d 42 00 f5 00 62 04 50 00 62 04 42 …+7      jf        ((245 <= L00.f04:type) && (L00.f04:type <= 248)) -> 00FD
+00BE: 59 6f 75 20 64 69 73 63 6f 76 65 72 …+29     text      "You discover a rune of some sorts there.\n"
+00E7: 86 00 00 40 00 62 00 43 0f ff ff fd …+2      setfield  L00.f00:kind = (L00.f00:kind & -3)
+00F5: e6 41 01 40                                  builtin   set_arrival_byte(1)
+00F9: 8b 41 00 40                                  return    0
+00FD:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+0109: 88 00 94                                     goto      -> 0094
+010C:>59 6f 75 20 64 69 73 63 6f 76 65 72 …+16     text      "You discover no rune there.\n"
+0128: 8b 41 00 40                                  return    0
+012C: a0 0d 50 00 ff ff 07 c3 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0028, 9/use: @004E, 11: @0083, 51: @001E, 54: @0002}

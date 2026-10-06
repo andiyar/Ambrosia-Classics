@@ -1,0 +1,37 @@
+; segment 1CC3  page 1C  class 0x58 (room) id 451
+; kind class  length 1126 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0452  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 52                                        .hdr      dictionary offset = 0452
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 8d 30 62 14 41 01 56 5e 40 04 4e             jf        !(A30.f14:status & 1) -> 044E
+0010: e8 40                                        builtin   begin_talking()
+0012: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0019: a4 42 00 7e 41 00 40                         builtin   show_portrait(126, 0)
+0020: 54 68 65 20 76 69 73 69 6f 6e 20 6f …+72     text      "The vision of Omen returns...*\"Well done, human.  That wasn't so hard now, was it.\"*"
+0074: 8d ae 43 00 00 09 33 41 03 40 40 01 …+1      jf        who_in_party_has(2355, 3) -> 011C
+0081: 22 41 6e 64 20 49 20 73 65 65 20 79 …+140    text      "\"And I see you found your reward - that was well done.  May it 	serve you well.\"*\"Still, even this may not be enough, so I have another gift 	for you.\"*"
+0119: 88 01 c7                                     goto      -> 01C7
+011C:>22 54 6f 6f 20 62 61 64 20 79 6f 75 …+260    text      "\"Too bad you didn't find your reward - your lack of 	attentiveness does not bode well...\"*\"Still, I am not without pity - I promised you help, and so 	you shall have it.\"*\"I shall grant you another boon - this magical mapping device, 	that lets you see where you've been\"*"  ; shares its tail with text @01C7
+01C7:>22 49 20 73 68 61 6c 6c 20 67 72 61 …+89     text      "\"I shall grant you another boon - this magical mapping device, 	that lets you see where you've been\"*"
+022C: a8 42 00 01 42 01 7a 41 00 41 00 40          builtin   give_item(1, 378, 0, 0)
+0238: fc 43 50 00 00 01 40                         builtin   set_viewer_flag_d(True)
+023F: 22 52 65 6d 65 6d 62 65 72 20 6f 75 …+88     text      "\"Remember our advice, and perhaps we shall meet again - I shall be 	watching you and your actions.\"*"
+02A3: 82 00 43 40 58 01 c4 40                      set       L00 = room#452
+02AB: 8d 00 62 14 41 01 56 5e 40 03 d4             jf        !(L00.f14:status & 1) -> 03D4
+02B6: 22 49 66 20 79 6f 75 20 65 76 65 72 …+375    text      "\"If you ever find yourself returning to my little 'Test', I'll 	tell you a secret.\"*\"When you pull the lever in the first room, an illusionary 	wall opens under the torch, so you can walk through the wall there.\"*\"From that secret room, just take the ladder down to my 	quarters here.\"*\"In the mean time, I will return you to your quarters - speak to 	no one of this encounter of ours.\"*"
+03D4:>22 49 6e 20 74 68 65 20 6d 65 61 6e …+89     text      "\"In the mean time, I will return you to your quarters - speak to 	no one of this encounter of ours.\"*"  ; shares its tail with text @02B6
+0439: e9 40                                        builtin   end_talking()
+043B: bf 41 01 43 00 00 00 96 41 00 40             builtin   teleport(1, 150, 0)
+0446: 92 00 43 50 00 ff ff 40                      raise     0, Nil  ; non-local exit
+044E:>8b 41 00 40                                  return    0
+0452: a0 03 50 00 ff ff 61 31 9c c3 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

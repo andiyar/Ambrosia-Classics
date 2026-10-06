@@ -1,0 +1,122 @@
+; segment 1814  page 18  class 0x40 (char) id 20 name "Thuria" (string table 0201)
+; kind class  length 3011 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0BAF  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0b af                                        .hdr      dictionary offset = 0BAF
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 61 …+36     text      "You see an ancient dowager, with noble bearing.*"
+0035: 8d 9f 0f 02 30 41 07 40 5e 40 00 a3          jf        !R0F02(A30, 7) -> 00A3  ; R0F02 = tstbit [from 0x0101 symtab]
+0041: 22 49 20 61 6d 20 4d 61 74 72 6f 6e …+41     text      "\"I am Matron Thuria, Elder of House Attis.  You are?\""
+0076: 8f 2a 00                                     prompt    "*"
+0079: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+11     text      "\"Pleased to meet you, ^"
+0090: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+0097: 2e 22                                        text      ".\""
+0099: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00A0: 88 00 bf                                     goto      -> 00BF
+00A3:>22 47 72 65 65 74 69 6e 67 73 20 61 …+7      text      "\"Greetings again, ^"
+00B6: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+00BD: 2e 22                                        text      ".\""
+00BF:>8d 9f 0f 02 30 41 01 40 9f 0f 02 30 …+8      jf        (R0F02(A30, 1) && !R0F02(A30, 2)) -> 0574  ; R0F02 = tstbit [from 0x0101 symtab]
+00D3: 2a                                           text      "*"
+00D4: 82 00 43 40 58 01 91 40                      set       L00 = room#401
+00DC: 22 48 61 76 65 20 79 6f 75 20 6c 65 …+49     text      "\"Have you learned anything about the situation at the mine?\"*"
+0119: 8d 9f 0f 02 42 00 79 41 07 40 40 03 …+1      jf        R0F02(121, 7) -> 0303  ; R0F02 = tstbit [from 0x0101 symtab]
+0126: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+012C: 22 59 65 73 2c 20 61 63 74 75 61 6c …+31     text      "\"Yes, actually I've learned a great deal.\"*"
+0157: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+015C: 22 41 6e 79 74 68 69 6e 67 20 79 6f …+28     text      "\"Anything you'd care to share on that?\"*"
+0184: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+018A: 22 49 27 6d 20 6e 6f 74 20 73 75 72 …+86     text      "\"I'm not sure of all the details yet, but there is some sort of being in the depths of the mine.\"*"
+01EC: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+01F1: 22 41 20 62 65 69 6e 67 3f 20 20 48 …+38     text      "\"A being?  Hostile?  Friendly?  Why is it there?\"*"
+0223: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+0229: 22 49 27 6d 20 6e 6f 74 20 65 78 61 …+108    text      "\"I'm not exactly sure myself - all I know for sure is that it probably means no harm and just wishes to be left alone.\"*"
+02A1: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+02A6: 22 54 68 61 74 20 64 6f 65 73 20 6d …+59     text      "\"That does me little good, but I thank you for the effort nonetheless.\""
+02ED: f3 41 0e 40                                  builtin   done_to_do(14)
+02F1: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+02F8: 9f 0e 8b 48 05 41 14 40                      call      R0E8B(G05:leader, 20)
+0300: 88 05 74                                     goto      -> 0574
+0303:>8d 00 62 14 41 01 56 40 03 fd                jf        (L00.f14:status & 1) -> 03FD
+030D: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+0313: 22 59 65 73 2c 20 49 27 76 65 20 62 …+52     text      "\"Yes, I've been to the mine, and I've seen the so-called ghost\"*"
+0353: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0358: 22 41 6e 64 3f 22 2a                         text      "\"And?\"*"
+035F: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+0365: 22 49 27 6d 20 6e 6f 74 20 73 75 72 …+59     text      "\"I'm not sure what it was.  It doesn't appear to be hostile, however.\"*"
+03AC: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+03B1: 22 57 65 6c 6c 2c 20 74 68 61 6e 6b …+61     text      "\"Well, thank you.  Please continue to work on this matter, if you would.\""
+03FA: 88 05 74                                     goto      -> 0574
+03FD:>8d 9f 0f 02 42 00 17 41 01 40 40 04 …+1      jf        R0F02(23, 1) -> 04CF  ; R0F02 = tstbit [from 0x0101 symtab]
+040A: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+0410: 22 49 27 76 65 20 74 61 6c 6b 65 64 …+117    text      "\"I've talked with Amphidamas, and got his side of the story.\"*\"At this point the best I can do is corroborate Atymnius' report.\"*"
+0491: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0496: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+42     text      "\"Very well, please continue looking into this matter.\""
+04CC: 88 05 74                                     goto      -> 0574
+04CF:>8d 9f 0f 02 42 00 1d 41 01 40 40 05 …+1      jf        R0F02(29, 1) -> 0574  ; R0F02 = tstbit [from 0x0101 symtab]
+04DC: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+04E2: 22 49 27 76 65 20 74 61 6c 6b 65 64 …+52     text      "\"I've talked with Atymnius, so I've heard the report from him.\"*"
+0522: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0527: 22 54 68 61 74 20 69 73 20 61 20 73 …+65     text      "\"That is a start, but you'll need to travel to the mine to get more details.\""
+0574:>8e                                           input       ; read a line into the input buffer
+0575: 90 6e 61 6d 65 2c 74 68 75 72 00 05 …+1      match     name,thur else -> 05A1
+0582: 22 49 20 61 6d 20 4d 61 74 72 6f 6e …+9      text      "\"I am Matron Thuria.\""
+0597: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+059E: 88 05 74                                     goto      -> 0574
+05A1:>90 6a 6f 62 00 06 1c                         match     job else -> 061C
+05A8: 22 49 20 61 6d 20 45 6c 64 65 72 20 …+101    text      "\"I am Elder of House @Attis, and with the support of House Strymon, we are still the strongest house in Cademia.\""
+0619: 88 05 74                                     goto      -> 0574
+061C:>90 62 79 65 00 06 3e                         match     bye else -> 063E
+0623: 22 47 6f 6f 64 62 79 65 2c 20 5e             text      "\"Goodbye, ^"
+062E: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0635: 2e 22                                        text      ".\""
+0637: 8b 41 00 40                                  return    0
+; ---- dead code 063B-063E: no dictionary entry, jump, pointer or call reaches it ----
+063B:x88 05 74                                     goto      -> 0574
+063E:>90 61 74 74 69 00 06 97                      match     atti else -> 0697
+0646: 22 48 6f 75 73 65 20 41 74 74 69 73 …+66     text      "\"House Attis is a noble house, with wealth from our @iron mine to support us.\""
+0694: 88 05 74                                     goto      -> 0574
+0697:>90 69 72 6f 6e 2c 6d 69 6e 65 00 07 …+1      match     iron,mine else -> 0728
+06A4: 22 57 69 74 68 20 74 68 65 20 70 6f …+117    text      "\"With the power that our iron mine gave us, we rose to power in Cademia, and despite @rumors of troubles, our position is solid.\""
+0725: 88 05 74                                     goto      -> 0574
+0728:>90 6d 61 6c 69 00 07 73                      match     mali else -> 0773
+0730: 22 59 6f 75 6e 67 20 4d 61 6c 69 73 …+52     text      "\"Young Malis has much to learn, but one day he will replace me.\""
+0770: 88 05 74                                     goto      -> 0574
+0773:>90 63 79 62 65 00 07 a7                      match     cybe else -> 07A7
+077B: 22 49 20 61 6d 20 71 75 69 74 65 20 …+29     text      "\"I am quite proud of my daughter Cybele.\""
+07A4: 88 05 74                                     goto      -> 0574
+07A7:>90 72 75 6d 6f 00 0b 66                      match     rumo else -> 0B66
+07AF: 8d 9f 0f 02 42 00 17 41 01 40 40 07 …+1      jf        R0F02(23, 1) -> 07FC  ; R0F02 = tstbit [from 0x0101 symtab]
+07BC: 22 59 6f 75 27 76 65 20 68 65 61 72 …+49     text      "\"You've heard first hand of the issues involved at the mine.\""
+07F9: 88 0b 63                                     goto      -> 0B63
+07FC:>8d 9f 0f 02 30 41 01 40 40 08 47             jf        R0F02(A30, 1) -> 0847  ; R0F02 = tstbit [from 0x0101 symtab]
+0807: 22 49 20 62 65 6c 69 65 76 65 20 79 …+49     text      "\"I believe you've agreed to investigate these rumors for us.\""
+0844: 88 0b 63                                     goto      -> 0B63
+0847:>22 49 74 20 69 73 20 63 6f 6d 6d 6f …+198    text      "\"It is common bar talk, and nothing more - the minds of the miners gone amuck.\"*\"Though Atymnius himself delivered his report first hand to me.\"*\"Perhaps you might be interested investigating this matter more?\""
+0919: 8f 79 6e 00                                  prompt    "yn"
+091D: 90 79 00 0b 12                               match     y else -> 0B12
+0922: 22 41 74 79 6d 6e 69 75 73 20 69 73 …+465    text      "\"Atymnius is staying here for the nonce - you'll want to talk to him, and then you'll need to journey to the mine.\"*\"It is located on the west side of the Titan's Spine Mountains.  You'll need to take the road to Pnyx and then turn south along the coast.\"*\"There will be a path inland through the woods that will lead you to the mine.\"*\"The foreman is a man named Amphidamas.  I trust that you'll be able to figure out what is going on - Atymnius' story was confusing at best.\""
+0AFF: f2 41 0e 43 30 00 02 1a 41 0e 4a 40          builtin   add_to_do(14, (str[021A:0]"Cure Alaric" + 14))
+0B0B: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0B12:>90 6e 00 0b 63                               match     n else -> 0B63
+0B17: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+64     text      "\"Very well, you are obviously busy.  I thank you for considering it though.\""
+0B63:>88 05 74                                     goto      -> 0574
+0B66:>90 2a 00 0b a8                               match     * else -> 0BA8
+0B6B: 8d 9f 08 02 30 40 5e 40 0b a5                jf        !R0802(A30) -> 0BA5
+0B75: 8d 9f 08 0e 30 40 5e 40 0b a5                jf        !R080E(A30) -> 0BA5
+0B7F: 8d 9f 08 01 30 40 5e 40 0b a5                jf        !R0801(A30) -> 0BA5
+0B89: 22 59 6f 75 20 6d 75 73 74 20 6c 6f …+16     text      "\"You must look elsewhere...\""
+0BA5:>88 05 74                                     goto      -> 0574
+0BA8:>88 05 74                                     goto      -> 0574
+; ---- dead code 0BAB-0BAF: no dictionary entry, jump, pointer or call reaches it ----
+0BAB:x8b 41 00 40                                  return    0
+0BAF: a0 03 98 14 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

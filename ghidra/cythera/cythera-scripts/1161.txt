@@ -1,0 +1,27 @@
+; segment 1161  page 11  class 0x00 (prop) type 353 tile-name "blast trap" (tool join F000/F004)
+; kind class  length 127 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @006B  methods: sel10/use_on@0002, sel65@004B
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 6b                                        .hdr      dictionary offset = 006B
+
+; ==== method sel10/use_on @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 42 6c 61 73 74 20 54 72 61 70 21 21 …+1      text      "Blast Trap!!\n"
+0012: d3 41 27 30 62 01 30 62 02 40                builtin   positional_sound(39, A30.f01:x, A30.f02:y)
+001C: e2 30 62 01 30 62 02 30 62 01 30 62 …+13     builtin   missile_burst(A30.f01:x, A30.f02:y, A30.f01:x, A30.f02:y, 435, 16, 3, 0)
+0035: 9f 0e b8 31 ac 41 05 41 0f 40 41 08 …+6      call      R0EB8(A31, random(5, 15), 8, Nil)
+0047: 8b 41 00 40                                  return    0
+
+; ==== method sel65 @004B ====
+004B: 81 03 00                                     frame     args=3 locals=0
+004E: 42 6c 61 73 74 20 74 72 61 70 20 64 …+10     text      "Blast trap destroyed.\n"
+0064: a7 30 40                                     builtin   delete_prop(A30)
+0067: 8b 41 00 40                                  return    0
+006B: a0 03 50 00 ff ff 00 24 91 61 00 02 …+8      .dict     dict[3] {10/use_on: @0002, 65: @004B}

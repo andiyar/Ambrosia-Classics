@@ -1,0 +1,43 @@
+; segment 1AF4  page 1A  class 0x50 (spell) type 244
+; kind class  length 215 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00AB  methods: sel2/name@0008, sel4/index@001E, sel9/use@0041
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 ab                                        .hdr      dictionary offset = 00AB
+0002: 90 01 00 00 00 78                            .array    array[1] = [120]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 4c 6f 6f 6b 20 41 72 6f 75 6e …+3      return    "Look Around"
+; ---- dead code 001A-001E: no dictionary entry, jump, pointer or call reaches it ----
+001A:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @001E ====
+001E: 81 02 00                                     frame     args=2 locals=0
+0021: 8d 31 41 01 54 40 00 36                      jf        (A31 == 1) -> 0036
+0029: 8d 48 12 40 00 36                            jf        G12:room -> 0036
+002F: 8b 43 50 00 00 01 40                         return    True
+0036:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 003D-0041: no dictionary entry, jump, pointer or call reaches it ----
+003D:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0041 ====
+0041: 81 01 05                                     frame     args=1 locals=5
+0044: 3e 20 4c 6f 6f 6b 20 41 72 6f 75 6e …+3      text      "> Look Around.\n"
+0053: 82 00 48 12 63 58 40                         set       L00 = as_room(G12:room)
+005A: 9d 07 00 40                                  send      L00.sel7/first_visit()
+005E: 82 01 a0 43 10 00 00 02 41 00 41 00 …+7      set       L01 = iterate_range(&L02, 0, 0, 255)
+0071:>8c a0 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_range(&L02, 1) -> 00A7
+007E: 82 04 01 63 40 40                            set       L04 = as_char(L01)
+0084: 8d 04 62 29 00 54 9f 0f 13 01 40 5e …+4      jf        ((L04.f29 == L00) && !R0F13(L01)) -> 0098  ; R0F13 = inparty [from 0x0101 symtab]
+0094: 9d 07 04 40                                  send      L04.sel7/first_visit()
+0098:>82 01 a0 43 10 00 00 02 41 02 40 40          set       L01 = iterate_range(&L02, 2)
+00A4: 88 00 71                                     goto      -> 0071
+00A7:>8b 41 00 40                                  return    0
+00AB: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @001E, 9/use: @0041, 40/p_typeflags28: @0002}

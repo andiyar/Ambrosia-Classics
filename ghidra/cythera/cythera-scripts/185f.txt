@@ -1,0 +1,88 @@
+; segment 185F  page 18  class 0x40 (char) id 95 name "Polydamas" (string table 0201)
+; kind class  length 2031 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @07DB  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 07 db                                        .hdr      dictionary offset = 07DB
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+34     text      "You see an old man, barely able to get around."
+0033: 82 00 dc 41 02 40 41 0a 4f 40                set       L00 = (get_variable(2) < 10)
+003D: 8d 00 40 00 66                               jf        L00 -> 0066
+0042: 20 20 43 6f 75 67 68 69 6e 67 20 73 …+21     text      "  Coughing spasm wracks his body."
+0063: 88 00 8c                                     goto      -> 008C
+0066:>20 20 44 65 73 70 69 74 65 20 74 68 …+26     text      "  Despite that, he seems full of life."
+008C:>8d ac 41 00 41 02 40 41 00 54 40 00 …+1      jf        (random(0, 2) == 0) -> 00A1
+0099: 9f 0f 01 41 5f 41 07 40                      call      R0F01(95, 7)  ; R0F01 = clrbit [from 0x0101 symtab]
+00A1:>22 43 6f 6d 65 20 61 20 6c 69 74 74 …+49     text      "\"Come a little closer - my eyes aren't what they once were.\"*"
+00DE: 8d 9f 0f 02 41 5f 41 07 40 5e 40 01 …+1      jf        !R0F02(95, 7) -> 017B  ; R0F02 = tstbit [from 0x0101 symtab]
+00EB: 22 44 6f 20 49 20 6b 6e 6f 77 20 79 …+58     text      "\"Do I know you, I don't think so.  My name is Polydamas.  Andyou are?\""
+0131: 8f 2a 00                                     prompt    "*"
+0134: 8d 00 5e 40 01 70                            jf        !L00 -> 0170
+013A: 22 59 6f 75 27 72 65 20 74 68 65 20 …+42     text      "\"You're the one who stopped the plague, aren't you...\""
+0170:>9f 0f 00 41 5f 41 07 40                      call      R0F00(95, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0178: 88 01 bc                                     goto      -> 01BC
+017B:>22 59 65 73 2c 20 49 20 72 65 63 6f …+53     text      "\"Yes, I recognize you, though my mind isn't what it use to be...\""
+01BC:>8e                                           input       ; read a line into the input buffer
+01BD: 8d ac 41 00 41 04 40 41 00 54 40 01 …+1      jf        (random(0, 4) == 0) -> 01ED
+01CA: 22 45 68 3f 20 20 43 6f 75 6c 64 20 …+20     text      "\"Eh?  Could you speak up a bit?\""
+01EA: 88 01 bc                                     goto      -> 01BC
+01ED:>90 6e 61 6d 65 00 02 3a                      match     name else -> 023A
+01F5: 22 46 6f 72 67 6f 74 74 65 6e 20 61 …+47     text      "\"Forgotten already?  Happens to me.  My name is Polydamas.\""
+0230: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0237: 88 01 bc                                     goto      -> 01BC
+023A:>90 6d 65 74 6f 00 02 92                      match     meto else -> 0292
+0242: 22 4d 65 74 6f 70 65 73 20 69 73 20 …+65     text      "\"Metopes is the Judge of Catamarca.  He's the third Judge I've served under.\""
+028F: 88 01 bc                                     goto      -> 01BC
+0292:>90 6a 6f 62 2c 63 6f 6f 6b 00 02 f7          match     job,cook else -> 02F7
+029E: 22 49 27 6d 20 74 68 65 20 6d 61 6a …+74     text      "\"I'm the majordomo of the @Citadel.  Fancy title, but I'm cook, doorman, you name it.\""
+02F4: 88 01 bc                                     goto      -> 01BC
+02F7:>90 70 6c 61 67 00 03 9e                      match     plag else -> 039E
+02FF: 8d 00 40 03 75                               jf        L00 -> 0375
+0304: 22 49 74 27 73 20 77 65 61 72 69 6e …+98     text      "\"It's wearing me down, and will probably kill me before too long.  Even the master is stumped as to a cure...\""
+0372: 88 03 9b                                     goto      -> 039B
+0375:>22 49 74 20 67 6f 74 20 70 72 65 74 …+26     text      "\"It got pretty dicey there, didn't it\""
+039B:>88 01 bc                                     goto      -> 01BC
+039E:>90 63 69 74 61 00 04 bb                      match     cita else -> 04BB
+03A6: 22 54 68 65 20 43 69 74 61 64 65 6c …+262    text      "\"The Citadel of Catamarca was built about 700 years ago by the Second @Tyrant of Cademia.\"*\"It was a combination summer home and military outpost.\"*\"It was built on this hunk of rock because it overlooked both the city and the ocean.  I suppose they had other @reasons too.\""
+04B8: 88 01 bc                                     goto      -> 01BC
+04BB:>90 72 65 61 73 00 04 e3                      match     reas else -> 04E3
+04C3: 22 57 68 79 2c 20 74 68 65 20 40 77 …+17     text      "\"Why, the @water, of course.\""
+04E0: 88 01 bc                                     goto      -> 01BC
+04E3:>90 77 61 74 65 00 05 4e                      match     wate else -> 054E
+04EB: 22 43 61 74 61 6d 61 72 63 61 20 68 …+84     text      "\"Catamarca has the best water in the world, flowing from a spring under this very hunk of rock.\""
+054B: 88 01 bc                                     goto      -> 01BC
+054E:>90 74 79 72 61 00 05 cf                      match     tyra else -> 05CF
+0556: 22 54 68 65 20 54 79 72 61 6e 74 73 …+106    text      "\"The Tyrants of Cademia were a shortlived ruling family of Eastern Cythera, until Alaric put an end to that nonsense.\""
+05CC: 88 01 bc                                     goto      -> 01BC
+05CF:>90 73 61 70 70 00 07 41                      match     sapp else -> 0741
+05D7: 8d 9f 0f 02 30 41 01 40 40 05 fd             jf        R0F02(A30, 1) -> 05FD  ; R0F02 = tstbit [from 0x0101 symtab]
+05E2: 22 49 20 68 6f 70 65 20 79 6f 75 20 …+12     text      "\"I hope you found it...\""
+05FA: 88 07 3e                                     goto      -> 073E
+05FD:>22 59 6f 75 20 6b 6e 6f 77 2c 20 66 …+302    text      "\"You know, funny you should mention that.  My predecessor, when I started this job gave me this book.\"*\"He said it was left behind by a Mage years before, and it seemed important, so he asked me to take care of it.\"*\"I've still got it, I think it is under my bed in my quarters - feel free to look for it there...\""
+0737: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+073E:>88 01 bc                                     goto      -> 01BC
+0741:>90 62 79 65 00 07 a3                         match     bye else -> 07A3
+0748: 8d 00 40 07 90                               jf        L00 -> 0790
+074D: 22 48 6f 70 65 66 75 6c 6c 79 20 49 …+52     text      "\"Hopefully I'll see you again, but the plague is doing me in...\""
+078D: 88 07 9c                                     goto      -> 079C
+0790:>22 54 61 6b 65 20 63 61 72 65 2e 22          text      "\"Take care.\""
+079C:>8b 41 00 40                                  return    0
+; ---- dead code 07A0-07A3: no dictionary entry, jump, pointer or call reaches it ----
+07A0:x88 01 bc                                     goto      -> 01BC
+07A3:>90 2a 00 07 d4                               match     * else -> 07D4
+07A8: 8d 9f 08 0b 30 40 5e 40 07 d1                jf        !R080B(A30) -> 07D1
+07B2: 8d 9f 08 01 30 40 5e 40 07 d1                jf        !R0801(A30) -> 07D1
+07BC: 22 45 68 3f 20 20 57 68 61 74 20 77 …+9      text      "\"Eh?  What was that?\""
+07D1:>88 01 bc                                     goto      -> 01BC
+07D4:>88 01 bc                                     goto      -> 01BC
+; ---- dead code 07D7-07DB: no dictionary entry, jump, pointer or call reaches it ----
+07D7:x8b 41 00 40                                  return    0
+07DB: a0 03 98 5f 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

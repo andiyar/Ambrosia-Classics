@@ -1,0 +1,162 @@
+; segment 0E87  page 0E  routine
+; kind routine  length 1073 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 05 10                                     frame     args=5 locals=16
+0003: 82 00 41 00 40                               set       L00 = 0
+0008: 82 01 43 00 00 01 b7 40                      set       L01 = 439
+0010: 82 02 cc 43 10 00 00 03 41 00 31 40 …+1      set       L02 = iterate_equipped(&L03, 0, A31)
+001D:>8c cc 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_equipped(&L03, 1) -> 0060
+002A: 8d 02 60 2f 40 00 51                         jf        has(L02, sel47) -> 0051
+0031: 82 01 02 62 0a 40                            set       L01 = L02.f0A:tile
+0037: 82 00 00 ac 41 00 02 61 2f 00 41 01 …+14     set       L00 = (L00 + random(0, ((prop(L02, sel47, 0) + 1) + R0EAC(A31, prop(L02, sel47, 1)))))
+0051:>82 02 cc 43 10 00 00 03 41 02 40 40          set       L02 = iterate_equipped(&L03, 2)
+005D: 88 00 1d                                     goto      -> 001D
+0060:>82 05 41 00 40                               set       L05 = 0
+0065: 8d 32 40 00 9d                               jf        A32 -> 009D
+006A: 8d 32 60 2a 32 60 26 5c 40 00 9d             jf        (has(A32, sel42) && has(A32, sel38/p26)) -> 009D
+0075: 82 05 32 62 06 40                            set       L05 = A32.f06:quality
+007B: 82 33 33 05 4a 40                            set       A33 = (A33 + L05)
+0081: 82 33 33 9f 0e ac 30 02 61 2a 03 40 …+2      set       A33 = (A33 + R0EAC(A30, prop(L02, sel42, 3)))
+008F: 82 34 34 9f 0e ac 30 02 61 2a 03 40 …+2      set       A34 = (A34 + R0EAC(A30, prop(L02, sel42, 3)))
+009D:>8d 33 41 00 51 40 03 a2                      jf        (A33 > 0) -> 03A2
+00A5: 82 06 43 50 00 ff ff 40                      set       L06 = Nil
+00AD: 82 07 45 00 16 90 05 00 00 00 00 00 …+16     set       L07 = blk@00B2
+      ; 0x45 inline block 00B2-00C8 (22 bytes):
+      00B2: 90 05                            .array[5]
+        [0] 0
+        [1] 436
+        [2] 437
+        [3] 0
+        [4] 0
+00C9: 8d 32 40 00 ee                               jf        A32 -> 00EE
+00CE: 8d 32 60 2a 40 00 eb                         jf        has(A32, sel42) -> 00EB
+00D5: 82 06 32 61 2a 05 40                         set       L06 = prop(A32, sel42, 5)
+00DC: 8d 32 61 2a 06 40 00 eb                      jf        prop(A32, sel42, 6) -> 00EB
+00E4: 82 07 32 61 2a 06 40                         set       L07 = prop(A32, sel42, 6)
+00EB:>88 00 fe                                     goto      -> 00FE
+00EE:>82 08 30 63 48 40                            set       L08 = as_cls48(A30)
+00F4: 82 06 08 61 3b 00 41 02 46 40                set       L06 = prop(L08, sel59/p3B, 0)[2]
+00FE:>8d 06 40 01 0c                               jf        L06 -> 010C
+0103: d3 06 30 62 01 30 62 02 40                   builtin   positional_sound(L06, A30.f01:x, A30.f02:y)
+010C:>e4 30 62 01 30 62 02 31 62 01 31 62 …+3      builtin   show_attack(A30.f01:x, A30.f02:y, A31.f01:x, A31.f02:y, L07)
+011B: 8d 33 00 4f 40 01 48                         jf        (A33 < L00) -> 0148
+0122: 2d 2d 5e                                     text      "--^"
+0125: 8a 31 40                                     print     A31
+0128: 20 70 61 72 72 69 65 73 20 5e                text      " parries ^"
+0132: 8a 30 40                                     print     A30
+0135: 2d 2d 0a                                     text      "--\n"
+0138: e3 31 62 01 31 62 02 01 40                   builtin   show_hit(A31.f01:x, A31.f02:y, L01)
+0141: 8b 43 50 00 00 01 40                         return    True
+0148:>82 09 ac 41 00 34 40 41 01 4a 05 4a …+1      set       L09 = ((random(0, A34) + 1) + L05)
+0155: 82 0a 44 00 40                               set       L0A = ""
+015A: 8d 09 41 03 4f 40 01 70                      jf        (L09 < 3) -> 0170
+0162: 82 0b 44 67 72 61 7a 65 64 00 40             set       L0B = "grazed"
+016D: 88 02 85                                     goto      -> 0285
+0170:>8d 09 41 06 4f 40 01 83                      jf        (L09 < 6) -> 0183
+0178: 82 0b 44 68 69 74 00 40                      set       L0B = "hit"
+0180: 88 02 85                                     goto      -> 0285
+0183:>8d 09 41 09 4f 40 01 a0                      jf        (L09 < 9) -> 01A0
+018B: 82 0b 44 68 69 74 00 40                      set       L0B = "hit"
+0193: 82 0a 44 20 68 61 72 64 00 40                set       L0A = " hard"
+019D: 88 02 85                                     goto      -> 0285
+01A0:>8d 09 41 0c 4f 40 01 c2                      jf        (L09 < 12) -> 01C2
+01A8: 82 0b 44 68 69 74 00 40                      set       L0B = "hit"
+01B0: 82 0a 44 20 76 65 72 79 20 68 61 72 …+3      set       L0A = " very hard"
+01BF: 88 02 85                                     goto      -> 0285
+01C2:>8d 09 41 10 4f 40 01 e9                      jf        (L09 < 16) -> 01E9
+01CA: 82 0b 44 68 69 74 00 40                      set       L0B = "hit"
+01D2: 82 0a 44 20 65 78 74 72 65 6d 65 6c …+8      set       L0A = " extremely hard"
+01E6: 88 02 85                                     goto      -> 0285
+01E9:>8d 09 41 14 4f 40 02 0f                      jf        (L09 < 20) -> 020F
+01F1: 82 0b 44 63 72 75 73 68 65 64 00 40          set       L0B = "crushed"
+01FD: 82 0a 44 20 76 65 72 79 20 68 61 72 …+3      set       L0A = " very hard"
+020C: 88 02 85                                     goto      -> 0285
+020F:>8d 09 41 19 4f 40 02 46                      jf        (L09 < 25) -> 0246
+0217: 82 0b 44 73 6d 61 73 68 65 64 00 40          set       L0B = "smashed"
+0223: 82 0a 44 20 77 69 74 68 20 61 20 62 …+20     set       L0A = " with a bonecrunching sound"
+0243: 88 02 85                                     goto      -> 0285
+0246:>8d 09 41 23 4f 40 02 69                      jf        (L09 < 35) -> 0269
+024E: 82 0b 44 67 72 6f 75 6e 64 00 40             set       L0B = "ground"
+0259: 82 0a 44 20 74 6f 20 64 75 73 74 00 …+1      set       L0A = " to dust"
+0266: 88 02 85                                     goto      -> 0285
+0269:>82 0b 44 73 68 72 65 64 64 65 64 00 …+1      set       L0B = "shredded"
+0276: 82 0a 44 20 74 6f 20 70 69 65 63 65 …+3      set       L0A = " to pieces"
+0285:>2d 2d 5e                                     text      "--^"
+0288: 8a 30 40                                     print     A30
+028B: 20                                           text      " "
+028C: 8a 0b 40                                     print     L0B
+028F: 20                                           text      " "
+0290: 8a 31 40                                     print     A31
+0293: 8a 0a 40                                     print     L0A
+0296: 82 0c 41 00 40                               set       L0C = 0
+029B: 8d 32 40 02 d1                               jf        A32 -> 02D1
+02A0: 8d 32 60 2a 40 02 b1                         jf        has(A32, sel42) -> 02B1
+02A7: 82 0c 32 61 2a 02 40                         set       L0C = prop(A32, sel42, 2)
+02AE: 88 02 bf                                     goto      -> 02BF
+02B1:>8d 32 60 2d 40 02 bf                         jf        has(A32, sel45) -> 02BF
+02B8: 82 0c 32 61 2d 02 40                         set       L0C = prop(A32, sel45, 2)
+02BF:>8d 05 40 02 ce                               jf        L05 -> 02CE
+02C4: 82 0c 0c 43 00 00 00 80 57 40                set       L0C = (L0C | 128)
+02CE:>88 03 0c                                     goto      -> 030C
+02D1:>8d 08 60 2a 40 02 e2                         jf        has(L08, sel42) -> 02E2
+02D8: 82 0c 08 61 2a 02 40                         set       L0C = prop(L08, sel42, 2)
+02DF: 88 02 f8                                     goto      -> 02F8
+02E2:>8d 08 60 2d 40 02 f3                         jf        has(L08, sel45) -> 02F3
+02E9: 82 0c 08 61 2d 02 40                         set       L0C = prop(L08, sel45, 2)
+02F0: 88 02 f8                                     goto      -> 02F8
+02F3:>82 0c 41 04 40                               set       L0C = 4
+02F8:>8d 08 62 33 41 08 56 40 03 0c                jf        (L08.f33 & 8) -> 030C
+0302: 82 0c 0c 43 00 00 01 00 57 40                set       L0C = (L0C | 256)
+030C:>82 09 9d 40 31 09 0c 40 40                   set       L09 = A31.sel64(L09, L0C)
+0315: 8d 09 41 00 50 40 03 43                      jf        (L09 <= 0) -> 0343
+031D: e3 31 62 01 31 62 02 43 00 00 01 b7 …+1      builtin   show_hit(A31.f01:x, A31.f02:y, 439)
+032A: 2c 20 62 75 74 20 74 6f 20 6e 6f 20 …+10     text      ", but to no effect.--\n"
+0340: 88 03 98                                     goto      -> 0398
+0343:>2e 2d 2d 0a                                  text      ".--\n"
+0347: 82 0d 30 63 40 40                            set       L0D = as_char(A30)
+034D: 82 0e 31 63 40 40                            set       L0E = as_char(A31)
+0353: 82 0f 0e 62 1b 0d 62 1b 4b 41 01 4a …+1      set       L0F = ((L0E.f1B:level - L0D.f1B:level) + 1)
+0360: 9d 41 31 09 0c 40                            send      A31.sel65(L09, L0C)
+0366: 8d 0f 41 00 51 40 03 87                      jf        (L0F > 0) -> 0387
+036E: 8d 09 0f 50 40 03 7e                         jf        (L09 <= L0F) -> 037E
+0375: 9f 0e 8b 0d 09 40                            call      R0E8B(L0D, L09)
+037B: 88 03 84                                     goto      -> 0384
+037E:>9f 0e 8b 0d 0f 40                            call      R0E8B(L0D, L0F)
+0384:>88 03 98                                     goto      -> 0398
+0387:>8d 09 41 00 0f 4b 51 40 03 98                jf        (L09 > (0 - L0F)) -> 0398
+0391: 9f 0e 8b 0d 41 01 40                         call      R0E8B(L0D, 1)
+0398:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 039F-03A2: no dictionary entry, jump, pointer or call reaches it ----
+039F:x88 04 2d                                     goto      -> 042D
+03A2:>82 07 45 00 16 90 05 00 00 00 00 00 …+16     set       L07 = blk@03A7
+      ; 0x45 inline block 03A7-03BD (22 bytes):
+      03A7: 90 05                            .array[5]
+        [0] 0
+        [1] 436
+        [2] 437
+        [3] 438
+        [4] 0
+03BE: 8d 32 40 03 e3                               jf        A32 -> 03E3
+03C3: 8d 32 60 2a 40 03 e0                         jf        has(A32, sel42) -> 03E0
+03CA: 82 06 32 61 2a 04 40                         set       L06 = prop(A32, sel42, 4)
+03D1: 8d 32 61 2a 06 40 03 e0                      jf        prop(A32, sel42, 6) -> 03E0
+03D9: 82 07 32 61 2a 06 40                         set       L07 = prop(A32, sel42, 6)
+03E0:>88 03 f3                                     goto      -> 03F3
+03E3:>82 08 30 63 48 40                            set       L08 = as_cls48(A30)
+03E9: 82 06 08 61 3b 00 41 01 46 40                set       L06 = prop(L08, sel59/p3B, 0)[1]
+03F3:>8d 06 40 04 01                               jf        L06 -> 0401
+03F8: d3 06 30 62 01 30 62 02 40                   builtin   positional_sound(L06, A30.f01:x, A30.f02:y)
+0401:>e4 30 62 01 30 62 02 31 62 01 31 62 …+3      builtin   show_attack(A30.f01:x, A30.f02:y, A31.f01:x, A31.f02:y, L07)
+0410: 2d 2d 5e                                     text      "--^"
+0413: 8a 30 40                                     print     A30
+0416: 20 6d 69 73 73 65 64 20 5e                   text      " missed ^"
+041F: 8a 31 40                                     print     A31
+0422: 2e 2d 2d 0a                                  text      ".--\n"
+0426: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 042D-0431: no dictionary entry, jump, pointer or call reaches it ----
+042D:x8b 41 00 40                                  return    0

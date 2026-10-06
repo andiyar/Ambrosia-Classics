@@ -1,0 +1,191 @@
+; segment 184F  page 18  class 0x40 (char) id 79 name "Charax" (string table 0201)
+; kind class  length 5372 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @14E8  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 7   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 14 e8                                        .hdr      dictionary offset = 14E8
+0002: 90 01 98 4f 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 04                                     frame     args=1 locals=4
+003D: 59 6f 75 20 73 65 65 20 61 20 6e 65 …+27     text      "You see a nervous, unkempt, young man.*"
+0064: 82 00 ae 42 00 1a 41 05 40 40                set       L00 = who_in_party_has(26, 5)
+006E: 8d 00 40 01 cc                               jf        L00 -> 01CC
+0073: 22 41 68 2c 20 79 6f 75 20 66 6f 75 …+58     text      "\"Ah, you found the book on Timeflux!\"*Charax takes the book from you.*"
+00B9: b1 00 42 00 1a 41 05 41 01 40                builtin   remove_items(L00, 26, 5, 1)
+00C3: f3 41 0c 40                                  builtin   done_to_do(12)
+00C7: 9f 0e 8b 48 05 41 14 40                      call      R0E8B(G05:leader, 20)
+00CF: 22 48 6d 2c 20 6c 65 74 20 6d 65 20 …+225    text      "\"Hm, let me study this for a while - why don't you come back in a couple of days?\"*\"This matter may seem trivial, but there could be much related to this matter that is yet to be ferreted out.\"*Charax turns away leafing through the book."
+01BC: 9f 0f 00 42 00 4f 41 01 40                   call      R0F00(79, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+01C5: 8b 41 00 40                                  return    0
+; ---- dead code 01C9-01CC: no dictionary entry, jump, pointer or call reaches it ----
+01C9:x88 0e 9b                                     goto      -> 0E9B
+01CC:>8d 9f 0f 02 42 00 4f 41 01 40 40 0c …+1      jf        R0F02(79, 1) -> 0C81  ; R0F02 = tstbit [from 0x0101 symtab]
+01D9: 8d dc 41 03 40 41 02 4f 40 03 60             jf        (get_variable(3) < 2) -> 0360
+01E4: 22 49 27 6d 20 6d 61 6b 69 6e 67 20 …+361    text      "\"I'm making progress, but it is slow and not quite working the way I expected.\"*\"It is quite facinating, actually - there are underlying field properties of the Sea, Time and Change.\"*\"And since Alchemy is based on Change, well, you can image that this is quite facinating indeed.\"*\"Give me some more time on this - I must thank you for bring up such a facinating issue...\""
+0359: 8b 41 00 40                                  return    0
+; ---- dead code 035D-0360: no dictionary entry, jump, pointer or call reaches it ----
+035D:x88 0c 7e                                     goto      -> 0C7E
+0360:>8d 9f 0f 02 42 00 4f 41 03 40 40 08 …+1      jf        R0F02(79, 3) -> 089C  ; R0F02 = tstbit [from 0x0101 symtab]
+036D: 82 00 ae 42 01 0f 41 00 40 40                set       L00 = who_in_party_has(271, 0)
+0377: 8d 00 43 40 40 00 01 54 40 08 53             jf        (L00 == char#1"Hero") -> 0853
+0382: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0389: 22 48 61 76 65 20 79 6f 75 20 66 69 …+43     text      "\"Have you figured out the Earth polarity reagent yet?\"*"
+03C0: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+03C5: 22 49 27 76 65 20 6d 61 64 65 20 73 …+60     text      "\"I've made some progress, but more a matter of elimating possbilities.\"*"
+040D: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0414: 22 49 20 77 61 73 20 67 69 76 65 6e …+151    text      "\"I was given this mushroom by the leader of the Seldane, and I thought they might be what you were looking for.\"*You hand Charax the spores given you by Sabinate.\n"
+04B7: b1 42 00 01 42 01 0f 41 00 40                builtin   remove_items(1, 271, 0)
+04C1: 9f 0f 00 42 00 4f 41 04 40                   call      R0F00(79, 4)  ; R0F00 = setbit [from 0x0101 symtab]
+04CA: 9f 0f 01 42 00 4f 41 03 40                   call      R0F01(79, 3)  ; R0F01 = clrbit [from 0x0101 symtab]
+04D3: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+04D8: 2a 22 48 6d 2c 20 6d 75 73 68 72 6f …+93     text      "*\"Hm, mushrooms, from the earth, yes - that could do the trick.  Very well, let's see what this makes...\""
+0541: ea 40                                        builtin   conversation_cue_2()
+0543: f0 42 00 4f 43 00 00 00 a0 41 07 41 …+7      builtin   queue_activity(79, 160, 7, 6, Nil)
+0556: f0 42 00 4f 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(79, 165, 255, 1, Nil)
+056C: f1 43 00 00 00 ff 40                         builtin   wait_for_flag(255)
+0573: eb 40                                        builtin   conversation_cue_1()
+0575: 43 68 61 72 61 78 20 6c 6f 61 64 73 …+47     text      "Charax loads up the distiller with mushroom and the kelp.\n*"
+05B0: ea 40                                        builtin   conversation_cue_2()
+05B2: 82 01 cb 43 10 00 00 02 41 00 41 07 …+4      set       L01 = iterate_props_at(&L02, 0, 7, 5)
+05C2:>8c cb 43 10 00 00 02 41 01 40 40 05 …+1      jt        iterate_props_at(&L02, 1) -> 05F8
+05CF: 8d 01 62 04 42 00 e9 54 40 05 e9             jf        (L01.f04:type == 233) -> 05E9
+05DA: 86 04 01 40 42 00 ea 40                      setfield  L01.f04:type = 234
+05E2: 86 06 01 40 41 01 40                         setfield  L01.f06:quality = 1
+05E9:>82 01 cb 43 10 00 00 02 41 02 40 40          set       L01 = iterate_props_at(&L02, 2)
+05F5: 88 05 c2                                     goto      -> 05C2
+05F8:>a6 41 04 40                                  builtin   show_tile_animate(4)
+05FC: e1 42 00 4f 43 00 00 00 f0 40                builtin   show_magic(79, 240)
+0606: a6 41 04 40                                  builtin   show_tile_animate(4)
+060A: eb 40                                        builtin   conversation_cue_1()
+060C: 43 68 61 72 61 78 20 68 61 73 20 61 …+564    text      "Charax has a very puzzled look on his face.\n*\"Something is wrong - it isn't distilling anything - it seems to have captured the essense, but...\"*\"Perhaps I'm not strong enough, I don't know.  It is definitely fully charged, but it almost seems stuck, or blocked.\"*\"It is as if it isn't suppose to make a potion at all - more a neutralizing system.\"*\"I'm betting that if one were to use it on something, it could remove Sea polarity essense and neutralize it with the Earth polarity.\"*\"Unfortunately, that won't help the wine - you can't move a distiller without spilling it.\"*"
+084C: 8b 41 00 40                                  return    0
+; ---- dead code 0850-0853: no dictionary entry, jump, pointer or call reaches it ----
+0850:x88 08 98                                     goto      -> 0898
+0853:>22 49 27 6d 20 73 74 69 6c 6c 20 77 …+57     text      "\"I'm still working out the Earth polarity reagent - come back later.\""
+0898:>8b 41 00 40                                  return    0
+089C:>8d 9f 0f 02 42 00 4f 41 04 40 40 08 …+1      jf        R0F02(79, 4) -> 08FE  ; R0F02 = tstbit [from 0x0101 symtab]
+08A9: 22 49 20 6d 75 73 74 20 73 74 75 64 …+69     text      "\"I must study what happened with the distiller - please give me some time alone.\""
+08FA: 8b 41 00 40                                  return    0
+08FE:>8d 9f 0f 02 42 00 4f 41 02 40 40 09 …+1      jf        R0F02(79, 2) -> 0939  ; R0F02 = tstbit [from 0x0101 symtab]
+090B: 22 41 6e 79 20 6c 75 63 6b 20 66 69 …+31     text      "\"Any luck finding the rare deep-sea kelp?\"*"
+0936: 88 0b 0b                                     goto      -> 0B0B
+0939:>22 49 27 76 65 20 6d 61 64 65 20 70 …+298    text      "\"I've made progress, and I've got a possible solution, though it might not work.\"*\"It involves extracting Sea based polarity, which should revert the Timeflux based changes.\"*\"However, I need a bit of rare deep-sea kelp, and something else that will re-assert Earth polarity, but I'm not sure on that one yet.\""
+0A6F: 9f 0f 00 42 00 4f 41 02 40                   call      R0F00(79, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0A78: 82 00 ae 42 01 0e 41 00 40 40                set       L00 = who_in_party_has(270, 0)
+0A82: 8d 00 5e 40 0b 0b                            jf        !L00 -> 0B0B
+0A88: 2a 22 50 65 72 68 61 70 73 20 69 66 …+103    text      "*\"Perhaps if you could try to track that down while I continue my research... Come back when you find some, thank.\""
+0AFB: f2 41 0d 43 30 00 02 1a 41 0d 4a 40          builtin   add_to_do(13, (str[021A:0]"Cure Alaric" + 13))
+0B07: 8b 41 00 40                                  return    0
+0B0B:>82 00 ae 42 01 0e 41 00 40 40                set       L00 = who_in_party_has(270, 0)
+0B15: 8d 00 40 0c 3a                               jf        L00 -> 0C3A
+0B1A: 2a                                           text      "*"
+0B1B: 8d 00 48 05 54 40 0b 5d                      jf        (L00 == G05:leader) -> 0B5D
+0B23: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0B29: 59 6f 75 20 68 6f 6c 64 20 75 70 20 …+37     text      "You hold up the kelp you found.*\"Kelp like this?\""
+0B5A: 88 0b 94                                     goto      -> 0B94
+0B5D:>a4 00 41 01 40                               builtin   show_portrait(L00, 1)
+0B62: 8a 00 40                                     print     L00
+0B65: 20 68 6f 6c 64 73 20 75 70 20 74 68 …+36     text      " holds up the kelp you found.*\"Will this work?\"*"  ; shares its tail with text @0B94
+0B94:>2a                                           text      "*"
+0B95: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0B9A: 22 45 78 65 63 65 6c 6c 65 6e 74 21 …+53     text      "\"Execellent!  That looks perfect.  Thanks.\"*Charax takes the kelp"
+0BDB: b1 00 42 01 0e 41 00 41 01 40                builtin   remove_items(L00, 270, 0, 1)
+0BE5: f3 41 0d 40                                  builtin   done_to_do(13)
+0BE9: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+0BF1: 2a 22 4e 6f 77 20 49 20 6a 75 73 74 …+47     text      "*\"Now I just need to resolve the Earth polarity reagent...\""
+0C2C: 9f 0f 00 30 41 03 40                         call      R0F00(A30, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+0C33: 8b 41 00 40                                  return    0
+; ---- dead code 0C37-0C3A: no dictionary entry, jump, pointer or call reaches it ----
+0C37:x88 0c 7e                                     goto      -> 0C7E
+0C3A:>a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0C40: 22 4e 6f 2c 20 6e 6f 74 20 79 65 74 …+3      text      "\"No, not yet.\"*"
+0C4F: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0C54: 22 57 65 6c 6c 2c 20 72 65 74 75 72 …+26     text      "\"Well, return when you make progress.\""
+0C7A: 8b 41 00 40                                  return    0
+; ---- dead code 0C7E-0C81: no dictionary entry, jump, pointer or call reaches it ----
+0C7E:x88 0e 9b                                     goto      -> 0E9B
+0C81:>8d 9f 0f 02 42 00 4f 41 07 40 40 0c …+1      jf        R0F02(79, 7) -> 0CD5  ; R0F02 = tstbit [from 0x0101 symtab]
+0C8E: 22 59 6f 75 20 6b 6e 6f 77 20 49 27 …+56     text      "\"You know I'm not fond of interruptions, but what can I do for you?\""
+0CD2: 88 0e 9b                                     goto      -> 0E9B
+0CD5:>22 4c 6f 6f 6b 20 2d 20 49 27 6d 20 …+73     text      "\"Look - I'm very busy, and you wouldn't understand what I'm doing anway, so go away!\""
+0D2A: 8d 9f 0f 02 42 00 52 41 00 40 40 0e …+1      jf        R0F02(82, 0) -> 0E97  ; R0F02 = tstbit [from 0x0101 symtab]
+0D37: 2a                                           text      "*"
+0D38: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0D3E: 22 41 72 65 20 79 6f 75 20 43 68 61 …+6      text      "\"Are you Charax?\"*"
+0D50: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0D55: 22 59 65 73 2c 20 49 20 61 6d 20 2d …+7      text      "\"Yes, I am - why?\"*"
+0D68: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0D6E: 22 50 61 6c 61 65 73 74 72 61 20 73 …+28     text      "\"Palaestra said I could find you here.\"*"
+0D96: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0D9B: 22 50 72 6f 76 65 20 69 74 20 2d 20 …+22     text      "\"Prove it - do you know alchemy?\"*"
+0DBD: 8d f5 48 05 42 00 d2 40 40 0e 42             jf        find_skill(G05:leader, 210) -> 0E42
+0DC8: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0DCE: 22 59 65 73 20 2d 20 69 74 20 77 61 …+32     text      "\"Yes - it was taught by Palaestra herself!\"*"
+0DFA: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0DFF: 22 48 6d 2c 20 76 65 72 79 20 77 65 …+43     text      "\"Hm, very well, make it quick - what can I do for you?\""
+0E36: 9f 0f 00 42 00 4f 41 07 40                   call      R0F00(79, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0E3F: 88 0e 94                                     goto      -> 0E94
+0E42:>22 4e 6f 2c 20 49 20 64 6f 6e 27 74 …+3      text      "\"No, I don't.\"*"
+0E51: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0E56: 22 54 68 65 6e 20 79 6f 75 20 77 6f …+46     text      "\"Then you wouldn't understand - please leave me in peace.\""
+0E90: 8b 41 00 40                                  return    0
+0E94:>88 0e 9b                                     goto      -> 0E9B
+0E97:>8b 41 00 40                                  return    0
+0E9B:>8e                                           input       ; read a line into the input buffer
+0E9C: 90 6e 61 6d 65 00 0e df                      match     name else -> 0EDF
+0EA4: 22 49 20 61 6d 20 43 68 61 72 61 78 …+37     text      "\"I am Charax - I thought you said you knew that?\""
+0ED5: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0EDC: 88 0e 9b                                     goto      -> 0E9B
+0EDF:>90 6a 6f 62 00 0f 0e                         match     job else -> 0F0E
+0EE6: 22 49 20 61 6d 20 61 20 46 72 65 65 …+25     text      "\"I am a Freemage, studying @Alchemy.\""
+0F0B: 88 0e 9b                                     goto      -> 0E9B
+0F0E:>90 61 6c 63 68 00 0f 76                      match     alch else -> 0F76
+0F16: 22 41 6c 63 68 65 6d 79 20 69 73 20 …+81     text      "\"Alchemy is the art of making potions - but I though you said you were taught by @Palaestra?\""
+0F73: 88 0e 9b                                     goto      -> 0E9B
+0F76:>90 70 61 6c 61 00 0f be                      match     pala else -> 0FBE
+0F7E: 22 49 20 68 61 76 65 20 6e 6f 74 68 …+49     text      "\"I have nothing but respect for her - she's quite a teacher!\""
+0FBB: 88 0e 9b                                     goto      -> 0E9B
+0FBE:>90 62 79 65 00 10 0d                         match     bye else -> 100D
+0FC5: 22 44 6f 6e 27 74 20 74 68 69 6e 6b …+53     text      "\"Don't think me rude, but please leave me alone with my studies.\""
+1006: 8b 41 00 40                                  return    0
+; ---- dead code 100A-100D: no dictionary entry, jump, pointer or call reaches it ----
+100A:x88 0e 9b                                     goto      -> 0E9B
+100D:>90 77 69 6e 65 00 14 94                      match     wine else -> 1494
+1015: 22 57 68 79 20 79 65 73 2c 20 49 20 …+120    text      "\"Why yes, I do make wine - kind of hard to get it out here at times.\"*\"My favorite is North Shore Red, but I make a passable drink.\""
+1099: 8d 9f 0f 02 42 00 66 41 07 40 40 14 …+1      jf        R0F02(102, 7) -> 1491  ; R0F02 = tstbit [from 0x0101 symtab]
+10A6: 2a                                           text      "*"
+10A7: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+10AE: 22 48 61 76 65 6e 27 74 20 79 6f 75 …+83     text      "\"Haven't you heard?  Something went wrong and all his stores went bad - and his must as well!\"*"
+110D: a4 42 00 4f 41 00 40                         builtin   show_portrait(79, 0)
+1114: 22 4e 6f 21 20 20 54 68 61 74 20 63 …+35     text      "\"No!  That can't be!  Any idea what happened?\"*"
+1143: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+114A: 22 4e 6f 74 20 72 65 61 6c 6c 79 20 …+43     text      "\"Not really - I was hoping you might be able to help.\"*"
+1181: a4 42 00 4f 41 00 40                         builtin   show_portrait(79, 0)
+1188: 22 4e 6f 20 2d 20 6f 6e 63 65 20 77 …+56     text      "\"No - once wine goes sour, there is no way to reverse the process.\"*"
+11CC: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+11D3: 22 57 68 61 74 20 63 6f 75 6c 64 20 …+18     text      "\"What could cause it though?\"*"
+11F1: a4 42 00 4f 41 00 40                         builtin   show_portrait(79, 0)
+11F8: 22 54 69 6d 65 20 69 73 20 74 68 65 …+140    text      "\"Time is the only thing that I know that will make wine go sour.\"*\"But must can't turn sour without first becoming wine - and that takes time as well.\"*"
+1290: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+1297: 22 57 68 61 74 20 61 62 6f 75 74 20 …+19     text      "\"What about magic or alchemy?\"*"
+12B6: a4 42 00 4f 41 00 40                         builtin   show_portrait(79, 0)
+12BD: 22 59 6f 75 20 6f 62 76 69 6f 75 73 …+444    text      "\"You obviously didn't learn much from Palaestra.\"*\"I suppose that some sort of spell could have altered the timeflux...\"*\"I don't know of anybody short of Alaric that could hope to pull something like that off though.\"*\"Though I remember once seeing a book on that at the Magisterium.\"*\"Perhaps you should go ask Selinus about it - he knows every book in the Magisterium.\"*\"If you manage to find it, if you bring it here, I'll see what I can figure out...\""
+1485: f2 41 0c 43 30 00 02 1a 41 0c 4a 40          builtin   add_to_do(12, (str[021A:0]"Cure Alaric" + 12))
+1491:>88 0e 9b                                     goto      -> 0E9B
+1494:>90 2a 00 14 e1                               match     * else -> 14E1
+1499: 8d 9f 08 08 30 40 5e 40 14 de                jf        !R0808(A30) -> 14DE
+14A3: 8d 9f 08 01 30 40 5e 40 14 de                jf        !R0801(A30) -> 14DE
+14AD: 22 49 20 63 61 6e 27 74 20 68 65 6c …+37     text      "\"I can't help you - please stop wasting my time.\""
+14DE:>88 0e 9b                                     goto      -> 0E9B
+14E1:>88 0e 9b                                     goto      -> 0E9B
+; ---- dead code 14E4-14E8: no dictionary entry, jump, pointer or call reaches it ----
+14E4:x8b 41 00 40                                  return    0
+14E8: a0 03 98 4f 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

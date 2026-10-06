@@ -1,0 +1,33 @@
+; segment 1426  page 14  class 0x20 (zone) id 38
+; kind class  length 142 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @007A  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 7a                                        .hdr      dictionary offset = 007A
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: d9 41 00 40                                  builtin   set_outdoor_sky(0)
+0009: da 44 42 72 69 64 67 65 00 40                builtin   set_map_title("Bridge")
+0013: d8 41 20 40                                  builtin   set_zone_light_minimum(32)
+0017: fd 41 01 40                                  builtin   set_erase_colour(1)
+001B: d6 41 03 40                                  builtin   play_music2(3)
+001F: 8d 9f 0f 02 42 00 22 41 07 40 40 00 …+1      jf        R0F02(34, 7) -> 0076  ; R0F02 = tstbit [from 0x0101 symtab]
+002C: 82 00 43 50 00 00 01 40                      set       L00 = True
+0034: 8d 9f 0f 13 42 00 22 40 5e 40 00 57          jf        !R0F13(34) -> 0057  ; R0F13 = inparty [from 0x0101 symtab]
+0040: 8d 48 0f 41 01 56 40 00 57                   jf        (G0F:day & 1) -> 0057
+0049: dd 41 09 41 01 40                            builtin   set_variable(9, 1)
+004F: 82 00 43 50 00 00 00 40                      set       L00 = False
+0057:>8d 00 40 00 76                               jf        L00 -> 0076
+005C: 8d dc 41 04 40 41 07 54 40 00 70             jf        (get_variable(4) == 7) -> 0070
+0067: dd 41 09 41 02 40                            builtin   set_variable(9, 2)
+006D: 88 00 76                                     goto      -> 0076
+0070:>dd 41 09 41 63 40                            builtin   set_variable(9, 99)
+0076:>8b 41 00 40                                  return    0
+007A: a0 03 50 00 ff ff 00 00 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

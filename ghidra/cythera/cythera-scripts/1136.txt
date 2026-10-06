@@ -1,0 +1,54 @@
+; segment 1136  page 11  class 0x00 (prop) type 310 tile-name "strange staff" (tool join F000/F004)
+; kind class  length 597 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0205  methods: sel15/take_drop_15@0069, sel9/use@007D, sel10/use_on@00A4
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 05                                        .hdr      dictionary offset = 0205
+0002: 90 02 91 36 00 0c 91 36 00 5d                .array    array[2] = [@000C, @005D]
+000C: 49 74 20 6c 6f 6f 6b 73 20 6c 69 6b …+69     .string   "It looks like some sort of magical device, but beyond anything I can figure out."
+005D: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0063: 90 01 00 00 00 19                            .array    array[1] = [25]
+
+; ==== method sel15/take_drop_15 @0069 ====
+0069: 81 01 00                                     frame     args=1 locals=0
+006C: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0073-0077: no dictionary entry, jump, pointer or call reaches it ----
+0073:x8b 41 00 40                                  return    0
+0077: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel9/use @007D ====
+007D: 81 01 00                                     frame     args=1 locals=0
+0080: 8d 48 13 40 00 99                            jf        G13:g13_bool -> 0099
+0086: 55 73 65 20 73 74 61 66 66 20 6f 6e …+7      text      "Use staff on what?\n"
+0099:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 00A0-00A4: no dictionary entry, jump, pointer or call reaches it ----
+00A0:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A4 ====
+00A4: 81 02 00                                     frame     args=2 locals=0
+00A7: 8d 31 62 04 42 00 36 54 31 62 06 41 …+6      jf        ((A31.f04:type == 54) && (A31.f06:quality == 7)) -> 0150
+00B9: 8d 30 62 03 41 01 54 40 00 df                jf        (A30.f03:frame == 1) -> 00DF
+00C3: 4e 6f 74 68 69 6e 67 20 66 75 72 74 …+13     text      "Nothing further happens.\n"
+00DC: 88 01 4d                                     goto      -> 014D
+00DF:>41 73 20 79 6f 75 20 64 69 70 20 74 …+91     text      "As you dip the staff into the fountain, the sphere at the top fills with the water and begins to glow.\n"
+0146: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+014D:>88 02 01                                     goto      -> 0201
+0150:>8d 30 62 03 41 01 54 31 62 04 42 01 …+6      jf        ((A30.f03:frame == 1) && (A31.f04:type == 301)) -> 01E8
+0162: 54 68 65 20 67 6c 6f 77 69 6e 67 20 …+64     text      "The glowing water from the staff seems to envelop the egg and transform it.\n"
+01AE: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+01B5: 86 04 31 40 42 01 2a 40                      setfield  A31.f04:type = 298
+01BD: 86 06 31 40 41 03 40                         setfield  A31.f06:quality = 3
+01C4: 8d dc 41 0e 40 5e 40 01 d8                   jf        !get_variable(14) -> 01D8
+01CD: 9f 0e 8b 43 40 40 00 01 41 64 40             call      R0E8B(char#1"Hero", 100)
+01D8:>dd 41 0e 43 50 00 00 01 40                   builtin   set_variable(14, True)
+01E1: e6 41 01 40                                  builtin   set_arrival_byte(1)
+01E5: 88 02 01                                     goto      -> 0201
+01E8:>4e 6f 74 68 69 6e 67 20 73 65 65 6d …+13     text      "Nothing seems to happen.\n"
+0201:>8b 41 00 40                                  return    0
+0205: a0 0d 91 36 00 77 00 27 50 00 ff ff …+68     .dict     dict[13] {9/use: @007D, 10/use_on: @00A4, 15/take_drop_15: @0069, 36/p_weight: @0063, 39/p_typeflags27: @0077, 51: @0002}

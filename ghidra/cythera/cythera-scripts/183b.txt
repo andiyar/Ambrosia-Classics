@@ -1,0 +1,48 @@
+; segment 183B  page 18  class 0x40 (char) id 59 name "Autonous" (string table 0201)
+; kind class  length 554 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0216  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 16                                        .hdr      dictionary offset = 0216
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 70 6f …+54     text      "You see a powerful and stoic looking man.*\"What is your business?\""
+0047:>8e                                           input       ; read a line into the input buffer
+0048: 90 6e 61 6d 65 00 00 65                      match     name else -> 0065
+0050: 22 41 75 74 6f 6e 6f 75 73 2e 22             text      "\"Autonous.\""
+005B: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0062: 88 00 47                                     goto      -> 0047
+0065:>90 6a 6f 62 00 00 95                         match     job else -> 0095
+006C: 22 49 20 61 6d 20 74 68 65 20 6f 66 …+26     text      "\"I am the official minter of coinage.\""
+0092: 88 00 47                                     goto      -> 0047
+0095:>90 62 79 65 00 00 ad                         match     bye else -> 00AD
+009C: 22 47 6f 6f 64 62 79 65 2e 22                text      "\"Goodbye.\""
+00A6: 8b 41 00 40                                  return    0
+; ---- dead code 00AA-00AD: no dictionary entry, jump, pointer or call reaches it ----
+00AA:x88 00 47                                     goto      -> 0047
+00AD:>90 63 6f 69 6e 2c 6f 62 6f 6c 00 00 …+1      match     coin,obol else -> 00F7
+00BA: 22 49 20 68 61 76 65 20 6d 61 64 65 …+46     text      "\"I have made every single obol for the past twelve years.\""
+00F4: 88 00 47                                     goto      -> 0047
+00F7:>90 74 77 65 6c 2c 79 65 61 72 00 01 …+1      match     twel,year else -> 0178
+0104: 22 54 77 65 6c 76 65 20 79 65 61 72 …+101    text      "\"Twelve years may seem like a long time for you, but I fully expect to still be at this in another twelve years.\""
+0175: 88 00 47                                     goto      -> 0047
+0178:>90 6d 69 6e 74 00 01 aa                      match     mint else -> 01AA
+0180: 22 49 20 74 61 6b 65 20 69 72 6f 6e …+27     text      "\"I take iron and forge it into oboloi.\""
+01A7: 88 00 47                                     goto      -> 0047
+01AA:>90 6d 69 72 72 00 01 e8                      match     mirr else -> 01E8
+01B2: 22 59 65 61 68 2c 20 49 20 68 61 76 …+39     text      "\"Yeah, I have to get that fixed one of these days.\""
+01E5: 88 00 47                                     goto      -> 0047
+01E8:>90 2a 00 02 0f                               match     * else -> 020F
+01ED: 22 49 20 6b 65 65 70 20 6d 79 20 6f …+19     text      "\"I keep my opinions to myself.\""
+020C: 88 00 47                                     goto      -> 0047
+020F:>88 00 47                                     goto      -> 0047
+; ---- dead code 0212-0216: no dictionary entry, jump, pointer or call reaches it ----
+0212:x8b 41 00 40                                  return    0
+0216: a0 03 98 3b 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

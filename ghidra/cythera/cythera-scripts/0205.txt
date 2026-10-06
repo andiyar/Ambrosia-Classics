@@ -1,0 +1,18 @@
+; segment 0205  page 02  string table
+; kind strtab  length 316 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 09 82 05 00 26 82 05 00 45 82 05 …+26     .strtab   string table, 9 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8205×9)
+0026: 42 6f 64 79 3a 20 31 36 20 20 52 65 …+19     .string   [0] "Body: 16  Reflex: 16  Mind: 16"
+0045: 42 6f 64 79 3a 20 31 38 20 20 52 65 …+19     .string   [1] "Body: 18  Reflex: 18  Mind: 12"
+0064: 42 6f 64 79 3a 20 31 37 20 20 52 65 …+19     .string   [2] "Body: 17  Reflex: 19  Mind: 12"
+0083: 42 6f 64 79 3a 20 32 30 20 20 52 65 …+18     .string   [3] "Body: 20  Reflex: 16  Mind: 6"
+00A1: 42 6f 64 79 3a 20 31 30 20 20 52 65 …+19     .string   [4] "Body: 10  Reflex: 18  Mind: 20"
+00C0: 42 6f 64 79 3a 20 31 30 20 20 52 65 …+19     .string   [5] "Body: 10  Reflex: 18  Mind: 20"
+00DF: 42 6f 64 79 3a 20 31 30 20 20 52 65 …+19     .string   [6] "Body: 10  Reflex: 18  Mind: 20"
+00FE: 42 6f 64 79 3a 20 31 36 20 20 52 65 …+19     .string   [7] "Body: 16  Reflex: 18  Mind: 14"
+011D: 42 6f 64 79 3a 20 31 36 20 20 52 65 …+19     .string   [8] "Body: 16  Reflex: 18  Mind: 14"

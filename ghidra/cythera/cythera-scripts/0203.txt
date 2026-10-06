@@ -1,0 +1,18 @@
+; segment 0203  page 02  string table
+; kind strtab  length 111 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 09 82 03 00 26 82 03 00 2f 82 03 …+26     .strtab   string table, 9 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8203×9)
+0026: 45 78 70 6c 6f 72 65 72 00                   .string   [0] "Explorer"
+002F: 46 69 67 68 74 65 72 00                      .string   [1] "Fighter"
+0037: 53 77 6f 72 64 73 6d 61 6e 00                .string   [2] "Swordsman"
+0041: 42 65 73 65 72 6b 65 72 00                   .string   [3] "Beserker"
+004A: 4d 61 67 65 00                               .string   [4] "Mage"
+004F: 57 69 7a 61 72 64 00                         .string   [5] "Wizard"
+0056: 4d 79 73 74 69 63 00                         .string   [6] "Mystic"
+005D: 53 74 6f 72 79 74 65 6c 6c 65 72 00          .string   [7] "Storyteller"
+0069: 52 6f 67 75 65 00                            .string   [8] "Rogue"

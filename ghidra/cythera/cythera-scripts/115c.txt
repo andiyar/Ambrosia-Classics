@@ -1,0 +1,19 @@
+; segment 115C  page 11  class 0x00 (prop) type 348 tile-name "gecko" (tool join F000/F004)
+; kind class  length 148 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0068  methods: sel8/search@000C
+; properties: sel37/p25, sel55/p37
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 68                                        .hdr      dictionary offset = 0068
+0002: 90 02 00 00 00 03 00 00 00 01                .array    array[2] = [3, 1]
+
+; ==== method sel8/search @000C ====
+000C: 81 01 00                                     frame     args=1 locals=0
+000F: 4f 74 68 65 72 20 74 68 61 6e 20 62 …+73     text      "Other than being bright orange and having six legs, it appears to be a normal gecko.\n"
+0064: 8b 41 00 40                                  return    0
+0068: a0 07 50 00 ff ff 00 00 91 5c 00 0c …+32     .dict     dict[7] {8/search: @000C, 37/p25: True, 55/p37: @0002}

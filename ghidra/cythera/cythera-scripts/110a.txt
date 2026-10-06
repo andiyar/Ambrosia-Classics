@@ -1,0 +1,31 @@
+; segment 110A  page 11  class 0x00 (prop) type 266 tile-name "sewer" (tool join F000/F004)
+; kind class  length 216 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C4  methods: sel8/search@0002, sel9/use@005B
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c4                                        .hdr      dictionary offset = 00C4
+
+; ==== method sel8/search @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 08 40 00 3c                         jf        A30.f08:u16_6 -> 003C
+000C: 49 74 20 61 6c 6d 6f 73 74 20 73 65 …+33     text      "It almost seems large enough to fit through.\n"
+0039: 88 00 57                                     goto      -> 0057
+003C:>49 74 20 69 73 20 63 6c 6f 67 67 65 …+15     text      "It is clogged with debris.\n"
+0057:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @005B ====
+005B: 81 01 00                                     frame     args=1 locals=0
+005E: 8d 30 62 08 40 00 a5                         jf        A30.f08:u16_6 -> 00A5
+0065: 59 6f 75 20 65 6e 74 65 72 20 74 68 …+11     text      "You enter the sewer...\n"
+007C: bf 43 00 00 ff ff 30 62 08 41 01 40          builtin   teleport(65535, A30.f08:u16_6, 1)
+0088: 2e 2e 2e 61 6e 64 20 65 76 65 6e 74 …+14     text      "...and eventually emerge.\n"
+00A2: 88 00 c0                                     goto      -> 00C0
+00A5:>49 74 20 69 73 20 63 6c 6f 67 67 65 …+15     text      "It is clogged with debris.\n"
+00C0:>8b 41 00 40                                  return    0
+00C4: a0 03 91 0a 00 5b 00 09 50 00 ff ff …+8      .dict     dict[3] {8/search: @0002, 9/use: @005B}

@@ -1,0 +1,172 @@
+; segment 1832  page 18  class 0x40 (char) id 50 name "Philinus" (string table 0201)
+; kind class  length 3973 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0F71  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0f 71                                        .hdr      dictionary offset = 0F71
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 9f 0f 13 42 00 35 40 40 02 3d             jf        R0F13(53) -> 023D  ; R0F13 = inparty [from 0x0101 symtab]
+0010: 22 41 72 69 61 64 6e 65 21 20 59 6f …+11     text      "\"Ariadne! You're safe!\""
+0027: f3 41 01 40                                  builtin   done_to_do(1)
+002B: 9f 0e 8b 43 40 40 00 01 41 32 40             call      R0E8B(char#1"Hero", 50)
+0036: 87 0c 48 0c 41 0a 4a 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + 10)
+003E: 2a                                           text      "*"
+003F: a4 42 00 35 41 01 40                         builtin   show_portrait(53, 1)
+0046: 22 59 65 73 2c 20 64 65 61 72 65 73 …+54     text      "\"Yes, dearest Philinus, and it is all due to this heroic person.\"*"
+0088: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+008D: 22 54 68 61 6e 6b 20 79 6f 75 20             text      "\"Thank you "
+0098: 8d 49 05 00 00 10 40 00 a9                   jf        seg0500[0010] -> 00A9
+00A1: 6d 61 27 61 6d                               text      "ma'am"
+00A6: 88 00 ac                                     goto      -> 00AC
+00A9:>73 69 72 2e 20 20 48 6f 75 73 65 20 …+36     text      "sir.  House @Nicander is forever in your debt!\"*"  ; shares its tail with text @00AC
+00AC:>2e 20 20 48 6f 75 73 65 20 40 4e 69 …+33     text      ".  House @Nicander is forever in your debt!\"*"
+00D9: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00E0: dd 41 01 41 04 40                            builtin   set_variable(1, 4)
+00E6: a4 42 00 35 41 01 40                         builtin   show_portrait(53, 1)
+00ED: 22 59 65 73 2c 20 74 68 61 6e 6b 20 …+16     text      "\"Yes, thank you again, kind "
+0109: 8d 49 05 00 00 10 40 01 1a                   jf        seg0500[0010] -> 011A
+0112: 6d 61 27 61 6d                               text      "ma'am"
+0117: 88 01 1d                                     goto      -> 011D
+011A:>73 69 72 2e 20 20 49 2c 20 61 6e 64 …+31     text      "sir.  I, and my House, are in your @debt.\"*"  ; shares its tail with text @011D
+011D:>2e 20 20 49 2c 20 61 6e 64 20 6d 79 …+28     text      ".  I, and my House, are in your @debt.\"*"
+0145: ba 42 00 35 40                               builtin   leave_party(53)
+014A: a4 41 ff 41 01 40                            builtin   show_portrait(-1, 1)
+0150: ea 40                                        builtin   conversation_cue_2()
+0152: f0 42 00 32 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(50, 160, 23, 29, Nil)
+0165: f0 42 00 32 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(50, 160, 23, 26, Nil)
+0178: f0 42 00 32 43 00 00 00 a0 41 13 41 …+7      builtin   queue_activity(50, 160, 19, 26, Nil)
+018B: f0 42 00 32 43 00 00 00 a0 41 13 41 …+7      builtin   queue_activity(50, 160, 19, 23, Nil)
+019E: f0 42 00 32 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(50, 160, 16, 23, Nil)
+01B1: f0 42 00 32 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(50, 160, 16, 25, Nil)
+01C4: f0 42 00 35 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(53, 160, 23, 30, Nil)
+01D7: f0 42 00 35 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(53, 160, 23, 27, Nil)
+01EA: f0 42 00 35 43 00 00 00 a0 41 14 41 …+7      builtin   queue_activity(53, 160, 20, 26, Nil)
+01FD: f0 42 00 35 43 00 00 00 a0 41 13 41 …+7      builtin   queue_activity(53, 160, 19, 23, Nil)
+0210: f0 42 00 35 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(53, 160, 16, 23, Nil)
+0223: f0 42 00 35 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(53, 160, 16, 24, Nil)
+0236: 8b 41 00 40                                  return    0
+; ---- dead code 023A-023D: no dictionary entry, jump, pointer or call reaches it ----
+023A:x88 04 29                                     goto      -> 0429
+023D:>8d ae 43 00 00 0c 4e 42 00 35 40 43 …+8      jf        (who_in_party_has(3150, 53) != Nil) -> 0367
+0251: 22 4e 6f 21 20 49 74 20 63 61 6e 27 …+121    text      "\"No! It can't be!  Why!\"*You hand the body to the grieving man, obviously her husband Philinus.\n*\"Please, I would like to be alone.\"*"
+02D6: b1 ae 43 00 00 0c 4e 42 00 35 40 43 …+10     builtin   remove_items(who_in_party_has(3150, 53), 3150, 53, 1)
+02EC: ea 40                                        builtin   conversation_cue_2()
+02EE: f0 42 00 32 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(50, 160, 23, 29, Nil)
+0301: f0 42 00 32 43 00 00 00 a0 41 17 41 …+7      builtin   queue_activity(50, 160, 23, 26, Nil)
+0314: f0 42 00 32 43 00 00 00 a0 41 13 41 …+7      builtin   queue_activity(50, 160, 19, 26, Nil)
+0327: f0 42 00 32 43 00 00 00 a0 41 13 41 …+7      builtin   queue_activity(50, 160, 19, 23, Nil)
+033A: f0 42 00 32 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(50, 160, 16, 23, Nil)
+034D: f0 42 00 32 43 00 00 00 a0 41 10 41 …+7      builtin   queue_activity(50, 160, 16, 25, Nil)
+0360: 8b 41 00 40                                  return    0
+; ---- dead code 0364-0367: no dictionary entry, jump, pointer or call reaches it ----
+0364:x88 04 29                                     goto      -> 0429
+0367:>8d dc 41 01 40 41 03 4f 40 03 bd             jf        (get_variable(1) < 3) -> 03BD
+0372: 22 49 20 61 6d 20 73 6f 72 72 79 2c …+59     text      "\"I am sorry, am I too distraught about Ariadne's kidnapping to talk...\""
+03B9: 8b 41 00 40                                  return    0
+03BD:>8d de 41 03 40 40 03 ec                      jf        test_flag(3) -> 03EC
+03C5: 22 50 6c 65 61 73 65 2c 20 49 20 77 …+23     text      "\"Please, I would like to be alone.\""
+03E8: 8b 41 00 40                                  return    0
+03EC:>22 49 66 20 69 74 20 69 73 6e 27 74 …+49     text      "\"If it isn't the rescuer of Ariadne!  Good to see you again.\""
+0429:>8e                                           input       ; read a line into the input buffer
+042A: 90 6e 61 6d 65 00 04 7f                      match     name else -> 047F
+0432: 22 57 68 79 20 49 20 61 6d 20 50 68 …+55     text      "\"Why I am Philinus.  Don't you remember rescuing my wife @Ariadne?\""
+0475: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+047C: 88 04 29                                     goto      -> 0429
+047F:>90 6a 6f 62 00 04 f1                         match     job else -> 04F1
+0486: 22 49 20 61 6d 20 74 68 65 20 45 6c …+92     text      "\"I am the Elder of House @Nicander, and so long as the people support me, I set the policies of Odemia.\""
+04EE: 88 04 29                                     goto      -> 0429
+04F1:>90 61 72 69 61 00 05 22                      match     aria else -> 0522
+04F9: 22 54 68 61 6e 6b 73 20 74 6f 20 79 …+26     text      "\"Thanks to you, she is safe and well.\""
+051F: 88 04 29                                     goto      -> 0429
+0522:>90 6e 69 63 61 00 05 7d                      match     nica else -> 057D
+052A: 22 48 6f 75 73 65 20 4e 69 63 61 6e …+68     text      "\"House Nicander is the ruling house of Odemia, and I am the head of that house.\""
+057A: 88 04 29                                     goto      -> 0429
+057D:>90 6f 64 65 6d 00 05 d2                      match     odem else -> 05D2
+0585: 22 4f 64 65 6d 69 61 20 6d 61 79 20 …+62     text      "\"Odemia may be a bit out of the way, but it is a nice town none the less.\""
+05CF: 88 04 29                                     goto      -> 0429
+05D2:>90 6f 70 68 65 00 07 05                      match     ophe else -> 0705
+05DA: 8d dc 41 03 40 40 06 ad                      jf        get_variable(3) -> 06AD
+05E2: 22 57 65 20 68 61 76 65 20 68 65 61 …+49     text      "\"We have heard the news - I can't believe my eldest is dead.\""
+061F: 8d dc 41 03 40 41 01 54 40 06 58             jf        (get_variable(3) == 1) -> 0658
+062A: 2a 22 48 6f 75 73 65 20 53 74 72 79 …+31     text      "*\"House Strymon must pay for this outrage!\""
+0655: 88 06 aa                                     goto      -> 06AA
+0658:>2a 22 41 6e 64 20 73 6f 6d 65 20 75 …+70     text      "*\"And some unknown power that can shapeshift - Alaric's powers are surely waning.\""
+06AA:>88 07 02                                     goto      -> 0702
+06AD:>22 4f 70 68 65 6c 74 69 75 73 20 69 …+73     text      "\"Opheltius is my oldest son.  He is down in @Cademia, representing the family there.\""
+0702:>88 04 29                                     goto      -> 0429
+0705:>90 61 73 63 61 00 07 92                      match     asca else -> 0792
+070D: 22 41 73 63 61 6c 6f 6e 20 69 73 20 …+118    text      "\"Ascalon is my youngest son.  I can never keep up with his doings, but he should be somewhere around town - try the Titan's Head.\""
+078F: 88 04 29                                     goto      -> 0429
+0792:>90 64 6f 64 6f 00 07 f7                      match     dodo else -> 07F7
+079A: 22 44 6f 64 6f 6e 61 20 69 73 20 61 …+78     text      "\"Dodona is a noble House that once ruled @Catamarca, before House @Strymon rose to power.\""
+07F4: 88 04 29                                     goto      -> 0429
+07F7:>90 61 74 74 69 00 08 34                      match     atti else -> 0834
+07FF: 22 41 74 74 69 73 20 69 73 20 61 20 …+38     text      "\"Attis is a noble House that once ruled @Cademia.\""
+0831: 88 04 29                                     goto      -> 0429
+0834:>90 63 61 64 65 00 08 a6                      match     cade else -> 08A6
+083C: 22 43 61 64 65 6d 69 61 20 69 73 20 …+91     text      "\"Cademia is the oldest city in Cythera, though it is too busy for me.  My son Opheltius is down there.\""
+08A3: 88 04 29                                     goto      -> 0429
+08A6:>90 63 61 74 61 00 09 62                      match     cata else -> 0962
+08AE: 22 43 61 74 61 6d 61 72 63 61 20 61 …+75     text      "\"Catamarca a would be a fine city to visit on vaction, were it not for House @Strymon.\""
+0905: 8d dc 41 02 40 41 04 4f 40 09 5f             jf        (get_variable(2) < 4) -> 095F
+0910: 2a 22 4f 66 20 63 6f 75 72 73 65 2c …+67     text      "*\"Of course, I hear there is some sort of @plague that has broken out there...\""
+095F:>88 04 29                                     goto      -> 0429
+0962:>90 70 6c 61 67 00 0a e5                      match     plag else -> 0AE5
+096A: 8d dc 41 02 40 41 04 4f 40 0a 36             jf        (get_variable(2) < 4) -> 0A36
+0975: 22 54 68 65 73 65 20 61 72 65 20 72 …+178    text      "\"These are rumors, mind you, but I heard a plague has broken out in Catamarca.\"*\"If it is true, one can only hope that it can be contained.  Why hasn't the Land King done anything about it?\""
+0A33: 88 0a e2                                     goto      -> 0AE2
+0A36:>22 49 27 76 65 20 68 65 61 72 64 20 …+160    text      "\"I've heard rumors that it wasn't a plague, but a magic curse lifted by an agent of the Land King\"*\"That such a thing could happen worries me - where might it strike next?\""
+0AE2:>88 04 29                                     goto      -> 0429
+0AE5:>90 73 74 72 79 00 0b 30                      match     stry else -> 0B30
+0AED: 22 48 6f 75 73 65 20 53 74 72 79 6d …+52     text      "\"House Strymon is our rival.  I really don't trust any of them.\""
+0B2D: 88 04 29                                     goto      -> 0429
+0B30:>90 61 74 75 73 00 0b c4                      match     atus else -> 0BC4
+0B38: 22 48 6f 75 73 65 20 41 74 75 73 73 …+125    text      "\"House Atussa is the only other House with a presence here in Odemia.\"*\"One can't be too careful with anyone allied with House @Strymon.\""
+0BC1: 88 04 29                                     goto      -> 0429
+0BC4:>90 62 79 65 00 0c 03                         match     bye else -> 0C03
+0BCB: 22 46 61 72 65 77 65 6c 6c 2c 20 61 …+37     text      "\"Farewell, and remember, we are in your @debt...\""
+0BFC: 8b 41 00 40                                  return    0
+; ---- dead code 0C00-0C03: no dictionary entry, jump, pointer or call reaches it ----
+0C00:x88 04 29                                     goto      -> 0429
+0C03:>90 64 65 62 74 00 0c 55                      match     debt else -> 0C55
+0C0B: 22 59 6f 75 20 68 61 76 65 20 64 6f …+59     text      "\"You have done us a favor.  Some day we may be able to do you a favor.\""
+0C52: 88 04 29                                     goto      -> 0429
+0C55:>90 70 69 70 65 00 0d 7d                      match     pipe else -> 0D7D
+0C5D: 8d 9f 0f 02 30 41 00 40 40 0c ab             jf        R0F02(A30, 0) -> 0CAB  ; R0F02 = tstbit [from 0x0101 symtab]
+0C68: 22 49 20 68 6f 70 65 20 79 6f 75 20 …+52     text      "\"I hope you were able to make use of that old set of pan-pipes.\""
+0CA8: 88 0d 7a                                     goto      -> 0D7A
+0CAB:>22 48 6d 2c 20 49 27 76 65 20 67 6f …+178    text      "\"Hm, I've got an old set around here some where.\"Philinus searches around a bit.\n*\"Ah, here you go - you can have them - it is the least I can do for you.\"Philinus gives you the pan-pipes.\n*"
+0D69: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0D70: a8 42 00 01 42 00 99 41 01 40                builtin   give_item(1, 153, 1)
+0D7A:>88 04 29                                     goto      -> 0429
+0D7D:>90 74 6c 65 70 00 0f 03                      match     tlep else -> 0F03
+0D85: 8d 9f 0f 02 42 00 37 41 02 40 40 0d …+1      jf        R0F02(55, 2) -> 0DDE  ; R0F02 = tstbit [from 0x0101 symtab]
+0D92: 22 49 74 20 69 73 20 67 6f 6f 64 20 …+61     text      "\"It is good to talk to him again - thank you for re-uniting old friends.\""
+0DDB: 88 0f 00                                     goto      -> 0F00
+0DDE:>22 54 6c 65 70 6f 6c 65 6d 75 73 20 …+53     text      "\"Tlepolemus is a good man - we used to hunt together years back.\""
+0E1F: 8d 9f 0f 02 42 00 37 41 01 40 40 0f …+1      jf        R0F02(55, 1) -> 0F00  ; R0F02 = tstbit [from 0x0101 symtab]
+0E2C: 2a                                           text      "*"
+0E2D: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0E34: 22 48 65 20 73 65 65 6d 73 20 74 6f …+71     text      "\"He seems to think that you've put your business before your friendship with him.\"*"
+0E87: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0E8C: 22 59 65 73 2c 20 49 20 73 75 70 70 …+97     text      "\"Yes, I suppose I have.  I've just been too busy, and that was certainly wrong.  Please tell him I'm sorry.\"*"
+0EF9: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0F00:>88 04 29                                     goto      -> 0429
+0F03:>90 2a 00 0f 6a                               match     * else -> 0F6A
+0F08: 8d 9f 08 06 30 40 5e 40 0f 67                jf        !R0806(A30) -> 0F67
+0F12: 8d 9f 08 0a 30 40 5e 40 0f 67                jf        !R080A(A30) -> 0F67
+0F1C: 8d 9f 08 01 30 40 5e 40 0f 67                jf        !R0801(A30) -> 0F67
+0F26: 22 48 6d 2c 20 49 27 6d 20 6e 6f 74 …+53     text      "\"Hm, I'm not sure about that... perhaps you'd better ask around.\""
+0F67:>88 04 29                                     goto      -> 0429
+0F6A:>88 04 29                                     goto      -> 0429
+; ---- dead code 0F6D-0F71: no dictionary entry, jump, pointer or call reaches it ----
+0F6D:x8b 41 00 40                                  return    0
+0F71: a0 03 98 32 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

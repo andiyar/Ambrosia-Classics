@@ -1,0 +1,38 @@
+; segment 0988  page 09  routine: combat-AI scenario action 8 (ai-scripts.md 5)
+; kind routine  length 233 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 07                                     frame     args=3 locals=7
+0003: 8d 9f 09 05 30 31 32 40 40 00 12             jf        R0905(A30, A31, A32) -> 0012
+000E: 8b 41 00 40                                  return    0
+0012:>82 00 43 50 00 ff ff 40                      set       L00 = Nil
+001A: 82 01 c9 43 10 00 00 02 41 00 31 40 …+1      set       L01 = iterate_descendants(&L02, 0, A31)
+0027:>8c c9 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_descendants(&L02, 1) -> 00D6
+0034: 8d 00 40 00 3c                               jf        L00 -> 003C
+0039: 88 00 d6                                     goto      -> 00D6
+003C:>8d 01 60 2b 40 00 51                         jf        has(L01, sel43) -> 0051
+0043: 8d 01 61 2b 01 32 52 40 00 51                jf        (prop(L01, sel43, 1) >= A32) -> 0051
+004D: 82 00 01 40                                  set       L00 = L01
+0051:>8d 01 60 31 40 00 66                         jf        has(L01, sel49) -> 0066
+0058: 8d 01 61 31 02 32 52 40 00 66                jf        (prop(L01, sel49, 2) >= A32) -> 0066
+0062: 82 00 01 40                                  set       L00 = L01
+0066:>8d 01 60 2e 40 00 c7                         jf        has(L01, sel46) -> 00C7
+006D: 8d 01 61 2e 01 32 52 40 00 c7                jf        (prop(L01, sel46, 1) >= A32) -> 00C7
+0077: 8d 01 61 2e 00 41 00 54 40 00 86             jf        (prop(L01, sel46, 0) == 0) -> 0086
+0082: 82 00 01 40                                  set       L00 = L01
+0086:>82 04 c9 43 10 00 00 05 41 00 31 40 …+1      set       L04 = iterate_descendants(&L05, 0, A31)
+0093:>8c c9 43 10 00 00 05 41 01 40 40 00 …+1      jt        iterate_descendants(&L05, 1) -> 00C7
+00A0: 8d 04 60 2d 40 00 b8                         jf        has(L04, sel45) -> 00B8
+00A7: 8d 04 61 2d 00 01 61 2e 00 54 40 00 …+1      jf        (prop(L04, sel45, 0) == prop(L01, sel46, 0)) -> 00B8
+00B4: 82 00 01 40                                  set       L00 = L01
+00B8:>82 04 c9 43 10 00 00 05 41 02 40 40          set       L04 = iterate_descendants(&L05, 2)
+00C4: 88 00 93                                     goto      -> 0093
+00C7:>82 01 c9 43 10 00 00 02 41 02 40 40          set       L01 = iterate_descendants(&L02, 2)
+00D3: 88 00 27                                     goto      -> 0027
+00D6:>8d 00 40 00 e5                               jf        L00 -> 00E5
+00DB: f0 30 41 54 41 00 41 00 00 40                builtin   queue_activity(A30, 84, 0, 0, L00)
+00E5:>8b 41 00 40                                  return    0

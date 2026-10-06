@@ -1,0 +1,19 @@
+; segment 0E86  page 0E  routine
+; kind routine  length 98 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 01                                     frame     args=2 locals=1
+0003: 86 1b 30 40 30 62 1b 31 4a 40                setfield  A30.f1B:level = (A30.f1B:level + A31)
+000D: 82 00 30 62 1d 40                            set       L00 = A30.f1D:health_max
+0013: 86 1d 30 40 9f 0e 82 30 40 40                setfield  A30.f1D:health_max = R0E82(A30)
+001D: 86 1c 30 40 30 62 1c 30 62 1d 4c 00 …+2      setfield  A30.f1C:health = ((A30.f1C:health * A30.f1D:health_max) / L00)
+002B: 82 00 30 62 1f 40                            set       L00 = A30.f1F:magic_max
+0031: 8d 00 40 00 4e                               jf        L00 -> 004E
+0036: 86 1f 30 40 9f 0e 83 30 40 40                setfield  A30.f1F:magic_max = R0E83(A30)
+0040: 86 1e 30 40 30 62 1e 30 62 1f 4c 00 …+2      setfield  A30.f1E:magic = ((A30.f1E:magic * A30.f1F:magic_max) / L00)
+004E:>86 21 30 40 30 62 21 41 06 48 11 4b …+4      setfield  A30.f21:training = (A30.f21:training + ((6 - G11:g11_unhandled) * A31))
+005E: 8b 41 00 40                                  return    0

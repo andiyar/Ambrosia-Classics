@@ -1,0 +1,33 @@
+; segment 0806  page 08  routine
+; kind routine  length 449 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 6e 69 63 61 00 00 3b                      match     nica else -> 003B
+000B: 22 57 61 74 63 68 20 79 6f 75 72 20 …+29     text      "\"Watch your words about our noble House.\""
+0034: 8b 43 50 00 00 01 40                         return    True
+003B:>90 61 74 74 69 00 00 73                      match     atti else -> 0073
+0043: 22 48 6f 75 73 65 20 41 74 74 69 73 …+29     text      "\"House Attis is a valuable ally of ours.\""
+006C: 8b 43 50 00 00 01 40                         return    True
+0073:>90 74 68 75 72 00 00 b2                      match     thur else -> 00B2
+007B: 22 54 68 75 72 69 61 20 69 73 20 74 …+36     text      "\"Thuria is the honorable Matron of House Attis.\""
+00AB: 8b 43 50 00 00 01 40                         return    True
+00B2:>90 63 6f 6d 61 00 00 fa                      match     coma else -> 00FA
+00BA: 22 4f 75 72 20 70 61 74 68 73 20 68 …+45     text      "\"Our paths have rarely crossed, but we don't trust them.\""
+00F3: 8b 43 50 00 00 01 40                         return    True
+00FA:>90 64 6f 64 6f 00 01 2a                      match     dodo else -> 012A
+0102: 22 48 6f 75 73 65 20 44 6f 64 6f 6e …+21     text      "\"House Dodona is most Honorable.\""
+0123: 8b 43 50 00 00 01 40                         return    True
+012A:>90 73 74 72 79 00 01 8c                      match     stry else -> 018C
+0132: 22 41 20 62 75 6e 63 68 20 6f 66 20 …+71     text      "\"A bunch of busybodies - they can barely handle the responsibilities of Catamarca.\""
+0185: 8b 43 50 00 00 01 40                         return    True
+018C:>90 61 74 75 73 00 01 b6                      match     atus else -> 01B6
+0194: 22 48 6f 75 73 65 20 41 74 75 73 73 …+15     text      "\"House Atussa matters not.\""
+01AF: 8b 43 50 00 00 01 40                         return    True
+01B6:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 01BD-01C1: no dictionary entry, jump, pointer or call reaches it ----
+01BD:x8b 41 00 40                                  return    0

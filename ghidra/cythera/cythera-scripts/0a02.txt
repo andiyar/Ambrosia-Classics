@@ -1,0 +1,27 @@
+; segment 0A02  page 0A  routine
+; kind routine  length 220 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 01                                     frame     args=1 locals=1
+0003: 82 00 41 0a ac 41 01 41 0a 40 4a 40          set       L00 = (10 + random(1, 10))
+000F: 8d 30 62 1e 30 62 1f 54 40 00 3d             jf        (A30.f1E:magic == A30.f1F:magic_max) -> 003D
+001A: 8d 30 48 05 54 40 00 3a                      jf        (A30 == G05:leader) -> 003A
+0022: 4e 6f 74 68 69 6e 67 20 73 65 65 6d …+12     text      "Nothing seems to happen."
+003A:>88 00 d8                                     goto      -> 00D8
+003D:>8d 30 62 1f 30 62 1e 4b 00 4f 40 00 …+1      jf        ((A30.f1F:magic_max - A30.f1E:magic) < L00) -> 0054
+004A: 82 00 30 62 1f 30 62 1e 4b 40                set       L00 = (A30.f1F:magic_max - A30.f1E:magic)
+0054:>8d 00 30 62 1c 51 40 00 66                   jf        (L00 > A30.f1C:health) -> 0066
+005D: 82 00 30 62 1c 41 01 4b 40                   set       L00 = (A30.f1C:health - 1)
+0066:>8d 00 41 00 51 40 00 b7                      jf        (L00 > 0) -> 00B7
+006E: 8d 30 48 05 54 40 00 a0                      jf        (A30 == G05:leader) -> 00A0
+0076: 59 6f 75 20 65 78 70 65 72 69 65 6e …+30     text      "You experience a brief pain and weakness.\n"
+00A0:>86 1e 30 40 30 62 1e 00 4a 40                setfield  A30.f1E:magic = (A30.f1E:magic + L00)
+00AA: 86 1c 30 40 30 62 1c 00 4b 40                setfield  A30.f1C:health = (A30.f1C:health - L00)
+00B4: 88 00 d8                                     goto      -> 00D8
+00B7:>8d 30 48 05 54 40 00 d8                      jf        (A30 == G05:leader) -> 00D8
+00BF: 4e 6f 74 68 69 6e 67 20 73 65 65 6d …+13     text      "Nothing seems to happen.\n"
+00D8:>8b 41 00 40                                  return    0

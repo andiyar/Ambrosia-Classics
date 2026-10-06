@@ -1,0 +1,50 @@
+; segment 1AF1  page 1A  class 0x50 (spell) type 241
+; kind class  length 295 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00FB  methods: sel2/name@0008, sel4/index@0020, sel9/use@003F
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 fb                                        .hdr      dictionary offset = 00FB
+0002: 90 01 00 00 00 65                            .array    array[1] = [101]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 45 73 74 69 6d 61 74 65 20 54 …+5      return    "Estimate Time"
+; ---- dead code 001C-0020: no dictionary entry, jump, pointer or call reaches it ----
+001C:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0020 ====
+0020: 81 02 00                                     frame     args=2 locals=0
+0023: 8d f5 31 42 00 cd 40 40 00 34                jf        find_skill(A31, 205) -> 0034
+002D: 8b 43 50 00 00 01 40                         return    True
+0034:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 003B-003F: no dictionary entry, jump, pointer or call reaches it ----
+003B:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @003F ====
+003F: 81 01 00                                     frame     args=1 locals=0
+0042: 3e 20 45 73 74 69 6d 61 74 65 20 54 …+18     text      "> Estimate Time.\nIt is around "
+0060: 8d 48 00 41 00 54 40 00 74                   jf        (G00:hour == 0) -> 0074
+0069: 6d 69 64 6e 69 67 68 74                      text      "midnight"
+0071: 88 00 f5                                     goto      -> 00F5
+0074:>8d 48 00 41 0c 54 40 00 84                   jf        (G00:hour == 12) -> 0084
+007D: 6e 6f 6f 6e                                  text      "noon"
+0081: 88 00 f5                                     goto      -> 00F5
+0084:>8d 48 00 41 0c 4f 40 00 ab                   jf        (G00:hour < 12) -> 00AB
+008D: 8a 48 00 40                                  print     G00:hour
+0091: 20 6f 27 63 6c 6f 63 6b 20 69 6e 20 …+11     text      " o'clock in the morning"
+00A8: 88 00 f5                                     goto      -> 00F5
+00AB:>8d 48 00 41 12 4f 40 00 d7                   jf        (G00:hour < 18) -> 00D7
+00B4: 8a 48 00 41 0c 4b 40                         print     (G00:hour - 12)
+00BB: 20 6f 27 63 6c 6f 63 6b 20 69 6e 20 …+13     text      " o'clock in the afternoon"
+00D4: 88 00 f5                                     goto      -> 00F5
+00D7:>8a 48 00 41 0c 4b 40                         print     (G00:hour - 12)
+00DE: 20 6f 27 63 6c 6f 63 6b 20 69 6e 20 …+13     text      " o'clock in the evening.\n"  ; shares its tail with text @00F5
+00F5:>2e 0a                                        text      ".\n"
+00F7: 8b 41 00 40                                  return    0
+00FB: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @0020, 9/use: @003F, 40/p_typeflags28: @0002}

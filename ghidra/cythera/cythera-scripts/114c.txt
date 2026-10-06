@@ -1,0 +1,37 @@
+; segment 114C  page 11  class 0x00 (prop) type 332 tile-name "rock outcropping" (tool join F000/F004)
+; kind class  length 356 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0150  methods: sel8/search@0002, sel9/use@00D4
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 50                                        .hdr      dictionary offset = 0150
+
+; ==== method sel8/search @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 03 41 00 54 40 00 6a                jf        (A30.f03:frame == 0) -> 006A
+000F: 54 68 65 20 72 6f 63 6b 20 6f 75 74 …+76     text      "The rock outcropping is quite solid, and slightly worn, as if something was tied to it.\n"
+0067: 88 00 d0                                     goto      -> 00D0
+006A:>8d 30 62 03 41 01 54 40 00 9f                jf        (A30.f03:frame == 1) -> 009F
+0074: 54 68 65 20 72 6f 70 65 20 67 6f 65 …+28     text      "The rope goes down into the darkness...\n"
+009C: 88 00 d0                                     goto      -> 00D0
+009F:>54 68 65 20 72 6f 70 65 20 6c 65 61 …+37     text      "The rope leads up the cave wall into darkness...\n"
+00D0:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @00D4 ====
+00D4: 81 01 01                                     frame     args=1 locals=1
+00D7: 8d 30 62 03 41 00 54 40 01 25                jf        (A30.f03:frame == 0) -> 0125
+00E1: 4a 75 6d 70 69 6e 67 20 69 6e 74 6f …+53     text      "Jumping into the abyss would be foolhardy, and certainly fatal..."
+0122: 88 01 4c                                     goto      -> 014C
+0125:>8d 30 62 03 41 01 51 40 01 3f                jf        (A30.f03:frame > 1) -> 013F
+012F: 82 00 41 04 40                               set       L00 = 4
+0134: bf 00 30 62 08 41 04 40                      builtin   teleport(L00, A30.f08:u16_6, 4)
+013C: 88 01 4c                                     goto      -> 014C
+013F:>82 00 41 03 40                               set       L00 = 3
+0144: bf 00 30 62 08 41 01 40                      builtin   teleport(L00, A30.f08:u16_6, 1)
+014C:>8b 41 00 40                                  return    0
+0150: a0 03 91 4c 00 d4 00 09 50 00 ff ff …+8      .dict     dict[3] {8/search: @0002, 9/use: @00D4}

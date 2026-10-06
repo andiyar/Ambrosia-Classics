@@ -1,0 +1,38 @@
+; segment 1A0C  page 1A  class 0x50 (spell) type 12
+; kind class  length 250 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00CE  methods: sel2/name@0008, sel8/search@002B, sel9/use@006C
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 ce                                        .hdr      dictionary offset = 00CE
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 45 6d 62 72 69 67 68 74 65 6e …+6      return    "Embrightenment"
+; ---- dead code 001D-0021: no dictionary entry, jump, pointer or call reaches it ----
+001D:x8b 41 00 40                                  return    0
+0021: 90 02 00 00 00 02 00 00 00 02                .array    array[2] = [2, 2]
+
+; ==== method sel8/search @002B ====
+002B: 81 01 00                                     frame     args=1 locals=0
+002E: 54 68 69 73 20 73 70 65 6c 6c 20 63 …+46     text      "This spell causes the area to be lit up as if by a torch.\n"
+0068: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @006C ====
+006C: 81 01 00                                     frame     args=1 locals=0
+006F: 8d 9f 0e a1 30 62 0b 41 02 41 04 40 …+3      jf        R0EA1(A30.f0B:loc16, 2, 4) -> 00CA
+007E: e1 48 09 63 00 43 00 00 00 f0 40             builtin   show_magic(as_prop(G09:speaker), 240)
+0089: d3 41 2f 48 09 62 01 48 09 62 02 40          builtin   positional_sound(47, G09:speaker.f01:x, G09:speaker.f02:y)
+0095: 8d 30 62 0b 40 00 bd                         jf        A30.f0B:loc16 -> 00BD
+009C: c3 41 00 41 01 43 00 00 08 00 9f 0e …+18     builtin   temp_ability(0, 1, (2048 + ((R0E85(as_char(A30.f0B:loc16)) - 2) * 512)))
+00BA: 88 00 c8                                     goto      -> 00C8
+00BD:>c3 41 00 41 01 43 00 00 08 00 40             builtin   temp_ability(0, 1, 2048)
+00C8:>be 40                                        builtin   refresh_light()
+00CA:>8b 41 00 40                                  return    0
+00CE: a0 07 50 00 ff ff 06 95 9a 0c 00 2b …+32     .dict     dict[7] {2/name: @0008, 8/search: @002B, 9/use: @006C, 51: @0021, 54: @0002}

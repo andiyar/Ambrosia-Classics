@@ -1664,7 +1664,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--data', default=DEFAULT_DATA, help='path to "Cythera Data" (data fork)')
     ap.add_argument('--out', default=None,
-                    help='directory for per-segment listings <segid>.txt (default: ghidra/cythera-scripts)')
+                    help='directory for per-segment listings <segid>.txt (default: ghidra/cythera/cythera-scripts)')
     ap.add_argument('--seg', nargs='*', default=None, help='only these segment ids (hex), e.g. 1802 3000')
     ap.add_argument('--census', nargs='?', const='-', default=None,
                     help='write the census markdown to FILE (default stdout)')
@@ -1672,7 +1672,7 @@ def main(argv=None):
     ap.add_argument('--quiet', action='store_true')
     a = ap.parse_args(argv)
     repo = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
-    out = a.out or os.path.join(repo, 'ghidra', 'cythera-scripts')
+    out = a.out or os.path.join(repo, 'ghidra', 'cythera', 'cythera-scripts')
     S = Store(a.data)
     only = {int(x, 16) for x in a.seg} if a.seg else None
     st, results = run_all(S, None)   # always analyse everything (xrefs need the whole corpus)

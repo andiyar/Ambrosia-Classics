@@ -1,0 +1,48 @@
+; segment 1133  page 11  class 0x00 (prop) type 307 tile-name "ring" (tool join F000/F004)
+; kind class  length 292 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00F8  methods: sel8/search@000E, sel13/wield@0086, sel14/take_drop_14@00BF
+; properties: sel36/p_weight, sel38/p26
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 f8                                        .hdr      dictionary offset = 00F8
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+0008: 90 01 00 00 00 06                            .array    array[1] = [6]
+
+; ==== method sel8/search @000E ====
+000E: 81 01 01                                     frame     args=1 locals=1
+0011: 82 00 45 00 46 90 04 91 33 00 28 91 …+64     set       L00 = blk@0016
+      ; 0x45 inline block 0016-005C (70 bytes):
+      0016: 90 04                            .array[4]
+        [0] @0028 " plain ring"
+        [1] @0034 " diamond ring"
+        [2] @0042 "n emerald ring"
+        [3] @0051 " ruby ring"
+005D: 59 6f 75 20 73 65 65 20 61                   text      "You see a"
+0066: 8a 00 30 62 03 46 40                         print     L00[A30.f03:frame]
+006D: 8d 30 62 06 40 00 80                         jf        A30.f06:quality -> 0080
+0074: 20                                           text      " "
+0075: 8a 43 30 00 02 1f 30 62 06 4a 40             print     (str[021F:0]<Nil entry: index base> + A30.f06:quality)
+0080:>2e 0a                                        text      ".\n"
+0082: 8b 41 00 40                                  return    0
+
+; ==== method sel13/wield @0086 ====
+0086: 81 02 00                                     frame     args=2 locals=0
+0089: 8d 30 62 07 40 00 bb                         jf        A30.f07:byte7 -> 00BB
+0090: c1 31 30 62 07 40                            builtin   add_ability(A31, A30.f07:byte7)
+0096: 8d 31 48 05 54 40 00 bb                      jf        (A31 == G05:leader) -> 00BB
+009E: 59 6f 75 20 67 65 74 20 61 20 73 74 …+17     text      "You get a strange feeling...\n"
+00BB:>8b 41 00 40                                  return    0
+
+; ==== method sel14/take_drop_14 @00BF ====
+00BF: 81 02 00                                     frame     args=2 locals=0
+00C2: 8d 30 62 07 40 00 f4                         jf        A30.f07:byte7 -> 00F4
+00C9: c2 31 30 62 07 40                            builtin   remove_ability(A31, A30.f07:byte7)
+00CF: 8d 31 48 05 54 40 00 f4                      jf        (A31 == G05:leader) -> 00F4
+00D7: 59 6f 75 20 67 65 74 20 61 20 73 74 …+17     text      "You get a strange feeling...\n"
+00F4:>8b 41 00 40                                  return    0
+00F8: a0 07 91 33 00 bf 00 0e 91 33 00 02 …+32     .dict     dict[7] {8/search: @000E, 13/wield: @0086, 14/take_drop_14: @00BF, 36/p_weight: @0002, 38/p26: @0008}

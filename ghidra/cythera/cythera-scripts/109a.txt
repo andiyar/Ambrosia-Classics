@@ -1,0 +1,36 @@
+; segment 109A  page 10  class 0x00 (prop) type 154 tile-name "lyre" (tool join F000/F004)
+; kind class  length 167 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @007B  methods: sel9/use@0008, sel10/use_on@005C
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 7b                                        .hdr      dictionary offset = 007B
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 01                                     frame     args=1 locals=1
+000B: 8d db 30 40 40 00 16                         jf        scripted_window_shown(A30) -> 0016
+0012: 8b 41 00 40                                  return    0
+0016:>82 00 9b 04 30 41 14 41 61 41 48 41 …+8      set       L00 = sysnew_window(A30, 20, 97, 72, 85, 167)
+002A: 9b 0f 00 41 00 41 00 41 55 43 00 00 …+34     sysnew    sysnew_0F(L00, 0, 0, 85, 167, 47, blk@003D)
+      ; 0x45 inline block 003D-0057 (26 bytes):
+      003D: 90 06                            .array[6]
+        [0] 18
+        [1] 15
+        [2] 12
+        [3] 9
+        [4] 6
+        [5] 3
+0058: 8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @005C ====
+005C: 81 02 00                                     frame     args=2 locals=0
+005F: 8d 31 43 00 00 0f ff 56 43 00 00 0f …+5      jf        ((A31 & 4095) == 4038) -> 0077
+0070: c5 43 00 00 00 83 40                         builtin   send_signal(131)
+0077:>8b 41 00 40                                  return    0
+007B: a0 07 50 00 ff ff 00 2a 90 9a 00 02 …+32     .dict     dict[7] {9/use: @0008, 10/use_on: @005C, 36/p_weight: @0002}

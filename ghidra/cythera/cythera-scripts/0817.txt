@@ -1,0 +1,27 @@
+; segment 0817  page 08  routine
+; kind routine  length 1558 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 64 75 74 79 2c 64 75 74 69 2c 73 …+6      match     duty,duti,serv else -> 009F
+0015: 22 54 68 65 20 64 75 74 69 65 73 20 …+119    text      "\"The duties of a Judge are numerous, including settling @disputes, running @Council, establishing House @popularity, and the like.\""
+0098: 8b 43 50 00 00 01 40                         return    True
+009F:>90 64 69 73 70 00 01 9a                      match     disp else -> 019A
+00A7: 22 57 65 20 61 72 65 20 69 6d 70 61 …+224    text      "\"We are impartial third parties that use our magical powers to get to the heart of disputes between citizens.\"*\"Since a citizen can not lie to us, and we have no political family ties except to Alaric, we are well suited for this task.\""
+0193: 8b 43 50 00 00 01 40                         return    True
+019A:>90 63 6f 75 6e 00 03 46                      match     coun else -> 0346
+01A2: 22 57 68 65 6e 20 74 68 65 72 65 20 …+401    text      "\"When there are matters of city law, we run the Council meeting, ensuring that it is fair to all Houses present.\"*\"We also have the power to veto any law we feel isn't in the best interest of the land.\"*\"Of course, a House can always appeal to Alaric, but the few times that has happens, he has always agreed with our reasoning.\"*\"With Alaric's weaking, however, this system may have some problems in the future.\""
+033F: 8b 43 50 00 00 01 40                         return    True
+0346:>90 70 6f 70 75 00 04 ed                      match     popu else -> 04ED
+034E: 22 49 74 20 69 73 20 74 68 65 20 4a …+396    text      "\"It is the Judge's duty to ensure that the voting power of the Houses is directly related to the popularity of the House with citizens of the city.\"*\"Normally, this is done yearly, through elections (and since I can detect people lieing to me, there is very little chance for fraud).\"*\"However, a House can call for special elections, if the Judge deems the reason sound, such as change in House leadership.\""
+04E6: 8b 43 50 00 00 01 40                         return    True
+04ED:>90 61 6c 61 72 00 06 0b                      match     alar else -> 060B
+04F5: 22 41 73 20 61 20 4d 61 67 65 2c 20 …+259    text      "\"As a Mage, I have no doubt that Alaric will recover and continue to lead us onto prosperity.\"*\"As a Judge, I obviously am closer to the situation than the rest of the citizens, and I'm worried.\"*\"I don't know what we will do if he falls - the times are perilous indeed.\""
+0604: 8b 43 50 00 00 01 40                         return    True
+060B:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0612-0616: no dictionary entry, jump, pointer or call reaches it ----
+0612:x8b 41 00 40                                  return    0

@@ -1,0 +1,49 @@
+; segment 0EA4  page 0E  routine
+; kind routine  length 338 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 05                                     frame     args=4 locals=5
+0003: 82 00 bb 30 40 40                            set       L00 = who_will_prompt(A30)
+0009: 8d 00 5e 40 00 16                            jf        !L00 -> 0016
+000F: 8b 43 50 00 00 00 40                         return    False
+0016:>82 01 00 63 40 40                            set       L01 = as_char(L00)
+001C: 8a 30 40                                     print     A30
+001F: 82 02 9f 0e a6 33 40 40                      set       L02 = R0EA6(A33)
+0027: 8d 02 41 00 54 40 00 36                      jf        (L02 == 0) -> 0036
+002F: 8b 43 50 00 00 00 40                         return    False
+0036:>82 03 31 02 46 40                            set       L03 = A31[L02]
+003C: 22 48 6f 77 20 6d 61 6e 79 2c 20             text      "\"How many, "
+0047: 8a 01 40                                     print     L01
+004A: 2c 20 61 74 20                               text      ", at "
+004F: 8a 03 40                                     print     L03
+0052: 3f 22                                        text      "?\""
+0054: 82 04 b4 43 50 00 ff ff 41 00 43 00 …+5      set       L04 = how_many(Nil, 0, 200)
+0065: 8d 04 5e 40 00 72                            jf        !L04 -> 0072
+006B: 8b 43 50 00 00 00 40                         return    False
+0072:>8d 9f 0d 01 00 40 03 04 4c 4f 40 00 …+1      jf        (R0D01(L00) < (L03 * L04)) -> 00D0
+007F: 8d 00 48 05 54 40 00 a8                      jf        (L00 == G05:leader) -> 00A8
+0087: 22 59 6f 75 20 64 6f 6e 27 74 20 68 …+18     text      "\"You don't have enough money.\""
+00A5: 88 00 c8                                     goto      -> 00C8
+00A8:>22                                           text      "\""
+00A9: 8a 01 40                                     print     L01
+00AC: 20 64 6f 65 73 6e 27 74 20 68 61 76 …+17     text      " doesn't have enough money.\"*"  ; shares its tail with text @00C8
+00C8:>2a                                           text      "*"
+00C9: 8b 43 50 00 00 00 40                         return    False
+00D0:>8d b8 32 02 46 04 40 9f 0d 03 01 03 …+11     jf        ((weight_if_added(A32[L02], L04) - R0D03(L01, (L03 * L04))) > free_capacity(L01)) -> 0136
+00E7: 8d 00 48 05 54 40 01 0f                      jf        (L00 == G05:leader) -> 010F
+00EF: 22 59 6f 75 20 64 6f 6e 27 74 20 68 …+17     text      "\"You don't have enough room.\""
+010C: 88 01 2e                                     goto      -> 012E
+010F:>22                                           text      "\""
+0110: 8a 01 40                                     print     L01
+0113: 20 64 6f 65 73 6e 27 74 20 68 61 76 …+16     text      " doesn't have enough room.\"*"  ; shares its tail with text @012E
+012E:>2a                                           text      "*"
+012F: 8b 43 50 00 00 00 40                         return    False
+0136:>9f 0d 02 00 03 04 4c 40                      call      R0D02(L00, (L03 * L04))
+013E: a8 00 32 02 46 41 00 04 40                   builtin   give_item(L00, A32[L02], 0, L04)
+0147: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 014E-0152: no dictionary entry, jump, pointer or call reaches it ----
+014E:x8b 41 00 40                                  return    0

@@ -1,0 +1,135 @@
+; segment 1100  page 11  class 0x00 (prop) type 256 tile-name "black disk" (tool join F000/F004)
+; kind class  length 685 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @025D  methods: sel15/take_drop_15@0042, sel8/search@0056, sel26@009B, sel27/wield_slide@017C
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 5d                                        .hdr      dictionary offset = 025D
+0002: 90 02 91 00 00 0c 91 00 00 36                .array    array[2] = [@000C, @0036]
+000C: 53 74 72 61 6e 67 65 2c 20 6c 6f 6f …+30     .string   "Strange, looks like a pearl, but black..."
+0036: 90 01 00 00 00 4a                            .array    array[1] = [74]
+003C: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @0042 ====
+0042: 81 01 00                                     frame     args=1 locals=0
+0045: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 004C-0050: no dictionary entry, jump, pointer or call reaches it ----
+004C:x8b 41 00 40                                  return    0
+0050: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel8/search @0056 ====
+0056: 81 01 00                                     frame     args=1 locals=0
+0059: 49 74 20 61 70 70 65 61 72 73 20 74 …+50     text      "It appears to be a small black stone that feels faintly warm.\n"
+0097: 8b 41 00 40                                  return    0
+
+; ==== method sel26 @009B ====
+009B: 81 02 04                                     frame     args=2 locals=4
+009E: 8d 31 62 04 42 00 b8 54 31 62 06 41 …+6      jf        ((A31.f04:type == 184) && (A31.f06:quality == 3)) -> 0178
+00B0: 82 00 45 00 92 90 08 91 00 00 d7 91 …+140    set       L00 = blk@00B5
+      ; 0x45 inline block 00B5-0147 (146 bytes):
+      00B5: 90 08                            .array[8]
+        [0] @00D7 ->
+          00D7: 90 03                            .array[3]
+            [0] 201
+            [1] 210
+            [2] 202
+        [1] @00E5 ->
+          00E5: 90 03                            .array[3]
+            [0] 203
+            [1] 204
+            [2] 212
+        [2] @00F3 ->
+          00F3: 90 03                            .array[3]
+            [0] 212
+            [1] 211
+            [2] 209
+        [3] @0101 ->
+          0101: 90 03                            .array[3]
+            [0] 207
+            [1] 206
+            [2] 208
+        [4] @010F ->
+          010F: 90 03                            .array[3]
+            [0] 210
+            [1] 211
+            [2] 208
+        [5] @011D ->
+          011D: 90 03                            .array[3]
+            [0] 205
+            [1] 206
+            [2] 209
+        [6] @012B ->
+          012B: 90 03                            .array[3]
+            [0] 214
+            [1] 213
+            [2] 205
+        [7] @0139 ->
+          0139: 90 03                            .array[3]
+            [0] 216
+            [1] 215
+            [2] 207
+0148: 82 01 a1 43 10 00 00 02 41 00 00 31 …+5      set       L01 = iterate_list(&L02, 0, L00[A31.f07:byte7])
+0159:>8c a1 43 10 00 00 02 41 01 40 40 01 …+1      jt        iterate_list(&L02, 1) -> 0178
+0166: c5 01 40                                     builtin   send_signal(L01)
+0169: 82 01 a1 43 10 00 00 02 41 02 40 40          set       L01 = iterate_list(&L02, 2)
+0175: 88 01 59                                     goto      -> 0159
+0178:>8b 41 00 40                                  return    0
+
+; ==== method sel27/wield_slide @017C ====
+017C: 81 02 04                                     frame     args=2 locals=4
+017F: 8d 31 62 04 42 00 b8 54 31 62 06 41 …+6      jf        ((A31.f04:type == 184) && (A31.f06:quality == 3)) -> 0259
+0191: 82 00 45 00 92 90 08 91 00 01 b8 91 …+140    set       L00 = blk@0196
+      ; 0x45 inline block 0196-0228 (146 bytes):
+      0196: 90 08                            .array[8]
+        [0] @01B8 ->
+          01B8: 90 03                            .array[3]
+            [0] 201
+            [1] 210
+            [2] 202
+        [1] @01C6 ->
+          01C6: 90 03                            .array[3]
+            [0] 203
+            [1] 204
+            [2] 212
+        [2] @01D4 ->
+          01D4: 90 03                            .array[3]
+            [0] 212
+            [1] 211
+            [2] 209
+        [3] @01E2 ->
+          01E2: 90 03                            .array[3]
+            [0] 207
+            [1] 206
+            [2] 208
+        [4] @01F0 ->
+          01F0: 90 03                            .array[3]
+            [0] 210
+            [1] 211
+            [2] 208
+        [5] @01FE ->
+          01FE: 90 03                            .array[3]
+            [0] 205
+            [1] 206
+            [2] 209
+        [6] @020C ->
+          020C: 90 03                            .array[3]
+            [0] 214
+            [1] 213
+            [2] 205
+        [7] @021A ->
+          021A: 90 03                            .array[3]
+            [0] 216
+            [1] 215
+            [2] 207
+0229: 82 01 a1 43 10 00 00 02 41 00 00 31 …+5      set       L01 = iterate_list(&L02, 0, L00[A31.f07:byte7])
+023A:>8c a1 43 10 00 00 02 41 01 40 40 02 …+1      jt        iterate_list(&L02, 1) -> 0259
+0247: c5 01 40                                     builtin   send_signal(L01)
+024A: 82 01 a1 43 10 00 00 02 41 02 40 40          set       L01 = iterate_list(&L02, 2)
+0256: 88 02 3a                                     goto      -> 023A
+0259:>8b 41 00 40                                  return    0
+025D: a0 0d 91 00 00 50 00 27 91 00 00 9b …+68     .dict     dict[13] {8/search: @0056, 15/take_drop_15: @0042, 26: @009B, 27/wield_slide: @017C, 36/p_weight: @003C, 39/p_typeflags27: @0050, 51: @0002}

@@ -1,0 +1,87 @@
+; segment 1AF2  page 1A  class 0x50 (spell) type 242
+; kind class  length 614 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @023A  methods: sel2/name@0002, sel4/index@001C, sel9/use@0043, sel11@0072
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 3a                                        .hdr      dictionary offset = 023A
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 44 65 61 63 74 69 76 61 74 65 …+7      return    "Deactivate Trap"
+; ---- dead code 0018-001C: no dictionary entry, jump, pointer or call reaches it ----
+0018:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @001C ====
+001C: 81 02 01                                     frame     args=2 locals=1
+001F: 8d f5 31 42 00 ca 40 40 00 30                jf        find_skill(A31, 202) -> 0030
+0029: 8b 43 50 00 00 01 40                         return    True
+0030:>82 00 31 63 40 40                            set       L00 = as_char(A31)
+0036: 8b 9d 04 00 30 62 04 40 40                   return    L00.sel4/index(A30.f04:type)
+; ---- dead code 003F-0043: no dictionary entry, jump, pointer or call reaches it ----
+003F:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0043 ====
+0043: 81 01 01                                     frame     args=1 locals=1
+0046: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+004D: 8d 48 09 48 05 54 40 00 67                   jf        (G09:speaker == G05:leader) -> 0067
+0056: 86 0b 30 40 48 05 40                         setfield  A30.f0B:loc16 = G05:leader
+005D: 8b 43 00 00 80 02 40                         return    32770
+; ---- dead code 0064-0067: no dictionary entry, jump, pointer or call reaches it ----
+0064:x88 00 6e                                     goto      -> 006E
+0067:>8b 9d 15 00 30 40 40                         return    L00.sel21/signal(A30)
+; ---- dead code 006E-0072: no dictionary entry, jump, pointer or call reaches it ----
+006E:x8b 41 00 40                                  return    0
+
+; ==== method sel11 @0072 ====
+0072: 81 03 08                                     frame     args=3 locals=8
+0075: 82 00 43 50 00 00 00 40                      set       L00 = False
+007D: 82 01 cb 43 10 00 00 02 41 00 31 32 …+2      set       L01 = iterate_props_at(&L02, 0, A31, A32)
+008B:>8c cb 43 10 00 00 02 41 01 40 40 02 …+1      jt        iterate_props_at(&L02, 1) -> 020F
+0098: 82 04 43 50 00 00 00 40                      set       L04 = False
+00A0: 8d 01 62 00 41 03 57 41 03 54 40 01 …+1      jf        ((L01.f00:kind | 3) == 3) -> 0102
+00AD: 8d 01 62 04 42 01 60 54 40 00 c3             jf        (L01.f04:type == 352) -> 00C3
+00B8: 82 04 43 50 00 00 01 40                      set       L04 = True
+00C0: 88 01 02                                     goto      -> 0102
+00C3:>8d 01 62 04 42 01 61 54 40 00 d9             jf        (L01.f04:type == 353) -> 00D9
+00CE: 82 04 43 50 00 00 01 40                      set       L04 = True
+00D6: 88 01 02                                     goto      -> 0102
+00D9:>8d 01 62 04 42 01 63 54 40 00 ef             jf        (L01.f04:type == 355) -> 00EF
+00E4: 82 04 43 50 00 00 01 40                      set       L04 = True
+00EC: 88 01 02                                     goto      -> 0102
+00EF:>8d 01 62 04 42 00 e6 54 40 01 02             jf        (L01.f04:type == 230) -> 0102
+00FA: 82 04 43 50 00 00 01 40                      set       L04 = True
+0102:>8d 04 40 01 25                               jf        L04 -> 0125
+0107: 82 00 43 50 00 00 01 40                      set       L00 = True
+010F: 5e                                           text      "^"
+0110: 8a 01 40                                     print     L01
+0113: 20 64 65 73 74 72 6f 79 65 64 2e 0a          text      " destroyed.\n"
+011F: a7 01 40                                     builtin   delete_prop(L01)
+0122: 88 02 00                                     goto      -> 0200
+0125:>8d 01 62 00 43 00 00 00 80 56 40 01 …+1      jf        (L01.f00:kind & 128) -> 0135
+0132: 88 02 00                                     goto      -> 0200
+0135:>8d 01 62 04 42 01 65 54 01 62 00 41 …+6      jf        ((L01.f04:type == 357) && (L01.f00:kind & 2)) -> 0200
+0147: 82 05 c7 43 10 00 00 06 41 00 40 40          set       L05 = iterate_all_props(&L06, 0)
+0153:>8c c7 43 10 00 00 06 41 01 40 40 01 …+1      jt        iterate_all_props(&L06, 1) -> 01C6
+0160: 8d 30 62 04 05 62 04 54 30 62 0d 05 …+15     jf        (((A30.f04:type == L05.f04:type) && (A30.f0D:mirror == L05.f0D:mirror)) && (A30.f06:quality == L05.f06:quality)) -> 01B7
+017B: 8d 30 62 0d 40 01 9e                         jf        A30.f0D:mirror -> 019E
+0182: 8d 30 62 01 05 62 01 54 40 01 9b             jf        (A30.f01:x == L05.f01:x) -> 019B
+018D: 86 00 05 40 05 62 00 43 0f ff ff fd …+2      setfield  L05.f00:kind = (L05.f00:kind & -3)
+019B:>88 01 b7                                     goto      -> 01B7
+019E:>8d 30 62 02 05 62 02 54 40 01 b7             jf        (A30.f02:y == L05.f02:y) -> 01B7
+01A9: 86 00 05 40 05 62 00 43 0f ff ff fd …+2      setfield  L05.f00:kind = (L05.f00:kind & -3)
+01B7:>82 05 c7 43 10 00 00 06 41 02 40 40          set       L05 = iterate_all_props(&L06, 2)
+01C3: 88 01 53                                     goto      -> 0153
+01C6:>54 72 69 70 20 77 69 72 65 20 6d 61 …+38     text      "Trip wire marked, allowing it to be stepped over.\n"
+01F8: 82 00 43 50 00 00 01 40                      set       L00 = True
+0200:>82 01 cb 43 10 00 00 02 41 02 40 40          set       L01 = iterate_props_at(&L02, 2)
+020C: 88 00 8b                                     goto      -> 008B
+020F:>8d 00 5e 40 02 36                            jf        !L00 -> 0236
+0215: 54 68 65 72 65 20 77 61 73 20 6e 6f …+21     text      "There was nothing to deactivate.\n"
+0236:>8b 41 00 40                                  return    0
+023A: a0 07 50 00 ff ff ff ff 9a f2 00 72 …+32     .dict     dict[7] {2/name: @0002, 4/index: @001C, 9/use: @0043, 11: @0072}

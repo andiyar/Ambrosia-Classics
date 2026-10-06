@@ -1,0 +1,13 @@
+; segment 0F0E  page 0F  routine "getinjury" [from 0x0101 symtab: key 170E; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 22 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 01                                     frame     args=1 locals=1
+0003: 82 00 30 63 40 40                            set       L00 = as_char(A30)
+0009: 8b 00 62 1d 00 62 1c 4b 40                   return    (L00.f1D:health_max - L00.f1C:health)
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0

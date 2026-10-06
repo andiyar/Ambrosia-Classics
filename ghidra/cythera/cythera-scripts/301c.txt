@@ -1,0 +1,35 @@
+; segment 301C  page 30  routine: default handler for selector 28 (attack)
+; kind routine  length 172 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 05                                     frame     args=2 locals=5
+0003: 8d 31 64 40 40 00 86                         jf        is_char(A31) -> 0086
+000A: 8d 30 43 40 40 00 01 54 40 00 51             jf        (A30 == char#1"Hero") -> 0051
+0015: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+0026:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 0051
+0033: 8d 00 30 53 40 00 42                         jf        (L00 != A30) -> 0042
+003A: 86 15 00 40 00 62 16 40                      setfield  L00.f15:activity = L00.f16:behaviour
+0042:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+004E: 88 00 26                                     goto      -> 0026
+0051:>82 03 30 63 48 40                            set       L03 = as_cls48(A30)
+0057: 8d 9d 42 30 31 40 40 00 7c                   jf        A30.sel66(A31) -> 007C
+0060: 82 04 43 00 00 00 c0 30 62 18 4d 40          set       L04 = (192 / A30.f18:reflex)
+006C: 86 23 30 40 30 62 23 04 4a 40                setfield  A30.f23:busy = (A30.f23:busy + L04)
+0076: 8b 04 40                                     return    L04
+; ---- dead code 0079-007C: no dictionary entry, jump, pointer or call reaches it ----
+0079:x88 00 83                                     goto      -> 0083
+007C:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0083-0086: no dictionary entry, jump, pointer or call reaches it ----
+0083:x88 00 a8                                     goto      -> 00A8
+0086:>8d 9d 42 30 31 40 40 00 a1                   jf        A30.sel66(A31) -> 00A1
+008F: 86 23 30 40 30 62 23 41 0c 4a 40             setfield  A30.f23:busy = (A30.f23:busy + 12)
+009A: 8b 41 0a 40                                  return    10
+; ---- dead code 009E-00A1: no dictionary entry, jump, pointer or call reaches it ----
+009E:x88 00 a8                                     goto      -> 00A8
+00A1:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 00A8-00AC: no dictionary entry, jump, pointer or call reaches it ----
+00A8:x8b 41 00 40                                  return    0

@@ -1,0 +1,14 @@
+; segment 0436  page 04  compiled combat AI (ai-scripts.md 3) — not VM bytecode, stored plain
+; length 120 bytes  unknown opcodes: 0 (no VM opcodes in this format)
+0000: name "Healer"
+0020: entry 65 81 00 0a 00 00 00 00
+0028: entry 65 07 05 04 06 0b 00 00
+0030: entry 64 81 f3 0a 00 00 00 00
+0038: entry 66 0f 00 0a 00 00 00 00
+0040: entry 64 84 00 0a 00 00 00 00
+0048: entry 65 81 00 0e 00 00 00 00
+0050: entry 64 81 06 0e 08 0d 00 00
+0058: entry 65 81 00 12 00 00 00 00
+0060: entry 64 81 06 12 06 0d 00 00
+0068: entry 65 01 00 00 00 00 00 00
+0070: entry 64 84 00 0a 00 00 00 00

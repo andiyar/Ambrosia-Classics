@@ -1,0 +1,102 @@
+; segment 080B  page 08  routine
+; kind routine  length 1413 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 70 6c 61 67 00 00 62                      match     plag else -> 0062
+000B: 8d dc 41 02 40 41 0a 4f 40 00 3b             jf        (get_variable(2) < 10) -> 003B
+0016: 22 54 68 61 74 20 77 61 73 20 61 20 …+22     text      "\"That was a close one, wasn't it.\""
+0038: 88 00 5b                                     goto      -> 005B
+003B:>22 4d 61 6e 79 20 61 72 65 20 73 69 …+20     text      "\"Many are sick, some have died.\""
+005B:>8b 43 50 00 00 01 40                         return    True
+0062:>90 61 6e 64 72 2c 68 61 70 6d 00 00 …+1      match     andr,hapm else -> 00E2
+006F: 22 48 61 70 6d 6f 6e 69 64 65 73 20 …+96     text      "\"Hapmonides and Andromache were servants of House Strymon.\"*\"Unfortunately, they didn't survive the Plague.\""
+00DB: 8b 43 50 00 00 01 40                         return    True
+00E2:>90 64 65 6d 6f 00 01 93                      match     demo else -> 0193
+00EA: 8d dc 41 04 40 41 01 54 40 00 fb             jf        (get_variable(4) == 1) -> 00FB
+00F5: dd 41 04 41 02 40                            builtin   set_variable(4, 2)
+00FB:>8d dc 41 04 40 41 02 54 40 01 5d             jf        (get_variable(4) == 2) -> 015D
+0106: 22 44 65 6d 6f 64 6f 63 75 73 20 77 …+72     text      "\"Demodocus was just here the other day.  Perhaps Parium knows where he is off to...\""
+015A: 88 01 8c                                     goto      -> 018C
+015D:>22 57 65 20 68 61 76 65 6e 27 74 20 …+35     text      "\"We haven't seen Demodocus around for a while.\""
+018C:>8b 43 50 00 00 01 40                         return    True
+0193:>90 63 69 74 61 00 01 fe                      match     cita else -> 01FE
+019B: 22 54 68 65 20 43 69 74 61 64 65 6c …+80     text      "\"The Citadel was once a stronghold of the Tyrants, sort of a summer home away from Cademia.\""
+01F7: 8b 43 50 00 00 01 40                         return    True
+01FE:>8d 48 10 41 06 54 40 05 7a                   jf        (G10:zone == 6) -> 057A
+0207: 90 77 68 65 72 00 05 7a                      match     wher else -> 057A
+020F: 9f 08 16 30 45 03 53 90 0a 88 0b 02 …+849    call      R0816(A30, blk@0216, 1)
+      ; 0x45 inline block 0216-0569 (851 bytes):
+      0216: 90 0a                            .array[10]
+        [0] @0240 ->
+          0240: 90 06                            .array[6]
+            [0] room#104
+            [1] @025A "The Green Goat"
+            [2] @0269 "The Green Goat's front door is "
+            [3] 24
+            [4] 13
+            [5] @0289 "."
+        [1] @028B ->
+          028B: 90 06                            .array[6]
+            [0] room#112
+            [1] @02A5 "House Strymon"
+            [2] @02B3 "House Strymon is "
+            [3] 44
+            [4] 29
+            [5] @02C5 "."
+        [2] @02C7 ->
+          02C7: 90 06                            .array[6]
+            [0] char#31"Sardis"
+            [1] @02E1 "Sardis of House Atussa"
+            [2] @02F8 "Sardis, of House Atussa, lives and works "
+            [3] 10
+            [4] 29
+            [5] @0322 "."
+        [3] @0324 ->
+          0324: 90 06                            .array[6]
+            [0] char#12"Darius"
+            [1] @033E "Darius of House Comana"
+            [2] @0355 "Darius, of House Comana, is currently staying "
+            [3] 11
+            [4] 47
+            [5] @0384 "."
+        [4] @0386 ->
+          0386: 90 03                            .array[3]
+            [0] char#71"Metopes"
+            [1] @0394 "Judge Metopes"
+            [2] @03A2 "Metopes lives in the Citadel, in the southern edge of town, overlooking the sea."
+        [5] @03F3 ->
+          03F3: 90 03                            .array[3]
+            [0] Nil
+            [1] @0401 "LandKing Hall"
+            [2] @040F "LandKing Hall north east through the forest beyond Odemia."
+        [6] @044A ->
+          044A: 90 03                            .array[3]
+            [0] Nil
+            [1] @0458 "Odemia"
+            [2] @045F "Catamarca lies north up the coast from town."
+        [7] @048C ->
+          048C: 90 03                            .array[3]
+            [0] Nil
+            [1] @049A "Cademia"
+            [2] @04A2 "Cademia lies west along the coast from town."
+        [8] @04CF ->
+          04CF: 90 03                            .array[3]
+            [0] Nil
+            [1] @04DD "Pnyx"
+            [2] @04E2 "Pnyx lies on the western shore, on the other side of the mountains."
+        [9] @0526 ->
+          0526: 90 03                            .array[3]
+            [0] Nil
+            [1] @0534 "Kosha"
+            [2] @053A "Kosha lies south along the shore from Cademia."
+056C: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0573-057A: no dictionary entry, jump, pointer or call reaches it ----
+0573:x8b 43 50 00 00 01 40                         return    True
+057A:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0581-0585: no dictionary entry, jump, pointer or call reaches it ----
+0581:x8b 41 00 40                                  return    0

@@ -1,0 +1,18 @@
+; segment 1B3C  page 1B  class 0x58 (room) id 60
+; kind class  length 192 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00AC  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 ac                                        .hdr      dictionary offset = 00AC
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 69 73 20 69 73 20 61 20 6b 69 …+151    text      "This is a kitchen area for the stronghold of the town, complete with stove and kitchen supplies.  A bed and personal effects are in the southern side of the room.\n"
+00A8: 8b 41 00 40                                  return    0
+00AC: a0 03 50 00 ff ff 00 00 9b 3c 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

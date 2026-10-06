@@ -1,0 +1,28 @@
+; segment 1067  page 10  class 0x00 (prop) type 103 tile-name "bow" (tool join F000/F004)
+; kind class  length 364 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0140  methods: -
+; properties: sel36/p_weight, sel38/p26, sel46, sel51, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 40                                        .hdr      dictionary offset = 0140
+0002: 90 02 90 67 00 0c 90 67 00 6a                .array    array[2] = [@000C, @006A]
+000C: 90 03 90 67 00 1a 90 67 00 32 90 67 …+2      .array    array[3] = [@001A, @0032, @0052]
+001A: 2d 20 49 74 27 73 20 6b 69 6e 64 20 …+12     .string   "- It's kind of awkward."
+0032: 2d 20 54 68 65 72 65 20 69 73 6e 27 …+20     .string   "- There isn't much curve on it."
+0052: 2d 20 54 68 65 20 73 74 72 69 6e 67 …+12     .string   "- The string is uneven."
+006A: 90 03 90 67 00 78 90 67 00 95 90 67 …+2      .array    array[3] = [@0078, @0095, @00A4]
+0078: 49 74 20 68 61 73 20 74 68 65 20 66 …+17     .string   "It has the finest bowstring."
+0095: 46 65 65 6c 20 74 68 65 20 70 75 6c …+3      .string   "Feel the pull."
+00A4: 49 74 20 66 69 74 73 20 77 65 6c 6c …+15     .string   "It fits well in your hand."
+00BF: 90 02 90 67 00 c9 90 67 01 18                .array    array[2] = [@00C9, @0118]
+00C9: 41 20 62 6f 77 20 69 73 20 61 20 6e …+67     .string   "A bow is a nice weapon when used at a distance, but useless in close quarters."
+0118: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+0122: 90 01 00 00 00 0a                            .array    array[1] = [10]
+0128: 90 01 00 00 00 05                            .array    array[1] = [5]
+012E: 90 04 00 00 00 01 00 00 00 05 00 00 …+6      .array    array[4] = [1, 5, 10, 11]
+0140: a0 07 50 00 ff ff 00 2a 90 67 01 22 …+32     .dict     dict[7] {36/p_weight: @0122, 38/p26: @0128, 46: @012E, 51: @00BF, 69: @0002}

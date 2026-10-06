@@ -1,0 +1,24 @@
+; segment 1AD4  page 1A  class 0x50 (spell) type 212
+; kind class  length 109 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0059  methods: sel2/name@0002, sel8/search@001A
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 59                                        .hdr      dictionary offset = 0059
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 48 65 61 6c 69 6e 67 20 4d 61 …+5      return    "Healing Magic"
+; ---- dead code 0016-001A: no dictionary entry, jump, pointer or call reaches it ----
+0016:x8b 41 00 40                                  return    0
+
+; ==== method sel8/search @001A ====
+001A: 81 01 00                                     frame     args=1 locals=0
+001D: 54 68 69 73 20 73 6b 69 6c 6c 20 69 …+44     text      "This skill is the basis for a number of healing spells.\n"
+0055: 8b 41 00 40                                  return    0
+0059: a0 03 9a d4 00 1a 00 08 50 00 ff ff …+8      .dict     dict[3] {2/name: @0002, 8/search: @001A}

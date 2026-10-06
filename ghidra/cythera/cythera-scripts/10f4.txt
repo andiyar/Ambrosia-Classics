@@ -1,0 +1,77 @@
+; segment 10F4  page 10  class 0x00 (prop) type 244 tile-name "LandKing Amulet" (tool join F000/F004)
+; kind class  length 790 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02C6  methods: sel8/search@005A, sel9/use@0137, sel10/use_on@015A
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 c6                                        .hdr      dictionary offset = 02C6
+0002: 90 02 90 f4 00 0c 90 f4 00 3e                .array    array[2] = [@000C, @003E]
+000C: 54 68 61 74 20 61 6d 75 6c 65 74 20 …+38     .string   "That amulet bears the symbol of our liege Alaric."
+003E: 90 02 00 00 00 06 00 00 00 4a                .array    array[2] = [6, 74]
+0048: 90 01 00 00 00 01                            .array    array[1] = [1]
+004E: 90 01 00 00 00 01                            .array    array[1] = [1]
+0054: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel8/search @005A ====
+005A: 81 01 00                                     frame     args=1 locals=0
+005D: 8d 30 62 06 41 08 51 40 00 88                jf        (A30.f06:quality > 8) -> 0088
+0067: 54 68 65 20 61 6d 75 6c 65 74 20 73 …+18     text      "The amulet sparkles brightly.\n"
+0085: 88 01 33                                     goto      -> 0133
+0088:>8d 30 62 06 41 05 51 40 00 aa                jf        (A30.f06:quality > 5) -> 00AA
+0092: 54 68 65 20 61 6d 75 6c 65 74 20 73 …+9      text      "The amulet sparkles.\n"
+00A7: 88 01 33                                     goto      -> 0133
+00AA:>8d 30 62 06 41 03 51 40 00 d2                jf        (A30.f06:quality > 3) -> 00D2
+00B4: 54 68 65 20 61 6d 75 6c 65 74 20 73 …+15     text      "The amulet sparkles dimly.\n"
+00CF: 88 01 33                                     goto      -> 0133
+00D2:>8d 30 62 06 41 01 51 40 00 fb                jf        (A30.f06:quality > 1) -> 00FB
+00DC: 54 68 65 20 61 6d 75 6c 65 74 20 62 …+16     text      "The amulet barely sparkles.\n"
+00F8: 88 01 33                                     goto      -> 0133
+00FB:>4f 6e 6c 79 20 74 68 65 20 73 6d 61 …+44     text      "Only the smallest spark of light remains in the amulet.\n"
+0133:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0137 ====
+0137: 81 01 00                                     frame     args=1 locals=0
+013A: 55 73 65 20 74 68 65 20 61 6d 75 6c …+12     text      "Use the amulet on whom?\n"
+0152: 8b 41 01 40                                  return    1
+; ---- dead code 0156-015A: no dictionary entry, jump, pointer or call reaches it ----
+0156:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @015A ====
+015A: 81 02 04                                     frame     args=2 locals=4
+015D: e1 48 09 63 00 43 00 00 00 f0 40             builtin   show_magic(as_prop(G09:speaker), 240)
+0168: d3 41 2e 48 05 62 01 48 05 62 02 40          builtin   positional_sound(46, G05:leader.f01:x, G05:leader.f02:y)
+0174: 8d 31 62 04 42 00 4e 54 31 62 04 42 …+7      jf        ((A31.f04:type == 78) || (A31.f04:type == 283)) -> 0250
+0187: 82 00 31 62 06 63 40 40                      set       L00 = as_char(A31.f06:quality)
+018F: 8d 00 40 02 3c                               jf        L00 -> 023C
+0194: 8d 00 62 14 41 01 56 40 01 b3                jf        (L00.f14:status & 1) -> 01B3
+019E: 54 68 65 79 20 61 72 65 6e 27 74 20 …+6      text      "They aren't dead!\n"
+01B0: 88 02 39                                     goto      -> 0239
+01B3:>86 14 00 40 00 62 14 41 01 57 40             setfield  L00.f14:status = (L00.f14:status | 1)
+01BE: 86 1c 00 40 00 62 1d 41 04 4d 41 01 …+2      setfield  L00.f1C:health = ((L00.f1D:health_max / 4) + 1)
+01CC: 5e                                           text      "^"
+01CD: 8a 00 40                                     print     L00
+01D0: 20 68 61 73 20 62 65 65 6e 20 62 72 …+36     text      " has been brought back from the brink of death.\n"
+0200: 82 01 c9 43 10 00 00 02 41 00 31 40 …+1      set       L01 = iterate_descendants(&L02, 0, A31)
+020D:>8c c9 43 10 00 00 02 41 01 40 40 02 …+1      jt        iterate_descendants(&L02, 1) -> 0236
+021A: 86 0b 01 40 00 40                            setfield  L01.f0B:loc16 = L00
+0220: 86 00 01 40 41 10 40                         setfield  L01.f00:kind = 16
+0227: 82 01 c9 43 10 00 00 02 41 02 40 40          set       L01 = iterate_descendants(&L02, 2)
+0233: 88 02 0d                                     goto      -> 020D
+0236:>a7 31 40                                     builtin   delete_prop(A31)
+0239:>88 02 4d                                     goto      -> 024D
+023C:>4e 6f 74 68 69 6e 67 20 68 61 70 70 …+5      text      "Nothing happens.\n"
+024D:>88 02 61                                     goto      -> 0261
+0250:>4e 6f 74 68 69 6e 67 20 68 61 70 70 …+5      text      "Nothing happens.\n"
+0261:>86 06 30 40 30 62 06 41 01 4b 40             setfield  A30.f06:quality = (A30.f06:quality - 1)
+026C: 8d 30 62 06 41 00 54 40 02 be                jf        (A30.f06:quality == 0) -> 02BE
+0276: 54 68 65 20 61 6d 75 6c 65 74 20 63 …+54     text      "The amulet crumbles to dust, leaving you feeling very vulnerable.\n"
+02B8: a7 30 40                                     builtin   delete_prop(A30)
+02BB: 88 02 c2                                     goto      -> 02C2
+02BE:>9d 08 30 40                                  send      A30.sel8/search()
+02C2:>8b 41 00 40                                  return    0
+02C6: a0 0d 90 f4 00 54 00 27 50 00 ff ff …+68     .dict     dict[13] {8/search: @005A, 9/use: @0137, 10/use_on: @015A, 36/p_weight: @0048, 38/p26: @004E, 39/p_typeflags27: @0054, 51: @0002}

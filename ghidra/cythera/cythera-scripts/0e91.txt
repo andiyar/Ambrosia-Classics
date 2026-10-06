@@ -1,0 +1,36 @@
+; segment 0E91  page 0E  routine
+; kind routine  length 244 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 02                                     frame     args=4 locals=2
+0003: 82 00 bb 30 40 40                            set       L00 = who_will_prompt(A30)
+0009: 8d 00 5e 40 00 16                            jf        !L00 -> 0016
+000F: 8b 43 50 00 00 00 40                         return    False
+0016:>82 01 00 63 40 40                            set       L01 = as_char(L00)
+001C: 8d 9f 0d 01 00 40 31 4f 40 00 78             jf        (R0D01(L00) < A31) -> 0078
+0027: 8d 00 48 05 54 40 00 50                      jf        (L00 == G05:leader) -> 0050
+002F: 22 59 6f 75 20 64 6f 6e 27 74 20 68 …+18     text      "\"You don't have enough money.\""
+004D: 88 00 70                                     goto      -> 0070
+0050:>22                                           text      "\""
+0051: 8a 01 40                                     print     L01
+0054: 20 64 6f 65 73 6e 27 74 20 68 61 76 …+17     text      " doesn't have enough money.\"*"  ; shares its tail with text @0070
+0070:>2a                                           text      "*"
+0071: 8b 43 50 00 00 00 40                         return    False
+0078:>8d 9f 0d 03 01 31 40 b8 32 41 01 40 …+8      jf        ((R0D03(L01, A31) + weight_if_added(A32, 1)) > free_capacity(L01)) -> 00DB
+008C: 8d 00 48 05 54 40 00 b4                      jf        (L00 == G05:leader) -> 00B4
+0094: 22 59 6f 75 20 64 6f 6e 27 74 20 68 …+17     text      "\"You don't have enough room.\""
+00B1: 88 00 d3                                     goto      -> 00D3
+00B4:>22                                           text      "\""
+00B5: 8a 01 40                                     print     L01
+00B8: 20 64 6f 65 73 6e 27 74 20 68 61 76 …+16     text      " doesn't have enough room.\"*"  ; shares its tail with text @00D3
+00D3:>2a                                           text      "*"
+00D4: 8b 43 50 00 00 00 40                         return    False
+00DB:>9f 0d 02 00 31 40                            call      R0D02(L00, A31)
+00E1: a8 00 32 41 00 41 00 40                      builtin   give_item(L00, A32, 0, 0)
+00E9: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 00F0-00F4: no dictionary entry, jump, pointer or call reaches it ----
+00F0:x8b 41 00 40                                  return    0

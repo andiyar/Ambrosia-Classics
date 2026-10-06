@@ -1,0 +1,45 @@
+; segment 10A3  page 10  class 0x00 (prop) type 163 tile-name "rolling pin" (tool join F000/F004)
+; kind class  length 440 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0168  methods: sel15/take_drop_15@0063, sel9/use@00A7, sel10/use_on@00C9
+; properties: sel36/p_weight, sel38/p26, sel42, sel43, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 68                                        .hdr      dictionary offset = 0168
+0002: 90 02 90 a3 00 0c 90 a3 00 57                .array    array[2] = [@000C, @0057]
+000C: 41 20 72 6f 6c 6c 69 6e 67 20 70 69 …+63     .string   "A rolling pin makes a dangerous weapon in the hands of an irate housewife!"
+0057: 90 01 00 00 00 61                            .array    array[1] = [97]
+005D: 90 01 00 00 00 02                            .array    array[1] = [2]
+
+; ==== method sel15/take_drop_15 @0063 ====
+0063: 81 01 00                                     frame     args=1 locals=0
+0066: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 006D-0071: no dictionary entry, jump, pointer or call reaches it ----
+006D:x8b 41 00 40                                  return    0
+0071: 90 01 00 00 00 04                            .array    array[1] = [4]
+0077: 90 07 00 00 00 02 00 00 00 01 00 00 …+18     .array    array[7] = [2, 1, 4, 198, 16, 18, Nil]
+0095: 90 04 00 00 00 06 00 00 00 02 50 00 …+6      .array    array[4] = [6, 2, True, 15]
+
+; ==== method sel9/use @00A7 ====
+00A7: 81 01 00                                     frame     args=1 locals=0
+00AA: 8d 48 13 40 00 be                            jf        G13:g13_bool -> 00BE
+00B0: 46 6c 61 74 74 65 6e 20 77 68 61 74 …+2      text      "Flatten what?\n"
+00BE:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 00C5-00C9: no dictionary entry, jump, pointer or call reaches it ----
+00C5:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00C9 ====
+00C9: 81 02 00                                     frame     args=2 locals=0
+00CC: 8d 31 62 04 42 00 a8 54 40 01 64             jf        (A31.f04:type == 168) -> 0164
+00D7: 8d f5 48 05 42 00 d0 40 40 01 31             jf        find_skill(G05:leader, 208) -> 0131
+00E2: 59 6f 75 20 6b 6e 65 61 64 20 74 68 …+56     text      "You knead the dough with the rolling pin - it is now ready to bake.\n"
+0126: 86 04 31 40 42 00 a9 40                      setfield  A31.f04:type = 169
+012E: 88 01 64                                     goto      -> 0164
+0131:>59 6f 75 20 65 6e 64 20 75 70 20 6b …+36     text      "You end up kneading the dough into nothingness.\n"
+0161: a7 30 40                                     builtin   delete_prop(A30)
+0164:>8b 41 00 40                                  return    0
+0168: a0 0d 50 00 ff ff 31 31 50 00 ff ff …+68     .dict     dict[13] {9/use: @00A7, 10/use_on: @00C9, 15/take_drop_15: @0063, 36/p_weight: @005D, 38/p26: @0071, 42: @0077, 43: @0095, 51: @0002}

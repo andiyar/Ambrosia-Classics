@@ -1,0 +1,49 @@
+; segment 1875  page 18  class 0x40 (char) id 117 name "Semele" (string table 0201)
+; kind class  length 708 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02B0  methods: sel12/talk@003A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 b0                                        .hdr      dictionary offset = 02B0
+0002: 90 01 98 75 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 00                                     frame     args=1 locals=0
+003D: 59 6f 75 20 73 65 65 20 61 20 73 74 …+24     text      "You see a stressed female student.\n*"
+0061:>8e                                           input       ; read a line into the input buffer
+0062: 90 6e 61 6d 65 00 00 88                      match     name else -> 0088
+006A: 22 49 27 6d 20 63 61 6c 6c 65 64 20 …+8      text      "\"I'm called Semele.\""
+007E: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0085: 88 00 61                                     goto      -> 0061
+0088:>90 65 69 6f 6e 00 01 fb                      match     eion else -> 01FB
+0090: 22 45 69 6f 6e 65 75 73 20 69 73 20 …+336    text      "\"Eioneus is my older brother - we are quite proud of him, with his work on magical weapons.\"*\"I haven't heard from him recently, but the last I did, he said he found a cave in the mountains that lead to a lava field.\"*\"He said it was just southwest of where the two tributaries of River Styx join together.\"*\"If you see him, tell him I said hello.\""
+01EC: f2 41 1e 43 30 00 02 1a 41 1e 4a 40          builtin   add_to_do(30, (str[021A:0]"Cure Alaric" + 30))
+01F8: 88 00 61                                     goto      -> 0061
+01FB:>90 6a 6f 62 00 02 35                         match     job else -> 0235
+0202: 22 49 27 6d 20 61 20 73 74 75 64 65 …+36     text      "\"I'm a student - I hope to become a researcher.\""
+0232: 88 00 61                                     goto      -> 0061
+0235:>90 73 65 6d 65 00 02 46                      match     seme else -> 0246
+023D: 22 59 65 73 3f 22                            text      "\"Yes?\""
+0243: 88 00 61                                     goto      -> 0061
+0246:>90 62 79 65 00 02 5f                         match     bye else -> 025F
+024D: 22 47 6f 6f 64 20 62 79 65 2e 22             text      "\"Good bye.\""
+0258: 8b 41 00 40                                  return    0
+; ---- dead code 025C-025F: no dictionary entry, jump, pointer or call reaches it ----
+025C:x88 00 61                                     goto      -> 0061
+025F:>90 2a 00 02 a9                               match     * else -> 02A9
+0264: 8d 9f 08 10 30 40 5e 40 02 a6                jf        !R0810(A30) -> 02A6
+026E: 8d 9f 08 0c 30 40 5e 40 02 a6                jf        !R080C(A30) -> 02A6
+0278: 8d 9f 08 08 30 40 5e 40 02 a6                jf        !R0808(A30) -> 02A6
+0282: 8d 9f 08 01 30 40 5e 40 02 a6                jf        !R0801(A30) -> 02A6
+028C: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+14     text      "\"I don't know about that.\""
+02A6:>88 00 61                                     goto      -> 0061
+02A9:>88 00 61                                     goto      -> 0061
+; ---- dead code 02AC-02B0: no dictionary entry, jump, pointer or call reaches it ----
+02AC:x8b 41 00 40                                  return    0
+02B0: a0 03 98 75 00 3a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @003A, 68: @0002}

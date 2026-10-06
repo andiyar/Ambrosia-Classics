@@ -1,0 +1,151 @@
+openjdk version "26.0.2.1" 2026-08-18
+OpenJDK Runtime Environment Homebrew (build 26.0.2.1)
+OpenJDK 64-Bit Server VM Homebrew (build 26.0.2.1, mixed mode)
+INFO  Using log config file: jar:file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/preferences (Preferences)  
+INFO  Loading previous preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.2_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (537 ms) (ClassSearcher)  
+WARNING: Final field name in class ghidra.util.charset.CharsetInfo has been mutated reflectively by class com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2 in unnamed module @15aab8c6 (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/gson-2.13.2.jar)
+WARNING: Use --enable-final-field-mutation=ALL-UNNAMED to avoid a warning
+WARNING: Mutating final fields will be blocked in a future release unless final field mutation is enabled
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1072 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldOffset has been called by org.apache.felix.framework.util.SecureAction (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/lib/org.apache.felix.framework-7.0.5.jar)
+WARNING: Please consider reporting this to the maintainers of class org.apache.felix.framework.util.SecureAction
+WARNING: sun.misc.Unsafe::staticFieldOffset will be removed in a future release
+INFO  HEADLESS Script Paths:
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/8051/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FileFormats/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Decompiler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PDB/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/JVM/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/PIC/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PyGhidra/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/VersionTracking/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BSim/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BytePatterns/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/Atmel/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/DATA/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FunctionID/ghidra_scripts
+    /Users/andiyar/Developer/Ambrosia-Classics/docs/cythera/tools (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Opening existing project: /Users/andiyar/Developer/Ambrosia-Classics/ghidra/proj/Cythera_pef (HeadlessAnalyzer)  
+INFO  Opening project: /Users/andiyar/Developer/Ambrosia-Classics/ghidra/proj/Cythera_pef (HeadlessProject)  
+INFO  REPORT: Processing read-only project file: /Cythera_pef (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: CyDecompBuiltins.java '/Users/andiyar/Developer/Ambrosia-Classics/ghidra/Cythera_builtins.decompiled.c'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /Users/andiyar/Developer/Ambrosia-Classics/docs/cythera/tools/CyDecompBuiltins.java (HeadlessAnalyzer)  
+INFO  CyDecompBuiltins.java> language: PowerPC:BE:32:default cspec macosx (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a0 -> TVector 100d05c8 -> code 10083ca8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a1 -> TVector 100d05c0 -> code 10083db0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a2 -> TVector 100d0a98 -> code 10093f90 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a3 -> TVector 100d0aa0 -> code 100941f4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a4 -> TVector 100d0aa8 -> code 10094258 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a5 -> TVector 100d0ab0 -> code 1009430c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a6 -> TVector 100d0ab8 -> code 100943fc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a7 -> TVector 100d0ac0 -> code 10094678 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a8 -> TVector 100d0ac8 -> code 10094730 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op a9 -> TVector 100d0ad0 -> code 10094954 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op aa -> TVector 100d0ad8 -> code 1009491c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ab -> TVector 100d0ae0 -> code 10094a24 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ac -> TVector 100d0ae8 -> code 10094bbc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ad -> TVector 100d0af0 -> code 10094c80 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ae -> TVector 100d0af8 -> code 10094e44 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op af -> TVector 100d0b00 -> code 10094fb4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b0 -> TVector 100d0b08 -> code 10095118 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b1 -> TVector 100d0b10 -> code 10095244 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b2 -> TVector 100d0b18 -> code 1009541c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b3 -> TVector 100d0b20 -> code 10095544 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b4 -> TVector 100d0b28 -> code 100955fc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b5 -> TVector 100d0b30 -> code 100956b4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b6 -> TVector 100d0b38 -> code 10095770 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b7 -> TVector 100d0b40 -> code 100957a8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b8 -> TVector 100d0b48 -> code 10095868 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op b9 -> TVector 100d0b50 -> code 10095918 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ba -> TVector 100d0b58 -> code 10095a10 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op bb -> TVector 100d0b60 -> code 10095af0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op bc -> TVector 100d0b68 -> code 10095bc0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op bd -> TVector 100d0b70 -> code 10096058 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op be -> TVector 100d0b78 -> code 100991b8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op bf -> TVector 100d0b80 -> code 10098e60 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c0 -> TVector 100d0b88 -> code 10096798 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c1 -> TVector 100d0b90 -> code 10096dec (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c2 -> TVector 100d0b98 -> code 10096e80 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c3 -> TVector 100d0ba0 -> code 10096f14 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c4 -> TVector 100d0ba8 -> code 10096fb8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c5 -> TVector 100d0bb0 -> code 10098418 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c6 -> TVector 100d0bb8 -> code 100984a0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c7 -> TVector 100d0bc0 -> code 10097080 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c8 -> TVector 100d0bc8 -> code 100971e0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op c9 -> TVector 100d0bd0 -> code 100973bc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ca -> TVector 100d0bd8 -> code 100975b8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op cb -> TVector 100d0be0 -> code 100976fc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op cc -> TVector 100d0be8 -> code 10097ce8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op cd -> TVector 100d0bf0 -> code 10097b58 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ce -> TVector 100d0bf8 -> code 10098028 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op cf -> TVector 100d0c00 -> code 10097edc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d0 -> TVector 100d0c08 -> code 10098204 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d1 -> TVector 100d0c10 -> code 100978f0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d2 -> TVector 100d0c18 -> code 1009851c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d3 -> TVector 100d0c20 -> code 100985c0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d4 -> TVector 100d0c28 -> code 1009874c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d5 -> TVector 100d0c30 -> code 100988dc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d6 -> TVector 100d0c38 -> code 10098994 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d7 -> TVector 100d0c40 -> code 10098a54 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d8 -> TVector 100d0c48 -> code 10098be4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op d9 -> TVector 100d0c50 -> code 10098ca0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op da -> TVector 100d0c58 -> code 10098d78 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op db -> TVector 100d0c60 -> code 10098f08 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op dc -> TVector 100d0c68 -> code 10098fb0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op dd -> TVector 100d0c70 -> code 10098ff8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op de -> TVector 100d0c78 -> code 1009904c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op df -> TVector 100d0c80 -> code 100990cc (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e0 -> TVector 100d0c88 -> code 1009abd4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e1 -> TVector 100d0c90 -> code 10099720 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e2 -> TVector 100d0c98 -> code 10099434 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e3 -> TVector 100d0ca0 -> code 100997b8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e4 -> TVector 100d0ca8 -> code 10099860 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e5 -> TVector 100d0cb0 -> code 100999b0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e6 -> TVector 100d0cb8 -> code 10099ab0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e7 -> TVector 100d0cc0 -> code 10099b08 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e8 -> TVector 100d0cc8 -> code 1009a12c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op e9 -> TVector 100d0cd0 -> code 1009a1b0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ea -> TVector 100d0cd8 -> code 1009a090 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op eb -> TVector 100d0ce0 -> code 10099ff4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ec -> TVector 100d0ce8 -> code 1009a234 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ed -> TVector 100d0cf0 -> code 1009a354 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ee -> TVector 100d0cf8 -> code 1009a40c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ef -> TVector 100d0d00 -> code 10099cd4 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f0 -> TVector 100d0d08 -> code 10099d9c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f1 -> TVector 100d0d10 -> code 10099e78 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f2 -> TVector 100d0d18 -> code 1009aa14 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f3 -> TVector 100d0d20 -> code 1009aa98 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f4 -> TVector 100d0d28 -> code 10096d54 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f5 -> TVector 100d0d30 -> code 1009ab14 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f6 -> TVector 100d0d38 -> code 100944d8 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f7 -> TVector 100d0d40 -> code 10099240 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f8 -> TVector 100d0d48 -> code 1009aec0 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op f9 -> TVector 100d0d50 -> code 1009ad40 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op fa -> TVector 100d0d58 -> code 1009ac8c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op fb -> TVector 100d0d60 -> code 1009ac50 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op fc -> TVector 100d0d68 -> code 1009ad94 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op fd -> TVector 100d0d70 -> code 1009ae38 (GhidraScript)  
+INFO  CyDecompBuiltins.java> op fe -> TVector 100d0d78 -> code 1009b12c (GhidraScript)  
+INFO  CyDecompBuiltins.java> op ff: null (GhidraScript)  
+INFO  CyDecompBuiltins.java> CyDecompBuiltins: wrote 95/95 (GhidraScript)  
+INFO  REPORT: Discarding changes to the following read-only file: /Cythera_pef (HeadlessAnalyzer)  

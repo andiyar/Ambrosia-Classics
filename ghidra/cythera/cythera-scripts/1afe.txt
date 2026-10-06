@@ -1,0 +1,63 @@
+; segment 1AFE  page 1A  class 0x50 (spell) type 254
+; kind class  length 368 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0144  methods: sel2/name@0008, sel4/index@001A, sel9/use@0027
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 44                                        .hdr      dictionary offset = 0144
+0002: 90 01 00 00 00 72                            .array    array[1] = [114]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 52 65 67 72 6f 75 70 00 40             return    "Regroup"
+; ---- dead code 0016-001A: no dictionary entry, jump, pointer or call reaches it ----
+0016:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @001A ====
+001A: 81 02 00                                     frame     args=2 locals=0
+001D: 8b 31 41 01 54 40                            return    (A31 == 1)
+; ---- dead code 0023-0027: no dictionary entry, jump, pointer or call reaches it ----
+0023:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0027 ====
+0027: 81 01 06                                     frame     args=1 locals=6
+002A: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+003B:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 0076
+0048: 82 03 00 63 40 40                            set       L03 = as_char(L00)
+004E: 8d 00 48 09 53 40 00 60                      jf        (L00 != G09:speaker) -> 0060
+0056: 86 15 03 40 41 01 40                         setfield  L03.f15:activity = 1
+005D: 88 00 67                                     goto      -> 0067
+0060:>86 15 03 40 41 02 40                         setfield  L03.f15:activity = 2
+0067:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+0073: 88 00 3b                                     goto      -> 003B
+0076:>82 04 43 50 00 00 00 40                      set       L04 = False
+007E:>8d 04 5e 40 01 40                            jf        !L04 -> 0140
+0084: 82 05 43 50 00 00 00 40                      set       L05 = False
+008C: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+009D:>8c ca 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_party(&L01, 1) -> 0100
+00AA: 82 03 00 63 40 40                            set       L03 = as_char(L00)
+00B0: 8d 00 48 09 53 40 00 e2                      jf        (L00 != G09:speaker) -> 00E2
+00B8: 8d 03 62 15 41 11 54 40 00 cd                jf        (L03.f15:activity == 17) -> 00CD
+00C2: 82 05 43 50 00 00 01 40                      set       L05 = True
+00CA: 88 00 df                                     goto      -> 00DF
+00CD:>8d 03 62 15 41 01 53 40 00 df                jf        (L03.f15:activity != 1) -> 00DF
+00D7: 82 04 43 50 00 00 01 40                      set       L04 = True
+00DF:>88 00 f1                                     goto      -> 00F1
+00E2:>8d 03 62 2a 40 00 f1                         jf        L03.f2A -> 00F1
+00E9: 82 04 43 50 00 00 01 40                      set       L04 = True
+00F1:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+00FD: 88 00 9d                                     goto      -> 009D
+0100:>8d 04 5e 05 5c 40 01 35                      jf        (!L04 && L05) -> 0135
+0108: f0 42 00 01 41 42 41 0a 41 00 41 00 …+1      builtin   queue_activity(1, 66, 10, 0, 0)
+0115: f0 42 00 01 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(1, 165, 254, 1, Nil)
+012B: f1 43 00 00 00 fe 40                         builtin   wait_for_flag(254)
+0132: 88 01 3d                                     goto      -> 013D
+0135:>82 04 43 50 00 00 01 40                      set       L04 = True
+013D:>88 00 7e                                     goto      -> 007E
+0140:>8b 41 00 40                                  return    0
+0144: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @001A, 9/use: @0027, 40/p_typeflags28: @0002}

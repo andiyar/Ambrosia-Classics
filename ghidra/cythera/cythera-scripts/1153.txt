@@ -1,0 +1,32 @@
+; segment 1153  page 11  class 0x00 (prop) type 339 tile-name "fur cloak" (tool join F000/F004)
+; kind class  length 265 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00B9  methods: sel13/wield@0062, sel14/take_drop_14@0090
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel44, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 b9                                        .hdr      dictionary offset = 00B9
+0002: 90 02 91 53 00 0c 91 53 00 44                .array    array[2] = [@000C, @0044]
+000C: 41 70 70 65 61 72 73 20 74 6f 20 62 …+44     .string   "Appears to be some sort of magical cloak, of great age."
+0044: 90 01 00 00 00 4a                            .array    array[1] = [74]
+004A: 90 01 00 00 00 14                            .array    array[1] = [20]
+0050: 90 01 00 00 00 09                            .array    array[1] = [9]
+0056: 90 01 00 00 00 08                            .array    array[1] = [8]
+005C: 90 01 00 00 00 0a                            .array    array[1] = [10]
+
+; ==== method sel13/wield @0062 ====
+0062: 81 02 00                                     frame     args=2 locals=0
+0065: 8d 31 48 05 54 40 00 8c                      jf        (A31 == G05:leader) -> 008C
+006D: 59 6f 75 20 67 65 74 20 61 20 66 65 …+19     text      "You get a feeling of security.\n"
+008C:>8b 41 00 40                                  return    0
+
+; ==== method sel14/take_drop_14 @0090 ====
+0090: 81 02 00                                     frame     args=2 locals=0
+0093: 8d 31 48 05 54 40 00 b5                      jf        (A31 == G05:leader) -> 00B5
+009B: 59 6f 75 20 66 65 65 6c 20 6d 6f 72 …+14     text      "You feel more vulnerable.\n"
+00B5:>8b 41 00 40                                  return    0
+00B9: a0 0d 91 53 00 56 00 27 91 53 00 62 …+68     .dict     dict[13] {13/wield: @0062, 14/take_drop_14: @0090, 36/p_weight: @004A, 38/p26: @0050, 39/p_typeflags27: @0056, 44: @005C, 51: @0002}

@@ -1,0 +1,59 @@
+; segment 1AC3  page 1A  class 0x50 (spell) type 195
+; kind class  length 861 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0331  methods: sel2/name@0002, sel8/search@0256
+; properties: sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 31                                        .hdr      dictionary offset = 0331
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 43 61 73 74 69 6e 67 00 40             return    "Casting"
+; ---- dead code 0010-0014: no dictionary entry, jump, pointer or call reaches it ----
+0010:x8b 41 00 40                                  return    0
+0014: 90 01 9a c3 00 1a                            .array    array[1] = [@001A]
+001A: 90 05 9a c3 00 30 9a c3 00 85 9a c3 …+10     .array    array[5] = [@0030, @0085, @00F3, @0186, @0226]
+0030: 90 03 50 00 ff ff 9a c3 00 3e 9a c3 …+2      .array    array[3] = [Nil, @003E, @0083]
+003E: 20 6c 6f 6f 6b 73 20 79 6f 75 20 6f …+57     .string   " looks you over, passing his hands back and forth in front of you..."
+0083: 2a 00                                        .string   "*"
+0085: 90 01 9a c3 00 8b                            .array    array[1] = [@008B]
+008B: 22 47 6f 6f 64 2c 20 6c 65 74 27 73 …+92     .string   "\"Good, let's get started right away...\"*You proceed to get trained in basics of the ways of the mage..."
+00F3: 90 04 9a c3 01 05 9a c3 01 4e 50 00 …+6      .array    array[4] = [@0105, @014E, Nil, @0150]
+0105: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+61     .string   "\"You've got the basics, now here are some more advanced formulations...\""
+014E: 2a 00                                        .string   "*"
+0150: 20 65 78 70 6c 61 69 6e 73 20 73 6f …+42     .string   " explains some more complex formulations and rituals."
+0186: 90 04 9a c3 01 98 9a c3 01 e7 50 00 …+6      .array    array[4] = [@0198, @01E7, Nil, @01E9]
+0198: 22 48 6d 20 2d 20 79 6f 75 27 72 65 …+67     .string   "\"Hm - you're quite the student, now here are some real advanced techinques...\""
+01E7: 2a 00                                        .string   "*"
+01E9: 20 73 68 6f 77 73 20 79 6f 75 20 73 …+49     .string   " shows you some even more complex attributes and properties."
+0226: 90 01 9a c3 02 2c                            .array    array[1] = [@022C]
+022C: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+30     .string   "\"You've got complete mastery of Casting.\""
+
+; ==== method sel8/search @0256 ====
+0256: 81 01 05                                     frame     args=1 locals=5
+0259: 54 68 69 73 20 73 6b 69 6c 6c 20 69 …+9      text      "This skill indicates "
+026E: 8d 30 62 03 41 10 56 40 02 83                jf        (A30.f03:frame & 16) -> 0283
+0278: 61 70 74 69 74 75 64 65                      text      "aptitude"
+0280: 88 02 8e                                     goto      -> 028E
+0283:>70 72 6f 66 69 63 69 65 6e 63 79 20 …+38     text      "proficiency in the magical arts of spell casting.\n"  ; shares its tail with text @028E
+028E:>20 69 6e 20 74 68 65 20 6d 61 67 69 …+27     text      " in the magical arts of spell casting.\n"
+02B5: 82 00 41 00 40                               set       L00 = 0
+02BA: 82 01 30 62 0b 63 40 40                      set       L01 = as_char(A30.f0B:loc16)
+02C2: 82 02 a0 43 10 00 00 03 41 00 41 00 …+7      set       L02 = iterate_range(&L03, 0, 0, 128)
+02D5:>8c a0 43 10 00 00 03 41 01 40 40 03 …+1      jt        iterate_range(&L03, 1) -> 0300
+02E2: 8d f5 01 02 40 40 02 f1                      jf        find_skill(L01, L02) -> 02F1
+02EA: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+02F1:>82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+02FD: 88 02 d5                                     goto      -> 02D5
+0300:>59 6f 75 20 6e 6f 77 20 6b 6e 6f 77 …+1      text      "You now know "
+030D: 8a 00 40                                     print     L00
+0310: 20 6f 66 20                                  text      " of "
+0314: 8a 9f 0e b5 01 40 40                         print     R0EB5(L01)
+031B: 20 73 70 65 6c 6c 73 20 70 6f 73 73 …+6      text      " spells possible.\n"
+032D: 8b 41 00 40                                  return    0
+0331: a0 07 50 00 ff ff 00 00 9a c3 02 56 …+32     .dict     dict[7] {2/name: @0002, 8/search: @0256, 54: @0014}

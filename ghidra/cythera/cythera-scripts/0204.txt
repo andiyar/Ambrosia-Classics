@@ -1,0 +1,18 @@
+; segment 0204  page 02  string table
+; kind strtab  length 934 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 09 82 04 00 26 82 04 00 bd 82 04 …+26     .strtab   string table, 9 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8204×9)
+0026: 41 20 65 78 70 6c 6f 72 65 72 20 69 …+139    .string   [0] "A explorer is one who learns much of the world, but has yet to master any of it.  A well-rounded character with no particular strengths or weaknesses."
+00BD: 41 20 66 69 67 68 74 65 72 20 69 73 …+89     .string   [1] "A fighter is one who is proficient with the combative arts, and balanced between attack and defense."
+0122: 41 20 73 77 6f 72 64 73 6d 61 6e 20 …+65     .string   [2] "A swordsman is a fighter who has specialized in the use of sword and shield."
+016F: 41 20 62 65 72 73 65 72 6b 65 72 20 …+94     .string   [3] "A berserker is a fighter who goes all out in his attacks, shunning even the use of weapons in his attack."
+01D9: 41 20 6d 61 67 65 20 69 73 20 6f 6e …+98     .string   [4] "A mage is one who is proficient in the mystical arts, and balanced between the pursuit of power and knowlege."
+0247: 41 20 77 69 7a 61 72 64 20 69 73 20 …+88     .string   [5] "A wizard is a mage who has specialized in knowing as broad a base in the mystical arts as possible."
+02AB: 41 20 6d 79 73 74 69 63 20 69 73 20 …+82     .string   [6] "A mystic is a mage who has specialized in powers within, even at the expense of a broad base."
+0309: 41 20 53 74 6f 72 79 74 65 6c 6c 65 …+80     .string   [7] "A Storyteller is one who wanders about the lands, with a natural rapport with his audience."
+0365: 41 20 72 6f 67 75 65 20 69 73 20 6f …+53     .string   [8] "A rogue is one who has mastered some of the more deceptive arts."

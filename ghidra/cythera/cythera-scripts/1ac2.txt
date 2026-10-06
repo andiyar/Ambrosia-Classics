@@ -1,0 +1,53 @@
+; segment 1AC2  page 1A  class 0x50 (spell) type 194
+; kind class  length 756 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02C8  methods: sel2/name@0002, sel0/init@0011, sel8/search@0271
+; properties: sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 c8                                        .hdr      dictionary offset = 02C8
+
+; ==== method sel2/name @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8b 44 4d 61 6e 61 00 40                      return    "Mana"
+; ---- dead code 000D-0011: no dictionary entry, jump, pointer or call reaches it ----
+000D:x8b 41 00 40                                  return    0
+
+; ==== method sel0/init @0011 ====
+0011: 81 01 01                                     frame     args=1 locals=1
+0014: 82 00 30 62 0b 63 40 40                      set       L00 = as_char(A30.f0B:loc16)
+001C: 86 1f 00 40 9f 0e 83 00 40 40                setfield  L00.f1F:magic_max = R0E83(L00)
+0026: 86 1e 00 40 00 62 1f 40                      setfield  L00.f1E:magic = L00.f1F:magic_max
+002E: 8b 41 00 40                                  return    0
+0032: 90 01 9a c2 00 38                            .array    array[1] = [@0038]
+0038: 90 05 9a c2 00 4e 9a c2 00 a3 9a c2 …+10     .array    array[5] = [@004E, @00A3, @0111, @01A4, @0244]
+004E: 90 03 50 00 ff ff 9a c2 00 5c 9a c2 …+2      .array    array[3] = [Nil, @005C, @00A1]
+005C: 20 6c 6f 6f 6b 73 20 79 6f 75 20 6f …+57     .string   " looks you over, passing his hands back and forth in front of you..."
+00A1: 2a 00                                        .string   "*"
+00A3: 90 01 9a c2 00 a9                            .array    array[1] = [@00A9]
+00A9: 22 47 6f 6f 64 2c 20 6c 65 74 27 73 …+92     .string   "\"Good, let's get started right away...\"*You proceed to get trained in basics of the ways of the mage..."
+0111: 90 04 9a c2 01 23 9a c2 01 6c 50 00 …+6      .array    array[4] = [@0123, @016C, Nil, @016E]
+0123: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+61     .string   "\"You've got the basics, now here are some more advanced formulations...\""
+016C: 2a 00                                        .string   "*"
+016E: 20 65 78 70 6c 61 69 6e 73 20 73 6f …+42     .string   " explains some more complex formulations and rituals."
+01A4: 90 04 9a c2 01 b6 9a c2 02 05 50 00 …+6      .array    array[4] = [@01B6, @0205, Nil, @0207]
+01B6: 22 48 6d 20 2d 20 79 6f 75 27 72 65 …+67     .string   "\"Hm - you're quite the student, now here are some real advanced techinques...\""
+0205: 2a 00                                        .string   "*"
+0207: 20 73 68 6f 77 73 20 79 6f 75 20 73 …+49     .string   " shows you some even more complex attributes and properties."
+0244: 90 01 9a c2 02 4a                            .array    array[1] = [@024A]
+024A: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+27     .string   "\"You've got complete mastery of Mana.\""
+
+; ==== method sel8/search @0271 ====
+0271: 81 01 00                                     frame     args=1 locals=0
+0274: 54 68 69 73 20 73 6b 69 6c 6c 20 69 …+9      text      "This skill indicates "
+0289: 8d 30 62 03 41 10 56 40 02 9e                jf        (A30.f03:frame & 16) -> 029E
+0293: 61 70 74 69 74 75 64 65                      text      "aptitude"
+029B: 88 02 a6                                     goto      -> 02A6
+029E:>74 72 61 69 6e 69 6e 67 20 69 6e 20 …+26     text      "training in the magical arts of mana.\n"  ; shares its tail with text @02A6
+02A6:>20 69 6e 20 74 68 65 20 6d 61 67 69 …+18     text      " in the magical arts of mana.\n"
+02C4: 8b 41 00 40                                  return    0
+02C8: a0 07 9a c2 00 11 00 00 9a c2 02 71 …+32     .dict     dict[7] {0/init: @0011, 2/name: @0002, 8/search: @0271, 54: @0032}

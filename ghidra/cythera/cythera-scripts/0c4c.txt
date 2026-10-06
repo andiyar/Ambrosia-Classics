@@ -1,0 +1,30 @@
+; segment 0C4C  page 0C  routine
+; kind routine  length 133 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 04                                     frame     args=4 locals=4
+0003: 8d 9f 09 01 30 43 50 00 ff ff 31 40 …+3      jf        R0901(A30, Nil, A31) -> 007A
+0012: 82 00 33 63 40 40                            set       L00 = as_char(A33)
+0018: 82 01 ad 41 1c 41 00 30 41 00 31 41 …+7      set       L01 = as_spell(create_prop(28, 0, A30, 0, A31, 0, 0))
+002B: 82 02 9d 09 01 40 40                         set       L02 = L01.sel9/use()
+0032: 8d 02 40 00 3c                               jf        L02 -> 003C
+0037: 9d 0a 01 00 40                               send      L01.sel10/use_on(L00)
+003C:>82 03 01 61 36 00 40                         set       L03 = prop(L01, sel54, 0)
+0043: 8d 9f 0f 13 30 40 40 00 65                   jf        R0F13(A30) -> 0065  ; R0F13 = inparty [from 0x0101 symtab]
+004C: 8a 30 40                                     print     A30
+004F: 20 63 61 73 74 73 20                         text      " casts "
+0056: 8a 9d 02 01 40 40                            print     L01.sel2/name()
+005C: 20 6f 6e 20                                  text      " on "
+0060: 8a 00 40                                     print     L00
+0063: 2e 0a                                        text      ".\n"
+0065:>a7 01 40                                     builtin   delete_prop(L01)
+0068: 8d 02 40 00 7a                               jf        L02 -> 007A
+006D: 8d 03 41 00 53 40 00 7a                      jf        (L03 != 0) -> 007A
+0075: 9d 43 00 30 40                               send      L00.sel67(A30)
+007A:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0081-0085: no dictionary entry, jump, pointer or call reaches it ----
+0081:x8b 41 00 40                                  return    0

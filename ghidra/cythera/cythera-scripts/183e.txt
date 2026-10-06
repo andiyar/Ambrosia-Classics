@@ -1,0 +1,220 @@
+; segment 183E  page 18  class 0x40 (char) id 62 name "Halos" (string table 0201)
+; kind class  length 6358 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @18C2  methods: sel12/talk@00DF
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 18 c2                                        .hdr      dictionary offset = 18C2
+; ---- local subroutine @0002 ----
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 15 43 00 00 00 90 53 30 62 …+20     jf        (((A30.f15:activity != 144) && (A30.f15:activity == 138)) && !find_skill(G05:leader, 203)) -> 00AC
+0025: 2a 22 42 75 74 20 6e 6f 77 20 69 73 …+120    text      "*\"But now is not a good time to talk - please, stop by my office during working hours.\"*\"We will be able to speak more freely then.\""
+00A9: 88 00 db                                     goto      -> 00DB
+00AC:>2a 22 53 6f 2c 20 79 6f 75 20 63 61 …+35     text      "*\"So, you came all this way to talk @politics?\""
+00DB:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @00DF ====
+00DF: 81 01 00                                     frame     args=1 locals=0
+00E2: 8d dc 41 03 40 41 01 54 40 09 b1             jf        (get_variable(3) == 1) -> 09B1
+00ED: 22                                           text      "\""
+00EE: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+00F5: 21 20 59 6f 75 27 76 65 20 67 6f 74 …+30     text      "! You've got to @help me!  I'm @innocent!\""
+011F:>8e                                           input       ; read a line into the input buffer
+0120: 90 6e 61 6d 65 00 01 53                      match     name else -> 0153
+0128: 22 54 68 65 20 6c 61 74 65 20 48 61 …+28     text      "\"The late Halos, if you can't @help me.\""
+0150: 88 01 1f                                     goto      -> 011F
+0153:>90 68 65 6c 70 00 01 9c                      match     help else -> 019C
+015B: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+50     text      "\"You've got to prove I'm @innocent, though it seems unlikely.\""
+0199: 88 01 1f                                     goto      -> 011F
+019C:>90 6a 6f 62 00 01 d2                         match     job else -> 01D2
+01A3: 22 55 6e 74 69 6c 20 49 27 6d 20 70 …+32     text      "\"Until I'm proven innocent, I'm a prisoner.\""
+01CF: 88 01 1f                                     goto      -> 011F
+01D2:>90 69 6e 6e 6f 2c 6d 75 72 64 00 02 …+1      match     inno,murd else -> 025D
+01DF: 22 49 27 76 65 20 74 6f 6c 64 20 40 …+111    text      "\"I've told @Berossus my @story, and he claims I'm telling the truth, but he also saw me kill @Opheltius, but I'm innocent!\""
+025A: 88 01 1f                                     goto      -> 011F
+025D:>90 62 65 72 6f 00 02 b5                      match     bero else -> 02B5
+0265: 22 48 65 27 73 20 74 68 65 20 4a 75 …+65     text      "\"He's the Judge, but I don't know how he'll get to the truth of this matter.\""
+02B2: 88 01 1f                                     goto      -> 011F
+02B5:>90 6f 70 68 65 00 03 3e                      match     ophe else -> 033E
+02BD: 22 49 27 76 65 20 6e 65 76 65 72 20 …+114    text      "\"I've never been fond of @Opheltius, or any of House @Nicander for that matter, but I've got no real reason why I'd kill him.\""
+033B: 88 01 1f                                     goto      -> 011F
+033E:>90 63 79 62 65 00 03 c4                      match     cybe else -> 03C4
+0346: 22 49 27 6d 20 61 20 66 72 69 65 6e …+111    text      "\"I'm a friend of House @Attis, and think of her like a daughter, this is true, and I swear it was her who entered my shop.\""
+03C1: 88 01 1f                                     goto      -> 011F
+03C4:>90 6e 69 63 61 00 04 26                      match     nica else -> 0426
+03CC: 22 48 6f 75 73 65 20 53 74 72 79 6d …+75     text      "\"House Strymon and House Nicander have never gotten along, but that's normal politics.\""
+0423: 88 01 1f                                     goto      -> 011F
+0426:>90 61 74 74 69 00 04 f3                      match     atti else -> 04F3
+042E: 22 48 6f 75 73 65 20 53 74 72 79 6d …+182    text      "\"House Strymon and House Attis aren't actually allies - we just happen to disagree with their alliance with Nicander.\"*\"Unofficially, I consider them to be friends of mine - but now, who knows.\""
+04F0: 88 01 1f                                     goto      -> 011F
+04F3:>90 73 74 6f 72 00 08 fc                      match     stor else -> 08FC
+04FB: 22 4c 69 6b 65 20 49 20 74 6f 6c 64 …+630    text      "\"Like I told @Berossus, I was in my shop working when @Cybele came in.\"*\"That's the last thing I remember, until I woke up, in my shop, being shaken by guards - and now I'm in here.\"*\"I don't know what to think anymore - sure, it is possible that if @Cybele told me that Opheltius raped her, I might have gone bezerk.\"*\"I might have even been angry enough to kill him, but how could I black out that entire memory?\"*\"Berossus knows I'm telling the truth - he tested me.  But he also saw me kill Opheltius.\"*\"And Cybele said she never came to my shop, much less told me that Opheltius did anything to her.\"*\"I just plain don't understand it.\"*"
+077D: 8d 9f 0f 13 42 00 61 40 40 08 af             jf        R0F13(97) -> 08AF  ; R0F13 = inparty [from 0x0101 symtab]
+0788: a4 42 00 61 41 01 40                         builtin   show_portrait(97, 1)
+078F: 22 44 6f 6e 27 74 20 77 6f 72 72 79 …+49     text      "\"Don't worry, old friend.  We'll get to the bottom of this!\"*"
+07CC: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+07D1: 22 54 68 61 6e 6b 73 20 41 65 74 68 …+39     text      "\"Thanks Aethon, that means a lot to me right now.\"*"
+0804: a4 42 00 61 41 01 40                         builtin   show_portrait(97, 1)
+080B: 22 50 65 72 68 61 70 73 20 77 65 20 …+93     text      "\"Perhaps we should see if anybody in the Guild knows anything - maybe somebody found the murder weapon.\"*"
+0874: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0879: 22 45 78 63 65 6c 6c 65 6e 74 20 69 …+39     text      "\"Excellent idea - it might well prove me innocent.\""
+08AC: 88 08 f9                                     goto      -> 08F9
+08AF:>22 50 65 72 68 61 70 73 20 69 66 20 …+62     text      "\"Perhaps if the murder weapon was to turn up, it might prove me innocent.\""
+08F9:>88 01 1f                                     goto      -> 011F
+08FC:>90 77 65 61 70 00 09 42                      match     weap else -> 0942
+0904: 22 46 69 6e 64 69 6e 67 20 74 68 65 …+47     text      "\"Finding the murder weapon may be the only way to save me.\""
+093F: 88 01 1f                                     goto      -> 011F
+0942:>90 62 79 65 00 09 7d                         match     bye else -> 097D
+0949: 22 50 6c 65 61 73 65 2c 20 66 69 6e …+33     text      "\"Please, find the truth about what happened!\""
+0976: 8b 41 00 40                                  return    0
+; ---- dead code 097A-097D: no dictionary entry, jump, pointer or call reaches it ----
+097A:x88 01 1f                                     goto      -> 011F
+097D:>90 2a 00 09 ab                               match     * else -> 09AB
+0982: 22 43 61 6e 20 77 65 20 73 74 69 63 …+26     text      "\"Can we stick to the problem at hand?\""
+09A8: 88 01 1f                                     goto      -> 011F
+09AB:>88 01 1f                                     goto      -> 011F
+; ---- dead code 09AE-09B1: no dictionary entry, jump, pointer or call reaches it ----
+09AE:x88 0a b7                                     goto      -> 0AB7
+09B1:>8d 30 62 15 43 00 00 00 8a 54 40 0a …+1      jf        (A30.f15:activity == 138) -> 0AB1
+09BE: 8d 9f 0f 02 30 41 01 40 9f 0f 02 30 …+15     jf        ((R0F02(A30, 1) || R0F02(A30, 2)) || R0F02(A30, 4)) -> 0A14  ; R0F02 = tstbit [from 0x0101 symtab]
+09D9: 22 41 68 2c 20 6d 79 20 66 72 69 65 …+44     text      "\"Ah, my friend, what can I do for you?  Talk @politics?\""
+0A11: 88 0a ae                                     goto      -> 0AAE
+0A14:>22 49 20 61 6d 20 72 65 61 6c 6c 79 …+44     text      "\"I am really quite busy now, could you come back later?\""
+0A4C: 8d f5 48 05 42 00 cb 40 40 0a aa             jf        find_skill(G05:leader, 203) -> 0AAA
+0A57: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0A5E: 2a 22 42 75 74 20 70 6c 65 61 73 65 …+28     text      "*\"But please sir, this is important...\"*"
+0A86: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0A8B: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+16     text      "\"Very well, but be quick...\""
+0AA7: 88 0a ae                                     goto      -> 0AAE
+0AAA:>8b 41 00 40                                  return    0
+0AAE:>88 0a b7                                     goto      -> 0AB7
+0AB1:>22 59 65 73 3f 22                            text      "\"Yes?\""
+0AB7:>8e                                           input       ; read a line into the input buffer
+0AB8: 90 62 79 65 00 0a e1                         match     bye else -> 0AE1
+0ABF: 22 46 61 72 65 77 65 6c 6c 2c 20 61 …+15     text      "\"Farewell, and be careful.\""
+0ADA: 8b 41 00 40                                  return    0
+; ---- dead code 0ADE-0AE1: no dictionary entry, jump, pointer or call reaches it ----
+0ADE:x88 0a b7                                     goto      -> 0AB7
+0AE1:>90 6e 61 6d 65 00 0b 51                      match     name else -> 0B51
+0AE9: 22 49 20 61 6d 20 48 61 6c 6f 73 22          text      "\"I am Halos\""
+0AF5: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0AFC: 8d 9f 0f 02 30 41 01 40 5e 9f 0f 02 …+20     jf        (!R0F02(A30, 1) && (R0F02(32, 1) || R0F02(60, 1))) -> 0B4E  ; R0F02 = tstbit [from 0x0101 symtab]
+0B1C: 2a 22 4c 65 74 20 6d 65 20 67 75 65 …+38     text      "*\"Let me guess - a friend of a friend sent you...\""
+0B4E:>88 0a b7                                     goto      -> 0AB7
+0B51:>90 73 65 6e 74 00 0b 6b                      match     sent else -> 0B6B
+0B59: 22 57 68 6f 20 73 65 6e 74 20 79 6f …+3      text      "\"Who sent you?\""
+0B68: 88 0a b7                                     goto      -> 0AB7
+0B6B:>90 66 72 69 65 00 0b 9f                      match     frie else -> 0B9F
+0B73: 22 49 20 68 61 76 65 20 6d 61 6e 79 …+29     text      "\"I have many friends - and many enemies.\""
+0B9C: 88 0a b7                                     goto      -> 0AB7
+0B9F:>90 65 6e 65 6d 00 0b ea                      match     enem else -> 0BEA
+0BA7: 22 49 27 6d 20 63 65 72 74 61 69 6e …+52     text      "\"I'm certainly not on good terms with House Comana, but who is?\""
+0BE7: 88 0a b7                                     goto      -> 0AB7
+0BEA:>90 6a 6f 62 00 0c 2c                         match     job else -> 0C2C
+0BF1: 22 49 20 72 65 70 72 65 73 65 6e 74 …+44     text      "\"I represent the interests of House Strymon in Cademia.\""
+0C29: 88 0a b7                                     goto      -> 0AB7
+0C2C:>90 6d 75 72 64 00 0c c7                      match     murd else -> 0CC7
+0C34: 8d dc 41 03 40 41 02 52 40 0c a9             jf        (get_variable(3) >= 2) -> 0CA9
+0C3F: 22 49 20 61 6d 20 69 6e 20 64 65 62 …+91     text      "\"I am in debt to you for that.  Still, the thought of a shapechanger - I never would have believed it.\""
+0CA6: 88 0c c4                                     goto      -> 0CC4
+0CA9:>22 49 20 68 61 76 65 6e 27 74 20 68 …+15     text      "\"I haven't heard of any...\""
+0CC4:>88 0a b7                                     goto      -> 0AB7
+0CC7:>90 61 6b 65 00 0d 59                         match     ake else -> 0D59
+0CCE: 8d 9f 0f 02 42 00 20 41 01 40 40 0d …+1      jf        R0F02(32, 1) -> 0D51  ; R0F02 = tstbit [from 0x0101 symtab]
+0CDB: 8d 9f 0f 02 30 41 01 40 40 0d 0a             jf        R0F02(A30, 1) -> 0D0A  ; R0F02 = tstbit [from 0x0101 symtab]
+0CE6: 22 59 65 73 2c 20 49 20 6b 6e 6f 77 …+21     text      "\"Yes, I know, Lady Ake sent you.\""
+0D07: 88 0d 4e                                     goto      -> 0D4E
+0D0A:>22 4c 61 64 79 20 41 6b 65 20 73 65 …+40     text      "\"Lady Ake sent you?  Well, why didn't you say so...\""
+0D3E: f3 41 0a 40                                  builtin   done_to_do(10)
+0D42: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0D49: 9e 00 02 30 40                               callsub   sub_0002(A30)
+0D4E:>88 0d 56                                     goto      -> 0D56
+0D51:>9f 08 07 30 40                               call      R0807(A30)
+0D56:>88 0a b7                                     goto      -> 0AB7
+0D59:>90 70 72 6f 70 00 0e 2c                      match     prop else -> 0E2C
+0D61: 8d 9f 0f 02 42 00 3c 41 01 40 40 0d …+1      jf        R0F02(60, 1) -> 0DFC  ; R0F02 = tstbit [from 0x0101 symtab]
+0D6E: 8d 9f 0f 02 30 41 02 40 40 0d a9             jf        R0F02(A30, 2) -> 0DA9  ; R0F02 = tstbit [from 0x0101 symtab]
+0D79: 22 59 65 73 2c 20 49 20 6b 6e 6f 77 …+33     text      "\"Yes, I know, my brother Propontis sent you.\""
+0DA6: 88 0d f9                                     goto      -> 0DF9
+0DA9:>22 4d 79 20 62 72 6f 74 68 65 72 20 …+52     text      "\"My brother Propontis sent you?  Well, why didn't you say so...\""
+0DE9: f3 41 0a 40                                  builtin   done_to_do(10)
+0DED: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0DF4: 9e 00 02 30 40                               callsub   sub_0002(A30)
+0DF9:>88 0e 29                                     goto      -> 0E29
+0DFC:>22 50 72 6f 70 6f 6e 74 69 73 20 69 …+33     text      "\"Propontis is my elder brother in Catamarca.\""
+0E29:>88 0a b7                                     goto      -> 0AB7
+0E2C:>90 64 65 62 74 00 0e ef                      match     debt else -> 0EEF
+0E34: 8d 9f 0f 02 42 00 3c 41 01 40 40 0e …+1      jf        R0F02(60, 1) -> 0ECF  ; R0F02 = tstbit [from 0x0101 symtab]
+0E41: 8d 9f 0f 02 30 41 02 40 40 0e 7c             jf        R0F02(A30, 2) -> 0E7C  ; R0F02 = tstbit [from 0x0101 symtab]
+0E4C: 22 59 65 73 2c 20 49 20 6b 6e 6f 77 …+33     text      "\"Yes, I know, my brother Propontis sent you.\""
+0E79: 88 0e cc                                     goto      -> 0ECC
+0E7C:>22 4d 79 20 62 72 6f 74 68 65 72 20 …+52     text      "\"My brother Propontis sent you?  Well, why didn't you say so...\""
+0EBC: f3 41 0a 40                                  builtin   done_to_do(10)
+0EC0: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0EC7: 9e 00 02 30 40                               callsub   sub_0002(A30)
+0ECC:>88 0e ec                                     goto      -> 0EEC
+0ECF:>22 49 20 62 65 6c 69 65 76 65 20 79 …+17     text      "\"I believe you are mistaken.\""
+0EEC:>88 0a b7                                     goto      -> 0AB7
+0EEF:>8d 9f 0f 02 30 41 04 40 5e ae 42 00 …+8      jf        (!R0F02(A30, 4) && who_in_party_has(134, 1)) -> 1036  ; R0F02 = tstbit [from 0x0101 symtab]
+0F03: 90 6e 6f 74 65 00 10 36                      match     note else -> 1036
+0F0B: 22 57 68 61 74 20 6e 6f 74 65 20 77 …+257    text      "\"What note would that be?\"*You show Halos the note that you found on Eudoxus.*\"Interesting, but it proves very little - it doesn't even say who it was to other than 'D'.\"*\"Still, this is most interesting - let me keep this and do some research...\"*Halos takes the note."
+1018: b1 ae 42 00 86 41 01 40 42 00 86 41 …+4      builtin   remove_items(who_in_party_has(134, 1), 134, 1, 1)
+1028: f3 41 0a 40                                  builtin   done_to_do(10)
+102C: 9f 0f 00 30 41 04 40                         call      R0F00(A30, 4)  ; R0F00 = setbit [from 0x0101 symtab]
+1033: 88 0a b7                                     goto      -> 0AB7
+1036:>90 70 6f 6c 69 00 12 1b                      match     poli else -> 121B
+103E: 8d 9f 0f 02 30 41 01 40 9f 0f 02 30 …+15     jf        ((R0F02(A30, 1) || R0F02(A30, 2)) || R0F02(A30, 4)) -> 11F9  ; R0F02 = tstbit [from 0x0101 symtab]
+1059: 22 54 68 65 20 70 6f 6c 69 74 69 63 …+337    text      "\"The politics of Cademia are complex, but here's the story:\"*\"House Attis has lost popular support, being just recently edged out by Comana.\"*\"However, Attis, combined with Strymon and Nicander outweigh Comana.\"*\"Of course, Strymon and Nicander don't get along.\"*\"Attis and Nicander, however, are allied enough to keep Comana from outright control.\""
+11B6: 8d dc 41 01 40 41 00 51 40 11 f6             jf        (get_variable(1) > 0) -> 11F6
+11C1: 2a 22 54 68 69 73 20 63 6f 75 6c 64 …+41     text      "*\"This could help explain the Nicander kidnapping...\""
+11F6:>88 12 18                                     goto      -> 1218
+11F9:>22 50 6f 6c 69 74 69 63 73 20 69 73 …+19     text      "\"Politics is a dirty business.\""
+1218:>88 0a b7                                     goto      -> 0AB7
+121B:>90 63 6f 6d 61 00 14 00                      match     coma else -> 1400
+1223: 8d dc 41 03 40 41 02 52 40 13 85             jf        (get_variable(3) >= 2) -> 1385
+122E: 22 49 20 68 61 76 65 20 6e 6f 20 70 …+328    text      "\"I have no proof, but if you ask me, they are involved in this whole sordid murder.\"*\"It has removed Nicander from Cademia, weakening Attis, and nearly increased the division between House Strymon and them.\"*\"Maybe I'm just being paranoid, but I know politics, and House Comana would have come up ahead regardless, had you not found Dryas.\""
+1382: 88 13 fd                                     goto      -> 13FD
+1385:>8d dc 41 01 40 41 00 51 9f 0f 02 30 …+23     jf        ((get_variable(1) > 0) && ((R0F02(A30, 1) || R0F02(A30, 2)) || R0F02(A30, 4))) -> 13FD  ; R0F02 = tstbit [from 0x0101 symtab]
+13A8: 22 49 27 76 65 20 67 6f 74 20 72 65 …+73     text      "\"I've got reasons to believe that they are involved with the @kidnapping of Ariadne.\""
+13FD:>88 0a b7                                     goto      -> 0AB7
+1400:>90 6b 69 64 6e 00 17 db                      match     kidn else -> 17DB
+1408: 8d dc 41 01 40 41 00 51 9f 0f 02 30 …+23     jf        ((get_variable(1) > 0) && ((R0F02(A30, 1) || R0F02(A30, 2)) || R0F02(A30, 4))) -> 17B1  ; R0F02 = tstbit [from 0x0101 symtab]
+142B: 22 4f 4b 2c 20 74 68 69 73 20 69 73 …+369    text      "\"OK, this is what I've been able to gather so far - mind you, I can't prove any of it yet...\"*\"The bandit who kidnapped Ariadne of Odemia was hired by House Comana.\"*\"Their motives are unclear, but the ransom could have bankrupted House Nicander.\"*\"Toppling Nicander would leave Odemia open for a new ruling House.\"*\"More importantly, Nicander would have no power here in Cademia.\""
+15A8: 8d 9f 0f 02 42 00 3d 41 01 40 40 17 …+1      jf        R0F02(61, 1) -> 17AE  ; R0F02 = tstbit [from 0x0101 symtab]
+15B5: 2a                                           text      "*"
+15B6: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+15BC: 22 49 6e 74 65 72 65 73 74 69 6e 67 …+97     text      "\"Interesting - I've heard from Mantinea that she saw Darius talking with some ruffians, as she called them.\"*"
+1629: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+162E: 22 54 68 61 74 20 64 6f 65 73 20 73 …+44     text      "\"That does seems to corroborate the story, doesn't it.\"*"
+1666: a4 48 05 41 02 40                            builtin   show_portrait(G05:leader, 2)
+166C: 22 42 75 74 20 63 61 6e 27 74 20 77 …+25     text      "\"But can't we do anything about it?\"*"
+1691: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+1696: 22 4e 6f 2c 20 6e 6f 74 20 66 6f 72 …+241    text      "\"No, not formally yet.  We need definite proof before we can get a formal investigation.\"*\"Perhaps you should talk to @Berossus, our Judge, though.\"*\"Even better, seek out a friend of mine, @Aethon - he might be interested in joining you on your quest.\""
+1793: 8d 9f 0f 00 30 41 03 40 5e 40 17 a7          jf        !R0F00(A30, 3) -> 17A7  ; R0F00 = setbit [from 0x0101 symtab]
+179F: 9f 0e 8b 48 05 41 14 40                      call      R0E8B(G05:leader, 20)
+17A7:>9f 0f 00 30 41 03 40                         call      R0F00(A30, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+17AE:>88 17 d8                                     goto      -> 17D8
+17B1:>8d 9f 08 01 30 40 5e 40 17 d8                jf        !R0801(A30) -> 17D8
+17BB: 22 43 61 6e 20 6e 6f 74 20 68 65 6c …+17     text      "\"Can not help you with that.\""
+17D8:>88 0a b7                                     goto      -> 0AB7
+17DB:>90 61 65 74 68 00 18 76                      match     aeth else -> 1876
+17E3: 8d 9f 0f 02 30 41 03 40 40 18 37             jf        R0F02(A30, 3) -> 1837  ; R0F02 = tstbit [from 0x0101 symtab]
+17EE: 22 41 65 74 68 6f 6e 20 69 73 20 61 …+58     text      "\"Aethon is a sly one - he's even known to take jobs as a @ratcatcher.\""
+1834: 88 18 73                                     goto      -> 1873
+1837:>22 49 27 76 65 20 68 65 61 72 64 20 …+48     text      "\"I've heard of him - it is my business to know such things.\""
+1873:>88 0a b7                                     goto      -> 0AB7
+1876:>90 2a 00 18 bb                               match     * else -> 18BB
+187B: 8d 9f 08 07 30 40 5e 40 18 b8                jf        !R0807(A30) -> 18B8
+1885: 8d 9f 08 0e 30 40 5e 40 18 b8                jf        !R080E(A30) -> 18B8
+188F: 8d 9f 08 01 30 40 5e 40 18 b8                jf        !R0801(A30) -> 18B8
+1899: 22 54 68 61 74 20 49 20 63 61 6e 20 …+19     text      "\"That I can not help you with.\""
+18B8:>88 0a b7                                     goto      -> 0AB7
+18BB:>88 0a b7                                     goto      -> 0AB7
+; ---- dead code 18BE-18C2: no dictionary entry, jump, pointer or call reaches it ----
+18BE:x8b 41 00 40                                  return    0
+18C2: a0 03 98 3e 00 df 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @00DF}

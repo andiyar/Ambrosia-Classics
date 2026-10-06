@@ -1,0 +1,226 @@
+; segment 1846  page 18  class 0x40 (char) id 70 name "Sacas" (string table 0201)
+; kind class  length 6525 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @1951  methods: sel12/talk@003A, sel21/signal@0D07:0000 (shared method: code in routine 0D07)
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 19 51                                        .hdr      dictionary offset = 1951
+0002: 90 01 98 46 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+
+; ==== method sel12/talk @003A ====
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 8d 9f 0f 02 30 41 07 40 5e 40 01 1c          jf        !R0F02(A30, 7) -> 011C  ; R0F02 = tstbit [from 0x0101 symtab]
+0049: 22 53 6f 20 79 6f 75 27 72 65 20 74 …+32     text      "\"So you're the one Alaric said was coming - "
+0075: 8d de 41 03 40 40 00 9e                      jf        test_flag(3) -> 009E
+007D: 62 75 74 20 49 20 68 61 64 20 68 6f …+18     text      "but I had hoped for better.\"*\""
+009B: 88 00 d3                                     goto      -> 00D3
+009E:>61 6e 64 20 72 65 73 63 75 69 6e 67 …+90     text      "and rescuing Lady Ariadne to boot!\"*\"He chose well.  My name is Sacas - I'm the Judge here in Odemia.\""  ; shares its tail with text @00D3
+00D3:>4d 79 20 6e 61 6d 65 20 69 73 20 53 …+37     text      "My name is Sacas - I'm the Judge here in Odemia.\""
+0104: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+010B: f4 44 4b 69 64 6e 61 70 70 69 6e 67 …+2      builtin   add_answer("Kidnapping")
+0119: 88 09 e1                                     goto      -> 09E1
+011C:>8d 9f 0f 02 30 41 00 40 40 09 bc             jf        R0F02(A30, 0) -> 09BC  ; R0F02 = tstbit [from 0x0101 symtab]
+0127: 8d 9f 0f 02 42 00 5e 41 00 40 40 09 …+1      jf        R0F02(94, 0) -> 0988  ; R0F02 = tstbit [from 0x0101 symtab]
+0134: 22 44 69 64 20 79 6f 75 20 66 69 6e …+37     text      "\"Did you find anything useful from the prisoner?\""
+0165: 8f 79 6e 00                                  prompt    "yn"
+0169: 90 79 00 09 03                               match     y else -> 0903
+016E: 8d 9f 0f 02 42 00 5e 41 01 40 40 08 …+1      jf        R0F02(94, 1) -> 08B7  ; R0F02 = tstbit [from 0x0101 symtab]
+017B: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0181: 22 48 65 20 63 6c 61 69 6d 73 20 74 …+81     text      "\"He claims that he was working for a 'group' of people who are more powerful than Nicander.\"*"
+01DE: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+01E3: 22 48 6d 20 2d 20 68 65 20 63 6f 75 …+259    text      "\"Hm - he could mean another House.  Both @Comana and @Strymon are fairly powerful...\"*\"Or perhaps he means something else - maybe some sort of covert organization?\"*\"At any rate, you did a good job - I was unable to get anything out of him, which is odd, considering...\"*"
+02F2: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+02F8: 22 43 6f 6e 73 69 64 65 72 69 6e 67 …+3      text      "\"Considering?\"*"
+0307: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+030C: 22 57 65 6c 6c 2c 20 61 73 20 61 20 …+732    text      "\"Well, as a Judge, I've got the power to delve out secrets such as this through mystical means...\"*\"It was as if he was immune to my sooth-spells.  Most odd.\"*She looks around a minute, as if investigating her conscious.*\"I probably shouldn't tell you this, since it could cause a great many problems if it gets out...\"*\"But when we captured him, he had a vial of silvery liquid, which he called 'kesh'.\"*\"We think that this might be related to the immunity, but we're not sure.  All we do know is that it is dangerous.\"*\"Investigation has shown it to be addictive, and probably fatal in the long term - beyond that, we don't know much.\"*\"If we could find where it was coming from, or even what it was made of, this might be an important clue.\""
+05F4: f2 41 24 43 30 00 02 1a 41 24 4a 40          builtin   add_to_do(36, (str[021A:0]"Cure Alaric" + 36))
+0600: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+0608: 9f 0f 01 30 41 00 40                         call      R0F01(A30, 0)  ; R0F01 = clrbit [from 0x0101 symtab]
+060F: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0616: f3 41 04 40                                  builtin   done_to_do(4)
+061A: 8d dc 41 0c 40 dc 41 0d 40 5d 40 08 …+1      jf        (get_variable(12) || get_variable(13)) -> 08B4
+0627: 2a                                           text      "*"
+0628: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+062E: 22 49 27 76 65 20 73 65 65 6e 20 74 …+19     text      "\"I've seen that stuff before.\"*"
+064D: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0652: 22 52 65 61 6c 6c 79 3f 20 20 57 68 …+13     text      "\"Really?  Where?  When?\"*"
+066B: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0671: 8d dc 41 0c 40 dc 41 0d 40 5c 40 07 …+1      jf        (get_variable(12) && get_variable(13)) -> 0730
+067E: 22 54 68 65 72 65 20 77 61 73 20 73 …+163    text      "\"There was some on a body found crushed in a tunnel in LandKing Hall.\"*\"I wasn't sure who he was - he might have been a spy!\"*\"I also found more on the bandit leader himself.\""
+072D: 88 07 e2                                     goto      -> 07E2
+0730:>8d dc 41 0c 40 40 07 b8                      jf        get_variable(12) -> 07B8
+0738: 22 54 68 65 72 65 20 77 61 73 20 73 …+113    text      "\"There was some on a body found crushed in a tunnel in LandKing Hall.\"*\"I wasn't sure who he was - he might have been a spy!\""
+07B5: 88 07 e2                                     goto      -> 07E2
+07B8:>22 49 20 66 6f 75 6e 64 20 73 6f 6d …+31     text      "\"I found some on the band leader himself.\"*"  ; shares its tail with text @07E2
+07E2:>2a                                           text      "*"
+07E3: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+07E8: 8d dc 41 0c 40 40 08 56                      jf        get_variable(12) -> 0856
+07F0: 22 41 20 73 70 79 3f 20 20 49 6e 20 …+80     text      "\"A spy?  In LandKing Hall?  This is unheard of.  I'll have Lindus investigate this at once.\""
+084C: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0853: 88 08 b4                                     goto      -> 08B4
+0856:>22 4e 6f 74 20 73 75 72 70 72 69 73 …+82     text      "\"Not surprising - but where did he get it from, I wonder.  Thanks for the infomation, though.\""
+08B4:>88 09 03                                     goto      -> 0903
+08B7:>22 41 6e 64 20 77 68 61 74 20 64 69 …+16     text      "\"And what did you find out?\""
+08D3: 8f 2a 00                                     prompt    "*"
+08D6: 22 49 20 73 65 65 20 2d 20 70 65 72 …+29     text      "\"I see - perhaps I over-estimated you...\""
+08FF: 8b 41 00 40                                  return    0
+0903:>90 6e 00 09 85                               match     n else -> 0985
+0908: 22 48 6d 2c 20 49 20 77 61 73 20 68 …+109    text      "\"Hm, I was hoping you'd find something\"*\"Perhaps you should ask specificly about the kidnapping - maybe he'll slip up...\""
+0981: 8b 41 00 40                                  return    0
+0985:>88 09 b9                                     goto      -> 09B9
+0988:>22 54 61 6c 6b 69 6e 67 20 74 6f 20 …+33     text      "\"Talking to the prisoner would be helpful...\""
+09B5: 8b 41 00 40                                  return    0
+09B9:>88 09 e1                                     goto      -> 09E1
+09BC:>22 57 68 61 74 20 63 61 6e 20 49 20 …+16     text      "\"What can I do for you this "
+09D8: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+09DF: 3f 22                                        text      "?\""
+09E1:>8e                                           input       ; read a line into the input buffer
+09E2: 90 6e 61 6d 65 2c 73 61 63 61 00 0a …+1      match     name,saca else -> 0A16
+09EF: 22 49 27 6d 20 63 61 6c 6c 65 64 20 …+17     text      "\"I'm called Sacas, remember?\""
+0A0C: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0A13: 88 09 e1                                     goto      -> 09E1
+0A16:>90 6a 6f 62 00 0a 44                         match     job else -> 0A44
+0A1D: 22 46 6f 72 20 6e 6f 77 2c 20 49 27 …+24     text      "\"For now, I'm the @Judge of Odemia.\""
+0A41: 88 09 e1                                     goto      -> 09E1
+0A44:>90 6a 75 64 67 00 0a ae                      match     judg else -> 0AAE
+0A4C: 22 57 65 6c 6c 2c 20 62 65 69 6e 67 …+83     text      "\"Well, being a Judge has its advantages, and many @duties, investigating @crimes isn't for me.\""
+0AAB: 88 09 e1                                     goto      -> 09E1
+0AAE:>90 63 72 69 6d 00 0b 2c                      match     crim else -> 0B2C
+0AB6: 22 4c 69 6b 65 20 74 68 65 20 41 72 …+17     text      "\"Like the Ariadne kidnapping."
+0AD3: 8d 9f 0f 02 30 41 01 40 40 0a f5             jf        R0F02(A30, 1) -> 0AF5  ; R0F02 = tstbit [from 0x0101 symtab]
+0ADE: 20 20 59 6f 75 20 61 73 20 6d 75 63 …+8      text      "  You as much as I.\""
+0AF2: 88 0b 29                                     goto      -> 0B29
+0AF5:>8d 9f 0f 02 30 41 00 40 40 0b 26             jf        R0F02(A30, 0) -> 0B26  ; R0F02 = tstbit [from 0x0101 symtab]
+0B00: 20 20 50 65 72 68 61 70 73 20 79 6f …+23     text      "  Perhaps you'll dig something up.\""
+0B23: 88 0b 29                                     goto      -> 0B29
+0B26:>2e 2e 22                                     text      "..\""
+0B29:>88 09 e1                                     goto      -> 09E1
+0B2C:>90 61 72 69 61 2c 6b 69 64 6e 00 0b …+1      match     aria,kidn else -> 0B9C
+0B39: 22 54 68 61 74 20 6b 69 64 6e 61 70 …+84     text      "\"That kidnapping has me bothered - the @prisoner we captured seems @immune to my @sooth-spells.\""
+0B99: 88 09 e1                                     goto      -> 09E1
+0B9C:>90 73 6f 6f 74 2c 73 70 65 6c 00 0b …+1      match     soot,spel else -> 0BF9
+0BA9: 22 41 73 20 61 20 4a 75 64 67 65 2c …+65     text      "\"As a Judge, I've got the power to delve out secrets through mystical means.\""
+0BF6: 88 09 e1                                     goto      -> 09E1
+0BF9:>8d 9f 0f 02 30 41 01 40 40 0f bf             jf        R0F02(A30, 1) -> 0FBF  ; R0F02 = tstbit [from 0x0101 symtab]
+0C04: 90 6b 65 73 68 00 0f bf                      match     kesh else -> 0FBF
+0C0C: 22 57 65 20 64 6f 6e 27 74 20 6b 6e …+91     text      "\"We don't know any more about it than what I've alredy told you.\"*\"Have you discovered anything more?\"*"
+0C73: 82 00 43 50 00 00 00 40                      set       L00 = False
+0C7B: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0C81: 8d 9f 0f 02 30 41 03 40 5e dc 41 0f …+5      jf        (!R0F02(A30, 3) && get_variable(15)) -> 0D6A  ; R0F02 = tstbit [from 0x0101 symtab]
+0C92: 82 00 43 50 00 00 01 40                      set       L00 = True
+0C9A: 22 59 65 73 20 49 20 68 61 76 65 2e …+79     text      "\"Yes I have.  There were a gang of bandits near the Great Swamp with a large cache of it.\"*"
+0CF5: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0CFA: 22 49 20 77 6f 75 6c 64 6e 27 74 20 …+93     text      "\"I wouldn't be surprised if that wasn't their home base.  If we can just figure out who supplied them...\""
+0D63: 9f 0f 00 30 41 03 40                         call      R0F00(A30, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+0D6A:>8d 9f 0f 02 30 41 04 40 5e dc 41 10 …+10     jf        (!R0F02(A30, 4) && (get_variable(16) || get_variable(14))) -> 0F6C  ; R0F02 = tstbit [from 0x0101 symtab]
+0D80: 8d 00 40 0d a4                               jf        L00 -> 0DA4
+0D85: 2a                                           text      "*"
+0D86: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0D8C: 22 54 68 65 72 65 20 6d 6f 72 65 2c …+74     text      "\"There more, though...\"*\"Below Kosha there is a grotto, with boxes full of the stuff.\""
+0DA4:>22 42 65 6c 6f 77 20 4b 6f 73 68 61 …+50     text      "\"Below Kosha there is a grotto, with boxes full of the stuff.\""  ; shares its tail with text @0D8C
+0DE2: 8d dc 41 0e 40 40 0e 2e                      jf        get_variable(14) -> 0E2E
+0DEA: 2a 22 49 20 65 76 65 6e 20 6d 61 64 …+57     text      "*\"I even made some myself, using some strange staff and harpy eggs.\"*"
+0E2E:>2a                                           text      "*"  ; shares its tail with text @0DEA
+0E2F: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0E34: 22 57 65 6c 6c 2c 20 66 61 63 69 6e …+270    text      "\"Well, facinating.  Looks like House Comana was the source of kesh.\"*\"Not that making kesh was illegal by any existing law, unfortunately.\"*\"Unfortunately, due to the effects of kesh, we can't legally tie House Comana to any bandit actions.\"*\"We must destroy this stuff, somehow...\""
+0F4E: f3 41 24 40                                  builtin   done_to_do(36)
+0F52: 9f 0f 00 30 41 04 40                         call      R0F00(A30, 4)  ; R0F00 = setbit [from 0x0101 symtab]
+0F59: 9f 0e 8b 43 40 40 00 01 41 64 40             call      R0E8B(char#1"Hero", 100)
+0F64: 82 00 43 50 00 00 01 40                      set       L00 = True
+0F6C:>8d 00 5e 40 0f bc                            jf        !L00 -> 0FBC
+0F72: 22 4e 6f 2c 20 6d 61 27 61 6d 2c 20 …+29     text      "\"No, ma'am, but I'll keep my eye out...\"*"
+0F9B: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0FA0: 22 57 65 6c 6c 2c 20 4f 4b 2c 20 6b …+16     text      "\"Well, OK, keep at it then.\""
+0FBC:>88 09 e1                                     goto      -> 09E1
+0FBF:>90 69 6d 6d 75 00 13 a1                      match     immu else -> 13A1
+0FC7: 8d 9f 0f 02 30 41 01 40 40 10 37             jf        R0F02(A30, 1) -> 1037  ; R0F02 = tstbit [from 0x0101 symtab]
+0FD2: 22 57 65 27 72 65 20 72 65 61 6c 6c …+86     text      "\"We're really not sure how kesh could interfere with our spells, but it is a definite possiblity.\""
+1034: 88 13 9e                                     goto      -> 139E
+1037:>8d 9f 0f 02 30 41 00 40 40 10 83             jf        R0F02(A30, 0) -> 1083  ; R0F02 = tstbit [from 0x0101 symtab]
+1042: 22 49 20 73 74 69 6c 6c 20 64 6f 6e …+50     text      "\"I still don't understand how my spells would be ineffective.\""
+1080: 88 13 9e                                     goto      -> 139E
+1083:>22 49 74 20 69 73 20 73 74 72 61 6e …+151    text      "\"It is strange that he should be able to resist the spells, and he's surely not going to talk to @Thersites.\"*\"Perhaps you could help?  He's bound to know that you"
+1126: 8d de 41 03 40 40 11 37                      jf        test_flag(3) -> 1137
+112E: 66 61 69 6c 65 64 20 74 6f 20 72 65 …+61     text      "failed to rescued Ariadne - perhaps he might slip up if you talk to him?\""
+1137:>20 72 65 73 63 75 65 64 20 41 72 69 …+52     text      " rescued Ariadne - perhaps he might slip up if you talk to him?\""  ; shares its tail with text @112E
+1177: 8f 79 6e 00                                  prompt    "yn"
+117B: 90 79 00 13 5c                               match     y else -> 135C
+1180: 8d bc 42 00 65 40 40 12 67                   jf        leader_can_see(101) -> 1267
+1189: 22 54 68 65 72 73 69 74 65 73 3f 22 …+1      text      "\"Thersites?\"*"
+1196: a4 42 00 65 41 01 40                         builtin   show_portrait(101, 1)
+119D: 22 59 65 73 20 6d 61 27 61 6d 3f 22 …+1      text      "\"Yes ma'am?\"*"
+11AA: a4 42 00 46 41 00 40                         builtin   show_portrait(70, 0)
+11B1: 22 43 6f 75 6c 64 20 79 6f 75 20 67 …+15     text      "\"Could you give this noble "
+11CC: 8d 49 05 00 00 10 40 11 d7                   jf        seg0500[0010] -> 11D7
+11D5: 77 6f 6d 61 6e 20 61 20 6a 61 69 6c …+7      text      "woman a jail key?\"*"
+11D7:>6d 61 6e 20 61 20 6a 61 69 6c 20 6b …+5      text      "man a jail key?\"*"  ; shares its tail with text @11D5
+11E8: a4 42 00 65 41 01 40                         builtin   show_portrait(101, 1)
+11EF: 22 42 79 20 79 6f 75 72 20 63 6f 6d …+7      text      "\"By your command.\"*"
+1202: a8 41 01 42 00 42 41 02 41 00 40             builtin   give_item(1, 66, 2, 0)
+120D: 9f 0f 00 42 00 65 41 00 40                   call      R0F00(101, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+1216: a4 41 ff 41 01 40                            builtin   show_portrait(-1, 1)
+121C: a4 42 00 46 41 00 40                         builtin   show_portrait(70, 0)
+1223: 22 53 65 65 20 77 68 61 74 20 79 6f …+53     text      "\"See what you can find out, and report your findings back to me.\""
+1264: 88 12 e3                                     goto      -> 12E3
+1267:>22 45 78 63 65 6c 6c 65 6e 74 21 20 …+214    text      "\"Excellent!  Tell @Thersites to give you the key to the @jail, and see what you can find - report back your findings to me.\"*\"You might also want to ask around town, to see if anybody else knows anything about the kidnapping.\""  ; shares its tail with text @12E3
+12E3:>2a 22 59 6f 75 20 6d 69 67 68 74 20 …+90     text      "*\"You might also want to ask around town, to see if anybody else knows anything about the kidnapping.\""
+1349: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+1350: f2 41 04 43 30 00 02 1a 41 04 4a 40          builtin   add_to_do(4, (str[021A:0]"Cure Alaric" + 4))
+135C:>90 6e 00 13 9e                               match     n else -> 139E
+1361: 22 49 20 75 6e 64 65 72 73 74 61 6e …+49     text      "\"I understand - you're busy.  But if you change your mind...\""
+139E:>88 09 e1                                     goto      -> 09E1
+13A1:>90 74 68 65 72 00 14 2b                      match     ther else -> 142B
+13A9: 22 54 68 65 72 73 69 74 65 73 20 69 …+115    text      "\"Thersites is the Captain of the Guard - he can be found in either his quarters in the southwest tower, or roaming about town.\""
+1428: 88 09 e1                                     goto      -> 09E1
+142B:>90 70 72 69 73 2c 6a 61 69 6c 00 15 …+1      match     pris,jail else -> 1560
+1438: 8d dc 41 01 40 41 07 52 40 14 9c             jf        (get_variable(1) >= 7) -> 149C
+1443: 22 49 20 73 75 70 70 6f 73 65 20 79 …+74     text      "\"I suppose you've heard, he died.  You should probably ask Thersites for the details.\""
+1499: 88 15 5d                                     goto      -> 155D
+149C:>22 57 65 27 76 65 20 67 6f 74 20 6f …+41     text      "\"We've got one of the kidnappers of Ariadne in Jail.\""
+14D1: 8d 9f 0f 02 30 41 00 40 40 15 5d             jf        R0F02(A30, 0) -> 155D  ; R0F02 = tstbit [from 0x0101 symtab]
+14DC: 2a 22 59 6f 75 27 6c 6c 20 6e 65 65 …+117    text      "*\"You'll need to go through @Thersites quarters to get to the battlement to get there - it's in the south east corner of town...\""
+155D:>88 09 e1                                     goto      -> 09E1
+1560:>90 62 79 65 00 15 e2                         match     bye else -> 15E2
+1567: 8d 9f 0f 02 30 41 00 40 9f 0f 02 42 …+10     jf        (R0F02(A30, 0) && !R0F02(101, 0)) -> 15BC  ; R0F02 = tstbit [from 0x0101 symtab]
+157D: 22 52 65 6d 65 6d 62 65 72 2c 20 79 …+48     text      "\"Remember, you can get the key to the prison from Thersites\""
+15B9: 88 15 db                                     goto      -> 15DB
+15BC:>22 54 68 61 6e 6b 73 20 61 67 61 69 …+19     text      "\"Thanks again for your help...\""
+15DB:>8b 41 00 40                                  return    0
+; ---- dead code 15DF-15E2: no dictionary entry, jump, pointer or call reaches it ----
+15DF:x88 09 e1                                     goto      -> 09E1
+15E2:>90 63 6f 6d 61 00 16 cd                      match     coma else -> 16CD
+15EA: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+212    text      "\"House Comana is a relative upstart among Houses.  They started out in the small town of Kosha.\"*\"About three years ago, Canachus, the House Elder died and Myus took power, and now they are trying to gain control of Cademia\""
+16CA: 88 09 e1                                     goto      -> 09E1
+16CD:>90 73 74 72 79 00 17 59                      match     stry else -> 1759
+16D5: 22 53 74 72 79 6d 6f 6e 20 69 73 20 …+117    text      "\"Strymon is one of the older Houses.  It has the enviable position of power in Catamarca - they are the major rival of Nicander.\""
+1756: 88 09 e1                                     goto      -> 09E1
+1759:>90 6e 69 63 61 00 18 e5                      match     nica else -> 18E5
+1761: 22 4e 69 63 61 6e 64 65 72 20 69 73 …+201    text      "\"Nicander is the ruling House here in Odemia.  Elder Philinus is nice enough, and you've met his wife Ariadne.\"*\"Their younger son, Ascalon, well, let's say I'm glad that his older brother Opheltius will inherit.\""
+1836: 8d bc 42 00 60 40 40 18 e2                   jf        leader_can_see(96) -> 18E2
+183F: 2a                                           text      "*"
+1840: a4 42 00 60 41 01 40                         builtin   show_portrait(96, 1)
+1847: 22 49 66 20 79 6f 75 20 61 73 6b 20 …+45     text      "\"If you ask me, he's a spoiled, dimwitted, brat, he is!\"*"
+1880: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+1885: 22 50 6c 65 61 73 65 2c 20 50 65 69 …+20     text      "\"Please, Peirithous, be civil.\"*"
+18A5: a4 42 00 60 41 01 40                         builtin   show_portrait(96, 1)
+18AC: 22 56 65 72 79 20 77 65 6c 6c 20 6d …+36     text      "\"Very well ma'am.  I'm sorry for interrupting.\"*"
+18DC: a4 41 ff 41 01 40                            builtin   show_portrait(-1, 1)
+18E2:>88 09 e1                                     goto      -> 09E1
+18E5:>90 2a 00 19 32                               match     * else -> 1932
+18EA: 8d 9f 08 17 30 40 5e 40 19 2f                jf        !R0817(A30) -> 192F
+18F4: 8d 9f 08 08 30 40 5e 40 19 2f                jf        !R0808(A30) -> 192F
+18FE: 8d 9f 08 0a 30 40 5e 40 19 2f                jf        !R080A(A30) -> 192F
+1908: 8d 9f 08 01 30 40 5e 40 19 2f                jf        !R0801(A30) -> 192F
+1912: 22 53 6f 72 72 79 20 2d 20 63 61 6e …+17     text      "\"Sorry - can't help on that.\""
+192F:>88 09 e1                                     goto      -> 09E1
+1932:>88 09 e1                                     goto      -> 09E1
+; ---- dead code 1935-1951: no dictionary entry, jump, pointer or call reaches it ----
+1935:x22 50 6c 65 61 73 65 20 63 6f 6d 65 …+12     text      "\"Please come back later\""
+194D:x8b 41 00 40                                  return    0
+1951: a0 07 8d 07 00 00 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @003A, 21/signal: @0D07:0000, 68: @0002}

@@ -1,0 +1,19 @@
+; segment 0501  page 05  array
+; kind array  length 276 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 09 85 01 00 26 85 01 00 44 85 01 …+26     .array    array[9] = [@0026, @0044, @005A, @0078, @008E, @00A4, @00BA, @00D0, @00F2]
+0026: 90 07 00 00 00 10 00 00 00 10 00 00 …+18     .array    array[7] = [16, 16, 16, 2240, 2241, 2242, 2243]
+0044: 90 05 00 00 00 12 00 00 00 12 00 00 …+10     .array    array[5] = [18, 18, 12, 4288, 4289]
+005A: 90 07 00 00 00 11 00 00 00 13 00 00 …+18     .array    array[7] = [17, 19, 12, 2240, 2241, 2244, 2249]
+0078: 90 05 00 00 00 14 00 00 00 10 00 00 …+10     .array    array[5] = [20, 16, 12, 6336, 2247]
+008E: 90 05 00 00 00 0a 00 00 00 12 00 00 …+10     .array    array[5] = [10, 18, 20, 4290, 4291]
+00A4: 90 05 00 00 00 0a 00 00 00 12 00 00 …+10     .array    array[5] = [10, 18, 20, 2242, 6339]
+00BA: 90 05 00 00 00 0a 00 00 00 12 00 00 …+10     .array    array[5] = [10, 18, 20, 6338, 2243]
+00D0: 90 08 00 00 00 10 00 00 00 12 00 00 …+22     .array    array[8] = [16, 18, 14, 1216, 2241, 1224, 203, 204]
+00F2: 90 07 00 00 00 10 00 00 00 12 00 00 …+18     .array    array[7] = [16, 18, 14, 2240, 202, 205, 213]
+0110: 85 01 00 00                                  .word     word @0000 (VAddr; readable by 0x49 / writable by 0x85)

@@ -1,0 +1,26 @@
+; segment 10E2  page 10  class 0x00 (prop) type 226 tile-name "candlestand" (tool join F000/F004)
+; kind class  length 160 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @008C  methods: sel9/use@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 8c                                        .hdr      dictionary offset = 008C
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 03 41 00 54 40 00 35                jf        (A30.f03:frame == 0) -> 0035
+000F: 86 03 30 40 41 01 40                         setfield  A30.f03:frame = 1
+0016: 54 68 65 20 63 61 6e 64 6c 65 73 74 …+16     text      "The candlestick is now lit.\n"
+0032: 88 00 88                                     goto      -> 0088
+0035:>8d 30 62 03 41 01 54 40 00 6e                jf        (A30.f03:frame == 1) -> 006E
+003F: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+0046: 54 68 65 20 63 61 6e 64 6c 65 73 74 …+25     text      "The candlestick is now extinguished.\n"
+006B: 88 00 88                                     goto      -> 0088
+006E:>54 68 65 20 63 61 6e 64 6c 65 73 74 …+14     text      "The candlestick is spent.\n"
+0088:>8b 41 00 40                                  return    0
+008C: a0 03 90 e2 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {9/use: @0002}

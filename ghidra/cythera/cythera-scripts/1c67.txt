@@ -1,0 +1,18 @@
+; segment 1C67  page 1C  class 0x58 (room) id 359
+; kind class  length 270 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00FA  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 fa                                        .hdr      dictionary offset = 00FA
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 27 76 65 20 65 6e 74 65 72 …+229    text      "You've entered some sort of chapel or place of worship, for whatever power or being the inhabitants of the temple worshipped.  There is some sort of presence that can almost be tasted, but the taste is bitter, and reeks of decaying seaweed.\n"
+00F6: 8b 41 00 40                                  return    0
+00FA: a0 03 50 00 ff ff 65 44 9c 67 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

@@ -1,0 +1,66 @@
+; segment 1811  page 18  class 0x40 (char) id 17 name "Ennomus" (string table 0201)
+; kind class  length 1179 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0487  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 87                                        .hdr      dictionary offset = 0487
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 02                                     frame     args=1 locals=2
+0005: 59 6f 75 20 73 65 65 20 61 20 6f 6c …+23     text      "You see a old, dirty, smelly drunk."
+0028: 8d 9f 0f 02 30 41 01 40 40 00 54             jf        R0F02(A30, 1) -> 0054  ; R0F02 = tstbit [from 0x0101 symtab]
+0033: 2a 48 65 20 61 70 70 65 61 72 73 20 …+17     text      "*He appears to be passed out."
+0050: 8b 41 00 40                                  return    0
+0054:>22 43 6f 6d 65 20 63 6c 6f 73 65 72 …+40     text      "\"Come closer - that's better.  Wanna know a secret?\""
+0088: 8f 79 6e 00                                  prompt    "yn"
+008C: 90 6e 00 00 a0                               match     n else -> 00A0
+0091: 22 59 65 72 20 6c 6f 73 73 2e 22             text      "\"Yer loss.\""
+009C: 8b 41 00 40                                  return    0
+00A0:>22 45 76 65 72 20 62 65 65 6e 20 74 …+11     text      "\"Ever been to Cademia?\""
+00B7: 8f 79 6e 00                                  prompt    "yn"
+00BB: 90 79 00 01 24                               match     y else -> 0124
+00C0: 22 59 61 20 6b 6e 6f 77 20 64 61 20 …+12     text      "\"Ya know da castle der?\""
+00D8: 8f 79 6e 00                                  prompt    "yn"
+00DC: 90 6e 00 01 0c                               match     n else -> 010C
+00E1: 22 59 6f 75 20 6b 6e 6f 77 20 2d 20 …+31     text      "\"You know - where da Tyrants used to live.\""
+010C:>90 79 00 01 24                               match     y else -> 0124
+0111: 22 59 61 2c 20 64 61 74 27 73 20 64 …+7      text      "\"Ya, dat's da one.\""
+0124:>90 6e 00 01 48                               match     n else -> 0148
+0129: 22 42 75 69 6c 74 20 62 79 20 74 68 …+98     text      "\"Built by the Tyrants, it was.\"*\"Anyways, my great-grandpappy helped build it!\"*\"And ya know what he told me?\""
+0148:>2a 22 41 6e 79 77 61 79 73 2c 20 6d …+67     text      "*\"Anyways, my great-grandpappy helped build it!\"*\"And ya know what he told me?\""  ; shares its tail with text @0129
+0197: 8f 79 6e 00                                  prompt    "yn"
+019B: 90 79 00 01 b9                               match     y else -> 01B9
+01A0: 22 4f 68 2c 20 64 65 6e 20 6e 65 76 …+9      text      "\"Oh, den never mind.\""
+01B5: 8b 41 00 40                                  return    0
+01B9:>22 48 65 20 74 6f 6c 64 20 6d 65 20 …+78     text      "\"He told me where da tomb of da Second Tyrant was hidden.\"*\"Wanna know?  It'll cost ya...\""
+0213: 8f 79 6e 00                                  prompt    "yn"
+0217: 90 79 00 04 4c                               match     y else -> 044C
+021C: 82 00 9f 0d 04 40 40                         set       L00 = R0D04()
+0223: 8d 00 41 00 54 40 02 6c                      jf        (L00 == 0) -> 026C
+022B: 22 59 65 72 20 61 73 20 62 75 73 74 …+43     text      "\"Yer as busted as I am - not nice to tease an old man.\""
+0262: 9f 0f 11 41 01 40                            call      R0F11(1)  ; R0F11 = deckarma [from 0x0101 symtab]
+0268: 8b 41 00 40                                  return    0
+026C:>82 01 b4 44 47 69 76 65 20 68 6f 77 …+19     set       L01 = how_many("Give how many oboloi?", 0, L00)
+028B: 8d 01 41 00 54 40 02 a5                      jf        (L01 == 0) -> 02A5
+0293: 22 42 65 20 74 68 61 74 20 77 61 79 …+2      text      "\"Be that way.\""
+02A1: 8b 41 00 40                                  return    0
+02A5:>9f 0d 05 01 40                               call      R0D05(L01)
+02AA: 8d 01 41 0a 51 40 02 ba                      jf        (L01 > 10) -> 02BA
+02B2: 9f 0f 12 01 41 0a 4d 40                      call      R0F12((L01 / 10))  ; R0F12 = inckarma [from 0x0101 symtab]
+02BA:>22 27 54 77 6f 20 50 61 63 65 73 20 …+99     text      "\"'Two Paces Past Noon' he done told me.  I don't know what he meant, but dat was where da entrance was hidden.\""
+0329: 8d 01 41 28 52 40 04 27                      jf        (L01 >= 40) -> 0427
+0331: 2a 22 53 69 6e 63 65 20 79 6f 75 20 …+221    text      "*\"Since you was kind to an old man, I've got something for you.\"*He digs through his grubby clothes, discarding various bits of rubbish.*\"Here it is!  He gave me this key - said it would open the tomb!\"*The old man gives you the key."
+041A: a8 41 01 43 00 00 0c 42 41 05 41 00 …+1      builtin   give_item(1, 3138, 5, 0)
+0427:>2a 54 68 65 20 6f 6c 64 20 6d 61 6e …+18     text      "*The old man then passes out.\n"
+0445: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+044C:>90 6e 00 04 83                               match     n else -> 0483
+0451: 22 57 65 6c 6c 2c 20 64 65 6e 20 79 …+34     text      "\"Well, den youse never gonna learn da secret.\""
+047F: 8b 41 00 40                                  return    0
+0483:>8b 41 00 40                                  return    0
+0487: a0 03 98 11 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

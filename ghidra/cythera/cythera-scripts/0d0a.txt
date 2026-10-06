@@ -1,0 +1,21 @@
+; segment 0D0A  page 0D  routine
+; kind routine  length 98 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 05                                     frame     args=1 locals=5
+0003: 82 00 30 48 07 4d 40                         set       L00 = (A30 / G07:party_size7)
+000A: 82 01 30 00 48 07 4c 4b 40                   set       L01 = (A30 - (L00 * G07:party_size7))
+0013: 82 02 ca 43 10 00 00 03 41 00 43 50 …+5      set       L02 = iterate_party(&L03, 0, True)
+0024:>8c ca 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_party(&L03, 1) -> 005E
+0031: 8d 01 40 00 49                               jf        L01 -> 0049
+0036: 9f 0d 09 02 00 41 01 4a 40                   call      R0D09(L02, (L00 + 1))
+003F: 82 01 01 41 01 4b 40                         set       L01 = (L01 - 1)
+0046: 88 00 4f                                     goto      -> 004F
+0049:>9f 0d 09 02 00 40                            call      R0D09(L02, L00)
+004F:>82 02 ca 43 10 00 00 03 41 02 40 40          set       L02 = iterate_party(&L03, 2)
+005B: 88 00 24                                     goto      -> 0024
+005E:>8b 41 00 40                                  return    0

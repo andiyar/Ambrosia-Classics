@@ -1,0 +1,48 @@
+; segment 0C80  page 0C  routine
+; kind routine  length 484 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 05 06                                     frame     args=5 locals=6
+0003: 82 00 a1 43 10 00 00 01 41 00 31 40 …+1      set       L00 = iterate_list(&L01, 0, A31)
+0010:>8c a1 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_list(&L01, 1) -> 01D9
+001D: 8d 9f 0f 02 00 41 06 40 40 00 b1             jf        R0F02(L00, 6) -> 00B1  ; R0F02 = tstbit [from 0x0101 symtab]
+0028: f0 30 41 42 41 05 41 00 41 00 40             builtin   queue_activity(A30, 66, 5, 0, 0)
+0033: f0 30 41 44 41 00 41 00 44 52 69 67 …+10     builtin   queue_activity(A30, 68, 0, 0, "Right away!")
+0049: f0 30 43 00 00 00 a0 32 41 00 46 32 …+6      builtin   queue_activity(A30, 160, A32[0], A32[1], 0)
+005B: f0 30 43 00 00 00 a2 00 41 00 41 00 …+1      builtin   queue_activity(A30, 162, L00, 0, 0)
+0068: f0 30 41 44 41 00 41 00 44 54 68 65 …+11     builtin   queue_activity(A30, 68, 0, 0, "There you go")
+007F: f0 30 43 00 00 00 a7 00 41 04 43 50 …+4      builtin   queue_activity(A30, 167, L00, 4, False)
+008F: f0 30 41 42 41 0a 41 00 41 00 40             builtin   queue_activity(A30, 66, 10, 0, 0)
+009A: f0 30 43 00 00 00 a0 30 62 01 30 62 …+4      builtin   queue_activity(A30, 160, A30.f01:x, A30.f02:y, 0)
+00AA: 8b 43 50 00 00 01 40                         return    True
+00B1:>8d 9f 0f 02 00 41 07 40 40 01 ca             jf        R0F02(L00, 7) -> 01CA  ; R0F02 = tstbit [from 0x0101 symtab]
+00BC: f0 30 41 42 41 05 41 00 41 00 40             builtin   queue_activity(A30, 66, 5, 0, 0)
+00C7: f0 30 41 44 41 00 41 00 44 43 6f 6d …+6      builtin   queue_activity(A30, 68, 0, 0, "Coming!")
+00D9: 82 03 00 63 40 40                            set       L03 = as_char(L00)
+00DF: f0 30 43 00 00 00 a2 00 41 00 41 00 …+1      builtin   queue_activity(A30, 162, L00, 0, 0)
+00EC: f0 30 41 44 41 00 41 00 44 57 68 61 …+19     builtin   queue_activity(A30, 68, 0, 0, "What would you like?")
+010B: f0 30 41 42 41 0a 41 00 41 00 40             builtin   queue_activity(A30, 66, 10, 0, 0)
+0116: f0 30 41 44 00 41 00 33 ac 41 00 33 …+4      builtin   queue_activity(A30, 68, L00, 0, A33[random(0, len(A33))])
+0126: 82 04 45 00 2d 90 03 8c 80 01 39 8c …+39     set       L04 = blk@012B
+      ; 0x45 inline block 012B-0158 (45 bytes):
+      012B: 90 03                            .array[3]
+        [0] @0139 "Coming up"
+        [1] @0143 "Right away"
+        [2] @014E "Certainly"
+0159: f0 30 41 42 41 0a 41 00 41 00 40             builtin   queue_activity(A30, 66, 10, 0, 0)
+0164: f0 30 41 44 41 00 41 00 04 ac 41 00 …+5      builtin   queue_activity(A30, 68, 0, 0, L04[random(0, len(L04))])
+0175: 82 05 34 ac 41 00 34 5f 40 46 40             set       L05 = A34[random(0, len(A34))]
+0180: f0 30 43 00 00 00 a0 05 41 00 46 05 …+6      builtin   queue_activity(A30, 160, L05[0], L05[1], 0)
+0192: f0 30 43 00 00 00 a2 00 41 00 41 00 …+1      builtin   queue_activity(A30, 162, L00, 0, 0)
+019F: f0 30 41 44 41 00 41 00 44 54 68 65 …+11     builtin   queue_activity(A30, 68, 0, 0, "There you go")
+01B6: f0 30 43 00 00 00 a7 00 41 05 41 00 …+1      builtin   queue_activity(A30, 167, L00, 5, 0)
+01C3: 8b 43 50 00 00 01 40                         return    True
+01CA:>82 00 a1 43 10 00 00 01 41 02 40 40          set       L00 = iterate_list(&L01, 2)
+01D6: 88 00 10                                     goto      -> 0010
+01D9:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 01E0-01E4: no dictionary entry, jump, pointer or call reaches it ----
+01E0:x8b 41 00 40                                  return    0

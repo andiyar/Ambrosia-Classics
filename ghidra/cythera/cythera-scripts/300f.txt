@@ -1,0 +1,63 @@
+; segment 300F  page 30  routine: default handler for selector 15 (take_drop_15)
+; kind routine  length 583 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 09                                     frame     args=1 locals=9
+0003: 82 00 48 10 63 20 40                         set       L00 = as_zone(G10:zone)
+000A: 8d 00 60 24 40 00 18                         jf        has(L00, sel36/p_weight) -> 0018
+0011: 8b 43 50 00 ff ff 40                         return    Nil
+0018:>82 01 9f 0e ac 48 05 42 00 d6 40 40          set       L01 = R0EAC(G05:leader, 214)
+0024: 82 02 f5 48 05 42 00 cd 40 40                set       L02 = find_skill(G05:leader, 205)
+002E: 8d 02 01 5d 40 02 3c                         jf        (L02 || L01) -> 023C
+0035: 82 03 9b 04 43 00 00 01 04 43 00 00 …+4      set       L03 = sysnew_window(260, 130)
+0045: 8d 01 40 00 96                               jf        L01 -> 0096
+004A: 9b 06 03 44 59 6f 75 20 73 65 6e 73 …+61     sysnew    sysnew_06(L03, "You sense that somebody is watching you 'borrow' that...", 50, 10, 200, 64)
+0093: 88 00 cc                                     goto      -> 00CC
+0096:>9b 06 03 44 54 68 61 74 20 64 6f 65 …+42     sysnew    sysnew_06(L03, "That doesn't seem to belong to you...", 50, 10, 200, 64)
+00CC:>9b 10 03 30 41 0a 41 0a 40                   sysnew    sysnew_10(L03, A30, 10, 10)
+00D5: 8d 01 40 00 f5                               jf        L01 -> 00F5
+00DA: 82 04 9b 08 03 44 53 74 65 61 6c 2f …+12     set       L04 = sysnew_08(L03, "Steal/s", 10, 90, 96, 32)
+00F2: 88 01 0c                                     goto      -> 010C
+00F5:>82 04 9b 08 03 44 54 61 6b 65 2f 73 …+11     set       L04 = sysnew_08(L03, "Take/s", 10, 90, 96, 32)
+010C:>82 05 9b 08 03 44 4c 65 61 76 65 2f …+17     set       L05 = sysnew_08(L03, "Leave/l/", 154, 90, 96, 32)
+0129: 82 06 43 50 00 00 01 40                      set       L06 = True
+0131:>8d 41 01 40 01 64                            jf        1 -> 0164
+0137: 82 07 03 62 37 40                            set       L07 = L03.f37
+013D: 8d 07 04 54 40 01 4f                         jf        (L07 == L04) -> 014F
+0144: 82 06 43 50 00 00 01 40                      set       L06 = True
+014C: 88 01 64                                     goto      -> 0164
+014F:>8d 07 05 54 40 01 61                         jf        (L07 == L05) -> 0161
+0156: 82 06 43 50 00 00 00 40                      set       L06 = False
+015E: 88 01 64                                     goto      -> 0164
+0161:>88 01 31                                     goto      -> 0131
+0164:>93 03 40                                     release   L03
+0167: 8d 06 40 02 39                               jf        L06 -> 0239
+016C: 8d 01 40 02 39                               jf        L01 -> 0239
+0171:>8d 01 41 00 51 40 01 df                      jf        (L01 > 0) -> 01DF
+0179: 82 01 01 41 01 4b 40                         set       L01 = (L01 - 1)
+0180: 8d ac 41 00 41 06 40 41 03 54 40 01 …+1      jf        (random(0, 6) == 3) -> 01DC
+018D: 82 08 45 00 34 90 03 b0 0f 01 a0 b0 …+46     set       L08 = blk@0192
+      ; 0x45 inline block 0192-01C6 (52 bytes):
+      0192: 90 03                            .array[3]
+        [0] @01A0 "Your shoe's untied..."
+        [1] @01B6 "Is that Alaric?"
+        [2] Nil
+01C7: 86 26 48 05 40 08 ac 41 00 08 5f 40 …+2      setfield  G05:leader.f26:f26 = L08[random(0, len(L08))]
+01D5: 8b 43 50 00 ff ff 40                         return    Nil
+01DC:>88 01 71                                     goto      -> 0171
+01DF:>82 08 45 00 3f 90 03 b0 0f 01 f2 b0 …+57     set       L08 = blk@01E4
+      ; 0x45 inline block 01E4-0223 (63 bytes):
+      01E4: 90 03                            .array[3]
+        [0] @01F2 "Look over there!"
+        [1] @0203 "Is that Elvis?"
+        [2] @0212 "Don't mind me..."
+0224: 86 26 48 05 40 08 ac 41 00 08 5f 40 …+2      setfield  G05:leader.f26:f26 = L08[random(0, len(L08))]
+0232: 8b 43 50 00 00 01 40                         return    True
+0239:>8b 06 40                                     return    L06
+023C:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0243-0247: no dictionary entry, jump, pointer or call reaches it ----
+0243:x8b 41 00 40                                  return    0

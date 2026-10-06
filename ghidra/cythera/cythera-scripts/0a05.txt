@@ -1,0 +1,13 @@
+; segment 0A05  page 0A  routine
+; kind routine  length 47 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: c2 30 41 15 40                               builtin   remove_ability(A30, 21)
+0008: 8d 30 48 05 54 40 00 2b                      jf        (A30 == G05:leader) -> 002B
+0010: 59 6f 75 72 20 68 65 61 64 20 73 74 …+15     text      "Your head starts to clear.\n"
+002B:>8b 41 00 40                                  return    0

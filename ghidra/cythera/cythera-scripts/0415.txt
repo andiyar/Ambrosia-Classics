@@ -1,0 +1,21 @@
+; segment 0415  page 04  compiled combat AI (ai-scripts.md 3) — not VM bytecode, stored plain
+; length 176 bytes  unknown opcodes: 0 (no VM opcodes in this format)
+0000: name "Missile Script"
+0020: entry 66 85 f0 00 00 00 00 00
+0028: entry 65 83 f0 00 00 00 00 00
+0030: entry 64 88 00 00 00 00 00 00
+0038: entry 00 01 00 00 00 00 00 00
+0040: entry 65 86 00 00 00 00 00 00
+0048: entry 00 83 00 00 00 00 00 00
+0050: entry 65 0a 06 03 05 0b 00 00
+0058: entry 64 89 f3 05 00 00 00 00
+0060: entry 65 0e f2 00 00 00 00 00
+0068: entry 66 0a f2 07 00 00 00 00
+0070: entry 65 0a 06 04 05 0b 00 00
+0078: entry 64 82 f3 00 00 00 00 00
+0080: entry 00 8b 00 00 00 00 00 00
+0088: entry 65 0e f2 00 00 00 00 00
+0090: entry 66 0a f2 07 00 00 00 00
+0098: entry 64 8a f2 05 00 00 00 00
+00A0: entry 65 01 00 00 00 00 00 00
+00A8: entry 64 8b 00 00 00 00 00 00

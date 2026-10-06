@@ -1,0 +1,19 @@
+; segment 0D01  page 0D  routine
+; kind routine  length 76 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 04                                     frame     args=1 locals=4
+0003: 82 00 41 00 40                               set       L00 = 0
+0008: 82 01 c9 43 10 00 00 02 41 00 30 40 …+1      set       L01 = iterate_descendants(&L02, 0, A30)
+0015:>8c c9 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_descendants(&L02, 1) -> 0045
+0022: 8d 01 60 3c 40 00 36                         jf        has(L01, sel60) -> 0036
+0029: 82 00 00 01 61 3c 00 01 62 09 4c 4a …+1      set       L00 = (L00 + (prop(L01, sel60, 0) * L01.f09:count))
+0036:>82 01 c9 43 10 00 00 02 41 02 40 40          set       L01 = iterate_descendants(&L02, 2)
+0042: 88 00 15                                     goto      -> 0015
+0045:>8b 00 40                                     return    L00
+; ---- dead code 0048-004C: no dictionary entry, jump, pointer or call reaches it ----
+0048:x8b 41 00 40                                  return    0

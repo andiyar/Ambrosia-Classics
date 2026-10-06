@@ -1,0 +1,118 @@
+; segment 080A  page 08  routine
+; kind routine  length 1410 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 64 65 6d 6f 00 00 ce                      match     demo else -> 00CE
+000B: 8d dc 41 04 40 41 06 54 40 00 1c             jf        (get_variable(4) == 6) -> 001C
+0016: dd 41 04 41 01 40                            builtin   set_variable(4, 1)
+001C:>8d dc 41 04 40 41 01 54 40 00 7b             jf        (get_variable(4) == 1) -> 007B
+0027: 22 44 65 6d 6f 64 6f 63 75 73 20 77 …+69     text      "\"Demodocus was just here not too long ago.  Perhaps Crito knows where he went...\""
+0078: 88 00 c7                                     goto      -> 00C7
+007B:>22 44 65 6d 6f 64 6f 63 75 73 20 68 …+64     text      "\"Demodocus hasn't been here for a while - who knows where he is off to now.\""
+00C7:>8b 43 50 00 00 01 40                         return    True
+00CE:>8d 48 10 41 02 54 40 05 77                   jf        (G10:zone == 2) -> 0577
+00D7: 90 77 68 65 72 00 05 77                      match     wher else -> 0577
+00DF: 9f 08 16 30 45 04 87 90 0d 88 0a 01 …+1157   call      R0816(A30, blk@00E6, 1)
+      ; 0x45 inline block 00E6-056D (1159 bytes):
+      00E6: 90 0d                            .array[13]
+        [0] @011C ->
+          011C: 90 06                            .array[6]
+            [0] room#65
+            [1] @0136 "The 'Titan's Head'"
+            [2] @0149 "The Titan's Head's front door is "
+            [3] 23
+            [4] 35
+            [5] @016B "."
+        [1] @016D ->
+          016D: 90 06                            .array[6]
+            [0] room#52
+            [1] @0187 "House Nicander"
+            [2] @0196 "House Nicander is "
+            [3] 20
+            [4] 26
+            [5] @01A9 "."
+        [2] @01AB ->
+          01AB: 90 06                            .array[6]
+            [0] char#70"Sacas"
+            [1] @01C5 "Judge Sacas"
+            [2] @01D1 "Judge Sacas' office "
+            [3] 53
+            [4] 34
+            [5] @01E6 "."
+        [3] @01E8 ->
+          01E8: 90 06                            .array[6]
+            [0] char#30"Milcom"
+            [1] @0202 "Milcon the Blacksmith"
+            [2] @0218 "Milcom's smithy is "
+            [3] 46
+            [4] 45
+            [5] @022C "."
+        [4] @022E ->
+          022E: 90 06                            .array[6]
+            [0] char#32"Ake"
+            [1] @0248 "Ake the Weaver"
+            [2] @0257 "Ake the weaver's workshop is "
+            [3] 37
+            [4] 36
+            [5] @0275 "."
+        [5] @0277 ->
+          0277: 90 06                            .array[6]
+            [0] char#35"Hebe"
+            [1] @0291 "Hebe the Threadmaker"
+            [2] @02A6 "Hebe the threadmaker lives "
+            [3] 43
+            [4] 29
+            [5] @02C2 "."
+        [6] @02C4 ->
+          02C4: 90 09                            .array[9]
+            [0] char#101"Thersites"
+            [1] @02EA "Thersites, Captain of the Guard"
+            [2] @030A "Thersites, the captain of the guard, lives "
+            [3] 13
+            [4] 48
+            [5] @0336 " but is often on patrol, or meeting with Judge Sacas, "
+            [6] 53
+            [7] 34
+            [8] @036D "."
+        [7] @036F ->
+          036F: 90 06                            .array[6]
+            [0] char#55"Tlepolemus"
+            [1] @0389 "Tlepolemus the Fisherman"
+            [2] @03A2 "Tlepolemus lives "
+            [3] 34
+            [4] 20
+            [5] @03B4 ", but is usually fishing outside of town."
+        [8] @03DE ->
+          03DE: 90 03                            .array[3]
+            [0] Nil
+            [1] @03EC "LandKing Hall"
+            [2] @03FA "LandKing Hall lies through the forest along the road northwest out of town."
+        [9] @0446 ->
+          0446: 90 03                            .array[3]
+            [0] Nil
+            [1] @0454 "Catamarca"
+            [2] @045E "Catamarca lies south down the coast from town."
+        [10] @048D ->
+          048D: 90 03                            .array[3]
+            [0] Nil
+            [1] @049B "Cademia"
+            [2] @04A3 "Cademia lies down the road southwest from town."
+        [11] @04D3 ->
+          04D3: 90 03                            .array[3]
+            [0] Nil
+            [1] @04E1 "Pnyx"
+            [2] @04E6 "Pnyx lies on the western shore, on the other side of the mountains."
+        [12] @052A ->
+          052A: 90 03                            .array[3]
+            [0] Nil
+            [1] @0538 "Kosha"
+            [2] @053E "Kosha lies south along the shore from Cademia."
+0570: 8b 43 50 00 00 01 40                         return    True
+0577:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 057E-0582: no dictionary entry, jump, pointer or call reaches it ----
+057E:x8b 41 00 40                                  return    0

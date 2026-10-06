@@ -1,0 +1,25 @@
+; segment 10F6  page 10  class 0x00 (prop) type 246 tile-name "Rune of Flame" (tool join F000/F004)
+; kind class  length 139 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0077  methods: sel10/use_on@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 77                                        .hdr      dictionary offset = 0077
+
+; ==== method sel10/use_on @0002 ====
+0002: 81 02 03                                     frame     args=2 locals=3
+0005: 86 00 30 40 30 62 00 43 0f ff ff fd …+2      setfield  A30.f00:kind = (A30.f00:kind & -3)
+0013: e2 30 62 01 30 62 02 30 62 01 30 62 …+13     builtin   missile_burst(A30.f01:x, A30.f02:y, A30.f01:x, A30.f02:y, 433, 16, 2, 0)
+002C: 82 00 cf 43 10 00 00 01 41 00 40 40          set       L00 = iterate_last_burst_victims(&L01, 0)
+0038:>8c cf 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_last_burst_victims(&L01, 1) -> 0070
+0045: 9f 0e b8 00 ac 41 00 41 06 40 ac 41 …+16     call      R0EB8(L00, ((random(0, 6) + random(0, 6)) + 2), 8, Nil)
+0061: 82 00 cf 43 10 00 00 01 41 02 40 40          set       L00 = iterate_last_burst_victims(&L01, 2)
+006D: 88 00 38                                     goto      -> 0038
+0070:>a7 30 40                                     builtin   delete_prop(A30)
+0073: 8b 41 00 40                                  return    0
+0077: a0 03 50 00 ff ff 00 24 90 f6 00 02 …+8      .dict     dict[3] {10/use_on: @0002}

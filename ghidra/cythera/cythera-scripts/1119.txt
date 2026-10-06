@@ -1,0 +1,27 @@
+; segment 1119  page 11  class 0x00 (prop) type 281 tile-name "sword" (tool join F000/F004)
+; kind class  length 346 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @010A  methods: sel8/search@00BC
+; properties: sel36/p_weight, sel38/p26, sel39/p_typeflags27, sel42, sel50, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 0a                                        .hdr      dictionary offset = 010A
+0002: 90 02 91 19 00 0c 91 19 00 66                .array    array[2] = [@000C, @0066]
+000C: 4e 6f 77 20 74 68 61 74 20 69 73 20 …+78     .string   "Now that is a mighty weapon, with a wicked looking edge, and balanced for one handed use."
+0066: 90 02 00 00 00 22 00 00 00 06                .array    array[2] = [34, 6]
+0070: 90 01 00 00 00 14                            .array    array[1] = [20]
+0076: 90 01 00 00 00 08                            .array    array[1] = [8]
+007C: 90 01 00 00 00 04                            .array    array[1] = [4]
+0082: 90 07 00 00 00 1e 00 00 00 01 00 00 …+18     .array    array[7] = [30, 1, 129, 196, 16, 17, @00A0]
+00A0: 90 05 00 00 00 00 00 00 08 b8 00 00 …+10     .array    array[5] = [0, 2232, 2233, 2234, 0]
+00B6: 90 01 00 00 00 50                            .array    array[1] = [80]
+
+; ==== method sel8/search @00BC ====
+00BC: 81 01 00                                     frame     args=1 locals=0
+00BF: 49 74 20 68 61 73 20 61 6e 20 65 78 …+59     text      "It has an extremely sharp edge, and seems to glow with a magical light."
+0106: 8b 41 00 40                                  return    0
+010A: a0 0d 91 19 00 76 00 27 50 00 ff ff …+68     .dict     dict[13] {8/search: @00BC, 36/p_weight: @0070, 38/p26: @007C, 39/p_typeflags27: @0076, 42: @0082, 50: @00B6, 51: @0002}

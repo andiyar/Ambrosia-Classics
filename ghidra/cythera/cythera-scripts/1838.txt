@@ -1,0 +1,235 @@
+; segment 1838  page 18  class 0x40 (char) id 56 name "Eteocles" (string table 0201)
+; kind class  length 3747 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0E8F  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0e 8f                                        .hdr      dictionary offset = 0E8F
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 04                                     frame     args=1 locals=4
+0005: 59 6f 75 20 73 65 65 20 61 20 62 61 …+64     text      "You see a balding man that needs a shave, and perhaps a good night's sleep.*"
+0051: 8d 30 62 15 43 00 00 00 93 54 40 01 …+1      jf        (A30.f15:activity == 147) -> 0116
+005E: 22 43 61 6e 27 74 20 79 6f 75 20 73 …+15     text      "\"Can't you see I'm eating?\""
+0079: 8d f5 48 05 42 00 cb 40 40 01 0f             jf        find_skill(G05:leader, 203) -> 010F
+0084: 2a                                           text      "*"
+0085: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+008C: 22 42 75 74 20 70 6c 65 61 73 65 20 …+83     text      "\"But please sir, it'll only take a minute - and I'm sure we can make this worth your while...\"*"
+00EB: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+00F0: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+16     text      "\"Very well, but be quick...\""
+010C: 88 01 13                                     goto      -> 0113
+010F:>8b 41 00 40                                  return    0
+0113:>88 01 2d                                     goto      -> 012D
+0116:>22 57 68 61 74 27 73 20 79 6f 75 72 …+11     text      "\"What's your business?\""
+012D:>82 00 41 00 40                               set       L00 = 0
+0132:>8e                                           input       ; read a line into the input buffer
+0133: 90 6e 61 6d 65 00 01 60                      match     name else -> 0160
+013B: 22 59 6f 75 20 63 61 6e 20 63 61 6c …+15     text      "\"You can call me Eteocles.\""
+0156: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+015D: 88 01 32                                     goto      -> 0132
+0160:>90 6a 6f 62 00 01 89                         match     job else -> 0189
+0167: 22 49 20 72 75 6e 20 64 61 20 40 52 …+19     text      "\"I run da @Ratcatcher's Guild.\""
+0186: 88 01 32                                     goto      -> 0132
+0189:>90 72 61 74 63 2c 67 75 69 6c 00 01 …+1      match     ratc,guil else -> 01E4
+0196: 22 57 65 20 70 72 6f 76 69 64 65 20 …+63     text      "\"We provide a valuable service to the city, ridding it of unwanted vermin.\""
+01E1: 88 01 32                                     goto      -> 0132
+01E4:>90 6b 65 73 68 00 02 cf                      match     kesh else -> 02CF
+01EC: 8d dc 41 04 40 40 02 b6                      jf        get_variable(4) -> 02B6
+01F4: 22 59 65 61 68 2c 20 77 65 20 68 65 …+179    text      "\"Yeah, we heard of da stuff.  It's effects could be quite useful, in catching 'rats' and all.\"*\"But it seems da stuff is addictive, and fatal in the long run.  Wouldn't want to mess with it.\""
+02B3: 88 02 cc                                     goto      -> 02CC
+02B6:>22 59 6f 75 73 65 20 69 73 20 61 77 …+10     text      "\"Youse is awful nosy.\""
+02CC:>88 01 32                                     goto      -> 0132
+02CF:>90 6a 6f 69 6e 2c 63 6f 6d 65 00 06 …+1      match     join,come else -> 066A
+02DC: 8d de 41 04 40 40 03 10                      jf        test_flag(4) -> 0310
+02E4: 22 59 6f 75 73 65 20 69 73 20 61 6c …+29     text      "\"Youse is already a member of the Guild.\""
+030D: 88 06 67                                     goto      -> 0667
+0310:>8d 00 41 00 54 40 04 37                      jf        (L00 == 0) -> 0437
+0318: 22 49 20 64 6f 6e 27 74 20 6b 6e 6f …+52     text      "\"I don't know, we can't go letting just anybody into the Guild.\""
+0358: 8d bc 42 00 61 40 9f 0f 13 42 00 61 …+5      jf        (leader_can_see(97) && R0F13(97)) -> 0434  ; R0F13 = inparty [from 0x0101 symtab]
+0369: 2a                                           text      "*"
+036A: a4 42 00 61 41 01 40                         builtin   show_portrait(97, 1)
+0371: 22 52 65 6c 61 78 2c 20 45 74 65 6f …+30     text      "\"Relax, Eteocles - I can vouch for them.\"*"
+039B: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+03A0: 22 57 65 6c 6c 2c 20 69 66 20 41 65 …+131    text      "\"Well, if Aethon says youse is OK, that's good enough for me.\"*\"But first, der's a matter of dues.  All new members must pay due of 50 oboloi.\""
+042F: 82 00 41 32 40                               set       L00 = 50
+0434:>88 05 35                                     goto      -> 0535
+0437:>8d f5 48 05 42 00 cc 40 40 04 fa             jf        find_skill(G05:leader, 204) -> 04FA
+0442: 8d 00 41 32 54 40 04 7a                      jf        (L00 == 50) -> 047A
+044A: 82 00 41 28 40                               set       L00 = 40
+044F: 22 57 65 6c 6c 2c 20 68 6f 77 73 20 …+28     text      "\"Well, hows about a 40 oboloi donation?\""
+0477: 88 04 f7                                     goto      -> 04F7
+047A:>8d 00 41 28 54 40 04 cd                      jf        (L00 == 40) -> 04CD
+0482: 22 49 20 6c 69 6b 65 73 20 79 6f 75 …+55     text      "\"I likes you, so here's my final deal - a 35 oboloi donation.  OK?\""
+04C5: 82 00 41 23 40                               set       L00 = 35
+04CA: 88 04 f7                                     goto      -> 04F7
+04CD:>22 4c 6f 6f 6b 2c 20 33 35 20 69 73 …+30     text      "\"Look, 35 is still my final offer - deal?\""
+04F7:>88 05 35                                     goto      -> 0535
+04FA:>22 41 20                                     text      "\"A "
+04FD: 8a 00 40                                     print     L00
+0500: 20 6f 62 6f 6c 6f 69 20 64 6f 6e 61 …+41     text      " oboloi donation is what it's gonna cost you - deal?\""
+0535:>8d 00 41 00 53 40 06 67                      jf        (L00 != 0) -> 0667
+053D: 8f 79 6e 00                                  prompt    "yn"
+0541: 90 79 00 06 42                               match     y else -> 0642
+0546: 8d 9f 0d 04 40 00 4f 40 05 7c                jf        (R0D04() < L00) -> 057C
+0550: 22 53 6f 72 72 79 20 2d 20 6e 6f 20 …+29     text      "\"Sorry - no credit.  Cash up front only.\""
+0579: 88 06 42                                     goto      -> 0642
+057C:>9f 0d 05 00 40                               call      R0D05(L00)
+0581: 22 57 65 6c 63 6f 6d 65 20 74 6f 20 …+50     text      "\"Welcome to da Guild!  Here is the honorary key to the sewers\""
+05BF: a8 42 00 01 43 00 00 08 42 41 00 41 …+2      builtin   give_item(1, 2114, 0, 0)
+05CD: df 41 04 43 50 00 00 01 40                   builtin   set_flag(4, True)
+05D6: 9f 0e 8b 48 05 41 32 40                      call      R0E8B(G05:leader, 50)
+05DE: 2a 22 57 65 20 68 61 76 65 20 61 20 …+88     text      "*\"We have a number of benefits, including the right to @buy certain goods, and 'special' @training.\""
+0642:>90 6e 00 06 67                               match     n else -> 0667
+0647: 22 50 65 72 68 61 70 73 20 79 6f 75 …+20     text      "\"Perhaps you should reconsider.\""
+0667:>88 01 32                                     goto      -> 0132
+066A:>90 61 65 74 68 00 06 a2                      match     aeth else -> 06A2
+0672: 22 41 65 74 68 6f 6e 20 69 73 20 6f …+33     text      "\"Aethon is one of our most talented members.\""
+069F: 88 01 32                                     goto      -> 0132
+06A2:>90 62 75 79 00 07 b9                         match     buy else -> 07B9
+06A9: 8d de 41 04 40 40 07 84                      jf        test_flag(4) -> 0784
+06B1: 86 27 30 40 9f 0e a5 44 57 68 61 74 …+196    setfield  A30.f27:ce17 = R0EA5("What are your interests?", blk@06D5, A30.f27:ce17, blk@076D)
+      ; 0x45 inline block 06D5-0767 (146 bytes):
+      06D5: 90 05                            .array[5]
+        [0] @06EB ->
+          06EB: 90 04                            .array[4]
+            [0] 265
+            [1] @06FD "Lock Pick"
+            [2] 7
+            [3] 1
+        [1] @0707 ->
+          0707: 90 04                            .array[4]
+            [0] 138
+            [1] @0719 "Boots"
+            [2] 10
+            [3] 1
+        [2] @071F ->
+          071F: 90 04                            .array[4]
+            [0] 38
+            [1] @0731 "Torch"
+            [2] 4
+            [3] 1
+        [3] @0737 ->
+          0737: 90 04                            .array[4]
+            [0] 158
+            [1] @0749 "Shovel"
+            [2] 15
+            [3] 1
+        [4] @0750 ->
+          0750: 90 04                            .array[4]
+            [0] 322
+            [1] @0762 "Bomb"
+            [2] 200
+            [3] 1
+      ; 0x45 inline block 076D-077F (18 bytes):
+      076D: 90 04                            .array[4]
+        [0] 3
+        [1] 5
+        [2] 7
+        [3] 5
+0781: 88 07 b6                                     goto      -> 07B6
+0784:>22 53 6f 72 72 79 2c 20 47 75 69 6c …+38     text      "\"Sorry, Guild members only - youse need to @join.\""
+07B6:>88 01 32                                     goto      -> 0132
+07B9:>90 74 72 61 69 2c 74 65 61 63 00 09 …+1      match     trai,teac else -> 0977
+07C6: 8d de 41 04 40 40 09 60                      jf        test_flag(4) -> 0960
+07CE: 8d f5 48 05 42 00 d5 40 f5 48 05 42 …+15     jf        ((find_skill(G05:leader, 213) && find_skill(G05:leader, 207)) && find_skill(G05:leader, 202)) -> 0819
+07E9: 22 59 6f 75 73 65 20 61 6c 72 65 61 …+33     text      "\"Youse already know what youse need to know.\""
+0816: 88 08 54                                     goto      -> 0854
+0819:>22 41 73 20 61 20 47 75 69 6c 64 20 …+47     text      "\"As a Guild member, we can teach you a few useful skills.\"*"
+0854:>82 01 43 40 40 00 01 40                      set       L01 = char#1"Hero"
+085C: 82 02 45 00 72 90 04 98 38 08 73 98 …+108    set       L02 = blk@0861
+      ; 0x45 inline block 0861-08D3 (114 bytes):
+      0861: 90 04                            .array[4]
+        [0] @0873 ->
+          0873: 90 02                            .array[2]
+            [0] @087D "Lock Picking"
+            [1] 213
+        [1] @088A ->
+          088A: 90 02                            .array[2]
+            [0] @0894 "Gambling"
+            [1] 207
+        [2] @089D ->
+          089D: 90 02                            .array[2]
+            [0] @08A7 "Trap Detection & Removal"
+            [1] 202
+        [3] @08C0 ->
+          08C0: 90 02                            .array[2]
+            [0] @08CA "Thievery"
+            [1] 214
+08D4: 82 03 c0 44 57 68 61 74 20 77 6f 75 …+48     set       L03 = pick_item("What would you like to train on?", "%s", L02, blk@0901)
+      ; 0x45 inline block 0901-090E (13 bytes):
+      0901: 90 01                            .array[1]
+        [0] @0907 "Cancel"
+0910: 8d 03 41 00 52 40 09 5d                      jf        (L03 >= 0) -> 095D
+0918: 82 03 02 03 46 40                            set       L03 = L02[L03]
+091E: 8d 03 41 01 46 42 00 d6 54 40 09 45          jf        (L03[1] == 214) -> 0945
+092A: 9f 0e b1 01 44 45 74 65 6f 63 6c 65 …+12     call      R0EB1(L01, "Eteocles", L03[1], True)
+0942: 88 09 5d                                     goto      -> 095D
+0945:>9f 0e b1 01 44 45 74 65 6f 63 6c 65 …+12     call      R0EB1(L01, "Eteocles", L03[1], False)
+095D:>88 09 74                                     goto      -> 0974
+0960:>22 4e 6f 74 20 61 20 63 68 61 6e 63 …+8      text      "\"Not a chance, bub.\""
+0974:>88 01 32                                     goto      -> 0132
+0977:>90 62 79 65 00 09 8b                         match     bye else -> 098B
+097E: 22 42 79 65 2e 22                            text      "\"Bye.\""
+0984: 8b 41 00 40                                  return    0
+; ---- dead code 0988-098B: no dictionary entry, jump, pointer or call reaches it ----
+0988:x88 01 32                                     goto      -> 0132
+098B:>90 6d 75 72 64 00 0a 88                      match     murd else -> 0A88
+0993: 8d dc 41 03 40 41 01 54 40 09 fb             jf        (get_variable(3) == 1) -> 09FB
+099E: 22 54 68 69 73 20 68 61 73 20 6d 65 …+78     text      "\"This has me bothered - I can't believe that Halos would do it.\"*\"It just makes no sense.\""
+09F8: 88 0a 85                                     goto      -> 0A85
+09FB:>8d dc 41 03 40 41 02 52 40 0a 62             jf        (get_variable(3) >= 2) -> 0A62
+0A06: 22 49 20 6b 6e 65 77 20 68 65 20 77 …+77     text      "\"I knew he was innocent - hopefully Berossus can find that shapechanger, whatever it is.\""
+0A5F: 88 0a 85                                     goto      -> 0A85
+0A62:>22 49 74 20 68 61 70 70 65 6e 73 2c …+23     text      "\"It happens, but it's pretty rare.\""
+0A85:>88 01 32                                     goto      -> 0132
+0A88:>90 77 65 61 70 00 0b d5                      match     weap else -> 0BD5
+0A90: 8d dc 41 03 40 41 01 54 40 0b 7c             jf        (get_variable(3) == 1) -> 0B7C
+0A9B: 8d 9f 0f 02 42 00 48 41 01 40 40 0b …+1      jf        R0F02(72, 1) -> 0B4C  ; R0F02 = tstbit [from 0x0101 symtab]
+0AA8: 22 48 6d 2c 20 70 65 72 68 61 70 73 …+137    text      "\"Hm, perhaps it was ditched into the sewers.  You should find @Dryas - he's one of my best sewer-rats.\"*\"If it made it to the sewers, he'll find it.\""
+0B3D: f2 41 0b 43 30 00 02 1a 41 70 4a 40          builtin   add_to_do(11, (str[021A:0]"Cure Alaric" + 112))
+0B49: 88 0b 79                                     goto      -> 0B79
+0B4C:>22 49 20 68 65 61 72 73 20 74 68 65 …+33     text      "\"I hears they never found the murder weapon.\""
+0B79:>88 0b d2                                     goto      -> 0BD2
+0B7C:>8d dc 41 03 40 41 02 52 40 0b ad             jf        (get_variable(3) >= 2) -> 0BAD
+0B87: 22 54 68 65 79 20 6e 65 76 65 72 20 …+23     text      "\"They never did find it, did they?\""
+0BAA: 88 0b d2                                     goto      -> 0BD2
+0BAD:>22 54 68 69 73 20 69 73 20 6e 6f 74 …+25     text      "\"This is not a place to get weapons.\""
+0BD2:>88 01 32                                     goto      -> 0132
+0BD5:>90 64 72 79 61 00 0c a8                      match     drya else -> 0CA8
+0BDD: 8d dc 41 03 40 41 01 54 40 0c 65             jf        (get_variable(3) == 1) -> 0C65
+0BE8: 45 74 65 6f 63 6c 65 73 20 67 65 74 …+110    text      "Eteocles gets a puzzled look on his face.*\"Ya know, come to think of it, I haven't seen him since the murder.  Dat's odd.\""
+0C62: 88 0c a5                                     goto      -> 0CA5
+0C65:>8d de 41 04 40 40 0c 90                      jf        test_flag(4) -> 0C90
+0C6D: 22 48 65 27 73 20 67 6f 74 20 61 20 …+20     text      "\"He's got a bright future here.\""
+0C8D: 88 0c a5                                     goto      -> 0CA5
+0C90:>22 4e 65 76 65 72 20 68 65 61 72 64 …+9      text      "\"Never heard of 'em.\""
+0CA5:>88 01 32                                     goto      -> 0132
+0CA8:>90 68 61 6c 6f 00 0d 27                      match     halo else -> 0D27
+0CB0: 8d dc 41 03 40 41 01 54 40 0c df             jf        (get_variable(3) == 1) -> 0CDF
+0CBB: 22 49 20 6a 75 73 74 20 64 6f 6e 27 …+21     text      "\"I just don't sees it happening.\""
+0CDC: 88 0d 24                                     goto      -> 0D24
+0CDF:>8d dc 41 03 40 41 02 52 40 0d 06             jf        (get_variable(3) >= 2) -> 0D06
+0CEA: 22 49 20 6b 6e 65 77 20 68 65 20 77 …+13     text      "\"I knew he was innocent.\""
+0D03: 88 0d 24                                     goto      -> 0D24
+0D06:>22 48 65 27 73 20 61 6e 20 68 6f 6e …+18     text      "\"He's an honest business man.\""
+0D24:>88 01 32                                     goto      -> 0132
+0D27:>90 6d 61 63 68 00 0e 53                      match     mach else -> 0E53
+0D2F: 8d de 41 04 40 40 0e 1c                      jf        test_flag(4) -> 0E1C
+0D37: 22 54 68 61 74 27 73 20 61 6e 20 61 …+214    text      "\"That's an annoying name in the history of da Guild, let me tell you.\"*\"You'd think that if anybody knew where his secret hideouts were, we'd know.\"*\"But that just ain't the way it is - and dats a personal insult to da Guild.\""
+0E19: 88 0e 50                                     goto      -> 0E50
+0E1C:>22 57 65 20 64 6f 6e 27 74 20 74 61 …+40     text      "\"We don't talk about certain things to non-members.\""
+0E50:>88 01 32                                     goto      -> 0132
+0E53:>90 2a 00 0e 88                               match     * else -> 0E88
+0E58: 8d 9f 08 0e 30 40 5e 40 0e 85                jf        !R080E(A30) -> 0E85
+0E62: 8d 9f 08 01 30 40 5e 40 0e 85                jf        !R0801(A30) -> 0E85
+0E6C: 48 65 20 73 74 61 72 65 73 20 62 6c …+13     text      "He stares blankly at you."
+0E85:>88 01 32                                     goto      -> 0132
+0E88:>88 01 32                                     goto      -> 0132
+; ---- dead code 0E8B-0E8F: no dictionary entry, jump, pointer or call reaches it ----
+0E8B:x8b 41 00 40                                  return    0
+0E8F: a0 03 98 38 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

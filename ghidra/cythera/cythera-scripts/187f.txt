@@ -1,0 +1,100 @@
+; segment 187F  page 18  class 0x40 (char) id 127 name "UrSylph" (string table 0201)
+; kind class  length 3403 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0D37  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0d 37                                        .hdr      dictionary offset = 0D37
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 77 68 …+34     text      "You see a whisp of air, pulsating with light.*"
+0033: 8d 9f 0f 02 30 41 07 40 5e 40 02 2b          jf        !R0F02(A30, 7) -> 022B  ; R0F02 = tstbit [from 0x0101 symtab]
+003F: 22 4f 75 72 20 40 69 6d 70 72 69 73 …+470    text      "\"Our @imprisionment has finally ended, but we do not care.\"*\"At one time we would have smited any who dared approach, so great was our anger.\"*\"At another time we would have rewarded any who freed us with their wildest desire.\"*\"But now, it matters not.  Our people have all fallen, and the Seldane and Undine are at war.\"*\"Imprisoned though we were, UrSylph still senses the turning of the wheel.\"*\"And you, you must be human.  We have sensed your arrival and the chaos it causes.\""
+0221: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0228: 88 02 4b                                     goto      -> 024B
+022B:>22 57 68 79 20 64 6f 20 79 6f 75 20 …+20     text      "\"Why do you torment us further?\""
+024B:>8e                                           input       ; read a line into the input buffer
+024C: 90 6e 61 6d 65 00 02 7f                      match     name else -> 027F
+0254: 22 57 65 20 61 72 65 20 55 72 53 79 …+28     text      "\"We are UrSylph.  The last great @Sylph\""
+027C: 88 02 4b                                     goto      -> 024B
+027F:>90 6a 6f 62 00 02 e1                         match     job else -> 02E1
+0286: 22 4f 6e 63 65 20 77 65 20 6c 65 61 …+76     text      "\"Once we lead a mighty people, and we were the greatest of them.  Now, we alone remain.\""
+02DE: 88 02 4b                                     goto      -> 024B
+02E1:>90 62 79 65 00 03 20                         match     bye else -> 0320
+02E8: 22 46 61 72 65 77 65 6c 6c 20 68 75 …+37     text      "\"Farewell human.  Know that you walk into death.\""
+0319: 8b 41 00 40                                  return    0
+; ---- dead code 031D-0320: no dictionary entry, jump, pointer or call reaches it ----
+031D:x88 02 4b                                     goto      -> 024B
+0320:>90 64 69 65 2c 64 65 61 74 2c 6d 6f …+5      match     die,deat,mort else -> 036C
+0331: 22 4d 6f 72 74 61 6c 73 20 64 69 65 …+44     text      "\"Mortals die.  That is the gift that makes them mortal.\""
+0369: 88 02 4b                                     goto      -> 024B
+036C:>90 73 79 6c 70 00 03 97                      match     sylp else -> 0397
+0374: 22 57 65 20 61 72 65 20 73 79 6c 70 …+20     text      "\"We are sylphs, beings of @air.\""
+0394: 88 02 4b                                     goto      -> 024B
+0397:>90 61 69 72 2c 6e 6f 72 74 00 03 d5          match     air,nort else -> 03D5
+03A3: 22 4f 66 20 74 68 65 20 66 6f 75 72 …+35     text      "\"Of the four @elements, air is the most noble.\""
+03D2: 88 02 4b                                     goto      -> 024B
+03D5:>90 65 6c 65 6d 00 04 30                      match     elem else -> 0430
+03DD: 22 40 45 61 72 74 68 20 74 6f 20 74 …+68     text      "\"@Earth to the East, @Air to the North, @Fire to the South, @Water to the West.\""
+042D: 88 02 4b                                     goto      -> 024B
+0430:>90 65 61 72 74 2c 65 61 73 74 00 04 …+1      match     eart,east else -> 0456
+043D: 22 45 61 72 74 68 2c 20 74 68 65 20 …+10     text      "\"Earth, the @Seldane.\""
+0453: 88 02 4b                                     goto      -> 024B
+0456:>90 66 69 72 65 2c 73 6f 75 74 00 04 …+1      match     fire,sout else -> 0479
+0463: 22 46 69 72 65 2c 20 74 68 65 20 40 …+7      text      "\"Fire, the @Ignae.\""
+0476: 88 02 4b                                     goto      -> 024B
+0479:>90 77 61 74 65 2c 77 65 73 74 00 04 …+1      match     wate,west else -> 049E
+0486: 22 57 61 74 65 72 2c 20 74 68 65 20 …+9      text      "\"Water, the @Undine.\""
+049B: 88 02 4b                                     goto      -> 024B
+049E:>90 69 67 6e 61 00 04 fe                      match     igna else -> 04FE
+04A6: 22 4f 6e 63 65 20 77 65 20 77 65 72 …+73     text      "\"Once we were friends with Ignae, but they have turned on us, and help @imprison me.\""
+04FB: 88 02 4b                                     goto      -> 024B
+04FE:>90 73 65 6c 64 00 05 5a                      match     seld else -> 055A
+0506: 22 50 69 74 79 66 75 6c 20 62 65 69 …+69     text      "\"Pityful beings.  Though they help to imprison me, still, they fade in the @war.\""
+0557: 88 02 4b                                     goto      -> 024B
+055A:>90 75 6e 64 69 00 05 ce                      match     undi else -> 05CE
+0562: 22 54 68 65 20 55 6e 64 69 6e 65 20 …+93     text      "\"The Undine are clever, they are.  They have overthrown the Seldane, and play with you humans like toys.\""
+05CB: 88 02 4b                                     goto      -> 024B
+05CE:>90 68 75 6d 61 00 06 bb                      match     huma else -> 06BB
+05D6: 22 59 6f 75 20 68 75 6d 61 6e 73 20 …+214    text      "\"You humans are the unknown.  We @sense your existance, and your struggles.\"*\"When you arrived, the balance between Seldane and Undine was thrown wild.\"*\"If either side can @claim you as their own, that side would surely win.\""
+06B8: 88 02 4b                                     goto      -> 024B
+06BB:>90 77 61 72 2c 77 69 6e 00 07 4d             match     war,win else -> 074D
+06C6: 22 41 6c 6c 20 74 68 65 20 65 6c 65 …+120    text      "\"All the elements are at war with each other, as the wheel turns.\"*\"North to south, east to west, but you humans can be the middle.\""
+074A: 88 02 4b                                     goto      -> 024B
+074D:>90 61 6c 61 72 00 07 9c                      match     alar else -> 079C
+0755: 22 57 65 20 40 73 65 6e 73 65 20 74 …+56     text      "\"We @sense that one - very unique.  Not quite human, that is truth.\""
+0799: 88 02 4b                                     goto      -> 024B
+079C:>90 69 6d 70 72 00 08 7e                      match     impr else -> 087E
+07A4: 22 41 65 6f 6e 73 20 61 67 6f 20 61 …+203    text      "\"Aeons ago all three @elements united to overthrow us, and imprisoned us here.\"*\"Trapped within @earth, surrounded by @fire, cut off by @water, we waited.\"*\"And now you come to free us, perhaps.  We no longer care.\""
+087B: 88 02 4b                                     goto      -> 024B
+087E:>90 70 65 6f 70 00 08 c8                      match     peop else -> 08C8
+0886: 22 4f 75 72 20 70 65 6f 70 6c 65 20 …+51     text      "\"Our people have all fallen, and are lesser than we once were.\""
+08C5: 88 02 4b                                     goto      -> 024B
+08C8:>90 73 65 6e 73 00 09 55                      match     sens else -> 0955
+08D0: 22 54 68 6f 75 67 68 20 63 75 74 20 …+118    text      "\"Though cut off, still we can sense some things that transpire.\"*\"We know much of @history that remains hidden to your most wise.\""
+0952: 88 02 4b                                     goto      -> 024B
+0955:>90 63 6c 61 69 00 09 e8                      match     clai else -> 09E8
+095D: 22 42 6f 74 68 20 55 6e 64 69 6e 65 …+124    text      "\"Both Undine and Seldane would claim you as their own, and both will lie to do so.\"*\"We would not @trust much of what either side says.\""
+09E5: 88 02 4b                                     goto      -> 024B
+09E8:>90 74 72 75 73 00 0a d7                      match     trus else -> 0AD7
+09F0: 22 54 72 75 73 74 20 2d 20 77 68 6f …+216    text      "\"Trust - who to trust.  Once we trusted Ignae, but Ignae betrayed us.\"*\"You, you can trust no one, that is for sure, not even us.\"*\"We need not lie to you, since we do not care, but your mind may still not understand our words.\""
+0AD4: 88 02 4b                                     goto      -> 024B
+0AD7:>90 68 69 73 74 00 0c 96                      match     hist else -> 0C96
+0ADF: 22 57 65 20 6b 6e 6f 77 20 6f 66 20 …+424    text      "\"We know of destruction of a small colony, through the hands of a traitor, and the power of the Undine.\"*\"We know how that traitor attempted to subvert the humans, worshipping false gods.\"*\"That one still thinks that he might some day have revenge on Seldane who used him as a puppet.\"*\"Instead, he just sits in his mountain strongholds, awaiting a death that will never truly come.\"*\"We know what transpires.  We know about betrayers.\""
+0C93: 88 02 4b                                     goto      -> 024B
+0C96:>90 62 65 74 72 00 0c f0                      match     betr else -> 0CF0
+0C9E: 22 49 67 6e 61 65 20 62 65 74 72 61 …+67     text      "\"Ignae betrayed us.  You humans, any one of you would betray your entire race.\""
+0CED: 88 02 4b                                     goto      -> 024B
+0CF0:>90 2a 00 0d 30                               match     * else -> 0D30
+0CF5: 54 68 65 20 62 61 6c 6c 20 6f 66 20 …+44     text      "The ball of light pulses once, but no response is heard."
+0D2D: 88 02 4b                                     goto      -> 024B
+0D30:>88 02 4b                                     goto      -> 024B
+; ---- dead code 0D33-0D37: no dictionary entry, jump, pointer or call reaches it ----
+0D33:x8b 41 00 40                                  return    0
+0D37: a0 03 98 7f 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

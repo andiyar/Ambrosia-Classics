@@ -1,0 +1,63 @@
+; segment 1845  page 18  class 0x40 (char) id 69 name "Dymas" (string table 0201)
+; kind class  length 1229 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @04B9  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 b9                                        .hdr      dictionary offset = 04B9
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6d …+18     text      "You see a small, outgoing boy."
+0023: 8d 9f 0f 02 30 41 07 40 40 00 3f             jf        R0F02(A30, 7) -> 003F  ; R0F02 = tstbit [from 0x0101 symtab]
+002E: 22 48 65 6c 6c 6f 20 61 67 61 69 6e …+2      text      "\"Hello again.\""
+003C: 88 00 9f                                     goto      -> 009F
+003F:>22 48 65 6c 6c 6f 20 74 68 65 72 65 …+36     text      "\"Hello there.  My name is Dymas - what's yours?\""
+006F: 8f 2a 00                                     prompt    "*"
+0072: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+17     text      "\"Pleased to meet you @again ^"
+008F: 8a 43 20 00 00 0a 40                         print     globstr(10:last_input)
+0096: 2e 22                                        text      ".\""
+0098: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+009F:>8e                                           input       ; read a line into the input buffer
+00A0: 90 6e 61 6d 65 00 00 d3                      match     name else -> 00D3
+00A8: 22 49 20 61 6c 72 65 61 64 79 20 74 …+28     text      "\"I already told you - my name is Dymas.\""
+00D0: 88 00 9f                                     goto      -> 009F
+00D3:>90 6a 6f 62 00 01 29                         match     job else -> 0129
+00DA: 22 4f 68 2c 20 49 27 6d 20 6d 75 63 …+64     text      "\"Oh, I'm much to young for a job, though sometimes I help my @father out...\""
+0126: 88 00 9f                                     goto      -> 009F
+0129:>90 62 79 65 00 01 41                         match     bye else -> 0141
+0130: 22 47 6f 6f 64 62 79 65 2e 22                text      "\"Goodbye.\""
+013A: 8b 41 00 40                                  return    0
+; ---- dead code 013E-0141: no dictionary entry, jump, pointer or call reaches it ----
+013E:x88 00 9f                                     goto      -> 009F
+0141:>90 66 61 74 68 2c 74 68 6f 61 2c 73 …+11     match     fath,thoa,smit,blac else -> 017F
+0158: 22 54 68 6f 61 73 20 74 68 65 20 62 …+24     text      "\"Thoas the blacksmith is my father.\""
+017C: 88 00 9f                                     goto      -> 009F
+017F:>90 6d 6f 74 68 00 01 d1                      match     moth else -> 01D1
+0187: 22 49 20 64 6f 6e 27 74 20 72 65 6d …+59     text      "\"I don't remember my mother - my father said she died when I was born.\""
+01CE: 88 00 9f                                     goto      -> 009F
+01D1:>8d 9f 0f 02 30 41 01 40 5e 40 02 42          jf        !R0F02(A30, 1) -> 0242  ; R0F02 = tstbit [from 0x0101 symtab]
+01DD: 90 61 67 61 69 00 02 42                      match     agai else -> 0242
+01E5: 22 49 20 6d 65 74 20 79 6f 75 20 6f …+71     text      "\"I met you once before, but it was in a @dream, at least I think it was a dream...\""
+0238: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+023F: 88 00 9f                                     goto      -> 009F
+0242:>90 64 72 65 61 00 04 6e                      match     drea else -> 046E
+024A: 22 49 6e 20 6d 79 20 64 72 65 61 6d …+369    text      "\"In my dream I was playing near the water, and this monster walked out of it.\"*\"He then seemed to melt and turn into a person - very tidy and organized looking.\"*\"I heard him say something like 'You won't stop me!', but he wasn't talking to me.\"*\"Instead, he was talking to this funny looking man with a hunchback standing next to me.\"*\"The funny looking man says 'No I won't, but "
+03C7: 8d 49 05 00 00 10 40 03 d6                   jf        seg0500[0010] -> 03D6
+03D0: 73 68 65                                     text      "she"
+03D3: 88 03 d8                                     goto      -> 03D8
+03D6:>68 65 20 77 69 6c 6c 21 27 22 2a 22 …+137    text      "he will!'\"*\"And then the air kinda shimmers and you suddenly appeared - this is how I recognized you.\"*\"And then I woke up - it was kind of strange.\""  ; shares its tail with text @03D8
+03D8:>20 77 69 6c 6c 21 27 22 2a 22 41 6e …+135    text      " will!'\"*\"And then the air kinda shimmers and you suddenly appeared - this is how I recognized you.\"*\"And then I woke up - it was kind of strange.\""
+046B: 88 00 9f                                     goto      -> 009F
+046E:>90 2a 00 04 b2                               match     * else -> 04B2
+0473: 22 59 6f 75 27 72 65 20 6a 75 73 74 …+48     text      "\"You're just making fun of me now!  That's not very nice...\""
+04AF: 88 00 9f                                     goto      -> 009F
+04B2:>88 00 9f                                     goto      -> 009F
+; ---- dead code 04B5-04B9: no dictionary entry, jump, pointer or call reaches it ----
+04B5:x8b 41 00 40                                  return    0
+04B9: a0 03 98 45 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

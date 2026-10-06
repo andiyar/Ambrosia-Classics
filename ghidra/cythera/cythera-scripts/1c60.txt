@@ -1,0 +1,18 @@
+; segment 1C60  page 1C  class 0x58 (room) id 352
+; kind class  length 143 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @007B  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 7b                                        .hdr      dictionary offset = 007B
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 69 73 20 72 6f 6f 6d 20 63 6f …+102    text      "This room contains a large statue in the center of it.  It appears to be a man, with a look of bliss on his face.\n"
+0077: 8b 41 00 40                                  return    0
+007B: a0 03 50 00 ff ff 0d 2d 9c 60 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

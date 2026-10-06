@@ -1,0 +1,15 @@
+; segment 0E64  page 0E  routine "DisplaySign" [from 0x0101 symtab: key 1664; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 50 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 08 02                                     frame     args=8 locals=2
+0003: 8d db 30 40 40 00 0e                         jf        scripted_window_shown(A30) -> 000E
+000A: 8b 41 00 40                                  return    0
+000E:>82 00 9b 04 30 33 34 35 36 37 40 40          set       L00 = sysnew_window(A30, A33, A34, A35, A36, A37)
+001A: 82 01 9b 06 00 31 41 00 41 00 36 37 …+2      set       L01 = sysnew_06(L00, A31, 0, 0, A36, A37)
+0028: 86 41 01 40 32 40                            setfield  L01.f41 = A32
+002E: 8b 41 00 40                                  return    0

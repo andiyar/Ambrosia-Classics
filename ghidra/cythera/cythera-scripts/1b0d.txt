@@ -1,0 +1,25 @@
+; segment 1B0D  page 1B  class 0x58 (room) id 13
+; kind class  length 306 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @011E  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 1e                                        .hdr      dictionary offset = 011E
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 54 68 69 73 20 72 6f 6f 6d 20 69 73 …+126    text      "This room is dominated by a central pool, which seems to be flowing in a clockwise fashion, though no obvious source of flow is apparent.\n"
+008F: 8d 30 62 14 41 01 56 5e 40 01 1a             jf        !(A30.f14:status & 1) -> 011A
+009A: 53 75 64 64 65 6e 6c 79 2c 20 74 68 …+70     text      "Suddenly, the earth begins to shake, and a rumbling is heard to the south of you.\n"
+00EC: d3 41 18 41 30 41 27 40                      builtin   positional_sound(24, 48, 39)
+00F4: e7 41 00 40                                  builtin   screen_effect(0)
+00F8: 82 00 43 40 40 00 06 40                      set       L00 = char#6"Hector"
+0100: 8d 00 40 01 1a                               jf        L00 -> 011A
+0105: 86 26 00 40 44 57 68 61 74 20 77 61 …+9      setfield  L00.f26:f26 = "What was that!"
+011A:>8b 41 00 40                                  return    0
+011E: a0 03 50 00 ff ff 00 00 9b 0d 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

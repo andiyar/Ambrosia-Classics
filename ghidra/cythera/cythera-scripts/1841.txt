@@ -1,0 +1,60 @@
+; segment 1841  page 18  class 0x40 (char) id 65 name "Periphas" (string table 0201)
+; kind class  length 614 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0252  methods: sel12/talk@0002, sel32/spawned@020A
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 52                                        .hdr      dictionary offset = 0252
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 6e 65 …+41     text      "You see a nerotic man, seemingly covered with flour.*"
+003A: 8d 30 62 15 43 00 00 00 8b 54 40 01 …+1      jf        (A30.f15:activity == 139) -> 0128
+0047: 22 49 6e 74 65 72 65 73 74 65 64 20 …+43     text      "\"Interested in some fresh baked bread?  Only 3 oboloi?\""
+007E: 8f 79 6e 00                                  prompt    "yn"
+0082: 90 79 00 00 e4                               match     y else -> 00E4
+0087: 86 27 30 40 9f 0e a5 44 46 72 65 73 …+81     setfield  A30.f27:ce17 = R0EA5("Fresh Baked Bread", blk@00A4, A30.f27:ce17, blk@00D0)
+      ; 0x45 inline block 00A4-00CA (38 bytes):
+      00A4: 90 01                            .array[1]
+        [0] @00AA ->
+          00AA: 90 04                            .array[4]
+            [0] 1093
+            [1] @00BC "Loaf of Bread"
+            [2] 3
+            [3] 1
+      ; 0x45 inline block 00D0-00E2 (18 bytes):
+      00D0: 90 04                            .array[4]
+        [0] 5
+        [1] 7
+        [2] 5
+        [3] 3
+00E4:>90 6e 00 01 25                               match     n else -> 0125
+00E9: 22 50 65 72 68 61 70 73 20 73 6f 6d …+48     text      "\"Perhaps some other time - but it is extra fresh right now!\""
+0125:>88 01 51                                     goto      -> 0151
+0128:>22 50 6c 65 61 73 65 20 2d 20 49 27 …+29     text      "\"Please - I'm not open for business now!\""
+0151:>8d 9f 0f 02 42 00 2a 41 03 40 9f 0f …+10     jf        (R0F02(42, 3) && !R0F02(A30, 1)) -> 0206  ; R0F02 = tstbit [from 0x0101 symtab]
+0167: 2a                                           text      "*"
+0168: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+016F: 22 41 63 74 75 61 6c 6c 79 2c 20 49 …+45     text      "\"Actually, I'm here to pick up a bag of flour for Apis.\"*"
+01A8: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+01AD: 22 59 65 73 2c 20 6f 66 20 63 6f 75 …+47     text      "\"Yes, of course - here you go.\"*He gives you a bag of flour"
+01E8: a8 48 05 42 00 a6 41 01 41 01 40             builtin   give_item(G05:leader, 166, 1, 1)
+01F3: f2 41 10 43 30 00 02 1a 41 74 4a 40          builtin   add_to_do(16, (str[021A:0]"Cure Alaric" + 116))
+01FF: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0206:>8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @020A ====
+020A: 81 01 00                                     frame     args=1 locals=0
+020D: 8d 30 62 15 43 00 00 00 8b 54 40 02 …+1      jf        (A30.f15:activity == 139) -> 0247
+021A: 8d ac 41 00 41 10 40 41 01 54 40 02 …+1      jf        (random(0, 16) == 1) -> 0247
+0227: 86 26 30 40 44 46 72 65 73 68 20 42 …+13     setfield  A30.f26:f26 = "Fresh Baked Bread!"
+0240: 8b 43 50 00 00 00 40                         return    False
+0247:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 024E-0252: no dictionary entry, jump, pointer or call reaches it ----
+024E:x8b 41 00 40                                  return    0
+0252: a0 03 98 41 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002, 32/spawned: @020A}

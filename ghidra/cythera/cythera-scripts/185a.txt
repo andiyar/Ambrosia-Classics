@@ -1,0 +1,87 @@
+; segment 185A  page 18  class 0x40 (char) id 90 name "Larisa" (string table 0201)
+; kind class  length 2087 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0813  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 08 13                                        .hdr      dictionary offset = 0813
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d dc 41 07 40 41 02 4f 40 04 d8             jf        (get_variable(7) < 2) -> 04D8
+0010: 8d bc 42 00 4a 40 40 04 87                   jf        leader_can_see(74) -> 0487
+0019: 22 54 69 6d 6f 6e 21 20 20 53 6f 20 …+81     text      "\"Timon!  So good to see you again!  How goes the studies?  What brings you to these swamps?\"*"
+0076: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+007D: 22 41 68 2c 20 4c 61 72 69 73 61 2c …+217    text      "\"Ah, Larisa, great to see you again too.  My studies have brought me on great adventure, not unlike yourself here.\"*\"All quite interesting, but that must wait until another time for us to detail it.  Let me introduce my friend, ^"
+0162: 8a 43 20 00 00 02 40                         print     globstr(2:player_name)
+0169: 2e 22 2a                                     text      ".\"*"
+016C: a4 42 00 5a 41 00 40                         builtin   show_portrait(90, 0)
+0173: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+017A: 22 50 6c 65 61 73 65 20 74 6f 20 6d …+9      text      "\"Please to meet you, "
+018F: 8d 49 05 00 00 10 40 01 a0                   jf        seg0500[0010] -> 01A0
+0198: 6d 61 27 61 6d                               text      "ma'am"
+019D: 88 01 a3                                     goto      -> 01A3
+01A0:>73 69 72 2e 20 20 41 6e 79 20 66 72 …+73     text      "sir.  Any friend of Timon is a friend of mine.  What brings you down to this swamp?\"*"  ; shares its tail with text @01A3
+01A3:>2e 20 20 41 6e 79 20 66 72 69 65 6e …+70     text      ".  Any friend of Timon is a friend of mine.  What brings you down to this swamp?\"*"
+01F5: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+01FC: 22 57 65 6c 6c 2c 20 77 65 20 61 72 …+109    text      "\"Well, we are involved in research on Seldane ruins, as you know, and these ruins might prove key to our understanding.\"*"
+0275: a4 42 00 5a 41 00 40                         builtin   show_portrait(90, 0)
+027C: 22 57 65 6c 6c 2c 20 74 68 65 72 65 …+374    text      "\"Well, there isn't all that much here, really, other than a building whose doors refuse to open.  Otherwise nothing unique.\"*\"I guess that isn't exactly true, since these ruins are in excellent condition, as well as the first evidence connecting those pylons with the Seldane.\"*\"In truth, I was just about to leave and return to Kosha to give my report to Myus - I'm overdue as it is.\"*"
+03FE: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+0405: 22 57 6f 75 6c 64 20 79 6f 75 20 6d …+37     text      "\"Would you mind if we looked around a bit here?\"*"
+0436: a4 42 00 5a 41 00 40                         builtin   show_portrait(90, 0)
+043D: 22 4e 6f 74 20 61 74 20 61 6c 6c 2e …+49     text      "\"Not at all.  Feel free - perhaps I will see you in Kosha...\""
+047A: dd 41 07 41 02 40                            builtin   set_variable(7, 2)
+0480: 8b 41 00 40                                  return    0
+; ---- dead code 0484-0487: no dictionary entry, jump, pointer or call reaches it ----
+0484:x88 04 d8                                     goto      -> 04D8
+0487:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+65     text      "\"I'm sorry, but strangers are not permitted here - I would ask you to leave.\""
+04D4: 8b 41 00 40                                  return    0
+04D8:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+84     text      "\"I'm sorry, but I've got to finish up here and head back to Kosha, and I'm in a bit of a hurry.\""
+0538:>8e                                           input       ; read a line into the input buffer
+0539: 90 6e 61 6d 65 00 05 60                      match     name else -> 0560
+0541: 22 57 68 79 2c 20 4c 61 72 69 73 61 …+9      text      "\"Why, Larisa, silly.\""
+0556: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+055D: 88 05 38                                     goto      -> 0538
+0560:>90 6c 61 72 69 00 05 71                      match     lari else -> 0571
+0568: 22 59 65 73 3f 22                            text      "\"Yes?\""
+056E: 88 05 38                                     goto      -> 0538
+0571:>90 6a 6f 62 00 05 ba                         match     job else -> 05BA
+0578: 22 49 27 6d 20 61 6e 20 65 78 70 6c …+51     text      "\"I'm an explorer, as much as my big brother hates to admit it.\""
+05B7: 88 05 38                                     goto      -> 0538
+05BA:>90 62 72 6f 74 00 05 e3                      match     brot else -> 05E3
+05C2: 22 4d 79 20 62 72 6f 74 68 65 72 20 …+18     text      "\"My brother Timon, of course.\""
+05E0: 88 05 38                                     goto      -> 0538
+05E3:>90 74 69 6d 6f 00 06 07                      match     timo else -> 0607
+05EB: 22 49 27 6d 20 71 75 69 74 65 20 70 …+13     text      "\"I'm quite proud of him.\""
+0604: 88 05 38                                     goto      -> 0538
+0607:>90 62 79 65 00 06 43                         match     bye else -> 0643
+060E: 22 50 65 72 68 61 70 73 20 77 65 27 …+34     text      "\"Perhaps we'll see each other again in Kosha.\""
+063C: 8b 41 00 40                                  return    0
+; ---- dead code 0640-0643: no dictionary entry, jump, pointer or call reaches it ----
+0640:x88 05 38                                     goto      -> 0538
+0643:>90 73 65 6c 64 00 06 7d                      match     seld else -> 067D
+064B: 22 54 68 65 20 53 65 6c 64 61 6e 65 …+35     text      "\"The Seldane race is almost certainly extinct.\""
+067A: 88 05 38                                     goto      -> 0538
+067D:>90 72 75 69 6e 00 07 05                      match     ruin else -> 0705
+0685: 22 54 68 65 73 65 20 72 75 69 6e 73 …+113    text      "\"These ruins were once a might Seldane city, as near as I've been able to gather.  But something caused it to be @abandoned.\""
+0702: 88 05 38                                     goto      -> 0538
+0705:>90 61 62 61 6e 00 07 80                      match     aban else -> 0780
+070D: 22 49 74 20 6d 69 67 68 74 20 68 61 …+100    text      "\"It might have been a natural disaster, or some sort of strife, but something drove the Seldane from this city.\""
+077D: 88 05 38                                     goto      -> 0538
+0780:>90 6a 6f 70 70 00 07 cf                      match     jopp else -> 07CF
+0788: 22 4a 6f 70 70 61 20 6d 69 67 68 74 …+56     text      "\"Joppa might seem like a bit of a grump, but he is very dependable.\""
+07CC: 88 05 38                                     goto      -> 0538
+07CF:>90 2a 00 08 0c                               match     * else -> 080C
+07D4: 8d 9f 08 01 30 40 5e 40 08 09                jf        !R0801(A30) -> 0809
+07DE: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+31     text      "\"I'm sorry, but could you repeat yourself?\""
+0809:>88 05 38                                     goto      -> 0538
+080C:>88 05 38                                     goto      -> 0538
+; ---- dead code 080F-0813: no dictionary entry, jump, pointer or call reaches it ----
+080F:x8b 41 00 40                                  return    0
+0813: a0 03 98 5a 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

@@ -1,0 +1,18 @@
+; segment 1C68  page 1C  class 0x58 (room) id 360
+; kind class  length 216 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C4  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c4                                        .hdr      dictionary offset = 00C4
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 61 72 65 20 69 6e 20 73 …+175    text      "You are in some sort of inner sanctum of the temple, with a natural dirt floor.  A fountain bubbles in the northwest corner, and the air is filled with the stench of saltwater and decay.\n"
+00C0: 8b 41 00 40                                  return    0
+00C4: a0 03 50 00 ff ff 20 31 9c 68 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

@@ -1,0 +1,132 @@
+; segment 182E  page 18  class 0x40 (char) id 46 name "Diomede" (string table 0201)
+; kind class  length 1498 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @05C6  methods: sel12/talk@00B3
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 05 c6                                        .hdr      dictionary offset = 05C6
+; ---- local subroutine @0002 ----
+0002: 81 01 03                                     frame     args=1 locals=3
+0005: 44 69 6f 6d 65 64 65 20 73 65 72 76 …+82     text      "Diomede serves you truly great meal of cheese, bread, and meat.*You eat until you are stuffed."
+0063: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+0074:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 00AF
+0081: 8d 00 62 28 41 18 4f 40 00 95                jf        (L00.f28:food < 24) -> 0095
+008B: 86 28 00 40 41 18 40                         setfield  L00.f28:food = 24
+0092: 88 00 a0                                     goto      -> 00A0
+0095:>86 28 00 40 00 62 28 41 02 4a 40             setfield  L00.f28:food = (L00.f28:food + 2)
+00A0:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+00AC: 88 00 74                                     goto      -> 0074
+00AF:>8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @00B3 ====
+00B3: 81 01 01                                     frame     args=1 locals=1
+00B6: 59 6f 75 20 73 65 65 20 61 20 6b 69 …+117    text      "You see a kindly, grandmotherly looking plump face on an equally plump body.\n*\"Welcome to Dares' Eatery - make yourself at home.\""
+0137: 82 00 41 00 40                               set       L00 = 0
+013C:>8e                                           input       ; read a line into the input buffer
+013D: 90 6e 61 6d 65 00 01 64                      match     name else -> 0164
+0145: 22 49 20 61 6d 20 44 69 6f 6d 65 64 …+16     text      "\"I am Diomede, Dares' wife.\""
+0161: 88 01 3c                                     goto      -> 013C
+0164:>90 6a 6f 62 00 01 bf                         match     job else -> 01BF
+016B: 22 49 20 68 65 6c 70 20 6d 79 20 68 …+69     text      "\"I help my husband out around the Eatery - can I get @interest you in something?\""
+01BC: 88 01 3c                                     goto      -> 013C
+01BF:>90 62 79 65 00 01 e6                         match     bye else -> 01E6
+01C6: 22 50 6c 65 61 73 65 20 63 6f 6d 65 …+13     text      "\"Please come back again.\""
+01DF: 8b 41 00 40                                  return    0
+; ---- dead code 01E3-01E6: no dictionary entry, jump, pointer or call reaches it ----
+01E3:x88 01 3c                                     goto      -> 013C
+01E6:>90 65 61 74 65 00 02 80                      match     eate else -> 0280
+01EE: 22 44 61 72 65 73 27 20 45 61 74 65 …+131    text      "\"Dares' Eatery - one of the finest places to get a meal in Cademia, with its outdoor patio.\"*\"Perhaps you'd be @interested in trying our fare?\""
+027D: 88 01 3c                                     goto      -> 013C
+0280:>90 64 69 6f 6d 2c 69 6e 74 65 2c 66 …+6      match     diom,inte,fare else -> 02F5
+0292: 22 57 6f 75 6c 64 20 79 6f 75 20 6c …+84     text      "\"Would you like some @food, or perhaps an entire @meal, or just a @drink and good conversation?\""
+02F2: 88 01 3c                                     goto      -> 013C
+02F5:>90 64 72 69 6e 00 03 b5                      match     drin else -> 03B5
+02FD: 22 41 20 72 6f 75 6e 64 20 6f 66 20 …+10     text      "\"A round of drinks is "
+0313: 8a 48 06 40                                  print     G06:party_size
+0317: 20 6f 62 6f 6c                               text      " obol"
+031C: 8d 48 06 41 01 51 40 03 27                   jf        (G06:party_size > 1) -> 0327
+0325: 6f 69 2e 22 2a 22 57 68 61 74 20 64 …+11     text      "oi.\"*\"What do you say?\""
+0327:>2e 22 2a 22 57 68 61 74 20 64 6f 20 …+9      text      ".\"*\"What do you say?\""  ; shares its tail with text @0325
+033C: 8f 79 6e 00                                  prompt    "yn"
+0340: 90 79 00 03 99                               match     y else -> 0399
+0345: 8d 9f 0d 04 40 48 06 52 40 03 6b             jf        (R0D04() >= G06:party_size) -> 036B
+0350: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+0357: 9f 0e a2 00 40                               call      R0EA2(L00)
+035C: 9f 0d 05 48 06 40                            call      R0D05(G06:party_size)
+0362: 9f 08 13 30 00 40                            call      R0813(A30, L00)
+0368: 88 03 99                                     goto      -> 0399
+036B:>22 59 6f 75 20 73 65 65 6d 20 61 20 …+34     text      "\"You seem a bit short - sorry, but no credit.\""
+0399:>90 6e 00 03 b2                               match     n else -> 03B2
+039E: 22 41 6e 6f 74 68 65 72 20 74 69 6d …+8      text      "\"Another time then.\""
+03B2:>88 01 3c                                     goto      -> 013C
+03B5:>90 6d 65 61 6c 00 04 5d                      match     meal else -> 045D
+03BD: 22 4d 65 61 6c 73 20 61 72 65 20 35 …+7      text      "\"Meals are 5 oboloi"
+03D0: 8d 48 06 41 01 51 40 03 e4                   jf        (G06:party_size > 1) -> 03E4
+03D9: 20 70 65 72 20 70 65 72 73 6f 6e 2e …+14     text      " per person.  Interested?\""
+03E4:>2e 20 20 49 6e 74 65 72 65 73 74 65 …+3      text      ".  Interested?\""  ; shares its tail with text @03D9
+03F3: 8f 79 6e 00                                  prompt    "yn"
+03F7: 90 79 00 04 2e                               match     y else -> 042E
+03FC: 8d 9f 0d 04 40 48 06 41 05 4c 52 40 …+2      jf        (R0D04() >= (G06:party_size * 5)) -> 041B
+040A: 9f 0d 05 48 06 41 05 4c 40                   call      R0D05((G06:party_size * 5))
+0413: 9e 00 02 30 40                               callsub   sub_0002(A30)
+0418: 88 04 2e                                     goto      -> 042E
+041B:>22 53 6f 72 72 79 2c 20 6e 6f 20 63 …+7      text      "\"Sorry, no credit.\""
+042E:>90 6e 00 04 5a                               match     n else -> 045A
+0433: 22 59 6f 75 20 64 6f 6e 27 74 20 6b …+27     text      "\"You don't know what you're missing...\""
+045A:>88 01 3c                                     goto      -> 013C
+045D:>90 66 6f 6f 64 00 05 0e                      match     food else -> 050E
+0465: 86 27 30 40 9f 0e a5 44 46 69 6e 65 …+154    setfield  A30.f27:ce17 = R0EA5("Fine Fresh Food", blk@0480, A30.f27:ce17, blk@04F7)
+      ; 0x45 inline block 0480-04F1 (113 bytes):
+      0480: 90 04                            .array[4]
+        [0] @0492 ->
+          0492: 90 04                            .array[4]
+            [0] 2117
+            [1] @04A4 "Cheese"
+            [2] 5
+            [3] 1
+        [1] @04AB ->
+          04AB: 90 04                            .array[4]
+            [0] 1093
+            [1] @04BD "Bread"
+            [2] 3
+            [3] 1
+        [2] @04C3 ->
+          04C3: 90 04                            .array[4]
+            [0] 9285
+            [1] @04D5 "Fish"
+            [2] 3
+            [3] 1
+        [3] @04DA ->
+          04DA: 90 04                            .array[4]
+            [0] 10309
+            [1] @04EC "Ribs"
+            [2] 9
+            [3] 1
+      ; 0x45 inline block 04F7-0509 (18 bytes):
+      04F7: 90 04                            .array[4]
+        [0] 5
+        [1] 5
+        [2] 3
+        [3] 7
+050B: 88 01 3c                                     goto      -> 013C
+050E:>90 64 61 72 65 00 05 49                      match     dare else -> 0549
+0516: 22 41 20 62 65 74 74 65 72 20 68 75 …+36     text      "\"A better husband and friend you'll never find!\""
+0546: 88 01 3c                                     goto      -> 013C
+0549:>90 68 75 73 62 00 05 80                      match     husb else -> 0580
+0551: 22 44 61 72 65 73 20 69 73 20 6d 79 …+32     text      "\"Dares is my husband - he runs the @Eatery.\""
+057D: 88 01 3c                                     goto      -> 013C
+0580:>90 2a 00 05 bf                               match     * else -> 05BF
+0585: 8d 9f 08 0e 30 40 5e 40 05 bc                jf        !R080E(A30) -> 05BC
+058F: 8d 9f 08 05 30 40 5e 40 05 bc                jf        !R0805(A30) -> 05BC
+0599: 8d 9f 08 01 30 40 5e 40 05 bc                jf        !R0801(A30) -> 05BC
+05A3: 22 49 27 6d 20 61 66 72 61 69 64 20 …+13     text      "\"I'm afraid I can't say.\""
+05BC:>88 01 3c                                     goto      -> 013C
+05BF:>88 01 3c                                     goto      -> 013C
+; ---- dead code 05C2-05C6: no dictionary entry, jump, pointer or call reaches it ----
+05C2:x8b 41 00 40                                  return    0
+05C6: a0 03 98 2e 00 b3 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @00B3}

@@ -1,0 +1,65 @@
+; segment 1045  page 10  class 0x00 (prop) type 69 tile-name "flatbread" (tool join F000/F004)
+; kind class  length 461 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @017D  methods: sel15/take_drop_15@00C9, sel9/use@00DD, sel10/use_on@00FC
+; properties: sel36/p_weight, sel40/p_typeflags28, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 7d                                        .hdr      dictionary offset = 017D
+0002: 90 02 90 45 00 0c 90 45 00 5d                .array    array[2] = [@000C, @005D]
+000C: 90 03 90 45 00 1a 90 45 00 2a 90 45 …+2      .array    array[3] = [@001A, @002A, @0047]
+001A: 2d 20 49 73 20 74 68 61 74 20 6d 6f …+4      .string   "- Is that mold?"
+002A: 2d 20 44 6f 65 73 6e 27 74 20 73 65 …+17     .string   "- Doesn't seem the freshest."
+0047: 2d 20 57 68 61 74 20 69 73 20 74 68 …+10     .string   "- What is that smell?"
+005D: 90 03 90 45 00 6b 90 45 00 91 90 45 …+2      .array    array[3] = [@006B, @0091, @00A7]
+006B: 54 68 69 73 20 69 73 20 74 68 65 20 …+26     .string   "This is the finest quality foodstuff."
+0091: 49 74 27 73 20 70 65 72 66 65 63 74 …+10     .string   "It's perfectly fresh."
+00A7: 59 6f 75 27 76 65 20 6e 65 76 65 72 …+16     .string   "You've never tasted better."
+00C3: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @00C9 ====
+00C9: 81 01 00                                     frame     args=1 locals=0
+00CC: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 00D3-00D7: no dictionary entry, jump, pointer or call reaches it ----
+00D3:x8b 41 00 40                                  return    0
+00D7: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel9/use @00DD ====
+00DD: 81 01 00                                     frame     args=1 locals=0
+00E0: 8d 48 13 40 00 f4                            jf        G13:g13_bool -> 00F4
+00E6: 46 65 65 64 20 74 6f 20 77 68 6f 6d …+2      text      "Feed to whom?\n"
+00F4:>8b 41 08 40                                  return    8
+; ---- dead code 00F8-00FC: no dictionary entry, jump, pointer or call reaches it ----
+00F8:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00FC ====
+00FC: 81 02 02                                     frame     args=2 locals=2
+00FF: 82 00 45 00 36 90 0d 00 00 00 03 00 …+48     set       L00 = blk@0104
+      ; 0x45 inline block 0104-013A (54 bytes):
+      0104: 90 0d                            .array[13]
+        [0] 3
+        [1] 5
+        [2] 4
+        [3] 3
+        [4] 2
+        [5] 8
+        [6] 5
+        [7] 3
+        [8] 6
+        [9] 5
+        [10] 8
+        [11] 7
+        [12] 10
+013B: 82 01 31 63 40 40                            set       L01 = as_char(A31)
+0141: 86 26 01 40 44 54 61 73 74 79 00 40          setfield  L01.f26:f26 = "Tasty"
+014D: 86 28 01 40 01 62 28 00 30 62 03 46 …+5      setfield  L01.f28:food = (L01.f28:food + (L00[A30.f03:frame] * 2))
+015E: 8d 30 62 09 41 01 50 40 01 6e                jf        (A30.f09:count <= 1) -> 016E
+0168: a7 30 40                                     builtin   delete_prop(A30)
+016B: 88 01 79                                     goto      -> 0179
+016E:>86 09 30 40 30 62 09 41 01 4b 40             setfield  A30.f09:count = (A30.f09:count - 1)
+0179:>8b 41 00 40                                  return    0
+017D: a0 0d 50 00 ff ff 00 2a 90 45 00 d7 …+68     .dict     dict[13] {9/use: @00DD, 10/use_on: @00FC, 15/take_drop_15: @00C9, 36/p_weight: @00C3, 40/p_typeflags28: @00D7, 69: @0002}

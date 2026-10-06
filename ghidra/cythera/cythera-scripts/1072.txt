@@ -1,0 +1,25 @@
+; segment 1072  page 10  class 0x00 (prop) type 114 tile-name "full helmet" (tool join F000/F004)
+; kind class  length 269 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00E1  methods: -
+; properties: sel36/p_weight, sel38/p26, sel44, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 e1                                        .hdr      dictionary offset = 00E1
+0002: 90 02 90 72 00 0c 90 72 00 5e                .array    array[2] = [@000C, @005E]
+000C: 90 03 90 72 00 1a 90 72 00 36 90 72 …+2      .array    array[3] = [@001A, @0036, @0048]
+001A: 2d 20 54 68 61 74 20 73 65 65 6d 73 …+16     .string   "- That seems uncomfortable."
+0036: 2d 20 49 73 20 74 68 61 74 20 61 20 …+6      .string   "- Is that a dent?"
+0048: 2d 20 49 74 20 6c 6f 6f 6b 73 20 74 …+10     .string   "- It looks too small."
+005E: 90 03 90 72 00 6c 90 72 00 89 90 72 …+2      .array    array[3] = [@006C, @0089, @00A6]
+006C: 45 76 65 6e 20 79 6f 75 72 20 66 61 …+17     .string   "Even your face is protected."
+0089: 49 74 20 66 69 74 73 20 79 6f 75 72 …+17     .string   "It fits your head perfectly."
+00A6: 46 65 65 6c 20 68 6f 77 20 77 65 6c …+29     .string   "Feel how well the weight is distributed."
+00CF: 90 01 00 00 00 18                            .array    array[1] = [24]
+00D5: 90 01 00 00 00 00                            .array    array[1] = [0]
+00DB: 90 01 00 00 00 03                            .array    array[1] = [3]
+00E1: a0 07 50 00 ff ff 00 0d 90 72 00 cf …+32     .dict     dict[7] {36/p_weight: @00CF, 38/p26: @00D5, 44: @00DB, 69: @0002}

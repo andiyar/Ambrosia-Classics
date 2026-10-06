@@ -1,0 +1,51 @@
+; segment 187C  page 18  class 0x40 (char) id 124 name "Uset" (string table 0201)
+; kind class  length 675 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @028F  methods: sel12/talk@002A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 8f                                        .hdr      dictionary offset = 028F
+0002: 90 01 98 7c 00 08                            .array    array[1] = [@0008]
+0008: 90 08 00 00 00 14 00 00 00 06 00 00 …+22     .array    array[8] = [20, 6, 20, 11, 40, 38, 20, 45]
+
+; ==== method sel12/talk @002A ====
+002A: 81 01 00                                     frame     args=1 locals=0
+002D: 8d 48 0e 41 01 56 41 00 54 40 00 c4          jf        ((G0E:g0E & 1) == 0) -> 00C4
+0039: 22 41 6e 20 61 75 20 47 65 72 6e 65 …+6      text      "\"An au Gernek ers\""
+004B: 8d bc 42 00 4a 40 40 00 c0                   jf        leader_can_see(74) -> 00C0
+0054: 2a                                           text      "*"
+0055: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+005C: 22 49 27 6d 20 61 66 72 61 69 64 20 …+88     text      "\"I'm afraid I can't help - this doesn't correspond to any of the phoneme I've assigned to carvings.\""
+00C0:>8b 41 00 40                                  return    0
+00C4:>8d 48 0c 41 28 4f 40 01 0d                   jf        (G0C:g0C_0to100 < 40) -> 010D
+00CD: 22 59 6f 75 72 20 68 65 61 72 74 20 …+48     text      "\"Your heart has been weighted and found wanting.  Be gone.\n\""
+0109: 8b 41 00 40                                  return    0
+010D:>8e                                           input       ; read a line into the input buffer
+010E: 90 6e 61 6d 65 2c 75 73 65 74 00 01 …+1      match     name,uset else -> 0132
+011B: 22 57 65 20 61 72 65 20 55 73 65 74 …+1      text      "\"We are Uset\""
+0128: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+012F: 88 01 0d                                     goto      -> 010D
+0132:>90 62 79 65 00 01 65                         match     bye else -> 0165
+0139: 22 4c 65 74 20 54 72 75 74 68 20 62 …+25     text      "\"Let Truth be called out before you.\""
+015E: 8b 41 00 40                                  return    0
+; ---- dead code 0162-0165: no dictionary entry, jump, pointer or call reaches it ----
+0162:x88 01 0d                                     goto      -> 010D
+0165:>90 6a 68 61 69 00 01 f7                      match     jhai else -> 01F7
+016D: 22 55 6e 74 6f 20 74 68 65 20 74 68 …+123    text      "\"Unto the third generation is that one lost to us.  That one, the son of that one, and the son of the son.\"*\"So does the world suffer.\""
+01F4: 88 01 0d                                     goto      -> 010D
+01F7:>90 6a 6f 62 2c 68 65 72 61 00 02 27          match     job,hera else -> 0227
+0203: 22 57 65 20 61 72 65 20 74 68 65 20 …+21     text      "\"We are the Herald of the Ayrit.\""
+0224: 88 01 0d                                     goto      -> 010D
+0227:>90 2a 00 02 88                               match     * else -> 0288
+022C: 8d 9f 08 0f 30 40 5e 40 02 85                jf        !R080F(A30) -> 0285
+0236: 53 68 65 20 73 74 61 72 65 73 20 69 …+67     text      "She stares intently at you, as if attempting to understand what you are saying."
+0285:>88 01 0d                                     goto      -> 010D
+0288:>88 01 0d                                     goto      -> 010D
+; ---- dead code 028B-028F: no dictionary entry, jump, pointer or call reaches it ----
+028B:x8b 41 00 40                                  return    0
+028F: a0 03 98 7c 00 2a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @002A, 68: @0002}

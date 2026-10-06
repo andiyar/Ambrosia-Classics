@@ -1,0 +1,11 @@
+; segment 0241  page 02  string table
+; kind strtab  length 403 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 02 82 41 00 0a 82 41 01 85                .strtab   string table, 2 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8241×2)
+000A: 59 6f 75 72 20 62 6f 64 79 20 63 6f …+367    .string   [0] "Your body collapses to the ground, all life flowing out of it.  There is no second chance for you, not now.  As your spirit leaves your body you wonder what will happen now, to Alaric, to the land.  Without your help, they are both surely doomed.  The last fleeting heartbeats of life bring you regret, while in the distance, you can swear you hear laughter, hollow and mocking."
+0185: 59 6f 75 20 61 72 65 20 64 65 61 64 …+2      .string   [1] "You are dead."

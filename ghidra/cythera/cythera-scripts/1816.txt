@@ -1,0 +1,84 @@
+; segment 1816  page 18  class 0x40 (char) id 22 name "Cybele" (string table 0201)
+; kind class  length 1176 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0484  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 84                                        .hdr      dictionary offset = 0484
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 62 65 …+19     text      "You see a beautiful young woman"
+0024: 8d dc 41 03 40 40 00 59                      jf        get_variable(3) -> 0059
+002C: 20 77 69 74 68 20 6c 69 6e 65 73 20 …+30     text      " with lines of strain showing on her face."
+0056: 88 00 5a                                     goto      -> 005A
+0059:>2e 2a                                        text      ".*"  ; shares its tail with text @005A
+005A:>2a                                           text      "*"
+005B: 8d 9f 0f 02 30 41 07 40 40 00 95             jf        R0F02(A30, 7) -> 0095  ; R0F02 = tstbit [from 0x0101 symtab]
+0066: 22 47 72 65 65 74 69 6e 67 73 20 61 …+10     text      "\"Greetings again, good"
+007C: 8d 49 05 00 00 10 40 00 8d                   jf        seg0500[0010] -> 008D
+0085: 6d 61 27 61 6d                               text      "ma'am"
+008A: 88 00 90                                     goto      -> 0090
+008D:>73 69 72 2e 22                               text      "sir.\""  ; shares its tail with text @0090
+0090:>2e 22                                        text      ".\""
+0092: 88 00 ad                                     goto      -> 00AD
+0095:>22 47 6f 6f 64 20                            text      "\"Good "
+009B: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+00A2: 2c 20 63 69 74 69 7a 65 6e 2e 22             text      ", citizen.\""
+00AD:>8e                                           input       ; read a line into the input buffer
+00AE: 90 6e 61 6d 65 2c 63 79 62 65 00 00 …+1      match     name,cybe else -> 00E3
+00BB: 22 49 20 61 6d 20 43 79 62 65 6c 65 …+18     text      "\"I am Cybele, of House Attis.\""
+00D9: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00E0: 88 00 ad                                     goto      -> 00AD
+00E3:>90 6f 70 68 65 00 01 af                      match     ophe else -> 01AF
+00EB: 8d dc 41 03 40 41 01 54 40 01 56             jf        (get_variable(3) == 1) -> 0156
+00F6: 22 54 68 65 20 74 68 69 6e 67 73 20 …+81     text      "\"The things they are saying about Opheltius aren't true - and I never went to Halos, either!\""
+0153: 88 01 ac                                     goto      -> 01AC
+0156:>8d dc 41 03 40 41 02 52 40 01 88             jf        (get_variable(3) >= 2) -> 0188
+0161: 22 49 20 63 61 6e 27 74 20 62 65 6c …+24     text      "\"I can't believe Opheltius is gone.\""
+0185: 88 01 ac                                     goto      -> 01AC
+0188:>22 4f 70 68 65 6c 74 69 75 73 20 69 …+24     text      "\"Opheltius is a good family friend.\""
+01AC:>88 00 ad                                     goto      -> 00AD
+01AF:>8d dc 41 03 40 40 02 5c                      jf        get_variable(3) -> 025C
+01B7: 90 6d 75 72 64 00 02 5c                      match     murd else -> 025C
+01BF: 8d dc 41 03 40 41 01 54 40 02 2a             jf        (get_variable(3) == 1) -> 022A
+01CA: 22 54 68 65 20 74 68 69 6e 67 73 20 …+81     text      "\"The things they are saying about Opheltius aren't true - and I never went to Halos, either!\""
+0227: 88 02 59                                     goto      -> 0259
+022A:>8d dc 41 03 40 41 02 52 40 02 59             jf        (get_variable(3) >= 2) -> 0259
+0235: 22 49 20 63 61 6e 27 74 20 62 65 6c …+24     text      "\"I can't believe Opheltius is gone.\""
+0259:>88 00 ad                                     goto      -> 00AD
+025C:>90 68 61 6c 6f 00 03 5b                      match     halo else -> 035B
+0264: 8d dc 41 03 40 41 01 54 40 02 c1             jf        (get_variable(3) == 1) -> 02C1
+026F: 22 49 20 6e 65 76 65 72 20 77 65 6e …+67     text      "\"I never went to Halos, and certainly not to tell him anything about Opheltius\""
+02BE: 88 03 58                                     goto      -> 0358
+02C1:>8d dc 41 03 40 41 02 52 40 03 1b             jf        (get_variable(3) >= 2) -> 031B
+02CC: 22 49 20 61 6d 20 73 6f 20 73 61 64 …+64     text      "\"I am so sad about what happened, though at least Halos was found innocent.\""
+0318: 88 03 58                                     goto      -> 0358
+031B:>22 57 68 69 6c 65 20 6f 75 72 20 66 …+49     text      "\"While our families are not friends, he is an honorable man.\""
+0358:>88 00 ad                                     goto      -> 00AD
+035B:>90 62 79 65 00 03 73                         match     bye else -> 0373
+0362: 22 47 6f 6f 64 62 79 65 2e 22                text      "\"Goodbye.\""
+036C: 8b 41 00 40                                  return    0
+; ---- dead code 0370-0373: no dictionary entry, jump, pointer or call reaches it ----
+0370:x88 00 ad                                     goto      -> 00AD
+0373:>90 6a 6f 62 00 03 fb                         match     job else -> 03FB
+037A: 22 52 65 61 6c 6c 79 2c 20 49 27 6d …+114    text      "\"Really, I'm not sure what I'll do in the future.  My brother Malis will take over duties of the House, and me, I don't know.\""
+03F8: 88 00 ad                                     goto      -> 00AD
+03FB:>90 6d 61 6c 69 00 04 4b                      match     mali else -> 044B
+0403: 22 4d 79 20 62 72 6f 74 68 65 72 20 …+57     text      "\"My brother - he's a bit overprotective at times, but he means well.\""
+0448: 88 00 ad                                     goto      -> 00AD
+044B:>90 2a 00 04 7d                               match     * else -> 047D
+0450: 8d 9f 08 02 30 40 5e 40 04 7a                jf        !R0802(A30) -> 047A
+045A: 8d 9f 08 0e 30 40 5e 40 04 7a                jf        !R080E(A30) -> 047A
+0464: 8d 9f 08 01 30 40 5e 40 04 7a                jf        !R0801(A30) -> 047A
+046E: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+047A:>88 00 ad                                     goto      -> 00AD
+047D:>88 00 ad                                     goto      -> 00AD
+; ---- dead code 0480-0484: no dictionary entry, jump, pointer or call reaches it ----
+0480:x8b 41 00 40                                  return    0
+0484: a0 03 98 16 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

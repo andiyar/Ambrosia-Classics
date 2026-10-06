@@ -1,0 +1,54 @@
+; segment 187B  page 18  class 0x40 (char) id 123 name "Seqedher" (string table 0201)
+; kind class  length 775 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02F3  methods: sel12/talk@002A
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 f3                                        .hdr      dictionary offset = 02F3
+0002: 90 01 98 7b 00 08                            .array    array[1] = [@0008]
+0008: 90 08 00 00 00 14 00 00 00 06 00 00 …+22     .array    array[8] = [20, 6, 20, 11, 40, 38, 20, 45]
+
+; ==== method sel12/talk @002A ====
+002A: 81 01 00                                     frame     args=1 locals=0
+002D: 8d 48 0e 41 01 56 41 00 54 40 00 c2          jf        ((G0E:g0E & 1) == 0) -> 00C2
+0039: 22 50 65 74 69 20 74 72 79 20 78 65 …+4      text      "\"Peti try xertk\""
+0049: 8d bc 42 00 4a 40 40 00 be                   jf        leader_can_see(74) -> 00BE
+0052: 2a                                           text      "*"
+0053: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+005A: 22 49 27 6d 20 61 66 72 61 69 64 20 …+88     text      "\"I'm afraid I can't help - this doesn't correspond to any of the phoneme I've assigned to carvings.\""
+00BE:>8b 41 00 40                                  return    0
+00C2:>8d 48 0c 41 28 4f 40 01 09                   jf        (G0C:g0C_0to100 < 40) -> 0109
+00CB: 22 59 6f 75 72 20 65 61 72 73 20 61 …+46     text      "\"Your ears are shut to the words of the truth.  Be gone.\n\""
+0105: 8b 41 00 40                                  return    0
+0109:>8e                                           input       ; read a line into the input buffer
+010A: 90 6e 61 6d 65 2c 73 65 71 65 00 01 …+1      match     name,seqe else -> 0133
+0117: 22 57 65 20 61 72 65 20 53 65 71 65 …+6      text      "\"We are Seqedher.\""
+0129: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0130: 88 01 09                                     goto      -> 0109
+0133:>90 6a 6f 62 2c 77 61 74 63 00 01 64          match     job,watc else -> 0164
+013F: 22 57 65 20 61 72 65 20 74 68 65 20 …+22     text      "\"We are the Watcher of the Ayrit.\""
+0161: 88 01 09                                     goto      -> 0109
+0164:>90 6a 68 61 69 00 01 bb                      match     jhai else -> 01BB
+016C: 22 54 68 61 74 20 6f 6e 65 20 69 73 …+64     text      "\"That one is beyond the Truth.  That one has chosen the path of the @Enemy.\""
+01B8: 88 01 09                                     goto      -> 0109
+01BB:>90 65 6e 65 6d 00 02 5d                      match     enem else -> 025D
+01C3: 22 54 68 65 20 66 6f 72 6d 20 6f 66 …+139    text      "\"The form of our enemy deceives those not of the Truth.  Their raiment is their disguise.\"*\"They, among the Mortals, walk, and not do the Mortals see.\""
+025A: 88 01 09                                     goto      -> 0109
+025D:>90 62 79 65 00 02 8b                         match     bye else -> 028B
+0264: 22 54 68 65 20 57 61 74 63 68 65 72 …+20     text      "\"The Watcher of Truth sees you.\""
+0284: 8b 41 00 40                                  return    0
+; ---- dead code 0288-028B: no dictionary entry, jump, pointer or call reaches it ----
+0288:x88 01 09                                     goto      -> 0109
+028B:>90 2a 00 02 ec                               match     * else -> 02EC
+0290: 8d 9f 08 0f 30 40 5e 40 02 e9                jf        !R080F(A30) -> 02E9
+029A: 53 68 65 20 73 74 61 72 65 73 20 69 …+67     text      "She stares intently at you, as if attempting to understand what you are saying."
+02E9:>88 01 09                                     goto      -> 0109
+02EC:>88 01 09                                     goto      -> 0109
+; ---- dead code 02EF-02F3: no dictionary entry, jump, pointer or call reaches it ----
+02EF:x8b 41 00 40                                  return    0
+02F3: a0 03 98 7b 00 2a 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @002A, 68: @0002}

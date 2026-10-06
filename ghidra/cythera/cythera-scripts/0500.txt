@@ -1,0 +1,7 @@
+; segment 0500  page 05  data
+; kind data (no code structure; read/written as words by 0x49 / 0x85)  length 20 bytes
+; referenced by 0x49 reads/0x85 writes: 31 (1 writes)
+; unknown opcodes: 0 (not code)
+; word offsets referenced: 0010
+0000:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+0010:  00 00 00 00

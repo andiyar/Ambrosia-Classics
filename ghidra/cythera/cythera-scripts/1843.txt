@@ -1,0 +1,67 @@
+; segment 1843  page 18  class 0x40 (char) id 67 name "Hypsenor" (string table 0201)
+; kind class  length 656 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @027C  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 7c                                        .hdr      dictionary offset = 027C
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6c …+49     text      "You see a slight, reserved man.*\"Yes, what can I do for you?\""
+0042:>8e                                           input       ; read a line into the input buffer
+0043: 90 6e 61 6d 65 2c 68 79 70 73 00 00 …+1      match     name,hyps else -> 006A
+0050: 22 49 20 61 6d 20 48 79 70 73 65 6e …+4      text      "\"I am Hypsenor.\""
+0060: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0067: 88 00 42                                     goto      -> 0042
+006A:>90 6a 6f 62 00 00 d8                         match     job else -> 00D8
+0071: 22 49 20 61 6d 20 61 20 74 61 69 6c …+88     text      "\"I am a tailor - I turn @fabric into simple clothing.  Perhaps you'd be interested in @buying some?\""
+00D5: 88 00 42                                     goto      -> 0042
+00D8:>90 66 61 62 72 00 01 37                      match     fabr else -> 0137
+00E0: 22 49 20 6d 6f 73 74 6c 79 20 67 65 …+72     text      "\"I mostly get it locally, though occasionally I get a shipment from @Ake in Odemia.\""
+0134: 88 00 42                                     goto      -> 0042
+0137:>90 61 6b 65 00 01 97                         match     ake else -> 0197
+013E: 22 53 68 65 20 64 6f 65 73 20 76 65 …+74     text      "\"She does very good work, though there isn't much demand for her quality of material.\""
+0194: 88 00 42                                     goto      -> 0042
+0197:>90 62 79 65 00 01 b0                         match     bye else -> 01B0
+019E: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+01A9: 8b 41 00 40                                  return    0
+; ---- dead code 01AD-01B0: no dictionary entry, jump, pointer or call reaches it ----
+01AD:x88 00 42                                     goto      -> 0042
+01B0:>90 62 75 79 00 02 2e                         match     buy else -> 022E
+01B7: 86 27 30 40 9f 0e a5 44 46 69 6e 65 …+104    setfield  A30.f27:ce17 = R0EA5("Fine Crafted Clothing", blk@01D8, A30.f27:ce17, blk@0217)
+      ; 0x45 inline block 01D8-0211 (57 bytes):
+      01D8: 90 02                            .array[2]
+        [0] @01E2 ->
+          01E2: 90 04                            .array[4]
+            [0] 136
+            [1] @01F4 "Cloak"
+            [2] 30
+            [3] 1
+        [1] @01FA ->
+          01FA: 90 04                            .array[4]
+            [0] 285
+            [1] @020C "Cape"
+            [2] 20
+            [3] 1
+      ; 0x45 inline block 0217-0229 (18 bytes):
+      0217: 90 04                            .array[4]
+        [0] 5
+        [1] 5
+        [2] 7
+        [3] 3
+022B: 88 00 42                                     goto      -> 0042
+022E:>90 2a 00 02 75                               match     * else -> 0275
+0233: 8d 9f 08 0e 30 40 5e 40 02 72                jf        !R080E(A30) -> 0272
+023D: 8d 9f 08 01 30 40 5e 40 02 72                jf        !R0801(A30) -> 0272
+0247: 22 50 65 72 68 61 70 73 20 79 6f 75 …+31     text      "\"Perhaps you should seek elsewhere friend.\""
+0272:>88 00 42                                     goto      -> 0042
+0275:>88 00 42                                     goto      -> 0042
+; ---- dead code 0278-027C: no dictionary entry, jump, pointer or call reaches it ----
+0278:x8b 41 00 40                                  return    0
+027C: a0 03 98 43 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

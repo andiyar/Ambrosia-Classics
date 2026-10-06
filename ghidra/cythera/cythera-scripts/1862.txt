@@ -1,0 +1,133 @@
+; segment 1862  page 18  class 0x40 (char) id 98 name "Dryas" (string table 0201)
+; kind class  length 2630 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0A32  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0a 32                                        .hdr      dictionary offset = 0A32
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6d …+35     text      "You see a small grubby boy, about 12 years old."
+0034: 8d 9f 0f 02 30 41 07 40 40 01 5d             jf        R0F02(A30, 7) -> 015D  ; R0F02 = tstbit [from 0x0101 symtab]
+003F: 8d dc 41 03 40 41 01 54 40 01 4c             jf        (get_variable(3) == 1) -> 014C
+004A: 8d 9f 0f 02 30 41 01 40 40 01 2f             jf        R0F02(A30, 1) -> 012F  ; R0F02 = tstbit [from 0x0101 symtab]
+0055: 22 49 73 20 69 74 20 73 61 66 65 3f …+31     text      "\"Is it safe?  Can you take me to Berossus?\""
+0080: 8f 79 6e 00                                  prompt    "yn"
+0084: 90 79 00 00 c9                               match     y else -> 00C9
+0089: 22 49 27 6d 20 73 63 61 72 65 64 2c …+30     text      "\"I'm scared, but we've got to help Halos.\""
+00B3: 9f 0f 01 30 41 00 40                         call      R0F01(A30, 0)  ; R0F01 = clrbit [from 0x0101 symtab]
+00BA: f2 41 0b 43 30 00 02 1a 41 0b 4a 40          builtin   add_to_do(11, (str[021A:0]"Cure Alaric" + 11))
+00C6: b9 30 40                                     builtin   join_party(A30)
+00C9:>90 6e 00 01 2c                               match     n else -> 012C
+00CE: 22 49 20 75 6e 64 65 72 73 74 61 6e …+75     text      "\"I understand - it's still too dangerous. I'll be fine here until you think it's safe.\""
+0125: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+012C:>88 01 49                                     goto      -> 0149
+012F:>22 49 20 73 61 77 20 69 74 21 20 20 …+14     text      "\"I saw it!  It was awful!\""
+0149:>88 01 5a                                     goto      -> 015A
+014C:>22 48 6f 77 64 79 2c 20 6d 61 74 65 …+2      text      "\"Howdy, mate.\""
+015A:>88 01 71                                     goto      -> 0171
+015D:>22 57 61 74 63 68 61 20 6c 6f 6f 6b …+8      text      "\"Watcha looking at?\""
+0171:>8d 9f 0f 13 30 40 40 01 8b                   jf        R0F13(A30) -> 018B  ; R0F13 = inparty [from 0x0101 symtab]
+017A: f4 44 4c 65 61 76 65 00 40                   builtin   add_answer("Leave")
+0183: f4 44 57 61 69 74 00 40                      builtin   add_answer("Wait")
+018B:>8d 30 62 15 41 70 54 40 01 9f                jf        (A30.f15:activity == 112) -> 019F
+0195: f4 44 46 6f 6c 6c 6f 77 00 40                builtin   add_answer("Follow")
+019F:>8e                                           input       ; read a line into the input buffer
+01A0: 90 6e 61 6d 65 00 01 be                      match     name else -> 01BE
+01A8: 22 49 27 6d 20 44 72 79 61 73 2e 22          text      "\"I'm Dryas.\""
+01B4: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+01BB: 88 01 9f                                     goto      -> 019F
+01BE:>90 64 72 79 61 00 01 da                      match     drya else -> 01DA
+01C6: 22 54 68 61 74 27 73 20 6d 79 20 6e …+5      text      "\"That's my name.\""
+01D7: 88 01 9f                                     goto      -> 019F
+01DA:>90 62 79 65 00 01 f1                         match     bye else -> 01F1
+01E1: 22 47 6f 6f 64 62 79 65 22                   text      "\"Goodbye\""
+01EA: 8b 41 00 40                                  return    0
+; ---- dead code 01EE-01F1: no dictionary entry, jump, pointer or call reaches it ----
+01EE:x88 01 9f                                     goto      -> 019F
+01F1:>90 68 61 6c 6f 00 02 54                      match     halo else -> 0254
+01F9: 8d dc 41 03 40 41 00 54 40 02 28             jf        (get_variable(3) == 0) -> 0228
+0204: 22 41 6e 20 68 6f 6e 65 73 74 20 62 …+21     text      "\"An honest business man, I hear.\""
+0225: 88 02 51                                     goto      -> 0251
+0228:>22 48 65 27 73 20 74 65 6c 6c 69 6e …+29     text      "\"He's telling the truth - he's innocent!\""
+0251:>88 01 9f                                     goto      -> 019F
+0254:>90 6d 75 72 64 00 02 e3                      match     murd else -> 02E3
+025C: 8d dc 41 03 40 41 01 54 40 02 99             jf        (get_variable(3) == 1) -> 0299
+0267: 22 48 61 6c 6f 73 20 69 73 20 69 6e …+35     text      "\"Halos is innocent - it was that @awful thing!\""
+0296: 88 02 e0                                     goto      -> 02E0
+0299:>8d dc 41 03 40 41 02 52 40 02 cb             jf        (get_variable(3) >= 2) -> 02CB
+02A4: 22 41 74 20 6c 65 61 73 74 20 77 65 …+24     text      "\"At least we proved Halos innocent.\""
+02C8: 88 02 e0                                     goto      -> 02E0
+02CB:>22 49 20 64 6f 6e 27 74 20 75 6e 64 …+9      text      "\"I don't understand.\""
+02E0:>88 01 9f                                     goto      -> 019F
+02E3:>90 77 61 69 74 00 03 68                      match     wait else -> 0368
+02EB: 8d 9f 0f 13 30 40 40 03 27                   jf        R0F13(A30) -> 0327  ; R0F13 = inparty [from 0x0101 symtab]
+02F4: 22 49 20 73 68 61 6c 6c 20 77 61 69 …+26     text      "\"I shall wait here until your return.\""
+031A: ba 30 40                                     builtin   leave_party(A30)
+031D: 86 15 30 40 41 70 40                         setfield  A30.f15:activity = 112
+0324: 88 03 65                                     goto      -> 0365
+0327:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+50     text      "\"I'm not currently in the party.  Perhaps I should @join you.\""
+0365:>88 01 9f                                     goto      -> 019F
+0368:>90 66 6f 6c 6c 00 03 d3                      match     foll else -> 03D3
+0370: 8d 30 62 15 41 70 54 40 03 89                jf        (A30.f15:activity == 112) -> 0389
+037A: 22 47 6c 61 64 6c 79 2e 22                   text      "\"Gladly.\""
+0383: b9 30 40                                     builtin   join_party(A30)
+0386: 88 03 d0                                     goto      -> 03D0
+0389:>22 49 27 6d 20 6e 6f 74 20 63 75 72 …+59     text      "\"I'm not currently waiting to rejoin you.  Perhaps I should @join you.\""
+03D0:>88 01 9f                                     goto      -> 019F
+03D3:>90 6a 6f 69 6e 2c 63 6f 6d 65 00 04 …+1      match     join,come else -> 04A4
+03E0: 8d 9f 0f 13 30 40 40 04 13                   jf        R0F13(A30) -> 0413  ; R0F13 = inparty [from 0x0101 symtab]
+03E9: 22 59 6f 75 27 72 65 20 61 6c 72 65 …+27     text      "\"You're already taking me to Berossus.\""
+0410: 88 04 a1                                     goto      -> 04A1
+0413:>8d dc 41 03 40 41 01 54 40 04 61             jf        (get_variable(3) == 1) -> 0461
+041E: 22 49 27 6d 20 73 63 61 72 65 64 2c …+30     text      "\"I'm scared, but we've got to help Halos.\""
+0448: 9f 0f 01 30 41 00 40                         call      R0F01(A30, 0)  ; R0F01 = clrbit [from 0x0101 symtab]
+044F: f2 41 0b 43 30 00 02 1a 41 0b 4a 40          builtin   add_to_do(11, (str[021A:0]"Cure Alaric" + 11))
+045B: b9 30 40                                     builtin   join_party(A30)
+045E: 88 04 a1                                     goto      -> 04A1
+0461:>8d dc 41 03 40 41 02 52 40 04 8e             jf        (get_variable(3) >= 2) -> 048E
+046C: 22 49 27 76 65 20 67 6f 74 20 77 6f …+19     text      "\"I've got work to get back to.\""
+048B: 88 04 a1                                     goto      -> 04A1
+048E:>22 49 20 64 6f 6e 27 74 20 74 68 69 …+7      text      "\"I don't think so.\""
+04A1:>88 01 9f                                     goto      -> 019F
+04A4:>90 61 77 66 75 00 09 aa                      match     awfu else -> 09AA
+04AC: 8d dc 41 03 40 41 02 54 40 05 19             jf        (get_variable(3) == 2) -> 0519
+04B7: 22 54 68 65 20 77 68 6f 6c 65 20 74 …+83     text      "\"The whole thing was just awful - and now a shapechanger!  Things are going wrong around here.\""
+0516: 88 09 a7                                     goto      -> 09A7
+0519:>8d dc 41 03 40 41 01 54 40 09 92             jf        (get_variable(3) == 1) -> 0992
+0524: 22 49 20 73 61 77 20 69 74 20 6d 79 …+868    text      "\"I saw it myself - I went to see if Halos needed any work done when it happened.\"*\"I was just about to go through the secret passage when I heard his door open, so I ducked back.\"*\"I was able to watch, though, and I saw Cybele of House Attis come in.\"*\"Next thing I know, she waves her hand and he collapses on the floor.\"*\"It was then that it got worse - suddenly Cybele seems to waver, all funny like, and the next thing I know...\"*\"Well, there was two of them.  Two Haloses there - and the fake one goes out the door.\"*\"I was so scared, of whatever it was, that I ran away, hiding in the sewers here.\"*\"It wasn't until later that I managed to, um, 'overhear', a conversation where they were talking about the murder.\"*\"I knew that Halos didn't do it - it was that shapechanger thing.\"*\"I wanted to tell somebody, but I was too scared - how would I know who to trust, so I hid.\""
+0894: 8d 9f 0f 13 30 40 5e 40 09 8f                jf        !R0F13(A30) -> 098F  ; R0F13 = inparty [from 0x0101 symtab]
+089E: 2a 22 57 69 6c 6c 20 79 6f 75 20 70 …+57     text      "*\"Will you protect me?  At least until I can tell Berossus my story?\""
+08E3: 8f 79 6e 00                                  prompt    "yn"
+08E7: 90 79 00 09 2c                               match     y else -> 092C
+08EC: 22 49 27 6d 20 73 63 61 72 65 64 2c …+30     text      "\"I'm scared, but we've got to help Halos.\""
+0916: 9f 0f 01 30 41 00 40                         call      R0F01(A30, 0)  ; R0F01 = clrbit [from 0x0101 symtab]
+091D: f2 41 0b 43 30 00 02 1a 41 0b 4a 40          builtin   add_to_do(11, (str[021A:0]"Cure Alaric" + 11))
+0929: b9 30 40                                     builtin   join_party(A30)
+092C:>90 6e 00 09 8f                               match     n else -> 098F
+0931: 22 49 20 75 6e 64 65 72 73 74 61 6e …+75     text      "\"I understand - it's still too dangerous. I'll be fine here until you think it's safe.\""
+0988: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+098F:>88 09 a7                                     goto      -> 09A7
+0992:>22 49 20 64 6f 6e 27 74 20 75 6e 64 …+9      text      "\"I don't understand.\""
+09A7:>88 01 9f                                     goto      -> 019F
+09AA:>90 6c 65 61 76 00 09 fa                      match     leav else -> 09FA
+09B2: 8d 9f 0f 13 30 40 40 09 e2                   jf        R0F13(A30) -> 09E2  ; R0F13 = inparty [from 0x0101 symtab]
+09BB: 22 4e 6f 21 20 20 54 68 65 20 73 68 …+24     text      "\"No!  The shapechanger will get me!\""
+09DF: 88 09 f7                                     goto      -> 09F7
+09E2:>22 49 20 64 6f 6e 27 74 20 75 6e 64 …+9      text      "\"I don't understand.\""
+09F7:>88 01 9f                                     goto      -> 019F
+09FA:>90 2a 00 0a 2b                               match     * else -> 0A2B
+09FF: 8d 9f 08 0e 30 40 5e 40 0a 28                jf        !R080E(A30) -> 0A28
+0A09: 8d 9f 08 01 30 40 5e 40 0a 28                jf        !R0801(A30) -> 0A28
+0A13: 22 49 20 64 6f 6e 27 74 20 75 6e 64 …+9      text      "\"I don't understand.\""
+0A28:>88 01 9f                                     goto      -> 019F
+0A2B:>88 01 9f                                     goto      -> 019F
+; ---- dead code 0A2E-0A32: no dictionary entry, jump, pointer or call reaches it ----
+0A2E:x8b 41 00 40                                  return    0
+0A32: a0 03 98 62 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

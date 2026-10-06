@@ -1,0 +1,20 @@
+; segment 10E4  page 10  class 0x00 (prop) type 228 tile-name "chicken" (tool join F000/F004)
+; kind class  length 86 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @002A  methods: sel32/spawned@000C
+; properties: sel37/p25, sel55/p37
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 2a                                        .hdr      dictionary offset = 002A
+0002: 90 02 00 00 00 03 00 00 00 01                .array    array[2] = [3, 1]
+
+; ==== method sel32/spawned @000C ====
+000C: 81 01 00                                     frame     args=1 locals=0
+000F: 8d ac 41 00 41 08 40 41 01 54 40 00 …+1      jf        (random(0, 8) == 1) -> 0026
+001C: d7 41 05 30 62 01 30 62 02 40                builtin   ambient_sound(5, A30.f01:x, A30.f02:y)
+0026:>8b 41 00 40                                  return    0
+002A: a0 07 50 00 ff ff 00 00 50 00 ff ff …+32     .dict     dict[7] {32/spawned: @000C, 37/p25: True, 55/p37: @0002}

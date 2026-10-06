@@ -1,0 +1,18 @@
+; segment 1101  page 11  class 0x00 (prop) type 257 tile-name "floor" (tool join F000/F004)
+; kind class  length 43 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0017  methods: sel21/signal@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 17                                        .hdr      dictionary offset = 0017
+
+; ==== method sel21/signal @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 86 00 30 40 43 00 00 00 80 30 62 00 …+2      setfield  A30.f00:kind = (128 ^ A30.f00:kind)
+0013: 8b 41 00 40                                  return    0
+0017: a0 03 91 01 00 02 00 15 50 00 ff ff …+8      .dict     dict[3] {21/signal: @0002}

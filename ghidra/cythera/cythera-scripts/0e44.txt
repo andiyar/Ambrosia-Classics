@@ -1,0 +1,29 @@
+; segment 0E44  page 0E  routine "DoToggleLock" [from 0x0101 symtab: key 1644; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 186 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 09 01                                     frame     args=9 locals=1
+0003: 82 00 30 62 03 40                            set       L00 = A30.f03:frame
+0009: 8d 00 35 54 40 00 2c                         jf        (L00 == A35) -> 002C
+0010: 49 74 20 69 73 20 6e 6f 77 20 75 6e …+7      text      "It is now unlocked\n"
+0023: 86 03 30 40 33 40                            setfield  A30.f03:frame = A33
+0029: 88 00 b6                                     goto      -> 00B6
+002C:>8d 00 36 54 40 00 4f                         jf        (L00 == A36) -> 004F
+0033: 49 74 20 69 73 20 6e 6f 77 20 75 6e …+7      text      "It is now unlocked\n"
+0046: 86 03 30 40 34 40                            setfield  A30.f03:frame = A34
+004C: 88 00 b6                                     goto      -> 00B6
+004F:>8d 00 33 54 00 31 54 5d 40 00 74             jf        ((L00 == A33) || (L00 == A31)) -> 0074
+005A: 49 74 20 69 73 20 6e 6f 77 20 6c 6f …+5      text      "It is now locked\n"
+006B: 86 03 30 40 35 40                            setfield  A30.f03:frame = A35
+0071: 88 00 b6                                     goto      -> 00B6
+0074:>8d 00 34 54 00 32 54 5d 40 00 99             jf        ((L00 == A34) || (L00 == A32)) -> 0099
+007F: 49 74 20 69 73 20 6e 6f 77 20 6c 6f …+5      text      "It is now locked\n"
+0090: 86 03 30 40 36 40                            setfield  A30.f03:frame = A36
+0096: 88 00 b6                                     goto      -> 00B6
+0099:>8d 00 37 54 00 38 54 5d 40 00 b6             jf        ((L00 == A37) || (L00 == A38)) -> 00B6
+00A4: 4d 61 67 69 63 61 6c 6c 79 20 4c 6f …+6      text      "Magically Locked!\n"
+00B6:>8b 41 00 40                                  return    0

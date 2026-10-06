@@ -1,0 +1,25 @@
+; segment 0E0C  page 0E  routine
+; kind routine  length 173 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 8d 30 62 04 42 00 8f 54 40 00 87             jf        (A30.f04:type == 143) -> 0087
+000E: 8d 30 62 06 43 0f ff ff 7f 56 41 3c …+4      jf        ((A30.f06:quality & -129) < 60) -> 0066
+001E: 54 68 65 20 6c 61 6d 70 20 69 73 20 …+17     text      "The lamp is now full of oil.\n"
+003B: 8d 30 62 06 43 00 00 00 80 56 40 00 …+1      jf        (A30.f06:quality & 128) -> 0055
+0048: 86 06 30 40 43 00 00 00 bc 40                setfield  A30.f06:quality = 188
+0052: 88 00 5c                                     goto      -> 005C
+0055:>86 06 30 40 41 3c 40                         setfield  A30.f06:quality = 60
+005C:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0063-0066: no dictionary entry, jump, pointer or call reaches it ----
+0063:x88 00 87                                     goto      -> 0087
+0066:>54 68 65 20 6c 61 6d 70 20 69 73 20 …+14     text      "The lamp is already full.\n"
+0080: 8b 43 50 00 00 01 40                         return    True
+0087:>59 6f 75 20 63 61 6e 27 74 20 75 73 …+15     text      "You can't use oil there...\n"
+00A2: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 00A9-00AD: no dictionary entry, jump, pointer or call reaches it ----
+00A9:x8b 41 00 40                                  return    0

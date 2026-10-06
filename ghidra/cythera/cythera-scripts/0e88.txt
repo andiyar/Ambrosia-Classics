@@ -1,0 +1,28 @@
+; segment 0E88  page 0E  routine
+; kind routine  length 184 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 02                                     frame     args=4 locals=2
+0003: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0009: 8d 00 61 3b 00 41 00 46 40 00 23             jf        prop(L00, sel59/p3B, 0)[0] -> 0023
+0014: d3 00 61 3b 00 41 00 46 30 62 01 30 …+3      builtin   positional_sound(prop(L00, sel59/p3B, 0)[0], A30.f01:x, A30.f02:y)
+0023:>8d 31 64 40 40 00 a5                         jf        is_char(A31) -> 00A5
+002A: 82 01 30 62 18 40                            set       L01 = A30.f18:reflex
+0030: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0036: 8d 00 62 33 41 01 56 40 00 46                jf        (L00.f33 & 1) -> 0046
+0040: 82 01 30 62 17 40                            set       L01 = A30.f17:body
+0046:>8d 32 43 50 00 ff ff 54 40 00 6b             jf        (A32 == Nil) -> 006B
+0051: 82 01 01 9f 0e ac 30 42 00 c7 40 4a …+1      set       L01 = (L01 + R0EAC(A30, 199))
+005E: 82 33 33 9f 0e ac 30 42 00 c7 40 4a …+1      set       A33 = (A33 + R0EAC(A30, 199))
+006B:>82 01 01 ac 41 00 41 1e 40 4a 31 62 …+32     set       L01 = ((((L01 + random(0, 30)) - (A31.f18:reflex + random(0, 30))) + R0E84(A30, False)) - R0E84(A31, True))
+0097: 8b 9f 0e 87 30 31 32 01 33 40 40             return    R0E87(A30, A31, A32, L01, A33)
+; ---- dead code 00A2-00A5: no dictionary entry, jump, pointer or call reaches it ----
+00A2:x88 00 b4                                     goto      -> 00B4
+00A5:>9f 0e 8f 30 31 32 33 40                      call      R0E8F(A30, A31, A32, A33)
+00AD: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 00B4-00B8: no dictionary entry, jump, pointer or call reaches it ----
+00B4:x8b 41 00 40                                  return    0

@@ -1,0 +1,46 @@
+; segment 1A1F  page 1A  class 0x50 (spell) type 31
+; kind class  length 319 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00EF  methods: sel2/name@0008, sel8/search@0028, sel9/use@006E, sel10/use_on@00A5
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 ef                                        .hdr      dictionary offset = 00EF
+0002: 90 01 00 00 00 00                            .array    array[1] = [0]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 52 65 73 69 73 74 20 46 69 72 …+3      return    "Resist Fire"
+; ---- dead code 001A-001E: no dictionary entry, jump, pointer or call reaches it ----
+001A:x8b 41 00 40                                  return    0
+001E: 90 02 00 00 00 04 50 00 ff ff                .array    array[2] = [4, Nil]
+
+; ==== method sel8/search @0028 ====
+0028: 81 01 00                                     frame     args=1 locals=0
+002B: 54 68 69 73 20 73 70 65 6c 6c 20 63 …+51     text      "This spell causes the target to be temporarily immune to heat.\n"
+006A: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @006E ====
+006E: 81 01 00                                     frame     args=1 locals=0
+0071: 8d 9f 0e a1 30 62 0b 41 04 41 0c 40 …+3      jf        R0EA1(A30.f0B:loc16, 4, 12) -> 00A1
+0080: 8d 48 13 40 00 9d                            jf        G13:g13_bool -> 009D
+0086: 43 61 73 74 20 27                            text      "Cast '"
+008C: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0092: 27 20 6f 6e 20 77 68 6f 6d 3f 0a             text      "' on whom?\n"
+009D:>8b 41 08 40                                  return    8
+00A1:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A5 ====
+00A5: 81 02 00                                     frame     args=2 locals=0
+00A8: e1 48 09 43 00 00 00 f0 40                   builtin   show_magic(G09:speaker, 240)
+00B1: d3 41 2c 48 09 62 01 48 09 62 02 40          builtin   positional_sound(44, G09:speaker.f01:x, G09:speaker.f02:y)
+00BD: 8d 30 62 0b 40 00 e1                         jf        A30.f0B:loc16 -> 00E1
+00C4: c3 31 41 17 43 00 00 01 f4 9f 0e 85 …+14     builtin   temp_ability(A31, 23, (500 + ((R0E85(as_char(A30.f0B:loc16)) - 4) * 100)))
+00DE: 88 00 eb                                     goto      -> 00EB
+00E1:>c3 31 41 17 43 00 00 01 f4 40                builtin   temp_ability(A31, 23, 500)
+00EB:>8b 41 00 40                                  return    0
+00EF: a0 0d 50 00 ff ff 06 95 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0028, 9/use: @006E, 10/use_on: @00A5, 51: @001E, 54: @0002}

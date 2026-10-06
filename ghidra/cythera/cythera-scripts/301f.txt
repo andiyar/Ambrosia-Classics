@@ -1,0 +1,25 @@
+; segment 301F  page 30  routine: default handler for selector 31 (moved)
+; kind routine  length 190 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 01                                     frame     args=2 locals=1
+0003: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0009: 8d 41 fb 31 50 31 41 fe 50 5c 40 00 …+1      jf        ((-5 <= A31) && (A31 <= -2)) -> 0065
+0016: 8d c4 30 41 1f 40 5e 00 62 32 41 40 …+8      jf        (!has_ability(A30, 31) && ((L00.f32 & 64) == 0)) -> 0062
+002A: 8d ac 41 01 41 0a 40 41 03 54 40 00 …+1      jf        (random(1, 10) == 3) -> 0062
+0037: 86 26 30 40 44 4f 75 63 68 21 20 53 …+18     setfield  A30.f26:f26 = "Ouch! Something bit me!"
+0055: c1 30 41 09 40                               builtin   add_ability(A30, 9)
+005A: 9d 41 30 41 01 41 02 40                      send      A30.sel65(1, 2)
+0062:>88 00 ba                                     goto      -> 00BA
+0065:>8d 31 42 ff 23 54 40 00 af                   jf        (A31 == -221) -> 00AF
+006E: 8d c4 30 41 17 40 5e 00 62 32 43 00 …+11     jf        (!has_ability(A30, 23) && ((L00.f32 & 128) == 0)) -> 00AC
+0085: 86 26 30 40 44 4f 75 63 68 21 20 54 …+12     setfield  A30.f26:f26 = "Ouch! That's hot!"
+009D: 9d 41 30 ac 41 00 41 04 40 41 01 4a …+3      send      A30.sel65((random(0, 4) + 1), 8)
+00AC:>88 00 ba                                     goto      -> 00BA
+00AF:>82 31 31 63 00 40                            set       A31 = as_prop(A31)
+00B5: 9d 0a 31 30 40                               send      A31.sel10/use_on(A30)
+00BA:>8b 41 00 40                                  return    0

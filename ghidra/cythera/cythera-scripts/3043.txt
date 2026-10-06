@@ -1,0 +1,25 @@
+; segment 3043  page 30  routine: default handler for selector 67
+; kind routine  length 161 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 04                                     frame     args=2 locals=4
+0003: 86 2a 30 40 31 40                            setfield  A30.f2A = A31
+0009: 86 15 30 40 30 62 16 40                      setfield  A30.f15:activity = A30.f16:behaviour
+0011: 8d 30 43 40 40 00 01 54 9f 0f 13 30 …+5      jf        ((A30 == char#1"Hero") || R0F13(A30)) -> 006F  ; R0F13 = inparty [from 0x0101 symtab]
+0022: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+0033:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 006F
+0040: 8d 00 30 53 40 00 60                         jf        (L00 != A30) -> 0060
+0047: 8d 00 62 15 00 62 16 53 40 00 60             jf        (L00.f15:activity != L00.f16:behaviour) -> 0060
+0052: 86 2a 00 40 31 40                            setfield  L00.f2A = A31
+0058: 86 15 00 40 00 62 16 40                      setfield  L00.f15:activity = L00.f16:behaviour
+0060:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+006C: 88 00 33                                     goto      -> 0033
+006F:>8d 9f 0f 13 30 40 5e 9f 0f 13 31 40 …+4      jf        (!R0F13(A30) && R0F13(A31)) -> 009D  ; R0F13 = inparty [from 0x0101 symtab]
+007F: 82 03 30 63 48 40                            set       L03 = as_cls48(A30)
+0085: 8d 03 62 35 41 00 54 03 62 35 41 02 …+5      jf        ((L03.f35 == 0) || (L03.f35 == 2)) -> 009D
+0096: c5 43 00 00 01 41 40                         builtin   send_signal(321)
+009D:>8b 41 00 40                                  return    0

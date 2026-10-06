@@ -1,0 +1,135 @@
+; segment 1804  page 18  class 0x40 (char) id 4 name "Hadrian" (string table 0201)
+; kind class  length 2566 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @09F2  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 09 f2                                        .hdr      dictionary offset = 09F2
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 05                                     frame     args=1 locals=5
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 6f …+37     text      "You see an older warrior, with a proud demeanor.*"
+0036: 82 00 43 50 00 00 00 40                      set       L00 = False
+003E: 8d 9f 0f 02 42 00 04 41 07 40 5e 40 …+2      jf        !R0F02(4, 7) -> 00C4  ; R0F02 = tstbit [from 0x0101 symtab]
+004C: 22 47 72 65 65 74 69 6e 67 73 2c 20 …+96     text      "\"Greetings, and welcome to our world, stranger.  I am Hadrian, the Captain of Alaric's Guard, and @Trainer.\""
+00B8: 9f 0f 00 42 00 04 41 07 40                   call      R0F00(4, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00C1: 88 00 e7                                     goto      -> 00E7
+00C4:>22 47 72 65 65 74 69 6e 67 73 20 61 …+14     text      "\"Greetings again, stranger"
+00DE: f4 44 54 72 61 69 6e 00 40                   builtin   add_answer("Train")
+00E7:>8e                                           input       ; read a line into the input buffer
+00E8: 90 6e 61 6d 65 00 01 30                      match     name else -> 0130
+00F0: 22 49 20 61 6d 20 63 61 6c 6c 65 64 …+42     text      "\"I am called Hadrian, the Captain of Alaric's Guards.\""
+0126: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+012D: 88 00 e7                                     goto      -> 00E7
+0130:>90 6a 6f 62 2c 67 75 61 72 2c 63 61 …+5      match     job,guar,capt else -> 0189
+0141: 22 49 20 61 6d 20 69 6e 20 63 68 61 …+57     text      "\"I am in charge of the guards that protect Alaric and LandKing Hall.\""
+0186: 88 00 e7                                     goto      -> 00E7
+0189:>90 73 6f 6e 2c 68 65 63 74 00 05 7e          match     son,hect else -> 057E
+0195: 8d 9f 0f 02 42 00 04 41 02 40 40 01 …+1      jf        R0F02(4, 2) -> 01DE  ; R0F02 = tstbit [from 0x0101 symtab]
+01A2: 22 49 20 61 6d 20 70 72 6f 75 64 20 …+45     text      "\"I am proud of the service that Hector has done for you.\""
+01DB: 88 05 7b                                     goto      -> 057B
+01DE:>8d 9f 0f 13 42 00 06 40 40 02 4f             jf        R0F13(6) -> 024F  ; R0F13 = inparty [from 0x0101 symtab]
+01E9: 22 48 65 20 68 61 73 20 73 65 72 76 …+56     text      "\"He has served you with honor, hasn't he!  I'm quite proud of him.\"*"
+022D: a4 42 00 06 41 01 40                         builtin   show_portrait(6, 1)
+0234: 48 65 63 74 6f 72 20 62 6c 75 73 68 …+6      text      "Hector blushes...*"
+0246: a4 41 ff 41 01 40                            builtin   show_portrait(-1, 1)
+024C: 88 05 7b                                     goto      -> 057B
+024F:>8d 9f 0f 02 42 00 06 41 00 40 40 04 …+1      jf        R0F02(6, 0) -> 0412  ; R0F02 = tstbit [from 0x0101 symtab]
+025C: 22 48 6f 77 27 73 20 6d 79 20 73 6f …+41     text      "\"How's my son doing?  Is he serving you with honor?\"*"
+0291: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+0297: 82 01 43 40 40 00 04 40                      set       L01 = char#4"Hadrian"
+029F: 8d 01 62 14 41 01 56 40 02 e3                jf        (L01.f14:status & 1) -> 02E3
+02A9: 22 59 65 73 2c 20 79 6f 75 20 73 68 …+36     text      "\"Yes, you should be quite proud.\"*\"Indeed I am.\""
+02D9: a4 42 00 04 41 00 40                         builtin   show_portrait(4, 0)
+02E0: 88 04 0f                                     goto      -> 040F
+02E3:>22 49 20 72 65 67 72 65 74 20 74 6f …+66     text      "\"I regret to tell you that Hector has died in my service.  I am truly sorry.\"*"
+0331: a4 42 00 04 41 00 40                         builtin   show_portrait(4, 0)
+0338: 48 61 64 72 69 61 6e 20 73 65 65 6d …+194    text      "Hadrian seems choked up, and unable to speak for a moment.\n*\"Thank you for telling me.  We all knew the risks involved.\"*\"A warrior can know no better death than to die for a cause that is right and just.\"*"
+0406: 9f 0f 00 42 00 04 41 02 40                   call      R0F00(4, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+040F:>88 05 7b                                     goto      -> 057B
+0412:>8d 9f 0f 02 42 00 04 41 00 40 40 04 …+1      jf        R0F02(4, 0) -> 0458  ; R0F02 = tstbit [from 0x0101 symtab]
+041F: 22 48 65 63 74 6f 72 20 69 73 20 61 …+42     text      "\"Hector is a fine son, and will serve you with honor.\""
+0455: 88 05 7b                                     goto      -> 057B
+0458:>22 4d 79 20 73 6f 6e 20 48 65 63 74 …+91     text      "\"My son Hector is fine lad - he will be a great warrior and leader, once he has a bit more experience.\""
+04BF: 8d 9f 0f 02 42 00 04 41 01 40 40 05 …+1      jf        R0F02(4, 1) -> 057B  ; R0F02 = tstbit [from 0x0101 symtab]
+04CC: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+04D2: 2a 22 49 20 77 6f 75 6c 64 20 6c 69 …+61     text      "*\"I would like your permission to have him accompany me on my journeys.\"*"
+051B: a4 42 00 04 41 00 40                         builtin   show_portrait(4, 0)
+0522: 22 57 68 79 2c 20 6e 6f 74 68 69 6e …+60     text      "\"Why, nothing would make me more proud!  He will serve you with honor!\"*"
+056A: 82 00 43 50 00 00 01 40                      set       L00 = True
+0572: 9f 0f 00 42 00 04 41 00 40                   call      R0F00(4, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+057B:>88 00 e7                                     goto      -> 00E7
+057E:>90 73 68 69 65 2c 73 77 6f 72 2c 61 …+11     match     shie,swor,atta,defe else -> 05C2
+0595: 22 49 20 63 61 6e 20 40 74 72 61 69 …+30     text      "\"I can @train you in that, if you'd like.\""
+05BF: 88 00 e7                                     goto      -> 00E7
+05C2:>90 74 72 61 69 2c 74 65 61 63 00 06 …+1      match     trai,teac else -> 0697
+05CF: 82 02 43 40 40 00 01 40                      set       L02 = char#1"Hero"
+05D7: 82 03 45 00 56 90 04 98 04 05 ee 98 …+80     set       L03 = blk@05DC
+      ; 0x45 inline block 05DC-0632 (86 bytes):
+      05DC: 90 04                            .array[4]
+        [0] @05EE ->
+          05EE: 90 02                            .array[2]
+            [0] @05F8 "Attack"
+            [1] 192
+        [1] @05FF ->
+          05FF: 90 02                            .array[2]
+            [0] @0609 "Defense"
+            [1] 193
+        [2] @0611 ->
+          0611: 90 02                            .array[2]
+            [0] @061B "Sword"
+            [1] 196
+        [3] @0621 ->
+          0621: 90 02                            .array[2]
+            [0] @062B "Shield"
+            [1] 201
+0633: 82 04 c0 44 57 68 61 74 20 77 6f 75 …+48     set       L04 = pick_item("What would you like to train on?", "%s", L03, blk@0660)
+      ; 0x45 inline block 0660-066D (13 bytes):
+      0660: 90 01                            .array[1]
+        [0] @0666 "Cancel"
+066F: 8d 04 41 00 52 40 06 94                      jf        (L04 >= 0) -> 0694
+0677: 82 04 03 04 46 40                            set       L04 = L03[L04]
+067D: 9f 0e b1 02 44 48 61 64 72 69 61 6e …+11     call      R0EB1(L02, "Hadrian", L04[1], True)
+0694:>88 00 e7                                     goto      -> 00E7
+0697:>90 65 69 6f 6e 00 07 66                      match     eion else -> 0766
+069F: 22 49 20 72 65 6d 65 6d 62 65 72 20 …+172    text      "\"I remember him - a bright young mage who was working on magically enhancing weapons.\"*\"I haven't seen him for years now, I wonder how he's doing...  He might be worth tracking down.\"*"
+0757: f2 41 1e 43 30 00 02 1a 41 1e 4a 40          builtin   add_to_do(30, (str[021A:0]"Cure Alaric" + 30))
+0763: 88 00 e7                                     goto      -> 00E7
+0766:>90 62 79 65 00 09 74                         match     bye else -> 0974
+076D: 8d 00 40 07 8f                               jf        L00 -> 078F
+0772: 22 46 61 72 65 77 65 6c 6c 2c 20 61 …+14     text      "\"Farewell, and thank you.\""
+078C: 88 07 9a                                     goto      -> 079A
+078F:>22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+079A:>8d 9f 0f 02 42 00 04 41 03 40 5e 40 …+2      jf        !R0F02(4, 3) -> 096D  ; R0F02 = tstbit [from 0x0101 symtab]
+07A8: 2a 22 41 63 74 75 61 6c 6c 79 2c 20 …+261    text      "*\"Actually, if you don't mind, I was wondering if you could do a favor for me?\"*\"My mother passed away recently, but with my duties here, I don't have time to properly honor her.\"*\"Could you place these flowers on her grave?  She is buried in the graveyard in Catamarca...\""
+08B9: 8f 79 6e 00                                  prompt    "yn"
+08BD: 90 79 00 09 24                               match     y else -> 0924
+08C2: 22 54 68 61 6e 6b 20 79 6f 75 2e 20 …+63     text      "\"Thank you.  Her name was Andra, and she is buried next to my father Lycus\""
+090D: f2 41 21 43 30 00 02 1a 41 21 4a 40          builtin   add_to_do(33, (str[021A:0]"Cure Alaric" + 33))
+0919: a8 48 05 42 00 3c 41 01 41 01 40             builtin   give_item(G05:leader, 60, 1, 1)
+0924:>90 6e 00 09 64                               match     n else -> 0964
+0929: 22 57 65 6c 6c 2c 20 49 20 75 6e 64 …+47     text      "\"Well, I understand.  Thank you for considering it anyway.\""
+0964:>9f 0f 00 42 00 04 41 03 40                   call      R0F00(4, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+096D:>8b 41 00 40                                  return    0
+; ---- dead code 0971-0974: no dictionary entry, jump, pointer or call reaches it ----
+0971:x88 00 e7                                     goto      -> 00E7
+0974:>90 61 6e 64 72 00 09 95                      match     andr else -> 0995
+097C: 22 41 6e 64 72 61 20 77 61 73 20 6d …+10     text      "\"Andra was my mother.\""
+0992: 88 00 e7                                     goto      -> 00E7
+0995:>90 6c 79 63 75 00 09 b6                      match     lycu else -> 09B6
+099D: 22 4c 79 63 75 73 20 77 61 73 20 6d …+10     text      "\"Lycus was my father.\""
+09B3: 88 00 e7                                     goto      -> 00E7
+09B6:>90 2a 00 09 eb                               match     * else -> 09EB
+09BB: 8d 9f 08 09 30 40 5e 40 09 e8                jf        !R0809(A30) -> 09E8
+09C5: 8d 9f 08 01 30 40 5e 40 09 e8                jf        !R0801(A30) -> 09E8
+09CF: 22 43 61 6e 27 74 20 68 65 6c 70 20 …+13     text      "\"Can't help you on that.\""
+09E8:>88 00 e7                                     goto      -> 00E7
+09EB:>88 00 e7                                     goto      -> 00E7
+; ---- dead code 09EE-09F2: no dictionary entry, jump, pointer or call reaches it ----
+09EE:x8b 41 00 40                                  return    0
+09F2: a0 03 98 04 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

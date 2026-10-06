@@ -1,0 +1,13 @@
+; segment 021F  page 02  string table
+; kind strtab  length 205 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 05 50 00 ff ff 82 1f 00 16 82 1f …+10     .strtab   string table, 5 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 821F×4)
+0016: 77 69 74 68 20 74 68 65 20 69 6e 73 …+31     .string   [1] "with the inscription '742 - Will To Union'"
+0041: 65 6e 67 72 61 76 65 64 20 77 69 74 …+40     .string   [2] "engraved with an eye in a downward pointed triangle"
+0075: 77 69 74 68 20 61 20 70 6c 75 73 20 …+33     .string   [3] "with a plus inside a triangle engraved on it"
+00A2: 77 69 74 68 20 74 68 65 20 69 6e 73 …+31     .string   [4] "with the inscription 'To Hapede with Love'"

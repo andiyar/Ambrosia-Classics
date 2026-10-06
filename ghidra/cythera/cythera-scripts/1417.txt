@@ -1,0 +1,25 @@
+; segment 1417  page 14  class 0x20 (zone) id 23
+; kind class  length 89 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0045  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 45                                        .hdr      dictionary offset = 0045
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: d9 43 0f ff ff f7 40                         builtin   set_outdoor_sky(-9)
+000C: da 44 4b 6f 73 68 61 20 47 72 6f 74 …+4      builtin   set_map_title("Kosha Grotto")
+001C: d8 41 d0 40                                  builtin   set_zone_light_minimum(-48)
+0020: d6 41 02 40                                  builtin   play_music2(2)
+0024: fd 41 01 40                                  builtin   set_erase_colour(1)
+0028: 8d de 41 0f 40 5e 40 00 41                   jf        !test_flag(15) -> 0041
+0031: df 41 0f 43 50 00 00 01 40                   builtin   set_flag(15, True)
+003A: c5 43 00 00 00 82 40                         builtin   send_signal(130)
+0041:>8b 41 00 40                                  return    0
+0045: a0 03 50 00 ff ff 00 24 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

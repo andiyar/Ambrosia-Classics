@@ -1,0 +1,91 @@
+; segment 0EA3  page 0E  routine
+; kind routine  length 597 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 11                                     frame     args=2 locals=17
+0003: 8d 30 60 44 40 00 14                         jf        has(A30, sel68) -> 0014
+000A: 82 00 30 61 44 00 40                         set       L00 = prop(A30, sel68, 0)
+0011: 88 00 32                                     goto      -> 0032
+0014:>82 01 30 63 48 40                            set       L01 = as_cls48(A30)
+001A: 8d 01 60 44 40 00 2b                         jf        has(L01, sel68) -> 002B
+0021: 82 00 01 61 44 00 40                         set       L00 = prop(L01, sel68, 0)
+0028: 88 00 32                                     goto      -> 0032
+002B:>8b 43 50 00 00 00 40                         return    False
+0032:>82 02 43 50 00 00 00 40                      set       L02 = False
+003A: 8d 30 62 15 41 07 54 40 00 4f                jf        (A30.f15:activity == 7) -> 004F
+0044: 82 02 43 50 00 00 01 40                      set       L02 = True
+004C: 88 00 9b                                     goto      -> 009B
+004F:>8d 30 62 15 41 04 54 ac 41 00 41 04 …+8      jf        ((A30.f15:activity == 4) && (random(0, 4) != 0)) -> 006E
+0063: 82 02 43 50 00 00 01 40                      set       L02 = True
+006B: 88 00 9b                                     goto      -> 009B
+006E:>8d 30 62 15 41 06 54 40 00 7b                jf        (A30.f15:activity == 6) -> 007B
+0078: 88 00 9b                                     goto      -> 009B
+007B:>8d 30 62 1c 41 03 4c 30 62 1d 4f ac …+12     jf        (((A30.f1C:health * 3) < A30.f1D:health_max) && (random(0, 3) != 0)) -> 009B
+0093: 82 02 43 50 00 00 01 40                      set       L02 = True
+009B:>82 03 9f 0e 8c 30 31 40 40                   set       L03 = R0E8C(A30, A31)
+00A4: 8d 02 5e 40 00 c4                            jf        !L02 -> 00C4
+00AA: 8d f7 30 62 01 30 62 02 31 62 01 31 …+7      jf        !straight_line(A30.f01:x, A30.f02:y, A31.f01:x, A31.f02:y) -> 00C4
+00BD: 8b 43 50 00 00 00 40                         return    False
+00C4:>82 04 a0 43 10 00 00 05 41 00 41 00 …+4      set       L04 = iterate_range(&L05, 0, 0, 3)
+00D4:>8c a0 43 10 00 00 05 41 01 40 40 02 …+1      jt        iterate_range(&L05, 1) -> 0251
+00E1: 82 07 ac 41 00 41 64 40 40                   set       L07 = random(0, 100)
+00EA: 82 08 43 50 00 00 01 40                      set       L08 = True
+00F2: 82 09 a1 43 10 00 00 0a 41 00 00 40 …+1      set       L09 = iterate_list(&L0A, 0, L00)
+00FF:>8c a1 43 10 00 00 0a 41 01 40 40 02 …+1      jt        iterate_list(&L0A, 1) -> 0242
+010C: 8d 08 40 01 22                               jf        L08 -> 0122
+0111: 82 07 07 09 4b 40                            set       L07 = (L07 - L09)
+0117: 82 08 43 50 00 00 00 40                      set       L08 = False
+011F: 88 02 33                                     goto      -> 0233
+0122:>82 08 43 50 00 00 01 40                      set       L08 = True
+012A: 8d 07 41 00 50 40 02 33                      jf        (L07 <= 0) -> 0233
+0132: 82 0c ad 41 1c 41 00 30 41 00 09 41 …+7      set       L0C = as_spell(create_prop(28, 0, A30, 0, L09, 0, 0))
+0145: 82 0d 0c 61 36 00 40                         set       L0D = prop(L0C, sel54, 0)
+014C: 82 0e 43 50 00 00 01 40                      set       L0E = True
+0154: 8d 0d 41 04 54 40 01 64                      jf        (L0D == 4) -> 0164
+015C: 82 0e 43 50 00 00 00 40                      set       L0E = False
+0164:>8d 02 40 01 7c                               jf        L02 -> 017C
+0169: 8d 0d 41 00 53 40 01 79                      jf        (L0D != 0) -> 0179
+0171: 82 0e 43 50 00 00 00 40                      set       L0E = False
+0179:>88 01 a4                                     goto      -> 01A4
+017C:>8d 0d 41 00 54 40 01 8f                      jf        (L0D == 0) -> 018F
+0184: 82 0e 43 50 00 00 00 40                      set       L0E = False
+018C: 88 01 a4                                     goto      -> 01A4
+018F:>8d 0d 41 01 54 03 41 02 51 5c 40 01 …+1      jf        ((L0D == 1) && (L03 > 2)) -> 01A4
+019C: 82 0e 43 50 00 00 00 40                      set       L0E = False
+01A4:>8d 0e 5e 40 01 b0                            jf        !L0E -> 01B0
+01AA: a7 0c 40                                     builtin   delete_prop(L0C)
+01AD: 88 02 42                                     goto      -> 0242
+01B0:>82 0f 9d 09 0c 40 40                         set       L0F = L0C.sel9/use()
+01B7: 82 10 43 50 00 00 00 40                      set       L10 = False
+01BF: 8d 0d 41 03 54 40 01 d2                      jf        (L0D == 3) -> 01D2
+01C7: 82 10 43 50 00 00 01 40                      set       L10 = True
+01CF: 88 01 f4                                     goto      -> 01F4
+01D2:>8d 0f 40 01 f4                               jf        L0F -> 01F4
+01D7: 8d 0d 41 00 54 40 01 e7                      jf        (L0D == 0) -> 01E7
+01DF: 9d 0a 0c 30 40                               send      L0C.sel10/use_on(A30)
+01E4: 88 01 ec                                     goto      -> 01EC
+01E7:>9d 0a 0c 31 40                               send      L0C.sel10/use_on(A31)
+01EC:>82 10 43 50 00 00 01 40                      set       L10 = True
+01F4:>8d 10 40 02 13                               jf        L10 -> 0213
+01F9: 8d 9f 0f 13 30 40 40 02 13                   jf        R0F13(A30) -> 0213  ; R0F13 = inparty [from 0x0101 symtab]
+0202: 8a 30 40                                     print     A30
+0205: 20 63 61 73 74 73 20                         text      " casts "
+020C: 8a 9d 02 0c 40 40                            print     L0C.sel2/name()
+0212: 0a                                           text      "\n"
+0213:>a7 0c 40                                     builtin   delete_prop(L0C)
+0216: 8d 10 40 02 30                               jf        L10 -> 0230
+021B: 8d 02 5e 40 02 26                            jf        !L02 -> 0226
+0221: 9d 43 31 30 40                               send      A31.sel67(A30)
+0226:>8b 43 50 00 00 01 40                         return    True
+; ---- dead code 022D-0230: no dictionary entry, jump, pointer or call reaches it ----
+022D:x88 02 33                                     goto      -> 0233
+0230:>88 02 42                                     goto      -> 0242
+0233:>82 09 a1 43 10 00 00 0a 41 02 40 40          set       L09 = iterate_list(&L0A, 2)
+023F: 88 00 ff                                     goto      -> 00FF
+0242:>82 04 a0 43 10 00 00 05 41 02 40 40          set       L04 = iterate_range(&L05, 2)
+024E: 88 00 d4                                     goto      -> 00D4
+0251:>8b 41 00 40                                  return    0

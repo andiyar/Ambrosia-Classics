@@ -1,0 +1,112 @@
+; segment 080D  page 08  routine
+; kind routine  length 1715 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 6b 6f 73 68 00 00 32                      match     kosh else -> 0032
+000B: 22 4b 6f 73 68 61 20 69 73 20 61 20 …+20     text      "\"Kosha is a fine place to live.\""
+002B: 8b 43 50 00 00 01 40                         return    True
+0032:>90 63 6f 6d 61 00 00 8a                      match     coma else -> 008A
+003A: 22 48 6f 75 73 65 20 43 6f 6d 61 6e …+61     text      "\"House Comana has done a fine job ruling Kosha, and we all support them.\""
+0083: 8b 43 50 00 00 01 40                         return    True
+008A:>90 6e 61 78 6f 00 00 d7                      match     naxo else -> 00D7
+0092: 22 48 65 20 68 61 73 6e 27 74 20 62 …+50     text      "\"He hasn't been around recently - I believe he is in Cademia.\""
+00D0: 8b 43 50 00 00 01 40                         return    True
+00D7:>90 6d 79 75 73 00 01 17                      match     myus else -> 0117
+00DF: 22 45 6c 64 65 72 20 4d 79 75 73 20 …+37     text      "\"Elder Myus does a fine job ruling House Comana.\""
+0110: 8b 43 50 00 00 01 40                         return    True
+0117:>90 63 61 6e 61 00 01 7e                      match     cana else -> 017E
+011F: 22 49 74 20 77 61 73 20 61 20 73 68 …+76     text      "\"It was a shame when Canachus died, but Myus seems to have take up the task quite well.\""
+0177: 8b 43 50 00 00 01 40                         return    True
+017E:>90 61 72 65 69 00 01 b2                      match     arei else -> 01B2
+0186: 22 4d 61 73 74 65 72 20 41 72 65 69 …+25     text      "\"Master Areithous sets a fine table!\""
+01AB: 8b 43 50 00 00 01 40                         return    True
+01B2:>90 64 61 72 69 00 02 01                      match     dari else -> 0201
+01BA: 22 48 65 20 68 61 73 6e 27 74 20 62 …+52     text      "\"He hasn't been around recently - I believe he is in Catamarca.\""
+01FA: 8b 43 50 00 00 01 40                         return    True
+0201:>8d 48 10 41 0d 54 40 05 ee                   jf        (G10:zone == 13) -> 05EE
+020A: 90 77 68 65 72 00 05 ee                      match     wher else -> 05EE
+0212: 9f 08 16 30 45 03 cb 90 0a 88 0d 02 …+969    call      R0816(A30, blk@0219, 1)
+      ; 0x45 inline block 0219-05E4 (971 bytes):
+      0219: 90 0a                            .array[10]
+        [0] @0243 ->
+          0243: 90 06                            .array[6]
+            [0] Nil
+            [1] @025D "The 'Roasted Haunch'"
+            [2] @0272 "The Roasted Haunch's front door is "
+            [3] 10
+            [4] 29
+            [5] @0296 "."
+        [1] @0298 ->
+          0298: 90 06                            .array[6]
+            [0] char#73"Itanos"
+            [1] @02B2 "Judge Itanos"
+            [2] @02BF "Judge Itanos' office "
+            [3] 10
+            [4] 14
+            [5] @02D5 "."
+        [2] @02D7 ->
+          02D7: 90 06                            .array[6]
+            [0] char#16"Atreus"
+            [1] @02F1 "Atreus the Gemsmith"
+            [2] @0305 "Atreus the Gemsmith's workshop is "
+            [3] 34
+            [4] 53
+            [5] @0328 "."
+        [3] @032A ->
+          032A: 90 06                            .array[6]
+            [0] char#10"Myus"
+            [1] @0344 "Myus of Comana"
+            [2] @0353 "Lord Myus is normally found in the Great Hall, "
+            [3] 31
+            [4] 24
+            [5] @0383 "."
+        [4] @0385 ->
+          0385: 90 06                            .array[6]
+            [0] Nil
+            [1] @039F "Citizen Larisa's Quarters"
+            [2] @03B9 "She hasn't been in town for a while now, but you can find her house "
+            [3] 11
+            [4] 50
+            [5] @03FE "."
+        [5] @0400 ->
+          0400: 90 03                            .array[3]
+            [0] Nil
+            [1] @040E "LandKing Hall"
+            [2] @041C "LandKing Hall lies at the far northern edge of the land, past Odemia"
+        [6] @0461 ->
+          0461: 90 03                            .array[3]
+            [0] Nil
+            [1] @046F "Odemia"
+            [2] @0476 "Odemia north of Catamarca and northeast of Cademia, along the eastern shore."
+        [7] @04C3 ->
+          04C3: 90 03                            .array[3]
+            [0] Nil
+            [1] @04D1 "Catamarca"
+            [2] @04DB "Catamarca northeast of here, across the gulf, but just follow the coast from Cademia."
+        [8] @0531 ->
+          0531: 90 03                            .array[3]
+            [0] Nil
+            [1] @053F "Cademia"
+            [2] @0547 "Cademia, north, up the shore."
+        [9] @0565 ->
+          0565: 90 03                            .array[3]
+            [0] Nil
+            [1] @0573 "Pnyx"
+            [2] @0578 "Pnyx lies on the other side of the Titan's Spine Mountains - take the road west from Cademia is the safest."
+05E7: 8b 43 50 00 00 01 40                         return    True
+05EE:>90 64 65 6d 6f 00 06 a8                      match     demo else -> 06A8
+05F6: 8d dc 41 04 40 41 03 54 40 06 07             jf        (get_variable(4) == 3) -> 0607
+0601: dd 41 04 41 04 40                            builtin   set_variable(4, 4)
+0607:>8d dc 41 04 40 41 04 54 40 06 68             jf        (get_variable(4) == 4) -> 0668
+0612: 22 44 65 6d 6f 64 6f 63 75 73 20 77 …+71     text      "\"Demodocus was performing here recently, though I don't know if he is still around\""
+0665: 88 06 a1                                     goto      -> 06A1
+0668:>22 49 74 20 68 61 73 20 62 65 65 6e …+45     text      "\"It has been a while since Demodocus played around here.\""
+06A1:>8b 43 50 00 00 01 40                         return    True
+06A8:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 06AF-06B3: no dictionary entry, jump, pointer or call reaches it ----
+06AF:x8b 41 00 40                                  return    0

@@ -30,7 +30,7 @@ Default line format (same as the 2026-10-03 scratch run): `%08x %5x %s` = entry,
 import argparse, os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_BIN = os.path.join(HERE, '..', '..', '..', 'ghidra', 'Cythera_pef')
+DEFAULT_BIN = os.path.join(HERE, '..', '..', '..', 'ghidra', 'cythera', 'Cythera_pef')
 LOAD = 0x10000000
 
 
@@ -78,7 +78,7 @@ def tables(code, langs=(0, 9)):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0],
                                  epilog='See the module docstring for the recipe.')
-    ap.add_argument('--bin', default=DEFAULT_BIN, help='PEF binary (default ghidra/Cythera_pef)')
+    ap.add_argument('--bin', default=DEFAULT_BIN, help='PEF binary (default ghidra/cythera/Cythera_pef)')
     ap.add_argument('--tb', action='store_true', help='also print zero-word and name-field addresses')
     ap.add_argument('--at', metavar='HEX', help='print the function containing this address')
     ap.add_argument('--grep', metavar='REGEX', help='only names matching REGEX')

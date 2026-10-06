@@ -1,0 +1,38 @@
+; segment 117A  page 11  class 0x00 (prop) type 378 tile-name "map" (tool join F000/F004)
+; kind class  length 272 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C0  methods: sel16/take_drop_16@000E, sel17/take_drop_17@001C, sel9/use@002A, sel8/search@0062
+; properties: sel36/p_weight, sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c0                                        .hdr      dictionary offset = 00C0
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+0008: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel16/take_drop_16 @000E ====
+000E: 81 01 00                                     frame     args=1 locals=0
+0011: fc 43 50 00 00 01 40                         builtin   set_viewer_flag_d(True)
+0018: 8b 41 00 40                                  return    0
+
+; ==== method sel17/take_drop_17 @001C ====
+001C: 81 01 00                                     frame     args=1 locals=0
+001F: fc 43 50 00 00 00 40                         builtin   set_viewer_flag_d(False)
+0026: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @002A ====
+002A: 81 01 02                                     frame     args=1 locals=2
+002D: 8d db 30 40 40 00 38                         jf        scripted_window_shown(A30) -> 0038
+0034: 8b 41 00 40                                  return    0
+0038:>82 00 9b 04 30 41 06 41 28 41 28 41 …+8      set       L00 = sysnew_window(A30, 6, 40, 40, 125, 165)
+004C: 82 01 9b 13 00 41 00 41 00 41 7d 43 …+6      set       L01 = sysnew_13(L00, 0, 0, 125, 165)
+005E: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0062 ====
+0062: 81 01 00                                     frame     args=1 locals=0
+0065: 49 74 20 61 70 70 65 61 72 73 20 74 …+75     text      "It appears to be some sort of map, yet it shimmers and seems to change while you move.\n"
+00BC: 8b 41 00 40                                  return    0
+00C0: a0 0d 91 7a 00 08 00 27 50 00 ff ff …+68     .dict     dict[13] {8/search: @0062, 9/use: @002A, 16/take_drop_16: @000E, 17/take_drop_17: @001C, 36/p_weight: @0002, 39/p_typeflags27: @0008}

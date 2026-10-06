@@ -1,0 +1,31 @@
+; segment 0901  page 09  routine: combat-AI scenario test 1 (ai-scripts.md 5)
+; kind routine  length 153 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 06                                     frame     args=3 locals=6
+0003: 8d f5 30 32 40 40 00 12                      jf        find_skill(A30, A32) -> 0012
+000B: 8b 43 50 00 00 01 40                         return    True
+0012:>8d 30 60 44 40 00 23                         jf        has(A30, sel68) -> 0023
+0019: 82 00 30 61 44 00 40                         set       L00 = prop(A30, sel68, 0)
+0020: 88 00 37                                     goto      -> 0037
+0023:>82 01 30 63 48 40                            set       L01 = as_cls48(A30)
+0029: 8d 01 60 44 40 00 37                         jf        has(L01, sel68) -> 0037
+0030: 82 00 01 61 44 00 40                         set       L00 = prop(L01, sel68, 0)
+0037:>82 02 43 50 00 00 01 40                      set       L02 = True
+003F: 82 03 a1 43 10 00 00 04 41 00 00 40 …+1      set       L03 = iterate_list(&L04, 0, L00)
+004C:>8c a1 43 10 00 00 04 41 01 40 40 00 …+1      jt        iterate_list(&L04, 1) -> 008E
+0059: 8d 02 40 00 69                               jf        L02 -> 0069
+005E: 82 02 43 50 00 00 00 40                      set       L02 = False
+0066: 88 00 7f                                     goto      -> 007F
+0069:>8d 03 32 54 40 00 77                         jf        (L03 == A32) -> 0077
+0070: 8b 43 50 00 00 01 40                         return    True
+0077:>82 02 43 50 00 00 01 40                      set       L02 = True
+007F:>82 03 a1 43 10 00 00 04 41 02 40 40          set       L03 = iterate_list(&L04, 2)
+008B: 88 00 4c                                     goto      -> 004C
+008E:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0095-0099: no dictionary entry, jump, pointer or call reaches it ----
+0095:x8b 41 00 40                                  return    0

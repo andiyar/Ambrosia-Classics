@@ -1,0 +1,20 @@
+; segment 0E67  page 0E  routine "DisplayInstrument" [from 0x0101 symtab: key 1667; mapping 0x16xx/0x17xx -> 0x0Exx/0x0Fxx, MED]
+; kind routine  length 97 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 09 05                                     frame     args=9 locals=5
+0003: 8d db 30 40 40 00 0e                         jf        scripted_window_shown(A30) -> 000E
+000A: 8b 41 00 40                                  return    0
+000E:>82 00 9b 04 30 31 32 33 34 35 40 40          set       L00 = sysnew_window(A30, A31, A32, A33, A34, A35)
+001A: 82 01 41 00 40                               set       L01 = 0
+001F: 82 02 a0 43 10 00 00 03 41 00 41 00 …+3      set       L02 = iterate_range(&L03, 0, 0, A38)
+002E:>8c a0 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_range(&L03, 1) -> 005D
+003B: 9b 0a 00 36 36 41 01 4a 36 01 41 00 …+1      sysnew    sysnew_0A(L00, A36, (A36 + 1), A36, L01, 0)
+0048: 82 01 01 37 4a 40                            set       L01 = (L01 + A37)
+004E: 82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+005A: 88 00 2e                                     goto      -> 002E
+005D:>8b 41 00 40                                  return    0

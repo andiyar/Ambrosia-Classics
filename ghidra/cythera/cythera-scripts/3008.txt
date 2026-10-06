@@ -1,0 +1,14 @@
+; segment 3008  page 30  routine: default handler for selector 8 (search)
+; kind routine  length 75 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 8d 30 63 40 40 00 2a                         jf        as_char(A30) -> 002A
+000A: 9f 0e 48 30 44 54 68 65 79 20 61 72 …+17     call      R0E48(A30, "They are carrying", False)  ; R0E48 = SpillOut [from 0x0101 symtab]
+0027: 88 00 47                                     goto      -> 0047
+002A:>9f 0e 48 30 44 53 65 61 72 63 68 69 …+17     call      R0E48(A30, "Searching reveals", True)  ; R0E48 = SpillOut [from 0x0101 symtab]
+0047:>8b 41 00 40                                  return    0

@@ -1,0 +1,15 @@
+; segment 101E  page 10  class 0x00 (prop) type 30 tile-name "glass" (tool join F000/F004)
+; kind class  length 34 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @000E  methods: -
+; properties: sel36/p_weight, sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 0e                                        .hdr      dictionary offset = 000E
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+0008: 90 01 00 00 00 10                            .array    array[1] = [16]
+000E: a0 03 90 1e 00 02 00 24 90 1e 00 08 …+8      .dict     dict[3] {36/p_weight: @0002, 39/p_typeflags27: @0008}

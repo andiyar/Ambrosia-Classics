@@ -1,0 +1,10 @@
+; segment 0414  page 04  compiled combat AI (ai-scripts.md 3) — not VM bytecode, stored plain
+; length 88 bytes  unknown opcodes: 0 (no VM opcodes in this format)
+0000: name "Beserk"
+0020: entry 66 0e f2 00 00 00 00 00
+0028: entry 64 82 06 00 08 05 0d 00
+0030: entry 00 8b 00 00 00 00 00 00
+0038: entry 65 0e f2 00 00 00 00 00
+0040: entry 64 8b 00 00 00 00 00 00
+0048: entry 65 01 00 00 00 00 00 00
+0050: entry 64 8c 00 00 00 00 00 00

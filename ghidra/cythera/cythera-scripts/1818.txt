@@ -1,0 +1,46 @@
+; segment 1818  page 18  class 0x40 (char) id 24 name "Eurybates" (string table 0201)
+; kind class  length 426 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0196  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 96                                        .hdr      dictionary offset = 0196
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6c …+30     text      "You see a sly looking, slender young man.*"
+002F: 8d 9f 0f 02 30 41 07 40 40 00 8c             jf        R0F02(A30, 7) -> 008C  ; R0F02 = tstbit [from 0x0101 symtab]
+003A: 22 59 6f 75 27 72 65 20 6e 65 77 20 …+60     text      "\"You're new around here - allow me to introduce myself.  I'm Eurybates.\""
+0082: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0089: 88 00 9d                                     goto      -> 009D
+008C:>22 48 6f 77 64 79 20 73 74 72 61 6e …+5      text      "\"Howdy stranger.\""
+009D:>8e                                           input       ; read a line into the input buffer
+009E: 90 6e 61 6d 65 2c 20 65 75 72 79 00 …+2      match     name, eury else -> 00C6
+00AC: 22 49 27 6d 20 45 75 72 79 62 61 74 …+4      text      "\"I'm Eurybates.\""
+00BC: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00C3: 88 00 9d                                     goto      -> 009D
+00C6:>90 6a 6f 62 2c 63 6f 6f 6b 2c 68 75 …+10     match     job,cook,hunt,food else -> 0104
+00DC: 22 49 27 6d 20 74 68 65 20 63 6f 6f …+25     text      "\"I'm the cook & hunter for the camp.\""
+0101: 88 00 9d                                     goto      -> 009D
+0104:>90 6d 69 6e 65 00 01 4e                      match     mine else -> 014E
+010C: 22 49 27 76 65 20 68 61 64 20 77 6f …+51     text      "\"I've had worse jobs, but life in a mining camp isn't all bad.\""
+014B: 88 00 9d                                     goto      -> 009D
+014E:>90 62 79 65 00 01 67                         match     bye else -> 0167
+0155: 22 46 61 72 65 77 65 6c 6c 2e 22             text      "\"Farewell.\""
+0160: 8b 41 00 40                                  return    0
+; ---- dead code 0164-0167: no dictionary entry, jump, pointer or call reaches it ----
+0164:x88 00 9d                                     goto      -> 009D
+0167:>90 2a 00 01 8f                               match     * else -> 018F
+016C: 8d 9f 08 11 30 40 5e 40 01 8c                jf        !R0811(A30) -> 018C
+0176: 8d 9f 08 01 30 40 5e 40 01 8c                jf        !R0801(A30) -> 018C
+0180: 22 45 78 63 75 73 65 20 6d 65 3f 22          text      "\"Excuse me?\""
+018C:>88 00 9d                                     goto      -> 009D
+018F:>88 00 9d                                     goto      -> 009D
+; ---- dead code 0192-0196: no dictionary entry, jump, pointer or call reaches it ----
+0192:x8b 41 00 40                                  return    0
+0196: a0 03 98 18 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

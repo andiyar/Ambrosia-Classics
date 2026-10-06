@@ -1,0 +1,90 @@
+; segment 1823  page 18  class 0x40 (char) id 35 name "Hebe" (string table 0201)
+; kind class  length 1263 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @04DB  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 04 db                                        .hdr      dictionary offset = 04DB
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 20 73 6c …+44     text      "You see a slight, mousey, woman.*\"Yes?  Can I help you?\""
+003D: 8d 49 05 00 00 10 40 00 53                   jf        seg0500[0010] -> 0053
+0046: 82 00 44 6d 61 27 61 6d 00 40                set       L00 = "ma'am"
+0050: 88 00 5b                                     goto      -> 005B
+0053:>82 00 44 73 69 72 00 40                      set       L00 = "sir"
+005B:>8e                                           input       ; read a line into the input buffer
+005C: 90 62 79 65 00 00 f0                         match     bye else -> 00F0
+0063: 8d 9f 0f 02 30 41 01 40 5e 40 00 df          jf        !R0F02(A30, 1) -> 00DF  ; R0F02 = tstbit [from 0x0101 symtab]
+006F: 22 5e                                        text      "\"^"
+0071: 8a 00 40                                     print     L00
+0074: 2c 20 6f 6e 65 20 6c 61 73 74 20 74 …+85     text      ", one last thing, if you are in Cademia and meet a trader named Antenor, tell him I forgive him.\""
+00D5: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+00DC: 88 00 e9                                     goto      -> 00E9
+00DF:>22 47 6f 6f 64 62 79 65 2e 22                text      "\"Goodbye.\""
+00E9:>8b 41 00 40                                  return    0
+; ---- dead code 00ED-00F0: no dictionary entry, jump, pointer or call reaches it ----
+00ED:x88 00 5b                                     goto      -> 005B
+00F0:>90 68 65 62 65 2c 6e 61 6d 65 00 01 …+1      match     hebe,name else -> 011E
+00FD: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+6      text      "\"My name is Hebe, "
+010F: 8a 00 40                                     print     L00
+0112: 2e 22                                        text      ".\""
+0114: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+011B: 88 00 5b                                     goto      -> 005B
+011E:>8d 9f 0f 02 42 00 29 41 03 40 40 01 …+1      jf        R0F02(41, 3) -> 01A3  ; R0F02 = tstbit [from 0x0101 symtab]
+012B: 90 63 72 69 74 00 01 a3                      match     crit else -> 01A3
+0133: 22 48 65 27 73 20 61 20 6e 69 63 65 …+90     text      "\"He's a nice enough person, but my feelings for Antenor are too strong for me to think about another.\""
+0199: 9f 0f 00 30 41 03 40                         call      R0F00(A30, 3)  ; R0F00 = setbit [from 0x0101 symtab]
+01A0: 88 00 5b                                     goto      -> 005B
+01A3:>90 61 6e 74 65 00 02 d3                      match     ante else -> 02D3
+01AB: 22 48 65 20 61 6e 64 20 49 20 77 65 …+14     text      "\"He and I were to be wed.\""
+01C5: 8d 9f 0f 02 42 00 24 41 01 40 9f 0f …+10     jf        (R0F02(36, 1) && !R0F02(A30, 2)) -> 02D0  ; R0F02 = tstbit [from 0x0101 symtab]
+01DB: 2a 22 44 6f 20 79 6f 75 20 62 65 61 …+16     text      "*\"Do you bear news of him?\"*"
+01F7: a4 41 01 41 02 40                            builtin   show_portrait(1, 2)
+01FD: 22 59 65 73 2c 20 49 20 6d 65 74 20 …+136    text      "\"Yes, I met him and gave him your message.  He said that he must forgive himself before he looks to you your forgiveness.\"*Hebe looks disappointed.*"
+0291: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0296: 22 49 20 75 6e 64 65 72 73 74 61 6e …+31     text      "\"I understand.  Thank you for your effort.\""
+02C1: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+02C8: 9f 0e 8b 48 05 41 0a 40                      call      R0E8B(G05:leader, 10)
+02D0:>88 00 5b                                     goto      -> 005B
+02D3:>90 6a 6f 62 00 03 14                         match     job else -> 0314
+02DA: 22 49 20 73 70 69 6e 20 40 66 6c 61 …+43     text      "\"I spin @flax into @thread, which I then sell to @Ake.\""
+0311: 88 00 5b                                     goto      -> 005B
+0314:>90 61 6b 65 00 03 4f                         match     ake else -> 034F
+031B: 22 53 68 65 20 69 73 20 6d 79 20 62 …+37     text      "\"She is my best customer.  Only customer though.\""
+034C: 88 00 5b                                     goto      -> 005B
+034F:>90 62 75 79 2c 74 68 72 65 00 03 8d          match     buy,thre else -> 038D
+035B: 22 53 6f 72 72 79 2c 20 62 75 74 20 …+35     text      "\"Sorry, but I've promised @Ake all I can spin.\""
+038A: 88 00 5b                                     goto      -> 005B
+038D:>90 74 72 61 69 2c 74 65 61 63 00 03 …+1      match     trai,teac else -> 03FB
+039A: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+82     text      "\"I'm sorry, but I'm still just an apprentice at this - Ake could surely teach you, however...\""
+03F8: 88 00 5b                                     goto      -> 005B
+03FB:>90 73 65 6c 6c 2c 66 6c 61 78 00 04 …+1      match     sell,flax else -> 049F
+0408: 22 44 6f 20 79 6f 75 20 68 61 76 65 …+87     text      "\"Do you have some flax you'd like to sell?  I don't have much, but I can pay you 10 oboloi a bale.\""
+046B: 8f 79 6e 00                                  prompt    "yn"
+046F: 90 79 00 04 9c                               match     y else -> 049C
+0474: 9f 0e a9 44 46 6c 61 78 00 45 00 19 …+28     call      R0EA9("Flax", blk@0480, 10)
+      ; 0x45 inline block 0480-0499 (25 bytes):
+      0480: 90 01                            .array[1]
+        [0] @0486 ->
+          0486: 90 03                            .array[3]
+            [0] 162
+            [1] @0494 "Flax"
+            [2] 10
+049C:>88 00 5b                                     goto      -> 005B
+049F:>90 2a 00 04 d4                               match     * else -> 04D4
+04A4: 8d 9f 08 0a 30 40 5e 40 04 d1                jf        !R080A(A30) -> 04D1
+04AE: 8d 9f 08 01 30 40 5e 40 04 d1                jf        !R0801(A30) -> 04D1
+04B8: 22 49 20 63 61 6e 6e 6f 74 20 68 65 …+8      text      "\"I cannot help you, "
+04CC: 8a 00 40                                     print     L00
+04CF: 2e 22                                        text      ".\""
+04D1:>88 00 5b                                     goto      -> 005B
+04D4:>88 00 5b                                     goto      -> 005B
+; ---- dead code 04D7-04DB: no dictionary entry, jump, pointer or call reaches it ----
+04D7:x8b 41 00 40                                  return    0
+04DB: a0 03 98 23 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

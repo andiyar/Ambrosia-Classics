@@ -1,0 +1,25 @@
+; segment 185C  page 18  class 0x40 (char) id 92 name "Eudoxus" (string table 0201)
+; kind class  length 155 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0087  methods: sel29/death@0002, sel12/talk@001F
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 87                                        .hdr      dictionary offset = 0087
+
+; ==== method sel29/death @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d dc 41 01 40 41 01 54 40 00 16             jf        (get_variable(1) == 1) -> 0016
+0010: dd 41 01 41 02 40                            builtin   set_variable(1, 2)
+0016:>9f 0e 8d 30 40                               call      R0E8D(A30)
+001B: 8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @001F ====
+001F: 81 01 00                                     frame     args=1 locals=0
+0022: 59 6f 75 20 73 65 65 20 61 20 64 69 …+85     text      "You see a dirty looking ruffian.\n*\"If you knew what was good for you, you'd move right along....\""
+0083: 8b 41 00 40                                  return    0
+0087: a0 03 98 5c 00 1f 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @001F, 29/death: @0002}

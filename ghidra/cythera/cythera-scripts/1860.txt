@@ -1,0 +1,51 @@
+; segment 1860  page 18  class 0x40 (char) id 96 name "Peirithous" (string table 0201)
+; kind class  length 414 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @018A  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 8a                                        .hdr      dictionary offset = 018A
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 64 6f …+34     text      "You see a dour faced man of middle age.*\"Good "
+0033: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+003A: 2c 20                                        text      ", "
+003C: 8d 49 05 00 00 10 40 00 4d                   jf        seg0500[0010] -> 004D
+0045: 6d 61 27 61 6d                               text      "ma'am"
+004A: 88 00 50                                     goto      -> 0050
+004D:>73 69 72 2e 22                               text      "sir.\""  ; shares its tail with text @0050
+0050:>2e 22                                        text      ".\""
+0052:>8e                                           input       ; read a line into the input buffer
+0053: 90 6e 61 6d 65 00 00 7e                      match     name else -> 007E
+005B: 22 49 20 61 6d 20 63 61 6c 6c 65 64 …+13     text      "\"I am called Peirithous.\""
+0074: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+007B: 88 00 52                                     goto      -> 0052
+007E:>90 6a 6f 62 00 00 ac                         match     job else -> 00AC
+0085: 22 49 20 61 6d 20 74 68 65 20 6d 61 …+24     text      "\"I am the majordomo of Judge Sacas.\""
+00A9: 88 00 52                                     goto      -> 0052
+00AC:>90 70 65 69 72 00 00 d5                      match     peir else -> 00D5
+00B4: 22 59 65 73 3f 20 20 57 68 61 74 20 …+18     text      "\"Yes?  What can I do for you?\""
+00D2: 88 00 52                                     goto      -> 0052
+00D5:>90 62 79 65 00 01 03                         match     bye else -> 0103
+00DC: 22 56 65 72 79 20 77 65 6c 6c 20 2d …+20     text      "\"Very well - I have work to do.\""
+00FC: 8b 41 00 40                                  return    0
+; ---- dead code 0100-0103: no dictionary entry, jump, pointer or call reaches it ----
+0100:x88 00 52                                     goto      -> 0052
+0103:>90 73 61 63 61 00 01 33                      match     saca else -> 0133
+010B: 22 4a 75 64 67 65 20 53 61 63 61 73 …+25     text      "\"Judge Sacas is an honorable person.\""
+0130: 88 00 52                                     goto      -> 0052
+0133:>90 2a 00 01 83                               match     * else -> 0183
+0138: 8d 9f 08 0a 30 40 5e 40 01 80                jf        !R080A(A30) -> 0180
+0142: 8d 9f 08 01 30 40 5e 40 01 80                jf        !R0801(A30) -> 0180
+014C: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+40     text      "\"I'm sorry, but that is not for me to gossip about.\""
+0180:>88 00 52                                     goto      -> 0052
+0183:>88 00 52                                     goto      -> 0052
+; ---- dead code 0186-018A: no dictionary entry, jump, pointer or call reaches it ----
+0186:x8b 41 00 40                                  return    0
+018A: a0 03 98 60 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

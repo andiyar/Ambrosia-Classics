@@ -1,0 +1,38 @@
+; segment 1A19  page 1A  class 0x50 (spell) type 25
+; kind class  length 240 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C4  methods: sel2/name@0008, sel8/search@0022, sel9/use@0067
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c4                                        .hdr      dictionary offset = 00C4
+0002: 90 01 00 00 00 05                            .array    array[1] = [5]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 52 61 6c 6c 79 00 40                   return    "Rally"
+; ---- dead code 0014-0018: no dictionary entry, jump, pointer or call reaches it ----
+0014:x8b 41 00 40                                  return    0
+0018: 90 02 00 00 00 02 50 00 ff ff                .array    array[2] = [2, Nil]
+
+; ==== method sel8/search @0022 ====
+0022: 81 01 00                                     frame     args=1 locals=0
+0025: 54 68 69 73 20 73 70 65 6c 6c 20 62 …+50     text      "This spell breaks the effect of fear on anybody in the party.\n"
+0063: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0067 ====
+0067: 81 01 03                                     frame     args=1 locals=3
+006A: 8d 9f 0e a1 30 62 0b 41 02 41 04 40 …+3      jf        R0EA1(A30.f0B:loc16, 2, 4) -> 00C0
+0079: e1 48 09 43 00 00 00 f0 40                   builtin   show_magic(G09:speaker, 240)
+0082: d3 41 2c 48 09 62 01 48 09 62 02 40          builtin   positional_sound(44, G09:speaker.f01:x, G09:speaker.f02:y)
+008E: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+009F:>8c ca 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_party(&L01, 1) -> 00C0
+00AC: c2 00 41 0d 40                               builtin   remove_ability(L00, 13)
+00B1: 82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+00BD: 88 00 9f                                     goto      -> 009F
+00C0:>8b 41 00 40                                  return    0
+00C4: a0 07 50 00 ff ff 07 c3 9a 19 00 22 …+32     .dict     dict[7] {2/name: @0008, 8/search: @0022, 9/use: @0067, 51: @0018, 54: @0002}

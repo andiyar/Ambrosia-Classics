@@ -1,0 +1,69 @@
+; segment 1AFA  page 1A  class 0x50 (spell) type 250
+; kind class  length 466 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01A6  methods: sel2/name@0008, sel4/index@001F, sel9/use@002C, sel10/use_on@00F0
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 a6                                        .hdr      dictionary offset = 01A6
+0002: 90 01 00 00 00 6b                            .array    array[1] = [107]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 54 72 79 20 41 6c 6c 20 4b 65 …+4      return    "Try All Keys"
+; ---- dead code 001B-001F: no dictionary entry, jump, pointer or call reaches it ----
+001B:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @001F ====
+001F: 81 02 00                                     frame     args=2 locals=0
+0022: 8b 31 41 01 54 40                            return    (A31 == 1)
+; ---- dead code 0028-002C: no dictionary entry, jump, pointer or call reaches it ----
+0028:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @002C ====
+002C: 81 01 07                                     frame     args=1 locals=7
+002F: 54 72 79 20 6b 65 79 73 20 6f 6e 20 …+6      text      "Try keys on what?\n"
+0041: 82 00 43 50 00 00 00 40                      set       L00 = False
+0049: 82 01 ca 43 10 00 00 02 41 00 43 50 …+5      set       L01 = iterate_party(&L02, 0, True)
+005A:>8c ca 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_party(&L02, 1) -> 00BD
+0067: 82 04 c9 43 10 00 00 05 41 00 01 40 …+1      set       L04 = iterate_descendants(&L05, 0, L01)
+0074:>8c c9 43 10 00 00 05 41 01 40 40 00 …+1      jt        iterate_descendants(&L05, 1) -> 00A6
+0081: 8d 04 62 04 42 00 42 54 40 00 97             jf        (L04.f04:type == 66) -> 0097
+008C: 82 00 43 50 00 00 01 40                      set       L00 = True
+0094: 88 00 a6                                     goto      -> 00A6
+0097:>82 04 c9 43 10 00 00 05 41 02 40 40          set       L04 = iterate_descendants(&L05, 2)
+00A3: 88 00 74                                     goto      -> 0074
+00A6:>8d 00 40 00 ae                               jf        L00 -> 00AE
+00AB: 88 00 bd                                     goto      -> 00BD
+00AE:>82 01 ca 43 10 00 00 02 41 02 40 40          set       L01 = iterate_party(&L02, 2)
+00BA: 88 00 5a                                     goto      -> 005A
+00BD:>8d 00 5e 40 00 e5                            jf        !L00 -> 00E5
+00C3: 59 6f 75 20 64 6f 6e 27 74 20 68 61 …+22     text      "You don't have any keys to use...\n"
+00E5:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 00EC-00F0: no dictionary entry, jump, pointer or call reaches it ----
+00EC:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00F0 ====
+00F0: 81 02 06                                     frame     args=2 locals=6
+00F3: 8d 31 60 34 40 01 8f                         jf        has(A31, sel52) -> 018F
+00FA: 82 00 ca 43 10 00 00 01 41 00 43 50 …+5      set       L00 = iterate_party(&L01, 0, True)
+010B:>8c ca 43 10 00 00 01 41 01 40 40 01 …+1      jt        iterate_party(&L01, 1) -> 017D
+0118: 82 03 c9 43 10 00 00 04 41 00 00 40 …+1      set       L03 = iterate_descendants(&L04, 0, L00)
+0125:>8c c9 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_descendants(&L04, 1) -> 016E
+0132: 8d 03 62 04 42 00 42 54 40 01 5f             jf        (L03.f04:type == 66) -> 015F
+013D: 8d 31 62 06 03 62 06 03 62 03 41 1a …+6      jf        (A31.f06:quality == (L03.f06:quality + (L03.f03:frame * 26))) -> 015F
+014F: 9f 0e 43 03 41 1a 03 62 03 4c 31 40          call      R0E43(L03, (26 * L03.f03:frame), A31)  ; R0E43 = DoKey [from 0x0101 symtab]
+015B: 8b 41 00 40                                  return    0
+015F:>82 03 c9 43 10 00 00 04 41 02 40 40          set       L03 = iterate_descendants(&L04, 2)
+016B: 88 01 25                                     goto      -> 0125
+016E:>82 00 ca 43 10 00 00 01 41 02 40 40          set       L00 = iterate_party(&L01, 2)
+017A: 88 01 0b                                     goto      -> 010B
+017D:>4e 6f 20 6b 65 79 20 66 69 74 73 2e …+3      text      "No key fits...\n"
+018C: 88 01 a2                                     goto      -> 01A2
+018F:>49 74 20 69 73 6e 27 74 20 6c 6f 63 …+7      text      "It isn't locked...\n"
+01A2:>8b 41 00 40                                  return    0
+01A6: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @001F, 9/use: @002C, 10/use_on: @00F0, 40/p_typeflags28: @0002}

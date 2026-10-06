@@ -1,0 +1,34 @@
+; segment 0C86  page 0C  routine
+; kind routine  length 286 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 06 05                                     frame     args=6 locals=5
+0003: 82 00 fa 33 40 40                            set       L00 = find_unique_prop(A33)
+0009: 82 01 fa 35 40 40                            set       L01 = find_unique_prop(A35)
+000F: 8d ac 41 00 41 04 40 41 01 54 00 43 …+9      jf        ((random(0, 4) == 1) && (L00 != Nil)) -> 007D
+0024: f0 30 43 00 00 00 a3 32 41 00 46 32 …+6      builtin   queue_activity(A30, 163, A32[0], A32[1], 0)
+0036: f0 30 43 00 00 00 a0 31 41 00 46 31 …+6      builtin   queue_activity(A30, 160, A31[0], A31[1], 0)
+0048: f0 30 43 00 00 00 a2 00 41 00 41 00 …+1      builtin   queue_activity(A30, 162, L00, 0, 0)
+0055: f0 30 41 4e 00 41 00 41 00 40                builtin   queue_activity(A30, 78, L00, 0, 0)
+005F: f0 30 41 42 41 05 40                         builtin   queue_activity(A30, 66, 5)
+0066: f0 30 43 00 00 00 a0 30 62 01 30 62 …+4      builtin   queue_activity(A30, 160, A30.f01:x, A30.f02:y, 0)
+0076: 8b 43 50 00 00 01 40                         return    True
+007D:>f0 30 43 00 00 00 a3 31 41 00 46 31 …+6      builtin   queue_activity(A30, 163, A31[0], A31[1], 0)
+008F: f0 30 41 42 41 05 41 00 41 00 40             builtin   queue_activity(A30, 66, 5, 0, 0)
+009A: f0 30 43 00 00 00 a3 34 41 00 46 34 …+6      builtin   queue_activity(A30, 163, A34[0], A34[1], 0)
+00AC: 82 02 a0 43 10 00 00 03 41 00 41 00 …+8      set       L02 = iterate_range(&L03, 0, 0, random(1, 3))
+00C0:>8c a0 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_range(&L03, 1) -> 00F2
+00CD: f0 30 41 51 31 41 00 46 31 41 01 46 …+3      builtin   queue_activity(A30, 81, A31[0], A31[1], 50)
+00DC: f0 30 41 42 41 05 40                         builtin   queue_activity(A30, 66, 5)
+00E3: 82 02 a0 43 10 00 00 03 41 02 40 40          set       L02 = iterate_range(&L03, 2)
+00EF: 88 00 c0                                     goto      -> 00C0
+00F2:>f0 30 43 00 00 00 a2 01 41 00 41 00 …+1      builtin   queue_activity(A30, 162, L01, 0, 0)
+00FF: f0 30 41 51 01 62 01 01 62 02 41 31 …+1      builtin   queue_activity(A30, 81, L01.f01:x, L01.f02:y, 49)
+010C: f0 30 41 42 41 0a 40                         builtin   queue_activity(A30, 66, 10)
+0113: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 011A-011E: no dictionary entry, jump, pointer or call reaches it ----
+011A:x8b 41 00 40                                  return    0

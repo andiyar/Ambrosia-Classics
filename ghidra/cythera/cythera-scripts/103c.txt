@@ -1,0 +1,22 @@
+; segment 103C  page 10  class 0x00 (prop) type 60 tile-name "flowers" (tool join F000/F004)
+; kind class  length 135 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0073  methods: sel26@0008
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 73                                        .hdr      dictionary offset = 0073
+0002: 90 01 00 00 00 0a                            .array    array[1] = [10]
+
+; ==== method sel26 @0008 ====
+0008: 81 02 00                                     frame     args=2 locals=0
+000B: 8d 30 62 06 41 01 54 31 62 04 42 00 …+13     jf        (((A30.f06:quality == 1) && (A31.f04:type == 182)) && (A31.f06:quality == 1)) -> 006F
+0024: 59 6f 75 20 66 65 65 6c 20 61 20 73 …+51     text      "You feel a sense of respectfulness fill you with your actions.\n"
+0063: f3 41 21 40                                  builtin   done_to_do(33)
+0067: 87 0c 48 0c 41 05 4a 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + 5)
+006F:>8b 41 00 40                                  return    0
+0073: a0 03 90 3c 00 02 00 24 50 00 ff ff …+8      .dict     dict[3] {26: @0008, 36/p_weight: @0002}

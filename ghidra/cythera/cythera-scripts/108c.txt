@@ -1,0 +1,32 @@
+; segment 108C  page 10  class 0x00 (prop) type 140 tile-name "pouch" (tool join F000/F004)
+; kind class  length 153 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0049  methods: sel23@0014, sel9/use@0022, sel8/search@003E
+; properties: sel22, sel36/p_weight, sel38/p26
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 49                                        .hdr      dictionary offset = 0049
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+0008: 90 01 00 00 00 28                            .array    array[1] = [40]
+000E: 90 01 00 00 00 07                            .array    array[1] = [7]
+
+; ==== method sel23 @0014 ====
+0014: 81 02 00                                     frame     args=2 locals=0
+0017: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 001E-0022: no dictionary entry, jump, pointer or call reaches it ----
+001E:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0022 ====
+0022: 81 01 00                                     frame     args=1 locals=0
+0025: 9f 0e 66 30 41 0d 41 24 41 24 43 00 …+9      call      R0E66(A30, 13, 36, 36, 178, 178)  ; R0E66 = DisplayContainer [from 0x0101 symtab]
+003A: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @003E ====
+003E: 81 01 00                                     frame     args=1 locals=0
+0041: 9d 09 30 40                                  send      A30.sel9/use()
+0045: 8b 41 00 40                                  return    0
+0049: a0 0d 50 00 ff ff 3b a8 50 00 ff ff …+68     .dict     dict[13] {8/search: @003E, 9/use: @0022, 22: @0008, 23: @0014, 36/p_weight: @0002, 38/p26: @000E}

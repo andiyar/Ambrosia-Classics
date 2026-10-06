@@ -1,0 +1,51 @@
+; segment 1831  page 18  class 0x40 (char) id 49 name "Bias" (string table 0201)
+; kind class  length 560 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @021C  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 1c                                        .hdr      dictionary offset = 021C
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 64 6f …+26     text      "You see a dour faced older man.*\"Yes?\""
+002B:>8e                                           input       ; read a line into the input buffer
+002C: 90 6e 61 6d 65 00 00 50                      match     name else -> 0050
+0034: 22 4d 79 20 6e 61 6d 65 20 69 73 20 …+6      text      "\"My name is Bias.\""
+0046: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+004D: 88 00 2b                                     goto      -> 002B
+0050:>90 6a 6f 62 00 00 78                         match     job else -> 0078
+0057: 22 49 20 61 6d 20 73 65 72 76 61 6e …+18     text      "\"I am servant of House Attis.\""
+0075: 88 00 2b                                     goto      -> 002B
+0078:>90 62 79 65 00 00 a5                         match     bye else -> 00A5
+007F: 22 49 20 77 69 6c 6c 20 72 65 74 75 …+19     text      "\"I will return to my work now.\""
+009E: 8b 41 00 40                                  return    0
+; ---- dead code 00A2-00A5: no dictionary entry, jump, pointer or call reaches it ----
+00A2:x88 00 2b                                     goto      -> 002B
+00A5:>90 74 68 75 72 00 00 e9                      match     thur else -> 00E9
+00AD: 22 49 20 68 61 76 65 20 77 6f 72 6b …+45     text      "\"I have worked for Matron Thuria since I was a man girl.\""
+00E6: 88 00 2b                                     goto      -> 002B
+00E9:>90 74 68 65 74 2c 77 69 66 65 00 01 …+1      match     thet,wife else -> 0127
+00F6: 22 49 20 6d 65 74 20 61 6e 64 20 6d …+34     text      "\"I met and married Thetis while working here.\""
+0124: 88 00 2b                                     goto      -> 002B
+0127:>90 63 79 62 65 00 01 7c                      match     cybe else -> 017C
+012F: 22 53 68 65 20 77 61 73 20 61 20 62 …+62     text      "\"She was a bit of a troublemaker growing up, but she has since matured...\""
+0179: 88 00 2b                                     goto      -> 002B
+017C:>90 6d 61 6c 69 00 01 c0                      match     mali else -> 01C0
+0184: 22 49 20 6c 69 6b 65 20 74 6f 20 74 …+45     text      "\"I like to think of young Malis as the son we never had.\""
+01BD: 88 00 2b                                     goto      -> 002B
+01C0:>90 2a 00 02 15                               match     * else -> 0215
+01C5: 8d 9f 08 02 30 40 5e 40 02 12                jf        !R0802(A30) -> 0212
+01CF: 8d 9f 08 0e 30 40 5e 40 02 12                jf        !R080E(A30) -> 0212
+01D9: 8d 9f 08 01 30 40 5e 40 02 12                jf        !R0801(A30) -> 0212
+01E3: 22 49 20 64 6f 6e 27 74 20 65 6e 67 …+35     text      "\"I don't engage in idle gossip with strangers.\""
+0212:>88 00 2b                                     goto      -> 002B
+0215:>88 00 2b                                     goto      -> 002B
+; ---- dead code 0218-021C: no dictionary entry, jump, pointer or call reaches it ----
+0218:x8b 41 00 40                                  return    0
+021C: a0 03 98 31 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

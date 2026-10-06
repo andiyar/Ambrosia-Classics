@@ -1,0 +1,13 @@
+; segment 3019  page 30  routine: default handler for selector 25 (take_drop_25)
+; kind routine  length 28 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 8d 30 60 27 40 00 18                         jf        has(A30, sel39/p_typeflags27) -> 0018
+000A: 8d 30 61 27 00 41 10 56 40 00 18             jf        (prop(A30, sel39/p_typeflags27, 0) & 16) -> 0018
+0015: a7 30 40                                     builtin   delete_prop(A30)
+0018:>8b 41 00 40                                  return    0

@@ -1,0 +1,45 @@
+; segment 101F  page 10  class 0x00 (prop) type 31 tile-name "potion" (tool join F000/F004)
+; kind class  length 316 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0110  methods: sel2/name@0008, sel9/use@00D0, sel10/use_on@00FB
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 10                                        .hdr      dictionary offset = 0110
+0002: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 01                                     frame     args=1 locals=1
+000B: 82 00 45 00 b4 90 08 90 1f 00 32 90 …+174    set       L00 = blk@0010
+      ; 0x45 inline block 0010-00C4 (180 bytes):
+      0010: 90 08                            .array[8]
+        [0] @0032 "Sustenance Potion"
+        [1] @0044 "Healing Potion"
+        [2] @0053 "Mage's Friend Potion"
+        [3] @0068 "Free Motion Potion"
+        [4] @007B "Antidote Potion"
+        [5] @008B "Clear Mind Potion"
+        [6] @009D "Smith's Friend Potion"
+        [7] @00B3 "Far Sight Potion"
+00C5: 8b 00 30 62 03 46 40                         return    L00[A30.f03:frame]
+; ---- dead code 00CC-00D0: no dictionary entry, jump, pointer or call reaches it ----
+00CC:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @00D0 ====
+00D0: 81 01 00                                     frame     args=1 locals=0
+00D3: 8d 48 13 40 00 f3                            jf        G13:g13_bool -> 00F3
+00D9: 57 68 6f 6d 20 73 68 6f 75 6c 64 20 …+14     text      "Whom should quaff potion?\n"
+00F3:>8b 41 08 40                                  return    8
+; ---- dead code 00F7-00FB: no dictionary entry, jump, pointer or call reaches it ----
+00F7:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00FB ====
+00FB: 81 02 00                                     frame     args=2 locals=0
+00FE: 9c 0a 00 30 62 03 40 31 63 40 40             callx     R[0A00+A30.f03:frame](as_char(A31))
+0109: a7 30 40                                     builtin   delete_prop(A30)
+010C: 8b 41 00 40                                  return    0
+0110: a0 07 50 00 ff ff 00 27 90 1f 00 02 …+32     .dict     dict[7] {2/name: @0008, 9/use: @00D0, 10/use_on: @00FB, 36/p_weight: @0002}

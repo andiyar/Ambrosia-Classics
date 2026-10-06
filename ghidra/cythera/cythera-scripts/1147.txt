@@ -1,0 +1,44 @@
+; segment 1147  page 11  class 0x00 (prop) type 327 tile-name "scale" (tool join F000/F004)
+; kind class  length 257 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00D5  methods: sel9/use@0008, sel10/use_on@0027
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 d5                                        .hdr      dictionary offset = 00D5
+0002: 90 01 00 00 00 14                            .array    array[1] = [20]
+
+; ==== method sel9/use @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 57 65 69 67 68 20 77 68 61 74 20 69 …+5      text      "Weigh what item?\n"
+001C: 8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0023-0027: no dictionary entry, jump, pointer or call reaches it ----
+0023:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0027 ====
+0027: 81 02 01                                     frame     args=2 locals=1
+002A: 8d 30 31 54 40 00 59                         jf        (A30 == A31) -> 0059
+0031: 59 6f 75 20 63 61 6e 27 74 20 77 65 …+25     text      "You can't weigh the scale on itself!\n"
+0056: 88 00 d1                                     goto      -> 00D1
+0059:>8d 31 60 24 40 00 af                         jf        has(A31, sel36/p_weight) -> 00AF
+0060: 82 00 b8 31 62 05 31 62 09 40 40             set       L00 = weight_if_added(A31.f05:item, A31.f09:count)
+006B: 8d 00 41 32 51 40 00 94                      jf        (L00 > 50) -> 0094
+0073: 5e                                           text      "^"
+0074: 8a 31 40                                     print     A31
+0077: 20 69 73 20 74 6f 6f 20 68 65 61 76 …+14     text      " is too heavy to weigh...\n"
+0091: 88 00 ac                                     goto      -> 00AC
+0094:>5e                                           text      "^"
+0095: 8a 31 40                                     print     A31
+0098: 20 77 65 69 67 68 73 20                      text      " weighs "
+00A0: 8a 00 40                                     print     L00
+00A3: 20 67 72 61 69 6e 73 2e 0a                   text      " grains.\n"
+00AC:>88 00 d1                                     goto      -> 00D1
+00AF:>5e                                           text      "^"
+00B0: 8a 31 40                                     print     A31
+00B3: 20 63 61 6e 27 74 20 62 65 20 6d 6f …+18     text      " can't be moved to the scale!\n"
+00D1:>8b 41 00 40                                  return    0
+00D5: a0 07 50 00 ff ff 00 15 91 47 00 02 …+32     .dict     dict[7] {9/use: @0008, 10/use_on: @0027, 36/p_weight: @0002}

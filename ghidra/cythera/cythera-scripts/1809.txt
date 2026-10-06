@@ -1,0 +1,62 @@
+; segment 1809  page 18  class 0x40 (char) id 9 name "Ruins Guard" (string table 0201)
+; kind class  length 928 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @038C  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 8c                                        .hdr      dictionary offset = 038C
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 02                                     frame     args=1 locals=2
+0005: 8d dc 41 07 40 41 00 54 40 03 79             jf        (get_variable(7) == 0) -> 0379
+0010: 8d 48 00 41 08 4f 48 00 41 12 51 5d …+3      jf        ((G00:hour < 8) || (G00:hour > 18)) -> 010E
+001F: 22 45 78 63 75 73 65 20 6d 65 2c 20          text      "\"Excuse me, "
+002B: 8d 49 05 00 00 10 40 00 3c                   jf        seg0500[0010] -> 003C
+0034: 6d 61 27 61 6d                               text      "ma'am"
+0039: 88 00 3f                                     goto      -> 003F
+003C:>73 69 72 2c 20 62 75 74 20 6e 6f 6e …+49     text      "sir, but none are permitted to enter the site at this time.\"*"  ; shares its tail with text @003F
+003F:>2c 20 62 75 74 20 6e 6f 6e 65 20 61 …+46     text      ", but none are permitted to enter the site at this time.\"*"
+0079: 8d 48 00 41 08 4f 40 00 c9                   jf        (G00:hour < 8) -> 00C9
+0082: 22 59 6f 75 20 6d 61 79 20 72 65 74 …+56     text      "\"You may return later in the morning, after Mistress Larisa arises.\""
+00C6: 88 01 01                                     goto      -> 0101
+00C9:>22 59 6f 75 20 6d 61 79 20 72 65 74 …+44     text      "\"You may return tomorrow, after Mistress Larisa arises.\""
+0101:>e9 40                                        builtin   end_talking()
+0103: bf 41 0e 41 1d 41 00 40                      builtin   teleport(14, 29, 0)
+010B: 88 03 75                                     goto      -> 0375
+010E:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+91     text      "\"I'm sorry, but strangers are not permitted within this site.  I'm going to have to ask you to leave.\"*"
+0175: 8d bc 42 00 4a 40 40 03 6b                   jf        leader_can_see(74) -> 036B
+017E: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+0185: 22 45 78 63 75 73 65 20 6d 65 2c 20 …+86     text      "\"Excuse me, but if you'd be so kind as to tell Larisa that her brother Timon is here to see her.\"*"
+01E7: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+01EC: 22 56 65 72 79 20 77 65 6c 6c 2c 20 …+57     text      "\"Very well, please stay here while I go check with Mistress Larisa.\"*"
+0231: ea 40                                        builtin   conversation_cue_2()
+0233: 82 00 30 62 01 40                            set       L00 = A30.f01:x
+0239: 82 01 30 62 02 40                            set       L01 = A30.f02:y
+023F: 86 15 30 40 43 00 00 00 87 40                setfield  A30.f15:activity = 135
+0249: f0 42 00 09 43 00 00 00 a0 41 2c 41 …+7      builtin   queue_activity(9, 160, 44, 38, Nil)
+025C: f0 42 00 09 41 44 41 00 41 00 44 44 …+29     builtin   queue_activity(9, 68, 0, 0, "Do you have a brother Timon?")
+0285: f0 42 00 09 41 42 41 0a 41 00 43 50 …+4      builtin   queue_activity(9, 66, 10, 0, Nil)
+0295: f0 42 00 09 41 44 41 00 41 00 44 56 …+27     builtin   queue_activity(9, 68, 0, 0, "Very well, I'll tell them.")
+02BC: f0 42 00 09 41 42 41 0a 41 00 43 50 …+4      builtin   queue_activity(9, 66, 10, 0, Nil)
+02CC: f0 42 00 09 43 00 00 00 a0 00 01 43 …+5      builtin   queue_activity(9, 160, L00, L01, Nil)
+02DD: f0 42 00 09 43 00 00 00 a5 43 00 00 …+10     builtin   queue_activity(9, 165, 255, 1, Nil)
+02F3: f1 43 00 00 00 ff 40                         builtin   wait_for_flag(255)
+02FA: eb 40                                        builtin   conversation_cue_1()
+02FC: 22 59 6f 75 72 20 73 69 73 74 65 72 …+86     text      "\"Your sister Larisa is in the tent over there to the south west.  She is quite eager to see you.\"*"
+035E: dd 41 07 41 01 40                            builtin   set_variable(7, 1)
+0364: 8b 41 00 40                                  return    0
+; ---- dead code 0368-036B: no dictionary entry, jump, pointer or call reaches it ----
+0368:x88 03 75                                     goto      -> 0375
+036B:>e9 40                                        builtin   end_talking()
+036D: bf 41 0e 41 1d 41 00 40                      builtin   teleport(14, 29, 0)
+0375:>8b 41 00 40                                  return    0
+0379:>22 47 6f 6f 64 20                            text      "\"Good "
+037F: 8a 43 20 00 00 01 40                         print     globstr(1:time_of_day)
+0386: 2e 22                                        text      ".\""
+0388: 8b 41 00 40                                  return    0
+038C: a0 03 98 09 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

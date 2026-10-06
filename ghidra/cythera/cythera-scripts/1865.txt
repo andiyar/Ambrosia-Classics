@@ -1,0 +1,160 @@
+; segment 1865  page 18  class 0x40 (char) id 101 name "Thersites" (string table 0201)
+; kind class  length 3820 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0EC0  methods: sel32/spawned@0002, sel12/talk@0070, sel21/signal@0D07:0000 (shared method: code in routine 0D07)
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0e c0                                        .hdr      dictionary offset = 0EC0
+
+; ==== method sel32/spawned @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 8d 30 62 15 43 00 00 00 93 54 48 00 …+7      jf        ((A30.f15:activity == 147) && (G00:hour == 18)) -> 0065
+0018: 8d ac 41 00 41 0a 40 41 01 54 9f 0f …+10     jf        ((random(0, 10) == 1) && !R0F02(A30, 5)) -> 0065  ; R0F02 = tstbit [from 0x0101 symtab]
+002E: 8b 9f 0c 85 30 45 00 1a 90 02 98 65 …+43     return    R0C85(A30, blk@0036, blk@0053)
+      ; 0x45 inline block 0036-0050 (26 bytes):
+      0036: 90 02                            .array[2]
+        [0] @0040 "Innkeep!"
+        [1] @0049 "Crito!"
+      ; 0x45 inline block 0053-0063 (16 bytes):
+      0053: 90 01                            .array[1]
+        [0] @0059 "Thank you"
+0065:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 006C-0070: no dictionary entry, jump, pointer or call reaches it ----
+006C:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @0070 ====
+0070: 81 01 02                                     frame     args=1 locals=2
+0073: 59 6f 75 20 73 65 65 20 61 20 6b 69 …+28     text      "You see a kindly looking, honorable man."
+009B: 8d 9f 0f 02 30 41 07 40 5e 40 01 c2          jf        !R0F02(A30, 7) -> 01C2  ; R0F02 = tstbit [from 0x0101 symtab]
+00A7: 8d 9f 0f 02 30 41 00 40 40 01 0a             jf        R0F02(A30, 0) -> 010A  ; R0F02 = tstbit [from 0x0101 symtab]
+00B2: 22 50 6c 65 61 73 65 64 20 74 6f 20 …+73     text      "\"Pleased to meet you - I am Thersites, as you already know, the Captain of the Guard\""
+0107: 88 01 56                                     goto      -> 0156
+010A:>22 41 74 20 6c 61 73 74 20 77 65 20 …+65     text      "\"At last we meet - I am Thersites, the Captain of the Guard here in Odemia.\"*"  ; shares its tail with text @0156
+0156:>2a                                           text      "*"
+0157: 8d de 41 03 40 40 01 8b                      jf        test_flag(3) -> 018B
+015F: 22 49 74 20 69 73 20 61 20 73 68 61 …+29     text      "\"It is a shame what happened to Ariadne.\""
+0188: 88 01 ba                                     goto      -> 01BA
+018B:>22 49 20 61 6d 20 71 75 69 74 65 20 …+36     text      "\"I am quite relieved that Ariadne was rescued.\"*"  ; shares its tail with text @01BA
+01BA:>2a                                           text      "*"
+01BB: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+01C2:>8d 9f 0f 13 ae 43 00 00 09 33 41 04 …+22     jf        ((R0F13(who_in_party_has(2355, 4)) && R0F02(A30, 1)) && !R0F02(A30, 2)) -> 02E0  ; R0F13 = inparty, R0F02 = tstbit [from 0x0101 symtab]
+01E4: 22 44 69 64 20 79 6f 75 20 66 69 6e …+13     text      "\"Did you find the ring?\"*"
+01FD: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0204: 22 59 65 73 2c 20 61 73 20 61 20 6d …+121    text      "\"Yes, as a matter of fact, I did.  Here you go...\"*You give Thersites the ring.  He looks it over with a look of relief on his face.*"
+0289: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+028E: 22 54 68 61 6e 6b 20 79 6f 75 20 76 …+22     text      "\"Thank you very much for this...\"*"
+02B0: 9f 0e 8b 48 05 41 05 40                      call      R0E8B(G05:leader, 5)
+02B8: 87 0c 48 0c 41 05 4a 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + 5)
+02C0: ab 43 00 00 09 33 41 04 ae 43 00 00 …+9      builtin   transfer_item(2355, 4, who_in_party_has(2355, 4), 101)
+02D5: f3 41 22 40                                  builtin   done_to_do(34)
+02D9: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+02E0:>8d dc 41 01 40 41 07 54 40 03 12             jf        (get_variable(1) == 7) -> 0312
+02EB: 22 59 65 73 2c 20 69 74 20 69 73 20 …+24     text      "\"Yes, it is true, Antiphus is dead.\""
+030F: 88 03 36                                     goto      -> 0336
+0312:>22 53 6f 2c 20 77 68 61 74 20 62 72 …+24     text      "\"So, what brings you on this visit?\""
+0336:>8e                                           input       ; read a line into the input buffer
+0337: 90 6e 61 6d 65 00 03 5a                      match     name else -> 035A
+033F: 22 49 20 61 6d 20 54 68 65 72 73 69 …+5      text      "\"I am Thersites.\""
+0350: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0357: 88 03 36                                     goto      -> 0336
+035A:>90 6a 6f 62 00 03 be                         match     job else -> 03BE
+0361: 22 42 65 69 6e 67 20 43 61 70 74 61 …+78     text      "\"Being Captain of the Guard is quite honorable, and I try my best to live up to the post.\""
+03BB: 88 03 36                                     goto      -> 0336
+03BE:>90 62 79 65 00 06 4d                         match     bye else -> 064D
+03C5: 8d 9f 0f 02 30 41 00 40 9f 0f 02 30 …+8      jf        (R0F02(A30, 0) && !R0F02(A30, 1)) -> 062C  ; R0F02 = tstbit [from 0x0101 symtab]
+03D9: 22 49 66 20 69 74 20 69 73 6e 27 74 …+321    text      "\"If it isn't too much trouble, I was wondering if you could do a favor for me?\"*\"Well, I'm a bit embarassed about this, but I lost a family heirloom of mine recently.\"*\"Since Sacas seems to trust you, if you happen to find it while investigating, I'd appreciate it's return...\"*\"Its a ring with the enscription 'To Hapede with Love'\""
+0526: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+052D: f2 41 22 43 30 00 02 1a 41 22 4a 40          builtin   add_to_do(34, (str[021A:0]"Cure Alaric" + 34))
+0539: 8d 9f 0f 13 ae 43 00 00 09 33 41 04 …+5      jf        R0F13(who_in_party_has(2355, 4)) -> 0629  ; R0F13 = inparty [from 0x0101 symtab]
+054A: 2a                                           text      "*"
+054B: a4 42 00 01 41 02 40                         builtin   show_portrait(1, 2)
+0552: 22 55 6d 2c 20 79 6f 75 20 6d 65 61 …+106    text      "\"Um, you mean this ring?\"*You give Thersites the ring you found.  He looks it over with a look of relief on his face.*"
+05C8: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+05CD: 22 54 68 61 6e 6b 20 79 6f 75 20 76 …+40     text      "\"Thank you very much for this - this is amazing...\"*"
+0601: 9f 0e 8b 48 05 41 0f 40                      call      R0E8B(G05:leader, 15)
+0609: ab 43 00 00 09 33 41 04 ae 43 00 00 …+9      builtin   transfer_item(2355, 4, who_in_party_has(2355, 4), 101)
+061E: f3 41 22 40                                  builtin   done_to_do(34)
+0622: 9f 0f 00 30 41 02 40                         call      R0F00(A30, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+0629:>88 06 46                                     goto      -> 0646
+062C:>22 53 74 6f 70 20 62 79 20 61 6e 64 …+14     text      "\"Stop by and visit again.\""
+0646:>8b 41 00 40                                  return    0
+; ---- dead code 064A-064D: no dictionary entry, jump, pointer or call reaches it ----
+064A:x88 03 36                                     goto      -> 0336
+064D:>90 74 72 61 69 00 07 40                      match     trai else -> 0740
+0655: 22 54 68 6f 75 67 68 20 49 27 76 65 …+75     text      "\"Though I've trained my men to use a mace, I prefer an axe since it does more damage.\"*"
+06AC: 82 00 45 00 27 90 02 98 65 06 bb 98 …+33     set       L00 = blk@06B1
+      ; 0x45 inline block 06B1-06D8 (39 bytes):
+      06B1: 90 02                            .array[2]
+        [0] @06BB ->
+          06BB: 90 02                            .array[2]
+            [0] @06C5 "Axe"
+            [1] 197
+        [1] @06C9 ->
+          06C9: 90 02                            .array[2]
+            [0] @06D3 "Mace"
+            [1] 198
+06D9: 82 01 c0 44 57 68 61 74 20 77 6f 75 …+48     set       L01 = pick_item("What would you like to train on?", "%s", L00, blk@0706)
+      ; 0x45 inline block 0706-0713 (13 bytes):
+      0706: 90 01                            .array[1]
+        [0] @070C "Cancel"
+0715: 8d 01 41 00 52 40 07 3d                      jf        (L01 >= 0) -> 073D
+071D: 82 01 00 01 46 40                            set       L01 = L00[L01]
+0723: 9f 0e b1 48 05 44 54 68 65 72 73 69 …+14     call      R0EB1(G05:leader, "Thersites", L01[1], True)
+073D:>88 03 36                                     goto      -> 0336
+0740:>90 70 72 69 73 2c 61 6e 74 69 00 09 …+1      match     pris,anti else -> 0927
+074D: 8d dc 41 01 40 41 07 52 40 08 e9             jf        (get_variable(1) >= 7) -> 08E9
+0758: 22 50 72 69 73 6f 6e 65 72 73 20 69 …+386    text      "\"Prisoners in my keeping don't die like that!  My honor demands that, but this...\"*\"You probably haven't heard, but it wasn't just that he died, it was how, and this I don't understand.\"*\"He was drowned.  Sure, the sea is just outside the jail, but he was locked up tight - no way in or out.\"*\"It was as if he were tossed into the sea and then fished out - even his clothes were wet with seawater.\""
+08E6: 88 09 24                                     goto      -> 0924
+08E9:>22 59 65 73 2c 20 77 65 27 76 65 20 …+47     text      "\"Yes, we've got a prisoner from Eudoxus' gang in our jail.\""
+0924:>88 03 36                                     goto      -> 0336
+0927:>90 6b 65 79 00 0a c7                         match     key else -> 0AC7
+092E: 8d 9f 0f 02 42 00 46 41 00 40 40 0a …+1      jf        R0F02(70, 0) -> 0A14  ; R0F02 = tstbit [from 0x0101 symtab]
+093B: 8d 9f 0f 02 30 41 00 40 40 09 82             jf        R0F02(A30, 0) -> 0982  ; R0F02 = tstbit [from 0x0101 symtab]
+0946: 22 49 20 61 6c 72 65 61 64 79 20 67 …+45     text      "\"I already gave you the key - don't tell me you lost it!\""
+097F: 88 0a 11                                     goto      -> 0A11
+0982:>22 53 61 63 61 73 20 73 65 6e 74 20 …+113    text      "\"Sacas sent you to get the key?  Very well, I suppose it is within her rights - hopefully you can find out more than she did\""
+09FF: a8 41 01 42 00 42 41 02 41 00 40             builtin   give_item(1, 66, 2, 0)
+0A0A: 9f 0f 00 30 41 00 40                         call      R0F00(A30, 0)  ; R0F00 = setbit [from 0x0101 symtab]
+0A11:>88 0a c4                                     goto      -> 0AC4
+0A14:>8d 9f 0f 02 42 00 46 41 01 40 40 0a …+1      jf        R0F02(70, 1) -> 0A89  ; R0F02 = tstbit [from 0x0101 symtab]
+0A21: 8d dc 41 01 40 41 07 52 40 0a 57             jf        (get_variable(1) >= 7) -> 0A57
+0A2C: 22 54 68 65 72 65 20 69 73 20 6e 6f …+28     text      "\"There is no need, now that he is dead.\""
+0A54: 88 0a 86                                     goto      -> 0A86
+0A57:>22 49 20 74 68 6f 75 67 68 74 20 79 …+35     text      "\"I thought you already talked to the prisoner?\""
+0A86:>88 0a c4                                     goto      -> 0AC4
+0A89:>22 49 27 6d 20 73 6f 72 72 79 2c 20 …+47     text      "\"I'm sorry, but the keys of the city are my responsibility\""
+0AC4:>88 03 36                                     goto      -> 0336
+0AC7:>90 6b 69 64 6e 2c 61 72 69 61 00 0c …+1      match     kidn,aria else -> 0CF2
+0AD4: 8d de 41 03 40 40 0b 76                      jf        test_flag(3) -> 0B76
+0ADC: 8d dc 41 01 40 41 07 52 40 0b 38             jf        (get_variable(1) >= 7) -> 0B38
+0AE7: 22 49 20 63 61 6e 27 74 20 73 61 79 …+66     text      "\"I can't say that @Antiphus didn't deserve death, but only after due process.\""
+0B35: 88 0b 73                                     goto      -> 0B73
+0B38:>22 4e 61 73 74 79 20 62 75 73 69 6e …+47     text      "\"Nasty business, that.  Rest assured, @Antiphus shall pay!\""
+0B73:>88 0c ef                                     goto      -> 0CEF
+0B76:>8d dc 41 01 40 41 07 52 40 0b de             jf        (get_variable(1) >= 7) -> 0BDE
+0B81: 22 57 69 74 68 20 41 6e 74 69 70 68 …+78     text      "\"With Antiphus and the rest of the bandits dead, I'd like to close the case, but I can't.\""
+0BDB: 88 0c 26                                     goto      -> 0C26
+0BDE:>22 41 6e 74 69 70 68 75 73 20 68 61 …+261    text      "\"Antiphus hasn't said much of use about who was ultimately behind this.\"*\"My gut tells me that there is more to this than a simple kidnapping by bandits.\"*\"If we could figure out the source to this Kesh stuff, we might figure out who is behind this - it doesn't bode well.\""  ; shares its tail with text @0C26
+0C26:>2a 22 4d 79 20 67 75 74 20 74 65 6c …+189    text      "*\"My gut tells me that there is more to this than a simple kidnapping by bandits.\"*\"If we could figure out the source to this Kesh stuff, we might figure out who is behind this - it doesn't bode well.\""
+0CEF:>88 03 36                                     goto      -> 0336
+0CF2:>90 6b 65 73 68 00 0e 78                      match     kesh else -> 0E78
+0CFA: 8d bc 42 00 46 40 40 0d 38                   jf        leader_can_see(70) -> 0D38
+0D03: 54 68 65 72 73 69 74 65 73 20 67 6c …+38     text      "Thersites glances briefly at Sacas, who nods back."
+0D35: 88 0d 6d                                     goto      -> 0D6D
+0D38:>22 49 20 73 68 6f 75 6c 64 6e 27 74 …+305    text      "\"I shouldn't be talking, but Sacas trusts you, so...\"*\"That Kesh is nasty stuff, from what I understand, and poses a major threat to the entire realm.\"*\"If the mages justice fails, there will surely be chaos in the land.\"*\"Whomever is behind this all must be insane - they would destroy our entire society for power!\""  ; shares its tail with text @0D6D
+0D6D:>2a 22 54 68 61 74 20 4b 65 73 68 20 …+252    text      "*\"That Kesh is nasty stuff, from what I understand, and poses a major threat to the entire realm.\"*\"If the mages justice fails, there will surely be chaos in the land.\"*\"Whomever is behind this all must be insane - they would destroy our entire society for power!\""
+0E75: 88 03 36                                     goto      -> 0336
+0E78:>90 2a 00 0e b9                               match     * else -> 0EB9
+0E7D: 8d 9f 08 0a 30 40 5e 40 0e b6                jf        !R080A(A30) -> 0EB6
+0E87: 8d 9f 08 01 30 40 5e 40 0e b6                jf        !R0801(A30) -> 0EB6
+0E91: 22 50 65 72 68 61 70 73 20 73 6f 6d …+25     text      "\"Perhaps somebody else can help you.\""
+0EB6:>88 03 36                                     goto      -> 0336
+0EB9:>88 03 36                                     goto      -> 0336
+; ---- dead code 0EBC-0EC0: no dictionary entry, jump, pointer or call reaches it ----
+0EBC:x8b 41 00 40                                  return    0
+0EC0: a0 07 8d 07 00 00 00 15 50 00 ff ff …+32     .dict     dict[7] {12/talk: @0070, 21/signal: @0D07:0000, 32/spawned: @0002}

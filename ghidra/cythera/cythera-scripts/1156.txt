@@ -1,0 +1,45 @@
+; segment 1156  page 11  class 0x00 (prop) type 342 tile-name "boards" (tool join F000/F004)
+; kind class  length 344 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @012C  methods: sel15/take_drop_15@0008, sel9/use@0016, sel10/use_on@003C
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 2c                                        .hdr      dictionary offset = 012C
+0002: 90 01 00 00 00 1e                            .array    array[1] = [30]
+
+; ==== method sel15/take_drop_15 @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0016 ====
+0016: 81 01 00                                     frame     args=1 locals=0
+0019: 41 74 74 65 6d 70 74 20 74 6f 20 72 …+12     text      "Attempt to repair what?\n"
+0031: 8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 0038-003C: no dictionary entry, jump, pointer or call reaches it ----
+0038:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @003C ====
+003C: 81 02 00                                     frame     args=2 locals=0
+003F: 8d 31 62 04 42 01 52 54 40 01 05             jf        (A31.f04:type == 338) -> 0105
+004A: 8d 31 62 03 41 02 54 40 00 8c                jf        (A31.f03:frame == 2) -> 008C
+0054: 59 6f 75 27 76 65 20 72 65 70 61 69 …+31     text      "You've repaired the section of the bridge.\n"
+007F: 86 03 31 40 41 00 40                         setfield  A31.f03:frame = 0
+0086: a7 30 40                                     builtin   delete_prop(A30)
+0089: 88 01 02                                     goto      -> 0102
+008C:>8d 31 62 03 41 01 54 40 00 d1                jf        (A31.f03:frame == 1) -> 00D1
+0096: 54 68 61 74 20 73 65 63 74 69 6f 6e …+44     text      "That section may be a bit damaged, but is still usable.\n"
+00CE: 88 01 02                                     goto      -> 0102
+00D1:>54 68 61 74 20 73 65 63 74 69 6f 6e …+37     text      "That section of bridge doesn't need any repairs.\n"
+0102:>88 01 28                                     goto      -> 0128
+0105:>59 6f 75 20 63 61 6e 27 74 20 72 65 …+5      text      "You can't repair "
+0116: 8a 31 40                                     print     A31
+0119: 20 77 69 74 68 20 62 6f 61 72 64 73 …+3      text      " with boards..."
+0128:>8b 41 00 40                                  return    0
+012C: a0 07 50 00 ff ff 00 27 91 56 00 02 …+32     .dict     dict[7] {9/use: @0016, 10/use_on: @003C, 15/take_drop_15: @0008, 36/p_weight: @0002}

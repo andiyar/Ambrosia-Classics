@@ -1,0 +1,66 @@
+; segment 1A24  page 1A  class 0x50 (spell) type 36
+; kind class  length 474 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @018A  methods: sel2/name@0008, sel8/search@0027, sel9/use@0071, sel10/use_on@00A8
+; properties: sel51, sel54
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 8a                                        .hdr      dictionary offset = 018A
+0002: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 53 68 61 6b 65 20 44 6f 77 6e …+2      return    "Shake Down"
+; ---- dead code 0019-001D: no dictionary entry, jump, pointer or call reaches it ----
+0019:x8b 41 00 40                                  return    0
+001D: 90 02 00 00 00 05 50 00 ff ff                .array    array[2] = [5, Nil]
+
+; ==== method sel8/search @0027 ====
+0027: 81 01 00                                     frame     args=1 locals=0
+002A: 54 68 69 73 20 73 70 65 6c 6c 20 63 …+55     text      "This spell causes other people to drop things they currently have.\n"
+006D: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0071 ====
+0071: 81 01 00                                     frame     args=1 locals=0
+0074: 8d 9f 0e a1 30 62 0b 41 05 41 0a 40 …+3      jf        R0EA1(A30.f0B:loc16, 5, 10) -> 00A4
+0083: 8d 48 13 40 00 a0                            jf        G13:g13_bool -> 00A0
+0089: 43 61 73 74 20 27                            text      "Cast '"
+008F: 8a 9d 02 30 40 40                            print     A30.sel2/name()
+0095: 27 20 6f 6e 20 77 68 6f 6d 3f 0a             text      "' on whom?\n"
+00A0:>8b 41 04 40                                  return    4
+00A4:>8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00A8 ====
+00A8: 81 02 05                                     frame     args=2 locals=5
+00AB: 82 00 41 00 40                               set       L00 = 0
+00B0: 82 01 c8 43 10 00 00 02 41 00 31 40 …+1      set       L01 = iterate_children(&L02, 0, A31)
+00BD:>8c c8 43 10 00 00 02 41 01 40 40 00 …+1      jt        iterate_children(&L02, 1) -> 00E0
+00CA: 82 00 00 41 01 4a 40                         set       L00 = (L00 + 1)
+00D1: 82 01 c8 43 10 00 00 02 41 02 40 40          set       L01 = iterate_children(&L02, 2)
+00DD: 88 00 bd                                     goto      -> 00BD
+00E0:>8d 00 41 00 54 40 01 05                      jf        (L00 == 0) -> 0105
+00E8: 4e 6f 74 68 69 6e 67 20 73 65 65 6d …+13     text      "Nothing seems to happen.\n"
+0101: 8b 41 00 40                                  return    0
+0105:>82 04 ac 41 00 00 40 40                      set       L04 = random(0, L00)
+010D: 82 00 41 00 40                               set       L00 = 0
+0112: 82 01 c8 43 10 00 00 02 41 00 31 40 …+1      set       L01 = iterate_children(&L02, 0, A31)
+011F:>8c c8 43 10 00 00 02 41 01 40 40 01 …+1      jt        iterate_children(&L02, 1) -> 016D
+012C: 8d 00 04 54 40 01 5e                         jf        (L00 == L04) -> 015E
+0133: 86 00 01 40 41 01 40                         setfield  L01.f00:kind = 1
+013A: 86 01 01 40 31 62 01 40                      setfield  L01.f01:x = A31.f01:x
+0142: 86 02 01 40 31 62 02 40                      setfield  L01.f02:y = A31.f02:y
+014A: 5e                                           text      "^"
+014B: 8a 31 40                                     print     A31
+014E: 20 64 72 6f 70 73 20                         text      " drops "
+0155: 8a 01 40                                     print     L01
+0158: 2e 0a                                        text      ".\n"
+015A: 8b 41 00 40                                  return    0
+015E:>82 01 c8 43 10 00 00 02 41 02 40 40          set       L01 = iterate_children(&L02, 2)
+016A: 88 01 1f                                     goto      -> 011F
+016D:>4e 6f 74 68 69 6e 67 20 73 65 65 6d …+13     text      "Nothing seems to happen.\n"
+0186: 8b 41 00 40                                  return    0
+018A: a0 0d 50 00 ff ff 06 95 50 00 ff ff …+68     .dict     dict[13] {2/name: @0008, 8/search: @0027, 9/use: @0071, 10/use_on: @00A8, 51: @001D, 54: @0002}

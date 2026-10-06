@@ -1,0 +1,51 @@
+; segment 1842  page 18  class 0x40 (char) id 66 name "Theano" (string table 0201)
+; kind class  length 412 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0188  methods: sel12/talk@0002, sel32/spawned@0146
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 88                                        .hdr      dictionary offset = 0188
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 6c 6f …+33     text      "You see a loud, but pleasant looking, woman.*"
+0032: 8d 30 62 15 43 00 00 00 8b 54 40 01 …+1      jf        (A30.f15:activity == 139) -> 0119
+003F: 22 53 6f 6d 65 20 6f 66 20 74 68 65 …+45     text      "\"Some of the finest cheese in the world?  Only 6 oboloi!\""
+0078: 8f 79 6e 00                                  prompt    "yn"
+007C: 90 79 00 00 d1                               match     y else -> 00D1
+0081: 86 27 30 40 9f 0e a5 44 46 69 6e 65 …+68     setfield  A30.f27:ce17 = R0EA5("Fine Cheese", blk@0098, A30.f27:ce17, blk@00BD)
+      ; 0x45 inline block 0098-00B7 (31 bytes):
+      0098: 90 01                            .array[1]
+        [0] @009E ->
+          009E: 90 04                            .array[4]
+            [0] 2117
+            [1] @00B0 "Cheese"
+            [2] 6
+            [3] 1
+      ; 0x45 inline block 00BD-00CF (18 bytes):
+      00BD: 90 04                            .array[4]
+        [0] 5
+        [1] 7
+        [2] 5
+        [3] 3
+00D1:>90 6e 00 01 16                               match     n else -> 0116
+00D6: 22 50 65 72 68 61 70 73 20 73 6f 6d …+52     text      "\"Perhaps some other time - you don't know what you are missing!\""
+0116:>88 01 42                                     goto      -> 0142
+0119:>22 50 6c 65 61 73 65 20 2d 20 49 27 …+29     text      "\"Please - I'm not open for business now!\""
+0142:>8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @0146 ====
+0146: 81 01 00                                     frame     args=1 locals=0
+0149: 8d 30 62 15 43 00 00 00 8b 54 40 01 …+1      jf        (A30.f15:activity == 139) -> 017D
+0156: 8d ac 41 00 41 10 40 41 01 54 40 01 …+1      jf        (random(0, 16) == 1) -> 017D
+0163: 86 26 30 40 44 46 69 6e 65 20 43 68 …+7      setfield  A30.f26:f26 = "Fine Cheese!"
+0176: 8b 43 50 00 00 00 40                         return    False
+017D:>8b 9f 30 20 30 40 40                         return    R3020(A30)
+; ---- dead code 0184-0188: no dictionary entry, jump, pointer or call reaches it ----
+0184:x8b 41 00 40                                  return    0
+0188: a0 03 98 42 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002, 32/spawned: @0146}

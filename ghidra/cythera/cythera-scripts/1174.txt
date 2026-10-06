@@ -1,0 +1,85 @@
+; segment 1174  page 11  class 0x00 (prop) type 372 tile-name "strange rod" (tool join F000/F004)
+; kind class  length 662 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @026A  methods: sel15/take_drop_15@0008, sel9/use@011A, sel8/search@0218
+; properties: sel36/p_weight, sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 6a                                        .hdr      dictionary offset = 026A
+0002: 90 01 00 00 00 02                            .array    array[1] = [2]
+
+; ==== method sel15/take_drop_15 @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+0016: 90 01 00 00 00 08                            .array    array[1] = [8]
+001C: 81 02 00                                     frame     args=2 locals=0
+001F: f8 41 01 41 01 40                            builtin   cd_audio(1, 1)
+0025: 50 6c 61 79 0a                               text      "Play\n"
+002A: 8b 41 00 40                                  return    0
+002E: 81 02 00                                     frame     args=2 locals=0
+0031: f8 41 00 43 50 00 ff ff 40                   builtin   cd_audio(0, Nil)
+003A: 53 74 6f 70 0a                               text      "Stop\n"
+003F: 8b 41 00 40                                  return    0
+0043: 81 02 00                                     frame     args=2 locals=0
+0046: 8d f8 41 03 43 50 00 ff ff 40 41 02 …+4      jf        (cd_audio(3, Nil) == 2) -> 0069
+0056: f8 41 02 43 50 00 00 00 40                   builtin   cd_audio(2, False)
+005F: 52 65 73 75 6d 65 0a                         text      "Resume\n"
+0066: 88 00 78                                     goto      -> 0078
+0069:>f8 41 02 43 50 00 00 01 40                   builtin   cd_audio(2, True)
+0072: 50 61 75 73 65 0a                            text      "Pause\n"
+0078:>8b 41 00 40                                  return    0
+007C: 81 02 00                                     frame     args=2 locals=0
+007F: f8 41 0a 43 50 00 ff ff 40                   builtin   cd_audio(10, Nil)
+0088: 45 6a 65 63 74 0a                            text      "Eject\n"
+008E: 8b 41 00 40                                  return    0
+0092: 81 02 00                                     frame     args=2 locals=0
+0095: f8 41 09 43 50 00 ff ff 40                   builtin   cd_audio(9, Nil)
+009E: 50 72 65 76 69 6f 75 73 20 54 72 61 …+3      text      "Previous Track\n"
+00AD: 8b 41 00 40                                  return    0
+00B1: 81 02 00                                     frame     args=2 locals=0
+00B4: f8 41 08 43 50 00 ff ff 40                   builtin   cd_audio(8, Nil)
+00BD: 4e 65 78 74 20 54 72 61 63 6b 0a             text      "Next Track\n"
+00C8: 8b 41 00 40                                  return    0
+00CC: 81 02 00                                     frame     args=2 locals=0
+00CF: f8 41 07 f8 41 06 43 50 00 ff ff 40 …+4      builtin   cd_audio(7, (cd_audio(6, Nil) + 10))
+00DF: 49 6e 63 72 65 61 73 65 20 56 6f 6c …+4      text      "Increase Volume\n"
+00EF: 8b 41 00 40                                  return    0
+00F3: 81 02 00                                     frame     args=2 locals=0
+00F6: f8 41 07 f8 41 06 43 50 00 ff ff 40 …+4      builtin   cd_audio(7, (cd_audio(6, Nil) - 10))
+0106: 44 65 63 72 65 61 73 65 20 56 6f 6c …+4      text      "Decrease Volume\n"
+0116: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @011A ====
+011A: 81 01 02                                     frame     args=1 locals=2
+011D: 8d db 30 40 40 01 28                         jf        scripted_window_shown(A30) -> 0128
+0124: 8b 41 00 40                                  return    0
+0128:>82 00 9b 04 30 41 20 41 08 41 00 41 …+8      set       L00 = sysnew_window(A30, 32, 8, 0, 56, 128)
+013C: 82 01 9b 0a 00 41 21 41 22 41 00 41 …+5      set       L01 = sysnew_0A(L00, 33, 34, 0, 0, 10)
+014D: 86 39 01 40 43 91 74 00 1c 40                setfield  L01.f39 = @001C
+0157: 82 01 9b 0a 00 41 23 41 24 41 00 41 …+5      set       L01 = sysnew_0A(L00, 35, 36, 0, 24, 10)
+0168: 86 39 01 40 43 91 74 00 2e 40                setfield  L01.f39 = @002E
+0172: 82 01 9b 0a 00 41 25 41 26 41 00 41 …+5      set       L01 = sysnew_0A(L00, 37, 38, 0, 0, 27)
+0183: 86 39 01 40 43 91 74 00 43 40                setfield  L01.f39 = @0043
+018D: 82 01 9b 0a 00 41 27 41 28 41 00 41 …+5      set       L01 = sysnew_0A(L00, 39, 40, 0, 24, 27)
+019E: 86 39 01 40 43 91 74 00 7c 40                setfield  L01.f39 = @007C
+01A8: 82 01 9b 0a 00 41 29 41 2a 41 00 41 …+5      set       L01 = sysnew_0A(L00, 41, 42, 0, 0, 44)
+01B9: 86 39 01 40 43 91 74 00 92 40                setfield  L01.f39 = @0092
+01C3: 82 01 9b 0a 00 41 2b 41 2c 41 00 41 …+5      set       L01 = sysnew_0A(L00, 43, 44, 0, 24, 44)
+01D4: 86 39 01 40 43 91 74 00 b1 40                setfield  L01.f39 = @00B1
+01DE: 82 01 9b 0a 00 41 2d 41 2e 41 00 41 …+5      set       L01 = sysnew_0A(L00, 45, 46, 0, 0, 61)
+01EF: 86 39 01 40 43 91 74 00 cc 40                setfield  L01.f39 = @00CC
+01F9: 82 01 9b 0a 00 41 2f 41 30 41 00 41 …+5      set       L01 = sysnew_0A(L00, 47, 48, 0, 24, 61)
+020A: 86 39 01 40 43 91 74 00 f3 40                setfield  L01.f39 = @00F3
+0214: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @0218 ====
+0218: 81 01 00                                     frame     args=1 locals=0
+021B: 59 6f 75 20 73 65 65 20 61 20 73 74 …+63     text      "You see a strange looking rod-like device with some raised colored shapes.\n"
+0266: 8b 41 00 40                                  return    0
+026A: a0 07 50 00 ff ff 00 27 91 74 00 02 …+32     .dict     dict[7] {8/search: @0218, 9/use: @011A, 15/take_drop_15: @0008, 36/p_weight: @0002, 39/p_typeflags27: @0016}

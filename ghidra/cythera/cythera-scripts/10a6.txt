@@ -1,0 +1,34 @@
+; segment 10A6  page 10  class 0x00 (prop) type 166 tile-name "bag of flour" (tool join F000/F004)
+; kind class  length 152 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @006C  methods: sel15/take_drop_15@0008, sel9/use@0016, sel11@003B
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 6c                                        .hdr      dictionary offset = 006C
+0002: 90 01 00 00 00 64                            .array    array[1] = [100]
+
+; ==== method sel15/take_drop_15 @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0016 ====
+0016: 81 01 00                                     frame     args=1 locals=0
+0019: 8d 48 13 40 00 33                            jf        G13:g13_bool -> 0033
+001F: 53 70 72 65 61 64 20 66 6c 6f 75 72 …+8      text      "Spread flour where?\n"
+0033:>8b 41 02 40                                  return    2
+; ---- dead code 0037-003B: no dictionary entry, jump, pointer or call reaches it ----
+0037:x8b 41 00 40                                  return    0
+
+; ==== method sel11 @003B ====
+003B: 81 03 00                                     frame     args=3 locals=0
+003E: 59 6f 75 20 73 70 72 65 61 64 20 6f …+15     text      "You spread out some flour.\n"
+0059: ad 41 01 31 32 41 00 42 00 a7 41 00 …+3      builtin   create_prop(1, A31, A32, 0, 167, 0, 0)
+0068: 8b 41 00 40                                  return    0
+006C: a0 07 50 00 ff ff 31 31 90 a6 00 02 …+32     .dict     dict[7] {9/use: @0016, 11: @003B, 15/take_drop_15: @0008, 36/p_weight: @0002}

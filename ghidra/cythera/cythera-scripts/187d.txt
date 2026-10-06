@@ -1,0 +1,131 @@
+; segment 187D  page 18  class 0x40 (char) id 125 name "Ignae" (string table 0201)
+; kind class  length 3961 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0F65  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 0f 65                                        .hdr      dictionary offset = 0F65
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 20 62 65 …+58     text      "You see a being made of pure fire, whose face dances with the flames.*"
+004B: 8d 9f 0f 02 30 41 07 40 5e 40 02 c4          jf        !R0F02(A30, 7) -> 02C4  ; R0F02 = tstbit [from 0x0101 symtab]
+0057: 22 47 72 65 65 74 69 6e 67 73 20 68 …+148    text      "\"Greetings human!  It is not often one of your kind gets to meet me.\"*\"I am called Ignae, and you, you are special, you are not like the rest of the human, eh?\""
+00F7: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00FE: 8d bc 42 00 4a 40 40 02 06                   jf        leader_can_see(74) -> 0206
+0107: 2a                                           text      "*"
+0108: a4 42 00 4a 41 01 40                         builtin   show_portrait(74, 1)
+010F: 22 54 68 69 73 20 73 75 72 65 6c 79 …+55     text      "\"This surely looks like some sort of demon - we must be cautious!\"*"
+0152: a4 30 41 00 40                               builtin   show_portrait(A30, 0)
+0157: 22 42 65 20 61 74 20 65 61 73 65 2c …+353    text      "\"Be at ease, mortal.  Though you dabble in what you call magic, you know me not.\"*\"I have as much in common with what you call a demon as you do with a rock, yes - that's it.\"*\"I am also called Ignae of the @South, for that is my place, though I'm obviously not there now.\"*\"But now you, you are @unique, are you not?  Not like @Alaric is unique, that is for sure.\""
+0206:>2a 22 49 20 61 6d 20 61 6c 73 6f 20 …+178    text      "*\"I am also called Ignae of the @South, for that is my place, though I'm obviously not there now.\"*\"But now you, you are @unique, are you not?  Not like @Alaric is unique, that is for sure.\""  ; shares its tail with text @0157
+02C4:>82 00 43 50 00 00 00 40                      set       L00 = False
+02CC:>8e                                           input       ; read a line into the input buffer
+02CD: 90 6e 61 6d 65 00 03 01                      match     name else -> 0301
+02D5: 22 41 73 20 49 27 76 65 20 73 61 69 …+29     text      "\"As I've said, I am Ignae of the @South.\""
+02FE: 88 02 cc                                     goto      -> 02CC
+0301:>90 6a 6f 62 00 03 58                         match     job else -> 0358
+0308: 22 54 68 61 74 27 73 20 61 20 67 6f …+65     text      "\"That's a good one.  What job does the wind or the tide have?  'Job' indeed!\""
+0355: 88 02 cc                                     goto      -> 02CC
+0358:>90 69 67 6e 61 00 03 a0                      match     igna else -> 03A0
+0360: 22 4e 6f 20 6d 61 74 74 65 72 20 68 …+49     text      "\"No matter how many times you say it, it still refers to me.\""
+039D: 88 02 cc                                     goto      -> 02CC
+03A0:>90 73 6f 75 74 00 04 42                      match     sout else -> 0442
+03A8: 8d 00 5e 40 04 17                            jf        !L00 -> 0417
+03AE: 22 59 65 73 2c 20 49 20 61 6d 20 49 …+82     text      "\"Yes, I am Ignae of the South.  There are four @pillars for the world, and I am of the South.\""
+040C: 82 00 43 50 00 00 01 40                      set       L00 = True
+0414: 88 04 3f                                     goto      -> 043F
+0417:>22 41 73 20 49 27 76 65 20 73 61 69 …+28     text      "\"As I've said, I am Ignae of the South.\""
+043F:>88 02 cc                                     goto      -> 02CC
+0442:>90 66 6f 75 6e 2c 70 69 6c 6c 00 04 …+1      match     foun,pill else -> 04D0
+044F: 22 41 73 20 74 68 65 72 65 20 61 72 …+114    text      "\"As there are four points on what you call a compass, there are four pillars of the world - @North, @East, @South, and @West.\""
+04CD: 88 02 cc                                     goto      -> 02CC
+04D0:>90 63 6f 6d 70 00 05 42                      match     comp else -> 0542
+04D8: 22 49 20 62 65 6c 69 65 76 65 20 79 …+91     text      "\"I believe you call it a compass in your world, or at least that's what I think your thoughts tell me.\""
+053F: 88 02 cc                                     goto      -> 02CC
+0542:>90 6e 6f 72 74 00 05 76                      match     nort else -> 0576
+054A: 22 59 6f 75 20 64 6f 20 6e 6f 74 20 …+29     text      "\"You do not want to know about that one.\""
+0573: 88 02 cc                                     goto      -> 02CC
+0576:>90 77 65 73 74 00 05 eb                      match     west else -> 05EB
+057E: 22 50 65 72 68 61 70 73 20 79 6f 75 …+94     text      "\"Perhaps you will know the West - the West is certainly involved!  They attempt to @destroy the @balance.\""
+05E8: 88 02 cc                                     goto      -> 02CC
+05EB:>90 65 61 73 74 00 06 84                      match     east else -> 0684
+05F3: 8d 9f 0f 02 42 00 78 41 07 40 9f 0f …+11     jf        (R0F02(120, 7) || R0F02(121, 7)) -> 0650  ; R0F02 = tstbit [from 0x0101 symtab]
+060A: 22 59 6f 75 27 76 65 20 61 6c 72 65 …+55     text      "\"You've already met the East - those of Earth are the East pillar.\""
+064D: 88 06 81                                     goto      -> 0681
+0650:>22 59 65 73 2c 20 79 6f 75 20 77 69 …+37     text      "\"Yes, you will meet the East, of this I am sure.\""
+0681:>88 02 cc                                     goto      -> 02CC
+0684:>90 65 61 72 74 00 06 aa                      match     eart else -> 06AA
+068C: 22 45 61 72 74 68 20 69 73 20 74 68 …+15     text      "\"Earth is the East pillar.\""
+06A7: 88 02 cc                                     goto      -> 02CC
+06AA:>90 66 69 72 65 00 06 d0                      match     fire else -> 06D0
+06B2: 22 46 69 72 65 20 69 73 20 74 68 65 …+15     text      "\"Fire is the South pillar.\""
+06CD: 88 02 cc                                     goto      -> 02CC
+06D0:>90 77 61 74 65 00 06 f6                      match     wate else -> 06F6
+06D8: 22 57 61 74 65 72 20 69 73 20 74 68 …+15     text      "\"Water is the West pillar.\""
+06F3: 88 02 cc                                     goto      -> 02CC
+06F6:>90 61 69 72 00 07 1a                         match     air else -> 071A
+06FD: 22 41 69 72 20 69 73 20 74 68 65 20 …+14     text      "\"Air is the North pillar.\""
+0717: 88 02 cc                                     goto      -> 02CC
+071A:>90 75 6e 69 71 00 07 81                      match     uniq else -> 0781
+0722: 22 59 6f 75 20 61 72 65 20 6c 69 6b …+80     text      "\"You are like the rest of the humans, but you are not born of this world, that is for sure.\""
+077E: 88 02 cc                                     goto      -> 02CC
+0781:>90 61 6c 61 72 00 07 ea                      match     alar else -> 07EA
+0789: 22 41 6c 61 72 69 63 20 69 73 20 6d …+82     text      "\"Alaric is more than human, as you should know - but how much more?  He sits in the @balance.\""
+07E7: 88 02 cc                                     goto      -> 02CC
+07EA:>90 62 61 6c 61 00 08 19                      match     bala else -> 0819
+07F2: 22 54 68 65 20 62 61 6c 61 6e 63 65 …+24     text      "\"The balance between East and West.\""
+0816: 88 02 cc                                     goto      -> 02CC
+0819:>90 61 78 69 73 00 08 6e                      match     axis else -> 086E
+0821: 22 54 68 65 20 61 78 69 73 20 73 74 …+62     text      "\"The axis streches from East to West, for the axis is both East and West.\""
+086B: 88 02 cc                                     goto      -> 02CC
+086E:>90 6d 61 67 70 00 08 c1                      match     magp else -> 08C1
+0876: 22 59 6f 75 20 61 72 65 20 6e 6f 20 …+60     text      "\"You are no Magpie, but neither is he.  He is the @balance that is not.\""
+08BE: 88 02 cc                                     goto      -> 02CC
+08C1:>90 62 61 68 6f 00 09 2d                      match     baho else -> 092D
+08C9: 22 41 68 21 20 4e 6f 77 20 79 6f 75 …+85     text      "\"Ah! Now you are closer to the heart of the matter - but for every hunchback there is a soldier.\""
+092A: 88 02 cc                                     goto      -> 02CC
+092D:>90 68 75 6e 63 00 09 79                      match     hunc else -> 0979
+0935: 22 48 75 6e 63 68 62 61 63 6b 20 2d …+53     text      "\"Hunchback - bent over and curved, looking like a question mark?\""
+0976: 88 02 cc                                     goto      -> 02CC
+0979:>90 73 6f 6c 64 00 09 d6                      match     sold else -> 09D6
+0981: 22 53 6f 6c 64 69 65 72 20 2d 20 73 …+70     text      "\"Soldier - standing straight and at attention, looking like an exclamation point!\""
+09D3: 88 02 cc                                     goto      -> 02CC
+09D6:>90 73 61 62 69 00 0a 07                      match     sabi else -> 0A07
+09DE: 22 53 61 62 69 6e 61 74 65 20 69 73 …+26     text      "\"Sabinate is what he is, and no more.\""
+0A04: 88 02 cc                                     goto      -> 02CC
+0A07:>90 6a 68 61 69 00 0a 99                      match     jhai else -> 0A99
+0A0F: 22 4a 68 61 69 78 75 73 20 61 74 74 …+123    text      "\"Jhaixus attempted to go beyond what he is, and he pays the price for that.\"*\"I have respect for the attempt, but scorn for the folly.\""
+0A96: 88 02 cc                                     goto      -> 02CC
+0A99:>90 6a 69 6e 72 00 0a fa                      match     jinr else -> 0AFA
+0AA1: 22 4a 69 6e 72 61 69 20 77 61 73 20 …+74     text      "\"Jinrai was the downfall of Jhaixus, and of Jinrai, but who would not pay that price?\""
+0AF7: 88 02 cc                                     goto      -> 02CC
+0AFA:>90 70 72 69 63 00 0b e6                      match     pric else -> 0BE6
+0B02: 22 54 68 65 20 70 72 69 63 65 20 66 …+213    text      "\"The price for going beyond what one is, but as your mathematics teach you, +1 plus -1 equals 0\"*\"Of course, in the case of Jhaixus and Jinrai, when you attempt to combine the East and the West, you form the Axis of Balance.\""
+0BE3: 88 02 cc                                     goto      -> 02CC
+0BE6:>90 30 2c 6e 6f 74 68 00 0c 70                match     0,noth else -> 0C70
+0BF0: 22 49 73 20 6e 6f 74 68 69 6e 67 20 …+113    text      "\"Is nothing nothing, or is it everything?  Nothing is?  or Nothing is not?  From Nothing to Without Limits is a single step.\""
+0C6D: 88 02 cc                                     goto      -> 02CC
+0C70:>90 62 79 65 00 0c 90                         match     bye else -> 0C90
+0C77: 22 4c 65 61 76 69 6e 67 20 73 6f 20 …+6      text      "\"Leaving so soon?\""
+0C89: 8b 41 00 40                                  return    0
+; ---- dead code 0C8D-0C90: no dictionary entry, jump, pointer or call reaches it ----
+0C8D:x88 02 cc                                     goto      -> 02CC
+0C90:>90 64 65 73 74 00 0e d8                      match     dest else -> 0ED8
+0C98: 22 54 68 65 20 62 61 6c 61 6e 63 65 …+561    text      "\"The balance between North and South, East and West, has always been precarious, but always it was balance.\"*\"Until the West found a way to have their powers trancend the axis, and drove the East from their seats of power.\"*\"This all happened, of course, long before you humans ever arrived.  I'm still not sure how that happened...\"*\"You humans, it seems, are outside the four pillars, or perhaps are a combination of all four - I'm not sure.\"*\"You could be quite an ally to any of the four pillars, though who would be master and who would be slave is hard to determine.\""
+0ED5: 88 02 cc                                     goto      -> 02CC
+0ED8:>90 73 65 6c 64 00 0f 2e                      match     seld else -> 0F2E
+0EE0: 22 54 68 61 74 20 6c 61 62 65 6c 20 …+63     text      "\"That label is confusing at best - I think in terms of the four pillars...\""
+0F2B: 88 02 cc                                     goto      -> 02CC
+0F2E:>90 2a 00 0f 5e                               match     * else -> 0F5E
+0F33: 22 59 6f 75 20 73 70 65 61 6b 20 6e …+28     text      "\"You speak nonsense, of this I am sure.\""
+0F5B: 88 02 cc                                     goto      -> 02CC
+0F5E:>88 02 cc                                     goto      -> 02CC
+; ---- dead code 0F61-0F65: no dictionary entry, jump, pointer or call reaches it ----
+0F61:x8b 41 00 40                                  return    0
+0F65: a0 03 98 7d 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

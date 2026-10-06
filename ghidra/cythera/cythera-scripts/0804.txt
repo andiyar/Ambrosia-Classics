@@ -1,0 +1,54 @@
+; segment 0804  page 08  routine
+; kind routine  length 1248 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 6b 6f 73 68 00 00 69                      match     kosh else -> 0069
+000B: 22 54 6f 20 74 68 69 6e 6b 2c 20 74 …+75     text      "\"To think, three years ago, Kosha was just a struggling farmtown, and now it prospers!\""
+0062: 8b 43 50 00 00 01 40                         return    True
+0069:>90 61 72 69 61 2c 6e 69 63 61 00 00 …+1      match     aria,nica else -> 00E4
+0076: 22 57 65 20 68 65 61 72 64 20 77 68 …+91     text      "\"We heard what happened to Lady Ariadne - what a pity, but those things are to be expected in @Odemia.\""
+00DD: 8b 43 50 00 00 01 40                         return    True
+00E4:>90 6f 64 65 6d 00 01 5b                      match     odem else -> 015B
+00EC: 22 43 6f 6e 73 69 64 65 72 69 6e 67 …+92     text      "\"Considering how remote Odemia is, it is a wonder it is as safe as it is, or isn't, as the case may be.\""
+0154: 8b 43 50 00 00 01 40                         return    True
+015B:>90 61 74 74 69 2c 63 61 64 65 00 01 …+1      match     atti,cade else -> 01BA
+0168: 22 46 61 63 65 20 69 74 2c 20 48 6f …+63     text      "\"Face it, House @Attis never had what it took to rule the city of Cademia.\""
+01B3: 8b 43 50 00 00 01 40                         return    True
+01BA:>90 61 74 75 73 00 02 23                      match     atus else -> 0223
+01C2: 22 59 6f 75 27 76 65 20 67 6f 74 20 …+78     text      "\"You've got to admire being able to step down from a ruling House to become a blacksmith!\""
+021C: 8b 43 50 00 00 01 40                         return    True
+0223:>90 73 74 72 79 00 02 8e                      match     stry else -> 028E
+022B: 22 59 6f 75 20 6b 6e 6f 77 2c 20 74 …+80     text      "\"You know, the way House Strymon has handled this @Plague, they clearly aren't fit to rule.\""
+0287: 8b 43 50 00 00 01 40                         return    True
+028E:>90 6d 61 67 65 00 02 f8                      match     mage else -> 02F8
+0296: 22 54 68 65 79 20 73 61 79 20 6d 61 …+79     text      "\"They say mages help keep the world in order - they aren't doing a great job, aren't they?\""
+02F1: 8b 43 50 00 00 01 40                         return    True
+02F8:>90 70 6c 61 67 00 03 4f                      match     plag else -> 034F
+0300: 22 41 20 74 65 72 72 69 62 6c 65 20 …+60     text      "\"A terrible thing, but crisis brings out the best, or worst, in people.\""
+0348: 8b 43 50 00 00 01 40                         return    True
+034F:>90 64 6f 64 6f 00 03 a7                      match     dodo else -> 03A7
+0357: 22 48 6f 75 73 65 20 44 6f 64 6f 6e …+61     text      "\"House Dodona is probably more fit to rule Catamarca than House Strymon.\""
+03A0: 8b 43 50 00 00 01 40                         return    True
+03A7:>90 6e 61 78 6f 00 03 cc                      match     naxo else -> 03CC
+03AF: 22 4e 61 78 6f 73 20 69 73 20 69 6e …+10     text      "\"Naxos is in Cademia.\""
+03C5: 8b 43 50 00 00 01 40                         return    True
+03CC:>90 6d 79 75 73 00 03 ee                      match     myus else -> 03EE
+03D4: 22 4d 79 75 73 20 69 73 20 69 6e 20 …+7      text      "\"Myus is in Kosha.\""
+03E7: 8b 43 50 00 00 01 40                         return    True
+03EE:>90 64 61 72 69 00 04 20                      match     dari else -> 0420
+03F6: 22 44 61 72 69 75 73 20 69 73 20 63 …+23     text      "\"Darius is currently in Catamarca.\""
+0419: 8b 43 50 00 00 01 40                         return    True
+0420:>90 61 6c 61 72 2c 6b 69 6e 67 00 04 …+1      match     alar,king else -> 0479
+042D: 22 4f 75 72 20 4c 6f 72 64 20 41 6c …+57     text      "\"Our Lord Alaric certainly is failing - that is clear.  Such a pity.\""
+0472: 8b 43 50 00 00 01 40                         return    True
+0479:>90 6d 61 67 70 00 04 d5                      match     magp else -> 04D5
+0481: 22 4f 68 2c 20 79 6f 75 20 6d 65 61 …+65     text      "\"Oh, you mean the LandKing's fool?  Very odd bird, if you'll pardon the pun.\""
+04CE: 8b 43 50 00 00 01 40                         return    True
+04D5:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 04DC-04E0: no dictionary entry, jump, pointer or call reaches it ----
+04DC:x8b 41 00 40                                  return    0

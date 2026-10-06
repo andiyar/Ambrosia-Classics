@@ -1,0 +1,72 @@
+; segment 1078  page 10  class 0x00 (prop) type 120 tile-name "pail" (tool join F000/F004)
+; kind class  length 547 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01F7  methods: sel15/take_drop_15@0008, sel9/use@0016, sel10/use_on@0041
+; properties: sel36/p_weight
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 f7                                        .hdr      dictionary offset = 01F7
+0002: 90 01 00 00 00 10                            .array    array[1] = [16]
+
+; ==== method sel15/take_drop_15 @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0012-0016: no dictionary entry, jump, pointer or call reaches it ----
+0012:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0016 ====
+0016: 81 01 00                                     frame     args=1 locals=0
+0019: 8d 48 13 40 00 36                            jf        G13:g13_bool -> 0036
+001F: 46 69 6c 6c 20 62 75 63 6b 65 74 20 …+11     text      "Fill bucket with what?\n"
+0036:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 003D-0041: no dictionary entry, jump, pointer or call reaches it ----
+003D:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0041 ====
+0041: 81 02 01                                     frame     args=2 locals=1
+0044: 8d 31 62 04 42 00 77 54 40 00 9b             jf        (A31.f04:type == 119) -> 009B
+004F: 86 00 30 40 30 62 00 43 00 00 00 80 …+2      setfield  A30.f00:kind = (A30.f00:kind | 128)
+005D: 86 03 31 40 41 03 40                         setfield  A31.f03:frame = 3
+0064: a6 41 04 40                                  builtin   show_tile_animate(4)
+0068: 86 03 31 40 41 05 40                         setfield  A31.f03:frame = 5
+006F: a6 41 04 40                                  builtin   show_tile_animate(4)
+0073: 86 03 31 40 41 07 40                         setfield  A31.f03:frame = 7
+007A: a6 41 04 40                                  builtin   show_tile_animate(4)
+007E: 86 03 31 40 41 01 40                         setfield  A31.f03:frame = 1
+0085: 86 00 30 40 30 62 00 43 0f ff ff 7f …+2      setfield  A30.f00:kind = (A30.f00:kind & -129)
+0093: 9f 0e 0a 30 40                               call      R0E0A(A30)
+0098: 88 01 f3                                     goto      -> 01F3
+009B:>8d 31 62 04 42 00 76 54 40 01 0c             jf        (A31.f04:type == 118) -> 010C
+00A6: 82 00 31 41 01 4b 40                         set       L00 = (A31 - 1)
+00AD: 8d 00 62 04 42 00 77 54 40 00 bf             jf        (L00.f04:type == 119) -> 00BF
+00B8: 8b 9d 0a 30 00 40 40                         return    A30.sel10/use_on(L00)
+00BF:>82 00 31 41 01 4a 40                         set       L00 = (A31 + 1)
+00C6: 8d 00 62 04 42 00 77 54 40 00 d8             jf        (L00.f04:type == 119) -> 00D8
+00D1: 8b 9d 0a 30 00 40 40                         return    A30.sel10/use_on(L00)
+00D8:>54 68 65 72 65 20 69 73 20 6e 6f 20 …+37     text      "There is no rope for the bucket - you'd lose it.\n"
+0109: 88 01 f3                                     goto      -> 01F3
+010C:>8d 31 62 04 42 00 37 54 31 62 04 42 …+7      jf        ((A31.f04:type == 55) || (A31.f04:type == 54)) -> 014B
+011F: 86 04 30 40 42 00 79 40                      setfield  A30.f04:type = 121
+0127: 54 68 65 20 62 75 63 6b 65 74 20 69 …+21     text      "The bucket is now full of water.\n"
+0148: 88 01 f3                                     goto      -> 01F3
+014B:>8d 31 62 04 42 00 5a 54 40 01 85             jf        (A31.f04:type == 90) -> 0185
+0156: 86 04 30 40 42 00 7a 40                      setfield  A30.f04:type = 122
+015E: d3 41 07 31 62 01 31 62 02 40                builtin   positional_sound(7, A31.f01:x, A31.f02:y)
+0168: 59 6f 75 20 68 61 76 65 20 6d 69 6c …+14     text      "You have milked the goat.\n"
+0182: 88 01 f3                                     goto      -> 01F3
+0185:>8d 31 62 04 42 00 da 54 40 01 98             jf        (A31.f04:type == 218) -> 0198
+0190: 9f 0e 0a 30 40                               call      R0E0A(A30)
+0195: 88 01 f3                                     goto      -> 01F3
+0198:>8d 31 62 04 42 00 db 54 40 01 ab             jf        (A31.f04:type == 219) -> 01AB
+01A3: 9f 0e 0c 30 40                               call      R0E0C(A30)
+01A8: 88 01 f3                                     goto      -> 01F3
+01AB:>8d 31 62 04 42 00 d9 54 40 01 be             jf        (A31.f04:type == 217) -> 01BE
+01B6: 9f 0e 0d 30 40                               call      R0E0D(A30)
+01BB: 88 01 f3                                     goto      -> 01F3
+01BE:>59 6f 75 20 6e 65 65 64 20 74 6f 20 …+41     text      "You need to fill the bucket from a source of liquid.\n"
+01F3:>8b 41 00 40                                  return    0
+01F7: a0 07 50 00 ff ff 00 27 90 78 00 02 …+32     .dict     dict[7] {9/use: @0016, 10/use_on: @0041, 15/take_drop_15: @0008, 36/p_weight: @0002}

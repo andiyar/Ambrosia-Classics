@@ -1,0 +1,35 @@
+; segment 1401  page 14  class 0x20 (zone) id 1
+; kind class  length 218 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00C6  methods: sel20/enter@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 c6                                        .hdr      dictionary offset = 00C6
+
+; ==== method sel20/enter @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: d9 41 00 40                                  builtin   set_outdoor_sky(0)
+0009: da 44 43 79 74 68 65 72 61 00 40             builtin   set_map_title("Cythera")
+0014: d8 41 20 40                                  builtin   set_zone_light_minimum(32)
+0018: fd 41 01 40                                  builtin   set_erase_colour(1)
+001C: d6 41 03 40                                  builtin   play_music2(3)
+0020: 8d dc 41 03 40 41 00 54 40 00 5c             jf        (get_variable(3) == 0) -> 005C
+002B: 8d 9f 0f 02 42 00 0d 41 01 40 9f 0f …+31     jf        (R0F02(13, 1) && ((R0F02(62, 1) || R0F02(62, 2)) || R0F02(62, 4))) -> 005C  ; R0F02 = tstbit [from 0x0101 symtab]
+0056: dd 41 03 41 01 40                            builtin   set_variable(3, 1)
+005C:>8d dc 41 01 40 41 05 54 9f 0f 02 42 …+9      jf        ((get_variable(1) == 5) && R0F02(70, 1)) -> 0077  ; R0F02 = tstbit [from 0x0101 symtab]
+0071: dd 41 01 41 06 40                            builtin   set_variable(1, 6)
+0077:>8d dc 41 04 40 41 02 54 40 00 93             jf        (get_variable(4) == 2) -> 0093
+0082: 8d dc 41 03 40 41 02 52 40 00 93             jf        (get_variable(3) >= 2) -> 0093
+008D: dd 41 04 41 05 40                            builtin   set_variable(4, 5)
+0093:>8d dc 41 04 40 41 00 54 40 00 a4             jf        (get_variable(4) == 0) -> 00A4
+009E: dd 41 04 41 07 40                            builtin   set_variable(4, 7)
+00A4:>8d dc 41 0b 40 41 00 54 40 00 c2             jf        (get_variable(11) == 0) -> 00C2
+00AF: 9f 0f 15 42 00 01 41 04 41 02 41 00 …+1      call      R0F15(1, 4, 2, 0)
+00BC: dd 41 0b 41 01 40                            builtin   set_variable(11, 1)
+00C2:>8b 41 00 40                                  return    0
+00C6: a0 03 50 00 ff ff 00 00 50 00 ff ff …+8      .dict     dict[3] {20/enter: @0002}

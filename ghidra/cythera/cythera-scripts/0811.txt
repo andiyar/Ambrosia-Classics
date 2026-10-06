@@ -1,0 +1,85 @@
+; segment 0811  page 08  routine
+; kind routine  length 1306 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 6d 69 6e 65 2c 69 72 6f 6e 00 00 …+1      match     mine,iron else -> 0054
+0010: 22 54 68 69 73 20 6d 69 6e 65 20 69 …+49     text      "\"This mine is the only good source of pure iron in the land.\""
+004D: 8b 43 50 00 00 01 40                         return    True
+0054:>90 65 75 72 79 00 00 86                      match     eury else -> 0086
+005C: 22 45 75 72 79 62 61 74 65 73 20 69 …+23     text      "\"Eurybates is our cook and hunter.\""
+007F: 8b 43 50 00 00 01 40                         return    True
+0086:>90 61 6d 70 68 00 00 c2                      match     amph else -> 00C2
+008E: 22 41 6d 70 68 69 64 61 6d 61 73 20 …+33     text      "\"Amphidamas is the foreman here at the mine.\""
+00BB: 8b 43 50 00 00 01 40                         return    True
+00C2:>90 61 74 79 6d 00 01 2d                      match     atym else -> 012D
+00CA: 22 41 74 79 6d 6e 69 75 73 20 77 61 …+80     text      "\"Atymnius was the miner to discover the ghost - he went to Cademia to tell Thuria about it.\""
+0126: 8b 43 50 00 00 01 40                         return    True
+012D:>90 74 68 75 72 00 01 72                      match     thur else -> 0172
+0135: 22 53 68 65 27 73 20 74 68 65 20 68 …+42     text      "\"She's the head of House Attis, which owns this mine.\""
+016B: 8b 43 50 00 00 01 40                         return    True
+0172:>90 61 74 74 69 00 01 9d                      match     atti else -> 019D
+017A: 22 48 6f 75 73 65 20 41 74 74 69 73 …+16     text      "\"House Attis owns the mine.\""
+0196: 8b 43 50 00 00 01 40                         return    True
+019D:>90 67 68 6f 73 00 02 07                      match     ghos else -> 0207
+01A5: 22 54 68 69 6e 67 73 20 68 61 76 65 …+79     text      "\"Things have just been turned upside down around here since Atymnius discovered the ghost.\""
+0200: 8b 43 50 00 00 01 40                         return    True
+0207:>90 72 68 65 73 2c 6c 79 63 75 2c 65 …+11     match     rhes,lycu,erec,tham else -> 0239
+021E: 22 48 65 27 73 20 61 20 6d 69 6e 65 …+8      text      "\"He's a miner here.\""
+0232: 8b 43 50 00 00 01 40                         return    True
+0239:>8d 48 10 41 18 54 40 05 0f                   jf        (G10:zone == 24) -> 050F
+0242: 90 77 68 65 72 00 05 0f                      match     wher else -> 050F
+024A: 9f 08 16 30 45 02 b4 90 08 88 11 02 …+690    call      R0816(A30, blk@0251, 1)
+      ; 0x45 inline block 0251-0505 (692 bytes):
+      0251: 90 08                            .array[8]
+        [0] @0273 ->
+          0273: 90 03                            .array[3]
+            [0] char#23"Amphidamas"
+            [1] @0281 "Foreman Amphidamas"
+            [2] @0294 "He's quarters are just north of the messhall."
+        [1] @02C2 ->
+          02C2: 90 03                            .array[3]
+            [0] char#24"Eurybates"
+            [1] @02D0 "Messhall"
+            [2] @02D9 "Eurybates serves food in messhall, just east of the center of camp."
+        [2] @031D ->
+          031D: 90 06                            .array[6]
+            [0] Nil
+            [1] @0337 "Mine Entrance"
+            [2] @0345 "It is "
+            [3] 40
+            [4] 10
+            [5] @034C "."
+        [3] @034E ->
+          034E: 90 03                            .array[3]
+            [0] Nil
+            [1] @035C "LandKing Hall"
+            [2] @036A "LandKing Hall is quite a distance due north, at the end of this mountain range."
+        [4] @03BA ->
+          03BA: 90 03                            .array[3]
+            [0] Nil
+            [1] @03C8 "Catamarca"
+            [2] @03D2 "Catamarca lies northeast, through the mountain pass to the north."
+        [5] @0414 ->
+          0414: 90 03                            .array[3]
+            [0] Nil
+            [1] @0422 "Odemia"
+            [2] @0429 "Odemia lies northeast, through the mountain pass to the north."
+        [6] @0468 ->
+          0468: 90 03                            .array[3]
+            [0] Nil
+            [1] @0476 "Pnyx"
+            [2] @047B "Pnyx is west from here - follow the road to the coast, and then north."
+        [7] @04C2 ->
+          04C2: 90 03                            .array[3]
+            [0] Nil
+            [1] @04D0 "Kosha"
+            [2] @04D6 "Kosha lies east of here, beyond the mountains."
+0508: 8b 43 50 00 00 01 40                         return    True
+050F:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0516-051A: no dictionary entry, jump, pointer or call reaches it ----
+0516:x8b 41 00 40                                  return    0

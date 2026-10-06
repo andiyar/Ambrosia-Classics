@@ -1,0 +1,31 @@
+; segment 1AFF  page 1A  class 0x50 (spell) type 255
+; kind class  length 91 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @002F  methods: sel2/name@0008, sel4/index@0017, sel9/use@0024
+; properties: sel40/p_typeflags28
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 2f                                        .hdr      dictionary offset = 002F
+0002: 90 01 00 00 00 20                            .array    array[1] = [32]
+
+; ==== method sel2/name @0008 ====
+0008: 81 01 00                                     frame     args=1 locals=0
+000B: 8b 44 50 61 73 73 00 40                      return    "Pass"
+; ---- dead code 0013-0017: no dictionary entry, jump, pointer or call reaches it ----
+0013:x8b 41 00 40                                  return    0
+
+; ==== method sel4/index @0017 ====
+0017: 81 02 00                                     frame     args=2 locals=0
+001A: 8b 31 41 01 54 40                            return    (A31 == 1)
+; ---- dead code 0020-0024: no dictionary entry, jump, pointer or call reaches it ----
+0020:x8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0024 ====
+0024: 81 01 00                                     frame     args=1 locals=0
+0027: a3 41 0a 40                                  builtin   add_leader_busy(10)
+002B: 8b 41 00 40                                  return    0
+002F: a0 07 50 00 ff ff ff ff 50 00 ff ff …+32     .dict     dict[7] {2/name: @0008, 4/index: @0017, 9/use: @0024, 40/p_typeflags28: @0002}

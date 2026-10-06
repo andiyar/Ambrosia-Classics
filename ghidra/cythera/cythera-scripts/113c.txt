@@ -1,0 +1,17 @@
+; segment 113C  page 11  class 0x00 (prop) type 316 tile-name "mortar and pestle" (tool join F000/F004)
+; kind class  length 113 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @005D  methods: -
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 5d                                        .hdr      dictionary offset = 005D
+0002: 90 02 91 3c 00 0c 91 3c 00 51                .array    array[2] = [@000C, @0051]
+000C: 49 74 20 69 73 20 75 73 65 64 20 69 …+57     .string   "It is used in the making of magic potions and components for spells."
+0051: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0057: 90 01 00 00 00 05                            .array    array[1] = [5]
+005D: a0 03 91 3c 00 02 00 33 91 3c 00 57 …+8      .dict     dict[3] {36/p_weight: @0057, 51: @0002}

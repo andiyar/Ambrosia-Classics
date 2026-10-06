@@ -1,0 +1,38 @@
+; segment 0EAF  page 0E  routine
+; kind routine  length 290 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 02                                     frame     args=3 locals=2
+0003: 82 00 f5 30 31 40 40                         set       L00 = find_skill(A30, A31)
+000A: 8d 00 40 00 88                               jf        L00 -> 0088
+000F: 8d 00 62 03 41 10 56 40 00 36                jf        (L00.f03:frame & 16) -> 0036
+0019: 86 03 00 40 00 62 03 41 0f 56 40             setfield  L00.f03:frame = (L00.f03:frame & 15)
+0024: 9d 00 00 40                                  send      L00.sel0/init()
+0028: 9f 0e 86 30 41 00 40                         call      R0E86(A30, 0)
+002F: 8b 43 50 00 ff ff 40                         return    Nil
+0036:>8d 32 5e 40 00 53                            jf        !A32 -> 0053
+003C: 8b 44 59 6f 75 20 61 6c 72 65 61 64 …+11     return    "You already know it"
+0053:>8d 00 62 03 41 0f 54 40 00 88                jf        (L00.f03:frame == 15) -> 0088
+005D: 8b 44 59 6f 75 20 61 6c 72 65 61 64 …+31     return    "You already have complete mastery of it"
+0088:>82 01 30 63 40 40                            set       L01 = as_char(A30)
+008E: 8d 01 62 21 41 00 51 40 00 f5                jf        (L01.f21:training > 0) -> 00F5
+0098: 86 21 01 40 01 62 21 41 01 4b 40             setfield  L01.f21:training = (L01.f21:training - 1)
+00A3: 8d 00 40 00 b6                               jf        L00 -> 00B6
+00A8: 86 03 00 40 00 62 03 41 01 4a 40             setfield  L00.f03:frame = (L00.f03:frame + 1)
+00B3: 88 00 e0                                     goto      -> 00E0
+00B6:>8d 32 40 00 cf                               jf        A32 -> 00CF
+00BB: 82 00 ad 41 1c 41 00 30 41 01 31 41 …+5      set       L00 = create_prop(28, 0, A30, 1, A31, 0, 0)
+00CC: 88 00 e0                                     goto      -> 00E0
+00CF:>82 00 ad 41 1c 41 00 30 41 00 31 41 …+5      set       L00 = create_prop(28, 0, A30, 0, A31, 0, 0)
+00E0:>9d 00 00 40                                  send      L00.sel0/init()
+00E4: 9f 0e 86 30 41 00 40                         call      R0E86(A30, 0)
+00EB: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 00F2-00F5: no dictionary entry, jump, pointer or call reaches it ----
+00F2:x88 01 1e                                     goto      -> 011E
+00F5:>8b 44 59 6f 75 20 68 61 76 65 20 6e …+29     return    "You have no training points available"
+; ---- dead code 011E-0122: no dictionary entry, jump, pointer or call reaches it ----
+011E:x8b 41 00 40                                  return    0

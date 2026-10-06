@@ -1,0 +1,82 @@
+; segment 0EB7  page 0E  routine
+; kind routine  length 584 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 0a                                     frame     args=2 locals=10
+0003: 8d 31 62 0b 30 53 40 00 13                   jf        (A31.f0B:loc16 != A30) -> 0013
+000C: 8b 43 50 00 00 00 40                         return    False
+0013:>82 00 31 61 26 00 40                         set       L00 = prop(A31, sel38/p26, 0)
+001A: 82 01 41 00 40                               set       L01 = 0
+001F: 8d 00 41 04 54 40 00 2f                      jf        (L00 == 4) -> 002F
+0027: 82 01 41 01 40                               set       L01 = 1
+002C: 88 00 46                                     goto      -> 0046
+002F:>8d 00 41 05 54 40 00 3f                      jf        (L00 == 5) -> 003F
+0037: 82 01 41 02 40                               set       L01 = 2
+003C: 88 00 46                                     goto      -> 0046
+003F:>8b 43 50 00 00 00 40                         return    False
+0046:>82 02 41 02 40                               set       L02 = 2
+004B: 82 03 cc 43 10 00 00 04 41 00 30 40 …+1      set       L03 = iterate_equipped(&L04, 0, A30)
+0058:>8c cc 43 10 00 00 04 41 01 40 40 00 …+1      jt        iterate_equipped(&L04, 1) -> 00A3
+0065: 8d 03 61 26 00 41 04 54 03 61 26 00 …+7      jf        ((prop(L03, sel38/p26, 0) == 4) || (prop(L03, sel38/p26, 0) == 3)) -> 0082
+0078: 82 02 02 41 01 4b 40                         set       L02 = (L02 - 1)
+007F: 88 00 94                                     goto      -> 0094
+0082:>8d 03 61 26 00 41 05 54 40 00 94             jf        (prop(L03, sel38/p26, 0) == 5) -> 0094
+008D: 82 02 02 41 02 4b 40                         set       L02 = (L02 - 2)
+0094:>82 03 cc 43 10 00 00 04 41 02 40 40          set       L03 = iterate_equipped(&L04, 2)
+00A0: 88 00 58                                     goto      -> 0058
+00A3:>8d 01 02 50 40 00 aa                         jf        (L01 <= L02) -> 00AA
+00AA:>8d 01 02 41 01 4a 54 40 01 c6                jf        (L01 == (L02 + 1)) -> 01C6
+00B4: 82 06 a0 43 10 00 00 07 41 00 41 00 …+4      set       L06 = iterate_range(&L07, 0, 0, 4)
+00C4:>8c a0 43 10 00 00 07 41 01 40 40 01 …+1      jt        iterate_range(&L07, 1) -> 01B2
+00D1: 8d 01 02 41 01 4a 53 40 00 de                jf        (L01 != (L02 + 1)) -> 00DE
+00DB: 88 01 b2                                     goto      -> 01B2
+00DE:>82 03 cc 43 10 00 00 04 41 00 30 40 …+1      set       L03 = iterate_equipped(&L04, 0, A30)
+00EB:>8c cc 43 10 00 00 04 41 01 40 40 01 …+1      jt        iterate_equipped(&L04, 1) -> 01A3
+00F8: 82 09 43 50 00 00 00 40                      set       L09 = False
+0100: 8d 06 41 00 54 40 01 1e                      jf        (L06 == 0) -> 011E
+0108: 8d 03 61 26 00 41 05 54 40 01 1b             jf        (prop(L03, sel38/p26, 0) == 5) -> 011B
+0113: 82 09 43 50 00 00 01 40                      set       L09 = True
+011B:>88 01 79                                     goto      -> 0179
+011E:>8d 06 41 01 54 40 01 40                      jf        (L06 == 1) -> 0140
+0126: 8d 03 61 26 00 41 04 54 03 60 2a 5c …+3      jf        ((prop(L03, sel38/p26, 0) == 4) && has(L03, sel42)) -> 013D
+0135: 82 09 43 50 00 00 01 40                      set       L09 = True
+013D:>88 01 79                                     goto      -> 0179
+0140:>8d 06 41 02 54 40 01 5e                      jf        (L06 == 2) -> 015E
+0148: 8d 03 61 26 00 41 04 54 40 01 5b             jf        (prop(L03, sel38/p26, 0) == 4) -> 015B
+0153: 82 09 43 50 00 00 01 40                      set       L09 = True
+015B:>88 01 79                                     goto      -> 0179
+015E:>8d 06 41 03 54 40 01 79                      jf        (L06 == 3) -> 0179
+0166: 8d 03 61 26 00 41 03 54 40 01 79             jf        (prop(L03, sel38/p26, 0) == 3) -> 0179
+0171: 82 09 43 50 00 00 01 40                      set       L09 = True
+0179:>8d 09 40 01 94                               jf        L09 -> 0194
+017E: 9d 0e 03 30 40                               send      L03.sel14/take_drop_14(A30)
+0183: 86 00 03 40 41 10 40                         setfield  L03.f00:kind = 16
+018A: 82 02 02 41 01 4a 40                         set       L02 = (L02 + 1)
+0191: 88 01 a3                                     goto      -> 01A3
+0194:>82 03 cc 43 10 00 00 04 41 02 40 40          set       L03 = iterate_equipped(&L04, 2)
+01A0: 88 00 eb                                     goto      -> 00EB
+01A3:>82 06 a0 43 10 00 00 07 41 02 40 40          set       L06 = iterate_range(&L07, 2)
+01AF: 88 00 c4                                     goto      -> 00C4
+01B2:>8d 01 02 41 01 4a 54 40 01 c3                jf        (L01 == (L02 + 1)) -> 01C3
+01BC: 8b 43 50 00 00 00 40                         return    False
+01C3:>88 02 31                                     goto      -> 0231
+01C6:>8d 01 02 41 02 4a 54 40 02 2a                jf        (L01 == (L02 + 2)) -> 022A
+01D0: 82 03 cc 43 10 00 00 04 41 00 30 40 …+1      set       L03 = iterate_equipped(&L04, 0, A30)
+01DD:>8c cc 43 10 00 00 04 41 01 40 40 02 …+1      jt        iterate_equipped(&L04, 1) -> 0227
+01EA: 8d 03 61 26 00 41 05 54 03 61 26 00 …+15     jf        (((prop(L03, sel38/p26, 0) == 5) || (prop(L03, sel38/p26, 0) == 3)) || (prop(L03, sel38/p26, 0) == 4)) -> 0218
+0205: 9d 0e 03 30 40                               send      L03.sel14/take_drop_14(A30)
+020A: 86 00 03 40 41 10 40                         setfield  L03.f00:kind = 16
+0211: 82 02 02 41 02 4a 40                         set       L02 = (L02 + 2)
+0218:>82 03 cc 43 10 00 00 04 41 02 40 40          set       L03 = iterate_equipped(&L04, 2)
+0224: 88 01 dd                                     goto      -> 01DD
+0227:>88 02 31                                     goto      -> 0231
+022A:>8b 43 50 00 00 00 40                         return    False
+0231:>9d 0d 31 30 40                               send      A31.sel13/wield(A30)
+0236: 86 00 03 40 41 18 40                         setfield  L03.f00:kind = 24
+023D: 8b 43 50 00 00 01 40                         return    True
+; ---- dead code 0244-0248: no dictionary entry, jump, pointer or call reaches it ----
+0244:x8b 41 00 40                                  return    0

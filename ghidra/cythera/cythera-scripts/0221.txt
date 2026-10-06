@@ -1,0 +1,11 @@
+; segment 0221  page 02  string table
+; kind strtab  length 329 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 90 1b 50 00 ff ff 50 00 ff ff 50 00 …+98     .strtab   string table, 27 entries (VAddrToPtr case 3 uses only the low 16 bits; high halves seen: 8221×2)
+006E: 49 74 20 73 65 65 6d 73 20 74 6f 20 …+111    .string   [25] "It seems to be some sort of crude map, showing mountains, perhaps some trees, a settlement, and then who knows what else.\n"
+00E9: 49 74 27 73 20 61 20 77 61 6e 74 65 …+84     .string   [26] "It's a wanted poster, though the likeness isn't very good, so it's unclear who the suspect is.\n"

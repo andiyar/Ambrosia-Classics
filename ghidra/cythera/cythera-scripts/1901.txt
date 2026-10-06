@@ -1,0 +1,73 @@
+; segment 1901  page 19  class 0x48 (cls48) id 1
+; kind class  length 483 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01CF  methods: sel0/init@0002, sel4/index@01C1
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 cf                                        .hdr      dictionary offset = 01CF
+
+; ==== method sel0/init @0002 ====
+0002: 81 02 02                                     frame     args=2 locals=2
+0005: 8d ac 41 00 41 04 40 41 01 54 40 00 …+1      jf        (random(0, 4) == 1) -> 0042
+0012: 82 00 45 00 12 90 04 00 00 00 6c 00 …+12     set       L00 = blk@0017
+      ; 0x45 inline block 0017-0029 (18 bytes):
+      0017: 90 04                            .array[4]
+        [0] 108
+        [1] 108
+        [2] 109
+        [3] 110
+002A: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+0042:>8d ac 41 00 41 05 40 41 01 54 40 00 …+1      jf        (random(0, 5) == 1) -> 007B
+004F: 82 00 45 00 0e 90 03 00 00 00 70 00 …+8      set       L00 = blk@0054
+      ; 0x45 inline block 0054-0062 (14 bytes):
+      0054: 90 03                            .array[3]
+        [0] 112
+        [1] 112
+        [2] 113
+0063: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+007B:>8d ac 41 00 41 03 40 41 00 54 40 00 …+1      jf        (random(0, 3) == 0) -> 00B4
+0088: 82 00 45 00 0e 90 03 00 00 00 6a 00 …+8      set       L00 = blk@008D
+      ; 0x45 inline block 008D-009B (14 bytes):
+      008D: 90 03                            .array[3]
+        [0] 106
+        [1] 106
+        [2] 107
+009C: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+00B4:>8d ac 41 00 41 06 40 41 00 54 40 01 …+1      jf        (random(0, 6) == 0) -> 0147
+00C1: 8d ac 41 00 41 02 40 41 01 54 40 01 …+1      jf        (random(0, 2) == 1) -> 010C
+00CE: 82 01 ad 41 18 41 00 31 41 00 42 00 …+7      set       L01 = create_prop(24, 0, A31, 0, 103, 0, 0)
+00E1: 82 01 ad 41 09 41 00 31 41 00 42 00 …+7      set       L01 = create_prop(9, 0, A31, 0, 102, 0, 0)
+00F4: 86 09 01 40 41 04 ac 41 01 41 04 40 …+9      setfield  L01.f09:count = ((4 + random(1, 4)) + random(1, 6))
+0109: 88 01 47                                     goto      -> 0147
+010C:>82 01 ad 41 18 41 00 31 41 00 42 00 …+7      set       L01 = create_prop(24, 0, A31, 0, 105, 0, 0)
+011F: 82 01 ad 41 09 41 00 31 41 00 42 00 …+7      set       L01 = create_prop(9, 0, A31, 0, 104, 0, 0)
+0132: 86 09 01 40 41 06 ac 41 01 41 06 40 …+9      setfield  L01.f09:count = ((6 + random(1, 6)) + random(1, 10))
+0147:>82 00 45 00 26 90 09 00 00 00 60 00 …+32     set       L00 = blk@014C
+      ; 0x45 inline block 014C-0172 (38 bytes):
+      014C: 90 09                            .array[9]
+        [0] 96
+        [1] 96
+        [2] 96
+        [3] 95
+        [4] 95
+        [5] 94
+        [6] 94
+        [7] 97
+        [8] 98
+0173: 82 01 ad 41 18 41 00 31 41 00 00 ac …+12     set       L01 = create_prop(24, 0, A31, 0, L00[random(0, len(L00))], 0, 0)
+018B: 8d ac 41 00 41 02 40 41 01 54 40 01 …+1      jf        (random(0, 2) == 1) -> 01BD
+0198: 82 01 ad 41 09 41 00 31 41 00 42 00 …+7      set       L01 = create_prop(9, 0, A31, 0, 130, 0, 0)
+01AB: 86 09 01 40 ac 41 01 41 04 40 ac 41 …+6      setfield  L01.f09:count = (random(1, 4) + random(2, 10))
+01BD:>8b 41 00 40                                  return    0
+
+; ==== method sel4/index @01C1 ====
+01C1: 81 02 00                                     frame     args=2 locals=0
+01C4: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 01CB-01CF: no dictionary entry, jump, pointer or call reaches it ----
+01CB:x8b 41 00 40                                  return    0
+01CF: a0 03 99 01 00 02 00 00 99 01 01 c1 …+8      .dict     dict[3] {0/init: @0002, 4/index: @01C1}

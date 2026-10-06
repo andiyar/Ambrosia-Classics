@@ -1,0 +1,52 @@
+; segment 1024  page 10  class 0x00 (prop) type 36 tile-name "passthrough" (tool join F000/F004)
+; kind class  length 377 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0165  methods: sel9/use@0053
+; properties: sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 65                                        .hdr      dictionary offset = 0165
+0002: 90 01 00 00 00 80                            .array    array[1] = [128]
+; ---- local subroutine @0008 ----
+0008: 81 04 03                                     frame     args=4 locals=3
+000B: 82 00 cb 43 10 00 00 01 41 00 30 31 …+2      set       L00 = iterate_props_at(&L01, 0, A30, A31)
+0019:>8c cb 43 10 00 00 01 41 01 40 40 00 …+1      jt        iterate_props_at(&L01, 1) -> 004F
+0026: 8d 00 62 04 42 00 17 54 40 00 40             jf        (L00.f04:type == 23) -> 0040
+0031: 8d 00 62 03 32 54 40 00 40                   jf        (L00.f03:frame == A32) -> 0040
+003A: 86 03 00 40 33 40                            setfield  L00.f03:frame = A33
+0040:>82 00 cb 43 10 00 00 01 41 02 40 40          set       L00 = iterate_props_at(&L01, 2)
+004C: 88 00 19                                     goto      -> 0019
+004F:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0053 ====
+0053: 81 01 01                                     frame     args=1 locals=1
+0056: 82 00 30 62 03 40                            set       L00 = A30.f03:frame
+005C: 8d 00 41 00 54 40 00 9e                      jf        (L00 == 0) -> 009E
+0064: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+5      callsub   sub_0008((A30.f01:x + 1), A30.f02:y, 2, 1)
+0075: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+8      callsub   sub_0008((A30.f01:x + 1), (A30.f02:y + 1), 2, 3)
+0089: 86 03 30 40 41 02 40                         setfield  A30.f03:frame = 2
+0090: 86 02 30 40 30 62 02 41 01 4b 40             setfield  A30.f02:y = (A30.f02:y - 1)
+009B: 88 01 61                                     goto      -> 0161
+009E:>8d 00 41 02 54 40 00 e0                      jf        (L00 == 2) -> 00E0
+00A6: 86 03 30 40 41 00 40                         setfield  A30.f03:frame = 0
+00AD: 86 02 30 40 30 62 02 41 01 4a 40             setfield  A30.f02:y = (A30.f02:y + 1)
+00B8: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+5      callsub   sub_0008((A30.f01:x + 1), A30.f02:y, 1, 2)
+00C9: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+8      callsub   sub_0008((A30.f01:x + 1), (A30.f02:y + 1), 3, 2)
+00DD: 88 01 61                                     goto      -> 0161
+00E0:>8d 00 41 03 54 40 01 22                      jf        (L00 == 3) -> 0122
+00E8: 9e 00 08 30 62 01 30 62 02 41 01 4a …+5      callsub   sub_0008(A30.f01:x, (A30.f02:y + 1), 0, 1)
+00F9: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+8      callsub   sub_0008((A30.f01:x + 1), (A30.f02:y + 1), 2, 3)
+010D: 86 03 30 40 41 05 40                         setfield  A30.f03:frame = 5
+0114: 86 01 30 40 30 62 01 41 01 4b 40             setfield  A30.f01:x = (A30.f01:x - 1)
+011F: 88 01 61                                     goto      -> 0161
+0122:>8d 00 41 05 54 40 01 61                      jf        (L00 == 5) -> 0161
+012A: 86 03 30 40 41 03 40                         setfield  A30.f03:frame = 3
+0131: 86 01 30 40 30 62 01 41 01 4a 40             setfield  A30.f01:x = (A30.f01:x + 1)
+013C: 9e 00 08 30 62 01 30 62 02 41 01 4a …+5      callsub   sub_0008(A30.f01:x, (A30.f02:y + 1), 1, 0)
+014D: 9e 00 08 30 62 01 41 01 4a 30 62 02 …+8      callsub   sub_0008((A30.f01:x + 1), (A30.f02:y + 1), 3, 2)
+0161:>8b 41 00 40                                  return    0
+0165: a0 03 90 24 00 02 00 27 90 24 00 53 …+8      .dict     dict[3] {9/use: @0053, 39/p_typeflags27: @0002}

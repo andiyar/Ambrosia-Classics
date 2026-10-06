@@ -1,0 +1,27 @@
+; segment 1B11  page 1B  class 0x58 (room) id 17
+; kind class  length 180 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00A0  methods: sel7/first_visit@0002, sel20/enter@0052
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 a0                                        .hdr      dictionary offset = 00A0
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 27 76 65 20 66 6f 75 6e 64 …+61     text      "You've found some sort of secret tunnel near the wall of Land King Hall.\n"
+004E: 8b 41 00 40                                  return    0
+
+; ==== method sel20/enter @0052 ====
+0052: 81 01 01                                     frame     args=1 locals=1
+0055: 8d 30 62 14 43 00 00 00 80 56 5e 40 …+2      jf        !(A30.f14:status & 128) -> 009C
+0063: 8d 9f 0f 13 42 00 06 40 40 00 9c             jf        R0F13(6) -> 009C  ; R0F13 = inparty [from 0x0101 symtab]
+006E: 86 14 30 40 30 62 14 43 00 00 00 80 …+2      setfield  A30.f14:status = (A30.f14:status | 128)
+007C: 82 00 43 40 40 00 06 40                      set       L00 = char#6"Hector"
+0084: 86 26 00 40 44 41 20 73 65 63 72 65 …+12     setfield  L00.f26:f26 = "A secret passage!"
+009C:>8b 41 00 40                                  return    0
+00A0: a0 03 50 00 ff ff 00 00 9b 11 00 02 …+8      .dict     dict[3] {7/first_visit: @0002, 20/enter: @0052}

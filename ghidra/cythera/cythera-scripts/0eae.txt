@@ -1,0 +1,21 @@
+; segment 0EAE  page 0E  routine
+; kind routine  length 80 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 02                                     frame     args=3 locals=2
+0003: 82 00 f5 30 31 40 40                         set       L00 = find_skill(A30, A31)
+000A: 8d 00 40 00 3e                               jf        L00 -> 003E
+000F: 8d 00 62 03 41 10 56 40 00 20                jf        (L00.f03:frame & 16) -> 0020
+0019: 8b 43 50 00 00 01 40                         return    True
+0020:>8d 32 5e 40 00 2d                            jf        !A32 -> 002D
+0026: 8b 43 50 00 00 00 40                         return    False
+002D:>8d 00 62 03 41 0f 54 40 00 3e                jf        (L00.f03:frame == 15) -> 003E
+0037: 8b 43 50 00 00 00 40                         return    False
+003E:>82 01 30 63 40 40                            set       L01 = as_char(A30)
+0044: 8b 01 62 21 41 00 51 40                      return    (L01.f21:training > 0)
+; ---- dead code 004C-0050: no dictionary entry, jump, pointer or call reaches it ----
+004C:x8b 41 00 40                                  return    0

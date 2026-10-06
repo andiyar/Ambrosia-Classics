@@ -1,0 +1,19 @@
+; segment 3004  page 30  routine: default handler for selector 4 (index)
+; kind routine  length 51 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 02 01                                     frame     args=2 locals=1
+0003: 8d 30 64 00 40 00 28                         jf        is_prop(A30) -> 0028
+000A: 82 00 30 63 00 40                            set       L00 = as_prop(A30)
+0010: 8d 00 62 11 40 00 21                         jf        L00.f11:has_frame -> 0021
+0017: 8b 00 62 12 31 46 40                         return    L00.f12:frame_dict[A31]
+; ---- dead code 001E-0021: no dictionary entry, jump, pointer or call reaches it ----
+001E:x88 00 28                                     goto      -> 0028
+0021:>8b 43 50 00 ff ff 40                         return    Nil
+0028:>8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 002F-0033: no dictionary entry, jump, pointer or call reaches it ----
+002F:x8b 41 00 40                                  return    0

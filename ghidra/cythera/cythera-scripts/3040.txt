@@ -1,0 +1,37 @@
+; segment 3040  page 30  routine: default handler for selector 64
+; kind routine  length 275 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 03 02                                     frame     args=3 locals=2
+0003: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0009: 8d 00 62 33 41 02 56 40 00 17                jf        (L00.f33 & 2) -> 0017
+0013: 8b 41 00 40                                  return    0
+0017:>8d 00 62 32 43 00 00 00 80 56 32 41 …+6      jf        ((L00.f32 & 128) && (A32 & 8)) -> 002D
+0029: 8b 41 00 40                                  return    0
+002D:>8d 00 62 32 43 00 00 80 00 56 32 41 …+6      jf        ((L00.f32 & 32768) && (A32 & 32)) -> 0043
+003F: 8b 41 00 40                                  return    0
+0043:>8d 00 62 32 43 00 00 08 00 56 32 41 …+6      jf        ((L00.f32 & 2048) && (A32 & 64)) -> 005C
+0055: 82 31 31 41 02 4d 40                         set       A31 = (A31 / 2)
+005C:>8d 00 62 32 43 00 00 02 00 56 32 41 …+6      jf        ((L00.f32 & 512) && (A32 & 8)) -> 0075
+006E: 82 31 31 41 02 4c 40                         set       A31 = (A31 * 2)
+0075:>8d c4 30 41 17 40 32 41 08 56 5c 40 …+2      jf        (has_ability(A30, 23) && (A32 & 8)) -> 0087
+0083: 8b 41 00 40                                  return    0
+0087:>8d 00 62 32 43 00 00 04 00 56 32 41 …+12     jf        (((L00.f32 & 1024) && !(A32 & 4)) && (A32 & 3)) -> 00A6
+009F: 82 31 31 41 02 4d 40                         set       A31 = (A31 / 2)
+00A6:>8d 00 62 32 43 00 00 01 00 56 32 43 …+10     jf        ((L00.f32 & 256) && !(A32 & 192)) -> 00C0
+00BC: 8b 41 00 40                                  return    0
+00C0:>8d 00 62 33 41 04 56 32 41 01 56 5c …+3      jf        ((L00.f33 & 4) && (A32 & 1)) -> 00D3
+00CF: 8b 41 00 40                                  return    0
+00D3:>82 01 00 62 30 9f 0e 81 30 32 40 4a …+1      set       L01 = (L00.f30 + R0E81(A30, A32))
+00E0: 82 31 31 ac 41 00 01 41 01 4a 40 4b …+17     set       A31 = ((A31 - random(0, (L01 + 1))) - random(0, (R0EAC(A30, 193) + 1)))
+00FD: 8d 31 41 00 4f 40 01 0c                      jf        (A31 < 0) -> 010C
+0105: 8b 41 00 40                                  return    0
+; ---- dead code 0109-010C: no dictionary entry, jump, pointer or call reaches it ----
+0109:x88 01 0f                                     goto      -> 010F
+010C:>8b 31 40                                     return    A31
+; ---- dead code 010F-0113: no dictionary entry, jump, pointer or call reaches it ----
+010F:x8b 41 00 40                                  return    0

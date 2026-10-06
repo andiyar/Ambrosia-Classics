@@ -1,0 +1,61 @@
+; segment 1815  page 18  class 0x40 (char) id 21 name "Malis" (string table 0201)
+; kind class  length 715 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @02B7  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 02 b7                                        .hdr      dictionary offset = 02B7
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 6e 65 …+36     text      "You see a nervous man, shy and uncertain.\"Hello "
+0035: 8d 9f 0f 02 30 41 07 40 40 00 47             jf        R0F02(A30, 7) -> 0047  ; R0F02 = tstbit [from 0x0101 symtab]
+0040: 61 67 61 69 6e 2c 20                         text      "again, "
+0047:>8d 49 05 00 00 10 40 00 59                   jf        seg0500[0010] -> 0059
+0050: 6d 61 27 61 6d 2e                            text      "ma'am."
+0056: 88 00 5d                                     goto      -> 005D
+0059:>73 69 72 2e 20 20 57 68 61 74 20 63 …+17     text      "sir.  What can I do for you?\""  ; shares its tail with text @005D
+005D:>20 20 57 68 61 74 20 63 61 6e 20 49 …+13     text      "  What can I do for you?\""
+0076:>8e                                           input       ; read a line into the input buffer
+0077: 90 6e 61 6d 65 00 00 ac                      match     name else -> 00AC
+007F: 22 49 20 61 6d 20 4d 61 6c 69 73 2c …+23     text      "\"I am Malis, son of Matron Thuria.\""
+00A2: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00A9: 88 00 76                                     goto      -> 0076
+00AC:>90 6a 6f 62 00 01 12                         match     job else -> 0112
+00B3: 22 4f 6e 65 20 64 61 79 20 49 20 77 …+80     text      "\"One day I will take over the rule of House Attis, but for now I learn the family business.\""
+010F: 88 00 76                                     goto      -> 0076
+0112:>90 74 68 75 72 00 01 2e                      match     thur else -> 012E
+011A: 22 4d 79 20 64 65 61 72 20 6d 6f 74 …+5      text      "\"My dear mother.\""
+012B: 88 00 76                                     goto      -> 0076
+012E:>90 6d 6f 74 68 00 01 49                      match     moth else -> 0149
+0136: 22 4d 61 74 72 6f 6e 20 54 68 75 72 …+4      text      "\"Matron Thuria.\""
+0146: 88 00 76                                     goto      -> 0076
+0149:>90 62 79 65 00 01 6d                         match     bye else -> 016D
+0150: 22 55 6e 74 69 6c 20 77 65 20 6d 65 …+10     text      "\"Until we meet again.\""
+0166: 8b 41 00 40                                  return    0
+; ---- dead code 016A-016D: no dictionary entry, jump, pointer or call reaches it ----
+016A:x88 00 76                                     goto      -> 0076
+016D:>90 67 68 6f 73 2c 70 72 6f 62 00 01 …+1      match     ghos,prob else -> 01C1
+017A: 22 59 6f 75 20 77 69 6c 6c 20 6e 65 …+56     text      "\"You will need to talk to my Mother about that - I have no comment.\""
+01BE: 88 00 76                                     goto      -> 0076
+01C1:>90 63 79 62 65 00 01 fd                      match     cybe else -> 01FD
+01C9: 22 4d 79 20 64 65 61 72 20 73 69 73 …+37     text      "\"My dear sister - I worry about her sometimes...\""
+01FA: 88 00 76                                     goto      -> 0076
+01FD:>90 77 6f 72 72 00 02 6a                      match     worr else -> 026A
+0205: 22 53 68 65 20 73 61 79 73 20 49 20 …+86     text      "\"She says I shouldn't worry, that everything always works out well, but still, such is my nature.\""
+0267: 88 00 76                                     goto      -> 0076
+026A:>90 2a 00 02 b0                               match     * else -> 02B0
+026F: 8d 9f 08 02 30 40 5e 40 02 ad                jf        !R0802(A30) -> 02AD
+0279: 8d 9f 08 0e 30 40 5e 40 02 ad                jf        !R080E(A30) -> 02AD
+0283: 8d 9f 08 01 30 40 5e 40 02 ad                jf        !R0801(A30) -> 02AD
+028D: 22 49 27 6d 20 73 6f 72 72 79 2c 20 …+20     text      "\"I'm sorry, I can't help you...\""
+02AD:>88 00 76                                     goto      -> 0076
+02B0:>88 00 76                                     goto      -> 0076
+; ---- dead code 02B3-02B7: no dictionary entry, jump, pointer or call reaches it ----
+02B3:x8b 41 00 40                                  return    0
+02B7: a0 03 98 15 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

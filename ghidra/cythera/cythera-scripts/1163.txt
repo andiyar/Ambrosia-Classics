@@ -1,0 +1,54 @@
+; segment 1163  page 11  class 0x00 (prop) type 355 tile-name "small hole" (tool join F000/F004)
+; kind class  length 471 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @01C3  methods: sel21/signal@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 c3                                        .hdr      dictionary offset = 01C3
+
+; ==== method sel21/signal @0002 ====
+0002: 81 02 05                                     frame     args=2 locals=5
+0005: 86 00 30 40 30 62 00 43 0f ff ff fd …+2      setfield  A30.f00:kind = (A30.f00:kind & -3)
+0013: 8d 30 62 0d 40 00 2d                         jf        A30.f0D:mirror -> 002D
+001A: 82 00 30 62 01 30 62 07 4a 40                set       L00 = (A30.f01:x + A30.f07:byte7)
+0024: 82 01 30 62 02 40                            set       L01 = A30.f02:y
+002A: 88 00 3d                                     goto      -> 003D
+002D:>82 00 30 62 01 40                            set       L00 = A30.f01:x
+0033: 82 01 30 62 02 30 62 07 4a 40                set       L01 = (A30.f02:y + A30.f07:byte7)
+003D:>8d 30 62 03 41 00 54 40 00 7c                jf        (A30.f03:frame == 0) -> 007C
+0047: e2 30 62 01 30 62 02 00 01 43 00 00 …+9      builtin   missile_burst(A30.f01:x, A30.f02:y, L00, L01, 2296, 0, 0, 13)
+005C: 9f 0e b8 48 05 ac 41 01 41 07 40 ac …+17     call      R0EB8(G05:leader, (random(1, 7) + random(1, 7)), 1026, Nil)
+0079: 88 01 b4                                     goto      -> 01B4
+007C:>8d 30 62 03 41 01 54 40 00 db                jf        (A30.f03:frame == 1) -> 00DB
+0086: e2 30 62 01 30 62 02 00 01 43 00 00 …+9      builtin   missile_burst(A30.f01:x, A30.f02:y, L00, L01, 440, 2, 0, 13)
+009B: 82 02 cf 43 10 00 00 03 41 00 40 40          set       L02 = iterate_last_burst_victims(&L03, 0)
+00A7:>8c cf 43 10 00 00 03 41 01 40 40 00 …+1      jt        iterate_last_burst_victims(&L03, 1) -> 00D8
+00B4: 9f 0e b8 02 41 06 ac 41 00 41 06 40 …+9      call      R0EB8(L02, (6 + random(0, 6)), 8, Nil)
+00C9: 82 02 cf 43 10 00 00 03 41 02 40 40          set       L02 = iterate_last_burst_victims(&L03, 2)
+00D5: 88 00 a7                                     goto      -> 00A7
+00D8:>88 01 b4                                     goto      -> 01B4
+00DB:>8d 30 62 03 41 02 54 40 01 3a                jf        (A30.f03:frame == 2) -> 013A
+00E5: e2 30 62 01 30 62 02 00 01 43 00 00 …+9      builtin   missile_burst(A30.f01:x, A30.f02:y, L00, L01, 433, 2, 0, 0)
+00FA: 82 02 cf 43 10 00 00 03 41 00 40 40          set       L02 = iterate_last_burst_victims(&L03, 0)
+0106:>8c cf 43 10 00 00 03 41 01 40 40 01 …+1      jt        iterate_last_burst_victims(&L03, 1) -> 0137
+0113: 9f 0e b8 02 41 0a ac 41 00 41 0a 40 …+9      call      R0EB8(L02, (10 + random(0, 10)), 32, Nil)
+0128: 82 02 cf 43 10 00 00 03 41 02 40 40          set       L02 = iterate_last_burst_victims(&L03, 2)
+0134: 88 01 06                                     goto      -> 0106
+0137:>88 01 b4                                     goto      -> 01B4
+013A:>8d 30 62 03 41 03 54 40 01 b4                jf        (A30.f03:frame == 3) -> 01B4
+0144: e2 30 62 01 30 62 02 00 01 43 00 00 …+9      builtin   missile_burst(A30.f01:x, A30.f02:y, L00, L01, 432, 0, 0, 0)
+0159: d3 41 27 00 01 40                            builtin   positional_sound(39, L00, L01)
+015F: e2 00 01 00 01 43 00 00 01 b3 41 10 …+5      builtin   missile_burst(L00, L01, L00, L01, 435, 16, 4, 0)
+0170: 82 02 cf 43 10 00 00 03 41 00 40 40          set       L02 = iterate_last_burst_victims(&L03, 0)
+017C:>8c cf 43 10 00 00 03 41 01 40 40 01 …+1      jt        iterate_last_burst_victims(&L03, 1) -> 01B4
+0189: 9f 0e b8 02 41 14 ac 41 00 41 0a 40 …+16     call      R0EB8(L02, ((20 + random(0, 10)) + random(0, 10)), 8, Nil)
+01A5: 82 02 cf 43 10 00 00 03 41 02 40 40          set       L02 = iterate_last_burst_victims(&L03, 2)
+01B1: 88 01 7c                                     goto      -> 017C
+01B4:>86 00 30 40 30 62 00 41 02 57 40             setfield  A30.f00:kind = (A30.f00:kind | 2)
+01BF: 8b 41 00 40                                  return    0
+01C3: a0 03 91 63 00 02 00 15 50 00 ff ff …+8      .dict     dict[3] {21/signal: @0002}

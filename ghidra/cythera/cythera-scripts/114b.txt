@@ -1,0 +1,33 @@
+; segment 114B  page 11  class 0x00 (prop) type 331 tile-name "rope" (tool join F000/F004)
+; kind class  length 350 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0132  methods: sel9/use@0081, sel10/use_on@008F
+; properties: sel36/p_weight, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 32                                        .hdr      dictionary offset = 0132
+0002: 90 02 91 4b 00 0c 91 4b 00 71                .array    array[2] = [@000C, @0071]
+000C: 59 6f 75 20 6e 65 76 65 72 20 6b 6e …+89     .string   "You never know.  If you might need to climb down a hole or something, that rope would come in handy."
+0071: 90 02 00 00 00 61 00 00 00 22                .array    array[2] = [97, 34]
+007B: 90 01 00 00 00 64                            .array    array[1] = [100]
+
+; ==== method sel9/use @0081 ====
+0081: 81 01 00                                     frame     args=1 locals=0
+0084: 8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 008B-008F: no dictionary entry, jump, pointer or call reaches it ----
+008B:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @008F ====
+008F: 81 02 00                                     frame     args=2 locals=0
+0092: 8d 31 62 04 42 01 4c 54 31 62 03 41 …+6      jf        ((A31.f04:type == 332) && (A31.f03:frame == 0)) -> 0105
+00A4: 86 03 31 40 41 01 40                         setfield  A31.f03:frame = 1
+00AB: 59 6f 75 20 74 69 65 20 74 68 65 20 …+72     text      "You tie the rope to the rock outcropping, tossing the free end down into the abyss.\n"
+00FF: a7 30 40                                     builtin   delete_prop(A30)
+0102: 88 01 2e                                     goto      -> 012E
+0105:>4e 6f 74 20 73 75 72 65 20 77 68 61 …+29     text      "Not sure what you plan to tie up here...\n"
+012E:>8b 41 00 40                                  return    0
+0132: a0 07 50 00 ff ff 31 30 91 4b 00 7b …+32     .dict     dict[7] {9/use: @0081, 10/use_on: @008F, 36/p_weight: @007B, 51: @0002}

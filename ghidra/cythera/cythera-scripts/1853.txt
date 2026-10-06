@@ -1,0 +1,107 @@
+; segment 1853  page 18  class 0x40 (char) id 83 name "Tros" (string table 0201)
+; kind class  length 2023 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @07BB  methods: sel32/spawned@0117, sel12/talk@013C
+; properties: sel68
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 4   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 07 bb                                        .hdr      dictionary offset = 07BB
+0002: 90 01 98 53 00 08                            .array    array[1] = [@0008]
+0008: 90 0c 00 00 00 14 00 00 00 0a 00 00 …+38     .array    array[12] = [20, 10, 10, 13, 20, 14, 10, 18, 20, 35, 20, 15]
+003A: 81 01 01                                     frame     args=1 locals=1
+003D: 8d ac 41 00 41 04 40 41 01 54 40 01 …+1      jf        (random(0, 4) == 1) -> 010C
+004A: 82 00 45 00 af 90 06 98 53 00 69 98 …+169    set       L00 = blk@004F
+      ; 0x45 inline block 004F-00FE (175 bytes):
+      004F: 90 06                            .array[6]
+        [0] @0069 "...basic Rune forms..."
+        [1] @0080 "The primary trigger..."
+        [2] @0097 "...art of inscribing..."
+        [3] @00AF "...however, do not forget..."
+        [4] @00CC "...care must be taken..."
+        [5] @00E5 "...when combined with..."
+00FF: 86 26 30 40 00 ac 41 00 00 5f 40 46 …+1      setfield  A30.f26:f26 = L00[random(0, len(L00))]
+010C:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 0113-0117: no dictionary entry, jump, pointer or call reaches it ----
+0113:x8b 41 00 40                                  return    0
+
+; ==== method sel32/spawned @0117 ====
+0117: 81 01 00                                     frame     args=1 locals=0
+011A: 8b 9f 0c 00 30 45 00 14 a0 03 98 53 …+18     return    R0C00(A30, blk@0122)
+      ; 0x45 inline block 0122-0136 (20 bytes):
+      0122: a0 03                            .dict[3 slots, 1 used]
+        key 138 @003A (code)
+; ---- dead code 0138-013C: no dictionary entry, jump, pointer or call reaches it ----
+0138:x8b 41 00 40                                  return    0
+
+; ==== method sel12/talk @013C ====
+013C: 81 01 01                                     frame     args=1 locals=1
+013F: 59 6f 75 20 73 65 65 20 61 20 76 65 …+55     text      "You see a very ordinary looking man, showing no facial expression.*"
+0182: 8d 30 62 15 43 00 00 00 8a 54 40 01 …+1      jf        (A30.f15:activity == 138) -> 01E3
+018F: 22 49 27 6d 20 69 6e 20 74 68 65 20 …+68     text      "\"I'm in the middle of a lecture, which is very important.  Please wait outside.\""
+01DF: 8b 41 00 40                                  return    0
+01E3:>22 59 65 73 2c 20 79 6f 75 6e 67 20          text      "\"Yes, young "
+01EF: 8d 49 05 00 00 10 40 01 ff                   jf        seg0500[0010] -> 01FF
+01F8: 6c 61 64 79                                  text      "lady"
+01FC: 88 02 02                                     goto      -> 0202
+01FF:>6d 61 6e 3f 22                               text      "man?\""  ; shares its tail with text @0202
+0202:>3f 22                                        text      "?\""
+0204:>8e                                           input       ; read a line into the input buffer
+0205: 90 62 79 65 00 02 1e                         match     bye else -> 021E
+020C: 22 47 6f 6f 64 20 62 79 65 2e 22             text      "\"Good bye.\""
+0217: 8b 41 00 40                                  return    0
+; ---- dead code 021B-021E: no dictionary entry, jump, pointer or call reaches it ----
+021B:x88 02 04                                     goto      -> 0204
+021E:>90 6e 61 6d 65 00 02 57                      match     name else -> 0257
+0226: 22 49 20 61 6d 20 54 72 6f 73 2c 20 …+27     text      "\"I am Tros, instructor of Runic Magic.\""
+024D: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0254: 88 02 04                                     goto      -> 0204
+0257:>90 74 72 6f 73 00 02 ab                      match     tros else -> 02AB
+025F: 8d 9f 0f 02 30 41 07 40 40 02 90             jf        R0F02(A30, 7) -> 0290  ; R0F02 = tstbit [from 0x0101 symtab]
+026A: 22 41 72 65 20 79 6f 75 20 61 64 64 …+23     text      "\"Are you addlebrained?  I am Tros.\""
+028D: 88 02 a8                                     goto      -> 02A8
+0290:>22 59 65 73 2c 20 49 20 61 6d 20 54 …+5      text      "\"Yes, I am Tros.\""
+02A1: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+02A8:>88 02 04                                     goto      -> 0204
+02AB:>90 6a 6f 62 00 02 f5                         match     job else -> 02F5
+02B2: 22 4d 79 20 6a 6f 62 20 69 73 20 74 …+52     text      "\"My job is to @train young students in the ways of Runic Magic.\""
+02F2: 88 02 04                                     goto      -> 0204
+02F5:>90 72 75 6e 69 2c 72 75 6e 65 2c 6d …+6      match     runi,rune,magi else -> 038F
+0307: 8d f5 48 05 42 00 d3 40 40 03 4a             jf        find_skill(G05:leader, 211) -> 034A
+0312: 22 42 75 74 20 79 6f 75 2c 20 6f 66 …+41     text      "\"But you, of course, already know about Runic Magic.\""
+0347: 88 03 8c                                     goto      -> 038C
+034A:>22 50 65 72 68 61 70 73 20 79 6f 75 …+54     text      "\"Perhaps you should join my class to get @trained on Runic Magic.\""
+038C:>88 02 04                                     goto      -> 0204
+038F:>90 74 72 61 69 2c 74 65 61 63 00 06 …+1      match     trai,teac else -> 06EE
+039C: 82 00 9f 0e ac 48 05 42 00 c2 40 40          set       L00 = R0EAC(G05:leader, 194)
+03A8: 8d 00 5e 40 04 15                            jf        !L00 -> 0415
+03AE: 22 59 6f 75 20 68 61 76 65 6e 27 74 …+88     text      "\"You haven't even learned the first thing about Magic - you aren't ready for more advance material.\""
+0412: 88 06 eb                                     goto      -> 06EB
+0415:>8d f5 48 05 42 00 d3 40 40 04 70             jf        find_skill(G05:leader, 211) -> 0470
+0420: 22 59 6f 75 27 76 65 20 61 6c 72 65 …+65     text      "\"You've already got the basics down, you don't have time to learn much more.\""
+046D: 88 06 eb                                     goto      -> 06EB
+0470:>8d 48 0d 43 50 00 00 01 54 40 06 b3          jf        (G0D:g0D == True) -> 06B3
+047C: 8d 9f 0e ae 48 05 42 00 d3 40 40 06 …+1      jf        R0EAE(G05:leader, 211) -> 0673
+0489: 22 48 6d 2c 20 49 20 73 75 70 70 6f …+461    text      "\"Hm, I suppose so, but I'll just give you the basics - you don't have the time for much more.\"*\"Runic magic can be though of as a time-separated spell casting.\"*\"Half the spell is cast when a rune is enscribed...\"*\"...and the other half happens when the rune is triggered.\"*\"This triggering happens when something steps upon the rune.\"*\"However, there are other runes, like Blocking, that doesn't fit this pattern.\"*Tros seems to drone on for what seems like an eternity..."
+0662: 9f 0e af 48 05 42 00 d3 43 50 00 00 …+2      call      R0EAF(G05:leader, 211, False)
+0670: 88 06 b0                                     goto      -> 06B0
+0673:>22 59 6f 75 27 72 65 20 65 78 70 65 …+49     text      "\"You're experience isn't great enough to gain this knowlege.\""
+06B0:>88 06 eb                                     goto      -> 06EB
+06B3:>22 48 6d 2c 20 49 20 64 6f 6e 27 74 …+44     text      "\"Hm, I don't think so.  You need to be registered here.\""
+06EB:>88 02 04                                     goto      -> 0204
+06EE:>90 72 65 67 69 00 07 41                      match     regi else -> 0741
+06F6: 22 59 65 73 2c 20 6a 75 73 74 20 72 …+60     text      "\"Yes, just run the 'Register Cythera' program - it has all the details.\""
+073E: 88 02 04                                     goto      -> 0204
+0741:>90 2a 00 07 b4                               match     * else -> 07B4
+0746: 8d 9f 08 08 30 40 5e 40 07 b1                jf        !R0808(A30) -> 07B1
+0750: 8d 9f 08 0c 30 40 5e 40 07 b1                jf        !R080C(A30) -> 07B1
+075A: 8d 9f 08 01 30 40 5e 40 07 b1                jf        !R0801(A30) -> 07B1
+0764: 22 59 6f 75 72 20 6c 61 63 6b 20 6f …+65     text      "\"Your lack of appropriate questions can only reflect a deficit in character.\""
+07B1:>88 02 04                                     goto      -> 0204
+07B4:>88 02 04                                     goto      -> 0204
+; ---- dead code 07B7-07BB: no dictionary entry, jump, pointer or call reaches it ----
+07B7:x8b 41 00 40                                  return    0
+07BB: a0 07 98 53 01 3c 00 0c 50 00 ff ff …+32     .dict     dict[7] {12/talk: @013C, 32/spawned: @0117, 68: @0002}

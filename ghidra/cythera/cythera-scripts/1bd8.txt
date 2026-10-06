@@ -1,0 +1,18 @@
+; segment 1BD8  page 1B  class 0x58 (room) id 216
+; kind class  length 209 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @00BD  methods: sel7/first_visit@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 bd                                        .hdr      dictionary offset = 00BD
+
+; ==== method sel7/first_visit @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 65 20 6f 64 6f 72 20 74 68 61 …+168    text      "The odor that you noted in the area seems to be centered on this building.  Between the odor and the stains everywhere, it would appear that you've found the dwelling of a tanner.\n"
+00B9: 8b 41 00 40                                  return    0
+00BD: a0 03 50 00 ff ff 20 6d 9b d8 00 02 …+8      .dict     dict[3] {7/first_visit: @0002}

@@ -1,0 +1,22 @@
+; segment 0E89  page 0E  routine
+; kind routine  length 143 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 04 02                                     frame     args=4 locals=2
+0003: 82 00 30 63 48 40                            set       L00 = as_cls48(A30)
+0009: 8d 00 61 3b 00 41 00 46 40 00 23             jf        prop(L00, sel59/p3B, 0)[0] -> 0023
+0014: d3 00 61 3b 00 41 00 46 30 62 01 30 …+3      builtin   positional_sound(prop(L00, sel59/p3B, 0)[0], A30.f01:x, A30.f02:y)
+0023:>8d 31 64 40 40 00 7c                         jf        is_char(A31) -> 007C
+002A: 82 01 30 62 18 9f 0e ac 30 42 00 c8 …+3      set       L01 = (A30.f18:reflex + R0EAC(A30, 200))
+0039: 82 01 01 ac 41 00 41 1e 40 4a 31 62 …+32     set       L01 = ((((L01 + random(0, 30)) - (A31.f18:reflex + random(0, 30))) + R0E84(A30, False)) - R0E84(A31, True))
+0065: 8b 9f 0e 87 30 31 32 01 33 9f 0e ac …+8      return    R0E87(A30, A31, A32, L01, (A33 + R0EAC(A30, 200)))
+; ---- dead code 0079-007C: no dictionary entry, jump, pointer or call reaches it ----
+0079:x88 00 8b                                     goto      -> 008B
+007C:>9f 0e 8f 30 31 32 33 40                      call      R0E8F(A30, A31, A32, A33)
+0084: 8b 43 50 00 00 00 40                         return    False
+; ---- dead code 008B-008F: no dictionary entry, jump, pointer or call reaches it ----
+008B:x8b 41 00 40                                  return    0

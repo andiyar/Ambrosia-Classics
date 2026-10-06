@@ -1,0 +1,28 @@
+; segment 1145  page 11  class 0x00 (prop) type 325 tile-name "sword dummy" (tool join F000/F004)
+; kind class  length 171 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0097  methods: sel65@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 97                                        .hdr      dictionary offset = 0097
+
+; ==== method sel65 @0002 ====
+0002: 81 03 01                                     frame     args=3 locals=1
+0005: 8d 32 41 01 54 40 00 7e                      jf        (A32 == 1) -> 007E
+000D: 82 00 48 09 63 40 40                         set       L00 = as_char(G09:speaker)
+0014: 8d ac 41 00 41 04 40 ac 41 00 9f 0e …+17     jf        ((random(0, 4) - random(0, (R0EAC(L00, 196) + 1))) <= 0) -> 005A
+0031: 47 6f 6f 64 20 68 69 74 21 0a                text      "Good hit!\n"
+003B: 8d 30 62 06 41 0a 4f 40 00 57                jf        (A30.f06:quality < 10) -> 0057
+0045: 9f 0e 8b 00 41 01 40                         call      R0E8B(L00, 1)
+004C: 86 06 30 40 30 62 06 41 01 4a 40             setfield  A30.f06:quality = (A30.f06:quality + 1)
+0057:>88 00 7b                                     goto      -> 007B
+005A:>49 74 20 64 6f 65 73 6e 27 74 20 66 …+21     text      "It doesn't fight back, at least.\n"
+007B:>88 00 93                                     goto      -> 0093
+007E:>49 74 20 61 70 70 65 61 72 73 20 75 …+9      text      "It appears unphased.\n"
+0093:>8b 41 00 40                                  return    0
+0097: a0 03 50 00 ff ff 00 09 50 00 ff ff …+8      .dict     dict[3] {65: @0002}

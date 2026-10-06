@@ -1,0 +1,31 @@
+; segment 10DA  page 10  class 0x00 (prop) type 218 tile-name "urn" (tool join F000/F004)
+; kind class  length 137 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @005D  methods: sel8/search@0002, sel9/use@0027, sel10/use_on@0051
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 5d                                        .hdr      dictionary offset = 005D
+
+; ==== method sel8/search @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 54 68 65 20 75 72 6e 20 69 73 20 66 …+18     text      "The urn is filled with water.\n"
+0023: 8b 41 00 40                                  return    0
+
+; ==== method sel9/use @0027 ====
+0027: 81 01 00                                     frame     args=1 locals=0
+002A: 8d 48 13 40 00 46                            jf        G13:g13_bool -> 0046
+0030: 46 69 6c 6c 20 77 68 61 74 20 77 69 …+10     text      "Fill what with water?\n"
+0046:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 004D-0051: no dictionary entry, jump, pointer or call reaches it ----
+004D:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0051 ====
+0051: 81 02 00                                     frame     args=2 locals=0
+0054: 9f 0e 0a 31 40                               call      R0E0A(A31)
+0059: 8b 41 00 40                                  return    0
+005D: a0 07 50 00 ff ff 00 27 90 da 00 02 …+32     .dict     dict[7] {8/search: @0002, 9/use: @0027, 10/use_on: @0051}

@@ -1,0 +1,155 @@
+; segment 1025  page 10  class 0x00 (prop) type 37 tile-name "glowing crystal" (tool join F000/F004)
+; kind class  length 1871 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @06FF  methods: sel15/take_drop_15@006C, sel16/take_drop_16@0080, sel9/use@01FA, sel10/use_on@0223
+; properties: sel36/p_weight, sel39/p_typeflags27, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 3   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 06 ff                                        .hdr      dictionary offset = 06FF
+0002: 90 02 90 25 00 0c 90 25 00 60                .array    array[2] = [@000C, @0060]
+000C: 54 68 65 72 65 20 69 73 20 70 6f 77 …+72     .string   "There is power there, that is for sure, but its source or use are beyond my skills."
+0060: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0066: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @006C ====
+006C: 81 01 00                                     frame     args=1 locals=0
+006F: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 0076-007A: no dictionary entry, jump, pointer or call reaches it ----
+0076:x8b 41 00 40                                  return    0
+007A: 90 01 00 00 00 08                            .array    array[1] = [8]
+
+; ==== method sel16/take_drop_16 @0080 ====
+0080: 81 01 00                                     frame     args=1 locals=0
+0083: 8d 30 62 03 41 00 54 dc 41 02 40 41 …+6      jf        ((A30.f03:frame == 0) && (get_variable(2) < 10)) -> 013A
+0095: dd 41 02 41 0a 40                            builtin   set_variable(2, 10)
+009B: 41 73 20 79 6f 75 20 70 69 63 6b 20 …+112    text      "As you pick up the glowing crystal, you get a feeling of sickness, which quickly passes, and a sense of normalness returns.\n"
+0117: 9f 0e 8b 43 40 40 00 01 41 32 40             call      R0E8B(char#1"Hero", 50)
+0122: 87 0c 48 0c 41 0a 4a 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + 10)
+012A: 9f 0f 15 42 00 01 41 01 41 05 41 00 …+1      call      R0F15(1, 1, 5, 0)
+0137: 88 01 f6                                     goto      -> 01F6
+013A:>8d 30 62 03 41 03 54 9f 0f 02 42 00 …+19     jf        (((A30.f03:frame == 3) && R0F02(120, 1)) && !R0F02(120, 2)) -> 01F6  ; R0F02 = tstbit [from 0x0101 symtab]
+0159: 41 73 20 79 6f 75 20 70 69 63 6b 20 …+113    text      "As you pick up the glowing crystal, you get a feeling of wrongness, which quickly passes, and a sense of normalness returns.\n"
+01D6: 9f 0f 00 42 00 78 41 02 40                   call      R0F00(120, 2)  ; R0F00 = setbit [from 0x0101 symtab]
+01DF: 87 0c 48 0c 41 0a 4a 40                      setglobal G0C:g0C_0to100 = (G0C:g0C_0to100 + 10)
+01E7: 9f 0e 8b 43 40 40 00 01 41 32 40             call      R0E8B(char#1"Hero", 50)
+01F2: f3 41 07 40                                  builtin   done_to_do(7)
+01F6:>8b 41 00 40                                  return    0
+
+; ==== method sel9/use @01FA ====
+01FA: 81 01 00                                     frame     args=1 locals=0
+01FD: 8d 48 13 40 02 18                            jf        G13:g13_bool -> 0218
+0203: 55 73 65 20 63 72 79 73 74 61 6c 20 …+9      text      "Use crystal on what?\n"
+0218:>8b 43 00 00 80 01 40                         return    32769
+; ---- dead code 021F-0223: no dictionary entry, jump, pointer or call reaches it ----
+021F:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @0223 ====
+0223: 81 02 06                                     frame     args=2 locals=6
+0226: 8d 31 62 04 42 00 25 54 40 03 96             jf        (A31.f04:type == 37) -> 0396
+0231: 82 00 30 62 03 40                            set       L00 = A30.f03:frame
+0237: 82 01 31 62 03 40                            set       L01 = A31.f03:frame
+023D: 8d 00 01 4a 41 01 54 40 02 a1                jf        ((L00 + L01) == 1) -> 02A1
+0247: 54 68 65 20 74 77 6f 20 70 61 72 74 …+40     text      "The two parts seem to fit together, forming a bond.\n"
+027B: 9f 0e 8b 43 40 40 00 01 41 19 40             call      R0E8B(char#1"Hero", 25)
+0286: 86 03 30 40 41 04 40                         setfield  A30.f03:frame = 4
+028D: a7 31 40                                     builtin   delete_prop(A31)
+0290: 9f 0f 15 42 00 01 41 08 41 02 41 00 …+1      call      R0F15(1, 8, 2, 0)
+029D: 8b 41 00 40                                  return    0
+02A1:>8d 00 41 04 54 01 41 02 54 5c 00 41 …+11     jf        (((L00 == 4) && (L01 == 2)) || ((L00 == 2) && (L01 == 4))) -> 02FF
+02B8: 54 68 65 20 74 68 69 72 64 20 70 61 …+45     text      "The third part joins onto the first two, forming a bond.\n"
+02F1: 86 03 30 40 41 05 40                         setfield  A30.f03:frame = 5
+02F8: a7 31 40                                     builtin   delete_prop(A31)
+02FB: 8b 41 00 40                                  return    0
+02FF:>8d 00 41 05 54 01 41 03 54 5c 00 41 …+11     jf        (((L00 == 5) && (L01 == 3)) || ((L00 == 3) && (L01 == 5))) -> 036D
+0316: 54 68 65 20 66 6f 75 72 74 68 20 70 …+48     text      "The fourth part joins onto the first three, forming a bond.\n"
+0352: 86 03 30 40 41 06 40                         setfield  A30.f03:frame = 6
+0359: a7 31 40                                     builtin   delete_prop(A31)
+035C: 9f 0f 15 42 00 01 41 03 41 01 41 00 …+1      call      R0F15(1, 3, 1, 0)
+0369: 8b 41 00 40                                  return    0
+036D:>54 68 65 79 20 64 6f 6e 27 74 20 73 …+22     text      "They don't seem to fit correctly.\n"
+038F: 8b 41 00 40                                  return    0
+; ---- dead code 0393-0396: no dictionary entry, jump, pointer or call reaches it ----
+0393:x88 06 cb                                     goto      -> 06CB
+0396:>8d 31 62 04 42 00 22 54 40 04 b8             jf        (A31.f04:type == 34) -> 04B8
+03A1: 8d 30 62 03 41 06 54 40 04 79                jf        (A30.f03:frame == 6) -> 0479
+03AB: 82 02 43 40 40 00 02 40                      set       L02 = char#2"Alaric"
+03B3: 82 03 a0 43 10 00 00 04 41 00 41 00 …+4      set       L03 = iterate_range(&L04, 0, 0, 5)
+03C3:>8c a0 43 10 00 00 04 41 01 40 40 04 …+1      jt        iterate_range(&L04, 1) -> 041B
+03D0: e2 48 05 62 01 48 05 62 02 31 62 01 …+18     builtin   missile_burst(G05:leader.f01:x, G05:leader.f02:y, A31.f01:x, A31.f02:y, A30.f0A:tile, 143, (5 - L03), 0)
+03EE: e2 48 05 62 01 48 05 62 02 31 62 01 …+18     builtin   missile_burst(G05:leader.f01:x, G05:leader.f02:y, A31.f01:x, A31.f02:y, A30.f0A:tile, 175, (5 - L03), 0)
+040C: 82 03 a0 43 10 00 00 04 41 02 40 40          set       L03 = iterate_range(&L04, 2)
+0418: 88 03 c3                                     goto      -> 03C3
+041B:>e2 48 05 62 01 48 05 62 02 31 62 01 …+16     builtin   missile_burst(G05:leader.f01:x, G05:leader.f02:y, A31.f01:x, A31.f02:y, A30.f0A:tile, 143, 20, 0)
+0437: 86 15 02 40 43 00 00 00 96 40                setfield  L02.f15:activity = 150
+0441: f3 41 00 40                                  builtin   done_to_do(0)
+0445: 8d 30 62 06 41 00 54 40 04 58                jf        (A30.f06:quality == 0) -> 0458
+044F: dd 41 00 41 02 40                            builtin   set_variable(0, 2)
+0455: 88 04 5e                                     goto      -> 045E
+0458:>dd 41 00 41 01 40                            builtin   set_variable(0, 1)
+045E:>9f 0f 00 42 00 02 41 01 40                   call      R0F00(2, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+0467: 9f 0e 8b 43 40 40 00 01 41 64 40             call      R0E8B(char#1"Hero", 100)
+0472: a3 41 28 40                                  builtin   add_leader_busy(40)
+0476: 88 04 b5                                     goto      -> 04B5
+0479:>54 68 65 20 73 74 6f 6e 65 20 67 6c …+48     text      "The stone glows brightly for a second, but nothing happens.\n"
+04B5:>88 06 cb                                     goto      -> 06CB
+04B8:>8d 31 62 04 42 00 b3 54 40 05 e5             jf        (A31.f04:type == 179) -> 05E5
+04C3: 8d 31 62 06 41 05 54 40 05 30                jf        (A31.f06:quality == 5) -> 0530
+04CD: e2 41 20 41 1f 41 20 41 1b 43 00 00 …+9      builtin   missile_burst(32, 31, 32, 27, 432, 0, 0, 0)
+04E2: a6 41 01 40                                  builtin   show_tile_animate(1)
+04E6: 82 03 cb 43 10 00 00 04 41 00 41 20 …+4      set       L03 = iterate_props_at(&L04, 0, 32, 27)
+04F6:>8c cb 43 10 00 00 04 41 01 40 40 05 …+1      jt        iterate_props_at(&L04, 1) -> 0528
+0503: 8d 03 62 04 42 00 0a 54 40 05 19             jf        (L03.f04:type == 10) -> 0519
+050E: 86 03 03 40 03 62 03 41 04 58 40             setfield  L03.f03:frame = (L03.f03:frame ^ 4)
+0519:>82 03 cb 43 10 00 00 04 41 02 40 40          set       L03 = iterate_props_at(&L04, 2)
+0525: 88 04 f6                                     goto      -> 04F6
+0528:>e6 41 01 40                                  builtin   set_arrival_byte(1)
+052C: 8b 41 00 40                                  return    0
+0530:>8d 31 62 06 41 01 54 40 05 c5                jf        (A31.f06:quality == 1) -> 05C5
+053A: e2 43 00 00 00 ac 41 4f 43 00 00 00 …+15     builtin   missile_burst(172, 79, 168, 79, 432, 0, 0, 0)
+0555: a6 41 01 40                                  builtin   show_tile_animate(1)
+0559: 82 03 cb 43 10 00 00 04 41 00 43 00 …+7      set       L03 = iterate_props_at(&L04, 0, 168, 79)
+056C:>8c cb 43 10 00 00 04 41 01 40 40 05 …+1      jt        iterate_props_at(&L04, 1) -> 05BD
+0579: 8d 03 62 04 42 00 c0 54 40 05 ae             jf        (L03.f04:type == 192) -> 05AE
+0584: 8d 03 62 00 43 00 00 00 80 56 40 05 …+1      jf        (L03.f00:kind & 128) -> 059A
+0591: df 41 41 41 01 40                            builtin   set_flag(65, 1)
+0597: 88 05 a0                                     goto      -> 05A0
+059A:>df 41 41 41 00 40                            builtin   set_flag(65, 0)
+05A0:>86 00 03 40 03 62 00 43 00 00 00 80 …+2      setfield  L03.f00:kind = (L03.f00:kind ^ 128)
+05AE:>82 03 cb 43 10 00 00 04 41 02 40 40          set       L03 = iterate_props_at(&L04, 2)
+05BA: 88 05 6c                                     goto      -> 056C
+05BD:>e6 41 01 40                                  builtin   set_arrival_byte(1)
+05C1: 8b 41 00 40                                  return    0
+05C5:>8d 31 62 06 41 04 54 40 05 e2                jf        (A31.f06:quality == 4) -> 05E2
+05CF: a6 41 01 40                                  builtin   show_tile_animate(1)
+05D3: e7 41 00 40                                  builtin   screen_effect(0)
+05D7: c5 43 00 00 00 87 40                         builtin   send_signal(135)
+05DE: e6 41 01 40                                  builtin   set_arrival_byte(1)
+05E2:>88 06 cb                                     goto      -> 06CB
+05E5:>8d 31 62 04 42 00 b8 54 40 06 83             jf        (A31.f04:type == 184) -> 0683
+05F0: 8d 31 62 06 41 01 54 30 62 03 41 04 …+5      jf        ((A31.f06:quality == 1) && (A30.f03:frame >= 4)) -> 0680
+0601: e7 41 00 40                                  builtin   screen_effect(0)
+0605: d3 41 18 31 62 01 31 62 02 40                builtin   positional_sound(24, A31.f01:x, A31.f02:y)
+060F: 86 06 31 40 41 00 40                         setfield  A31.f06:quality = 0
+0616: 86 02 31 40 31 62 02 41 01 4b 40             setfield  A31.f02:y = (A31.f02:y - 1)
+0621: 82 03 cb 43 10 00 00 04 41 00 31 62 …+9      set       L03 = iterate_props_at(&L04, 0, A31.f01:x, (A31.f02:y + 1))
+0636:>8c cb 43 10 00 00 04 41 01 40 40 06 …+1      jt        iterate_props_at(&L04, 1) -> 066B
+0643: 8d 03 62 04 42 00 3e 54 40 06 5c             jf        (L03.f04:type == 62) -> 065C
+064E: 86 00 03 40 03 62 00 43 0f ff ff 7f …+2      setfield  L03.f00:kind = (L03.f00:kind & -129)
+065C:>82 03 cb 43 10 00 00 04 41 02 40 40          set       L03 = iterate_props_at(&L04, 2)
+0668: 88 06 36                                     goto      -> 0636
+066B:>df 41 40 41 01 40                            builtin   set_flag(64, 1)
+0671: 9f 0e 8b 43 40 40 00 01 41 19 40             call      R0E8B(char#1"Hero", 25)
+067C: 8b 41 00 40                                  return    0
+0680:>88 06 cb                                     goto      -> 06CB
+0683:>8d 31 62 04 42 00 ff 54 40 06 cb             jf        (A31.f04:type == 255) -> 06CB
+068E: 8d 31 62 06 41 00 54 30 62 03 41 04 …+5      jf        ((A31.f06:quality == 0) && (A30.f03:frame >= 4)) -> 06CB
+069F: 86 00 31 40 31 62 00 43 00 00 00 80 …+2      setfield  A31.f00:kind = (A31.f00:kind | 128)
+06AD: e2 31 62 01 31 62 02 31 62 01 31 62 …+14     builtin   missile_burst(A31.f01:x, A31.f02:y, A31.f01:x, A31.f02:y, A31.f0A:tile, 143, 10, 0)
+06C7: 8b 41 00 40                                  return    0
+06CB:>54 68 65 20 63 72 79 73 74 61 6c 20 …+36     text      "The crystal glows briefly, but nothing happens.\n"
+06FB: 8b 41 00 40                                  return    0
+06FF: a0 0d 90 25 00 7a 00 27 50 00 ff ff …+68     .dict     dict[13] {9/use: @01FA, 10/use_on: @0223, 15/take_drop_15: @006C, 16/take_drop_16: @0080, 36/p_weight: @0066, 39/p_typeflags27: @007A, 51: @0002}

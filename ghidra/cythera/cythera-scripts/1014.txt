@@ -1,0 +1,21 @@
+; segment 1014  page 10  class 0x00 (prop) type 20 tile-name "mirror" (tool join F000/F004)
+; kind class  length 87 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0043  methods: sel65@0014
+; properties: sel35/p23
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 43                                        .hdr      dictionary offset = 0043
+0002: 90 04 00 00 00 00 00 00 00 01 00 00 …+6      .array    array[4] = [0, 1, 0, 2]
+
+; ==== method sel65 @0014 ====
+0014: 81 03 00                                     frame     args=3 locals=0
+0017: 8d 31 41 00 51 40 00 3f                      jf        (A31 > 0) -> 003F
+001F: 53 65 76 65 6e 20 79 65 61 72 73 2c …+13     text      "Seven years, coming up..."
+0038: 86 03 30 40 41 02 40                         setfield  A30.f03:frame = 2
+003F:>8b 41 00 40                                  return    0
+0043: a0 03 90 14 00 14 00 41 50 00 ff ff …+8      .dict     dict[3] {35/p23: @0002, 65: @0014}

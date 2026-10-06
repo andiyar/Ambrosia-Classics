@@ -1,0 +1,25 @@
+; segment 1038  page 10  class 0x00 (prop) type 56 tile-name "wooden door" (tool join F000/F004)
+; kind class  length 117 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0049  methods: sel0/init@0002, sel9/use@0017
+; properties: sel39/p_typeflags27
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 49                                        .hdr      dictionary offset = 0049
+
+; ==== method sel0/init @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 86 03 30 40 31 62 03 40                      setfield  A30.f03:frame = A31.f03:frame
+000D: 8b 41 00 40                                  return    0
+0011: 90 01 00 00 02 80                            .array    array[1] = [640]
+
+; ==== method sel9/use @0017 ====
+0017: 81 01 00                                     frame     args=1 locals=0
+001A: d3 41 1a 30 62 01 30 62 02 40                builtin   positional_sound(26, A30.f01:x, A30.f02:y)
+0024: 9f 0e 40 30 41 01 41 03 41 05 41 07 …+21     call      R0E40(A30, 1, 3, 5, 7, 255, 255, 255, 255)  ; R0E40 = DoDoor [from 0x0101 symtab]
+0045: 8b 41 00 40                                  return    0
+0049: a0 07 90 38 00 02 00 00 50 00 ff ff …+32     .dict     dict[7] {0/init: @0002, 9/use: @0017, 39/p_typeflags27: @0011}

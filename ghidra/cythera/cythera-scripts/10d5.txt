@@ -1,0 +1,58 @@
+; segment 10D5  page 10  class 0x00 (prop) type 213 tile-name "mushroom steak" (tool join F000/F004)
+; kind class  length 444 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @016C  methods: sel15/take_drop_15@00C9, sel9/use@00DD, sel10/use_on@00FC
+; properties: sel36/p_weight, sel40/p_typeflags28, sel69
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 01 6c                                        .hdr      dictionary offset = 016C
+0002: 90 02 90 d5 00 0c 90 d5 00 5d                .array    array[2] = [@000C, @005D]
+000C: 90 03 90 d5 00 1a 90 d5 00 2a 90 d5 …+2      .array    array[3] = [@001A, @002A, @0047]
+001A: 2d 20 49 73 20 74 68 61 74 20 6d 6f …+4      .string   "- Is that mold?"
+002A: 2d 20 44 6f 65 73 6e 27 74 20 73 65 …+17     .string   "- Doesn't seem the freshest."
+0047: 2d 20 57 68 61 74 20 69 73 20 74 68 …+10     .string   "- What is that smell?"
+005D: 90 03 90 d5 00 6b 90 d5 00 91 90 d5 …+2      .array    array[3] = [@006B, @0091, @00A7]
+006B: 54 68 69 73 20 69 73 20 74 68 65 20 …+26     .string   "This is the finest quality foodstuff."
+0091: 49 74 27 73 20 70 65 72 66 65 63 74 …+10     .string   "It's perfectly fresh."
+00A7: 59 6f 75 27 76 65 20 6e 65 76 65 72 …+16     .string   "You've never tasted better."
+00C3: 90 01 00 00 00 01                            .array    array[1] = [1]
+
+; ==== method sel15/take_drop_15 @00C9 ====
+00C9: 81 01 00                                     frame     args=1 locals=0
+00CC: 8b 43 50 00 ff ff 40                         return    Nil
+; ---- dead code 00D3-00D7: no dictionary entry, jump, pointer or call reaches it ----
+00D3:x8b 41 00 40                                  return    0
+00D7: 90 01 00 00 00 04                            .array    array[1] = [4]
+
+; ==== method sel9/use @00DD ====
+00DD: 81 01 00                                     frame     args=1 locals=0
+00E0: 8d 48 13 40 00 f4                            jf        G13:g13_bool -> 00F4
+00E6: 46 65 65 64 20 74 6f 20 77 68 6f 6d …+2      text      "Feed to whom?\n"
+00F4:>8b 41 01 40                                  return    1
+; ---- dead code 00F8-00FC: no dictionary entry, jump, pointer or call reaches it ----
+00F8:x8b 41 00 40                                  return    0
+
+; ==== method sel10/use_on @00FC ====
+00FC: 81 02 03                                     frame     args=2 locals=3
+00FF: 82 00 45 00 0e 90 03 00 00 00 05 00 …+8      set       L00 = blk@0104
+      ; 0x45 inline block 0104-0112 (14 bytes):
+      0104: 90 03                            .array[3]
+        [0] 5
+        [1] 4
+        [2] 3
+0113: 82 01 45 00 2b 90 03 90 d5 01 26 90 …+37     set       L01 = blk@0118
+      ; 0x45 inline block 0118-0143 (43 bytes):
+      0118: 90 03                            .array[3]
+        [0] @0126 "Not very good"
+        [1] @0134 "Yetch!"
+        [2] @013B "Not bad"
+0144: 82 02 31 63 40 40                            set       L02 = as_char(A31)
+014A: 86 26 02 40 01 30 62 03 46 40                setfield  L02.f26:f26 = L01[A30.f03:frame]
+0154: 86 28 02 40 02 62 28 00 30 62 03 46 …+5      setfield  L02.f28:food = (L02.f28:food + (L00[A30.f03:frame] * 2))
+0165: a7 30 40                                     builtin   delete_prop(A30)
+0168: 8b 41 00 40                                  return    0
+016C: a0 0d 50 00 ff ff 0d 6f 90 d5 00 d7 …+68     .dict     dict[13] {9/use: @00DD, 10/use_on: @00FC, 15/take_drop_15: @00C9, 36/p_weight: @00C3, 40/p_typeflags28: @00D7, 69: @0002}

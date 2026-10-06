@@ -1,0 +1,115 @@
+; segment 0809  page 08  routine
+; kind routine  length 1462 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 1   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 81 01 00                                     frame     args=1 locals=0
+0003: 90 64 69 6d 2c 6c 69 67 68 74 00 00 …+1      match     dim,light else -> 004E
+0010: 22 49 74 27 73 20 6e 6f 74 20 61 73 …+43     text      "\"It's not as bright in LandKing hall as it used to be.\""
+0047: 8b 43 50 00 00 01 40                         return    True
+004E:>90 61 6c 61 72 2c 6c 61 6e 64 2c 6b …+6      match     alar,land,king else -> 00AD
+0060: 22 41 6c 61 72 69 63 27 73 20 62 6f …+58     text      "\"Alaric's bond with the land grows weak, and so his mind is strained.\""
+00A6: 8b 43 50 00 00 01 40                         return    True
+00AD:>90 65 61 72 74 2c 71 75 61 6b 2c 74 …+6      match     eart,quak,trem else -> 0129
+00BF: 22 54 68 65 72 65 20 68 61 76 65 20 …+87     text      "\"There have always been minor tremors here, but as time goes on, they become more and more common.\""
+0122: 8b 43 50 00 00 01 40                         return    True
+0129:>90 77 68 65 72 00 05 ab                      match     wher else -> 05AB
+0131: 9f 08 16 30 45 04 69 90 0d 88 09 01 …+1127   call      R0816(A30, blk@0138, 1)
+      ; 0x45 inline block 0138-05A1 (1129 bytes):
+      0138: 90 0d                            .array[13]
+        [0] @016E ->
+          016E: 90 06                            .array[6]
+            [0] room#5
+            [1] @0188 "Kitchen"
+            [2] @0190 "The kitchen is "
+            [3] 32
+            [4] 35
+            [5] @01A0 "."
+        [1] @01A2 ->
+          01A2: 90 06                            .array[6]
+            [0] room#9
+            [1] @01BC "Dining Room"
+            [2] @01C8 "The dining area is "
+            [3] 41
+            [4] 40
+            [5] @01DC "."
+        [2] @01DE ->
+          01DE: 90 06                            .array[6]
+            [0] room#3
+            [1] @01F8 "Library"
+            [2] @0200 "The library is "
+            [3] 26
+            [4] 16
+            [5] @0210 "."
+        [3] @0212 ->
+          0212: 90 06                            .array[6]
+            [0] room#4
+            [1] @022C "Throne Room"
+            [2] @0238 "The throne room is "
+            [3] 41
+            [4] 16
+            [5] @024C "."
+        [4] @024E ->
+          024E: 90 06                            .array[6]
+            [0] room#6
+            [1] @0268 "Magpie's Quarters"
+            [2] @027A "Magpie's quaters are "
+            [3] 29
+            [4] 19
+            [5] @0290 "."
+        [5] @0292 ->
+          0292: 90 06                            .array[6]
+            [0] room#7
+            [1] @02AC "Barracks"
+            [2] @02B5 "The barracks are "
+            [3] 29
+            [4] 26
+            [5] @02C7 "."
+        [6] @02C9 ->
+          02C9: 90 06                            .array[6]
+            [0] room#10
+            [1] @02E3 "Alaric's Quarters"
+            [2] @02F5 "They are "
+            [3] 9
+            [4] 29
+            [5] @02FF "."
+        [7] @0301 ->
+          0301: 90 06                            .array[6]
+            [0] Nil
+            [1] @031B "Exit"
+            [2] @0320 "The exit to outside is "
+            [3] 63
+            [4] 32
+            [5] @0338 "."
+        [8] @033A ->
+          033A: 90 03                            .array[3]
+            [0] Nil
+            [1] @0348 "Odemia"
+            [2] @034F "Go out the exit, and follow the road south-southeast.  Its the first city you'll come to."
+        [9] @03A9 ->
+          03A9: 90 03                            .array[3]
+            [0] Nil
+            [1] @03B7 "Catamarca"
+            [2] @03C1 "Go out the exit, past Odemia, and continue south along the coast."
+        [10] @0403 ->
+          0403: 90 03                            .array[3]
+            [0] Nil
+            [1] @0411 "Cademia"
+            [2] @0419 "Go out the exit, past Odemia, and then follow the road southwest.  It lies just after the bridge over the river Sitia."
+        [11] @0490 ->
+          0490: 90 03                            .array[3]
+            [0] Nil
+            [1] @049E "Pnyx"
+            [2] @04A3 "Go out, past Odemia, southwest across the river Sitia, and then take the road west out of Cademia until you reach the western shore."
+        [12] @0528 ->
+          0528: 90 03                            .array[3]
+            [0] Nil
+            [1] @0536 "Kosha"
+            [2] @053C "Go out, past Odemia, southwest across the river Sitia, and then follow the coast south past Cademia."
+05A4: 8b 43 50 00 00 01 40                         return    True
+05AB:>8b 43 50 00 00 00 40                         return    False
+; ---- dead code 05B2-05B6: no dictionary entry, jump, pointer or call reaches it ----
+05B2:x8b 41 00 40                                  return    0

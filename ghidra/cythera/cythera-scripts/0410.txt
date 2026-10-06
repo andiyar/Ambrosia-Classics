@@ -1,0 +1,15 @@
+; segment 0410  page 04  compiled combat AI (ai-scripts.md 3) — not VM bytecode, stored plain
+; length 128 bytes  unknown opcodes: 0 (no VM opcodes in this format)
+0000: name "Attack Nearest"
+0020: entry 65 82 f0 00 00 00 00 00
+0028: entry 65 0e f0 00 10 00 00 00
+0030: entry 66 0d f0 00 10 00 00 00
+0038: entry 65 0a f0 02 10 00 00 00
+0040: entry 4b 82 f3 00 00 00 00 00
+0048: entry 00 8b 00 00 00 00 00 00
+0050: entry 19 01 00 00 00 00 00 00
+0058: entry 65 0e 06 00 05 0d 00 00
+0060: entry 64 82 f3 00 00 00 00 00
+0068: entry 00 8b 00 00 00 00 00 00
+0070: entry 65 01 00 00 00 00 00 00
+0078: entry 64 8c 00 00 00 00 00 00

@@ -1,0 +1,64 @@
+; segment 185E  page 18  class 0x40 (char) id 94 name "Antiphus" (string table 0201)
+; kind class  length 946 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @039E  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 9e                                        .hdr      dictionary offset = 039E
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 59 6f 75 20 73 65 65 20 61 20 62 72 …+31     text      "You see a brigand with a sneer on his face."
+0030: 8d 9f 0f 02 30 41 07 40 40 00 56             jf        R0F02(A30, 7) -> 0056  ; R0F02 = tstbit [from 0x0101 symtab]
+003B: 22 43 6f 6d 65 20 62 61 63 6b 20 74 …+12     text      "\"Come back to taunt me?\""
+0053: 88 00 eb                                     goto      -> 00EB
+0056:>8d de 41 03 40 40 00 9f                      jf        test_flag(3) -> 009F
+005E: 22 4f 6f 6f 68 2c 20 79 6f 75 20 6d …+50     text      "\"Oooh, you must be the big hero who failed to rescue Ariadne.\""
+009C: 88 00 e4                                     goto      -> 00E4
+009F:>22 53 6f 20 79 6f 75 27 72 65 20 74 …+57     text      "\"So you're the one who rescued Ariadne - you've made a big @mistake.\""
+00E4:>9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+00EB:>8e                                           input       ; read a line into the input buffer
+00EC: 90 6e 61 6d 65 00 01 42                      match     name else -> 0142
+00F4: 22 4e 6f 74 20 74 68 61 74 20 69 74 …+56     text      "\"Not that it is any of your business, but you can call me Antiphus.\""
+0138: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+013F: 88 00 eb                                     goto      -> 00EB
+0142:>90 62 79 65 00 01 62                         match     bye else -> 0162
+0149: 22 44 6f 6e 27 74 20 63 6f 6d 65 20 …+6      text      "\"Don't come back.\""
+015B: 8b 41 00 40                                  return    0
+; ---- dead code 015F-0162: no dictionary entry, jump, pointer or call reaches it ----
+015F:x88 00 eb                                     goto      -> 00EB
+0162:>90 6a 6f 62 00 01 8b                         match     job else -> 018B
+0169: 22 59 6f 75 20 61 72 65 20 61 6e 20 …+19     text      "\"You are an idiot, aren't you.\""
+0188: 88 00 eb                                     goto      -> 00EB
+018B:>90 61 72 69 61 2c 6d 69 73 74 2c 6b …+6      match     aria,mist,kidn else -> 0258
+019D: 8d de 41 03 40 40 01 ea                      jf        test_flag(3) -> 01EA
+01A5: 22 45 76 65 6e 20 61 74 74 65 6d 70 …+54     text      "\"Even attempting to mess with our group of @people was a mistake.\""
+01E7: 88 02 55                                     goto      -> 0255
+01EA:>22 59 6f 75 20 74 68 69 6e 6b 20 79 …+95     text      "\"You think you're so important because you rescued Ariadne, but you've crossed the wrong group of @people.\""
+0255:>88 00 eb                                     goto      -> 00EB
+0258:>90 67 72 6f 75 2c 70 65 6f 70 00 02 …+1      match     grou,peop else -> 02BC
+0265: 22 4c 65 74 27 73 20 6a 75 73 74 20 …+59     text      "\"Let's just say that they are more powerful than those Nicander fools.\""
+02AC: 9f 0f 00 30 41 01 40                         call      R0F00(A30, 1)  ; R0F00 = setbit [from 0x0101 symtab]
+02B3: dd 41 01 41 05 40                            builtin   set_variable(1, 5)
+02B9: 88 00 eb                                     goto      -> 00EB
+02BC:>90 61 6c 61 72 2c 6b 69 6e 67 00 03 …+1      match     alar,king else -> 0303
+02C9: 22 41 6c 61 72 69 63 20 69 73 20 61 …+43     text      "\"Alaric is a dottering old fool, whose age has passed.\""
+0300: 88 00 eb                                     goto      -> 00EB
+0303:>90 6b 65 73 68 00 03 26                      match     kesh else -> 0326
+030B: 22 47 72 65 61 74 20 73 74 75 66 66 …+12     text      "\"Great stuff, isn't it.\""
+0323: 88 00 eb                                     goto      -> 00EB
+0326:>90 65 75 64 6f 00 03 67                      match     eudo else -> 0367
+032E: 22 59 65 61 68 2c 20 49 20 66 6f 6c …+42     text      "\"Yeah, I followed Eudoxus, and that's all I'm saying.\""
+0364: 88 00 eb                                     goto      -> 00EB
+0367:>90 2a 00 03 97                               match     * else -> 0397
+036C: 22 51 75 69 74 20 79 6f 75 72 20 62 …+28     text      "\"Quit your babbling and leave me alone.\""
+0394: 88 00 eb                                     goto      -> 00EB
+0397:>88 00 eb                                     goto      -> 00EB
+; ---- dead code 039A-039E: no dictionary entry, jump, pointer or call reaches it ----
+039A:x8b 41 00 40                                  return    0
+039E: a0 03 98 5e 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

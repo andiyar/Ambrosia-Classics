@@ -1,0 +1,69 @@
+; segment 1855  page 18  class 0x40 (char) id 85 name "Alcestris" (string table 0201)
+; kind class  length 847 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @033B  methods: sel12/talk@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 2   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 03 3b                                        .hdr      dictionary offset = 033B
+
+; ==== method sel12/talk @0002 ====
+0002: 81 01 01                                     frame     args=1 locals=1
+0005: 59 6f 75 20 73 65 65 20 61 6e 20 61 …+58     text      "You see an ancient woman, dimished by age, but still bright with life."
+004B: 8d 49 05 00 00 10 40 00 60                   jf        seg0500[0010] -> 0060
+0054: 82 00 44 6c 61 64 79 00 40                   set       L00 = "lady"
+005D: 88 00 68                                     goto      -> 0068
+0060:>82 00 44 6d 61 6e 00 40                      set       L00 = "man"
+0068:>8d 9f 0f 02 30 41 07 40 40 00 8f             jf        R0F02(A30, 7) -> 008F  ; R0F02 = tstbit [from 0x0101 symtab]
+0073: 22 48 65 6c 6c 6f 20 61 67 61 69 6e …+8      text      "\"Hello again, young "
+0087: 8a 00 40                                     print     L00
+008A: 2e 22                                        text      ".\""
+008C: 88 00 b3                                     goto      -> 00B3
+008F:>22 57 68 65 72 65 20 61 72 65 20 79 …+19     text      "\"Where are your manners, young "
+00AE: 8a 00 40                                     print     L00
+00B1: 2e 22                                        text      ".\""
+00B3:>8e                                           input       ; read a line into the input buffer
+00B4: 8d ac 41 00 41 06 40 41 01 54 40 01 …+1      jf        (random(0, 6) == 1) -> 010A
+00C1: 22 43 6f 75 6c 64 20 79 6f 75 20 73 …+58     text      "\"Could you speak up a bit?  It's rude to speak so I can't hear you...\""
+0107: 88 00 b3                                     goto      -> 00B3
+010A:>90 6e 61 6d 65 00 01 48                      match     name else -> 0148
+0112: 22 49 20 61 6d 20 41 6c 63 65 73 74 …+18     text      "\"I am Alcestris, and you are?\""
+0130: 8f 2a 00                                     prompt    "*"
+0133: 22 45 68 2c 20 79 65 61 68 2e 22             text      "\"Eh, yeah.\""
+013E: 9f 0f 00 30 41 07 40                         call      R0F00(A30, 7)  ; R0F00 = setbit [from 0x0101 symtab]
+0145: 88 00 b3                                     goto      -> 00B3
+0148:>90 62 79 65 00 01 6c                         match     bye else -> 016C
+014F: 22 47 6f 6f 64 20 62 79 65 2c 20 79 …+5      text      "\"Good bye, young "
+0160: 8a 00 40                                     print     L00
+0163: 2e 22                                        text      ".\""
+0165: 8b 41 00 40                                  return    0
+; ---- dead code 0169-016C: no dictionary entry, jump, pointer or call reaches it ----
+0169:x88 00 b3                                     goto      -> 00B3
+016C:>90 6a 6f 62 2c 63 6f 6f 6b 00 01 de          match     job,cook else -> 01DE
+0178: 22 49 27 6d 20 74 68 65 20 63 6f 6f …+87     text      "\"I'm the cook here at the castle, and been that since, eh, before your were born, that's for sure.\""
+01DB: 88 00 b3                                     goto      -> 00B3
+01DE:>90 62 65 72 6f 00 02 27                      match     bero else -> 0227
+01E6: 22 49 27 76 65 20 73 65 65 6e 20 6a …+50     text      "\"I've seen judges come and go - Berossus is just another one.\""
+0224: 88 00 b3                                     goto      -> 00B3
+0227:>90 61 73 69 75 00 02 4d                      match     asiu else -> 024D
+022F: 22 53 6d 61 72 6d 79 20 6c 69 74 74 …+15     text      "\"Smarmy little man, he is.\""
+024A: 88 00 b3                                     goto      -> 00B3
+024D:>90 6e 61 78 6f 00 02 ae                      match     naxo else -> 02AE
+0255: 22 50 6f 6d 70 6f 75 73 20 67 69 74 …+74     text      "\"Pompous git.  Not half the man that his father was - none of those Comana brats are.\""
+02AB: 88 00 b3                                     goto      -> 00B3
+02AE:>90 63 6f 6d 61 00 02 f7                      match     coma else -> 02F7
+02B6: 22 49 20 6b 6e 65 77 20 43 61 6e 61 …+50     text      "\"I knew Canachus Comana, and his sons are no Canachus Comana.\""
+02F4: 88 00 b3                                     goto      -> 00B3
+02F7:>90 2a 00 03 34                               match     * else -> 0334
+02FC: 8d 9f 08 0e 30 40 5e 40 03 31                jf        !R080E(A30) -> 0331
+0306: 8d 9f 08 01 30 40 5e 40 03 31                jf        !R0801(A30) -> 0331
+0310: 22 45 68 3f 20 20 59 6f 75 27 6c 6c …+21     text      "\"Eh?  You'll need to speak up...\""
+0331:>88 00 b3                                     goto      -> 00B3
+0334:>88 00 b3                                     goto      -> 00B3
+; ---- dead code 0337-033B: no dictionary entry, jump, pointer or call reaches it ----
+0337:x8b 41 00 40                                  return    0
+033B: a0 03 98 55 00 02 00 0c 50 00 ff ff …+8      .dict     dict[3] {12/talk: @0002}

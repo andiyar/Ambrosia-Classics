@@ -1,0 +1,24 @@
+; segment 1186  page 11  class 0x00 (prop) type 390 tile-name "plaque" (tool join F000/F004)
+; kind class  length 82 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @003E  methods: sel9/use@0002, sel8/search@000D
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 3e                                        .hdr      dictionary offset = 003E
+
+; ==== method sel9/use @0002 ====
+0002: 81 01 00                                     frame     args=1 locals=0
+0005: 9d 08 30 40                                  send      A30.sel8/search()
+0009: 8b 41 00 40                                  return    0
+
+; ==== method sel8/search @000D ====
+000D: 81 01 00                                     frame     args=1 locals=0
+0010: 8d 30 62 06 41 00 53 40 00 3a                jf        (A30.f06:quality != 0) -> 003A
+001A: 9f 0e 64 30 43 30 00 02 18 30 62 06 …+20     call      R0E64(A30, (str[0218:0]"" + A30.f06:quality), 33, 8, 9, 7, 180, 134)  ; R0E64 = DisplaySign [from 0x0101 symtab]
+003A:>8b 41 00 40                                  return    0
+003E: a0 03 91 86 00 02 00 09 50 00 ff ff …+8      .dict     dict[3] {8/search: @000D, 9/use: @0002}

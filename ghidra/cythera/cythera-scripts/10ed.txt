@@ -1,0 +1,19 @@
+; segment 10ED  page 10  class 0x00 (prop) type 237 tile-name "sulfur" (tool join F000/F004)
+; kind class  length 132 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @0058  methods: -
+; properties: sel36/p_weight, sel40/p_typeflags28, sel48, sel51
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 58                                        .hdr      dictionary offset = 0058
+0002: 90 02 90 ed 00 0c 90 ed 00 40                .array    array[2] = [@000C, @0040]
+000C: 49 74 20 69 73 20 61 6c 63 68 65 6d …+40     .string   "It is alchemically distilled into a Healing Potion."
+0040: 90 01 00 00 00 4a                            .array    array[1] = [74]
+0046: 90 01 00 00 00 01                            .array    array[1] = [1]
+004C: 90 01 00 00 00 01                            .array    array[1] = [1]
+0052: 90 01 00 00 00 01                            .array    array[1] = [1]
+0058: a0 07 50 00 ff ff 00 2a 90 ed 00 46 …+32     .dict     dict[7] {36/p_weight: @0046, 40/p_typeflags28: @004C, 48: @0052, 51: @0002}

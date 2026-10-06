@@ -1,0 +1,22 @@
+; segment 10F5  page 10  class 0x00 (prop) type 245 tile-name "Rune of Warding" (tool join F000/F004)
+; kind class  length 115 bytes  (Cythera Data, XOR-decrypted with key = segment id)
+; dictionary @005F  methods: sel10/use_on@0002
+; properties: -
+; (method = value is a code pointer whose target byte is 0x80-0x8F, any segment: a first-byte HEURISTIC; the engine runs whatever value a sent selector finds as code and reads 0x60/0x61 values as properties)
+; unknown opcodes: 0   anomalies: 0   dead-code runs: 0   undecoded bytes: 0
+;
+; offset: bytes  mnemonic operands  ; comment
+; locals L00..L2F (TInterp[1]), args A30..A3F (TInterp[0]); &Lnn = address of a local (tag-1 literal);
+; R<seg> = routine segment; @off = code pointer; Gnn = GetGlobal; .fNN = GetField; ">" = jump target; "x" = dead code
+; blk@off = 0x45 inline literal block, its contents listed indented under the instruction
+0000: 00 5f                                        .hdr      dictionary offset = 005F
+
+; ==== method sel10/use_on @0002 ====
+0002: 81 02 00                                     frame     args=2 locals=0
+0005: 86 00 30 40 30 62 00 43 0f ff ff fd …+2      setfield  A30.f00:kind = (A30.f00:kind & -3)
+0013: a6 41 01 40                                  builtin   show_tile_animate(1)
+0017: 8d 30 62 06 42 00 20 54 40 00 58             jf        (A30.f06:quality == 32) -> 0058
+0022: 53 6f 6d 65 74 68 69 6e 67 20 68 61 …+42     text      "Something has triggered one of your runes of warding.\n"
+0058:>a7 30 40                                     builtin   delete_prop(A30)
+005B: 8b 41 00 40                                  return    0
+005F: a0 03 50 00 ff ff 00 24 90 f5 00 02 …+8      .dict     dict[3] {10/use_on: @0002}
