@@ -1,25 +1,28 @@
-// Bubble Trouble X for Windows (plan 2026-10-06-btx-windows W4): thin SDL glue over `WinGameDriver` (BTXWinKit).
+// Bubble Trouble X for Windows (plan 2026-10-06-btx-windows W4, W4.5): thin SDL glue over `WinGameDriver` (BTXWinKit).
 // Builds and runs on the Mac too (brew sdl3) for development; cross-built with tools/windows/build.sh --sdl.
 //
-//   BubbleTroubleXWin [--data DIR] [--prefs FILE] [--scale N] [--name NAME]
+//   BubbleTroubleXWin [--data DIR] [--prefs FILE] [--scale N] [--name NAME] [--auto-dialogs]
 //                     [--frames N [--dump FILE.ppm] [--keys SCRIPT]]
 //
 // --data    the folder with the five .rsrc files, Fonts/ and Decoded/ (default: Data/ beside the executable).
 // --prefs   the prefs file (default: %APPDATA%\Ambrosia Classics\Bubble Trouble X\Prefs.bin on Windows;
 //           ~/Library/Application Support/Ambrosia Classics/Bubble Trouble X (SDL)/Prefs.bin on the Mac).
-// --scale   window size multiple of the 640×500 canvas (default 1; the window is resizable, integer-fit).
+// --scale   window size multiple of the 640×500 canvas (default: the largest that fits the screen — 2 on 1080p;
+//           the window is resizable, integer-fit; Window ▸ Zoom toggles 1× / the largest).
 // --name    info message 2's "Registered To:" name (default: the account's full name).
+// --auto-dialogs  every dialog answers at once with its default (Cancel, prefs unchanged, the default name) instead
+//           of showing — the scripted dialog policy (`WinAutoDialogs`).
 // --frames  HEADLESS SMOKE MODE: run N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s, each —
-//           reproducible on any machine), then write the last presented 640×500 canvas to --dump as binary PPM and
-//           quit with exit 0. The audio driver is forced to SDL's `dummy` (never a real device from automation);
-//           prefs live in memory unless --prefs is given; the name is "Player" and the date 3 March unless given;
-//           focus events are ignored. --keys plays a timed input script (format: BTXWinKit `WinKeyScript`).
+//           reproducible on any machine), then write the last presented canvas (640×500; 640×480 in full screen) to
+//           --dump as binary PPM and quit with exit 0. The audio driver is forced to SDL's `dummy` (never a real
+//           device from automation); prefs live in memory unless --prefs is given; the name is "Player" and the date
+//           3 March unless given; the window opens at 1×; real input is ignored except the close box. --keys plays a
+//           timed input script (format: BTXWinKit `WinKeyScript` — keys, clicks, pointer moves, typed text).
 //
 // SDL drivers: SDL_VIDEO_DRIVER / SDL_AUDIO_DRIVER, or HECTOR_SDL_VIDEO_DRIVER / HECTOR_SDL_AUDIO_DRIVER (which win;
 // CrossOver strips SDL_* — tools/windows/README.md). Exit 0 on a normal quit, 1 on a failure, 64 on bad arguments.
 import BTXWinKit
 import BubbleTroubleCore
-import CSDL3
 import Foundation
 import HectorAudio
 import HectorSDL
@@ -37,11 +40,12 @@ func fail(_ message: String, code: Int32 = 1) -> Never {
 
 var dataPath: String?
 var prefsPath: String?
-var scale = 1
+var scale: Int?
 var name: String?
 var frames: Int?
 var dumpPath: String?
 var keysPath: String?
+var autoDialogs = false
 var args = CommandLine.arguments.dropFirst()
 @MainActor func value(_ flag: String) -> String {
     guard let v = args.popFirst() else { fail("\(flag) needs a value", code: 64) }
@@ -55,13 +59,14 @@ while let arg = args.popFirst() {
         guard let v = Int(value(arg)), (1...8).contains(v) else { fail("--scale needs 1…8", code: 64) }
         scale = v
     case "--name": name = value(arg)
+    case "--auto-dialogs": autoDialogs = true
     case "--frames":
         guard let v = Int(value(arg)), v > 0 else { fail("--frames needs a count > 0", code: 64) }
         frames = v
     case "--dump": dumpPath = value(arg)
     case "--keys": keysPath = value(arg)
     default:
-        fail("usage: BubbleTroubleXWin [--data DIR] [--prefs FILE] [--scale N] [--name NAME] "
+        fail("usage: BubbleTroubleXWin [--data DIR] [--prefs FILE] [--scale N] [--name NAME] [--auto-dialogs] "
              + "[--frames N [--dump FILE.ppm] [--keys SCRIPT]]", code: 64)
     }
 }
@@ -99,32 +104,39 @@ if let prefsPath {
 SDLHost.applyDriverOverridesFromEnvironment()
 if headless {
     // Belt and braces: a smoke never opens a real audio device, whatever the environment says.
-    _ = SDL_SetHintWithPriority("SDL_AUDIO_DRIVER", "dummy", SDL_HINT_OVERRIDE)
+    SDLHost.setHint("SDL_AUDIO_DRIVER", "dummy", override: true)
 }
 
 /// `WinHost` over HectorSDL. In headless mode the clock and the input are the script's (`WinScriptedInput`).
+/// The canvas is 640×500 (menu strip + game screen) windowed and 640×480 in full screen; mouse positions go back to
+/// the driver in 640×500 window-canvas coordinates either way.
 final class SDLWinHost: WinHost {
     let sdl: SDLHost
     var scripted: WinScriptedInput?
     var lastFrame: WinFrame?
     var quitRequested = false
-    private var capsLock = false
+    /// When the window was last drawn (present or redraw), host nanoseconds.
+    private(set) var lastDrawn: UInt64 = 0
 
     init(sdl: SDLHost, scripted: WinScriptedInput?) {
         self.sdl = sdl
         self.scripted = scripted
     }
 
-    var nanoseconds: UInt64 { scripted?.nanoseconds ?? SDL_GetTicksNS() }
+    var nanoseconds: UInt64 { scripted?.nanoseconds ?? SDLClock.nanoseconds }
 
     var modifiers: WinModifiers {
         if let scripted { return scripted.modifiers }
         return Self.convert(sdl.modifiers)
     }
 
+    /// The canvas rows above the game screen that the window does not show (full screen hides the menu strip).
+    private var hiddenRows: Int { WinCanvas.height - sdl.logicalHeight }
+
     func pollEvents() -> [WinEvent] {
         let real = sdl.pollEvents()
-        guard scripted != nil else { return real.compactMap(Self.convert) }
+        if real.contains(.exposed) { redraw() }
+        guard scripted != nil else { return real.compactMap(convert) }
         // Headless: only the window's close box gets through; the rest is the script's.
         var events: [WinEvent] = real.contains(.quit) ? [.quit] : []
         events += scripted!.events()
@@ -133,12 +145,25 @@ final class SDLWinHost: WinHost {
 
     func present(_ frame: WinFrame) {
         lastFrame = frame
+        if frame.width != sdl.logicalWidth || frame.height != sdl.logicalHeight {
+            do {
+                try sdl.setLogicalSize(width: frame.width, height: frame.height)
+            } catch {
+                report("cannot resize the canvas: \(error)")
+                return
+            }
+        }
         sdl.present(rgba: frame.rgba)
+        lastDrawn = nanoseconds
     }
 
-    func setCursorVisible(_ visible: Bool) {
-        _ = visible ? SDL_ShowCursor() : SDL_HideCursor()
+    /// The last frame again (the window was uncovered, resized or restored — or nothing was drawn for a while).
+    func redraw() {
+        sdl.redraw()
+        lastDrawn = nanoseconds
     }
+
+    func setCursorVisible(_ visible: Bool) { sdl.setCursorVisible(visible) }
 
     /// The hand (`crsr 200`) is not built yet: the system arrow stays (recorded by the driver).
     func setCursor(_ cursor: WinCursor) {}
@@ -154,6 +179,27 @@ final class SDLWinHost: WinHost {
 
     func quit() { quitRequested = true }
 
+    func setFullScreen(_ on: Bool) -> Bool {
+        sdl.setFullscreen(on)
+        return sdl.isFullscreen
+    }
+
+    func minimize() { sdl.minimize() }
+
+    /// Window ▸ Zoom: 1× ↔ the largest integer scale that fits the screen.
+    func zoom() {
+        guard !sdl.isFullscreen else { return }
+        let best = SDLHost.initialScale(logicalWidth: WinCanvas.width, logicalHeight: WinCanvas.height)
+        let current = sdl.windowSize.width / WinCanvas.width
+        sdl.setWindowScale(current > 1 ? 1 : best)
+        redraw()
+    }
+
+    func setTextInput(_ on: Bool) {
+        guard scripted == nil else { return }
+        if on { sdl.startTextInput() } else { sdl.stopTextInput() }
+    }
+
     static func convert(_ m: HostModifiers) -> WinModifiers {
         var w: WinModifiers = []
         if m.contains(.shift) { w.insert(.shift) }
@@ -164,17 +210,20 @@ final class SDLWinHost: WinHost {
         return w
     }
 
-    static func convert(_ e: HostEvent) -> WinEvent? {
+    func convert(_ e: HostEvent) -> WinEvent? {
+        let dy = hiddenRows
         switch e {
         case let .keyDown(code, chars, mods, isRepeat):
-            .keyDown(keyCode: code, characters: chars, modifiers: convert(mods), isRepeat: isRepeat)
-        case let .keyUp(code, mods): .keyUp(keyCode: code, modifiers: convert(mods))
-        case let .mouseDown(x, y): .mouseDown(x: x, y: y)
-        case let .mouseUp(x, y): .mouseUp(x: x, y: y)
-        case let .mouseMoved(x, y): .mouseMoved(x: x, y: y)
-        case .quit: .quit
-        case .focusLost: .focusLost
-        case .focusGained: .focusGained
+            return .keyDown(keyCode: code, characters: chars, modifiers: Self.convert(mods), isRepeat: isRepeat)
+        case let .keyUp(code, mods): return .keyUp(keyCode: code, modifiers: Self.convert(mods))
+        case let .mouseDown(x, y): return .mouseDown(x: x, y: y + dy)
+        case let .mouseUp(x, y): return .mouseUp(x: x, y: y + dy)
+        case let .mouseMoved(x, y): return .mouseMoved(x: x, y: y + dy)
+        case .quit: return .quit
+        case .focusLost: return .focusLost
+        case .focusGained: return .focusGained
+        case let .textInput(text): return .textInput(text)
+        case .exposed: return nil
         }
     }
 }
@@ -188,10 +237,12 @@ do {
     fail("cannot load the original data from \(dataDir.path): \(error)")
 }
 
+let windowScale = scale ?? (headless ? 1 : SDLHost.initialScale(logicalWidth: WinCanvas.width,
+                                                                 logicalHeight: WinCanvas.height))
 let sdl: SDLHost
 do {
     sdl = try SDLHost(title: "Bubble Trouble X", logicalWidth: WinCanvas.width, logicalHeight: WinCanvas.height,
-                      scale: scale)
+                      scale: windowScale)
 } catch {
     fail("cannot open the window: \(error)")
 }
@@ -220,7 +271,7 @@ let options = WinGameDriver.Options(registeredName: registeredName, today: today
 let driver: WinGameDriver
 do {
     driver = try WinGameDriver(assets: assets, host: host, audioOutput: output, prefsBacking: prefsBacking,
-                               dialogs: WinDialogsStub(), options: options)
+                               dialogs: autoDialogs ? WinAutoDialogs() : nil, options: options)
 } catch {
     fail("cannot start: \(error)")
 }
@@ -241,19 +292,21 @@ if let frames {
             fail("cannot write \(dumpPath): \(error)")
         }
     }
-    let video = SDL_GetCurrentVideoDriver().map { String(cString: $0) } ?? "?"
-    let audio = SDL_GetCurrentAudioDriver().map { String(cString: $0) } ?? "?"
     print("BubbleTroubleXWin: \(frames) frames (tick \(driver.ticksNow())), phase \(driver.frontEnd.phase), "
-          + "video=\(video) audio=\(audio)\(dumpPath.map { ", wrote \($0)" } ?? "")")
+          + "dialog \(driver.dialogs.isShowing), menu \(driver.tracker.openMenu.map(String.init) ?? "-"), "
+          + "video=\(SDLHost.currentVideoDriver) audio=\(SDLHost.currentAudioDriver)"
+          + "\(dumpPath.map { ", wrote \($0)" } ?? "")")
 } else {
     while !driver.finished {
         driver.step()
-        // Sleep until the running clock's next fire, at most 1 ms at a time so input stays prompt.
         let now = host.nanoseconds
+        // Never leave the window undrawn for long (an expose the platform did not report).
+        if now &- host.lastDrawn > 250_000_000 { host.redraw() }
+        // Sleep until the next fire, at most 1 ms at a time so input stays prompt.
         if let next = driver.nextDeadline, next > now {
-            SDL_DelayNS(min(next - now, 1_000_000))
+            SDLClock.sleep(nanoseconds: min(next - now, 1_000_000))
         } else if driver.nextDeadline == nil {
-            SDL_DelayNS(1_000_000)
+            SDLClock.sleep(nanoseconds: 1_000_000)
         }
     }
 }

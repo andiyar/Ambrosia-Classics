@@ -16,6 +16,13 @@ final class ScriptedHost: WinHost {
     private(set) var restores = 0
     private(set) var beeps = 0
     private(set) var quitCalled = false
+    /// Full screen as the host reports it; `refuseFullScreen` makes the switch fail (no screen).
+    private(set) var fullScreen = false
+    var refuseFullScreen = false
+    private(set) var minimizes = 0
+    private(set) var zooms = 0
+    private(set) var textInput = false
+    private(set) var textInputChanges: [Bool] = []
 
     init(script: WinKeyScript = WinKeyScript()) {
         input = WinScriptedInput(script: script)
@@ -43,6 +50,16 @@ final class ScriptedHost: WinHost {
     func restoreMousePosition() { restores += 1 }
     func beep() { beeps += 1 }
     func quit() { quitCalled = true }
+    func setFullScreen(_ on: Bool) -> Bool {
+        if !refuseFullScreen { fullScreen = on }
+        return fullScreen
+    }
+    func minimize() { minimizes += 1 }
+    func zoom() { zooms += 1 }
+    func setTextInput(_ on: Bool) {
+        textInput = on
+        textInputChanges.append(on)
+    }
 }
 
 /// Records every output call, with a settable "playing" state per voice.
@@ -105,7 +122,7 @@ enum WinTestData {
     /// A started driver over a scripted host; fixed date and name, so runs are reproducible.
     static func driver(script: WinKeyScript = WinKeyScript(), backing: any BTXPrefsBacking = WinMemoryPrefs(),
                        output: any WinAudioOutput = SilentWinAudioOutput(),
-                       dialogs: any WinDialogs = WinDialogsStub()) throws -> (WinGameDriver, ScriptedHost) {
+                       dialogs: (any WinDialogs)? = WinAutoDialogs()) throws -> (WinGameDriver, ScriptedHost) {
         let host = ScriptedHost(script: script)
         let driver = try WinGameDriver(assets: assets(), host: host, audioOutput: output, prefsBacking: backing,
                                        dialogs: dialogs,

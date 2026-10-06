@@ -40,7 +40,12 @@ public struct WinGameAssets {
 /// Clocks: the 1/60 s TickCount timer drives `FrontEnd.tick`; while a game or demo runs frames the 0.033 s Carbon
 /// frame timer drives `FrontEnd.frame` instead — or, with the frame-limit cheat, a 0.001 s timer. Exactly one runs
 /// at a time; missed fires are dropped (`WinTimer`). The host's main loop calls `step()` repeatedly.
-public final class WinGameDriver {
+///
+/// The Mac's chrome is drawn in-window (W4.5, D15.3): the menu bar (`MenuBar` / `MenuTracker` / `MenuBarView`, W5) in
+/// the 20 px strip above the game screen, the dialogs (`DialogSystem`, W6) over it, and the About panel. Input goes
+/// to the open menu first, then the menu bar's Ctrl shortcuts, then a dialog (app-modal) or the About panel, then the
+/// game. In full screen the strip is not shown (as the Mac's menu bar hides) and the canvas is the game screen.
+public final class WinGameDriver: DialogSystemDelegate {
     public struct Options {
         /// Info message 2's "Registered To:" name (the Mac passes `NSFullUserName()`).
         public var registeredName: String
@@ -71,6 +76,7 @@ public final class WinGameDriver {
     private let store: BTXPrefsStore
     public let dialogs: any WinDialogs
     private let options: Options
+    private let text: BitmapFontRasterizer
     private var prefs: BTXPrefs
     private var scores: HighScoreTable
 
@@ -86,17 +92,35 @@ public final class WinGameDriver {
     /// The `_WipeScreen` / `_WipeScreenOut` being paced.
     private var wipe: (out: Bool, step: Int, row: Int, lastTick: UInt32)?
 
-    // Menu state for W5's in-window menu bar (the Mac's `BTXMenus` properties).
+    // The in-window menu bar (W5): `BTXMenus`' state and the press-drag-release tracking.
+    public private(set) var menuBar = MenuBar()
+    public private(set) var tracker = MenuTracker()
+    private let menuView: MenuBarView
+    /// The closed bar's strip (rows 0 ..< 20), drawn once per bar state.
+    private var stripCache: (bar: MenuBar, pixels: ArraySlice<UInt32>)?
     /// 'pref' and 'Full' enabled — the session's `.enableMenus`.
-    public private(set) var playMenusEnabled = true
+    public var playMenusEnabled: Bool { menuBar.playMenusEnabled }
     /// `DisableMenuCommand(0, 'abou')` in effect — the session's `.disableAbout`.
-    public private(set) var aboutDisabled = false
+    public var aboutDisabled: Bool { menuBar.aboutDisabled }
     /// A dialog is up: every menu item is disabled (Carbon `ModalDialog` is app-modal).
-    public private(set) var dialogUp = false
+    public var dialogUp: Bool { menuBar.dialogUp }
+    /// Bubble Trouble X ▸ About's panel while it is open.
+    public private(set) var about: WinAboutPanel?
+
+    /// The dialogs' 1/60 s tick (flash, caret, the prefs' null events) — runs while one is on screen, whatever the
+    /// game clocks do.
+    private var dialogTimer = WinTimer(intervalNanoseconds: WinClock.nanosPerSecond, per: 60)
+    /// Layout-aware text input is on at the host.
+    public private(set) var textInputOn = false
+    /// What the chrome looked like at the last present (a change re-presents).
+    private var lastChrome: Chrome?
 
     private var quitWithoutSaving = false
     private var saveOnQuit = false
     private var frontEndQuit = false
+    /// The window's close box (the quit Apple event) is waiting on the game's own quit path: a second close
+    /// terminates at once (the Mac's `replyPending` → `.terminateNow`).
+    private var closeRequestPending = false
     /// Quit was chosen while a game runs outside its pause: ⌘ + key 0x0C goes into every frame's keys until the
     /// game's own ⌘Q check fades the music and quits.
     public private(set) var quitPending = false
@@ -124,8 +148,9 @@ public final class WinGameDriver {
     private var keys = WinKeyState()
     private var mouse = (x: 0, y: 0)
     private var mouseButton = false
-    /// The last mouse-down landed in the game screen (its mouse-up goes there too).
-    private var mouseDownInGame = false
+    /// Where the last mouse-down went (its mouse-up goes there too).
+    private enum MouseTarget { case none, game, dialog, about }
+    private var mouseTarget = MouseTarget.none
 
     /// Called after every frame fire with the running session (tests trace the demo).
     public var frameObserver: ((GameSession) -> Void)?
@@ -134,13 +159,18 @@ public final class WinGameDriver {
 
     /// Loads the prefs and builds the sound and the compositor (the first half of the Mac's
     /// `applicationDidFinishLaunching`); `start()` opens the front end.
+    /// `dialogs` defaults to the real in-window `DialogSystem`; pass `WinAutoDialogs` for runs that must not stop at a
+    /// dialog.
     public init(assets: WinGameAssets, host: any WinHost, audioOutput: any WinAudioOutput,
-                prefsBacking: any BTXPrefsBacking, dialogs: any WinDialogs, options: Options) throws {
+                prefsBacking: any BTXPrefsBacking, dialogs: (any WinDialogs)? = nil, options: Options) throws {
         self.host = host
         self.data = assets.data
         self.art = assets.art
-        self.dialogs = dialogs
+        self.dialogs = dialogs ?? DialogSystem(data: assets.data, art: assets.art,
+                                               renderer: DialogRenderer(rasterizer: assets.text))
         self.options = options
+        text = assets.text
+        menuView = MenuBarView(text: assets.text)
         store = BTXPrefsStore(backing: prefsBacking, legacyFileURL: nil,
                               factoryScores: try HighScoreTable.factory(from: assets.data))
         (prefs, scores) = store.load()
@@ -149,50 +179,80 @@ public final class WinGameDriver {
         applyPrefsToAudio()
     }
 
-    /// `_InitMac` → `_Interface`: the front end and the splash's first output. (Full screen at launch is W5's —
-    /// see `setFullScreen`.)
+    /// The Mac's `applicationDidFinishLaunching` tail: `_LoadMenuBar` + `_ResetOptionsMenu`, the window shown, full
+    /// screen when the prefs say so (`_InitMac` → `_PrepareMonitor`), then `_Interface`: the front end and the
+    /// splash's first output.
     public func start() {
+        dialogs.delegate = self
+        menuBar.resetOptionsMenu(prefs)
+        present()
+        if prefs.fullScreen { _ = setFullScreen(true) }
         frontEnd = FrontEnd(data: data, prefs: prefs, highScores: scores, registeredName: options.registeredName,
                             today: options.today)
-        var hooks = WinDialogHooks()
-        hooks.playSound = { [unowned self] cue, level in audio.play(cue, sfxLevel: level) }
-        hooks.livePrefs = { [unowned self] p, updateMusic in
-            prefs = p
-            applyPrefsToAudio()
-            if updateMusic { audio.updateMusicVolume() }
-        }
-        hooks.modalStateChanged = { [unowned self] in modalStateChanged() }
-        dialogs.hooks = hooks
         present()
         tickFired()                                                     // the splash's first output
     }
 
     // MARK: The main loop
 
-    /// One pass of the host's loop: the queued events, then the running clock's fire if one is due (at most one).
+    /// One pass of the host's loop: the queued events (each typing key paired with its text), the dialogs' tick if
+    /// one is due, then the running clock's fire if one is due (at most one); then the chrome is re-presented if it
+    /// changed and the host's text input follows the dialogs.
     public func step() {
         guard !finished else { return }
-        for event in host.pollEvents() {
-            handleEvent(event)
+        for (event, typed) in Self.pairTypedText(host.pollEvents()) {
+            handleEvent(event, typed: typed)
             if finished { return }
         }
         let now = host.nanoseconds
+        if dialogTimer.poll(now: now) {
+            dialogs.tick(heldKeys: keys.held)
+            if finished { return }
+        }
         switch clock {
         case .frame: if frameTimer.poll(now: now) { frameFired() }
         case .fastFrame: if fastFrameTimer.poll(now: now) { frameFired() }
         case .tick: if tickTimer.poll(now: now) { tickFired() }
         case .none: break
         }
+        guard !finished else { return }
+        syncChrome()
     }
 
-    /// When the running clock fires next (nil: none runs) — the host may sleep until then.
+    /// When the running clock (or the dialogs' tick) fires next (nil: none runs) — the host may sleep until then.
     public var nextDeadline: UInt64? {
-        switch clock {
+        let game: UInt64? = switch clock {
         case .frame: frameTimer.nextFire
         case .fastFrame: fastFrameTimer.nextFire
         case .tick: tickTimer.nextFire
         case .none: nil
         }
+        guard let d = dialogTimer.nextFire else { return game }
+        return game.map { min($0, d) } ?? d
+    }
+
+    /// Pairs each key-down with the layout-aware text that follows it in the same poll (before the next key-down):
+    /// SDL reports the key, then what it typed. A `.textInput` with no key-down before it (an IME commit, a dead key's
+    /// composition) stays an event of its own.
+    public static func pairTypedText(_ events: [WinEvent]) -> [(WinEvent, String?)] {
+        var out: [(WinEvent, String?)] = []
+        var used = Set<Int>()
+        for (i, e) in events.enumerated() where !used.contains(i) {
+            guard case .keyDown = e else { out.append((e, nil)); continue }
+            var typed: String?
+            var j = i + 1
+            while j < events.count {
+                if case .keyDown = events[j] { break }
+                if case let .textInput(t) = events[j], !used.contains(j) {
+                    typed = t
+                    used.insert(j)
+                    break
+                }
+                j += 1
+            }
+            out.append((e, typed))
+        }
+        return out
     }
 
     // MARK: Quit
@@ -206,6 +266,7 @@ public final class WinGameDriver {
     ///   `_StopMusic` fade and `.quitNow` follows.
     public func quitChosen() {
         guard !finished, frontEnd != nil else { terminate(); return }
+        tracker.close()
         guard let session, session.isInGame else {
             if !quitThroughFrontEnd() { terminate() }
             return
@@ -232,6 +293,8 @@ public final class WinGameDriver {
     private func terminate() {
         guard !finished else { return }
         frontEndQuit = true
+        quitPending = false
+        closeRequestPending = false
         if !quitWithoutSaving && (saveOnQuit || !(session?.isInGame ?? false)) {
             savePrefs()
         }
@@ -335,13 +398,13 @@ public final class WinGameDriver {
             switch request {
             case .hideCursor: hideCursor()
             case .showCursor: showCursor()
-            case let .enableMenus(on): playMenusEnabled = on
+            case let .enableMenus(on): menuBar.playMenusEnabled = on
             case .haltAllSound: audio.haltEffects()
             case .quitNow: quitNow = true
             case .savePrefs: savePrefs()
             case let .setCursor(id): setCursor(id == 200 ? .hand : .arrow)
             case .restoreMousePosition: host.restoreMousePosition()
-            case let .disableAbout(off): aboutDisabled = off
+            case let .disableAbout(off): menuBar.aboutDisabled = off
             case .beep:
                 beeps += 1
                 host.beep()
@@ -380,7 +443,6 @@ public final class WinGameDriver {
             return
         }
         if out.ended != nil && quitPending {    // the game ended before its ⌘Q check ran: an ordinary quit (saves)
-            quitPending = false
             terminate()
             return
         }
@@ -403,15 +465,68 @@ public final class WinGameDriver {
 
     private func hostTicks() -> UInt32 { WinClock.ticks(nanoseconds: host.nanoseconds) }
 
-    /// The compositor's screen (and the fade) to the host.
+    /// The composed canvas (and the fade) to the host.
     private func present() {
-        let frame = WinFrame(screen: compositor.screen, fade: fadeLevel())
+        let frame = currentFrame
+        lastChrome = chrome
         host.present(frame)
         presentObserver?(frame)
     }
 
     /// The frame as it would be presented now (dumps).
-    public var currentFrame: WinFrame { WinFrame(screen: compositor.screen, fade: fadeLevel()) }
+    public var currentFrame: WinFrame { WinFrame(canvas: composeCanvas(), fade: fadeLevel()) }
+
+    /// Windowed: the menu bar's strip, the game screen under it, the dialogs and the About panel over the screen,
+    /// the open menu over everything. Full screen: the game screen, the dialogs and the About panel.
+    private func composeCanvas() -> RGBAImage {
+        let screen = compositor.screen
+        if isFullScreen {
+            var img = screen
+            dialogs.draw(into: &img, canvasX: 0, canvasY: 0)
+            about?.draw(into: &img, canvasX: 0, canvasY: 0)
+            return img
+        }
+        let strip = WinCanvas.menuStripHeight * WinCanvas.width
+        var img = RGBAImage(width: WinCanvas.width, height: WinCanvas.height)
+        img.pixels.replaceSubrange(strip..<img.pixels.count, with: screen.pixels.prefix(img.pixels.count - strip))
+        dialogs.draw(into: &img, canvasX: 0, canvasY: WinCanvas.menuStripHeight)
+        about?.draw(into: &img, canvasX: 0, canvasY: WinCanvas.menuStripHeight)
+        if tracker.isOpen {
+            menuView.draw(menuBar, tracker: tracker, into: &img)
+        } else {
+            if stripCache?.bar != menuBar {
+                var bar = RGBAImage(width: WinCanvas.width, height: WinCanvas.menuStripHeight)
+                menuView.draw(menuBar, tracker: MenuTracker(), into: &bar)
+                stripCache = (menuBar, bar.pixels[...])
+            }
+            img.pixels.replaceSubrange(0..<strip, with: stripCache!.pixels)
+        }
+        return img
+    }
+
+    /// Everything besides the game screen that changes what is presented.
+    private struct Chrome: Equatable {
+        var bar: MenuBar
+        var tracker: MenuTracker
+        var dialogs: Int
+        var about: Bool
+        var fullScreen: Bool
+    }
+
+    private var chrome: Chrome {
+        Chrome(bar: menuBar, tracker: tracker, dialogs: dialogs.drawKey, about: about != nil, fullScreen: isFullScreen)
+    }
+
+    /// After every step: the menu bar's dialog state, the host's text input, and a present when the chrome changed.
+    private func syncChrome() {
+        menuBar.dialogUp = dialogs.isShowing
+        let wantText = dialogs.isShowing && dialogs.wantsTextInput
+        if wantText != textInputOn {
+            textInputOn = wantText
+            host.setTextInput(wantText)
+        }
+        if chrome != lastChrome { present() }
+    }
 
     /// `_SaveGamePrefs`: the prefs as the front end / running game hold them plus the high scores.
     private func savePrefs() {
@@ -474,7 +589,7 @@ public final class WinGameDriver {
         }
     }
 
-    private func answerArrived(_ answer: WinDialogAnswer, fromPause: Bool) {
+    private func answerArrived(_ answer: DialogSystem.Answer, fromPause: Bool) {
         if case let .prefs(p) = answer {
             prefsDialogClosed(p)
             if !fromPause {
@@ -485,18 +600,21 @@ public final class WinGameDriver {
                 }
             }
         } else {
-            pendingAnswers.append { answer.deliver(to: $0) }
+            pendingAnswers.append { DialogSystem.deliver(answer, to: $0) }
         }
         if handleDepth == 0 { drainAnswers() }
     }
 
-    /// The tail of `_PrefsDialog` after Save / Cancel.
+    /// The tail of `_PrefsDialog` after Save (the edited prefs) or Cancel (the prefs at open): `_GoFullScreenMode` /
+    /// `_GoWindowMode` when bool 0x37 no longer matches, `_SaveGamePrefs`, `_InitControls`, `_UpdateSoundVol`,
+    /// `_UpdateMusicStatus`, then `_ResetOptionsMenu` and `_SetMyCCursor(200)`.
     private func prefsDialogClosed(_ p: BTXPrefs) {
         if p.fullScreen != isFullScreen { _ = setFullScreen(p.fullScreen) }
         prefs = p
         frontEnd?.prefsChanged(p)
         applyPrefsToAudio()
         savePrefs()
+        menuBar.resetOptionsMenu(p)
         setCursor(.hand)
     }
 
@@ -510,8 +628,35 @@ public final class WinGameDriver {
         }
     }
 
+    // MARK: DialogSystemDelegate
+
+    public func dialogPlaySound(_ cue: SoundCue, volumeOverride: Int?) {
+        audio.play(cue, sfxLevel: volumeOverride)
+    }
+
+    public func dialogLivePrefs(_ p: BTXPrefs, updateMusic: Bool) {
+        prefs = p
+        applyPrefsToAudio()
+        if updateMusic { audio.updateMusicVolume() }
+    }
+
+    public func dialogBeep() {
+        beeps += 1
+        host.beep()
+    }
+
+    public func dialogModalStateChanged() { modalStateChanged() }
+
+    /// A dialog went up or away: the menu bar follows (app-modal), the dialogs' tick runs while one is shown, and the
+    /// clocks stop while one waits for the user and resume where they stopped when none does (BTXController's
+    /// `modalStateChanged`: "the App's clocks stop").
     private func modalStateChanged() {
-        dialogUp = dialogs.isShowing
+        menuBar.dialogUp = dialogs.isShowing
+        if dialogs.isShowing {
+            if !dialogTimer.isRunning { dialogTimer.start(now: host.nanoseconds) }
+        } else {
+            dialogTimer.invalidate()
+        }
         if dialogs.isModal {
             guard suspendedAt == nil else { return }
             suspendedAt = hostTicks()
@@ -538,13 +683,69 @@ public final class WinGameDriver {
         savePrefs()
     }
 
-    /// Full screen is not built in W4 (HectorSDL has no full-screen call yet): the window stays windowed and the
-    /// switch reports failure, so a menu toggle flips the pref back exactly as the Mac does when no screen exists.
+    /// The window is in full screen (the menu strip hidden, the game screen integer-fit on black).
     public private(set) var isFullScreen = false
 
+    /// `_GoFullScreenMode` / `_GoWindowMode` (BTXController.setFullScreen: the main screen filled, integer-crisp, no
+    /// display-mode switch), then the window redrawn and `gDidToggleFullscreen` (the menu redraws 10 ticks later).
+    /// False when the switch did not happen (the host refused).
     public func setFullScreen(_ on: Bool) -> Bool {
-        guard isFullScreen == on else { return true }
-        return false
+        isFullScreen = host.setFullScreen(on)
+        guard isFullScreen == on else { return false }
+        if on { tracker.close() }
+        present()
+        frontEnd?.didToggleFullscreen()
+        return true
+    }
+
+    // MARK: Menu commands (`BTXMenus` actions, `_HandleMenuChoice`)
+
+    /// Carries out a menu command exactly as the Mac item's action does.
+    public func perform(_ command: MenuCommand) {
+        switch command {
+        case .about:
+            // `_SetMyCCursor(200)`, then the About panel (`orderFrontStandardAboutPanel`).
+            setCursor(.hand)
+            if about == nil { about = WinAboutPanel(text: text, icon: try? art.cicn(128)) }
+        case .preferences:
+            preferencesChosen()
+        case .quit:
+            quitChosen()
+        case .fullScreen:
+            var p = currentPrefs
+            var bar = menuBar                                           // the switch re-presents (reads the bar)
+            bar.fullScreenChosen(&p) { setFullScreen($0) }
+            menuBar = bar
+            menuChangedPrefs(p)
+        case .soundEffects, .music, .keySet:
+            var p = currentPrefs
+            menuBar.apply(command, to: &p)
+            menuChangedPrefs(p, updateMusicVolume: command == .music)
+        case .minimize:
+            host.minimize()
+        case .zoom:
+            host.zoom()
+        case .undo, .redo, .cut, .copy, .paste, .delete, .selectAll:
+            break                                                       // no responder takes them (always disabled)
+        case .minimizeAll, .bringAllToFront, .arrangeInFront:
+            break                                                       // the only window: nothing happens
+        }
+    }
+
+    /// The About panel's close button (or Esc, or a click elsewhere).
+    public func closeAbout() { about = nil }
+
+    private static func menuModifiers(_ m: WinModifiers) -> MenuModifiers {
+        var out: MenuModifiers = []
+        if m.contains(.command) { out.insert(.command) }
+        if m.contains(.shift) { out.insert(.shift) }
+        if m.contains(.option) { out.insert(.option) }
+        if m.contains(.control) { out.insert(.control) }
+        return out
+    }
+
+    private var menuGeometry: MenuGeometry {
+        menuView.geometry(for: menuBar, width: WinCanvas.width, height: WinCanvas.height)
     }
 
     // MARK: Cursor
@@ -579,41 +780,41 @@ public final class WinGameDriver {
 
     // MARK: Input
 
-    /// One host event (the Mac's ShellInputHandler, NSApplication delegate and menu key equivalents).
-    public func handleEvent(_ event: WinEvent) {
+    /// One host event (the Mac's ShellInputHandler, NSApplication delegate and menu key equivalents); `typed` is the
+    /// layout-aware text a key-down typed (`pairTypedText`), nil when none came.
+    public func handleEvent(_ event: WinEvent, typed: String? = nil) {
         switch event {
         case let .keyDown(code, chars, mods, isRepeat):
-            // Ctrl+Q = the Quit menu item's ⌘Q: the menu eats it (the view never sees it); inert under a dialog.
-            if code == 0x0C && mods.contains(.command) {
-                if !dialogs.isShowing && !isRepeat { quitChosen() }
-                return
-            }
-            keys.keyDown(code)
-            // Modifier keys arrive on the Mac as flagsChanged, never as keyDown.
-            guard !WinKeyState.modifierKeyCodes.contains(code), let frontEnd else { return }
-            handle(frontEnd.key(code, chars: chars, modifiers: Self.keyModifiers(mods), isRepeat: isRepeat),
-                   now: ticksNow())
-        case let .keyUp(code, _):
+            keyDown(code, chars: chars, modifiers: mods, isRepeat: isRepeat, typed: typed)
+        case let .keyUp(code, mods):
             keys.keyUp(code)
+            if code == 0x3A || code == 0x3D {
+                tracker.modifiersChanged(Self.menuModifiers(mods.subtracting(.option)), bar: menuBar,
+                                         geometry: menuGeometry)
+            }
+        case let .textInput(text):
+            // Text with no key-down before it (an IME commit, a dead key's composition): typed into the dialog.
+            guard dialogs.isShowing, !tracker.isOpen else { return }
+            for ch in text {
+                dialogs.keyDown(DialogKeyEvent(keyCode: Self.noKeyCode, characters: String(ch)))
+            }
         case let .mouseMoved(x, y):
             mouse = (x, y)
+            if !isFullScreen {
+                tracker.mouseMoved(x: x, y: y, modifiers: Self.menuModifiers(host.modifiers), bar: menuBar,
+                                   geometry: menuGeometry)
+            }
+            if dialogs.isShowing { dialogs.mouseMoved(x: x, y: y - WinCanvas.menuStripHeight) }
         case let .mouseDown(x, y):
-            mouse = (x, y)
-            mouseButton = true
-            // The menu strip is W5's; the game view sees only clicks on the game screen.
-            mouseDownInGame = y >= WinCanvas.menuStripHeight
-            guard mouseDownInGame, let frontEnd else { return }
-            handle(frontEnd.mouseDown(h: x, v: y - WinCanvas.menuStripHeight,
-                                      modifiers: Self.keyModifiers(host.modifiers)), now: ticksNow())
+            mouseDown(x, y)
         case let .mouseUp(x, y):
-            mouse = (x, y)
-            mouseButton = false
-            guard mouseDownInGame, let frontEnd else { return }
-            mouseDownInGame = false
-            handle(frontEnd.mouseUp(h: x, v: y - WinCanvas.menuStripHeight,
-                                    modifiers: Self.keyModifiers(host.modifiers)), now: ticksNow())
+            mouseUp(x, y)
         case .quit:
+            // The quit Apple event (`applicationShouldTerminate`): a second one while the first waits on the game's
+            // own quit path terminates at once; otherwise `quitChosen`'s routes.
+            if closeRequestPending { terminate(); return }
             quitChosen()
+            if quitPending && !finished { closeRequestPending = true }
         case .focusLost:
             keys.releaseAll()
             guard let frontEnd else { return }
@@ -622,6 +823,103 @@ public final class WinGameDriver {
             guard let frontEnd else { return }
             handle(frontEnd.appActivated(keys: heldKeys()), now: ticksNow())
         }
+    }
+
+    /// The key code `DialogKeyEvent` gets for text that came without a key (none of Carbon's: the text decides).
+    static let noKeyCode: UInt16 = 0xFFFF
+
+    private func keyDown(_ code: UInt16, chars: String, modifiers mods: WinModifiers, isRepeat: Bool, typed: String?) {
+        // Modifier keys arrive on the Mac as flagsChanged, never as keyDown: GetKeys sees them; Alt swaps the Window
+        // menu's alternates; nothing else does.
+        if WinKeyState.modifierKeyCodes.contains(code) {
+            keys.keyDown(code)
+            if code == 0x3A || code == 0x3D {
+                tracker.modifiersChanged(Self.menuModifiers(mods.union(.option)), bar: menuBar, geometry: menuGeometry)
+            }
+            return
+        }
+        // AltGr is Ctrl+Alt on Windows: a key that typed text with both held is typing, not a Ctrl shortcut.
+        let altGr = typed != nil && mods.contains(.command) && mods.contains(.option)
+        // An open menu takes every key (Esc closes it).
+        if tracker.isOpen {
+            _ = tracker.keyDown(keyCode: code)
+            return
+        }
+        // The menu bar's key equivalents, by physical key (D18.5): the menu eats the key (the view never sees it).
+        if mods.contains(.command), !altGr,
+           let command = menuBar.command(forKeyCode: code, modifiers: Self.menuModifiers(mods)) {
+            if !isRepeat { perform(command) }
+            return
+        }
+        keys.keyDown(code)
+        if dialogs.isShowing {
+            let text = typed ?? (DialogKeyEvent.typesText(keyCode: code) ? chars : "")
+            dialogs.keyDown(DialogKeyEvent(keyCode: code, characters: text,
+                                           command: mods.contains(.command) && !altGr, shift: mods.contains(.shift),
+                                           option: mods.contains(.option) && !altGr,
+                                           control: mods.contains(.control)))
+            return
+        }
+        if about != nil {                                               // the About panel is the key window
+            if code == 0x35 { closeAbout() }
+            return
+        }
+        guard let frontEnd else { return }
+        var m = mods
+        if altGr { m.subtract([.command, .option]) }
+        handle(frontEnd.key(code, chars: chars, modifiers: Self.keyModifiers(m), isRepeat: isRepeat),
+               now: ticksNow())
+    }
+
+    private func mouseDown(_ x: Int, _ y: Int) {
+        mouse = (x, y)
+        mouseButton = true
+        mouseTarget = .none
+        // The menu bar first: a press on the strip, or anywhere while a menu is open, is the bar's.
+        if !isFullScreen, tracker.mouseDown(x: x, y: y, modifiers: Self.menuModifiers(host.modifiers), bar: menuBar,
+                                            geometry: menuGeometry) {
+            return
+        }
+        let cy = y - WinCanvas.menuStripHeight
+        if dialogs.isShowing {                                          // app-modal: the dialog takes it (or beeps)
+            mouseTarget = .dialog
+            dialogs.mouseDown(x: x, y: cy)
+            return
+        }
+        if let a = about {
+            if a.contains(x: x, y: cy) {
+                mouseTarget = .about
+                if a.isOnCloseButton(x: x, y: cy) { closeAbout() }
+                return
+            }
+            closeAbout()                                                // the game window comes forward
+        }
+        guard y >= WinCanvas.menuStripHeight, let frontEnd else { return }
+        mouseTarget = .game
+        handle(frontEnd.mouseDown(h: x, v: cy, modifiers: Self.keyModifiers(host.modifiers)), now: ticksNow())
+    }
+
+    private func mouseUp(_ x: Int, _ y: Int) {
+        mouse = (x, y)
+        mouseButton = false
+        if !isFullScreen {
+            let r = tracker.release(x: x, y: y, modifiers: Self.menuModifiers(host.modifiers), bar: menuBar,
+                                    geometry: menuGeometry)
+            if r.consumed {
+                mouseTarget = .none
+                if let c = r.command { perform(c) }
+                return
+            }
+        }
+        let target = mouseTarget
+        mouseTarget = .none
+        let cy = y - WinCanvas.menuStripHeight
+        if dialogs.isShowing {
+            dialogs.mouseUp(x: x, y: cy)
+            return
+        }
+        guard target == .game, let frontEnd else { return }
+        handle(frontEnd.mouseUp(h: x, v: cy, modifiers: Self.keyModifiers(host.modifiers)), now: ticksNow())
     }
 
     /// `EventRecord.modifiers` as the front end reads them.

@@ -19,8 +19,9 @@ public struct WinModifiers: OptionSet, Sendable, Hashable {
 }
 
 /// One input event in Mac terms (the shape of HectorSDL's `HostEvent`, restated here so BTXWinKit needs no SDL).
-/// Key codes are Carbon `kVK_*`; `characters` is what `NSEvent.characters` would carry; mouse coordinates are
-/// pixels of the whole 640×500 window canvas (the 20 px menu strip on top, then the 640×480 game screen).
+/// Key codes are Carbon `kVK_*`; `characters` is what `NSEvent.characters` would carry (US layout); mouse coordinates
+/// are pixels of the whole 640×500 window canvas (the 20 px menu strip on top, then the 640×480 game screen) — in full
+/// screen, where the strip is not shown, the host still reports them in these coordinates (screen y + 20).
 public enum WinEvent: Sendable, Hashable {
     case keyDown(keyCode: UInt16, characters: String, modifiers: WinModifiers, isRepeat: Bool)
     case keyUp(keyCode: UInt16, modifiers: WinModifiers)
@@ -31,6 +32,9 @@ public enum WinEvent: Sendable, Hashable {
     case quit
     case focusLost
     case focusGained
+    /// Layout-aware typed text (SDL text input, on while a dialog's edit field has the focus): it follows the key
+    /// event that typed it, in the same poll.
+    case textInput(String)
 }
 
 /// The cursor the game asked for (`_SetMyCCursor(200)` = the hand from `crsr 200`, `_InitCursor` = the arrow;
@@ -40,42 +44,40 @@ public enum WinCursor: Sendable, Hashable {
     case hand
 }
 
-/// The window canvas: the 640×480 game screen under a 20 px strip reserved for the in-window menu bar (W5).
+/// The window canvas: the 640×480 game screen under a 20 px strip for the in-window menu bar (W5). In full screen the
+/// strip is not shown (the Mac's menu bar hides there too) and the canvas is the game screen alone.
 public enum WinCanvas {
     public static let width = Compositor.width
     public static let menuStripHeight = 20
     public static let height = Compositor.height + menuStripHeight
-    /// The strip's colour until W5 draws the menu bar (0xRRGGBB): plain white.
-    public static let blankStrip: UInt32 = 0xFFFFFF
 }
 
-/// One presented frame: the compositor's screen plus the display fade. `rgba` builds the 640×500 RGBA8 canvas
-/// (top row first, alpha 0xFF) only when a host asks for bytes.
+/// One presented frame: the composed window canvas (menu bar, game screen, dialogs — 640×500, or 640×480 in full
+/// screen) plus the display fade. `rgba` builds the RGBA8 bytes (top row first, alpha 0xFF) only when a host asks.
 public struct WinFrame: Sendable {
-    /// The game screen, 640×480, 0xAARRGGBB.
-    public let screen: RGBAImage
+    /// The canvas, 0xAARRGGBB.
+    public let canvas: RGBAImage
     /// `CGDisplayFade`'s darkness, 0 (clear) … 255 (black), applied to the whole window.
     public let fade: Int
 
-    public init(screen: RGBAImage, fade: Int = 0) {
-        self.screen = screen
+    public init(canvas: RGBAImage, fade: Int = 0) {
+        self.canvas = canvas
         self.fade = max(0, min(255, fade))
     }
 
+    public var width: Int { canvas.width }
+    public var height: Int { canvas.height }
+
     public var rgba: [UInt8] {
-        let w = WinCanvas.width, strip = WinCanvas.menuStripHeight
-        var out = [UInt8](repeating: 0xFF, count: w * WinCanvas.height * 4)
+        var out = [UInt8](repeating: 0xFF, count: canvas.width * canvas.height * 4)
         let keep = 255 - fade
-        func put(_ i: Int, _ argb: UInt32) {
-            let r = Int((argb >> 16) & 0xFF), g = Int((argb >> 8) & 0xFF), b = Int(argb & 0xFF)
-            out[i] = UInt8(r * keep / 255)
-            out[i + 1] = UInt8(g * keep / 255)
-            out[i + 2] = UInt8(b * keep / 255)
-            out[i + 3] = 0xFF
-        }
-        for i in 0..<(w * strip) { put(i * 4, WinCanvas.blankStrip) }
-        screen.pixels.withUnsafeBufferPointer { px in
-            for i in 0..<min(px.count, w * Compositor.height) { put((w * strip + i) * 4, px[i]) }
+        canvas.pixels.withUnsafeBufferPointer { px in
+            for i in 0..<min(px.count, canvas.width * canvas.height) {
+                let argb = px[i]
+                out[i * 4] = UInt8(Int((argb >> 16) & 0xFF) * keep / 255)
+                out[i * 4 + 1] = UInt8(Int((argb >> 8) & 0xFF) * keep / 255)
+                out[i * 4 + 2] = UInt8(Int(argb & 0xFF) * keep / 255)
+            }
         }
         return out
     }
@@ -83,9 +85,9 @@ public struct WinFrame: Sendable {
     /// Binary PPM (P6) of `rgba` — the `--dump` format (HectorSDL's smoke uses the same).
     public var ppm: [UInt8] {
         let rgba = self.rgba
-        var out = Array("P6\n\(WinCanvas.width) \(WinCanvas.height)\n255\n".utf8)
-        out.reserveCapacity(out.count + WinCanvas.width * WinCanvas.height * 3)
-        for p in 0..<(WinCanvas.width * WinCanvas.height) { out.append(contentsOf: rgba[p * 4 ..< p * 4 + 3]) }
+        var out = Array("P6\n\(width) \(height)\n255\n".utf8)
+        out.reserveCapacity(out.count + width * height * 3)
+        for p in 0..<(width * height) { out.append(contentsOf: rgba[p * 4 ..< p * 4 + 3]) }
         return out
     }
 }
@@ -111,6 +113,14 @@ public protocol WinHost: AnyObject {
     func restoreMousePosition()
     /// `_SysBeep(1)`.
     func beep()
+    /// Full screen on / off (`_GoFullScreenMode` / `_GoWindowMode`); returns the state the window is in afterwards.
+    func setFullScreen(_ on: Bool) -> Bool
+    /// Window ▸ Minimize.
+    func minimize()
+    /// Window ▸ Zoom: the window between 1× and the largest integer scale that fits the screen.
+    func zoom()
+    /// Layout-aware text input on / off (on while a dialog's edit field has the keyboard focus).
+    func setTextInput(_ on: Bool)
     /// The driver has finished (prefs saved or not, by the quit rules): close the window and leave the loop.
     func quit()
 }

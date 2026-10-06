@@ -62,6 +62,9 @@ public enum WinKeyNames {
 ///     <frame> down <key> [mods…]      key down (held until an `up`)
 ///     <frame> up <key> [mods…]
 ///     <frame> click <x> <y>           mouse down at <frame>, up at <frame>+1 (window canvas pixels, menu strip = 0…19)
+///     <frame> move <x> <y>            the pointer moves there (no button change)
+///     <frame> text <string…>          layout-aware typed text (SDL text input), as after a key: `press a` then
+///                                     `text é` on the same frame types "é" with the A key
 ///     <frame> caps on|off             Caps Lock's lock state (the pause key)
 ///     <frame> quit                    the window's close box
 ///
@@ -137,6 +140,14 @@ public struct WinKeyScript: Sendable, Equatable {
                 add(frame, .event(.mouseMoved(x: x, y: y)))
                 add(frame, .event(.mouseDown(x: x, y: y)))
                 add(frame + 1, .event(.mouseUp(x: x, y: y)))
+            case "move":
+                guard words.count == 4, let x = Int(words[2]), let y = Int(words[3]) else {
+                    throw ParseError(line: lineNo, message: "expected `move <x> <y>`")
+                }
+                add(frame, .event(.mouseMoved(x: x, y: y)))
+            case "text":
+                guard words.count >= 3 else { throw ParseError(line: lineNo, message: "expected `text <string>`") }
+                add(frame, .event(.textInput(words[2...].joined(separator: " "))))
             case "caps":
                 guard words.count == 3, words[2] == "on" || words[2] == "off" else {
                     throw ParseError(line: lineNo, message: "expected `caps on|off`")

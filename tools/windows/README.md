@@ -123,17 +123,30 @@ SDL_AUDIO_DRIVER=dummy SDL_VIDEO_DRIVER=dummy swift run --package-path BubbleTro
   BubbleTroubleXWin --data <Data> --frames 600 --dump mac.ppm
 ```
 
+**Window (W4.5):** the in-window menu bar in the 20 px strip, the original dialogs drawn over the game (DLOG/DITL),
+the About panel; resizable, opening at the largest integer scale that fits the screen (2× on 1080p; `--scale N`
+overrides); Options ▸ Full Screen (Ctrl+F, saved in the prefs and restored at launch) hides the strip and
+integer-fits the game screen on black; Window ▸ Zoom toggles 1× / the largest scale. Layout-aware text (SDL text
+input, AltGr) while a dialog's edit field has the focus. `--auto-dialogs` answers every dialog at once with its
+default instead (the old W4 behaviour).
+
 **Headless smoke mode** (`--frames N`): N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s,
-each), then the last presented 640×500 canvas → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio
+each), then the last presented canvas (640×500; 640×480 in full screen) → `--dump` (binary PPM) and exit 0. It forces SDL's `dummy` audio
 driver in-process, keeps prefs in memory (unless `--prefs`), uses the name "Player" and 3 March, and ignores
 focus events — so a dump depends only on N, the script and the data. `--keys FILE` plays timed input, one
 command per line (`#` comments): `<frame> press|down|up <key> [cmd|shift|option|control]`, `<frame> click <x>
-<y>` (canvas pixels; the menu strip is rows 0–19), `<frame> caps on|off`, `<frame> quit`. Keys: a–z, 0–9, space,
+<y>` (canvas pixels; the menu strip is rows 0–19), `<frame> move <x> <y>` (the pointer, no button), `<frame> text <string>` (typed text, as SDL text input delivers it
+after the key), `<frame> caps on|off`, `<frame> quit`. Keys: a–z, 0–9, space,
 return, enter, tab, delete, esc, left/right/up/down, command/shift/capslock/option/control, or `0x..`
 (Carbon key codes). Ctrl+Q on Windows is `press q cmd`. Example: `620 press return` starts a game from the menu.
 
 W4 results (2026-10-06): `--frames 600` reaches the main menu; `--frames 900` with `620 press return` is in
 level 1 (its JPEG background from `Decoded/`); both CrossOver dumps `cmp`-identical to the Mac SDL build's.
+
+W4.5 results (2026-10-06): `--frames 610` with `600 click 180 10` + `602 move 220 84` shows the Options menu open
+over the main menu (Music highlighted); `--frames 660` with `600 press 0x2b cmd` (Ctrl+,) shows DLOG 190 over it;
+both CrossOver dumps (`HECTOR_SDL_*_DRIVER=dummy`, `--prefs` in scratch) exit 0 and are `cmp`-identical to the Mac
+SDL build's.
 
 ## Results (W0, 2026-10-06)
 
