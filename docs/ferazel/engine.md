@@ -77,11 +77,20 @@ InitRopeSprite, 28 calls) [HIGH].
 Parallax (`.DoubleBlitPPCParallaxOneLayer @ 10017924`): for screen row `r`, the PxBack layer
 is offset horizontally by `scrollX · back[r + (scrollY·yb>>8)] >> 8` where `back` is the
 8192-entry table at hdr+0x326c and `yb` = hdr+0xb26c; PxMid likewise with hdr+0x726c / 0xb26e
-[HIGH]. The PxBack/PxMid maps are 6×8 visible 128-px cells per frame (loop `8 × 6`) [HIGH].
-Draw order per frame (`.PaintFrameWrap @ 10011cf8`): parallax+tile grid
-(`.SetScrollLocation` → `.RedrawScrollGrid`), lights on tiles, `.HandleLights`, water effects,
-`.WrapDrawSprites`, rain (OmniPx mode 1), `.AnimateCLUT`, flame layer, particles, OmniPx, copy to
-screen at (16,8) [HIGH for order of calls; per-layer blend rules NOT RESOLVED].
+[HIGH]. ⚑ wave 2 corr (2026-10-04) RO #2: ~~"likewise" (both layers drawn)~~ a screen row is **either**
+a back row (PxBack behind tiles/sprites through the mask port) **or** a mid row (PxMid over
+everything, no PxBack); mid rows exist only when hdr+0x3268 = 1, and the mode changes only at
+factor-change rows (`1001793c`, `1001891c`; rendering-omnipx-titles §1.2–§1.3). The PxBack/PxMid maps
+are 6×8 visible 128-px cells per frame (loop `8 × 6`) [HIGH].
+Draw order per frame (`.PaintFrameWrap @ 10011cf8`): tile grid (`.SetScrollLocation` →
+`.RedrawScrollGrid`, which only fills the tile frame), lights on tiles, `.HandleLights`, water
+effects, `.WrapDrawSprites`, rain (OmniPx mode 1), `.AnimateCLUT`, flame layer, particles, OmniPx,
+copy to screen at (16,8) [HIGH for order of calls]. ⚑ wave 2 corr (2026-10-04) RO #1: the parallax
+layers are composited **during the copy to screen** (`WrapCopyToScreen` → `DoubleBlitUniversal` →
+`DoubleBlitPPCParallaxOneLayer`/`…Fire`; `10022ff0..1002307c` are the only calls of the two
+blitters); per-layer pixel rules rendering-omnipx-titles §1.2 [HIGH]. ⚑ wave 2 corr (2026-10-04)
+RO #13: `.DisposePxMidTileset` is empty (`100027f8` returns), so the PxMid ports persist across
+levels.
 
 ## 4. Main loop and frame cadence (`.GameLoop @ 10009d48`)  [HIGH]
 
@@ -94,6 +103,11 @@ PaintFrameWrap(draw, odd);                   // draw (if draw) THEN sprite logic
                                              //   (MTHandleSprites → each sprite's +0x4c
                                              //   callback; MTCollideSprites; player special
                                              //   collisions), HandleParticles, erase
+                                             // ⚑ wave 2 corr (2026-10-04) ES2 #W4: the special
+                                             //   pass is the only caller of .HitPlayerSprite
+                                             //   (slot 0x1009fdd4 loaded only at 10007c60) and is
+                                             //   skipped while *_DAT_1009ffa8 (player died),
+                                             //   10007c40..10007c64
 CheckGameEvents(); CheckGameLoopKeys(); UpdateDynamicSounds(); UpdateTrackMap();
 every >150 ticks and if FPS display on: FindFPS/DisplayFPS
 boss-music check (hdr+0x2724, below)
@@ -141,6 +155,10 @@ y when the player is on ground/rope/swimming or leaves the band (view rect inset
 bottom): downward it moves `max(Δ/6, 6)` px/frame, upward `max((focus − limit)/7, 5)`
 [HIGH for the arithmetic; the exact list of gating flags is long and quoted in the function].
 `playerX/Y` here are `_DAT_1009fd94/_DAT_1009fd90` (set to start+50/start+59 by `.GameLoop`).
+⚑ wave 2 corr (2026-10-04) T2 W4 — look-ahead L (`_DAT_100a0680`, 24.8 px), updated in `.HandlePlayerSprite` just before
+`.PlayerScroll` (`10051494..1005158c`): vx > 0x100 → L += vx>>2, a second time while L < 0; cap +0x5000
+(80 px); vx < −0x100 mirrored, floor −0x5000; |vx| ≤ 0x100 → L decays 0x200/frame only while it points
+against the facing; zeroed by passages at transit counts 21/22 (triggers-background-2 §8.2) [HIGH].
 
 `.FindUpperLeftCorner @ 1000b5ec`:
 - target h = focusX − 0x130 (304) + hdr+0x270a; target v = focusY − 0xc0 (192) + hdr+0x270c;
@@ -174,6 +192,10 @@ saves; the Esc dialog's Save branch is dead (DITL 202 has no item 5); level comp
 updates memory. Full flow: **save-continue.md** §1–§7. ⚑ corrected (review 1a adjudication 6 / B18,
 2026-10-03) (label ⚑ corrected (review 1d, 2026-10-03) #1): confirmed from raw — `.AskToContinue` returns 0 on `fe00 == 0`
 (`100071d0..100071e4`); `.ContinueGame` copies G from save+0x18 (`1000d0cc`) [HIGH].
+⚑ wave 2 corr (2026-10-04) SC W2: on resume, a world file that cannot be reopened shows the `.ReportError` alert and quits the
+application (`ExitToShell`, `10048bb0`); a save naming a missing level dereferences a nil level handle
+with no visible message (`.SafeReportStr` ignores its string, `100359c8..10035a04`) — undefined past
+that (save-continue §9.3).
 - There is **no lives counter**: death ends the run unless the player resumes from a save
   (`.AskToContinue @ 10007190` buttons via `TrackClickOnCommandButtonDeath`) [MED: no other
   decrement of a life-like field found; `G+0x12 = 3` is set in `.InitGameGlobals` but its
