@@ -467,3 +467,30 @@ decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and 
 original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
 RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
 **Approved by:** Ben.
+
+## D23 — Aki 1.0 public release: notarized DMG, Remaster art in, macOS 27 icon; iPad merged first (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):**
+1. Merge order "iPad first, then Remaster" — both on main (5e6755d, then 9bd0e56).
+2. First public Aki release is **1.0** (Ben chose 1.0 over a 0.9 pre-release, knowing Phase 3 — Level Editor, `.aki` levels
+   — is not built), a **notarized + stapled DMG** with the **Remastered art included** (hd-4x, ~207 MB). "Need to notarize
+   and stamp builds of course — look for notarisekit for the method": `tools/package-aki-release.sh` builds Release,
+   assembles the original 1.2.0 data verbatim (pinned sha256 manifest, checked on the assembly, after signing and again
+   inside the mounted DMG), signs with Developer ID + hardened runtime + timestamp, then calls notarize-kit's
+   `notarize-bundle.sh` + `package-dmg.sh` (profile `oniarm64-notarize`). Tag `aki-1.0`, notes `docs/release/aki-1.0.md`.
+3. **macOS 26+ app icon** (Ben: "not in squircle jail"; picked green felt from four Icon Composer renders):
+   `Aki/App/Mac/AppIcon.icon` — the original aki.icns tile stack, upscaled 4× (Upscayl high-fidelity-4x), glass off, on a
+   green-felt gradient. A deliberate departure from 100 % on an OS-owned surface, Ben's call. The upscaled derivative
+   `Assets/tiles.png` is committed to the public repo (Ben's standing "shareware data may live in git" overrule, D10's
+   exception recorded here). The original aki.icns still ships in Contents/Resources with the data; iPad icon unchanged.
+**Seat rulings (inside the standing 100 % ruling):**
+- (a) Apple's OsakaMono.ttf is NOT in the public build (Apple's font, not redistributable): Release Notes show in Menlo
+  unless the Mac has Osaka-Mono installed — an exception to D4.2 for the public build only; stage-aki.sh still bundles it.
+- (b) `CFBundleShortVersionString` stays **1.2.0** (the replicated game); `CFBundleVersion` = the release (**1.0**), so the
+  About panel reads "Version 1.2.0 (1.0)"; the notes explain the two numbers.
+- (c) The GitHub release is created as a **draft**; Ben tries the downloaded DMG, then it is published.
+- (d) Tested only on this Mac (macOS 27.0.1, Apple Silicon); the binary is universal and the notes say Intel and macOS
+  15/26 are untested. The Menlo Release-Notes path cannot be exercised here (Osaka-Mono installed system-wide).
+- (e) Noted, not changed: the iPad build scales to fill the height, smoothed (WHAT-TO-EXPECT-iPad, Ben on the mini), which
+  supersedes D7 R3's integer scaling — recorded here as as-built.
+**Approved by:** Ben (1–3); seat (a)–(e).
