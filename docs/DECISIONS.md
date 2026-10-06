@@ -435,3 +435,35 @@ anonymous download verified byte-identical to the staged zip. **Supersedes D16.4
 Apple-glyph `.btxfont` files (menu bar/dialog text only) now ship publicly, Ben's call knowing it. Original game data
 public per D10. Ben reports the Windows build **plays with sound in CrossOver** (first ear check).
 **Approved by:** Ben.
+
+## D21 — Windows build has no menu bar; Ctrl shortcuts kept; window 640×480 (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "it looks silly. just get rid of it entirely. it doesn't need it. ctrl-f full
+screen can be as given." **Supersedes D15.3 for the menu bar only** — the original Carbon dialogs stay drawn in-window
+(DLOG/DITL, D15.3). The drawn bar, its tracker and the Alt alternates are deleted; D19.1 and D19.3 (about the
+bar's items) lapse with it. The window is the 640×480 game screen alone, windowed and in full screen (no 20 px strip, no
+offsets); at the integer-fit opening scale (D19.4, unchanged rule) that is now **2× on a 1080p screen** (Windows 10/11,
+taskbar at the bottom) and 1× on 1366×768.
+**Kept:** the Mac bar's key equivalents with its enable rules (`WinShortcuts`): Ctrl+F full screen, Ctrl+, preferences
+(both off in play), Ctrl+M music, Ctrl+Shift+A sound effects, Ctrl+Q quit, Ctrl+Alt+M eaten (Minimize All: nothing
+happens, as on the Mac); all off while a dialog is up. Physical keys only (D19.2).
+**Dropped with the bar:** About (no shortcut, no other way in — `WinAboutPanel` deleted); Options ▸ Key Sets (no
+shortcut; Preferences ▸ Keys still chooses the set); the check marks.
+**Carried:** Geneva 10 and System Bold 12 (drawn only by the bar and About) are still baked, shipped and checked at
+start-up — read by nothing; dropping them is a staging change for another day.
+**Approved by:** Ben (the removal); orchestrator brief (shortcut list, About's fate).
+**Ben's playtest verdicts (2026-10-06, after 3 levels with sound):** effects good; music right and changes at level 4;
+Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand cursor — all yes (Q1, Q3, Q12, Q16, text);
+⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
+demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
+on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
+
+## D22 — Deimos Rising builds next, ahead of Ferazel's Wand (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "my assumption is deimos will be 'Easier' than ferazel … let's let ferazel do
+its own thing in its own session and move on to steps 2 and then 3 for deimos." The Deimos RE bank is closed (100 % of
+game code read, 938 rows = 716/222/0), so Deimos goes straight to build work: **step 2** = Phase 0 for Deimos (HectorKit
+decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and a `Deimos/Core` census proving every
+original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
+RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
+**Approved by:** Ben.

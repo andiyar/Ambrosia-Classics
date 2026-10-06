@@ -7,13 +7,13 @@
 // --data    the folder with the five .rsrc files, Fonts/ and Decoded/ (default: Data/ beside the executable).
 // --prefs   the prefs file (default: %APPDATA%\Ambrosia Classics\Bubble Trouble X\Prefs.bin on Windows;
 //           ~/Library/Application Support/Ambrosia Classics/Bubble Trouble X (SDL)/Prefs.bin on the Mac).
-// --scale   window size multiple of the 640×500 canvas (default: the largest integer scale whose window fits the
-//           screen's usable area — 1× windowed on a 1080p Windows 11 screen; the window is resizable, integer-fit).
+// --scale   window size multiple of the 640×480 game screen (default: the largest integer scale whose window fits the
+//           screen's usable area — 2× on a 1080p screen at 100 % display scaling; the window is resizable, integer-fit).
 // --name    info message 2's "Registered To:" name (default: the account's full name).
 // --auto-dialogs  every dialog answers at once with its default (Cancel, prefs unchanged, the default name) instead
 //           of showing — the scripted dialog policy (`WinAutoDialogs`).
 // --frames  HEADLESS SMOKE MODE: run N main-loop iterations on a fixed-step clock (one TickCount, 1/60 s, each —
-//           reproducible on any machine), then write the last presented canvas (640×500; 640×480 in full screen) to
+//           reproducible on any machine), then write the last presented canvas (640×480) to
 //           --dump as binary PPM and quit with exit 0. The audio driver is forced to SDL's `dummy` (never a real
 //           device from automation); prefs live in memory unless --prefs is given; the name is "Player" and the date
 //           3 March unless given; the window opens at 1×; real input is ignored except the close box. --keys plays a
@@ -130,8 +130,8 @@ if headless {
 }
 
 /// `WinHost` over HectorSDL. In headless mode the clock and the input are the script's (`WinScriptedInput`).
-/// The canvas is 640×500 (menu strip + game screen) windowed and 640×480 in full screen; mouse positions go back to
-/// the driver in 640×500 window-canvas coordinates either way.
+/// The canvas is the 640×480 game screen, windowed and in full screen (D21: no menu bar); mouse positions go to the
+/// driver in its coordinates.
 final class SDLWinHost: WinHost {
     let sdl: SDLHost
     var scripted: WinScriptedInput?
@@ -153,9 +153,6 @@ final class SDLWinHost: WinHost {
         return Self.convert(sdl.modifiers)
     }
 
-    /// The canvas rows above the game screen that the window does not show (full screen hides the menu strip).
-    private var hiddenRows: Int { WinCanvas.height - sdl.logicalHeight }
-
     func pollEvents() -> [WinEvent] {
         let real = sdl.pollEvents()
         if real.contains(.exposed) { redraw() }
@@ -168,14 +165,6 @@ final class SDLWinHost: WinHost {
 
     func present(_ frame: WinFrame) {
         lastFrame = frame
-        if frame.width != sdl.logicalWidth || frame.height != sdl.logicalHeight {
-            do {
-                try sdl.setLogicalSize(width: frame.width, height: frame.height)
-            } catch {
-                report("cannot resize the canvas: \(error)")
-                return
-            }
-        }
         sdl.present(rgba: frame.rgba)
         lastDrawn = nanoseconds
         draws += 1
@@ -225,14 +214,13 @@ final class SDLWinHost: WinHost {
     }
 
     func convert(_ e: HostEvent) -> WinEvent? {
-        let dy = hiddenRows
         switch e {
         case let .keyDown(code, chars, mods, isRepeat):
             return .keyDown(keyCode: code, characters: chars, modifiers: Self.convert(mods), isRepeat: isRepeat)
         case let .keyUp(code, mods): return .keyUp(keyCode: code, modifiers: Self.convert(mods))
-        case let .mouseDown(x, y): return .mouseDown(x: x, y: y + dy)
-        case let .mouseUp(x, y): return .mouseUp(x: x, y: y + dy)
-        case let .mouseMoved(x, y): return .mouseMoved(x: x, y: y + dy)
+        case let .mouseDown(x, y): return .mouseDown(x: x, y: y)
+        case let .mouseUp(x, y): return .mouseUp(x: x, y: y)
+        case let .mouseMoved(x, y): return .mouseMoved(x: x, y: y)
         case .quit: return .quit
         case .focusLost: return .focusLost
         case .focusGained: return .focusGained
@@ -314,7 +302,7 @@ if let frames {
         }
     }
     print("BubbleTroubleXWin: \(frames) frames (tick \(driver.ticksNow())), phase \(driver.frontEnd.phase), "
-          + "dialog \(driver.dialogs.isShowing), menu \(driver.tracker.openMenu.map(String.init) ?? "-"), "
+          + "dialog \(driver.dialogs.isShowing), "
           + "video=\(SDLHost.currentVideoDriver) audio=\(SDLHost.currentAudioDriver)"
           + "\(dumpPath.map { ", wrote \($0)" } ?? "")")
 } else {

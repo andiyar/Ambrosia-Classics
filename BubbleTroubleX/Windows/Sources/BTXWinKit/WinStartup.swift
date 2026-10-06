@@ -5,8 +5,9 @@ import Foundation
 /// failure to start must be said in a message box (the executable shows `message` through HectorSDL) and written to
 /// `BubbleTroubleX.log` (`WinLog`) — the tester can send that file back.
 public enum WinStartup {
-    /// The baked font faces the game draws with (`btx-bake-font`'s list): menus and dialogs in System 12 / System
-    /// Bold 12, the About panel in Geneva 9 and 10.
+    /// The baked font faces (`btx-bake-font`'s list), all shipped and checked: the game draws with Geneva 9
+    /// (`_DrawInterfaceText`) and System 12 (the dialogs, `_DrawFPS`); Geneva 10 and System Bold 12 drew the menu bar
+    /// and the About panel, both gone since D21 — still baked and shipped, read by nothing.
     public static let requiredFonts = ["Geneva-9", "Geneva-10", "System-12", "System-Bold-12"].map { "\($0).btxfont" }
 
     /// What the game needs in `Data/` (D10, D16.1): the five original `.rsrc` files, every baked font face

@@ -6,6 +6,12 @@ entries land at `$D/<Pak>/<entry name>`).
 
 ## 1. Image decoding is QuickTime's, not the game's
 
+⚑ corrected (wave 3+4, 2026-10-04): `FUN_10021190` below imports **sprite plates only** (sole
+caller the group loader `FUN_10018d20`, GWorld depth from the caller); TGAs (`im16`) import through the
+U_Image path `FUN_10020e60` → `FUN_10020f00`, which takes the depth from the file and shares the same
+QuickTime sequence and warnings — so the claims below hold; only the function attribution changes
+(sprite-manager-resource-image.md §6.1).
+
 `FUN_10021190(id, depth, kind) @ 10021190` (M_Image.cc by assert `s_M_Image_cc_100e882e`):
 ```c
   uVar4 = 0x696d3136;                                            // 'im16'
@@ -32,7 +38,8 @@ Claims:
   standard GWorld format; the media-mask compare below (`== 0x1f` = pure blue) is consistent.
   [MED — GWorld format not read in this binary; inferred from the 0x1f/0x7fff values]
 - `FUN_10020da0(img, id, 'TGA ')` / `FUN_10020e60` are the U_Image wrappers used by level and
-  interface code (`FUN_1000fbc0`, `FUN_100000e0`, `FUN_100234d0`). [MED]
+  interface code (`FUN_1000fbc0`, `FUN_100000e0`, `FUN_100234d0`). [MED] ⚑ corrected (wave 3+4, 2026-10-04): `FUN_10020e60` →
+  `FUN_10020f00` is the TGA importer (HIGH, sprite-manager-resource-image.md §6.1).
 
 ## 2. `im08` — sprite plates (GIF89a, colour plate "IC" + alpha plate "IA")
 
@@ -152,7 +159,9 @@ Alpha map `FUN_1001eec0(key) @ 1001eec0`, per alpha-buffer pixel `p`:
 Blit (plain variant `FUN_1001d9f0 @ 1001d9f0`; clipped/scaled/tinted variants `FUN_1001db50`,
 `1001dd20`, `1001df00`, `1001e0d0/e2b0/e4f0/e770`, `1001a6f0/aa90` share the scheme): without an
 alpha map — or when the global `DAT_100e0181` is 0 — copy every pixel ≠ key. With the map, per
-row: first value 1000 → skip the row; per pixel `a`: 0x20 → skip, 0 → copy, else
+row: first value 1000 → skip the row; per pixel `a` (mode 0 — ⚑ corrected (wave 3+4, 2026-10-04): modes 1 and 3 add the
+command alpha, α = min(a + p, 32), and mode 2 uses α = trunc(a + 0.032·p²); blit-pixel-rules.md §2–§3):
+0x20 → skip, 0 → copy, else
 `dst = (dst·a + src·(32 − a)) / 32` per 5-bit channel (packed-channel multiply, `>> 5`).
 → **transparency a ∈ 0..32 = red channel of the 16-bit alpha plate: black = opaque, white (31) =
 fully transparent, greys blend** — the plate reading of §2.3 confirmed. [HIGH — read]
@@ -160,16 +169,21 @@ Draw dispatcher `FUN_10019570 @ 10019570` (U_Sprite.cc, "Sprite Draw: encoded da
 picks the blitter from the draw command's flag word (`&1`, `&2`, `&4` → modes 1/2/3, each with a
 visibility/blend argument `param_1[7]`, 32 = invisible → nothing drawn), the clipped variant when
 the frame crosses the clip rect, the `FUN_1001a6f0/aa90` path when the command's float `+0x18` ≠
-`*_DAT_100df188` (presumably a scale ≠ 1.0 — constant not resolved); draw type `COST`
+`*_DAT_100df188` (presumably a scale ≠ 1.0 — ~~constant not resolved~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: the TOC slot `0x100df188` points to `0x100d6d34` = f32 1.0 (then 100.0, 0.5), so the test is scale ≠ 1.0 (`100195d0`; blit-pixel-rules.md §0, §1.1)); draw type `COST`
 (0x434f5354) is not a sprite but a translucent solid-colour rectangle (`FUN_1001ec80`, same
 `(dst·a + colour·(32−a))/32` blend). [HIGH for the dispatch; MED for the per-flag names]
-Still open: who sets `DAT_100e0181` (alpha drawing on/off; no named write in the dump).
+~~Still open: who sets `DAT_100e0181` (alpha drawing on/off; no named write in the dump).~~ → ⚑ corrected (wave 3+4, 2026-10-04):
+only the debugOnly ALPHA console handler (`1001f060`), never registered, so it stays 1 all session
+(blit-pixel-rules.md §6).
 
 ### 2.4 Sprite census
 `list_paks.py --images` (GIF/TGA headers): 250 GIF entries (248 Game.pak + 2 Interface.pak),
 45 TGA entries. 2554 frames total across the 125 groups (§2.2 tool). The Sprite Groups Cache
 (`"Sprite Groups Cache"`, `FUN_1001b040/1b590`) and Units Cache (`G_UnitDefinitions.cc`) are
 load-time caches written next to the data — not part of the original data. [MED]
+⚑ corrected (wave 3+4, 2026-10-04): the Sprite Groups Cache format, load policy, reader `FUN_1001b040`
+and writer `FUN_1001b390`/`FUN_1001b590` are now written out (sprite-manager-resource-image.md §4); the
+cache is used on Mac OS X only and its date is never compared [HIGH].
 
 ## 3. `im16` — 16-bit TGA images (backgrounds, maps, masks, interface)
 

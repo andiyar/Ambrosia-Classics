@@ -42,7 +42,7 @@ zeroing constructor `FUN_10030df0` and every reader/writer in the range:
 |---|---|---|---|---|
 | +0x00 | u8 | paused (Caps Lock) | `FUN_10030360` set, `FUN_10030870` clear | dump |
 | +0x01 | u8 | film playback (no pause allowed) | `FUN_10030210` param_2 | game loop passes `bVar2` = film flag (`param_1+5`) |
-| +0x02 | u8 | quit chosen on pause screen | `FUN_10030870` | `FUN_10022ef0` return |
+| +0x02 | u8 | quit chosen on pause screen — ⚑ corrected (review wave 3, 2026-10-06) #C9: always 0 in 1.0.6, the pause loop's quit return needs `DAT_100e01b8`, which nothing sets during play (loose-ends-session.md §2.3, INDEX #48) | `FUN_10030870` | `FUN_10022ef0` return |
 | +0x03 | u8 | auto-interlace allowed | `FUN_10030210` param_4 (game 1, level select 0) | `FUN_10030640` gate |
 | +0x04 | u8 | **game-screen layout** (1 = game area + borders + score bar, 0 = full screen) | `FUN_10030210` param_3 (game 1, level select 0) | present choice §2.4; pause notice 4CC `CEGA`/`CEBU` |
 | +0x08 | i32 | frames presented | `FUN_10030bc0` `+1` | `10030d34..d3c`; returned by `FUN_10030360`/`FUN_10030350`; game stores it at game `+0x30` (`10005910 stw r3,0x30(r29)`) |
@@ -78,7 +78,7 @@ Methods:
 ### 2.1 Begin frame `FUN_10030360 @ 10030360` (every frame) [HIGH — dump + listing `100304e8..10030564`]
 Order: music service `FUN_10047f50` → clear 16 render-layer queues `FUN_100189f0` (listing
 `100189f0`: zeroes 16 words at `*(r2-0x7198)`; MED that they are the layer heads flushed by
-`FUN_10018b20`) → console: if closed and key 0x32 down open it (`FUN_1002d1a0`), else console
+`FUN_10018b20` — ⚑ corrected (wave 3+4, 2026-10-04): HIGH, they are the 16 render-layer counts, blit-pixel-rules.md §7.1) → console: if closed and key 0x32 down open it (`FUN_1002d1a0`), else console
 update `FUN_1002d230` → message aging `FUN_1002dd90` (per **frame**) → volume/F6 keys
 `FUN_10030910` → `GetMouse` `FUN_10048ee0` → Caps Lock (0x39): released → paused = 0; pressed
 and not paused and **not a film** → paused = 1 + notice GameString 0 → quit flag =
@@ -248,12 +248,15 @@ TickCount = the Mac 60.15 Hz tick (brief value). One logic tick per presented fr
   function reads it → **interlacing has no effect on the simulation.** [HIGH]
 - **Rendering effect:** `FUN_10010120` passes pref 5 as the last argument of `FUN_10009fd0`
   (terrain picture `+0x6c` → work buffer `+0x68`). Off: two identical `CopyBits` of the whole
-  visible terrain (dump; listing not checked). On: `FUN_100450e0` doubles both rowBytes, halves
+  visible terrain (~~dump; listing not checked~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: listing-confirmed, display-window-present.md §2.1, `10009fd0…1000a184`). On: `FUN_100450e0` doubles both rowBytes, halves
   the rectangles, offsets the start by one row when the parity word `*param_5` (picture `+0x2c`)
   is odd, does one `CopyBits`, then `*param_5 ^= 1` — i.e. **only every other terrain row is
   refreshed per frame, alternating fields**; the other half keeps the previous frame's composited
   pixels (moving sprites leave one-frame combing). Sprites, HUD and the present are unaffected.
-  [MED — decompile arithmetic read; the field semantics are the natural reading]
+  [MED — decompile arithmetic read; the field semantics are the natural reading] ⚑ corrected (review wave 3, 2026-10-06) #S: the call shape is
+  listing-confirmed (display-window-present.md §2.1 cross-check of `FUN_100450e0`: rowBytes doubled,
+  rects halved, odd parity starts one row lower, one CopyBits srcCopy, parity ^= 1; `10045588…10045590`,
+  `100455c8…100455f4`) [HIGH for the copy]; the visual combing stays MED.
 - Level start (`FUN_100064d0`): if pref 5 is on, save it in game `+0xf`, force pref 5 = 0, draw
   the full background once; the game loop restores pref 5 = 1 at the appear tick
   (`1000599c li r3,0x5 ; li r4,0x1 ; bl 0x10004ab0`, then `stb 0,0xf(r29)`). [HIGH]
@@ -271,7 +274,7 @@ Fresh prefs: `FUN_10004540` → `FUN_10004f80` fails (no file; and no `pref` tag
 | pref | default | set by | UI | effect |
 |---|---|---|---|---|
 | byte 2 | 0 → 1 after first dialog | boot | — | config dialog shown at first launch |
-| byte 4 | 1 | `FUN_100050f0` (`stb r3,0x8`) | DITL item 8 **"Full Screen (Takes Effect on Relaunch)"** | display mode |
+| byte 4 | 1 | `FUN_100050f0` (`stb r3,0x8`) | DITL item 8 **"Full Screen (Takes Effect on Relaunch)"** | none — never read; the game always runs DrawSprocket 640×480×16 (display-window-present.md §8.1) ⚑ corrected (wave 3+4, 2026-10-04): was "display mode" |
 | byte 5 | 0 | `FUN_100050f0` (`stb r29,0x9`) | item 9 **"Interlacing  (Faster but lower quality)"**, F6 | §5 |
 | byte 6 | 0 | `FUN_100050f0` (`stb r29,0xa`) | none | auto-interlace §2.6 |
 | byte 7 | 0 | `FUN_100050f0` (`stb r29,0xb`) | item 10 **"Bypass System Volume"** (enables slider 12) | sound |
@@ -369,12 +372,14 @@ pref 6 is 0.
    step 1 — layers 0/1 are terrain **stamps** (layer 1 = the stamp sprite, layer 0 its shadow),
    drawn into the terrain buffer by flag 8; entity shadows are on layers 2/4/6. "Layer 1 =
    shadows" (engine-loop §5) was wrong.
-4. The non-interlaced background path issues two identical `CopyBits` (dump of `FUN_10009fd0`);
-   listing not checked; purpose unknown (timing ballast or a bug).
+4. ~~The non-interlaced background path issues two identical `CopyBits` (dump of `FUN_10009fd0`);
+   listing not checked; purpose unknown (timing ballast or a bug).~~ → ⚑ corrected (wave 3+4, 2026-10-04): listing-confirmed —
+   two identical CopyBits srcCopy, redundant (display-window-present.md §2.1).
 5. Exact TickCount rate on the target OS (60.15 Hz is the brief's value); Ben's machine/emulator
    would decide whether the original felt like 30.07 or 30.00 ticks/s.
-6. `FUN_1000beb0` internals (which buffers it copies, whether it waits for VBL); not read beyond
-   the border painting.
+6. ~~`FUN_1000beb0` internals (which buffers it copies, whether it waits for VBL); not read beyond
+   the border painting.~~ → ⚑ corrected (wave 3+4, 2026-10-04): display-window-present.md §5.5 — 2 border PaintRects + 2 CopyBits
+   from `D+0x68` (game area, score bar), no VBL wait or page flip.
 
 ## Role-table rows (for merge)
 | `FUN_10030190` | frame ctrl | construct frame controller (= zero all fields) | MED | dump; callers `FUN_100051a0`, `FUN_1002e310` — ⚑ label audit (review wave 2): was HIGH on dump |
@@ -416,7 +421,7 @@ Touched but **not read**: `FUN_1002dea0` (messages draw, LOW by perm F27), `FUN_
 particles-debris-blur.md §2.9; was LOW "draws something sized to the game area"), `FUN_1001a650`
 (layer flush, LOW), `FUN_1002d1a0/1002d230/1002d190` (console open/update/is-open, LOW),
 `FUN_1002db50`, `FUN_1002d040` (console/message reset, LOW), `FUN_10047990/10047a30` (volume
-down/up returning %, LOW), `FUN_1000bd80` (present used by fades, not read), `FUN_10048220`.
+down/up returning %, LOW), `FUN_1000bd80` (present used by fades; ⚑ corrected (wave 3+4, 2026-10-04): read — display-window-present.md §5.4), `FUN_10048220`.
 
 ## INDEX updates (for merge)
 - **#12 closed** → timing-frame.md §3: no code writes the divider; the game always runs at

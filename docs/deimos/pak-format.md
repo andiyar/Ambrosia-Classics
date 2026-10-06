@@ -77,7 +77,9 @@ Claims:
   not the central one). [HIGH]
 - The zlib inflate code is linked (strings "inflateInit error", "invalid distance code", …) but
   `FUN_10049ca0` never reaches it; all 871 shipped entries are method 0. [MED — the inflate
-  callers were not traced; the gate above is HIGH]
+  callers were not traced; the gate above is HIGH] ⚑ corrected (wave 3+4, 2026-10-04): HIGH — the zip reader
+  (`0x10049ca0–0x1004a8a0`) has no call into zlib and its inflate strings are unreferenced
+  (app-pak-music-library.md §5.1).
 
 ### 1.3 Byte tables (standard PKZIP 2.0 — little-endian)
 Local file header (30 bytes + name + extra), at `LHO`:
@@ -195,7 +197,9 @@ the suffix is. The folders mirror the type names by authoring convention. [HIGH]
    sub-folder `coli film flli idli im08 im16 leve plde pref reli soun stli tefo unde wede` —
    the 15 folders that exist in `$G/ Data/Local/`). Ghidra could not recover the jump table
    ("Could not recover jumptable at 0x10001790"), so the per-folder handler is unread. [MED for
-   "Local first"; the handlers are NOT RESOLVED]
+   "Local first"; the handlers are NOT RESOLVED] ⚑ corrected (wave 3+4, 2026-10-04): the 15 entries are two-instruction type
+   selectors feeding one shared Local-scan body (listing `0x10001844–0x10001b1c`); the Local loop completes
+   before the Paks scan, so Local records precede pak records [HIGH] (app-pak-music-library.md §2.1–§2.2).
 2. Scan `" Data:Paks"` (`s_Data_Paks_100e331c`): each file whose suffix passes `FUN_100040c0`
    (".zip" `0x100e2dff` or ".pak" `0x100e2e04`) is opened with `FUN_10049de0`; every accepted
    entry with non-zero size becomes a 0x158-byte tag record:
@@ -225,6 +229,8 @@ the suffix is. The folders mirror the type names by authoring convention. [HIGH]
    ⚑ corrected (wave 2, 2026-10-03): was "fatal" — `FUN_10000fd0` calls `FUN_1000ced0("Error", msg, 0)`
    (`10000fdc li r4,0x0`), which shows the alert and returns, so the game continues (unless the
    alert routine `FUN_10045ab0` itself quits, MED) — see loose-ends-session.md §8.2.
+   ⚑ corrected (wave 3+4, 2026-10-04): the caveat drops — `FUN_10045ab0` never quits (file-pict-alerts-manager.md §1.1); the
+   threshold is **100** (`0x64`, no writer; compared after the override pass; app-pak-music-library.md §2.3).
 
 ### 2.4 Reading an entry
 `FUN_10002850(type, id)` / `FUN_10002a20` / `FUN_10002be0(index, type, &id)` open the owning zip

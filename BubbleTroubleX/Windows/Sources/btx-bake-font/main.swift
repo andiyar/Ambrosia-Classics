@@ -8,8 +8,8 @@ import CoreGraphics
 import CoreText
 import Foundation
 
-/// The faces: the compositor's two (`_DrawInterfaceText`: Geneva 9; `_DrawFPS`: System 12) and the in-window menu
-/// bar / dialog chrome's (W5/W6: System 12 bold, Geneva 10).
+/// The faces: the compositor's two (`_DrawInterfaceText`: Geneva 9; `_DrawFPS`: System 12, also the dialogs') and the
+/// in-window menu bar / About panel's (W5: System 12 bold, Geneva 10 — unused since D21 removed both, still baked).
 let faces: [(name: String, size: Int)] = [("Geneva", 9), ("Geneva", 10), ("System", 12), ("System-Bold", 12)]
 
 /// As CoreTextRasterizer resolves names: "System" is the UI system font; "System-Bold" its emphasized form.

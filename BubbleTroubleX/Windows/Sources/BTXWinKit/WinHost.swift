@@ -20,8 +20,8 @@ public struct WinModifiers: OptionSet, Sendable, Hashable {
 
 /// One input event in Mac terms (the shape of HectorSDL's `HostEvent`, restated here so BTXWinKit needs no SDL).
 /// Key codes are Carbon `kVK_*`; `characters` is what `NSEvent.characters` would carry (US layout); mouse coordinates
-/// are pixels of the whole 640×500 window canvas (the 20 px menu strip on top, then the 640×480 game screen) — in full
-/// screen, where the strip is not shown, the host still reports them in these coordinates (screen y + 20).
+/// are pixels of the 640×480 canvas (the game screen — windowed and in full screen alike; the full-screen letterbox maps
+/// outside it).
 public enum WinEvent: Sendable, Hashable {
     case keyDown(keyCode: UInt16, characters: String, modifiers: WinModifiers, isRepeat: Bool)
     case keyUp(keyCode: UInt16, modifiers: WinModifiers)
@@ -44,16 +44,14 @@ public enum WinCursor: Sendable, Hashable {
     case hand
 }
 
-/// The window canvas: the 640×480 game screen under a 20 px strip for the in-window menu bar (W5). In full screen the
-/// strip is not shown (the Mac's menu bar hides there too) and the canvas is the game screen alone.
+/// The window canvas: the 640×480 game screen and nothing else, windowed and in full screen (D21: no menu bar).
 public enum WinCanvas {
     public static let width = Compositor.width
-    public static let menuStripHeight = 20
-    public static let height = Compositor.height + menuStripHeight
+    public static let height = Compositor.height
 }
 
-/// One presented frame: the composed window canvas (menu bar, game screen, dialogs — 640×500, or 640×480 in full
-/// screen) plus the display fade. `rgba` builds the RGBA8 bytes (top row first, alpha 0xFF) only when a host asks.
+/// One presented frame: the composed canvas (the game screen with the dialogs over it, 640×480) plus the display fade.
+/// `rgba` builds the RGBA8 bytes (top row first, alpha 0xFF) only when a host asks.
 public struct WinFrame: Sendable {
     /// The canvas, 0xAARRGGBB.
     public let canvas: RGBAImage

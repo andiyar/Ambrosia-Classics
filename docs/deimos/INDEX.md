@@ -33,6 +33,15 @@ rows, 96 corrected; 36 proposed-HIGH rows lowered to MED by the label rule; func
 header); unions still not re-run. ⚑ corrected (review wave 2, 2026-10-03): after the review-wave-2 fix pass the hand table
 is **679 rows = 397 HIGH / 267 MED / 15 LOW** (+1 row `FUN_10014120`; 6 MED → HIGH on quoted
 listings, 2 HIGH → MED; function-roles.md header).
+⚑ wave 3+4 (2026-10-04): the hand table is now **938 rows = 698 HIGH / 240 MED / 0 LOW** (+259 rows,
+54 corrected, 1 proposed-HIGH row lowered to MED by the label rule; function-roles.md header) and
+covers every one of the 979 `FUN_` functions in `0x10000000–0x1004b400` with a HIGH or MED row;
+unions still not re-run. ⚑ corrected (review wave 3, 2026-10-06): after the review-wave-3 fix pass the hand table is still
+**938 rows = 698 HIGH / 240 MED / 0 LOW** (addresses added, no label changed; function-roles.md header), and no
+bank file keeps a LOW row for any game function (35 stale LOW rows re-labelled). ⚑ micro-wave (2026-10-06): after the listing micro-wave fold-in the hand table is
+**938 rows = 716 HIGH / 222 MED / 0 LOW** (18 MED → HIGH on `$W/disasm-micro*.txt` listings, one of them,
+`FUN_10014670`, also corrected in meaning; 4 new non-`FUN_` rows for the slider procs and AppleEvent
+handlers, not counted; function-roles.md header).
 
 ## Topical files
 | file | lines | sections | labels present (`grep -o '\[HIGH'` etc.: H/M/L) |
@@ -61,6 +70,15 @@ listings, 2 HIGH → MED; function-roles.md header).
 | `loose-ends-session.md` | 468 | 1 `plde` fly-in keys unread; 2 session results + post-game gates, quit flag; 3 high-score insertion + name entry; 4 game over + lives gate; 5 all-levels finale sequence; 6 screen transitions (fades); 7 film end to end; 8 miscellany (ExitToShell, `FUN_10000fd0` non-fatal, Local overrides, `+0x39` writers); worked two-player table (wave 2) | 25/4/0 |
 | `sound-music.md` | 521 | 1 architecture; 2 sound effects (load, conversion, play parameters, is-playing); 3 voice list (16 voices, priority, stealing, mixing); 4 master/device volume + prefs + keys; 5 state sounds; 6 music (level/fade arithmetic, streaming, when, pause); 7 `gaso` call sites; 8 audible vs implementation detail; worked Ion Cannon (wave 2) | 40/3/0 |
 | `front-end.md` | 528 | 1 front-end state; 2 main menu (buttons, layout, idle, event pump, dispatch, actions, keys); 3 start/return flow; 4 scores + name entry; 5 fades, advert, sounds; 6 credits; 7 level select (front view) + video grid; 8 pause; 9 loading lines; 10 census; worked cold start (wave 2) | 31/2/0 |
+| `blit-pixel-rules.md` | 587 | 0 constants; 1 dispatch `FUN_10019570` → 30 leaves (selection, argument passing, leaf matrix); 2 blend kernel; 3 unscaled leaves per-pixel rules (mode 2 partial alpha); 4 clipped twins instruction diff; 5 scaled path (geometry, nearest-neighbour sampling, clipped scaled, per-mode formulas); 6 the three switches — writer scan; 7 render-list reset, entity `+0x1a` writer; worked example (wave 3+4) | 15/3/0 |
+| `static-init-audit.md` | 456 | 1 what runs before `main` (entry chain, dispatcher, 29 game + 3 library initialisers, image = unexecuted data); 2 the four record kinds; 3 table A per initialiser; 4 static-ness, no post-`main` writer, clip survivors; 5 table B — 49 bank claims swept (41 right / 8 wrong), the −1 owner serial; ⚑ conflicts; worked sprite template (wave 3+4) | 10/4/0 |
+| `text-metrics-lists.md` | 363 | 0 globals, `FUN_1000f720` initialiser; 1 glyph metrics (char → frame, cache filler, size/measure, `tesm` widths, space = frame 90 4 px, 6-px mono cell); 2 format record flags (+0x10c layer, +0x10d clip, +0x110 draw-now; colour strip; Loc frame); 3 element lists + fades; 4 rest of range; worked example (wave 3+4) | 16/4/3 |
+| `display-window-present.md` | 602 | 1 pixel buffer object; 2 buffer copies (double CopyBits, centred, blended); 3 window object; 4 display object `D`; 5 presents (the one screen blit, rect/full/fade/in-game presents, per-frame vs once); 6 DrawSprocket set-up/teardown; 7 suspend/resume, cursor, events; 8 replica consequences (Full Screen pref ignored); worked frame (wave 3+4) | 50/1/0 |
+| `app-pak-music-library.md` | 501 | 1 boot range: list helpers, File object, errors; 2 U_Pak leftovers (15-way jump table = type selectors, Local scan body, threshold 100); 3 M_Music-span file helpers; 4 M_Application (log file, Toolbox wrappers); 5 zip reader tail (not minizip; inflate unreachable), Input/InputSprocket module, runtime registrar; 6 colour packers, Registration; worked Local scan (wave 3+4) | 15/3/0 |
+| `sprite-manager-resource-image.md` | 525 | 0 constants; 1 sprite manager init/teardown, blitter buffers; 2 group list queries; 3 debug commands + switch writers; 4 Sprite Groups Cache (load policy, layout, reader, writer); 5 resource registry G_Resource; 6 U_Image import + TGA orientation; 7 two NRs closed; worked `bocr` (wave 3+4) | 20/4/2 |
+| `file-pict-alerts-manager.md` | 346 | 1 alerts (`FUN_10045ab0` never quits, two-button, confirm); 2 memory reserve, string/memory helpers; 3 FSSpec/catalog helpers; 4 QuickDraw/screen helpers (PICT draw, port validator); 5 dialog/menu helpers; 6 U_Manager registry; 7 weapon-handler ctor/dtor; 8 NUMBLURS readout; worked ` Data:Paks` lookup (wave 3+4) | 19/6/0 |
+| `gameplay-leftovers.md` | 516 | 1 game counters, film object, pixel-buffer lifetime; 2 GameObject/Entity helpers (ramps, hit glow, accessors, ctors); 3 player accessors; 4 debris/level-select/score-bar/plde modules; 5 unit-def leftovers; 6 reachability; 7 critic O4–O7 closed (air launch ×1.0, scale tolerance, orphan orbiter, water codes, crosshair rect, hit factor, countdown vs pause, destroy census); worked Bacta Gun sprite (wave 3+4) | 22/2/0 |
+| `micro-wave-2026-10-06.md` | 451 | listing micro-wave: 1 prefs slider action procs; 2 AppleEvent handlers; 3 listing addresses for 13 replay-critical MED rows (rule conditions, heading → frame, power-up release by name, aux fire, FLOAT reader, object reset, entity pool, level-select flash, player draw, load by sector); 4–7 INDEX #40 #47 #54 #60 closed; fold-in notes (2026-10-06) | 12/1/0 |
 Label counts per file: `cd docs/deimos; for f in *.md; do grep -o '\[HIGH' $f | wc -l; …` (counts the
 first label of each bracket; compound brackets such as "[HIGH for X; MED for Y]" count once).
 Line and label counts in this table are as of the implementer session; the 2026-10-03 fix pass
@@ -72,7 +90,12 @@ per-file counts are pre-fix-pass. The nine wave-2 rows (marked "(wave 2)") were 
 now 969 lines. The review-wave-2 fix pass (`FIXPASS-wave2-2026-10-03.md`) then lowered 32 owning-file
 role rows (plus a few matching body-table rows) from HIGH to MED (`… | MED | … ⚑ label audit (review
 wave 2)`), raised four back to HIGH on quoted listings and added text to every wave-2 file, so the
-nine wave-2 per-file counts above are pre-fix-pass.
+nine wave-2 per-file counts above are pre-fix-pass. The eight wave-3+4 rows (marked "(wave 3+4)") were
+counted on 2026-10-04 at commit 2ff0756 (same commands), before their Fable review; function-roles.md is
+now 1284 lines. The review-wave-3 fix pass (`FIXPASS-wave3-2026-10-06.md`) changed only a few labels in
+the wave-3+4 files (sprite-manager §1.1/§4.4 → HIGH, app-pak §3.2 step → MED, text §2.4 → HIGH) and re-labelled
+35 stale LOW role rows in nine older files; it added text and struck NRs in most files, so the per-file counts
+above are pre-fix-pass.
 
 Tools (`docs/deimos/tools/`, all run in this session):
 `list_paks.py` (pak census/listing/decode/audio/images), `StringXrefs.java` (Ghidra post-script:
@@ -90,7 +113,8 @@ the project created by `decompile.sh`.
   (`FUN_10010cf0…10010f90`), unregistered time limit and 4-level demo set in `FUN_100051a0` /
   `FUN_10011b30`, `STR#` 900/901 shareware texts.
 - Web/network: InternetConfig `ICLaunchURL` ("Visit the Deimos Rising Website Now?").
-- Linked libraries: MSL C/C++ runtime, zlib inflate (unused by the STORED-only pak reader), IJG
+- Linked libraries: MSL C/C++ runtime, zlib inflate (unused by the STORED-only pak reader; HIGH — the zip reader has no call into zlib,
+  app-pak-music-library.md §5.1, ⚑ corrected (wave 3+4, 2026-10-04)), IJG
   JPEG 6, an HTML renderer (tag parser strings, `index.iml`), SIOUX console, a GIF/PICT/sound
   helper layer at `0x100cc000–0x100d3530`.
 - In-game level editor (`Editor[edit]` lists, `Editor Panel`/`Editor Background` TGAs,
@@ -105,17 +129,22 @@ the project created by `decompile.sh`.
 
 ## NOT RESOLVED (consolidated)
 Pak / data
-1. Local-folder scan handlers (15-way jump table at `0x100e2db4`, Ghidra could not recover it).
+1. ~~Local-folder scan handlers (15-way jump table at `0x100e2db4`, Ghidra could not recover it).~~ →
+   ⚑ closed (wave 3+4, 2026-10-04) → app-pak-music-library.md §2.1–§2.2: the 15 entries are two-instruction type selectors feeding
+   one shared Local-scan body (listing `0x10001844–0x10001b1c`; table words from the data image).
 2. ~~Override precedence between `Data:Local` files and pak entries (`FUN_10004300`/`FUN_100043c0`).
    Also decides the weapon cycle order after overrides (weapons-projectiles.md NR 8). (wave 1)~~ →
    ⚑ closed (wave 2, 2026-10-03) → loose-ends-session.md §8.7: each Local record removes every non-Local record
    with the same (type, ID); pak duplicates are both kept and the first in list order wins;
    weapon cycle order = pak order in 1.0.6 (HIGH for the override logic; the "Local first"
-   insertion order stays tied to #1, MED).
-3. Minimum tag count `_DAT_100e00ec` for "Tag Index Incomplete! Aborting." ⚑ narrowed (wave 2,
+   insertion order stays tied to #1, MED). ⚑ corrected (wave 3+4, 2026-10-04): "Local first" MED → HIGH — the Local loop
+   completes before the Paks scan starts (app-pak-music-library.md §2.2).
+3. ~~Minimum tag count `_DAT_100e00ec` for "Tag Index Incomplete! Aborting." ⚑ narrowed (wave 2,
    2026-10-03): the alert is non-fatal (`FUN_10000fd0` → `FUN_1000ced0(…, 0)` returns), so the
    game continues after it unless the alert routine `FUN_10045ab0` itself quits
-   (loose-ends-session.md §8.2, NR 2). Threshold still open.
+   (loose-ends-session.md §8.2, NR 2). Threshold still open.~~ → ⚑ closed (wave 3+4, 2026-10-04) → app-pak-music-library.md
+   §2.3: threshold **100** (`0x64`, no writer, compared after the override pass); file-pict-alerts-manager.md
+   §1.1: `FUN_10045ab0` has one exit and never quits, so the game continues after the Caution alert.
 4. ~~Whether loaders abort when the token parse-error flag (`DAT_100e01e1`) is set. ⚑ narrowed
    (wave 1, 2026-10-03): for `unde`/`plde` a missing/malformed non-string key in strict mode ⇒
    fatal "Error" alert + shutdown sequence; missing string keys are silent (unit-def-struct.md
@@ -124,9 +153,11 @@ Pak / data
    `FUN_10048480` → ExitToShell, so a fatal unit/plde parse error quits after the alert.
 5. ~~`tefo` `#Format_ID` numeric values "3"/"4": whether they match (`FUN_10014060` unread).~~ →
    hud-scorebar.md §9: `<3>` = CEBU, `<4>` = CEGA (strtok NUL + 4-byte copy + strcmp; MED). ⚑ closed (wave 2, 2026-10-03)
-6. Space-character advance in sprite text (`FUN_1000ebd0` float branch). ⚑ narrowed (wave 2,
+6. ~~Space-character advance in sprite text (`FUN_1000ebd0` float branch). ⚑ narrowed (wave 2,
    2026-10-03): at scale 1.0 the size comes from the per-ASCII cache `*(0x100df024)`
-   (`FUN_1000ed10`, 128 × 8 B); its filler is unread (hud-scorebar.md §9, NR 6).
+   (`FUN_1000ed10`, 128 × 8 B); its filler is unread (hud-scorebar.md §9, NR 6).~~ → ⚑ closed (wave 3+4, 2026-10-04) →
+   text-metrics-lists.md §1.3–§1.5: filler `FUN_1000ec70`; space = frame 90 (invisible), 4 px at scale 1.0,
+   `trunc(4·s)` otherwise, never drawn (4 px from a plate scan, MED).
 7. ~~`plde` parser key→offset table (`FUN_10039e70`, reader form not matched by the tool).~~ →
    unit-def-struct.md §9 (all 0x108 bytes, 57 keys; HIGH) = player-physics.md role-row table. ⚑ closed (wave 1, 2026-10-03)
 Graphics / sound
@@ -139,8 +170,14 @@ Graphics / sound
    the writer of the alpha on/off global `DAT_100e0181`. ⚑ corrected (review 2026-10-03)
    ⚑ narrowed (wave 2, 2026-10-03): `DAT_100e0181` starts at 1 (image); the sibling switches are
    `DAT_100e0172` (setter `FUN_1001a290`) and `DAT_100e0171` (queue effects); writers still open
-   (sprite-geometry-draw.md §4.4, NR 3).
-10. QuickTime's TGA row orientation as seen by the media-mask lookup (assumed row 0 = top).
+   (sprite-geometry-draw.md §4.4, NR 3). ⚑ closed (wave 3+4, 2026-10-04) (residue) → blit-pixel-rules.md §6 and
+   sprite-manager-resource-image.md §3.2 (agree): only the FX (`1001afdc`) and ALPHA (`1001f060`, via
+   `FUN_1001a290`) console handlers write the three switches; both commands are debugOnly and never
+   registered, so all three stay 1 (critic O10 confirmed).
+10. ~~QuickTime's TGA row orientation as seen by the media-mask lookup (assumed row 0 = top).~~ →
+    ⚑ closed (wave 3+4, 2026-10-04) → sprite-manager-resource-image.md §6: the game does no row flip; the files are bottom-up and
+    map and mask share the importer and the stored orientation (data check), so row 0 = visual top given
+    that the title screen shows upright. MED residual: needs Ben's eyes on the upright title (its NR 4).
 11. ~~Playback parameters of `FUN_10047670`/`FUN_10047bf0` (volume/pitch/priority semantics).~~ →
     sound-music.md §2.3 (`(id, priority ≤ 100, volume → 128·v/100, allowMultiple)`, pitch 16.16 =
     speed 1/p, no pan/loop) and §3 (priority = rank in a 16-voice list, 8 audible). ⚑ closed (wave 2, 2026-10-03)
@@ -157,7 +194,8 @@ Engine
     Volume (defaults 50/100); `FUN_100050f0` read (key table at +0x14b8) (timing-frame.md §6,
     sound-music.md §4.2); byte 9 = FPS counter, byte 11 = cheats enabled
     (messages-notices-console.md §5). Still open: int pref 2 (= 50, no reader found) and the rest
-    of the ≈0x1000-byte block.
+    of the ≈0x1000-byte block. ⚑ narrowed (wave 3+4, 2026-10-04): byte 4 "Full Screen" has no effect — passed to
+    `FUN_1000c470` and never read; the game always runs DrawSprocket 640×480×16 (display-window-present.md §8.1).
 14. OS X keyboard/HID control path and the default key table (`M_ControlsConfigure.cc`,
     `M_HIDConfigure.cc`, `STR#` 130). ⚑ narrowed (wave 2, 2026-10-03): the default key codes
     (2 players × 7) written by `FUN_100050f0` are listed in timing-frame.md §6; consumer not found.
@@ -245,10 +283,14 @@ Wave 1 additions (2026-10-03)
     HIGH). ⚑ corrected (review wave 1, 2026-10-03) #I1
 35. `invulnerableUntil…` unit keys appear inert (no consumer, MED) — bosses.md §3.5.
 Wave 2 additions (2026-10-03)
-36. Where the per-layer render lists of layers 2–15 are emptied each frame (`FUN_1001a650` clears
-    only 0/1; xrefs to `_DAT_100df198`) — sprite-geometry-draw.md NR 2.
-37. Scaled blitters (`FUN_1001c270` … `FUN_1001bfd0`) unread: sampling rule for scaled sprites —
-    sprite-geometry-draw.md NR 6 (also hud-scorebar.md NR 2).
+36. ~~Where the per-layer render lists of layers 2–15 are emptied each frame (`FUN_1001a650` clears
+    only 0/1; xrefs to `_DAT_100df198`) — sprite-geometry-draw.md NR 2.~~ → ⚑ closed (wave 3+4, 2026-10-04) →
+    blit-pixel-rules.md §7.1 and sprite-manager-resource-image.md §7 (agree): `FUN_100189f0` zeroes the 16
+    layer counts at every begin frame (`10030388`).
+37. ~~Scaled blitters (`FUN_1001c270` … `FUN_1001bfd0`) unread: sampling rule for scaled sprites —
+    sprite-geometry-draw.md NR 6 (also hud-scorebar.md NR 2).~~ → ⚑ closed (wave 3+4, 2026-10-04) → blit-pixel-rules.md §5:
+    nearest-neighbour, left/top-aligned integer sampling; the unclipped path clamps to 416 × 480, the
+    clipped path masks with the command clip; per-mode formulas = the unscaled ones.
 38. ~~Whether `FUN_100009e0` appends at the list tail (dump says tail, MED; listing would settle it).
     It decides whether an entity spawned mid-update emits particles in the same tick (replay
     order) — particles-debris-blur.md NR 2, loose-ends-session.md role rows.~~ → ⚑ corrected (review wave 2, 2026-10-03) #C5:
@@ -258,28 +300,51 @@ Wave 2 additions (2026-10-03)
     function-roles.md `FUN_100009e0` HIGH).
 39. LCG state at the first app draw = image value 1 (assumes a pre-execution data image and no
     indirect `rand` before `FUN_100431f0`); affects only the particle direction table —
-    particles-debris-blur.md NR 3.
-40. Particle colour packing: whether the `unde` `RRGGBB` reader packs 8-bit channels into 555 by
-    `>>3` — particles-debris-blur.md NR 1.
+    particles-debris-blur.md NR 3. ⚑ narrowed (wave 3+4, 2026-10-04) → static-init-audit.md §1.5, table B #31: the image is
+    the unpacked pidata (pre-execution) and no pre-`main` code writes the LCG `0x100e032c`; residue =
+    indirect calls inside MSL stream constructors (its NR 1) and anything in `FUN_100000e0` before the
+    first draw.
+40. ~~Particle colour packing: whether the `unde` `RRGGBB` reader packs 8-bit channels into 555 by
+    `>>3` — particles-debris-blur.md NR 1.~~ → ⚑ corrected (micro-wave, 2026-10-06) #40 closed → micro-wave-2026-10-06.md §4: COLOR
+    reader `FUN_1002cbd0` → `FUN_10010990` (c16 = trunc(65535·c/255) in float32, `10010b34..10010b6c`) →
+    `FUN_10010c00` (`>> 11`): exactly `c >> 3` for every c (brute force over 256); `FUN_10010bd0` read at
+    its call sites `1004370c`/`1004371c`; particles-debris-blur.md NR 1 struck, §2.7 `FUN_10010bd0` HIGH [HIGH].
 41. `hitParticleDoCircularBurst_BOOL` (+0x131) has no reader at the hit site (inert?) —
     particles-debris-blur.md NR 7.
 42. Exact TickCount rate on the target OS / Ben's machine (60.15 Hz assumed → 30.07 vs 30.00
     ticks/s) — timing-frame.md NR 5 (a ruling/measurement for Ben).
-43. Whether `tefo` `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px
-    border) — messages-notices-console.md NR 2.
+43. ~~Whether `tefo` `Loc_X/Y` are screen-absolute or game-area-relative (message x 30 vs the 32-px
+    border) — messages-notices-console.md NR 2.~~ → ⚑ closed (wave 3+4, 2026-10-04) → text-metrics-lists.md §2.4: Loc =
+    buffer coordinates, no offset added — in game that is game-area-relative (screen = +32), overlays
+    clipped to the game area (MED residue: which buffer the flush targets, its NR 2). ⚑ corrected (review wave 3, 2026-10-06) #M3:
+    residue closed — normal draws use port index `0x100e0179` = 0 → `D+0x68` (`10019728 bl 0x1000ad90`),
+    text-metrics-lists.md NR 2 struck, §2.4 HIGH.
 44. Mac OS X volume path: the volume keys skip the hardware call and the message under OS X;
     whether the replica reproduces the OS 9 messages is a ruling for Ben —
     messages-notices-console.md NR 6, sound-music.md §4.
 45. MathLib `atan` last-ulp agreement for the 1° round-trip truncation set —
     loose-ends-combat.md NR 1.
-46. Air launchers `FUN_1003c7a0`/`FUN_1003c940` copy req+0x28 from registers not traced (only the
-    ground launcher known to change +0x28, MED) — loose-ends-combat.md NR 4.
-47. Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
-    and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.
-48. In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
+46. ~~Air launchers `FUN_1003c7a0`/`FUN_1003c940` copy req+0x28 from registers not traced (only the
+    ground launcher known to change +0x28, MED) — loose-ends-combat.md NR 4.~~ → ⚑ closed (wave 3+4, 2026-10-04) →
+    gameplay-leftovers.md §7.1: both copy template +0x28/+0x2a (`1003c874/78`, `1003ca54/58`) = 1.0, so
+    air/aux shots always have multiplier 1.0 (critic O4).
+47. ~~Finale same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850` update)
+    and `aieg` group-delay meaning: ±1 tick in the finale timeline — loose-ends-session.md NR 3.~~ →
+    ⚑ corrected (micro-wave, 2026-10-06) #47 closed → micro-wave-2026-10-06.md §5: `noal` is requested owner-less at `10006ee4`
+    before `1000702c bl 0x10033850`, lands at the PERM tail with countdown 0 (→ −1 ≤ 0, `10033a54..10033a70`)
+    and is processed on T0; `12gc` likewise on T0+90. `aieg` = per-member cumulative countdown `R(5,6)`
+    (`10035fb8..10035fe0`, sum zeroed in `FUN_10035bf0` at `10035c20`): member k first processed at
+    R + S_k − 1, last ∈ [R+249, R+299] — was "≈ T0+95…T0+370" in loose-ends-session.md §5.3 (corrected
+    there; timeline now HIGH). Residue: R = the `12gc` S2 spawn-set delay → #64 [HIGH].
+48. ~~In-game route that sets the quit flag `DAT_100e01b8` (aevt/quit TVector, event code 8 of the
     unrecovered jump table at `0x10048fc8`) — loose-ends-session.md NR 1. ⚑ corrected (review wave 2, 2026-10-03) #C10
     narrowed: event code 8 = the Quit AppleEvent (high-level event 23 at `100490ec`, front-end.md
-    §2.5, HIGH); still open: whether that event is pumped during play.
+    §2.5, HIGH); still open: whether that event is pumped during play.~~ → ⚑ corrected (review wave 3, 2026-10-06) #48 closed →
+    loose-ends-session.md §2.3: none. `b8` has 11 accesses; its writers are `FUN_100229a0`,
+    `FUN_10022ed0`, `FUN_10023330`, `FUN_10023b00`; `FUN_10022ed0` is reached only from the menu loop
+    (`10022ce8`) and the Quit-AppleEvent handler `0x10049c50` (`10049c70`), dispatched only by the menu
+    pump `FUN_10048f30` (sole caller `10022cac`). Play and the pause loop poll keys only, so a Quit
+    AppleEvent waits for the menu and the pause loop's quit branch is dead (critic wave 3 §3) [HIGH].
 49. Pitch direction by ear: the code makes `pitch` a duration multiplier (speed 1/p) — Ben listens
     to `exsl` at 0.5 or `icbu` — sound-music.md NR 1.
 50. `ampCmd` full scale on a sampled-sound channel (255 or 256): decides whether music at pref 100
@@ -288,10 +353,15 @@ Wave 2 additions (2026-10-03)
     path of §2.3 step 4; `FUN_1001f950(0,id,2)`) — sound-music.md NR 4.
 52. Physical keys for menu volume charCodes 0x9D / 0x8A (Mac Roman `ù` / `ä`) —
     front-end.md NR 1.
-53. Screen rect `+0x50..+0x5c` that suppresses menu hover (set in `FUN_1000ae20`) —
-    front-end.md NR 2.
-54. Music state after a demo/replay returns to the menu (`inmu` not restarted in modes 1/2?) —
-    front-end.md NR 4.
+53. ~~Screen rect `+0x50..+0x5c` that suppresses menu hover (set in `FUN_1000ae20`) —
+    front-end.md NR 2.~~ → ⚑ closed (wave 3+4, 2026-10-04) → display-window-present.md §4, §7: (top, left, MBarHeight, right)
+    of the DSp screen rect = the menu-bar strip; hover is suppressed while the pointer is inside it
+    (inclusive). MBarHeight is OS-dependent (its NR 3).
+54. ~~Music state after a demo/replay returns to the menu (`inmu` not restarted in modes 1/2?) —
+    front-end.md NR 4.~~ → ⚑ corrected (micro-wave, 2026-10-06) #54 closed → micro-wave-2026-10-06.md §6: in film modes no
+    stream-changing music call runs (every stop / `ammu` / level `#music_ID` site is skipped on the film
+    flag; the resume at `1000669c` is a no-op unless paused) and `b6` is not set, so the menu's `inmu` plays
+    on uninterrupted from the menu through the film and back; front-end.md NR 4 struck [HIGH].
 55. ~~Whether erasing high scores (Option+SCORES) is saved immediately (`FUN_10004ae0` writes the
     live prefs; prefs are written at quit by `FUN_100045f0`) — front-end.md NR 7.~~ → ⚑ corrected (review wave 2, 2026-10-03)
     #C7: not immediately — saved at quit (`FUN_10000630 → FUN_100045f0`, loose-ends-session.md
@@ -302,6 +372,56 @@ Review wave 2 fix pass (2026-10-03)
     `FUN_10014120` turns the sprite template clip from 0 into {0, 0, 480, 416}
     (sprite-geometry-draw.md §3.1); cautions placed at hud-scorebar.md NR 7, `FUN_10030e70`,
     `FUN_10039100`, `FUN_100228d0`, `FUN_1002a4f0`. ⚑ corrected (review wave 2, 2026-10-03)
+    ⚑ closed (wave 3+4, 2026-10-04) → static-init-audit.md §2–§5: three value kinds change before `main` — draw-template clip
+    480/416 (×26), spawn-request +0x24 = −1 (×7), notice-post sound record (×9); no post-`main` writer;
+    49 bank claims swept, 41 right, 8 wrong (corrected in place by the wave 3+4 synthesis). Residue →
+    #59.
+
+Wave 3+4 additions (2026-10-04)
+57. RGB8 → RGB555 conversion of the GIF plates by QuickTime (the worked examples assume `c >> 3`);
+    decides every source colour and alpha-map value — blit-pixel-rules.md NR 1.
+58. ~~Whether any shipped scale walk ends at a value ≠ 1.0 and so takes the scaled path at w′ = w with a
+    1-px anchor shift (`stateRequiredScalePercent` / `stateScaleDeltaPercent` census) —
+    blit-pixel-rules.md NR 3.~~ → ⚑ corrected (review wave 3, 2026-10-06) #58 closed: a walk cannot drift — `FUN_10012840` stores the
+    target exactly on overshoot in both directions (`10012870 fcmpo; bgelr; 10012878 stfs f1,0x84(r3)` /
+    `100128a4 fcmpo; blelr; 100128ac stfs`), and the target is percent / 100.0f (`FUN_1001a260`
+    `1001a288 fdivs`, 100.0 at `0x100d6d34`+4), so a walk to 100 % ends at exactly 1.0f and takes the
+    unscaled path (critic wave 3 §3). Residue (data, MED): a state whose own target is a percent near
+    100 (e.g. 101) is a genuine scale with w′ = w for small sprites — blit-pixel-rules.md NR 3 (narrowed).
+59. Clip source not traced in five draw builders (`FUN_1002f7a0`, `FUN_1000d7f0`, `FUN_1000db90`,
+    `FUN_1000df00`, `FUN_1000e670`): only if one keeps the template clip does the static-init 480/416
+    reach the screen — static-init-audit.md NR 2 (text-metrics-lists.md §2.2 shows `FUN_1000e670` keeps
+    it when +0x10d ≠ 0). ⚑ corrected (review wave 3, 2026-10-06) #C2 narrowed → static-init-audit.md §4.3: all five traced. The
+    text builders `FUN_1000d380`, `FUN_1000e670`, `FUN_1000d7f0`, `FUN_1000db90`, `FUN_1000df00` keep the
+    template clip whenever format +0x10d ≠ 0 (`1000d538`, `1000e734`, `1000d9b8`, `1000de64`, `1000e1d4`
+    `bne` past `bl 0x1000a530`), so queued overlays (messages, notices, console, FPS, tallies) are clipped
+    to x < 416, y < 480 [HIGH — text half closed]. `FUN_1002f7a0`'s level-select `COST` strip always keeps
+    it (`1002fb94..1002fc10`, no store to cmd+0x20..+0x2c). Still open: whether that strip rect reaches
+    x ≥ 416 / y ≥ 480 on the 640-wide level-select screen, and whether the `COST` leaf honours the clip.
+60. ~~Film object +0xc/+0x10 writers outside `0x10009390–0x10009980` not searched (`FUN_10009400` frees
+    them) — gameplay-leftovers.md NR 1.~~ → ⚑ corrected (micro-wave, 2026-10-06) #60 closed → micro-wave-2026-10-06.md §7: the film
+    pointer is never stored to memory (`r25` only, passed into calls); all consumers lie in
+    `0x10009390–0x10009980`, whose only +0xc/+0x10 stores (ctor `100093d8`/`100093e0`, loader `100094f0`,
+    dtor `10009450`) store 0 — vestigial NULL fields, both free loops no-ops; gameplay-leftovers.md NR 1
+    struck [HIGH].
+61. Same-pass processing of entities flagged deleted earlier in the pass (no `+0xcb` test at the loop
+    head): whether any shipped pausing controller is destroyed before its own update in list order —
+    gameplay-leftovers.md NR 3 (§7.4d).
+
+Micro-wave additions (2026-10-06)
+62. Level-select flash start values: the starter `FUN_1002fe40` (listing `1002fea8..1002ff14`) sets scale
+    1.0, growing 1, colour = text format 0x1b (accept) / 0x1c (fail) +0x122 and alpha = that format's
+    `BlendAmount` (+0x114); the stepper then walks alpha +1/tick to 32 and the flash ends when scale is
+    back at 1.0 and alpha is 32 (micro-wave-2026-10-06.md §3.8). Open: which `tefo` files formats 27/28
+    are (likely `lsca` / `lscf`, BlendAmount 16 → a 16-tick flash; MED until the format index → tag
+    order is read). Decides the exact flash length — front-end.md NR 9, gameplay-leftovers.md NR 2,
+    micro-wave NR 1. (The micro-wave named the caller `FUN_1002e310`; the fold-in found the stores in
+    `FUN_1002fe40`.)
+63. Entity-pool slot pre-allocation: who fills each slot's entity pointer (slot +0x10) before
+    `FUN_100385d0` hands it out (micro-wave-2026-10-06.md §3.7, NR 2). Not replay-relevant (fixes object
+    addresses only).
+64. `12gc` S2 spawn-set delay (the tick R at which the `aieg` group is requested; R = T0+95 only if that
+    set's delay is 0) — loose-ends-session.md §5.3, micro-wave NR 4. Settle by decoding `12gc`'s spawn set.
 
 ## Append rule
 New findings append to the topical file they belong to (or a new topical file of ≤ ~600 lines)
@@ -332,7 +452,7 @@ fix is marked inline with `⚑ corrected (review 2026-10-03)`.
 | 14 | Min | raw branch of `FUN_10029a10` writes the extra-life step | waves-and-enemies.md §7 |
 | 15 | Min | import string literally `ICAp;InternetConfigLib` | engine-loop.md §1 |
 | 16 | Min | `inte` = 27 CRs (28 lines incl. unterminated last) | data-tags.md §2 |
-| 17 | Min | REPORT's flat "zlib never reached" vs bank MED | REPORT-implementer.md |
+| 17 | Min | REPORT's flat "zlib never reached" vs bank MED | REPORT-implementer.md — ⚑ corrected (wave 3+4, 2026-10-04): now HIGH, the zip reader has no call into zlib and its inflate strings are unreferenced (app-pak-music-library.md §5.1; pak-format.md §1.2 and REPORT-implementer.md updated) |
 
 **Wave 1 (2026-10-03) — RE-bank deepening, nine topical files** (`units-movement.md`,
 `spawn-and-waves.md`, `weapons-projectiles.md`, `damage-health-death.md`, `player-physics.md`,
@@ -412,3 +532,88 @@ inline with `⚑ corrected (review wave 2, 2026-10-03) #id` (or `⚑ label audit
 | — | — | `FUN_10029c00` = `PLAYER AIRWEP` (alias `AIR`) / `PLAYER GROUNDWEP` (alias `GROUND`), HIGH — not a conflict | function-roles.md, loose-ends-session.md §8.1 + row, messages-notices-console.md row, weapons-projectiles.md §2 + §4 + row, player-physics.md NR 5 + row |
 | L | — | label reconciliation of the 36 label-rule rows: 4 raised to HIGH on quoted listings (`FUN_1001dd20`, `FUN_1001df00`, `FUN_10018b20`, `FUN_10048120`), 32 lowered to MED in their owning files; table now 679 = 397/267/15 | function-roles.md header + rows; hud-scorebar, front-end, loose-ends-session, sprite-geometry-draw, timing-frame, particles-debris-blur, sound-music role rows |
 | S | — | stale NRs struck with pointers: sprite NR 1, 4, 8; particles NR 2, 4, 5; timing NR 3; hud NR 1, 2; messages NR 3, 7; front NR 3, 5, 7, 8; weapons-projectiles NR 4; session NR 4 (both halves), NR 5; bosses NR 1; player-physics NR 5; INDEX #30 merged | the files named |
+
+**Wave 3+4 (2026-10-04) — the 100 % wave, eight topical files** (`blit-pixel-rules.md`,
+`static-init-audit.md`, `text-metrics-lists.md`, `display-window-present.md`,
+`app-pak-music-library.md`, `sprite-manager-resource-image.md`, `file-pict-alerts-manager.md`,
+`gameplay-leftovers.md`; reader output at 2ff0756, previous head 6c085ca). Synthesis merged 251 new +
+54 corrected rows into function-roles.md §1 (plus 8 rows from splitting the scaled-blitter group row and
+`FUN_10025b00` / `FUN_100228d0`): 679 → **938 rows = 698 HIGH / 240 MED / 0 LOW**; one proposed-HIGH row
+lowered to MED by the label rule (`FUN_10021190`, callers.txt only — the owning file still prints HIGH).
+§1 alone now covers all 979 game-code `FUN_` functions (`w4-census-all.py`: 0 unread). Closed
+NOT-RESOLVED #1, #3, #6, #9 (residue), #10 (MED residual: Ben's eyes), #36, #37, #43, #46, #53, #56;
+narrowed #2 (tail → HIGH), #13, #39; added #57–#61; ledger row 17 → HIGH. Critic items closed: O4 (#46,
+combat NR 4, spawn NR 8), O5 (spawn NR 5 residue), O6 (combat NR 2, units NR 3), O7 (damage NR 5, NR 6,
+player NR 7, level NR 8, scoring NR 6), O8 (#10), O9/O11 (blit §3–§5, §7), O10 (#9), O12 (text-metrics:
+#6, hud NR 3/5/6, messages NR 1/2), O14 (display §2.1, §5: hud NR 4, timing NR 4/6), O15 hover rect (#53).
+Cross-file corrections applied (marked `⚑ corrected (wave 3+4, 2026-10-04)`): spawn-request template
++0x24 = −1 at runtime — bosses.md §3.5 + NR 3, damage-health-death.md §2.5, spawn-and-waves.md §1.1 + §7,
+weapons-projectiles.md §3.1, level-scroll-objects.md §6.3; `FUN_10032b20` / `FUN_100228d0` identities and
+the scores template base `0x100e8968` — hud-scorebar.md §4 + NR 7 + role row, front-end.md §4.2 + census
+row; pref byte 4 never read — engine-loop.md §5 + prefs table, timing-frame.md §6; TGA importer
+`FUN_10020f00` — sprite-sound-containers.md §1; the §2.3a pixel rule is mode 0 only (+ `DAT_100e0181`
+writer); hud-scorebar.md §9 6-px digit = frame 58; "unzip.c"/Vollant wording → custom zip reader +
+InputSprocket module (function-roles.md §1/§3, CRITIC-wave2 row); zlib unreachable HIGH (pak-format.md
+§1.2, REPORT); sprite-geometry-draw.md §4.4, §5.2, NR 2/3/5/6/7 and two role rows; file-level NRs struck
+in hud, front-end, timing, messages, loose-ends-session, loose-ends-combat, units-movement,
+spawn-and-waves, damage, player-physics, scoring, level-scroll; "not read" mentions fixed in
+level-scroll-objects.md §9 list, unit-def-struct.md §8, timing-frame.md not-read list. Open ⚑ conflict
+left for the reviewer: `FUN_1001aec0` — static-init-audit.md §5.1 #3 names `FUN_1001aec0`/`FUN_1001eec0`
+as post-`main` writers of the `0x100e0170..81` switches, while blit-pixel-rules.md §6 and
+sprite-manager-resource-image.md §3.2 put the stores in no-function handler code at `1001afdc`/`1001f060`
+(`FUN_1001aec0` = list drain, `FUN_1001eec0` = alpha-map builder) — likely nearest-function attribution
+in the w3s2 scan; both cite listings. Big results: static init changes only three value kinds; the game
+is always DrawSprocket 640×480×16 with no VBL; scaled sprites are nearest-neighbour; the zip reader never
+inflates; the alert routine never quits. (Was "Pending Fable review"; reviewed below.)
+**Verdict: ACCEPT_WITH_FIXES** — Fable review of commit 2ff0756 (0 Critical, 1 Important, 7 Minor; 135 HIGH
+claims re-derived: 135 confirmed / 0 wrong; full text `REVIEW-wave3-2026-10-04.md`; critic
+`CRITIC-wave3-2026-10-04.md`; fix-pass summary `FIXPASS-wave3-2026-10-06.md`). Every fix is marked inline
+with `⚑ corrected (review wave 3, 2026-10-06) #id` (ids I1, M1–M7, C1–C9, S = stale-NR strike, L = label
+reconciliation, T = table repair; plus `#48`, `#58`). Wave 3+4 fix pass (2026-10-06): table unchanged at
+938 = 698/240/0.
+| # | sev | finding | landed in |
+|---|---|---|---|
+| I1 | Imp | merge rows missing for `FUN_1000d380`, `FUN_1000e270`, `FUN_1000e8d0`, `FUN_1000ef90`; `e8d0`/`ef90` HIGH on "read" only; jump table at `0x100e542c` (r2 − 0xf04), not `…30` | text-metrics-lists.md §1.1 + role rows (4 added); function-roles.md rows `FUN_1000e8d0`, `FUN_1000ef90` (listing cited), `FUN_1000d380`, `FUN_1000e270` |
+| M1 | Min | table B #3 named `FUN_1001aec0`/`FUN_1001eec0` as switch writers; the stores `1001afdc`/`1001f060` are in the no-function FX/ALPHA handlers | static-init-audit.md table B #3; function-roles.md `FUN_1001aec0` row + wave-3+4 note (conflict closed) |
+| M2 | Min | `FUN_10045f70` walks the low-memory PortList (`10045f80 lwz r28,0xd66(0)`), not the GDevice list | display-window-present.md §6.2 |
+| M3 | Min | text NR 1 / NR 5 closed by display (`D+0x68` = 640×480×16, `1000b320`; `FUN_1000c3b0` `1000c3b0..e4`; `FUN_1000bbd0` one CopyBits); §2.4 target buffer HIGH (normal draws → port 0 → `D+0x68`, `10019728 bl 0x1000ad90`) | text-metrics-lists.md §2.4, NR 1, 2, 5 struck; INDEX #43 residue closed |
+| M4 | Min | M_File modes are read in app-pak §1.2 (`0x11` rb, `0x0f` a+t, `0x17` a+b) | sprite-manager-resource-image.md §4.4 → HIGH, NR 2 struck |
+| M5 | Min | usage levels "HIGH" on the decompile | sprite-manager-resource-image.md §5 — kept HIGH with the 27 `li r5,N` call sites cited (fix-pass listing) |
+| M6 | Min | "2000 draw commands" MED vs blit HIGH | sprite-manager-resource-image.md §1.1 → HIGH (`100187f8`, `10018824`) |
+| M7 | Min | HFS catalog order is OS behaviour | app-pak-music-library.md §3.2 step 4 → MED |
+| C1 | LOW | = M1 | as M1 |
+| C2 | MED | static-init §4.3 "no builder keeps the template clip" wrong: the text builders keep it when +0x10d ≠ 0 (`1000d538`, `1000e734`, `1000d9b8`, `1000de64`, `1000e1d4`), the level-select `COST` strip of `FUN_1002f7a0` always (`1002fb94..1002fc10`) → overlays clipped to x < 416, y < 480 | static-init-audit.md bottom line, §4.3, conflict-list note, NR 2 struck; INDEX #59 narrowed |
+| C3 | MED | `DAT_100e01b8` = quit requested, not a film/demo gate | scoring-bonuses.md NR 2 struck |
+| C4 | LOW | text NR 1 / NR 3 closed (display §1; blit §1.2/§3: the tint leaf takes α) | text-metrics-lists.md NR 1, NR 3 struck |
+| C5 | LOW | static NR 3 / NR 4 closed (display §4/§7 `+0x4c` = cursor visible; app-pak §6 Registration object) | static-init-audit.md NR 3, NR 4 struck (MSL residue LOW) |
+| C6 | LOW | sprite-mgr NR 5 closed by blit `FUN_1001a450` | sprite-manager-resource-image.md NR 5 struck |
+| C7 | LOW | per-frame order: messages → console → layers 0–1 → background → 2–5 → particles → 6–15 → limiter only if pref 10 → present | display-window-present.md §5.6 |
+| C8 | LOW | no divider writer exists (timing §3) | units-movement.md NR 6 struck |
+| C9 | LOW | the pause loop's quit branch is dead (#48) | loose-ends-session.md §2.3, NR 1 struck; timing-frame.md §1 +0x02 row |
+| #48 | — | closed from the listing: `b8` writers only `FUN_100229a0/10022ed0/10023330/10023b00`; `FUN_10022ed0` only from the menu loop and the Quit-AE handler `0x10049c50`, pumped only by `FUN_10048f30` (menu) | INDEX #48 struck; loose-ends-session.md §2.3, NR 1 |
+| #58 | — | closed: `FUN_10012840` clamps exactly to the target, `FUN_1001a260` = percent/100.0f → a walk to 100 % ends at exactly 1.0f | INDEX #58 struck; blit-pixel-rules.md NR 3 narrowed |
+| #59 | — | text half closed (C2); residue = the level-select `COST` strip rect | INDEX #59 narrowed |
+| S | — | stale file-level NRs struck with pointers (critic §3): bosses 4–8; damage 2–4; level 2, 3, 5, 6 (residue), 7, 9; combat 5; spawn 1, 2, 4, 6, 7; player 1, 2, 6, 8; scoring 1, 2, 5, 7; unit-def 3–6; units 1, 4, 6; weapons 1, 2, 5–8; particles 6; sound 3; text 1, 2, 3, 5; static 2, 3, 4; sprite-mgr 2, 5, 6; blit 4; display 5; app-pak 4; file-pict 4; inline: data-tags §5/§6 (3), engine-loop §5/§8 (#14 narrowed), sprite-sound-containers §2 (`0x100df188` = 1.0), timing §5 (listing), hud §9 (format flags, steps 2–3, `FUN_1000d260` → HIGH) | the files named |
+| L | — | 35 stale LOW role rows in nine older files re-labelled to this table's label (32 HIGH, 3 MED; scoring combined row split); 40 "listing, no address" HIGH rows: 24 static-initialiser rows kept (backed by static-init §3 data bytes, as the critic ruled), 16 rows given listing addresses — **the three gameplay-leftovers §5.1/§5.2 rows kept HIGH with addresses instead of lowered to MED** (reversal of the handoff's instruction; FIXPASS record) | units-movement, messages, sprite-geometry, front-end, player-physics, particles, scoring, spawn, damage role rows; function-roles.md + owning-file rows |
+| T | — | `FUN_10000000` row moved below the §1 header; new_handler `0x10001000` is not a function | function-roles.md; display-window-present.md, loose-ends-session.md §8.2 |
+
+**2026-10-06 — Micro-wave fold-in** (`micro-wave-2026-10-06.md`: role rows for the no-function slider procs
+and AppleEvent handlers, listing addresses for 13 replay-critical MED rows, INDEX #40 #47 #54 #60). Every
+HIGH claim was spot-checked against its cited lines in `$W/disasm-micro.txt`, `disasm-micro2.txt`,
+`disasm-micro3.txt` and `critic3-work/gaps.txt` (TV slots and constants re-read from `$W/mem/*.bin`; the
+#15/#16 compare idioms and the `>>3` packing re-run in Python): all confirmed, **none downgraded**. Marked
+inline `⚑ corrected (micro-wave, 2026-10-06) #<id>` (ids = micro-wave sections `§1`–`§7`, or the INDEX
+number). Table 938 = 698/240/0 → **938 = 716/222/0**.
+| # | sev | finding | landed in |
+|---|---|---|---|
+| §1 | — | slider action procs `0x10011750` (Sound, item 12 → label 13) / `0x100118e0` (Music, item 15 → label 16): ±1 / ±10 by part, `SetControlValue` pins, live `"%i%%"` relabel; prefs written only by `FUN_10010fc0` | function-roles.md 2 new `(undefined)` rows |
+| §2 | — | AE handlers `oapp`/`odoc` → noErr, `pdoc` → −1708, `quit` → set `b8`; installer `FUN_10049aa0` MED → HIGH | function-roles.md 2 new `(undefined)` rows + `FUN_10049aa0` |
+| §3.1 | — | rule conditions #4/#5/#14–16 listing-read (`FUN_100352f0`, `FUN_100353e0`, `FUN_100351f0`; #15/#16 signed) | function-roles.md; bosses.md §3.1 rows 4, 5, 14 and role rows → HIGH |
+| §3.2 | — | heading → frame `FUN_10016230`: single precision, negatives truncate | function-roles.md; units-movement.md §8.2, §10 rows |
+| §3.3 | — | `FUN_10014670` enters the release state **by name** (was "switch to its state") | function-roles.md (corrected); units-movement.md §10 rows; weapons-projectiles.md §2.5 and role row |
+| §3.4–§3.10 | — | `FUN_1003bff0`, `FUN_1002c960`, `FUN_10012650`, `FUN_100385d0`/`FUN_10038810` (pool: 1000 slots, last-freed reuse), `FUN_1002fcc0`, `FUN_100298c0`, `FUN_10011fd0` MED → HIGH | function-roles.md; weapons-projectiles.md, units-movement.md, spawn-and-waves.md, scoring-bonuses.md, player-physics.md, level-scroll-objects.md role rows |
+| #40 | — | closed: `unde` RRGGBB → 555 = exactly `>>3`; `FUN_10010990` → HIGH | INDEX #40 struck; particles-debris-blur.md §2.7, NR 1 |
+| #47 | — | closed: finale same-tick order; `aieg` = cumulative per-member `R(5,6)` countdown — the "T0+95…T0+370" row corrected | INDEX #47 struck; loose-ends-session.md §5.3 (timeline → HIGH), NR 3 |
+| #54 | — | closed: `inmu` plays on through a film; `FUN_10007170` → HIGH | INDEX #54 struck; front-end.md NR 4; loose-ends-combat.md, level-scroll-objects.md role rows |
+| #60 | — | closed: film +0xc/+0x10 are always NULL; `FUN_100094a0`, `FUN_10009680` → HIGH | INDEX #60 struck; gameplay-leftovers.md NR 1 |
+| new | — | #62 flash start values (narrowed by the fold-in: starter `FUN_1002fe40`, not `FUN_1002e310`), #63 pool pre-allocation, #64 `12gc` S2 spawn-set delay; micro-wave NR 3 (`FUN_10000f30`/`f80` return) is already covered by loose-ends-session.md §8.2 (they end in the non-fatal `FUN_10000fd0`) and gets no new number; NR 5 = existing #13, #59 | INDEX #62–#64; front-end.md NR 9, gameplay-leftovers.md NR 2 struck/narrowed |

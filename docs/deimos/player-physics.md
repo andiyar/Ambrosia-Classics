@@ -376,35 +376,37 @@ tick 10. Holding "right" instead from frame 0 would bank 0 → 4 on tick 1 (`+0x
 tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, capped at offset 31).
 
 ## NOT RESOLVED (this file)
-1. Consumers of `plde` keys not read in this range: `waitingTime` (+0x74), `filmIntroTime`
+1. ~~Consumers of `plde` keys not read in this range: `waitingTime` (+0x74), `filmIntroTime`
    (+0x78), `introTime` (+0x7c), `entry_StartVelocityX/Y` (+0xa4/+0xa8, −7.2),
    `entry_TargetVelocityX/Y` (+0xac/+0xb0), `entry_VelocityDelta` (+0xb4), `death_Duration`
    (+0xc0), `active_MoneyCounterSpawn_ID` (+0xc4). `grep -n "0x94) + 0x(74|78|7c|a4|a8|ac|b0|b4)"`
    in the dump finds none; the fly-in may live in the `plen` entry unit (unit-def reader). Settle:
    raw scan of the code image for `lwz rX,0x94(rY)` followed by loads at these offsets, and the
-   callers of `FUN_10026ca0` (get plde).
-2. `FUN_1003b3c0` return codes (1 = start overload, 2 = cancel; local flag → `FUN_10029f60`
+   callers of `FUN_10026ca0` (get plde).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §1: the `plde` fly-in keys have no reader except MoneyCounterSpawn (critic wave 3 §3).
+2. ~~`FUN_1003b3c0` return codes (1 = start overload, 2 = cancel; local flag → `FUN_10029f60`
    sprite refresh) and the gate `+0x84 == 1.0` (entity second fade, `FUN_10012840`) — weapon
-   handler reader.
+   handler reader.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §6.1 (`FUN_1003b3c0` return codes, listing re-checked) (critic wave 3 §3).
 3. The checksum arithmetic of §9 (registration, out of scope by project ruling).
 4. Lifecycle of the crosshair flag `+0x360` (set in `FUN_1003b3c0`; clearer not traced) and the
-   consumer of flli 149/150 `Crosshair_FadeIn/OutPercentageRate`.
+   consumer of flli 149/150 `Crosshair_FadeIn/OutPercentageRate`. ⚑ corrected (wave 3+4, 2026-10-04) narrowed: the crosshair
+   fade is `FUN_10012750` run on the crosshair object (gameplay-leftovers.md §2.1).
 5. ~~`FUN_10029c00` has no direct caller (`$W/callers.txt`); body reads sector and re-assigns a
    handler weapon slot via `FUN_1002adb0`/`FUN_1003b180`. Settle: search the data image for
    its address (function-pointer table).~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: two raw callers `10008408` ('PEAA')
    and `10008490` ('PEAG') in the debug command `PLAYER AIRWEP|AIR` / `PLAYER GROUNDWEP|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`), unregistered → unreachable in 1.0.6
    (messages-notices-console.md §5.5, loose-ends-session.md §8.1).
-6. Reset points of the lives-decrement gate (`FUN_10006b50` `*param_1` = `local_a27[2]` in
-   `FUN_100051a0`). Settle: read `FUN_100051a0` around the level loop.
-7. Hit factor f1 passed by `FUN_10033850` to `FUN_10027100` (damage reader).
-8. What `+0x68` (appear fade) and `+0x58` (glow) do at draw time (`FUN_10012f20`, sprite blit).
+6. ~~Reset points of the lives-decrement gate (`FUN_10006b50` `*param_1` = `local_a27[2]` in
+   `FUN_100051a0`). Settle: read `FUN_100051a0` around the level loop.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §4 (game over and the lives gate) (critic wave 3 §3).
+7. ~~Hit factor f1 passed by `FUN_10033850` to `FUN_10027100` (damage reader).~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
+   f1 = the colliding unit's `damage_FLOAT` (+0x274), `100342c0 lfs f1,0x274(r31)` (gameplay-leftovers.md §7.4c).
+8. ~~What `+0x68` (appear fade) and `+0x58` (glow) do at draw time (`FUN_10012f20`, sprite blit).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: sprite-geometry-draw.md §4 (visibility `+0x68` → alpha, hit glow `+0x58`) (critic wave 3 §3).
 9. Level-start invulnerability carry-over (§4.4) is a code reading with no indirect-clear search;
    Ben's eyes: is the ship invulnerable for ~2 s after appearing on level 2+?
 
 ## Role-table rows (for merge)
 | function | module | role | conf | evidence |
 |---|---|---|---|---|
-| `FUN_10026100` | (static init) | copy constant templates into G_Player statics | LOW | dump; caller `FUN_10000000` |
+| `FUN_10026100` | (static init) | copy constant templates into G_Player statics | HIGH | dump; caller `FUN_10000000` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; TU init D + T only, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_10026180` | G_Player.cc (span) | pure `7·3^bitlen(x&0xff)`; only caller discards it (obfuscation filler in §9) | HIGH | disasm `10026180..10026254`, `10028b38`/`10028c54` |
 | `FUN_10026260` | G_Player.cc (span) | player constructor (field defaults, lives 0, money 0, score 0, index 0xff, numPlayers 1) | HIGH | disasm stores `100262a4..10026340`; caller `FUN_100051a0` |
 | `FUN_100263a0` | G_Player.cc (span) | player destructor | MED | dump |
@@ -435,18 +437,18 @@ tick 3, → 6 on tick 5, and shift the view +1 per tick (10 px after 10 ticks, c
 | `FUN_10027dd0` | G_Player.cc | invulnerable flag +0xce | HIGH | disasm |
 | `FUN_10027de0` | G_Player.cc | set/clear invulnerability (+sticky) | MED | dump |
 | ⚑ corrected `FUN_10028170` | G_Player.cc | player update: accel/decay/cap movement, banking frames F166, view shift, area clamp F54/55/183, crosshair F185–187, defence bonus F184 | HIGH | disasm §2; was MED "perm F183-187" |
-| `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, money text | MED | dump; caller `FUN_10007070` |
+| `FUN_100298c0` | G_Player.cc | draw player (state 4): weapons, sprite passes, money text | HIGH | dump; caller `FUN_10007070` — ⚑ corrected (micro-wave, 2026-10-06) #§3.9: listing in micro-wave-2026-10-06.md §3.9 (function-roles.md row). Was MED |
 | `FUN_100299c0` / `FUN_100299f0` / `FUN_10029a00` | G_Player.cc | reset / get / set score (obfuscated +0x5532a3e) | HIGH | disasm |
 | `FUN_10029b20` | G_Player.cc | step score multiplier 1→2→3→4→5→10 | HIGH | jump table `0x100e93c0` |
 | `FUN_10029bd0` / `FUN_10029fd0` | G_Player.cc | get / reset(1) multiplier | MED | dump — ⚑ label audit (review wave 1) |
-| `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | get / set flag +0xbd | LOW | dump |
+| `FUN_10029be0` / `FUN_10029bf0` | G_Player.cc | get / set flag +0xbd | HIGH | dump — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; cheated flag get/set `10029be0 lbz r3,0xbd(r3)` / `10029bf0 stb r4,0xbd(r3)` (gameplay-leftovers.md §3) |
 | `FUN_10029c00` | G_Player.cc | advance a weapon slot to the next weapon of its type available at the sector; reached only from the debug command `PLAYER AIRWEP\|AIR` / `PLAYER GROUNDWEP\|GROUND` (sub-keywords of the PLAYER handler `0x10007ff0`; strings `AIRWEP` `0x100e41fc`, `AIR` `0x100e4203`, `GROUNDWEP` `0x100e4207`, `GROUND` `0x100e4211`) (unreachable in 1.0.6) | HIGH | raw calls `10008408`/`10008490` + strings (messages-notices-console.md §5.5) — ⚑ corrected (review wave 2, 2026-10-03): was "(no direct caller)" LOW |
 | `FUN_10029cb0` | G_Player.cc | get +0xc0 (level ref) | MED | dump |
 | `FUN_10029cc0` | G_Player.cc | become active / respawn: start pos, v 0, state 4, appear fade, spawn entry unit | HIGH | disasm |
 | `FUN_10029f10` / `FUN_10029f60` | G_Player.cc | reset ship sprite/frame / sprite from weapon appearance face | HIGH | disasm |
 | `FUN_1002a150` | G_Player.cc | life-state step (entering, dying, lives decrement, game over, invulnerability expiry) | HIGH | disasm |
 | `FUN_1002a450` | G_Player.cc | load-and-check a permanent unit def | MED | strings |
-| `FUN_1002a4f0` | (static init) | spawn-request template statics | LOW | dump — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: it writes `0x100e9178…` before `main`, so no value of those templates may be taken from the data image (INDEX #56) |
+| `FUN_1002a4f0` | (static init) | spawn-request template statics | HIGH | dump — ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: it writes `0x100e9178…` before `main`, so no value of those templates may be taken from the data image (INDEX #56) — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on dump; TU init (player request +0x24 ← −1), static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_1002a5b0` / `FUN_1002a610` | G_Debris.cc (span) | register / tear down "Debris" + NUMDEBRIS console command | MED | strings |
 | `FUN_10039e70` | G_PlayerDefinitions.cc | `plde` parser (table below) | HIGH | disasm reader calls |
 `plde` key → offset (`FUN_10039e70`, from the listing pairs `addi r5,r31,<key>` /

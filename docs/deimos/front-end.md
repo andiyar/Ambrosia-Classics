@@ -237,9 +237,10 @@ Headers: FMT 10 `scnt` "Name" (x 110, y 83, left), FMT 11 `scst` "Score" (x 377,
 `sset` "Sector" (x 463, left) — strings at `0x100e8ba1/ba6/bac`. Then 15 rows, `rowY = F77 (107)`,
 `rowY += F76 (19)` per row (`10022838 li r3,0x4c`), 4 elements per row (list item 3 + 4·row is the
 symbol, 4 + 4·row the name):
-- symbol: template text-settings at `0x100e8964` (face `none`; ⚑ caution ⚑ corrected (review wave 2, 2026-10-03) #C1: read
-  from the data image, but the static initialiser `FUN_100228d0` writes this template before
-  `main` — runtime values unverified until INDEX #56); only the row being edited gets the
+- symbol: template text-settings at **`0x100e8968`** (r2+0x2638; face `none` — ⚑ corrected (wave 3+4, 2026-10-04): was
+  `0x100e8964` (the decompile's −4 copy-loop artefact) with the caution "runtime values unverified until INDEX
+  #56"; `FUN_100228d0` writes only +0x100/+0x104 ← 0, so the image values are the runtime values,
+  static-init-audit.md §5.1 #13); only the row being edited gets the
   player's ship face (gaob 0/1 Player 1/2 → player def `+0x28` face, `+0x2c` frame), at x = F80
   (73), y = rowY + F81 (7).
 - name `prefs+0x10f8+21·row`, score `"%i"` of `prefs+0x1260+4·row`, sector name
@@ -302,7 +303,7 @@ P2 screen (P2's row, P2 ship), confirm, 25 ticks, then the menu (§3 step 7a).
   blend is listing-read in loose-ends-session.md §6 (`1001eb8c…` floor((A·a + B·(32−a))/32), A =
   snapshot, B = black, a = 0 → 32), so black → image]
 
-### 5.2 Element (text/sprite list) fades — G_Text, rate F160 `Interface_FadeRate` = 1 [MED]
+### 5.2 Element (text/sprite list) fades — G_Text, rate F160 `Interface_FadeRate` = 1 [HIGH — ⚑ corrected (wave 3+4, 2026-10-04): was MED; listings in text-metrics-lists.md §3.1]
 `FUN_1000db90(list, rate)` fade in: blend 31 → 0 over 32 steps, `rate` ticks apart; `FUN_1000df00`
 fade out: blend 1 → 32 over 32 steps. With F160 = 1 ⇒ **≈32 ticks** each. Wrappers in range:
 `FUN_10025840` (menu fade in), `FUN_10025890` (menu fade out), `FUN_100232d0` (loading lines fade
@@ -401,7 +402,7 @@ faded in when `fadeIn`, else drawn; present. `FUN_100232d0` (boot end) fades the
 | `FUN_10021bd0` | 225 | name entry for one player | HIGH |
 | `FUN_100222f0` | 213 | scores list layout | HIGH |
 | `FUN_10022880` | 16 | free all items of a list | MED ⚑ label audit (review wave 2) |
-| `FUN_100228d0` | 31 | static init of the scores symbol template (`0x100e8964`; ⚑ caution #C1: its writes override the data-image bytes, INDEX #56) | LOW |
+| `FUN_100228d0` | 31 | static init of the TU's draw template `0x100e891c` (clip), `"nonenone"` pair `0x100e8904`, text-settings template `0x100e8968` (+0x100/+0x104 ← 0 only) and notice-post template `0x100e8ab0` (sound record) — ⚑ corrected (wave 3+4, 2026-10-04): was "static init of the scores symbol template (`0x100e8964`; …)" LOW (static-init-audit.md §5.1 #14) | HIGH |
 | `FUN_100229a0` | 227 | main menu loop | HIGH |
 | `FUN_10022ed0` / `FUN_10022ee0` | 10/9 | set / get quit request `b8` | HIGH |
 | `FUN_10022ef0` | 48 | pause screen | HIGH |
@@ -439,16 +440,16 @@ faded in when `fadeIn`, else drawn; present. `FUN_100232d0` (boot end) fades the
 | `FUN_100258e0` | 14 | draw element list | HIGH |
 | `FUN_10025920` | 15 | volume keys 0x9D / 0x8A | HIGH (keys NR) |
 | `FUN_10025970` | 51 | advertisement | HIGH |
-| `FUN_10025b00` | 25 | static init (credits globals) | LOW |
+| `FUN_10025b00` | 25 | static init (credits globals) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; TU init D/T/S, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row) |
 | `FUN_10025b90` | 185 | credits | HIGH |
 | `FUN_100260b0` | 16 | free list items | MED ⚑ label audit (review wave 2) |
 | `FUN_10006240` | 110 | video-grid overlay | HIGH |
-| `FUN_10030020`, `FUN_10030e70` | 36/43 | static inits (level-select / score-bar globals) | LOW (read) |
+| `FUN_10030020`, `FUN_10030e70` | 36/43 | static inits (level-select / score-bar globals) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; TU inits, static-init-audit.md §3 table A (listing + interpreter); function-roles.md rows) |
 | `FUN_100301d0`, `FUN_100302b0`, `FUN_10030350`, `FUN_10030900` | | controller destructor / end session (FlushEvents) / frame counter / paused byte | MED (read) |
 | `FUN_100302e0` | 15 | between-level reset (scoring-bonuses §10.4) | MED (read) |
 | `FUN_10030df0` | 25 | **frame-controller state reset** (see rows) | HIGH |
 | `FUN_10030f40` | 135 | score-bar init: resource group "Score Bar", 2×0x14c, reli 0–7/8–15 + screen-offset copies, faces `none` | MED (read) |
-| `FUN_100313b0` | 13 | release "Score Bar" group | LOW (read) |
+| `FUN_100313b0` | 13 | release "Score Bar" group | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (read)"; ScoreBar teardown, gameplay-leftovers.md §4.3) |
 | `FUN_10030190…FUN_10030bc0` (frame controller) | | engine-loop.md §4 | not re-read (only `FUN_10030870` read) |
 
 ## Worked example — cold start → main menu → 1-player game at sector 1
@@ -478,17 +479,23 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
 ## NOT RESOLVED (this file)
 1. Physical keys for charCodes 0x9D / 0x8A (menu volume −/+ in `FUN_10025920`); settle by testing
    the original or reading the KCHR in use (they are Mac Roman `ù` / `ä`).
-2. The screen rect `+0x50..+0x5c` that suppresses menu hover while the mouse is inside it (set in
-   `FUN_1000ae20` from locals and `+0x60`); read `FUN_1000ae20`.
+2. ~~The screen rect `+0x50..+0x5c` that suppresses menu hover while the mouse is inside it (set in
+   `FUN_1000ae20` from locals and `+0x60`); read `FUN_1000ae20`.~~ → ⚑ corrected (wave 3+4, 2026-10-04): display-window-present.md
+   §4, §7 — (top, left, MBarHeight, right) of the DSp screen rect: the menu-bar strip; hover is suppressed
+   while the pointer is inside it, inclusive (INDEX #53).
 3. ~~Direction of `FUN_1000ba70`'s blend (`FUN_1001e9d0` unread): assumed black → image.~~ →
    ⚑ corrected (review wave 2, 2026-10-03) #S: loose-ends-session.md §6 (listing; black → image).
-4. Music after a demo/replay: `FUN_100234d0` neither stops `inmu` nor sets `b6` in modes 1/2;
+4. ~~Music after a demo/replay: `FUN_100234d0` neither stops `inmu` nor sets `b6` in modes 1/2;
    whether level music keeps playing on the menu afterwards depends on `FUN_100051a0`'s music
-   calls.
+   calls.~~ → ⚑ corrected (micro-wave, 2026-10-06) #54: micro-wave-2026-10-06.md §6 — in film modes no stream-changing music
+   call runs (`FUN_100234d0` `1002350c`/`10023598`/`1002376c`, `FUN_100064d0` `10006754`/`100067bc`,
+   `FUN_100051a0` `10005960`/`10005ad4`, `FUN_10007170` `100071e8`), and `b6` is not set, so the menu's
+   `inmu` plays on uninterrupted through the film and back; no level music or `ammu` is heard (INDEX #54).
 5. ~~Semantics of the sound args (0x4b|0x32, 100, 0|1) — INDEX #11.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S:
    sound-music.md §2.3 (priority, volume, allowMultiple).
 6. Developer-logo draw (`FUN_10044c30(1000)` in boot) and `FUN_100476a0` (pause sound halt) not
-   read.
+   read. ⚑ corrected (wave 3+4, 2026-10-04) narrowed: `FUN_10044c30` draws PICT resource 1000 "Swoop Software Logo" (640×480) at
+   native size at (0,0) of the current port (file-pict-alerts-manager.md §4).
 7. ~~Whether erasing high scores (Option+SCORES) is saved immediately: `FUN_10004ae0` writes the live
    prefs, no save call in `FUN_100229a0`; settle by reading the prefs save path at quit.~~ →
    ⚑ corrected (review wave 2, 2026-10-03) #S (C7, INDEX #55): not immediately — prefs reach disk only at quit
@@ -496,8 +503,12 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
 8. ~~Item labels/command-keys of menu 128/2000 (resource fork MENU not parsed); only item 1 of each
    is acted on.~~ → ⚑ corrected (review wave 2, 2026-10-03) #M7d #S: MENU 128 item 1 = "About Deimos Rising…", MENU 2000 =
    File ▸ Quit (resource fork, read by the review).
-9. Accept/fail flash durations in level select (F44–F47 arithmetic in `FUN_1002fcc0`, owned by
-   scoring-bonuses §10).
+9. ~~Accept/fail flash durations in level select (F44–F47 arithmetic in `FUN_1002fcc0`, owned by
+   scoring-bonuses §10).~~ → ⚑ corrected (micro-wave, 2026-10-06) narrowed: micro-wave-2026-10-06.md §3.8 — the stepper is
+   listing-read (alpha +1 → 32; scale ± rate between 1.0 and 2.0; accept 6 up + 6 down, fail 4 + 4; ends
+   when scale == 1.0 and alpha == 32). The starter `FUN_1002fe40` (listing `1002fea8..1002ff14`) sets
+   scale 1.0, growing 1, colour = text format 0x1b/0x1c +0x122 and alpha = that format's
+   `BlendAmount` (+0x114). Residue → INDEX #62 (which `tefo` files formats 27/28 are).
 
 ## Role-table rows (for merge)
 | `FUN_100229a0` | G_Interface.cc | main menu loop: copyright flip F68, hover, event dispatch, button actions | HIGH | listing `10022ab4…10022cb8`; front-end.md §2 |
@@ -525,7 +536,7 @@ dead time from the click to the level-select screen being live: 32 + 33 + 9 ≈ 
 | `FUN_10025920` | G_Interface.cc | volume −10 / +10 on charCode 0x9D / 0x8A | HIGH | listing `1002592c` |
 | `FUN_10025970` | G_Interface.cc | advert `adve`; F67 minimum when after a cut-off game; click/key exit | HIGH | `10025a2c li r3,0x43` |
 | `FUN_10025b90` | G_Credits.cc | paged credits: `<page N>` ticks, `<title>`, F74/F75, 60-tick gap | HIGH | listing `10025d50 li r3,0x3c` |
-| `FUN_10025b00` / `FUN_100228d0` | | static initialisers | LOW | caller `FUN_10000000` |
+| `FUN_10025b00` / `FUN_100228d0` | | static initialisers | HIGH | caller `FUN_10000000` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; static-init-audit.md §3 table A (listing + interpreter); function-roles.md rows |
 | `FUN_10021950` | G_Scores.cc | scores screen: 600 ticks (F78), click/key exit, `N` → 1P game | HIGH | `10021ab4 li r3,0x4e` |
 | `FUN_10021bd0` | G_Scores.cc | name entry: 20 chars, ctype 0xdc, Return, BS, blink F82/F83, linger F79, easter eggs, save prefs | HIGH | listing `10021d90…100221f4` |
 | `FUN_100222f0` | G_Scores.cc | scores layout: headers FMT 10–12, 15 rows y F77+F76·r, ship symbol F80/F81, FMT 13–21 | HIGH | listing indices |
