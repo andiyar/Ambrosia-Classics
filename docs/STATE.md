@@ -52,6 +52,7 @@
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
+- **Cythera RE wave 2 DONE (2026-10-06, Opus 5.5 seat):** all 840 newly decompiled bodies read or identified into `docs/cythera/` (census + six new banks: ui-play, dialogue-ui, scripted-windows, app-shell, ui-toolkit, open-items-2026-10-06; appends to ten banks; the 95 builtins now carry their real names). Review ACCEPT_WITH_FIXES (0 Critical/3 Major/13 Minor, 82/84 claims pass; ran on Opus 5.5, so a Fable revision pass is owed), all fixed. NOT RESOLVED 5/6/10/14/19/21–25 closed (22: wave 1 had the ending branch inverted — crystal quality 1 = saved ending); still open: `Render__7TViewer` layer order (16) and small carried sub-points — handoff `docs/handoff-2026-10-06-cythera-re.md`.
 
 1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
    as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
@@ -73,7 +74,7 @@
    --sign "Developer ID Application: Benjamin Thomas (5W72UJL332)" --notarize oniarm64-notarize` (bump `CFBundleVersion`
    in `Aki/App/Mac/Info.plist` first; the script asserts it). Ben verified the notarized DMG 2026-10-06: sound, music, ⌘G all work. Untested: Intel, macOS 15/26. **Next: Aki Phase 3** (editor, `.aki`).
 2. **Bubble Trouble X — Ben's play gate (sound is in):** Ben 2026-10-06 played 3 levels: sound + music right, Q1/Q3/Q4/Q5/Q8/Q12/Q16/Q18 + text all yes (D14 addendum); NR-10 waived ("who cares about demos?"). Still open: his longer playtest; Q2 cheat memories, Q9/Q13/Q15 if he notices anything. Carried minors: core `musicPlaying` flag vs channel status (D14.5); deactivation during a carried-over pause; an event during the very first wipe acts one frame early; app activate/deactivate during dialogs (docs/bubble-trouble/review-carries-2026-10-04.md).
-3. RE deepening chains (Deimos CLOSED 2026-10-06; Ferazel wave 2 fix+merge owed; Cythera wave 2 owed) — separate chips.
+3. RE deepening chains (Deimos CLOSED 2026-10-06; Ferazel wave 2 fix+merge owed; Cythera wave 2 DONE 2026-10-06, Render layer order + Fable revision pass remain) — separate chips.
 4. **Windows port** (Ben 2026-10-06) — BTX staged for his brother (above); await his report.
 5. Phase 3 Aki, then Bubble Trouble X shell on HectorShell (design §6). EV's adoption of HectorKit: separate task.
 
