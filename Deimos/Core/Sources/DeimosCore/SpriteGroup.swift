@@ -51,6 +51,11 @@ public struct SpriteFrame: Sendable, Equatable {
 ///
 /// Frame size must be 1…300 × 1…256 (`kU_Sprite_MaxDimensions`, inclusive) and the frame count
 /// below 0xFFFF.
+///
+/// Not modelled (Phase 1 notes): the loader's "invalid (empty) plate" DATA ERROR is unreachable here —
+/// `GIFImage` refuses a zero-size image (`GIFError.emptyImage`) before a group is built; the original
+/// returns early for the ID `none`, and when a plate fails to import it returns 0 (no group, no
+/// assert) instead of raising — this port throws the GIF/plate error to the caller.
 public struct SpriteGroup: Sendable {
     public let id: FourCC
     public let frames: [SpriteFrame]

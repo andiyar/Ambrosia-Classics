@@ -50,7 +50,10 @@ public enum GIFError: Error, Equatable, Sendable {
 /// table is full the decoder keeps reading 12-bit codes without adding entries until a clear
 /// ("deferred clear"). Data sub-blocks are bounds-checked; the stream must yield exactly
 /// `width × height` pixels (fewer → `truncatedLZW`, more → `excessLZW`); codes after the last pixel
-/// other than the end code are refused the same way.
+/// other than the end code are refused the same way. A stream whose data runs out exactly at
+/// `width × height` pixels without an end code is accepted (giflib and Pillow do; every shipped plate
+/// has its end code). The output buffer grows as pixels arrive — it is never pre-sized from the
+/// unchecked header (plan invariant 3: a 0xFFFF × 0xFFFF header over a few bytes of LZW fails fast).
 public struct GIFImage: Sendable {
     public let width: Int
     public let height: Int
@@ -153,7 +156,8 @@ public struct GIFImage: Sendable {
         var next = end + 1
         var codeSize = minCodeSize + 1
         var prev = -1
-        var out = [UInt8](repeating: 0, count: pixelCount)
+        var out: [UInt8] = []
+        out.reserveCapacity(min(pixelCount, 1 << 20))
         var outCount = 0
         var stack = [UInt8](repeating: 0, count: 4096)
 
@@ -174,6 +178,7 @@ public struct GIFImage: Sendable {
 
         while true {
             guard let code = readCode() else {
+                if outCount == pixelCount { break }     // data ended at the last pixel, no end code
                 throw GIFError.truncatedLZW(decoded: outCount, expected: pixelCount)
             }
             if code == clear {
@@ -205,7 +210,7 @@ public struct GIFImage: Sendable {
                 throw GIFError.invalidCode(code)
             }
             guard outCount + depth <= pixelCount else { throw GIFError.excessLZW }
-            while depth > 0 { depth -= 1; out[outCount] = stack[depth]; outCount += 1 }
+            while depth > 0 { depth -= 1; out.append(stack[depth]); outCount += 1 }
             if next == 1 << codeSize && codeSize < 12 { codeSize += 1 }
             prev = code
         }

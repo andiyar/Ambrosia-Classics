@@ -63,7 +63,7 @@ Research note 21); any game logic.
    updating it): its SSND runs past the declared FORM end. Readers walk chunks to the end of the *data*.
 2. One pak entry (`Music.pak:Ambient Music Loop[ammu].IMA`) has general-purpose flag bit 1 set and version-needed 10;
    meaningless for STORED, ignored (the game never reads flags).
-3. 18 of 45 TGAs carry colour-map-spec byte `0x18` with colour-map type 0 — ignored per TGA; 14 TGAs carry the
+3. 18 of 45 TGAs carry colour-map-spec byte 7 (colour-map entry size) = `0x18` with colour-map type 0 — ignored per TGA; 14 TGAs carry the
    26-byte TGA 2.0 footer.
 4. The `GLOW` alpha plate scans to **different frame rects** under the original's 8-bit-index compare than under an
    RGB compare (bank tool `plate_frames.py`): fill (8,0,255) and the frame body's (0,0,255) land on one system-CLUT
@@ -190,17 +190,21 @@ All byte claims below were **re-verified on the archive bytes on 2026-10-06** (p
 
 **Text** (bank pak-format.md §3, data-tags.md, unit-def-struct.md §2, waves-and-enemies.md §1)
 11. De-obfuscation `plain = ~rotl8(cipher, 4)` is an involution. **All 473 text entries are encoded** (none plain); no NUL
-    byte in any decoded text; 85 carry Mac Roman bytes ≥ 0x80 (leve 6, unde 79, stli 1 — `cred`). Loaders decode
+    byte in any decoded text; 85 carry Mac Roman bytes ≥ 0x80 (leve 6, unde 79, stli 1 — `edit`; ⚑ as built: was `cred`). Loaders decode
     unconditionally except `unde` (only if `#name_STR` is absent) and `wede` (only if `#type_ID` is absent).
 12. U_Token grammar: `strstr(buf+cursor, key)`, then `<` searched from the key hit, then `>`; value = between; cursor :=
     position of `>` (forward-only). Readers: STR (max length per key, copies ≤ max−1, missing key silent — default kept,
     `<>` → ""); ID (exactly 4 chars else error); INT (`sscanf %i`, ≤ 31 chars, length ≥ 1); FLOAT (`sscanf %f` float32);
     BOOL (`strcmp(v,"TRUE")==0`, anything else false); COLOR (`RRGGBB` → pix16 = `(r>>3)<<10|(g>>3)<<5|(b>>3)`, the
-    float `trunc(65535·c/255)` path is ≡ `c>>3` for all c — INDEX #40 HIGH; `"0"` → 0; else logged + 0); RECT (`strtok ","`
+    float `trunc(65535·c/255)` path is ≡ `c>>3` for all c — INDEX #40 HIGH; ⚑ as built (R-B): `"0"` is NOT special — anything
+    but six hex digits is an error ("Invalid COLOR.", flag set, dest untouched)); RECT (`strtok ","`
     + 4×`%i`, text order (left, top, right, bottom) → Mac Rect (top, left, bottom, right), HIGH). Missing/malformed
-    non-STR key → error flag (strict mode is on for unde/plde: fatal "incorrect or missing data" + quit).
+    non-STR key → error flag (strict mode is on for unde/plde — ⚑ as built: and wede — fatal "incorrect or missing data" +
+    quit). ⚑ as built (R-B): an INT/FLOAT value with no digits is NOT an error (`sscanf` return unchecked; dest untouched) —
+    only a missing key or a zero-length value flags.
     Value census over all text: INT 57,140 (6 written as floats, note 5 of deltas; no leading zeros/hex), FLOAT 19,815,
-    BOOL TRUE 4,149 / FALSE 63,723, COLOR 3,223 (all 6 hex digits).
+    BOOL TRUE 4,149 / FALSE 63,723 (⚑ as built: TRUE 4,201 / FALSE 64,203 — the probe skipped the 532
+    `#stateSpawnSetDon'tSpawnOffscreen_BOOL` items, 52 TRUE + 480 FALSE), COLOR 3,223 (all 6 hex digits).
 13. Per-type shapes (census): `stli` 5 lists, lines = CR count (+1 if the file does not end in CR): cred 102, edit 5,
     inte 28, pali 1, pgsl 37 (= the 37 × 128 GameStrings table) → **173**; `flli/gafl` **220** `#…<…>` items (positional,
     keys are documentation; ≠ 220 → "DATA ERROR"); `idli` 6 lists: edit 1, gaob 40, gaso 24, gasp 8, gate 54, tesp 3 (= 130);
@@ -240,7 +244,8 @@ All byte claims below were **re-verified on the archive bytes on 2026-10-06** (p
       [MED — inverse-table construction not read. Planner check: 4-bit-cell nearest and full-precision nearest give
       **identical frame rects on all 125 plates** (2,554 frames); both differ from an RGB compare only on
       `GLOW` (850 × 102, 12 frames), where 5 rects change — e.g. frame 3 is (51,279,100,328), RGB gives (8,279,100,328).]
-16. **GIF census (250 `im08`):** all `GIF89a`, global colour table present (2–256 entries), exactly one image
+16. **GIF census (250 `im08`):** all `GIF89a`, global colour table present (2–256 entries; ⚑ as built: the shipped tables
+    are 8–256 — 8 ×5, 16 ×4, 32 ×3, 64 ×3, 256 ×235), exactly one image
     descriptor at (0,0) sized == the logical screen, **no** local colour table, **no** interlace, exactly one extension
     (GCE `0xF9`) with transparency flag 0 and disposal 0, LZW minimum code size 8 in all 250, trailer `0x3B` at EOF, no
     trailing bytes. Max plate 1400 × 131. Pillow decodes all 250 to their header size.
@@ -265,7 +270,7 @@ All byte claims below were **re-verified on the archive bytes on 2026-10-06** (p
     **no pixel has bit 15 set**; body = 18 + 2wh; 14 files then carry the 26-byte footer ending `TRUEVISION-XFILE.\0`.
     Sizes: 480×3600 ×12 (maps), 96×720 ×12 (media masks), 146×306 ×12 (previews), 640×480 ×5, 160×480, 112×480,
     260×342, 284×173. Masks: 829,440 px = 712,245 `0x7fff` + **117,194 `0x001f`** (water) + one stray `0x256b`
-    (`ist3`). Orientation pin: `Canyon 1 Media[cat1]` column 5 water at stored rows 371–389 → **top-down rows 330–348**.
+    (`ist3`; ⚑ as built: the bytes say `int3`, Industrial 3 Media). Orientation pin: `Canyon 1 Media[cat1]` column 5 water at stored rows 371–389 → **top-down rows 330–348**.
 
 **Sound** (bank sprite-sound-containers.md §4–§5, sound-music.md §2.2, §6)
 20. **AIFF census (99 `soun`):** all `FORM`/`AIFC`, chunks FVER COMM [MARK] INST SSND APPL (91 + 7 with MARK) or, for
@@ -746,6 +751,29 @@ Task C1). Never edit the shared symlink.
 - Commit: `docs: Deimos Phase 0 as built (D23)`.
 
 ---
+
+## As built — corrections from the Phase 0 reviews (2026-10-06)
+
+The research notes above keep the planner's text; ⚑ marks the corrected spots. In one place:
+- **Oracle.** `ghidra/Deimos_pef.decompiled.c` was never produced for 1.0.6; implementers and reviewers worked from the
+  disassembly listing `~/ghidra-proj-deimos/disasm-review3-all.txt` plus the memory images `mem/10000000.bin` (code,
+  base 0x10000000) and `mem/100de330.bin` (data, base 0x100de330, r2 = 0x100e6330). Every address cited in the
+  DeimosCore doc comments is a listing address.
+- Note 11: the one stli with Mac Roman bytes is `edit`, not `cred`.
+- Note 12: COLOR `"0"` is an error (`FUN_10010990` returns false; the wrapper logs "Invalid COLOR."); INT/FLOAT with no
+  digits store nothing and raise no flag; RECT zeroes its destination before the lookup (the one reader that writes on
+  failure). BOOL value census = TRUE 4,201 / FALSE 64,203 (the probe missed the apostrophe key).
+- wede strict mode is ON (`1002b994 li r4,1; bl 0x1002c4d0`), fatal like unde/plde; `leve` has none.
+- Note 16: shipped GIF global tables are 8–256 entries.
+- Note 19 / Known delta 3: the stray mask pixel is in `int3`; the TGA stray is header byte 7 (colour-map entry size)
+  = 0x18 with colour-map type 0.
+- Tag index (R-B, listings `100016c0–10001f14`): duplicates are counted per Local flag after all records and before
+  overrides (a pair logs "(2)" twice); the zip test is lower-cased `strstr`; a rejected zip entry ends its pak's
+  enumeration; alert lines are the binary's format strings.
+- Test ladder as built: C7 **99** (the census suite has 5 + DeimosCoreTests 94), review fixes R-B +2, R-C +1, R-D +0
+  → 102. C8 STOPPED at its decode gate (2026-10-06): HectorKit `PICT.decodeAny` refuses 9 of the 12 app-fork PICTs
+  (opcode 0x009B DirectBitsRgn, 16-bit packType 3: 130 135 190–193 195–197); PICT 128/900/1000 and all 6 DITLs decode.
+  Nothing of C8 is committed; the orchestrator rules (kit support for 0x009B, or record them as named refusals).
 
 ## Execution order
 

@@ -153,10 +153,11 @@ final class TGAImageTests: XCTestCase {
         XCTAssertEqual(levels.count, 12)
         var maps = Set<String>()
         for level in levels {
-            let text = try LeveKeys(index.data(for: level))
-            // #background_RECT is text order (left, top, right, bottom).
-            XCTAssertEqual(text["background_RECT"], "0, 0, 480, 3600", "\(level.id)")
-            let mapID = try XCTUnwrap(text["backgroundImage_ID"]), maskID = try XCTUnwrap(text["mediaMask_ID"])
+            let (l, errors) = LevelDefinition.parseHeaderOnly(id: level.id, text: [UInt8](try index.data(for: level)))
+            XCTAssertEqual(errors, [], "\(level.id)")
+            // #background_RECT <0, 0, 480, 3600> is text order (left, top, right, bottom).
+            XCTAssertEqual(l.background, MacRect(top: 0, left: 0, bottom: 3600, right: 480), "\(level.id)")
+            let mapID = l.backgroundImage.description, maskID = l.mediaMask.description
             let map = try XCTUnwrap(images[mapID], mapID), mask = try XCTUnwrap(images[maskID], maskID)
             XCTAssertEqual([map.width, map.height], [480, 3600], mapID)
             // The mask lookup reads mask[y/5][x/5] (bank §6.2): same aspect, ratio 5 on both axes.
@@ -193,20 +194,4 @@ private enum ShippedTGAs {
         }
     }
     static func all() throws -> [Entry] { try loaded.get() }
-}
-
-/// Test-local reader for a level's header keys: de-obfuscates (`~rotl8(c, 4)`, bank pak-format §3) and
-/// takes the first `#key <value>` per key. Enough for the TGA cross-check without the C2/C3 parsers.
-private struct LeveKeys {
-    private var values: [String: String] = [:]
-    init(_ data: Data) throws {
-        let plain = data.map { ~(($0 << 4) | ($0 >> 4)) }
-        let text = MacRoman.decode(Array(plain))
-        for item in text.split(separator: "#").dropFirst() {
-            guard let lt = item.firstIndex(of: "<"), let gt = item[lt...].firstIndex(of: ">") else { continue }
-            let key = item[..<lt].trimmingCharacters(in: .whitespacesAndNewlines)
-            if values[key] == nil { values[key] = String(item[item.index(after: lt)..<gt]) }
-        }
-    }
-    subscript(_ key: String) -> String? { values[key] }
 }

@@ -43,7 +43,11 @@ public enum QuickDrawColor {
     /// 4-bit-cell rule and a full-precision nearest-colour rule give identical frame rects on all 125
     /// alpha plates (2,554 frames); both differ from an RGB compare only on `GLOW`, where the fill
     /// (8,0,255) and the frame body's (0,0,255) land on one index (210) and 5 of 12 rects change
-    /// (`SpriteGroupTests.testGlowUsesEightBitScan`).
+    /// (`SpriteGroupTests.testGlowUsesEightBitScan`). Review R-D (2026-10-06) widened this: nine
+    /// alternative inverse-table rules (cell resolutions, cell-centre vs cell-corner colours, distance
+    /// metrics, tie-breaks) all give byte-identical rects on all 125 plates / 2,554 frames; only a raw
+    /// RGB compare differs (GLOW, 5 of 12). So the MED residual — which exact inverse table QuickDraw
+    /// builds — has zero census exposure: any plausible rule yields the shipped frames.
     public static func systemIndex(_ r: UInt8, _ g: UInt8, _ b: UInt8) -> UInt8 {
         inverseTable[Int(r >> 4) << 8 | Int(g >> 4) << 4 | Int(b >> 4)]
     }

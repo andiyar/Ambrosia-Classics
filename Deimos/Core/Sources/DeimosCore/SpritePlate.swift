@@ -6,8 +6,10 @@ import Foundation
 public enum SpritePlateError: Error, Equatable, Sendable {
     /// `alphaIndices.count != width × height` (a caller error, not an original assert).
     case indexCountMismatch(count: Int, width: Int, height: Int)
-    /// Plate narrower than 3 or shorter than 2 (the three row-0 key pixels and a strip row are read).
-    case plateTooSmall(width: Int, height: Int)
+    /// Plate narrower than 3 (the three row-0 key pixels) — `FALSE`, line 0x5c (`1001f1f0–1001f200`).
+    case plateTooNarrow(width: Int)
+    /// Plate shorter than 2 (no strip row) — `FALSE`, line 0x63 (`1001f20c–1001f220`). Tested after the width.
+    case plateTooShort(height: Int)
     /// Row-0 key pixels: fill (0,0) equals grid (1,0) — `FALSE`, line 0x6b.
     case fillEqualsGrid
     /// Row-0 key pixels: grid (1,0) equals key (2,0) — `FALSE`, line 0x71.
@@ -19,9 +21,19 @@ public enum SpritePlateError: Error, Equatable, Sendable {
     public var assertText: String {
         switch self {
         case .indexCountMismatch: return "alphaIndices.count == width * height"
-        case .plateTooSmall: return "plateWidth >= 3 and plateHeight >= 2"
-        case .fillEqualsGrid, .gridEqualsKey: return "FALSE"
+        case .plateTooNarrow, .plateTooShort, .fillEqualsGrid, .gridEqualsKey: return "FALSE"
         case .noFrames: return "outRectListPtr->GetNumLinks() > 0"
+        }
+    }
+
+    /// The assert's U_SpritePlate.cc line (`FUN_1001f1c0`), nil where this port has no original line.
+    public var line: Int? {
+        switch self {
+        case .plateTooNarrow: return 0x5c
+        case .plateTooShort: return 0x63
+        case .fillEqualsGrid: return 0x6b
+        case .gridEqualsKey: return 0x71
+        case .indexCountMismatch, .noFrames: return nil
         }
     }
 }
@@ -48,7 +60,8 @@ public enum SpritePlate {
         guard w >= 0, h >= 0, px.count == w * h else {
             throw SpritePlateError.indexCountMismatch(count: px.count, width: w, height: h)
         }
-        guard w >= 3, h >= 2 else { throw SpritePlateError.plateTooSmall(width: w, height: h) }
+        guard w >= 3 else { throw SpritePlateError.plateTooNarrow(width: w) }
+        guard h >= 2 else { throw SpritePlateError.plateTooShort(height: h) }
         let fill = px[0], grid = px[1], key = px[2]
         guard fill != grid else { throw SpritePlateError.fillEqualsGrid }
         guard grid != key else { throw SpritePlateError.gridEqualsKey }

@@ -81,17 +81,23 @@ final class SpriteGroupTests: XCTestCase {
         XCTAssertThrowsError(try SpritePlate.frameRects(alphaIndices: [1, 1, 2, 0, 0, 0], width: 3, height: 2)) {
             XCTAssertEqual($0 as? SpritePlateError, .fillEqualsGrid)
             XCTAssertEqual(($0 as? SpritePlateError)?.assertText, "FALSE")
+            XCTAssertEqual(($0 as? SpritePlateError)?.line, 0x6b)
         }
         // grid == key
         XCTAssertThrowsError(try SpritePlate.frameRects(alphaIndices: [0, 1, 1, 0, 0, 0], width: 3, height: 2)) {
             XCTAssertEqual($0 as? SpritePlateError, .gridEqualsKey)
+            XCTAssertEqual(($0 as? SpritePlateError)?.line, 0x71)
         }
         // w < 3, h < 2
         XCTAssertThrowsError(try SpritePlate.frameRects(alphaIndices: [0, 1, 0, 0], width: 2, height: 2)) {
-            XCTAssertEqual($0 as? SpritePlateError, .plateTooSmall(width: 2, height: 2))
+            XCTAssertEqual($0 as? SpritePlateError, .plateTooNarrow(width: 2))
+            XCTAssertEqual(($0 as? SpritePlateError)?.assertText, "FALSE")
+            XCTAssertEqual(($0 as? SpritePlateError)?.line, 0x5c)
         }
         XCTAssertThrowsError(try SpritePlate.frameRects(alphaIndices: [0, 1, 2], width: 3, height: 1)) {
-            XCTAssertEqual($0 as? SpritePlateError, .plateTooSmall(width: 3, height: 1))
+            XCTAssertEqual($0 as? SpritePlateError, .plateTooShort(height: 1))
+            XCTAssertEqual(($0 as? SpritePlateError)?.assertText, "FALSE")
+            XCTAssertEqual(($0 as? SpritePlateError)?.line, 0x63)
         }
         // An all-fill plate has no frames.
         XCTAssertThrowsError(try SpritePlate.frameRects(alphaIndices: [0, 1, 2, 0, 0, 0], width: 3, height: 2)) {

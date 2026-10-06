@@ -7,7 +7,7 @@ import HectorResources
 /// first, end last, no clears when the table fills — the decoder's "deferred clear" path); its
 /// width rule was checked against Pillow on the 4×4 vector below and a 128×128 12-bit fill.
 enum GIFFixture {
-    static func lzw(_ indices: [UInt8], minCodeSize mcs: Int) -> [UInt8] {
+    static func lzw(_ indices: [UInt8], minCodeSize mcs: Int, endCode: Bool = true) -> [UInt8] {
         let clear = 1 << mcs, end = clear + 1
         var next = end + 1, width = mcs + 1
         var table: [Int: Int] = [:]                      // (prefixCode << 8 | k) → code
@@ -28,7 +28,7 @@ enum GIFFixture {
             if next > 1 << width && width < 12 { width += 1 }
         }
         if w >= 0 { emit(w) }
-        emit(end)
+        if endCode { emit(end) }
         if accBits > 0 { out.append(UInt8(acc & 0xFF)) }
         return out
     }
@@ -135,6 +135,14 @@ final class GIFImageTests: XCTestCase {
                .truncatedLZW(decoded: 1, expected: 4))
         expect(GIFFixture.gif(width: 2, height: 2, palette: pal, indices: idx,
                               lzwData: GIFFixture.lzw(idx + [0], minCodeSize: 8)), .excessLZW)
+        // The data ends exactly at the last pixel with no end code: accepted (giflib/Pillow).
+        XCTAssertEqual(try GIFImage(data: GIFFixture.gif(width: 2, height: 2, palette: pal, indices: idx,
+                                                         lzwData: GIFFixture.lzw(idx, minCodeSize: 8, endCode: false))).indices,
+                       idx)
+        // A 0xFFFF × 0xFFFF header over a 2-byte stream (one clear code): refused without allocating
+        // 4 GB from the unchecked header (invariant 3).
+        expect(GIFFixture.gif(width: 0xFFFF, height: 0xFFFF, palette: pal, indices: [], lzwData: [0x00, 0x01]),
+               .truncatedLZW(decoded: 0, expected: 0xFFFF * 0xFFFF))
         // A first code that is not a literal; a code beyond the next free one.
         expect(GIFFixture.gif(width: 2, height: 2, palette: pal, indices: idx, minCodeSize: 2,
                               lzwData: [0x04 | 0x07 << 3, 0x00]), .invalidCode(7))
