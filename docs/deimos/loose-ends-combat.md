@@ -503,22 +503,25 @@ Delete" (timer 20, still collidable) → `Delete`, so it can be taken for 185 ti
 ## NOT RESOLVED (this file)
 1. MathLib `atan` ulp agreement (§1.3): the exact set of headings that lose 1° per round trip
    is from an IEEE simulation. A run of the original (or the MathLib atan bit pattern) would settle it.
-2. Orphaned-orbiter motion (§5.2) relies on U's integrator order. No shipped orbiter whose owner can die
-   while `+0xd8` = 0xff was enumerated (census of `OrbitOwner` states × owner destruction).
+2. ~~Orphaned-orbiter motion (§5.2) relies on U's integrator order. No shipped orbiter whose owner can die
+   while `+0xd8` = 0xff was enumerated (census of `OrbitOwner` states × owner destruction).~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O6):
+   the 4 shipped orbiters (`bgpp icpp pbpp rgpp`) are deleted with their owner or their player, so the orphan
+   motion never happens in 1.0.6 (gameplay-leftovers.md §7.3).
 3. The console handlers at `0x10008xxx` (GOD) and `0x10039080` (PLAYERACTIVESPAWNS) are not in the
    decompile dump (no function boundary). They were read from raw bytes only, and their command-table entry layout
    (`0x100e0980`) was not decoded. Debug-only, so behaviour-neutral for normal play.
-4. `FUN_1003c7a0`/`FUN_1003c940` copy req+0x28 from registers (`sth r9/r8`, `sth r10/r9`). I assumed
+4. ~~`FUN_1003c7a0`/`FUN_1003c940` copy req+0x28 from registers (`sth r9/r8`, `sth r10/r9`). I assumed
    they hold the template halves (same pattern as the other sites) but did not trace the loads → MED for "only the
-   ground launcher changes +0x28".
-5. `FUN_10015550` (second caller of `FUN_10006110`) not read.
+   ground launcher changes +0x28".~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O4): traced — `1003c874/78`, `1003ca54/58` load
+   template +0x28/+0x2a (1.0); air/aux shots always pass 1.0 [HIGH] (gameplay-leftovers.md §7.1; INDEX #46).
+5. ~~`FUN_10015550` (second caller of `FUN_10006110`) not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: `FUN_10015550` is read: HIGH in function-roles.md (cases `100156dc…` decompiled and listed) (critic wave 3 §3).
 6. Pulse Tank timing (§1.4) assumes the scroll state and the on-screen gate definition of B §3.
    The 83–95-tick figure is for the x-crossing of the centre only.
 
 ## Role-table rows (for merge)
 | `FUN_10042cd0` | U_Math | heading (internal h') of a float vector: axis cases 0/180/90/270, quadrant atan formulas, trunc, ≥360→0; exact inverse of `FUN_10042b80` | HIGH | full listing `10042cd0..10042e8c` (loose-ends-combat.md §1.2) — ⚑ corrected (was MED, decompile) |
 | `FUN_10005cf0` | G_Game | game `+0x39` "level end reached" (set `10006db4`, cleared `10007248`/`10005524`/`10005828`) | HIGH | listing + raw store scan (§2) |
-| `FUN_10007170` | G_Game | level transition: when +0x09 and a player is alive → sound, fade, clear +0x09/**+0x39**, `FUN_100302e0`, `FUN_100064d0` next level; otherwise +0x08 = 0 (session ends) | MED | decompile + `10007248` (§2.1) |
+| `FUN_10007170` | G_Game | level transition: when +0x09 and a player is alive → sound, fade, clear +0x09/**+0x39**, `FUN_100302e0`, `FUN_100064d0` next level; otherwise +0x08 = 0 (session ends) | HIGH | decompile + `10007248` (§2.1) — ⚑ corrected (micro-wave, 2026-10-06) #§6: listing in micro-wave-2026-10-06.md §6 (function-roles.md row). Was MED |
 | `FUN_10037580` | G_EntityGroup | pickup switch: grnd/air (refuse if invulnerable), coin, exli, mult, shie, **spec (no-op, consumed)**, default consumed | HIGH | listing `10037580..100376f0` (§3.1) — ⚑ corrected (spec case) |
 | `FUN_10027490` | G_Player | shield += value, clamp [0,100], skip if 0 or not in game | HIGH | listing (§3.2) |
 | `FUN_10027de0` | G_Player | set/clear invulnerable `+0xce` with sticky `+0xcf` (sticky only from console GOD) | HIGH | listing `10027de0..10027e40` + raw call `10008518` (§3.3) |

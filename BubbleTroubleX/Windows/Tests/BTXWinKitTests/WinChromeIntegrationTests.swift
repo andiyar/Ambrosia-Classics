@@ -4,11 +4,10 @@ import BubbleTroubleRender
 import Foundation
 import XCTest
 
-/// W4.5: the driver with the real in-window chrome — the menu bar (W5), the dialogs (W6), the About panel, full
-/// screen and layout-aware text — headless over the real data (HECTORKIT_DATA_BTX).
+/// W4.5 + D21: the driver with the real in-window chrome — the dialogs (W6), the Ctrl shortcuts (no menu bar), full
+/// screen and layout-aware text — headless over the real data (HECTORKIT_DATA_BTX). The canvas is the 640×480 game
+/// screen, windowed and in full screen.
 final class WinChromeIntegrationTests: XCTestCase {
-    private let strip = WinCanvas.menuStripHeight
-
     // MARK: Helpers
 
     private func realDriver(backing: any BTXPrefsBacking = WinMemoryPrefs(),
@@ -27,7 +26,7 @@ final class WinChromeIntegrationTests: XCTestCase {
         h.input.advance()
     }
 
-    /// A click at window-canvas (x, y): down in one iteration, up in the next.
+    /// A click at canvas (x, y): down in one iteration, up in the next.
     private func click(_ d: WinGameDriver, _ h: ScriptedHost, _ x: Int, _ y: Int) {
         step(d, h, [.mouseMoved(x: x, y: y), .mouseDown(x: x, y: y)])
         step(d, h, [.mouseUp(x: x, y: y)])
@@ -35,21 +34,6 @@ final class WinChromeIntegrationTests: XCTestCase {
 
     private func key(_ code: UInt16, _ chars: String = "", _ mods: WinModifiers = []) -> WinEvent {
         .keyDown(keyCode: code, characters: chars, modifiers: mods, isRepeat: false)
-    }
-
-    private func geometry(_ d: WinGameDriver) throws -> MenuGeometry {
-        MenuBarView(text: try WinTestData.assets().text).geometry(for: d.menuBar, width: 640, height: 500)
-    }
-
-    /// Chooses row `row` of menu `menu` by click-release-click (sticky) — the way a mouse user picks an item.
-    private func choose(_ d: WinGameDriver, _ h: ScriptedHost, menu: Int, row: Int) throws {
-        let g = try geometry(d)
-        let t = g.titles[menu]
-        click(d, h, t.x + 4, 10)
-        XCTAssertEqual(d.tracker.openMenu, menu)
-        let r = g.dropdowns[menu].rows[row].frame
-        click(d, h, r.x + 20, r.y + r.height / 2)
-        XCTAssertFalse(d.tracker.isOpen)
     }
 
     private func system(_ d: WinGameDriver) throws -> DialogSystem { try XCTUnwrap(d.dialogs as? DialogSystem) }
@@ -72,7 +56,7 @@ final class WinChromeIntegrationTests: XCTestCase {
         let url = try scratchPrefsURL()
         let (d, h) = try realDriver(backing: WinPrefsFile(fileURL: url))
         toMenu(d, h)
-        XCTAssertTrue(d.menuBar.musicChecked)
+        XCTAssertNotEqual(d.currentPrefs.musicVolume, 1)
         step(d, h, [key(0x2B, ",", .command)])                         // Ctrl+, = ⌘,
         XCTAssertTrue(WinTestData.run(d, h, limit: 120) { d.dialogs.isShowing }, "DLOG 190 up")
         let s = try system(d)
@@ -81,31 +65,40 @@ final class WinChromeIntegrationTests: XCTestCase {
         XCTAssertTrue(d.dialogs.isModal)
         XCTAssertEqual(d.clock, .none, "the game clocks stop under a modal dialog")
         XCTAssertTrue(d.dialogUp)
-        XCTAssertFalse(d.menuBar.isEnabled(.always), "app-modal: the whole bar is disabled")
+        XCTAssertFalse(d.shortcuts.isEnabled(.always), "app-modal: every shortcut is off")
         let frozen = d.ticksNow()
         WinTestData.run(d, h, limit: 30)
         XCTAssertEqual(d.ticksNow(), frozen, "TickCount frozen while the dialog waits")
-        // The dialog is drawn over the canvas, under the strip.
+        // The dialog is drawn over the 640×480 canvas, centred (`alertPositionParentWindowScreen`).
         let frame = try XCTUnwrap(h.lastFrame)
-        XCTAssertEqual(frame.height, 500)
-        XCTAssertEqual(frame.canvas[dlg.originX + 30, strip + dlg.originY + 30], 0xFFFF_FFFF, "the white dialog body")
+        XCTAssertEqual(frame.width, 640)
+        XCTAssertEqual(frame.height, 480)
+        XCTAssertEqual(dlg.originX, (640 - dlg.template.width + 1) / 2, "horizontally centred")
+        XCTAssertEqual(dlg.originY, Int((Double(480 - dlg.template.height) / 3).rounded()), "a third of the free height above")
+        XCTAssertEqual(frame.canvas[dlg.originX + 30, dlg.originY + 30], 0xFFFF_FFFF, "the white dialog body")
+        // The Ctrl shortcuts are off under it: Full Screen, Music and Quit do nothing.
+        let before = d.currentPrefs
+        step(d, h, [key(0x03, "f", .command)])
+        step(d, h, [key(0x2E, "m", .command)])
+        XCTAssertFalse(d.isFullScreen)
+        XCTAssertEqual(d.currentPrefs, before)
+        XCTAssertTrue(d.dialogs.isShowing)
 
         // Music popup (item 27) → "Off" (row 0), through the driver's mouse routing (window coordinates).
         let b = dlg.popupButtonRect(try XCTUnwrap(dlg.item(27)))
-        let bx = dlg.originX + b.x + b.width / 2, by = strip + dlg.originY + b.y + b.height / 2
+        let bx = dlg.originX + b.x + b.width / 2, by = dlg.originY + b.y + b.height / 2
         step(d, h, [.mouseMoved(x: bx, y: by), .mouseDown(x: bx, y: by)])
         guard case .popup(let m) = dlg.tracking else { return XCTFail("the Music menu did not open") }
         let r = m.rows[0]
-        let rx = dlg.originX + r.x + r.width / 2, ry = strip + dlg.originY + r.y + r.height / 2
+        let rx = dlg.originX + r.x + r.width / 2, ry = dlg.originY + r.y + r.height / 2
         step(d, h, [.mouseMoved(x: rx, y: ry), .mouseUp(x: rx, y: ry)])
         XCTAssertEqual(dlg.value(27), 1)
         XCTAssertEqual(d.currentPrefs.musicVolume == 1, false, "live prefs reach the sound, not the front end yet")
         // Save (item 1).
         let save = s.centre(of: 1)
-        click(d, h, save.x, save.y + strip)
+        click(d, h, save.x, save.y)
         XCTAssertTrue(WinTestData.run(d, h, limit: 60) { !d.dialogs.isShowing }, "DLOG 190 closed")
         XCTAssertEqual(d.currentPrefs.musicVolume, 1)
-        XCTAssertFalse(d.menuBar.musicChecked, "`_ResetOptionsMenu` after the dialog: Music unchecked")
         XCTAssertFalse(d.dialogUp)
         XCTAssertEqual(d.clock, .tick, "the clocks run again")
         XCTAssertEqual(d.cursor, .hand)
@@ -157,7 +150,7 @@ final class WinChromeIntegrationTests: XCTestCase {
         XCTAssertFalse(d.finished)
         step(d, h, [.textInput("ü")])
         XCTAssertEqual(dlg.text(2), "é@béü")
-        // Ctrl+Q under the dialog: the menu is disabled, the filter ignores it — no quit.
+        // Ctrl+Q under the dialog: the shortcut is off, the filter ignores it — no quit.
         step(d, h, [key(0x0C, "q", .command)])
         XCTAssertFalse(d.finished)
         XCTAssertEqual(dlg.text(2), "é@béü")
@@ -170,101 +163,6 @@ final class WinChromeIntegrationTests: XCTestCase {
         step(d, h)
         XCTAssertFalse(h.textInput, "text input off once the field is gone")
         XCTAssertEqual(h.textInputChanges, [true, false])
-    }
-
-    // MARK: About
-
-    func testAboutFromTheMenuOpensThePanelAndItsCloseButtonCloses() throws {
-        let (d, h) = try realDriver()
-        toMenu(d, h)
-        try choose(d, h, menu: 0, row: 0)                              // Bubble Trouble X ▸ About
-        let about = try XCTUnwrap(d.about)
-        XCTAssertEqual(d.cursor, .hand, "`_SetMyCCursor(200)`")
-        XCTAssertFalse(d.dialogs.isShowing, "not a modal dialog: the game runs on")
-        XCTAssertEqual(d.clock, .tick)
-        let frame = try XCTUnwrap(h.lastFrame)
-        XCTAssertEqual(frame.canvas[about.originX + 40, strip + about.originY + 40], 0xFFEC_ECEC, "the panel")
-        // Keys are the panel's: Return does not reach the menu screen.
-        let phase = d.frontEnd.phase
-        step(d, h, [key(0x24, "\r")])
-        XCTAssertEqual(d.frontEnd.phase, phase)
-        XCTAssertNil(d.session)
-        // The close button.
-        click(d, h, about.originX + 14, strip + about.originY + 14)
-        XCTAssertNil(d.about)
-        // Esc closes it too.
-        try choose(d, h, menu: 0, row: 0)
-        XCTAssertNotNil(d.about)
-        step(d, h, [key(0x35, "\u{1B}")])
-        XCTAssertNil(d.about)
-    }
-
-    func testClickOutsideAboutClosesItAndIsSwallowed() throws {
-        let (d, h) = try realDriver()
-        toMenu(d, h)
-        try choose(d, h, menu: 0, row: 0)
-        let about = try XCTUnwrap(d.about)
-        // A point on the main menu's Demo button outside the panel.
-        let demo = try XCTUnwrap(try WinTestData.assets().data.rects.rect(2), "Rect 2: the Demo button")
-        var point: (x: Int, y: Int)?
-        for y in Int(demo.top) + 2 ..< Int(demo.bottom) - 2 {
-            for x in Int(demo.left) + 2 ..< Int(demo.right) - 2 where point == nil && !about.contains(x: x, y: y) {
-                point = (x, y)
-            }
-        }
-        let (x, y) = try XCTUnwrap(point)
-        click(d, h, x, strip + y)
-        XCTAssertNil(d.about, "the click closes the panel")
-        WinTestData.run(d, h, limit: 10)
-        XCTAssertNil(d.session, "the click and its release never reached the game: no demo")
-        XCTAssertEqual(d.frontEnd.phase, .menu)
-        // The next click is the game's again.
-        click(d, h, x, strip + y)
-        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.session != nil }, "Demo pressed and released")
-    }
-
-    func testPreferencesOverAboutDrawsTheDialogInFront() throws {
-        let (d, h) = try realDriver()
-        toMenu(d, h)
-        try choose(d, h, menu: 0, row: 0)
-        XCTAssertNotNil(d.about)
-        step(d, h, [key(0x2B, ",", .command)])                         // Ctrl+, while About is up
-        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.dialogs.isShowing }, "DLOG 190 up")
-        let about = try XCTUnwrap(d.about, "About stays open behind (a window of its own on the Mac)")
-        let both = d.currentFrame.canvas
-        d.closeAbout()
-        let dialogOnly = d.currentFrame.canvas
-        let screen = d.compositor.screen
-        var dialogPixels = 0, overAbout = 0
-        for y in 0..<480 {
-            for x in 0..<640 {
-                let p = dialogOnly[x, strip + y]
-                if p != screen[x, y] {                                  // the dialog's pixel
-                    dialogPixels += 1
-                    XCTAssertEqual(both[x, strip + y], p, "About drawn over the dialog at (\(x), \(y))")
-                    if both[x, strip + y] != p { return }
-                    if about.contains(x: x, y: y) { overAbout += 1 }
-                }
-            }
-        }
-        XCTAssertGreaterThan(dialogPixels, 10_000)
-        XCTAssertGreaterThan(overAbout, 1_000, "the dialog and the panel overlap")
-    }
-
-    // MARK: Focus
-
-    func testFocusLostClosesAnOpenMenuWithoutACommand() throws {
-        let (d, h) = try realDriver()
-        toMenu(d, h)
-        let g = try geometry(d)
-        click(d, h, g.titles[2].x + 4, 10)                             // Options, sticky open
-        XCTAssertEqual(d.tracker.openMenu, 2)
-        let prefs = d.currentPrefs
-        step(d, h, [.focusLost])
-        XCTAssertFalse(d.tracker.isOpen)
-        XCTAssertEqual(d.currentPrefs, prefs, "nothing chosen")
-        step(d, h, [.focusGained])
-        XCTAssertFalse(d.tracker.isOpen)
     }
 
     // MARK: Live move / resize (Windows' modal loop)
@@ -301,17 +199,16 @@ final class WinChromeIntegrationTests: XCTestCase {
         let backing = WinMemoryPrefs()
         let (d, h) = try realDriver(backing: backing)
         toMenu(d, h)
-        XCTAssertEqual(h.lastFrame?.height, 500)
+        XCTAssertEqual(h.lastFrame?.height, 480)
+        let presents = h.presents
         step(d, h, [key(0x03, "f", .command)])                         // Ctrl+F
         XCTAssertTrue(h.fullScreen)
         XCTAssertTrue(d.isFullScreen)
-        XCTAssertTrue(d.menuBar.fullScreenChecked)
         XCTAssertTrue(d.currentPrefs.fullScreen)
-        XCTAssertEqual(h.lastFrame?.height, 480, "the strip hides in full screen: the game screen alone")
+        XCTAssertGreaterThan(h.presents, presents, "the window redrawn at its new size")
+        XCTAssertEqual(h.lastFrame?.width, 640)
+        XCTAssertEqual(h.lastFrame?.height, 480, "the same canvas in full screen")
         XCTAssertTrue(try store(backing).load().prefs.fullScreen, "saved")
-        // The strip is gone: a click at the top of the screen is the game's, not the bar's.
-        click(d, h, 30, strip + 2)
-        XCTAssertFalse(d.tracker.isOpen)
 
         // A new launch over the same prefs starts in full screen.
         let h2 = ScriptedHost()
@@ -320,19 +217,17 @@ final class WinChromeIntegrationTests: XCTestCase {
         d2.start()
         XCTAssertTrue(h2.fullScreen)
         XCTAssertTrue(d2.isFullScreen)
-        XCTAssertTrue(d2.menuBar.fullScreenChecked)
         XCTAssertEqual(h2.lastFrame?.height, 480)
 
         // Back to the window.
         step(d, h, [key(0x03, "f", .command)])
         XCTAssertFalse(h.fullScreen)
         XCTAssertFalse(d.currentPrefs.fullScreen)
-        XCTAssertEqual(h.lastFrame?.height, 500)
+        XCTAssertEqual(h.lastFrame?.height, 480)
         // A refused switch flips the pref back (the Mac's no-screen case).
         h.refuseFullScreen = true
         step(d, h, [key(0x03, "f", .command)])
         XCTAssertFalse(d.isFullScreen)
-        XCTAssertFalse(d.menuBar.fullScreenChecked)
         XCTAssertFalse(d.currentPrefs.fullScreen)
         // `setFullScreen`'s return is the Mac's: true when the window is now as asked.
         h.refuseFullScreen = false
@@ -342,68 +237,67 @@ final class WinChromeIntegrationTests: XCTestCase {
         XCTAssertFalse(d.setFullScreen(true))
     }
 
-    // MARK: Menu clicks
+    // MARK: Ctrl shortcuts (no menu bar)
 
-    func testMenuClicksRunTheirCommands() throws {
+    func testShortcutsRunTheirCommands() throws {
         let backing = WinMemoryPrefs()
         let (d, h) = try realDriver(backing: backing)
         toMenu(d, h)
         let phase = d.frontEnd.phase
-        // Options ▸ Music (row 3): off, unmarked, saved.
-        try choose(d, h, menu: 2, row: 3)
+        // Ctrl+M: Music off, saved; again: back on.
+        step(d, h, [key(0x2E, "m", .command)])
         XCTAssertEqual(d.currentPrefs.musicVolume, 1)
-        XCTAssertFalse(d.menuBar.musicChecked)
         XCTAssertEqual(try store(backing).load().prefs.musicVolume, 1)
-        try choose(d, h, menu: 2, row: 3)
+        step(d, h, [key(0x2E, "m", .command)])
         XCTAssertNotEqual(d.currentPrefs.musicVolume, 1)
-        XCTAssertTrue(d.menuBar.musicChecked)
-        // Options ▸ Sound Effects (row 2) by its shortcut Ctrl+Shift+A.
+        // Ctrl+Shift+A: Sound Effects off, saved.
         step(d, h, [key(0x00, "A", [.command, .shift])])
         XCTAssertEqual(d.currentPrefs.sfxVolume, 1)
-        XCTAssertFalse(d.menuBar.soundChecked)
-        // Window ▸ Minimize and Zoom are disabled, as on the Mac (the window is titled only): nothing is chosen.
-        for row in 0...1 {
-            let g = try geometry(d)
-            let item = g.dropdowns[3].rows[row].frame
-            click(d, h, g.titles[3].x + 4, 10)
-            click(d, h, item.x + 20, item.y + 5)
-            XCTAssertTrue(d.tracker.isOpen, "a disabled item leaves the menu open")
-            step(d, h, [key(0x35, "\u{1B}")])
-            XCTAssertFalse(d.tracker.isOpen)
-        }
-        // Edit is disabled: choosing Undo does nothing and the menu stays open (sticky).
-        let g = try geometry(d)
-        click(d, h, g.titles[1].x + 4, 10)
-        let undo = g.dropdowns[1].rows[0].frame
-        click(d, h, undo.x + 20, undo.y + 5)
-        XCTAssertTrue(d.tracker.isOpen)
-        // Keys go to the open menu: Esc closes it and never reaches the game.
-        step(d, h, [key(0x35, "\u{1B}")])
-        XCTAssertFalse(d.tracker.isOpen)
+        XCTAssertEqual(try store(backing).load().prefs.sfxVolume, 1)
+        // A repeat of a held shortcut does nothing (the Mac's menu key equivalents ignore auto-repeat).
+        step(d, h, [.keyDown(keyCode: 0x00, characters: "A", modifiers: [.command, .shift], isRepeat: true)])
+        XCTAssertEqual(d.currentPrefs.sfxVolume, 1)
+        // Ctrl+Alt+M (the Mac's ⌥⌘M Minimize All) is eaten: nothing happens.
+        let prefs = d.currentPrefs
+        step(d, h, [key(0x2E, "m", [.command, .option])])
+        XCTAssertEqual(d.currentPrefs, prefs)
         XCTAssertEqual(d.frontEnd.phase, phase)
-        // Alt held swaps the Window menu's alternates in the open menu.
-        click(d, h, g.titles[3].x + 4, 10)
-        step(d, h, [key(0x3A, "", .option)])
-        XCTAssertTrue(d.tracker.optionHeld)
-        step(d, h, [.keyUp(keyCode: 0x3A, modifiers: [])])
-        XCTAssertFalse(d.tracker.optionHeld)
-        step(d, h, [key(0x35, "\u{1B}")])
-        // The bar is drawn in the strip.
-        let frame = try XCTUnwrap(h.lastFrame)
-        XCTAssertEqual(frame.canvas[639, 0], 0xFF00_0000 | MenuBarView.barColor)
-        XCTAssertEqual(frame.canvas[639, 19], 0xFF00_0000 | MenuBarView.barLine)
+        XCTAssertFalse(d.finished)
+        // Ctrl+Q at the main menu: the quit routes (saves, fades, quits).
+        step(d, h, [key(0x0C, "q", .command)])
+        XCTAssertTrue(WinTestData.run(d, h, limit: 600) { d.finished }, "Ctrl+Q quits")
+        XCTAssertTrue(h.quitCalled)
     }
 
-    func testMenusFollowThePlayState() throws {
+    func testNoMenuStrip() throws {
+        let (d, h) = try realDriver()
+        toMenu(d, h)
+        let frame = try XCTUnwrap(h.lastFrame)
+        XCTAssertEqual(frame.width, 640)
+        XCTAssertEqual(frame.height, 480)
+        XCTAssertEqual(frame.canvas.pixels, d.compositor.screen.pixels, "the canvas is the game screen alone")
+        // The top rows are the game's: a click there reaches the game (no bar takes it), and the pointer the game
+        // reads is the canvas position.
+        step(d, h, [.mouseMoved(x: 30, y: 2)])
+        click(d, h, 30, 2)
+        XCTAssertFalse(d.dialogs.isShowing)
+        XCTAssertFalse(d.finished)
+    }
+
+    func testShortcutsFollowThePlayState() throws {
         let (d, h) = try realDriver()
         toMenu(d, h)
         h.injected = [key(0x24, "\r")]                                 // New Game
         XCTAssertTrue(WinTestData.run(d, h, limit: 1_000) { d.session?.phase == .playing }, "game running")
-        XCTAssertFalse(d.menuBar.isEnabled(.preferences), "Preferences off in play")
-        XCTAssertFalse(d.menuBar.isEnabled(.playMenus), "Full Screen off in play")
-        XCTAssertFalse(d.menuBar.isEnabled(.about), "About off in play")
+        XCTAssertFalse(d.shortcuts.isEnabled(.playMenus), "Preferences / Full Screen off in play")
         step(d, h, [key(0x2B, ",", .command)])                         // Ctrl+, in play: disabled → the game's key
         XCTAssertFalse(d.dialogs.isShowing)
+        step(d, h, [key(0x03, "f", .command)])                         // Ctrl+F in play: disabled
+        XCTAssertFalse(d.isFullScreen)
+        XCTAssertFalse(d.currentPrefs.fullScreen)
+        let music = d.currentPrefs.musicVolume
+        step(d, h, [key(0x2E, "m", .command)])                         // Ctrl+M stays on in play
+        XCTAssertNotEqual(d.currentPrefs.musicVolume, music)
     }
 
     // MARK: Quit with a dialog up

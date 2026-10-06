@@ -74,9 +74,9 @@ it is a math module (proposed name `U_Math` — LOW, name pattern only).
 | `FUN_10042cd0` | heading of a float vector via libm atan; axis cases from the `0x100d7318` table: (0,0)/(0,+y) → 0, (0,−y) → 180, (+x,0) → 90, (−x,0) → 270; first quadrant `atan(x/y)·57.2958`; ≥360 → 0 | MED | decompile + table; full branch listing not walked; callers `FUN_100146f0`, `FUN_10037b50` |
 | `FUN_10042f80 @ 10042f80` | **circle overlap test** (§2.1) | HIGH | listing below |
 | `FUN_100426e0` | writes a data file in `Data` (type/creator `Data`/`Deim`); "FILE ERROR: Could not create new…", "Data Saved: %s"; used by the units-cache writer | MED | decompile strings; caller `FUN_10041e40` (cache builder) |
-| `FUN_100428b0` | static initialiser: copies three constant records into globals `0x100ecfc8…0x100ed008` | LOW | decompile; caller `FUN_10000000` |
-| `FUN_100431f0` | an init routine: `FUN_1003a870(…)`, `FUN_10044630()`, then **two `RandomRange(0,99)`** into `_DAT_100e026c`/`_DAT_100e0268`, then `FUN_1002d080` | LOW (role) / HIGH (RNG calls in the decompile) | caller `FUN_100000e0` (app init). These are RNG consumers at app init (engine-loop.md §9 handoff) — ⚑ corrected (wave 2, 2026-10-03): particle module init; 302 draws (300 in `FUN_10044630` + 2), all before any `srand`; see particles-debris-blur.md §1 |
-| `FUN_10043280` | the teardown paired with `FUN_100431f0` (`FUN_10044550`) | LOW | decompile; caller `FUN_10000630` |
+| `FUN_100428b0` | static initialiser: copies three constant records into globals `0x100ecfc8…0x100ed008` | HIGH | decompile; caller `FUN_10000000` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; TU init: draw template D `0x100ecfc4` only (the "constant records" are D +4/+0x20/+0x38), static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
+| `FUN_100431f0` | an init routine: `FUN_1003a870(…)`, `FUN_10044630()`, then **two `RandomRange(0,99)`** into `_DAT_100e026c`/`_DAT_100e0268`, then `FUN_1002d080` | HIGH | caller `FUN_100000e0` (app init). These are RNG consumers at app init (engine-loop.md §9 handoff) — ⚑ corrected (wave 2, 2026-10-03): particle module init; 302 draws (300 in `FUN_10044630` + 2), all before any `srand`; see particles-debris-blur.md §1 — ⚑ corrected (review wave 3, 2026-10-06) #L: was "LOW (role) / HIGH (RNG calls)"; particle module init, listing `100431f0..10043260` (particles-debris-blur.md §1, §2.1) |
+| `FUN_10043280` | the teardown paired with `FUN_100431f0` (`FUN_10044550`) | HIGH | decompile; caller `FUN_10000630` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; particle module teardown (particles-debris-blur.md §2.1) |
 
 Heading convention check [MED]. `FUN_10042b30` and `FUN_10042cd0` agree: heading h ↔ vector
 (sin h, cos h). For that same vector `FUN_10043090` returns `−h`. The caller `FUN_10033600`
@@ -195,7 +195,8 @@ entity is not deleted and its state `Collides` (+0x347). A = the entity being up
      owner (`10037074 lwz r5,0x140(r17)` … `100370b4 lwz r3,0x140(r17)`), not B's. The listing
      carries this copy-paste bug; a 100 % replica keeps it. **Consequence:** a player shot is
      always A (next paragraph) and carries no owner (spawn-request template `0x100ecd14`
-     +0x20/+0x24 = 0; neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` writes them), so the
+     +0x20 = 0, +0x24 = −1 (static init `FUN_1003ce60`, static-init-audit.md §5.2; ⚑ corrected (wave 3+4, 2026-10-04): was "+0x20/+0x24 = 0"
+     from the data image); neither launcher `FUN_1003c4f0`/`FUN_1003c7a0` writes them), so the
      redirect never fires and a `passHitsToOwner` turret/bubble struck by a player shot takes the
      damage on its **own** shields (`100370d8–100370e8`); bubbles with 0.0 shields swallow it (§3).
      Only ramming (§2.3, the entity's own `+0x140`) passes damage to the owner. See bosses.md §3.5
@@ -439,17 +440,20 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 ## NOT RESOLVED (this file)
 1. `FUN_10019ca0` (`U_Sprite_GetDimensions`) scale argument and the frame sizes. Collision
    radii in pixels per unit need them (sprite plate frame rects ×, possibly, `+0x84` scale).
-2. Value of `entity+0xd8` (owner index) for enemy-spawned entities. It is copied from spawn
+2. ~~Value of `entity+0xd8` (owner index) for enemy-spawned entities. It is copied from spawn
    request +0x14 (`FUN_10035cd0`). Is it always outside 0..1, so that enemy-shot kills never
-   score? Read `FUN_10033220` callers' request templates (`0x100e64bc…`, `0x100eb420…`).
-3. `entity+0x13e` ("has children") writer `FUN_100142f0` l. 11933 — not read.
-4. The weapon-pickup (`air `/`grnd`) swap and the shield-pickup cap (`FUN_10027490` listing) —
-   player/weapon reader.
-5. The ground-accuracy crosshair rectangle in step 9 (`FUN_1003bab0`): decompile reads
+   score? Read `FUN_10033220` callers' request templates (`0x100e64bc…`, `0x100eb420…`).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §4.3: `+0xd8` of enemy-spawned entities (INDEX #32 closed) (critic wave 3 §3).
+3. ~~`entity+0x13e` ("has children") writer `FUN_100142f0` l. 11933 — not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §4.2: every access to `+0x13c/+0x13d/+0x13e` (raw scan) (critic wave 3 §3).
+4. ~~The weapon-pickup (`air `/`grnd`) swap and the shield-pickup cap (`FUN_10027490` listing) —
+   player/weapon reader.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §3.1 (pickup switch, listing `10037580..100376f0`) and §3.2 (shield cap `FUN_10027490`) (critic wave 3 §3).
+5. ~~The ground-accuracy crosshair rectangle in step 9 (`FUN_1003bab0`): decompile reads
    `left ≤ cx < right && top ≤ cy < bottom` (strict upper bound), for ground, non-harmless,
-   canBeHit, `IsTargetable` units only — listing not checked; scoring reader.
-6. `FUN_1000fec0` = scroll offset used by the water test (MED). Also the return codes of
-   `FUN_1000fee0` other than 0/1.
+   canBeHit, `IsTargetable` units only — listing not checked; scoring reader.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7):
+   listing-confirmed half-open `l ≤ cx < r`, `t ≤ cy < b`; the test is in `FUN_10033850` `100343ac..100344e8`
+   (gameplay-leftovers.md §7.4b).
+6. ~~`FUN_1000fec0` = scroll offset used by the water test (MED). Also the return codes of
+   `FUN_1000fee0` other than 0/1.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7): `FUN_1000fee0` returns only 0/1;
+   `FUN_1000fec0` = window top `0x100e5acc` (HIGH) (gameplay-leftovers.md §7.4a).
 7. `FUN_100431f0`'s two `RandomRange(0,99)` at app init: are they before `srand`, and do they
    matter for film replay? (engine reader). ⚑ corrected (wave 2, 2026-10-03): closed — 302 draws, all before
    `srand`, no replay effect (particles-debris-blur.md §1).
@@ -480,9 +484,9 @@ hit 4; damage 0.4 (6 %) → dies on hit 17 (after 16 hits: 4 %). Hits are at lea
 | `FUN_10043040` | U_Math | mirror heading 180−h mod 360 | HIGH | listing |
 | `FUN_10042cd0` | U_Math | heading of float vector (libm atan, axis table) | MED | decompile |
 | `FUN_100426e0` | ? | write data file in Data folder (units cache helper) | MED | strings; caller FUN_10041e40 |
-| `FUN_100428b0` | ? | static initialiser copying constant records | LOW | decompile |
-| `FUN_100431f0` | ? | init: two RandomRange(0,99) + FUN_1002d080 | LOW | decompile; caller FUN_100000e0 |
-| `FUN_10043280` | ? | teardown for FUN_100431f0 | LOW | decompile |
+| `FUN_100428b0` | ? | static initialiser copying constant records | HIGH | decompile — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
+| `FUN_100431f0` | ? | init: two RandomRange(0,99) + FUN_1002d080 | HIGH | decompile; caller FUN_100000e0 — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; particle module init, listing `100431f0..10043260` (particles-debris-blur.md §1) |
+| `FUN_10043280` | ? | teardown for FUN_100431f0 | HIGH | decompile — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; particle module teardown (particles-debris-blur.md §2.1) |
 | `FUN_10014f10` | | damage entity: hit delay flli167 (>), shields +0x134 −= dmg, invuln restore, on-hit state, ≤0 → score+destroy/depletion state, glow/particles/sound/collision spawn | HIGH | listing 10014f10–1001527c |
 | `FUN_10016300` | | destroy entity: obstacle, particles, destructSpawn (media-gated), notice, sound, flags cb/d9/da, ground-kill count, random bonus | HIGH | listing |
 | `FUN_10016880` | | media gate for death/deletion spawns + water impact by mediaImpactSize | HIGH | listing |

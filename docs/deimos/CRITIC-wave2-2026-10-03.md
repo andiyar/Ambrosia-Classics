@@ -59,7 +59,7 @@ Per family (H/M/L/–). "Unread" = none+LOW lines, before → after:
 | M_Sound | 47160–47e40 | 18 | 1/5/2/10 | 15/3/0/0 | 297 → 0 |
 | M_Music + streamer | 47e40–491d0 | 27 | 3/6/1/17 | 14/7/0/6 | 570 → 286 |
 | M_Application | 491d0–49ca0 | 16 | 1/3/0/12 | 3/3/0/10 | 283 → 197 |
-| unzip.c (library) | 49ca0–4b400 | 32 | 8/7/0/17 | untouched | 313 |
+| unzip.c (library) [⚑ corrected (wave 3+4, 2026-10-04): custom zip reader `49ca0–4a8a0` (module string "unzip.c", not Gilles Vollant's minizip) + Input/InputSprocket module `4a8b0–4b2a0` + MW registrar `4b2b0`; app-pak-music-library.md §5] | 49ca0–4b400 | 32 | 8/7/0/17 | untouched | 313 |
 
 Library callees reached directly from gameplay: 34 functions, 9 labelled. The other 25 are trivial or out of scope by ruling:
 - `FUN_1004ee30` = abs, already named in units-movement.md prose.

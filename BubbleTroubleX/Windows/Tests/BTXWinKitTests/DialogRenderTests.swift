@@ -14,18 +14,19 @@ final class DialogRenderTests: XCTestCase {
     static let goldens = DialogFixture.packageDirectory.appendingPathComponent("Tests/Goldens")
     static let eyeDirectory = URL(fileURLWithPath: "/private/tmp/claude-504/w6")
 
-    /// The 640×500 window: a 20 px menu strip, then the canvas in a flat game-ish blue, the dialogs drawn over it.
+    /// The 640×480 window canvas (D21: no menu strip) in a flat game-ish blue, the dialogs drawn over it. The pattern
+    /// keeps the phase it had under the old 20 px strip (`y + 20`), so the goldens are unchanged.
     private func window(_ s: DialogSystem) -> RGBAImage {
-        var img = RGBAImage(width: 640, height: 500, fill: 0xFFEE_EEEE)
-        for y in 20..<500 { for x in 0..<640 { img[x, y] = 0xFF00_0000 | UInt32(0x10 + (x + y) % 32) << 8 | 0x60 } }
-        s.draw(into: &img, canvasX: 0, canvasY: 20)
+        var img = RGBAImage(width: 640, height: 480)
+        for y in 0..<480 { for x in 0..<640 { img[x, y] = 0xFF00_0000 | UInt32(0x10 + (x + y + 20) % 32) << 8 | 0x60 } }
+        s.draw(into: &img, canvasX: 0, canvasY: 0)
         return img
     }
 
-    /// The dialog's rect on the window plus a 24 px margin (shadow), clamped.
+    /// The dialog's rect on the canvas plus a 24 px margin (shadow), clamped.
     private func crop(_ img: RGBAImage, around d: DialogWindow) -> RGBAImage {
-        let x0 = max(0, d.originX - 24), y0 = max(0, d.originY + 20 - 24)
-        let x1 = min(640, d.originX + d.template.width + 24), y1 = min(500, d.originY + 20 + d.template.height + 24)
+        let x0 = max(0, d.originX - 24), y0 = max(0, d.originY - 24)
+        let x1 = min(640, d.originX + d.template.width + 24), y1 = min(480, d.originY + d.template.height + 24)
         var out = RGBAImage(width: x1 - x0, height: y1 - y0)
         for y in 0..<out.height { for x in 0..<out.width { out[x, y] = img[x0 + x, y0 + y] } }
         return out
@@ -84,9 +85,9 @@ final class DialogRenderTests: XCTestCase {
         Self.writePNG(c, "dlog1000.png")
         try assertGolden(c, "Dialog-1000")
         // Spot checks that do not depend on the golden: white body, the accent default button, the edit field white.
-        XCTAssertEqual(img[d.originX + 5, d.originY + 20 + 60] & 0xFF_FFFF, DialogRenderer.windowBackground)
+        XCTAssertEqual(img[d.originX + 5, d.originY + 60] & 0xFF_FFFF, DialogRenderer.windowBackground)
         let ok = d.item(1)!.rect
-        XCTAssertEqual(img[d.originX + ok.x + 4, d.originY + 20 + ok.y + 10] & 0xFF_FFFF, DialogRenderer.accent)
+        XCTAssertEqual(img[d.originX + ok.x + 4, d.originY + ok.y + 10] & 0xFF_FFFF, DialogRenderer.accent)
     }
 
     func testGoldenDLOG190() throws {
@@ -101,7 +102,7 @@ final class DialogRenderTests: XCTestCase {
         try assertGolden(c, "Dialog-190")
         // `_TouchUpPrefsDialog`'s grey frame on item 22.
         let r = d.item(22)!.rect
-        XCTAssertEqual(img[d.originX + r.x + 10, d.originY + 20 + r.y] & 0xFF_FFFF, 0x7F7F7F)
+        XCTAssertEqual(img[d.originX + r.x + 10, d.originY + r.y] & 0xFF_FFFF, 0x7F7F7F)
     }
 
     /// Every other state for the eye (no golden): prefs areas, an open popup, DLOG 200 + ALRT 201, each table dialog.

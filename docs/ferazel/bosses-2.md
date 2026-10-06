@@ -2,7 +2,7 @@
 
 **Code readings only; nothing behaviour-verified.** Date 2026-10-03. Sources, conventions and
 §1 (shared framework: parameters, boss flag, arena, kill consequences, damage tables, sounds)
-are in `bosses.md`; section numbers continue from it.
+are in `bosses.md`; section numbers continue from it. ⚑ wave 2 (2026-10-04): §8–§12 continue in `bosses-3.md`.
 
 ---------------------------------------------------------------------------------------------
 
@@ -45,7 +45,9 @@ sprite. The segment branch keeps `+0x50 = .KillDemon` (set before the type test)
 Skip if `+0xe9`/`+0x1b2`. `.StandardSpriteHandles`; rect; `phase += t[8]`, reset to 0 (not
 modulo) when ≥ 0x230. **Key code 0x77 held → HP = −1** — no debug-flag test (raw 1008a6c4..
 1008a6dc: `li r3,0x77; bl IsPressed; … li r0,-0x1; sth r0,0xa4`) [HIGH; key name "End" MED].
-`type == 0x780` → write 0x781 then subtract 1 (a no-op; same idiom in `.HandleBurn`).
+`type == 0x780` → write 0x781 then subtract 1 (a no-op; same idiom in `.HandleBurn`). ⚑ wave 2 (2026-10-04): also in
+`.UpdateSprites` for 0x6ea; no call or branch between the two stores, so the transient value is
+unobservable — omit in a replica (bosses-3 §10.4) [HIGH].
 `+0x50 = .KillDemon`. State switch (`n` = `+0x46`):
 
 | state | behaviour |
@@ -155,7 +157,7 @@ start of the next frame. `.StandardXichraFloat`: face group 0, frame `(n mod 20)
 ### 6.3 Phases (`w+0x6a`, switch at l. 22840–22955)  [HIGH]
 | phase | form | hdr+0x2730 | sway target | exit |
 |---|---|---|---|---|
-| 0 | 0 | 3 | 0 (`w+0x2c = 0`) | state-0 frame 80 (`+0xa6 == 0x50`): Mcnv **250** ("Xichra 1"), record 500 p3 = 4, two Walker-class **0x6d6** minions (record 500, layer 0x14) at (cx − 298, camTop − 110) / (cx + 82, camTop − 110), `w+0x6c = 2` → phase 1. (`+0x100 = 1` is written twice to the first minion, never to the second: raw 1008ecc4/1008ece8) |
+| 0 | 0 | 3 | 0 (`w+0x2c = 0`) | state-0 frame 80 (`+0xa6 == 0x50`): Mcnv **250** ("Xichra 1"), record 500 p3 = 4, two Walker-class **0x6d6** minions (record 500, layer 0x14) at (cx − 298, camTop − 110) / (cx + 82, camTop − 110), `w+0x6c = 2` → phase 1. (`+0x100 = 1` is written twice to the first minion, never to the second: raw 1008ecc4/1008ece8 — ⚑ wave 2 (2026-10-04): harmless, the Walker Setup already sets `+0x100 = 1` for p3 = 4; the minions are 2000-HP tier-4 Ax goblins, bosses-3 §8.4) |
 | 1 | 0 | — | 0 | each minion with `+0xe9` → `w+0x6c−−`; at < 1: Mcnv **251** ("Xichra 2") → 2 |
 | 2 | 0 | 3 | 0x200 | hits < 1 → 3: hits = 4, flash 5, snd 468 rate 78000+`FastRand(12000)`, `.UpdateXichraCannons` |
 | 3 | 1 | 4 | 0x300 | hits < 1 → 4: hits = 4, flash 5, snd 468 ×2 (78000+, 90000+) |
@@ -166,7 +168,9 @@ start of the next frame. `.StandardXichraFloat`: face group 0, frame `(n mod 20)
 Action cycle, phases 2–5: `w+0x34−−`; when < 1 and ready: state 0 → 1, 1 → 2, 2 → 0 with `w+0x34 =
 90 + FastRand(60)` (`addi … 0x5a` 1008e7f4). The timer reloads only on 2 → 0, so the shot and
 rain attacks run back to back after each 90–149-frame float. hdr+0x2730 is the CLUT-animation
-mode field (sprites-backgrounds-sounds.md §4; L67 header ships 3, 16, 75, 12000) [MED: visual].
+mode field (sprites-backgrounds-sounds.md §4; L67 header ships 3, 16, 75, 12000) ~~[MED: visual]~~
+⚑ wave 2 (2026-10-04): decoded — modes 3..7 recolour the magenta ramp (palette 239..254) that makes up ~15 % of the
+throne-room backdrop PICT 387: violet → orange → red → flickering grey → black (bosses-3 §9) [HIGH].
 
 ### 6.4 States (`+0xb0`, switch at l. 22995–23400)  [HIGH]
 | state | behaviour |
@@ -226,7 +230,10 @@ is not reached in play; the game ends from state 8 [MED: no other writer of its 
 p1 = 0x67 (103), p2 = 15; record 401 p1 = 0x68, p2 = 15; both `+0xa6 = 0`, `+0x158 = 8`, `+0x160 =
 8`, `+0x164 = 9000`, `+0x15c = +2` (A) / −2 (B). Cannon behaviour is Background-class code (types
 0x442..0x44a, `.SetupBackgroundSprite` l. 13996ff: face `(type − 0x442)·4`, layer 1000, p1 selects
-the mode) — NOT RESOLVED here. Before phase 3 the cannons run with records 400/401 all zero.
+the mode) — ~~NOT RESOLVED here~~. Before phase 3 the cannons run with records 400/401 all zero.
+⚑ wave 2 (2026-10-04): resolved in bosses-3 §8.2 — before phase 3 both are fixed (A up-right, B up-left, launch 9000);
+from phase 3 A turns +2 and B −2 per 1/32 turn, 180° per move, 15-frame pause; the type writes
+(0x443/0x444) change nothing because aim is set only in Setup [HIGH].
 
 ---------------------------------------------------------------------------------------------
 
@@ -249,33 +256,44 @@ right edge, or below the map (`hdr+0xb282·32`).
 | Box 0x5c4 (1476) | Xichra form 2 | Box class | falls | 0xa8 on contact, invul 60, coins 5 at 49 % | — |
 
 0x46a/0x71f tile collisions are `.HitEnemyShotTileSprite` (not read here). Whether 0x77b, with
-no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFromTiles` [MED].
+no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFromTiles` ~~[MED]~~.
+⚑ wave 2 (2026-10-04): 0x46a dies on its first FG hit (ignores BG/water), 0x71f on its first wall hit
+(enemy-shots §1.2/§1.3); 0x77b **passes through terrain** — `.SeparateFromTiles2` returns at once
+when `+0x1f8 == 0` (1003c86c..1003c874) [HIGH] (bosses-3 §12.2).
 
 ---------------------------------------------------------------------------------------------
 
 ## NOT RESOLVED
 1. `+0xb8` draw modes 1, 0xb and 0xc (`0x10008/0x10009/0x1000c`, `0xb0000..0xb0002`) and what
-   `.WrapDrawSprites` does with them; the flash buffer `*_DAT_100a0008`.
-2. Xichra's cannons: Background types 0x442..0x44a with p1 0x67/0x68, p2 15 and the
-   `+0x158/+0x15c/+0x160/+0x164` values written by `.UpdateXichraCannons`.
-3. `.HitEnemyShotTileSprite` for 0x46a/0x71f; whether 0x77b ignores tiles.
+   `.WrapDrawSprites` does with them; the flash buffer `*_DAT_100a0008`. ⚑ wave 2 (2026-10-04): still open — carried
+   by INDEX item 15 (draw effects); not attempted by the boss lane (bosses-3 NR 1). ⚑ wave 2 corr
+   (2026-10-04) DE #9: → closed by draw-effects §2 (modes 1, 0xb, 0xc); `*_DAT_100a0008` is not a flash
+   buffer but the sprite/parallax **mask buffer** (draw-effects §1.3) — every non-rotated sprite writes 0
+   under its silhouette (`1002d18c..1002d2c0`).
+2. ~~Xichra's cannons: Background types 0x442..0x44a with p1 0x67/0x68, p2 15 and the
+   `+0x158/+0x15c/+0x160/+0x164` values written by `.UpdateXichraCannons`.~~ → closed: bosses-3 §8.2 (and §8.1 census, §8.3 cannon-fired seeds)
+3. ~~`.HitEnemyShotTileSprite` for 0x46a/0x71f; whether 0x77b ignores tiles.~~ → closed: bosses-3 §12.2
 4. ~~(→ held-item-melee.md, review 1b #11: the melee hit frames live in `.HandleHeldItemSprite`.)
    Which held-weapon frames carry the player-shot handler (`.HandleItemUse` condition), i.e.
    exactly when melee counts against the Chief / Xichra window; whether any player shot ever has
    `+0xa6 ≠ 0` (the boss Hit gate).~~ Closed by held-item-melee.md §1.3/§1.7: strike = swing calls
    c = 3, 4, 5; the held item's `+0xa6` is never written non-zero, so the boss gate always passes for
    melee. ⚑ corrected (review 1c, 2026-10-03) #10.
-5. hdr+0x2730 modes 3..7 as seen on screen (CLUT animation during Xichra's phases).
+5. ~~hdr+0x2730 modes 3..7 as seen on screen (CLUT animation during Xichra's phases).~~ → closed: bosses-3 §9
 6. ~~`+0xcd` (grounded/landed) — PlatformBounce writes it; the tile-landing writer was not traced.~~
    Closed (synthesis ledger A5): `.StandardSpriteHandles` copies `+0xce` into `+0xcd` at frame start
    (raw `100368c4..100368c8`); `.PlatformBounce` sets 1 on a landing (`100379c4`) — physics §0.1.
-7. Behaviour of the 0x6d6 minions with record-500 p3 = 4 and `+0x100 = 1` (Walker reader).
-8. ~~`+0x88 = 0` in boss mode (field meaning);~~ `STPlay3DSoundPitched` rate units. (`+0x88` closed: light-overlay gate, physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5 — boss mode switches the light pass off.)
-9. Vestigial: Wizard state 11 (no writer), `w[4]`, Chief `+0xb2`, Warrior `+0x154` (egg) and p2
-   default 150 — written, never read in the boss code; purpose unknown.
-10. Gate 2940 with p1 ≥ 0 (`record[p1].p4 == 1` condition) — Box-class reader.
-11. Whether level 55 lets the player reach x > 15940 (the only way its arena would lock).
-12. Purpose of the Demon/HandleBurn "0x780 → 0x781 → −1" type write (no-op as compiled).
+7. ~~Behaviour of the 0x6d6 minions with record-500 p3 = 4 and `+0x100 = 1` (Walker reader).~~ → closed: bosses-3 §8.4
+8. ~~`+0x88 = 0` in boss mode (field meaning);~~ ~~`STPlay3DSoundPitched` rate units.~~ → closed: bosses-3 §12.1 (`+0x88` closed: light-overlay gate, physics §0.1 ⚑ corrected (review 1c, 2026-10-03) #5 — boss mode switches the light pass off.)
+9. ~~Vestigial: Wizard state 11 (no writer), `w[4]`, Chief `+0xb2`, Warrior `+0x154` (egg) and p2
+   default 150 — written, never read in the boss code; purpose unknown.~~ → closed: bosses-3 §10.1–§10.3
+   (no reader engine-wide; Warrior/Wizard/Dillo share a Setup template; Chief keeps an emptied switch;
+   intent undeterminable)
+10. ~~Gate 2940 with p1 ≥ 0 (`record[p1].p4 == 1` condition) — Box-class reader.~~ → closed: bosses-3 §8.5
+   (reader in triggers-background §1; the seven level-67 gates read record 0, which nothing writes → never open)
+11. ~~Whether level 55 lets the player reach x > 15940 (the only way its arena would lock).~~ → closed: bosses-3 §11
+12. ~~Purpose of the Demon/HandleBurn "0x780 → 0x781 → −1" type write (no-op as compiled).~~ → closed: bosses-3 §10.4
+   (unobservable no-op, third site in `.UpdateSprites`; intent CLOSED AS UNDETERMINABLE)
 
 ## Proposed additions to physics.md §0
 | off | type | proposal |
@@ -332,3 +350,12 @@ no tile callback, passes through terrain depends on `.ApplyGravityAndSeparateFro
    byte +1 has no boss reader.
 7. spells-items.md §2.1 "the bosses have none" (statue) → confirmed by raw `bl 0x10043138` scan.
 8. INDEX NOT-RESOLVED 6 → boss Handle routines resolved here; NOT-RESOLVED 1 → closed for bosses.
+
+### Wave-2 corrections ⚑ wave 2 (2026-10-04)
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| W1 | world-data-format.md §3.2, row 0x2730..0x2736 | "CLUT animation (mode, first index, count?, period 12000)" [MED] | 0x2730 mode 1..7 · 0x2732 **count** of animated entries (indices 255 − count .. 254) · 0x2734 **period** in frames · 0x2736 **amplitude** (12000 in the data); only reader `.AnimateCLUT`, only writer `.HandleXichraSprite`; non-zero only in L50 (1, 48, 180, 12000), L51 (1, 48, 56, 12000), L67 (3, 16, 75, 12000) [HIGH] | bosses-3 §9.1–§9.2; raw 10011850..10011860, 1008e6d0..1008ebcc |
+| W2 | sprites-backgrounds-sounds.md §4 | "`.AnimateCLUT` (hdr+0x2730..0x2736) cycles a CLUT range [MED]" | not a cycle: a sine-wave recolour of entries 255 − count..254 of the level+sprite CLUT by a per-mode formula, pushed to the screen with `SetEntries`, rate-gated by the effect level [HIGH] | bosses-3 §9.2; raw 1001180c..10011cd4 |
+| W3 (merged with triggers-background-2 §8.1 into the existing ⚑ wave 2 text; ⚑ corrected (review 2i, 2026-10-04) #4) | triggers-background.md §2.2 (end) and triggers-background-2.md NR 2 | "A captive of type 90 gets gravity 0x15e [HIGH; identity of type 90 not resolved]" | type 90 = 0x5a = the player shot of id 0x5a (thrown fire/Ziridium seeds from `.HandleItemUse`, the Smite bolt from `.SmiteEnemies`); no placement record has type 90 (all 24 `Mlvl`) [HIGH] — as enemy-shots §2.1 already says | raw `cmpwi r0,0x5a` 10058da8 → `li r0,0x15e; sth r0,0x110(r19)` 10058db0..10058db4; `MTNewSprite(0x5a01, …)` main l. 44265, 47036; bosses-3 §8.3 |
+| W4 | triggers-background.md §1 (census paragraph) | 2940 with p1 = 0 "stay shut unless record 0's p4 is 1" | for level 67 settled: record 0 is a 1208 floor fire and every record-p4 writer writes only its own record (Button, Bonus containers, Box, sign), so its seven gates never open [HIGH reading, MED completeness] | bosses-3 §8.5 |
+| W5 | coverage.md §2 rows `.AnimateCLUT` / `.UpdateXichraCannons` | "SC, B2" / "cannon values" | add **B3 §9** / **B3 §8.2** | bosses-3 |

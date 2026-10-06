@@ -167,7 +167,7 @@ pix  = FUN_10010bd0(rgb16) = (R>>1 & 0x7c00) | (G>>6 & 0x3e0) | (B>>11)
 Values go through u16 stores (`sth`/`lhz`) between steps. Quirk: c = 31 gives c16 = 63487, which
 packs back to 30, so even variant 0 is one step darker. Variant factors are 1.0, 0.88, 0.76, 0.64,
 0.52. Each particle takes the variant `R(0,4)`, and its core and fringe come from the same i.
-`FUN_10010bd0` is MED (decompile only, one line).
+`FUN_10010bd0` is HIGH: listing `10010bd0..10010bf0` (`lhz` +0/+2/+4, `rlwimi`/`rlwinm` 0x7c00/0x3e0, `srawi 0xb`), called at `1004370c` (core) and `1004371c` (fringe) — ⚑ corrected (micro-wave, 2026-10-06) #40: was "MED (decompile only, one line)". The data side is listing-backed too: `unde` RRGGBB → pix16 via `FUN_10010990` packs as exactly `c >> 3` per channel for all 256 c (micro-wave-2026-10-06.md §4).
 
 ### 2.8 Update — `FUN_100438c0 @ 100438c0` (world update, `FUN_10006b50` `10006be0`) [HIGH listing `100438c0..10043b9c`]
 It runs once per logic tick, after debris scroll and before motion blur, players and entities
@@ -233,7 +233,7 @@ right}` (16 bytes) in `0x100e01cc` (`r2−0x6164`). All code-image accesses to t
 | `FUN_1002a6d0 @ 1002a6d0` | add: alloc 0x10 ("newDebris" line 0x69), copy words +0/+4/+8/+c | `1002a6f4..1002a744` |
 | `FUN_1002a770 @ 1002a770` | per tick: `top += d; bottom += d` with d = `FUN_1000fed0()` (scroll delta) — obstacles ride the terrain; **never removed** until the level reset | `1002a7e4..1002a7fc` |
 | `FUN_1002a830 @ 1002a830` | hit test of rect e against every entry, inclusive: `e.bottom ≥ d.top && e.top ≤ d.bottom && e.right ≥ d.left && e.left ≤ d.right` | `1002a8a4 lwz 8(r28)…blt`, `1002a8b4…bgt`, `1002a8c4 lwz 0xc…blt`, `1002a8d4…bgt` |
-| `FUN_1002a920 @ 1002a920` | count (no direct caller; probably the NUMDEBRIS callback via `*(r2−…)` = `_DAT_100df318`) | LOW |
+| `FUN_1002a920 @ 1002a920` | count (no direct caller; probably the NUMDEBRIS callback via `*(r2−…)` = `_DAT_100df318`) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; NUMDEBRIS readout via TV `0x100e0940`, handler `0x1002aa30`, debug-only (gameplay-leftovers.md §4.1)) |
 | `FUN_1002a950 @ 1002a950` | free all + dispose list (if live) | decompile |
 Writers (who spawns debris): `FUN_10016300` step 2 (destroyed unit with `destructCreateObstacle`
 +0x4b3 that was not spawned on the air layer, rect from `FUN_10012a00`, `10016338..10016364`).
@@ -271,7 +271,7 @@ and does not scroll with the ground. The frame buffer is not post-processed.
 | `FUN_10046eb0 @ 10046eb0` | allocate: if count ≥ 1000 → print the limit message once (`FUN_10049550`, `FUN_1002dbd0`) and return 0; else use the cached free index, or scan for the first free slot; count++, cached = −1 | `10046ed0 lwz r4,4(r30); cmpwi r4,0x3e8; blt` |
 | `FUN_100470f0 @ 100470f0` | free: inUse = 0, count−−, cached = this index | decompile |
 | `FUN_10046ba0` | remove all from the list (objects stay in the pool) | decompile |
-| `FUN_10046b70 @ 10046b70` | count (no direct caller; NUMBLURS callback?) | LOW |
+| `FUN_10046b70 @ 10046b70` | count (no direct caller; NUMBLURS callback?) | HIGH (⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; NUMBLURS readout via TV `0x100e0a18`, listing `10046b7c..10046b94` (file-pict-alerts-manager.md §8)) |
 Quirk: `FUN_10046d30` sets the cached free index to **0** (not −1), so the first blur of a level
 takes slot 0 without a scan. That is harmless.
 
@@ -361,9 +361,11 @@ down with the terrain scroll. psbh's burst (FALSE → `'air '`) does not [HIGH f
 derivation is from unit-def-struct.md].
 
 ## NOT RESOLVED (this file)
-1. `FUN_10043340`'s request colour: whether the unde `RRGGBB` reader packs 8-bit channels into
+1. ~~`FUN_10043340`'s request colour: whether the unde `RRGGBB` reader packs 8-bit channels into
    555 by `>>3` (assumed in the worked example). Settle: listing of the COLOR reader in
-   G_UnitDefinitions (unit-def-struct.md P@ rows).
+   G_UnitDefinitions (unit-def-struct.md P@ rows).~~ → ⚑ corrected (micro-wave, 2026-10-06) #40: micro-wave-2026-10-06.md §4 —
+   COLOR reader `FUN_1002cbd0` → `FUN_10010990` (c16 = trunc(65535·c/255), float32) → `FUN_10010c00`
+   (`>> 11`): exactly `c >> 3` for all 256 c (brute force); the worked example stands (INDEX #40).
 2. ~~Whether `FUN_100009e0` appends at the list tail. It decides whether an entity spawned during
    `FUN_10033850` (e.g. psbh) emits its state particles in the same tick, and so where its 10 draws
    fall relative to the remaining entities' draws. Settle: listing of `FUN_100009e0`/`FUN_10000e10`.~~
@@ -384,9 +386,9 @@ derivation is from unit-def-struct.md].
    under particles. Settle: read `FUN_10018b20`.~~ → ⚑ corrected (review wave 2, 2026-10-03) #S: sprite-geometry-draw.md §6
    (particles over layers 0–5 = terrain, ground shadows, ground units; under layers 6–15 = air
    shadows, air units, player, effects, atmosphere, HUD).
-6. Console callbacks `FUN_1002a920` / `FUN_10046b70` (no direct callers) are presumed to be the
+6. ~~Console callbacks `FUN_1002a920` / `FUN_10046b70` (no direct callers) are presumed to be the
    NUMDEBRIS/NUMBLURS handlers via TOC function descriptors `_DAT_100df318` / `_DAT_100df568`.
-   Settle: resolve the descriptors in the data image.
+   Settle: resolve the descriptors in the data image.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: gameplay-leftovers.md §4.1 (`FUN_1002a920` = NUMDEBRIS readout, TV `0x100e0940`, handler `0x1002aa30`) and file-pict-alerts-manager.md §8 (`FUN_10046b70` = NUMBLURS readout, TV `0x100e0a18`, handler `0x10047120`); both debug-only, unreachable (critic wave 3 §3).
 7. `hitParticleDoCircularBurst_BOOL` (+0x131): no reader found at the hit site. A whole-binary
    scan for `lbz rX,0x131(rY)` would settle whether it is inert.
 8. The `FUN_10006190` (score) and `FUN_10027100` (player hit) draws that precede the destruction
@@ -408,16 +410,16 @@ derivation is from unit-def-struct.md].
 | `FUN_1002a6d0` | G_Debris.cc | add obstacle rect (16 bytes) — unchanged | HIGH | listing `1002a6d0..1002a760` |
 | `FUN_1002a770` | G_Debris.cc (span) | per tick: shift every obstacle rect's top/bottom by the scroll delta | HIGH | listing; caller `FUN_10006b50` `10006bd8` |
 | ⚑ corrected `FUN_1002a830` | G_Debris.cc (span) | rect vs obstacle list, inclusive on all sides (was MED decompile) | HIGH | listing `1002a8a4..1002a8e4` |
-| `FUN_1002a920` | G_Debris.cc (span) | obstacle count (NUMDEBRIS callback?) | LOW | no direct caller |
+| `FUN_1002a920` | G_Debris.cc (span) | obstacle count (NUMDEBRIS callback?) | HIGH | no direct caller — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; gameplay-leftovers.md §4.1 (NUMDEBRIS readout, unreachable) |
 | `FUN_1002a950` | G_Debris.cc (span) | free all obstacles + list | MED | decompile |
-| `FUN_1002aa70` | (static init) | `"nonenone"` string pair template | LOW | decompile; caller `FUN_10000000` |
+| `FUN_1002aa70` | (static init) | `"nonenone"` string pair template | HIGH | decompile; caller `FUN_10000000` — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW on decompile; TU init, only the pair `0x100e99d4` +8/+0xc ← 0, static-init-audit.md §3 table A (listing + interpreter); function-roles.md row |
 | `FUN_1002aa90` / `FUN_1002aad0` | G_WeaponDefinitions.cc (span) | register+build / unregister+free the weapon list | MED | decompile; callers `FUN_100000e0` / `FUN_10000630` |
 | `FUN_100466e0` / `FUN_10046760` | G_MotionBlur.cpp (span) | blur module init (prealloc once) / teardown | MED | decompile; callers `FUN_100000e0` / `FUN_10000630` |
 | `FUN_100467c0` | G_MotionBlur.cpp | per-level reset: empty list, new list 0x100e0284, clear pool flags | HIGH | listing; caller `FUN_100064d0` |
 | ⚑ corrected `FUN_10046840` | G_MotionBlur.cpp | emit blur: copy entity sprite instance (+0x18..+0x8c, glow only if AllowGlow), vis = Initial, floor 0.0, delta (was LOW "emit motion blur") | HIGH | listing `10046840..10046a04`; caller `FUN_10033850` `100343a4` |
 | `FUN_10046a10` | G_MotionBlur.cpp | per tick: vis −= delta; < 0.0 → remove + free | HIGH | listing; caller `FUN_10006b50` `10006be8` |
 | `FUN_10046ae0` | G_MotionBlur.cpp | draw all blurs (`FUN_10012f20`) | HIGH | listing; caller `FUN_10007070` `10007094` |
-| `FUN_10046b70` | G_MotionBlur.cpp | blur count (NUMBLURS callback?) | LOW | no direct caller |
+| `FUN_10046b70` | G_MotionBlur.cpp | blur count (NUMBLURS callback?) | HIGH | no direct caller — ⚑ corrected (review wave 3, 2026-10-06) #L: was LOW; file-pict-alerts-manager.md §8 (NUMBLURS readout, unreachable) |
 | `FUN_10046ba0` | G_MotionBlur.cpp | remove all from list | MED | decompile |
 | `FUN_10046c70` | G_MotionBlur.cpp | prealloc 1000 × 0x94 sprite objects | HIGH | listing |
 | `FUN_10046d30` | G_MotionBlur.cpp | clear pool in-use flags, cached index 0 | MED | decompile |

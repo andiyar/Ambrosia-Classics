@@ -447,8 +447,8 @@ of the first, both behind any prio ≥ 40 sound of equal-or-greater gain.
    listens to a bullet impact (`exsl` at 0.5) or `icbu` in the original — short/high confirms.
 2. `ampCmd` scale on a sampled-sound channel (255 or 256 = full?) — decides whether music at pref
    100 is −6 dB vs effects. Settle: Inside Macintosh: Sound / SM 3.x notes, or a capture.
-3. Labels of the dialog items 10/0x0C/0x0F and slider ranges (resource-fork DITL/CNTL not
-   parsed) — INDEX #13.
+3. ~~Labels of the dialog items 10/0x0C/0x0F and slider ranges (resource-fork DITL/CNTL not
+   parsed) — INDEX #13.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: timing-frame.md §6 (DITL 190 item labels: item 10 "Bypass System Volume" (byte pref 7, enables slider 12), item 12/13 "Sound Volume:", 15/16 "Music Volume:"; slider ranges remain INDEX #13) (critic wave 3 §3).
 4. `FUN_1001f950(0,id,2)` (on-demand resource load) and whether any shipped path plays a sound
    that was not preloaded (would trigger the wrong-sound bug of §2.3 step 4).
 5. Writers of `DAT_100e01b6`/`DAT_100e01b5` (menu "returned"/"in pause") and which UI events call

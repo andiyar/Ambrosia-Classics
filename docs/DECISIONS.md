@@ -435,3 +435,66 @@ anonymous download verified byte-identical to the staged zip. **Supersedes D16.4
 Apple-glyph `.btxfont` files (menu bar/dialog text only) now ship publicly, Ben's call knowing it. Original game data
 public per D10. Ben reports the Windows build **plays with sound in CrossOver** (first ear check).
 **Approved by:** Ben.
+
+## D21 — Windows build has no menu bar; Ctrl shortcuts kept; window 640×480 (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "it looks silly. just get rid of it entirely. it doesn't need it. ctrl-f full
+screen can be as given." **Supersedes D15.3 for the menu bar only** — the original Carbon dialogs stay drawn in-window
+(DLOG/DITL, D15.3). The drawn bar, its tracker and the Alt alternates are deleted; D19.1 and D19.3 (about the
+bar's items) lapse with it. The window is the 640×480 game screen alone, windowed and in full screen (no 20 px strip, no
+offsets); at the integer-fit opening scale (D19.4, unchanged rule) that is now **2× on a 1080p screen** (Windows 10/11,
+taskbar at the bottom) and 1× on 1366×768.
+**Kept:** the Mac bar's key equivalents with its enable rules (`WinShortcuts`): Ctrl+F full screen, Ctrl+, preferences
+(both off in play), Ctrl+M music, Ctrl+Shift+A sound effects, Ctrl+Q quit, Ctrl+Alt+M eaten (Minimize All: nothing
+happens, as on the Mac); all off while a dialog is up. Physical keys only (D19.2).
+**Dropped with the bar:** About (no shortcut, no other way in — `WinAboutPanel` deleted); Options ▸ Key Sets (no
+shortcut; Preferences ▸ Keys still chooses the set); the check marks.
+**Carried:** Geneva 10 and System Bold 12 (drawn only by the bar and About) are still baked, shipped and checked at
+start-up — read by nothing; dropping them is a staging change for another day.
+**Approved by:** Ben (the removal); orchestrator brief (shortcut list, About's fate).
+**Ben's playtest verdicts (2026-10-06, after 3 levels with sound):** effects good; music right and changes at level 4;
+Caps Lock pause, title/pause pictures, high-score overlay, smoothed text, hand cursor — all yes (Q1, Q3, Q12, Q16, text);
+⇧⌘A / ⌘M fine (Q4/Q5 kept as the nib); full screen and dialogs over the game fine (Q8, Q18). **Demos: "who cares about
+demos?"** — NR-10 is waived: the demos stay as they replay now and are not checked against the original (which cannot run
+on his Apple Silicon Mac). Freezing the current replay as regression goldens (core Task 11.5) is allowed but not owed.
+
+## D22 — Deimos Rising builds next, ahead of Ferazel's Wand (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):** "my assumption is deimos will be 'Easier' than ferazel … let's let ferazel do
+its own thing in its own session and move on to steps 2 and then 3 for deimos." The Deimos RE bank is closed (100 % of
+game code read, 938 rows = 716/222/0), so Deimos goes straight to build work: **step 2** = Phase 0 for Deimos (HectorKit
+decoders for its data — stored-ZIP paks, im08/im16 images, soun audio — and a `Deimos/Core` census proving every
+original file opens), then **step 3** = the build plan (contracts from the bank → playable app on HectorShell). Ferazel's
+RE wave 2 continues in its own session; Ferazel's build waits. Ben's list order (CLAUDE.md) otherwise unchanged.
+**Approved by:** Ben.
+**App icon (Ben 2026-10-06, "can we get the icon macos27 compliant - so it's not in squiqle jail"):** the original goldfish
+(BubbleTrouble.icns 512 px) as an Icon Composer document `BubbleTroubleX/App/AppIcon.icon` — Ben's pick from three previews:
+light tile, bigger fish (scale 1.75); macOS renders the dark/clear variants itself. A shell-level exception to the 100 %
+rule, by Ben's ask.
+
+## D23 — Aki 1.0 public release: notarized DMG, Remaster art in, macOS 26+ icon; iPad merged first (2026-10-06)
+
+**Decided (Ben in chat, 2026-10-06):**
+1. Merge order "iPad first, then Remaster" — both on main (5e6755d, then 9bd0e56).
+2. First public Aki release is **1.0** (Ben chose 1.0 over a 0.9 pre-release, knowing Phase 3 — Level Editor, `.aki` levels
+   — is not built), a **notarized + stapled DMG** with the **Remastered art included** (hd-4x, ~207 MB). "Need to notarize
+   and stamp builds of course — look for notarisekit for the method": `tools/package-aki-release.sh` builds Release,
+   assembles the original 1.2.0 data verbatim (pinned sha256 manifest, checked on the assembly, after signing and again
+   inside the mounted DMG), signs with Developer ID + hardened runtime + timestamp, then calls notarize-kit's
+   `notarize-bundle.sh` + `package-dmg.sh` (profile `oniarm64-notarize`). Tag `aki-1.0`, notes `docs/release/aki-1.0.md`.
+3. **macOS 26+ app icon** (Ben: "not in squircle jail"; picked green felt from four Icon Composer renders):
+   `Aki/App/Mac/AppIcon.icon` — the original aki.icns tile stack, upscaled 4× (Upscayl high-fidelity-4x), glass off, on a
+   green-felt gradient. A deliberate departure from 100 % on an OS-owned surface, Ben's call. The upscaled derivative
+   `Assets/tiles.png` is committed to the public repo (Ben's standing "shareware data may live in git" overrule, D10's
+   exception recorded here). The original aki.icns still ships in Contents/Resources with the data; iPad icon unchanged.
+**Seat rulings (inside the standing 100 % ruling):**
+- (a) Apple's OsakaMono.ttf is NOT in the public build (Apple's font, not redistributable): Release Notes show in Menlo
+  unless the Mac has Osaka-Mono installed — an exception to D4.2 for the public build only; stage-aki.sh still bundles it.
+- (b) `CFBundleShortVersionString` stays **1.2.0** (the replicated game); `CFBundleVersion` = the release (**1.0**), so the
+  About panel reads "Version 1.2.0 (1.0)"; the notes explain the two numbers.
+- (c) The GitHub release is created as a **draft**; Ben tries the downloaded DMG, then it is published.
+- (d) Tested only on this Mac (macOS 27.0.1, Apple Silicon); the binary is universal and the notes say Intel and macOS
+  15/26 are untested. The Menlo Release-Notes path cannot be exercised here (Osaka-Mono installed system-wide).
+- (e) Noted, not changed: the iPad build scales to fill the height, smoothed (WHAT-TO-EXPECT-iPad, Ben on the mini), which
+  supersedes D7 R3's integer scaling — recorded here as as-built.
+**Approved by:** Ben (1–3); seat (a)–(e).

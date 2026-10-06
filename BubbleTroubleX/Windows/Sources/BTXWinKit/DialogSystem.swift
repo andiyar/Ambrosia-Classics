@@ -14,7 +14,7 @@ public protocol DialogSystemDelegate: AnyObject {
     func dialogLivePrefs(_ prefs: BTXPrefs, updateMusic: Bool)
     /// `SysBeep(1)` (refused keys, a click outside the front dialog, an alert's stage sound).
     func dialogBeep()
-    /// `isShowing` / `isModal` may have changed (the driver stops / restarts its clocks and greys its menu bar).
+    /// `isShowing` / `isModal` may have changed (the driver stops / restarts its clocks and its Ctrl shortcuts).
     func dialogModalStateChanged()
 }
 
@@ -37,8 +37,8 @@ public protocol DialogSystemDelegate: AnyObject {
 ///
 /// **Host contract.** The dialogs sit modally over the 640×480 canvas, placed as `alertPositionParentWindowScreen`
 /// places them on their parent (horizontally centred, a third of the free height above). While `isShowing` the host
-/// routes every key and mouse event here (canvas coordinates; the menu strip above the canvas is negative y — a click
-/// there beeps, as the app-modal Carbon dialog refused other windows), calls `tick(heldKeys:)` once per 1/60 s, and
+/// routes every key and mouse event here (canvas coordinates; a click outside the front dialog — the letterbox
+/// around the canvas included — beeps, as the app-modal Carbon dialog refused other windows), calls `tick(heldKeys:)` once per 1/60 s, and
 /// draws with `draw(into:canvasX:canvasY:)` after the game frame. While `isModal` the game clocks stop.
 public final class DialogSystem {
     /// What a dialog answered; `deliver(_:to:)` hands it to the front end.
@@ -75,7 +75,7 @@ public final class DialogSystem {
     /// The mouse in canvas coordinates (last move / press / release).
     public private(set) var mouse: (x: Int, y: Int)?
 
-    /// True while any dialog is on screen — the menu bar is disabled then (Carbon `ModalDialog` is app-modal).
+    /// True while any dialog is on screen — the Ctrl shortcuts are off then (Carbon `ModalDialog` is app-modal).
     public var isShowing: Bool { !stack.isEmpty }
     /// True while a dialog waits for the user (`ModalDialog` / `_WaitUntilKeyOrMousePress` block the original's
     /// loop): the clocks stop. False for DLOG 160 after its OK / Cancel, held up through the front end's hold.

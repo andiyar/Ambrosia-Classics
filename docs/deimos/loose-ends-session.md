@@ -93,7 +93,7 @@ the **signed** `score > entry` on 200 000 random pairs plus all sign-boundary pa
 (0x80000000, 1) → 0 and (0xFFFFFFFF, 0) → 0, which unsigned would give as 1). This
 upgrades scoring-bonuses.md §9.2 (MED) to HIGH; the reading is unchanged.
 
-### 2.3 `DAT_100e01b8` = "quit requested" [HIGH for the writers; MED for the in-game route]
+### 2.3 `DAT_100e01b8` = "quit requested" [HIGH for the writers; HIGH: no in-game route — ⚑ corrected (review wave 3, 2026-10-06) #C9/#48: was "MED for the in-game route"]
 Writers (dump, `0x100e01b8` = r2−0x6178): cleared at the top of the menu loop `FUN_100229a0`;
 set by the menu key handler `FUN_10023b00` for `'q'`/`'Q'`; by `FUN_10023330(part == 2)` (menu
 command); by `FUN_10022ed0` (event code 8 of `FUN_10048f30`, whose jump table Ghidra could not
@@ -106,6 +106,18 @@ no high-score entry**, and the menu then quits. (The `aevt`/`quit` Apple-event h
 by `FUN_10049aa0` is the probable in-game setter; its TVector target was not traced. LOW for
 that link.) ⚑ corrected (review wave 2, 2026-10-03) #C10: the aevt route itself is identified (event 23 → code 8, front-end.md
 §2.5, HIGH); what stays open is only whether the event pump runs during play (INDEX #48).
+⚑ corrected (review wave 3, 2026-10-06) #C9 / INDEX #48 closed (fix-pass listing `$W/disasm-review3-all.txt`): `b8` (r2−0x6178)
+has exactly 11 accesses; the only stores are in `FUN_100229a0` (`100229d8`, `10022ad4`), `FUN_10022ed0`
+(`10022ed4`), `FUN_10023330` (`10023368`) and `FUN_10023b00` (`10023c7c`). `FUN_10022ed0` is called only
+from the menu loop (`10022ce8`) and from the no-function Quit-AppleEvent handler at `0x10049c50`
+(`10049c70 bl 0x10022ed0`), which runs only inside `AEProcessAppleEvent` in the menu event pump
+`FUN_10048f30`, whose sole caller is the menu loop (`10022cac`). The Caps-Lock pause loop
+`FUN_10022ef0` polls keys only (`10049150` GetKeys, `10023030` get `b7`) and pumps no events. So
+**nothing sets the quit flag during play**: a Quit AppleEvent sent during a game waits until the menu
+pumps events, and the pause loop's "exits with quit" branch (`10022f8c lbz; 10022fa4 beq`; `10022fa8
+li r30,0x1`) is **dead** in 1.0.6 (was: "exits with \"quit\" when it is set → … ends the game").
+The critic also notes `FUN_10048c90` (scores/credits/advert screens) drops what = 23 events (critic
+wave 3 §3, not re-read here) [MED].
 
 ## 3. High-score insertion and name entry
 
@@ -232,7 +244,7 @@ truncated integer distance (54.6 → 54); the −32 frame rule is settled by loo
 | T0+3, +6, … | Flash Off/On every 3 ticks; `acbo` on each Flash On (15 plays, T0…T0+84) |
 | T0+90 | 16th Flash On → counter → S6; `12gc` spawned the same tick (delay 0, spawn-and-waves.md §2.3) |
 | T0+92 | `noal` S5 Scale Out |
-| T0+95 | `12gc` S2; Air Explosion Group requested: 50 explosions staggered 5–6 ticks (≈ T0+95…T0+370) |
+| T0+95 | `12gc` S2; Air Explosion Group (`aieg`) requested at tick R: 50 explosions, member k first processed at **R + S_k − 1** with S_k = Σ_{j≤k} R(5,6) (a per-member cumulative spawn countdown, 50 RNG draws in member order; first at R+4 or R+5, last ∈ [R+249, R+299]); R = T0+95 if `12gc`'s S2 spawn set has delay 0 (not re-checked, INDEX #64) — ⚑ corrected (micro-wave, 2026-10-06) #47: was "50 explosions staggered 5–6 ticks (≈ T0+95…T0+370)" (micro-wave-2026-10-06.md §5) |
 | T0+102 | `noal` S4 Scale In + **`leen`** (only play); then pulses 90↔100 % every 10 ticks until the session ends |
 | T0+395 | `12gc` S1 entry 1: flags at ≈ T0+395, +464, +534, +604 (delay d issues at entry + max(d−1,0)) → irises open; storms ≈ 18–19 ticks after each flag |
 | T0+675 | S1 entry 2 (self-timer 280): second flag round ≈ T0+675, +744, +814, +884 → each iris releases a second storm |
@@ -240,9 +252,15 @@ truncated integer distance (54.6 → 54); the −32 frame rule is settled by loo
 | T0+1201 | accuracy tally state 1 ends (flli 196 = 1200, strict wait) → tally, then the mission bonus if all 12 levels were 100 %, then the coin bonus (scoring-bonuses.md §6.4–6.5; the money from the storms counts) |
 | tally done | `G+9` → `FUN_10007170`: `tran`, fade to black (§6), `FUN_100064d0` finds sector 13 → `none` → `G+8 = 0` |
 | after | `FUN_100234d0`: result +0x14 = 1 → best sector 12 (no −1) → pref 3 = 12; high-score check (§2.2) |
-[Timeline: MED overall — the per-state numbers are data (HIGH) and the timer/counter/spawn rules
-are HIGH in bosses.md §3.2 and spawn-and-waves.md §2.3. Medium because the exact same-tick order of
-creation versus the first update, and the group-delay semantics of `aieg`, were not re-walked here.]
+[Timeline: HIGH for the same-tick order and the `aieg` stagger rule — ⚑ corrected (micro-wave, 2026-10-06) #47
+(micro-wave-2026-10-06.md §5): `noal` is requested owner-less at `10006ee4` before the entity update
+`1000702c bl 0x10033850` of the same tick, lands in PERM (first active group, tail append), has
+group delay 0 (countdown 0 → −1 ≤ 0 at `10033a54..10033a70`) and is processed on T0; `12gc` likewise on
+T0+90; `aieg` members get the cumulative countdown `10035fb8..10035fe0` (sum zeroed by the wrapper
+`FUN_10035bf0` at `10035c20`). The per-state numbers are data (HIGH) and the timer/counter/spawn rules
+are HIGH in bosses.md §3.2 and spawn-and-waves.md §2.3. Still open: R itself (the `12gc` S2 spawn-set
+delay, INDEX #64). Was: "MED overall … because the exact same-tick order of creation versus the first
+update, and the group-delay semantics of `aieg`, were not re-walked here."]
 The game itself never "ends" during the 1200-tick wait. The players keep flying (invulnerable)
 and can collect the storm pickups. The session ends only after the tallies.
 
@@ -323,7 +341,7 @@ available at the current sector (`FUN_1002adb0`, `FUN_1003b180`).
 8.2 **`FUN_10000630` exits the process** [HIGH — listing]: its last call `10000730 bl 0x10048480`;
 `FUN_10048480` logs, then `100484b8 bl 0x100d4d7c` (UnregisterAppearanceClient glue) and
 `100484c0 bl 0x100d4464` (**ExitToShell** glue). So a fatal `FUN_1000ced0(…, 1)` (memory, tool,
-`FUN_10001000`, and the unit-def "incorrect or missing data" error) quits the game after the
+the new_handler at `0x10001000` (no Ghidra function; ⚑ corrected (review wave 3, 2026-10-06), critic wave 3 §1: was "`FUN_10001000`"), and the unit-def "incorrect or missing data" error) quits the game after the
 alert, saving prefs on the way (`FUN_100045f0`). ⚑ conflict with pak-format.md §2.3 item 4:
 `FUN_10000fd0` is **not** fatal: `10000fdc li r4,0x0; bl 0x10001040` → `FUN_1000ced0("Error",
 msg, 0)` shows the alert and **returns**. The same holds for the FILE/DATA ERROR helpers
@@ -417,17 +435,21 @@ If P2 had also qualified with a score higher than P1's but in a different slot, 
 would corrupt one row of the table.
 
 ## NOT RESOLVED (this file)
-1. The in-game route that sets `DAT_100e01b8` (quit) during play: the `aevt/quit` handler TVector
+1. ~~The in-game route that sets `DAT_100e01b8` (quit) during play: the `aevt/quit` handler TVector
    (`_DAT_100dea78`, `FUN_10049aa0`) and event code 8 of `FUN_10048f30` (unrecovered jump table).
    Settle: resolve the TVector's code address and read it; recover the jump table at `0x10048fc8`.
    ⚑ corrected (review wave 2, 2026-10-03) #C10 narrowed: code 8 = the Quit AppleEvent (event 23 at `100490ec`, front-end.md
-   §2.5); open only whether that event is pumped during play.
-2. `FUN_10045ab0` (the alert behind `FUN_1000ced0`) — whether a non-fatal alert can still quit
-   (e.g. a Quit button). Decides whether "Tag Index Incomplete! Aborting." really continues.
-3. The finale's same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850`
+   §2.5); open only whether that event is pumped during play.~~ → ⚑ corrected (review wave 3, 2026-10-06) #C9/#48: §2.3 and INDEX #48 (closed): nothing sets `b8` during play; the Quit AppleEvent is pumped only by the menu loop's `FUN_10048f30` (`10022cac`), via the handler `0x10049c50` (`10049c70 bl 0x10022ed0`); the pause-loop quit branch is dead.
+2. ~~`FUN_10045ab0` (the alert behind `FUN_1000ced0`) — whether a non-fatal alert can still quit
+   (e.g. a Quit button). Decides whether "Tag Index Incomplete! Aborting." really continues.~~ →
+   ⚑ corrected (wave 3+4, 2026-10-04): file-pict-alerts-manager.md §1.1 — one exit, never quits; non-fatal = Caution alert "OK",
+   then return, so the game continues (INDEX #3).
+3. ~~The finale's same-tick order (entity created in `FUN_10006b50` vs its first `FUN_10033850`
    update) and `aieg`'s group-delay meaning (members staggered vs spawn-in delay). These shift
    §5.3 by ±1 tick and set the explosion spread. Settle with `FUN_10033220`/`FUN_10035cd0`
-   listings.
+   listings.~~ → ⚑ corrected (micro-wave, 2026-10-06) #47: §5.3 (now HIGH) and micro-wave-2026-10-06.md §5 — `noal` is
+   created before the same tick's entity update and processed on T0; `aieg` members carry a cumulative
+   `R(5,6)` countdown (member k at R + S_k − 1). Residue: R itself (`12gc` S2 spawn-set delay) → INDEX #64.
 4. ~~The rule-2 distance (`FUN_10035070`/`FUN_10042e90`, bosses.md NR 1) and the frame of
    spawn-set children versus level objects (−32 x shift, bosses.md NR 4). Both affect whether every
    flag opens its iris; §5.2 shows a ≥ 5 px margin under the stated assumptions.~~ → ⚑ corrected (review wave 2, 2026-10-03)

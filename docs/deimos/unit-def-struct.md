@@ -390,7 +390,8 @@ A pure load-time accelerator: an exact memory image of the parsed master list. [
   written by `FUN_100426e0(buf,size,1)`: path `FUN_10048560(" Data", _DAT_100e0248 → "Units Cache")`,
   create with `FUN_10001200(…,0x17,'Data','Deim')`, reopen, `FUN_10001430` write, log "Data Saved:".
 - **Reader `FUN_100420f0`** (from `FUN_1003cf10`): frees and recreates the master and family lists;
-  gated by `FUN_100461b0()` (not read); finds the file (`FUN_10044ce0`) and its modification date
+  gated by `FUN_100461b0()` (= running Mac OS X, loose-ends-session.md §8.3 — ⚑ corrected (wave 3+4, 2026-10-04): was "not read");
+  finds the file (`FUN_10044ce0` = FSMakeFSSpec on `": Data:Units Cache"`; file-pict-alerts-manager.md §3) and its modification date
   (`FUN_10044f00`); enumerates ` Data:Local:unde` (`FUN_10048610`) for the newest local file date;
   **cache older than any local `unde` file ⇒ ignored** ("ignoring cache as Unit Defs data is more
   recent"). Pak dates are not compared [MED — only this folder is enumerated]. Opens (`FUN_10001200`
@@ -572,16 +573,16 @@ magic/version, reserved `'none'` IDs, zeroed unknown regions) and in the unused 
    a unit/state base; if none, they are reserved space.
 2. Consumer of `unit+0x11` ("has owner-linked state") and of `unit+0x0c` (10000). A `char`-pattern
    grep of the dump for `+ 0x11)` found only weapon-struct uses. Settle as in 1.
-3. `FUN_10000630` (shutdown sequence): whether it terminates the process after a fatal parse error
-   (last callee `FUN_10048480` not read) — decides whether a malformed `unde` aborts the game.
-4. `FUN_100461b0` — the gate in front of the cache reader (pref? volume writable?); and whether
-   `DAT_100e024c` is initialised to 0 (static) so that a successful cache load never rewrites it.
-5. `FUN_1003d550`'s first list: confirmed as a family member list only by shape (`param_2+0x40`,
+3. ~~`FUN_10000630` (shutdown sequence): whether it terminates the process after a fatal parse error
+   (last callee `FUN_10048480` not read) — decides whether a malformed `unde` aborts the game.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.2: `FUN_10000630` ends in ExitToShell (`10000730 bl 0x10048480`) (critic wave 3 §3).
+4. ~~`FUN_100461b0` — the gate in front of the cache reader (pref? volume writable?); and whether
+   `DAT_100e024c` is initialised to 0 (static) so that a successful cache load never rewrites it.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.3: `FUN_100461b0` = "running Mac OS X" (`Gestalt('sysv')`) (critic wave 3 §3).
+5. ~~`FUN_1003d550`'s first list: confirmed as a family member list only by shape (`param_2+0x40`,
    elements → unit pointers); its callers `FUN_10015550`/`FUN_10015b40` pass which family? (read
-   the call sites).
-6. `FUN_1003ef90`, `FUN_1003f0b0`, `FUN_100395d0`, `FUN_10039a80` have no direct caller; presumably
+   the call sites).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.4 (raw call sites pass the entity's family) (critic wave 3 §3).
+6. ~~`FUN_1003ef90`, `FUN_1003f0b0`, `FUN_100395d0`, `FUN_10039a80` have no direct caller; presumably
    reached through the debug-command table registered by `FUN_1003cf10` (`FUN_1002d080`). Not
-   gameplay; not traced.
+   gameplay; not traced.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: reached from the no-function unit-def console handler at `0x10041b70` (registered by `FUN_1003cf10`; `10041c9c bl 0x1002b150`, `10041cb0 bl 0x100395d0`, `10041cc4 bl 0x1003ef90`; fix-pass listing) — debug-only; `FUN_1003f0b0`/`FUN_10039a80` are the LOGUNUSED collectors (sprite-manager-resource-image.md NR 3) (critic wave 3 §1, §3).
 
 ## Role-table rows (for merge)
 

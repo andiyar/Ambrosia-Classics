@@ -199,8 +199,9 @@ else 'grnd' / stw r0,0x8(r30)`. The constant: r28 = TOC slot `0x100df440` → `0
 For each pending record (iteration over the initial count; `FUN_10000c00` unlinks the current
 node and backs the iterator up to its predecessor, so removal never skips a neighbour — list
 helpers `FUN_10000e10`/`FUN_10000c00` read): if `fctiwz(+0xa0) == row`, build a 0x2c-byte spawn
-request on the stack from the template at `0x100eb41c` (r2+0x50ec; bytes = `'none'`, 0…, +0x14 =
-0xff, +0x28 = 1.0f) and overwrite: +0x00 unit, +0x04 x (+0x9c), +0x08 y (+0xa0), **+0x0c = 1**
+request on the stack from the template at `0x100eb41c` (r2+0x50ec; runtime bytes = `'none'`, 0…, +0x14 =
+0xff, +0x24 = −1 (`FUN_10039100`), +0x28 = 1.0f; ⚑ corrected (wave 3+4, 2026-10-04): the image has +0x24 = 0, static-init-audit.md
+§5.1 #24) and overwrite: +0x00 unit, +0x04 x (+0x9c), +0x08 y (+0xa0), **+0x0c = 1**
 ("y is a map row"), +0x18 heading, +0x1c stationary, +0x1d terrain effects; call
 `FUN_10033220(&req, 0, 0)`; then **unconditionally** unlink and free the pending record
 (`100331b0 bl FUN_10033220 / 100331c4 bl FUN_10000c00`). [HIGH — listing `1003310c…100331ec`]
@@ -391,26 +392,28 @@ Reading:
 ## NOT RESOLVED (this file)
 1. Entity anchor: is (x, y) the sprite centre? Settle by reading the blit callee of
    `FUN_10012fa0` (what it subtracts from `local_84/local_80`).
-2. `0x100e013c` and `0x100e0140` have no readers in the dump; check the raw listing / jump-table
-   targets for indirect reads before declaring them dead.
-3. `FUN_10012ca0` mode-1 bounds exact expression (float compares with `cror`; only the 128 margin
-   is HIGH).
+2. ~~`0x100e013c` and `0x100e0140` have no readers in the dump; check the raw listing / jump-table
+   targets for indirect reads before declaring them dead.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.5: `0x100e013c`/`0x100e0140` have no readers (raw scan) (critic wave 3 §3).
+3. ~~`FUN_10012ca0` mode-1 bounds exact expression (float compares with `cror`; only the 128 margin
+   is HIGH).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.6: `FUN_10012ca0` bounds from the listing (critic wave 3 §3).
 4. `FUN_1002b3a0(sector)` → `FUN_1002b6d0('PEAA'/'PEAG'/'SPEC', sector)`: per-sector item setup,
    probably the level-gated weapon availability; not read.
-5. `FUN_10027de0(player, 1, 0)` at level end and `FUN_10027db0`: player end-of-level mode; not read.
+5. ~~`FUN_10027de0(player, 1, 0)` at level end and `FUN_10027db0`: player end-of-level mode; not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-combat.md §3.3: `FUN_10027de0`/`FUN_10027db0` (player `+0xce/+0xcf`) (critic wave 3 §3).
 6. ~~Weapon carry-over details of `FUN_1003af90(handler, 1)` and the start-weapon pick
    `FUN_1003cdb0` ("best" bookkeeping looks inverted)~~ → `FUN_1003cdb0` closed: not inverted.
    Over weapon defs of class `PEAA` (`1003cdf4 subis r0,r4,0x5045; cmplwi r0,0x4141`) with
    `+0x13c ≤ sector ≤ +0x140` (`1003ce00–1003ce14`), the first match is taken and a later one
    replaces it only when best.min < cand.min (`1003ce28 lwz r0,0x13c(r30); cmpw r0,r4; bge
    skip`) — the highest minimum sector wins, ties keep the first; weapons-projectiles.md §1.3 is
-   right. ⚑ corrected (review wave 1, 2026-10-03) #M9. `FUN_1003af90` carry-over details stay with the weapons reader.
-7. Which on-screen text the level select shows for "Starting Bonus" vs "No Starting Bonus"
-   (`pgsl` lines 3/6) — the code-side consequences are §8 (1 life, later air weapon).
-8. Whether entities still in their spawn countdown (+0xb0 > 0) can pause the scroll (they appear
-   to be skipped before `LAB_10033d70`) — bosses reader.
-9. `FUN_1000b9a0(display, 1)` at the level transition (fade?) and `FUN_10010f90` registered test —
-   not read.
+   right. ⚑ corrected (review wave 1, 2026-10-03) #M9. `FUN_1003af90` carry-over details stay with the weapons reader. → ⚑ corrected (review wave 3, 2026-10-06) #S: residue closed — `FUN_1003af90` carry-over: loose-ends-combat.md §6.5 (listing `1003b0ac..1003b134`) (critic wave 3 §3).
+7. ~~Which on-screen text the level select shows for "Starting Bonus" vs "No Starting Bonus"
+   (`pgsl` lines 3/6) — the code-side consequences are §8 (1 life, later air weapon).~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §8.9 (level-select bonus text; confirms scoring-bonuses.md §10.3) (critic wave 3 §3).
+8. ~~Whether entities still in their spawn countdown (+0xb0 > 0) can pause the scroll (they appear
+   to be skipped before `LAB_10033d70`) — bosses reader.~~ → ⚑ corrected (wave 3+4, 2026-10-04) (critic O7): cannot — the loop
+   head `10033a60..10033a7c` skips them before `10033d70`; new detail: no `+0xcb` test there, so an
+   entity killed earlier in the same pass still runs its pause check that tick (gameplay-leftovers.md §7.4d).
+9. ~~`FUN_1000b9a0(display, 1)` at the level transition (fade?) and `FUN_10010f90` registered test —
+   not read.~~ → ⚑ corrected (review wave 3, 2026-10-06) #S: loose-ends-session.md §6 (screen transitions; `FUN_1000b9a0(display, mode)` = 33-step fade to black, listing `1000b9cc…1000ba50`) (critic wave 3 §3). `FUN_10010f90` = the "registered?" test, MED row in function-roles.md (registration is out of scope by ruling).
 
 ## Role-table rows (for merge)
 | function | module | role | label | evidence |
@@ -446,13 +449,13 @@ Reading:
 | `FUN_10011de0` | G_Level.cc | level count (list length, 12) | MED | read (`FUN_10000ce0` = count) — was LOW — ⚑ label audit (review wave 1) |
 | `FUN_10011e30` | G_Level.cc | tag → sector (0 if absent) | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_10011f00` | G_Level.cc | sector → tag (`none` if absent) | MED | read — ⚑ label audit (review wave 1) |
-| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10011fd0` | G_Level.cc | load level by sector (info [+ object list]) | HIGH | read — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§3.10: listing in micro-wave-2026-10-06.md §3.10 (function-roles.md row). Was MED |
 | `FUN_100120f0` | G_Level.cc | load level by tag (asserts editor flag `DAT_100e0151` clear) | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_10012170` | G_Level.cc | free a level-object list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_100121c0` | G_Level.cc | free the order list | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10012230` | G_Level.cc | read pak entry `leve`, de-obfuscate, parse | MED | read — was MED — ⚑ label audit (review wave 1) |
 | `FUN_100064d0` | G_Game.cc (span) | level start: next sector, per-level resets, scroll init, load spawns, Notice_Level_NN | HIGH | read + listing |
-| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | MED | read — ⚑ label audit (review wave 1) |
+| `FUN_10007170` | G_Game.cc (span) | level complete → transition sound, `FUN_100064d0` next sector | HIGH | read — ⚑ label audit (review wave 1) — ⚑ corrected (micro-wave, 2026-10-06) #§6: listing in micro-wave-2026-10-06.md §6 (function-roles.md row). Role as in function-roles.md: when +0x09 and a player is alive → film: +0x08 = 0, else stop music, `tran`, fade, clear +0x09/+0x39, `FUN_100302e0`, `FUN_100064d0` next level. Was MED |
 | `FUN_100064c0` | G_Game.cc (span) | stop session (`+0x08 = 0`) | MED | read — ⚑ label audit (review wave 1) |
 | `FUN_10007130` / `FUN_10007150` / `FUN_10007280` | G_Game.cc (span) | per-level counter resets (game struct +0x16c…, +0x3c/40, +0x48…) | MED | read |
 | ⚑ corrected `FUN_10033090` | G_EntityGroup.cc (span) | spawn pending level objects whose yLoc == row; request y flagged "map row"; record always removed (was HIGH "spawn level objects at a scroll row") | HIGH | listing |
@@ -470,7 +473,9 @@ Not read in scope: none of the functions in `0x1000fbc0–0x10010860`, `0x10011a
 `FUN_10011bf0` (10 lines) — rows below. ⚑ corrected (review wave 1, 2026-10-03) #M7: the old line claimed `0x10011c00–` was
 fully read. Callees named but not read: `FUN_1002b3a0`→`FUN_1002b6d0`, `FUN_10027de0`,
 `FUN_10027db0`, `FUN_1000b9a0`, `FUN_100467c0`, `FUN_1004a950`, `FUN_10018130`, `FUN_100189f0`,
-`FUN_10031ad0`, `FUN_10031400`, `FUN_10036af0`, `FUN_10006110`, `FUN_10005cf0`.
+`FUN_10031ad0`, `FUN_10031400`, `FUN_10036af0`, `FUN_10006110`, `FUN_10005cf0`. ⚑ corrected (wave 3+4, 2026-10-04):
+`FUN_1004a950` (per-level input reset, app-pak-music-library.md §5.2) and `FUN_100189f0` (render-layer
+count reset, blit-pixel-rules.md §7.1) are now read; every function in the list has a function-roles.md row.
 
 ## INDEX updates (for merge)
 - **#17 closed** → this file §2 (initial top 3120, HIGH from `FUN_1000fa90` listing) and §5
