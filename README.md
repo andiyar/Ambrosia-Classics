@@ -39,9 +39,9 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 ### Bubble Trouble X
 ![status](https://img.shields.io/badge/status-1.0%20released-brightgreen) &nbsp;
 ![Mac](https://img.shields.io/badge/Mac-download-blue) &nbsp;
-![Windows](https://img.shields.io/badge/Windows-test%20build-yellow)
+![Windows](https://img.shields.io/badge/Windows-download-blue)
 
-**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11: there's a [Windows test build](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-windows-test-1), cross-compiled from the same Swift code. That one stays a test build for now.
+**Bubble Trouble X 1.0 is out.** [Download it here](https://github.com/andiyar/Ambrosia-Classics/releases/tag/btx-1.0): a signed, notarized Mac app with the original Bubble Trouble X 1.1 data inside. Everything in the game comes from that data, and every sound effect and each level set's music has been checked against the original. My playtest is done. Not in yet: the separate BT Level Editor, and so custom levels. It also runs on Windows 10/11 (64-bit), cross-compiled from the same Swift code: the same release has **BubbleTroubleX-1.0-Windows.zip**. It isn't code-signed for Windows, so Windows asks once ("More info" → "Run anyway").
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-building%20next-yellow) &nbsp;
@@ -126,6 +126,8 @@ Open the DMG, drag Aki to Applications, double-click. It's signed and notarized 
 **Bubble Trouble X: [BubbleTroubleX-1.0.dmg](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0.dmg)** (12.6 MB). Same requirements, same testing: macOS 15 or later, universal, tested on Apple Silicon, macOS 27.
 
 Open the DMG, drag Bubble Trouble X to Applications, double-click. Signed and notarized the same way; the game data is already inside. The About box says 1.1.0 (1.0): 1.1.0 is the version of Bubble Trouble X this rebuilds, 1.0 is this release.
+
+**Bubble Trouble X for Windows: [BubbleTroubleX-1.0-Windows.zip](https://github.com/andiyar/Ambrosia-Classics/releases/download/btx-1.0/BubbleTroubleX-1.0-Windows.zip)** (36.9 MB). Windows 10/11, 64-bit. Extract All, then double-click Bubble Trouble X.exe; it isn't code-signed for Windows, so click "More info" → "Run anyway" once.
 
 ### Build from source
 
