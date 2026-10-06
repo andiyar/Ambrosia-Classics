@@ -14,6 +14,7 @@ let package = Package(
     products: [
         .library(name: "DeimosCore", targets: ["DeimosCore"]),
         .library(name: "DeimosRender", targets: ["DeimosRender"]),
+        .library(name: "DeimosHost", targets: ["DeimosHost"]),
         .executable(name: "deimos-census", targets: ["deimos-census"]),
     ],
     dependencies: [
@@ -27,6 +28,9 @@ let package = Package(
         // The renderer (Phase 1 R1–R3): RGB555 buffers, CopyBits, presents, fades, blitters. Foundation +
         // DeimosCore only (plan invariant 1) — executes Core's RenderOps on persistent buffers.
         .target(name: "DeimosRender", dependencies: ["DeimosCore"]),
+        // The host driver (Phase 1 H1): the Mac-tick clock, the FPS limiter and fade waits as yields, Esc restart.
+        // Foundation + DeimosCore + DeimosRender only (plan invariant 1) — no threads, no sleeping.
+        .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender"]),
         // The census tool (Task C7): Markdown on stdout = docs/deimos/data-census.md below its rule.
         // `--render` uses ImageIO (PNG writer, census-only; plan invariant 2). Section 9 (Task C8, the
         // app resource fork) decodes PICT/DITL with HectorGraphics, whose QuickTime-in-PICT path uses
@@ -46,5 +50,6 @@ let package = Package(
             .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
         .testTarget(name: "DeimosRenderTests", dependencies: ["DeimosRender", "DeimosCore"]),
+        .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore"]),
     ]
 )
