@@ -25,7 +25,7 @@ section loaded at 0x100CD280; TOC r2 = 0x100D5280. Python tools are stdlib only.
 | `f008_dump.py` | ⚑ wave 3 (2026-10-06): 0xF008 creature records (count, byte 7, f33/f32 bit counts) + 0xF005 bytes + 0xF007 count (recipe B) | `python3 docs/cythera/tools/f008_dump.py` → `records 50 byte7 {0: 50}` … `0x507915 167 33` |
 | `scan_clr80.py` | ⚑ wave 3 (2026-10-06): byte stores that clear bit 0x80 (`rlwinm …,0,25,23/31`, `andi. 0x7f`, `xori 0x80` then `stb/stbx` within 4) over the whole code listing (recipe C) | `python3 docs/cythera/tools/scan_clr80.py [all.dis]` → hits `1004f188`, `1005caf0` |
 | `scan_byte7.py` | ⚑ wave 3 (2026-10-06): loads at offsets 5/6/7/8/14 within 8 instructions of a creature-record pointer (`lwz rA,4(…)` or r3 after `bl 0x10044a60`) (recipe D) | `python3 docs/cythera/tools/scan_byte7.py [all.dis]` → `{5: 1, 6: 10, 7: 0, 8: 27, 14: 3}` |
-| `listing.py` | ⚑ wave 3 (2026-10-06): helper for the two scanners — reads `all.dis` (`ppcdis.py 10000000 100cd280 > all.dis`) or generates it in a subprocess | library only |
+| `listing.py` | ⚑ wave 3 (2026-10-06): helper for the two scanners — reads `all.dis` (`ppcdis.py 10000000 100cd280 > all.dis`) or generates it in a subprocess | library (`lines(path)`); as a script prints the line count: `python3 docs/cythera/tools/listing.py [all.dis]`. ⚑ wave 3 (2026-10-06): all six wave-3 tools take `--help` |
 | `gen_classmap.py` | writes `engine-classmap-{1,2,3}.md` from `names.txt` via `demangle.py` | run inside `docs/cythera/tools` with `names.txt` there; **edit its hard-coded `D=` output dir** (points at the focused-darwin worktree) first |
 
 Ghidra: 12.1.3 Homebrew `analyzeHeadless`; the project path must not contain a dot-prefixed element
