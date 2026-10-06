@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-06 (Ferazel designed + planned; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-06 (Ferazel Phase 0 under way: K1 C0 C1 done; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -69,7 +69,7 @@
   Fable review ACCEPT_WITH_FIXES 3 Important / 12 Minor, all applied; ladder Ferazel/Core 6 → 100 tests, HectorKit floor
   289 → 301). Planner probes found two bank gaps now in the plan's "Bank corrections": face pixels go through
   Color2Index at load (sheets carry their own palettes) and 326 PICTs are 32-bit `ditherCopy` — both LOW, both on the
-  gate card. **Nothing implemented yet.** Next: Phase 0 K1 + C0 + C1 (chip issued). Ben owes the Let's Play link
+  gate card. **Phase 0 K1 + C0 + C1 DONE (2026-10-06, Opus orchestrator):** HectorKit `PICT.decodePixels` (indices + public 16-bit `ColorTable`, v1 BitMaps, DirectBits RGB + mode; HK D12; HK main d38a541, **floor 313** — the plan said 301, Deimos had already added 12); data in git `Resources/Ferazel/` (6 `.rsrc` + 28 AIFC, `cmp`-identical; D26 as-built); `Ferazel/Core` package + `FerazelData`/`FerazelResources`/`ResourceChain`, **6/0** tests. Next: C2 + C3 (+ C4) (chip issued); ladder C2 21 → C3 28 → C4 43. Deimos plans a kit `ShellView.scalingPolicy` (integer full screen) — Ferazel A1 reuses it, no second one. Ben owes the Let's Play link
   (goes into design §2).
 
 ## Open, ordered
