@@ -63,7 +63,7 @@ extension GameState {
             guard r.stateRuleUnit != .none else { continue }                   // 100155a8..100155b0
             guard ruleCondition(i, r) == true else { continue }                // 100156ac..100158e0
             let outcome = enterState(i, named: r.stateRuleAction, spawning: false, now: now)   // 100158e4..100158fc
-            return removeByStateMachine(i, outcome)                            // 10033db8..10033e08
+            return removeByStateMachine(i, outcome, now: now)                  // 10033db8..10033e08
         }
         return false
     }
@@ -71,6 +71,8 @@ extension GameState {
     /// One rule's condition for entity `i` (`100156ac..100158d8`); nil when the unit (`FUN_1003d550`) or the
     /// condition string is unknown — the original disables such a rule (see the type comment).
     func ruleCondition(_ i: Int, _ r: UnitRule) -> Bool? {
+        // `none` passes: `applyRules` skips it before here (100155a8), but a direct call evaluates the callees'
+        // own `none` handling (false / 0, `10034f04`, `10035094`, `10035208`).
         guard r.stateRuleUnit == .none || assets.unitIndex[r.stateRuleUnit] != nil else { return nil }
         guard let c = RuleCondition(string: r.stateRuleCondition) else { return nil }
         let unit = r.stateRuleUnit, range = r.stateRuleRange

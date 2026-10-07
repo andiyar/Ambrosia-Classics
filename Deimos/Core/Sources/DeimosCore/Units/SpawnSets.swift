@@ -37,7 +37,6 @@ extension GameState {
         var k = 0
         while k < count {                                                      // 10015bb0..10016198
             defer { k += 1 }
-            guard k < st.spawnSets.count else { continue }
             let set = st.spawnSets[k]                                          // 10015bb8..10015bc4
             let s = Int(world.entities[i].state)                               // 10015bc8..10015be0
             var r = world.entities[i].spawnRecords[s][k]
@@ -94,7 +93,7 @@ extension GameState {
     /// The request of `FUN_10015b40` (`10015d64..10016188`, see the type comment).
     private mutating func issueSpawnSetRequest(_ i: Int, set: SpawnSet) {
         let id = set.stateSpawnSetSpawn
-        guard id != .none else { return }                                      // 10015d64..10015d70
+        guard id != .none else { return }                                      // 10015d64..10015d70 (kept: the listing re-tests it; unreachable after step 1)
         let ui = assets.unitIndex[id]                                          // 10015d74..10015d84 FUN_1003d550
         let u = ui.map { assets.definitions.units[$0] }
         if let u, u.terrainEffect {                                            // 10015d88..10015d94

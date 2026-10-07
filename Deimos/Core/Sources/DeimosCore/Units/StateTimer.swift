@@ -34,30 +34,30 @@ extension GameState {
     @discardableResult
     mutating func applyTimerTarget(_ i: Int, _ name: String, now: Int32) -> Bool {
         if name == "Delete" {                                                  // 10033c78..10033ca0
-            removeByStateMachine(i, StateEntryOutcome(delete: true))
+            removeByStateMachine(i, StateEntryOutcome(delete: true), now: now)
             return true
         }
         if name == "Destroy" {                                                 // 10033ca4..10033cd0
-            removeByStateMachine(i, StateEntryOutcome(destroy: true))
+            removeByStateMachine(i, StateEntryOutcome(destroy: true), now: now)
             return true
         }
         if name.isEmpty || name == "none" { return false }                     // 10033cd4..10033cf8
         let outcome = enterState(i, named: name, spawning: false, now: now)    // 10033cfc..10033d14
-        return removeByStateMachine(i, outcome)                                // 10033d1c..10033d6c
+        return removeByStateMachine(i, outcome, now: now)                      // 10033d1c..10033d6c
     }
 
     /// `FUN_100146f0`'s out-bytes as `FUN_10033850` handles them after the timer (`10033d1c..10033d5c`) and the
     /// rules (`10033db8..10033df8`): delete → +0xcb = 1, +0xd9 = −1 (not destroyed); destroy →
     /// `FUN_10016300(e, −1, now)`. Returns true when either was set (delete is tested first).
     @discardableResult
-    mutating func removeByStateMachine(_ i: Int, _ outcome: StateEntryOutcome) -> Bool {
+    mutating func removeByStateMachine(_ i: Int, _ outcome: StateEntryOutcome, now: Int32) -> Bool {
         if outcome.delete {
             world.entities[i].deleted = true
             world.entities[i].killer = -1
             return true
         }
         if outcome.destroy {
-            destroyEntity(i, killer: -1)
+            destroyEntity(i, killer: -1, now: now)
             return true
         }
         return false

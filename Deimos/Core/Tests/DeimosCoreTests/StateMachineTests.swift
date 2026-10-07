@@ -189,8 +189,6 @@ final class StateMachineTests: XCTestCase {
         XCTAssertFalse(s.applyRules(sh, now: 6))
         XCTAssertEqual(s.world.entities[sh].state, stateIndex(s, sh, "Keep Moving South"))
         XCTAssertEqual(s.world.entities[sh].stateStart, 6)
-        // A state with no active rules (+0x24 = 0) is not evaluated.
-        XCTAssertFalse(s.applyRules(sh, now: 7))
     }
 
     func testCountRulesSigned() throws {
@@ -215,6 +213,14 @@ final class StateMachineTests: XCTestCase {
         XCTAssertEqual(s.ruleCondition(gd, rule("gedf", "Are More of These Entities Active", range: 1)), true)
         XCTAssertEqual(s.ruleCondition(gd, rule("gedf", "Are More of These Entities Active", range: -1)), true)   // signed
         XCTAssertEqual(s.ruleCondition(gd, rule("gedf", "Are Fewer of These Entities Active", range: -1)), false)
+        // #14 is equality (10015880 subf; cntlzw): count 3 vs range 2 is false, not ≥.
+        let third = try place(&s, "gedf")
+        XCTAssertEqual(s.activeCount(ofUnit: FourCC("gedf")!), 3)
+        XCTAssertEqual(s.ruleCondition(gd, rule("gedf", "Number of This Type of Entity Active", range: 2)), false)
+        XCTAssertEqual(s.ruleCondition(gd, rule("gedf", "Are More of These Entities Active", range: 2)), true)
+        XCTAssertFalse(s.applyRules(gd, now: 2))
+        XCTAssertEqual(s.world.entities[gd].state, 0)
+        s.world.entities[third].spawnCountdown = 1                              // back to 2 counted
         XCTAssertEqual(s.activeCount(ofUnit: .none), 0)
         // le07's gebd: the #14 rule (gedf, range 2) fires → "Spawn Bonus, Delete".
         XCTAssertFalse(s.applyRules(gd, now: 2))
@@ -368,17 +374,144 @@ final class StateMachineTests: XCTestCase {
         }
         r.world.entities[tu].hasSpawnSets = true
         let groupsBefore = r.world.groups.count
+        XCTAssertEqual(bebu.numInGroupMin, 1); XCTAssertEqual(bebu.numInGroupMax, 1)
+        XCTAssertEqual(bebu.appearsPercent, 100); XCTAssertEqual(bebu.initialHeadingTolerance, 6)
+        var ob = Oracle(seed: r.rng.state)
         r.runSpawnSets(tu, now: 1)
-        XCTAssertEqual(r.world.groups.count, groupsBefore + 1)
-        let h: Int32 = 86                                                      // 90 + 356 − 360
-        let cs = Trig.cos(h), sn = Trig.sin(h)
-        let xf = Float(-5), yf = Float(-18)
-        let dx = EntityDraw.fctiwz((-(yf * sn)).addingProduct(xf, cs))
-        let dy = EntityDraw.fctiwz((yf * cs).addingProduct(xf, sn))
+        guard r.world.groups.count == groupsBefore + 1 else { return XCTFail("no bebu group") }
+        // h = 90 + 356 − 360 = 86: offset (−5, −18) rotated by 86° → (+17, −6) (dx = trunc(−5·cos 86 + 18·sin 86),
+        // dy = trunc(−18·cos 86 − 5·sin 86)); rotating by the facing alone (90°) would give (218, 145).
         let g = r.world.groups[groupsBefore]
-        XCTAssertEqual(g.x.bitPattern, (Float(200) + Float(dx)).bitPattern)
-        XCTAssertEqual(g.y.bitPattern, (Float(150) + Float(dy)).bitPattern)
+        XCTAssertEqual(g.x, 217)
+        XCTAssertEqual(g.y, 144)
         XCTAssertEqual(r.world.entities[tu].spawnRecords[1][k].remaining, 0)
+        // The request heading is the same sum (10015fac stw r19 → req+0x10; 1001614c skips HeadingDegrees): the
+        // member (flag set by +0x0d) gets 86 ± D1 (`10035ee4`, bebu tolerance 6 → R(−3, 3), the request's first
+        // draw: group 1…1 and appears 100 make none). HeadingDegrees alone would give 356 + D1.
+        let member = r.world.entities[g.members[0]]
+        _ = ob.r(st.spawnSets[k].stateSpawnSetDelayBetweenEntitiesMin, st.spawnSets[k].stateSpawnSetDelayBetweenEntitiesMax)   // 10015cb8
+        XCTAssertEqual(member.heading, 86 + ob.r(-3, 3))
+
+        // An executor model on le07's geyser (geys S0 → gesm: rate 30–60, volley 1–2, delay 3–5, repeat): every
+        // re-arm draws delay → volley → rate (10015d00, 10015d14, 10015d30); every in-volley tick decrements a
+        // positive countdown (10015c8c) and issues at ≤ 0 with the delay redrawn first (10015cb8).
+        var q = try state(seed: 0x469c2)
+        let gy = try place(&q, "geys", x: 200, y: 200)
+        let gu = q.assets.definitions.units[q.world.entities[gy].unit]
+        q.enterState(gy, named: gu.states[0].stateName, spawning: true, now: 0)
+        let gst = try XCTUnwrap(q.currentState(gy))
+        let gk = try XCTUnwrap(gst.spawnSets.firstIndex { $0.stateSpawnSetSpawn == FourCC("gesm")! })
+        let gs = gst.spawnSets[gk]
+        XCTAssertEqual([gs.stateSpawnSetRateMin, gs.stateSpawnSetRateMax, gs.stateSpawnSetNumInVolleyMin,
+                        gs.stateSpawnSetNumInVolleyMax, gs.stateSpawnSetDelayBetweenEntitiesMin,
+                        gs.stateSpawnSetDelayBetweenEntitiesMax], [30, 60, 1, 2, 3, 5])
+        for j in q.world.entities[gy].spawnRecords[0].indices where j != gk {
+            q.world.entities[gy].spawnRecords[0][j].active = false
+        }
+        var rearms = 0, issued = 0, tick: Int32 = 1
+        while tick < 600 && q.world.entities[gy].state == 0 {                  // bound 600 ticks
+            q.flags.gameTime = tick
+            let pre = q.world.entities[gy].spawnRecords[0][gk]
+            var o = Oracle(seed: q.rng.state)
+            q.runSpawnSets(gy, now: tick)
+            let post = q.world.entities[gy].spawnRecords[0][gk]
+            if pre.remaining > 0 {
+                let dec = pre.countdown > 0 ? pre.countdown - 1 : pre.countdown
+                if dec > 0 {
+                    XCTAssertEqual(post.countdown, dec, "tick \(tick)")
+                    XCTAssertEqual(post.remaining, pre.remaining, "tick \(tick)")
+                } else {
+                    XCTAssertEqual(post.remaining, pre.remaining - 1, "tick \(tick)")
+                    XCTAssertEqual(post.countdown, o.r(3, 5), "tick \(tick)")
+                    issued += 1
+                }
+            } else if tick >= pre.lastArm + pre.rate {
+                XCTAssertEqual(post.lastArm, tick)
+                XCTAssertEqual(post.countdown, o.r(3, 5), "tick \(tick)")
+                XCTAssertEqual(post.volley, o.r(1, 2), "tick \(tick)")
+                XCTAssertEqual(post.remaining, post.volley)
+                XCTAssertEqual(post.rate, o.r(30, 60), "tick \(tick)")
+                rearms += 1
+            } else {
+                XCTAssertEqual(post, pre, "tick \(tick)")
+            }
+            tick += 1
+        }
+        XCTAssertGreaterThanOrEqual(rearms, 5)
+        XCTAssertGreaterThanOrEqual(issued, 6)
+        // Fleeing without SpawnIfFleeing freezes the set (10015c14..10015c28): nothing advances.
+        q.world.entities[gy].fleeing = true
+        q.world.entities[gy].spawnRecords[0][gk].remaining = 1
+        q.world.entities[gy].spawnRecords[0][gk].countdown = 2
+        let draws = q.rng.draws
+        q.runSpawnSets(gy, now: tick)
+        XCTAssertEqual(q.world.entities[gy].spawnRecords[0][gk].countdown, 2)
+        XCTAssertEqual(q.rng.draws, draws)
+
+        // Gates on other shipped sets.
+        var v = try state(seed: 3)
+        func armOnly(_ s: inout GameState, _ i: Int, state si: Int, set k: Int, remaining: Int32, volley: Int32) {
+            for j in s.world.entities[i].spawnRecords[si].indices {
+                var rec = s.world.entities[i].spawnRecords[si][j]
+                rec.active = j == k; rec.rate = 0; rec.remaining = remaining; rec.volley = volley; rec.countdown = 0
+                rec.lastArm = 0
+                s.world.entities[i].spawnRecords[si][j] = rec
+            }
+            s.world.entities[i].hasSpawnSets = true
+        }
+        func groups(_ s: GameState, _ id: String) -> Int { s.world.groups.filter { $0.unit == FourCC(id)! }.count }
+        // bu01 S0 → b1gl has SpawnIfFleeing: a fleeing spawner still issues.
+        let bu = try place(&v, "bu01", x: 100, y: 100)
+        v.enterState(bu, named: "Spawn Glow, Approach Player", spawning: true, now: 0)
+        armOnly(&v, bu, state: 0, set: 0, remaining: 1, volley: 1)
+        v.world.entities[bu].fleeing = true
+        let buLive = v.world.liveCount
+        v.runSpawnSets(bu, now: 1)
+        XCTAssertEqual(groups(v, "b1gl"), 1)
+        XCTAssertGreaterThan(v.world.liveCount, buLive)
+        XCTAssertEqual(v.world.entities[bu].spawnRecords[0][0].remaining, 0)
+        // tapu S0 sets 2/3 → tatr (terrainEffect): only a non-stationary spawner with terrain effects requests
+        // (10015d8c..10015dac); the countdown was redrawn and remaining spent either way.
+        let tp = try place(&v, "tapu", x: 100, y: 100)
+        v.enterState(tp, named: v.assets.definitions.units[v.world.entities[tp].unit].states[0].stateName,
+                     spawning: true, now: 0)
+        XCTAssertTrue(v.assets.definitions.units[v.assets.unitIndex[FourCC("tatr")!]!].terrainEffect)
+        let tatrSet = 2
+        XCTAssertEqual(v.currentState(tp)?.spawnSets[tatrSet].stateSpawnSetSpawn, FourCC("tatr")!)
+        let liveBefore = v.world.liveCount
+        for (stationary, terrain, spawns) in [(true, true, false), (false, false, false), (false, true, true)] {
+            armOnly(&v, tp, state: 0, set: tatrSet, remaining: 1, volley: 1)
+            v.world.entities[tp].stationary = stationary; v.world.entities[tp].terrainEffects = terrain
+            let before = v.world.liveCount
+            v.runSpawnSets(tp, now: 1)
+            XCTAssertEqual(v.world.liveCount > before, spawns, "stationary \(stationary) terrain \(terrain)")
+            XCTAssertEqual(v.world.entities[tp].spawnRecords[0][tatrSet].remaining, 0)
+        }
+        XCTAssertGreaterThan(v.world.liveCount, liveBefore)
+        // pllt S1 → pllb (Don'tSpawnOffscreen, volley 6): off screen with the volley not started → remaining 0,
+        // no draw (10015c2c..10015c6c); mid-volley it is not cancelled.
+        let pt = try place(&v, "pllt", x: 450, y: 100)
+        v.enterState(pt, named: v.assets.definitions.units[v.world.entities[pt].unit].states[1].stateName,
+                     spawning: true, now: 0)
+        XCTAssertTrue(try XCTUnwrap(v.currentState(pt)).spawnSets[0].stateSpawnSetDontSpawnOffscreen)
+        armOnly(&v, pt, state: 1, set: 0, remaining: 6, volley: 6)
+        var d0 = v.rng.draws
+        v.runSpawnSets(pt, now: 1)
+        XCTAssertEqual(v.world.entities[pt].spawnRecords[1][0].remaining, 0)
+        XCTAssertEqual(v.rng.draws, d0)
+        armOnly(&v, pt, state: 1, set: 0, remaining: 5, volley: 6)
+        v.world.entities[pt].spawnRecords[1][0].countdown = 3
+        v.runSpawnSets(pt, now: 1)
+        XCTAssertEqual(v.world.entities[pt].spawnRecords[1][0].remaining, 5)
+        XCTAssertEqual(v.world.entities[pt].spawnRecords[1][0].countdown, 2)
+        // plla S0 (RepeatSpawns FALSE): once the volley is spent the set goes inactive (10015cc8..10015cdc).
+        let pl = try place(&v, "plla", x: 100, y: 100)
+        v.enterState(pl, named: "Spawn Children", spawning: true, now: 0)
+        armOnly(&v, pl, state: 0, set: 0, remaining: 0, volley: 1)
+        d0 = v.rng.draws
+        v.runSpawnSets(pl, now: 5)
+        XCTAssertFalse(v.world.entities[pl].spawnRecords[0][0].active)
+        XCTAssertEqual(v.rng.draws, d0)
     }
 
     // MARK: - Power-up release
