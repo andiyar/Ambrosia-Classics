@@ -72,6 +72,14 @@ public struct EffectMixer: Sendable {
     /// (0 = refused by a full list) or nil when nothing reached the mixer: id `none`, an `allowMultiple == false`
     /// cue whose last instance still lives (`10047c40`, `FUN_100476e0`), or an unregistered id.
     @discardableResult
+    ///
+    /// The two gates between the `none` test and the allowMultiple test — sound available (`10047c28 lbz
+    /// r0,-0x60a0(r2)`, set when the mixer opened, `FUN_10047160`) and effects enabled (`10047c34 lbz
+    /// r0,-0x609f(r2)`, set once at `10047230` and never cleared) — are NOT here: a mixer that exists is an
+    /// available sound system. They belong to the layers that decide whether a mixer exists at all — the engine
+    /// (A2: an engine that failed to open plays nothing) and the driver (H2: `audio == nil` → no cue reaches a
+    /// mixer). Core's pitch draw happens before all of them (bank §8.6, C0's `SoundPlay`), so none of this
+    /// touches the RNG.
     public mutating func play(_ cue: SoundCue) -> UInt32? {
         guard cue.id != .none else { return nil }
         if !cue.allowMultiple, isPlaying(cue.id) { return nil }

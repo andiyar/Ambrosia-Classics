@@ -33,8 +33,8 @@ let package = Package(
         // Foundation + DeimosCore + DeimosRender only (plan invariant 1) — no threads, no sleeping.
         .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender"]),
         // The game's own audio (Phase 2 A1–A2): the 16-voice / 8-audible effects mixer over the continuous-IMA
-        // sounds, and the music streamer, behind one pull source. Foundation + DeimosCore + HectorAudio +
-        // Synchronization only (plan invariant 1; DeimosAudio ruling — pulled on the audio thread).
+        // sounds, and the music streamer, behind one pull source. Foundation + DeimosCore + HectorAudio only
+        // (plan invariant 1; A2 adds Synchronization for the engine's Mutex — pulled on the audio thread).
         .target(name: "DeimosAudio", dependencies: [
             "DeimosCore",
             .product(name: "HectorAudio", package: "HectorKit"),

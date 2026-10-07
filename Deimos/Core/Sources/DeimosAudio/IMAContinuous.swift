@@ -12,6 +12,14 @@ public enum IMAContinuousError: Error, Equatable, Sendable {
     case pcmNotModelled
     /// A RIFF/WAVE effect: accepted by the original's gate, never shipped (all 96 effects are AIFC `ima4`).
     case waveNotModelled
+    /// `ima4` whose COMM sample size is not 16: `FUN_100d1d90` takes the `ima4` path only when `+8 == 16`
+    /// (`100d1db4 lhz r0,0x8(r31); cmplwi r0,0x10; bne`) and otherwise falls into the PCM re-encoder, reading the
+    /// IMA bytes as PCM — never shipped (all 96 effects say 16), refused by name.
+    case imaSampleSize(Int)
+    /// A rate whose 16.16 value is 0 (0, negative, NaN, or below 1/65536 Hz). The original would load it and
+    /// `FixDiv(44100, 0)` = 0 (`FUN_1006e2b0` `1006e2d0`) gives step 0: a voice that decodes silently and ends.
+    /// No shipped effect has one (all 44100 Hz); refused rather than played as an invisible voice.
+    case invalidRate(Double)
 }
 
 /// The mixer's in-memory sound: Apple `ima4` turned into ONE continuous IMA nibble stream — the
@@ -85,7 +93,29 @@ public struct IMAContinuous: Sendable, Equatable {
         let aiff = try AIFFAudio(data: data)
         guard aiff.channels < 2 else { throw IMAContinuousError.stereoEffect(channels: aiff.channels) }
         guard aiff.encoding == .ima4 else { throw IMAContinuousError.pcmNotModelled }
-        self.init(ima4: aiff.soundData, rate: Self.fixedRate(aiff.sampleRate))
+        let size = Self.commSampleSize(data)
+        guard size == 16 else { throw IMAContinuousError.imaSampleSize(size) }
+        let rate = Self.fixedRate(aiff.sampleRate)
+        guard rate != 0 else { throw IMAContinuousError.invalidRate(aiff.sampleRate) }
+        self.init(ima4: aiff.soundData, rate: rate)
+    }
+
+    /// The first COMM chunk's `sampleSize` (signed 16-bit at body + 6), the field `FUN_100d2400` copies to the
+    /// converter's `+8` (`100d266c lha r4,0x6a(r1); sth r4,0x8(r29)`); −1 when absent (the kit has already
+    /// refused a file without COMM). `AIFFAudio` does not expose it for `ima4`.
+    static func commSampleSize(_ data: Data) -> Int {
+        let b = [UInt8](data)
+        func u32(_ o: Int) -> Int { Int(b[o]) << 24 | Int(b[o + 1]) << 16 | Int(b[o + 2]) << 8 | Int(b[o + 3]) }
+        var o = 12
+        while o + 8 <= b.count {
+            let size = u32(o + 4)
+            if b[o..<o + 4].elementsEqual("COMM".utf8) {
+                guard o + 16 <= b.count else { return -1 }
+                return Int(Int16(bitPattern: UInt16(b[o + 14]) << 8 | UInt16(b[o + 15])))
+            }
+            o += 8 + size + (size & 1)
+        }
+        return -1
     }
 
     /// The rate as 16.16 Fixed: `rate × 65536` truncated (`FUN_100d2400` `100d26a4 lfd; fmul; bl 0x1004d5c0`).

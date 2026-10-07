@@ -69,7 +69,11 @@ public struct Voice: Sendable, Equatable {
     ///   afterwards `last = s`. A silent voice runs the same frame count (`100d34b4..100d34d8`).
     /// * The buffer filling up ends the call **mid-sample**: the remaining outputs of that input sample are lost
     ///   and `last` is NOT updated (`100d3498 beq 0x100d34f0`, `100d34cc`). Done iff the input is exhausted.
+    ///
+    /// `frames` must be ≥ 1: the original's counter is tested only after a decrement (`100d348c subic.`), so 0 would
+    /// write without bound; here 0 (or less) does nothing and reports whether the input was already exhausted.
     public mutating func render(_ sound: IMAContinuous, into dest: UnsafeMutablePointer<Int16>?, frames: Int) -> Bool {
+        guard frames > 0 else { return position == total }
         var pred = Int32(predictor)
         var index = Int32(stepIndex)
         var pos = position

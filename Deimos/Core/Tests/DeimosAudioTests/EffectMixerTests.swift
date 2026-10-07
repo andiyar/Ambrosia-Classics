@@ -43,6 +43,25 @@ final class EffectMixerTests: XCTestCase {
         // Decode order = Apple's (low nibble of each original byte first).
         XCTAssertEqual(s.nibble(at: 0), raw[2] & 0x0F)
         XCTAssertEqual(s.nibble(at: 1), raw[2] >> 4)
+
+        // The load gates on the same file: COMM sampleSize must be 16 for the ima4 path (`100d1db4`), and a rate
+        // of 0 is refused (never shipped).
+        var comm = 12
+        while String(decoding: file[comm..<comm + 4], as: UTF8.self) != "COMM" {
+            let size = Int(file[comm + 4]) << 24 | Int(file[comm + 5]) << 16 | Int(file[comm + 6]) << 8 | Int(file[comm + 7])
+            comm += 8 + size + (size & 1)
+        }
+        XCTAssertEqual(Int(file[comm + 14]) << 8 | Int(file[comm + 15]), 16)
+        var size4 = file
+        size4[comm + 15] = 4
+        XCTAssertThrowsError(try IMAContinuous(soundFile: size4)) {
+            XCTAssertEqual($0 as? IMAContinuousError, .imaSampleSize(4))
+        }
+        var rate0 = file
+        for k in 16..<26 { rate0[comm + k] = 0 }
+        XCTAssertThrowsError(try IMAContinuous(soundFile: rate0)) {
+            XCTAssertEqual($0 as? IMAContinuousError, .invalidRate(0))
+        }
     }
 
     func testIMADecodeClamps() throws {
@@ -82,19 +101,52 @@ final class EffectMixerTests: XCTestCase {
         XCTAssertEqual(v.predictor, 0)
         XCTAssertEqual(out.filter { $0 != 0 }.count, 0)
 
-        // Predictor and index carry across the dropped packet headers: a 2-packet ima4 whose second header says
-        // predictor 0x7F80 / index 88 decodes on from where packet 1 left off.
-        var data = [UInt8](repeating: 0x77, count: 68)
-        data[0] = 0; data[1] = 0
-        data[34] = 0x7F; data[35] = 0x58
+        // Predictor and index carry across the dropped packet headers: packet 1 is all nibble 0 (predictor 0,
+        // index 0); packet 2's header says predictor 0x7F80 / index 88 but is never read — its nibbles 1 add
+        // ⌊3·7/8⌋ = 2 each from predictor 0 at index 0.
+        var data = [UInt8](repeating: 0x00, count: 68)
+        for k in 36..<68 { data[k] = 0x11 }
+        data[34] = 0x7F; data[35] = 0x80 | 0x58
         let two = IMAContinuous(ima4: Data(data), rate: 0xAC44_0000)
         XCTAssertEqual(two.sampleCount, 132)
         XCTAssertEqual(two.bytes.count, 66)
-        XCTAssertEqual(Array(two.bytes[32..<64]), [UInt8](repeating: 0x77, count: 32))
+        out = [Int16](repeating: 0, count: out.count)
+        v = voice(two)
+        XCTAssertTrue(out.withUnsafeMutableBufferPointer { v.render(two, into: $0.baseAddress!, frames: EffectMixer.blockFrames) })
+        XCTAssertEqual(out[2 * 63], 0)                                      // last sample of packet 1
+        XCTAssertEqual(Array(out[(2 * 64)..<(2 * 67)].enumerated().filter { $0.offset % 2 == 0 }.map(\.element)),
+                       [2, 4, 6])                                           // samples 65–67: carried, not re-synced
+        XCTAssertEqual(out[2 * 127], 128)                                   // 64 × 2 at the end of packet 2
+        XCTAssertEqual(out[2 * 131], 128)                                   // the 2·P zero-nibble tail holds it
+        XCTAssertEqual(v.predictor, 128)
+        XCTAssertEqual(v.stepIndex, 0)
+
+        // frames 0 writes nothing (the original would run unbounded) and leaves the voice as it was.
+        let fresh = voice(up)
+        v = fresh
+        var guardBuf: [Int16] = [7, 7]
+        XCTAssertFalse(guardBuf.withUnsafeMutableBufferPointer { v.render(up, into: $0.baseAddress!, frames: 0) })
+        XCTAssertEqual(guardBuf, [7, 7])
+        XCTAssertEqual(v, fresh)
     }
 
     func testVolumeToGain() {
         XCTAssertEqual([100, 90, 80, 75, 70, 50].map { EffectMixer.gain(volume: $0) }, [128, 115, 102, 96, 89, 64])
+
+        // The gain is applied to the decoded sample BEFORE interpolation (`100d33ec mullw; srawi 7`, then the
+        // `r24` steps from `last`): predictors 2, 4, 6, 8 at gain 89 → 1, 2, 4, 5; pitch 2 → two frames each.
+        var m = EffectMixer()
+        m.register(FourCC("ramp")!, AudioTestData.synthetic([1], count: 4))
+        m.play(AudioTestData.cue("ramp", volume: 70, pitch: 2))
+        m.mixBlock()
+        XCTAssertEqual(stride(from: 0, to: 16, by: 2).map { m.block[$0] }, [0, 1, 1, 2, 3, 4, 4, 5])
+        XCTAssertEqual(m.block[16], 0)
+
+        // Above 100 % the request's gain (150 → 192) is clamped to 0x80 by the mixer (`100d1930`, `100d1944`).
+        XCTAssertEqual(EffectMixer.gain(volume: 150), 192)
+        m.play(AudioTestData.cue("ramp", volume: 150))
+        XCTAssertEqual(m.voice(at: 0).gainLeft, 0x80)
+        XCTAssertEqual(m.voice(at: 0).gainRight, 0x80)
     }
 
     func testInsertionRanking() throws {
@@ -198,6 +250,40 @@ final class EffectMixerTests: XCTestCase {
         XCTAssertEqual(frames(pitch: 1.0), 1000)
         XCTAssertEqual(frames(pitch: 2.0), 2000)                             // p > 1: longer (and lower)
         XCTAssertEqual(frames(pitch: 0.5), 500)                              // p < 1: shorter (and higher)
+
+        // The rate ratio is FixDiv(44100, soundRate) (`100d1a74`): a 22050 Hz sound steps 2.0 at pitch 1.
+        var half = EffectMixer()
+        half.register(FourCC("half")!, IMAContinuous(nibbleBytes: AudioTestData.synthetic([1], count: 1000).bytes,
+                                                     sampleCount: 1000, rate: 0x5622_0000))
+        half.play(AudioTestData.cue("half"))
+        XCTAssertEqual(half.voice(at: 0).ratio, 0x20000)
+        XCTAssertEqual(half.voice(at: 0).step, 0x20000)
+        let halfOut = half.drain(maxBlocks: 8)
+        XCTAssertEqual(stride(from: 0, to: halfOut.count, by: 2).filter { halfOut[$0] != 0 }.count, 2000)
+
+        // A block that fills on the last output of a sample leaves `last` un-updated (`100d3498 beq 0x100d34f0`):
+        // pitch 2, predictor 2k — frame 1024 is sample 512's second output; block 2 starts at sample 513 and
+        // interpolates from sample 511's 1022 → 1022 + (128·4 >> 8) = 1024 (not 1025 from 1024).
+        var brk = EffectMixer()
+        brk.register(FourCC("ramp")!, AudioTestData.synthetic([1], count: 600))
+        brk.play(AudioTestData.cue("ramp", pitch: 2))
+        brk.mixBlock()
+        XCTAssertEqual(brk.block[2 * 1023], 1024)                            // sample 512 = 1024, its 2nd output
+        brk.mixBlock()
+        XCTAssertEqual(Array(stride(from: 0, to: 4, by: 2).map { brk.block[$0] }), [1024, 1026])
+
+        // The accumulator restarts at 0 every block (`100d32ec li r0,0`): pitch 0.75 (step 0xC00) writes samples
+        // k with k mod 4 ≠ 1, so block 1 ends at sample 1366; block 2 counts from 1367 again — 1367 is skipped and
+        // its first frame is sample 1368 = 2736 (a carried phase would write 1367 = 2734).
+        var phase = EffectMixer()
+        phase.register(FourCC("ramp")!, AudioTestData.synthetic([1], count: 2000))
+        phase.play(AudioTestData.cue("ramp", pitch: 0.75))
+        XCTAssertEqual(phase.voice(at: 0).step, 0xC000)
+        phase.mixBlock()
+        XCTAssertEqual(Array(stride(from: 0, to: 6, by: 2).map { phase.block[$0] }), [4, 6, 8])   // samples 2, 3, 4
+        XCTAssertEqual(phase.block[2 * 1023], 2732)                          // sample 1366
+        phase.mixBlock()
+        XCTAssertEqual(phase.block[0], 2736)
     }
 
     func testAllowMultipleFalseBlocksRestart() {
