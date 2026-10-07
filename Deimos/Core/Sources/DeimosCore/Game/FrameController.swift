@@ -1,11 +1,11 @@
 import Foundation
 
-/// The 0x38-byte frame-controller object each loop keeps on its stack (timing-frame.md §1–§2.5, HIGH):
-/// the tick flag and speed divider, frames presented, the FPS-window frame counter and the Esc hold.
-/// Phase 1 carries only this arithmetic; the FPS monitor (`FUN_100305e0`/`FUN_10030640`), the limiter
-/// wait, auto-interlace, Caps-Lock pause and the presents are not here (the limiter/present are
-/// `RenderOp`s; the rest is Phase 2). Esc only REPORTS quit: the pass in which it is detected still
-/// completes — stopping the session is the caller's (review M1).
+/// The 0x38-byte frame-controller object each loop keeps on its stack (timing-frame.md §1–§2.6, HIGH):
+/// the tick flag and speed divider, frames presented, the FPS-window frame counter and the Esc hold; Phase 2
+/// (plan C19) adds the key-edge latches and the FPS-monitor fields. The behaviour that touches the game
+/// (Caps Lock pause, the volume/F6 keys, the FPS monitor's auto-interlace, the console) is `FrameKeys`; the
+/// limiter wait and the presents are `RenderOp`s. Esc only REPORTS quit: the pass in which it is detected
+/// still completes — stopping the session is the caller's (review M1).
 public struct FrameController: Equatable, Sendable {
     /// +0x00 paused (Caps Lock). Never set in Phase 1.
     public var paused = false
@@ -19,10 +19,21 @@ public struct FrameController: Equatable, Sendable {
     public var gameScreenLayout = false
     /// +0x08 frames presented (`FUN_10030bc0` +1, `10030d34..d3c`).
     public var framesPresented: Int32 = 0
+    /// +0x0e / +0x0f / +0x10: the key-edge latches of `FUN_10030910` — `-` (0x1B), `=` (0x18), F6 (0x61).
+    /// Phase 2 (C19).
+    public var latchMinus = false
+    public var latchEquals = false
+    public var latchF6 = false
     /// +0x14 Esc-hold counter (`FUN_100307c0`).
     public var escHold: Int32 = 0
+    /// +0x18 TickCount at the FPS-window start (`FUN_100305e0`, `FUN_10030640`). Phase 2 (C19).
+    public var fpsWindowStart: UInt32 = 0
     /// +0x20 frames counted in the current FPS window (`10030d40..d48`).
     public var windowFrames: Int32 = 0
+    /// +0x24 the FPS shown: the last window's frame count (`10030690`), 30 at init. Phase 2 (C19).
+    public var fpsShown: Int32 = 0
+    /// +0x28 deficient windows, counted cumulatively (`100306c0..100306f4`). Phase 2 (C19).
+    public var deficientWindows: Int32 = 0
     /// +0x2c speed divider — only ever 0 in 1.0.6 (timing-frame §3).
     public var speedDivider: Int32 = 0
     /// +0x30 divider countdown.
@@ -55,6 +66,15 @@ public struct FrameController: Equatable, Sendable {
         self.gameScreenLayout = gameScreenLayout
         self.autoInterlaceAllowed = autoInterlaceAllowed
         resetDivider()
+    }
+
+    /// `FUN_100305e0` — FPS-monitor init (`100305f4..10030628`): +0x18 = TickCount, +0x20 = +0x24 =
+    /// fctiwz(PermFloat 32) (30), +0x28 = 0.
+    public mutating func fpsMonitorInit(ticks: UInt32) {
+        fpsWindowStart = ticks
+        windowFrames = fpsMaxRate
+        fpsShown = windowFrames
+        deficientWindows = 0
     }
 
     /// `FUN_10030790` — +0x2c = 0, +0x30 = 0, +0x34 = 1 (`10030790..100307a0`).
