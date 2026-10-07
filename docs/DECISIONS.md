@@ -650,6 +650,11 @@ ImageIO only in `Sources/ferazel-census`, for `--render`) — its stdout is `doc
 (16-CLUT Color2Index 1,178,146 of 3,387,696; FG 200 under clut 201 44/239 colours 5,400 px). `Ferazel/Core` tests
 **60/0** (C5 56 + 4 `CensusTests`). Built on HectorKit main `4ca2e18` (`v0.3.0` + 8; the plan expected `522feb8`,
 an ancestor — HectorKit main moved on with the Cythera K1 work).
+**Ben, 2026-10-07 — duplicate-colour tie-break decided at the gate:** clut 201 holds 162 pure blacks (1..160, 254,
+255); `.ruled`'s "exact match → lowest index" sends FG 200's 8,443 black pixels (FG converts under 201) to index 1,
+which the screen clut 202 shows as light yellow (FFFF,FFFF,7F7F) — yellow specks on every FG edge (C6 review). Which
+duplicate QuickDraw's `Color2Index` picks is the open LOW. Ruling: build both tie-breaks selectable (lowest, the
+current default, and highest — 255 here, black in both cluts) and show Ben both at the Phase 1 gate; not built in C6/R1.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
