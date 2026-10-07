@@ -510,7 +510,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   ticks) · `testPressCapsLockNoticeOpaqueAtOnce` (fade-in off → alpha 0; alignment `CEGA` for fc+4 = 1; §4.4).
 - **Gate:** G2 = previous + **6** (canonical **217**). **Commit:** `DeimosCore: notice slot and message queue (aging per frame, notices per tick); 6 tests`.
 
-### A2 — minor — DeimosAudio: music streamer, master gain, the engine (→ +7, canonical 224) — after A1 and K2 on HK main
+### A2 — minor — DeimosAudio: music streamer, the engine (→ +7, canonical 224) — after A1 and K2 on HK main
 - **Files:** `Sources/DeimosAudio/{MusicStream,DeimosAudioEngine}.swift`; `Tests/DeimosAudioTests/MusicEngineTests.swift`.
 - **Contract (sound-music §4, §6; S5):** `MusicStream` plays a `soun` music tag (`mu03`, `ammu`, `inmu` — AIFC ima4
   stereo) from the pak byte range with a **non-allocating Apple-ima4 packet decoder inside DeimosAudio** (34-byte
@@ -524,10 +524,10 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **Tests (7):** `testMusicAmpFullScale255` (int pref 1 = 100 → m 128 → amp 128 → gain 128/255; §6.2) ·
   `testMusicLoopsSeamlessly` (a synthetic 2-packet AIFC: frame after the last = frame 0) ·
   `testMusicDecoderMatchesKitIMA4` (the synthetic AIFC and `mu03`'s first 4 packets: bit-identical to the kit's `IMA4`) ·
-  `testMusicPauseFreezes` · `testMasterGainScalesAll` (unity at start; v 50 → 64/128 on effects and music; v 0 →
-  silence with positions advancing) · `testPauseClickSurvivesHalt` (`apply(sounds: [a, incl], haltEffectsAt: 1)`: `a`
+  `testMusicPauseFreezes` · `testUnityGainNoMasterVolume` (Q4 ruled: a full-scale effect and music render at unity — no
+  gain stage exists; `DeimosAudioSink.apply` has no volume parameter) · `testPauseClickSurvivesHalt` (`apply(sounds: [a, incl], haltEffectsAt: 1)`: `a`
   is cut, `incl` plays; leg A I-6) · `testEngineIsAPullSource` (outputRate 44100; `render` fills 2·frames floats).
-- **Gate:** G2 = previous + **7** (canonical **224**). **Commit:** `DeimosAudio: music streamer (non-allocating ima4, seamless loop, pause, level), master gain, positional halt, DeimosAudioEngine pull source; 7 tests`.
+- **Gate:** G2 = previous + **7** (canonical **224**). **Commit:** `DeimosAudio: music streamer (non-allocating ima4, seamless loop, pause, level), unity gain (Q4), positional halt, DeimosAudioEngine pull source; 7 tests`.
 
 ### R4 — minor — Render: particle stamps (→ +3, canonical 227) — after C0
 - **Files:** `Sources/DeimosRender/{DeimosRenderer,ParticleStamps}.swift`; `Tests/DeimosRenderTests/ParticleStampTests.swift`.
@@ -834,7 +834,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **Files:** `Package.swift` (S1 H2 line), `Sources/DeimosHost/{DeimosDriver,HeadlessRunner,FilmReplay,ReplayTrace}.swift`;
   `Tests/DeimosHostTests/{DriverTests,ReplayHarnessTests}.swift` (DriverTests: existing kept).
 - **Contract:** S6. Driver: `pass(keys:ticks:)`; a pass's cues go to `audio` when the pass begins (sounds with the halt
-  index, music, master volume — the original issues them inside the tick; ≤ one frame early, inaudible);
+  index, music — the original issues them inside the tick; ≤ one frame early, inaudible);
   **`.pauseWait(p)`** yields until an `idle` sees `capsLock == false`, then `present(p)`; typed characters accumulate
   across `idle` calls into the next pass; **Esc latch** clears when **any** `idle` sees Esc up (carry); ◇ restarts keep
   the ended session's prefs (S9.6); level complete / game over end the session like Esc. `HeadlessRunner` (logic only
