@@ -16,7 +16,7 @@ public enum WorldGlobalsError: Error, Equatable, Sendable {
     case trailingBytes(id: UInt16, after: Int, count: Int)
     /// A C string with no NUL before the end of the segment.
     case unterminatedString(id: UInt16, offset: Int)
-    /// A 0xF001 record outside the census: tile not in 1..<0xA00, or nframes/divisor ≤ 0 (`LoadGlobals` divides).
+    /// A 0xF001 record outside the census shape (`AnimationRecord.init?`: tile/base range, nframes/divisor ≤ 0).
     case badAnimationRecord(index: Int)
     /// A negative 0xF00B count.
     case negativeScheduleCount(character: Int, count: Int16)
@@ -80,10 +80,10 @@ public struct WorldGlobals: Sendable {
     public let filterIDs: [UInt8]
     /// 0xF00A as stored (1024 bytes, all zero; no reader).
     public let f00A: Data
-    /// 0xF014: frame-variable symbol table.
-    public let frameVariableNames: SymbolTable
-    /// 0xF015: object-name symbol table.
-    public let objectNames: SymbolTable
+    /// 0xF014: frame-variable symbol table {u16 value, name} (S2; parsed by `SymbolTable`).
+    public let frameVariableNames: [(UInt16, String)]
+    /// 0xF015: object-name symbol table {u16 value, name}.
+    public let objectNames: [(UInt16, String)]
 
     public init(file: SegmentFile) throws {
         try self.init(store: file)
@@ -95,9 +95,7 @@ public struct WorldGlobals: Sendable {
         for id in Self.ids {
             guard let d = store.segment(id), !d.isEmpty else { throw WorldGlobalsError.missing(id) }
             let b = [UInt8](d)
-            if let size = Self.fixedSizes[id], b.count != size {
-                throw WorldGlobalsError.lengthMismatch(id: id, expected: size, actual: b.count)
-            }
+            try Self.checkFixedSize(id, count: b.count)
             seg[id] = b
         }
         func u16s(_ id: UInt16) -> [UInt16] { let b = seg[id]!; return (0..<(b.count / 2)).map { be16(b, $0 * 2) } }
@@ -128,37 +126,52 @@ public struct WorldGlobals: Sendable {
         tileNames = try Self.parseTileNames(seg[0xF004]!)
         paletteCycles = try Self.parsePaletteCycles(seg[0xF005]!)
 
-        let f007 = seg[0xF007]!
-        guard f007.count >= 2 else { throw WorldGlobalsError.badLength(id: 0xF007, length: f007.count) }
-        let f007Expected = 2 + Int(be16(f007, 0)) * 5
-        guard f007.count == f007Expected else {
-            throw WorldGlobalsError.lengthMismatch(id: 0xF007, expected: f007Expected, actual: f007.count)
-        }
-        self.f007 = Data(f007)
-
-        let f008 = seg[0xF008]!
-        guard f008.count >= 0x800, (f008.count - 0x800) % CreatureRecord.size == 0 else {
-            throw WorldGlobalsError.badLength(id: 0xF008, length: f008.count)
-        }
-        let creatureRecords = (0..<(f008.count / CreatureRecord.size)).map {
-            CreatureRecord(bytes: Array(f008[($0 * 16)..<($0 * 16 + 16)]))
-        }
-        creatures = Array(creatureRecords[0..<128])
-        creatureTail = Array(creatureRecords[128...])
-
+        f007 = Data(try Self.checkF007(seg[0xF007]!))
+        (creatures, creatureTail) = try Self.parseCreatures(seg[0xF008]!)
         schedules = try Self.parseSchedules(seg[0xF00B]!)
+        wallSubstitutions = try Self.parseWalls(seg[0xF00D]!)
+        frameVariableNames = try Self.parseSymbols(seg[0xF014]!, id: 0xF014).entries.map { ($0.value, $0.name) }
+        objectNames = try Self.parseSymbols(seg[0xF015]!, id: 0xF015).entries.map { ($0.value, $0.name) }
+    }
 
-        let f00D = seg[0xF00D]!
-        guard f00D.count % WallRecord.size == 0 else { throw WorldGlobalsError.badLength(id: 0xF00D, length: f00D.count) }
-        wallSubstitutions = try (0..<(f00D.count / WallRecord.size)).map { k in
-            let o = k * WallRecord.size
-            let tile = be16(f00D, o)
-            guard tile <= 0x2000 else { throw WorldGlobalsError.wallTileOutOfRange(index: k, tile: tile) }
-            return WallRecord(tile: tile, alternates: (1...4).map { be16(f00D, o + $0 * 2) })
+    /// A fixed-size global must be exactly its `LoadSegment` size; other ids pass.
+    static func checkFixedSize(_ id: UInt16, count: Int) throws {
+        if let size = fixedSizes[id], count != size {
+            throw WorldGlobalsError.lengthMismatch(id: id, expected: size, actual: count)
         }
+    }
 
-        frameVariableNames = try Self.parseSymbols(seg[0xF014]!, id: 0xF014)
-        objectNames = try Self.parseSymbols(seg[0xF015]!, id: 0xF015)
+    /// 0xF007 (open-items-2026-10-06 §5): u16 count then count × 5 bytes, exactly.
+    static func checkF007(_ b: [UInt8]) throws -> [UInt8] {
+        guard b.count >= 2 else { throw WorldGlobalsError.badLength(id: 0xF007, length: b.count) }
+        let expected = 2 + Int(be16(b, 0)) * 5
+        guard b.count == expected else {
+            throw WorldGlobalsError.lengthMismatch(id: 0xF007, expected: expected, actual: b.count)
+        }
+        return b
+    }
+
+    /// 0xF008 (combat.md §4): 128 records in the first 0x800 bytes, then `(size − 0x800) >> 4` tail records;
+    /// a size below 0x800 or not a whole number of records is refused.
+    static func parseCreatures(_ b: [UInt8]) throws -> ([CreatureRecord], [CreatureRecord]) {
+        guard b.count >= 0x800, (b.count - 0x800) % CreatureRecord.size == 0 else {
+            throw WorldGlobalsError.badLength(id: 0xF008, length: b.count)
+        }
+        let all = stride(from: 0, to: b.count, by: CreatureRecord.size).map {
+            CreatureRecord(bytes: Array(b[$0..<($0 + CreatureRecord.size)]))
+        }
+        return (Array(all[0..<128]), Array(all[128...]))
+    }
+
+    /// 0xF00D (§5): 10-byte records, each tile ≤ 0x2000 (the `TViewer` ctor's assert).
+    static func parseWalls(_ b: [UInt8]) throws -> [WallRecord] {
+        guard b.count % WallRecord.size == 0 else { throw WorldGlobalsError.badLength(id: 0xF00D, length: b.count) }
+        return try (0..<(b.count / WallRecord.size)).map { k in
+            let o = k * WallRecord.size
+            let tile = be16(b, o)
+            guard tile <= 0x2000 else { throw WorldGlobalsError.wallTileOutOfRange(index: k, tile: tile) }
+            return WallRecord(tile: tile, alternates: (1...4).map { be16(b, o + $0 * 2) })
+        }
     }
 
     /// 0xF001 (§3.4; note 7 as ruled 2026-10-07): 8-byte records until a zero i16 tile, then nothing. The
@@ -172,10 +185,9 @@ public struct WorldGlobals: Sendable {
             let tile = Int16(bitPattern: be16(b, k))
             if tile == 0 { break }
             guard k + 8 <= b.count else { throw WorldGlobalsError.missingTerminator(0xF001) }
-            let r = AnimationRecord(tile: tile, base: Int16(bitPattern: be16(b, k + 2)),
-                                    frameCount: Int16(bitPattern: be16(b, k + 4)),
-                                    divisor: Int16(bitPattern: be16(b, k + 6)))
-            guard (1..<0xA00).contains(r.tile), r.frameCount > 0, r.divisor > 0 else {
+            guard let r = AnimationRecord(tile: tile, base: Int16(bitPattern: be16(b, k + 2)),
+                                          frameCount: Int16(bitPattern: be16(b, k + 4)),
+                                          divisor: Int16(bitPattern: be16(b, k + 6))) else {
                 throw WorldGlobalsError.badAnimationRecord(index: out.count)
             }
             out.append(r)
@@ -235,13 +247,17 @@ public struct WorldGlobals: Sendable {
         guard b.count == expected else {
             throw WorldGlobalsError.lengthMismatch(id: 0xF00B, expected: expected, actual: b.count)
         }
+        var entries: [[ScheduleEntry]] = []
+        entries.reserveCapacity(counts.count)
         var o = 0x200
-        let entries: [[ScheduleEntry]] = counts.map { n in
-            (0..<Int(n)).map { _ in
-                defer { o += ScheduleEntry.size }
-                return ScheduleEntry(hour: b[o], activity: b[o + 1], conditionOp: b[o + 2], conditionArg: b[o + 3],
-                                     packedLocation: be32(b, o + 4))
+        for n in counts {
+            var list: [ScheduleEntry] = []
+            for _ in 0..<Int(n) {
+                list.append(ScheduleEntry(hour: b[o], activity: b[o + 1], conditionOp: b[o + 2],
+                                          conditionArg: b[o + 3], packedLocation: be32(b, o + 4)))
+                o += ScheduleEntry.size
             }
+            entries.append(list)
         }
         return ScheduleTable(counts: counts, entries: entries)
     }
@@ -268,7 +284,7 @@ public struct WorldGlobals: Sendable {
     }
 }
 
-/// Big-endian reads; callers have bounds-checked `o`.
+/// Big-endian reads shared by every World record; callers have bounds-checked `o`.
 @inline(__always) func be16(_ b: [UInt8], _ o: Int) -> UInt16 { UInt16(b[o]) << 8 | UInt16(b[o + 1]) }
 @inline(__always) func be32(_ b: [UInt8], _ o: Int) -> UInt32 {
     UInt32(b[o]) << 24 | UInt32(b[o + 1]) << 16 | UInt32(b[o + 2]) << 8 | UInt32(b[o + 3])

@@ -3,6 +3,8 @@ import Foundation
 public enum PropSegmentError: Error, Equatable, Sendable {
     /// Segment 0x8100 + L is absent (0x8125 in the shipped data).
     case absent(UInt16)
+    /// A level outside 0...0xFF (ids 0x8100–0x81FF); refused, not wrapped.
+    case levelOutOfRange(Int)
     /// A segment whose length is not a whole number of 16-byte records (`LoadLevelProps` counts `len >> 4`).
     case lengthNotMultipleOf16(Int)
 }
@@ -13,7 +15,8 @@ public struct PropSegment: Sendable {
     public let records: [PropRecord]
 
     public init(file: some SegmentStore, level: Int) throws {
-        let id = UInt16(truncatingIfNeeded: 0x8100 + (level & 0xFF))
+        guard (0...0xFF).contains(level) else { throw PropSegmentError.levelOutOfRange(level) }
+        let id = UInt16(0x8100 + level)
         guard let data = file.segment(id) else { throw PropSegmentError.absent(id) }
         try self.init(data: data)
     }
@@ -24,7 +27,7 @@ public struct PropSegment: Sendable {
         guard data.count % PropRecord.size == 0 else { throw PropSegmentError.lengthNotMultipleOf16(data.count) }
         let b = [UInt8](data)
         records = stride(from: 0, to: b.count, by: PropRecord.size).map {
-            PropRecord(bytes: Array(b[$0..<($0 + PropRecord.size)]))!
+            PropRecord(record: b[$0..<($0 + PropRecord.size)])
         }
     }
 }

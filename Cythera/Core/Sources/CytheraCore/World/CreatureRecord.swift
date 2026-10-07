@@ -6,7 +6,7 @@ public struct CreatureRecord: Equatable, Sendable {
 
     init(bytes: [UInt8]) { self.bytes = bytes }
 
-    private func u16(_ o: Int) -> UInt16 { UInt16(bytes[o]) << 8 | UInt16(bytes[o + 1]) }
+    private func u16(_ o: Int) -> UInt16 { be16(bytes, o) }
 
     /// Byte 0: base Body (field 0x2C).
     public var body: UInt8 { bytes[0] }

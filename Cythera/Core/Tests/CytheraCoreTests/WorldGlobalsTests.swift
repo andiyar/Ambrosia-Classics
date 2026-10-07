@@ -41,6 +41,48 @@ final class WorldGlobalsTests: XCTestCase {
                 XCTAssertTrue(e is WorldGlobalsError, "\(String(id, radix: 16)): \(e)")
             }
         }
+        // Every prefix of every global through its own parser (Invariant 5). Fixed-size globals: every shorter
+        // length is refused. Terminated / counted globals: every prefix throws a WorldGlobalsError, except the
+        // prefixes that are themselves whole shapes (record or entry boundaries), which parse to fewer records.
+        let raw = Dictionary(uniqueKeysWithValues: WorldGlobals.ids.map { ($0, [UInt8](file.segment($0)!)) })
+        func throwsNamed(_ label: String, _ body: () throws -> Void) {
+            XCTAssertThrowsError(try body(), label) { e in XCTAssertTrue(e is WorldGlobalsError, "\(label): \(e)") }
+        }
+        for (id, size) in WorldGlobals.fixedSizes {
+            XCTAssertEqual(raw[id]!.count, size)
+            XCTAssertNoThrow(try WorldGlobals.checkFixedSize(id, count: size))
+            for cut in 0..<size { throwsNamed("\(id) \(cut)") { try WorldGlobals.checkFixedSize(id, count: cut) } }
+        }
+        for cut in 0..<66 { throwsNamed("F001 \(cut)") { _ = try WorldGlobals.parseAnimations(Array(raw[0xF001]![..<cut])) } }
+        for cut in 0..<16 { throwsNamed("F005 \(cut)") { _ = try WorldGlobals.parsePaletteCycles(Array(raw[0xF005]![..<cut])) } }
+        for cut in 0..<167 { throwsNamed("F007 \(cut)") { _ = try WorldGlobals.checkF007(Array(raw[0xF007]![..<cut])) } }
+        for cut in 0..<2048 { throwsNamed("F008 \(cut)") { _ = try WorldGlobals.parseCreatures(Array(raw[0xF008]![..<cut])) } }
+        for cut in 0..<5448 { throwsNamed("F00B \(cut)") { _ = try WorldGlobals.parseSchedules(Array(raw[0xF00B]![..<cut])) } }
+        for cut in 0..<500 {
+            let b = Array(raw[0xF00D]![..<cut])
+            if cut % 10 == 0 { XCTAssertEqual(try WorldGlobals.parseWalls(b).count, cut / 10) }
+            else { throwsNamed("F00D \(cut)") { _ = try WorldGlobals.parseWalls(b) } }
+        }
+        let f004 = raw[0xF004]!
+        for cut in 0..<f004.count {
+            let b = Array(f004[..<cut])
+            if cut < 5780 { throwsNamed("F004 \(cut)") { _ = try WorldGlobals.parseTileNames(b) } }
+            else { XCTAssertEqual(try WorldGlobals.parseTileNames(b).trailing.count, cut - 5780) }
+        }
+        for id: UInt16 in [0xF014, 0xF015] {
+            let full = raw[id]!
+            let table = try WorldGlobals.parseSymbols(full, id: id)
+            XCTAssertEqual(table.byteCount, full.count)
+            var boundaries: Set<Int> = [0], o = 0
+            for e in table.entries { o += 2 + e.name.utf8.count + 1; boundaries.insert(o) }
+            XCTAssertEqual(o, full.count)
+            for cut in 0..<full.count {
+                let b = Array(full[..<cut])
+                if boundaries.contains(cut) { XCTAssertNoThrow(try WorldGlobals.parseSymbols(b, id: id)) }
+                else { throwsNamed("\(id) \(cut)") { _ = try WorldGlobals.parseSymbols(b, id: id) } }
+            }
+        }
+
         // A missing global; 0xF001 with bytes after its terminator; 0xF001 with no terminator.
         let missing = globalsStore(file); missing.write(0xF00C, data: Data())
         XCTAssertThrowsError(try WorldGlobals(store: missing)) { e in
@@ -54,6 +96,17 @@ final class WorldGlobalsTests: XCTestCase {
         XCTAssertThrowsError(try WorldGlobals(store: unterminated)) { e in
             XCTAssertEqual(e as? WorldGlobalsError, .missingTerminator(0xF001))
         }
+        // 0xF001 records outside the census shape (AnimationRecord.init?): divisor 0, frames 0, base ≥ 0xA00.
+        for (offset, value) in [(6, 0), (4, 0), (2, 0x0A00)] {
+            var b = raw[0xF001]!
+            b[offset] = UInt8(value >> 8); b[offset + 1] = UInt8(value & 0xFF)
+            XCTAssertThrowsError(try WorldGlobals.parseAnimations(b)) { e in
+                XCTAssertEqual(e as? WorldGlobalsError, .badAnimationRecord(index: 0))
+            }
+        }
+        XCTAssertNil(AnimationRecord(tile: 987, base: 987, frameCount: 4, divisor: 0))
+        XCTAssertNil(AnimationRecord(tile: 0xA00, base: 987, frameCount: 4, divisor: 1))
+        XCTAssertNil(AnimationRecord(tile: 987, base: 0x9FE, frameCount: 4, divisor: 1))
         // A schedule table whose counts do not fill the segment exactly.
         let sched = globalsStore(file); sched.write(0xF00B, data: file.segment(0xF00B)! + Data(count: 8))
         XCTAssertThrowsError(try WorldGlobals(store: sched)) { e in
@@ -62,13 +115,14 @@ final class WorldGlobalsTests: XCTestCase {
     }
 
     func testBaseTilesAndAnimations() throws {
-        let g = try WorldGlobals(file: try segmentFile())
+        let file = try segmentFile()
+        let g = try WorldGlobals(file: file)
         XCTAssertEqual(g.baseTiles.count, 1024)
         XCTAssertEqual(g.baseTiles.filter { $0 != 0 }.count, 395)
         XCTAssertEqual(g.baseTiles.max(), 4863)
         XCTAssertEqual(g.animations.count, 8)
         XCTAssertEqual(g.animationTerminatorOffset, 64)
-        XCTAssertEqual(g.animationTerminatorOffset + 2, 66)       // nothing follows the terminator
+        XCTAssertEqual(g.animationTerminatorOffset + 2, file.entry(0xF001)?.length)   // nothing follows it
         let expected: [(Int16, Int16, Int16, Int16)] = [
             (987, 987, 4, 2), (2161, 2161, 4, 1), (1275, 1274, 2, 4), (1180, 1180, 4, 1),
             (1176, 1176, 4, 1), (1172, 1172, 4, 1), (1168, 1168, 4, 1), (902, 902, 4, 1),
@@ -145,12 +199,14 @@ final class WorldGlobalsTests: XCTestCase {
     }
 
     func testSchedules() throws {
-        let g = try WorldGlobals(file: try segmentFile())
+        let file = try segmentFile()
+        let g = try WorldGlobals(file: file)
         let s = g.schedules
         XCTAssertEqual(s.counts.count, 256)
         let total = s.entries.reduce(0) { $0 + $1.count }
         XCTAssertEqual(total, 617)
-        XCTAssertEqual(0x200 + 8 * total, 5448)
+        XCTAssertEqual(0x200 + 8 * total, file.entry(0xF00B)?.length)
+        XCTAssertEqual(s.counts.map(Int.init), s.entries.map(\.count))
         XCTAssertEqual(s.entries.filter { !$0.isEmpty }.count, 114)
         XCTAssertEqual(s.entries[0].count, 1)
         XCTAssertEqual(s.entries[0][0].hour, 9)
@@ -198,13 +254,14 @@ final class WorldGlobalsTests: XCTestCase {
         XCTAssertEqual(filters.values.reduce(0, +), 124)
         XCTAssertEqual(filters, [128: 72, 131: 30, 134: 12, 129: 4, 130: 3, 133: 3])
 
-        XCTAssertEqual(g.frameVariableNames.entries.count, 10)
-        XCTAssertEqual(g.frameVariableNames.byteCount, 123)
-        XCTAssertEqual(g.frameVariableNames.entries.first?.value, 259)
-        XCTAssertEqual(g.frameVariableNames.entries.first?.name, "Od_Shutter1")
-        XCTAssertEqual(g.objectNames.entries.count, 13)
-        XCTAssertEqual(g.objectNames.byteCount, 179)
-        XCTAssertEqual(g.objectNames.entries.first?.name, "Cad_Bellows1")
+        // {u16, C string} entries consuming the whole segment (ASCII names: 2 + length + NUL each).
+        XCTAssertEqual(g.frameVariableNames.count, 10)
+        XCTAssertEqual(g.frameVariableNames.reduce(0) { $0 + 3 + $1.1.utf8.count }, file.entry(0xF014)?.length)
+        XCTAssertEqual(g.frameVariableNames.first?.0, 259)
+        XCTAssertEqual(g.frameVariableNames.first?.1, "Od_Shutter1")
+        XCTAssertEqual(g.objectNames.count, 13)
+        XCTAssertEqual(g.objectNames.reduce(0) { $0 + 3 + $1.1.utf8.count }, file.entry(0xF015)?.length)
+        XCTAssertEqual(g.objectNames.first?.1, "Cad_Bellows1")
 
         XCTAssertEqual(g.f00A.count, 1024)
         XCTAssertTrue(g.f00A.allSatisfy { $0 == 0 })
@@ -216,6 +273,7 @@ final class WorldGlobalsTests: XCTestCase {
         XCTAssertEqual(g.f007.count, 167)
         let f007 = [UInt8](g.f007)
         XCTAssertEqual(Int(f007[0]) << 8 | Int(f007[1]), 33)
-        XCTAssertEqual(2 + 33 * 5, 167)
+        XCTAssertEqual(2 + 33 * 5, g.f007.count)
+        XCTAssertEqual(file.entry(0xF007)?.length, 167)
     }
 }

@@ -38,7 +38,7 @@ public struct MapHeader: Equatable, Sendable {
 
     /// `bytes` must hold at least 0x20 bytes; only the first 0x20 are read.
     init(bytes: [UInt8]) {
-        func i16(_ o: Int) -> Int16 { Int16(bitPattern: UInt16(bytes[o]) << 8 | UInt16(bytes[o + 1])) }
+        func i16(_ o: Int) -> Int16 { Int16(bitPattern: be16(bytes, o)) }
         width = i16(0); height = i16(2); unused4 = i16(4); firstChunk = i16(6); chunkCount = i16(8)
         wrapX = bytes[0x0A]; wrapY = bytes[0x0B]
         exitNorth = i16(0x0C); exitEast = i16(0x0E); exitSouth = i16(0x10); exitWest = i16(0x12)

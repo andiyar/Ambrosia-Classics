@@ -63,20 +63,40 @@ final class PropTests: XCTestCase {
         // Every prefix of map 0x8002 (0x2820 B) throws a named error, never traps (Invariant 5).
         let map = file.segment(0x8002)!
         for cut in 0..<map.count {
-            XCTAssertThrowsError(try LevelMap(data: map.prefix(cut)), "prefix \(cut)") { e in
+            XCTAssertThrowsError(try LevelMap(data: map.prefix(cut), maxMapDimension: 0x200), "prefix \(cut)") { e in
                 XCTAssertTrue(e is LevelMapError, "prefix \(cut): \(e)")
             }
         }
         // A map whose length breaks 0x20 + C·0x80 + W·H·2 → named error (Invariant 4).
-        XCTAssertThrowsError(try LevelMap(data: map + Data([0, 0]))) { e in
+        XCTAssertThrowsError(try LevelMap(data: map + Data([0, 0]), maxMapDimension: 0x200)) { e in
             XCTAssertEqual(e as? LevelMapError, .lengthMismatch(expected: 0x2820, actual: 0x2822))
         }
         var negative = Data(map); negative[0] = 0x80               // W < 0
-        XCTAssertThrowsError(try LevelMap(data: negative)) { e in
+        XCTAssertThrowsError(try LevelMap(data: negative, maxMapDimension: 0x200)) { e in
             XCTAssertEqual(e as? LevelMapError, .badDimensions(width: Int16(bitPattern: 0x8040), height: 64, chunkCount: 16))
+        }
+        // The side cap is the file header's +0x48 (0x0200 shipped; CreateGlobals: 0 → 0x400). W = 0x201 is
+        // refused under 0x200 and passes the dimension check under 0 (then fails the length formula).
+        XCTAssertEqual(file.header.maxMapDimension, 0x200)
+        XCTAssertEqual(LevelMap.cellBufferSide(maxMapDimension: 0), 0x400)
+        XCTAssertEqual(LevelMap.cellBufferSide(maxMapDimension: 0x200), 0x200)
+        var wide = Data(map); wide[0] = 0x02; wide[1] = 0x01
+        XCTAssertThrowsError(try LevelMap(data: wide, maxMapDimension: 0x200)) { e in
+            XCTAssertEqual(e as? LevelMapError, .badDimensions(width: 0x201, height: 64, chunkCount: 16))
+        }
+        XCTAssertThrowsError(try LevelMap(data: wide, maxMapDimension: 0)) { e in
+            XCTAssertEqual(e as? LevelMapError, .lengthMismatch(expected: 0x20 + 16 * 0x80 + 0x201 * 64 * 2, actual: 0x2820))
         }
         XCTAssertThrowsError(try LevelMap(file: file, level: 0x2A)) { e in
             XCTAssertEqual(e as? LevelMapError, .absent(0x802A))
+        }
+        for level in [-1, 0x100, 0x8002] {
+            XCTAssertThrowsError(try LevelMap(file: file, level: level)) { e in
+                XCTAssertEqual(e as? LevelMapError, .levelOutOfRange(level))
+            }
+            XCTAssertThrowsError(try PropSegment(file: file, level: level)) { e in
+                XCTAssertEqual(e as? PropSegmentError, .levelOutOfRange(level))
+            }
         }
 
         // The chunked path (hdr[6] < hdr[8]; data-format §3.3) parsed as `LoadLevelMap` does and flagged:
@@ -87,7 +107,7 @@ final class PropTests: XCTestCase {
         for i in 0x20..<0xA0 { chunked[i] = 0x11 }                // chunk 0
         for i in 0xA0..<0x120 { chunked[i] = 0x22 }               // chunk 1
         chunked[0xA0] = 0; chunked[0xA1] = 1; chunked[0xA2] = 0; chunked[0xA3] = 0   // indices [1, 0]
-        let cm = try LevelMap(data: Data(chunked))
+        let cm = try LevelMap(data: Data(chunked), maxMapDimension: 0x200)
         XCTAssertTrue(cm.header.isChunked)
         XCTAssertEqual(LevelMap.bodyOffset(of: cm.header), 0xA0)
         XCTAssertEqual(cm.blockIndices, [1, 0])
@@ -98,17 +118,22 @@ final class PropTests: XCTestCase {
         XCTAssertTrue(cm.cells[64...].allSatisfy { $0 == 0 })
         // A block index past the loaded chunk records → named error.
         var badIndex = chunked; badIndex[0xA1] = 2
-        XCTAssertThrowsError(try LevelMap(data: Data(badIndex))) { e in
+        XCTAssertThrowsError(try LevelMap(data: Data(badIndex), maxMapDimension: 0x200)) { e in
             XCTAssertEqual(e as? LevelMapError, .chunkIndexOutOfRange(block: 0, chunk: 2, chunkCount: 2))
         }
         for cut in 0..<chunked.count {
-            XCTAssertThrowsError(try LevelMap(data: Data(chunked.prefix(cut))), "chunked prefix \(cut)")
+            XCTAssertThrowsError(try LevelMap(data: Data(chunked.prefix(cut)), maxMapDimension: 0x200),
+                                 "chunked prefix \(cut)") { e in
+                let expected: LevelMapError = cut < 0x20 ? .truncatedHeader(cut) : .chunkedTruncated(need: 0x120, have: cut)
+                XCTAssertEqual(e as? LevelMapError, expected, "chunked prefix \(cut)")
+            }
         }
 
         // Props: a prefix that is a whole number of records is a valid (shorter) segment; every other prefix
         // throws the named error.
         let props = file.segment(0x8102)!
-        for cut in 0..<min(props.count, 0x400) {
+        XCTAssertEqual(props.count, 799 * 16)
+        for cut in 0..<props.count {
             if cut % 16 == 0 {
                 XCTAssertEqual(try PropSegment(data: props.prefix(cut)).records.count, cut / 16)
             } else {

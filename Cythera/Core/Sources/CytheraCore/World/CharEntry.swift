@@ -15,13 +15,13 @@ public struct CharEntry: Equatable, Sendable {
 
     init(bytes: [UInt8]) { self.bytes = bytes }
 
-    private func u16(_ o: Int) -> UInt16 { UInt16(bytes[o]) << 8 | UInt16(bytes[o + 1]) }
+    private func u16(_ o: Int) -> UInt16 { be16(bytes, o) }
 
     public var isEmpty: Bool { bytes.allSatisfy { $0 == 0 } }
 
     /// +0x00 u32 packed location.
     public var packedLocation: UInt32 {
-        UInt32(bytes[0]) << 24 | UInt32(bytes[1]) << 16 | UInt32(bytes[2]) << 8 | UInt32(bytes[3])
+        be32(bytes, 0)
     }
     public var location: WorldLocation { WorldLocation(packed: packedLocation) }
     /// +0x04 u16 current type (bits 0–9) + frame (bits 10–14), copied to prop i (`CueCharacters`).

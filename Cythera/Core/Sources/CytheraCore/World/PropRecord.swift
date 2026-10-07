@@ -11,8 +11,11 @@ public struct PropRecord: Equatable, Sendable {
         self.bytes = bytes
     }
 
+    /// For callers that sliced exactly 16 bytes (`PropSegment`).
+    init(record bytes: ArraySlice<UInt8>) { self.bytes = Array(bytes) }
+
     private var u24: UInt32 { UInt32(bytes[1]) << 16 | UInt32(bytes[2]) << 8 | UInt32(bytes[3]) }
-    private func u16(_ o: Int) -> UInt16 { UInt16(bytes[o]) << 8 | UInt16(bytes[o + 1]) }
+    private func u16(_ o: Int) -> UInt16 { be16(bytes, o) }
 
     /// Byte 0: kind (§4.3) — 0 on map, 0x08–0x0B in a container, 0x10 inventory, 0x18 equipped, 0x1C skill,
     /// 0x42 'B' marker, 0x44 'D' roof zone, bit 0x80 hidden, 0xFF free.
