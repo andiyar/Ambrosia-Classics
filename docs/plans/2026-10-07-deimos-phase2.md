@@ -682,6 +682,11 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   `Player/Player.swift` — C15 edits `Player.swift` to move or change them; leg B I12),
   `Sources/DeimosCore/Player/Player.swift`, `Sources/DeimosCore/ScoreBar/ScoreBarState.swift` (power target = handler
   percent, icon rebuild); `Tests/DeimosCoreTests/WeaponTests.swift`.
+- **⚑ Amendment (wave 2.4 reviews):** Files += `Player/{PlayerLife,PlayerUpdate}.swift` limited to the overload paths
+  (`overloadTick`, `startOverload`, the start gate) — `testOverloadTimeline` exercises them; no other wave-2.5 task
+  touches those files. Contract += `tickWeapons` must call `players[i].refreshFaceFromWeapon()` before returning when
+  the weapon switched (the stub's dropped `switched` out-parameter), and stores the previous-fire bytes +0x9/+0xa/+0xb
+  (1003b9d4); C14's stub body (Phase-1 crosshair update 1003b9ec..1003ba30) is replaced.
 - **Contract (weapons-projectiles §2–§4, loose-ends-combat §6, HIGH):** `tickWeapons` in the §2.3 order; return codes
   1/2 to the player; fire rate + edge; switching + pending; availability by sector; power-up machine §2.5; bombs §2.7;
   launchers §3.2; icons; crosshair fade (flli 149/150) and the locked frame setter `FUN_1003bab0` (called by C12).
@@ -722,6 +727,11 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   `FUN_10036be0`, and the terrain-stamp path (`FUN_10012f20` with +0x36, sprite-geometry-draw §3.2).
 - **Files:** `Sources/DeimosCore/Combat/{Destruction,Removal,MediaGate}.swift` (Destruction takes over C10's stub);
   `Tests/DeimosCoreTests/DestructionTests.swift`.
+- **⚑ Amendment (wave 2.4 reviews, orchestrator 2026-10-07):** Files += `Player/PlayerLife.swift` (deletion only) and
+  `Units/Spawn.swift` (the `removeEntities(ofUnit:ownedBy:)` stub tail only). Move C14's `destroyEntitiesOwned(byPlayer:)`,
+  `removeEntity(serial:)` and `removeMemberStub` into `Combat/Removal.swift` under the same names (call sites in
+  `killPlayer` / `showMultiplierIndicator` unchanged) and wire them and C8's tail to the real `FUN_10036120`; keep the
+  walkers' counts snapshotted once (10034bc0 / 10034c14). `destroyEntity` gains/keeps the `now` argument per fix(C10).
 - **Contract (damage-health-death §4, scoring §7, spawn-and-waves §5):** destroy (§4.1 order incl. the random-bonus
   ladder with the reward-armed rule); media gate (§4.2: map point (trunc x + 32, trunc y + top), mask index x / 5, y /
   5, water iff 0x001f — sprite-sound-containers §3.1 HIGH, row order MED as for the map; `smra`/`mera`/`lara` draws);
@@ -763,6 +773,11 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **Files:** `Sources/DeimosCore/Units/EntityUpdate.swift`, `Sources/DeimosCore/Game/UpdateWorld.swift` (`extension
   GameState`), `Sources/DeimosCore/Draw/EntityDraw.swift`; `Tests/DeimosCoreTests/{EntityUpdateTests,EntityDrawTests}.swift`
   (EntityDrawTests: existing 5 kept, new ones added).
+- **⚑ Amendment (wave 2.4 reviews):** per entity, call C9's `rotationGate` (`FUN_10017150`, only caller 10015b64,
+  before the +0xc3 test) and then C10's `runSpawnSets` (which starts at 10015b6c); pass the state read before the
+  motion controller (r18 from 10033e08) into `followOwner` / `copyFromOwner`; keep ONE nearest-player helper —
+  delete the private copy in `Units/Rules.swift` (182–201) in favour of C9's `Motion.swift` one (Files += `Units/Rules.swift`,
+  that deletion only).
 - **Contract:** `updateEntities(log:) -> Bool` (pause) = `FUN_10033850`: the per-tick player-collision cache, then per
   entity in group order: spawn-in countdown (state start re-stamped while counting) → state particles → state sound
   (AllowOnlyOneInstance = not playing) → timer (re-read the state) → **pause flag (`10033d70`)** → **animation step
@@ -790,6 +805,9 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   `FUN_100064d0` (`100064d0..10006984`), `FUN_10007070`, `FUN_10030bc0` (`10030bec..10030dc4`), `FUN_10009750`.
 - **Files:** `Sources/DeimosCore/Game/DeimosSession.swift`; `Tests/DeimosCoreTests/{DeimosSessionTests,FilmPlaybackTests}.swift`,
   `Tests/DeimosRenderTests/LevelOneFrameTests.swift`.
+- **⚑ Amendment (wave 2.4 reviews):** set `GameState.film` and `flags.filmPlaying` together (PlayerUpdate yields no
+  input when the flag is set without a film); send `MusicCue.level(pref music volume)` at session start (A2 review m4 —
+  the engine starts at the pref-100 level).
 - **Contract:** the session holds a `GameState`, the frame controller, console and key state; **every existing public
   property** (`gameTime`, `appeared`, `sector`, `rng`, `running`, `scoreBar`, `scroll`, `players`, …) stays as a
   forwarding accessor (invariant 12; DriverTests/LevelOneFrameTests read them). `init` = `FUN_100051a0` set-up (seed =
