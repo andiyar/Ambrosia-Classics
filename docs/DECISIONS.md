@@ -718,3 +718,52 @@ TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic
 `TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
 widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
 **Approved by:** Ben.
+
+## D31 — Deimos Rising build: Phase 2 rulings (seat) (2026-10-07)
+
+**Decided (seat, under D27, D29, D30 and the 100 % rule; plan `docs/plans/2026-10-07-deimos-phase2.md`, reviewed by two
+Opus legs — `docs/plans/2026-10-07-deimos-phase2-REVIEW.md`, both ACCEPT_WITH_FIXES, one fix pass):**
+1. **DeimosAudio is its own target** (Foundation + DeimosCore + HectorAudio + Synchronization): the game's 16-voice
+   effects mixer and the music streamer behind one pull source. Because: the mixer is pulled on the audio thread behind a
+   `Mutex` while DeimosRender is a single-threaded op executor; the Phase 5 Windows shell links it unchanged behind
+   `SDLAudioOut(source:)`; test isolation. Rejected: the mixer in DeimosRender (conflates threading models); the mixer in
+   DeimosCore (Core would own wall-clock state and real-time locks — it stays a pure function of ticks).
+2. **Seam additions (plan S3, additive only, D29.1):** `RenderOp.particles([ParticleStamp])` and `.pauseWait(PresentKind)`
+   (a host op like `.fade`/`.limit`, `RenderOp.isHostOp`); `PassOutput.haltEffectsAt` and `CueBuffer.haltEffectsAt` — the
+   **positional halt** (the index into the pass's sounds where `FUN_100476a0` ran: earlier sounds are cut, later ones
+   start after it, so the pause click survives the pause's own halt — leg A I-6); `HeldKeys.typed` (key-down Mac
+   charCodes, no auto-repeat); `MSLRandom.draws` (rand calls since srand; excluded from `==`); `DeimosAssets.unitIndex`;
+   `DeimosSession.pass(keys:ticks:)` (C18a). `SoundPlay.record` = `FUN_100475e0` (pitch is the one draw; volume =
+   `R(MinVol, MinVol)`, no draw; priority & 0xFF) and `SoundPlay.perm` = `FUN_10047670` (pitch 1.0, no draw).
+3. **`GameState` storage rule and hook stubs (plan invariants 13–14):** one value holds the whole simulation; C7
+   declares every stored field; rule methods take entity/player indices and never hold an `inout` entity across a
+   `GameState` call; a task alone in its wave may add a field, a parallel task STOPs and reports. An earlier task that
+   must call later-owned behaviour creates that file with a `// ◇ stub — <later task> fills` body
+   (`Combat/Destruction.swift` C10 → C11b, `Weapons/WeaponTick.swift` C14 → C15).
+4. **Cue routing (H2):** a pass's sounds (with the halt index) and music cues go to the audio sink when the driver
+   begins the pass — the original issues them inside the tick; at most one frame early, inaudible.
+5. **Phase-2 stand-ins (plan S9, each on the gate card):** level complete, game over and Esc end the session and a new
+   game starts at sector 1; level-start music without a level select is `[.play(ammu, loop: true), .stop]` at load;
+   `-film deNN` launch argument; prefs live in memory only (they survive ◇ restarts, not launches — the prefs file
+   stays Phase 4); one player in the app; a film is not ended by the mouse.
+6. **Button mapping pinned to the guide** (probe p17): key-table slots 4/5/6 = fire air (⌘) / fire ground (⌥) / select
+   (Space), the Player Guide's Default Controls; the films agree (the select bit appears in de02 15, de03 26, de04 3
+   ticks, never in de01 — sector 1 has one air weapon). INDEX #14 LOW → settled by the guide.
+7. **Q2 (pitch direction) and Q3 (music loudness) are built on their defaults** pending Ben's ear: speed = 1/pitch, as
+   the code; music full scale 255 (music at 128/255 of a full effect). Both on the gate card.
+8. **Q4 (volume keys) — RULED by Ben 2026-10-07: the Mac OS X behaviour.** `-`/`=` change int pref 0 by ∓10 (clamped
+   0…100) silently — no gain change, no click, no message; **no in-game volume: effects and music play at unity gain and
+   the OS volume controls set the level** (C19; DeimosAudio has no master gain). Ben: "can't we just have the game
+   default to 100% and use the system controls?" The classic-Mac-OS branch (`FUN_100461b0` false: the device-volume write `FUN_10047b80`, sound-music §4.1) is not built.
+9. **Q5 (invulnerability carry-over)** is not reachable in Phase 2 (level 2 is Phase 3); built as read.
+10. **The replay gate (G4):** P1's decoded score at the instant the replay's film read consumes byte index 4808 is
+    25,050 (`FilmCursor.scoreAtRead`; `FUN_10009830` mid-tick, leg A I-3). A red G4 never edits the expectation and never
+    skips the test: H3 merges with the gate recorded **"pending trace"** and the orchestrator opens **F1 — replay
+    triage** (first divergence tick from `deimos-replay --trace`; fixes as `fix(<task>)` under that task's Files). A
+    divergence is a bug until two Opus reviewers have each re-read the listing at every address it depends on and agree
+    the replica follows 1.0.6 exactly; only then may it be ruled **"de01 predates the 1.0.6 code"** — recorded in this
+    entry, `testDemo01…` re-pinned to the ruled tick and the replica's own score, and Ben's eyes on `-film de01` decide.
+11. **Bank corrections are owned by B1** (orchestrator-run, after A4): implementers report corrections in their PR
+    notes only; no implementer edits `docs/deimos/*`.
+**Approved by:** seat (orchestrator; plan reviewed by two Opus 5.5 legs — Ben 2026-10-07: Opus only, no Fable) + **Ben
+for Q4** (2026-10-07, in chat).

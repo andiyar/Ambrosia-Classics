@@ -70,7 +70,9 @@ public final class DeimosRenderer {
             CopyBits.copy(from: back, to: &buffers.screen, srcRect: src, dstRect: dst)
         case let .present(kind):
             buffers.present(kind)
-        case .fade, .limit:
+        case .particles:
+            break   // R4 fills (the 7×7 stamps, particles-debris-blur §2.9)
+        case .fade, .limit, .pauseWait:
             preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit)")
         }
     }

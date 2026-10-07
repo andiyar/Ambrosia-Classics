@@ -5,15 +5,25 @@ import Foundation
 public struct MSLRandom: Equatable, Sendable {
     /// `_DAT_100e032c`.
     public var state: UInt32
+    /// `rand()` calls since `init`/`srand` — a replica-only counter for draw-order tests (plan S3); not part of
+    /// the generator, so `==` ignores it.
+    public private(set) var draws: UInt64 = 0
 
     public init(seed: UInt32) { state = seed }
 
-    /// `FUN_10055400` — `srand(s)`: stores the state.
-    public mutating func srand(_ seed: UInt32) { state = seed }
+    /// `FUN_10055400` — `srand(s)`: stores the state (and resets `draws`).
+    public mutating func srand(_ seed: UInt32) {
+        state = seed
+        draws = 0
+    }
+
+    /// The generator state alone (`draws` excluded).
+    public static func == (a: MSLRandom, b: MSLRandom) -> Bool { a.state == b.state }
 
     /// `FUN_100553e0` — `state = state·0x41c64e6d + 0x3039; return state >> 16 & 0x7fff`.
     public mutating func rand() -> Int32 {
         state = state &* 0x41c6_4e6d &+ 0x3039
+        draws &+= 1
         return Int32(state >> 16 & 0x7fff)
     }
 
