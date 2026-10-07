@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C2 done; Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0–C5 done, C6 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C2 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1 done (69/0), R2 ∥ R3 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -88,7 +88,13 @@
   0144 keep the original's 32-bit overflow (Color2Index all-sixteen 1,178,146, not the plan's 1,178,143); C5 FG/FG-water
   convert under the level CLUT (201 on L1), fixed sets 183/185 under clut 199 (D26 as-built C4 + C5; bank ⚑ Corrections in
   lighting-tables and sprites-backgrounds-sounds). HectorKit untouched (main 522feb8, floor 316 — Deimos's
-  `ShellView.scalingPolicy` `.integerFit` is there; Ferazel A1 reuses it). Next: C6 `ferazel-census` (→ 60), then R1.
+  `ShellView.scalingPolicy` `.integerFit` is there; Ferazel A1 reuses it).
+  **C6 + R1 DONE (2026-10-07, Opus orchestrator; Opus-only legs):** `ferazel-census` + `docs/ferazel/data-census.md`
+  (1,108 items, 0 failures; **Phase 0 complete**) → **60/0**; R1 LOCKED seams (+ case `redrawEntireScrollGrid`), prefs,
+  LevelTables, ports, strip-incremental `.RedrawScrollGrid` into port 0004 (follow the binary; blend cells 1,560) → **69/0**.
+  **Ben 2026-10-07:** the duplicate-black tie-break (FG black → index 1 = light yellow under clut 202) is decided at the
+  Phase 1 gate — build lowest and highest selectable (D26). HectorKit untouched (main 4ca2e18 after Cythera K1).
+  Next: R2 ∥ R3 (wave 1.2), then R4 (needs table 0148).
   Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered

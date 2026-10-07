@@ -655,6 +655,20 @@ an ancestor — HectorKit main moved on with the Cythera K1 work).
 which the screen clut 202 shows as light yellow (FFFF,FFFF,7F7F) — yellow specks on every FG edge (C6 review). Which
 duplicate QuickDraw's `Color2Index` picks is the open LOW. Ruling: build both tie-breaks selectable (lowest, the
 current default, and highest — 255 here, black in both cluts) and show Ben both at the Phase 1 gate; not built in C6/R1.
+**As built (R1, 2026-10-07):** LOCKED S3 seam types + `FerazelPrefs` (`.InitPrefs` defaults), `InputActions`, `KeyState`;
+`LevelTables` (C4's requests resolved through the chosen model, built against clut 202 = level+base — 1001ad04 → `ff8c`,
+1001ff34/10020408/10020a8c → `fe94`); ports `000c`/`0008`/`0004`; `TileGridRenderer`. Follow-the-binary readings, both
+Opus review legs CONFIRMED at the addresses (bank sprites-backgrounds ⚑ Corrections 4–6, plan Bank corrections item 9):
+`.RedrawScrollGrid` is **strip-incremental** (`.SetScrollLocation @10012848`) and draws tiles into **port `0004`**, copied
+to `000c` by `.WrapRectBlitX`; the whole window is `.RedrawEntireScrollGrid @10013fd0`, so S3 gains the case
+`DrawOp.redrawEntireScrollGrid(h:v:)` (a case added, nothing renamed); mask `0008` has no per-frame fill, 0xFF per redrawn
+cell, 0x00 under the FG stamp; blend cells read the 80..95-overwritten kind table → **1,560** on level 1 (plan said
+1,335, raw table); overlay pattern only for o2 == 95, never tinted. Measured: 5,482 of 44,473 FG-face pixels in the
+start window land on 0x01..0x9f where clut 201 ≠ 202 (the tie-break item above). Open, carried: table `0148` (the
+`.BuildTintTable` brightness table, read only by `.BlitEncFaceTrans*`) not in `LevelTables` — R4; levels 50, 51, 67 skip
+one `.AnimateCLUT` step in `LevelTables.forLevel` (documented, Phase 1 draws level 1 only); ring helpers floor-mod
+negatives where the binary truncates, and the wrap checks use the face size where the binary passes 0x20 — unreachable on
+shipped data. `Ferazel/Core` **69/0**.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
