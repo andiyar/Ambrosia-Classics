@@ -29,7 +29,7 @@ extension GameState {
     /// `FUN_100269a0(p, G+0x18, now)` — `Player.levelStart` (incl. its `R(400, 2000)` at `10026a9c`, drawn for every
     /// in-game player) and, for an in-game player, the money-counter reset `FUN_10027630` (`10026a48`).
     public mutating func playerLevelStart(_ i: Int) {
-        players[i].levelStart(now: flags.gameTime, rng: &rng, levelRef: flags.level)
+        players[i].levelStart(now: flags.gameTime, rng: &rng, levelRef: flags.level, sector: flags.sector)
         if players[i].inGame { resetCoinTally(i) }
     }
 
@@ -147,7 +147,7 @@ extension GameState {
             players[i].shield = v                                            // 100271b4
         }
         if players[i].shield < 0 {                                           // 100271bc..100271d0
-            killPlayer(i)                                                    // 100271dc
+            killPlayer(i, now: now)                                          // 100271d8..100271dc (r4 = r29)
             return
         }
         players[i].object.startHitGlow(colour: d.hitGlowColor, step: d.hitGlowSpeed, force: false)   // 100271e8..100271fc
@@ -164,12 +164,11 @@ extension GameState {
         }
     }
 
-    /// `FUN_10027e50` — the ship is destroyed at game time now (see the type's comment for the order).
-    public mutating func killPlayer(_ i: Int) {
-        let now = flags.gameTime
+    /// `FUN_10027e50(p, now)` — the ship is destroyed at game time `now` (the caller's r4; see the type's comment for
+    /// the order). The owner destruction (`FUN_10034b90`, Combat/Removal) runs first, before the death spawn: its
+    /// destroyed path (`FUN_10016300`) makes particles, spawns, sounds and random-bonus draws.
+    public mutating func killPlayer(_ i: Int, now: Int32) {
         let idx = players[i].index
-        // The owner destruction runs first; while `FUN_10036120` is C11b's stub (no spawns, no draws) its order
-        // against the death spawn is not observable — it becomes so when C11b fills the destroyed path.
         destroyEntitiesOwned(byPlayer: idx)                                  // 10027e70..10027e74 FUN_10034b90
         spawnAtPlayer(i, players[i].definition.deathSpawn, owned: true)      // 10027e7c..10027f18
         if !players[i].inGame { players[i].shield = 0 }                      // 10027f20..10027f30
@@ -200,8 +199,6 @@ extension GameState {
         players[i].setLifeState(3, now: now)                                 // 10028108..10028110
         if players[i].inGame { players[i].invulnerable = true }              // 10028114..10028124
         if players[i].multiplier != 1 {                                      // 10028128..1002813c
-            // Not observable while `FUN_10036120` is a stub: the owner destruction above already flagged an
-            // owned indicator whose state has canBeDestroyedOnOwnerDestruction.
             removeEntity(serial: players[i].multiplierIndicator)             // 10028140..10028144 FUN_10034de0
             players[i].multiplier = 1                                        // 1002814c..10028150 FUN_10029fd0
         }
@@ -238,7 +235,7 @@ extension GameState {
                     players[i].overloadInterval = interval
                     players[i].overloadCount &+= 1                           // 10027034..1002703c
                     if players[i].overloadCount == d.powerupOverloadNumWarnings {   // 10027040..10027050
-                        killPlayer(i)                                        // 1002705c
+                        killPlayer(i, now: now)                              // 1002705c
                         return
                     }
                     if let cue = SoundPlay.record(d.powerupOverloadSound, allowMultiple: true, rng: &rng) {   // 10027068..10027070
@@ -284,56 +281,5 @@ extension GameState {
             players[i].invulnerable = false
             players[i].invulnerableSticky = false
         }
-    }
-
-    // MARK: - ◇ removal walkers (C11b owns FUN_10036120; these walk as the listing does)
-
-    /// `FUN_10034b90 @ 10034b90(player)` (`10034ba4..10034cc0`): player −1 → nothing; every group member (group list
-    /// order, member order) whose `+0xd8` == player: its state's `canBeDestroyedOnOwnerDestruction` (+0x329) →
-    /// `FUN_10036120(group, e, 1, 0)`, else `canBeDeletedOnOwnerDeletion` (+0x32a) → `FUN_10036120(group, e, 0, 0)`.
-    mutating func destroyEntitiesOwned(byPlayer player: Int8) {
-        guard player != -1 else { return }                                   // 10034ba4..10034bb0
-        let groupCount = world.groups.count                                  // 10034bb8..10034bc0 (counted once)
-        var g = 0
-        while g < groupCount {
-            let memberCount = world.groups[g].members.count                  // 10034c08..10034c14 (counted once)
-            var k = 0
-            while k < memberCount {
-                let e = world.groups[g].members[k]
-                if world.entities[e].ownerPlayer == player, let st = currentState(e) {   // 10034c48..10034c60
-                    if st.canBeDestroyedOnOwnerDestruction {                 // 10034c68..10034c84
-                        removeMemberStub(group: g, entity: e, destroyed: true)
-                    } else if st.canBeDeletedOnOwnerDeletion {               // 10034c8c..10034ca8
-                        removeMemberStub(group: g, entity: e, destroyed: false)
-                    }
-                }
-                k += 1
-            }
-            g += 1
-        }
-    }
-
-    /// `FUN_10034de0 @ 10034de0(serial)` (`10034df8..10034ec4`): the first group member (group list order, member
-    /// order) whose serial `+0x9c` matches → `FUN_10036120(group, e, 0, 0)`, then return. No deleted-flag test.
-    /// Both counts are taken once (`10034dfc..10034e04`, `10034e50..10034e58`).
-    mutating func removeEntity(serial: Int32) {
-        let groupCount = world.groups.count
-        for g in 0..<groupCount {
-            let memberCount = world.groups[g].members.count
-            for k in 0..<memberCount {
-                let e = world.groups[g].members[k]
-                guard world.entities[e].serial == serial else { continue }   // 10034e88..10034e94
-                removeMemberStub(group: g, entity: e, destroyed: false)      // 10034e98..10034ea4
-                return
-            }
-        }
-    }
-
-    /// `FUN_10036120(group, e, destroyed, 0)` — ◇ stub — C11b fills (Combat/Removal): only the common tail
-    /// (`10036370..10036380`: +0xcb = 1, group +0xa8 −= 1), as `removeEntities(ofUnit:ownedBy:)` (C8) does. The
-    /// destroyed path's accuracy decrement, coins, deletion spawn and child handling are not run here.
-    mutating func removeMemberStub(group g: Int, entity e: Int, destroyed: Bool) {
-        world.entities[e].deleted = true
-        world.groups[g].live &-= 1
     }
 }

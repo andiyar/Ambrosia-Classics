@@ -387,8 +387,13 @@ final class CombatTests: XCTestCase {
         // Steps 11 then 12 on `cals` (hitParticles `tiny`, shieldSound `cohi` pitch 0.95…1.05): an independent replay of
         // the two draws in that order.
         let u = s.assets.definitions.units[s.world.entities[c].unit]
-        var rng = s.rng
-        var particles = s.particles
+        // A is struck first (10037014..10037050): the shot takes cals' 1.0 and dies; its destruction (`FUN_10016300`,
+        // C11b) makes its own draws before B's two.
+        var t = s
+        t.damageEntity(shot1, damage: u.damage, killer: s.world.entities[c].ownerPlayer, now: 300)
+        XCTAssertTrue(t.world.entities[shot1].destroyed)
+        var rng = t.rng
+        var particles = t.particles
         particles.emit(ParticleRequest(x: 150, y: 150, colour: u.hitParticlesColor, delay: 0, ground: false,
                                        type: u.hitParticles), rng: &rng)
         let cue = SoundPlay.record(u.shieldSound, allowMultiple: true, rng: &rng)

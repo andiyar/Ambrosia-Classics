@@ -299,7 +299,7 @@ final class PlayerTests: XCTestCase {
         s.players[0].money = 67
         s.scoreBar.setShownShield(index: 0, 55); s.scoreBar.setShownPower(index: 0, 40)
         let first = s.world.nextSerial
-        s.killPlayer(0)
+        s.killPlayer(0, now: s.flags.gameTime)
         let made = spawned(s, after: first)
         let ids = made.map(\.id)
         let death = s.players[0].definition.deathSpawn
@@ -345,7 +345,7 @@ final class PlayerTests: XCTestCase {
         let lives = s.players[0].lives
         XCTAssertEqual(lives, 3)
         let t = s.flags.gameTime
-        s.killPlayer(0)
+        s.killPlayer(0, now: s.flags.gameTime)
         let cursor = s.film?.cursors[0]
         tick(&s)                                                        // at T: still dying
         XCTAssertEqual(s.film?.cursors[0], cursor)                      // no read while dying
@@ -371,7 +371,7 @@ final class PlayerTests: XCTestCase {
         s.film = nil; s.flags.filmPlaying = false
         s.players[0].lives = 1
         let u = s.flags.gameTime
-        s.killPlayer(0)
+        s.killPlayer(0, now: s.flags.gameTime)
         s.flags.gameTime = u + 40
         tick(&s)
         XCTAssertEqual(s.players[0].lifeState, 3)
@@ -390,7 +390,7 @@ final class PlayerTests: XCTestCase {
         g.flags.p1Active = false
         g.updatePlayer(1, input: [])
         let v = g.flags.gameTime
-        g.killPlayer(0)
+        g.killPlayer(0, now: g.flags.gameTime)
         g.flags.gameTime = v + 81
         g.updatePlayer(0, input: [])
         XCTAssertEqual(g.players[0].lifeState, 4)

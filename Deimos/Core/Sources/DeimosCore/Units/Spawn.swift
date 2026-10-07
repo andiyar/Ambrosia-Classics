@@ -474,19 +474,24 @@ extension GameState {
                        bottom: EntityDraw.fctiwz(o.y + hh), right: EntityDraw.fctiwz(o.x + hw))
     }
 
-    /// `FUN_10036be0(unit, player, 0)` (`10036be0..10036ce4`): every group member of that unit owned by that
-    /// player goes through `FUN_10036120(group, e, 0, 0)`.
-    /// ◇ stub — C11b fills: `FUN_10036120` is Combat/Removal's; here only its non-destroyed tail (`10036370..
-    /// 10036380`: +0xcb = 1, group +0xa8 −= 1). The `destructDeleteChildren` child deletion (`FUN_100364f0`) is
-    /// not run (no RNG on that path).
+    /// `FUN_10036be0(unit, player, 0)` (`10036be0..10036ce4`): every group member whose unit ID (+0x94 → +0x4) is
+    /// `id` and whose `+0xd8` is `player` → `FUN_10036120(group, e, 0, 0)` (`removeMember`, Combat/Removal — C11b).
+    /// Both counts are taken once (`10036c00..10036c0c`, `10036c44..10036c50`).
     mutating func removeEntities(ofUnit id: FourCC, ownedBy player: Int8) {
         let units = assets.definitions.units
-        for g in world.groups.indices {
-            for slot in world.groups[g].members
-            where units[world.entities[slot].unit].id == id && world.entities[slot].ownerPlayer == player {
-                world.entities[slot].deleted = true
-                world.groups[g].live &-= 1
+        let groupCount = world.groups.count
+        var g = 0
+        while g < groupCount {
+            let memberCount = world.groups[g].members.count
+            var k = 0
+            while k < memberCount {
+                let slot = world.groups[g].members[k]
+                if units[world.entities[slot].unit].id == id && world.entities[slot].ownerPlayer == player {   // 10036c88..10036ca8
+                    removeMember(group: g, entity: slot, destroyed: false, byPlayer: false)   // 10036cac..10036cb8
+                }
+                k += 1
             }
+            g += 1
         }
     }
 
