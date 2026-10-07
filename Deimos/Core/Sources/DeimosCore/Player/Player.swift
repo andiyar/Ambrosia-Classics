@@ -103,6 +103,36 @@ public struct GameObject: Equatable, Sendable {
         }
     }
 
+    /// `FUN_10012bc0 @ 10012bc0(obj, colour, step, force)` — start the hit glow (listing `10012bc0..10012bfc`):
+    /// already on and not `force` → nothing; else on, level 32, falling, step, colour.
+    public mutating func startHitGlow(colour: UInt16, step: Int32, force: Bool) {
+        if hitGlowOn && !force { return }                            // 10012bc0..10012bdc
+        hitGlowOn = true                                             // 10012be4
+        hitGlowLevel = 32                                            // 10012be8..10012bec
+        hitGlowFalling = true                                        // 10012bf0
+        hitGlowStep = step                                           // 10012bf4
+        hitGlowColour = colour                                       // 10012bf8
+    }
+
+    /// `FUN_10012c10 @ 10012c10` — the hit-glow tick (listing `10012c10..10012c9c`, unsigned compares):
+    /// falling → level −= step; level (unsigned) < 4 → 4 and rising. Rising → level += step; level
+    /// (unsigned) > 32 → 32, falling again and the glow off.
+    public mutating func stepHitGlow() {
+        guard hitGlowOn else { return }                              // 10012c10..10012c18
+        if hitGlowFalling {
+            hitGlowLevel = hitGlowLevel &- hitGlowStep               // 10012c28..10012c34
+            if UInt32(bitPattern: hitGlowLevel) >= 4 { return }      // 10012c3c cmplwi; bgelr
+            hitGlowLevel = 4                                         // 10012c44..10012c48
+            hitGlowFalling = false                                   // 10012c4c..10012c58 (cntlzw toggle)
+        } else {
+            hitGlowLevel = hitGlowLevel &+ hitGlowStep               // 10012c60..10012c6c
+            if UInt32(bitPattern: hitGlowLevel) <= 32 { return }     // 10012c74 cmplwi; blelr
+            hitGlowLevel = 32                                        // 10012c7c..10012c80
+            hitGlowFalling = true                                    // 10012c88..10012c94
+            hitGlowOn = false                                        // 10012c98
+        }
+    }
+
     /// `FUN_10012940 @ 10012940` — half-size refresh, only when +0x34 is set: face `none` → 0, 0;
     /// else w′, h′ from the frame (`FUN_10019ca0(face, frame, scale)`; +0x50 is 0 for the player and the
     /// crosshair) and half = C division by 2 (`rlwinm; add; srawi`); clears +0x34. `frameSize` returns the
@@ -161,7 +191,8 @@ public struct WeaponHandler: Equatable, Sendable {
 /// The player object (G_Player.cc, 0x36c bytes; player-physics.md §1). Field comments cite the original
 /// offsets. Obfuscated stores (lives +0x1524dcef, money +0xb2cce, score +0x5532a3e — integer, lossless)
 /// are kept plain; the shield's float obfuscation is lossy and is reproduced (`shield`).
-/// ★ LOCKED name (plan S2); the update is the ◇ Phase-1 stub `updatePhase1` (PlayerPhase1.swift).
+/// ★ LOCKED name (plan S2). The update is `GameState.updatePlayer(_:input:)` (PlayerUpdate.swift, C14); the ◇ Phase-1
+/// stub `updatePhase1` (PlayerPhase1.swift) stays until C18b deletes it.
 public struct Player: Sendable {
     let assets: DeimosAssets
 
@@ -287,6 +318,7 @@ public struct Player: Sendable {
         try setupHandler(now: now)                                   // 100268c0 FUN_1003ade0
         maxSpeed = plde.activeDefaultMaxSpeed                        // 100268cc FUN_10026cb0
         resetShield(full: false)                                     // 100268dc FUN_10027400(p, 0)
+        cheated = false                                              // 100268ec FUN_10029bf0(p, 0)
         clearOverload()                                              // 10026904 FUN_10026ea0
         if inGame {
             setLifeState(2, now: now)                                // 10026924
@@ -359,16 +391,23 @@ public struct Player: Sendable {
     /// `FUN_10029f10` → `FUN_10029f60`: face = the effective air weapon's appearance for this index
     /// (`+0x144` P1, `+0x148` P2), `+0x34` = 1; then frame 0, `+0xd4` = 0, `+0x4c` = `play`.
     mutating func resetShipSprite() {
+        refreshFaceFromWeapon()                                      // 10029f24 FUN_10029f60
+        object.frame = 0                                             // 10029f30
+        lastBankingTick = 0                                          // 10029f3c
+        object.layer = FourCC("play")!                               // 10029f40
+    }
+
+    /// `FUN_10029f60 @ 10029f60` — face = the effective air weapon's appearance for this index (`+0x144`
+    /// P1, `+0x148` P2; any other index leaves the face), `+0x34` = 1. Also called by the player update when
+    /// the handler tick reports a select (`10029104..10029118`; C15's `tickWeapons` calls it).
+    mutating func refreshFaceFromWeapon() {
         let w = handler.effectiveAir                                 // 10029f78 FUN_1003bce0
         switch index {                                               // 10029f80..10029fb0
         case 0: object.face = w.player1AppearanceFace
         case 1: object.face = w.player2AppearanceFace
         default: break
         }
-        object.sizeDirty = true                                      // 10029fb8
-        object.frame = 0                                             // 10029f30
-        lastBankingTick = 0                                          // 10029f3c
-        object.layer = FourCC("play")!                               // 10029f40
+        object.sizeDirty = true                                      // 10029fb4..10029fb8
     }
 
     /// `FUN_10026b10`: solo start (`entry_soloStartX/Y`) when `+0xcd == 1`, else the multi start; int →
