@@ -25,14 +25,14 @@
   DITL 6/6 (`docs/deimos/data-census.md`). **Phase 1 (the build plan) needs:** the game's continuous-IMA effect decode +
   16-voice/8-audible mixer, music streamed from the pak range, the glyph map over `tesm`, the MED colour rules (plan
   notes 15/21). **Ben's eyes:** INDEX #10 — `deimos-census --render out/deimos-render`, is `menu.png` upright?
-- **Deimos Rising Phase 2 — level 1 plays: IN PROGRESS (2026-10-07, Opus 5.5 orchestrator; Ben: Opus 5.5 only, no
+- **Deimos Rising Phase 2 — level 1 plays: IN PROGRESS (2026-10-07; player physics already bit-exact vs an independent model over 5000 de01 ticks; Opus 5.5 orchestrator; Ben: Opus 5.5 only, no
   Fable legs — ask him before any Fable leg, only if two Opus legs contradict AND find major errors).** Branch
   `deimos-phase2` (pushed, NOT merged). Plan `docs/plans/2026-10-07-deimos-phase2.md` (Opus planner, two Opus review legs
   ACCEPT_WITH_FIXES → `…-phase2-REVIEW.md`, fixes applied); rulings **D31** (Q4 RULED by Ben: Mac OS X volume keys, no
   in-game volume — the OS controls apply). Done + reviewed + fixed: K2 (HectorKit main **e595472**, `PCMPullSource` +
   ShellMixer stream voice + `SDLAudioOut(source:)`, HK D15, floor **328**; Deimos/Aki/BTX/AkiPad build), C0, A1, A2
-  (DeimosAudio target), R4, C13, C16, C7, C8 (in fix pass). `Deimos/Core` **246/0/0** (`--skip DeimosReplayTests`).
-  Next: wave 2.4 C9 ∥ C10 ∥ C14, then 2.5–2.12 per the plan's Execution order; machine gate = de01 replay 25,050 at the
+  (DeimosAudio target), R4, C13, C16, C7, C8, C9, C10, C14 (waves 2.0–2.4). `Deimos/Core` **275/0/0**
+  (`--skip DeimosReplayTests`). Wave 2.5 (C11a ∥ C15 ∥ C19) in progress; then 2.6–2.12 per the plan's Execution order; machine gate = de01 replay 25,050 at the
   read of byte 4808 (`FilmCursor.score(player: 0, atRead: 4808)`).
 - **Deimos Rising Phase 1 — level 1 look: GATE 1 PASSED (Ben, 2026-10-07: "it looks okay!"; D30 — runs at OS X's
   60 Hz tick, Ben played on OS X) (2026-10-07, Opus 5.5 orchestrator,
