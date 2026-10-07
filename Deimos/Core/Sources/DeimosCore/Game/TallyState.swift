@@ -52,4 +52,20 @@ public struct TallyState: Equatable, Sendable {
     public var missionPayments: Int32 = 0
 
     public init() {}
+
+    /// `FUN_10007280 @ 10007280` (`10007280..100072b0`; called by the session set-up `10005568` and every level start
+    /// `1000651c`): state 0, timers 0, alpha 0x20, bonus/step 0, text empty, percent 0, mission flag/payments 0. The
+    /// coin tallies are `FUN_10027630`'s (`GameState.resetCoinTally`).
+    public mutating func reset() {
+        state = 0                                                            // 1000728c
+        stateTimer = 0                                                       // 10007290
+        alpha = 0x20                                                         // 10007288 / 10007294
+        tickTimer = 0                                                        // 10007298
+        bonusRemaining = 0                                                   // 1000729c
+        bonusStep = 0                                                        // 100072a0
+        text = []                                                            // 100072a4
+        percent = 0                                                          // 100072a8
+        missionBonus = false                                                 // 100072ac
+        missionPayments = 0                                                  // 100072b0
+    }
 }
