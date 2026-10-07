@@ -779,6 +779,10 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   delete the private nearest-player copy in `Units/Rules.swift` (line range moved after fix(C10) f1366d5 — re-find it) in
   favour of C9's `Motion.swift` one (Files += `Units/Rules.swift`, that deletion only). Act on `updateMotion`'s
   delete/destroy outcome, and turn an `integrateAndCull` false into the silent delete (+0xcb = 1, +0xd9 = 0xff).
+  The same pre-controller state goes into C11a's `collideWithPlayers` and the entity↔entity Collides gate (10034580)
+  (fix(C11a)); C12 calls `updateHittable` at 10033ea0 itself and names C11a's entry points (`collideWithPlayers`, the
+  FUN_10036cf0 entity scan, the obstacle block) at their listing positions in FUN_10033850. The player ram also
+  redirects to the owner when the state has passHitsToOwner (10034228) — C11a contract gap, built as the listing.
 - **Contract:** `updateEntities(log:) -> Bool` (pause) = `FUN_10033850`: the per-tick player-collision cache, then per
   entity in group order: spawn-in countdown (state start re-stamped while counting) → state particles → state sound
   (AllowOnlyOneInstance = not playing) → timer (re-read the state) → **pause flag (`10033d70`)** → **animation step
