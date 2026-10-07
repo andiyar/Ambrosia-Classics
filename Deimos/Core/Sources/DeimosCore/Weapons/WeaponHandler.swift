@@ -164,10 +164,10 @@ extension Player {
     /// `+0x128` = flli 149/150, crosshair layer `plui` (`1003ae64`), the aux list emptied (`FUN_1003cb30`); ground =
     /// `FUN_1003cca0(1)` (first `DEAG` default) with +0x78 = +0x7c = now and +0x84 = 0; air = `FUN_1003cdb0(sector)`
     /// with +0x5c = now and +0x68 = 0. Either missing → the original's fatal assert (thrown here).
-    mutating func setupHandler(now: Int32) throws {
+    mutating func setupHandler(now: Int32, sector: Int32) throws {
         handler.pendingAir = nil                                     // 1003ae18
         handler.pendingGround = nil                                  // 1003ae24
-        resetHandler(levelStart: false)                              // 1003ae28
+        resetHandler(levelStart: false, sector: sector)              // 1003ae28
         handler.iconsDirty = false                                   // 1003ae34
         handler.owner = index                                        // 1003ae3c
         handler.crosshairFadeInRate = assets.floats[149]             // 1003ae48
@@ -196,8 +196,9 @@ extension Player {
     /// the pending ground applied (`FUN_1003b180(h, 'PEAG', …)`); with arg 1 (level start) the `PEAA` def whose
     /// minimum == sector (`FUN_1003cd30`) is equipped and the pending air dropped, otherwise (arg 0) the pending air
     /// is applied (`1003b0d4..1003b134`); `FUN_1003bab0(h, 0)`; crosshair visibility = 0.0, target 100.0, step
-    /// `+0x124` (`1003b148..1003b15c`).
-    mutating func resetHandler(levelStart: Bool) {
+    /// `+0x124` (`1003b148..1003b15c`). `sector` = game +0x14 (`FUN_10005cd0` at `1003b0dc`), read only with arg 1;
+    /// the respawn reset (arg 0) needs none.
+    mutating func resetHandler(levelStart: Bool, sector: Int32 = 0) {
         handler.x = 0                                                // 1003afc0
         handler.y = 0                                                // 1003afc4
         handler.previousFireGround = false                           // 1003afc8
@@ -263,8 +264,8 @@ extension Player {
 
     /// `FUN_1003bb40 @ 1003bb40(handler, out[6])` (hud-scorebar §6, HIGH): {face, frame} of the effective
     /// air weapon, the next in the select cycle and the one after; a pair that repeats an earlier one
-    /// (by face + frame) is `none`.
-    public func scoreBarIcons() -> [ScoreBarState.Icon] {
+    /// (by face + frame) is `none`. `sector` = game +0x14 (`FUN_10005cd0` in `FUN_1003bb40`).
+    public func scoreBarIcons(sector: Int32) -> [ScoreBarState.Icon] {
         let weapons = assets.definitions.weapons
         let peaa = FourCC("PEAA")!
         let cur = handler.effectiveAir
@@ -279,4 +280,7 @@ extension Player {
         let slot2 = n2.map(icon) ?? slot0
         return [slot0, slot1, (slot2 == slot0 || slot2 == slot1) ? .none : slot2]
     }
+
+    /// `scoreBarIcons(sector:)` at the sector given to `setup` — for the callers that pass none (◇ Phase-1 session).
+    public func scoreBarIcons() -> [ScoreBarState.Icon] { scoreBarIcons(sector: sector) }
 }

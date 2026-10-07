@@ -94,6 +94,24 @@ final class WeaponTests: XCTestCase {
         var h = WeaponHandler(); h.ground = s.players[0].handler.ground
         h.setCrosshairLock(true)
         XCTAssertFalse(h.crosshairLocked)
+        // Crosshair fade-in after the (re)spawn reset: visibility 0 → 100 by flli 149 (6) per handler tick
+        // (`FUN_10012750` at `1003ba2c`), counted from the respawn tick's own handler tick.
+        var f = try world()
+        toActive(&f)
+        let rate = f.assets.floats[149]
+        XCTAssertEqual(rate, 6)
+        var seen: [Float] = [f.players[0].handler.crosshair.visibility]
+        for _ in 0..<17 { tick(&f); seen.append(f.players[0].handler.crosshair.visibility) }
+        XCTAssertEqual(seen, (1...18).map { min(Float($0) * 6, 100) })
+        // Bacta Gun (sector 2): SetHeading TRUE records carry their angle into +0x138; the flash `bagl` does not.
+        var b = try world(sector: 2)
+        toActive(&b)
+        XCTAssertEqual(b.players[0].handler.air.id, FourCC("aibg"))
+        let r2 = tick(&b, .fireAir)
+        XCTAssertEqual(r2.spawned.map(\.id.description), ["bagb", "bagl", "bagb", "bagb", "bagb", "bagb", "bagb", "bagb"])
+        XCTAssertEqual(r2.ids("bagb").map(\.heading), [3, 6, 9, 357, 354, 351, 0])
+        XCTAssertEqual(r2.ids("bagb").map { [$0.object.x, $0.object.y] }, [[211, 320], [214, 322], [217, 327], [205, 320],
+                                                               [202, 322], [199, 327], [208, 319]])
     }
 
     func testAirEdgeAndCooldown() throws {
@@ -162,6 +180,9 @@ final class WeaponTests: XCTestCase {
         XCTAssertEqual(GameState.powerPercent(level: 1, max: 200), 0)        // 0.5 %
         XCTAssertEqual(GameState.powerPercent(level: 2, max: 200), 1)
         XCTAssertEqual(GameState.powerPercent(level: 30, max: 20), 100)
+        // max 0: 0 / 0 = NaN fails `fcmpo; bge` (unordered) → 0.0; 1 / 0 = +inf → 100.0.
+        XCTAssertEqual(GameState.powerPercent(level: 0, max: 0).bitPattern, Float(0).bitPattern)
+        XCTAssertEqual(GameState.powerPercent(level: 1, max: 0), 100)
     }
 
     func testOverloadTimeline() throws {
@@ -195,6 +216,15 @@ final class WeaponTests: XCTestCase {
         XCTAssertEqual(warnings, [9, 17, 24, 30, 36, 42, 48])
         XCTAssertEqual(death, 54)
         XCTAssertEqual(sOver - t, 195)
+        // Photon Beam (sector 5): OverloadTime 0 → the `cmpwi r3,0; ble` gate (`1003c230..1003c238`) never overloads.
+        var p = try world(sector: 5)
+        toActive(&p)
+        XCTAssertEqual(p.players[0].handler.air.powerupAir.overloadTime, 0)
+        for _ in 0..<(14 + 300) { tick(&p, .fireAir) }
+        XCTAssertEqual(p.players[0].handler.airPower.state, 1)
+        XCTAssertEqual(p.players[0].handler.airPower.level, 22)
+        XCTAssertFalse(p.players[0].overloadActive)
+        XCTAssertEqual(p.players[0].lifeState, 4)
     }
 
     func testReleaseStream() throws {
@@ -228,10 +258,15 @@ final class WeaponTests: XCTestCase {
                 XCTAssertEqual(u.states[Int(e.state)].stateName, "_Powerup Release, Dwindle & Del")
             }
             if now <= r0 + 38 { XCTAssertEqual(s.players[0].handler.airPower.state, 3, "r+\(now - r0)") }
+            if now == r0 + 39 {                                              // level 0 → idle (`1003c35c` before the timing)
+                XCTAssertEqual(s.players[0].handler.airPower.state, 0)
+                XCTAssertEqual(s.players[0].handler.airPower.start, r0 + 39)
+            }
             bound += 1
             if bound > 60 { XCTFail("release loop unbounded"); return }
         }
-        // Worked example 4a: icps at r, r+2, …, r+38 (20, TBRS 1); idle by r+40.
+        // icps at r, r+2, …, r+38 (20, TBRS 1); idle at r+39 — the level ≤ 0 test (`1003c35c..1003c364`) precedes
+        // the release timing (review ruling: the bank's worked example 4a "r+40" is wrong; B1 corrects it).
         XCTAssertEqual(stream, (0..<20).map { Int32(2 * $0) })
         XCTAssertEqual(s.players[0].handler.airPower.state, 0)
         XCTAssertEqual(s.players[0].handler.airPower.level, 0)
@@ -269,6 +304,20 @@ final class WeaponTests: XCTestCase {
                 tick(&s)
             }
         }
+        // One sector source, game +0x14: a player set up at sector 1 with the game now at sector 2 cycles,
+        // equips and previews by 2 (select `1003b8c0`, reset `1003b0dc`, icons `FUN_1003bb40`).
+        var d = try world(sector: 1)
+        toActive(&d)
+        d.flags.sector = 2
+        XCTAssertEqual(d.players[0].sector, 1)
+        tick(&d, .select)
+        XCTAssertEqual(d.players[0].handler.air.id, FourCC("aibg"))          // at 1 it would stay aiic
+        d.players[0].handler.air = d.assets.definitions.weapons[1]
+        d.players[0].resetHandler(levelStart: true, sector: d.flags.sector)
+        XCTAssertEqual(d.players[0].handler.air.id, FourCC("aibg"))          // FUN_1003cd30(2)
+        XCTAssertEqual(d.players[0].scoreBarIcons(sector: d.flags.sector).map(\.frame), [1, 0, 0])
+        XCTAssertEqual(d.players[0].scoreBarIcons(sector: d.flags.sector)[2], .none)
+
         // While a power-up runs the switch is pending: the face follows the pending weapon; it is applied when
         // the machine returns to idle.
         var s = try world(sector: 2)
@@ -319,6 +368,39 @@ final class WeaponTests: XCTestCase {
         tick(&s)
         XCTAssertEqual(tick(&s, .fireGround).ids("plbo").count, 1)           // t+15
         XCTAssertEqual(s.players[0].handler.bombsPending, 4)
+
+        // Sectors 9–12: capped at trunc(flli 152) = 8 → t, t+2, …, t+14.
+        for sector: Int32 in [9, 12] {
+            var c = try world(sector: sector)
+            toActive(&c)
+            let t9 = c.flags.gameTime
+            var bombs: [Int32] = []
+            for k in 0..<20 {
+                let now = c.flags.gameTime
+                if !tick(&c, k == 0 ? .fireGround : []).ids("plbo").isEmpty { bombs.append(now - t9) }
+            }
+            XCTAssertEqual(bombs, (0..<8).map { Int32(2 * $0) }, "sector \(sector)")
+        }
+
+        // Ground and air in one tick: the ground launcher runs first (`1003ba34` before `1003ba4c`).
+        var g = try world()
+        toActive(&g)
+        XCTAssertEqual(tick(&g, [.fireGround, .fireAir]).spawned.map(\.id.description), ["plbo", "pblf", "icb ", "icbf", "icb "])
+
+        // The respawn reset (`FUN_1003af90(h, 0)`): previous-button bytes cleared, the pending ground applied.
+        g.players[0].handler.previousFireGround = true
+        g.players[0].handler.previousFireAir = true
+        g.players[0].handler.previousSelect = true
+        g.players[0].handler.bombsPending = 3
+        let other = g.assets.definitions.weapons[1]
+        g.players[0].handler.pendingGround = other
+        g.players[0].resetHandler(levelStart: false)
+        XCTAssertFalse(g.players[0].handler.previousFireGround)
+        XCTAssertFalse(g.players[0].handler.previousFireAir)
+        XCTAssertFalse(g.players[0].handler.previousSelect)
+        XCTAssertEqual(g.players[0].handler.ground.id, other.id)
+        XCTAssertNil(g.players[0].handler.pendingGround)
+        XCTAssertEqual(g.players[0].handler.bombsPending, 0)
     }
 
     func testBombSpeedRatio() throws {
@@ -342,6 +424,13 @@ final class WeaponTests: XCTestCase {
         let ratio: Float = Float(81) / Float(121)
         XCTAssertEqual(bomb.object.vy.bitPattern, (v6.y * ratio).bitPattern)
         XCTAssertEqual(-bomb.object.vy, 4.02, accuracy: 0.005)
+        // The ratio uses the handler's y (+0x04, last tick's copy), the request the player's y: make them differ.
+        for _ in 0..<12 { tick(&s) }                                         // adj 40 → 0 at −4 per tick
+        XCTAssertEqual(s.players[0].handler.crosshair.y, 209)
+        s.players[0].handler.y = 350
+        bomb = try XCTUnwrap(tick(&s, .fireGround).ids("plbo").first)
+        XCTAssertEqual(bomb.object.vy.bitPattern, (v6.y * (Float(141) / Float(121))).bitPattern)
+        XCTAssertEqual([bomb.object.x, bomb.object.y], [208, 330])
         // A crosshair below the ship gives 0 (max(0, trunc(h.y − crosshair.y))): the bomb does not move.
         for _ in 0..<6 { tick(&s) }
         s.players[0].handler.crosshair.y = 400
@@ -367,6 +456,13 @@ final class WeaponTests: XCTestCase {
         XCTAssertEqual(s.scoreBar.records[0].shownPower, before - 4)
         tick(&s)
         XCTAssertEqual(s.scoreBar.records[0].shownPower, before - 5)
+        // Slot 2 repeating slot 1 (not slot 0) is blanked: Bacta held at sector 1 → n1 = Ion, n2 = Ion again.
+        s.players[0].handler.air = s.assets.definitions.weapons[0]
+        s.players[0].handler.pendingAir = nil
+        let icons = s.players[0].scoreBarIcons(sector: 1)
+        XCTAssertEqual(icons.map(\.frame), [1, 0, 0])
+        XCTAssertEqual(icons[2], .none)
+        XCTAssertEqual(icons[1].face, FourCC("wesy"))
         // Sector 5 icons: Photon, then the next two selects (Rear, Bacta); after a select they rebuild.
         var s5 = try world(sector: 5)
         let wesy = FourCC("wesy")!

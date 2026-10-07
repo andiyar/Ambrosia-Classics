@@ -225,9 +225,10 @@ public struct Player: Sendable {
     public var integrityPasses: Int32 = 0
     /// +0x240: the weapon handler.
     public var handler = WeaponHandler()
-    /// Game +0x14, the sector (`FUN_10005cd0`), read by the handler reset and the icon builder. Kept on
-    /// the player because Phase 1 has one level; set by `setup`. A per-player copy of one game field (C4
-    /// review m4): when the session gains level advance (Phase 2) the game's sector should be passed in instead.
+    /// The sector given to `setup` — a per-player copy of game +0x14 (`FUN_10005cd0`) kept only for callers that
+    /// pass no sector: the ◇ Phase-1 session (`DeimosSession`, deleted by C18b), `levelStart` / `scoreBarIcons()`
+    /// without a `sector:` argument and `ScoreBarState` without one. The original reads G+0x14 everywhere: every
+    /// `GameState` path passes `flags.sector` (C15 review); not a model of any original field.
     public var sector: Int32 = 1
 
     /// pf[2] (`0x100d6fc8` + 8): the shield obfuscation bias.
@@ -277,7 +278,7 @@ public struct Player: Sendable {
         score = 0                                                    // 1002688c FUN_100299c0
         multiplier = 1                                               // 10026898 FUN_10029fd0
         resetShield(full: true)                                      // 100268a8 FUN_10027400(p, 1)
-        try setupHandler(now: now)                                   // 100268c0 FUN_1003ade0
+        try setupHandler(now: now, sector: Int32(sector))            // 100268c0 FUN_1003ade0
         maxSpeed = plde.activeDefaultMaxSpeed                        // 100268cc FUN_10026cb0
         resetShield(full: false)                                     // 100268dc FUN_10027400(p, 0)
         cheated = false                                              // 100268ec FUN_10029bf0(p, 0)
@@ -298,10 +299,12 @@ public struct Player: Sendable {
     /// `FUN_10027400(p, 1)`; overload cleared; appear fade = flli 163/164/165 (`10026a6c..10026a98`); then
     /// exactly one `FUN_10046580(400, 2000)` (`10026a9c`), whose result only P1 keeps: `+0x234` = now + R,
     /// `+0x238` = 0 (`10026ab4 extsb.; bne`; the registration reads `FUN_1007ec40…` are not modelled).
-    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none) {
+    /// `sector` = game +0x14 for the reset's `FUN_1003cd30`; nil → the copy given to `setup` (Phase-1 callers).
+    public mutating func levelStart(now: Int32, rng: inout MSLRandom, levelRef: FourCC = .none,
+                                    sector: Int32? = nil) {
         guard inGame else { return }                                 // 100269c4..100269cc
         hitThisLevel = false                                         // 100269d4
-        resetHandler(levelStart: true)                               // 100269e0 FUN_1003af90(h, 1)
+        resetHandler(levelStart: true, sector: sector ?? self.sector)   // 100269e0 FUN_1003af90(h, 1)
         appearing = false                                            // 100269ec
         self.levelRef = levelRef                                     // 100269f4
         resetShipSprite()                                            // 100269f8 FUN_10029f10

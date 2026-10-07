@@ -19,7 +19,7 @@ import HectorResources
 ///   +0x28 + TBRS → a request for `ReleaseSpawn_ID` at the player, +0x28 = now, level − 1, percent. State ≥ 4 →
 ///   nothing.
 /// - Percent (`1003c280..1003c300`): `fdivs` (float)level / (float)max in single, `fmul` by the double 100.0
-///   (`0x100d72b8`), `frsp`; stored, reloaded, then < 1.0 (double, `0x100d72c0`) → 0.0, > 100.0 → 100.0.
+///   (`0x100d72b8`), `frsp`; stored, reloaded, then not ≥ 1.0 (double, `0x100d72c0`; NaN included) → 0.0, > 100.0 → 100.0.
 /// - The ground copy (`1003b4f4..1003b8a4`) runs when either ground ID ≠ none, on +0x31…+0x4c and the
 ///   `#powerup_Ground_*` block; it has **no overload test** (+0x1f8 is never read) and **never sets the code**.
 extension GameState {
@@ -27,7 +27,8 @@ extension GameState {
     static func powerPercent(level: Int32, max: Int32) -> Float {
         let q: Float = Float(level) / Float(max)                             // fsubs ×2 (exact), fdivs
         var p = Float(100.0 * Double(q))                                     // fmul f4 (double 100.0), frsp
-        if p < 1.0 { p = 0 } else if p > 100.0 { p = 100 }                   // fcmpo 1.0 / 100.0
+        // `fcmpo f1, 1.0; bge` keeps p only when p ≥ 1.0 — unordered (NaN, from 0 / 0) takes the 0.0 store.
+        if !(p >= 1.0) { p = 0 } else if p > 100.0 { p = 100 }              // fcmpo 1.0 / 100.0
         return p
     }
 
