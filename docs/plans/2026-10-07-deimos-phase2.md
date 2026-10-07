@@ -813,6 +813,11 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **⚑ Amendment (wave 2.4 reviews):** set `GameState.film` and `flags.filmPlaying` together (PlayerUpdate yields no
   input when the flag is set without a film); send `MusicCue.level(pref music volume)` at session start (A2 review m4 —
   the engine starts at the pref-100 level).
+  **Pause (C19 reviews, orchestrator ruling):** the pause pass's music ends at `.pause`; C19's `PauseScreen.musicAfterWait`
+  (`[.resume]`) becomes the FIRST music cue of the next pass (that pass begins only after the host's `.pauseWait` and
+  present — ≤ one frame late, inaudible; LOCKED seams unchanged). `FrameKeysResult.volume` never becomes a gain cue
+  (D31). Console open withholds input only on tick frames (1004aa20) per C19's result. Call C19's level-transition
+  reset (FUN_100302e0 pieces) where FUN_10007170 runs.
 - **Contract:** the session holds a `GameState`, the frame controller, console and key state; **every existing public
   property** (`gameTime`, `appeared`, `sector`, `rng`, `running`, `scoreBar`, `scroll`, `players`, …) stays as a
   forwarding accessor (invariant 12; DriverTests/LevelOneFrameTests read them). `init` = `FUN_100051a0` set-up (seed =
@@ -856,6 +861,9 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 ### H2 — ⚑ MAJOR — DeimosHost: driver Phase 2 + headless runner + replay trace (→ +8, canonical 338) — ∥ C18b
 - **Files:** `Package.swift` (S1 H2 line), `Sources/DeimosHost/{DeimosDriver,HeadlessRunner,FilmReplay,ReplayTrace}.swift`;
   `Tests/DeimosHostTests/{DriverTests,ReplayHarnessTests}.swift` (DriverTests: existing kept).
+- **⚑ Amendment (C19 reviews):** a driver test proves the audio sink receives `.resume` only after Caps Lock goes up (the
+  pass after the wait); across an app suspend/resume during the wait, music stays paused (the original's pause flag
+  r2−0x617b blocks the resume handler 10023e7c).
 - **Contract:** S6. Driver: `pass(keys:ticks:)`; a pass's cues go to `audio` when the pass begins (sounds with the halt
   index, music — the original issues them inside the tick; ≤ one frame early, inaudible);
   **`.pauseWait(p)`** yields until an `idle` sees `capsLock == false`, then `present(p)`; typed characters accumulate
