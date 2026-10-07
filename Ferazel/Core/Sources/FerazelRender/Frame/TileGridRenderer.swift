@@ -53,7 +53,7 @@ public struct TileGridRenderer: Sendable {
 
     /// The cell-clear face: PICT 1002 (32×32, 32-bit, all black) converted under clut 801, the "System CLUT"
     /// `.PreparePaintFrame @ 10010868` makes current before loading it (l. 8415–8420; lighting-tables §1.1).
-    public static func loadClearFace(resources: FerazelResources, search: ColorSearch,
+    static func loadClearFace(resources: FerazelResources, search: ColorSearch,
                                      dither: DitherModel = .errorDiffusion) throws -> EncodedFace {
         let clut = try ColorLUT.load(id: 801, from: resources, chain: .frontEnd)
         return try FaceSheet.load(.single(pict: 1002), from: resources, chain: .frontEnd, clut: clut, search: search,
@@ -64,9 +64,19 @@ public struct TileGridRenderer: Sendable {
     /// on the unconstrained (col, row) with C's truncating remainder (`srawi`/`addze`, `0x2aaaaaab`) — the bank's
     /// "floor mod" agrees for every col, row ≥ 0, which is every cell the grid draws. (> 63 is the original's fatal
     /// "bad FGPattern"; it cannot arise for col, row ≥ 0.)
-    public static func patternTile(col: Int, row: Int, periodSix: Bool) -> Int {
+    static func patternTile(col: Int, row: Int, periodSix: Bool) -> Int {
         let n = periodSix ? 6 : 8
         return col % n + 8 * (row % n)
+    }
+
+    /// The tile-grid draw ops of the seam: `.redrawScrollGrid` → `setScrollLocation` (strip-incremental),
+    /// `.redrawEntireScrollGrid` → `redrawEntireScrollGrid` (the whole window). Every other op is not the grid's.
+    mutating func apply(_ op: DrawOp, ports: inout FramePorts) {
+        switch op {
+        case .redrawScrollGrid(let h, let v): setScrollLocation(h: h, v: v, ports: &ports)
+        case .redrawEntireScrollGrid(let h, let v): redrawEntireScrollGrid(h: h, v: v, ports: &ports)
+        default: break
+        }
     }
 
     /// `.SetScrollLocation(h, v)`: clamp (negative → 0; `(h + 640) >> 5 > 0x200` → h = 0x3da0, `(v + 416) >> 5 > 0x200`
@@ -116,8 +126,8 @@ public struct TileGridRenderer: Sendable {
         }
     }
 
-    /// `.RedrawEntireScrollGrid`: rows drawnV/32 ... +13, cols drawnH/32 ... +20, culled against the scroll point
-    /// (h, v).
+    /// `.RedrawEntireScrollGrid @ 10013fd0` (`DrawOp.redrawEntireScrollGrid`): rows drawnV/32 ... +13, cols
+    /// drawnH/32 ... +20, culled against the scroll point (h, v).
     public func redrawEntireScrollGrid(h: Int, v: Int, ports: inout FramePorts) {
         let top = drawnV / 32, left = drawnH / 32
         redrawScrollGrid(top: top, left: left, right: left + 0x14, bottom: top + 0xd, h: h, v: v, ports: &ports)
@@ -125,7 +135,7 @@ public struct TileGridRenderer: Sendable {
 
     /// `.RedrawScrollGrid(rect, 0)`: rows top ... bottom, cols left ... right (inclusive; empty when top > bottom or
     /// left > right), culled against the scroll point (h, v).
-    public func redrawScrollGrid(top: Int, left: Int, right: Int, bottom: Int, h: Int, v: Int, ports: inout FramePorts) {
+    func redrawScrollGrid(top: Int, left: Int, right: Int, bottom: Int, h: Int, v: Int, ports: inout FramePorts) {
         redraw(top: top, left: left, right: right, bottom: bottom, scroll: TileBlitters.Scroll(h: h, v: v), ports: &ports)
     }
 
@@ -207,19 +217,19 @@ public struct TileGridRenderer: Sendable {
                 if w == -1 || !submerged {
                     draw(fgFace)
                 } else {
-                    draw(fgFace, .table(tables.water[w]))
+                    draw(fgFace, .table(water(w)))
                 }
                 if k >= 0, k < 0x5f {
                     // mode 0x14 | pattern (dry) or (w + 0x15) << 16 | pattern; `.BlitEncFaceX` sends the latter to the
                     // dry blitter unless 0x26c6 ≠ 0 (decompile l. 27043–27050).
-                    draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? tables.water[w] : nil))
+                    draw(blend.faces[k], blendOp(pattern: pattern, water: w >= 0 && submerged ? water(w) : nil))
                     if w >= 0, !submerged {
-                        draw(sets.fgWater.sheet.faces[t], .table(tables.water[w]))
+                        draw(sets.fgWater.sheet.faces[t], .table(water(w)))
                     }
                 }
             } else {
                 let p = sets.pattern.faces[pattern]
-                if w == -1 || !submerged { draw(p) } else { draw(p, .table(tables.water[w])) }
+                if w == -1 || !submerged { draw(p) } else { draw(p, .table(water(w))) }
             }
         }
 
@@ -236,6 +246,13 @@ public struct TileGridRenderer: Sendable {
             }
         }
         return true
+    }
+
+    /// Water table w (`_DAT_100a0170`). The original indexes w = BG kind − 200 for kinds 200..209 but builds only
+    /// w 0..5; no shipped level has a BG kind 206..209 under a drawn FG cell — refused, not invented.
+    private func water(_ w: Int) -> [UInt8] {
+        precondition(w < tables.water.count, "water table w ≥ 6 is outside the census (w = \(w))")
+        return tables.water[w]
     }
 
     private func blendOp(pattern: Int, water: [UInt8]?) -> TileBlitters.Op {

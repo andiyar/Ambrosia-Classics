@@ -41,21 +41,21 @@ final class TileGridTests: XCTestCase {
 
     // MARK: helpers
 
-    /// The copy-run (opaque) pixels of a face, row-major `width × height` (blend faces copy weight 0 too).
+    /// The copy-run (opaque) pixels of a face, row-major `width × height` (blend faces copy weight 0 too): `decode()`
+    /// of the face with every copied byte made non-zero (a copied 0 and a skip both decode to 0).
     private func copied(_ face: EncodedFace) throws -> [Bool] {
-        var out = [Bool](repeating: false, count: face.width * face.height)
-        var row = -1, col = 0
-        try face.walk { token in
+        func word(_ op: Int, _ n: Int) -> [UInt8] { [UInt8(op), UInt8(n >> 16 & 0xff), UInt8(n >> 8 & 0xff), UInt8(n & 0xff)] }
+        var marked = face
+        marked.data = []
+        for token in try face.tokens() {
             switch token {
-            case .row: row += 1; col = 0
-            case .skip(let n): col += n
-            case .copy(let bytes):
-                for k in 0..<bytes.count { out[row * face.width + col + k] = true }
-                col += bytes.count
-            case .end: break
+            case .row(let length): marked.data += word(1, length)
+            case .skip(let n): marked.data += word(3, n)
+            case .copy(let bytes): marked.data += word(2, bytes.count) + [UInt8](repeating: 1, count: (bytes.count + 3) & ~3)
+            case .end: marked.data += word(0, 0)
             }
         }
-        return out
+        return try marked.decode().map { $0 != 0 }
     }
 
     /// The 32×32 pixels of world cell (col, row) in a port.
@@ -155,6 +155,13 @@ final class TileGridTests: XCTestCase {
         XCTAssertEqual(FramePorts.ringY(416), 0)
         XCTAssertEqual(FramePorts.ringY(420), 4)
         XCTAssertEqual(FramePorts.ringOffset(x: 645, y: 420), 4 * 640 + 5)
+        // Negative world coordinates floor-mod into the ring.
+        XCTAssertEqual(FramePorts.ringX(-1), 639)
+        XCTAssertEqual(FramePorts.ringX(-640), 0)
+        XCTAssertEqual(FramePorts.ringX(-645), 635)
+        XCTAssertEqual(FramePorts.ringY(-1), 415)
+        XCTAssertEqual(FramePorts.ringY(-420), 412)
+        XCTAssertEqual(FramePorts.ringOffset(x: -5, y: -4), 412 * 640 + 635)
 
         // A 32×32 opaque face at world (630, 410) with the view there: one blit at the ring position and three
         // wrapped copies (`.WrapDrawTile` shape) — x 630..639 and 0..21, y 410..415 and 0..25.
@@ -170,10 +177,10 @@ final class TileGridTests: XCTestCase {
             XCTAssertEqual(port[y * 640 + x], 0, "(\(x), \(y))")
         }
         // Culled outside [h − 32, h + 608] × [v − 32, v + 384].
-        XCTAssertTrue(TileBlitters.visible(x: 630 + 608, y: 410 + 384, width: 32, height: 32, scroll: s))
-        XCTAssertFalse(TileBlitters.visible(x: 630 + 609, y: 410, width: 32, height: 32, scroll: s))
-        XCTAssertFalse(TileBlitters.visible(x: 630 - 33, y: 410, width: 32, height: 32, scroll: s))
-        XCTAssertFalse(TileBlitters.visible(x: 640, y: 410 - 33, width: 32, height: 32, scroll: s))
+        XCTAssertTrue(TileBlitters.visible(x: 630 + 608, y: 410 + 384, scroll: s))
+        XCTAssertFalse(TileBlitters.visible(x: 630 + 609, y: 410, scroll: s))
+        XCTAssertFalse(TileBlitters.visible(x: 630 - 33, y: 410, scroll: s))
+        XCTAssertFalse(TileBlitters.visible(x: 640, y: 410 - 33, scroll: s))
 
         // The whole grid at (630, 410): world cell (20, 13) = (640, 416) lands at ring (0, 0), and the frame port
         // holds the tiles port's copy (`.WrapRectBlitX`) everywhere the view reads.
@@ -238,11 +245,12 @@ final class TileGridTests: XCTestCase {
         let s = TileBlitters.Scroll(h: 0, v: 10)
         let iterated = (0...13).flatMap { r in (0...20).map { ($0, r) } }
         XCTAssertEqual(iterated.count, 294)
-        XCTAssertEqual(iterated.filter { TileBlitters.visible(x: $0.0 * 32, y: $0.1 * 32, width: 32, height: 32, scroll: s) }
+        XCTAssertEqual(iterated.filter { TileBlitters.visible(x: $0.0 * 32, y: $0.1 * 32, scroll: s) }
             .count, 260)
 
         var ports = FramePorts()
-        f.renderer(drawnH: 0, drawnV: 10).redrawEntireScrollGrid(h: 0, v: 10, ports: &ports)
+        var grid = f.renderer(drawnH: 0, drawnV: 10)
+        grid.apply(.redrawEntireScrollGrid(h: 0, v: 10), ports: &ports)   // the seam case → the whole-window path
         XCTAssertEqual(ports.frame, ports.tiles)
         // Self-derived by the R1 implementer, 2026-10-07 (`.ruled`, `.errorDiffusion`, no lights — the Effects = 3
         // tile layer): FNV-1a 64 of the 640×416 frame and mask ports.

@@ -30,8 +30,9 @@ public struct LevelTables: Sendable, Equatable {
     public let reddenA: [[UInt8]]
     /// `_DAT_100a0174`: redden B, n 0..15 (§5).
     public let reddenB: [[UInt8]]
-    /// The §6.1 pair tables `0160`, `015c`, `0158`, `0154`, `0150`, `014c`, 65,536 entries each.
-    public let pairs: [TableRequests.Pair: [UInt8]]
+    /// The §6.1 pair tables `0160`, `015c`, `0158`, `0154`, `0150`, `014c`, 65,536 entries each, in
+    /// `TableRequests.Pair.allCases` order (read them with `pair(_:)`).
+    let pairs: [[UInt8]]
     /// `_DAT_100a0144` grey-pull, `[a·0x1000 + b·0x100 + i]` (§6.1).
     public let greyPull: [UInt8]
     /// `_DAT_100a0130` ambient, D 0..15 (§7.3).
@@ -65,9 +66,7 @@ public struct LevelTables: Sendable, Equatable {
         water = (0..<TableRequests.waterCount).map { resolve(TableRequests.water($0, clut: workingClut)) }
         reddenA = (0..<8).map { resolve(TableRequests.reddenA($0, clut: workingClut)) }
         reddenB = (0..<16).map { resolve(TableRequests.reddenB($0, clut: workingClut)) }
-        var pairs: [TableRequests.Pair: [UInt8]] = [:]
-        for p in TableRequests.Pair.allCases { pairs[p] = resolve(TableRequests.pair(p, clut: workingClut)) }
-        self.pairs = pairs
+        pairs = TableRequests.Pair.allCases.map { resolve(TableRequests.pair($0, clut: workingClut)) }
         greyPull = resolve(TableRequests.greyPullTable(clut: workingClut))
         ambient = (0..<TableRequests.darknessLevels).map { resolve(TableRequests.ambient(darkness: $0, clut: levelBaseClut)) }
         var light: [RGB16] = []
@@ -90,8 +89,15 @@ public struct LevelTables: Sendable, Equatable {
         return LevelTables(workingClut: base, levelBaseClut: base, screenClut: base, search: search, random: random)
     }
 
-    /// `pairs[p]` (every case is built).
+    /// Pair table `p` (every case is built, in `allCases` order).
     public func pair(_ p: TableRequests.Pair) -> [UInt8] {
-        pairs[p]!
+        switch p {
+        case .additive: pairs[0]
+        case .average: pairs[1]
+        case .threeQuarterSprite: pairs[2]
+        case .quarterSprite: pairs[3]
+        case .spriteGreyAverage: pairs[4]
+        case .glow: pairs[5]
+        }
     }
 }

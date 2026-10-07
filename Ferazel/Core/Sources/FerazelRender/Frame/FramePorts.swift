@@ -32,13 +32,14 @@ public struct FramePorts: Sendable, Equatable {
         tiles = blank
     }
 
-    /// The ring column of world x: `x − 640·trunc(x/640)` (the `0x66666667` divide in `.WrapDrawTile @ 100169f4`,
-    /// a truncating remainder — equal to x mod 640 for every x ≥ 0, which is every tile the grid draws).
-    public static func ringX(_ x: Int) -> Int { x - width * (x / width) }
+    /// The ring column of world x: x mod 640, floored (0..639 for every x). The original's `0x66666667` divide in
+    /// `.WrapDrawTile @ 100169f4` is a truncating remainder; the two agree for every x ≥ 0, which is every tile the
+    /// grid draws.
+    static func ringX(_ x: Int) -> Int { let r = x % width; return r < 0 ? r + width : r }
 
-    /// The ring row of world y: `y − 416·trunc(y/416)` (the `0x4ec4ec4f` divide).
-    public static func ringY(_ y: Int) -> Int { y - height * (y / height) }
+    /// The ring row of world y: y mod 416, floored (the `0x4ec4ec4f` divide; as `ringX`).
+    static func ringY(_ y: Int) -> Int { let r = y % height; return r < 0 ? r + height : r }
 
-    /// The byte offset of world pixel (x, y) in a port (x, y ≥ 0).
-    public static func ringOffset(x: Int, y: Int) -> Int { ringY(y) * width + ringX(x) }
+    /// The byte offset of world pixel (x, y) in a port.
+    static func ringOffset(x: Int, y: Int) -> Int { ringY(y) * width + ringX(x) }
 }

@@ -19,23 +19,35 @@ final class SeamTests: XCTestCase {
         XCTAssertNotEqual(face, FaceRef(pict: 1020, index: 5, set: .flipped))
         let sprite = SpriteDraw(face: face, x: 83, y: 143, mode: 0x9_0000, mirrored: true,
                                 clip: SpriteClip(left: 1, right: 2, bottom: 3, top: 4), lightOverlay: true, waterRow: 0)
-        var other = sprite
+        var other = SpriteDraw(face: FaceRef(pict: 1020, index: 5, set: .encoded), x: 83, y: 143, mode: 0x9_0000,
+                               mirrored: true, clip: SpriteClip(left: 1, right: 2, bottom: 3, top: 4), lightOverlay: true,
+                               waterRow: 0)
         XCTAssertEqual(sprite, other)
         other.clip.top = 5
         XCTAssertNotEqual(sprite, other)
         XCTAssertEqual(SpriteClip(), SpriteClip(left: 0, right: 0, bottom: 0, top: 0))
-        let ops: [DrawOp] = [
-            .setScreenClut(id: 202),
-            .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
-            .redrawScrollGrid(h: 0, v: 10),
-            .drawLightsOntoTiles,
-            .wrapDrawSprites([sprite]),
-            .copyToScreen(h: 0, v: 10, graphicsMode: 1, backdrop: true),
-            .statusBar(StatusBarState(score: 0, coins: 0, health: 30, breath: 0, magic: 0, levelName: "A Scent Of Peril",
-                                      selectedSlot: 0)),
-        ]
-        XCTAssertEqual(ops, ops.map { $0 })
+        func levelStart() -> [DrawOp] {
+            [
+                .setScreenClut(id: 202),
+                .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
+                .redrawEntireScrollGrid(h: 0, v: 10),
+                .redrawScrollGrid(h: 0, v: 10),
+                .drawLightsOntoTiles,
+                .wrapDrawSprites([SpriteDraw(face: FaceRef(pict: 1020, index: 5, set: .encoded), x: 83, y: 143,
+                                             mode: 0x9_0000, mirrored: true,
+                                             clip: SpriteClip(left: 1, right: 2, bottom: 3, top: 4), lightOverlay: true,
+                                             waterRow: 0)]),
+                .copyToScreen(h: 0, v: 10, graphicsMode: 1, backdrop: true),
+                .statusBar(StatusBarState(score: 0, coins: 0, health: 30, breath: 0, magic: 0,
+                                          levelName: "A Scent Of Peril", selectedSlot: 0)),
+            ]
+        }
+        let ops = levelStart()
+        XCTAssertEqual(ops, levelStart())
+        XCTAssertEqual(ops[5], .wrapDrawSprites([sprite]))
         XCTAssertNotEqual(DrawOp.redrawScrollGrid(h: 0, v: 10), .redrawScrollGrid(h: 0, v: 42))
+        XCTAssertNotEqual(DrawOp.redrawEntireScrollGrid(h: 0, v: 10), .redrawScrollGrid(h: 0, v: 10))
+        XCTAssertNotEqual(DrawOp.redrawEntireScrollGrid(h: 0, v: 10), .redrawEntireScrollGrid(h: 32, v: 10))
         XCTAssertNotEqual(DrawOp.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
                           .drawPicture(id: 129, chain: .level, h: 0, v: 0))
         XCTAssertEqual(StatusBarState(), StatusBarState(score: 0, coins: 0, health: 0, breath: 0, magic: 0, levelName: "",

@@ -9,6 +9,9 @@ public enum DrawOp: Equatable, Sendable {
     case drawPicture(id: Int16, chain: ResourceChain, h: Int, v: Int)
     /// `.SetScrollLocation` → `.RedrawScrollGrid` (the tile layer).
     case redrawScrollGrid(h: Int, v: Int)
+    /// `.RedrawEntireScrollGrid @ 10013fd0`: the whole cell window (level start, `.GameLoop` l. 5211; full redraws,
+    /// e.g. decompile l. 3265, 3914, 6259).
+    case redrawEntireScrollGrid(h: Int, v: Int)
     /// `.DrawLightsOntoTiles`; the caller skips it when prefs+6 (Effects) == 3.
     case drawLightsOntoTiles
     /// `.WrapDrawSprites`, active-list order (draw-effects §1.1).
