@@ -14,6 +14,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "CytheraCore", targets: ["CytheraCore"]),
+        .library(name: "CytheraRender", targets: ["CytheraRender"]),
     ],
     dependencies: [
         .package(path: Context.environment["HECTORKIT_PATH"] ?? "../../../HectorKit"),
@@ -22,9 +23,22 @@ let package = Package(
         .target(name: "CytheraCore", dependencies: [
             .product(name: "HectorResources", package: "HectorKit"),
         ]),
+        // The render layer (C5): segment and PICT pixels as indexed buffers, the palette (plan S1, S3).
+        .target(name: "CytheraRender", dependencies: [
+            "CytheraCore",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
         .testTarget(name: "CytheraCoreTests", dependencies: [
             "CytheraCore",
             .product(name: "HectorResources", package: "HectorKit"),
+        ]),
+        .testTarget(name: "CytheraRenderTests", dependencies: [
+            "CytheraRender",
+            "CytheraCore",
+            .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorGraphics", package: "HectorKit"),
         ]),
     ]
 )
