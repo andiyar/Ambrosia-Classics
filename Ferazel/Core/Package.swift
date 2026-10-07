@@ -8,14 +8,15 @@ import PackageDescription
 // HectorKit is a LOCAL path dependency during build-out: from Ferazel/Core, three levels up is the
 // directory that holds both repos (in a worktree session: the .claude/worktrees/HectorKit symlink —
 // docs/DECISIONS.md D1). `HECTORKIT_PATH` overrides it.
-// Targets grow task by task (SwiftPM rejects a declared target with no sources): ferazel-census lands
-// with its first sources.
+// Targets grow task by task (SwiftPM rejects a declared target with no sources): ferazel-census (C6) is a thin
+// main over FerazelRender.FerazelCensus; its folder alone may import ImageIO, for `--render` (plan invariant 1).
 let package = Package(
     name: "FerazelCore",
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "FerazelCore", targets: ["FerazelCore"]),
         .library(name: "FerazelRender", targets: ["FerazelRender"]),
+        .executable(name: "ferazel-census", targets: ["ferazel-census"]),
     ],
     dependencies: [
         .package(path: Context.environment["HECTORKIT_PATH"] ?? "../../../HectorKit"),
@@ -30,11 +31,15 @@ let package = Package(
             .product(name: "HectorGraphics", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
         ]),
+        // The census tool (C6): stdout = docs/ferazel/data-census.md below its rule.
+        .executableTarget(name: "ferazel-census", dependencies: ["FerazelRender", "FerazelCore"]),
         .testTarget(name: "FerazelCoreTests", dependencies: [
             "FerazelCore",
             .product(name: "HectorResources", package: "HectorKit"),
         ]),
+        // Depends on the executable so `swift test` builds it (CensusTests.testExitCodes runs the binary).
         .testTarget(name: "FerazelRenderTests", dependencies: [
+            "ferazel-census",
             "FerazelRender",
             "FerazelCore",
             .product(name: "HectorResources", package: "HectorKit"),

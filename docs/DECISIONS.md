@@ -643,6 +643,14 @@ and pattern 206 under 202 — 234/28/67/13,898 and 200/30/73/8,606; blend 185 un
 `NewBlitPort` may hold stale bytes where a cell reaches past the frame (PICT 257 PxBack cells 30..35); built as 0
 (design §11).
 
+**As built (C6, 2026-10-07):** `ferazel-census` (thin `main` over framework-free `FerazelRender.FerazelCensus`;
+ImageIO only in `Sources/ferazel-census`, for `--render`) — its stdout is `docs/ferazel/data-census.md` below the rule:
+`Totals: items 1,108 decoded, failures 0` (770 PICT · 79 clut · 172 `snd ` · 24 `Mlvl` · 29 `Mcnv` · 28 music · `Mwld` ·
+`Mmap` · 4 `STR#`), every plan C6 summary line reproduced except the two Ben's follow-the-binary rulings move
+(16-CLUT Color2Index 1,178,146 of 3,387,696; FG 200 under clut 201 44/239 colours 5,400 px). `Ferazel/Core` tests
+**60/0** (C5 56 + 4 `CensusTests`). Built on HectorKit main `4ca2e18` (`v0.3.0` + 8; the plan expected `522feb8`,
+an ancestor — HectorKit main moved on with the Cythera K1 work).
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**
