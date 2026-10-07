@@ -98,6 +98,9 @@ extension GameState {
         case FourCC("spec")!: pickupCode = FourCC("SPEC")!
         default: pickupCode = .none
         }
+        // Unreachable with shipped data: no unit's `pickup_Type_ID` is `grnd`, `air ` or `spec` (census: `coin` 4,
+        // `shie` 2, `exli` 1, `mult` 1, `none` 378 — loose-ends-combat §3.4), so this branch is transcribed but
+        // never taken.
         if pickupCode != .none {                                               // 10014958..100149ac
             if !st.statePickupDoNotChangeAppearanceOnStateChange {
                 let w = Player.nextWeapon(type: pickupCode, after: world.entities[i].shownWeapon,
@@ -106,8 +109,8 @@ extension GameState {
                     world.entities[i].shownWeapon = w.id
                     world.entities[i].object.face = w.scoreBarPreviewFace      // 1001499c..100149a4
                 }
-                // nil: the original reads +0x130 of a null pointer (10014990 beq skips only the +0xf8 store) —
-                // not reachable with shipped data (every pickup code has a weapon at every sector); face kept.
+                // nil: the original reads +0x130 of a null pointer (10014990 beq skips only the +0xf8 store);
+                // face kept here.
             }
         } else {
             world.entities[i].object.face = st.stateSpriteFace                 // 100149b8..100149c0

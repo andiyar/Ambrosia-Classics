@@ -28,9 +28,11 @@ import HectorResources
 /// - Not kept: the module's debug globals −0x611c (read by `FUN_10033220` `100332d8`), −0x6111…−0x6114
 ///   (read by `FUN_100345f0`), −0x6124 / −0x6120 (tracked-unit IDs, `'none'` from the static initialiser
 ///   `10032c2c..10032c30`). Their only writers are the G_EntityGroup debug-command handlers after
-///   `FUN_10038810` (`10038970…100390a0`), which are never registered (loose-ends-combat §4.4,
-///   messages-notices-console §5.2), so they hold their initial values (0 / `'none'`) all game — readers
-///   treat them as those constants.
+///   `FUN_10038810` (`10038970…100390a0`; −0x611c's is the `PLAYERACTIVESPAWNS` toggle at `0x10039080`,
+///   loose-ends-combat §2.2), registered debug-only and so never created by `FUN_1002d080`
+///   (messages-notices-console §5.2): they hold their initial values all game and readers treat them as
+///   constants — −0x611c = **1** (`0x100e0214` in the data image; `GameState.playersActiveCheckEnabled`),
+///   −0x6111…−0x6114 = 0, −0x6124 / −0x6120 = `'none'`.
 public struct EntityWorld: Equatable, Sendable {
     /// `FUN_10038390` preallocates 1000 entities; `10038600 cmpwi r4,0x3e8`.
     public static let capacity = 1000

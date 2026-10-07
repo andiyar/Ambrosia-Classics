@@ -144,6 +144,29 @@ final class SpawnTests: XCTestCase {
         XCTAssertEqual(s.rng.draws, 2)
         XCTAssertTrue(s.entityLimitWarned)
         XCTAssertEqual(s.messages.messages.map(\.text), [Array("REACHED ENTITY LIMIT".utf8)])
+
+        // deleteExistingEntitiesOfThisTypeOwnedByPlayer (nole), the other step before the group: with a player
+        // (req+0x14 ≠ −1) every nole of that player goes through FUN_10036120(group, e, 0, 0) — deleted, not
+        // destroyed, no killer, group live − 1 — then the new one joins PERM. Without a player nothing is removed.
+        s = try state(seed: 1)
+        var req = SpawnRequest(unit: FourCC("nole")!, x: 208, y: 240)
+        req.player = 0
+        let first = try XCTUnwrap(s.spawn(req)).entity
+        var other = req; other.player = 1
+        let p2 = try XCTUnwrap(s.spawn(other)).entity
+        XCTAssertEqual(s.world.groups[0].live, 2)
+        let second = try XCTUnwrap(s.spawn(req)).entity
+        XCTAssertTrue(s.world.entities[first].deleted)
+        XCTAssertFalse(s.world.entities[first].destroyed)                     // r5 = 0
+        XCTAssertEqual(s.world.entities[first].killer, -1)                    // r6 = 0: no player credit
+        XCTAssertEqual(s.world.groups[0].destroyed, 0)
+        XCTAssertFalse(s.world.entities[p2].deleted)                           // the other player's stays
+        XCTAssertFalse(s.world.entities[second].deleted)
+        XCTAssertEqual(s.world.groups[0].live, 2)                              // 2 − 1 + 1
+        req.player = -1
+        _ = try XCTUnwrap(s.spawn(req))
+        XCTAssertFalse(s.world.entities[second].deleted)
+        XCTAssertEqual(s.world.groups[0].live, 3)
     }
 
     func testPlacementRadialAndRect() throws {
@@ -240,6 +263,42 @@ final class SpawnTests: XCTestCase {
         // FUN_10042bf0's x term is trunc(dx)·dx: (2.5, 0) → n = fctiwz(2·2.5) = 5, len = root(5).
         u = GameState.normalised(2.5, 0)
         XCTAssertEqual(u.x.bitPattern, (Float(2.5) / Trig.root(5)).bitPattern)
+        // Burst / implode (no shipped unit — a synthetic bu01 with doBurst, speed 2): velocity = (u.x·2, −(u.y·2)),
+        // and +0x138 = compass(headingOf(u)) of the unit vector u itself (10037d14 addi r3,r1,0x40), not of the
+        // y-negated velocity.
+        for implode in [false, true] {
+            var syn = s.assets.definitions.units[try unit(s, "bu01")]
+            syn.doBurst = !implode; syn.doImplode = implode
+            syn.initialSpeedMin = 2; syn.initialSpeedMax = 2
+            s = try state(seed: 4); (i, g) = try bare(&s, "bu01", gx: 0, gy: 0)
+            s.world.entities[i].object.x = 10; s.world.entities[i].object.y = 20
+            s.initialMotion(i, group: g, flag: false, heading: 0, owner: nil, multiplier: 1, unit: syn)
+            let d = implode ? GameState.normalised(-10, -20) : GameState.normalised(10, 20)
+            let e = s.world.entities[i]
+            XCTAssertEqual(e.object.vx.bitPattern, (d.x * 2).bitPattern)
+            XCTAssertEqual(e.object.vy.bitPattern, (-(d.y * 2)).bitPattern)
+            XCTAssertEqual(e.heading, Trig.internalHeading(Trig.headingOf(vx: d.x, vy: d.y)))
+            XCTAssertNotEqual(e.heading, Trig.internalHeading(Trig.headingOf(vx: e.object.vx, vy: e.object.vy)))
+            XCTAssertEqual(s.rng.draws, 0)
+        }
+
+        // UseParentDirection (pllt state 0, owner plla: 24 directions × 1 frame): the owner at frame 9 faces
+        // 9·15 = 135; pllt (36 directions) → 135 / 10 = 13.5 → half-up 14. Its own R(0, 35) frame draw is made
+        // first and overwritten. With an invalid link (serial mismatch) the drawn frame stays.
+        s = try state(seed: 6)
+        let plla = try XCTUnwrap(s.spawn(SpawnRequest(unit: FourCC("plla")!, x: 94, y: -64)))
+        s.world.entities[plla.entity].object.frame = 9
+        XCTAssertEqual(s.facing(of: plla.entity), 135)
+        var child = SpawnRequest(unit: FourCC("pllt")!, x: 94, y: -64)
+        child.owner = plla.entity; child.ownerSerial = plla.serial
+        let before = s.rng.draws
+        let t1 = try XCTUnwrap(s.spawn(child))
+        XCTAssertEqual(s.world.entities[t1.entity].object.frame, 14)
+        XCTAssertEqual(s.rng.draws - before, 1)                                 // the state-0 frame draw only
+        child.ownerSerial = plla.serial + 1                                    // link invalid (FUN_10036ab0)
+        o = Oracle(seed: s.rng.state)
+        let t2 = try XCTUnwrap(s.spawn(child))
+        XCTAssertEqual(s.world.entities[t2.entity].object.frame, o.r(0, 35))
     }
 
     func testCyclicStartDraws() throws {
@@ -298,6 +357,27 @@ final class SpawnTests: XCTestCase {
         XCTAssertEqual(s.enterState(i, named: "Destroy", spawning: false, now: t0), StateEntryOutcome(destroy: true))
         XCTAssertEqual(s.enterState(i, named: "No State", spawning: false, now: t0 + 1), StateEntryOutcome())
         XCTAssertEqual(s.world.entities[i].stateStart, t0)
+
+        // On-counter (nole: "Flash On" counter 5 → "Hold"): the 5th entry of Flash On zeroes its count and
+        // recurses into Hold at the same time; enterCount[Hold] = 1.
+        let nole = try XCTUnwrap(s.spawn(SpawnRequest(unit: FourCC("nole")!, x: 208, y: 240))).entity
+        XCTAssertEqual(s.world.entities[nole].enterCount[0], 1)                // the spawn is entry 1
+        for k in 2...5 {
+            XCTAssertEqual(s.enterState(nole, named: "Flash Off", spawning: false, now: Int32(10 * k)), StateEntryOutcome())
+            XCTAssertEqual(s.enterState(nole, named: "Flash On", spawning: false, now: Int32(10 * k + 3)), StateEntryOutcome())
+            XCTAssertEqual(s.world.entities[nole].state, k < 5 ? 0 : 3)
+        }
+        XCTAssertEqual(s.world.entities[nole].enterCount[0], 0)
+        XCTAssertEqual(s.world.entities[nole].enterCount[3], 1)
+        XCTAssertEqual(s.world.entities[nole].stateStart, 53)
+        // cass: "Flash Off" counter 15 → "Delete": the 15th entry returns the delete out-byte (before +0xc8).
+        let cass = try XCTUnwrap(s.spawn(SpawnRequest(unit: FourCC("cass")!, x: 100, y: 100))).entity
+        for k in 1...15 {
+            let r = s.enterState(cass, named: "Flash Off", spawning: false, now: Int32(k))
+            XCTAssertEqual(r, StateEntryOutcome(delete: k == 15), "entry \(k)")
+            XCTAssertEqual(s.world.entities[cass].state, 3)
+            XCTAssertEqual(s.world.entities[cass].enterCount[3], Int32(k))     // not reset on Delete
+        }
     }
 
     func testShieldsBySector() throws {
@@ -409,7 +489,12 @@ final class SpawnTests: XCTestCase {
             XCTAssertEqual(before - s.world.pendingLevelObjects.count, rows.count, "\(level.id)")
             spawned += rows.count
             if level.id == FourCC("le07")! { XCTAssertEqual(rows.count, 0) }
-            XCTAssertFalse(s.world.pendingLevelObjects.contains { $0.y >= 3056 && $0.y <= 3600 })
+            let top = s.scroll.window.top, bottom = s.scroll.window.bottom      // this level's own window
+            XCTAssertEqual(bottom - top, 480)
+            XCTAssertEqual(rows.count, level.objects.filter { $0.yLoc >= top - 64 && $0.yLoc <= bottom }.count,
+                           "\(level.id)")
+            XCTAssertFalse(s.world.pendingLevelObjects.contains {
+                EntityDraw.fctiwz($0.y) >= top - 64 && EntityDraw.fctiwz($0.y) <= bottom })
         }
         XCTAssertEqual(total, 565)
         XCTAssertEqual(spawned, 13)

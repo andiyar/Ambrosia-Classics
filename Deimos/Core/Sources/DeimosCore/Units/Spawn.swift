@@ -34,8 +34,9 @@ public enum SpawnRefusal: Equatable, Sendable {
 /// - `FUN_10033220(req, out, unit) @ 10033220` (`10033220..100335fc`): `'none'` → assert; now = G+0x1c
 ///   (`10033264 bl FUN_10005ce0`); unit = the argument or `FUN_1003d2f0(req.unit)`, none → log and return;
 ///   **`n = FUN_100369f0(unit)` first** (`100332c0`), `n ≤ 0` → return; `canBeSpawnedOnlyWhenPlayersActive`
-///   (unit+0x12a) → needs the byte −0x611c (`0x100e0214` = **1** in the data image; its only writers are the
-///   unregistered debug commands, so 1 all game) and `FUN_10006110` (a player in state 4) and not
+///   (unit+0x12a) → needs the byte −0x611c (`0x100e0214` = **1** in the data image; its only writer is the
+///   `PLAYERACTIVESPAWNS` toggle at `0x10039080`, a debug-only console command that `FUN_1002d080` never
+///   creates (messages-notices-console §5.2), so 1 all game) and `FUN_10006110` (a player in state 4) and not
 ///   `FUN_10005cf0` (G+0x39 level ending); `doNotSpawnIfTypeAlreadyExists` (unit+0x118) → `FUN_10036af0`;
 ///   cap `poolCount + n ≤ 1000` (`1003332c cmpwi 0x3e8; ble`) else the once-per-level message
 ///   `FUN_1002dbd0("Reached Entity Limit", type 1, upper 1, 0)` (`10033334..1003335c`); then
@@ -73,7 +74,8 @@ public enum SpawnRefusal: Equatable, Sendable {
 ///   the live ground count −0x6118 += 1; out = {entity, serial}.
 extension GameState {
     /// The byte −0x611c (`0x100e0214`) `FUN_10033220` tests before the players-active rule: 1 in the data image,
-    /// written only by the unregistered G_EntityGroup debug handlers (`1003909c`), so 1 for the whole game.
+    /// written only by the `PLAYERACTIVESPAWNS` toggle (`0x10039080`, `1003909c stb`), whose registration passes
+    /// debugOnly = 1 so `FUN_1002d080` never creates it (messages-notices-console §5.2): 1 for the whole game.
     static let playersActiveCheckEnabled = true
 
     /// `FUN_100369f0(unit)` — the group size after the appears rolls (draw sites `10036a2c`, `10036a74`).
@@ -369,14 +371,16 @@ extension GameState {
     /// `vector(internal(heading), speed)`; (2) `initiallyHuntsClosestPlayer` → target = the active player nearest
     /// (W·0.5, 0.0), or (W·0.5, −100.0) with none; velocity = normalised(target − pos)·speed (`fmuls`); (3)
     /// `doBurst`/`doImplode` → d = pos − group (burst) / group − pos (implode), u = normalised(d), velocity =
-    /// (u.x·speed, −(u.y·speed)), +0x138 = compass of `headingOf(velocity)`; (4) default → h = the owner's facing
+    /// (u.x·speed, −(u.y·speed)), +0x138 = compass of `headingOf(u)` — the unit vector itself, not the
+    /// y-negated velocity (`10037d14 addi r3,r1,0x40`: the `FUN_10042bf0` result); (4) default → h = the owner's facing
     /// when `useOwnerHeading` and the request has an owner, else `initialHeading` ± **draw `10037db8`**
     /// `R(−(tol/2), tol/2)` (only for the initialHeading source, tol ≠ 0; one wrap, then outside 0…359 → 0);
     /// +0x138 = h, velocity = `vector(internal(h), speed)`. Then mult ≠ 1.0 → velocity ·= mult (`fmuls`);
     /// +0x100/+0x104 = +0x108/+0x10c = velocity, accel = (0.0, 0.0).
     mutating func initialMotion(_ i: Int, group g: Int, flag: Bool, heading: Int32, owner: Int?,
-                                multiplier mult: Float) {
-        let u = assets.definitions.units[world.entities[i].unit]
+                                multiplier mult: Float, unit override: UnitDefinition? = nil) {
+        // `override` stands in for the entity's definition (+0x94) — a test seam for branches no shipped unit takes.
+        let u = override ?? assets.definitions.units[world.entities[i].unit]
         if world.entities[i].stationary {                                      // 10037b70..10037bb4
             var e = world.entities[i]
             e.object.vx = 0; e.object.vy = 0
@@ -405,7 +409,7 @@ extension GameState {
             let d = Self.normalised(dx, dy)                                    // 10037d08
             vx = d.x * speed                                                   // 10037d18
             vy = -(d.y * speed)                                                // 10037d24..10037d28 fneg
-            world.entities[i].heading = Trig.internalHeading(Trig.headingOf(vx: vx, vy: vy))   // 10037d30..10037d40
+            world.entities[i].heading = Trig.internalHeading(Trig.headingOf(vx: d.x, vy: d.y))   // 10037d14..10037d40
         } else {
             var h: Int32
             var fromInitial: Bool
