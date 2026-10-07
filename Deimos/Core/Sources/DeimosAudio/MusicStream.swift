@@ -46,11 +46,14 @@ public struct MusicTrack: Sendable {
 /// sampled-synth channel, §6.3), not through the effects mixer's continuous-nibble decoder (§2.2) — so the
 /// preamble re-sync rule of the kit (continue at full precision when the header agrees, else load the header) applies.
 ///
-/// Loop (§6.3, `FUN_100d0968` resets the read position to the SSND start): the frame after the last is frame 0.
-/// The decoder state is reset at the wrap (frame 0 decodes exactly as on the first pass). Whether the Sound
-/// Manager carried its predictor across the wrap is not read (bank NOT RESOLVED #6, "the exact byte at which a
-/// looping stream wraps"); with the kit's re-sync rule a carry could differ from the reset only in the low 7 bits
-/// of the first packet's predictor — inaudible.
+/// Loop (§6.3): at the end of SSND with loop set, the double-buffer callback continues from the SSND start **in the
+/// same buffer** (`FUN_100d0968`: `*(iVar1+0x2e) = ssndStart`), so the Sound Manager's decompressor saw one continuous
+/// packet stream — the decoder state CARRIES across the wrap, and packet 0's preamble goes through the same re-sync
+/// rule as any other. The frame after the last is frame 0 of the next pass. On the shipped tracks this is identical
+/// to a fresh decode (A2 fix-pass probe over every packet): `mu03` ends at step index 10/8 and `ammu` at 46/41
+/// (L/R) against packet 0's preamble index 0/0 → the header reloads; `inmu` ends at predictor 0/0, index 0/0 =
+/// its preamble → the carry continues from the same value. (The exact wrap byte is bank NOT RESOLVED #6; the call
+/// chain is HIGH.)
 public struct MusicStream: Sendable {
     public let track: MusicTrack
     /// Every caller passes loop 1 (`FUN_10047f90` callers, §6.1); a non-looping stream goes silent at its end.
@@ -127,8 +130,8 @@ public struct MusicStream: Sendable {
         if frameInPacket == IMA4.framesPerPacket {
             if nextPacket == track.packets {
                 guard loop else { exhausted = true; return (0, 0) }
-                nextPacket = 0                                        // FUN_100d0968: back to the SSND start
-                for ch in 0..<track.channels { runIndex[ch] = -1; runPredictor[ch] = 0 }
+                nextPacket = 0                                        // FUN_100d0968: back to the SSND start,
+                                                                      // decoder state carried (same buffer)
             }
             decodePacket(nextPacket)
             nextPacket += 1

@@ -13,9 +13,11 @@ final class MusicEngineTests: XCTestCase {
     /// A synthetic AIFC `ima4` file: `packets` packet-frames of `channels` channels, bytes from a fixed LCG, each
     /// packet's preamble a valid predictor/index; rate as an 80-bit extended.
     /// `chained`: every later packet's preamble is the channel's running state after the previous packet (its
-    /// predictor's high 9 bits + its index) — the case where the kit continues at full precision (re-sync carry).
+    /// predictor's high 9 bits + its index) — the case where the kit continues at full precision (re-sync carry);
+    /// `chainOffset` moves that predictor first (> 0x7F: index equal, predictor too far → the header is loaded).
+    /// `firstHeader`: packet 0's preamble for every channel (e.g. an index field > 88, which clamps to 88).
     static func aifc(packets: Int, channels: Int = 2, rate: Double = 44100, seed: UInt32 = 0x1234_5678,
-                     chained: Bool = false, firstHeader: UInt16? = nil) -> Data {
+                     chained: Bool = false, chainOffset: Int = 0, firstHeader: UInt16? = nil) -> Data {
         var x = seed
         func next() -> UInt8 { x = x &* 1_103_515_245 &+ 12345; return UInt8(truncatingIfNeeded: x >> 16) }
         let indexTable = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8]
@@ -27,11 +29,11 @@ final class MusicEngineTests: XCTestCase {
                 if p == 0, let firstHeader { pre = firstHeader }
                 if chained, p > 0 {
                     let pcm = IMA4.decode(body, packetFrames: p, channels: channels)
-                    let last = pcm[(p * 64 - 1) * channels + ch]
-                    pre = UInt16(bitPattern: last) & 0xFF80 | UInt16(runIndex[ch])
+                    let last = min(max(Int(pcm[(p * 64 - 1) * channels + ch]) + chainOffset, -32768), 32767)
+                    pre = UInt16(bitPattern: Int16(last)) & 0xFF80 | UInt16(runIndex[ch])
                 }
                 body += [UInt8(pre >> 8), UInt8(pre & 0xFF)]
-                var index = Int(pre & 0x7F)
+                var index = min(Int(pre & 0x7F), 88)
                 for _ in 0..<32 {
                     let b = next()
                     body.append(b)
@@ -61,10 +63,20 @@ final class MusicEngineTests: XCTestCase {
         return IMA4.decode([UInt8](a.soundData.prefix(p * 34 * a.channels)), packetFrames: p, channels: a.channels)
     }
 
-    /// An engine with the given effects and music files keyed by tag.
-    static func engine(effects: EffectMixer = EffectMixer(), music: [String: Data] = [:]) -> DeimosAudioEngine {
-        let files = Dictionary(uniqueKeysWithValues: music.map { (FourCC($0.key)!, $0.value) })
-        return DeimosAudioEngine(effects: effects) { files[$0] }
+    /// The kit's decode of the sound data repeated `passes` times — one continuous packet stream, decoder state
+    /// carried across each wrap (bank §6.3: `FUN_100d0968` refills the same buffer from the SSND start).
+    static func kitLooped(_ file: Data, passes: Int) throws -> [Int16] {
+        let a = try AIFFAudio(data: file)
+        let one = [UInt8](a.soundData.prefix(a.frameCount * 34 * a.channels))
+        return IMA4.decode(Array([[UInt8]](repeating: one, count: passes).joined()),
+                           packetFrames: a.frameCount * passes, channels: a.channels)
+    }
+
+    /// An engine with the given effects and music files (parsed as at init) keyed by tag.
+    static func engine(effects: EffectMixer = EffectMixer(), music: [String: Data] = [:]) throws -> DeimosAudioEngine {
+        var tracks: [FourCC: MusicTrack] = [:]
+        for (tag, file) in music { tracks[FourCC(tag)!] = try MusicTrack(soundFile: file) }
+        return DeimosAudioEngine(effects: effects, tracks: tracks)
     }
 
     /// Renders `frames` frames in chunks of `chunk`.
@@ -102,7 +114,7 @@ final class MusicEngineTests: XCTestCase {
         // The engine's music is decoded × 128/255 at the default pref, and follows a `.level` cue.
         let file = Self.aifc(packets: 2)
         let pcm = try Self.kitFrames(file)
-        let e = Self.engine(music: ["mu03": file])
+        let e = try Self.engine(music: ["mu03": file])
         XCTAssertEqual(e.withState { $0.musicLevel }, 128)
         e.apply(sounds: [], music: [.play(FourCC("mu03")!, loop: true)], haltEffectsAt: nil)
         let out = Self.render(e, frames: 64)
@@ -117,26 +129,27 @@ final class MusicEngineTests: XCTestCase {
         let file = Self.aifc(packets: 2)                                    // 128 frames
         let pcm = try Self.kitFrames(file)
         XCTAssertEqual(pcm.count, 256)
+        let looped = try Self.kitLooped(file, passes: 4)
+        XCTAssertEqual(Array(looped[256..<512]), pcm)                      // this fixture: the wrap reloads packet 0's header
         var s = MusicStream(track: try MusicTrack(soundFile: file), loop: true)
         var frames: [(Int16, Int16)] = []
         for _ in 0..<(3 * 128 + 5) { frames.append(s.nextFrame()) }         // bounded: 389 frames
         // nextFrame ran 2 ahead at init (the resampler's a/b): compare from the stream's own start.
         for (k, f) in frames.enumerated() {
-            let i = (k + 2) % 128
-            XCTAssertEqual(f.0, pcm[2 * i], "frame \(k + 2) L"); XCTAssertEqual(f.1, pcm[2 * i + 1], "frame \(k + 2) R")
+            let i = k + 2
+            XCTAssertEqual(f.0, looped[2 * i], "frame \(i) L"); XCTAssertEqual(f.1, looped[2 * i + 1], "frame \(i) R")
         }
         // Through the output path: the frame after the last is frame 0 (and 1, 2, …), on every pass.
         var t = MusicStream(track: try MusicTrack(soundFile: file), loop: true)
         var out = [Float](repeating: 0, count: 2 * 300)
         out.withUnsafeMutableBufferPointer { t.mix(into: $0, frames: 300, gain: 1) }
         for k in 0..<300 {
-            let i = k % 128
-            XCTAssertEqual(out[2 * k], Float(pcm[2 * i]) / 32768, "out \(k) L")
-            XCTAssertEqual(out[2 * k + 1], Float(pcm[2 * i + 1]) / 32768, "out \(k) R")
+            XCTAssertEqual(out[2 * k], Float(looped[2 * k]) / 32768, "out \(k) L")
+            XCTAssertEqual(out[2 * k + 1], Float(looped[2 * k + 1]) / 32768, "out \(k) R")
         }
-        // The decoder restarts at the wrap: even when the last packet's end state would satisfy the kit's re-sync
-        // rule against packet 0's preamble (index equal, predictor within 0x7F), frame 0 decodes from the preamble.
-        // Fixture: a mono 1-packet file whose preamble is (0x7F80, 88) and whose own decode ends at index 88 with a
+        // The decoder state CARRIES across the wrap: when the last packet's end state satisfies the re-sync rule
+        // against packet 0's preamble (index equal, predictor within 0x7F), the next pass's frame 0 continues from
+        // the running predictor, not from the preamble. Fixture: a mono 1-packet file whose preamble is (0x7F80, 88) and whose own decode ends at index 88 with a
         // predictor ≠ 0x7F80 within 0x7F of it (bounded seed search).
         var wrapFile: Data?
         for seed in UInt32(1)...4000 {
@@ -153,18 +166,20 @@ final class MusicEngineTests: XCTestCase {
         }
         let wf = try XCTUnwrap(wrapFile, "no re-sync fixture within 4000 seeds")
         let wp = try Self.kitFrames(wf)
+        let wl = try Self.kitLooped(wf, passes: 3)
+        XCTAssertNotEqual(wl[64], wp[0])                                    // the carry is visible at the wrap
         var w = MusicStream(track: try MusicTrack(soundFile: wf), loop: true)
         var wo = [Float](repeating: 0, count: 2 * 130)
         wo.withUnsafeMutableBufferPointer { w.mix(into: $0, frames: 130, gain: 1) }
-        for k in 0..<130 { XCTAssertEqual(wo[2 * k], Float(wp[k % 64]) / 32768, "wrap frame \(k)") }
+        for k in 0..<130 { XCTAssertEqual(wo[2 * k], Float(wl[k]) / 32768, "wrap frame \(k)") }
         // A file at half the output rate is linearly resampled to 44.1 kHz, across the loop too.
         let slow = Self.aifc(packets: 2, rate: 22050)
-        let sp = try Self.kitFrames(slow)
+        let sp = try Self.kitLooped(slow, passes: 3)
         var r = MusicStream(track: try MusicTrack(soundFile: slow), loop: true)
         var ro = [Float](repeating: 0, count: 2 * 260)
         ro.withUnsafeMutableBufferPointer { r.mix(into: $0, frames: 260, gain: 1) }
         for k in 0..<260 {
-            let i = (k / 2) % 128, j = (i + 1) % 128
+            let i = k / 2, j = i + 1
             let a = Float(sp[2 * i]), b = Float(sp[2 * j])
             let want = k % 2 == 0 ? a / 32768 : (a + (b - a) * 0.5) / 32768
             XCTAssertEqual(ro[2 * k], want, "resampled \(k)")
@@ -192,6 +207,14 @@ final class MusicEngineTests: XCTestCase {
         try check(Self.aifc(packets: 2), packets: 2, "synthetic")
         try check(Self.aifc(packets: 4, seed: 7, chained: true), packets: 4, "synthetic chained (re-sync carry)")
         try check(Self.aifc(packets: 3, channels: 1, seed: 99), packets: 3, "synthetic mono")
+        // Re-sync refused: index equal but the predictor > 0x7F away → the preamble's predictor is loaded.
+        let far = Self.aifc(packets: 4, seed: 11, chained: true, chainOffset: 0x100)
+        try check(far, packets: 4, "synthetic chained, predictor 0x100 off (header reload)")
+        XCTAssertNotEqual(try Self.kitFrames(far), try Self.kitFrames(Self.aifc(packets: 4, seed: 11, chained: true)))
+        // A preamble index field > 88 (7 bits: up to 127) clamps to 88.
+        try check(Self.aifc(packets: 2, seed: 5, firstHeader: 0x1200 | 120), packets: 2, "header index 120")
+        XCTAssertEqual(try Self.kitFrames(Self.aifc(packets: 1, seed: 5, firstHeader: 0x1200 | 120)),
+                       try Self.kitFrames(Self.aifc(packets: 1, seed: 5, firstHeader: 0x1200 | 88)))
         // mu03 (Music 3, stereo ima4 44.1 kHz): the first 4 packets only (landmine 11e — never the whole track).
         let mu03 = try AudioTestData.soundFile("mu03")
         let track = try MusicTrack(soundFile: mu03)
@@ -204,7 +227,7 @@ final class MusicEngineTests: XCTestCase {
     func testMusicPauseFreezes() throws {
         let file = Self.aifc(packets: 2)
         let pcm = try Self.kitFrames(file)
-        let e = Self.engine(music: ["ammu": file])
+        let e = try Self.engine(music: ["ammu": file])
         e.apply(sounds: [], music: [.level(100), .play(FourCC("ammu")!, loop: true)], haltEffectsAt: nil)
         let g = Float(128) / 255
         let first = Self.render(e, frames: 50)
@@ -240,7 +263,7 @@ final class MusicEngineTests: XCTestCase {
         engineMixer.register(FourCC("loud")!, loud)
         let cue = AudioTestData.cue("loud", volume: 100)
         reference.play(cue)
-        let e = Self.engine(effects: engineMixer)
+        let e = try Self.engine(effects: engineMixer)
         e.apply(sounds: [cue], music: [], haltEffectsAt: nil)
         let frames = 3 * EffectMixer.blockFrames
         let got = Self.render(e, frames: frames, chunk: 700)
@@ -251,15 +274,36 @@ final class MusicEngineTests: XCTestCase {
         // Music: decoded × amp/255 and nothing else; at m 0x100 (amp 255) that is unity.
         let file = Self.aifc(packets: 1)
         let pcm = try Self.kitFrames(file)
-        let m = Self.engine(music: ["inmu": file])
+        let m = try Self.engine(music: ["inmu": file])
         m.withState { $0.musicLevel = 0x100 }
         m.apply(sounds: [], music: [.play(FourCC("inmu")!, loop: true)], haltEffectsAt: nil)
         let music = Self.render(m, frames: 64)
         for i in 0..<128 { XCTAssertEqual(music[i], Float(pcm[i]) / 32768, "music sample \(i)") }
+        // Effects + music sum, clamped to ±1 (the output's full scale): a full-scale effect under unity music.
+        var ref2 = EffectMixer()
+        ref2.register(FourCC("loud")!, loud)
+        ref2.play(cue)
+        var mix2 = EffectMixer()
+        mix2.register(FourCC("loud")!, loud)
+        let loudMusic = Self.aifc(packets: 2, seed: 3)
+        let both = try Self.engine(effects: mix2, music: ["inmu": loudMusic])
+        both.withState { $0.musicLevel = 0x100 }
+        both.apply(sounds: [cue], music: [.play(FourCC("inmu")!, loop: true)], haltEffectsAt: nil)
+        let sum = Self.render(both, frames: 2048, chunk: 500)
+        var fx = [Float](repeating: 0, count: 2 * 2048)
+        fx.withUnsafeMutableBufferPointer { ref2.render(into: $0, frames: 2048) }
+        let lp = try Self.kitLooped(loudMusic, passes: 17)                  // 17 × 128 ≥ 2048 frames
+        var clamped = 0
+        for i in 0..<(2 * 2048) {
+            let raw = fx[i] + Float(lp[i]) / 32768
+            if abs(raw) > 1 { clamped += 1 }
+            XCTAssertEqual(sum[i], min(max(raw, -1), 1), "sum \(i)")
+        }
+        XCTAssertGreaterThan(clamped, 0)                                    // the clamp is exercised
     }
 
     func testPauseClickSurvivesHalt() throws {
-        let e = Self.engine(effects: try AudioTestData.mixer(["cabo", "incl"]))
+        let e = try Self.engine(effects: try AudioTestData.mixer(["cabo", "incl"]))
         let a = AudioTestData.cue("cabo", priority: 70), incl = AudioTestData.cue("incl", priority: 50)
         e.apply(sounds: [a, incl], music: [.pause], haltEffectsAt: 1)
         XCTAssertEqual(e.withState { s in (0..<s.effects.voiceCount).map { s.effects.voice(at: $0).priority } }, [50])

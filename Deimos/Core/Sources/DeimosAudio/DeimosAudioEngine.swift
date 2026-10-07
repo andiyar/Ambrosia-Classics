@@ -44,42 +44,51 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
     }
 
     private let state: Mutex<State>
-    private let loadMusic: @Sendable (FourCC) -> Data?
-    /// Parsed tracks by tag (game thread only; music restarts from the top every level, §6.4).
-    private let tracks = Mutex<[FourCC: MusicTrack]>([:])
+    /// Every music track by tag, read and parsed at `init` so `.play` does no file I/O on the game thread (music
+    /// restarts from the top every level, §6.4). Immutable; the compressed bytes stay resident (≈ 13.6 MB for the
+    /// three shipped tracks — the original streamed them from disk, §6.3; only the decode is per packet here).
+    private let tracks: [FourCC: MusicTrack]
 
     /// Opens the mixer (`FUN_10047160`, numChannels = flli 38 `SoundNumChannels`) and preloads every effect: each
     /// `soun` tag in `assets.index` (first record of an id, as `TagIndex.record` finds it) that passes the effect
     /// load (`FUN_100d1780`: AIFF/AIFC, channels < 2, `ima4`) — the music tracks are stereo and fall out. A tag whose
-    /// conversion fails is not registered (`FUN_10047330`: "couldn't convert an AIFF sound…", no record).
+    /// conversion fails is not registered (`FUN_10047330`: "couldn't convert an AIFF sound…", no record; DEBUG builds
+    /// log it). Every `soun` tag that fails the effect gate and parses as an `ima4` track (`mu03`, `ammu`, `inmu`) is
+    /// loaded as music.
     public convenience init(assets: DeimosAssets) throws {
         let channels = assets.floats.count > 38 ? Int(EffectMixer.fctiwz(assets.floats[38])) : 8
         var mixer = EffectMixer(numChannels: channels)
         let soun = FourCC("soun")!
+        var music: [FourCC: MusicTrack] = [:]
         var seen = Set<FourCC>()
         for record in assets.index.records(ofType: soun) where seen.insert(record.id).inserted {
             guard let first = assets.index.record(type: soun, id: record.id),
-                  let data = try? assets.index.data(for: first),
-                  let sound = try? IMAContinuous(soundFile: data) else { continue }
-            mixer.register(record.id, sound)
+                  let data = try? assets.index.data(for: first) else { continue }
+            do {
+                mixer.register(record.id, try IMAContinuous(soundFile: data))
+            } catch {
+                if let track = try? MusicTrack(soundFile: data) {
+                    music[record.id] = track
+                } else {
+                    #if DEBUG
+                    print("DeimosAudio: couldn't convert an AIFF sound to the internal format: soun '\(record.id)' (\(error))")
+                    #endif
+                }
+            }
         }
-        let index = assets.index
-        self.init(effects: mixer) { id in
-            guard let r = index.record(type: soun, id: id) else { return nil }
-            return try? index.data(for: r)
-        }
+        self.init(effects: mixer, tracks: music)
     }
 
-    /// An engine over a ready mixer and a music-file source (tests: synthetic effects and AIFC tracks).
-    init(effects: EffectMixer, music: @escaping @Sendable (FourCC) -> Data?) {
+    /// An engine over a ready mixer and parsed music tracks (tests: synthetic effects and AIFC tracks).
+    init(effects: EffectMixer, tracks: [FourCC: MusicTrack]) {
         state = Mutex(State(effects: effects))
-        loadMusic = music
+        self.tracks = tracks
     }
 
     // MARK: DeimosAudioSink (game thread)
 
     public func apply(sounds: [SoundCue], music: [MusicCue], haltEffectsAt: Int?) {
-        // `.play` streams are built (track parsed once, buffers allocated, first packet decoded) before the lock.
+        // `.play` streams are built (buffers allocated, first packet decoded; no I/O) before the lock.
         var prepared: [MusicStream?] = []
         for cue in music {
             if case let .play(id, loop) = cue { prepared.append(stream(id, loop: loop)) } else { prepared.append(nil) }
@@ -117,16 +126,9 @@ public final class DeimosAudioEngine: DeimosAudioSink, PCMPullSource {
         _ = (released, prepared)                                        // replaced streams die here, not in render
     }
 
-    /// A fresh stream for `id` (nil for `none` or a track that will not load).
+    /// A fresh stream for `id` (nil for `none` or a tag that is not a loaded track — "MUSIC ERROR", nothing plays).
     private func stream(_ id: FourCC, loop: Bool) -> MusicStream? {
-        guard id != .none else { return nil }                           // 10047ff0 subis r0,r28,0x6e6f; cmplwi 0x6e65
-        let cached = tracks.withLock { $0[id] }
-        let track: MusicTrack
-        if let cached { track = cached } else {
-            guard let data = loadMusic(id), let t = try? MusicTrack(soundFile: data) else { return nil }
-            tracks.withLock { $0[id] = t }
-            track = t
-        }
+        guard id != .none, let track = tracks[id] else { return nil }   // 10047ff0 subis r0,r28,0x6e6f; cmplwi 0x6e65
         return MusicStream(track: track, loop: loop)
     }
 
