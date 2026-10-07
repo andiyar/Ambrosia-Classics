@@ -13,6 +13,8 @@ public enum PixelError: Error, Equatable, Sendable {
     case lz(id: UInt16, LZError)
     /// A pix header with a zero dimension.
     case header(UInt16)
+    /// A pix segment shorter than its 4-byte {u16 w, u16 h} header.
+    case shortHeader(UInt16)
     /// A number outside the band's id range (e.g. portrait 0, sky 256).
     case number(String, Int)
     /// A compo-tile entry naming a tile past the store's 0xA00.
@@ -61,10 +63,13 @@ enum PixelSegments {
     }
 
     /// LZ-decodes `data` (a whole segment, or its tail after a header) and requires exactly `expected` bytes out
-    /// and the whole input consumed — the shape all 378 shipped streams have (p04; Invariant 4).
+    /// and the whole input consumed — the shape all 378 shipped streams have (p04; Invariant 4). The decode is
+    /// limited to `expected` bytes (`LZ.decode(_:limit:)`), so a lying stream cannot grow the output past it.
     static func unLZ(_ data: Data, id: UInt16, expected: Int) throws -> [UInt8] {
         let decoded: (bytes: [UInt8], consumed: Int)
-        do { decoded = try LZ.decode(data) } catch let e as LZError { throw PixelError.lz(id: id, e) }
+        do { decoded = try LZ.decode(data, limit: expected) } catch let e as LZError {
+            throw PixelError.lz(id: id, e)                  // `.outputLimit(expected)` for a too-long stream
+        }
         guard decoded.bytes.count == expected else {
             throw PixelError.length(id: id, expected: expected, actual: decoded.bytes.count)
         }

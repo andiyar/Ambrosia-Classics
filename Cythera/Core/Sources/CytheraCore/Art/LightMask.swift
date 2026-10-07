@@ -3,7 +3,8 @@ import Foundation
 /// A `Lite` resource: byte n, then n × n intensity bytes, row-major (engine-classes §3.3, open-items §10 —
 /// HIGH sizes). `Lite 140 + radius/100` is the party light stamped by `CopyLight` (`Lite 140` = 65 B = 1 + 8²,
 /// `Lite 158` = 14,401 B = 1 + 120²); `Lite 128…133` are other light shapes whose use is NOT RESOLVED. All 25
-/// ship in `Cythera.rsrc` (none in the data file; p07). The length must be exactly 1 + n².
+/// ship in `Cythera.rsrc` (none in the data file; p07), n = 8…120. The length must be exactly 1 + n²; n = 0 is
+/// refused (no shipped mask is empty — Invariant 4).
 public struct LightMask: Equatable, Sendable {
     /// n, the mask's width and height.
     public let size: Int
@@ -13,6 +14,7 @@ public struct LightMask: Equatable, Sendable {
     public init(data: Data) throws {
         let b = ArtBytes(data, type: "Lite")
         let n = Int(try b.u8(0, "size"))
+        guard n > 0 else { throw ArtRecordError.shape("Lite size 0") }
         try b.require(1, n * n, "intensities")
         guard b.count == 1 + n * n else {
             throw ArtRecordError.length("Lite", expected: 1 + n * n, actual: b.count)

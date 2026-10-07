@@ -22,10 +22,11 @@ public struct PaletteResource: Equatable, Sendable {
     public let reserved: [UInt8]
     public let entries: [Entry]
 
-    /// Parses a `pltt`; the length must be exactly 16 + 16 × count.
+    /// Parses a `pltt`; the length must be exactly 16 + 16 × count, and count 0 is refused (Invariant 4).
     public init(data: Data) throws {
         let b = ArtBytes(data, type: "pltt")
         count = Int(try b.u16(0, "pmEntries"))
+        guard count > 0 else { throw ArtRecordError.shape("pltt pmEntries 0") }
         try b.require(2, 14, "reserved")
         reserved = Array(b.bytes[2..<16])
         try b.require(16, 16 * count, "ColorInfo")

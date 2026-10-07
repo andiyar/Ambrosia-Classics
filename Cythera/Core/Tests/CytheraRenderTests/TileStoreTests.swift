@@ -1,6 +1,6 @@
 import CryptoKit
 import XCTest
-import CytheraCore
+@testable import CytheraCore
 @testable import CytheraRender
 
 /// C5 (docs/plans/2026-10-06-cythera-phase0.md): the tile store of data-format §3.4 (`LoadTiles__Fv @ 10005080`,
@@ -27,6 +27,14 @@ final class TileStoreTests: XCTestCase {
         XCTAssertTrue(store.tile(0xA00).isEmpty)
         let sha = SHA256.hash(data: Data(store.bytes)).map { String(format: "%02x", $0) }.joined()
         XCTAssertEqual(sha, "5419637e2a87784239e837484206219cae1d23060c23ec73ce6d3079c94a7b80")
+
+        // Hostile (Invariant 5): every prefix of sheet 0x8E00 throws; the full sheet decodes to 0x4000 bytes.
+        let sheet = try XCTUnwrap(try segmentFile().segment(0x8E00))
+        XCTAssertEqual(try TileStore.decodeSheet(sheet, id: 0x8E00), Array(store.bytes[0..<0x4000]))
+        for n in 0..<sheet.count {
+            XCTAssertThrowsError(try TileStore.decodeSheet(sheet.prefix(n), id: 0x8E00), "prefix \(n)")
+        }
+        XCTAssertThrowsError(try TileStore(bytes: [UInt8](repeating: 0, count: 0x27FFFF)))
     }
 
     func testCompoTileQuadrants() throws {
@@ -40,7 +48,7 @@ final class TileStoreTests: XCTestCase {
         // so the compo tile reproduces the quadrant layout; then a transposed variant (column = row of k).
         func entry(tile: Int, col: Int, row: Int) -> UInt16 { UInt16(tile | row << 12 | col << 14) }
         let entries = (0..<16).map { entry(tile: 0x100 + $0, col: $0 % 4, row: $0 / 4) }
-        let out = try store.compoTile(entries)
+        let out = try store.compoTile(CompoTileRecord(entries: entries))
         XCTAssertEqual(out.count, 1_024)
         for y in 0..<32 {
             for x in 0..<32 {
@@ -50,7 +58,7 @@ final class TileStoreTests: XCTestCase {
             }
         }
         let swapped = (0..<16).map { entry(tile: 0x200, col: $0 / 4, row: $0 % 4) }
-        let out2 = try store.compoTile(swapped)
+        let out2 = try store.compoTile(CompoTileRecord(entries: swapped))
         for y in 0..<32 {
             for x in 0..<32 {
                 let col = y / 8, row = x / 8      // entry at (x/8, y/8) took quadrant (col = y/8, row = x/8)
@@ -58,23 +66,21 @@ final class TileStoreTests: XCTestCase {
                 XCTAssertEqual(out2[y * 32 + x], bytes[src], "swapped (\(x),\(y))")
             }
         }
-        XCTAssertThrowsError(try store.compoTile(Array(entries.prefix(15))))
-        XCTAssertThrowsError(try store.compoTile([UInt16](repeating: 0x0A00, count: 16))) { error in
+        XCTAssertThrowsError(try store.compoTile(CompoTileRecord(entries: Array(entries.prefix(15)))))
+        XCTAssertThrowsError(try store.compoTile(CompoTileRecord(entries: [UInt16](repeating: 0x0A00, count: 16)))) { error in
             XCTAssertEqual(error as? PixelError, .tileOutOfRange(0xA00))
         }
 
-        // Every shipped non-zero record (segment 0xF013, 4,096 × 0x20 B) references tiles ≤ 0xFFF (p11).
+        // Every shipped non-zero record (segment 0xF013 via `WorldGlobals.compoTiles`, 4,096 records; 264
+        // non-zero — p11) builds: each entry's tile is inside the 0xA00 store (else `tileOutOfRange`).
         let file = try segmentFile()
-        let f013 = [UInt8](try XCTUnwrap(file.segment(0xF013)))
-        XCTAssertEqual(f013.count, 4_096 * 0x20)
+        let records = try WorldGlobals(file: file).compoTiles
+        XCTAssertEqual(records.count, 4_096)
         let real = try TileStore(file: file)
         var nonZero = 0
-        for r in 0..<4_096 {
-            let e = (0..<16).map { UInt16(f013[r * 32 + $0 * 2]) << 8 | UInt16(f013[r * 32 + $0 * 2 + 1]) }
-            guard e.contains(where: { $0 != 0 }) else { continue }
+        for (r, record) in records.enumerated() where !record.isEmpty {
             nonZero += 1
-            XCTAssertTrue(e.allSatisfy { Int($0 & 0xFFF) <= 0xFFF })
-            XCTAssertNoThrow(try real.compoTile(e), "record \(r)")
+            XCTAssertNoThrow(try real.compoTile(record), "record \(r)")
         }
         XCTAssertEqual(nonZero, 264)
     }

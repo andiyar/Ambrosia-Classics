@@ -24,6 +24,7 @@ final class StoredPictureTests: XCTestCase {
                 XCTAssertEqual(image.pixels.count, image.width * image.height, key)
                 XCTAssertEqual([image.width, image.height], [picture.width, picture.height], key)
                 XCTAssertNotNil(table, key)
+                XCTAssertEqual(picture.transferMode, 0, "\(key): indexed mode as stored")
                 if picture.maskRegion == nil {
                     indexedRect.append(key)
                 } else {
@@ -62,6 +63,8 @@ final class StoredPictureTests: XCTestCase {
                 XCTFail("\(name) refused"); continue
             }
             XCTAssertEqual([p.width, p.height], [640, 480], name)
+            XCTAssertEqual(p.transferMode, 0, "\(name): mode as stored (Catamarca = 0 srcCopy, D28 as-built)")
+            XCTAssertNil(p.maskRegion, name)
             if name == "Catamarca" {
                 guard case .direct16 = p.pixels else { XCTFail("Catamarca is 16-bit direct"); continue }
             } else {
@@ -72,5 +75,17 @@ final class StoredPictureTests: XCTestCase {
         XCTAssertEqual(StoredPicture.record(try screenshot("Land King Hall"), headerBytes: 512),
                        .refused("0x8200 QuickTime"))
         XCTAssertEqual(StoredPicture.record(Data(count: 100), headerBytes: 512), .refused("shorter than its header"))
+
+        // Hostile (Invariant 5): every prefix of one indexed (data 139) and one direct (data 129) PICT throws,
+        // and the refusal text is the stable spelling.
+        for id: Int16 in [139, 129] {
+            let full = try XCTUnwrap(r.data.resource(type: "PICT", id: id)).data
+            for n in 0..<full.count {
+                XCTAssertThrowsError(try StoredPicture.decode(full.prefix(n)), "PICT \(id) prefix \(n)")
+            }
+        }
+        XCTAssertEqual(StoredPicture.refusalReason(PICT.DecodeError.unsupportedOpcode(0x32)), "unsupportedOpcode 0x0032")
+        XCTAssertEqual(StoredPicture.refusalReason(PICT.DecodeError.unsupportedPixels("directMode")),
+                       "unsupportedPixels directMode")
     }
 }

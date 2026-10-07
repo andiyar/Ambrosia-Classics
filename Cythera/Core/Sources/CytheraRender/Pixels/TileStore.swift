@@ -21,11 +21,16 @@ public struct TileStore: Sendable {
         var bytes = [UInt8](repeating: 0, count: Self.tileCount * Self.tileBytes)
         for id in Self.sheetIDs {
             guard let sheet = file.segment(id) else { continue }       // absent → zero tiles (as `memset`)
-            let pixels = try PixelSegments.unLZ(sheet, id: id, expected: Self.sheetBytes)
+            let pixels = try Self.decodeSheet(sheet, id: id)
             let at = Int(id - Self.sheetIDs.lowerBound) * Self.sheetBytes
             bytes.replaceSubrange(at..<(at + Self.sheetBytes), with: pixels)
         }
         self.bytes = bytes
+    }
+
+    /// One tile sheet: exactly 0x4000 LZ bytes (16 tiles) consuming the whole segment.
+    public static func decodeSheet(_ data: Data, id: UInt16) throws -> [UInt8] {
+        try PixelSegments.unLZ(data, id: id, expected: sheetBytes)
     }
 
     /// A store from a ready buffer of exactly 0xA00 × 0x400 bytes (tests, Phase 1 animation tables).
@@ -47,9 +52,11 @@ public struct TileStore: Sendable {
     /// row-major; entry e copies the 8×8 block at
     /// `tile[e & 0xfff] + ((e>>8)>>3 & 0x18) + ((e>>8) & 0x30)*0x10` — bits 14–15 = source quadrant column
     /// (× 8 px), bits 12–13 = source quadrant row (× 8 rows). The original indexes its current-frame tile
-    /// pointer table (0xA00 entries) with `e & 0xfff`; an index past 0x9FF is refused here
-    /// (`tileOutOfRange`) rather than read past the table. Output: 32×32 = 1,024 bytes.
-    public func compoTile(_ entries: [UInt16]) throws -> [UInt8] {
+    /// pointer table (`ptr[frame][0…0x9FF]`) with `e & 0xfff`, so an index past 0x9FF would read a later
+    /// frame's entry (frame 1's for 0xA00…0xFFF from frame 0); that is refused here (`tileOutOfRange`) — no
+    /// shipped record does it (all 264 non-zero records build). Output: 32×32 = 1,024 bytes.
+    public func compoTile(_ record: CompoTileRecord) throws -> [UInt8] {
+        let entries = record.entries
         guard entries.count == 16 else { throw PixelError.compoEntries(entries.count) }
         var out = [UInt8](repeating: 0, count: Self.tileBytes)
         for (k, e) in entries.enumerated() {

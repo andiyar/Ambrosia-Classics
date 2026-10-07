@@ -24,7 +24,7 @@ final class PixelSegmentTests: XCTestCase {
         XCTAssertEqual(0x88FA - 0x8800 + 1 - present.count, 109, "109 gaps (p03)")
         var zeros = 0, maxIndex: UInt8 = 0
         for p in 1...251 {
-            let id = Portrait.segmentID(p)
+            let id = try Portrait.segmentID(p)
             XCTAssertEqual(Int(id), 0x87FF + p)
             guard present.contains(id) else {
                 XCTAssertThrowsError(try Portrait(number: p, file: file)) {
@@ -40,8 +40,16 @@ final class PixelSegmentTests: XCTestCase {
         }
         XCTAssertEqual(zeros, 48_252)
         XCTAssertEqual(maxIndex, 255)
-        XCTAssertThrowsError(try Portrait(number: 0, file: file))
-        XCTAssertThrowsError(try Portrait(number: 258, file: file))
+        // Boundaries: 256 is the page's last id (absent); 0 and 257 are refused, never wrapped.
+        XCTAssertEqual(try Portrait.segmentID(256), 0x88FF)
+        XCTAssertThrowsError(try Portrait(number: 256, file: file)) { XCTAssertEqual($0 as? PixelError, .absent(0x88FF)) }
+        for p in [0, 257] {
+            XCTAssertThrowsError(try Portrait.segmentID(p)) { XCTAssertEqual($0 as? PixelError, .number("portrait", p)) }
+            XCTAssertThrowsError(try Portrait(number: p, file: file)) { XCTAssertEqual($0 as? PixelError, .number("portrait", p)) }
+        }
+        // Hostile (Invariant 5): every prefix of portrait 1 (0x8800) throws.
+        let seg = try XCTUnwrap(file.segment(0x8800))
+        for n in 0..<seg.count { XCTAssertThrowsError(try Portrait.decode(seg.prefix(n), id: 0x8800), "prefix \(n)") }
     }
 
     func testSkyStrips() throws {
@@ -57,6 +65,10 @@ final class PixelSegmentTests: XCTestCase {
         }
         XCTAssertEqual(pixels, 165_888)
         XCTAssertEqual(zeros, 35_806)
+        // Hostile (Invariant 5): every prefix of 0x8400 throws.
+        let seg = try XCTUnwrap(file.segment(0x8400))
+        for n in 0..<seg.count { XCTAssertThrowsError(try SkyStrip.decode(seg.prefix(n), id: 0x8400), "prefix \(n)") }
+        XCTAssertThrowsError(try SkyStrip(number: 256, file: file))
     }
 
     func testPixImages() throws {
@@ -98,9 +110,33 @@ final class PixelSegmentTests: XCTestCase {
         for n in 0..<small.count {
             XCTAssertThrowsError(try PixImage.decode(Data(small.prefix(n)), id: 0x8F35), "prefix \(n)")
         }
+        for n in 0..<4 {
+            XCTAssertThrowsError(try PixImage.decode(Data(small.prefix(n)), id: 0x8F35)) {
+                XCTAssertEqual($0 as? PixelError, .shortHeader(0x8F35), "short header \(n)")
+            }
+        }
         var lying = [UInt8](small)
         lying[1] = 13                                     // width 13 → rowBytes 16 ≠ the stream's 12 × 12
-        XCTAssertThrowsError(try PixImage.decode(Data(lying), id: 0x8F35))
+        XCTAssertThrowsError(try PixImage.decode(Data(lying), id: 0x8F35)) {
+            XCTAssertEqual($0 as? PixelError, .length(id: 0x8F35, expected: 192, actual: 144))
+        }
+        var shrunk = [UInt8](small)
+        shrunk[1] = 4; shrunk[3] = 4                      // 4 × 4 = 16 B < the stream's 144: refused at the limit
+        XCTAssertThrowsError(try PixImage.decode(Data(shrunk), id: 0x8F35)) {
+            XCTAssertEqual($0 as? PixelError, .lz(id: 0x8F35, .outputLimit(16)))
+        }
+        var huge = [UInt8](small)
+        huge[0] = 0xFF; huge[1] = 0xFF; huge[2] = 0xFF; huge[3] = 0xFF   // 65,535² claimed: nothing allocated from it
+        XCTAssertThrowsError(try PixImage.decode(Data(huge), id: 0x8F35)) {
+            XCTAssertEqual($0 as? PixelError, .length(id: 0x8F35, expected: 65_536 * 65_535, actual: 144))
+        }
+        var zero = [UInt8](small)
+        zero[0] = 0; zero[1] = 0
+        XCTAssertThrowsError(try PixImage.decode(Data(zero), id: 0x8F35)) { XCTAssertEqual($0 as? PixelError, .header(0x8F35)) }
+        // IndexedImage refuses a size whose rowBytes × height overflows, and a buffer of the wrong length.
+        XCTAssertThrowsError(try IndexedImage(width: Int.max / 2, height: 4, rowBytes: Int.max / 2, pixels: []))
+        XCTAssertThrowsError(try IndexedImage(width: 3, height: 2, rowBytes: 4, pixels: [0, 0, 0, 0, 0, 0, 0]))
+        XCTAssertThrowsError(try IndexedImage(width: 5, height: 1, rowBytes: 4, pixels: [0, 0, 0, 0]))
         XCTAssertThrowsError(try PixImage(number: 0x40, file: file)) { XCTAssertEqual($0 as? PixelError, .absent(0x8F40)) }
     }
 

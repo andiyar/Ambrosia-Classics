@@ -69,8 +69,37 @@ public struct StoredPicture: Equatable, Sendable {
             return .stored(try decode(picture))
         } catch {
             if bitsOpcode(picture) == 0x8200 { return .refused("0x8200 QuickTime") }
-            return .refused(String(describing: error))
+            return .refused(refusalReason(error))
         }
+    }
+
+    /// A stable text for a refusal, spelled here case by case (not `String(describing:)`).
+    static func refusalReason(_ error: Error) -> String {
+        switch error {
+        case let e as PICT.DecodeError:
+            switch e {
+            case .notV2: return "notV2"
+            case .truncated: return "truncated"
+            case .unsupportedOpcode(let op): return "unsupportedOpcode 0x" + hex4(op)
+            case .badPackBits: return "badPackBits"
+            case .unsupportedDepth(let d): return "unsupportedDepth \(d)"
+            case .bandOutOfFrame: return "bandOutOfFrame"
+            case .bandCoverage: return "bandCoverage"
+            case .unsupportedBand(let s): return "unsupportedBand \(s)"
+            case .unsupportedPixels(let s): return "unsupportedPixels \(s)"
+            }
+        case let e as PICT.MaskDecodeError:
+            if case .unsupportedRegion(let s) = e { return "unsupportedRegion \(s)" }
+            return "maskDecode"
+        case is PixMapDecodeError: return "pixMapDecode"
+        case is PixelError: return "pixelBuffer"
+        default: return "unrecognisedError"
+        }
+    }
+
+    private static func hex4(_ v: Int) -> String {
+        let s = String(v, radix: 16, uppercase: true)
+        return String(repeating: "0", count: max(0, 4 - s.count)) + s
     }
 
     /// The first bits-carrying opcode of a version-2 picture (0x0098…0x009B or 0x8200 CompressedQuickTime),

@@ -6,6 +6,9 @@ public enum LZError: Error, Equatable, Sendable {
     case truncated
     /// A match's distance reaches before the first output byte (the stray segment 0x8EFF does this — note 5).
     case matchBeforeStart
+    /// The output would grow past the caller's limit (`decode(_:limit:)`) — a decompression bomb is refused
+    /// before the bytes are appended (Invariant 5: no unchecked allocation).
+    case outputLimit(Int)
 }
 
 /// The Delver LZ codec, `FUN_1007573c @ 1007573c` (docs/cythera/data-format.md §2, HIGH; oracle
@@ -38,25 +41,38 @@ public enum LZ {
         return try decode(src, census: &census)
     }
 
-    static func decode(_ src: Data, census: inout OpCensus) throws -> (bytes: [UInt8], consumed: Int) {
+    /// As `decode(_:)`, but throws `outputLimit(limit)` as soon as the output would exceed `limit` bytes —
+    /// for callers that know the decoded size (tile sheets, portraits, sky, pix; C5).
+    public static func decode(_ src: Data, limit: Int) throws -> (bytes: [UInt8], consumed: Int) {
+        var census = OpCensus()
+        return try decode(src, census: &census, limit: limit)
+    }
+
+    static func decode(_ src: Data, census: inout OpCensus, limit: Int = .max) throws
+        -> (bytes: [UInt8], consumed: Int) {
         try src.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
             let input = raw.bindMemory(to: UInt8.self)
             let count = input.count
             var out: [UInt8] = []
             var i = 0
 
+            func room(_ n: Int) throws {
+                guard n <= limit - out.count else { throw LZError.outputLimit(limit) }
+            }
             func byte(_ at: Int) throws -> Int {
                 guard at < count else { throw LZError.truncated }
                 return Int(input[at])
             }
             func literals(_ n: Int) throws {
                 guard n <= count - i else { throw LZError.truncated }
+                try room(n)
                 out.append(contentsOf: input[i..<(i + n)])
                 i += n
             }
             func match(length: Int, distance: Int) throws {
                 let start = out.count - distance
                 guard start >= 0 else { throw LZError.matchBeforeStart }
+                try room(length)
                 for k in 0..<length { out.append(out[start + k]) }
             }
 
@@ -84,11 +100,13 @@ public enum LZ {
                     census.e += 1
                     let v = try byte(i + 1)
                     i += 2
+                    try room((b & 0xF) + 3)
                     out.append(contentsOf: repeatElement(UInt8(v), count: (b & 0xF) + 3))
                 } else if b & 0x08 == 0 {
                     census.f += 1
                     let n = try byte(i + 1), v = try byte(i + 2)
                     i += 3
+                    try room(n + 3)
                     out.append(contentsOf: repeatElement(UInt8(v), count: n + 3))
                 } else {
                     census.end += 1

@@ -22,8 +22,7 @@ public struct DisplacementFilter: Equatable, Sendable {
         try b.require(0, 0x24, "header")
         let body = b.count - 0x24
         guard body > 0, body % 0x400 == 0 else {
-            throw ArtRecordError.length("FILT", expected: 0x24 + max(1, (body + 0x3FF) / 0x400) * 0x400,
-                                        actual: b.count)
+            throw ArtRecordError.shape("FILT length \(b.count) is not 0x24 + N × 0x400 with N ≥ 1")
         }
         holdCount = b.bytes[0]
         counter = b.bytes[1]

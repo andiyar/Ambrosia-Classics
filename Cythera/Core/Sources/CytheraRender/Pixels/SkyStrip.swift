@@ -14,9 +14,13 @@ public struct SkyStrip: Equatable, Sendable {
     public init(number n: Int, file: SegmentFile) throws {
         guard (0...0xFF).contains(n) else { throw PixelError.number("sky", n) }
         let id = UInt16(0x8400 + n)
-        let pixels = try PixelSegments.unLZ(try PixelSegments.segment(id, in: file), id: id,
-                                            expected: Self.width * Self.height)
         number = n
-        image = try IndexedImage(width: Self.width, height: Self.height, rowBytes: Self.width, pixels: pixels)
+        image = try Self.decode(try PixelSegments.segment(id, in: file), id: id)
+    }
+
+    /// One sky segment: exactly 9,216 LZ bytes consuming the whole segment.
+    public static func decode(_ data: Data, id: UInt16) throws -> IndexedImage {
+        let pixels = try PixelSegments.unLZ(data, id: id, expected: width * height)
+        return try IndexedImage(width: width, height: height, rowBytes: width, pixels: pixels)
     }
 }

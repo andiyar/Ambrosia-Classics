@@ -131,5 +131,15 @@ final class LZTests: XCTestCase {
         XCTAssertThrowsError(try LZ.decode(Data([0x80, 0x00, 0x00, 0xF8]))) { XCTAssertEqual($0 as? LZError, .matchBeforeStart) }
         // A literal run that claims more bytes than remain.
         XCTAssertThrowsError(try LZ.decode(Data([0xCF, 0x01]))) { XCTAssertEqual($0 as? LZError, .truncated) }
+        // The output limit (C5 review): the exact size passes, one byte less is refused before appending, and
+        // an RLE bomb (255 × `F7 FF 00` = 258 B each) stops at the limit instead of growing.
+        XCTAssertEqual(try LZ.decode(src, limit: 4_096).bytes, try LZ.decode(src).bytes)
+        XCTAssertThrowsError(try LZ.decode(src, limit: 4_095)) { XCTAssertEqual($0 as? LZError, .outputLimit(4_095)) }
+        let bomb = Data(Array(repeating: [0xF7, 0xFF, 0x00], count: 255).joined() + [0xF8])
+        XCTAssertEqual(try LZ.decode(bomb).bytes.count, 255 * 258)
+        XCTAssertThrowsError(try LZ.decode(bomb, limit: 1_000)) { XCTAssertEqual($0 as? LZError, .outputLimit(1_000)) }
+        XCTAssertThrowsError(try LZ.decode(Data([0xE0, 0x41, 0xF8]), limit: 2)) {
+            XCTAssertEqual($0 as? LZError, .outputLimit(2))
+        }
     }
 }

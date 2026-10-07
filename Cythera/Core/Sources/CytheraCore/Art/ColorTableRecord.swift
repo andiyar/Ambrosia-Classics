@@ -3,11 +3,11 @@ import Foundation
 /// Why an art resource record did not parse (plan Invariants 4–5: malformed input throws, never traps; a shape
 /// the census has not shown is refused by name).
 public enum ArtRecordError: Error, Equatable, Sendable {
-    /// The resource ended before a field the layout requires (`what` names the resource type and field).
+    /// The resource ended before a field the layout requires; the string names the resource type and field.
     case truncated(String)
     /// The resource's length is not the one its own count fields imply.
     case length(String, expected: Int, actual: Int)
-    /// A count or size field outside the measured corpus (`what` names it).
+    /// A count or size field outside the measured corpus; the string names the resource type, field and value.
     case shape(String)
 }
 

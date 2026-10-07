@@ -22,7 +22,7 @@ public struct PixImage: Equatable, Sendable {
     /// One pix segment: the header, then exactly `((w+3)&~3) × h` LZ bytes consuming the rest of the segment.
     public static func decode(_ data: Data, id: UInt16) throws -> IndexedImage {
         let b = [UInt8](data.prefix(4))
-        guard b.count == 4 else { throw PixelError.lz(id: id, .truncated) }
+        guard b.count == 4 else { throw PixelError.shortHeader(id) }
         let w = Int(b[0]) << 8 | Int(b[1]), h = Int(b[2]) << 8 | Int(b[3])
         guard w > 0, h > 0 else { throw PixelError.header(id) }
         let rowBytes = (w + 3) & ~3

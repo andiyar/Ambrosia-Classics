@@ -40,6 +40,16 @@ final class PaletteAndMasksTests: XCTestCase {
         let app = try ColorTableRecord(data: appClut.data)
         let differ = (0..<256).filter { app.entries[$0] != data.entries[$0] }
         XCTAssertEqual(differ, [0, 16, 252, 253])
+        XCTAssertEqual(app.entries.filter { !(replicated($0.r) && replicated($0.g) && replicated($0.b)) }.count, 250)
+        // Refused shapes: ctSize −1 and 256 (> the 8-bit range), and a table with one trailing byte.
+        for ctSize: [UInt8] in [[0xFF, 0xFF], [0x01, 0x00]] {
+            XCTAssertThrowsError(try ColorTableRecord(data: Data([0, 0, 0, 0, 0, 0] + ctSize))) {
+                guard case .shape = $0 as? ArtRecordError else { return XCTFail("\($0)") }
+            }
+        }
+        XCTAssertThrowsError(try ColorTableRecord(data: dataClut.data + [0])) {
+            XCTAssertEqual($0 as? ArtRecordError, .length("clut", expected: 2_056, actual: 2_057))
+        }
 
         let palette = try Palette.clut256(r)
         XCTAssertEqual(palette.origin, .dataFile)
@@ -60,6 +70,9 @@ final class PaletteAndMasksTests: XCTestCase {
         XCTAssertEqual([pltt.entries[0].r, pltt.entries[0].g, pltt.entries[0].b], [0xFFFF, 0xFFFF, 0xFFFF])
         XCTAssertEqual([pltt.entries[1].r, pltt.entries[1].g, pltt.entries[1].b], [0xC6C6, 0xC6C6, 0xC6C6])
         XCTAssertNil(r.data.resource(type: "pltt", id: 130))
+        XCTAssertThrowsError(try PaletteResource(data: Data(count: 16))) {
+            XCTAssertEqual($0 as? ArtRecordError, .shape("pltt pmEntries 0"))
+        }
         assertEveryPrefixThrows(try XCTUnwrap(r.app.resource(type: "pltt", id: 130)).data,
                                 { _ = try PaletteResource(data: $0) }, "pltt")
     }
@@ -80,6 +93,7 @@ final class PaletteAndMasksTests: XCTestCase {
         }
         assertEveryPrefixThrows(lites[6].data, { _ = try LightMask(data: $0) }, "Lite 140")
         XCTAssertThrowsError(try LightMask(data: lites[6].data + [0]))
+        XCTAssertThrowsError(try LightMask(data: Data([0]))) { XCTAssertEqual($0 as? ArtRecordError, .shape("Lite size 0")) }
     }
 
     func testDisplacementFilters() throws {
@@ -108,9 +122,16 @@ final class PaletteAndMasksTests: XCTestCase {
         XCTAssertEqual(f.frames[0][0], -1)
         XCTAssertThrowsError(try DisplacementFilter(data: Data(synthetic.prefix(0x24))), "no frame")
         XCTAssertThrowsError(try DisplacementFilter(data: Data(synthetic + [0])), "partial frame")
-        let small = Data(synthetic)
-        for n in stride(from: 0, to: small.count, by: 7) {
-            XCTAssertThrowsError(try DisplacementFilter(data: Data(small.prefix(n))), "prefix \(n)")
+        // Hostile (Invariant 5) over EVERY prefix of FILT 128: the layout has no frame count (the reader runs to
+        // the end of the handle), so a prefix ending on a frame boundary is itself a well-formed filter of k
+        // frames; every other prefix throws.
+        let real = filts[0].data
+        for n in 0..<real.count {
+            if n > 0x24, (n - 0x24) % 0x400 == 0 {
+                XCTAssertEqual(try DisplacementFilter(data: real.prefix(n)).frames.count, (n - 0x24) / 0x400)
+            } else {
+                XCTAssertThrowsError(try DisplacementFilter(data: real.prefix(n)), "prefix \(n)")
+            }
         }
     }
 }
