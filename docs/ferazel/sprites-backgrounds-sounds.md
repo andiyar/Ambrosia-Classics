@@ -279,3 +279,17 @@ Read against `ghidra/Ferazel_pef.decompiled.c` (Ferazel 1.0 PEF) by the C5 revie
 3. **PxBack/PxMid with header `0x26cc` set use the `0x285e` level+base CLUT** (`*_DAT_1009ff8c`;
    `.LoadPxBackTileset` l. 1094–1096, `.LoadPxMidTileset` l. 1128–1130), otherwise the level CLUT. "Sprite CLUT"
    for this flag (§3, bosses-3 "level+sprite") is loose wording for the level+base CLUT.
+4. **`.RedrawScrollGrid` is strip-incremental, and draws into port `0004`** (R1, 2026-10-07; both Opus review legs
+   re-read it). `.SetScrollLocation @10012848` redraws only the newly exposed row/column strips (l. 9506–9539, old h for
+   the row strip, old v for the column strip); the whole 21×14 window is drawn only by `.RedrawEntireScrollGrid
+   @10013fd0` (level start, l. ~3265, 3914, 6259). Every blit is culled against `fe78` (x ≤ h+0x260, y ≤ v+0x180,
+   fixed 0x20 cell), so 260 cells draw at scroll (0, 10). Tiles go into port `0004`; `.WrapRectBlitX` (raw
+   10013f90) copies them to `000c`. Mask port `0008`: no per-frame fill; each redrawn cell writes 0xFF (100246b4,
+   10024738) and 0x00 into `0004` (10023260, 10023378; constant 0x100a1690 = 0.0); the FG boolean stamp writes 0x00
+   (100230bc, 10023148).
+5. **Blend cells use the overwritten FG kind table** — `.LookupFGTileKind @10041fe8` reads the table
+   `.LoadTileDefinitions @10041dcc` rewrites for tiles 80..95 (kind = tile): level 1 has **1,560** blend-face cells,
+   not the 1,335 the planner counted with the raw table (plan Research note 8).
+6. **Overlay cells in `.RedrawScrollGrid` draw the pattern only for o2 == 95 and never water-tint it.** §3.3's
+   "o2 ≥ 95 → pattern, tinted in water" describes `.PlainWrapFGOverlayTile`, a different call site. Equivalent on the
+   shipped data (max o2 = 95 on all 24 levels).
