@@ -85,6 +85,9 @@ extension GameState {
         }
         if st.stateCyclicMotion { cyclicMotion(i) }                            // 1001538c..100153a0
         if u.constrainInGameArea { constrainInGameArea(i) }                    // 100153a4..100153b8
+        // +0x11c/+0x120 = the caller's out-point (r1+0x40/+0x44). With no active player `FUN_10005d40` copies its own
+        // never-written distance slots (r1+0x3c / r1+0x40 of its frame, `10005e68..10005e84` with index −1) — i.e.
+        // uninitialised stack in the original. Never read while +0x118 = −1 (gameplay-leftovers §7.3); (0, 0) here.
         world.entities[i].targetX = near.x                                     // 100153bc..100153c8
         world.entities[i].targetY = near.y                                     // 100153cc..100153d0
         world.entities[i].trackedPlayer = near.player                          // 100153d4..100153d8

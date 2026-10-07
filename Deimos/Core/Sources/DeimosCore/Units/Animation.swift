@@ -31,6 +31,9 @@ extension GameState {
         let fpd = st.stateFramesPerDirection
         let base = dir &* fpd                                                  // 10015a00
         let last = base &+ (fpd &- 1)                                          // 100159d8, 10015a04
+        // FramesPerDirection 0 makes last = base − 1: `FUN_10046580(base, base − 1)` divides by a zero span — undefined
+        // `divw` in the original, a trap here (MSLRandom.range's precondition). Unreachable: every shipped random-frame
+        // state has FPD ≥ 1 (11 states: plsh FPD 8, spla/spsm/spme/spti FPD 5).
         if st.stateContinuousFrameRandomisation {                              // 100159d0, 10015a08
             world.entities[i].object.frame = rng.range(base, last)             // 10015a0c..10015a14
         } else if !world.entities[i].animationStopped {                        // 10015a1c..10015a24

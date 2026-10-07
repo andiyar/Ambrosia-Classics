@@ -111,6 +111,41 @@ final class MotionTests: XCTestCase {
         XCTAssertFalse(keep(100, -128.5))
         XCTAssertTrue(keep(100, 618))                                // y − hh = 608 ≤ 480 + 128
         XCTAssertFalse(keep(100, 618.5))
+        // Constrain (FUN_10016da0, W 416, H 480): each hit negates v, accel and desired on that axis only.
+        func constrain(_ x: Float, _ y: Float) -> Entity {
+            var e = s.world.entities[i]
+            e.object.x = x; e.object.y = y
+            e.object.scaledWidth = 30; e.object.halfWidth = 15; e.object.halfHeight = 10
+            e.object.vx = 2; e.object.vy = 3; e.accelX = 0.5; e.accelY = 0.25; e.desiredVX = 4; e.desiredVY = 5
+            s.world.entities[i] = e
+            s.constrainInGameArea(i)
+            return s.world.entities[i]
+        }
+        func flippedX(_ e: Entity) -> Bool {
+            e.object.vx == -2 && e.accelX == -0.5 && e.desiredVX == -4 && e.object.vy == 3 && e.accelY == 0.25
+                && e.desiredVY == 5
+        }
+        func flippedY(_ e: Entity) -> Bool {
+            e.object.vy == -3 && e.accelY == -0.25 && e.desiredVY == -5 && e.object.vx == 2 && e.accelX == 0.5
+                && e.desiredVX == 4
+        }
+        // Right edge: x + scaled width (+0x24 = 30, not the half width 15) > W + 32 = 448 → x = 416 − 30 + 32.
+        var e = constrain(419, 200)                                  // 449 > 448 (with hw: 434, no hit)
+        XCTAssertEqual(e.object.x, 418); XCTAssertTrue(flippedX(e))
+        e = constrain(418, 200)                                      // 448: not >
+        XCTAssertEqual(e.object.x, 418); XCTAssertEqual(e.object.vx, 2)
+        // Left edge: the centre against −32.0.
+        e = constrain(-32.5, 200)
+        XCTAssertEqual(e.object.x, -32); XCTAssertTrue(flippedX(e))
+        e = constrain(-32, 200)
+        XCTAssertEqual(e.object.x, -32); XCTAssertEqual(e.object.vx, 2)
+        // Top: y − hh < 0.0 → y = hh. Bottom: y + hh > H → y = H − hh.
+        e = constrain(100, 9.5)
+        XCTAssertEqual(e.object.y, 10); XCTAssertTrue(flippedY(e))
+        e = constrain(100, 470.5)
+        XCTAssertEqual(e.object.y, 470); XCTAssertTrue(flippedY(e))
+        e = constrain(100, 470)
+        XCTAssertEqual(e.object.y, 470); XCTAssertEqual(e.object.vy, 3)
     }
 
     func testShurikenHoldsSixDown() throws {
@@ -134,6 +169,66 @@ final class MotionTests: XCTestCase {
             XCTAssertEqual(e.state, 0)
         }
         XCTAssertEqual(s.rng.draws, before)                          // no draws in a plain move state
+        // FUN_10017a10: both clamps, the unclamped step, equality, stationary zeroing.
+        func ramp(_ v: (Float, Float), _ a: (Float, Float), _ d: (Float, Float)) -> (Float, Float) {
+            var e = s.world.entities[i]
+            e.object.vx = v.0; e.object.vy = v.1; e.accelX = a.0; e.accelY = a.1; e.desiredVX = d.0; e.desiredVY = d.1
+            s.world.entities[i] = e
+            s.rampToDesired(i)
+            return (s.world.entities[i].object.vx, s.world.entities[i].object.vy)
+        }
+        var r = ramp((1, 3), (0.75, -0.75), (1.5, 2.5))              // 1.75 > 1.5 → 1.5; 2.25 < 2.5 → 2.5
+        XCTAssertEqual(r.0, 1.5); XCTAssertEqual(r.1, 2.5)
+        r = ramp((1, 3), (0.25, -0.25), (1.5, 2.5))                  // inside: v += accel
+        XCTAssertEqual(r.0, 1.25); XCTAssertEqual(r.1, 2.75)
+        r = ramp((1.5, 2.5), (0.25, -0.25), (1.5, 2.5))              // equal: unchanged
+        XCTAssertEqual(r.0, 1.5); XCTAssertEqual(r.1, 2.5)
+        s.world.entities[i].stationary = true
+        _ = ramp((1, 3), (0.25, -0.25), (1.5, 2.5))
+        let z = s.world.entities[i]
+        XCTAssertEqual([z.object.vx, z.object.vy, z.desiredVX, z.desiredVY, z.accelX, z.accelY], [0, 0, 0, 0, 0, 0])
+        s.world.entities[i].stationary = false
+        // OrbitOwner state: only vx steps toward MaxSpeed by Delta (the orbit rate); vy, accel, desired untouched.
+        let ob = try entity(&s, "pbpp", "Expand, Brighten, Orbit Owner")
+        let ost = try XCTUnwrap(s.currentState(ob))
+        let m = ost.stateMaxSpeed, dd = ost.stateDelta
+        XCTAssertTrue(dd > 0 && m > dd, "pbpp orbit M \(m) D \(dd)")
+        func orbitRamp(_ vx: Float) -> Float {
+            s.world.entities[ob].object.vx = vx; s.world.entities[ob].object.vy = 9
+            s.world.entities[ob].accelX = 0.5; s.world.entities[ob].desiredVX = -7
+            s.rampToDesired(ob)
+            XCTAssertEqual(s.world.entities[ob].object.vy, 9)
+            XCTAssertEqual(s.world.entities[ob].accelX, 0.5); XCTAssertEqual(s.world.entities[ob].desiredVX, -7)
+            return s.world.entities[ob].object.vx
+        }
+        XCTAssertEqual(orbitRamp(0), 0 + dd)
+        XCTAssertEqual(orbitRamp(m - dd / 2), m)                     // clamped at M from below
+        XCTAssertEqual(orbitRamp(m + 2 * dd), (m + 2 * dd) - dd)
+        XCTAssertEqual(orbitRamp(m + dd / 2), m)                     // clamped at M from above
+        XCTAssertEqual(orbitRamp(m), m)
+        // No active player: +0x118 = −1; DeleteOnNoActivePlayers → del, Destruct… → destroy (no ramp after).
+        let base = try TestAssets.loaded.get()
+        for (del, des) in [(true, false), (false, true)] {
+            let a = try patched(base, "shur", "Move South, Wait Range, RULE") {
+                $0.stateDeleteOnNoActivePlayers = del; $0.stateDestructOnNoActivePlayers = des
+            }
+            var t = try state(a, active: false)
+            let k = try entity(&t, "shur", "Move South, Wait Range, RULE", x: 208, y: 100)
+            t.world.entities[k].trackedPlayer = 0
+            t.world.entities[k].object.vy = 6; t.world.entities[k].accelY = 1; t.world.entities[k].desiredVY = 9
+            XCTAssertEqual(t.updateMotion(k, now: 1), StateEntryOutcome(delete: del, destroy: des))
+            XCTAssertEqual(t.world.entities[k].trackedPlayer, -1)
+            XCTAssertEqual(t.world.entities[k].object.vy, 6)         // returned before the ramp
+        }
+        // Without those keys: fall through — tracked −1, target (0, 0), the ramp runs.
+        var t = try state(active: false)
+        let k = try entity(&t, "shur", "Move South, Wait Range, RULE", x: 208, y: 100)
+        t.world.entities[k].targetX = 5; t.world.entities[k].targetY = 5; t.world.entities[k].trackedPlayer = 0
+        t.world.entities[k].object.vy = 6; t.world.entities[k].accelY = 1; t.world.entities[k].desiredVY = 9
+        XCTAssertEqual(t.updateMotion(k, now: 1), StateEntryOutcome())
+        XCTAssertEqual(t.world.entities[k].trackedPlayer, -1)
+        XCTAssertEqual(t.world.entities[k].targetX, 0); XCTAssertEqual(t.world.entities[k].targetY, 0)
+        XCTAssertEqual(t.world.entities[k].object.vy, 7)
     }
 
     func testRangeTriggerOnUpdate50() throws {
@@ -159,6 +254,23 @@ final class MotionTests: XCTestCase {
         XCTAssertEqual(e.object.vx, -0.25)
         XCTAssertEqual(e.object.vy, 6)
         XCTAssertEqual(e.stateStart, 50)
+        // Strict compare (fcmpo; bge): dist == OnRange 140 does not trigger, 139 does.
+        for (y, fires) in [(Float(190), false), (Float(191), true)] {
+            var t = try state(px: 208, py: 330)
+            let k = try entity(&t, "shur", "Move South, Wait Range, RULE", x: 208, y: y)
+            XCTAssertEqual(t.nearestActivePlayer(to: k).distance, fires ? 139 : 140)
+            t.updateMotion(k, now: 1)
+            XCTAssertEqual(t.world.entities[k].state == wait, fires, "y \(y)")
+        }
+        // Nearest player: ties go to P1 (strictly smaller replaces).
+        var t = try state(px: 100, py: 100)
+        t.players[1].lifeState = 4; t.players[1].index = 1
+        t.players[1].object.x = 300; t.players[1].object.y = 100
+        let k = try entity(&t, "shur", "Move South, Wait Range, RULE", x: 200, y: 100)
+        XCTAssertEqual(t.nearestActivePlayer(to: k).player, 0)
+        t.players[1].object.x = 299
+        let n = t.nearestActivePlayer(to: k)
+        XCTAssertEqual(n.player, 1); XCTAssertEqual(n.x, 299); XCTAssertEqual(n.distance, 99)
     }
 
     func testHuntTieGoesNegative() throws {
@@ -325,6 +437,36 @@ final class MotionTests: XCTestCase {
         XCTAssertFalse(u.rotationGate(k, now: 14))                   // +0xc4 1 → 0, then the turn: no target
         XCTAssertFalse(u.world.entities[k].rotating)
         XCTAssertEqual(u.rng.draws, 0)
+        // PauseAnyRotationWhileSpawning holds the turn while its active set is mid-volley (0 < remaining < volley).
+        let ap = try patched(base, "pllt", "Track Player & Attack") {
+            var set = SpawnSet()
+            set.stateSpawnSetSpawn = FourCC("shur")!
+            set.stateSpawnSetPauseAnyRotationWhileSpawning = true
+            $0.spawnSets.append(set)
+        }
+        var p = try state(ap, px: 300, py: 100)
+        let q = try entity(&p, "pllt", "Track Player & Attack", x: 100, y: 100)
+        p.world.entities[q].trackedPlayer = 0
+        p.world.entities[q].targetX = 300; p.world.entities[q].targetY = 100
+        p.world.entities[q].lastFrameStep = -1; p.world.entities[q].object.frame = 0
+        let sq = Int(p.world.entities[q].state), last = p.world.entities[q].spawnRecords[sq].count - 1
+        func record(active: Bool, remaining: Int32) {
+            p.world.entities[q].spawnRecords[sq][last].active = active
+            p.world.entities[q].spawnRecords[sq][last].volley = 3
+            p.world.entities[q].spawnRecords[sq][last].remaining = remaining
+        }
+        record(active: true, remaining: 1)
+        XCTAssertFalse(p.rotationGate(q, now: 0))
+        XCTAssertEqual(p.world.entities[q].object.frame, 0)          // held
+        record(active: true, remaining: 3)                           // volley not started: not held
+        p.rotationGate(q, now: 0)
+        XCTAssertEqual(p.world.entities[q].object.frame, 1)
+        record(active: true, remaining: 0)                           // volley done: not held
+        p.rotationGate(q, now: 1)
+        XCTAssertEqual(p.world.entities[q].object.frame, 2)
+        record(active: false, remaining: 1)                          // inactive: not held
+        p.rotationGate(q, now: 2)
+        XCTAssertEqual(p.world.entities[q].object.frame, 3)
     }
 
     func testLockLinkOrbit() throws {
@@ -386,10 +528,35 @@ final class MotionTests: XCTestCase {
         s.world.entities[o].deleted = false
         let lockState = s.assets.definitions.units[try unitIndex(s.assets, "pllt")].states[try stateIndex(s.assets, "pllt", "Wait")]
         s.world.entities[c].ownerOffsetX = 3; s.world.entities[c].ownerOffsetY = 4
-        s.world.entities[c].ownerLastX = 0; s.world.entities[c].ownerLastY = 0
+        s.world.entities[c].ownerLastX = 7; s.world.entities[c].ownerLastY = 9
+        s.world.entities[c].object.vx = 10; s.world.entities[c].orbitRadius = 20; s.world.entities[c].orbitAngle = 50
+        XCTAssertTrue(try XCTUnwrap(s.currentState(c)).stateOrbitOwner)    // c's own state orbits — not the one passed
         s.followOwner(c, state: lockState)
         XCTAssertEqual(s.world.entities[c].object.x, 103); XCTAssertEqual(s.world.entities[c].object.y, 104)
-        XCTAssertEqual(s.world.entities[c].ownerLastX, 0)            // no link step
+        XCTAssertEqual(s.world.entities[c].ownerLastX, 7)            // no link step
+        XCTAssertEqual(s.world.entities[c].ownerLastY, 9)
+        XCTAssertEqual(s.world.entities[c].orbitAngle, 50)           // no orbit step
+        XCTAssertEqual(s.world.entities[c].ownerOffsetX, 3)          // orbit would re-derive the offset
+        // All three keys: lock, then link, then orbit (the order of 1003401c..10034054).
+        var all = UnitState()
+        all.stateLockToOwnerLoc = true; all.stateLinkToOwnerLoc = true; all.stateOrbitOwner = true
+        s.world.entities[c].object.x = 140; s.world.entities[c].object.y = 60
+        // Lock + link only: lock first (owner + offset = (103, 104)), then link adds −(last − now) = (93, 91).
+        var two = UnitState()
+        two.stateLockToOwnerLoc = true; two.stateLinkToOwnerLoc = true
+        var t = s
+        t.followOwner(c, state: two)
+        XCTAssertEqual(t.world.entities[c].object.x, 196); XCTAssertEqual(t.world.entities[c].object.y, 195)
+        // All three: the result is lock → link → orbit (orbit after link: its position is not shifted by the link).
+        var manual = s
+        manual.lockToOwner(c); manual.linkToOwner(c); manual.orbitOwner(c)
+        var linkLast = s
+        linkLast.lockToOwner(c); linkLast.orbitOwner(c); linkLast.linkToOwner(c)
+        s.followOwner(c, state: all)
+        XCTAssertEqual(s.world.entities[c], manual.world.entities[c])
+        XCTAssertNotEqual(s.world.entities[c], linkLast.world.entities[c])
+        XCTAssertEqual(s.world.entities[c].orbitAngle, 60)
+        s.world.entities[c].object.vx = 0; s.world.entities[c].ownerOffsetX = 3; s.world.entities[c].ownerOffsetY = 4
         // Owner copies (FUN_10036930): visibility, scale (+0x34 and the triple), hit glow, each by its flag.
         var st = UnitState()
         st.useOwnersVisibility = true; st.visuallyReflectOwnerHits = true
