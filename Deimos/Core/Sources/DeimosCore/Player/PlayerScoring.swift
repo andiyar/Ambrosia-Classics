@@ -70,7 +70,9 @@ extension GameState {
     /// → 35…39 = `mux2 mux3 mux4 mux5 muxx`; else `none` → nothing); the previous indicator removed by serial
     /// (`FUN_10034de0(+0xb8)`); a request at the ship owned by the player; `+0xb8` = the out-parameter's serial.
     /// When the request creates nothing the original stores an uninitialised stack word (`1002a134` reads
-    /// `r1+0x3c`, which `FUN_10033220` writes only on success); here −1.
+    /// `r1+0x3c`, which `FUN_10033220` writes only on success); here −1 — a disclosed divergence (the stack word is
+    /// unknowable; −1 matches no serial, so the next `FUN_10034de0` removes nothing, as a stale serial would not either
+    /// unless it happened to equal a live one).
     mutating func showMultiplierIndicator(_ i: Int) {
         guard players[i].lifeState == 4 else { return }                      // 10029ff4..10029ffc
         let perm: Int

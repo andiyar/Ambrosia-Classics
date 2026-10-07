@@ -332,7 +332,7 @@ public struct Player: Sendable {
     /// returns at once when not in game. Else `+0xd0` = 0; handler reset `FUN_1003af90(h, 1)`; `+0xc5` = 0;
     /// `+0xc0` = levelRef; ship sprite `FUN_10029f10`; size `FUN_10012940`; start position, velocity 0,
     /// crosshair adjust 0, overload cleared `FUN_10026b10`; **state 2 at now** (`10026a20`); glow off
-    /// `FUN_10012c00`; money 0; money counter reset (`FUN_10027630`, not modelled); shield
+    /// `FUN_10012c00`; money 0; money counter reset (`FUN_10027630` — modelled by `GameState.playerLevelStart` on `TallyState.coin`); shield
     /// `FUN_10027400(p, 1)`; overload cleared; appear fade = flli 163/164/165 (`10026a6c..10026a98`); then
     /// exactly one `FUN_10046580(400, 2000)` (`10026a9c`), whose result only P1 keeps: `+0x234` = now + R,
     /// `+0x238` = 0 (`10026ab4 extsb.; bne`; the registration reads `FUN_1007ec40…` are not modelled).

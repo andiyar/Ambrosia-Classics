@@ -128,7 +128,8 @@ extension GameState {
     }
 
     /// One linear decay step toward 0 (`100292a0..100292f4`): > 0 → −step, < 0 → 0.0; then (re-read) < 0 →
-    /// +step, > 0 → 0.0.
+    /// +step, > 0 → 0.0. The first snap is kept as the listing has it (`100292c4..100292c8`) though it is masked:
+    /// when v − step < 0, the second block gives (v − step) + step ∈ [0, v] and snaps it to 0.0 anyway.
     static func decay(_ v: inout Float, _ step: Float) {
         if v > 0 {
             v = v - step

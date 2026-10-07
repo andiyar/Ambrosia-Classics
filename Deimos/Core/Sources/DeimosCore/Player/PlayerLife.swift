@@ -132,6 +132,8 @@ extension GameState {
     /// loss > 0.0 → `+0xd0`; shield < 0.0 → `killPlayer`, return; hit glow (colour, speed, not forced); damage > 0.0
     /// → the spawn-on-hit unit (when `now ≥ lastSpawn + trunc(flli 162)`) and, once per life, the shield-warning
     /// unit when shield ≤ shieldWarningPercentage (`+0xd1` set even when the unit is `none`).
+    /// `damage` must be the Float32 the caller holds (the original's f1 is single precision: `lfs f1,0x274(r31)` at
+    /// `100342c0` and `fmuls` here) — never a Double narrowed after the multiply.
     public mutating func playerHit(_ i: Int, damage: Float) {
         let now = flags.gameTime
         guard players[i].lifeState == 4 else { return }                      // 1002712c..10027134
@@ -166,6 +168,8 @@ extension GameState {
     public mutating func killPlayer(_ i: Int) {
         let now = flags.gameTime
         let idx = players[i].index
+        // The owner destruction runs first; while `FUN_10036120` is C11b's stub (no spawns, no draws) its order
+        // against the death spawn is not observable — it becomes so when C11b fills the destroyed path.
         destroyEntitiesOwned(byPlayer: idx)                                  // 10027e70..10027e74 FUN_10034b90
         spawnAtPlayer(i, players[i].definition.deathSpawn, owned: true)      // 10027e7c..10027f18
         if !players[i].inGame { players[i].shield = 0 }                      // 10027f20..10027f30
@@ -178,6 +182,9 @@ extension GameState {
             assets.objects.indices.contains($0) ? assets.objects[$0] : .none
         }
         var m = players[i].money                                             // 10027fa0..10027fc0
+        // One request struct reused for every coin (only +0x00 rewritten, `10028034` etc.). `FUN_10033220` never
+        // writes into its request (r24: loads only, `1003327c..100335b0`; passed read-only to `FUN_100377f0` and
+        // `FUN_10035bf0` → `FUN_10035cd0`, whose r22 accesses are loads), so reusing it is exact.
         var req = SpawnRequest.template                                      // 10027fa8..10028010 (+0x14 = 0xff)
         req.x = players[i].object.x; req.y = players[i].object.y             // 10028014..10028020
         for (k, value) in [Int32(50), 10, 5, 1].enumerated() {               // 10028024..100280f8
@@ -193,6 +200,8 @@ extension GameState {
         players[i].setLifeState(3, now: now)                                 // 10028108..10028110
         if players[i].inGame { players[i].invulnerable = true }              // 10028114..10028124
         if players[i].multiplier != 1 {                                      // 10028128..1002813c
+            // Not observable while `FUN_10036120` is a stub: the owner destruction above already flagged an
+            // owned indicator whose state has canBeDestroyedOnOwnerDestruction.
             removeEntity(serial: players[i].multiplierIndicator)             // 10028140..10028144 FUN_10034de0
             players[i].multiplier = 1                                        // 1002814c..10028150 FUN_10029fd0
         }
@@ -284,10 +293,12 @@ extension GameState {
     /// `FUN_10036120(group, e, 1, 0)`, else `canBeDeletedOnOwnerDeletion` (+0x32a) → `FUN_10036120(group, e, 0, 0)`.
     mutating func destroyEntitiesOwned(byPlayer player: Int8) {
         guard player != -1 else { return }                                   // 10034ba4..10034bb0
+        let groupCount = world.groups.count                                  // 10034bb8..10034bc0 (counted once)
         var g = 0
-        while g < world.groups.count {
+        while g < groupCount {
+            let memberCount = world.groups[g].members.count                  // 10034c08..10034c14 (counted once)
             var k = 0
-            while k < world.groups[g].members.count {
+            while k < memberCount {
                 let e = world.groups[g].members[k]
                 if world.entities[e].ownerPlayer == player, let st = currentState(e) {   // 10034c48..10034c60
                     if st.canBeDestroyedOnOwnerDestruction {                 // 10034c68..10034c84
@@ -304,9 +315,14 @@ extension GameState {
 
     /// `FUN_10034de0 @ 10034de0(serial)` (`10034df8..10034ec4`): the first group member (group list order, member
     /// order) whose serial `+0x9c` matches → `FUN_10036120(group, e, 0, 0)`, then return. No deleted-flag test.
+    /// Both counts are taken once (`10034dfc..10034e04`, `10034e50..10034e58`).
     mutating func removeEntity(serial: Int32) {
-        for g in world.groups.indices {
-            for e in world.groups[g].members where world.entities[e].serial == serial {   // 10034e88..10034e94
+        let groupCount = world.groups.count
+        for g in 0..<groupCount {
+            let memberCount = world.groups[g].members.count
+            for k in 0..<memberCount {
+                let e = world.groups[g].members[k]
+                guard world.entities[e].serial == serial else { continue }   // 10034e88..10034e94
                 removeMemberStub(group: g, entity: e, destroyed: false)      // 10034e98..10034ea4
                 return
             }

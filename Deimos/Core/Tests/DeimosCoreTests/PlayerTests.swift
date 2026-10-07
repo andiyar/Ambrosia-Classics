@@ -83,6 +83,33 @@ final class PlayerTests: XCTestCase {
         XCTAssertEqual(s.players[0].object.x, 208)
         XCTAssertEqual(s.players[0].object.vx, 0)
         XCTAssertEqual(s.players[0].object.frame, 0)                   // no-horizontal table: 0 → 0
+        // Positive decay (`100292a0..100292c8`): 3.0 → 1.4 → 0.0 (1.4 − 1.6 < 0 snaps), likewise on vy.
+        s.players[0].object.vx = 3; s.players[0].object.vy = 0.5
+        tick(&s)
+        XCTAssertEqual(bits(s.players[0].object.vx), bits(Float(3) - 1.6))
+        XCTAssertEqual(s.players[0].object.vy, 0)
+        tick(&s)
+        XCTAssertEqual(s.players[0].object.vx, 0)
+        // The banking tables (player-physics §2.4), every frame 0…6 and an out-of-range 7, under no left/right,
+        // left, right and both (left wins).
+        let none: [Int32] = [0, 0, 1, 2, 0, 4, 5], left: [Int32] = [1, 2, 3, 3, 3, 4, 5]
+        let right: [Int32] = [4, 0, 1, 2, 5, 6, 6]
+        let cases: [(PlayerInput, [Int32])] = [([], none), (.left, left), (.right, right), ([.left, .right], left)]
+        for (input, table) in cases {
+            for f in Int32(0)...7 {
+                s.players[0].object.x = 208; s.players[0].object.vx = 0
+                s.players[0].object.frame = f
+                s.players[0].lastBankingTick = s.flags.gameTime - 2
+                tick(&s, input)
+                XCTAssertEqual(s.players[0].object.frame, f == 7 ? 7 : table[Int(f)], "input \(input.rawValue) frame \(f)")
+            }
+        }
+        // k = trunc(flli 166) = 1: a step only when now > last + 1 — every second tick while held.
+        s.players[0].object.frame = 0
+        s.players[0].lastBankingTick = s.flags.gameTime - 2
+        var frames: [Int32] = []
+        for _ in 0..<6 { tick(&s, .right); frames.append(s.players[0].object.frame) }
+        XCTAssertEqual(frames, [4, 4, 5, 5, 6, 6])
     }
 
     func testClampToArea() throws {
@@ -100,6 +127,15 @@ final class PlayerTests: XCTestCase {
         tick(&s, .right)
         XCTAssertEqual(s.players[0].object.x, Float(416 - hw + 32))
         XCTAssertEqual(s.players[0].object.vx, 0)
+        // Exactly on the edges: strict compares, no clamp — the velocity survives (x − hw == −32, x + hw == W + 32).
+        s.players[0].object.x = Float(hw - 32) + 2; s.players[0].object.vx = -0.4
+        tick(&s, .left)                                                 // vx −2.0, x = hw − 32
+        XCTAssertEqual(s.players[0].object.x, Float(hw - 32))
+        XCTAssertEqual(s.players[0].object.vx, -2)
+        s.players[0].object.x = Float(416 - hw + 32) - 2; s.players[0].object.vx = 0.4
+        tick(&s, .right)                                                // vx 2.0, x = W − hw + 32
+        XCTAssertEqual(s.players[0].object.x, Float(416 - hw + 32))
+        XCTAssertEqual(s.players[0].object.vx, 2)
         // Inside both edges: untouched.
         s.players[0].object.x = 200; s.players[0].object.vx = 0
         tick(&s, .right)
@@ -198,6 +234,42 @@ final class PlayerTests: XCTestCase {
         u.playerHit(0, damage: 1.0)
         XCTAssertEqual(u.players[0].shield, 50); XCTAssertFalse(u.players[0].hitThisLevel)
         XCTAssertEqual(u.players[0].lastHit, 501)
+        // Spawn-on-hit `plsh` every trunc(flli 162) = 10 ticks, `now ≥ last + 10` (the hit at 500 spawned it).
+        XCTAssertEqual(u.players[0].definition.activeSpawnOnHit, FourCC("plsh"))
+        XCTAssertEqual(u.players[0].lastHitSpawn, 500)
+        u.flags.gameTime = 509
+        u.playerHit(0, damage: 1.0)
+        XCTAssertEqual(u.players[0].lastHitSpawn, 500)
+        u.flags.gameTime = 510
+        u.playerHit(0, damage: 1.0)
+        XCTAssertEqual(u.players[0].lastHitSpawn, 510)
+        // The overload warnings (player-physics §6.2), started at T0 inside the update so the first tick is T0 + 1:
+        // flashes + `wewa` at T0 + 9, 17, 24, 30, 36, 42, 48 with the interval 8 → 7, 6, 5, 4, 3 (minimum), 3, 3;
+        // the 8th warning destroys the ship at T0 + 54.
+        var v = try world()
+        toActive(&v)
+        let sound = v.players[0].definition.powerupOverloadSound.id
+        XCTAssertNotEqual(sound, .none)
+        let t0 = v.flags.gameTime
+        v.startOverload(0, now: t0)
+        v.flags.gameTime = t0 + 1
+        var flashes: [Int32] = [], intervals: [Int32] = []
+        while v.players[0].lifeState == 4 {
+            let now = v.flags.gameTime, before = v.cues.sounds.filter { $0.id == sound }.count
+            tick(&v)
+            if v.cues.sounds.filter({ $0.id == sound }).count > before {
+                flashes.append(now - t0); intervals.append(v.players[0].overloadInterval)
+            }
+            if now - t0 > 80 { XCTFail("no overload death by T0 + 80"); break }
+        }
+        XCTAssertEqual(flashes, [9, 17, 24, 30, 36, 42, 48])
+        XCTAssertEqual(intervals, [7, 6, 5, 4, 3, 3, 3])
+        XCTAssertEqual(v.players[0].lifeState, 3)
+        XCTAssertEqual(v.players[0].stateEntered, t0 + 54)
+        XCTAssertTrue(v.players[0].overloadActive)                      // the death tick returns at once…
+        XCTAssertEqual(v.players[0].overloadCount, 8)
+        tick(&v)
+        XCTAssertFalse(v.players[0].overloadActive)                     // …the next tick (not state 4) clears it
     }
 
     func testShieldEighthPercent() throws {

@@ -29,9 +29,11 @@ public struct FilmCursor: Equatable, Sendable {
     /// `FUN_100097a0(film, p, out) @ 100097a0` — player p's next input byte: `cursor > frames` (signed,
     /// `100097bc cmpw; bgtlr`) → no read and no advance (the caller has cleared the inputs, so 0); else the byte
     /// at the cursor (`lbz r0,0x30(r3)`, unpacked into the 7 input bytes) and cursor + 1 (`1000981c..10009824`).
-    /// At `cursor == frames` the byte read is the block's first byte past the recording — zero in every
-    /// shipped film (`Film.trailingBytesAreZero`, census) — so the replay runs one tick past the recording,
-    /// and that read still counts as a read (it returns 0 and advances to frames + 1).
+    /// At `cursor == frames` the original reads the block's first byte past the recording (`bgtlr` is strict),
+    /// not a hard 0. The decoded `Film.Block` keeps only the `frames` recorded bytes, so 0 is returned there; that
+    /// is exact whenever `film.trailingBytesAreZero` (every shipped film — census; de01 included). A film with a
+    /// non-zero trailing byte would need `Film` to expose it. The replay runs one tick past the recording, and that
+    /// read still counts as a read (it advances to frames + 1).
     public mutating func next(player p: Int) -> UInt8 {
         let block = film.players[p]
         let c = cursors[p]
