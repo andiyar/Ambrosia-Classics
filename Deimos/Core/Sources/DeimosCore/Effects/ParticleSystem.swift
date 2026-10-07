@@ -164,6 +164,7 @@ public struct ParticleSystem: Equatable, Sendable {
     /// `FUN_10042f20` — `n < 0x4000 ? sqrtTable[n] : (float)sqrt(n)`; the table entries are built by the same
     /// expression (`100429cc..10042a00`: `fsubs` → float n, MathLib `sqrt`, `frsp`), so one formula covers both.
     /// ◇ C7's `Trig.root` is the shared owner of this function; this private copy keeps C13 independent of C7.
+    // C7: replace with Trig.root (FUN_10042f20)
     static func root(_ n: Int32) -> Float {
         Float(Foundation.sqrt(Double(Float(n))))
     }

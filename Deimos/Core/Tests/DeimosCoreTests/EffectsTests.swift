@@ -128,7 +128,10 @@ final class EffectsTests: XCTestCase {
             (100, -0.5, false), (100, 0, true),                      // y < 0.0
             (100, 473.5, false), (100, 473, true),                   // y + 7 > 480 (ble keeps)
         ]
-        for (x, y, alive) in cases {
+        // NaN: the x tests and the top test (`blt`/`bgt`) let it through; the bottom test keeps only on `ble`
+        // (`10043aa8`), so a NaN y dies and a NaN x lives.
+        let nan = Float.nan
+        for (x, y, alive) in cases + [(nan, 100, true), (100, nan, false)] {
             var b = try system()
             b.groups = [ParticleGroup(particles: [Particle(x: x, y: y), Particle(x: 200, y: 200)])]
             b.update(scrollDelta: 0)
@@ -164,6 +167,24 @@ final class EffectsTests: XCTestCase {
         // Entry 52 is exactly (0, 0.85): x = 208 hits the centre column, k = 1 (frsp of 1.0 × 0.85).
         XCTAssertEqual(s.burstTable[52].x, 0)
         XCTAssertEqual(s.burstTable[52].y.bitPattern, 0x3f59_999a)
+        // Both tables locked bit-for-bit: FNV-1a 64 over each entry's x then y float bits, little-endian bytes
+        // (golden from an independent Python float32 model of 10044630..10044818, MSL rand from seed 1).
+        func fnv(_ t: [ParticleVector]) -> UInt64 {
+            var h: UInt64 = 0xcbf2_9ce4_8422_2325
+            for v in t {
+                for f in [v.x, v.y] {
+                    var bits = f.bitPattern
+                    for _ in 0..<4 {
+                        h ^= UInt64(bits & 0xff)
+                        h = h &* 0x0000_0100_0000_01b3
+                        bits >>= 8
+                    }
+                }
+            }
+            return h
+        }
+        XCTAssertEqual(fnv(s.burstTable), 0x1daa_1694_0f4c_13f2)
+        XCTAssertEqual(fnv(s.ringTable), 0x6b6a_2a02_6564_cb96)
         // The ring table holds the unscaled unit vectors.
         for v in s.ringTable { XCTAssertEqual(v.x * v.x + v.y * v.y, 1, accuracy: 1e-5) }
         // The level reset keeps both indices.
@@ -191,6 +212,9 @@ final class EffectsTests: XCTestCase {
         XCTAssertEqual(ParticleSystem.stampWeights(fade: 6).map(\.weight), grid(28, 16, 12, 6, 6))
         XCTAssertEqual(ParticleSystem.stampWeights(fade: 7).map(\.weight), grid(29, 17, 13, 7, 0), "centre snaps back")
         XCTAssertEqual(ParticleSystem.stampWeights(fade: 32).map(\.weight), grid(31, 31, 31, 32, 25))
+        // The fades R4's tests use: 26 (caps), −1 (unsigned compares, word wrap — 0xFFFFFFFF + 22 = 21, X = −8).
+        XCTAssertEqual(ParticleSystem.stampWeights(fade: 26).map(\.weight), grid(31, 31, 31, 26, 19))
+        XCTAssertEqual(ParticleSystem.stampWeights(fade: -1).map(\.weight), grid(21, 9, 5, -1, -8))
         let core = ParticleSystem.stampWeights(fade: 0).enumerated().filter(\.element.core).map(\.offset)
         XCTAssertEqual(core, [17, 23, 24, 25, 31], "E at (2,3) (3,2) (3,4) (4,3), X at (3,3)")
     }
@@ -233,7 +257,9 @@ final class EffectsTests: XCTestCase {
         e.adjustShadowForScaling = true
         e.drawShadow = true
         e.hitGlowOn = true; e.hitGlowLevel = 7
+        XCTAssertEqual(pool.cachedFree, -1, "prealloc: scan")
         pool.levelReset()
+        XCTAssertEqual(pool.cachedFree, 0, "FUN_10046d30 caches 0, not −1")
         XCTAssertEqual(pool.emit(MotionBlurRequest(object: e, initialVisibility: 50, visibilityDelta: 10)),
                        .emitted(slot: 0), "the level reset caches slot 0")
         let b = pool.slots[0]
