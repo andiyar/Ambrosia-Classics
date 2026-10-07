@@ -818,6 +818,9 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   present — ≤ one frame late, inaudible; LOCKED seams unchanged). `FrameKeysResult.volume` never becomes a gain cue
   (D31). Console open withholds input only on tick frames (1004aa20) per C19's result. Call C19's level-transition
   reset (FUN_100302e0 pieces) where FUN_10007170 runs.
+  **One sector source (C15 reviews):** Files += `ScoreBar/ScoreBarState.swift` — `levelStart` / `update` take `sector:` and
+  pass it to `scoreBarIcons(sector:)` (callers TestWorld, DeimosSession); set `flags.sector` from the film/start; then
+  retire the Phase-1 `Player.sector` copy.
 - **Contract:** the session holds a `GameState`, the frame controller, console and key state; **every existing public
   property** (`gameTime`, `appeared`, `sector`, `rng`, `running`, `scoreBar`, `scroll`, `players`, …) stays as a
   forwarding accessor (invariant 12; DriverTests/LevelOneFrameTests read them). `init` = `FUN_100051a0` set-up (seed =
