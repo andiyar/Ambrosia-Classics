@@ -16,6 +16,12 @@
 > "absent" no longer holds). HectorKit after K1: main `4ca2e18`, floor **322**, D14. Direct PICT modes are {0, 36, 64}
 > (129 = 36, 133–138 = 0), not "mode 64" (contract 3 / note 11 wrong). D28 already existed: C0 appended an as-built.
 > AI segments 0x0410–0x0436 are plaintext — C8/C9 read them via `segment(_:)`. C2 `segment(_:)` returns a zero-based copy.
+> **Tranche 2 corrections (2026-10-07, seat re-measured; D28 as-built tranche 2):** C4 `testMap0x8002Worked` — chunk 0
+> begins `0000 0000 01F6 01E4` (two zero words first; bank xxd agrees). 0xF001 = 8 × 8-byte records + the zero i16 at
+> 64..65 and **nothing after** (66 B) — the "2 tail bytes" in C4 / note 7 / Bank correction 3 were the terminator itself.
+> "max tile index 0x429" is over all cells' low 12 bits; over non-compo cells it is 0x32C. Bank correction 14 (new):
+> data-format §5's 0xF009 row says 0x2000 B; the segment is 0x4000 B (512 × 0x20). S3 `StoredPicture` is a struct
+> (width, height, transferMode, maskRegion, `pixels: Pixels` with the locked cases) — the bare enum cannot carry sizes.
 
 **Goal.** The installed Cythera 1.0.4 folder's game data is in git byte-identical to the archive; `Cythera/Core` exists
 with `CytheraCore` (Foundation + HectorResources) and `CytheraRender` (+ HectorGraphics/HectorAudio); every one of the

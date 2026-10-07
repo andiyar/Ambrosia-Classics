@@ -729,6 +729,22 @@ doll is a Phase 1 gate-card item. Research note 1's abbreviated hash tails for `
 (full hashes + `cmp` agree). Script-band AI segments 0x0410–0x0436 are stored unencrypted (`PerformAI` →
 `GetSegment(0x360+n)`): read them with `segment(_:)`, never `scriptSegment(_:)` — C8/C9 route them.
 
+**As built — Phase 0 tranche 2 (2026-10-07, C3 + C4 + C5; all-Opus implementers + reviewers, two legs per ⚑):**
+`Cythera/Core` suite **44/0/0** (ladder 14 → 20 → 34 → 44 exact). C3 LZ (all 378 shipped streams byte-identical to
+`lz.py` per reviewer differential; op census as planned) + additive `LZ.decode(_:limit:)` / `.outputLimit` (decompression
+bound; locked signature unchanged). C4 World records (42 maps, 14,485 props, 20 globals typed). C5 CytheraRender (tile
+store SHA, portraits/sky/pix/macro, Palette with `origin`, compo tiles via `CompoTileRecord`, Lite/FILT, PICTs as stored).
+HectorKit untouched (main 4ca2e18, floor 322). **Seat rulings (re-measured, Invariant 10 STOP by the C4 implementer):**
+(1) map 0x8002 chunk 0 begins `0000 0000 01F6 01E4`; (2) 0xF001 = 8 records + zero i16, no tail bytes (Bank correction 3
+wrong); (3) max tile 0x429 all cells / 0x32C non-compo — both asserted; (4) map side capped by the segment header's
+maxMapDimension (+0x48, 0x200), 0x400 only when it is 0, as `CreateGlobals__Fs @ 10004d0c`; (5) F001 refusals (frames or
+divisor ≤ 0, base/tile ≥ 0xA00) are Invariant-4 census refusals the original does not make — documented in code; (6)
+S3 `StoredPicture` adopted as a struct around the locked cases; (7) Land King Hall: the kit throws `unsupportedOpcode(0x32)`
+(a rect op precedes 0x8200), so CytheraRender names the refusal "0x8200 QuickTime" with a bounded opcode walk — kit
+carry: a kit error naming the first unsupported *bits* opcode would remove it; (8) FILT has no frame count, so a prefix
+ending on a frame boundary is a valid shorter filter (as the loader reads to the handle's end). Measured: Catamarca and
+the other screenshots mode 0, PICT 129 = 36, 133–138 = 0 (agrees with tranche 1); app `clut 256` 250 non-replicated.
+
 ## D29 — Deimos Rising build: design + Phase 1 rulings (seat) (2026-10-06)
 
 **Decided (seat, under D27 and the 100 % rule; design `docs/plans/2026-10-06-deimos-design.md`, plan

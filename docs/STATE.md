@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C2 done; Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0–C5 done, C6 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 under way: K1 C0–C5 done, C6 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -105,8 +105,12 @@
   K1 on HectorKit main **4ca2e18** (HK D14; `decodePixels` takes 0x0099/0x009B regions as `maskRegion` + 16-bit DirectBits;
   direct modes {0, 36, 64} as stored — plan's "mode 64" was wrong; floor **322**, plan said 319 from a stale 313 base).
   Classics: `Resources/Cythera/` 20 files (D28 as-built), `Cythera/Core` CytheraData/CytheraResources + SegmentFile/
-  Cipher/Overlay, suite **14/0/0** (ladder on track). Next: C3 → C4/C5 + C8 → C9 (chip). Handoff
-  `docs/handoff-2026-10-07-cythera-phase0-t1.md`.
+  Cipher/Overlay, suite **14/0/0** (ladder on track). Handoff `docs/handoff-2026-10-07-cythera-phase0-t1.md`.
+  **Tranche 2 DONE (2026-10-07, same model policy): C3 LZ + C4 World records + C5 CytheraRender pixels** → suite
+  **44/0/0** (ladder exact); HectorKit untouched (4ca2e18, floor 322). C4 STOPPED once (Invariant 10): plan had map
+  0x8002 chunk 0 and the 0xF001 tail wrong — seat re-measured and ruled (D28 as-built tranche 2; plan "Tranche 2
+  corrections"). Next: C8 ⚑ → C9 ⚑ (script decoder + parity), then wave C (C6, C7 ⚑, C10) — chip. Handoff
+  `docs/handoff-2026-10-07-cythera-phase0-t2.md`.
 
 1. **Aki Phase 2 — DONE, Ben's gate PASSED 2026-10-04 (DECISIONS D9): "the game works fine"; pairs fade.** P2.1–P2.12
    as before (AkiCore 107 tests). Q24 fix 6603e55: `runFade` waits one full tick (1/60 s) after each of its two presents
