@@ -123,7 +123,7 @@ lists are newer); the binary is 1.0.6 (2004-01-02), so code drift 1.0 → 1.0.6 
 1. **PASS** = P1's decoded score **at the instant the replay's film read consumes byte index 4808** (cursor 4808 →
    4809) is 25,050. That is exactly what the recorder stored: `FUN_10009830` is called from `FUN_1002a3a0` at
    `1002a42c`, step 3 of `FUN_10028170` — mid-tick, before P2, the score bar, the tallies (`10006f58`, `10006ff4`) and
-   the entity update (`1000702c`) of that tick (leg A I-3). `FilmCursor.scoreAtRead` holds it (C7 field, written by
+   the entity update (`1000702c`) of that tick (leg A I-3). `FilmCursor.score(player: 0, atRead: 4808)` returns it (C7 `readScores`, fix(C7) 0b2093a — the read at cursor 4809 is one tick later; written by
    C14's input step). The CLI also prints the end-of-pass score and the end reason.
 2. **Landing.** H3 lands `DeimosReplayTests` as the gate (a separate bundle, excluded from G2 by `--skip`, so G2's
    ladder stays green). If G4 is red, H3 still merges with the gate recorded **"pending trace"** in STATE, and the
@@ -346,7 +346,7 @@ plays at unity and the OS volume controls apply (Q4 RULED by Ben 2026-10-07, D31
 test); `public struct HeadlessRunner` (logic-only or rendering; `init(assets:start:seed:prefs:)`,
 `init(assets:film:)`, `mutating func run(maxPasses:) -> ReplayResult`); `public struct FilmReplay` (`static func
 run(film:assets:trace:maxPasses:) -> ReplayResult`); `ReplayResult` (`endReason` `.filmEnd/.levelComplete/.gameOver/
-.bound`, `cursor`, `scoreAtRead4808: Int32?` (from `FilmCursor.scoreAtRead`), `endScore`, `passes`); `ReplayTrace`
+.bound`, `cursor`, `scoreAtRead4808: Int32?` (from `FilmCursor.score(player: 0, atRead: 4808)`), `endScore`, `passes`); `ReplayTrace`
 (records a `TickTrace` row per ticked pass from the session's public state; CSV writer, header fixed).
 
 ### S7. App + `project.yml` (A3)
@@ -643,7 +643,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   fills); `Tests/DeimosCoreTests/PlayerTests.swift`. (`PlayerPhase1.swift` untouched.)
 - **Contract (player-physics §1–§8, scoring-bonuses §3–§5, damage §5):** `updatePlayer(_ i:, input:)` in the
   `FUN_10028170` order (defence bonus → life state → input (`FUN_1002a3a0`, state 4 only, after the life-state step of
-  the same tick: a playing film's next byte via `film.next(player:)`, **storing `film.scoreAtRead[i]` = the decoded score
+  the same tick: a playing film's next byte via `film.next(player:)`, **calling `film.next(player:score:)` so `readScores[i][cursor]` = the decoded score
   at that read** (G4.1), else the keys' `PlayerInput`) → second fade → overload warnings → ramps → +0xc5 → size/blink →
   state 4: `tickWeapons`, velocity, banking, integrate, view shift, clamps, handler position, crosshair); hits
   `FUN_10027100`; death `FUN_10027e50` (Bank corrections 2 order); respawn `FUN_10029cc0`; level start `FUN_100269a0`
@@ -839,7 +839,7 @@ listing address it read, every bank correction it found (invariant 3) and anythi
   across `idle` calls into the next pass; **Esc latch** clears when **any** `idle` sees Esc up (carry); ◇ restarts keep
   the ended session's prefs (S9.6); level complete / game over end the session like Esc. `HeadlessRunner` (logic only
   unless asked to render; `maxPasses`), `FilmReplay` (seed/sector/players from the film; `scoreAtRead4808` from
-  `FilmCursor.scoreAtRead`), `ReplayTrace` (a `TickTrace` row per ticked pass: game time, cursor, P1
+  `FilmCursor.score(player: 0, atRead: 4808)`), `ReplayTrace` (a `TickTrace` row per ticked pass: game time, cursor, P1
   state/score/lives/shield/money/multiplier, draws, entities, groups, scroll top, paused, levelEnding; CSV).
 - **Tests (8):** `testPauseWaitHoldsUntilCapsUp` (fake-clock cap 120 s) · `testCuesRoutedAtPassBegin` (a recording sink
   sees each pass's cues once, in order, with the halt index) · `testTypedQueueAcrossIdleCalls` ·
