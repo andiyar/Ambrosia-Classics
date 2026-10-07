@@ -26,6 +26,8 @@ import DeimosCore
 ///   `FUN_1001a650(n)`; RenderLists.swift).
 /// - `.screenBlit(src, dst)` — `FUN_1000bbd0` (`1000bbd0…1000bc5c`): one CopyBits srcCopy, back → window.
 /// - `.present(kind)` — `Presents`.
+/// - `.particles(stamps)` — `FUN_10043ba0` (`ParticleStamps`): the 7×7 spread-555 stamps into the back buffer.
+/// - `.pauseWait` traps with `.fade` / `.limit` (`RenderOp.isHostOp`).
 ///
 /// Image decodes are cached per process (`ImageCache`); sprite groups through the assets' own cache. Missing data
 /// stops the renderer the same way for both: an `im16` that is missing or not a 16-bit TGA, and a sprite group
@@ -70,8 +72,8 @@ public final class DeimosRenderer {
             CopyBits.copy(from: back, to: &buffers.screen, srcRect: src, dstRect: dst)
         case let .present(kind):
             buffers.present(kind)
-        case .particles:
-            break   // R4 fills (the 7×7 stamps, particles-debris-blur §2.9)
+        case let .particles(stamps):
+            ParticleStamps.stamp(stamps, into: &buffers.back)                       // FUN_10043ba0 at 10030cd0
         case .fade, .limit, .pauseWait:
             preconditionFailure("DeimosRenderer.apply: \(op) is the host's (fadeBegin/fadeStep/fadeEnd; limit; pauseWait)")
         }
