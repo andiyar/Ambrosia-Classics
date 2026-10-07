@@ -135,7 +135,7 @@ public struct ParticleSystem: Equatable, Sendable {
             let dy: Float = cy - Float(py)                           // 10044720 fsubs f28
             let dx: Float = cx - Float(px)                           // 1004472c fsubs f29
             let sum = (dy * dy).addingProduct(dx, dx)                // 10044728 fmuls; 10044730 fmadds (fused)
-            let len = ParticleSystem.root(EntityDraw.fctiwz(sum))    // 10044734 fctiwz; bl 0x10042f20
+            let len = Trig.root(EntityDraw.fctiwz(sum))              // 10044734 fctiwz; bl 0x10042f20
             let ux: Float = dx / len                                 // 10044748 fdivs
             let uy: Float = dy / len                                 // 10044758 fdivs
             ring.append(ParticleVector(x: ux, y: uy))                // 1004475c / 10044764
@@ -159,14 +159,6 @@ public struct ParticleSystem: Equatable, Sendable {
         burstTable = burst
         ringTable = ring
         appStartDraws = rng.draws
-    }
-
-    /// `FUN_10042f20` — `n < 0x4000 ? sqrtTable[n] : (float)sqrt(n)`; the table entries are built by the same
-    /// expression (`100429cc..10042a00`: `fsubs` → float n, MathLib `sqrt`, `frsp`), so one formula covers both.
-    /// ◇ C7's `Trig.root` is the shared owner of this function; this private copy keeps C13 independent of C7.
-    // C7: replace with Trig.root (FUN_10042f20)
-    static func root(_ n: Int32) -> Float {
-        Float(Foundation.sqrt(Double(Float(n))))
     }
 
     /// The burst-type switch of `FUN_10043340` (`10043388..10043478`, §2.3): count, small-speed flag, ring flag.
