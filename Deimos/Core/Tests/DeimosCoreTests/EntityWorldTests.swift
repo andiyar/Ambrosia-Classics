@@ -32,7 +32,7 @@ final class EntityWorldTests: XCTestCase {
         XCTAssertFalse(world.inUse.contains(true))
         XCTAssertEqual(world.groundCount, 0)
         XCTAssertTrue(world.noticesShown.isEmpty)
-        XCTAssertTrue(world.pendingLevelObjects.isEmpty)
+        // pendingLevelObjects: FUN_10032e60's last call FUN_10035900 frees and rebuilds it — C8's.
 
         // GameState: a fresh world and buffers, the level reset clears the entity-limit latch (-0x6110).
         let assets = try TestAssets.loaded.get()
@@ -44,11 +44,58 @@ final class EntityWorldTests: XCTestCase {
         XCTAssertNil(state.film)
         XCTAssertNil(state.trace)
         XCTAssertTrue(state.flags.drawShadows)
+        XCTAssertEqual(state.flags.numPlayers, 0)
+        XCTAssertEqual(state.flags.framesPresented, 0)
+        XCTAssertFalse(state.flags.gameOverNoticed)
+        XCTAssertEqual(state.tally.coin.count, 2)
+        XCTAssertFalse(state.players[0].cheated)                               // constructor 100262e0
+        XCTAssertEqual(state.players[0].multiplierIndicator, -1)               // constructor 100262d8
         state.entityLimitWarned = true
         state.world.nextSerial = 1234
         state.levelResetEntities()
         XCTAssertFalse(state.entityLimitWarned)
         XCTAssertEqual(state.world.nextSerial, 1000)
+
+        // FilmCursor: FUN_100097a0 reads bytes 0…frames−1, then byte `frames` (0, past the recording) and
+        // advances; once cursor > frames (signed) nothing is read or advanced. FUN_10009750 = signed P1
+        // cursor > frames. Scores are recorded per read, by consumed byte index.
+        var cursor = FilmCursor(film: try Self.film(inputs: [5, 6, 7]))
+        XCTAssertEqual(cursor.next(player: 0, score: 10), 5)
+        XCTAssertEqual(cursor.next(player: 0, score: 20), 6)
+        XCTAssertEqual(cursor.next(player: 0, score: 30), 7)
+        XCTAssertFalse(cursor.finished)                                        // cursor 3 == frames: not over
+        XCTAssertEqual(cursor.next(player: 0, score: 40), 0)                   // the read one past the recording
+        XCTAssertEqual(cursor.cursors[0], 4)
+        XCTAssertTrue(cursor.finished)                                         // 4 > 3
+        XCTAssertEqual(cursor.next(player: 0, score: 50), 0)                   // no read, no advance, no record
+        XCTAssertEqual(cursor.cursors[0], 4)
+        XCTAssertEqual(cursor.readScores[0], [10, 20, 30, 40])
+        XCTAssertEqual(cursor.score(player: 0, atRead: 2), 30)                 // the last recorded byte's read
+        XCTAssertEqual(cursor.score(player: 0, atRead: 3), 40)
+        XCTAssertNil(cursor.score(player: 0, atRead: 4))
+        XCTAssertEqual(cursor.scoreAtRead[0], 40)
+        XCTAssertNil(cursor.scoreAtRead[1])
+        cursor.cursors[0] = -1                                                 // signed: −1 > 3 is false
+        XCTAssertFalse(cursor.finished)
+        cursor.cursors[0] = Int32.max
+        XCTAssertTrue(cursor.finished)
+    }
+
+    /// A one-player film image (`Film` layout): version 0x2715, P1 block with `inputs`, zero padding.
+    private static func film(inputs: [UInt8]) throws -> Film {
+        var b = [UInt8](repeating: 0, count: Film.size)
+        func put(_ v: UInt32, _ at: Int) {
+            b[at] = UInt8(v >> 24); b[at + 1] = UInt8(v >> 16 & 0xff); b[at + 2] = UInt8(v >> 8 & 0xff)
+            b[at + 3] = UInt8(v & 0xff)
+        }
+        put(Film.version, 0)
+        put(0x469c2, 4)
+        put(FourCC("le07")!.rawValue, 8)
+        b[0x0c] = 1
+        put(UInt32(inputs.count), 0x10)
+        put(Film.scoreBias, 0x14)
+        for (i, v) in inputs.enumerated() { b[0x1c + i] = v }
+        return try Film(data: Data(b))
     }
 
     func testPoolCapAndHint() {
@@ -64,8 +111,25 @@ final class EntityWorldTests: XCTestCase {
         XCTAssertEqual(world.liveCount, 1000)
 
         // FUN_10038810: free → hint = that slot; the next allocation takes it.
+        // The count check is `count >= 1000` (10038600 cmpwi r4,0x3e8; blt): with 1000 in use it refuses even
+        // when a slot's byte reads free (a `>` slip would hand out slot 999 here).
+        world.inUse[999] = false
+        XCTAssertNil(world.allocate())
+        world.freeHint = 999
+        XCTAssertNil(world.allocate())
+        world.inUse[999] = true
+        world.freeHint = -1
+
         world.entities[417].shields = 2.5                                      // a field FUN_100142f0 keeps
         world.entities[417].deleted = true
+        // The object reset FUN_10012650 writes none of +0x64, +0x75, +0x78, +0x7c, +0x80 (micro-wave §3.6).
+        world.entities[417].object.glowTintColour = 0x1234
+        world.entities[417].object.hitGlowOn = true
+        world.entities[417].object.hitGlowFalling = true
+        world.entities[417].object.hitGlowLevel = 12
+        world.entities[417].object.hitGlowStep = 6
+        world.entities[417].object.hitGlowColour = 0x7fff
+        world.entities[417].object.x = 99
         world.free(417)
         XCTAssertEqual(world.freeHint, 417)
         XCTAssertEqual(world.allocate(), 417)
@@ -79,6 +143,13 @@ final class EntityWorldTests: XCTestCase {
         XCTAssertEqual(e.ownerSerial, -1)
         XCTAssertEqual(e.shownWeapon, .none)
         XCTAssertEqual(e.shields, 2.5)                                         // not reset: stale, as in the pool
+        XCTAssertEqual(e.object.glowTintColour, 0x1234)
+        XCTAssertTrue(e.object.hitGlowFalling)
+        XCTAssertEqual(e.object.hitGlowLevel, 12)
+        XCTAssertEqual(e.object.hitGlowStep, 6)
+        XCTAssertEqual(e.object.hitGlowColour, 0x7fff)
+        XCTAssertFalse(e.object.hitGlowOn)                                     // +0x74 = 0 (1001272c)
+        XCTAssertEqual(e.object.x, 0)                                          // +0x00 = 0.0 (10012674)
 
         // Two frees: the most recent wins; once used, the lowest free slot is next.
         world.free(10)

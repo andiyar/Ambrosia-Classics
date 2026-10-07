@@ -57,6 +57,11 @@ public struct GameObject: Equatable, Sendable {
     public var hitGlowOn = false
     public var hitGlowLevel: Int32 = 0
     public var hitGlowColour: UInt16 = 0
+    /// +0x75 / +0x7c: the hit glow's phase — 1 = level falling 32 → 4, 0 = rising back to 32 (toggled by
+    /// `FUN_10012c10` `10012c4c..10012c58` / `10012c88..10012c94`) — and its step per tick (`FUN_10012bc0`
+    /// `10012bf0 stb r6,0x75`, `10012bf4 stw r5,0x7c`). Like +0x78/+0x80, not reset by `FUN_10012650`.
+    public var hitGlowFalling = false
+    public var hitGlowStep: Int32 = 0
     /// +0x84 / +0x88 / +0x8c: scale current / target / step.
     public var scale: Float = 1
     public var scaleTarget: Float = 1
@@ -179,6 +184,13 @@ public struct Player: Sendable {
     public var score: Int32 = 0
     /// +0xb4: score multiplier.
     public var multiplier: UInt8 = 1
+    /// +0xb8: serial of the multiplier indicator unit, −1 none (constructor `100262d8`; `FUN_10029fe0`;
+    /// scoring-bonuses §1.1). Declared by C7 (field only).
+    public var multiplierIndicator: Int32 = -1
+    /// +0xbd: cheated this game — set by every console cheat (`bl 0x10029bf0` with r4 = 1,
+    /// `0x10008118–0x100091bc`; scoring-bonuses §1.1); 0 from the constructor (`100262e0`). Declared by C7
+    /// (field only; C19 sets it).
+    public var cheated = false
     /// +0xc0: level reference (game +0x18) given at level start.
     public var levelRef: FourCC = .none
     /// +0xc4: in game (not eliminated).

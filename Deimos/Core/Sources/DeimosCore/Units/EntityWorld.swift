@@ -70,7 +70,8 @@ public struct EntityWorld: Equatable, Sendable {
     }
 
     /// `FUN_10032e60` without its first store (the entity-limit latch, `GameState.levelResetEntities`) and
-    /// without its last call (`FUN_10035900`, C8). See the type's comment.
+    /// without its last call (`FUN_10035900`, C8 — it frees and rebuilds `pendingLevelObjects`, which this
+    /// method leaves alone). See the type's comment.
     public mutating func levelReset() {
         freeHint = 0                                                    // 10038450 FUN_10038450
         liveCount = 0

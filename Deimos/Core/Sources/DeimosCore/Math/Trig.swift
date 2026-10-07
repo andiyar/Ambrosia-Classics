@@ -52,8 +52,10 @@ public enum Trig {
     /// r2−0x6e28 → BSS `0x101072d0`: `(float)sqrt((double)(float)n)`, n = 0…16383.
     public static let sqrtTable: [Float] = (0..<16384).map { n in squareRoot(Int32(n)) }
 
-    /// `FUN_10042f00` — S[h]; h = 360 → 0 (`cmpwi r3,0x168`). No other range check in the original (an index
-    /// outside 0…360 reads neighbouring BSS); here it is a precondition (the array traps).
+    /// `FUN_10042f00` — S[h]; h = 360 → 0 (`cmpwi r3,0x168`). No other range check in the original: an index
+    /// outside 0…360 reads neighbouring BSS (the other table, or whatever lies beyond). **Callers must keep
+    /// headings in 0…360** (every heading the bank reads is wrapped there first); here an out-of-range index
+    /// is a precondition failure (the array traps) rather than a silent read of the wrong memory.
     public static func sin(_ h: Int32) -> Float { sinTable[h == 360 ? 0 : Int(h)] }
 
     /// `FUN_10042ee0` — C[h]; h = 360 → 0. Same precondition as `sin`.

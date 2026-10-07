@@ -16,7 +16,10 @@ public struct EntityGroup: Equatable, Sendable {
     public var id: Int32 = -1
     /// +0x98: unit ID, or `PERM`.
     public var unit: FourCC = .none
-    /// +0x9c / +0xa0: group position (float; a pending record holds the map row in y).
+    /// +0x9c / +0xa0: group position (float; a pending record holds the map row in y). Written by every request
+    /// that opens or joins the group (`1003351c..1003357c`, PERM included). PERM's are never written by
+    /// `FUN_10032e60`, so they are uninitialised heap until the first PERM request in the original; 0 here
+    /// (no reader before that write is known).
     public var x: Float = 0
     public var y: Float = 0
     /// +0xa4: members requested (group size n; PERM: the last singleton request's n, stored).

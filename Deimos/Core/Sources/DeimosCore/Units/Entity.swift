@@ -26,7 +26,12 @@ public struct SpawnRecord: Equatable, Sendable {
 /// loose-ends-combat §4.2), each with its offset; C7 also scanned every entity-register access of the
 /// G_Entity / G_EntityGroup functions in the listing for 0x94…0x1eb (PR notes) — the table below is that
 /// set. Defaults are the constructor's (`FUN_100141a0`: `FUN_100125d0` object constructor, +0x94/+0x98
-/// and the 20 record-list heads 0, then `FUN_100142f0`); `reset()` is `FUN_100142f0` alone.
+/// and the 20 record-list heads 0, then `FUN_100142f0`); `reset()` is `FUN_100142f0` alone. Fields neither
+/// the constructor nor the reset writes (+0xb8, +0x100…+0x114, +0x134, +0x138, and the object's +0x64,
+/// +0x75, +0x78, +0x7c, +0x80) were **uninitialised heap** in a never-used pool entity of the original
+/// (`FUN_10038390` allocates the 1000 and runs only `FUN_100141a0` on them — MED, build not read); here they
+/// start at 0 / false — a divergence only if some path reads one before its first write (C8 confirms the
+/// spawn path writes them).
 ///
 /// Not kept: +0x98, the unit's lookup-cache pointer (`FUN_100144a0` writes it; `FUN_1003d550` reads it in
 /// `FUN_10015550`/`FUN_10015b40` before falling back to the global list) — `DeimosAssets.unitIndex` replaces the
@@ -154,7 +159,8 @@ public struct Entity: Equatable, Sendable {
     /// +0xca, +0xcb, +0xcc = 0; +0xd8 = +0xd9 = −1; +0xda = 0; +0xdc = 0.0 (`0x100d6c8c`); +0xe0, +0xd0,
     /// +0xd4, +0xe4, +0xe8, +0xec, +0xf0, +0xf4 = 0; +0xf8 = `none`; +0xcd = 0; target +0x11c/+0x120, offsets
     /// +0x124…+0x130 = 0.0 (`0x100d67f4`); +0x118 = −1; +0x13c/+0x13d/+0x13e = 0; then `FUN_10012650` (the
-    /// object reset, which keeps +0x64 and the hit-glow level/colour +0x78/+0x80 — micro-wave §3.6).
+    /// object reset, which keeps +0x64 and the hit-glow phase/level/step/colour +0x75/+0x78/+0x7c/+0x80 —
+    /// micro-wave §3.6).
     /// **Not reset** (a reused slot keeps the previous occupant's values, as the pool does): +0xb8 timer,
     /// +0x100…+0x114 velocity copies, +0x134 shields, +0x138 heading.
     public mutating func reset() {
@@ -203,11 +209,14 @@ public struct Entity: Equatable, Sendable {
         stationary = false                                              // 1001446c
         terrainEffects = false                                          // 10014470
         hasSpawnRecords = false                                         // 10014474
-        // 10014478 FUN_10012650: the object reset keeps +0x64, +0x78, +0x80.
-        let tint = object.glowTintColour, level = object.hitGlowLevel, colour = object.hitGlowColour
+        // 10014478 FUN_10012650 (stores listed in micro-wave §3.6, `10012674..1001273c`): it writes no byte of
+        // +0x64, +0x75, +0x78, +0x7c or +0x80 — those keep their values.
+        let kept = object
         object = GameObject()
-        object.glowTintColour = tint
-        object.hitGlowLevel = level
-        object.hitGlowColour = colour
+        object.glowTintColour = kept.glowTintColour                     // +0x64
+        object.hitGlowFalling = kept.hitGlowFalling                     // +0x75
+        object.hitGlowLevel = kept.hitGlowLevel                         // +0x78
+        object.hitGlowStep = kept.hitGlowStep                           // +0x7c
+        object.hitGlowColour = kept.hitGlowColour                       // +0x80
     }
 }
