@@ -13,6 +13,10 @@
 > draw the real frame), `pict-1020.png` (walk sheet under clut 200) and `pict-207.png` (PxBack under clut 201) —
 > ImageIO, census-only. The data is the committed copy `Resources/Ferazel` (DECISIONS D26). "Decoded" means decodes
 > to the census — not "looks/sounds right"; every Color2Index choice is [LOW] (D26).
+> Known artefact in `level1-start.png`: light-yellow specks along FG tile edges. Clut 201 holds 162 pure blacks
+> (indices 1..160, 254, 255); the ruled model's "exact match → lowest index" sends FG 200's 8,443 black source pixels
+> to index 1, which clut 202 (the screen CLUT) shows as (FFFF,FFFF,7F7F). Which duplicate QuickDraw's `Color2Index`
+> really picks is the open LOW — not a decode bug.
 
 ## Spec-vs-data deltas
 
