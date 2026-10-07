@@ -76,10 +76,9 @@ final class Phase2SeamTests: XCTestCase {
     func testPermSoundNoDraw() throws {
         let a = try assets()
         XCTAssertEqual(a.sounds[18], FourCC("wesw"))
-        let rng = MSLRandom(seed: 1)
+        // perm takes no generator: the no-draw property is in its signature.
         let cue = SoundPlay.perm(a.sounds[18], priority: 75, volume: 100, allowMultiple: true)
         XCTAssertEqual(cue, SoundCue(id: FourCC("wesw")!, priority: 75, volume: 100, pitch: 1.0, allowMultiple: true))
-        XCTAssertEqual(rng.draws, 0)
     }
 
     /// `unde` tag → master-list index (`FUN_1003d2f0` / `FUN_1003d550`).
