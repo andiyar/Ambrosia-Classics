@@ -133,9 +133,9 @@ extension GameState {
     /// → the spawn-on-hit unit (when `now ≥ lastSpawn + trunc(flli 162)`) and, once per life, the shield-warning
     /// unit when shield ≤ shieldWarningPercentage (`+0xd1` set even when the unit is `none`).
     /// `damage` must be the Float32 the caller holds (the original's f1 is single precision: `lfs f1,0x274(r31)` at
-    /// `100342c0` and `fmuls` here) — never a Double narrowed after the multiply.
-    public mutating func playerHit(_ i: Int, damage: Float) {
-        let now = flags.gameTime
+    /// `100342c0` and `fmuls` here) — never a Double narrowed after the multiply. `now` is the caller's game time
+    /// (r5 → r29, `1002711c`; compared at `10027148`, stored at `10027150`) — the entity update's r17.
+    public mutating func playerHit(_ i: Int, damage: Float, now: Int32) {
         guard players[i].lifeState == 4 else { return }                      // 1002712c..10027134
         let d = players[i].definition
         guard now >= players[i].lastHit &+ d.shieldHitDelay else { return }  // 10027138..1002714c

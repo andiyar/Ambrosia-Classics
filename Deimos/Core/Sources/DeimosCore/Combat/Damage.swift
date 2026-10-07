@@ -45,6 +45,8 @@ extension GameState {
         guard !(old <= 0) else { return absorbed }                           // 10014f88..10014fa0, 10014fc0
         let ui = world.entities[i].unit
         let u = assets.definitions.units[ui]
+        // r30 = the current state, read once here and kept (the original indexes unit + 0x4e0 + state·0x5e0 with no
+        // bounds check; nil — an out-of-range index, never produced by the state machine — stops here instead).
         guard let st = currentState(i) else { return absorbed }              // 10014fc4..10014fd0 (r30)
         if st.stateInvulnerableShieldsDoNotDepleteOnCollision {              // 10014fd4..10014fdc
             world.entities[i].shields = old                                  // 10014fe0

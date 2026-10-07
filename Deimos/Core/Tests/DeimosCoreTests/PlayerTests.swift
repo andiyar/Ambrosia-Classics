@@ -203,8 +203,8 @@ final class PlayerTests: XCTestCase {
         let shields: [Float] = [85, 70, 55, 40, 25, 10]
         for k in 0..<6 {
             s.flags.gameTime = t
-            s.playerHit(0, damage: 1.0)
-            s.playerHit(0, damage: 1.0)                                 // same tick: < lastHit + delay → ignored
+            s.playerHit(0, damage: 1.0, now: s.flags.gameTime)
+            s.playerHit(0, damage: 1.0, now: s.flags.gameTime)                                 // same tick: < lastHit + delay → ignored
             XCTAssertEqual(s.players[0].shield, shields[k], "hit \(k + 1)")
             XCTAssertEqual(s.players[0].lifeState, 4)
             XCTAssertEqual(s.players[0].lastHit, t)
@@ -215,33 +215,33 @@ final class PlayerTests: XCTestCase {
         }
         XCTAssertTrue(s.players[0].shieldWarningShown)                  // 10 ≤ 15 → nosw once
         s.flags.gameTime = t
-        s.playerHit(0, damage: 1.0)                                     // 10 − 15 = −5 < 0 → destroyed
+        s.playerHit(0, damage: 1.0, now: s.flags.gameTime)                                     // 10 − 15 = −5 < 0 → destroyed
         XCTAssertEqual(s.players[0].lifeState, 3)
         XCTAssertEqual(s.players[0].stateEntered, t)
         // Not in state 4: ignored.
         s.flags.gameTime = t + 5
-        s.playerHit(0, damage: 1.0)
+        s.playerHit(0, damage: 1.0, now: s.flags.gameTime)
         XCTAssertEqual(s.players[0].lastHit, 0)                         // the death cleared it; no new hit
         // A hit landing exactly on 0 survives; invulnerable → no shield loss but the glow and the timer.
         var u = try world()
         toActive(&u)
         u.players[0].shield = 15
         u.flags.gameTime = 500
-        u.playerHit(0, damage: 1.0)
+        u.playerHit(0, damage: 1.0, now: u.flags.gameTime)
         XCTAssertEqual(u.players[0].shield, 0); XCTAssertEqual(u.players[0].lifeState, 4)
         u.players[0].shield = 50; u.players[0].hitThisLevel = false; u.players[0].invulnerable = true
         u.flags.gameTime = 501
-        u.playerHit(0, damage: 1.0)
+        u.playerHit(0, damage: 1.0, now: u.flags.gameTime)
         XCTAssertEqual(u.players[0].shield, 50); XCTAssertFalse(u.players[0].hitThisLevel)
         XCTAssertEqual(u.players[0].lastHit, 501)
         // Spawn-on-hit `plsh` every trunc(flli 162) = 10 ticks, `now ≥ last + 10` (the hit at 500 spawned it).
         XCTAssertEqual(u.players[0].definition.activeSpawnOnHit, FourCC("plsh"))
         XCTAssertEqual(u.players[0].lastHitSpawn, 500)
         u.flags.gameTime = 509
-        u.playerHit(0, damage: 1.0)
+        u.playerHit(0, damage: 1.0, now: u.flags.gameTime)
         XCTAssertEqual(u.players[0].lastHitSpawn, 500)
         u.flags.gameTime = 510
-        u.playerHit(0, damage: 1.0)
+        u.playerHit(0, damage: 1.0, now: u.flags.gameTime)
         XCTAssertEqual(u.players[0].lastHitSpawn, 510)
         // The overload warnings (player-physics §6.2), started at T0 inside the update so the first tick is T0 + 1:
         // flashes + `wewa` at T0 + 9, 17, 24, 30, 36, 42, 48 with the interval 8 → 7, 6, 5, 4, 3 (minimum), 3, 3;

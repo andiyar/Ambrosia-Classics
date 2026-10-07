@@ -20,7 +20,7 @@ public struct PlayerCollisionCache: Equatable, Sendable {
         /// `FUN_100128d0(player)` — the ship's position (r1+0xd4 + 8·p).
         public var x: Float = 0
         public var y: Float = 0
-        /// `float(bottom − top) × 0.5` (`1003997c..10033998`: int → float, `fmuls` by `0x100d7204` = 0.5).
+        /// `float(bottom − top) × 0.5` (`1003397c..10033998`: int → float, `fmuls` by `0x100d7204` = 0.5).
         public var radius: Float = 0
 
         public init() {}
@@ -102,7 +102,11 @@ extension GameState {
 
     /// The player-collision step of `FUN_10033850` for entity `i` at game time `now` (damage §2.3, loose-ends-combat
     /// §3.1; listing `10034074..10034314`). The caller has checked the entity is spawned in and not deleted
-    /// (`10034068`). Rect `FUN_10012ad0`; tested only if `cache.activeCount > 0`, the state `Collides` (+0x347), the
+    /// (`10034068`). **`state` is the entity update's r18** — the state read before the motion controller
+    /// (`10033e08`), never re-read here: a state change during the update (timer, rule, range trigger) does not
+    /// reach this step until the next tick. nil (a state index outside the unit's states; the original has no
+    /// check and would read past the unit) → no test. Rect `FUN_10012ad0`; tested only if `cache.activeCount > 0`,
+    /// the state `Collides` (+0x347), the
     /// unit not `harmlessToPlayers` (+0x11a), the state `CollidesWithPlayers` (+0x34f), and `r ≥ −32`, `l ≤
     /// cache.right`, `b ≥ 0`, `t ≤ cache.bottom`. Then per slot p = 0, 1, while the entity is not deleted
     /// (`10034110`): an active slot, the inclusive box overlap (`e.b ≥ p.t`, `e.t ≤ p.b`, `e.r ≥ p.l`, `e.l ≤ p.r`),
@@ -113,11 +117,12 @@ extension GameState {
     ///   valid (`FUN_10036ab0`), else to the entity, credited to the player index (`10034228..100342b8`); then the
     ///   player takes the unit's `damage_FLOAT` (`100342bc..100342d0`); the player out of state 4 → the slot drops
     ///   (`100342d8..100342f8`).
-    public mutating func collideWithPlayers(_ i: Int, cache: inout PlayerCollisionCache, now: Int32) {
+    public mutating func collideWithPlayers(_ i: Int, state st: UnitState?, cache: inout PlayerCollisionCache,
+                                            now: Int32) {
         let er = entityRect(i)                                           // 10034074..10034088 FUN_10012ad0
-        guard cache.activeCount > 0, let st = currentState(i), st.stateCollides else { return }   // 10034090..100340a0
-        let u = assets.definitions.units[world.entities[i].unit]
-        guard !u.harmlessToPlayers, st.stateCollidesWithPlayers else { return }   // 100340a4..100340b8
+        guard cache.activeCount > 0, let st, st.stateCollides else { return }     // 10034090..100340a0 (r18)
+        let ui = world.entities[i].unit                                  // r31
+        guard !assets.definitions.units[ui].harmlessToPlayers, st.stateCollidesWithPlayers else { return }   // 100340a4..100340b8
         guard er.right >= -32, er.left <= cache.right, er.bottom >= 0, er.top <= cache.bottom else { return }   // 100340bc..100340e8
         let ex = world.entities[i].object.x, ey = world.entities[i].object.y      // 100340ec..100340f4
         let er2 = Self.collisionRadius(er)                               // 10034180..100341bc
@@ -130,7 +135,7 @@ extension GameState {
             else { continue }                                            // 10034128..1003417c
             guard Self.circlesOverlap(ax: slot.x, ay: slot.y, bx: ex, by: ey, ra: slot.radius, rb: er2)
             else { continue }                                            // 100341c0..100341cc
-            if u.pickupType != .none {                                   // 100341d0..100341dc
+            if assets.definitions.units[ui].pickupType != .none {        // 100341d0..100341dc
                 if collectPickup(player: p, entity: i) {                 // 100341e0..100341f8 FUN_10037580
                     destroyEntity(i, killer: players[p].index, now: now) // 100341fc..10034214 FUN_10026c90, FUN_10016300
                     world.entities[i].collected = true                   // 1003421c..10034220
@@ -146,7 +151,7 @@ extension GameState {
             if !passed {                                                 // 10034280..10034284
                 damageEntity(i, damage: ram, killer: players[p].index, now: now)          // 10034288..100342b4
             }
-            playerHit(p, damage: u.damage)                               // 100342bc..100342d0 FUN_10027100
+            playerHit(p, damage: assets.definitions.units[ui].damage, now: now)   // 100342bc..100342d0 FUN_10027100
             if players[p].lifeState != 4 {                               // 100342d8..100342ec FUN_10026c50
                 cache.slots[p].active = false                            // 100342f0..100342f4
                 cache.activeCount &-= 1                                  // 100342f8
@@ -169,6 +174,14 @@ extension GameState {
         if u.destructCreateObstacle {                                    // 1003454c..10034554
             debris.add(boundingBox(i))                                   // 10034558..1003456c
         }
+    }
+
+    /// The entity ↔ entity step of `FUN_10033850` (`10034574..10034594`): entity `a` not deleted and **`state`** (the
+    /// update's r18, read before the motion controller at `10033e08` — not re-read) `Collides` (+0x347) →
+    /// `collideWithEntities(a, now)`. nil state (out of range; the original has no check) → nothing.
+    public mutating func entityCollisionStep(_ a: Int, state st: UnitState?, now: Int32) {
+        guard !world.entities[a].deleted, let st, st.stateCollides else { return }   // 10034574..10034588
+        collideWithEntities(a, now: now)                                 // 1003458c..10034594
     }
 
     /// `FUN_10036cf0(A, now) @ 10036cf0` — entity ↔ entity for A = entity `a` (damage §2.5, HIGH; listing
@@ -194,62 +207,81 @@ extension GameState {
     public mutating func collideWithEntities(_ a: Int, now: Int32) -> Bool {
         let groupCount = world.groups.count                              // 10036d0c..10036d18 (taken once)
         guard groupCount >= 1 else { return world.entities[a].deleted }  // 10036d1c..10036d20
-        let ua = assets.definitions.units[world.entities[a].unit]        // 10036d24
-        let stA = currentState(a)                                        // 10036d28..10036d38 FUN_10014650
+        let uaIndex = world.entities[a].unit                             // 10036d24 (r27)
+        let units = assets.definitions.units
+        let aPasses = statePassesHits(a)                                 // 10036d28..10036d38 FUN_10014650 (r28, read once)
         let ar = entityRect(a)                                           // 10036d40..10036d5c
-        if ua.playerProjectile && ar.bottom < 0 { return world.entities[a].deleted }   // 10036d64..10036d78
-        let ax = world.entities[a].object.x, ay = world.entities[a].object.y           // 10036d7c..10036d84
-        let serialA = world.entities[a].serial                           // 10036d94
+        let aProjectile = units[uaIndex].playerProjectile                // 10036d9c (r30)
+        if aProjectile && ar.bottom < 0 { return world.entities[a].deleted }   // 10036d64..10036d78
+        let ax = world.entities[a].object.x, ay = world.entities[a].object.y   // 10036d7c..10036d84
+        let serialA = world.entities[a].serial                           // 10036d94 (r24)
+        let aHarmless = units[uaIndex].harmlessToPlayers                 // 10036d98 (r29)
+        let aLayer = units[uaIndex].layer                                // 10036da0 (r23)
+        let aDamage = units[uaIndex].damage                              // read at 100370bc / 100370d8 (constant)
         let ra = Self.collisionRadius(ar)                                // 10036f48..10036fac
         var g = 0
-        while g < groupCount {                                           // 10036da8..10037110
+        while g < groupCount, g < world.groups.count {                   // 10036da8..10037110
             let memberCount = world.groups[g].members.count              // 10036db8..10036dc8 (taken once)
             var k = 0
-            while k < memberCount {                                      // 10036dec..10037104
+            while k < memberCount, k < world.groups[g].members.count {   // 10036dec..10037104 (lists only grow mid-pass)
                 let b = world.groups[g].members[k]
                 k += 1
-                guard let stB = currentState(b), stB.stateCollides else { continue }   // 10036e0c..10036e20
-                let eb = world.entities[b]
-                guard !eb.deleted, eb.hittable, eb.serial != serialA else { continue } // 10036e24..10036e44
-                let ub = assets.definitions.units[eb.unit]
-                guard ub.layer == ua.layer else { continue }             // 10036e48..10036e54
-                guard ua.harmlessToPlayers != ub.harmlessToPlayers else { continue }   // 10036e58..10036e7c
-                guard eb.spawnCountdown <= 0 else { continue }           // 10036e80..10036e88
-                if ua.playerProjectile {                                 // 10036e8c..10036e9c
-                    guard ub.canBeHitByPlayerProjectile else { continue }
+                guard stateCollides(b) else { continue }                 // 10036e0c..10036e20
+                guard !world.entities[b].deleted, world.entities[b].hittable,
+                      world.entities[b].serial != serialA else { continue }          // 10036e24..10036e44
+                let ub = world.entities[b].unit
+                guard units[ub].layer == aLayer else { continue }        // 10036e48..10036e54
+                guard aHarmless != units[ub].harmlessToPlayers else { continue }     // 10036e58..10036e7c
+                guard world.entities[b].spawnCountdown <= 0 else { continue }        // 10036e80..10036e88
+                if aProjectile {                                         // 10036e8c..10036e9c
+                    guard units[ub].canBeHitByPlayerProjectile else { continue }
                 } else {                                                 // 10036ea0..10036ebc
-                    guard ub.canBeHitByPlayerProjectile, ub.playerProjectile else { continue }
+                    guard units[ub].canBeHitByPlayerProjectile, units[ub].playerProjectile else { continue }
                 }
                 let br = entityRect(b)                                   // 10036ec0..10036ed4
-                if ub.playerProjectile && br.bottom < 0 { continue }     // 10036edc..10036ef4
+                if units[ub].playerProjectile && br.bottom < 0 { continue }          // 10036edc..10036ef4
                 guard ar.bottom >= br.top, ar.top <= br.bottom, ar.right >= br.left, ar.left <= br.right
                 else { continue }                                        // 10036ef8..10036f34
-                let bx = eb.object.x, by = eb.object.y                   // 10036f38..10036f40
+                let bx = world.entities[b].object.x, by = world.entities[b].object.y // 10036f38..10036f40
                 guard Self.circlesOverlap(ax: ax, ay: ay, bx: bx, by: by, ra: ra, rb: Self.collisionRadius(br))
                 else { continue }                                        // 10036f48..10036fc0
+                let bDamage = units[ub].damage
                 // 1. A takes B's damage, credited to B+0xd8.
                 var passed = false
-                if stA?.passHitsToOwner == true, ownerLinkValid(a), let o = world.entities[a].owner {   // 10036fc4..10037010
-                    damageEntity(o, damage: ub.damage, killer: world.entities[b].ownerPlayer, now: now) // 10037014..10037028
+                if aPasses, ownerLinkValid(a), let o = world.entities[a].owner {     // 10036fc4..10037010
+                    damageEntity(o, damage: bDamage, killer: world.entities[b].ownerPlayer, now: now)   // 10037014..10037028
                     passed = true
                 }
                 if !passed {                                             // 10037034..10037038
-                    damageEntity(a, damage: ub.damage, killer: world.entities[b].ownerPlayer, now: now) // 1003703c..10037050
+                    damageEntity(a, damage: bDamage, killer: world.entities[b].ownerPlayer, now: now)   // 1003703c..10037050
                 }
                 // 2. B takes A's damage, credited to A+0xd8 — B's passHitsToOwner redirects to A's owner (bug kept).
                 passed = false
-                if currentState(b)?.passHitsToOwner == true, ownerLinkValid(a),
-                   let o = world.entities[a].owner {                     // 10037058..100370b0
-                    damageEntity(o, damage: ua.damage, killer: world.entities[a].ownerPlayer, now: now) // 100370b4..100370c4
+                if statePassesHits(b), ownerLinkValid(a), let o = world.entities[a].owner {  // 10037058..100370b0 (B re-read)
+                    damageEntity(o, damage: aDamage, killer: world.entities[a].ownerPlayer, now: now)   // 100370b4..100370c4
                     passed = true
                 }
                 if !passed {                                             // 100370d0..100370d4
-                    damageEntity(b, damage: ua.damage, killer: world.entities[a].ownerPlayer, now: now) // 100370d8..100370e8
+                    damageEntity(b, damage: aDamage, killer: world.entities[a].ownerPlayer, now: now)   // 100370d8..100370e8
                 }
                 if world.entities[a].deleted { return true }             // 100370f0..100370f8
             }
             g += 1
         }
         return world.entities[a].deleted                                 // 10037114
+    }
+
+    /// `FUN_10014650(e)+0x347` / `+0x32b` read in place (no copy of the state). A state index outside the unit's
+    /// states reads false — the original has no check (it would read past the unit; out of range only).
+    private func stateCollides(_ i: Int) -> Bool {
+        let u = world.entities[i].unit, st = Int(world.entities[i].state)
+        guard u >= 0, assets.definitions.units[u].states.indices.contains(st) else { return false }
+        return assets.definitions.units[u].states[st].stateCollides
+    }
+
+    private func statePassesHits(_ i: Int) -> Bool {
+        let u = world.entities[i].unit, st = Int(world.entities[i].state)
+        guard u >= 0, assets.definitions.units[u].states.indices.contains(st) else { return false }
+        return assets.definitions.units[u].states[st].passHitsToOwner
     }
 }
