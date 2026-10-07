@@ -776,8 +776,9 @@ listing address it read, every bank correction it found (invariant 3) and anythi
 - **⚑ Amendment (wave 2.4 reviews):** per entity, call C9's `rotationGate` (`FUN_10017150`, only caller 10015b64,
   before the +0xc3 test) and then C10's `runSpawnSets` (which starts at 10015b6c); pass the state read before the
   motion controller (r18 from 10033e08) into `followOwner` / `copyFromOwner`; keep ONE nearest-player helper —
-  delete the private copy in `Units/Rules.swift` (182–201) in favour of C9's `Motion.swift` one (Files += `Units/Rules.swift`,
-  that deletion only).
+  delete the private nearest-player copy in `Units/Rules.swift` (line range moved after fix(C10) f1366d5 — re-find it) in
+  favour of C9's `Motion.swift` one (Files += `Units/Rules.swift`, that deletion only). Act on `updateMotion`'s
+  delete/destroy outcome, and turn an `integrateAndCull` false into the silent delete (+0xcb = 1, +0xd9 = 0xff).
 - **Contract:** `updateEntities(log:) -> Bool` (pause) = `FUN_10033850`: the per-tick player-collision cache, then per
   entity in group order: spawn-in countdown (state start re-stamped while counting) → state particles → state sound
   (AllowOnlyOneInstance = not playing) → timer (re-read the state) → **pause flag (`10033d70`)** → **animation step
