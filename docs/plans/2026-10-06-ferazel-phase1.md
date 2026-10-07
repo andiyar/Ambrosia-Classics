@@ -855,6 +855,27 @@ addresses, before writing the tests that pin them.
 8. **Confirmations worth recording:** lighting-tables §1.2's agreement range (39..153 at 4 bits, 66..157 at 5 bits) and
    §1.4's per-table level spread (1:138 … 0x16:71) reproduce exactly with the bit-replicated inverse-table model (p09);
    water table 0 @0x9e = 0x84 exact / 0x49 4-bit as §4 states.
+9. ⚑ **R1 dump reading (2026-10-07) — the mask port `0008` and `.RedrawScrollGrid` (sprites-backgrounds §3.1,
+   rendering-omnipx-titles §1.2; `ghidra/ferazel/Ferazel_pef.decompiled.c` l. 9464–10088, disasm cited raw).**
+   (a) **Strip-incremental, not whole-window.** `.PaintFrameWrap` calls `.SetScrollLocation(h, v) @ 10012848` every
+   drawn frame; it redraws only the newly exposed row strip (v changed: rows old/32+13 .. new/32+12 down, new/32 ..
+   old/32−1 up, at the OLD h's 21 columns) and column strip (h changed: cols old/32+20 .. new/32+20 right, new/32 ..
+   old/32 left, at the OLD v's 14 rows), each through `.RedrawScrollGrid(rect, 0) @ 10013498` (l. 9534–9539). The whole
+   window (cols h/32 .. +20, rows v/32 .. +13, `.RedrawEntireScrollGrid @ 10013fd0`) is drawn only at level start
+   (`.GameLoop` l. 5210–5211) and on full redraws. Every per-cell blit culls to x ∈ [h−32, h+608], y ∈ [v−32, v+384]
+   (`.WrapDrawTile @ 100169f4`, `.WrapDrawBoolTile @ 10016f84`), so at scroll (0, 10) 20×13 of the 21×14 iterated
+   cells are drawn. Tiles go into the **third port `0004`**, not the frame: `.RedrawScrollGrid` draws every tile into
+   `_DAT_100a0004` and ends with `.WrapRectBlitX(0004 → 000c, union of the iterated cell rects) @ 100142fc` (l. 10065, raw `10013f90`).
+   (b) **Mask values.** Per redrawn cell — not per frame; nothing fills `0008` wholesale — the first two calls
+   (raw `10013688 bl .WrapEraseBoolTile`, `100136ac bl .WrapDrawBoolTile`) use `_DAT_100a0108` = PICT 1002 (32×32,
+   all black, opaque; `.PreparePaintFrame` l. 8419–8420): `.BlitEncEraseBoolTileUnmasked @ 100246b4` writes **0xFF**
+   over the cell of `0008` (`10024738 li r4,-1`, `1002474c..` `stw`), and `.BlitEncBoolTileUnmasked @ 10023260` writes
+   **0x00** over the cell of `0004` (`10023378 lfd f0,-0x61b0(r2)` = `0x100a1690` = 0.0, `100232f4..` `stfd`). Every
+   boolean stamp into `0008` — BG face, FG face (the §3.1 step-4 stamp: FG face when the FG face is opaque or there is
+   no BG; BG then FG when the BG face has a transparent pixel), overlay o2 faces — writes **0x00** over the stamped
+   face's copy-run pixels and leaves skip runs (`.BlitEncBoolTile @ 100230bc`: `10023148 li r4,0`, `10023164..` `stw`;
+   the Unmasked twin for opaque faces as above). So `0008` = 0xFF where nothing opaque was stamped (backdrop shows),
+   0x00 under opaque BG/FG/overlay pixels; `0004` starts each redrawn cell at 0x00.
 
 ---
 
