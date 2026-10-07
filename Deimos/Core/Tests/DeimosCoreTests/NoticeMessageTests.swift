@@ -48,6 +48,12 @@ final class NoticeMessageTests: XCTestCase {
         // Text is cut at 63 chars (`FUN_10046510(+0xc, s, 0x3f)`); upper → ASCII toupper (`FUN_100463b0`).
         e.post(text: String(repeating: "a", count: 70), kind: .normal, uppercase: true)
         XCTAssertEqual(e.messages.first?.text, Array(repeating: UInt8(ascii: "A"), count: 63))
+        // The shipped MSL Mac Roman toupper (`0x100f0f94` class bit 0x40 → map `0x100f1194`).
+        var u = MessageQueue(floats: a.floats)
+        u.post(text: [0x8a, 0x87, 0x88, 0xa7, 0x61, 0x5a, 0x31, 0xd8], kind: .normal, uppercase: true)
+        XCTAssertEqual(u.messages.first?.text, [0x80, 0xe7, 0xcb, 0xa7, 0x41, 0x5a, 0x31, 0xd9])
+        u.post(text: [0x8a], kind: .normal, uppercase: false)
+        XCTAssertEqual(u.messages.last?.text, [0x8a])
     }
 
     /// §2.3 quirk: at most one message is deleted per frame and the walk stops there, so the later expired
@@ -94,6 +100,25 @@ final class NoticeMessageTests: XCTestCase {
             XCTAssertEqual(t.format.colorStripBlendAmount, 16)
             XCTAssertTrue(t.format.colorStripDo)
         }
+        // A sticky readout is prepended (list head) and drawn first at k·20; pass 2 counts j over the normal
+        // entries only, with count = all 4 entries: Loc_Y 10 + 20·(4 − j − 1) = 70, 50, 30.
+        var s = q
+        s.post(text: "Game Time:  ", kind: .status, readout: 7)
+        XCTAssertEqual(s.messages.map(\.sticky), [true, false, false, false])
+        XCTAssertEqual(s.messages.first?.readout, 7)
+        let sr = s.drawRequests(formats: a.formats, readoutValue: { $0 == 7 ? 1234 : -1 })
+        XCTAssertEqual(sr.map(\.text), ["Game Time:  1234", "first", "second", "third"].map { Array($0.utf8) })
+        XCTAssertEqual(sr.map(\.format.locY), [10, 70, 50, 30])
+        // Sticky lines never age.
+        for f in UInt32(1)...200 { s.age(frame: f) }
+        XCTAssertEqual(s.messages.count, 1)
+        XCTAssertEqual(s.messages.first?.fade, 0)
+        // Re-posting the same readout un-sticks it (no new entry); it then ages out like a normal message.
+        s.post(text: "ignored", kind: .normal, readout: 7)
+        XCTAssertEqual(s.messages.count, 1)
+        XCTAssertEqual(s.messages.first?.sticky, false)
+        s.age(frame: 201)
+        XCTAssertEqual(s.messages.first?.fade, 1, "post time 0 + 60 long passed")
         // Fade 17 → strip blend 33 > 32 → strip off.
         for f in UInt32(1)...77 { q.age(frame: f) }
         let faded = q.drawRequests(formats: a.formats)
@@ -163,6 +188,53 @@ final class NoticeMessageTests: XCTestCase {
         XCTAssertEqual(n.alpha, 32)
         XCTAssertFalse(n.active, "0 → 32 in 8 ticks")
         XCTAssertEqual(rng.draws, 1)
+        // `lastTick` is stored before the active test: an inactive tick still consumes its game time.
+        n.tick(gameTime: 500, rng: &rng, cues: &cues)
+        XCTAssertEqual(n.lastTick, 500)
+        n.post(NoticeSlot.Post(text: Array("Y".utf8), hold: false, fadeIn: true, delay: 0, sound: sound,
+                               alignment: .centerInGameArea), now: 500)
+        n.tick(gameTime: 500, rng: &rng, cues: &cues)
+        XCTAssertEqual(n.delay, 0, "same game time: no tick")
+        XCTAssertEqual(cues.sounds.count, 1)
+        XCTAssertEqual(n.alpha, 32)
+        // Delay 2: not drawable on the first tick; drawable on the tick the delay reaches 0 (fade-in runs), but
+        // the start reset and the sound come one tick later (10018360 reads the decremented delay back as 0).
+        var dl = NoticeSlot(floats: a.floats)
+        var dc = CueBuffer()
+        var dr = MSLRandom(seed: 1)
+        dl.post(NoticeSlot.Post(text: Array("D".utf8), hold: false, fadeIn: true, delay: 2, sound: sound,
+                                alignment: .centerInGameArea), now: 10)
+        XCTAssertNil(dl.drawRequest(formats: a.formats))
+        dl.tick(gameTime: 11, rng: &dr, cues: &dc)
+        XCTAssertEqual(dl.delay, 1)
+        XCTAssertNil(dl.drawRequest(formats: a.formats))
+        XCTAssertEqual(dl.alpha, 32)
+        dl.tick(gameTime: 12, rng: &dr, cues: &dc)
+        XCTAssertEqual(dl.delay, 0)
+        XCTAssertNotNil(dl.drawRequest(formats: a.formats))
+        XCTAssertEqual(dl.alpha, 30)
+        XCTAssertEqual(dl.start, 10)
+        XCTAssertTrue(dc.sounds.isEmpty)
+        dl.tick(gameTime: 13, rng: &dr, cues: &dc)
+        XCTAssertEqual(dl.start, 13)
+        XCTAssertEqual(dc.sounds.count, 1)
+        XCTAssertEqual(dl.delay, -1)
+        // Hold: no auto-clear, and later posts and clears are ignored.
+        var h = NoticeSlot(floats: a.floats)
+        var hc = CueBuffer()
+        h.post(NoticeSlot.Post(text: Array("H".utf8), hold: true, fadeIn: false, delay: 0, sound: SoundRecord(),
+                               alignment: .centerInGameArea), now: 0)
+        for t in Int32(1)...200 { h.tick(gameTime: t, rng: &dr, cues: &hc) }
+        XCTAssertTrue(h.active)
+        XCTAssertFalse(h.fadingOut)
+        XCTAssertEqual(h.alpha, 0)
+        h.post(NoticeSlot.Post(text: Array("Z".utf8), hold: false, fadeIn: true, delay: 0, sound: SoundRecord(),
+                               alignment: .centerInBuffer), now: 201)
+        XCTAssertEqual(h.text, Array("H".utf8))
+        XCTAssertEqual(h.start, 1)
+        h.post(nil, now: 202)
+        XCTAssertTrue(h.active)
+        XCTAssertFalse(h.fadingOut)
         // Draw (FUN_100184b0): format 49, BlendAmount = alpha, strip blend += alpha, alignment N+0x68, layer 15.
         var d = NoticeSlot(floats: a.floats)
         d.post(NoticeSlot.Post(text: Array("X".utf8), hold: false, fadeIn: true, delay: 0, sound: SoundRecord(),

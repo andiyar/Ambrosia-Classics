@@ -13,8 +13,9 @@ import HectorResources
 ///   empty text → nothing (`1002dc7c`); `count ≥ fctiwz(flli 24)` (signed, sticky entries counted) → the new
 ///   message is dropped (`1002dc88..1002dca4`); record: post = clock, fade 0, text ≤ 63 chars
 ///   (`FUN_10046510(+0xc, s, 0x3f)` = strncpy + NUL at 63), +0x4c upper, +0x54 type, +0x50 readout, sticky =
-///   readout ≠ 0; upper → `FUN_100463b0` (MSL toupper over the C locale table — ASCII a–z; MED for bytes ≥
-///   0x80); sticky → prepend (`FUN_10000910`), else append (`FUN_100009e0`).
+///   readout ≠ 0; upper → `FUN_100463b0` (`100463b0..10046404`: per byte, class table `*(r2 − 0x78e8)` =
+///   `0x100f0f94` bit 0x40 → map `*(r2 − 0x78c4)` = `0x100f1194`; the shipped MSL Mac Roman tables, read from
+///   the data image — `toUpper` below); sticky → prepend (`FUN_10000910`), else append (`FUN_100009e0`).
 /// - `FUN_1002dd90` (`1002dd90..1002de9c`): clock = frame (stored first, even with an empty list); for i in
 ///   0..<count (count read once), sticky skipped: `clock > post + fctiwz(flli 25)` (`cmplw`, unsigned) → fade +=
 ///   fctiwz(flli 26); `fade ≥ 32` (`cmplwi`) → unlink + free and **return** (one deletion per frame).
@@ -52,6 +53,23 @@ public struct MessageQueue: Equatable, Sendable {
         public var kind: Kind
     }
 
+    /// `FUN_100463b0`'s effective map: every byte whose class entry (`0x100f0f94`) has bit 0x40 and whose map
+    /// entry (`0x100f1194`) differs (58 class-0x40 bytes; 0xa7, 0xde, 0xdf map to themselves). Data image
+    /// `mem/100de330.bin`, r2 = `0x100e6330`.
+    static let toUpper: [UInt8: UInt8] = {
+        var m: [UInt8: UInt8] = [:]
+        for c in UInt8(0x61)...0x7a { m[c] = c - 0x20 }
+        let high: [(UInt8, UInt8)] = [
+            (0x87, 0xe7), (0x88, 0xcb), (0x89, 0xe5), (0x8a, 0x80), (0x8b, 0xcc), (0x8c, 0x81), (0x8d, 0x82),
+            (0x8e, 0x83), (0x8f, 0xe9), (0x90, 0xe6), (0x91, 0xe8), (0x92, 0xea), (0x93, 0xed), (0x94, 0xeb),
+            (0x95, 0xec), (0x96, 0x84), (0x97, 0xee), (0x98, 0xf1), (0x99, 0xef), (0x9a, 0x85), (0x9b, 0xcd),
+            (0x9c, 0xf2), (0x9d, 0xf4), (0x9e, 0xf3), (0x9f, 0x86), (0xbe, 0xae), (0xbf, 0xaf), (0xcf, 0xce),
+            (0xd8, 0xd9),
+        ]
+        for (l, u) in high { m[l] = u }
+        return m
+    }()
+
     /// The list in order: sticky entries at the head, then the normal entries oldest first.
     public private(set) var messages: [Message] = []
     /// `_DAT_100e01f4`: the frame passed to the last aging call.
@@ -87,7 +105,7 @@ public struct MessageQueue: Equatable, Sendable {
         guard Int32(messages.count) < maxCount else { return }               // 1002dca0 cmpw; bge
         var body = Array(s.prefix(0x3f))                                     // 1002dd04 FUN_10046510
         if uppercase {                                                       // 1002dd30..1002dd40
-            body = body.map { (0x61...0x7a).contains($0) ? $0 - 0x20 : $0 }
+            body = body.map { Self.toUpper[$0] ?? $0 }
         }
         let m = Message(postTime: clock, fade: 0, text: body, uppercase: uppercase, sticky: readout != 0,
                         readout: readout, kind: kind)
