@@ -767,3 +767,18 @@ Opus legs — `docs/plans/2026-10-07-deimos-phase2-REVIEW.md`, both ACCEPT_WITH_
     notes only; no implementer edits `docs/deimos/*`.
 **Approved by:** seat (orchestrator; plan reviewed by two Opus 5.5 legs — Ben 2026-10-07: Opus only, no Fable) + **Ben
 for Q4** (2026-10-07, in chat).
+
+**D31 addendum — rulings closed during execution (seat, 2026-10-07; Ben: Opus 5.5 only — ask him about a Fable leg only
+if two Opus legs contradict AND find major errors; none did this session):**
+- **G4 reads `FilmCursor.score(player: 0, atRead: 4808)`** (per-read `readScores`, fix(C7) 0b2093a) — `scoreAtRead`
+  alone would hold the score of the read at cursor 4809, one tick later, inside the tallies.
+- **Pause music resumes after the wait:** C19's `PauseScreen.musicAfterWait` (`[.resume]`) is the first music cue of
+  the pass after `.pauseWait` (≤ one frame late; LOCKED seams unchanged); H2 proves it and keeps music paused across an
+  app suspend during the wait (fix(C19) fd66d50; plan C18a/H2 amendments).
+- **Power-up release stream goes idle at r+39**, not the plan's/bank's r+40 (`1003c35c` level ≤ 0 test precedes the
+  timing check at `1003c368`; independent model; fix(C15) e715efb).
+- **One sector source = G+0x14 (`flags.sector`)**; the Phase-1 `Player.sector` copy is retired by C18a (last reader
+  `ScoreBarState`).
+- **The pre-controller state (r18 from `10033e08`)** gates owner links (C9) and player/entity collisions (C11a); C12 passes it.
+- Disclosed divergences where the original reads uninitialised memory: refused indicator spawn +0xb8 = −1, refused
+  activation-spawn serial −1, no-player flee target (0,0), PERM +0x9c/+0xa0 = 0, entity fields the reset leaves = 0.
