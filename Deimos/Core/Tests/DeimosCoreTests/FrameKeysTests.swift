@@ -36,8 +36,13 @@ final class FrameKeysTests: XCTestCase {
         XCTAssertFalse(quiet.pauseStarted)
         XCTAssertNil(FrameKeys.endFrameWrapper(controller: &c, console: &con, game: &g, keys: HeldKeys(), ticks: 0))
 
+        // The console is open when the pause starts: the pause screen resets (closes) it.
+        _ = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys(held: [0x32]))
+        XCTAssertTrue(con.isOpen)
+        g.cues = CueBuffer()
         let r = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys(capsLock: true))
         XCTAssertTrue(r.pauseStarted)
+        XCTAssertTrue(con.isOpen, "begin frame leaves the console open")
         XCTAssertTrue(r.tick, "the pause frame still ticks")
         XCTAssertTrue(c.paused)
         XCTAssertTrue(g.notice.active)
@@ -52,18 +57,27 @@ final class FrameKeysTests: XCTestCase {
         g.cues.sounds.append(earlier)
         let wait = FrameKeys.endFrameWrapper(controller: &c, console: &con, game: &g, keys: HeldKeys(capsLock: true),
                                              ticks: 0)
-        XCTAssertEqual(wait, .gameScreen)
+        XCTAssertEqual(wait, PauseScreen(present: .gameScreen, musicAfterWait: [.resume]))
+        XCTAssertEqual(wait?.musicAfterWait, [.resume], "the resume comes after the wait — the next pass's music")
         XCTAssertEqual(g.cues.haltEffectsAt, 1, "the halt cuts what came before it in the pass")
         XCTAssertEqual(g.cues.sounds, [earlier, SoundPlay.perm(FourCC("incl")!, priority: 50, volume: 100,
                                                               allowMultiple: true)])
-        XCTAssertEqual(g.cues.music, [.pause, .resume])
+        XCTAssertEqual(g.cues.music, [.pause], "only the pause before the wait is in this pass")
         XCTAssertFalse(c.paused)
         XCTAssertTrue(g.notice.fadingOut, "cleared: fades out over 8 ticks")
-        XCTAssertFalse(con.isOpen)
+        XCTAssertFalse(con.isOpen, "console reset by FUN_10030870")
+        XCTAssertFalse(con.visible)
 
         // Released → paused stays 0; a fresh press pauses again.
-        _ = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys())
+        XCTAssertFalse(FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys()).pauseStarted)
         XCTAssertFalse(c.paused)
+        XCTAssertNil(FrameKeys.endFrameWrapper(controller: &c, console: &con, game: &g, keys: HeldKeys(), ticks: 0))
+        let again = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys(capsLock: true))
+        XCTAssertTrue(again.pauseStarted)
+        XCTAssertTrue(c.paused)
+        XCTAssertTrue(g.notice.active && !g.notice.fadingOut, "the notice is posted afresh")
+        XCTAssertNotNil(FrameKeys.endFrameWrapper(controller: &c, console: &con, game: &g,
+                                                  keys: HeldKeys(capsLock: true), ticks: 0))
 
         // A film: no pause, no notice, no cue.
         var f = try game()
@@ -94,10 +108,18 @@ final class FrameKeysTests: XCTestCase {
         XCTAssertEqual(frame([0x1B]).volume, 40)
         XCTAssertEqual(g.prefs.intPrefs[0], 40)
         XCTAssertNil(frame([0x1B]).volume, "held: edge only")
+        XCTAssertNil(frame([0x1B]).volume, "still held: the latch follows the key")
         XCTAssertEqual(g.prefs.intPrefs[0], 40)
         XCTAssertNil(frame([]).volume)
         XCTAssertEqual(frame([0x1B]).volume, 30)
 
+        g.prefs.intPrefs[0] = 100
+        g.prefs.intPrefs[0] = 70
+        XCTAssertEqual(frame([0x18]).volume, 80)
+        XCTAssertNil(frame([0x18]).volume, "`=` held: edge only")
+        XCTAssertNil(frame([0x18]).volume, "`=` still held: the latch follows the key")
+        XCTAssertEqual(g.prefs.intPrefs[0], 80)
+        _ = frame([])
         g.prefs.intPrefs[0] = 100
         XCTAssertEqual(frame([0x18]).volume, 100, "at 100 `=` stays 100")
         XCTAssertEqual(g.prefs.intPrefs[0], 100)
@@ -185,6 +207,7 @@ final class FrameKeysTests: XCTestCase {
         XCTAssertEqual(t.format, g.assets.formats[39])
         XCTAssertEqual(t.layer, 15)
         XCTAssertFalse(t.drawNow)
+        XCTAssertFalse(t.keepTemplateClip, "10030c08..10030c90 writes no +0x10d (the census MED claim does not hold)")
 
         // 29 frames in the next window (> 60 ticks): deficient → format 40.
         for k in 1...29 {
@@ -198,5 +221,40 @@ final class FrameKeysTests: XCTestCase {
         XCTAssertEqual(MacRoman.decode(t.text), "29")
         XCTAssertEqual(t.format, g.assets.formats[40])
         XCTAssertEqual(g.prefs.bytePrefs[5], 0, "auto-interlace needs pref 6 (never set in a stock install)")
+
+        // Auto-interlace (`100306c0..10030754`): with +3 and byte pref 6, the 10th deficient window (cumulative —
+        // `deficientWindows` is never reset by a good window) sets byte pref 5 and posts GameString 17.
+        g.messages.reset()
+        var now: UInt32 = 1185
+        func deficientWindow() {
+            for k in 1...20 {
+                _ = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys())
+                _ = FrameKeys.endFrameWrapper(controller: &c, console: &con, game: &g, keys: HeldKeys(),
+                                              ticks: k == 20 ? now + 61 : now + UInt32(k))
+            }
+            now += 61
+        }
+        for w in 2...9 {
+            deficientWindow()
+            XCTAssertEqual(c.deficientWindows, Int32(w))
+        }
+        deficientWindow()
+        XCTAssertEqual(c.deficientWindows, 0, "the 10th window resets the count")
+        XCTAssertEqual(g.prefs.bytePrefs[5], 0, "byte pref 6 off: no auto-interlace")
+        XCTAssertTrue(g.messages.messages.isEmpty)
+        g.prefs.bytePrefs[6] = 1
+        for w in 1...9 {
+            deficientWindow()
+            XCTAssertEqual(c.deficientWindows, Int32(w))
+        }
+        XCTAssertEqual(g.prefs.bytePrefs[5], 0)
+        deficientWindow()
+        XCTAssertEqual(c.deficientWindows, 0, "reset at flli 34 = 10")
+        XCTAssertEqual(g.prefs.bytePrefs[5], 1)
+        XCTAssertEqual(g.messages.messages.map(\.text), [g.assets.gameStrings[17]])
+        // Already on: the next 10th window does nothing more.
+        g.messages.reset()
+        for _ in 1...10 { deficientWindow() }
+        XCTAssertTrue(g.messages.messages.isEmpty, "pref 5 already on: no second message")
     }
 }

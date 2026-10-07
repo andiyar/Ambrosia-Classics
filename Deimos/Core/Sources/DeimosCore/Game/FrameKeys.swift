@@ -13,13 +13,28 @@ public struct FrameKeysResult: Equatable, Sendable {
     /// runs the pause screen (`FrameKeys.endFrameWrapper` → `.pauseWait`).
     public var pauseStarted: Bool
     /// `-` / `=` went down this frame: int pref 0 as `FUN_10047990` / `FUN_10047a30` left it. On Mac OS X (Q4,
-    /// D31) that is all: no gain change, no click, no message.
+    /// D31) that is all: no gain change, no click, no message — this value is information only and never becomes
+    /// a gain cue (the app plays at unity; the OS volume controls apply).
     public var volume: Int32?
     /// F6 toggled byte pref 5 this frame (message + gaso 7 already recorded).
     public var interlaceToggled: Bool
-    /// The console is open at the input read (`10030534 bl 0x1002d190; bne`): no player input this tick (the
-    /// same test in `FUN_10006b50`).
+    /// A tick frame with the console open: the input is cleared (`1003052c bl 0x1004aa20`) and the read
+    /// skipped (`10030534 bl 0x1002d190; bne`) — no player input this tick (the same test in `FUN_10006b50`).
+    /// Already ANDed with `tick`: on a non-tick frame begin frame neither clears nor reads (`10030524 beq`).
     public var inputWithheld: Bool
+}
+
+/// The end-frame wrapper's pause screen (`FUN_10030870` → `FUN_10022ef0`): the present for `.pauseWait`, and the
+/// music the original issues after the wait (`FUN_10048220(0)` at `10022fb4`), which C18a puts first in the next
+/// pass's music list.
+public struct PauseScreen: Equatable, Sendable {
+    public var present: PresentKind
+    public var musicAfterWait: [MusicCue] = [.resume]
+
+    public init(present: PresentKind, musicAfterWait: [MusicCue] = [.resume]) {
+        self.present = present
+        self.musicAfterWait = musicAfterWait
+    }
 }
 
 /// The begin-frame keys and the end-frame wrapper's pause and FPS monitor (timing-frame §2.1, §2.4, §2.6;
@@ -67,6 +82,19 @@ public enum FrameKeys {
         console.flushEvents()                                         // 10030284
     }
 
+    /// `FUN_100302e0` — the level-transition reset (`100302f4..10030328`; caller `FUN_10007170`): clear layers
+    /// (the renderer's), messages reset, console reset `FUN_1002d040(+8)`, FPS init `FUN_100305e0`, divider reset
+    /// `FUN_10030790`, FlushEvents. Unlike `startSession` the controller is not zeroed (+8, +0x1c and the latches
+    /// survive). C17 / C18a call it where `FUN_10007170` does.
+    public static func levelTransitionReset(controller c: inout FrameController, console: inout Console,
+                                            game: inout GameState, ticks: UInt32) {
+        game.messages.reset()                                         // 100302fc
+        console.reset(frame: UInt32(bitPattern: c.framesPresented))  // 10030304..10030308
+        c.fpsMonitorInit(ticks: ticks)                                // 10030314
+        c.resetDivider()                                              // 10030320
+        console.flushEvents()                                         // 10030328
+    }
+
     /// `FUN_10030360` — begin frame.
     public static func beginFrame(controller c: inout FrameController, console: inout Console, game: inout GameState,
                                   keys: HeldKeys) -> FrameKeysResult {
@@ -93,7 +121,7 @@ public enum FrameKeys {
         let begin = c.beginFrame(escDown: keys.held.contains(escKey), escHoldPref: game.prefs.bytePrefs[8] != 0)
         return FrameKeysResult(tick: begin.tick, quit: begin.quit, framesPresented: begin.framesPresented,
                                pauseStarted: pauseStarted, volume: volume, interlaceToggled: interlace,
-                               inputWithheld: console.isOpen)         // 10030534..10030540
+                               inputWithheld: begin.tick && console.isOpen)   // 10030518..10030540
     }
 
     /// `FUN_10030910` — the volume keys (Mac OS X behaviour only, Q4/D31) and F6.
@@ -156,10 +184,13 @@ public enum FrameKeys {
 
     /// `FUN_10030570` after its `FUN_10030bc0` draw part: the end-frame counters (`FrameController.endFrame`), Esc
     /// again (discarded), the pause screen (`FUN_10030870`), then the FPS monitor if the next frame ticks. Returns
-    /// the present of the blocking `.pauseWait` when the pause screen ran (the cues around the wait — halt, gaso
-    /// 8, music pause, then music resume — are already in `game.cues`; the host waits for Caps Lock up).
+    /// the pause screen when it ran: the cues BEFORE the wait (halt, gaso 8, music pause) are in `game.cues`; the
+    /// host waits for Caps Lock up (`.pauseWait(present)`); the original resumes the music only AFTER the wait
+    /// (`10022fb4`), and a pass's cues reach audio when the pass begins, so the resume is NOT in this pass's list —
+    /// it is `PauseScreen.musicAfterWait`, which C18a puts first in the NEXT pass's music list (orchestrator ruling,
+    /// C19 review; ≤ one frame late).
     public static func endFrameWrapper(controller c: inout FrameController, console: inout Console,
-                                       game: inout GameState, keys: HeldKeys, ticks: UInt32) -> PresentKind? {
+                                       game: inout GameState, keys: HeldKeys, ticks: UInt32) -> PauseScreen? {
         c.endFrame()                                                  // 10030584
         _ = c.escCheck(escDown: keys.held.contains(escKey), escHoldPref: game.prefs.bytePrefs[8] != 0)   // 10030590
         let wait = pauseScreen(controller: &c, console: &console, game: &game)   // 1003059c
@@ -171,7 +202,7 @@ public enum FrameKeys {
 
     /// `FUN_10030870` → `FUN_10022ef0(+4, 0, 0)`.
     static func pauseScreen(controller c: inout FrameController, console: inout Console,
-                            game: inout GameState) -> PresentKind? {
+                            game: inout GameState) -> PauseScreen? {
         guard c.paused else { return nil }                            // 10030884..1003088c
         console.reset(frame: UInt32(bitPattern: c.framesPresented))   // 10030890..10030894
         console.flushEvents()                                         // 10022f1c
@@ -179,11 +210,11 @@ public enum FrameKeys {
         game.cues.sounds.append(SoundPlay.perm(game.assets.sounds[8], priority: 0x32, volume: 100,
                                                allowMultiple: true))  // 10022f2c..10022f44
         game.cues.music.append(.pause)                                // 10022f4c..10022f50
-        // … the host waits for Caps Lock up (`.pauseWait`); quit (b8) is never set during play (INDEX #48) …
-        game.cues.music.append(.resume)                               // 10022fb4..10022fb8
+        // … the host waits for Caps Lock up (`.pauseWait`); quit (b8) is never set during play (INDEX #48);
+        // the resume after the wait (10022fb4..10022fb8) is `musicAfterWait` …
         game.notice.post(nil, now: game.flags.gameTime)               // 100308c0..100308d0
         c.paused = false                                              // 100308d8..100308dc
-        return c.gameScreenLayout ? .gameScreen : .fullScreen         // 10022fd4..10023004 (+4 = 1 / 0)
+        return PauseScreen(present: c.gameScreenLayout ? .gameScreen : .fullScreen)   // 10022fd4..10023004 (+4 = 1 / 0)
     }
 
     /// `FUN_10030640` — on tick frames: TickCount > +0x18 + 60 (`cmplw; ble`) → +0x24 = +0x20; byte pref 10 →

@@ -112,12 +112,39 @@ final class ConsoleTests: XCTestCase {
         XCTAssertEqual(both.map(\.text), [bytes(">"), bytes("fps")])
         XCTAssertEqual(both.map(\.layer), [15, 15])
 
+        // Recall over a longer typed line: strcpy writes "fps" + NUL and keeps the old tail bytes, so the next
+        // append re-joins them (`1002d2fc`, `1002d3e0`).
+        for _ in 0..<3 { _ = frame([], [Console.backspace]) }
+        for ch in bytes("abcdef") { _ = frame([], [ch]) }
+        _ = frame([], [Console.upArrow])
+        XCTAssertEqual(con.text, bytes("fps"))
+        XCTAssertEqual(Array(con.buffer.prefix(7)), bytes("fps") + [0] + bytes("ef") + [0])
+        _ = frame([], bytes("z"))
+        XCTAssertEqual(con.text, bytes("fpszef"))
+        // A typed line feed (0x0A) executes like Return: unknown, so the last line stays "fps".
+        g.messages.reset()
+        _ = frame([], [Console.lineFeed])
+        XCTAssertFalse(con.isOpen)
+        XCTAssertEqual(texts(g), ["Unknown Command"])
+        XCTAssertEqual(con.lastLine, bytes("fps"))
+        _ = frame([0x32])
+        _ = frame([], [Console.upArrow])
+        XCTAssertEqual(con.text, bytes("fps"))
+
         // Expiry: no key for 120 frames keeps it open; frame lastKey + 121 executes (as typed).
         let opened = con.lastKey
         var n = 0
         while con.isOpen && n < 200 { _ = frame(); n += 1 }
         XCTAssertEqual(con.lastKey, opened &+ 121, "frame > lastKey + flli 22 (120), unsigned")
         XCTAssertEqual(g.prefs.bytePrefs[9], 0, "the recalled FPS ran on expiry")
+
+        // The withhold is tick-gated (`10030524 beq`): a non-tick frame with the console open reads nothing anyway.
+        _ = frame([0x32])
+        XCTAssertTrue(con.isOpen)
+        c.tickNextFrame = false
+        let idle = FrameKeys.beginFrame(controller: &c, console: &con, game: &g, keys: HeldKeys())
+        XCTAssertFalse(idle.tick)
+        XCTAssertFalse(idle.inputWithheld, "no tick → no clear, no read: nothing to withhold")
     }
 
     /// §5.2: exactly the ten registrations of `FUN_100051a0` with r7 = 0, in order; everything else is
@@ -211,6 +238,18 @@ final class ConsoleTests: XCTestCase {
         XCTAssertTrue(h.messages.messages.isEmpty)
         XCTAssertTrue(h.cues.sounds.isEmpty)
         XCTAssertFalse(h.players[0].cheated)
+
+        // Each cheat sets the cheated flag (+0xbd, `FUN_10029bf0(p, 1)`) on its own — checked on fresh games, before
+        // any LIFE has run; an inactive P2 is never flagged.
+        for code in ["accuracy", "funds", "score", "shields", "mult"] {
+            var k = try game()
+            k.prefs.bytePrefs[11] = 1
+            var kc = try Console(assets: k.assets)
+            XCTAssertFalse(k.players[0].cheated)
+            run(&kc, &k, code)
+            XCTAssertTrue(k.players[0].cheated, code)
+            XCTAssertFalse(k.players[1].cheated, code)
+        }
     }
 
     /// §5.4 limits: life 1, funds 3 (+20 money), score 2 (`FUN_10029a10(p, 10000, 0)` × multiplier), shields 1

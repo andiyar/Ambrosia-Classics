@@ -98,6 +98,18 @@ public struct Console: Equatable, Sendable {
     /// fctiwz(flli 23) (`Console_FadeOutRate`, 4).
     public let fadeRate: Int32
 
+    /// The charCode table `FUN_1002d230` switches on (`1002d2e0..1002d350`): Mac `GetOSEvent` keyDown charCodes,
+    /// no auto-repeat. These are the codes `HeldKeys.typed` must carry (A3 maps the host's keys onto them; this
+    /// file pins them — HeldKeys' "C19 pins the codes").
+    public static let upArrow: UInt8 = 0x1e
+    public static let backspace: UInt8 = 0x08
+    public static let returnKey: UInt8 = 0x0d
+    public static let lineFeed: UInt8 = 0x0a
+    public static let graveKey: UInt8 = 0x60
+    public static let tildeKey: UInt8 = 0x7e
+    /// The 30-char cap (`1002d2bc cmplwi r31,0x1e`).
+    public static let maxLength = 30
+
     /// Format indices of the prompt and the typed text.
     public static let promptFormat = 33
     public static let textFormat = 34
@@ -155,20 +167,20 @@ public struct Console: Equatable, Sendable {
         guard got || expired else { return }                                 // 1002d298..1002d2a4
         lastKey = frame                                                      // 1002d2a8
         let len = text.count                                                 // 1002d2b0 strlen
-        if len >= 30 { key = 0x0a }                                          // 1002d2bc..1002d2c8
-        if expired { key = 0x0a }                                            // 1002d2cc..1002d2d8
+        if len >= Self.maxLength { key = Self.lineFeed }                     // 1002d2bc..1002d2c8
+        if expired { key = Self.lineFeed }                                   // 1002d2cc..1002d2d8
         switch key {
-        case 0x1e:                                                           // 1002d2e0..1002d2fc, 1002d30c
+        case Self.upArrow:                                                   // 1002d2e0..1002d2fc, 1002d30c
             guard lastBuffer[0] != 0 else { return }
             let src = lastLine
             for (i, b) in src.enumerated() { buffer[i] = b }                 // strcpy: the NUL, not the tail
             buffer[src.count] = 0
-        case 0x0a, 0x0d:                                                     // 1002d38c..1002d3dc
+        case Self.lineFeed, Self.returnKey:                                  // 1002d38c..1002d3dc
             isOpen = false
             execute(text, game: &game)
-        case 0x08:                                                           // 1002d360..1002d388
+        case Self.backspace:                                                 // 1002d360..1002d388
             if len > 1 { buffer[len - 1] = 0 } else if len > 0 { buffer[0] = 0 }
-        case 0x60, 0x7e:                                                     // 1002d354..1002d358
+        case Self.graveKey, Self.tildeKey:                                   // 1002d354..1002d358
             visible = true
         default:
             buffer[len] = key                                                // 1002d3e0 stbx
