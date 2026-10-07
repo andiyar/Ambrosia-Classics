@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "DeimosCore", targets: ["DeimosCore"]),
         .library(name: "DeimosRender", targets: ["DeimosRender"]),
         .library(name: "DeimosHost", targets: ["DeimosHost"]),
+        .library(name: "DeimosAudio", targets: ["DeimosAudio"]),
         .executable(name: "deimos-census", targets: ["deimos-census"]),
     ],
     dependencies: [
@@ -31,6 +32,13 @@ let package = Package(
         // The host driver (Phase 1 H1): the Mac-tick clock, the FPS limiter and fade waits as yields, Esc restart.
         // Foundation + DeimosCore + DeimosRender only (plan invariant 1) — no threads, no sleeping.
         .target(name: "DeimosHost", dependencies: ["DeimosCore", "DeimosRender"]),
+        // The game's own audio (Phase 2 A1–A2): the 16-voice / 8-audible effects mixer over the continuous-IMA
+        // sounds, and the music streamer, behind one pull source. Foundation + DeimosCore + HectorAudio +
+        // Synchronization only (plan invariant 1; DeimosAudio ruling — pulled on the audio thread).
+        .target(name: "DeimosAudio", dependencies: [
+            "DeimosCore",
+            .product(name: "HectorAudio", package: "HectorKit"),
+        ]),
         // The census tool (Task C7): Markdown on stdout = docs/deimos/data-census.md below its rule.
         // `--render` uses ImageIO (PNG writer, census-only; plan invariant 2). Section 9 (Task C8, the
         // app resource fork) decodes PICT/DITL with HectorGraphics, whose QuickTime-in-PICT path uses
@@ -51,5 +59,6 @@ let package = Package(
         ]),
         .testTarget(name: "DeimosRenderTests", dependencies: ["DeimosRender", "DeimosCore"]),
         .testTarget(name: "DeimosHostTests", dependencies: ["DeimosHost", "DeimosRender", "DeimosCore"]),
+        .testTarget(name: "DeimosAudioTests", dependencies: ["DeimosAudio", "DeimosCore"]),
     ]
 )
