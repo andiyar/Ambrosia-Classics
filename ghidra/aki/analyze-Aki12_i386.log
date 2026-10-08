@@ -1,0 +1,186 @@
+openjdk version "26.0.2.1" 2026-08-18
+OpenJDK Runtime Environment Homebrew (build 26.0.2.1)
+OpenJDK 64-Bit Server VM Homebrew (build 26.0.2.1, mixed mode)
+INFO  Using log config file: jar:file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/preferences (Preferences)  
+INFO  Loading previous preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.2_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (546 ms) (ClassSearcher)  
+WARNING: Final field name in class ghidra.util.charset.CharsetInfo has been mutated reflectively by class com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2 in unnamed module @15aab8c6 (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/gson-2.13.2.jar)
+WARNING: Use --enable-final-field-mutation=ALL-UNNAMED to avoid a warning
+WARNING: Mutating final fields will be blocked in a future release unless final field mutation is enabled
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Headless startup complete (1321 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldOffset has been called by org.apache.felix.framework.util.SecureAction (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/lib/org.apache.felix.framework-7.0.5.jar)
+WARNING: Please consider reporting this to the maintainers of class org.apache.felix.framework.util.SecureAction
+WARNING: sun.misc.Unsafe::staticFieldOffset will be removed in a future release
+INFO  HEADLESS Script Paths:
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/8051/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FileFormats/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Decompiler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PDB/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/JVM/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/PIC/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PyGhidra/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/VersionTracking/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BSim/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BytePatterns/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/Atmel/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/DATA/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FunctionID/ghidra_scripts
+    /Users/andiyar/Developer/Ambrosia-Classics/ghidra (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: /Users/andiyar/Developer/Ghidra/aki/proj/Aki12_i386 (HeadlessAnalyzer)  
+INFO  Creating project: /Users/andiyar/Developer/Ghidra/aki/proj/Aki12_i386 (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: /Users/andiyar/Developer/Ghidra/aki/proj/Aki12_i386 (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386 (HeadlessAnalyzer)  
+INFO  Using Loader: Mac OS X Mach-O (ProgramLoader)  
+INFO  Using Language/Compiler: x86:LE:32:default:gcc (ProgramLoader)  
+INFO  Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/andiyar/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java] (ProgramLoader)  
+INFO  Additional info:
+Loading file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386?MD5=1a4f75b526c4a30382b6475e5f2d6dc2...
+------------------------------------------------
+
+Linking the External Programs of 'Aki12_i386' to imported libraries...
+  [@executable_path/../Frameworks/Sparkle.framework/Versions/A/Sparkle] -> not found in project
+  [/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon] -> not found in project
+  [/System/Library/Frameworks/QuickTime.framework/Versions/A/QuickTime] -> not found in project
+  [/System/Library/Frameworks/Security.framework/Versions/A/Security] -> not found in project
+  [/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices] -> not found in project
+  [@executable_path/../Frameworks/AmbrosiaTools.framework/Versions/A/AmbrosiaTools] -> not found in project
+  [@executable_path/../Frameworks/ASWAppKit.framework/Versions/A/ASWAppKit] -> not found in project
+  [@executable_path/../Frameworks/ASWFoundation.framework/Versions/A/ASWFoundation] -> not found in project
+  [@executable_path/../Frameworks/ASWAboutBox.framework/Versions/A/ASWAboutBox] -> not found in project
+  [@executable_path/../Frameworks/ASWRegistration.framework/Versions/A/ASWRegistration] -> not found in project
+  [/usr/lib/libgcc_s.1.dylib] -> not found in project
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices] -> not found in project
+  [/usr/lib/libobjc.A.dylib] -> not found in project
+  [/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation] -> not found in project
+  [/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit] -> not found in project
+  [/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation] -> not found in project
+------------------------------------------------
+
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386 (HeadlessAnalyzer)  
+INFO  Packed database cache: /var/tmp/andiyar-ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: mac_osx (ApplyDataArchiveAnalyzer)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.129 secs
+    Apply Data Archives                        0.176 secs
+    CFStrings                                  0.015 secs
+    Call Convention ID                         0.002 secs
+    Call-Fixup Installer                       0.003 secs
+    Create Address Tables                      0.014 secs
+    Create Address Tables - One Time           0.016 secs
+    Create Function                            0.037 secs
+    Data Reference                             0.028 secs
+    Decompiler Switch Analysis                 1.300 secs
+    Demangler GNU                              0.073 secs
+    Disassemble                                0.333 secs
+    Disassemble Entry Points                   0.345 secs
+    Disassemble Entry Points - One Time        0.006 secs
+    Embedded Media                             0.003 secs
+    External Entry References                  0.001 secs
+    Function ID                                0.235 secs
+    Function Start Pre Search                  0.007 secs
+    Function Start Search                      0.010 secs
+    Function Start Search After Code           0.003 secs
+    Function Start Search After Data           0.004 secs
+    Function Start Search delayed - One Time   0.010 secs
+    Mach-O Function Starts                     0.007 secs
+    Non-Returning Functions - Discovered       0.062 secs
+    Non-Returning Functions - Known            0.003 secs
+    Reference                                  0.027 secs
+    Scalar Operand References                  0.321 secs
+    Shared Return Calls                        0.032 secs
+    Stack                                      0.780 secs
+    Subroutine References                      0.018 secs
+    X86 Function Callee Purge                  0.016 secs
+    x86 Constant Reference Analyzer            0.580 secs
+-----------------------------------------------------
+     Total Time   4 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386 (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DumpDecompile.java '/Users/andiyar/Developer/Ghidra/aki/Aki12_i386.decompiled.c'  (HeadlessAnalyzer)  
+DisasmFuncs.java:8: error: duplicate class: DisasmFuncs
+public class DisasmFuncs extends GhidraScript {
+       ^
+StringXrefs.java:16: error: duplicate class: StringXrefs
+public class StringXrefs extends GhidraScript {
+       ^
+DumpMemory.java:10: error: duplicate class: DumpMemory
+public class DumpMemory extends GhidraScript {
+       ^
+DisasmFuncs.java:8: error: duplicate class: DisasmFuncs
+public class DisasmFuncs extends GhidraScript {
+       ^
+StringXrefs.java:16: error: duplicate class: StringXrefs
+public class StringXrefs extends GhidraScript {
+       ^
+DumpMemory.java:10: error: duplicate class: DumpMemory
+public class DumpMemory extends GhidraScript {
+       ^
+DisasmFuncs.java:8: error: duplicate class: DisasmFuncs
+public class DisasmFuncs extends GhidraScript {
+       ^
+StringXrefs.java:16: error: duplicate class: StringXrefs
+public class StringXrefs extends GhidraScript {
+       ^
+DumpMemory.java:10: error: duplicate class: DumpMemory
+public class DumpMemory extends GhidraScript {
+       ^
+DisasmRange.java:9: error: duplicate class: DisasmRange
+public class DisasmRange extends GhidraScript {
+       ^
+DisasmFuncs.java:8: error: duplicate class: DisasmFuncs
+public class DisasmFuncs extends GhidraScript {
+       ^
+StringXrefs.java:16: error: duplicate class: StringXrefs
+public class StringXrefs extends GhidraScript {
+       ^
+DumpMemory.java:10: error: duplicate class: DumpMemory
+public class DumpMemory extends GhidraScript {
+       ^
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before/docs/deimos/tools/DumpMemory.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/tools/DisasmFuncs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/after/docs/deimos/tools/DumpMemory.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before-d/tools/StringXrefs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before-d/tools/DumpMemory.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-tools/DisasmRange.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before-d/tools/DisasmFuncs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/tools/StringXrefs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/after/docs/deimos/tools/StringXrefs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/after/docs/deimos/tools/DisasmFuncs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/tools/DumpMemory.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before/docs/deimos/tools/StringXrefs.java
+skipping /Users/andiyar/Developer/Ambrosia-Classics/ghidra/deimos-proj/critic3-work/before/docs/deimos/tools/DisasmFuncs.java
+INFO  SCRIPT: /Users/andiyar/Developer/Ambrosia-Classics/ghidra/DumpDecompile.java (HeadlessAnalyzer)  
+INFO  DumpDecompile.java> decompiled 0/842 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 500/842 (GhidraScript)  
+INFO  DumpDecompile.java> DumpDecompile: wrote 566/842 functions to /Users/andiyar/Developer/Ghidra/aki/Aki12_i386.decompiled.c (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386 (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file:///Users/andiyar/Developer/Ghidra/aki/Aki12_i386 (HeadlessAnalyzer)  
+INFO  /Aki12_i386: file created (andiyar) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /Aki12_i386 (Aki12_i386:/Aki12_i386) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  

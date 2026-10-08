@@ -1,9 +1,20 @@
-# ghidra/ — decompile recipe (everything but the scripts is git-ignored)
+# ghidra/ — the decompile bank (every game's dumps are committed)
 
-**Where everything lives (Ben 2026-10-06):** `~/Developer/Ghidra/<game>/` — binary, Ghidra project (`proj/`), every dump and log, for ferazel, cythera, deimos, aki, btx, ev-nova, ev-override (its README has the table). This directory keeps the scripts; `proj`, `deimos-proj` and the Cythera files here are symlinks into that folder; `ferazel/` is a committed copy of the Ferazel text dumps + binary (the exception to the rule below).
+**Where everything lives (Ben 2026-10-06, completed 2026-10-08):**
+- `ghidra/<game>/` (committed, in every worktree): the binary, every text dump and its analyze log —
+  `aki/` (1.2.0 `Aki12_i386` + 1.1.0 `Aki_ppc`), `btx/`, `ferazel/`, `deimos/`, `cythera/`. Read these.
+- `~/Developer/Ghidra/<game>/` (not in git): the same files **plus the Ghidra projects** (`proj/`) and,
+  for Deimos, the RE waves' scratch (`$W` in `docs/deimos/`, reached here via the `deimos-proj` symlink).
+  Its README has the table. Run Ghidra only against that folder — never inside `.claude/worktrees/…`.
+- In this checkout `proj`, `deimos-proj` and the old flat paths (`Cythera_*`, `Aki12_*`, `Deimos_*`) are
+  git-ignored symlinks into `~/Developer/Ghidra/`, so older citations still resolve here.
 
-The originals are copyrighted; binaries, Ghidra projects, logs and `*.decompiled.c` dumps never
-enter git. Only `*.py`, `*.java`, `*.sh` and this README are tracked.
+Never leave a dump only in a worktree or a scratchpad: regenerate into `~/Developer/Ghidra/<game>/`
+and copy the text dump + log into `ghidra/<game>/` (that is how the Aki 1.2, Deimos and Cythera dumps
+were lost and rebuilt). Recipes: `regen-ferazel.sh`, `regen-cythera.sh`, and below. Regenerated
+2026-10-08, matching the bank's recorded figures exactly: Aki 1.2 `wrote 566/842`; Deimos
+`wrote 2580/2588`, 3,070,632 B (from the untouched 2026-10-03 project, `-process -noanalysis -readOnly`
+on a copy).
 
 ## Tool
 Ghidra 12.1.3 from Homebrew: `/opt/homebrew/Cellar/ghidra/12.1.3/libexec/support/analyzeHeadless`

@@ -17,8 +17,9 @@ The games (Ben's list, final 2026-10-03): **Aki — Mahjong Solitaire** (first),
 5. First session on this machine: `~/Developer/Toolkits/fable-kit/fable.md` §4 §6 §10.
 
 ## Oracles
-- The original binaries, decompiled with Ghidra headless into `ghidra/<game>.decompiled.c`
-  (git-ignored; recipe in `ghidra/README.md`). Aki 1.1.0 PPC + 1.2.0 UB; Bubble Trouble X 1.1 UB.
+- The original binaries, decompiled with Ghidra headless. Dumps are **committed** in `ghidra/<game>/`
+  (aki, btx, ferazel, deimos, cythera); Ghidra projects live in `~/Developer/Ghidra/<game>/` (not in git).
+  Never leave a dump only in a worktree. Layout + recipes: `ghidra/README.md`.
 - Shipped documentation per game (Aki Handbook PDF; the Bubble Trouble HTML guide + editor read-me).
 - The archive mirror index: `~/Developer/Ambrosia/docs/ARCHIVE-INDEX.md` (where every recovered
   copy lives and how it was opened).

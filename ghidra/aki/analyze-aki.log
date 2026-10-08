@@ -1,0 +1,499 @@
+openjdk version "26.0.2.1" 2026-08-18
+OpenJDK Runtime Environment Homebrew (build 26.0.2.1)
+OpenJDK 64-Bit Server VM Homebrew (build 26.0.2.1, mixed mode)
+INFO  Using log config file: jar:file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/Generic.jar!/generic.log4j.xml (LoggingInitialization)  
+INFO  Using log file: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/application.log (LoggingInitialization)  
+INFO  Loading user preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.3_PUBLIC/preferences (Preferences)  
+INFO  Loading previous preferences: /Users/andiyar/Library/ghidra/ghidra_12.1.2_PUBLIC/preferences (Preferences)  
+INFO  Searching for classes... (ClassSearcher)  
+INFO  Class search complete (538 ms) (ClassSearcher)  
+WARNING: Final field name in class ghidra.util.charset.CharsetInfo has been mutated reflectively by class com.google.gson.internal.bind.ReflectiveTypeAdapterFactory$2 in unnamed module @15aab8c6 (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Framework/Generic/lib/gson-2.13.2.jar)
+WARNING: Use --enable-final-field-mutation=ALL-UNNAMED to avoid a warning
+WARNING: Mutating final fields will be blocked in a future release unless final field mutation is enabled
+INFO  Initializing SSL Context (DefaultSSLContextInitializer)  
+INFO  Initializing Random Number Generator... (SecureRandomFactory)  
+INFO  Random Number Generator initialization complete: NativePRNGNonBlocking (SecureRandomFactory)  
+INFO  Trust manager disabled, cacerts have not been set (DefaultTrustManagerFactory)  
+INFO  Starting cache cleanup: /var/tmp/andiyar-ghidra/fscache2 (FileCacheMaintenanceDaemon)  
+INFO  Finished cache cleanup, estimated storage used: 0 (FileCacheMaintenanceDaemon)  
+INFO  Headless startup complete (1165 ms) (AnalyzeHeadless)  
+INFO  Class searcher loaded 59 extension points (20 false positives) (ClassSearcher)  
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldOffset has been called by org.apache.felix.framework.util.SecureAction (file:/opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/lib/org.apache.felix.framework-7.0.5.jar)
+WARNING: Please consider reporting this to the maintainers of class org.apache.felix.framework.util.SecureAction
+WARNING: sun.misc.Unsafe::staticFieldOffset will be removed in a future release
+INFO  HEADLESS Script Paths:
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/8051/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger-rmi-trace/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FileFormats/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Decompiler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PDB/ghidra_scripts
+    /Users/andiyar/Developer/Ambrosia/ghidra
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/JVM/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SystemEmulation/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/PIC/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Debug/Debugger/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/GnuDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/MicrosoftCodeAnalyzer/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/PyGhidra/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/SwiftDemangler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/WildcardAssembler/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/VersionTracking/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BSim/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/BytePatterns/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/Atmel/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/DecompilerDependent/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Processors/DATA/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/Base/ghidra_scripts
+    /opt/homebrew/Cellar/ghidra/12.1.3/libexec/Ghidra/Features/FunctionID/ghidra_scripts (HeadlessAnalyzer)  
+INFO  HEADLESS: execution starts (HeadlessAnalyzer)  
+INFO  Creating project: /Users/andiyar/Developer/Ambrosia/ghidra/proj/Aki (HeadlessAnalyzer)  
+INFO  Creating project: /Users/andiyar/Developer/Ambrosia/ghidra/proj/Aki (DefaultProject)  
+INFO  REPORT: Processing input files:  (HeadlessAnalyzer)  
+INFO       project: /Users/andiyar/Developer/Ambrosia/ghidra/proj/Aki (HeadlessAnalyzer)  
+INFO  IMPORTING: file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc (HeadlessAnalyzer)  
+INFO  Using Loader: Mac OS X Mach-O (ProgramLoader)  
+INFO  Using Language/Compiler: PowerPC:BE:64:VLE-32addr:default (ProgramLoader)  
+INFO  Using Library Search Path: [., /System/Library/dyld/dyld_shared_cache_arm64e, /System/Library/dyld/dyld_shared_cache_x86_64, /System/Library/dyld/dyld_shared_cache_x86_64h, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64, /System/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64h, /Users/andiyar/Library/Java/Extensions, /Library/Java/Extensions, /Network/Library/Java/Extensions, /System/Library/Java/Extensions, /usr/lib/java] (ProgramLoader)  
+INFO  Additional info:
+Loading file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc?MD5=f8a6daf867608cd3526c617164a8945b...
+------------------------------------------------
+
+Linking the External Programs of 'Aki_ppc' to imported libraries...
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon] -> not found in project
+  [/System/Library/Frameworks/QuickTime.framework/Versions/A/QuickTime] -> not found in project
+  [/System/Library/Frameworks/DrawSprocket.framework/Versions/A/DrawSprocket] -> not found in project
+  [/usr/lib/libz.1.dylib] -> not found in project
+  [/usr/lib/libSystem.B.dylib] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/ImageCapture.framework/Versions/A/ImageCapture] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/SpeechRecognition.framework/Versions/A/SpeechRecognition] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/SecurityHI.framework/Versions/A/SecurityHI] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/Ink.framework/Versions/A/Ink] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/Help.framework/Versions/A/Help] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/OpenScripting.framework/Versions/A/OpenScripting] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/Print.framework/Versions/A/Print] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HTMLRendering.framework/Versions/A/HTMLRendering] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/NavigationServices.framework/Versions/A/NavigationServices] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/CarbonSound.framework/Versions/A/CarbonSound] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/CommonPanels.framework/Versions/A/CommonPanels] -> not found in project
+  [/System/Library/Frameworks/Carbon.framework/Versions/A/Frameworks/HIToolbox.framework/Versions/A/HIToolbox] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices] -> not found in project
+  [/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation] -> not found in project
+  [/System/Library/Frameworks/CoreAudio.framework/Versions/A/CoreAudio] -> not found in project
+  [/System/Library/Frameworks/Security.framework/Versions/A/Security] -> not found in project
+  [/usr/lib/system/libmathCommon.A.dylib] -> not found in project
+  [/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/AE] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ATS.framework/Versions/A/ATS] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ColorSync.framework/Versions/A/ColorSync] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/PrintCore.framework/Versions/A/PrintCore] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/QD.framework/Versions/A/QD] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/LangAnalysis.framework/Versions/A/LangAnalysis] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/HIServices.framework/Versions/A/HIServices] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/SpeechSynthesis.framework/Versions/A/SpeechSynthesis] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/FindByContent.framework/Versions/A/FindByContent] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/LaunchServices] -> not found in project
+  [/usr/lib/libcups.2.dylib] -> not found in project
+  [/System/Library/PrivateFrameworks/DesktopServicesPriv.framework/Versions/A/DesktopServicesPriv] -> not found in project
+  [/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration] -> not found in project
+  [/System/Library/PrivateFrameworks/DiskArbitration.framework/Versions/A/DiskArbitration] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/libCGATS.A.dylib] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/libCSync.A.dylib] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/libPDFRIP.A.dylib] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/libPSRIP.A.dylib] -> not found in project
+  [/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/CoreGraphics.framework/Versions/A/Resources/libRIP.A.dylib] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/CarbonCore] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/OSServices.framework/Versions/A/OSServices] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CFNetwork.framework/Versions/A/CFNetwork] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/WebServicesCore.framework/Versions/A/WebServicesCore] -> not found in project
+  [/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/SearchKit.framework/Versions/A/SearchKit] -> not found in project
+  [/usr/lib/libicucore.A.dylib] -> not found in project
+  [/System/Library/PrivateFrameworks/Bom.framework/Versions/A/Bom] -> not found in project
+  [/usr/lib/libbsm.dylib] -> not found in project
+  [/usr/lib/libssl.0.9.7.dylib] -> not found in project
+  [/usr/lib/libcrypto.0.9.7.dylib] -> not found in project
+  [/usr/lib/libresolv.9.dylib] -> not found in project
+------------------------------------------------
+
+ (ProgramLoader)  
+INFO  IMPORTING: Loaded 0 additional files (HeadlessAnalyzer)  
+INFO  ANALYZING all memory and code: file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc (HeadlessAnalyzer)  
+ERROR Invalid PNG data at 000d3be4 (PngDataType)  
+ERROR Invalid PNG data at 000d3d3c (PngDataType)  
+ERROR Invalid PNG data at 000d40dc (PngDataType)  
+ERROR Invalid GIF data at 000d5788 (GifDataType)  
+ERROR Invalid GIF data at 000d5790 (GifDataType)  
+INFO  hit non-returning function, restarting decompiler switch analyzer later (DecompilerSwitchAnalyzer)  
+INFO  Packed database cache: /var/tmp/andiyar-ghidra/packed-db-cache (PackedDatabaseCache)  
+INFO  Applied data type archive: mac_osx (ApplyDataArchiveAnalyzer)  
+WARN  Decompiling 000d0c10, pcode error at 000d0c10: Unable to resolve constructor at 000d0c10 (DecompileCallback)  
+WARN  Decompiling 0010400c, pcode error at 0010400c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d0d14, pcode error at 000d0d14: Unable to resolve constructor at 000d0d14 (DecompileCallback)  
+WARN  Decompiling 000cfe14, pcode error at 000cfe14: Unable to resolve constructor at 000cfe14 (DecompileCallback)  
+WARN  Decompiling 00104000, pcode error at 00104000: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfa00, pcode error at 000cfa00: Unable to resolve constructor at 000cfa00 (DecompileCallback)  
+WARN  Decompiling 000d071c, pcode error at 000d071c: Unable to resolve constructor at 000d071c (DecompileCallback)  
+WARN  Decompiling 000cfb1c, pcode error at 000cfb1c: Unable to resolve constructor at 000cfb1c (DecompileCallback)  
+WARN  Decompiling 000d0000, pcode error at 000d0000: Unable to resolve constructor at 000d0000 (DecompileCallback)  
+WARN  Decompiling 00104008, pcode error at 00104008: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104004, pcode error at 00104004: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104018, pcode error at 00104018: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104010, pcode error at 00104010: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104014, pcode error at 00104014: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfc04, pcode error at 000cfc04: Unable to resolve constructor at 000cfc04 (DecompileCallback)  
+WARN  Decompiling 000cfd04, pcode error at 000cfd04: Unable to resolve constructor at 000cfd04 (DecompileCallback)  
+WARN  Decompiling 000d0634, pcode error at 000d0634: Unable to resolve constructor at 000d0634 (DecompileCallback)  
+WARN  Decompiling 000d0e34, pcode error at 000d0e34: Unable to resolve constructor at 000d0e34 (DecompileCallback)  
+WARN  Decompiling 000d1220, pcode error at 000d1220: Unable to resolve constructor at 000d1220 (DecompileCallback)  
+WARN  Decompiling 000cfc24, pcode error at 000cfc24: Unable to resolve constructor at 000cfc24 (DecompileCallback)  
+WARN  Decompiling 000cfd24, pcode error at 000cfd24: Unable to resolve constructor at 000cfd24 (DecompileCallback)  
+WARN  Decompiling 000d0028, pcode error at 000d0028: Unable to resolve constructor at 000d0028 (DecompileCallback)  
+WARN  Decompiling 000d0a2c, pcode error at 000d0a2c: Unable to resolve constructor at 000d0a2c (DecompileCallback)  
+WARN  Decompiling 000cff28, pcode error at 000cff28: Unable to resolve constructor at 000cff28 (DecompileCallback)  
+WARN  Decompiling 000d0b2c, pcode error at 000d0b2c: Unable to resolve constructor at 000d0b2c (DecompileCallback)  
+WARN  Decompiling 000d012c, pcode error at 000d012c: Unable to resolve constructor at 000d012c (DecompileCallback)  
+WARN  Decompiling 000d1354, pcode error at 000d1354: Unable to resolve constructor at 000d1354 (DecompileCallback)  
+WARN  Decompiling 000cfa40, pcode error at 000cfa40: Unable to resolve constructor at 000cfa40 (DecompileCallback)  
+WARN  Decompiling 000cfe40, pcode error at 000cfe40: Unable to resolve constructor at 000cfe40 (DecompileCallback)  
+WARN  Decompiling 000d0d44, pcode error at 000d0d44: Unable to resolve constructor at 000d0d44 (DecompileCallback)  
+WARN  Decompiling 000cfc44, pcode error at 000cfc44: Unable to resolve constructor at 000cfc44 (DecompileCallback)  
+WARN  Decompiling 000d0d70, pcode error at 000d0d70: Unable to resolve constructor at 000d0d70 (DecompileCallback)  
+WARN  Decompiling 000cfd48, pcode error at 000cfd48: Unable to resolve constructor at 000cfd48 (DecompileCallback)  
+WARN  Decompiling 000d0974, pcode error at 000d0974: Unable to resolve constructor at 000d0974 (DecompileCallback)  
+WARN  Decompiling 00104064, pcode error at 00104064: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d1374, pcode error at 000d1374: Unable to resolve constructor at 000d1374 (DecompileCallback)  
+WARN  Decompiling 000cfb60, pcode error at 000cfb60: Unable to resolve constructor at 000cfb60 (DecompileCallback)  
+WARN  Decompiling 000d0864, pcode error at 000d0864: Unable to resolve constructor at 000d0864 (DecompileCallback)  
+WARN  Decompiling 000d0564, pcode error at 000d0564: Unable to resolve constructor at 000d0564 (DecompileCallback)  
+WARN  Decompiling 000d0764, pcode error at 000d0764: Unable to resolve constructor at 000d0764 (DecompileCallback)  
+WARN  Decompiling 000cfa68, pcode error at 000cfa68: Unable to resolve constructor at 000cfa68 (DecompileCallback)  
+WARN  Decompiling 000cfc64, pcode error at 000cfc64: Unable to resolve constructor at 000cfc64 (DecompileCallback)  
+WARN  Decompiling 000d0168, pcode error at 000d0168: Unable to resolve constructor at 000d0168 (DecompileCallback)  
+WARN  Decompiling 00104174, pcode error at 00104174: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfe6c, pcode error at 000cfe6c: Unable to resolve constructor at 000cfe6c (DecompileCallback)  
+WARN  Decompiling 00104170, pcode error at 00104170: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d0b90, pcode error at 000d0b90: Unable to resolve constructor at 000d0b90 (DecompileCallback)  
+WARN  Decompiling 000cf968, pcode error at 000cf968: Unable to resolve constructor at 000cf968 (DecompileCallback)  
+WARN  Decompiling 000cfd6c, pcode error at 000cfd6c: Unable to resolve constructor at 000cfd6c (DecompileCallback)  
+WARN  Decompiling 000cff98, pcode error at 000cff98: Unable to resolve constructor at 000cff98 (DecompileCallback)  
+WARN  Decompiling 000cfe9c, pcode error at 000cfe9c: Unable to resolve constructor at 000cfe9c (DecompileCallback)  
+WARN  Decompiling 00104188, pcode error at 00104188: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfd90, pcode error at 000cfd90: Unable to resolve constructor at 000cfd90 (DecompileCallback)  
+WARN  Decompiling 000d0080, pcode error at 000d0080: Unable to resolve constructor at 000d0080 (DecompileCallback)  
+WARN  Decompiling 000d0680, pcode error at 000d0680: Unable to resolve constructor at 000d0680 (DecompileCallback)  
+WARN  Decompiling 000cfc84, pcode error at 000cfc84: Unable to resolve constructor at 000cfc84 (DecompileCallback)  
+WARN  Decompiling 00104194, pcode error at 00104194: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d018c, pcode error at 000d018c: Unable to resolve constructor at 000d018c (DecompileCallback)  
+WARN  Decompiling 00104190, pcode error at 00104190: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d0ab0, pcode error at 000d0ab0: Unable to resolve constructor at 000d0ab0 (DecompileCallback)  
+WARN  Decompiling 000d01b0, pcode error at 000d01b0: Unable to resolve constructor at 000d01b0 (DecompileCallback)  
+WARN  Decompiling 001040ac, pcode error at 001040ac: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfdb8, pcode error at 000cfdb8: Unable to resolve constructor at 000cfdb8 (DecompileCallback)  
+WARN  Decompiling 000d07bc, pcode error at 000d07bc: Unable to resolve constructor at 000d07bc (DecompileCallback)  
+WARN  Decompiling 001040bc, pcode error at 001040bc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfaa4, pcode error at 000cfaa4: Unable to resolve constructor at 000cfaa4 (DecompileCallback)  
+WARN  Decompiling 000cfca4, pcode error at 000cfca4: Unable to resolve constructor at 000cfca4 (DecompileCallback)  
+WARN  Decompiling 001040b8, pcode error at 001040b8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d00a8, pcode error at 000d00a8: Unable to resolve constructor at 000d00a8 (DecompileCallback)  
+WARN  Decompiling 000d13a8, pcode error at 000d13a8: Unable to resolve constructor at 000d13a8 (DecompileCallback)  
+WARN  Decompiling 001040b4, pcode error at 001040b4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d03ac, pcode error at 000d03ac: Unable to resolve constructor at 000d03ac (DecompileCallback)  
+WARN  Decompiling 000cfba8, pcode error at 000cfba8: Unable to resolve constructor at 000cfba8 (DecompileCallback)  
+WARN  Decompiling 001040cc, pcode error at 001040cc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040b0, pcode error at 001040b0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d15ac, pcode error at 000d15ac: Unable to resolve constructor at 000d15ac (DecompileCallback)  
+WARN  Decompiling 000d11d8, pcode error at 000d11d8: Unable to resolve constructor at 000d11d8 (DecompileCallback)  
+WARN  Decompiling 001040c8, pcode error at 001040c8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040c4, pcode error at 001040c4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfdd8, pcode error at 000cfdd8: Unable to resolve constructor at 000cfdd8 (DecompileCallback)  
+WARN  Decompiling 001040c0, pcode error at 001040c0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d08c4, pcode error at 000d08c4: Unable to resolve constructor at 000d08c4 (DecompileCallback)  
+WARN  Decompiling 001041dc, pcode error at 001041dc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cffc0, pcode error at 000cffc0: Unable to resolve constructor at 000cffc0 (DecompileCallback)  
+WARN  Decompiling 000d09c4, pcode error at 000d09c4: Unable to resolve constructor at 000d09c4 (DecompileCallback)  
+WARN  Decompiling 001040d4, pcode error at 001040d4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000d04c8, pcode error at 000d04c8: Unable to resolve constructor at 000d04c8 (DecompileCallback)  
+WARN  Decompiling 001041d8, pcode error at 001041d8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfcc4, pcode error at 000cfcc4: Unable to resolve constructor at 000cfcc4 (DecompileCallback)  
+WARN  Decompiling 001040d0, pcode error at 001040d0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cf9cc, pcode error at 000cf9cc: Unable to resolve constructor at 000cf9cc (DecompileCallback)  
+WARN  Decompiling 001041d0, pcode error at 001041d0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 000cfaf4, pcode error at 000cfaf4: Unable to resolve constructor at 000cfaf4 (DecompileCallback)  
+WARN  Decompiling 000d14f8, pcode error at 000d14f8: Unable to resolve constructor at 000d14f8 (DecompileCallback)  
+WARN  Decompiling 000d09f8, pcode error at 000d09f8: Unable to resolve constructor at 000d09f8 (DecompileCallback)  
+WARN  Decompiling 000d0ae0, pcode error at 000d0ae0: Unable to resolve constructor at 000d0ae0 (DecompileCallback)  
+WARN  Decompiling 000cfce4, pcode error at 000cfce4: Unable to resolve constructor at 000cfce4 (DecompileCallback)  
+WARN  Decompiling 000cfbe4, pcode error at 000cfbe4: Unable to resolve constructor at 000cfbe4 (DecompileCallback)  
+WARN  Decompiling 000d13ec, pcode error at 000d13ec: Unable to resolve constructor at 000d13ec (DecompileCallback)  
+INFO  -----------------------------------------------------
+    ASCII Strings                              0.176 secs
+    Apply Data Archives                        0.158 secs
+    Call Convention ID                         4.806 secs
+    Call-Fixup Installer                       0.011 secs
+    Create Address Tables                      0.074 secs
+    Create Address Tables - One Time           0.010 secs
+    Create Function                            0.062 secs
+    Data Reference                             0.080 secs
+    Decompiler Switch Analysis                 5.956 secs
+    Decompiler Switch Analysis - One Time      2.894 secs
+    Demangler GNU                              0.739 secs
+    Disassemble                                0.098 secs
+    Disassemble Entry Points                   2.380 secs
+    Disassemble Entry Points - One Time        0.127 secs
+    Embedded Media                             0.014 secs
+    External Entry References                  0.007 secs
+    Function ID                                0.019 secs
+    Function Start Pre Search                  0.021 secs
+    Function Start Search                      0.017 secs
+    Function Start Search After Code           0.011 secs
+    Function Start Search After Data           0.012 secs
+    Function Start Search delayed - One Time   0.014 secs
+    Mach-O Function Starts                     0.027 secs
+    Non-Returning Functions - Discovered       0.109 secs
+    Non-Returning Functions - Known            0.009 secs
+    PowerPC Constant Reference Analyzer        1.836 secs
+    Reference                                  0.101 secs
+    Shared Return Calls                        0.114 secs
+    Stack                                      1.758 secs
+    Subroutine References                      0.063 secs
+    Subroutine References - One Time           0.001 secs
+-----------------------------------------------------
+     Total Time   21 secs
+-----------------------------------------------------
+ (AutoAnalysisManager)  
+INFO  REPORT: Analysis succeeded for file: file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc (HeadlessAnalyzer)  
+INFO  REPORT: Execute script: DumpDecompile.java '/Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c'  (HeadlessAnalyzer)  
+INFO  SCRIPT: /Users/andiyar/Developer/Ambrosia/ghidra/DumpDecompile.java (HeadlessAnalyzer)  
+INFO  DumpDecompile.java> decompiled 0/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 500/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 1000/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 1500/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 2000/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 2500/4214 (GhidraScript)  
+INFO  DumpDecompile.java> decompiled 3000/4214 (GhidraScript)  
+WARN  Decompiling 000cf8c4, pcode error at 000cf8c4: Unable to resolve constructor at 000cf8c4 (DecompileCallback)  
+WARN  Decompiling 000cf8e4, pcode error at 000cf8e4: Unable to resolve constructor at 000cf8e4 (DecompileCallback)  
+WARN  Decompiling 000cf908, pcode error at 000cf908: Unable to resolve constructor at 000cf908 (DecompileCallback)  
+WARN  Decompiling 000cf928, pcode error at 000cf928: Unable to resolve constructor at 000cf928 (DecompileCallback)  
+WARN  Decompiling 000cf968, pcode error at 000cf968: Unable to resolve constructor at 000cf968 (DecompileCallback)  
+WARN  Decompiling 000cf99c, pcode error at 000cf99c: Unable to resolve constructor at 000cf99c (DecompileCallback)  
+WARN  Decompiling 000cf9cc, pcode error at 000cf9cc: Unable to resolve constructor at 000cf9cc (DecompileCallback)  
+WARN  Decompiling 000cfa00, pcode error at 000cfa00: Unable to resolve constructor at 000cfa00 (DecompileCallback)  
+WARN  Decompiling 000cfa40, pcode error at 000cfa40: Unable to resolve constructor at 000cfa40 (DecompileCallback)  
+WARN  Decompiling 000cfa68, pcode error at 000cfa68: Unable to resolve constructor at 000cfa68 (DecompileCallback)  
+WARN  Decompiling 000cfaa4, pcode error at 000cfaa4: Unable to resolve constructor at 000cfaa4 (DecompileCallback)  
+WARN  Decompiling 000cfaf4, pcode error at 000cfaf4: Unable to resolve constructor at 000cfaf4 (DecompileCallback)  
+WARN  Decompiling 000cfb1c, pcode error at 000cfb1c: Unable to resolve constructor at 000cfb1c (DecompileCallback)  
+WARN  Decompiling 000cfb60, pcode error at 000cfb60: Unable to resolve constructor at 000cfb60 (DecompileCallback)  
+WARN  Decompiling 000cfba8, pcode error at 000cfba8: Unable to resolve constructor at 000cfba8 (DecompileCallback)  
+WARN  Decompiling 000cfbe4, pcode error at 000cfbe4: Unable to resolve constructor at 000cfbe4 (DecompileCallback)  
+WARN  Decompiling 000cfc04, pcode error at 000cfc04: Unable to resolve constructor at 000cfc04 (DecompileCallback)  
+WARN  Decompiling 000cfc24, pcode error at 000cfc24: Unable to resolve constructor at 000cfc24 (DecompileCallback)  
+WARN  Decompiling 000cfc44, pcode error at 000cfc44: Unable to resolve constructor at 000cfc44 (DecompileCallback)  
+WARN  Decompiling 000cfc64, pcode error at 000cfc64: Unable to resolve constructor at 000cfc64 (DecompileCallback)  
+WARN  Decompiling 000cfc84, pcode error at 000cfc84: Unable to resolve constructor at 000cfc84 (DecompileCallback)  
+WARN  Decompiling 000cfca4, pcode error at 000cfca4: Unable to resolve constructor at 000cfca4 (DecompileCallback)  
+WARN  Decompiling 000cfcc4, pcode error at 000cfcc4: Unable to resolve constructor at 000cfcc4 (DecompileCallback)  
+WARN  Decompiling 000cfce4, pcode error at 000cfce4: Unable to resolve constructor at 000cfce4 (DecompileCallback)  
+WARN  Decompiling 000cfd04, pcode error at 000cfd04: Unable to resolve constructor at 000cfd04 (DecompileCallback)  
+WARN  Decompiling 000cfd24, pcode error at 000cfd24: Unable to resolve constructor at 000cfd24 (DecompileCallback)  
+WARN  Decompiling 000cfd48, pcode error at 000cfd48: Unable to resolve constructor at 000cfd48 (DecompileCallback)  
+WARN  Decompiling 000cfd6c, pcode error at 000cfd6c: Unable to resolve constructor at 000cfd6c (DecompileCallback)  
+WARN  Decompiling 000cfd90, pcode error at 000cfd90: Unable to resolve constructor at 000cfd90 (DecompileCallback)  
+WARN  Decompiling 000cfdb8, pcode error at 000cfdb8: Unable to resolve constructor at 000cfdb8 (DecompileCallback)  
+WARN  Decompiling 000cfdd8, pcode error at 000cfdd8: Unable to resolve constructor at 000cfdd8 (DecompileCallback)  
+WARN  Decompiling 000cfe14, pcode error at 000cfe14: Unable to resolve constructor at 000cfe14 (DecompileCallback)  
+WARN  Decompiling 000cfe40, pcode error at 000cfe40: Unable to resolve constructor at 000cfe40 (DecompileCallback)  
+WARN  Decompiling 000cfe6c, pcode error at 000cfe6c: Unable to resolve constructor at 000cfe6c (DecompileCallback)  
+WARN  Decompiling 000cfe9c, pcode error at 000cfe9c: Unable to resolve constructor at 000cfe9c (DecompileCallback)  
+WARN  Decompiling 000cfee4, pcode error at 000cfee4: Unable to resolve constructor at 000cfee4 (DecompileCallback)  
+WARN  Decompiling 000cff28, pcode error at 000cff28: Unable to resolve constructor at 000cff28 (DecompileCallback)  
+WARN  Decompiling 000cff50, pcode error at 000cff50: Unable to resolve constructor at 000cff50 (DecompileCallback)  
+WARN  Decompiling 000cff78, pcode error at 000cff78: Unable to resolve constructor at 000cff78 (DecompileCallback)  
+WARN  Decompiling 000cff98, pcode error at 000cff98: Unable to resolve constructor at 000cff98 (DecompileCallback)  
+WARN  Decompiling 000cffc0, pcode error at 000cffc0: Unable to resolve constructor at 000cffc0 (DecompileCallback)  
+WARN  Decompiling 000d0000, pcode error at 000d0000: Unable to resolve constructor at 000d0000 (DecompileCallback)  
+WARN  Decompiling 000d0028, pcode error at 000d0028: Unable to resolve constructor at 000d0028 (DecompileCallback)  
+WARN  Decompiling 000d0058, pcode error at 000d0058: Unable to resolve constructor at 000d0058 (DecompileCallback)  
+WARN  Decompiling 000d0080, pcode error at 000d0080: Unable to resolve constructor at 000d0080 (DecompileCallback)  
+WARN  Decompiling 000d00a8, pcode error at 000d00a8: Unable to resolve constructor at 000d00a8 (DecompileCallback)  
+WARN  Decompiling 000d0108, pcode error at 000d0108: Unable to resolve constructor at 000d0108 (DecompileCallback)  
+WARN  Decompiling 000d012c, pcode error at 000d012c: Unable to resolve constructor at 000d012c (DecompileCallback)  
+WARN  Decompiling 000d0168, pcode error at 000d0168: Unable to resolve constructor at 000d0168 (DecompileCallback)  
+WARN  Decompiling 000d018c, pcode error at 000d018c: Unable to resolve constructor at 000d018c (DecompileCallback)  
+WARN  Decompiling 000d01b0, pcode error at 000d01b0: Unable to resolve constructor at 000d01b0 (DecompileCallback)  
+WARN  Decompiling 000d01f0, pcode error at 000d01f0: Unable to resolve constructor at 000d01f0 (DecompileCallback)  
+WARN  Decompiling 000d021c, pcode error at 000d021c: Unable to resolve constructor at 000d021c (DecompileCallback)  
+WARN  Decompiling 000d024c, pcode error at 000d024c: Unable to resolve constructor at 000d024c (DecompileCallback)  
+WARN  Decompiling 000d0274, pcode error at 000d0274: Unable to resolve constructor at 000d0274 (DecompileCallback)  
+WARN  Decompiling 000d0290, pcode error at 000d0290: Unable to resolve constructor at 000d0290 (DecompileCallback)  
+WARN  Decompiling 000d02bc, pcode error at 000d02bc: Unable to resolve constructor at 000d02bc (DecompileCallback)  
+WARN  Decompiling 000d02e8, pcode error at 000d02e8: Unable to resolve constructor at 000d02e8 (DecompileCallback)  
+WARN  Decompiling 000d0304, pcode error at 000d0304: Unable to resolve constructor at 000d0304 (DecompileCallback)  
+WARN  Decompiling 000d0320, pcode error at 000d0320: Unable to resolve constructor at 000d0320 (DecompileCallback)  
+WARN  Decompiling 000d033c, pcode error at 000d033c: Unable to resolve constructor at 000d033c (DecompileCallback)  
+WARN  Decompiling 000d0358, pcode error at 000d0358: Unable to resolve constructor at 000d0358 (DecompileCallback)  
+WARN  Decompiling 000d0374, pcode error at 000d0374: Unable to resolve constructor at 000d0374 (DecompileCallback)  
+WARN  Decompiling 000d03ac, pcode error at 000d03ac: Unable to resolve constructor at 000d03ac (DecompileCallback)  
+WARN  Decompiling 000d03ec, pcode error at 000d03ec: Unable to resolve constructor at 000d03ec (DecompileCallback)  
+WARN  Decompiling 000d041c, pcode error at 000d041c: Unable to resolve constructor at 000d041c (DecompileCallback)  
+WARN  Decompiling 000d044c, pcode error at 000d044c: Unable to resolve constructor at 000d044c (DecompileCallback)  
+WARN  Decompiling 000d0470, pcode error at 000d0470: Unable to resolve constructor at 000d0470 (DecompileCallback)  
+WARN  Decompiling 000d049c, pcode error at 000d049c: Unable to resolve constructor at 000d049c (DecompileCallback)  
+WARN  Decompiling 000d04c8, pcode error at 000d04c8: Unable to resolve constructor at 000d04c8 (DecompileCallback)  
+WARN  Decompiling 000d04fc, pcode error at 000d04fc: Unable to resolve constructor at 000d04fc (DecompileCallback)  
+WARN  Decompiling 000d0540, pcode error at 000d0540: Unable to resolve constructor at 000d0540 (DecompileCallback)  
+WARN  Decompiling 000d0564, pcode error at 000d0564: Unable to resolve constructor at 000d0564 (DecompileCallback)  
+WARN  Decompiling 000d0594, pcode error at 000d0594: Unable to resolve constructor at 000d0594 (DecompileCallback)  
+WARN  Decompiling 000d05bc, pcode error at 000d05bc: Unable to resolve constructor at 000d05bc (DecompileCallback)  
+WARN  Decompiling 000d05e4, pcode error at 000d05e4: Unable to resolve constructor at 000d05e4 (DecompileCallback)  
+WARN  Decompiling 000d060c, pcode error at 000d060c: Unable to resolve constructor at 000d060c (DecompileCallback)  
+WARN  Decompiling 000d0634, pcode error at 000d0634: Unable to resolve constructor at 000d0634 (DecompileCallback)  
+WARN  Decompiling 000d0650, pcode error at 000d0650: Unable to resolve constructor at 000d0650 (DecompileCallback)  
+WARN  Decompiling 000d0680, pcode error at 000d0680: Unable to resolve constructor at 000d0680 (DecompileCallback)  
+WARN  Decompiling 000d069c, pcode error at 000d069c: Unable to resolve constructor at 000d069c (DecompileCallback)  
+WARN  Decompiling 000d06c8, pcode error at 000d06c8: Unable to resolve constructor at 000d06c8 (DecompileCallback)  
+WARN  Decompiling 000d06f8, pcode error at 000d06f8: Unable to resolve constructor at 000d06f8 (DecompileCallback)  
+WARN  Decompiling 000d071c, pcode error at 000d071c: Unable to resolve constructor at 000d071c (DecompileCallback)  
+WARN  Decompiling 000d0738, pcode error at 000d0738: Unable to resolve constructor at 000d0738 (DecompileCallback)  
+WARN  Decompiling 000d0764, pcode error at 000d0764: Unable to resolve constructor at 000d0764 (DecompileCallback)  
+WARN  Decompiling 000d07bc, pcode error at 000d07bc: Unable to resolve constructor at 000d07bc (DecompileCallback)  
+WARN  Decompiling 000d07e8, pcode error at 000d07e8: Unable to resolve constructor at 000d07e8 (DecompileCallback)  
+WARN  Decompiling 000d0818, pcode error at 000d0818: Unable to resolve constructor at 000d0818 (DecompileCallback)  
+WARN  Decompiling 000d0840, pcode error at 000d0840: Unable to resolve constructor at 000d0840 (DecompileCallback)  
+WARN  Decompiling 000d0864, pcode error at 000d0864: Unable to resolve constructor at 000d0864 (DecompileCallback)  
+WARN  Decompiling 000d0898, pcode error at 000d0898: Unable to resolve constructor at 000d0898 (DecompileCallback)  
+WARN  Decompiling 000d08c4, pcode error at 000d08c4: Unable to resolve constructor at 000d08c4 (DecompileCallback)  
+WARN  Decompiling 000d08f8, pcode error at 000d08f8: Unable to resolve constructor at 000d08f8 (DecompileCallback)  
+WARN  Decompiling 000d092c, pcode error at 000d092c: Unable to resolve constructor at 000d092c (DecompileCallback)  
+WARN  Decompiling 000d0974, pcode error at 000d0974: Unable to resolve constructor at 000d0974 (DecompileCallback)  
+WARN  Decompiling 000d09c4, pcode error at 000d09c4: Unable to resolve constructor at 000d09c4 (DecompileCallback)  
+WARN  Decompiling 000d09f8, pcode error at 000d09f8: Unable to resolve constructor at 000d09f8 (DecompileCallback)  
+WARN  Decompiling 000d0a2c, pcode error at 000d0a2c: Unable to resolve constructor at 000d0a2c (DecompileCallback)  
+WARN  Decompiling 000d0a6c, pcode error at 000d0a6c: Unable to resolve constructor at 000d0a6c (DecompileCallback)  
+WARN  Decompiling 000d0a94, pcode error at 000d0a94: Unable to resolve constructor at 000d0a94 (DecompileCallback)  
+WARN  Decompiling 000d0ab0, pcode error at 000d0ab0: Unable to resolve constructor at 000d0ab0 (DecompileCallback)  
+WARN  Decompiling 000d0ae0, pcode error at 000d0ae0: Unable to resolve constructor at 000d0ae0 (DecompileCallback)  
+WARN  Decompiling 000d0b2c, pcode error at 000d0b2c: Unable to resolve constructor at 000d0b2c (DecompileCallback)  
+WARN  Decompiling 000d0b68, pcode error at 000d0b68: Unable to resolve constructor at 000d0b68 (DecompileCallback)  
+WARN  Decompiling 000d0b90, pcode error at 000d0b90: Unable to resolve constructor at 000d0b90 (DecompileCallback)  
+WARN  Decompiling 000d0bb8, pcode error at 000d0bb8: Unable to resolve constructor at 000d0bb8 (DecompileCallback)  
+WARN  Decompiling 000d0be4, pcode error at 000d0be4: Unable to resolve constructor at 000d0be4 (DecompileCallback)  
+WARN  Decompiling 000d0c10, pcode error at 000d0c10: Unable to resolve constructor at 000d0c10 (DecompileCallback)  
+WARN  Decompiling 000d0c54, pcode error at 000d0c54: Unable to resolve constructor at 000d0c54 (DecompileCallback)  
+WARN  Decompiling 000d0c78, pcode error at 000d0c78: Unable to resolve constructor at 000d0c78 (DecompileCallback)  
+WARN  Decompiling 000d0cbc, pcode error at 000d0cbc: Unable to resolve constructor at 000d0cbc (DecompileCallback)  
+WARN  Decompiling 000d0cd8, pcode error at 000d0cd8: Unable to resolve constructor at 000d0cd8 (DecompileCallback)  
+WARN  Decompiling 000d0d14, pcode error at 000d0d14: Unable to resolve constructor at 000d0d14 (DecompileCallback)  
+WARN  Decompiling 000d0d44, pcode error at 000d0d44: Unable to resolve constructor at 000d0d44 (DecompileCallback)  
+WARN  Decompiling 000d0d70, pcode error at 000d0d70: Unable to resolve constructor at 000d0d70 (DecompileCallback)  
+WARN  Decompiling 000d0e34, pcode error at 000d0e34: Unable to resolve constructor at 000d0e34 (DecompileCallback)  
+WARN  Decompiling 000d11d8, pcode error at 000d11d8: Unable to resolve constructor at 000d11d8 (DecompileCallback)  
+WARN  Decompiling 000d11f8, pcode error at 000d11f8: Unable to resolve constructor at 000d11f8 (DecompileCallback)  
+WARN  Decompiling 000d1220, pcode error at 000d1220: Unable to resolve constructor at 000d1220 (DecompileCallback)  
+WARN  Decompiling 000d1240, pcode error at 000d1240: Unable to resolve constructor at 000d1240 (DecompileCallback)  
+WARN  Decompiling 000d1268, pcode error at 000d1268: Unable to resolve constructor at 000d1268 (DecompileCallback)  
+WARN  Decompiling 000d1294, pcode error at 000d1294: Unable to resolve constructor at 000d1294 (DecompileCallback)  
+WARN  Decompiling 000d12dc, pcode error at 000d12dc: Unable to resolve constructor at 000d12dc (DecompileCallback)  
+WARN  Decompiling 000d1304, pcode error at 000d1304: Unable to resolve constructor at 000d1304 (DecompileCallback)  
+WARN  Decompiling 000d132c, pcode error at 000d132c: Unable to resolve constructor at 000d132c (DecompileCallback)  
+WARN  Decompiling 000d1354, pcode error at 000d1354: Unable to resolve constructor at 000d1354 (DecompileCallback)  
+WARN  Decompiling 000d1374, pcode error at 000d1374: Unable to resolve constructor at 000d1374 (DecompileCallback)  
+WARN  Decompiling 000d13a8, pcode error at 000d13a8: Unable to resolve constructor at 000d13a8 (DecompileCallback)  
+WARN  Decompiling 000d13ec, pcode error at 000d13ec: Unable to resolve constructor at 000d13ec (DecompileCallback)  
+WARN  Decompiling 000d14f8, pcode error at 000d14f8: Unable to resolve constructor at 000d14f8 (DecompileCallback)  
+WARN  Decompiling 000d1520, pcode error at 000d1520: Unable to resolve constructor at 000d1520 (DecompileCallback)  
+WARN  Decompiling 000d1544, pcode error at 000d1544: Unable to resolve constructor at 000d1544 (DecompileCallback)  
+WARN  Decompiling 000d15ac, pcode error at 000d15ac: Unable to resolve constructor at 000d15ac (DecompileCallback)  
+WARN  Decompiling 000d1638, pcode error at 000d1638: Unable to resolve constructor at 000d1638 (DecompileCallback)  
+WARN  Decompiling 00104000, pcode error at 00104000: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104004, pcode error at 00104004: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104008, pcode error at 00104008: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010400c, pcode error at 0010400c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104010, pcode error at 00104010: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104014, pcode error at 00104014: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104018, pcode error at 00104018: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104064, pcode error at 00104064: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104068, pcode error at 00104068: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010406c, pcode error at 0010406c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104070, pcode error at 00104070: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104074, pcode error at 00104074: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104078, pcode error at 00104078: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010407c, pcode error at 0010407c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104080, pcode error at 00104080: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104084, pcode error at 00104084: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104088, pcode error at 00104088: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010408c, pcode error at 0010408c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104090, pcode error at 00104090: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104094, pcode error at 00104094: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104098, pcode error at 00104098: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010409c, pcode error at 0010409c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040a0, pcode error at 001040a0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040a4, pcode error at 001040a4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040a8, pcode error at 001040a8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040ac, pcode error at 001040ac: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040b0, pcode error at 001040b0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040b4, pcode error at 001040b4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040b8, pcode error at 001040b8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040bc, pcode error at 001040bc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040c0, pcode error at 001040c0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040c4, pcode error at 001040c4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040c8, pcode error at 001040c8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040cc, pcode error at 001040cc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040d0, pcode error at 001040d0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040d4, pcode error at 001040d4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040d8, pcode error at 001040d8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040dc, pcode error at 001040dc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040e0, pcode error at 001040e0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040e4, pcode error at 001040e4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040e8, pcode error at 001040e8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040ec, pcode error at 001040ec: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040f0, pcode error at 001040f0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040f4, pcode error at 001040f4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040f8, pcode error at 001040f8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001040fc, pcode error at 001040fc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104100, pcode error at 00104100: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104104, pcode error at 00104104: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104108, pcode error at 00104108: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010410c, pcode error at 0010410c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010411c, pcode error at 0010411c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104120, pcode error at 00104120: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104124, pcode error at 00104124: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104128, pcode error at 00104128: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104170, pcode error at 00104170: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104174, pcode error at 00104174: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104178, pcode error at 00104178: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010417c, pcode error at 0010417c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104180, pcode error at 00104180: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104184, pcode error at 00104184: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104188, pcode error at 00104188: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010418c, pcode error at 0010418c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104190, pcode error at 00104190: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104194, pcode error at 00104194: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 00104198, pcode error at 00104198: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 0010419c, pcode error at 0010419c: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041a0, pcode error at 001041a0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041a4, pcode error at 001041a4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041a8, pcode error at 001041a8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041ac, pcode error at 001041ac: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041b0, pcode error at 001041b0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041b4, pcode error at 001041b4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041b8, pcode error at 001041b8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041bc, pcode error at 001041bc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041c0, pcode error at 001041c0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041c4, pcode error at 001041c4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041c8, pcode error at 001041c8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041cc, pcode error at 001041cc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041d0, pcode error at 001041d0: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041d4, pcode error at 001041d4: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+INFO  DumpDecompile.java> decompiled 3500/4214 (GhidraScript)  
+WARN  Decompiling 001041d8, pcode error at 001041d8: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+WARN  Decompiling 001041dc, pcode error at 001041dc: Disassembly not permitted within uninitialized memory block (DecompileCallback)  
+INFO  DumpDecompile.java> DumpDecompile: wrote 3503/4214 functions to /Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c (GhidraScript)  
+INFO  ANALYZING changes made by post scripts: file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc (HeadlessAnalyzer)  
+INFO  REPORT: Post-analysis succeeded for file: file:///Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc (HeadlessAnalyzer)  
+INFO  /Aki_ppc: file created (andiyar) (LocalFileSystem)  
+INFO  REPORT: Save succeeded for: /Aki_ppc (Aki:/Aki_ppc) (HeadlessAnalyzer)  
+INFO  REPORT: Import succeeded (HeadlessAnalyzer)  

@@ -15,7 +15,7 @@ Usage:
 """
 import sys, re, argparse
 
-DEFAULT = "ghidra/Aki12_i386.decompiled.c"
+DEFAULT = "ghidra/aki/Aki12_i386.decompiled.c"
 HDR = re.compile(r'^// ==== (.+?) @ ([0-9A-Fa-fx]+)(?: \([^)]*\))? ====$', re.M)
 
 

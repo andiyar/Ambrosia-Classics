@@ -2,9 +2,9 @@
 """Extract and diff the 12 built-in Aki layouts between 1.2.0 (i386 dump) and 1.1.0 (PPC).
 
 Sources (all read-only):
-  1.2: ghidra/Aki12_i386.decompiled.c  -- `_AddTile(lo,hi,lo,hi,layer)` calls; each double is two
+  1.2: ghidra/aki/Aki12_i386.decompiled.c  -- `_AddTile(lo,hi,lo,hi,layer)` calls; each double is two
        32-bit words (little-endian i386 stack: low word first), so (0,0x40140000) = 5.0.
-  1.1: /Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c -- `AddTile(DOUBLE_x,DOUBLE_y,..)`
+  1.1: ghidra/aki/Aki_ppc.decompiled.c -- `AddTile(DOUBLE_x,DOUBLE_y,..)`
        gives x,y (resolved from the PPC __literal8 pool) but Ghidra lost the layer argument (the
        short lives in r7 under the Mach-O PPC ABI because the two doubles shadow r3..r6). So the
        1.1 layer is recovered by a minimal PPC decoder over the binary's __text: it tracks
@@ -16,9 +16,9 @@ Usage: python3 docs/aki/tools/diff_layouts.py [--dump-12 N] [--dump-11 N]   (N =
 """
 import re, struct, sys
 
-D12 = "ghidra/Aki12_i386.decompiled.c"
-D11 = "/Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc.decompiled.c"
-B11 = "/Users/andiyar/Developer/Ambrosia/ghidra/Aki_ppc"
+D12 = "ghidra/aki/Aki12_i386.decompiled.c"
+D11 = "ghidra/aki/Aki_ppc.decompiled.c"
+B11 = "ghidra/aki/Aki_ppc"
 HDR = re.compile(r'^// ==== (.+?) @ ([0-9A-Fa-fx]+) ====$', re.M)
 # LoadLayout (both builds): level index g->level (0-based) -> function called
 LEVEL_TO_FUNC = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 10, 7: 7, 8: 11, 9: 9, 10: 6, 11: 8, 12: 12}
