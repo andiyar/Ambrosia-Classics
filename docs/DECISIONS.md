@@ -669,6 +669,28 @@ start window land on 0x01..0x9f where clut 201 ≠ 202 (the tie-break item above
 one `.AnimateCLUT` step in `LevelTables.forLevel` (documented, Phase 1 draws level 1 only); ring helpers floor-mod
 negatives where the binary truncates, and the wrap checks use the face size where the binary passes 0x20 — unreachable on
 shipped data. `Ferazel/Core` **69/0**.
+**As built (R2 + R3, 2026-10-09; Opus implementers, Opus-only legs — R2 one leg with dump re-read, R3 two legs):**
+R2 — per-cell darkness reaches tiles **inside `.RedrawScrollGrid`**: after each cell's tile draws it calls
+`.LightAnyBGTile/FGTile/FGOverlayFGTile/FGOverlayBGTile(…, 10)` (bl `100137c8`, `10013c70`, `10013d64`,
+`10013ec0`/`10013ee4`), each gated `prefs+6 != 3` → `.WrapLightTile` → `.DrawLightOverTile @1001c934` (no light and
+D ≠ 0 → ambient remap of the copy-run pixels in port 0004). `.DrawLightsOntoTiles` only redraws op-marked cells (none at
+level-1 start). Seat ruling (follow the binary): R2 also edited `TileGridRenderer` for those call sites + an Effects
+parameter (default 1 = lit; R1's tests pass Effects 3 and keep their hashes). Follow-the-binary corrections (bank
+lighting-tables ⚑ Phase-1 note): `.BlitLightOverFaceClip` uses ambient on the light face's first and last rows;
+`.DrawLightOpOverTile`'s ambient fallback is gated on hdr+0x2706 > 0, so it remaps at D = 0 too; `.PlainWrapFGTile`
+draws FG-water before the blend and `.PlainWrapFGOverlayTile` tints in water without the 0x26c6 test. Measured: level-1
+start frame darkened FNV `97fa2462814fd12a` (199,164 of 266,240 px change); light tables `.ruled` vs `.exactNearest`
+on clut 202 differ on **151,568 of 450,560**. Light face 806 (84×84 cells of a 192×192 PICT, QuickDraw scaling) is
+refused by name. R3 — `.DoubleBlitPPCParallaxOneLayer` as written (§1.1–§1.5), `PxSprites` in FerazelCore. Follow the
+binary, both legs CONFIRMED: strip sprites are **N + 1** copies (k = 0…min(N, 31 − count), `1003372c..10033740`, slots
+count + k), so 9/12/12/3/9/2 sprites on levels 10/30/40/45/62/67, effective cap 16 per call; the corner piece is always
+composited through `.DoubleBlitUniversal` (`100178b8 b 100178c8` — the CopyBits at `100178bc` is unreachable); in
+line-skip mode an odd-top call starts one screen row lower but reads its first source row (`10017a6c..10017a78`,
+`10017fb0..10017fcc`). The plan's level-1 probe "re-decided at 273→274 and 410→411" is half wrong: one call reaches view
+row 383, so only 273→274 occurs. Header 0x271e is 0 on all 24 levels. Refused by name (not built in Phase 1): the Fire
+variant (levels 52, 55) and the ripple flag hdr 0x26ca (levels 11, 18). Open, carried: the strip face's conversion CLUT
+when 0x26cc is unset (R4); op-grid 8-entry overflow and the stale-r21 overlay o2 not modelled (MED); the per-call byte
+toggle `_DAT_100a00c8` not modelled (no reader found). `Ferazel/Core` **81/0**.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 

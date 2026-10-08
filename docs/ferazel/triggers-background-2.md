@@ -459,3 +459,9 @@ and p4 stays 1) [HIGH arithmetic, part 1 §1 rules].
 | W4 | engine.md §5 camera | focus x = `playerX + (_DAT_100a0680 >> 8)` (update rule not given) | add the update rule: vx > 0x100 → L += vx/4 (twice while L < 0), cap ±0x5000 (80 px); slow → decays 0x200/frame only while pointing against the facing; zeroed by passages at counts 21/22 | part 2 §8.2; `10051494..1005158c` |
 | W5 | player-states.md §2 rows `_DAT_100a06f0`, `_DAT_100a05f8` | "1..0x16, then −0x16"; "walk-out (−15..0)" | the −0x16 is not timed: it rises +1 only on frames the player overlaps a passage (normally the destination); the walk-out ends 7 frames before input returns | part 2 §8.2 timeline |
 | W6 | pickups-boxes.md §2.2 row 1450..1453 / enemy-shots-and-damage.md §1.4 (spouts) | spout keys p1/p2 named as "linked switch" records | add the census: L4 spouts 28 (p1 30, p2 31), 67/70 (63, 0), 68 (57, 0), 183 (0, 0); record 0 of level 4 is a 1401 with p4 0 and no writer → the p2 = 0 keys are inert and spout 183 never fires | part 2 §8.5 |
+
+## ⚑ Corrections (R3 build, 2026-10-09; Ben: follow the binary)
+1. **§4 strip copies are N + 1, capped 16 per call.** `.MTAddPxSprite` loops k = 0 … min(N, 31 − count) with `cmpw; ble`
+   (`1003372c..10033740`; N held in r23 from `10033660`, truncating ÷768 at `100335f0..1003360c`) and places copy k in
+   slot count + k (`1003368c..1003369c`), so the count grows each pass: 9/12/12/3/9/2 sprites on levels
+   10/30/40/45/62/67 (N = 8/11/11/2/8/1). "Capped at 31 sprites total" reads as at most 16 per call [HIGH, two Opus legs].

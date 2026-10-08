@@ -439,3 +439,14 @@ None (no sprite fields involved).
 | 11 | player-states.md §7 (and player-states-2 NR 4) | PICT 1026 "unused or loaded by computed id" | unused: no `0x402` immediate, no computed site can yield it; PICT 1054 also unused | §5 |
 | 12 | world-data-format.md §1 | "Why 21 and 27 are missing … NOT RESOLVED" | facts closed (never catalogued by the installer, never requested, fallback n−1); the reason is undeterminable | §6.4 |
 | 13 | engine.md §3 | `.DisposePxMidTileset` not mentioned | it is empty: PxMid ports persist across levels | `100027f8` (`return`) |
+
+## ⚑ Corrections (R3 build, 2026-10-09; Ben: follow the binary)
+1. **§1.1 corner piece.** When v' − 32 > 0 and h' − 32 > 0, the corner is always composited through `.DoubleBlitUniversal`,
+   backdrop or not: `100178b8 b 100178c8` jumps over the CopyBits at `100178bc`, which nothing branches to [HIGH].
+2. **§1.3 line-skip (graphics 3).** A call whose dst top is odd starts one screen row lower (`10017a6c..10017a78`) but
+   still reads its first source row there (source row = src.top + (y − adjusted top), `10017fb0..10017fcc`); piece 2
+   uses the unadjusted dst2 top (`10018304..10018328`) [HIGH].
+3. **§1.5 / plan p19.** One call draws view rows 0..383 and compares the factor of row 383 with row 384, so on level 1
+   at V 10 the back row is re-decided only at 273→274; the 410→411 change lies past the drawn rows [HIGH].
+4. Header 0x271e (the 0x86/0x85 flags) is 0 on all 24 levels; the late re-decide branch (`100187a8`, view row > 0x280)
+   is dead as written [HIGH data].

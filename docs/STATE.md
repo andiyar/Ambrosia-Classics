@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1 done (69/0), R2 ∥ R3 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R3 done (81/0), R4 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -94,7 +94,11 @@
   LevelTables, ports, strip-incremental `.RedrawScrollGrid` into port 0004 (follow the binary; blend cells 1,560) → **69/0**.
   **Ben 2026-10-07:** the duplicate-black tie-break (FG black → index 1 = light yellow under clut 202) is decided at the
   Phase 1 gate — build lowest and highest selectable (D26). HectorKit untouched (main 4ca2e18 after Cythera K1).
-  Next: R2 ∥ R3 (wave 1.2), then R4 (needs table 0148).
+  **R2 + R3 DONE (2026-10-09, Opus orchestrator; Opus-only legs):** darkness on tiles inside `.RedrawScrollGrid`
+  (`LightAny*Tile`, Effects ≠ 3), light faces, `.DrawLightsOntoTiles` → **74/0**; parallax as written
+  (`.DoubleBlitPPCParallaxOneLayer`, ring split, row state machine) + `PxSprites` (N + 1 copies, follow the binary) →
+  **81/0**; Fire (52/55) and ripple (11/18) levels refused by name (D26 as-built R2 + R3).
+  Next: R4 (wave 1.3, needs table 0148), then R5, R6.
   Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered
