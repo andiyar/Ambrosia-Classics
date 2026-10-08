@@ -563,3 +563,63 @@ The text above stands; these notes override it where they differ. Transcribed in
 5. **§7.3 group 1 — `frsp` before truncation.** v·m is rounded to single (`1001af78`, `1001af90`, `1001af94`),
    compared with 0, and the single is truncated (`fctiwz 1001af9c`). Over every v 0..0xffff and k 0..10 this changes
    no output against truncating the double (measured, 0 differences).
+
+## ⚑ Phase-1 note (R2, 2026-10-09; plan R2 precondition; Ben: follow the binary)
+How per-cell darkness and lights reach **tiles** — §7.4 documents only the op path; the main path is inside
+`.RedrawScrollGrid`. `ghidra/ferazel/Ferazel_pef.decompiled.c` line numbers, raw addresses from `Ferazel_pef.disasm.txt`.
+Transcribed in `FerazelRender.LightRenderer` + `TileGridRenderer` (R2). Every link below was raw-read: **[HIGH]**
+unless marked.
+1. **Per cell, inside `.RedrawScrollGrid @ 10013498`** (l. 9464–10088), each call gated `param_2 == 0 &&
+   prefs+6 (Effects) ≠ 3` (`lha r0,6(r16); cmpwi r0,3; beq`, e.g. `100137ac..100137b4`), all into port `0004`:
+   `.LightAnyBGTile(b, pt, 0004, 10)` right after the BG face is drawn and bool-stamped — `100137c8` (FG face
+   transparent, l. 9919) / `10013c70` (no FG, l. 10002); BG not drawn (opaque FG) → no BG light. `.LightAnyFGTile(t,
+   b, pt, 0004, 10) @ 10014054` after all FG/blend/water/pattern draws (`10013d64`, l. 10020) — FG face t for every
+   t ≥ 0, so the pattern cell (t = 95) is lit through FG face 95's copy runs; both of its branches pass the same
+   arguments. `.LightAnyFGOverlayFGTile(o2) @ 100141cc` / `…BGTile @ 10014264` after the overlay draw (`10013ec0` /
+   `10013ee4`, l. 10044/10047). Each → `.WrapLightTile(face, 0004, Point(0,0), pt, 0x20, 0x20, pt, 10) @ 10016c8c`
+   (the `.WrapDrawTile` cull, then **one** `.DrawLightOverTile` at the ring position — no wrapped copies; a 32-px cell
+   never straddles the 640×416 ring). The `(0,0)` Points `_DAT_100a1584..15b8` are zero bytes with no TOC store.
+2. **`.DrawLightOverTile @ 1001c934`** (l. 14858–14969): D = `.GetAmbDarkVal(x, y) @ 1001aaf8` (`1001c97c`) stored in
+   `_DAT_100a011c`; the last argument 10 (`1001c98c cmplwi r0,0xa`) sets mode 1 and clears the "skip unchanged" flag
+   (`1001c998/1001c99c`; tested `1001c9f4`), so **every** active slot with a face is tried. A light whose face rect
+   (`face+0x58`, (0,0,h,w)) at (x_l − r, y_l − r) meets the tile face's bounds `+0x08` at (x, y) (`SectRect`
+   `1001caec`) is blitted — first `.BlitLightOverFaceClip` (`1001cb50`), later ones `.BlitAfterLightOverFaceClip`
+   (`1001cb84`) — at light offset (y − (y_l − r), x − (x_l − r)). No light met and **D ≠ 0** (`1001cc04 extsh.;
+   beq`): `.BlitAmbDarkenOverFaceNoClip @ 1001e6a0` (`1001cc2c`) — every port pixel under a copy run of the face
+   becomes `ambient[D][pixel]`; the face's pixels are not read, skip runs untouched (l. 16079–16215).
+3. **`.BlitLightOverFaceClip` per run** (raw `1001db20..1001dbb8`): with r29 = light row + 1, `cmpwi r29,1; ble` and
+   `cmpw r29,+0x54; bge` send the run to ambient slab D — so the light face's **first and last rows are never
+   used** (§7.4's rule holds only for light rows 1 … h − 2); so does a run starting at a light column ≥ the width.
+   Else per pixel: column < 0 or ≥ width → ambient; p = 0 → ambient; else `light[D][(p + (colour & 0xff) − 0xf5)·0x100
+   + dst]`. `.BlitAfterLightOverFaceClip` (l. 15606–15845): slab 0 (`_DAT_100a0134`, no D), p = 0 read as 0xf5,
+   pixels in light columns outside 0 … w − 1 or rows < 0 left alone, the blit ends at the first row ≥ h (§7.4's MED
+   → HIGH).
+4. **`.DrawLightsOntoTiles @ 1001c8e4`** (called by `.PaintFrameWrap` after `.SetScrollLocation` when Effects ≠ 3,
+   l. 9202–9203) = `FUN_1001c1cc` (clears flag byte and count of the 20×13 cells, l. 14557–14600) → `.CalcLightOps
+   @ 1001c45c` → `.DrawLightOps @ 1001c6f4`. `.CalcLightOps`: view = SetRect((h>>5)·32, (v>>5)·32, +640, +416);
+   per active slot, `.HasLightChanged @ 1001c390` (changed unless y, x, face, colour `+0x18` vs `+0x1a` are as
+   before and `+1` is 0 — radius not compared); rect = current face rect (unchanged) or current ∪ previous (`+8`,
+   `+0x10/+0x12`, radius `+0x16`) (changed); cells **left>>5 … right>>5 × top>>5 … bottom>>5, both edges inclusive**
+   (`1001c694/1001c6a8 ble`) → `.AddLightOp @ 1001c2c0` (grid-relative, dropped outside 0…19 × 0…12; flag |= changed;
+   no bound on the 8 index slots of a 0x54-byte cell). `.DrawLightOps`: per cell with its flag set and (t ≠ −1 ||
+   b ≥ 0 || o2 ≠ −1 — o2 is read only when o1 > 99, else r21 keeps the last o2 read [MED: its value on entry]),
+   **no clear**: `.PlainWrapBGTile @ 10012ea8`, `.DrawLightOpBGTile @ 100131e8`, `.PlainWrapFGTile @ 10012ab4`,
+   `.DrawLightOpFGTile @ 100132a0`, `.PlainWrapFGOverlayTile @ 10012f84`, `.DrawLightOpFGOverlayTile @ 10013358`,
+   `.WrapRectBlitX(0004 → 000c, cell)` (`1001c7d8..1001c880`). `.PlainWrapFGTile` is **not** the grid's FG rule: in
+   water with `0x26c6` = 0 the FG-water face is drawn for any t (not only 0 ≤ k < 95) and **before** the blend; it
+   ends with the FG bool stamp into `0008` when the BG face is transparent. `.PlainWrapFGOverlayTile` tints o2 < 95
+   through water table w whenever the cell is water (no `0x26c6` test) and stamps nothing. `.WrapLightOpTile @
+   10016d80` does draw the wrapped copies. `.DrawLightOpOverTile @ 1001cc70` uses the cell's op list (lights `+4`,
+   `+0xc`, `+0x14`), first/after as above; none met and `hdr+0x2706 > 0` (`1001cec4`): `.BlitAmbDarkenOverFaceClip
+   @ 1001e1ac` (`1001cef0`) through slab D — **D = 0 included** (slab 0 = `Color2Index` of the CLUT's own colours).
+5. **Level-1 start: nothing from the op path.** No slot is active, so the op grid stays empty and `.DrawLightOps`
+   draws nothing; the start frame's darkness is entirely step 2's ambient fallback (D = light byte − 1, 0 … 10 in
+   the window, enable 5). R2 self-derived (`.ruled`, `.errorDiffusion`, Effects 1, scroll (0, 10)): frame FNV-1a 64
+   `97fa2462814fd12a`, 199,164 of the 266,240 drawn view pixels changed vs the Effects-3 frame `8e7a06f030d78d4a`
+   (mask unchanged `e5437bb66513def6`).
+6. **Edges.** D = −1 (light byte 0 with darkness enabled) reads the 256 bytes before `_DAT_100a0130` = the light
+   table's last row (`100fbd6c + 16·0x6e00 = 10169d6c`; slab 15, t 109) [HIGH arithmetic]; no shipped level enables
+   darkness over a 0 byte (§7.1). Light faces: `.Load1LightFaceFromPICT @ 1002ff1c` swaps `*_DAT_1009ff94` to clut 801
+   around `.Load1PlainFaceFromPICT @ 1002fe68` (`.NewBlitPort` w × h, `DrawPicture` into (0,0,h,w)); of its 12 call
+   sites (l. 50257–56147) 11 match their PICT's frame and `(806, 84, 84)` (`.InitBonusSprite`, l. 52306) has
+   `DrawPicture` shrink the 192×192 PICT — QuickDraw's stretch is ROM code, refused in the replica [LOW].

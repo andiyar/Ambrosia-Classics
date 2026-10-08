@@ -24,8 +24,12 @@ import FerazelCore
 ///    (drawn after the blend); t == 95: the pattern tile (tinted in water when `0x26c6` ≠ 0);
 /// 3. overlay: o1 = 100 → FG face o2 (the pattern tile when o2 = 95) → tiles and FG face o2 bool-stamp → mask;
 ///    o1 = 101 → BG face o2 → tiles and its bool-stamp → mask (no water tint on this path).
-/// The per-cell lights (`.LightAnyBGTile`, `.LightAnyFGTile`, `.LightAnyFGOverlay*Tile`, when prefs Effects ≠ 3) sit
-/// between these steps in the original and are not drawn here (plan R2); this is the Effects = 3 tile layer.
+/// The per-cell lights (plan R2; lighting-tables "⚑ Phase-1 note (R2)"), each only when prefs Effects (`prefs+6`,
+/// `_DAT_1009fe44`) ≠ 3, through `LightRenderer.lightTile` into `0004`: `.LightAnyBGTile(b)` right after the BG face
+/// is drawn and stamped (`bl` at raw `100137c8` / `10013c70`, decompile l. 9919 / 10002), `.LightAnyFGTile(t)` (FG
+/// face t, any t ≥ 0 incl. 95; `10013d64`, l. 10020) after step 2's FG draws, `.LightAnyFGOverlayFGTile` /
+/// `…BGTile(o2)` (`10013ec0` / `10013ee4`, l. 10044 / 10047) after the overlay draw; each gate is `lha r0,6(r16);
+/// cmpwi r0,3; beq` (e.g. `100137ac..100137b4`). Effects = 3 is R1's tile layer.
 /// The `param_2 ≠ 0` (mask-only) mode of `.RedrawScrollGrid` is not built (its one caller is outside R1).
 public struct TileGridRenderer: Sendable {
     public let level: LevelFile
@@ -39,9 +43,16 @@ public struct TileGridRenderer: Sendable {
     public private(set) var drawnH: Int
     /// `_DAT_1009fe70`: the v the grid was last drawn at.
     public private(set) var drawnV: Int
+    /// prefs `+0x06` Effects (`FerazelPrefs.effects`): 3 skips the per-cell lights and `.DrawLightsOntoTiles`.
+    public var effects: Int16
+    /// The light slots and the darkness the per-cell lights read (`LightRenderer`).
+    public var lights: LightRenderer
 
+    /// - Parameters:
+    ///   - effects: prefs Effects; the default is `.InitPrefs`' on a modern Mac (1).
+    ///   - lights: the light state; nil = no light slot in use over `level` and `tables`.
     public init(level: LevelFile, sets: TileSets, fixed: TileSets.Fixed, tables: LevelTables, clearFace: EncodedFace,
-                drawnH: Int, drawnV: Int) {
+                drawnH: Int, drawnV: Int, effects: Int16 = FerazelPrefs().effects, lights: LightRenderer? = nil) {
         self.level = level
         self.sets = sets
         self.blend = fixed.blend
@@ -49,6 +60,8 @@ public struct TileGridRenderer: Sendable {
         self.clearFace = clearFace
         self.drawnH = drawnH
         self.drawnV = drawnV
+        self.effects = effects
+        self.lights = lights ?? LightRenderer(level: level, tables: tables)
     }
 
     /// The cell-clear face: PICT 1002 (32×32, 32-bit, all black) converted under clut 801, the "System CLUT"
@@ -177,6 +190,11 @@ public struct TileGridRenderer: Sendable {
         func stamp(_ face: EncodedFace) {
             TileBlitters.wrapDraw(face, .bool, into: &ports.mask, x: x, y: y, scroll: scroll)
         }
+        let lit = effects != 3
+        /// `.LightAny*Tile(…, 10)` → `.WrapLightTile` → `.DrawLightOverTile` into `0004`.
+        func light(_ face: EncodedFace) {
+            lights.lightTile(face, into: &ports.tiles, x: x, y: y, scroll: scroll)
+        }
         /// The overlay o2 face of o1 (100 → FG set, 101 → BG set); nil past the set (no shipped level reaches it).
         func overlayFace() -> EncodedFace? {
             guard o2 >= 0 else { return nil }
@@ -194,6 +212,7 @@ public struct TileGridRenderer: Sendable {
             if b >= 0 {
                 draw(bg[b])
                 stamp(bg[b])
+                if lit { light(bg[b]) }   // `.LightAnyBGTile` (l. 10002)
                 if let o = overlayFace() { stamp(o) }
             }
         } else {
@@ -204,6 +223,7 @@ public struct TileGridRenderer: Sendable {
                 draw(bg[b])
                 stamp(bg[b])
                 if bg[b].hasTransparentPixel { stamp(fgFace) }
+                if lit { light(bg[b]) }   // `.LightAnyBGTile` (l. 9919)
             }
             if let o = overlayFace() { stamp(o) }
 
@@ -231,6 +251,7 @@ public struct TileGridRenderer: Sendable {
                 let p = sets.pattern.faces[pattern]
                 if w == -1 || !submerged { draw(p) } else { draw(p, .table(water(w))) }
             }
+            if lit { light(fgFace) }   // `.LightAnyFGTile` (l. 10020): FG face t, the pattern cell's face 95 too
         }
 
         // 3. overlay.
@@ -240,9 +261,11 @@ public struct TileGridRenderer: Sendable {
                                                                        periodSix: header.patternPeriodSix != 0)]
                                 : fg[o2])
                 stamp(fg[o2])
+                if lit { light(fg[o2]) }   // `.LightAnyFGOverlayFGTile` (l. 10044)
             } else if o1 == 101, o2 < bg.count {
                 draw(bg[o2])
                 stamp(bg[o2])
+                if lit { light(bg[o2]) }   // `.LightAnyFGOverlayBGTile` (l. 10047)
             }
         }
         return true
@@ -250,12 +273,12 @@ public struct TileGridRenderer: Sendable {
 
     /// Water table w (`_DAT_100a0170`). The original indexes w = BG kind − 200 for kinds 200..209 but builds only
     /// w 0..5; no shipped level has a BG kind 206..209 under a drawn FG cell — refused, not invented.
-    private func water(_ w: Int) -> [UInt8] {
+    func water(_ w: Int) -> [UInt8] {
         precondition(w < tables.water.count, "water table w ≥ 6 is outside the census (w = \(w))")
         return tables.water[w]
     }
 
-    private func blendOp(pattern: Int, water: [UInt8]?) -> TileBlitters.Op {
+    func blendOp(pattern: Int, water: [UInt8]?) -> TileBlitters.Op {
         .blend(pattern: sets.patternPlain.faces[pattern], patternWidth: sets.patternPlain.arguments.cellWidth,
                quarter: tables.pair(.quarterSprite), half: tables.pair(.average),
                threeQuarter: tables.pair(.threeQuarterSprite), water: water)

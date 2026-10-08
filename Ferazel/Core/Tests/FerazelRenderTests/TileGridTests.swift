@@ -29,9 +29,10 @@ final class TileGridTests: XCTestCase {
             clearFace = try TileGridRenderer.loadClearFace(resources: resources, search: search)
         }
 
+        /// Effects = 3 ("Reduced"): the tile layer without the per-cell lights (R2 adds them for Effects ≠ 3).
         func renderer(drawnH: Int, drawnV: Int) -> TileGridRenderer {
             TileGridRenderer(level: level, sets: sets, fixed: fixed, tables: tables, clearFace: clearFace,
-                             drawnH: drawnH, drawnV: drawnV)
+                             drawnH: drawnH, drawnV: drawnV, effects: 3)
         }
     }
 
