@@ -39,11 +39,11 @@ final class ParallaxTests: XCTestCase {
     }
 
     /// The level's blitter with every PxBack slot = `back`, every PxMid image slot = `image`, every mask slot = `mask`.
-    private func blitter(_ level: LevelFile, back: [UInt8], image: [UInt8]? = nil, mask: [UInt8]? = nil) -> ParallaxBlitter {
+    private func blitter(_ level: LevelFile, back: [UInt8], image: [UInt8]? = nil, mask: [UInt8]? = nil) throws -> ParallaxBlitter {
         let slots: [[UInt8]?] = (0..<ParallaxBlitter.slotCount).map { slot in
             slot < ParallaxBlitter.midImageBase ? back : slot < ParallaxBlitter.midMaskBase ? (image ?? back) : (mask ?? back)
         }
-        return ParallaxBlitter(level: level, faceSlots: slots)
+        return try ParallaxBlitter(level: level, faceSlots: slots)
     }
 
     /// A 640×416 port whose byte at (x, y) is `f(x, y)`.
@@ -87,7 +87,7 @@ final class ParallaxTests: XCTestCase {
 
         let f = try fixture()
         let back = face { row, x in UInt8((row * 3 + x) & 0xff) }
-        let b = blitter(f.level1, back: back)
+        let b = try blitter(f.level1, back: back)
         // Frame and mask chosen so that every word kind (0, ~0, mixed with carries) occurs.
         let source = port { x, y in UInt8((x * 7 + y) & 0xff) | 0x80 }
         let mask = port { x, _ in [0x00, 0x00, 0x0f, 0xff, 0x80, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00][x % 12] }
@@ -135,13 +135,14 @@ final class ParallaxTests: XCTestCase {
         let back = face { _, _ in 0x55 }
         let image = face { row, x in UInt8((row + 2 * x) & 0x7f) | 0x01 }
         let mask = face { row, x in [0x00, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0x00][(row + x) % 12] }
-        let b = blitter(f.level10, back: back, image: image, mask: mask)
+        let b = try blitter(f.level10, back: back, image: image, mask: mask)
         let source = port { x, y in UInt8((x + 5 * y) & 0xff) }
         var screen = blankScreen()
         let traces = trace(b, h: 1, v: 1400, source: source, screen: &screen)
         let rows = traces.flatMap { $0 }
         let mid = try XCTUnwrap(rows.first { $0.mid }, "level 10 at v 1400 draws a mid row")
-        let s = mid.subRow, phase = 1
+        // Sub-row from §1.3 (`10018b40..10018bdc`), not the trace: s = (view row + v0m) & 0x7f, v0m = V·ym >> 8.
+        let s = ((mid.y - 8) + ((1400 * Int(f.level10.header.pxMidYFactor)) >> 8)) & 0x7f, phase = 1
         let v1 = 1400 % 416, srcRow = (v1 + (mid.y - 8)) % 416, srcLeft = 1
         func i(_ j: Int) -> UInt8 { image[s * 128 + (phase + j) % 128] }
         func k(_ j: Int) -> UInt8 { mask[s * 128 + (phase + j) % 128] }
@@ -181,7 +182,7 @@ final class ParallaxTests: XCTestCase {
         XCTAssertEqual(ParallaxBlitter.calls(h: 100, v: 100, backdrop: false).map(\.composited), [false, false, false, true])
 
         let f = try fixture()
-        let b = blitter(f.level1, back: face { _, _ in 0 })
+        let b = try blitter(f.level1, back: face { _, _ in 0 })
         var screen = blankScreen()
         let traces = trace(b, h: 100, v: 100, screen: &screen)
         XCTAssertEqual(traces.count, 2)
@@ -192,32 +193,55 @@ final class ParallaxTests: XCTestCase {
         XCTAssertEqual(traces[1].first?.tableRow, 0, "each call restarts the row state")
     }
 
-    /// §1.3 step 6 on level 1 at (h 0, v 10): v0b = 10·74 >> 8 = 2; the per-row back factors `back[r + 2]` carry 64
+    /// §1.3 step 6 on level 1 at (h 300, v 10): v0b = 10·74 >> 8 = 2; the per-row back factors `back[r + 2]` carry 64
     /// on view rows 274..410 (world-data §3.2 0xb26c table rows 276..412, p19), so the factor changes at 273→274 and
     /// 410→411 — the drawn call (view rows 0..383) re-decides the back row once, at 273→274, and nowhere else.
+    /// With every slot a distinct face and the mask all 0xFF, rows 273 and 274 show the backdrop at x = h·128 >> 8 =
+    /// 150 and h·64 >> 8 = 75 respectively; both expectations come from the factor table, the map and the faces.
     func testLevel1FactorChangeRows() throws {
         let f = try fixture()
-        let v0b = (10 * Int(f.level1.header.pxBackYFactor)) >> 8
+        let level = f.level1
+        let h = 300, v = 10
+        let v0b = (v * Int(level.header.pxBackYFactor)) >> 8
         XCTAssertEqual(v0b, 2)
-        let xb = (0..<480).map { f.level1.backFactors[$0 + v0b] }
+        let xb = (0..<480).map { level.backFactors[$0 + v0b] }
         XCTAssertEqual((0..<479).filter { xb[$0] != xb[$0 + 1] }.map { $0 + 1 }, [274, 411])
         XCTAssertEqual(Set(xb[274...410]), [64])
-        let b = blitter(f.level1, back: face { _, _ in 0 })
+        // The plan's 410→411 lies past view row 383: one call compares xb[383] with xb[384] at most.
+        XCTAssertEqual(xb[383], xb[384])
+
+        // Slot-distinct faces: byte (slot, row, x) = slot·7 + row·3 + x.
+        func pixel(_ slot: Int, _ row: Int, _ x: Int) -> UInt8 { UInt8((slot * 7 + row * 3 + x) & 0xff) }
+        let slots: [[UInt8]?] = (0..<ParallaxBlitter.slotCount).map { slot in face { row, x in pixel(slot, row, x) } }
+        let b = try ParallaxBlitter(level: level, faceSlots: slots)
         var screen = blankScreen()
-        let rows = trace(b, h: 0, v: 10, screen: &screen).flatMap { $0 }
+        let rows = trace(b, h: h, v: v, mask: port { _, _ in 0xff }, screen: &screen).flatMap { $0 }
         XCTAssertEqual(rows.map(\.viewRow), Array(0...383))
         XCTAssertEqual(rows.filter(\.redecided).map(\.viewRow), [274])
         XCTAssertFalse(rows.contains { $0.mid }, "level 1: PxMid disabled (0x3268 = 0)")
-        // After the re-decision the sub-row is recomputed as (T − 8 + v0b + n) & 0x7f with n = 274.
-        XCTAssertEqual(rows[274].subRow, (0 + 2 + 274) & 0x7f)
-        XCTAssertEqual(rows[274].cellRow, rows[274].tableRow + rows[0].cellRow, "back refill y = qb + t")
+
+        // View row r draws table row t = (r + v0b) >> 7, sub-row (r + v0b) & 0x7f, from cell-map row qb + t (qb = 0).
+        // Row 273 still uses table row 2 as filled at its start factor back[2·128] (step 2); row 274 refills it at
+        // xb[274]. Screen column j shows map cell ((X + j) >> 7, qb + t) at face x (X + j) & 0x7f, X = h·factor >> 8.
+        func expectedRow(_ r: Int, factor: Int) -> [UInt8] {
+            let t = (r + v0b) >> 7, sub = (r + v0b) & 0x7f, x0 = (h * factor) >> 8
+            return (0..<608).map { j in
+                pixel(Int(level.pxBack.cell(col: (x0 + j) >> 7, row: t)), sub, (x0 + j) & 0x7f)
+            }
+        }
+        let startFactor = Int(level.backFactors[2 * 128])
+        XCTAssertEqual(startFactor, 128)
+        let row273 = expectedRow(273, factor: startFactor), row274 = expectedRow(274, factor: Int(xb[274]))
+        XCTAssertNotEqual(row273, row274)
+        XCTAssertEqual(Array(screen[((8 + 273) * Self.sw + 16)..<((8 + 273) * Self.sw + 624)]), row273, "x 150")
+        XCTAssertEqual(Array(screen[((8 + 274) * Self.sw + 16)..<((8 + 274) * Self.sw + 624)]), row274, "x 75")
     }
 
     /// §1.5 table (MED simulation): level 10 shows its PxMid band for V in 1392..1536 and draws, as written, PxMid
     /// cell rows 16 and 17 (geometric 17, 18); V 1391 draws none.
     func testMidBandLevel10() throws {
         let f = try fixture()
-        let b = blitter(f.level10, back: face { _, _ in 0 })
+        let b = try blitter(f.level10, back: face { _, _ in 0 })
         var drawn = Set<Int>()
         for v in 1392...1536 {
             var screen = blankScreen()
@@ -235,7 +259,7 @@ final class ParallaxTests: XCTestCase {
     /// draws its first source row one screen row lower.
     func testGraphicsModeRowSteps() throws {
         let f = try fixture()
-        let b = blitter(f.level1, back: face { _, _ in 0 })
+        let b = try blitter(f.level1, back: face { _, _ in 0 })
         let source = port { _, y in UInt8(y & 0xff) }
         let mask = port { _, _ in 0 }                                   // F everywhere
         func run(_ mode: Int, v: Int) -> [UInt8] {

@@ -5,7 +5,9 @@ import FerazelCore
 /// §1.1–§1.5, transcribed as written — Invariant 3): `.PaintFrameWrap` → `.WrapCopyToScreen @ 100174bc` →
 /// `.DoubleBlitUniversal @ 10022e34` → `.DoubleBlitPPCParallaxOneLayer @ 10017924`. The Fire variant
 /// (`…Fire @ 10018dd4`, header `0x2722 > 0`, levels 52/55, §1.6) and OmniPx (§3) are not built: a level with a
-/// flame mode is refused, and `omniPxActive` only makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`).
+/// flame mode is refused, and `omniPxActive` only makes `.GetPxBackTile` answer 0 (`1003c4f8..1003c514`). The
+/// ripple table's producer is not built either, so a level with the ripple flag (header `0x26ca`, levels 11, 18) is
+/// refused too (Invariant 6) rather than drawn without its ripple.
 ///
 /// Sources per output byte (§1.2): **F** the source port (the frame `000c`), **M** the mask port `0008` (0xFF where
 /// the backdrop may show), and the 8 col × 6 row cell tables **I** (`PTR_DAT_100a1020`) and **K** (`_DAT_100a101c`)
@@ -53,6 +55,8 @@ public struct ParallaxBlitter: Sendable {
     public enum Refusal: Error, Equatable {
         /// Header `0x2722 > 0`: `.DoubleBlitUniversal` takes the Fire variant (§1.6), not built.
         case fireVariant(flameMode: Int16)
+        /// Header `0x26ca ≠ 0` (levels 11, 18): the rows need the ripple table, whose producer is not built.
+        case ripple(flag: UInt8)
     }
 
     /// One drawn row of a compositor call, for tests and inspection.
@@ -92,7 +96,8 @@ public struct ParallaxBlitter: Sendable {
     /// Game globals `+0x174` (OmniPx on): `.GetPxBackTile` returns 0.
     public var omniPxActive = false
     /// The ripple table `*_DAT_1009ffb8` (i32 per virtual row; each row's x offset is `−(entry >> 8)`), non-zero only
-    /// with header `0x26ca` (levels 11, 18). Its producer is not built; empty reads 0.
+    /// with header `0x26ca` (levels 11, 18). Not produced in Phase 1: its producer is not built and those levels are
+    /// refused at init, so it stays empty (reads 0).
     public var rippleTable: [Int32] = []
 
     /// The blitter for a level with its loaded PxBack and PxMid sets (`TileSets`).
@@ -103,18 +108,20 @@ public struct ParallaxBlitter: Sendable {
             for (i, f) in pxMid.image.faces.enumerated() where i < 12 { slots[Self.midImageBase + i] = f }
             for (i, f) in pxMid.mask.faces.enumerated() where i < 12 { slots[Self.midMaskBase + i] = f }
         }
-        guard level.header.flameMode <= 0 else { throw Refusal.fireVariant(flameMode: level.header.flameMode) }
-        self.init(level: level, faceSlots: slots)
+        try self.init(level: level, faceSlots: slots)
     }
 
     public init(level: LevelFile, sets: TileSets) throws {
         try self.init(level: level, pxBack: sets.pxBack, pxMid: sets.pxMid)
     }
 
-    /// Faces by slot (`slotCount` entries, each nil or `cellBytes` bytes).
-    init(level: LevelFile, faceSlots: [[UInt8]?]) {
+    /// Faces by slot (`slotCount` entries, each nil or `cellBytes` bytes). Every init path ends here, so both
+    /// refusals apply to all of them.
+    init(level: LevelFile, faceSlots: [[UInt8]?]) throws {
         precondition(faceSlots.count == Self.slotCount, "ParallaxBlitter: \(Self.slotCount) face slots")
         let h = level.header
+        guard h.flameMode <= 0 else { throw Refusal.fireVariant(flameMode: h.flameMode) }
+        guard h.parallaxRipple == 0 else { throw Refusal.ripple(flag: h.parallaxRipple) }
         backFactors = level.backFactors
         midFactors = level.midFactors
         backYFactor = Int(h.pxBackYFactor)
