@@ -252,6 +252,21 @@ final class ParallaxTests: XCTestCase {
         XCTAssertEqual(drawn, [16, 17])
         var screen = blankScreen()
         XCTAssertFalse(trace(b, h: 0, v: 1391, screen: &screen).flatMap { $0 }.contains { $0.mid })
+
+        // The named refusals through the public init (an empty PxBack sheet: the header gates come first).
+        // Fire variant hdr+0x2722 > 0 (52 → 1, 55 → 2); ripple hdr+0x26ca ≠ 0 (11, 18); level 10 builds.
+        let empty = PlainFaceSheet(picture: try ConvertedPicture(id: 0, width: 1, height: 1, pixels: [0], clutId: 0),
+                                   arguments: try FaceSheet.Arguments(pict: 0, count: 0, cellWidth: 1, cellHeight: 1, columns: 1))
+        XCTAssertNoThrow(try ParallaxBlitter(level: f.level10, pxBack: empty, pxMid: nil))
+        let resources = try FerazelData.open(try FerazelData.dataDirectory())
+        let refusals: [(Int16, ParallaxBlitter.Refusal)] = [(52, .fireVariant(flameMode: 1)), (55, .fireVariant(flameMode: 2)),
+                                                            (11, .ripple(flag: 1)), (18, .ripple(flag: 1))]
+        for (id, want) in refusals {
+            let level = try LevelFile.load(from: resources, level: id)
+            XCTAssertThrowsError(try ParallaxBlitter(level: level, pxBack: empty, pxMid: nil), "level \(id)") {
+                XCTAssertEqual($0 as? ParallaxBlitter.Refusal, want, "level \(id)")
+            }
+        }
     }
 
     /// §1.1 graphics gate (`10022fc0..1002307c`): prefs+2 = 1 every row; 2 → each row written twice (step 2);
