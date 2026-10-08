@@ -569,7 +569,7 @@ How per-cell darkness and lights reach **tiles** — §7.4 documents only the op
 `.RedrawScrollGrid`. `ghidra/ferazel/Ferazel_pef.decompiled.c` line numbers, raw addresses from `Ferazel_pef.disasm.txt`.
 Transcribed in `FerazelRender.LightRenderer` + `TileGridRenderer` (R2). Every link below was raw-read: **[HIGH]**
 unless marked.
-1. **Per cell, inside `.RedrawScrollGrid @ 10013498`** (l. 9464–10088), each call gated `param_2 == 0 &&
+1. **Per cell, inside `.RedrawScrollGrid @ 10013498`** (l. 9816–10088), each call gated `param_2 == 0 &&
    prefs+6 (Effects) ≠ 3` (`lha r0,6(r16); cmpwi r0,3; beq`, e.g. `100137ac..100137b4`), all into port `0004`:
    `.LightAnyBGTile(b, pt, 0004, 10)` right after the BG face is drawn and bool-stamped — `100137c8` (FG face
    transparent, l. 9919) / `10013c70` (no FG, l. 10002); BG not drawn (opaque FG) → no BG light. `.LightAnyFGTile(t,
