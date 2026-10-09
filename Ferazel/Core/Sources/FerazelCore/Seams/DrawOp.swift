@@ -18,6 +18,9 @@ public enum DrawOp: Equatable, Sendable {
     case wrapDrawSprites([SpriteDraw])
     /// `.WrapCopyToScreen` (rendering-omnipx-titles §1.1).
     case copyToScreen(h: Int, v: Int, graphicsMode: Int, backdrop: Bool)
+    /// `.WrapEraseSprites @ 10014a58` (`.PaintFrameWrap` l. 9456, drawn frame or not): the dirty-rect restore over the
+    /// active list after the sprite Handles, at scroll (h, v); each sprite carries its last-frame copies.
+    case wrapEraseSprites(sprites: [SpriteSlot], h: Int, v: Int)
     /// `.UpdateStatusBar(1, 0, 0)`.
     case statusBar(StatusBarState)
 }

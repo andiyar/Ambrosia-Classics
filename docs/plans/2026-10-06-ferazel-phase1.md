@@ -876,6 +876,24 @@ addresses, before writing the tests that pin them.
    face's copy-run pixels and leaves skip runs (`.BlitEncBoolTile @ 100230bc`: `10023148 li r4,0`, `10023164..` `stw`;
    the Unmasked twin for opaque faces as above). So `0008` = 0xFF where nothing opaque was stamped (backdrop shows),
    0x00 under opaque BG/FG/overlay pixels; `0004` starts each redrawn cell at 0x00.
+10. ⚑ **R5 dump reading (2026-10-10) — the camera focus base and the level-start scroll (engine §5, Research note 16;
+   `ghidra/ferazel/Ferazel_pef.decompiled.c`).** Two point pairs exist. `(_DAT_1009fd94, _DAT_1009fd90)` is the
+   player's hot-rect centre: `.GameLoop @ 10009d48` sets it to the sprite origin + (0x32, 0x3b) = **(133, 202)** on
+   level 1 (l. 5149–5150; origin = (hdr 0x2848 − 0x20, hdr 0x2846 − 0x20) = (83, 143), `.NewGame` l. 5823) and the
+   player Handle rewrites it each frame (l. 46376–46388). `.FindUpperLeftCorner @ 1000b5ec` does **not** read it: it
+   reads `(_DAT_1009fd44, _DAT_1009fd40)` (l. 5932–5933), which `.SetupPlayerSprite @ 1004aefc` sets to the **sprite
+   origin (83, 143)** (`+8`/`+6`, l. 42834–42840) and `.PlayerScroll @ 1004c528` — called from the player Handle inside
+   `.PaintFrameWrap`'s `.HandleSprites`, after the draw — sets to `fd44 = fd94 + (_DAT_100a0680 >> 8)` (l. 43794) and,
+   with `DAT_100a5f58` set (`.ClearPlayerVars` l. 42577), `fd40 = fd90` (l. 43809–43816). The eased camera
+   `(_DAT_1009fd84 + 2, _DAT_1009fd84)` and the scroll point `PTR_DAT_1009fe78` start at the sprite origin − 0xd0 =
+   (−125, −65) (l. 5168–5195), and `.FindUpperLeftCorner` eases by `max(Δ/6, 1)` without clamping that pair (the
+   clamps apply to `fe78` only, l. 6095–6191). So the view **pans in**: level start (l. 5209) → (−141, −63), iteration 1
+   → (−154, −61), both clamped to scroll **(0, 0)**; from iteration 2 the target is (−176 after the 16-px snap, 10) and
+   v reaches **10 on the 24th `.FindUpperLeftCorner`** of the level (iteration 23); h stays clamped at 0 (eased −176).
+   Neither of the planner's readings ((0, 10) as the first scroll, or (0, 42)) is the first scroll; (0, 10) is where it
+   settles. Also: `.SetupLevel` itself zeroes `fe78` and draws `.RedrawEntireScrollGrid` at (0, 0) (l. 2577–2582)
+   before `.GameLoop`'s own (l. 5211); the snap tests the player vx `_DAT_1009fd3c` (stored from `+0x24`, handler dump
+   l. 2745–2748) and `cRam100a5114` (set each Handle, l. 46393).
 
 ---
 
