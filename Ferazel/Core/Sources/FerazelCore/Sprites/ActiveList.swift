@@ -66,9 +66,4 @@ public struct ActiveList: Equatable, Sendable {
         }
         return out
     }
-
-    /// Every sprite in list order, mutably (the draw pass writes `+0xb8`, the still counter and the last-frame copies).
-    public mutating func forEach(_ body: (inout SpriteSlot) -> Void) {
-        for k in sprites.indices { body(&sprites[k]) }
-    }
 }

@@ -96,7 +96,18 @@ final class SpriteListTests: XCTestCase {
         // Outcrop 2853: `.GetAmbDarkVal(x, y)` > 4 → 0x10006, > 7 → 0x10007 (header 0x2706 = 5 ≠ 0).
         let outcrop = try entry(c, record: 74)
         let D = c.level.lightByte(col: 3037 >> 5, row: 512 >> 5)
-        XCTAssertEqual(outcrop.slot.mode, D > 7 ? 0x10007 : D > 4 ? 0x10006 : 0)
+        XCTAssertEqual(D, 7)
+        XCTAssertEqual(outcrop.slot.mode, 0x10006)
+        // The thresholds (`> 4`, `> 7`), from literal values: an outcrop on a cell of each darkness 4, 5, 7, 8.
+        for (dark, mode) in [(4, UInt32(0)), (5, 0x10006), (7, 0x10006), (8, 0x10007)] {
+            let cellAt = (0..<Int(c.level.header.gridHeight)).lazy.flatMap { r in
+                (0..<Int(c.level.header.gridWidth)).lazy.map { (col: $0, row: r) }
+            }.first { c.level.lightByte(col: $0.col, row: $0.row) == dark }
+            let at = try XCTUnwrap(cellAt, "a cell of darkness \(dark)")
+            let p = Placement(index: 74, flag: 1, byte1: 0, type: 2853, p1: 0, p2: 0, p3: 0, p4: 0,
+                              y: Int16(at.row * 32), x: Int16(at.col * 32))
+            XCTAssertEqual(try SetupFaces.setup(p, context: c).slot.mode, mode, "darkness \(dark)")
+        }
         XCTAssertEqual(outcrop.slot.layer, 150)
         XCTAssertFalse(outcrop.slot.lightOverlay)
         XCTAssertEqual(outcrop.sheet?.clut, 202)
@@ -111,6 +122,34 @@ final class SpriteListTests: XCTestCase {
         // Crawler p1 = 0: Setup's face slot is PICT 1500, which no file holds (0); the Handle's ceiling face 1712
         // (layer 11). Roach: cached set 1720 (layer 11).
         try check(9, type: 1712, layer: 11, mode: 0, light: true, pict: 1712, source: .handle)
+        // Crawler tiers p2 (literal: 1 → 0x10002, 2 → 0x10003, 3 → 0x1000f; enemies-ground §4).
+        for (tier, mode) in [(Int16(1), UInt32(0x10002)), (2, 0x10003), (3, 0x1000f)] {
+            let p = Placement(index: 9, flag: 1, byte1: 0, type: 1712, p1: 0, p2: tier, p3: 0, p4: 0, y: 452, x: 1340)
+            XCTAssertEqual(try SetupFaces.setup(p, context: c).slot.mode, mode, "tier \(tier)")
+        }
+        // The lights the Setups add (`.AddLight`; prefs Effects 1): torch 1307 light 801 192×192 at (x + 5, y + 8),
+        // colour 0x16 (p3 = 0); Xichron 1055 light 822 52×52 at (+16, +16), 0x16 — only with Effects 1; money bag
+        // 1292 light 822, colour 99 (Effects 1); sphere 1335 and item 3204 light 810 72×72, colour 99, ungated.
+        XCTAssertEqual(try entry(c, record: 3).light, SetupFaces.Light(pict: 801, width: 192, height: 192,
+                                                                       x: 633 + 5, y: 322 + 8, colour: 0x16))
+        XCTAssertEqual(try entry(c, record: 10).light, SetupFaces.Light(pict: 822, width: 52, height: 52,
+                                                                        x: 3188 + 16, y: 430 + 16, colour: 0x16))
+        XCTAssertEqual(try entry(c, record: 154).light?.colour, 99)
+        XCTAssertEqual(try entry(c, record: 2).light, SetupFaces.Light(pict: 810, width: 72, height: 72,
+                                                                       x: 1953 + 16, y: 758 + 16, colour: 99))
+        XCTAssertEqual(try entry(c, record: 68).light, SetupFaces.Light(pict: 810, width: 72, height: 72,
+                                                                        x: 291 + 16, y: 123 + 12, colour: 99))
+        XCTAssertEqual(try entry(c, record: 3).light?.radius, 96)
+        XCTAssertNil(try entry(c, record: 4).light)
+        let reduced = SetupFaces.Context(level: c.level, playerX: c.playerX, effects: 3)
+        XCTAssertNil(try SetupFaces.setup(c.level.placements[10], context: reduced).light)
+        XCTAssertNil(try SetupFaces.setup(c.level.placements[154], context: reduced).light)
+        XCTAssertNotNil(try SetupFaces.setup(c.level.placements[3], context: reduced).light)
+        // Every one of them, in `.AddLight` order: 22 torches + 43 Xichrons + 1 bag + 1 sphere + 1 item (Effects 1);
+        // 22 + 1 + 1 with Effects 3. The Xichron gate (< 150 lights) never closes on level 1.
+        XCTAssertEqual(try SetupFaces.spawnLevelSprites(context: c) { _ in .noFace }.lights.count, 22 + 43 + 1 + 1 + 1)
+        XCTAssertEqual(try SetupFaces.spawnLevelSprites(context: reduced) { _ in .noFace }.lights.count, 22 + 1 + 1)
+        XCTAssertEqual(try SetupFaces.setup(c.level.placements[10], context: c, lightsInUse: 150).light, nil)
         try check(15, type: 1720, layer: 11, mode: 0, light: true, pict: 1720, source: .setupCached)
 
         // Sheet arguments (Init<Class>Sprite calls).
@@ -159,7 +198,7 @@ final class SpriteListTests: XCTestCase {
 
     func testSpawnOrderLevel1() throws {
         let (_, c) = try context()
-        let spawned = try SetupFaces.spawnLevelSprites(context: c)
+        let spawned = try SetupFaces.spawnLevelSprites(context: c) { _ in .noFace }
         let order = spawned.created.map { c.level.placements[$0] }
         XCTAssertEqual(order.count, 162)
         XCTAssertEqual(order.prefix(22).map(\.type), Array(repeating: 1307, count: 22))
@@ -187,7 +226,7 @@ final class SpriteListTests: XCTestCase {
 
     // MARK: - IdleSprites
 
-    func testIdleActivationRule() {
+    func testIdleActivationRule() throws {
         typealias R = IdleSprites.Rect
         // Window at view (h, v) = (100, 50), no player: (h − 24, v − 24, h + 632, v + 408) outset by 96 →
         // left −20, top −70, right 828, bottom 554.
@@ -215,20 +254,28 @@ final class SpriteListTests: XCTestCase {
         XCTAssertEqual(first.activated, [1, 3])
         XCTAssertEqual(list.sprites.map(\.type), [11, 12])
         // The other direction, one rule (no hysteresis): move B 1 px further right → idle again; D never.
-        let bid = idle.entries[1]!.activeID!
+        let bid = try XCTUnwrap(idle.entries[1]?.activeID)
         list.update(id: bid) { $0.x += 1 }
-        let did = idle.entries[3]!.activeID!
+        let did = try XCTUnwrap(idle.entries[3]?.activeID)
         list.update(id: did) { $0.x += 5000 }
         let second = idle.handle(h: 100, v: 50, playerHotRect: nil, active: &list) { _ in face }
         XCTAssertEqual(second.deactivated, [1])
         XCTAssertEqual(list.sprites.map(\.type), [12])
-        XCTAssertNil(idle.entries[1]!.activeID)
-        XCTAssertEqual(idle.entries[1]!.saved.x, 828 - 2 + 11)   // `.ActiveToIdleSprite` saves the live position
+        XCTAssertNil(try XCTUnwrap(idle.entries[1]).activeID)
+        XCTAssertEqual(try XCTUnwrap(idle.entries[1]).saved.x, 828 - 2 + 11)   // `.ActiveToIdleSprite` saves the live position
         // The same rule vertically: the box's top on the window's bottom edge (half-open: no overlap), a top margin of
         // 1 → active.
         var e = SpriteSlot(type: 13, x: 300, y: 554 - 4, layer: 0, face: ref); e.margins = .init(top: 1)
         _ = idle.add(e, faceRect: face)
         XCTAssertEqual(idle.handle(h: 100, v: 50, playerHotRect: nil, active: &list) { _ in face }.activated, [4])
+        // Right and bottom margins: boxes whose right / bottom edge sits on the window's left (−20) / top (−70) edge;
+        // a margin of 1 reaches in, the twins without one stay idle.
+        let leftOf = SpriteSlot(type: 14, x: -20 - 20, y: 100, layer: 0, face: ref)
+        let above = SpriteSlot(type: 15, x: 300, y: -70 - 30, layer: 0, face: ref)
+        var leftM = leftOf; leftM.margins = .init(right: 1)
+        var aboveM = above; aboveM.margins = .init(bottom: 1)
+        for sprite in [leftOf, leftM, above, aboveM] { _ = idle.add(sprite, faceRect: face) }
+        XCTAssertEqual(idle.handle(h: 100, v: 50, playerHotRect: nil, active: &list) { _ in face }.activated, [6, 8])
         // The last entry (511) is never scanned (`100083e8 cmpwi r30,0x1ff`).
         var full = IdleSprites()
         for k in 0..<IdleSprites.capacity {
@@ -237,7 +284,7 @@ final class SpriteListTests: XCTestCase {
         XCTAssertNil(full.add(SpriteSlot(type: 20, x: 0, y: 0), faceRect: face))   // table full
         var none = ActiveList()
         XCTAssertEqual(full.handle(h: 0, v: 0, playerHotRect: nil, active: &none) { _ in face }.activated.count, 511)
-        XCTAssertNil(full.entries[511]!.activeID)
+        XCTAssertNil(try XCTUnwrap(full.entries[511]).activeID)
     }
 
     func testIdleWindowAtStartLevel1() throws {
@@ -272,7 +319,7 @@ final class SpriteListTests: XCTestCase {
         let result = spawned.idle.handle(h: 0, v: 10, playerHotRect: player, active: &spawned.active) { _ in
             IdleSprites.Rect(top: 0, left: 0, bottom: 0x40, right: 0x40)
         }
-        let records = result.activated.map { spawned.idle.entries[$0]!.saved.recordIndex }
+        let records = try result.activated.map { try XCTUnwrap(spawned.idle.entries[$0]).saved.recordIndex }
         // Self-derived from the transcribed rule (margins all 0 on level 1): the 13 records of the margin-free point
         // test with the 96-px outset (plan Research note 16).
         XCTAssertEqual(records.sorted(), [1, 3, 4, 6, 22, 52, 68, 78, 131, 157, 158, 159, 160])

@@ -69,6 +69,24 @@ public enum SetupFaces {
         }
     }
 
+    /// A light a Setup adds: `.AddLight @ 1001bc08 (face, (v, h), 0, 0, 0, colour)` takes the first free of the 200
+    /// slots at `_DAT_100a0128` and sets `+0` active, `+1` new, `+4` face, `+0xc` the point, `+0x14` radius = face
+    /// width (`+0x50`) >> 1, `+0x18` colour (decompile l. 14275–14322). Neither `MTKillSprite` nor
+    /// `.ActiveToIdleSprite` removes it, so an idle sprite's light stays from the level start.
+    public struct Light: Equatable, Sendable {
+        /// The light face: `.Load1LightFaceFromPICT(pict, width, height)`.
+        public let pict: Int16
+        public let width: Int
+        public let height: Int
+        /// The point (`+0xe` h, `+0xc` v).
+        public let x: Int
+        public let y: Int
+        /// `+0x18`.
+        public let colour: Int
+
+        public var radius: Int { width >> 1 }
+    }
+
     /// One placed sprite after its Setup.
     public struct Entry: Equatable, Sendable {
         public let type: Int16
@@ -80,6 +98,8 @@ public enum SetupFaces {
         public let source: FaceSource
         /// The sprite as the Setup leaves it; `face` is the drawn face (nil for `.none`).
         public let slot: SpriteSlot
+        /// The light the Setup adds (`.AddLight`), nil when none.
+        public let light: Light?
     }
 
     /// The state a Setup reads besides its record.
@@ -87,10 +107,13 @@ public enum SetupFaces {
         public let level: LevelFile
         /// `*_DAT_1009fd94` (player x), read by `.SetupWalkerSprite` for `+0x17e`.
         public let playerX: Int
+        /// prefs `+6` Effects (`_DAT_1009fe44 + 6`): the Xichron and money-bag lights need it == 1.
+        public let effects: Int16
 
-        public init(level: LevelFile, playerX: Int) {
+        public init(level: LevelFile, playerX: Int, effects: Int16 = FerazelPrefs().effects) {
             self.level = level
             self.playerX = playerX
+            self.effects = effects
         }
 
         /// The playerX in effect while `.SetupLevel` runs at a level start: `.GameLoop(hdr+0x2848 − 0x20, …)`
@@ -140,13 +163,19 @@ public enum SetupFaces {
     // MARK: - one Setup
 
     /// The class Setup for record `p` (`.GenerateSprite`'s selection, then the Setup arm).
-    public static func setup(_ p: Placement, context c: SetupFaces.Context) throws -> Entry {
+    /// - Parameter lightsInUse: `*_DAT_100a0124`, the lights added so far (the Xichron light needs < 150).
+    public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0) throws -> Entry {
         guard let (cls, spawn) = SpriteClassTable.classify(type: p.type, p1Negative: p.p1 < 0) else {
             throw Error.unmapped(type: p.type)
         }
         var s = SpriteSlot(type: p.type, x: Int(p.x), y: Int(p.y), recordIndex: Int16(p.index))
         let t = Int(p.type)
-        var sheet: Sheet?, index = 0, source = FaceSource.none
+        var sheet: Sheet?, index = 0, source = FaceSource.none, light: Light?
+        /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
+        /// / `.InitEffectSprite`'s light faces.
+        func addLight(_ pict: Int16, _ size: Int, dx: Int, dy: Int, colour: Int) {
+            light = Light(pict: pict, width: size, height: size, x: s.x + dx, y: s.y + dy, colour: colour)
+        }
 
         func face(_ pict: Int16, _ i: Int = 0, _ src: FaceSource) {
             sheet = sheets[pict]
@@ -195,22 +224,33 @@ public enum SetupFaces {
             case 0x41f:                                        // gold Xichron: Handle face set 0x421, `+0x46 >> 1`
                 s.lightOverlay = false
                 face(0x421, 0, .handle)
+                // prefs +6 == 1 and fewer than 150 lights: `_DAT_100a07fc` = light 0x336 (52×52), colour 0x16.
+                if c.effects == 1 && lightsInUse < 0x96 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 0x16) }
             case 0x423:                                        // secret-area trigger: no face (l. 52403)
                 s.lightOverlay = false
             case 0x50c:                                        // money bag: Handle face `*_DAT_100a08e0` (PICT 0x50c)
                 s.lightOverlay = false
                 face(0x50c, 0, .handle)
+                if c.effects == 1 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 99) }   // prefs +6 == 1
             case 0x517:                                        // rock pile (l. 52567): Handle face PICT 0x517; `+0x88` kept
                 face(0x517, 0, .handle)
             case 0x51b:                                        // torch (l. 52541): Handle face set 0x51b, `+0x46 >> 1`
                 s.lightOverlay = false
                 face(0x51b, 0, .handle)
+                // Ungated: `_DAT_100a08c0` = light 0x321 (192×192) at (y + 8, x + 5), colour 0x16 (p3 = 0) or 0x58.
+                addLight(0x321, 0xc0, dx: 5, dy: 8, colour: p.p3 == 0 ? 0x16 : 0x58)
             case 0x532...0x53b:                                // spheres: Handle face `_DAT_100a089c[type − 0x532]`
                 s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
                 face(Int16(t), 0, .handle)
+                // `*PTR_DAT_100a088c` = light 0x32a (72×72) at (y + 0x10, x + 0x10), colour 99.
+                addLight(0x32a, 0x48, dx: 0x10, dy: 0x10, colour: 99)
             case 0xc80...0xcb0:                                // items: `+0xc0 = _DAT_100a08a0[type − 0xc80]` (l. 52667)
                 s.lightOverlay = false
                 face(Int16(t), 0, .setup)
+                // Light 0x32a at (y + 0xc, x + 0x10), colour 99 (0x21 / 0x2c / 0x4d for the listed items).
+                let colour = [0xc97, 0xc99, 0xc9a].contains(t) ? 0x21 : [0xc86, 0xc98].contains(t) ? 0x2c
+                    : t == 0xc93 ? 0x4d : 99
+                addLight(0x32a, 0x48, dx: 0x10, dy: 0xc, colour: colour)
             default:
                 throw Error.notTranscribed(type: p.type)
             }
@@ -327,7 +367,7 @@ public enum SetupFaces {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,
-                     faceIndex: index, source: source, slot: s)
+                     faceIndex: index, source: source, slot: s, light: light)
     }
 
     // MARK: - the level spawn
@@ -339,6 +379,8 @@ public enum SetupFaces {
         public var idle: IdleSprites
         /// Record indices in `.GenerateSprite` call order.
         public var created: [Int]
+        /// The lights the Setups added, in `.AddLight` order (= slot order on a level start with no light in use).
+        public var lights: [Light]
     }
 
     /// `.SetupLevelSprites @ 10003cd0` (l. 1940–2101): every flag-1 record of type 0x51b, then types 0x578..0x595,
@@ -346,13 +388,15 @@ public enum SetupFaces {
     /// layer −1 → 0): spawned now → `MTNewSprite` (Setup, then `.MTInsertSprite`); queued → `.AddIdleSprite`
     /// (Setup with layer argument 1, then `.ActiveToIdleSprite`, whose face rect `idleFaceRect` answers — the opaque
     /// bounds of the face `+0xc0` holds then, `Rect.noFace` without one).
+    /// Core has no face pixels: `FerazelRender.SpriteBlitter.Faces.idleFaceRect` answers the face `+8` rect.
     public static func spawnLevelSprites(context c: Context,
-                                         idleFaceRect: (Entry) -> IdleSprites.Rect = { _ in .noFace }) throws -> Spawned {
+                                         idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
-        var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [])
+        var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [])
         for p in c.level.spawnOrder {
-            let e = try setup(p, context: c)
+            let e = try setup(p, context: c, lightsInUse: out.lights.count)
             out.created.append(p.index)
+            if let l = e.light { out.lights.append(l) }
             switch e.spawn {
             case .now:
                 out.active.insert(e.slot)

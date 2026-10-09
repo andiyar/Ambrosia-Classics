@@ -28,7 +28,7 @@ import FerazelCore
 ///
 /// Not reached by a level-1 Setup and refused by name (`Refusal`): hurt flash (3, 4), diffuse (5), ripple and the
 /// water split (6, `+0x11c`), behind-tiles (8), squash (0xa), translucency (0xb, 0xd — table `0148` not built),
-/// silhouette (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13), a light slot in use.
+/// silhouette (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13).
 /// Rotation and scale are not in the seam (`SpriteDraw`); Phase 1 never sets them.
 public struct SpriteBlitter: Sendable {
 
@@ -37,9 +37,10 @@ public struct SpriteBlitter: Sendable {
         case mode(UInt32)
         /// `+0x11c` ≠ 0 (the water split, mode 6 rows).
         case waterSplit(Int)
-        /// A light slot is active: the per-sprite light blitters are not built (no level-1 Setup adds a light that
-        /// Phase 1 models).
-        case lights
+        /// A light-table read outside the table (the original reads other memory).
+        case lightIndex(Int)
+        /// A `FaceRef` with no loaded face.
+        case faceNotLoaded(FaceRef)
         /// The ambient table for this darkness (outside 0 … 15 and −1).
         case darkness(Int)
         /// `SpriteSlot.previous` with a rotation or a non-unit scale.
@@ -57,7 +58,8 @@ public struct SpriteBlitter: Sendable {
         public init<S: Sequence>(_ wanted: S, resources: FerazelResources, search: ColorSearch,
                                  dither: DitherModel = .errorDiffusion) throws where S.Element == SetupFaces.Sheet {
             var cluts: [Int16: ColorLUT] = [:]
-            for s in wanted where sheets[s.pict] == nil {
+            let placeholder = SetupFaces.sheet(pict: SetupFaces.placeholderPict).map { [$0] } ?? []
+            for s in Array(wanted) + placeholder where sheets[s.pict] == nil {
                 let clut: ColorLUT
                 if let c = cluts[s.clut] { clut = c } else {
                     clut = try ColorLUT.load(id: s.clut, from: resources, chain: .level)
@@ -70,6 +72,20 @@ public struct SpriteBlitter: Sendable {
                 sheets[s.pict] = try FaceSheet.load(loader, from: resources, chain: .frontEnd, clut: clut,
                                                     search: search, dither: dither)
             }
+        }
+
+        /// `.ActiveToIdleSprite`'s face rect at `.AddIdleSprite` time: face `+8` (the opaque bounds) of the face `+0xc0`
+        /// holds — the loaded face for `.setup`, the placeholder PICT 150 for `.setupCached` (the caches load after
+        /// `.SetupLevelSprites`) — else `SetRect(0, 0, 0x40, 0x40)`.
+        public func idleFaceRect(_ e: SetupFaces.Entry) -> IdleSprites.Rect {
+            let face: EncodedFace?
+            switch e.source {
+            case .setup: face = e.slot.face.flatMap(self.face)
+            case .setupCached: face = sheets[SetupFaces.placeholderPict]?.faces.first
+            case .handle, .none: face = nil
+            }
+            guard let b = face?.bounds else { return .noFace }
+            return IdleSprites.Rect(top: Int(b.top), left: Int(b.left), bottom: Int(b.bottom), right: Int(b.right))
         }
 
         public func face(_ ref: FaceRef) -> EncodedFace? {
@@ -98,13 +114,13 @@ public struct SpriteBlitter: Sendable {
     // MARK: - `.WrapDrawSprites`
 
     /// The draw pass over `draws` (active-list order) at scroll (h, v) (`PTR_DAT_1009fe78`); `drawn` is the grid's
-    /// `_DAT_1009fe74` / `_DAT_1009fe70` pair the cull offsets by. A `FaceRef` with no loaded face draws nothing.
+    /// `_DAT_1009fe74` / `_DAT_1009fe70` pair the cull offsets by. A `FaceRef` with no loaded face is refused.
     public func wrapDrawSprites(_ draws: [SpriteDraw], h: Int, v: Int, drawn: (h: Int, v: Int)? = nil,
                                 ports: inout FramePorts) throws {
         let off = drawn ?? (h, v)
         let view = Rect(top: off.v, left: off.h, bottom: off.v + 0x180, right: off.h + 0x260)
         for d in draws {
-            guard let face = faces.face(d.face) else { continue }
+            guard let face = faces.face(d.face) else { throw Refusal.faceNotLoaded(d.face) }
             guard Rect(face.bounds).offset(dh: off.h, dv: off.v).intersects(view) else { continue }
             let fw = face.width, fh = face.height
             let top = d.clip.top, left = d.clip.left
@@ -157,15 +173,40 @@ public struct SpriteBlitter: Sendable {
         }
     }
 
-    /// `.WrapLightFace` + `.DrawLightOverFace` (no light slot) for one sprite.
+    /// `.WrapLightFace` + `.DrawLightOverFace @ 1001cf38` (decompile l. 15067–15288) for one sprite, per ring copy:
+    /// D = `.GetAmbDarkVal(x + w'/2, y + h'/2)` (the clipped w', h'); each active slot (200, slot order) is skipped
+    /// when, as written, |x + w'/2 − light.x| ≥ light.x + r + w'/2 **and** |y + h'/2 − light.y| ≥ light.y + r + h'/2
+    /// (the light's own coordinate inside the bound, l. 15172–15184), else tested: the light face rect at (light.x − r,
+    /// light.y − r) against the sprite face's bounds `+8` at (x, y); the first that meets is drawn with
+    /// `.BlitLightOverFace(Flip)Clip`, every later one with `.BlitAfterLightOverFace(Flip)Clip`, at the light offset
+    /// (y − (light.y − r), x − (light.x − r)). None met and header `0x2706` > 0: `.BlitAmbDarkenOverFace(Flip)Clip`
+    /// through slab D.
     private func lightFace(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, x: Int, y: Int,
                            flip: Bool, h0: Int, v0: Int, ports: inout FramePorts) throws {
-        guard !lights.slots.contains(where: { $0.active }) else { throw Refusal.lights }
         var failure: Refusal?
+        let bounds = Rect(face.bounds).offset(dh: x, dv: y)
         Self.wrap(src: src, dst: dst, w: w, h: h, h0: h0, v0: v0) { s, t, ww, hh in
             guard failure == nil else { return }
             let D = lights.darkness(x: x + (ww >> 1), y: y + (hh >> 1))
-            guard level.header.darknessEnable > 0 else { return }
+            let cx = x + (ww >> 1), cy = y + (hh >> 1)
+            var lit = false
+            for slot in lights.slots where slot.active {
+                guard let lf = slot.face else { continue }
+                let r = slot.radius
+                if abs(cx - slot.x) >= slot.x + r + (ww >> 1) && abs(cy - slot.y) >= slot.y + r + (hh >> 1) { continue }
+                let lightRect = Rect(top: slot.y - r, left: slot.x - r, bottom: slot.y - r + lf.height,
+                                     right: slot.x - r + lf.width)
+                guard lightRect.intersects(bounds) else { continue }
+                if !lit && !tables.ambient.indices.contains(D) { failure = .darkness(D); return }
+                if let f = lightBlit(face, into: &ports.frame, src: s, dst: t, w: ww, h: hh, flip: flip, after: lit,
+                                     light: lf, colour: slot.colour & 0xff, D: D, offRow: y - (slot.y - r),
+                                     offCol: x - (slot.x - r)) {
+                    failure = f
+                    return
+                }
+                lit = true
+            }
+            guard !lit, level.header.darknessEnable > 0 else { return }
             guard D == -1 || tables.ambient.indices.contains(D) else { failure = .darkness(D); return }
             let slab = lights.ambientSlab(D)
             Self.blit(face, into: &ports.frame, src: s, dst: t, w: ww, h: hh, flip: flip, reject: false) { _, p in
@@ -173,6 +214,66 @@ public struct SpriteBlitter: Sendable {
             }
         }
         if let failure { throw failure }
+    }
+
+    /// The four light blitters over one window of `face` (face pixel (r, c) reads light row offRow + r; light column
+    /// offCol + c, or offCol + width − c when mirrored — the flip twins start each row at offCol + width, raw
+    /// `.BlitLightOverFaceFlipClip @ 1001ea20`):
+    /// - first (`.BlitLightOverFaceClip @ 1001d8e8` / `FlipClip`): the whole run → ambient slab D when the light row
+    ///   is ≤ 0 (flip: < 0) or ≥ height − 1, or the run's first light column ≥ width (flip: < 1); else per pixel:
+    ///   column outside the light → ambient, light pixel p = 0 → ambient, else `light[D·0x6e00 + (p + colour − 0xf5)·0x100
+    ///   + dst]`;
+    /// - after (`.BlitAfterLightOverFaceClip @ 1001dd8c` / `FlipClip @ 1001eee0`), slab D = 0: rows < 0 left alone, the
+    ///   blit ends at the first light row ≥ height; a run whose first column is ≥ width (flip: < 1) is left alone;
+    ///   per pixel inside the light: `light[(p + colour − 0xf5)·0x100 + dst]` with p = 0 read as 0xf5 (unflipped) or
+    ///   the pixel left alone (flip).
+    /// Returns a refusal for a light-table index outside the table.
+    private func lightBlit(_ face: EncodedFace, into port: inout [UInt8], src: (Int, Int), dst: (Int, Int), w: Int,
+                           h: Int, flip: Bool, after: Bool, light lf: LightFace, colour: Int, D: Int, offRow: Int,
+                           offCol: Int) -> Refusal? {
+        let LW = lf.width, LH = lf.height, fw = face.width
+        let amb = after ? [] : lights.ambientSlab(D)
+        let base = after ? 0 : D * 0x6e00
+        let table = tables.light
+        var failure: Refusal?
+        var stopped = false
+        Self.forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: false) { r, c0, n, index in
+            guard failure == nil, !stopped else { return }
+            let lr = offRow + r
+            func lc(_ c: Int) -> Int { flip ? offCol + fw - c : offCol + c }
+            func lit(_ p: Int, _ d: UInt8) -> UInt8? {
+                let i = base + (p + colour - 0xf5) * 0x100 + Int(d)
+                guard i >= 0, i < table.count else { failure = .lightIndex(i); return nil }
+                return table[i]
+            }
+            if !after {
+                let rowOut = flip ? (lr < 0 || lr + 1 >= LH) : (lr <= 0 || lr + 1 >= LH)
+                let runOut = flip ? lc(c0) < 1 : lc(c0) >= LW
+                for c in c0..<(c0 + n) {
+                    let o = index(c), d = port[o]
+                    let col = lc(c)
+                    if rowOut || runOut || col < 0 || col >= LW { port[o] = amb[Int(d)]; continue }
+                    let p = Int(lf.pixel(row: lr, col: col))
+                    if p == 0 { port[o] = amb[Int(d)]; continue }
+                    guard let v = lit(p, d) else { return }
+                    port[o] = v
+                }
+            } else {
+                if lr >= LH { stopped = true; return }
+                guard lr >= 0 else { return }
+                if flip ? lc(c0) < 1 : lc(c0) >= LW { return }
+                for c in c0..<(c0 + n) {
+                    let col = lc(c)
+                    guard col >= 0, col < LW else { continue }
+                    var p = Int(lf.pixel(row: lr, col: col))
+                    if p == 0 { if flip { continue } else { p = 0xf5 } }
+                    let o = index(c)
+                    guard let v = lit(p, port[o]) else { return }
+                    port[o] = v
+                }
+            }
+        }
+        return failure
     }
 
     // MARK: - `.WrapEraseSprites`
@@ -199,7 +300,8 @@ public struct SpriteBlitter: Sendable {
                       Rect(top: view.top, left: view.right - 0x10, bottom: view.bottom, right: view.right + 0x10)]
         var restamped: [(top: Int, left: Int, bottom: Int, right: Int)] = []
         for s in sprites {
-            guard let prev = s.previous, let face = faces.face(prev.face) else { continue }
+            guard let prev = s.previous else { continue }
+            guard let face = faces.face(prev.face) else { throw Refusal.faceNotLoaded(prev.face) }
             guard s.previousRotation == 0, s.previousScale == 0x100 else {
                 throw Refusal.transform
             }
@@ -230,7 +332,9 @@ public struct SpriteBlitter: Sendable {
                     0xff
                 }
             }
-            guard let cells = erased.intersection(ring) else { continue }   // [MED: SectRectFast's empty result]
+            // `SectRectFast` → QuickDraw `SectRect`: no overlap gives the empty rect (0, 0, 0, 0), so cell (0, 0) is
+            // re-stamped (l. 10589–10603).
+            let cells = erased.intersection(ring) ?? Rect(top: 0, left: 0, bottom: 0, right: 0)
             let r = (top: cells.top >> 5, left: cells.left >> 5, bottom: cells.bottom >> 5, right: cells.right >> 5)
             grid?.redrawScrollGridMask(top: r.top, left: r.left, right: r.right, bottom: r.bottom, h: h, v: v,
                                        ports: &ports)
@@ -299,6 +403,28 @@ public struct SpriteBlitter: Sendable {
     /// As above with `index(portIndex, source pixel, port pixel)`.
     static func blit(_ face: EncodedFace, into port: inout [UInt8], src: (Int, Int), dst: (Int, Int), w: Int, h: Int,
                      flip: Bool, reject: Bool, index: (Int, UInt8, UInt8) -> UInt8) {
+        let data = face.data
+        forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: reject) { _, c0, n, at in
+            for c in c0..<(c0 + n) {
+                let o = at(c)
+                port[o] = index(o, data[at.dataOffset + c - c0], port[o])
+            }
+        }
+    }
+
+    /// Where a window run's face column c lands in the port, and the run's first data byte.
+    struct RunIndex {
+        let row: Int, ox: Int, fw: Int, flip: Bool, dataOffset: Int
+        func callAsFunction(_ c: Int) -> Int {
+            row * FramePorts.width + (flip ? ox + fw - 1 - c : ox + c)
+        }
+    }
+
+    /// The window walk every `.BlitEncFace*` clip variant shares: rows `[sv, sv + h)` and face columns `[sh, sh + w)`
+    /// (mirrored: `[fw − sh − w, fw − sh)`) of `face` at port position (dv, dh), clipped to the port as
+    /// `.BlitEncFaceClipX` clips; `run(faceRow, firstFaceColumn, count, index)` per copy-run piece, in token order.
+    static func forEachRun(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, flip: Bool,
+                           reject: Bool, _ run: (Int, Int, Int, RunIndex) -> Void) {
         let W = FramePorts.width, H = FramePorts.height
         let fw = face.width, fh = face.height
         var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
@@ -308,40 +434,31 @@ public struct SpriteBlitter: Sendable {
         if W <= dh + w { w = W - dh }
         if H <= dv + h { h = H - dv }
         guard w > 0, h > 0 else { return }
-        let ox = dh - sh, oy = dv - sv               // face (0, 0) in port coordinates
-        // Face columns drawn: [sh, sh + w) unflipped, [fw − sh − w, fw − sh) flipped.
+        let ox = dh - sh, oy = dv - sv
         let c0 = flip ? fw - sh - w : sh, c1 = flip ? fw - sh : sh + w
-        face.data.withUnsafeBufferPointer { data in
-            port.withUnsafeMutableBufferPointer { out in
-                var p = 0, row = -1, col = 0
-                while p + 4 <= data.count {
-                    let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
-                    p += 4
-                    switch tok {
-                    case 1:
-                        row += 1
-                        col = 0
-                        if row >= sv + h { return }
-                    case 3:
-                        col += n
-                    case 2:
-                        if row >= sv {
-                            let a = max(col, c0), b = min(col + n, c1)
-                            if a < b {
-                                let py = oy + row
-                                for c in a..<b {
-                                    let px = flip ? ox + fw - 1 - c : ox + c
-                                    let o = py * W + px
-                                    out[o] = index(o, data[p + c - col], out[o])
-                                }
-                            }
-                        }
-                        col += n
-                        p += (n + 3) & ~3
-                    default:
-                        return
+        let data = face.data
+        var p = 0, row = -1, col = 0
+        while p + 4 <= data.count {
+            let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
+            p += 4
+            switch tok {
+            case 1:
+                row += 1
+                col = 0
+                if row >= sv + h { return }
+            case 3:
+                col += n
+            case 2:
+                if row >= sv {
+                    let a = max(col, c0), b = min(col + n, c1)
+                    if a < b {
+                        run(row, a, b - a, RunIndex(row: oy + row, ox: ox, fw: fw, flip: flip, dataOffset: p + a - col))
                     }
                 }
+                col += n
+                p += (n + 3) & ~3
+            default:
+                return
             }
         }
     }
@@ -367,6 +484,7 @@ extension TileGridRenderer {
                 let t = level.fgTile(col: col, row: row), b = level.bgTile(col: col, row: row)
                 let o1 = level.overlay1(col: col, row: row)
                 let o2 = o1 > 99 ? level.overlay2(col: col, row: row) : -1
+                // Out of range: the original's `ReportError` and `return` — the rest of the rect is not stamped.
                 guard (-1...0x5f).contains(t), (-1...0x5f).contains(b) else { return }
                 func stamp(_ face: EncodedFace) {
                     TileBlitters.wrapDraw(face, .bool, into: &ports.mask, x: x, y: y, scroll: scroll)

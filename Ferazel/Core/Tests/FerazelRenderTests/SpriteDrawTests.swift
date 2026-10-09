@@ -16,14 +16,35 @@ final class SpriteDrawTests: XCTestCase {
         [(0, 0), (2, 3), (5, 7)].contains { $0 == (r, c) } ? 0 : UInt8(0x20 + 8 * r + c)
     }
     private static let ref = FaceRef(pict: 9001, index: 0, set: .encoded)
+    /// A 40×40 face opaque only in rows 20..29, columns 20..29 (bounds (20, 19, 30, 32): away from every edge strip).
+    private static let inner = FaceRef(pict: 9002, index: 0, set: .encoded)
 
     private func faces() throws -> SpriteBlitter.Faces {
+        func sheet(_ pict: Int16, _ w: Int, _ h: Int, _ px: [UInt8]) throws -> FaceSheet {
+            let face = try FaceEncoder.encode(pixels: px, width: w, height: h,
+                                              rect: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(h), right: Int16(w)),
+                                              sourceId: pict)
+            let a = try FaceSheet.Arguments(pict: pict, count: 1, cellWidth: w, cellHeight: h, columns: 1)
+            return FaceSheet(arguments: a, faces: [face], shortCells: [:], clutId: 202)
+        }
         let px = (0..<Self.h).flatMap { r in (0..<Self.w).map { c in Self.pixel(r, c) } }
-        let face = try FaceEncoder.encode(pixels: px, width: Self.w, height: Self.h,
-                                          rect: EncodedFace.Rect(top: 0, left: 0, bottom: Int16(Self.h),
-                                                                 right: Int16(Self.w)), sourceId: 9001)
-        let a = try FaceSheet.Arguments(pict: 9001, count: 1, cellWidth: Self.w, cellHeight: Self.h, columns: 1)
-        return SpriteBlitter.Faces(sheets: [9001: FaceSheet(arguments: a, faces: [face], shortCells: [:], clutId: 202)])
+        let inner = (0..<40).flatMap { r in (0..<40).map { c in (20..<30).contains(r) && (20..<30).contains(c) ? UInt8(9) : 0 } }
+        return SpriteBlitter.Faces(sheets: [9001: try sheet(9001, Self.w, Self.h, px), 9002: try sheet(9002, 40, 40, inner)])
+    }
+
+    /// The copy-run pixels of a face, row-major.
+    private func opaque(_ face: EncodedFace) throws -> [Bool] {
+        var out = [Bool](repeating: false, count: face.width * face.height)
+        var row = -1, col = 0
+        for t in try face.tokens() {
+            switch t {
+            case .row: row += 1; col = 0
+            case .skip(let n): col += n
+            case .copy(let b): for k in 0..<b.count { out[row * face.width + col + k] = true }; col += b.count
+            case .end: break
+            }
+        }
+        return out
     }
 
     private func blitter(_ f: TileGridTests.Fixture, effects: Int16 = 3) throws -> SpriteBlitter {
@@ -109,7 +130,14 @@ final class SpriteDrawTests: XCTestCase {
         var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.ref); lit.dynamicLight = true
         XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: 2), 0xbff02)
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: 0xbff02, clip: open)],
-                                                   h: 0, v: 0, ports: &ports))
+                                                   h: 0, v: 0, ports: &ports)) {
+            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0xbff02))
+        }
+        let missing = FaceRef(pict: 1, index: 0, set: .encoded)
+        XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: missing, x: 0, y: 0, clip: open)], h: 0, v: 0,
+                                                   ports: &ports)) {
+            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .faceNotLoaded(missing))
+        }
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, clip: open, waterRow: 1)],
                                                    h: 0, v: 0, ports: &ports)) {
             XCTAssertEqual($0 as? SpriteBlitter.Refusal, .waterSplit(1))
@@ -124,6 +152,52 @@ final class SpriteDrawTests: XCTestCase {
         let D = f.level.lightByte(col: (100 + Self.w / 2) >> 5, row: (50 + Self.h / 2) >> 5)
         let slab = lit1.lights.ambientSlab(D)
         assertDrawn(dark, x0: 100, y0: 50, rows: 0..<6, cols: 0..<8, flip: false, fill: fill, value: { slab[Int($0)] })
+        // D is sampled at the clipped face's centre, not its corner: a face straddling two cells of different darkness.
+        let (dc, dr) = try XCTUnwrap((0..<14).lazy.flatMap { r in (1..<20).lazy.map { (col: $0, row: r) } }.first {
+            let a = f.level.lightByte(col: $0.col - 1, row: $0.row), b = f.level.lightByte(col: $0.col, row: $0.row)
+            return a != b && (0..<16).contains(a) && (0..<16).contains(b)
+                && lit1.lights.ambientSlab(a)[0x20...0x50] != lit1.lights.ambientSlab(b)[0x20...0x50]
+        }.map { ($0.col, $0.row) })
+        let sx = dc * 32 - 3, sy = dr * 32 + 10   // corner in cell dc − 1, centre (sx + 4) in cell dc
+        var straddle = FramePorts(fill: fill)
+        try lit1.wrapDrawSprites([SpriteDraw(face: Self.ref, x: sx, y: sy, clip: open, lightOverlay: true)], h: 0, v: 0,
+                                 ports: &straddle)
+        let centre = lit1.lights.ambientSlab(f.level.lightByte(col: dc, row: dr))
+        assertDrawn(straddle, x0: sx, y0: sy, rows: 0..<6, cols: 0..<8, flip: false, fill: fill,
+                    value: { centre[Int($0)] })
+
+        // A light slot that meets the face: `.BlitLightOverFaceClip` — light pixel (offRow + r, offCol + c), colour;
+        // mirrored, `.BlitLightOverFaceFlipClip` reads column offCol + width − c. A sprite far from it: ambient.
+        let lightPixels = (0..<32).flatMap { r in (0..<32).map { c in
+            (2..<30).contains(r) && (2..<30).contains(c) ? UInt8(0xf5 + c % 11) : 0 } }
+        let lf = LightFace(pict: 1, width: 32, height: 32, pixels: lightPixels)
+        var lights = LightRenderer(level: f.level, tables: f.tables)
+        lights.slots[0].active = true
+        lights.slots[0].face = lf
+        lights.slots[0].x = 104; lights.slots[0].y = 53; lights.slots[0].radius = 16; lights.slots[0].colour = 0x16
+        let withLight = SpriteBlitter(level: f.level, tables: f.tables, faces: try faces(), effects: 1, lights: lights)
+        let L = f.level.lightByte(col: 104 >> 5, row: 53 >> 5)
+        XCTAssertTrue((0..<16).contains(L))
+        for flip in [false, true] {
+            var lp = FramePorts(fill: fill)
+            try withLight.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 100, y: 50, mirrored: flip, clip: open,
+                                                      lightOverlay: true),
+                                           SpriteDraw(face: Self.ref, x: 400, y: 200, clip: open, lightOverlay: true)],
+                                          h: 0, v: 0, ports: &lp)
+            let offRow = 50 - (53 - 16), offCol = 100 - (104 - 16)
+            for r in 0..<Self.h {
+                for c in 0..<Self.w where Self.pixel(r, c) != 0 {
+                    let lc = flip ? offCol + Self.w - c : offCol + c
+                    let p = Int(lightPixels[(offRow + r) * 32 + lc])
+                    let want = f.tables.light[L * 0x6e00 + (p + 0x16 - 0xf5) * 0x100 + Int(Self.pixel(r, c))]
+                    let x = flip ? 100 + Self.w - 1 - c : 100 + c
+                    XCTAssertEqual(at(lp.frame, x, 50 + r), want, "lit (\(r), \(c)) flip \(flip)")
+                }
+            }
+            let farSlab = withLight.lights.ambientSlab(f.level.lightByte(col: 404 >> 5, row: 203 >> 5))
+            assertDrawn(lp, x0: 400, y0: 200, rows: 0..<6, cols: 0..<8, flip: false, fill: fill,
+                        value: { farSlab[Int($0)] })
+        }
         // Effects 3 skips it.
         assertDrawn(try draw(SpriteDraw(face: Self.ref, x: 100, y: 50, clip: open, lightOverlay: true)), x0: 100,
                     y0: 50, rows: 0..<6, cols: 0..<8, flip: false, fill: fill)
@@ -151,20 +225,35 @@ final class SpriteDrawTests: XCTestCase {
                 }
             }
         }
-        // An unchanged sprite away from the edge strips is not erased (the rect is the face bounds offset by the
-        // scroll, as written: (0, 1, 6, 8) + (h, v) lies within 16 px of the view's top-left edges, so move the view
-        // so that the bounds meet no strip: impossible for a face this small — every face-local rect within 16 px of
-        // (0, 0) meets the top/left strips). So the erase fires for it too:
+        // The test rect is the face bounds offset by the scroll, as written: the 8×6 face's (0, 0, 6, 9) lies within
+        // 16 px of the view's top-left edge strips, so even unchanged it is erased …
         var still = SpriteSlot(type: 1, x: 100, y: 50, face: Self.ref)
         still.recordDrawn()
         var stillPorts = FramePorts(fill: fill)
         XCTAssertEqual(try b.wrapEraseSprites([still], h: 0, v: 0, ports: &stillPorts).count, 1)
+        // … while the 40×40 face with bounds (20, 19, 30, 32) meets no strip: unchanged → not erased (`changed` false).
+        var quiet = SpriteSlot(type: 1, x: 100, y: 50, face: Self.inner)
+        quiet.recordDrawn()
+        var quietPorts = FramePorts(fill: fill)
+        for k in quietPorts.tiles.indices { quietPorts.tiles[k] = 3 }
+        XCTAssertEqual(try b.wrapEraseSprites([quiet], h: 0, v: 0, ports: &quietPorts).count, 0)
+        XCTAssertTrue(quietPorts.frame.allSatisfy { $0 == fill })
+        XCTAssertTrue(quietPorts.mask.allSatisfy { $0 == fill })
+        quiet.x += 1   // moved → erased
+        XCTAssertEqual(try b.wrapEraseSprites([quiet], h: 0, v: 0, ports: &quietPorts).count, 1)
+        // An erased rect off the ring window: `SectRect`'s empty (0, 0, 0, 0) → cell (0, 0) re-stamped.
+        var far = SpriteSlot(type: 1, x: 2000, y: 2000, face: Self.ref)
+        far.recordDrawn()
+        far.dead = true
+        let farCells = try b.wrapEraseSprites([far], h: 0, v: 0, ports: &stillPorts)
+        XCTAssertEqual(farCells.count, 1)
+        XCTAssertEqual([farCells[0].top, farCells[0].left, farCells[0].bottom, farCells[0].right], [0, 0, 0, 0])
         // …while a sprite with no last-frame face is skipped.
         XCTAssertEqual(try b.wrapEraseSprites([SpriteSlot(type: 1, x: 0, y: 0, face: Self.ref)], h: 0, v: 0,
                                               ports: &stillPorts).count, 0)
 
         // The mask-only re-stamp on the real grid: under an erased footprint over level-1 tiles the mask comes back as
-        // the full redraw left it (start window, scroll (0, 10); a sprite over FG cells at (64, 288)).
+        // the full redraw left it (start window, scroll (0, 10); a sprite over the level-1 tiles at (64, 288)).
         let grid = f.renderer(drawnH: 0, drawnV: 10)
         var full = FramePorts()
         grid.redrawEntireScrollGrid(h: 0, v: 10, ports: &full)
@@ -177,6 +266,46 @@ final class SpriteDrawTests: XCTestCase {
         try b.wrapEraseSprites([gone], h: 0, v: 10, ports: &drawnOver, grid: grid)
         XCTAssertEqual(drawnOver.mask, full.mask)
         XCTAssertEqual(drawnOver.frame, full.frame)
+
+        // The mask-only `.RedrawScrollGrid(cell, 1)` per stamp rule, against the stamping faces' copy runs: a cell
+        // with an FG tile and no BG (the FG stamp), one with a BG face that has a transparent pixel and an FG tile (BG +
+        // FG stamps), and one with an overlay o1 = 100 / 101 (the overlay stamp; it is stamped twice, idempotently).
+        let fgF = f.sets.fg.faces, bgF = f.sets.bg.faces
+        func cellWhere(_ test: (Int, Int, Int, Int, Int) -> Bool) -> (Int, Int)? {
+            for row in 0..<Int(f.level.header.gridHeight) { for col in 0..<Int(f.level.header.gridWidth) {
+                let t = f.level.fgTile(col: col, row: row), bb = f.level.bgTile(col: col, row: row)
+                let o1 = f.level.overlay1(col: col, row: row)
+                let o2 = o1 > 99 ? f.level.overlay2(col: col, row: row) : -1
+                if (-1...0x5f).contains(t), (-1...0x5f).contains(bb), test(t, bb, o1, o2, 0) { return (col, row) }
+            } }
+            return nil
+        }
+        func restamp(_ col: Int, _ row: Int, _ expected: [EncodedFace], line: UInt = #line) throws {
+            var p = FramePorts(fill: 0xff)
+            let sh = min(max(col * 32 - 288, 0), 32 * 200 - 640), sv = min(max(row * 32 - 176, 0), 32 * 50 - 384)
+            grid.redrawScrollGridMask(top: row, left: col, right: col, bottom: row, h: sh, v: sv, ports: &p)
+            var want = [Bool](repeating: false, count: 32 * 32)
+            for e in expected { for (k, o) in try opaque(e).enumerated() where o { want[k] = true } }
+            for j in 0..<32 { for i in 0..<32 {
+                XCTAssertEqual(at(p.mask, col * 32 + i, row * 32 + j), want[j * 32 + i] ? 0 : 0xff,
+                               "cell (\(col), \(row)) px (\(i), \(j))", line: line)
+            } }
+        }
+        func overlayFace(_ o1: Int, _ o2: Int) -> EncodedFace? { o2 < 0 ? nil : o1 == 100 ? fgF[o2] : o1 == 101 ? bgF[o2] : nil }
+        let fgOnly = try XCTUnwrap(cellWhere { t, bb, o1, _, _ in t >= 0 && bb < 0 && o1 < 100 })
+        try restamp(fgOnly.0, fgOnly.1, [fgF[f.level.fgTile(col: fgOnly.0, row: fgOnly.1)]])
+        let bgFg = try XCTUnwrap(cellWhere { t, bb, o1, _, _ in
+            t >= 0 && bb >= 0 && bgF[bb].hasTransparentPixel && o1 < 100
+                && (try? self.opaque(fgF[t])) != (try? self.opaque(bgF[bb])) })
+        try restamp(bgFg.0, bgFg.1, [bgF[f.level.bgTile(col: bgFg.0, row: bgFg.1)],
+                                     fgF[f.level.fgTile(col: bgFg.0, row: bgFg.1)]])
+        let ov = try XCTUnwrap(cellWhere { _, _, o1, o2, _ in o2 >= 0 && (o1 == 100 || o1 == 101) })
+        let (ot, ob) = (f.level.fgTile(col: ov.0, row: ov.1), f.level.bgTile(col: ov.0, row: ov.1))
+        let oo1 = f.level.overlay1(col: ov.0, row: ov.1), oo2 = f.level.overlay2(col: ov.0, row: ov.1)
+        var ovFaces = [try XCTUnwrap(overlayFace(oo1, oo2))]
+        if ob < 0 && ot >= 0 { ovFaces.append(fgF[ot]) }
+        if ob >= 0 { ovFaces.append(bgF[ob]); if ot >= 0 && bgF[ob].hasTransparentPixel { ovFaces.append(fgF[ot]) } }
+        try restamp(ov.0, ov.1, ovFaces)
     }
 
     func testSpecialTableModes() throws {
@@ -227,12 +356,25 @@ final class SpriteDrawTests: XCTestCase {
         for e in entries { if let ref = e.slot.face { XCTAssertNotNil(sprites.face(ref), "type \(e.type)") } }
         XCTAssertEqual(sprites.sheets[1307]?.clutId, 200)
         XCTAssertEqual(sprites.sheets[2710]?.clutId, 202)
-        var spawned = try SetupFaces.spawnLevelSprites(context: c)
-        spawned.idle.handle(h: 0, v: 10, playerHotRect: nil, active: &spawned.active) { _ in .noFace }
+        // `.ActiveToIdleSprite`'s face +8 rect at spawn (the loaded face for `.setup`, the PICT 150 placeholder for
+        // `.setupCached`): still the 13 records of the start window.
+        var spawned = try SetupFaces.spawnLevelSprites(context: c, idleFaceRect: sprites.idleFaceRect)
+        XCTAssertEqual(spawned.idle.handle(h: 0, v: 10, playerHotRect: nil, active: &spawned.active) { _ in .noFace }
+            .activated.count, 13)
         let draws = spawned.active.wrapDrawSprites()
         var ports = FramePorts()
         try SpriteBlitter(level: f.level, tables: f.tables, faces: sprites)
             .wrapDrawSprites(draws, h: 0, v: 10, ports: &ports)
         XCTAssertEqual(draws.count, 10 + 13 - 1)   // the 1059 trigger in the window has no face
+
+        // The `+0x89` write-back (`100147b8` / `100147bc`) through the Core pass.
+        var list = ActiveList()
+        var dyn = SpriteSlot(type: 1, x: 0, y: 0, face: Self.ref); dyn.dynamicLight = true
+        list.insert(dyn)
+        XCTAssertEqual(list.wrapDrawSprites { _ in (3, 0) }.first?.mode, 0xc0300)
+        XCTAssertEqual(list.sprites[0].mode, 0xc0300)
+        XCTAssertEqual(list.sprites[0].previous?.mode, 0xc0300)
+        XCTAssertEqual(list.wrapDrawSprites { _ in (0, 0) }.first?.mode, 0)
+        XCTAssertEqual(list.sprites[0].mode, 0)
     }
 }

@@ -49,13 +49,8 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x1aa` rotation (degrees) / `+0x1ae` scale (0x100 = 1.0).
     public var rotation: Int16 = 0
     public var scale: Int16 = 0x100
-    /// `+0xaa` hurt-flash frames / `+0x1b4` flash through redden B.
-    public var hurtFlash: Int16 = 0
-    public var hurtFlashB = false
-    /// `+0x11c` water contact (0 in Phase 1) / `+0x128` water kind / `+0x18c` effect active.
+    /// `+0x11c` water contact (0 in Phase 1).
     public var waterRow: Int32 = 0
-    public var waterKind: Int16 = 0
-    public var effectActive = false
     /// `+0xe9` kill request.
     public var dead = false
     /// `+0x1b3` burning (read by `.WrapEraseSprites`).
@@ -103,7 +98,8 @@ public struct SpriteSlot: Equatable, Sendable {
 
     /// What `.WrapDrawSprites` hands the blitters for this sprite: nil when `+0xe9` is set or `+0xc0` is 0 (step 1,
     /// `1001452c`, `10014538`). The effective mode is the stored `+0xb8` (call `applyDynamicLight` first for a `+0x89`
-    /// sprite); the hurt flash (`+0xaa`) is not built in Phase 1 and refused by the blitter.
+    /// sprite). The hurt flash (`+0xaa`, `+0x1b4`), the water kind `+0x128` and `+0x18c` are not kept: no Phase-1
+    /// routine sets them (a flash would reach the blitter as mode 3 / 4, which it refuses).
     public var draw: SpriteDraw? {
         guard !dead, let face else { return nil }
         return SpriteDraw(face: face, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip, lightOverlay: lightOverlay,
