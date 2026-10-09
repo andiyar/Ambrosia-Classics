@@ -11,8 +11,9 @@ import HectorResources
 /// - `.GameLoop`: the player `MTNewSprite(0, x, y, 10)` (l. 5181), the camera at the origin − 0xd0 (l. 5168–5195),
 ///   `_HideCursorSafe` (l. 5203), `.FindUpperLeftCorner` (l. 5209), `.SetScrollLocation` (l. 5210),
 ///   `.RedrawEntireScrollGrid` (l. 5211), `.UpdateStatusBar(0, 0, 0)` (l. 5216), `.SetAIFFMusic(hdr+0x284a)` (l. 5221).
-///   The menu bar was hidden before `.GameLoop` by the front end (`.ContinueGame` l. 6877; Phase 1 has no front end, so
-///   the request rides the level start). Not built: `.FadeAIFFMusic(1, 4)`, the gamma fades, `.ChapterScreen`
+///   The menu bar was hidden before `.GameLoop` by the front end — on a new game by `.main` (l. 8280) and
+///   `.MainMenu @ 1000e618` (l. 7349); on a resume by `.ContinueGame` (l. 6877). Phase 1 has no front end, so the
+///   request rides the level start. Not built: `.FadeAIFFMusic(1, 4)`, the gamma fades, `.ChapterScreen`
 ///   (hdr 0x273c, l. 5222–5226), the countdown effect sprite 0x4c4 (l. 5183) and the player's held-item / trail
 ///   sprites (faceless at their Setups).
 ///
@@ -85,7 +86,7 @@ public final class FerazelSession {
         var ops = FrameOps()
         let graphics = prefs.graphics
         if iterations == 0 {
-            ops.draws.append(.setScreenClut(id: level.header.screenClut == 0 ? 202 : level.header.screenClut))
+            ops.draws.append(.setScreenClut(id: ColorLUT.screenClutId(level.header)))
             ops.draws.append(.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
             ops.draws.append(.redrawEntireScrollGrid(h: 0, v: 0))
             ops.requests.append(.hideMenuBar)

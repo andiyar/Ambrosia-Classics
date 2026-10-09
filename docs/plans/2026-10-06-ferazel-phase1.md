@@ -893,7 +893,8 @@ addresses, before writing the tests that pin them.
    Neither of the planner's readings ((0, 10) as the first scroll, or (0, 42)) is the first scroll; (0, 10) is where it
    settles. Also: `.SetupLevel` itself zeroes `fe78` and draws `.RedrawEntireScrollGrid` at (0, 0) (l. 2577–2582)
    before `.GameLoop`'s own (l. 5211); the snap tests the player vx `_DAT_1009fd3c` (stored from `+0x24`, handler dump
-   l. 2745–2748) and `cRam100a5114` (set each Handle, l. 46393).
+   l. 2745–2748) and `cRam100a5114` (set each Handle, l. 46393); the menu bar is hidden before `.GameLoop` on a new game by `.main` (l. 8280) and
+   `.MainMenu` (l. 7349), on a resume by `.ContinueGame` (l. 6877) — none of `.GameLoop` / `.SetupLevel` hides it.
 
 ---
 

@@ -30,14 +30,14 @@ final class SeamTests: XCTestCase {
             [
                 .setScreenClut(id: 202),
                 .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
-                .redrawScrollGrid(h: 0, v: 10),               // `.GameLoop` l. 5210, then l. 5211
-                .redrawEntireScrollGrid(h: 0, v: 10),
+                .redrawScrollGrid(h: 0, v: 0),                // `.GameLoop` l. 5210, then l. 5211
+                .redrawEntireScrollGrid(h: 0, v: 0),           // level start scroll (0, 0): plan note 10
                 .drawLightsOntoTiles,
                 .wrapDrawSprites([SpriteDraw(face: FaceRef(pict: 1020, index: 5, set: .encoded), x: 83, y: 143,
                                              mode: 0x9_0000, mirrored: true,
                                              clip: SpriteClip(left: 1, right: 2, bottom: 3, top: 4), lightOverlay: true,
                                              waterRow: 0)]),
-                .copyToScreen(h: 0, v: 10, graphicsMode: 1, backdrop: true),
+                .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true),
                 .statusBar(StatusBarState(score: 0, coins: 0, health: 30, breath: 0, magic: 0,
                                           levelName: "A Scent Of Peril", selectedSlot: 0)),
             ]

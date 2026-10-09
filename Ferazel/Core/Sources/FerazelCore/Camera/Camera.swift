@@ -56,7 +56,9 @@ public struct Camera: Equatable, Sendable {
     }
 
     /// One `.FindUpperLeftCorner`. `snapArmed` is `cRam100a5114` (set by every player Handle, cleared while the
-    /// look-ahead decays against the facing); `graphics` is prefs+2.
+    /// look-ahead decays against the facing); it defaults to true, including before any Handle has run (the level-start
+    /// call and iteration 1, whose initial value is unread) — no level-1 effect: both targets clamp to h = 0 either
+    /// way. `graphics` is prefs+2.
     public mutating func findUpperLeftCorner(focusX: Int, focusY: Int, playerVX: Int = 0, snapArmed: Bool = true,
                                              graphics: Int16 = 1) {
         var tx = Int(Int16(truncatingIfNeeded: focusX - Self.focusOffsetX + offsetX))
