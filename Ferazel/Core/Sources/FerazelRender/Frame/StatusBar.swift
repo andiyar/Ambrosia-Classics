@@ -90,6 +90,10 @@ public struct StatusBar {
         if full { copyToScreen(top: 0, left: 0, bottom: Self.height, right: Self.width, screen: &screen) }
         updateHealthMagic(state, incremental: !full, screen: &screen)
         updateTextStats(state, incremental: !full, screen: &screen)
+        // The binary redraws the item stat when param_1 == 0, when Next/Previous (actions 8/7) stepped the selection
+        // this call (`bVar1`, its 12-frame repeat counter `*_DAT_1009fd9c` at 0; l. 4885–4918 — the step happens in
+        // `.UpdateStatusBar` itself) or while the item flash `PTR_DAT_1009fda8` runs. The seam carries neither the
+        // keys nor the flash (both idle in Phase 1), so a changed `selectedSlot` stands for the key step.
         if full || state.selectedSlot != lastSelected { updateItemStat(selected: state.selectedSlot, screen: &screen) }
     }
 

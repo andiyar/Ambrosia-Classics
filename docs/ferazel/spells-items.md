@@ -205,8 +205,10 @@ Read in `ghidra/ferazel/Ferazel_pef.decompiled.c` (raw addresses from `Ferazel_p
   pixels kept); HUD piece `0x100ab9dc` = 196×45 PICT 133 under 200; item/spell icons: `9e0` PICT 702 (1215×47, item
   big), `9e4` PICT 703 (621×46, item small), `9e8` PICT 700 (spell big), `9ec` PICT 701 (spell small), all under 200.
   133 and 700..703 are 32-bit (ditherCopy).
-- **`.CopyBitsCT @ 1000001c`** copies the destination's `ctSeed` into the source's before `CopyBits` (unless the debug
-  flag `*_DAT_100a0088`, set only by cheat keys l. 47127–47132) → **raw index copy**. `.UpdateStatusBar(0, …)`'s full
+- **`.CopyBitsCT @ 1000001c`** copies the destination's `ctSeed` into the source's before `CopyBits` (unless the flag
+  `*_DAT_100a0088` is set: cheat keys l. 47127–47132, `.HandleKeys` item case 0x11 l. 47602, `.HitPlayerSprite`
+  pickup 0xcb1 l. 49740; `.GameLoop` clears it at level start, l. 5151) → **raw index copy**; with the flag set
+  every CT copy translates. `.UpdateStatusBar(0, …)`'s full
   640×88 copy to the screen (l. 4875, rect x 0..640 × y 392..480) and every health/magic copy are CT; after the first one
   the status port carries the screen's seed, so the later plain `CopyBits` from the status port to the screen are raw
   too. The PICT 132 background therefore shows **clut-199 indices through the screen CLUT**, the bars **clut-200

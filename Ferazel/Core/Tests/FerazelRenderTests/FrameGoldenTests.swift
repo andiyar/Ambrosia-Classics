@@ -20,8 +20,26 @@ final class FrameGoldenTests: XCTestCase {
                           dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
     }
 
+    /// The level's session, its Setup lights handed to the renderer (one source: `FerazelSession.lights`).
     private func session(_ renderer: FrameRenderer, prefs: FerazelPrefs = FerazelPrefs()) throws -> FerazelSession {
-        try FerazelSession(resources: try Self.resources.get(), prefs: prefs, level: 1, faceBounds: renderer.faceBounds)
+        let s = try FerazelSession(resources: try Self.resources.get(), prefs: prefs, level: 1,
+                                   faceBounds: renderer.faceBounds)
+        try renderer.addLights(s.lights)
+        return s
+    }
+
+    /// `.HandleLights` ran over every Setup light: not new, the previous fields = the current ones, so the next
+    /// `.DrawLightsOntoTiles` finds no changed cell.
+    private func assertLightsHandled(_ r: FrameRenderer, h: Int, v: Int, line: UInt = #line) {
+        let active = r.lights.slots.filter(\.active)
+        XCTAssertEqual(active.count, 68, line: line)
+        for l in active {
+            XCTAssertFalse(l.isNew, line: line)
+            XCTAssertEqual(l.previousFace, l.face, line: line)
+            XCTAssertEqual([l.previousX, l.previousY, l.previousRadius, l.previousColour],
+                           [l.x, l.y, l.radius, l.colour], line: line)
+        }
+        XCTAssertFalse(r.lights.calcLightOps(h: h, v: v).contains(where: \.changed), line: line)
     }
 
     private func fnv1a(_ bytes: [UInt8]) -> UInt64 {
@@ -88,6 +106,18 @@ final class FrameGoldenTests: XCTestCase {
         let r = try renderer()
         try r.apply(FrameOps(draws: [.setScreenClut(id: 202), .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0)]))
         XCTAssertEqual(r.screen.pixels, expected)
+        // PICT 129 converts to canonical indices under every model, so the `.MTRedraw` translation shows only on
+        // indices with an earlier duplicate in 202: 7 → 3, 79 → 78, 160 / 254 / 255 → 96 (black), clipped at the edge.
+        let dupes = try ConvertedPicture(id: 9, width: 5, height: 1, pixels: [7, 79, 160, 255, 1], clutId: 202)
+        r.redrawToWindow(dupes, h: 637, v: 479)
+        XCTAssertEqual([r.screen[637, 479], r.screen[638, 479], r.screen[639, 479]], [3, 78, 96])
+        r.redrawToWindow(dupes, h: 0, v: 0)
+        XCTAssertEqual((0..<5).map { r.screen[$0, 0] }, [3, 78, 96, 96, 1])
+        try r.apply(FrameOps(draws: [.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0)]))
+        XCTAssertEqual(r.screen.pixels, expected)
+        XCTAssertThrowsError(try r.apply(FrameOps(draws: [.setScreenClut(id: 201)]))) {
+            XCTAssertEqual($0 as? FrameRenderer.Refusal, .screenClut(201, tablesBuiltFor: 202))
+        }
         // The view (16, 8)–(624, 392) is left for `.WrapCopyToScreen`: after the first step only it and the status bar
         // (y ≥ 392) changed; the frame strips are PICT 129's.
         let s = try session(r)
@@ -136,6 +166,7 @@ final class FrameGoldenTests: XCTestCase {
         let ops = s.step(keys: KeyState())
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])    // R5: level 1 opens at (0, 0) and pans in
         try r.apply(ops)
+        assertLightsHandled(r, h: 0, v: 0)
         dump(r, "level1-frame1")
         // Measured 2026-10-10 (R6): the level start + iteration 1 at scroll (0, 0), `.ruled`, error diffusion, the 68
         // Setup lights at Effects 1, the box rasterizer. The player is not drawn yet (his face is set by the Handle,
@@ -148,6 +179,7 @@ final class FrameGoldenTests: XCTestCase {
         let r = try renderer()
         let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
+        assertLightsHandled(r, h: 0, v: 0)
         let right = KeyState(pressed: [CameraFocusDriver.arrowRight])
         var chain: [UInt64] = []
         var scrolls: [[Int]] = []
@@ -157,6 +189,7 @@ final class FrameGoldenTests: XCTestCase {
             scrolls.append([s.camera.scrollH, s.camera.scrollV])
         }
         dump(r, "level1-pan60")
+        assertLightsHandled(r, h: scrolls[59][0], v: scrolls[59][1])
         // Measured 2026-10-10 (R6): frames 30 and 60 of the hold (iterations 31 and 61), and the FNV-1a of the 60
         // frame hashes (little-endian bytes). The pan-in has v settled at 10; h starts to move once the eased pair
         // passes 0.

@@ -26,11 +26,19 @@ import FerazelCore
 ///   the seam does not carry the flag).
 ///
 /// The light slots: `.SetupLevelSprites` (inside `.SetupLevel`, l. 2526, before its `.RedrawEntireScrollGrid`
-/// l. 2582) `.AddLight`s the Setup lights (`SetupFaces.spawnLevelSprites(…).lights`, D26 R4: 68 on level 1 at
-/// Effects 1) into the first free slots in order — `.AddLight @ 1001bc08`: `+0` active, `+1` new, `+2` 0, `+4` face,
+/// l. 2582) `.AddLight`s the Setup lights — the session's `FerazelSession.lights` (D26 R4: 68 on level 1 at
+/// Effects 1), handed over with `addLights` before the first `apply` — into the first free slots in order — `.AddLight @ 1001bc08`: `+0` active, `+1` new, `+2` 0, `+4` face,
 /// `+8` previous face nil, `+0x14` radius = face width >> 1, `+0xc` the point, `+0x18` colour; the other previous
 /// fields keep their (zero) contents. The light faces load with `LightFace.load` (clut 801).
 public final class FrameRenderer {
+
+    /// What the renderer refuses instead of reading memory the original would have.
+    public enum Refusal: Error, Equatable {
+        /// A `setScreenClut` other than the level CLUT the tables were built against.
+        case screenClut(Int16, tablesBuiltFor: Int16)
+        /// `.AddLight` with all 200 slots in use (the original's `ReportError`).
+        case lightSlotsFull
+    }
 
     /// What `apply` executed, in order (the test oracle of the op order).
     enum Executed: Equatable {
@@ -60,9 +68,11 @@ public final class FrameRenderer {
     /// The ops of the last `apply`, as executed.
     private(set) var executed: [Executed] = []
     private var statusBarFull = true
+    /// The light faces loaded so far, by (pict, width, height).
+    private var lightFaces: [[Int]: LightFace] = [:]
 
     /// The level's renderer: tile sets, tables, parallax, sprite faces (every level-1 Setup sheet plus the player's
-    /// `.InitPlayerSprite` sets) and the Setup lights, the status bar under the level CLUT.
+    /// `.InitPlayerSprite` sets), empty light slots (`addLights`), the status bar under the level CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     public init(resources: FerazelResources, level: Int, search: ColorSearch, dither: DitherModel,
                 text: any TextRasterizer, prefs: FerazelPrefs = FerazelPrefs()) throws {
@@ -86,28 +96,7 @@ public final class FrameRenderer {
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
         let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets),
                                             resources: resources, search: search, dither: dither)
-        var lights = LightRenderer(level: L, tables: tables)
-        let setupLights = try SetupFaces.spawnLevelSprites(context: context, idleFaceRect: faces.idleFaceRect).lights
-        precondition(setupLights.count <= LightRenderer.slotCount, "AddLight: more than 200 lights")
-        var lightFaces: [[Int]: LightFace] = [:]
-        for (i, l) in setupLights.enumerated() {
-            let key = [Int(l.pict), l.width, l.height]
-            let face: LightFace
-            if let f = lightFaces[key] { face = f } else {
-                face = try LightFace.load(pict: l.pict, width: l.width, height: l.height, from: resources,
-                                          search: search, dither: dither)
-                lightFaces[key] = face
-            }
-            var s = LightSlot()
-            s.active = true
-            s.isNew = true
-            s.face = face
-            s.x = l.x
-            s.y = l.y
-            s.radius = face.width >> 1
-            s.colour = l.colour
-            lights.slots[i] = s
-        }
+        let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
         grid = TileGridRenderer(level: L, sets: sets, fixed: fixed, tables: tables, clearFace: clear, drawnH: 0,
                                 drawnV: 0, effects: prefs.effects, lights: lights)
@@ -128,6 +117,32 @@ public final class FrameRenderer {
         SetupFaces.Sheet(pict: 0x406, count: 3, cellWidth: 100, cellHeight: 0x78, columns: 3, clut: 200),
     ]
 
+    /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order): the first
+    /// free slot gets `+0` active, `+1` new, `+2` 0, `+4` the face (`LightFace.load`, clut 801), `+8` nil, `+0x14`
+    /// the face width >> 1, `+0xc` the point, `+0x18` the colour.
+    /// - Throws: `Refusal.lightSlotsFull`; `LightFaceError` / `PictureSourceError` for a face that does not load.
+    public func addLights(_ list: [SetupFaces.Light]) throws {
+        for l in list {
+            let key = [Int(l.pict), l.width, l.height]
+            let face: LightFace
+            if let f = lightFaces[key] { face = f } else {
+                face = try LightFace.load(pict: l.pict, width: l.width, height: l.height, from: resources,
+                                          search: search, dither: dither)
+                lightFaces[key] = face
+            }
+            guard let i = lights.slots.firstIndex(where: { !$0.active }) else { throw Refusal.lightSlotsFull }
+            var s = LightSlot()
+            s.active = true
+            s.isNew = true
+            s.face = face
+            s.x = l.x
+            s.y = l.y
+            s.radius = face.width >> 1
+            s.colour = l.colour
+            lights.slots[i] = s
+        }
+    }
+
     /// A face's opaque bounds (`face +8`) — what `FerazelSession(faceBounds:)` asks (`.ActiveToIdleSprite`).
     public func faceBounds(_ ref: FaceRef) -> IdleSprites.Rect {
         guard let b = sprites.faces.face(ref)?.bounds else { return .noFace }
@@ -135,15 +150,17 @@ public final class FrameRenderer {
     }
 
     /// Executes one iteration's draw ops (sounds, music and shell requests are the shell's).
-    /// - Throws: `SpriteBlitter.Refusal` for a sprite shape outside the census, `ColorLUTError` / `PictureSourceError`
-    ///   for a missing CLUT or picture.
+    /// - Throws: `SpriteBlitter.Refusal` for a sprite shape outside the census, `Refusal.screenClut` for a CLUT the
+    ///   tables were not built against, `ColorLUTError` / `PictureSourceError` for a missing CLUT or picture.
     public func apply(_ ops: FrameOps) throws {
         executed = []
         for op in ops.draws {
             switch op {
             case .setScreenClut(let id):
+                guard id == tables.screenClutId else {
+                    throw Refusal.screenClut(id, tablesBuiltFor: tables.screenClutId)
+                }
                 screenClut = try ColorLUT.load(id: id, from: resources, chain: .level)
-                precondition(id == tables.screenClutId, "setScreenClut(\(id)): the tables are built for \(tables.screenClutId)")
                 statusBarFull = true
                 executed.append(.screenClut(id))
             case .drawPicture(let id, let chain, let h, let v):
@@ -191,6 +208,12 @@ public final class FrameRenderer {
     private func drawPicture(id: Int16, chain: ResourceChain, h: Int, v: Int) throws {
         let picture = try ConvertedPicture(source: try PictureSource.load(id: id, from: resources, chain: chain),
                                            clut: screenClut, search: search, dither: dither)
+        redrawToWindow(picture, h: h, v: v)
+    }
+
+    /// `.MTRedraw`'s `CopyBits` from the back screen to the window: every index through `Color2Index` of its own
+    /// colour under the screen CLUT (seeds differ), the picture at (h, v), clipped to the screen.
+    func redrawToWindow(_ picture: ConvertedPicture, h: Int, v: Int) {
         let prepared = search.prepared(for: screenClut)
         let redraw = screenClut.entries.map { prepared.index(of: RGB16($0.red, $0.green, $0.blue)) }
         for y in 0..<picture.height where (0..<IndexedFrame.height).contains(v + y) {
