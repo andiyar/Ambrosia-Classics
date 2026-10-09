@@ -739,6 +739,35 @@ them. Not built (stubs): the camera look-ahead, the `FastRand` fidget reset, spr
 fades. `.statusBar` carries no full/incremental flag, so the level-start (0,0,0) and per-frame (1,0,0) calls look the
 same [LOW]. `Ferazel/Core` **94/0**.
 
+**As built (R6, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + one fix round):** `StatusBar`, `TextRasterizer`
+(with a box-drawing test stub), `FrameRenderer` (executes R5's `FrameOps`, including the skipped-draw rule and the erase;
+it fills the light slots from `session.lights` first-free after `RemoveAllLights`, l. 2269, so it is the only source of
+the lights), and `IndexedFrame.rgba(through:)`. Follow-the-binary readings, all CONFIRMED by the reviewer at the addresses
+(bank spells-items §6 ⚑ Phase-1 note):
+- The **magic bar is at x 419** (0x1ab − 8, l. 4527–4567), not the plan's 214. At the start value 560, what shows at
+  x 214 is the 70-px breath overlay.
+- The text is font 20, size 12, bold, white on black rects (`10008cac..cd0`, `10008d30..d64`).
+- PICT 132 is converted under **clut 199** (l. 470–472). `.UpdateItemStat` also draws at level start (l. 4911).
+- `.CopyBitsCT @1000001c` copies keep raw indices (the bars and the status-port copies); the icon copies translate [MED].
+- `.HandleLights` runs between `.DrawLightsOntoTiles` and `.WrapDrawSprites` (l. 9205).
+- The PICT 129 rect at `DAT_100a266c` is (0, 0, 480, 640), read from pidata.
+- **Frame 1 has no player face**: `.SetupPlayerSprite` leaves +0xc0 = 0, and the Handle sets the face after
+  `.WrapDrawSprites`.
+Goldens, NEW measurements (`.ruled` colour search, error diffusion, the 68 lights, box-text stub), deterministic over two
+reviewer runs:
+
+| Golden | Scroll | FNV-1a |
+|---|---|---|
+| frame 1 | (0, 0) | `9db8f32f7e3d88b4` |
+| right held, frame 30 | (4, 10) | `f6296c7e706130f3` |
+| right held, frame 60 | (226, 10) | `e7a951e3eafca30a` |
+| hash of all 60 frame hashes | — | `3c5aee2b87819db6` |
+
+Seat changes: `FrameRenderer.apply` throws; the max values and the start inventory are StatusBar constants, because
+`StatusBarState` has no fields for them. The item-stat redraw trigger is simplified (the binary's is l. 4885–4918; the
+seam carries no key or flash state) [LOW]. The duplicate-black tie-break (Ben 2026-10-07) is still unbuilt and goes to
+A1. `Ferazel/Core` **100/0** — Phase 1 core complete.
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**
