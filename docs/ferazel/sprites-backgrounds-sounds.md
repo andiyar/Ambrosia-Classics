@@ -293,3 +293,7 @@ Read against `ghidra/Ferazel_pef.decompiled.c` (Ferazel 1.0 PEF) by the C5 revie
 6. **Overlay cells in `.RedrawScrollGrid` draw the pattern only for o2 == 95 and never water-tint it.** §3.3's
    "o2 ≥ 95 → pattern, tinted in water" describes `.PlainWrapFGOverlayTile`, a different call site. Equivalent on the
    shipped data (max o2 = 95 on all 24 levels).
+7. **(R4, 2026-10-09) Sprite sheets' conversion CLUT:** boot-loaded sheets and cached-flag-0 sheets convert under clut
+   **200**; cached-flag-1 sheets (plants, wall tunnels, 1464, outcrops) under clut **202** = level + base (`1008901c`).
+   The OmniPx strip face with hdr 0x26cc unset converts under **200** (decompile l. 2273). At Setup the cached faces
+   are the PICT 150 placeholder (l. 73900–73950, after l. 2537); what re-faces them is not yet read.

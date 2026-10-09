@@ -391,3 +391,16 @@ L3: its particles take the **raw face pixel** as colour (`kind = −(pixel + 0x1
 | 9 | bosses-2 NR 1 | "the flash buffer `*_DAT_100a0008`" | the sprite/parallax mask buffer (§1.3); every non-rotated sprite writes 0 under its silhouette | `1002d18c..1002d2c0` |
 | 10 | enemies-water-cave §0.2 table | "Mode 1 = per-pixel remap … (`.BlitEncFaceSpecialClipX`, case 1)" | correct; add: the hurt flash replaces it for the flash's frames, and a fully submerged sprite (`+0x11c == 1`) is drawn with the water table instead of its tint | `100146f0..10014728`, `100148f0..1001491c` |
 | 11 | geysers §4 | tint "[MED "tint"]" | mode-1 remap through table 0x17 / 0xc [HIGH dispatch] | §2.2 |
+
+## ⚑ Corrections (R4, 2026-10-09; Ben: follow the binary; both Opus review legs CONFIRMED at the addresses)
+1. **`.WrapDrawSprites` never culls.** The SectRect cull offsets both the face rect and the 0x260×0x180 window by the
+   same scroll (`10014544..1001457c`), so every sprite with a face passes. The right clip is h + 0x280 (`10015260`).
+2. **`.WrapEraseSprites @10014a58` offsets the previous face bounds by the scroll, not the sprite position**
+   (`10014c08..10014c14`), so almost every sprite is erased every frame. An empty SectRect (the rect misses the ring)
+   yields (0,0,0,0) and re-stamps cell (0,0) (decompile l. 10589–10603). An out-of-range tile in the re-stamp reports an
+   error and abandons the rest of the rect.
+3. **Flip light blitters** read the light column at offCol + width − c (not width − 1 − c); the flipped second-light
+   blitter leaves p = 0 pixels unchanged where the unflipped one reads them as 0xf5. The light-slot quick reject in
+   `.DrawLightOverFace` adds the light's own coordinate to the bound (decompile l. 15172–15184).
+4. **Mode 0xb (`+0x89` D = −1 case) is not reached on level 1** — no level-1 Setup sets `+0x89`; refused by name in Phase 1.
+   Level-1 Setup modes: 0 ×148, 0x10006 ×8, 0x10007 ×1, 0x10010 ×3, 0x10016 ×2.

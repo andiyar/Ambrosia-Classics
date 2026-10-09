@@ -450,3 +450,7 @@ counts below 20, and **costs 200 HP when it ends** — the shot's own damage is 
 springs, 8.4 FootPressure, 8.5 programmed paths, 8.6 flotation and quicksand, 8.7 landing effects,
 8.8 panting, 8.9 platform modes) moved, numbering and text kept (deepening corrections marked in place), to **`physics-sprites.md`** — this
 file had passed the ~650-line split rule. References to "physics §8.x" mean that file.
+
+⚑ R4 note (2026-10-09): `.MTNewSprite` writes y into `+0xc` (`100331e4..100331f8`); every level-1 Setup copies the
+position back from `+8`/`+6`, so it is harmless there. `.GameLoop` sets playerX = (x − 32) + 50 before `.SetupLevel`
+(decompile l. 5150–5165) — 133 on level 1, which mirrors every Walker at Setup.

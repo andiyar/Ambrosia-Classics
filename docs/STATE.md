@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-07 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R3 done (81/0), R4 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-09 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R4 done (88/0), R5 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -98,7 +98,10 @@
   (`LightAny*Tile`, Effects ≠ 3), light faces, `.DrawLightsOntoTiles` → **74/0**; parallax as written
   (`.DoubleBlitPPCParallaxOneLayer`, ring split, row state machine) + `PxSprites` (N + 1 copies, follow the binary) →
   **81/0**; Fire (52/55) and ripple (11/18) levels refused by name (D26 as-built R2 + R3).
-  Next: R4 (wave 1.3, needs table 0148), then R5, R6.
+  **R4 DONE (2026-10-09, Opus orchestrator; two Opus legs + re-review):** placed sprites in their Setup faces (42
+  level-1 types), active list, idle activation (13 at the start window), `.WrapDrawSprites` + `.WrapEraseSprites` +
+  sprite light pass → **88/0**; level-1 Setups add 68 lights (exposed, not wired; R2's premise wrong); mode 0xb refused,
+  table 0148 still unbuilt (D26 as-built R4). Next: R5 (player pose, camera, session step; wires lights + erase op), then R6.
   Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered

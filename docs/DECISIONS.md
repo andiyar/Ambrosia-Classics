@@ -692,6 +692,30 @@ variant (levels 52, 55) and the ripple flag hdr 0x26ca (levels 11, 18). Open, ca
 when 0x26cc is unset (R4); op-grid 8-entry overflow and the stale-r21 overlay o2 not modelled (MED); the per-call byte
 toggle `_DAT_100a00c8` not modelled (no reader found). `Ferazel/Core` **81/0**.
 
+**As built (R4, 2026-10-09; Opus implementer, two Opus legs + one re-review, all ACCEPT):** `SpriteSlot`, `ActiveList`
+(`.MTInsertSprite` l. 30556: a new sprite goes after every equal-or-lower signed layer), `IdleSprites`
+(`.HandleIdleSprites @100081ac`: window h−0x18..h+0x278 × v−0x18..v+0x198 ∪ player hot rect, outset 0x60, 511
+entries, `+0x1c6` gate; all level-1 margins 0), ◇ `SetupFaces` (42 level-1 types), and `SpriteBlitter`
+(`.WrapDrawSprites` + `.WrapDrawFace` dispatch, mask pass, `.DrawLightOverFace` via `.WrapLightFace` on R2's tables,
+and `.WrapEraseSprites @10014a58`, which R1's precondition assigned to R4; the op itself is R5's). Level 1: 162 active
+records; 10 spawn now and 13 activate at scroll (0, 10) (Research note 16 holds). Setup modes 0 ×148, 0x10006 ×8,
+0x10007, 0x10010 ×3, 0x10016 ×2. Follow-the-binary readings, CONFIRMED at the addresses (bank draw-effects, lighting-tables,
+physics ⚑ R4, sprites-backgrounds item 7): `.GameLoop` playerX = (x−32)+50 = 133 before `.SetupLevel` (l. 5150–5165)
+mirrors every Walker; the draw cull never culls (`10014544..7c`), right clip h+0x280; erase offsets by the scroll, not
+the sprite (`10014c08..14`), and an empty SectRect re-stamps cell (0,0); sprite sheets convert under clut 200 (boot /
+cached-flag 0) or 202 (cached-flag 1, `1008901c`); the strip face with 0x26cc unset converts under 200 (l. 2273, closes
+the R3 carry); **level-1 Setups add 68 lights** at Effects 1 (24 at Effects 3; torches 801, Xichrons/money bag 822,
+sphere + item 810). R2's "no level-1 lights" premise is wrong: `SetupFaces` exposes them, wiring is R5/R6. Seat rulings:
+mode 0xb is refused by name (no level-1 `+0x89` sprite, never reached), so table `0148` is still not built; the Crawler
+1712 Setup face (PICT 1500) is absent from the data, so the Handle's face 1712 is drawn. Gate card: 22 types draw the
+first face of the sheet their Handle uses; types 1485, 2710, 2713, 2714, 3002, 2842, 1700, 1705, 1760 and 1720 are left
+with the PICT 150 placeholder at Setup, and Phase 1 draws the loaded face (what re-faces them in the binary is not read);
+platform radial placement, siblings and the 1485 spokes are not spawned. Open, carried: the Setups' `FastRand` calls are
+not modelled (walker `1006740c`/`10067760`/`10067780`, every Bonus `1005e8c0`, Xichron `1005db3c/4c/60`, torch
+`1005df24` [MED]); `lightFace` uses (0,0,h,w) where the binary reads the light face's +0x58 rect (l. 15179, MED-equal);
+light 810's face behind `PTR_DAT_100a088c` is unresolved; the lit path refuses D = −1 where the ambient path accepts it.
+`Ferazel/Core` **88/0**.
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**

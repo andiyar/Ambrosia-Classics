@@ -623,3 +623,10 @@ unless marked.
    around `.Load1PlainFaceFromPICT @ 1002fe68` (`.NewBlitPort` w × h, `DrawPicture` into (0,0,h,w)); of its 12 call
    sites (l. 50257–56147) 11 match their PICT's frame and `(806, 84, 84)` (`.InitBonusSprite`, l. 52306) has
    `DrawPicture` shrink the 192×192 PICT — QuickDraw's stretch is ROM code, refused in the replica [LOW].
+
+## ⚑ Phase-1 note (R4, 2026-10-09; follow the binary)
+Level-1 Setups **add lights** (contradicts R2's "no level-1 Setup adds a light"): `.AddLight @1001bc08` is ungated
+and neither `.MTKillSprite` nor `.ActiveToIdleSprite` removes the light. Level 1 at Effects 1: **68** — 22 torches
+(type 1307, light 801, ungated; decompile l. 52541–52560), 43 Xichrons (type 1055, light 822, only when prefs+6 == 1 and
+fewer than 150 lights), 1 money bag (822, Effects 1 only), sphere + item (810, ungated); **24** at Effects 3.
+`SetupFaces` exposes them; wiring them into the light list is R5/R6.
