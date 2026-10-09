@@ -197,3 +197,46 @@ reappears; Invincibility hides 32000 frames when **p2 = 0** (else 450) (pickups-
 - `.WandGlow @ 10006b6c` is **not** a gameplay effect: it plays Titles PICTs 172..177 (82×82)
   forward then back, 5 ticks each, at (138,286), and is called only from `.AskToContinue`
   (the death/continue screen) [HIGH].
+
+### ⚑ Phase-1 note (R6, 2026-10-10; plan R6 precondition; Ben: follow the binary)
+Read in `ghidra/ferazel/Ferazel_pef.decompiled.c` (raw addresses from `Ferazel_pef.disasm.txt`) [HIGH unless marked]:
+- **Ports** (`.InitAppGlobals`, l. 470–482): status port `0x100ab9d8` = `.NewBlitPort(640, 88, clut 199)` +
+  `.DrawPicInGWorld(132)` (converted under **199**), then `.ChangeBlitPortClut(port, clut 200)` (colours + seed only,
+  pixels kept); HUD piece `0x100ab9dc` = 196×45 PICT 133 under 200; item/spell icons: `9e0` PICT 702 (1215×47, item
+  big), `9e4` PICT 703 (621×46, item small), `9e8` PICT 700 (spell big), `9ec` PICT 701 (spell small), all under 200.
+  133 and 700..703 are 32-bit (ditherCopy).
+- **`.CopyBitsCT @ 1000001c`** copies the destination's `ctSeed` into the source's before `CopyBits` (unless the debug
+  flag `*_DAT_100a0088`, set only by cheat keys l. 47127–47132) → **raw index copy**. `.UpdateStatusBar(0, …)`'s full
+  640×88 copy to the screen (l. 4875, rect x 0..640 × y 392..480) and every health/magic copy are CT; after the first one
+  the status port carries the screen's seed, so the later plain `CopyBits` from the status port to the screen are raw
+  too. The PICT 132 background therefore shows **clut-199 indices through the screen CLUT**, the bars **clut-200
+  indices** [HIGH reading; MED that QuickDraw skips translation on equal seeds, the documented rule].
+- **`.UpdateHealthMagic @ 10008430`** (l. 4361): h = clamp(G+4 >> 3, 0, 0xc4), b = clamp(G+6 >> 3) (breath first
+  clamped to health), M = G+0xa >> 3. HUD-piece rows → status port at y 7..16: rows 0..9 cols h..M at x 214+h (empty),
+  rows 36..45 cols M..196 at 214+M (past max), rows 9..18 cols 0..b at 214 (breath), rows 27..36 cols b..h at 214+b
+  (health above breath); then status x 212..412 × y 7..16 → screen y 399. Magic: m = clamp(G+0xe >> 3), MM = G+0xc
+  >> 3: rows 0..9 cols m..196 at 419+m, rows 36..45 cols MM..196 at 419+MM, rows 18..27 cols 0..m at **x 419**
+  (0x1ab − 8, not 214); status x 416..616 × y 7..16 → screen y 399. At the start values (560): breath and magic
+  bars 70 px, 126 px past-max each. Flash colourising (`RGBForeColor`, counters `PTR_DAT_1009fdbc` / `_DAT_1009fdb8`)
+  and the suffocation tick only when those run.
+- **`.UpdateTextStats @ 10008c6c`** (l. 4594; `10008cac..10008cd0`): `TextFace(1)` **bold**, `TextFont(20)`,
+  `TextSize(12)`, transfer mode untouched (srcOr), colour `RGBForeColor(FFFF, FFFF, FFFF)` **white**. Each field first
+  `PaintRect`s its status-port rect **black** (`ForeColor(blackColor)`, `10008d30..10008d64`): score (9, 25)–(21, 133),
+  coins (9, 148)–(21, 192), name (36, 25)–(49, 192), as (top, left)–(bottom, right); pens (x, y) (27, 19), (150, 19),
+  (27, 46);
+  each rect is then `CopyBits`'d to the screen at +392. `SetPort` does not change the GDevice, so both colours are
+  `Color2Index` against the screen device (the level CLUT) [MED]. Skipped when score and coins are unchanged and
+  param ≠ 0.
+- **`.UpdateItemStat @ 10008f90`** (l. 4674) — drawn at level start (`.UpdateStatusBar` returns before it only when
+  param_1 ≠ 0, no key step and no flash): the selected slot's big icon, src (0, id·45)–(47, id·45 + 44) of 700 (spell
+  flag `+8` = 1) or 702 → status (30, 215)–(77, 259) (top, left)–(bottom, right); every non-empty slot i's small icon, src rows 23..46 (0..23 when
+  selected), cols id·23.. of 701/703 → box top-left (y 31 + 23·(i / 15), x 266 + 23·(i mod 15)), 23×23; a count > 1 in Geneva
+  (font 3) 9/8 pt white. **Empty inventory:** only the **first** empty slot's box is `PaintRect`ed black (the loop
+  breaks, `sVar11 = 0x1b`); `.InitGameGlobals` painted all 30 boxes black once (l. 852–860; black under the
+  device CLUT of the moment, not modelled — Phase 1 writes 0xFF, black in 199/200/202 [MED]). Then status x 215..267 and x 264..616, y 30..76 →
+  screen +392. These icon copies run with differing seeds → translated
+  (`Color2Index`(RGB under 200) against the screen device) [MED]. Start inventory (l. 616–625): slot 0 = spell 0,
+  slot 1 = item 0, both count 1.
+- `.SetupLevel` draws PICT 129 with `.DrawPICTToBackScreen(0x81, &DAT_100a266c)` (l. 2574): rect (0, 0, 480, 640)
+  (data `100a266c` = `0000 0000 01e0 0280`), into the back screen (clut = level+base after `.ChangeBlitPortClut`,
+  l. 7999–8000), then `.MTRedraw` copies it to the window (translated: differing seeds) [MED].
