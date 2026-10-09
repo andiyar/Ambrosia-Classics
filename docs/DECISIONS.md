@@ -716,6 +716,29 @@ not modelled (walker `1006740c`/`10067760`/`10067780`, every Bonus `1005e8c0`, X
 light 810's face behind `PTR_DAT_100a088c` is unresolved; the lit path refuses D = −1 where the ambient path accepts it.
 `Ferazel/Core` **88/0**.
 
+**As built (R5, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + one fix round):** `FerazelSession.step` = one
+`.GameLoop` iteration (l. 5224–5290): `.FindUpperLeftCorner`, then `.PaintFrameWrap @10011cf8`, then the status bar.
+`Camera` transcribes `.FindUpperLeftCorner @1000b5ec`, and ◇ `PlayerPose` / `CameraFocusDriver` are the Phase-1 stubs.
+Follow-the-binary readings, all CONFIRMED by the reviewer at the addresses:
+(1) **The first scroll is (0, 0) and the view pans in**; the plan's "(0, 10), no pan-in" was wrong. The camera starts
+at origin − 0xd0 (l. 5168–5195). It reads the focus (fd44/fd40) at l. 5932, which `.SetupPlayerSprite` sets to the
+sprite origin (83, 143) (l. 42825–42840). `.PlayerScroll @1004c528` moves the focus to (133, 202) only from inside the
+player Handle (l. 46423), after the first draw. The eased pair is never clamped (only the scroll point is, l. 6170–6191).
+v first reaches 10 on the 24th call, and the eased h settles at −176. This is a new measurement (plan ⚑ note 10).
+(2) **A skipped "Reduce frame rate" iteration drops only `copyToScreen`.** The tiles, lights, sprites and erase still
+run (l. 9254–9450). With prefs[0] set, the FIRST iteration is the skipped one (l. 5241–5245).
+(3) `.SetupLevel` already draws the whole grid at (0, 0) (l. 2577–2582). At level start the strip op comes before the
+entire-grid op (l. 5210–5211); SeamTests `levelStart()` was reordered to match. The level-start status bar is at l. 5216.
+(4) The first walk frame shows 1020[7], i.e. 0xc + 2 in the same frame (handlers l. 2134–2187); the turn sequence is
+handlers l. 2207–2238.
+(5) Facing comes from the held key. `.HandleKeys` sets it from the sign of vx (l. 47377–47431), and on the first frame
+that sign follows the key.
+(6) The menu bar is hidden by `.main` (l. 8280) and `.MainMenu` (l. 7349); `.ContinueGame` hides it on resume (l. 6877).
+Added: `DrawOp.wrapEraseSprites`. The 68 Setup lights are exposed as `session.lights`; R6 fills the light slots from
+them. Not built (stubs): the camera look-ahead, the `FastRand` fidget reset, sprite 0x4c4, the chapter screen, music
+fades. `.statusBar` carries no full/incremental flag, so the level-start (0,0,0) and per-frame (1,0,0) calls look the
+same [LOW]. `Ferazel/Core` **94/0**.
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**

@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-09 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R4 done (88/0), R5 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R5 done (94/0), R6 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -101,7 +101,11 @@
   **R4 DONE (2026-10-09, Opus orchestrator; two Opus legs + re-review):** placed sprites in their Setup faces (42
   level-1 types), active list, idle activation (13 at the start window), `.WrapDrawSprites` + `.WrapEraseSprites` +
   sprite light pass → **88/0**; level-1 Setups add 68 lights (exposed, not wired; R2's premise wrong); mode 0xb refused,
-  table 0148 still unbuilt (D26 as-built R4). Next: R5 (player pose, camera, session step; wires lights + erase op), then R6.
+  table 0148 still unbuilt (D26 as-built R4). **R5 DONE (2026-10-10, Opus orchestrator; one Opus leg + fix round):** `FerazelSession.step` in `.GameLoop` /
+  `.PaintFrameWrap` order, `Camera` = `.FindUpperLeftCorner`, Phase-1 pose + focus stubs, `DrawOp.wrapEraseSprites`.
+  Following the binary: level 1 opens at scroll **(0, 0)** and pans in (not the plan's (0, 10)), and a skipped
+  reduced-frame-rate iteration drops only the screen copy (D26 as-built R5). **94/0**. Next: R6 (status bar, frame,
+  CLUT → RGBA, goldens; fills light slots from `session.lights`), then A1.
   Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered

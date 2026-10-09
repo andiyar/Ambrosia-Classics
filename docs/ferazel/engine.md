@@ -338,3 +338,5 @@ record snapshot for L exists in the save block". Consequences a replica must rep
   collected/killed sprite. (Debug key code 0x76 held during `.SetupLevel` clears the flag first
   → forced fresh load; out of scope.)
 - `.GameLoop` chapter-screen gate (§6) tests the same flag.
+
+> ⚑ R5 (2026-10-10, follow-the-binary, CONFIRMED): §4 — `.PaintFrameWrap @10011cf8` runs `_SetScrollLocation`, `_DrawLightsOntoTiles`, `_HandleLights`, `_WrapDrawWaterEffects` and `_WrapDrawSprites` unconditionally. Only the `param_1 != 0` block (l. 9254–9450, incl. `_WrapCopyToScreen`) is skipped on a "Reduce frame rate" iteration, and with prefs[0] set the first loop iteration is the skipped one (l. 5241–5245). `_HandleIdleSprites` → `_HandleSprites` → `_HandleParticles` → `_WrapEraseSprites` always run (l. 9452–9456). §5 — the camera starts at origin − 0xd0 (l. 5168–5195), and its eased pair is never clamped (only the scroll point is, l. 6170–6191). The focus is the sprite origin until the player Handle's `.PlayerScroll @1004c528` (l. 46423) moves it to start + (50, 59). Level 1 therefore opens at scroll (0, 0) and pans in; v first reaches 10 on the 24th call.
