@@ -21,8 +21,9 @@ import HectorResources
 /// draw = 0 iff prefs[0] and not odd (odd starts false, toggles at the end — so with prefs[0] the FIRST iteration
 /// skips): `.SetScrollLocation`, `.DrawLightsOntoTiles` unless prefs+6 == 3, `.WrapDrawSprites` unconditionally; only
 /// the `if (param_1 != 0)` block (l. 9254–9450) with `.WrapCopyToScreen(port, h, v, 0x10, 8, prefs+9 == 0,
-/// prefs+2 == 3, 0)` (l. 9443/9447) is skipped; then always `.HandleIdleSprites`, `.HandleSprites` (the ◇ player pose
-/// and ◇ focus driver stand in for the player Handle), `.WrapEraseSprites` (l. 9452–9456); after it
+/// prefs+2 == 3, 0)` (l. 9443/9447) is skipped; then always `.HandleIdleSprites`, `.HandleSprites` (the items' light
+/// twinkle from `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — and the ◇ player pose and ◇ focus
+/// driver standing in for the player Handle), `.WrapEraseSprites` (l. 9452–9456); after it
 /// `.UpdateStatusBar(1, 0, 0)`.
 public final class FerazelSession {
     public let resources: FerazelResources
@@ -113,6 +114,12 @@ public final class FerazelSession {
         // `.HandleIdleSprites`, then `.HandleSprites`: the player Handle (pose, then `.PlayerScroll`'s focus).
         let bounds = faceBounds
         idle.handle(h: h, v: v, playerHotRect: pose.hotRect, active: &active, faceRect: bounds)
+        // The Bonus Handles' item-light twinkle (`BonusHandle`), active-list order.
+        for id in active.sprites.map(\.id) {
+            active.update(id: id) { s in
+                if let op = BonusHandle.twinkle(&s, effects: prefs.effects) { ops.draws.append(op) }
+            }
+        }
         let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
         pose.step(left: held.left, right: held.right, run: held.run)
         let p = pose

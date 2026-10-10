@@ -121,7 +121,11 @@
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
   ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):
-  hidden toggle `MacGamma` BUILT (off by default, γ 1.8/2.2 on the palette, app shell only; D26). Open: the potion light (light 24) over-lights the table sprite.
+  hidden toggle `MacGamma` BUILT (off by default, γ 1.8/2.2 on the palette, app shell only; D26).
+  **Light-24 table glow CLOSED (2026-10-10, Opus seat + one Opus review leg; D26 "As built (light-24 table glow)"):** the sprite light pass
+  was right. `.HandleBonusSprite` twinkles an item's light through faces 0x32a–0x32d, and the replica held the brightest. Built as
+  `BonusHandle` + seam case `DrawOp.changeLightFace`. The table's ΔE at 02:12 went from 21.6 to 6.9 on the matching phase, and the other
+  six LP frames are unchanged. Pan goldens re-measured (frame 1 unchanged); `Ferazel/Core` **104/0**. Carried: torch flicker, sphere cycles.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.

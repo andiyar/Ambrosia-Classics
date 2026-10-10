@@ -10,8 +10,8 @@ LOW (design §6, D26). Opus measurement leg, orchestrated by an Opus 5.5 session
   Tie-break `highest`, dither `.errorDiffusion` and Effects 1 already match and stay.
 - **Mac display gamma → a hidden toggle, off by default** (like `ColorTieBreak`): presenting through the classic Mac's ~1.8 gamma
   (the measured γ ≈ 0.76) is its own small shell task, not built here.
-- **Open item:** the sprite light pass over the table under light 24 (the potion's light) is too bright (Q3) — a follow-the-binary read of
-  `.WrapLightFace` / `.DrawLightOverFace` for that light is owed.
+- **Closed (2026-10-10, see "Q3 resolved" below):** the table under light 24 (the potion's light) was too bright (Q3). The sprite light
+  pass was right; the potion's light face twinkles (`.HandleBonusSprite`), and the replica held its brightest face.
 
 ## Verdicts
 
@@ -133,6 +133,30 @@ Inverse-table models with tie-break lowest score ΔE 15–23 (HUD-γ), because e
 
 The sprite-blob survey (spritelight.py) covers the 11 structurally matched blobs (edge NCC > 0.5). E1 is closer on 10. The exception is the table under the potion light (E1 dE 16.0 vs plain 7.2).
 
+## Q3 resolved — the item light twinkles (2026-10-10, D26 "As built (light-24 table glow)")
+
+The follow-the-binary read found `.WrapLightFace`, `.DrawLightOverFace`, its blitters and the table's `+0x88` (= 1) all transcribed
+right. The difference is `.HandleBonusSprite` (LAB_1005f808, raw `1005f808..1005f914`). Every frame it steps an item's light through faces
+0x32a → 0x32b → 0x32c → 0x32d → 0x32c → 0x32b, four frames each. The replica held 0x32a, the brightest face (sums of k: 19,936 / 13,039 /
+7,992 / 3,812). It is fixed in Core (`BonusHandle`, `DrawOp.changeLightFace`). The tool takes `--twinkle k` (k 0…3): every item light
+shows face 0x32a + k, as its Handle leaves it.
+
+Re-scored on the 02:12 frame (exactNearest/highest/FS/E1, HUD-γ region means, q3.py's masks):
+
+| light 24 face | table px lit by light 24 (1,015) | light-24 wall px (1,272) |
+|---|---|---|
+| 0x32a held (before) | ΔE 21.6, dL −17.7 | ΔE 5.0, dL −4.5 |
+| 0x32b | 13.4, −11.0 | 2.8, −0.3 |
+| **0x32c** | **6.9, −4.3** | 3.7, +2.4 |
+| 0x32d | 9.6, +1.1 | 5.4, +4.5 |
+| mean over the 24-frame cycle | 11.2, −8.0 | 2.8, +0.6 |
+| without light 24 | 18.8, +5.4 | 6.9, +6.1 |
+| Effects 3 (plain table) | 6.6, −1.5 | 3.5, +2.3 |
+
+The LP's 5-frame median sits on the 0x32c phase. The start phase is the Setup's `FastRand(0x10)`, which is not modelled. The other six
+frames render byte-identically at every k, so nothing else regresses. In the whole view of the 02:12 frame, the mean 8×8-block ΔE drops
+from 2.885 to 2.838–2.865.
+
 ## Caveats
 - The LP is 2.25× upscaled, 4:2:0 h264 at ~2.2 Mb/s. Fine dither patterns survive only at full resolution. Chroma bleed lifts the dark-red backdrop in the video, which shows up as the red-channel offset (+11 to +17) in the free fits.
 - Animation and state differ: our sprites are at frame 0, and video sprites are animated. Coins taken or enemies killed differ. The player isn't drawn by us. All of these are masked, but residual blocks remain.
@@ -158,4 +182,4 @@ python3 scripts/hudtone.py; python3 scripts/score.py               # HUD gamma; 
 python3 scripts/q1.py; python3 scripts/q3.py; python3 scripts/spritelight.py; python3 scripts/q4.py; python3 scripts/q4full.py
 python3 scripts/sidebyside.py                              # out/*.png
 ```
-Direct render: `tool/.build/release/fzcolour render <exact|ruled|inv4|inv5> <lowest|highest> <fs|none> <effects> <sprites 0|1> <outdir> h,v [...] [--drop i,j] [--only i,j]` writes 640×480 RGB24 `.rgb` files.
+Direct render: `tool/.build/release/fzcolour render <exact|ruled|inv4|inv5> <lowest|highest> <fs|none> <effects> <sprites 0|1> <outdir> h,v [...] [--drop i,j] [--only i,j] [--twinkle k]` writes 640×480 RGB24 `.rgb` files.

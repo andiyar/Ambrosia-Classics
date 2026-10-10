@@ -630,3 +630,12 @@ and neither `.MTKillSprite` nor `.ActiveToIdleSprite` removes the light. Level 1
 (type 1307, light 801, ungated; decompile l. 52541–52560), 43 Xichrons (type 1055, light 822, only when prefs+6 == 1 and
 fewer than 150 lights), 1 money bag (822, Effects 1 only), sphere + item (810, ungated); **24** at Effects 3.
 `SetupFaces` exposes them; wiring them into the light list is R5/R6.
+
+## ⚑ Phase-1 note (item light twinkle, 2026-10-10; follow the binary)
+Lights are not static once added. `.HandleBonusSprite @ 1005e934` re-faces them through `+0x9a` (every Bonus `.AddLight` stores its slot
+there): for an active Bonus sprite of type ≥ 2000 with prefs+6 ≠ 3 (LAB_1005f808, raw `1005f808..1005f914`), each frame
+`+0x46 += 1` (Int16), k = (`+0x46` >> 2) mod 6 (truncating, k < 0 → no call), then `.ChangeLightFace(+0x9a, PTR_DAT_100a088c[0,1,2,3,2,1][k])`.
+The faces are 0x32a–0x32d, 72×72, loaded by `.InitEffectSprite` (l. 53662–53668). The item Setup seeds `+0x46 = FastRand(0x10)`
+(l. 52670). The torches flicker 0x321 ↔ 0x322 at Effects 1 (l. 53260–53266). The spheres (l. 53347–53383) and 0x53c/0x53d
+(l. 53298–53340) cycle the same array and also set mode 0xb. Built for the items (D26 "As built (light-24 table glow)"); the rest are
+carried. This light, held on 0x32a, is what over-lit the level-1 table at Let's Play 02:12.

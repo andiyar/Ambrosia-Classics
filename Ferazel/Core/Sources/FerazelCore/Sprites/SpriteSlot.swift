@@ -42,6 +42,11 @@ public struct SpriteSlot: Equatable, Sendable {
     public var dynamicLight = false
     /// `+0x1c6`: may go idle off-screen.
     public var mayIdle = true
+    /// `+0x9a`: the light slot the Setup's `.AddLight` returned (`.InitSprite`'s 0xffff = −1, none); the Handles'
+    /// `.ChangeLightFace` target.
+    public var light: Int16 = -1
+    /// `+0x46`: the Handle's animation counter.
+    public var phase: Int16 = 0
     /// `+0x1c8..+0x1ce`.
     public var margins = Margins()
     /// `+0x1b6` left / `+0x1b8` right / `+0x1ba` bottom / `+0x1bc` top.

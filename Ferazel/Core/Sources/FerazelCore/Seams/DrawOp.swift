@@ -18,6 +18,10 @@ public enum DrawOp: Equatable, Sendable {
     case wrapDrawSprites([SpriteDraw])
     /// `.WrapCopyToScreen` (rendering-omnipx-titles §1.1).
     case copyToScreen(h: Int, v: Int, graphicsMode: Int, backdrop: Bool)
+    /// `.ChangeLightFace @ 1001bdbc` from a sprite Handle (`.HandleSprites`, after `.WrapDrawSprites` and before
+    /// `.WrapEraseSprites`): light slot `slot` (0…199) gets the light face `.Load1LightFaceFromPICT(pict, width,
+    /// height)` and radius width / 2. Phase 1: the item twinkle (`BonusHandle`).
+    case changeLightFace(slot: Int, pict: Int16, width: Int, height: Int)
     /// `.WrapEraseSprites @ 10014a58` (`.PaintFrameWrap` l. 9456, drawn frame or not): the dirty-rect restore over the
     /// active list after the sprite Handles, at scroll (h, v); each sprite carries its last-frame copies.
     case wrapEraseSprites(sprites: [SpriteSlot], h: Int, v: Int)

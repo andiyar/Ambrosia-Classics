@@ -144,7 +144,7 @@ final class FrameGoldenTests: XCTestCase {
             .screenClut(202), .picture(129), .entireGrid(h: 0, v: 0), .strip(h: 0, v: 0), .entireGrid(h: 0, v: 0),
             .statusBar(full: true),
             .strip(h: 0, v: 0), .lightsOntoTiles, .handleLights, .sprites(sprites), .copy(h: 0, v: 0),
-            .erase(erased), .statusBar(full: false),
+            .lightFace(24), .erase(erased), .statusBar(full: false),
         ])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 68)          // the level-1 Setup lights (Effects 1)
         XCTAssertFalse(r.lights.slots.contains { $0.active && $0.isNew })   // `.HandleLights` cleared `+1`
@@ -208,11 +208,49 @@ final class FrameGoldenTests: XCTestCase {
         assertLightsHandled(r, h: scrolls[59][0], v: scrolls[59][1])
         // Measured 2026-10-10 (R6): frames 30 and 60 of the hold (iterations 31 and 61), and the FNV-1a of the 60
         // frame hashes (little-endian bytes). The pan-in has v settled at 10; h starts to move once the eased pair
-        // passes 0.
+        // passes 0. Re-measured 2026-10-10 with the potion light's twinkle (`BonusHandle`; was f6296c7e706130f3 /
+        // e7a951e3eafca30a / 3c5aee2b87819db6, light 24 held on 0x32a); frame 1 is unchanged.
         XCTAssertEqual(scrolls[29], [4, 10])
         XCTAssertEqual(scrolls[59], [226, 10])
-        XCTAssertEqual(hex(chain[29]), "f6296c7e706130f3")
-        XCTAssertEqual(hex(chain[59]), "e7a951e3eafca30a")
-        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "3c5aee2b87819db6")
+        XCTAssertEqual(hex(chain[29]), "686024aba05c6660")
+        XCTAssertEqual(hex(chain[59]), "18c4e45ebeee8e88")
+        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "51d5f367bd111589")
+    }
+
+    func testItemLightTwinkleDimsTheTable() throws {
+        // `.ChangeLightFace @ 1001bdbc`: the slot's face and radius; a slot outside 0…199 is ignored.
+        let r = try renderer()
+        let s = try session(r)
+        try r.apply(s.step(keys: KeyState()))
+        XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32a)
+        try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: 0x32c, width: 0x48, height: 0x48),
+                                     .changeLightFace(slot: 200, pict: 0x32d, width: 0x48, height: 0x48)]))
+        XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32c)
+        XCTAssertEqual(r.lights.slots[24].radius, 36)
+        XCTAssertEqual(r.executed, [.lightFace(24), .lightFace(200)])
+
+        // Let's Play 02:12 (colour-measurement-2026-10-10 Q3): the table 0xb6f under the potion's light 24. Through
+        // the twinkle its face spends 3 of every 6 phases on 0x32c/0x32d, far dimmer than the Setup's 0x32a, so the
+        // table under the light is darker than with 0x32a held (what Phase 1 drew before `BonusHandle`).
+        func tableLuma(forcing pict: Int16?) throws -> Int {
+            let r = try renderer()
+            let s = try session(r)
+            for _ in 0..<13 { try r.apply(s.step(keys: KeyState())) }   // step 13 leaves 0x32d (13 >> 2 = 3)
+            XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32d)
+            if let pict {
+                try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48)]))
+            }
+            try r.apply(s.step(keys: KeyState()))
+            let h = s.camera.scrollH, v = s.camera.scrollV
+            var sum = 0
+            for wy in 134..<160 { for wx in 270..<330 {
+                let c = r.screenClut.entries[Int(r.screen[16 + wx - h, 8 + wy - v])]
+                sum += Int(c.red >> 8) + Int(c.green >> 8) + Int(c.blue >> 8)
+            } }
+            return sum
+        }
+        let twinkled = try tableLuma(forcing: nil), held = try tableLuma(forcing: 0x32a)
+        XCTAssertLessThan(Double(twinkled), Double(held) * 0.9)
     }
 }
+

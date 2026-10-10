@@ -21,6 +21,8 @@ import FerazelCore
 ///   `1001bff8`), so its redraw never runs. `.WrapDrawWaterEffects` (bubbles, particles) is not built. Then
 ///   `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
+/// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` — the slot's face and radius; the next
+///   `.DrawLightsOntoTiles` sees the face differ from its previous one and redraws the cells it covers.
 /// - `wrapEraseSprites`: `SpriteBlitter.wrapEraseSprites` with the grid's mask re-stamp.
 /// - `statusBar`: `StatusBar.update` — full after a `setScreenClut` (the level start), incremental otherwise (D26 R5:
 ///   the seam does not carry the flag).
@@ -43,7 +45,7 @@ public final class FrameRenderer {
     /// What `apply` executed, in order (the test oracle of the op order).
     enum Executed: Equatable {
         case screenClut(Int16), picture(Int16), entireGrid(h: Int, v: Int), strip(h: Int, v: Int), lightsOntoTiles
-        case handleLights, sprites(Int), copy(h: Int, v: Int), erase(Int), statusBar(full: Bool)
+        case handleLights, sprites(Int), copy(h: Int, v: Int), lightFace(Int), erase(Int), statusBar(full: Bool)
     }
 
     public let resources: FerazelResources
@@ -123,13 +125,7 @@ public final class FrameRenderer {
     /// - Throws: `Refusal.lightSlotsFull`; `LightFaceError` / `PictureSourceError` for a face that does not load.
     public func addLights(_ list: [SetupFaces.Light]) throws {
         for l in list {
-            let key = [Int(l.pict), l.width, l.height]
-            let face: LightFace
-            if let f = lightFaces[key] { face = f } else {
-                face = try LightFace.load(pict: l.pict, width: l.width, height: l.height, from: resources,
-                                          search: search, dither: dither)
-                lightFaces[key] = face
-            }
+            let face = try lightFace(pict: l.pict, width: l.width, height: l.height)
             guard let i = lights.slots.firstIndex(where: { !$0.active }) else { throw Refusal.lightSlotsFull }
             var s = LightSlot()
             s.active = true
@@ -141,6 +137,16 @@ public final class FrameRenderer {
             s.colour = l.colour
             lights.slots[i] = s
         }
+    }
+
+    /// The light face `.Load1LightFaceFromPICT(pict, width, height)`, loaded once.
+    private func lightFace(pict: Int16, width: Int, height: Int) throws -> LightFace {
+        let key = [Int(pict), width, height]
+        if let f = lightFaces[key] { return f }
+        let face = try LightFace.load(pict: pict, width: width, height: height, from: resources, search: search,
+                                      dither: dither)
+        lightFaces[key] = face
+        return face
     }
 
     /// A face's opaque bounds (`face +8`) — what `FerazelSession(faceBounds:)` asks (`.ActiveToIdleSprite`).
@@ -191,6 +197,14 @@ public final class FrameRenderer {
                 parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
                                       parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copy(h: h, v: v))
+            case .changeLightFace(let slot, let pict, let width, let height):
+                // `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.
+                if lights.slots.indices.contains(slot) {
+                    let face = try lightFace(pict: pict, width: width, height: height)
+                    lights.slots[slot].face = face
+                    lights.slots[slot].radius = face.width >> 1
+                }
+                executed.append(.lightFace(slot))
             case .wrapEraseSprites(let list, let h, let v):
                 grid.lights = lights
                 try sprites.wrapEraseSprites(list, h: h, v: v, ports: &ports, grid: grid)

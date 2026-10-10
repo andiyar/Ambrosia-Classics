@@ -31,6 +31,8 @@ cd Aki/Core && swift test                          # each game's core package ha
 xcodegen generate && xcodebuild -scheme Aki build  # never hand-edit the pbxproj; project.yml is truth
 ```
 Staged builds for Ben go to `out/<Game>/` as a double-clickable `.app` + what-to-expect steps.
+**Published releases** (the exact DMG/zip + `.sha256` uploaded to GitHub) are copied to the MAIN checkout's
+`releases/<tag>/` (git-ignored) the same session — never left only in a worktree's `out/release/`.
 
 ## Workflow
 Fable-kit method: STATE updated the same session; real forks recorded in DECISIONS; sessions end
