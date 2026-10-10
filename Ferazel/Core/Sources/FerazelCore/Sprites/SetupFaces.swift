@@ -174,7 +174,7 @@ public enum SetupFaces {
         /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
         /// / `.InitEffectSprite`'s light faces.
         /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
-        /// `.InitBonusSprite` site, l. 52455–52700).
+        /// `.SetupBonusSprite` site, l. 52455–52700).
         func addLight(_ pict: Int16, _ size: Int, dx: Int, dy: Int, colour: Int) {
             light = Light(pict: pict, width: size, height: size, x: s.x + dx, y: s.y + dy, colour: colour)
             s.light = Int16(lightsInUse)

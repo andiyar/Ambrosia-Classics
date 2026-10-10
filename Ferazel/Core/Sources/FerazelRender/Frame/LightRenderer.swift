@@ -1,9 +1,9 @@
 import Foundation
 import FerazelCore
 
-/// One of the 200 light slots at `_DAT_100a0128` (0x30 bytes each; lighting-tables §7.4). Phase 1 never fills one
-/// (no placed type on level 1 adds a light in its Setup; effects add them later — `.AddLight`/`.HandleLights` are not
-/// built here).
+/// One of the 200 light slots at `_DAT_100a0128` (0x30 bytes each; lighting-tables §7.4). `FrameRenderer` fills them
+/// from the Setup lights (`.AddLight`), runs `.HandleLights` for still lights and `.ChangeLightFace` for the item
+/// twinkle (`BonusHandle`); lights added later by effects and moving lights are not built.
 public struct LightSlot: Sendable, Equatable {
     /// `+0x00`.
     public var active = false

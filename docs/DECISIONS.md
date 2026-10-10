@@ -813,6 +813,24 @@ highest; `ColorSearch`'s API default stays `.lowest`, so Core goldens are unchan
 outside A2's Files list. G1 HK main 328 == floor 328; G2 **102/0**; G3 1,108/0; G4 6 + 28; G5 ×4 BUILD SUCCEEDED; G9 both copies
 pid + clean quit, no crash report. Ben's Phase 1 gate pending.
 
+**As built (light-24 table glow, 2026-10-10; Opus seat, one Opus review leg):** the [MED] open item above is closed, and the
+cause was not `.WrapLightFace`. `.DrawLightOverFace`, its blitters and the `+0x88` gate were already transcribed right (the table 0xb6f
+keeps `.InitSprite`'s `+0x88 = 1`). The binary does light the table, but with a twinkling face. Every frame `.HandleBonusSprite`
+(LAB_1005f808, decompile l. 53295–53416, raw `1005f808..1005f914`) takes each active Bonus sprite of type ≥ 2000 with prefs+6 ≠ 3
+through `+0x46 += 1`, k = (`+0x46` >> 2) mod 6, and calls `.ChangeLightFace(+0x9a, PTR_DAT_100a088c[0,1,2,3,2,1][k])`. Those four faces
+are 0x32a–0x32d, 72×72 (`.InitEffectSprite` l. 53662–53668), and 0x32b–0x32d are much dimmer (sums of k: 19,936 / 13,039 / 7,992 / 3,812).
+The replica held the Setup's 0x32a forever. Built: `SpriteSlot` `+0x9a` light (each Bonus `.AddLight` stores its slot) and `+0x46`
+phase (the Setup's `FastRand(0x10)` is not modelled, so 0 [MED]). `BonusHandle.twinkle` runs for the items 0xc80…0xcb0, in
+`FerazelSession.step` after `.HandleIdleSprites` (the `.HandleSprites` position, between the copy and the erase). The seam gains the
+case `DrawOp.changeLightFace(slot:pict:width:height:)` (a case added, nothing renamed), which `FrameRenderer` executes as
+`.ChangeLightFace @ 1001bdbc`. Re-scored with `fzcolour … --twinkle k` (exactNearest/highest/FS/E1, HUD-γ): the table pixels light 24
+touches went from ΔE 21.6 (dL −17.7) with 0x32a held to 13.4 / **6.9** / 9.6 at 0x32b / 0x32c / 0x32d. The LP frame sits on the 0x32c
+phase, level with the plain table's 6.6. The light-24 wall pixels went from 5.0 to 2.8–5.4, and the other six LP frames are
+byte-identical. **Goldens re-measured** (NEW measurement; frame 1 `9db8f32f7e3d88b4` and A1's `highest` frame 1 unchanged): right held,
+frame 30 = `686024aba05c6660`, frame 60 = `18c4e45ebeee8e88`, hash of all 60 = `51d5f367bd111589` (were `f6296c7e706130f3` /
+`e7a951e3eafca30a` / `3c5aee2b87819db6`). `Ferazel/Core` **104/0**. Not built, carried: the torch flicker (`ChangeLightFace` 0x321 ↔
+0x322 and particles, l. 53260–53285), and the sphere and 0x53c/0x53d light cycles (they also set mode 0xb, which is refused). With `+0x46` = 0 every item light twinkles in step (the original's start phases are random) [MED]. Review leg: MERGEABLE, 0 Critical / 0 Important / 7 Minor; the comment cite and the stale `LightSlot` doc were fixed, and the rest are carried or noted.
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**
