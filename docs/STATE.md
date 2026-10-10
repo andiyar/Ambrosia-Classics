@@ -112,7 +112,8 @@
   project.yml target via the `Ferazel/FerazelCore` symlink; duplicate-black tie-break built (hidden `ColorTieBreak`
   default, Ben's ruling) (D26 as-built A1). **102/0**; all four app schemes build. Ben saw level 1 and heard the music.
   Next: A2 (stage script, WHAT-TO-EXPECT, gate card) → Ben's Phase 1 gate.
-  Ben owes the Let's Play link (goes into design §2).
+  Let's Play = https://www.youtube.com/watch?v=ESuyxMUEzDw (design §2, Ben 2026-10-10). At 02:12 its level-1 FG rock edges
+  show no yellow specks, so the video favours the `highest` duplicate-black tie-break; Ben picks at the gate.
 
 ## Open, ordered
 - **Cythera RE wave 1 DONE (2026-10-04):** eight rules banks Fable-reviewed ACCEPT_WITH_FIXES (1 Critical/2 Major/6 Minor, all fixed) and merged; binary decompiled to 100 % of traceback-named functions (1,994 across three git-ignored dumps, `tools/missing-addrs.txt`); open: `docs/cythera/INDEX.md` NOT RESOLVED 5/6/10/16/21–25 — handoff `docs/handoff-2026-10-04-cythera-re.md`.
