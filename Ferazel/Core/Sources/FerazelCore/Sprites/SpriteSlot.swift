@@ -53,7 +53,13 @@ public struct SpriteSlot: Equatable, Sendable {
     public internal(set) var id: Int = 0
     /// `+0x04`.
     public var type: Int16
-    /// `+0x0c` / `+0x0a`: the face cell's top-left in world px.
+    /// `+0x0c` / `+0x0a`: the face cell's top-left in world px — the **pixel copies** of the 24.8 position
+    /// `x256`/`y256`. They are written from the 24.8 position only where the binary writes them: `.SeparateFromTiles2`
+    /// at entry (raw `1003c82c..1003c844`, with `+8`/`+6`), `.ApplySpeedAndSeparateFromTiles`' steps, `.RectBounce` /
+    /// `.PlatformBounce` (l. 36410–36415, 33059–33061), the carry in `.StandardSpriteHandles`, `.IdleToActiveSprite`,
+    /// `.MTNewSprite` (its quirk: `newSprite`), and each class Handle's own stores. Between those writes the two may
+    /// disagree, as in the original: the water current in `.StandardSpriteHandles` moves `x256` without `x`
+    /// (decompile l. 32481) and that is faithful — the next integration re-derives the copy.
     public var x: Int
     public var y: Int
     /// `+0x48`: the placement record (−1 = none).
@@ -119,10 +125,14 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x34` (QuickDraw top, left, bottom, right in face-local px): the hot rect.
     public var hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
     /// `+0x3c..+0x42`: the hot rect offset by (x, y), built by `.CalcHotRect @ 10032614` during `.MTCollideSprites`.
+    /// Stale outside that pass (and the `.InitSprite` zeros for a sprite never tested) — as in the original, where
+    /// only `.CalcHotRect` (l. 30193–30200) writes it.
     public var hotRectWorld = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
     /// `+0x44`: `+0x3c` built this collision pass (cleared for every sprite at the pass start).
     public var hotRectBuilt = false
-    /// `+0x10` / `+0xe`: the hot-rect centre in world px (`.CalcCenterPos`, `.StandardSpriteCleanup`).
+    /// `+0x10` / `+0xe`: the hot-rect centre in world px (`.CalcCenterPos`, `.StandardSpriteCleanup`). Computed only
+    /// there (`.StandardSpriteCleanup` l. 32647–32652): a sprite whose Handle never runs Cleanup (an `inert` one, or
+    /// before its first Handle) keeps the `.InitSprite` 0 or its last value, as the original's record does [LOW].
     public var centre = Point()
     /// `+0x8` x / `+0x6` y: the position copy every integration step writes with `+0xc`/`+0xa` (`.SeparateFromTiles2`
     /// at entry, raw `1003c82c..1003c844`); `.WallBounce` kinds 4–7 revert to it (F3; physics §0).
@@ -214,8 +224,14 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x1b3` burning (read by `.WrapEraseSprites`).
     public var burning = false
     /// Last frame's copies `.WrapDrawSprites` writes after each sprite (`+0xc8` face, `+0xc6`/`+0xc4` x/y, `+0x17f`,
-    /// `+0xbc` mode, `+0x1ac`/`+0x1b0` rotation/scale, `+0x124` water row) — read by `.WrapEraseSprites`.
+    /// `+0xbc` mode, `+0x1ac`/`+0x1b0` rotation/scale, `+0x124` water row) — read by `.WrapEraseSprites`. nil while
+    /// `+0xc8` is 0 (no face drawn); the drawn position itself is `drawnX`/`drawnY`, kept for every sprite.
     public var previous: SpriteDraw?
+    /// `+0xc6` / `+0xc4`: the pixel position at the last `.WrapDrawSprites`, copied for **every** sprite on the list,
+    /// face or not (`100149a4..10014a14`); `.InitSprite` 0. The carry in `.StandardSpriteHandles` reads the ridden
+    /// solid's (F2 review fix: a faceless solid carries by its real drawn delta).
+    public var drawnX = 0
+    public var drawnY = 0
     public var previousRotation: Int16 = 0
     public var previousScale: Int16 = 0x100
     public var previousWaterRow: Int32 = 0
@@ -252,6 +268,8 @@ public struct SpriteSlot: Equatable, Sendable {
     public mutating func recordDrawn() {
         previous = face.map { SpriteDraw(face: $0, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip,
                                          lightOverlay: lightOverlay, waterRow: Int(waterRow)) }
+        drawnX = x
+        drawnY = y
         previousRotation = rotation
         previousScale = scale
         previousWaterRow = waterRow

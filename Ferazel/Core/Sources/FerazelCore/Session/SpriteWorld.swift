@@ -49,11 +49,25 @@ public final class SpriteWorld {
     /// the layer the Setup leaves. Nil when all 700 records are live (the original's `ReportError`). The record index
     /// and its search hint `_DAT_100a01c4` have no reader and are not kept [MED: the Setups' idle-sprite records are
     /// made and freed outside this type].
+    ///
+    /// The pixel copies, as written (raw `100331e4 sth r27,0xc(r25)`, `100331f0 sth r27,0x8(r25)`, `100331f4 sth
+    /// r28,0xc(r25)`, `100331f8 sth r28,0x6(r25)`; decompile l. 30706–30709): x goes to `+0xc` and `+8`, then y to
+    /// the **same** `+0xc` and to `+6` — so `+0xc` = y, `+0xa` keeps the `MemoryClear` 0, `+8`/`+6` = (x, y). The
+    /// 24.8 position is right; the pixel copy is fixed by the first writer (a Setup's own store, `.SeparateFromTiles2`
+    /// entry, …; see `SpriteSlot.x`). The level spawn does not see it: `.AddIdleSprite` re-stores x, y into the idle
+    /// entry (l. 4137–4138) and `.IdleToActiveSprite` rewrites `+0xc`/`+0xa` from it.
+    ///
+    /// The 700 cap counts the sprites on the list; the original counts in-use records (`+0` ≠ 0), which also
+    /// include records unlinked by `.MTRemoveSprite` and not yet killed, and idled records until `.UpdateSprites`
+    /// kills them [LOW: Phase 2 never comes near 700].
     @discardableResult
     public func newSprite(type: Int16, x: Int, y: Int, layer: Int16, handler: SpriteHandler, record: Int16 = -1,
                           setup: (inout SpriteSlot) -> Void = { _ in }) -> Int? {
         guard active.sprites.count < Self.recordCount else { return nil }
         var s = SpriteSlot(type: type, x: x, y: y, recordIndex: record, layer: Int32(layer))
+        s.oldPosition = SpriteSlot.Point(x: x, y: y)              // `+8` = x, `+6` = y
+        s.x = y                                                   // `+0xc` = x, then `+0xc` = y (the quirk above)
+        s.y = 0                                                   // `+0xa` never written: `MemoryClear` 0
         s.handler = handler
         setup(&s)
         s.recordIndex = record                                    // `.MTNewSprite` re-stores `+0x48` after the Setup
@@ -75,13 +89,23 @@ public final class SpriteWorld {
     /// `.MTHandleSprites @ 1003259c` (raw `100325b8..100325d4`): from the head, `next` (`+0x68`) is loaded **before**
     /// the Handle `+0x4c` is called, then the walk continues from that saved sprite's own `next`. A sprite created
     /// during the pass is handled this frame only if inserted after the saved `next`; one moved to a later place is
-    /// handled again. Every class Setup installs a Handle, so the `+0x4c == 0` skip is never taken. A saved `next`
-    /// unlinked by the Handle is not called (its record is gone) and the walk follows the `next` it kept [MED].
+    /// handled again. Every class Setup installs a Handle, so the `+0x4c == 0` skip is never taken.
+    ///
+    /// A saved `next` unlinked by the Handle is **still handled**: the walk reads `+0x4c` from the record, and
+    /// `.MTRemoveSprite`/`.MTKillSprite` (l. 30601–30628, 30739–30770) leave it — kill only clears the in-use byte
+    /// `+0` (and stores type 0x8001 on a head record); the record lives on until `.MTNewSprite` reuses the slot.
+    /// The walk then follows the `next` the record kept. So `handle` gets the id of a record that may be off the list
+    /// (`ActiveList.record(id:)`). In the original the case is latent: `.MTKillSprite`'s callers are
+    /// `.AddIdleSprite` (10007e78, its own new record), `.IdleToActiveSprite` (10008168), `.UpdateSprites`
+    /// (10009a58) and the px-sprite routines (100334ec, 1003384c) — none reachable from a Handle — and
+    /// `.MTRemoveSprite`'s one caller, `.MTChangeSpriteLayer`, re-inserts at once. Moving the saved `next` to the head
+    /// (a layer change below everything) makes the walk re-handle the current sprite: [1, 2, 3] with 1 moving 2 to the
+    /// front handles [1, 2, 1, 3] (platforms-ropes-radial-2 §8.2).
     public func handleSprites(_ handle: (SpriteWorld, Int) -> Void) {
         var cursor = active.sprites.first?.id
         while let id = cursor {
             let next = active.next(after: id)                     // `lwz r31,0x68(r3)` before `bl 0x1009f80c`
-            if active.sprite(id: id) != nil { handle(self, id) }
+            if active.record(id: id) != nil { handle(self, id) }   // `+0x4c` read from the record, linked or not
             cursor = next
         }
     }
@@ -107,7 +131,7 @@ public final class SpriteWorld {
     /// ey = B `+0x3c` if B `+0xe` < A `+0xe` else B `+0x40`), the single-pass minimum first, then the others in list
     /// order. `hit(world, a, b)` is `a`'s callback, called only when `a` has one (`+0x5c` re-read at each call).
     public func collideSprites(_ hit: (SpriteWorld, Int, Int) -> Void) {
-        for s in active.sprites { active.update(id: s.id) { $0.hotRectBuilt = false } }
+        active.clearHotRectBuilt()
         func call(_ a: Int, _ b: Int) {
             if active.sprite(id: a)?.hasHit == true { hit(self, a, b) }
         }
@@ -119,14 +143,15 @@ public final class SpriteWorld {
                 var inner = active.sprites.first?.id
                 while let bID = inner {
                     defer { inner = active.next(after: bID) }
-                    guard bID != aID, let A = active.sprite(id: aID), let B = active.sprite(id: bID), !B.dead
-                    else { continue }
-                    guard abs(A.x - B.x) < R, abs(A.y - B.y) < R, A.hasHit || B.hasHit,
-                          !A.sameHandlerExempt || A.handler != B.handler else { continue }
-                    if !A.hotRectBuilt { calcHotRect(aID) }
-                    if !B.hotRectBuilt { calcHotRect(bID) }
-                    guard let a = active.sprite(id: aID)?.hotRectWorld, let b = active.sprite(id: bID)?.hotRectWorld,
-                          a.intersects(b) else { continue }
+                    // Fields read in place by list index (O(1), no whole-record copies), re-read every pair: a
+                    // hit dispatched at once (7th contact on) may change A or B.
+                    guard bID != aID, let ai = active.index(of: aID), let bi = active.index(of: bID) else { continue }
+                    let pair = active.collidePair(ai, bi)
+                    guard !pair.bDead, abs(pair.dx) < R, abs(pair.dy) < R, pair.eitherHit,
+                          !pair.exempt else { continue }
+                    if !pair.aBuilt { calcHotRect(aID) }
+                    if !pair.bBuilt { calcHotRect(bID) }
+                    guard active.hotRectsIntersect(ai, bi) else { continue }
                     if contacts.count < 6 {
                         contacts.append(bID)
                     } else {

@@ -132,7 +132,7 @@ public final class FerazelSession {
         let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
         let effects = prefs.effects
         world.handleSprites { world, id in
-            guard let handler = world.active.sprite(id: id)?.handler else { return }
+            guard let handler = world.active.record(id: id)?.handler else { return }   // the record's `+0x4c`
             switch handler {
             case .player:
                 // ◇ the player Handle: the pose, then `.PlayerScroll`'s focus (replaced by P1a … P5).
@@ -144,7 +144,14 @@ public final class FerazelSession {
                 }
                 self.focusDriver.step(held)
             case .inert:
-                // The Bonus item-light twinkle (`BonusHandle`, inside `.HandleBonusSprite`); no other inert Handle.
+                // `.HandleBonusSprite @ 1005e934` (decompile l. 52832–52840), as far as Phase 2 builds it: `+0xe9` →
+                // return, `+0x1b2` → return, `.StandardSpriteHandles`, (`+0xa6 < 0` counts up // later: Phase 4 — no
+                // Phase-2 writer), then the item-light twinkle (`BonusHandle`). The other inert classes (enemies,
+                // buttons) stay Handle-less until Phase 4/5.
+                guard let s0 = world.active.record(id: id),
+                      SpriteClassTable.classify(type: s0.type, p1Negative: false)?.0 == .bonus,
+                      !s0.dead, !s0.handleSkip else { return }
+                world.standardSpriteHandles(id)
                 world.active.update(id: id) { s in
                     if let op = BonusHandle.twinkle(&s, effects: effects) { ops.draws.append(op) }
                 }

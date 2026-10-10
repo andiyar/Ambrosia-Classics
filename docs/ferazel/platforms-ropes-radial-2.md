@@ -35,6 +35,13 @@ handlers only in the next frame.
 - `.MTNewSprite` runs the Setup proc (`bl 0x1009f80c` with r12 = the setup TVector, `1003321c`)
   **before** `.MTInsertSprite` (`1003322c`); the `+0x80` argument is stored first (`10033200`) but the
   Setup proc may overwrite it, and the inserted position uses the Setup's value.
+  ⚑ F2 review (2026-10-10; raw `100331e4 sth r27,0xc(r25)`, `100331f0 sth r27,0x8(r25)`, `100331f4 sth
+  r28,0xc(r25)`, `100331f8 sth r28,0x6(r25)`, decompile l. 30706–30709): the pixel copies are stored x → `+0xc`,
+  x → `+8`, then y → the **same** `+0xc`, y → `+6`. So after `.MTNewSprite` `+0xc` = y and `+0xa` keeps the
+  `MemoryClear` 0; `+8`/`+6` and the 24.8 `+0x14`/`+0x1c` are right. The first writer of the copies (a Setup's own
+  store, `.SeparateFromTiles2` entry) repairs it; the level spawn never sees it (`.AddIdleSprite` re-stores x, y
+  into the idle entry, l. 4137–4138; `.IdleToActiveSprite` rewrites `+0xc`/`+0xa`). Modelled as written in
+  `SpriteWorld.newSprite` [HIGH] (physics.md R4 note).
 - `.MTChangeSpriteLayer` = remove + insert (moves the sprite to the tail of its new layer group).
   ⚑ planner-probe (Phase 2 plan B3, landed by F2 2026-10-10; raw from the main disasm): it is guarded —
   `100332a0 lwz r3,0x80(r3); 100332a4 cmpw r3,r0; 100332a8 beq 0x100332c0` — so a call with the **same** layer is a
@@ -44,6 +51,14 @@ handlers only in the next frame.
   and **handled twice that frame** (e.g. the mode-12 pendulum's layer flip 0x7ef4 in front / −300 behind, triggers-background §2.5, W2a); moved earlier, it is not
   re-handled. `.MTRemoveSprite`/`.MTKillSprite` leave the unlinked record's own `+0x68`, so a walk whose saved `next`
   was unlinked continues from that record's old `next` [HIGH for the guard; F2 `SpriteWorldTests`].
+  ⚑ F2 review (2026-10-10): they also leave `+0x4c` — `.MTKillSprite` (l. 30739–30770) only clears the in-use byte
+  `+0` (and stores type 0x8001 on a head record) — so a saved `next` killed by the current Handle is **still
+  handled** (`.MTHandleSprites` reads `+0x4c` from the record, l. 30182–30188), then the walk follows its kept
+  `next`. The record lives until `.MTNewSprite` reuses the slot (`MemoryClear`). The case is latent in the original:
+  no `.MTKillSprite` caller (`.AddIdleSprite` 10007e78 on its own new record, `.IdleToActiveSprite` 10008168,
+  `.UpdateSprites` 10009a58, px sprites 100334ec/1003384c) is reachable from a Handle, and `.MTChangeSpriteLayer`
+  re-inserts at once. Moving the saved `next` to the head re-handles the current sprite: [1, 2, 3] with 1 moving
+  2 below everything → [1, 2, 1, 3] [HIGH, raw; F2 `SpriteWorld.handleSprites`].
   Direct `+0x80` stores do **not** move a sprite (e.g. `.HandleStatueSprite` `+0x80 = 2` at `10066518`,
   `.HandleHeldItemSprite` `0x14` every frame at `1004beb0`, `.DoSetupPlatformSprite` `100632d8`/`10063400`).
 - `.MTHandleSprites` (raw `100325b8..100325d8`) loads `next` **before** calling the handler `+0x4c`

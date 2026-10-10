@@ -10,7 +10,7 @@ extension SpriteWorld {
     /// `param_3` (the mover's centre offset, [0] = y, [1] = x), `rect` `param_5` (the mover's rect in face-local px).
     /// Returns 1 landed (from above with vy > 0, bounce clear — M l. 36296–36300), 2 hit from below, else 0.
     ///
-    /// - Push `P = m+0x13c · (s+0x138 · (m.vx − s.vx) >> 8) >> 8` from the entry velocities.
+    /// - Push `P = (m+0x13c · ((s+0x138 · (m.vx − s.vx)) >> 8)) >> 8` from the entry velocities.
     /// - Height of the solid's top above its bottom: flat `s.bottom − s.top`; sloped (`+0xd2`/`+0xd4` ≠ −1000)
     ///   `(d2·(w − o) + d4·o) / w` with o = the mover's rect centre x − the solid's left, w = the rect width, and the
     ///   slack 0x20 instead of 8 (l. 36239–36247).
@@ -31,7 +31,10 @@ extension SpriteWorld {
         var width = 0                                                  // iVar16
         var slack = 8                                                  // sVar13
         let bottomRel = s.hotRect.bottom                               // iVar11
-        let push = Int32(m.pushForce) &* ((Int32(s.pushMass) &* (m.vx &- s.vx)) >> 8) >> 8   // iVar17
+        // iVar17 (l. 36233–36235): `1003e4d8 mullw` mass·Δvx, `1003e4ec srawi 8`, `1003e4f4 mullw` F·t,
+        // `1003e500 srawi 8`. Parenthesised in full: Swift's `>>` binds tighter than `&*`.
+        let t = (Int32(s.pushMass) &* (m.vx &- s.vx)) >> 8
+        let push = (Int32(m.pushForce) &* t) >> 8
         var height = bottomRel - s.hotRect.top                         // iVar12
         let sloped = s.surfaceLeft != -1000 || s.surfaceRight != -1000
         if sloped {

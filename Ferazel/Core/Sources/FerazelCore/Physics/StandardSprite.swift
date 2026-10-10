@@ -19,11 +19,15 @@ extension SpriteWorld {
     ///   probe 2026-10-10) and no Phase-2 task builds `.LookupModedImpulse`; the branch is skipped here.
     /// - **Carry** while riding (`+0xdc`): `+0xce = 3`; `+0x14 += (solid.x − solid.drawnX)·256`;
     ///   `+0x1c = (solid.y − solid.drawnY)·256 + +0x1c + 0x100`; `+0xc`/`+0xa` refreshed; the siblings `+0x1d4`,
-    ///   `+0x1d8` get the same x delta (x only). drawnX/drawnY = the solid's `+0xc6`/`+0xc4`, i.e. its `previous`
-    ///   copy (0 before its first draw, `.InitSprite`).
+    ///   `+0x1d8` get the same x delta (x only). drawnX/drawnY = the solid's `+0xc6`/`+0xc4` (`SpriteSlot.drawnX`/
+    ///   `drawnY`, copied at every draw, face or not; 0 before its first draw, `.InitSprite`). The original reads the
+    ///   `+0xdc` record whether or not it is still linked (an idled solid stays linked with `+0x4c = 0` until
+    ///   `.UpdateSprites` kills it, and a killed record keeps its fields): Core reads it through
+    ///   `ActiveList.record(id:)`. A record Core no longer holds (dropped past `ActiveList.recordLimit`) reads as 0s —
+    ///   in the original that slot may already be reused by `.MTNewSprite` (`MemoryClear`) [LOW: no Phase-2 path].
     /// - `+0x140 = 0`, `+0xd8 = 0`.
     public func standardSpriteHandles(_ id: Int) {
-        guard var s = active.sprite(id: id) else { return }
+        guard var s = active.record(id: id) else { return }
         if s.invulnerable > 0 { s.invulnerable -= 1 }
         if s.flash > 0 { s.flash -= 1 }
         if s.reentry < 0 { s.reentry += 1 }
@@ -58,9 +62,9 @@ extension SpriteWorld {
             // to 33, `+0x98`, `+0x92 = 1`; decompile l. 32490–32570). Unreached on levels 1–2.
         }
         if let solidID = s.ridden {
-            let solid = active.sprite(id: solidID)
+            let solid = active.record(id: solidID)
             let sx = solid?.x ?? 0, sy = solid?.y ?? 0
-            let drawnX = solid?.previous?.x ?? 0, drawnY = solid?.previous?.y ?? 0
+            let drawnX = solid?.drawnX ?? 0, drawnY = solid?.drawnY ?? 0
             let dx = Int32(truncatingIfNeeded: Int(Int16(truncatingIfNeeded: sx)) - Int(Int16(truncatingIfNeeded: drawnX)))
             let dy = Int32(truncatingIfNeeded: Int(Int16(truncatingIfNeeded: sy)) - Int(Int16(truncatingIfNeeded: drawnY)))
             s.groundKind = 3
@@ -75,7 +79,7 @@ extension SpriteWorld {
                     c.x = Self.pixel(c.x256)
                 }
             }
-            s = active.sprite(id: id) ?? s
+            s = active.record(id: id) ?? s
         }
         s.underwaterDone = false
         s.material = 0
@@ -99,14 +103,14 @@ extension SpriteWorld {
     /// - Parameter exitSplash: `.Splash(s, 4)` // later: E1a.
     public func standardSpriteCleanup(_ id: Int, faceWidth: (FaceRef) -> Int,
                                       exitSplash: (SpriteWorld, Int) -> Void = { _, _ in }) {
-        guard let start = active.sprite(id: id) else { return }
+        guard let start = active.record(id: id) else { return }
         var w = 0x80
         if let f = start.face { w = faceWidth(f) }
         if start.lastWater != 0 && start.waterRow == 0 {
             exitSplash(self, id)
             active.update(id: id) { $0.quicksandDepth = 0 }
         }
-        guard var s = active.sprite(id: id) else { return }
+        guard var s = active.record(id: id) else { return }
         let r = s.hotRect
         s.centre.x = Int(Int16(truncatingIfNeeded: s.x + r.left + ((r.right - r.left) >> 1)))
         s.centre.y = Int(Int16(truncatingIfNeeded: s.y + r.top + ((r.bottom - r.top) >> 1)))

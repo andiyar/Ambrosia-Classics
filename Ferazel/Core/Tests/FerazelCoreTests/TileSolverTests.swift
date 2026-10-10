@@ -30,6 +30,7 @@ final class TileSolverTests: XCTestCase {
                        rect: IdleSprites.Rect? = nil) -> Int {
         let r = rect ?? tall
         return t.world.newSprite(type: 0x45, x: x, y: y, layer: 10, handler: .player) {
+            $0.x = x; $0.y = y          // the pixel copies (`.MTNewSprite` leaves `+0xc` = y, `+0xa` = 0; F2 review)
             $0.hotRect = r
             $0.vx = vx
             $0.vy = vy

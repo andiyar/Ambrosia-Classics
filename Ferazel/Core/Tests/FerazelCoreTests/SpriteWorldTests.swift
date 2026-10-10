@@ -15,11 +15,14 @@ final class SpriteWorldTests: XCTestCase {
     }
 
     /// A solid at (100, 200) with hot rect 0…16 × 0…64, and a mover with hot rect 0…32 × 0…16 at (110, y).
+    /// The setups store the pixel copies themselves: `.MTNewSprite` leaves `+0xc` = y, `+0xa` = 0 (its quirk).
     private func solidAndMover(_ w: SpriteWorld, moverY: Int, vy: Int32) -> (mover: Int, solid: Int) {
         let solid = w.newSprite(type: 1400, x: 100, y: 200, layer: -1, handler: .platform) {
+            $0.x = 100; $0.y = 200
             $0.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 16, right: 64)
         }!
         let mover = w.newSprite(type: 0x45, x: 110, y: moverY, layer: 10, handler: .player) {
+            $0.x = 110; $0.y = moverY
             $0.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 32, right: 16)
             $0.vy = vy
         }!
@@ -117,28 +120,73 @@ final class SpriteWorldTests: XCTestCase {
     }
 
     func testLandingRestoresMoverX() throws {
+        // `.RectBounce` never writes `+0xc` on a landing, so it leaves `+0x14` alone; what `.PlatformBounce`'s
+        // restore does that can be seen is the re-derived pixel copy `+0xc = +0x14 >> 8` (M l. 33059–33061). Here the
+        // 24.8 x has moved on (as the water current moves it without its pixel copy) while `+0xc` still holds 110:
+        // the landing must restore the entry 24.8 x and bring `+0xc` to it.
         let w = try world()
         let ids = solidAndMover(w, moverY: 170, vy: 0x1b8)
         w.active.update(id: ids.mover) { m in
-            m.x256 = (110 << 8) + 0xc0
+            m.x = 110
+            m.y = 170
+            m.x256 = (113 << 8) + 0xc0
             m.y256 = (170 << 8) + 0x40
             m.vx = 0x300
         }
         XCTAssertEqual(land(w, ids), 1)
         let m = w.active.sprite(id: ids.mover)!
-        XCTAssertEqual(m.x256, (110 << 8) + 0xc0)             // the entry 24.8 x, fraction kept
-        XCTAssertEqual(m.x, 110)
+        XCTAssertEqual(m.x256, (113 << 8) + 0xc0)             // the entry 24.8 x, fraction kept
+        XCTAssertEqual(m.x, 113)                              // `+0xc` re-derived from it (was 110)
         XCTAssertEqual(m.vx, 0x300)
         XCTAssertEqual(m.y256, 168 << 8)                      // y snapped: its fraction dropped
+        XCTAssertEqual(m.y, 168)
+    }
+
+    func testSidePushArithmetic() throws {
+        // `.RectBounce` l. 36233–36235, raw `1003e4d8 mullw` (mass·Δvx), `1003e4ec srawi 8`, `1003e4f4 mullw` (F·t),
+        // `1003e500 srawi 8`: P = (F · ((mass · (m.vx − s.vx)) >> 8)) >> 8. The mover (hot rect 0…32 × 0…16) comes in
+        // from the left of the solid (hot rect 0…16 × 0…64 at (100, 200)): prev mid x < the solid's, gap above
+        // (−22) < gap left → the side arm, vx > 0 → solid vx += P (`+0x138 > 0`).
+        func push(force: Int16, mass: Int16, moverVX: Int32, solidVX: Int32) throws -> Int32 {
+            let w = try world()
+            let solid = w.newSprite(type: 1400, x: 100, y: 200, layer: -1, handler: .platform)!
+            let mover = w.newSprite(type: 0x45, x: 90, y: 190, layer: 10, handler: .player)!
+            w.active.update(id: solid) { s in
+                s.x = 100; s.y = 200; s.x256 = 100 << 8; s.y256 = 200 << 8
+                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 16, right: 64)
+                s.pushMass = mass
+                s.vx = solidVX
+            }
+            w.active.update(id: mover) { m in
+                m.x = 90; m.y = 190; m.x256 = 90 << 8; m.y256 = 190 << 8
+                m.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 32, right: 16)
+                m.pushForce = force
+                m.vx = moverVX
+            }
+            let r = w.active.sprite(id: mover)!.hotRect
+            w.rectBounce(mover: mover, solid: solid, centre: SpriteSlot.Point(x: 8, y: 16), factor: 0, rect: r,
+                         bounce: false)
+            XCTAssertEqual(w.active.sprite(id: mover)?.vx, 0)
+            return w.active.sprite(id: solid)!.vx - solidVX
+        }
+        // F 3, mass 0x100, Δvx 0x4ff: t = 0x100·0x4ff >> 8 = 0x4ff; P = 3·0x4ff >> 8 = 3837 >> 8 = 14
+        // (3·(0x4ff >> 8) = 12 would be the shift bound first).
+        XCTAssertEqual(try push(force: 3, mass: 0x100, moverVX: 0x4ff, solidVX: 0), 14)
+        // The same Δvx against a moving solid: 0x5ff − 0x100.
+        XCTAssertEqual(try push(force: 3, mass: 0x100, moverVX: 0x5ff, solidVX: 0x100), 14)
+        // F 0x100, mass 0x100, Δvx 0x80: t = 0x80; P = 0x100·0x80 >> 8 = 0x80 (0x100·(0x80 >> 8) = 0).
+        XCTAssertEqual(try push(force: 0x100, mass: 0x100, moverVX: 0x80, solidVX: 0), 0x80)
     }
 
     func testCarryAddsDrawnDeltaPlusOnePixel() throws {
         let w = try world()
         let solid = w.newSprite(type: 1400, x: 100, y: 200, layer: -1, handler: .platform) {
+            $0.x = 100; $0.y = 200                            // the pixel copies (`.MTNewSprite` quirk)
             $0.face = FaceRef(pict: 1400, index: 0, set: .encoded)
         }!
-        let sib = w.newSprite(type: 1400, x: 300, y: 50, layer: -1, handler: .platform)!
+        let sib = w.newSprite(type: 1400, x: 300, y: 50, layer: -1, handler: .platform) { $0.x = 300; $0.y = 50 }!
         let rider = w.newSprite(type: 0x45, x: 110, y: 168, layer: 10, handler: .player) { s in
+            s.x = 110; s.y = 168
             s.siblings.first = sib
         }!
         _ = w.active.wrapDrawSprites()                        // the solid's `+0xc6`/`+0xc4` = (100, 200)
@@ -152,6 +200,29 @@ final class SpriteWorldTests: XCTestCase {
         XCTAssertEqual(r.groundKind, 3)
         XCTAssertEqual(w.active.sprite(id: sib)?.x, 305)      // `+0x1d4` carried by dx only
         XCTAssertEqual(w.active.sprite(id: sib)?.y, 50)
+    }
+
+    func testCarryFromFacelessSolid() throws {
+        // `.WrapDrawSprites` copies `+0xc6`/`+0xc4 ← +0xc`/`+0xa` for every sprite on the list, face or not
+        // (`100149a4..10014a14`), so the carry of a rider on a faceless solid uses its real drawn position.
+        let w = try world()
+        let solid = w.newSprite(type: 1400, x: 100, y: 200, layer: -1, handler: .platform)!
+        let rider = w.newSprite(type: 0x45, x: 110, y: 168, layer: 10, handler: .player)!
+        w.active.update(id: solid) { s in
+            s.x = 100; s.y = 200; s.x256 = 100 << 8; s.y256 = 200 << 8
+        }
+        w.active.update(id: rider) { r in
+            r.x = 110; r.y = 168; r.x256 = 110 << 8; r.y256 = 168 << 8
+        }
+        XCTAssertNil(w.active.sprite(id: solid)?.face)
+        _ = w.active.wrapDrawSprites()                        // the solid's `+0xc6`/`+0xc4` = (100, 200)
+        w.active.update(id: solid) { $0.x = 105 }             // +5 px since the draw
+        w.active.update(id: rider) { $0.ridden = solid }
+        w.standardSpriteHandles(rider)
+        let r = w.active.sprite(id: rider)!
+        XCTAssertEqual(r.x256, 115 << 8)                      // +5, not +105
+        XCTAssertEqual(r.y256, 169 << 8)                      // + 0x100
+        XCTAssertEqual([r.x, r.y], [115, 169])
     }
 
     func testCurrentRampsOver33Frames() throws {
