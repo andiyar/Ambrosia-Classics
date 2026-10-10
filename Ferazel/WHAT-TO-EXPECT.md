@@ -97,22 +97,26 @@ MED = fairly sure), and what would be wrong.
 13. **Icon** — previews of the original 32×32 icon scaled up to a modern icon are in the folder
     **"Ferazel icon previews"** on your Desktop (light, dark, tinted and clear). Pick one.
 14. **The black border** around the play view — that is the original's own screen picture (the 608×384 view sits
-    inside it, 16 px from the left and 8 px from the top), not a bug.
-15. **Your pick — the duplicate-black tie-break.** The palette has black in more than one slot, and which slot the
-    original picked is unknown. The build starts on **lowest** (you may see yellow specks along foreground edges).
-    To compare with **highest**, quit the game, open Terminal and paste:
+    inside it, 16 px from the left and 8 px from the top), not a bug. Your Let's Play shows the same frame.
+15. **The duplicate-black tie-break — decided: highest.** The palette has black in more than one slot. You ruled on
+    2026-10-10, from your Let's Play (at 02:12 the foreground rock edges are clean light grey, no yellow specks), that
+    the original matches **highest**, so the build starts on highest. The other choice, **lowest**, shows yellow
+    specks along the foreground edges. To look at lowest anyway, quit the game, open Terminal and paste:
 
-    `defaults write com.ambrosiaclassics.ferazel ColorTieBreak highest`
+    `defaults write com.ambrosiaclassics.ferazel ColorTieBreak lowest`
 
-    then open the game again. To go back to lowest, quit, paste:
+    then open the game again. To go back to highest, quit, paste:
 
     `defaults delete com.ambrosiaclassics.ferazel ColorTieBreak`
 
-    and open it again. Tell us which looks right.
+    and open it again.
+16. **Brightness and the glow behind the table — under measurement.** Next to your Let's Play, our picture looks
+    darker overall, and there is a light glow behind the table that the video doesn't have. Both are being measured
+    in a separate task; tell us if you notice anything more about them.
 
 Known by design: no chapter-1 screen, no menus or title screen, no sound effects, the window scaled ×2 or ×3; Caps Lock
 (pause) and Esc (abort dialog) do nothing until Phase 3 — ⌘Q quits.
 
 ## What to tell us
 Plain yes or no to "does it look like Ferazel?" — then anything that looked wrong, by card number if you can, and your
-picks for line 13 (icon) and line 15 (tie-break).
+pick for line 13 (icon).
