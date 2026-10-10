@@ -11,6 +11,10 @@ import FerazelCore
 /// `index(of:in:)` answers through the same `Prepared` (cached per CLUT, keyed by (id, seed) and confirmed by its
 /// entries — every shipped `clut` stores seed 0, so the seed alone would not tell them apart). No per-request memo
 /// outlives a call: exact-nearest is computed directly over flat channel arrays.
+///
+/// Duplicate colours (Ben, 2026-10-07, D26): which of several equal entries `Color2Index` returns is [LOW] — clut 201
+/// holds 162 pure blacks. `TieBreak` picks it for the `.ruled` exact-match scan and `.exactNearest`'s equal
+/// distances; `.lowest` is the default. The inverse table's own cells keep lowest (`InverseTable`).
 public final class ColorSearch: @unchecked Sendable {
 
     public enum Model: Hashable, Sendable {
@@ -22,11 +26,19 @@ public final class ColorSearch: @unchecked Sendable {
         case inverseTable(bits: Int)
     }
 
-    public let model: Model
+    /// Which index wins among equal candidates (an exact-match duplicate, or an equal distance).
+    public enum TieBreak: Hashable, Sendable {
+        case lowest
+        case highest
+    }
 
-    public init(model: Model = .ruled) {
+    public let model: Model
+    public let tieBreak: TieBreak
+
+    public init(model: Model = .ruled, tieBreak: TieBreak = .lowest) {
         if case .inverseTable(let bits) = model { precondition((1...6).contains(bits), "inverse table bits \(bits)") }
         self.model = model
+        self.tieBreak = tieBreak
     }
 
     /// The index `Color2Index` is modelled to return for `rgb` with `clut` as the device's colour table.
@@ -52,9 +64,9 @@ public final class ColorSearch: @unchecked Sendable {
     public func prepared(for clut: ColorLUT) -> Prepared {
         lock.lock()
         defer { lock.unlock() }
-        let key = Key(id: clut.id, seed: clut.seed)
+        let key = Key(id: clut.id, seed: clut.seed, tieBreak: tieBreak)
         if let found = cache[key]?.first(where: { $0.entries == clut.entries }) { return found.prepared }
-        let p = Prepared(clut: clut, model: model)
+        let p = Prepared(clut: clut, model: model, tieBreak: tieBreak)
         cache[key, default: []].append((clut.entries, p))
         return p
     }
@@ -67,13 +79,16 @@ public final class ColorSearch: @unchecked Sendable {
     private struct Key: Hashable {
         let id: Int16
         let seed: UInt32
+        let tieBreak: TieBreak
     }
 
     /// One model on one CLUT, everything precomputed: the flat channels (exact-nearest), the inverse table
     /// (`.inverseTable`, and 4 bits for `.ruled`), and for `.ruled` the palette entries bucketed by their own
-    /// 4-bit cell in ascending index order, so an exact match is a scan of the request's cell (lowest index first).
+    /// 4-bit cell in index order (ascending for `.lowest`, descending for `.highest`), so an exact match is a scan
+    /// of the request's cell, the tie-break's winner first.
     public struct Prepared: Sendable {
         public let model: Model
+        public let tieBreak: TieBreak
         let channels: Channels
         let table: InverseTable?
         /// `.ruled`: bucket `cell` is `bucketEntries[bucketStart[cell] ..< bucketStart[cell + 1]]`.
@@ -81,8 +96,9 @@ public final class ColorSearch: @unchecked Sendable {
         private let bucketEntries: [UInt8]
         private let packed: [UInt64]
 
-        public init(clut: ColorLUT, model: Model) {
+        public init(clut: ColorLUT, model: Model, tieBreak: TieBreak = .lowest) {
             self.model = model
+            self.tieBreak = tieBreak
             channels = Channels(clut)
             switch model {
             case .exactNearest:
@@ -103,8 +119,9 @@ public final class ColorSearch: @unchecked Sendable {
             for i in 1..<counts.count { counts[i] += counts[i - 1] }
             var fill = counts
             var entries = [UInt8](repeating: 0, count: colors.count)
-            for (i, c) in colors.enumerated() {   // ascending i: each bucket lists its lowest index first
-                let cell = t.cell(of: c)
+            let order = tieBreak == .lowest ? Array(colors.indices) : colors.indices.reversed()
+            for i in order {   // each bucket lists the tie-break's winner first
+                let cell = t.cell(of: colors[i])
                 entries[Int(fill[cell])] = UInt8(i)
                 fill[cell] += 1
             }
@@ -120,7 +137,7 @@ public final class ColorSearch: @unchecked Sendable {
         @inline(__always) public func index(of rgb: RGB16) -> UInt8 {
             switch model {
             case .exactNearest:
-                return channels.nearest(Int(rgb.red), Int(rgb.green), Int(rgb.blue))
+                return channels.nearest(Int(rgb.red), Int(rgb.green), Int(rgb.blue), tieBreak: tieBreak)
             case .inverseTable:
                 return table.unsafelyUnwrapped.index(of: rgb)
             case .ruled:
@@ -151,9 +168,10 @@ public final class ColorSearch: @unchecked Sendable {
             blue = clut.entries.map { Int($0.blue) }
         }
 
-        /// Exact nearest by least squared distance, ties → lowest index (strict `<`).
-        func nearest(_ r: Int, _ g: Int, _ b: Int) -> UInt8 {
-            red.withUnsafeBufferPointer { pr in
+        /// Exact nearest by least squared distance, ties → lowest index (strict `<`) or highest (`<=`).
+        func nearest(_ r: Int, _ g: Int, _ b: Int, tieBreak: TieBreak = .lowest) -> UInt8 {
+            let highest = tieBreak == .highest
+            return red.withUnsafeBufferPointer { pr in
                 green.withUnsafeBufferPointer { pg in
                     blue.withUnsafeBufferPointer { pb in
                         var best = Int.max
@@ -161,7 +179,7 @@ public final class ColorSearch: @unchecked Sendable {
                         for i in 0..<pr.count {
                             let dr = pr[i] &- r, dg = pg[i] &- g, db = pb[i] &- b
                             let d = dr &* dr &+ dg &* dg &+ db &* db
-                            if d < best { best = d; bi = i }
+                            if d < best || (highest && d == best) { best = d; bi = i }
                         }
                         return UInt8(bi)
                     }

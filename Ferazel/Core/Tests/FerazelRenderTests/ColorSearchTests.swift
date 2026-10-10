@@ -54,6 +54,21 @@ final class ColorSearchTests: XCTestCase {
         XCTAssertEqual(ColorSearch(model: .exactNearest).index(of: RGB16(1, 0, 0), in: c), 0x60)
     }
 
+    func testDuplicateBlackTieBreakCLUT201() throws {
+        // Ben, 2026-10-07 (D26): clut 201 holds 162 pure blacks; which duplicate QuickDraw picks is LOW, so the
+        // tie-break is selectable — `.lowest` (the default) and `.highest`.
+        let c = try clut(201, try resources())
+        let black = RGB16(0, 0, 0)
+        let blacks = (0..<256).filter { RGB16(c.entries[$0]) == black }
+        XCTAssertEqual(blacks, Array(1...160) + [254, 255])
+        XCTAssertEqual(ColorSearch(model: .ruled).index(of: black, in: c), 1)
+        XCTAssertEqual(ColorSearch(model: .ruled, tieBreak: .lowest).index(of: black, in: c), 1)
+        XCTAssertEqual(ColorSearch(model: .ruled, tieBreak: .highest).index(of: black, in: c), 255)
+        XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .lowest).index(of: black, in: c), 1)
+        XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .highest).index(of: black, in: c), 255)
+        XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .highest).indices(of: [black], in: c), [255])
+    }
+
     func testInverseTableBitReplicatedCells() throws {
         XCTAssertEqual(InverseTable.cellColor(0, bits: 4), 0x0000)
         XCTAssertEqual(InverseTable.cellColor(1, bits: 4), 0x1111)

@@ -15,8 +15,10 @@ final class FrameGoldenTests: XCTestCase {
 
     nonisolated(unsafe) private static let resources = Result { try FerazelData.open(try FerazelData.dataDirectory()) }
 
-    private func renderer(prefs: FerazelPrefs = FerazelPrefs()) throws -> FrameRenderer {
-        try FrameRenderer(resources: try Self.resources.get(), level: 1, search: ColorSearch(model: .ruled),
+    private func renderer(prefs: FerazelPrefs = FerazelPrefs(),
+                          tieBreak: ColorSearch.TieBreak = .lowest) throws -> FrameRenderer {
+        try FrameRenderer(resources: try Self.resources.get(), level: 1,
+                          search: ColorSearch(model: .ruled, tieBreak: tieBreak),
                           dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
     }
 
@@ -172,6 +174,20 @@ final class FrameGoldenTests: XCTestCase {
         // Setup lights at Effects 1, the box rasterizer. The player is not drawn yet (his face is set by the Handle,
         // after the draw — R5).
         XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "9db8f32f7e3d88b4")
+    }
+
+    func testFirstFrameGoldenLevel1HighestTieBreak() throws {
+        // Ben, 2026-10-07 (D26): the duplicate-colour tie-break `.highest` (FG 200's blacks → 255, black in clut
+        // 202 too) beside the default above. The scroll and lights are the default frame's.
+        let r = try renderer(tieBreak: .highest)
+        let s = try session(r)
+        let ops = s.step(keys: KeyState())
+        XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
+        try r.apply(ops)
+        assertLightsHandled(r, h: 0, v: 0)
+        dump(r, "level1-frame1-highest")
+        // Measured 2026-10-10 (A1): as the default frame 1 but `.highest`.
+        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "9b512587ae1dd08b")
     }
 
     func testPanFrameGoldens() throws {
