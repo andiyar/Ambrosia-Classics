@@ -8,6 +8,7 @@
 ![arch](https://img.shields.io/badge/arch-Apple%20Silicon-blue) &nbsp;
 ![status](https://img.shields.io/badge/Aki-1.0-green) &nbsp;
 ![status](https://img.shields.io/badge/Bubble%20Trouble%20X-1.0-green) &nbsp;
+![Windows](https://img.shields.io/badge/Windows-BTX-blue) &nbsp;
 ![type](https://img.shields.io/badge/type-fan%20preservation-orange)
 
 </div>
@@ -45,21 +46,21 @@ There's also an **iPad version** (same game, same data, touch in place of the mo
 
 ### Deimos Rising
 ![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
-![reverse engineering](https://img.shields.io/badge/reverse%20engineering-100%25%20read-green)
+![gate 1](https://img.shields.io/badge/level%201%20look-passed-green)
 
-Every function of the game's code has been read out of the decompile and written up (rules, formats, enemies, weapons). Building has started: the shared kit can now read its data files (the zipped paks and its AIFF/WAVE sounds), and a census proving every original file opens is under way. Then the game.
+Every function of the game's code has been read out of the decompile and written up. The original data is in the repo, and a census proves all 872 files open. **Level 1 looks right**: the app draws the first level, its ship, enemies, terrain and status panel the way the original did, at OS X's 60 Hz. I checked it by eye on 2026-10-07 ("it looks okay!"). Now making level 1 actually play: shooting, enemies, destruction, bonuses, the end-of-level tally and game over are in progress on a branch.
 
 ### Ferazel's Wand
-![status](https://img.shields.io/badge/status-planning%20the%20build-yellow) &nbsp;
-![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
+![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
+![renderer](https://img.shields.io/badge/level%201%20renderer-done-green)
 
-The reverse-engineering notes are done, two passes deep (rules, formats, enemies, bosses, spells, physics, lighting, particles). The build plan is being written now. No code yet.
+The data is in the repo and all 1,108 items in it open. The level-1 renderer is done in the core: tiles, lighting and darkness, the parallax backgrounds, the sprites in their starting poses, the status bar and the game-screen frame, all following the original's own drawing code (100 tests, with whole-frame reference images). Next is the app itself, so level 1 can be seen on screen and checked against the original's look.
 
 ### Cythera
-![status](https://img.shields.io/badge/status-reverse%20engineering-orange) &nbsp;
-![code](https://img.shields.io/badge/code-not%20started-lightgrey)
+![status](https://img.shields.io/badge/status-building-yellow) &nbsp;
+![reverse engineering](https://img.shields.io/badge/reverse%20engineering-done-green)
 
-The whole binary is decompiled and read: rules notes plus a second pass through every newly decompiled function. A final check pass is next. No code yet.
+The whole binary is decompiled and read. Building has started: the data is in the repo, and the core can already unpack the game's files (its segment files, compression and world records) and decode its tiles, portraits and pictures. Next is the script decoder, then the first gate: walking around Catamarca.
 
 <details>
 <summary><strong>Aki milestone status</strong></summary>
@@ -140,7 +141,7 @@ python3 tools/upscale-aki-art.py                   # the Remastered Art → Reso
 tools/stage-aki.sh                                 # builds Release and copies your Aki data in → out/Aki/Aki.app
 ```
 
-`stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). The game data isn't in the repo itself (yet); the staged app carries it.
+`stage-aki.sh` looks for the original Aki 1.2.0 app at `Resources/Aki/1.2.0.app` (a symlink is fine). Aki's and Bubble Trouble X's data aren't in the repo yet (the release downloads carry them); Ferazel's Wand, Deimos Rising and Cythera's original data are, under `Resources/`.
 
 `upscale-aki-art.py` needs [Upscayl](https://upscayl.org/) (plus Pillow and numpy) and writes about 207 MB of git-ignored pictures. Without it the app still builds and plays; **Remastered Art** is just greyed out.
 
