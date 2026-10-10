@@ -67,6 +67,13 @@ final class ColorSearchTests: XCTestCase {
         XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .lowest).index(of: black, in: c), 1)
         XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .highest).index(of: black, in: c), 255)
         XCTAssertEqual(ColorSearch(model: .exactNearest, tieBreak: .highest).indices(of: [black], in: c), [255])
+        // A near-black request is not an exact match: `.ruled` falls to the inverse table, whose cell (0, 0, 0) ties
+        // over the same 162 blacks — the tie-break governs that cell too.
+        let nearBlack = RGB16(1, 0, 0)
+        XCTAssertEqual(ColorSearch(model: .ruled, tieBreak: .lowest).index(of: nearBlack, in: c), 1)
+        XCTAssertEqual(ColorSearch(model: .ruled, tieBreak: .highest).index(of: nearBlack, in: c), 255)
+        XCTAssertEqual(ColorSearch(model: .inverseTable(bits: 4), tieBreak: .highest).index(of: nearBlack, in: c), 255)
+        XCTAssertEqual(InverseTable(clut: c, bits: 5, tieBreak: .highest).index(of: nearBlack), 255)
     }
 
     func testInverseTableBitReplicatedCells() throws {

@@ -60,6 +60,8 @@ import HectorShell
             try renderer.addLights(session.lights)
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory,
                                  prefs: prefs)
+            // Step 1's `.SetAIFFMusic(hdr+0x284a)` (l. 5221): decoded now, not inside the first step.
+            audio?.prepare(track: Int(session.level.header.music))
         } catch {
             #if DEBUG
             let alert = NSAlert()
@@ -79,7 +81,7 @@ import HectorShell
         shell.windowedWindow.makeKeyAndOrderFront(nil)
         NSApp.activate()
 
-        timer = ShellIdleTimer(interval: 1.0 / 60.0) { [weak self] in self?.idleFired() }
+        timer = ShellIdleTimer(interval: 1.0 / 240.0) { [weak self] in self?.idleFired() }
         timer.start()
         idleFired()
     }
@@ -136,7 +138,8 @@ import HectorShell
 
     // MARK: Clock
 
-    /// One 1/60 s fire. `.GameLoop` (decompile l. 5229–5296) takes `start = TickCount()` at the top of each iteration
+    /// One 1/240 s fire (Deimos precedent: a 60 Hz timer against the 60 Hz tick beats into 3-tick gaps; four fires
+    /// a tick never miss a boundary by more than a quarter tick). `.GameLoop` (decompile l. 5229–5296) takes `start = TickCount()` at the top of each iteration
     /// and waits at the bottom: with prefs[0] = 0 until 2 ticks after its start; with prefs[0] set, the non-drawing
     /// iteration does not wait and the drawing one waits until 4 ticks after its own start. Here a fire runs the next
     /// iteration once that wait is over — with prefs[0] set, the non-drawing iteration and its drawing partner back to
@@ -165,7 +168,7 @@ import HectorShell
     @discardableResult
     private func runStep() -> Bool {
         let held = shell.view.pollKeyState().held
-        let ops = session.step(keys: KeyState(pressed: held.map(Int.init)))
+        let ops = session.step(keys: KeyState(pressed: held.map { Self.keyMapCode(Int($0)) }))
         do {
             try renderer.apply(ops)
         } catch {
@@ -175,15 +178,30 @@ import HectorShell
         }
         for cue in ops.music { audio?.handle(cue) }
         for request in ops.requests { honour(request) }
-        present()
+        if ops.drawn { present() }               // a skipped iteration leaves the screen as it was
         return ops.drawn
     }
 
-    /// The renderer's 8-bit screen through the current screen CLUT into the window bitmap.
+    /// Right Shift, Option and ⌘ (0x3C, 0x3D, 0x36) as the left keys (0x38, 0x3A, 0x37): the classic `KeyMap`
+    /// reports either side of a modifier under the left key's bit.
+    static func keyMapCode(_ code: Int) -> Int {
+        switch code {
+        case 0x3c: return 0x38
+        case 0x3d: return 0x3a
+        case 0x36: return 0x37
+        default: return code
+        }
+    }
+
+    /// The renderer's 8-bit screen through the current screen CLUT, written straight into the window bitmap (the
+    /// `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word array per frame).
     private func present() {
-        let words = renderer.screen.rgba(through: renderer.screenClut)
-        words.withUnsafeBufferPointer { src in
-            bitmap.pixels.update(from: src.baseAddress!, count: min(src.count, Self.width * Self.height))
+        let table = renderer.screenClut.entries.map { e -> UInt32 in
+            0xff00_0000 | UInt32(e.red >> 8) << 16 | UInt32(e.green >> 8) << 8 | UInt32(e.blue >> 8)
+        }
+        let out = bitmap.pixels
+        renderer.screen.pixels.withUnsafeBufferPointer { src in
+            for i in 0..<min(src.count, Self.width * Self.height) { out[i] = table[Int(src[i])] }
         }
         shell.view.present(bitmap)
     }

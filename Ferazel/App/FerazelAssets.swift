@@ -4,7 +4,7 @@ import Foundation
 /// The only file-system entry point (plan S5, S7): the original Ferazel's Wand 1.0.3 data — the six `.rsrc` files and
 /// `Ferazel's Wand Music` — shipped unchanged in this app at `Contents/Resources/Ferazel/` by `tools/stage-ferazel.sh`
 /// (D10, D26).
-@MainActor enum FerazelAssets {
+enum FerazelAssets {
     /// The bundle's `Contents/Resources/Ferazel` when it holds the data. In DEBUG only, when the bundle lacks it (an
     /// unstaged Xcode build), `FERAZEL_DATA` names the folder instead (e.g. the repo's `Resources/Ferazel`). Nil when
     /// neither has it.

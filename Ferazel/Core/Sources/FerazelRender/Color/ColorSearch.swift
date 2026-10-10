@@ -14,7 +14,7 @@ import FerazelCore
 ///
 /// Duplicate colours (Ben, 2026-10-07, D26): which of several equal entries `Color2Index` returns is [LOW] — clut 201
 /// holds 162 pure blacks. `TieBreak` picks it for the `.ruled` exact-match scan and `.exactNearest`'s equal
-/// distances; `.lowest` is the default. The inverse table's own cells keep lowest (`InverseTable`).
+/// distances, and the inverse table's cell ties (`InverseTable`); `.lowest` is the default.
 public final class ColorSearch: @unchecked Sendable {
 
     public enum Model: Hashable, Sendable {
@@ -104,9 +104,9 @@ public final class ColorSearch: @unchecked Sendable {
             case .exactNearest:
                 table = nil
             case .inverseTable(let bits):
-                table = InverseTable(channels: channels, bits: bits)
+                table = InverseTable(channels: channels, bits: bits, tieBreak: tieBreak)
             case .ruled:
-                table = InverseTable(channels: channels, bits: 4)
+                table = InverseTable(channels: channels, bits: 4, tieBreak: tieBreak)
             }
             guard case .ruled = model, let t = table else {
                 bucketStart = []; bucketEntries = []; packed = []

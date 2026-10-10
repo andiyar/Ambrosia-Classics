@@ -186,8 +186,8 @@ final class FrameGoldenTests: XCTestCase {
         try r.apply(ops)
         assertLightsHandled(r, h: 0, v: 0)
         dump(r, "level1-frame1-highest")
-        // Measured 2026-10-10 (A1): as the default frame 1 but `.highest`.
-        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "9b512587ae1dd08b")
+        // Measured 2026-10-10 (A1 fix round): as the default frame 1 but `.highest`, inverse-table cell ties included.
+        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "b80b0efd384ffdb9")
     }
 
     func testPanFrameGoldens() throws {
