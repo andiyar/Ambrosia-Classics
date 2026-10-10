@@ -797,7 +797,11 @@ Effects 1/2/3. Tie-break **highest** HIGH; the dither is **error-diffused** HIGH
 LOW); the video runs **Effects 1/2** HIGH. The model only matters inside the lighting tables: `.exactNearest` beats `.ruled` in 7/7 frames
 (fitted ΔE 1.21 vs 2.19), and `.inverseTable(5)` ties with exact. **Ben ruled the app default `.exactNearest`** (FerazelController; the
 Core default and goldens are unchanged). The "darker" look is display gamma: the HUD art, which is model-invariant, is γ ≈ 0.76 brighter
-in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** (its own task, unbuilt). The 02:12 table glow is
+in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** — built 2026-10-10: `UserDefaults`
+`MacGamma` (`defaults write com.ambrosiaclassics.ferazel MacGamma -bool true`, or launch arg `-MacGamma YES`), read once at
+launch; when on, `FerazelController.present()` maps each 8-bit channel of the 256-entry screen palette through a LUT
+v' = round(255·(v/255)^(1.8/2.2)) (γ ≈ 0.818; the LP measured ≈ 0.76, range 0.71–0.90 — 1.8/2.2 kept unless Ben says
+otherwise). Presentation only: FerazelCore, the goldens and the 102 tests are untouched; off is byte-identical to before. The 02:12 table glow is
 light 24 (the potion item 0xc84, light PICT 810, not gated by Effects). On the wall tiles it matches the video, but our sprite light pass
 over-lights the table by about L* 17. Open [MED]: re-read `.WrapLightFace` for that case.
 **As built (A2, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (stage-btx shape:
@@ -982,4 +986,16 @@ passed.** Q1 (design §11.1, INDEX #42): "i'm playing on osx. let's try 60" → 
 TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic 60.15 Hz default D29.5 proceeded on.
 `TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
 widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
+**Approved by:** Ben.
+
+## D32 — Ferazel's Wand Phase 1 gate PASSED (2026-10-10)
+
+**Decided (Ben, in chat, after looking at the staged Phase 1 build `~/Desktop/Ferazel's Wand.app`, build 51ed68b = main
+ee5af2a):** "it looks good" — **the Phase 1 gate ("does it look like Ferazel", D26 / design §8) passed.** He asked "no
+animations yet?" first and was told that by design only Ferazel's breathe/walk-in-place stub and the camera move; every
+placed sprite stays in its Setup face until the sprite Handles run (Phases 2, 4, 5). He did not ask for scenery animation
+in Phase 1. The gate card's LOW/MED items raised no objection and stay labelled as they are in the bank. Defaults as staged:
+colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurement). **Icon: Ben picked the Default render** ("default icon is fine") — `Ferazel/App/AppIcon.icon` stays as A1
+built it. **Still open:** the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
+[MED]; the level-start music fade-in [LOW]. (D31 is taken on the unmerged `deimos-phase2` branch, so this is D32.)
 **Approved by:** Ben.

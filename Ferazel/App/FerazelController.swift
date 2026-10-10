@@ -18,6 +18,16 @@ import HectorShell
     /// edges, no yellow specks). `-ColorTieBreak lowest` on the command line sets it for one launch. Core's
     /// `ColorSearch` default stays `.lowest`, so its goldens are untouched.
     static let tieBreakKey = "ColorTieBreak"
+    /// The hidden defaults key for Ben's Mac display-gamma toggle (D26, 2026-10-10), off by default: when true, each
+    /// frame is presented as the classic Mac (gamma 1.8) showed it on a modern 2.2 display. `-MacGamma YES` on the
+    /// command line sets it for one launch. Presentation only — FerazelCore and its goldens never see it.
+    static let macGammaKey = "MacGamma"
+    /// The Let's Play measured ≈ 0.76 (colour-measurement-2026-10-10 Q2); the toggle uses the display ratio 1.8/2.2.
+    static let macGammaExponent = 1.8 / 2.2
+    /// v' = 255·(v/255)^(1.8/2.2), rounded, per 8-bit channel; applied to the 256-entry palette, not per pixel.
+    static let macGammaLUT: [UInt8] = (0...255).map { v in
+        UInt8((255 * pow(Double(v) / 255, macGammaExponent)).rounded())
+    }
 
     private var session: FerazelSession!
     private var renderer: FrameRenderer!
@@ -26,6 +36,8 @@ import HectorShell
     private var timer: ShellIdleTimer!
     private let prefs = FerazelPrefs()
     private let bitmap = ShellBitmap(width: FerazelController.width, height: FerazelController.height)
+    /// `MacGamma`, read once at launch.
+    private let macGamma = FerazelController.macGamma()
 
     /// `TickCount()` at the start of the step the next wait is measured from (`.GameLoop`'s `start`); nil before the
     /// first step.
@@ -90,6 +102,10 @@ import HectorShell
 
     static func tieBreak(_ defaults: UserDefaults = .standard) -> ColorSearch.TieBreak {
         defaults.string(forKey: tieBreakKey) == "lowest" ? .lowest : .highest
+    }
+
+    static func macGamma(_ defaults: UserDefaults = .standard) -> Bool {
+        defaults.bool(forKey: macGammaKey)
     }
 
     /// A title bar, collapsible, no close box (⌘Q quits) and not resizable (whole-number scale) — the Deimos window.
@@ -196,10 +212,14 @@ import HectorShell
     }
 
     /// The renderer's 8-bit screen through the current screen CLUT, written straight into the window bitmap (the
-    /// `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word array per frame).
+    /// `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word array per frame). With `MacGamma` on,
+    /// each palette channel goes through `macGammaLUT` first.
     private func present() {
+        let lut = macGamma ? Self.macGammaLUT : nil
         let table = renderer.screenClut.entries.map { e -> UInt32 in
-            0xff00_0000 | UInt32(e.red >> 8) << 16 | UInt32(e.green >> 8) << 8 | UInt32(e.blue >> 8)
+            var (r, g, b) = (Int(e.red >> 8), Int(e.green >> 8), Int(e.blue >> 8))
+            if let lut { (r, g, b) = (Int(lut[r]), Int(lut[g]), Int(lut[b])) }
+            return 0xff00_0000 | UInt32(r) << 16 | UInt32(g) << 8 | UInt32(b)
         }
         let out = bitmap.pixels
         renderer.screen.pixels.withUnsafeBufferPointer { src in

@@ -16,6 +16,7 @@
 !/ghidra/btx/
 !/ghidra/deimos/
 /out/
+/releases/
 .build/
 .swiftpm/
 *.xcodeproj
