@@ -36,6 +36,14 @@ handlers only in the next frame.
   **before** `.MTInsertSprite` (`1003322c`); the `+0x80` argument is stored first (`10033200`) but the
   Setup proc may overwrite it, and the inserted position uses the Setup's value.
 - `.MTChangeSpriteLayer` = remove + insert (moves the sprite to the tail of its new layer group).
+  ⚑ planner-probe (Phase 2 plan B3, landed by F2 2026-10-10; raw from the main disasm): it is guarded —
+  `100332a0 lwz r3,0x80(r3); 100332a4 cmpw r3,r0; 100332a8 beq 0x100332c0` — so a call with the **same** layer is a
+  no-op (the sprite keeps its place; no move to the group's tail); only a different layer stores `+0x80` and runs
+  `.MTRemoveSprite` + `.MTInsertSprite` (`100332b4`, `100332bc`). With the `next`-before-Handle walk below, a sprite
+  that moves itself during `.MTHandleSprites` to a layer placing it after the walk's saved `next` is reached again
+  and **handled twice that frame** (e.g. the mode-12 pendulum's layer flip 0x7ef4 in front / −300 behind, triggers-background §2.5, W2a); moved earlier, it is not
+  re-handled. `.MTRemoveSprite`/`.MTKillSprite` leave the unlinked record's own `+0x68`, so a walk whose saved `next`
+  was unlinked continues from that record's old `next` [HIGH for the guard; F2 `SpriteWorldTests`].
   Direct `+0x80` stores do **not** move a sprite (e.g. `.HandleStatueSprite` `+0x80 = 2` at `10066518`,
   `.HandleHeldItemSprite` `0x14` every frame at `1004beb0`, `.DoSetupPlatformSprite` `100632d8`/`10063400`).
 - `.MTHandleSprites` (raw `100325b8..100325d8`) loads `next` **before** calling the handler `+0x4c`

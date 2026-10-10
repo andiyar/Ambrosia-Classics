@@ -13,32 +13,57 @@ public struct ActiveList: Equatable, Sendable {
     /// Head first.
     public private(set) var sprites: [SpriteSlot] = []
     private var nextID = 1
+    /// The `+0x68` an unlinked record keeps: `.MTRemoveSprite` / `.MTKillSprite` relink the neighbours but leave the
+    /// record's own `next` (raw `10032ff8..1003305c`), so a walk that saved it continues from there.
+    private var unlinkedNext: [Int: Int] = [:]
 
     public init() {}
 
-    /// `.MTInsertSprite`; returns the sprite's id.
+    /// `.MTNewSprite`'s `.MTInsertSprite`: a new id, then the insert rule. Returns the sprite's id.
     @discardableResult
     public mutating func insert(_ sprite: SpriteSlot) -> Int {
         var s = sprite
         s.id = nextID
         nextID += 1
+        place(s)
+        return s.id
+    }
+
+    /// `.MTInsertSprite @ 10032f1c`.
+    private mutating func place(_ s: SpriteSlot) {
+        unlinkedNext[s.id] = nil
         if sprites.isEmpty || s.layer < sprites[0].layer {
             sprites.insert(s, at: 0)
-            return s.id
+            return
         }
         if let k = sprites.indices.dropFirst().first(where: { s.layer < sprites[$0].layer }) {
             sprites.insert(s, at: k)
         } else {
             sprites.append(s)
         }
-        return s.id
     }
 
     /// `.MTRemoveSprite @ 10032ff8` (unlink; the record itself is the caller's).
     @discardableResult
     public mutating func remove(id: Int) -> SpriteSlot? {
         guard let k = sprites.firstIndex(where: { $0.id == id }) else { return nil }
+        unlinkedNext[id] = k + 1 < sprites.count ? sprites[k + 1].id : nil
         return sprites.remove(at: k)
+    }
+
+    /// `.MTRemoveSprite` then `.MTInsertSprite` of a live sprite (`.MTChangeSpriteLayer`): it goes to the tail of its
+    /// (new) layer group; id and record kept.
+    public mutating func relink(id: Int) {
+        guard let s = remove(id: id) else { return }
+        place(s)
+    }
+
+    /// The record's `+0x68`: the sprite after `id` in the list, or — for an unlinked record — the `next` it kept.
+    public func next(after id: Int) -> Int? {
+        if let k = sprites.firstIndex(where: { $0.id == id }) {
+            return k + 1 < sprites.count ? sprites[k + 1].id : nil
+        }
+        return unlinkedNext[id]
     }
 
     public func sprite(id: Int) -> SpriteSlot? { sprites.first { $0.id == id } }

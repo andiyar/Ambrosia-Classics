@@ -25,15 +25,21 @@ import HectorResources
 /// twinkle from `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — and the ◇ player pose and ◇ focus
 /// driver standing in for the player Handle), `.WrapEraseSprites` (l. 9452–9456); after it
 /// `.UpdateStatusBar(1, 0, 0)`.
+///
+/// F2: the sprites live in a `SpriteWorld`. `.HandleSprites` is its three passes (Invariant 3): `handleSprites`
+/// walks the active list (each sprite's Handle at its list position: the player slot runs the ◇ pose and ◇ focus
+/// driver, an inert Bonus item its `BonusHandle` twinkle), then `collideSprites`, then `collideSpecial`.
 public final class FerazelSession {
     public let resources: FerazelResources
     public let prefs: FerazelPrefs
-    public let level: LevelFile
-    public private(set) var globals: GameGlobals
+    /// The sprite physics world: active list, idle table, `FastRand` stream, game globals, level.
+    public let world: SpriteWorld
+    public var level: LevelFile { world.level }
+    public var globals: GameGlobals { world.globals }
     /// The active sprite list (the player included).
-    public private(set) var active: ActiveList
+    public var active: ActiveList { world.active }
     /// The idle-sprite table.
-    public private(set) var idle: IdleSprites
+    public var idle: IdleSprites { world.idle }
     /// The lights the Setups added, in `.AddLight` (= `.SetupLevel`) order — the light slots 0… a renderer fills.
     public let lights: [SetupFaces.Light]
     /// The player's `ActiveList` id.
@@ -41,10 +47,8 @@ public final class FerazelSession {
     public private(set) var pose: PlayerPose
     public private(set) var camera: Camera
     public private(set) var focusDriver: CameraFocusDriver
-    /// The session's `FastRand` stream (plan Invariant 4): the Setups' draws are taken at level start.
-    private var rng: FastRand
-    /// The stream's current state (`_DAT_100a17e8`).
-    public var rngSeed: Int32 { rng.seed }
+    /// The stream's current state (`_DAT_100a17e8`; the stream is `world.rng`, plan Invariant 4).
+    public var rngSeed: Int32 { world.rng.seed }
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
     /// Iterations run.
@@ -61,8 +65,8 @@ public final class FerazelSession {
         self.resources = resources
         self.prefs = prefs
         let L = try LevelFile.load(from: resources, level: Int16(level))
-        self.level = L
-        globals = GameGlobals(header: L.header)
+        let world = SpriteWorld(level: L, seed: seed)
+        self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
         let p = PlayerPose(header: L.header)
@@ -71,8 +75,7 @@ public final class FerazelSession {
                                         height: Int(L.header.gridHeight) * 0x20)
         camera = try Camera(header: L.header, spriteX: p.x, spriteY: p.y)
         let context = SetupFaces.Context(level: L, playerX: focusDriver.pointX, effects: prefs.effects)
-        var rng = FastRand(seed: seed)
-        var spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &rng) { e in
+        var spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
             switch e.source {
@@ -82,11 +85,15 @@ public final class FerazelSession {
             case .setup: return e.slot.face.map(bounds) ?? .noFace
             }
         }
-        self.rng = rng
         lights = spawned.lights
-        playerID = spawned.active.insert(p.slot)
-        active = spawned.active
-        idle = spawned.idle
+        // The player `MTNewSprite(0, x, y, 10, …)` with `.SetupPlayerSprite`'s Handle and hot rect `+0x34`.
+        var player = p.slot
+        player.handler = .player
+        player.hotRect = PlayerPose.hotRectLocal
+        playerID = spawned.active.insert(player)
+        world.active = spawned.active
+        world.idle = spawned.idle
+        world.playerID = playerID
     }
 
     /// One `.GameLoop` iteration (the first call also carries the level start).
@@ -114,28 +121,42 @@ public final class FerazelSession {
         let h = camera.scrollH, v = camera.scrollV
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
-        ops.draws.append(.wrapDrawSprites(active.wrapDrawSprites()))
+        ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites()))
         if draw {
             ops.draws.append(.copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: prefs.plainCopy == 0))
         }
-        // `.HandleIdleSprites`, then `.HandleSprites`: the player Handle (pose, then `.PlayerScroll`'s focus).
+        // `.HandleIdleSprites`.
         let bounds = faceBounds
-        idle.handle(h: h, v: v, playerHotRect: pose.hotRect, active: &active, faceRect: bounds)
-        // The Bonus Handles' item-light twinkle (`BonusHandle`), active-list order.
-        for id in active.sprites.map(\.id) {
-            active.update(id: id) { s in
-                if let op = BonusHandle.twinkle(&s, effects: prefs.effects) { ops.draws.append(op) }
+        world.idle.handle(h: h, v: v, playerHotRect: pose.hotRect, active: &world.active, faceRect: bounds)
+        // `.HandleSprites`: `.MTHandleSprites` — each sprite's Handle at its list position.
+        let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
+        let effects = prefs.effects
+        world.handleSprites { world, id in
+            guard let handler = world.active.sprite(id: id)?.handler else { return }
+            switch handler {
+            case .player:
+                // ◇ the player Handle: the pose, then `.PlayerScroll`'s focus (replaced by P1a … P5).
+                self.pose.step(left: held.left, right: held.right, run: held.run)
+                let p = self.pose
+                world.active.update(id: id) { s in
+                    s.face = p.face
+                    s.mirrored = p.mirrored
+                }
+                self.focusDriver.step(held)
+            case .inert:
+                // The Bonus item-light twinkle (`BonusHandle`, inside `.HandleBonusSprite`); no other inert Handle.
+                world.active.update(id: id) { s in
+                    if let op = BonusHandle.twinkle(&s, effects: effects) { ops.draws.append(op) }
+                }
+            case .platform, .chain, .background, .box, .effect, .rope, .ropeSegment:
+                break   // later: W1 (platform, chain), W2a/W2b (background), W3 (box, rope, ropeSegment), E1a (effect)
             }
         }
-        let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
-        pose.step(left: held.left, right: held.right, run: held.run)
-        let p = pose
-        active.update(id: playerID) { s in
-            s.face = p.face
-            s.mirrored = p.mirrored
-        }
-        focusDriver.step(held)
-        ops.draws.append(.wrapEraseSprites(sprites: active.sprites, h: h, v: v))
+        // `.MTCollideSprites`, then the player pass. No Phase-2 hit callback or `.HitPlayerSprite` arm exists yet.
+        world.collideSprites { _, _, _ in }       // later: W1–W3 hit callbacks
+        world.collideSpecial(hitPlayer: { _, _, _ in }, hit: { _, _, _ in })   // later: P2 `.HitPlayerSprite`
+        // later: E1a `.HandleParticles`
+        ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: h, v: v))
         ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
         ops.drawn = draw
         odd.toggle()

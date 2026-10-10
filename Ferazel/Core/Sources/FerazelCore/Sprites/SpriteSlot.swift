@@ -19,6 +19,36 @@ public struct SpriteSlot: Equatable, Sendable {
         }
     }
 
+    /// The occluder rect `+0x1be` xmin / `+0x1c0` xmax / `+0x1c2` ymax / `+0x1c4` ymin in world px (`.InitSprite`
+    /// 32000 each; physics §0.1, adjudication A11), consumed by `.StandardSpriteCleanup`'s horizontal clip.
+    public struct Occluder: Equatable, Sendable {
+        public var left: Int16
+        public var right: Int16
+        public var bottom: Int16
+        public var top: Int16
+
+        public init(left: Int16 = 32000, right: Int16 = 32000, bottom: Int16 = 32000, top: Int16 = 32000) {
+            self.left = left; self.right = right; self.bottom = bottom; self.top = top
+        }
+    }
+
+    /// A point (`+0x10` x / `+0xe` y for the hot-rect centre).
+    public struct Point: Equatable, Sendable {
+        public var x: Int
+        public var y: Int
+
+        public init(x: Int = 0, y: Int = 0) { self.x = x; self.y = y }
+    }
+
+    /// The linked sprites `+0x1d4` / `+0x1d8` (`ActiveList` ids; nil = 0). `.StandardSpriteHandles` carries both with
+    /// a ridden sprite's dx.
+    public struct Siblings: Equatable, Sendable {
+        public var first: Int?
+        public var second: Int?
+
+        public init(first: Int? = nil, second: Int? = nil) { self.first = first; self.second = second }
+    }
+
     /// Identity in the `ActiveList` (the original's record pointer); assigned by `ActiveList.insert`.
     public internal(set) var id: Int = 0
     /// `+0x04`.
@@ -70,6 +100,109 @@ public struct SpriteSlot: Equatable, Sendable {
     public var waterRow: Int32 = 0
     /// `+0xe9` kill request.
     public var dead = false
+
+    // MARK: The physics record (plan S2, F2). Defaults are `.MTNewSprite`'s `MemoryClear` + `.InitSprite`.
+
+    /// `+0x4c` the Handle (`.MTHandleSprites` calls it) — every class Setup installs one (plan S2 `SpriteHandler`).
+    public var handler: SpriteHandler
+    /// `+0x5c` ≠ 0: the sprite has a hit callback (`.MTCollideSprites` outer gate, `C.hit` in the player pass). No
+    /// Phase-2 Setup before W1 sets it. // later: W1 platform, W2a/W2b background, W3 box/rope
+    public var hasHit = false
+    /// `+0x14` / `+0x1c`: x / y in 24.8 fixed point (`.MTNewSprite`: `x << 8`, `y << 8`).
+    public var x256: Int32
+    public var y256: Int32
+    /// `+0x24` / `+0x2c`: vx / vy in 1/256 px per frame.
+    public var vx: Int32 = 0
+    public var vy: Int32 = 0
+    /// `+0x110` (i16): gravity per frame.
+    public var gravity: Int16 = 0
+    /// `+0x34` (QuickDraw top, left, bottom, right in face-local px): the hot rect.
+    public var hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+    /// `+0x3c..+0x42`: the hot rect offset by (x, y), built by `.CalcHotRect @ 10032614` during `.MTCollideSprites`.
+    public var hotRectWorld = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+    /// `+0x44`: `+0x3c` built this collision pass (cleared for every sprite at the pass start).
+    public var hotRectBuilt = false
+    /// `+0x10` / `+0xe`: the hot-rect centre in world px (`.CalcCenterPos`, `.StandardSpriteCleanup`).
+    public var centre = Point()
+    /// `+0xcd` (u8): `.StandardSpriteHandles` copies `+0xce` into it; `.PlatformBounce` sets 1 on a landing.
+    public var onSprite: UInt8 = 0
+    /// `+0xce` (u8): the ground / surface kind under the sprite this frame (0 airborne, 3 = a sprite).
+    public var groundKind: UInt8 = 0
+    /// `+0xcf` (u8): ceiling hit (`.PlatformBounce` return 2).
+    public var ceilingHit = false
+    /// `+0xd0` (u8): landed on a one-way top.
+    public var oneWayLanded = false
+    /// `+0xd2` / `+0xd4` (i16): the left / right surface heights of a sloped top (`.InitSprite` −1000 each = flat).
+    public var surfaceLeft: Int16 = -1000
+    public var surfaceRight: Int16 = -1000
+    /// `+0xd6` (i16): the slope of the top the sprite stands on (`.RectBounce`, `.PlatformBounce`; cleared by
+    /// `.StandardSpriteCleanup`).
+    public var slope: Int16 = 0
+    /// `+0xd8` (i16): surface material (FG kind / 100), zeroed by `.StandardSpriteHandles`.
+    public var material: Int16 = 0
+    /// `+0xdc`: the sprite being ridden (an `ActiveList` id; nil = 0).
+    public var ridden: Int?
+    /// `+0xe0`: the rider (an `ActiveList` id; nil = 0).
+    public var rider: Int?
+    /// `+0x186` (u8): ridden this frame (`.PlatformBounce`, `.RopeCollide`; cleared by the owner's Handle).
+    public var ridingLatch = false
+    /// `+0x185` (u8): one-way top.
+    public var oneWay = false
+    /// `+0x138` (i16): push mass; `+0x13a` (i16): landing sag; `+0x13c` (i16): pusher factor (`.RectBounce`).
+    public var pushMass: Int16 = 0
+    public var sag: Int16 = 0
+    public var pushForce: Int16 = 0
+    /// `+0x120` (i32): last frame's water contact (`+0x11c` copied by `.StandardSpriteHandles`).
+    public var lastWater: Int32 = 0
+    /// `+0x128` (i16): water kind (BG kind − 200).
+    public var waterKind: Int16 = 0
+    /// `+0x118` (i16): the water-reset gate (`< 0x1d` → `.StandardSpriteHandles` runs the current and the
+    /// `+0x11c` reset). Every writer stores 0 (enemies-water-cave §0.1).
+    public var waterGate: Int16 = 0
+    /// `+0x8a` (u8): the water current applies (`.InitSprite` 1; the player clears it while clinging).
+    public var currentApplies = true
+    /// `+0x94` (i16): the water-current ramp counter (0 … 33).
+    public var currentRamp: Int16 = 0
+    /// `+0x90` (i16): wind scale /256 (≤ 0 immune). `+0x92` (u8): in wind this frame. `+0x96` / `+0x98` (i16): the
+    /// wind ramp counter / last impulse x.
+    public var windScale: Int16 = 0
+    public var inWind = false
+    public var windRamp: Int16 = 0
+    public var windLast: Int16 = 0
+    /// `+0x140` (u8): water handled this frame.
+    public var underwaterDone = false
+    /// `+0x144` (i32): quicksand depth (`.HandleFlotation` kind 5); zeroed on leaving the water.
+    public var quicksandDepth: Int32 = 0
+    /// `+0x116` (i16): invulnerability frames.
+    public var invulnerable: Int16 = 0
+    /// `+0xaa` (i16): hurt-flash frames.
+    public var flash: Int16 = 0
+    /// `+0x1b4` (u8): the hurt flash uses mode 4 instead of 3.
+    public var flashTable: UInt8 = 0
+    /// `+0xa4` (i16): hit points.
+    public var hp: Int16 = 0
+    /// `+0x19e` / `+0x1a0` (i16): buoyancy / float-line offset (`.HandleFlotation`).
+    public var buoyancy: Int16 = 0
+    public var floatOffset: Int16 = 0
+    /// `+0x130` (i32): cannon hold timer; negative = re-entry block, counted up by `.StandardSpriteHandles`.
+    public var reentry: Int32 = 0
+    /// `+0x180` (u8): radial wall-bounce latch, cleared every frame by `.StandardSpriteHandles`.
+    public var radialLatch = false
+    /// `+0x184` (u8): no collision with sprites of the same handler (`.MTCollideSprites`).
+    public var sameHandlerExempt = false
+    /// `+0x1b2` (u8): Handle skip — never the outer sprite of `.MTCollideSprites`.
+    public var handleSkip = false
+    /// `+0x1a2` (i16): burn-away row (≠ 0 → `.HandleBurn` from `.StandardSpriteCleanup`).
+    public var burnRow: Int16 = 0
+    /// `+0x1a6` / `+0x1a8` (i16): glow particle kind / glow chance (`.ParticleGlow` from `.StandardSpriteCleanup`).
+    public var glowKind: Int16 = 0
+    public var glowChance: Int16 = 0
+    /// `+0x1be..+0x1c4`.
+    public var occluder = Occluder()
+    /// `+0x1d4` / `+0x1d8`.
+    public var siblings = Siblings()
+    // later: W1 — `radial: Radial?` (the `+0x198` block, `+0x187` has-radial); `Radial` is W1's type (plan S2).
+    // later: W3 — `+0x1e8` the surface-height function (ropes, rope bridge); `.PlatformBounce` takes it as an argument.
     /// `+0x1b3` burning (read by `.WrapEraseSprites`).
     public var burning = false
     /// Last frame's copies `.WrapDrawSprites` writes after each sprite (`+0xc8` face, `+0xc6`/`+0xc4` x/y, `+0x17f`,
@@ -86,6 +219,9 @@ public struct SpriteSlot: Equatable, Sendable {
         self.recordIndex = recordIndex
         self.layer = layer
         self.face = face
+        x256 = Int32(truncatingIfNeeded: x) << 8
+        y256 = Int32(truncatingIfNeeded: y) << 8
+        handler = SpriteHandler.forClass(type: type)
     }
 
     /// `.WrapDrawSprites` step 4's `+0x89` arm (raw `1001472c..100147bc`): with dynamic light and a face,
@@ -121,5 +257,25 @@ public struct SpriteSlot: Equatable, Sendable {
         guard !dead, let face else { return nil }
         return SpriteDraw(face: face, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip, lightOverlay: lightOverlay,
                           waterRow: Int(waterRow))
+    }
+}
+
+/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 4/5 classes (Bonus, enemies, buttons):
+/// no Phase-2 Handle and no hit callback; still drawn, idled and erased. (The Bonus item-light twinkle Phase 1
+/// built, `BonusHandle`, is the one piece of an inert Handle that runs — at the sprite's place in the handle pass.)
+public enum SpriteHandler: Equatable, Hashable, Sendable {
+    case player, platform, chain, background, box, effect, rope, ropeSegment, inert
+
+    /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
+    /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.
+    public static func forClass(type: Int16) -> SpriteHandler {
+        switch SpriteClassTable.classify(type: type, p1Negative: false)?.0 {
+        case .platform: return .platform
+        case .box: return .box
+        case .background: return .background
+        case .effect: return .effect
+        case .rope: return .rope
+        default: return .inert
+        }
     }
 }
