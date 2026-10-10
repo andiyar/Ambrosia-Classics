@@ -797,7 +797,11 @@ Effects 1/2/3. Tie-break **highest** HIGH; the dither is **error-diffused** HIGH
 LOW); the video runs **Effects 1/2** HIGH. The model only matters inside the lighting tables: `.exactNearest` beats `.ruled` in 7/7 frames
 (fitted ΔE 1.21 vs 2.19), and `.inverseTable(5)` ties with exact. **Ben ruled the app default `.exactNearest`** (FerazelController; the
 Core default and goldens are unchanged). The "darker" look is display gamma: the HUD art, which is model-invariant, is γ ≈ 0.76 brighter
-in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** (its own task, unbuilt). The 02:12 table glow is
+in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** — built 2026-10-10: `UserDefaults`
+`MacGamma` (`defaults write com.ambrosiaclassics.ferazel MacGamma -bool true`, or launch arg `-MacGamma YES`), read once at
+launch; when on, `FerazelController.present()` maps each 8-bit channel of the 256-entry screen palette through a LUT
+v' = round(255·(v/255)^(1.8/2.2)) (γ ≈ 0.818; the LP measured ≈ 0.76, range 0.71–0.90 — 1.8/2.2 kept unless Ben says
+otherwise). Presentation only: FerazelCore, the goldens and the 102 tests are untouched; off is byte-identical to before. The 02:12 table glow is
 light 24 (the potion item 0xc84, light PICT 810, not gated by Effects). On the wall tiles it matches the video, but our sprite light pass
 over-lights the table by about L* 17. Open [MED]: re-read `.WrapLightFace` for that case.
 **As built (A2, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (stage-btx shape:
