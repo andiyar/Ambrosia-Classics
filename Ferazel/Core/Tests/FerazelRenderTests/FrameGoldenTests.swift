@@ -31,18 +31,33 @@ final class FrameGoldenTests: XCTestCase {
     }
 
     /// `.HandleLights` ran over every Setup light: not new, the previous fields = the current ones, so the next
-    /// `.DrawLightsOntoTiles` finds no changed cell.
-    private func assertLightsHandled(_ r: FrameRenderer, h: Int, v: Int, line: UInt = #line) {
-        let active = r.lights.slots.filter(\.active)
+    /// `.DrawLightsOntoTiles` finds no changed cell — except the slots in `reFaced`, which a Handle re-faced after the
+    /// draw (`.HandleBonusSprite`'s twinkle, `.ChangeLightFace`): their drawn face is `drawn`, the current one `now`
+    /// (radius unchanged, 72×72 faces), and exactly the op cells listing one of them are flagged changed.
+    private func assertLightsHandled(_ r: FrameRenderer, h: Int, v: Int, reFaced: [Int: (drawn: Int16, now: Int16)] = [:],
+                                     line: UInt = #line) {
+        let active = r.lights.slots.enumerated().filter { $0.element.active }
         XCTAssertEqual(active.count, 68, line: line)
-        for l in active {
+        for (i, l) in active {
             XCTAssertFalse(l.isNew, line: line)
-            XCTAssertEqual(l.previousFace, l.face, line: line)
+            if let f = reFaced[i] {
+                XCTAssertEqual(l.previousFace?.pict, f.drawn, "slot \(i)", line: line)
+                XCTAssertEqual(l.face?.pict, f.now, "slot \(i)", line: line)
+            } else {
+                XCTAssertEqual(l.previousFace, l.face, "slot \(i)", line: line)
+            }
             XCTAssertEqual([l.previousX, l.previousY, l.previousRadius, l.previousColour],
                            [l.x, l.y, l.radius, l.colour], line: line)
         }
-        XCTAssertFalse(r.lights.calcLightOps(h: h, v: v).contains(where: \.changed), line: line)
+        for op in r.lights.calcLightOps(h: h, v: v) {
+            XCTAssertEqual(op.changed, !Set(op.lights).isDisjoint(with: reFaced.keys), "cell \(op.col),\(op.row)",
+                           line: line)
+        }
     }
+
+    /// Light 24 (the potion 0xc84) after step 1 under seed 1: the Setup's `+0x46 = FastRand(0x10)` = 6, the twinkle
+    /// makes it 7 → k = (7 >> 2) mod 6 = 1 → 0x32b, after the draw that used the Setup face 0x32a.
+    private static let potionStep1: [Int: (drawn: Int16, now: Int16)] = [24: (0x32a, 0x32b)]
 
     private func fnv1a(_ bytes: [UInt8]) -> UInt64 {
         var h: UInt64 = 0xcbf2_9ce4_8422_2325
@@ -168,7 +183,7 @@ final class FrameGoldenTests: XCTestCase {
         let ops = s.step(keys: KeyState())
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])    // R5: level 1 opens at (0, 0) and pans in
         try r.apply(ops)
-        assertLightsHandled(r, h: 0, v: 0)
+        assertLightsHandled(r, h: 0, v: 0, reFaced: Self.potionStep1)
         dump(r, "level1-frame1")
         // Measured 2026-10-10 (R6): the level start + iteration 1 at scroll (0, 0), `.ruled`, error diffusion, the 68
         // Setup lights at Effects 1, the box rasterizer. The player is not drawn yet (his face is set by the Handle,
@@ -184,7 +199,7 @@ final class FrameGoldenTests: XCTestCase {
         let ops = s.step(keys: KeyState())
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
         try r.apply(ops)
-        assertLightsHandled(r, h: 0, v: 0)
+        assertLightsHandled(r, h: 0, v: 0, reFaced: Self.potionStep1)
         dump(r, "level1-frame1-highest")
         // Measured 2026-10-10 (A1 fix round): as the default frame 1 but `.highest`, inverse-table cell ties included.
         XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "b80b0efd384ffdb9")
@@ -195,7 +210,7 @@ final class FrameGoldenTests: XCTestCase {
         let r = try renderer()
         let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
-        assertLightsHandled(r, h: 0, v: 0)
+        assertLightsHandled(r, h: 0, v: 0, reFaced: Self.potionStep1)
         let right = KeyState(pressed: [CameraFocusDriver.arrowRight])
         var chain: [UInt64] = []
         var scrolls: [[Int]] = []
@@ -209,12 +224,14 @@ final class FrameGoldenTests: XCTestCase {
         // Measured 2026-10-10 (R6): frames 30 and 60 of the hold (iterations 31 and 61), and the FNV-1a of the 60
         // frame hashes (little-endian bytes). The pan-in has v settled at 10; h starts to move once the eased pair
         // passes 0. Re-measured 2026-10-10 with the potion light's twinkle (`BonusHandle`; was f6296c7e706130f3 /
-        // e7a951e3eafca30a / 3c5aee2b87819db6, light 24 held on 0x32a); frame 1 is unchanged.
+        // e7a951e3eafca30a / 3c5aee2b87819db6, light 24 held on 0x32a); frame 1 is unchanged. Re-measured 2026-10-10
+        // (F1) with the twinkle's start phase from the Setup's `FastRand(0x10)` = 6 under seed 1 (was 686024aba05c6660
+        // / 18c4e45ebeee8e88 / 51d5f367bd111589 with phase 0); frame 1's hash is unchanged.
         XCTAssertEqual(scrolls[29], [4, 10])
         XCTAssertEqual(scrolls[59], [226, 10])
-        XCTAssertEqual(hex(chain[29]), "686024aba05c6660")
-        XCTAssertEqual(hex(chain[59]), "18c4e45ebeee8e88")
-        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "51d5f367bd111589")
+        XCTAssertEqual(hex(chain[29]), "e493fc8b09f84ed5")
+        XCTAssertEqual(hex(chain[59]), "3ec51d436e278776")
+        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "6e034d02ef78d7fb")
     }
 
     func testItemLightTwinkleDimsTheTable() throws {
@@ -222,7 +239,7 @@ final class FrameGoldenTests: XCTestCase {
         let r = try renderer()
         let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
-        XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32a)
+        XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32b)        // seed 1: phase 6 → 7, k = 1
         try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: 0x32c, width: 0x48, height: 0x48),
                                      .changeLightFace(slot: 200, pict: 0x32d, width: 0x48, height: 0x48)]))
         XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32c)
@@ -235,8 +252,9 @@ final class FrameGoldenTests: XCTestCase {
         func tableLuma(forcing pict: Int16?) throws -> Int {
             let r = try renderer()
             let s = try session(r)
-            for _ in 0..<13 { try r.apply(s.step(keys: KeyState())) }   // step 13 leaves 0x32d (13 >> 2 = 3)
-            XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32d)
+            // Seed 1: the Setup phase is 6, so step 13 leaves phase 19 → k = (19 >> 2) mod 6 = 4 → 0x32c.
+            for _ in 0..<13 { try r.apply(s.step(keys: KeyState())) }
+            XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32c)
             if let pict {
                 try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48)]))
             }

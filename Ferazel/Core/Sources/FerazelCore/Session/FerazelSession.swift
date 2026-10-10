@@ -41,6 +41,10 @@ public final class FerazelSession {
     public private(set) var pose: PlayerPose
     public private(set) var camera: Camera
     public private(set) var focusDriver: CameraFocusDriver
+    /// The session's `FastRand` stream (plan Invariant 4): the Setups' draws are taken at level start.
+    private var rng: FastRand
+    /// The stream's current state (`_DAT_100a17e8`).
+    public var rngSeed: Int32 { rng.seed }
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
     /// Iterations run.
@@ -48,10 +52,11 @@ public final class FerazelSession {
 
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
 
+    /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
     ///   `.HandleIdleSprites` tests. Core has no face pixels; without it each face's frame (sheet cell, or the PICT's
     ///   frame for a single face) is used — a superset of the opaque bounds [MED].
-    public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int,
+    public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) throws {
         self.resources = resources
         self.prefs = prefs
@@ -66,7 +71,8 @@ public final class FerazelSession {
                                         height: Int(L.header.gridHeight) * 0x20)
         camera = try Camera(header: L.header, spriteX: p.x, spriteY: p.y)
         let context = SetupFaces.Context(level: L, playerX: focusDriver.pointX, effects: prefs.effects)
-        var spawned = try SetupFaces.spawnLevelSprites(context: context) { e in
+        var rng = FastRand(seed: seed)
+        var spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
             switch e.source {
@@ -76,6 +82,7 @@ public final class FerazelSession {
             case .setup: return e.slot.face.map(bounds) ?? .noFace
             }
         }
+        self.rng = rng
         lights = spawned.lights
         playerID = spawned.active.insert(p.slot)
         active = spawned.active

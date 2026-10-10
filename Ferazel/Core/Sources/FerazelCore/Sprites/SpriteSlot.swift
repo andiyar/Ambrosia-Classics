@@ -47,6 +47,18 @@ public struct SpriteSlot: Equatable, Sendable {
     public var light: Int16 = -1
     /// `+0x46`: the Handle's animation counter.
     public var phase: Int16 = 0
+    /// The Setups' `FastRand` draws (F1; plan "F1 ⚑ FastRand sites"), kept though no Phase-2 routine reads them yet.
+    /// `+0x112` (i16): "slipperiness" / the `.WallBounce` kick (pickups-boxes field table).
+    public var slip: Int16 = 0
+    /// `+0x114` (i16): friction — a Bonus's vx decays by it per frame (pickups-boxes field table).
+    public var friction: Int16 = 0
+    /// `+0x14c` (i32): the class word — Bonus light-flicker timer (pickups-boxes §1.1), Walker decision distance
+    /// (enemies-ground §3.1).
+    public var classTimer: Int32 = 0
+    /// `+0x154` (i32): Walker `1000 + FastRand(400)` (enemies-ground §3.1: no reader in Walker code).
+    public var classWord154: Int32 = 0
+    /// `+0xf0` (i32): Walker (goblin) voice pitch `2·FastRand(0x5fff) + 0xbfff` (enemies-ground §3).
+    public var voicePitch: Int32 = 0
     /// `+0x1c8..+0x1ce`.
     public var margins = Margins()
     /// `+0x1b6` left / `+0x1b8` right / `+0x1ba` bottom / `+0x1bc` top.

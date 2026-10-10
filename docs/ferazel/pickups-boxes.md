@@ -45,6 +45,16 @@ integer one, `CalcCenterPos`, `+0xe4 = 1`. For 1055/1056, 1290..1293 and 1300/13
 attached only when prefs `+0x06 == 1` (1055/1056 also need the light count `_DAT_100a0124 < 150`);
 the other types always get one. `_DAT_1009fe44` is the 0x942-byte prefs copy (main dump l. 7196
 `BlockMoveData(*prefs, _DAT_1009fe44, 0x942)`; engine §8 row 0x06).
+⚑ planner-probe (Phase 2 plan C6, landed by F1 2026-10-10; raw from the main disasm): the Setups'
+`FastRand` draws and their fields, in Setup order — every Bonus arm ends at `LAB_1005e8bc` `1005e8c0` R(60) →
+`+0x14c` (i32); 1055/1056 (`1005db3c/4c/60`): R(19) → `+0x46`, R(6)+0x1c → `+0x112`, R(3)+2 → `+0x114`; 1290/1291
+(`1005de54/64`): R(10) → `+0x46`, R(6)+0x1c → `+0x112`; 1292/1293 (`1005df24`): −R(10)−5 → `+0x46`; 1300/1301
+(`1005dff4..18`): R(4), R(6)+0x1c, R(3)+2; 1302/1305/1306 (`1005e054..78`): R(9), R(6)+0x1c, R(3)+2; 1307 torch
+(`1005e110`) and 1350 (`1005e1bc`): R(10) → `+0x46`; 3100..3109 (`1005e4a4`), 2000..2099 (`1005e534`), spheres
+1330..1339 (`1005e5dc`), items 3200..3248 (`1005e724`): R(16) → `+0x46` (the items' twinkle phase); 1340/1341
+(`1005e6c0`): R(16) → `+0x15c`. Walker Setup (enemies-ground §3.1), unconditional: `1006740c` 2·R(0x5fff)+0xbfff →
+`+0xf0`, `10067760` R(70)+0x78 → `+0x14c`, `10067780` R(400)+1000 → `+0x154`. The R4 carry list (D32) named
+`1005df24` "torch": it is the money bag; the torch is `1005e110` (positive R(10)).
 
 `.HandleBonusSprite` (l. 7030–7666) returns at once if `+0xe9` (dying) or `+0x1b2`; runs
 `StandardSpriteHandles`; a negative `+0xa6` counts up by 1 per frame; type arm; then the tail

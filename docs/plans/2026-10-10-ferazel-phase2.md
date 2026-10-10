@@ -294,7 +294,7 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   does, in `.SetupLevelSprites` spawn order (R4's [MED] list, meanings digest C §3.2, completed by the precondition's
   enumeration): the type < 0x421 arm (on L1: the 43 coins 1055) `1005db3c/4c/60` R(19) → `+0x46`, R(6)+0x1c →
   `+0x112`, R(3)+2 → `+0x114`; every Bonus `1005e8c0` R(60) → `+0x14c`; the other `.SetupBonusSprite` arms per the
-  note; torch `1005df24` −R(10)−5; Walker `1006740c` R(0x5fff) → `+0xf0` per bank, `10067760` R(70)+0x78, `10067780`
+  note; torch `1005e110` R(10) → `+0x46` (⚑ F1: the draft had `1005df24` −R(10)−5, which is the money bag 0x50c); Walker `1006740c` R(0x5fff) → `+0xf0` per bank, `10067760` R(70)+0x78, `10067780`
   R(400)+1000. Fields not drawn by Phase 1 are added to `SpriteSlot` by name. Draws are consumed even where the field
   is unused until a later phase. `FerazelSession` exposes `rngSeed: Int32` (read).
 - **Tests (6):** `testParkMillerEquivalence` (200,000 steps from seed 1 = 16807·s mod 0x7fffffff; probe C
@@ -917,12 +917,30 @@ up-ease divides by focus − groundY (P5). C4 particles §1.1/§5.1 — hint = m
 row-vs-pixel gate (E1a; the gate E1b). C5 particles NR 4 closed (E1a). C6 R4's Setup FastRand meanings (F1). C7 physics-sprites §8.7 —
 landing stops voices 414 and 427 (P2).
 
-**F1 ⚑ FastRand sites of the level-1 Setups (written by F1 before coding; completed by the implementer).** Starting
-list (planner, leg-1 L3): `.SetupBonusSprite` (M l. 52338–52805) has 20 `bl 0x100340e0` sites — e.g. type 0x51b
-(1307) ×22 R(10) → `+0x46` at `1005e110`; `1005de54/64` R(10), R(6); `1005e054/64/78` R(9), R(6), R(3);
-`1005dff4..1005e018` R(4), R(6), R(3); light arms `1005e4a4/534/5dc/6c0` R(16); the type < 0x421 arm `1005db3c/4c/60`
-(on L1: the 43 coins 1055 — the draft called it "Xichron") R(19), R(6), R(3); Walker `1006740c` R(0x5fff) → `+0xf0` per
-bank. The implementer lists every site (arm, n, destination field) reached by a level-1 type, in spawn order.
+**F1 ⚑ FastRand sites of the level-1 Setups (complete; F1 implementer 2026-10-10, from the disasm `bl 0x100340e0`
+list + a call-graph closure).** Reached by the 42 level-1 types, per sprite, in Setup order (R(n) = `FastRand(n)`):
+- Bonus `.SetupBonusSprite`, every arm then the tail `LAB_1005e8bc` `1005e8c0` R(60) → `+0x14c` (i32):
+  1055 ×43 `1005db3c` R(19) → `+0x46`, `1005db4c` R(6)+0x1c → `+0x112`, `1005db60` R(3)+2 → `+0x114`, tail (4 each);
+  1307 torch ×22 **`1005e110`** R(10) → `+0x46`, tail (2); 1292 money bag ×1 **`1005df24`** −R(10)−5 → `+0x46`, tail
+  (2); 1335 sphere ×1 `1005e5dc` R(16) → `+0x46`, tail (2); 3204 item ×1 `1005e724` R(16) → `+0x46` (the twinkle
+  phase), tail (2); 1059 ×10, 1303 ×3: tail only (1 each).
+- Walker `.SetupWalkerSprite` (1700 ×2, 1705 ×4, 1760 ×1), unconditional: `1006740c` R(0x5fff)·2 + 0xbfff → `+0xf0`
+  (i32), `10067760` R(70)+0x78 → `+0x14c`, `10067780` R(400)+1000 → `+0x154` (3 each).
+- None: Background (sites `10072834/287c` = 0x73f/0x740, `10072ba8/2c08` = 0xb4a..0xb4d), Box (`1006b99c` = 0x439,
+  `1006bd18` = 0x5a0..0x5a9, `.Deviation` = 0x5d2..0x5d5; its child `MTNewSprite`s are 0x5a5+, 0xb71..0xb74), Platform,
+  Crawler, Roach, `.SetupChainSprite` (the 1485 spokes), `.GenerateSprite`/`.MTNewSprite`/`.AddIdleSprite`/
+  `.InitSprite`/`.AddLight`. `.IdleToActiveSprite` passes Setup 0 (no re-draw on activation).
+- Spawn order: the torch pass (44 draws), the platform pass (0), then records 0…510 — **256 draws** under any seed;
+  the first coin (record 10, spawn #36) takes draw 48: `+0x46` = 3 under seed 1; the item (record 68) `+0x46` = 6.
+- Corrections: the torch is `1005e110` R(10) (positive); `1005df24` −R(10)−5 is the money bag 0x50c/0x50d
+  (pickups-boxes §1.3 agrees) — the D32 carry list and this plan's F1 contract had them swapped. `1005e6c0` R(16)
+  writes `+0x15c` (0x53c/0x53d, not on L1).
+- Level-start order after the Setups (`.GameLoop`): `.SetupLevel` @10009e3c (`.SetupLevelSprites` l. 2526 inside
+  it) → player + 0x4c4 `MTNewSprite`s (no draws: `.SetupHeldItemSprite`/trail, 0x4c4 excluded at l. 53748) →
+  `.AnimateCLUT` @10009fb8 (R(4000) at `10011bc4`, l. 9062, conditional) → `.BuildTintTable` @10009fc0 (2 × R(5000)
+  per entry, `10021d04/14`) — all **after** the Setups. Also `.RedrawEntireScrollGrid` → diffuse blits
+  (`10029b64/7c`, `10029e5c/74`) after `.SetupLevelSprites`. Not modelled in F1 (Render / later tasks).
+
 **W4 ⚑ FastRand sites of the level-2 new types (written by W4 before coding):** the same enumeration for 1740, 1800,
 1056, 1058, 1332, 1341, 3205.
 

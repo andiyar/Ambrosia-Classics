@@ -162,9 +162,17 @@ public enum SetupFaces {
 
     // MARK: - one Setup
 
+    /// The class Setup for record `p` with a throwaway `FastRand(seed: 1)` — for callers that read faces only.
+    public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0) throws -> Entry {
+        var rng = FastRand(seed: 1)
+        return try setup(p, context: c, lightsInUse: lightsInUse, rng: &rng)
+    }
+
     /// The class Setup for record `p` (`.GenerateSprite`'s selection, then the Setup arm).
     /// - Parameter lightsInUse: `*_DAT_100a0124`, the lights added so far (the Xichron light needs < 150).
-    public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0) throws -> Entry {
+    /// - Parameter rng: the session stream; the Setup draws as the binary does (plan "F1 ⚑ FastRand sites").
+    public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0,
+                             rng: inout FastRand) throws -> Entry {
         guard let (cls, spawn) = SpriteClassTable.classify(type: p.type, p1Negative: p.p1 < 0) else {
             throw Error.unmapped(type: p.type)
         }
@@ -227,6 +235,9 @@ public enum SetupFaces {
             case 0x41f:                                        // gold Xichron: Handle face set 0x421, `+0x46 >> 1`
                 s.lightOverlay = false
                 face(0x421, 0, .handle)
+                s.phase = rng.next(0x13)                       // raw `1005db3c` → `+0x46`
+                s.slip = rng.next(6) + 0x1c                    // `1005db4c` → `+0x112`
+                s.friction = rng.next(3) + 2                   // `1005db60` → `+0x114`
                 // prefs +6 == 1 and fewer than 150 lights: `_DAT_100a07fc` = light 0x336 (52×52), colour 0x16.
                 if c.effects == 1 && lightsInUse < 0x96 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 0x16) }
             case 0x423:                                        // secret-area trigger: no face (l. 52403)
@@ -234,17 +245,20 @@ public enum SetupFaces {
             case 0x50c:                                        // money bag: Handle face `*_DAT_100a08e0` (PICT 0x50c)
                 s.lightOverlay = false
                 face(0x50c, 0, .handle)
+                s.phase = -5 - rng.next(10)                    // raw `1005df24` (`neg; subi 5`) → `+0x46`
                 if c.effects == 1 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 99) }   // prefs +6 == 1
             case 0x517:                                        // rock pile (l. 52567): Handle face PICT 0x517; `+0x88` kept
                 face(0x517, 0, .handle)
             case 0x51b:                                        // torch (l. 52541): Handle face set 0x51b, `+0x46 >> 1`
                 s.lightOverlay = false
                 face(0x51b, 0, .handle)
+                s.phase = rng.next(10)                         // raw `1005e110` → `+0x46`
                 // Ungated: `_DAT_100a08c0` = light 0x321 (192×192) at (y + 8, x + 5), colour 0x16 (p3 = 0) or 0x58.
                 addLight(0x321, 0xc0, dx: 5, dy: 8, colour: p.p3 == 0 ? 0x16 : 0x58)
             case 0x532...0x53b:                                // spheres: Handle face `_DAT_100a089c[type − 0x532]`
                 s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
                 face(Int16(t), 0, .handle)
+                s.phase = rng.next(0x10)                       // raw `1005e5dc` → `+0x46`
                 // `*PTR_DAT_100a088c` = light 0x32a (72×72) at (y + 0x10, x + 0x10), colour 99.
                 addLight(0x32a, 0x48, dx: 0x10, dy: 0x10, colour: 99)
             case 0xc80...0xcb0:                                // items: `+0xc0 = _DAT_100a08a0[type − 0xc80]` (l. 52667)
@@ -253,12 +267,15 @@ public enum SetupFaces {
                 // Light 0x32a at (y + 0xc, x + 0x10), colour 99 (0x21 / 0x2c / 0x4d for the listed items).
                 let colour = [0xc97, 0xc99, 0xc9a].contains(t) ? 0x21 : [0xc86, 0xc98].contains(t) ? 0x2c
                     : t == 0xc93 ? 0x4d : 99
+                // `+0x46 = FastRand(0x10)` (raw `1005e724`, l. 52670–52671), drawn before the `.AddLight`: the start
+                // phase of `BonusHandle.twinkle`.
+                s.phase = rng.next(0x10)
                 addLight(0x32a, 0x48, dx: 0x10, dy: 0xc, colour: colour)
-                // `+0x46 = FastRand(0x10)` (l. 52670–52671): the PRNG is not modelled, so 0 [MED]. It is the phase of
-                // `BonusHandle.twinkle`.
             default:
                 throw Error.notTranscribed(type: p.type)
             }
+            // `LAB_1005e8bc`, every arm (raw `1005e8c0`): `+0x14c = FastRand(60)`.
+            s.classTimer = Int32(rng.next(0x3c))
 
         case .box:
             s.layer = 2                                        // l. 58939
@@ -345,6 +362,11 @@ public enum SetupFaces {
             default: break
             }
             if p.p4 != 0 { s.margins = SpriteSlot.Margins(left: 0x5f4, right: 0x5f4, top: 0x5f4, bottom: 0x5f4) }
+            // The three unconditional draws, in this order (raw `1006740c`, `10067760`, `10067780`; l. 56959,
+            // 57079, 57082). The writes between them draw nothing, so taking them here keeps the stream order.
+            s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff     // `+0xf0` (`rlwinm 1; addis 1; subi 0x4001`)
+            s.classTimer = Int32(rng.next(0x46)) + 0x78            // `+0x14c`
+            s.classWord154 = Int32(rng.next(400)) + 1000           // `+0x154`
 
         case .crawler:
             s.layer = 0xb                                      // l. 56180
@@ -394,12 +416,20 @@ public enum SetupFaces {
     /// (Setup with layer argument 1, then `.ActiveToIdleSprite`, whose face rect `idleFaceRect` answers — the opaque
     /// bounds of the face `+0xc0` holds then, `Rect.noFace` without one).
     /// Core has no face pixels: `FerazelRender.SpriteBlitter.Faces.idleFaceRect` answers the face `+8` rect.
+    /// With a throwaway `FastRand(seed: 1)` — for callers that read faces and order only.
     public static func spawnLevelSprites(context c: Context,
+                                         idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
+        var rng = FastRand(seed: 1)
+        return try spawnLevelSprites(context: c, rng: &rng, idleFaceRect: idleFaceRect)
+    }
+
+    /// The spawn with the session stream: each Setup draws in spawn order (plan "F1 ⚑ FastRand sites").
+    public static func spawnLevelSprites(context c: Context, rng: inout FastRand,
                                          idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [])
         for p in c.level.spawnOrder {
-            let e = try setup(p, context: c, lightsInUse: out.lights.count)
+            let e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
             out.created.append(p.index)
             if let l = e.light { out.lights.append(l) }
             switch e.spawn {

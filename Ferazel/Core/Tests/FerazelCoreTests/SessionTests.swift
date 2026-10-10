@@ -205,7 +205,7 @@ final class SessionTests: XCTestCase {
                                    levelName: "A Scent Of Peril", selectedSlot: 0)
         XCTAssertEqual(first.draws[5], .statusBar(start))
         XCTAssertEqual(first.draws[9], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
-        XCTAssertEqual(first.draws[10], .changeLightFace(slot: 24, pict: 0x32a, width: 0x48, height: 0x48))
+        XCTAssertEqual(first.draws[10], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
         XCTAssertEqual(first.draws[12], .statusBar(start))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
@@ -272,28 +272,29 @@ final class SessionTests: XCTestCase {
         let placed = session.active.sprites + session.idle.entries.compactMap { $0?.saved }
         let potion = try XCTUnwrap(placed.first { $0.type == 0xc84 })
         XCTAssertEqual(potion.light, 24)
-        XCTAssertEqual(potion.phase, 0)                         // `FastRand(0x10)` not modelled
+        XCTAssertEqual(potion.phase, 6)                         // seed 1: the Setup's `FastRand(0x10)` (raw `1005e724`)
 
         // +0x46 += 1, k = (+0x46 >> 2) mod 6 → faces 0, 1, 2, 3, 2, 1 of 0x32a…0x32d, four calls each (1005f834..).
+        // From phase 6: 7 → k 1; 8–11 → 2; 12–15 → 3; 16–19 → 4; 20–23 → 5; 24–27 → 0; 28–31 → 1; 32–34 → 2.
         var s = potion
         let seq = (0..<28).map { _ in BonusHandle.twinkle(&s, effects: 1) }
         let picts = seq.map { op -> Int16? in
             guard case .changeLightFace(24, let p, 0x48, 0x48)? = op else { return nil }
             return p
         }
-        XCTAssertEqual(picts, [0x32a, 0x32a, 0x32a] + [Int16](repeating: 0x32b, count: 4)
-                       + [Int16](repeating: 0x32c, count: 4) + [Int16](repeating: 0x32d, count: 4)
-                       + [Int16](repeating: 0x32c, count: 4) + [Int16](repeating: 0x32b, count: 4)
-                       + [Int16](repeating: 0x32a, count: 4) + [0x32b])
+        XCTAssertEqual(picts, [0x32b] + [Int16](repeating: 0x32c, count: 4)
+                       + [Int16](repeating: 0x32d, count: 4) + [Int16](repeating: 0x32c, count: 4)
+                       + [Int16](repeating: 0x32b, count: 4) + [Int16](repeating: 0x32a, count: 4)
+                       + [Int16](repeating: 0x32b, count: 4) + [Int16](repeating: 0x32c, count: 3))
         // Effects 3 takes the other branch (no call, no count); no light (`+0x9a` −1) counts but changes nothing; the
         // Int16 counter wraps negative and the truncating mod gives k < 0 → no call; a non-item does nothing.
         var e3 = potion
         XCTAssertNil(BonusHandle.twinkle(&e3, effects: 3))
-        XCTAssertEqual(e3.phase, 0)
+        XCTAssertEqual(e3.phase, 6)
         var dark = potion
         dark.light = -1
         XCTAssertNil(BonusHandle.twinkle(&dark, effects: 1))
-        XCTAssertEqual(dark.phase, 1)
+        XCTAssertEqual(dark.phase, 7)
         var wrap = potion
         wrap.phase = .max
         XCTAssertNil(BonusHandle.twinkle(&wrap, effects: 1))
@@ -306,7 +307,7 @@ final class SessionTests: XCTestCase {
         let ops = (0..<8).map { _ in session.step(keys: KeyState()).draws.filter {
             if case .changeLightFace = $0 { return true } else { return false } } }
         XCTAssertEqual(ops.map(\.count), [Int](repeating: 1, count: 8))
-        XCTAssertEqual(ops[3], [.changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)])
+        XCTAssertEqual(ops[3], [.changeLightFace(slot: 24, pict: 0x32c, width: 0x48, height: 0x48)])   // phase 10, k 2
         var reduced = FerazelPrefs()
         reduced.effects = 3
         let e = try FerazelSession(resources: r, prefs: reduced, level: 1)
