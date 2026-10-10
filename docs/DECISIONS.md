@@ -711,7 +711,7 @@ mode 0xb is refused by name (no level-1 `+0x89` sprite, never reached), so table
 first face of the sheet their Handle uses; types 1485, 2710, 2713, 2714, 3002, 2842, 1700, 1705, 1760 and 1720 are left
 with the PICT 150 placeholder at Setup, and Phase 1 draws the loaded face (what re-faces them in the binary is not read);
 platform radial placement, siblings and the 1485 spokes are not spawned. Open, carried: the Setups' `FastRand` calls are
-not modelled (walker `1006740c`/`10067760`/`10067780`, every Bonus `1005e8c0`, Xichron `1005db3c/4c/60`, torch
+not modelled (⚑ modelled on level 1 by Phase 2 F1, 883b493) (walker `1006740c`/`10067760`/`10067780`, every Bonus `1005e8c0`, Xichron `1005db3c/4c/60`, torch
 ~~`1005df24`~~ `1005e110` [MED]; ⚑ F1 2026-10-10: `1005df24` −R(10)−5 is the money bag 0x50c, the torch is R(10)); `lightFace` uses (0,0,h,w) where the binary reads the light face's +0x58 rect (l. 15179, MED-equal);
 light 810's face behind `PTR_DAT_100a088c` is unresolved; the lit path refuses D = −1 where the ambient path accepts it.
 `Ferazel/Core` **88/0**.

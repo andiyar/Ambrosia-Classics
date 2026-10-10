@@ -940,6 +940,17 @@ list + a call-graph closure).** Reached by the 42 level-1 types, per sprite, in 
   `.AnimateCLUT` @10009fb8 (R(4000) at `10011bc4`, l. 9062, conditional) → `.BuildTintTable` @10009fc0 (2 × R(5000)
   per entry, `10021d04/14`) — all **after** the Setups. Also `.RedrawEntireScrollGrid` → diffuse blits
   (`10029b64/7c`, `10029e5c/74`) after `.SetupLevelSprites`. Not modelled in F1 (Render / later tasks).
+  **F1 review (Opus leg, 2026-10-10) — the full post-Setup level-start order on L1:** (1) `.RedrawEntireScrollGrid`
+  inside `.SetupLevel` (M l. 2582) — diffuse draws, count not yet established; (2) `.AnimateCLUT` — 0 draws on L1
+  (`clutAnimMode` 0); (3) `.BuildTintTable` — 255 × 2 = **510** unconditional R(5000) (M l. 18258–18259); (4)
+  `.RedrawEntireScrollGrid` again in `.GameLoop` (M l. 5212) — diffuse draws, count not established. Also
+  `.DestroyCrunchTile` → `.ExplodeFaceIntoParticles` (M l. 2390) draws **before** the Setups when a level is
+  re-entered with its saved flag set (not a fresh start; W4/Phase 3 level re-entry).
+  ⚑ **Orchestrator carry → E2:** before any per-frame RNG-dependent number is measured (P1a's `soundRate()` sites
+  onward), the session stream must consume (1)–(4) in this order, and FrameRenderer's tint table 0xa must take its
+  510 draws from that stream (today `random: { _ in 0 }`, FrameRenderer.swift:89–90). E2 establishes the diffuse
+  counts from the dump, wires it, and records the post-start seed-1 state; ladder unchanged unless E2 adds a named
+  test (then +N, recorded).
 
 **W4 ⚑ FastRand sites of the level-2 new types (written by W4 before coding):** the same enumeration for 1740, 1800,
 1056, 1058, 1332, 1341, 3205.
