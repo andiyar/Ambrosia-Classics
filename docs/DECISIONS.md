@@ -999,3 +999,28 @@ colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurem
 built it. **Still open:** the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
 [MED]; the level-start music fade-in [LOW]. (D31 is taken on the unmerged `deimos-phase2` branch, so this is D32.)
 **Approved by:** Ben.
+
+## D33 — Ferazel's Wand Phase 2 "Ferazel moves": planning rulings (2026-10-10)
+
+**Decided (Ben, in chat, during planning):** (1) **Reaching level 2 before the world map exists:** touching level 1's
+exit loads the level it unlocks straight away, **and** a hidden launch switch `FerazelLevel` (`-FerazelLevel 2` or
+`defaults write com.ambrosiaclassics.ferazel FerazelLevel 2`) starts on that level — both ◇ stubs, replaced by Phase 3's
+stage-complete screen + world map (Ben asked whether the map is being built: yes, Phase 3, the D26 order). (2) **Death:**
+the dying animation and the original border wipe (`.DeathEffect`), then **restart the current level from its start
+with fresh globals** — ◇ stub for Phase 3's menu/Continue; no invented checkpoints.
+**Seat's rulings (plan `docs/plans/2026-10-10-ferazel-phase2.md`, under the 100 % rule):** everything that moves or hurts
+the player on levels 1–2 is Phase 2 (platforms of every mode, 1480–1489 radial bars/balls, cannons, trampolines,
+passages, wall tunnels, Box solids, damaging floors, liquids, drowning); ropes and springs are built with synthetic tests
+(none placed on levels 1–2). Enemies and Bonus sprites stay `inert` (Setup face, no Handle, no contact damage) until
+Phases 4–5; crate/boulder **pushing** stays in Phase 4 with the boxes (design §8) — they are solids now. Phase 2 loads
+levels 1 and 2 only: level 2's exits (to 3 and 4) restart level 2, `FerazelLevel` outside 1…2 → 1. Keys are the
+original defaults only (keypad 4/6/8/5, Shift, Option, ⌘, keypad 7/9); Phase 1's arrow-key stub goes with
+`CameraFocusDriver`. Sound effects through a Foundation-only Sound Tool mixer as read (16-entry list, **8 audible
+voices**, ±127 clip, 8-bit 22,050 Hz; `ST_Open(8, 1, 22050)`), attached with `ShellMixer.attachStream` — HectorKit
+untouched. `FastRand` seeded from the clock in the app (as `.InitAppGlobals`), fixed in tests. Follow-the-binary bank
+corrections found by the planning legs (no JUMP gate by teleporter charge; no mid-air spin refill; un-clamped shuttles;
+the pendulum's harmful band; the layer-change guard and double-handled frame; 8 voices) are listed in the plan and
+appended to the bank by the task that first relies on each.
+**Rejected:** pulling the world map into Phase 2 (Ben: map stays Phase 3); arrow keys kept alongside the keypad;
+float mixing instead of the Sound Tool's 8-bit path.
+**Approved by:** Ben (rulings 1–2, 2026-10-10); the plan itself awaits his approval.
