@@ -768,6 +768,30 @@ Seat changes: `FrameRenderer.apply` throws; the max values and the start invento
 seam carries no key or flash state) [LOW]. The duplicate-black tie-break (Ben 2026-10-07) is still unbuilt and goes to
 A1. `Ferazel/Core` **100/0** — Phase 1 core complete.
 
+**As built (A1, 2026-10-10; Opus implementer, two Opus legs MERGEABLE + one fix round, re-reviewed):** the `Ferazel` app
+target on HectorShell (`Ferazel/App`: Main, Controller, Assets, Audio, CoreTextRasterizer, Info.plist, AppIcon.icon) and
+the project.yml merge. Seat rulings: the package path is the symlink `Ferazel/FerazelCore → Core` (D13.8 precedent;
+`Aki/Core` already owns the name "core"); the window uses Deimos's style (no close box), `.integerFit`, content exactly
+640k × 480k with k = 3/2/1 by whether the visible frame holds the whole window (title bar included). Measured: 2560×1440
+screen → k 2, window 1280×992, backing draw rect (0,0,2560,1920) edge to edge. The black border Ben saw on first sight is
+the game's own screen (PICT 129's frame around the 608×384 view at (16,8), engine §3), not the shell.
+Follow-the-binary readings (`.GameLoop` l. 5244–5291, both legs CONFIRMED): with prefs[0] set, the non-drawing
+iteration has **no wait** and the drawing one waits 4 ticks from **its own** start (the plan's "pair capped at 4 ticks"
+paraphrased it). Clock: a 240 Hz `ShellIdleTimer` (a 1/60 s timer beat against the tick counter into 3-tick gaps; Deimos
+precedent) runs one step when ≥ 2 ticks have passed since the last step's start; missed steps are dropped. `.SetAIFFMusic`
+(l. 41869–41921): track outside 1..32 → 1, missing file → n−1 (21, 27 absent); decoded before step 1. Right Shift/Option/⌘
+fold to the left codes (classic KeyMap). Font 20 = Times (no FOND/NFNT in the game files). Icon = `icl8`/`ICN#` 128 ×16
+nearest-neighbour (0 mismatched pixels vs the system palette + mask); previews go to Ben at A2.
+**Ben, 2026-10-10 — duplicate-black tie-break in A1, hidden switch:** `ColorSearch` takes a tie-break (`lowest`
+default, `highest`) governing the `.ruled` exact-match scan, `.exactNearest` equal distances and the inverse table's
+cell ties; caches key on it. The app reads `UserDefaults` `ColorTieBreak` (`defaults write com.ambrosiaclassics.ferazel
+ColorTieBreak highest`, or launch arg `-ColorTieBreak highest`). Clut 201 black → 1 (lowest) / 255 (highest). Default
+goldens unchanged; NEW measurement: level-1 frame 1 under `highest` = `b80b0efd384ffdb9`.
+Not built: the level-start music fade-in (`_FadeAIFFMusic(1,4)`, l. 5222) — music starts at full volume [LOW]; the
+DEBUG data-missing alert names `tools/stage-ferazel.sh` (A2). Debug builds cannot hold 30 Hz; A2 stages Release.
+`Ferazel/Core` **102/0**; census 1,108/0; G5 Ferazel, Aki, BubbleTroubleX, Deimos BUILD SUCCEEDED. Ben's first look
+(2026-10-10): level 1 on screen, music heard.
+
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
 **Decided (Ben, 2026-10-06, answering the orchestrator's four forks after Phase 0 closed; same shape as Ferazel D26):**

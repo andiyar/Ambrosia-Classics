@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R6 done (100/0), A1 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R6 + A1 done (102/0), A2 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -106,9 +106,12 @@
   Following the binary: level 1 opens at scroll **(0, 0)** and pans in (not the plan's (0, 10)), and a skipped
   reduced-frame-rate iteration drops only the screen copy (D26 as-built R5). **94/0**. **R6 DONE (2026-10-10):**
   status bar (magic bar at x 419 per the binary, not 214), Game Screen frame, FrameRenderer (68 Setup lights wired),
-  CLUT → RGBA, level-1 goldens (D26 as-built R6). **100/0, Phase 1 core complete.** Next: A1 ⚑ MAJOR (app target on
-  HectorShell; project.yml changes, so the app builds join the gate; duplicate-black tie-break goes here), then A2 +
-  Ben's gate.
+  CLUT → RGBA, level-1 goldens (D26 as-built R6). **100/0, Phase 1 core complete.** **A1 DONE (2026-10-10, two Opus
+  legs + fix round):** `Ferazel's Wand` app on HectorShell (whole-number window scale, 240 Hz timer / 2-tick step clock
+  per `.GameLoop`, arrows + keypad, looped music via `.SetAIFFMusic` rules, CoreText status text, icon from `icl8` 128),
+  project.yml target via the `Ferazel/FerazelCore` symlink; duplicate-black tie-break built (hidden `ColorTieBreak`
+  default, Ben's ruling) (D26 as-built A1). **102/0**; all four app schemes build. Ben saw level 1 and heard the music.
+  Next: A2 (stage script, WHAT-TO-EXPECT, gate card) → Ben's Phase 1 gate.
   Ben owes the Let's Play link (goes into design §2).
 
 ## Open, ordered
