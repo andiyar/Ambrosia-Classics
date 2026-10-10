@@ -116,7 +116,7 @@
   **A2 DONE (2026-10-10, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (Release, data into
   `Contents/Resources/Ferazel/`, ad-hoc sign, build stamp in the staged notes, Icon Composer previews) and
   `Ferazel/WHAT-TO-EXPECT.md` with the corrected 16-line gate card (D26 as-built A2). Staged `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app`.
-  **Ben's Phase 1 gate PASSED 2026-10-10 ("it looks good", D32).** Open: icon pick, hidden gamma toggle, light-24 table
+  **Ben's Phase 1 gate PASSED 2026-10-10 ("it looks good", D32).** Icon: Default render kept. Open: hidden gamma toggle, light-24 table
   over-light [MED], music fade-in [LOW]. Next Ferazel: Phase 2 plan ("Ferazel moves", design §8) when Ben calls it.
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben

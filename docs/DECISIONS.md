@@ -973,7 +973,7 @@ ee5af2a):** "it looks good" — **the Phase 1 gate ("does it look like Ferazel",
 animations yet?" first and was told that by design only Ferazel's breathe/walk-in-place stub and the camera move; every
 placed sprite stays in its Setup face until the sprite Handles run (Phases 2, 4, 5). He did not ask for scenery animation
 in Phase 1. The gate card's LOW/MED items raised no objection and stay labelled as they are in the bank. Defaults as staged:
-colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurement). **Still open:** the icon pick (previews
-in `~/Desktop/Ferazel icon previews/`); the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
+colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurement). **Icon: Ben picked the Default render** ("default icon is fine") — `Ferazel/App/AppIcon.icon` stays as A1
+built it. **Still open:** the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
 [MED]; the level-start music fade-in [LOW]. (D31 is taken on the unmerged `deimos-phase2` branch, so this is D32.)
 **Approved by:** Ben.
