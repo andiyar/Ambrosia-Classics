@@ -965,3 +965,15 @@ TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic
 `TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
 widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
 **Approved by:** Ben.
+
+## D32 — Ferazel's Wand Phase 1 gate PASSED (2026-10-10)
+
+**Decided (Ben, in chat, after looking at the staged Phase 1 build `~/Desktop/Ferazel's Wand.app`, build 51ed68b = main
+ee5af2a):** "it looks good" — **the Phase 1 gate ("does it look like Ferazel", D26 / design §8) passed.** He asked "no
+animations yet?" first and was told that by design only Ferazel's breathe/walk-in-place stub and the camera move; every
+placed sprite stays in its Setup face until the sprite Handles run (Phases 2, 4, 5). He did not ask for scenery animation
+in Phase 1. The gate card's LOW/MED items raised no objection and stay labelled as they are in the bank. Defaults as staged:
+colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurement). **Still open:** the icon pick (previews
+in `~/Desktop/Ferazel icon previews/`); the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
+[MED]; the level-start music fade-in [LOW]. (D31 is taken on the unmerged `deimos-phase2` branch, so this is D32.)
+**Approved by:** Ben.
