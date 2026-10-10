@@ -5,6 +5,7 @@ import FerazelRender
 // Throwaway measurement tool (colour study). Renders level-1 frames at arbitrary scrolls through the public
 // FrameRenderer API by issuing the same DrawOps the session would (no core change).
 // usage: fzcolour render <model> <tie> <dither> <effects> <sprites 0|1> <outdir> h,v [h,v ...] [--drop i,j,..] [--only i,j]
+//                       [--twinkle k]   (k 0…3: every item light shows BonusHandle.twinkleFaces[k], as after its Handle)
 //        fzcolour lights <effects>
 //        fzcolour info
 struct NoText: TextRasterizer {
@@ -36,10 +37,11 @@ case "render":
     let dither: DitherModel = args[4] == "fs" ? .errorDiffusion : .none
     let sprites = args[6] == "1"
     let outdir = args[7]
-    var scrolls: [(Int, Int)] = []; var drop = Set<Int>(); var only: Set<Int>? = nil
+    var scrolls: [(Int, Int)] = []; var drop = Set<Int>(); var only: Set<Int>? = nil; var twinkle: Int? = nil
     var i = 8
     while i < args.count {
         if args[i] == "--drop" { drop = Set(args[i+1].split(separator: ",").map { Int($0)! }); i += 2; continue }
+        if args[i] == "--twinkle" { twinkle = Int(args[i+1])!; i += 2; continue }
         if args[i] == "--only" { only = Set(args[i+1].split(separator: ",").compactMap { Int($0) }); i += 2; continue }
         let p = args[i].split(separator: ",").map { Int($0)! }; scrolls.append((p[0], p[1])); i += 1
     }
@@ -54,8 +56,16 @@ case "render":
         case .setup: return e.slot.face.map(r.faceBounds) ?? .noFace
         }
     }
-    let lights = sp.lights.enumerated().filter { !drop.contains($0.offset) && (only?.contains($0.offset) ?? true) }.map(\.element)
-    try r.addLights(lights)
+    let kept = sp.lights.indices.filter { !drop.contains($0) && (only?.contains($0) ?? true) }
+    try r.addLights(kept.map { sp.lights[$0] })
+    if let k = twinkle {
+        // the item lights (`+0x9a` = their index in sp.lights) at their slot after the --drop/--only filter
+        let items = (sp.active.sprites + sp.idle.entries.compactMap { $0?.saved }).filter { BonusHandle.twinkles(type: $0.type) && $0.light >= 0 }
+        let f = BonusHandle.twinkleFaces[k]
+        let ops = items.compactMap { s in kept.firstIndex(of: Int(s.light)) }.map {
+            DrawOp.changeLightFace(slot: $0, pict: f.pict, width: f.width, height: f.height) }
+        try r.apply(FrameOps(draws: ops))
+    }
     try r.apply(FrameOps(draws: [.setScreenClut(id: ColorLUT.screenClutId(L.header)), .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0)]))
     for (h, v) in scrolls {
         var draws: [SpriteDraw] = []

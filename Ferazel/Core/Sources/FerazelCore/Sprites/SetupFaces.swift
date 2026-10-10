@@ -173,8 +173,11 @@ public enum SetupFaces {
         var sheet: Sheet?, index = 0, source = FaceSource.none, light: Light?
         /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
         /// / `.InitEffectSprite`'s light faces.
+        /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
+        /// `.InitBonusSprite` site, l. 52455–52700).
         func addLight(_ pict: Int16, _ size: Int, dx: Int, dy: Int, colour: Int) {
             light = Light(pict: pict, width: size, height: size, x: s.x + dx, y: s.y + dy, colour: colour)
+            s.light = Int16(lightsInUse)
         }
 
         func face(_ pict: Int16, _ i: Int = 0, _ src: FaceSource) {
@@ -251,6 +254,8 @@ public enum SetupFaces {
                 let colour = [0xc97, 0xc99, 0xc9a].contains(t) ? 0x21 : [0xc86, 0xc98].contains(t) ? 0x2c
                     : t == 0xc93 ? 0x4d : 99
                 addLight(0x32a, 0x48, dx: 0x10, dy: 0xc, colour: colour)
+                // `+0x46 = FastRand(0x10)` (l. 52670–52671): the PRNG is not modelled, so 0 [MED]. It is the phase of
+                // `BonusHandle.twinkle`.
             default:
                 throw Error.notTranscribed(type: p.type)
             }
