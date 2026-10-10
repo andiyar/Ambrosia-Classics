@@ -791,6 +791,15 @@ Not built: the level-start music fade-in (`_FadeAIFFMusic(1,4)`, l. 5222) — mu
 DEBUG data-missing alert names `tools/stage-ferazel.sh` (A2). Debug builds cannot hold 30 Hz; A2 stages Release.
 `Ferazel/Core` **102/0**; census 1,108/0; G5 Ferazel, Aki, BubbleTroubleX, Deimos BUILD SUCCEEDED. Ben's first look
 (2026-10-10): level 1 on screen, music heard.
+**Measured against the Let's Play (2026-10-10; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 static level-1 LP frames
+(bt709 TV range, 5-frame medians, scroll found by edge NCC), scored as 8×8-block CIE76 ΔE over 4 models × 2 tie-breaks × 2 dithers ×
+Effects 1/2/3. Tie-break **highest** HIGH; the dither is **error-diffused** HIGH (on 32-bit sprites at full video resolution; FS-specific
+LOW); the video runs **Effects 1/2** HIGH. The model only matters inside the lighting tables: `.exactNearest` beats `.ruled` in 7/7 frames
+(fitted ΔE 1.21 vs 2.19), and `.inverseTable(5)` ties with exact. **Ben ruled the app default `.exactNearest`** (FerazelController; the
+Core default and goldens are unchanged). The "darker" look is display gamma: the HUD art, which is model-invariant, is γ ≈ 0.76 brighter
+in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** (its own task, unbuilt). The 02:12 table glow is
+light 24 (the potion item 0xc84, light PICT 810, not gated by Effects). On the wall tiles it matches the video, but our sprite light pass
+over-lights the table by about L* 17. Open [MED]: re-read `.WrapLightFace` for that case.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 

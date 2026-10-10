@@ -21,7 +21,7 @@ InputSprocket configuration, the debug/cheat keys, AppleEvents, movie capture (t
 | The RE bank (`docs/ferazel/`) | the rules, as **code readings only** — "nothing in this bank is behaviour-verified" (INDEX header). Labels: HIGH = read directly, every constant resolved; MED = one inferred link; LOW = guesswork. |
 | The original data (`Resources/Ferazel/`, §4) | every level, sheet, palette, sound, conversation and map — loaded, never re-authored. |
 | The decompiles (`ghidra/Ferazel_pef.decompiled.c`, the handlers dump, the raw disasm; git-ignored, recipe in INDEX provenance) | the tie-breaker when a bank sentence and a test disagree. Never edit an expectation to match the code under test. |
-| **YouTube longplays + a Let's Play of part one Ben will link** | timing, look, feel. Compressed video: good for "does the water look like that", useless for a palette index. |
+| **YouTube longplays + Ben's Let's Play of part one: "Let's Play Ferazel's Wand! Part 1: A Scent of Peril", https://www.youtube.com/watch?v=ESuyxMUEzDw (Ben, 2026-10-10)** | timing, look, feel. Compressed video: good for "does the water look like that", useless for a palette index. |
 | **Ben's eyes and hands** | the only behaviour oracle. Every phase ends with a staged build and a gate card. |
 
 Rule for every label: **HIGH → frame-exact, pinned by a test to the bank's number. MED → built as read, named on the

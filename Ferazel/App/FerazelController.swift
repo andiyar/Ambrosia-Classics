@@ -54,7 +54,7 @@ import HectorShell
         }
         do {
             let resources = try FerazelData.open(dataDirectory)
-            let search = ColorSearch(model: .ruled, tieBreak: Self.tieBreak())
+            let search = ColorSearch(model: .exactNearest, tieBreak: Self.tieBreak())  // D26 LP measurement 2026-10-10 (Ben)
             renderer = try FrameRenderer(resources: resources, level: Self.level, search: search,
                                          dither: .errorDiffusion, text: CoreTextRasterizer(), prefs: prefs)
             session = try FerazelSession(resources: resources, prefs: prefs, level: Self.level,
