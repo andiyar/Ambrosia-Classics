@@ -53,8 +53,11 @@ rsync -a --exclude '.DS_Store' --exclude $'Icon\r' "$DATA/$MUSIC/" "$DEST/$MUSIC
 xattr -cr "$OUT/$NAME"
 # --deep is deprecated but still accepted by Xcode 27's codesign (stage-aki.sh precedent)
 codesign --force --deep --sign - "$OUT/$NAME"
-codesign --verify --deep "$OUT/$NAME"
-cp "$ROOT/Ferazel/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
+codesign --verify --deep --strict "$OUT/$NAME"
+# The staged notes carry a build stamp under the title (the repo file stays stamp-free).
+STAMP="Build $(git -C "$ROOT" rev-parse --short HEAD), staged $(date '+%Y-%m-%d %H:%M')."
+awk -v stamp="$STAMP" 'NR == 1 { print; print ""; print stamp; next } { print }' \
+    "$ROOT/Ferazel/WHAT-TO-EXPECT.md" > "$OUT/WHAT-TO-EXPECT.md"
 
 # Icon previews for Ben's pick (gate card line 13). Icon Composer's ictool (the one on xcrun's path is actool's and
 # does not export images).
@@ -70,6 +73,10 @@ if [ -x "$ICTOOL" ]; then
             rm -f "$PREVIEWS/Ferazel icon - $r.png"
         fi
     done
+    if [ -z "$(ls -A "$PREVIEWS")" ]; then
+        echo "stage-ferazel: every icon preview render failed — no previews staged" >&2
+        rmdir "$PREVIEWS"
+    fi
 else
     echo "stage-ferazel: Icon Composer's ictool not found at $ICTOOL — icon previews skipped" >&2
 fi
@@ -78,8 +85,8 @@ if [ "${FERAZEL_STAGE_NO_DESKTOP:-0}" != "1" ]; then
     rm -rf "$HOME/Desktop/$NAME"
     ditto "$OUT/$NAME" "$HOME/Desktop/$NAME"
     ditto "$OUT/WHAT-TO-EXPECT.md" "$HOME/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md"
+    rm -rf "$HOME/Desktop/Ferazel icon previews"
     if [ -d "$PREVIEWS" ]; then
-        rm -rf "$HOME/Desktop/Ferazel icon previews"
         ditto "$PREVIEWS" "$HOME/Desktop/Ferazel icon previews"
         echo "desktop: $HOME/Desktop/Ferazel icon previews"
     fi

@@ -1,7 +1,5 @@
 # Ferazel's Wand — what to expect (Phase 1 gate build)
 
-<!-- ORCHESTRATOR: build stamp -->
-
 This is the first build of the Ferazel's Wand 1.0.3 replica. It shows one thing: **how level 1 looks.** The level is
 drawn, the background scrolls behind it, Ferazel stands at the start and breathes, the placed sprites sit where the
 level puts them, the status bar is drawn, and track 1 of the music plays. Every picture and sound comes from the
@@ -49,6 +47,12 @@ Things that are missing on purpose for now:
 - **No sound effects, no title screen, no menus, no chapter-1 screen.**
 - **The music starts at full volume.** The original fades it in at the start of the level; that fade isn't built yet
   (LOW).
+- **The picture looks a little darker than your Let's Play.** Measured against the video, that is mostly display gamma:
+  the original ran on a classic Mac screen (gamma about 1.8), modern screens use 2.2. You ruled (2026-10-10) a hidden
+  gamma switch, off by default, like the tie-break one — it is **not built yet**.
+- **The table next to the potion is too bright.** The potion's light (light 24) lights the table sprite far more
+  than in the video, which looks like a glow behind the table. How the original lights neighbouring sprites with an
+  item's light is still to be read from its code (an open item).
 
 ### First face only
 - 22 kinds of placed sprite show the first picture of the sheet their own code uses. Their real starting picture comes
@@ -64,13 +68,14 @@ Things that are missing on purpose for now:
 
 Compare with the longplays and your Let's Play link. Each line names what you'll see, how sure we are (LOW = least sure,
 MED = fairly sure), and what would be wrong.
-1. **Colours of every tile and sprite** — LOW: every picture is converted through the colour search (the Color2Index
-   model); e.g. under CLUT 202 the FG sheet has 62 of 239 colours where the two models disagree. If colours look
-   off, the exact and 5-bit models are a one-line switch. (The original may even have matched colours through the
-   screen's colour table rather than the sheet's — another reason the model is switchable.)
+1. **Colours of every tile and sprite** — every picture is converted through the colour search (the Color2Index
+   model). The build uses the **exact nearest-colour** model: you ruled it on 2026-10-10 after it measured best against
+   your Let's Play in all 7 frames compared (`docs/ferazel/colour-measurement-2026-10-10.md`). Exact versus the 5-bit inverse table is still
+   LOW — the two measured too close to separate; the other models are a one-line switch.
 2. **Dithered 32-bit art** — LOW: barrel 2922, chair 2924, table 2927, Geroditus 2951, merchant 2952, book pile 2842,
    sign 2902, moss 2713, Walker 1700, Roach 1720, the HUD piece 133 are 32-bit pictures the original dithered into
-   256 colours; ours uses Floyd–Steinberg dithering. Look for dot patterns on those sprites.
+   256 colours. Your Let's Play shows they were dithered with error diffusion (HIGH, `docs/ferazel/colour-measurement-2026-10-10.md`); ours uses
+   Floyd–Steinberg, and that this is the exact method is LOW. Look for dot patterns on those sprites.
 3. **Grass/edge blending** (the foreground's blended edges, 1,335 cells in level 1) — this is where the two colour
    models disagree most (35 % of entries).
 4. **Water** — water in level 1 spans x 128..6208, y 608..1600; **acid**: 24 cells at x 6016..6272, y 544..640. Wrong
@@ -84,8 +89,8 @@ MED = fairly sure), and what would be wrong.
    (read from the original's code). The text is
    Times bold, white — MED: the game asks for font 20, which is Times, and the game files carry no font of their own.
    Wrong would look like: the text in a different typeface, size or colour, or a bar in the wrong place.
-8. **Camera** — the level opens at the top-left corner of the map and **pans in** to Ferazel over the first second or
-   so. That is the original's own behaviour (read from its code), not a bug. His exact height in the view is a reading
+8. **Camera** — the level opens at the top-left corner of the map and **pans in** to Ferazel: its vertical scroll first
+   reaches v 10 on the 24th frame, about 0.8 s at 30 frames a second. That is the original's own behaviour (read from its code), not a bug. His exact height in the view is a reading
    (MED). Arrows or keypad move the camera; this is Phase 1 only (Phase 2 brings the original keys and real movement).
 9. **Ferazel** — stands at the start, breathes, turns, walks/runs in place on left/right (stand-in; Phase 2 makes him
    move). On the very first frame he isn't drawn at all — a one-frame blink at the start is the original.
@@ -100,7 +105,8 @@ MED = fairly sure), and what would be wrong.
     inside it, 16 px from the left and 8 px from the top), not a bug. Your Let's Play shows the same frame.
 15. **The duplicate-black tie-break — decided: highest.** The palette has black in more than one slot. You ruled on
     2026-10-10, from your Let's Play (at 02:12 the foreground rock edges are clean light grey, no yellow specks), that
-    the original matches **highest**, so the build starts on highest. The other choice, **lowest**, shows yellow
+    the original matches **highest**, so the build starts on highest. The colour measurement against the video
+    confirms it (`docs/ferazel/colour-measurement-2026-10-10.md`). The other choice, **lowest**, shows yellow
     specks along the foreground edges. To look at lowest anyway, quit the game, open Terminal and paste:
 
     `defaults write com.ambrosiaclassics.ferazel ColorTieBreak lowest`
@@ -110,9 +116,11 @@ MED = fairly sure), and what would be wrong.
     `defaults delete com.ambrosiaclassics.ferazel ColorTieBreak`
 
     and open it again.
-16. **Brightness and the glow behind the table — under measurement.** Next to your Let's Play, our picture looks
-    darker overall, and there is a light glow behind the table that the video doesn't have. Both are being measured
-    in a separate task; tell us if you notice anything more about them.
+16. **Brightness and the glow behind the table — known deviations** (`docs/ferazel/colour-measurement-2026-10-10.md`). Next to your Let's Play,
+    our picture looks darker overall: that is mostly display gamma (the original ran at classic Mac gamma, about
+    1.8); your hidden gamma switch, off by default, is not built yet. The glow behind the table is the table sprite
+    lit too brightly by the potion's light (light 24); how the original does that is an open item still to be read
+    from its code.
 
 Known by design: no chapter-1 screen, no menus or title screen, no sound effects, the window scaled ×2 or ×3; Caps Lock
 (pause) and Esc (abort dialog) do nothing until Phase 3 — ⌘Q quits.
