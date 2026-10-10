@@ -100,7 +100,9 @@ git -C "$WT" status --porcelain | grep -v '^??'
 F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a **145** → P1b **151** → P2 **160** → P3 **170**
 → P4 **180** → P5 **188** → W1 **196** → W2a **200** → W2b **205** → W3 **213** → W4 **219** → E1a **224** → E1b
 **227** → S1 **234** → GD **238** (then A3, A4: no tests). Merged in another order: previous total + the task's N.
-As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139).
+As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
++1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
+Later tasks: previous total + N (S2 → 145, E2 → 153, …).
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -575,6 +577,12 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   L = −1 makes mode 0xb reachable, and record the finding in the commit body and STATE (E2 builds 0xb + table 0148 if
   reachable — see E2). Carry: `.ActiveToIdleSprite` does not unlink; `.UpdateSprites` kills later — Core's Phase-1
   `IdleSprites` unlinks at once; W1 reconciles (F2 fix-round finding).
+  More carries from the F2/F3 re-review (Opus, 2026-10-10, MERGEABLE): (M2) no test pins `newSprite`'s `.MTNewSprite`
+  pixel-copy quirk (x = y, y = 0; raw 100331e4..f8) — add one when `newSprite` gets its first production caller (W1
+  chain spokes / W2b cannon shots); (M3) `SeparateFromTiles`/`WallBounce`/`WallBounceBG` look sprites up with
+  `sprite(id:)` (linked only) while Handles use `record(id:)` — a Handle on an unlinked record would silently skip
+  separation; reconcile with the `.ActiveToIdleSprite` carry; (M6) the Bonus Handle guard classifies with
+  `p1Negative: false` hard-coded; (M7) `TileHotRects.init(level:)` reads `level` beside `world.tiles`.
 - **Contract:** physics-sprites §8.9, platforms-ropes-radial §1–§2, -2 §8–§9, digest B §2.2. `.SetupPlatformSprite
   @10061f94` (layer −1, `+0xc0 = 0` → **frame 1 draws no platform**, one-way, sag 0x50, `+0xa6 = 1`), first handler
   `.DoSetupPlatformSprite @10062098` (mode p1, face set 0x578 + (type − 0x578)·0x34, rect (0x10,6,0x3d,0x1e)),

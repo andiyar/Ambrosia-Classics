@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 GATE PASSED (D32, 102/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 1 GATE PASSED (D32), Phase 2 wave 2.0 done (140/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -117,7 +117,12 @@
   `Contents/Resources/Ferazel/`, ad-hoc sign, build stamp in the staged notes, Icon Composer previews) and
   `Ferazel/WHAT-TO-EXPECT.md` with the corrected 16-line gate card (D26 as-built A2). Staged `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app`.
   **Ben's Phase 1 gate PASSED 2026-10-10 ("it looks good", D32).** Icon: Default render kept. Open: hidden gamma toggle, light-24 table
-  over-light [MED], music fade-in [LOW]. **Phase 2 "Ferazel moves" PLANNED (2026-10-10, Opus planner, two Opus review legs, fixes applied; D33):** `docs/plans/2026-10-10-ferazel-phase2.md` — 22 tasks (F1–F3 foundations, S2 Sound Tool mixer, E2 draw modes, P1a–P5 player + camera, W1–W4 platforms/radial/cannons/passages/boxes/ropes/level 2, E1a–E1b particles + water effects, S1 cues, GD goldens, A3 app, A4 stage), 13 ⚑ MAJOR, ladder 102 → **238**, HectorKit untouched. Ben ruled: exit loads level 2 + hidden `FerazelLevel` switch; death → wipe → restart level. **Nothing built; awaiting Ben's approval of the plan**, then the first execution session [F1 F2 F3] (chip).
+  over-light [MED], music fade-in [LOW]. **Phase 2 "Ferazel moves" PLANNED (2026-10-10, Opus planner, two Opus review legs, fixes applied; D33):** `docs/plans/2026-10-10-ferazel-phase2.md` — 22 tasks (F1–F3 foundations, S2 Sound Tool mixer, E2 draw modes, P1a–P5 player + camera, W1–W4 platforms/radial/cannons/passages/boxes/ropes/level 2, E1a–E1b particles + water effects, S1 cues, GD goldens, A3 app, A4 stage), 13 ⚑ MAJOR, ladder 102 → **238**, HectorKit untouched. Ben ruled: exit loads level 2 + hidden `FerazelLevel` switch; death → wipe → restart level. **Ben approved the plan 2026-10-10.**
+  **Wave 2.0 DONE (2026-10-10, Opus orchestrator; all-Opus legs; D33 as built):** F1 `FastRand` + the 256 level-1 Setup draws
+  (item twinkle phase now drawn → three pan goldens re-measured), F2 `SpriteWorld` physics world (rider/carry, layer guard,
+  O(1) list), F3 `TileSolver` → `Ferazel/Core` **140/0** (base was 104, not 102); census 1,108/0; Ferazel app builds;
+  HectorKit untouched. Nothing visible changes in the app yet. Next: **[S2 E2]** (Sound Tool mixer; draw additions + the
+  carried level-start RNG draws: tint 0xa 510 + diffuse), ladder S2 → 145, E2 → 153.
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
   ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):

@@ -1023,4 +1023,25 @@ the pendulum's harmful band; the layer-change guard and double-handled frame; 8 
 appended to the bank by the task that first relies on each.
 **Rejected:** pulling the world map into Phase 2 (Ben: map stays Phase 3); arrow keys kept alongside the keypad;
 float mixing instead of the Sound Tool's 8-bit path.
-**Approved by:** Ben (rulings 1–2, 2026-10-10); the plan itself awaits his approval.
+**Approved by:** Ben (rulings 1–2, 2026-10-10); **the plan itself approved by Ben 2026-10-10** (start of the first
+execution session: "Sure").
+
+**As built (wave 2.0: F1, F2, F3 — 2026-10-10; Opus 5.5 orchestrator, Opus implementers, Opus legs: F1 one, F2/F3 two
+each + fix rounds + one re-review leg MERGEABLE):** `Ferazel/Core` **104 → 140/0** (ladder base was 104, not the
+plan's 102: the light-24 twinkle landed after planning). **F1** `FastRand` (Park–Miller, lo 0x8000 → 0, `next(0)`
+reseeds via an injected clock, `soundRate()`); the level-1 Setups draw **256** times under any seed (Bonus + Walker
+only), first coin `+0x46` = 3, the item's twinkle phase = 6 under seed 1. Orchestrator ruling (follow the binary): the
+twinkle phase is drawn, so expectations pinned to the Phase-1 phase-0 stub were updated (pan goldens
+`686024aba05c6660 → e493fc8b09f84ed5`, `18c4e45ebeee8e88 → 3ec51d436e278776`, `51d5f367bd111589 → 6e034d02ef78d7fb`;
+first-frame goldens unchanged; cause proven by forcing the phase to 0). Torch draw is `1005e110` R(10), `1005df24` is
+the money bag (plan + D32 carry corrected). After the Setups, level start draws **510** more for tint table 0xa plus
+the diffuse blits (twice) — carried to **E2** (before any per-frame RNG number is measured). **F2** `SpriteWorld`
+(handle pass with next preloaded, a killed saved next still handled; layer-change guard; SSH/Cleanup; PlatformBounce
++ RectBounce; carry from the drawn copy `drawnX/drawnY` +0xc6/+0xc4, recorded for every sprite; `.MTNewSprite`'s
+pixel-copy quirk as written; the Bonus Handle runs SSH then the twinkle at its list position; O(1) id→index lookups,
+list order unchanged — fuzzed against a pointer model). Review caught a Swift precedence bug in the side push
+(`>>` binds tighter than `&*`): fixed + tested. **F3** `TileSolver` (SeparateFromTiles2, full WallBounce/WallBounceBG,
+ApplySpeedAndSeparate, slope f32 factors); follow the binary: kind 3 sets a rising sprite's bottom to Y+16 without
+landing; ice slide once per **separation call**; climb is read **after** the separation (raw 1004b9b0..bc); one tile
+map owned by `SpriteWorld`. Bank corrections A3, A5, A6, A10, A12 (now HIGH), A13, B3, C6 + a WallBounceBG §10.1
+correction landed. Carries: plan W1 precondition (ActiveToIdle unlink, review M2/M3/M6/M7). HectorKit untouched.
