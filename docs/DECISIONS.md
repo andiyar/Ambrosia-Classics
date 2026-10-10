@@ -800,6 +800,18 @@ Core default and goldens are unchanged). The "darker" look is display gamma: the
 in the video (classic Mac 1.8 vs 2.2). **Ben: a hidden gamma toggle, off by default** (its own task, unbuilt). The 02:12 table glow is
 light 24 (the potion item 0xc84, light PICT 810, not gated by Effects). On the wall tiles it matches the video, but our sprite light pass
 over-lights the table by about L* 17. Open [MED]: re-read `.WrapLightFace` for that case.
+**As built (A2, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (stage-btx shape:
+xcodegen → Release into `.build/xcode-ferazel` → `out/Ferazel/Ferazel's Wand.app`, `Resources/Ferazel/` or `FERAZEL_DATA` into
+`Contents/Resources/Ferazel/`, `xattr -cr`, ad-hoc sign + `--strict` verify, build stamp written into the staged WHAT-TO-EXPECT only,
+Icon Composer `ictool` previews (Xcode's `xcrun ictool` is actool's and cannot export) into `out/Ferazel/icon-previews/`, all to
+`~/Desktop/` unless `FERAZEL_STAGE_NO_DESKTOP=1`) and `Ferazel/WHAT-TO-EXPECT.md`. The gate card corrects the plan: line 7 magic bar
+x 419 + Times bold [MED]; line 8 the camera opens at (0, 0) and pans in (v 10 on step 24); frame 1 has no player face; lines 14–16
+added (black border = PICT 129 frame, confirmed by the Let's Play; tie-break; gamma + light-24 table glow as known deviations).
+**Ben, 2026-10-10 — the app's duplicate-black tie-break default is `highest`** (Let's Play 02:12: FG rock edges clean light grey,
+no yellow specks; confirmed by the measurement above). `FerazelController` reads `ColorTieBreak lowest` as lowest, anything else as
+highest; `ColorSearch`'s API default stays `.lowest`, so Core goldens are unchanged. Seat-ruled scope: that one controller edit is
+outside A2's Files list. G1 HK main 328 == floor 328; G2 **102/0**; G3 1,108/0; G4 6 + 28; G5 ×4 BUILD SUCCEEDED; G9 both copies
+pid + clean quit, no crash report. Ben's Phase 1 gate pending.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 

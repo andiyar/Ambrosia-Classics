@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 R1–R6 + A1 done (102/0), A2 next; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 0 done, Phase 1 machine-complete (102/0), staged, Ben's Phase 1 gate pending; Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -111,9 +111,12 @@
   per `.GameLoop`, arrows + keypad, looped music via `.SetAIFFMusic` rules, CoreText status text, icon from `icl8` 128),
   project.yml target via the `Ferazel/FerazelCore` symlink; duplicate-black tie-break built (hidden `ColorTieBreak`
   default, Ben's ruling) (D26 as-built A1). **102/0**; all four app schemes build. Ben saw level 1 and heard the music.
-  Next: A2 (stage script, WHAT-TO-EXPECT, gate card) → Ben's Phase 1 gate.
   Let's Play = https://www.youtube.com/watch?v=ESuyxMUEzDw (design §2, Ben 2026-10-10). At 02:12 its level-1 FG rock edges
-  show no yellow specks, so the video favours the `highest` duplicate-black tie-break; Ben picks at the gate.
+  show no yellow specks, so **Ben ruled the app tie-break default `highest`** (`ColorTieBreak lowest` selects the other).
+  **A2 DONE (2026-10-10, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (Release, data into
+  `Contents/Resources/Ferazel/`, ad-hoc sign, build stamp in the staged notes, Icon Composer previews) and
+  `Ferazel/WHAT-TO-EXPECT.md` with the corrected 16-line gate card (D26 as-built A2). Staged `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app`.
+  Machine gates green; **STOP: Ben's Phase 1 gate pending ("does it look like Ferazel")** + his icon pick.
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
   ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):
