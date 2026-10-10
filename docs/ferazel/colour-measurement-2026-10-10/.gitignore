@@ -1,0 +1,7 @@
+.build/
+v/
+out/
+combos/
+mosaic/
+*.json
+*.rgb
