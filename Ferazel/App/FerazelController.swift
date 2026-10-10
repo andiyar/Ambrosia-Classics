@@ -13,8 +13,10 @@ import HectorShell
     static let title = "Ferazel's Wand"
     /// Phase 1 opens "A Scent Of Peril" directly (the chapter screen and front end are later phases).
     static let level = 1
-    /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "highest" → `.highest`, anything
-    /// else → `.lowest`. `-ColorTieBreak highest` on the command line sets it for one launch.
+    /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "lowest" → `.lowest`, anything
+    /// else → `.highest` — the app's default since Ben's ruling of 2026-10-10 (his Let's Play at 02:12: clean FG rock
+    /// edges, no yellow specks). `-ColorTieBreak lowest` on the command line sets it for one launch. Core's
+    /// `ColorSearch` default stays `.lowest`, so its goldens are untouched.
     static let tieBreakKey = "ColorTieBreak"
     /// The hidden defaults key for Ben's Mac display-gamma toggle (D26, 2026-10-10), off by default: when true, each
     /// frame is presented as the classic Mac (gamma 1.8) showed it on a modern 2.2 display. `-MacGamma YES` on the
@@ -99,7 +101,7 @@ import HectorShell
     }
 
     static func tieBreak(_ defaults: UserDefaults = .standard) -> ColorSearch.TieBreak {
-        defaults.string(forKey: tieBreakKey) == "highest" ? .highest : .lowest
+        defaults.string(forKey: tieBreakKey) == "lowest" ? .lowest : .highest
     }
 
     static func macGamma(_ defaults: UserDefaults = .standard) -> Bool {

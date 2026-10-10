@@ -804,6 +804,18 @@ v' = round(255·(v/255)^(1.8/2.2)) (γ ≈ 0.818; the LP measured ≈ 0.76, rang
 otherwise). Presentation only: FerazelCore, the goldens and the 102 tests are untouched; off is byte-identical to before. The 02:12 table glow is
 light 24 (the potion item 0xc84, light PICT 810, not gated by Effects). On the wall tiles it matches the video, but our sprite light pass
 over-lights the table by about L* 17. Open [MED]: re-read `.WrapLightFace` for that case.
+**As built (A2, 2026-10-10; Opus implementer, one Opus leg MERGEABLE + two fix rounds):** `tools/stage-ferazel.sh` (stage-btx shape:
+xcodegen → Release into `.build/xcode-ferazel` → `out/Ferazel/Ferazel's Wand.app`, `Resources/Ferazel/` or `FERAZEL_DATA` into
+`Contents/Resources/Ferazel/`, `xattr -cr`, ad-hoc sign + `--strict` verify, build stamp written into the staged WHAT-TO-EXPECT only,
+Icon Composer `ictool` previews (Xcode's `xcrun ictool` is actool's and cannot export) into `out/Ferazel/icon-previews/`, all to
+`~/Desktop/` unless `FERAZEL_STAGE_NO_DESKTOP=1`) and `Ferazel/WHAT-TO-EXPECT.md`. The gate card corrects the plan: line 7 magic bar
+x 419 + Times bold [MED]; line 8 the camera opens at (0, 0) and pans in (v 10 on step 24); frame 1 has no player face; lines 14–16
+added (black border = PICT 129 frame, confirmed by the Let's Play; tie-break; gamma + light-24 table glow as known deviations).
+**Ben, 2026-10-10 — the app's duplicate-black tie-break default is `highest`** (Let's Play 02:12: FG rock edges clean light grey,
+no yellow specks; confirmed by the measurement above). `FerazelController` reads `ColorTieBreak lowest` as lowest, anything else as
+highest; `ColorSearch`'s API default stays `.lowest`, so Core goldens are unchanged. Seat-ruled scope: that one controller edit is
+outside A2's Files list. G1 HK main 328 == floor 328; G2 **102/0**; G3 1,108/0; G4 6 + 28; G5 ×4 BUILD SUCCEEDED; G9 both copies
+pid + clean quit, no crash report. Ben's Phase 1 gate pending.
 
 ## D27 — Deimos Rising build: Ben's four rulings (2026-10-06)
 
@@ -956,4 +968,16 @@ passed.** Q1 (design §11.1, INDEX #42): "i'm playing on osx. let's try 60" → 
 TickCount** (`TickRate.osx`: the limiter's 2 ticks = 30.00 fps), not the classic 60.15 Hz default D29.5 proceeded on.
 `TickRate.classic` stays in DeimosHost. The MED gate-card items (24→16 colour cut, TGA orientation, `tesm` digit
 widths) raised no objection — they stay MED in the bank, unchallenged by Ben's eyes.
+**Approved by:** Ben.
+
+## D32 — Ferazel's Wand Phase 1 gate PASSED (2026-10-10)
+
+**Decided (Ben, in chat, after looking at the staged Phase 1 build `~/Desktop/Ferazel's Wand.app`, build 51ed68b = main
+ee5af2a):** "it looks good" — **the Phase 1 gate ("does it look like Ferazel", D26 / design §8) passed.** He asked "no
+animations yet?" first and was told that by design only Ferazel's breathe/walk-in-place stub and the camera move; every
+placed sprite stays in its Setup face until the sprite Handles run (Phases 2, 4, 5). He did not ask for scenery animation
+in Phase 1. The gate card's LOW/MED items raised no objection and stay labelled as they are in the bank. Defaults as staged:
+colour model `.exactNearest`, tie-break `highest` (D26 as-built A2 + LP measurement). **Still open:** the icon pick (previews
+in `~/Desktop/Ferazel icon previews/`); the hidden Mac-gamma toggle (off by default, unbuilt); the light-24 table over-light
+[MED]; the level-start music fade-in [LOW]. (D31 is taken on the unmerged `deimos-phase2` branch, so this is D32.)
 **Approved by:** Ben.
