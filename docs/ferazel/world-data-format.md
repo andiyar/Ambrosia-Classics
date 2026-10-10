@@ -138,7 +138,7 @@ Census values are from all 24 levels (Python dump of each field, this session).
 | 0x26d0 | u8 | level has its own `snd ` set in the world file | `.LoadLevelSounds @ 100333d4` | [HIGH] (0 in all levels) |
 | 0x2706 | i16 | ~~ambient darkness (0..5)~~ **enable flag** for per-cell darkness (values 1, 2, 5 all just enable; the darkness is the BG-cell high byte − 1) ⚑ wave 2 corr (2026-10-04) LT #5 | `.GetAmbDarkVal @ 1001aaf8`, `.DrawLightOverFace`, `.DrawParticles`, copied to globals+0x22 in `.SetupLevel` | [HIGH] (lighting-tables §7.1) |
 | 0x270a/0x270c | i16 | camera target offsets x/y added to the player-centred target (x: 0 everywhere; y: −30 in 11, −108 in 18, 36 in 25, −80 in 67) | `.FindUpperLeftCorner` | [HIGH] |
-| 0x270e | i16 | landing/"hard-ground" damage (112,150,56,100; 0 → 0x70) | `.HandlePlayerSprite` (`+0xd8 == 2` branch) | [MED] |
+| 0x270e | i16 | landing/"hard-ground" damage (112,150,56,100; 0 → 0x70) | `.HandlePlayerSprite` (`+0xd8 == 2` branch) | [MED] — ⚑ planner-probe (Phase 2 plan A10, landed by F3 2026-10-10; M l. 45106–45123): **damaging-surface damage, not landing damage** — right after `.ApplySpeedAndSeparateFromTiles`, `+0xd8 == 2` (material 2 = FG kind 2xx stood on) ∧ `+0x116 == 0` ∧ not dying → HP −= hdr+0x270e (0 → 0x70) every such frame, `+0x116 = 0x3c`, `+0xaa = 0x12`, hurt sound; no landing speed is read [HIGH] |
 | 0x2710 | i16 | ice slipperiness: ground friction = (256−v)·800>>8 (100 in 1,2; 80 in 11,18; 220 in 30,31) | `.HandlePlayerSprite` (`+0xd8 == 3`) | [HIGH] |
 | 0x2712 | i16 | gamma fade-in on level start | `.GameLoop` | [HIGH] (0 in data) |
 | 0x2714 | i16 | water-current push, 1/256 px/frame (550, 470, −512, 768) | `.StandardSpriteHandles`, `.WrapDrawWaterEffects` | [HIGH] |

@@ -124,6 +124,14 @@ public struct SpriteSlot: Equatable, Sendable {
     public var hotRectBuilt = false
     /// `+0x10` / `+0xe`: the hot-rect centre in world px (`.CalcCenterPos`, `.StandardSpriteCleanup`).
     public var centre = Point()
+    /// `+0x8` x / `+0x6` y: the position copy every integration step writes with `+0xc`/`+0xa` (`.SeparateFromTiles2`
+    /// at entry, raw `1003c82c..1003c844`); `.WallBounce` kinds 4–7 revert to it (F3; physics §0).
+    public var oldPosition = Point()
+    /// `+0x181` (u8): the ice-slide latch — cleared at every `.SeparateFromTiles2` entry, set by a `.WallBounce` /
+    /// `.WallBounceBG` slide (F3; player-states-2 §9.2).
+    public var slideLatch = false
+    /// `+0xeb` (u8): crunches tiles on contact (`.SeparateFromTiles2` runs the crunch-nibble pass while set; F3).
+    public var crunches: UInt8 = 0
     /// `+0xcd` (u8): `.StandardSpriteHandles` copies `+0xce` into it; `.PlatformBounce` sets 1 on a landing.
     public var onSprite: UInt8 = 0
     /// `+0xce` (u8): the ground / surface kind under the sprite this frame (0 airborne, 3 = a sprite).

@@ -35,7 +35,9 @@ public struct LevelHeader: Sendable, Equatable {
     /// 0x270a / 0x270c — camera target offsets x / y.
     public let cameraOffsetX: Int16
     public let cameraOffsetY: Int16
-    /// 0x270e — landing ("hard-ground") damage (0 → 0x70 at the use site).
+    /// 0x270e — damaging-surface damage: HP lost per frame on material 2 (`+0xd8 == 2`, FG kind 2xx) while not
+    /// invulnerable (0 → 0x70 at the use site; `.HandlePlayerSprite` M l. 45106–45123) — not landing damage
+    /// (Phase 2 plan Bank correction A10).
     public let landingDamage: Int16
     /// 0x2710 — ice slipperiness.
     public let iceSlipperiness: Int16

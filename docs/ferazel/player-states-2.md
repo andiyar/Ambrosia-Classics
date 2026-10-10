@@ -76,6 +76,13 @@ run for the player; they are listed only as "(bounce arm)".
 | 0x36..0x39 | 1:4 floor "/", four tiles | `t = c − X`; `s = ((32 − t) >> 2) + 24 / 16 / 8 / 0`; land as 0x32; ice: `vx −= 2.86·slip`, then the same `vy = max(vy, vx>>1)` as 0x32 (not mirrored) |
 | 0x3a, 0x3b | — | default: return 0 |
 | 0x3c | half floor 8 px higher | → kind 3 with Y − 8 (step 5) |
+⚑ planner-probe (Phase 2 plan A6, landed by F3 2026-10-10): "last frame's integers" for kinds 4–7 (and
+`.WallBounceBG` 4/7) are `+0x8`/`+0x6`, which `.SeparateFromTiles2` writes from the 24.8 position **at the entry of
+every call** (raw `1003c82c..1003c844`; `.ApplySpeedAndSeparateFromTiles` also writes them before each
+separation, `.ApplyGravityAndSeparateFromTiles` after its last) — so the revert goes to the position the current separation started from (the
+current integration sub-step), not to the previous frame's position [HIGH]. Kind 3 stores `B = Y+16` outside its
+`vy > 0` test: a rising sprite overlapping a kind-3 rect is still put on Y+16, it only does not land (`+0xce`, vy
+kept) [HIGH, decompile case 3 = raw `10037de8..`].
 Slip factors are f64 constants: 7.07 (`0x100a1910`), 3.82 (`0x100a1908`), 9.23 (`0x100a1900`), 2.86
 (`0x100a18f8`) (`tools/const.py`); a slide is applied at most once per frame per sprite (latch
 `s+0x181`). Labels: arithmetic [HIGH]; the shape glosses ("\" etc.) are [MED] (derived from the
@@ -154,6 +161,12 @@ switch on k − 3 (table `r2−0x2284` = 0x100a55bc, kinds 3..0x2f; others → n
 - Kinds 0, 1, 2, 5, 6, 8..0xb, 0x30..0x3b: nothing.
 - On a hit: `s+0xd0 = 1` (one-way top) and the 24.8 position is always re-synced (sub-pixel lost).
 Upgrades physics §3.3's "[LOW for one-way]".
+⚑ F3 follow-the-binary (2026-10-10, decompile l. 34114–34792): two rows above are incomplete. (1) Kinds 4 / 7:
+after the revert, when `y + bottom ≤ Y+16` (the reverted y) the routine **reports a hit** with only the revert
+(`uVar7 = 1` set before the test); the no-hit case is only `y + bottom > Y+16 ∧ Bprev > Y+19`. (2) The composites
+do not all test previous-x edges: 0x11 (`Y+16 < T` → 0xd / 0), 0x13 (`Y+16 < B` → 2, else `y + vC + B > 16` → 0xf,
+else none), 0x14 (`Y+16 < B` → 0 / 0xc) and 0x16 (`T < Y+16` → 2 / 0xe) test the current y; the others use
+`L/R − (vx >> 8)` as §9.3 with `.WallBounce`'s choices (raw `1003a960..1003a96c` for 0x14) [HIGH].
 
 ## 11. Kinds in the shipped levels (Python over all 24 `Mlvl`: FG table hdr+0x28e0, BG table
 hdr+0x29a0, tiles 0x50..0x5f forced to kind = tile as `.LoadTileDefinitions` does, FG/BG maps per

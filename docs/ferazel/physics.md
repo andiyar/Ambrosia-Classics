@@ -139,6 +139,13 @@ unrelated base — none seen]. Every constant below is hard-coded in the handler
 - `.ApplySpeedAndSeparateFromTiles @ 1004b83c` (player): `x += vx`; `y += vy` in sub-steps of
   0x400 (4 px) while `vy > 0x400`, stopping early when a collision changed vy; separate after
   each.
+  ⚑ planner-probe (Phase 2 plan A3, landed by F3 2026-10-10; raw from the main disasm): only the `vy ≤ 0x400`
+  path (one step) ends with a test — after its `.SeparateFromTiles2`, `vy == 0 ∧ +0xce == 0 ∧ climb
+  _DAT_100a0758 == 0` → **jump counter `_DAT_100a0764 = 0`** (raw `1004b998..1004b9c8`): a head bump (a ceiling
+  zeroed vy) or the apex ends the jump hold. The `vy > 0x400` loop stops when vy differs from its **entry** value
+  (`cmpw r0,r27`, `1004b8d8`), not merely when a collision ran, and then skips the remainder step; a free fall at
+  0x1000 separates 5 times (4 × 0x400, then the zero remainder). Every step also writes `+0x8/+0xc` and
+  `+0x6/+0xa` and the player globals `_DAT_1009fe68`/`_DAT_1009fe64` (the pre-separation pixels) [HIGH].
 - `.ApplyFriction(s, f)`: move vx toward 0 by `f`, no overshoot.
 - `.AccelerateSprite(s, ax, ay, maxX, maxY)`: in water (`+0x11c` or `+0x120`) all four args ×0.8
   (double 0x100a1928 = 0.8); `vx += ax; vy += ay`; clamp |vx| ≤ maxX and |vy| ≤ maxY when non-zero.
@@ -150,6 +157,12 @@ unrelated base — none seen]. Every constant below is hard-coded in the handler
   0x2c..0x2d (a<0) or 0x2e..0x2f (a>0) → ×0.382 (floats 0x100a1920/191c/1918, read with
   `tools/const.py`); `vx += a`; clamp |vx| ≤ cap. (So the slope families are 45°, ~22.5° and
   ~67.5° — cos values; the 0x24..0x2b family has no uphill penalty.)
+  ⚑ planner-probe (Phase 2 plan A5, landed by F3 2026-10-10; raw `10037350..10037580`): the ×0.8 test reads
+  **`+0x11c` only** (`lwz r0,0x11c(r3)`, raw `10037354`; M l. 32853) — unlike `.AccelerateSprite`, which also
+  tests `+0x120` — so it never fires for the player, whose `+0x11c` `.StandardSpriteHandles` has zeroed before the
+  Handle runs. The products are single precision: `vx += fctiwz(f32(a)·F)` and cap = `f32(f32(cap)·F)` (`fmuls`
+  `100374dc`, `10037508`), then `f32(|vx|) > cap → vx = ±fctiwz(cap)`; F = 0.707f / 0.923f / 0.382f (so 335 →
+  236 / 309 / 127, cap 1900 → 1343 / 1753 / 725) [HIGH].
 - `.HurtSprite @ 10037034 (s, dmg, kvx, kvy, invul, flash)`: only if `dmg>0`, `hp>0`,
   invulnerability `s+0x116 == 0`: `hp −= dmg; vx += kvx; vy += kvy; s+0x116 = invul;
   s+0xaa = flash`; returns 1.
@@ -177,6 +190,15 @@ Only sprites with a tile callback (`s+0x1f8`) collide. The 3×3 cells around the
 - BG tile kind `kb = BGkind(t)`; if `kb ≠ 0` and the sprite intersects the full 32×32 cell →
   `tileHit(s, pos, kb, 0)`.
 (The second 9-cell loop gated by `s+0xe4` computes rects and discards them — dead code.)
+⚑ planner-probe (Phase 2 plan A12, landed by F3 2026-10-10): the sprite's hot rect is built **once**, before the
+9-cell loop (stack `0x7a..0x80`, stored only at `1003c884..1003c8b4`, M l. 35206–35209), from the integer position
+the call writes at its entry (`+0x8 = +0xc`, `+0x6 = +0xa` from 24.8, raw `1003c82c..1003c844`, with `+0x181 = 0`);
+a callback that moves the sprite does not change the rect the later cells are tested with. The plan carried this
+[MED]; the store scan of the four slots makes it [HIGH]. Cells: centre = hot-rect centre / 32 as C division
+(`srawi 5; addze`); order (c,r), (c−1,r−1), (c,r−1), (c+1,r−1), (c−1,r), (c+1,r), (c−1,r+1), (c,r+1), (c+1,r+1);
+`+0xeb` is re-read per cell; the crunch 2×2 walk is column-outer. An empty BG cell (tile −1) has BG kind −1 ≠ 0,
+so it **does** reach the callback when the rect meets the cell (the callbacks' `< 100` arm sends −1 to
+`.WallBounce`, which returns at once) [HIGH].
 
 ### 3.2 FG hot rects (`.InitTileHotRects @ 10002824`)  [HIGH]
 Per FG tile, from `kind mod 100` (`SetRect(l,t,r,b)` arguments, tile-local px):
