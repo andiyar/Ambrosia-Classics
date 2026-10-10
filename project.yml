@@ -15,6 +15,9 @@ packages:
   # Aki/Core is already "core" (BTX precedent, DECISIONS D13.8).
   DeimosCore:
     path: Deimos/DeimosCore
+  # Through the `Ferazel/FerazelCore → Core` symlink, as Deimos (D13.8): Aki/Core is already "core".
+  FerazelCore:
+    path: Ferazel/FerazelCore
   HectorKit:
     path: ../HectorKit
 settings:
@@ -159,6 +162,29 @@ targets:
         INFOPLIST_FILE: Deimos/App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
+  # Ferazel's Wand (plan 2026-10-06-ferazel-phase1 S5/S6, A1): the original 1.0.3 data is staged into
+  # Contents/Resources/Ferazel by tools/stage-ferazel.sh (A2); the icon is the original icl8 128 scaled x16 (AppIcon.icon).
+  Ferazel:
+    type: application
+    platform: macOS
+    sources:
+      - path: Ferazel/App
+        excludes: ["Info.plist"]
+    dependencies:
+      - package: FerazelCore
+        product: FerazelCore
+      - package: FerazelCore
+        product: FerazelRender
+      - package: HectorKit
+        product: HectorShell
+    settings:
+      base:
+        PRODUCT_NAME: "Ferazel's Wand"
+        PRODUCT_BUNDLE_IDENTIFIER: com.ambrosiaclassics.ferazel
+        INFOPLIST_FILE: Ferazel/App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_APP_SANDBOX: NO
 schemes:
   Aki:
     build:
@@ -176,3 +202,7 @@ schemes:
     build:
       targets:
         Deimos: all
+  Ferazel:
+    build:
+      targets:
+        Ferazel: all
