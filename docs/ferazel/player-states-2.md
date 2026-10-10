@@ -84,8 +84,9 @@ current integration sub-step), not to the previous frame's position [HIGH]. Kind
 `vy > 0` test: a rising sprite overlapping a kind-3 rect is still put on Y+16, it only does not land (`+0xce`, vy
 kept) [HIGH, decompile case 3 = raw `10037de8..`].
 Slip factors are f64 constants: 7.07 (`0x100a1910`), 3.82 (`0x100a1908`), 9.23 (`0x100a1900`), 2.86
-(`0x100a18f8`) (`tools/const.py`); a slide is applied at most once per frame per sprite (latch
-`s+0x181`). Labels: arithmetic [HIGH]; the shape glosses ("\" etc.) are [MED] (derived from the
+(`0x100a18f8`) (`tools/const.py`); a slide is applied at most once per `.SeparateFromTiles2` call per sprite (latch
+`s+0x181`, cleared at every call's entry, raw `1003c868` — so a sprite separated several times in a frame can slide
+several times; ⚑ F3 review correction of "once per frame"). Labels: arithmetic [HIGH]; the shape glosses ("\" etc.) are [MED] (derived from the
 surface formulas, not from tile art).
 
 ### 9.3 Composite kinds 0x10..0x1f (recursion; `c` = centred left, `c+1` = centred right)  [HIGH]
@@ -344,7 +345,7 @@ shipped data never exercises the odd part (§11). A replica copies these rules e
   `+0x88` ~~draw-normal flag~~ light-overlay gate (`.WrapLightFace` pass; ⚑ corrected (review 1c, 2026-10-03) #5, physics §0.1); `+0x18c` effect-active flag.
 - `+0xd0` on a one-way top (`.WallBounceBG` 1, `.WallBounce` 0, `.PlatformBounce` one-way).
 - `+0xe4` enables `.SeparateFromTiles2`'s second (dead) loop — player 1; `+0xeb` crunch-capable.
-- `+0x140` skip water processing; `+0x181` ice slide applied this frame; `+0x1b2` handler skip.
+- `+0x140` skip water processing; `+0x181` ice slide applied in this `.SeparateFromTiles2` call (cleared at each call); `+0x1b2` handler skip.
 - `+0x1e4` cannon sprite; `+0x1ec/+0x1f0/+0x1f4` saved handler / hit / tile callbacks while
   cannoned; `+0x130` (cannoned) fire timer.
 

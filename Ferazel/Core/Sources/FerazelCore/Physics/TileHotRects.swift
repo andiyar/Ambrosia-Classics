@@ -8,15 +8,14 @@ import Foundation
 ///   loop; a negative kind takes the full rect). `.SeparateFromTiles2` reads it by **tile**; `.WallBounce` /
 ///   `.WallBounceBG` read it by **kind** (`mulli r3,k,0x14`, raw `10037b8c..10037bc0`) — the as-written quirk of
 ///   player-states-2 §14 item 1, kept by indexing this one table with both.
-/// - `perKind[k]` = entry `k`'s `+0xc` rect, kind 0…63 — read only by `.SeparateFromTiles2`'s dead second loop
-///   (`+0xe4`, raw `1003ce74..1003cea0`); built for fidelity, unused.
+/// - Entry `k`'s `+0xc` rect (kind 0…63) is read only by `.SeparateFromTiles2`'s dead second loop (`+0xe4`, raw
+///   `1003ce74..1003cea0`) and is not kept (F3 review: no reader).
 /// - The third table (`DAT_100a4314`, 96 × 0xc bytes, inset 6 px for 3…5 else 2 px) has no reader (physics §3.2) and is
 ///   not kept.
 public struct TileHotRects: Equatable, Sendable {
     public typealias Rect = IdleSprites.Rect
 
     public let perTile: [Rect]
-    public let perKind: [Rect]
 
     /// `fgKind(t)` = `.LookupFGTileKind(t)` (the level's runtime FG table; −1 outside 0…95).
     public init(fgKind: (Int) -> Int) {
@@ -41,23 +40,7 @@ public struct TileHotRects: Equatable, Sendable {
             default: tiles.append(set(0, 0, 0x20, 0x30))              // `LAB_10002a18`: < 0, 8…0x2c, 0x2e, ≥ 0x30
             }
         }
-        var kinds: [Rect] = []
-        kinds.reserveCapacity(0x40)
-        for k in 0..<0x40 {
-            switch k {
-            case 0: kinds.append(set(0, 0, 0x10, 0x20))
-            case 1: kinds.append(set(0, 0, 0x20, 0x10))
-            case 2: kinds.append(set(0x10, 0, 0x20, 0x20))
-            case 3: kinds.append(set(0, 0x10, 0x20, 0x20))
-            case 4: kinds.append(set(0, 0x10, 0x10, 0x20))
-            case 5: kinds.append(set(0, 0, 0x10, 0x10))
-            case 6: kinds.append(set(0x10, 0, 0x20, 0x10))
-            case 7: kinds.append(set(0x10, 0x10, 0x20, 0x20))
-            default: kinds.append(set(0, 0, 0x20, 0x20))
-            }
-        }
         perTile = tiles
-        perKind = kinds
     }
 
     /// The level's table (`.LoadTileDefinitions` then `.InitTileHotRects`).

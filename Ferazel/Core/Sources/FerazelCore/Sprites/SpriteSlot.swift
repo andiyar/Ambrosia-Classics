@@ -146,8 +146,10 @@ public struct SpriteSlot: Equatable, Sendable {
     public var onSprite: UInt8 = 0
     /// `+0xce` (u8): the ground / surface kind under the sprite this frame (0 airborne, 3 = a sprite).
     public var groundKind: UInt8 = 0
-    /// `+0xcf` (u8): ceiling hit (`.PlatformBounce` return 2).
-    public var ceilingHit = false
+    /// `+0xcf` (u8): ceiling hit — the byte as written: `.WallBounce`/`.WallBounceBG` store the (base) kind byte
+    /// (`uVar18`/`uVar9` = `(char)param_2`, decompile l. 33188, 34197), `.PlatformBounce` return 2 stores 1. Its
+    /// reader tests ≠ 0 (`100546cc`).
+    public var ceilingHit: UInt8 = 0
     /// `+0xd0` (u8): landed on a one-way top.
     public var oneWayLanded = false
     /// `+0xd2` / `+0xd4` (i16): the left / right surface heights of a sloped top (`.InitSprite` −1000 each = flat).

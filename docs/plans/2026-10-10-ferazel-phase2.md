@@ -100,6 +100,7 @@ git -C "$WT" status --porcelain | grep -v '^??'
 F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a **145** → P1b **151** → P2 **160** → P3 **170**
 → P4 **180** → P5 **188** → W1 **196** → W2a **200** → W2b **205** → W3 **213** → W4 **219** → E1a **224** → E1b
 **227** → S1 **234** → GD **238** (then A3, A4: no tests). Merged in another order: previous total + the task's N.
+As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139).
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -198,7 +199,8 @@ New source folders only: `Sources/FerazelCore/{Random,Physics,World/Movers,Playe
   block), `handler: SpriteHandler`, plus `scratch: [Int: Int32]` **forbidden** — every field a task needs is named.
   Field list is open to additions by later tasks (Invariant 9); each addition names its offset.
 - ★ `enum SpriteHandler { case player, platform, chain, background, box, effect, rope, ropeSegment, inert }` — `inert`
-  = Phase 4/5 classes (Bonus, enemies): no Handle, no hit callback, still drawn, idled and erased.
+  = Phase 4/5 classes (Bonus, enemies): no Phase-2 Handle **except the Bonus Handle's `.StandardSpriteHandles` + light
+  twinkle** (F2 review), no hit callback, still drawn, idled and erased.
 - ★ `SpriteWorld` (F2, `Session/SpriteWorld.swift`) — F2 moves the session onto it: owns `ActiveList`, `IdleSprites`,
   `FastRand` (moved from the session), `GameGlobals`, the level; `PlayerState` is added by P1a (not F2);
   `func handleSprites()` (`.MTHandleSprites`: walk with next pre-loaded),
@@ -343,16 +345,20 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   (c−1,r+1), (c,r+1), (c+1,r+1); entry hot rect computed once [MED]; FG kind ≠ −1 ∧ rect meets the tile's FG hot rect
   → crunch nibbles (if `+0xeb`) then `callback(kind, 1)`; BG kind ≠ 0 ∧ full cell meets → `callback(kind, 0)`.
   `.WallBounce` full table (hundreds → material; `k < 0 ∨ k > 0x3c` → no collision; centring except 0, 2, 8, 0xb,
-  0xd, 0xe, 0x24..0x2b; 0x3c = kind 3 at Y−8; kinds 4–7 revert to the call's entry position; slopes land
-  `vy = |vx| + 0x100` / `|vx|/2 + 0x100` / `2|vx| + 0x100`; 0x2c..0x2f set `+0xce` even rising; ice once per frame
-  `+0x181` with f64 slide factors 7.07/3.82/9.23/2.86; `+0xd8 = material` if > 0). `.WallBounceBG` (one-way floors
+  0xd, 0xe, 0x24..0x2b; 0x3c = kind 3 at Y−8; kinds 4–7 revert to the call's entry position; kind 3 puts the bottom
+  on Y+16 **even when rising** but lands (vy 0, `+0xce`) only when `vy > 0` — the `sth r0,0xa(r31)` at raw `10037e48`
+  is outside the `vy > 0` test `10037e20..10037e28` (F3 review); slopes land
+  `vy = |vx| + 0x100` / `|vx|/2 + 0x100` / `2|vx| + 0x100`; 0x2c..0x2f set `+0xce` even rising; ice once per
+  `.SeparateFromTiles2` **call** (`+0x181` cleared at every call, raw `1003c868`, not once per frame — F3 review)
+  with f64 slide factors 7.07/3.82/9.23/2.86; `+0xd8 = material` if > 0). `.WallBounceBG` (one-way floors
   `Bprev ≤ Y+17`, slopes `Bprev ≤ Y+s+3`, ceilings two-way, `+0xd0 = 1`, position re-synced). `.ApplySpeedAndSeparate
   FromTiles @1004b83c` (M l. 43183): x += vx; vy ≤ 0x400 → one step + separate, then **vy == 0 ∧ `+0xce` == 0 ∧
   climb == 0 → jump counter 0** (raw `1004b998..1004b9c8`, returned to the caller as a flag); vy > 0x400 → 0x400 steps
   with a separation after each, stop when vy changes, remainder + one more separation (M l. 43226–43245).
   `.AccelerateSprite` (×0.8 when `+0x11c ∨ +0x120`, M l. 32768), `.AccelerateBasedOnSlope` (f32 0.707/0.923/0.382 by
   kind; ×0.8 tests `+0x11c` only, M l. 32853 — never fires for the player, Bank correction A5).
-- **Tests (10):** `testKind3FloorLandsOnlyFalling` (bottom = Y+16, vy 0, `+0xce` 3; rising passes) ·
+- **Tests (10):** `testKind3FloorLandsOnlyFalling` (bottom = Y+16, vy 0, `+0xce` 3; rising: the bottom is still put
+  on Y+16 but does not land — `+0xce` 0, vy kept; the store at raw `10037e48` is outside the `vy > 0` test) ·
   `testKind0WallPush` (moving left into kind 0: left edge X+16, vx 0, no `+0xce`) · `testSlope45LandingVy` (kind 0xc,
   vx 1000 → vy 1256, `+0xce` 0xc) · `testKind2cSnapsWhileRising` (vy −500 → `+0xce` 0x2c, vy 2|vx| + 0x100) ·
   `testKind3cIsFloor8pxHigher` · `testNoCollisionKinds` (0x30, 0x31, 0x3a, 0x3b, 80..95, 0x4e → no effect) ·
@@ -567,7 +573,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 - **Precondition:** read `SpriteSlot.applyDynamicLight(lightTile:fakeLight:)` (`Sources/FerazelCore/Sprites/SpriteSlot.swift`);
   determine from the data (the light byte of the cells the level-2 rafts float over; L2 hdr 0x2706 = 1) whether
   L = −1 makes mode 0xb reachable, and record the finding in the commit body and STATE (E2 builds 0xb + table 0148 if
-  reachable — see E2).
+  reachable — see E2). Carry: `.ActiveToIdleSprite` does not unlink; `.UpdateSprites` kills later — Core's Phase-1
+  `IdleSprites` unlinks at once; W1 reconciles (F2 fix-round finding).
 - **Contract:** physics-sprites §8.9, platforms-ropes-radial §1–§2, -2 §8–§9, digest B §2.2. `.SetupPlatformSprite
   @10061f94` (layer −1, `+0xc0 = 0` → **frame 1 draws no platform**, one-way, sag 0x50, `+0xa6 = 1`), first handler
   `.DoSetupPlatformSprite @10062098` (mode p1, face set 0x578 + (type − 0x578)·0x34, rect (0x10,6,0x3d,0x1e)),

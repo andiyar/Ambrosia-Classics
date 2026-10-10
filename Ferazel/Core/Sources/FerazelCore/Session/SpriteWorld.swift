@@ -12,8 +12,27 @@ import Foundation
 ///
 /// The Handles and hit callbacks are passed in by the caller (the session) and dispatch on `SpriteSlot.handler`;
 /// this type owns only the list walks.
+///
+/// ⚠️ Exclusivity (F3 review) — two ways to lose or trap a write, both silent in the type system:
+/// 1. **Never call the tile solver (or any routine that writes `active`) inside `active.update(id:) { … }`.** The
+///    closure holds exclusive access to `active`; a nested `world.active` access traps at run time ("Simultaneous
+///    accesses … modification requires exclusive access"), in release builds too. Read what you need, close the
+///    closure, then call.
+/// 2. **Never hold a `SpriteSlot` copy across a solver call and write it back** (`var s = active.sprite(id:)!; …
+///    solver.separateFromTiles(id, …); active.update(id:) { $0 = s }`): the write-back silently undoes everything the
+///    solver and its tile callbacks did. Re-read after the call (the solver itself does this around its recursions and
+///    callbacks). Debug builds can check a held copy with `solverWrites`: take it before, `assert` it unchanged before
+///    the write-back.
 public final class SpriteWorld {
     public let level: LevelFile
+    /// The one mutable tile map (FG/BG cells + the kind tables) every Core tile reader uses during play — the tile
+    /// solver, P2's `.CrunchTile` (which writes it and emits `DrawOp.setTile`), and every later reader (F3 review: one
+    /// source of truth). Built from `level` at init; `level.fg`/`level.bg` stay the loaded file (the Phase-1 Setups read
+    /// them at spawn time, before any crunch, and FerazelRender draws from them plus `setTile`).
+    public var tiles: TileGrid
+    /// Debug aid for hazard 2 above: bumped by every sprite write of the tile solver (`.SeparateFromTiles2`,
+    /// `.WallBounce`, `.WallBounceBG`). No behaviour reads it.
+    public internal(set) var solverWrites: UInt = 0
     /// The active list (`*(_DAT_1009ff58 + 0x5c)`).
     public var active: ActiveList
     /// The idle table (`0x100ac02c`).
@@ -35,6 +54,7 @@ public final class SpriteWorld {
 
     public init(level: LevelFile, seed: Int32 = 1, active: ActiveList = ActiveList(), idle: IdleSprites = IdleSprites()) {
         self.level = level
+        tiles = TileGrid(level: level)
         rng = FastRand(seed: seed)
         globals = GameGlobals(header: level.header)
         self.active = active

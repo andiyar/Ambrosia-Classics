@@ -6,6 +6,10 @@ public struct ApplySpeedResult: Equatable, Sendable {
     public var zeroJumpCounter: Bool
     /// `*_DAT_1009fe68` / `*_DAT_1009fe64`: the player's whole-px x / y as last written before a separation (the
     /// pre-separation pixels of the last step; `.HandlePlayerSprite` rewrites them later in the frame, save-continue).
+    ///
+    /// Extra surface, not a return value in the binary: the routine stores these two **globals** (raw `1004b974`,
+    /// `1004b98c`), and their home, P1a's `PlayerState`, does not exist yet in F3 — so they are handed back for the
+    /// caller to store. P1a may store them directly and stop reading these fields.
     public var playerX: Int16
     public var playerY: Int16
 
@@ -27,20 +31,23 @@ extension TileSolver {
     ///   (no remainder); remaining < 0x400 → stop }; if vy never changed: `+0x1c += remaining`, pixel copies, one more
     ///   separation (M l. 43226–43245). A free fall at vy 0x1000 separates 5 times (the last with a zero remainder).
     ///
-    /// - Parameter climb: `*_DAT_100a0758` (the cling/climb state, P1a's `PlayerState`).
+    /// - Parameter climb: reads `*_DAT_100a0758` (the cling/climb state, P1a's `PlayerState`). A closure, not a
+    ///   value: the dump loads it **after** the separation (`lwz r3,-0x70e8(r2); lha r0,0(r3)`, raw `1004b9b0..bc`,
+    ///   after the `bl 0x1003c804` at `1004b990`), and `.HitPlayerTileSprite` (the `pass` callback, P2) can set it to 1
+    ///   during that separation. No default: every caller says where climb lives.
     /// - Parameter pass: the player's tile callback (`.HitPlayerTileSprite`, P2).
     @discardableResult
-    public func applySpeedAndSeparate(_ id: Int, climb: Int16 = 0, pass: TileHit?) -> ApplySpeedResult {
+    public func applySpeedAndSeparate(_ id: Int, climb: () -> Int16, pass: TileHit?) -> ApplySpeedResult {
         guard let s0 = world.active.sprite(id: id) else {
             return ApplySpeedResult(zeroJumpCounter: false, playerX: 0, playerY: 0)
         }
         let entryVY = s0.vy                                             // r27
         var result = ApplySpeedResult(zeroJumpCounter: false, playerX: 0, playerY: 0)
-        world.active.update(id: id) { $0.x256 &+= $0.vx }
+        put(id) { $0.x256 &+= $0.vx }
 
         /// `+0x1c += dy`, then `+0x8 = +0xc = *_DAT_1009fe68 = x px`, `+0x6 = +0xa = *_DAT_1009fe64 = y px`, separate.
         func step(_ dy: Int32) {
-            world.active.update(id: id) { s in
+            put(id) { s in
                 s.y256 &+= dy
                 let px = SpriteWorld.pixel(s.x256), py = SpriteWorld.pixel(s.y256)
                 s.oldPosition = SpriteSlot.Point(x: px, y: py)
@@ -54,7 +61,8 @@ extension TileSolver {
 
         if entryVY <= 0x400 {
             step(entryVY)
-            if let s = world.active.sprite(id: id), s.vy == 0, s.groundKind == 0, climb == 0 {
+            // `lwz r0,0x2c` / `lbz r0,0xce` / `lha` of `*_DAT_100a0758`, in that order, all after the separation.
+            if let s = world.active.sprite(id: id), s.vy == 0, s.groundKind == 0, climb() == 0 {
                 result.zeroJumpCounter = true
             }
         } else {
@@ -87,15 +95,15 @@ extension TileSolver {
             g = Int16(truncatingIfNeeded: Self.fctiwz(Double(s0.gravity) * Double(bitPattern: 0x3fe6_6666_6666_6666)))
             if g < 0x100 { g = 0x100 }
         }
-        world.active.update(id: id) { $0.groundKind = 0 }
+        put(id) { $0.groundKind = 0 }
         separateFromTiles(id, pass: pass)
-        world.active.update(id: id) { s in
+        put(id) { s in
             s.vy &+= Int32(g)
             s.x256 &+= s.vx
         }
         var vy = world.active.sprite(id: id)?.vy ?? 0
         func step(_ dy: Int32) {
-            world.active.update(id: id) { $0.y256 &+= dy }
+            put(id) { $0.y256 &+= dy }
             separateFromTiles(id, pass: pass)
         }
         if vy > 0xc00 {
@@ -107,7 +115,7 @@ extension TileSolver {
         } else {
             step(vy)
         }
-        world.active.update(id: id) { s in
+        put(id) { s in
             let px = SpriteWorld.pixel(s.x256), py = SpriteWorld.pixel(s.y256)
             s.oldPosition = SpriteSlot.Point(x: px, y: py)
             s.x = px
@@ -116,6 +124,28 @@ extension TileSolver {
             s.centre.x = Int(Int16(truncatingIfNeeded: s.x + r.left + Int(Int16(truncatingIfNeeded: (r.right - r.left) >> 1))))
             s.centre.y = Int(Int16(truncatingIfNeeded: s.y + r.top + Int(Int16(truncatingIfNeeded: (r.bottom - r.top) >> 1))))
         }
+    }
+}
+
+extension TileSolver {
+    /// `.AccelerateSprite` on sprite `id` (plan S2 name; `SpriteSlot.accelerateSprite`).
+    public func accelerateSprite(_ id: Int, ax: Int32, ay: Int32, maxX: Int32, maxY: Int32) {
+        put(id) { $0.accelerateSprite(ax: ax, ay: ay, maxX: maxX, maxY: maxY) }
+    }
+
+    /// `.AccelerateBasedOnSlope` on sprite `id` (plan S2 name; `SpriteSlot.accelerateBasedOnSlope`).
+    public func accelerateBasedOnSlope(_ id: Int, _ a: Int16, cap: Int32) {
+        put(id) { $0.accelerateBasedOnSlope(a, cap: cap) }
+    }
+
+    /// `.ApplyFriction` on sprite `id` (plan S2 name; `SpriteSlot.applyFriction`, F2).
+    public func applyFriction(_ id: Int, _ f: Int16) {
+        put(id) { $0.applyFriction(f) }
+    }
+
+    /// `.EnforceMaxSpeed` on sprite `id` (plan S2 name; `SpriteSlot.enforceMaxSpeed`, F2).
+    public func enforceMaxSpeed(_ id: Int, _ m: Int32) {
+        put(id) { $0.enforceMaxSpeed(m) }
     }
 }
 

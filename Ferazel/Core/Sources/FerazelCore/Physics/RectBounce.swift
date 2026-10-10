@@ -203,7 +203,7 @@ extension SpriteWorld {
                 if s.sag > 0 && entryVY > 0x200 { s.vy &+= (entryVY &* Int32(s.sag)) >> 8 }
             }
         } else if result == 2 {
-            active.update(id: mID) { $0.ceilingHit = true }
+            active.update(id: mID) { $0.ceilingHit = 1 }
         }
         return result
     }

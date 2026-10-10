@@ -53,12 +53,18 @@ extension TileSolver {
     ///   `y += 2`, `vy += 0x200` when `vy > 0` (`y += 1` for 0x13/0x14, unreachable); `+0xd0 = 0`; 24.8 re-synced
     ///   only for an integer that changed; material > 0 → `+0xd8`.
     ///
-    /// `+0xcf` stores the kind byte in the dump; its only reader tests ≠ 0 (`100546cc`), so `ceilingHit` = true.
+    /// `+0xcf` (`ceilingHit`) stores the kind byte as the dump does (`uVar18 = (undefined1)param_2`, l. 33188 — the
+    /// base kind: hundreds stripped, 0x3c already 3; a composite stores its recursion's base kind).
     /// The 7th argument (`param_7`) is only forwarded by the recursions and is not kept.
+    ///
+    /// `vCentre` is `*param_4`, a pointer to a short in the caller's frame (`&sStack_72`, `&sStack_4c`, …; decompile
+    /// l. 48259, 55875), dereferenced only by kind 0x13 (l. 33621). It is passed by value: nothing between entry and
+    /// that read writes the caller's local (this routine writes the sprite record and `*param_3` only), so the two
+    /// are equal [LOW].
     @discardableResult
     public func wallBounce(_ id: Int, kind kindIn: Int, tile pos: inout TilePos, vCentre: Int, factor: Int16,
                            rect r: IdleSprites.Rect, bounce: Bool) -> Bool {
-        let h = Self.h
+        let h = Self.short16
         guard var s = world.active.sprite(id: id) else { return false }
         var k = Int(Int16(truncatingIfNeeded: kindIn))
         var material = 0
@@ -82,7 +88,7 @@ extension TileSolver {
             let tileRect = IdleSprites.Rect(top: h(pos.y + e.top), left: h(pos.x + e.left), bottom: h(pos.y + e.bottom),
                                             right: h(pos.x + e.right))
             guard M.intersects(tileRect) else {
-                world.active.update(id: id) { $0 = s }
+                put(id) { $0 = s }
                 return false
             }
         }
@@ -104,7 +110,7 @@ extension TileSolver {
         func bounceVertical() { s.vx = (s.vx &* f) >> 8; s.vy = 0 &- ((s.vy &* f) >> 8) }
         func ceiling() {
             if s.vy < 0 && bounce { bounceVertical() }
-            if s.vy < 0 { s.ceilingHit = true; s.vy = 0 }
+            if s.vy < 0 { s.ceilingHit = kindByte; s.vy = 0 }
         }
         func floorStop() {
             if s.vy > 0 && bounce { s.vy = 0 &- ((s.vy &* f) >> 8) }
@@ -113,7 +119,7 @@ extension TileSolver {
         func restore() { s.x = s.oldPosition.x; s.y = s.oldPosition.y }
         /// A composite: write the sprite back, recurse with the base kind and the original rect, read it back.
         func recurse(_ base: Int) -> Bool {
-            world.active.update(id: id) { $0 = s }
+            put(id) { $0 = s }
             let result = wallBounce(id, kind: base, tile: &pos, vCentre: vCentre, factor: factor, rect: r, bounce: bounce)
             s = world.active.sprite(id: id) ?? s
             return result
@@ -497,7 +503,7 @@ extension TileSolver {
             if entryY256 >> 8 != Int32(s.y) { s.y256 = Int32(s.y) << 8 }
             if material > 0 { s.material = Int16(material) }
         }
-        world.active.update(id: id) { $0 = s }
+        put(id) { $0 = s }
         return hit
     }
 }

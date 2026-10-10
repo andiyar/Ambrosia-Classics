@@ -21,7 +21,7 @@ extension TileSolver {
     @discardableResult
     public func wallBounceBG(_ id: Int, kind kindIn: Int, tile pos: inout TilePos, vCentre: Int, factor: Int16,
                              rect r: IdleSprites.Rect, bounce: Bool) -> Bool {
-        let h = Self.h
+        let h = Self.short16
         guard var s = world.active.sprite(id: id) else { return false }
         var k = Int(Int16(truncatingIfNeeded: kindIn))
         guard k >= 0, k <= 0x3c else { return false }
@@ -35,7 +35,7 @@ extension TileSolver {
             let tileRect = IdleSprites.Rect(top: h(pos.y + e.top), left: h(pos.x + e.left), bottom: h(pos.y + e.bottom),
                                             right: h(pos.x + e.right))
             guard M.intersects(tileRect) else {
-                world.active.update(id: id) { $0 = s }
+                put(id) { $0 = s }
                 return false
             }
         }
@@ -55,14 +55,14 @@ extension TileSolver {
         func bounceVertical() { s.vx = (s.vx &* f) >> 8; s.vy = 0 &- ((s.vy &* f) >> 8) }
         func ceiling() {
             if s.vy < 0 && bounce { bounceVertical() }
-            if s.vy < 0 { s.ceilingHit = true; s.vy = 0 }
+            if s.vy < 0 { s.ceilingHit = kindByte; s.vy = 0 }
         }
         /// `rect.bottom + (y − (vy >> 8)) ≤ limit` — the previous bottom (`vy >> 8` as an int).
         func fromAbove(_ limit: Int) -> Bool { r.bottom + (s.y - Int(s.vy >> 8)) <= limit }
         /// The previous left / right edge offset from X: `rect.edge + (x − (short)(vx >> 8)) − X`.
         func prevEdge(_ edge: Int) -> Int { h(edge + (s.x - Self.short8(s.vx)) - X) }
         func recurse(_ base: Int) -> Bool {
-            world.active.update(id: id) { $0 = s }
+            put(id) { $0 = s }
             let result = wallBounce(id, kind: base, tile: &pos, vCentre: vCentre, factor: factor, rect: r, bounce: bounce)
             s = world.active.sprite(id: id) ?? s
             return result
@@ -91,7 +91,7 @@ extension TileSolver {
             s.y = s.oldPosition.y
             let wall = k == 4 ? h(M.left - X) : h((X + 0x20) - M.right)
             if h((Y + 0x20) - M.bottom) < wall {
-                world.active.update(id: id) { $0 = s }                 // `return uVar2`: the revert only
+                put(id) { $0 = s }                 // `return uVar2`: the revert only
                 return true
             }
             if Y + 0x10 < s.y + r.bottom {
@@ -245,7 +245,7 @@ extension TileSolver {
             s.x256 = Int32(s.x) << 8
             s.y256 = Int32(s.y) << 8
         }
-        world.active.update(id: id) { $0 = s }
+        put(id) { $0 = s }
         return hit
     }
 }

@@ -60,20 +60,34 @@ public enum TileLayer: Int, Equatable, Sendable {
 public typealias TileHit = (TileSolver, _ id: Int, _ cell: TilePos, _ kind: Int, _ layer: TileLayer) -> Void
 
 /// The tile solver (plan S2, F3; physics §2–§3, player-states-2 §9–§14): `.SeparateFromTiles2`, `.WallBounce`,
-/// `.WallBounceBG` and the integration helpers that call them. It reads and writes the sprites of `world` in place.
+/// `.WallBounceBG` and the integration helpers that call them. It reads and writes the sprites of `world` in place,
+/// and reads the world's one tile map `world.tiles` (F3 review: no private copy — P2's `.CrunchTile` writes the same
+/// map the next separation reads).
+///
+/// ⚠️ Exclusivity (see `SpriteWorld`): never call a solver routine from inside `world.active.update(id:) { … }` (a
+/// run-time exclusivity trap), and never write back a `SpriteSlot` copy taken before a solver call (it silently
+/// undoes the solver and its tile callbacks). Tile callbacks are called outside any `update` closure, so they may
+/// read and write `world` freely; the solver re-reads the sprite after each callback and recursion.
 public final class TileSolver {
     public let world: SpriteWorld
-    public var grid: TileGrid
+    /// `DAT_100a4794`, built from the kind tables of `world.tiles` at init (`.InitTileHotRects` runs once per level,
+    /// after `.LoadTileDefinitions`; the kind tables do not change during play — a crunch changes cells, not kinds).
     public let hotRects: TileHotRects
 
-    public init(world: SpriteWorld, grid: TileGrid? = nil) {
+    public init(world: SpriteWorld) {
         self.world = world
-        let g = grid ?? TileGrid(level: world.level)
-        self.grid = g
-        hotRects = TileHotRects(fgKind: g.fgKind(tile:))
+        let kinds = world.tiles
+        hotRects = TileHotRects(fgKind: kinds.fgKind(tile:))
     }
 
-    @inline(__always) static func h(_ v: Int) -> Int { Int(Int16(truncatingIfNeeded: v)) }
+    /// `(short)v`: the 16-bit truncation the dump applies to every coordinate sum (`extsh`).
+    @inline(__always) static func short16(_ v: Int) -> Int { Int(Int16(truncatingIfNeeded: v)) }
+
+    /// Every sprite write of the solver goes through here (bumps `world.solverWrites`, the hazard-2 debug aid).
+    @inline(__always) func put(_ id: Int, _ body: (inout SpriteSlot) -> Void) {
+        world.active.update(id: id, body)
+        world.solverWrites &+= 1
+    }
 
     /// `.SeparateFromTiles2 @ 1003c804` (decompile l. 35130ff.; raw `1003c804..1003cec8`; physics §3.1):
     /// 1. **At entry, every call**: `+0x8 = +0xc = (i16)(+0x14 >> 8)`, `+0x6 = +0xa = (i16)(+0x1c >> 8)` (raw
@@ -92,14 +106,14 @@ public final class TileSolver {
     /// - Parameter pass: the sprite's tile callback `+0x1f8` (nil = 0). // later: the handlers' callbacks (P2
     ///   `.HitPlayerTileSprite`, W1–W3 movers) — the crunch nibble's `.CrunchTile` is P2's, reached through them.
     public func separateFromTiles(_ id: Int, pass: TileHit?) {
-        let h = Self.h
+        let h = Self.short16
         guard var s = world.active.sprite(id: id) else { return }
         let px = SpriteWorld.pixel(s.x256), py = SpriteWorld.pixel(s.y256)
         s.oldPosition = SpriteSlot.Point(x: px, y: py)
         s.x = px
         s.y = py
         s.slideLatch = false
-        world.active.update(id: id) { $0 = s }
+        put(id) { $0 = s }
         guard let pass else { return }
 
         let r = s.hotRect
@@ -111,10 +125,10 @@ public final class TileSolver {
                      (c - 1, row + 1), (c, row + 1), (c + 1, row + 1)]
         for (col, rw) in cells {
             let X = h(col << 5), Y = h(rw << 5)
-            let fgTile = grid.fgTile(col: col, row: rw)
-            let bgTile = grid.bgTile(col: col, row: rw)
-            let fgKind = Int(Int16(truncatingIfNeeded: grid.fgKind(tile: fgTile)))
-            let bgKind = Int(Int16(truncatingIfNeeded: grid.bgKind(tile: bgTile)))
+            let fgTile = world.tiles.fgTile(col: col, row: rw)
+            let bgTile = world.tiles.bgTile(col: col, row: rw)
+            let fgKind = Int(Int16(truncatingIfNeeded: world.tiles.fgKind(tile: fgTile)))
+            let bgKind = Int(Int16(truncatingIfNeeded: world.tiles.bgKind(tile: bgTile)))
             if fgKind != -1 {
                 let e = hotRects.perTile[fgTile]
                 let tileRect = IdleSprites.Rect(top: h(Y + e.top), left: h(X + e.left), bottom: h(Y + e.bottom),
@@ -127,7 +141,7 @@ public final class TileSolver {
                             for j in 0..<2 {
                                 let rr = rw - 1 + j
                                 let cy = h(rr << 5)
-                                let dir = Int(Int16(truncatingIfNeeded: grid.crunchDir(col: cc, row: rr)))
+                                let dir = Int(Int16(truncatingIfNeeded: world.tiles.crunchDir(col: cc, row: rr)))
                                 guard dir > 0 else { continue }
                                 let box = IdleSprites.Rect(top: h(cy + 0x10), left: h(cx + 0x10), bottom: h(cy + 0x30),
                                                            right: h(cx + 0x30))
