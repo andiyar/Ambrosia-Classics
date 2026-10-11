@@ -189,6 +189,7 @@ final class SessionTests: XCTestCase {
                 case .changeLightFace: return "lightFace"
                 case .wrapEraseSprites: return "erase"
                 case .statusBar: return "status"
+                case .gammaStep: return "gamma"
                 }
             }
         }

@@ -121,11 +121,12 @@ final class SpriteDrawTests: XCTestCase {
         assertDrawn(try draw(SpriteDraw(face: Self.ref, x: 400, y: 100 + 0x180 - 2, clip: open), h: 300, v: 100),
                     x0: 400, y0: 100 + 0x180 - 2, rows: 0..<2, cols: 0..<8, flip: false, fill: fill)
 
-        // Refused by name: hurt flash (mode 3), translucency (0xb, e.g. a `+0x89` word with L = −1), the water split.
+        // Refused by name: diffuse (mode 5), translucency (0xb, e.g. a `+0x89` word with L = −1). (The hurt flash and
+        // the water split are drawn since E2 — DrawEffectTests.)
         var ports = FramePorts(fill: fill)
-        XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: 0x30002, clip: open)],
+        XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: 0x50003, clip: open)],
                                                    h: 0, v: 0, ports: &ports)) {
-            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0x30002))
+            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(0x50003))
         }
         var lit = SpriteSlot(type: 1, x: 0, y: 0, face: Self.ref); lit.dynamicLight = true
         XCTAssertEqual(lit.applyDynamicLight(lightTile: -1, fakeLight: 2), 0xbff02)
@@ -137,10 +138,6 @@ final class SpriteDrawTests: XCTestCase {
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: missing, x: 0, y: 0, clip: open)], h: 0, v: 0,
                                                    ports: &ports)) {
             XCTAssertEqual($0 as? SpriteBlitter.Refusal, .faceNotLoaded(missing))
-        }
-        XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, clip: open, waterRow: 1)],
-                                                   h: 0, v: 0, ports: &ports)) {
-            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .waterSplit(1))
         }
 
         // Step 7, the light pass (`+0x88`, Effects ≠ 3, level-1 header 0x2706 = 5 > 0, no light slot): every frame
@@ -340,8 +337,8 @@ final class SpriteDrawTests: XCTestCase {
                     value: { f.tables.ambient[3][Int($0)] })
         assertDrawn(try draw(0xc0205), x0: 200, y0: 100, rows: 0..<6, cols: 0..<8, flip: false, fill: 0x55,
                     value: { f.tables.light[2 * 0x6e00 + 5 * 0x100 + Int($0)] })
-        // The undefined Special tables (2, 7, 0xf..0x13) and the other modes are refused.
-        for word: UInt32 in [0x20000, 0x70000, 0x50003, 0x60000, 0x80000, 0xa0080, 0xd0000, 0xe0005, 0x140000] {
+        // The undefined Special tables (2, 7, 0xf..0x13) and the other unbuilt modes are refused (6 is drawn since E2).
+        for word: UInt32 in [0x20000, 0x70000, 0x50003, 0x80000, 0xa0080, 0xd0000, 0xe0005, 0x140000] {
             var ports = FramePorts()
             XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: word, clip: open)],
                                                        h: 0, v: 0, ports: &ports), "mode \(String(word, radix: 16))")

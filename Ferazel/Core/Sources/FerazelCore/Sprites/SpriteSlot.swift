@@ -199,6 +199,9 @@ public struct SpriteSlot: Equatable, Sendable {
     public var flash: Int16 = 0
     /// `+0x1b4` (u8): the hurt flash uses mode 4 instead of 3.
     public var flashTable: UInt8 = 0
+    /// `+0x18c` (u8): drawn in one piece — no water split, the light pass without the water row (`.WrapDrawSprites`
+    /// `10014800`, `10014960`); the player's teleporter charge sets it (draw-effects §2.3). No Phase-2 writer.
+    public var noWaterSplit = false
     /// `+0xa4` (i16): hit points.
     public var hp: Int16 = 0
     /// `+0x19e` / `+0x1a0` (i16): buoyancy / float-line offset (`.HandleFlotation`).
@@ -268,8 +271,7 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0xc6`/`+0xc4 ← +0xc`/`+0xa`, `+0xbc ← +0xb8`, `+0x1ac ← +0x1aa`, `+0x1b0 ← +0x1ae`, `+0x124 ← +0x11c`,
     /// `+0x17f ← +0x17e` (the fixed-point and velocity copies are not kept).
     public mutating func recordDrawn() {
-        previous = face.map { SpriteDraw(face: $0, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip,
-                                         lightOverlay: lightOverlay, waterRow: Int(waterRow)) }
+        previous = face == nil ? nil : makeDraw()
         drawnX = x
         drawnY = y
         previousRotation = rotation
@@ -278,13 +280,21 @@ public struct SpriteSlot: Equatable, Sendable {
     }
 
     /// What `.WrapDrawSprites` hands the blitters for this sprite: nil when `+0xe9` is set or `+0xc0` is 0 (step 1,
-    /// `1001452c`, `10014538`). The effective mode is the stored `+0xb8` (call `applyDynamicLight` first for a `+0x89`
-    /// sprite). The hurt flash (`+0xaa`, `+0x1b4`), the water kind `+0x128` and `+0x18c` are not kept: no Phase-1
-    /// routine sets them (a flash would reach the blitter as mode 3 / 4, which it refuses).
+    /// `1001452c`, `10014538`). `mode` is the stored `+0xb8` (call `applyDynamicLight` first for a `+0x89` sprite);
+    /// the blitter derives the hurt-flash word from `flash`/`flashTable` (step 4), except for a `+0x89` sprite, whose
+    /// light word overwrites the flash (`1001472c..100147bc`) — its `flash` is passed as 0. `+0x1aa`/`+0x1ae`, the
+    /// water row/kind `+0x11c`/`+0x128`, `+0x18c` and the occluder (nil while the `.InitSprite` 32000s) ride along.
     public var draw: SpriteDraw? {
-        guard !dead, let face else { return nil }
-        return SpriteDraw(face: face, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip, lightOverlay: lightOverlay,
-                          waterRow: Int(waterRow))
+        guard !dead, face != nil else { return nil }
+        return makeDraw()
+    }
+
+    /// The `SpriteDraw` of the current fields (`face` non-nil).
+    private func makeDraw() -> SpriteDraw {
+        SpriteDraw(face: face!, x: x, y: y, mode: mode, mirrored: mirrored, clip: clip, lightOverlay: lightOverlay,
+                   waterRow: Int(waterRow), rotation: rotation, scale: scale, flash: dynamicLight ? 0 : flash,
+                   flashTable: flashTable, occluder: occluder == Occluder() ? nil : occluder, waterKind: waterKind,
+                   noWaterSplit: noWaterSplit)
     }
 }
 

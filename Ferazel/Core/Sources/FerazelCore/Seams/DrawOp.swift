@@ -27,4 +27,8 @@ public enum DrawOp: Equatable, Sendable {
     case wrapEraseSprites(sprites: [SpriteSlot], h: Int, v: Int)
     /// `.UpdateStatusBar(1, 0, 0)`.
     case statusBar(StatusBarState)
+    /// One `.HandleAsyncGammaFade @ 10035788` step of `.GammaFadeOutAsync(N, rgb)` / `.GammaFadeInAsync(N)`
+    /// (lighting-tables §10): `MT_FadeToColor(toward, numerator·100 / denominator, 0, 1)` — the current gamma moved
+    /// that percentage toward `toward` (nil = the original gamma, the fade-in), compounding. Presentation only.
+    case gammaStep(numerator: Int, denominator: Int, toward: RGB16? = nil)
 }

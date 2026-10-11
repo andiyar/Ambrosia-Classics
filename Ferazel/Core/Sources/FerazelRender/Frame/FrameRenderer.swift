@@ -26,6 +26,8 @@ import FerazelCore
 /// - `wrapEraseSprites`: `SpriteBlitter.wrapEraseSprites` with the grid's mask re-stamp.
 /// - `statusBar`: `StatusBar.update` — full after a `setScreenClut` (the level start), incremental otherwise (D26 R5:
 ///   the seam does not carry the flag).
+/// - `gammaStep(j, N, toward)`: one `.HandleAsyncGammaFade` step on `gamma` (`ScreenGamma`); `presentedClut` shows it.
+/// After each `wrapEraseSprites` the water-ripple phase `*_DAT_1009fd74` advances by 0x100 (0x200 at level start).
 ///
 /// The light slots: `.SetupLevelSprites` (inside `.SetupLevel`, l. 2526, before its `.RedrawEntireScrollGrid`
 /// l. 2582) `.AddLight`s the Setup lights — the session's `FerazelSession.lights` (D26 R4: 68 on level 1 at
@@ -48,6 +50,7 @@ public final class FrameRenderer {
     enum Executed: Equatable {
         case screenClut(Int16), picture(Int16), entireGrid(h: Int, v: Int), strip(h: Int, v: Int), lightsOntoTiles
         case handleLights, sprites(Int), copy(h: Int, v: Int), lightFace(Int), erase(Int), statusBar(full: Bool)
+        case gamma(numerator: Int, denominator: Int)
     }
 
     public let resources: FerazelResources
@@ -58,8 +61,13 @@ public final class FrameRenderer {
     public private(set) var tables: LevelTables
     /// The screen (the main device's 640×480 pixels).
     public private(set) var screen: IndexedFrame
-    /// The CLUT the screen shows through (`.SetScreenClut`); present with `screen.rgba(through: screenClut)`.
+    /// The CLUT the screen shows through (`.SetScreenClut`); present with `screen.rgba(through: screenClut,
+    /// gamma: gamma)`, or through `presentedClut`.
     public private(set) var screenClut: ColorLUT
+    /// The screen gamma the Monitor Tool fades leave (`DrawOp.gammaStep`; lighting-tables §10).
+    public private(set) var gamma = ScreenGamma.identity
+    /// `screenClut` through `gamma` — what the screen shows; presentation only (the app's MacGamma goes on top).
+    public var presentedClut: ColorLUT { gamma.apply(screenClut) }
     public private(set) var ports: FramePorts
     public private(set) var grid: TileGridRenderer
     public private(set) var sprites: SpriteBlitter
@@ -156,6 +164,12 @@ public final class FrameRenderer {
         sprites.tables = tables
     }
 
+    /// `.DeathEffect`'s painter for this screen: `ForeColor(blackColor)` = `Color2Index` of black in the screen CLUT.
+    /// The app (A3) runs its 50 steps on `screen` and feeds each returned gamma step back through `apply`.
+    public var deathEffect: DeathEffect {
+        DeathEffect(foreColor: search.index(of: DeathEffect.fadeColour, in: screenClut))
+    }
+
     /// The light face `.Load1LightFaceFromPICT(pict, width, height)`, loaded once.
     private func lightFace(pict: Int16, width: Int, height: Int) throws -> LightFace {
         let key = [Int(pict), width, height]
@@ -225,7 +239,12 @@ public final class FrameRenderer {
             case .wrapEraseSprites(let list, let h, let v):
                 grid.lights = lights
                 try sprites.wrapEraseSprites(list, h: h, v: v, ports: &ports, grid: grid)
+                // `*_DAT_1009fd74 += 0x100` right after `.WrapEraseSprites` (`.PaintFrameWrap` raw `100127ec..100127f4`).
+                sprites.ripplePhase &+= 0x100
                 executed.append(.erase(list.count))
+            case .gammaStep(let numerator, let denominator, let toward):
+                gamma.step(numerator: numerator, denominator: denominator, toward: toward)
+                executed.append(.gamma(numerator: numerator, denominator: denominator))
             case .statusBar(let state):
                 let full = statusBarFull
                 statusBar.update(state, full: full, screen: &screen)

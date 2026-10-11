@@ -23,9 +23,10 @@ public struct IndexedFrame: Sendable, Equatable {
     }
 
     /// The frame as 0xAARRGGBB words (alpha 0xFF), row 0 at the top — the `ShellBitmap.pixels` layout — each index
-    /// shown through `clut` (the 16-bit channels' high bytes).
-    public func rgba(through clut: ColorLUT) -> [UInt32] {
-        let table = clut.entries.map { e -> UInt32 in
+    /// shown through `clut` (the 16-bit channels' high bytes), the CLUT first taken through the screen `gamma`
+    /// (`ScreenGamma`, the Monitor Tool fades; identity by default).
+    public func rgba(through clut: ColorLUT, gamma: ScreenGamma = .identity) -> [UInt32] {
+        let table = gamma.apply(clut).entries.map { e -> UInt32 in
             0xff00_0000 | UInt32(e.red >> 8) << 16 | UInt32(e.green >> 8) << 8 | UInt32(e.blue >> 8)
         }
         return pixels.map { table[Int($0)] }
