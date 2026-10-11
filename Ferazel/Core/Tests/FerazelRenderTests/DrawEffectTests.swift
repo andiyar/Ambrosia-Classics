@@ -65,15 +65,17 @@ final class DrawEffectTests: XCTestCase {
     /// Draws `d` on ports filled with `fill`, then erases it the way the next frame's `.WrapEraseSprites` does (the
     /// sprite moved one pixel): the frame must be all `fill` again (restored from the tiles port), and no mask byte
     /// the draw zeroed may remain 0 (the erase stamps 0xFF there). Returns the drawn ports.
-    private func drawAndErase(_ b: SpriteBlitter, _ d: SpriteDraw, fill: UInt8 = 0x33, line: UInt = #line) throws
-        -> FramePorts {
+    private func drawAndErase(_ b: SpriteBlitter, _ d: SpriteDraw, fill: UInt8 = 0x33, line: UInt = #line,
+                              afterDraw: (inout SpriteSlot) -> Void = { _ in }) throws -> FramePorts {
         var ports = FramePorts(fill: fill)
         try b.wrapDrawSprites([d], h: 0, v: 0, ports: &ports)
         var s = SpriteSlot(type: 1, x: d.x, y: d.y, face: d.face)
         s.mode = d.mode; s.mirrored = d.mirrored; s.clip = d.clip; s.lightOverlay = d.lightOverlay
         s.waterRow = Int32(d.waterRow); s.waterKind = d.waterKind; s.rotation = d.rotation; s.scale = d.scale
+        s.noWaterSplit = d.noWaterSplit
         s.recordDrawn()
         s.x += 1
+        afterDraw(&s)
         var erased = ports
         try b.wrapEraseSprites([s], h: 0, v: 0, ports: &erased)
         XCTAssertEqual(erased.frame.filter { $0 != fill }.count, 0, "frame restored", line: line)
@@ -135,6 +137,25 @@ final class DrawEffectTests: XCTestCase {
         var whole = d
         whole.noWaterSplit = true
         XCTAssertEqual(SpriteBlitter.faceCalls(whole, face: face).calls.map(\.word), [0x30005])
+        // The erase reads the **last frame's** `+0x18d` (copied from `+0x18c` at the draw's tail, l. 10391) for the
+        // split, and the **current** `+0x128` for the submerged word (l. 10540–10566, `*(short *)(iVar14 + 0x128)`):
+        // a sprite drawn whole and cleared of `+0x18c` since is still erased whole (a ripple erase would leave the
+        // unshifted rows). The kind only names the water table the back-scratch never reads — not observable.
+        _ = try drawAndErase(b, whole, fill: 0x77) { $0.noWaterSplit = false; $0.waterKind = 5 }
+        // The ripple index: the draw's `(uint)(…) % 0x23` (`mulhwu`) vs the back-scratch twins' signed `%`
+        // (decompile l. 21818): with the phase past 2³¹ the draw still finds a row offset, the erase's index is
+        // negative (reads before `_DAT_100a0118`) → refused.
+        var wrapped = b
+        wrapped.ripplePhase = Int32.min
+        var pw = FramePorts(fill: 0x77)
+        try wrapped.wrapDrawSprites([d], h: 0, v: 0, ports: &pw)
+        var slot = SpriteSlot(type: 1, x: d.x, y: d.y, face: d.face)
+        slot.clip = Self.open; slot.waterRow = 1; slot.waterKind = 2
+        slot.recordDrawn()
+        slot.x += 1
+        XCTAssertThrowsError(try wrapped.wrapEraseSprites([slot], h: 0, v: 0, ports: &pw)) {
+            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .ripplePhase(Int32.min))
+        }
     }
 
     func testPartialWaterSplit() throws {
@@ -257,6 +278,19 @@ final class DrawEffectTests: XCTestCase {
         try b.wrapDrawSprites([SpriteDraw(face: Self.raft, x: 240, y: 150, clip: Self.open, scale: 0x101)], h: 0, v: 0,
                               ports: &over)
         XCTAssertEqual(over, unit)
+        // The accumulators compare as shorts (`extsh; cmpwi 0x100`, raw `1002c14c..50`, `1002c060..64`): a 200-px
+        // skip at scale 0xff adds 51,000 — negative as a short — so the skip advances nothing and no later pixel of
+        // the row passes 0xff either; at 0x80 the skip advances 100 columns and every 2nd pixel lands.
+        let (_, longSkip) = try Self.synthetic(9103, 210, 1) { _, c in c < 200 }
+        func columns(_ scale: Int16) -> [Int] {
+            var at: [Int] = []
+            SpriteBlitter.scaleWalk(longSkip.faces[0], src: (0, 0), dst: (10, 0), w: 210, h: 1, scale: scale) { o, _ in
+                at.append(o - 10 * FramePorts.width)
+            }
+            return at
+        }
+        XCTAssertEqual(columns(0xff), [])
+        XCTAssertEqual(columns(0x80), [100, 101, 102, 103, 104])
         // Mode 0xc under scale reads its table (the Scale switch, `0xc` arm); mode 5 has none → refused.
         var p = FramePorts()
         XCTAssertNoThrow(try b.wrapDrawSprites([SpriteDraw(face: Self.ball, x: 260, y: 120, mode: 0xc0300,
@@ -287,6 +321,30 @@ final class DrawEffectTests: XCTestCase {
         XCTAssertEqual(results, ["8: 1518 (243, 146)–(316, 182) c7b3a31b79554f82",
                                  "352: 1517 (242, 148)–(318, 179) b25c25d2e5184a5b",
                                  "8f: 1517 (243, 148)–(319, 179) e8eea9a4d6c87293"])
+        // The clip flag (`.BlitEncFaceX` l. 26862–26944): the frame at the point grown by S = 80 — top/bottom by
+        // (int)(80·|sin 8°|) = 11.13…, left/right by 80·|cos 8°| = 79.22…, each edge `fctiwz` (toward zero) — must lie in
+        // (0, 0, 416, 640). h 79 → left (int)(−0.22) = 0 holds, h 78 → −1 fails; v 11 → 0 holds, v 10 → −1 fails; right
+        // 79.22 + h + 80: 640 at h 481 holds, 641 at 482 fails.
+        func clip(_ v: Int, _ h: Int, rot: Int16 = 8, scale: Int16 = 0x100) throws -> Bool {
+            try SpriteBlitter.clipFlag(face, src: (0, 0), dst: (v, h), w: 80, h: 41, mode: 0, rotation: rot, scale: scale)
+        }
+        XCTAssertEqual(try [clip(20, 80), clip(20, 79), clip(20, 78), clip(11, 100), clip(10, 100), clip(20, 481),
+                            clip(20, 482), clip(364, 100), clip(365, 100)],
+                       [false, false, true, false, true, false, true, false, true])
+        // `0x100 < scale` (not ≥): at 0x100 no growth test, at 0x101 rotation 0 grows left/right by S·|cos 0| = 80.
+        XCTAssertEqual(try [clip(20, 0, rot: 0, scale: 0x100), clip(20, 0, rot: 0, scale: 0x101),
+                            clip(20, 80, rot: 0, scale: 0x101)], [false, true, false])
+        XCTAssertTrue(try SpriteBlitter.clipFlag(face, src: (0, 1), dst: (20, 80), w: 79, h: 41, mode: 0, rotation: 0,
+                                                 scale: 0x100))
+        // The two-pixel write needs x < 639 (`cmpw r8,r16` raw `1002afe0`): at angle 0 the walk is the identity, so
+        // the small face at h 633 puts column 5 at 638 (two wide) and column 6 at 639 (one, not into the next row).
+        let small = try XCTUnwrap(b.faces.face(Self.small))
+        var two: [Int: Bool] = [:]
+        try SpriteBlitter.rotWalk(small, src: (0, 0), dst: (100, 633), w: 8, h: 6, rotation: 0, scale: 0x100,
+                                  flip: false, clip: true, columns: 8) { o, t, _ in
+            if o / FramePorts.width == 100 { two[o % FramePorts.width] = t }
+        }
+        XCTAssertEqual(two, [633: true, 634: true, 635: true, 636: true, 637: true, 638: true, 639: false])
         // A rotation outside the 360-entry tables is refused (the original reads past them).
         var p = FramePorts()
         XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.raft, x: 0, y: 0, clip: Self.open,
@@ -355,8 +413,11 @@ final class DrawEffectTests: XCTestCase {
             let gray = DeathEffect.grayBands(step: k)
             XCTAssertEqual(gray.count, k > 1 ? 4 : 0)
             if k > 1 {
-                XCTAssertEqual(gray[0], .init(left: 16, top: 16 + i, right: 624, bottom: 20 + i))
-                XCTAssertEqual(gray[3], .init(left: 612 - i, top: 8, right: 616 - i, bottom: 392))
+                // `OffsetRect` (l. 2708–2711): top (0, 8), bottom (0, −8), left (8, 0), right (−8, 0).
+                XCTAssertEqual(gray, [.init(left: 16, top: 16 + i, right: 624, bottom: 20 + i),
+                                      .init(left: 16, top: 380 - i, right: 624, bottom: 384 - i),
+                                      .init(left: 24 + i, top: 8, right: 28 + i, bottom: 392),
+                                      .init(left: 612 - i, top: 8, right: 616 - i, bottom: 392)])
                 let y = gray[0].top + 1                                               // 17 + 4k: no black band
                 XCTAssertEqual(fresh[321, y], black, "step \(k)")                      // (x + y) even
                 XCTAssertEqual(fresh[320, y], 7, "step \(k)")
@@ -376,6 +437,35 @@ final class DrawEffectTests: XCTestCase {
             Optional(DrawOp.gammaStep(numerator: $0, denominator: 0x30, toward: RGB16(0, 0, 0)))
         })
         XCTAssertNil(gammas[49])
+
+        // On the renderer (the A3 seam): `deathEffectStep(k)` paints step k on `screen` and applies its gamma step.
+        let f = try fixture()
+        let r = try FrameRenderer(resources: f.resources, level: 1, search: ColorSearch(model: .ruled),
+                                  dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer())
+        XCTAssertThrowsError(try r.deathEffectStep(0)) {
+            XCTAssertEqual($0 as? FrameRenderer.Refusal, .tintTableNotBuilt)
+        }
+        let s = try FerazelSession(resources: f.resources, prefs: FerazelPrefs(), level: 1, faceBounds: r.faceBounds)
+        try r.buildTintTable(s.tintTableDraws)
+        let painter = r.deathEffect
+        XCTAssertEqual(painter.foreColor, ColorSearch(model: .ruled).index(of: RGB16(0, 0, 0), in: r.screenClut))
+        var expected = r.screen
+        var g = ScreenGamma.identity
+        for k in 0..<DeathEffect.steps {
+            try r.deathEffectStep(k)
+            if case .gammaStep(let n, let d, let t)? = painter.frame(step: k, on: &expected) {
+                g.step(numerator: n, denominator: d, toward: t)
+            }
+            XCTAssertEqual(r.executed, k <= 0x30 ? [.gamma(numerator: k, denominator: 0x30)] : [], "step \(k)")
+        }
+        XCTAssertEqual(r.screen, expected)
+        XCTAssertEqual(r.gamma, g)
+        XCTAssertTrue(r.presentedClut.entries.allSatisfy { $0.rgb == [0, 0, 0] })   // faded fully to black
+        for k in [-1, DeathEffect.steps] {
+            XCTAssertThrowsError(try r.deathEffectStep(k)) {
+                XCTAssertEqual($0 as? FrameRenderer.Refusal, .deathEffectStep(k))
+            }
+        }
     }
 
     func testGammaStepScalesCLUT() throws {
@@ -405,6 +495,8 @@ final class DrawEffectTests: XCTestCase {
         // screen is untouched; `.DeathEffect`'s fore colour is `Color2Index(black)` in the screen CLUT.
         let r = try FrameRenderer(resources: f.resources, level: 1, search: ColorSearch(model: .ruled),
                                   dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer())
+        try r.buildTintTable(try FerazelSession(resources: f.resources, prefs: FerazelPrefs(), level: 1,
+                                                faceBounds: r.faceBounds).tintTableDraws)
         let before = r.screen
         try r.apply(FrameOps(draws: [.gammaStep(numerator: 10, denominator: 40, toward: black)]))
         XCTAssertEqual(r.executed, [.gamma(numerator: 10, denominator: 40)])

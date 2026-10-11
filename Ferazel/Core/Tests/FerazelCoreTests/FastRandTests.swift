@@ -94,6 +94,18 @@ final class FastRandTests: XCTestCase {
         XCTAssertEqual(Array(s.tintTableDraws.prefix(4)), [4854, 3275, 106, 4033])   // B, R of entry 0, then entry 1
         XCTAssertEqual(s.rngSeed, r.seed)
         XCTAssertEqual(s.rngSeed, 0x2c1b_1519)                             // 16807^766 mod (2^31 − 1)
+        // `.BuildTintTable` (M l. 18245–18262): per entry `local_ae` (blue, `sth r3,0x82(r1)`) = the first draw
+        // (raw `10021d04`), then red (`sth r3,0x7e(r1)`) = the second (raw `10021d14`), green = lum. Seed-1 draws
+        // 257/258 = 4854/3275 (entry 0), 259/260 = 106/4033 (entry 1), 765/766 = 1893/412 (entry 0xfe) — hand-derived
+        // from Park–Miller, independent of `TableRequests`.
+        XCTAssertEqual(Array(s.tintTableDraws.suffix(2)), [1893, 412])
+        let c202 = try ColorLUT.load(id: 202, from: res, chain: .level)
+        var d = s.tintTableDraws.makeIterator()
+        let table = TableRequests.tint(0xa, clut: c202) { _ in UInt16(d.next()!) }
+        for (i, rb) in [(0, (3275, 4854)), (1, (4033, 106)), (0xfe, (412, 1893))] {
+            let rq = try XCTUnwrap(table[i].request, "entry \(i)")
+            XCTAssertEqual([Int(rq.red), Int(rq.blue)], [rb.0, rb.1], "entry \(i): red = 2nd draw, blue = 1st")
+        }
         for level in [1, 2] {
             let h = try LevelFile.load(from: res, level: Int16(level)).header
             XCTAssertEqual(h.clutAnimCount, 0, "level \(level)")

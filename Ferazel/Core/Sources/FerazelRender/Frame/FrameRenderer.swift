@@ -44,6 +44,12 @@ public final class FrameRenderer {
         case lightSlotsFull
         /// `buildTintTable` with other than `.BuildTintTable`'s 510 draws.
         case tintTableDraws(Int)
+        /// `apply` or `deathEffectStep` before `buildTintTable`: table 0xa has no draws yet (the session's
+        /// `tintTableDraws` must be handed over first — the renderer is built before the session, which needs its
+        /// `faceBounds`, so the hand-off cannot be an init argument).
+        case tintTableNotBuilt
+        /// `deathEffectStep` outside `.DeathEffect`'s loop, k = 0 … 49.
+        case deathEffectStep(Int)
     }
 
     /// What `apply` executed, in order (the test oracle of the op order).
@@ -79,6 +85,8 @@ public final class FrameRenderer {
     public private(set) var scroll: (h: Int, v: Int) = (0, 0)
     /// The level+base CLUT the tables were built on (working copy, lighting source and search CLUT; `LevelTables`).
     private let levelClut: ColorLUT
+    /// `buildTintTable` ran (until then `apply` refuses).
+    public private(set) var tintTableBuilt = false
     /// The ops of the last `apply`, as executed.
     private(set) var executed: [Executed] = []
     private var statusBarFull = true
@@ -155,19 +163,30 @@ public final class FrameRenderer {
 
     /// `.BuildTintTable @ 10020a5c`'s table 0xa from the session's stream (`FerazelSession.tintTableDraws`: 510
     /// `FastRand(5000)`, B then R per entry 0..0xfe, raw `10021d04/14`) — the one RNG stream stays Core's (plan
-    /// Invariant 4); the renderer only resolves the colours. Hand it over before the first `apply`. Only the sprite
+    /// Invariant 4); the renderer only resolves the colours. Required before the first `apply` (which otherwise throws
+    /// `Refusal.tintTableNotBuilt`). Only the sprite
     /// blitter reads the tint bank (mode 1); the grid and the light renderer read water, ambient and light tables.
     /// - Throws: `Refusal.tintTableDraws` unless there are exactly 510 draws.
     public func buildTintTable(_ draws: [Int16]) throws {
         guard draws.count == 0xff * 2 else { throw Refusal.tintTableDraws(draws.count) }
         tables = tables.replacingRandomTint(draws, workingClut: levelClut, screenClut: levelClut, search: search)
         sprites.tables = tables
+        tintTableBuilt = true
     }
 
     /// `.DeathEffect`'s painter for this screen: `ForeColor(blackColor)` = `Color2Index` of black in the screen CLUT.
-    /// The app (A3) runs its 50 steps on `screen` and feeds each returned gamma step back through `apply`.
     public var deathEffect: DeathEffect {
         DeathEffect(foreColor: search.index(of: DeathEffect.fadeColour, in: screenClut))
+    }
+
+    /// One `.DeathEffect @ 10005270` step k (0 … 49) on `screen`, with its `.HandleAsyncGammaFade` step applied to
+    /// `gamma` (none after k = 0x30) — what the app (A3) runs once per tick for the 50 steps, then
+    /// `session.deathEffectDone()`; `executed` holds the gamma step.
+    /// - Throws: `Refusal.deathEffectStep` for k outside 0 … 49, `Refusal.tintTableNotBuilt` before the hand-off.
+    public func deathEffectStep(_ k: Int) throws {
+        guard (0..<DeathEffect.steps).contains(k) else { throw Refusal.deathEffectStep(k) }
+        let op = deathEffect.frame(step: k, on: &screen)
+        try apply(FrameOps(draws: op.map { [$0] } ?? []))
     }
 
     /// The light face `.Load1LightFaceFromPICT(pict, width, height)`, loaded once.
@@ -190,6 +209,7 @@ public final class FrameRenderer {
     /// - Throws: `SpriteBlitter.Refusal` for a sprite shape outside the census, `Refusal.screenClut` for a CLUT the
     ///   tables were not built against, `ColorLUTError` / `PictureSourceError` for a missing CLUT or picture.
     public func apply(_ ops: FrameOps) throws {
+        guard tintTableBuilt else { throw Refusal.tintTableNotBuilt }
         executed = []
         for op in ops.draws {
             switch op {

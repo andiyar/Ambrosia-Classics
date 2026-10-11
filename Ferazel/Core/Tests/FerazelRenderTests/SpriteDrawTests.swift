@@ -341,7 +341,9 @@ final class SpriteDrawTests: XCTestCase {
         for word: UInt32 in [0x20000, 0x70000, 0x50003, 0x80000, 0xa0080, 0xd0000, 0xe0005, 0x140000] {
             var ports = FramePorts()
             XCTAssertThrowsError(try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: 0, y: 0, mode: word, clip: open)],
-                                                       h: 0, v: 0, ports: &ports), "mode \(String(word, radix: 16))")
+                                                       h: 0, v: 0, ports: &ports), "mode \(String(word, radix: 16))") {
+                XCTAssertEqual($0 as? SpriteBlitter.Refusal, .mode(word), "mode \(String(word, radix: 16))")
+            }
         }
 
         // Level 1's placed sprites: every sheet `SetupFaces` names loads under its CLUT and every Phase-1 face

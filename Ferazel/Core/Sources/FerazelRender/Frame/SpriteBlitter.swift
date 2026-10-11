@@ -41,8 +41,8 @@ public struct SpriteBlitter: Sendable {
     public enum Refusal: Error, Equatable {
         /// A draw mode with no transcribed blitter (`mode` = the whole effective `+0xb8` word).
         case mode(UInt32)
-        /// The light pass with a water row ≥ 1: `.DrawLightOverFace`'s underwater blitters (last argument 1) are not
-        /// built.
+        /// The light pass with a water row ≥ 1: `.DrawLightOverFace`'s underwater blitters (last argument 1) — owed by
+        /// P4 (the underwater light variant, draw-effects §3).
         case underwaterLight(Int)
         /// A light-table read outside the table (the original reads other memory).
         case lightIndex(Int)
@@ -52,9 +52,13 @@ public struct SpriteBlitter: Sendable {
         case darkness(Int)
         /// A rotation outside the 360-entry cos/sin tables (`_DAT_100a0164`/`0168`).
         case rotation(Int16)
-        /// A rotated erase of a face wider than the 256-entry column tables of `.BlitEncFaceBoolRot` /
-        /// `.BlitEncFaceBackScratchRot` (they read past them).
+        /// A rotated draw or erase reading past its column tables: the erase twins `.BlitEncFaceBoolRot` /
+        /// `.BlitEncFaceBackScratchRot` build 256 entries (a wider face), and `rotWalk` refuses a copy-run column
+        /// outside the table it was given (draw or erase).
         case transform
+        /// A water-ripple row index that is negative under the back-scratch twins' signed `%` (the phase
+        /// `*_DAT_1009fd74` past 2³¹): the original reads before `_DAT_100a0118`.
+        case ripplePhase(Int32)
     }
 
     /// The face sets the sprites draw from (`SetupFaces.Sheet`s), loaded once.
@@ -236,7 +240,7 @@ public struct SpriteBlitter: Sendable {
             if !transformed {
                 guard mode == 6 else { throw Refusal.mode(word) }
                 let t = try table(mode: 6, sub: sub, word: word)
-                Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
+                try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
                                 signedModulo: false) { o, s in ports.frame[o] = t(s) }
             } else if rot == 0 && !flip {
                 let t = try table(mode: mode, sub: sub, word: word)
@@ -261,7 +265,7 @@ public struct SpriteBlitter: Sendable {
         }
         if mode < 0x14 && mode != 0xd && !transformed {
             if mode == 6 {
-                Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
+                try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
                                 signedModulo: false) { o, _ in ports.mask[o] = 0 }
             } else {
                 Self.blit(face, into: &ports.mask, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, _ in 0 }
@@ -547,7 +551,7 @@ public struct SpriteBlitter: Sendable {
         let tiles = ports.tiles
         if rot == 0 && scale == 0x100 {
             if mode == 6 || mode == 0xd {
-                Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip && mode != 0xd, phase: ripplePhase,
+                try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip && mode != 0xd, phase: ripplePhase,
                                 signedModulo: true) { o, _ in ports.frame[o] = tiles[o] }
             } else {
                 Self.blit(face, into: &ports.frame, src: src, dst: dst, w: w, h: h, flip: flip, reject: true,
@@ -575,7 +579,7 @@ public struct SpriteBlitter: Sendable {
         let mode = Int(Int32(bitPattern: word) >> 16)
         if rot == 0 && scale == 0x100 {
             if mode == 6 || mode == 0xd {
-                Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip && mode != 0xd, phase: ripplePhase,
+                try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip && mode != 0xd, phase: ripplePhase,
                                 signedModulo: false) { o, _ in ports.mask[o] = 0xff }
             } else {
                 Self.blit(face, into: &ports.mask, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, _ in 0xff }
@@ -744,7 +748,7 @@ extension SpriteBlitter {
     /// width − sh)), the bank's one-pixel clip quirk (draw-effects §2.4). `put(portIndex, sourcePixel)` per pixel;
     /// a pixel outside the 640×416 port lands in its 8-px slop (`.NewBlitPortSlop`) and is not kept.
     static func rippleWalk(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, flip: Bool,
-                           phase: Int32, signedModulo: Bool, _ put: (Int, UInt8) -> Void) {
+                           phase: Int32, signedModulo: Bool, _ put: (Int, UInt8) -> Void) throws {
         let W = FramePorts.width, H = FramePorts.height, fw = face.width
         var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
         if dh < 0 { sh -= dh; w += dh; dh = 0 }
@@ -765,11 +769,14 @@ extension SpriteBlitter {
             case 0:
                 return
             case 1:
-                if rowsSeen < (sv & 0xffff) { p += n }
+                let skipped = rowsSeen < (sv & 0xffff)
+                if skipped { p += n }
                 rowsSeen += 1
-                let i = Int(phase >> 8) + nextRow
-                let m = signedModulo ? i % 35 : Int(UInt32(truncatingIfNeeded: i) % 35)
-                let R = rippleOffsets[(m + 35) % 35]
+                let i = Int32(truncatingIfNeeded: Int(phase >> 8) + nextRow)
+                let m = signedModulo ? Int(i % 35) : Int(UInt32(bitPattern: i) % 35)
+                // A negative index reads before the table; harmless for a row whose data is skipped.
+                guard m >= 0 || skipped else { throw Refusal.ripplePhase(phase) }
+                let R = m >= 0 ? rippleOffsets[m] : 0
                 row = nextRow
                 nextRow += 1
                 k = R

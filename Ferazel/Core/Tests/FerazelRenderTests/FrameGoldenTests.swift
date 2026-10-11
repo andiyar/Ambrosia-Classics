@@ -103,8 +103,15 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertEqual(rgba[1], 0xFF00_0000)                    // entry 0xff: black
         XCTAssertEqual(rgba[640], 0xFFFF_FF7F)                  // row 1 (row 0 on top): entry 1 = (FFFF, FFFF, 7F7F)
         XCTAssertEqual(rgba[640 * 480 - 1], 0xFF00_0000)
-        // The renderer presents through the current screen CLUT, which `.SetScreenClut` sets.
+        // The renderer presents through the current screen CLUT, which `.SetScreenClut` sets. Before the session's
+        // `.BuildTintTable` draws are handed over it refuses to run (E2 review: table 0xa must not stay zero).
         let r = try renderer()
+        XCTAssertThrowsError(try r.apply(FrameOps(draws: [.setScreenClut(id: 202)]))) {
+            XCTAssertEqual($0 as? FrameRenderer.Refusal, .tintTableNotBuilt)
+        }
+        XCTAssertFalse(r.tintTableBuilt)
+        _ = try session(r)
+        XCTAssertTrue(r.tintTableBuilt)
         try r.apply(FrameOps(draws: [.setScreenClut(id: 202)]))
         XCTAssertEqual(r.screenClut, c202)
         XCTAssertEqual(r.screenClut.entries.map(\.value), (0..<256).map(UInt16.init))
@@ -123,6 +130,7 @@ final class FrameGoldenTests: XCTestCase {
         let redraw = c202.entries.map { search.index(of: RGB16($0.red, $0.green, $0.blue), in: c202) }
         let expected = converted.pixels.map { redraw[Int($0)] }
         let r = try renderer()
+        let s = try session(r)
         try r.apply(FrameOps(draws: [.setScreenClut(id: 202), .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0)]))
         XCTAssertEqual(r.screen.pixels, expected)
         // PICT 129 converts to canonical indices under every model, so the `.MTRedraw` translation shows only on
@@ -139,7 +147,6 @@ final class FrameGoldenTests: XCTestCase {
         }
         // The view (16, 8)–(624, 392) is left for `.WrapCopyToScreen`: after the first step only it and the status bar
         // (y ≥ 392) changed; the frame strips are PICT 129's.
-        let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
         for y in 0..<392 { for x in 0..<640 where !((16..<624).contains(x) && (8..<392).contains(y)) {
             XCTAssertEqual(r.screen[x, y], expected[y * 640 + x], "frame (\(x), \(y))")
@@ -164,6 +171,8 @@ final class FrameGoldenTests: XCTestCase {
             .lightFace(24), .erase(erased), .statusBar(full: false),
         ])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 68)          // the level-1 Setup lights (Effects 1)
+        // The ripple phase `*_DAT_1009fd74`: 0x200 at level start (l. 5217), + 0x100 after the erase (`100127ec..f4`).
+        XCTAssertEqual(r.sprites.ripplePhase, 0x300)
         XCTAssertFalse(r.lights.slots.contains { $0.active && $0.isNew })   // `.HandleLights` cleared `+1`
         // "Reduce frame rate": the first iteration skips only the copy; the screen keeps the level-start frame there.
         var reduce = FerazelPrefs()
@@ -175,8 +184,10 @@ final class FrameGoldenTests: XCTestCase {
         try rr.apply(skipped)
         XCTAssertEqual(rr.executed.filter { if case .copy = $0 { true } else { false } }, [])
         XCTAssertEqual(rr.executed.count, r.executed.count - 1)
+        XCTAssertEqual(rr.sprites.ripplePhase, 0x300)                     // a skipped iteration still erases
         try rr.apply(rs.step(keys: KeyState()))
         XCTAssertEqual(rr.executed.filter { if case .copy = $0 { true } else { false } }.count, 1)
+        XCTAssertEqual(rr.sprites.ripplePhase, 0x400)
     }
 
     func testFirstFrameGoldenLevel1() throws {

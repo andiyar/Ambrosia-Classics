@@ -11,6 +11,9 @@ import FerazelCore
 /// blend stays affine. The result is truncated toward zero and clamped to 0…0xFFFF. [MED: the Monitor Tool's ramp
 /// resolution and rounding are library code, lighting-tables NOT RESOLVED 8; `ColorGamma` as a flat ramp is the
 /// reading of "fade to colour".] Presentation only: the 8-bit screen and every table are unchanged.
+/// Not modelled: the async fades' gates (`DAT_100a53c2` gamma available, `*_DAT_1009fde8` faded-out flag set by the
+/// fade-out's end and cleared by the fade-in's, `.HandleAsyncGammaFade` raw `100357b0..100357c8`) — a step is always
+/// taken; under compounding a repeated fade toward the state already reached is a no-op [MED].
 public struct ScreenGamma: Sendable, Equatable {
     /// Per channel (R, G, B): `out = gain·v + offset`.
     public private(set) var gain: [Double] = [1, 1, 1]

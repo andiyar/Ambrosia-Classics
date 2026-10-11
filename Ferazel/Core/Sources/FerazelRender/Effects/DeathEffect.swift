@@ -12,6 +12,9 @@ import FerazelCore
 ///   pattern `qd+0xb2` with `patOr` (`PenMode(1)`), then the bands in the black pattern `qd+0xba` with `patCopy`;
 /// - one `.HandleAsyncGammaFade` (`DrawOp.gammaStep(k, 0x30, toward: black)` while k ≤ 0x30; the fade is over after
 ///   k = 0x30, so step 49 has none), then the wait for the next tick.
+/// Not modelled: `.GammaFadeOutAsync`'s gates (`DAT_100a53c2` gamma available, `*_DAT_1009fde8` not already faded
+/// out, raw `100356c0..`) — taken as open; with the screen already faded the compounding steps toward black change
+/// nothing visible either [MED]. `FrameRenderer.deathEffectStep` runs a step on the renderer's screen.
 /// QuickDraw colour patterns: a 1 bit is the foreground colour (`patCopy` and `patOr`); a 0 bit is the background
 /// under `patCopy` and leaves the pixel under `patOr` (Inside Macintosh: Imaging With QuickDraw, colour transfer
 /// modes) — the black pattern is all 1s, gray is `AA 55 AA 55 …`, aligned to the screen's (0, 0): pixel (x, y) is set
@@ -57,8 +60,10 @@ public struct DeathEffect: Sendable {
     }
 
     /// Paints step `k` onto `screen` (gray bands, then black) and returns its gamma step, nil when the fade is over.
+    /// - Precondition: k in 0 … 49 (`iVar7` from 0 by 4 while < 200).
     @discardableResult
     public func frame(step k: Int, on screen: inout IndexedFrame) -> DrawOp? {
+        precondition((0..<Self.steps).contains(k), "DeathEffect step \(k)")
         for r in Self.grayBands(step: k) { paint(r, on: &screen) { x, y in (x + y) & 1 == 0 } }
         for r in Self.blackBands(step: k) { paint(r, on: &screen) { _, _ in true } }
         guard k <= Self.gammaSteps else { return nil }
