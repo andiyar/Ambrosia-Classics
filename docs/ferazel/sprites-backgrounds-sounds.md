@@ -231,6 +231,26 @@ Helpers ⚑ wave 2 corr (2026-10-04) EG2 #2: `FUN_100916dc(x)` = number of voice
 voice's completion proc (`10091504..100916c8`) (enemies-ground-2 §3) [HIGH].
 Volume knob: `iRam100a510c` (global volume) × per-call volume >> 8 [HIGH].
 
+⚑ planner-probe C1 (Phase 2 plan, S2 implementer 2026-10-11; follow the binary) — the mixer, transcribed
+[HIGH]. **8 audible voices over a 16-entry list**, not 16 voices: `ST_Open(8, 1, 22050)` (M l. 8282 →
+`FUN_10090e38` @ 10090e38: arg 1 → audible count `*_DAT_100a1330`, capped at 16; arg 2 → stereo
+`*_DAT_100a1338`; rate 0x56220000 → `PTR_DAT_100a133c`); the list is 16 × 0x34 at `_DAT_100a1314`, count
+`*_DAT_100a1310`. The block mixer `FUN_10091ddc` @ 10091ddc (1024 frames, `li r5,0x400` raw 10091df4) sums only
+entries `i < 8` (raw `10091e18 cmpw r5,r11`), each side `(s · vol) >> 7` (`mullw`/`srawi 7`, raw
+10091e58..10091e68), and **clips each side to ±127** (raw `10091eac..10091edc`, `cmpwi ±0x7f`), writing 8-bit
+offset stereo, left in the high byte (raw 10091ee4..10091eec). Entries past the 8th still advance (`acc += step>>8;
+cur = data + (acc>>8)`, raw 10091e70..10091e9c) and count down; only summed entries update their previous
+pointer, and when `cur == prev` the sample is `(s[0] + s[1]) srawi 1` (raw 10091e2c..10091e44). After each block
+`FUN_10091c94` @ 10091c94 decrements every entry's countdown (+0x0c = `FixDiv(blocks<<16, step)>>16`, ≥ 1; raw
+100913a4..100913c8) and removes those at 0, so a sound lasts whole 1024-frame blocks. Corrections to the text
+above: (a) the request's shorts are priority **+0x14**, left **+0x16**, right **+0x18** (raw 10091248..1009128c;
+`.STPlay3DSoundPitched` stores `.CalcStereoVolume`'s scrollX+200 ear at +0x16), not +0x18/+0x1a; (b) the loader
+copies from header **+0x17** (raw `100917c8 addi r28,r28,0x17`), one byte past the 0x16-byte sampled header, so the
+**first sample is dropped** and n = size − (hdr + 0x17) (every shipped `snd ` ends at its data: n = length − 1,
+Python over all 172); (c) a request that loses to all 16 entries is dropped (returns 0, nothing evicted, raw
+1009131c..10091334); otherwise a full list loses its 16th entry (count clamped to 15 before the shift, raw
+10091338..10091348). Ids: counter `*_DAT_100a130c` = 1, += 2 (`FUN_10091fe4`). Built: `SoundTool` (FerazelRender).
+
 ### 6.3 Positional sound  [HIGH]
 `.STPlay3DSound(snd, prio, vol, pos(v,h)) @ 10047ac0` → `.CalcStereoVolume @ 10047738`:
 two "ears" at view (scrollX+200, scrollY+192) and (scrollX+408, scrollY+192);
