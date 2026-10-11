@@ -63,7 +63,7 @@ final class FastRandTests: XCTestCase {
         let session = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 1, seed: 1)
         var r = FastRand(seed: 1)
         var n = 0
-        while r.seed != session.rngSeed && n < 100_000 {
+        while r.seed != session.seedAfterSetups && n < 100_000 {
             _ = r.next(1)
             n += 1
         }
@@ -75,6 +75,36 @@ final class FastRandTests: XCTestCase {
         // The item (3204, record 68): `+0x46` = R(16) = 6, the `BonusHandle.twinkle` start phase.
         let item = try XCTUnwrap(idle.first { $0.saved.type == 3204 })
         XCTAssertEqual(item.saved.phase, 6)
+    }
+
+    /// E2 Part A (plan F1 ⚑ note, "Orchestrator carry → E2"): after `.SetupLevelSprites` the level start draws, in
+    /// order, (1) `.RedrawEntireScrollGrid` in `.SetupLevel` (l. 2582) — 0: the grid's `.WrapDrawFace` words are 9
+    /// and ≥ 0x14 (raw `100139b4`, `1001394c`, `10013b14`), and `.BlitEncFaceDiffuse` (the four FastRand sites
+    /// `10029b64/7c`, `10029e5c/74`) is reached only for mode 5 (`cmpwi r23,0x5` raw `1002d130`); (2) `.AnimateCLUT`
+    /// (l. 9062, R(4000) per animated entry, raw `10011bc4`) — 0 on levels 1 and 2 (header 0x2732 = 0); (3)
+    /// `.BuildTintTable` table 0xa, B then R per entry 0..0xfe (raw `10021d04/14`, l. 18258–18259) — 510 R(5000);
+    /// (4) `.SetScrollLocation` + `.RedrawEntireScrollGrid` in `.GameLoop` (l. 5210–5211) — 0, as (1).
+    func testLevelStartDrawsAfterSetups() throws {
+        let res = try resources()
+        let s = try FerazelSession(resources: res, prefs: FerazelPrefs(), level: 1, seed: 1)
+        XCTAssertEqual(s.seedAfterSetups, 0x3577_f881)                     // 16807^256 mod (2^31 − 1)
+        var r = FastRand(seed: s.seedAfterSetups)
+        let replay = (0..<510).map { _ in r.next(5000) }
+        XCTAssertEqual(s.tintTableDraws, replay)
+        XCTAssertEqual(Array(s.tintTableDraws.prefix(4)), [4854, 3275, 106, 4033])   // B, R of entry 0, then entry 1
+        XCTAssertEqual(s.rngSeed, r.seed)
+        XCTAssertEqual(s.rngSeed, 0x2c1b_1519)                             // 16807^766 mod (2^31 − 1)
+        for level in [1, 2] {
+            let h = try LevelFile.load(from: res, level: Int16(level)).header
+            XCTAssertEqual(h.clutAnimCount, 0, "level \(level)")
+        }
+        // `.AnimateCLUT`'s draw count: header 0x2732 entries when 0x2730 == 6 and the Effects gate passes.
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 6, count: 3, effects: 1, frameCounter: 0, parity: false), 3)
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 6, count: 3, effects: 1, frameCounter: 0, parity: true), 0)
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 6, count: 3, effects: 2, frameCounter: 1, parity: false), 0)
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 6, count: 3, effects: 3, frameCounter: 0, parity: false), 0)
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 5, count: 3, effects: 1, frameCounter: 0, parity: false), 0)
+        XCTAssertEqual(FerazelSession.animateCLUTDraws(mode: 6, count: 0, effects: 1, frameCounter: 0, parity: false), 0)
     }
 
     func testSessionDeterministic() throws {

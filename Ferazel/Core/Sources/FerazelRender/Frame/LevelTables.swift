@@ -22,8 +22,9 @@ public struct LevelTables: Sendable, Equatable {
     /// The CLUT `ColorSearch` ran against (the screen CLUT, level+base).
     public let screenClutId: Int16
     public let model: ColorSearch.Model
-    /// `_DAT_100a0140`: 25 tint tables (lighting-tables §3), table 0xa from the injected random source.
-    public let tint: [[UInt8]]
+    /// `_DAT_100a0140`: 25 tint tables (lighting-tables §3), table 0xa from the injected random source (rebuilt from
+    /// the session's draws by `replacingRandomTint`).
+    public private(set) var tint: [[UInt8]]
     /// `_DAT_100a0170`: water tables w 0..5 (§4); table 4 is never written (all index 0).
     public let water: [[UInt8]]
     /// `_DAT_100a0178`: redden A, n 0..7 (§5; entry 0xff forced to 0xff).
@@ -87,6 +88,25 @@ public struct LevelTables: Sendable, Equatable {
                                 random: (Int16) -> UInt16) throws -> LevelTables {
         let base = try ColorLUT.load(id: ColorLUT.screenClutId(header), from: resources, chain: .level)
         return LevelTables(workingClut: base, levelBaseClut: base, screenClut: base, search: search, random: random)
+    }
+
+    /// These tables with tint table 0xa rebuilt from `draws` — `.BuildTintTable`'s `FastRand(5000)` pairs in draw
+    /// order (B, then R, per entry 0..0xfe; `FerazelSession.tintTableDraws`), on the same CLUTs as `init`.
+    public func replacingRandomTint(_ draws: [Int16], workingClut: ColorLUT, screenClut: ColorLUT,
+                                    search: ColorSearch) -> LevelTables {
+        var next = draws.makeIterator()
+        let entries = TableRequests.tint(0xa, clut: workingClut) { _ in UInt16(bitPattern: next.next()!) }
+        let requested = entries.compactMap(\.request)
+        var chosen = search.indices(of: requested, in: screenClut).makeIterator()
+        var copy = self
+        copy.tint[0xa] = entries.map { e in
+            switch e {
+            case .request: return chosen.next()!
+            case .overridden(_, let i): _ = chosen.next(); return i
+            case .index(let i): return i
+            }
+        }
+        return copy
     }
 
     /// Pair table `p` (every case is built, in `allCases` order).

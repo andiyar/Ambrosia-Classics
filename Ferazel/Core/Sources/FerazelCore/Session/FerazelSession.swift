@@ -49,6 +49,13 @@ public final class FerazelSession {
     public private(set) var focusDriver: CameraFocusDriver
     /// The stream's current state (`_DAT_100a17e8`; the stream is `world.rng`, plan Invariant 4).
     public var rngSeed: Int32 { world.rng.seed }
+    /// The stream's state right after `.SetupLevelSprites` (before the post-Setup level-start draws).
+    public let seedAfterSetups: Int32
+    /// `.BuildTintTable @ 10020a5c`'s 510 `FastRand(5000)` for tint table 0xa, in draw order — B, then R, for each of
+    /// entries 0..0xfe (raw `10021d04`, `10021d14`; l. 18258–18259). Drawn from this session's stream at level start;
+    /// a renderer builds its table 0xa from them (`FrameRenderer.buildTintTable`), so Core keeps the one stream and
+    /// never sees a colour.
+    public let tintTableDraws: [Int16]
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
     /// Iterations run.
@@ -94,6 +101,37 @@ public final class FerazelSession {
         world.active = spawned.active
         world.idle = spawned.idle
         world.playerID = playerID
+
+        // The level start's draws after `.SetupLevelSprites`, in the binary's order (plan F1 ⚑ note, E2 carry):
+        // (1) `.RedrawEntireScrollGrid` inside `.SetupLevel` (l. 2582): none. Its `.WrapDrawFace` words are 9 + water
+        //     kind and 0x14/0x15 + kind (raw `1001394c`, `100139b4`, `10013b14`, `10013bc8`); `.BlitEncFaceX` reaches
+        //     `.BlitEncFaceDiffuse`/`FlipDiffuse` (the only FastRand sites in its closure, `10029b64/7c`, `10029e5c/74`)
+        //     for mode 5 only (`cmpwi r23,0x5` raw `1002d130`), which no tile draw passes.
+        //     The player and 0x4c4 `MTNewSprite`s (l. 5181–5183): none (F1 note).
+        seedAfterSetups = world.rng.seed
+        // (2) `.AnimateCLUT @ 1001180c` (`10009fb8`), with `_DAT_1009fd98` = 0 (l. 5144) and the parity flag
+        //     `_DAT_1009fd30` false on a fresh start [MED: it is not reset by `.GameLoop`]. The values recolour the
+        //     working CLUT, which `LevelTables` does not model (levels 50, 51, 67); the draws are consumed.
+        let h = L.header
+        for _ in 0..<Self.animateCLUTDraws(mode: h.clutAnimMode, count: h.clutAnimCount, effects: prefs.effects,
+                                           frameCounter: 0, parity: false) {
+            _ = world.rng.next(4000)
+        }
+        // (3) `.BuildTintTable @ 10020a5c` (`10009fc0`): table 0xa, 255 entries × (B, R).
+        tintTableDraws = (0..<(0xff * 2)).map { _ in world.rng.next(5000) }
+        // `.BuildReddenTable` (`10009fc8`), `.FindUpperLeftCorner`: none. (4) `.SetScrollLocation` and
+        // `.RedrawEntireScrollGrid` in `.GameLoop` (l. 5210–5211): none, as (1).
+    }
+
+    /// `.AnimateCLUT @ 1001180c`'s `FastRand(4000)` count (l. 8961–9062, raw `10011bc4`): with header `0x2732` (count)
+    /// ≠ 0 and the Effects gate open (prefs+6 ≠ 3; 2 → `_DAT_1009fd98 & 3 == 0`; 1 → `_DAT_1009fd30 == 0`), the loop
+    /// runs entries `0xff − count ..< 0xff`, and mode `0x2730` == 6 draws once per entry.
+    public static func animateCLUTDraws(mode: Int16, count: Int16, effects: Int16, frameCounter: Int32,
+                                        parity: Bool) -> Int {
+        guard count != 0, mode == 6, effects != 3 else { return 0 }
+        if effects == 2 && frameCounter & 3 != 0 { return 0 }
+        if effects == 1 && parity { return 0 }
+        return max(0, Int(count))
     }
 
     /// One `.GameLoop` iteration (the first call also carries the level start).

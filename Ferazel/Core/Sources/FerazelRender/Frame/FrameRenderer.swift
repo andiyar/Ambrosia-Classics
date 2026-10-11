@@ -40,6 +40,8 @@ public final class FrameRenderer {
         case screenClut(Int16, tablesBuiltFor: Int16)
         /// `.AddLight` with all 200 slots in use (the original's `ReportError`).
         case lightSlotsFull
+        /// `buildTintTable` with other than `.BuildTintTable`'s 510 draws.
+        case tintTableDraws(Int)
     }
 
     /// What `apply` executed, in order (the test oracle of the op order).
@@ -53,7 +55,7 @@ public final class FrameRenderer {
     public let prefs: FerazelPrefs
     public let search: ColorSearch
     public let dither: DitherModel
-    public let tables: LevelTables
+    public private(set) var tables: LevelTables
     /// The screen (the main device's 640×480 pixels).
     public private(set) var screen: IndexedFrame
     /// The CLUT the screen shows through (`.SetScreenClut`); present with `screen.rgba(through: screenClut)`.
@@ -67,6 +69,8 @@ public final class FrameRenderer {
     public private(set) var lights: LightRenderer
     /// `PTR_DAT_1009fe78`.
     public private(set) var scroll: (h: Int, v: Int) = (0, 0)
+    /// The level+base CLUT the tables were built on (working copy, lighting source and search CLUT; `LevelTables`).
+    private let levelClut: ColorLUT
     /// The ops of the last `apply`, as executed.
     private(set) var executed: [Executed] = []
     private var statusBarFull = true
@@ -86,7 +90,9 @@ public final class FrameRenderer {
         self.level = L
         let clut = try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: resources, chain: .level)
         screenClut = clut
-        // `.FastRand` for tint table 0xa is not modelled (R1's tests pass 0 too) [MED].
+        levelClut = clut
+        // Tint table 0xa takes `.BuildTintTable`'s draws from the session's stream: built here with 0s, rebuilt by
+        // `buildTintTable(session.tintTableDraws)` before the first `apply` (as `addLights`).
         tables = try LevelTables.forLevel(L.header, resources: resources, search: search, random: { _ in 0 })
         let fixed = try TileSets.Fixed(resources: resources, search: search, dither: dither)
         let sets = try TileSets(level: L, fixed: fixed, resources: resources, search: search, dither: dither)
@@ -137,6 +143,17 @@ public final class FrameRenderer {
             s.colour = l.colour
             lights.slots[i] = s
         }
+    }
+
+    /// `.BuildTintTable @ 10020a5c`'s table 0xa from the session's stream (`FerazelSession.tintTableDraws`: 510
+    /// `FastRand(5000)`, B then R per entry 0..0xfe, raw `10021d04/14`) — the one RNG stream stays Core's (plan
+    /// Invariant 4); the renderer only resolves the colours. Hand it over before the first `apply`. Only the sprite
+    /// blitter reads the tint bank (mode 1); the grid and the light renderer read water, ambient and light tables.
+    /// - Throws: `Refusal.tintTableDraws` unless there are exactly 510 draws.
+    public func buildTintTable(_ draws: [Int16]) throws {
+        guard draws.count == 0xff * 2 else { throw Refusal.tintTableDraws(draws.count) }
+        tables = tables.replacingRandomTint(draws, workingClut: levelClut, screenClut: levelClut, search: search)
+        sprites.tables = tables
     }
 
     /// The light face `.Load1LightFaceFromPICT(pict, width, height)`, loaded once.

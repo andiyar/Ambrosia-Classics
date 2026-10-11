@@ -22,11 +22,13 @@ final class FrameGoldenTests: XCTestCase {
                           dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
     }
 
-    /// The level's session, its Setup lights handed to the renderer (one source: `FerazelSession.lights`).
+    /// The level's session, its Setup lights and `.BuildTintTable` draws handed to the renderer (one source each:
+    /// `FerazelSession.lights`, `FerazelSession.tintTableDraws` — the session's one stream).
     private func session(_ renderer: FrameRenderer, prefs: FerazelPrefs = FerazelPrefs()) throws -> FerazelSession {
         let s = try FerazelSession(resources: try Self.resources.get(), prefs: prefs, level: 1,
                                    faceBounds: renderer.faceBounds)
         try renderer.addLights(s.lights)
+        try renderer.buildTintTable(s.tintTableDraws)
         return s
     }
 
@@ -182,6 +184,18 @@ final class FrameGoldenTests: XCTestCase {
         let s = try session(r)
         let ops = s.step(keys: KeyState())
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])    // R5: level 1 opens at (0, 0) and pans in
+        // E2 Part A: tint table 0xa from the session's 510 `.BuildTintTable` draws (B, R per entry 0..0xfe), the
+        // other tables untouched; no level-1 sprite draws mode 1 sub 0xa, so the frame hash does not see it.
+        let c202 = try ColorLUT.load(id: 202, from: try Self.resources.get(), chain: .level)
+        var d = s.tintTableDraws.makeIterator()
+        let requested = TableRequests.tint(0xa, clut: c202) { _ in UInt16(d.next()!) }
+        XCTAssertEqual(Array(r.tables.tint[0xa].prefix(0xff)),
+                       r.search.indices(of: requested.prefix(0xff).compactMap(\.request), in: c202))
+        XCTAssertEqual(r.tables.tint[0xa][0xff], 0xff)
+        XCTAssertEqual(r.sprites.tables, r.tables)
+        XCTAssertThrowsError(try r.buildTintTable([])) {
+            XCTAssertEqual($0 as? FrameRenderer.Refusal, .tintTableDraws(0))
+        }
         try r.apply(ops)
         assertLightsHandled(r, h: 0, v: 0, reFaced: Self.potionStep1)
         dump(r, "level1-frame1")

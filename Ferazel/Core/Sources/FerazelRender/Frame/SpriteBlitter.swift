@@ -95,7 +95,7 @@ public struct SpriteBlitter: Sendable {
     }
 
     public let level: LevelFile
-    public let tables: LevelTables
+    public internal(set) var tables: LevelTables
     public let faces: Faces
     /// prefs `+6` Effects (3 skips the light pass).
     public var effects: Int16

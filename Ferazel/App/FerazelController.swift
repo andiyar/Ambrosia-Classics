@@ -72,6 +72,7 @@ import HectorShell
             session = try FerazelSession(resources: resources, prefs: prefs, level: Self.level,
                                          faceBounds: renderer.faceBounds)
             try renderer.addLights(session.lights)
+            try renderer.buildTintTable(session.tintTableDraws)   // tint 0xa from the session's stream (E2 Part A)
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory,
                                  prefs: prefs)
             // Step 1's `.SetAIFFMusic(hdr+0x284a)` (l. 5221): decoded now, not inside the first step.
