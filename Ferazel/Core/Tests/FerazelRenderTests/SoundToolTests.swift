@@ -31,29 +31,39 @@ final class SoundToolTests: XCTestCase {
 
     // 9th entry silent until one ends (M l. 78687 `if (iVar4 < *piVar3)`, *piVar3 = 8; raw 10091e18 cmpw):
     // entries past the 8th still advance (M l. 78698–78699 run for every entry < count) and tick their
-    // countdown (FUN_10091c94), but are not summed and do not update their previous-pointer (+0x24).
+    // countdown (FUN_10091c94), but are not summed and do not update their previous-pointer (+0x24 is written
+    // only inside the audible branch, raw 10091e48..10091e4c).
     func testEightAudible() throws {
-        // L1: samples 5 for the first block, 7 for the second, 3 blocks long.
+        // L1: samples 5 for the first block, 7 for the next two (3 blocks), step 1.0.
         let l1 = SoundTool.RawSound(id: 1, rate: Self.r22050,
                                     samples: [0] + [Int8](repeating: 5, count: 1024) + [Int8](repeating: 7, count: 2048))
-        var raws = [l1, dc(2, 10, blocks: 1)]                   // S: one block → countdown FixDiv(1<<16, 0x10000)>>16 = 1
-        for i in 0..<7 { raws.append(dc(Int16(10 + i), 10, blocks: 3)) }
+        // L2: post-skip [5, 7], played at rate 1 → step FixMul(0x10000, 1) = 1, step >> 8 = 0: it never moves.
+        let l2 = SoundTool.RawSound(id: 3, rate: Self.r22050, samples: [0, 5, 7])
+        var raws = [l1, l2, dc(2, 10, blocks: 1), dc(4, 10, blocks: 1)]   // S, S′: countdown FixDiv(1<<16, 0x10000)>>16 = 1
+        for i in 0..<6 { raws.append(dc(Int16(10 + i), 10, blocks: 3)) }
         let tool = SoundTool(raw: raws)
-        tool.play(snd: 1, priority: 1, left: 0x80, right: 0x80)   // prio 1: everything prio 2 goes in front
-        tool.play(snd: 2, priority: 2, left: 0x80, right: 0x80)
-        for i in 0..<7 { tool.play(snd: Int16(10 + i), priority: 2, left: 0x80, right: 0x80) }
-        // Equal prio + equal sum → each newer one in front (M l. 78254–78263); L1 (prio 1) is the 9th entry.
-        XCTAssertEqual(tool.snapshot().map(\.snd), [16, 15, 14, 13, 12, 11, 10, 2, 1])
+        tool.play(snd: 3, priority: 1, left: 0x80, right: 0x80, rate: 1)
+        tool.play(snd: 1, priority: 1, left: 0x80, right: 0x80)   // ties L2 → in front of it
+        tool.play(snd: 2, priority: 2, left: 0x80, right: 0x80)   // prio 2 → in front of both prio-1 entries
+        tool.play(snd: 4, priority: 2, left: 0x80, right: 0x80)
+        for i in 0..<6 { tool.play(snd: Int16(10 + i), priority: 2, left: 0x80, right: 0x80) }
+        // Equal prio + equal sum → each newer one in front (M l. 78254–78263); L1, L2 are the 9th and 10th.
+        XCTAssertEqual(tool.snapshot().map(\.snd), [15, 14, 13, 12, 11, 10, 4, 2, 1, 3])
+        // L2's countdown: FixDiv(1<<16, 1) overflows → 0x7fffffff >> 16 = 32767 blocks (faithful, no clamp).
+        XCTAssertEqual(tool.snapshot().last?.countdown, 32767)
 
-        // Block 1: 8 audible × 10 = 80 both sides; L1's 5 is not heard (would be 85).
+        // Block 1: 8 audible × 10 = 80 both sides; L1's 5 and L2's 5 are not heard (would be 85/90).
         let b1 = pull(tool, 1024)
         XCTAssertEqual(Set(b1.map(\.l)), [80]); XCTAssertEqual(Set(b1.map(\.r)), [80])
-        // After block 1 S's countdown 1 → 0: removed; L1 moves up to the 8th entry.
-        XCTAssertFalse(tool.isPlaying(snd: 2))
-        XCTAssertEqual(tool.snapshot().map(\.snd), [16, 15, 14, 13, 12, 11, 10, 1])
-        // Block 2: 7 × 10 + L1 at source index 1024 (it advanced while silent: acc = 1024 × 0x100) = 77.
+        // After block 1 S and S′ count 1 → 0: removed; L1 and L2 move up to the 7th and 8th entries.
+        XCTAssertFalse(tool.isPlaying(snd: 2)); XCTAssertFalse(tool.isPlaying(snd: 4))
+        XCTAssertEqual(tool.snapshot().map(\.snd), [15, 14, 13, 12, 11, 10, 1, 3])
+        // Block 2: 6 × 10 + L1 at source index 1024 (it advanced while silent: acc = 1024 × 0x100) = 7, + L2:
+        // frame 0 cur 0 ≠ prev (never mixed, still null) → 5; frames 1… cur 0 == prev 0 → (5 + 7) >> 1 = 6.
+        // Had prev been updated while silent, frame 0 would already average (73).
         let b2 = pull(tool, 1024)
-        XCTAssertEqual(Set(b2.map(\.l)), [77]); XCTAssertEqual(Set(b2.map(\.r)), [77])
+        XCTAssertEqual(b2[0].l, 72); XCTAssertEqual(b2[0].r, 72)
+        XCTAssertEqual(Set(b2.dropFirst().map(\.l)), [73]); XCTAssertEqual(Set(b2.dropFirst().map(\.r)), [73])
     }
 
     // Insert rule, FUN_10091208 M l. 78243–78307 (raw 10091248..10091348): prio 0 → 1; L/R > 0x80 → 0x80;
@@ -110,6 +120,13 @@ final class SoundToolTests: XCTestCase {
         let o = pull(one, 6)
         XCTAssertEqual(o.map(\.l), [10, -20, 127, -127, -3, 0])   // first header sample (99) skipped
         XCTAssertEqual(o.map(\.r), [5, -10, 63, -64, -2, 0])      // 10·64>>7=5, −20·64>>7=−10, 127·64>>7=63, −128·64>>7=−64
+        // The same on the LEFT side (left 0x40): −3 → −2 (srawi), −20 → −10, −128 → −64.
+        let lf = SoundTool(raw: [SoundTool.RawSound(id: 1, rate: Self.r22050,
+                                                   samples: [99, 10, -20, 127, -128, -3, 0])])
+        lf.play(snd: 1, priority: 1, left: 0x40, right: 0x80)
+        let lo = pull(lf, 6)
+        XCTAssertEqual(lo.map(\.l), [5, -10, 63, -64, -2, 0])
+        XCTAssertEqual(lo.map(\.r), [10, -20, 127, -127, -3, 0])
 
         // Two full-scale voices: 100 + 100 = 200 → 127; −100 + −100 → −127.
         let two = SoundTool(raw: [
@@ -167,13 +184,38 @@ final class SoundToolTests: XCTestCase {
         s = slow.snapshot()[0]
         XCTAssertEqual(s.baseStep, 0x10000); XCTAssertEqual(s.step, 0x8000); XCTAssertEqual(s.countdown, 2)
         XCTAssertEqual(pull(slow, 4).map(\.l), [10, -6, -21, 9])
+
+        // Countdown floor (raw 100913c0 cmpwi r23,1; bge): 1 block at rate 0x20000 → step 0x20000,
+        // FixDiv(1<<16, 0x20000) = 0x8000 → >> 16 = 0 → 1. Plays every other sample, ends after one block.
+        let fast = tool()
+        fast.play(snd: 1, priority: 1, left: 0x80, right: 0x80, rate: 0x20000)
+        s = fast.snapshot()[0]
+        XCTAssertEqual(s.step, 0x20000); XCTAssertEqual(s.countdown, 1)
+        XCTAssertEqual(pull(fast, 3).map(\.l), [10, 40, 0])
+        _ = pull(fast, 1021)
+        XCTAssertFalse(fast.isPlaying(snd: 1))
+
+        // Empty sounds: a header of 1 sample (n = 0 after the drop) or none. blocks = (0 + 0x3ff) >> 10 = 0,
+        // stored ≥ 1 (raw 1009180c); the buffer is the 0x400 zero pad alone. One silent block, then gone.
+        let empty = SoundTool(raw: [SoundTool.RawSound(id: 1, rate: Self.r22050, samples: [7]),
+                                    SoundTool.RawSound(id: 2, rate: Self.r22050, samples: [])])
+        XCTAssertEqual(empty.play(snd: 1, priority: 1, left: 0x80, right: 0x80), 1)
+        XCTAssertEqual(empty.play(snd: 2, priority: 1, left: 0x80, right: 0x80), 3)
+        XCTAssertEqual(empty.snapshot().map(\.countdown), [1, 1])
+        let e = pull(empty, 1024)
+        XCTAssertEqual(Set(e.map(\.l)), [0]); XCTAssertEqual(Set(e.map(\.r)), [0])
+        XCTAssertFalse(empty.isPlaying(snd: 1)); XCTAssertFalse(empty.isPlaying(snd: 2))
+        // The stored block count is 1, not 0: at step 0.5 the countdown is FixDiv(1<<16, 0x8000)>>16 = 2
+        // (a 0-block count would give 0 → floored to 1).
+        empty.play(snd: 1, priority: 1, left: 0x80, right: 0x80, rate: 0x8000)
+        XCTAssertEqual(empty.snapshot().map(\.countdown), [2])
     }
 
     // Stop FUN_10091504 (every entry whose sound matches, list compacted), count FUN_100916dc; the game's
     // only-if-idle idiom is `if (FUN_100916dc(snd) == 0) play` (e.g. M l. 2787–2789). A sound ends on its
     // countdown at a 1024-frame boundary (FUN_10091c94).
     func testStopAndOnlyIfIdle() throws {
-        let tool = SoundTool(raw: [dc(1, 10, blocks: 1), dc(2, 20, blocks: 3)])
+        let tool = SoundTool(raw: [dc(1, 10, blocks: 1), dc(2, 20, blocks: 3), dc(3, 0, blocks: 1)])
         XCTAssertFalse(tool.isPlaying(snd: 1))
         tool.play(snd: 1, priority: 1, left: 0x80, right: 0x80)
         XCTAssertTrue(tool.isPlaying(snd: 1))
@@ -189,6 +231,11 @@ final class SoundToolTests: XCTestCase {
         XCTAssertEqual(tool.snapshot().map(\.snd), [2])
         tool.stop(snd: 1)                                                    // nothing matches: no-op
         XCTAssertEqual(tool.snapshot().map(\.snd), [2])
+        // The freed tail entries were cleared (FUN_10091b44 zeroes the vacated slot): a quiet sound that loses
+        // to snd 2 stops at the first empty entry, index 1 — stale entries there would make it walk past count.
+        tool.play(snd: 3, priority: 1, left: 0x08, right: 0x08)
+        XCTAssertEqual(tool.snapshot().map(\.snd), [2, 3])
+        tool.stop(snd: 3)
         XCTAssertEqual(Set(pull(tool, 4).map(\.l)), [10])                     // 20 × 0x40 >> 7 = 10
 
         // Natural end: snd 1 (one block, countdown 1) is playing during one block and gone after it.
@@ -200,5 +247,15 @@ final class SoundToolTests: XCTestCase {
         XCTAssertFalse(tool.isPlaying(snd: 1))
         if !tool.isPlaying(snd: 1) { tool.play(snd: 1, priority: 1, left: 0x80, right: 0x80) }   // idle → plays
         XCTAssertTrue(tool.isPlaying(snd: 1))
+
+        // render clamps frames like HectorKit's PCMMixer: ≤ 0 → untouched, never past buffer.count / 2.
+        var small = [Float](repeating: 9, count: 2)
+        small.withUnsafeMutableBufferPointer {
+            tool.render(into: $0, frames: -1)
+            tool.render(into: $0, frames: 0)
+        }
+        XCTAssertEqual(small, [9, 9])
+        small.withUnsafeMutableBufferPointer { tool.render(into: $0, frames: 5) }   // one frame written, no trap
+        XCTAssertNotEqual(small, [9, 9])
     }
 }

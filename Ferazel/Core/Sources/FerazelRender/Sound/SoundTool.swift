@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import HectorAudio
 
 /// The original's "Sound Tool" software mixer, transcribed from the Ferazel 1.0 PEF
@@ -20,13 +21,24 @@ import HectorAudio
 ///   (`FUN_10091b44`). A sound therefore lasts a whole number of blocks and a play/stop is heard from the next
 ///   block.
 ///
-/// Not modelled (no caller in this API): the per-request id/ref (+0x04, always 0 from the game's wrappers), the
-/// completion proc (+0x0c/+0x10 → entry +0x1c/+0x28, `FUN_1009f80c`; `.STPlayLoopedSound`'s re-play), the mono
-/// path `FUN_10091f00` and its louder-side copy (stereo is on), the system output volume `FUN_10091124`.
+/// Not modelled (no caller in this API): the **request record's** id/ref field (request +0x04, always 0 from the
+/// game's wrappers; not the entry's +0x04 sound field), the completion proc (request +0x0c/+0x10 → entry
+/// +0x1c/+0x28, `FUN_1009f80c`; `.STPlayLoopedSound`'s re-play), stop/count by entry id and the `0 = all`
+/// argument (M l. 78339, 78378), the mono path `FUN_10091f00` and its louder-side copy (stereo is on), the system
+/// output volume `FUN_10091124`.
+///
+/// Empty entries: the original keys an entry's emptiness on its asnd pointer (+0x04 == 0, M l. 78254); here the
+/// entry stores the `snd ` id and id 0 means empty. No shipped `snd ` has id 0 (ids 128…, enumerated from the
+/// Sounds file), and `play` of an unknown id (0 included) returns 0 without touching the list.
+///
+/// Countdown range, faithful (no clamp): a tiny or zero step (request rate ≤ 1, or a sound rate < 256 so
+/// `rate >> 8` = 0) makes `FixDiv(blocks << 16, step)` overflow to 0x7fffffff, i.e. a 32767-block countdown
+/// (~25 min); a negative step's quotient read unsigned `>> 16` gives up to 65535. The original does the same.
 ///
 /// Output: `render(into:frames:)` hands out the 8-bit offset stereo stream as Float32 `(byte − 0x80) / 128`.
-/// Threading: every entry point takes one `NSLock` for a few microseconds; `render` never allocates (the sound
-/// data, the 16-entry list and the 1024-frame block are allocated once in `init`).
+/// Threading: the mutable state is under one `Mutex` (Synchronization, as HectorKit's `PCMMixer`), held for a few
+/// microseconds per call (one 1024-frame block at most in `render`); `render` never allocates (the sound data,
+/// the 16-entry list and the 1024-frame block are allocated once in `init`).
 public final class SoundTool: PCMPullSource, @unchecked Sendable {
     /// Play-list length (the 16 × 0x34 array; insert loop `cmpwi r4,0x10`, raw 1009130c).
     public static let listLength = 16
@@ -69,8 +81,8 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
 
     /// One 0x34-byte entry. Byte offsets in the original record are given per field.
     private struct Entry {
-        var id: Int32 = 0           // +0x00
-        var snd: Int16 = 0          // +0x04 sound (0 = empty)
+        var id: Int32 = 0           // entry +0x00 id
+        var snd: Int16 = 0          // entry +0x04 asnd pointer, here the `snd ` id (0 = empty entry)
         var asnd = -1               // index into `asnds`
         var countdown: Int32 = 0    // +0x0c blocks left
         var step: Int32 = 0         // +0x10 16.16
@@ -83,17 +95,20 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         var priority: UInt16 = 0    // +0x30
     }
 
-    private let lock = NSLock()
+    /// Everything that changes after `init`.
+    private struct State {
+        var list = [Entry](repeating: Entry(), count: SoundTool.listLength)
+        var count = 0                        // *_DAT_100a1310
+        var nextId: Int32 = 1                // *_DAT_100a130c: 1, then += 2 (FUN_10091fe4 M l. 78777 ff., `*puVar2 = 1`)
+        var blockPos = SoundTool.blockFrames
+    }
+
+    private let state = Mutex(State())
     private let pool: UnsafeMutableBufferPointer<Int8>
     private let asnds: [Asnd]
     private let bySnd: [Int16: Int]
-
-    // Guarded by `lock`.
-    private var list: [Entry]
-    private var count = 0                    // *_DAT_100a1310
-    private var nextId: Int32 = 1            // *_DAT_100a130c: 1, then += 2 (FUN_10091fe4 M l. 78777 ff., `*puVar2 = 1`)
+    /// The current 1024-frame block; written and read only inside `state.withLock`.
     private let block: UnsafeMutableBufferPointer<UInt16>
-    private var blockPos = SoundTool.blockFrames
 
     init(raw sounds: [RawSound]) {
         var asnds: [Asnd] = []
@@ -120,7 +135,6 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         }
         self.asnds = asnds
         self.bySnd = bySnd
-        list = [Entry](repeating: Entry(), count: Self.listLength)
         block = .allocate(capacity: Self.blockFrames)
         block.initialize(repeating: 0x8080)
     }
@@ -161,105 +175,107 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         var countdown = Int32(bitPattern: UInt32(bitPattern: Self.fixDiv(asnd.blocks << 16, step)) >> 16)
         if countdown < 1 { countdown = 1 }   // cmpwi r23,0x1; bge (raw 100913c0)
 
-        lock.lock()
-        defer { lock.unlock() }
-        // M l. 78254–78263: skip while new.prio < e.prio (cmplw) or new.L+R < e.L+R (cmpw); else insert here.
-        var s = 0
-        while list[s].snd != 0 {
-            let e = list[s]
-            if prio < e.priority || Int32(l) + Int32(r) < Int32(e.left) + Int32(e.right) {
-                s += 1
-                if s >= Self.listLength { break }
-            } else {
-                break
+        return state.withLock { st in
+            // M l. 78254–78263: skip while new.prio < e.prio (cmplw) or new.L+R < e.L+R (cmpw); else insert here.
+            var s = 0
+            while st.list[s].snd != 0 {
+                let e = st.list[s]
+                if prio < e.priority || Int32(l) + Int32(r) < Int32(e.left) + Int32(e.right) {
+                    s += 1
+                    if s >= Self.listLength { break }
+                } else {
+                    break
+                }
             }
+            guard s < Self.listLength else { return 0 }   // raw 1009131c..10091334: dropped, nothing evicted
+            if st.count > 15 { st.count = 15 }            // the 16th entry is overwritten
+            var i = st.count
+            while i > s { st.list[i] = st.list[i - 1]; i -= 1 } // BlockMoveData(e[s] → e[s+1], (count − s)·0x34)
+            let id = st.nextId
+            st.nextId &+= 2                                  // request ref 0 → *_DAT_100a130c, += 2 (M l. 78294–78298)
+            st.list[s] = Entry(id: id, snd: snd, asnd: a, countdown: countdown, step: step, baseStep: base,
+                               acc: 0, cur: 0, prev: -1, left: l, right: r, priority: prio)
+            st.count += 1
+            return id
         }
-        guard s < Self.listLength else { return 0 }   // raw 1009131c..10091334: dropped, nothing evicted
-        if count > 15 { count = 15 }                  // the 16th entry is overwritten
-        var i = count
-        while i > s { list[i] = list[i - 1]; i -= 1 } // BlockMoveData(e[s] → e[s+1], (count − s)·0x34)
-        let id = nextId
-        nextId &+= 2                                  // request ref 0 → *_DAT_100a130c, += 2 (M l. 78294–78298)
-        list[s] = Entry(id: id, snd: snd, asnd: a, countdown: countdown, step: step, baseStep: base,
-                        acc: 0, cur: 0, prev: -1, left: l, right: r, priority: prio)
-        count += 1
-        return id
     }
 
     /// `FUN_10091504(snd)`: removes every entry playing `snd`, closing up the list.
     public func stop(snd: Int16) {
-        lock.lock()
-        defer { lock.unlock() }
-        var i = 0
-        while i < count {
-            if list[i].snd == snd { remove(at: i) } else { i += 1 }
+        state.withLock { st in
+            var i = 0
+            while i < st.count {
+                if st.list[i].snd == snd { remove(&st, at: i) } else { i += 1 }
+            }
         }
     }
 
     /// `FUN_100916dc(snd) != 0`: some entry (audible or not) is playing `snd`.
     public func isPlaying(snd: Int16) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        for i in 0..<count where list[i].snd == snd { return true }
-        return false
+        state.withLock { st in
+            for i in 0..<st.count where st.list[i].snd == snd { return true }
+            return false
+        }
     }
 
     func snapshot() -> [VoiceState] {
-        lock.lock()
-        defer { lock.unlock() }
-        return (0..<count).map { i in
-            let e = list[i]
-            return VoiceState(id: e.id, snd: e.snd, priority: e.priority, left: e.left, right: e.right,
-                              baseStep: e.baseStep, step: e.step, countdown: e.countdown)
+        state.withLock { st in
+            (0..<st.count).map { i in
+                let e = st.list[i]
+                return VoiceState(id: e.id, snd: e.snd, priority: e.priority, left: e.left, right: e.right,
+                                  baseStep: e.baseStep, step: e.step, countdown: e.countdown)
+            }
         }
     }
 
     // MARK: - Output
 
     public func render(into buffer: UnsafeMutableBufferPointer<Float>, frames: Int) {
-        lock.lock()
-        defer { lock.unlock() }
-        for f in 0..<frames {
-            if blockPos >= Self.blockFrames {
-                mixBlock()
-                blockPos = 0
+        let frames = min(max(frames, 0), buffer.count / 2)   // as PCMMixer: ≤ 0 → no-op, never past the buffer
+        guard frames > 0 else { return }
+        state.withLock { st in
+            for f in 0..<frames {
+                if st.blockPos >= Self.blockFrames {
+                    mixBlock(&st)
+                    st.blockPos = 0
+                }
+                let w = block[st.blockPos]
+                st.blockPos += 1
+                buffer[2 * f] = Float(Int(w >> 8) - 0x80) / 128
+                buffer[2 * f + 1] = Float(Int(w & 0xff) - 0x80) / 128
             }
-            let w = block[blockPos]
-            blockPos += 1
-            buffer[2 * f] = Float(Int(w >> 8) - 0x80) / 128
-            buffer[2 * f + 1] = Float(Int(w & 0xff) - 0x80) / 128
         }
     }
 
     /// `FUN_10091c94`: one block, then the countdowns (lock held).
-    private func mixBlock() {
-        for f in 0..<Self.blockFrames { block[f] = mixFrame() }
+    private func mixBlock(_ st: inout State) {
+        for f in 0..<Self.blockFrames { block[f] = mixFrame(&st) }
         var i = 0
-        while i < count {
-            list[i].countdown &-= 1
-            if list[i].countdown == 0 { remove(at: i) } else { i += 1 }   // FUN_10091b44; iVar9 − 1
+        while i < st.count {
+            st.list[i].countdown &-= 1
+            if st.list[i].countdown == 0 { remove(&st, at: i) } else { i += 1 }   // FUN_10091b44; iVar9 − 1
         }
     }
 
     /// One frame of `FUN_10091ddc` (lock held).
-    private func mixFrame() -> UInt16 {
+    private func mixFrame(_ st: inout State) -> UInt16 {
         var sumL: Int32 = 0
         var sumR: Int32 = 0
-        for i in 0..<count {
-            let a = asnds[list[i].asnd]
+        for i in 0..<st.count {
+            let a = asnds[st.list[i].asnd]
             if i < Self.audibleVoices {
-                let cur = list[i].cur
+                let cur = st.list[i].cur
                 var v = sample(a, cur)                                    // lbz; extsb
-                if cur == list[i].prev {
+                if cur == st.list[i].prev {
                     v = (v + sample(a, cur + 1)) >> 1                     // add; srawi 1 (raw 10091e38..10091e44)
                 }
-                list[i].prev = cur
-                sumL &+= (v &* Int32(list[i].left)) >> 7                  // mullw; srawi 7
-                sumR &+= (v &* Int32(list[i].right)) >> 7
+                st.list[i].prev = cur
+                sumL &+= (v &* Int32(st.list[i].left)) >> 7                  // mullw; srawi 7
+                sumR &+= (v &* Int32(st.list[i].right)) >> 7
             }
             // Every entry advances (raw 10091e70..10091e9c): acc += step >> 8 (logical); cur = data + (acc >> 8).
-            list[i].acc &+= UInt32(bitPattern: list[i].step) >> 8
-            list[i].cur = Int(list[i].acc >> 8)
+            st.list[i].acc &+= UInt32(bitPattern: st.list[i].step) >> 8
+            st.list[i].cur = Int(st.list[i].acc >> 8)
         }
         sumL = min(max(sumL, -0x7f), 0x7f)
         sumR = min(max(sumR, -0x7f), 0x7f)
@@ -272,23 +288,29 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
     }
 
     /// `FUN_10091b44` (lock held): close the gap, clear the freed tail entry.
-    private func remove(at i: Int) {
-        count -= 1
+    private func remove(_ st: inout State, at i: Int) {
+        st.count -= 1
         var j = i
-        while j < count { list[j] = list[j + 1]; j += 1 }
-        list[count] = Entry()
+        while j < st.count { st.list[j] = st.list[j + 1]; j += 1 }
+        st.list[st.count] = Entry()   // the insert loop stops at the first empty entry (M l. 78254)
     }
 
     // MARK: - Toolbox fixed point
 
-    /// `FixMul`: (a·b) / 65536, rounded to nearest [MED: the Toolbox rounding is not in the dump].
+    /// `FixMul`: (a·b) / 65536, rounded to nearest. [MED] The Toolbox trap's rounding is not in the dump, and
+    /// FixMath.h (the only document on this machine) does not state it; a probe of today's CoreServices gives
+    /// `(a·b + 0xC000) >> 16` for positive products, but Ferazel ran on Mac OS 8/9 InterfaceLib (bank §6.2 C1
+    /// note). Integral products (every 22050/11025 Hz sound at any rate) agree under all three. It matters: snd rate 0x56EE8BA3 gives base 0x10260 rounded vs
+    /// 0x1025f truncated, and with `.STPlay3DSoundRand`'s rate 0xec77..0x11386 `step >> 8` differs in about 1 in
+    /// 256–512 draws (review figure, 2026-10-11).
     static func fixMul(_ a: Int32, _ b: Int32) -> Int32 {
         let p = Int64(a) * Int64(b)
         let r = (p + 0x8000) >> 16
         return Int32(clamping: r)
     }
 
-    /// `FixDiv`: (a·65536) / b, rounded to nearest; b = 0 → ±0x7fffffff [MED: Toolbox rounding/overflow].
+    /// `FixDiv`: (a·65536) / b, rounded to nearest; overflow or b = 0 → 0x7fffffff / 0x80000000 by sign. [MED]
+    /// Rounding as `fixMul` (not in the dump; see the figure there).
     static func fixDiv(_ a: Int32, _ b: Int32) -> Int32 {
         guard b != 0 else { return a < 0 ? Int32.min : Int32.max }
         let n = Int64(a) << 16

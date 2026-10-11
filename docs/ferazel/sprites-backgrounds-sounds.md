@@ -249,7 +249,14 @@ copies from header **+0x17** (raw `100917c8 addi r28,r28,0x17`), one byte past t
 **first sample is dropped** and n = size − (hdr + 0x17) (every shipped `snd ` ends at its data: n = length − 1,
 Python over all 172); (c) a request that loses to all 16 entries is dropped (returns 0, nothing evicted, raw
 1009131c..10091334); otherwise a full list loses its 16th entry (count clamped to 15 before the shift, raw
-10091338..10091348). Ids: counter `*_DAT_100a130c` = 1, += 2 (`FUN_10091fe4`). Built: `SoundTool` (FerazelRender).
+10091338..10091348). Ids: counter `*_DAT_100a130c` = 1, += 2 (`FUN_10091fe4`). Built: `SoundTool` (FerazelRender). [MED, open] `FixMul`/`FixDiv`
+are Toolbox traps (`.glue::`), so their rounding is not in the dump; `SoundTool` rounds to nearest. It matters
+only for non-integral products: snd rate 0x56EE8BA3 (the one 22254.5 Hz sound) gives base 0x10260 rounded vs
+0x1025f truncated, and with `.STPlay3DSoundRand`'s rate 0xec77..0x11386 `step >> 8` then differs in about 1 in
+256–512 draws (S2 review). A probe of today's macOS CoreServices (FixMath.h states no rounding) gives
+`FixDiv(0x56EE8B, 0x562200)` = 0x10260 and FixDiv round-half-up (1/3 → 0x5555, 2/3 → 0xaaab), but FixMul =
+`(a·b + 0xC000) >> 16` for positive products (neither round nor truncate) — the Mac OS 8/9 InterfaceLib that
+Ferazel ran on is not on this machine, so neither is evidence for it.
 
 ### 6.3 Positional sound  [HIGH]
 `.STPlay3DSound(snd, prio, vol, pos(v,h)) @ 10047ac0` → `.CalcStereoVolume @ 10047738`:
