@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-10 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 1 GATE PASSED (D32), Phase 2 wave 2.0 done (140/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-11 (Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 1 GATE PASSED (D32), Phase 2 waves 2.0–2.1 done (154/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -123,6 +123,11 @@
   O(1) list), F3 `TileSolver` → `Ferazel/Core` **140/0** (base was 104, not 102); census 1,108/0; Ferazel app builds;
   HectorKit untouched. Nothing visible changes in the app yet. Next: **[S2 E2]** (Sound Tool mixer; draw additions + the
   carried level-start RNG draws: tint 0xa 510 + diffuse), ladder S2 → 145, E2 → 153.
+  **Wave 2.1 DONE (2026-10-11, Opus orchestrator; all-Opus legs; D33 as built wave 2.1):** S2 Sound Tool mixer
+  (8 audible of 16, ±127 clip, 22,050 Hz; every sound loses its first sample, as the original), E2 draw modes
+  (hurt flash, water split/ripple, scale, rotation), death wipe, screen gamma; tint table 0xa now drawn from the
+  session stream (level start = 766 draws on L1; the diffuse passes draw 0) → `Ferazel/Core` **154/0**, census
+  1,108/0, Ferazel builds, no golden moved. Nothing visible changes in the app yet. Next: **[P1a P1b P2]** (P1a → 160).
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
   ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):

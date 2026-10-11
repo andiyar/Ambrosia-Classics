@@ -1045,3 +1045,26 @@ ApplySpeedAndSeparate, slope f32 factors); follow the binary: kind 3 sets a risi
 landing; ice slide once per **separation call**; climb is read **after** the separation (raw 1004b9b0..bc); one tile
 map owned by `SpriteWorld`. Bank corrections A3, A5, A6, A10, A12 (now HIGH), A13, B3, C6 + a WallBounceBG §10.1
 correction landed. Carries: plan W1 precondition (ActiveToIdle unlink, review M2/M3/M6/M7). HectorKit untouched.
+
+**As built (wave 2.1: S2, E2 — 2026-10-11; Opus 5.5 orchestrator, Opus implementers in parallel (S2 in a scratch
+clone, cherry-picked), two Opus legs each, one fix round each, one Opus re-review leg over both fix rounds):**
+`Ferazel/Core` **140 → 154/0** (E2 carry +1, E2 +8, S2 +5); census 1,108/0; Ferazel builds; **no golden moved**;
+HectorKit untouched. **S2** `SoundTool` (FerazelRender, `PCMPullSource`, `Synchronization.Mutex`): 16-entry list, 8
+mixed, insert rule (unsigned priority compare, L/R clamp 0x80), `(s8·vol) >> 7` per side, ±127 clip, 22,050 Hz,
+1024-frame blocks. Follow the binary (bank correction C1 in sprites-backgrounds-sounds §6.2): every sound loses its
+first sample (raw `100917c8`); request L/R are +0x16/+0x18 (bank had +0x18/+0x1a); entries past 8 advance silently;
+play/stop land on block boundaries. FixMul/FixDiv round-to-nearest [MED] (today's Carbon FixMul is `(p+0xC000)>>16` —
+not the OS 8/9 library; only the one 22,254 Hz sound can differ). Not built (carried to S1/A3): stop/count by id with
+0 = all, completion procs / looped sounds, mono. **E2** draw modes 3/4 (hurt flash), 6 + water split/ripple, 9, 0xc
+scale, rotation, occluder (applied in Core cleanup as the binary — no draw-time read), `DeathEffect` +
+`FrameRenderer.deathEffectStep(k)`, `ScreenGamma` + `presentedClut`; `DrawOp.gammaStep` gained a defaulted `toward:`
+(the dump's fade target — plan S3 amended); seam fields `waterKind` (+0x128), +0x18c/+0x18d (erase split from the
+previous draw). **Level-start draws (F1 carry):** the two `.RedrawEntireScrollGrid` passes draw **0** (diffuse only in
+mode 5; the grid never passes it — the F1 note over-counted from the call graph), `.AnimateCLUT` 0 on L1/L2,
+`.BuildTintTable` 510 (B before R) → seed 1 = 0x2c1b1519 after level start; tint table 0xa now comes from the session
+stream (`apply` refuses until it is built). Carries: the underwater light variant (draw-effects §3) is refused by
+name → P4; the per-frame 0x4c4 direct handler call may draw FastRand → P1a reads it first. Re-review minors (low,
+carried): `deathEffectStep` paints before the `tintTableNotBuilt` throw; `DeathEffect.frame` traps where the renderer
+throws on a bad step; new `Refusal.ripplePhase` (a negative signed back-scratch index on a drawn row — the original
+reads memory before the table; ~2²³ frames on one level; A3 rebuilds the renderer per level so it resets) has no unit
+test (census covers the skipped-row exemption); the frames-clamp test does not prove no write past the end.

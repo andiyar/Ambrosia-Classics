@@ -102,7 +102,8 @@ F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a *
 **227** → S1 **234** → GD **238** (then A3, A4: no tests). Merged in another order: previous total + the task's N.
 As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
 +1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
-Later tasks: previous total + N (S2 → 145, E2 → 153, …).
+Later tasks: previous total + N. Wave 2.1 as executed: E2 carry `testLevelStartDrawsAfterSetups` +1 → 141, E2 +8 → 149, S2
++5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, …
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -241,7 +242,10 @@ case setTile(col: Int, row: Int, fg: UInt16)     // where .CrunchTile changes th
 case wrapDrawWaterEffects([WaterFaceDraw])     // before .wrapDrawSprites (M l. 9200–9230); E1a adds, E1b fills
 case drawParticles([ParticleDraw])             // drawn frames only, before .copyToScreen (M l. 9433); E1a
 case eraseParticles                            // drawn frames only, after .copyToScreen (M l. 9449); E1a
-case gammaStep(numerator: Int, denominator: Int) // GammaFadeOut/InAsync step (lighting-tables §10); E2 (passages)
+case gammaStep(numerator: Int, denominator: Int, toward: …) // GammaFadeOut/InAsync step (lighting-tables §10); E2 (passages)
+                                               // ⚑ E2 as built: a third, defaulted `toward:` (the fade's target rgb —
+                                               //   `.GammaFadeOutAsync` stores it; `.HandleAsyncGammaFade` branches on
+                                               //   17ec 0/1). Pattern matches bind three values.
 // SpriteDraw — new fields (defaults keep Phase-1 values): rotation (+0x1aa, 0), scale (+0x1ae, 0x100),
 //   flash (+0xaa, 0), flashTable (+0x1b4, 0), occluder (+0x1be..+0x1c4, nil)                       ; E2
 // SoundCue — new field: onlyIfIdle: Bool = false     (FUN_100916dc gates)                       ; S1
@@ -418,6 +422,10 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 ### Wave 2.2 — the player (one lane, in order: P1a → P1b → P2 → P3 → P4 → P5)
 
 #### P1a — ⚑ MAJOR — Player skeleton and vertical motion: `PlayerState`, gravity, jump, climb, exertion (→ 145)
+- ⚑ **E2 carries → P1a:** (a) the session stream after level start on L1 under seed 1 is **0x2c1b1519** (766 draws =
+  256 Setups + 510 tint; `seedAfterSetups` 0x3577f881) — every per-frame RNG number starts there; (b) the per-frame
+  direct 0x4c4 handler call (raw `1000a148..58`, before `.PaintFrameWrap`) is unmodelled and may draw FastRand — read
+  it before measuring any per-frame RNG number (E2 leg 1, LOW).
 - **Files:** `Sources/FerazelCore/Player/{PlayerState,Player,HandleKeys}.swift`, `Sources/FerazelCore/Session/SpriteWorld.swift`
   (adds `PlayerState`); `Tests/FerazelCoreTests/PlayerMotionTests.swift`.
 - **Contract:** `PlayerState` (S2; added to `SpriteWorld` here) initialised as `.SetupPlayerSprite @1004aefc` +
@@ -517,6 +525,9 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 - **Commit:** `FerazelCore: player states and faces (HandlePlayerSprite state selection), breathing, footsteps; PlayerPose stub removed; 10 tests`.
 
 #### P4 — minor — Liquids, hazards, breath, death (→ 180)
+- ⚑ **E2 carry → P4:** `SpriteBlitter` refuses (`underwaterLight`, SpriteBlitter.swift ~l. 359–370) the light pass
+  over a lit sprite with `+0x11c` ≥ 1 on a dark level (L1 `darknessEnable` = 5) — the binary uses the underwater
+  light variant (draw-effects §3). P4 builds it (first liquids) before any submerged lit sprite can reach the renderer.
 - **Files:** `Sources/FerazelCore/Player/PlayerLiquids.swift`, `Sources/FerazelCore/Physics/{UnderWater,Flotation}.swift`,
   `Sources/FerazelCore/Player/Player.swift`, `Sources/FerazelRender/Frame/FrameRenderer.swift` (bubble 0x410 sheet);
   `Tests/FerazelCoreTests/LiquidHazardTests.swift`.
@@ -737,6 +748,13 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 - **Commit:** `Particles: water effects (motes, bubbles, Enhanced water faces); goldens ◈; 3 tests`.
 
 #### S1 — minor — Sound cues in Core (→ 234)
+- ⚑ **S2 carries → S1 / A3:** `SoundTool` as built has no stop/count by the id `play` returns and no `0 = all`
+  (M l. 78339, 78378; the score tally M l. 2787–2822 loops `while count(0)`), no completion procs
+  (`.STPlayLoopedSound`), no mono path — whichever task first needs one builds it. Faithful quirks to know: every
+  sound loses its first sample (loader copies from header + 0x17, raw `100917c8`); entries past the 8th advance
+  silently; play/stop land on 1024-frame block boundaries; rate ≤ 1 or sndRate < 256 → 32767–65535-block
+  countdowns; FixMul/FixDiv round-to-nearest is [MED] (only the one 22,254 Hz sound can differ).
+  A3: the death wipe is `FrameRenderer.deathEffectStep(k)` (k 0…49; paints the renderer's screen + its gamma step).
 - **Files:** `Sources/FerazelCore/Sound/{SoundCues,StereoVolume,SoundSlots}.swift`, `Sources/FerazelCore/Seams/{SoundCue,FrameOps}.swift`,
   `Sources/FerazelCore/Session/FerazelSession.swift`, every cue-site file: `Sources/FerazelCore/Player/{Player,HandleKeys,PlayerTiles,GroundCeilingEffects,PlayerStates,PlayerLiquids,HitPlayerSprite}.swift`,
   `Sources/FerazelCore/World/Movers/{BackgroundSprite,BoxSprite,RopeSprite}.swift`, `Sources/FerazelCore/Particles/Splash.swift`;
@@ -961,6 +979,13 @@ list + a call-graph closure).** Reached by the 42 level-1 types, per sprite, in 
   `.RedrawEntireScrollGrid` again in `.GameLoop` (M l. 5212) — diffuse draws, count not established. Also
   `.DestroyCrunchTile` → `.ExplodeFaceIntoParticles` (M l. 2390) draws **before** the Setups when a level is
   re-entered with its saved flag set (not a fresh start; W4/Phase 3 level re-entry).
+  ⚑ **E2 as built (2026-10-11):** (1) and (4) draw **0** on L1/L2 — the grid's `.WrapDrawFace` words are 9+kind /
+  0x14 / 0x15+kind (raw `1001394c`, `100139b4`, `10013b14`, `10013bc8`) and the diffuse sites run only for mode 5
+  (`cmpwi r23,0x5` @`1002d130`); `.SetScrollLocation` the same; (2) `.AnimateCLUT` draws 0x2732 × R(4000) only when
+  0x2730 == 6 (0 on L1/L2); (3) 510, entries 0..0xfe, **B before R** (M l. 18245–18262). Seed 1: 0x3577f881 after
+  the Setups, **0x2c1b1519** after level start. Core records `tintTableDraws`; `FrameRenderer.buildTintTable`
+  rebuilds table 0xa from them (`apply` throws `tintTableNotBuilt` until it has run). No golden moved (no Phase-1
+  frame reads table 0xa; leg 1 proved it). Both review legs re-derived the counts from the disasm call graph.
   ⚑ **Orchestrator carry → E2:** before any per-frame RNG-dependent number is measured (P1a's `soundRate()` sites
   onward), the session stream must consume (1)–(4) in this order, and FrameRenderer's tint table 0xa must take its
   510 draws from that stream (today `random: { _ in 0 }`, FrameRenderer.swift:89–90). E2 establishes the diffuse
