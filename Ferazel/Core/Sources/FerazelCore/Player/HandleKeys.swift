@@ -1,9 +1,9 @@
 import Foundation
 
 /// `.HandleKeys(s, ridden) @ 10052ac0` (decompile l. 47047–47882; player-states §4–§5, physics §4), called by
-/// `.HandlePlayerSprite` row 21 unless a door transit locks input. P1a builds everything but the L/R block (P1b):
-/// the early returns, the standard hot rect, the carpet steering, the USE gates (false in Phase 2), the DOWN block
-/// (crouch, shield, spin), the climb block and the JUMP arm with its else-refill.
+/// `.HandlePlayerSprite` row 21 unless a door transit locks input: the early returns, the standard hot rect, the
+/// carpet steering, the USE gates (false in Phase 2), the L/R block with `.FootPressure` (P1b), the DOWN block
+/// (crouch, shield, spin), the climb block and the JUMP arm with its else-refill (P1a).
 ///
 /// Keys: one `InputActions` snapshot per frame stands in for each live `.IsInputKeyPressed(i)` (plan Hazards: keys
 /// cannot change inside a frame) [MED, gate card 20]. Every sound here is `.STPlayRegSound` — no `FastRand` draw.
@@ -44,15 +44,23 @@ public enum HandleKeys {
         // → cast / select. // later: Phase 4 (spells, inventory) — false in Phase 2 (plan P1a).
         w.player.useDebounce = false                                      // `_DAT_100a0760 = 0`
         // USE, second gate (l. 47353–47357): USE ∧ an item (not a spell) selected ∧ shield < 1 ∧ climb 0 ∧ rope 0 →
-        // the item switch (l. 47543–47609) instead of the L/R block. // later: Phase 4 — false in Phase 2.
-        w.player.useItemHeld = false                                      // `_DAT_100a075c = 0`
-        if !w.player.glider {
-            if w.player.climb == 0 && w.player.crouch == 0 && !w.player.carpet && charge < 0x15 {
-                // later: P1b — the L/R block (l. 47360–47493): walk/run/turn, air control, rope, swim, exertion
-                // +1 (< 0xb9) walking / +3 running, the facing from vx.
+        // the item switch (l. 47543–47609) instead of the L/R and glider blocks. // later: Phase 4 — false in
+        // Phase 2 (no inventory; plan P1a/P1b).
+        let itemSwitch = false
+        if !itemSwitch {
+            w.player.useItemHeld = false                                  // `_DAT_100a075c = 0`
+            // The L/R gate (l. 47359–47365; raw `100534f0..10053548`, Bank correction A7): not gliding
+            // (`_DAT_100a05e0`), climb 0 (`_DAT_100a0758`), crouch depth 0 (`_DAT_100a071c`), no carpet
+            // (`PTR_DAT_100a05a4`), |teleporter charge| < 0x15.
+            if !w.player.glider {
+                if w.player.climb == 0 && w.player.crouch == 0 && !w.player.carpet && charge < 0x15 {
+                    leftRight(w, id: id, keys: keys)
+                }
+            } else if s().hp > 0 {
+                // later: Phase 4 — glider steering (l. 47494–47541).
             }
-        } else if s().hp > 0 {
-            // later: Phase 4 — glider steering (l. 47494–47541).
+        } else {
+            // later: Phase 4 — the item switch (l. 47543–47609).
         }
 
         if w.player.climb == 0 {
@@ -148,6 +156,117 @@ public enum HandleKeys {
         } else if near || w.player.swim != 0 {
             swimStroke(w, id: id, near: near, ridden: ridden)
         }
+    }
+
+    /// The L/R block (l. 47366–47490; raw `1005354c..100539c0`; player-states §4, §5.7, §6). Each key zeroes
+    /// fidgets and idle. **LEFT** (action 0): airborne (`+0xce == 0`) — swimming: −0xd2 while vx > −0x76c; on a
+    /// rope: −1000, floor −0x960; else −0x14a while vx > −air max (`600e`, `6010` with the run flag; raw
+    /// `10053780`). Grounded — walk flag `0730`; walking: exertion +1 while < 0xb9, run flag 0,
+    /// `.AccelerateBasedOnSlope(−0x104 if vx < 0 ∨ ice else −0x14f, walk max)`; running: exertion +3, run flag 1,
+    /// −0x12c / −0x1f4 with the run max; then with the air counter `0718` 0: `.FootPressure` (no Double Speed, no
+    /// post-jump guard) and the slip y += |2vx| + 0x200 when `+0x112 > 0` (raw `100536a4..100536d0`, Bank correction
+    /// A14). Then vx < 0 ∧ stun 0 → F 1. **RIGHT** (action 1): airborne — swimming: +0xd2 while vx < 0x76c; on a
+    /// rope: +1000, cap 0x960; grounded — walk flag `0734`, exertion and run flag as LEFT,
+    /// `.AccelerateBasedOnSlope(0x14f if vx < 1 ∧ no ice else 0x104 / 500 else 300)`, `.FootPressure` under the same
+    /// three gates (no slip); then in **every** state +0x14a while vx < air max (raw `100539a4`), and vx > 0 → F 2
+    /// with no stun test (raw `100539ac..100539bc`).
+    static func leftRight(_ w: SpriteWorld, id: Int, keys: InputActions) {
+        guard var s = w.active.record(id: id) else { return }
+        defer { let out = s; w.active.update(id: id) { $0 = out } }
+        func airMax() -> Int32 { Int32(w.player.runFlag ? w.player.airRun : w.player.airWalk) }
+        func walkOrRun(_ walk: Int16, _ walkFresh: Int16, _ run: Int16, _ runFresh: Int16, fresh: Bool) {
+            if !keys.contains(.run) {
+                if w.player.exertion < 0xb9 { w.player.exertion += 1 }    // raw `10053600..1005360c` / `10053860..6c`
+                w.player.runFlag = false
+                s.accelerateBasedOnSlope(fresh ? walkFresh : walk, cap: Int32(w.player.maxWalk))
+            } else {
+                w.player.exertion &+= 3                                   // raw `10053598..100535a0` / `100537f8..800`
+                w.player.runFlag = true
+                s.accelerateBasedOnSlope(fresh ? runFresh : run, cap: Int32(w.player.maxRun))
+            }
+        }
+        if keys.contains(.left) {
+            w.player.fidgets = 0                                          // `_DAT_100a0688`
+            w.player.idle = 0                                             // `_DAT_100a068c`
+            if s.groundKind == 0 {
+                if w.player.swim != 0 {
+                    if -0x76c < s.vx { s.vx &-= 0xd2 }                    // raw `100536d8..10053710`
+                } else if w.player.rope {
+                    s.vx &-= 1000                                         // raw `10053724..10053740`
+                    if s.vx < -0x960 { s.vx = -0x960 }
+                } else if 0 &- airMax() < s.vx {
+                    s.vx &-= 0x14a                                        // raw `10053780`
+                }
+            } else {
+                w.player.walkLeft = true
+                walkOrRun(-0x104, -0x14f, -0x12c, -0x1f4, fresh: !(s.vx < 0 || w.player.ice != 0))
+                if w.player.airCounter == 0 {
+                    if !w.player.doubleSpeed && w.player.postJumpGuard == 0 { footPressure(&s) }
+                    if 0 < s.slip {
+                        let twice = s.vx &* 2                             // `rlwinm. r3,r0,1,0,30; ble → neg`
+                        s.y256 = (twice < 1 ? 0 &- twice : twice) &+ s.y256 &+ 0x200
+                    }
+                }
+            }
+            if s.vx < 0 && w.player.stun == 0 { w.player.facing = 1 }    // raw `10053788..100537a8`
+        }
+        if keys.contains(.right) {
+            w.player.fidgets = 0
+            w.player.idle = 0
+            if s.groundKind == 0 {
+                if w.player.swim != 0 {
+                    if s.vx < 0x76c { s.vx &+= 0xd2 }                     // raw `10053908..10053940`
+                } else if w.player.rope {
+                    s.vx &+= 1000                                         // raw `10053954..10053970`
+                    if 0x960 < s.vx { s.vx = 0x960 }
+                }
+            } else {
+                w.player.walkRight = true
+                walkOrRun(0x104, 0x14f, 300, 500, fresh: s.vx < 1 && w.player.ice == 0)
+                if w.player.airCounter == 0 && !w.player.doubleSpeed && w.player.postJumpGuard == 0 {
+                    footPressure(&s)
+                }
+            }
+            if s.vx < airMax() { s.vx &+= 0x14a }                         // raw `10053974..100539a8`
+            if 0 < s.vx { w.player.facing = 2 }                           // raw `100539ac..100539bc`
+        }
+    }
+
+    /// `.FootPressure @ 100431ec` (raw `100431ec..100433bc`; physics-sprites §8.4): not riding (`+0xdc` 0), not on a
+    /// one-way top (`+0xd0`), `+0xce` not 4/7/0x13/0x14 and not moving uphill (vx ≤ 0 excludes 0xc, 0x20, 0x21,
+    /// 0x2c, 0x2d, 0x32…0x35; vx > 0 excludes 0xf, 0x22, 0x23, 0x2e, 0x2f, 0x36…0x39) → y += |vx|. Riding with a
+    /// slope `+0xd6 ≠ 0`: d = |vx·slope| >> 8 (`mullw`, `srawi`); vx and slope of one sign (vx 0 counts as +) →
+    /// y += min(d, 0x800), else y −= d. Returns the delta. Also called by `.HandleBoxSprite` (Phase 4).
+    @discardableResult
+    static func footPressure(_ s: inout SpriteSlot) -> Int16 {
+        if s.ridden == nil {
+            let k = s.groundKind
+            guard !s.oneWayLanded, k != 4, k != 7, k != 0x13, k != 0x14 else { return 0 }
+            let downhill: Bool
+            if 0 < s.vx {
+                downhill = ![0xf, 0x22, 0x23, 0x2e, 0x2f].contains(k) && !(0x36...0x39).contains(k)
+            } else {
+                downhill = ![0xc, 0x20, 0x21, 0x2c, 0x2d].contains(k) && !(0x32...0x35).contains(k)
+            }
+            guard downhill else { return 0 }
+            let d = 0 < s.vx ? s.vx : 0 &- s.vx
+            s.y256 &+= d
+            return Int16(truncatingIfNeeded: d)
+        }
+        let slope = Int32(s.slope)
+        guard slope != 0 else { return 0 }
+        let product = s.vx &* slope
+        let d = (product < 1 ? 0 &- product : product) >> 8
+        var delta: Int32
+        if (s.vx < 0) == (slope < 0) {
+            delta = d
+            if 0x800 <= delta { delta = 0x800 }                           // `cmpwi 0x800; bge → li 0x800`
+        } else {
+            delta = 0 &- d
+            if 0x800 <= delta { delta = 0x800 }                           // dead (delta ≤ 0), as written
+        }
+        s.y256 &+= delta
+        return Int16(truncatingIfNeeded: delta)
     }
 
     /// `.AccelerateSprite(s, 0, J + (−0xc80 − ((|vx| + 0x4e2) >> 3)), 0, 8000)` (raw `100541c4`, `10054240`).

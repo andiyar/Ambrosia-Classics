@@ -491,6 +491,11 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   (from 1900: 1800, 2030, 1930, 1830, 2060, 1960, 1860, 2090; then released: coasts to 0 in 19 frames — the draft's separate
   air-coast test, folded in to keep N = 6).
 - **Commit:** `FerazelCore: player motion — HandleKeys L/R block (walk/run/turn/air, right-only push, left-only slip); 6 tests`.
+- ⚑ **As executed (P1b, 2026-10-13):** G2 **166** then 0 (160 + 6). Built from raw `100534f0..100539c0` incl. `.FootPressure
+  @100431ec` (both L/R ground paths call it; not named by the contract — built as read in `HandleKeys.swift`, Phase 4's
+  `.HandleBoxSprite` reuses it); air drag stays P1a's row 24 (not doubled); the USE item-switch gate wraps the L/R and glider
+  blocks as read (false in Phase 2). The air-coast check runs from 1900 (probe A: 19 frames), not from the held 2090 (21).
+  Bank notes A7, A14 in player-states §4.
 
 #### P2 — ⚑ MAJOR — `.HitPlayerTileSprite`: landing, ceiling, cling, pull-up, crunch call (→ 160)
 - **Files:** `Sources/FerazelCore/Player/{PlayerTiles,GroundCeilingEffects}.swift`, `Sources/FerazelCore/Player/Player.swift`,

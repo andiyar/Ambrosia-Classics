@@ -217,4 +217,280 @@ final class PlayerMotionTests: XCTestCase {
         frame(w, solver)
         XCTAssertEqual(player(w).vy, 1568)
     }
+
+    // MARK: P1b — the L/R block (`.HandleKeys` raw `100534f0..100539c0`; plan P1b, probe A `kinematics.out`)
+
+    /// Runs `n` frames with `keys` held and returns vx after each.
+    private func vxs(_ w: SpriteWorld, _ solver: TileSolver, _ keys: InputActions, _ n: Int) -> [Int32] {
+        (0..<n).map { _ in frame(w, solver, keys); return player(w).vx }
+    }
+
+    func testWalkRightFromRestReachesMaxIn4() throws {
+        // Grounded RIGHT from rest: `.AccelerateBasedOnSlope(0x14f, walk max 0x76c)` (vx < 1, no ice; raw `100538b4`),
+        // later 0x104 (raw `10053898`), then +0x14a while vx < air max 0x76c (raw `100539a4`): 335 + 330 = 665,
+        // + 260 + 330 = 1255, 1845; 2105 → capped 1900, not < 1900 so no +0x14a.
+        let w = try world()
+        let solver = standing(w)
+        w.player.facing = 1
+        XCTAssertEqual(vxs(w, solver, .right, 4), [665, 1255, 1845, 1900])
+        XCTAssertEqual(vxs(w, solver, .right, 2), [1900, 1900])
+        XCTAssertEqual(player(w).y256, Int32(standY) << 8)              // `.FootPressure` is undone by the floor
+        XCTAssertEqual(player(w).groundKind, 3)
+        XCTAssertTrue(w.player.walkRight)
+        XCTAssertFalse(w.player.walkLeft)
+        XCTAssertFalse(w.player.runFlag)
+        XCTAssertEqual(w.player.facing, 2)                              // vx > 0 → F 2 (raw `100539b8`)
+        // Exertion +1 per walking frame while < 0xb9 (raw `1005385c..1005386c`): 6 frames → 6; 0xb8 → 0xb9 → 0xb9.
+        XCTAssertEqual(w.player.exertion, 6)
+        w.player.exertion = 0xb8
+        frame(w, solver, .right)
+        XCTAssertEqual(w.player.exertion, 0xb9)
+        frame(w, solver, .right)
+        XCTAssertEqual(w.player.exertion, 0xb9)
+        // `.FootPressure` (raw `100538f8`) presses y down by |vx| after the accel and before the +0x14a: from rest
+        // y += 335 (vx 335 at the call), not 665.
+        let id = w.playerID!
+        w.active.update(id: id) { $0.vx = 0 }
+        let y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 665)
+        XCTAssertEqual(player(w).y256 - y0, 335)
+        // …not with the post-jump guard set (raw `100538e8`), nor with the air counter ≠ 0 (raw `100538c8`).
+        w.active.update(id: id) { $0.vx = 0; $0.y256 = y0 }
+        w.player.postJumpGuard = 1
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).y256, y0)
+        w.player.postJumpGuard = 0
+        w.player.airCounter = 1
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).y256, y0)
+        w.player.airCounter = 0
+        // `.FootPressure` itself (raw `100431ec..100433bc`): no push on kinds 4/7/0x13/0x14, a one-way top, or uphill
+        // (vx > 0 on 0xf; vx ≤ 0 on 0xc); downhill pushes |vx|. Riding a slope: |vx·slope| >> 8, + min(d, 0x800)
+        // with the slope's sign (vx 0 counts as +), −d against it.
+        var probe = player(w)
+        for (kind, vx, push) in [(UInt8(7), Int32(600), Int32(0)), (0x13, 600, 0), (0xf, 600, 0), (0xf, -600, 600),
+                                 (0xc, -600, 0), (0xc, 600, 600), (0x36, 600, 0), (0x39, 600, 0), (0x3a, 600, 600), (0x32, -600, 0),
+                                 (0x35, -600, 0), (0x36, -600, 600), (3, -600, 600)] {
+            probe.groundKind = kind
+            probe.vx = vx
+            probe.y256 = 0
+            HandleKeys.footPressure(&probe)
+            XCTAssertEqual(probe.y256, push, "kind \(kind) vx \(vx)")
+        }
+        probe.groundKind = 3
+        probe.oneWayLanded = true
+        probe.y256 = 0
+        HandleKeys.footPressure(&probe)
+        XCTAssertEqual(probe.y256, 0)
+        probe.oneWayLanded = false
+        probe.ridden = id
+        for (slope, vx, push) in [(Int16(0), Int32(600), Int32(0)), (2, 600, 4), (-2, 600, -4), (-2, -600, 4),
+                                  (2, 0, 0), (0x100, 0x900, 0x800), (-0x100, 0x900, -0x900)] {
+            probe.slope = slope
+            probe.vx = vx
+            probe.y256 = 0
+            HandleKeys.footPressure(&probe)
+            XCTAssertEqual(probe.y256, push, "slope \(slope) vx \(vx)")
+        }
+        // Each L/R press zeroes idle and fidgets (raw `10053560..10053568`, `100537c0..100537c8`).
+        w.player.idle = 5
+        w.player.fidgets = 2
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(w.player.idle, 0)
+        XCTAssertEqual(w.player.fidgets, 0)
+        w.player.idle = 5
+        w.player.fidgets = 2
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(w.player.idle, 0)
+        XCTAssertEqual(w.player.fidgets, 0)
+        // The gates (raw `100534f0..10053548`): glider, climb ≠ 0, crouch ≠ 0, carpet, |teleporter charge| ≥ 0x15
+        // each skip the whole block — vx, walk flag and exertion untouched.
+        let gates: [(String, (inout PlayerState) -> Void)] = [
+            ("glider", { $0.glider = true }), ("climb", { $0.climb = 1 }), ("crouch", { $0.crouch = 1 }),
+            ("carpet", { $0.carpet = true }), ("charge", { $0.teleporterCharge = -0x15 }),
+        ]
+        for (name, gate) in gates {
+            let saved = w.player
+            w.active.update(id: id) { $0.vx = 0 }
+            w.player.exertion = 0
+            gate(&w.player)
+            HandleKeys.run(world: w, keys: [.right, .run], ridden: nil)
+            XCTAssertEqual(player(w).vx, 0, name)
+            XCTAssertFalse(w.player.walkRight, name)
+            XCTAssertEqual(w.player.exertion, 0, name)
+            w.player = saved
+        }
+        w.active.update(id: id) { $0.vx = 0 }
+        w.player.teleporterCharge = 0x14                                 // 0x14 still walks (`cmpwi 0x14; bgt`)
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 665)
+    }
+
+    func testWalkLeftFromRestReachesMaxIn8() throws {
+        // Grounded LEFT: −0x14f from rest (vx ≥ 0, no ice; raw `10053654`), then −0x104 (raw `10053638`), and **no
+        // −0x14a on the ground** (only the air path has it, raw `10053780`): −335, −595 … −1895, −1900.
+        let w = try world()
+        let solver = standing(w)
+        w.player.facing = 2
+        XCTAssertEqual(vxs(w, solver, .left, 8), [-335, -595, -855, -1115, -1375, -1635, -1895, -1900])
+        XCTAssertEqual(player(w).y256, Int32(standY) << 8)
+        XCTAssertTrue(w.player.walkLeft)
+        XCTAssertFalse(w.player.walkRight)
+        XCTAssertEqual(w.player.facing, 1)                              // vx < 0 ∧ stun 0 → F 1 (raw `100537a4`)
+        XCTAssertEqual(w.player.exertion, 8)                            // +1 per walking frame (raw `100535fc..1005360c`)
+        // Stunned: LEFT does not turn him (raw `10053794..100537a0`).
+        let id = w.playerID!
+        w.player.facing = 2
+        w.player.stun = 1
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(w.player.facing, 2)
+        w.player.stun = 0
+        // The left-only ground slip (raw `100536a4..100536d0`; Bank correction A14): `+0x112 > 0` → y += 2|vx| +
+        // 0x200 after `.FootPressure`'s |vx|: from rest vx −335 → 335 + 670 + 512 = 1517. RIGHT never slips.
+        w.active.update(id: id) { $0.vx = 0; $0.slip = 1 }
+        var y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).y256 - y0, 1517)
+        w.active.update(id: id) { $0.vx = 0 }
+        y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).y256 - y0, 335)
+        // The post-jump guard skips `.FootPressure` but not the slip (raw `10053688..100536a4`); the air counter skips
+        // both (raw `10053668..10053674`).
+        w.active.update(id: id) { $0.vx = 0 }
+        w.player.postJumpGuard = 1
+        y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).y256 - y0, 670 + 512)
+        w.player.postJumpGuard = 0
+        w.player.airCounter = 1
+        w.active.update(id: id) { $0.vx = 0 }
+        y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).y256, y0)
+    }
+
+    func testRunRightOvershootsThenClamps() throws {
+        // RUN + RIGHT: 500 from rest (raw `10053844`), 300 after (raw `10053828`), cap run max 0xc80; +0x14a while vx
+        // < air run max 0xc80 (run flag set, raw `10053980`): 830, 1460, 2090, 2720, 3020 + 330 = 3350 (the
+        // overshoot), then 3650 → capped 3200, not < 3200 → 3200.
+        let w = try world()
+        let solver = standing(w)
+        XCTAssertEqual(vxs(w, solver, [.right, .run], 6), [830, 1460, 2090, 2720, 3350, 3200])
+        XCTAssertTrue(w.player.runFlag)
+        XCTAssertEqual(w.player.exertion, 18)                           // +3 per running frame (raw `100537f8..10053800`)
+        // +3 has no 0xb9 ceiling.
+        w.player.exertion = 0xb9
+        frame(w, solver, [.right, .run])
+        XCTAssertEqual(w.player.exertion, 0xbc)
+        // RUN + LEFT (raw `10053598..100535f8`): −500 from rest, −300 after, no −0x14a on the ground; +3 each.
+        w.active.update(id: w.playerID!) { $0.vx = 0 }
+        w.player.exertion = 0
+        XCTAssertEqual(vxs(w, solver, [.left, .run], 3), [-500, -800, -1100])
+        XCTAssertEqual(w.player.exertion, 9)
+        // Releasing RUN clears the run flag (raw `10053610..10053614`).
+        frame(w, solver, .left)
+        XCTAssertFalse(w.player.runFlag)
+    }
+
+    func testStopFromWalkAndRun() throws {
+        // Walk to max, release: ground deceleration 800 on the side with no input (row 24): 1100, 300, 0.
+        // Run to max, release: 2400, 1600, 800, 0.
+        let w = try world()
+        let solver = standing(w)
+        XCTAssertEqual(vxs(w, solver, .right, 4).last, 1900)
+        XCTAssertEqual(vxs(w, solver, [], 3), [1100, 300, 0])
+        XCTAssertFalse(w.player.walkRight)
+        XCTAssertEqual(vxs(w, solver, [.right, .run], 6).last, 3200)
+        XCTAssertEqual(vxs(w, solver, [], 4), [2400, 1600, 800, 0])
+        // The walk flags are cleared at the top of every call (`_DAT_100a0730/0734 = 0`), so a released frame
+        // decelerates.
+        XCTAssertFalse(w.player.walkRight)
+        XCTAssertEqual(player(w).y256, Int32(standY) << 8)
+    }
+
+    func testTurnRightFromWalkMax() throws {
+        // At −1900 hold RIGHT: +0x14f (vx < 1) + 0x14a = −1235; LEFT is not held, so row 24 decelerates the vx < 0
+        // side +800 → −435; then 230 (F 2 now: vx > 0), 820, 1410, 2000, 1900.
+        let w = try world()
+        let solver = standing(w)
+        w.active.update(id: w.playerID!) { $0.vx = -1900 }
+        w.player.facing = 1
+        XCTAssertEqual(vxs(w, solver, .right, 1), [-435])
+        XCTAssertEqual(w.player.facing, 1)                              // vx −1235 after the keys: no turn yet
+        XCTAssertEqual(vxs(w, solver, .right, 5), [230, 820, 1410, 2000, 1900])
+        XCTAssertEqual(w.player.facing, 2)
+        // RIGHT turns him even while stunned (no stun test, raw `100539ac..100539bc`).
+        w.player.facing = 1
+        w.player.stun = 1
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(w.player.facing, 2)
+        w.player.stun = 0
+        // The mirror turn: at +1900 hold LEFT → 1900 − 335 − 800 = 765, then 765 − 335 − 800 → 0, then −335 …
+        w.active.update(id: w.playerID!) { $0.vx = 1900 }
+        XCTAssertEqual(vxs(w, solver, .left, 4), [765, 0, -335, -595])
+    }
+
+    func testAirHoldRightOscillates() throws {
+        // Airborne RIGHT: only the +0x14a while vx < air max 0x76c (raw `100539a4`), then the air drag 100 (row 24):
+        // 1900 → 1800, 2130 − 100 = 2030, 1930, 1830, 2060, 1960, 1860, 2090.
+        let w = try world(floor: false)
+        let id = Player.spawn(world: w, x: 100, y: 0)!
+        let solver = TileSolver(world: w)
+        w.active.update(id: id) { $0.vx = 1900 }
+        XCTAssertEqual(vxs(w, solver, .right, 8), [1800, 2030, 1930, 1830, 2060, 1960, 1860, 2090])
+        XCTAssertEqual(player(w).groundKind, 0)
+        XCTAssertFalse(w.player.walkRight)                              // walk flags are ground-only
+        XCTAssertEqual(w.player.exertion, 0)                            // no exertion in the air
+        // Released: the drag alone coasts 1900 to 0 in 19 frames (probe A `kinematics.out`).
+        w.active.update(id: id) { $0.vx = 1900 }
+        var coast = 0
+        while player(w).vx != 0 && coast < 100 {
+            frame(w, solver)
+            coast += 1
+        }
+        XCTAssertEqual(coast, 19)
+        // Airborne LEFT: −0x14a while vx > −air max (raw `10053770..10053784`) — the mirror sequence.
+        w.active.update(id: id) { $0.vx = -1900 }
+        XCTAssertEqual(vxs(w, solver, .left, 4), [-1800, -2030, -1930, -1830])
+        // The run flag (left from the last grounded frame) raises the air max to 0xc80 (raw `10053980`, `10053754`).
+        w.player.runFlag = true
+        w.active.update(id: id) { $0.vx = 1900 }
+        XCTAssertEqual(vxs(w, solver, .right, 1), [2130])
+        w.active.update(id: id) { $0.vx = -1900 }
+        XCTAssertEqual(vxs(w, solver, .left, 1), [-2130])
+        w.player.runFlag = false
+        // Swimming (direct calls, no drag): RIGHT +0xd2 while < 0x76c (raw `1005393c`) and still +0x14a; LEFT −0xd2
+        // while > −0x76c (raw `1005370c`), no −0x14a.
+        w.player.swim = 1
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0xd2 + 0x14a)
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -0xd2)
+        w.player.runFlag = true                                         // the swim cap is 0x76c even running
+        w.active.update(id: id) { $0.vx = -0x76c }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -0x76c)
+        w.active.update(id: id) { $0.vx = 0x76c }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0x76c + 0x14a)                     // no +0xd2 at the cap; +0x14a (< 0xc80)
+        w.player.runFlag = false
+        w.player.swim = 0
+        // On a rope: ±1000 clamped ±0x960 (raw `10053954..10053970`, `10053724..10053740`); RIGHT still +0x14a.
+        w.player.rope = true
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 1000 + 0x14a)
+        w.active.update(id: id) { $0.vx = 2000 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0x960)
+        w.active.update(id: id) { $0.vx = -2000 }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -0x960)
+        w.player.rope = false
+    }
 }

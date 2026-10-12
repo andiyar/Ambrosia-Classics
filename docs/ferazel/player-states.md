@@ -304,6 +304,18 @@ Every L/R/USE/DOWN press zeroes idle and fidgets. **USE held with an item (not a
 selected, while not clinging/on a rope/shielding, replaces the whole L/R (and glider) block for
 as long as it is held** (main dump l. 44446–44458 vs the item `switch` at l. 44644; the item itself fires once per press,
 debounce `_DAT_100a075c`) [HIGH].
+⚑ planner-probe (Phase 2 plan A7, landed by P1b 2026-10-13; follow the binary): the L/R block's gate is not only
+"not climbing" — raw `100534f0..10053548` (main l. 47359–47365) tests, in order, glider `_DAT_100a05e0 == 0` (else the
+glider block), climb `_DAT_100a0758 == 0`, **crouch depth `_DAT_100a071c == 0`** (`lha r0,0(r22)`), **carpet
+`PTR_DAT_100a05a4 == 0`** (`10053520 lbz`) and |teleporter charge `PTR_DAT_100a0700`| ≤ 0x14 (`cmpwi r3,0x14; bgt`); any
+failing term skips both L and R for the frame (a crouching player is turned only by the DOWN block, a carpet rider only by
+the carpet block). Test `PlayerMotionTests.testWalkRightFromRestReachesMaxIn4`.
+⚑ planner-probe (Phase 2 plan A14, landed by P1b 2026-10-13; follow the binary): the ground slip is **LEFT-only** — raw
+`100536a4 lha r0,0x112(r31); cmpwi; ble` → `100536b0..100536d0` y(24.8) += |2·vx| + 0x200 (`rlwinm. r3,r0,1,0,30`, neg if
+≤ 0), under the air-counter-0 test (`10053668`) but after and independent of the `.FootPressure` gates (Double Speed,
+post-jump guard); the RIGHT path (`100538c8..10053904`) has no such step. `+0x112` is written non-zero for the player
+only on an ice surface (material 3, `hdr 0x2710 >> 4`), so it is unreachable on levels 1–2 (no ice); built as read.
+Test `PlayerMotionTests.testWalkLeftFromRestReachesMaxIn8`.
 
 ## 5. Jump, spin, swim, wall jump, drag  [HIGH]
 1. **Counter refill** (main dump l. 44962–44973): the `else` of the JUMP arm's condition
