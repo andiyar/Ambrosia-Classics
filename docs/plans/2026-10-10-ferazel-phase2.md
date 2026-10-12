@@ -103,7 +103,7 @@ F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a *
 As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
 +1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
 Later tasks: previous total + N. Wave 2.1 as executed: E2 carry `testLevelStartDrawsAfterSetups` +1 → 141, E2 +8 → 149, S2
-+5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, …
++5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), …
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -488,14 +488,18 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   665, 1255, 1845, 1900) · `testWalkLeftFromRestReachesMaxIn8` (−335, −595, −855, −1115, −1375, −1635, −1895, −1900) ·
   `testRunRightOvershootsThenClamps` (830, 1460, 2090, 2720, 3350, 3200) · `testStopFromWalkAndRun` (1100, 300, 0 /
   2400, 1600, 800, 0) · `testTurnRightFromWalkMax` (−435, 230, 820, 1410, 2000, 1900) · `testAirHoldRightOscillates`
-  (from 1900: 1800, 2030, 1930, 1830, 2060, 1960, 1860, 2090; then released: coasts to 0 in 19 frames — the draft's separate
-  air-coast test, folded in to keep N = 6).
+  (from 1900: 1800, 2030, 1930, 1830, 2060, 1960, 1860, 2090; then released **from 1900**: coasts to 0 in 19 frames — from
+  the held 2090 it would be 21; the draft's separate air-coast test, folded in to keep N = 6).
 - **Commit:** `FerazelCore: player motion — HandleKeys L/R block (walk/run/turn/air, right-only push, left-only slip); 6 tests`.
-- ⚑ **As executed (P1b, 2026-10-13):** G2 **166** then 0 (160 + 6). Built from raw `100534f0..100539c0` incl. `.FootPressure
-  @100431ec` (both L/R ground paths call it; not named by the contract — built as read in `HandleKeys.swift`, Phase 4's
-  `.HandleBoxSprite` reuses it); air drag stays P1a's row 24 (not doubled); the USE item-switch gate wraps the L/R and glider
-  blocks as read (false in Phase 2). The air-coast check runs from 1900 (probe A: 19 frames), not from the held 2090 (21).
-  Bank notes A7, A14 in player-states §4.
+- ⚑ **As executed (P1b, 2026-10-13; commits d1c729f + review fixes):** G2 **166** then 0 (160 + 6). Built from raw
+  `100534f0..100539c0`. **The gate is the binary's five terms** (raw `100534f0..10053548`): glider `_DAT_100a05e0` == 0,
+  climb `_DAT_100a0758` == 0, crouch `_DAT_100a071c` == 0, carpet `PTR_DAT_100a05a4` == 0, and |charge `PTR_DAT_100a0700`|
+  ≤ 0x14 — the plan omitted the charge term; the charge is re-read at the gate as the binary does (raw `1005352c`). A7
+  changed no code (P1a's gate already had crouch and carpet). **`.FootPressure @100431ec`** built in `HandleKeys.swift`
+  (called by both ground paths; writes only `+0x1c`, no RNG) — Phase 4's `.HandleBoxSprite` also calls it: move it to a
+  SpriteSlot/Physics extension then. Air drag stays P1a's row 24 (not doubled); the USE item-switch gate wraps the L/R and
+  glider blocks as read (false in Phase 2). The air coast runs from 1900 (19 frames; from the held 2090 it would be 21).
+  LEFT's −air max carries the binary's `extsh` after `neg` (raw `10053774`). Bank notes A7, A14 in player-states §4.
 
 #### P2 — ⚑ MAJOR — `.HitPlayerTileSprite`: landing, ceiling, cling, pull-up, crunch call (→ 160)
 - **Files:** `Sources/FerazelCore/Player/{PlayerTiles,GroundCeilingEffects}.swift`, `Sources/FerazelCore/Player/Player.swift`,

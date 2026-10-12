@@ -272,7 +272,11 @@ final class PlayerMotionTests: XCTestCase {
         var probe = player(w)
         for (kind, vx, push) in [(UInt8(7), Int32(600), Int32(0)), (0x13, 600, 0), (0xf, 600, 0), (0xf, -600, 600),
                                  (0xc, -600, 0), (0xc, 600, 600), (0x36, 600, 0), (0x39, 600, 0), (0x3a, 600, 600), (0x32, -600, 0),
-                                 (0x35, -600, 0), (0x36, -600, 600), (3, -600, 600)] {
+                                 (0x35, -600, 0), (0x36, -600, 600), (3, -600, 600), (4, 600, 0), (0x14, -600, 0),
+                                 (0x20, -600, 0), (0x21, -600, 0), (0x2c, -600, 0), (0x2d, -600, 0),
+                                 (0x20, 600, 600), (0x21, 600, 600), (0x2c, 600, 600), (0x2d, 600, 600),
+                                 (0x22, 600, 0), (0x23, 600, 0), (0x2e, 600, 0), (0x2f, 600, 0),
+                                 (0x22, -600, 600), (0x23, -600, 600), (0x2e, -600, 600), (0x2f, -600, 600)] {
             probe.groundKind = kind
             probe.vx = vx
             probe.y256 = 0
@@ -294,6 +298,19 @@ final class PlayerMotionTests: XCTestCase {
             HandleKeys.footPressure(&probe)
             XCTAssertEqual(probe.y256, push, "slope \(slope) vx \(vx)")
         }
+        // On ice (`_DAT_100a0694 ≠ 0`) RIGHT from rest takes the continuing 0x104 (raw `10053884..10053898`):
+        // 260 + 330 = 590. Double Speed skips `.FootPressure` (raw `100538d8..100538e4`).
+        w.player.ice = 1
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 590)
+        w.player.ice = 0
+        w.player.doubleSpeed = true
+        w.active.update(id: id) { $0.vx = 0; $0.y256 = y0 }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 665)
+        XCTAssertEqual(player(w).y256, y0)
+        w.player.doubleSpeed = false
         // Each L/R press zeroes idle and fidgets (raw `10053560..10053568`, `100537c0..100537c8`).
         w.player.idle = 5
         w.player.fidgets = 2
@@ -357,6 +374,32 @@ final class PlayerMotionTests: XCTestCase {
         y0 = player(w).y256
         HandleKeys.run(world: w, keys: .right, ridden: nil)
         XCTAssertEqual(player(w).y256 - y0, 335)
+        // `+0x112 == 0`: no slip (`cmpwi; ble`, raw `100536a8`) — only `.FootPressure`'s 335.
+        w.active.update(id: id) { $0.vx = 0; $0.slip = 0 }
+        y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).y256 - y0, 335)
+        // Double Speed skips `.FootPressure` (raw `10053678..10053684`) but not the slip: 670 + 512.
+        w.active.update(id: id) { $0.vx = 0; $0.slip = 1 }
+        w.player.doubleSpeed = true
+        y0 = player(w).y256
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).y256 - y0, 670 + 512)
+        w.player.doubleSpeed = false
+        w.active.update(id: id) { $0.slip = 0 }
+        // On ice LEFT from rest takes the continuing −0x104 (raw `10053624..10053638`).
+        w.player.ice = 1
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -0x104)
+        w.player.ice = 0
+        // Facing boundary: LEFT from +0x14f lands on vx 0 exactly — `cmpwi 0; bge` keeps F (raw `1005378c..10053790`).
+        w.player.facing = 2
+        w.active.update(id: id) { $0.vx = 0x14f }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0)
+        XCTAssertEqual(w.player.facing, 2)
+        w.active.update(id: id) { $0.slip = 1 }
         // The post-jump guard skips `.FootPressure` but not the slip (raw `10053688..100536a4`); the air counter skips
         // both (raw `10053668..10053674`).
         w.active.update(id: id) { $0.vx = 0 }
@@ -491,6 +534,15 @@ final class PlayerMotionTests: XCTestCase {
         w.active.update(id: id) { $0.vx = -2000 }
         HandleKeys.run(world: w, keys: .left, ridden: nil)
         XCTAssertEqual(player(w).vx, -0x960)
+        w.active.update(id: id) { $0.vx = 0 }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -1000)                             // unclamped, no −0x14a on a rope
         w.player.rope = false
+        // Facing boundary: airborne RIGHT from −0x14a lands on vx 0 exactly — `cmpwi 0; ble` keeps F (raw `100539b4`).
+        w.player.facing = 1
+        w.active.update(id: id) { $0.vx = -0x14a }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0)
+        XCTAssertEqual(w.player.facing, 1)
     }
 }

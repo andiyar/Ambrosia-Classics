@@ -51,9 +51,11 @@ public enum HandleKeys {
             w.player.useItemHeld = false                                  // `_DAT_100a075c = 0`
             // The L/R gate (l. 47359–47365; raw `100534f0..10053548`, Bank correction A7): not gliding
             // (`_DAT_100a05e0`), climb 0 (`_DAT_100a0758`), crouch depth 0 (`_DAT_100a071c`), no carpet
-            // (`PTR_DAT_100a05a4`), |teleporter charge| < 0x15.
+            // (`PTR_DAT_100a05a4`), |teleporter charge| < 0x15 — the charge re-read here as the binary re-reads
+            // `PTR_DAT_100a0700` (raw `1005352c lwz r3,-0x7140(r2); lha`), not the early-return copy.
             if !w.player.glider {
-                if w.player.climb == 0 && w.player.crouch == 0 && !w.player.carpet && charge < 0x15 {
+                if w.player.climb == 0 && w.player.crouch == 0 && !w.player.carpet
+                    && abs(Int(w.player.teleporterCharge)) < 0x15 {
                     leftRight(w, id: id, keys: keys)
                 }
             } else if s().hp > 0 {
@@ -171,9 +173,16 @@ public enum HandleKeys {
     /// three gates (no slip); then in **every** state +0x14a while vx < air max (raw `100539a4`), and vx > 0 → F 2
     /// with no stun test (raw `100539ac..100539bc`).
     static func leftRight(_ w: SpriteWorld, id: Int, keys: InputActions) {
+        // ⚠️ Works on a copy of the record and writes it back on exit: any call added here that writes the player's
+        // record through `w.active` (none in Phase 2 — `.AccelerateBasedOnSlope` and `.FootPressure` take the copy)
+        // would be overwritten by the write-back. Move such a call outside, or re-read the copy after it.
         guard var s = w.active.record(id: id) else { return }
         defer { let out = s; w.active.update(id: id) { $0 = out } }
         func airMax() -> Int32 { Int32(w.player.runFlag ? w.player.airRun : w.player.airWalk) }
+        /// −air max as the LEFT test computes it: `lha; neg; …; extsh` (raw `1005375c..10053774`).
+        func negAirMax() -> Int32 {
+            Int32(Int16(truncatingIfNeeded: 0 &- Int32(w.player.runFlag ? w.player.airRun : w.player.airWalk)))
+        }
         func walkOrRun(_ walk: Int16, _ walkFresh: Int16, _ run: Int16, _ runFresh: Int16, fresh: Bool) {
             if !keys.contains(.run) {
                 if w.player.exertion < 0xb9 { w.player.exertion += 1 }    // raw `10053600..1005360c` / `10053860..6c`
@@ -194,7 +203,7 @@ public enum HandleKeys {
                 } else if w.player.rope {
                     s.vx &-= 1000                                         // raw `10053724..10053740`
                     if s.vx < -0x960 { s.vx = -0x960 }
-                } else if 0 &- airMax() < s.vx {
+                } else if negAirMax() < s.vx {
                     s.vx &-= 0x14a                                        // raw `10053780`
                 }
             } else {
