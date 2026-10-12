@@ -326,8 +326,8 @@ public enum CrunchTiles {
 
     /// The crunched-tile log (`G+0xad6` < 20000): level byte, row, column (raw `10044bc8..10044c14`).
     static func log(_ w: SpriteWorld, col: Int, row: Int) {
-        guard w.player.crunchLog.count < 20000 else { return }
-        w.player.crunchLog.append(CrunchLogEntry(level: Int8(truncatingIfNeeded: w.level.id),
+        guard w.globals.crunchLog.count < 20000 else { return }
+        w.globals.crunchLog.append(CrunchLogEntry(level: Int8(truncatingIfNeeded: w.level.id),
                                                  col: Int16(truncatingIfNeeded: col),
                                                  row: Int16(truncatingIfNeeded: row)))
     }
@@ -379,7 +379,10 @@ public enum CrunchTiles {
         let tx1 = Int(Int16(truncatingIfNeeded: tx + 1)), ty1 = Int(Int16(truncatingIfNeeded: ty + 1))
         w.player.tileCacheValid = false
         if explode {
-            // `.ExplodeCrunchedTile` ×4 (raw `10044608..10044634`). // later: E1a (particles and their draws)
+            // `.ExplodeCrunchedTile` ×4 (raw `10044608..10044634`) → `.ExplodeFaceIntoParticles` for each of the four
+            // cells holding a tile 0…0x5f.
+            // later: E1a — ExplodeFaceIntoParticles draws (4/pixel) missing here (plan "⚑ P2 carry → E1a"): until
+            // then the stream diverges from the original after the first crunch destroy.
         }
         reshape(w, col: tx, row: ty, block: (tx, ty), position: 5, dir: dir, explode: explode, clearDir: clearDir)
         reshape(w, col: tx1, row: ty, block: (tx, ty), position: 7, dir: dir, explode: explode, clearDir: clearDir)

@@ -1,5 +1,19 @@
 import Foundation
 
+/// One crunched tile in the game globals' log (`G+0x12d8+n` = the level byte `(char)*_DAT_1009feac`,
+/// `G+0x60f8+4n` = row, `G+0x60fa+4n` = column; `.CrunchTile` raw `10044bc8..10044c14`).
+public struct CrunchLogEntry: Equatable, Sendable {
+    public var level: Int8
+    public var col: Int16
+    public var row: Int16
+
+    public init(level: Int8, col: Int16, row: Int16) {
+        self.level = level
+        self.col = col
+        self.row = row
+    }
+}
+
 /// The game-globals block `G` (`_DAT_1009ffc0`; engine §9) — Phase 1 keeps the start values the status bar and the
 /// player read. `.InitGameGlobals @ 10001498` (decompile l. 582; tail stores l. 799–812): `+0xc = +0xa = 0x230`
 /// (max magic, max health), `+4` health = `+6` breath = `+0xa`, `+8` 0, `+0xe` magic = `+0xc`, `+0x10` coins 0,
@@ -30,6 +44,10 @@ public struct GameGlobals: Equatable, Sendable {
     public var startFacing: Int16
     /// `+0x172` selected inventory slot.
     public var selectedSlot: Int16 = 0
+    /// The crunched-tile log (`+0xad6` count < 20000; `+0x12d8+n` level byte, `+0x60f8+4n` row, `+0x60fa+4n` column),
+    /// appended by `.CrunchTile` and the crumble overlay's Handle (P2) — re-applied on revisits (engine §9; W4 /
+    /// Phase 3 level re-entry reads it).
+    public var crunchLog: [CrunchLogEntry] = []
 
     /// `.InitGameGlobals`' start values, `+0x16` from the level header (`.NewGame`).
     public init(header: LevelHeader) {

@@ -123,6 +123,13 @@ otherwise `ReportError("Crunch sprite face out of range")`). At hp < 1: killed, 
 hp == 0 and armed: snd 424 'rock crush', `.DestroyCrunchTile(tx, ty, +0x15c, 1, 1, 0)` and the
 tile is logged in the game globals (count `G+0xad6` < 20000: `G+0x12d8+n` = level byte,
 `G+0x60f8+4n` = ty, `G+0x60fa+4n` = tx) for re-application on revisits (engine §9).
+⚑ follow-the-binary (Phase 2 P2, 2026-10-13): (1) the overlay sorts on **layer 0xb**, not 50 — `.SetupEffectSprite`
+stores `+0x80 = 0xb` (raw `100606e0`) after `.MTNewSprite` stored the passed 0x32 and before `.MTInsertSprite` (raw
+`1003321c` Setup, `1003322c` insert); (2) `+0x15c` is the crunch **direction** nibble (`.GetFGCrunchDirTile`, r26 →
+`stw r3,0x15c` raw `10044ac4..10044ac8`), not the tile kind; (3) `.HitPlayerTileSprite`'s crunch bounce adds (16, 16) to
+the cell point before `.RectBounceFake2` (raw `100552cc..100552f0`) — the decompile omits it — so the 36×36 rect
+(−2, −2, 0x22, 0x22) is centred on the 2×2 block; (4) the landing sound 603 (springboard) is played at priority **1**
+(`li r4,0x1` raw `1005469c`; physics-sprites §8.7).
 
 ## 3. Countdown timer and digit sprites  [HIGH]
 

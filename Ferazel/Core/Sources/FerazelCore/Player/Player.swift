@@ -118,8 +118,6 @@ public enum Player {
         let tileHit = tileHit ?? PlayerTiles.hit(keys: keys)
         func s() -> SpriteSlot { w.active.record(id: id)! }
         func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
-        w.player.cues.removeAll()
-        w.player.tileOps.removeAll()
 
         // 1 (l. 44486–44488): ridden copy, last facing, turn flag.
         w.player.ridden = s().ridden

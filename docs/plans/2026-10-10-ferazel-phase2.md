@@ -503,6 +503,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 
 #### P2 — ⚑ MAJOR — `.HitPlayerTileSprite`: landing, ceiling, cling, pull-up, crunch call (→ 160)
 - **Files:** `Sources/FerazelCore/Player/{PlayerTiles,GroundCeilingEffects}.swift`, `Sources/FerazelCore/Player/Player.swift`,
+  (as executed, necessary: `Player/PlayerState.swift`, `Sprites/SpriteSlot.swift`, `Session/GameGlobals.swift`; the fix
+  round's drain also touched the `frame` fixture of `Tests/FerazelCoreTests/PlayerMotionTests.swift`)
   `Sources/FerazelCore/Seams/DrawOp.swift` (`setTile`), `Sources/FerazelRender/Frame/FrameRenderer.swift` (dust PICT
   1201; applies `setTile` to its LevelFile/grid); `Tests/FerazelCoreTests/PlayerTileTests.swift`,
   `Tests/FerazelCoreTests/SessionTests.swift` (only if the exhaustive switch needs the case).
@@ -556,6 +558,35 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   120,37 0x000a; 119,36 0x0305; 120,36 0x1300; 121,36 0x1308; 120,37 0x0004; 121,37 0x000a; 120,36 0x0300). Bank C7
   landed in physics-sprites §8.7. Out-of-Files: `Player/PlayerState.swift` (PlayerCue `.threeD`/`onlyIfIdle`, P2
   globals), `Sprites/SpriteSlot.swift` (`+0xb0`, `+0x150/158/15c/16c` — S2 additions).
+- ⚑ **P2 review fix round (2026-10-13; both Opus legs MERGEABLE_WITH_FIXES, no behaviour bug):** `cues` / `tileOps`
+  are no longer cleared inside `Player.handle` (the early returns skipped the clear; the overlay's Handle fills them
+  too) — `PlayerState.drainFrameOutputs()` hands them over once per frame after the handle pass. The crunch log moved
+  to `GameGlobals.crunchLog` (G-resident; `Player.spawn` re-creates `PlayerState`). Asserts added inside the 9 tests
+  (G2 stays 175): every ledge kind both sides, the dy / pull-up / kind 5–6 boundaries, the right-wall pull-up, the exact
+  occupied-above +1000, the landing gate and impact boundaries (0x400/0x401, 700/701, 0x17ff/0x1800), launched,
+  carpet lock, the cling arm's writes, Double Speed climb and the cast/wand zero, crunch kinds 0/1/2/4, the strength
+  and cooldown boundaries, the overlay's own collapse, the 40-slot overflow, a table of every reshape arm with its
+  cascades (raw arm addresses), the `.RectBounceFake2` axis tie, full 423/424 cue fields. `FrameRenderer.setTile`
+  re-parses `Mlvl` and rebuilds the grid, light and sprite renderers per op (leg 2: release 0.145 ms/op, debug 63 ms
+  for a 10-op crunch frame) — carry "patch the cell in place" to A3 if the app hitches. A direction-only map write
+  (`.SetFGCrunchDirTile`) redraws an unchanged cell (identical pixels; the original does not redraw) [LOW].
+- ⚑ **P2 carry → P3:** wire into `FerazelSession.step` `Player.handle` **and** the Effect Handle (`EffectSprite.handle`
+  for `case .effect`, today `break // later: E1a`) — without it dust records leak and kind-3 overlays stick at phase
+  15; call `world.player.drainFrameOutputs()` once per frame after `.MTHandleSprites` (before the collide passes'
+  outputs are added), and emit the `setTile` DrawOps at the binary-correct position: P3 reads in the dump where a
+  map write becomes visible (`.ChangedTile` → `.RedrawScrollGrid` during the Handle pass, i.e. after
+  `.WrapCopyToScreen` and before `.WrapEraseSprites`, per leg 2) and places them so the frame / tile port sees them
+  where the original's does.
+- ⚑ **P2 carry → E1a (RNG, HIGH):** at each crunch destroy (`.DestroyCrunchTile` raw `100445b0`, explode arm
+  `10044608..10044634`, cascades included) `.ExplodeCrunchedTile @ 100444f0` calls, for each of the four cells holding an
+  FG tile 0…0x5f, `.ExplodeFaceIntoParticles(face, (Y, X), 2, 2, 2, 100, 100) @ 10043448` (decompile l. 38373–38512):
+  every 2nd row (`param_4`), every 2nd opaque pixel (`param_3`; the skip counter carries across runs and rows), it draws
+  **R(0x14), R(0x2ee), R(100), R(0x1e)** (4 per emitted pixel, the `param_7 == 100` arm) and calls `.NewParticle`.
+  Core needs per-tile FG opaque-pixel masks (Core is Foundation + HectorResources: E1a decides — derive them in Core
+  from the FG face data or inject them at session init); E1a's Files gain `Player/PlayerTiles.swift` (the marker
+  `// later: E1a — ExplodeFaceIntoParticles draws (4/pixel) missing here` in `CrunchTiles.destroyCrunchTile`). Until then
+  the session stream diverges from the original after the first crunch destroy (`testCrunchKind3Collapses`' RNG numbers
+  are pre-destroy only).
 
 #### P3 — minor — Player states and faces (replaces ◇ `PlayerPose`) (→ 170) ◈
 - **Files:** `Sources/FerazelCore/Player/{PlayerStates,Breathing}.swift`, delete `Sources/FerazelCore/Player/PlayerPose.swift`,

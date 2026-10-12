@@ -89,12 +89,14 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x114` (i16): friction — a Bonus's vx decays by it per frame (pickups-boxes field table).
     public var friction: Int16 = 0
     /// `+0x14c` (i32): the class word — Bonus light-flicker timer (pickups-boxes §1.1), Walker decision distance
-    /// (enemies-ground §3.1).
+    /// (enemies-ground §3.1), the crumble overlay 1210's starting hp (its face = `+0x14c` − hp; P2).
     public var classTimer: Int32 = 0
-    /// `+0x154` (i32): Walker `1000 + FastRand(400)` (enemies-ground §3.1: no reader in Walker code).
+    /// `+0x154` (i32): Walker `1000 + FastRand(400)` (enemies-ground §3.1: no reader in Walker code); the crumble
+    /// overlay 1210's tile column (P2).
     public var classWord154: Int32 = 0
     /// `+0x150` / `+0x158` / `+0x15c` / `+0x16c` (i32): class words — the crumble overlay 1210 keeps its table slot,
-    /// tile row, crunch direction nibble and "armed" flag here (`.MakeCrunchSprite`, `.CrunchTile`; P2).
+    /// tile row, crunch direction nibble (not the tile kind, as triggers-background-2 §2.3 had it) and "armed" flag
+    /// here (`.MakeCrunchSprite`, `.CrunchTile`; P2).
     public var classWord150: Int32 = 0
     public var classWord158: Int32 = 0
     public var classWord15c: Int32 = 0

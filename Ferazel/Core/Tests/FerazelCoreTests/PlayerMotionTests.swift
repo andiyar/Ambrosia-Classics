@@ -34,7 +34,10 @@ final class PlayerMotionTests: XCTestCase {
                           bounce: false)
     }
 
+    /// One frame: the previous frame's cues are drained first (the frame driver's `drainFrameOutputs()`, P2), so
+    /// `w.player.cues` reads this frame's.
     private func frame(_ w: SpriteWorld, _ solver: TileSolver, _ keys: InputActions = []) {
+        _ = w.player.drainFrameOutputs()
         Player.handle(world: w, keys: keys, solver: solver, tileHit: floorHit)
     }
 

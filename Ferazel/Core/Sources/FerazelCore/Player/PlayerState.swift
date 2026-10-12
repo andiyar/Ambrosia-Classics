@@ -43,20 +43,6 @@ public struct PlayerCue: Equatable, Sendable {
     }
 }
 
-/// One crunched tile in the game globals' log (`G+0x12d8+n` = the level byte `(char)*_DAT_1009feac`,
-/// `G+0x60f8+4n` = row, `G+0x60fa+4n` = column; `.CrunchTile` raw `10044bc8..10044c14`).
-public struct CrunchLogEntry: Equatable, Sendable {
-    public var level: Int8
-    public var col: Int16
-    public var row: Int16
-
-    public init(level: Int8, col: Int16, row: Int16) {
-        self.level = level
-        self.col = col
-        self.row = row
-    }
-}
-
 /// The player's globals (plan S2, P1a; player-states §2). The original keeps almost all player state in globals, not
 /// in the sprite record; each is named here by the TOC slot the decompiler prints (`_DAT_100a0758` = the slot at
 /// 0x100a0758 holding a pointer to the global) so a reviewer can grep the address. Defaults are `.ClearPlayerVars
@@ -275,19 +261,27 @@ public struct PlayerState: Equatable, Sendable {
     /// The 40-slot crumble-overlay table at `0x100a53d8` (`.ClearCrunchSprites` / `.FindCrunchSprite` /
     /// `.MakeCrunchSprite`): an overlay sprite id per slot (nil = 0). A global, kept here with the player's.
     public var crunchSprites = [Int?](repeating: nil, count: 0x28)
-    /// The crunched-tile log in the game globals (`G+0xad6` count < 20000; `G+0x12d8+n` level byte, `G+0x60f8+4n` row,
-    /// `G+0x60fa+4n` column) — re-applied on revisits (engine §9; W4 / Phase 3). Kept here: P2 owns no `GameGlobals`.
-    public var crunchLog: [CrunchLogEntry] = []
     /// `*_DAT_100a00f4`: the water-effects tile cache is valid (`.FillCachedTileArray` sets it; `.DestroyCrunchTile`
     /// clears it; `.WrapDrawWaterEffects` refills when clear — E1b).
     public var tileCacheValid = false
 
-    /// The sound calls of the current frame, in call order (cleared at the top of `Player.handle`). The Effect
-    /// Handles after the player in the list (the crumble overlay, layer 0xb) append theirs here too.
+    /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile
+    /// callback and by the Effect Handles (the crumble overlay's 424).
     public var cues: [PlayerCue] = []
-    /// The map changes of the current frame, in call order (`DrawOp.setTile`, one per `.SetFGTile` /
-    /// `.SetFGCrunchDirTile` write; cleared at the top of `Player.handle` like `cues`).
+    /// The map changes made since the last `drainFrameOutputs()`, in call order (`DrawOp.setTile`, one per
+    /// `.SetFGTile` / `.SetFGCrunchDirTile` write — from the player's tile callback or the overlay's Handle).
     public var tileOps: [DrawOp] = []
+
+    /// Hands over and clears `cues` and `tileOps`. The frame driver calls it once per frame after the whole
+    /// `.MTHandleSprites` pass (plan P2 review ruling 1: the outputs are filled by several Handles, so no single Handle
+    /// may clear them; the session wiring is P3's — "⚑ P2 carry → P3").
+    public mutating func drainFrameOutputs() -> (cues: [PlayerCue], tileOps: [DrawOp]) {
+        defer {
+            cues = []
+            tileOps = []
+        }
+        return (cues, tileOps)
+    }
 
     /// `.ClearPlayerVars`' state.
     public init() {}

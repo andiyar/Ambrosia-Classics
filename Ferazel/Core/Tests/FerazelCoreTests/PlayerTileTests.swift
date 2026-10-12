@@ -33,9 +33,27 @@ final class PlayerTileTests: XCTestCase {
 
     private func player(_ w: SpriteWorld) -> SpriteSlot { w.active.sprite(id: w.playerID!)! }
 
-    /// One `.HandlePlayerSprite` with the real tile callback (the default `tileHit`).
+    /// One `.HandlePlayerSprite` with the real tile callback (the default `tileHit`). The previous frame's outputs are
+    /// drained first, as the frame driver does after each handle pass, so `cues` / `tileOps` read this frame's.
     private func frame(_ w: SpriteWorld, _ solver: TileSolver, _ keys: InputActions = []) {
+        _ = w.player.drainFrameOutputs()
         Player.handle(world: w, keys: keys, solver: solver)
+    }
+
+    /// A player standing on the floor with the landing state crafted for a direct `.CheckGroundCeilingHitEffects`:
+    /// `+0xce` 3, `0738` 0, not latched, cues drained.
+    private func landingState(impact: Int32, lastWater: Int32 = 0) throws -> SpriteWorld {
+        let w = try world([])
+        _ = standing(w)
+        w.active.update(id: w.playerID!) { s in
+            s.groundKind = 3
+            s.lastWater = lastWater
+        }
+        w.player.groundLast = 0
+        w.player.landedLatch = false
+        w.player.impact = impact
+        _ = w.player.drainFrameOutputs()
+        return w
     }
 
     /// Spawn on the floor at x 100 and settle: frame 1 lands, frame 2 refills the jump counter to 6.
@@ -68,8 +86,10 @@ final class PlayerTileTests: XCTestCase {
             XCTAssertEqual(landingCues(w), [], "frame \(f)")
             XCTAssertEqual(dusts(w).count, 0, "frame \(f)")
         }
+        w.player.launched = true                                        // a spring/tumble flag: the landing clears it
         frame(w, solver)
         XCTAssertEqual(w.player.impact, 4564)
+        XCTAssertEqual(w.player.carpetLock, 2)                          // FG `.WallBounce` hit → `059c` = 2
         XCTAssertEqual(w.player.impact >> 7, 35)                        // v = 35 < 0x30 → 0 (raw `1005458c`)
         // Landing (`+0xce` ≠ 0, `0738` == 0, `0724` == 0): stop 414 and 427 if playing (Bank correction C7), then
         // v == 0 ∧ impact > 700 ∧ dry → 601 prio 0x14 vol 0x3c (raw `10054658..10054680`).
@@ -179,6 +199,32 @@ final class PlayerTileTests: XCTestCase {
             XCTAssertTrue(w.active.sprite(id: id)!.oneWayLanded)
             XCTAssertEqual(w.player.oneWayTimer, 0xe)
         }
+        // Exact boundaries, read directly (raw `10054538..10054680`): dust only when impact > 0x400; v = impact >> 7
+        // kept from 0x30 (impact 0x1800 → v 48 → 600 vol 116; 0x17ff → v 47 → 0 → 601); 601 only when impact > 700.
+        for (impact, dust, cue) in [(Int32(0x400), false, PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c)),
+                                    (0x401, true, PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c)),
+                                    (0x17ff, true, PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c)),
+                                    (0x1800, true, PlayerCue(call: .reg, snd: 600, priority: 0x14, volume: 116))] {
+            let w = try landingState(impact: impact)
+            GroundCeilingEffects.check(w, id: w.playerID!)
+            XCTAssertEqual(dusts(w).count, dust ? 1 : 0, "impact \(impact)")
+            XCTAssertEqual(landingCues(w), [cue], "impact \(impact)")
+        }
+        for (impact, cues) in [(Int32(700), [PlayerCue]()), (701, [PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c)])] {
+            let w = try landingState(impact: impact)
+            GroundCeilingEffects.check(w, id: w.playerID!)
+            XCTAssertEqual(landingCues(w), cues, "impact \(impact)")
+            XCTAssertEqual(dusts(w).count, 0)
+        }
+        // The landing gate `0738` == 0 (raw `1005451c..10054528`): last frame's pre-move ground kind 3 → nothing at all.
+        do {
+            let w = try landingState(impact: 6400)
+            w.player.groundLast = 3
+            GroundCeilingEffects.check(w, id: w.playerID!)
+            XCTAssertEqual(w.player.cues, [])
+            XCTAssertFalse(w.player.landedLatch)
+            XCTAssertEqual(dusts(w).count, 0)
+        }
         // The springboard branch, read directly (`.HitPlayerTileSprite` cannot reach it: a ridden player has `0738` = 3
         // from row 20; `.HitPlayerSprite`, W1, can): ridden `+0xb0` == 0x58c → 603 prio 1 vol 0x55 only when impact
         // > 0x578, and never 600/601.
@@ -248,6 +294,18 @@ final class PlayerTileTests: XCTestCase {
             TileSolver(world: g).separateFromTiles(gid, pass: PlayerTiles.hit(keys: .left))
             XCTAssertEqual(g.player.climb, clings ? 1 : 0, "y \(y)")
         }
+        // The kind is taken mod 100 (raw `10054da4..10054dec`, `mulhw` by 0x51eb851f): FG kind 100 (material 1, base 0)
+        // clings like 0; kind 1 (a ceiling) never clings.
+        for (kind, clings) in [(100, true), (1, false)] {
+            let g = try world([(5, 10, 9), (5, 11, 9)], floor: false)
+            var kinds = Array(0..<0x60)
+            kinds[9] = kind
+            g.tiles = TileGrid(fg: g.tiles.fg, bg: g.tiles.bg, fgKinds: kinds, bgKinds: g.tiles.bgKinds)
+            let gid = Player.spawn(world: g, x: 137, y: 279)!
+            g.active.update(id: gid) { $0.vx = -500 }
+            TileSolver(world: g).separateFromTiles(gid, pass: PlayerTiles.hit(keys: .left))
+            XCTAssertEqual(g.player.climb, clings ? 1 : 0, "kind \(kind)")
+        }
         // No LEFT and not clinging last frame: no cling, `.WallBounce` stops vx.
         do {
             let g = try world([(5, 10, 0), (5, 11, 0)], floor: false)
@@ -268,6 +326,20 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(player(w).vx, 0)
         XCTAssertEqual(player(w).vy, 0)
         XCTAssertEqual(player(w).x, 138)
+        // Row 33's cling arm (l. 45750–45790), no pull-up: crouch 0, air counter 0, the climb phase wraps (13 → 1,
+        // 0 → 12, 12 kept); with a wand phase ≥ 1 the phase is 1.
+        for (phase, wand, expected) in [(Int16(13), Int16(0), Int16(1)), (0, 0, 12), (12, 0, 12), (5, 1, 1)] {
+            w.player.climbPhase = phase
+            w.player.wandPhase = wand
+            w.player.crouch = 3
+            w.player.airCounter = 5
+            frame(w, solver, .left)
+            XCTAssertEqual(w.player.climb, 1)
+            XCTAssertEqual(w.player.climbPhase, expected, "phase \(phase) wand \(wand)")
+            XCTAssertEqual(w.player.crouch, 0)
+            XCTAssertEqual(w.player.airCounter, 0)
+        }
+        w.player.wandPhase = 0
         // Climb ±1000 (the climb block, l. 47681–47724) eased 100 toward 0 by row 26 before the move: UP moves −900,
         // DOWN +900 (vy is zeroed again by the cling).
         var y0 = player(w).y256
@@ -277,6 +349,23 @@ final class PlayerTileTests: XCTestCase {
         frame(w, solver, .down)
         XCTAssertEqual(player(w).y256 - y0, 900)
         XCTAssertEqual(w.player.climb, 1)
+        // Double Speed: ±0x578 (raw `10053e4c..`) → −0x578 + 100 = −1300.
+        w.player.doubleSpeed = true
+        y0 = player(w).y256
+        frame(w, solver, .up)
+        XCTAssertEqual(player(w).y256 - y0, -1300)
+        w.player.doubleSpeed = false
+        // A cast begun this call (`06e0` == 0) or a wand phase with the wand held < 5: vy 0 instead of the climb.
+        for (began, wand, held) in [(true, Int16(0), Int16(0)), (false, 1, 4)] {
+            w.player.noCastBegan = !began
+            w.player.wandPhase = wand
+            w.player.wandHeld = held
+            w.active.update(id: id) { $0.vy = 77 }
+            HandleKeys.climbBlock(w, id: id, keys: .up)
+            XCTAssertEqual(player(w).vy, 0, "began \(began)")
+        }
+        w.player.wandPhase = 0
+        w.player.wandHeld = 0
         // Row 26 on its own: ease ±100 (clamp ±4000) and vx ∓0x800 into the wall, climb cleared.
         for (side, vy, ey, ex) in [(Int16(1), Int32(-1000), Int32(-900), Int32(-0x800)), (1, 1000, 900, -0x800),
                                    (2, -4500, -4000, 0x800), (2, 4500, 4000, 0x800), (1, 50, 0, -0x800)] {
@@ -401,13 +490,65 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(g.player.climb, 1)
         XCTAssertEqual(g.active.sprite(id: gid)!.vy, 0)
         XCTAssertFalse(g.player.cues.contains { $0.snd == 416 })
-        XCTAssertGreaterThanOrEqual(g.active.sprite(id: gid)!.y256, yBefore + 1000 - 0xff)
+        // Exactly +1000: `.WallBounce` kind 4's restore returns to `+6`, which the branch rewrote (282), so the integer
+        // does not change and the 24.8 position is not re-synced.
+        XCTAssertEqual(g.active.sprite(id: gid)!.y256, yBefore + 1000)
         // dy ≤ 0 on a ledge kind: no cling at all.
         let h = try world([(5, 10, 4)], floor: false)
         let hid = Player.spawn(world: h, x: 137, y: 277)!               // dy = 336 − 336 = 0
         h.active.update(id: hid) { $0.vx = -500 }
         TileSolver(world: h).separateFromTiles(hid, pass: PlayerTiles.hit(keys: .left))
         XCTAssertEqual(h.player.climb, 0)
+        // Every ledge kind (raw `10054e2c..10054e4c` left: 4, 0x14, 0x2d; `10054eb4..10054ed4` right: 7, 0x13, 0x2f), each
+        // touched with its hot rect: dy 2 → cling and pull-up 1 with 416; dy 0 → nothing. Left x puts the hot-rect left
+        // edge (x + 0x26) one px inside the tile rect's right edge; right x puts x + 0x3e one px inside its left edge.
+        for (kind, right, x) in [(4, false, 137), (0x14, false, 153), (0x2d, false, 137),
+                                 (7, true, 115), (0x13, true, 99), (0x2f, true, 115)] {
+            for (y, clings) in [(279, true), (277, false)] {
+                let k = try world([(5, 10, kind)], floor: false)
+                let kid = Player.spawn(world: k, x: x, y: y)!
+                k.active.update(id: kid) { $0.vx = right ? 500 : -500 }
+                TileSolver(world: k).separateFromTiles(kid, pass: PlayerTiles.hit(keys: right ? .right : .left))
+                XCTAssertEqual(k.player.climb, clings ? 1 : 0, "kind \(kind) y \(y)")
+                XCTAssertEqual(k.player.pullUp, clings ? 1 : 0, "kind \(kind) y \(y)")
+                XCTAssertEqual(k.player.cues.contains(PlayerCue(call: .reg, snd: 416, priority: 1, volume: 0xab)), clings)
+                if clings { XCTAssertEqual(k.player.wallSide, right ? 2 : 1) }
+            }
+        }
+        // The pull-up start `((y >> 8) + 59 − 4) − (Y + 16) < 1` (raw `10055004..10055028`): y 281 → 0 → pull-up;
+        // y 282 → 1 → a cling without a pull-up.
+        for (y, pulls) in [(281, true), (282, false)] {
+            let k = try world([(5, 10, 4)], floor: false)
+            let kid = Player.spawn(world: k, x: 137, y: y)!
+            k.active.update(id: kid) { $0.vx = -500 }
+            TileSolver(world: k).separateFromTiles(kid, pass: PlayerTiles.hit(keys: .left))
+            XCTAssertEqual(k.player.climb, 1)
+            XCTAssertEqual(k.player.pullUp, pulls ? 1 : 0, "y \(y)")
+        }
+        // Kind 6 (top-right quarter) clings on the right only while dy < 4: y 280 → 3, y 281 → 4.
+        for (y, clings) in [(280, true), (281, false)] {
+            let k = try world([(5, 10, 6)], floor: false)
+            let kid = Player.spawn(world: k, x: 115, y: y)!
+            k.active.update(id: kid) { $0.vx = 500 }
+            TileSolver(world: k).separateFromTiles(kid, pass: PlayerTiles.hit(keys: .right))
+            XCTAssertEqual(k.player.climb, clings ? 1 : 0, "y \(y)")
+        }
+        // The right-wall pull-up: kind 7 at (5, 10), `+0x17e` 0 → x256 += 0x2000 on frame 20 (no draw offset: not
+        // mirrored). Kind 7 keeps its right edge: the wall puts him at X + 16 − 0x3e = 114.
+        let k = try world([(5, 10, 7)], floor: false)
+        let kid = Player.spawn(world: k, x: 115, y: 279)!
+        let ks = TileSolver(world: k)
+        k.active.update(id: kid) { $0.vx = 500 }
+        frame(k, ks, .right)
+        XCTAssertEqual(k.player.pullUp, 2)
+        XCTAssertEqual(SpriteWorld.pixel(k.active.sprite(id: kid)!.x256), 114)
+        for _ in 2...19 { frame(k, ks) }
+        XCTAssertEqual(k.player.pullUp, 20)
+        frame(k, ks)
+        XCTAssertEqual(k.player.pullUp, 0)
+        XCTAssertEqual(k.player.pixelX, 114 + 32)
+        XCTAssertEqual(k.active.sprite(id: kid)!.x256, (114 << 8) + 0x2000)   // the wall re-synced 24.8 to 114 first
+        XCTAssertEqual(k.player.pixelY, 279 - 22)
     }
 
     // MARK: - the post-jump guard, ceilings
@@ -545,8 +686,10 @@ final class PlayerTileTests: XCTestCase {
                     default: break
                     }
                 }
-                for c in w.player.cues where c.snd == 423 || c.snd == 424 { log.append("\(f): \(c.snd)") }
-                for op in w.player.tileOps { log.append("\(f): \(op)") }
+                // The frame driver's drain, once after the whole handle pass (the overlay's outputs included).
+                let out = w.player.drainFrameOutputs()
+                for c in out.cues where c.snd == 423 || c.snd == 424 { log.append("\(f): \(c)") }
+                for op in out.tileOps { log.append("\(f): \(op)") }
                 if let o = w.active.sprites.first(where: { $0.type == 0x4ba }) {
                     log.append("\(f): overlay \(o.phase) \(o.hp) \(o.face?.index ?? -1) \(o.dead)")
                 }
@@ -567,13 +710,18 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(overlays.map(\.dead), [true, true])
         // Not freed: killed by `.CrunchTile`, so their Handles (which free the slot) never reach hp < 1.
         XCTAssertEqual(Array(w.player.crunchSprites.prefix(3)), [overlays[0].id, overlays[1].id, nil])
-        XCTAssertEqual(Array(log.prefix(2)), ["2: 423", "2: 423"])
+        // `.STPlay3DSound(423 / 424, 1, 0x100, pos)` at the crunch point (`stw r3,0x78(r1)` … `lwz r6,0x78(r1)`): no draw,
+        // no idle gate on these.
+        func c3d(_ snd: Int16, _ x: Int) -> String {
+            "\(PlayerCue(call: .threeD, snd: snd, priority: 1, volume: 0x100, position: SpriteSlot.Point(x: x, y: 1152)))"
+        }
+        XCTAssertEqual(Array(log.prefix(2)), ["2: \(c3d(423, 3808))", "2: \(c3d(423, 3840))"])
         XCTAssertEqual(log.filter { $0.hasPrefix("2: overlay") }, ["2: overlay 15 2 -1 false"])
         XCTAssertEqual(log.filter { $0.hasPrefix("3: overlay") }, ["3: overlay 14 2 0 false"])
         XCTAssertEqual(log.filter { $0.hasPrefix("16: overlay") }, ["16: overlay 1 2 0 false"])
         XCTAssertEqual(log.filter { $0.hasPrefix("17: overlay") }, ["17: overlay 0 1 1 false"])
         XCTAssertEqual(log.filter { $0.hasPrefix("18:") }, [
-            "18: 424", "18: 424",
+            "18: \(c3d(424, 3808))", "18: \(c3d(424, 3840))",
             "18: \(DrawOp.setTile(col: 119, row: 36, fg: 0x1305))",
             "18: \(DrawOp.setTile(col: 120, row: 36, fg: 0x1308))",
             "18: \(DrawOp.setTile(col: 119, row: 37, fg: 0x000b))",
@@ -592,10 +740,12 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(w.tiles.fg.cell(col: 119, row: 37), 0x000b)
         XCTAssertEqual(w.tiles.fg.cell(col: 120, row: 37), 0x0004)
         XCTAssertEqual(w.tiles.fg.cell(col: 121, row: 37), 0x000a)
-        XCTAssertEqual(w.player.crunchLog, [CrunchLogEntry(level: 1, col: 119, row: 36),
+        XCTAssertEqual(w.globals.crunchLog, [CrunchLogEntry(level: 1, col: 119, row: 36),
                                             CrunchLogEntry(level: 1, col: 120, row: 36)])
         XCTAssertFalse(w.player.tileCacheValid)
-        // The two R(3) draws of frame 2 are the only draws: the stream is 2 steps past the seed.
+        // The two R(3) draws of frame 2 are the only draws: the stream is 2 steps past the seed. ⚠️ These RNG numbers
+        // hold up to the destroy only: the frame-18 destroys omit `.ExplodeFaceIntoParticles`' 4 draws per pixel
+        // ("⚑ P2 carry → E1a"), so the stream after them is not the original's yet.
         var expected = FastRand(seed: 1)
         _ = expected.next(3)
         _ = expected.next(3)
@@ -626,6 +776,217 @@ final class PlayerTileTests: XCTestCase {
             XCTAssertTrue(w.player.cues.contains(down ? PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba)
                                                       : PlayerCue(call: .stopIfPlaying, snd: 427)))
             XCTAssertEqual(w.active.sprites.filter { $0.type == 0x4ba }.map(\.classWord154), [119, 120])
+        }
+        // The strength boundary `vy > 0x9c4` (raw `10055290..10055298`): vy 2060 + 440 = 2500 → strength 0 (no bounce: the
+        // FG pass lands him, vy 0); 2061 → 2501 → bounce (int)(−0.9 · 2501) = −2250 with DOWN; and the cooldown gate
+        // `060c` == 0: cooldown 2 (row 13 → 1) at vy 3440 → strength 0.
+        for (vy0, cooldown, bounces) in [(Int32(2060), Int16(0), false), (2061, 0, true), (3000, 2, false)] {
+            let w = SpriteWorld(level: try level1())
+            let pid = Player.spawn(world: w, x: 3806, y: 1078)!
+            w.active.update(id: pid) { $0.vy = vy0 }
+            w.player.spin = true
+            w.player.crunchCooldown = cooldown
+            Player.handle(world: w, keys: .down, solver: TileSolver(world: w))
+            let p = w.active.sprite(id: pid)!
+            XCTAssertEqual(p.vy, bounces ? -2250 : 0, "vy0 \(vy0) cooldown \(cooldown)")
+            XCTAssertEqual(p.y, bounces ? 1081 : 1083)
+            XCTAssertEqual(w.player.crunchCooldown, bounces ? 5 : cooldown - (cooldown > 0 ? 1 : 0))
+        }
+        // The overlay's own collapse (the player gone): `.CrunchTile(pos, 0)` arms it (phase 15); 15 Handles count it to
+        // 0 and take hp 2 → 1; the 16th takes hp → 0: killed, slot 0 freed, 424 at its centre `+0xe` (x + 16 + 8,
+        // y + 16 + 8), `.DestroyCrunchTile(119, 36, 1, 1, 1, 0)` (the five writes above) and the log (l. 54099–54125).
+        do {
+            let w = SpriteWorld(level: try level1())
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: TilePos(x: 3808, y: 1152), strength: 0), 1)
+            let o = w.player.crunchSprites[0]!
+            _ = w.player.drainFrameOutputs()
+            for k in 1...15 {
+                EffectSprite.handle(world: w, id: o)
+                XCTAssertEqual(w.active.sprite(id: o)!.phase, Int16(15 - k))
+            }
+            XCTAssertEqual(w.active.sprite(id: o)!.hp, 1)
+            XCTAssertEqual(w.active.sprite(id: o)!.face, FaceRef(pict: 0x4ba, index: 1, set: .encoded))
+            XCTAssertEqual(w.player.drainFrameOutputs().cues, [])
+            EffectSprite.handle(world: w, id: o)
+            let out = w.player.drainFrameOutputs()
+            XCTAssertEqual(out.cues, [PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100,
+                                                position: SpriteSlot.Point(x: 3848, y: 1192))])
+            XCTAssertEqual(out.tileOps, [.setTile(col: 119, row: 36, fg: 0x1305), .setTile(col: 120, row: 36, fg: 0x1308),
+                                         .setTile(col: 119, row: 37, fg: 0x000b), .setTile(col: 120, row: 37, fg: 0x000a),
+                                         .setTile(col: 119, row: 36, fg: 0x0305)])
+            XCTAssertTrue(w.active.sprite(id: o)!.dead)
+            XCTAssertNil(w.active.sprite(id: o)!.face)
+            XCTAssertNil(w.player.crunchSprites[0])
+            XCTAssertEqual(w.globals.crunchLog, [CrunchLogEntry(level: 1, col: 119, row: 36)])
+        }
+        // Crunch kinds 0, 1, 2, 4 on a synthetic cell (5, 5) = direction 1, kind k, no tile (raw `10044988..10044b68`).
+        func crunchWorld(_ cells: [(Int, Int, UInt16)]) throws -> SpriteWorld {
+            let w = try world([], floor: false)
+            var fg = [UInt16](repeating: 0, count: 16 * 16)
+            for (c, r, v) in cells { fg[r * 16 + c] = v }
+            w.tiles = TileGrid(fg: TileMap(width: 16, height: 16, cells: fg), bg: w.tiles.bg, fgKinds: w.tiles.fgKinds,
+                               bgKinds: w.tiles.bgKinds)
+            return w
+        }
+        let at = TilePos(x: 160, y: 160)
+        let p423 = SpriteSlot.Point(x: 160, y: 160)
+        // Kind 0: strength 0 returns the kind byte 0 and does nothing; strength 1 breaks it at once (424, no overlay).
+        do {
+            let w = try crunchWorld([(5, 5, 0x1000)])
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 0), 0)
+            XCTAssertEqual(w.player.cues, [])
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 1), 1)
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100, position: p423)])
+            XCTAssertEqual(w.tiles.fg.cell(col: 5, row: 5), 0x0000)
+            XCTAssertEqual(w.active.sprites.count, 0)
+        }
+        // Kinds 2 / 4: below strength 2 / 4 only `if (!playing(423)) 423` (onlyIfIdle), no overlay, return 1; at strength
+        // 2 both break (`p == 2 ∧ kind < 4` / kind 2 ∧ p 2), kind 4 at 4. Strength 0 returns the kind byte.
+        for (kind, strong) in [(UInt16(2), UInt8(2)), (4, 4)] {
+            let w = try crunchWorld([(5, 5, 0x1000 | kind << 8)])
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 0), UInt8(kind))
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 1), 1)
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100, position: p423,
+                                                     onlyIfIdle: true)])
+            XCTAssertEqual(w.active.sprites.count, 0)
+            w.player.cues = []
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: strong), 1)
+            XCTAssertEqual(w.player.cues.map(\.snd), [424], "kind \(kind)")
+            XCTAssertEqual(w.tiles.fg.cell(col: 5, row: 5) >> 12, 0)
+        }
+        // Kind 1 at strength 1: an overlay, not armed (`+0x16c` 0) — its Handle counts the phase but takes no hp;
+        // each player hit at phase 0 takes 1 hp and re-arms the delay with 423 + R(3) + 1; at hp 0 it breaks.
+        do {
+            let w = try crunchWorld([(5, 5, 0x1100), (5, 6, 0x1100)])
+            var rng = w.rng
+            let r1 = rng.next(3)
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 1), 1)
+            let o = w.player.crunchSprites[0]!
+            XCTAssertEqual(w.active.sprite(id: o)!.classWord16c, 0)
+            XCTAssertEqual(w.active.sprite(id: o)!.phase, r1 + 1)
+            XCTAssertEqual(w.active.sprite(id: o)!.hp, 2)
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100, position: p423)])
+            for _ in 0..<5 { EffectSprite.handle(world: w, id: o) }
+            XCTAssertEqual(w.active.sprite(id: o)!.phase, 0)
+            XCTAssertEqual(w.active.sprite(id: o)!.hp, 2)                // unarmed: the Handle takes no hp
+            let r2 = rng.next(3)
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 1), 1)
+            XCTAssertEqual(w.active.sprite(id: o)!.hp, 1)
+            XCTAssertEqual(w.active.sprite(id: o)!.phase, r2 + 1)
+            XCTAssertEqual(w.rng.seed, rng.seed)
+            w.active.update(id: o) { $0.phase = 0 }
+            w.player.cues = []
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: at, strength: 1), 1)
+            XCTAssertTrue(w.active.sprite(id: o)!.dead)
+            XCTAssertEqual(w.player.cues.map(\.snd), [424])
+            // `.FindCrunchSprite` matches x and y: the cell below gets its own overlay.
+            XCTAssertEqual(CrunchTiles.crunchTile(w, pos: TilePos(x: 160, y: 192), strength: 1), 1)
+            XCTAssertEqual(w.active.sprites.filter { $0.type == 0x4ba }.map(\.classWord158), [5, 6])
+        }
+        // The 40-slot table full: the 41st overlay kills slot 0's and takes slot 0 (`+0x150` 0; l. 39160–39178).
+        do {
+            let w = try crunchWorld([])
+            let ids = (0..<40).map { CrunchTiles.makeCrunchSprite(w, col: $0 % 16, row: $0 / 16, hp: 2)! }
+            XCTAssertEqual(w.player.crunchSprites, ids.map { Optional($0) })
+            let extra = CrunchTiles.makeCrunchSprite(w, col: 0, row: 10, hp: 2)!
+            XCTAssertTrue(w.active.sprite(id: ids[0])!.dead)
+            XCTAssertEqual(w.player.crunchSprites[0], extra)
+            XCTAssertEqual(w.active.sprite(id: extra)!.classWord150, 0)
+            XCTAssertEqual(w.active.sprite(id: ids[39])!.classWord150, 39)
+        }
+        // `.ReshapeCrunchedTile`, every arm (expected outputs read from the disasm's branch tree, raw `10043f14..100444c4`;
+        // arm addresses per row): (position, k, new tile or nil = untouched, cascade anchor or nil). Block anchor (5, 5):
+        // position 5 = (5, 5), 7 = (6, 5), 6 = (5, 6), 8 = (6, 6). The cell holds tile k (FG kind = tile; k ≥ 0x50 is the
+        // tile itself). A cascade is `.DestroyCrunchTile` of the neighbouring block, seen as its direction nibble cleared.
+        let arms: [(Int, Int, Int?, (Int, Int)?)] = [
+            (5, 2, 6, nil),            // 100440b4
+            (5, 3, 4, nil),            // 1004401c
+            (5, 7, -1, nil),           // 100440a0
+            (5, 8, 1, nil),            // 100440c8
+            (5, 9, 6, (4, 5)),         // 10044030: + Destroy(tx − 1, ty)
+            (5, 0xa, 0, nil),          // 10044064
+            (5, 0x18, 0x14, nil),      // 10044078
+            (5, 0x1c, 0x10, nil),      // 100440dc
+            (5, 0x1e, 0x12, nil),      // 1004400c → 100440f0
+            (5, 0x2a, 0x12, nil),      // 10043fe4 → 100440f0
+            (5, 0x5f, 0xb, nil),       // 1004408c
+            (5, 0, nil, nil), (5, 1, nil, nil), (5, 4, nil, nil), (5, 0xb, nil, nil), (5, 0x1d, nil, nil),
+            (5, 0x1f, nil, nil),
+            (7, 0, 5, nil),            // 1004420c
+            (7, 3, 7, nil),            // 10044160
+            (7, 4, -1, nil),           // 100441f8
+            (7, 9, 2, nil),            // 10044174
+            (7, 0xa, 5, (6, 5)),       // 10044188: + Destroy(tx + 1, ty)
+            (7, 0xb, 1, nil),          // 100441bc
+            (7, 0x1f, 0x13, nil),      // 100441e4
+            (7, 0x5f, 8, nil),         // 100441d0
+            (7, 1, nil, nil), (7, 2, nil, nil), (7, 5, nil, nil), (7, 0xc, nil, nil),
+            (6, 1, 5, nil),            // 100442a4
+            (6, 2, 7, nil),            // 100442b8
+            (6, 6, -1, nil),           // 100442cc
+            (6, 8, 5, (5, 6)),         // 100442e0: + Destroy(tx, ty + 1)
+            (6, 9, 3, nil),            // 10044314
+            (6, 0xb, 0, nil),          // 10044328
+            (6, 0x1b, 0x17, nil),      // 10044284 → 10044350
+            (6, 0x2e, 0x17, nil),      // 1004426c → 10044350
+            (6, 0x1d, 0x11, nil),      // 1004433c
+            (6, 0x5f, 0xa, nil),       // 10044364
+            (6, 0, nil, nil), (6, 3, nil, nil), (6, 7, nil, nil), (6, 0xa, nil, nil), (6, 0x1c, nil, nil),
+            (8, 0, 4, nil),            // 100443f8
+            (8, 1, 6, nil),            // 100443e4
+            (8, 5, -1, nil),           // 1004440c
+            (8, 8, 2, nil),            // 10044420
+            (8, 0xa, 3, nil),          // 10044434
+            (8, 0xb, 4, (6, 5)),       // 10044448: + Destroy(tx + 1, ty)
+            (8, 0x1a, 0x16, nil),      // 1004447c
+            (8, 0x1c, 0x10, nil),      // 10044490
+            (8, 0x5f, 9, nil),         // 100444a4
+            (8, 2, nil, nil), (8, 6, nil, nil), (8, 0x1b, nil, nil),
+        ]
+        let cellOf = [5: (5, 5), 7: (6, 5), 6: (5, 6), 8: (6, 6)]
+        let anchors = [(4, 5), (6, 5), (5, 6)]
+        for (position, k, out, cascade) in arms {
+            let (c, r) = cellOf[position]!
+            // Each candidate neighbour anchor carries direction 1 (and keeps whatever tile the case puts there).
+            var cells = anchors.map { ($0.0, $0.1, UInt16(0x1000)) }
+            if let i = cells.firstIndex(where: { $0.0 == c && $0.1 == r }) { cells.remove(at: i) }
+            let dir: UInt16 = anchors.contains { $0 == (c, r) } ? 0x1000 : 0
+            cells.append((c, r, dir | UInt16(k + 1)))
+            let w = try crunchWorld(cells)
+            CrunchTiles.reshape(w, col: c, row: r, block: (5, 5), position: position, dir: 1, explode: false,
+                                clearDir: true)
+            let tile = Int(w.tiles.fg.cell(col: c, row: r) & 0xff) - 1
+            XCTAssertEqual(tile, out ?? k, "position \(position) k \(k)")
+            for a in anchors {
+                let cleared = w.tiles.fg.cell(col: a.0, row: a.1) >> 12 == 0
+                XCTAssertEqual(cleared, cascade.map { $0 == a } ?? false, "position \(position) k \(k) anchor \(a)")
+            }
+        }
+        // Hundreds stripped while > 100 (raw `10043f5c..10043f68`): kind 103 at position 5 acts as 3 → tile 4; kind 100 is
+        // not > 100 and has no arm.
+        for (kind, out) in [(103, 4), (100, 9)] {
+            let w = try crunchWorld([(5, 5, UInt16(9 + 1))])
+            var kinds = Array(0..<0x60)
+            kinds[9] = kind
+            w.tiles = TileGrid(fg: w.tiles.fg, bg: w.tiles.bg, fgKinds: kinds, bgKinds: w.tiles.bgKinds)
+            CrunchTiles.reshape(w, col: 5, row: 5, block: (5, 5), position: 5, dir: 1, explode: false, clearDir: true)
+            XCTAssertEqual(Int(w.tiles.fg.cell(col: 5, row: 5) & 0xff) - 1, out, "kind \(kind)")
+        }
+        // `.RectBounceFake2` axis rule (raw `1003edd8..1003edec` and its mirror): the push is horizontal only when the
+        // vertical distance is strictly the smaller; a tie goes vertical. Solid at pos (0, 0) + (−2, −2, 0x22, 0x22),
+        // centre (16, 16); the player's centre = (x + 50, y + 59). x −24, y −53: |dy| 10 = |dx| 10 → y = −2 − 0x55;
+        // y −52: 9 < 10 → x = 0x22 − 0x26.
+        for (y, ex, ey) in [(-53, -24, -2 - 0x55), (-52, 0x22 - 0x26, -52)] {
+            let w = try world([], floor: false)
+            let pid = Player.spawn(world: w, x: -24, y: y)!
+            w.active.update(id: pid) { s in
+                s.x = -24
+                s.y = y
+            }
+            PlayerTiles.rectBounceFake2(w, id: pid, pos: TilePos(x: 0, y: 0), rect: PlayerTiles.crunchRect, cx: 50,
+                                        cy: 59, hotRect: HandleKeys.standardHotRect)
+            XCTAssertEqual(w.active.sprite(id: pid)!.x, ex, "y \(y)")
+            XCTAssertEqual(w.active.sprite(id: pid)!.y, ey, "y \(y)")
         }
         // Deterministic: a second run gives the same log and map.
         let again = try run()
