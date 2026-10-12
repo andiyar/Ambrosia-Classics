@@ -448,10 +448,36 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   air does not refill) · `testTerminalVelocityAndZeroBump` (12000 on frame 28 from vy 1; −440 + 440 → 1) ·
   `testSubmergedBrake` (vy 2000 → 1488 (−0x200 = 512) → 1568 after +0x50).
 - **Commit:** `FerazelCore: player skeleton — PlayerState, the 42-row HandlePlayerSprite order, gravity/terminal/brake, jump impulse and sustain, climb, exertion; 6 tests`.
+- ⚑ **As executed (P1a, 2026-10-13; commits 0c462ec + review fixes):** digest A §1.2 was not available to the
+  implementer; the 42 rows were derived from the dump (M l. 44396–46650) and player-states §1 and are listed in
+  `Player.swift`'s header. **Plan-row ↔ code-row map** (every row number this plan cites in P1a–P5; code comments carry
+  "(plan row N)"):
+
+  | plan row (digest A §1.2) | code row | what | M l. |
+  |---|---|---|---|
+  | 13 | 19 | pre-move `.SeparateFromTiles2` | 44916 |
+  | 22 | 27 | latches cleared + `.ApplySpeedAndSeparateFromTiles` (the move) | 45101–45105 |
+  | 35 | 40 (first half) | end `.SeparateFromTiles2` — the water pass (`PTR_DAT_100a0704 = 1`) | 46424–46427 |
+  | 36 | 40 (second half) | draw offsets x −0x32 (dying / `055c`, facing left) / −0x14 (pull-up, facing left) | 46428–46437 |
+
+  **Signature:** the S2 call `Player.handle(world:keys:)` is valid — `solver:` (nil → one is built), `tileHit:` (nil =
+  no callback; P2 makes `.HitPlayerTileSprite` the default) and `faceWidth:` (100) are defaulted extras.
+  `Player.spawn(world:x:y:) -> Int?` (nil = `.MTNewSprite` found no record: no Setup, no player, as `.GameLoop`).
+  **Known untested in Phase 2** (unreachable on L1/L2 or no Phase-2 writer, built as read): the impulse cap 8000, the
+  shield-raise JUMP gate (no shield items), quicksand (vy × 0.65, max-speed scaling), the side push `>> 2`, Double
+  Speed / High Jump / Feather Fall, the carpet block, the swim stroke. Exertion +8 per jump/sustain is tested; +1/+3
+  walk/run is P1b's (below).
 
 #### P1b — ⚑ MAJOR — `.HandleKeys` horizontal: the L/R block (→ 151)
 - **Files:** `Sources/FerazelCore/Player/HandleKeys.swift`; `Tests/FerazelCoreTests/PlayerMotionTests.swift`; the bank
   file named by A14 (Bank corrections).
+- ⚑ **P1a carry → P1b:** (1) exertion **+1 walking (only while < 0xb9) / +3 running** sits inside the L/R block (raw
+  `10053598..100535a0` / `100537f8..10053800` +3 under RUN, `10053600..1005360c` / `10053860..1005386c` +1) — it is
+  P1b's, and P1b's tests assert it (`PlayerState.exertion`; P1a built only the +8 per jump/sustain/stroke).
+  (2) USE held with a non-spell item selected (and shield < 1, climb 0, rope 0) takes the item switch **instead of**
+  the L/R block (M l. 47353–47357 → l. 47543–47609); USE is false in Phase 2 (no inventory) — P1a built the gate as
+  read (`useItemHeld`), P1b keeps the L/R block in its else-branch. The L/R block goes at the
+  `// later: P1b` stub in `HandleKeys.run` (M l. 47360–47493).
 - **Contract:** `.HandleKeys` L/R block (M l. 47047–47884, digest A §5.2): gated by **climb == 0 ∧ crouch depth == 0**
   (M l. 47360) **and `_DAT_100a05e0 == 0` and `PTR_DAT_100a05a4 == 0`** (M l. 47358–47363); ground walk accel 0x14f
   from rest / 0x104 continuing, run 0x1f4 / 0x12c, max 0x76c / 0xc80, **RIGHT adds +0x14a in every non-cling state
@@ -471,6 +497,13 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   `Sources/FerazelCore/Seams/DrawOp.swift` (`setTile`), `Sources/FerazelRender/Frame/FrameRenderer.swift` (dust PICT
   1201; applies `setTile` to its LevelFile/grid); `Tests/FerazelCoreTests/PlayerTileTests.swift`,
   `Tests/FerazelCoreTests/SessionTests.swift` (only if the exhaustive switch needs the case).
+- ⚑ **P1a carry → P2:** P1a built the cling-side code of `.HandleKeys` and `.HandlePlayerSprite` but nothing in P1a
+  can set `climb` (`_DAT_100a0758`); P2's cling tests assert it: wall jump vx **±0x8ca** (wall side 1 → +) with vy
+  **−0x8cb** at counter 3 overwritten in the same call by the sustain (−3637); climb **±1000** (±0x578 Double Speed,
+  0 when a cast began); the pre-move ease **±100** toward 0 (clamp ±4000) and vx ∓0x800 into the wall (code row 26);
+  the cling refill **3** (else-refill, airborne + climb); **lost the wall → vx = vy = 0** (code row 29); and the
+  wall jump with DOWN held refilling to 6 + spin (player-states §5 item 4, A2 correction). Plan rows 13/22/35/36 =
+  code rows 19/27/40/40 (P1a As executed). The real `.HitPlayerTileSprite` becomes `Player.handle`'s default `tileHit`.
 - **Contract:** `.HitPlayerTileSprite @10054ca8` (M l. 48113–48358) for FG/BG/crunch/water dispatch (digest A §4.3);
   three separation passes per frame (pre-move row 13, move row 22, end row 35 = the only water pass); cling on kinds
   0/5 (left) and 2/6 (right), ledge kinds {4, 0x14, 0x2d}/{7, 0x13, 0x2f} with the dy tests; gate `0738 == 0`, not
@@ -498,6 +531,13 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
 - **Files:** `Sources/FerazelCore/Player/{PlayerStates,Breathing}.swift`, delete `Sources/FerazelCore/Player/PlayerPose.swift`,
   `Sources/FerazelCore/Session/FerazelSession.swift`, `Sources/FerazelRender/Frame/FrameRenderer.swift` (player sheet
   list), `Tests/FerazelCoreTests/{PlayerStateTests,SessionTests}.swift`, `Tests/FerazelRenderTests/FrameGoldenTests.swift` (◈).
+- ⚑ **P1a carry → P3:** `Player.spawn` does not create the held-item sprite (`.SetupPlayerSprite`'s
+  `MTNewSprite(100, 0, 0, 0x14, 0x1ff, …)`, M l. 42846, into `_DAT_100a065c`) nor the five trail sprites (type 1,
+  layer 9, M l. 42898–42907 loop), and the player is **not wired into `FerazelSession`** (the session still runs ◇
+  `PlayerPose`). P3, which owns `FerazelSession`, spawns them in the binary's order (player, then 0x4c4, M l.
+  5181–5183; inside the Setup: held item, then the trail loop) and replaces `PlayerPose` with `Player.handle`. The
+  global hot-rect copy `PTR_DAT_100a0530` is write-only (one TOC load, raw `1004af68`) — not modelled. Row 42's
+  below-map rule (`y > hdr 0xb282·32 + 100 → HP 0`, M l. 46494) already exists — P4's `testBelowMapKills` reuses it.
 - **Contract:** state selection M l. 45220–46196, first match wins (digest A §2): dying, hurt-stun, rope (W3 hooks it),
   swim, cling/climb/pull-up, grounded (crouch, walk/run with footsteps, stand/turn/uphill 1004, fidget), airborne (air
   counter buckets, spin 1025, tumble 1015 only from its later-phase writers); glider/spirit/boss-grab/door/melee as

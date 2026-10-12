@@ -1,16 +1,19 @@
 import Foundation
 
 /// The player sprite (plan S2, P1a): `.SetupPlayerSprite @ 1004aefc` (`spawn`) and `.HandlePlayerSprite @ 1004d5fc`
-/// (`handle`, decompile l. 44396–46654) as 42 rows in the binary's order. Rows that belong to later tasks are named
+/// (`handle`, decompile l. 44396–46650) as 42 rows in the binary's order. Rows that belong to later tasks are named
 /// no-ops (`// later: <task>`, plan Invariant 6) — their flags stay 0 because their writers do not exist yet.
 ///
-/// The row list (derived from the dump and player-states §1; the planner's digest A §1.2 was not available):
+/// The row list (derived from the dump and player-states §1; the planner's digest A §1.2 was not available — the
+/// plan's row numbers map as: plan row 13 = row 19, 22 = 27, 35 = 40 (the end pass), 36 = 40 (the draw offsets);
+/// plan P1a "⚑ As executed"):
 ///  1 entry: ridden copy, last facing, turn flag          22 quicksand vy × 0.65
 ///  2 looped ambient sound (later: S1)                     23 gravity add, terminal 12000, vy 0 → 1
 ///  3 riding: carpet, camera latch, 0x6a4 ride-on cue     24 air drag / ground deceleration
 ///  4 kill / Handle-skip returns                           25 `+0xce = +0xcf = 0`; inventory repair (later: Phase 3)
 ///  5 max speeds (quicksand, Double Speed)                 26 climb pre-move
 ///  6 idle +1, `+0x18c`, `+0x8a`, rope latch               27 latches cleared, `.ApplySpeedAndSeparateFromTiles`
+///                                                            (plan row 22)
 ///  7 `.RopeCollide` (later: W3)                           28 surface material: ice (damage: later P4)
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (later: P3)
@@ -23,8 +26,9 @@ import Foundation
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
 /// 17 liquid damage / heal (later: P4)                     38 `.PlayerConstraints` (later: W4)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
-/// 19 pre-move `.SeparateFromTiles2`                          (later: P5)
-/// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass), draw offset
+/// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (later: P5)
+/// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass; plan row 35),
+///                                                            draw offsets (plan row 36)
 /// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, liquid tint, breath refill (later: P4)
 ///                                                         42 tail: copies, below-map, stillness, ride ramps, trail
 ///                                                            ring (later: Phase 4), `.StandardSpriteCleanup`,
@@ -45,7 +49,7 @@ public enum Player {
 
     /// `.GameLoop`'s `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (decompile l. 5181) with the globals it
     /// writes first (`fe68 = x`, `fe64 = y`, `fd94 = x + 0x32`, `fd90 = y + 0x3b`; l. 5145–5150). x, y = the header
-    /// start − 0x20 (`.NewGame` l. 5823). `.SetupPlayerSprite` (l. 42781–42980): `.InitSprite`, `.ClearPlayerVars`
+    /// start − 0x20 (`.NewGame` l. 5823). `.SetupPlayerSprite` (l. 42781–42983): `.InitSprite`, `.ClearPlayerVars`
     /// (`PlayerState()`), melee item −1, ridden 0, look-ahead 0, dying 0, type 0x45, v 0, layer 10, HP `+0xa4 = G+4`,
     /// gravity 0x1b8, the player Handle, hit callback 0, the tile callback; `fd44 = fe68 = +8`, `fd40 = fe64 = +6`,
     /// 24.8 from `+8`/`+6`; face 0; hot rect `(0x26, 0x22, 0x3e, 0x55)`; exertion 0; `+0x13c = 0x100`;
@@ -53,8 +57,14 @@ public enum Player {
     /// `5f5a`/`5f5c`). Not built: the held-item sprite (type 100, layer 0x14) and the five trail sprites (type 1,
     /// layer 9), the Shadow-Double ring, the Pentashield slots and `+0xe4 = 1` (the dead second loop's gate) —
     /// // later: Phase 4 (held items, Double Speed, Pentashield); faceless, and no Phase-2 routine reads them.
+    /// `PTR_DAT_100a0530` (the global copy of the hot rect, `SetRect` at l. 42818–42820) is not kept: its one TOC
+    /// load is that store (raw `1004af68 lwz r3,-0x7310(r2)`) — write-only.
+    ///
+    /// When `.MTNewSprite` finds no free record it returns 0 after `.ReportError` (l. 30689–30701) without running the
+    /// Setup, and `.GameLoop` stores `*_DAT_1009fdd8 = 0`: no player — here nil, `playerID` nil and `PlayerState`
+    /// untouched.
     @discardableResult
-    public static func spawn(world w: SpriteWorld, x: Int, y: Int) -> Int {
+    public static func spawn(world w: SpriteWorld, x: Int, y: Int) -> Int? {
         var p = PlayerState()
         p.pixelX = Int16(truncatingIfNeeded: x)
         p.pixelY = Int16(truncatingIfNeeded: y)
@@ -81,7 +91,11 @@ public enum Player {
             s.pushForce = 0x100
             s.windScale = 0x100
             s.mirrored = left
-        }!
+        }
+        guard let id else {
+            w.playerID = nil
+            return nil
+        }
         p.facing = left ? 1 : 2
         p.lastFacing = p.facing
         w.player = p
@@ -92,41 +106,44 @@ public enum Player {
     /// `.HandlePlayerSprite(s)`: one frame of the player.
     /// - Parameter keys: this frame's `.IsInputKeyPressed` snapshot.
     /// - Parameter solver: the tile solver over `world` (built once per level by the caller; one is made if nil).
-    /// - Parameter tileHit: the player's tile callback `+0x1f8` (`.HitPlayerTileSprite`) — a test double until P2.
+    /// - Parameter tileHit: the player's tile callback `+0x1f8` (`.HitPlayerTileSprite`) — a test double until P2;
+    ///   the default nil (no callback: the separations only refresh the pixel copies) is what makes the locked S2 call
+    ///   `Player.handle(world:keys:)` valid. // later: P2 makes `.HitPlayerTileSprite` the default.
     /// - Parameter faceWidth: the width of a face (face `+6`) for `.StandardSpriteCleanup`'s occluder clip — Core has
     ///   no face records [MED: the player's sheets are 100 px wide but for 1022/1023/1050–1053].
-    public static func handle(world w: SpriteWorld, keys: InputActions, solver: TileSolver? = nil, tileHit: TileHit?,
-                              faceWidth: (FaceRef) -> Int = { _ in 100 }) {
+    public static func handle(world w: SpriteWorld, keys: InputActions, solver: TileSolver? = nil,
+                              tileHit: TileHit? = nil, faceWidth: (FaceRef) -> Int = { _ in 100 }) {
         guard let id = w.playerID, w.active.record(id: id) != nil else { return }
         let solver = solver ?? TileSolver(world: w)
         func s() -> SpriteSlot { w.active.record(id: id)! }
         func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
         w.player.cues.removeAll()
 
-        // 1 (l. 44444–44446): ridden copy, last facing, turn flag.
+        // 1 (l. 44486–44488): ridden copy, last facing, turn flag.
         w.player.ridden = s().ridden
         w.player.lastFacing = w.player.facing
         w.player.turnMirror = false
-        // 2 (l. 44447–44491): the looped ambient sound of level modes 2/4 (`*_DAT_1009fec4`, `.STPlayLoopedSound`,
+        // 2 (l. 44489–44531): the looped ambient sound of level modes 2/4 (`*_DAT_1009fec4`, `.STPlayLoopedSound`,
         // re-panned by the player's distance). // later: S1
-        // 3 (l. 44492–44515).
+        // 3 (l. 44532–44552).
         riding(w, id: id)
-        // 4 (l. 44516–44521).
+        // 4 (l. 44553–44558).
         if s().dead || s().handleSkip { return }
-        // 5 (l. 44522–44558).
+        // 5 (l. 44559–44588).
         maxSpeeds(w, id: id)
-        // 6 (l. 44559–44563).
+        // 6 (l. 44589–44594).
         w.player.idle &+= 1
+        let notClimbing = w.player.climb == 0
         set { p in
             p.noWaterSplit = false
-            p.currentApplies = w.player.climb == 0
+            p.currentApplies = notClimbing
         }
         w.player.lastRope = w.player.rope
         w.player.rope = false
-        // 7: `if dying < 1: .RopeCollide(s)` (l. 44564–44566). // later: W3
-        // 8 (l. 44567–44633).
+        // 7: `if dying < 1: .RopeCollide(s)` (l. 44595–44597). // later: W3
+        // 8 (l. 44598–44658).
         selectGravity(world: w, id: id)
-        // 9 (l. 44634–44648).
+        // 9 (l. 44659–44672).
         if (s().groundKind != 0 || w.player.climb != 0) && w.player.ridden == nil { w.player.jumpBase = 0 }
         if w.player.highJump { w.player.jumpBase = -0x898 }
         if w.player.featherFall {
@@ -135,20 +152,20 @@ public enum Player {
                 if 0x352 < p.vy { p.vy = 0x352 }
             }
         }
-        // 10 (l. 44649).
+        // 10 (l. 44673).
         w.standardSpriteHandles(id)
-        // 11 (l. 44650–44662): the Shadow Double sprite 0x1b39 (`PTR_DAT_100a0654`/`_DAT_100a0658`). // later: Phase 4
-        // 12 (l. 44663–44668).
+        // 11 (l. 44674–44685): the Shadow Double sprite 0x1b39 (`PTR_DAT_100a0654`/`_DAT_100a0658`). // later: Phase 4
+        // 12 (l. 44686–44691).
         let crunch: UInt8 = (w.player.spin || s().groundKind != 0) ? 1 : 0
         set { $0.crunches = crunch }
-        // 13 (l. 44669–44741).
+        // 13 (l. 44692–44747).
         countdowns(w, id: id)
-        // 14 (l. 44742–44795): `.TickTock` of the power-up timers 0650/064c/0640/0630/0624/0618 and their
+        // 14 (l. 44748–44814): `.TickTock` of the power-up timers 0650/064c/0640/0630/0624/0618 and their
         // active/blink flags (0654, 0648/0644, 0638/0634, 062c/0628, 0620/061c). // later: Phase 4 (no Phase-2 writer
         // of the timers; the flags stay 0). Then 0610 −1 (no floor) and 0614 = (0610 ≥ 1):
         w.player.countdown0610 &-= 1
         w.player.flag0614 = w.player.countdown0610 >= 1
-        // 15 (l. 44796–44806).
+        // 15 (l. 44815–44826).
         w.player.lastInvulnerable = s().invulnerable
         w.player.waterPass = false
         let last = s().lastWater
@@ -157,15 +174,15 @@ public enum Player {
         } else {
             w.player.nearSurface = true
         }
-        // 16 (l. 44807–44834): spirit form (`_DAT_100a0578 > 0`, `.TickTockLong`). // later: Phase 4
-        // 17 (l. 44835–44884): liquid damage / heal (`PTR_DAT_100a0538`, kinds 0/1/2/3). // later: P4
-        // 18 (l. 44885–44891).
+        // 16 (l. 44827–44855): spirit form (`_DAT_100a0578 > 0`, `.TickTockLong`). // later: Phase 4
+        // 17 (l. 44856–44908): liquid damage / heal (`PTR_DAT_100a0538`, kinds 0/1/2/3). // later: P4
+        // 18 (l. 44909–44915).
         if 0 < w.player.countdown06d8 { w.player.countdown06d8 -= 1 }
         if 0 < w.player.countdown06cc { w.player.countdown06cc -= 1 }
         w.player.seeSawTouch = false
-        // 19 (l. 44892): the pre-move contact pass.
+        // 19 (l. 44916; plan row 13): the pre-move contact pass.
         solver.separateFromTiles(id, pass: tileHit)
-        // 20 (l. 44893–44915).
+        // 20 (l. 44917–44941).
         if w.player.dying == 0 { set { $0.hotRect = HandleKeys.standardHotRect } }   // both arms identical
         if w.player.ridden == nil {
             w.player.groundLast = s().groundKind
@@ -182,7 +199,7 @@ public enum Player {
             }
         }
         w.player.impact = s().vy
-        // 21 (l. 44916–44924).
+        // 21 (l. 44942–44950).
         if w.player.doorTransit == 0 {
             HandleKeys.run(world: w, keys: keys, ridden: w.player.ridden)
         } else {
@@ -193,11 +210,11 @@ public enum Player {
                 p.vx = 0
             }
         }
-        // 22 (l. 44925–44931): quicksand.
+        // 22 (l. 44951–44957): quicksand.
         if (s().waterRow != 0 || s().lastWater != 0) && s().waterKind == 5 {
             set { $0.vy = TileSolver.fctiwz(Double($0.vy) * quicksandFactor) }
         }
-        // 23 (l. 44932–44942): not while clinging; no gravity while floating (`+0x120 ≠ 0 ∧ +0x19e ≠ 0`).
+        // 23 (l. 44958–44968): not while clinging; no gravity while floating (`+0x120 ≠ 0 ∧ +0x19e ≠ 0`).
         if w.player.climb == 0 {
             set { p in
                 if p.lastWater == 0 || p.buoyancy == 0 { p.vy &+= Int32(p.gravity) }
@@ -205,7 +222,7 @@ public enum Player {
                 if p.vy == 0 { p.vy = 1 }
             }
         }
-        // 24 (l. 44943–45053).
+        // 24 (l. 44969–45053).
         dragAndDeceleration(w, id: id)
         // 25 (l. 45054–45063).
         set { p in
@@ -213,51 +230,52 @@ public enum Player {
             p.ceilingHit = 0
         }
         // The selected-slot repair (`G+0x172`, the item at `G+0x24 + 10·slot`). // later: Phase 3 (inventory)
-        // 26 (l. 45064–45101).
+        // 26 (l. 45064–45100).
         climbPreMove(w, id: id)
-        // 27 (l. 45102–45106).
+        // 27 (l. 45101–45105; plan row 22): the move.
         w.player.bumpedLatch = false                                      // `_DAT_100a0720`
         w.player.landedLatch = false                                      // `_DAT_100a0724`
         let moved = solver.applySpeedAndSeparate(id, climb: { w.player.climb }, pass: tileHit)
         if moved.zeroJumpCounter { w.player.jumpCounter = 0 }
         w.player.pixelX = moved.playerX
         w.player.pixelY = moved.playerY
-        // 28 (l. 45107–45140).
+        // 28 (l. 45106–45135).
         surfaceMaterial(w, id: id)
-        // 29 (l. 45141–45144): lost the wall this frame.
+        // 29 (l. 45136–45139): lost the wall this frame.
         if w.player.lastClimb != 0 && w.player.climb == 0 {
             set { p in
                 p.vy = 0
                 p.vx = 0
             }
         }
-        // 30 (l. 45145): `.HandleBreathing @ 1004bb44` (physics-sprites §8.8). // later: P3
-        // 31 (l. 45146–45179): the held item's face `+0xc0 = 0`, the cast / wand phase machine, `.CastSpell`.
+        // 30 (l. 45140): `.HandleBreathing @ 1004bb44` (physics-sprites §8.8). // later: P3
+        // 31 (l. 45141–45176): the held item's face `+0xc0 = 0`, the cast / wand phase machine, `.CastSpell`.
         // // later: Phase 4 (spells, held items)
-        // 32 (l. 45180–45225): the potion drink. // later: Phase 4
-        // 33 (l. 45226–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
+        // 32 (l. 45177–45218): the potion drink. // later: Phase 4
+        // 33 (l. 45219–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
         // hurt-stun, door, rope, swim (vy damping, counter refill, splash), cling / climb / pull-up, melee, grounded
         // (walk sounds, fidgets: FastRand), airborne (`_DAT_100a0718`). // later: P3 (faces, states), P2 (the pull-up
         // move), P4 (the swim arm)
-        // 34 (l. 46197–46202).
+        // 34 (l. 46197–46203).
         if w.player.climb == 0 { w.player.pullUp = 0 }
         let tumbleDrawn = false                                           // `cStack_6b` // later: P3 (launched tumble)
         if !tumbleDrawn {
             let mirror = w.player.facing != 2, turn = w.player.turnMirror
             set { $0.mirrored = turn ? !mirror : mirror }
         }
-        // 35 (l. 46203–46239): `.ShouldEmitBubbles` — oxygen, drowning damage, `.EmitBubble`, the bubble timer
+        // 35 (l. 46204–46241): `.ShouldEmitBubbles` — oxygen, drowning damage, `.EmitBubble`, the bubble timer
         // (`FastRand(0x96)`). // later: P4
-        // 36 (l. 46240–46343): teleporter charge (`FastRand(6)` tint), power-up / invulnerability tint `+0xb8`,
+        // 36 (l. 46242–46346): teleporter charge (`FastRand(6)` tint), power-up / invulnerability tint `+0xb8`,
         // `+0x88`, `+0x18c`, `+0x1a6`, `+0x1a8`. // later: Phase 3 (teleporters), Phase 4 (power-ups), P3 (the blink)
-        // 37 (l. 46344–46365).
+        // 37 (l. 46347–46365).
         sidePush(w, id: id)
         // 38 (l. 46366): `.PlayerConstraints @ 1004cb4c` (map clamps, the level exits hdr+0x2724). // later: W4
-        // 39 (l. 46367–46385).
+        // 39 (l. 46367–46392).
         positions(w, id: id)
-        // The camera look-ahead `_DAT_100a0680` and `uRam100a5114` (l. 46386–46422), `.PlayerScroll`
+        // The camera look-ahead `_DAT_100a0680` and `uRam100a5114` (l. 46393–46422), `.PlayerScroll`
         // (l. 46423). // later: P5
-        // 40 (l. 46424–46437): the end pass — the only one that processes water (P2/P4).
+        // 40 (l. 46424–46437; plan rows 35 and 36): the end pass (plan row 35) — the only one that processes water
+        // (P2/P4) — then the draw offsets (plan row 36).
         w.player.flag05a0 = false
         w.player.waterPass = true
         solver.separateFromTiles(id, pass: tileHit)
@@ -267,14 +285,14 @@ public enum Player {
             set { $0.x &-= 0x14 }
         }
         w.player.flag055c = false
-        // 41 (l. 46438–46490): the death trigger (HP < 1), the liquid screen tint, the breath refill. // later: P4
-        // 42 (l. 46491–46653).
+        // 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint, the breath refill. // later: P4
+        // 42 (l. 46489–46649).
         tail(w, id: id, faceWidth: faceWidth)
     }
 
     // MARK: - rows
 
-    /// Row 3 (l. 44492–44515): no ridden sprite → carpet 0; else carpet = (type 0x438 / 0x439), the camera latch
+    /// Row 3 (l. 44532–44552): no ridden sprite → carpet 0; else carpet = (type 0x438 / 0x439), the camera latch
     /// `*_DAT_1009fd34 = 1`, idle 0, and on a change from no ridden sprite onto a 0x6a4: `.STPlay3DSoundRand(509,
     /// 1, 0xbf, ridden+0xe)` — its rate drawn here (plan Invariant 4). Then `0554 = 0558`; carpet → vx 0.
     static func riding(_ w: SpriteWorld, id: Int) {
@@ -294,7 +312,7 @@ public enum Player {
         if w.player.carpet { w.active.update(id: id) { $0.vx = 0 } }
     }
 
-    /// Row 5 (l. 44522–44558; raw `1004d904..1004da24`): Double Speed → idle 0 and 0xd82 / 0x15e0; in quicksand
+    /// Row 5 (l. 44559–44588; raw `1004d904..1004da24`): Double Speed → idle 0 and 0xd82 / 0x15e0; in quicksand
     /// (`+0x11c ∨ +0x120`, kind 5): f = ((b − t) − min(+0x120 − t, b)) · 256 / (b − t) (`divw`), max = 0x76c −
     /// (f·0x3b6 >> 8), 0xc80 − (f·0x640 >> 8) (`srawi`); else 0x76c / 0xc80.
     static func maxSpeeds(_ w: SpriteWorld, id: Int) {
@@ -325,7 +343,7 @@ public enum Player {
         }
     }
 
-    /// Row 8 (l. 44567–44633; raw `1004da74..1004dc4c`): not gliding → gravity 0x1b8. Airborne (`+0xce == 0`):
+    /// Row 8 (l. 44598–44658; raw `1004da74..1004dc4c`): not gliding → gravity 0x1b8. Airborne (`+0xce == 0`):
     /// swimming or fully submerged (`+0x11c == 1`, last frame's water pass) → 0x50, spinning → 0x118; fully
     /// submerged: **vy −= 0x200 when vy > 0x6a4** (> 3000 spinning) (raw `1004daec..1004db10`; Bank correction
     /// A4), and not spinning, not swimming, liquid ≠ 5 → swim 1; on a rope → 0; the glider's pitch gravity
@@ -348,7 +366,7 @@ public enum Player {
             }
             if w.player.rope { s.gravity = 0 }
             if w.player.glider && w.player.gliderExit == 0 {
-                // later: Phase 4 — the glider's pitch gravity and wind scale (l. 44597–44629).
+                // later: Phase 4 — the glider's pitch gravity and wind scale (l. 44622–44655).
             }
         } else {
             s.gravity = gravity
@@ -357,7 +375,7 @@ public enum Player {
         w.active.update(id: id) { $0 = out }
     }
 
-    /// Row 13 (l. 44669–44741): the counters that tick toward 0.
+    /// Row 13 (l. 44692–44747): the counters that tick toward 0.
     static func countdowns(_ w: SpriteWorld, id: Int) {
         let invul = w.active.record(id: id)?.invulnerable ?? 0
         var p = w.player
@@ -387,7 +405,7 @@ public enum Player {
         w.player = p
     }
 
-    /// Row 24 (l. 44943–45053): airborne or gliding — drag toward 0 every frame, input or not: 100 (600 on a rope,
+    /// Row 24 (l. 44969–45053): airborne or gliding — drag toward 0 every frame, input or not: 100 (600 on a rope,
     /// 0x14 on the glider), no overshoot. Grounded — swim 0; vx > 0 without RIGHT input (`0734`) / vx < 0 without
     /// LEFT input (`0730`): −800 (300 while stunned), or on ice (`0694 ≠ 0`) −0694 only when `+0xce` is 3, 4, 7 or
     /// `+0x112 == 0`; clamped at 0.
@@ -436,7 +454,7 @@ public enum Player {
         w.active.update(id: id) { $0 = out }
     }
 
-    /// Row 26 (l. 45064–45101; raw `1004ea18..1004eaf8`): `0754 = climb`; clinging → spin 0, stop snd 427 if it
+    /// Row 26 (l. 45064–45100; raw `1004ea18..1004eaf8`): `0754 = climb`; clinging → spin 0, stop snd 427 if it
     /// is playing, vy eased 100 toward 0 (rising: ≥ −4000; falling: ≤ 4000), vx = −0x800 (wall on the left) /
     /// +0x800 into the wall, and climb cleared (the tile callback re-asserts it during the move, P2).
     static func climbPreMove(_ w: SpriteWorld, id: Int) {
@@ -466,7 +484,7 @@ public enum Player {
         w.player.climb = 0
     }
 
-    /// Row 28 (l. 45107–45140; raw `1004eb24..1004ec4c`): the surface material `+0xd8` the move left. 3 (ice) →
+    /// Row 28 (l. 45106–45135; raw `1004eb24..1004ec4c`): the surface material `+0xd8` the move left. 3 (ice) →
     /// `0694 = (i16)((0x100 − hdr 0x2710)·800 >> 8)` (srawi), at least 1, and `+0x112 = hdr 0x2710 >> 4`;
     /// neither 2 nor 3 → both 0. 2 (a damaging surface, hdr 0x270e or 0x70): // later: P4 (hurt, snd, stun) —
     /// left unchanged as the binary leaves them on that arm.
@@ -487,7 +505,7 @@ public enum Player {
         }
     }
 
-    /// Row 37 (l. 46344–46365): hdr+0x272c v ≠ 0 — airborne and not riding: vx += v while vx is short of 5v (in
+    /// Row 37 (l. 46347–46365): hdr+0x272c v ≠ 0 — airborne and not riding: vx += v while vx is short of 5v (in
     /// v's direction); else x += v >> 2 (srawi) and the camera latch `*_DAT_1009fd34 = 1`.
     static func sidePush(_ w: SpriteWorld, id: Int) {
         let v = Int32(w.level.header.sidePush)
@@ -506,7 +524,7 @@ public enum Player {
         }
     }
 
-    /// Row 39 (l. 46367–46385): `+8 = +0xc = fe68 = (i16)(x256 >> 8)`, `+6 = +0xa = fe64`; the centre
+    /// Row 39 (l. 46367–46392): `+8 = +0xc = fe68 = (i16)(x256 >> 8)`, `+6 = +0xa = fe64`; the centre
     /// `+0x10 = fd94 = x + l + ((r − l) >> 1)`, `+0xe = fd90 = y + t + ((b − t) >> 1)`; grounded, riding, clinging or
     /// `05a0` → `0740 = +0xe`.
     static func positions(_ w: SpriteWorld, id: Int) {
@@ -529,7 +547,7 @@ public enum Player {
         }
     }
 
-    /// Row 42 (l. 46491–46653): `G+4 = HP`, `fd3c = vx`, `04c8 = vy`; below the map (y > hdr 0xb282·32 + 100) →
+    /// Row 42 (l. 46489–46649): `G+4 = HP`, `fd3c = vx`, `04c8 = vy`; below the map (y > hdr 0xb282·32 + 100) →
     /// HP 0; the stillness counter; the riding ramps; the Shadow-Double ring // later: Phase 4;
     /// `.DoubleSpeedTrail` // later: Phase 4; `.StandardSpriteCleanup`; `05ec` (0…0x1f) and `057c` (+2, 0…0x167);
     /// the tint overrides (05a8 → 0x10008 / 0x10009; spirit 0xb0001/0xb0005 // later: Phase 4; 0564 → 0x10007

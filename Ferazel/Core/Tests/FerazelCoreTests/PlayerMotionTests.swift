@@ -42,7 +42,7 @@ final class PlayerMotionTests: XCTestCase {
 
     /// Spawn on the floor and settle: frame 1 lands (`+0xce` 3), frame 2 refills the jump counter to 6.
     private func standing(_ w: SpriteWorld) -> TileSolver {
-        _ = Player.spawn(world: w, x: 100, y: standY)
+        XCTAssertNotNil(Player.spawn(world: w, x: 100, y: standY))
         let solver = TileSolver(world: w)
         frame(w, solver)
         frame(w, solver)
@@ -54,8 +54,10 @@ final class PlayerMotionTests: XCTestCase {
 
     func testJumpImpulseAtRestWalkRun() throws {
         // J − 0xc80 − ((|vx| + 0x4e2) >> 3), J = 0: rest −3200 − 156 = −3356; walk max 1900: −3200 − 393 = −3593;
-        // run max 3200: −3200 − 556 = −3756 (raw `100541c4`/`10054240 addi r0,r3,0x4e2`).
-        for (vx, expected) in [(Int32(0), Int32(-3356)), (1900, -3593), (3200, -3756)] {
+        // run max 3200: −3200 − 556 = −3756 (raw `100541c4`/`10054240 addi r0,r3,0x4e2`). Negative vx takes |vx|
+        // (−1900 → −3593); vx ±6 pins 0x4e2: (6 + 1250) >> 3 = 157 → −3357, where 0x4e0 would give 156.
+        for (vx, expected) in [(Int32(0), Int32(-3356)), (1900, -3593), (3200, -3756), (-1900, -3593), (-3200, -3756),
+                               (6, -3357), (-6, -3357)] {
             let w = try world()
             _ = standing(w)
             w.active.update(id: w.playerID!) { $0.vx = vx }
@@ -77,6 +79,11 @@ final class PlayerMotionTests: XCTestCase {
         for f in 1...14 {
             frame(w, solver, f <= 6 ? .jump : [])
             dy.append(player(w).y256 - y0)
+            if f <= 6 {
+                // Exertion +8 on the jump frame and on every sustained frame (l. 47779); counter 6 → 0.
+                XCTAssertEqual(w.player.exertion, Int16(8 * f), "frame \(f)")
+                XCTAssertEqual(w.player.jumpCounter, Int16(6 - f), "frame \(f)")
+            }
         }
         XCTAssertEqual(dy.min(), -25752)                               // −25752 / 256 = 100.59 px
         XCTAssertEqual(dy.firstIndex(of: -25752).map { $0 + 1 }, 12)
@@ -92,8 +99,11 @@ final class PlayerMotionTests: XCTestCase {
         let y0 = player(w).y256
         var dy: [Int32] = []
         for f in 1...9 {
+            if f == 2 { w.active.update(id: w.playerID!) { $0.vx = 1000 } }
             frame(w, solver, f == 1 ? .jump : [])
             dy.append(player(w).y256 - y0)
+            if f == 2 { XCTAssertEqual(player(w).vx, 900) }           // air drag 100 every airborne frame (l. 44972)
+            if f == 3 { XCTAssertEqual(player(w).vx, 800) }
         }
         XCTAssertEqual(dy.min(), -11172)
         XCTAssertEqual(dy[6], -11172)
@@ -104,7 +114,7 @@ final class PlayerMotionTests: XCTestCase {
 
     func testNoAutoRepeatOrMidAirSpinRefill() throws {
         // JUMP held through the whole arc and the landing: the arm is taken every frame, so the else-refill never
-        // runs — the counter stays 0 on the ground until JUMP is released (main l. 47823–47832).
+        // runs — the counter stays 0 on the ground until JUMP is released (main l. 47870–47880).
         let w = try world()
         let solver = standing(w)
         for _ in 1...40 { frame(w, solver, .jump) }
@@ -113,6 +123,23 @@ final class PlayerMotionTests: XCTestCase {
         XCTAssertEqual(w.player.jumpCounter, 0)
         frame(w, solver, [])
         XCTAssertEqual(w.player.jumpCounter, 6)                         // released on the ground: refill 6
+        // Ground deceleration without input (l. 45009–45052): 800 per frame, clamped at 0; 300 while stunned.
+        w.active.update(id: w.playerID!) { $0.vx = 1000 }
+        frame(w, solver, [])
+        XCTAssertEqual(player(w).vx, 200)
+        frame(w, solver, [])
+        XCTAssertEqual(player(w).vx, 0)
+        w.active.update(id: w.playerID!) { $0.vx = -1000 }
+        frame(w, solver, [])
+        XCTAssertEqual(player(w).vx, -200)
+        w.player.stun = 1
+        w.active.update(id: w.playerID!) { $0.vx = 1000 }
+        frame(w, solver, [])
+        XCTAssertEqual(player(w).vx, 700)
+        w.player.stun = 0
+        w.active.update(id: w.playerID!) { $0.vx = 0 }
+        frame(w, solver, [])
+        XCTAssertEqual(w.player.jumpCounter, 6)
         // DOWN + JUMP in the air with counter 3: the DOWN block sets the spin first (0 < counter < 6, raw
         // `10053cec..10053d28`), so the refill arm's `spin == 0` test (raw `10053fc4`) fails — no refill, the
         // sustain runs and the counter goes 3 → 2 (Bank correction A2).
@@ -130,12 +157,12 @@ final class PlayerMotionTests: XCTestCase {
     func testTerminalVelocityAndZeroBump() throws {
         // Free fall (no floor): vy 1 + 440k; frame 27 → 11881, frame 28 → 12321 → clamped 12000.
         let w = try world(floor: false)
-        let id = Player.spawn(world: w, x: 100, y: 0)
+        let id = Player.spawn(world: w, x: 100, y: 0)!
         let solver = TileSolver(world: w)
         w.active.update(id: id) { $0.vy = 1 }
         var vys: [Int32] = []
         for _ in 1...29 {
-            frame(w, solver)
+            Player.handle(world: w, keys: [])                           // the locked S2 call (no floor: no callback needed)
             vys.append(player(w).vy)
         }
         XCTAssertEqual(vys[26], 11881)
@@ -145,19 +172,46 @@ final class PlayerMotionTests: XCTestCase {
         w.active.update(id: id) { $0.vy = -440 }
         frame(w, solver)
         XCTAssertEqual(player(w).vy, 1)
+        // Row 3's ride-on cue: stepping onto a 0x6a4 from no ridden sprite draws `FastRand(10000)` at the call site
+        // (`STPlay3DSoundRand(509, 1, 0xbf, +0xe)`); riding on next frame draws nothing.
+        let solidID = w.newSprite(type: 0x6a4, x: 100, y: 200, layer: 5, handler: .inert) { s in
+            s.x = 100; s.y = 200; s.drawnX = 100; s.drawnY = 200
+        }!
+        w.active.update(id: id) { $0.ridden = solidID }
+        var expected = w.rng
+        let rate = expected.soundRate()
+        frame(w, solver)
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 509, priority: 1, volume: 0xbf,
+                                                 position: w.active.sprite(id: solidID)!.centre, rate: rate)])
+        XCTAssertEqual(w.rng.seed, expected.seed)
+        w.active.update(id: id) { $0.ridden = solidID }
+        frame(w, solver)
+        XCTAssertEqual(w.player.cues, [])
+        XCTAssertEqual(w.rng.seed, expected.seed)
     }
 
     func testSubmergedBrake() throws {
         // Fully submerged (`+0x11c == 1`, set by last frame's water pass), airborne, not spinning: gravity 0x50 and
         // vy 2000 > 0x6a4 → 2000 − 0x200 = 1488 (raw `1004daec..1004daf8`); the frame's gravity add → 1568.
         let w = try world(floor: false)
-        let id = Player.spawn(world: w, x: 100, y: 0)
+        let id = Player.spawn(world: w, x: 100, y: 0)!
         let solver = TileSolver(world: w)
         w.active.update(id: id) { $0.vy = 2000; $0.waterRow = 1 }
         Player.selectGravity(world: w, id: id)
         XCTAssertEqual(player(w).vy, 1488)
         XCTAssertEqual(player(w).gravity, 0x50)
         XCTAssertEqual(w.player.swim, 1)                                // swim entry (liquid kind ≠ 5)
+        // Thresholds: `cmpwi 0x6a4; ble` — 0x6a4 keeps, 0x6a5 brakes; spinning `cmpwi 0xbb8; ble` — 3000 keeps,
+        // 3001 brakes, gravity 0x118 (raw `1004dac8`, `1004db04`).
+        for (spin, vy, out) in [(false, Int32(0x6a4), Int32(0x6a4)), (false, 0x6a5, 0x6a5 - 0x200),
+                                (true, 3000, 3000), (true, 3001, 3001 - 0x200)] {
+            w.player.spin = spin
+            w.active.update(id: id) { $0.vy = vy; $0.waterRow = 1 }
+            Player.selectGravity(world: w, id: id)
+            XCTAssertEqual(player(w).vy, out, "spin \(spin) vy \(vy)")
+            XCTAssertEqual(player(w).gravity, spin ? 0x118 : 0x50)
+        }
+        w.player.spin = false
         w.active.update(id: id) { $0.vy = 2000; $0.waterRow = 1 }
         w.player.swim = 0
         frame(w, solver)
