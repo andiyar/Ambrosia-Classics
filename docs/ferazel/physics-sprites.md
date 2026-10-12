@@ -196,6 +196,13 @@ bumped latches `_DAT_100a0724/_DAT_100a0720` before `.ApplySpeedAndSeparateFromT
   water); `v > 0`: `_DAT_100a0288` vol `2v + 0x14` (not from water). The routine writes no HP
   (no fall damage here).
 - Ceiling bump (not latched, not dying, `+0xcf` set): latch, sound `_DAT_100a0408` vol 0xa0.
+- ⚑ planner-probe (Phase 2 plan C7, landed by P2 2026-10-13; raw `100544d8..10054708`): the two stopped voices are
+  **414** (`_DAT_100a03f8`, the jump sound) and **427** (`_DAT_100a03cc`, the spin sound) — each `FUN_100916dc`
+  (playing?) then `FUN_10091504` (stop), 427 also re-testing `+0xce ≠ 0`; the sounds are 601 (`a0284`, prio 0x14),
+  600 (`a0288`, prio 0x14), 603 (`a0280`, **prio 1**), 404 (`a0408`, prio 0x14); v is `extsh(impact >> 7)` (srawi)
+  and the 600/601 split tests `extsh(v << 1)`; the dust is `MTNewSprite(0x4b1, +0xc + 0x18, (+0x1c >> 8) + 0x53, 0xb,
+  −1, .SetupEffectSprite)`. Its Handle shows faces 1…5 of PICT 1201 (face 0 is never set: `+0x46` is incremented
+  before use) and kills it on the 6th call.
 
 ### 8.8 `.HandleBreathing @ 1004bb44` — panting cadence (not oxygen)  [HIGH; raw disasm checked]
 From `.HandlePlayerSprite` (handler dump l. 1396) unless dying. Exertion `E = _DAT_100a06a4`

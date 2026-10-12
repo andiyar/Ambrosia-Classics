@@ -12,6 +12,9 @@ public struct PlayerCue: Equatable, Sendable {
         case reg
         /// `.STPlay3DSoundRand(snd, prio, vol, pos)` — `rate` holds the drawn `FastRand(10000) + 0xec77`.
         case threeDRand
+        /// `.STPlay3DSound(snd, prio, vol, pos) @ 10047ac0` — no draw (its callees are `10047738` and the play list
+        /// `10091208`). P2: the crunch sounds 423 / 424 (`.CrunchTile`, the crumble overlay's Handle).
+        case threeD
         /// `if (FUN_100916dc(snd)) FUN_10091504(snd)`: stop the sound if it is playing.
         case stopIfPlaying
     }
@@ -24,15 +27,33 @@ public struct PlayerCue: Equatable, Sendable {
     public var position: SpriteSlot.Point?
     /// The rate drawn at the call site (`.threeDRand` only).
     public var rate: Int32?
+    /// `if (!FUN_100916dc(snd)) play(…)`: the call is made only while the sound is not playing (`.CrunchTile`'s 423,
+    /// raw `10044a50..10044a74`; S1 maps it to `SoundCue.onlyIfIdle`).
+    public var onlyIfIdle: Bool
 
     public init(call: Call, snd: Int16, priority: Int16 = 0, volume: Int16 = 0, position: SpriteSlot.Point? = nil,
-                rate: Int32? = nil) {
+                rate: Int32? = nil, onlyIfIdle: Bool = false) {
         self.call = call
         self.snd = snd
         self.priority = priority
         self.volume = volume
         self.position = position
         self.rate = rate
+        self.onlyIfIdle = onlyIfIdle
+    }
+}
+
+/// One crunched tile in the game globals' log (`G+0x12d8+n` = the level byte `(char)*_DAT_1009feac`,
+/// `G+0x60f8+4n` = row, `G+0x60fa+4n` = column; `.CrunchTile` raw `10044bc8..10044c14`).
+public struct CrunchLogEntry: Equatable, Sendable {
+    public var level: Int8
+    public var col: Int16
+    public var row: Int16
+
+    public init(level: Int8, col: Int16, row: Int16) {
+        self.level = level
+        self.col = col
+        self.row = row
     }
 }
 
@@ -174,6 +195,15 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a0724` / `_DAT_100a0720`: the landed / bumped latches (cleared before the move; P2 sets them).
     public var landedLatch = false
     public var bumpedLatch = false
+    /// `_DAT_100a05f8`: the row-33 animation counter whose arm precedes the rope / swim / cling arms (set by
+    /// `.HitPlayerSprite`, l. 49599 / 49680). // later: P3 / Phase 3 — no Phase-2 writer, stays 0.
+    public var animation05f8: Int16 = 0
+    /// `PTR_DAT_100a0670`: the standing flag (the cling / stun arms clear it; P3 reads it).
+    public var standing0670 = false
+    /// `PTR_DAT_100a0648` / `PTR_DAT_100a063c`: the walk-on-liquid power-up and its liquid kind — `.HitPlayerTileSprite`
+    /// turns a matching BG water cell into an FG kind-3 floor 16 px up. // later: Phase 4 (no Phase-2 writer).
+    public var walkOnLiquid = false
+    public var walkOnLiquidKind: Int16 = 0
 
     // MARK: casting and items (read by the climb and JUMP gates)
 
@@ -240,8 +270,24 @@ public struct PlayerState: Equatable, Sendable {
     public var potionItem: Int16 = -1
     public var meleeItem: Int16 = -1
 
-    /// The sound calls of the current frame, in call order (cleared at the top of `Player.handle`).
+    // MARK: crunch tiles (P2; `.CrunchTile`, `.MakeCrunchSprite`, `.DestroyCrunchTile`)
+
+    /// The 40-slot crumble-overlay table at `0x100a53d8` (`.ClearCrunchSprites` / `.FindCrunchSprite` /
+    /// `.MakeCrunchSprite`): an overlay sprite id per slot (nil = 0). A global, kept here with the player's.
+    public var crunchSprites = [Int?](repeating: nil, count: 0x28)
+    /// The crunched-tile log in the game globals (`G+0xad6` count < 20000; `G+0x12d8+n` level byte, `G+0x60f8+4n` row,
+    /// `G+0x60fa+4n` column) — re-applied on revisits (engine §9; W4 / Phase 3). Kept here: P2 owns no `GameGlobals`.
+    public var crunchLog: [CrunchLogEntry] = []
+    /// `*_DAT_100a00f4`: the water-effects tile cache is valid (`.FillCachedTileArray` sets it; `.DestroyCrunchTile`
+    /// clears it; `.WrapDrawWaterEffects` refills when clear — E1b).
+    public var tileCacheValid = false
+
+    /// The sound calls of the current frame, in call order (cleared at the top of `Player.handle`). The Effect
+    /// Handles after the player in the list (the crumble overlay, layer 0xb) append theirs here too.
     public var cues: [PlayerCue] = []
+    /// The map changes of the current frame, in call order (`DrawOp.setTile`, one per `.SetFGTile` /
+    /// `.SetFGCrunchDirTile` write; cleared at the top of `Player.handle` like `cues`).
+    public var tileOps: [DrawOp] = []
 
     /// `.ClearPlayerVars`' state.
     public init() {}

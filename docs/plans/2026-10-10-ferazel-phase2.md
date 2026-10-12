@@ -103,7 +103,7 @@ F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a *
 As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
 +1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
 Later tasks: previous total + N. Wave 2.1 as executed: E2 carry `testLevelStartDrawsAfterSetups` +1 → 141, E2 +8 → 149, S2
-+5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), …
++5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), P2 → 175, …
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -535,6 +535,27 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   119..121 row 36: the reading's frame count, resulting tile and the `setTile` ops, self-derived from
   triggers-background-2 §2.3 and the dump, recorded).
 - **Commit:** `FerazelCore: player tile callback — landing/ceiling effects, cling, pull-up, crunch tiles (DrawOp.setTile), dust sprite; 9 tests`.
+- ⚑ **As executed (P2, 2026-10-13):** G2 **175** then 0 (166 + 9). Built from raw `10054ca8..10055408`
+  (`.HitPlayerTileSprite`), `100544d8..10054708` (`.CheckGroundCeilingHitEffects`), `10044928..10044c34`
+  (`.CrunchTile`), `100445b0..100446f0` / `10043f14..100444c4` (destroy / reshape, branch tree from the disasm),
+  `.HandleEffectSprite` 1201/1210 arms. `PlayerTiles.hit(keys:)` is `Player.handle`'s default `tileHit`; row 33's cling
+  arm (the pull-up move) is built behind the earlier arms' tests (glider, dying, spirit, boss grab, stun, `05f8`,
+  rope, swim). Map writes go to `world.tiles` and `PlayerState.tileOps` (`DrawOp.setTile`, cleared with `cues`);
+  `FrameRenderer` patches its `Mlvl` copy, rebuilds grid/light/sprite renderers on it (state kept) and redraws the
+  cell, and loads PICTs 1201 and 1210 (`effectSheets`). Divergences / readings: (1) the decompile omits `pos += (16,16)`
+  before `.RectBounceFake2` (raw `100552cc..100552f0`) — built per disasm; (2) the crumble overlay sorts on **layer
+  0xb**, not 50 (`.SetupEffectSprite` stores `+0x80` before `.MTInsertSprite`, raw `100606e0`, `1003321c`/`1003322c`;
+  triggers-background-2 §2.3 says 50); (3) dust shows faces 1…5, killed on the 6th Handle (face 0 never set);
+  (4) 603 is prio **1**; (5) `+0xeb` is tested once per FG cell before the 2×2 crunch scan, so one scan can make two
+  layer-2 calls; (6) the plan's "v 35 → 601" read confirmed (35 < 0x30 → 0); (7) the springboard arm is unreachable
+  from the tile path (a ridden player has `0738` = 3) — tested directly; (8) **RNG gap**: `.ExplodeCrunchedTile` →
+  `.ExplodeFaceIntoParticles` (4 FastRand per emitted pixel of the tile's face) is not built — owned by no task;
+  the stream diverges after a crunch destroy until it is (carry → E1a / orchestrator). Crunch derivation (level 1,
+  player at (3806, 1083)): frame 2 makes two overlays ((119,36), (120,36); slots 0/1; two R(3)), `+0x46` 15 → 0 at
+  frame 17 (hp 1, face 1), frame 18 destroys both: ten `setTile`s (119,36 0x1305; 120,36 0x1308; 119,37 0x000b;
+  120,37 0x000a; 119,36 0x0305; 120,36 0x1300; 121,36 0x1308; 120,37 0x0004; 121,37 0x000a; 120,36 0x0300). Bank C7
+  landed in physics-sprites §8.7. Out-of-Files: `Player/PlayerState.swift` (PlayerCue `.threeD`/`onlyIfIdle`, P2
+  globals), `Sprites/SpriteSlot.swift` (`+0xb0`, `+0x150/158/15c/16c` — S2 additions).
 
 #### P3 — minor — Player states and faces (replaces ◇ `PlayerPose`) (→ 170) ◈
 - **Files:** `Sources/FerazelCore/Player/{PlayerStates,Breathing}.swift`, delete `Sources/FerazelCore/Player/PlayerPose.swift`,

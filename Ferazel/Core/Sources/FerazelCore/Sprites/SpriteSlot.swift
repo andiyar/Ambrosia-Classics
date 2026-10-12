@@ -93,6 +93,15 @@ public struct SpriteSlot: Equatable, Sendable {
     public var classTimer: Int32 = 0
     /// `+0x154` (i32): Walker `1000 + FastRand(400)` (enemies-ground §3.1: no reader in Walker code).
     public var classWord154: Int32 = 0
+    /// `+0x150` / `+0x158` / `+0x15c` / `+0x16c` (i32): class words — the crumble overlay 1210 keeps its table slot,
+    /// tile row, crunch direction nibble and "armed" flag here (`.MakeCrunchSprite`, `.CrunchTile`; P2).
+    public var classWord150: Int32 = 0
+    public var classWord158: Int32 = 0
+    public var classWord15c: Int32 = 0
+    public var classWord16c: Int32 = 0
+    /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
+    /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
+    public var subtype: Int16 = 0
     /// `+0xf0` (i32): Walker (goblin) voice pitch `2·FastRand(0x5fff) + 0xbfff` (enemies-ground §3).
     public var voicePitch: Int32 = 0
     /// `+0x1c8..+0x1ce`.

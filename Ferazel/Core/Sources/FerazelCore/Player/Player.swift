@@ -19,7 +19,7 @@ import Foundation
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (later: P3)
 /// 10 `.StandardSpriteHandles`                             31 held-item face, cast / wand phase (later: Phase 4)
 /// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
-/// 12 crunch-capable `+0xeb`                               33 state / face selection (later: P2, P3, P4)
+/// 12 crunch-capable `+0xeb`                               33 state / face selection (cling arm: P2; later: P3, P4)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
 /// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 bubbles / drowning (later: P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, power-up tint (later: Phase 3–4, P3)
@@ -106,18 +106,20 @@ public enum Player {
     /// `.HandlePlayerSprite(s)`: one frame of the player.
     /// - Parameter keys: this frame's `.IsInputKeyPressed` snapshot.
     /// - Parameter solver: the tile solver over `world` (built once per level by the caller; one is made if nil).
-    /// - Parameter tileHit: the player's tile callback `+0x1f8` (`.HitPlayerTileSprite`) — a test double until P2;
-    ///   the default nil (no callback: the separations only refresh the pixel copies) is what makes the locked S2 call
-    ///   `Player.handle(world:keys:)` valid. // later: P2 makes `.HitPlayerTileSprite` the default.
+    /// - Parameter tileHit: the player's tile callback `+0x1f8`; nil (the default, the locked S2 call
+    ///   `Player.handle(world:keys:)`) = `.HitPlayerTileSprite` with this frame's keys (`PlayerTiles.hit`, P2). A test
+    ///   may pass a double.
     /// - Parameter faceWidth: the width of a face (face `+6`) for `.StandardSpriteCleanup`'s occluder clip — Core has
     ///   no face records [MED: the player's sheets are 100 px wide but for 1022/1023/1050–1053].
     public static func handle(world w: SpriteWorld, keys: InputActions, solver: TileSolver? = nil,
                               tileHit: TileHit? = nil, faceWidth: (FaceRef) -> Int = { _ in 100 }) {
         guard let id = w.playerID, w.active.record(id: id) != nil else { return }
         let solver = solver ?? TileSolver(world: w)
+        let tileHit = tileHit ?? PlayerTiles.hit(keys: keys)
         func s() -> SpriteSlot { w.active.record(id: id)! }
         func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
         w.player.cues.removeAll()
+        w.player.tileOps.removeAll()
 
         // 1 (l. 44486–44488): ridden copy, last facing, turn flag.
         w.player.ridden = s().ridden
@@ -253,9 +255,14 @@ public enum Player {
         // // later: Phase 4 (spells, held items)
         // 32 (l. 45177–45218): the potion drink. // later: Phase 4
         // 33 (l. 45219–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
-        // hurt-stun, door, rope, swim (vy damping, counter refill, splash), cling / climb / pull-up, melee, grounded
-        // (walk sounds, fidgets: FastRand), airborne (`_DAT_100a0718`). // later: P3 (faces, states), P2 (the pull-up
-        // move), P4 (the swim arm)
+        // hurt-stun, `05f8`, rope, swim (vy damping, counter refill, splash), cling / climb / pull-up, melee, grounded
+        // (walk sounds, fidgets: FastRand), airborne (`_DAT_100a0718`). // later: P3 (faces, states), P4 (the swim
+        // arm). P2 builds the cling arm's writes (the pull-up move), reached when every earlier arm's test fails.
+        let p33 = w.player
+        if !p33.glider && p33.dying <= 0 && p33.spiritTransition <= 0 && p33.bossGrab <= 0 && p33.stun <= 0
+            && p33.animation05f8 == 0 && !p33.rope && p33.swim == 0 && p33.climb != 0 {
+            clingArm(w, id: id)
+        }
         // 34 (l. 46197–46203).
         if w.player.climb == 0 { w.player.pullUp = 0 }
         let tumbleDrawn = false                                           // `cStack_6b` // later: P3 (launched tumble)
@@ -482,6 +489,46 @@ public enum Player {
             p.vx = side == 1 ? -0x800 : 0x800
         }
         w.player.climb = 0
+    }
+
+    /// Row 33's cling arm (l. 45750–45813; `_DAT_100a0758` ≠ 0): idle → fidgets when > 0, standing `0670` 0, air
+    /// counter 0, spin 0, stop 427 if playing, crouch 0; then without a pull-up the climb phase `5f54` wraps (≥ 13 → 1,
+    /// < 1 → 12) and, with a wand phase (`06d4` ≥ 1), climb phase 1 and vy 0 // faces: later P3; with a pull-up, the
+    /// counter `06a0` += 1 and past 0x14 the move: x256 ±0x2000 (− when `+0x17e`, the wall on the left), y256 −= 0x1600,
+    /// pull-up 0, climb 0, air counter 0, spin 0, stop 427, crouch 2, `0738` = 1, `+0xce` = 1 (face: later P3).
+    static func clingArm(_ w: SpriteWorld, id: Int) {
+        if 0 < w.player.idle { w.player.idle = w.player.fidgets }
+        w.player.standing0670 = false
+        w.player.airCounter = 0
+        w.player.spin = false
+        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
+        w.player.crouch = 0
+        if w.player.pullUp == 0 {
+            if w.player.climbPhase < 0xd {
+                if w.player.climbPhase < 1 { w.player.climbPhase = 0xc }
+            } else {
+                w.player.climbPhase = 1
+            }
+            if 0 < w.player.wandPhase {
+                w.player.climbPhase = 1
+                w.active.update(id: id) { $0.vy = 0 }
+            }
+            return
+        }
+        w.player.pullUp += 1
+        guard 0x14 < w.player.pullUp else { return }
+        w.active.update(id: id) { p in
+            p.x256 &+= p.mirrored ? -0x2000 : 0x2000
+            p.y256 &-= 0x1600
+        }
+        w.player.pullUp = 0
+        w.player.climb = 0
+        w.player.airCounter = 0
+        w.player.spin = false
+        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))
+        w.player.crouch = 2
+        w.player.groundLast = 1                                         // `_DAT_100a0738`
+        w.active.update(id: id) { $0.groundKind = 1 }
     }
 
     /// Row 28 (l. 45106–45135; raw `1004eb24..1004ec4c`): the surface material `+0xd8` the move left. 3 (ice) →

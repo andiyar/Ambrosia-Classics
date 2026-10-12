@@ -27,6 +27,9 @@ import FerazelCore
 /// - `statusBar`: `StatusBar.update` — full after a `setScreenClut` (the level start), incremental otherwise (D26 R5:
 ///   the seam does not carry the flag).
 /// - `gammaStep(j, N, toward)`: one `.HandleAsyncGammaFade` step on `gamma` (`ScreenGamma`); `presentedClut` shows it.
+/// - `setTile(col, row, fg)` (P2): the FG cell of the renderer's level becomes `fg` (`.SetFGTile` /
+///   `.SetFGCrunchDirTile` as Core made them), then `.ChangedTile @ 10012a50` = `.RedrawScrollGrid` of that one cell
+///   at the current scroll point (into the tile port, then its rect into the frame port).
 /// After each `wrapEraseSprites` the water-ripple phase `*_DAT_1009fd74` advances by 0x100 (0x200 at level start).
 ///
 /// The light slots: `.SetupLevelSprites` (inside `.SetupLevel`, l. 2526, before its `.RedrawEntireScrollGrid`
@@ -57,10 +60,16 @@ public final class FrameRenderer {
         case screenClut(Int16), picture(Int16), entireGrid(h: Int, v: Int), strip(h: Int, v: Int), lightsOntoTiles
         case handleLights, sprites(Int), copy(h: Int, v: Int), lightFace(Int), erase(Int), statusBar(full: Bool)
         case gamma(numerator: Int, denominator: Int)
+        case tile(col: Int, row: Int)
     }
 
     public let resources: FerazelResources
-    public let level: LevelFile
+    /// The level as loaded, with the `setTile` writes applied (the grid, light and sprite renderers draw from it).
+    public private(set) var level: LevelFile
+    /// The `Mlvl` resource bytes `level` was parsed from (`setTile` patches its FG cell and re-parses).
+    private var levelData: Data
+    /// The fixed tile faces (`TileGridRenderer` takes its blend sheet from them when rebuilt by `setTile`).
+    private let fixed: TileSets.Fixed
     public let prefs: FerazelPrefs
     public let search: ColorSearch
     public let dither: DitherModel
@@ -102,8 +111,12 @@ public final class FrameRenderer {
         self.prefs = prefs
         self.search = search
         self.dither = dither
-        let L = try LevelFile.load(from: resources, level: Int16(level))
+        guard let mlvl = resources.world.resource(type: "Mlvl", id: Int16(level)) else {
+            throw WorldDataError.missing(type: "Mlvl", id: Int16(level))
+        }
+        let L = try LevelFile(resource: mlvl)
         self.level = L
+        levelData = mlvl.data
         let clut = try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: resources, chain: .level)
         screenClut = clut
         levelClut = clut
@@ -111,6 +124,7 @@ public final class FrameRenderer {
         // `buildTintTable(session.tintTableDraws)` before the first `apply` (as `addLights`).
         tables = try LevelTables.forLevel(L.header, resources: resources, search: search, random: { _ in 0 })
         let fixed = try TileSets.Fixed(resources: resources, search: search, dither: dither)
+        self.fixed = fixed
         let sets = try TileSets(level: L, fixed: fixed, resources: resources, search: search, dither: dither)
         let clear = try TileGridRenderer.loadClearFace(resources: resources, search: search, dither: dither)
         parallax = try ParallaxBlitter(level: L, sets: sets)
@@ -118,7 +132,8 @@ public final class FrameRenderer {
         let context = SetupFaces.Context(level: L, playerX: SetupFaces.Context.levelStartPlayerX(L.header),
                                          effects: prefs.effects)
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
-        let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets),
+        let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets)
+                                                .union(Self.effectSheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -139,6 +154,14 @@ public final class FrameRenderer {
         SetupFaces.Sheet(pict: 0x404, count: 10, cellWidth: 100, cellHeight: 0x78, columns: 10, clut: 200),
         SetupFaces.Sheet(pict: 0x405, count: 6, cellWidth: 100, cellHeight: 0x78, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x406, count: 3, cellWidth: 100, cellHeight: 0x78, columns: 3, clut: 200),
+    ]
+
+    /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
+    /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`) and the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`)
+    /// — the two effects P2 spawns. // later: E1a / Phase 3–5 — the other effect sets.
+    static let effectSheets: Set<SetupFaces.Sheet> = [
+        SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),
+        SetupFaces.Sheet(pict: 0x4ba, count: 3, cellWidth: 0x20, cellHeight: 0x20, columns: 3, clut: 200),
     ]
 
     /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order): the first
@@ -265,6 +288,9 @@ public final class FrameRenderer {
             case .gammaStep(let numerator, let denominator, let toward):
                 gamma.step(numerator: numerator, denominator: denominator, toward: toward)
                 executed.append(.gamma(numerator: numerator, denominator: denominator))
+            case .setTile(let col, let row, let fg):
+                try setTile(col: col, row: row, fg: fg)
+                executed.append(.tile(col: col, row: row))
             case .statusBar(let state):
                 let full = statusBarFull
                 statusBar.update(state, full: full, screen: &screen)
@@ -272,6 +298,34 @@ public final class FrameRenderer {
                 executed.append(.statusBar(full: full))
             }
         }
+    }
+
+    /// `DrawOp.setTile`: the FG cell (col, row) of `level` (`Mlvl` §3.1 layout: header, PxBack, PxMid, BG, then FG)
+    /// becomes `fg`; the grid, light and sprite renderers are rebuilt on the new level keeping their state (drawn
+    /// pair, effects, light slots, ripple phase); then `.ChangedTile`'s one-cell `.RedrawScrollGrid` at `scroll`.
+    /// A cell outside the grid (Core clamps as `.ConstrainXY`, so none comes) is ignored.
+    private func setTile(col: Int, row: Int, fg: UInt16) throws {
+        let hdr = level.header
+        let w0 = Int(hdr.pxBackWidth), h0 = Int(hdr.pxBackHeight), w1 = Int(hdr.pxMidWidth), h1 = Int(hdr.pxMidHeight)
+        let w2 = Int(hdr.gridWidth), h2 = Int(hdr.gridHeight)
+        guard (0..<w2).contains(col), (0..<h2).contains(row) else { return }
+        let offset = LevelFile.headerSize + 2 * (w0 * h0 + w1 * h1) + 2 * w2 * h2 + 2 * (row * w2 + col)
+        var data = levelData
+        data[data.startIndex + offset] = UInt8(fg >> 8)
+        data[data.startIndex + offset + 1] = UInt8(fg & 0xff)
+        let new = try LevelFile(id: level.id, data: data)
+        levelData = data
+        level = new
+        var light = LightRenderer(level: new, tables: tables)
+        light.slots = lights.slots
+        lights = light
+        grid = TileGridRenderer(level: new, sets: grid.sets, fixed: fixed, tables: tables, clearFace: grid.clearFace,
+                                drawnH: grid.drawnH, drawnV: grid.drawnV, effects: grid.effects, lights: light)
+        var blitter = SpriteBlitter(level: new, tables: sprites.tables, faces: sprites.faces, effects: sprites.effects,
+                                    lights: light)
+        blitter.ripplePhase = sprites.ripplePhase
+        sprites = blitter
+        grid.redrawScrollGrid(top: row, left: col, right: col, bottom: row, h: scroll.h, v: scroll.v, ports: &ports)
     }
 
     /// `.DrawPICTToBackScreen(id, (0, 0, 480, 640))` + `.MTRedraw`, the picture at (h, v).

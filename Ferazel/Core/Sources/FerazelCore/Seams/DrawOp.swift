@@ -31,4 +31,10 @@ public enum DrawOp: Equatable, Sendable {
     /// (lighting-tables §10): `MT_FadeToColor(toward, numerator·100 / denominator, 0, 1)` — the current gamma moved
     /// that percentage toward `toward` (nil = the original gamma, the fade-in), compounding. Presentation only.
     case gammaStep(numerator: Int, denominator: Int, toward: RGB16? = nil)
+    /// A map write of `.CrunchTile`'s machinery (plan S3, P2) at its call site in the sprite Handles: the FG cell
+    /// (col, row) — already clamped as `.ConstrainXY` — now holds `fg` (the whole u16: tile + 1 in bits 0–7, crunch
+    /// kind 8–11, crunch direction 12–15). Emitted for `.ChangeFGTile` (`.SetFGTile` + `.ChangedTile`, the one-cell
+    /// `.RedrawScrollGrid`) and for `.SetFGCrunchDirTile` (no redraw in the original; the renderer's redraw of an
+    /// unchanged tile byte paints the same cell). The renderer applies it to its copy of the level and redraws the cell.
+    case setTile(col: Int, row: Int, fg: UInt16)
 }
