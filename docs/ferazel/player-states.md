@@ -29,7 +29,7 @@ player sprite. Face sets are pointers to arrays of 0x34-byte face records; "set[
 | 806–814 | return if `s+0xe9` (kill) or `s+0x1b2` set |
 | 815–845 | max speeds `_DAT_100a600a/600c` (ground walk/run) and `_DAT_100a600e/6010` (air walk/run): 0x76c/0xc80; quicksand scaling; Double Speed 0xd82/0x15e0 (physics §4) |
 | 846–853 | idle counter `_DAT_100a068c += 1`; `s+0x18c = 0`; `s+0x8a = (climb == 0)` (water-current gate, physics §2); rope latch `_DAT_100a0584 = _DAT_100a0588; _DAT_100a0588 = 0`; `.RopeCollide` unless dying |
-| 854–925 | gravity selection (§5.6), jump base J reset / High Jump, Feather Fall clamp |
+| 854–925 | gravity selection (§5.6), jump base J reset / High Jump, Feather Fall clamp. ⚑ planner-probe (Phase 2 plan A4, landed by P1a 2026-10-13; follow the binary): airborne and fully submerged (`s+0x11c == 1`, last frame's water pass — read before `.StandardSpriteHandles` zeroes it) the **submerged brake** `vy −= 0x200` (512) when vy > 0x6a4 (> 0xbb8 = 3000 while spinning) — raw `1004dae8 lwz r3,0x2c; 1004daec cmpwi r3,0x6a4; ble; 1004daf4 subi r0,r3,0x200; stw` (spin arm `1004db04 cmpwi r3,0xbb8` … `1004db10`); then swim 1 when not spinning, not swimming, liquid ≠ 5. vy 2000 → 1488, + gravity 0x50 → 1568 (`testSubmergedBrake`) |
 | 929 | `.StandardSpriteHandles` |
 | 930–1003 | Shadow Double sprite 0x1b39 spawn/kill; crunch-capable `s+0xeb = spin ∨ s+0xce`; ~18 countdown timers (§2) |
 | 1004–1063 | power-up timers (`.TickTock`) → active/blink flags |
@@ -93,7 +93,7 @@ player sprite. Face sets are pointers to arrays of 0x34-byte face records; "set[
 | `_DAT_100a0718` | **air animation counter** (0 grounded; jump/fall face index source; spring writes 2, catapult 8, `.HitPlayerSprite` 1) — closes the "meaning of `_DAT_100a0718`" part of INDEX NOT-RESOLVED 14 | HIGH |
 | `PTR_DAT_100a0668` / `_DAT_100a0664` | spin flag / spin frame (0..7) | HIGH |
 | `_DAT_100a05b8` / `_DAT_100a05b4` | launched/tumble flag / tumble frame (0..7) | HIGH |
-| `_DAT_100a0764` | jump counter (6 on ground, 3 clinging, 0 airborne — refilled whenever the JUMP arm is not taken, i.e. not (`glider == 0` ∧ JUMP ∧ teleporter charge < 1); ⚑ corrected (review 1b, 2026-10-03) #7, §5.1) | HIGH |
+| `_DAT_100a0764` | jump counter (6 on ground, 3 clinging, 0 airborne — refilled whenever the JUMP arm is not taken, i.e. not (`glider == 0` ∧ JUMP ∧ teleporter charge < 1); ⚑ corrected (review 1b, 2026-10-03) #7, §5.1) — ⚑ planner-probe (Phase 2 plan A1, landed by P1a 2026-10-13; follow the binary): the third term of the JUMP arm is the **shield raise** `PTR_DAT_100a05e8 < 1`, not the teleporter charge — raw `10052ae8 lwz r23,-0x7258(r2)` (TOC 0x100a7840 − 0x7258 = slot 0x100a05e8), `10053ec8 lha r0,0(r23); cmpwi r0,0; bgt 0x10054468` (the refill). The charge `PTR_DAT_100a0700` gates only `.HandleKeys`' early return (|charge| > 0x1e) and the L/R block (< 0x15) | HIGH |
 | `_DAT_100a0678` | jump base J (0; ridden sprite's `+0x194`; −0x898 High Jump; springs write 1) | HIGH |
 | `PTR_DAT_100a06b8` | spin-refill cooldown (20 frames) | HIGH |
 | `_DAT_100a05f4` | swim stroke cooldown (12 frames) | HIGH |
@@ -313,6 +313,7 @@ debounce `_DAT_100a075c`) [HIGH].
    ordinary play (no glider, no charge) it is still JUMP-up only, so: **no coyote time** (walking off
    a ledge with JUMP up zeroes the counter next frame), **no jump buffer and no auto-repeat** (holding
    JUMP through a landing does not jump). `.RopeCollide` writes 6 while on the same rope, 0 on a fresh grab.
+   ⚑ planner-probe (Phase 2 plan A1, landed by P1a 2026-10-13; follow the binary): the third term of the JUMP arm is the **shield raise** `PTR_DAT_100a05e8 < 1`, not the teleporter charge — raw `10052ae8 lwz r23,-0x7258(r2)` (TOC 0x100a7840 − 0x7258 = slot 0x100a05e8), `10053ec8 lha r0,0(r23); cmpwi r0,0; bgt 0x10054468` (the refill). The charge `PTR_DAT_100a0700` gates only `.HandleKeys`' early return (|charge| > 0x1e) and the L/R block (< 0x15). So holding a shield up (DOWN + away from F on the ground) also refills the counter with JUMP held.
 2. **Initial jump** (ground, not swimming, counter 6, l. 44876–44910): if `s+0x116 > 60`
    (Invincibility sphere) → launched tumble; rope flags 0; exertion +8; sound `_DAT_100a03f8` vol
    0x9c; post-jump guard 2; vy = 0; face `1010[0]` and airborne if the air counter is 0; ridden →
@@ -328,6 +329,7 @@ debounce `_DAT_100a075c`) [HIGH].
    a spin jump. UP + JUMP while submerged below the surface band → swim state 0, air counter 1,
    refill as above: a land-style leap out of the swim state. Spin effects: crunch-capable,
    face 1025, `CrunchTile` bounce (player-states-2 §10); its gravity is water-only (Corrections).
+   ⚑ planner-probe (Phase 2 plan A2, landed by P1a 2026-10-13; follow the binary): **no mid-air refill** — the DOWN block (raw `10053cec..10053d28`: DOWN ∧ spin 0 ∧ 0 < counter < 6 → `stb 1` to the spin flag) runs **before** the JUMP arm, whose refill test needs spin == 0 (raw `10053fc4 lbz r0,0(r13); bne`); so DOWN + JUMP in the air with counter 1..5 spins and sustains (counter − 1) but never refills to 6. The refill is reachable only with counter 6, i.e. the grounded spin jump (or UP + JUMP below the surface band). Test `PlayerMotionTests.testNoAutoRepeatOrMidAirSpinRefill`.
 5. **Wall jump** (l. 44818–44836): JUMP with climb set and counter > 0 → sound, guard 2, climb 0,
    vy = 0 (−0x8cb when the counter is 3), vx = +0x8ca (wall on the left) / −0x8ca. The counter is
    still 3, so the **sustain of item 3 runs in the same call** and overwrites vy with

@@ -2,7 +2,7 @@ import Foundation
 
 /// The sprite physics world (plan S2, F2): what `.HandleSprites @ 10007c24` and the sprite routines read and write —
 /// the active list, the idle table, the session's one `FastRand` stream (plan Invariant 4), the game globals and the
-/// level. `PlayerState` joins in P1a.
+/// level, and the player's globals (`PlayerState`, P1a).
 ///
 /// Frame order (plan Invariant 3; platforms-ropes-radial-2 §8.1): the draw, `.HandleIdleSprites`, then
 /// `.HandleSprites` = `handleSprites` (`.MTHandleSprites`) → `collideSprites` (`.MTCollideSprites`) → if the player
@@ -43,6 +43,9 @@ public final class SpriteWorld {
     public var globals: GameGlobals
     /// `*_DAT_1009fdd8`: the player sprite (nil = 0).
     public var playerID: Int?
+    /// The player's globals (`_DAT_100a0xxx`, player-states §2): `.ClearPlayerVars` until `Player.spawn` runs
+    /// `.SetupPlayerSprite` (P1a). Read and written by `Player.handle` and `HandleKeys`.
+    public var player = PlayerState()
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// // later: P4 (the death trigger sets it)
     public var playerDead = false

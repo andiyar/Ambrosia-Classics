@@ -199,8 +199,7 @@ bumped latches `_DAT_100a0724/_DAT_100a0720` before `.ApplySpeedAndSeparateFromT
 
 ### 8.8 `.HandleBreathing @ 1004bb44` — panting cadence (not oxygen)  [HIGH; raw disasm checked]
 From `.HandlePlayerSprite` (handler dump l. 1396) unless dying. Exertion `E = _DAT_100a06a4`
-(i16): +1 per walking frame, +3 per running frame [MED: walk/run attribution of the two
-`.HandleKeys` sites], +8 per jump / swim stroke (`.HandleKeys`),
+(i16): +1 per walking frame, +3 per running frame [~~MED~~ → HIGH: ⚑ planner-probe (Phase 2 plan A8, landed by P1a 2026-10-13): r28 = slot 0x100a06a4 (`10052afc lwz r28,-0x719c(r2)`); the +3 sites sit on the RUN-pressed path (`IsInputKeyPressed(4)`, LEFT `10053584..100535a0` then the run accel −0x1f4/−0x12c with the run max `600c`; RIGHT `100537e4..10053800`, +0x1f4/+0x12c), the +1 sites (`cmpwi r3,0xb9; bge`, cap 0xb9) on the RUN-up path (LEFT `10053600..1005360c`, RIGHT `10053860..1005386c`) with the walk accel ∓0x14f/∓0x104 and the walk max `600a`], +8 per jump / swim stroke (`.HandleKeys`),
 +0x19 per cast (`.CastSpell`), +0x50 per hit (`.HurtPlayer`); −2 per frame while > 0.
 - If oxygen `G+6 <` health `G+4`: `f = (1.0 − (float)G+4) · 400.0`; if `E + f < 220.0`,
   `E = (i16)(E + f)` (floats `0x100a1a48` = 1.0, `0x100a1a44` = 400.0, `0x100a1a40` = 220.0;
