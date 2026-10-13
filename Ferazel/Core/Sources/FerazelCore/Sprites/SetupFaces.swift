@@ -309,6 +309,7 @@ public enum SetupFaces {
                 }
             case 0x422:                                        // trigger (l. 52469–52477; W4): no face, rect (0, 0, 0x60, 0x60)
                 s.lightOverlay = false
+                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x60, right: 0x60)   // SetRect l. 52472
             case 0x423:                                        // secret-area trigger: no face (l. 52403)
                 s.lightOverlay = false
             case 0x50c:                                        // money bag: Handle face `*_DAT_100a08e0` (PICT 0x50c)
@@ -475,6 +476,7 @@ public enum SetupFaces {
             s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
             s.classWord158 = 0x1e
             s.classWord15c = 0
+            s.subtype = 7                                      // `+0xb0 = 7` (l. 68310)
             face(0x6cc, 0, .handle)                            // the Handle faces it from the cache set 0x6cc
 
         case .frog:
@@ -488,6 +490,8 @@ public enum SetupFaces {
             s.classTimer = -0x14 - Int32(rng.next(0x1e))
             s.hotRect = IdleSprites.Rect(top: 0x14, left: 0xb, bottom: 0x49, right: 0x48)
             s.classWord150 = -1
+            s.subtype = 0xb                                    // `+0xb0 = 0xb` (l. 70171)
+            s.gravity = 0x8c                                   // `+0x110 = 0x8c` (l. 70179)
             s.classWord15c = Int32(p.p1)
             s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff
             switch p.p1 {

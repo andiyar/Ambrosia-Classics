@@ -111,6 +111,12 @@ public final class FerazelSession {
         let world = SpriteWorld(level: L, seed: seed)
         // W4 (P3 carries): the parity `_DAT_1009fd30` and the G-resident crunch log run on from the previous level.
         world.parity = carry.parity
+        // W4 review fix: after a level exit G runs on whole (`.InitGameGlobals` is `.NewGame`'s only, M l. 5747); the
+        // next-level loop re-writes `+0x16` from the new header (l. 5821).
+        if let g = carry.globals {
+            world.globals = g
+            world.globals.startFacing = Int16(L.header.startFacingLeft)
+        }
         world.globals.crunchLog = carry.crunchLog
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
@@ -334,6 +340,11 @@ public final class FerazelSession {
             let request = loopEnd()
             ended = request
             ops.requests.append(request)
+            // The player pass's cues (the exit's snd 421) start at once in the original (the Sound Tool); the loop
+            // ends before the next Handle pass would hand them out, so the last iteration hands them out after its
+            // Handle pass's cues. Normal iterations keep the once-per-frame drain above.
+            frameCues += world.player.cues
+            world.player.cues = []
         }
         return ops
     }
@@ -365,7 +376,8 @@ public final class FerazelSession {
     /// What the next level's session takes (`init(…carry:)`, W4): the parity always; the crunch log unless the restart
     /// after death takes fresh globals (D33).
     public var carry: LevelCarry {
-        LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog)
+        LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog,
+                   globals: restartWithFreshGlobals ? nil : world.globals)
     }
 
     /// `PassageView.snap` (`.HitPlayerSprite` l. 49659–49672, W2b): the camera snapped to (player x − 0x142, y − 0xc0),

@@ -45,9 +45,21 @@ public struct LevelCarry: Equatable, Sendable {
     /// lives; `.SetupLevel` re-applies a level's entries only when G+0x176 + 2·level == 1 (M l. 2382–2393) — the
     /// revisit flag, // later: Phase 3 (no Phase-2 writer).
     public var crunchLog: [CrunchLogEntry]
+    /// The game globals `G` after a level EXIT (W4 review fix): `.InitGameGlobals` runs only from `.NewGame`
+    /// (M l. 5747, 6707) — the next-level loop (l. 5815–5836) re-writes `+0x16` (the start facing, from the next
+    /// header, l. 5821) and `.SetupLevel` `+0x20`/`+0x22`/`+0x176` (not modelled; l. 2376–2381), so score, health,
+    /// breath, suffocation, max health / magic, magic, coins, `+0x12`, Xichrons and the selected slot run on (the
+    /// player's HP is `G+4` again at `.SetupPlayerSprite`, l. 42831). Nil = fresh `G` (a first start, or the restart
+    /// after death, D33); `crunchLog` above still rules the log.
+    public var globals: GameGlobals?
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity
         self.crunchLog = crunchLog
+    }
+
+    public init(parity: Bool, crunchLog: [CrunchLogEntry], globals: GameGlobals?) {
+        self.init(parity: parity, crunchLog: crunchLog)
+        self.globals = globals
     }
 }

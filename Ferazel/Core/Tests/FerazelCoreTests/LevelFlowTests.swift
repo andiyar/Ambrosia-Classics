@@ -74,10 +74,17 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(e.light, SetupFaces.Light(pict: 0x336, width: 0x34, height: 0x34, x: 4335 + 0x10, y: 740 + 0x10,
                                                  colour: 0x2c))
         XCTAssertFalse(e.slot.lightOverlay)
-        // 1058 (rec 228): faceless trigger, the tail's draw only.
+        // The light is gated on prefs +6 (Effects) == 1 (M l. 52452): Effects 2 → no light, the same draws.
+        var r2 = FastRand(seed: 1)
+        let e2 = try SetupFaces.setup(L.placements[175], context: SetupFaces.Context(level: L, playerX: c.playerX,
+                                                                                    effects: 2), rng: &r2)
+        XCTAssertNil(e2.light)
+        XCTAssertEqual(r2.seed, x.seed)
+        // 1058 (rec 228): faceless trigger, SetRect(0, 0, 0x60, 0x60) (M l. 52472), the tail's draw only.
         x = FastRand(seed: 1)
         (e, rng) = try setup(228)
         XCTAssertEqual([e.source == .none, e.slot.face == nil, e.slot.lightOverlay, e.light == nil], [true, true, false, true])
+        XCTAssertEqual(e.slot.hotRect, rect(0, 0, 0x60, 0x60))
         XCTAssertEqual(e.slot.classTimer, Int32(x.next(0x3c)))
         XCTAssertEqual(rng.seed, x.seed)
         // 1332 (rec 206, sphere): R(0x10) → +0x46 after its light (99), tail R(0x3c).
@@ -87,6 +94,13 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual([e.slot.face, e.light?.colour == 99 ? f(0x534) : nil], [f(0x534), f(0x534)])
         XCTAssertEqual(rng.seed, x.seed)
         // 1341 (rec 187): ungated light 0x32a at (x + 0x16, y + 0x14) colour 0x21, R(0x10) → +0x15c, tail.
+        for seed in [0x2c1b1519, 0x7fff_1234] + Array(Int32(1)...32) {
+            x = FastRand(seed: seed)
+            (e, rng) = try setup(187, seed: seed)
+            XCTAssertEqual([e.slot.classWord15c, e.slot.classTimer], [Int32(x.next(0x10)), Int32(x.next(0x3c))],
+                           "seed \(seed)")
+            XCTAssertEqual(rng.seed, x.seed, "seed \(seed)")
+        }
         x = FastRand(seed: 1)
         (e, rng) = try setup(187)
         XCTAssertEqual(e.light, SetupFaces.Light(pict: 0x32a, width: 0x48, height: 0x48, x: 431 + 0x16, y: 484 + 0x14,
@@ -107,6 +121,7 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(rng.seed, 1)
         XCTAssertEqual([Int(e.slot.layer), Int(e.slot.hp), Int(e.slot.classWord150), Int(e.slot.classWord158)],
                        [0xb, 500, -1, 0x1e])
+        XCTAssertEqual([Int(e.slot.subtype), Int(e.slot.gravity)], [7, 0])           // `+0xb0 = 7` (M l. 68310)
         XCTAssertEqual(e.slot.hotRect, rect(0xc, 0xf, 0x2b, 0x2f))
         XCTAssertEqual([e.slot.face], [f(0x6cc)])
         XCTAssertEqual([e.source == .handle, e.slot.handler == .inert], [true, true])
@@ -121,6 +136,18 @@ final class LevelFlowTests: XCTestCase {
             XCTAssertEqual(rng.seed, x.seed)
         }
         XCTAssertEqual([Int(e.slot.layer), Int(e.slot.hp), Int(e.slot.mode), Int(e.slot.classWord15c)], [0xb, 0x15e, 0, 0])
+        // `+0xb0 = 0xb` (M l. 70171), gravity `+0x110 = 0x8c` (l. 70179).
+        XCTAssertEqual([Int(e.slot.subtype), Int(e.slot.gravity)], [0xb, 0x8c])
+        // The p1 tiers (l. 70185–70206) on synthetic placements of rec 173: `+0x15c` = p1, (HP, `+0xb8`).
+        let frog = L.placements[173]
+        for (p1, hp, mode) in [(Int16(1), 500, 0x1000c), (2, 0x15e, 0x10017), (3, 0x5dc, 0x1000f), (4, 1000, 0x1000b),
+                               (5, 500, 0), (-1, 500, 0)] {
+            let q = Placement(index: frog.index, flag: frog.flag, byte1: frog.byte1, type: frog.type, p1: p1,
+                              p2: frog.p2, p3: frog.p3, p4: frog.p4, y: frog.y, x: frog.x)
+            var fr = FastRand(seed: 1)
+            let fe = try SetupFaces.setup(q, context: c, rng: &fr)
+            XCTAssertEqual([Int(fe.slot.hp), Int(fe.slot.mode), Int(fe.slot.classWord15c)], [hp, mode, Int(p1)], "p1 \(p1)")
+        }
         XCTAssertEqual(e.slot.hotRect, rect(0xb, 0x14, 0x48, 0x49))
         XCTAssertEqual([e.slot.face], [f(0x708)])
         XCTAssertEqual(e.source, .setupCached)
@@ -215,6 +242,15 @@ final class LevelFlowTests: XCTestCase {
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         _ = s.step(keys: KeyState())
         s.world.globals.crunchLog.append(CrunchLogEntry(level: 1, col: 7, row: 9))
+        // Non-default G for the carry below (G+4 follows the player's HP at the Handle's tail).
+        s.world.active.update(id: try XCTUnwrap(s.world.playerID)) { $0.hp = 333 }
+        s.world.globals.magic = 211
+        s.world.globals.coins = 17
+        s.world.globals.score = 4321
+        s.world.globals.breath = 300
+        s.world.globals.xichrons = 2
+        s.world.globals.selectedSlot = 1
+        s.world.globals.startFacing = 7
         let e = try SetupFaces.setup(rec, context: SetupFaces.Context(level: L1, playerX: 0))
         XCTAssertEqual(e.slot.hotRect, IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54))
         XCTAssertNil(e.slot.face)
@@ -232,9 +268,36 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertFalse(s.world.playerDead)
         XCTAssertFalse(s.step(keys: KeyState()).requests.contains(.loadLevel(2)))   // emitted once
 
-        // The carry (P3 carries): the parity and the crunch log run on into level 2.
+        // The carry (P3 carries): the parity and the crunch log run on into level 2 — and the whole of G: only
+        // `.NewGame` calls `.InitGameGlobals` (M l. 5747), the next-level loop (l. 5815–5836) re-writes only `+0x16`
+        // (the start facing, l. 5821) and `.SetupLevel` only `+0x20`/`+0x22`/`+0x176` (not modelled).
         let carry = s.carry
-        XCTAssertEqual(carry, LevelCarry(parity: s.world.parity, crunchLog: [CrunchLogEntry(level: 1, col: 7, row: 9)]))
+        XCTAssertEqual(carry, LevelCarry(parity: s.world.parity, crunchLog: [CrunchLogEntry(level: 1, col: 7, row: 9)],
+                                         globals: s.globals))
+        XCTAssertEqual([s.globals.health, s.globals.magic, s.globals.coins], [333, 211, 17])
+        let next = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, seed: s.rngSeed, carry: carry)
+        var expected = s.globals
+        expected.startFacing = Int16(next.level.header.startFacingLeft)
+        XCTAssertEqual(next.globals, expected)
+        XCTAssertEqual([next.globals.score, Int32(next.globals.xichrons), Int32(next.globals.selectedSlot)], [4321, 2, 1])
+        XCTAssertNotEqual(next.globals.startFacing, 7)
+        let np = try XCTUnwrap(next.world.playerID.flatMap { next.active.sprite(id: $0) })
+        XCTAssertEqual(np.hp, 333)                                     // `.SetupPlayerSprite`: `+0xa4 = G+4`
+        XCTAssertEqual(next.carry.globals, expected)
+
+        // The exit touched inside the iteration's player pass: the arm's cue 421 is handed out with that (last)
+        // iteration — the Sound Tool starts it at once — after the Handle pass's cues.
+        let t = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        _ = t.step(keys: KeyState())
+        // The player is put on rec 66; its idle entry wakes inside the iteration (`.HandleIdleSprites`).
+        let tp = try XCTUnwrap(t.world.playerID)
+        t.world.active.update(id: tp) { $0.x = e.slot.x; $0.y = e.slot.y; $0.x256 = Int32(e.slot.x) << 8
+            $0.y256 = Int32(e.slot.y) << 8 }
+        XCTAssertEqual(t.step(keys: KeyState()).requests, [.loadLevel(2)])
+        XCTAssertEqual(t.active.sprites.filter { $0.type == HitPlayerSprite.levelExit }.map(\.recordIndex), [66])
+        XCTAssertEqual(t.frameCues.last, PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
+        XCTAssertEqual(t.frameCues.filter { $0.snd == 421 }.count, 1, "\(t.frameCues)")
+        XCTAssertTrue(t.player.cues.isEmpty)
         for parity in [false, true] {
             let n = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, seed: s.rngSeed,
                                        carry: LevelCarry(parity: parity, crunchLog: carry.crunchLog))
@@ -315,19 +378,29 @@ final class LevelFlowTests: XCTestCase {
         let r = try resources()
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         for _ in 0..<5 { _ = s.step(keys: KeyState()) }
-        s.world.globals.health = 0
         s.world.globals.magic = 3
         s.world.globals.breath = 7
+        s.world.globals.coins = 9
+        s.world.globals.score = 55
         s.world.globals.crunchLog = [CrunchLogEntry(level: 1, col: 1, row: 2)]
+        // The death path: HP 0 → the dying arm → game over → `.deathEffect`; the shell's wipe ends → restart.
+        s.world.active.update(id: try XCTUnwrap(s.world.playerID)) { $0.hp = 0 }
+        var frames = 0
+        while s.ended == nil && frames < 200 { _ = s.step(keys: KeyState()); frames += 1 }
+        XCTAssertEqual(s.ended, .deathEffect)
+        XCTAssertLessThan(s.globals.health, 1)
         s.world.parity = true
         XCTAssertEqual(s.carry.crunchLog.count, 1)
+        XCTAssertNotNil(s.carry.globals)
         guard case .loadLevel(let n) = s.deathEffectDone() else { return XCTFail("no loadLevel") }
         XCTAssertEqual(n, 1)
         // Fresh G (D33): the crunch log goes with it; the parity is not G's and runs on.
         XCTAssertEqual(s.carry, LevelCarry(parity: true, crunchLog: []))
+        XCTAssertNil(s.carry.globals)
         let fresh = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: n, seed: s.rngSeed, carry: s.carry)
         XCTAssertEqual([fresh.globals.health, fresh.globals.magic, fresh.globals.breath], [560, 560, 560])
         XCTAssertEqual([fresh.globals.maxHealth, fresh.globals.maxMagic, fresh.globals.coins], [560, 560, 0])
+        XCTAssertEqual(fresh.globals, GameGlobals(header: fresh.level.header))
         XCTAssertEqual(fresh.globals.crunchLog, [])
         XCTAssertTrue(fresh.world.parity)
         XCTAssertNil(fresh.ended)
