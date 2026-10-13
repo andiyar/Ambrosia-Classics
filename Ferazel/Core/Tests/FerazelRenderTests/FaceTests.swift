@@ -390,6 +390,11 @@ final class FaceTests: XCTestCase {
         let sets: [FaceSheet.Arguments] = sheets.compactMap { if case .set(let a) = $0 { return a } else { return nil } }
         XCTAssertEqual(sets.map { [Int($0.pict), $0.count, $0.cellWidth, $0.cellHeight, $0.columns] },
                        expected.map { [Int($0.0), $0.1, $0.2, $0.3, $0.4] })
+        // Core's `.StandardSpriteCleanup` face width for the player (`PlayerStates.faceWidth`, P3) is this table's cell
+        // width; the single 1004 is 100 wide (asserted below).
+        XCTAssertEqual(sets.map { PlayerStates.faceWidth(FaceRef(pict: $0.pict, index: 0, set: .encoded)) },
+                       sets.map(\.cellWidth))
+        XCTAssertEqual(PlayerStates.faceWidth(FaceRef(pict: 1004, index: 0, set: .encoded)), 100)
         XCTAssertEqual(Set(sheets.map(\.pict)), Set((1003...1039).filter { ![1005, 1006, 1007, 1008, 1009, 1018, 1019, 1026].contains($0) }.map(Int16.init)))
         // Every cell lies inside its sheet's frame, and 1004 is one 100×120 face.
         let r = try resources()

@@ -46,6 +46,8 @@ public final class SpriteWorld {
     /// The player's globals (`_DAT_100a0xxx`, player-states §2): `.ClearPlayerVars` until `Player.spawn` runs
     /// `.SetupPlayerSprite` (P1a). Read and written by `Player.handle` and `HandleKeys`.
     public var player = PlayerState()
+    /// Records taken whose Setup is still running (`newSprite`).
+    private var reserved = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// // later: P4 (the death trigger sets it)
     public var playerDead = false
@@ -85,19 +87,24 @@ public final class SpriteWorld {
     /// entry, …; see `SpriteSlot.x`). The level spawn does not see it: `.AddIdleSprite` re-stores x, y into the idle
     /// entry (l. 4137–4138) and `.IdleToActiveSprite` rewrites `+0xc`/`+0xa` from it.
     ///
+    /// The record is taken (`+0 = 1`, raw `100331cc stb r0,0x0(r25)`, l. 30704) **before** the Setup runs
+    /// (`1003321c`), so a Setup's own `.MTNewSprite`s (`.SetupPlayerSprite`'s held item and trails, the countdown's
+    /// digits) already see it in use: `reserved` counts the records whose Setup is running (P3 review).
     /// The 700 cap counts the sprites on the list; the original counts in-use records (`+0` ≠ 0), which also
     /// include records unlinked by `.MTRemoveSprite` and not yet killed, and idled records until `.UpdateSprites`
     /// kills them [LOW: Phase 2 never comes near 700].
     @discardableResult
     public func newSprite(type: Int16, x: Int, y: Int, layer: Int16, handler: SpriteHandler, record: Int16 = -1,
                           setup: (inout SpriteSlot) -> Void = { _ in }) -> Int? {
-        guard active.sprites.count < Self.recordCount else { return nil }
+        guard active.sprites.count + reserved < Self.recordCount else { return nil }
         var s = SpriteSlot(type: type, x: x, y: y, recordIndex: record, layer: Int32(layer))
         s.oldPosition = SpriteSlot.Point(x: x, y: y)              // `+8` = x, `+6` = y
         s.x = y                                                   // `+0xc` = x, then `+0xc` = y (the quirk above)
         s.y = 0                                                   // `+0xa` never written: `MemoryClear` 0
         s.handler = handler
+        reserved += 1
         setup(&s)
+        reserved -= 1
         s.recordIndex = record                                    // `.MTNewSprite` re-stores `+0x48` after the Setup
         return active.insert(s)
     }

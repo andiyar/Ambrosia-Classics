@@ -658,6 +658,32 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   the scroll is unchanged, and by frame 60 the player clings at x 146 — his cell spans 146..246 against the view
   from h 226; the unchanged hash says none of 1012[0]'s opaque pixels reach it [MED, inferred]). Bank A9 (player-states
   §3) and A11 (physics-sprites §8.8) landed.
+- ⚑ **P3 review fix round (2026-10-13; both Opus legs MERGEABLE_WITH_FIXES, no behaviour bug):** asserts only (G2
+  stays 185). Session wiring pinned: the level-start list tail (trails ×5 layer 9, player, held item 0x14, digits ×6
+  and the countdown at 0x7fff — `testPlayerStartPose`), `frameCues` (the walk's 411 on frame 5, the cling's 455 + 427s —
+  `testWalkCycleFaces`), and the crunch's ten `setTile`s through `FerazelSession.step` on iteration 18 between the copy
+  (+ the potion's twinkle) and the erase (`testCrunchKind3Collapses`). Faces pinned: swim 1027, cling-cast 1031 (6 → 5),
+  pull-up 1023 + the landing 1011[2], crouch 1011, uphill 1004 (kinds 0xc/0xf/0x2c/0x2e/0x2f; 0x2d not settled on), the
+  Double Speed walk steps (frames 14, 30), dying before hurt-stun, the held item's face cleared by row 31. Breathing
+  boundaries (E 0x9f/0xa0, L at 300, the 600 cap) and the fidget's R(60) under seed 2 (R(60) ≠ R(61); seed 1 cannot
+  tell them apart). Swim caps ±0x76b. `.MTNewSprite` takes the record before the Setup (raw `100331cc`): `SpriteWorld`
+  counts the records whose Setup is running, so `.SetupPlayerSprite` with one record left gets the player and no held
+  item / trails (asserted); `SessionError.noPlayerRecord` itself has no reachable fixture (a session cannot be filled
+  before its init) — untested. `Player.spawn` no longer resets `crunchSprites` / `tileCacheValid` (not ClearPlayerVars
+  globals); the session runs `.ClearCrunchSprites` before the Setups (`.GameLoop` l. 5160). FrameRenderer now loads the
+  one table `FaceSheet.playerSheets` (Core's duplicate list removed; `FaceTests.testPlayerFaceSetsTable` checks
+  `PlayerStates.faceWidth` against it); the held-item singles 0x2ee…0x308 (l. 42490) are not loaded — carry to the phase
+  that shows the held item. Surviving mutant: removing the countdown's direct Handle call (raw `1000a148..58`) — the
+  0x4c4 Handle is idempotent while hidden (equivalent in Phase 2). **Known untested in Phase 2** (no writer or no
+  reachable fixture): shield 1039, wind, Feather Fall, tumble wrap 1015, teleporter sparkle (R(6)), rope 1016/1017,
+  potion 1036, the glider / spirit / boss-grab / door / melee stubs, `.EmitBubble` (P4). RNG gap noted: row 36's
+  `+0x1a8` = 0x10 (invulnerable > 60) makes `.StandardSpriteCleanup` reach `.ParticleGlow` (draws FastRand, unbuilt,
+  // later: E1a).
+- ⚑ **P3 carries:** (1) → W4/LevelFlow: the parity `_DAT_1009fd30` carries across levels in the original (only
+  `.PaintFrameWrap` writes it) but a rebuilt `SpriteWorld` resets it to 0 — keep it across level loads; (2) → W4: the
+  crunch log (`GameGlobals.crunchLog`, G-resident) must survive level revisits, but `GameGlobals` is rebuilt per level;
+  (3) → P5: the app's arrow keys still pan the ◇ focus driver but no longer move Ferazel — P5 removes them; (4) → E1a:
+  `.ParticleGlow` (above).
 
 #### P4 — minor — Liquids, hazards, breath, death (→ 180)
 - ⚑ **E2 carry → P4:** `SpriteBlitter` refuses (`underwaterLight`, SpriteBlitter.swift ~l. 359–370) the light pass

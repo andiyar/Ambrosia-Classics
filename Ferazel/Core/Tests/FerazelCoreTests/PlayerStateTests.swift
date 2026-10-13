@@ -18,11 +18,12 @@ final class PlayerStateTests: XCTestCase {
         return try LevelFile.load(from: r, level: 1)
     }
 
-    private func world() throws -> SpriteWorld {
+    /// - Parameter floorTile: the floor's tile (= its FG kind here); 3 = a flat kind-3 floor.
+    private func world(floorTile: Int = 3) throws -> SpriteWorld {
         let w = SpriteWorld(level: try level1())
         let cols = 32
         var fg = [UInt16](repeating: 0, count: cols * 16)
-        for c in 0..<cols { fg[12 * cols + c] = 3 + 1 }
+        for c in 0..<cols { fg[12 * cols + c] = UInt16(floorTile + 1) }
         w.tiles = TileGrid(fg: TileMap(width: cols, height: 16, cells: fg),
                            bg: TileMap(width: cols, height: 16, cells: [UInt16](repeating: 0, count: cols * 16)),
                            fgKinds: Array(0..<0x60), bgKinds: [Int](repeating: 0, count: 0x60))
@@ -102,6 +103,21 @@ final class PlayerStateTests: XCTestCase {
         s.player.spin = true
         s.player.spinFrame = 7
         XCTAssertEqual(frame(s, ss), f(1025, 0))
+        // Row 31 clears the held item's face every frame (`*(_DAT_100a065c + 0xc0) = 0`, l. 45141).
+        let held = try XCTUnwrap(s.player.heldItem)
+        s.active.update(id: held) { $0.face = FaceRef(pict: 750, index: 0, set: .encoded) }
+        frame(s, ss)
+        XCTAssertNil(s.active.sprite(id: held)?.face)
+        // Swim (`_DAT_100a0714` 3, a stroke; set directly — P4 writes it): ahead of the airborne arm; k = 2 → 1027[1],
+        // gravity 0x50, the counter 3 → 4, the jump counter refilled to 6 (stroke cooldown 0) — then, out of liquid
+        // (`+0x120` = `+0x11c` = 0, no spirit), swim 0 (l. 45749–45781).
+        s.player.spin = false
+        s.player.swim = 3
+        s.player.jumpCounter = 0
+        XCTAssertEqual(frame(s, ss), f(1027, 1))
+        XCTAssertEqual(player(s).gravity, 0x50)
+        XCTAssertEqual(s.player.jumpCounter, 6)
+        XCTAssertEqual(s.player.swim, 0)
         XCTAssertEqual(s.player.airCounter, 0x1a)
         s.player.spin = false
         s.player.launched = true
@@ -137,6 +153,17 @@ final class PlayerStateTests: XCTestCase {
             }
         }
         XCTAssertEqual(steps, [5, 13, 21, 29])
+        // Double Speed (no Phase-2 writer; set directly): the walk's steps move to `+0x46` 8 and 0x20 — 0x20 never
+        // occurs (the phase wraps past 0x1f), so one step per 16-frame cycle: 0xe, 0x10 … 0x1e, 0, 2 … 8 → frames 14, 30.
+        let d = try world()
+        let ds = standing(d, x: 20)
+        d.player.doubleSpeed = true
+        var dsteps: [Int] = []
+        for k in 1...30 {
+            frame(d, ds, [.right])
+            if d.player.cues.contains(where: { (410...413).contains($0.snd) }) { dsteps.append(k) }
+        }
+        XCTAssertEqual(dsteps, [14, 30])
         XCTAssertEqual(w.rng.seed, replay.seed)                           // exactly one FastRand(2) per step
 
         // In liquid (`+0x120 ≠ 0` — SSH copies `+0x11c`): the 3D splash 454 instead, its rate drawn after the R(2).
@@ -252,6 +279,20 @@ final class PlayerStateTests: XCTestCase {
         XCTAssertEqual(faces[306], f(1029, 0))                           // m 156: reset, face kept
         XCTAssertEqual(w.player.idle, 0)
         XCTAssertEqual(w.player.fidgets, 1)
+        // Standing on an uphill slope with no wand phase: the single face 1004 instead of 1003, turn countdown 0 —
+        // F 1 on kinds 0xc / 0x2c / 0x2d, F 2 on 0xf / 0x2e / 0x2f (l. 46000–46017; `(u8)(kind − 0x2c) < 2`). Kind 0x2d
+        // is not reached here (he does not settle on it).
+        for (tile, facing, uphill) in [(0xc, Int16(1), true), (0xc, 2, false), (0xf, 2, true), (0xf, 1, false),
+                                        (0x2c, 1, true), (0x2c, 2, false), (0x2e, 2, true), (0x2e, 1, false),
+                                        (0x2f, 2, true), (0x2f, 1, false)] {
+            let u = try world(floorTile: tile)
+            XCTAssertNotNil(Player.spawn(world: u, x: 100, y: standY - 40))
+            u.player.facing = facing
+            let us = TileSolver(world: u)
+            var face: FaceRef?
+            for _ in 0..<12 { face = frame(u, us) }
+            XCTAssertEqual(face, uphill ? f(1004, 0) : f(1003, 1), "kind \(tile) F \(facing)")
+        }
         // Any L/R zeroes idle and fidgets (`.HandleKeys`), so the next fidget waits another 150 frames.
         frame(w, solver, [.right])
         XCTAssertEqual([w.player.idle, w.player.fidgets], [0, 0])
@@ -265,9 +306,14 @@ final class PlayerStateTests: XCTestCase {
         var k = 2
         while w.player.fidgets < 3 { frame(w, solver); k += 1 }
         XCTAssertEqual(k, 3 * 306)                                       // idle 1…306 per cycle (reset at m 156)
-        var replay = w.rng
         var seen: [FaceRef?] = []
         while w.player.idle < 0x95 { seen.append(frame(w, solver)) }
+        // Seed 2 for the reset's draw: its first FastRand(60) differs from FastRand(61) (under seed 1 they agree).
+        w.rng = FastRand(seed: 2)
+        var replay = w.rng
+        var other = FastRand(seed: 2)
+        XCTAssertNotEqual(replay.next(60), other.next(61))
+        replay = FastRand(seed: 2)
         XCTAssertEqual(seen.last??.pict, 1003)
         var m: [Int: FaceRef?] = [:]
         for i in 0...241 { m[i] = frame(w, solver) }
@@ -309,6 +355,9 @@ final class PlayerStateTests: XCTestCase {
         XCTAssertEqual(w.player.stun, 0)
         // Then the stand arm (chest frame 3 on entry: `0670` was cleared).
         XCTAssertEqual(frame(w, solver), f(1003, 3))
+        // Crouch (DOWN on the ground: depth +1 per frame to 4, `.HandleKeys`): 1011[depth − 1] (l. 45869–45891).
+        let crouched = (0..<5).map { _ in frame(w, solver, [.down]) }
+        XCTAssertEqual(crouched, [f(1011, 0), f(1011, 1), f(1011, 2), f(1011, 3), f(1011, 3)])
     }
 
     func testDyingFacesAndEnd() throws {
@@ -347,6 +396,13 @@ final class PlayerStateTests: XCTestCase {
                 XCTAssertEqual(end, liquid ? 100 : 80)
             }
         }
+        // Dying is tested before the hurt-stun (first match wins): both set → 1022, the stun untouched.
+        let both = try world()
+        let bs = standing(both)
+        both.player.dying = 1
+        both.player.stun = 1
+        XCTAssertEqual(frame(both, bs), f(1022, 0))
+        XCTAssertEqual(both.player.stun, 1)
     }
 
     // MARK: - breathing, blink
@@ -389,6 +445,22 @@ final class PlayerStateTests: XCTestCase {
         Breathing.handle(world: w, id: id)
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 408, priority: 1, volume: 0x37)])
         XCTAssertEqual(w.player.breathPeriod, 3)
+        // Boundaries, from a held calm state (chest 1, last phase 5, reload due): E 0xa1 − 2 = 0x9f holds, 0xa2 − 2 =
+        // 0xa0 advances (5 → 6 → 0; `0x9f < E`, l. 43367); E 302 − 2 = 300 → L = (300 − 100) >> 6 = 3 → period 6;
+        // E 700 − 2 → capped 600 → L 7 → 6 → period 3.
+        for (e, phase, period, after) in [(Int16(0xa1), Int16(5), Int16(7), Int16(0x9f)), (0xa2, 0, 7, 0xa0),
+                                          (302, 0, 6, 300), (700, 0, 3, 600)] {
+            w.player.exertion = e
+            w.player.chestFrame = 1
+            w.player.breathPhase = 5
+            w.player.lastBreathPhase = 5
+            w.player.breathPeriod = 1
+            w.player.cues = []
+            Breathing.handle(world: w, id: id)
+            XCTAssertEqual(w.player.breathPhase, phase, "E \(e)")
+            XCTAssertEqual(w.player.breathPeriod, period, "E \(e)")
+            XCTAssertEqual(w.player.exertion, after, "E \(e)")
+        }
         // Oxygen below health: f = (1 − 560)·400 (f32) = −223600; E 0 + f < 220 → E = (i16)−223600 = −26992.
         let o = try world()
         XCTAssertNotNil(Player.spawn(world: o, x: 100, y: standY))

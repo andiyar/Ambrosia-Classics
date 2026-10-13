@@ -59,6 +59,31 @@ final class SessionTests: XCTestCase {
         XCTAssertNil(p.face)                                 // `.SetupPlayerSprite`: +0xc0 = 0 until the first Handle
         XCTAssertEqual(p.sprite.layer, 10)
         XCTAssertEqual(p.sprite.hotRect, IdleSprites.Rect(top: 0x22, left: 0x26, bottom: 0x55, right: 0x3e))
+        // The level start's tail of the active list (P3): `.SetupPlayerSprite` makes the held item (100, layer 0x14)
+        // and the five trails (1, layer 9) **before** the player is inserted (`.MTNewSprite` runs the Setup before
+        // `.MTInsertSprite`), then the countdown 0x4c4's Setup makes six digits 0x4c5 before it (all layer 0x7fff);
+        // each lands at the tail of its layer group: trails, player, held item, digits, countdown.
+        let all = p.session.active.sprites
+        guard all.count == 24 else { return XCTFail("active list: \(all.count) sprites, expected 24") }
+        XCTAssertEqual(Array(all.suffix(14)).map { [Int($0.type), Int($0.layer)] },
+                       [[1, 9], [1, 9], [1, 9], [1, 9], [1, 9], [0x45, 10], [100, 0x14]]
+                       + [[Int]](repeating: [0x4c5, 0x7fff], count: 6) + [[0x4c4, 0x7fff]])
+        XCTAssertEqual(all[15].id, p.session.playerID)
+        XCTAssertEqual(p.session.player.heldItem, all[16].id)
+        XCTAssertEqual(p.session.player.trail, all[10...14].map { Optional($0.id) })
+        XCTAssertEqual(p.session.countdownID, all[23].id)
+        // `.MTNewSprite` with all 700 records in use: no player, no Setup (`*_DAT_1009fdd8 = 0`). With one record left,
+        // the player's record is taken before its Setup runs (raw `100331cc`), so the held item and the trails find
+        // none.
+        for (filled, spawns) in [(700, false), (699, true)] {
+            let full = SpriteWorld(level: try level1())
+            for _ in 0..<filled { _ = full.active.insert(SpriteSlot(type: 0x51b, x: 0, y: 0)) }
+            XCTAssertEqual(Player.spawn(world: full, x: 83, y: 143) != nil, spawns)
+            XCTAssertEqual(full.playerID != nil, spawns)
+            XCTAssertNil(full.player.heldItem)
+            XCTAssertEqual(full.player.trail.compactMap { $0 }, [])
+            XCTAssertEqual(full.active.sprites.count, 700)
+        }
         let hot = { (s: SpriteSlot) in IdleSprites.Rect(top: s.y + s.hotRect.top, left: s.x + s.hotRect.left,
                                                          bottom: s.y + s.hotRect.bottom, right: s.x + s.hotRect.right) }
         // The spawn's hot rect in the world, at `+8`/`+6` (`.MTNewSprite` leaves `+0xc`/`+0xa` to the first writer).
@@ -99,8 +124,25 @@ final class SessionTests: XCTestCase {
         // is pinned by `PlayerStateTests.testWalkFootstepFrames`).
         // ⚑ P3 (re-measured, Invariant-10 ruling; was 20 × 1020[7…15, 0…10] walking in place): the real player
         // walks off the start ledge — FG (5, 6) is empty — on frame 6 (airborne, c 0 < 3 → 0x12 → 1010[5]) and from
-        // frame 10 clings to the pit's far wall (FG (8, 7) kind 6) at x 146: 1012[(phase 1 − 1) >> 1] = 1012[0].
-        let seen = faces(&p, frames: 20, right: true)
+        // frame 10 clings to the pit's far wall (FG (6, 6) kind 6; hot-rect right 146 + 0x3e = 208, its left edge 192 +
+        // 16) at x 146: 1012[(phase 1 − 1) >> 1] = 1012[0]. The session hands the frame's cues over (`frameCues`):
+        // the grounded arm's stop 427 on frames 1–5 and the footstep on frame 5 (`+0x46` 0x16; FastRand(2) = 0 under
+        // seed 1 → index 1 → 411, vol 0x55).
+        var cues: [[PlayerCue]] = []
+        let seen = (0..<20).map { _ -> FaceRef? in
+            p.step(left: false, right: true, run: false)
+            cues.append(p.session.frameCues)
+            return p.face
+        }
+        let stop = PlayerCue(call: .stopIfPlaying, snd: 427)
+        XCTAssertEqual(cues.prefix(5).map { $0 }, [[stop], [stop], [stop], [stop],
+                                                   [stop, PlayerCue(call: .reg, snd: 411, priority: 1, volume: 0x55)]])
+        // Airborne (frames 6–9): none. The first cling frame (10): 455 (`.STPlay3DSoundRand`) and the cling arm's stop 427;
+        // then each clinging frame: row 26's stop 427 and the cling arm's.
+        XCTAssertEqual(cues[5...8].map(\.count), [0, 0, 0, 0])
+        XCTAssertEqual(cues[9].map(\.snd), [455, 427])
+        XCTAssertEqual(cues[9].map(\.call), [.threeDRand, .stopIfPlaying])
+        XCTAssertEqual(Array(cues.suffix(10)), [[PlayerCue]](repeating: [stop, stop], count: 10))
         XCTAssertEqual(seen, [fr(1020, 7), fr(1020, 8), fr(1020, 9), fr(1020, 10), fr(1020, 11)]
                        + [FaceRef?](repeating: fr(1010, 5), count: 4) + [FaceRef?](repeating: fr(1012, 0), count: 11))
         XCTAssertEqual(p.sprite.x, 146)

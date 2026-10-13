@@ -145,11 +145,18 @@ public final class FrameRenderer {
         ports = FramePorts()
     }
 
-    /// `.InitPlayerSprite @ 1004a284` (l. 42428–42490): every set it loads (`PlayerStates.sheets`, P3 — the state
-    /// machine's faces: stand, uphill, air, crouch, climb, hurt, casts, tumble, rope, walk, stab, dying 150×120,
-    /// pull-up 120×120, run, spin, swim, fidgets, turn, door, potion, boss grab, spirit, shield), at boot under clut 200
-    /// (`.InitSprites`, l. 118). The cached glider sets 1050–1053 // later: Phase 4.
-    static let playerSheets: Set<SetupFaces.Sheet> = Set(PlayerStates.sheets)
+    /// `.InitPlayerSprite @ 1004a284` (l. 42427–42484): the player's face sets — `FaceSheet.playerSheets`, the one
+    /// table (29 sets: every face the state machine selects, P3), at boot under clut 200 (`.InitSprites`, l. 118). Not
+    /// loaded: the cached glider sets 1050–1053 (// later: Phase 4) and the held-item singles 0x2ee…0x308
+    /// (`_DAT_100a5f68`, l. 42490; // later: the phase that shows the held item).
+    static let playerSheets: Set<SetupFaces.Sheet> = Set(FaceSheet.playerSheets.map { loader -> SetupFaces.Sheet in
+        switch loader {
+        case .single(let pict): return .single(pict)
+        case .set(let a):
+            return SetupFaces.Sheet(pict: a.pict, count: a.count, cellWidth: a.cellWidth, cellHeight: a.cellHeight,
+                                    columns: a.columns, clut: 200)
+        }
+    })
 
     /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
     /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`) and the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`)

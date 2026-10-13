@@ -329,8 +329,9 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(player(w).vy, 0)
         XCTAssertEqual(player(w).x, 138)
         // Row 33's cling arm (l. 45750–45790), no pull-up: crouch 0, air counter 0, the climb phase wraps (13 → 1,
-        // 0 → 12, 12 kept); with a wand phase ≥ 1 the phase is 1.
-        for (phase, wand, expected) in [(Int16(13), Int16(0), Int16(1)), (0, 0, 12), (12, 0, 12), (5, 1, 1)] {
+        // 0 → 12, 12 kept); with a wand phase ≥ 1 the phase is 1. Faces (P3): 1012[(phase − 1) >> 1]; with a wand phase
+        // 1031[wand], 6 drawn as 5 (`07a8`, l. 45800–45806).
+        for (phase, wand, expected) in [(Int16(13), Int16(0), Int16(1)), (0, 0, 12), (12, 0, 12), (5, 1, 1), (5, 6, 1)] {
             w.player.climbPhase = phase
             w.player.wandPhase = wand
             w.player.crouch = 3
@@ -338,6 +339,9 @@ final class PlayerTileTests: XCTestCase {
             frame(w, solver, .left)
             XCTAssertEqual(w.player.climb, 1)
             XCTAssertEqual(w.player.climbPhase, expected, "phase \(phase) wand \(wand)")
+            XCTAssertEqual(player(w).face, wand == 0
+                           ? FaceRef(pict: 1012, index: Int(expected - 1) >> 1, set: .encoded)
+                           : FaceRef(pict: 1031, index: wand == 6 ? 5 : Int(wand), set: .encoded))
             XCTAssertEqual(w.player.crouch, 0)
             XCTAssertEqual(w.player.airCounter, 0)
         }
@@ -454,6 +458,7 @@ final class PlayerTileTests: XCTestCase {
             PlayerCue(call: .reg, snd: 416, priority: 1, volume: 0xab)])
         XCTAssertEqual(w.player.climb, 1)
         XCTAssertEqual(w.player.pullUp, 2)                              // set 1 in row 19, row 33 counts it up
+        XCTAssertEqual(player(w).face, FaceRef(pict: 1023, index: 0, set: .encoded))   // P3: 1023[(n − 1) >> 1], n 1
         // The move's vx −0x800 is pushed back by kind 4 (X + 16 − 0x26 = 138); row 40 then draws him 0x14 px left while
         // pulling up, mirrored (`+0xc` only — the 24.8 position stays).
         XCTAssertEqual(SpriteWorld.pixel(player(w).x256), 138)
@@ -462,6 +467,7 @@ final class PlayerTileTests: XCTestCase {
         for f in 2...19 {
             frame(w, solver)
             XCTAssertEqual(w.player.pullUp, Int16(f + 1), "frame \(f)")
+            XCTAssertEqual(player(w).face, FaceRef(pict: 1023, index: (f - 1) >> 1, set: .encoded), "frame \(f)")
             XCTAssertEqual(SpriteWorld.pixel(player(w).x256), x0)
             XCTAssertEqual(player(w).y, y0)
             XCTAssertEqual(w.player.crouch, 0)
@@ -475,6 +481,7 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(w.player.pullUp, 0)
         XCTAssertEqual(w.player.climb, 0)
         XCTAssertEqual(w.player.crouch, 2)
+        XCTAssertEqual(player(w).face, FaceRef(pict: 1011, index: 2, set: .encoded))   // P3: landed crouched, `07e0 + 0x68`
         XCTAssertEqual(w.player.groundLast, 1)
         XCTAssertEqual(player(w).groundKind, 1)
         XCTAssertEqual(Int(w.player.pixelX), x0 - 32)
@@ -752,6 +759,33 @@ final class PlayerTileTests: XCTestCase {
         _ = expected.next(3)
         _ = expected.next(3)
         XCTAssertEqual(w.rng.seed, expected.seed)
+        // The same crunch through `FerazelSession.step` (P3 wiring): the level-start player is replaced by one spawned
+        // at the crunch spot (its held item and trails stay, inert). The ten `setTile`s reach `FrameOps.draws` on
+        // iteration 18 inside the handle pass — after `.WrapCopyToScreen` and the potion's twinkle (earlier in the
+        // list), from the overlay's Handle (layer 0xb), before `.WrapEraseSprites` — as `.ChangedTile @ 10012a50`
+        // redraws each cell at once.
+        let session = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()),
+                                          prefs: FerazelPrefs(), level: 1)
+        _ = session.world.active.remove(id: session.playerID)
+        XCTAssertNotNil(Player.spawn(world: session.world, x: 3806, y: 1083))
+        var frames: [FrameOps] = []
+        for _ in 1...18 { frames.append(session.step(keys: KeyState())) }
+        XCTAssertEqual(frames.prefix(17).map { $0.draws.filter { if case .setTile = $0 { true } else { false } }.count },
+                       [Int](repeating: 0, count: 17))
+        let draws = frames[17].draws
+        let tiles = draws.filter { if case .setTile = $0 { true } else { false } }
+        XCTAssertEqual(tiles, [
+            .setTile(col: 119, row: 36, fg: 0x1305), .setTile(col: 120, row: 36, fg: 0x1308),
+            .setTile(col: 119, row: 37, fg: 0x000b), .setTile(col: 120, row: 37, fg: 0x000a),
+            .setTile(col: 119, row: 36, fg: 0x0305), .setTile(col: 120, row: 36, fg: 0x1300),
+            .setTile(col: 121, row: 36, fg: 0x1308), .setTile(col: 120, row: 37, fg: 0x0004),
+            .setTile(col: 121, row: 37, fg: 0x000a), .setTile(col: 120, row: 36, fg: 0x0300)])
+        let copy = try XCTUnwrap(draws.firstIndex { if case .copyToScreen = $0 { true } else { false } })
+        let twinkle = try XCTUnwrap(draws.firstIndex { if case .changeLightFace = $0 { true } else { false } })
+        let first = try XCTUnwrap(draws.firstIndex { if case .setTile = $0 { true } else { false } })
+        let erase = try XCTUnwrap(draws.firstIndex { if case .wrapEraseSprites = $0 { true } else { false } })
+        XCTAssertEqual([copy + 1, twinkle + 1, first + 10], [twinkle, first, erase])
+        XCTAssertEqual(session.world.tiles.fg.cell(col: 120, row: 36), 0x0300)
         // Strength 1 — a fall faster than 0x9c4 while crunch-capable (spinning): `+0xeb` 1 → the overlay is made (423, R(3))
         // and the player bounces off the block (raw `100552c8..100553f4`). Spawned 5 px above at vy 3000: row 23 → 3440;
         // the move's second 0x400 step sinks him to y 1086 (bottom 1171) → (119, 36): vy 3440 > 0x9c4 ∧ cooldown 0 →

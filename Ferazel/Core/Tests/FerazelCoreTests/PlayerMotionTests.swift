@@ -69,7 +69,8 @@ final class PlayerMotionTests: XCTestCase {
             XCTAssertEqual(w.player.jumpCounter, 5)
             XCTAssertEqual(w.player.exertion, 8)
             XCTAssertEqual(w.player.postJumpGuard, 2)
-            // ⚑ P3: the settle frames' the grounded arm's per-frame `stop 427` (raw `1005074c`/`10050760`, P3) comes first (the cues are not drained here).
+            // ⚑ P3: the last settle frame's grounded-arm `stop 427` (raw `1005074c`/`10050760`) comes first — the
+            // cues are not drained before this direct `.HandleKeys` call.
             XCTAssertEqual(w.player.cues, [PlayerCue(call: .stopIfPlaying, snd: 427),
                                            PlayerCue(call: .reg, snd: 414, priority: 1, volume: 0x9c)])
         }
@@ -536,6 +537,13 @@ final class PlayerMotionTests: XCTestCase {
         w.active.update(id: id) { $0.vx = 0x76c }
         HandleKeys.run(world: w, keys: .right, ridden: nil)
         XCTAssertEqual(player(w).vx, 0x76c + 0x14a)                     // no +0xd2 at the cap; +0x14a (< 0xc80)
+        // One inside each cap still strokes (`vx < 0x76c`, `-0x76c < vx`; raw `10053908..10053940`, `100536d8..10053710`).
+        w.active.update(id: id) { $0.vx = 0x76b }
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
+        XCTAssertEqual(player(w).vx, 0x76b + 0xd2 + 0x14a)
+        w.active.update(id: id) { $0.vx = -0x76b }
+        HandleKeys.run(world: w, keys: .left, ridden: nil)
+        XCTAssertEqual(player(w).vx, -0x76b - 0xd2)
         w.player.runFlag = false
         w.player.swim = 0
         // On a rope: ±1000 clamped ±0x960 (raw `10053954..10053970`, `10053724..10053740`); RIGHT still +0x14a.

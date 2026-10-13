@@ -1,8 +1,7 @@
 import Foundation
 
 /// `.HandlePlayerSprite` row 33 — the state / face selection (decompile l. 45219–46196, `goto LAB_10050e6c`; raw
-/// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3, replacing the Phase-1 ◇
-/// `PlayerPose`. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
+/// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
 /// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider, spirit,
 /// boss-grab, door and melee arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs
@@ -23,26 +22,10 @@ public enum PlayerStates {
     public static let fidget2: Int16 = 1028, fidget1: Int16 = 1029, turn: Int16 = 1030, clingCast: Int16 = 1031
     public static let vBladeCast: Int16 = 1032, crouchCast: Int16 = 1034, potion: Int16 = 1036, shield: Int16 = 1039
 
-    /// Every set `.InitPlayerSprite` loads with `.LoadEncFaceSetFromPICT(pict, count, w, h, cols, …)` /
-    /// `.Load1EncFaceFromPICT` (1004), at boot under clut 200 — what `FrameRenderer` loads. The four glider sets
-    /// 1050–1053 (`.CacheEncFaceSetFromPICT`, 160×160) // later: Phase 4 (the glider).
-    public static let sheets: [SetupFaces.Sheet] = [
-        sheet(1003, 4, 100, 4), .single(1004), sheet(1010, 10, 100, 10), sheet(1011, 4, 100, 4),
-        sheet(1012, 6, 100, 6), sheet(1013, 4, 100, 6), sheet(1014, 6, 100, 6), sheet(1020, 0x10, 100, 4),
-        sheet(1021, 5, 100, 5), sheet(1022, 10, 0x96, 10), sheet(1023, 10, 0x78, 10), sheet(1024, 0xc, 100, 4),
-        sheet(1025, 8, 100, 8), sheet(1027, 6, 100, 6), sheet(1028, 10, 100, 10), sheet(1029, 6, 100, 6),
-        sheet(1030, 3, 100, 3), sheet(1031, 6, 100, 6), sheet(1032, 6, 100, 6), sheet(1033, 6, 100, 6),
-        sheet(1015, 8, 100, 4), sheet(1016, 7, 100, 7), sheet(1017, 8, 100, 4), sheet(1034, 5, 100, 5),
-        sheet(1035, 5, 100, 5), sheet(1036, 6, 100, 6), sheet(1037, 4, 100, 4), sheet(1038, 4, 100, 4),
-        sheet(1039, 9, 100, 9),
-    ]
-
-    private static func sheet(_ pict: Int16, _ count: Int, _ width: Int, _ columns: Int) -> SetupFaces.Sheet {
-        SetupFaces.Sheet(pict: pict, count: count, cellWidth: width, cellHeight: 0x78, columns: columns, clut: 200)
-    }
-
     /// A player face's width (face `+6`) for `.StandardSpriteCleanup`: the set's cell width (150 for 1022, 120 for
-    /// 1023, else 100; the single 1004 is 100 wide like the stand faces [MED: its picFrame is not read here]).
+    /// 1023, else 100 — the single 1004 is 100×120 too). The sets themselves are FerazelRender's
+    /// `FaceSheet.playerSheets` (the one table, `.InitPlayerSprite` l. 42427–42484); `FaceTests.testPlayerFaceSetsTable`
+    /// checks these widths against it.
     public static func faceWidth(_ f: FaceRef) -> Int {
         switch f.pict {
         case dying: return 0x96
@@ -412,13 +395,14 @@ public enum PlayerStates {
         } else {
             setFace(face(fidget2, (raw % 0x14) >> 1))
             if 0xf0 < raw {
-                w.player.idle = 0 &- w.rng.next(0x3c)                  // `-FastRand(60)` (raw `1005…`, l. 46044)
+                w.player.idle = 0 &- w.rng.next(0x3c)                  // `-FastRand(60)` (raw `10050e50..10050e54`, l. 46044)
                 w.player.fidgets = 0
             }
         }
     }
 
-    /// A footstep (l. 45915–45926 run, 45939–45950 walk): index `PTR_DAT_100a0710` += `FastRand(2)` + 1, −4 past 3;
+    /// A footstep (l. 45915–45926 run, 45939–45950 walk; the `FastRand(2)` at raw `1005089c..100508a0` run,
+    /// `10050998..1005099c` walk): index `PTR_DAT_100a0710` += `FastRand(2)` + 1, −4 past 3;
     /// dry (`+0x120 == 0`) → `.STPlayRegSound(410 + index, 1, volume)` (0x78 run, 0x55 walk); in liquid →
     /// `.STPlay3DSoundRand(454 `_DAT_100a0378`, 1, 0x2a, +0xe)` with its rate drawn here, after the `FastRand(2)`.
     static func footstep(_ w: SpriteWorld, id: Int, volume: Int16) {

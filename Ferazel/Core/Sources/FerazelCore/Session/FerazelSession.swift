@@ -105,6 +105,9 @@ public final class FerazelSession {
                                         height: Int(L.header.gridHeight) * 0x20)
         camera = try Camera(header: L.header, spriteX: px, spriteY: py)
         let context = SetupFaces.Context(level: L, playerX: focusDriver.pointX, effects: prefs.effects)
+        // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
+        // in this fresh world; W4's level flow keeps the order when a world is reused.
+        world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
         let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
@@ -183,6 +186,8 @@ public final class FerazelSession {
             s.layer = 0x7fff
             s.lightOverlay = false
             for _ in 0..<6 {
+                // `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: Phase 3–4
+                // (the timer pickup shows the countdown; then `.UpdateDigits` gives the digits faces).
                 w.newSprite(type: digitType, x: s.x, y: s.y, layer: 0x7fff, handler: .inert) { d in
                     d.lightOverlay = false
                     d.layer = 0x7fff

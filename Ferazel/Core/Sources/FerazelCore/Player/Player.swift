@@ -74,6 +74,11 @@ public enum Player {
     @discardableResult
     public static func spawn(world w: SpriteWorld, x: Int, y: Int) -> Int? {
         var p = PlayerState()
+        // Not `.ClearPlayerVars`' globals, so the Setup leaves them: the crunch-overlay table (cleared by
+        // `.ClearCrunchSprites` from `.GameLoop`, l. 5160, before `.SetupLevel`) and the water-effects cache flag
+        // `*_DAT_100a00f4` (written only by `.FillCachedTileArray` l. 8568 and `.DestroyCrunchTile` l. 39072).
+        p.crunchSprites = w.player.crunchSprites
+        p.tileCacheValid = w.player.tileCacheValid
         p.pixelX = Int16(truncatingIfNeeded: x)
         p.pixelY = Int16(truncatingIfNeeded: y)
         p.centreX = Int16(truncatingIfNeeded: x + 0x32)
