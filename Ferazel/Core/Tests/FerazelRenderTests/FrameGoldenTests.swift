@@ -217,8 +217,8 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "9db8f32f7e3d88b4")
 
         // E1b: the Enhanced water-face draw (`WaterFaceBlitter`, raw `10011464..100114e4`). No liquid shows in any
-        // level-1 golden frame (the window is rows 0…13; the first pools are on rows 19–20), so the op is applied
-        // here: cell (3, 0) (FG tile t, the cell `ParticleTests.testWaterFaceParity` finds), liquid kind 1, at the
+        // level-1 golden frame (the window is rows 0…13; level 1's topmost liquid is row 17, cols 188–195, and the
+        // liquid nearest the window is at col 4, row 41), so the op is applied here: cell (3, 0) (FG tile t, the cell `ParticleTests.testWaterFaceParity` finds), liquid kind 1, at the
         // frame-1 scroll (0, 0) — FG-water face t through mode 0x60001 (the ripple, water table 1, the mask twin),
         // then the light with water row 1. Only the cell's rows change, within its columns ± the ripple; the
         // kind picks the table; the ports are pinned.
@@ -280,6 +280,13 @@ final class FrameGoldenTests: XCTestCase {
                                                        scroll: r.scroll, ports: &k1)) {
             XCTAssertEqual($0 as? FrameRenderer.Refusal, .waterFaceTile(0x60))
         }
+        // The guard is the FG-water set's size (0x60 faces): tile 0x5f, the last, draws (no refusal; the ports
+        // pinned unchanged).
+        XCTAssertEqual(r.grid.sets.fgWater.sheet.faces.count, 0x60)
+        var last = before
+        try WaterFaceBlitter.draw([WaterFaceDraw(cellX: 3, cellY: 0, tile: 0x5f, waterKind: 1)],
+                                  faces: r.grid.sets.fgWater.sheet, sprites: r.sprites, scroll: r.scroll, ports: &last)
+        XCTAssertEqual(last, before)
     }
 
     func testFirstFrameGoldenLevel1HighestTieBreak() throws {

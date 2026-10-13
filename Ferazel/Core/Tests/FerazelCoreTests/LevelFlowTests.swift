@@ -272,8 +272,26 @@ final class LevelFlowTests: XCTestCase {
         // `.NewGame` calls `.InitGameGlobals` (M l. 5747), the next-level loop (l. 5815–5836) re-writes only `+0x16`
         // (the start facing, l. 5821) and `.SetupLevel` only `+0x20`/`+0x22`/`+0x176` (not modelled).
         let carry = s.carry
-        XCTAssertEqual(carry, LevelCarry(parity: s.world.parity, crunchLog: [CrunchLogEntry(level: 1, col: 7, row: 9)],
-                                         globals: s.globals))
+        // E1b review fix: the water-effects tile cache, its origin and the flag are globals (written only by
+        // `.FillCachedTileArray`, M l. 8564–8568, and `.DestroyCrunchTile`, l. 39072): they ride the carry.
+        var expectCarry = LevelCarry(parity: s.world.parity, crunchLog: [CrunchLogEntry(level: 1, col: 7, row: 9)],
+                                     globals: s.globals)
+        expectCarry.particles = s.world.particles.counters
+        expectCarry.waterCells = s.waterEffects.cells
+        expectCarry.waterOriginCol = s.waterEffects.originCol
+        expectCarry.waterOriginRow = s.waterEffects.originRow
+        expectCarry.tileCacheValid = true
+        XCTAssertEqual(carry, expectCarry)
+        // Level 1's last walk filled at the start window: origin (0, 0), flag set, the cells `.FillCachedTileArray(0, 0)`
+        // makes from level 1.
+        XCTAssertEqual([carry.waterOriginCol, carry.waterOriginRow], [0, 0])
+        XCTAssertTrue(carry.tileCacheValid)
+        var ref = WaterEffects()
+        var refValid = false
+        ref.fill(col: 0, row: 0, tiles: TileGrid(level: L1), overlay: { (L1.overlay1(col: $0, row: $1),
+                                                                         L1.overlay2(col: $0, row: $1)) },
+                 height: Int(L1.header.gridHeight), valid: &refValid)
+        XCTAssertEqual(carry.waterCells, ref.cells)
         XCTAssertEqual([s.globals.health, s.globals.magic, s.globals.coins], [333, 211, 17])
         let next = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, seed: s.rngSeed, carry: carry)
         var expected = s.globals
@@ -284,6 +302,41 @@ final class LevelFlowTests: XCTestCase {
         let np = try XCTUnwrap(next.world.playerID.flatMap { next.active.sprite(id: $0) })
         XCTAssertEqual(np.hp, 333)                                     // `.SetupPlayerSprite`: `+0xa4 = G+4`
         XCTAssertEqual(next.carry.globals, expected)
+        // The cache arrives as level 1 left it; level 2's first drawn origin (19, 0) differs → its first walk refills.
+        XCTAssertEqual(next.waterEffects.cells, carry.waterCells)
+        XCTAssertEqual([next.waterEffects.originCol, next.waterEffects.originRow], [0, 0])
+        XCTAssertTrue(next.player.tileCacheValid)
+        _ = next.step(keys: KeyState())
+        XCTAssertEqual([next.waterEffects.originCol, next.waterEffects.originRow], [19, 0])
+        XCTAssertNotEqual(next.waterEffects.cells, carry.waterCells)
+        // The old origin equal to the new level's first one, the flag set: no refill — the old cells are walked (as the
+        // binary does). One stale cell (index 0 = window cell (19, 0)) liquid with FG 5 / kind 5, BG kind −1 (no
+        // emitter), the rest dry without wind; the parity set: its Enhanced face on iteration 1, no `FastRand`, the
+        // cache untouched. With the flag clear the same carry refills from level 2: no face.
+        func faces(_ ops: FrameOps) -> [WaterFaceDraw]? {
+            ops.draws.compactMap { if case .wrapDrawWaterEffects(let l) = $0 { l } else { nil } }.first
+        }
+        var stale = WaterEffects.Cell()
+        stale.overlay1 = -1
+        var staleCells = [WaterEffects.Cell](repeating: stale, count: carry.waterCells.count)
+        staleCells[0].isWater = 1
+        staleCells[0].bgKind = -1
+        staleCells[0].fgTile = 5
+        staleCells[0].fgKind = 5
+        var staleCarry = LevelCarry(parity: true, crunchLog: [])
+        staleCarry.waterCells = staleCells
+        staleCarry.waterOriginCol = 19
+        staleCarry.waterOriginRow = 0
+        staleCarry.tileCacheValid = true
+        let st = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, seed: 1, carry: staleCarry)
+        XCTAssertEqual(faces(st.step(keys: KeyState())), [WaterFaceDraw(cellX: 19, cellY: 0, tile: 5, waterKind: 0)])
+        XCTAssertEqual(st.waterEffects.cells, staleCells)
+        XCTAssertEqual([st.waterEffects.originCol, st.waterEffects.originRow], [19, 0])
+        staleCarry.tileCacheValid = false
+        let rf = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, seed: 1, carry: staleCarry)
+        XCTAssertEqual(faces(rf.step(keys: KeyState())), [])
+        XCTAssertNotEqual(rf.waterEffects.cells, staleCells)
+        XCTAssertEqual(st.rngSeed, rf.rngSeed)
 
         // The exit touched inside the iteration's player pass: the arm's cue 421 is handed out with that (last)
         // iteration — the Sound Tool starts it at once — after the Handle pass's cues.
@@ -399,7 +452,13 @@ final class LevelFlowTests: XCTestCase {
         // splash on iteration 21 (53 columns × 3 kind-200 particles, slots 0…158) has drained to count 0, hwm 157.
         var expectCarry = LevelCarry(parity: true, crunchLog: [])
         expectCarry.particles = ParticlePool.Counters(count: 0, hint: 0, highWater: 157)
+        // E1b review fix: the water-effects cache, its origin and the flag are globals and ride the restart too.
+        expectCarry.waterCells = s.waterEffects.cells
+        expectCarry.waterOriginCol = s.waterEffects.originCol
+        expectCarry.waterOriginRow = s.waterEffects.originRow
+        expectCarry.tileCacheValid = true
         XCTAssertEqual(s.carry, expectCarry)
+        XCTAssertEqual([s.carry.waterOriginCol, s.carry.waterOriginRow], [0, 2])       // the dying player's window
         XCTAssertNil(s.carry.globals)
         let fresh = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: n, seed: s.rngSeed, carry: s.carry)
         XCTAssertEqual([fresh.globals.health, fresh.globals.magic, fresh.globals.breath], [560, 560, 560])
@@ -407,6 +466,10 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(fresh.globals, GameGlobals(header: fresh.level.header))
         XCTAssertEqual(fresh.globals.crunchLog, [])
         XCTAssertTrue(fresh.world.parity)
+        XCTAssertEqual(fresh.waterEffects.cells, s.waterEffects.cells)
+        XCTAssertEqual([fresh.waterEffects.originCol, fresh.waterEffects.originRow],
+                       [s.waterEffects.originCol, s.waterEffects.originRow])
+        XCTAssertTrue(fresh.player.tileCacheValid)
         XCTAssertNil(fresh.ended)
         XCTAssertFalse(fresh.world.playerDead)
         XCTAssertFalse(fresh.player.gameOver)

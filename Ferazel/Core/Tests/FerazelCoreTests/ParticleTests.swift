@@ -733,6 +733,18 @@ final class ParticleTests: XCTestCase {
             }
             XCTAssertEqual(c == -550 ? [got.min()!, got.max()!] : got.sorted(), want, "current \(c)")
         }
+        // Per seed, exactly (the sign of the negative arm): vx = c − (R(|c| >> 1) − (|c| >> 2)), the fourth draw.
+        for c: Int16 in [-550, -7] {
+            let a = -Int(c)
+            for sd: Int32 in 1...300 {
+                let r = one(liquid(200), env: env(current: c), seed: sd)
+                guard r.pool.counters.count == 1 else { continue }
+                let d = draws(sd, [28, 28, 100, Int16(a >> 1)])
+                XCTAssertEqual(Int(r.pool.records[0].vx), Int(c) - (d.values[3] - (a >> 2)), "current \(c) seed \(sd)")
+            }
+        }
+        XCTAssertEqual([Int(s1), Int(one(liquid(200), env: env(current: -550), seed: s1).pool.records[0].vx)],
+                       [3, -452])
         // Chance 28 at Effects 1, 22 at Effects 2 (a third draw of 22…27 emits only at 1); 28 itself emits nothing.
         let s22 = seed(moteDraws, 2, in: 22..<28), s28 = seed(moteDraws, 2, in: 28..<29)
         XCTAssertEqual(one(liquid(200), env: env(1), seed: s22).pool.counters.count, 1)
@@ -741,6 +753,11 @@ final class ParticleTests: XCTestCase {
         XCTAssertEqual(e2.rng.seed, draws(s22, [28, 28, 100]).after)       // no R(275) without the particle
         XCTAssertEqual(one(liquid(200), env: env(1), seed: s28).pool.counters.count, 0)
         XCTAssertEqual(one(liquid(200), env: env(2), seed: seed(moteDraws, 2, in: 0..<22)).pool.counters.count, 1)
+        // The Effects-2 edge: a third draw of exactly 22 emits at Effects 1 only; 21 at both.
+        let e22 = seed(moteDraws, 2, in: 22..<23), e21 = seed(moteDraws, 2, in: 21..<22)
+        XCTAssertEqual([one(liquid(200), env: env(2), seed: e22).pool.counters.count,
+                        one(liquid(200), env: env(1), seed: e22).pool.counters.count,
+                        one(liquid(200), env: env(2), seed: e21).pool.counters.count], [0, 1, 1])
         // Effects 3: no emitter runs — no draw at all.
         XCTAssertEqual(one(liquid(200), env: env(3), seed: s1).rng.seed, s1)
         // Current 0: shape 1, vx 0, no velocity draw. Kind 203 (healing) ignores the current: −213, shape 1, vx 0.
@@ -789,6 +806,13 @@ final class ParticleTests: XCTestCase {
         let s3 = seed([24, 200, 100], 2, in: 0..<24)
         let b3 = one(liquid(203), env: env(), seed: s3).pool.records[0]
         XCTAssertEqual([Int(b3.kind), Int(b3.gravity), Int(b3.vy)], [-203, -5, -300 - draws(s3, [24, 200, 100]).values[1]])
+        // R(200) exactly (not R(201)): a seed whose second draw differs between the two, the vy pinned.
+        var s3d: Int32 = 1
+        while draws(s3d, [24, 200, 100]).values[2] >= 24
+                || draws(s3d, [24, 200]).values[1] == draws(s3d, [24, 201]).values[1] { s3d += 1 }
+        let b3d = one(liquid(203), env: env(), seed: s3d).pool.records[0]
+        XCTAssertEqual(Int(b3d.vy), -300 - draws(s3d, [24, 200, 100]).values[1])
+        XCTAssertEqual([Int(s3d), Int(b3d.vy), draws(s3d, [24, 201]).values[1]], [12, -452, 153])
         let s4 = seed([24, 100], 1, in: 0..<24)
         let b4 = one(liquid(204), env: env(), seed: s4)
         XCTAssertEqual([Int(b4.pool.records[0].kind), Int(b4.pool.records[0].gravity), Int(b4.pool.records[0].vy)],
@@ -866,6 +890,21 @@ final class ParticleTests: XCTestCase {
             XCTAssertEqual(one(liquid(0, o1: 0), env: env(), seed: k, s: 10, dustShape: 9).pool.records[0].shape, shape)
         }
         XCTAssertEqual(one(liquid(0, o1: -1), env: env(), seed: sd, s: 10).rng.seed, sd)
+        // Strength 0: chance 20, then `FastRand(0)` reseeds from the clock (Time + Ticks) — an injected clock here;
+        // the impulse (amount 0) is (0, 0) and h, v and the last draw come from the clock seed.
+        let sz = seed([100], 0, in: 0..<20)
+        var zr = FastRand(seed: sz, clock: { (secondsSince1904: 3_000_000_000, ticks: 12_345) })
+        var zp = ParticlePool()
+        var zs: Int16 = 0
+        _ = WaterEffects.cell(liquid(0, o1: 0), col: 60, row: 19, scrollV: 0, env: env(), overlay2: { 0 }, rng: &zr,
+                              particles: &zp, dustShape: &zs)
+        let clockSeed = FastRand.clockSeed(secondsSince1904: 3_000_000_000, ticks: 12_345)
+        let zd = draws(clockSeed, [27, 27, 100])
+        XCTAssertEqual(zr.seed, zd.after)
+        XCTAssertEqual([Int(zp.counters.count), Int(zp.records[0].vx), Int(zp.records[0].vy), Int(zp.records[0].x >> 8),
+                        Int(zp.records[0].y >> 8)], [1, 0, 0, x + zd.values[0] + 3, y + zd.values[1] + 3])
+        XCTAssertEqual([Int(clockSeed), Int(zr.seed), Int(zp.records[0].x >> 8), Int(zp.records[0].y >> 8)],
+                       [-1_294_954_951, 1_144_183_967, 1939, 615])
         XCTAssertEqual(one(liquid(0, o1: 36), env: env(), seed: sd, s: 10).rng.seed, sd)
         // Directions: o1 18 → mode 0 (h − a), 9 → 27 (v − a), 27 → 9 (v + a), 1 → 19 (h + 0.985a, v − 0.174a).
         let a = 150 + dd.values[1]
@@ -929,6 +968,11 @@ final class ParticleTests: XCTestCase {
         cache.fill(col: 0, row: 16, tiles: grid(liquidRows: 10...15, solidAt: nil), overlay: { _, _ in (-1, -1) },
                    height: 16, valid: &valid)
         XCTAssertEqual([cache.cells[3].bubbleV, cache.cells[3].depth], [498, 2])
+        // The walk's cap (`9 < iVar6` breaks, l. 8601): a column liquid on rows 0…12 → (3, 0) takes 10 steps, r 0 → 10,
+        // depth 11 → (10 − 1)·32 + 50 = 338.
+        cache.fill(col: 0, row: 0, tiles: grid(liquidRows: 0...12, solidAt: nil), overlay: { _, _ in (-1, -1) },
+                   height: 16, valid: &valid)
+        XCTAssertEqual([cache.cells[3].bubbleV, cache.cells[3].depth], [338, 11])
 
         // `.SetScrollLocation`'s clamp of the drawn pair.
         for (h, v, dh, dv) in [(-5, -5, 0, 0), (0x3d9f, 0x3e7f, 0x3d9f, 0x3e7f), (0x3da0, 0x3e80, 0x3da0, 16000),

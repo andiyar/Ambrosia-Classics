@@ -36,8 +36,9 @@ public enum LevelFlow {
     }
 }
 
-/// What the original keeps across a level load that Core rebuilds per level (plan P3 carries 1–2, W4): a new
-/// `FerazelSession` takes the previous session's `carry` (A3 passes it with `rngSeed`).
+/// What the original keeps across a level load that Core rebuilds per level (plan P3 carries 1–2, W4; the particle
+/// counters E1a; the water-effects tile cache E1b): a new `FerazelSession` takes the previous session's `carry` (A3
+/// passes it with `rngSeed`).
 public struct LevelCarry: Equatable, Sendable {
     /// `*_DAT_1009fd30`, the frame parity: only `.PaintFrameWrap` writes it, so it runs on across levels.
     public var parity: Bool
@@ -55,6 +56,15 @@ public struct LevelCarry: Equatable, Sendable {
     /// The particle pool's count, hint and high-water mark (`100a019c`/`01a0`/`01a4`): static shorts `.InitParticles`
     /// never resets (particles §1.1), so they run on into every next level and every restart (E1a).
     public var particles = ParticlePool.Counters()
+    /// `.WrapDrawWaterEffects`' tile cache `_DAT_100a00f0` (`WaterEffects.cells`), its origin `sRam100a3826` /
+    /// `sRam100a3824` and the valid flag `*_DAT_100a00f4` (`PlayerState.tileCacheValid`): globals written only by
+    /// `.FillCachedTileArray` (M l. 8564–8568) and `.DestroyCrunchTile` (the flag, M l. 39072), so they run on into
+    /// every next level and every restart (E1b review fix) — a new level whose first drawn origin equals the old one
+    /// walks the old level's cells until a crunch clears the flag or the origin moves.
+    public var waterCells = WaterEffects().cells
+    public var waterOriginCol: Int16 = 0
+    public var waterOriginRow: Int16 = 0
+    public var tileCacheValid = false
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

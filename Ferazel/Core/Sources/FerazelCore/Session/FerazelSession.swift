@@ -78,8 +78,9 @@ public final class FerazelSession {
     public let tintTableDraws: [Int16]
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
-    /// `.WrapDrawWaterEffects`' tile cache (`_DAT_100a00f0`, its origin) and the dust's `local_6a` (E1b). Per session:
-    /// a new level's session starts with the flag `*_DAT_100a00f4` clear, so its first walk refills.
+    /// `.WrapDrawWaterEffects`' tile cache (`_DAT_100a00f0`, its origin) and the dust's `local_6a` (E1b). The cache,
+    /// the origin and the flag `*_DAT_100a00f4` are globals that run on from the previous level (`LevelCarry`, E1b
+    /// review fix): a first walk at the old origin with the flag set walks the old cells; `local_6a` starts at 0.
     public private(set) var waterEffects = WaterEffects()
     /// The level loaded (`Mlvl` id).
     public let levelNumber: Int
@@ -140,6 +141,11 @@ public final class FerazelSession {
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
+        // E1b review fix: the water-effects cache, origin and flag `*_DAT_100a00f4` run on (`LevelCarry`); the player
+        // Setup keeps the flag (`Player.spawn`).
+        world.player.tileCacheValid = carry.tileCacheValid
+        waterEffects = WaterEffects(cells: carry.waterCells, originCol: carry.waterOriginCol,
+                                    originRow: carry.waterOriginRow)
         let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
@@ -394,12 +400,17 @@ public final class FerazelSession {
         return .loadLevel(levelNumber)
     }
 
-    /// What the next level's session takes (`init(…carry:)`, W4): the parity and the particle counters always (E1a);
-    /// the crunch log unless the restart after death takes fresh globals (D33).
+    /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a) and the
+    /// water-effects cache, origin and flag (E1b) always; the crunch log unless the restart after death takes fresh
+    /// globals (D33).
     public var carry: LevelCarry {
         var c = LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog,
                            globals: restartWithFreshGlobals ? nil : world.globals)
         c.particles = world.particles.counters
+        c.waterCells = waterEffects.cells
+        c.waterOriginCol = waterEffects.originCol
+        c.waterOriginRow = waterEffects.originRow
+        c.tileCacheValid = world.player.tileCacheValid
         return c
     }
 

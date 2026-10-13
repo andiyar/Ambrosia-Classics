@@ -37,7 +37,8 @@ import Foundation
 ///    36, s·15 + R(s))`, h = cell x + R(27) + 3, then v = cell y + R(27) + 3; shape 7 (o1 < 3, > 33, 16…20), 4 (7…11,
 ///    25…29), else 1 — or 2 when hdr `0x26c9` ≠ 0 — stored in the frame's `local_6a`; R(100) > 50 → shape =
 ///    `local_6a` (`dustShape`); `NewParticle(10, 0, (v, h), shape, impulse h, impulse v, 0, 2)`. s = 0 → `FastRand(0)`
-///    reseeds the stream from the clock (as written; no shipped level reaches it on levels 1–2: no wind cell).
+///    reseeds the stream from the clock (as written; no shipped level reaches it: wind exists only on levels 10, 20
+///    and 52, none with strength 0).
 public struct WaterEffects: Equatable, Sendable {
 
     /// One cache record (11 i32, 0x2c bytes; particles NOT RESOLVED 4, closed E1b).
@@ -100,11 +101,19 @@ public struct WaterEffects: Equatable, Sendable {
     public internal(set) var originCol: Int16 = 0
     public internal(set) var originRow: Int16 = 0
     /// `local_6a` (stack `0x76`) of `.WrapDrawWaterEffects`: written only by the dust's flag branch and read by its
-    /// R(100) > 50 arm, so a dust cell with shape 7 or 4 before any flag-branch cell reads whatever the stack held
-    /// [LOW: kept across calls here, 0 at the start; no level-1/2 cell has wind].
+    /// R(100) > 50 arm, so a dust cell with shape 7 or 4 before any flag-branch cell reads whatever the stack held.
+    /// The port keeps it across calls (0 at a session's start) where the binary reads an uninitialised stack value
+    /// [LOW; no level-1/2 cell has wind].
     public var dustShape: Int16 = 0
 
     public init() {}
+
+    /// The cache and origin a previous level left (`LevelCarry`, E1b review fix); `dustShape` is a stack local, 0.
+    public init(cells: [Cell], originCol: Int16, originRow: Int16) {
+        self.cells = cells
+        self.originCol = originCol
+        self.originRow = originRow
+    }
 
     /// `.FillCachedTileArray(col, row)`: the origin stored, `*_DAT_100a00f4 = 1`, then the 14 × 21 records. The depth
     /// walk (0 < `+0x14` < 5; raw `10010e8c..10010f3c`): r = the cell's row, n = 0, depth = 1; while the BG cell
@@ -254,6 +263,7 @@ public struct WaterEffects: Equatable, Sendable {
         let v = Int(Int16(truncatingIfNeeded: e.bubbleV))
         if depth > 4 { chance = Int(Int16(truncatingIfNeeded: chance / (depth - 4))) }
         var gravity = 0, vy = 0
+        // `kind == 0` is dead: the caller's guard (`0 < kind < 5`, in `cell`) lets only 1…4 in — kept as decompiled.
         if kind == 3 || kind == 0 {
             vy = -300 - Int(rng.next(200))
             gravity = -5
@@ -297,6 +307,9 @@ public struct WaterEffects: Equatable, Sendable {
         var chance = (s >> 1) + 0x14
         if chance >= 0x41 { chance = 0x41 }
         guard Int(rng.next(100)) < chance else { return }
+        // s = 0: `FastRand(0)` reseeds from the clock and returns the caller's r30 — here the cell pointer (raw
+        // `10011144`); the port returns 0. Unreachable on every shipped level (wind only on levels 10, 20 and 52, none
+        // with strength 0).
         let r = Int(rng.next(Int16(truncatingIfNeeded: s)))
         let a = o1 + 0x12
         let impulse = lookupModedImpulse(mode: Int16(truncatingIfNeeded: a - (a / 0x24) * 0x24),
