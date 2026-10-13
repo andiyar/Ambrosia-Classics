@@ -151,4 +151,51 @@ final class ParticleRenderTests: XCTestCase {
             XCTAssertEqual(p.mask, [UInt8](repeating: 0xff, count: p.mask.count))
         }
     }
+
+    func testLifeTableMatchesRows() throws {
+        // E1b: Core's colour-0 table (`ParticleLife`) against `.InitParticleColors`' rows on every level CLUT — the 16
+        // `ColorLUT.screenClutId`s of the shipped `Mlvl`s (`SetScreenClut(level+base)` precedes `.InitParticles`,
+        // `.SetupLevel` l. 2571–2572) — under both colour models. Lowest tie-break: they agree everywhere. Highest:
+        // only CLUT 222 (levels 52, 55) differs — its white requests for kinds 1, 2, 4, 13 past their lives find the
+        // duplicate white at 254 instead of 0 (24…119, 38…119, 16…119, 24…119: 378 cells), so such particles would
+        // live to the age limit there instead of dying at the life Core assumes.
+        let res = try FerazelData.open(try FerazelData.dataDirectory())
+        let system = try ColorLUT.load(id: 801, from: res, chain: .frontEnd)
+        var byClut: [Int16: [Int16]] = [:]
+        for lv: Int16 in -10...1000 {
+            guard let L = try? LevelFile.load(from: res, level: lv) else { continue }
+            byClut[ColorLUT.screenClutId(L.header), default: []].append(lv)
+        }
+        XCTAssertEqual(byClut.keys.sorted(), [202, 210, 212, 214, 216, 218, 220, 222, 224, 228, 236, 238, 240, 242, 246,
+                                              248])
+        XCTAssertEqual(byClut[222], [52, 55])
+        for model in [ColorSearch.Model.exactNearest, .ruled] {
+            for tie in [ColorSearch.TieBreak.lowest, .highest] {
+                var differ: [Int16: [Int: [Int]]] = [:]
+                for id in byClut.keys.sorted() {
+                    let clut = try ColorLUT.load(id: id, from: res, chain: .level)
+                    let rows = ParticleRenderer.colourRows(system: system, screenClut: clut,
+                                                           search: ColorSearch(model: model, tieBreak: tie))
+                    for k in 0..<0x100 {
+                        for a in 1..<0x78 where (rows[k][a] == 0) != ParticleLife.colourIsZero(kind: Int16(k), age: Int16(a)) {
+                            XCTAssertEqual(rows[k][a], 254, "\(id) \(model) \(tie) k\(k) a\(a)")
+                            differ[id, default: [:]][k, default: []].append(a)
+                        }
+                    }
+                }
+                if tie == .lowest {
+                    XCTAssertEqual(differ.count, 0, "\(model)")
+                } else {
+                    XCTAssertEqual(Array(differ.keys), [222], "\(model)")
+                    let d = differ[222] ?? [:]
+                    XCTAssertEqual(d.keys.sorted(), [1, 2, 4, 13], "\(model)")
+                    XCTAssertEqual(d[1], Array(24..<0x78))
+                    XCTAssertEqual(d[2], Array(38..<0x78))
+                    XCTAssertEqual(d[4], Array(16..<0x78))
+                    XCTAssertEqual(d[13], Array(24..<0x78))
+                    XCTAssertEqual(d.values.reduce(0) { $0 + $1.count }, 378)
+                }
+            }
+        }
+    }
 }

@@ -215,6 +215,71 @@ final class FrameGoldenTests: XCTestCase {
         // Setup lights at Effects 1, the box rasterizer. The player is not drawn yet (his face is set by the Handle,
         // after the draw — R5).
         XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "9db8f32f7e3d88b4")
+
+        // E1b: the Enhanced water-face draw (`WaterFaceBlitter`, raw `10011464..100114e4`). No liquid shows in any
+        // level-1 golden frame (the window is rows 0…13; the first pools are on rows 19–20), so the op is applied
+        // here: cell (3, 0) (FG tile t, the cell `ParticleTests.testWaterFaceParity` finds), liquid kind 1, at the
+        // frame-1 scroll (0, 0) — FG-water face t through mode 0x60001 (the ripple, water table 1, the mask twin),
+        // then the light with water row 1. Only the cell's rows change, within its columns ± the ripple; the
+        // kind picks the table; the ports are pinned.
+        let before = r.ports
+        let t = Int16(r.level.fgTile(col: 3, row: 0))
+        let draw = WaterFaceDraw(cellX: 3, cellY: 0, tile: t, waterKind: 1)
+        try r.apply(FrameOps(draws: [.wrapDrawWaterEffects([draw])]))
+        XCTAssertEqual(r.executed, [.handleLights, .waterEffects(1)])
+        let w = FramePorts.width
+        let changed = r.ports.frame.indices.filter { r.ports.frame[$0] != before.frame[$0] }
+        let masked = r.ports.mask.indices.filter { r.ports.mask[$0] != before.mask[$0] }
+        XCTAssertGreaterThan(changed.count, 0)
+        let span = SpriteBlitter.rippleOffsets.min()!...SpriteBlitter.rippleOffsets.max()!
+        for i in changed + masked {
+            XCTAssertTrue((0..<32).contains(i / w), "row \(i / w)")
+            XCTAssertTrue((96 + span.lowerBound...127 + span.upperBound).contains(i % w), "col \(i % w)")
+        }
+        XCTAssertTrue(masked.allSatisfy { r.ports.mask[$0] == 0 })
+        XCTAssertEqual(r.ports.tiles, before.tiles)
+        var k0 = before, k1 = before
+        try WaterFaceBlitter.draw([WaterFaceDraw(cellX: 3, cellY: 0, tile: t, waterKind: 0)],
+                                  faces: r.grid.sets.fgWater.sheet, sprites: r.sprites, scroll: r.scroll, ports: &k0)
+        try WaterFaceBlitter.draw([draw], faces: r.grid.sets.fgWater.sheet, sprites: r.sprites, scroll: r.scroll,
+                                  ports: &k1)
+        XCTAssertEqual(k1, r.ports)
+        XCTAssertNotEqual(k0.frame, k1.frame)
+        // The mask there is already 0 (the grid's FG stamp); over an all-0xff mask the twin clears the silhouette.
+        var m = before
+        m.mask = [UInt8](repeating: 0xff, count: m.mask.count)
+        try WaterFaceBlitter.draw([draw], faces: r.grid.sets.fgWater.sheet, sprites: r.sprites, scroll: r.scroll,
+                                  ports: &m)
+        let zeroed = m.mask.indices.filter { m.mask[$0] == 0 }
+        XCTAssertTrue(zeroed.allSatisfy { (0..<32).contains($0 / w) })
+        XCTAssertEqual([Int(t), changed.count, masked.count, zeroed.count], [40, 292, 0, 292])
+        XCTAssertEqual(hex(fnv1a(r.ports.frame + r.ports.mask)), "2ed3103e74e4550b")
+        // Under a light (the first active slot whose point is in the frame-1 view; level 1's hdr 0x2706 is 0, so an
+        // unlit face gets no darken pass): the light pass runs with water row 1 — the underwater (rippled) light
+        // blitter, which differs from the dry one.
+        let lit = r.lights.slots.first { $0.active && (0..<0x260).contains($0.x) && (0..<0x180).contains($0.y) }!
+        let ld = WaterFaceDraw(cellX: lit.x >> 5, cellY: lit.y >> 5, tile: t, waterKind: 1)
+        var l1 = before
+        try WaterFaceBlitter.draw([ld], faces: r.grid.sets.fgWater.sheet, sprites: r.sprites, scroll: r.scroll,
+                                  ports: &l1)
+        var dry = before
+        let face = r.grid.sets.fgWater.sheet.faces[Int(t)]
+        try r.sprites.blitEncFaceX(face, src: (0, 0), dst: (ld.cellY << 5, ld.cellX << 5), w: 32, h: 32, word: 0x60001,
+                                   flip: false, rotation: 0, scale: 0x100, ports: &dry)
+        var above = dry
+        try r.sprites.lightFace(face, src: (0, 0), dst: (ld.cellY << 5, ld.cellX << 5), w: 32, h: 32,
+                                x: ld.cellX << 5, y: ld.cellY << 5, flip: false, waterRow: 1, h0: 0, v0: 0, ports: &dry)
+        try r.sprites.lightFace(face, src: (0, 0), dst: (ld.cellY << 5, ld.cellX << 5), w: 32, h: 32,
+                                x: ld.cellX << 5, y: ld.cellY << 5, flip: false, waterRow: 0, h0: 0, v0: 0, ports: &above)
+        XCTAssertEqual(l1, dry)
+        XCTAssertNotEqual(l1.frame, above.frame)
+        XCTAssertEqual([ld.cellX, ld.cellY], [9, 4])
+        XCTAssertEqual(hex(fnv1a(l1.frame)), "4f18ef875172bfe")
+        XCTAssertThrowsError(try WaterFaceBlitter.draw([WaterFaceDraw(cellX: 3, cellY: 0, tile: 0x60, waterKind: 1)],
+                                                       faces: r.grid.sets.fgWater.sheet, sprites: r.sprites,
+                                                       scroll: r.scroll, ports: &k1)) {
+            XCTAssertEqual($0 as? FrameRenderer.Refusal, .waterFaceTile(0x60))
+        }
     }
 
     func testFirstFrameGoldenLevel1HighestTieBreak() throws {

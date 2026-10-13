@@ -641,4 +641,461 @@ final class ParticleTests: XCTestCase {
         XCTAssertEqual(box(0, gate: (40, 40)).particles.counters.count, 0)
         XCTAssertEqual(box(0, gate: (40, 0)).particles.counters.count, (0x30 + 8) * 3)
     }
+
+    // MARK: - E1b: `.FillCachedTileArray @ 10010d30` / `.WrapDrawWaterEffects @ 10010fac`
+
+    /// A liquid cache record (BG kind `bg`, liquid kind bg − 200), FG empty, no wind.
+    private func liquid(_ bg: Int32, above: Int32 = 0, bubbleV: Int32 = 650, depth: Int32 = 1,
+                        fg: Int32 = -1, fgKind: Int32 = -1, o1: Int32 = -1) -> WaterEffects.Cell {
+        var e = WaterEffects.Cell()
+        e.fgTile = fg
+        e.fgKind = fgKind
+        e.bgKind = bg
+        e.isWater = UnderWater.isWaterTile(Int(bg)) ? 1 : 0
+        e.waterKind = bg - 200
+        e.waterAbove = above
+        e.overlay1 = o1
+        e.overlay2 = -1
+        e.bubbleV = bubbleV
+        e.depth = depth
+        return e
+    }
+
+    private func env(_ effects: Int16 = 1, parity: Bool = false, submerged: UInt8 = 0, current: Int16 = 550,
+                     surface: UInt8 = 0) -> WaterEffects.Env {
+        WaterEffects.Env(effects: effects, parity: parity, submergedFaces: submerged, current: current,
+                         surfaceFlag: surface)
+    }
+
+    /// One visible cell (`WaterEffects.cell`) at (col, row) under drawn v `scrollV`, from seed `seed`.
+    private func one(_ e: WaterEffects.Cell, col: Int = 60, row: Int = 19, scrollV: Int = 0,
+                     env: WaterEffects.Env, seed: Int32, s: Int = -1, dustShape: Int16 = 0)
+        -> (pool: ParticlePool, rng: FastRand, face: WaterFaceDraw?, dustShape: Int16) {
+        var rng = FastRand(seed: seed)
+        var pool = ParticlePool()
+        var shape = dustShape
+        let f = WaterEffects.cell(e, col: col, row: row, scrollV: scrollV, env: env, overlay2: { s }, rng: &rng,
+                                  particles: &pool, dustShape: &shape)
+        return (pool, rng, f, shape)
+    }
+
+    /// The draws `ns` from `seed` (the reference stream).
+    private func draws(_ seed: Int32, _ ns: [Int16]) -> (values: [Int], after: Int32) {
+        var r = FastRand(seed: seed)
+        let v = ns.map { Int(r.next($0)) }
+        return (v, r.seed)
+    }
+
+    /// The first seed ≥ 1 whose draw `index` of `ns` falls in `range`.
+    private func seed(_ ns: [Int16], _ index: Int, in range: Range<Int>) -> Int32 {
+        var s: Int32 = 1
+        while !range.contains(draws(s, ns).values[index]) { s += 1 }
+        return s
+    }
+
+    func testMoteVelocityLevel1() throws {
+        let res = try resources()
+        let L1 = try LevelFile.load(from: res, level: 1)
+        // Level 1: current hdr 0x2714 = 550, the surface flag 0x26c9 and 0x26c6 clear.
+        XCTAssertEqual([Int(L1.header.waterCurrent), Int(L1.header.waterSurfaceEffect), Int(L1.header.submergedFaces)],
+                       [550, 0, 0])
+        let x = 60 * 32, y = 19 * 32
+
+        // Motes (raw `10011270..100113f4`), kind 200 at (60, 19): h = x + 2 + R(28), v = y + 2 + R(28), R(100) < 28 →
+        // vx = 550 + R(275) − 137, kind −210, shape 7, gravity 0, vy 0, mode 3, delay 0.
+        let moteDraws: [Int16] = [28, 28, 100, 275]
+        let s1 = seed(moteDraws, 2, in: 0..<28)
+        let d1 = draws(s1, moteDraws)
+        let m = one(liquid(200), env: env(current: L1.header.waterCurrent), seed: s1)
+        let p = m.pool.records[0]
+        XCTAssertEqual(m.pool.counters, ParticlePool.Counters(count: 1, hint: 0, highWater: 0))
+        XCTAssertEqual([Int(p.kind), Int(p.shape), Int(p.gravity), Int(p.vy), Int(p.mode), Int(p.age)], [-210, 7, 0, 0, 3, 0])
+        XCTAssertEqual(Int(p.vx), 550 + d1.values[3] - 137)
+        XCTAssertEqual([Int(p.x >> 8), Int(p.y >> 8)], [x + 2 + d1.values[0], y + 2 + d1.values[1]])
+        XCTAssertEqual(m.rng.seed, d1.after)
+        XCTAssertNil(m.face)
+        // The seeded case, pinned.
+        XCTAssertEqual([Int(s1), Int(p.vx), Int(p.x >> 8), Int(p.y >> 8)], [3, 452, 1943, 629])
+        // The range over 3000 seeds: 550 ± 137, both ends reached.
+        var vxs = Set<Int32>()
+        for sd: Int32 in 1...3000 {
+            let r = one(liquid(200), env: env(), seed: sd)
+            if r.pool.counters.count == 1 { vxs.insert(r.pool.records[0].vx) }
+        }
+        XCTAssertEqual([vxs.min(), vxs.max()], [413, 687])
+        // A negative current: vx = c − (R(|c| >> 1) − (|c| >> 2)) → −550 ± 137; odd currents pin the shifts
+        // (7: 7 + R(3) − 1 ∈ 6…8; −7: −7 − (R(3) − 1) ∈ −8…−6 — an arithmetic −7 >> 1 would draw R(−4)).
+        for (c, want) in [(Int16(-550), [-687, -413]), (7, [6, 7, 8]), (-7, [-8, -7, -6])] as [(Int16, [Int32])] {
+            var got = Set<Int32>()
+            for sd: Int32 in 1...3000 {
+                let r = one(liquid(200), env: env(current: c), seed: sd)
+                if r.pool.counters.count == 1 { got.insert(r.pool.records[0].vx) }
+            }
+            XCTAssertEqual(c == -550 ? [got.min()!, got.max()!] : got.sorted(), want, "current \(c)")
+        }
+        // Chance 28 at Effects 1, 22 at Effects 2 (a third draw of 22…27 emits only at 1); 28 itself emits nothing.
+        let s22 = seed(moteDraws, 2, in: 22..<28), s28 = seed(moteDraws, 2, in: 28..<29)
+        XCTAssertEqual(one(liquid(200), env: env(1), seed: s22).pool.counters.count, 1)
+        let e2 = one(liquid(200), env: env(2), seed: s22)
+        XCTAssertEqual(e2.pool.counters.count, 0)
+        XCTAssertEqual(e2.rng.seed, draws(s22, [28, 28, 100]).after)       // no R(275) without the particle
+        XCTAssertEqual(one(liquid(200), env: env(1), seed: s28).pool.counters.count, 0)
+        XCTAssertEqual(one(liquid(200), env: env(2), seed: seed(moteDraws, 2, in: 0..<22)).pool.counters.count, 1)
+        // Effects 3: no emitter runs — no draw at all.
+        XCTAssertEqual(one(liquid(200), env: env(3), seed: s1).rng.seed, s1)
+        // Current 0: shape 1, vx 0, no velocity draw. Kind 203 (healing) ignores the current: −213, shape 1, vx 0.
+        let z = one(liquid(200), env: env(current: 0), seed: s1)
+        XCTAssertEqual([Int(z.pool.records[0].shape), Int(z.pool.records[0].vx)], [1, 0])
+        XCTAssertEqual(z.rng.seed, draws(s1, [28, 28, 100]).after)
+        // 203 also bubbles (liquid kind 3) first: R(24), R(200), R(100), then the mote's draws.
+        let healDraws: [Int16] = [24, 200, 100, 28, 28, 100]
+        let sh = seed(healDraws, 5, in: 0..<28)
+        let hd = draws(sh, healDraws)
+        let heal = one(liquid(203, depth: 1), env: env(), seed: sh)
+        let motes = heal.pool.records.prefix(Int(heal.pool.counters.count)).filter { $0.kind == -213 }
+        XCTAssertEqual(motes.map { [Int($0.shape), Int($0.vx), Int($0.vy)] }, [[1, 0, 0]])
+        XCTAssertEqual(heal.rng.seed, hd.after)
+        // 205: kind −215, shape 4, vy = R(64) + 160 drawn after the current's.
+        let lavaDraws: [Int16] = [28, 28, 100, 275, 64]
+        let sl = seed(lavaDraws, 2, in: 0..<28)
+        let ld = draws(sl, lavaDraws)
+        let lava = one(liquid(205), env: env(), seed: sl).pool.records[0]
+        XCTAssertEqual([Int(lava.kind), Int(lava.shape), Int(lava.vx), Int(lava.vy)],
+                       [-215, 4, 550 + ld.values[3] - 137, ld.values[4] + 160])
+        // Acid 201 makes no mote (bubbles only, below).
+        XCTAssertFalse(one(liquid(201), env: env(), seed: s1).pool.records.contains { $0.alive && $0.kind == -211 })
+
+        // Bubbles (raw `10011170..1001126c`), liquid kinds 1…4 with (`+0x10` = 0 or row < drawn v px): h = x + 4 +
+        // R(24), v = `+0x24`; kinds 1, 2: vy = −500 − R(300), gravity −20; 3: −300 − R(200), −5; 4: 0, 0 (no draw);
+        // R(100) < chance → kind −bg, shape 2, vx 0, mode 3.
+        let acidDraws: [Int16] = [24, 300, 100]
+        let sa = seed(acidDraws, 2, in: 0..<18)
+        let ad = draws(sa, acidDraws)
+        for bg: Int32 in [201, 202] {
+            let b = one(liquid(bg), env: env(), seed: sa)
+            let r = b.pool.records[0]
+            XCTAssertEqual([Int(r.kind), Int(r.shape), Int(r.gravity), Int(r.vx), Int(r.vy), Int(r.mode)],
+                           [-Int(bg), 2, -20, 0, -500 - ad.values[1], 3], "bg \(bg)")
+            XCTAssertEqual([Int(r.x >> 8), Int(r.y >> 8)], [x + 4 + ad.values[0], 650])
+            XCTAssertEqual(b.rng.seed, ad.after)
+        }
+        XCTAssertEqual([Int(sa), ad.values[0], ad.values[1]], [3, 18, 207])
+        let healBubble = heal.pool.records.prefix(Int(heal.pool.counters.count)).filter { $0.kind == -203 }
+        if hd.values[2] < 24 {
+            XCTAssertEqual(healBubble.map { [Int($0.gravity), Int($0.vy)] }, [[-5, -300 - hd.values[1]]])
+        } else {
+            XCTAssertEqual(healBubble.count, 0)
+        }
+        let s3 = seed([24, 200, 100], 2, in: 0..<24)
+        let b3 = one(liquid(203), env: env(), seed: s3).pool.records[0]
+        XCTAssertEqual([Int(b3.kind), Int(b3.gravity), Int(b3.vy)], [-203, -5, -300 - draws(s3, [24, 200, 100]).values[1]])
+        let s4 = seed([24, 100], 1, in: 0..<24)
+        let b4 = one(liquid(204), env: env(), seed: s4)
+        XCTAssertEqual([Int(b4.pool.records[0].kind), Int(b4.pool.records[0].gravity), Int(b4.pool.records[0].vy)],
+                       [-204, 0, 0])
+        XCTAssertEqual(b4.rng.seed, draws(s4, [24, 100]).after)
+        // The chance: 24 at Effects 1, 18 at Effects 2; depth `+0x28` > 4 divides it by (depth − 4): 6 → 12 (9 at
+        // Effects 2), 7 → 8, 5 → 24, 4 → 24.
+        func emits(_ effects: Int16, depth: Int32, third: Int) -> Bool {
+            let sd = seed(acidDraws, 2, in: third..<(third + 1))
+            return one(liquid(201, depth: depth), env: env(effects), seed: sd).pool.counters.count == 1
+        }
+        XCTAssertEqual([emits(1, depth: 1, third: 23), emits(1, depth: 1, third: 24), emits(2, depth: 1, third: 17),
+                        emits(2, depth: 1, third: 18)], [true, false, true, false])
+        XCTAssertEqual([emits(1, depth: 6, third: 11), emits(1, depth: 6, third: 12), emits(2, depth: 6, third: 8),
+                        emits(2, depth: 6, third: 9)], [true, false, true, false])
+        XCTAssertEqual([emits(1, depth: 7, third: 7), emits(1, depth: 7, third: 8), emits(1, depth: 5, third: 23),
+                        emits(1, depth: 4, third: 23)], [true, false, true, true])
+        // The row-vs-pixel gate (raw `10011150..1001115c`): liquid above (`+0x10` 1) blocks the bubble only while
+        // the cell's ROW is ≥ the drawn v in PIXELS — row 19 under v 19 px: no draw at all; under v 20 px (still
+        // tile row 0 on screen): the bubble's draws happen.
+        XCTAssertEqual(one(liquid(201, above: 1), scrollV: 19, env: env(), seed: sa).rng.seed, sa)
+        XCTAssertEqual(one(liquid(201, above: 1), scrollV: 20, env: env(), seed: sa).rng.seed, ad.after)
+        XCTAssertEqual(one(liquid(201, above: 1), scrollV: 20, env: env(), seed: sa).pool.counters.count, 1)
+        // Gates: Effects 3, a dry cell, a negative BG kind.
+        XCTAssertEqual(one(liquid(201), env: env(3), seed: sa).rng.seed, sa)
+        var dry = liquid(201)
+        dry.isWater = 0
+        XCTAssertEqual(one(dry, env: env(), seed: sa).rng.seed, sa)
+        var negative = liquid(201)
+        negative.bgKind = -1
+        XCTAssertEqual(one(negative, env: env(), seed: sa).rng.seed, sa)
+
+        // Wind dust (raw `100114ec..10011680`): 0 ≤ overlay 1 < 0x24, s = overlay 2: R(100) < min((s >> 1) + 20, 65)
+        // → R(s), impulse `.LookupModedImpulse((o1 + 18) mod 36, 15·s + R(s))`, h = x + R(27) + 3, v = y + R(27) + 3,
+        // the shape, R(100) > 50 → `local_6a`; kind 10, mode 2.
+        let dustDraws: [Int16] = [100, 10, 27, 27, 100]
+        let sd0 = seed(dustDraws, 0, in: 0..<25)
+        var sd = sd0
+        while draws(sd, dustDraws).values[0] >= 25 || draws(sd, dustDraws).values[4] > 50 { sd += 1 }
+        let dd = draws(sd, dustDraws)
+        let dust = one(liquid(0, o1: 0), env: env(), seed: sd, s: 10)
+        let q = dust.pool.records[0]
+        XCTAssertEqual([Int(q.kind), Int(q.shape), Int(q.gravity), Int(q.vx), Int(q.vy), Int(q.mode)],
+                       [10, 7, 0, 150 + dd.values[1], 0, 2])
+        XCTAssertEqual([Int(q.x >> 8), Int(q.y >> 8)], [x + dd.values[2] + 3, y + dd.values[3] + 3])
+        XCTAssertEqual(dust.rng.seed, dd.after)
+        // The chance: s 10 → 25; s 88 → 64; s 90 and 100 → 65 (capped).
+        func dusts(_ s: Int, first: Int) -> Bool {
+            let k = seed([100], 0, in: first..<(first + 1))
+            return one(liquid(0, o1: 0), env: env(), seed: k, s: s).pool.counters.count == 1
+        }
+        XCTAssertEqual([dusts(10, first: 24), dusts(10, first: 25), dusts(88, first: 63), dusts(88, first: 64),
+                        dusts(90, first: 64), dusts(90, first: 65), dusts(100, first: 64), dusts(100, first: 65)],
+                       [true, false, true, false, true, false, true, false])
+        // The shape by direction o1 (last draw ≤ 50), surface flag 0 → 1, set → 2; the last draw > 50 → `local_6a`.
+        let shapes: [Int32: Int16] = [0: 7, 2: 7, 3: 1, 6: 1, 7: 4, 11: 4, 12: 1, 15: 1, 16: 7, 20: 7, 21: 1, 24: 1,
+                                      25: 4, 29: 4, 30: 1, 33: 1, 34: 7, 35: 7]
+        let sHigh = { () -> Int32 in
+            var k: Int32 = 1
+            while draws(k, dustDraws).values[0] >= 25 || draws(k, dustDraws).values[4] <= 50 { k += 1 }
+            return k
+        }()
+        for (o1, shape) in shapes {
+            XCTAssertEqual(one(liquid(0, o1: o1), env: env(), seed: sd, s: 10).pool.records[0].shape, shape, "o1 \(o1)")
+            XCTAssertEqual(one(liquid(0, o1: o1), env: env(surface: 1), seed: sd, s: 10).pool.records[0].shape,
+                           shape == 1 ? 2 : shape, "o1 \(o1)")
+            let hi = one(liquid(0, o1: o1), env: env(), seed: sHigh, s: 10, dustShape: 9)
+            XCTAssertEqual(hi.pool.records[0].shape, shape == 1 ? 1 : 9, "o1 \(o1)")
+            XCTAssertEqual(hi.dustShape, shape == 1 ? 1 : 9)
+        }
+        // The last draw's edge: 50 keeps the direction's shape, 51 takes `local_6a`.
+        for (last, shape) in [(50, Int16(7)), (51, 9)] {
+            var k: Int32 = 1
+            while draws(k, dustDraws).values[0] >= 25 || draws(k, dustDraws).values[4] != last { k += 1 }
+            XCTAssertEqual(one(liquid(0, o1: 0), env: env(), seed: k, s: 10, dustShape: 9).pool.records[0].shape, shape)
+        }
+        XCTAssertEqual(one(liquid(0, o1: -1), env: env(), seed: sd, s: 10).rng.seed, sd)
+        XCTAssertEqual(one(liquid(0, o1: 36), env: env(), seed: sd, s: 10).rng.seed, sd)
+        // Directions: o1 18 → mode 0 (h − a), 9 → 27 (v − a), 27 → 9 (v + a), 1 → 19 (h + 0.985a, v − 0.174a).
+        let a = 150 + dd.values[1]
+        for (o1, vx, vy) in [(Int32(18), -a, 0), (9, 0, -a), (27, 0, a),
+                             (1, Int(Double(a) * 0.985), -Int(Double(a) * 0.174))] {
+            let r = one(liquid(0, o1: o1), env: env(), seed: sd, s: 10).pool.records[0]
+            XCTAssertEqual([Int(r.vx), Int(r.vy)], [vx, vy], "o1 \(o1)")
+        }
+        // `.LookupModedImpulse` (raw `100404a4`): (v, h) from base (0, 0); `fctiwz` truncates toward zero.
+        let imp: [(Int16, Int16, Int16, Int16)] = [(0, 100, 0, -100), (1, 100, 17, -98), (3, 5, 2, -4), (4, 100, 64, -76),
+                                                   (9, 100, 100, 0), (10, 100, 98, 17), (13, 100, 76, 64),
+                                                   (18, 100, 0, 100), (19, 100, -17, 98), (22, 100, -64, 76),
+                                                   (27, 100, -100, 0), (28, 100, -98, -17), (35, 100, -17, -98),
+                                                   (36, 100, 0, 0), (-1, 100, 0, 0), (20, -50, 17, -47)]
+        for (mode, amount, v, h) in imp {
+            let r = WaterEffects.lookupModedImpulse(mode: mode, amount: amount)
+            XCTAssertEqual([r.v, r.h], [v, h], "mode \(mode) amount \(amount)")
+        }
+
+        // `.FillCachedTileArray`: a 16×16 grid, BG liquid kind 201 at column 3 rows 2…9, FG solid 0x50 at (0, 6).
+        func grid(liquidRows: ClosedRange<Int>, solidAt: (Int, Int)?) -> TileGrid {
+            var fg = [UInt16](repeating: 0, count: 256)
+            if let (c, r) = solidAt { fg[r * 16 + c] = 0x50 + 1 }
+            fg[2 * 16 + 3] = 5 + 1
+            var bg = [UInt16](repeating: 0, count: 256)
+            for r in liquidRows { bg[r * 16 + 3] = 1 + 1 }
+            var kinds = [Int](repeating: 0, count: 0x60)
+            kinds[1] = 201
+            var fgKinds = Array(0..<0x60)
+            fgKinds[5] = 0x44
+            return TileGrid(fg: TileMap(width: 16, height: 16, cells: fg), bg: TileMap(width: 16, height: 16, cells: bg),
+                            fgKinds: fgKinds, bgKinds: kinds)
+        }
+        var cache = WaterEffects()
+        var valid = false
+        cache.fill(col: 0, row: 0, tiles: grid(liquidRows: 2...9, solidAt: (0, 6)),
+                   overlay: { c, r in (c == 3 && r == 2 ? 7 : -1, c == 3 && r == 2 ? 40 : -1) }, height: 16, valid: &valid)
+        XCTAssertTrue(valid)
+        XCTAssertEqual([cache.originCol, cache.originRow], [0, 0])
+        let c32 = cache.cells[2 * 21 + 3]
+        XCTAssertEqual([c32.fgTile, c32.fgKind, c32.bgKind, c32.isWater, c32.waterAbove, c32.waterKind, c32.bgKindAbove,
+                        c32.overlay1, c32.overlay2], [5, 0x44, 201, 1, 0, 1, -1, 7, 40])
+        // The depth walk tests the liquid at row r + the window row index and the solid at the ORIGIN column:
+        // (3, 2) walks rows 4…8 for liquid, meets the solid at (0, 6) → `+0x24` (6 − 1)·32 + 50 = 210, `+0x28` 6;
+        // (3, 3) → 210, 5; (3, 9) tests row 18 (clamped 15, dry) → no step: 8·32 + 50 = 306, 1.
+        XCTAssertEqual([c32.bubbleV, c32.depth], [210, 6])
+        XCTAssertEqual([cache.cells[3 * 21 + 3].bubbleV, cache.cells[3 * 21 + 3].depth, cache.cells[3 * 21 + 3].waterAbove],
+                       [210, 5, 1])
+        XCTAssertEqual([cache.cells[9 * 21 + 3].bubbleV, cache.cells[9 * 21 + 3].depth], [306, 1])
+        // Without the solid: (3, 2) steps while rows 4…9 are liquid: r 2 → 8 (row 10 dry), depth 7 → 7·32 + 50 = 274.
+        cache.fill(col: 0, row: 0, tiles: grid(liquidRows: 2...9, solidAt: nil), overlay: { _, _ in (-1, -1) },
+                   height: 16, valid: &valid)
+        XCTAssertEqual([cache.cells[2 * 21 + 3].bubbleV, cache.cells[2 * 21 + 3].depth], [274, 7])
+        // A dry refill keeps `+0x24`/`+0x28` (written only for liquid kinds 1…4).
+        cache.fill(col: 0, row: 0, tiles: grid(liquidRows: 12...12, solidAt: nil), overlay: { _, _ in (-1, -1) },
+                   height: 16, valid: &valid)
+        XCTAssertEqual([cache.cells[2 * 21 + 3].bubbleV, cache.cells[2 * 21 + 3].depth, cache.cells[2 * 21 + 3].waterKind],
+                       [274, 7, -201])
+        // Origin row ≥ hdr 0xb282 (16): every step ends the walk with r − 2 — (3, ri 0) at origin row 16 (clamped
+        // reads): r 16 → 17 → 15, depth 2 → 14·32 + 50 = 498.
+        cache.fill(col: 0, row: 16, tiles: grid(liquidRows: 10...15, solidAt: nil), overlay: { _, _ in (-1, -1) },
+                   height: 16, valid: &valid)
+        XCTAssertEqual([cache.cells[3].bubbleV, cache.cells[3].depth], [498, 2])
+
+        // `.SetScrollLocation`'s clamp of the drawn pair.
+        for (h, v, dh, dv) in [(-5, -5, 0, 0), (0x3d9f, 0x3e7f, 0x3d9f, 0x3e7f), (0x3da0, 0x3e80, 0x3da0, 16000),
+                               (0x3da1, 0x3e81, 0x3da0, 16000)] {
+            let d = WaterEffects.drawnPair(h: h, v: v)
+            XCTAssertEqual([d.h, d.v], [dh, dv], "\(h) \(v)")
+        }
+
+        // The walk's window and bounds: rows v / 32 … + 13, columns h / 32 … + 20 (C division), the cache stepped from
+        // its base; cells outside the grid skipped. Every cell liquid 200 with FG 0x50, the tile = its cache index.
+        var w = WaterEffects()
+        for i in w.cells.indices { w.cells[i] = liquid(200, fg: Int32(i % 0x5f), fgKind: 0x50) }
+        var rng = FastRand(seed: 1)
+        var pool = ParticlePool()
+        func faces(_ h: Int, _ v: Int, width: Int, height: Int) -> [WaterFaceDraw] {
+            w.walk(scroll: (h, v), width: width, height: height, env: env(1, parity: true), overlay2: { _, _ in -1 },
+                   rng: &rng, particles: &pool)
+        }
+        XCTAssertEqual(faces(0, 0, width: 200, height: 50).count, 21 * 14)
+        XCTAssertEqual(faces(0, 0, width: 3, height: 2).map { [$0.cellX, $0.cellY, Int($0.tile)] },
+                       [[0, 0, 0], [1, 0, 1], [2, 0, 2], [0, 1, 21], [1, 1, 22], [2, 1, 23]])
+        XCTAssertEqual(faces(-64, -33, width: 3, height: 1).map { [$0.cellX, $0.cellY, Int($0.tile)] },
+                       [[0, 0, 23], [1, 0, 24], [2, 0, 25]])
+        XCTAssertEqual(faces(32 * 190 + 31, 32 * 40, width: 200, height: 50).map(\.cellX).max(), 199)
+        XCTAssertEqual(faces(32 * 190 + 31, 32 * 40, width: 200, height: 50).count, 10 * 10)
+
+        // Level 1 at the pool under the start ledge (rows 19–20, cols 56–81; drawn pair (1792, 320), seed 1): the
+        // refill, the motes (kind −210, shape 7, 550 ± 137) and, the parity clear, no face.
+        let world = SpriteWorld(level: L1, seed: 1)
+        var we = WaterEffects()
+        XCTAssertTrue(we.run(world: world, h: 1792, v: 320, effects: 1).isEmpty)
+        XCTAssertTrue(world.player.tileCacheValid)
+        XCTAssertEqual([we.originCol, we.originRow], [56, 10])
+        let made = world.particles.records.prefix(Int(world.particles.counters.count))
+        XCTAssertGreaterThan(made.count, 0)
+        XCTAssertEqual(Set(made.map(\.kind)), [-210])
+        XCTAssertEqual(Set(made.map(\.shape)), [7])
+        XCTAssertTrue(made.allSatisfy { (413...687).contains($0.vx) })
+        XCTAssertEqual([made.count, Int(made[0].vx), Int(made[0].x >> 8), Int(made[0].y >> 8), Int(world.rng.seed)],
+                       [11, 417, 1873, 611, 382_955_828])
+        // The parity set: the Enhanced faces of the visible liquid cells with 0 ≤ FG kind < 0x60 and FG < 0x5f.
+        world.parity = true
+        let l1faces = we.run(world: world, h: 1792, v: 320, effects: 1)
+        func expected(cols: ClosedRange<Int>) -> [WaterFaceDraw] {
+            var out: [WaterFaceDraw] = []
+            for row in 10...23 {
+                for col in cols {
+                    let t = world.tiles.fgTile(col: col, row: row), k = world.tiles.fgKind(tile: t)
+                    let b = world.tiles.bgKind(tile: world.tiles.bgTile(col: col, row: row))
+                    if UnderWater.isWaterTile(b) && t < 0x5f && k >= 0 && k < 0x60 {
+                        out.append(WaterFaceDraw(cellX: col, cellY: row, tile: Int16(t), waterKind: Int16(b - 200)))
+                    }
+                }
+            }
+            return out
+        }
+        let want = expected(cols: 56...76)
+        XCTAssertEqual(l1faces, want)
+        XCTAssertEqual(l1faces.count, 22)
+        // The cache is not refilled while the origin and the flag hold — a map write leaves it stale — but is after
+        // `.DestroyCrunchTile` clears the flag, and when the drawn pair crosses a tile.
+        world.tiles.bgKinds = world.tiles.bgKinds.map { $0 == 200 ? 0 : $0 }
+        XCTAssertEqual(we.run(world: world, h: 1792 + 31, v: 320 + 31, effects: 1), want)
+        world.player.tileCacheValid = false
+        XCTAssertEqual(we.run(world: world, h: 1792, v: 320, effects: 1), [])
+        world.tiles = TileGrid(level: L1)
+        XCTAssertEqual(we.run(world: world, h: 1792, v: 320, effects: 1), [])      // origin and flag hold: stale
+        XCTAssertEqual(we.run(world: world, h: 1792 + 32, v: 320, effects: 1), expected(cols: 57...77))
+        XCTAssertEqual([we.originCol, we.originRow], [57, 10])
+    }
+
+    func testWaterFaceParity() throws {
+        let res = try resources()
+        // Level 1 with one BG tile's kind made liquid 200 (no liquid shows at the start otherwise) — the BG tile of the
+        // first start-window cell (row-major) whose FG tile is 0…0x5e with FG kind 0…0x5f: the Enhanced faces are the
+        // window's cells over that tile with such an FG. Set before the first iteration (the cache fills then).
+        func session(_ prefs: FerazelPrefs, carry: LevelCarry = LevelCarry()) throws -> (FerazelSession, [WaterFaceDraw]) {
+            let s = try FerazelSession(resources: res, prefs: prefs, level: 1, carry: carry)
+            func qualifies(_ col: Int, _ row: Int) -> Bool {
+                let t = s.world.tiles.fgTile(col: col, row: row), k = s.world.tiles.fgKind(tile: t)
+                return s.world.tiles.bgTile(col: col, row: row) >= 0 && t >= 0 && t < 0x5f && k >= 0 && k < 0x60
+            }
+            let first = (0..<14 * 21).first { qualifies($0 % 21, $0 / 21) }!
+            let b = s.world.tiles.bgTile(col: first % 21, row: first / 21)
+            XCTAssertEqual([first, b], [3, 92])
+            s.world.tiles.bgKinds[b] = 200
+            var want: [WaterFaceDraw] = []
+            for row in 0..<14 {
+                for col in 0..<21 {
+                    let t = s.world.tiles.fgTile(col: col, row: row), k = s.world.tiles.fgKind(tile: t)
+                    if s.world.tiles.bgTile(col: col, row: row) == b && t < 0x5f && k >= 0 && k < 0x60 {
+                        want.append(WaterFaceDraw(cellX: col, cellY: row, tile: Int16(t), waterKind: 0))
+                    }
+                }
+            }
+            return (s, want)
+        }
+        func faces(_ ops: FrameOps) -> [WaterFaceDraw]? {
+            ops.draws.compactMap { if case .wrapDrawWaterEffects(let l) = $0 { l } else { nil } }.first
+        }
+        // Effects 1, every iteration drawn: the faces on iterations 2, 4, 6, 8 (parity set before the flip).
+        let (s, want) = try session(FerazelPrefs())
+        XCTAssertGreaterThan(want.count, 0)
+        XCTAssertEqual(want.count, 12)
+        var got: [Bool] = []
+        for _ in 0..<8 {
+            let before = s.world.parity
+            let ops = s.step(keys: KeyState())
+            let f = faces(ops)
+            XCTAssertLessThan(s.camera.scrollH, 32)
+            XCTAssertLessThan(s.camera.scrollV, 32)
+            XCTAssertEqual(f, before ? want : [])
+            XCTAssertEqual(s.world.parity, !before)
+            got.append(!(f ?? []).isEmpty)
+        }
+        XCTAssertEqual(got, [false, true, false, true, false, true, false, true])
+        // The op sits after the tile layer's lights and before the sprites (l. 9203–9207).
+        let order = s.step(keys: KeyState()).draws.compactMap { op -> String? in
+            switch op {
+            case .drawLightsOntoTiles: return "lights"
+            case .wrapDrawWaterEffects: return "water"
+            case .wrapDrawSprites: return "sprites"
+            case .drawParticles: return "particles"
+            default: return nil
+            }
+        }
+        XCTAssertEqual(order, ["lights", "water", "sprites", "particles"])
+        // "Reduce frame rate": the call runs on skipped iterations too (outside `.PaintFrameWrap`'s `param_1` block)
+        // with the parity it did not flip — faces on skipped 3, 7 and drawn 4, 8; none on 1, 2, 5, 6.
+        var reduce = FerazelPrefs()
+        reduce.reduceFrameRate = 1
+        let (r, rwant) = try session(reduce)
+        var pattern: [String] = []
+        for _ in 0..<8 {
+            let before = r.world.parity
+            let ops = r.step(keys: KeyState())
+            XCTAssertEqual(faces(ops), before ? rwant : [])
+            XCTAssertEqual(r.world.parity, ops.drawn ? !before : before)
+            pattern.append((ops.drawn ? "D" : "s") + ((faces(ops) ?? []).isEmpty ? "" : "+"))
+        }
+        XCTAssertEqual(pattern, ["s", "D", "s+", "D+", "s", "D", "s+", "D+"])
+        // Effects 2 and 3: no face ever (and Effects 3 runs no emitter).
+        for effects: Int16 in [2, 3] {
+            var p = FerazelPrefs()
+            p.effects = effects
+            let (e, _) = try session(p)
+            for _ in 0..<4 { XCTAssertEqual(faces(e.step(keys: KeyState())), [], "Effects \(effects)") }
+        }
+        // The parity runs on from the previous level (`LevelCarry`): set → faces on iteration 1.
+        let (c, cwant) = try session(FerazelPrefs(), carry: LevelCarry(parity: true))
+        XCTAssertEqual(faces(c.step(keys: KeyState())), cwant)
+        // hdr 0x26c6 ≠ 0 (only level 11 ships it): no face.
+        var e = liquid(200, fg: 5, fgKind: 5)
+        XCTAssertEqual(one(e, env: env(parity: true), seed: 1).face,
+                       WaterFaceDraw(cellX: 60, cellY: 19, tile: 5, waterKind: 0))
+        XCTAssertNil(one(e, env: env(parity: true, submerged: 1), seed: 1).face)
+        XCTAssertNil(one(e, env: env(parity: false), seed: 1).face)
+        XCTAssertNil(one(e, env: env(2, parity: true), seed: 1).face)
+        XCTAssertNil(one(e, env: env(3, parity: true), seed: 1).face)
+        // FG tile < 0x5f; 0 ≤ FG kind < 0x60; a liquid cell; the liquid kind rides along.
+        for (fg, kind, liquidCell, wanted) in [(Int32(0x5e), Int32(0x5e), true, true), (0x5f, 0x5f, true, false),
+                                               (5, 0x5f, true, true), (5, 0x60, true, false), (5, -1, true, false),
+                                               (5, 0, true, true), (5, 5, false, false)] {
+            e = liquid(liquidCell ? 201 : 0, fg: fg, fgKind: kind)
+            let f = one(e, env: env(parity: true), seed: 1).face
+            XCTAssertEqual(f, wanted ? WaterFaceDraw(cellX: 60, cellY: 19, tile: Int16(fg), waterKind: 1) : nil,
+                           "fg \(fg) kind \(kind) \(liquidCell)")
+        }
+    }
 }

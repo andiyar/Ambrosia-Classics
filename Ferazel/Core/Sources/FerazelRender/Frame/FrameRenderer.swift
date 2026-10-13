@@ -19,8 +19,8 @@ import FerazelCore
 ///   session emits this op on every `.PaintFrameWrap` iteration): every active slot not pending removal copies its
 ///   face, point, radius and colour to the "previous" fields and clears `+1` (new); the speeds are 0 for every
 ///   level-1 light, so nothing moves; the row-redraw counter `*_DAT_100a012c` has no writer (its only TOC load is
-///   `1001bff8`), so its redraw never runs. Then the op itself is recorded only — its water faces // later: E1b (the
-///   list is empty until then).
+///   `1001bff8`), so its redraw never runs. Then the op's Enhanced water faces (E1b), in list order:
+///   `WaterFaceBlitter.draw` into the frame port at the scroll point (Core already made the bubbles, motes and dust).
 /// - `wrapDrawSprites`: `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair. A passage
 ///   jump's own `.WrapDrawSprites` (`.HitPlayerSprite` l. 49677) has no `.HandleLights` before it.
 /// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
@@ -58,6 +58,8 @@ public final class FrameRenderer {
         case tintTableNotBuilt
         /// `deathEffectStep` outside `.DeathEffect`'s loop, k = 0 … 49.
         case deathEffectStep(Int)
+        /// A `WaterFaceDraw` tile outside the FG-water set (Core hands only 0…0x5e; the original reads past it).
+        case waterFaceTile(Int16)
     }
 
     /// What `apply` executed, in order (the test oracle of the op order).
@@ -333,6 +335,10 @@ public final class FrameRenderer {
                 // `.HandleLights` (l. 9205) runs just before `.WrapDrawWaterEffects` (l. 9206).
                 handleLights()
                 executed.append(.handleLights)
+                // Its Enhanced water faces (E1b): the FG-water faces through mode 0x60000 + kind, then the light.
+                sprites.lights = lights
+                try WaterFaceBlitter.draw(list, faces: grid.sets.fgWater.sheet, sprites: sprites, scroll: scroll,
+                                          ports: &ports)
                 executed.append(.waterEffects(list.count))
             case .drawParticles(let list):
                 particles.draw(list, scroll: scroll, ports: &ports)

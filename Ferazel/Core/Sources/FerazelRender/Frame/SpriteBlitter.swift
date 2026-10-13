@@ -348,7 +348,7 @@ public struct SpriteBlitter: Sendable {
     ///   underwater. In the light loop that height is stored back into `param_6` (`param_6 = param_6 − iVar9`,
     ///   l. 15259): every later slot's skip test, split and height see the shortened h' (as written); the closing
     ///   darken runs only when no light met, so it always sees the unshortened h'.
-    private func lightFace(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, x: Int, y: Int,
+    func lightFace(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, x: Int, y: Int,
                            flip: Bool, waterRow: Int = 0, h0: Int, v0: Int, ports: inout FramePorts) throws {
         var failure: Refusal?
         let bounds = Rect(face.bounds).offset(dh: x, dv: y)

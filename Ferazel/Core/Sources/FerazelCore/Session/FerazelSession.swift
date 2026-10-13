@@ -78,6 +78,9 @@ public final class FerazelSession {
     public let tintTableDraws: [Int16]
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
+    /// `.WrapDrawWaterEffects`' tile cache (`_DAT_100a00f0`, its origin) and the dust's `local_6a` (E1b). Per session:
+    /// a new level's session starts with the flag `*_DAT_100a00f4` clear, so its first walk refills.
+    public private(set) var waterEffects = WaterEffects()
     /// The level loaded (`Mlvl` id).
     public let levelNumber: Int
     /// `Mmap 200`, read by `LevelFlow` when the level exit is touched.
@@ -259,8 +262,9 @@ public final class FerazelSession {
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
         let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
-        // `.WrapDrawWaterEffects(odd)` (l. 9206): every iteration; its water faces and bubbles // later: E1b.
-        ops.draws.append(.wrapDrawWaterEffects([]))
+        // `.WrapDrawWaterEffects(odd)` (l. 9206): every iteration, drawn or not, with the parity before this
+        // iteration's flip — its bubbles, motes and wind dust into the pool, its Enhanced water faces into the op (E1b).
+        ops.draws.append(.wrapDrawWaterEffects(waterEffects.run(world: world, h: h, v: v, effects: prefs.effects)))
         ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
