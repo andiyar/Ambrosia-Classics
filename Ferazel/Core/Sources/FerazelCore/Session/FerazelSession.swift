@@ -63,8 +63,8 @@ public final class FerazelSession {
     public let countdownID: Int?
     /// `iRam100a5110`: the countdown (−0x1e = hidden; `.GameLoop` decrements it only while > −0x1e).
     public private(set) var countdown: Int32 = -0x1e
-    /// The player cues of the last iteration, in call order (`PlayerState.drainFrameOutputs` after `.MTHandleSprites`;
-    /// S1 turns them into `SoundCue`s).
+    /// The player cues of the last iteration, in call order (`PlayerState.drainFrameOutputs` after `.MTHandleSprites`).
+    /// The `SoundCue`s come from `PlayerState.soundCalls` instead (S1: converted at the end of the same iteration).
     public private(set) var frameCues: [PlayerCue] = []
     public private(set) var camera: Camera
     /// The stream's current state (`_DAT_100a17e8`; the stream is `world.rng`, plan Invariant 4).
@@ -363,7 +363,8 @@ public final class FerazelSession {
         if let g = world.gammaFade.handle() { ops.draws.append(g) }
         // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
         // after this iteration (W4).
-        if ended == nil, world.player.gameOver || world.player.levelDone {
+        let endsNow = ended == nil && (world.player.gameOver || world.player.levelDone)
+        if endsNow {
             let request = loopEnd()
             ended = request
             ops.requests.append(request)
@@ -372,6 +373,16 @@ public final class FerazelSession {
             // Handle pass's cues. Normal iterations keep the once-per-frame drain above.
             frameCues += world.player.cues
             world.player.cues = []
+        }
+        // S1: the iteration's sound calls — the handle pass's and the player pass's, in call order, each under the
+        // scroll point it was made at — as the Sound Tool takes them (`SoundCues`).
+        SoundCues.emit(world.player.soundCalls, prefs: prefs, into: &ops)
+        world.player.soundCalls = []
+        if endsNow {
+            // After the loop (l. 5300–5310): `FUN_10091504` of 452 (`*_DAT_1009fe24`) and 511 (`*_DAT_1009fe20`);
+            // G+4 ≥ 1 with the level complete (`*_DAT_100a0088`) stops 452, 453 (`*_DAT_1009fd68`) and 511 again.
+            ops.soundStops += [452, 511]
+            if globals.health >= 1 && world.player.levelDone { ops.soundStops += [452, 453, 511] }
         }
         return ops
     }

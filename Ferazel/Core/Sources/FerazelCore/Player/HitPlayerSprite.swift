@@ -50,7 +50,7 @@ public enum HitPlayerSprite {
         if o1.type == PlatformSprite.spiked,
            Int16(truncatingIfNeeded: o1.centre.y) <= Int16(truncatingIfNeeded: p1.centre.y) || p1.vy < -0x200,
            p1.invulnerable < 1, p1.ridden != oID {
-            w.player.cues.append(PlayerCue(call: .reg, snd: 450, priority: 1, volume: 0xab))
+            w.player.cue(PlayerCue(call: .reg, snd: 450, priority: 1, volume: 0xab))
             w.active.update(id: pID) { s in
                 s.hp &-= 0x70
                 s.invulnerable = 0x3c
@@ -90,7 +90,7 @@ extension HitPlayerSprite {
             return
         }
         if o.type == levelExit {
-            w.player.cues.append(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
+            w.player.cue(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
             let r = BackgroundSprite.record(w, o)
             w.player.exitIndex = r?.p1 ?? 0
             if let p2 = r?.p2, p2 != 0 { w.player.exit2 = p2 }
@@ -164,7 +164,7 @@ extension HitPlayerSprite {
             s.vy = Int32(vy)                                            // `fctiwz`: toward zero
             s.groundKind = 0
         }
-        w.player.cues.append(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
+        w.player.cue(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
         w.player.airCounter = 1
     }
 
@@ -294,7 +294,7 @@ public enum HurtPlayer {
         w.player.exertion &+= 0x50
         if blood { bloodSpray(w, player: pID, attacker: aID, count: 0x28, speed: 500, spread: 0x96, kind: 2) }
         func cue(_ c: PlayerCue.Call, _ snd: Int16, _ vol: Int16, rate: Int32? = nil, pos: SpriteSlot.Point? = nil) {
-            w.player.cues.append(PlayerCue(call: c, snd: snd, priority: 1, volume: vol, position: pos, rate: rate))
+            w.player.cue(PlayerCue(call: c, snd: snd, priority: 1, volume: vol, position: pos, rate: rate))
         }
         if damage < 0xe0 {
             cue(.regPitched, 508, 0x97, rate: Int32(w.rng.next(10000)) + 65000)

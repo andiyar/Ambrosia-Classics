@@ -31,28 +31,28 @@ public enum GroundCeilingEffects {
                 v = 100
             }
             let twice = Int16(truncatingIfNeeded: Int32(v) << 1)        // `slw; extsh` (raw `100545b4..100545c4`)
-            w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 414))   // `_DAT_100a03f8` (Bank correction C7)
+            w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 414))   // `_DAT_100a03f8` (Bank correction C7)
             if (w.active.sprite(id: id)?.groundKind ?? 0) != 0 {
-                w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
+                w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
             }
             let me = w.active.sprite(id: id) ?? s
             let springboard = me.ridden.flatMap { w.active.record(id: $0) }.map { $0.subtype == 0x58c } ?? false
             if !springboard {
                 if twice == 0 {
                     if 700 < impact && me.lastWater == 0 {
-                        w.player.cues.append(PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c))   // `a0284`
+                        w.player.cue(PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c))   // `a0284`
                     }
                 } else if me.lastWater == 0 {
-                    w.player.cues.append(PlayerCue(call: .reg, snd: 600, priority: 0x14,
-                                                   volume: Int16(truncatingIfNeeded: Int32(twice) + 0x14)))   // `a0288`
+                    w.player.cue(PlayerCue(call: .reg, snd: 600, priority: 0x14,
+                                           volume: Int16(truncatingIfNeeded: Int32(twice) + 0x14)))   // `a0288`
                 }
             } else if 0x578 < impact {
-                w.player.cues.append(PlayerCue(call: .reg, snd: 603, priority: 1, volume: 0x55))   // `_DAT_100a0280`
+                w.player.cue(PlayerCue(call: .reg, snd: 603, priority: 1, volume: 0x55))   // `_DAT_100a0280`
             }
         }
         if !w.player.bumpedLatch && w.player.dying == 0 && (w.active.sprite(id: id)?.ceilingHit ?? 0) != 0 {
             w.player.bumpedLatch = true
-            w.player.cues.append(PlayerCue(call: .reg, snd: 404, priority: 0x14, volume: 0xa0))   // `_DAT_100a0408`
+            w.player.cue(PlayerCue(call: .reg, snd: 404, priority: 0x14, volume: 0xa0))   // `_DAT_100a0408`
         }
     }
 }
@@ -151,8 +151,8 @@ public enum EffectSprite {
                 let slot = Int(p.classWord150)
                 if w.player.crunchSprites.indices.contains(slot) { w.player.crunchSprites[slot] = nil }
                 if p.hp == 0 && p.classWord16c == 1 {
-                    w.player.cues.append(PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100,
-                                                   position: p.centre))   // `_DAT_100a01e0`
+                    w.player.cue(PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100,
+                                           position: p.centre))   // `_DAT_100a01e0`
                     CrunchTiles.destroyCrunchTile(w, col: Int(Int16(truncatingIfNeeded: p.classWord154)),
                                                   row: Int(Int16(truncatingIfNeeded: p.classWord158)),
                                                   dir: Int(Int16(truncatingIfNeeded: p.classWord15c)),

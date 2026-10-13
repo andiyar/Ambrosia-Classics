@@ -357,6 +357,32 @@ public struct PlayerState: Equatable, Sendable {
     /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile
     /// callback and by the Effect Handles (the crumble overlay's 424).
     public var cues: [PlayerCue] = []
+    /// One sound call as S1 converts it: the cue and the scroll point `PTR_DAT_1009fe78` at the call
+    /// (`.CalcStereoVolume` reads it then; `scrollH`/`scrollV` here).
+    public struct SoundCall: Equatable, Sendable {
+        public var cue: PlayerCue
+        public var scrollH: Int
+        public var scrollV: Int
+
+        public init(cue: PlayerCue, scrollH: Int, scrollV: Int) {
+            self.cue = cue
+            self.scrollH = scrollH
+            self.scrollV = scrollV
+        }
+    }
+
+    /// S1: every sound call since the session last converted them (`SoundCues.emit`, once at the end of each
+    /// iteration — the handle pass's and the player pass's calls of the same iteration, in call order). Not touched
+    /// by `drainFrameOutputs()`.
+    public var soundCalls: [SoundCall] = []
+
+    /// A sound call at its call site: recorded in `cues` (the frame's `PlayerCue`s) and, with the scroll point it is
+    /// made under, in `soundCalls`. Every cue site goes through here.
+    public mutating func cue(_ c: PlayerCue) {
+        cues.append(c)
+        soundCalls.append(SoundCall(cue: c, scrollH: scrollH, scrollV: scrollV))
+    }
+
     /// The map changes made since the last `drainFrameOutputs()`, in call order (`DrawOp.setTile`, one per
     /// `.SetFGTile` / `.SetFGCrunchDirTile` write — from the player's tile callback or the overlay's Handle).
     public var tileOps: [DrawOp] = []

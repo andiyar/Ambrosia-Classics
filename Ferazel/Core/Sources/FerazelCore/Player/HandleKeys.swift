@@ -16,7 +16,7 @@ public enum HandleKeys {
         guard let id = w.playerID, w.active.record(id: id) != nil else { return }
         func s() -> SpriteSlot { w.active.record(id: id)! }
         func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
-        func cue(_ snd: Int16, _ vol: Int16) { w.player.cues.append(PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol)) }
+        func cue(_ snd: Int16, _ vol: Int16) { w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol)) }
 
         // Early returns (l. 47108–47122): |teleporter charge| > 0x1e; drinking a potion (wand phase and crouch 0);
         // boss grab.
@@ -296,7 +296,7 @@ public enum HandleKeys {
         let solid = w.active.record(id: r)
         w.player.jumpBase = solid?.jumpBonus ?? 0
         if w.player.jumpBase != 0 && solid?.subtype == PlatformSprite.springboard {
-            w.player.cues.append(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
+            w.player.cue(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
         }
     }
 
@@ -310,7 +310,7 @@ public enum HandleKeys {
             w.player.strokeCooldown = 0xc
             w.player.exertion &+= 8
             if w.player.spiritTimer == 0 {
-                w.player.cues.append(PlayerCue(call: .reg, snd: 497, priority: 1, volume: 0x9c))   // `_DAT_100a02e8`
+                w.player.cue(PlayerCue(call: .reg, snd: 497, priority: 1, volume: 0x9c))   // `_DAT_100a02e8`
             }
             w.active.update(id: id) { s in
                 s.gravity = 0x50
@@ -421,7 +421,7 @@ public enum HandleKeys {
             w.player.lastRope = false
             w.player.rope = false
             w.player.swim = 0
-            w.player.cues.append(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))   // `_DAT_100a03cc`
+            w.player.cue(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))   // `_DAT_100a03cc`
             w.player.crouch = 0
             w.player.spinFrame = 0
         }

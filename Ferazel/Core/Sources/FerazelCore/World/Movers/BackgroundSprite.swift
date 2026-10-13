@@ -454,9 +454,9 @@ extension BackgroundSprite {
         var dy = w.player.scrollV + 0xd0 - Int(Int16(truncatingIfNeeded: k.centre.y))
         if dy < 1 { dy = -dy }
         if dx < 300 && dy < 200 {
-            w.player.cues.append(PlayerCue(call: .stop, snd: 493))                         // `_DAT_100a02f8`
-            w.player.cues.append(PlayerCue(call: .threeDRand, snd: 493, priority: 1, volume: 0x100, position: k.centre,
-                                           rate: w.rng.soundRate()))
+            w.player.cue(PlayerCue(call: .stop, snd: 493))                         // `_DAT_100a02f8`
+            w.player.cue(PlayerCue(call: .threeDRand, snd: 493, priority: 1, volume: 0x100, position: k.centre,
+                                   rate: w.rng.soundRate()))
         }
         w.active.update(id: id) { $0.occluder.bottom = 32000 }
         var vx: Int32 = 0, vy: Int32 = 0, setX = false, setY = false
@@ -503,8 +503,8 @@ extension BackgroundSprite {
         let dx = h(c.centre.x - c.x), dy = h(c.centre.y - c.y)
         let isPlayer = cID == w.playerID
         guard !isPlayer || 0 < c.hp else { return }
-        w.player.cues.append(PlayerCue(call: .threeDRand, snd: 484, priority: 1, volume: 0x97, position: c.centre,
-                                       rate: w.rng.soundRate()))
+        w.player.cue(PlayerCue(call: .threeDRand, snd: 484, priority: 1, volume: 0x97, position: c.centre,
+                               rate: w.rng.soundRate()))
         w.active.update(id: cID) { s in
             s.savedHandler = s.handler
             s.savedHandleCleared = s.handleCleared                          // a saved `+0x4c` of 0
@@ -638,8 +638,8 @@ extension BackgroundSprite {
             s.vx = storedVX
             s.vy = storedVY
         }
-        w.player.cues.append(PlayerCue(call: .threeDRand, snd: 483, priority: 1, volume: 0x100, position: c.centre,
-                                       rate: w.rng.soundRate()))                          // `_DAT_100a0310`
+        w.player.cue(PlayerCue(call: .threeDRand, snd: 483, priority: 1, volume: 0x100, position: c.centre,
+                               rate: w.rng.soundRate()))                          // `_DAT_100a0310`
         w.active.update(id: id) { s in
             s.handler = s.savedHandler ?? s.handler
             s.handleCleared = s.savedHandleCleared

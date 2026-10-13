@@ -49,8 +49,8 @@ public enum Splash {
         let sounds = (s.handler != .platform || s.type < 10) && gate
         let width = Int(Int16(truncatingIfNeeded: s.hotRect.right)) - Int(Int16(truncatingIfNeeded: s.hotRect.left))
         func cue(_ snd: Int16, _ volume: Int16) {
-            w.player.cues.append(PlayerCue(call: .threeDRand, snd: snd, priority: 1, volume: volume,
-                                           position: s.centre, rate: w.rng.soundRate()))
+            w.player.cue(PlayerCue(call: .threeDRand, snd: snd, priority: 1, volume: volume,
+                                   position: s.centre, rate: w.rng.soundRate()))
         }
         if mode == 3 {
             if sounds {

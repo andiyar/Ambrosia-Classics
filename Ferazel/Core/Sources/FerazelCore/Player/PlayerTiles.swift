@@ -118,8 +118,8 @@ public enum PlayerTiles {
             if !wasClimbing {
                 w.player.jumpCounter = 0                                // `_DAT_100a0764`
                 let rate = w.rng.soundRate()                            // `.STPlay3DSoundRand` (raw `10054f70`)
-                w.player.cues.append(PlayerCue(call: .threeDRand, snd: 455, priority: 1, volume: 0x3c,
-                                               position: s.centre, rate: rate))   // `_DAT_100a0374`
+                w.player.cue(PlayerCue(call: .threeDRand, snd: 455, priority: 1, volume: 0x3c,
+                                       position: s.centre, rate: rate))   // `_DAT_100a0374`
             }
             w.player.climb = 1
             w.player.facing = side                                      // `_DAT_100a5f5a = r23 & 0xff`
@@ -133,7 +133,7 @@ public enum PlayerTiles {
                     let y = w.active.sprite(id: id)!.y256
                     if h(Int(y >> 8) + cy - 4 - (pos.y + 0x10)) < 1 {
                         w.player.pullUp = 1                             // `_DAT_100a06a0`
-                        w.player.cues.append(PlayerCue(call: .reg, snd: 416, priority: 1, volume: 0xab))   // `a03f0`
+                        w.player.cue(PlayerCue(call: .reg, snd: 416, priority: 1, volume: 0xab))   // `a03f0`
                     }
                 } else {
                     w.active.update(id: id) { p in
@@ -192,7 +192,7 @@ public enum PlayerTiles {
             p.y256 = Int32(p.y) << 8
         }
         if keys.contains(.down) {
-            w.player.cues.append(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))   // `_DAT_100a03cc`
+            w.player.cue(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))   // `_DAT_100a03cc`
             w.player.spin = true
             w.active.update(id: id) { p in
                 p.vy = bounced
@@ -200,7 +200,7 @@ public enum PlayerTiles {
             }
         } else {
             w.player.spin = false
-            w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))
+            w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))
             w.active.update(id: id) { $0.vy = 0 }
         }
         w.player.crunchCooldown = 5
@@ -280,8 +280,8 @@ public enum CrunchTiles {
             var spr = findCrunchSprite(w, col: tx, row: ty)
             if (kind == 2 && p < 2) || (kind == 4 && p < 4) {
                 // `if (!FUN_100916dc(423)) .STPlay3DSound(423, 1, 0x100, pos)` (raw `10044a50..10044a74`).
-                w.player.cues.append(PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100, position: point,
-                                               onlyIfIdle: true))
+                w.player.cue(PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100, position: point,
+                                       onlyIfIdle: true))
             } else if !destroy {
                 if spr == nil && kind != 2 && kind != 4 {
                     spr = makeCrunchSprite(w, col: tx, row: ty, hp: 2)
@@ -300,8 +300,8 @@ public enum CrunchTiles {
                     if rec.hp <= 0 {
                         destroy = true
                     } else if rec.phase == 0 {
-                        w.player.cues.append(PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100,
-                                                       position: point))   // `_DAT_100a01e4`
+                        w.player.cue(PlayerCue(call: .threeD, snd: 423, priority: 1, volume: 0x100,
+                                               position: point))   // `_DAT_100a01e4`
                         let r = w.rng.next(3)                           // raw `10044b4c`
                         w.active.update(id: o) { s in
                             s.phase = r &+ 1
@@ -313,7 +313,7 @@ public enum CrunchTiles {
         }
         if destroy {
             if let o = findCrunchSprite(w, col: tx, row: ty) { w.active.update(id: o) { $0.dead = true } }
-            w.player.cues.append(PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100, position: point))
+            w.player.cue(PlayerCue(call: .threeD, snd: 424, priority: 1, volume: 0x100, position: point))
             destroyCrunchTile(w, col: tx, row: ty, dir: dir, explode: true, clearDir: true)
             log(w, col: tx, row: ty)
         }

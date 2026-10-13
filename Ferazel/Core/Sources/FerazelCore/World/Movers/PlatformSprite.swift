@@ -619,11 +619,11 @@ public enum PlatformSprite {
                 let p4 = record(w, s0)?.p4 ?? 0
                 if p4 == 0 {
                     let rate = w.rng.soundRate()
-                    w.player.cues.append(PlayerCue(call: .threeDRand, snd: 461, priority: 1, volume: 0xab,
-                                                   position: pos, rate: rate))
+                    w.player.cue(PlayerCue(call: .threeDRand, snd: 461, priority: 1, volume: 0xab,
+                                           position: pos, rate: rate))
                 } else {
-                    w.player.cues.append(PlayerCue(call: .threeDPitched, snd: 461, priority: 1, volume: 0x100,
-                                                   position: pos, rate: Int32(p4) &* 0xf3b &+ 0x10000))
+                    w.player.cue(PlayerCue(call: .threeDPitched, snd: 461, priority: 1, volume: 0x100,
+                                           position: pos, rate: Int32(p4) &* 0xf3b &+ 0x10000))
                 }
             }
         } else {
@@ -725,13 +725,13 @@ public enum PlatformSprite {
             let pos = s.centre
             if s.phase == 0 {
                 let rate = w.rng.soundRate()
-                w.player.cues.append(PlayerCue(call: .threeDRand, snd: 440, priority: 1, volume: 0x100, position: pos,
-                                               rate: rate))
+                w.player.cue(PlayerCue(call: .threeDRand, snd: 440, priority: 1, volume: 0x100, position: pos,
+                                       rate: rate))
             }
             if s.phase == 6 {
                 let rate = w.rng.soundRate()
-                w.player.cues.append(PlayerCue(call: .threeDRand, snd: 441, priority: 1, volume: 0x100, position: pos,
-                                               rate: rate))
+                w.player.cue(PlayerCue(call: .threeDRand, snd: 441, priority: 1, volume: 0x100, position: pos,
+                                       rate: rate))
             }
             var phase = s.phase + 1
             if catapultScriptCount < phase { phase = 0 }

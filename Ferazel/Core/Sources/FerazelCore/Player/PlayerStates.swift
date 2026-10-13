@@ -52,7 +52,7 @@ public enum PlayerStates {
         /// `if (0 < idle) idle = fidgets` — most arms' "idle reset".
         func idleReset() { if 0 < w.player.idle { w.player.idle = w.player.fidgets } }
         /// `if (FUN_100916dc(*_DAT_100a03cc)) FUN_10091504(…)`: stop the spin sound 427 if it is playing.
-        func stopSpinSound() { w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427)) }
+        func stopSpinSound() { w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427)) }
 
         // Glider (`_DAT_100a05e0`, l. 45219–45518, incl. dying on the glider). // later: Phase 4 (no Phase-2 writer)
         if w.player.glider { return false }
@@ -214,7 +214,7 @@ public enum PlayerStates {
         w.player.standing0670 = false
         w.player.airCounter = 0
         w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
+        w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
         w.player.crouch = 0
         let n = w.player.pullUp
         if n == 0 {
@@ -249,7 +249,7 @@ public enum PlayerStates {
         w.player.climb = 0
         w.player.airCounter = 0
         w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))
+        w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))
         w.player.crouch = 2
         w.player.groundLast = 1                                         // `_DAT_100a0738`
         let landed = face(crouch, 2)                                    // `07e0 + 0x68`
@@ -264,7 +264,7 @@ public enum PlayerStates {
         func s() -> SpriteSlot { w.active.record(id: id)! }
         func setFace(_ f: FaceRef?) { w.active.update(id: id) { $0.face = f } }
         func idleReset() { if 0 < w.player.idle { w.player.idle = w.player.fidgets } }
-        func stopSpinSound() { w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427)) }
+        func stopSpinSound() { w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427)) }
 
         // Crouch (`_DAT_100a071c ≠ 0`).
         if w.player.crouch != 0 {
@@ -431,11 +431,11 @@ public enum PlayerStates {
         if 3 < w.player.footstep { w.player.footstep -= 4 }
         guard let s = w.active.record(id: id) else { return }
         if s.lastWater == 0 {
-            w.player.cues.append(PlayerCue(call: .reg, snd: 410 + w.player.footstep, priority: 1, volume: volume))
+            w.player.cue(PlayerCue(call: .reg, snd: 410 + w.player.footstep, priority: 1, volume: volume))
         } else {
             let rate = w.rng.soundRate()
-            w.player.cues.append(PlayerCue(call: .threeDRand, snd: 454, priority: 1, volume: 0x2a, position: s.centre,
-                                           rate: rate))
+            w.player.cue(PlayerCue(call: .threeDRand, snd: 454, priority: 1, volume: 0x2a, position: s.centre,
+                                   rate: rate))
         }
     }
 

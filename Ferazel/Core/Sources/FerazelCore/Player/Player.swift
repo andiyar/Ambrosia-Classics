@@ -344,8 +344,8 @@ public enum Player {
             w.player.idle = 0
             if w.player.lastRidden == nil && solid.type == 0x6a4 {
                 let rate = w.rng.soundRate()
-                w.player.cues.append(PlayerCue(call: .threeDRand, snd: 509, priority: 1, volume: 0xbf,
-                                               position: solid.centre, rate: rate))   // `_DAT_100a02b4`
+                w.player.cue(PlayerCue(call: .threeDRand, snd: 509, priority: 1, volume: 0xbf,
+                                       position: solid.centre, rate: rate))   // `_DAT_100a02b4`
             }
         } else {
             w.player.carpet = false
@@ -503,7 +503,7 @@ public enum Player {
         w.player.lastClimb = w.player.climb
         guard w.player.climb != 0 else { return }
         w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
+        w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
         let side = w.player.wallSide
         w.active.update(id: id) { p in
             if p.vy < 0 {

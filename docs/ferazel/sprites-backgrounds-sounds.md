@@ -324,3 +324,11 @@ Read against `ghidra/Ferazel_pef.decompiled.c` (Ferazel 1.0 PEF) by the C5 revie
    **200**; cached-flag-1 sheets (plants, wall tunnels, 1464, outcrops) under clut **202** = level + base (`1008901c`).
    The OmniPx strip face with hdr 0x26cc unset converts under **200** (decompile l. 2273). At Setup the cached faces
    are the PICT 150 placeholder (l. 73900–73950, after l. 2537); what re-faces them is not yet read.
+8. **(S1, 2026-10-14) `.InitSounds` loads exactly 144 handles** (decompile l. 39734–40037): 300..304, 401..511, 600..615
+   **without 602**, 700..704, 800..805, 4704, 4705; the footsteps 410..413 are the array `*_DAT_100a025c`[0..3], 477..479
+   `*_DAT_100a0320`[0..2], 486..488 `*_DAT_100a0304`[0..2], 489..491 `*_DAT_100a0300`[0..2]. Every `STPlay*` returns on a
+   nil handle (`param_1 == 0`). Table: `FerazelCore/Sound/SoundSlots.swift`.
+9. **(S1, 2026-10-14) `.UpdateDynamicSounds` never re-pans anything.** §6.3's "keep looping sounds positioned" [MED]: the
+   16-entry table `*_DAT_100a0258` (TOC `-0x75e8(r2)`) is loaded only by `.InitDynamicSounds` (raw `10047938`, zeroes the
+   flags) and `.UpdateDynamicSounds` (raw `100479b4`, reads them); nothing in the binary arms an entry, so the per-frame
+   call at `.GameLoop` l. 5253 is a no-op. `.STPlayLoopedSound` re-queues through `.STLoopCallBack`, not this table.

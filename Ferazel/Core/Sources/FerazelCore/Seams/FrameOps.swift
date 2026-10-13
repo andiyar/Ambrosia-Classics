@@ -11,6 +11,10 @@ public struct FrameOps: Equatable, Sendable {
     public var requests: [ShellRequest]
     /// False on a skipped draw (prefs[0] "Reduce frame rate": the odd iteration of the pair, engine §4).
     public var drawn: Bool
+    /// S1: the `FUN_10091504(snd)` stops of the iteration (every voice playing `snd`), in call order. A stop cancels
+    /// the plays of its snd made earlier in the same iteration (Core drops them from `sounds`), so the shell applies
+    /// `soundStops` first, then `sounds`.
+    public var soundStops: [Int16] = []
 
     /// The empty iteration: nothing drawn, played or requested, and not a skipped draw.
     public init(draws: [DrawOp] = [], sounds: [SoundCue] = [], music: [MusicCue] = [], requests: [ShellRequest] = [],

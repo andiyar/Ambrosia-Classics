@@ -43,13 +43,13 @@ public enum PlayerLiquids {
                 w.globals = g
             }
             if healing {
-                w.player.cues.append(PlayerCue(call: .reg, snd: 803, priority: 1, volume: 0xab, onlyIfIdle: true))
+                w.player.cue(PlayerCue(call: .reg, snd: 803, priority: 1, volume: 0xab, onlyIfIdle: true))
             } else {
-                w.player.cues.append(PlayerCue(call: .stop, snd: 803))
+                w.player.cue(PlayerCue(call: .stop, snd: 803))
             }
         } else if kind < 3 && 0 <= kind {
             if s.invulnerable == 0 && w.player.countdown06d8 == 0 && 4 < s.hp {
-                w.player.cues.append(PlayerCue(call: .reg, snd: 407, priority: 1, volume: 0x100))
+                w.player.cue(PlayerCue(call: .reg, snd: 407, priority: 1, volume: 0x100))
                 w.player.countdown06d8 = 0x23
                 w.active.update(id: id) { p in
                     p.flash = 0xd
@@ -71,8 +71,8 @@ public enum PlayerLiquids {
         if damage == 0 { damage = 0x70 }
         w.player.stun = 1
         w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))
-        w.player.cues.append(PlayerCue(call: .reg, snd: 450, priority: 1, volume: 0x100))
+        w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))
+        w.player.cue(PlayerCue(call: .reg, snd: 450, priority: 1, volume: 0x100))
         w.active.update(id: id) { p in
             p.invulnerable = 0x3c
             p.flash = 0x12
@@ -92,7 +92,7 @@ public enum PlayerLiquids {
         if w.globals.breath < 1 && s.invulnerable == 0 {
             if w.globals.suffocation == 0 {
                 w.globals.breath = 0
-                w.player.cues.append(PlayerCue(call: .reg, snd: 443, priority: 1, volume: 0x100))
+                w.player.cue(PlayerCue(call: .reg, snd: 443, priority: 1, volume: 0x100))
                 w.active.update(id: id) { p in
                     p.hp &-= 0x70
                     p.invulnerable = 0x28
@@ -123,7 +123,7 @@ public enum PlayerLiquids {
             let y = Int(Int16(truncatingIfNeeded: s.centre.y - 0x10))
             w.newSprite(type: bubble, x: x, y: y, layer: 0xb, handler: .effect) { EffectSprite.setup(&$0) }
             w.player.bubbleCooldown = 2
-            w.player.cues.append(PlayerCue(call: .reg, snd: 415, priority: 1, volume: 0xab))
+            w.player.cue(PlayerCue(call: .reg, snd: 415, priority: 1, volume: 0xab))
         } else {
             w.player.bubbleCooldown -= 1
         }
@@ -144,7 +144,7 @@ public enum PlayerLiquids {
         if s.hp < 1 && w.player.dying == 0 && w.player.stun == 0 {
             w.active.update(id: id) { $0.windScale = 0 }
             w.player.diedInLiquid = !(s.waterRow == 0 && s.lastWater == 0)
-            w.player.cues.append(PlayerCue(call: .reg, snd: 417, priority: 1, volume: 0x100))
+            w.player.cue(PlayerCue(call: .reg, snd: 417, priority: 1, volume: 0x100))
             w.player.dying = 1
         }
         if !Breathing.shouldEmitBubbles(world: w, id: id) {

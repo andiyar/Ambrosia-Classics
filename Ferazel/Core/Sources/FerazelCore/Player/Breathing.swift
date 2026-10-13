@@ -46,7 +46,7 @@ public enum Breathing {
                     if !shouldEmitBubbles(world: w, id: id) || oxygen < 1 {
                         if 0 < oxygen {
                             let snd: Int16 = 9 - level < 4 ? 408 : 409          // `_DAT_100a0400` / `_DAT_100a03fc`
-                            w.player.cues.append(PlayerCue(call: .reg, snd: snd, priority: 1, volume: 0x37))
+                            w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: 0x37))
                         }
                     } else {
                         PlayerLiquids.emitBubble(w, id: id)                // `.EmitBubble @ 1004ba74` (P4)

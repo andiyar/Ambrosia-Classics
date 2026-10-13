@@ -397,8 +397,8 @@ public enum RopeSprite {
                 let tableBase: Int16 = r.type == 0xbce ? 489 : 486
                 let vol = r.type == 0xbce ? vol3022 : volOther
                 let pos = w.active.record(id: pID)?.centre
-                w.player.cues.append(PlayerCue(call: .threeDRand, snd: tableBase + k, priority: 1, volume: vol,
-                                               position: pos, rate: w.rng.soundRate()))
+                w.player.cue(PlayerCue(call: .threeDRand, snd: tableBase + k, priority: 1, volume: vol,
+                                       position: pos, rate: w.rng.soundRate()))
             }
             if !w.player.lastRope || rid != w.player.currentRope {
                 if !w.player.lastRope {
