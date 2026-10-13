@@ -58,7 +58,9 @@ final class SpriteListTests: XCTestCase {
             if let s = e.sheet { XCTAssertEqual(s.clut, clut, "conversion CLUT", line: line) }
             let p = c.level.placements[record]
             XCTAssertEqual(e.slot.x, Int(p.x), line: line); XCTAssertEqual(e.slot.y, Int(p.y), line: line)
-            XCTAssertEqual(e.slot.face == nil, source == .none, line: line)
+            // W1: `.SetupPlatformSprite` leaves `+0xc0 = 0` — a platform's entry names the sheet its first Handle frame
+            // faces it from (`.handle`) while the slot stays faceless (the level-start frame draws no platform).
+            XCTAssertEqual(e.slot.face == nil, source == .none || e.spriteClass == .platform, line: line)
         }
         // Background: cannon 1090 (layer 1000, face from the aim), mace 1485 (cache 1480+5), plants (cache 0xa8c+i,
         // CLUT flag 1 → level+base 202; p1 mirrors, p2 tints, p3 → layer 10000), tunnel 3002, exit 3249 (no face).
@@ -114,6 +116,15 @@ final class SpriteListTests: XCTestCase {
         // Platform: layer −1, face from `.DoSetupPlatformSprite` = set 1400 (10 × 80×41) cell type − 1400.
         try check(25, type: 1400, layer: -1, mode: 0, light: true, pict: 1400, index: 0, source: .handle)
         try check(14, type: 1402, layer: -1, mode: 0, light: true, pict: 1400, index: 2, source: .handle)
+        // W1 `.SetupPlatformSprite @ 10061f94` (decompile l. 54501–54537): no face, Platform Handle + hit + tile
+        // callbacks, one-way, sag 0x50, `+0xa6 = 1`, gravity 0, empty hot rect, the first-frame flag clear.
+        let plat = try entry(c, record: 25).slot
+        XCTAssertNil(plat.face)
+        XCTAssertEqual(plat.handler, .platform)
+        XCTAssertTrue(plat.hasHit && plat.hasTileHit && plat.oneWay && !plat.setupDone)
+        XCTAssertEqual([plat.sag, plat.counterA6, plat.gravity], [0x50, 1, 0])
+        XCTAssertEqual(plat.hotRect, IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0))
+        XCTAssertEqual([plat.x, plat.y, Int(plat.x256), Int(plat.y256)], [292, 972, 292 << 8, 972 << 8])
         // Walker: layer 4; mirrored while the player is left of x + 50; tier p3 = 1 → 0x10010; 1705 / 1760 sets.
         try check(17, type: 1700, layer: 4, mode: 0x10010, mirrored: true, light: true, pict: 1700,
                   source: .setupCached)
@@ -260,7 +271,13 @@ final class SpriteListTests: XCTestCase {
         list.update(id: did) { $0.x += 5000 }
         let second = idle.handle(h: 100, v: 50, playerHotRect: nil, active: &list) { _ in face }
         XCTAssertEqual(second.deactivated, [1])
+        // W1 (the `.ActiveToIdleSprite` carry, l. 4162–4204): the saved record stays listed with `+0x4c = 0` until
+        // `.UpdateSprites` kills it at the end of the iteration (was: unlinked at once, `[12]` here).
+        XCTAssertEqual(list.sprites.map(\.type), [11, 12])
+        XCTAssertEqual(list.sprites.map(\.handleCleared), [true, false])
+        for id in list.sprites.filter(\.handleCleared).map(\.id) { list.remove(id: id) }   // `.UpdateSprites`
         XCTAssertEqual(list.sprites.map(\.type), [12])
+        XCTAssertNotNil(list.record(id: bid))                                    // `.MTKillSprite` keeps the record
         XCTAssertNil(try XCTUnwrap(idle.entries[1]).activeID)
         XCTAssertEqual(try XCTUnwrap(idle.entries[1]).saved.x, 828 - 2 + 11)   // `.ActiveToIdleSprite` saves the live position
         // The same rule vertically: the box's top on the window's bottom edge (half-open: no overlap), a top margin of

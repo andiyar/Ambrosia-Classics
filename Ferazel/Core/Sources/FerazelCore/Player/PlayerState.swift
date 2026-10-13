@@ -19,6 +19,9 @@ public struct PlayerCue: Equatable, Sendable {
         case stopIfPlaying
         /// `FUN_10091504(snd)` with no playing test (P4: row 17's healing sound 803 when nothing heals, l. 44879–44883).
         case stop
+        /// `.STPlay3DSoundPitched(snd, prio, vol, pos, rate) @ 10047b8c` — no draw; `rate` holds the caller's pitch
+        /// (W1: the crumbling platform's 461 with p4 ≠ 0, `p4·0xf3b + 0x10000`).
+        case threeDPitched
     }
 
     public var call: Call
@@ -27,7 +30,7 @@ public struct PlayerCue: Equatable, Sendable {
     public var volume: Int16
     /// The 3D position (`*(int *)(sprite + 0xe)`: y = `+0xe`, x = `+0x10`); nil for the non-3D calls.
     public var position: SpriteSlot.Point?
-    /// The rate drawn at the call site (`.threeDRand` only).
+    /// The rate drawn at the call site (`.threeDRand`), or the caller's pitch (`.threeDPitched`).
     public var rate: Int32?
     /// `if (!FUN_100916dc(snd)) play(…)`: the call is made only while the sound is not playing (`.CrunchTile`'s 423,
     /// raw `10044a50..10044a74`; S1 maps it to `SoundCue.onlyIfIdle`).

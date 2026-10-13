@@ -22,7 +22,7 @@ extension TileSolver {
     public func wallBounceBG(_ id: Int, kind kindIn: Int, tile pos: inout TilePos, vCentre: Int, factor: Int16,
                              rect r: IdleSprites.Rect, bounce: Bool) -> Bool {
         let h = Self.short16
-        guard var s = world.active.sprite(id: id) else { return false }
+        guard var s = world.active.record(id: id) else { return false }
         var k = Int(Int16(truncatingIfNeeded: kindIn))
         guard k >= 0, k <= 0x3c else { return false }
         s.x = SpriteWorld.pixel(s.x256)
@@ -64,7 +64,7 @@ extension TileSolver {
         func recurse(_ base: Int) -> Bool {
             put(id) { $0 = s }
             let result = wallBounce(id, kind: base, tile: &pos, vCentre: vCentre, factor: factor, rect: r, bounce: bounce)
-            s = world.active.sprite(id: id) ?? s
+            s = world.active.record(id: id) ?? s
             return result
         }
         func land(_ vyRule: (Int32) -> Int32) {

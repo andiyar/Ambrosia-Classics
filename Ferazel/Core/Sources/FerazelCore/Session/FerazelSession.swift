@@ -221,7 +221,10 @@ public final class FerazelSession {
         let h = camera.scrollH, v = camera.scrollV
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
-        ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites()))
+        let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
+        ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
+            Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
+        }))
         if draw {
             // later: E1a `.DrawParticles`, `.UpdateOmniPx`; then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
@@ -230,7 +233,7 @@ public final class FerazelSession {
         // `.HandleIdleSprites`: the window takes the live player's (`*_DAT_1009fdd8`) `+0x34` rect at its `+0xc`/`+0xa`
         // (l. 4302–4308).
         let bounds = faceBounds
-        let playerRect = world.playerID.flatMap { world.active.sprite(id: $0) }.map { p in
+        let playerRect = world.playerID.flatMap { world.active.record(id: $0) }.map { p in
             IdleSprites.Rect(top: p.y + p.hotRect.top, left: p.x + p.hotRect.left, bottom: p.y + p.hotRect.bottom,
                              right: p.x + p.hotRect.right)
         }
@@ -264,21 +267,95 @@ public final class FerazelSession {
                 world.active.update(id: id) { s in
                     if let op = BonusHandle.twinkle(&s, effects: effects) { ops.draws.append(op) }
                 }
-            case .platform, .chain, .background, .box, .rope, .ropeSegment:
-                break   // later: W1 (platform, chain), W2a/W2b (background), W3 (box, rope, ropeSegment)
+            case .platform:
+                PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
+            case .chain:
+                ChainSprite.handle(world: world, id: id)                          // `.HandleChainSprite` (W1)
+            case .seeSawSegment:
+                ChainSprite.handleSeeSawSegment(world: world, id: id, solver: solver,
+                                                faceWidth: PlatformSprite.faceWidth)
+            case .background, .box, .rope, .ropeSegment:
+                break   // later: W2a/W2b (background), W3 (box, rope, ropeSegment)
             }
         }
         // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).
         frameCues = world.player.drainFrameOutputs().cues
-        // `.MTCollideSprites`, then the player pass. No Phase-2 hit callback or `.HitPlayerSprite` arm exists yet.
-        world.collideSprites { _, _, _ in }       // later: W1–W3 hit callbacks
-        world.collideSpecial(hitPlayer: { _, _, _ in }, hit: { _, _, _ in })   // later: P2 `.HitPlayerSprite`
+        // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
+        world.collideSprites(Self.hitCallback)
+        world.collideSpecial(hitPlayer: { w, p, c in HitPlayerSprite.hit(w, player: p, other: c) }, hit: Self.hitCallback)
         // later: E1a `.HandleParticles`
         ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: h, v: v))
         ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
         ops.drawn = draw
         odd.toggle()
+        // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).
+        world.updateSprites()
         return ops
+    }
+
+    /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
+    /// Effect class's `.HitEffectSprite` is empty. // later: W2a/W2b (background), W3 (box), Phase 4–5 (enemies, shots).
+    static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
+        guard let s = w.active.record(id: a) else { return }
+        switch s.handler {
+        case .platform: PlatformSprite.hit(w, id: a, other: b)
+        default: break
+        }
+    }
+
+    /// The `+0x89` inputs of `.WrapDrawSprites` (l. 10282–10297; raw `1001472c..100147bc`): L = `.GetLightTile(+0x10 >>
+    /// 5, +0xe >> 5)` (the BG cell's high byte − 1, `LevelFile.lightByte`; the hot-rect centre, `srawi`), F =
+    /// `.GetFakeLight` (`fakeLight`). `SpriteSlot.applyDynamicLight` turns them into `+0xb8`. The original computes them
+    /// only for a sprite whose face passes the draw's cull (`SectRectFast`, l. 10261–10265); Core asks for every `+0x89`
+    /// sprite with a face [MED: an off-view raft's word is refreshed one draw early].
+    static func dynamicLight(_ s: SpriteSlot, level: LevelFile, lights: [SetupFaces.Light],
+                             bounds: (FaceRef) -> IdleSprites.Rect,
+                             frame: (FaceRef) -> IdleSprites.Rect) -> (lightTile: Int, fakeLight: Int) {
+        let L = level.lightByte(col: Int(Int16(truncatingIfNeeded: s.centre.x) >> 5),
+                                row: Int(Int16(truncatingIfNeeded: s.centre.y) >> 5))
+        guard let f = s.face else { return (L, 0) }
+        // The drawn width / height (`iVar12` / `iVar15`, l. 10285–10298): face `+6` − left clip, less what the right
+        // clip cuts; face `+4` − top clip, less what the bottom clip cuts.
+        let fr = frame(f)
+        let fw = fr.right, fh = fr.bottom
+        var w = fw - s.clip.left
+        if s.clip.right < fw { w -= fw - s.clip.right }
+        var h = fh - s.clip.top
+        if s.clip.bottom < fh { h -= fh - s.clip.bottom }
+        return (L, fakeLight(x: s.x, y: s.y, width: w, height: h, faceBounds: bounds(f), lights: lights))
+    }
+
+    /// `.GetFakeLight(face, …, w, h, pos, &out) @ 1001d708` (decompile l. 15290–15360; lighting-tables §7.5): the first
+    /// active light in slot order (the Setup lights, `lights`, in `.AddLight` order — Phase 2 removes none) that passes
+    /// the bounding pre-test (it is skipped only when |x + w/2 − lx| ≥ lx + r + w/2 **and** |y + h/2 − ly| ≥ ly + r + h/2
+    /// — the light's own coordinate added, as written), has radius `+0x14` > 0x20 and whose face rect (`+0x58` = (0, 0,
+    /// height, width) offset by (lx − r, ly − r)) contains the centre of the sprite face's opaque bounds (face `+8` at
+    /// (x, y); `PtInRect`, half-open): v = 11 − (`.PEDistance`(lx − px, ly − py)·11) / r (i16, C division), accepted for
+    /// 0 ≤ v < 12 → v + the light's colour. Otherwise 0.
+    static func fakeLight(x: Int, y: Int, width w: Int, height h: Int, faceBounds b: IdleSprites.Rect,
+                          lights: [SetupFaces.Light]) -> Int {
+        let s16 = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        for l in lights {
+            let r = l.radius
+            let ax = abs(x + (w >> 1) - l.x)
+            if l.x + r + (w >> 1) <= ax {
+                let ay = abs(y + (h >> 1) - l.y)
+                if l.y + r + (h >> 1) <= ay { continue }
+            }
+            let top = l.y - r, left = l.x - r
+            let px = s16(x + ((b.left + b.right) >> 1)), py = s16(y + ((b.top + b.bottom) >> 1))
+            guard 0x20 < r, left <= px, px < left + l.width, top <= py, py < top + l.height else { continue }
+            let d = peDistance(l.x - px, l.y - py)
+            let v = s16(0xb - s16((d * 0xb) / r))
+            if 0 <= v && v < 0xc { return s16(v + l.colour) }
+        }
+        return 0
+    }
+
+    /// `.PEDistance(a, b) @ 10047648` (decompile l. 40638–40684): max(|a|, |b|) + min(|a|, |b|) / 3.
+    static func peDistance(_ a: Int, _ b: Int) -> Int {
+        let x = abs(a), y = abs(b)
+        return max(x, y) + min(x, y) / 3
     }
 
     /// `.FindUpperLeftCorner` on the player's globals: the focus `(fd44, fd40)`, vx `fd3c`, `uRam100a5114`, and the

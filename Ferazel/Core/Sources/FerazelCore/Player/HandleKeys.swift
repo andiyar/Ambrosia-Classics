@@ -148,10 +148,7 @@ public enum HandleKeys {
                         p.groundKind = 0
                     }
                 }
-                if ridden != nil {
-                    // later: W1 — J = the ridden platform's `+0x194`, and the springboard sound 604 (`_DAT_100a027c`)
-                    // when J ≠ 0 and its `+0xb0` mode is 0x58c. No Phase-2 sprite is ridden before W1.
-                }
+                jumpFromRidden(w, ridden: ridden)                         // l. 47808–47813 (W1)
                 accelerateJump(w, id: id)
                 w.player.jumpCounter -= 1
             }
@@ -290,6 +287,19 @@ public enum HandleKeys {
     /// halved (srawi) when already swimming below the surface band, swim 3, gravity 0x50, stroke cooldown 12,
     /// exertion +8, snd 497 vol 0x9c unless in spirit form, face 1027[0], cap 2000; a later counter repeats it
     /// quartered below the band.
+    /// A jump or first stroke off a ridden sprite (l. 47808–47813, 47844–47849): J (`_DAT_100a0678`) = the ridden
+    /// sprite's `+0x194` (the springboard's depression bonus; 0 for every other platform mode); J ≠ 0 on a ridden
+    /// `+0xb0 == 0x58c` → `.STPlayRegSound(604, 1, 0x100)` (`_DAT_100a027c`). The stroke computed its impulse from the
+    /// previous J before this (l. 47827), the jump reads the new one (`.AccelerateSprite` after).
+    static func jumpFromRidden(_ w: SpriteWorld, ridden: Int?) {
+        guard let r = ridden else { return }
+        let solid = w.active.record(id: r)
+        w.player.jumpBase = solid?.jumpBonus ?? 0
+        if w.player.jumpBase != 0 && solid?.subtype == PlatformSprite.springboard {
+            w.player.cues.append(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
+        }
+    }
+
     static func swimStroke(_ w: SpriteWorld, id: Int, near: Bool, ridden: Int?) {
         guard let p = w.active.record(id: id) else { return }
         let ax = p.vx < 1 ? 0 &- p.vx : p.vx
@@ -308,9 +318,7 @@ public enum HandleKeys {
                 s.face = FaceRef(pict: 1027, index: 0, set: .encoded)    // `*_DAT_100a07b8`
                 s.groundKind = 0
             }
-            if ridden != nil {
-                // later: W1 — J from the ridden platform's `+0x194` (and the 0x58c springboard sound).
-            }
+            jumpFromRidden(w, ridden: ridden)                             // l. 47844–47849 (W1), after `a`
             let ay = Int32(a)
             w.active.update(id: id) { $0.accelerateSprite(ax: 0, ay: ay, maxX: 0, maxY: 2000) }
             w.player.jumpCounter -= 1

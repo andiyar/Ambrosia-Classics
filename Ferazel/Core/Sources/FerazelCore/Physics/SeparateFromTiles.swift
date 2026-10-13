@@ -103,11 +103,14 @@ public final class TileSolver {
     ///    `callback((X, Y), kind, 0)`.
     /// 5. The second 9-cell loop under `+0xe4` computes rects and discards them (dead, physics §3.1) — not built.
     ///
+    /// The sprite is read as a record, linked or not (`ActiveList.record(id:)`), as the Handles read it — the original
+    /// takes a record pointer (W1 reconciles the F2/F3 re-review's M3 with the `.ActiveToIdleSprite` carry; also
+    /// `.WallBounce` / `.WallBounceBG`).
     /// - Parameter pass: the sprite's tile callback `+0x1f8` (nil = 0). // later: the handlers' callbacks (P2
     ///   `.HitPlayerTileSprite`, W1–W3 movers) — the crunch nibble's `.CrunchTile` is P2's, reached through them.
     public func separateFromTiles(_ id: Int, pass: TileHit?) {
         let h = Self.short16
-        guard var s = world.active.sprite(id: id) else { return }
+        guard var s = world.active.record(id: id) else { return }
         let px = SpriteWorld.pixel(s.x256), py = SpriteWorld.pixel(s.y256)
         s.oldPosition = SpriteSlot.Point(x: px, y: py)
         s.x = px
@@ -134,7 +137,7 @@ public final class TileSolver {
                 let tileRect = IdleSprites.Rect(top: h(Y + e.top), left: h(X + e.left), bottom: h(Y + e.bottom),
                                                 right: h(X + e.right))
                 if rect.intersects(tileRect) {
-                    if (world.active.sprite(id: id)?.crunches ?? 0) != 0 {
+                    if (world.active.record(id: id)?.crunches ?? 0) != 0 {
                         for i in 0..<2 {
                             let cc = col - 1 + i
                             let cx = h(cc << 5)

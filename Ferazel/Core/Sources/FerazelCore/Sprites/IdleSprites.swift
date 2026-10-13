@@ -7,7 +7,8 @@ import Foundation
 ///   it and it is killed (`MTKillSprite`). Entry: `+0` used, `+4` the live sprite (0 = idle), `+8`/`+0xa`/`+0xc`
 ///   type/x/y, `+0xe` record, `+0x10..+0x17` the face rect, `+0x24..` the saved sprite bytes (`saved`).
 /// - `.ActiveToIdleSprite @ 10007ed4` (l. 4162): face rect = face `+8..+0xf` (the opaque bounds) when `+0xc0` ≠ 0,
-///   else `SetRect(0, 0, 0x40, 0x40)`; type/x/y from the live sprite; the sprite unlinked.
+///   else `SetRect(0, 0, 0x40, 0x40)`; type/x/y from the live sprite; the live record keeps its place with `+0x4c = 0`
+///   (`SpriteSlot.handleCleared`) until `.UpdateSprites` kills it (`SpriteWorld.updateSprites`).
 /// - `.IdleToActiveSprite @ 1000803c` (l. 4217): `MTNewSprite(type, x, y, saved +0x80, saved +0x48, setup 0)` — no
 ///   Setup runs — then the saved bytes are copied back (links kept); x/y from the entry.
 /// - `.HandleIdleSprites @ 100081ac` (l. 4276): window = `SetRect(h − 24, v − 24, h + 632, v + 408)` ∪ the player's
@@ -98,13 +99,19 @@ public struct IdleSprites: Equatable, Sendable {
                 guard live.mayIdle else { continue }
                 let r = Self.testRect(x: live.x, y: live.y, face: e.faceRect, margins: live.margins)
                 if !r.intersects(window) {
-                    // `.ActiveToIdleSprite(i, 1)`.
+                    // `.ActiveToIdleSprite(i, 1)` (l. 4162–4204): the record saved, then the live one keeps its place
+                    // on the list with `+0x4c = 0` and `+0xe9 = 0` — it is not unlinked here; `.UpdateSprites` kills it
+                    // at the end of the iteration (`SpriteWorld.updateSprites`; W1 carry). `+0x54` (the rope's
+                    // `.RopeIdleize`) // later: W3.
                     e.faceRect = live.face.map(faceRect) ?? .noFace
                     var s = live
                     s.id = 0
                     e.saved = s
                     e.activeID = nil
-                    active.remove(id: id)
+                    active.update(id: id) { c in
+                        c.handleCleared = true
+                        c.dead = false
+                    }
                     entries[i] = e
                     off.append(i)
                 }

@@ -45,8 +45,14 @@ public struct SpriteSlot: Equatable, Sendable {
     public struct Siblings: Equatable, Sendable {
         public var first: Int?
         public var second: Int?
+        /// `+0x1dc` / `+0x1e0` (W1): the third and fourth links — the 4-wheel's S3 and its links, read by
+        /// `.HitPlatformTileSprite`'s bounce. `.StandardSpriteHandles`' carry moves `+0x1d4`/`+0x1d8` only.
+        public var third: Int?
+        public var fourth: Int?
 
-        public init(first: Int? = nil, second: Int? = nil) { self.first = first; self.second = second }
+        public init(first: Int? = nil, second: Int? = nil, third: Int? = nil, fourth: Int? = nil) {
+            self.first = first; self.second = second; self.third = third; self.fourth = fourth
+        }
     }
 
     /// Identity in the `ActiveList` (the original's record pointer); assigned by `ActiveList.insert`.
@@ -238,7 +244,22 @@ public struct SpriteSlot: Equatable, Sendable {
     public var occluder = Occluder()
     /// `+0x1d4` / `+0x1d8`.
     public var siblings = Siblings()
-    // later: W1 — `radial: Radial?` (the `+0x198` block, `+0x187` has-radial); `Radial` is W1's type (plan S2).
+    /// `+0x187` has-radial / `+0x198` the 0xa4-byte radial block (`.MakeRadial`; W1, plan S2). nil = `+0x187` 0.
+    public var radial: Radial?
+    /// `+0xa6` (i16): the platform's direction / cooldown / lifetime / phase word (`.SetupPlatformSprite` 1; W1).
+    public var counterA6: Int16 = 0
+    /// `+0xb2` (i16): the platform sub-state (modes 50/51 10 / 0xb) and the radial "driver" flag (W1).
+    public var subState: Int16 = 0
+    /// `+0x17c` (u8): the platform's first-frame `.DoSetupPlatformSprite` has run (W1).
+    public var setupDone = false
+    /// `+0x194` (i32): the jump bonus a rider's jump reads (`.HandleKeys`: J = ridden `+0x194`; W1 writes it).
+    public var jumpBonus: Int32 = 0
+    /// `+0x1f8` ≠ 0: the sprite has a tile callback (W1: platform modes 10/11 clear it; the handler picks the closure).
+    public var hasTileHit = false
+    /// `+0x4c` == 0: `.ActiveToIdleSprite` cleared the Handle of a live record it saved (raw `10007ed4..`, l. 4202);
+    /// the record stays on the list — `.MTHandleSprites` skips it, `.UpdateSprites` kills it at the end of the
+    /// iteration (W1 carry, F2 fix-round finding).
+    public var handleCleared = false
     // later: W3 — `+0x1e8` the surface-height function (ropes, rope bridge); `.PlatformBounce` takes it as an argument.
     /// `+0x1b3` burning (read by `.WrapEraseSprites`).
     public var burning = false
@@ -317,6 +338,9 @@ public struct SpriteSlot: Equatable, Sendable {
 /// built, `BonusHandle`, is the one piece of an inert Handle that runs — at the sprite's place in the handle pass.)
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
+    /// W1 (added, Invariant 9): `.HandleSeeSawSegSprite @ 100655c8` (`_DAT_100a01c8`) — the see-saw segments 0x59b
+    /// `.SetupSeeSawSegSprite` installs (the player pass's see-saw test, `SpriteWorld.isSeeSawSegment`).
+    case seeSawSegment
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

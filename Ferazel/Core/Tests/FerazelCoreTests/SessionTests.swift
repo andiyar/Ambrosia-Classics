@@ -319,9 +319,11 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
         XCTAssertTrue(first.drawn)
         XCTAssertTrue(first.sounds.isEmpty)
-        // Iteration 1 draws the 10 spawned-now sprites; the player's face is still 0 (`.SetupPlayerSprite`).
+        // Iteration 1 draws the spawned-now sprites with a face; the player's face is still 0 (`.SetupPlayerSprite`).
+        // W1 ◈: the 7 platforms are faceless until their first Handle (`.SetupPlatformSprite` `+0xc0 = 0`), so 3 of
+        // the 10 are drawn (was 10 with the Phase-1 Setup faces).
         guard case .wrapDrawSprites(let drawn1) = first.draws[8] else { return XCTFail("sprites") }
-        XCTAssertEqual(drawn1.count, 10)
+        XCTAssertEqual(drawn1.count, 3)
         XCTAssertFalse(drawn1.contains { $0.face.pict == 1003 })
         guard case .wrapEraseSprites(let sprites1, let eh, let ev) = first.draws[11] else { return XCTFail("erase") }
         XCTAssertEqual([eh, ev], [0, 0])

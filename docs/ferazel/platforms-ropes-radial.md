@@ -287,6 +287,21 @@ Record byte +1 is 0 in every Platform, Rope and spring record.
 Unused in shipped data: modes 4 (from records), 5, 21, 22, 50, every 1xx form, types 1406, 1409,
 1411..1419, 1421..1424, 1426..1429.
 
+### 2.10 ⚑ W1 build notes (2026-10-13, Phase 2 W1; dump re-read)
+- Springboard flotation: the one-argument `.HandleFlotation(s)` of physics §8.9 has r4 = `+0x150` (the rest line)
+  at the call (`1006474c lwz r4,0x150(r25)` … `100647f8 bl 0x10042d04`, r4 untouched) — surfaceY = the rest line
+  [HIGH; closes that MED].
+- Catapult script (§8.9 "table at `0x100a6314`"): `.InitPlatformSprite` copies from `0x100a6314` into entries 0…,
+  after the count 0x13; the data there is 0, 1, 1, 2, 2, 1, 0, 3, 4, 5, 6, 6, 5, 5, 4, 4, 3, 3, 0, 0 — entry 0 is 0 and the
+  19 listed values are entries 1…19 (the step is incremented before the read; it wraps past 0x13 to 0).
+- Mode 2's spring-back, y equal to the record y: stores `_DAT_100a6312 = 0x100` and `*PTR_DAT_100a094c = 0` (raw
+  `10064c3c..10064c50`) — both write-only (no other reference); vy is untouched on that frame and kept when snapped
+  from above.
+- First-frame radial position (`+0x10`/`+0xe` still the `.InitSprite` 0 on the first Handle): level 1's three-wheel
+  (record 21) members are placed ≈1900 px right of the hub on frame 1, where P's tile pass meets FG tiles —
+  `.HitPlatformTileSprite` bounces the wheel at once (speed +0x100, hub vx −0x100, cooldown −5 on all three), so it
+  starts turning and rolling unridden [HIGH arithmetic; the visible result is Ben's gate].
+
 ---
 
 ## 3. Ropes (class Rope, types 3020..3039)

@@ -144,8 +144,12 @@ public enum SetupFaces {
             one(0x426), set(0x429, 3, 0x54, 100, 3), set(0x51c, 4, 0x21, 0x1f, 4), one(0x5b8, clut: 202),
             one(0xb1a), one(0xb25, clut: 202), one(0xb56), set(0xb5e, 6, 0x3c, 0x58, 6), one(0xc12), one(0xc14),
             one(0xb87), one(0xb88), one(0xb6a), one(0xb6c), one(0xb6f),
-            // `.InitPlatformSprite`: set 0x578.
-            set(0x578, 10, 0x50, 0x29, 10),
+            // `.InitPlatformSprite` (l. 54477–54496): set 0x578, the ice set 0x2c7, the springboard singles 0x58c…0x58e,
+            // the mace chains 0x59a / 0x59c, the chain links 0x599 (60 × 16×16), the see-saw segments 0x59b (45 × 24×24),
+            // the catapult 0x582 (7 × 216×200) — at boot under clut 200 (W1).
+            set(0x578, 10, 0x50, 0x29, 10), set(0x2c7, 3, 0x28, 0x18, 1), one(0x58c), one(0x58d), one(0x58e),
+            one(0x59a), one(0x59c), set(0x599, 0x3c, 0x10, 0x10, 10), set(0x59b, 0x2d, 0x18, 0x18, 1),
+            set(0x582, 7, 0xd8, 200, 1),
             // `.InitWalkerSprite`: 0x6a4 single, 0x6a9 set, 0x6e0 set (all cached, 0).
             one(0x6a4), set(0x6a9, 3, 0xcc, 0x59, 1), set(0x6e0, 9, 0x54, 0x5c, 9),
             // `.InitCrawlerSprite`: 0x6b0 single (0x5dc+i are absent); `.InitRoachSprite`: 0x6b8 set (cached, 0).
@@ -159,6 +163,11 @@ public enum SetupFaces {
 
     /// The sheet a Phase-1 face of PICT `pict` comes from (the level-1 table; nil for any other PICT).
     public static func sheet(pict: Int16) -> Sheet? { sheets[pict] }
+
+    /// The Platform class's sets (`.InitPlatformSprite`, W1): what its Handles face their sprites from — the platform
+    /// set, ice, catapult, springboard, chain links, mace chains and see-saw segments. FerazelRender loads them all.
+    public static let platformSheets: [Sheet] = [0x578, 0x2c7, 0x582, 0x58c, 0x58d, 0x58e, 0x599, 0x59a, 0x59b, 0x59c]
+        .compactMap { sheets[$0] }
 
     // MARK: - one Setup
 
@@ -332,10 +341,19 @@ public enum SetupFaces {
             }
 
         case .platform:
-            s.layer = -1                                       // l. 54514
-            // `+0xc0 = 0`; `.DoSetupPlatformSprite` (first Handle frame) sets set 0x578 + (type − 0x578)·0x34.
-            guard (0x578...0x581).contains(t) else { throw Error.notTranscribed(type: p.type) }
-            face(0x578, t - 0x578, .handle)
+            // `.SetupPlatformSprite @ 10061f94` (W1, `PlatformSprite.setup`): layer −1, `+0xc0 = 0` — the level-start
+            // frame draws no platform; `.DoSetupPlatformSprite` (the first Handle frame) sets set 0x578 + (type −
+            // 0x578)·0x34 (the catapult its set 0x582, the springboard its single 0x58c). The entry names that sheet
+            // (`.handle`) while the slot's face stays nil. The armless types (0x584…0x58b, 0x58d…0x595: a face index
+            // past the set; the one placed, 0x591, is a see-saw arm that clears its face every frame) name none.
+            s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)
+            PlatformSprite.setup(&s)
+            switch t {
+            case 0x578...0x581: face(0x578, t - 0x578, .handle)
+            case 0x582, 0x583: face(0x582, 0, .handle)
+            case 0x58c: face(0x58c, 0, .handle)
+            default: break
+            }
 
         case .walker:
             s.layer = 4                                        // l. 56933
@@ -390,7 +408,7 @@ public enum SetupFaces {
         }
 
         if source != .none, sheet == nil { throw Error.notTranscribed(type: p.type) }   // a face outside the table
-        if source != .none, let sh = sheet {
+        if source != .none, cls != .platform, let sh = sheet {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,

@@ -120,6 +120,16 @@ public final class SpriteWorld {
         active.relink(id: id)
     }
 
+    /// `.UpdateSprites @ 10009a00` (decompile l. 4940–5033), at the end of the `.GameLoop` iteration (after
+    /// `.PaintFrameWrap`; platforms-ropes-radial-2 §8.1 step 7) — the part Phase 2 reaches: every listed record whose
+    /// Handle `+0x4c` is 0 (`.ActiveToIdleSprite` saved it this iteration, `SpriteSlot.handleCleared`) is killed
+    /// (`.MTKillSprite`; the record stays readable through `ActiveList.record(id:)`). The `+0xe9` death count-up
+    /// (1 … 4, the callbacks, face and light cleared, the record flag), the record position write-back (`+0x188` …)
+    /// and the 0x6ea re-type are not built — // later: Phase 3–5 (no Phase-2 writer of a killing `+0xe9` count).
+    public func updateSprites() {
+        for id in active.sprites.filter(\.handleCleared).map(\.id) { active.remove(id: id) }
+    }
+
     // MARK: - the passes
 
     /// `.MTHandleSprites @ 1003259c` (raw `100325b8..100325d4`): from the head, `next` (`+0x68`) is loaded **before**
@@ -141,7 +151,8 @@ public final class SpriteWorld {
         var cursor = active.sprites.first?.id
         while let id = cursor {
             let next = active.next(after: id)                     // `lwz r31,0x68(r3)` before `bl 0x1009f80c`
-            if active.record(id: id) != nil { handle(self, id) }   // `+0x4c` read from the record, linked or not
+            // `+0x4c` read from the record, linked or not; 0 (an idled record, `SpriteSlot.handleCleared`) is skipped.
+            if let r = active.record(id: id), !r.handleCleared { handle(self, id) }
             cursor = next
         }
     }
@@ -233,9 +244,9 @@ public final class SpriteWorld {
     }
 
     /// Whether `s` runs `.HandleSeeSawSegSprite` (`_DAT_100a01c8` → `100655c8`, compared at `10032db8`): the see-saw
-    /// segments 0x59b that `.MakeRadiusSprites` makes with `.SetupSeeSawSegSprite` (platforms-ropes-radial-2 §8.4)
-    /// [MED: identified by type; W1 builds them].
-    static func isSeeSawSegment(_ s: SpriteSlot) -> Bool { s.type == 0x59b }
+    /// segments 0x59b that `.MakeRadiusSprites` makes with `.SetupSeeSawSegSprite` (platforms-ropes-radial-2 §8.4) —
+    /// by the Handle, as the dump compares `+0x4c` (W1).
+    static func isSeeSawSegment(_ s: SpriteSlot) -> Bool { s.handler == .seeSawSegment && !s.handleCleared }
 
     /// `.MTCollideSpecialSprite(player, .HitPlayerSprite) @ 10032ac8` (decompile l. 30374–30520; raw
     /// `10032ac8..10032eec`; platforms-ropes-radial-2 §8.3), run by `.HandleSprites` only when `playerDead` is false
@@ -257,7 +268,7 @@ public final class SpriteWorld {
         var cursor = active.sprites.first?.id
         while let cID = cursor {
             defer { cursor = active.next(after: cID) }
-            guard cID != pID, let C = active.sprite(id: cID), !C.dead, let P = active.sprite(id: pID),
+            guard cID != pID, let C = active.sprite(id: cID), !C.handleCleared, !C.dead, let P = active.sprite(id: pID),
                   rect(P).intersects(rect(C)) else { continue }
             if contacts.count < 16 { contacts.append(cID) } else { hitPlayer(self, pID, cID) }
         }

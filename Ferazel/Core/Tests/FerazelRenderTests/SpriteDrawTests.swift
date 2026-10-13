@@ -364,7 +364,9 @@ final class SpriteDrawTests: XCTestCase {
         var ports = FramePorts()
         try SpriteBlitter(level: f.level, tables: f.tables, faces: sprites)
             .wrapDrawSprites(draws, h: 0, v: 10, ports: &ports)
-        XCTAssertEqual(draws.count, 10 + 13 - 1)   // the 1059 trigger in the window has no face
+        // The 1059 trigger in the window has no face; W1: neither have the 7 platforms before their first Handle
+        // (`.SetupPlatformSprite` `+0xc0 = 0`; was 10 + 13 − 1 with the Phase-1 Setup faces).
+        XCTAssertEqual(draws.count, 10 + 13 - 1 - 7)
 
         // The `+0x89` write-back (`100147b8` / `100147bc`) through the Core pass.
         var list = ActiveList()
