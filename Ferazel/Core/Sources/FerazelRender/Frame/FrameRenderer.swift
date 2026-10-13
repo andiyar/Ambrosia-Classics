@@ -159,11 +159,13 @@ public final class FrameRenderer {
     })
 
     /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
-    /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`) and the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`)
-    /// — the two effects P2 spawns. // later: E1a / Phase 3–5 — the other effect sets.
+    /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`), the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`) and
+    /// the bubble 1040 (`LoadEncFaceSetFromPICT(0x410, 4, 8, 8, 4, …)`, l. 53656: 4 × 8×8, `.EmitBubble`, P4) — the
+    /// effects Phase 2 spawns. // later: E1a / Phase 3–5 — the other effect sets.
     static let effectSheets: Set<SetupFaces.Sheet> = [
         SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x4ba, count: 3, cellWidth: 0x20, cellHeight: 0x20, columns: 3, clut: 200),
+        SetupFaces.Sheet(pict: 0x410, count: 4, cellWidth: 8, cellHeight: 8, columns: 4, clut: 200),
     ]
 
     /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order): the first

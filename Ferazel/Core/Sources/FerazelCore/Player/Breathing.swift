@@ -19,7 +19,7 @@ public enum Breathing {
     /// - the period counter `_DAT_100a06b0` −1; at < 1 it reloads with 9 − L and, unless (chest `PTR_DAT_100a04fc`
     ///   == 1 ∧ E < 0xa0 ∧ last phase `_DAT_100a06a8` ≥ 2), the breath phase `sRam100a5f5e` advances — so with
     ///   E < 0xa0 the calm cycle **holds at chest frame 1** (phase 5) once it gets there (l. 43367; Bank correction
-    ///   A11); at phase 2: bubbling with oxygen → `.EmitBubble` // later: P4; else oxygen > 0 → the breath sound
+    ///   A11); at phase 2: bubbling with oxygen → `.EmitBubble` (P4); else oxygen > 0 → the breath sound
     ///   (408 `_DAT_100a0400` when 9 − L < 4, else 409 `_DAT_100a03fc`; prio 1, vol 0x37);
     /// - the phase wraps after 5; chest = phase, 6 − phase above 3 (2 while bubbling); last phase = phase.
     public static func handle(world w: SpriteWorld, id: Int) {
@@ -49,7 +49,7 @@ public enum Breathing {
                             w.player.cues.append(PlayerCue(call: .reg, snd: snd, priority: 1, volume: 0x37))
                         }
                     } else {
-                        // later: P4 — `.EmitBubble @ 1004ba74` (sprite 0x410, snd 415).
+                        PlayerLiquids.emitBubble(w, id: id)                // `.EmitBubble @ 1004ba74` (P4)
                     }
                 }
             }

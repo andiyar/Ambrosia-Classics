@@ -247,6 +247,17 @@ over the face's opaque footprint — `lbz r17,0(r9) … lbzx r16,r10,r17 … stw
 Extra interaction found: the player clears `+0x88` whenever its `+0xb8 ≠ 0` (`100512dc..100512ec`:
 `lwz r0,0xb8; cmpwi 0; beq; li r0,0; stb r0,0x88`), so a tinted player is drawn unlit.
 
+⚑ P4 (2026-10-13, built in `SpriteBlitter.lightFace`): **what "underwater variant" means.** In all six blitters
+`.DrawLightOverFace` calls (`BlitLightOverFace(Flip)Clip`, `BlitAfterLightOverFace(Flip)Clip`,
+`BlitAmbDarkenOverFace(Flip)Clip`), last argument 1 only changes the row start: at each row token the port pointer
+**and** the column counter start at R = `_DAT_100a0118[((*_DAT_1009fd74 >> 8) + port row) % 35]` (signed `%`, `mulhw`;
+raw `1001dcb0..1001dce8`, `1001e0b8..1001e0e4`, `1001e5f8..1001e624`, `1001edf4..1001ee24`, `1001f20c..1001f23c`, `1001f778..1001f79c`) —
+the same ripple as mode 6, so the light lands on the rippled pixels; the light column counter (`iVar10` / `iVar6`)
+restarts at the unshifted offset, so the light is read at the face column, not the shifted one. Split (W = water row
+> 1): rows above with height min(W, h) — the two **flipped light** calls pass W unclamped (decompile l. 15250, 15254)
+— then rows from v + W with h − W, last argument 1; in the light loop that `h − W` is stored back into `param_6`
+(l. 15259), so every later light slot (skip test, split, height) sees the shortened height [HIGH code; as written].
+
 ## 4. Burn-away: `.HandleBurn @ 10043cd8` and `.BurnFaceRow @ 100437d8`
 
 ### 4.1 Call site and frame order  [HIGH]

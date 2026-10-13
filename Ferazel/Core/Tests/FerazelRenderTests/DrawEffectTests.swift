@@ -192,13 +192,54 @@ final class DrawEffectTests: XCTestCase {
         XCTAssertEqual(ports.frame[165 * FramePorts.width + 311], 0x33)
         // Port rows 160..179 read R[22..34], R[0..6]: 11 shifted rows lose one column each.
         XCTAssertEqual(footprint(ports).count, 12 * 40 - 11)
-        // The light pass over a sprite with a water row needs the underwater blitters: refused by name.
+        // ⚑ P4 (the E2 carry; was "refused by name" `.underwaterLight(20)`): the light pass over a sprite with a water
+        // row. No light slot on this fixture and level 1's hdr 0x2706 = 5 → `.DrawLightOverFace`'s closing darken
+        // (l. 15106–15152): W 20 > 1 → `.BlitAmbDarkenOverFaceClip(…, min(20, 40), 0)` over rows 0…19, then rows from
+        // v + 20, height 40 − 20, last argument 1 — the underwater variant shifts each row by the same R as the mode-6
+        // draw (raw `1001e5f8..1001e624`: R[((phase >> 8) + port row) % 35]), so the darken lands on the drawn pixels.
         var lit = d
         lit.lightOverlay = true
-        var p = FramePorts()
-        XCTAssertThrowsError(try blitter(effects: 1).wrapDrawSprites([lit], h: 0, v: 0, ports: &p)) {
-            XCTAssertEqual($0 as? SpriteBlitter.Refusal, .underwaterLight(20))
+        let lb = try blitter(effects: 1)
+        var p = FramePorts(fill: 0x33)
+        try lb.wrapDrawSprites([lit], h: 0, v: 0, ports: &p)
+        let slab = lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 140 + 20))
+        XCTAssertNotEqual(slab[0x33], 0x33)
+        for c in 0..<12 {
+            XCTAssertEqual(p.frame[145 * FramePorts.width + 300 + c], slab[Int(f.tables.tint[8][Int(Self.pixel(5, c))])])
+            if c > 0 {
+                XCTAssertEqual(p.frame[165 * FramePorts.width + 300 + c - 1],
+                               slab[Int(f.tables.water[1][Int(Self.pixel(25, c))])], "c \(c)")
+            }
         }
+        XCTAssertEqual(p.frame[165 * FramePorts.width + 299], 0x33)
+        XCTAssertEqual(p.frame[165 * FramePorts.width + 311], 0x33)        // an unshifted darken would reach it
+        // With a light that meets the face (slot 0: a 64×64 light, pixel (r, c) = 0xf5 + c mod 8, at (312, 162) radius
+        // 32 → light offset row 140 − 130 = 10, column 300 − 280 = 20; colour 0): `.BlitLightOverFaceClip` over rows
+        // 0…19, then from row 20 with the last argument 1 (l. 15240–15270) — the destination and the column window
+        // shift by R, the light column stays offCol + c (raw `1001dcb0..1001dce8`: `in_r11` and the port pointer take
+        // R, `iVar10` restarts at offCol).
+        var lb2 = lb
+        let light = LightFace(pict: 1, width: 64, height: 64,
+                              pixels: (0..<64 * 64).map { UInt8(0xf5 + ($0 % 64) % 8) })
+        lb2.lights.slots[0].active = true
+        lb2.lights.slots[0].face = light
+        lb2.lights.slots[0].x = 312
+        lb2.lights.slots[0].y = 162
+        lb2.lights.slots[0].radius = 32
+        var q = FramePorts(fill: 0x33)
+        try lb2.wrapDrawSprites([lit], h: 0, v: 0, ports: &q)
+        let D = lb2.lights.darkness(x: 306, y: 160)
+        func lightened(_ lightRow: Int, _ lightCol: Int, _ d: UInt8) -> UInt8 {
+            f.tables.light[D * 0x6e00 + (Int(light.pixel(row: lightRow, col: lightCol)) - 0xf5) * 0x100 + Int(d)]
+        }
+        for c in 0..<12 {
+            XCTAssertEqual(q.frame[145 * FramePorts.width + 300 + c], lightened(15, 20 + c, f.tables.tint[8][Int(Self.pixel(5, c))]))
+            if c > 0 {
+                XCTAssertEqual(q.frame[165 * FramePorts.width + 300 + c - 1],
+                               lightened(35, 20 + c, f.tables.water[1][Int(Self.pixel(25, c))]), "c \(c)")
+            }
+        }
+        XCTAssertEqual(q.frame[165 * FramePorts.width + 311], 0x33)
     }
 
     // MARK: - the hurt flash

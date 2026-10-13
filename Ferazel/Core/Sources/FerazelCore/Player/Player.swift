@@ -14,22 +14,23 @@ import Foundation
 ///  5 max speeds (quicksand, Double Speed)                 26 climb pre-move
 ///  6 idle +1, `+0x18c`, `+0x8a`, rope latch               27 latches cleared, `.ApplySpeedAndSeparateFromTiles`
 ///                                                            (plan row 22)
-///  7 `.RopeCollide` (later: W3)                           28 surface material: ice (damage: later P4)
+///  7 `.RopeCollide` (later: W3)                           28 surface material: damage (P4), ice
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
 /// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (later: Phase 4)
 /// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
 /// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
-/// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 bubbles / drowning (later: P4)
+/// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 oxygen, drowning, bubbles (P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
-/// 17 liquid damage / heal (later: P4)                     38 `.PlayerConstraints` (later: W4)
+/// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (later: W4)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
 /// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (later: P5)
 /// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass; plan row 35),
 ///                                                            draw offsets (plan row 36)
-/// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, liquid tint, breath refill (later: P4)
+/// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, breath refill (P4); liquid tint
+///                                                            (later: no seam)
 ///                                                         42 tail: copies, below-map, stillness, ride ramps, trail
 ///                                                            ring (later: Phase 4), `.StandardSpriteCleanup`,
 ///                                                            counters, tint overrides
@@ -208,7 +209,8 @@ public enum Player {
             w.player.nearSurface = true
         }
         // 16 (l. 44827–44855): spirit form (`_DAT_100a0578 > 0`, `.TickTockLong`). // later: Phase 4
-        // 17 (l. 44856–44908): liquid damage / heal (`PTR_DAT_100a0538`, kinds 0/1/2/3). // later: P4
+        // 17 (l. 44856–44908): liquid damage / heal (`PTR_DAT_100a0538`, kinds 0/1/2/3; P4).
+        PlayerLiquids.liquidDamage(w, id: id)
         // 18 (l. 44909–44915).
         if 0 < w.player.countdown06d8 { w.player.countdown06d8 -= 1 }
         if 0 < w.player.countdown06cc { w.player.countdown06cc -= 1 }
@@ -298,7 +300,8 @@ public enum Player {
             set { $0.mirrored = turn ? !mirror : mirror }
         }
         // 35 (l. 46204–46241): `.ShouldEmitBubbles` — oxygen, drowning damage, `.EmitBubble`, the bubble timer
-        // (`FastRand(0x96)`). // later: P4
+        // (`FastRand(0x96)`; P4).
+        PlayerLiquids.bubbles(w, id: id)
         // 36 (l. 46242–46346): teleporter charge (`FastRand(6)` sparkle), the invulnerability blink on the parity frames,
         // the power-up tints (`PlayerStates.tint`, P3; teleporters Phase 3, power-ups Phase 4 have no Phase-2 writer).
         PlayerStates.tint(w, id: id)
@@ -320,7 +323,9 @@ public enum Player {
             set { $0.x &-= 0x14 }
         }
         w.player.flag055c = false
-        // 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint, the breath refill. // later: P4
+        // 41 (l. 46438–46488): the death trigger (HP < 1), the liquid screen tint (// later: no Phase-2 seam), the
+        // breath refill (P4).
+        PlayerLiquids.deathAndRefill(w, id: id)
         // 42 (l. 46489–46649).
         tail(w, id: id, faceWidth: faceWidth)
     }
@@ -521,13 +526,13 @@ public enum Player {
 
     /// Row 28 (l. 45106–45135; raw `1004eb24..1004ec4c`): the surface material `+0xd8` the move left. 3 (ice) →
     /// `0694 = (i16)((0x100 − hdr 0x2710)·800 >> 8)` (srawi), at least 1, and `+0x112 = hdr 0x2710 >> 4`;
-    /// neither 2 nor 3 → both 0. 2 (a damaging surface, hdr 0x270e or 0x70): // later: P4 (hurt, snd, stun) —
-    /// left unchanged as the binary leaves them on that arm.
+    /// neither 2 nor 3 → both 0. 2 (a damaging surface, hdr 0x270e or 0x70): `PlayerLiquids.damagingSurface` (P4) —
+    /// the ice globals left unchanged as the binary leaves them on that arm.
     static func surfaceMaterial(_ w: SpriteWorld, id: Int) {
         guard let s = w.active.record(id: id) else { return }
         switch s.material {
         case 2:
-            break   // later: P4 — `+0x116 == 0 ∧ dying == 0` → stun 1, spin 0, stop 427, snd 0x2dc slot, hurt.
+            PlayerLiquids.damagingSurface(w, id: id)
         case 3:
             let slip = Int32(w.level.header.iceSlipperiness)
             var ice = Int16(truncatingIfNeeded: ((0x100 &- slip) &* 0x320) >> 8)

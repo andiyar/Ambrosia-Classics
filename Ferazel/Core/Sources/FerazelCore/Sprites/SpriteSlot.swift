@@ -204,6 +204,9 @@ public struct SpriteSlot: Equatable, Sendable {
     public var underwaterDone = false
     /// `+0x144` (i32): quicksand depth (`.HandleFlotation` kind 5); zeroed on leaving the water.
     public var quicksandDepth: Int32 = 0
+    /// `+0x148` (i32): the liquid surface y `.HandleUnderWater` stores on entering (`+0x120 == 0`); the quicksand floor
+    /// line is `+0x148 + (+0x144 >> 8)` (P4).
+    public var quicksandSurface: Int32 = 0
     /// `+0x116` (i16): invulnerability frames.
     public var invulnerable: Int16 = 0
     /// `+0xaa` (i16): hurt-flash frames.

@@ -12,7 +12,7 @@ import Foundation
 ///   3, `pos.y −= 16`; raw `10054d4c..10054d94`; // later: Phase 4 — no Phase-2 writer): kind < 100 → `.WallBounce`
 ///   + `.CheckGroundCeilingHitEffects`; < 200 → `.WallBounceBG(kind − 100)`, a hit while `+0xce` ≠ 0 sets the one-way
 ///   timer `04cc = 0xf`, then the effects; 600 / 601 → nothing; `.IsWaterTile` (200…209) ∧ the water pass ∧ `+0x140`
-///   == 0 → `.HandleUnderWater(s, pos)` // later: P4.
+///   == 0 → `.HandleUnderWater(s, pos)` (P4).
 /// - **FG (layer 1)**: the cling test, the post-jump guard `04d8 > 0` → return (no `.WallBounce`, no effects), then
 ///   `.WallBounce(s, kind, &pos, &sStack_72, 0, +0x34, 0, 0)`, the carpet arm on a hit, and the effects.
 /// - **Crunch (layer 2)**: `+0xeb` = (`060c` == 0 ∧ vy > 0x9c4), `.CrunchTile(pos, +0xeb)`, and on a crunch with
@@ -71,7 +71,8 @@ public enum PlayerTiles {
             } else if UInt16(truncatingIfNeeded: kind - 600) < 2 {
                 return
             } else if (200..<210).contains(k), w.player.waterPass, !(w.active.sprite(id: id)?.underwaterDone ?? true) {
-                // `.HandleUnderWater(s, pos) @ 10042e30`. // later: P4
+                // `.HandleUnderWater(s, pos) @ 10042e30` (P4); its entry `.Splash(s, 3)` // later: E1a.
+                UnderWater.handle(world: w, id: id, pos: pos)
             }
         }
     }

@@ -34,16 +34,13 @@ import FerazelCore
 ///
 /// Still refused by name (`Refusal`): diffuse (5), behind-tiles (8), squash (0xa), translucency (0xb, 0xd — table
 /// `0148` not built), silhouette (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13), the
-/// same modes under scale / rotation (no table: the register keeps garbage), and the light pass over a sprite with a
-/// water row (`.DrawLightOverFace`'s underwater variants, not built).
+/// same modes under scale / rotation (no table: the register keeps garbage). The light pass over a sprite with a water
+/// row uses `.DrawLightOverFace`'s underwater variants (P4).
 public struct SpriteBlitter: Sendable {
 
     public enum Refusal: Error, Equatable {
         /// A draw mode with no transcribed blitter (`mode` = the whole effective `+0xb8` word).
         case mode(UInt32)
-        /// The light pass with a water row ≥ 1: `.DrawLightOverFace`'s underwater blitters (last argument 1) — owed by
-        /// P4 (the underwater light variant, draw-effects §3).
-        case underwaterLight(Int)
         /// A light-table read outside the table (the original reads other memory).
         case lightIndex(Int)
         /// A `FaceRef` with no loaded face.
@@ -337,48 +334,99 @@ public struct SpriteBlitter: Sendable {
     /// `.WrapLightFace` + `.DrawLightOverFace @ 1001cf38` (decompile l. 15067–15288) for one sprite, per ring copy:
     /// D = `.GetAmbDarkVal(x + w'/2, y + h'/2)` (the clipped w', h'); each active slot (200, slot order) is skipped
     /// when, as written, |x + w'/2 − light.x| ≥ light.x + r + w'/2 **and** |y + h'/2 − light.y| ≥ light.y + r + h'/2
-    /// (the light's own coordinate inside the bound, l. 15172–15184), else tested: the light face rect at (light.x − r,
-    /// light.y − r) against the sprite face's bounds `+8` at (x, y); the first that meets is drawn with
-    /// `.BlitLightOverFace(Flip)Clip`, every later one with `.BlitAfterLightOverFace(Flip)Clip`, at the light offset
-    /// (y − (light.y − r), x − (light.x − r)). None met and header `0x2706` > 0: `.BlitAmbDarkenOverFace(Flip)Clip`
-    /// through slab D.
-    /// A water row ≥ 1 (`.DrawLightOverFace`'s `param_9`, l. 15116–15160) needs the underwater blitters: refused
-    /// wherever a blit would run.
+    /// (the light's own coordinate inside the bound, l. 15172–15184; h' the current `param_6`, see below), else tested:
+    /// the light face rect at (light.x − r, light.y − r) against the sprite face's bounds `+8` at (x, y); the first that
+    /// meets is drawn with `.BlitLightOverFace(Flip)Clip`, every later one with `.BlitAfterLightOverFace(Flip)Clip`, at
+    /// the light offset (y − (light.y − r), x − (light.x − r)). None met and header `0x2706` > 0:
+    /// `.BlitAmbDarkenOverFace(Flip)Clip` through slab D.
+    ///
+    /// The water row W (`param_9` = `+0x11c` unless `+0x18c`; P4, the E2 carry; draw-effects §3) picks each blit's
+    /// last argument 1, the **underwater variant** (the per-row ripple `rippleShift`, through `forEachRun`'s `rowShift`):
+    /// - W < 1: one call, above water; W == 1: one call, underwater (the whole face);
+    /// - W > 1: the rows above with height min(W, h') — except the flipped light blitters, passed W itself (l. 15250,
+    ///   15254, as written) — then, when W < h', the rows from source / destination v + W (i16) with height h' − W,
+    ///   underwater. In the light loop that height is stored back into `param_6` (`param_6 = param_6 − iVar9`,
+    ///   l. 15259): every later slot's skip test, split and height see the shortened h' (as written); the closing
+    ///   darken runs only when no light met, so it always sees the unshortened h'.
     private func lightFace(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, x: Int, y: Int,
                            flip: Bool, waterRow: Int = 0, h0: Int, v0: Int, ports: inout FramePorts) throws {
         var failure: Refusal?
         let bounds = Rect(face.bounds).offset(dh: x, dv: y)
+        let water = waterRow
+        let shift: (Int) -> Int = { row in
+            guard let r = self.rippleShift(row: row) else {
+                if failure == nil { failure = .ripplePhase(self.ripplePhase) }
+                return 0
+            }
+            return r
+        }
+        func lowered(_ p: (Int, Int)) -> (Int, Int) { (Int(Int16(truncatingIfNeeded: p.0 + water)), p.1) }
         Self.wrap(src: src, dst: dst, w: w, h: h, h0: h0, v0: v0) { s, t, ww, hh in
             guard failure == nil else { return }
             let D = lights.darkness(x: x + (ww >> 1), y: y + (hh >> 1))
-            let cx = x + (ww >> 1), cy = y + (hh >> 1)
+            let cx = x + (ww >> 1)
+            var hcur = hh                                               // `param_6`
             var lit = false
             for slot in lights.slots where slot.active {
                 guard let lf = slot.face else { continue }
                 let r = slot.radius
-                if abs(cx - slot.x) >= slot.x + r + (ww >> 1) && abs(cy - slot.y) >= slot.y + r + (hh >> 1) { continue }
+                let cy = y + (hcur >> 1)
+                if abs(cx - slot.x) >= slot.x + r + (ww >> 1) && abs(cy - slot.y) >= slot.y + r + (hcur >> 1) { continue }
                 let lightRect = Rect(top: slot.y - r, left: slot.x - r, bottom: slot.y - r + lf.height,
                                      right: slot.x - r + lf.width)
                 guard lightRect.intersects(bounds) else { continue }
-                if waterRow >= 1 { failure = .underwaterLight(waterRow); return }
                 if !lit && !tables.ambient.indices.contains(D) { failure = .darkness(D); return }
-                if let f = lightBlit(face, into: &ports.frame, src: s, dst: t, w: ww, h: hh, flip: flip, after: lit,
-                                     light: lf, colour: slot.colour & 0xff, D: D, offRow: y - (slot.y - r),
-                                     offCol: x - (slot.x - r)) {
+                func blit(_ s: (Int, Int), _ t: (Int, Int), _ height: Int, _ under: Bool) -> Refusal? {
+                    lightBlit(face, into: &ports.frame, src: s, dst: t, w: ww, h: height, flip: flip, after: lit,
+                              light: lf, colour: slot.colour & 0xff, D: D, offRow: y - (slot.y - r),
+                              offCol: x - (slot.x - r), rowShift: under ? shift : nil)
+                }
+                var f: Refusal?
+                if water < 1 {
+                    f = blit(s, t, hcur, false)
+                } else if water == 1 {
+                    f = blit(s, t, hcur, true)
+                } else {
+                    f = blit(s, t, flip ? water : min(water, hcur), false)
+                    if f == nil && water < hcur {
+                        hcur -= water
+                        f = blit(lowered(s), lowered(t), hcur, true)
+                    }
+                }
+                if let f = f ?? failure {
                     failure = f
                     return
                 }
                 lit = true
             }
             guard !lit, level.header.darknessEnable > 0 else { return }
-            if waterRow >= 1 { failure = .underwaterLight(waterRow); return }
             guard D == -1 || tables.ambient.indices.contains(D) else { failure = .darkness(D); return }
             let slab = lights.ambientSlab(D)
-            Self.blit(face, into: &ports.frame, src: s, dst: t, w: ww, h: hh, flip: flip, reject: false) { _, p in
-                slab[Int(p)]
+            func darken(_ s: (Int, Int), _ t: (Int, Int), _ height: Int, _ under: Bool) {
+                Self.blit(face, into: &ports.frame, src: s, dst: t, w: ww, h: height, flip: flip, reject: false,
+                          rowShift: under ? shift : nil) { _, p in slab[Int(p)] }
+            }
+            if water < 1 {
+                darken(s, t, hh, false)
+            } else if water == 1 {
+                darken(s, t, hh, true)
+            } else {
+                darken(s, t, min(water, hh), false)
+                if water < hh { darken(lowered(s), lowered(t), hh - water, true) }
             }
         }
         if let failure { throw failure }
+    }
+
+    /// The underwater blitters' per-row offset (the last argument 1 of `.BlitLightOverFace(Flip)Clip`,
+    /// `.BlitAfterLightOverFace(Flip)Clip`, `.BlitAmbDarkenOverFace(Flip)Clip`; raw `1001dcb0..1001dce0`,
+    /// `1001e0b8..1001e0e4`, `1001e5f8..1001e624`, `1001edf4..1001ee24`, `1001f20c..1001f23c`, `1001f778..1001f79c`): R =
+    /// `rippleOffsets[((phase >> 8) + row) % 35]` with row the **port** row of the face row and a signed `%` (`mulhw`);
+    /// nil where that index is negative (the original reads before `_DAT_100a0118`).
+    func rippleShift(row: Int) -> Int? {
+        let i = (ripplePhase >> 8) &+ Int32(truncatingIfNeeded: row)
+        let m = Int(i % 35)
+        return m >= 0 ? Self.rippleOffsets[m] : nil
     }
 
     /// The four light blitters over one window of `face` (face pixel (r, c) reads light row offRow + r; light column
@@ -395,14 +443,15 @@ public struct SpriteBlitter: Sendable {
     /// Returns a refusal for a light-table index outside the table.
     private func lightBlit(_ face: EncodedFace, into port: inout [UInt8], src: (Int, Int), dst: (Int, Int), w: Int,
                            h: Int, flip: Bool, after: Bool, light lf: LightFace, colour: Int, D: Int, offRow: Int,
-                           offCol: Int) -> Refusal? {
+                           offCol: Int, rowShift: ((Int) -> Int)? = nil) -> Refusal? {
         let LW = lf.width, LH = lf.height, fw = face.width
         let amb = after ? [] : lights.ambientSlab(D)
         let base = after ? 0 : D * 0x6e00
         let table = tables.light
         var failure: Refusal?
         var stopped = false
-        Self.forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: false) { r, c0, n, index in
+        Self.forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: false,
+                        rowShift: rowShift) { r, c0, n, index in
             guard failure == nil, !stopped else { return }
             let lr = offRow + r
             func lc(_ c: Int) -> Int { flip ? offCol + fw - c : offCol + c }
@@ -649,16 +698,17 @@ public struct SpriteBlitter: Sendable {
     /// entry test (dh + face width < 0, dv + face height < 0, dh > 640, dv > 416 → nothing). Each copy-run pixel
     /// becomes `op(source pixel, port pixel)`; skips leave the port alone.
     static func blit(_ face: EncodedFace, into port: inout [UInt8], src: (Int, Int), dst: (Int, Int), w: Int, h: Int,
-                     flip: Bool, reject: Bool, _ op: (UInt8, UInt8) -> UInt8) {
-        blit(face, into: &port, src: src, dst: dst, w: w, h: h, flip: flip, reject: reject,
+                     flip: Bool, reject: Bool, rowShift: ((Int) -> Int)? = nil, _ op: (UInt8, UInt8) -> UInt8) {
+        blit(face, into: &port, src: src, dst: dst, w: w, h: h, flip: flip, reject: reject, rowShift: rowShift,
              index: { _, s, old in op(s, old) })
     }
 
     /// As above with `index(portIndex, source pixel, port pixel)`.
     static func blit(_ face: EncodedFace, into port: inout [UInt8], src: (Int, Int), dst: (Int, Int), w: Int, h: Int,
-                     flip: Bool, reject: Bool, index: (Int, UInt8, UInt8) -> UInt8) {
+                     flip: Bool, reject: Bool, rowShift: ((Int) -> Int)? = nil,
+                     index: (Int, UInt8, UInt8) -> UInt8) {
         let data = face.data
-        forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: reject) { _, c0, n, at in
+        forEachRun(face, src: src, dst: dst, w: w, h: h, flip: flip, reject: reject, rowShift: rowShift) { _, c0, n, at in
             for c in c0..<(c0 + n) {
                 let o = at(c)
                 port[o] = index(o, data[at.dataOffset + c - c0], port[o])
@@ -677,8 +727,12 @@ public struct SpriteBlitter: Sendable {
     /// The window walk every `.BlitEncFace*` clip variant shares: rows `[sv, sv + h)` and face columns `[sh, sh + w)`
     /// (mirrored: `[fw − sh − w, fw − sh)`) of `face` at port position (dv, dh), clipped to the port as
     /// `.BlitEncFaceClipX` clips; `run(faceRow, firstFaceColumn, count, index)` per copy-run piece, in token order.
+    /// - Parameter rowShift: the underwater light / darken blitters (P4): per drawn row, R = `rowShift(port row)`
+    ///   starts both the destination and the column counter (the light blitters' `in_r11` / `in_r0`), so face column
+    ///   c lands at dh − sh + c + R (mirrored: dh − sh + width − 1 − c − R) and the window is tested on c + R; the light
+    ///   column a blitter reads stays the unshifted c (its own counter starts at offCol).
     static func forEachRun(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, flip: Bool,
-                           reject: Bool, _ run: (Int, Int, Int, RunIndex) -> Void) {
+                           reject: Bool, rowShift: ((Int) -> Int)? = nil, _ run: (Int, Int, Int, RunIndex) -> Void) {
         let W = FramePorts.width, H = FramePorts.height
         let fw = face.width, fh = face.height
         var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
@@ -691,7 +745,7 @@ public struct SpriteBlitter: Sendable {
         let ox = dh - sh, oy = dv - sv
         let c0 = flip ? fw - sh - w : sh, c1 = flip ? fw - sh : sh + w
         let data = face.data
-        var p = 0, row = -1, col = 0
+        var p = 0, row = -1, col = 0, R = 0
         while p + 4 <= data.count {
             let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
             p += 4
@@ -700,13 +754,15 @@ public struct SpriteBlitter: Sendable {
                 row += 1
                 col = 0
                 if row >= sv + h { return }
+                if let rowShift, row >= sv { R = rowShift(oy + row) }
             case 3:
                 col += n
             case 2:
                 if row >= sv {
-                    let a = max(col, c0), b = min(col + n, c1)
+                    let a = max(col, c0 - R), b = min(col + n, c1 - R)
                     if a < b {
-                        run(row, a, b - a, RunIndex(row: oy + row, ox: ox, fw: fw, flip: flip, dataOffset: p + a - col))
+                        run(row, a, b - a, RunIndex(row: oy + row, ox: flip ? ox - R : ox + R, fw: fw, flip: flip,
+                                                    dataOffset: p + a - col))
                     }
                 }
                 col += n

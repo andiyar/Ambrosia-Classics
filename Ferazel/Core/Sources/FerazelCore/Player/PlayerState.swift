@@ -17,6 +17,8 @@ public struct PlayerCue: Equatable, Sendable {
         case threeD
         /// `if (FUN_100916dc(snd)) FUN_10091504(snd)`: stop the sound if it is playing.
         case stopIfPlaying
+        /// `FUN_10091504(snd)` with no playing test (P4: row 17's healing sound 803 when nothing heals, l. 44879–44883).
+        case stop
     }
 
     public var call: Call
@@ -113,7 +115,7 @@ public struct PlayerState: Equatable, Sendable {
 
     // MARK: states
 
-    /// `_DAT_100a069c`: dying counter (0 alive). // later: P4 (the death trigger).
+    /// `_DAT_100a069c`: dying counter (0 alive; row 41's death trigger sets 1, P4).
     public var dying: Int16 = 0
     /// `_DAT_100a05e0`: on the glider. // later: Phase 4 (spells).
     public var glider = false
@@ -265,9 +267,14 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a0698`: the melee / throw counter (`.HandleItemUse`). // later: Phase 4 (no Phase-2 writer).
     public var itemUse: Int16 = 0
     /// `PTR_DAT_100a0594`: the necklace revive counter. `PTR_DAT_100a0560`: died in liquid (the dying arm ends at
-    /// 100, not 80). // later: Phase 4 (revive), P4 (the death trigger writes 0560).
+    /// 100, not 80; row 41's death trigger writes it, P4). // later: Phase 4 (revive).
     public var revive: Int16 = 0
     public var diedInLiquid = false
+    /// `PTR_DAT_100a0538`: row 17's liquid-contact counter (0 out of the liquid, +1 per frame up to 2; acid and healing
+    /// act from the third frame). `PTR_DAT_100a06f4`: the `.EmitBubble` cooldown (2 after a bubble). Both 0 after
+    /// `.ClearPlayerVars`. P4.
+    public var liquidCounter: Int16 = 0
+    public var bubbleCooldown: Int16 = 0
     /// `DAT_100a5106`: the game-over flag the dying arm sets when it ends (`.GameLoop` leaves its loop; W4 restarts).
     public var gameOver = false
     /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.

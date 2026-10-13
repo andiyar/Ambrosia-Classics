@@ -58,9 +58,9 @@ public enum GroundCeilingEffects {
 }
 
 /// The Effect class (triggers-background-2 §2): `.SetupEffectSprite @ 10060680` and `.HandleEffectSprite @ 10061160`
-/// for the two effects Phase 2 spawns — the landing dust 1201 (`.CheckGroundCeilingHitEffects`) and the crumble
-/// overlay 1210 (`.MakeCrunchSprite`). The other ids (explosions and their particle package, bubbles, plumes, the
-/// countdown, crate debris, …) // later: E1a / Phase 3–5.
+/// for the effects Phase 2 spawns — the landing dust 1201 (`.CheckGroundCeilingHitEffects`), the crumble overlay 1210
+/// (`.MakeCrunchSprite`) and the bubble 1040 (`.EmitBubble`, P4). The other ids (explosions and their particle package,
+/// plumes, the countdown's digits, crate debris, …) // later: E1a / Phase 3–5.
 public enum EffectSprite {
     /// 0x4b1 'dust cloud' (PICT 1201, 6 × 56×8) and 0x4ba 'crumble overlay' (PICT 1210, 3 × 32×32).
     public static let dust: Int16 = 0x4b1
@@ -71,7 +71,8 @@ public enum EffectSprite {
     /// passed), the Handle (`.effect`), the hit callback `.HitEffectSprite` (empty, but installed: `+0x5c` ≠ 0), the tile
     /// callback `.HitEffectTileSprite` (no 1201/1210 Handle separates), `+0xa6` 3 (not kept: no Phase-2 reader), hot rect
     /// `SetRect(+0x34, 16, 16, 32, 32)`, face 0, `+0xc = +8`, `+0xa = +6`, 24.8 from them, `+0xe4` 1 / `+0x13e` 0 (not
-    /// kept). 1201 and 1210 skip the explosion package (no draws, no light).
+    /// kept). 1201, 1210 and 1040 skip the explosion package (no draws, no light). 1040 (0x410): hot rect
+    /// `SetRect(+0x34, 0, −10, 8, −2)` (left 0, top −10, right 8, bottom −2; l. 53736).
     public static func setup(_ s: inout SpriteSlot) {
         s.lightOverlay = false
         s.phase = 0
@@ -84,13 +85,26 @@ public enum EffectSprite {
         s.y = s.oldPosition.y
         s.x256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.x)) << 8
         s.y256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.y)) << 8
+        if s.type == PlayerLiquids.bubble { s.hotRect = IdleSprites.Rect(top: -10, left: 0, bottom: -2, right: 8) }
     }
 
-    /// The frame width of an effect face (`face +6`) for `.StandardSpriteCleanup`: 56 (1201), 32 (1210).
+    /// `.HitEffectTileSprite(s, pos, kind, layer) @ 100619a0` (l. 54298–54324), the Effect class's tile callback: BG
+    /// (layer 0) liquid (`.IsWaterTile`) with `+0x140 == 0` → `.HandleUnderWater(s, pos)` (its entry `.Splash`
+    /// // later: E1a). The FG arm (0xc1b's `.WallBounce`) and the crunch arm (`+0xeb` → `.CrunchTile`) belong to effects
+    /// Phase 2 does not spawn (// later: E1a / Phase 3–5).
+    public static func hitTile(_ solver: TileSolver, id: Int, pos: TilePos, kind: Int, layer: TileLayer) {
+        let w = solver.world
+        guard layer == .background, UnderWater.isWaterTile(kind),
+              let s = w.active.sprite(id: id), !s.underwaterDone else { return }
+        UnderWater.handle(world: w, id: id, pos: pos)
+    }
+
+    /// The frame width of an effect face (`face +6`) for `.StandardSpriteCleanup`: 56 (1201), 32 (1210), 8 (1040).
     public static func faceWidth(_ f: FaceRef) -> Int {
         switch f.pict {
         case dust: return 0x38
         case crumble: return 0x20
+        case PlayerLiquids.bubble: return 8
         default: return 0x80
         }
     }
@@ -150,6 +164,25 @@ public enum EffectSprite {
                     w.active.update(id: id) { $0.face = FaceRef(pict: crumble, index: Int(f), set: .encoded) }
                 }
                 // else `.ReportError` — the face is left as it was.
+            }
+        case PlayerLiquids.bubble:
+            // 1040 (l. 54149–54161; raw `10061584..10061604`): `+0x46` += 1, past 7 → 0; face `+0x46 >> 1` of PICT
+            // 1040; vy = −500; `.SeparateFromTiles2` with `.HitEffectTileSprite`; out of the liquid (`+0x11c == 0`) →
+            // face 0, `.RemoveLight(+0x9a)` (the bubble has none: −1), killed; then straight to the tail (`b
+            // 0x100618dc` — the decompile's view-bottom kill, l. 54267, belongs to 0x4b2…0x4b4 only, raw
+            // `10061260..1006127c`).
+            w.active.update(id: id) { p in
+                p.phase &+= 1
+                if 7 < p.phase { p.phase = 0 }
+                p.face = FaceRef(pict: PlayerLiquids.bubble, index: Int(p.phase >> 1), set: .encoded)
+                p.vy = -500
+            }
+            TileSolver(world: w).separateFromTiles(id, pass: { hitTile($0, id: $1, pos: $2, kind: $3, layer: $4) })
+            if w.active.record(id: id)?.waterRow == 0 {
+                w.active.update(id: id) { p in
+                    p.face = nil
+                    p.dead = true
+                }
             }
         default:
             break   // later: E1a / Phase 3–5 — the other effect ids.
