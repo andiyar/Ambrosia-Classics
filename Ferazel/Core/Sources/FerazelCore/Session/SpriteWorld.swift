@@ -25,6 +25,10 @@ import Foundation
 ///    the write-back.
 public final class SpriteWorld {
     public let level: LevelFile
+    /// The level's placement records as the game holds them (`*_DAT_100a0058 + 4 + 16·i`): the loaded file's, with the
+    /// writes the Setups make (W2a: `.SetupBackgroundSprite` writes the 1480–1489 defaults p2 0 → 0x8c, p3 0 → 0x1e
+    /// back, l. 62329–62336). `level.placements` stays the file.
+    public var records: [Placement]
     /// The one mutable tile map (FG/BG cells + the kind tables) every Core tile reader uses during play — the tile
     /// solver, P2's `.CrunchTile` (which writes it and emits `DrawOp.setTile`), and every later reader (F3 review: one
     /// source of truth). Built from `level` at init; `level.fg`/`level.bg` stay the loaded file (the Phase-1 Setups read
@@ -65,6 +69,7 @@ public final class SpriteWorld {
 
     public init(level: LevelFile, seed: Int32 = 1, active: ActiveList = ActiveList(), idle: IdleSprites = IdleSprites()) {
         self.level = level
+        records = level.placements
         tiles = TileGrid(level: level)
         rng = FastRand(seed: seed)
         globals = GameGlobals(header: level.header)

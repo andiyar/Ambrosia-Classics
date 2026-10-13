@@ -219,9 +219,13 @@ final class SpriteListTests: XCTestCase {
             XCTAssertEqual(group.map(\.index), group.map(\.index).sorted())
         }
         XCTAssertEqual(order.map(\.index), c.level.spawnOrder.map(\.index))
-        // Spawned now (`MTNewSprite`, inserted by the Setup's layer): 7 platforms (−1), then 1335, 1485, 1485 (1).
-        XCTAssertEqual(spawned.active.sprites.map(\.type), [1402, 1403, 1400, 1400, 1400, 1401, 1401, 1335, 1485, 1485])
-        XCTAssertEqual(spawned.active.sprites.map(\.recordIndex), [14, 21, 25, 40, 47, 57, 58, 2, 16, 44])
+        // Spawned now (`MTNewSprite`, inserted by the Setup's layer): 7 platforms (−1), then 1335, 1485, 1485 (1) — and
+        // (W2a) each 1485's Setup makes 7 mace chains 0x59a (1434) at layer 0 (`.MakeRadiusSprites`), between the
+        // platforms and the layer-1 sprites.
+        XCTAssertEqual(spawned.active.sprites.map(\.type), [1402, 1403, 1400, 1400, 1400, 1401, 1401]
+                       + Array(repeating: 1434, count: 14) + [1335, 1485, 1485])
+        XCTAssertEqual(spawned.active.sprites.map(\.recordIndex), [14, 21, 25, 40, 47, 57, 58]
+                       + Array(repeating: -1, count: 14) + [2, 16, 44])
         // Queued idle (`.AddIdleSprite`: first free entry), in creation order: the 22 torches take entries 0..21.
         let idle = spawned.idle.entries.compactMap { $0 }
         XCTAssertEqual(idle.count, 152)
@@ -349,7 +353,7 @@ final class SpriteListTests: XCTestCase {
             XCTAssertLessThanOrEqual(Int(p.x) + f.right, window.right, "record \(rec)")
             XCTAssertLessThanOrEqual(Int(p.y) + f.bottom, window.bottom, "record \(rec)")
         }
-        XCTAssertEqual(spawned.active.sprites.count, 10 + 13)
+        XCTAssertEqual(spawned.active.sprites.count, 10 + 14 + 13)        // W2a: + the 14 mace chains
     }
 
     /// A PICT's picFrame (bytes 2…9 of the resource: top, left, bottom, right) at the origin.

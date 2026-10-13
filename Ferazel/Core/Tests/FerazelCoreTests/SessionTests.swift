@@ -62,16 +62,17 @@ final class SessionTests: XCTestCase {
         // The level start's tail of the active list (P3): `.SetupPlayerSprite` makes the held item (100, layer 0x14)
         // and the five trails (1, layer 9) **before** the player is inserted (`.MTNewSprite` runs the Setup before
         // `.MTInsertSprite`), then the countdown 0x4c4's Setup makes six digits 0x4c5 before it (all layer 0x7fff);
-        // each lands at the tail of its layer group: trails, player, held item, digits, countdown.
+        // each lands at the tail of its layer group: trails, player, held item, digits, countdown. W2a: 24 → 38 — the
+        // two 1485 pendulums' Setups make 7 mace chains 0x59a each (`.MakeRadiusSprites`, layer 0).
         let all = p.session.active.sprites
-        guard all.count == 24 else { return XCTFail("active list: \(all.count) sprites, expected 24") }
+        guard all.count == 38 else { return XCTFail("active list: \(all.count) sprites, expected 38") }
         XCTAssertEqual(Array(all.suffix(14)).map { [Int($0.type), Int($0.layer)] },
                        [[1, 9], [1, 9], [1, 9], [1, 9], [1, 9], [0x45, 10], [100, 0x14]]
                        + [[Int]](repeating: [0x4c5, 0x7fff], count: 6) + [[0x4c4, 0x7fff]])
-        XCTAssertEqual(all[15].id, p.session.playerID)
-        XCTAssertEqual(p.session.player.heldItem, all[16].id)
-        XCTAssertEqual(p.session.player.trail, all[10...14].map { Optional($0.id) })
-        XCTAssertEqual(p.session.countdownID, all[23].id)
+        XCTAssertEqual(all[29].id, p.session.playerID)
+        XCTAssertEqual(p.session.player.heldItem, all[30].id)
+        XCTAssertEqual(p.session.player.trail, all[24...28].map { Optional($0.id) })
+        XCTAssertEqual(p.session.countdownID, all[37].id)
         // `.MTNewSprite` with all 700 records in use: no player, no Setup (`*_DAT_1009fdd8 = 0`). With one record left,
         // the player's record is taken before its Setup runs (raw `100331cc`), so the held item and the trails find
         // none.

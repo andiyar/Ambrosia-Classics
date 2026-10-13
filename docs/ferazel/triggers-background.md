@@ -301,6 +301,14 @@ type, 24, .SetupChainSprite)` with type 1436 in mode 14, else 1434 (part 2 §1).
 the object is not one-way, `.PlatformBounce` (physics §8.1) — modes 1/2 are solid hurting blocks
 [HIGH].
 
+⚑ W2a (2026-10-13, follow the binary, decompile l. 63167–63180, raw `100743a4..100743bc`): the mode-12 row
+above is inverted — `+0x170 = 1` in front, then **cleared** for mode 12 while R+0x40 < 0x60, so a pendulum hurts
+**iff 0x60 ≤ D < 0x80** (13/14: D < 0x80). Measured on L1 recs 16 / 44 (seed 1): harmful frames 37–39, 106–109 /
+32–35, 110–112; the frame it comes in front it is handled twice (`.MTChangeSpriteLayer` → list tail): 37, 184 /
+1, 110, 257. `+0x116 = 30` is written even when `.HurtPlayer` refuses. "coins 5" is the argument:
+`.HurtPlayer` takes FastRand(3) + 4 for n > 2, capped at G+0x10 (l. 48078–48086). The mace chains are made inside
+the Setup (layer 0, faceless until their Handle), not by a first Handle as the platforms' are.
+
 ### 2.6 Retracting spikes 1840..1843 ("now" spawn)  [HIGH]
 Faces: 1840/1841 sheet PICT 1840 (288×128, 12 cells 24×128; 1841 = 1840 mirrored, wall spikes);
 1842 PICT 1842 '!Retracting spikes floor' (128×24), 1843 PICT 1843 '!Retracting spikes ceiling'.

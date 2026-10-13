@@ -22,6 +22,9 @@ public struct PlayerCue: Equatable, Sendable {
         /// `.STPlay3DSoundPitched(snd, prio, vol, pos, rate) @ 10047b8c` — no draw; `rate` holds the caller's pitch
         /// (W1: the crumbling platform's 461 with p4 ≠ 0, `p4·0xf3b + 0x10000`).
         case threeDPitched
+        /// `.STPlayRegSoundPitched(snd, prio, vol, rate)` — no draw inside; `rate` holds the caller's pitch, which
+        /// `.HurtPlayer` draws at its call site (W2a: 508 at `FastRand(10000) + 65000` / `+ 50000`, l. 48053–48067).
+        case regPitched
     }
 
     public var call: Call
@@ -164,7 +167,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a06a0`: pull-up counter (0, 1…20). `_DAT_100a5f54`: climb animation phase (1…12).
     public var pullUp: Int16 = 0
     public var climbPhase: Int16 = 1
-    /// `_DAT_100a0748`: hurt-stun counter.
+    /// `_DAT_100a0748`: hurt-stun counter (`.HurtPlayer` sets 1, W2a).
     public var stun: Int16 = 0
     /// `_DAT_100a071c`: crouch depth (0…4). `PTR_DAT_100a05e8` / `_DAT_100a05e4`: shield raise / extension.
     public var crouch: Int16 = 0
@@ -336,6 +339,12 @@ public struct PlayerState: Equatable, Sendable {
     /// `*_DAT_100a00f4`: the water-effects tile cache is valid (`.FillCachedTileArray` sets it; `.DestroyCrunchTile`
     /// clears it; `.WrapDrawWaterEffects` refills when clear — E1b).
     public var tileCacheValid = false
+
+    /// The coins `.HurtPlayer` knocked out of the player (W2a; l. 48078–48103): the count taken from `G+0x10`, summed
+    /// over the level. The original makes a Bonus 0x516 per coin (`MTNewSprite(0x516, …, 0x14, −1, .SetupBonusSprite)`);
+    /// // later: Phase 4 (Bonus pickups) spawns them — until then they are only counted, and the Bonus Setup's own
+    /// `FastRand` draws between each coin's draws are not made (the stream diverges after a coin-losing hit).
+    public var coinsLost: Int16 = 0
 
     /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile
     /// callback and by the Effect Handles (the crumble overlay's 424).

@@ -107,6 +107,9 @@ public struct SpriteSlot: Equatable, Sendable {
     public var classWord158: Int32 = 0
     public var classWord15c: Int32 = 0
     public var classWord16c: Int32 = 0
+    /// `+0x170` (i32): the Background radial bars / balls' harmful flag — `.HandleBackgroundSprite` writes it every
+    /// frame (modes 10–14), the pendulum arm of `.HitPlayerSprite` hurts only when it is 1 (W2a).
+    public var classWord170: Int32 = 0
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0

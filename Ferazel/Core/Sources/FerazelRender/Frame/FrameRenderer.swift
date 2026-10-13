@@ -104,7 +104,8 @@ public final class FrameRenderer {
 
     /// The level's renderer: tile sets, tables, parallax, sprite faces (every level-1 Setup sheet plus the player's
     /// `.InitPlayerSprite` sets and the Platform class's `.InitPlatformSprite` sets — 0x578, 0x2c7, 0x582, 0x58c…0x58e,
-    /// 0x599…0x59c, `SetupFaces.platformSheets`, W1), empty light slots (`addLights`), the status bar under the level
+    /// 0x599…0x59c, `SetupFaces.platformSheets`, W1 — and the Background class's radial bars and balls 1480…1488,
+    /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     public init(resources: FerazelResources, level: Int, search: ColorSearch, dither: DitherModel,
@@ -135,7 +136,8 @@ public final class FrameRenderer {
                                          effects: prefs.effects)
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
         let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets)
-                                                .union(Self.effectSheets).union(SetupFaces.platformSheets),
+                                                .union(Self.effectSheets).union(SetupFaces.platformSheets)
+                                                .union(SetupFaces.backgroundSheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights

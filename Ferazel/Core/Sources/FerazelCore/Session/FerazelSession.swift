@@ -119,6 +119,7 @@ public final class FerazelSession {
         lights = spawned.lights
         world.active = spawned.active
         world.idle = spawned.idle
+        world.records = spawned.records                                  // the Setups' write-backs (W2a)
         // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
         // `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184); `+0x46` of the player = param_3 = 0.
         guard let pid = Player.spawn(world: world, x: px, y: py) else { throw SessionError.noPlayerRecord }
@@ -274,8 +275,11 @@ public final class FerazelSession {
             case .seeSawSegment:
                 ChainSprite.handleSeeSawSegment(world: world, id: id, solver: solver,
                                                 faceWidth: PlatformSprite.faceWidth)
-            case .background, .box, .rope, .ropeSegment:
-                break   // later: W2a/W2b (background), W3 (box, rope, ropeSegment)
+            case .background:
+                // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b's arms not run yet).
+                BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
+            case .box, .rope, .ropeSegment:
+                break   // later: W3 (box, rope, ropeSegment)
             }
         }
         // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).

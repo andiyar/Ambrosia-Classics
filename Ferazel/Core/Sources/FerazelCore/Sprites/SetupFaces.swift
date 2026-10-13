@@ -100,6 +100,9 @@ public enum SetupFaces {
         public let slot: SpriteSlot
         /// The light the Setup adds (`.AddLight`), nil when none.
         public let light: Light?
+        /// The placement record as the Setup leaves it: the Setups that write defaults back (W2a: 1480–1489's p2 0 →
+        /// 0x8c, p3 0 → 0x1e) change it; every other Setup leaves the record it read.
+        public let record: Placement
     }
 
     /// The state a Setup reads besides its record.
@@ -132,9 +135,9 @@ public enum SetupFaces {
         }
         func one(_ p: Int16, clut: Int16 = 200) -> (Int16, Sheet) { (p, .single(p, clut: clut)) }
         var all: [(Int16, Sheet)] = [
-            // `.InitBackgroundSprite`: cannon set 0x442 (cached, flag 0); maces 0x5c8+i (cached singles, flag 0);
-            // plants 0xa8c+i and tunnels 3000+i (cached singles, flag 1 → level+base).
-            set(0x442, 5, 0x96, 0x96, 5), one(0x5cd),
+            // `.InitBackgroundSprite`: cannon set 0x442 (cached, flag 0); maces 0x5c8+i (cached singles, flag 0 —
+            // `backgroundSheets`, W2a); plants 0xa8c+i and tunnels 3000+i (cached singles, flag 1 → level+base).
+            set(0x442, 5, 0x96, 0x96, 5),
             // `.InitBonusSprite`: Xichron 0x421 set, torch 0x51b set, singles 0x50c, 0x517, 0x532+i, 0xc80+i.
             set(0x421, 10, 0x20, 0x20, 10), set(0x51b, 6, 10, 0x1c, 6), one(0x50c), one(0x517), one(0x537),
             one(0xc84),
@@ -156,10 +159,16 @@ public enum SetupFaces {
             one(0x6b0), set(0x6b8, 6, 100, 0x36, 6),
         ]
         for p: Int16 in [0xa96, 0xa99, 0xa9a, 0xbba] { all.append(one(p, clut: 202)) }
+        all += backgroundSheets.map { ($0.pict, $0) }
         for p: Int16 in [0xb36, 0xb37, 0xb3a, 0xb43] { all.append(one(p)) }
         all.append(one(placeholderPict))
         return Dictionary(uniqueKeysWithValues: all)
     }()
+
+    /// The Background class's radial bars and balls (`.InitBackgroundSprite` l. 61906–61909: ten
+    /// `.Cache1EncFaceFromPICT(0x5c8 + i)`, flag 0 → clut 200) — their Handle re-faces them every frame (W2a). PICT
+    /// 1489 is absent from every shipped file: its cache entry keeps the placeholder [LOW: placed on no level].
+    public static let backgroundSheets: [Sheet] = (Int16(0x5c8)...0x5d0).map { Sheet.single($0) }
 
     /// The sheet a Phase-1 face of PICT `pict` comes from (the level-1 table; nil for any other PICT).
     public static func sheet(pict: Int16) -> Sheet? { sheets[pict] }
@@ -188,6 +197,7 @@ public enum SetupFaces {
         var s = SpriteSlot(type: p.type, x: Int(p.x), y: Int(p.y), recordIndex: Int16(p.index))
         let t = Int(p.type)
         var sheet: Sheet?, index = 0, source = FaceSource.none, light: Light?
+        var record = p
         /// `.AddLight(face, (y + dy, x + dx), 0, 0, 0, colour)` with one of `.InitBonusSprite`'s / `.InitPlayerShotSprite`'s
         /// / `.InitEffectSprite`'s light faces.
         /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
@@ -210,18 +220,19 @@ public enum SetupFaces {
 
         switch cls {
         case .background:
-            s.layer = 1                                        // `+0x80 = 1` (l. 61970)
+            BackgroundSprite.setupCommon(&s)                   // l. 61966–61977: layer 1, callbacks 0, `+0xa6` 3, HP 6
             switch t {
             case 0x442...1098:                                 // cannons (l. 62058)
                 s.layer = 1000
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
             case 0x5c8...0x5d1:                                // maces / balls (l. 62312)
                 face(Int16(t), 0, .setupCached)                // `+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`
-                // `+0xb0 = p1` (0 → 0xb); modes 12, 13, 14 with a record clear `+0x88`; modes 1, 2 move the sprite onto
-                // a programmed path (not transcribed).
+                // `+0xb0 = p1` (0 → 0xb); modes 1, 2 move the sprite onto a programmed path (not transcribed). The rest
+                // (W2a): `BackgroundSprite.setupMace` — rect, the written-back p2 / p3, one-way, `+0x88`, `+0xa6`; the
+                // radial block and the mace chains are made after the insert (`spawnLevelSprites`).
                 let mode = p.p1 == 0 ? 0xb : Int(p.p1)
                 guard !(1...2).contains(mode) else { throw Error.notTranscribed(type: p.type) }
-                if (12...14).contains(mode) { s.lightOverlay = false }
+                record = BackgroundSprite.setupMace(&s, record: p)
             case 0xa8c...0xaef:                                // plants (l. 62629–62668)
                 s.layer = -100
                 s.lightOverlay = true
@@ -412,7 +423,7 @@ public enum SetupFaces {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,
-                     faceIndex: index, source: source, slot: s, light: light)
+                     faceIndex: index, source: source, slot: s, light: light, record: record)
     }
 
     // MARK: - the level spawn
@@ -426,6 +437,8 @@ public enum SetupFaces {
         public var created: [Int]
         /// The lights the Setups added, in `.AddLight` order (= slot order on a level start with no light in use).
         public var lights: [Light]
+        /// The level's placement records after the Setups' write-backs (`Entry.record`), by index (W2a).
+        public var records: [Placement]
     }
 
     /// `.SetupLevelSprites @ 10003cd0` (l. 1940–2101): every flag-1 record of type 0x51b, then types 0x578..0x595,
@@ -445,14 +458,23 @@ public enum SetupFaces {
     public static func spawnLevelSprites(context c: Context, rng: inout FastRand,
                                          idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
-        var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [])
+        var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
+                          records: c.level.placements)
         for p in c.level.spawnOrder {
             let e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
             out.created.append(p.index)
+            out.records[p.index] = e.record
             if let l = e.light { out.lights.append(l) }
             switch e.spawn {
             case .now:
-                out.active.insert(e.slot)
+                let id = out.active.insert(e.slot)
+                if BackgroundSprite.maces.contains(e.type) {
+                    // `.MakeRadial` + `.MakeRadiusSprites` inside the 1480–1489 Setup (W2a): the mace chains are
+                    // `.MTNewSprite`s of their own (no `FastRand`). 1480–1489 always spawn now (`SpriteClassTable`).
+                    let w = SpriteWorld(level: c.level, active: out.active)
+                    BackgroundSprite.makeRadial(w, id: id, record: e.record)
+                    out.active = w.active
+                }
             case .idle:
                 _ = out.idle.add(e.slot, faceRect: idleFaceRect(e))
             }

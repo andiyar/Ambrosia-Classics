@@ -914,20 +914,22 @@ final class PlatformTests: XCTestCase {
 
     func testSpokeAndSiblingCounts() throws {
         let s = try session()
-        // The level start: platforms faceless, no spokes yet (made by the first Handle frame).
-        XCTAssertEqual(s.active.sprites.filter { $0.handler == .chain }.count, 0)
+        // The level start: platforms faceless, no platform spokes yet (made by the first Handle frame). W2a: the 14
+        // mace chains 0x59a of the two 1485 pendulums are already there (their Setup makes them) — filtered out below.
+        XCTAssertEqual(s.active.sprites.filter { $0.handler == .chain && $0.type == 0x596 }.count, 0)
+        XCTAssertEqual(s.active.sprites.filter { $0.handler == .chain && $0.type == 0x59a }.count, 14)
         XCTAssertTrue(s.active.sprites.filter { $0.handler == .platform }.allSatisfy { $0.face == nil })
         XCTAssertEqual(s.active.sprites.filter { $0.handler == .platform }.count, 7)
         _ = s.step(keys: KeyState())
         let list = s.active.sprites
-        let chains = list.filter { $0.handler == .chain }
+        let chains = list.filter { $0.handler == .chain && $0.type != 0x59a }
         let platforms = list.filter { $0.handler == .platform }
         // 180/14 = 12 (record 14) + 3 × 60/12 = 15 (record 21's wheel) + 2 × 60/14 = 8 (records 57, 58).
         XCTAssertEqual(chains.count, 35)
         XCTAssertEqual(platforms.filter { $0.recordIndex == -1 }.count, 2)
         XCTAssertTrue(chains.allSatisfy { $0.layer == -2 && $0.type == 0x596 && !$0.hasHit })
         XCTAssertTrue(chains.allSatisfy { $0.hotRect == IdleSprites.Rect(top: 0, left: 0, bottom: 0x10, right: 0x10) })
-        let lastChain = try XCTUnwrap(list.lastIndex { $0.handler == .chain })
+        let lastChain = try XCTUnwrap(list.lastIndex { $0.handler == .chain && $0.type == 0x596 })
         let firstPlatform = try XCTUnwrap(list.firstIndex { $0.handler == .platform })
         XCTAssertLessThan(lastChain, firstPlatform)                      // layer −2 before every layer −1
         XCTAssertEqual(lastChain + 1, firstPlatform)
