@@ -284,8 +284,12 @@ public final class FerazelSession {
                 BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
             case .cannoned:
                 BackgroundSprite.handleCannoned(world: world, id: id, keys: actions)   // `.HandleCannonedSprite` (W2b)
-            case .box, .rope, .ropeSegment:
-                break   // later: W3 (box, rope, ropeSegment)
+            case .box:
+                BoxSprite.handle(world: world, id: id)                            // `.HandleBoxSprite` (W3)
+            case .rope:
+                RopeSprite.handle(world: world, id: id)                           // `.HandleRopeSprite` (W3)
+            case .ropeSegment:
+                RopeSprite.handleSegment(world: world, id: id) { Self.frameRect($0, resources: res).right }
             }
         }
         // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).
@@ -346,7 +350,8 @@ public final class FerazelSession {
 
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels). // later:
-    /// W3 (box), Phase 4–5 (enemies, shots).
+    /// Phase 4 — the Box class's `.HitBoxSprite` (box vs box / statue / platform; W3 builds the boxes standing still),
+    /// Phase 4–5 (enemies, shots).
     static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         guard let s = w.active.record(id: a) else { return }
         switch s.handler {

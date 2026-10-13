@@ -174,7 +174,8 @@ public enum Player {
         }
         w.player.lastRope = w.player.rope
         w.player.rope = false
-        // 7: `if dying < 1: .RopeCollide(s)` (l. 44595–44597). // later: W3
+        // 7: `if dying < 1: .RopeCollide(s)` (l. 44595–44597; W3).
+        if w.player.dying < 1 { RopeSprite.collide(w, player: id, keys: keys) }
         // 8 (l. 44598–44658).
         selectGravity(world: w, id: id)
         // 9 (l. 44659–44672).

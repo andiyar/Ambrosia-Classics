@@ -2,9 +2,9 @@ import Foundation
 
 /// `.HitPlayerSprite(player, other) @ 100556f4` (decompile l. 48450–49929), reached only through the player pass
 /// `.MTCollideSpecialSprite(player, .HitPlayerSprite)` (platforms-ropes-radial-2 §8.3). The arms built so far: the
-/// entry gates, the **Platform** arm (W1) and the **Background** arm's pendulum part (W2a). // later: the Bonus arm
-/// (Phase 4), the Box / see-saw segment arm (W3), the rest of the Background arm (W2b), the enemy and shot arms
-/// (Phase 4–5).
+/// entry gates, the **Platform** arm (W1), the **Background** arm's pendulum (W2a) and passage (W2b) parts, and the
+/// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`). // later: the Bonus arm (Phase 4), the
+/// Box mechanisms (Phase 4), the enemy and shot arms (Phase 4–5).
 public enum HitPlayerSprite {
     /// The entry gates (l. 48565–48570): dying (`_DAT_100a069c > 0`) → nothing; in spirit form (`_DAT_100a0578 > 0`)
     /// only a Bonus reaches its arm. Then the Platform arm (l. 49124–49147; `+0x4c == .HandlePlatformSprite`, so an
@@ -32,6 +32,9 @@ public enum HitPlayerSprite {
         case .platform: break
         case .background:
             background(w, player: pID, other: oID, keys: keys)
+            return
+        case .box, .seeSawSegment:
+            box(w, player: pID, other: oID)                             // `PTR_PTR_100a0484` / `_DAT_100a01c8` (W3)
             return
         default: return                                                 // later: the other arms
         }
@@ -88,6 +91,63 @@ extension HitPlayerSprite {
         guard let o1 = w.active.record(id: oID), !o1.oneWay, let p1 = w.active.record(id: pID) else { return }
         w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p1.hotRect, bounce: false)
     }
+}
+
+extension HitPlayerSprite {
+    /// The Box / see-saw segment arm (`+0x4c == PTR_PTR_100a0484` or `_DAT_100a01c8`, decompile l. 49149–49362; raw
+    /// `10057278..10057324` for the trampoline), up to the mechanism branches (pickups-boxes §2.1, §2.3, §2.4.11):
+    /// 1. the entry vy `uVar38 = +0x2c` (l. 49150) — the trampoline's threshold reads it, not the post-landing 0;
+    ///    `iStack_ac = (int)(−0.9·vy)` (l. 49153) is read only by the spin-stomp mechanism (// later: Phase 4);
+    /// 2. a see-saw segment (l. 49155–49166): the player's x + (rect left + right) >> 1 outside the segment's
+    ///    [x + left, x + right] → return; else the segment's `+0xb2 = 1`, `_DAT_100a067c = 1`;
+    /// 3. d = (player `+0x10` − `+0xc`, `+0xe` − `+0xa`) (l. 49167–49168) — his own centre offset;
+    /// 4. // later: Phase 4 — the special arms of l. 49170–49303: falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
+    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`), NPC `.Conversation`, doors
+    ///    0xb5e/0xb5f and the chest 0x51c (keys, items), the timer 0xb5b, the sign / grave texts. None of their types is
+    ///    placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need the item and conversation
+    ///    systems; their solidity below is built;
+    /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
+    /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
+    ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 4;
+    /// 7. // later: Phase 4 — the geyser head 0x5a9 hurt (l. 49310–49335; made only by `.HandleGeyserColumn`);
+    /// 8. the trampoline 0x5be (l. 49339–49361): `+0x46 = 1`; entry vy ≤ 0xa5a (`cmpwi r25,0xa5a; ble`) → return;
+    ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
+    ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`
+    ///    (`_DAT_100a027c`, no draw); the air counter `_DAT_100a0718 = 1`; `+0xce = 0`;
+    /// 9. // later: Phase 4 — the mechanism branches from l. 49363: the spin stomp on switch blocks / crates, the
+    ///    teleporters 0x424…0x426, the save point 0x429.
+    static func box(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
+        let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        let entryVY = p.vy                                              // `uVar38`
+        if o.handler == .seeSawSegment {
+            let cx = h(p.x + h((p.hotRect.left + p.hotRect.right) >> 1))
+            if cx < h(o.x + o.hotRect.left) { return }
+            if h(o.x + o.hotRect.right) < cx { return }
+            w.active.update(id: oID) { $0.subState = 1 }
+            w.player.seeSawTouch = true
+        }
+        let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
+        if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
+        guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p.hotRect, bounce: false) == 1
+        else { return }
+        guard o.type == BoxSprite.trampoline else { return }            // later: Phase 4 (7, 9)
+        w.active.update(id: oID) { $0.phase = 1 }
+        guard 0xa5a < entryVY else { return }
+        guard let p1 = w.active.record(id: pID) else { return }
+        let v = -(trampolineFactor * Double(p1.gravity) - Double(0 &- entryVY))
+        let vy = trampolineCap < v ? v : trampolineCap
+        w.active.update(id: pID) { s in
+            s.vy = Int32(vy)                                            // `fctiwz`: toward zero
+            s.groundKind = 0
+        }
+        w.player.cues.append(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
+        w.player.airCounter = 1
+    }
+
+    /// `dRam100a1a10` = 0.6 and `dRam100a1a08` = −6500 (doubles; `tools/const.py`).
+    static let trampolineFactor = 0.6
+    static let trampolineCap = -6500.0
 }
 
 /// The session's part of a passage jump (`.HitPlayerSprite` l. 49659–49682; W2b), called by `HitPlayerSprite.passage`

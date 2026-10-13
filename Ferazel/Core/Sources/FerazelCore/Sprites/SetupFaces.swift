@@ -147,6 +147,9 @@ public enum SetupFaces {
             one(0x426), set(0x429, 3, 0x54, 100, 3), set(0x51c, 4, 0x21, 0x1f, 4), one(0x5b8, clut: 202),
             one(0xb1a), one(0xb25, clut: 202), one(0xb56), set(0xb5e, 6, 0x3c, 0x58, 6), one(0xc12), one(0xc14),
             one(0xb87), one(0xb88), one(0xb6a), one(0xb6c), one(0xb6f),
+            // W3 (`.InitBoxSprite` M l. 58743, 58797–58806): the boulder single 0x42e (boot), the bridge cache 0x5b5
+            // (flag 1 → the level+base CLUT, 202 on level 2) and the trampoline cache set 0x5be (flag 0; 4 × 0x36×0x38).
+            one(0x42e), one(0x5b5, clut: 202), set(0x5be, 4, 0x36, 0x38, 4),
             // `.InitPlatformSprite` (l. 54477–54496): set 0x578, the ice set 0x2c7, the springboard singles 0x58c…0x58e,
             // the mace chains 0x59a / 0x59c, the chain links 0x599 (60 × 16×16), the see-saw segments 0x59b (45 × 24×24),
             // the catapult 0x582 (7 × 216×200) — at boot under clut 200 (W1).
@@ -322,58 +325,50 @@ public enum SetupFaces {
             s.classTimer = Int32(rng.next(0x3c))
 
         case .box:
-            s.layer = 2                                        // l. 58939
+            // `.SetupBoxSprite` (W3, `BoxSprite.setup`): layer, rect, one-way, callbacks, gravity, HP, the type's fields.
+            BoxSprite.setup(&s, record: p, level: c.level)
             switch t {
             case 0x426:                                        // teleporter 3 (l. 59012)
                 face(0x426, 0, .setup)
                 if inWater() { s.mode = 0x90000 }
             case 0x429:                                        // save point: set 0x429 cell p1 (l. 59000)
                 face(0x429, Int(p.p1), .setup)
+            case 0x42e:                                        // boulder (l. 59064): the boot single 0x42e (W3)
+                face(0x42e, 0, .setup)
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
-                s.layer = 0
                 face(0x51c, 0, .setup)
-            case 0x5b4...0x5bb:                                // bridges (l. 59212): layer 0, cache face by the Handle
-                s.layer = 0
-                s.mirrored = t == 0x5b6 || t == 0x5b9
-                guard t == 0x5b8 else { throw Error.notTranscribed(type: p.type) }
+            case 0x5b5, 0x5b6:                                 // bridges 1461 / 1462 (W3): cache 0x5b5, faced by the Handle
+                face(0x5b5, 0, .handle)
+            case 0x5b8:                                        // bridge 1464 (l. 59212): cache face by the Handle
                 face(0x5b8, 0, .handle)
+            case 0x5be:                                        // trampoline (W3): `+0xc0 = cache 0x5be + 4` (face 0)
+                face(BoxSprite.trampoline, 0, .setupCached)
             case 0xaf5..<0xb22:                                // decorations (l. 59641)
-                s.layer = -1
-                s.lightOverlay = true
                 face(Int16(t), 0, .setupCached)                // `+0xc0 = cache[type − 0xaf5] + 4`
-                if p.p1 != 0 { s.mirrored = true }
-                if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
-                if p.p3 != 0 { s.layer = 10000 }
             case 0xb22..<0xb36:                                // rock outcrops (l. 59683)
-                s.layer = 0x96
-                s.lightOverlay = false
-                let D = c.level.header.darknessEnable == 0 ? 0 : c.level.lightByte(col: s.x >> 5, row: s.y >> 5)
-                if D > 4 { s.mode = 0x10006 }                  // `.GetAmbDarkVal(x, y)` (`@1001aaf8`)
-                if D > 7 { s.mode = 0x10007 }
-                if t == 0xb28 { s.mode = 0xb0005 }
                 face(Int16(t), 0, .handle)                     // re-faced each frame from cache 0xb22+i
             case 0xb36..<0xb4a:                                // mushrooms (l. 59705)
-                s.layer = 0x78
                 face(Int16(t), 0, .handle)
             case 0xb56..<0xb5e:                                // signs (l. 59280)
-                s.layer = 0
                 face(Int16(t), 0, .setup)                      // `+0xc0 = (&0x100a642c)[type − 0xb56]`
             case 0xb5e:                                        // door right (l. 59280 else): set 0xb5e cell 0
-                s.layer = 0
                 face(0xb5e, 0, .setup)
             case 0xb68..<0xb71:                                // furniture (l. 59603): cache, Handle re-faces
-                s.layer = 0
                 face(Int16(t), 0, .handle)
             case 0xb87..<0xb9a:                                // NPCs (l. 59715): cache 0xb86+i, Handle
-                s.layer = 0
                 face(Int16(t), 0, .handle)
             case 0xc12...0xc14:                                // crates (l. 59535)
-                s.lightOverlay = true
                 face(Int16(t), 0, .setup)
             default:
                 throw Error.notTranscribed(type: p.type)
             }
+
+        case .rope:
+            // `.SetupRopeSprite` (W3, `RopeSprite.setup`): no face — the segments the first Handle makes carry them.
+            // 3023…3039 have no `.SetupRopeSegArray` arm (seg 0: a division by zero; none placed).
+            guard RopeSprite.types.contains(p.type) else { throw Error.notTranscribed(type: p.type) }
+            RopeSprite.setup(&s, record: p)
 
         case .platform:
             // `.SetupPlatformSprite @ 10061f94` (W1, `PlatformSprite.setup`): layer −1, `+0xc0 = 0` — the level-start

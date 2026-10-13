@@ -156,9 +156,11 @@ public struct PlayerState: Equatable, Sendable {
     public var swim: Int16 = 0
     /// `_DAT_100a05fc`: near the liquid surface (`0 < +0x120 ≤ 0x15`, liquid ≠ 5).
     public var nearSurface = false
-    /// `_DAT_100a0588` / `_DAT_100a0584`: on a rope now / last frame. // later: W3 (`.RopeCollide` sets it).
+    /// `_DAT_100a0588` / `_DAT_100a0584`: on a rope now / last frame (`.RopeCollide` sets it, W3).
     public var rope = false
     public var lastRope = false
+    /// `_DAT_100a0580`: the rope the player is on (an `ActiveList` id; `.RopeCollide` writes it, W3).
+    public var currentRope: Int?
     /// `_DAT_100a0758` / `PTR_DAT_100a0754`: climb (wall cling) this frame / last frame. // P2's tile callback sets it.
     public var climb: Int16 = 0
     public var lastClimb: Int16 = 0
@@ -287,8 +289,8 @@ public struct PlayerState: Equatable, Sendable {
     public var lastBreathPhase: Int16 = 0
     /// `PTR_DAT_100a0710`: the footstep index into the 4-sound table `_DAT_100a025c` (410…413).
     public var footstep: Int16 = 0
-    /// `_DAT_100a058c`: the rope walk counter (0…15). `_DAT_100a0768`: the last cast was V Blade (alternate cast faces).
-    /// // later: W3 (rope), Phase 4 (spells) — no Phase-2 writer.
+    /// `_DAT_100a058c`: the rope walk counter (0…15; the rope state, `PlayerStates`; `.RopeCollide` reads it, W3).
+    /// `_DAT_100a0768`: the last cast was V Blade (alternate cast faces). // later: Phase 4 (spells) — no Phase-2 writer.
     public var ropeWalk: Int16 = 0
     public var vBladeCast = false
     /// `_DAT_100a0698`: the melee / throw counter (`.HandleItemUse`). // later: Phase 4 (no Phase-2 writer).

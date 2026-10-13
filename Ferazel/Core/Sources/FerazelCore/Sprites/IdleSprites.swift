@@ -101,10 +101,12 @@ public struct IdleSprites: Equatable, Sendable {
                 if !r.intersects(window) {
                     // `.ActiveToIdleSprite(i, 1)` (l. 4162–4204): the record saved, then the live one keeps its place
                     // on the list with `+0x4c = 0` and `+0xe9 = 0` — it is not unlinked here; `.UpdateSprites` kills it
-                    // at the end of the iteration (`SpriteWorld.updateSprites`; W1 carry). `+0x54` (the rope's
-                    // `.RopeIdleize`) // later: W3.
-                    e.faceRect = live.face.map(faceRect) ?? .noFace
-                    var s = live
+                    // at the end of the iteration (`SpriteWorld.updateSprites`; W1 carry). First `+0x54` (l. 4176–4178):
+                    // installed only by `.SetupRopeSprite` — `.RopeIdleize` (W3).
+                    if live.handler == .rope { RopeSprite.idleize(&active, id: id) }
+                    let saved = active.record(id: id) ?? live
+                    e.faceRect = saved.face.map(faceRect) ?? .noFace
+                    var s = saved
                     s.id = 0
                     e.saved = s
                     e.activeID = nil
@@ -119,8 +121,10 @@ public struct IdleSprites: Equatable, Sendable {
                 guard e.saved.type != 0 else { continue }
                 let r = Self.testRect(x: e.saved.x, y: e.saved.y, face: e.faceRect, margins: e.saved.margins)
                 if r.intersects(window) {
-                    // `.IdleToActiveSprite(i)`.
-                    e.activeID = active.insert(e.saved)
+                    // `.IdleToActiveSprite(i)`; then `+0x58` (l. 4266–4268): `.RopeDeIdleize` (W3).
+                    let id = active.insert(e.saved)
+                    e.activeID = id
+                    if e.saved.handler == .rope { RopeSprite.deIdleize(&active, id: id) }
                     entries[i] = e
                     on.append(i)
                 }

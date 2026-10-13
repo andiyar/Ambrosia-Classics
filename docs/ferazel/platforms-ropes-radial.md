@@ -545,3 +545,17 @@ Readers (every r2-relative reference, `subi rX,r2,0x30ac` / `0x352c`; no TOC slo
     slope-hugging is never disabled for good. (Review 1b #1.)
 14. ⚑ wave 2 (2026-10-04) (moved after 13 — ⚑ corrected (review 2g, 2026-10-04) #7): further corrections (frame order, layers, `.HitPlayerSprite` reached only through
     `.MTCollideSpecialSprite`) are in platforms-ropes-radial-2 "Corrections to the existing bank".
+
+### 3.8 ⚑ W3 build notes (2026-10-14, Phase 2 W3; dump re-read)
+- Contact sounds (physics-sprites §8.2 "set `_DAT_100a0304`/`0300`"): the sound init (M l. 39916–39926) fills
+  `_DAT_100a0304[0..2]` with snd 0x1e6…0x1e8 = **486…488 ropecreak1–3** (3020, 3021) and `_DAT_100a0300[0..2]` with
+  0x1e9…0x1eb = **489…491 chaincreak1–3** (3022). Each call is `FastRand(3)` (the index) then `.STPlay3DSoundRand`'s
+  own `FastRand(10000)`, at the player's centre `+0xe` [HIGH].
+- `.RopeCollide` with DOWN held (M l. 43958–43961): the grab branch has already run — the jump counter is 0 and the
+  landing sound has played — only the attach is skipped [HIGH].
+- `.SetupRopeSprite` does **not** build the array: `+0x17c = 0` there, `.HandleRopeSprite` calls `.SetupRopeSegArray`
+  on the first Handle (M l. 71545–71547), which also installs `+0x1e8`; until then `.RopeCollide` meeting the rope's
+  span returns at once (scan stopped). The same first Handle decays `+0x154` once (rest 0xc00 → 1228 for 3022) [HIGH].
+- The static curve's second fill loop stores `base = dy` (not `dy << 8`) for (span + seg)/2 ≤ j ≤ span + seg; the pow
+  loops then overwrite j < span, and base[span], base[span + 1] get dy·256 — so samples span + 2 … span + seg keep the
+  unshifted dy (read by no segment and no `.GetRopeHeight`) [HIGH].

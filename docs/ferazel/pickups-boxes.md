@@ -584,3 +584,11 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
 13. spells-items.md §2.1 (review 1a adj. 1): names only — id 2 "Ice Crystals", id 3 "Ice Wall", id 7
    second Ice-Wall icon (PICT 700 captions); §4 items: id 1 "Steel Key", id 5 "Health Potion" (PICT
    702 captions, §1.8).
+14. ⚑ W3 build notes (2026-10-14, Phase 2 W3; dump re-read). §2.2 trampoline 1470: the cache set is
+   `_CacheEncFaceSetFromPICT(_DAT_100a0a2c, 0x5be, 4, 0x36, 0x38, 4, …)` (M l. 58806) — 4 cells of **0x36 wide ×
+   0x38 tall** (54×56), not 56×54; flag 0 → CLUT 200. §2.4.11: 0.6 and −6500 are doubles (`lfd f4,-0x5e30(r2)` @
+   `100572b0`, `lfd f0,-0x5e38(r2)` @ `100572b8`), combined by `fnmsub` and truncated by `fctiwz`; the threshold
+   compares the **entry** vy (`r25`, read before `.PlatformBounce`), `cmpwi r25,0xa5a; ble` → vy ≤ 0xa5a stands;
+   `+0x46 = 1` is stored before the threshold test (`1005728c`), so a standing player re-arms the squash every
+   contact (face held at 1). The Box arm is shared with the see-saw segments 0x59b (`_DAT_100a01c8`, M l.
+   49149–49166: centre-x gate, segment `+0xb2 = 1`, `_DAT_100a067c = 1`) [HIGH].

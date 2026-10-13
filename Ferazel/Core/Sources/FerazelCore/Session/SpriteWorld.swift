@@ -109,16 +109,25 @@ public final class SpriteWorld {
     public func newSprite(type: Int16, x: Int, y: Int, layer: Int16, handler: SpriteHandler, record: Int16 = -1,
                           setup: (inout SpriteSlot) -> Void = { _ in }) -> Int? {
         guard active.sprites.count + reserved < Self.recordCount else { return nil }
+        reserved += 1
+        let s = Self.newRecord(type: type, x: x, y: y, layer: layer, handler: handler, record: record, setup: setup)
+        reserved -= 1
+        return active.insert(s)
+    }
+
+    /// `.MTNewSprite`'s record before `.MTInsertSprite` (`newSprite`): the cleared record, the position stores with
+    /// their quirk, the layer, the Setup, `+0x48` re-stored. W3: the rope's segments are made by `.RopeDeIdleize`
+    /// inside `.HandleIdleSprites`, which holds the active list only (`RopeSprite.makeSegments`).
+    static func newRecord(type: Int16, x: Int, y: Int, layer: Int16, handler: SpriteHandler, record: Int16,
+                          setup: (inout SpriteSlot) -> Void) -> SpriteSlot {
         var s = SpriteSlot(type: type, x: x, y: y, recordIndex: record, layer: Int32(layer))
         s.oldPosition = SpriteSlot.Point(x: x, y: y)              // `+8` = x, `+6` = y
         s.x = y                                                   // `+0xc` = x, then `+0xc` = y (the quirk above)
         s.y = 0                                                   // `+0xa` never written: `MemoryClear` 0
         s.handler = handler
-        reserved += 1
         setup(&s)
-        reserved -= 1
         s.recordIndex = record                                    // `.MTNewSprite` re-stores `+0x48` after the Setup
-        return active.insert(s)
+        return s
     }
 
     /// `.MTChangeSpriteLayer @ 10033288` (raw `100332a0..100332bc`): `lwz 0x80; cmpw; beq` — **no-op when the layer

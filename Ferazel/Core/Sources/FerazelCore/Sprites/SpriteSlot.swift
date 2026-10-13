@@ -263,7 +263,10 @@ public struct SpriteSlot: Equatable, Sendable {
     /// the record stays on the list — `.MTHandleSprites` skips it, `.UpdateSprites` kills it at the end of the
     /// iteration (W1 carry, F2 fix-round finding).
     public var handleCleared = false
-    // later: W3 — `+0x1e8` the surface-height function (ropes, rope bridge); `.PlatformBounce` takes it as an argument.
+    /// `+0x9c` the rope block (`.SetupRopeSegArray`, W3); its presence also stands for `+0x1e8`, the surface-height
+    /// function `.GetRopeHeight` that routine installs (`RopeBlock`). // later: Phase 4 — the rope bridge 1466's
+    /// `.GetRopeBridgeHeight` (unplaced).
+    public var rope: RopeBlock?
     /// W2b (cannons, `.TurnIntoCannoned @ 10058594`, decompile l. 49930–49974): `+0x164` (i32) a cannon's launch speed S
     /// (9000 for p1 0, M l. 62114); `+0x1e4` the cannon holding a captive (an `ActiveList` id; nil = 0); `+0x1ec` /
     /// `+0x1f0` / `+0x1f4` the captive's saved Handle, hit and tile callbacks (restored at the launch).
