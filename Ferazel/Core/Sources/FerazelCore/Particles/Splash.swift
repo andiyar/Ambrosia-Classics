@@ -66,23 +66,25 @@ public enum Splash {
         }
     }
 
-    /// The column loop (raw `10042a58..10042b3c`, `10042bd0..10042cb4`).
+    /// The column loop (raw `10042a58..10042b3c`, `10042bd0..10042cb4`): h starts at the 16-bit `+0xc + left − 4` and
+    /// runs while `(int)h < +0xc + right + 4` (an int sum). h is kept as an Int here and truncated to 16 bits where it
+    /// is used (`newParticle`), so a bound past 0x7fff ends the loop instead of wrapping h forever (the original's
+    /// short h would spin there); in range every value is the same.
     private static func columns(_ w: SpriteWorld, _ s: SpriteSlot, kind: Int, v: Int) {
         let x = Int(Int16(truncatingIfNeeded: s.x))
         let end = x + Int(Int16(truncatingIfNeeded: s.hotRect.right)) + 4
-        var h = Int16(truncatingIfNeeded: x + Int(Int16(truncatingIfNeeded: s.hotRect.left)) - 4)
-        while Int(h) < end {
+        var h = Int(Int16(truncatingIfNeeded: x + Int(Int16(truncatingIfNeeded: s.hotRect.left)) - 4))
+        while h < end {
             let vx = Int(w.rng.next(500)) + Int((0 &- s.vx) >> 4) - 0xfa
             let r = Int(w.rng.next(200))
             let vy0 = Int(Int16(truncatingIfNeeded: (-600 - r) - Int(Int16(truncatingIfNeeded: s.vy >> 3))))
-            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: Int(h), shape: 2, vx: vx, vy: vy0 + 400,
+            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: h, shape: 2, vx: vx, vy: vy0 + 400,
                                     delay: 0, mode: 1)
-            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: Int(h), shape: 4, vx: vx, vy: vy0 + 200,
+            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: h, shape: 4, vx: vx, vy: vy0 + 200,
                                     delay: 1, mode: 1)
-            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: Int(h), shape: 1, vx: vx, vy: vy0,
+            w.particles.newParticle(kind: kind, gravity: 0x96, v: v, h: h, shape: 1, vx: vx, vy: vy0,
                                     delay: 2, mode: 1)
-            let step = w.rng.next(1)
-            h = step &+ h &+ 1
+            h += Int(w.rng.next(1)) + 1
         }
     }
 }

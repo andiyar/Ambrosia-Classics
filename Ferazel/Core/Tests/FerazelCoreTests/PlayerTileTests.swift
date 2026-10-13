@@ -1040,6 +1040,30 @@ final class PlayerTileTests: XCTestCase {
             CrunchTiles.reshape(w, col: 5, row: 5, block: (5, 5), position: 5, dir: 1, explode: false, clearDir: true)
             XCTAssertEqual(Int(w.tiles.fg.cell(col: 5, row: 5) & 0xff) - 1, out, "kind \(kind)")
         }
+        // `.ExplodeCrunchedTile` (M l. 39042–39056) on the four cells of a destroyed block: FG tile t with −1 < t <
+        // 0x60 → `.ExplodeFaceIntoParticles(face t, (row << 5, col << 5), 2, 2, 2, 100, 100)`. Tiles 0x5f at (5, 5)
+        // and 0x10 at (6, 6) explode; 0x60 at (6, 5) and the empty (5, 6) do not. A synthetic 3-row face: every 2nd
+        // pixel of rows 0 and 2 → 4 particles per face, style 100 (4 draws each: R(20), R(750), R(100), R(30)).
+        do {
+            func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+                let t = op << 24 | UInt32(n)
+                return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+            }
+            let face = ParticleFace(frame: [0, 0, 3, 4], bounds: [0, -1, 4, 6],
+                                    tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(1, 12) + tok(3, 1)
+                                        + tok(2, 2) + [20, 21, 0, 0] + tok(1, 8) + tok(2, 4) + [30, 31, 32, 33] + tok(0, 0))
+            let w = try crunchWorld([(5, 5, 0x5f + 1), (6, 5, 0x60 + 1), (6, 6, 0x10 + 1)])
+            w.particleFaces = ParticleFaces(fgTile: { _ in face })
+            var ref = w.rng
+            CrunchTiles.destroyCrunchTile(w, col: 5, row: 5, dir: 0, explode: true, clearDir: false)
+            XCTAssertEqual(w.particles.counters.count, 8)
+            let rs = w.particles.records
+            XCTAssertEqual([0, 3, 4, 7].map { [rs[$0].y >> 8, rs[$0].x >> 8] }, [[161, 160], [163, 163], [193, 192],
+                                                                                   [195, 195]])
+            let (a20, a750, a100, a30) = (ref.next(0x14), ref.next(0x2ee), ref.next(100), ref.next(0x1e))
+            XCTAssertEqual([rs[0].age, Int16(rs[0].vy), Int16(rs[0].vx), rs[0].gravity, rs[0].shape, rs[0].kind],
+                           [98 - a20, 40 - a750, a100 - 50, 100 + a30, 2, -(10 + 256)])
+        }
         // `.RectBounceFake2` axis rule (raw `1003edd8..1003edec` and its mirror): the push is horizontal only when the
         // vertical distance is strictly the smaller; a tie goes vertical. Solid at pos (0, 0) + (−2, −2, 0x22, 0x22),
         // centre (16, 16); the player's centre = (x + 50, y + 59). x −24, y −53: |dy| 10 = |dx| 10 → y = −2 − 0x55;

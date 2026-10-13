@@ -156,8 +156,9 @@ final class FrameGoldenTests: XCTestCase {
     }
 
     func testFirstFrameOpsOrder() throws {
-        // Step 1 as executed: the level start, then one `.PaintFrameWrap` (`.HandleLights` runs before the sprites,
-        // l. 9205), the copy, the erase, and the per-frame status bar (nothing changed → nothing drawn).
+        // Step 1 as executed: the level start, then one `.PaintFrameWrap` (`.HandleLights` runs before the water
+        // effects and the sprites, l. 9205–9207), the copy, the erase, and the per-frame status bar (nothing changed →
+        // nothing drawn).
         let r = try renderer()
         let s = try session(r)
         let ops = s.step(keys: KeyState())
@@ -167,7 +168,7 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertEqual(r.executed, [
             .screenClut(202), .picture(129), .entireGrid(h: 0, v: 0), .strip(h: 0, v: 0), .entireGrid(h: 0, v: 0),
             .statusBar(full: true),
-            .strip(h: 0, v: 0), .lightsOntoTiles, .waterEffects(0), .handleLights, .sprites(sprites), .particles(0),
+            .strip(h: 0, v: 0), .lightsOntoTiles, .handleLights, .waterEffects(0), .sprites(sprites), .particles(0),
             .copy(h: 0, v: 0), .eraseParticles, .lightFace(24), .erase(erased), .statusBar(full: false),
         ])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 68)          // the level-1 Setup lights (Effects 1)

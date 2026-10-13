@@ -29,6 +29,9 @@ public struct ParticleRenderer: Sendable {
     /// `.InitParticles`, `.SetupLevel` l. 2571–2572), the ambient row of `darkness` (hdr `0x2706`).
     public init(system: ColorLUT, screenClut: ColorLUT, search: ColorSearch, tables: LevelTables, darkness: Int16,
                 effects: Int16) {
+        // The binary indexes the ambient table `_DAT_100a0130[hdr+0x2706]` directly, unbounded (raw
+        // `10031cf0..10031d0c`). Every shipped level's 0x2706 is 0, 1, 2 or 5 (inside the 16 rows), so only a forged
+        // `Mlvl` reaches the fallback to row 0, which stands in for reading past the table (Swift would trap).
         let d = tables.ambient.indices.contains(Int(darkness)) ? Int(darkness) : 0
         self.init(rows: Self.colourRows(system: system, screenClut: screenClut, search: search),
                   ambient: tables.ambient[d], effects: effects)

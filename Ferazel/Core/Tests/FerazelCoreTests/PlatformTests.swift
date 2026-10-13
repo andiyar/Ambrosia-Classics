@@ -625,7 +625,8 @@ final class PlatformTests: XCTestCase {
         XCTAssertLessThanOrEqual(g[rearmed][4], 0)
 
         // Mode 4, a spell floe's lifetime (`+0xa6`, l. 55738–55760): counts down; below 0x2d the ice face with effect 0
-        // or 0xb0000 by the frame parity `_DAT_1009fd30`; at 0 `+0xe9` (and `.ExplodeFaceIntoParticles`, E1a — no face provider here, so no particles).
+        // or 0xb0000 by the frame parity `_DAT_1009fd30`; at 0 `+0xe9` and `.ExplodeFaceIntoParticles` (E1a — no face
+        // provider until the end, so no particles).
         let floe = try make(4) { c in
             c.counterA6 = 0x2e
             c.mode = 0x10018
@@ -638,9 +639,25 @@ final class PlatformTests: XCTestCase {
             life.append([Int(c.counterA6), Int(c.mode), c.face?.pict == 0x2c7 ? 1 : 0, c.dead ? 1 : 0])
         }
         XCTAssertEqual(life, [[0x2d, 0x10018, 0, 0], [0x2c, 0xb0000, 1, 0], [0x2b, 0, 1, 0], [0x2a, 0xb0000, 1, 0]])
-        w.active.update(id: floe) { $0.counterA6 = 1 }
+        // The explode (M l. 55700–55702) once `+0xa6` drops below 1, with xStep 1, yStep 2: a 3-row synthetic face
+        // (3 px, 2 px, 4 px) gives every pixel of rows 0 and 2 → 7 particles. 2 → 1 explodes nothing.
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let face = ParticleFace(frame: [0, 0, 3, 4], bounds: [0, -1, 4, 6],
+                                tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(1, 12) + tok(3, 1) + tok(2, 2)
+                                    + [20, 21, 0, 0] + tok(1, 8) + tok(2, 4) + [30, 31, 32, 33] + tok(0, 0))
+        w.particleFaces = ParticleFaces(sprite: { _ in face })
+        let pool0 = w.particles.counters.count
+        w.active.update(id: floe) { $0.counterA6 = 2 }
+        PlatformSprite.handle(world: w, id: floe, solver: solver)
+        XCTAssertEqual(w.particles.counters.count, pool0)
+        XCTAssertEqual(w.active.record(id: floe)?.counterA6, 1)
         PlatformSprite.handle(world: w, id: floe, solver: solver)
         XCTAssertTrue(try XCTUnwrap(w.active.record(id: floe)).dead)
+        XCTAssertEqual(w.particles.counters.count, pool0 + 7)
+        w.particleFaces = ParticleFaces()
         PlatformSprite.handle(world: w, id: floe, solver: solver)          // `+0xe9`: the Handle returns at once
         XCTAssertEqual(w.active.record(id: floe)?.counterA6, 0)
         w.parity = false

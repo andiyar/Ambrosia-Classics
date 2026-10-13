@@ -615,6 +615,22 @@ final class LiquidHazardTests: XCTestCase {
                        [true, false, true, true, true, false])
         // Kind 5 never sets it: from 0, `+0x120` 10 in kind 5 keeps 0 (kind 0 would set 1).
         XCTAssertEqual([band(0), band(10, kind: 5), band(1, kind: 5), band(10)], [false, false, false, true])
+        // The swim arm's `.Splash(s, 3)` (l. 45741, E1a): stroke k = swim − 1 == 5, not near the surface and `+0x120`
+        // > 0x12 → the player-wide splash, (0x18 + 8) × 3 particles. Quicksand (kind 5) keeps near-surface 0 at 0x12.
+        func stroke(_ swim: Int16, water: Int32, kind: Int16 = 0) -> Int16 {
+            v.particles = ParticlePool()
+            v.player.swim = swim
+            v.player.nearSurface = false
+            v.active.update(id: v.playerID!) { p in
+                p.waterRow = water
+                p.waterKind = kind
+                p.groundKind = 0
+            }
+            Player.handle(world: v, keys: [], solver: vs, tileHit: { _, _, _, _, _ in })
+            return v.particles.counters.count
+        }
+        XCTAssertEqual([stroke(6, water: 30), stroke(5, water: 30), stroke(7, water: 30)], [96, 0, 0])
+        XCTAssertEqual([stroke(6, water: 0x13, kind: 5), stroke(6, water: 0x12, kind: 5)], [96, 0])
     }
 
     func testBelowMapKills() throws {

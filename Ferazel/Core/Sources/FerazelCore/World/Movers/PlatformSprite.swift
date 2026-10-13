@@ -879,7 +879,8 @@ public enum PlatformSprite {
     ///   rider — target = ∓|rider.cx − cx| / 5 (rider right of the centre → negative), `+0x46` eases ±2 when off by
     ///   more than 1, `+0x1aa` = `+0x46` (+360 when negative), `+0x88 = 0`, `+0x89 = 1` (the latch cleared only with a
     ///   rider); `.ApplyFriction(100)`; a lifetime `+0xa6 > 0` counts down (at < 1 `.ExplodeFaceIntoParticles(+0xc0,
-    ///   (+0xa, +0xc), 1, 2, 4, 0x32, 100)` — E1a, the face before this frame's re-face — and `+0xe9`), below 0x2d the floe face with effect 0 / 0xb0000 by the frame parity `_DAT_1009fd30`.
+    ///   (+0xa, +0xc), 1, 2, 4, 0x32, 100)` — E1a, the face before this frame's re-face — and `+0xe9`), below 0x2d
+    ///   the floe face with effect 0 / 0xb0000 by the frame parity `_DAT_1009fd30`.
     /// - modes < 10 and ≥ 0x58c: x += vx, y += vy.
     /// - mode 2: the vertical spring-back to the record y `+0x10` (raw `10064bb8..10064c50`): y > record → vy > 0 ?
     ///   vy >>= 1 (≤ 0x80 → −0x80) : (vy > −0x180 → vy −= 0x40); y < record → y256 = record << 8 (vy kept); equal →

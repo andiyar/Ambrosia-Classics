@@ -14,15 +14,15 @@ import FerazelCore
 ///   seeds, so each index goes through `Color2Index` of its own colour [MED].
 /// - `redrawScrollGrid` / `redrawEntireScrollGrid` (`TileGridRenderer`): the scroll point `PTR_DAT_1009fe78` becomes
 ///   (h, v) as passed; `drawLightsOntoTiles` at that point.
-/// - `wrapDrawSprites`: first `.HandleLights @ 1001bff0` (`.PaintFrameWrap` l. 9205, between `.DrawLightsOntoTiles`
-///   and `.WrapDrawSprites`, unconditional — not an op of the seam): every active slot not pending removal copies its
+/// - `wrapDrawWaterEffects` (E1a): first `.HandleLights @ 1001bff0` (`.PaintFrameWrap` l. 9205, after
+///   `.DrawLightsOntoTiles` and before `.WrapDrawWaterEffects` l. 9206, unconditional — not an op of the seam; the
+///   session emits this op on every `.PaintFrameWrap` iteration): every active slot not pending removal copies its
 ///   face, point, radius and colour to the "previous" fields and clears `+1` (new); the speeds are 0 for every
 ///   level-1 light, so nothing moves; the row-redraw counter `*_DAT_100a012c` has no writer (its only TOC load is
-///   `1001bff8`), so its redraw never runs. Then `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the
-///   grid's drawn pair.
-/// - `wrapDrawWaterEffects` (E1a): recorded only — its water faces // later: E1b (the list is empty until then). It
-///   arrives before `wrapDrawSprites`, so `.HandleLights` (run with the sprites op) follows it here, where the original
-///   runs it first (l. 9205–9206); with an empty list the order is not observable [E1b moves it].
+///   `1001bff8`), so its redraw never runs. Then the op itself is recorded only — its water faces // later: E1b (the
+///   list is empty until then).
+/// - `wrapDrawSprites`: `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair. A passage
+///   jump's own `.WrapDrawSprites` (`.HitPlayerSprite` l. 49677) has no `.HandleLights` before it.
 /// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
 ///   its erase after the copy.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
@@ -301,8 +301,6 @@ public final class FrameRenderer {
                 grid.drawLightsOntoTiles(h: scroll.h, v: scroll.v, ports: &ports)
                 executed.append(.lightsOntoTiles)
             case .wrapDrawSprites(let draws):
-                handleLights()
-                executed.append(.handleLights)
                 sprites.lights = lights
                 try sprites.wrapDrawSprites(draws, h: scroll.h, v: scroll.v, drawn: (grid.drawnH, grid.drawnV),
                                             ports: &ports)
@@ -332,6 +330,9 @@ public final class FrameRenderer {
                 try setTile(col: col, row: row, fg: fg)
                 executed.append(.tile(col: col, row: row))
             case .wrapDrawWaterEffects(let list):
+                // `.HandleLights` (l. 9205) runs just before `.WrapDrawWaterEffects` (l. 9206).
+                handleLights()
+                executed.append(.handleLights)
                 executed.append(.waterEffects(list.count))
             case .drawParticles(let list):
                 particles.draw(list, scroll: scroll, ports: &ports)
