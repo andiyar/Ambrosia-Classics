@@ -246,8 +246,11 @@ public enum BoxSprite {
     /// - 0x5be (l. 60555–60563): face = the cache set `_DAT_100a0a2c` [`+0x46`]; `+0x46 > 0` → `+0x46 += 1`, past 3 → 0;
     /// - 0x5b4…0x5bb (l. 60565–60591): face = the class cache (0x5b5 / 0x5b6 → 0x5b5, 0x5b8 / 0x5b9 → 0x5b8, the others
     ///   their own);
-    /// - the tail `LAB_1006f948` (l. 61152–61156): `.ApplyFriction(+0x114)`; `+0xcd ≠ 0` → `.FootPressure`
-    ///   // later: Phase 4 (gravity 0: never grounded); `.EnforceMaxSpeed(0x1838)`; `+0x1c += vy`; `+0xcd = +0xce`;
+    /// - the tail `LAB_1006f948` (l. 61152–61156): `.ApplyFriction(+0x114)`; type ≠ 0x438 / 0x439 ∧ `+0xcd ≠ 0` →
+    ///   `.FootPressure` — not called here (// later: Phase 4). `+0xcd` CAN be set: a built Box whose
+    ///   `.StandardSpriteHandles` ride sets `+0xce = 3` has it copied to `+0xcd` below, so the next frame's tail would
+    ///   call it; with the built types' vx 0 it moves nothing (|vx| = 0 unridden, |vx·slope| >> 8 = 0 ridden);
+    ///   `.EnforceMaxSpeed(0x1838)`; `+0x1c += vy`; `+0xcd = +0xce`;
     ///   gravity ≠ 0 → `.ApplyGravityAndSeparateFromTiles` // later: Phase 4 (the fall — no built type has gravity);
     ///   `.BoxCleanUp`: `.BoxUW` (left the water → `.Splash(s, 4)`, // later: E1a) then `.BoxClean` (M l.
     ///   60000–60015): the centre `+0x10 = x + left + (right − left) >> 1`, `+0xe` likewise, `+0xdc = 0`, `+0xd6 = 0`.

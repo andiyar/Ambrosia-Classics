@@ -166,6 +166,11 @@ final class BoxRopeTests: XCTestCase {
         bh = try XCTUnwrap(w2.active.sprite(id: b))
         XCTAssertNil(bh.ridden)
         XCTAssertEqual([bh.y, bh.centre.y, Int(bh.groundKind), Int(bh.onSprite)], [bs.y + 1, bs.y + 1 + 12, 3, 3])
+        // The flipped 1462 (0x5b6) takes the same class cache as 0x5b5 (M l. 60571–60576: both read `iVar14`).
+        let b61 = try add(w2, L2.placements[61])
+        w2.active.update(id: b61) { $0.face = nil }
+        BoxSprite.handle(world: w2, id: b61)
+        XCTAssertEqual(w2.active.sprite(id: b61)?.face, FaceRef(pict: 0x5b5, index: 0, set: .encoded))
     }
 
     func testTrampolineBounce() throws {
@@ -551,6 +556,10 @@ final class BoxRopeTests: XCTestCase {
         w.active.update(id: id) { $0.ridingLatch = true; $0.classWord154 = 0x1800 - 0x1a0 }
         RopeSprite.handle(world: w, id: id)
         XCTAssertEqual(w.active.sprite(id: id)?.classWord154, 0x1800)
+        // Easing down snaps too (M l. 71605–71621): 0x1980 → (int)−(0x180·0.4 − 0x1980) = 6374, within 0x100 of T → T.
+        w.active.update(id: id) { $0.ridingLatch = true; $0.phase = 120; $0.classWord154 = 0x1800 + 0x180 }
+        RopeSprite.handle(world: w, id: id)
+        XCTAssertEqual(w.active.sprite(id: id)?.classWord154, 0x1800)
         // Above the target it eases down: rider at 24 → T = 0x1800·(14400 − 9216)/14400 = 2211.
         w.active.update(id: id) { $0.ridingLatch = true; $0.phase = 24 }
         RopeSprite.handle(world: w, id: id)
@@ -626,6 +635,22 @@ final class BoxRopeTests: XCTestCase {
             XCTAssertEqual(st.hotRect, IdleSprites.Rect(top: -16, left: 0, bottom: 30 + 40, right: 200))
             XCTAssertEqual(st.y, Int(rt.y) - 15)
         }
+
+        // A steep 3022 (dy 400 over span 240): the segment step s = Δ >> 8 passes 14 — the face index clamps to 14 and
+        // the y offset gains (s − 14)·256 (M l. 71688–71716).
+        let (ws, _) = try world(level: 1)
+        let steep = try ropeInWorld(ws, rope(602, 3022, x1: 1000, y1: 500, x2: 1240, y2: 900))
+        RopeSprite.handle(world: ws, id: steep)
+        let ss = try XCTUnwrap(ws.active.sprite(id: steep))
+        let sb = try XCTUnwrap(ss.rope)
+        let sg = sb.segments.compactMap { $0 }.map { ws.active.sprite(id: $0)! }
+        XCTAssertEqual(sg.map { $0.face!.index }, Array(repeating: 14, count: 10))
+        // Segment 0: s = 11345 >> 8 = 44 → `segmentOffset(14)` −0x800 + (44 − 14)·256 = 5632 over the sample at 0 (0);
+        // segment 9: s = (102400 − 93265) >> 8 = 35 → 93265 − 0x800 + 21·256 = 96593.
+        XCTAssertEqual([sb.base[24] &+ sb.dyn[24], sb.base[216] &+ sb.dyn[216], sb.base[240] &+ sb.dyn[240]],
+                       [11345, 93265, 102400])
+        XCTAssertEqual(sg.map { $0.y256 - (Int32(ss.y) << 8) },
+                       [5632, 16721, 27566, 38164, 48517, 58624, 68485, 78100, 87470, 96593])
     }
 
     /// The rope record placed into the world (appended to the records so `+0x48` finds it) and its sprite inserted.
@@ -703,6 +728,15 @@ final class BoxRopeTests: XCTestCase {
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 489 + pick, priority: 1, volume: 0x69,
                                                  position: ps.centre, rate: rate)])
 
+        // The grab frame plays no step sound even with the walk counter at 1 (`!grab`): only the landing cue.
+        let walk0 = w.player.ropeWalk
+        place(feet: surf + 5, vy: 0x800)
+        w.player.ropeWalk = 1
+        RopeSprite.collide(w, player: p, keys: [])
+        XCTAssertTrue(grabbed())
+        XCTAssertEqual(w.player.cues.map { Int($0.volume) }, [0x69])
+        w.player.ropeWalk = walk0
+
         // Facing left: i = cx − x − 7.
         place(feet: surf, vy: 0x100, facingLeft: true)
         RopeSprite.collide(w, player: p, keys: [])
@@ -771,6 +805,27 @@ final class BoxRopeTests: XCTestCase {
         w2.player.ropeWalk = 8
         RopeSprite.collide(w2, player: p2, keys: [])
         XCTAssertEqual(w2.player.cues.map { Int($0.volume) }, [0x41])
+
+        // A rope with no block yet (`+0x1e8 == 0`) under the player stops the whole scan (M l. 43863–43986: return, not
+        // continue): a built rope later in the list at the same place is never reached.
+        let (w3, p3) = try world(level: 1)
+        let unbuilt = try ropeInWorld(w3, rope(600, 3022, x1: 1000, y1: 500, x2: 1240, y2: 500))
+        let built = try ropeInWorld(w3, rope(601, 3022, x1: 1000, y1: 500, x2: 1240, y2: 500))
+        RopeSprite.handle(world: w3, id: unbuilt)
+        RopeSprite.handle(world: w3, id: built)
+        w3.active.update(id: unbuilt) { $0.rope = nil }
+        let r3 = try XCTUnwrap(w3.active.sprite(id: built))
+        let surf3 = r3.y + Int(RopeSprite.height(r3, 100))
+        w3.active.update(id: p3) { s in
+            s.mirrored = false
+            s.x = r3.x + 100 - 7 - cxOff
+            s.centre.x = s.x + cxOff
+            s.y = surf3 - 16
+            s.vy = 0x100
+        }
+        RopeSprite.collide(w3, player: p3, keys: [])
+        XCTAssertFalse(w3.player.rope)
+        XCTAssertEqual(w3.player.cues, [])
 
         // Wired as row 7 of `.HandlePlayerSprite` (`dying < 1`, after `0584 = 0588; 0588 = 0`): a player falling onto
         // the rope ends the Handle on it.

@@ -105,7 +105,8 @@ extension HitPlayerSprite {
     ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`), NPC `.Conversation`, doors
     ///    0xb5e/0xb5f and the chest 0x51c (keys, items), the timer 0xb5b, the sign / grave texts. None of their types is
     ///    placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need the item and conversation
-    ///    systems; their solidity below is built;
+    ///    systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
+    ///    never solid; that early return is built. The doors, chest and signs fall through, so their solidity is built;
     /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
     /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
     ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 4;
@@ -128,6 +129,9 @@ extension HitPlayerSprite {
             w.player.seeSawTouch = true
         }
         let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
+        if (0xb87...0xb99).contains(o.type) {
+            return      // later: Phase 4 — `+0xb0` / `_DAT_100a06cc` gates, the 0x96 cool-down and `.Conversation`
+        }
         if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
         guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p.hotRect, bounce: false) == 1
         else { return }
