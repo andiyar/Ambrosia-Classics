@@ -69,7 +69,9 @@ final class PlayerMotionTests: XCTestCase {
             XCTAssertEqual(w.player.jumpCounter, 5)
             XCTAssertEqual(w.player.exertion, 8)
             XCTAssertEqual(w.player.postJumpGuard, 2)
-            XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 414, priority: 1, volume: 0x9c)])
+            // ⚑ P3: the settle frames' the grounded arm's per-frame `stop 427` (raw `1005074c`/`10050760`, P3) comes first (the cues are not drained here).
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .stopIfPlaying, snd: 427),
+                                           PlayerCue(call: .reg, snd: 414, priority: 1, volume: 0x9c)])
         }
     }
 
@@ -83,8 +85,9 @@ final class PlayerMotionTests: XCTestCase {
             frame(w, solver, f <= 6 ? .jump : [])
             dy.append(player(w).y256 - y0)
             if f <= 6 {
-                // Exertion +8 on the jump frame and on every sustained frame (l. 47779); counter 6 → 0.
-                XCTAssertEqual(w.player.exertion, Int16(8 * f), "frame \(f)")
+                // Exertion +8 on the jump frame and on every sustained frame (l. 47779), less
+                // `.HandleBreathing`'s −2 per frame while > 0 (raw `1004bb8c..1004bb90`, row 30, P3): net +6; counter 6 → 0.
+                XCTAssertEqual(w.player.exertion, Int16(6 * f), "frame \(f)")
                 XCTAssertEqual(w.player.jumpCounter, Int16(6 - f), "frame \(f)")
             }
         }
@@ -184,12 +187,14 @@ final class PlayerMotionTests: XCTestCase {
         var expected = w.rng
         let rate = expected.soundRate()
         frame(w, solver)
+        // ⚑ P3: riding is grounded (`+0xce` 3) → the grounded arm's per-frame `stop 427` (raw `1005074c`/`10050760`, P3).
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 509, priority: 1, volume: 0xbf,
-                                                 position: w.active.sprite(id: solidID)!.centre, rate: rate)])
+                                                 position: w.active.sprite(id: solidID)!.centre, rate: rate),
+                                       PlayerCue(call: .stopIfPlaying, snd: 427)])
         XCTAssertEqual(w.rng.seed, expected.seed)
         w.active.update(id: id) { $0.ridden = solidID }
         frame(w, solver)
-        XCTAssertEqual(w.player.cues, [])
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .stopIfPlaying, snd: 427)])   // no 509; P3's grounded stop
         XCTAssertEqual(w.rng.seed, expected.seed)
     }
 
@@ -243,12 +248,17 @@ final class PlayerMotionTests: XCTestCase {
         XCTAssertFalse(w.player.walkLeft)
         XCTAssertFalse(w.player.runFlag)
         XCTAssertEqual(w.player.facing, 2)                              // vx > 0 → F 2 (raw `100539b8`)
-        // Exertion +1 per walking frame while < 0xb9 (raw `1005385c..1005386c`): 6 frames → 6; 0xb8 → 0xb9 → 0xb9.
-        XCTAssertEqual(w.player.exertion, 6)
+        // Exertion +1 per walking frame while < 0xb9 (raw `1005385c..1005386c`), less
+        // `.HandleBreathing`'s −2 per frame while > 0 (raw `1004bb8c..1004bb90`, row 30, P3): 1 → −1, then 0 → 1 → −1 …: 6 frames → 0;
+        // 0xb8 → 0xb9 − 2 = 0xb7 → 0xb8 − 2 = 0xb6. The cap itself, on `.HandleKeys` alone: 0xb9 stays 0xb9.
+        XCTAssertEqual(w.player.exertion, 0)
         w.player.exertion = 0xb8
         frame(w, solver, .right)
-        XCTAssertEqual(w.player.exertion, 0xb9)
+        XCTAssertEqual(w.player.exertion, 0xb7)
         frame(w, solver, .right)
+        XCTAssertEqual(w.player.exertion, 0xb6)
+        w.player.exertion = 0xb9
+        HandleKeys.run(world: w, keys: .right, ridden: nil)
         XCTAssertEqual(w.player.exertion, 0xb9)
         // `.FootPressure` (raw `100538f8`) presses y down by |vx| after the accel and before the +0x14a: from rest
         // y += 335 (vx 335 at the call), not 665.
@@ -359,7 +369,8 @@ final class PlayerMotionTests: XCTestCase {
         XCTAssertTrue(w.player.walkLeft)
         XCTAssertFalse(w.player.walkRight)
         XCTAssertEqual(w.player.facing, 1)                              // vx < 0 ∧ stun 0 → F 1 (raw `100537a4`)
-        XCTAssertEqual(w.player.exertion, 8)                            // +1 per walking frame (raw `100535fc..1005360c`)
+        XCTAssertEqual(w.player.exertion, 0)                            // +1 per walking frame (raw `100535fc..1005360c`)
+                                                                        // − 2 by `.HandleBreathing` (raw `1004bb8c`), P3
         // Stunned: LEFT does not turn him (raw `10053794..100537a0`).
         let id = w.playerID!
         w.player.facing = 2
@@ -426,16 +437,17 @@ final class PlayerMotionTests: XCTestCase {
         let solver = standing(w)
         XCTAssertEqual(vxs(w, solver, [.right, .run], 6), [830, 1460, 2090, 2720, 3350, 3200])
         XCTAssertTrue(w.player.runFlag)
-        XCTAssertEqual(w.player.exertion, 18)                           // +3 per running frame (raw `100537f8..10053800`)
-        // +3 has no 0xb9 ceiling.
+        // +3 per running frame (raw `100537f8..10053800`) − 2 by `.HandleBreathing`'s −2 per frame while > 0 (raw `1004bb8c..1004bb90`, row 30, P3): net +1.
+        XCTAssertEqual(w.player.exertion, 6)
+        // +3 has no 0xb9 ceiling: 0xb9 + 3 − 2.
         w.player.exertion = 0xb9
         frame(w, solver, [.right, .run])
-        XCTAssertEqual(w.player.exertion, 0xbc)
+        XCTAssertEqual(w.player.exertion, 0xba)
         // RUN + LEFT (raw `10053598..100535f8`): −500 from rest, −300 after, no −0x14a on the ground; +3 each.
         w.active.update(id: w.playerID!) { $0.vx = 0 }
         w.player.exertion = 0
         XCTAssertEqual(vxs(w, solver, [.left, .run], 3), [-500, -800, -1100])
-        XCTAssertEqual(w.player.exertion, 9)
+        XCTAssertEqual(w.player.exertion, 3)                            // (+3 − 2) × 3, P3 breathing
         // Releasing RUN clears the run flag (raw `10053610..10053614`).
         frame(w, solver, .left)
         XCTAssertFalse(w.player.runFlag)

@@ -93,8 +93,10 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(w.player.impact >> 7, 35)                        // v = 35 < 0x30 → 0 (raw `1005458c`)
         // Landing (`+0xce` ≠ 0, `0738` == 0, `0724` == 0): stop 414 and 427 if playing (Bank correction C7), then
         // v == 0 ∧ impact > 700 ∧ dry → 601 prio 0x14 vol 0x3c (raw `10054658..10054680`).
+        // ⚑ P3: then the landing frame's grounded arm, the grounded arm's per-frame `stop 427` (raw `1005074c`/`10050760`, P3).
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .stopIfPlaying, snd: 414), PlayerCue(call: .stopIfPlaying, snd: 427),
-                                       PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c)])
+                                       PlayerCue(call: .reg, snd: 601, priority: 0x14, volume: 0x3c),
+                                       PlayerCue(call: .stopIfPlaying, snd: 427)])
         XCTAssertTrue(w.player.landedLatch)
         XCTAssertFalse(w.player.launched)
         XCTAssertEqual(player(w).groundKind, 3)
@@ -176,7 +178,7 @@ final class PlayerTileTests: XCTestCase {
             XCTAssertEqual(w.player.impact, vy)
             XCTAssertEqual(landingCues(w), [], "vy \(vy)")
             XCTAssertEqual(dusts(w).count, 0)
-            XCTAssertEqual(w.player.cues.filter { $0.call == .stopIfPlaying }.map(\.snd), [414, 427])
+            XCTAssertEqual(w.player.cues.filter { $0.call == .stopIfPlaying }.map(\.snd), [414, 427, 427])  // + P3's grounded stop
         }
         // A BG one-way top (BG kind 103 → `.WallBounceBG` kind 3) landed on sets the timer `04cc` = 0xf (raw
         // `100551fc..10055218`); row 42 counts it down once the same frame → 14.

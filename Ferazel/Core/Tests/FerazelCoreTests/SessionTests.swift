@@ -2,37 +2,70 @@ import XCTest
 import HectorResources
 @testable import FerazelCore
 
-/// R5 (docs/plans/2026-10-06-ferazel-phase1.md): the ◇ player pose (player-states §3.11, transcribed from
-/// `.HandlePlayerSprite @ 1004d5fc`), the camera (`.FindUpperLeftCorner @ 1000b5ec`, engine §5) with the ◇ focus
-/// driver, and one `.GameLoop @ 10009d48` iteration in `.PaintFrameWrap @ 10011cf8` order — against the committed
-/// `Resources/Ferazel` (D26). A missing data file is a FAILURE, never a skip.
+/// R5 (docs/plans/2026-10-06-ferazel-phase1.md): the player's grounded faces (player-states §3.11; since P3 the real
+/// `.HandlePlayerSprite @ 1004d5fc` in the session — the Phase-1 ◇ pose is gone, the face sequences are the binary's
+/// and unchanged), the camera (`.FindUpperLeftCorner @ 1000b5ec`, engine §5) with the ◇ focus driver, and one
+/// `.GameLoop @ 10009d48` iteration in `.PaintFrameWrap @ 10011cf8` order — against the committed `Resources/Ferazel`
+/// (D26). A missing data file is a FAILURE, never a skip. The keys are the original defaults (keypad 4 / 6, Shift).
 final class SessionTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
 
     private func level1() throws -> LevelFile { try LevelFile.load(from: try resources(), level: 1) }
 
-    private func pose() throws -> PlayerPose { PlayerPose(header: try level1().header) }
+    /// The level-1 session with the player at its start (P3: the real player in place of the ◇ pose).
+    private func pose() throws -> Pose { Pose(try FerazelSession(resources: try resources(), prefs: FerazelPrefs(),
+                                                                 level: 1)) }
 
-    private func faces(_ p: inout PlayerPose, frames: Int, left: Bool = false, right: Bool = false,
+    /// The player as the Phase-1 tests read it: one `step` = one `.GameLoop` iteration with keypad 4 / keypad 6 /
+    /// Shift (`FerazelPrefs.defaultKeys` 0x56 / 0x58 / 0x38) held.
+    private struct Pose {
+        let session: FerazelSession
+        init(_ s: FerazelSession) { session = s }
+        var sprite: SpriteSlot { session.active.sprite(id: session.playerID)! }
+        var face: FaceRef? { sprite.face }
+        var mirrored: Bool { sprite.mirrored }
+        var turnFlag: Bool { session.player.turnMirror }
+        var idle: Int16 { session.player.idle }
+        var facing: Int16 { session.player.facing }
+        func step(left: Bool, right: Bool, run: Bool) {
+            var codes: [Int] = []
+            if left { codes.append(0x56) }
+            if right { codes.append(0x58) }
+            if run { codes.append(0x38) }
+            _ = session.step(keys: KeyState(pressed: codes))
+        }
+    }
+
+    private func fr(_ pict: Int16, _ index: Int) -> FaceRef? { FaceRef(pict: pict, index: index, set: .encoded) }
+
+    private func faces(_ p: inout Pose, frames: Int, left: Bool = false, right: Bool = false,
                        run: Bool = false) -> [FaceRef?] {
         (0..<frames).map { _ in p.step(left: left, right: right, run: run); return p.face }
     }
 
-    // MARK: - PlayerPose
+    // MARK: - the player's grounded faces
 
     func testPlayerStartPose() throws {
         var p = try pose()
-        // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, …)` (`.NewGame` l. 5823) → `MTNewSprite(0, x, y, 10, …)`.
-        XCTAssertEqual(p.x, 83)
-        XCTAssertEqual(p.y, 143)
-        XCTAssertEqual(PlayerPose.layer, 10)
-        XCTAssertEqual(p.facing, .right)                     // G+0x16 = hdr 0x26c8 = 0 → F = 2, +0x17e = 0
+        // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, …)` (`.NewGame` l. 5823) → `MTNewSprite(0, x, y, 10, …)` →
+        // `.SetupPlayerSprite`: `fd44 = fe68 = +8`, `fd40 = fe64 = +6` (`PlayerState.startX/startY`).
+        XCTAssertEqual(p.session.player.startX, 83)
+        XCTAssertEqual(p.session.player.startY, 143)
+        XCTAssertEqual(p.sprite.oldPosition, SpriteSlot.Point(x: 83, y: 143))
+        XCTAssertEqual(Player.layer, 10)
+        XCTAssertEqual(p.facing, 2)                          // G+0x16 = hdr 0x26c8 = 0 → F = 2, +0x17e = 0
         XCTAssertFalse(p.mirrored)
         XCTAssertNil(p.face)                                 // `.SetupPlayerSprite`: +0xc0 = 0 until the first Handle
-        XCTAssertEqual(p.slot.layer, 10)
-        XCTAssertEqual(p.hotRect, IdleSprites.Rect(top: 143 + 0x22, left: 83 + 0x26, bottom: 143 + 0x55,
-                                                   right: 83 + 0x3e))
+        XCTAssertEqual(p.sprite.layer, 10)
+        XCTAssertEqual(p.sprite.hotRect, IdleSprites.Rect(top: 0x22, left: 0x26, bottom: 0x55, right: 0x3e))
+        let hot = { (s: SpriteSlot) in IdleSprites.Rect(top: s.y + s.hotRect.top, left: s.x + s.hotRect.left,
+                                                         bottom: s.y + s.hotRect.bottom, right: s.x + s.hotRect.right) }
+        // The spawn's hot rect in the world, at `+8`/`+6` (`.MTNewSprite` leaves `+0xc`/`+0xa` to the first writer).
+        let spawn = p.sprite.oldPosition
+        XCTAssertEqual(IdleSprites.Rect(top: spawn.y + 0x22, left: spawn.x + 0x26, bottom: spawn.y + 0x55,
+                                        right: spawn.x + 0x3e),
+                       IdleSprites.Rect(top: 143 + 0x22, left: 83 + 0x26, bottom: 143 + 0x55, right: 83 + 0x3e))
         // First Handle: stand entry forces chest frame 3 → face 1003[3]; then the breathing triangle (phase 4 → 2,
         // phase 5 → 1 after the 7-frame calm period, then held at 1: `.HandleBreathing @ 1004bb44`).
         let seen = faces(&p, frames: 10)
@@ -40,9 +73,15 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(seen.map { $0?.index }, [3, 2, 2, 2, 2, 2, 2, 1, 1, 1])
         XCTAssertTrue(seen.allSatisfy { $0?.pict == 1003 })
         XCTAssertFalse(p.mirrored)
-        XCTAssertEqual(p.slot.face, FaceRef(pict: 1003, index: 1, set: .encoded))
-        XCTAssertEqual(p.slot.x, 83)
-        XCTAssertEqual(p.slot.y, 143)
+        XCTAssertEqual(p.sprite.face, FaceRef(pict: 1003, index: 1, set: .encoded))
+        // ⚑ P3 (re-measured, Invariant-10 ruling): the frame-1 lift 143 → 123. The start point puts the hot-rect bottom
+        // at 228, 20 px inside FG (4, 6) — kind 4; the pre-move `.SeparateFromTiles2` (row 19, `bl 0x1003c804` at raw
+        // `1004e58c`) hands it to `.WallBounce`'s kind-4 floor arm (decompile l. 33244–33266): y = Y + 0x10 −
+        // rect.bottom = 192 + 16 − 0x55 = 123 (vy 0, so `+0xce` is not set there). Phase 1's pose never moved.
+        XCTAssertEqual(p.sprite.x, 83)
+        XCTAssertEqual(p.sprite.y, 123)
+        XCTAssertEqual(hot(p.sprite), IdleSprites.Rect(top: 123 + 0x22, left: 83 + 0x26, bottom: 123 + 0x55,
+                                                       right: 83 + 0x3e))
         // Fidget after 150 idle frames (idle +1 per frame, l. 44591): face 1029[m / 3], m = idle − 150.
         var q = try pose()
         let f = faces(&q, frames: 160)
@@ -56,36 +95,40 @@ final class SessionTests: XCTestCase {
         var p = try pose()
         _ = faces(&p, frames: 3)
         // Right held (F unchanged): the first walking frame sets `+0x46 = 0xc` and adds 2 in the same frame
-        // (handler l. 2088–2120) → 0xe → face 1020[7]; then +2 per frame, wrap past 0x1f to 0.
+        // (handler l. 2088–2120) → 0xe → face 1020[7]; then +2 per frame (the flat-floor cycle with its wrap past 0x1f
+        // is pinned by `PlayerStateTests.testWalkFootstepFrames`).
+        // ⚑ P3 (re-measured, Invariant-10 ruling; was 20 × 1020[7…15, 0…10] walking in place): the real player
+        // walks off the start ledge — FG (5, 6) is empty — on frame 6 (airborne, c 0 < 3 → 0x12 → 1010[5]) and from
+        // frame 10 clings to the pit's far wall (FG (8, 7) kind 6) at x 146: 1012[(phase 1 − 1) >> 1] = 1012[0].
         let seen = faces(&p, frames: 20, right: true)
-        let expected = (0..<20).map { k -> Int in ((0xe + 2 * k) % 0x20) >> 1 }
-        XCTAssertEqual(seen.map { $0?.index }, expected)
-        XCTAssertEqual(Array(expected.prefix(10)), [7, 8, 9, 10, 11, 12, 13, 14, 15, 0])
-        XCTAssertTrue(seen.allSatisfy { $0?.pict == 1020 })
+        XCTAssertEqual(seen, [fr(1020, 7), fr(1020, 8), fr(1020, 9), fr(1020, 10), fr(1020, 11)]
+                       + [FaceRef?](repeating: fr(1010, 5), count: 4) + [FaceRef?](repeating: fr(1012, 0), count: 11))
+        XCTAssertEqual(p.sprite.x, 146)
         XCTAssertFalse(p.mirrored)
         XCTAssertEqual(p.idle, 0)                            // `.HandleKeys` zeroes idle on L/R
-        // Release: back to standing with chest frame 3 on entry.
+        // Release: the cling holds (the tile callback re-asserts it every frame) — still 1012[0]; walk again: 1012[0].
         p.step(left: false, right: false, run: false)
-        XCTAssertEqual(p.face, FaceRef(pict: 1003, index: 3, set: .encoded))
-        // Walk again: the phase restarts at 0xc (+2).
+        XCTAssertEqual(p.face, FaceRef(pict: 1012, index: 0, set: .encoded))
         p.step(left: false, right: true, run: false)
-        XCTAssertEqual(p.face, FaceRef(pict: 1020, index: 7, set: .encoded))
+        XCTAssertEqual(p.face, FaceRef(pict: 1012, index: 0, set: .encoded))
     }
 
     func testRunCycleFaces() throws {
         var p = try pose()
         p.step(left: false, right: false, run: false)
-        // Run held: +2 per frame, wrap past 0x17 to 0 → the 12 faces of 1024; no turn check on the run arm.
+        // Run held: +2 per frame from 0xc + 2 → 1024[7], 1024[8] …; no turn check on the run arm (the flat-floor
+        // 12-face cycle with its wrap past 0x17 is pinned by `PlayerStateTests.testRunFootstepFrames`).
+        // ⚑ P3 (re-measured, Invariant-10 ruling; was 24 × 1024[7…11, 0…11, 0…6] running in place, then a reversal
+        // drawn 1024 mirrored): the real player runs off the start ledge on frame 5 (1010[5]) and clings to the pit's
+        // far wall from frame 7 at x 146 (1012[0]); the reversal (LEFT + RUN) leaves the cling as it is — 1012[0],
+        // facing right (`+0x17e` 0: the wall is on the right).
         let seen = faces(&p, frames: 24, right: true, run: true)
-        let expected = (0..<24).map { k -> Int in ((0xe + 2 * k) % 0x18) >> 1 }
-        XCTAssertEqual(seen.map { $0?.index }, expected)
-        XCTAssertEqual(Array(expected.prefix(6)), [7, 8, 9, 10, 11, 0])
-        XCTAssertEqual(Set(expected).count, 12)
-        XCTAssertTrue(seen.allSatisfy { $0?.pict == 1024 })
-        // A reversal while running does not turn: the run arm returns before the turn test.
+        XCTAssertEqual(seen, [fr(1024, 7), fr(1024, 8), fr(1024, 9), fr(1024, 10), fr(1010, 5), fr(1010, 5)]
+                       + [FaceRef?](repeating: fr(1012, 0), count: 18))
+        XCTAssertEqual(p.sprite.x, 146)
         p.step(left: true, right: false, run: true)
-        XCTAssertEqual(p.face?.pict, 1024)
-        XCTAssertTrue(p.mirrored)
+        XCTAssertEqual(p.face, fr(1012, 0))
+        XCTAssertFalse(p.mirrored)
     }
 
     func testTurnSequence() throws {
@@ -96,9 +139,9 @@ final class SessionTests: XCTestCase {
             p.step(left: true, right: false, run: false)
             turn.append((p.face, p.turnFlag, p.mirrored))
         }
-        // F 2 → 1 with no velocity (Phase 1: no physics): the walk arm fails, the stand arm starts countdown 4:
-        // 1030[0], [1], [2] with the turn flag (drawn with the OLD facing — +0x17e toggled back to right), then
-        // [1], [0] facing left; frame 6 walks (phase 0xc + 2 → 1020[7]).
+        // F 2 → 1 (vx −335 < 0, |vx| ≤ 0x5db): the walk arm fails, the stand arm starts countdown 4: 1030[0], [1], [2]
+        // with the turn flag (drawn with the OLD facing — +0x17e toggled back to right), then [1], [0] facing left;
+        // frame 6 walks (phase 0xc + 2 → 1020[7]). Unchanged with the real player (he walks left, away from the pit).
         XCTAssertEqual(turn.map { $0.0 }, [
             FaceRef(pict: 1030, index: 0, set: .encoded), FaceRef(pict: 1030, index: 1, set: .encoded),
             FaceRef(pict: 1030, index: 2, set: .encoded), FaceRef(pict: 1030, index: 1, set: .encoded),
@@ -106,14 +149,19 @@ final class SessionTests: XCTestCase {
         ])
         XCTAssertEqual(turn.map { $0.1 }, [true, true, true, false, false, false])
         XCTAssertEqual(turn.map { $0.2 }, [false, false, false, true, true, true])
-        XCTAssertEqual(p.facing, .left)
-        // A turn back to the right while standing: same five frames, mirrored the other way.
+        XCTAssertEqual(p.facing, 1)
+        // A turn back to the right after one release frame.
+        // ⚑ P3 (re-measured, Invariant-10 ruling; was 1030[0, 1, 2, 1, 0] mirrored 1, 1, 1, 0, 0 from a standstill):
+        // the release frame decelerates −1635 → −835 (stand 1003[3]); the first RIGHT frame brings vx to 0 without
+        // turning F (F changes only on vx > 0), so the walk arm draws 1020[7] facing left; vx 665 on the next frame
+        // turns F → 2 and the turn runs 1030[0], [1], [2] with the flag, then [1] facing right.
         p.step(left: false, right: false, run: false)
-        let back = (0..<5).map { _ -> (Int?, Bool) in
-            p.step(left: false, right: true, run: false); return (p.face?.index, p.mirrored)
+        XCTAssertEqual(p.face, fr(1003, 3))
+        let back = (0..<5).map { _ -> (FaceRef?, Bool) in
+            p.step(left: false, right: true, run: false); return (p.face, p.mirrored)
         }
-        XCTAssertEqual(back.map { $0.0 }, [0, 1, 2, 1, 0])
-        XCTAssertEqual(back.map { $0.1 }, [true, true, true, false, false])
+        XCTAssertEqual(back.map { $0.0 }, [fr(1020, 7), fr(1030, 0), fr(1030, 1), fr(1030, 2), fr(1030, 1)])
+        XCTAssertEqual(back.map { $0.1 }, [true, true, true, true, false])
     }
 
     // MARK: - Camera
@@ -255,10 +303,11 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(kinds(e2.draws), ["grid", "sprites", "copy", "erase", "status"])
         XCTAssertEqual(e2.draws[2], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
 
-        // The keys drive the stub: right arrow walks in place and moves the focus 1900/256 px per frame.
+        // The keys drive the player and the ◇ focus driver: keypad 6 (action 1, `FerazelPrefs.defaultKeys`) walks and
+        // moves the focus 1900/256 px per frame.
         let k = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         _ = k.step(keys: KeyState())
-        _ = k.step(keys: KeyState(pressed: [CameraFocusDriver.arrowRight]))
+        _ = k.step(keys: KeyState(pressed: [0x58]))
         XCTAssertEqual(k.focusDriver.pointX256, (133 << 8) + 1900)
         XCTAssertEqual(k.active.sprite(id: k.playerID)?.face, FaceRef(pict: 1020, index: 7, set: .encoded))
     }

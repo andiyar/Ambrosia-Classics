@@ -231,12 +231,13 @@ final class FrameGoldenTests: XCTestCase {
     }
 
     func testPanFrameGoldens() throws {
-        // 60 frames with the right arrow held (the ◇ focus driver), after the first frame.
+        // 60 frames with keypad 6 held (action 1, the original default — P3; it walks the player and still drives the
+        // ◇ focus driver, so the camera is unchanged until P5), after the first frame.
         let r = try renderer()
         let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
         assertLightsHandled(r, h: 0, v: 0, reFaced: Self.potionStep1)
-        let right = KeyState(pressed: [CameraFocusDriver.arrowRight])
+        let right = KeyState(pressed: [0x58])
         var chain: [UInt64] = []
         var scrolls: [[Int]] = []
         for _ in 0..<60 {
@@ -254,9 +255,13 @@ final class FrameGoldenTests: XCTestCase {
         // / 18c4e45ebeee8e88 / 51d5f367bd111589 with phase 0); frame 1's hash is unchanged.
         XCTAssertEqual(scrolls[29], [4, 10])
         XCTAssertEqual(scrolls[59], [226, 10])
-        XCTAssertEqual(hex(chain[29]), "e493fc8b09f84ed5")
+        // ◈ Re-measured 2026-10-13 (P3, twice): the real player walks (keypad 6) instead of the ◇ pose walking in place —
+        // he walks off the start ledge into the pit (cols 5–8) and clings to its far wall (1012); the camera is still
+        // the ◇ focus driver's, so the scrolls are unchanged (was e493fc8b09f84ed5 / 3ec51d436e278776 /
+        // 6e034d02ef78d7fb; frame 60 is unchanged — the player is off-screen by then).
+        XCTAssertEqual(hex(chain[29]), "be2b8e2e6631b1a7")
         XCTAssertEqual(hex(chain[59]), "3ec51d436e278776")
-        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "6e034d02ef78d7fb")
+        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "967803e69d2ceaf6")
     }
 
     func testItemLightTwinkleDimsTheTable() throws {

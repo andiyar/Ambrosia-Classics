@@ -49,6 +49,11 @@ public final class SpriteWorld {
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// // later: P4 (the death trigger sets it)
     public var playerDead = false
+    /// `*_DAT_1009fd30`: the frame-parity flag. Only `.PaintFrameWrap` writes it — toggled on **drawn** iterations,
+    /// after `.DrawParticles`/`.UpdateOmniPx` and before `.WrapCopyToScreen` (raw `10012710..1001272c`, l. 9435–9440;
+    /// plan Invariant 3); 0 on a fresh start (nothing else stores it). The session flips it; the player's
+    /// invulnerability blink (row 36, P3) and the water faces (E1b) read it.
+    public var parity = false
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

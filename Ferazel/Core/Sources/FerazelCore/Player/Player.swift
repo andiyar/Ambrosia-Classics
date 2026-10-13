@@ -16,13 +16,13 @@ import Foundation
 ///                                                            (plan row 22)
 ///  7 `.RopeCollide` (later: W3)                           28 surface material: ice (damage: later P4)
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
-///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (later: P3)
-/// 10 `.StandardSpriteHandles`                             31 held-item face, cast / wand phase (later: Phase 4)
+///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
+/// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (later: Phase 4)
 /// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
-/// 12 crunch-capable `+0xeb`                               33 state / face selection (cling arm: P2; later: P3, P4)
+/// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
 /// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 bubbles / drowning (later: P4)
-/// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, power-up tint (later: Phase 3–4, P3)
+/// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
 /// 17 liquid damage / heal (later: P4)                     38 `.PlayerConstraints` (later: W4)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
@@ -37,6 +37,9 @@ public enum Player {
     /// `.SetupPlayerSprite`'s layer `+0x80` and type `+4`.
     public static let layer: Int16 = 10
     public static let spriteType: Int16 = 0x45
+    /// The held-item sprite's type (`.SetupHeldItemSprite`) and the trail sprites' (`.SetupPlayerSprite`'s loop).
+    public static let heldItemType: Int16 = 100
+    public static let trailType: Int16 = 1
     /// Gravity `+0x110`: normal 0x1b8, swimming / submerged 0x50, spin in water 0x118, Feather Fall 0x40, rope 0.
     public static let gravity: Int16 = 0x1b8
     public static let swimGravity: Int16 = 0x50
@@ -54,9 +57,14 @@ public enum Player {
     /// gravity 0x1b8, the player Handle, hit callback 0, the tile callback; `fd44 = fe68 = +8`, `fd40 = fe64 = +6`,
     /// 24.8 from `+8`/`+6`; face 0; hot rect `(0x26, 0x22, 0x3e, 0x55)`; exertion 0; `+0x13c = 0x100`;
     /// `+0x90 = 0x100`; facing from `G+0x16` (0 → F 2 and `+0x17e = 0`, else F 1 and `+0x17e = 1`; both
-    /// `5f5a`/`5f5c`). Not built: the held-item sprite (type 100, layer 0x14) and the five trail sprites (type 1,
-    /// layer 9), the Shadow-Double ring, the Pentashield slots and `+0xe4 = 1` (the dead second loop's gate) —
-    /// // later: Phase 4 (held items, Double Speed, Pentashield); faceless, and no Phase-2 routine reads them.
+    /// `5f5a`/`5f5c`). Inside the Setup, before the player's own `.MTInsertSprite` (P3, the P1a carry): the held-item
+    /// sprite `MTNewSprite(100, 0, 0, 0x14, 0x1ff, .SetupHeldItemSprite)` into `_DAT_100a065c` (l. 42846), then the
+    /// five trail sprites `MTNewSprite(1, −1, −1, +0x80 − 1 = 9, 0x1ff, .SetupTrailSprite)` into `PTR_DAT_100a051c`
+    /// (l. 42898–42907) — both `.inert` here: `.HandleHeldItemSprite @ 1004be74` only re-pins a faceless sprite
+    /// (// later: Phase 4, held items) and `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
+    /// `.StandardSpriteCleanup` of a faceless sprite (// later: Phase 4, `.DoubleSpeedTrail` gives them faces);
+    /// neither Setup nor Handle draws `FastRand` (plan Invariant 4). Not built: the Shadow-Double ring, the Pentashield
+    /// slots and `+0xe4 = 1` (the dead second loop's gate) — // later: Phase 4.
     /// `PTR_DAT_100a0530` (the global copy of the hot rect, `SetRect` at l. 42818–42820) is not kept: its one TOC
     /// load is that store (raw `1004af68 lwz r3,-0x7310(r2)`) — write-only.
     ///
@@ -72,6 +80,8 @@ public enum Player {
         p.centreY = Int16(truncatingIfNeeded: y + 0x3b)
         let hp = w.globals.health
         let left = w.globals.startFacing != 0
+        var held: Int?
+        var trail: [Int?] = []
         let id = w.newSprite(type: 0, x: x, y: y, layer: layer, handler: .player) { s in
             s.type = spriteType
             s.vy = 0
@@ -88,6 +98,22 @@ public enum Player {
             s.y256 = Int32(p.startY) << 8
             s.face = nil
             s.hotRect = HandleKeys.standardHotRect
+            held = w.newSprite(type: heldItemType, x: 0, y: 0, layer: 0x14, handler: .inert, record: 0x1ff) { h in
+                // `.SetupHeldItemSprite @ 1004bdd0` (l. 43406–43425).
+                h.type = heldItemType
+                h.face = nil
+                h.y = 0
+                h.x = 0
+                h.layer = 0x14
+                h.hasHit = false
+                h.hotRect = IdleSprites.Rect(top: 2, left: -2, bottom: 0x16, right: 0x1a)
+            }
+            let trailLayer = Int16(truncatingIfNeeded: s.layer - 1)
+            for _ in 0..<5 {
+                // `.SetupTrailSprite @ 1004b3b4`: `.InitSprite` and the Handle.
+                trail.append(w.newSprite(type: trailType, x: -1, y: -1, layer: trailLayer, handler: .inert,
+                                         record: 0x1ff))
+            }
             s.pushForce = 0x100
             s.windScale = 0x100
             s.mirrored = left
@@ -98,6 +124,8 @@ public enum Player {
         }
         p.facing = left ? 1 : 2
         p.lastFacing = p.facing
+        p.heldItem = held
+        p.trail = trail
         w.player = p
         w.playerID = id
         return id
@@ -110,9 +138,9 @@ public enum Player {
     ///   `Player.handle(world:keys:)`) = `.HitPlayerTileSprite` with this frame's keys (`PlayerTiles.hit`, P2). A test
     ///   may pass a double.
     /// - Parameter faceWidth: the width of a face (face `+6`) for `.StandardSpriteCleanup`'s occluder clip — Core has
-    ///   no face records [MED: the player's sheets are 100 px wide but for 1022/1023/1050–1053].
+    ///   no face records: the cell width of the player's set (`PlayerStates.faceWidth`).
     public static func handle(world w: SpriteWorld, keys: InputActions, solver: TileSolver? = nil,
-                              tileHit: TileHit? = nil, faceWidth: (FaceRef) -> Int = { _ in 100 }) {
+                              tileHit: TileHit? = nil, faceWidth: (FaceRef) -> Int = PlayerStates.faceWidth) {
         guard let id = w.playerID, w.active.record(id: id) != nil else { return }
         let solver = solver ?? TileSolver(world: w)
         let tileHit = tileHit ?? PlayerTiles.hit(keys: keys)
@@ -248,30 +276,27 @@ public enum Player {
                 p.vx = 0
             }
         }
-        // 30 (l. 45140): `.HandleBreathing @ 1004bb44` (physics-sprites §8.8). // later: P3
-        // 31 (l. 45141–45176): the held item's face `+0xc0 = 0`, the cast / wand phase machine, `.CastSpell`.
-        // // later: Phase 4 (spells, held items)
+        // 30 (l. 45140): `.HandleBreathing @ 1004bb44` (physics-sprites §8.8).
+        Breathing.handle(world: w, id: id)
+        // 31 (l. 45141–45176): the held item's face `*(_DAT_100a065c + 0xc0) = 0`; then the cast / wand phase machine,
+        // `.CastSpell` // later: Phase 4 (spells, held items).
+        if let h = w.player.heldItem { w.active.update(id: h) { $0.face = nil } }
         // 32 (l. 45177–45218): the potion drink. // later: Phase 4
         // 33 (l. 45219–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
-        // hurt-stun, `05f8`, rope, swim (vy damping, counter refill, splash), cling / climb / pull-up, melee, grounded
-        // (walk sounds, fidgets: FastRand), airborne (`_DAT_100a0718`). // later: P3 (faces, states), P4 (the swim
-        // arm). P2 builds the cling arm's writes (the pull-up move), reached when every earlier arm's test fails.
-        let p33 = w.player
-        if !p33.glider && p33.dying <= 0 && p33.spiritTransition <= 0 && p33.bossGrab <= 0 && p33.stun <= 0
-            && p33.animation05f8 == 0 && !p33.rope && p33.swim == 0 && p33.climb != 0 {
-            clingArm(w, id: id)
-        }
+        // hurt-stun, `05f8`, rope, swim, cling / climb / pull-up, melee, grounded (walk sounds, fidgets: FastRand),
+        // airborne (`_DAT_100a0718`); first match wins (`PlayerStates.select`, P3).
+        let tumbleDrawn = PlayerStates.select(world: w, id: id)           // `cStack_6b`
         // 34 (l. 46197–46203).
         if w.player.climb == 0 { w.player.pullUp = 0 }
-        let tumbleDrawn = false                                           // `cStack_6b` // later: P3 (launched tumble)
         if !tumbleDrawn {
             let mirror = w.player.facing != 2, turn = w.player.turnMirror
             set { $0.mirrored = turn ? !mirror : mirror }
         }
         // 35 (l. 46204–46241): `.ShouldEmitBubbles` — oxygen, drowning damage, `.EmitBubble`, the bubble timer
         // (`FastRand(0x96)`). // later: P4
-        // 36 (l. 46242–46346): teleporter charge (`FastRand(6)` tint), power-up / invulnerability tint `+0xb8`,
-        // `+0x88`, `+0x18c`, `+0x1a6`, `+0x1a8`. // later: Phase 3 (teleporters), Phase 4 (power-ups), P3 (the blink)
+        // 36 (l. 46242–46346): teleporter charge (`FastRand(6)` sparkle), the invulnerability blink on the parity frames,
+        // the power-up tints (`PlayerStates.tint`, P3; teleporters Phase 3, power-ups Phase 4 have no Phase-2 writer).
+        PlayerStates.tint(w, id: id)
         // 37 (l. 46347–46365).
         sidePush(w, id: id)
         // 38 (l. 46366): `.PlayerConstraints @ 1004cb4c` (map clamps, the level exits hdr+0x2724). // later: W4
@@ -487,46 +512,6 @@ public enum Player {
             p.vx = side == 1 ? -0x800 : 0x800
         }
         w.player.climb = 0
-    }
-
-    /// Row 33's cling arm (l. 45750–45813; `_DAT_100a0758` ≠ 0): idle → fidgets when > 0, standing `0670` 0, air
-    /// counter 0, spin 0, stop 427 if playing, crouch 0; then without a pull-up the climb phase `5f54` wraps (≥ 13 → 1,
-    /// < 1 → 12) and, with a wand phase (`06d4` ≥ 1), climb phase 1 and vy 0 // faces: later P3; with a pull-up, the
-    /// counter `06a0` += 1 and past 0x14 the move: x256 ±0x2000 (− when `+0x17e`, the wall on the left), y256 −= 0x1600,
-    /// pull-up 0, climb 0, air counter 0, spin 0, stop 427, crouch 2, `0738` = 1, `+0xce` = 1 (face: later P3).
-    static func clingArm(_ w: SpriteWorld, id: Int) {
-        if 0 < w.player.idle { w.player.idle = w.player.fidgets }
-        w.player.standing0670 = false
-        w.player.airCounter = 0
-        w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))   // `_DAT_100a03cc`
-        w.player.crouch = 0
-        if w.player.pullUp == 0 {
-            if w.player.climbPhase < 0xd {
-                if w.player.climbPhase < 1 { w.player.climbPhase = 0xc }
-            } else {
-                w.player.climbPhase = 1
-            }
-            if 0 < w.player.wandPhase {
-                w.player.climbPhase = 1
-                w.active.update(id: id) { $0.vy = 0 }
-            }
-            return
-        }
-        w.player.pullUp += 1
-        guard 0x14 < w.player.pullUp else { return }
-        w.active.update(id: id) { p in
-            p.x256 &+= p.mirrored ? -0x2000 : 0x2000
-            p.y256 &-= 0x1600
-        }
-        w.player.pullUp = 0
-        w.player.climb = 0
-        w.player.airCounter = 0
-        w.player.spin = false
-        w.player.cues.append(PlayerCue(call: .stopIfPlaying, snd: 427))
-        w.player.crouch = 2
-        w.player.groundLast = 1                                         // `_DAT_100a0738`
-        w.active.update(id: id) { $0.groundKind = 1 }
     }
 
     /// Row 28 (l. 45106–45135; raw `1004eb24..1004ec4c`): the surface material `+0xd8` the move left. 3 (ice) →

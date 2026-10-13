@@ -14,21 +14,34 @@ import HectorResources
 ///   The menu bar was hidden before `.GameLoop` by the front end — on a new game by `.main` (l. 8280) and
 ///   `.MainMenu @ 1000e618` (l. 7349); on a resume by `.ContinueGame` (l. 6877). Phase 1 has no front end, so the
 ///   request rides the level start. Not built: `.FadeAIFFMusic(1, 4)`, the gamma fades, `.ChapterScreen`
-///   (hdr 0x273c, l. 5222–5226), the countdown effect sprite 0x4c4 (l. 5183) and the player's held-item / trail
-///   sprites (faceless at their Setups).
+///   (hdr 0x273c, l. 5222–5226).
+/// - P3: the player is `Player.spawn` (`.SetupPlayerSprite`, with its held-item and five trail sprites), then the
+///   countdown sprite `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184) into `*_DAT_1009fd7c` with its
+///   six digit sprites 0x4c5; `iRam100a5110 = −0x1e` (l. 5186), so the countdown stays hidden (its only other writer
+///   is the timer pickup in `.HitPlayerSprite`, l. 49275 — // later: Phase 3–4). No `FastRand` in any of them.
 ///
-/// **Each iteration** (l. 5224–5290): `.FindUpperLeftCorner`, then `.PaintFrameWrap(draw, odd) @ 10011cf8` with
+/// **Each iteration** (l. 5224–5290): `.FindUpperLeftCorner`, the countdown sprite's Handle called directly (raw
+/// `1000a148..1000a158`: `if (*_DAT_1009fd7c) (*(+0x4c))()`), then `.PaintFrameWrap(draw, odd) @ 10011cf8` with
 /// draw = 0 iff prefs[0] and not odd (odd starts false, toggles at the end — so with prefs[0] the FIRST iteration
 /// skips): `.SetScrollLocation`, `.DrawLightsOntoTiles` unless prefs+6 == 3, `.WrapDrawSprites` unconditionally; only
 /// the `if (param_1 != 0)` block (l. 9254–9450) with `.WrapCopyToScreen(port, h, v, 0x10, 8, prefs+9 == 0,
-/// prefs+2 == 3, 0)` (l. 9443/9447) is skipped; then always `.HandleIdleSprites`, `.HandleSprites` (the items' light
-/// twinkle from `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — and the ◇ player pose and ◇ focus
-/// driver standing in for the player Handle), `.WrapEraseSprites` (l. 9452–9456); after it
-/// `.UpdateStatusBar(1, 0, 0)`.
+/// prefs+2 == 3, 0)` (l. 9443/9447) is skipped — and with it the parity flip `*_DAT_1009fd30` (`SpriteWorld.parity`,
+/// l. 9435–9440, before the copy); then always `.HandleIdleSprites`, `.HandleSprites` (the items' light twinkle from
+/// `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — the player's `.HandlePlayerSprite` (`Player`) with
+/// the ◇ focus driver still steering the camera until `.PlayerScroll` (P5), and the Effect Handles), `.WrapEraseSprites`
+/// (l. 9452–9456); after it `.UpdateStatusBar(1, 0, 0)`.
+///
+/// **Map writes** (P3, the P2 carry): `.SetFGTile`/`.SetFGCrunchDirTile` are followed by `.ChangedTile @ 10012a50` =
+/// `.RedrawScrollGrid` of the cell, which draws into the tile port at once — inside the Handle that crunched (the
+/// player's tile callback or the crumble overlay's Handle). So each Handle's `DrawOp.setTile`s are appended right
+/// after that Handle, at its place in the handle pass (after `.WrapCopyToScreen`, interleaved in list order with the
+/// other Handles' ops — e.g. a Bonus twinkle's `changeLightFace`, which the redrawn cell's light pass reads — and
+/// before `.WrapEraseSprites`); the cues are drained once after `.MTHandleSprites` (`frameCues`).
 ///
 /// F2: the sprites live in a `SpriteWorld`. `.HandleSprites` is its three passes (Invariant 3): `handleSprites`
-/// walks the active list (each sprite's Handle at its list position: the player slot runs the ◇ pose and ◇ focus
-/// driver, an inert Bonus item its `BonusHandle` twinkle), then `collideSprites`, then `collideSpecial`.
+/// walks the active list (each sprite's Handle at its list position: the player slot runs `Player.handle` and the ◇
+/// focus driver, an Effect its `EffectSprite.handle`, an inert Bonus item its `BonusHandle` twinkle), then
+/// `collideSprites`, then `collideSpecial`.
 public final class FerazelSession {
     public let resources: FerazelResources
     public let prefs: FerazelPrefs
@@ -42,9 +55,17 @@ public final class FerazelSession {
     public var idle: IdleSprites { world.idle }
     /// The lights the Setups added, in `.AddLight` (= `.SetupLevel`) order — the light slots 0… a renderer fills.
     public let lights: [SetupFaces.Light]
-    /// The player's `ActiveList` id.
+    /// The player's `ActiveList` id (`*_DAT_1009fdd8`).
     public let playerID: Int
-    public private(set) var pose: PlayerPose
+    /// The player's globals (`world.player`).
+    public var player: PlayerState { world.player }
+    /// `*_DAT_1009fd7c`: the countdown sprite 0x4c4 (nil when `.MTNewSprite` found no record).
+    public let countdownID: Int?
+    /// `iRam100a5110`: the countdown (−0x1e = hidden; `.GameLoop` decrements it only while > −0x1e).
+    public private(set) var countdown: Int32 = -0x1e
+    /// The player cues of the last iteration, in call order (`PlayerState.drainFrameOutputs` after `.MTHandleSprites`;
+    /// S1 turns them into `SoundCue`s).
+    public private(set) var frameCues: [PlayerCue] = []
     public private(set) var camera: Camera
     public private(set) var focusDriver: CameraFocusDriver
     /// The stream's current state (`_DAT_100a17e8`; the stream is `world.rng`, plan Invariant 4).
@@ -62,6 +83,8 @@ public final class FerazelSession {
     public private(set) var iterations = 0
 
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
+    /// The tile solver over `world` (one per level).
+    private let solver: TileSolver
 
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
@@ -76,13 +99,13 @@ public final class FerazelSession {
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
-        let p = PlayerPose(header: L.header)
-        pose = p
-        focusDriver = CameraFocusDriver(spriteX: p.x, spriteY: p.y, width: Int(L.header.gridWidth) * 0x20,
+        // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823).
+        let px = Int(L.header.startX) - 0x20, py = Int(L.header.startY) - 0x20
+        focusDriver = CameraFocusDriver(spriteX: px, spriteY: py, width: Int(L.header.gridWidth) * 0x20,
                                         height: Int(L.header.gridHeight) * 0x20)
-        camera = try Camera(header: L.header, spriteX: p.x, spriteY: p.y)
+        camera = try Camera(header: L.header, spriteX: px, spriteY: py)
         let context = SetupFaces.Context(level: L, playerX: focusDriver.pointX, effects: prefs.effects)
-        var spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
+        let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
             switch e.source {
@@ -93,14 +116,14 @@ public final class FerazelSession {
             }
         }
         lights = spawned.lights
-        // The player `MTNewSprite(0, x, y, 10, …)` with `.SetupPlayerSprite`'s Handle and hot rect `+0x34`.
-        var player = p.slot
-        player.handler = .player
-        player.hotRect = PlayerPose.hotRectLocal
-        playerID = spawned.active.insert(player)
         world.active = spawned.active
         world.idle = spawned.idle
-        world.playerID = playerID
+        // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
+        // `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184); `+0x46` of the player = param_3 = 0.
+        guard let pid = Player.spawn(world: world, x: px, y: py) else { throw SessionError.noPlayerRecord }
+        playerID = pid
+        countdownID = Self.spawnCountdown(world, x: px, y: py)
+        solver = TileSolver(world: world)
 
         // The level start's draws after `.SetupLevelSprites`, in the binary's order (plan F1 ⚑ note, E2 carry):
         // (1) `.RedrawEntireScrollGrid` inside `.SetupLevel` (l. 2582): none. Its `.WrapDrawFace` words are 9 + water
@@ -134,6 +157,40 @@ public final class FerazelSession {
         return max(0, Int(count))
     }
 
+    /// The level could not be set up.
+    public enum SessionError: Error, Equatable {
+        /// `.MTNewSprite` found no free record for the player (the original's `*_DAT_1009fdd8 = 0`).
+        case noPlayerRecord
+    }
+
+    /// The countdown digit sprites' type (`.SetupDigitSprite`).
+    public static let digitType: Int16 = 0x4c5
+    /// The countdown sprite's type.
+    public static let countdownType: Int16 = 0x4c4
+
+    /// `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184): the Effect Setup's common part
+    /// (`EffectSprite.setup`; 0x4c4 is in the list that skips the `FastRand(8)` package, l. 53748), then its own arm
+    /// (l. 53826–53860): the Effect Handle, hit and tile callbacks 0, layer 0x7fff (the sort key), `+0x88` 0, a 0x1c-byte
+    /// block `+0x9c` holding six `MTNewSprite(0x4c5, +0xc, +0xa, 0x7fff, −1, .SetupDigitSprite)` — each `.InitSprite`,
+    /// `+0x88` 0, layer 0x7fff, the digit Handle `.anon_10060c78` (`.StandardSpriteHandles` + `.StandardSpriteCleanup`
+    /// of a faceless sprite: `.inert` here). The digits are inserted before the 0x4c4 itself (its Setup runs first).
+    /// `.UpdateDigits @ 10060d04` (the 0x4c4 arm of `.HandleEffectSprite`) leaves every face 0 while `iRam100a5110`
+    /// < −0x1d — always in Phase 2 (`EffectSprite.handle`'s default arm: the faces stay nil). No `FastRand`.
+    static func spawnCountdown(_ w: SpriteWorld, x: Int, y: Int) -> Int? {
+        w.newSprite(type: countdownType, x: x, y: y, layer: 800, handler: .effect) { s in
+            EffectSprite.setup(&s)
+            s.hasHit = false
+            s.layer = 0x7fff
+            s.lightOverlay = false
+            for _ in 0..<6 {
+                w.newSprite(type: digitType, x: s.x, y: s.y, layer: 0x7fff, handler: .inert) { d in
+                    d.lightOverlay = false
+                    d.layer = 0x7fff
+                }
+            }
+        }
+    }
+
     /// One `.GameLoop` iteration (the first call also carries the level start).
     public func step(keys: KeyState) -> FrameOps {
         var ops = FrameOps()
@@ -153,34 +210,48 @@ public final class FerazelSession {
         }
         iterations += 1
 
+        // `if (-0x1e < iRam100a5110) iRam100a5110 -= 1` (l. 5237–5239).
+        if -0x1e < countdown { countdown -= 1 }
         camera.findUpperLeftCorner(focusX: focusDriver.focusX, focusY: focusDriver.focusY, playerVX: focusDriver.vx,
                                    graphics: graphics)
+        // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
+        if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c) }
         let draw = prefs.reduceFrameRate == 0 || odd
         let h = camera.scrollH, v = camera.scrollV
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
         ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites()))
         if draw {
+            // later: E1a `.DrawParticles`, `.UpdateOmniPx`; then the parity flip (raw `10012710..1001272c`).
+            world.parity.toggle()
             ops.draws.append(.copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: prefs.plainCopy == 0))
         }
-        // `.HandleIdleSprites`.
+        // `.HandleIdleSprites`: the window takes the player's `+0x34` rect at its `+0xc`/`+0xa` (l. 4302–4308).
         let bounds = faceBounds
-        world.idle.handle(h: h, v: v, playerHotRect: pose.hotRect, active: &world.active, faceRect: bounds)
+        let playerRect = world.active.sprite(id: playerID).map { p in
+            IdleSprites.Rect(top: p.y + p.hotRect.top, left: p.x + p.hotRect.left, bottom: p.y + p.hotRect.bottom,
+                             right: p.x + p.hotRect.right)
+        }
+        world.idle.handle(h: h, v: v, playerHotRect: playerRect, active: &world.active, faceRect: bounds)
         // `.HandleSprites`: `.MTHandleSprites` — each sprite's Handle at its list position.
         let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
+        let actions = InputActions(keys: keys, prefs: prefs)
         let effects = prefs.effects
+        let solver = self.solver
         world.handleSprites { world, id in
             guard let handler = world.active.record(id: id)?.handler else { return }   // the record's `+0x4c`
+            defer {
+                // `.ChangedTile`'s redraw happens inside the Handle that wrote the map: its ops go here (header).
+                ops.draws.append(contentsOf: world.player.tileOps)
+                world.player.tileOps = []
+            }
             switch handler {
             case .player:
-                // ◇ the player Handle: the pose, then `.PlayerScroll`'s focus (replaced by P1a … P5).
-                self.pose.step(left: held.left, right: held.right, run: held.run)
-                let p = self.pose
-                world.active.update(id: id) { s in
-                    s.face = p.face
-                    s.mirrored = p.mirrored
-                }
+                // `.HandlePlayerSprite`; then the ◇ focus driver stands in for `.PlayerScroll` (row 39) until P5.
+                Player.handle(world: world, keys: actions, solver: solver)
                 self.focusDriver.step(held)
+            case .effect:
+                EffectSprite.handle(world: world, id: id)
             case .inert:
                 // `.HandleBonusSprite @ 1005e934` (decompile l. 52832–52840), as far as Phase 2 builds it: `+0xe9` →
                 // return, `+0x1b2` → return, `.StandardSpriteHandles`, (`+0xa6 < 0` counts up // later: Phase 4 — no
@@ -193,10 +264,12 @@ public final class FerazelSession {
                 world.active.update(id: id) { s in
                     if let op = BonusHandle.twinkle(&s, effects: effects) { ops.draws.append(op) }
                 }
-            case .platform, .chain, .background, .box, .effect, .rope, .ropeSegment:
-                break   // later: W1 (platform, chain), W2a/W2b (background), W3 (box, rope, ropeSegment), E1a (effect)
+            case .platform, .chain, .background, .box, .rope, .ropeSegment:
+                break   // later: W1 (platform, chain), W2a/W2b (background), W3 (box, rope, ropeSegment)
             }
         }
+        // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).
+        frameCues = world.player.drainFrameOutputs().cues
         // `.MTCollideSprites`, then the player pass. No Phase-2 hit callback or `.HitPlayerSprite` arm exists yet.
         world.collideSprites { _, _, _ in }       // later: W1–W3 hit callbacks
         world.collideSpecial(hitPlayer: { _, _, _ in }, hit: { _, _, _ in })   // later: P2 `.HitPlayerSprite`

@@ -263,6 +263,15 @@ Common: air counter 0, spin 0, spin sound stopped.
 7. Potion counter (l. 1431–1475): +1/frame; at 20: item 5 → HP = breath = max; item 4 → magic =
    max (flash 6); item 0x19 → just removed; at 40 item 0x19 → spirit (§3.3); > 40 → 0.
 
+⚑ planner-probe (Phase 2 plan A9, landed by P3 2026-10-13; follow the binary): **the jump frame is drawn grounded**
+[~~MED~~ → HIGH] — row 20 latches `_DAT_100a0738 = s+0xce` (raw `1004e618..1004e634`; 3 when riding) **before**
+`.HandleKeys` (`bl 0x10052ac0` at raw `1004e688`) makes the impulse, and row 33's grounded test reads that latch first
+(raw `100502c4 lwz r3,-0x7108(r2); lbz; cmplwi; bne 0x100505ac` — the grounded arm starts at `100505ac` with the crouch
+test `lwz r3,-0x7124(r2)`, the airborne arm is the fall-through at `100502e0`). So the frame JUMP is pressed shows the
+stand face `1003[chest]` (no crouch, no walk flag), and `1010` starts on the next frame with the air counter 1
+(`PlayerStateTests.testJumpFrameDrawnGrounded`: c 0, 1…10, 10, 11…; faces 1010[0,1,1,2,2,3,3,4,4,4,4,4,…], [5] from
+frame 18).
+
 ### 3.12 Airborne (l. 2349–2452)  [HIGH]
 Air counter `c = _DAT_100a0718` update: c < 10: rising (`vy ≤ 0`) and not spinning → c + 1; else
 c < 3 → c = 18; else c + 2. c ≥ 10: c + 1 only while falling, not spinning, not in wind

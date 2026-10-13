@@ -222,6 +222,12 @@ From `.HandlePlayerSprite` (handler dump l. 1396) unless dying. Exertion `E = _D
   when the period < 4, else `_DAT_100a03fc`, vol 0x37). Phase wraps after 5 (6-phase cycle);
   chest frame = triangle (0,1,2,3,2,1) of the phase when not bubbling, else 2; `_DAT_100a06a8`
   = phase.
+- ⚑ planner-probe (Phase 2 plan A11, landed by P3 2026-10-13; follow the binary): **calm breathing holds at chest
+  frame 1** — the advance test is `chest != 1 || min(E,600) > 0x9f || last phase < 2` (decompile l. 43367), so with
+  E < 0xa0 the cycle runs phase 3 → 4 (chest 2) → 5 (chest 1) and then stops there: at every later reload the chest is
+  1 and the last phase 5 ≥ 2. Phase 2 (the breath sound / bubble) is never reached while calm; only exertion ≥ 0xa0
+  restarts the cycle. E 0: period 9 − 2 = 7, so 1003[3] (the stand entry), [2] ×6, then [1] for good
+  (`PlayerStateTests.testBreathingCalmHoldsAtChest1`; `SessionTests.testPlayerStartPose`).
 
 ### 8.9 Platforms (class Platform, types 0x578..0x595; `.DoSetupPlatformSprite @ 10062098`, `.HandlePlatformSprite @ 100635b4`)  [HIGH arithmetic; MED names]
 `.HandlePlatformSprite` runs `.DoSetupPlatformSprite` on its first frame (`+0x17c`). Mode

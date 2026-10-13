@@ -103,7 +103,7 @@ F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a *
 As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
 +1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
 Later tasks: previous total + N. Wave 2.1 as executed: E2 carry `testLevelStartDrawsAfterSetups` +1 → 141, E2 +8 → 149, S2
-+5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), P2 → 175, …
++5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), P2 → 175, P3 → **185**, …
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -624,6 +624,40 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   in liquid; hot rect drift ±2 from c 9) · `testBreathingCalmHoldsAtChest1` (E 0 → period 7, phase 3→4→5, holds) ·
   `testInvulBlinkParity`.
 - **Commit:** `FerazelCore: player states and faces (HandlePlayerSprite state selection), breathing, footsteps; PlayerPose stub removed; 10 tests`.
+- ⚑ **As executed (P3, 2026-10-13):** G2 **185** then 0 (175 + 10). Built from raw `1004ec4c..10050e6c` (row 33,
+  first match wins: glider / spirit / boss grab / door `05f8` / melee `0698` are never-taken named stubs; dying,
+  hurt-stun, rope, swim, cling, grounded, airborne built), `.HandleBreathing @ 1004bb44`, row 36 (blink, teleporter
+  charge, power-up tints as read). `PlayerStates.swift` (row 33, row 36, the player sheet list + face widths),
+  `Breathing.swift`; Out-of-Files, necessary: `Player.swift` (rows 30/31/33/36 wired, spawn's held item + trails),
+  `PlayerState.swift` (P3 globals), `SpriteWorld.swift` (`parity` = `_DAT_1009fd30`, flipped by the session on drawn
+  iterations only), and — by the orchestrator's Invariant-10 ruling — `PlayerMotionTests.swift` / `PlayerTileTests.swift`.
+  **Implemented code-first, not in TDD order**; the 10 tests' failures were then shown by 14 mutants (all killed).
+  **The camera still follows the ◇ focus driver until P5** (keypad keys drive both the player and the driver).
+  Wiring: `Player.spawn` makes the held item (`MTNewSprite(100, 0, 0, 0x14, 0x1ff)`, l. 42846) then the five trails
+  (type 1, layer 9, l. 42898–42907) inside the Setup — both `.inert` (their Handles only touch faceless sprites;
+  // later: Phase 4); the session then spawns the countdown 0x4c4 (l. 5184; layer 0x7fff, six digit sprites 0x4c5,
+  hidden while `iRam100a5110` = −0x1e) and calls its Handle directly before `.PaintFrameWrap` (raw `1000a148..58`).
+  None draws FastRand (the 0x4c4 skips the `FastRand(8)` package, l. 53748); seed-1 post-start stays 0x2c1b1519.
+  `setTile` ops are appended right after the Handle that wrote the map, inside the handle pass: `.SetFGTile` is followed
+  by `.ChangedTile @ 10012a50` → `.RedrawScrollGrid` of the one cell, drawn at once (l. 9544–9552); cues drained once
+  after `.MTHandleSprites` (`FerazelSession.frameCues`). FrameRenderer loads every `.InitPlayerSprite` set (glider
+  1050–1053 // later: Phase 4). **Re-measured under "follow the binary" (orchestrator ruling on the P3 STOP):** (a)
+  P1a/P1b/P2 exertion asserts net of `.HandleBreathing`'s −2 (raw `1004bb8c..1004bb90`): testFullJumpApex 8f → 6f;
+  testRunRightOvershootsThenClamps 18 → 6, 0xbc → 0xba, 9 → 3; testWalkRightFromRestReachesMaxIn4 6 → 0, 0xb9/0xb9 →
+  0xb7/0xb6 (+ a `HandleKeys.run` cap assert 0xb9 → 0xb9); testWalkLeftFromRestReachesMaxIn8 8 → 0; (b) cue lists gain
+  the grounded arm's per-frame stop 427 (raw `1005074c`/`10050760`): testJumpImpulseAtRestWalkRun, testTerminalVelocity-
+  AndZeroBump (×2), testFullJumpLandsFrame24, testHardLandingVolumes ([414, 427] → [414, 427, 427]) — no kinematic number
+  moved; (c) testPlayerStartPose: spawn (83, 143) asserted before the first step; new frame-1 lift y 143 → 123 — the
+  spawn arithmetic is `.NewGame`'s (hdr 0x2848/0x2846 − 0x20, l. 5823) and the lift is the pre-move
+  `.SeparateFromTiles2` (`bl 0x1003c804` at raw `1004e58c`) → `.WallBounce` kind-4 floor arm (l. 33244–33266) on FG
+  (4, 6): 192 + 16 − 0x55 = 123; (d) testWalkCycleFaces / testRunCycleFaces / testTurnSequence stay on level 1,
+  re-measured (walk: 1020[7…11], 1010[5] ×4, then 1012[0] clinging to the pit wall at x 146; run: 1024[7…10],
+  1010[5] ×2, 1012[0]; the turn unchanged, the turn back now 1020[7], 1030[0, 1, 2, 1]) — the plan's flat-floor
+  sequences are pinned by `PlayerStateTests`; (e) ◈ testPanFrameGoldens frame 30 e493fc8b09f84ed5 → be2b8e2e6631b1a7,
+  chain 6e034d02ef78d7fb → 967803e69d2ceaf6, frame 60 3ec51d436e278776 unchanged (the camera is still the stub's, so
+  the scroll is unchanged, and by frame 60 the player clings at x 146 — his cell spans 146..246 against the view
+  from h 226; the unchanged hash says none of 1012[0]'s opaque pixels reach it [MED, inferred]). Bank A9 (player-states
+  §3) and A11 (physics-sprites §8.8) landed.
 
 #### P4 — minor — Liquids, hazards, breath, death (→ 180)
 - ⚑ **E2 carry → P4:** `SpriteBlitter` refuses (`underwaterLight`, SpriteBlitter.swift ~l. 359–370) the light pass

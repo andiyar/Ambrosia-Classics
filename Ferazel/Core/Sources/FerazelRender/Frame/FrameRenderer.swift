@@ -145,16 +145,11 @@ public final class FrameRenderer {
         ports = FramePorts()
     }
 
-    /// `.InitPlayerSprite @ 1004a284` (l. 42428–42460): the Phase-1 pose's sets — stand 1003, fidgets 1028 / 1029,
-    /// turn 1030, walk 1020, run 1024 — 100×120 cells, at boot under clut 200 (`.InitSprites`, l. 118).
-    static let playerSheets: Set<SetupFaces.Sheet> = [
-        SetupFaces.Sheet(pict: 0x3eb, count: 4, cellWidth: 100, cellHeight: 0x78, columns: 4, clut: 200),
-        SetupFaces.Sheet(pict: 0x3fc, count: 0x10, cellWidth: 100, cellHeight: 0x78, columns: 4, clut: 200),
-        SetupFaces.Sheet(pict: 0x400, count: 0xc, cellWidth: 100, cellHeight: 0x78, columns: 4, clut: 200),
-        SetupFaces.Sheet(pict: 0x404, count: 10, cellWidth: 100, cellHeight: 0x78, columns: 10, clut: 200),
-        SetupFaces.Sheet(pict: 0x405, count: 6, cellWidth: 100, cellHeight: 0x78, columns: 6, clut: 200),
-        SetupFaces.Sheet(pict: 0x406, count: 3, cellWidth: 100, cellHeight: 0x78, columns: 3, clut: 200),
-    ]
+    /// `.InitPlayerSprite @ 1004a284` (l. 42428–42490): every set it loads (`PlayerStates.sheets`, P3 — the state
+    /// machine's faces: stand, uphill, air, crouch, climb, hurt, casts, tumble, rope, walk, stab, dying 150×120,
+    /// pull-up 120×120, run, spin, swim, fidgets, turn, door, potion, boss grab, spirit, shield), at boot under clut 200
+    /// (`.InitSprites`, l. 118). The cached glider sets 1050–1053 // later: Phase 4.
+    static let playerSheets: Set<SetupFaces.Sheet> = Set(PlayerStates.sheets)
 
     /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
     /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`) and the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`)

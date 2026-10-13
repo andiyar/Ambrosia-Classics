@@ -245,6 +245,47 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a04cc`: the "stood on a BG one-way top" timer.
     public var oneWayTimer: Int8 = 0
 
+    // MARK: state selection, faces and breathing (P3; row 33 l. 45219–46196, `.HandleBreathing`, row 36)
+
+    /// `PTR_DAT_100a06c8`: the turn countdown (4 → 0 over the five turn frames).
+    public var turnCountdown: Int16 = 0
+    /// `_DAT_100a0728`: walking last frame (the first walking frame sets the phase `+0x46` to 0xc).
+    public var walking = false
+    /// `PTR_DAT_100a04fc`: the chest frame (index into 1003) — `.HandleBreathing` writes it, the stand entry sets 3.
+    public var chestFrame: Int16 = 0
+    /// `_DAT_100a06b0` / `_DAT_100a06a8`: the breathing period counter / last frame's breath phase.
+    public var breathPeriod: Int16 = 0
+    public var lastBreathPhase: Int16 = 0
+    /// `PTR_DAT_100a0710`: the footstep index into the 4-sound table `_DAT_100a025c` (410…413).
+    public var footstep: Int16 = 0
+    /// `_DAT_100a058c`: the rope walk counter (0…15). `_DAT_100a0768`: the last cast was V Blade (alternate cast faces).
+    /// // later: W3 (rope), Phase 4 (spells) — no Phase-2 writer.
+    public var ropeWalk: Int16 = 0
+    public var vBladeCast = false
+    /// `_DAT_100a0698`: the melee / throw counter (`.HandleItemUse`). // later: Phase 4 (no Phase-2 writer).
+    public var itemUse: Int16 = 0
+    /// `PTR_DAT_100a0594`: the necklace revive counter. `PTR_DAT_100a0560`: died in liquid (the dying arm ends at
+    /// 100, not 80). // later: Phase 4 (revive), P4 (the death trigger writes 0560).
+    public var revive: Int16 = 0
+    public var diedInLiquid = false
+    /// `DAT_100a5106`: the game-over flag the dying arm sets when it ends (`.GameLoop` leaves its loop; W4 restarts).
+    public var gameOver = false
+    /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.
+    /// // later: Phase 3 (teleporters) — no Phase-2 writer of 070c.
+    public var teleporterTouch = false
+    public var teleporterFire = false
+    /// `PTR_DAT_100a0644`, `PTR_DAT_100a0634`, `PTR_DAT_100a0628`, `PTR_DAT_100a061c`: the power-up tint flags paired
+    /// with walk-on-liquid / High Jump / Feather Fall / Double Speed in row 36. // later: Phase 4 (`.TickTock`).
+    public var tint0644 = false
+    public var tint0634 = false
+    public var tint0628 = false
+    public var tint061c = false
+    /// `_DAT_100a065c`: the held-item sprite (`.SetupPlayerSprite`'s `MTNewSprite(100, 0, 0, 0x14, 0x1ff, …)`).
+    public var heldItem: Int?
+    /// `PTR_DAT_100a051c`: the five trail records `{sprite, 0, −1, −1, 0}` (`.SetupPlayerSprite`'s loop); the
+    /// sprites are type 1, layer 9 (`.SetupTrailSprite`). `.DoubleSpeedTrail` // later: Phase 4.
+    public var trail: [Int?] = []
+
     // MARK: ClearPlayerVars' non-zero globals with no P1a reader (kept for the later rows)
 
     /// `uRam100a5f5e`: breath phase (3). `_DAT_100a5f56`: bubble timer (0x28). `DAT_100a5f58` (1). `uRam100a5fd4` (1).
