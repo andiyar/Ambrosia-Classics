@@ -38,6 +38,12 @@ Staged builds for Ben go to `out/<Game>/` as a double-clickable `.app` + what-to
 Fable-kit method: STATE updated the same session; real forks recorded in DECISIONS; sessions end
 with a handoff + a `spawn_task` chip carrying the full next-session trigger (RESUME.md fallback).
 Commit each verified logical step to `main` and push. Local verification only; no cloud CI.
-Opus implementers, Fable reviewers; reviewers report everything with confidence, no self-filtering.
+**Model policy (Ben 2026-10-07, 2026-10-13):** Opus 5.5 is the seat and every implementer/reviewer leg (`fk-implementer` /
+`fk-reviewer`, no `model` param; ⚑ MAJOR = two Opus legs). Fable 5.1 is the cross-check only: one Fable review leg on
+each phase plan (after its Opus legs) and one at each phase end over the whole phase's diff + gate card, before staging —
+never per task. Reviewers report everything with confidence, no self-filtering.
+**Unattended loop (D34):** `.looper/config.sh` adapts fable-kit's session looper; its chip is `docs/NEXT.md`
+(first line `STATUS: …`), Ben's queue `docs/QUESTIONS.md`, ledger `docs/LOOP-LOG.md`; stop with `touch STOP`
+(git-ignored). The loop merges to LOCAL main only and never pushes — a human session pushes.
 Portability shape (HectorKit D6): every game's `*Core` target is Foundation-only; Apple frameworks only in
 the app shell (HectorShell) and census oracles — keeps a later SDL/Windows shell possible. Mac stays native.
