@@ -145,7 +145,7 @@ public enum BackgroundSprite {
         if maces.contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
             mace(w, id: id)
-        } else if (0x442...0x44b).contains(t) {
+        } else if cannonArms.contains(t) {
             cannon(w, id: id)
         } else if springs.contains(t) {
             spring(w, id: id)
@@ -199,8 +199,11 @@ public enum BackgroundSprite {
 // MARK: - W2b: cannons, springs, passages, wall tunnels
 
 extension BackgroundSprite {
-    /// The cannons the Setup arms (`0x441 < type < 1099`, l. 62057–62058); the Handle's arm is 0x442…0x44b.
+    /// The cannons the Setup arms (`0x441 < type < 1099`, l. 62057–62058).
     public static let cannons: ClosedRange<Int16> = 0x442...0x44a
+    /// The cannon arms of `.HandleBackgroundSprite` and `.HitBackgroundSprite` (`0x441 < type < 0x44c`, l. 62944–62945,
+    /// 63680): one type wider than the Setup's — 0x44b has no Setup arm [LOW: none placed on levels 1–2].
+    public static let cannonArms: ClosedRange<Int16> = 0x442...0x44b
     /// The springs with a Setup and Handle arm (0x47e…0x481; 0x482…0x487 have none — triggers-background §2.3).
     public static let springs: ClosedRange<Int16> = 0x47e...0x481
     /// The passages 2900 / 2901.
@@ -250,7 +253,7 @@ extension BackgroundSprite {
         s.hasHit = true
         let k = L.bgKind(tile: L.bgTile(col: Int(Int16(truncatingIfNeeded: s.x)) >> 5,
                                         row: Int(Int16(truncatingIfNeeded: s.y)) >> 5))
-        s.classWord16c = (200..<210).contains(k) ? 1 : 0
+        s.classWord16c = UnderWater.isWaterTile(k) ? 1 : 0
     }
 
     /// The spring arms (l. 62046–62054, 62186–62219): the hit callback, `+0x1ba = 32000` (the `.InitSprite` value), hot rect 0x47e
@@ -295,10 +298,11 @@ extension BackgroundSprite {
     ///   + 0.2·(home x << 8))` (doubles `100a1b18` 0.8, `100a1b10` 0.2; fctiwz), the same for y, the pixel copies — the
     ///   recoil eases home; // later: p1 1…100 and > 106 (`.HandleProgrammedPath`), 101…106 (rotation, the 485 cue gated
     ///   on the sound playing) — refused at Setup;
-    /// - the aim `+0x46` wrapped into 0…31; ≥ 0x12 → mirrored and folded to 0x21 − aim (0 → not mirrored);
+    /// - the aim `+0x46` wrapped into 0…31; ≥ 0x12 → mirrored and folded to 0x21 − aim (0 → not mirrored) — the fold
+    ///   only sets the mirror flag: the aim is reloaded raw (`lha r3,0x46(r17)` @ 10073fc8) for the rest;
     /// - aim mod 4 == 0: k = aim / 4, k ≥ 5 → mirrored, face 8 − k, else not; rotation `+0x1aa` 0, face set 0x442[k],
-    ///   `+0xb8` 0; otherwise face 0x442[0], not mirrored, rotation `2·r` with r = ((0x20 − folded)·0xb4 / 16) / 2 (C
-    ///   division), − 0xb4 past 0xb3;
+    ///   `+0xb8` 0; otherwise face 0x442[0], not mirrored, rotation `2·r` with r = ((0x20 − aim)·0xb4 / 16) / 2 (C
+    ///   division, the raw aim: `subfic r0,r3,0x20` @ 10074040), − 0xb4 past 0xb3;
     /// - `+0x88 = 0`.
     static func cannon(_ w: SpriteWorld, id: Int) {
         guard let s0 = w.active.record(id: id) else { return }
@@ -343,7 +347,7 @@ extension BackgroundSprite {
                 c.face = FaceRef(pict: 0x442, index: Int(k), set: .encoded)
                 c.mode = 0
             } else {
-                let u = Int32(Int16(truncatingIfNeeded: 0x20 - Int32(a))) * 0xb4
+                let u = Int32(Int16(truncatingIfNeeded: 0x20 - aim)) * 0xb4      // the raw aim (`subfic` @ 10074040)
                 var r = Int16(truncatingIfNeeded: (u / 16) / 2)
                 c.face = FaceRef(pict: 0x442, index: 0, set: .encoded)
                 c.mirrored = false
@@ -418,7 +422,7 @@ extension BackgroundSprite {
             guard !otherSpring, bg.phase == 0, !o.dead, !runs(o, .effect) else { return }
             w.active.update(id: id) { $0.phase = 4 }
             superSpring(w, spring: id, hitter: oID)
-        } else if (0x442...0x44b).contains(t) {
+        } else if cannonArms.contains(t) {
             // An idled record (`+0x4c` 0, `handleCleared`, listed until `.UpdateSprites`) matches none of the excluded
             // Handles: it is captured like any other, and its saved Handle (0) comes back at the launch.
             if !o.handleCleared {

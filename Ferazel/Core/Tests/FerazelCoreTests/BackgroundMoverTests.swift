@@ -496,6 +496,9 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual([k0.hasHit, k0.hasTileHit], [true, false])
         XCTAssertEqual(k0.handler, .background)
         XCTAssertEqual([k0.x256, k0.y256], [4117 << 8, 560 << 8])
+        // On a water BG cell (`.IsWaterTile` 200…209): `+0x16c` 1 — L1 cell (188, 17) is kind 201.
+        XCTAssertEqual(w.level.bgKind(tile: w.level.bgTile(col: 188, row: 17)), 201)
+        XCTAssertEqual(try SetupFaces.setup(placement(1, 1090, x: 188 * 32, y: 17 * 32), context: c).slot.classWord16c, 1)
         // Aim `(type − 0x442)·4` for every cannon type; p1 ≠ 0 (path, rotating) is not built.
         for t: Int16 in 1090...1098 {
             let a = try SetupFaces.setup(placement(1, t, x: 400, y: 400), context: c)
@@ -518,7 +521,8 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual([ks.mirrored, ks.lightOverlay], [false, false])
         XCTAssertEqual([ks.x, ks.y, Int(ks.waterRow)], [4117, 560, 0])            // at home: no ease; dry
         // The aim → face / mirror / rotation (mod 4 == 0: face aim / 4, ≥ 5 mirrored 8 − k; else face 0 rotated by
-        // 2·(((0x20 − folded)·0xb4 / 16) / 2), folded = 0x21 − aim from 0x12 on; the aim wrapped to 0…31).
+        // 2·(((0x20 − aim)·0xb4 / 16) / 2) of the raw aim — the fold 0x21 − aim from 0x12 on only sets the mirror
+        // (raw `10073fc8` reloads `+0x46`); the aim wrapped to 0…31).
         func aim(_ a: Int16) throws -> [Int] {
             w.active.update(id: k) { $0.phase = a }
             BackgroundSprite.handle(world: w, id: k, faceWidth: Self.width)
@@ -530,8 +534,8 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(try aim(20), [20, 3, 1, 0])
         XCTAssertEqual(try aim(28), [28, 1, 1, 0])
         XCTAssertEqual(try aim(2), [2, 0, 0, 336])                         // (30·180 / 16) / 2 = 168
-        XCTAssertEqual(try aim(0x13), [0x13, 0, 0, 202])                   // folded 14: (18·180 / 16) / 2 = 101
-        XCTAssertEqual(try aim(-3), [29, 0, 0, 314])                       // 29 → folded 4: (28·180 / 16) / 2 = 157
+        XCTAssertEqual(try aim(0x13), [0x13, 0, 0, 146])                   // raw 19: (13·180 / 16) / 2 = 73
+        XCTAssertEqual(try aim(-3), [29, 0, 0, 32])                        // 29: (3·180 / 16) / 2 = 16
         XCTAssertEqual(try aim(0x22), [2, 0, 0, 336])
         XCTAssertEqual(try aim(0x11), [0x11, 0, 0, 168])                   // < 0x12, not folded: (15·180 / 16) / 2 = 84
         w.active.update(id: k) { $0.phase = 0 }
@@ -597,6 +601,11 @@ final class BackgroundMoverTests: XCTestCase {
         }
         let rate483 = r2.soundRate()
         let before = Set(w.active.sprites.map(\.id))
+        // The launch resets (l. 50190–50197): launched 1; swim, spin, climb 0 (`_DAT_100a0714`, `0668`, `0758`).
+        w.player.launched = false
+        w.player.swim = 3
+        w.player.spin = true
+        w.player.climb = 2
         BackgroundSprite.handleCannoned(world: w, id: p, keys: [])
         XCTAssertEqual(w.rng.seed, r2.seed)
         q = try XCTUnwrap(w.active.sprite(id: p))
@@ -610,6 +619,7 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual([Int(w.player.pixelX), Int(w.player.pixelY), Int(w.player.centreX), Int(w.player.centreY)],
                        [4142, 538, 4192, 597])
         XCTAssertTrue(w.player.launched)                                  // `_DAT_100a05b8 = 1`
+        XCTAssertEqual([Int(w.player.swim), w.player.spin ? 1 : 0, Int(w.player.climb)], [0, 0, 0])
         XCTAssertEqual(q.face, FaceRef(pict: 1015, index: Int(w.player.tumbleFrame), set: .encoded))
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 483, priority: 1, volume: 0x100,
                                                  position: SpriteSlot.Point(x: 4192, y: 633), rate: rate483)])
@@ -676,8 +686,8 @@ final class BackgroundMoverTests: XCTestCase {
         BackgroundSprite.hit(w2, id: k2, other: walker)
         XCTAssertEqual(w2.active.sprite(id: walker)?.handler, .cannoned)
         XCTAssertFalse(w2.player.launched)
-        // Aim not a multiple of 4: held past 0 (no fire).
-        w2.active.update(id: k2) { $0.phase = 17 }
+        // Aim not a multiple of 4 (18: even, not mod 4): held past 0 (no fire).
+        w2.active.update(id: k2) { $0.phase = 18 }
         for _ in 0..<17 { BackgroundSprite.handleCannoned(world: w2, id: walker, keys: []) }
         XCTAssertEqual([Int(try XCTUnwrap(w2.active.sprite(id: walker)).reentry)], [-2])
         XCTAssertEqual(w2.active.sprite(id: walker)?.handler, .cannoned)
@@ -690,6 +700,16 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertNil(wq.face)
         XCTAssertFalse(w2.player.launched)
         XCTAssertEqual(w2.player.cues.map(\.snd), [484, 483])
+        // A type-0x5a captive fired at aim 12 (octant 3, (7200, 3150)): `+0x110` gravity 0x15e (l. 50168); vy > 0 →
+        // stored v ((int)(7200·0.7), (int)(3150·0.55)) = (5040, 1732).
+        let bat = w2.active.insert(SpriteSlot(type: 0x5a, x: 1000, y: 600))
+        w2.active.update(id: bat) { $0.hp = 5; $0.gravity = 7 }
+        BackgroundSprite.hit(w2, id: k2, other: bat)
+        XCTAssertEqual(w2.active.sprite(id: bat)?.handler, .cannoned)
+        w2.active.update(id: k2) { $0.phase = 12 }
+        for _ in 0..<15 { BackgroundSprite.handleCannoned(world: w2, id: bat, keys: []) }
+        let bq = try XCTUnwrap(w2.active.sprite(id: bat))
+        XCTAssertEqual([Int(bq.vx), Int(bq.vy), Int(bq.gravity)], [5040, 1732, 0x15e])
         _ = p2
 
         // Not captured: an Effect, a Background (a mace), the types 0x41f / 0x434 / 0x771 / 0x772 / 0xb7c / 0x5c3 /
@@ -722,6 +742,12 @@ final class BackgroundMoverTests: XCTestCase {
         let idled = try XCTUnwrap(w3.active.sprite(id: idledID))
         XCTAssertEqual(idled.handler, .cannoned)
         XCTAssertEqual([idled.handleCleared, idled.savedHandleCleared], [false, true])
+        // Fired (aim 0, 15 Cannoned Handles): `+0x4c` restored to the saved 0 — idled again, the Background handler kept.
+        for _ in 0..<15 { BackgroundSprite.handleCannoned(world: w3, id: idledID, keys: []) }
+        let fired = try XCTUnwrap(w3.active.sprite(id: idledID))
+        XCTAssertEqual([Int(fired.reentry), Int(fired.vy)], [-0x23, -9000])
+        XCTAssertTrue(fired.handleCleared)
+        XCTAssertEqual(fired.handler, .background)
         w3.active.update(id: p3) { $0.hp = 0 }
         let seed3 = w3.rng.seed
         BackgroundSprite.hit(w3, id: k3, other: p3)
@@ -744,6 +770,27 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual([Int(try XCTUnwrap(w4.active.sprite(id: p4)).vy), Int(try XCTUnwrap(w4.active.sprite(id: p4)).reentry)],
                        [-9000, -5])
         XCTAssertEqual(try XCTUnwrap(w4.active.sprite(id: k4)).y256, ky)  // no recoil
+
+        // In a level-1 session: the player captured by the L1 cannon (record 41) is handled by `.HandleCannonedSprite`
+        // through `.MTHandleSprites` — held 14 iterations, launched on the 15th (v (0, −9000), `+0x130` −5).
+        let s5 = try session()
+        let sw = s5.world
+        _ = s5.step(keys: KeyState())
+        var cs = try SetupFaces.setup(sw.records[41], context: SetupFaces.Context(level: sw.level, playerX: 0)).slot
+        cs.recordIndex = 41
+        let k5 = sw.active.insert(cs)
+        BackgroundSprite.hit(sw, id: k5, other: s5.playerID)
+        XCTAssertEqual(sw.active.sprite(id: s5.playerID)?.handler, .cannoned)
+        for n in 1...15 {
+            _ = s5.step(keys: KeyState())
+            let pq = try XCTUnwrap(sw.active.sprite(id: s5.playerID))
+            if n < 15 {
+                XCTAssertEqual([Int(pq.reentry), Int(pq.vy)], [15 - n, 0], "step \(n)")
+            } else {
+                XCTAssertEqual([Int(pq.reentry), Int(pq.vy)], [-5, -9000])
+                XCTAssertEqual(pq.handler, .player)
+            }
+        }
     }
 
     func testWallTunnelWindowL1() throws {
@@ -893,8 +940,9 @@ final class BackgroundMoverTests: XCTestCase {
         // The walk-out faces (row 33's door arm): 1030[min((|n| >> 1) >> 1, 2)] while n climbs −15 … −1, idle 0.
         w.player.idle = 9
         var walk: [Int] = []
-        for _ in 0..<16 {
+        for n in 0..<16 {
             PlayerStates.select(world: w, id: pID)
+            if n == 0 { XCTAssertEqual(w.player.idle, 0) }                 // `_DAT_100a068c = 0` in the door arm
             walk.append(try XCTUnwrap(w.active.sprite(id: pID)?.face).pict == 1030
                         ? try XCTUnwrap(w.active.sprite(id: pID)?.face).index : -1)
         }
@@ -980,6 +1028,19 @@ final class BackgroundMoverTests: XCTestCase {
         let gamma = { (d: DrawOp) -> Bool in if case .gammaStep = d { return true }; return false }
         XCTAssertEqual([count(frames[21], redrawAll), count(frames[21], wrapDraw)], [2, 2])
         XCTAssertEqual([count(frames[20], redrawAll), count(frames[20], wrapDraw)], [0, 1])
+        // The jump's `.HandleIdleSprites` at the new view activates the partner (record 510), drawn by the jump's
+        // `.WrapDrawSprites`.
+        XCTAssertTrue(sw.active.sprites.contains { $0.recordIndex == 510 && $0.type == 2900 })
+        let draws21 = frames[21].draws.compactMap { d -> [SpriteDraw]? in
+            if case .wrapDrawSprites(let a) = d { return a }; return nil }
+        XCTAssertTrue(draws21[1].contains { $0.face.pict == 2900 })
+        // `.WrapEraseSprites` on the jump frame reads the live scroll point — the post-snap one, not the frame's paint.
+        let erase21 = frames[21].draws.compactMap { d -> [Int]? in
+            if case .wrapEraseSprites(_, let h, let v) = d { return [h, v] }; return nil }
+        let copy21 = frames[21].draws.compactMap { d -> [Int]? in
+            if case .copyToScreen(let h, let v, _, _) = d { return [h, v] }; return nil }
+        XCTAssertEqual(erase21, [[s.camera.scrollH, s.camera.scrollV]])
+        XCTAssertNotEqual(erase21, copy21)
         XCTAssertEqual(frames.map { count($0, gamma) }, Array(repeating: 1, count: 22))
         XCTAssertEqual(frames[21].draws.last, .gammaStep(numerator: 0, denominator: 20, toward: nil))
         // The camera: from the snap (x − 0x142, y − 0xc0) the 90 passes reach the focus target (centre − (0x130, 0xc0)

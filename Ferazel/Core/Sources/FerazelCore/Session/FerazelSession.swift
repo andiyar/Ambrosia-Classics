@@ -298,7 +298,9 @@ public final class FerazelSession {
         ops.draws.append(contentsOf: passageOps)
         passageOps = []
         // later: E1a `.HandleParticles`
-        ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: h, v: v))
+        // `.WrapEraseSprites` reads the live scroll point (`PTR_DAT_1009fe78`, l. 10452–10458): on a passage jump the
+        // snap and its 90 `.FindUpperLeftCorner` passes (inside `.MTCollideSpecialSprite`) have just moved it.
+        ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: camera.scrollH, v: camera.scrollV))
         ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
         ops.drawn = draw
         odd.toggle()
