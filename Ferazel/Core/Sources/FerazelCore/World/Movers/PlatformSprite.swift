@@ -878,8 +878,8 @@ public enum PlatformSprite {
     ///   gravity only when dry last frame (`+0x11c == 0 ∧ +0x120 == 0`, `100649c4`); the raft (3): tilt toward the
     ///   rider — target = ∓|rider.cx − cx| / 5 (rider right of the centre → negative), `+0x46` eases ±2 when off by
     ///   more than 1, `+0x1aa` = `+0x46` (+360 when negative), `+0x88 = 0`, `+0x89 = 1` (the latch cleared only with a
-    ///   rider); `.ApplyFriction(100)`; a lifetime `+0xa6 > 0` counts down (at < 1 the particles // later: E1a and
-    ///   `+0xe9`), below 0x2d the floe face with effect 0 / 0xb0000 by the frame parity `_DAT_1009fd30`.
+    ///   rider); `.ApplyFriction(100)`; a lifetime `+0xa6 > 0` counts down (at < 1 `.ExplodeFaceIntoParticles(+0xc0,
+    ///   (+0xa, +0xc), 1, 2, 4, 0x32, 100)` — E1a, the face before this frame's re-face — and `+0xe9`), below 0x2d the floe face with effect 0 / 0xb0000 by the frame parity `_DAT_1009fd30`.
     /// - modes < 10 and ≥ 0x58c: x += vx, y += vy.
     /// - mode 2: the vertical spring-back to the record y `+0x10` (raw `10064bb8..10064c50`): y > record → vy > 0 ?
     ///   vy >>= 1 (≤ 0x80 → −0x80) : (vy > −0x180 → vy −= 0x40); y < record → y256 = record << 8 (vy kept); equal →
@@ -926,11 +926,15 @@ public enum PlatformSprite {
             w.active.update(id: id) { $0.applyFriction(100) }
             if let s = w.active.record(id: id), 0 < s.counterA6 {
                 let parity = w.parity
+                if s.counterA6 - 1 < 1 {
+                    // `.ExplodeFaceIntoParticles(+0xc0, +10, 1, 2, 4, 0x32, 100)` (M l. 55700–55702; E1a).
+                    ExplodeFace.explode(w, face: s.face.flatMap(w.particleFaces.sprite),
+                                        v: Int16(truncatingIfNeeded: s.y), h: Int16(truncatingIfNeeded: s.x), xStep: 1,
+                                        yStep: 2, shape: 4, gravity: 0x32, style: 100)
+                }
                 w.active.update(id: id) { c in
                     c.counterA6 -= 1
                     if c.counterA6 < 1 {
-                        // later: E1a — `.ExplodeFaceIntoParticles(+0xc0, pos, 1, 2, 4, 0x32, 100)` (its particles and
-                        // their `FastRand` draws).
                         c.dead = true
                     }
                     if c.counterA6 < 0x2d {

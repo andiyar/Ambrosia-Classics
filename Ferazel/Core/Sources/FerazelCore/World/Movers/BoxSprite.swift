@@ -273,7 +273,7 @@ public enum BoxSprite {
     ///   call it; with the built types' vx 0 it moves nothing (|vx| = 0 unridden, |vx·slope| >> 8 = 0 ridden);
     ///   `.EnforceMaxSpeed(0x1838)`; `+0x1c += vy`; `+0xcd = +0xce`;
     ///   gravity ≠ 0 → `.ApplyGravityAndSeparateFromTiles` // later: Phase 4 (the fall — no built type has gravity);
-    ///   `.BoxCleanUp`: `.BoxUW` (left the water → `.Splash(s, 4)`, // later: E1a) then `.BoxClean` (M l.
+    ///   `.BoxCleanUp`: `.BoxUW @ 1006d758` (`+0x120 ≠ 0` ∧ `+0x11c == 0` → `.Splash(s, 4)`, E1a) then `.BoxClean` (M l.
     ///   60000–60015): the centre `+0x10 = x + left + (right − left) >> 1`, `+0xe` likewise, `+0xdc = 0`, `+0xd6 = 0`.
     public static func handle(world w: SpriteWorld, id: Int) {
         guard let s0 = w.active.record(id: id), handleBuilt(s0.type), !s0.dead, !s0.handleSkip else { return }
@@ -295,6 +295,10 @@ public enum BoxSprite {
             s.enforceMaxSpeed(0x1838)
             s.y256 &+= s.vy
             s.onSprite = s.groundKind
+        }
+        // `.BoxUW` (M l. 59991–59996).
+        if let s = w.active.record(id: id), s.lastWater != 0, s.waterRow == 0 { Splash.splash(w, id: id, mode: 4) }
+        w.active.update(id: id) { s in
             // `.BoxClean`.
             let r = s.hotRect
             s.centre.x = Int(Int16(truncatingIfNeeded: s.x + r.left + ((r.right - r.left) >> 1)))

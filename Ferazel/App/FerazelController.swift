@@ -70,7 +70,7 @@ import HectorShell
             renderer = try FrameRenderer(resources: resources, level: Self.level, search: search,
                                          dither: .errorDiffusion, text: CoreTextRasterizer(), prefs: prefs)
             session = try FerazelSession(resources: resources, prefs: prefs, level: Self.level,
-                                         faceBounds: renderer.faceBounds)
+                                         faceBounds: renderer.faceBounds, particleFaces: renderer.particleFaces)
             try renderer.addLights(session.lights)
             try renderer.buildTintTable(session.tintTableDraws)   // tint 0xa from the session's stream (E2 Part A)
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory,

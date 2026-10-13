@@ -177,7 +177,8 @@ final class ParticleTests: XCTestCase {
         XCTAssertEqual(next.world.frameCounter, 1)
     }
 
-    func testParticleMotion() {
+    func testParticleMotion() throws {
+        let L1 = try LevelFile.load(from: try resources(), level: 1)
         var p = ParticlePool()
         let g = grid()
         // NewParticle(200, 150, (100, 50), 2, −154, −502, 0, 1): x = 50·256 − 154, y = 100·256 − 502, vy += 150.
@@ -241,6 +242,101 @@ final class ParticleTests: XCTestCase {
         k.handle(tiles: g)
         XCTAssertEqual(k.records[0].age, 0x7a)
         XCTAssertEqual(k.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: -1))
+
+        // E1a emitter sites — the face walks (`.ExplodeFaceIntoParticles`, `.ParticleGlow`) on a synthetic face: frame
+        // (0, 0, 3, 4), bounds (0, −1, 4, 6); row 0 = 3 literal [10 11 12], row 1 = skip 1 + 2 literal [20 21], row 2 =
+        // 4 literal [30 31 32 33].
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let face = ParticleFace(frame: [0, 0, 3, 4], bounds: [0, -1, 4, 6],
+                                tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(1, 12) + tok(3, 1) + tok(2, 2)
+                                    + [20, 21, 0, 0] + tok(1, 8) + tok(2, 4) + [30, 31, 32, 33] + tok(0, 0))
+        func explode(_ style: Int16, face f: ParticleFace? = nil) -> SpriteWorld {
+            let w = SpriteWorld(level: L1, seed: 1)
+            ExplodeFace.explode(w, face: f ?? face, v: 100, h: 50, xStep: 2, yStep: 2, shape: 2, gravity: 100,
+                                style: style)
+            return w
+        }
+        // Style 100 (xStep 2, yStep 2): rows 0 and 2 used (the first at v + 1), every 2nd pixel with the column
+        // counter carried across rows: (101, 50) px 10, (101, 52) px 12, (103, 51) px 31, (103, 53) px 33.
+        let e100 = explode(100)
+        let r100 = e100.particles.records.prefix(4)
+        XCTAssertEqual(e100.particles.counters.count, 4)
+        XCTAssertEqual(r100.map(\.kind), [-266, -268, -287, -289])
+        XCTAssertEqual(r100.map { [Int($0.y >> 8), Int($0.x >> 8)] }, [[101, 50], [101, 52], [103, 51], [103, 53]])
+        var ref = FastRand(seed: 1)
+        let (a20, a750, a100, a30) = (ref.next(0x14), ref.next(0x2ee), ref.next(100), ref.next(0x1e))
+        XCTAssertEqual([r100[0].gravity, Int16(r100[0].vx), Int16(r100[0].vy), r100[0].age],
+                       [100 + a30, a100 - 50, 40 - a750, 98 - a20])
+        XCTAssertEqual(Set(r100.map(\.shape)), [2])
+        XCTAssertEqual(Set(r100.map(\.mode)), [1])
+        for _ in 0..<12 { _ = ref.next(1) }
+        XCTAssertEqual(e100.rng.seed, ref.seed)                            // 4 draws per particle
+        // Style 101: radial about (cV, cH) = (100 + 2, 50 + 2); R(60) vx, R(60) vy, R(16) delay, R(12) gravity.
+        let e101 = explode(101)
+        var r1 = FastRand(seed: 1)
+        let (b0, b1, b16, b12) = (Int32(r1.next(0x3c)), Int32(r1.next(0x3c)), r1.next(0x10), r1.next(0xc))
+        let p101 = e101.particles.records[0]
+        XCTAssertEqual([p101.vx, p101.vy], [(50 - 52) * 50 + b0 - 30, (101 - 102) * 50 + b1 - 30])
+        XCTAssertEqual([p101.age, p101.gravity, p101.kind], [104 - b16, 100 + b12, -266])
+        XCTAssertEqual(e101.particles.counters.count, 4)
+        // Style 102: kind 1, shape R(2) + 1, delay R(5): five draws each.
+        let e102 = explode(102)
+        var r2 = FastRand(seed: 1)
+        _ = (r2.next(0x3c), r2.next(0x3c))
+        let (c5, c2, c12) = (r2.next(5), r2.next(2), r2.next(0xc))
+        let p102 = e102.particles.records[0]
+        XCTAssertEqual([p102.kind, p102.shape, p102.age, p102.gravity], [1, c2 + 1, -c5, 100 + c12])
+        for _ in 0..<15 { _ = r2.next(1) }
+        XCTAssertEqual(e102.rng.seed, r2.seed)
+        // Another style walks without emitting; no face, nothing.
+        XCTAssertEqual([explode(99).rng.seed, explode(100, face: ParticleFace(frame: [0, 0, 0, 0], bounds: [0, 0, 0, 0],
+                                                                              tokens: tok(0, 0))).rng.seed], [1, 1])
+        let none = SpriteWorld(level: L1, seed: 1)
+        ExplodeFace.explode(none, face: nil, v: 0, h: 0, xStep: 1, yStep: 1, shape: 1, gravity: 0, style: 100)
+        XCTAssertEqual(none.rng.seed, 1)
+
+        // `.ParticleGlow` (kind 220, chance 100): each run's first and last pixel — (101: 50, 52), (102: 51, 52),
+        // (103: 50, 53); vx = 120 + R(150), negated left of cH = 50 + (0 + 4) >> 1 = 52; 6 draws each.
+        let gw = SpriteWorld(level: L1, seed: 1)
+        ParticleGlow.glow(gw, face: face, v: 100, h: 50, kind: 220, chance: 100, flip: false)
+        let gl = gw.particles.records.prefix(6)
+        XCTAssertEqual(gw.particles.counters.count, 6)
+        XCTAssertEqual(gl.map { Int($0.x >> 8) }, [50, 52, 51, 52, 50, 53])
+        XCTAssertEqual(gl.map { $0.vx < 0 }, [true, false, true, false, true, false])
+        var rg = FastRand(seed: 1)
+        let (d4, d5, _, d150, _, d80) = (rg.next(4), rg.next(5), rg.next(100), rg.next(0x96), rg.next(100), rg.next(0x50))
+        XCTAssertEqual([Int32(gl[0].y >> 8), gl[0].vx, gl[0].vy], [Int32(101 + d4), -(120 + Int32(d150)), 40 - Int32(d80)])
+        XCTAssertEqual([gl[0].age, gl[0].kind, gl[0].shape, gl[0].gravity], [-(d5 + 2), 220, 1, 0])
+        XCTAssertEqual(Set(gl.map(\.mode)), [0])
+        for _ in 0..<30 { _ = rg.next(1) }
+        XCTAssertEqual(gw.rng.seed, rg.seed)
+        // Chance −1: the five draws per endpoint, no particle. Flipped: each row starts at h + 4 and walks left.
+        let g0 = SpriteWorld(level: L1, seed: 1)
+        ParticleGlow.glow(g0, face: face, v: 100, h: 50, kind: 220, chance: -1, flip: false)
+        var r0 = FastRand(seed: 1)
+        for _ in 0..<30 { _ = r0.next(1) }
+        XCTAssertEqual([g0.particles.counters.count, Int16(truncatingIfNeeded: g0.rng.seed == r0.seed ? 1 : 0)], [0, 1])
+        let gf = SpriteWorld(level: L1, seed: 1)
+        ParticleGlow.glow(gf, face: face, v: 100, h: 50, kind: 220, chance: 100, flip: true)
+        XCTAssertEqual(gf.particles.records.prefix(6).map { Int($0.x >> 8) }, [54, 52, 53, 52, 54, 51])
+        // From `.StandardSpriteCleanup`: `+0x1a8 ≠ 0` with a face and a provider.
+        let sc = SpriteWorld(level: L1, seed: 1)
+        sc.particleFaces = ParticleFaces(sprite: { _ in face })
+        let gid = sc.newSprite(type: 0, x: 50, y: 100, layer: 10, handler: .player) { s in
+            s.x = 50; s.y = 100
+            s.face = FaceRef(pict: 1020, index: 0, set: .encoded)
+            s.glowKind = 221
+            s.glowChance = 100
+        }!
+        sc.standardSpriteCleanup(gid, faceWidth: { _ in 4 })
+        XCTAssertEqual(sc.particles.counters.count, 6)
+        XCTAssertEqual(sc.particles.records[0].kind, 221)
+        sc.active.update(id: gid) { $0.glowChance = 0 }
+        sc.standardSpriteCleanup(gid, faceWidth: { _ in 4 })
+        XCTAssertEqual(sc.particles.counters.count, 6)
     }
 
     func testSplashLevel1() throws {
@@ -372,5 +468,40 @@ final class ParticleTests: XCTestCase {
         u.active.update(id: uid) { $0.waterRow = 0; $0.lastWater = 140 }
         Splash.splash(u, id: uid, mode: 3)
         XCTAssertEqual([u.particles.records[0].kind, Int16(u.particles.records[0].y >> 8)], [200, 448])
+
+        // E1a emitter sites. The cannon smoke 0x442's Setup: 45 × (R(2000) vy, R(2000) vx, R(2) shape) →
+        // `NewParticle(4, 0x96, (y + 0x18, x + 0x10), R2 + 1, R1 − 1000, R0 − 1000, 0, 1)`.
+        let sm = SpriteWorld(level: L, seed: 1)
+        var smoke = SpriteSlot(type: 0x442, x: 0, y: 0)
+        smoke.oldPosition = SpriteSlot.Point(x: 300, y: 200)
+        BackgroundSprite.smokeSetup(sm, &smoke)
+        XCTAssertEqual(sm.particles.counters, ParticlePool.Counters(count: 45, hint: 44, highWater: 44))
+        var rs = FastRand(seed: 1)
+        let (s0, s1, s2) = (Int32(rs.next(2000)), Int32(rs.next(2000)), rs.next(2))
+        let p0 = sm.particles.records[0]
+        XCTAssertEqual([p0.vy, p0.vx, p0.x, p0.y], [s0 - 1000, s1 - 1000, (300 + 0x10) << 8, (200 + 0x18) << 8])
+        XCTAssertEqual([p0.kind, p0.gravity, p0.shape, p0.age, Int16(p0.mode)], [4, 0x96, s2 + 1, 0, 1])
+        XCTAssertEqual(smoke.layer, 0x7fbc)
+        // `.BoxUW` in the Box tail: left the water this frame (`+0x120 ≠ 0`, `+0x11c == 0` after the SSH copy) →
+        // `.Splash(s, 4)` — a 0x30-wide trampoline rising faster than 0x4b0: (0x30 + 8) × 3 particles of kind
+        // `+0x12a` + 200.
+        func box(_ waterRow: Int32) -> SpriteWorld {
+            let (b, _) = world()
+            _ = b.newSprite(type: BoxSprite.trampoline, x: 100, y: 300, layer: 5, handler: .box) { s in
+                s.x = 100; s.y = 300
+                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x10, right: 0x30)
+                s.face = FaceRef(pict: BoxSprite.trampoline, index: 0, set: .encoded)
+                s.waterRow = waterRow
+                s.previousWaterKind = 1
+                s.vy = -0x600
+            }
+            let id = b.active.sprites.last { $0.type == BoxSprite.trampoline }!.id
+            BoxSprite.handle(world: b, id: id)
+            return b
+        }
+        let wet = box(40)
+        XCTAssertEqual(wet.particles.counters.count, (0x30 + 8) * 3)
+        XCTAssertEqual(wet.particles.records[0].kind, 201)
+        XCTAssertEqual(box(0).particles.counters.count, 0)
     }
 }

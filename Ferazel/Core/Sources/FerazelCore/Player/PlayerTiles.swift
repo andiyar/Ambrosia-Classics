@@ -371,9 +371,9 @@ public enum CrunchTiles {
 
     /// `.DestroyCrunchTile(tx, ty, dir, explode, clearDir)` (raw `100445b0..100446f0`): the water-effects cache flag
     /// `*_DAT_100a00f4 = 0`; with `explode`, `.ExplodeCrunchedTile` on (tx, ty), (tx+1, ty), (tx, ty+1), (tx+1, ty+1)
-    /// // later: E1a — `.ExplodeFaceIntoParticles(face, (Y, X), 2, 2, 2, 100, 100)` draws 4 `FastRand` per emitted
-    /// pixel of the tile's FG face (every 2nd opaque pixel of every 2nd row), a count Core cannot know without the faces
-    /// (plan P2 report, RNG gap); then `.ReshapeCrunchedTile` at positions 5, 7, 6, 8 of the block (old tiles read
+    /// `.ExplodeCrunchedTile(col, row) @ 100444f0` (M l. 39042–39056): FG tile t of the cell, 0 ≤ t < 0x60 →
+    /// `.ExplodeFaceIntoParticles(FG face t, (row << 5, col << 5), 2, 2, 2, 100, 100)` (E1a: 4 `FastRand` per emitted
+    /// pixel, the faces from `particleFaces.fgTile`); then `.ReshapeCrunchedTile` at positions 5, 7, 6, 8 of the block (old tiles read
     /// cell by cell); with `clearDir`, the direction nibble of (tx, ty) → 0. `dir` is only passed on.
     static func destroyCrunchTile(_ w: SpriteWorld, col: Int, row: Int, dir: Int, explode: Bool, clearDir: Bool) {
         let tx = Int(Int16(truncatingIfNeeded: col)), ty = Int(Int16(truncatingIfNeeded: row))
@@ -382,8 +382,13 @@ public enum CrunchTiles {
         if explode {
             // `.ExplodeCrunchedTile` ×4 (raw `10044608..10044634`) → `.ExplodeFaceIntoParticles` for each of the four
             // cells holding a tile 0…0x5f.
-            // later: E1a — ExplodeFaceIntoParticles draws (4/pixel) missing here (plan "⚑ P2 carry → E1a"): until
-            // then the stream diverges from the original after the first crunch destroy.
+            for (c, r) in [(tx, ty), (tx1, ty), (tx, ty1), (tx1, ty1)] {
+                let t = w.tiles.fgTile(col: c, row: r)
+                guard 0 <= t && t < 0x60 else { continue }
+                ExplodeFace.explode(w, face: w.particleFaces.fgTile(t), v: Int16(truncatingIfNeeded: r << 5),
+                                    h: Int16(truncatingIfNeeded: c << 5), xStep: 2, yStep: 2, shape: 2, gravity: 100,
+                                    style: 100)
+            }
         }
         reshape(w, col: tx, row: ty, block: (tx, ty), position: 5, dir: dir, explode: explode, clearDir: clearDir)
         reshape(w, col: tx1, row: ty, block: (tx, ty), position: 7, dir: dir, explode: explode, clearDir: clearDir)

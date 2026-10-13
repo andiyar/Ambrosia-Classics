@@ -73,6 +73,10 @@ public final class SpriteWorld {
     /// `*_DAT_1009fd98`: the level's frame counter — 0 at `.GameLoop` entry (l. 5144), +1 at the top of every
     /// iteration (l. 5236); `.Splash`'s sound gate reads it (> 3).
     public var frameCounter: Int32 = 0
+    /// The face pixels the face emitters walk (`ExplodeFace`, `ParticleGlow`; E1a): FerazelRender's faces, handed to
+    /// the session (`FerazelSession(…particleFaces:)`). The default finds none — then those emitters make no
+    /// particles and no `FastRand` draws.
+    public var particleFaces = ParticleFaces()
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

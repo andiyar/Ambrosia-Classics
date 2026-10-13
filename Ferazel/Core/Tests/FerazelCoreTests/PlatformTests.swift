@@ -625,7 +625,7 @@ final class PlatformTests: XCTestCase {
         XCTAssertLessThanOrEqual(g[rearmed][4], 0)
 
         // Mode 4, a spell floe's lifetime (`+0xa6`, l. 55738–55760): counts down; below 0x2d the ice face with effect 0
-        // or 0xb0000 by the frame parity `_DAT_1009fd30`; at 0 `+0xe9` (the particles // later: E1a).
+        // or 0xb0000 by the frame parity `_DAT_1009fd30`; at 0 `+0xe9` (and `.ExplodeFaceIntoParticles`, E1a — no face provider here, so no particles).
         let floe = try make(4) { c in
             c.counterA6 = 0x2e
             c.mode = 0x10018

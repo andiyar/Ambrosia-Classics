@@ -256,6 +256,18 @@ public final class FrameRenderer {
         return IdleSprites.Rect(top: Int(b.top), left: Int(b.left), bottom: Int(b.bottom), right: Int(b.right))
     }
 
+    /// The face pixels for Core's face emitters (`FerazelSession(…particleFaces:)`, E1a): a loaded sprite face, and
+    /// FG tile t of the level's FG set (`*_DAT_1009ff88`, `TileSets.fg`).
+    public var particleFaces: ParticleFaces {
+        let faces = sprites.faces, fg = grid.sets.fg
+        @Sendable func convert(_ f: EncodedFace) -> ParticleFace {
+            ParticleFace(frame: [f.frame.top, f.frame.left, f.frame.bottom, f.frame.right],
+                         bounds: [f.bounds.top, f.bounds.left, f.bounds.bottom, f.bounds.right], tokens: f.data)
+        }
+        return ParticleFaces(sprite: { ref in faces.face(ref).map(convert) },
+                             fgTile: { t in fg.faces.indices.contains(t) ? convert(fg.faces[t]) : nil })
+    }
+
     /// Executes one iteration's draw ops (sounds, music and shell requests are the shell's).
     /// - Throws: `SpriteBlitter.Refusal` for a sprite shape outside the census, `Refusal.screenClut` for a CLUT the
     ///   tables were not built against, `ColorLUTError` / `PictureSourceError` for a missing CLUT or picture.

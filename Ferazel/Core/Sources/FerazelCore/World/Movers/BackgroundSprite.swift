@@ -709,15 +709,17 @@ extension BackgroundSprite {
     /// `.SetupEffectSprite` for the smoke 0x442 (l. 53688–53800): the common part (`EffectSprite.setup`), then the
     /// explosion package — light position (y + 0x18, x + 0x18), particle kind 4 (type 5 / 0x442), and 45 ×
     /// (`FastRand(2000)`, `FastRand(2000)`, `FastRand(2)`) → `.NewParticle(4, 0x96, (y + 0x18, x + 0x10), r2 + 1,
-    /// r1 − 1000, r0 − 1000, 0, 1)` (// later: E1a — the particles; the draws are made here, in this order); no 0x4b6
-    /// and no `.AddLight` for 0x442; layer `+0x80 = 0x7fbc`.
+    /// r1 − 1000, r0 − 1000, 0, 1)` (E1a: the grey-smoke particles, l. 53779–53782; the position from `+0xa`/`+0xc` as
+    /// the common part left them); no 0x4b6 and no `.AddLight` for 0x442; layer `+0x80 = 0x7fbc`.
     static func smokeSetup(_ w: SpriteWorld, _ s: inout SpriteSlot) {
         EffectSprite.setup(&s)
+        let v = Int(Int16(truncatingIfNeeded: s.y)) + 0x18, h = Int(Int16(truncatingIfNeeded: s.x)) + 0x10
         for _ in 0..<0x2d {
-            _ = w.rng.next(2000)
-            _ = w.rng.next(2000)
-            _ = w.rng.next(2)
-            // later: E1a — `.NewParticle(4, 0x96, …)`.
+            let r0 = Int(w.rng.next(2000))
+            let r1 = Int(w.rng.next(2000))
+            let r2 = Int(w.rng.next(2))
+            w.particles.newParticle(kind: 4, gravity: 0x96, v: v, h: h, shape: r2 + 1, vx: r1 - 1000, vy: r0 - 1000,
+                                    delay: 0, mode: 1)
         }
         s.layer = 0x7fbc
     }

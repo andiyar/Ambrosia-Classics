@@ -101,8 +101,11 @@ public final class FerazelSession {
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
     ///   `.HandleIdleSprites` tests. Core has no face pixels; without it each face's frame (sheet cell, or the PICT's
     ///   frame for a single face) is used — a superset of the opaque bounds [MED].
+    /// - Parameter particleFaces: the face pixels the face emitters walk (E1a: `.ExplodeFaceIntoParticles`,
+    ///   `.ParticleGlow`) — FerazelRender's (`FrameRenderer.particleFaces`); none by default (no particles, no draws).
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
-                carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) throws {
+                carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
+                particleFaces: ParticleFaces = ParticleFaces()) throws {
         self.resources = resources
         self.prefs = prefs
         levelNumber = level
@@ -122,6 +125,7 @@ public final class FerazelSession {
         // high-water mark (particles §1.1): they run on from the previous level (E1a).
         world.particles = ParticlePool(counters: carry.particles)
         world.particles.initParticles()
+        world.particleFaces = particleFaces
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds

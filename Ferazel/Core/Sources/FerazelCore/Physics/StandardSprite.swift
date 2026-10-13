@@ -92,8 +92,8 @@ extension SpriteWorld {
     /// - The centre `+0x10 = x + r.left + (r.right − r.left) >> 1`, `+0xe = y + r.top + (r.bottom − r.top) >> 1`.
     /// - `+0xdc = 0`; `+0xe0 = 0` unless `+0x186`; `+0xd6 = 0`.
     /// - `+0x1a2 ≠ 0` → `.HandleBurn` // later: burn-away (no Phase-2 writer of `+0x1a2`).
-    /// - `+0x1a8 ≠ 0` with a face → `.ParticleGlow @ 10043ad0` // later: E1a. It draws `FastRand` (an RNG gap until
-    ///   built). Only the player sets `+0x1a8`: row 36 writes 0x10 while blinking with `+0x116` > 60 and 8 under a
+    /// - `+0x1a8 ≠ 0` with a face → `.ParticleGlow(+0xc0, (+0xa, +0xc), +0x1a6, +0x1a8, +0x17e) @ 10043ad0` (l. 32664–32668;
+    ///   `ParticleGlow`, E1a; its `FastRand` draws need the face's pixels, `particleFaces`). Only the player sets `+0x1a8`: row 36 writes 0x10 while blinking with `+0x116` > 60 and 8 under a
     ///   power-up tint (P3), spells later — so a hit with invulnerability > 60 (W2a/P4) reaches it in Phase 2.
     /// - The occluder clip: when x + w + 8 ≥ `+0x1be`, x − 8 ≤ `+0x1c0` and `+0x1c4` ≤ cy ≤ `+0x1c2`: a sprite whose
     ///   centre x + w/2 is left of the occluder's middle gets `+0x1b8 = +0x1be − x` (32000 when beyond the face
@@ -122,8 +122,10 @@ extension SpriteWorld {
         if s.burnRow != 0 {
             // later: `.HandleBurn` (burn-away; no Phase-2 writer of `+0x1a2`).
         }
-        if s.glowChance != 0, s.face != nil {
-            // later: `.ParticleGlow` (no Phase-2 writer of `+0x1a8`).
+        if s.glowChance != 0, let f = s.face {
+            ParticleGlow.glow(self, face: particleFaces.sprite(f), v: Int16(truncatingIfNeeded: s.y),
+                              h: Int16(truncatingIfNeeded: s.x), kind: s.glowKind, chance: s.glowChance,
+                              flip: s.mirrored)
         }
         let x = s.x
         let o = s.occluder
