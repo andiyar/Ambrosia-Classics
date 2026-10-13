@@ -60,68 +60,67 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 4. `git -C ~/Developer/HectorKit status --porcelain` empty and `log -1` = the HK SHA below (or a later local main that
    a previous run recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK worktree.
 
-## STATE (live, 2026-10-14, written by loop run 4 at its close; head of `main` = run 4's docs-close commit on top of f68f170 — read `git log -8 main`)
-- Loop run 4 built **W2b + W3 + W4** and merged them (wave 2.3 CLOSED): `ea28448` W2b, `f2f3239` W2b review fixes,
-  `2f986d7` W3, `f3b089d` W3 review fixes, `0f7dd62` W4, `f68f170` W4 review fixes, then the docs close. Run 1's dirty
-  worktree `loop-1-20261013-180951` is still there (Q1, unanswered): not yours — never delete it, never build on it.
-  Run 2's worktree `loop-2-20261013-182411` (9136a70, already merged) is also still listed — not yours.
-- `Ferazel/Core` suite: **234 passed, 0 failed/skipped** (G2 grep). Census `Totals: items 1,108 decoded, failures 0`,
+## STATE (live, 2026-10-14, written by loop run 5 at its close; head of `main` = run 5's docs-close commit on top of d02d27e — read `git log -8 main`)
+- Loop run 5 built **E1a + E1b** (wave 2.4, first part) and merged them: `1b6d7a7` E1a, `704ffe3` E1a emitter sites,
+  `57825b8` E1a review fixes, `242760e` bank row 12, `266e681` E1b, `5b4d8f7` E1b review fixes, `d02d27e` comment, then
+  the docs close. Run 1's dirty worktree `loop-1-20261013-180951` is still there (Q1, unanswered): not yours — never
+  delete it, never build on it. Run 2's worktree `loop-2-20261013-182411` (9136a70, merged) is also still listed.
+- `Ferazel/Core` suite: **243 passed, 0 failed/skipped** (G2 grep). Census `Totals: items 1,108 decoded, failures 0`,
   exit 0. Ferazel app: BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **0c65dcb**, clean, floor **328**.
-- Phase 2 plan position: waves 2.0–2.3 MERGED (as-built in D33 "As built (wave 2.3, second part …)" and each task's
-  "⚑ As executed" bullet, plan l. 907 / 945 / 1004). **Next = wave 2.4: E1a, E1b (both ⚑ MAJOR), then S1 (minor).**
-  Ladder as executed: … W2a 215, W2b 220, W3 228, W4 **234** now; E1a (+5) → **239**, E1b (+3) → **242**, S1 (+7) →
-  **249**, GD (+4) → **253**; then A3 (⚑, app), A4 (stage + gate card) — "previous total + the task's N" (the plan's own
-  "→ N" headers are stale).
-- Goldens today (P5 moved the pan pair; W1–W4 moved none): `testFirstFrameGoldenLevel1`
-  `9db8f32f7e3d88b4`, `…HighestTieBreak` `b80b0efd384ffdb9`, pan frame 30 `172596fa2f3b6c58`, frame 60
-  `cc9786ba763d383a`, chain `b4230ba5a643c5b5`. Only ◈ tasks (E1b, GD; E1a only if a splash enters a golden — none
-  expected) may move one, in-commit, old → new + reason.
-- What wave 2.3 established (read the W2b/W3/W4 "⚑ As executed" bullets): a level-2 session now builds (L2 starts 33
-  active / 196 idle — stalactite children made at Setup; 212 records, 40 spokes + 4 siblings after frame 1);
-  `LevelFlow` + `ShellRequest.loadLevel(Int)` / `.deathEffect` exist with no-op app arms (A3 wires them);
-  `LevelCarry` (`session.carry` → `init(…carry:)`) carries the parity always and, on an **exit**, the whole G (only
-  `_NewGame` inits G — the plan was corrected); death → fresh G (Ben D33 ◇). Passages emit `DrawOp.gammaStep` (21
-  iterations per fade). Cannon launches make 415 FastRand draws (smoke sprites; their particles are `// later: E1a`).
-  NPCs are never solid. Box push/fall is Phase 4 (crates rest 2–6 px off the binary's settle — a gate-card note for A4).
-- Carries into wave 2.4: **E1a**: `.ExplodeFaceIntoParticles` / `.ParticleGlow` unbuilt; fill `HurtPlayer.bloodSpray`
-  (`.BloodSpray @100549f4`, 40 particles); W2b's cannon smoke `// later: E1a` stubs (smoke particles) live in
-  `World/Movers/BackgroundSprite.swift` / `Player/GroundCeilingEffects.swift`; the RNG drifts from the first pendulum hit
-  until E1a and the Phase-4 coin spawn land; P3's `+0x1a8 = 0x10` → `.StandardSpriteCleanup` → `.ParticleGlow` (draws
-  FastRand). **E1b**: water-face parity reads `_DAT_1009fd30` (flipped on drawn iterations only; carried across levels by
-  `LevelCarry`). **S1**: P4's material-2 stop is a `PlayerCue .stopIfPlaying` (reconcile with `soundStops`); 508 via
-  `.regPitched`; W4: the music fade `.FadeAIFFMusic` + the sound stops after the loop (M l. 5296–5304) are not emitted
-  (S1 or A3 owns them — S1 decides, records it); the exit cue 421 is plain `STPlayRegSound`. **E2/0148**: mode 0xb not
-  reachable on L1/L2. **A3**: `FrameRenderer.setTile` re-parses the level per op; the suite never renders L2 (a W4
-  reviewer's 5-frame probe did) — A3/GD should. Open, unowned: M6 (Bonus guard `p1Negative: false`), M7
+- Phase 2 plan position: waves 2.0–2.3 MERGED; wave 2.4 E1a + E1b MERGED (as-built: D33 "As built (wave 2.4, first
+  part …)" and each task's "⚑ As executed" bullet under "#### E1a" / "#### E1b"). **Next = S1 (minor), GD (minor), then
+  A3 (⚑ MAJOR, app).** Ladder as executed: … W4 234, E1a 239 (+1 ParticleRenderTests → 240), E1b **243** now; S1 (+7)
+  → **250**, GD (+4) → **254**; A3 (no tests), A4 (stage + gate card, phase-end run) — "previous total + the task's N".
+- Goldens today (unchanged since P5): `testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`, `…HighestTieBreak`
+  `b80b0efd384ffdb9`, pan frame 30 `172596fa2f3b6c58`, frame 60 `cc9786ba763d383a`, chain `b4230ba5a643c5b5`. (E1a/E1b's
+  ◈ prediction did not come true: golden frames show rows 0–13; L1's topmost liquid is row 17 cols 188–195, the nearest
+  to the start window col 4 row 41.) Only GD adds goldens (new tests, new hashes); no existing golden may move in S1.
+- What wave 2.4 established: particles run for real (pool, kills, splash, blood spray, ExplodeFace, ParticleGlow, cannon
+  smoke); `DrawOp.wrapDrawWaterEffects` (every iteration, `.HandleLights` first), `.drawParticles` / `.eraseParticles`
+  (drawn iterations); `LevelCarry` now carries the parity, the particle counters and the water-tile cache/origin/flag
+  (globals no level start resets) and, on an exit, the whole G. Core sessions in tests have no face-pixel provider, so
+  face-walk emitters emit nothing there (the app passes the faces) — GD's scripted goldens run in Render where faces
+  exist: say in GD's commit whether its sessions get the faces (they should, as the app does).
+- Carries into S1/GD/A3: **S1**: P4's material-2 stop is a `PlayerCue .stopIfPlaying` (reconcile with `soundStops`);
+  508 via `.regPitched`; W4: the music fade `.FadeAIFFMusic` + the sound stops after the loop (M l. 5296–5304) are not
+  emitted (S1 or A3 owns them — S1 decides, records it); the exit cue 421 is plain `STPlayRegSound`; E1a's `.Splash`
+  sound gate (snds 405/406/605, bank particles correction 11) emits a cue value — S1 converts it like the others.
+  **GD**: the plan's `testLevel1SwimGolden` says "first water body, cols 56..81 row 19" — a run-5 reviewer read L1's
+  topmost liquid as row 17 cols 188–195 and the nearest to the start as col 4 row 41: read the level data before
+  scripting the swim and record which body the test enters. **A3**: `FrameRenderer.setTile` re-parses the level per op;
+  the suite never renders L2 — A3/GD should. Open, unowned: M6 (Bonus guard `p1Negative: false`), M7
   (`TileHotRects.init(level:)` reads `level` beside `world.tiles`); `200..<210` literals in `SetupFaces.swift` /
-  `PlayerTiles.swift` (could use `UnderWater.isWaterTile`) — fix when a task touches them.
+  `PlayerTiles.swift` (could use `UnderWater.isWaterTile`); `ParticleLife` ≠ rows on CLUT 222 under highest (levels
+  52/55 — the phase that reaches them uses the rows); a `.carry` test with a non-zero water-origin column (minor).
 
-## THIS RUN'S JOB — wave 2.4: **E1a** (⚑ MAJOR → two Opus legs), then **E1b** (⚑ MAJOR ◈ → two Opus legs)
-Plan sections: **E1a** "#### E1a" (≈ l. 1028–1048), **E1b** "#### E1b" (≈ l. 1050–1063); read each in full plus the
-Invariants (l. 123–172, esp. 3 — the parity flip position and drawn-vs-skipped iterations — and 4 — one RNG stream) and
-Shared architecture S3 (`DrawOp` cases `wrapDrawWaterEffects`, `drawParticles`, `eraseParticles`).
-- **E1a**: Files + 5 tests as the plan; G2 → **239 / 0**; G5 (touches FerazelRender). The exhaustive `switch op` in
-  `SessionTests` (l. 183–193) and `testFirstFrameOpsOrder` (l. 149) change because three `DrawOp` cases are added —
-  that is expected by the plan, not an Invariant-10 event; any OTHER count/golden moving is.
-- **E1b**: Files + 3 tests; G2 → **242 / 0**; G5; ◈ level-1 goldens are predicted to move (motes, acid bubbles, water
-  faces on parity frames) — record old → new + reason in-commit; verify the cause by revert (no water effects → old
-  hashes return). If they do NOT move, rule as run 3 did for W1 (find out why, record it).
-- Unit size: two ⚑ MAJOR tasks = the chip's unit. Do not start S1 in this run. If your own context passes ~170k after
-  E1a merges, close with E1b as the next run's first task.
+## THIS RUN'S JOB — **S1** (minor, one Opus leg), **GD** (minor, one Opus leg), then **A3** (⚑ MAJOR → two Opus legs) if your context allows
+Plan sections: **S1** "#### S1" (≈ l. 1100), **GD** "#### GD" (under "### Wave 2.5"), **A3** "#### A3" (after GD); read
+each in full plus the Invariants (l. 123–172, esp. 4 — S1 adds NO FastRand draws; the rates were drawn at the call
+sites) and Shared architecture S3/S5 (`SoundCue.onlyIfIdle`, `FrameOps.soundStops`; the app's arms).
+- **S1**: Files + Precondition (`.UpdateDynamicSounds`) + 7 tests as the plan; G2 → **250 / 0**; no golden moves.
+- **GD**: 4 tests in `Tests/FerazelRenderTests/Phase2GoldenTests.swift`; G2 → **254 / 0**; the reviewer re-runs them
+  twice for determinism; the new hashes are first measurements (record them in the commit body + As-executed).
+- **A3** (app: original keys, sound via `SoundTool` + `ShellMixer.attachStream`, `loadLevel` rebuild with `rngSeed` +
+  `carry`, `deathEffect` → `FrameRenderer.deathEffectStep(k)` 50 steps → `deathEffectDone()`, `FerazelLevel` launch arg,
+  clock seed, `presentedClut`): G5 BUILD SUCCEEDED, G2 unchanged. Unit rule: S1 + GD + A3 is 3 tasks with one ⚑ — allowed;
+  if your own context passes ~170k after GD merges, close with A3 as the next run's first task. After A3, the next unit is
+  the **phase-end run** (A4 stage + gate card + G9 + the Fable phase review over `git diff 4edb92e..HEAD` — 4edb92e = the Phase 2
+  plan/D33 commit, the parent of F1 883b493 — + fixes).
 - Per task: brief the implementer per orchestrator §3 with the full scene (the planner's probes/digests were NEVER
   committed: the plan's numbers are the targets; the dump is the authority — "M l. N" = line N of
   `ghidra/ferazel/Ferazel_pef.decompiled.c`, raw addresses in `ghidra/ferazel/Ferazel_pef.disasm.txt`). **Dispatch every
-  subagent with `run_in_background: false`**; see the HAZARD below. Insist on tests FIRST, seen failing (run 4's W2b and
-  W4 implementers wrote code first). Run the gates yourself from the merge head and never relay a subagent's number.
-  Review legs must RUN the suite and try ≥ 20 targeted mutations (run 4: W2b 133 mutants / 12 real survivors, W3 60/7,
-  W4 52/4 — ask implementers to pin every branch with exact values up front). Ask the fidelity leg to read the dump
-  for anything the plan does not mention that L1/L2 reach (run 4's W4 leg found the globals-carry bug that way). Then
-  one implementer fix round; **if the fix round changes behaviour (not only asserts), one short Opus re-review leg of
-  it**. Re-run G2 and commit with explicit paths. STOP on any number the plan did not predict (Invariant 10). Precedent
-  rulings (runs 2–4): when real rows replace a stub, or the binary creates sprites the plan's counts did not include,
-  counts may move — rule under "follow the binary", verify the cause by trace (revert the cause → old numbers return),
-  record old → new. Where the dump contradicts the plan, the dump wins; record it in the As-executed bullet. Never let a
-  kinematic number move silently.
+  subagent with `run_in_background: false`**; see the HAZARD below. Insist on tests FIRST, seen failing (runs 4–5:
+  implementers still wrote code first; they proved failure by temporary mutation — acceptable, but ask). Run the gates
+  yourself from the merge head and never relay a subagent's number. Review legs must RUN the suite and try ≥ 25 targeted
+  mutations (run 5: E1a 83 mutants / 30 real survivors, E1b 75 / 6 — ask implementers to pin every branch with exact
+  values up front). Ask the fidelity leg to read the dump for anything the plan does not mention that L1/L2 reach (run 5's
+  E1b legs found the water-cache globals carry that way). Then one implementer fix round; **if the fix round changes
+  behaviour (not only asserts), one short Opus re-review leg of it**. Re-run G2 and commit with explicit paths. STOP on any
+  number the plan did not predict (Invariant 10). Precedent rulings (runs 2–5): when real rows replace a stub, or the
+  binary creates sprites/draws the plan's counts did not include, counts may move — rule under "follow the binary",
+  verify the cause by trace (revert the cause → old numbers return), record old → new. Where the dump contradicts the
+  plan, the dump wins; record it in the As-executed bullet. Never let a kinematic number move silently. A ◈ golden that
+  does not move: find out why and record it (runs 3 and 5).
 - Merge each task's green commits to `main` (`--ff-only`) as soon as its gates pass, so a cap or a crash later in the
   run loses nothing.
 
@@ -133,12 +132,12 @@ leg and your own G2 run) can go in the same message: they run in parallel and bo
 use SendMessage to resume a finished agent: it may return asynchronously. Dispatch a fresh implementer with the full
 context instead (run 2 did this for every fix round).
 
-## GATES (fenced; verified on this machine 2026-10-14 from f68f170 (run 4) — copy literally; `$WT` = your worktree)
+## GATES (fenced; verified on this machine 2026-10-14 from d02d27e (run 5) — copy literally; `$WT` = your worktree)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (Phase 2); later phases: a local HK main you made + floor ≥ 328 (see AUTHORIZATIONS)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 0c65dcb
-# G2 suite: first number = the ladder total (234 today; E1a 239; E1b 242; S1 249; GD 253), second = 0
+# G2 suite: first number = the ladder total (243 today; S1 250; GD 254; A3 254), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

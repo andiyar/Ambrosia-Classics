@@ -1,4 +1,4 @@
-# STATE — Ambrosia Classics — 2026-10-14 (Ferazel Phase 2 wave 2.3 done on the loop (234/0); Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 1 GATE PASSED (D32), Phase 2 waves 2.0–2.1 done (154/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
+# STATE — Ambrosia Classics — 2026-10-14 (Ferazel Phase 2 wave 2.4 E1a E1b done on the loop (243/0); Cythera Phase 0 K1–C5 done; Deimos gate 1 passed; Ferazel Phase 1 GATE PASSED (D32), Phase 2 waves 2.0–2.1 done (154/0); Aki 1.0 released; Bubble Trouble X 1.0 released, Mac + Windows)
 
 > Live state only. Dated; re-verify before acting. Narrative goes in handoffs, forks in DECISIONS.
 
@@ -8,7 +8,7 @@
   `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
   `docs/QUESTIONS.md` (what only Ben can answer — his phase gate cards queue there; he is away in Fiji). Each run
   updates the Ferazel bullet below at its close. Start/stop: `.looper/config.sh` header. Setup gates from main 1aedbf4:
-  Ferazel/Core 154/0, census 1,108/0, Ferazel builds, HectorKit 0c65dcb clean (floor 328). P1a–P3 were then built by an interactive session (185/0, a40fc96); loop run 2 built P4 P5 (203/0); loop run 3 built W1 W2a (215/0); loop run 4 built W2b W3 W4 — wave 2.3 closed (234/0, main f68f170 + docs close). Next: wave 2.4 E1a E1b.
+  Ferazel/Core 154/0, census 1,108/0, Ferazel builds, HectorKit 0c65dcb clean (floor 328). P1a–P3 were then built by an interactive session (185/0, a40fc96); loop run 2 built P4 P5 (203/0); loop run 3 built W1 W2a (215/0); loop run 4 built W2b W3 W4 — wave 2.3 closed (234/0); loop run 5 built E1a E1b — particles + water effects (243/0, main d02d27e + docs close). Next: S1, GD (then A3).
 
 - **Phase 0 DONE (2026-10-03).** HectorKit **v0.1.0** (`~/Developer/HectorKit`, tag on f578925): HectorResources /
   HectorGraphics / HectorAudio lifted from EV e23122f + the new banded-QuickTime decoder; machine gate

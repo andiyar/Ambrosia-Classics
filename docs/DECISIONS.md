@@ -1145,6 +1145,24 @@ M l. 5747/6707; the next-level loop writes only G `+0x16`) — the plan had ever
 out on the loop-ending frame. Carries: music fade + sound stops after the loop → A3/S1; G fields not yet modelled →
 Phase 3/4; 0x420 tint is a Handle write → Phase 4.
 
+**As built (wave 2.4, first part: E1a, E1b — 2026-10-14, loop run 5; Opus 5.5 orchestrator, Opus implementers, two Opus
+legs each (⚑ MAJOR), each behaviour-changing fix round re-reviewed):** `Ferazel/Core` **234 → 243/0** (E1a +5 → 239, +1
+`testParticleRendererRowsAndErase` → 240 (the plan's Files named `ParticleRenderTests.swift`), E1b +3 → 243); census
+1,108/0; Ferazel builds; HectorKit untouched (0c65dcb, floor 328); no golden moved (golden frames show rows 0–13; L1's
+liquid starts at row 17). **E1a** particle pool (2000 × 32 B, hint/count/hwm, count drift copied), `.NewParticle`,
+`.HandleParticles`, `.DrawParticles` (colour-0 kill −2, drawn iterations only), `.EraseParticles`, `.Splash`,
+`.BloodSpray @100425f8`, `.ExplodeFaceIntoParticles`, `.ParticleGlow`, the three S3 `DrawOp` cases, `ParticleRenderer`.
+**E1b** `.FillCachedTileArray`, `.WrapDrawWaterEffects @10010fac` (bubbles, motes, wind dust, 36 `.LookupModedImpulse`
+cases) and the Enhanced water faces (`WaterFaceBlitter`). **Rulings (follow the binary):** E1a fills every `// later:
+E1a` emitter site L1/L2 reach, not only the plan's files (the RNG stream drifts otherwise); RNG-dependent test numbers
+moved with revert-verified causes (pendulum rates, bubbleTimer); the particle counters and the water-tile cache/origin/
+flag are globals no level start resets → `LevelCarry` carries them; `.WrapDrawWaterEffects` runs outside the drawn block,
+so Enhanced faces appear on skipped iterations with parity set (plan said drawn only); `.HandleLights` precedes the water
+op. Unreachable-on-shipped-data deviations (recorded, not copied): `.Splash`'s infinite loop at x ≥ ≈0x7fd0;
+`FastRand(0)`'s return value r30 in wind dust of strength 0; wind dust's uninitialised shape (port 0, persists). Carries:
+`ParticleLife` ≠ rows on CLUT 222 under highest (levels 52/55); face-walk emitters need the renderer's faces (Core tests
+emit none); a test carrying a non-zero water-origin column through `.carry` (re-review minor).
+
 ## D34 — Ferazel's Wand goes to the unattended session loop: Ben's authorizations + the Fable cross-check rule (2026-10-13)
 
 **Decided (Ben, AskUserQuestion in the setup session, 2026-10-13; he is away in Fiji for a few days and wants to come

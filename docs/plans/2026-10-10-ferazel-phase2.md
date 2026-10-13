@@ -1046,6 +1046,24 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   vy 0x800, **sound gate off in the test** (level frame counter ≤ 3, so `.Splash`'s `STPlay3DSoundRand` draw does not
   happen): 96 particles; first column vx −154, vy0 −902 — with the draw it would be −167).
 - **Commit:** `Particles: pool, life table, splash, blood spray; DrawOp particle/water cases; 5 tests`.
+- ⚑ **As executed (E1a, loop run 5, 2026-10-14; 1b6d7a7 plan scope + 704ffe3 emitter sites + fix round 57825b8 +
+  bank row 12 242760e; two Opus legs MERGEABLE (fidelity; mutation 83 tried / 30 real survivors → all pinned), fix round
+  re-reviewed MERGEABLE 12/13):** G2 **239** then **240** (+1 `testParticleRendererRowsAndErase` — the plan's Files named
+  `ParticleRenderTests.swift` but no test; seat ruling) / 0; G5 BUILD SUCCEEDED; no golden moved. Seat ruling: E1a also
+  filled every `// later: E1a` emitter site L1/L2 reach (ExplodeFaceIntoParticles at crunch-destroy + ice floe,
+  ParticleGlow, cannon smoke, box splash, swim/entry/exit splashes) so the FastRand stream matches; left: the
+  GroundCeilingEffects / FrameRenderer markers (effects nothing on L1/L2 spawns). `.BloodSpray` is **@100425f8**
+  (100549f4 = `.HurtPlayer`'s call, M l. 48051). Numbers moved, each revert-verified: pendulum hit rates 2564/2302/475 →
+  9172/9726/3032 (blood spray's 80 draws); bubbleTimer 238 → 209 (entry splash); restart carry gains the pool counters
+  (hwm 157 from the L1 raft 1403 splashing on iteration 21 — counters are never reset by the binary, so `LevelCarry`
+  carries them); crunch test copy+1 → copy+2 (the erase op). New SpriteSlot fields +0x13e (splash flag; 1 from
+  `.InitSprite`, 0 from the Effect Setup) and +0x12a (last frame's +0x128). `FrameRenderer` runs `.HandleLights` before
+  the water op (M l. 9205–9207); a passage jump's own redraw runs none (M l. 49676–49678). Named stub: Core tests have
+  no face-pixel provider, so the face-walk emitters (ExplodeFace) emit nothing in sessions without the renderer — the app
+  passes the faces (`FerazelController`). Port deviation (unreachable): `.Splash`'s column counter sign-extends before
+  every compare (raw 10042b44), so x ≥ ≈0x7fd0 loops forever in the binary; the port ends the loop (no shipped level is
+  near). Bank corrections 8–12 in `docs/ferazel/particles.md` (shape 0/>7 return the colour; hwm re-read; BloodSpray
+  address; the Splash sound gate + kinds; kind-12 green wraps in a 16-bit store, t1 = 46).
 
 #### E1b — ⚑ MAJOR — Water effects: `.FillCachedTileArray`, `.WrapDrawWaterEffects`, Enhanced water faces (→ 227) ◈
 - **Files:** `Sources/FerazelCore/Particles/WaterEffects.swift`, `Sources/FerazelCore/Session/FerazelSession.swift`,
@@ -1061,6 +1079,23 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   zeros == resolved rows on all 16 level CLUTs, lowest; highest differs only on CLUT 222) · `testWaterFaceParity`
   (Effects 1: water faces on alternate drawn frames only).
 - **Commit:** `Particles: water effects (motes, bubbles, Enhanced water faces); goldens ◈; 3 tests`.
+- ⚑ **As executed (E1b, loop run 5, 2026-10-14; 266e681 + fix round 5b4d8f7 + comment d02d27e; two Opus legs MERGEABLE
+  (fidelity; mutation 75 / 6 real survivors → pinned), fix round re-reviewed MERGEABLE 14/15):** G2 **243** / 0 (240 + 3);
+  G3 census 1,108/0; G5 BUILD SUCCEEDED. ◈ **No golden moved** (as W1 in run 3): every golden frame shows rows 0–13 /
+  cols 0–20, level 1's topmost liquid is row 17 (cols 188–195) and the nearest to the window (col 4, row 41) — revert
+  of the emission leaves the hashes; the face draw is pinned by applying the op directly inside
+  `testFirstFrameGoldenLevel1`. **Dump beats plan:** `.WrapDrawWaterEffects` is **@10010fac** (10011258 = its bubble
+  call) and is called **outside** `.PaintFrameWrap`'s drawn block (M l. 9206 vs 9254), so under Reduce frame rate the
+  Enhanced faces also appear on skipped iterations whose parity is set (`testWaterFaceParity` pins the binary's rule,
+  not the plan's "drawn only"). Row-vs-pixel quirk: the "no liquid above" bubble gate compares the cell's tile row with
+  the drawn v in pixels (raw 10011150..1001115c) — effectively always open below the top. The depth walk tests liquid
+  at row + window-row index and stops at a solid read from the ORIGIN column (M l. 8541–8630). Wind dust with strength
+  0 calls `FastRand(0)` (clock reseed) — wind exists only on levels 10/20/52, none with strength 0, so unreachable; the
+  port returns 0 where the binary returns r30. The cache, its origin and its valid flag (`_DAT_100a00f4`; cleared only
+  by `.DestroyCrunchTile`, M l. 39072) are globals: `LevelCarry` carries them across exit and restart (fix round).
+  Carry: `ParticleLife` differs from the resolved rows on CLUT 222 (levels 52, 55) under the highest tie-break (the
+  shipping default) — expected by the plan; the level that reaches it must use the rows. Bank corrections 13–16; NR 4
+  closed. `SpriteBlitter.lightFace` made internal (outside Files).
 
 #### S1 — minor — Sound cues in Core (→ 234)
 - ⚑ **S2 carries → S1 / A3:** `SoundTool` as built has no stop/count by the id `play` returns and no `0 = all`
