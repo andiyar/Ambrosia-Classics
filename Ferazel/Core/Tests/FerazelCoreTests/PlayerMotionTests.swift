@@ -74,6 +74,24 @@ final class PlayerMotionTests: XCTestCase {
             XCTAssertEqual(w.player.cues, [PlayerCue(call: .stopIfPlaying, snd: 427),
                                            PlayerCue(call: .reg, snd: 414, priority: 1, volume: 0x9c)])
         }
+        // W1: off a ridden sprite J = its `+0x194` (l. 47808–47813), read by this jump's impulse; J ≠ 0 on a
+        // springboard 0x58c (`+0xb0`) adds `.STPlayRegSound(604, 1, 0x100)`; any other ridden mode: no 604.
+        for mode in [PlatformSprite.springboard, 2] {
+            let w = try world()
+            _ = standing(w)
+            let board = try XCTUnwrap(w.newSprite(type: 1400, x: 0, y: 0, layer: -1, handler: .inert))
+            w.active.update(id: board) { c in
+                c.subtype = mode
+                c.jumpBonus = -0x300
+            }
+            HandleKeys.run(world: w, keys: .jump, ridden: board)
+            XCTAssertEqual(player(w).vy, -3356 - 0x300, "mode \(mode)")
+            XCTAssertEqual(w.player.jumpBase, -0x300)
+            XCTAssertEqual(w.player.cues.map(\.snd).filter { $0 == 604 }.count, mode == PlatformSprite.springboard ? 1 : 0)
+            if mode == PlatformSprite.springboard {
+                XCTAssertEqual(w.player.cues.last, PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
+            }
+        }
     }
 
     func testFullJumpApex() throws {

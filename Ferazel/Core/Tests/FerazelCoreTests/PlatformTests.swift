@@ -96,7 +96,7 @@ final class PlatformTests: XCTestCase {
         XCTAssertEqual(limited(max: 45, min: 315, angle: 44 << 8, speed: 0x200), [45 << 8, -0xc0])
         XCTAssertEqual(limited(max: 45, min: 315, angle: 44 << 8, speed: 0x100), [45 << 8, 0x100])   // exactly 45
         XCTAssertEqual(limited(max: 45, min: 315, angle: 316 << 8, speed: -0x200), [315 << 8, 0xc0])
-        XCTAssertEqual(limited(max: 45, min: 315, angle: (179 << 8) - 1, speed: 0x100), [45 << 8, -0x60]) // 0xb3ff
+        XCTAssertEqual(limited(max: 45, min: 315, angle: (179 << 8) - 1, speed: 0x100), [45 << 8, -0x60]) // 0xb2ff
         XCTAssertEqual(limited(max: 45, min: 315, angle: 179 << 8, speed: 0x100), [315 << 8, -0x60]) // 0xb400: min
         XCTAssertEqual(limited(max: 225, min: 135, angle: 136 << 8, speed: -0x200), [135 << 8, 0xc0])
         XCTAssertEqual(limited(max: 225, min: 135, angle: 224 << 8, speed: 0x200), [225 << 8, -0xc0])
@@ -119,6 +119,32 @@ final class PlatformTests: XCTestCase {
         let q = try XCTUnwrap(w.active.sprite(id: id))
         XCTAssertEqual([q.x, q.y], [100 + 0 - 10, 200 - 60 - 3])          // a = 90: dx 0, dy −60
         XCTAssertEqual([q.x256, q.y256], [90 << 8, 137 << 8])
+        // The hub damping (`+0x10 > 0`): hvx·d >> 8 (srawi), 0 when unchanged — −1·0xf7 >> 8 = −1 → 0; hvy damped
+        // with no such test: 1000·0xf7 >> 8 = 964.
+        w.active.update(id: id) { c in
+            var r = Radial()
+            r.hubDamp = 0xf7
+            r.hubVX = -1
+            r.hubVY = 1000
+            c.radial = r
+        }
+        RadialMotion.updatePosition(w, id: id)
+        XCTAssertEqual(w.active.sprite(id: id)?.radial.map { [$0.hubVX, $0.hubVY] }, [0, 964])
+        // `.RadialWheelStep(s, k)`: speed += (mod(a)·k) >> 8 (srawi: −90·0x81 = −11610 → −46); hub vx = −speed only
+        // when `+0x10 < 0x100`.
+        func stepped(k: Int32, hubDamp: Int32) -> [Int32]? {
+            w.active.update(id: id) { c in
+                var r = Radial()
+                r.hubDamp = hubDamp
+                r.hubVX = 77
+                c.radial = r
+            }
+            RadialMotion.wheelStep(w, id: id, k: k)
+            return w.active.sprite(id: id)?.radial.map { [$0.speed, $0.hubVX] }
+        }
+        XCTAssertEqual(stepped(k: 0x81, hubDamp: 0), [-46, 46])
+        XCTAssertEqual(stepped(k: 0x100, hubDamp: 0xff), [-90, 90])
+        XCTAssertEqual(stepped(k: 0x100, hubDamp: 0x100), [-90, 77])     // `+0x10` = 0x100: the hub vx kept
     }
 
     func testShuttleL1Rec25() throws {
@@ -178,6 +204,50 @@ final class PlatformTests: XCTestCase {
         let dx = try XCTUnwrap(s.active.sprite(id: id)).x - px0
         XCTAssertNotEqual(dx, 0)
         XCTAssertEqual(try XCTUnwrap(s.active.sprite(id: player)).x - x0, dx)   // carried by the platform's move
+        // The session's `.MTCollideSprites` runs the Platform hit callback `+0x5c` (`.HitPlatformSprite`): a mode-0
+        // platform made beside the player, falling onto record 25's top, lands on it in the step (the platform the
+        // mover).
+        let low = try XCTUnwrap(s.active.sprite(id: id))
+        let upper = try XCTUnwrap(s.world.newSprite(type: 1400, x: low.x - 30, y: low.y - 0x18 + 1, layer: -1,
+                                                    handler: .platform, record: 25) { PlatformSprite.setup(&$0) })
+        s.world.active.update(id: upper) { c in
+            c.setupDone = true
+            c.subtype = 0
+            c.hotRect = PlatformSprite.defaultRect
+            c.vy = 0x100
+        }
+        _ = s.step(keys: KeyState())
+        XCTAssertEqual(s.active.sprite(id: upper)?.ridden, id)
+        XCTAssertEqual(s.active.sprite(id: upper).map { [$0.groundKind, $0.onSprite] }, [3, 1])
+        XCTAssertEqual(s.active.sprite(id: id)?.rider, player)           // the player pass lands after, on `+0xe0`
+        // An idled record (`.ActiveToIdleSprite`: `+0x4c = 0`, `SpriteSlot.handleCleared`) stays listed until the
+        // step's `.UpdateSprites`: `.MTHandleSprites` skips it, the player pass skips it, then it is killed (the
+        // record stays readable).
+        s.world.active.update(id: id) { $0.handleCleared = true }
+        var handled: [Int] = []
+        s.world.handleSprites { _, h in handled.append(h) }
+        XCTAssertFalse(handled.contains(id))
+        XCTAssertTrue(handled.contains(upper))
+        let me0 = try XCTUnwrap(s.active.sprite(id: player))
+        let plat0 = try XCTUnwrap(s.active.sprite(id: id))
+        s.world.active.update(id: player) { c in                         // the player's rect well inside its rect
+            c.x = plat0.x
+            c.y = plat0.y + 6 - 85 + 8
+        }
+        var touched: [Int] = []
+        s.world.collideSpecial(hitPlayer: { _, _, c in touched.append(c) }, hit: { _, _, _ in })
+        XCTAssertFalse(touched.contains(id))
+        s.world.active.update(id: id) { $0.handleCleared = false }
+        touched = []
+        s.world.collideSpecial(hitPlayer: { _, _, c in touched.append(c) }, hit: { _, _, _ in })
+        XCTAssertTrue(touched.contains(id))                              // the same contact, not idled
+        s.world.active.update(id: id) { $0.handleCleared = true }
+        s.world.active.update(id: player) { $0 = me0 }
+        _ = s.step(keys: KeyState())
+        XCTAssertFalse(s.active.sprites.contains { $0.id == id })         // `.UpdateSprites` killed it
+        let gone = try XCTUnwrap(s.active.record(id: id))
+        XCTAssertEqual([gone.x, gone.y, Int(gone.x256)], [plat0.x, plat0.y, Int(plat0.x256)])   // not handled
+        XCTAssertTrue(s.active.sprites.contains { $0.id == upper })
 
         // The Platform arm of `.HitPlayerSprite` (l. 49124–49147) on this shuttle, in a world of its own: the player
         // falling onto its top lands (`.PlatformBounce(player, platform, centre, 0, rect, 0)`).
@@ -276,6 +346,32 @@ final class PlatformTests: XCTestCase {
         try drop(onto: pid, vy: 0)
         HitPlayerSprite.hit(w, player: pl, other: pid)
         XCTAssertEqual(w.active.sprite(id: pl)?.hp, 0x230)
+        // Centre at or below, riding it (`+0xdc` == the platform): no hurt; the same contact not riding it hurts.
+        for riding in [true, false] {
+            try drop(onto: pid, vy: 0)
+            w.active.update(id: pl) { c in
+                c.centre.y = q.centre.y
+                c.ridden = riding ? pid : nil
+            }
+            HitPlayerSprite.hit(w, player: pl, other: pid)
+            XCTAssertEqual(w.active.sprite(id: pl)?.hp, riding ? 0x230 : 0x230 - 0x70, "riding \(riding)")
+        }
+        // An idled record (`+0x4c = 0`) is no Platform: nothing, the latches not even cleared.
+        w.active.update(id: pid) { $0.type = 1400 }
+        try drop(onto: pid, vy: 0x600)
+        w.active.update(id: pid) { $0.handleCleared = true }
+        HitPlayerSprite.hit(w, player: pl, other: pid)
+        XCTAssertNil(w.active.sprite(id: pl)?.ridden)
+        XCTAssertTrue(w.player.landedLatch && w.player.bumpedLatch)
+        w.active.update(id: pid) { $0.handleCleared = false }
+        // Mode 2 (horizontal) with no clamp after the step: vx 1279 < 1280 steps by 1280 >> 4 = 80 to 1359.
+        w.active.update(id: pid) { c in
+            c.vx = 1279
+            c.counterA6 = 1
+            c.x256 = c.classWord154
+        }
+        PlatformSprite.shuttle(w, id: pid, vertical: false)
+        XCTAssertEqual(w.active.sprite(id: pid).map { [$0.vx, Int32($0.counterA6)] }, [1359, 1])
     }
 
     func testShuttleNoClampOvershoot() throws {
@@ -376,6 +472,26 @@ final class PlatformTests: XCTestCase {
         XCTAssertEqual(slot.applyDynamicLight(lightTile: lit.lightTile, fakeLight: lit.fakeLight), 0xc0067)
         XCTAssertEqual(FerazelSession.peDistance(-26, 1), 26)
         XCTAssertEqual(FerazelSession.peDistance(9, -12), 15)           // 12 + 9/3
+        // Through the session's `.WrapDrawSprites` light closure (no level-2 session yet): on level 1 a platform given
+        // the raft's `+0x89` and face 1400 [8], set against level 1's sphere 1335 (light 810 at (1969, 774), colour 99)
+        // as record 154's raft lies against level 2's (offset (−1634, −707)): F = 103, L = BG (61, 24)'s light byte 9.
+        let s1 = try session()
+        _ = s1.step(keys: KeyState())
+        let lit1 = try platform(s1, record: 25)
+        s1.world.active.update(id: lit1) { c in
+            c.face = FaceRef(pict: 1400, index: 8, set: .encoded)
+            c.dynamicLight = true
+            c.x = 3562 - 1634
+            c.y = 1487 - 707
+            c.centre = SpriteSlot.Point(x: 3603 - 1634, y: 1504 - 707)
+            c.mode = 0
+        }
+        XCTAssertEqual(s1.lights.first { $0.pict == 810 }, SetupFaces.Light(pict: 810, width: 72, height: 72, x: 1969,
+                                                                           y: 774, colour: 99))
+        let L1 = s1.level.lightByte(col: (3603 - 1634) >> 5, row: (1504 - 707) >> 5)
+        _ = s1.step(keys: KeyState())
+        XCTAssertEqual(L1, 9)
+        XCTAssertEqual(s1.active.record(id: lit1)?.mode, 0xc0967)           // 0xc0000 + 9·0x100 + 103
     }
 
     func testMode2SpringBackTrace() throws {
@@ -764,9 +880,21 @@ final class PlatformTests: XCTestCase {
         XCTAssertEqual(s1c.radial?.speed, -0x100)
         XCTAssertEqual(s1c.radial?.hubVX, 0x100)
         XCTAssertEqual(s1c.radial?.hubVY, 0)
-        // The latch: a second wall this frame bounces nothing.
+        // The latch: a second wall this frame bounces nothing — with the cooldown cleared, so the latch alone holds.
+        w.active.update(id: id) { $0.counterA6 = 0 }
         PlatformSprite.hitTile(solver, id: id, pos: cell, kind: kind, layer: .foreground)
         XCTAssertEqual(w.active.sprite(id: id)?.radial?.speed, h.radial?.speed)
+        XCTAssertEqual(w.active.sprite(id: id)?.counterA6, 0)
+        XCTAssertEqual(w.active.sprite(id: id)?.radial?.hubVX, h.radial?.hubVX)
+        // The tile centre is pos.x + 0x10: with P's stored centre at pos.x + 8 (left of it) the bounce turns + (speed
+        // −0x100 → 192 → +0x100).
+        w.active.update(id: id) { c in
+            c.radialLatch = false
+            c.centre.x = cell.x + 8
+        }
+        PlatformSprite.hitTile(solver, id: id, pos: cell, kind: kind, layer: .foreground)
+        XCTAssertEqual(w.active.sprite(id: id)?.radial?.speed, 0x100)
+        XCTAssertEqual(w.active.sprite(id: id)?.counterA6, -5)
         // `.BounceRadial` arithmetic on literal values (l. 54333–54409).
         w.active.update(id: id) { c in
             c.radial?.speed = 1000
