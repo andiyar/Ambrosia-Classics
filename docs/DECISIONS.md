@@ -1098,6 +1098,21 @@ destroy or a long invulnerability; parity and crunch log across level loads → 
 focus driver (they no longer move Ferazel) → P5; `FrameRenderer.setTile` re-parses the level per op (0.145 ms
 release) → A3 if it hitches; held-item faces 0x2ee..0x308 unloaded.
 
+**As built (wave 2.2, second half: P4, P5 — 2026-10-13, loop run 2; Opus 5.5 orchestrator, Opus implementers, one Opus
+leg each + fix round; P5's behaviour-changing fix round re-reviewed MERGEABLE):** `Ferazel/Core` **185 → 203/0** (P4 +10
+→ 195, P5 +8 → 203); census 1,108/0; Ferazel builds. **P4** liquids (`.HandleUnderWater`, `.HandleFlotation`), acid /
+healing / drowning / breath, damaging surfaces, below-map death, the death trigger, bubble 0x410, and the E2 carry:
+the underwater light variant in `SpriteBlitter`. **P5** `.PlayerScroll` (freeze / follow / ease, look-ahead L) replaces
+the ◇ focus driver; Camera snap vetoes read the live player `*_DAT_1009fdd8`, as does `.HandleIdleSprites`' window.
+**Orchestrator ruling (Invariant-10 STOP, follow the binary):** the real camera changes which sprites the level-1
+crunch fixture activates, so `testCrunchKind3Collapses`' session section was re-measured (setTiles iteration 18 → 17,
+potion idle); ◈ pan goldens re-derived (frame 30 → 172596fa2f3b6c58, frame 60 → cc9786ba763d383a, chain →
+b4230ba5a643c5b5). The P3 fix round (6fd7484) was reviewed and confirmed. **Carries:** material-2 stop as a
+`PlayerCue .stopIfPlaying` → S1 reconciles with `soundStops`; `playerDead` set after the loop exits → W4; idle rect via
+`sprite(id:)` (linked only) → W1 with the `.ActiveToIdleSprite` carry. Loop note: run 1 ended its turn while a
+background implementer ran (the headless session exits at end of turn, killing the agent) and merged nothing; its
+dirty worktree `loop-1-20261013-180951` was kept by the looper. Runs dispatch subagents in the foreground.
+
 ## D34 — Ferazel's Wand goes to the unattended session loop: Ben's authorizations + the Fable cross-check rule (2026-10-13)
 
 **Decided (Ben, AskUserQuestion in the setup session, 2026-10-13; he is away in Fiji for a few days and wants to come

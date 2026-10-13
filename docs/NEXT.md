@@ -60,58 +60,66 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 4. `git -C ~/Developer/HectorKit status --porcelain` empty and `log -1` = the HK SHA below (or a later local main that
    a previous run recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK worktree.
 
-## STATE (live, 2026-10-13, written by the interactive P1a–P3 session at its close; head of `main` = the merge of a40fc96 + the looper setup — read `git log -3 main`)
-- An interactive orchestrator session (not a loop run) built **P1a P1b P2 P3** on 2026-10-13 and closed at `a40fc96`
-  "Ferazel Phase 2 wave 2.2 first half close: P1a P1b P2 P3 as built (185/0); …" (pushed to origin by that session's
-  own trigger); local `main` = that + the looper setup commit 4887c9f, merged (Ben approved; nothing more pushed).
-  The setup chip's "first run = P1a P1b" is DONE — do not redo it.
-- `Ferazel/Core` suite: **185 passed, 0 failed/skipped** (two test targets — count with the G2 grep).
-- Census: `Totals: items 1,108 decoded, failures 0`, exit 0. Ferazel app (`xcodebuild -scheme Ferazel`): BUILD SUCCEEDED.
-- HectorKit `~/Developer/HectorKit` main **0c65dcb**, clean, zero-skip floor **328** (`tools/check-zero-skip.sh`).
-  Phase 2 does not touch HectorKit (plan G1). Later phases may (D34 — see AUTHORIZATIONS).
-- Phase 2 plan position: waves 2.0, 2.1 and the first half of 2.2 (P1a P1b P2 P3) MERGED, as-built in D33 ("As built
-  (wave 2.2, first half)") and in each task's "⚑ As executed" bullet in the plan. **Next = P4, then P5.**
-  Ladder as executed: … → P3 **185** now; P4 → **195**, P5 → **203**, W1 → 211, W2a → 215, W2b → 220, W3 → 228, W4 →
-  234, E1a → 239, E1b → 242, S1 → 249, GD → 253 ("previous total + the task's N"; record review-fix changes in the
-  plan's "Verification model" as-executed line).
+## STATE (live, 2026-10-13, written by loop run 2 at its close; head of `main` = run 2's docs-close commit on top of 46a6984 — read `git log -6 main`)
+- Loop run 1 (`loop/1-20261013-180951`) merged nothing: it ended its turn while its background implementer ran, and the
+  headless session exited and killed the agent. Its worktree is still there, dirty, with superseded partial P4 edits.
+  The looper kept it, and it is not yours: never delete it, never build on it. **Run 2 built P4 + P5 on top of `17f5b04`
+  and merged:** `8eb4a0f` P4, `bfcdbf9` P4 review fixes, `de8d714` P5, `46a6984` P5 review fixes, then the docs close.
+- `Ferazel/Core` suite: **203 passed, 0 failed/skipped** (G2 grep). Census `Totals: items 1,108 decoded, failures 0`,
+  exit 0. Ferazel app: BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **0c65dcb**, clean, floor **328**.
+- Phase 2 plan position: waves 2.0, 2.1, 2.2 (P1a–P5) MERGED; as-built in D33 ("As built (wave 2.2, second half)") and
+  in each task's "⚑ As executed" bullet. **Next = wave 2.3: W1 then W2a.** Ladder as executed: … P4 195, P5 **203**
+  now; W1 (+8) → **211**, W2a (+4) → **215**, W2b (+5) → 220, W3 (+8) → 228, W4 (+6) → 234, E1a (+5) → 239, E1b (+3) →
+  242, S1 (+7) → 249, GD (+4) → 253 ("previous total + the task's N").
 - Goldens today: `testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`, `…HighestTieBreak` `b80b0efd384ffdb9`, pan frame 30
-  `be2b8e2e6631b1a7` (P3 ◈), frame 60 `3ec51d436e278776`, chain `967803e69d2ceaf6` (P3 ◈). Only ◈ tasks (P5, W1,
+  `172596fa2f3b6c58`, frame 60 `cc9786ba763d383a`, chain `b4230ba5a643c5b5` (P5 ◈; scrolls [0,19]). Only ◈ tasks (W1,
   E1b, GD; E1a conditionally) may move one, in-commit, old → new + reason.
-- Owed: the **P3 review fix round (6fd7484) was not re-reviewed** — it changed code (`SpriteWorld.newSprite` counts a
-  record taken before its Setup, as `.MTNewSprite` raw `100331cc`/`1003321c`; `Player.spawn` no longer resets the
-  crunch-overlay table / water-cache flag; `.ClearCrunchSprites` before the level Setups). P4's first review leg also
-  reads `git diff d943925 6fd7484` and reports on it.
-- Carries the plan already records (read the "⚑ … carry" and "⚑ As executed" bullets of P1a–P3): **P4** — the E2
-  underwater-light carry; row 42 below-map HP 0 already exists (P4's `testBelowMapKills` reuses it). **P5** — the app's
-  arrow keys still pan the ◇ `CameraFocusDriver` (they no longer move Ferazel; keypad 4/6/8/5 does); P5 deletes the
-  driver and the arrows. **E1a** — `.ExplodeFaceIntoParticles` (4 FastRand per emitted pixel at each crunch destroy)
-  and `.ParticleGlow` (invulnerability > 60) are unbuilt, so the session stream diverges from the original after the
-  first crunch destroy or a long invulnerability. **W4** — parity `_DAT_1009fd30` and the crunch log must survive level
-  loads. **A3** — `FrameRenderer.setTile` re-parses the level per op (0.145 ms release).
+- Carries the plan records (read the "⚑ … carry" / "As executed" bullets of P1a–P5): **W1**: the `.ActiveToIdleSprite`
+  carry (Core unlinks at once; the binary unlinks later in `.UpdateSprites`), F2/F3 re-review carries M2/M3/M6/M7 (in
+  W1's Precondition), and from P5: `FerazelSession` (~l. 233) looks up the idle-window player rect with `sprite(id:)`
+  (linked only) where the binary reads `*_DAT_1009fdd8` regardless [LOW, latent]. `_DAT_1009fd34` (`cameraSnapVeto`) and
+  the 0x57a camera veto first fire once W1 adds rideable platforms. The W1 precondition: decide whether mode 0xb is
+  reachable (L2 rafts' light byte, hdr 0x2706) and record it. **W2a**: `.HurtPlayer` (built here) gets its blood-spray
+  hook for E1a; the cue 508 goes through `.STPlayRegSoundPitched` with its own rate (S1). **S1**: P4's material-2 stop is
+  a `PlayerCue .stopIfPlaying` (order kept), not a `soundStops` entry; reconcile it. **W4**: `SpriteWorld.playerDead`
+  (`_DAT_1009ffa8`) is set only after the game loop exits (l. 5303); the parity and the crunch log must survive level
+  loads. **E1a**: `.ExplodeFaceIntoParticles` and `.ParticleGlow` are unbuilt (RNG diverges after the first crunch
+  destroy). **A3**: `FrameRenderer.setTile` re-parses the level per op. Known untested in Phase 2: the underwater light
+  is untested only where no fixture reaches it; quicksand is pinned synthetically only (no L1/L2 cell).
 
-## THIS RUN'S JOB — wave 2.2, tasks **P4** then **P5** (both minor; one Opus review leg each — P5 is ◈)
-Plan sections: **P4** `docs/plans/2026-10-10-ferazel-phase2.md` "#### P4" (≈ l. 688); **P5** "#### P5" (≈ l. 718). Read
-each section in full incl. its "⚑ carry" bullets, plus the P1a–P3 "As executed" bullets (the plan-row ↔ code-row map:
-plan rows 13/22/35/36 = code rows 19/27/40/40 in `Player.swift`). Precondition for each: the bank sections and dump
-ranges the section names; the plan's M-line cites run ~20–45 lines early against the committed dump — locate by raw
-address.
-- **P4** — Files and 10 tests as the plan; G2 → **195 / 0**.
-- **P5** — Files and 8 tests as the plan (◈ pan goldens move: record old → new); G2 → **203 / 0**; G5 (app) since the
-  arrow keys go.
-- Per task: brief the implementer per orchestrator §3; run the gates yourself from the merge head — never relay a
-  subagent's number; review legs must RUN the suite and try targeted mutations (the P1a–P3 legs found 17–46 surviving
-  mutants per task — ask for exact-value asserts); one implementer fix round; re-run G2; commit explicit paths only.
-  STOP on any number the plan did not predict (Invariant 10) — earlier tasks' numbers measured against stubs may move
-  when a real row replaces a stub (P3 hit this: exertion and cue lists only; rule under "follow the binary", record
-  old → new, never let a kinematic number move silently).
-- Wave 2.2 ends with P5: run G3 + G5 at the wave end.
+## THIS RUN'S JOB — wave 2.3, tasks **W1** then **W2a** (both ⚑ MAJOR → two Opus review legs each; W1 is ◈)
+Plan sections: **W1** `docs/plans/2026-10-10-ferazel-phase2.md` "#### W1" (≈ l. 779–822); **W2a** "#### W2a" (≈ l.
+823–843). Read each in full incl. its Precondition and carries, plus the P4/P5 "As executed" bullets (≈ l. 716–776).
+The plan's M-line cites run ~20–45 lines early against the committed dump; locate by raw address.
+- **W1**: Files and 8 tests as the plan; G2 → **211 / 0**; ◈ goldens may move only for the reason the plan names
+  (frame 1 draws no platform, platforms now drawn/moving), recorded old → new; G5 (FrameRenderer sheets). Record the
+  mode-0xb reachability finding in the commit body and STATE.
+- **W2a**: Files and 4 tests as the plan; G2 → **215 / 0**.
+- Per task: brief the implementer per orchestrator §3 with the full scene (the planner's probes/digests were NEVER
+  committed: the plan's numbers are the targets; the dump is the authority). **Dispatch every subagent with
+  `run_in_background: false`**; see the HAZARD below. Run the gates yourself from the merge head and never relay a
+  subagent's number. Review legs must RUN the suite and try ≥ 15 targeted mutations. Ask for exact-value asserts: in
+  run 2, P4's leg had 15/40 mutants survive and P5's had 18/41. Then one implementer fix round; **if the fix round
+  changes behaviour (not only asserts), one short Opus re-review leg of it** (run 2 did this for P5). Re-run G2 and
+  commit with explicit paths. STOP on any number the plan did not predict (Invariant 10). Precedent rulings: when a
+  real row or the real camera replaces a stub, numbers measured against the stub may move. Rule under "follow the
+  binary", verify the cause by trace, and record old → new. Never let a kinematic number move silently.
+- If the context cap allows after W2a (≤ 3 tasks with at most one MAJOR — so NOT a third task this run), close.
 
-## GATES (fenced; verified on this machine 2026-10-13 from main a40fc96 — copy literally; `$WT` = your worktree)
+### HAZARD — headless session (learned run 1, 2026-10-13)
+The looper runs you with `claude -p`: **when you end your turn, the session exits and every background subagent or
+background shell is killed.** Run 1 ended its turn "waiting on the implementer" and lost the whole run. Always pass
+`run_in_background: false` to the Agent tool and never `run_in_background: true` on Bash. Independent calls (a review
+leg and your own G2 run) can go in the same message: they run in parallel and both return before you continue. Do not
+use SendMessage to resume a finished agent: it may return asynchronously. Dispatch a fresh implementer with the full
+context instead (run 2 did this for every fix round).
+
+## GATES (fenced; verified on this machine 2026-10-13 from 46a6984 (run 2) — copy literally; `$WT` = your worktree)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (Phase 2); later phases: a local HK main you made + floor ≥ 328 (see AUTHORIZATIONS)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 0c65dcb
-# G2 suite: first number = the ladder total (185 today; P4 195; P5 203), second = 0
+# G2 suite: first number = the ladder total (203 today; W1 211; W2a 215), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

@@ -103,7 +103,7 @@ F1 **108** → F2 **116** → F3 **126** → S2 **131** → E2 **139** → P1a *
 As executed: base 104 (post-plan twinkle +2); F1 110, F2 118 (+2 review fixes → 120), F3 130 (+9 review fixes → 139),
 +1 `testFuzzHandleOrderMatchesPointerModel` (F2 re-review's pointer-level list model) → **140** at the end of wave 2.0.
 Later tasks: previous total + N. Wave 2.1 as executed: E2 carry `testLevelStartDrawsAfterSetups` +1 → 141, E2 +8 → 149, S2
-+5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), P2 → 175, P3 → **185**, …
++5 → **154** (S2 and E2 ran in parallel and merged in that order; review fix rounds added asserts, no tests). P1a → 160, P1b → **166** (review fix round: asserts only), P2 → 175, P3 → **185**, P4 → **195**, P5 → **203** (P4/P5 review fixes: asserts only, plus P5's live-player read), …
 
 **Goldens that move (◈).** Phase 1's goldens (`testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`,
 `…HighestTieBreak` `b80b0efd384ffdb9`, `testPanFrameGoldens` `f6296c7e706130f3` / `e7a951e3eafca30a` /
@@ -714,6 +714,22 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   → −1300) · `testNearSurfaceBand` (`+0x120` 1..21 → near-surface 1 (not kind 5); ≥ 44 or grounded → 0; 22..43 keeps
   the previous) · `testBelowMapKills` (L1: y > 1700 → HP 0, trigger next frame).
 - **Commit:** `FerazelCore: liquids (HandleUnderWater, flotation), acid/heal/drowning, damaging surfaces, below-map death, death trigger; 10 tests`.
+- ⚑ **As executed (P4, loop run 2, 2026-10-13; 8eb4a0f + fix round bfcdbf9; one Opus leg MERGEABLE_WITH_FIXES):** G2
+  **195** then 0 (185 + 10); every plan number reproduced (census, surfaceY 544, drown hits 590…870, FG203 hits 1…241
+  / trigger 250, acid frame 3, stroke −1300, band, below-map 1700); no earlier number and no golden moved. The E2 carry
+  landed: `SpriteBlitter.lightFace` builds the underwater light variant (`DrawLightOverFace`, decompile l. 15240–15262:
+  the flipped light passes the water row unclamped, the shortened height is stored back for later lights) — the old
+  `.underwaterLight` refusal assert in `DrawEffectTests` was replaced by pixel asserts. Out-of-Files, necessary:
+  `PlayerState.swift` (803 stop, liquid counter, bubble cooldown), `SpriteSlot.swift` (surface `+0x148`),
+  `Breathing.swift` / `PlayerTiles.swift` / `GroundCeilingEffects.swift` (call sites, the bubble's Effect arms), bank
+  note `draw-effects.md` §3. Bubble 0x410 has no below-view kill (the disasm `10061584..10061604` jumps to the tail;
+  the decompile nests the 0x4b2–0x4b4 kill away from the 0x410 arm — reviewer confirmed). Material-2 surface stop is a
+  `PlayerCue .stopIfPlaying` before snd 450 (order kept) rather than a `soundStops` entry — **S1 reconciles**. Face
+  inset assumed 0 [MED]. Fix round (asserts only): the quicksand kind-5 path pinned on a synthetic grid (0xf, −8, 0xc0,
+  ground 3, pull +8), heal/breath boundaries, the first `+0x11c` clamp, flotation cap, died-in-liquid mixed case, the
+  underwater light flip / store-back / ripple row; three `<`→`<=` cap mutants are equivalent (write back the compared
+  value). `SpriteWorld.playerDead` (`_DAT_1009ffa8`) is set only after the game loop exits (l. 5303) → **W4**. The P3
+  fix round (6fd7484) was re-reviewed by P4's leg: all three changes confirmed against the dump.
 
 #### P5 — minor — `.PlayerScroll` (replaces ◇ `CameraFocusDriver`) (→ 188) ◈
 - **Files:** `Sources/FerazelCore/Camera/{PlayerScroll,Camera}.swift`, delete `Sources/FerazelCore/Camera/CameraFocusDriver.swift`,
@@ -735,6 +751,28 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   L 530 at frame 21, −420 at 22, −895 → −4 at 23) · `testLookAheadDecayOvershoot` (LA4 0x300 → 0x100 → −0x100 stays;
   LA5 no decay with the facing).
 - **Commit:** `FerazelCore: PlayerScroll (freeze/follow/ease, look-ahead) replaces the Phase-1 focus driver; camera snap vetoes; 8 tests`.
+- ⚑ **As executed (P5, loop run 2, 2026-10-13; de8d714 + fix round 46a6984; one Opus leg MERGEABLE_WITH_FIXES + an Opus
+  re-review of the fix round MERGEABLE):** G2 **203** then 0 (195 + 8); all eight plan numbers reproduced; the focus
+  driver and its arrow-key pan are gone (the app had no wiring of its own); app builds. `PlayerState` renames
+  `startX/startY` → `focusX/focusY` (fd44/fd40), `flag5f58` → `scrollLatch`, `_DAT_1009fd34` = `cameraSnapVeto` (writers:
+  the riding arm and the side push, l. 44542 / 46363 — it fires once W1 adds rideable platforms; the 0x57a veto too).
+  ◈ `testPanFrameGoldens` (the camera now follows the walking player, who clings at x 146 from frame 10; target v =
+  groundY 211 − 0xc0 = 19, h clamped to 0): frame 30 `be2b8e2e6631b1a7 → 172596fa2f3b6c58`, frame 60
+  `3ec51d436e278776 → cc9786ba763d383a`, chain `967803e69d2ceaf6 → b4230ba5a643c5b5`, scrolls [4,10]/[226,10] → [0,19];
+  first-frame goldens unchanged. **Orchestrator ruling (Invariant-10 STOP, follow the binary):**
+  `testCrunchKind3Collapses`' session section was measured with the ◇ camera: with the real camera at (978,226) on
+  iteration 1, Crawler 1712 (layer 0xb) activates right after the player and the potion stays idle, so the overlays are
+  handled the frame they are made — the ten setTiles land on iteration **18 → 17** and the potion twinkle is gone
+  (traced at HEAD and with P5). Fix round: the camera's snap-veto inputs and `.HandleIdleSprites`' player rect read
+  the **live** player (`*_DAT_1009fdd8`, raw `100081e8`, `1000b8ac..b8ec`), not the session's stored id (production:
+  both 17, nothing moves; the respawning crunch test re-measured: the sprite after the Crawler is now Roach 0x6b8 id 59,
+  not overlay id 99 — two Roaches activated by the live player's rect); band edges pinned exactly (`1004c590..1004c5cc`,
+  PtInRect half-open), look-ahead srawi, freeze/ease/groundY boundaries, session camera wiring asserted (the right-arm
+  `>>2`/`/4` mutants are equivalent: vx > 0x100 only). Bank note: `engine.md` after R5 — in the real session level 1's
+  v settles at −10 eased and the scroll v stays 0 (the frame-1 lift to y 123), so `testCameraStartScroll` guards the
+  Camera arithmetic only. **Carry → W1** (with the `.ActiveToIdleSprite` carry): the idle rect looks the player up with
+  `sprite(id:)` (linked only) while the binary reads the pointer regardless (`FerazelSession.swift` ~l. 233) [LOW,
+  latent]; `PlayerTileTests` ~l. 769–774 comments an iteration-1 rect it does not assert.
 
 ### Wave 2.3 — the world (one lane, in order: W1 → W2a → W2b → W3 → W4; W1 after P4 for raft flotation, W3 after P3)
 

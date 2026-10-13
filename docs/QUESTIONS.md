@@ -32,7 +32,17 @@ brother's Windows machine.
 
 ## Open
 
-_(none yet — the first run writes here)_
+### Q1 — 2026-10-13 — Remove the leftover loop-1 worktree and branch?
+Context: Loop run 1 ended its turn while a background implementer was still working. In the looper's headless mode
+that exits the session and kills the agent, so run 1 merged nothing. It left uncommitted, superseded partial P4 edits
+in `.claude/worktrees/loop-1-20261013-180951` (branch `loop/1-20261013-180951`, at 17f5b04). Run 2 rebuilt P4 + P5
+from scratch and merged them, and later runs now dispatch subagents in the foreground. The loop never deletes what it
+did not create.
+Options: (a) delete it: `git worktree remove --force .claude/worktrees/loop-1-20261013-180951 && git branch -D
+loop/1-20261013-180951`; (b) keep it.
+Recommendation: a. Nothing in it is needed; everything was rebuilt, reviewed and merged.
+Blocks: nothing.
+Answer:
 
 ## Answered
 
