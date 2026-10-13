@@ -64,8 +64,10 @@ public struct PlayerState: Equatable, Sendable {
     public var lastRidden: Int?
     /// `PTR_DAT_100a05a4`: riding a magic carpet (ridden type 0x438/0x439).
     public var carpet = false
-    /// `*_DAT_1009fd34`: set while riding (the camera's snap veto, P5) and by the side push.
-    public var ridingCamera = false
+    /// `*_DAT_1009fd34` (u8): the camera's one-shot snap veto (P5), read and cleared by `.FindUpperLeftCorner`'s snap
+    /// test. Two writers set it: riding a sprite (row 3, decompile l. 44542, `Player.riding`) and the level side push
+    /// while grounded or riding (row 37, l. 46363, `Player.sidePush`).
+    public var cameraSnapVeto = false
     /// `*_DAT_1009fe68` / `*_DAT_1009fe64`: the player's whole-px x / y (`.SetupPlayerSprite`; rewritten by
     /// `.ApplySpeedAndSeparateFromTiles` and the Handle's position row).
     public var pixelX: Int16 = 0

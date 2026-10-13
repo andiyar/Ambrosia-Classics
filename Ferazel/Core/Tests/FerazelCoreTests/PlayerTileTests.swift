@@ -766,8 +766,11 @@ final class PlayerTileTests: XCTestCase {
         // Re-measured with `.PlayerScroll` (P5; P3's 18 was measured under the ◇ focus driver, which kept the view at
         // the level start): the camera follows the spawned player, so iteration 1's `.HandleIdleSprites` window
         // activates the ceiling Crawler 1712 (layer 0xb) and never reaches the potion 0xc84 at (291, 123) — no Bonus
-        // twinkle on any iteration. On iteration 2 the Crawler sits between the player and the end of layer 0xb, so the
-        // player's saved next (`lwz r31,0x68(r3)`) is the Crawler, the two overlays are inserted after it, and the walk
+        // twinkle on any iteration. The window is the view's rect ∪ the live player's (`*_DAT_1009fdd8`) `+0x34` rect
+        // (l. 4302–4308): on iteration 1 that rect is still at (1083, 0) (`.MTNewSprite`'s x/y quirk — his first Handle
+        // has not run); from iteration 2 it is at (3806, 1083), so iteration 2's pass also activates the two Roaches
+        // 0x6b8 (layer 0xb, (2275, 1130) and (3168, 572)) at the tail of layer 0xb, after the Crawler. The player's
+        // saved next (`lwz r31,0x68(r3)`) is the Crawler, the two overlays are inserted after the Roaches, and the walk
         // reaches them the frame they are made (`+0x46` 15 → 14 on iteration 2): the collapse lands one frame earlier.
         let session = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()),
                                           prefs: FerazelPrefs(), level: 1)
@@ -782,12 +785,16 @@ final class PlayerTileTests: XCTestCase {
         let crawler = try XCTUnwrap(session.world.active.sprites.first { $0.type == 0x6b0 })
         XCTAssertEqual(crawler.layer, 0xb)
         XCTAssertEqual(session.world.active.next(after: spawned), crawler.id)
+        XCTAssertFalse(session.world.active.sprites.contains { $0.type == 0x6b8 })   // the Roaches come on iteration 2
         XCTAssertTrue(potionIdle())
         frames.append(session.step(keys: KeyState()))
         let made = session.world.active.sprites.filter { $0.type == 0x4ba }
         XCTAssertEqual(made.count, 2)
         XCTAssertEqual(session.world.active.next(after: spawned), crawler.id)
-        XCTAssertEqual(made.first.map(\.id), session.world.active.next(after: crawler.id))
+        let roaches = session.world.active.sprites.filter { $0.type == 0x6b8 }
+        XCTAssertEqual(roaches.map { [$0.x, $0.y, Int($0.layer)] }, [[2275, 1130, 0xb], [3168, 572, 0xb]])
+        XCTAssertEqual(session.world.active.next(after: crawler.id), roaches.first?.id)
+        XCTAssertEqual(roaches.last.flatMap { session.world.active.next(after: $0.id) }, made.first?.id)
         XCTAssertEqual(made.map(\.phase), [14, 14])                     // handled on the frame they were made
         for _ in 3...17 {
             frames.append(session.step(keys: KeyState()))

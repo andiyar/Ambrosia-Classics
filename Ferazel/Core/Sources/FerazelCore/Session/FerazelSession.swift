@@ -227,9 +227,10 @@ public final class FerazelSession {
             world.parity.toggle()
             ops.draws.append(.copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: prefs.plainCopy == 0))
         }
-        // `.HandleIdleSprites`: the window takes the player's `+0x34` rect at its `+0xc`/`+0xa` (l. 4302–4308).
+        // `.HandleIdleSprites`: the window takes the live player's (`*_DAT_1009fdd8`) `+0x34` rect at its `+0xc`/`+0xa`
+        // (l. 4302–4308).
         let bounds = faceBounds
-        let playerRect = world.active.sprite(id: playerID).map { p in
+        let playerRect = world.playerID.flatMap { world.active.sprite(id: $0) }.map { p in
             IdleSprites.Rect(top: p.y + p.hotRect.top, left: p.x + p.hotRect.left, bottom: p.y + p.hotRect.bottom,
                              right: p.x + p.hotRect.right)
         }
@@ -285,12 +286,12 @@ public final class FerazelSession {
     /// (cleared by the snap test). The scroll point it leaves (`PTR_DAT_1009fe78`) is what `.PlayerScroll` reads.
     private func findUpperLeftCorner(graphics: Int16) {
         let p = world.player
-        let s = world.active.record(id: playerID)
+        let s = world.playerID.flatMap { world.active.record(id: $0) }   // the live `*_DAT_1009fdd8`, not `playerID`
         let ridden = s?.ridden.flatMap { world.active.record(id: $0) }
-        world.player.ridingCamera = camera.findUpperLeftCorner(
+        world.player.cameraSnapVeto = camera.findUpperLeftCorner(
             focusX: Int(p.focusX), focusY: Int(p.focusY), playerVX: Int(p.lastVX), snapArmed: p.snapArmed,
             ridingVeto: ridden?.type == Camera.snapVetoRiddenType,
-            inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.ridingCamera, graphics: graphics)
+            inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.cameraSnapVeto, graphics: graphics)
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
     }

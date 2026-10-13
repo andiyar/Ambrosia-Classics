@@ -339,7 +339,7 @@ public enum Player {
     static func riding(_ w: SpriteWorld, id: Int) {
         if let r = w.player.ridden, let solid = w.active.record(id: r) {
             w.player.carpet = solid.type == 0x438 || solid.type == 0x439
-            w.player.ridingCamera = true
+            w.player.cameraSnapVeto = true
             w.player.idle = 0
             if w.player.lastRidden == nil && solid.type == 0x6a4 {
                 let rate = w.rng.soundRate()
@@ -561,7 +561,7 @@ public enum Player {
             }
         } else {
             w.active.update(id: id) { $0.x256 &+= v >> 2 }
-            w.player.ridingCamera = true
+            w.player.cameraSnapVeto = true
         }
     }
 

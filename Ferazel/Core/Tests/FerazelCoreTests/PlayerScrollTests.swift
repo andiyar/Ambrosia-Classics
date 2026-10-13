@@ -69,6 +69,28 @@ final class PlayerScrollTests: XCTestCase {
         PlayerScroll.scroll(&q, groundKind: 0, inWind: false)
         XCTAssertEqual(q.focusY, 190)
         XCTAssertFalse(q.scrollLatch)
+        // fd90 = ground y still freezes (`cmpw r0,r3; bgt` at `1004c660`: only fd90 > ground y skips), latch dropped.
+        var eq = state(y: 202, focusY: 190, groundY: 202, latch: true)
+        PlayerScroll.scroll(&eq, groundKind: 0, inWind: false)
+        XCTAssertEqual(eq.focusY, 190)
+        XCTAssertFalse(eq.scrollLatch)
+        // Vetoes of the freeze only (ridden `0558`, easing `06dc`: not in path B's list) → path C, up by
+        // max((230 − 195) / 7, 5): 225, easing 1 (a freeze would hold 230). The rope `0588` vetoes both → path B, exact.
+        var ridden = state(y: 190, focusY: 230, groundY: 195, latch: false)
+        ridden.ridden = 5
+        PlayerScroll.scroll(&ridden, groundKind: 0, inWind: false)
+        XCTAssertEqual(ridden.focusY, 225)
+        XCTAssertTrue(ridden.scrollEasing)
+        var easing = state(y: 190, focusY: 230, groundY: 195, latch: false)
+        easing.scrollEasing = true
+        PlayerScroll.scroll(&easing, groundKind: 0, inWind: false)
+        XCTAssertEqual(easing.focusY, 225)
+        XCTAssertTrue(easing.scrollEasing)
+        var rope = state(y: 190, focusY: 230, groundY: 195, latch: false)
+        rope.rope = true
+        PlayerScroll.scroll(&rope, groundKind: 0, inWind: false)
+        XCTAssertEqual(rope.focusY, 190)
+        XCTAssertFalse(rope.scrollEasing)
     }
 
     func testFallEaseDown() {
@@ -90,6 +112,13 @@ final class PlayerScrollTests: XCTestCase {
         XCTAssertEqual(p.focusY, 300)
         XCTAssertFalse(p.scrollEasing)
         XCTAssertTrue(p.scrollLatch)
+        // Landing exactly on fd90 ends the ease (`cmpw r0,r4; blt` at `1004c768`: only focus < fd90 keeps easing):
+        // 196 + max(6 / 6, 6) = 202.
+        var x = state(y: 202, focusY: 196, groundY: 150, latch: false, scrollV: 64)
+        PlayerScroll.scroll(&x, groundKind: 0, inWind: false)
+        XCTAssertEqual(x.focusY, 202)
+        XCTAssertFalse(x.scrollEasing)
+        XCTAssertTrue(x.scrollLatch)
     }
 
     func testLandHigherEaseUp() {
@@ -111,6 +140,13 @@ final class PlayerScrollTests: XCTestCase {
         // Latched again: path B, exact.
         PlayerScroll.scroll(&p, groundKind: 4, inWind: false)
         XCTAssertEqual(p.focusY, 140)
+        // Landing exactly on the ground y ends it (`cmpw r0,r4; bgt` at `1004c7d4`: only focus > ground y keeps
+        // easing): 155 − max(5 / 7, 5) = 150.
+        var x = state(y: 140, focusY: 155, groundY: 150, latch: false)
+        PlayerScroll.scroll(&x, groundKind: 4, inWind: false)
+        XCTAssertEqual(x.focusY, 150)
+        XCTAssertFalse(x.scrollEasing)
+        XCTAssertTrue(x.scrollLatch)
     }
 
     func testOutOfBandSnaps() {
@@ -121,18 +157,25 @@ final class PlayerScrollTests: XCTestCase {
         XCTAssertEqual(p.focusY, 300)
         XCTAssertFalse(p.scrollEasing)
         XCTAssertFalse(p.scrollLatch)
-        // The band's edges: v 287 is in (eases), 15 is out (snaps); the bottom is exclusive (`PtInRect`).
-        var q = state(y: 287, focusY: 202, groundY: 202, latch: false)
-        PlayerScroll.scroll(&q, groundKind: 0, inWind: false)
-        XCTAssertEqual(q.focusY, 216)
-        var r = state(y: 15, focusY: 202, groundY: 202, latch: false)
-        PlayerScroll.scroll(&r, groundKind: 0, inWind: false)
-        XCTAssertEqual(r.focusY, 15)
-        // h: the band is cols scrollH .. scrollH + 0x25f.
-        var s = state(y: 230, focusY: 202, groundY: 202, latch: false)
-        s.centreX = 0x260
-        PlayerScroll.scroll(&s, groundKind: 0, inWind: false)
-        XCTAssertEqual(s.focusY, 230)
+        // The band's four edges, each pinned in and out (raw `1004c590..1004c5cc`: `SetRect(r, h, v, h + 0x260,
+        // v + 0x180)`, top `addi 0x10`, bottom `subi 0x60`; `PtInRect(fd90, fd94)` at `1004c670` / `1004c6dc`: left /
+        // top inclusive, right / bottom exclusive). Scroll point (100, 64): rows 80..351, cols 100..707. An in-band
+        // y ≤ ground y freezes (focus 202 holds); an in-band y > ground y eases; out of band snaps (focus = y).
+        func edge(x: Int16 = 300, y: Int16) -> Int16 {
+            var e = state(y: y, focusY: 202, groundY: 202, latch: false, scrollV: 64)
+            e.scrollH = 100
+            e.centreX = x
+            PlayerScroll.scroll(&e, groundKind: 0, inWind: false)
+            return e.focusY
+        }
+        XCTAssertEqual(edge(y: 80), 202)                     // top = scrollV + 16: in (freeze)
+        XCTAssertEqual(edge(y: 79), 79)                      // scrollV + 15: out (snap)
+        XCTAssertEqual(edge(y: 351), 226)                    // bottom − 1 = scrollV + 287: in (ease 202 + 149 / 6)
+        XCTAssertEqual(edge(y: 352), 352)                    // scrollV + 288: out (snap)
+        XCTAssertEqual(edge(x: 100, y: 230), 208)            // left = scrollH: in (ease 202 + 6)
+        XCTAssertEqual(edge(x: 99, y: 230), 230)             // scrollH − 1: out
+        XCTAssertEqual(edge(x: 707, y: 230), 208)            // scrollH + 607: in
+        XCTAssertEqual(edge(x: 708, y: 230), 230)            // scrollH + 608: out
     }
 
     // MARK: - the look-ahead row
@@ -159,6 +202,15 @@ final class PlayerScrollTests: XCTestCase {
         XCTAssertEqual(q.lookAhead, 0x40)
         for _ in 0..<200 { PlayerScroll.lookAhead(&q, vx: -0x76c) }
         XCTAssertEqual(q.lookAhead, -0x5000)
+        // Left arm, both adds `srawi r0,r0,0x2` (raw `100514f0`, `1005150c`): −0x101 >> 2 = −0x41 (C's / 4 gives
+        // −0x40). From 0: −0x41. From 0x100: 0xbf, still > 0 → again: 0x7e. (The right arm's two srawi see vx > 0x100
+        // only, where >> 2 and / 4 agree.)
+        var n = PlayerState()
+        PlayerScroll.lookAhead(&n, vx: -0x101)
+        XCTAssertEqual(n.lookAhead, -0x41)
+        n.lookAhead = 0x100
+        PlayerScroll.lookAhead(&n, vx: -0x101)
+        XCTAssertEqual(n.lookAhead, 0x7e)
     }
 
     func testLookAheadReversal() {

@@ -220,7 +220,13 @@ final class SessionTests: XCTestCase {
         // sets to the sprite origin (83, 143); `.PlayerScroll` moves it to the hot-rect centre (fd94, fd90) =
         // origin + (50, 59) = (133, 202) on the first Handle (R5's measurement: a player standing at the origin's
         // centre; the session's player is lifted on frame 1 — `testPlayerStartPose`).
-        XCTAssertEqual([83 + 0x32, 143 + 0x3b], [133, 202])
+        // (50, 59) is the standard hot rect's centre (row 39: l + ((r − l) >> 1), t + ((b − t) >> 1)), and
+        // `.SetupPlayerSprite` leaves the focus at the origin.
+        let hot = HandleKeys.standardHotRect
+        XCTAssertEqual([hot.left + ((hot.right - hot.left) >> 1), hot.top + ((hot.bottom - hot.top) >> 1)], [0x32, 0x3b])
+        let w0 = SpriteWorld(level: L)
+        XCTAssertNotNil(Player.spawn(world: w0, x: 83, y: 143))
+        XCTAssertEqual([w0.player.focusX, w0.player.focusY, w0.player.centreX, w0.player.centreY], [83, 143, 133, 202])
         // Level start (l. 5209): ease from (−125, −65) toward (−224, −49): (−141, −63) → scroll (0, 0).
         cam.findUpperLeftCorner(focusX: 83, focusY: 143)
         XCTAssertEqual([cam.h, cam.v, cam.scrollH, cam.scrollV], [-141, -63, 0, 0])
@@ -368,6 +374,67 @@ final class SessionTests: XCTestCase {
         XCTAssertTrue(kp.scrollLatch && kp.snapArmed && !kp.scrollEasing)
         XCTAssertEqual([kp.scrollH, kp.scrollV], [k.camera.scrollH, k.camera.scrollV])
         XCTAssertEqual(k.active.sprite(id: k.playerID)?.face, FaceRef(pict: 1020, index: 7, set: .encoded))
+
+        // Each `.FindUpperLeftCorner` input reaches the camera from the player's globals and the live player
+        // `*_DAT_1009fdd8` (vx `fd3c`, `uRam100a5114`, `+0xdc` → type 0x57a, `+0x11c`, `+0x120`, `fd34`): with a focus
+        // whose target is 15 px off the 16-px grid, each one alone vetoes the snap the base case takes.
+        let rider = try XCTUnwrap(k.active.sprites.first { $0.type == Camera.snapVetoRiddenType }).id
+        func camH(_ set: (FerazelSession) -> Void) throws -> (got: Int, snapped: Int, unsnapped: Int) {
+            let c = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+            _ = c.step(keys: KeyState())
+            c.world.player.focusX = 2015
+            c.world.player.focusY = 400
+            c.world.player.lastVX = 0
+            c.world.player.snapArmed = true
+            c.world.player.cameraSnapVeto = false
+            set(c)
+            var snapped = c.camera, unsnapped = c.camera
+            snapped.findUpperLeftCorner(focusX: 2015, focusY: 400)
+            unsnapped.findUpperLeftCorner(focusX: 2015, focusY: 400, playerVX: 0x100)
+            _ = c.step(keys: KeyState())
+            return (c.camera.h, snapped.h, unsnapped.h)
+        }
+        let base = try camH { _ in }
+        XCTAssertNotEqual(base.snapped, base.unsnapped)
+        XCTAssertEqual(base.got, base.snapped)
+        let vetoes: [(String, (FerazelSession) -> Void)] = [
+            ("vx", { $0.world.player.lastVX = -0x100 }),
+            ("snapArmed", { $0.world.player.snapArmed = false }),
+            ("fd34", { $0.world.player.cameraSnapVeto = true }),
+            ("0x57a", { c in c.world.active.update(id: c.world.playerID!) { $0.ridden = rider } }),
+            ("+0x11c", { c in c.world.active.update(id: c.world.playerID!) { $0.waterRow = 1 } }),
+            ("+0x120", { c in c.world.active.update(id: c.world.playerID!) { $0.lastWater = 1 } }),
+            // The live pointer, not the session's level-start id: a respawned player's `+0x120` vetoes.
+            ("respawn", { c in
+                _ = c.world.active.remove(id: c.playerID)
+                let n = Player.spawn(world: c.world, x: 3806, y: 1083)!
+                c.world.player.focusX = 2015
+                c.world.player.focusY = 400
+                c.world.active.update(id: n) { $0.lastWater = 1 }
+            })]
+        for (name, set) in vetoes {
+            XCTAssertEqual(try camH(set).got, base.unsnapped, name)
+        }
+
+        // Row 39's ground-y writer (`0740 = +0xe`): grounded, riding, clinging (`climb`) or `05a0` — each alone.
+        let g = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        _ = g.step(keys: KeyState())
+        let gid = try XCTUnwrap(g.world.playerID)
+        g.world.active.update(id: gid) { $0.groundKind = 0 }
+        let cy = try XCTUnwrap(g.world.active.sprite(id: gid)).centre.y
+        func groundY(_ set: (SpriteWorld) -> Void) -> Int16 {
+            g.world.player.groundCentreY = -1
+            g.world.player.ridden = nil
+            g.world.player.climb = 0
+            g.world.player.flag05a0 = false
+            set(g.world)
+            Player.positions(g.world, id: gid)
+            return g.world.player.groundCentreY
+        }
+        XCTAssertEqual(groundY { _ in }, -1)
+        XCTAssertEqual(groundY { $0.player.climb = 1 }, Int16(cy))
+        XCTAssertEqual(groundY { $0.player.ridden = rider }, Int16(cy))
+        XCTAssertEqual(groundY { $0.player.flag05a0 = true }, Int16(cy))
     }
 
     // MARK: - `.HandleBonusSprite`'s item-light twinkle
