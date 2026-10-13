@@ -227,6 +227,10 @@ public enum SetupFaces {
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
             case 0x5c8...0x5d1:                                // maces / balls (l. 62312)
                 face(Int16(t), 0, .setupCached)                // `+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`
+                // On a level's first load that pointer is still the placeholder (PICT 150) face: the binary copies it
+                // here, so frame 1 can carry PICT 150 until the Handle's per-frame re-face; Core takes the cached face
+                // (`.setupCached`). Not visible on L1 (pendulums at x 2656 / 2756, off screen at the start). 1489
+                // (0x5d1): no shipped PICT and no level places it.
                 // `+0xb0 = p1` (0 → 0xb); modes 1, 2 move the sprite onto a programmed path (not transcribed). The rest
                 // (W2a): `BackgroundSprite.setupMace` — rect, the written-back p2 / p3, one-way, `+0x88`, `+0xa6`; the
                 // radial block and the mace chains are made after the insert (`spawnLevelSprites`).
@@ -471,6 +475,8 @@ public enum SetupFaces {
                 if BackgroundSprite.maces.contains(e.type) {
                     // `.MakeRadial` + `.MakeRadiusSprites` inside the 1480–1489 Setup (W2a): the mace chains are
                     // `.MTNewSprite`s of their own (no `FastRand`). 1480–1489 always spawn now (`SpriteClassTable`).
+                    // ⚑ The throwaway `SpriteWorld` here has its own seed-1 `rng`, not `rng` above: a `FastRand` draw
+                    // added to `makeRadial` would be swallowed silently — thread the stream through first.
                     let w = SpriteWorld(level: c.level, active: out.active)
                     BackgroundSprite.makeRadial(w, id: id, record: e.record)
                     out.active = w.active

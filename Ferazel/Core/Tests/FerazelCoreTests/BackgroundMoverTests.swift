@@ -280,7 +280,12 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(w.player.coinsLost, 5)
         XCTAssertEqual(coins, 6)
         XCTAssertEqual(w.globals.coins, 0)
-        XCTAssertEqual(w.rng.seed, r.seed)                                // every draw, in order
+        // Every draw Core makes, in order. Not yet every draw the binary makes: the blood spray (`.BloodSpray`, the E1a
+        // seam) draws before the 508 rates, and each coin's Bonus Setup (`.SetupBonusSprite` M l. ~52576–52580, ≥ 3
+        // draws per coin; Phase 4) draws between its dx and vx draws. rate1 / rate2 / rate3 below are measured against
+        // those placeholders and move when E1a / Phase 4 land; the session's stream drifts only from the first pendulum
+        // hit on.
+        XCTAssertEqual(w.rng.seed, r.seed)
         XCTAssertEqual([s.vx, s.vy, Int32(s.flash)], [0x100, 0x40 - 1000, 0xc])   // the ball's vx is 0
         XCTAssertEqual([w.player.stun, w.player.carpetLock, w.player.exertion, w.player.climb, w.player.pullUp],
                        [1, 5, 7 + 0x50, 0, 0])
@@ -294,6 +299,15 @@ final class BackgroundMoverTests: XCTestCase {
             PlayerCue(call: .threeDRand, snd: 489, priority: 1, volume: 0x100, position: pos, rate: rate3),
         ])
         XCTAssertEqual([rate1, rate2, rate3], [50000 + 2564, 65000 + 2302, 0xec77 + 475])
+        // Uncapped (`G+0x10` = 9): the arm's coins 5 → FastRand(3) + 5 − 1 = 2 + 4 = 6 lost, 3 left.
+        let (wG, pG) = try world()
+        wG.globals.coins = 9
+        let mG = try addBackground(wG, Placement(index: 7, flag: 1, byte1: 0, type: 1485, p1: 12, p2: 120, p3: 30,
+                                                 p4: 0, y: 1000, x: 2000))
+        wG.active.update(id: mG) { $0.classWord170 = 1 }
+        wG.active.update(id: pG) { $0.hp = 0x230 }
+        HitPlayerSprite.hit(wG, player: pG, other: mG)
+        XCTAssertEqual([wG.player.coinsLost, wG.globals.coins], [6, 3])
 
         // Invulnerable: no hurt, `+0x116` not re-set; harmless (`+0x170` 0): neither.
         w.player.cues = []
@@ -302,6 +316,14 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(w.active.sprite(id: p)?.invulnerable, 5)
         XCTAssertEqual(w.active.sprite(id: p)?.hp, 0x230 - 224)
         w.active.update(id: p) { $0.invulnerable = 0 }
+        // An idled pendulum (`+0x4c` 0, `handleCleared`) matches no arm's Handle: harmful or not, no hurt.
+        w.active.update(id: m) { $0.handleCleared = true }
+        let seedIdled = w.rng.seed
+        HitPlayerSprite.hit(w, player: p, other: m)
+        XCTAssertEqual([w.active.sprite(id: p)?.hp, w.active.sprite(id: p)?.invulnerable], [0x230 - 224, 0])
+        XCTAssertEqual(w.player.cues, [])
+        XCTAssertEqual(w.rng.seed, seedIdled)
+        w.active.update(id: m) { $0.handleCleared = false }
         w.active.update(id: m) { $0.classWord170 = 0 }
         HitPlayerSprite.hit(w, player: p, other: m)
         XCTAssertEqual(w.active.sprite(id: p)?.invulnerable, 0)
@@ -326,6 +348,27 @@ final class BackgroundMoverTests: XCTestCase {
         HitPlayerSprite.hit(w2, player: p2, other: ball)
         XCTAssertEqual(w2.active.sprite(id: p2)?.ridden, ball)
         XCTAssertEqual(w2.active.sprite(id: ball)?.rider, p2)
+        // Landed on the top: y = solid top (1060 + 0x16) − rect bottom 85 = 997, vy 0.
+        XCTAssertEqual([w2.active.sprite(id: p2)?.y, w2.active.sprite(id: p2).map { Int($0.vy) }], [997, 0])
+        // d decides the side (`.RectBounce` l. 36196–36442: the previous centre `pos + d − (v >> 8)` against the solid's
+        // centre lines (2040, 1110); gaps from the previous rect). One pixel either side of each line, vx 0, vy 0x300:
+        // - player (1990, 1010): gapAbove −10 ≥ gapLeft −41 > gapBelow −97 — prevMidY = cy − 53: 1109 lands on the top
+        //   (y 997, vy 0, ridden), 1110 is from the left (x 2012 − 62 = 1950, y and vy kept);
+        // - player (1990, 1051): gapAbove −51 < gapLeft = gapRight −41 — prevMidX = cx: 2039 from the left (x 1950),
+        //   2040 from the right (x 2068 − 38 = 2030).
+        func bounce(_ x: Int, _ y: Int, centre cx: Int, _ cy: Int) throws -> [Int] {
+            w2.active.update(id: p2) {
+                $0.x = x; $0.y = y; $0.x256 = Int32(x) << 8; $0.y256 = Int32(y) << 8; $0.vx = 0; $0.vy = 0x300
+                $0.centre = SpriteSlot.Point(x: cx, y: cy); $0.ridden = nil
+            }
+            HitPlayerSprite.hit(w2, player: p2, other: ball)
+            let q = try XCTUnwrap(w2.active.sprite(id: p2))
+            return [q.x, q.y, Int(q.vy), q.ridden == ball ? 1 : 0]
+        }
+        XCTAssertEqual(try bounce(1990, 1010, centre: 2000, 1162), [1990, 997, 0, 1])
+        XCTAssertEqual(try bounce(1990, 1010, centre: 2000, 1163), [1950, 1010, 0x300, 0])
+        XCTAssertEqual(try bounce(1990, 1051, centre: 2039, 1100), [1950, 1051, 0x300, 0])
+        XCTAssertEqual(try bounce(1990, 1051, centre: 2040, 1100), [2030, 1051, 0x300, 0])
 
         // `.HurtPlayer` itself (l. 47955–48105).
         let (w3, p3) = try world()
@@ -359,6 +402,27 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual([rate, Int32(pick)], [65000 + 2564, 0])
         // coins 3 > 2 → R(3) + 2, capped at G+0x10 = 1: one coin, its 3D Rand cue and five draws.
         XCTAssertEqual([w3.globals.coins, w3.player.coinsLost], [0, 1])
+        // Invulnerable (`+0x116` 5): `.HurtSprite` refuses → 0, the player untouched (no knockback, stun, coin, cue).
+        w3.active.update(id: p3) { $0.invulnerable = 5 }
+        w3.globals.coins = 4
+        let before = (try XCTUnwrap(w3.active.sprite(id: p3)), w3.player, w3.globals, w3.rng.seed)
+        XCTAssertFalse(HurtPlayer.hurt(w3, player: p3, attacker: atk, damage: 0x70, blood: true, invulnerable: 0x3c,
+                                       coins: 5))
+        XCTAssertEqual(w3.active.sprite(id: p3), before.0)
+        XCTAssertEqual(w3.player, before.1)
+        XCTAssertEqual(w3.globals, before.2)
+        XCTAssertEqual(w3.rng.seed, before.3)
+        // The R(3) choice on seeds 2 and 3 (R(10000) then R(3): 5129, 1 / 7693, 2) → 402 / 403.
+        for (seed, snd): (Int32, Int16) in [(2, 402), (3, 403)] {
+            let (w5, p5) = try world()
+            let a5 = w5.active.insert(SpriteSlot(type: 1485, x: 0, y: 0))
+            w5.active.update(id: a5) { $0.hp = 1 }
+            w5.active.update(id: p5) { $0.hp = 0x230 }
+            w5.rng.seed = seed
+            XCTAssertTrue(HurtPlayer.hurt(w5, player: p5, attacker: a5, damage: 0x70, blood: false, invulnerable: 1,
+                                          coins: 0))
+            XCTAssertEqual(w5.player.cues.map(\.snd), [508, snd])
+        }
         // A positive attacker vx pushes right; an attacker with HP ≥ 1 needs no exemption; ≤ 2 coins draw no R(3);
         // G+0x10 = 0 → no coin, no cue.
         let (w4, p4) = try world()
