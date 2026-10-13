@@ -761,18 +761,43 @@ final class PlayerTileTests: XCTestCase {
         XCTAssertEqual(w.rng.seed, expected.seed)
         // The same crunch through `FerazelSession.step` (P3 wiring): the level-start player is replaced by one spawned
         // at the crunch spot (its held item and trails stay, inert). The ten `setTile`s reach `FrameOps.draws` on
-        // iteration 18 inside the handle pass — after `.WrapCopyToScreen` and the potion's twinkle (earlier in the
-        // list), from the overlay's Handle (layer 0xb), before `.WrapEraseSprites` — as `.ChangedTile @ 10012a50`
-        // redraws each cell at once.
+        // iteration 17 inside the handle pass — after `.WrapCopyToScreen`, from the overlay's Handle (layer 0xb),
+        // before `.WrapEraseSprites` — as `.ChangedTile @ 10012a50` redraws each cell at once.
+        // Re-measured with `.PlayerScroll` (P5; P3's 18 was measured under the ◇ focus driver, which kept the view at
+        // the level start): the camera follows the spawned player, so iteration 1's `.HandleIdleSprites` window
+        // activates the ceiling Crawler 1712 (layer 0xb) and never reaches the potion 0xc84 at (291, 123) — no Bonus
+        // twinkle on any iteration. On iteration 2 the Crawler sits between the player and the end of layer 0xb, so the
+        // player's saved next (`lwz r31,0x68(r3)`) is the Crawler, the two overlays are inserted after it, and the walk
+        // reaches them the frame they are made (`+0x46` 15 → 14 on iteration 2): the collapse lands one frame earlier.
         let session = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()),
                                           prefs: FerazelPrefs(), level: 1)
         _ = session.world.active.remove(id: session.playerID)
-        XCTAssertNotNil(Player.spawn(world: session.world, x: 3806, y: 1083))
-        var frames: [FrameOps] = []
-        for _ in 1...18 { frames.append(session.step(keys: KeyState())) }
-        XCTAssertEqual(frames.prefix(17).map { $0.draws.filter { if case .setTile = $0 { true } else { false } }.count },
+        let spawned = try XCTUnwrap(Player.spawn(world: session.world, x: 3806, y: 1083))
+        func potionIdle() -> Bool {
+            session.world.idle.entries.contains { $0?.saved.type == 0xc84 && $0?.activeID == nil }
+                && !session.world.active.sprites.contains { $0.type == 0xc84 }
+        }
+        XCTAssertTrue(potionIdle())
+        var frames: [FrameOps] = [session.step(keys: KeyState())]
+        let crawler = try XCTUnwrap(session.world.active.sprites.first { $0.type == 0x6b0 })
+        XCTAssertEqual(crawler.layer, 0xb)
+        XCTAssertEqual(session.world.active.next(after: spawned), crawler.id)
+        XCTAssertTrue(potionIdle())
+        frames.append(session.step(keys: KeyState()))
+        let made = session.world.active.sprites.filter { $0.type == 0x4ba }
+        XCTAssertEqual(made.count, 2)
+        XCTAssertEqual(session.world.active.next(after: spawned), crawler.id)
+        XCTAssertEqual(made.first.map(\.id), session.world.active.next(after: crawler.id))
+        XCTAssertEqual(made.map(\.phase), [14, 14])                     // handled on the frame they were made
+        for _ in 3...17 {
+            frames.append(session.step(keys: KeyState()))
+            XCTAssertTrue(potionIdle())
+        }
+        XCTAssertEqual(frames.map { $0.draws.filter { if case .changeLightFace = $0 { true } else { false } }.count },
                        [Int](repeating: 0, count: 17))
-        let draws = frames[17].draws
+        XCTAssertEqual(frames.prefix(16).map { $0.draws.filter { if case .setTile = $0 { true } else { false } }.count },
+                       [Int](repeating: 0, count: 16))
+        let draws = frames[16].draws
         let tiles = draws.filter { if case .setTile = $0 { true } else { false } }
         XCTAssertEqual(tiles, [
             .setTile(col: 119, row: 36, fg: 0x1305), .setTile(col: 120, row: 36, fg: 0x1308),
@@ -781,10 +806,9 @@ final class PlayerTileTests: XCTestCase {
             .setTile(col: 121, row: 36, fg: 0x1308), .setTile(col: 120, row: 37, fg: 0x0004),
             .setTile(col: 121, row: 37, fg: 0x000a), .setTile(col: 120, row: 36, fg: 0x0300)])
         let copy = try XCTUnwrap(draws.firstIndex { if case .copyToScreen = $0 { true } else { false } })
-        let twinkle = try XCTUnwrap(draws.firstIndex { if case .changeLightFace = $0 { true } else { false } })
         let first = try XCTUnwrap(draws.firstIndex { if case .setTile = $0 { true } else { false } })
         let erase = try XCTUnwrap(draws.firstIndex { if case .wrapEraseSprites = $0 { true } else { false } })
-        XCTAssertEqual([copy + 1, twinkle + 1, first + 10], [twinkle, first, erase])
+        XCTAssertEqual([copy + 1, first + 10], [first, erase])
         XCTAssertEqual(session.world.tiles.fg.cell(col: 120, row: 36), 0x0300)
         // Strength 1 — a fall faster than 0x9c4 while crunch-capable (spinning): `+0xeb` 1 → the overlay is made (423, R(3))
         // and the player bounces off the block (raw `100552c8..100553f4`). Spawned 5 px above at vy 3000: row 23 → 3440;

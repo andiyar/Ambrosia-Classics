@@ -231,8 +231,8 @@ final class FrameGoldenTests: XCTestCase {
     }
 
     func testPanFrameGoldens() throws {
-        // 60 frames with keypad 6 held (action 1, the original default — P3; it walks the player and still drives the
-        // ◇ focus driver, so the camera is unchanged until P5), after the first frame.
+        // 60 frames with keypad 6 held (action 1, the original default — P3; it walks the player, and since P5 his
+        // `.PlayerScroll` moves the camera focus), after the first frame.
         let r = try renderer()
         let s = try session(r)
         try r.apply(s.step(keys: KeyState()))
@@ -253,15 +253,20 @@ final class FrameGoldenTests: XCTestCase {
         // e7a951e3eafca30a / 3c5aee2b87819db6, light 24 held on 0x32a); frame 1 is unchanged. Re-measured 2026-10-10
         // (F1) with the twinkle's start phase from the Setup's `FastRand(0x10)` = 6 under seed 1 (was 686024aba05c6660
         // / 18c4e45ebeee8e88 / 51d5f367bd111589 with phase 0); frame 1's hash is unchanged.
-        XCTAssertEqual(scrolls[29], [4, 10])
-        XCTAssertEqual(scrolls[59], [226, 10])
+        // ◈ P5: the camera follows the player (was [4, 10] / [226, 10] under the ◇ focus driver): he walks into the
+        // pit and clings at x 146, so the target h (focus x − 0x130) stays below 0 → h clamps to 0; v follows his
+        // centre y down into the pit.
+        XCTAssertEqual(scrolls[29], [0, 19])
+        XCTAssertEqual(scrolls[59], [0, 19])
         // ◈ Re-measured 2026-10-13 (P3, twice): the real player walks (keypad 6) instead of the ◇ pose walking in place —
         // he walks off the start ledge into the pit (cols 5–8) and clings to its far wall (1012); the camera is still
         // the ◇ focus driver's, so the scrolls are unchanged (was e493fc8b09f84ed5 / 3ec51d436e278776 /
-        // 6e034d02ef78d7fb; frame 60 is unchanged — the player is off-screen by then).
-        XCTAssertEqual(hex(chain[29]), "be2b8e2e6631b1a7")
-        XCTAssertEqual(hex(chain[59]), "3ec51d436e278776")
-        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "967803e69d2ceaf6")
+        // 6e034d02ef78d7fb; frame 60 is unchanged — the player is off-screen by then). ◈ Re-measured 2026-10-13 (P5,
+        // twice): `.PlayerScroll` replaces the ◇ focus driver, so the view stays on the player (was be2b8e2e6631b1a7 /
+        // 3ec51d436e278776 / 967803e69d2ceaf6).
+        XCTAssertEqual(hex(chain[29]), "172596fa2f3b6c58")
+        XCTAssertEqual(hex(chain[59]), "cc9786ba763d383a")
+        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "b4230ba5a643c5b5")
     }
 
     func testItemLightTwinkleDimsTheTable() throws {

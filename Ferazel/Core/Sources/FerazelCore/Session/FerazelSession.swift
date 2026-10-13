@@ -28,7 +28,7 @@ import HectorResources
 /// prefs+2 == 3, 0)` (l. 9443/9447) is skipped — and with it the parity flip `*_DAT_1009fd30` (`SpriteWorld.parity`,
 /// l. 9435–9440, before the copy); then always `.HandleIdleSprites`, `.HandleSprites` (the items' light twinkle from
 /// `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — the player's `.HandlePlayerSprite` (`Player`) with
-/// the ◇ focus driver still steering the camera until `.PlayerScroll` (P5), and the Effect Handles), `.WrapEraseSprites`
+/// its look-ahead and `.PlayerScroll` moving the camera focus (P5), and the Effect Handles), `.WrapEraseSprites`
 /// (l. 9452–9456); after it `.UpdateStatusBar(1, 0, 0)`.
 ///
 /// **Map writes** (P3, the P2 carry): `.SetFGTile`/`.SetFGCrunchDirTile` are followed by `.ChangedTile @ 10012a50` =
@@ -39,8 +39,8 @@ import HectorResources
 /// before `.WrapEraseSprites`); the cues are drained once after `.MTHandleSprites` (`frameCues`).
 ///
 /// F2: the sprites live in a `SpriteWorld`. `.HandleSprites` is its three passes (Invariant 3): `handleSprites`
-/// walks the active list (each sprite's Handle at its list position: the player slot runs `Player.handle` and the ◇
-/// focus driver, an Effect its `EffectSprite.handle`, an inert Bonus item its `BonusHandle` twinkle), then
+/// walks the active list (each sprite's Handle at its list position: the player slot runs `Player.handle` (with
+/// `.PlayerScroll`), an Effect its `EffectSprite.handle`, an inert Bonus item its `BonusHandle` twinkle), then
 /// `collideSprites`, then `collideSpecial`.
 public final class FerazelSession {
     public let resources: FerazelResources
@@ -67,7 +67,6 @@ public final class FerazelSession {
     /// S1 turns them into `SoundCue`s).
     public private(set) var frameCues: [PlayerCue] = []
     public private(set) var camera: Camera
-    public private(set) var focusDriver: CameraFocusDriver
     /// The stream's current state (`_DAT_100a17e8`; the stream is `world.rng`, plan Invariant 4).
     public var rngSeed: Int32 { world.rng.seed }
     /// The stream's state right after `.SetupLevelSprites` (before the post-Setup level-start draws).
@@ -101,10 +100,9 @@ public final class FerazelSession {
         self.faceBounds = bounds
         // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823).
         let px = Int(L.header.startX) - 0x20, py = Int(L.header.startY) - 0x20
-        focusDriver = CameraFocusDriver(spriteX: px, spriteY: py, width: Int(L.header.gridWidth) * 0x20,
-                                        height: Int(L.header.gridHeight) * 0x20)
         camera = try Camera(header: L.header, spriteX: px, spriteY: py)
-        let context = SetupFaces.Context(level: L, playerX: focusDriver.pointX, effects: prefs.effects)
+        // playerX = `fd94` = origin x + 0x32 (`.GameLoop` l. 5149, before `.SetupLevel`).
+        let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects)
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
@@ -206,8 +204,7 @@ public final class FerazelSession {
             ops.draws.append(.redrawEntireScrollGrid(h: 0, v: 0))
             ops.requests.append(.hideMenuBar)
             ops.requests.append(.hideCursor)
-            camera.findUpperLeftCorner(focusX: focusDriver.focusX, focusY: focusDriver.focusY,
-                                       playerVX: focusDriver.vx, graphics: graphics)
+            findUpperLeftCorner(graphics: graphics)
             ops.draws.append(.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV))
             ops.draws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
             ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
@@ -217,8 +214,7 @@ public final class FerazelSession {
 
         // `if (-0x1e < iRam100a5110) iRam100a5110 -= 1` (l. 5237–5239).
         if -0x1e < countdown { countdown -= 1 }
-        camera.findUpperLeftCorner(focusX: focusDriver.focusX, focusY: focusDriver.focusY, playerVX: focusDriver.vx,
-                                   graphics: graphics)
+        findUpperLeftCorner(graphics: graphics)
         // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
         if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c) }
         let draw = prefs.reduceFrameRate == 0 || odd
@@ -239,7 +235,6 @@ public final class FerazelSession {
         }
         world.idle.handle(h: h, v: v, playerHotRect: playerRect, active: &world.active, faceRect: bounds)
         // `.HandleSprites`: `.MTHandleSprites` — each sprite's Handle at its list position.
-        let held = CameraFocusDriver.Held(keys: keys, prefs: prefs)
         let actions = InputActions(keys: keys, prefs: prefs)
         let effects = prefs.effects
         let solver = self.solver
@@ -252,9 +247,8 @@ public final class FerazelSession {
             }
             switch handler {
             case .player:
-                // `.HandlePlayerSprite`; then the ◇ focus driver stands in for `.PlayerScroll` (row 39) until P5.
+                // `.HandlePlayerSprite` (its look-ahead row and `.PlayerScroll` move the focus, P5).
                 Player.handle(world: world, keys: actions, solver: solver)
-                self.focusDriver.step(held)
             case .effect:
                 EffectSprite.handle(world: world, id: id)
             case .inert:
@@ -284,6 +278,21 @@ public final class FerazelSession {
         ops.drawn = draw
         odd.toggle()
         return ops
+    }
+
+    /// `.FindUpperLeftCorner` on the player's globals: the focus `(fd44, fd40)`, vx `fd3c`, `uRam100a5114`, and the
+    /// snap vetoes read through `*_DAT_1009fdd8` (`+0xdc` → type 0x57a, `+0x11c`, `+0x120`) and `*_DAT_1009fd34`
+    /// (cleared by the snap test). The scroll point it leaves (`PTR_DAT_1009fe78`) is what `.PlayerScroll` reads.
+    private func findUpperLeftCorner(graphics: Int16) {
+        let p = world.player
+        let s = world.active.record(id: playerID)
+        let ridden = s?.ridden.flatMap { world.active.record(id: $0) }
+        world.player.ridingCamera = camera.findUpperLeftCorner(
+            focusX: Int(p.focusX), focusY: Int(p.focusY), playerVX: Int(p.lastVX), snapArmed: p.snapArmed,
+            ridingVeto: ridden?.type == Camera.snapVetoRiddenType,
+            inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.ridingCamera, graphics: graphics)
+        world.player.scrollH = camera.scrollH
+        world.player.scrollV = camera.scrollV
     }
 
     /// A face's frame at the origin: the sheet cell for a level-1 face set, else the PICT's picFrame (`.frontEnd`

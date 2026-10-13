@@ -70,9 +70,10 @@ public struct PlayerState: Equatable, Sendable {
     /// `.ApplySpeedAndSeparateFromTiles` and the Handle's position row).
     public var pixelX: Int16 = 0
     public var pixelY: Int16 = 0
-    /// `*_DAT_1009fd44` / `*_DAT_1009fd40`: the start copies `.SetupPlayerSprite` writes (`+8` / `+6`).
-    public var startX: Int16 = 0
-    public var startY: Int16 = 0
+    /// `*_DAT_1009fd44` / `*_DAT_1009fd40`: the camera focus `.FindUpperLeftCorner` reads. `.SetupPlayerSprite` sets
+    /// it to the sprite origin (`+8` / `+6`); `.PlayerScroll` (P5) moves it every Handle.
+    public var focusX: Int16 = 0
+    public var focusY: Int16 = 0
     /// `*_DAT_1009fd94` / `*_DAT_1009fd90`: the hot-rect centre x / y (`.GameLoop`: origin + 0x32 / + 0x3b; the
     /// Handle's position row: `+0x10` / `+0xe`).
     public var centreX: Int16 = 0
@@ -82,6 +83,24 @@ public struct PlayerState: Equatable, Sendable {
     /// `*_DAT_1009fd3c` / `PTR_DAT_100a04c8`: vx / vy copied at the end of the Handle.
     public var lastVX: Int32 = 0
     public var lastVY: Int32 = 0
+
+    // MARK: camera (P5; `.PlayerScroll @ 1004c528`, the look-ahead row l. 46393–46422)
+
+    /// `*_DAT_100a0680` (i32, 24.8 px): the horizontal look-ahead L (0 at `.ClearPlayerVars` / `.SetupPlayerSprite`).
+    public var lookAhead: Int32 = 0
+    /// `uRam100a5114` (u8): the camera's 16-px snap armed — set by every look-ahead row, cleared while L decays
+    /// against the facing; read by `.FindUpperLeftCorner`. No `.ClearPlayerVars` write: true before the first Handle
+    /// (as `Camera`'s default).
+    public var snapArmed = true
+    /// `DAT_100a5f58` (u8): the focus-y latch (1 at `.ClearPlayerVars`): set when an ease reaches its target, cleared
+    /// by the jump freeze; while set the focus y follows exactly.
+    public var scrollLatch = true
+    /// `*_DAT_100a06dc` (u8): the focus y is easing (0 at `.ClearPlayerVars`).
+    public var scrollEasing = false
+    /// `PTR_DAT_1009fe78` = (v, h): the scroll point `.PlayerScroll` builds its band from. `Camera` owns it; the
+    /// session copies it here after each `.FindUpperLeftCorner`.
+    public var scrollH = 0
+    public var scrollV = 0
 
     // MARK: facing and idle
 
@@ -295,10 +314,10 @@ public struct PlayerState: Equatable, Sendable {
 
     // MARK: ClearPlayerVars' non-zero globals with no P1a reader (kept for the later rows)
 
-    /// `uRam100a5f5e`: breath phase (3). `_DAT_100a5f56`: bubble timer (0x28). `DAT_100a5f58` (1). `uRam100a5fd4` (1).
+    /// `uRam100a5f5e`: breath phase (3). `_DAT_100a5f56`: bubble timer (0x28). `DAT_100a5f58` (1) is `scrollLatch`.
+    /// `uRam100a5fd4` (1).
     public var breathPhase: Int16 = 3
     public var bubbleTimer: Int16 = 0x28
-    public var flag5f58: Int16 = 1
     public var flag5fd4: Int16 = 1
     /// `_DAT_100a5fd6` / `_DAT_100a5fd8`: potion / melee item id (−1).
     public var potionItem: Int16 = -1

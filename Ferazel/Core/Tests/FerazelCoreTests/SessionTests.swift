@@ -4,7 +4,7 @@ import HectorResources
 
 /// R5 (docs/plans/2026-10-06-ferazel-phase1.md): the player's grounded faces (player-states §3.11; since P3 the real
 /// `.HandlePlayerSprite @ 1004d5fc` in the session — the Phase-1 ◇ pose is gone, the face sequences are the binary's
-/// and unchanged), the camera (`.FindUpperLeftCorner @ 1000b5ec`, engine §5) with the ◇ focus driver, and one
+/// and unchanged), the camera (`.FindUpperLeftCorner @ 1000b5ec`, engine §5; since P5 fed by `.PlayerScroll`), and one
 /// `.GameLoop @ 10009d48` iteration in `.PaintFrameWrap @ 10011cf8` order — against the committed `Resources/Ferazel`
 /// (D26). A missing data file is a FAILURE, never a skip. The keys are the original defaults (keypad 4 / 6, Shift).
 final class SessionTests: XCTestCase {
@@ -49,9 +49,9 @@ final class SessionTests: XCTestCase {
     func testPlayerStartPose() throws {
         var p = try pose()
         // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, …)` (`.NewGame` l. 5823) → `MTNewSprite(0, x, y, 10, …)` →
-        // `.SetupPlayerSprite`: `fd44 = fe68 = +8`, `fd40 = fe64 = +6` (`PlayerState.startX/startY`).
-        XCTAssertEqual(p.session.player.startX, 83)
-        XCTAssertEqual(p.session.player.startY, 143)
+        // `.SetupPlayerSprite`: `fd44 = fe68 = +8`, `fd40 = fe64 = +6` (`PlayerState.focusX/focusY`).
+        XCTAssertEqual(p.session.player.focusX, 83)
+        XCTAssertEqual(p.session.player.focusY, 143)
         XCTAssertEqual(p.sprite.oldPosition, SpriteSlot.Point(x: 83, y: 143))
         XCTAssertEqual(Player.layer, 10)
         XCTAssertEqual(p.facing, 2)                          // G+0x16 = hdr 0x26c8 = 0 → F = 2, +0x17e = 0
@@ -218,24 +218,19 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(cam.maxV, 1216)
         // The focus base (⚑ plan note 10): `.FindUpperLeftCorner` reads (fd44, fd40), which `.SetupPlayerSprite`
         // sets to the sprite origin (83, 143); `.PlayerScroll` moves it to the hot-rect centre (fd94, fd90) =
-        // origin + (50, 59) = (133, 202) on the first Handle.
-        var driver = CameraFocusDriver(spriteX: 83, spriteY: 143)
-        XCTAssertEqual(driver.focusX, 83)
-        XCTAssertEqual(driver.focusY, 143)
-        XCTAssertEqual(driver.pointX, 133)
-        XCTAssertEqual(driver.pointY, 202)
+        // origin + (50, 59) = (133, 202) on the first Handle (R5's measurement: a player standing at the origin's
+        // centre; the session's player is lifted on frame 1 — `testPlayerStartPose`).
+        XCTAssertEqual([83 + 0x32, 143 + 0x3b], [133, 202])
         // Level start (l. 5209): ease from (−125, −65) toward (−224, −49): (−141, −63) → scroll (0, 0).
-        cam.findUpperLeftCorner(focusX: driver.focusX, focusY: driver.focusY)
+        cam.findUpperLeftCorner(focusX: 83, focusY: 143)
         XCTAssertEqual([cam.h, cam.v, cam.scrollH, cam.scrollV], [-141, -63, 0, 0])
         // Iteration 1 (still the origin focus: `.PlayerScroll` runs in `.HandleSprites`, after the draw).
-        cam.findUpperLeftCorner(focusX: driver.focusX, focusY: driver.focusY)
+        cam.findUpperLeftCorner(focusX: 83, focusY: 143)
         XCTAssertEqual([cam.h, cam.v, cam.scrollH, cam.scrollV], [-154, -61, 0, 0])
-        driver.step(keys: KeyState(), prefs: FerazelPrefs())
-        XCTAssertEqual([driver.focusX, driver.focusY], [133, 202])
         // Then the pan-in toward target (−176 after the 16-px snap, 10): v climbs by max(Δ/6, 1).
         var vs: [Int] = []
         for _ in 0..<40 {
-            cam.findUpperLeftCorner(focusX: driver.focusX, focusY: driver.focusY, playerVX: driver.vx)
+            cam.findUpperLeftCorner(focusX: 133, focusY: 202, playerVX: 0)
             vs.append(cam.scrollV)
         }
         XCTAssertEqual(Array(vs.prefix(14)), [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2])
@@ -258,6 +253,21 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(snap.h, 992)
         for _ in 0..<200 { snap.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, playerVX: 1900) }
         XCTAssertEqual(snap.h, 999)
+        // The snap vetoes (P5, raw `1000b894..1000b944`): riding a 0x57a, water `+0x11c`/`+0x120`, or the one-shot
+        // `*_DAT_1009fd34`, which the snap test clears (returned); an unarmed snap (`uRam100a5114` 0) or |vx| ≥ 0x100
+        // leaves the latch as it was.
+        var veto = snap
+        XCTAssertFalse(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, ridingVeto: true))
+        XCTAssertEqual(veto.h, 999)
+        XCTAssertFalse(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, inWater: true))
+        XCTAssertEqual(veto.h, 999)
+        XCTAssertFalse(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, latch: true))
+        XCTAssertEqual(veto.h, 999)
+        XCTAssertTrue(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, snapArmed: false, latch: true))
+        XCTAssertTrue(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, playerVX: -0x100, latch: true))
+        XCTAssertEqual(veto.h, 999)
+        XCTAssertFalse(veto.findUpperLeftCorner(focusX: 992 + 0x130 + 7, focusY: 400, playerVX: 0xff))
+        XCTAssertEqual(veto.h, 998)                          // snapped target 992: 999 − max(7 / 6, 1)
     }
 
     // MARK: - FerazelSession.step
@@ -345,12 +355,18 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(kinds(e2.draws), ["grid", "sprites", "copy", "erase", "status"])
         XCTAssertEqual(e2.draws[2], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
 
-        // The keys drive the player and the ◇ focus driver: keypad 6 (action 1, `FerazelPrefs.defaultKeys`) walks and
-        // moves the focus 1900/256 px per frame.
+        // The keys drive the player; his Handle's look-ahead row and `.PlayerScroll` move the focus (P5; the arrow
+        // keys of the Phase-1 ◇ focus driver are gone): keypad 6 (action 1, `FerazelPrefs.defaultKeys`) walks.
         let k = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         _ = k.step(keys: KeyState())
         _ = k.step(keys: KeyState(pressed: [0x58]))
-        XCTAssertEqual(k.focusDriver.pointX256, (133 << 8) + 1900)
+        let kp = k.player, ks = try XCTUnwrap(k.active.sprite(id: k.playerID))
+        // Frame 2: vx 665 (the walk's first step), L = 665 >> 2 = 166; centre x = 85 + 0x26 + 12 = 135 (x256 21913),
+        // fd44 = 135 + (166 >> 8) = 135; grounded with the latch set → path B: fd40 = fd90 = 123 + 0x22 + 25 = 182.
+        XCTAssertEqual([ks.vx, ks.x256, kp.lookAhead], [665, 21913, 166])
+        XCTAssertEqual([kp.centreX, kp.centreY, kp.focusX, kp.focusY, kp.groundCentreY], [135, 182, 135, 182, 182])
+        XCTAssertTrue(kp.scrollLatch && kp.snapArmed && !kp.scrollEasing)
+        XCTAssertEqual([kp.scrollH, kp.scrollV], [k.camera.scrollH, k.camera.scrollV])
         XCTAssertEqual(k.active.sprite(id: k.playerID)?.face, FaceRef(pict: 1020, index: 7, set: .encoded))
     }
 

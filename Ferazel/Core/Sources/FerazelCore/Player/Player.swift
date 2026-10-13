@@ -26,7 +26,7 @@ import Foundation
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
 /// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (later: W4)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
-/// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (later: P5)
+/// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (`PlayerScroll`, P5)
 /// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass; plan row 35),
 ///                                                            draw offsets (plan row 36)
 /// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, breath refill (P4); liquid tint
@@ -96,12 +96,12 @@ public enum Player {
             s.hp = hp
             s.gravity = gravity
             s.hasHit = false
-            p.startX = Int16(truncatingIfNeeded: s.oldPosition.x)
-            p.startY = Int16(truncatingIfNeeded: s.oldPosition.y)
-            p.pixelX = p.startX
-            p.pixelY = p.startY
-            s.x256 = Int32(p.startX) << 8
-            s.y256 = Int32(p.startY) << 8
+            p.focusX = Int16(truncatingIfNeeded: s.oldPosition.x)
+            p.focusY = Int16(truncatingIfNeeded: s.oldPosition.y)
+            p.pixelX = p.focusX
+            p.pixelY = p.focusY
+            s.x256 = Int32(p.focusX) << 8
+            s.y256 = Int32(p.focusY) << 8
             s.face = nil
             s.hotRect = HandleKeys.standardHotRect
             held = w.newSprite(type: heldItemType, x: 0, y: 0, layer: 0x14, handler: .inert, record: 0x1ff) { h in
@@ -310,8 +310,9 @@ public enum Player {
         // 38 (l. 46366): `.PlayerConstraints @ 1004cb4c` (map clamps, the level exits hdr+0x2724). // later: W4
         // 39 (l. 46367–46392).
         positions(w, id: id)
-        // The camera look-ahead `_DAT_100a0680` and `uRam100a5114` (l. 46393–46422), `.PlayerScroll`
-        // (l. 46423). // later: P5
+        // The camera look-ahead `_DAT_100a0680` and `uRam100a5114` (l. 46393–46422), then `.PlayerScroll @ 1004c528`
+        // (l. 46423, raw `bl` at `10051594`; P5).
+        PlayerScroll.handle(world: w, id: id)
         // 40 (l. 46424–46437; plan rows 35 and 36): the end pass (plan row 35) — the only one that processes water
         // (P2/P4) — then the draw offsets (plan row 36).
         w.player.flag05a0 = false

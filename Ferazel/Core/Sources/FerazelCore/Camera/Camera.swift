@@ -6,8 +6,9 @@ import Foundation
 ///
 /// Each call: target h = focus x − 0x130 + hdr 0x270a, target v = focus y − 0xc0 + hdr 0x270c (the focus is
 /// `(_DAT_1009fd44, _DAT_1009fd40)`, `.PlayerScroll`'s); the 16-px snap `t = (t >> 4) << 4` of the target h when
-/// |player vx `_DAT_1009fd3c`| < 0x100 and `cRam100a5114` is set (the extra vetoes — riding platform 0x57a, the water
-/// fields `+0x11c`/`+0x120`, auto-scroll modes 1–2, the one-shot `_DAT_1009fd34` — never hold in Phase 1); each axis
+/// |player vx `_DAT_1009fd3c`| < 0x100 and `cRam100a5114` is set, unless vetoed (raw `1000b894..1000b944`, l. 6037–6050): the
+/// player `*_DAT_1009fdd8` rides (`+0xdc`) a sprite of type 0x57a, its water fields `+0x11c`/`+0x120` are non-zero,
+/// auto-scroll modes 1–2 (refused here), or the one-shot `*_DAT_1009fd34` is set — which this test clears (P5); each axis
 /// eases by `max(Δ / 6, 1)` (`* 0x2aaaaaab >> 32`, truncating); the scroll point takes the eased pair (no auto-scroll);
 /// graphics 2 / 3 (prefs+2) force an even v; then `0 ≤ h ≤ 32·W − 0x280`, `0 ≤ v ≤ 32·H − 0x180` (`hdr+0xb280` /
 /// `+0xb282`). The boss-arena bounds (hdr 0x2724 / 0x272e), auto-scroll (0x272a) and the shake counters
@@ -55,16 +56,28 @@ public struct Camera: Equatable, Sendable {
         scrollV = v
     }
 
+    /// The ridden type that vetoes the snap (`+4 == 0x57a`, l. 6040).
+    public static let snapVetoRiddenType: Int16 = 0x57a
+
     /// One `.FindUpperLeftCorner`. `snapArmed` is `cRam100a5114` (set by every player Handle, cleared while the
     /// look-ahead decays against the facing); it defaults to true, including before any Handle has run (the level-start
     /// call and iteration 1, whose initial value is unread) — no level-1 effect: both targets clamp to h = 0 either
-    /// way. `graphics` is prefs+2.
+    /// way. `graphics` is prefs+2. The snap vetoes (P5): `ridingVeto` = the player's ridden sprite is a 0x57a,
+    /// `inWater` = its `+0x11c` or `+0x120` ≠ 0, `latch` = `*_DAT_1009fd34`.
+    /// - Returns: `*_DAT_1009fd34` after the call — cleared when the snap test ran (|vx| < 0x100 and armed), else as
+    ///   passed.
+    @discardableResult
     public mutating func findUpperLeftCorner(focusX: Int, focusY: Int, playerVX: Int = 0, snapArmed: Bool = true,
-                                             graphics: Int16 = 1) {
+                                             ridingVeto: Bool = false, inWater: Bool = false, latch: Bool = false,
+                                             graphics: Int16 = 1) -> Bool {
         var tx = Int(Int16(truncatingIfNeeded: focusX - Self.focusOffsetX + offsetX))
         let ty = Int(Int16(truncatingIfNeeded: focusY - Self.focusOffsetY + offsetY))
+        var latchOut = latch
         if abs(playerVX) < 0x100 && snapArmed {
-            tx = (tx >> 4) << 4
+            // Auto-scroll modes 1–2 (`*_DAT_1009fec4`, `_DAT_1009fec0`) would veto too: refused by `init`.
+            let snap = !ridingVeto && !inWater && !latch
+            latchOut = false
+            if snap { tx = (tx >> 4) << 4 }
         }
         h = Self.ease(h, toward: tx)
         v = Self.ease(v, toward: ty)
@@ -86,6 +99,7 @@ public struct Camera: Equatable, Sendable {
         } else if scrollV > maxV {
             scrollV = maxV
         }
+        return latchOut
     }
 
     /// `max(|Δ| / 6, 1)` toward the target (no move when equal).
