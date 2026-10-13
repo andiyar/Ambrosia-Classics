@@ -1113,6 +1113,21 @@ b4230ba5a643c5b5). The P3 fix round (6fd7484) was reviewed and confirmed. **Carr
 background implementer ran (the headless session exits at end of turn, killing the agent) and merged nothing; its
 dirty worktree `loop-1-20261013-180951` was kept by the looper. Runs dispatch subagents in the foreground.
 
+**As built (wave 2.3, first part: W1, W2a — 2026-10-13, loop run 3; Opus 5.5 orchestrator, Opus implementers, two Opus
+legs each (⚑ MAJOR) + asserts-only fix rounds):** `Ferazel/Core` **203 → 215/0** (W1 +8 → 211, W2a +4 → 215); census
+1,108/0; Ferazel builds. **W1** the Platform class in every mode as read, radial tables/`.UpdateRadialPos`, wheel
+siblings, chain spokes, the Platform arm of `.HitPlayerSprite`; the `.ActiveToIdleSprite` carry settled (record stays
+listed, `.UpdateSprites` kills at step end), M2/M3 and P5's idle rect settled; M6/M7 open. **Rulings (follow the
+binary):** ◈ goldens did not move (no platform in the start/pan views) — "frame 1 draws no platform" moved two draw
+counts instead (10 → 3, 22 → 15); the level-1 wheel (rec 21) bounces on frame 1 because the stored radial centre is 0
+until its first Handle (real per both legs; turns ≈ 28° off-screen); mode 0xb is not reachable through the L2 raft
+light path (rafts → mode 0xc), so E2's 0xb/table 0148 stays unbuilt. **W2a** 1480–1489 radial bars/balls (harmful band
+0x60 ≤ D < 0x80, double-handled frame, per-frame re-face), mace chains made at Setup (four level-start counts moved,
+traced), `.HurtPlayer` with the attacker gate as the dump has it (EnemyShot/Box exempt — the plan said
+Platform/Background) and coins `FastRand(3)+4` capped (the plan's "5" is the argument); seams `HurtPlayer.bloodSpray`
+(E1a) and `PlayerCue.Call.regPitched` (S1). Carry: the RNG stream drifts from the first pendulum hit until E1a and the
+Phase-4 coin spawn land.
+
 ## D34 — Ferazel's Wand goes to the unattended session loop: Ben's authorizations + the Fable cross-check rule (2026-10-13)
 
 **Decided (Ben, AskUserQuestion in the setup session, 2026-10-13; he is away in Fiji for a few days and wants to come

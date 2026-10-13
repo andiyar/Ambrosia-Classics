@@ -819,6 +819,31 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   `testSpokeAndSiblingCounts` (L1 35 spokes + 2 siblings; spokes at layer −2 before every platform; the L2 counts are
   W4's).
 - **Commit:** `FerazelCore: Platform class (all modes), radial geometry, chain spokes, wheel siblings; frame 1 draws no platform (golden ◈); 8 tests`.
+- ⚑ **As executed (W1, loop run 3, 2026-10-13; b481ebe + fix round 710c689; two Opus legs: fidelity MERGEABLE,
+  tests/mutations MERGEABLE_WITH_FIXES — 67 mutants, 26 survivors, the test gaps closed asserts-only, 17/17 re-killed):**
+  G2 **211** then 0 (203 + 8; the M2 `.MTNewSprite` pin folded into `testSpokeAndSiblingCounts`); every plan number
+  reproduced (rec 14's speed is exactly 0 on frames 78 and 156; its sign bit flips on 78 and 157). **◈ goldens did NOT
+  move** — the plan's prediction was wrong: no platform lies in the level-1 start view (x −125…483, y −65…319) or the
+  pan frames' view; "frame 1 draws no platform" moved two counts instead, same cause, verified by both legs:
+  `SessionTests` iteration-1 draws 10 → 3, `SpriteDrawTests` start-window draws 22 → 15 (platform records 14, 21, 25,
+  40, 47, 57, 58; spokes and siblings are made in the first Handle). **Wheel frame-1 bounce (both legs: real, high
+  confidence):** platforms are created active with the stored centre `+0x10/+0xe` = 0 (MTNewSprite clears; nothing writes
+  it before the first Handle), so `.UpdateRadialPos` puts rec 21's members ≈ 1900 px right (3798, 1058) inside row-33
+  tiles; mode 20 runs `.SeparateFromTiles2` there and `.BounceRadial` sends speed +0x100, hub vx −0x100 (siblings
+  247/−247, cooldown −4); frame 2 is back at (1910, 521). In play the wheel turns ≈ 28° and drifts ≈ 28 px left early in
+  level 1, off-screen. `testWheelRiddenStep` measures the plan's ridden numbers on a tile-less map copy and pins the
+  real-map bounce too. **Mode 0xb:** not reachable through the L2 raft light path — no L2 background cell has light byte
+  −1 (rafts read 0 → mode 0xc; rec 154 under sphere light 810 → 0xc0067). Mode 0xb is still written directly by
+  crumble/blink/floe platforms, spirit form, Bonus, Effect and shots — none placed on L1/L2; E2's 0xb/0148 stays unbuilt
+  until a placed sprite needs it. **Carries settled:** `.ActiveToIdleSprite` keeps the record listed with `+0x4c = 0`
+  and `SpriteWorld.updateSprites` kills it at step end (`testIdleActivationRule` list [11, 12] → [12] after the kill);
+  M2 pinned; M3 (`record(id:)` in SeparateFromTiles/WallBounce/WallBounceBG); P5's idle player rect reads the record;
+  `cameraSnapVeto` / 0x57a veto written by the riding row; `HandleKeys` J = ridden `+0x194` + snd 604 (springboard).
+  **Still open:** M6 (Bonus guard `p1Negative: false`), M7 (`TileHotRects.init(level:)`). Out-of-Files, necessary:
+  SpriteSlot fields, PlayerState `.threeDPitched`, SpriteWorld, IdleSprites, FerazelSession, HandleKeys, the three
+  physics files, SessionTests/SpriteDrawTests counts, PlayerMotionTests (J/604). Built, untested (not on L1/L2): see-saw,
+  catapult, springboard, persp ≠ 0, mace chains of platforms. A level-2 session cannot be built until W4 (type 2848).
+  Bank: platforms-ropes-radial §2.10.
 
 #### W2a — ⚑ MAJOR — Radial bars/balls 1480–1489, `.HurtPlayer`, the re-face tail (→ 200)
 - **Files:** `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`, `Sources/FerazelCore/Sprites/SetupFaces.swift`,
@@ -840,6 +865,25 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   asserts the record defaults: L1 recs keep r 120, g 30) · `testPendulumHitCosts224And5Coins` (HP −224, `+0x116` 30
   after, `coinsLost` 5).
 - **Commit:** `FerazelCore: Background movers part 1 — radial bars/balls (harmful band, double-handled frame), HurtPlayer, re-face tail; 4 tests`.
+- ⚑ **As executed (W2a, loop run 3, 2026-10-13; dce1871 + fix round af15839; two Opus legs, both MERGEABLE_WITH_FIXES —
+  62 mutants, 10 survivors (2 equivalent), gaps closed asserts/comments only, all re-killed):** G2 **215** then 0
+  (211 + 4); every plan number reproduced. **The dump corrects the plan (both legs confirmed):** (1) `.HurtPlayer`'s
+  attacker gate exempts **EnemyShot** (`0x100a0488`) and **Box** (`0x100a0484`) handlers, not Platform/Background (raw
+  `10054768..94`); (2) the pendulum arm passes coins 5 and `.HurtPlayer` turns it into `FastRand(3) + 4` capped at the
+  player's coins (seed 1 draws 6; the plan test's player holds 5); (3) the bank's triggers-background §2.5 mode-12 row
+  was inverted (⚑ note appended). **Invariant-10 ruling (follow the binary):** the mace chains (1434) are made inside
+  `.SetupBackgroundSprite` before `MTInsertSprite` (7 per L1 pendulum = p2 120/16, 14 total, no FastRand draws), so four
+  level-start counts moved: `testSpawnOrderLevel1` 10 → 24, `testIdleWindowAtStartLevel1` 10+13 → 10+14+13,
+  `testPlayerStartPose` 24 → 38, `testSpokeAndSiblingCounts` filters narrowed to 0x596 (reverting the Setup-time chains
+  restores every old number, 20/20); no golden moved (pendulums at x 2656/2756). **Hooks:** `HurtPlayer.bloodSpray`
+  (empty seam → E1a), `PlayerCue.Call.regPitched` for cue 508 with its rate drawn at the call site (→ S1), coins counted
+  in `PlayerState.coinsLost`, not spawned (Phase 4). **RNG carry:** from the first pendulum hit the stream drifts from
+  the original — the blood spray's draws (E1a) and each coin Bonus Setup's ≥ 3 draws (`.SetupBonusSprite`, Phase 4) are
+  skipped; nothing drifts before a hit. Out-of-Files: `SpriteSlot.classWord170`, `SpriteWorld.records`, session wiring.
+  Frame 1 of a first load draws Setup-cached faces where the binary copies the placeholder (off-screen on L1) [NIT];
+  the throwaway `SpriteWorld` per pendulum in `SetupFaces` would swallow a future FastRand draw (commented); sheet 1489
+  absent (not placed). Note for W2b: its `testBackgroundRecordDefaultsWrittenBack` (p2 → 140, p3 → 30) is already
+  asserted by W2a's `testPendulumDoubleHandleFrames`; W2b still writes it as its own test (ladder +5).
 
 #### W2b — ⚑ MAJOR — Cannons, passages, springs, the wall tunnel (→ 205)
 - **Files:** `Sources/FerazelCore/World/Movers/BackgroundSprite.swift`, `Sources/FerazelCore/Sprites/SetupFaces.swift`,
