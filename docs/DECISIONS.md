@@ -1068,3 +1068,32 @@ carried): `deathEffectStep` paints before the `tintTableNotBuilt` throw; `DeathE
 throws on a bad step; new `Refusal.ripplePhase` (a negative signed back-scratch index on a drawn row — the original
 reads memory before the table; ~2²³ frames on one level; A3 rebuilds the renderer per level so it resets) has no unit
 test (census covers the skipped-row exemption); the frames-clamp test does not prove no write past the end.
+
+**As built (wave 2.2, first half: P1a, P1b, P2, P3 — 2026-10-13; Opus 5.5 orchestrator, Opus implementers, two Opus
+legs per task (P3 given two though minor: it carried the session wiring), one fix round each, one Opus re-review leg
+over the P1a/P1b/P2 fix rounds MERGEABLE; the P3 fix round (6fd7484) was not re-reviewed — the next session's first
+reviewer reads it):** `Ferazel/Core` **154 → 185/0** (P1a +6 → 160, P1b +6 → 166, P2 +9 → 175, P3 +10 → 185; review
+fixes added asserts only); census 1,108/0; Ferazel builds. **P1a** `PlayerState`/`Player.handle(world:keys:)` (42 rows
+in the binary's order; the plan's digest-A row numbers map 13/22/35/36 → code 19/27/40/40, table in the plan) +
+`.HandleKeys` vertical; the per-frame 0x4c4 direct call is the countdown-digits Effect sprite and draws no FastRand;
+exertion +1/+3 lives in the L/R block (moved to P1b). **P1b** the L/R block; its gate is five terms (glider, carpet,
+climb, crouch, |charge 0700| ≤ 0x14 — the plan omitted charge); `.FootPressure @100431ec` built (both ground paths).
+**P2** `.HitPlayerTileSprite` + `.CheckGroundCeilingHitEffects` + `.CrunchTile` (reshape table hand-traced, 48 arms),
+dust Effect Handle, `DrawOp.setTile`; follow the binary: the (16,16) add before `.RectBounceFake2` is disasm-only (raw
+`100552cc..f0`), the crumble overlay is layer 0xb (not 50), 603 priority 1; frame outputs drain once per frame
+(`PlayerState.drainFrameOutputs`), crunch log on `GameGlobals`. **P3** state selection + faces, breathing, footsteps,
+invulnerability blink on the drawn-iteration parity; `PlayerPose` deleted; the player, held item, five trails and
+the 0x4c4 countdown are wired into the session; setTile ops follow the Handle that wrote the map (`.ChangedTile
+@10012a50` redraws at once). **Orchestrator ruling (Invariant-10 STOP, follow the binary):** real rows 30/33 changed
+numbers P1a–P2 had measured against stubs — only exertion (breathing −2/frame, raw `1004bb8c..90`) and cue lists (the
+grounded per-frame stop 427, raw `1005074c/60`) were re-measured; no kinematic number moved. Level 1 spawns at
+(83,143) 20 px inside the floor and frame 1 lifts him to y 123 (original behaviour, kind-4 floor arm); walking right
+from the start drops him into the column-5 pit and he clings to its wall (6,6) — SessionTests' face sequences
+re-measured on L1; the flat-floor sequences are pinned by PlayerStateTests. ◈ pan golden frame 30
+`e493fc8b09f84ed5 → be2b8e2e6631b1a7`, chain `6e034d02ef78d7fb → 967803e69d2ceaf6`, frame 60 unchanged (camera still the
+◇ stub until P5). Bank corrections A1, A2, A4, A7, A8, A9, A11, A14, C7 + triggers-background-2 §2.3 notes landed.
+**Carries:** `.ExplodeFaceIntoParticles` (4 FastRand per emitted pixel at each crunch destroy) and `.ParticleGlow`
+(invulnerability > 60) → **E1a** — until then the session stream diverges from the original after the first crunch
+destroy or a long invulnerability; parity and crunch log across level loads → W4; app arrow keys still pan the ◇
+focus driver (they no longer move Ferazel) → P5; `FrameRenderer.setTile` re-parses the level per op (0.145 ms
+release) → A3 if it hitches; held-item faces 0x2ee..0x308 unloaded.

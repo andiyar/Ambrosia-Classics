@@ -128,6 +128,11 @@
   (hurt flash, water split/ripple, scale, rotation), death wipe, screen gamma; tint table 0xa now drawn from the
   session stream (level start = 766 draws on L1; the diffuse passes draw 0) → `Ferazel/Core` **154/0**, census
   1,108/0, Ferazel builds, no golden moved. Nothing visible changes in the app yet. Next: **[P1a P1b P2]** (P1a → 160).
+  **Wave 2.2 first half DONE (2026-10-13, Opus orchestrator; all-Opus legs; D33 as built wave 2.2): P1a P1b P2 P3** —
+  the real player: jump/gravity, walk/run/turn/air, landing + ceiling effects, cling, pull-up, crumbling tiles
+  (`DrawOp.setTile`), dust, states/faces, breathing, footsteps; `PlayerPose` gone → `Ferazel/Core` **185/0**, census
+  1,108/0, Ferazel builds. In the app the keypad now moves Ferazel (camera still the ◇ stub until P5; no sound until
+  A3). Next: **[P4 P5]** then wave 2.3 (P4 → 195, P5 → 203).
   **Colour MEASURED against the Let's Play (2026-10-10, Opus leg; `docs/ferazel/colour-measurement-2026-10-10.md`):** 7 level-1
   frames, 48 combos each. Tie-break `highest`, error-diffusion dither and Effects 1 match. `.exactNearest` beats `.ruled` in 7/7 frames, so **Ben
   ruled the app default model `.exactNearest`** (applied; G2 102/0, Ferazel builds). The video is about γ 0.76 brighter (classic Mac display gamma):
