@@ -78,6 +78,15 @@ public final class FerazelSession {
     public let tintTableDraws: [Int16]
     /// The `.GameLoop` parity flag `bVar23`.
     public private(set) var odd = false
+    /// The level loaded (`Mlvl` id).
+    public let levelNumber: Int
+    /// `Mmap 200`, read by `LevelFlow` when the level exit is touched.
+    public let map: WorldMap
+    /// The request that ended the game loop (W4): `.deathEffect` or `.loadLevel(n)`, emitted once with the iteration
+    /// that ended it; nil while the loop runs.
+    public private(set) var ended: ShellRequest?
+    /// `deathEffectDone()` was called: the restart takes fresh globals (D33), so `carry` drops the crunch log.
+    private var restartWithFreshGlobals = false
     /// Iterations run.
     public private(set) var iterations = 0
 
@@ -88,15 +97,21 @@ public final class FerazelSession {
     private var passageOps: [DrawOp] = []
 
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
+    /// - Parameter carry: what the previous level's session hands on (`carry`; W4) — the parity and the crunch log.
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
     ///   `.HandleIdleSprites` tests. Core has no face pixels; without it each face's frame (sheet cell, or the PICT's
     ///   frame for a single face) is used — a superset of the opaque bounds [MED].
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
-                faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) throws {
+                carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) throws {
         self.resources = resources
         self.prefs = prefs
+        levelNumber = level
+        map = try WorldMap.load(from: resources)
         let L = try LevelFile.load(from: resources, level: Int16(level))
         let world = SpriteWorld(level: L, seed: seed)
+        // W4 (P3 carries): the parity `_DAT_1009fd30` and the G-resident crunch log run on from the previous level.
+        world.parity = carry.parity
+        world.globals.crunchLog = carry.crunchLog
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
@@ -137,11 +152,12 @@ public final class FerazelSession {
         //     The player and 0x4c4 `MTNewSprite`s (l. 5181–5183): none (F1 note).
         seedAfterSetups = world.rng.seed
         // (2) `.AnimateCLUT @ 1001180c` (`10009fb8`), with `_DAT_1009fd98` = 0 (l. 5144) and the parity flag
-        //     `_DAT_1009fd30` false on a fresh start [MED: it is not reset by `.GameLoop`]. The values recolour the
-        //     working CLUT, which `LevelTables` does not model (levels 50, 51, 67); the draws are consumed.
+        //     `_DAT_1009fd30` as the last level left it (not reset by `.GameLoop`; false on a first start — W4 carry).
+        //     The values recolour the working CLUT, which `LevelTables` does not model (levels 50, 51, 67); the draws
+        //     are consumed.
         let h = L.header
         for _ in 0..<Self.animateCLUTDraws(mode: h.clutAnimMode, count: h.clutAnimCount, effects: prefs.effects,
-                                           frameCounter: 0, parity: false) {
+                                           frameCounter: 0, parity: carry.parity) {
             _ = world.rng.next(4000)
         }
         // (3) `.BuildTintTable @ 10020a5c` (`10009fc0`): table 0xa, 255 entries × (B, R).
@@ -312,7 +328,44 @@ public final class FerazelSession {
         world.updateSprites()
         // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
         if let g = world.gammaFade.handle() { ops.draws.append(g) }
+        // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
+        // after this iteration (W4).
+        if ended == nil, world.player.gameOver || world.player.levelDone {
+            let request = loopEnd()
+            ended = request
+            ops.requests.append(request)
+        }
         return ops
+    }
+
+    /// After the loop (l. 5296–5322): G+4 < 1 → `*_DAT_1009ffa8 = 1`, `.FadeAIFFMusic(0, 2)`, `.DeathEffect` (the
+    /// shell's, `ShellRequest.deathEffect`); else level complete → the stage-complete screen and the world map, which
+    /// Phase 2 replaces by `LevelFlow` (◇ D33). // later: Phase 3 — `.EndLevelSGUpdate`, `.StageCompleteEffect`, the
+    /// fades, `.ShowWorldMap` (and its unlock of the second exit `_DAT_100a5118`). A game over with G+4 ≥ 1 has no
+    /// Phase-2 writer (the dying arm follows HP < 1); it takes the death path too (◇).
+    private func loopEnd() -> ShellRequest {
+        if globals.health < 1 {
+            world.playerDead = true
+            return .deathEffect
+        }
+        if world.player.levelDone {
+            return LevelFlow.exitRequest(level: level.header.mapNodeLevel, exit: world.player.exitIndex, map: map,
+                                         current: levelNumber)
+        }
+        return .deathEffect
+    }
+
+    /// W4 (◇ D33): the shell reports that `.DeathEffect`'s wipe ended → restart the current level from its start with
+    /// fresh globals (`carry` then keeps only the parity). The shell rebuilds the session with `rngSeed` and `carry`.
+    public func deathEffectDone() -> ShellRequest {
+        restartWithFreshGlobals = true
+        return .loadLevel(levelNumber)
+    }
+
+    /// What the next level's session takes (`init(…carry:)`, W4): the parity always; the crunch log unless the restart
+    /// after death takes fresh globals (D33).
+    public var carry: LevelCarry {
+        LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog)
     }
 
     /// `PassageView.snap` (`.HitPlayerSprite` l. 49659–49672, W2b): the camera snapped to (player x − 0x142, y − 0xc0),

@@ -14,6 +14,8 @@ public enum BoxSprite {
     public static let trampoline: Int16 = 0x5be
     /// The bridges 1460…1467 (0x5b4…0x5bb).
     public static let bridges: ClosedRange<Int16> = 0x5b4...0x5bb
+    /// The stalactite 2932 (W4; its child is made by `SetupFaces.spawnLevelSprites`).
+    public static let stalactite: Int16 = 0xb74
 
     @inline(__always) static func rect(_ left: Int, _ top: Int, _ right: Int, _ bottom: Int) -> IdleSprites.Rect {
         IdleSprites.Rect(top: top, left: left, bottom: bottom, right: right)       // `SetRect(r, left, top, right, bottom)`
@@ -28,10 +30,10 @@ public enum BoxSprite {
     ///
     /// Transcribed arms: teleporters 0x424…0x426, the save point 0x429, boulders / rocks 0x42e…0x430, 0x433, 0x434, the
     /// chest 0x51c, the bridges 0x5b4…0x5bb, the trampoline 0x5be, signs 0xb56…0xb5d, doors 0xb5e / 0xb5f, crates
-    /// 0xc12…0xc14, and the post-chain blocks: switch blocks 0x4e2…0x4ff, furniture 0xb68…0xb70, decorations
+    /// 0xc12…0xc14, the stalactite 0xb74 (W4), and the post-chain blocks: switch blocks 0x4e2…0x4ff, furniture 0xb68…0xb70, decorations
     /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99. // later: Phase 4 / W4 — the other
     /// arms (tree trunk 0x2c8/0x2c9, carpet 0x438/0x439, geysers 0x5a0…0x5a9, spiked balls 0x5c3/0x5c4, pipes
-    /// 0x5d2…0x5d5, the table 0xb71, the cart 0xb72/0xb73, the stalactite 0xb74, gates 0xb7c/0xb7d, the snowball 0xbfe —
+    /// 0x5d2…0x5d5, the table 0xb71, the cart 0xb72/0xb73, gates 0xb7c/0xb7d, the snowball 0xbfe —
     /// several make sprites or draw `FastRand` at Setup) leave the head's fields.
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
@@ -127,6 +129,25 @@ public enum BoxSprite {
             s.gravity = 0
             s.layer = 0
             s.hotRect = rect(0x24, -0x40, 0x3c, 0x98)
+        case stalactite:                                   // stalactite (l. 59361–59401; W4)
+            if s.recordIndex == -1 {
+                // The child the stalactite's own Setup makes (`.MTNewSprite(…, −1, …)`): `+0x110`, `+0x5c`, `+0x1f8` 0,
+                // layer 1. The parent gives it its face (`SetupFaces.spawnLevelSprites`).
+                s.gravity = 0
+                s.hasHit = false
+                s.hasTileHit = false
+                s.layer = 1
+            } else {
+                // gravity 0, one-way, SetRect(9, 10, 0x18, 0x2a); HP = p2 (0 → 0x96), `+0x14c` = p3 (0 → 0x40),
+                // `+0x150` = p4 (0 → 100), `+0x154` = x (`+0xc`). The child and the face are `SetupFaces`'.
+                s.gravity = 0
+                s.oneWay = true
+                s.hotRect = rect(9, 10, 0x18, 0x2a)
+                s.hp = p.p2 == 0 ? 0x96 : p.p2
+                s.classTimer = p.p3 == 0 ? 0x40 : Int32(p.p3)
+                s.classWord150 = p.p4 == 0 ? 100 : Int32(p.p4)
+                s.classWord154 = Int32(Int16(truncatingIfNeeded: s.x))
+            }
         case 0xc12...0xc14:                                // crates (l. 59535–59560)
             s.classTimer = Int32(p.p1)
             s.gravity = 0

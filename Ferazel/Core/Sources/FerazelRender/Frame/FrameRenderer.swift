@@ -107,7 +107,8 @@ public final class FrameRenderer {
     /// 0x599…0x59c, `SetupFaces.platformSheets`, W1 — and the Background class's radial bars and balls 1480…1488,
     /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'; W2b: the springs and
     /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
-    /// the placed types' sheets), empty light slots (`addLights`), the status bar under the level
+    /// the placed types' sheets; W4: the level-2 types' sheets come with them, plus the stalactite child's set 0xb74,
+    /// `SetupFaces.boxChildSheets`), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     public init(resources: FerazelResources, level: Int, search: ColorSearch, dither: DitherModel,
@@ -140,7 +141,8 @@ public final class FrameRenderer {
         let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets)
                                                 .union(Self.effectSheets).union(SetupFaces.platformSheets)
                                                 .union(SetupFaces.backgroundSheets)
-                                                .union(SetupFaces.backgroundW2bSheets),
+                                                .union(SetupFaces.backgroundW2bSheets)
+                                                .union(SetupFaces.boxChildSheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights

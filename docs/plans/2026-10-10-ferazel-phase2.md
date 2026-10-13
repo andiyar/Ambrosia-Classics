@@ -950,6 +950,27 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   level 2) · `testDeathRequestsWipeThenRestart` (game over → `deathEffect`; `deathEffectDone()` → `loadLevel(current)`)
   · `testRestartFreshGlobals` (HP 560, magic 560, breath 560, start position).
 - **Commit:** `FerazelCore: level-2 Setups, exit → next level and death → restart (Phase-2 stubs, D33); 6 tests`.
+- ⚑ **W4 FastRand note (precondition):** every `FastRand` (`bl 0x100340e0`) the Setups of the level-2 new types reach,
+  in the arm's order, all on the session stream inside `.SetupLevelSprites` (spawn order); none per frame (the
+  Handles stay inert). `.AddLight` and `.MTNewSprite` draw nothing.
+  - **1056** (0x420, `.SetupBonusSprite` 0x41f/0x420 arm, M l. 52430–52466): `1005db3c` R(0x13) → `+0x46`;
+    `1005db4c` R(6) → `+0x112` = r + 0x1c; `1005db60` R(3) → `+0x114` = r + 2; the light (prefs+6 == 1 ∧ < 150
+    lights; colour 0x2c) draws none; tail `LAB_1005e8bc` `1005e8c0` R(0x3c) → `+0x14c`.
+  - **1058** (0x422, the faceless trigger arm l. 52469–52477): the tail `1005e8c0` R(0x3c) only.
+  - **1332** (0x534, sphere arm l. 52710–52721): `.AddLight` (0x32a, colour 99) then `1005e5dc` R(0x10) → `+0x46`;
+    tail R(0x3c).
+  - **1341** (0x53d, l. 52650–52663): `.AddLight` (0x32a at x + 0x16, y + 0x14, colour 0x21, ungated) then
+    `1005e6c0` R(0x10) → `+0x15c` (`stw`, i32); tail R(0x3c).
+  - **3205** (0xc85, item arm l. 52667–52707): `1005e724` R(0x10) → `+0x46` (before `.AddLight`, colour 99); tail
+    R(0x3c).
+  - **1740** (0x6cc, `.SetupBatSprite` 0x6cc…0x6d5 arm, M l. 68279–68310): **none** — the arm's only draw,
+    `1007dd3c` R(0x50), is 0x6ce's (re-typed 0x6cd); `1007de38` is 0x73c's, `1007e01c`/`1007e034` the swarm 0x74d's
+    (+ R(7) in each member's `.SetupSwarmMemberSprite`) — none placed on level 2.
+  - **1800** (0x708, `.SetupFrogSprite`, M l. 70172, 70182): `10081f84` R(0x1e) → `+0x14c` = −0x14 − r; then
+    `10081ff8` R(0x5fff) → `+0xf0` = 2r + 0xbfff.
+  - **Box types** 2848, 2849 (decorations), 2911 (door left), 2925, 2926, 2928 (furniture), 2932 (stalactite: its
+    Setup-time child `.MTNewSprite(0xb74, x, y, +0x80 − 1, −1, .SetupBoxSprite)` runs the record −1 arm), 2954 (NPC):
+    none (W3: "no arm of a type placed on levels 1–2 draws `FastRand`").
 
 ### Wave 2.4 — effects and sound (one lane, in order: E1a → E1b → S1)
 

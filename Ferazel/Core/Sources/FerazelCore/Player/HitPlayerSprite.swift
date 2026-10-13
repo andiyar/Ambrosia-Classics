@@ -73,14 +73,28 @@ extension HitPlayerSprite {
     ///   the hurt landed**; then, if the other's one-way `+0x185` is 0, `.PlatformBounce(player, other, d, 0, player
     ///   `+0x34`, 0)` (modes 10–14 set it, so only a mode-0 / 3–9 / 15+ bar is solid); return.
     /// - **the passage arm** (0xb54 / 0xb55, l. 49594–49683; W2b): `passage`.
-    /// - // later: 0xbf4 and the other Background arms after it (Phase 3; none placed on levels 1–2). Cannons, springs
-    ///   and tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
+    /// - **the level exit** 0xcb1 (l. 49733–49741; W4): `.STPlayRegSound(*_DAT_100a03dc = snd 421, 1, 0x100)` (no
+    ///   draw), the exit index `uRam100a5116` = the record's p1 (`+8`), `_DAT_100a5118` = p2 when ≠ 0, level complete
+    ///   `*_DAT_100a0088 = 1` — `.GameLoop` leaves its loop after this iteration (`FerazelSession`, `LevelFlow`).
+    /// - // later: 0xbf4 and the other Background arms (Phase 3; none placed on levels 1–2). Cannons, springs and
+    ///   tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
+    /// The level exit (PICT-less Background type 3249).
+    public static let levelExit: Int16 = 0xcb1
+
     static func background(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let d = SpriteSlot.Point(x: h(p.centre.x - o.x), y: h(p.centre.y - o.y))
         if BackgroundSprite.passages.contains(o.type) {
             passage(w, player: pID, passage: oID, keys: keys)
+            return
+        }
+        if o.type == levelExit {
+            w.player.cues.append(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
+            let r = BackgroundSprite.record(w, o)
+            w.player.exitIndex = r?.p1 ?? 0
+            if let p2 = r?.p2, p2 != 0 { w.player.exit2 = p2 }
+            w.player.levelDone = true
             return
         }
         guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 3)
@@ -106,7 +120,12 @@ extension HitPlayerSprite {
     ///    0xb5e/0xb5f and the chest 0x51c (keys, items), the timer 0xb5b, the sign / grave texts. None of their types is
     ///    placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need the item and conversation
     ///    systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
-    ///    never solid; that early return is built. The doors, chest and signs fall through, so their solidity is built;
+    ///    never solid; that early return is built. Everything else falls through to `.PlatformBounce`, so its solidity
+    ///    is built: the doors and the chest after their key / item code, the timer 0xb5b, the graves 0xb11…0xb14 and
+    ///    the signs after the text code (l. 49287–49303), and the falling rocks 0x433 / 0x434 (0x433 also with
+    ///    `+0x160` < 0) except on the hurting drop (`+0x160` ≥ 0, the rock's `+0xe` above the player's, vy > 599:
+    ///    `.HurtPlayer` + `.KillBox`, return) and 0x434 with `+0x160` < 0 (return, l. 49170); the spiked balls
+    ///    0x5c3 / 0x5c4 return;
     /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
     /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
     ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 4;

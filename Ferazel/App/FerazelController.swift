@@ -237,6 +237,10 @@ import HectorShell
         case .showCursor: wantsCursorHidden = false
         case .hideMenuBar: wantsMenuBarHidden = true
         case .showMenuBar: wantsMenuBarHidden = false
+        // W4: no-op until A3 (rebuild the session with `rngSeed` + `carry` and the renderer; drive `DeathEffect`, then
+        // `session.deathEffectDone()`).
+        case .loadLevel: break
+        case .deathEffect: break
         }
         updateMenuBar()
         updateCursor()

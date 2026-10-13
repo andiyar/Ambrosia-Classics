@@ -165,6 +165,15 @@ public enum SetupFaces {
         all += backgroundSheets.map { ($0.pict, $0) }
         all += backgroundW2bSheets.map { ($0.pict, $0) }
         for p: Int16 in [0xb36, 0xb37, 0xb3a, 0xb43] { all.append(one(p)) }
+        // W4 — the level-2 types (the same `.Init<Class>Sprite` calls): spheres 0x532+i and items 0xc80+i (boot
+        // singles); the 0x53c / 0x53d sets (`.InitBonusSprite` l. 52313–52316, boot, 6 × 0x2c×0x2a); decorations
+        // 0xaf5+i, furniture 0xb68+i and NPCs 0xb86+i (cached, flag 0 — `.InitBoxSprite` l. 58777–58786, 58831); the
+        // stalactite set 0xb75 (boot, 24 × 0x20×0x36, 12 columns; its child's set 0xb74 is `boxChildSheets`); the bat
+        // set 0x6cc (`.InitBatSprite` l. 68099, cached; `_DAT_100a0a48` not set → flag 0) and the frog set 0x708
+        // (`.InitFrogSprite` l. 70116, cached, flag 0).
+        for p: Int16 in [0x534, 0xc85, 0xb20, 0xb21, 0xb6d, 0xb6e, 0xb70, 0xb8a] { all.append(one(p)) }
+        all += [set(0x53c, 6, 0x2c, 0x2a, 6), set(0x53d, 6, 0x2c, 0x2a, 6), set(0xb75, 0x18, 0x20, 0x36, 0xc),
+                set(0x6cc, 0xb, 0x38, 0x34, 0xb), set(0x708, 8, 0x78, 100, 8)]
         all.append(one(placeholderPict))
         return Dictionary(uniqueKeysWithValues: all)
     }()
@@ -183,6 +192,12 @@ public enum SetupFaces {
         Sheet(pict: 0x480, count: 4, cellWidth: 0x3c, cellHeight: 0x3c, columns: 4, clut: 200),
         .single(0xb54), .single(0xb55),
     ]
+
+    /// The faces a Setup gives a sprite it makes itself (W4): the stalactite's child (`.SetupBoxSprite` 0xb74, M l.
+    /// 59397–59400: `+0xc0 = *_DAT_100a0a5c + p1·0x34`, the boot set 0xb74, 12 × 0x20×0x14, `.InitBoxSprite` l.
+    /// 58789). FerazelRender loads them.
+    public static let boxChildSheets: [Sheet] = [Sheet(pict: 0xb74, count: 0xc, cellWidth: 0x20, cellHeight: 0x14,
+                                                       columns: 0xc, clut: 200)]
 
     /// The sheet a Phase-1 face of PICT `pict` comes from (the level-1 table; nil for any other PICT).
     public static func sheet(pict: Int16) -> Sheet? { sheets[pict] }
@@ -271,7 +286,7 @@ public enum SetupFaces {
                 BackgroundSprite.setupTunnel(&s)
                 face(Int16(t), 0, .setupCached)
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
-                break
+                s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:
                 throw Error.notTranscribed(type: p.type)
             }
@@ -279,14 +294,21 @@ public enum SetupFaces {
         case .bonus:
             s.layer = 1                                        // l. 52383
             switch t {
-            case 0x41f:                                        // gold Xichron: Handle face set 0x421, `+0x46 >> 1`
+            case 0x41f, 0x420:                                 // Xichrons (l. 52430–52466): Handle face set 0x421, `+0x46 >> 1`
+                // 0x420 (W4): the same arm and Handle face set (`PTR_DAT_100a0478`, l. 52855); its Handle also sets
+                // `+0xb8 = 0x10001` every frame (l. 52860) // later: Phase 4 (the Bonus Handle) — inert, untinted.
                 s.lightOverlay = false
                 face(0x421, 0, .handle)
                 s.phase = rng.next(0x13)                       // raw `1005db3c` → `+0x46`
                 s.slip = rng.next(6) + 0x1c                    // `1005db4c` → `+0x112`
                 s.friction = rng.next(3) + 2                   // `1005db60` → `+0x114`
-                // prefs +6 == 1 and fewer than 150 lights: `_DAT_100a07fc` = light 0x336 (52×52), colour 0x16.
-                if c.effects == 1 && lightsInUse < 0x96 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 0x16) }
+                // prefs +6 == 1 and fewer than 150 lights: `_DAT_100a07fc` = light 0x336 (52×52), colour 0x16 (0x41f)
+                // or 0x2c (0x420).
+                if c.effects == 1 && lightsInUse < 0x96 {
+                    addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: t == 0x41f ? 0x16 : 0x2c)
+                }
+            case 0x422:                                        // trigger (l. 52469–52477; W4): no face, rect (0, 0, 0x60, 0x60)
+                s.lightOverlay = false
             case 0x423:                                        // secret-area trigger: no face (l. 52403)
                 s.lightOverlay = false
             case 0x50c:                                        // money bag: Handle face `*_DAT_100a08e0` (PICT 0x50c)
@@ -302,6 +324,12 @@ public enum SetupFaces {
                 s.phase = rng.next(10)                         // raw `1005e110` → `+0x46`
                 // Ungated: `_DAT_100a08c0` = light 0x321 (192×192) at (y + 8, x + 5), colour 0x16 (p3 = 0) or 0x58.
                 addLight(0x321, 0xc0, dx: 5, dy: 8, colour: p.p3 == 0 ? 0x16 : 0x58)
+            case 0x53c, 0x53d:                                 // (l. 52650–52663; W4) Handle face sets 0x53c / 0x53d
+                s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
+                face(Int16(t), 0, .handle)                     // `+0xc0` stays 0; the Handle's `+0x46 >> 1` (l. 53300)
+                // `*PTR_DAT_100a088c` = light 0x32a (72×72) at (y + 0x14, x + 0x16), ungated: colour 0x21 / 0x4d.
+                addLight(0x32a, 0x48, dx: 0x16, dy: 0x14, colour: t == 0x53d ? 0x21 : 0x4d)
+                s.classWord15c = Int32(rng.next(0x10))         // raw `1005e6c0` → `+0x15c` (`stw`)
             case 0x532...0x53b:                                // spheres: Handle face `_DAT_100a089c[type − 0x532]`
                 s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
                 face(Int16(t), 0, .handle)
@@ -352,8 +380,10 @@ public enum SetupFaces {
                 face(Int16(t), 0, .handle)
             case 0xb56..<0xb5e:                                // signs (l. 59280)
                 face(Int16(t), 0, .setup)                      // `+0xc0 = (&0x100a642c)[type − 0xb56]`
-            case 0xb5e:                                        // door right (l. 59280 else): set 0xb5e cell 0
+            case 0xb5e, 0xb5f:                                 // doors (l. 59280 else; 0xb5f l. 59238 — W4): set 0xb5e cell 0
                 face(0xb5e, 0, .setup)
+            case 0xb74:                                        // stalactite (l. 59361–59401; W4): set 0xb75 cell p1
+                face(0xb75, Int(p.p1), .setup)
             case 0xb68..<0xb71:                                // furniture (l. 59603): cache, Handle re-faces
                 face(Int16(t), 0, .handle)
             case 0xb87..<0xb9a:                                // NPCs (l. 59715): cache 0xb86+i, Handle
@@ -433,6 +463,43 @@ public enum SetupFaces {
             s.layer = 0xb                                      // l. 64923
             face(0x6b8, 0, .setupCached)
 
+        case .bat:
+            // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
+            // 0x6cc…0x6d5 arm (l. 68279–68310): HP 500, SetRect(0xc, 0xf, 0x2b, 0x2f), `+0x158 = 0x1e`, `+0x15c = 0`,
+            // `+0xb0 = 7`, no draw. Only 1740 (0x6cc) is placed on levels 1–2; 0x6cd/0x6ce (programmed path, R(0x50)),
+            // 0x6d1, the swarms and 0x73a… are not transcribed. // later: Phase 4–5 (the bat Handle).
+            guard t == 0x6cc else { throw Error.notTranscribed(type: p.type) }
+            s.layer = 0xb
+            s.classWord150 = -1
+            s.hp = 500
+            s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
+            s.classWord158 = 0x1e
+            s.classWord15c = 0
+            face(0x6cc, 0, .handle)                            // the Handle faces it from the cache set 0x6cc
+
+        case .frog:
+            // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; W4, inert): layer 0xb, HP 500, `+0xb0 = 0xb`,
+            // `+0x14c = −0x14 − FastRand(0x1e)` (raw `10081f84`), SetRect(0xb, 0x14, 0x48, 0x49), `+0x150 = −1`,
+            // `+0x15c` = p1, `+0xf0 = FastRand(0x5fff)·2 + 0xbfff` (`10081ff8`); p1 tiers (HP, `+0xb8`); hdr 0x26cd ≠ 0 →
+            // `+0x8e = 1` (0 on levels 1–2 — no field); `+0xc0` = cache 0x708 face 0. // later: Phase 4–5 (Handle).
+            guard (0x708...0x711).contains(t) else { throw Error.notTranscribed(type: p.type) }
+            s.layer = 0xb
+            s.hp = 500
+            s.classTimer = -0x14 - Int32(rng.next(0x1e))
+            s.hotRect = IdleSprites.Rect(top: 0x14, left: 0xb, bottom: 0x49, right: 0x48)
+            s.classWord150 = -1
+            s.classWord15c = Int32(p.p1)
+            s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff
+            switch p.p1 {
+            case 0: s.hp = 0x15e; s.mode = 0
+            case 1: s.hp = 500; s.mode = 0x1000c
+            case 2: s.hp = 0x15e; s.mode = 0x10017
+            case 3: s.hp = 0x5dc; s.mode = 0x1000f
+            case 4: s.hp = 1000; s.mode = 0x1000b
+            default: break
+            }
+            face(0x708, 0, .setupCached)                       // `+0xc0 = cache 0x708 + 4` (l. 70209)
+
         default:
             throw Error.notTranscribed(type: p.type)
         }
@@ -480,7 +547,20 @@ public enum SetupFaces {
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
                           records: c.level.placements)
         for p in c.level.spawnOrder {
-            let e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
+            var e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
+            if e.type == BoxSprite.stalactite, e.slot.recordIndex != -1 {
+                // `.SetupBoxSprite`'s stalactite arm (M l. 59383–59400) makes its child before the parent is inserted
+                // or idled: `.MTNewSprite(0xb74, +8, +6, +0x80 − 1, −1, .SetupBoxSprite)` — the record −1 arm — then
+                // `child +0xc0 = *_DAT_100a0a5c + p1·0x34` and the parent's `+0x1d4` = the child. The child is active
+                // from the level start whether the parent spawns or idles (no draw).
+                var k = SpriteSlot(type: e.type, x: e.slot.oldPosition.x, y: e.slot.oldPosition.y, recordIndex: -1)
+                BoxSprite.setup(&k, record: p, level: c.level)
+                k.face = FaceRef(pict: boxChildSheets[0].pict, index: Int(p.p1), set: .encoded)
+                var parent = e.slot
+                parent.siblings.first = out.active.insert(k)
+                e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
+                          faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)
+            }
             out.created.append(p.index)
             out.records[p.index] = e.record
             if let l = e.light { out.lights.append(l) }

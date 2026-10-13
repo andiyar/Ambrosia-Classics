@@ -306,6 +306,12 @@ public struct PlayerState: Equatable, Sendable {
     public var bubbleCooldown: Int16 = 0
     /// `DAT_100a5106`: the game-over flag the dying arm sets when it ends (`.GameLoop` leaves its loop; W4 restarts).
     public var gameOver = false
+    /// `*_DAT_100a0088`: the level is complete — the level exit's arm of `.HitPlayerSprite` sets it (M l. 49740) and
+    /// `.GameLoop` leaves its loop (W4). `uRam100a5116`: the exit index (−1 from `.GameLoop` l. 5152; the exit's p1);
+    /// `_DAT_100a5118`: the second exit index (the exit's p2 when ≠ 0; −1 after `.ShowWorldMap`, M l. 67561).
+    public var levelDone = false
+    public var exitIndex: Int16 = -1
+    public var exit2: Int16 = -1
     /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.
     /// // later: Phase 3 (teleporters) — no Phase-2 writer of 070c.
     public var teleporterTouch = false
