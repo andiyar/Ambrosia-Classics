@@ -97,17 +97,15 @@ public enum SoundCues {
         return cue.map { .play($0) }
     }
 
-    /// The iteration's calls, in call order, into `ops.sounds` / `ops.soundStops`. The seam keeps plays and stops in
-    /// two lists, so a stop removes the plays of its snd made earlier in the iteration (the original stops them in the
-    /// same iteration) and the shell applies `soundStops` before `sounds`.
+    /// The iteration's calls, in call order, into `ops.sounds` / `ops.soundStops`, each stop with its place among the
+    /// plays (`ops.soundStopAt`; the mixer takes plays and stops in call order, l. 78217–78310 — no play is dropped).
     public static func emit(_ calls: [PlayerState.SoundCall], prefs: FerazelPrefs, into ops: inout FrameOps) {
         for call in calls {
             switch convert(call, prefs: prefs) {
             case .play(let cue)?:
                 ops.sounds.append(cue)
             case .stop(let snd)?:
-                ops.sounds.removeAll { $0.snd == snd }
-                ops.soundStops.append(snd)
+                ops.stopSound(snd)
             case nil:
                 break
             }

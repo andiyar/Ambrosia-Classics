@@ -83,8 +83,9 @@ final class SoundCueTests: XCTestCase {
         XCTAssertEqual(SoundSlots.snd(slot: 0x100a0300, index: 2), 491)
         XCTAssertEqual(SoundSlots.table.count, 144)
         XCTAssertEqual(emit([call(PlayerCue(call: .reg, snd: 412 + 1000, priority: 1, volume: 0x100))]).sounds, [])
-        // Call order with stops: a stop cancels the plays of its snd made earlier in the iteration (the original stops
-        // them in the same iteration), so the shell applies `soundStops` before `sounds`; a play after the stop stays.
+        // Call order with stops: the mixer (`FUN_10091208` / `FUN_10091504`, l. 78217–78310) takes the calls in order —
+        // a play before a stop still takes (and may evict) a voice, and a stop frees nothing for the plays before it.
+        // Every play stays in `sounds`; each stop records where it fell (`soundStopAt` = `sounds.count` at the stop).
         let mixed = emit([call(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba)),
                           call(PlayerCue(call: .reg, snd: 414, priority: 1, volume: 0x9c)),
                           call(PlayerCue(call: .stopIfPlaying, snd: 427)),
@@ -92,8 +93,21 @@ final class SoundCueTests: XCTestCase {
                           call(PlayerCue(call: .reg, snd: 493, priority: 1, volume: 0x100)),
                           call(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))])
         // 0xba · 196 >> 8 = 142 → 71; 0x100 → 196 → 98.
-        XCTAssertEqual(mixed.sounds, [cue(414, 1, 59, 59), cue(493, 1, 98, 98), cue(427, 1, 71, 71)])
+        XCTAssertEqual(mixed.sounds, [cue(427, 1, 71, 71), cue(414, 1, 59, 59), cue(493, 1, 98, 98),
+                                      cue(427, 1, 71, 71)])
         XCTAssertEqual(mixed.soundStops, [427, 493])
+        XCTAssertEqual(mixed.soundStopAt, [2, 2])
+        // Play then stop of one snd: both kept, the stop after the play (at 1); stop then play: the stop at 0.
+        let playStop = emit([call(PlayerCue(call: .reg, snd: 493, priority: 1, volume: 0x100)),
+                             call(PlayerCue(call: .stop, snd: 493))], prefs())
+        XCTAssertEqual(playStop.sounds, [cue(493, 1, 98, 98)])
+        XCTAssertEqual(playStop.soundStops, [493])
+        XCTAssertEqual(playStop.soundStopAt, [1])
+        let stopPlay = emit([call(PlayerCue(call: .stop, snd: 493)),
+                             call(PlayerCue(call: .reg, snd: 493, priority: 1, volume: 0x100))], prefs())
+        XCTAssertEqual(stopPlay.sounds, [cue(493, 1, 98, 98)])
+        XCTAssertEqual(stopPlay.soundStops, [493])
+        XCTAssertEqual(stopPlay.soundStopAt, [0])
     }
 
     func testLandingCues() throws {
@@ -111,6 +125,7 @@ final class SoundCueTests: XCTestCase {
             let ops = emit(w.player.soundCalls)
             XCTAssertEqual(ops.sounds, sounds, "impact \(impact)")
             XCTAssertEqual(ops.soundStops, [414, 427], "impact \(impact)")
+            XCTAssertEqual(ops.soundStopAt, [0, 0], "impact \(impact)")
         }
     }
 
@@ -163,6 +178,9 @@ final class SoundCueTests: XCTestCase {
         XCTAssertEqual(emit([c3, cp, cr, cg].map { call($0, h: h, v: v) }).sounds,
                        [cue(423, 1, 88, 88), cue(461, 1, 176, 176, 0x1b000), cue(440, 1, 176, 176, 61000),
                         cue(508, 1, 196, 196, 50001)])
+        // `.threeDPitched` with no rate on the cue plays at 0x10000.
+        let cpNil = PlayerCue(call: .threeDPitched, snd: 461, priority: 1, volume: 0x100, position: centre)
+        XCTAssertEqual(emit([call(cpNil, h: h, v: v)], prefs()).sounds, [cue(461, 1, 176, 176, 0x10000)])
         // Only-if-idle (`if (!FUN_100916dc(423)) …`, raw `10044a50..10044a74`) rides the cue.
         var idle = c3
         idle.onlyIfIdle = true
@@ -195,6 +213,12 @@ final class SoundCueTests: XCTestCase {
                                                scrollH: h, scrollV: v, global: 196), cue(461, 1, 10, 10))
         XCTAssertNil(SoundCues.play3DPitched(snd: 461, priority: 1, volume: 15, position: centre, rate: 0x10000,
                                              scrollH: h, scrollV: v, global: 196))
+        // Off-centre, sum 19: scroll (0, 0), pos (250, 192), vol 15 → 11; L ear d 50 → g 121 → 121 · 11 >> 7 = 10,
+        // R ear d 158 → g 108 → 9; spread 2 + 1 = 3 → 13 / 6 → L + R = 19 < 0x14 → dropped (L · 2 = 26 would keep it).
+        XCTAssertTrue(StereoVolume.calc(volume: 11, position: SpriteSlot.Point(x: 250, y: 192), scrollH: 0,
+                                        scrollV: 0) == (13, 6))
+        XCTAssertNil(SoundCues.play3DPitched(snd: 461, priority: 1, volume: 15, position: SpriteSlot.Point(x: 250, y: 192),
+                                             rate: 0x10000, scrollH: 0, scrollV: 0, global: 196))
         // Beyond 1024: the left ear at d 1025 gives 0 (not (1024 − 1025) >> 3 = −1), the right at 1233 too → 0/0.
         let far = SpriteSlot.Point(x: h + 200 - 1025, y: v + 192)
         XCTAssertTrue(StereoVolume.calc(volume: 196, position: far, scrollH: h, scrollV: v) == (0, 0))
@@ -316,6 +340,25 @@ final class SoundCueTests: XCTestCase {
         XCTAssertEqual(end.requests, [.loadLevel(1)])
         XCTAssertEqual(Array(end.soundStops.suffix(5)), [452, 511, 452, 453, 511])
         XCTAssertFalse(end.soundStops.dropLast(5).contains(452))
+        // After every play of the iteration.
+        XCTAssertEqual(Array(end.soundStopAt.suffix(5)), [Int](repeating: end.sounds.count, count: 5))
+        // G+4 exactly 1 is still ≥ 1 (l. 5302): 453 is stopped. (G+4 is the player's HP, copied each iteration.)
+        let one = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        _ = one.step(keys: KeyState())
+        one.world.active.update(id: try XCTUnwrap(one.world.playerID)) { $0.hp = 1 }
+        one.world.player.levelDone = true
+        let oneEnd = one.step(keys: KeyState())
+        XCTAssertEqual(one.globals.health, 1)
+        XCTAssertEqual(Array(oneEnd.soundStops.suffix(5)), [452, 511, 452, 453, 511])
+        // A game over with G+4 ≥ 1 and no level complete: 452, 511 only (the 453 arm needs `*_DAT_100a0088`).
+        let over = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        _ = over.step(keys: KeyState())
+        over.world.player.gameOver = true
+        let overEnd = over.step(keys: KeyState())
+        XCTAssertGreaterThanOrEqual(over.globals.health, 1)
+        XCTAssertEqual(overEnd.requests, [.deathEffect])
+        XCTAssertEqual(Array(overEnd.soundStops.suffix(2)), [452, 511])
+        XCTAssertFalse(overEnd.soundStops.contains(453))
         // Death wins over a completed level (G+4 < 1 is tested first, l. 5302): 452, 511 only.
         let both = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         _ = both.step(keys: KeyState())

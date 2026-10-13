@@ -158,7 +158,7 @@ public enum Player {
         w.player.lastFacing = w.player.facing
         w.player.turnMirror = false
         // 2 (l. 44489–44531): the looped ambient sound of level modes 2/4 (`*_DAT_1009fec4`, `.STPlayLoopedSound`,
-        // re-panned by the player's distance). // later: S1
+        // re-panned by the player's distance). // later: auto-scroll levels (not L1/L2)
         // 3 (l. 44532–44552).
         riding(w, id: id)
         // 4 (l. 44553–44558).

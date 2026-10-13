@@ -381,8 +381,8 @@ public final class FerazelSession {
         if endsNow {
             // After the loop (l. 5300–5310): `FUN_10091504` of 452 (`*_DAT_1009fe24`) and 511 (`*_DAT_1009fe20`);
             // G+4 ≥ 1 with the level complete (`*_DAT_100a0088`) stops 452, 453 (`*_DAT_1009fd68`) and 511 again.
-            ops.soundStops += [452, 511]
-            if globals.health >= 1 && world.player.levelDone { ops.soundStops += [452, 453, 511] }
+            for snd: Int16 in [452, 511] { ops.stopSound(snd) }
+            if globals.health >= 1 && world.player.levelDone { for snd: Int16 in [452, 453, 511] { ops.stopSound(snd) } }
         }
         return ops
     }
