@@ -394,7 +394,8 @@ public final class FerazelSession {
     }
 
     /// W4 (◇ D33): the shell reports that `.DeathEffect`'s wipe ended → restart the current level from its start with
-    /// fresh globals (`carry` then keeps only the parity). The shell rebuilds the session with `rngSeed` and `carry`.
+    /// fresh globals (`carry` then keeps only the non-G globals: the parity, the particle-pool counters and the water-tile
+    /// cache — E1a/E1b). The shell rebuilds the session with `rngSeed` and `carry`.
     public func deathEffectDone() -> ShellRequest {
         restartWithFreshGlobals = true
         return .loadLevel(levelNumber)
