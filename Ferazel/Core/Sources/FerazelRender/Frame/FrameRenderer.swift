@@ -105,7 +105,9 @@ public final class FrameRenderer {
     /// The level's renderer: tile sets, tables, parallax, sprite faces (every level-1 Setup sheet plus the player's
     /// `.InitPlayerSprite` sets and the Platform class's `.InitPlatformSprite` sets — 0x578, 0x2c7, 0x582, 0x58c…0x58e,
     /// 0x599…0x59c, `SetupFaces.platformSheets`, W1 — and the Background class's radial bars and balls 1480…1488,
-    /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'), empty light slots (`addLights`), the status bar under the level
+    /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'; W2b: the springs and
+    /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
+    /// the placed types' sheets), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     public init(resources: FerazelResources, level: Int, search: ColorSearch, dither: DitherModel,
@@ -137,7 +139,8 @@ public final class FrameRenderer {
         let entries = try L.activePlacements.map { try SetupFaces.setup($0, context: context) }
         let faces = try SpriteBlitter.Faces(Set(entries.compactMap(\.sheet)).union(Self.playerSheets)
                                                 .union(Self.effectSheets).union(SetupFaces.platformSheets)
-                                                .union(SetupFaces.backgroundSheets),
+                                                .union(SetupFaces.backgroundSheets)
+                                                .union(SetupFaces.backgroundW2bSheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -165,8 +168,10 @@ public final class FrameRenderer {
     /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
     /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`), the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`) and
     /// the bubble 1040 (`LoadEncFaceSetFromPICT(0x410, 4, 8, 8, 4, …)`, l. 53656: 4 × 8×8, `.EmitBubble`, P4) — the
-    /// effects Phase 2 spawns. // later: E1a / Phase 3–5 — the other effect sets.
+    /// effects Phase 2 spawns — and W2b's cannon smoke 0x442 (`LoadEncFaceSetFromPICT(0x4b0, 13, 48, 48, 13, …)`,
+    /// l. 53646). // later: E1a / Phase 3–5 — the other effect sets.
     static let effectSheets: Set<SetupFaces.Sheet> = [
+        SetupFaces.Sheet(pict: 0x4b0, count: 0xd, cellWidth: 0x30, cellHeight: 0x30, columns: 0xd, clut: 200),
         SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x4ba, count: 3, cellWidth: 0x20, cellHeight: 0x20, columns: 3, clut: 200),
         SetupFaces.Sheet(pict: 0x410, count: 4, cellWidth: 8, cellHeight: 8, columns: 4, clut: 200),

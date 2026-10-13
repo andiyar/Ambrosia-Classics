@@ -4,8 +4,8 @@ import Foundation
 /// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
 /// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider, spirit,
-/// boss-grab, door and melee arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs
-/// (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
+/// boss-grab and melee arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs; the door
+/// arm is W2b's (passages) (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
 public enum PlayerStates {
     // MARK: the face sets (`.InitPlayerSprite @ 1004a284`, l. 42428–42490; player-states §7)
 
@@ -21,6 +21,8 @@ public enum PlayerStates {
     public static let pullUp: Int16 = 1023, run: Int16 = 1024, spin: Int16 = 1025, swim: Int16 = 1027
     public static let fidget2: Int16 = 1028, fidget1: Int16 = 1029, turn: Int16 = 1030, clingCast: Int16 = 1031
     public static let vBladeCast: Int16 = 1032, crouchCast: Int16 = 1034, potion: Int16 = 1036, shield: Int16 = 1039
+    /// 1033 (`_DAT_100a07a0`): the door walk-in (W2b).
+    public static let walkIn: Int16 = 1033
 
     /// A player face's width (face `+6`) for `.StandardSpriteCleanup`: the set's cell width (150 for 1022, 120 for
     /// 1023, else 100 — the single 1004 is 100×120 too). The sets themselves are FerazelRender's
@@ -118,8 +120,26 @@ public enum PlayerStates {
             if 10 < w.player.stun { w.player.stun = 0 }
             return false
         }
-        // Door walk-in / walk-out (`_DAT_100a05f8 ≠ 0`, l. 45701–45722). // later: Phase 3 (doors; no Phase-2 writer)
-        if w.player.animation05f8 != 0 { return false }
+        // Door walk-in / walk-out (`_DAT_100a05f8 ≠ 0`, l. 45661–45682; raw `1004fddc..1004fe80`; W2b — the passage arm
+        // of `.HitPlayerSprite` writes it): n = |05f8|, idle `_DAT_100a068c` = 0, k = n >> 1; n < 0 (walk-out) → k >>= 1,
+        // at most 2, face 1030[k] (`_DAT_100a07ac`); else at most 5, face 1033[k] (`_DAT_100a07a0`); then 05f8 += 1 —
+        // so the walk-in counts up until the jump sets −15 and the walk-out stops at 0.
+        let door = w.player.animation05f8
+        if door != 0 {
+            let n = door < 1 ? 0 &- Int32(door) : Int32(door)
+            w.player.idle = 0
+            var k = Int16(truncatingIfNeeded: n >> 1)
+            if door < 1 {
+                k = k >> 1
+                if 2 < k { k = 2 }
+                setFace(face(turn, Int(k)))
+            } else {
+                if 5 < k { k = 5 }
+                setFace(face(walkIn, Int(k)))
+            }
+            w.player.animation05f8 = door &+ 1
+            return false
+        }
 
         // Rope (`_DAT_100a0588`, l. 45723–45748). // W3's `.RopeCollide` sets the flag; no Phase-2 level has a rope.
         if w.player.rope {

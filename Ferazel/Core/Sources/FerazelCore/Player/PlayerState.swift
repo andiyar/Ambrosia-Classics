@@ -178,7 +178,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a05b8` / `_DAT_100a05b4`: launched tumble flag / tumble frame.
     public var launched = false
     public var tumbleFrame: Int16 = 0
-    /// `_DAT_100a06f0`: door transit counter (input lock). // later: Phase 3 (passages set it; W2b).
+    /// `_DAT_100a06f0`: door transit counter (input lock) — the passage arm of `.HitPlayerSprite` (W2b).
     public var doorTransit: Int16 = 0
     /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 3 (teleporters).
     public var teleporterCharge: Int16 = 0
@@ -211,7 +211,7 @@ public struct PlayerState: Equatable, Sendable {
     public var landedLatch = false
     public var bumpedLatch = false
     /// `_DAT_100a05f8`: the row-33 animation counter whose arm precedes the rope / swim / cling arms (set by
-    /// `.HitPlayerSprite`, l. 49599 / 49680). // later: P3 / Phase 3 — no Phase-2 writer, stays 0.
+    /// `.HitPlayerSprite`'s passage arm, l. 49599 / 49680 — W2b): the door walk-in (> 0) / walk-out (< 0) faces.
     public var animation05f8: Int16 = 0
     /// `PTR_DAT_100a0670`: the standing flag (the cling / stun arms clear it; P3 reads it).
     public var standing0670 = false

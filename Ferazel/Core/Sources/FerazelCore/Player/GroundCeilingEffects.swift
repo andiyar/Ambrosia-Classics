@@ -105,6 +105,7 @@ public enum EffectSprite {
         case dust: return 0x38
         case crumble: return 0x20
         case PlayerLiquids.bubble: return 8
+        case BackgroundSprite.smokeSheet: return 0x30
         default: return 0x80
         }
     }
@@ -182,6 +183,21 @@ public enum EffectSprite {
                 w.active.update(id: id) { p in
                     p.face = nil
                     p.dead = true
+                }
+            }
+        case BackgroundSprite.smoke:
+            // The cannon smoke 0x442 (W2b; the `type < 0xcb2` arm, l. 54203–54255): `+0xb8 = 0x10005`; `+0x46` += 1;
+            // the `.ChangeLightFace` / `.RemoveLight` steps at 2, 4, 6, 14, 17, 20, 23 act on `+0x9a` = −1 (the smoke
+            // has no light: no-ops, raw `1001bdbc` / `1001bd34`); `+0x46` < 0x1a → face 0x4b0[`+0x46` >> 1], else
+            // killed and face 0.
+            w.active.update(id: id) { p in
+                p.mode = 0x10005
+                p.phase &+= 1
+                if p.phase < 0x1a {
+                    p.face = FaceRef(pict: BackgroundSprite.smokeSheet, index: Int(p.phase >> 1), set: .encoded)
+                } else {
+                    p.dead = true
+                    p.face = nil
                 }
             }
         default:

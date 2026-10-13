@@ -61,6 +61,12 @@ public final class SpriteWorld {
     /// plan Invariant 3); 0 on a fresh start (nothing else stores it). The session flips it; the player's
     /// invulnerability blink (row 36, P3) and the water faces (E1b) read it.
     public var parity = false
+    /// The async gamma fade (`.GammaFadeOutAsync` / `.GammaFadeInAsync` and the per-iteration `.HandleAsyncGammaFade`,
+    /// W2b): the passage arm of `.HitPlayerSprite` starts it, the session steps it once per `.GameLoop` iteration.
+    public var gammaFade = AsyncGammaFade()
+    /// The session's part of a passage jump (W2b, `.HitPlayerSprite` l. 49594–49683): the camera, the 90
+    /// `.FindUpperLeftCorner` passes, `.HandleIdleSprites` and the draws. nil (a world without a session) skips them.
+    public var passageView: PassageView?
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

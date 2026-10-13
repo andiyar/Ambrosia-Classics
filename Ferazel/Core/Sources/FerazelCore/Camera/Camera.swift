@@ -102,6 +102,16 @@ public struct Camera: Equatable, Sendable {
         return latchOut
     }
 
+    /// The passage jump's snap (`.HitPlayerSprite` l. 49659–49664, W2b): the eased pair `_DAT_1009fd84` and the scroll
+    /// point `PTR_DAT_1009fe78` both set to (player x − 0x142, player y − 0xc0) as i16 — no clamp (the caller's
+    /// 90 `.FindUpperLeftCorner` passes then ease and clamp).
+    public mutating func snap(playerX: Int, playerY: Int) {
+        h = Int(Int16(truncatingIfNeeded: playerX - 0x142))
+        v = Int(Int16(truncatingIfNeeded: playerY - 0xc0))
+        scrollH = h
+        scrollV = v
+    }
+
     /// `max(|Δ| / 6, 1)` toward the target (no move when equal).
     static func ease(_ c: Int, toward t: Int) -> Int {
         if c < t { return c + max((t - c) / 6, 1) }

@@ -160,6 +160,7 @@ public enum SetupFaces {
         ]
         for p: Int16 in [0xa96, 0xa99, 0xa9a, 0xbba] { all.append(one(p, clut: 202)) }
         all += backgroundSheets.map { ($0.pict, $0) }
+        all += backgroundW2bSheets.map { ($0.pict, $0) }
         for p: Int16 in [0xb36, 0xb37, 0xb3a, 0xb43] { all.append(one(p)) }
         all.append(one(placeholderPict))
         return Dictionary(uniqueKeysWithValues: all)
@@ -169,6 +170,16 @@ public enum SetupFaces {
     /// `.Cache1EncFaceFromPICT(0x5c8 + i)`, flag 0 → clut 200) — their Handle re-faces them every frame (W2a). PICT
     /// 1489 is absent from every shipped file: its cache entry keeps the placeholder [LOW: placed on no level].
     public static let backgroundSheets: [Sheet] = (Int16(0x5c8)...0x5d0).map { Sheet.single($0) }
+
+    /// The Background class's W2b sets (`.InitBackgroundSprite` l. 61861–61883, cache flag 0 → clut 200): the springs
+    /// 0x47e / 0x47f / 0x480 (`.CacheEncFaceSetFromPICT(…, 4, 0x3c, 0x3c, 4, …)`; 0x481 draws 0x480 mirrored) and the
+    /// passages 0xb54 / 0xb55 (`.Cache1EncFaceFromPICT`). The cannon set 0x442 is in the level-1 table above.
+    public static let backgroundW2bSheets: [Sheet] = [
+        Sheet(pict: 0x47e, count: 4, cellWidth: 0x3c, cellHeight: 0x3c, columns: 4, clut: 200),
+        Sheet(pict: 0x47f, count: 4, cellWidth: 0x3c, cellHeight: 0x3c, columns: 4, clut: 200),
+        Sheet(pict: 0x480, count: 4, cellWidth: 0x3c, cellHeight: 0x3c, columns: 4, clut: 200),
+        .single(0xb54), .single(0xb55),
+    ]
 
     /// The sheet a Phase-1 face of PICT `pict` comes from (the level-1 table; nil for any other PICT).
     public static func sheet(pict: Int16) -> Sheet? { sheets[pict] }
@@ -222,9 +233,18 @@ public enum SetupFaces {
         case .background:
             BackgroundSprite.setupCommon(&s)                   // l. 61966–61977: layer 1, callbacks 0, `+0xa6` 3, HP 6
             switch t {
-            case 0x442...1098:                                 // cannons (l. 62058)
-                s.layer = 1000
+            case 0x442...1098:                                 // cannons (l. 62058–62184; W2b `setupCannon`)
+                // p1 < 0 (programmed path, `.SetupProgrammedPath`) and p1 > 0 (101…106 rotating / shot-steered; the
+                // rest a path without a Setup) are not built: none is placed on levels 1–2. // later: Phase 3.
+                guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }
+                BackgroundSprite.setupCannon(&s, record: p, level: c.level)
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
+            case 0x47e...0x481:                                // springs (l. 62046–62219; W2b `setupSpring`)
+                BackgroundSprite.setupSpring(&s, level: c.level)
+                face(t == 0x481 ? 0x480 : Int16(t), 0, .handle) // the Handle faces `+0x46` of 0x47e / 0x47f / 0x480
+            case 0xb54, 0xb55:                                 // passages (l. 62433–62437, 62585–62589; W2b)
+                BackgroundSprite.setupPassage(&s)
+                face(Int16(t), 0, .setupCached)                // `+0xc0 = cache + 4` (`_DAT_100a0b3c` / `0b38`)
             case 0x5c8...0x5d1:                                // maces / balls (l. 62312)
                 face(Int16(t), 0, .setupCached)                // `+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`
                 // On a level's first load that pointer is still the placeholder (PICT 150) face: the binary copies it
@@ -244,8 +264,8 @@ public enum SetupFaces {
                 if p.p1 != 0 { s.mirrored = true }             // + `.FlipHRect` of the hot rect
                 if p.p2 != 0 { s.mode = UInt32(truncatingIfNeeded: Int(p.p2) + 0x10000) }
                 if p.p3 != 0 { s.layer = 10000 }
-            case 3000..<0xbc2:                                 // wall tunnels (l. 62620–62627)
-                s.layer = 0
+            case 3000..<0xbc2:                                 // wall tunnels (l. 62620–62627; W2b `setupTunnel`)
+                BackgroundSprite.setupTunnel(&s)
                 face(Int16(t), 0, .setupCached)
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 break

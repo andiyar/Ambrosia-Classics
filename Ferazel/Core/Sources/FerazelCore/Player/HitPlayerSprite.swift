@@ -18,7 +18,9 @@ public enum HitPlayerSprite {
     ///   faster than 0x200, not invulnerable and not riding it → `.STPlayRegSound(450, 1, 0xab)` (`_DAT_100a02dc`), HP
     ///   −0x70, invulnerable 0x3c, flash 0xc, return;
     /// - `.CheckGroundCeilingHitEffects(player)`.
-    public static func hit(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+    /// - Parameter keys: the frame's `.IsInputKeyPressed` answers (the passage arm's UP; one snapshot per step — plan
+    ///   hazard "live key reads").
+    public static func hit(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard w.player.dying <= 0 else { return }
         guard let o = w.active.record(id: oID) else { return }
         if 0 < w.player.spiritTimer {
@@ -29,7 +31,7 @@ public enum HitPlayerSprite {
         switch o.handler {
         case .platform: break
         case .background:
-            background(w, player: pID, other: oID)
+            background(w, player: pID, other: oID, keys: keys)
             return
         default: return                                                 // later: the other arms
         }
@@ -67,18 +69,100 @@ extension HitPlayerSprite {
     ///   `.HurtPlayer(player, other, 0xe0, blood 1, invul 0x3c, coins 5)` and then `+0x116 = 0x1e` — **whether or not
     ///   the hurt landed**; then, if the other's one-way `+0x185` is 0, `.PlatformBounce(player, other, d, 0, player
     ///   `+0x34`, 0)` (modes 10–14 set it, so only a mode-0 / 3–9 / 15+ bar is solid); return.
-    /// - // later: W2b — passages 0xb54 / 0xb55 (l. 49594–49690), cannons, springs, tunnels.
-    static func background(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+    /// - **the passage arm** (0xb54 / 0xb55, l. 49594–49683; W2b): `passage`.
+    /// - // later: 0xbf4 and the other Background arms after it (Phase 3; none placed on levels 1–2). Cannons, springs
+    ///   and tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
+    static func background(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let d = SpriteSlot.Point(x: h(p.centre.x - o.x), y: h(p.centre.y - o.y))
-        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: W2b
+        if BackgroundSprite.passages.contains(o.type) {
+            passage(w, player: pID, passage: oID, keys: keys)
+            return
+        }
+        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 3)
         if p.invulnerable == 0 && o.classWord170 == 1 {
             HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0xe0, blood: true, invulnerable: 0x3c, coins: 5)
             w.active.update(id: pID) { $0.invulnerable = 0x1e }
         }
         guard let o1 = w.active.record(id: oID), !o1.oneWay, let p1 = w.active.record(id: pID) else { return }
         w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p1.hotRect, bounce: false)
+    }
+}
+
+/// The session's part of a passage jump (`.HitPlayerSprite` l. 49659–49682; W2b), called by `HitPlayerSprite.passage`
+/// at the binary's call sites — a world without a session (nil) skips them.
+public struct PassageView {
+    /// Per matching idle entry, after the player has moved: the camera snap (`Camera.snap`), `*_DAT_1009fec4` saved /
+    /// 0 / restored around 90 `.FindUpperLeftCorner` passes, the scroll location `_DAT_1009fe74/fe70` from the scroll
+    /// point, `.RedrawEntireScrollGrid`.
+    public var snap: (SpriteWorld) -> Void
+    /// After the scan: `.HandleIdleSprites`, `.WrapDrawSprites`, `.RedrawEntireScrollGrid`.
+    public var redraw: (SpriteWorld) -> Void
+
+    public init(snap: @escaping (SpriteWorld) -> Void, redraw: @escaping (SpriteWorld) -> Void) {
+        self.snap = snap
+        self.redraw = redraw
+    }
+}
+
+extension HitPlayerSprite {
+    /// The fade colour `.GammaFadeOutAsync` gets at a passage: the 6 bytes at `0x100a5f60` (`subi r5,r2,0x18e0` @
+    /// `10057f44`; data (0, 0, 0) in the PEF image, no writer) — black.
+    public static let passageFadeColour = RGB16(red: 0, green: 0, blue: 0)
+
+    /// The passage arm (0xb54 / 0xb55, decompile l. 49594–49683; triggers-background §2.11, -2 §8.2):
+    /// 1. the door counter `_DAT_100a06f0` 0 and UP (action 2) not pressed → return; at 0: the walk counter
+    ///    `_DAT_100a05f8 = 1` and `.GammaFadeOutAsync(0x14, black)`;
+    /// 2. `06f0` += 1; 0x15 → the look-ahead `_DAT_100a0680 = 0`; not 0x16 → return (frozen meanwhile: `.HandlePlayerSprite`
+    ///    skips `.HandleKeys` and zeroes v while `06f0` ≠ 0);
+    /// 3. at 0x16: d = the player's origin − the passage's (i16); `0680 = 0`; the record's p2 (darkness) — // later: the
+    ///    level darkness override (`G+0x20`, hdr 0x2706; every shipped passage has p2 0); then every used idle entry of
+    ///    0 … 510 whose record index `+0xe` is this passage's p1 (all scanned, no early exit) moves the player to the
+    ///    entry's (x, y) + d: `+0xc = fe68`, `+0xa = fe64`, the centre from the hot rect into `+0x10/+0xe` and
+    ///    `fd94/fd90`, the camera focus `fd44/fd40` = the centre, 24.8 from the origin; then `PassageView.snap`;
+    /// 4. `PassageView.redraw`, `.GammaFadeInAsync(0x14)`, `05f8 = −15`, `06f0 = −0x16`.
+    /// The counter climbs back to 0 one contact at a time — the player, frozen with the offset kept, touches the
+    /// partner (triggers-background-2 §8.2).
+    static func passage(_ w: SpriteWorld, player pID: Int, passage oID: Int, keys: InputActions) {
+        if w.player.doorTransit == 0 && !keys.contains(.up) { return }
+        if w.player.doorTransit == 0 {
+            w.player.animation05f8 = 1
+            w.gammaFade.fadeOut(steps: 0x14, toward: passageFadeColour)
+        }
+        w.player.doorTransit &+= 1
+        if w.player.doorTransit == 0x15 { w.player.lookAhead = 0 }
+        guard w.player.doorTransit == 0x16,
+              let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
+        w.player.lookAhead = 0
+        // later: Phase 3 — p2 ≠ 0: −1 → `G+0x20 = 0`, hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
+        let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        let dx = h(p.x - o.x), dy = h(p.y - o.y)
+        let partner = BackgroundSprite.record(w, o)?.p1
+        for i in 0..<IdleSprites.scanned {
+            guard let e = w.idle.entries[i], let partner, e.saved.recordIndex == partner else { continue }
+            w.active.update(id: pID) { s in
+                s.x = h(dx + e.saved.x)
+                s.y = h(dy + e.saved.y)
+                let r = s.hotRect
+                s.centre.x = h(s.x + r.left + h((r.right - r.left) >> 1))
+                s.centre.y = h(s.y + r.top + h((r.bottom - r.top) >> 1))
+                s.x256 = Int32(s.x) << 8
+                s.y256 = Int32(s.y) << 8
+            }
+            guard let s = w.active.record(id: pID) else { return }
+            w.player.pixelX = Int16(truncatingIfNeeded: s.x)
+            w.player.pixelY = Int16(truncatingIfNeeded: s.y)
+            w.player.centreX = Int16(truncatingIfNeeded: s.centre.x)
+            w.player.centreY = Int16(truncatingIfNeeded: s.centre.y)
+            w.player.focusX = w.player.centreX
+            w.player.focusY = w.player.centreY
+            w.passageView?.snap(w)
+        }
+        w.passageView?.redraw(w)
+        w.gammaFade.fadeIn(steps: 0x14)
+        w.player.animation05f8 = -15
+        w.player.doorTransit = -0x16
     }
 }
 

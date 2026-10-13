@@ -264,6 +264,16 @@ public struct SpriteSlot: Equatable, Sendable {
     /// iteration (W1 carry, F2 fix-round finding).
     public var handleCleared = false
     // later: W3 — `+0x1e8` the surface-height function (ropes, rope bridge); `.PlatformBounce` takes it as an argument.
+    /// W2b (cannons, `.TurnIntoCannoned @ 10058594`, decompile l. 49930–49974): `+0x164` (i32) a cannon's launch speed S
+    /// (9000 for p1 0, M l. 62114); `+0x1e4` the cannon holding a captive (an `ActiveList` id; nil = 0); `+0x1ec` /
+    /// `+0x1f0` / `+0x1f4` the captive's saved Handle, hit and tile callbacks (restored at the launch).
+    public var launchSpeed: Int32 = 0
+    public var cannon: Int?
+    public var savedHandler: SpriteHandler?
+    /// The saved `+0x4c` was 0 (`handleCleared`: an idled record captured before `.UpdateSprites` killed it).
+    public var savedHandleCleared = false
+    public var savedHasHit = false
+    public var savedHasTileHit = false
     /// `+0x1b3` burning (read by `.WrapEraseSprites`).
     public var burning = false
     /// Last frame's copies `.WrapDrawSprites` writes after each sprite (`+0xc8` face, `+0xc6`/`+0xc4` x/y, `+0x17f`,
@@ -344,6 +354,9 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// W1 (added, Invariant 9): `.HandleSeeSawSegSprite @ 100655c8` (`_DAT_100a01c8`) — the see-saw segments 0x59b
     /// `.SetupSeeSawSegSprite` installs (the player pass's see-saw test, `SpriteWorld.isSeeSawSegment`).
     case seeSawSegment
+    /// W2b (added, Invariant 9): `.HandleCannonedSprite @ 10058710` (`PTR_PTR_100a045c`) — the Handle
+    /// `.TurnIntoCannoned` installs on a cannon's captive until the launch restores the saved one (`+0x1ec`).
+    case cannoned
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

@@ -84,6 +84,8 @@ public final class FerazelSession {
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
     /// The tile solver over `world` (one per level).
     private let solver: TileSolver
+    /// The draws a passage jump makes inside the player pass (`PassageView`, W2b), appended after it.
+    private var passageOps: [DrawOp] = []
 
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
@@ -146,6 +148,8 @@ public final class FerazelSession {
         tintTableDraws = (0..<(0xff * 2)).map { _ in world.rng.next(5000) }
         // `.BuildReddenTable` (`10009fc8`), `.FindUpperLeftCorner`: none. (4) `.SetScrollLocation` and
         // `.RedrawEntireScrollGrid` in `.GameLoop` (l. 5210–5211): none, as (1).
+        world.passageView = PassageView(snap: { [unowned self] _ in self.passageSnap() },
+                                        redraw: { [unowned self] _ in self.passageRedraw() })
     }
 
     /// `.AnimateCLUT @ 1001180c`'s `FastRand(4000)` count (l. 8961–9062, raw `10011bc4`): with header `0x2732` (count)
@@ -276,8 +280,10 @@ public final class FerazelSession {
                 ChainSprite.handleSeeSawSegment(world: world, id: id, solver: solver,
                                                 faceWidth: PlatformSprite.faceWidth)
             case .background:
-                // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b's arms not run yet).
+                // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b: cannons, springs, passages).
                 BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
+            case .cannoned:
+                BackgroundSprite.handleCannoned(world: world, id: id, keys: actions)   // `.HandleCannonedSprite` (W2b)
             case .box, .rope, .ropeSegment:
                 break   // later: W3 (box, rope, ropeSegment)
             }
@@ -286,7 +292,11 @@ public final class FerazelSession {
         frameCues = world.player.drainFrameOutputs().cues
         // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
         world.collideSprites(Self.hitCallback)
-        world.collideSpecial(hitPlayer: { w, p, c in HitPlayerSprite.hit(w, player: p, other: c) }, hit: Self.hitCallback)
+        world.collideSpecial(hitPlayer: { w, p, c in HitPlayerSprite.hit(w, player: p, other: c, keys: actions) },
+                             hit: Self.hitCallback)
+        // A passage jump's draws (`PassageView`, W2b), made inside the player pass.
+        ops.draws.append(contentsOf: passageOps)
+        passageOps = []
         // later: E1a `.HandleParticles`
         ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: h, v: v))
         ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
@@ -294,15 +304,52 @@ public final class FerazelSession {
         odd.toggle()
         // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).
         world.updateSprites()
+        // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
+        if let g = world.gammaFade.handle() { ops.draws.append(g) }
         return ops
     }
 
+    /// `PassageView.snap` (`.HitPlayerSprite` l. 49659–49672, W2b): the camera snapped to (player x − 0x142, y − 0xc0),
+    /// then 90 `.FindUpperLeftCorner` passes with the focus the arm just set (`*_DAT_1009fec4`, the auto-scroll mode, is
+    /// saved, zeroed and restored around them — auto-scroll is refused by `Camera.init`, so it is 0 throughout); the
+    /// scroll location `_DAT_1009fe74/fe70` takes the scroll point (Core's draws read `camera.scrollH/V`);
+    /// `.RedrawEntireScrollGrid`.
+    private func passageSnap() {
+        guard let p = world.playerID.flatMap({ world.active.record(id: $0) }) else { return }
+        camera.snap(playerX: p.x, playerY: p.y)
+        world.player.scrollH = camera.scrollH
+        world.player.scrollV = camera.scrollV
+        for _ in 0..<Self.passagePasses { findUpperLeftCorner(graphics: prefs.graphics) }
+        passageOps.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+    }
+
+    /// The passage jump's `.FindUpperLeftCorner` passes (`sVar36 < 0x5a`, l. 49666).
+    public static let passagePasses = 0x5a
+
+    /// `PassageView.redraw` (l. 49676–49678): `.HandleIdleSprites` at the new view (the live player's rect),
+    /// `.WrapDrawSprites`, `.RedrawEntireScrollGrid`.
+    private func passageRedraw() {
+        let playerRect = world.playerID.flatMap { world.active.record(id: $0) }.map { p in
+            IdleSprites.Rect(top: p.y + p.hotRect.top, left: p.x + p.hotRect.left, bottom: p.y + p.hotRect.bottom,
+                             right: p.x + p.hotRect.right)
+        }
+        world.idle.handle(h: camera.scrollH, v: camera.scrollV, playerHotRect: playerRect, active: &world.active,
+                          faceRect: faceBounds)
+        let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
+        passageOps.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
+            Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
+        }))
+        passageOps.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+    }
+
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
-    /// Effect class's `.HitEffectSprite` is empty. // later: W2a/W2b (background), W3 (box), Phase 4–5 (enemies, shots).
+    /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels). // later:
+    /// W3 (box), Phase 4–5 (enemies, shots).
     static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         guard let s = w.active.record(id: a) else { return }
         switch s.handler {
         case .platform: PlatformSprite.hit(w, id: a, other: b)
+        case .background: BackgroundSprite.hit(w, id: a, other: b)        // `.HitBackgroundSprite` (W2b)
         default: break
         }
     }
@@ -389,5 +436,66 @@ public final class FerazelSession {
         let b = [UInt8](res.data)
         func i16(_ o: Int) -> Int { Int(Int16(bitPattern: UInt16(b[o]) << 8 | UInt16(b[o + 1]))) }
         return IdleSprites.Rect(top: 0, left: 0, bottom: i16(6) - i16(2), right: i16(8) - i16(4))
+    }
+}
+
+/// The async gamma fade (lighting-tables §10; decompile l. 31872–31950), W2b: `.GammaFadeOutAsync(N, rgb) @ 100356c0`,
+/// `.GammaFadeInAsync(N) @ 1003565c` and the per-iteration `.HandleAsyncGammaFade @ 10035788` (`.GameLoop` l. 5282,
+/// after `.UpdateSprites` and `.UpdateStatusBar(1, 0, 0)`). Core keeps the state and emits each step as
+/// `DrawOp.gammaStep` (E2's `ScreenGamma` executes it):
+/// - fade-out — only while `*_DAT_1009fde8` (faded out) is 0: `DAT_100a53d6` (done) 0, step `_DAT_100a17ee` 0,
+///   direction `_DAT_100a17ec` 0, N `_DAT_100a17d0`, the target rgb at `100a024c`;
+/// - fade-in — only while faded out: done 0, step 0, N, direction 1;
+/// - each iteration while not done: `MT_FadeToColor(rgb or nil, step·100 / N, 0, 1)` (`gammaStep(step, N, toward)`),
+///   step += 1; past N: done, and the end state — fade-out `FadeToColor(rgb, 100)` + faded out 1, fade-in
+///   `FadeToColor(nil, 0)` + faded out 0 (`_ShowCursorSafe`). Neither end call moves the gamma `ScreenGamma` models
+///   (100 % toward the colour just reached; 0 %), so no op is emitted for them.
+/// `DAT_100a53c2` (gamma available) is taken as set. The level-start fades of `.GameLoop` are not built (session
+/// header), so a level starts with no fade pending (done) and not faded out [MED: `DAT_100a53d6`'s value at a level
+/// start depends on those unbuilt fades].
+public struct AsyncGammaFade: Equatable, Sendable {
+    /// `DAT_100a53d6`.
+    public private(set) var done = true
+    /// `_DAT_100a17ec`: 0 out, 1 in.
+    public private(set) var fadingIn = false
+    /// `_DAT_100a17ee` / `_DAT_100a17d0`.
+    public private(set) var step: Int16 = 0
+    public private(set) var steps: Int16 = 0
+    /// `100a024c`: the fade-out colour.
+    public private(set) var toward = RGB16(red: 0, green: 0, blue: 0)
+    /// `*_DAT_1009fde8`: the screen is faded out.
+    public private(set) var fadedOut = false
+
+    public init() {}
+
+    /// `.GammaFadeOutAsync(N, rgb)`.
+    public mutating func fadeOut(steps n: Int16, toward rgb: RGB16) {
+        guard !fadedOut else { return }
+        done = false
+        step = 0
+        fadingIn = false
+        steps = n
+        toward = rgb
+    }
+
+    /// `.GammaFadeInAsync(N)`.
+    public mutating func fadeIn(steps n: Int16) {
+        guard fadedOut else { return }
+        done = false
+        step = 0
+        steps = n
+        fadingIn = true
+    }
+
+    /// `.HandleAsyncGammaFade`: the step's op, nil when no fade runs.
+    public mutating func handle() -> DrawOp? {
+        guard !done else { return nil }
+        let op = DrawOp.gammaStep(numerator: Int(step), denominator: Int(steps), toward: fadingIn ? nil : toward)
+        step &+= 1
+        if steps < step {
+            done = true
+            fadedOut = !fadingIn
+        }
+        return op
     }
 }

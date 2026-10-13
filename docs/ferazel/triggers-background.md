@@ -481,3 +481,15 @@ contributed (part 2 §5 rows 2, 3, 6–10) is closed there with its evidence in 
 ⚑ wave 2 (2026-10-04): consolidated in part 2 §7 (wave-1 rows) and §7.1 (wave-2 rows, numbered W1..).
 The wave-2 corrections to **this** part are made in place above (each marked ⚑ wave 2) — the
 Button-consumer count (two → three) and the wiring census (22 → 24 of 24) were wrong here.
+
+⚑ W2b build (2026-10-14; Ben: follow the binary) — additions, no contradiction found:
+- §2.2 launch vectors are the **rounded** double products, then fctiwz: S = 9000 gives 0.707·S = 6363 (not 6362),
+  0.235·S = 2115, 0.35·S = 3150 (M l. 50074–50113). Each smoke is an Effect 0x442 whose
+  `.SetupEffectSprite` runs the explosion package: 45 × (`FastRand(2000)`, `FastRand(2000)`, `FastRand(2)`) →
+  `.NewParticle(4, 0x96, …)` (M l. 53765–53783), then layer 0x7fbc, no light; `.HandleCannonedSprite` adds `FastRand(2)`
+  (mirror) and `FastRand(4)` (start phase) per smoke and `FastRand(8)` dy, dx before the 2nd and 3rd — 415 draws a
+  launch, plus 484's and 483's rates. The smoke's Handle: mode 0x10005, face 0x4b0[phase >> 1] until phase 0x1a.
+- §2.11 the passage fade colour (`.GammaFadeOutAsync(0x14, …)` reads the 6 bytes at `0x100a5f60`, `subi r5,r2,0x18e0`
+  @ `10057f44`) is (0, 0, 0) in the PEF data with no writer — black. Each async fade takes N + 1 = 21 iterations
+  (`.HandleAsyncGammaFade` j = 0 … 20); the jump at contact 22 follows the fade-out's end at iteration 21.
+- §2.12 the window is built from the tunnel's 24.8 position (`+0x14 >> 8`, `+0x1c >> 8`), not `+0xc/+0xa`.
