@@ -1097,3 +1097,36 @@ re-measured on L1; the flat-floor sequences are pinned by PlayerStateTests. ◈ 
 destroy or a long invulnerability; parity and crunch log across level loads → W4; app arrow keys still pan the ◇
 focus driver (they no longer move Ferazel) → P5; `FrameRenderer.setTile` re-parses the level per op (0.145 ms
 release) → A3 if it hitches; held-item faces 0x2ee..0x308 unloaded.
+
+## D34 — Ferazel's Wand goes to the unattended session loop: Ben's authorizations + the Fable cross-check rule (2026-10-13)
+
+**Decided (Ben, AskUserQuestion in the setup session, 2026-10-13; he is away in Fiji for a few days and wants to come
+back to a playable or at least testable game):** (1) **Scope:** the loop takes the whole game, phases 2 → 7 in design §8
+order, as far as it gets; **phase gates queue, they do not block** — at each phase end it stages the build to
+`~/Desktop`, writes the gate card into `docs/QUESTIONS.md`, and plans the next phase in the next run; Ben's later
+verdict can re-open a phase. (2) **Phase plans 3–7:** the loop writes each plan when its turn comes (Opus planner), two
+Opus review legs, **one Fable review leg**, fixes applied, rulings in a new D-number, listed in QUESTIONS for Ben's
+read — **execution does not wait for his approval** (an exception to the standing "Ben approves plans first" rule,
+for the loop only). (3) **Run / stage:** the loop may launch the staged `.app` for the G9 boot check and replace
+`~/Desktop/Ferazel's Wand.app` (+ notes, icon previews); never delete `com.ambrosiaclassics.*` prefs; no notarization,
+no release packaging, no installs. (4) **HectorKit:** the loop may commit to HectorKit's LOCAL `main` when a phase needs
+it — own HK worktree, zero-skip floor may only rise, HK D-number, Classics STATE pins the SHA; never push either repo.
+**Also Ben (chat, same session): "a Fable review for each phase ending (or major step like that); Opus 5.5 as the
+primary otherwise — Fable is our cross-check for each major work."** Recorded in CLAUDE.md "Model policy": Fable legs =
+each phase plan after its Opus legs, each phase end over the whole phase's diff + gate card before staging, and (seat's
+reading of "major step") a tie-break when two Opus legs contradict each other on a MAJOR finding after one fix round.
+Nothing else runs on Fable. This supersedes the 2026-10-07 "no Fable anywhere" tightening (memory
+`feedback-no-fable-gate-every-task`) for those three cases only. The kit's generic `standing-prompt.md` (written the
+same day) lists "a task the plan marks MAJOR" among its Fable triggers; for this project the chip narrows it to the
+three cases above — Ben flips that by editing one line of `docs/NEXT.md` if he wants Fable on every MAJOR task.
+**Seat's rulings (setup session):** the adapter is `.looper/config.sh` (REPO, local main, `docs/NEXT.md` chip,
+`docs/QUESTIONS.md`, `docs/LOOP-LOG.md`, `STOP` + `.looper/logs/` git-ignored, `MODEL=claude-opus-5-5`,
+`STALL_LIMIT=3`, `MAX_RUNS=0`, a `pre_run` that waits for this project's xcodebuild/SwiftPM processes and the staged
+game apps to be idle, 30-min cap). One run = the next 2 ladder tasks (3 if ≤ 1 MAJOR), or a phase-end run, or a
+planning run — the 300k cap sized at "2 MAJOR ≈ 190k". The loop never writes `STATUS: DONE` (Ben's word) and never
+spawns chips; `STATUS: BLOCKED` only when nothing on the ladder can proceed without him (his brother's Windows test,
+the notarized DMG, a remote). Gate numbers in the first chip were run from main 1aedbf4 on 2026-10-13: `Ferazel/Core`
+154/0, census 1,108/0, Ferazel BUILD SUCCEEDED, HectorKit 0c65dcb clean, floor 328.
+**Rejected:** blocking at each phase gate (Ben chose queued gates); waiting for plan approval per phase; HectorKit
+read-only for the loop.
+**Approved by:** Ben, 2026-10-13.

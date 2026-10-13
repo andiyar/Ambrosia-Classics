@@ -24,3 +24,7 @@ DerivedData/
 .DS_Store
 !/ghidra/*.sh
 !/ghidra/README.md
+
+# unattended session looper (D34): the stop flag and the run logs
+/STOP
+/.looper/logs/

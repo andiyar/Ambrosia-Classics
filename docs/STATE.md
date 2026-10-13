@@ -4,6 +4,12 @@
 
 ## Where we are
 
+- **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
+  `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
+  `docs/QUESTIONS.md` (what only Ben can answer — his phase gate cards queue there; he is away in Fiji). Each run
+  updates the Ferazel bullet below at its close. Start/stop: `.looper/config.sh` header. Setup gates from main 1aedbf4:
+  Ferazel/Core 154/0, census 1,108/0, Ferazel builds, HectorKit 0c65dcb clean (floor 328). P1a–P3 were then built by an interactive session (185/0, a40fc96); first loop run = P4 P5.
+
 - **Phase 0 DONE (2026-10-03).** HectorKit **v0.1.0** (`~/Developer/HectorKit`, tag on f578925): HectorResources /
   HectorGraphics / HectorAudio lifted from EV e23122f + the new banded-QuickTime decoder; machine gate
   `tools/check-zero-skip.sh` PASS at **floor 119** (0 skips with the three `HECTORKIT_DATA_*` vars; EV Override
