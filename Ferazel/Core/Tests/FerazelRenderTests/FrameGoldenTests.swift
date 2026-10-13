@@ -167,8 +167,8 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertEqual(r.executed, [
             .screenClut(202), .picture(129), .entireGrid(h: 0, v: 0), .strip(h: 0, v: 0), .entireGrid(h: 0, v: 0),
             .statusBar(full: true),
-            .strip(h: 0, v: 0), .lightsOntoTiles, .handleLights, .sprites(sprites), .copy(h: 0, v: 0),
-            .lightFace(24), .erase(erased), .statusBar(full: false),
+            .strip(h: 0, v: 0), .lightsOntoTiles, .waterEffects(0), .handleLights, .sprites(sprites), .particles(0),
+            .copy(h: 0, v: 0), .eraseParticles, .lightFace(24), .erase(erased), .statusBar(full: false),
         ])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 68)          // the level-1 Setup lights (Effects 1)
         // The ripple phase `*_DAT_1009fd74`: 0x200 at level start (l. 5217), + 0x100 after the erase (`100127ec..f4`).
@@ -183,7 +183,7 @@ final class FrameGoldenTests: XCTestCase {
         XCTAssertFalse(skipped.drawn)
         try rr.apply(skipped)
         XCTAssertEqual(rr.executed.filter { if case .copy = $0 { true } else { false } }, [])
-        XCTAssertEqual(rr.executed.count, r.executed.count - 1)
+        XCTAssertEqual(rr.executed.count, r.executed.count - 3)              // no copy, no particle draw or erase
         XCTAssertEqual(rr.sprites.ripplePhase, 0x300)                     // a skipped iteration still erases
         try rr.apply(rs.step(keys: KeyState()))
         XCTAssertEqual(rr.executed.filter { if case .copy = $0 { true } else { false } }.count, 1)

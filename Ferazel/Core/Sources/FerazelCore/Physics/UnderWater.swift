@@ -41,10 +41,10 @@ public enum UnderWater {
     ///   inset`, at least 1;
     /// - `+0x19e > 0` → `.HandleFlotation(s, S)`;
     /// - `+0x140 = 1`.
-    /// - Parameter splash: `.Splash(s, 3) @ 10041f04` — the entry splash's particles (and their `FastRand` draws).
-    ///   // later: E1a
+    /// - Parameter splash: `.Splash(s, 3) @ 10042874` (l. 38175) — the entry splash's particles and their `FastRand`
+    ///   draws (`Splash`, E1a).
     public static func handle(world w: SpriteWorld, id: Int, pos: TilePos,
-                              splash: (SpriteWorld, Int) -> Void = { _, _ in }) {
+                              splash: (SpriteWorld, Int) -> Void = { w, id in Splash.splash(w, id: id, mode: 3) }) {
         guard var s = w.active.record(id: id) else { return }
         let inset: Int32 = 0                                            // `**(short **)(s + 0xc0)`: frame rect top
         let row = Int(Int16(truncatingIfNeeded: pos.y) >> 5)            // `(short)((int)param_2 >> 0x15)`

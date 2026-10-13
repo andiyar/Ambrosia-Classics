@@ -333,11 +333,12 @@ public enum HurtPlayer {
         return true
     }
 
-    /// The E1a seam: `.BloodSpray(s, attacker, count, speed, spread, kind) @ 100425f8` (particles §; 40 particles and
-    /// their `FastRand` draws). // later: E1a builds it here — until then a hurt with blood draws less than the
-    /// original (the stream diverges after the first bloody hit).
+    /// `.BloodSpray(s, attacker, count, speed, spread, kind) @ 100425f8` (particles §5.3; E1a): 40 particles and their
+    /// 80 `FastRand` draws when the hot rects overlap (`BloodSpray`).
     static func bloodSpray(_ w: SpriteWorld, player: Int, attacker: Int, count: Int16, speed: Int16, spread: Int16,
-                           kind: Int16) {}
+                           kind: Int16) {
+        BloodSpray.spray(w, victim: player, attacker: attacker, count: count, speed: speed, spread: spread, kind: kind)
+    }
 }
 
 /// `.HurtSprite(s, damage, dvx, dvy, invul, flash) @ 10037034` (decompile l. 32705–32726): damage < 1 or HP `+0xa4`

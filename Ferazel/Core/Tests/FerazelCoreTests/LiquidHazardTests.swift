@@ -296,7 +296,8 @@ final class LiquidHazardTests: XCTestCase {
                 XCTAssertEqual(w.player.bubbleCooldown, 2)
             case 41:
                 XCTAssertEqual(w.player.bubbleCooldown, 1)
-                XCTAssertEqual(w.player.bubbleTimer, 238)
+                // ⚑ E1a (Invariant-10, revert-verified): was 238 — the entry `.Splash(s, 3)` now draws its 32 × 3.
+                XCTAssertEqual(w.player.bubbleTimer, 209)
                 XCTAssertEqual(w.player.cues.filter { $0.snd == 415 }, [])
             case 104:
                 XCTAssertFalse(w.active.sprite(id: bubble!)!.dead)

@@ -18,8 +18,13 @@ import FerazelCore
 ///   and `.WrapDrawSprites`, unconditional — not an op of the seam): every active slot not pending removal copies its
 ///   face, point, radius and colour to the "previous" fields and clears `+1` (new); the speeds are 0 for every
 ///   level-1 light, so nothing moves; the row-redraw counter `*_DAT_100a012c` has no writer (its only TOC load is
-///   `1001bff8`), so its redraw never runs. `.WrapDrawWaterEffects` (bubbles, particles) is not built. Then
-///   `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair.
+///   `1001bff8`), so its redraw never runs. Then `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the
+///   grid's drawn pair.
+/// - `wrapDrawWaterEffects` (E1a): recorded only — its water faces // later: E1b (the list is empty until then). It
+///   arrives before `wrapDrawSprites`, so `.HandleLights` (run with the sprites op) follows it here, where the original
+///   runs it first (l. 9205–9206); with an empty list the order is not observable [E1b moves it].
+/// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
+///   its erase after the copy.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
 /// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` — the slot's face and radius; the next
 ///   `.DrawLightsOntoTiles` sees the face differ from its previous one and redraws the cells it covers.
@@ -61,6 +66,7 @@ public final class FrameRenderer {
         case handleLights, sprites(Int), copy(h: Int, v: Int), lightFace(Int), erase(Int), statusBar(full: Bool)
         case gamma(numerator: Int, denominator: Int)
         case tile(col: Int, row: Int)
+        case waterEffects(Int), particles(Int), eraseParticles
     }
 
     public let resources: FerazelResources
@@ -90,6 +96,8 @@ public final class FrameRenderer {
     public private(set) var statusBar: StatusBar
     /// `_DAT_100a0128`: the light slots the grid and the sprite light pass read.
     public private(set) var lights: LightRenderer
+    /// The particle colour rows, draw and erase (E1a).
+    public private(set) var particles: ParticleRenderer
     /// `PTR_DAT_1009fe78`.
     public private(set) var scroll: (h: Int, v: Int) = (0, 0)
     /// The level+base CLUT the tables were built on (working copy, lighting source and search CLUT; `LevelTables`).
@@ -150,6 +158,11 @@ public final class FrameRenderer {
                                 drawnV: 0, effects: prefs.effects, lights: lights)
         sprites = SpriteBlitter(level: L, tables: tables, faces: faces, effects: prefs.effects, lights: lights)
         statusBar = try StatusBar(resources: resources, screenClut: clut, search: search, dither: dither, text: text)
+        // `.InitParticles` → `.InitParticleColors` (`.SetupLevel` l. 2572, after `.SetScreenClut(level+base)`): clut
+        // 801 entries through `Color2Index` against the level+base CLUT; lit kinds through ambient row hdr 0x2706.
+        particles = ParticleRenderer(system: try ColorLUT.load(id: 801, from: resources, chain: .frontEnd),
+                                     screenClut: clut, search: search, tables: tables,
+                                     darkness: L.header.darknessEnable, effects: prefs.effects)
         screen = IndexedFrame()
         ports = FramePorts()
     }
@@ -306,6 +319,14 @@ public final class FrameRenderer {
             case .setTile(let col, let row, let fg):
                 try setTile(col: col, row: row, fg: fg)
                 executed.append(.tile(col: col, row: row))
+            case .wrapDrawWaterEffects(let list):
+                executed.append(.waterEffects(list.count))
+            case .drawParticles(let list):
+                particles.draw(list, scroll: scroll, ports: &ports)
+                executed.append(.particles(list.count))
+            case .eraseParticles:
+                particles.erase(scroll: scroll, ports: &ports)
+                executed.append(.eraseParticles)
             case .statusBar(let state):
                 let full = statusBarFull
                 statusBar.update(state, full: full, screen: &screen)

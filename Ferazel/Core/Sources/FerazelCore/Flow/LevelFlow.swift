@@ -52,6 +52,9 @@ public struct LevelCarry: Equatable, Sendable {
     /// player's HP is `G+4` again at `.SetupPlayerSprite`, l. 42831). Nil = fresh `G` (a first start, or the restart
     /// after death, D33); `crunchLog` above still rules the log.
     public var globals: GameGlobals?
+    /// The particle pool's count, hint and high-water mark (`100a019c`/`01a0`/`01a4`): static shorts `.InitParticles`
+    /// never resets (particles §1.1), so they run on into every next level and every restart (E1a).
+    public var particles = ParticlePool.Counters()
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

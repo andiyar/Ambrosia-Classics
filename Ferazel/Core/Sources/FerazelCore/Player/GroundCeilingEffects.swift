@@ -70,8 +70,8 @@ public enum EffectSprite {
     /// `+0x46` 0, layer `+0x80` = 0xb (stored before `.MTInsertSprite`, so it is the sort key whatever the caller
     /// passed), the Handle (`.effect`), the hit callback `.HitEffectSprite` (empty, but installed: `+0x5c` ≠ 0), the tile
     /// callback `.HitEffectTileSprite` (no 1201/1210 Handle separates), `+0xa6` 3 (not kept: no Phase-2 reader), hot rect
-    /// `SetRect(+0x34, 16, 16, 32, 32)`, face 0, `+0xc = +8`, `+0xa = +6`, 24.8 from them, `+0xe4` 1 / `+0x13e` 0 (not
-    /// kept). 1201, 1210 and 1040 skip the explosion package (no draws, no light). 1040 (0x410): hot rect
+    /// `SetRect(+0x34, 16, 16, 32, 32)`, face 0, `+0xc = +8`, `+0xa = +6`, 24.8 from them, `+0xe4` 1 (not kept),
+    /// `+0x13e` 0 (no splash, E1a). 1201, 1210 and 1040 skip the explosion package (no draws, no light). 1040 (0x410): hot rect
     /// `SetRect(+0x34, 0, −10, 8, −2)` (left 0, top −10, right 8, bottom −2; l. 53736).
     public static func setup(_ s: inout SpriteSlot) {
         s.lightOverlay = false
@@ -85,12 +85,13 @@ public enum EffectSprite {
         s.y = s.oldPosition.y
         s.x256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.x)) << 8
         s.y256 = Int32(Int16(truncatingIfNeeded: s.oldPosition.y)) << 8
+        s.splashes = false
         if s.type == PlayerLiquids.bubble { s.hotRect = IdleSprites.Rect(top: -10, left: 0, bottom: -2, right: 8) }
     }
 
     /// `.HitEffectTileSprite(s, pos, kind, layer) @ 100619a0` (l. 54298–54324), the Effect class's tile callback: BG
-    /// (layer 0) liquid (`.IsWaterTile`) with `+0x140 == 0` → `.HandleUnderWater(s, pos)` (its entry `.Splash`
-    /// // later: E1a). The FG arm (0xc1b's `.WallBounce`) and the crunch arm (`+0xeb` → `.CrunchTile`) belong to effects
+    /// (layer 0) liquid (`.IsWaterTile`) with `+0x140 == 0` → `.HandleUnderWater(s, pos)` (its entry `.Splash` —
+    /// an Effect's `+0x13e` is 0, so it returns at once). The FG arm (0xc1b's `.WallBounce`) and the crunch arm (`+0xeb` → `.CrunchTile`) belong to effects
     /// Phase 2 does not spawn (// later: E1a / Phase 3–5).
     public static func hitTile(_ solver: TileSolver, id: Int, pos: TilePos, kind: Int, layer: TileLayer) {
         let w = solver.world

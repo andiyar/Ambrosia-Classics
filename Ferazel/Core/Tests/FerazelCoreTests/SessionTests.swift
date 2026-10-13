@@ -298,13 +298,19 @@ final class SessionTests: XCTestCase {
                 case .statusBar: return "status"
                 case .gammaStep: return "gamma"
                 case .setTile: return "setTile"
+                case .wrapDrawWaterEffects: return "water"
+                case .drawParticles: return "particles"
+                case .eraseParticles: return "eraseP"
                 }
             }
         }
         // Level start (`.SetupLevel` l. 2571–2582, `.GameLoop` l. 5203–5221), then iteration 1 (l. 5224–5290).
         // `.HandleSprites` runs between the copy and the erase: the active potion's light twinkle (`BonusHandle`).
+        // E1a: `.WrapDrawWaterEffects` before the sprites every iteration; `.DrawParticles` before and
+        // `.EraseParticles` after the copy on drawn iterations (l. 9206, 9433, 9449).
         XCTAssertEqual(kinds(first.draws), ["clut", "picture", "entire", "grid", "entire", "status",
-                                            "grid", "lights", "sprites", "copy", "lightFace", "erase", "status"])
+                                            "grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
+                                            "lightFace", "erase", "status"])
         XCTAssertEqual(first.draws[0], .setScreenClut(id: 202))
         XCTAssertEqual(first.draws[1], .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
         XCTAssertEqual(first.draws[2], .redrawEntireScrollGrid(h: 0, v: 0))
@@ -313,9 +319,12 @@ final class SessionTests: XCTestCase {
         let start = StatusBarState(score: 0, coins: 0, health: 560, breath: 560, magic: 560,
                                    levelName: "A Scent Of Peril", selectedSlot: 0)
         XCTAssertEqual(first.draws[5], .statusBar(start))
-        XCTAssertEqual(first.draws[9], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
-        XCTAssertEqual(first.draws[10], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
-        XCTAssertEqual(first.draws[12], .statusBar(start))
+        XCTAssertEqual(first.draws[8], .wrapDrawWaterEffects([]))
+        XCTAssertEqual(first.draws[10], .drawParticles([]))
+        XCTAssertEqual(first.draws[11], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
+        XCTAssertEqual(first.draws[12], .eraseParticles)
+        XCTAssertEqual(first.draws[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
+        XCTAssertEqual(first.draws[15], .statusBar(start))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
         XCTAssertTrue(first.drawn)
@@ -323,10 +332,10 @@ final class SessionTests: XCTestCase {
         // Iteration 1 draws the spawned-now sprites with a face; the player's face is still 0 (`.SetupPlayerSprite`).
         // W1 ◈: the 7 platforms are faceless until their first Handle (`.SetupPlatformSprite` `+0xc0 = 0`), so 3 of
         // the 10 are drawn (was 10 with the Phase-1 Setup faces).
-        guard case .wrapDrawSprites(let drawn1) = first.draws[8] else { return XCTFail("sprites") }
+        guard case .wrapDrawSprites(let drawn1) = first.draws[9] else { return XCTFail("sprites") }
         XCTAssertEqual(drawn1.count, 3)
         XCTAssertFalse(drawn1.contains { $0.face.pict == 1003 })
-        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = first.draws[11] else { return XCTFail("erase") }
+        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = first.draws[14] else { return XCTFail("erase") }
         XCTAssertEqual([eh, ev], [0, 0])
         XCTAssertEqual(sprites1, session.active.sprites)
         let player = try XCTUnwrap(session.active.sprite(id: session.playerID))
@@ -336,9 +345,10 @@ final class SessionTests: XCTestCase {
 
         // Iteration 2: no level-start ops; the player is drawn.
         let second = session.step(keys: KeyState())
-        XCTAssertEqual(kinds(second.draws), ["grid", "lights", "sprites", "copy", "lightFace", "erase", "status"])
+        XCTAssertEqual(kinds(second.draws), ["grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
+                                             "lightFace", "erase", "status"])
         XCTAssertTrue(second.music.isEmpty && second.requests.isEmpty)
-        guard case .wrapDrawSprites(let drawn2) = second.draws[2] else { return XCTFail("sprites") }
+        guard case .wrapDrawSprites(let drawn2) = second.draws[3] else { return XCTFail("sprites") }
         XCTAssertTrue(drawn2.contains { $0.face == FaceRef(pict: 1003, index: 3, set: .encoded) && $0.x == 83 })
 
         // prefs[0] "Reduce frame rate": the FIRST iteration skips (odd starts false), then they alternate. A skipped
@@ -349,9 +359,10 @@ final class SessionTests: XCTestCase {
         let steps = (0..<4).map { _ in s.step(keys: KeyState()) }
         XCTAssertEqual(steps.map(\.drawn), [false, true, false, true])
         XCTAssertEqual(kinds(steps[0].draws), ["clut", "picture", "entire", "grid", "entire", "status",
-                                               "grid", "lights", "sprites", "lightFace", "erase", "status"])
-        XCTAssertEqual(kinds(steps[1].draws), ["grid", "lights", "sprites", "copy", "lightFace", "erase", "status"])
-        XCTAssertEqual(kinds(steps[2].draws), ["grid", "lights", "sprites", "lightFace", "erase", "status"])
+                                               "grid", "lights", "water", "sprites", "lightFace", "erase", "status"])
+        XCTAssertEqual(kinds(steps[1].draws), ["grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
+                                               "lightFace", "erase", "status"])
+        XCTAssertEqual(kinds(steps[2].draws), ["grid", "lights", "water", "sprites", "lightFace", "erase", "status"])
 
         // Effects 3 (Reduced) drops `.DrawLightsOntoTiles`; Low Detail / plain copy reach the copy's arguments.
         var reduced = FerazelPrefs()
@@ -361,8 +372,8 @@ final class SessionTests: XCTestCase {
         let e = try FerazelSession(resources: r, prefs: reduced, level: 1)
         _ = e.step(keys: KeyState())
         let e2 = e.step(keys: KeyState())
-        XCTAssertEqual(kinds(e2.draws), ["grid", "sprites", "copy", "erase", "status"])
-        XCTAssertEqual(e2.draws[2], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
+        XCTAssertEqual(kinds(e2.draws), ["grid", "water", "sprites", "particles", "copy", "eraseP", "erase", "status"])
+        XCTAssertEqual(e2.draws[4], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
 
         // The keys drive the player; his Handle's look-ahead row and `.PlayerScroll` move the focus (P5; the arrow
         // keys of the Phase-1 ◇ focus driver are gone): keypad 6 (action 1, `FerazelPrefs.defaultKeys`) walks.

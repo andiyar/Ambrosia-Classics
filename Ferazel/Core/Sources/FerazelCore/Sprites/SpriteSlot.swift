@@ -291,6 +291,12 @@ public struct SpriteSlot: Equatable, Sendable {
     public var previousRotation: Int16 = 0
     public var previousScale: Int16 = 0x100
     public var previousWaterRow: Int32 = 0
+    /// `+0x12a` (i16): last frame's water kind (`+0x128` copied by `.WrapDrawSprites`' tail, l. 10391) — the kind of
+    /// `.Splash(s, 4)`'s leaving particles (E1a).
+    public var previousWaterKind: Int16 = 0
+    /// `+0x13e` (u8): the sprite splashes (`.Splash` returns at once when 0): `.InitSprite` 1 (l. 35648), the Effect
+    /// Setup 0 (l. 53734) — no other writer (E1a).
+    public var splashes = true
 
     public init(type: Int16, x: Int, y: Int, recordIndex: Int16 = -1, layer: Int32 = 0, face: FaceRef? = nil) {
         self.type = type
@@ -320,7 +326,7 @@ public struct SpriteSlot: Equatable, Sendable {
 
     /// `.WrapDrawSprites`' tail for every sprite on the list, drawn or not (`100149a4..10014a14`): `+0xc8 ← +0xc0`,
     /// `+0xc6`/`+0xc4 ← +0xc`/`+0xa`, `+0xbc ← +0xb8`, `+0x1ac ← +0x1aa`, `+0x1b0 ← +0x1ae`, `+0x124 ← +0x11c`,
-    /// `+0x17f ← +0x17e` (the fixed-point and velocity copies are not kept).
+    /// `+0x17f ← +0x17e`, `+0x12a ← +0x128` (l. 10391; E1a) (the fixed-point and velocity copies are not kept).
     public mutating func recordDrawn() {
         previous = face == nil ? nil : makeDraw()
         drawnX = x
@@ -328,6 +334,7 @@ public struct SpriteSlot: Equatable, Sendable {
         previousRotation = rotation
         previousScale = scale
         previousWaterRow = waterRow
+        previousWaterKind = waterKind
     }
 
     /// What `.WrapDrawSprites` hands the blitters for this sprite: nil when `+0xe9` is set or `+0xc0` is 0 (step 1,

@@ -1,0 +1,376 @@
+import XCTest
+import HectorResources
+@testable import FerazelCore
+
+/// E1a (docs/plans/2026-10-10-ferazel-phase2.md): the particle pool — `.NewParticle @ 10031e68`, `.HandleParticles
+/// @ 10031828`, the Core half of `.DrawParticles @ 10031aa4` (the colour-0 kill, `ParticleLife`), `.Splash @ 10042874`
+/// and the session's particle ops (particles §1–§5.4). Synthetic tile grids where a test names one; the committed level 1
+/// otherwise (D26).
+final class ParticleTests: XCTestCase {
+
+    private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
+
+    /// A 16×16 grid: FG tile 0x50 at (1, 1), 0x4f at (2, 1), 0x51 at (3, 1); BG liquid (tile 1, kind 200) on row 2,
+    /// cols 0…5, with FG tile 0x50 over (4, 2).
+    private func grid() -> TileGrid {
+        var fg = [UInt16](repeating: 0, count: 16 * 16)
+        fg[1 * 16 + 1] = 0x50 + 1
+        fg[1 * 16 + 2] = 0x4f + 1
+        fg[1 * 16 + 3] = 0x51 + 1
+        fg[2 * 16 + 4] = 0x50 + 1
+        var bg = [UInt16](repeating: 0, count: 16 * 16)
+        for c in 0...5 { bg[2 * 16 + c] = 1 + 1 }
+        var bgKinds = [Int](repeating: 0, count: 0x60)
+        bgKinds[1] = 200
+        return TileGrid(fg: TileMap(width: 16, height: 16, cells: fg), bg: TileMap(width: 16, height: 16, cells: bg),
+                        fgKinds: Array(0..<0x60), bgKinds: bgKinds)
+    }
+
+    /// A particle at rest inside cell (col, row) (5 px in), kind 3 (never colour-killed), no gravity.
+    @discardableResult
+    private func still(_ p: inout ParticlePool, col: Int, row: Int, mode: Int, delay: Int = 0, vy: Int = 0) -> Int {
+        p.newParticle(kind: 3, gravity: 0, v: row * 32 + 5, h: col * 32 + 5, shape: 1, vx: 0, vy: vy, delay: delay,
+                      mode: mode)
+    }
+
+    // MARK: - the five plan tests
+
+    func testAllocationHint() {
+        var p = ParticlePool()
+        // `.NewParticle` (raw `10031e84..10031f38`): slots 0, 1, 2 from hint 0; hint = the slot taken.
+        XCTAssertEqual((0..<3).map { _ in still(&p, col: 8, row: 8, mode: 0) }, [0, 1, 2])
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 3, hint: 2, highWater: 2))
+        // Kill 1 (`.HandleParticles`, age > 0x78): hint = min(hint, 1), count − 1 (once), hwm kept (1 ≠ 2).
+        p.records[1].age = 0x79
+        p.handle(tiles: grid())
+        XCTAssertFalse(p.records[1].alive)
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 2, hint: 1, highWater: 2))
+        // Kill 2 at the high-water mark: hwm − 1.
+        p.records[2].age = 0x79
+        p.handle(tiles: grid())
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 1, hint: 1, highWater: 1))
+        XCTAssertEqual(p.records.map(\.alive).prefix(4), [true, false, false, false])
+        // The scan starts at the hint: slot 1 again (hint 1, hwm max(1, 1)), then 2 (raises hwm).
+        XCTAssertEqual(still(&p, col: 8, row: 8, mode: 0), 1)
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 2, hint: 1, highWater: 1))
+        XCTAssertEqual(still(&p, col: 8, row: 8, mode: 0), 2)
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 3, hint: 2, highWater: 2))
+        // A kill below the hwm leaves it; the same slot dying twice in one pass is impossible (+0 is cleared).
+        p.records[0].age = 0x79
+        p.handle(tiles: grid())
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 2, hint: 0, highWater: 2))
+        // A stale hint (Init never resets it, §1.3): slots below it stay unused.
+        var stale = ParticlePool(counters: ParticlePool.Counters(count: -7, hint: 5, highWater: 0))
+        XCTAssertEqual(still(&stale, col: 8, row: 8, mode: 0), 5)
+        XCTAssertEqual(stale.counters, ParticlePool.Counters(count: -6, hint: 5, highWater: 5))
+        // A full pool: −1, nothing made, nothing counted.
+        var full = ParticlePool()
+        for _ in 0..<ParticlePool.capacity { still(&full, col: 8, row: 8, mode: 0) }
+        XCTAssertEqual(full.counters, ParticlePool.Counters(count: 2000, hint: 1999, highWater: 1999))
+        XCTAssertEqual(still(&full, col: 8, row: 8, mode: 0), -1)
+        XCTAssertEqual(full.counters, ParticlePool.Counters(count: 2000, hint: 1999, highWater: 1999))
+        // `.InitParticles`: byte +0 only; the counters run on (§1.1).
+        full.initParticles()
+        XCTAssertEqual(full.live, 0)
+        XCTAssertEqual(full.counters, ParticlePool.Counters(count: 2000, hint: 1999, highWater: 1999))
+        // The record as stored (§1.2): 16-bit arguments, age = −delay, x/y = h/v << 8.
+        var one = ParticlePool()
+        one.newParticle(kind: -0x105, gravity: 0x1_0096, v: -3, h: 0x1_0007, shape: 4, vx: 0x1_8000, vy: -0x1_0001,
+                        delay: -50, mode: 0x103)
+        let r = one.records[0]
+        XCTAssertEqual([r.kind, r.gravity, r.shape, r.age], [-0x105, 0x96, 4, 50])
+        XCTAssertEqual([r.vx, r.vy, r.x, r.y], [-0x8000, -1, 7 << 8, -3 << 8])
+        XCTAssertEqual([r.mode, r.blend], [3, 0])
+    }
+
+    func testColourKillCountsTwice() {
+        // `ParticleLife` (particles §4.2–§4.3): the first zero age of each row.
+        let lives: [Int: Int16] = [1: 24, 13: 24, 2: 38, 4: 16, 9: 13, 10: 17, 11: 15, 12: 19, 210: 21, 211: 21,
+                                   220: 12, 221: 12, 222: 12, 223: 22]
+        for k in 0..<0x100 {
+            let never: Set = [3, 5, 6, 7, 8, 199, 200, 201, 202, 203, 205, 213, 215]
+            XCTAssertEqual(ParticleLife.life[k], lives[k] ?? (never.contains(k) ? 120 : 0), "kind \(k)")
+        }
+        var p = ParticlePool()
+        let specs: [(kind: Int, age: Int16)] = [(14, 1), (2, 37), (2, 38), (3, 119), (3, 120), (-258, 5), (256, 1),
+                                                (-512, 1), (14, 0), (14, -3), (14, 1)]
+        for s in specs {
+            p.newParticle(kind: s.kind, gravity: 0, v: 100 + Int(s.age), h: 50, shape: 2, vx: 0, vy: 0,
+                          delay: -Int(s.age), mode: 0)
+        }
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: 11, hint: 10, highWater: 10))
+        let drawn = p.draw()
+        // Kills: 0 (unbuilt row), 2 (age 38 = kind 2's life), 4 (age ≥ 0x78), 6 (256 − 0x100 = 0), 7 (|−512| − 0x100 =
+        // 0x100, low byte 0), 10 (unbuilt, at the hwm): six kills × 2 → 11 − 12 = −1 (§1.4). hint 0, hwm 10 → 9.
+        XCTAssertEqual(p.counters, ParticlePool.Counters(count: -1, hint: 0, highWater: 9))
+        XCTAssertEqual(p.records.prefix(11).map(\.alive),
+                       [false, true, false, true, false, true, false, false, true, true, false])
+        // Ages ≤ 0 are neither drawn nor killed; the drawn ones in pool order.
+        XCTAssertEqual(drawn.map(\.slot), [1, 3, 5])
+        XCTAssertEqual(drawn[2], ParticleDraw(slot: 5, kind: -258, age: 5, shape: 2, v: 105, h: 50))
+        XCTAssertEqual(drawn[0], ParticleDraw(slot: 1, kind: 2, age: 37, shape: 2, v: 137, h: 50))
+        // The draw does not age or move anything.
+        XCTAssertEqual(p.records[3].age, 119)
+        // The colour test itself.
+        XCTAssertFalse(ParticleLife.colourIsZero(kind: -0x101, age: 1))
+        XCTAssertTrue(ParticleLife.colourIsZero(kind: 0x200, age: 1))
+        XCTAssertTrue(ParticleLife.colourIsZero(kind: 1, age: 24))
+        XCTAssertFalse(ParticleLife.colourIsZero(kind: -1, age: 23))
+        XCTAssertTrue(ParticleLife.colourIsZero(kind: 0x1ff, age: 0x78))
+        // The count is an i16 (`sth`): it wraps.
+        var w = ParticlePool(counters: ParticlePool.Counters(count: -0x8000, hint: 0, highWater: 0))
+        w.newParticle(kind: 14, gravity: 0, v: 0, h: 0, shape: 1, vx: 0, vy: 0, delay: -1, mode: 0)
+        XCTAssertEqual(w.counters.count, -0x7fff)
+        _ = w.draw()
+        XCTAssertEqual(w.counters, ParticlePool.Counters(count: 0x7fff, hint: 0, highWater: -1))
+    }
+
+    func testSkippedDrawNoColourKill() throws {
+        var prefs = FerazelPrefs()
+        prefs.reduceFrameRate = 1
+        let s = try FerazelSession(resources: try resources(), prefs: prefs, level: 1)
+        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters())
+        // An unbuilt-row particle (dies at its first draw) and a blood particle, high in the level's air, mode 0.
+        s.world.particles.newParticle(kind: 14, gravity: 0, v: 40, h: 300, shape: 1, vx: 0, vy: 0, delay: 0, mode: 0)
+        s.world.particles.newParticle(kind: 2, gravity: 0, v: 40, h: 310, shape: 4, vx: 0x100, vy: 0, delay: 0, mode: 0)
+        func kinds(_ ops: FrameOps) -> [String] {
+            ops.draws.compactMap { op in
+                switch op {
+                case .wrapDrawWaterEffects(let l): return "water\(l.count)"
+                case .wrapDrawSprites: return "sprites"
+                case .drawParticles(let l): return "particles\(l.count)"
+                case .copyToScreen: return "copy"
+                case .eraseParticles: return "eraseP"
+                case .wrapEraseSprites: return "erase"
+                default: return nil
+                }
+            }
+        }
+        // Iteration 1 is skipped: no `.DrawParticles` → no colour kill; `.HandleParticles` still runs (age 0 → 1, the
+        // move), and the parity does not flip.
+        let first = s.step(keys: KeyState())
+        XCTAssertFalse(first.drawn)
+        XCTAssertEqual(kinds(first), ["water0", "sprites", "erase"])
+        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 2, hint: 1, highWater: 1))
+        XCTAssertEqual(s.world.particles.records[0].age, 1)
+        XCTAssertTrue(s.world.particles.records[0].alive)
+        XCTAssertEqual(s.world.particles.records[1].x, 310 << 8 + 0x100)
+        XCTAssertFalse(s.world.parity)
+        // Iteration 2 is drawn: the kind-14 particle dies in the draw (count − 2), the blood is handed over at age 1;
+        // then the handle pass ages the survivor.
+        let second = s.step(keys: KeyState())
+        XCTAssertTrue(second.drawn)
+        XCTAssertEqual(kinds(second), ["water0", "sprites", "particles1", "copy", "eraseP", "erase"])
+        let list = second.draws.compactMap { if case .drawParticles(let l) = $0 { l } else { nil } }.first
+        XCTAssertEqual(list, [ParticleDraw(slot: 1, kind: 2, age: 1, shape: 4, v: 40, h: 311)])
+        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
+        XCTAssertFalse(s.world.particles.records[0].alive)
+        XCTAssertEqual(s.world.particles.records[1].age, 2)
+        XCTAssertTrue(s.world.parity)
+        // The counters ride the carry into the next level (`.InitParticles` keeps them), the records do not.
+        XCTAssertEqual(s.carry.particles, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
+        let next = try FerazelSession(resources: try resources(), prefs: prefs, level: 2, carry: s.carry)
+        XCTAssertEqual(next.world.particles.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
+        XCTAssertEqual(next.world.particles.live, 0)
+        XCTAssertEqual(next.world.frameCounter, 0)
+        _ = next.step(keys: KeyState())
+        XCTAssertEqual(next.world.frameCounter, 1)
+    }
+
+    func testParticleMotion() {
+        var p = ParticlePool()
+        let g = grid()
+        // NewParticle(200, 150, (100, 50), 2, −154, −502, 0, 1): x = 50·256 − 154, y = 100·256 − 502, vy += 150.
+        p.newParticle(kind: 200, gravity: 150, v: 100, h: 50, shape: 2, vx: -154, vy: -502, delay: 0, mode: 1)
+        p.handle(tiles: g)
+        XCTAssertEqual([p.records[0].x, p.records[0].y, p.records[0].vy], [12646, 25098, -352])
+        XCTAssertEqual(p.records[0].age, 1)
+        XCTAssertEqual(p.draw(), [ParticleDraw(slot: 0, kind: 200, age: 1, shape: 2, v: 98, h: 49)])
+        // Negative positions draw as `srawi 8` (floor): x −1 → h −1.
+        var n = ParticlePool()
+        n.newParticle(kind: 3, gravity: 0, v: 0, h: 0, shape: 1, vx: -1, vy: -0x101, delay: 0, mode: 0)
+        n.handle(tiles: g)
+        XCTAssertEqual(n.draw().map { [$0.h, $0.v] }, [[-1, -2]])
+
+        // A delay freezes it (age −2 → −1 → 0 unmoved), then the age-0 pass moves it.
+        var d = ParticlePool()
+        d.newParticle(kind: 3, gravity: 7, v: 20, h: 10, shape: 1, vx: 3, vy: 5, delay: 2, mode: 0)
+        d.handle(tiles: g)
+        d.handle(tiles: g)
+        XCTAssertEqual([d.records[0].age, Int16(d.records[0].x), Int16(d.records[0].vy)], [0, 10 << 8, 5])
+        d.handle(tiles: g)
+        XCTAssertEqual([d.records[0].age, Int16(d.records[0].x - (10 << 8)), Int16(d.records[0].y - (20 << 8))],
+                       [1, 3, 5])
+        XCTAssertEqual(d.records[0].vy, 12)
+
+        // The collision modes (§2.2) at the moved position; age at the test = the stored age (before + 1).
+        func survives(col: Int, row: Int, mode: Int, age: Int16 = 0, vy: Int = 0) -> Bool {
+            var q = ParticlePool()
+            still(&q, col: col, row: row, mode: mode, vy: vy)
+            q.records[0].y -= Int32(vy)                                  // land on (col, row) after the move
+            q.records[0].age = age
+            q.handle(tiles: g)
+            return q.records[0].alive
+        }
+        // mode 2: FG > 0x4f and age > 1.
+        XCTAssertFalse(survives(col: 1, row: 1, mode: 2, age: 2))
+        XCTAssertTrue(survives(col: 1, row: 1, mode: 2, age: 1))
+        XCTAssertTrue(survives(col: 2, row: 1, mode: 2, age: 5))
+        // mode 3: only FG < 0x50 over liquid keeps it.
+        XCTAssertTrue(survives(col: 0, row: 2, mode: 3))
+        XCTAssertFalse(survives(col: 0, row: 3, mode: 3))
+        XCTAssertFalse(survives(col: 4, row: 2, mode: 3))
+        XCTAssertFalse(survives(col: 2, row: 1, mode: 3))
+        // mode 1: FG ≥ 0x51 dies; else liquid and vy ≥ 0x2ef (after the gravity add) dies.
+        XCTAssertFalse(survives(col: 3, row: 1, mode: 1))
+        XCTAssertTrue(survives(col: 1, row: 1, mode: 1))
+        XCTAssertTrue(survives(col: 4, row: 3, mode: 1, vy: 0x2ef))
+        XCTAssertFalse(survives(col: 0, row: 2, mode: 1, vy: 0x2ef))
+        XCTAssertTrue(survives(col: 0, row: 2, mode: 1, vy: 0x2ee))
+        XCTAssertTrue(survives(col: 4, row: 2, mode: 1))                // FG 0x50 < 0x51, liquid, vy 0
+        XCTAssertFalse(survives(col: 4, row: 2, mode: 1, vy: 0x2ef))
+        // mode 0 / any other: the age only (> 0x78).
+        XCTAssertTrue(survives(col: 3, row: 1, mode: 0))
+        XCTAssertTrue(survives(col: 3, row: 1, mode: 7, age: 0x78))
+        XCTAssertFalse(survives(col: 0, row: 3, mode: 0, age: 0x79))
+        // The bound is read once at entry: a particle at the hwm that dies lowers it, the loop still visits the rest
+        // it had (none above here) — and a killed record is still aged (`10031a4c`).
+        var k = ParticlePool()
+        still(&k, col: 8, row: 8, mode: 0)
+        k.records[0].age = 0x79
+        k.handle(tiles: g)
+        XCTAssertEqual(k.records[0].age, 0x7a)
+        XCTAssertEqual(k.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: -1))
+    }
+
+    func testSplashLevel1() throws {
+        let L = try LevelFile.load(from: try resources(), level: 1)
+        // BG liquid (tile 1, kind 201) on rows 6…11 of a 16×16 grid; the player-sized sprite (hot rect 0x26…0x3e, the
+        // standard rect) at (100, 300), `+0x11c` 40, centre (150, 330), vx 0x200, vy 0x800.
+        func world(frame: Int32 = 0, kind: Int16 = 0, handler: SpriteHandler = .player, type: Int16 = 0,
+                   rect: IdleSprites.Rect = HandleKeys.standardHotRect) -> (SpriteWorld, Int) {
+            let w = SpriteWorld(level: L, seed: 1)
+            var bg = [UInt16](repeating: 0, count: 16 * 16)
+            for r in 6...11 { for c in 0..<16 { bg[r * 16 + c] = 1 + 1 } }
+            var bgKinds = [Int](repeating: 0, count: 0x60)
+            bgKinds[1] = 201
+            w.tiles = TileGrid(fg: TileMap(width: 16, height: 16, cells: [UInt16](repeating: 0, count: 256)),
+                               bg: TileMap(width: 16, height: 16, cells: bg), fgKinds: Array(0..<0x60),
+                               bgKinds: bgKinds)
+            w.frameCounter = frame
+            let id = w.newSprite(type: type, x: 100, y: 300, layer: 10, handler: handler) { s in
+                s.x = 100; s.y = 300
+                s.hotRect = rect
+                s.face = FaceRef(pict: 1020, index: 0, set: .encoded)
+                s.vx = 0x200
+                s.vy = 0x800
+                s.waterRow = 40
+                s.waterKind = kind
+                s.centre = SpriteSlot.Point(x: 150, y: 330)
+            }!
+            return (w, id)
+        }
+        // Sound gate off (frame counter 0 ≤ 3): row (300 + 0 + 40 + 16) >> 5 = 11, walked up to 6 (row 5 is dry);
+        // kind 201 (≥ 200 kept); S = 192. Columns 100 + 0x26 − 4 = 134 … < 100 + 0x3e + 4 = 166: 32 × 3 = 96.
+        let (w, id) = world()
+        Splash.splash(w, id: id, mode: 3)
+        XCTAssertEqual(w.particles.counters, ParticlePool.Counters(count: 96, hint: 95, highWater: 95))
+        XCTAssertTrue(w.player.cues.isEmpty)
+        let r = w.particles.records
+        // First column: vx = R(500) 128 + (−0x200 >> 4) − 250 = −154; vy0 = −600 − R(200) 46 − (0x800 >> 3) = −902.
+        XCTAssertEqual(r[0].vx, -154)
+        XCTAssertEqual([r[0].vy, r[1].vy, r[2].vy], [-502, -702, -902])
+        XCTAssertEqual([r[0].shape, r[1].shape, r[2].shape], [2, 4, 1])
+        XCTAssertEqual([r[0].age, r[1].age, r[2].age], [0, -1, -2])
+        XCTAssertEqual(Set(r.prefix(96).map(\.kind)), [201])
+        XCTAssertEqual(Set(r.prefix(96).map(\.gravity)), [150])
+        XCTAssertEqual(Set(r.prefix(96).map(\.mode)), [1])
+        XCTAssertEqual(Set(r.prefix(96).map(\.y)), [192 << 8])
+        XCTAssertEqual([r[0].x, r[3].x, r[95].x], [134 << 8, 135 << 8, 165 << 8])
+        // Three draws per column (R(500), R(200), R(1)): 96 in all.
+        var ref = FastRand(seed: 1)
+        for _ in 0..<96 { _ = ref.next(1) }
+        XCTAssertEqual(w.rng.seed, ref.seed)
+
+        // Gate on (frame counter 4, centre in view): the big splash 405 first, its rate drawn before the columns, so
+        // the first column's R(500) is the next value: vx −167.
+        let (w2, id2) = world(frame: 4)
+        Splash.splash(w2, id: id2, mode: 3)
+        var ref2 = FastRand(seed: 1)
+        let rate = ref2.soundRate()
+        XCTAssertEqual(w2.player.cues, [PlayerCue(call: .threeDRand, snd: 405, priority: 1, volume: 0x100,
+                                                  position: SpriteSlot.Point(x: 150, y: 330), rate: rate)])
+        XCTAssertEqual(w2.particles.records[0].vx, -167)
+        XCTAssertEqual(w2.particles.counters.count, 96)
+        // A narrow rect (width 0x10 < 0x11): the small 406 at 0x2d; quicksand (`+0x128` 5): 605 for both.
+        let narrow = IdleSprites.Rect(top: 0, left: 0, bottom: 0x10, right: 0x10)
+        let (w3, id3) = world(frame: 4, rect: narrow)
+        Splash.splash(w3, id: id3, mode: 3)
+        XCTAssertEqual(w3.player.cues.map { [$0.snd, $0.volume] }, [[406, 0x2d]])
+        XCTAssertEqual(w3.particles.counters.count, (0x10 + 8) * 3)
+        let (w4, id4) = world(frame: 4, kind: 5)
+        Splash.splash(w4, id: id4, mode: 3)
+        XCTAssertEqual(w4.player.cues.map { [$0.snd, $0.volume] }, [[605, 0x100]])
+        // The gate's edges: frame counter 3; a Platform-handled type ≥ 10 (a type < 10 passes); the centre off view.
+        for (fr, handler, type, centre) in [(Int32(3), SpriteHandler.player, Int16(0), SpriteSlot.Point(x: 150, y: 330)),
+                                            (4, .platform, 10, SpriteSlot.Point(x: 150, y: 330)),
+                                            (4, .player, 0, SpriteSlot.Point(x: 0x271, y: 330)),
+                                            (4, .player, 0, SpriteSlot.Point(x: -0x11, y: 330)),
+                                            (4, .player, 0, SpriteSlot.Point(x: 150, y: 401)),
+                                            (4, .player, 0, SpriteSlot.Point(x: 150, y: -0x11))] {
+            let (g, gid) = world(frame: fr, handler: handler, type: type)
+            g.active.update(id: gid) { $0.centre = centre }
+            Splash.splash(g, id: gid, mode: 3)
+            XCTAssertTrue(g.player.cues.isEmpty, "\(fr) \(handler) \(type) \(centre)")
+            XCTAssertEqual(g.particles.records[0].vx, -154)
+        }
+        let (g9, id9) = world(frame: 4, handler: .platform, type: 9)
+        g9.active.update(id: id9) { $0.centre = SpriteSlot.Point(x: 0x270, y: 400) }
+        Splash.splash(g9, id: id9, mode: 3)
+        XCTAssertEqual(g9.player.cues.count, 1)
+
+        // Leaving (mode 4): kind `+0x12a` + 200, at S − 4, only with vy < −0x4b0; the sound needs width > 0x10 only.
+        let (l1, lid1) = world(frame: 4)
+        l1.active.update(id: lid1) { $0.vy = -0x4b1; $0.previousWaterKind = 2 }
+        Splash.splash(l1, id: lid1, mode: 4)
+        XCTAssertEqual(l1.player.cues.map { [$0.snd, $0.volume] }, [[406, 0x100]])
+        XCTAssertEqual(l1.particles.counters.count, 96)
+        XCTAssertEqual(l1.particles.records[0].kind, 202)
+        XCTAssertEqual(l1.particles.records[0].y, 188 << 8)
+        // vy0 = −600 − R(200) − (short)(−0x4b1 >> 3) = −600 − R + 151.
+        var ref3 = FastRand(seed: 1)
+        _ = ref3.soundRate()
+        let r500 = Int32(ref3.next(500)), r200 = Int32(ref3.next(200))
+        XCTAssertEqual(l1.particles.records[0].vx, r500 + (-0x200 >> 4) - 250)
+        XCTAssertEqual(l1.particles.records[2].vy, -600 - r200 + 151)
+        let (l2, lid2) = world(frame: 4)
+        l2.active.update(id: lid2) { $0.vy = -0x4b0 }
+        Splash.splash(l2, id: lid2, mode: 4)
+        XCTAssertEqual(l2.player.cues.count, 1)
+        XCTAssertEqual(l2.particles.counters.count, 0)
+        let (l3, lid3) = world(frame: 4, rect: narrow)
+        l3.active.update(id: lid3) { $0.vy = -0x2000 }
+        Splash.splash(l3, id: lid3, mode: 4)
+        XCTAssertEqual(l3.player.cues.count, 0)
+        XCTAssertEqual(l3.particles.counters.count, 0)
+        XCTAssertEqual(l3.rng.seed, 1)
+        // No splash at all without `+0x13e` or a face (the Effect class clears `+0x13e`).
+        for change in [{ (s: inout SpriteSlot) in s.splashes = false }, { (s: inout SpriteSlot) in s.face = nil }] {
+            let (n, nid) = world(frame: 4)
+            n.active.update(id: nid, change)
+            Splash.splash(n, id: nid, mode: 3)
+            XCTAssertEqual([n.particles.counters.count, Int16(n.player.cues.count)], [0, 0])
+            XCTAssertEqual(n.rng.seed, 1)
+        }
+        var e = SpriteSlot(type: 0x4b1, x: 0, y: 0)
+        EffectSprite.setup(&e)
+        XCTAssertFalse(e.splashes)
+        XCTAssertTrue(SpriteSlot(type: 0, x: 0, y: 0).splashes)
+        // `+0x120` stands in when `+0x11c` is 0; a surface cell kind below 200 is raised to 200 (row 12 is dry: kind
+        // 0 → 200): W 0, `+0x120` 140 → row (300 + 140 + 16) >> 5 = 14 → dry above → kind 200 at S = 448.
+        let (u, uid) = world()
+        u.active.update(id: uid) { $0.waterRow = 0; $0.lastWater = 140 }
+        Splash.splash(u, id: uid, mode: 3)
+        XCTAssertEqual([u.particles.records[0].kind, Int16(u.particles.records[0].y >> 8)], [200, 448])
+    }
+}

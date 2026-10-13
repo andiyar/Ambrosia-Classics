@@ -67,6 +67,12 @@ public final class SpriteWorld {
     /// The session's part of a passage jump (W2b, `.HitPlayerSprite` l. 49594–49683): the camera, the 90
     /// `.FindUpperLeftCorner` passes, `.HandleIdleSprites` and the draws. nil (a world without a session) skips them.
     public var passageView: PassageView?
+    /// The particle pool (`ParticlePool`, E1a): the emitters (`Splash`, `BloodSpray`, …) allocate into it from the
+    /// Handles; the session runs `.DrawParticles` (drawn iterations) and `.HandleParticles` at their frame positions.
+    public var particles = ParticlePool()
+    /// `*_DAT_1009fd98`: the level's frame counter — 0 at `.GameLoop` entry (l. 5144), +1 at the top of every
+    /// iteration (l. 5236); `.Splash`'s sound gate reads it (> 3).
+    public var frameCounter: Int32 = 0
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

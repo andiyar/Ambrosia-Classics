@@ -180,7 +180,7 @@ public enum PlayerStates {
             if !w.player.nearSurface {
                 set { p in if p.vy < 0 { p.vy &+= 200 } }
                 if 0x12 < s().lastWater && k == 5 {
-                    // later: E1a — `.Splash(s, 3)`.
+                    Splash.splash(w, id: id, mode: 3)                   // `.Splash(s, 3)` (l. 45741; E1a)
                 }
             }
             if s().lastWater == 0 && s().waterRow == 0 && w.player.spiritTimer < 1 { w.player.swim = 0 }

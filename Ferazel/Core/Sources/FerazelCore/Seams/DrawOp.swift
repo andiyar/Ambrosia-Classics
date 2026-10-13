@@ -37,4 +37,13 @@ public enum DrawOp: Equatable, Sendable {
     /// `.RedrawScrollGrid`) and for `.SetFGCrunchDirTile` (no redraw in the original; the renderer's redraw of an
     /// unchanged tile byte paints the same cell). The renderer applies it to its copy of the level and redraws the cell.
     case setTile(col: Int, row: Int, fg: UInt16)
+    /// `.WrapDrawWaterEffects(odd) @ 10010fac` (`.PaintFrameWrap` l. 9206, after `.HandleLights` and before
+    /// `.WrapDrawSprites`), every iteration, drawn or not (E1a adds the case with an empty list; E1b fills it).
+    case wrapDrawWaterEffects([WaterFaceDraw])
+    /// `.DrawParticles @ 10031aa4` (l. 9433), drawn iterations only, before `.UpdateOmniPx`, the parity flip and
+    /// `.WrapCopyToScreen`: the records Core left alive after its colour-0 kills, in pool order (possibly empty).
+    case drawParticles([ParticleDraw])
+    /// `.EraseParticles @ 10031d6c` (l. 9449), drawn iterations only, right after `.WrapCopyToScreen`: what the last
+    /// `drawParticles` drew is restored from the tile port by each record's erase mode `+0x1d`.
+    case eraseParticles
 }

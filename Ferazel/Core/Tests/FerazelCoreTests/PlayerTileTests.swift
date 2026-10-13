@@ -815,7 +815,8 @@ final class PlayerTileTests: XCTestCase {
         let copy = try XCTUnwrap(draws.firstIndex { if case .copyToScreen = $0 { true } else { false } })
         let first = try XCTUnwrap(draws.firstIndex { if case .setTile = $0 { true } else { false } })
         let erase = try XCTUnwrap(draws.firstIndex { if case .wrapEraseSprites = $0 { true } else { false } })
-        XCTAssertEqual([copy + 1, first + 10], [first, erase])
+        XCTAssertEqual([copy + 2, first + 10], [first, erase])          // E1a: `.EraseParticles` follows the copy
+        XCTAssertEqual(draws[copy + 1], .eraseParticles)
         XCTAssertEqual(session.world.tiles.fg.cell(col: 120, row: 36), 0x0300)
         // Strength 1 — a fall faster than 0x9c4 while crunch-capable (spinning): `+0xeb` 1 → the overlay is made (423, R(3))
         // and the player bounces off the block (raw `100552c8..100553f4`). Spawned 5 px above at vy 3000: row 23 → 3440;

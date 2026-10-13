@@ -102,9 +102,9 @@ extension SpriteWorld {
     ///
     /// - Parameter faceWidth: a face's width (face `+6`) — Core has no face records [MED: the session passes the
     ///   frame width].
-    /// - Parameter exitSplash: `.Splash(s, 4)` // later: E1a.
+    /// - Parameter exitSplash: `.Splash(s, 4)` (l. 32645; `Splash`, E1a).
     public func standardSpriteCleanup(_ id: Int, faceWidth: (FaceRef) -> Int,
-                                      exitSplash: (SpriteWorld, Int) -> Void = { _, _ in }) {
+                                      exitSplash: (SpriteWorld, Int) -> Void = { w, id in Splash.splash(w, id: id, mode: 4) }) {
         guard let start = active.record(id: id) else { return }
         var w = 0x80
         if let f = start.face { w = faceWidth(f) }

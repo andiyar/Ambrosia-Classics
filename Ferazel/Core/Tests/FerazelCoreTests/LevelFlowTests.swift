@@ -395,7 +395,11 @@ final class LevelFlowTests: XCTestCase {
         guard case .loadLevel(let n) = s.deathEffectDone() else { return XCTFail("no loadLevel") }
         XCTAssertEqual(n, 1)
         // Fresh G (D33): the crunch log goes with it; the parity is not G's and runs on.
-        XCTAssertEqual(s.carry, LevelCarry(parity: true, crunchLog: []))
+        // ⚑ E1a: the particle counters ride every carry (`.InitParticles` keeps them): the level-1 raft 1403's entry
+        // splash on iteration 21 (53 columns × 3 kind-200 particles, slots 0…158) has drained to count 0, hwm 157.
+        var expectCarry = LevelCarry(parity: true, crunchLog: [])
+        expectCarry.particles = ParticlePool.Counters(count: 0, hint: 0, highWater: 157)
+        XCTAssertEqual(s.carry, expectCarry)
         XCTAssertNil(s.carry.globals)
         let fresh = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: n, seed: s.rngSeed, carry: s.carry)
         XCTAssertEqual([fresh.globals.health, fresh.globals.magic, fresh.globals.breath], [560, 560, 560])

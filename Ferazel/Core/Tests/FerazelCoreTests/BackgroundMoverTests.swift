@@ -271,6 +271,7 @@ final class BackgroundMoverTests: XCTestCase {
         w.player.pullUp = 3
         w.player.spin = true
         var r = w.rng
+        for _ in 0..<80 { _ = r.next(0x96) }                // E1a: `.BloodSpray`'s 40 × (vy, vx) draws, before the rates
         let rate1 = Int32(r.next(10000)) + 50000, rate2 = Int32(r.next(10000)) + 65000
         let coins = r.next(3) + 5 - 1
         let rate3 = r.soundRate()
@@ -282,12 +283,14 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(w.player.coinsLost, 5)
         XCTAssertEqual(coins, 6)
         XCTAssertEqual(w.globals.coins, 0)
-        // Every draw Core makes, in order. Not yet every draw the binary makes: the blood spray (`.BloodSpray`, the E1a
-        // seam) draws before the 508 rates, and each coin's Bonus Setup (`.SetupBonusSprite` M l. ~52576–52580, ≥ 3
-        // draws per coin; Phase 4) draws between its dx and vx draws. rate1 / rate2 / rate3 below are measured against
-        // those placeholders and move when E1a / Phase 4 land; the session's stream drifts only from the first pendulum
-        // hit on.
+        // Every draw Core makes, in order. Not yet every draw the binary makes: each coin's Bonus Setup
+        // (`.SetupBonusSprite` M l. ~52576–52580, ≥ 3 draws per coin; Phase 4) draws between its dx and vx draws.
+        // rate1 / rate2 / rate3 below are measured against that placeholder and move when Phase 4 lands. ⚑ E1a
+        // (Invariant-10, revert-verified): the blood spray (`.BloodSpray`, 80 draws before the 508 rates) now draws —
+        // rates were 50000 + 2564, 65000 + 2302, 0xec77 + 475.
         XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(w.particles.counters, ParticlePool.Counters(count: 40, hint: 39, highWater: 39))
+        XCTAssertEqual(Set(w.particles.records.prefix(40).map(\.kind)), [2])
         XCTAssertEqual([s.vx, s.vy, Int32(s.flash)], [0x100, 0x40 - 1000, 0xc])   // the ball's vx is 0
         XCTAssertEqual([w.player.stun, w.player.carpetLock, w.player.exertion, w.player.climb, w.player.pullUp],
                        [1, 5, 7 + 0x50, 0, 0])
@@ -300,7 +303,7 @@ final class BackgroundMoverTests: XCTestCase {
             PlayerCue(call: .regPitched, snd: 508, priority: 1, volume: 0x100, rate: rate2),
             PlayerCue(call: .threeDRand, snd: 489, priority: 1, volume: 0x100, position: pos, rate: rate3),
         ])
-        XCTAssertEqual([rate1, rate2, rate3], [50000 + 2564, 65000 + 2302, 0xec77 + 475])
+        XCTAssertEqual([rate1, rate2, rate3], [50000 + 9172, 65000 + 9726, 0xec77 + 3032])
         // Uncapped (`G+0x10` = 9): the arm's coins 5 → FastRand(3) + 5 − 1 = 2 + 4 = 6 lost, 3 left.
         let (wG, pG) = try world()
         wG.globals.coins = 9

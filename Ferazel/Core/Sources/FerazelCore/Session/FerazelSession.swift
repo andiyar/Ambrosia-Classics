@@ -118,6 +118,10 @@ public final class FerazelSession {
             world.globals.startFacing = Int16(L.header.startFacingLeft)
         }
         world.globals.crunchLog = carry.crunchLog
+        // `.InitParticles` (`.SetupLevel`, `bl` 10004fc0) clears byte +0 of every record and keeps the count, hint and
+        // high-water mark (particles §1.1): they run on from the previous level (E1a).
+        world.particles = ParticlePool(counters: carry.particles)
+        world.particles.initParticles()
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
@@ -238,6 +242,8 @@ public final class FerazelSession {
             ops.music.append(.play(track: Int(level.header.music)))
         }
         iterations += 1
+        // `*piVar5 += 1` (`_DAT_1009fd98`, l. 5236).
+        world.frameCounter &+= 1
 
         // `if (-0x1e < iRam100a5110) iRam100a5110 -= 1` (l. 5237–5239).
         if -0x1e < countdown { countdown -= 1 }
@@ -249,13 +255,19 @@ public final class FerazelSession {
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
         let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
+        // `.WrapDrawWaterEffects(odd)` (l. 9206): every iteration; its water faces and bubbles // later: E1b.
+        ops.draws.append(.wrapDrawWaterEffects([]))
         ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
         if draw {
-            // later: E1a `.DrawParticles`, `.UpdateOmniPx`; then the parity flip (raw `10012710..1001272c`).
+            // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
+            ops.draws.append(.drawParticles(world.particles.draw()))
+            // later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
             ops.draws.append(.copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: prefs.plainCopy == 0))
+            // `.EraseParticles` (l. 9449).
+            ops.draws.append(.eraseParticles)
         }
         // `.HandleIdleSprites`: the window takes the live player's (`*_DAT_1009fdd8`) `+0x34` rect at its `+0xc`/`+0xa`
         // (l. 4302–4308).
@@ -323,7 +335,8 @@ public final class FerazelSession {
         // A passage jump's draws (`PassageView`, W2b), made inside the player pass.
         ops.draws.append(contentsOf: passageOps)
         passageOps = []
-        // later: E1a `.HandleParticles`
+        // `.HandleParticles` (l. 9454), after `.HandleSprites` and before `.WrapEraseSprites`.
+        world.particles.handle(tiles: world.tiles)
         // `.WrapEraseSprites` reads the live scroll point (`PTR_DAT_1009fe78`, l. 10452–10458): on a passage jump the
         // snap and its 90 `.FindUpperLeftCorner` passes (inside `.MTCollideSpecialSprite`) have just moved it.
         ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: camera.scrollH, v: camera.scrollV))
@@ -373,11 +386,13 @@ public final class FerazelSession {
         return .loadLevel(levelNumber)
     }
 
-    /// What the next level's session takes (`init(…carry:)`, W4): the parity always; the crunch log unless the restart
-    /// after death takes fresh globals (D33).
+    /// What the next level's session takes (`init(…carry:)`, W4): the parity and the particle counters always (E1a);
+    /// the crunch log unless the restart after death takes fresh globals (D33).
     public var carry: LevelCarry {
-        LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog,
-                   globals: restartWithFreshGlobals ? nil : world.globals)
+        var c = LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog,
+                           globals: restartWithFreshGlobals ? nil : world.globals)
+        c.particles = world.particles.counters
+        return c
     }
 
     /// `PassageView.snap` (`.HitPlayerSprite` l. 49659–49672, W2b): the camera snapped to (player x − 0x142, y − 0xc0),
