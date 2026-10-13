@@ -40,7 +40,7 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 1. This file, then `docs/QUESTIONS.md` (act on any new text under an item's `Answer:` before anything else — it is an
    authorization for exactly what it says; record it in DECISIONS).
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D26** (Ferazel design rulings, as-built C0…A2),
-   **D32** (Phase 1 gate), **D33** (Phase 2 rulings + as-built waves 2.0, 2.1), **D34** (the loop's authorizations).
+   **D32** (Phase 1 gate), **D33** (Phase 2 rulings + as-built waves 2.0–2.3), **D34** (the loop's authorizations).
 3. `docs/plans/2026-10-10-ferazel-phase2.md` — "Verification model" (lines 66–121), "Non-negotiable invariants" +
    "Hazards" (123–182), "Shared architecture" (184–278), then ONLY the task sections this run executes (below).
 4. `docs/plans/2026-10-06-ferazel-design.md` §1, §2, §8 (what "done" means; the phase table; oracles).
@@ -60,64 +60,70 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 4. `git -C ~/Developer/HectorKit status --porcelain` empty and `log -1` = the HK SHA below (or a later local main that
    a previous run recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK worktree.
 
-## STATE (live, 2026-10-13, written by loop run 3 at its close; head of `main` = run 3's docs-close commit on top of af15839 — read `git log -6 main`)
-- Loop run 3 built **W1 + W2a** and merged them: `b481ebe` W1, `710c689` W1 review fixes, `dce1871` W2a, `af15839` W2a
-  review fixes, then the docs close. Run 1's dirty worktree `loop-1-20261013-180951` is still there (Q1, unanswered):
-  not yours — never delete it, never build on it.
-- `Ferazel/Core` suite: **215 passed, 0 failed/skipped** (G2 grep). Census `Totals: items 1,108 decoded, failures 0`,
+## STATE (live, 2026-10-14, written by loop run 4 at its close; head of `main` = run 4's docs-close commit on top of f68f170 — read `git log -8 main`)
+- Loop run 4 built **W2b + W3 + W4** and merged them (wave 2.3 CLOSED): `ea28448` W2b, `f2f3239` W2b review fixes,
+  `2f986d7` W3, `f3b089d` W3 review fixes, `0f7dd62` W4, `f68f170` W4 review fixes, then the docs close. Run 1's dirty
+  worktree `loop-1-20261013-180951` is still there (Q1, unanswered): not yours — never delete it, never build on it.
+  Run 2's worktree `loop-2-20261013-182411` (9136a70, already merged) is also still listed — not yours.
+- `Ferazel/Core` suite: **234 passed, 0 failed/skipped** (G2 grep). Census `Totals: items 1,108 decoded, failures 0`,
   exit 0. Ferazel app: BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **0c65dcb**, clean, floor **328**.
-- Phase 2 plan position: waves 2.0–2.2 MERGED; wave 2.3 **W1, W2a MERGED** (as-built in D33 "As built (wave 2.3, first
-  part)" and each task's "⚑ As executed" bullet). **Next = W2b, W3, then W4 (closes wave 2.3).** Ladder as executed:
-  … P5 203, W1 211, W2a **215** now; W2b (+5) → **220**, W3 (+8) → **228**, W4 (+6) → **234**, E1a (+5) → 239, E1b (+3)
-  → 242, S1 (+7) → 249, GD (+4) → 253 ("previous total + the task's N").
-- Goldens today (unchanged by W1/W2a): `testFirstFrameGoldenLevel1` `9db8f32f7e3d88b4`, `…HighestTieBreak`
-  `b80b0efd384ffdb9`, pan frame 30 `172596fa2f3b6c58`, frame 60 `cc9786ba763d383a`, chain `b4230ba5a643c5b5`. Only ◈
-  tasks (E1b, GD; E1a conditionally) may move one, in-commit, old → new + reason. W2b/W3/W4 are not ◈.
-- What W1/W2a established (read the two "⚑ As executed" bullets, plan ≈ l. 823–870 and after W2a's commit line):
-  platforms are created active and faceless (`+0xc0 = 0`) until their first Handle; the stored radial centre is 0
-  until then (the L1 wheel's frame-1 bounce is real, pinned); `.ActiveToIdleSprite` leaves the record listed with
-  `handleCleared` and `SpriteWorld.updateSprites` kills it at step end; physics reads `record(id:)`; mace chains (1434)
-  are made inside `.SetupBackgroundSprite` (level-1 start list = 38); `.HurtPlayer` exists (attacker gate: EnemyShot/Box
-  exempt; coins `FastRand(3)+4` capped, recorded in `PlayerState.coinsLost`); seams `HurtPlayer.bloodSpray` (E1a) and
-  `PlayerCue.Call.regPitched` (S1, cue 508). A level-2 **session** cannot be built until W4 (Setup of type 2848 throws).
-- Carries: **W2b**: its `testBackgroundRecordDefaultsWrittenBack` (p2 0 → 140, p3 0 → 30) is already asserted inside
-  W2a's `testPendulumDoubleHandleFrames` — still write W2b's own test (ladder +5), on a W2b type if one has the
-  defaults, and say so. Passages emit `DrawOp.gammaStep`; cannons' smoke Effect sprites draw FastRand. **W3**: Box arm
-  of `.HitPlayerSprite` sits in `Player/HitPlayerSprite.swift` beside W1's Platform and W2a's Background arms; the
-  attacker gate already exempts Box. **W4**: `SpriteWorld.playerDead` (`_DAT_1009ffa8`) is set only after the game loop
-  exits (l. 5303); the parity and the crunch log must survive level loads; the L2 counts the plan names (212 active, 40
-  spokes + 4 siblings) are measured with W1's spokes created in the first Handle and W2a's chains at Setup — if they
-  differ, trace before ruling. **E1a**: `.ExplodeFaceIntoParticles` / `.ParticleGlow` unbuilt; fill
-  `HurtPlayer.bloodSpray`; the RNG drifts from the first pendulum hit until E1a and the Phase-4 coin spawn land.
-  **S1**: P4's material-2 stop is a `PlayerCue .stopIfPlaying` (reconcile with `soundStops`); 508 via `.regPitched`.
-  **E2/0148**: mode 0xb is not reachable through the L2 raft light path; still written directly by crumble/blink/floe
-  platforms, spirit form, Bonus, Effect, shots (none placed on L1/L2). **A3**: `FrameRenderer.setTile` re-parses the
-  level per op. Open, unowned: M6 (Bonus guard `p1Negative: false`), M7 (`TileHotRects.init(level:)` reads `level`
-  beside `world.tiles`) — fix when a task touches them.
+- Phase 2 plan position: waves 2.0–2.3 MERGED (as-built in D33 "As built (wave 2.3, second part …)" and each task's
+  "⚑ As executed" bullet, plan l. 907 / 945 / 1004). **Next = wave 2.4: E1a, E1b (both ⚑ MAJOR), then S1 (minor).**
+  Ladder as executed: … W2a 215, W2b 220, W3 228, W4 **234** now; E1a (+5) → **239**, E1b (+3) → **242**, S1 (+7) →
+  **249**, GD (+4) → **253**; then A3 (⚑, app), A4 (stage + gate card) — "previous total + the task's N" (the plan's own
+  "→ N" headers are stale).
+- Goldens today (P5 moved the pan pair; W1–W4 moved none): `testFirstFrameGoldenLevel1`
+  `9db8f32f7e3d88b4`, `…HighestTieBreak` `b80b0efd384ffdb9`, pan frame 30 `172596fa2f3b6c58`, frame 60
+  `cc9786ba763d383a`, chain `b4230ba5a643c5b5`. Only ◈ tasks (E1b, GD; E1a only if a splash enters a golden — none
+  expected) may move one, in-commit, old → new + reason.
+- What wave 2.3 established (read the W2b/W3/W4 "⚑ As executed" bullets): a level-2 session now builds (L2 starts 33
+  active / 196 idle — stalactite children made at Setup; 212 records, 40 spokes + 4 siblings after frame 1);
+  `LevelFlow` + `ShellRequest.loadLevel(Int)` / `.deathEffect` exist with no-op app arms (A3 wires them);
+  `LevelCarry` (`session.carry` → `init(…carry:)`) carries the parity always and, on an **exit**, the whole G (only
+  `_NewGame` inits G — the plan was corrected); death → fresh G (Ben D33 ◇). Passages emit `DrawOp.gammaStep` (21
+  iterations per fade). Cannon launches make 415 FastRand draws (smoke sprites; their particles are `// later: E1a`).
+  NPCs are never solid. Box push/fall is Phase 4 (crates rest 2–6 px off the binary's settle — a gate-card note for A4).
+- Carries into wave 2.4: **E1a**: `.ExplodeFaceIntoParticles` / `.ParticleGlow` unbuilt; fill `HurtPlayer.bloodSpray`
+  (`.BloodSpray @100549f4`, 40 particles); W2b's cannon smoke `// later: E1a` stubs (smoke particles) live in
+  `World/Movers/BackgroundSprite.swift` / `Player/GroundCeilingEffects.swift`; the RNG drifts from the first pendulum hit
+  until E1a and the Phase-4 coin spawn land; P3's `+0x1a8 = 0x10` → `.StandardSpriteCleanup` → `.ParticleGlow` (draws
+  FastRand). **E1b**: water-face parity reads `_DAT_1009fd30` (flipped on drawn iterations only; carried across levels by
+  `LevelCarry`). **S1**: P4's material-2 stop is a `PlayerCue .stopIfPlaying` (reconcile with `soundStops`); 508 via
+  `.regPitched`; W4: the music fade `.FadeAIFFMusic` + the sound stops after the loop (M l. 5296–5304) are not emitted
+  (S1 or A3 owns them — S1 decides, records it); the exit cue 421 is plain `STPlayRegSound`. **E2/0148**: mode 0xb not
+  reachable on L1/L2. **A3**: `FrameRenderer.setTile` re-parses the level per op; the suite never renders L2 (a W4
+  reviewer's 5-frame probe did) — A3/GD should. Open, unowned: M6 (Bonus guard `p1Negative: false`), M7
+  (`TileHotRects.init(level:)` reads `level` beside `world.tiles`); `200..<210` literals in `SetupFaces.swift` /
+  `PlayerTiles.swift` (could use `UnderWater.isWaterTile`) — fix when a task touches them.
 
-## THIS RUN'S JOB — wave 2.3 continued: **W2b** (⚑ MAJOR → two Opus legs), **W3** (minor → one leg), then **W4** (minor → one leg) if the cap allows
-Plan sections: **W2b** "#### W2b" (≈ l. 870–890 after W1/W2a's As-executed bullets; grep `^#### W2b`), **W3**
-"#### W3", **W4** "#### W4" (incl. its Precondition: enumerate every FastRand site in the L2 new types' Setups into the
-W4 ⚑ note before coding). Read each in full with its carries, plus W1/W2a's "As executed" bullets.
-- **W2b**: Files + 5 tests as the plan; G2 → **220 / 0**; G5 (FrameRenderer sheets 3000+, 2700+).
-- **W3**: Files + 8 tests; G2 → **228 / 0**.
-- **W4**: Files + 6 tests; G2 → **234 / 0**; G5 (touches `Ferazel/App`); G3 census at the wave end. W4 closes wave 2.3
-  — after it, the D33 "As built (wave 2.3)" paragraph is completed.
-- Unit size: three tasks with one MAJOR is the chip's maximum. Do W2b, then W3; start W4 only if your own context is
-  under ~170k after W3 merges; otherwise close with W4 as the next run's first task.
+## THIS RUN'S JOB — wave 2.4: **E1a** (⚑ MAJOR → two Opus legs), then **E1b** (⚑ MAJOR ◈ → two Opus legs)
+Plan sections: **E1a** "#### E1a" (≈ l. 1028–1048), **E1b** "#### E1b" (≈ l. 1050–1063); read each in full plus the
+Invariants (l. 123–172, esp. 3 — the parity flip position and drawn-vs-skipped iterations — and 4 — one RNG stream) and
+Shared architecture S3 (`DrawOp` cases `wrapDrawWaterEffects`, `drawParticles`, `eraseParticles`).
+- **E1a**: Files + 5 tests as the plan; G2 → **239 / 0**; G5 (touches FerazelRender). The exhaustive `switch op` in
+  `SessionTests` (l. 183–193) and `testFirstFrameOpsOrder` (l. 149) change because three `DrawOp` cases are added —
+  that is expected by the plan, not an Invariant-10 event; any OTHER count/golden moving is.
+- **E1b**: Files + 3 tests; G2 → **242 / 0**; G5; ◈ level-1 goldens are predicted to move (motes, acid bubbles, water
+  faces on parity frames) — record old → new + reason in-commit; verify the cause by revert (no water effects → old
+  hashes return). If they do NOT move, rule as run 3 did for W1 (find out why, record it).
+- Unit size: two ⚑ MAJOR tasks = the chip's unit. Do not start S1 in this run. If your own context passes ~170k after
+  E1a merges, close with E1b as the next run's first task.
 - Per task: brief the implementer per orchestrator §3 with the full scene (the planner's probes/digests were NEVER
-  committed: the plan's numbers are the targets; the dump is the authority). **Dispatch every subagent with
-  `run_in_background: false`**; see the HAZARD below. Run the gates yourself from the merge head and never relay a
-  subagent's number. Review legs must RUN the suite and try ≥ 20 targeted mutations (run 3: W1 26/67 and W2a 10/62
-  survivors before the fix rounds — ask implementers to pin every branch with exact values up front). Then one
-  implementer fix round; **if the fix round changes behaviour (not only asserts), one short Opus re-review leg of it**.
-  Re-run G2 and commit with explicit paths. STOP on any number the plan did not predict (Invariant 10). Precedent
-  rulings (runs 2–3): when real rows replace a stub, or the binary creates sprites the plan's counts did not include
-  (W2a's Setup-time chains), counts may move — rule under "follow the binary", verify the cause by trace (revert the
-  cause → old numbers return), record old → new. Where the dump contradicts the plan (W2a: the attacker gate, the
-  coin draw), the dump wins; record it in the As-executed bullet. Never let a kinematic number move silently.
-- Merge each task's green commits to `main` (`--ff-only`) as soon as its gates pass (run 3 did this), so a cap or a
-  crash later in the run loses nothing.
+  committed: the plan's numbers are the targets; the dump is the authority — "M l. N" = line N of
+  `ghidra/ferazel/Ferazel_pef.decompiled.c`, raw addresses in `ghidra/ferazel/Ferazel_pef.disasm.txt`). **Dispatch every
+  subagent with `run_in_background: false`**; see the HAZARD below. Insist on tests FIRST, seen failing (run 4's W2b and
+  W4 implementers wrote code first). Run the gates yourself from the merge head and never relay a subagent's number.
+  Review legs must RUN the suite and try ≥ 20 targeted mutations (run 4: W2b 133 mutants / 12 real survivors, W3 60/7,
+  W4 52/4 — ask implementers to pin every branch with exact values up front). Ask the fidelity leg to read the dump
+  for anything the plan does not mention that L1/L2 reach (run 4's W4 leg found the globals-carry bug that way). Then
+  one implementer fix round; **if the fix round changes behaviour (not only asserts), one short Opus re-review leg of
+  it**. Re-run G2 and commit with explicit paths. STOP on any number the plan did not predict (Invariant 10). Precedent
+  rulings (runs 2–4): when real rows replace a stub, or the binary creates sprites the plan's counts did not include,
+  counts may move — rule under "follow the binary", verify the cause by trace (revert the cause → old numbers return),
+  record old → new. Where the dump contradicts the plan, the dump wins; record it in the As-executed bullet. Never let a
+  kinematic number move silently.
+- Merge each task's green commits to `main` (`--ff-only`) as soon as its gates pass, so a cap or a crash later in the
+  run loses nothing.
 
 ### HAZARD — headless session (learned run 1, 2026-10-13)
 The looper runs you with `claude -p`: **when you end your turn, the session exits and every background subagent or
@@ -127,12 +133,12 @@ leg and your own G2 run) can go in the same message: they run in parallel and bo
 use SendMessage to resume a finished agent: it may return asynchronously. Dispatch a fresh implementer with the full
 context instead (run 2 did this for every fix round).
 
-## GATES (fenced; verified on this machine 2026-10-13 from af15839 (run 3) — copy literally; `$WT` = your worktree)
+## GATES (fenced; verified on this machine 2026-10-14 from f68f170 (run 4) — copy literally; `$WT` = your worktree)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (Phase 2); later phases: a local HK main you made + floor ≥ 328 (see AUTHORIZATIONS)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 0c65dcb
-# G2 suite: first number = the ladder total (215 today; W2b 220; W3 228; W4 234), second = 0
+# G2 suite: first number = the ladder total (234 today; E1a 239; E1b 242; S1 249; GD 253), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

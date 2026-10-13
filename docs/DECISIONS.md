@@ -1128,6 +1128,23 @@ Platform/Background) and coins `FastRand(3)+4` capped (the plan's "5" is the arg
 (E1a) and `PlayerCue.Call.regPitched` (S1). Carry: the RNG stream drifts from the first pendulum hit until E1a and the
 Phase-4 coin spawn land.
 
+**As built (wave 2.3, second part: W2b, W3, W4 — wave 2.3 CLOSED; 2026-10-13/14, loop run 4; Opus 5.5 orchestrator,
+Opus implementers; W2b two Opus legs (⚑ MAJOR), W3/W4 one leg each; every fix round that changed behaviour got a short
+Opus re-review):** `Ferazel/Core` **215 → 234/0** (W2b +5 → 220, W3 +8 → 228, W4 +6 → 234); census 1,108/0; Ferazel
+builds; HectorKit untouched (0c65dcb, floor 328); no golden moved. **W2b** cannons 1090–1098 (hold 15, aim-mod-4 fire,
+launch 9000, 415 smoke draws per launch), wall tunnels 3000–3009, springs 1150–1153, passages 2900/2901 with the
+`DrawOp.gammaStep` fade, freeze, partner jump, camera snap + 90 passes. **W3** Box solids standing still (Phase 4 owns
+the push/fall tail — crates rest 2–6 px off the binary's settle, gate-card item), trampoline 1470, bridges, ropes
+3020–3022 and the rope state; NPCs are never solid (the arm returns before `.PlatformBounce`). **W4** every level-2
+Setup (stalactite children made at Setup: L2 starts 33 active / 196 idle; 212 records, 40 spokes + 4 siblings after
+frame 1, as planned), `LevelFlow` (exit → `Mmap` link → `loadLevel`; targets outside 1…2 restart the current level ◇),
+death → `deathEffect` → `deathEffectDone()` → `loadLevel(current)` with fresh G (◇ Ben), `LevelCarry` (parity always).
+**Rulings (follow the binary):** cannon rotation from the raw aim (the fold only mirrors; first pins corrected);
+passage-jump erase at the live scroll; **globals carry across a level exit** (`_InitGameGlobals` only from `_NewGame`,
+M l. 5747/6707; the next-level loop writes only G `+0x16`) — the plan had every load reset G; the exit cue 421 is handed
+out on the loop-ending frame. Carries: music fade + sound stops after the loop → A3/S1; G fields not yet modelled →
+Phase 3/4; 0x420 tint is a Handle write → Phase 4.
+
 ## D34 — Ferazel's Wand goes to the unattended session loop: Ben's authorizations + the Fable cross-check rule (2026-10-13)
 
 **Decided (Ben, AskUserQuestion in the setup session, 2026-10-13; he is away in Fiji for a few days and wants to come

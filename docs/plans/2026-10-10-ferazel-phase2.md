@@ -904,6 +904,23 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   steps + 22 frozen frames) · `testBackgroundRecordDefaultsWrittenBack` (p2 0 → 140, p3 0 → 30) · `testSuperSpring`
   (synthetic 1150: vy = −0x2292, re-fires no earlier than frame n+4; physics-sprites §8.3, PR2 §8.1).
 - **Commit:** `FerazelCore: Background movers part 2 — cannons, wall tunnels, passages, springs; 5 tests`.
+- ⚑ **As executed (W2b, loop run 4, 2026-10-13/14; ea28448 + fix round f2f3239; two Opus legs, both
+  MERGEABLE_WITH_FIXES (133 mutants, 12 real survivors), fix round re-reviewed MERGEABLE 10/10):** G2 **220** then 0
+  (215 + 5); every plan number reproduced; no golden or count moved. **The dump corrects the code/plan:** cannon rotation
+  uses the RAW aim (raw `10073fc8` reload, `10074040 subfic`), the `0x20 − a` fold only sets a mirror flag (the first pins
+  202/314 were wrong → 146/32); `.WrapEraseSprites` on the passage-jump frame reads the live post-snap scroll; the plan's
+  "20-step fade" is 21 iterations in the dump; launch speeds round before truncation (0.707·9000 → 6363); each cannon
+  launch draws 415 FastRand for three smoke sprites (3×(45×3+2)+4); cannon Setup range 0x442–0x44a, Handle/hit arms
+  0x442–0x44b; passage fade colour black. **Rulings:** cannons with p1 ≠ 0 refused (none on L1/L2); no W2b Setup writes
+  p2/p3 back, so `testBackgroundRecordDefaultsWrittenBack` pins it on mace records with stored 0. W2a's
+  `testPendulumHarmfulBand` had two "W2b not built" placeholders (cannon as the not-run arm → fire 0x4b8; tunnel 3002
+  centre → (496, 670) from its new hit rect) — both legs judged them direct consequences, not Invariant-10 edits.
+  Out-of-Files: SpriteSlot (`.cannoned`), SpriteWorld (`gammaFade`, `passageView`), PlayerStates (door faces),
+  GroundCeilingEffects (smoke 0x442 Handle), PlayerState (comments). Stubs `// later:` smoke particles (E1a), passage
+  darkness (p2), shot kills on springs/cannons, Bonus `+0x168`, `.DoubleSpeedTrail`, light-slot removal on capture —
+  none reachable on L1/L2. Open minors: 0x44b cannon arm untested (none placed); erase pin is relative, not literal;
+  `200..<210` literals remain in SetupFaces.swift / PlayerTiles.swift. L1: cannons recs 41, 150, 156; tunnel rec 56; no
+  springs on L1/L2.
 
 #### W3 — minor — Box solids, trampoline, ropes (→ 213)
 - **Files:** `Sources/FerazelCore/World/Movers/{BoxSprite,RopeSprite}.swift`, `Sources/FerazelCore/Sprites/SetupFaces.swift`,
@@ -925,6 +942,19 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   `testRopeSagCentre3022` (span 240: rest sag 0xc00, 10 segments) · `testRopeGrabWindow` (`surf ≤ y+16 < surf+0x40`,
   previous above) · `testReversedRopeIsDead` (L3 rec 145, span −173: no segments).
 - **Commit:** `FerazelCore: Box solids, trampoline, ropes; 8 tests`.
+- ⚑ **As executed (W3, loop run 4, 2026-10-14; 2f986d7 + fix round f3b089d; one Opus leg MERGEABLE_WITH_FIXES (60
+  mutants, 7 survivors → 5 pinned), fix round re-reviewed MERGEABLE):** G2 **228** then 0 (220 + 8); no existing number
+  moved (no rope on L1/L2). **Dump vs brief:** 0.6·g and −6500 are doubles (`lfd` @ `100572b0`), not f32. Bank corrections
+  appended (pickups-boxes item 14, platforms-ropes-radial §3.8): trampoline cell 54×56; 3022 creaks 489–491, 3020/3021
+  486–488; DOWN still plays the grab creak. No W3 Setup draws; each `.RopeCollide` creak draws R(3) then `soundRate()`.
+  **Fix round (follow the binary):** the NPC arm (0xb87–0xb99, M l. 49199–49210) returns before `.PlatformBounce` —
+  NPCs never solid (no effect today: NPC rects stay empty until their Handle). Out-of-Files: `SpriteSlot.rope`,
+  `PlayerState.currentRope`, `SpriteWorld.newRecord` (split from `newSprite`, behaviour unchanged), rope idle callbacks
+  (IdleSprites), Handle dispatch (FerazelSession). **Carries:** only trampoline + bridge Box Handles run — the
+  `.HandleBoxSprite` gravity/push/fall tail is Phase 4, so L1 crates recs 31/65/130 rest 2/4/6 px lower than the binary
+  would settle them, rec 129 sits 2 px above rec 65, L2 boulder rec 21 2 px low (reviewer, conf 0.6; Phase-4 gate card
+  item); rope segments idled stay listed until a later `.UpdateSprites` count-up (L3+); decorations' `.FlipHRect`
+  `// later:`; non-built Boxes never compute their centre (multi-contact order only). Stalactite 2932 → W4 (done there).
 
 #### W4 — minor — Level 2 Setups, level flow, restart (→ 219)
 - **Files:** `Sources/FerazelCore/Sprites/SetupFaces.swift`, `Sources/FerazelCore/Flow/LevelFlow.swift`,
@@ -971,6 +1001,27 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   - **Box types** 2848, 2849 (decorations), 2911 (door left), 2925, 2926, 2928 (furniture), 2932 (stalactite: its
     Setup-time child `.MTNewSprite(0xb74, x, y, +0x80 − 1, −1, .SetupBoxSprite)` runs the record −1 arm), 2954 (NPC):
     none (W3: "no arm of a type placed on levels 1–2 draws `FastRand`").
+- ⚑ **As executed (W4, loop run 4, 2026-10-14; 0f7dd62 + fix round f68f170; one Opus leg MERGEABLE_WITH_FIXES (52
+  mutants, 4 real survivors → pinned), fix round re-reviewed MERGEABLE 11/14):** G2 **234** then 0 (228 + 6); G3 census
+  1,108/0; G5 BUILD SUCCEEDED; no L1 number or golden moved. **L2 counts reproduce the plan** (212 records; 40 spokes + 4
+  siblings after frame 1); the stalactite 2932's Setup-time child (M l. 59361–59401) makes L2 start with 33 active (3
+  children, active even when the parent idles), 196 idle. Every L2 type's Setup now runs (incl. NPC 2954, inert).
+  `LevelCarry` (`session.carry` → defaulted `init(…carry:)`, added-only) carries the parity always. **Fix round —
+  the dump corrects the plan (follow the binary):** `_InitGameGlobals` runs only from `_NewGame` (M l. 5747, 6707) and the
+  next-level loop (M l. 5815–5836) writes only G `+0x16`, so on an **exit** G carries (score, health, breath,
+  suffocation, max health/magic, magic, coins, `+0x12`, Xichrons, selected slot, crunch log; HP back from G+4 via
+  `.SetupPlayerSprite` l. 42831); `+0x16` start facing is re-written per level; `.SetupLevel`'s `+0x20/+0x22/+0x176` not
+  modelled. On **death** Ben's D33 ◇ stands: fresh G, parity kept. The exit cue 421 (plain `STPlayRegSound`) queued in
+  the loop-ending frame is now handed out with that frame. Added Setup fields bat `+0xb0 = 7`, frog `+0xb0 = 0xb`, frog
+  gravity `+0x110 = 0x8c`, 0x422 rect (0,0,0x60,0x60) (M l. 52472); 0x420's `+0xb8 = 0x10001` tint is
+  `.HandleBonusSprite`'s (M l. 52859–52861) → Phase 4. Out-of-Files: HitPlayerSprite (exit arm; never-solid doc),
+  PlayerState (level-done flag, exit indices p1/p2 — p2 stored, unread), BoxSprite (stalactite arm). **Carries:** the
+  music fade `.FadeAIFFMusic` + the sound stops after the loop (M l. 5296–5304) are not emitted → A3/S1; G fields the
+  model does not hold yet (inventory `+0x24…`, `+0x174`, arrays `+0x23e/+0x306/+0x6ee`, `+0x240`) and `.EndLevelSGUpdate`
+  → Phase 3/4; carry test does not set maxHealth/maxMagic/`+0x12` non-default (whole-struct assign, low risk);
+  0x41f/0x420 Setup rect (2,−4,0x12,0x10) + water flag `+0x15c` unmodelled (Phase 4 Bonus); `// later:` 1056 per-frame
+  tint, frog `+0x8e`, other bat variants, crunch-log re-apply on revisit (Phase 3). The suite never renders L2 (a
+  reviewer's 5-frame probe did; A3/GD should).
 
 ### Wave 2.4 — effects and sound (one lane, in order: E1a → E1b → S1)
 
