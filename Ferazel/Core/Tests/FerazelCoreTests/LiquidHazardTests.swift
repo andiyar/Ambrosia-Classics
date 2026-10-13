@@ -129,6 +129,13 @@ final class LiquidHazardTests: XCTestCase {
         XCTAssertEqual(s.waterRow, 1)
         XCTAssertEqual(s.quicksandSurface, 99)
         XCTAssertEqual(s.y, 600)
+        // The clamp's boundary: S − y − inset = 544 − 544 − 0 = 0 → 1 (`+0x11c < 1`, l. 38181).
+        w.active.update(id: id) { p in p.y256 = 544 << 8; p.underwaterDone = false }
+        UnderWater.handle(world: w, id: id, pos: TilePos(x: 50 * 32, y: 18 * 32))
+        XCTAssertEqual(w.active.sprite(id: id)!.waterRow, 1)
+        w.active.update(id: id) { p in p.y256 = 543 << 8 }
+        UnderWater.handle(world: w, id: id, pos: TilePos(x: 50 * 32, y: 18 * 32))
+        XCTAssertEqual(w.active.sprite(id: id)!.waterRow, 1)
         // `.HandleFlotation(s, 544)` when `+0x19e` > 0: hot rect (top 6, bottom 0x1e) → mid 6 + 12 = 18; target T =
         // `+0x1a0` 10 + 544 − 18 = 536. y 600 > T → b = −0x50: vy 0 → −80 → (int)(−80 · 0.93) = −74. Then y 536,
         // vy 60 (< 0x46): b = +0x50 (T − y = 0 is not < 0) → 140 → (int)(140 · 0.86) = 120; T == y but |120| ≥ 0x46 → no
@@ -158,6 +165,57 @@ final class LiquidHazardTests: XCTestCase {
         XCTAssertEqual(float(y: 536, vy: 1).y256, 536 << 8)
         XCTAssertEqual(float(y: 500, vy: 0, buoyancy: 0x200).vy, 301)      // b 0x15e = 350 → (int)(350 · 0.86) = 301
         XCTAssertEqual(float(y: 600, vy: 0, buoyancy: 0).vy, 0)            // no flotation without buoyancy
+        // The cap pinned where a one-off cap would truncate apart: (1 + 350) · 0.86 = 301.86 → 301 (0x15f: 302.72 → 302);
+        // sinking side −350 · 0.93 = −325.5 → −325 (0x15f: −326.43 → −326); b = 0x15e itself passes uncapped.
+        XCTAssertEqual(float(y: 500, vy: 1, buoyancy: 0x200).vy, 301)
+        XCTAssertEqual(float(y: 600, vy: 0, buoyancy: 0x200).vy, -325)
+        XCTAssertEqual(float(y: 500, vy: 1, buoyancy: 0x15e).vy, 301)
+        XCTAssertEqual(float(y: 500, vy: 1, buoyancy: 0x15d).vy, 301)      // 350 · 0.86 = 301.0
+        XCTAssertEqual(float(y: 500, vy: 0, buoyancy: 0x15d).vy, 300)      // 349 · 0.86 = 300.14
+
+        // Kind 5 (quicksand; synthetic — no level 1/2 cell): BG kind 205 on rows 6…11 → surface 192; hot rect bottom
+        // b = 0x1e. Entering at y 250 (vy 100, depth `+0x144` 0x1000): `+0x148` = 192; depth += 0xc0 → 0x10c0; y 251;
+        // F = 192 + (0x10c0 >> 8) = 208; y256 += 0x100; y + b = 281 ≥ F and vy ≥ 1 → y = 208 − 30 = 178, vy 0, ground
+        // kind `+0xce` 3, y256 = 178·256; `+0x11c` = 192 − 178 = 14.
+        let q = pool(try level(2), liquid: 5)
+        let qid = try XCTUnwrap(q.newSprite(type: 1, x: 100, y: 250, layer: 5, handler: .inert))
+        func sink(y256: Int32, vy: Int32, depth: Int32, entering: Bool = false) -> SpriteSlot {
+            q.active.update(id: qid) { p in
+                p.y256 = y256
+                p.vy = vy
+                p.quicksandDepth = depth
+                p.lastWater = entering ? 0 : 3
+                p.hotRect = IdleSprites.Rect(top: 6, left: 0x10, bottom: 0x1e, right: 0x3d)
+                p.groundKind = 0
+                p.underwaterDone = false
+            }
+            UnderWater.handle(world: q, id: qid, pos: TilePos(x: 100, y: 8 * 32))
+            return q.active.sprite(id: qid)!
+        }
+        s = sink(y256: 250 << 8, vy: 100, depth: 0x1000, entering: true)
+        XCTAssertEqual(s.waterKind, 5)
+        XCTAssertEqual(s.quicksandSurface, 192)
+        XCTAssertEqual(s.quicksandDepth, 0x10c0)
+        XCTAssertEqual(s.y, 178)
+        XCTAssertEqual(s.vy, 0)
+        XCTAssertEqual(s.groundKind, 3)
+        XCTAssertEqual(s.y256, 178 << 8)
+        XCTAssertEqual(s.waterRow, 14)
+        // Rising (vy −50) at y 170 → 171, depth 0x1000 → 0x10c0, F 208: y + b = 201 < F → the pull: min(0x10c0,
+        // 171 + 30 + 8 − 192 = 17) = 17 → << 8 = 0x1100; y256 + 0x100; vy kept; `+0x11c` = 192 − 171 = 21.
+        s = sink(y256: 170 << 8, vy: -50, depth: 0x1000)
+        XCTAssertEqual(s.quicksandDepth, 17 << 8)
+        XCTAssertEqual(s.y, 171)
+        XCTAssertEqual(s.y256, 171 << 8)
+        XCTAssertEqual(s.vy, -50)
+        XCTAssertEqual(s.groundKind, 0)
+        XCTAssertEqual(s.waterRow, 21)
+        // The pull below 0 → 0 (y 150 → 151: 151 + 38 − 192 = −3); vy 0 below the floor: depth only += 0xc0.
+        XCTAssertEqual(sink(y256: 150 << 8, vy: -50, depth: 0x1000).quicksandDepth, 0)
+        XCTAssertEqual(sink(y256: 150 << 8, vy: 0, depth: 0x1000).quicksandDepth, 0x10c0)
+        // Sunk past the surface: `+0x11c` from `+0x148` clamps to 1 (y 200 → 201, vy 0, F 208: 192 − 201 < 1).
+        XCTAssertEqual(sink(y256: 200 << 8, vy: 0, depth: 0x1000).waterRow, 1)
+        XCTAssertEqual(sink(y256: 191 << 8, vy: 0, depth: 0x1000).waterRow, 1)        // 192 − 192 = 0 → 1
     }
 
     func testDrownFromFullBreath() throws {
@@ -264,6 +322,33 @@ final class LiquidHazardTests: XCTestCase {
         v.active.update(id: v.playerID!) { $0.waterKind = 5 }
         PlayerLiquids.emitBubble(v, id: v.playerID!)
         XCTAssertEqual(v.player.bubbleCooldown, 2)
+        // Row 35 in kind 5 (quicksand; synthetic — `0 < +0x120 < 0xf`): oxygen −8 per tick (16 → 8 → 0), and at < 1
+        // with the countdown 0: 443, HP −0x70, invulnerable 0x28, G+8 = 0xf (not 0x1e); no bubble.
+        v.active.update(id: v.playerID!) { p in
+            p.lastWater = 5
+            p.invulnerable = 0
+        }
+        v.globals.breath = 16
+        v.globals.suffocation = 0
+        let hp = player(v).hp
+        PlayerLiquids.bubbles(v, id: v.playerID!)
+        XCTAssertEqual(v.globals.breath, 8)
+        XCTAssertEqual(player(v).hp, hp)
+        PlayerLiquids.bubbles(v, id: v.playerID!)
+        XCTAssertEqual(v.globals.breath, 0)
+        XCTAssertEqual(player(v).hp, hp - 0x70)
+        XCTAssertEqual(player(v).invulnerable, 0x28)
+        XCTAssertEqual(v.globals.suffocation, 0xf)
+        XCTAssertEqual(v.active.sprites.filter { $0.type == 0x410 }.count, 1)    // the mirrored one above only
+        // Not invulnerable again, countdown 0xf → −1 per tick; kind 0 at the countdown 0 → 0x1e.
+        v.active.update(id: v.playerID!) { $0.invulnerable = 0 }
+        PlayerLiquids.bubbles(v, id: v.playerID!)
+        XCTAssertEqual(v.globals.breath, -8)
+        XCTAssertEqual(v.globals.suffocation, 0xe)
+        v.active.update(id: v.playerID!) { $0.waterKind = 0 }
+        v.globals.suffocation = 0
+        PlayerLiquids.bubbles(v, id: v.playerID!)
+        XCTAssertEqual(v.globals.suffocation, 0x1e)
     }
 
     func testBreathRefill() throws {
@@ -439,6 +524,32 @@ final class LiquidHazardTests: XCTestCase {
         XCTAssertEqual(z.player.cues, [PlayerCue(call: .stop, snd: 803)])
         XCTAssertEqual(z.globals.breath, 10)
         XCTAssertEqual(z.globals.magic, 0)
+        // Row 17's heal alone (counter 2, `+0xa4` 100, max health G+0xa 560, max magic G+0xc 560): oxygen +8, capped
+        // only above G+0xa (`G+0xa < G+6`); healing on G+4 < G+0xa (strict); magic +4 on G+0xe < G+0xc (strict, no cap).
+        func heal(breath: Int16, health: Int16, magic: Int16) -> (breath: Int16, hp: Int16, magic: Int16, cue: PlayerCue.Call?) {
+            z.active.update(id: z.playerID!) { $0.hp = 100 }
+            z.player.liquidCounter = 2
+            _ = z.player.drainFrameOutputs()
+            z.globals.maxHealth = 560
+            z.globals.maxMagic = 560
+            z.globals.breath = breath
+            z.globals.health = health
+            z.globals.magic = magic
+            PlayerLiquids.liquidDamage(z, id: z.playerID!)
+            return (z.globals.breath, player(z).hp, z.globals.magic, z.player.cues.first { $0.snd == 803 }?.call)
+        }
+        var h = heal(breath: 100, health: 560, magic: 560)
+        XCTAssertEqual([h.breath, h.hp, h.magic], [108, 100, 560])
+        XCTAssertEqual(h.cue, .stop)
+        h = heal(breath: 552, health: 559, magic: 560)                      // 560: at the cap, kept; G+4 559 heals
+        XCTAssertEqual([h.breath, h.hp, h.magic], [560, 104, 560])
+        XCTAssertEqual(h.cue, .reg)
+        h = heal(breath: 553, health: 560, magic: 559)                      // 561 → 560; magic 559 → 563
+        XCTAssertEqual([h.breath, h.hp, h.magic], [560, 100, 563])
+        XCTAssertEqual(h.cue, .reg)
+        h = heal(breath: 559, health: 561, magic: 561)                      // above the maxima: nothing heals
+        XCTAssertEqual([h.breath, h.hp, h.magic], [560, 100, 561])
+        XCTAssertEqual(h.cue, .stop)
     }
 
     func testSwimStrokeImpulse() throws {
@@ -501,6 +612,8 @@ final class LiquidHazardTests: XCTestCase {
                        [true, true, true, false, false, true, false])
         XCTAssertEqual([band(10), band(0), band(10), band(10, kind: 5), band(-1), band(10, kind: 5, grounded: true)],
                        [true, false, true, true, true, false])
+        // Kind 5 never sets it: from 0, `+0x120` 10 in kind 5 keeps 0 (kind 0 would set 1).
+        XCTAssertEqual([band(0), band(10, kind: 5), band(1, kind: 5), band(10)], [false, false, false, true])
     }
 
     func testBelowMapKills() throws {
@@ -537,5 +650,19 @@ final class LiquidHazardTests: XCTestCase {
         u.player.stun = 5
         frame(u, us)
         XCTAssertEqual(u.player.dying, 0)
+        // Died-in-liquid `PTR_DAT_100a0560` = 0 only when `+0x11c` and `+0x120` are both 0 (l. 46442–46444): either
+        // one alone → 1.
+        for (row, last, wet) in [(Int32(5), Int32(0), true), (0, 5, true), (0, 0, false), (5, 5, true)] {
+            let t = pool(try level(1), rows: nil, floor: false)
+            XCTAssertNotNil(Player.spawn(world: t, x: 100, y: 100))
+            t.active.update(id: t.playerID!) { p in
+                p.hp = 0
+                p.waterRow = row
+                p.lastWater = last
+            }
+            PlayerLiquids.deathAndRefill(t, id: t.playerID!)
+            XCTAssertEqual(t.player.dying, 1)
+            XCTAssertEqual(t.player.diedInLiquid, wet, "+0x11c \(row), +0x120 \(last)")
+        }
     }
 }

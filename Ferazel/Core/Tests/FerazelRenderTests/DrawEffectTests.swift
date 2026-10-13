@@ -213,6 +213,26 @@ final class DrawEffectTests: XCTestCase {
         }
         XCTAssertEqual(p.frame[165 * FramePorts.width + 299], 0x33)
         XCTAssertEqual(p.frame[165 * FramePorts.width + 311], 0x33)        // an unshifted darken would reach it
+        // Every port pixel: the darken lands exactly on what the draw covered (each underwater row with its own port-row
+        // R, the lower call from v + 20), once — anything else stays 0x33 (slab[0x33] ≠ 0x33).
+        func darkened(_ drawn: FramePorts, _ lit: FramePorts, _ slab: [UInt8]) -> Int {
+            zip(drawn.mask.indices, lit.frame).filter { i, v in v != (drawn.mask[i] == 0 ? slab[Int(drawn.frame[i])] : 0x33) }.count
+        }
+        XCTAssertEqual(darkened(ports, p, slab), 0)
+        // Clipped by the view bottom (`.WrapLightFace`: y 370 + 40 > 0x180 → h' 14): the darken's upper height is
+        // min(W 20, h' 14) — 14 rows, ending at port row 383; W 20 > h' → no lower call.
+        var low = lit
+        low.y = 370
+        var pl = FramePorts(fill: 0x33)
+        try lb.wrapDrawSprites([low], h: 0, v: 0, ports: &pl)
+        var pd = FramePorts(fill: 0x33)
+        var unlit = low
+        unlit.lightOverlay = false
+        try lb.wrapDrawSprites([unlit], h: 0, v: 0, ports: &pd)
+        let lowSlab = lb.lights.ambientSlab(lb.lights.darkness(x: 300 + 6, y: 370 + 7))
+        XCTAssertEqual(footprint(pd).maxY, 383)
+        XCTAssertEqual(darkened(pd, pl, lowSlab), 0)
+        for row in 384..<390 { XCTAssertEqual(pl.frame[row * FramePorts.width + 305], 0x33, "row \(row)") }
         // With a light that meets the face (slot 0: a 64×64 light, pixel (r, c) = 0xf5 + c mod 8, at (312, 162) radius
         // 32 → light offset row 140 − 130 = 10, column 300 − 280 = 20; colour 0): `.BlitLightOverFaceClip` over rows
         // 0…19, then from row 20 with the last argument 1 (l. 15240–15270) — the destination and the column window
@@ -240,6 +260,51 @@ final class DrawEffectTests: XCTestCase {
             }
         }
         XCTAssertEqual(q.frame[165 * FramePorts.width + 311], 0x33)
+        // Every underwater row (port rows 160…179): face column c at 300 + c + R(port row), drawn where 0 ≤ c + R < 12,
+        // light row 10 + face row, light column 20 + c (unshifted); nothing else in the row.
+        for r in 20..<40 {
+            let row = 140 + r
+            let R = try XCTUnwrap(lb2.rippleShift(row: row))
+            var want = [UInt8](repeating: 0x33, count: 32)
+            for c in 0..<12 where 0 <= c + R && c + R < 12 {
+                want[10 + c + R] = lightened(10 + r, 20 + c, f.tables.water[1][Int(Self.pixel(r, c))])
+            }
+            XCTAssertEqual(Array(q.frame[(row * FramePorts.width + 290)..<(row * FramePorts.width + 322)]), want, "row \(row)")
+        }
+        // A second light (slot 1: 128×128, every pixel 0xf9, at (306, 160) radius 64 — light row 44 + r) after slot 0,
+        // W 25 (l. 15240–15270): slot 0's lower call stores h' = 40 − 25 = 15 back into `param_6`; slot 1 then splits on
+        // the shortened h': unflipped `.BlitAfterLightOverFaceClip` height min(25, 15) = 15 (rows 0…14), and 25 < 15
+        // fails → no lower call; flipped `.BlitAfterLightOverFaceFlipClip` is passed W 25 itself (rows 0…24). Each
+        // touched pixel d → light[(0xf9 − 0xf5)·0x100 + d] (slab 0); the other rows keep slot 0's pixels.
+        var lb3 = lb2
+        lb3.lights.slots[1].active = true
+        lb3.lights.slots[1].face = LightFace(pict: 2, width: 128, height: 128,
+                                             pixels: [UInt8](repeating: 0xf9, count: 128 * 128))
+        lb3.lights.slots[1].x = 306
+        lb3.lights.slots[1].y = 160
+        lb3.lights.slots[1].radius = 64
+        for (flip, rows) in [(false, 0..<15), (true, 0..<25)] {
+            var d25 = lit
+            d25.waterRow = 25
+            d25.mirrored = flip
+            var one = FramePorts(fill: 0x33), two = FramePorts(fill: 0x33)
+            try lb2.wrapDrawSprites([d25], h: 0, v: 0, ports: &one)
+            try lb3.wrapDrawSprites([d25], h: 0, v: 0, ports: &two)
+            var moved = [0, 0, 0]                                       // face rows 0…14, 15…24, 25…39
+            for row in 130..<190 {
+                for x in 290..<322 {
+                    let i = row * FramePorts.width + x, v = one.frame[i]
+                    let after = f.tables.light[4 * 0x100 + Int(v)]
+                    let want = rows.contains(row - 140) && (300..<312).contains(x) ? after : v
+                    XCTAssertEqual(two.frame[i], want, "flip \(flip) (\(x), \(row))")
+                    if (140..<180).contains(row) && (300..<312).contains(x) && after != v {
+                        moved[row - 140 < 15 ? 0 : row - 140 < 25 ? 1 : 2] += 1
+                    }
+                }
+            }
+            // Every band holds pixels slot 1 would move, so each boundary above is observable.
+            XCTAssertTrue(moved.allSatisfy { $0 > 0 }, "flip \(flip) \(moved)")
+        }
     }
 
     // MARK: - the hurt flash

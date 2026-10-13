@@ -49,7 +49,8 @@ public final class SpriteWorld {
     /// Records taken whose Setup is still running (`newSprite`).
     private var reserved = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
-    /// // later: P4 (the death trigger sets it)
+    /// Set only after the game loop exits, when G+4 < 1 (decompile l. 5303) — not by the death trigger (row 41).
+    /// // later: W4
     public var playerDead = false
     /// `*_DAT_1009fd30`: the frame-parity flag. Only `.PaintFrameWrap` writes it — toggled on **drawn** iterations,
     /// after `.DrawParticles`/`.UpdateOmniPx` and before `.WrapCopyToScreen` (raw `10012710..1001272c`, l. 9435–9440;
