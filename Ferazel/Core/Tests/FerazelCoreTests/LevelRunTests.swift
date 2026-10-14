@@ -219,6 +219,13 @@ final class LevelRunTests: XCTestCase {
         // The fade-in's end (step 41): `ShowCursorSafe` (M l. 31945), once.
         let shows = all.flatMap { $0.steps }.map { $0.requests.contains(.showCursor) }
         XCTAssertEqual(shows, Array(repeating: false, count: 40) + [true] + Array(repeating: false, count: 4))
+        // `_HideCursorSafe()` at the top of every iteration (M l. 5233): each step opens with a hide, so the show at
+        // the fade-in's end lasts until the next iteration — the cursor's net state is hidden.
+        XCTAssertEqual(all.flatMap { $0.steps }.map { $0.requests.first }, Array(repeating: .hideCursor, count: 45))
+        let hidden = all.flatMap { $0.steps }.flatMap { $0.requests }.reduce(false) { h, r in
+            r == .hideCursor ? true : r == .showCursor ? false : h
+        }
+        XCTAssertTrue(hidden)
 
         // The restart fast path (same level, tilesets kept, M l. 2252): 25 %, 50 %, the six flag-1 singles reloaded
         // (the CLUT ids stay −1 / 202 — self-derived, `CachedFaces`), 100 % twice.

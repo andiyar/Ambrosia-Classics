@@ -314,6 +314,9 @@ public final class FerazelSession {
             ops.music.append(.play(track: Int(level.header.music)))
         }
         iterations += 1
+        // `_HideCursorSafe()` at the top of every iteration (M l. 5233; L1 review fix 2). Hosted only: the non-hosted
+        // Phase-2 path keeps its expectations (Invariant 10) — its one hide is the start block's above. Carry: A1a.
+        if hostedByLevelRun { ops.requests.append(.hideCursor) }
         // `*piVar5 += 1` (`_DAT_1009fd98`, l. 5236).
         world.frameCounter &+= 1
 
@@ -421,8 +424,9 @@ public final class FerazelSession {
         // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
         let fadingIn = !world.gammaFade.done && world.gammaFade.fadingIn
         if let g = world.gammaFade.handle() { ops.draws.append(g) }
-        // A fade-in's end call: `_ShowCursorSafe()` (M l. 31945; L1 review fix).
-        if fadingIn && world.gammaFade.done { ops.requests.append(.showCursor) }
+        // A fade-in's end call: `_ShowCursorSafe()` (M l. 31945; L1 review fix) — the next iteration's top hides it
+        // again. Hosted only: the non-hosted path sends no per-iteration hide, so a show there would linger.
+        if hostedByLevelRun && fadingIn && world.gammaFade.done { ops.requests.append(.showCursor) }
         // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
         // after this iteration (W4).
         let endsNow = !loopEnded && (world.player.gameOver || world.player.levelDone)

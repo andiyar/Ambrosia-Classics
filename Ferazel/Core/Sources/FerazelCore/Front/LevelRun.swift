@@ -40,8 +40,8 @@ public struct LevelRunSegment: Equatable, Sendable {
 /// each segment's draws on its target's renderer, in order; `merged` is the whole tick as one `FrontOutput` (the
 /// sounds, music and requests in order, `present` / `prefs` merged).
 ///
-/// Routing: an op only one renderer executes goes to it (`FrameRenderer.swift` refuses the front-end ops,
-/// `ScreenRenderer.Refusal.levelOp` the level ops); `setScreenClut(id)` goes to `.level` when `id` is the level's
+/// Routing: an op only one renderer executes goes to it (`FrameRenderer.swift` silently drops the front-end ops;
+/// `ScreenRenderer` refuses the level ops, `Refusal.levelOp`); `setScreenClut(id)` goes to `.level` when `id` is the level's
 /// screen CLUT (the one `FrameRenderer`'s tables are built for — it refuses any other, e.g. clut 281) and to `.screen`
 /// otherwise; `drawPicture` and `gammaStep` (both renderers execute them on the shared surface) stay with the
 /// renderer of the draw before them (`.screen` before any). A cue- or request-only output joins the last segment; an
