@@ -58,6 +58,19 @@ Recommendation: a or b — the machine reads match the binary on every point che
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
 Answer:
 
+### Q3 — 2026-10-14 — Phase 3 plan (front end + saves): four small choices, for your later read
+Context: Loop run 8 wrote and reviewed the Phase 3 plan (`docs/plans/2026-10-14-ferazel-phase3.md`, rulings in
+DECISIONS D35): title, menu, options, world map, chapter and stats screens, save points, Continue, death screen,
+conversations, pause. Execution starts next run without waiting (D34). Four choices in it are yours; each has a default
+the loop builds unless you say otherwise.
+Options: (1) saved games written in the data fork (portable; reads original saves too) vs a real resource fork
+(original-readable, stripped by zip/Windows) — default data fork; (2) macOS save/open panels instead of 1997 Standard
+File dialogs — default yes; (3) in a window the macOS menu bar stays visible during play (full screen hides it, as
+design §7.4) — default visible; (4) keep the hidden `-FerazelLevel N` test switch — default keep.
+Recommendation: the defaults — each keeps the game's behaviour and only touches the Mac around it.
+Blocks: nothing (D34). A different answer becomes a small task in the phase.
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_

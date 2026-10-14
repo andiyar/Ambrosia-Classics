@@ -1199,3 +1199,39 @@ the notarized DMG, a remote). Gate numbers in the first chip were run from main 
 **Rejected:** blocking at each phase gate (Ben chose queued gates); waiting for plan approval per phase; HectorKit
 read-only for the loop.
 **Approved by:** Ben, 2026-10-13.
+
+## D35 — Ferazel's Wand Phase 3 "Front end + saves": planning rulings (2026-10-14, loop run 8)
+
+**Decided (seat, under D34's plan authorization — execution does not wait for Ben; his read is QUESTIONS Q3):** the plan
+is `docs/plans/2026-10-14-ferazel-phase3.md` (Opus planner; Opus leg 1 plan-vs-dump SOUND WITH FIXES with four dump
+verifiers; Opus leg 2 plan-vs-code SOUND WITH FIXES; Opus fix round; FABLE-GRADE plan leg PASS WITH FIXES — re-ran G2
+256/0 in an archive, 1 MAJOR (L2 must run before L1) + 6 MINOR; Opus fix round 2). 17 Core tasks with tests (X1 R1 SV1
+SV2 FE0 O1 L2 L1 M1 M2 F1a D1 F1b S1 P1 C1 C2), two app tasks (A1a A1b), phase end A2; 7 ⚑ MAJOR; ladder 256 → **345**;
+nine runs ([X1 R1 SV1], [SV2 FE0 O1], [L2 L1], [M1 M2], [F1a D1 F1b], [S1 P1], [C1 C2], [A1a A1b], phase end). The
+plan's "Rulings" section (17 items) is the full text; in short:
+1. **Scope** = design §8 row 3 + §9 (d); out: inventory/pickups (Phase 4), enemies (5), bosses + `.Victory` (6),
+   InputSprocket, resolution switching, CD check, debug keys (F4 is not debug-gated and is built).
+2. ◇ **`BuiltLevels = 1...2`**: the map behaves as the original; a level without transcribed Setups shows a stand-in
+   report and stays on the map. `-FerazelLevel N` kept as hidden New-Game-at-level-N within `BuiltLevels`.
+3. **Front end = Core state machines on 60 Hz ticks** (`GameFlow`, `LevelRun`, `WorldMapRun`); the 2/4-tick level
+   cadence moves from App to Core; ms fades → ticks rounded up [MED]. **Modal moments run inside a resumable frame**
+   (`FrameSuspension`: save point, conversation, sign; Esc/⌘Q/⌘W/⌘P/Caps Lock at `.CheckGameLoopKeys`). One RNG stream
+   for the whole game, owned by `GameFlow` between levels.
+4. **Byte-exact persistence:** G 0x19978, save block **0xebe58 = 966,232** bytes (the bank's 965,208 was wrong —
+   `save-continue.md` correction owed by SV1), prefs 0x942, big-endian; never-initialised bytes written as 0.
+5. **Files:** prefs + saves under `~/Library/Application Support/Ambrosia Classics/Ferazel's Wand/`; a saved game is a
+   classic resource map written into the **data fork** (type 'FWSg' / creator 'Msct'), the reader also takes a real
+   resource fork; macOS save/open panels replace Standard File; the macOS system volume is never set (fields kept).
+6. **No HectorKit change** (the draft's K1 was dropped: HK already has `ClassicResourceMap.serialize(_:)`, and
+   `ShellMixer.load(id:)` under one fixed music id bounds memory like the original's dispose). HK stays 0c65dcb, floor 328.
+7. **Menus/dialogs:** MBAR 128 transcribed, items live only in the main-menu and pause loops; windowed the macOS menu
+   bar stays visible (changes design §7.4 for the windowed case — Q3); DLOG/DITL dialogs on AppKit adapted from BTX's
+   `CarbonDialog` into `Ferazel/App/Dialogs/`.
+8. **Design §9 (d):** a save naming a missing level shows "An unexpected error occurred -- the level could not be
+   loaded from the world file!" (0x100a2e76, the original's only displayed text for it) and returns to the menu.
+9. **Settled by the binary (were draft questions):** death without a save returns to the main menu (D33's restart
+   stub retires with the App's `Ending`); the Controls panel refuses the A key as "already used" (zeroed slot 9).
+10. **Bank corrections** BC1–BC30 (plan section) are appended to the named bank files by the tasks that rely on them.
+**Rejected:** a HectorKit resource writer (exists); "Tried to open a level that wasn't there!" (never shown by the
+original); a real resource fork by default (stripped by zip/git/Windows — Ben may choose it, Q3); restart-after-death.
+**Approved by:** seat under D34 (Ben reads later, Q3).
