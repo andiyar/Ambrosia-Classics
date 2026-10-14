@@ -48,6 +48,20 @@ public struct WorldMap: Sendable, Equatable {
         self.tail = Array(b.bytes[(Self.slotCount * Self.slotSize)...])
     }
 
+    /// The existing node in slot `index` (`node + index · 0x128` with byte +0x000 ≠ 0); nil for an empty slot or an
+    /// index outside 0…127.
+    public func node(_ index: Int) -> Node? {
+        guard (0..<Self.slotCount).contains(index) else { return nil }
+        return nodes.first { $0.index == index }
+    }
+
+    /// `.FindCurrNode(level) @ 1007bb80` (M l. 67144–67163): the first existing node (slot order) whose +0x102 level
+    /// is `level`; nil where the original reports "Current node could not be found!" (0x100a6d30) and quits.
+    /// Node 60 ↔ level 62, node 62 ↔ level 67; every other node's index is its level.
+    public func findCurrNode(level: Int16) -> Node? {
+        nodes.first { $0.level == level }
+    }
+
     /// `Mmap <id>` (200 in the shipped game) from World Data (`.OpenDefaultWorldMap`).
     public static func load(from resources: FerazelResources, id: Int16 = 200) throws -> WorldMap {
         guard let r = resources.world.resource(type: "Mmap", id: id) else {

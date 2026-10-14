@@ -405,6 +405,37 @@ animates it. Exit indices come from the level-exit sprite type 3249 (params 1 an
 (`InitGameGlobals: *(short*)(G+0x240) = 1`). Selection: Return/Enter or ISp elements 5/6;
 Escape/⌘-Q-style keys abort to menu.
 
+> ⚑ planner note (Phase 3 M1, 2026-10-14) (BC14; `.ShowWorldMap @ 1007c494`, M l. 67432–67658): ⌘Q (0x37 + 0x0c,
+> or Esc + Q) on the map → the quit confirm "Are you sure you want to quit?" (0x100a6d69; OK = abort + quit flag
+> `1009fd50`); ⌘W / Esc → the abort confirm "Are you sure you want to abort this game?" (0x100a6d88). Moves = actions
+> 0–3 **and** the arrows 0x7b–0x7e; select = Return 0x24 / Enter 0x4c / actions 5 / 6 (default Option / ⌘ — the
+> held-⌘ quirk: an idle ⌘ enters the level before ⌘Q is seen unless Q goes down in the same iteration). In
+> `.CheckPlayerNodeMovement` a tie (|dv| = |dh|) makes the vertical direction primary, equal h takes the right branch,
+> "above" is strictly `tgt.v < cur.v`; pass 2 (secondaries) runs only when pass 1 found nothing. `.InitPlayerMapData`'s
+> name copy is dead. Node faces are centred on (h, v) (blit at (h − 20, v − 20) in a slop-8 port). One new link →
+> the auto-walk; two (p1 and p2) → none. p2 (`_DAT_100a5118`) is stored only when ≠ 0 and is a global only
+> `.ShowWorldMap` resets (to −1, M l. 67561). The map draws `FastRand`: one `FastRand(15)` per visible node in
+> `.MakeNodeSprites` (before `.AddNodeSprite`), 3 × 50 per `.DrawNewLink`. `STR# 1000` spellings differ from the Mlvl
+> names on levels 1, 10, 50, 51, 67 — the status bar keeps the Mlvl spelling until the map loop's first name update.
+>
+> ⚑ planner note (Phase 3 M1, 2026-10-14) (BC24): the walk draws **29** frames (steps 2…30; step 1 is never drawn —
+> `.FindPlayerNodeLoc` increments before use and sets cur = target, step = 0 in the call that computed step 30, each
+> axis `trunc(cur·(30−s)/30) + trunc(tgt·s/30)`); the unlock runs twice (idempotent, M l. 67513–67524 and
+> 67545–67557); `.UpdateNodeSprites` runs once before the first draw (M l. 67530: node counters `FastRand(15)+1`, the
+> ambient's −3 → no face); `.ReInitWorldMapGraphics` (PICTs 600/601) at entry, and `InputActivate(1,1)` last before
+> the loop (M l. 67565, after the `.DrawNewLink`s and `fe2c = 1`); the node-sprite count is reset on exit (M l.
+> 67652); `.DrawNodeSprites` calls `.RedrawLinks` while the ambient sprite has a face (`+0xd`); `.DrawNewLink`'s line
+> order is centre, −1/−1, +1/+1 (`.DrawLink`'s is centre, +1/+1, −1/−1, white centre); PICT 8003 is loaded, never
+> drawn (M l. 66635–66636).
+>
+> ⚑ planner note (Phase 3 M1, 2026-10-14) (BC31): the map loop's own walking test (the loop condition and the
+> movement / name gate, M l. 67567–67579) is **step `*_DAT_100a0c18` ≠ 0**; only `.FindPlayerNodeLoc` tests
+> `cur ≠ walkTarget`. Entry order: clut 700 → PICT 129 → `UpdateStatusBar(0,0,0)` → `.ReInitWorldMapGraphics` → PICT
+> 7000 (M l. 67498–67512); a second `UpdateStatusBar(0,0,0)` follows the first frame (M l. 67539). A clear
+> level-complete flag returns **1**, not −1, after "Error showing world map" (M l. 67493–67496). The node sprite's
+> `+0xc` has no reader; `+0xd` is written only for type 100 (static array: 0 elsewhere). As built:
+> `FerazelCore.WorldMapRun` (`Front/WorldMapRun.swift`).
+
 ### 4.3 `.CalcPercent @ 10005894` / `.FillPercent @ 10005510` (stage-complete stats)  [HIGH]
 
 `CalcPercent(a, b)`: `b == 0 → 100`; `a == 0 → 0`; else `(int)(100.0f · a / b)` (constant

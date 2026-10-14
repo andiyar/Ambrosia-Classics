@@ -1559,6 +1559,16 @@ BC30 conversations-mcnv — action 2 gives `B == 0 ? 1 : B` (a negative B is add
 only the low byte of p(A+1); 2907 and 2833…2836 also fall through to `.PlatformBounce`; portraits 4026–4029 do not
 exist (C1, C2).
 
+*Added by M1 (loop run 12):*
+
+BC31 world-data §4.2 — `.ShowWorldMap`'s own "walking" test (the loop condition and the movement/name gate, M l. 67567–67579)
+is **step `*_DAT_100a0c18` ≠ 0**; only `.FindPlayerNodeLoc` tests `cur ≠ walkTarget`. Entry order is clut 700 → PICT
+129 → `UpdateStatusBar(0,0,0)` → `.ReInitWorldMapGraphics` → PICT 7000 (M l. 67498–67512), and a second
+`UpdateStatusBar(0,0,0)` follows the first frame (M l. 67539). A clear level-complete flag returns **1** (not −1) after
+"Error showing world map" (M l. 67493–67496). The node sprite's `+0xc` byte has no reader; `+0xd` is written only for
+type 100 (the array is static, so 0 elsewhere). `.DrawNewLink`'s end draws the sprites twice around the background
+restore (M l. 67263–67270) (M1).
+
 ---
 
 ## Research notes (where every number came from)
