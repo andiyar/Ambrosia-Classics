@@ -136,8 +136,9 @@ public struct WorldMapOutput: Equatable, Sendable {
 /// absolute 60 Hz ticks (Invariant 3); world-data §4.2 (+ BC14, BC24). It returns (`result`) the level to enter, or −1
 /// when the game was aborted (`quitRequested` then says whether ⌘Q's OK also asked to quit).
 ///
-/// **Entry (M l. 67493–67565):** `*_DAT_100a0088` (level complete) clear → `ReportError("Error showing world map")`,
-/// return **1**; cur = `.FindCurrNode(hdr+0x26c4)` (none → "Current node could not be found!" + `ExitToShell`);
+/// **Entry (M l. 67493–67565):** `*_DAT_100a0088` (level complete) clear, or no node table (`Mmap` handle nil or empty)
+/// → `ReportError("Error showing world map")`, return **1**; cur = `.FindCurrNode(hdr+0x26c4)` (none → "Current node
+/// could not be found!" + `ExitToShell`: `quitRequested`, no `result`);
 /// clut 700 on the three ports and the screen; PICT 129 (0, 0, 640, 480); `UpdateStatusBar(0,0,0)`;
 /// `.ReInitWorldMapGraphics`; PICT 7000 into the background (0, 0, 608, 384); the unlock of exit1 / exit2 (≥ 0);
 /// the ambient sprite (100 at (38, 168), counter −4); `.MakeNodeSprites`; the marker (0x45); `.UpdateNodeSprites`; the
@@ -184,7 +185,10 @@ public final class WorldMapRun {
     static let quitText = "Are you sure you want to quit?"             // 0x100a6d69
     static let abortText = "Are you sure you want to abort this game?" // 0x100a6d88
 
+    /// The node table (`*_DAT_100a043c`); an empty map when the world file has no `Mmap 200` (`mapMissing`).
     public let map: WorldMap
+    /// No node table: the entry reports "Error showing world map" and returns 1 (M l. 67492–67496).
+    public let mapMissing: Bool
     /// `STR# 1000` (`.InitMapLevelNames @ 1007ad84`, M l. 66644–66664: `GetIndString(1000, i)` for i < 100, from the
     /// world file).
     public let levelNames: StringList
@@ -207,11 +211,13 @@ public final class WorldMapRun {
     public private(set) var walkTarget: Int16 = 0
     /// `*_DAT_100a0c18`: the walk's step (0 = not walking; the loop tests it).
     public private(set) var walkStep: Int16 = 0
-    /// The node-sprite list (`_DAT_100a0c30` / count `*_DAT_100a0c50`); emptied on exit (M l. 67652).
+    /// The node-sprite list (`_DAT_100a0c30` / count `*_DAT_100a0c50`): a global — the entry appends to it as the last
+    /// run left it (`.ShowWorldMap` never clears it on entry); emptied on exit (M l. 67652).
     public private(set) var sprites: [MapSprite] = []
     /// `*_DAT_1009fd4c`: the game was aborted (an OK in either confirm).
     public private(set) var aborted = false
-    /// `*_DAT_1009fd50`: ⌘Q's OK — the flow quits.
+    /// `*_DAT_1009fd50`: ⌘Q's OK — the flow quits. Also set (with a `.quit` request and no `result`) when the current
+    /// node is not found: `.FindCurrNode` calls `ExitToShell` and never returns (M l. 67154–67155).
     public private(set) var quitRequested = false
     /// `*PTR_DAT_1009fe2c`: on the map (set before the loop, cleared on exit).
     public private(set) var onMap = false
@@ -258,10 +264,19 @@ public final class WorldMapRun {
     ///   - levelComplete: `*_DAT_100a0088`.
     ///   - seed: the game's `FastRand` seed.
     ///   - fade / music: the flow's gamma and music state.
+    ///   - sprites: the node-sprite list as the previous map run left it (`sprites` after its exit — empty, M l. 67652).
     public init(resources: FerazelResources, prefs: FerazelPrefs, globals: GameGlobals, level: Int16, levelName: String,
                 exit1: Int16, exit2: Int16, levelComplete: Bool, seed: Int32, fade: ScreenFade,
-                music: MusicFade) throws {
-        map = try WorldMap.load(from: resources)
+                music: MusicFade, sprites: [MapSprite] = []) throws {
+        // `(int *)*_DAT_100a043c == 0 || *(int *)*_DAT_100a043c == 0` → the entry's error (M l. 67492–67493).
+        if resources.world.resource(type: "Mmap", id: 200) == nil {
+            map = try WorldMap(data: Data(count: WorldMap.length))
+            mapMissing = true
+        } else {
+            map = try WorldMap.load(from: resources)
+            mapMissing = false
+        }
+        self.sprites = sprites
         levelNames = try StringList.load(from: resources, id: 1000)
         self.prefs = prefs
         self.globals = globals
@@ -381,8 +396,8 @@ public final class WorldMapRun {
 
     /// M l. 67493–67539: the checks, the screen, the unlocks, the sprites, the first frame.
     private func enter(out: inout WorldMapOutput) {
-        guard levelComplete else {
-            // `_ReportError(&DAT_100a6d51, 0); return 1` (M l. 67493–67496).
+        guard levelComplete && !mapMissing else {
+            // `_ReportError(&DAT_100a6d51, 0); return 1` (M l. 67492–67496).
             out.output.requests.append(.dialog(.error(text: Self.errorShowingMap, code: 0)))
             pending = .mapError
             return
@@ -407,8 +422,8 @@ public final class WorldMapRun {
         // The unlocks (M l. 67513–67524).
         if exit1 >= 0 { unlock(exit: exit1) }
         if exit2 >= 0 { unlock(exit: exit2) }
-        // `_AddNodeSprite(0x26, 0xa8, 100, −4, 0)`, `.MakeNodeSprites`, the marker at cur (M l. 67525–67529).
-        sprites = []
+        // `_AddNodeSprite(0x26, 0xa8, 100, −4, 0)`, `.MakeNodeSprites`, the marker at cur (M l. 67525–67529) —
+        // appended at the count the last exit left (no reset here).
         addSprite(MapSprite(h: 0x26, v: 0xa8, type: Self.ambientType, counter: -4))
         makeNodeSprites(out: &out)
         marker = addSprite(MapSprite(h: Int(node.h) - 0x14, v: Int(node.v) - 0x14, type: Self.markerType, counter: 0))
@@ -428,10 +443,10 @@ public final class WorldMapRun {
         case .mapError:
             result = 1
         case .noNode:
-            // `ExitToShell()`: the original never returns (the decompile's `return 0` is unreachable).
+            // `ExitToShell()` (M l. 67155): the original never returns (the decompile's `return 0` is unreachable) —
+            // no level result; the run stops here.
             out.output.requests.append(.quit)
             quitRequested = true
-            result = 0
         case .confirm(let quit):
             // `_ConfirmAbortGameDialog()`: OK → abort (+ the quit flag); Cancel → `_HideCursorSafe()`; then the map
             // view copied back over the dialog (M l. 67602–67646).

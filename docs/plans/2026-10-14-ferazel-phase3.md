@@ -873,10 +873,11 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   name → status bar (so **until arrival the bar shows the Mlvl spelling**, e.g. "A Scent Of Peril", BC14); draw; wait
   ≥ 1 tick; Caps Lock (gated on `PTR_DAT_1009fe14 == 0`) → P1's pause (the work port copied to the port at
   `*(1009ff58+0xc)` before, to the screen after) — **M1 leaves a named `// later: P1` stub** at this point (P1 does
-  not exist yet; P1 replaces it); ⌘ or Esc held: `FlushEvents(0xff7f)` + `ShowCursorSafe`, then + Q → confirm "Are you
+  not exist yet; P1 replaces it); ⌘ or Esc held: + Q → confirm "Are you
   sure you want to quit?" (0x100a6d69) → OK: abort + quit flag `1009fd50`; else + W or Esc → confirm "Are you sure you
   want to abort this game?" (0x100a6d88) → OK: abort; Cancel → `HideCursorSafe` (dialog = `ShellRequest.dialog
-  (.confirm)`; the flow waits; Esc+Q also reaches the quit confirm). Exit: `FadeAIFFMusic(0,2)`, on-map 0, **the
+  (.confirm)`; the flow waits; Esc+Q also reaches the quit confirm). (corrected loop run 12) `FlushEvents(0xff7f)` + `ShowCursorSafe` run only
+  inside the Q and the W/Esc branches, just before each confirm (M l. 67602–67646) — not whenever ⌘ or Esc is held. Exit: `FadeAIFFMusic(0,2)`, on-map 0, **the
   node-sprite count `*_DAT_100a0c50 = 0`** (M l. 67652; re-entry starts an empty list); return −1 if aborted else
   `node[cur].level`. The held-⌘ quirk is kept: an idle ⌘ (action 6) ends the loop and enters the current level before
   the ⌘Q test can see it (⌘Q fires only if ⌘ and Q go down inside the same iteration; while walking ⌘Q works) [MED,
