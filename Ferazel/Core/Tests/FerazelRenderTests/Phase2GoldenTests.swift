@@ -55,6 +55,7 @@ final class Phase2GoldenTests: XCTestCase {
             w += [Int(c.snd), c.priority, c.left, c.right, Int(c.rate), c.onlyIfIdle ? 1 : 0]
         }
         w.append(ops.soundStops.count)
+        XCTAssertEqual(ops.soundStops.count, ops.soundStopAt.count, "every stop has its soundStopAt")
         for (snd, at) in zip(ops.soundStops, ops.soundStopAt) { w += [Int(snd), at] }
         return w
     }
@@ -71,31 +72,48 @@ final class Phase2GoldenTests: XCTestCase {
     func testLevel2FirstFrameGolden() throws {
         let r = try renderer(level: 2)
         let s = try session(r, level: 2)
-        let ops = s.step(keys: KeyState())
-        try r.apply(ops)
+        try r.apply(s.step(keys: KeyState()))
+        let first = fnv1a(r.screen.pixels)
         // Measured 2026-10-14 (GD, three runs): level 2's start + iteration 1 — its camera opens at the start scroll
         // (631, 20), not level 1's (0, 0); 91 Setup lights at Effects 1.
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [631, 20])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 91)
-        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "565e867a02736c18")
+        XCTAssertEqual(hex(first), "565e867a02736c18")
+        // Iteration 1 is the frame the original never copies to the screen (the first iteration): the player and the
+        // lights are not in it. Iteration 2 is the first frame shown — measured 2026-10-14 (GD fix round, three runs);
+        // a start x one px off moves it. No Setup light lies in level 2's opening view, so no light colour shows here.
+        try r.apply(s.step(keys: KeyState()))
+        XCTAssertEqual(hex(fnv1a(r.screen.pixels)), "df22325e851e782d")
     }
 
     func testLevel1JumpAndLandGolden() throws {
         let r = try renderer(level: 1)
         let s = try session(r, level: 1)
-        let script: Script = [([], 10), ([Self.jump], 6), ([], 14)]
+        let script: Script = [([], 10), ([Self.jump], 6), ([], 24)]
         var chain: [UInt64] = []
+        var cues: [Int] = []
+        var top = Int.max, landed: Int?
+        var i = 0
         for (keys, n) in script { for _ in 0..<n {
-            try r.apply(s.step(keys: KeyState(pressed: keys)))
+            let ops = s.step(keys: KeyState(pressed: keys))
+            try r.apply(ops)
+            i += 1
             chain.append(fnv1a(r.screen.pixels))
+            cues += [i] + cueWords(ops)
+            let p = try player(s)
+            top = min(top, p.y)
+            if landed == nil, top < 123, p.y == 123 { landed = i }
         } }
-        // Measured 2026-10-14 (GD, three runs): he stands at (83, 123), the jump takes him to y 22 (iteration 22) and
-        // at iteration 30 he is still falling (y 75, vy 3244) — the landing back on y 123 falls after the 30 frames
-        // the plan fixes. The FNV-1a of the 30 frame hashes (little-endian bytes).
+        // Measured 2026-10-14 (GD, three runs; fix round): he stands at (83, 123), the jump takes him to y 22 and he
+        // lands back on y 123 at iteration 33 (the landing 601 cues on 34) — the plan's 30 frames never land, so the
+        // test runs 40. The FNV-1a of the 40 frame hashes, then the cue words (per iteration: its index, the
+        // `SoundCue`s with every field, the stops with their `soundStopAt`), all as little-endian bytes.
         let p = try player(s)
-        XCTAssertEqual(chain.count, 30)
-        XCTAssertEqual([p.x, p.y, Int(p.vy)], [83, 75, 3244])
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "73c35838c0f30060")
+        XCTAssertEqual(chain.count, 40)
+        XCTAssertEqual(top, 22)
+        XCTAssertEqual(landed, 33)
+        XCTAssertEqual([p.x, p.y, Int(p.vy)], [83, 123, 0])
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "e4f4bf977dd98eaa")
     }
 
     /// The route from the start (centre cell (4, 5)) to the first water body (BG liquid, cols 56…81, row 19): found
@@ -108,42 +126,65 @@ final class Phase2GoldenTests: XCTestCase {
         ([right, run], 48), ([right, run, jump], 6), ([right, run], 35),
     ]
 
+    /// 40 iterations in the pool after the entry: stand, a jump out and back in (exit splash 406, entry splash 405),
+    /// a jump to the right, UP (the liquid refill key), stand. The pool is wading depth (one liquid row over the
+    /// floor, two at cols 67…77; standing `+0x11c` is 69, never 1), so the jump key jumps here — the stroke
+    /// (`swimStroke`) needs `nearSurface` or `swim ≠ 0`, and the swim gravity `+0x11c == 1`, which this pool never
+    /// sets.
+    private static let poolStrokes: Script = [([], 6), ([jump], 6), ([], 10), ([right, jump], 8), ([up], 4), ([], 6)]
+
     func testLevel1SwimGolden() throws {
         let r = try renderer(level: 1)
         let s = try session(r, level: 1)
         var chain: [UInt64] = []
+        var cues: [Int] = []
         var entry: (frame: Int, col: Int, row: Int, before: Int, after: Int, sounds: [Int16])?
         var i = 0
         let wall = s.world.tiles.fgTile(col: 24, row: 13)
         var broken: Int?
-        for (keys, n) in Self.swimRoute { for _ in 0..<n {
+        var splashes: [Int] = []
+        for (keys, n) in Self.swimRoute + Self.poolStrokes { for _ in 0..<n {
             let before = liquidParticles(s)
             let wasDry = try player(s).waterRow == 0
             let ops = s.step(keys: KeyState(pressed: keys))
             try r.apply(ops)
             i += 1
             chain.append(fnv1a(r.screen.pixels))
+            cues += [i] + cueWords(ops)
             if broken == nil, s.world.tiles.fgTile(col: 24, row: 13) != wall { broken = i }
             let p = try player(s)
             if wasDry, p.waterRow != 0, entry == nil {
                 entry = (i, p.centre.x >> 5, p.centre.y >> 5, before, liquidParticles(s), ops.sounds.map(\.snd))
             }
+            for c in ops.sounds where c.snd == Splash.bigSnd || c.snd == 406 { splashes += [i, Int(c.snd)] }
         } }
         // Measured 2026-10-14 (GD, three runs). The walk right from the start cannot reach any liquid on foot: the
         // start rooms are closed by crunch walls (`.CrunchTile`, direction nibbles at cols 12…20 rows 2…4 and col 24
         // rows 10…15). The route drops into the lower room and breaks the col-24 wall with a spin-jump fall
         // (blocks (24…25, 13…14) gone on iteration 259), then runs right along rows 15…18 and drops into the
-        // first water body (BG liquid cols 56…81, row 19) on iteration 357, the last of the script: centre cell
+        // first water body (BG liquid cols 56…81, row 19) on iteration 357, the last of the route: centre cell
         // (60, 18), the big splash 405 (hot rect 24 wide) and `.Splash(s, 3)`'s (24 + 8) × 3 = 96 liquid particles.
         XCTAssertEqual(broken, 259)
         let e = try XCTUnwrap(entry)
         XCTAssertEqual([e.frame, e.col, e.row, e.before, e.after], [357, 60, 18, 0, 96])
         XCTAssertEqual(e.sounds, [Splash.bigSnd])
-        XCTAssertEqual(chain.count, 357)
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "22899ab83d5d14a0")
+        // Then the 40 pool iterations (fix round, measured 2026-10-14, three runs): the splash cues (iteration, snd),
+        // the end state — the player (x, y, vx, vy) and his `+0x11c`, the live liquid particles and all live
+        // particles — and the FNV-1a of the 397 frame hashes then the cue words, little-endian.
+        XCTAssertEqual(splashes, [357, 405, 365, 406, 385, 405])
+        let p = try player(s)
+        XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy), Int(p.waterRow)], [1978, 539, 0, 0, 69])
+        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [67, 252])
+        XCTAssertEqual(chain.count, 397)
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "95ff5176412df650")
     }
 
-    /// 600 iterations of a fixed walk / run / jump cycle (60 frames, repeated 10 times).
+    /// 600 iterations: the swim route (357: the col-24 wall break, the camera pan, the pool entry), the pool strokes
+    /// (40: an exit and a re-entry splash), climbing out of the pool to the left (a running jump out — the exit
+    /// splash 406 on iteration 420 — over the ledge at cols 52…56 and on left to col 42; 83), then a walk / run /
+    /// jump cycle (60 frames, twice) along cols 42…53 (landings, wall clings 455).
+    private static let poolExit: Script = [([left], 20), ([left, jump], 10), ([left], 20), ([left, run, jump], 10),
+                                           ([left], 23)]
     private static let playCycle: Script = [
         ([right], 12), ([right, run], 12), ([right, run, jump], 8), ([right], 6), ([], 4), ([left], 6),
         ([left, jump], 6), ([right, jump], 6),
@@ -155,24 +196,27 @@ final class Phase2GoldenTests: XCTestCase {
         var chain: [UInt64] = []
         var cues: [Int] = []
         var i = 0
-        for _ in 0..<10 { for (keys, n) in Self.playCycle { for _ in 0..<n {
+        let script = Self.swimRoute + Self.poolStrokes + Self.poolExit + Self.playCycle + Self.playCycle
+        for (keys, n) in script { for _ in 0..<n {
             let ops = s.step(keys: KeyState(pressed: keys))
             try r.apply(ops)
             chain.append(fnv1a(r.screen.pixels))
             cues += [i] + cueWords(ops)
             i += 1
-        } } }
-        // Measured 2026-10-14 (GD, three runs): the FNV-1a of the 600 frame hashes; of the cue words (per iteration:
-        // its index, the `SoundCue`s in order with every field, the stops with their `soundStopAt`); and the final
-        // state — the player (x, y, vx, vy), the scroll, the `FastRand` seed, the live particles.
+        } }
+        // Measured 2026-10-14 (GD fix round, three runs): the FNV-1a of the 600 frame hashes; of the cue words (per
+        // iteration: its index, the `SoundCue`s in order with every field, the stops with their `soundStopAt`); and the
+        // final state — the player (x, y, vx, vy), the scroll (off (0, 0): the route pans the camera), the `FastRand`
+        // seed, the live particles.
         let p = try player(s)
         XCTAssertEqual(s.iterations, 600)
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "2b06ca5447084169")
-        XCTAssertEqual(cues.count, 3244)
-        XCTAssertEqual(hex(fnv1a(bytes(cues))), "a332f94ec91c2744")
-        XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy)], [182, 75, 230, 3520])
-        XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
-        XCTAssertEqual(s.rngSeed, 1348255379)
-        XCTAssertEqual(s.world.particles.live, 0)
+        XCTAssertEqual(hex(fnv1a(bytes(chain))), "9532d65a42d39666")
+        XCTAssertEqual(cues.count, 3078)
+        XCTAssertEqual(hex(fnv1a(bytes(cues))), "a875a96c2801dbe9")
+        XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy)], [1591, 361, 1150, 705])
+        XCTAssertNotEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
+        XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [1353, 309])
+        XCTAssertEqual(s.rngSeed, 2032060201)
+        XCTAssertEqual(s.world.particles.live, 44)
     }
 }
