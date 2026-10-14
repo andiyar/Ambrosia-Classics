@@ -162,6 +162,8 @@ level start.
 "Ferazel Saved Game" (pstr 0x100a586c), body = the whole save block, 0xebe58 = 965,208 bytes.
 No slots: Standard File named files, any number, any folder.
 
+> ⚑ planner note (Phase 3 SV1, 2026-10-14) (BC21): 0xebe58 = **966,232** bytes; "965,208" above is a decimal slip.
+
 ### 3.2 Default name (`.IncrementLastSGString @ 1004811c`, l. 40877)
 
 On prefs+0x42 (live prefs copy): if its chars 1..4 are `@@@@` (the factory default "@@@@@",
@@ -193,6 +195,8 @@ append " 2". So successive saves default to "Ferazel Saved Game", "Ferazel Saved
 "Writers/readers" is complete: the save handle's TOC slot `-0x77ec` is referenced only by
 InitAppGlobals, InitGameGlobals, SetupLevel, NewGame, DoSaveGame, SavePointSave, EndLevelSGUpdate,
 ContinueGame, SaveSG, OpenSG, HandleLineActions (`tools/tocrefs.py 100a0054`) [HIGH].
+
+> ⚑ planner note (Phase 3 SV1, 2026-10-14) (BC2): the snapshot area is `L < 100` (0x19998 + 0x2000·100 = 0xe1998); `0xe1998..0xe7d97` is never accessed; each level slot holds 511 records, so its 512th 16-byte slot (`+0x1ff0..+0x1fff`) is unused (the copy loops stop at `0x1ff` = 511: raw `1000c1f0 li r0,0x1f7` + tail to 511, M l. 6368–6482). `FerazelCore.SaveBlock` stores none of these and writes them 0 (Phase 3 Invariant 7).
 
 ### 3.4 OpenSG(reply)
 
