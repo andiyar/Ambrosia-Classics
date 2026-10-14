@@ -1,130 +1,166 @@
-# Ferazel's Wand — what to expect (Phase 1 gate build)
+# Ferazel's Wand — what to expect (Phase 2 gate build: feel on levels 1–2)
 
-This is the first build of the Ferazel's Wand 1.0.3 replica. It shows one thing: **how level 1 looks.** The level is
-drawn, the background scrolls behind it, Ferazel stands at the start and breathes, the placed sprites sit where the
-level puts them, the status bar is drawn, and track 1 of the music plays. Every picture and sound comes from the
-original game files, unchanged.
+**Status: machine gates green; Ben's gate pending.**
 
-The question for you is one line: **does it look like Ferazel?**
+This build of the Ferazel's Wand 1.0.3 replica makes **Ferazel move.** You can play levels 1 and 2 with the original
+keys: walk, run, jump, spin, cling and climb walls, swim, ride the platforms, get hurt, die and start again, and walk
+out of level 1 into level 2. The sound effects play through a copy of the original's own sound mixer. Every picture and
+sound still comes from the original game files, unchanged.
 
-## What this build is — and is not
-- **It is** the look: the tiles and their colours, the grass and edge blending, water and acid, the darkness of each
-  cell, the lights, the parallax background, the placed sprites, Ferazel standing at the start, the status bar, the
-  frame around the play view, the music, the speed.
-- **It is not** the game yet. Ferazel does not really move — no running, jumping, falling or magic, and nothing touches
-  anything. No title screen, no menus, no sound effects. The chapter-1 screen that comes before the level is skipped;
-  the build drops you straight into level 1. Real movement is Phase 2; menus and the rest come later.
+The question for you: **does he move and feel like Ferazel on levels 1 and 2?** Play it side by side with your Let's
+Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
+
+## What this build is, and what it is not
+- **It is** the player's whole movement on levels 1 and 2, the camera that follows him, water, acid, damaging floors,
+  healing brine, drowning, platforms of every kind on these two levels, the spiked pendulums, cannons, trampolines,
+  bridges, passages, dying and restarting, the exit from level 1 into level 2, the splashes, bubbles and particles, and
+  the sound effects. Phase 1's look is unchanged underneath.
+- **It is not** the rest of the game yet. Enemies stand still and do no harm (Phase 5). Coins, potions, chests, doors,
+  teleporters, save points, signs and the people you meet are only solid things to stand on or bump into (Phases 3–4).
+  Crates and the boulder can't be pushed yet (Phase 4). No title screen, no menus, no world map, no stage-complete
+  screen (Phase 3).
 
 ## Opening it
-- Double-click `Ferazel's Wand.app` on your Desktop.
+- Double-click `Ferazel's Wand.app` on your Desktop. It opens on level 1.
 - If macOS says it can't check the app: right-click it, choose Open, then Open again.
-- The window is the game's 640×480 screen scaled ×2 or ×3 (whichever fits your screen whole). ⌃⌘F gives full screen.
+- **To start on level 2**, quit the game, open Terminal and paste:
+
+  `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 2`
+
+  That counts for that one launch. To make it stick, paste
+  `defaults write com.ambrosiaclassics.ferazel FerazelLevel 2` instead, and
+  `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` to go back to level 1. Any number other than 1 or 2
+  starts level 1. You can also just reach level 2 through level 1's exit.
+- The window is the game's 640×480 screen scaled ×2 or ×3, whichever fits your screen whole. ⌃⌘F gives full screen.
 - This is a Release build, so it holds the original's speed (about 30 frames a second).
+- The hidden settings below all live in the `com.ambrosiaclassics.ferazel` preferences domain.
 
-## Keys
-- **← → ↑ ↓** (or **keypad 4 / 6 / 8 / 5**, the original's default keys) — move the camera's focus around the level so
-  you can look at it; holding **Shift** (the original's run key) moves it faster. Left/right also make Ferazel turn and
-  walk or run **in place** — he doesn't go anywhere yet.
-- **⌃⌘F** — full screen on and off.
-- **⌘Q** — quit.
-- **Caps Lock** (pause) and **Esc** (the "abort game?" dialog) do nothing until Phase 3. Nothing else does anything yet.
+## Keys (the original's defaults; there is no key setup screen yet)
+- **keypad 4 / 6** — walk left / right. **Shift** — run.
+- **keypad 8** — up: climb a wall, enter a passage or a cannon. **keypad 5** — down: crouch, climb down.
+- **Option** — jump. **keypad 5 + Option** — spin.
+- **⌘, keypad 7 and keypad 9** are mapped as in the original; nothing on levels 1–2 uses them yet.
+- The arrow keys do nothing now. Phase 1's arrow-key camera is gone.
+- **⌃⌘F** — full screen on and off. **⌘Q** — quit at once. The original asked "are you sure?" first; that dialog
+  comes later. ⌘W does nothing.
+- **Caps Lock** (pause) and **Esc** (the "abort game?" dialog) do nothing until Phase 3.
 
-## Things that differ from the original on purpose
-1. **No screen switching.** The original switched your monitor to 640×480 in 256 colours. This build runs in a window
-   (or full screen) and does the 256-colour palette itself.
-2. **No CD check, no installer check, no birthday dialog.**
-3. **No InputSprocket.** Keys come straight from the original's own key table.
-4. **The menu bar** hides during play, as the original did.
-5. **Settings and saves** will live in their own folder under Application Support (later phases).
-6. **Music** is played by our own player from the original music files; the loop point may sound a hair different from
-   QuickTime's.
+## How to get to water on level 1
+Walking right from the start does **not** reach water. Walk right from the start and you drop at once into a little
+pit and cling to its wall. That is the original. The start rooms are closed in by **breakable walls**. The way out:
+drop into the lower room and **spin-jump down onto the wall** a few blocks to the right (about x 770, column 24; spin
+= keypad 5 + Option while you fall from above). The wall breaks. Then run right along the lower passage and you drop
+into the first pool (x ≈ 1800–2600). The machine test plays exactly this route.
 
-Things that are missing on purpose for now:
-- **Ferazel doesn't move** (Phase 2). The arrows move the camera instead, and he walks or runs on the spot. This is a
-  stand-in, as is the way the camera follows the keys.
-- **The placed sprites only show their first picture** — see "First face only" below. They don't move or do anything
-  (Phases 4–5).
-- **No sound effects, no title screen, no menus, no chapter-1 screen.**
-- **The music starts at full volume.** The original fades it in at the start of the level; that fade isn't built yet
-  (LOW).
-- **The picture looks a little darker than your Let's Play.** Measured against the video, that is mostly display gamma:
-  the original ran on a classic Mac screen (gamma about 1.8), modern screens use 2.2. You ruled (2026-10-10) a hidden
-  gamma switch, off by default, like the tie-break one — it is **not built yet**.
-- **The table next to the potion is too bright.** The potion's light (light 24) lights the table sprite far more
-  than in the video, which looks like a glow behind the table. How the original lights neighbouring sprites with an
-  item's light is still to be read from its code (an open item).
+That first pool is only wading-deep, so jumping there is an ordinary jump and **swimming is not covered by any machine
+test.** To swim, go on to the **deep pool**: columns 146–156, rows 23–26 (x ≈ 4670–5020, about y 740–860, a bit
+under halfway across level 1).
 
-### First face only
-- 22 kinds of placed sprite show the first picture of the sheet their own code uses. Their real starting picture comes
-  with their own code in a later phase.
-- Ten kinds — 1485, 2710, 2713, 2714, 3002, 2842, 1700, 1705, 1760 and 1720 — start out in the original with a
-  placeholder picture (PICT 150) and something we haven't read yet gives them their real one. This build simply draws
-  the picture they load.
-- Platforms are not arranged in their circles, their partner pieces are not spawned, and the spokes of 1485 are missing.
-- The Crawler (1712) shows its sheet's picture, because the picture its setup asks for (PICT 1500) isn't in the game
-  files.
+## The gate card: what to check
 
-## The gate card — what to check
+Each line says what the build does, copied from the original's code ("built as the binary"), and where we have one,
+what "wrong" would look like. **MED** = fairly sure. Unmarked lines are read straight from the code.
 
-Compare with the longplays and your Let's Play link. Each line names what you'll see, how sure we are (LOW = least sure,
-MED = fairly sure), and what would be wrong.
-1. **Colours of every tile and sprite** — every picture is converted through the colour search (the Color2Index
-   model). The build uses the **exact nearest-colour** model: you ruled it on 2026-10-10 after it measured best against
-   your Let's Play in all 7 frames compared (`docs/ferazel/colour-measurement-2026-10-10.md`). Exact versus the 5-bit inverse table is still
-   LOW — the two measured too close to separate; the other models are a one-line switch.
-2. **Dithered 32-bit art** — LOW: barrel 2922, chair 2924, table 2927, Geroditus 2951, merchant 2952, book pile 2842,
-   sign 2902, moss 2713, Walker 1700, Roach 1720, the HUD piece 133 are 32-bit pictures the original dithered into
-   256 colours. Your Let's Play shows they were dithered with error diffusion (HIGH, `docs/ferazel/colour-measurement-2026-10-10.md`); ours uses
-   Floyd–Steinberg, and that this is the exact method is LOW. Look for dot patterns on those sprites.
-3. **Grass/edge blending** (the foreground's blended edges, 1,335 cells in level 1) — this is where the two colour
-   models disagree most (35 % of entries).
-4. **Water** — water in level 1 spans x 128..6208, y 608..1600; **acid**: 24 cells at x 6016..6272, y 544..640. Wrong
-   would look like: the water or acid the wrong colour, or the ground at the water's edge cut off with a hard square
-   edge / the far background showing through where solid ground should be (colour LOW, edges MED).
-5. **Darkness per cell** (every cell in level 1 has its own light level) — MED for tiles.
-6. **Parallax** — the far background scrolls slower than the level, and one horizontal band of it moves even slower
-   sideways than the rest (as the original does). Wrong would look like: the background hills jumping, tearing or
-   repeating a strip while you scroll, or the background showing through things it shouldn't.
-7. **Status bar** — the bars at their starting values; the magic bar sits at x 419, about two-thirds of the way across
-   (read from the original's code). The text is
-   Times bold, white — MED: the game asks for font 20, which is Times, and the game files carry no font of their own.
-   Wrong would look like: the text in a different typeface, size or colour, or a bar in the wrong place.
-8. **Camera** — the level opens at the top-left corner of the map and **pans in** to Ferazel: its vertical scroll first
-   reaches v 10 on the 24th frame, about 0.8 s at 30 frames a second. That is the original's own behaviour (read from its code), not a bug. His exact height in the view is a reading
-   (MED). Arrows or keypad move the camera; this is Phase 1 only (Phase 2 brings the original keys and real movement).
-9. **Ferazel** — stands at the start, breathes, turns, walks/runs in place on left/right (stand-in; Phase 2 makes him
-   move). On the very first frame he isn't drawn at all — a one-frame blink at the start is the original.
-10. **Placed sprites** — every sprite in its starting picture; anything listed under "First face only" above is
-    deferred.
-11. **Ground and wall tile colours** (MED: which palette the original used for them is assumed). Wrong would look
-    like: the ground tiles' colours off or banded compared with the longplays, while the background looks right.
-12. **Music** — track 1 loops. It starts at full volume (the original fades it in — not built yet, LOW).
-13. **Icon** — previews of the original 32×32 icon scaled up to a modern icon are in the folder
-    **"Ferazel icon previews"** on your Desktop (light, dark, tinted and clear). Pick one.
-14. **The black border** around the play view — that is the original's own screen picture (the 608×384 view sits
-    inside it, 16 px from the left and 8 px from the top), not a bug. Your Let's Play shows the same frame.
-15. **The duplicate-black tie-break — decided: highest.** The palette has black in more than one slot. You ruled on
-    2026-10-10, from your Let's Play (at 02:12 the foreground rock edges are clean light grey, no yellow specks), that
-    the original matches **highest**, so the build starts on highest. The colour measurement against the video
-    confirms it (`docs/ferazel/colour-measurement-2026-10-10.md`). The other choice, **lowest**, shows yellow
-    specks along the foreground edges. To look at lowest anyway, quit the game, open Terminal and paste:
+1. **Walk and run.** Speed, how fast he gets going and how fast he stops. Built as the binary: **right reaches full
+   walking speed in 4 frames, left in 8** (an extra push to the right only), and running right overshoots full speed
+   for one frame. Wrong would look like: left and right feeling the same, or a slide when you let go.
+2. **Jump.** Built as the binary: a full jump is about 100 px high, a tap about 44 px; a full jump is back on the
+   ground in about 0.8 s. No grace jump after you walk off a ledge, no jump that remembers an early press, and holding
+   Option does not jump again. On the take-off frame he still looks like he is standing.
+3. **Spin (keypad 5 + Option).** Built as the binary: only from the ground, a wall or the water. It does **not** make a
+   jump longer in mid-air. (Our notes said it did; the code says no.)
+4. **Walls.** Clinging, climbing up and down (keypad 8 / 5), the wall jump, pulling himself up over a ledge.
+5. **Slopes and ledges.** Built as the binary: he climbs a slope faster going right than going left. He drops when
+   there is nothing under him, and lands on one-way ledges from above only.
+6. **Camera.** Built as the binary: when he jumps from flat ground the view does **not** follow him up. When he falls
+   below where he stood it eases down; when he lands higher it eases up. It looks up to 80 px ahead in the direction he
+   walks and keeps that when he stops.
+7. **Water.** Level 1 has five pools; the first is described above. Built as the binary: a splash going in and coming
+   out, swimming strokes (deep pool only), the current pushing him along (level 1 only), bubbles, and his breath
+   running out. Once it is gone he takes a hit about every 2.3 s.
+8. **Acid and damaging floors.** Level 1 has the acid pool at the far right and 18 damaging floor cells; level 2 has
+   four acid pools (74 cells). Built as the binary: the hurt flash, a groan or "ouch", and the knock-back stun.
+9. **Healing brine** (level 2, 12 cells). His health and magic fill up, with the fill-up sound.
+10. **Platforms.** Built as the binary:
+    - Level 1's three sliding platforms dip when you land on them and spring back.
+    - The rotor pair and the swinging platform are near x 2300 and x 3200, and the three-wheel is near x 1850.
+    - On level 2 the rafts float and tilt under you, and the wheels turn when you ride them.
+    - A platform never shows on the very first frame of a level, as in the original.
+    - Level 1's wheel bumps itself on its first frame, out of view, so early in level 1 it has already turned about 28°
+      and moved about 28 px left. That is the original's own quirk.
+11. **Spiked pendulums** (level 1, x ≈ 2660 and 2760). Built as the binary: they hurt only in a narrow band just in
+    front of the bottom of the swing. (Our notes had the band the wrong way round.) The coins you would lose are not
+    dropped yet (Phase 4).
+12. **Cannons** (level 1, three). Climb in with keypad 8 and you are fired straight up, with a puff of smoke.
+13. **Crates, the boulder (level 2), trampolines (level 2), bridges.** Crates and the boulder stand still as solid
+    blocks (pushing is Phase 4). Trampolines bounce you, and bridges are solid both ways. **MED:** the original lets
+    crates settle under gravity, which is Phase 4's, so level 1's crates sit 2–6 px lower than the original would
+    settle them, one crate stacked on another sits 2 px high, and level 2's boulder sits 2 px low.
+14. **Passages** (level 2, three pairs). Press keypad 8 at one: the screen fades to black, you come out at its
+    partner, and it fades back in.
+15. **Death.** The dying animation, then the original's border wipe, then the level starts again from the beginning
+    with fresh health, magic and score. That restart stands in for Phase 3's menu / Continue. **Not built:** the
+    original fades the restarted level in from black; here it appears at full brightness at once.
+16. **Level 1 → 2.** Touching level 1's exit loads level 2 at once. That stands in for Phase 3's stats screen and world
+    map. What happens:
+    - The exit sound plays out. Nothing silences it when the new level loads; the original does not either.
+    - The music fades out, and the screen holds still for about 0.8 s while it does. The original holds still too.
+    - Then level 2 appears straight away. **Not built:** the original's stage-complete effect, its fade to black and
+      its end-of-level stats update. The music starts again at full volume, with no fade-in.
+    - Your score, health, magic and coins carry into level 2, as in the original. Level 2's own exits lead to levels 3
+      and 4, which aren't built, so they restart level 2.
+17. **Sound.** Footsteps, jump, soft and hard landings, head bonk, splash, swim, groan or "ouch", the drowning choke,
+    fill-up, cannon, trampoline. Built as the binary: the original's Sound Tool mixer, 8-bit at 22,050 Hz with
+    8 voices at most, so a little gritty on purpose. Wrong would look like: sounds cut off oddly, coming from the wrong
+    side in stereo, or too loud or quiet next to the music.
+18. **Water look (MED).** On level 1 the water now shows drifting motes, the acid bubbles, and the ground under water
+    shimmers every other frame. These are the original's "Enhanced" water effects, which Phase 1 didn't draw.
+19. **Breathing (MED).** When he has stood still a while, his chest stops moving. The original holds the calm breath on
+    one picture.
+20. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
+    - the keys are read live, within a frame;
+    - how he catches on the seams between tiles;
+    - exactly where the water surface starts to count as water;
+    - where the wheels start on their first frame (off-screen);
+    - when a bubble is allowed to rise.
+21. **Every run is different.** Random numbers start from the clock at launch, as the original's did, so no two runs
+    play out exactly the same (splashes, particles, sound pitches).
 
-    `defaults write com.ambrosiaclassics.ferazel ColorTieBreak lowest`
+## Still true from Phase 1 (the look)
+- **Colours** go through the exact nearest-colour search (you ruled it 2026-10-10 against your Let's Play). The
+  duplicate-black tie-break is **highest** (your ruling, Let's Play 02:12). To look at **lowest**, quit and paste
+  `defaults write com.ambrosiaclassics.ferazel ColorTieBreak lowest`, then open the game again;
+  `defaults delete com.ambrosiaclassics.ferazel ColorTieBreak` goes back.
+- **The hidden Mac gamma switch is built**, and off by default. The picture looks a little darker than your Let's Play
+  because the original ran on a classic Mac screen (gamma 1.8) and modern screens use 2.2. To see it as a classic Mac
+  showed it, quit and paste `defaults write com.ambrosiaclassics.ferazel MacGamma -bool true` (or launch with
+  `--args -MacGamma YES` for one run), then open the game again; `defaults delete com.ambrosiaclassics.ferazel MacGamma`
+  turns it off.
+- **The glow behind the table next to the potion is fixed.** The potion's light twinkles, as in the original. **MED:**
+  every item light twinkles in step, where the original starts each one at a random point. The torch flicker isn't
+  built yet.
+- **The black border** around the play view is the original's own screen picture, not a bug.
+- **The music** is track 1 of the original files, played by our own player. It starts at full volume; the original
+  fades it in at the start of a level, and that isn't built yet. The loop point may sound a hair different from
+  QuickTime's.
+- **The placed sprites** that aren't built yet (enemies, items, people) still show their first picture only.
+- On the very first frame of a level Ferazel isn't drawn. That one-frame blink is the original's.
 
-    then open the game again. To go back to highest, quit, paste:
-
-    `defaults delete com.ambrosiaclassics.ferazel ColorTieBreak`
-
-    and open it again.
-16. **Brightness and the glow behind the table — known deviations** (`docs/ferazel/colour-measurement-2026-10-10.md`). Next to your Let's Play,
-    our picture looks darker overall: that is mostly display gamma (the original ran at classic Mac gamma, about
-    1.8); your hidden gamma switch, off by default, is not built yet. The glow behind the table is the table sprite
-    lit too brightly by the potion's light (light 24); how the original does that is an open item still to be read
-    from its code.
-
-Known by design: no chapter-1 screen, no menus or title screen, no sound effects, the window scaled ×2 or ×3; Caps Lock
-(pause) and Esc (abort dialog) do nothing until Phase 3 — ⌘Q quits.
+## Known stand-ins and differences
+- **Enemies** stand still and do no harm (Phase 5). **Pickups, chests, doors, teleporters, save points, signs and
+  people** are only solid (Phases 3–4).
+- **Death restarts the level** and **the exit loads level 2 at once.** These are stand-ins for Phase 3's menu, stats
+  screen and world map. Not built: the fade-in after a restart, the stage-complete effect, the fade to black at the
+  exit, and the end-of-level stats update.
+- **Only levels 1 and 2 load.** Level 2's exits restart level 2.
+- **No music fade-in**, at a level's start or after the exit.
+- **⌘Q quits without asking**, and ⌘W does nothing.
+- **Caps Lock and Esc** do nothing until Phase 3.
+- **Ropes and springs are built**, but levels 1 and 2 have none. The first rope is on level 3 and the first spring on
+  level 15.
+- **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.** The game runs in a
+  window and does the 256-colour palette itself, and the keys come straight from the original's key table.
 
 ## What to tell us
-Plain yes or no to "does it look like Ferazel?" — then anything that looked wrong, by card number if you can, and your
-pick for line 13 (icon).
+Plain yes or no to "does he move and feel like Ferazel on levels 1 and 2?". Then anything that felt or looked wrong,
+by card number if you can.
