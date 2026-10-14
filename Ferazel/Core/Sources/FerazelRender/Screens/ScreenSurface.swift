@@ -12,6 +12,9 @@ public final class ScreenSurface {
     public var clut: ColorLUT
     /// The screen gamma the fades leave.
     public var gamma: ScreenGamma
+    /// The gamma the running timed `MT_FadeToColor` started from (`ScreenGammaOp.timedFadeToColor` tick 0); nil when
+    /// none runs.
+    public var timedFadeStart: ScreenGamma?
 
     public init(clut: ColorLUT, frame: IndexedFrame = IndexedFrame(), gamma: ScreenGamma = .identity) {
         self.clut = clut

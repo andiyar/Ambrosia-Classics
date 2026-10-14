@@ -485,7 +485,7 @@ Liquid screen tint (`.HandlePlayerSprite`, handlers l. 2704–2730) [MED]: while
 `TintScreen(colour, 15)` with kind 0 → (0,0,64000), 1 → (0,64000,0), 2 → (64000,0,0), other kinds →
 black; cleared with `TintScreen(nil)` when `+0x11c` is 0 or > 10.
 
-> ⚑ planner note (Phase 3 FE0, 2026-10-14) (BC28): `.GammaFadeOut` ms = `trunc(0.7 · Double(55 · trunc(2.3n)))` in that
+> ⚑ implementer note (FE0, loop run 10, 2026-10-14) (BC28): `.GammaFadeOut` ms = `trunc(0.7 · Double(55 · trunc(2.3n)))` in that
 > order — `fctiwz(2.3n)`, the integer `extsh(m)·0x37`, × 0.7, `FUN_10090a64` (double → u32) — n 3 → 230, not 231 (raw
 > `10035338..100353c4`); it also sets `53d6 = 1` (M l. 31799). `.TintFadeProc`'s t = pct·0.01 is rounded to single
 > precision (`frsp`, raw `10035008`), each `1 − k·t` is one fused `fnmsub`, and the scaled values are written back into

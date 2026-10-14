@@ -36,7 +36,17 @@ public struct ScreenGamma: Sendable, Equatable {
 
     /// `MT_FadeToColor(toward, percent, 0, 1)`: f = percent / 100 of the way from the current gamma to the target.
     public mutating func fade(toward: RGB16?, percent: Int) {
-        let f = Double(percent) / 100
+        fade(toward: toward, fraction: Double(percent) / 100)
+    }
+
+    /// The fraction of a timed `MT_FadeToColor(_, 100, ms, 1)` done at 0-based tick `tick`: min(1, (tick + 1) ticks /
+    /// ms); ms ≤ 0 → 1 [MED: library schedule, as `ScreenFade.gammaFadeOut`'s].
+    public static func timedFraction(tick: Int, milliseconds ms: Int) -> Double {
+        ms <= 0 ? 1 : min(1, Double((tick + 1) * 1000) / Double(60 * ms))
+    }
+
+    /// `f` (0…1) of the way from this gamma to `toward` (nil = the original gamma).
+    public mutating func fade(toward: RGB16?, fraction f: Double) {
         let target: [Double]? = toward.map { [Double($0.red), Double($0.green), Double($0.blue)] }
         for c in 0..<3 {
             if let t = target {

@@ -92,17 +92,17 @@ final class SavedFileTests: XCTestCase {
         let dir = try tempDir()
         let url = dir.appendingPathComponent(PrefsFile.fileName)
         XCTAssertEqual(PrefsFile.fileName, "Ferazel's Wand Prefs")
-        XCTAssertNil(try PrefsFile.read(from: url))                        // absent → `.InitPrefs`' defaults
+        XCTAssertNil(PrefsFile.read(from: url))                        // absent → `.InitPrefs`' defaults
         var prefs = FerazelPrefs()
         prefs.soundVolume = 3
         prefs.keys[4] = 0x31
         prefs.savedGameName = "My Save"
         prefs.recentNames[2] = "Old"
         try PrefsFile.write(prefs.record(), to: url)
-        let back = try XCTUnwrap(try PrefsFile.read(from: url))
+        let back = try XCTUnwrap(PrefsFile.read(from: url))
         XCTAssertEqual(back, prefs.record())
         XCTAssertEqual(FerazelPrefs(record: back), prefs)
-        // One `'Pref'` 0 named "Preferences" (`AddResource(h,'Pref',0,"Preferences")`, M l. 7753).
+        // One `'Pref'` 0 named "Preferences" (`AddResource(h,'Pref',0,"Preferences")`, M l. 7758).
         let map = try ClassicResourceMap.parse(try Data(contentsOf: url))
         XCTAssertEqual(map.count, 1)
         let res = try XCTUnwrap(map.resource(type: "Pref", id: 0))
@@ -110,7 +110,11 @@ final class SavedFileTests: XCTestCase {
         XCTAssertEqual(res.data.count, 0x942)
         // A file holding no `'Pref'` 0 reads as absent (`Get1Resource` nil → defaults).
         try ClassicResourceMap.serialize([Resource(type: "Pref", id: 1, name: nil, data: Data([1]))]).write(to: url)
-        XCTAssertNil(try PrefsFile.read(from: url))
+        XCTAssertNil(PrefsFile.read(from: url))
+        // An existing but unreadable file (here a folder) is no record either: the defaults, not an error.
+        let folder = dir.appendingPathComponent("Unreadable Prefs")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        XCTAssertNil(PrefsFile.read(from: folder))
     }
 
     func testSavedGameFileRoundTrip() throws {
@@ -129,7 +133,7 @@ final class SavedFileTests: XCTestCase {
         XCTAssertEqual(back.image(), image)
         XCTAssertEqual(back, block)
         #if os(macOS)
-        // `FSpCreate(spec, 'Msct', 'FWSg', 0)` (M l. 41250).
+        // `FSpCreate(spec, 'Msct', 'FWSg', 0)` (M l. 41253).
         let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
         XCTAssertEqual((attrs[.hfsTypeCode] as? NSNumber)?.uint32Value, 0x4657_5367)      // 'FWSg'
         XCTAssertEqual((attrs[.hfsCreatorCode] as? NSNumber)?.uint32Value, 0x4d73_6374)   // 'Msct'

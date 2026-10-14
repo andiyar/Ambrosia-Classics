@@ -22,7 +22,7 @@ public enum SavedGameError: Error, Equatable, Sendable {
 /// A saved-game file: one `'FWSg'` id 0 named "Ferazel Saved Game" holding the 966,232-byte `SaveBlock` (`.SaveSG
 /// @ 10048294`: `FSpDelete`, `FSpCreate(spec, 'Msct', 'FWSg', 0)`, `FSpCreateResFile`, `AddResource(block, 'FWSg', 0,
 /// 0x100a586c)`, `WriteResource`; M l. 41179ff). The replica writes the classic resource map into the **data fork**
-/// (D35 ruling 7, Known deviation 2) and reads the data fork or — on macOS — the file's resource fork, so a save from
+/// (D35 ruling 5, Known deviation 2) and reads the data fork or — on macOS — the file's resource fork, so a save from
 /// a real Mac resumes (Known deviation 9: elsewhere the data fork is the only fork and type/creator are skipped).
 public enum SavedGameFile {
     public static let resourceType = "FWSg"

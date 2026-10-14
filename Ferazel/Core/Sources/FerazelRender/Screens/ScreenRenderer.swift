@@ -3,7 +3,11 @@ import FerazelCore
 import HectorResources
 
 /// The level-less executor of the front-end `DrawOp`s (plan S4, FE0) onto the shared `ScreenSurface`:
-/// - `setScreenClut(id)`: `.SetScreenClut` — the surface's CLUT (`GetCTable` along `.frontEnd`); the gamma stays.
+/// - CLUTs resolve as the original's `GetCTable` does: along the resource chain open at the call. `copyPicture`'s
+///   `forceClut` walks the op's `chain` (the chain its picture is fetched on); `setScreenClut` carries no chain, so it
+///   walks `chain` (the renderer's open chain: `.frontEnd`, `.level` when a front-end screen is drawn mid-level, e.g.
+///   `.Pause`'s `SetScreenClut(level clut)`).
+/// - `setScreenClut(id)`: `.SetScreenClut` — the surface's CLUT (`GetCTable` along `chain`); the gamma stays.
 /// - `drawPicture(id, chain, h, v)`: `.DrawPICTToBackScreen` + `.MTRedraw` — the PICT converted under the screen CLUT
 ///   (`ConvertedPicture`), then each index through `Color2Index` of its own colour (as `FrameRenderer`), at (h, v)
 ///   (a full-screen picture at (0, 0)), clipped to the screen.
@@ -18,7 +22,8 @@ import HectorResources
 /// - `drawText(run)`: the injected `TextRasterizer`'s mask at the pen (`run.h`, `run.v`), srcOr: only glyph pixels
 ///   change, to `Color2Index(run.rgb)`.
 /// - `screenGamma(op)`: `.tint` → `ScreenGamma.tintFade` (the unfaded gamma scaled, `.TintFadeProc`); `.fadeToColor` →
-///   `ScreenGamma.fade` (compounding); `.identity` → the original gamma; `.clut` (`.TurnGray`) // later: D1.
+///   `ScreenGamma.fade` (compounding); `.timedFadeToColor` → the gamma captured at its tick 0 moved the tick's absolute
+///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut` (`.TurnGray`) // later: D1.
 /// - `gammaStep`: one `.HandleAsyncGammaFade` step (`ScreenGamma.step`).
 /// - `drawFace` // later: M2; `restoreView` // later: C2 — accepted as no-ops.
 /// - The level ops (grid, lights, sprites, copy, erase, status bar, tiles, water, particles) are `FrameRenderer`'s:
@@ -35,9 +40,12 @@ public final class ScreenRenderer {
     public let search: ColorSearch
     public let dither: DitherModel
     public let text: any TextRasterizer
+    /// The resource chain open (`CurResFile`'s chain) for the ops that carry none (`setScreenClut`).
+    public var chain: ResourceChain
 
     public init(surface: ScreenSurface, resources: FerazelResources, search: ColorSearch,
-                dither: DitherModel = .errorDiffusion, text: any TextRasterizer) {
+                dither: DitherModel = .errorDiffusion, text: any TextRasterizer, chain: ResourceChain = .frontEnd) {
+        self.chain = chain
         self.surface = surface
         self.resources = resources
         self.search = search
@@ -51,7 +59,7 @@ public final class ScreenRenderer {
         for op in ops {
             switch op {
             case .setScreenClut(let id):
-                surface.clut = try ColorLUT.load(id: id, from: resources, chain: .frontEnd)
+                surface.clut = try ColorLUT.load(id: id, from: resources, chain: chain)
             case .drawPicture(let id, let chain, let h, let v):
                 let picture = try ConvertedPicture(source: try PictureSource.load(id: id, from: resources, chain: chain),
                                                    clut: surface.clut, search: search, dither: dither)
@@ -72,13 +80,23 @@ public final class ScreenRenderer {
             case .drawText(let run):
                 drawText(run)
             case .screenGamma(let g):
+                if case .timedFadeToColor(let tick, let ms, let rgb) = g {
+                    if tick == 0 || surface.timedFadeStart == nil { surface.timedFadeStart = surface.gamma }
+                    var next = surface.timedFadeStart ?? surface.gamma
+                    next.fade(toward: rgb, fraction: ScreenGamma.timedFraction(tick: tick, milliseconds: ms))
+                    surface.gamma = next
+                    break
+                }
+                surface.timedFadeStart = nil
                 switch g {
                 case .tint(let mode, let percent): surface.gamma = .tintFade(mode: mode, percent: percent)
                 case .fadeToColor(let percent, let rgb): surface.gamma.fade(toward: rgb, percent: percent)
+                case .timedFadeToColor: break   // handled above
                 case .identity: surface.gamma = .identity
                 case .clut: break   // later: D1 (`.TurnGray`'s SetEntries)
                 }
             case .gammaStep(let numerator, let denominator, let toward):
+                surface.timedFadeStart = nil
                 surface.gamma.step(numerator: numerator, denominator: denominator, toward: toward)
             case .drawFace:
                 break   // later: M2 (the map's node / marker / boss / ambient faces)
@@ -155,6 +173,9 @@ public final class ScreenRenderer {
         }
     }
 
+    /// srcOr only: the binary imports no `TextMode` (0 hits in `ghidra/ferazel/` main, handlers and disasm), so every
+    /// `DrawString` (e.g. M l. 3351, 4589, 4666) draws in the port's default `txMode` srcOr — the only mode `TextRun`
+    /// defines; `run.mode` is therefore not consulted.
     private func drawText(_ run: TextRun) {
         let mask = text.rasterize(MacRoman.decode(run.bytes), font: run.font, size: run.size, face: run.face)
         let index = search.index(of: run.rgb, in: surface.clut)

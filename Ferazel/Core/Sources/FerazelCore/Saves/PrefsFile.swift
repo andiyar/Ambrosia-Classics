@@ -13,13 +13,13 @@ public enum PrefsFile {
     /// "Preferences" (pstr `0x100a3199`).
     public static let resourceName = "Preferences"
 
-    /// The `'Pref'` 0 record as stored, or nil when there is none — no file, a file that is not a resource map, or a
-    /// map without `'Pref'` 0 — the cases where `.InitPrefs`' `Get1Resource` returns nil and the defaults are made
-    /// (`FerazelPrefs()`). The record is returned at its stored length (`FerazelPrefs(record:)` grows it).
-    public static func read(from url: URL) throws -> Data? {
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        let data = try Data(contentsOf: url)
-        guard ClassicResourceMap.sniff(data),
+    /// The `'Pref'` 0 record as stored, or nil when there is none — no file, a file that cannot be read, a file that is
+    /// not a resource map, or a map without `'Pref'` 0 — the cases where `.InitPrefs`' `Get1Resource` returns nil and
+    /// the defaults are made (`FerazelPrefs()`, M l. 7694ff). The record is returned at its stored length
+    /// (`FerazelPrefs(record:)` grows it).
+    public static func read(from url: URL) -> Data? {
+        guard let data = try? Data(contentsOf: url),
+              ClassicResourceMap.sniff(data),
               let map = try? ClassicResourceMap.parse(data),
               let res = map.resource(type: resourceType, id: resourceID) else { return nil }
         return res.data

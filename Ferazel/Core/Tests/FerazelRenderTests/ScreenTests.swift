@@ -156,9 +156,23 @@ final class ScreenTests: XCTestCase {
         XCTAssertEqual(r.surface.presentedClut.entries[0].blue, 39320)
         // Driven by ticks: the run blocks for 30 ticks, one op per tick.
         var run = TimelineRun(tl, start: 0xffff_fff0)
-        XCTAssertEqual(run.tick(now: 0xffff_fff0).draws.count, 1)
+        let first = run.tick(now: 0xffff_fff0)
+        XCTAssertEqual(first.draws.count, 1)
+        XCTAssertTrue(first.present)                                           // a gamma-only tick presents
+        XCTAssertFalse(run.tick(now: 0xffff_fff0).present)                     // nothing due: no present
         XCTAssertFalse(run.isDone(now: 0xffff_fff0))
-        XCTAssertEqual(run.tick(now: 0xffff_fff0 &+ 29).draws.count, 29)
+        let rest = run.tick(now: 0xffff_fff0 &+ 29)
+        XCTAssertEqual(rest.draws.count, 29)
+        XCTAssertTrue(rest.present)
+        // A music-only tick changes neither the surface nor the gamma: no present.
+        var mf = MusicFade()
+        _ = mf.setAIFFMusic(24)
+        var prefs9 = FerazelPrefs()
+        prefs9.musicVolume = 9
+        var musicRun = TimelineRun(mf.fadeAIFFMusic(direction: 1, ticks: 4, prefs: prefs9), start: 0)
+        let cue = musicRun.tick(now: 0)
+        XCTAssertEqual(cue.music, [.volume(0)])
+        XCTAssertFalse(cue.present)
         XCTAssertTrue(run.isDone(now: 0xffff_fff0 &+ 30))
         XCTAssertFalse(run.isDone(now: 0xffff_fff0 &+ 29))
     }
@@ -197,6 +211,28 @@ final class ScreenTests: XCTestCase {
         XCTAssertEqual(slow.duration, 109)
         XCTAssertEqual(slow.events.last?.output.draws, [.screenGamma(.fadeToColor(percent: 100, rgb: nil))])
         XCTAssertEqual(slow.events.last?.output.requests, [])
+        // Linear (M l. 31859–31862: one `MT_FadeToColor(nil, 100, 1815, 1)`): tick k is the absolute fraction
+        // min(1, (k + 1) / 108.9) of the way from the faded gamma to the original — never 0 %, no late jump.
+        XCTAssertEqual(slow.events.count, 110)
+        for k in 0..<109 {
+            XCTAssertEqual(slow.events[k].at, k)
+            XCTAssertEqual(slow.events[k].output.draws,
+                           [.screenGamma(.timedFadeToColor(tick: k, milliseconds: 1815, rgb: nil))])
+        }
+        let sr = try renderer()
+        try sr.apply([.screenGamma(.tint(mode: 3, percent: 100))])
+        var blues: [Int] = []
+        for e in slow.events.dropLast() {
+            try sr.apply(e.output.draws)
+            blues.append(Int(sr.surface.presentedClut.entries[0].blue))
+        }
+        XCTAssertEqual(blues, blues.sorted())                                  // monotone
+        XCTAssertGreaterThan(blues[0], 0)                                      // tick 0 moves (1/108.9)
+        for (k, b) in blues.enumerated() {                                     // linear, to within a rounding
+            XCTAssertEqual(Double(b), 65535 * min(1, Double((k + 1) * 1000) / Double(60 * 1815)), accuracy: 1)
+        }
+        XCTAssertEqual(blues.last, 0xffff)
+        XCTAssertEqual(blues[53], 32496)                                       // 54/108.9 of the way, not 25 %
 
         // On the surface: the compounding steps after a fade-out to black, then the snap to the original gamma.
         let r = try renderer()
@@ -220,7 +256,8 @@ final class ScreenTests: XCTestCase {
         XCTAssertFalse(m.loaded)
         XCTAssertEqual(m.currentTrack, -1)
         XCTAssertEqual(m.fadeAIFFMusic(direction: 1, ticks: 4, prefs: prefs), .none)   // nothing loaded
-        XCTAssertEqual(m.setAIFFMusic(24), [.stop, .play(track: 24)])
+        // M l. 41877ff: `ShutDownAIFFMusic` (M l. 41943) does nothing with no movie loaded — no `.stop` the first time.
+        XCTAssertEqual(m.setAIFFMusic(24), [.play(track: 24)])
         XCTAssertEqual(m.currentTrack, 24)
         XCTAssertTrue(m.musicFaded)                                            // *0448 = 1: starts silent
         XCTAssertEqual(m.setAIFFMusic(40), [.stop, .play(track: 1)])           // > 32 → 1

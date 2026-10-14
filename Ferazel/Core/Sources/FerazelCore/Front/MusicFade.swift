@@ -32,18 +32,20 @@ public struct MusicFade: Equatable, Sendable {
     }
 
     /// `.SetAIFFMusic(n) @ 10049388` (M l. 41852ff): n −1 → nothing at all (the current music is not stopped); else
-    /// n < 1 or > 32 → 1, `ShutDownAIFFMusic` (`.stop`), then the movie opened, `SetMovieVolume(0)` before the start,
-    /// `*0448 = 1`, `1992 = 1`, `5be0 = n`, load, preroll, start → `.play(track: n)` (which starts at volume 0: no
-    /// separate `.volume(0)`). A missing file's retry with n − 1 stays the App's resolver (`FerazelAudio.resolveTrack`).
+    /// n < 1 or > 32 → 1, `ShutDownAIFFMusic` (`.stop` only when a movie is loaded, M l. 41943), then the movie
+    /// opened, `SetMovieVolume(0)` before the start, `*0448 = 1`, `1992 = 1`, `5be0 = n`, load, preroll, start →
+    /// `.play(track: n)` (which starts at volume 0: no separate `.volume(0)`). A missing file's retry with n − 1 stays
+    /// the App's resolver (`FerazelAudio.resolveTrack`).
     public mutating func setAIFFMusic(_ n: Int) -> [MusicCue] {
         guard quickTimePresent else { return [] }
         var track = Int16(truncatingIfNeeded: n)
         guard track != -1 else { return [] }
         if track < 1 || track > 0x20 { track = 1 }
+        let stop = shutDown()
         loaded = true
         musicFaded = true
         currentTrack = track
-        return [.stop, .play(track: Int(track))]
+        return stop + [.play(track: Int(track))]
     }
 
     /// `.ShutDownAIFFMusic @ 10049644`: stops and disposes the movie when one is loaded.
@@ -69,16 +71,10 @@ public struct MusicFade: Equatable, Sendable {
         }
         let v = Self.fullVolume(prefs), step = max(0, t)
         var events: [FrontTimeline.Event] = []
-        var last = out ? v : 0                                   // the first `SetMovieVolume` (V out, 0 in)
-        var first = true
+        // The opening `SetMovieVolume` (V out, 0 in) equals step 0's volume, so it and step 0 are one cue.
         for s in 0..<24 {
             let vol = Int(Int16(truncatingIfNeeded: v * (out ? 24 - s : s) / 24))
-            var cues: [MusicCue] = []
-            if first { cues.append(.volume(last)) }
-            if !(first && vol == last) { cues.append(.volume(vol)) }
-            first = false
-            last = vol
-            events.append(.init(at: s * step, output: FrontOutput(music: cues)))
+            events.append(.init(at: s * step, output: FrontOutput(music: [.volume(vol)])))
         }
         let end = out ? 0 : v
         events.append(.init(at: 24 * step, output: FrontOutput(music: [.volume(end)])))

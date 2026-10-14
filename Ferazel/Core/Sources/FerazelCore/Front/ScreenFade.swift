@@ -85,20 +85,17 @@ public struct ScreenFade: Equatable, Sendable {
     }
 
     /// `.GammaFadeInSlow(n) @ 10035584`: when enabled and faded, `MT_FadeToColor(nil, 100, ms, 1)` — linear toward the
-    /// original gamma over ms [MED: library `MT_FadeToColor`], emitted per tick as the compounding step that takes the
-    /// fade from fraction f(k) to f(k+1) = min(1, (k + 1) ticks / ms) — then `FadeToColor(nil, 100, 0)` and faded
-    /// cleared on the tick the block ends (no `ShowCursorSafe`). n 0x37 → 1815 ms → 109 ticks.
+    /// original gamma over ms [MED: library `MT_FadeToColor`], emitted per tick k as `.timedFadeToColor(tick: k, ms)`:
+    /// the absolute fraction min(1, (k + 1) ticks / ms) of the way from the faded gamma — then `FadeToColor(nil, 100, 0)`
+    /// and faded cleared on the tick the block ends (no `ShowCursorSafe`). n 0x37 → 1815 ms → 109 ticks.
     public mutating func gammaFadeInSlow(_ n: Int) -> FrontTimeline {
         guard fadingEnabled, faded else { return .none }
         let ms = Self.fadeInSlowMilliseconds(n)
         let ticks = Self.ticks(milliseconds: ms)
         var events: [FrontTimeline.Event] = []
-        var before = 0.0
         for k in 0..<ticks {
-            let f = min(1.0, Double((k + 1) * 1000) / Double(60 * ms))
-            let pct = before >= 1 ? 100 : Int((100 * (f - before) / (1 - before)).rounded(.towardZero))
-            events.append(.init(at: k, output: FrontOutput(draws: [.screenGamma(.fadeToColor(percent: pct, rgb: nil))])))
-            before = f
+            events.append(.init(at: k, output: FrontOutput(
+                draws: [.screenGamma(.timedFadeToColor(tick: k, milliseconds: ms, rgb: nil))])))
         }
         events.append(.init(at: ticks, output: FrontOutput(draws: [.screenGamma(.fadeToColor(percent: 100, rgb: nil))])))
         faded = false

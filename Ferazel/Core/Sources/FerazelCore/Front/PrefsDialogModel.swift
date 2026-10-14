@@ -348,7 +348,7 @@ public struct PrefsDialogModel {
     }
 
     /// `.AlreadyUsingKey(code, slot) @ 100758f8`: scans the **ten** shorts +0x12…+0x24 (+0x24, slot 9, is never
-    /// written by `.InitPrefs` and 0 in the replica — so key code 0x00 'A' reads as used, D35 ruling 15). Every
+    /// written by `.InitPrefs` and 0 in the replica — so key code 0x00 'A' reads as used, D35 ruling 9). Every
     /// match on another slot sets the verdict to 1, except Up (2) with Jump (5) either way, which sets 0: the result is
     /// the **last** matching slot's verdict.
     public static func alreadyUsingKey(_ code: Int16, slot: Int, in prefs: FerazelPrefs) -> Bool {

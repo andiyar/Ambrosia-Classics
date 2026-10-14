@@ -339,7 +339,7 @@ Error-string names in `.InitAppGlobals` (pstrs at 0x100a272e..0x100a2867) also n
 | `.GammaFadeOutAsync(n,col…)` / `.GammaFadeInAsync(n)` + `.HandleAsyncGammaFade` (once per GameLoop iteration) | step k of n: `MT_FadeToColor(0, col or NULL, 100k/n, 0, 1)`; out ends at 100 with the colour, in ends with `(0,0,0)` (raw `100357cc..100358b8`) |
 Exact library semantics of the third argument: NOT RESOLVED (third-party Monitor Tool).
 
-> ⚑ planner note (Phase 3 FE0, 2026-10-14) (BC16): `.GammaFadeIn(n)` passes min(100, trunc(p·3n/100)) for p = 0, s, 2s … ≤ 100
+> ⚑ implementer note (FE0, loop run 10, 2026-10-14) (BC16): `.GammaFadeIn(n)` passes min(100, trunc(p·3n/100)) for p = 0, s, 2s … ≤ 100
 > (s = max(1, 100/(3n))), not a 0→100 percent — n 6 → 0, 0, 1, 2 … 9, 9, 10 … 18, then 100 (lighting-tables §10 is right;
 > M l. 31819–31840). (BC28): `.GammaFadeOut`'s ms = `trunc(0.7 · Double(55 · trunc(2.3n)))` in that order (n 3 → 230, not
 > 231; raw `10035338..100353c4`); it also sets `53d6 = 1` (M l. 31799); `.GammaFadeIn` ends with `ShowCursorSafe`;

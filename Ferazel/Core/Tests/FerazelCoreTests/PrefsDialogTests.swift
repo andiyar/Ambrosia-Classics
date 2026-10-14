@@ -127,7 +127,7 @@ final class PrefsDialogTests: XCTestCase {
         XCTAssertEqual(d.itemTexts[15], "Q")
         XCTAssertEqual(d.focus, 7)
 
-        // 'A' (0x00) reads as used: slot 9 (+0x24) is 0 in the record (D35 ruling 15) [LOW, recorded].
+        // 'A' (0x00) reads as used: slot 9 (+0x24) is 0 in the record (D35 ruling 9) [LOW, recorded].
         XCTAssertTrue(PrefsDialogModel.alreadyUsingKey(0x00, slot: 0, in: d.working))
         XCTAssertEqual(d.keyDown(char: 0x61, keyCode: 0x00), .refused(PrefsDialogModel.keyInUseMessage))
         // The last matching slot's verdict: Up's key on Jump with Up matched first, then no later match → free.
@@ -255,9 +255,10 @@ final class PrefsDialogTests: XCTestCase {
         XCTAssertEqual(t.live.musicOn, 0)
 
         let on = t.toggleMusic(&record, paused: false)
-        // M l. 7238–7249: SetMusicAIFFVolume(0) is gated on a loaded movie (none after the stop); SetAIFFMusic's own
-        // shutdown cue (MusicFade.setAIFFMusic) precedes the play.
-        XCTAssertEqual(on.music, [.stop, .play(track: 24), .volume(256)])
+        // M l. 7238–7249: SetMusicAIFFVolume(0) is gated on a loaded movie (none after the stop). SetAIFFMusic's
+        // ShutDownAIFFMusic (M l. 41877ff, 41943) and SetMusicAIFFVolume (M l. 41959–41971) are both gated on a loaded
+        // movie: the stop already happened at ⌘M off, so no second `.stop` before the play.
+        XCTAssertEqual(on.music, [.play(track: 24), .volume(256)])
         XCTAssertEqual(record.musicOn, 1)
         XCTAssertEqual(record.musicVolume, 9)
         XCTAssertEqual(on.prefs, record)
