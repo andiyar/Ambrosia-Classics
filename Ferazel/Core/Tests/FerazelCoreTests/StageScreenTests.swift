@@ -94,6 +94,10 @@ final class StageScreenTests: XCTestCase {
         XCTAssertEqual(plays(p46).map(\.at), [0, 5, 10, 15, 20, 23, 34])
         XCTAssertEqual(plays(p46).last?.cue, cue(801, 0xab))
         XCTAssertEqual(p46.duration, 34 + 40 + 12)
+        // pct 45: `pct > 45` is false → still 2 ticks per row (n2 44 → rows 0…21, then row 22 + 804).
+        let p45 = fill(45)
+        XCTAssertEqual(barRows(p45).map(\.row), Array(0...22))
+        XCTAssertEqual(barRows(p45).map(\.at), Array(stride(from: 0, through: 44, by: 2)))
         // Sound off: `STPlayRegSound` returns −1, no voice is ever playing, so no waits on the sounds.
         let quiet = fill(46, sounds: sounds(on: false))
         XCTAssertTrue(plays(quiet).isEmpty)
@@ -147,7 +151,7 @@ final class StageScreenTests: XCTestCase {
     func testChapterScreenLevel1() throws {
         let r = try FerazelData.open(try FerazelData.dataDirectory())
         let bar = StatusBarState(score: 5, levelName: "x")
-        func run(keyAt: Int?) -> [(Int, FrontOutput)] {
+        func run(keyAt: Int?, keyCode: Int? = 0x31, capsLock: Bool = false) -> [(Int, FrontOutput)] {
             var fade = ScreenFade()
             fade.faded = true                                   // the level entry's fade-out came first (L1)
             guard var m = ChapterScreenRun(chapter: 1, levelClut: 201, statusBar: bar, resources: r) else {
@@ -158,7 +162,10 @@ final class StageScreenTests: XCTestCase {
             var t = 0
             while !m.isDone, t < 3000 {
                 var input = FrontInput()
-                if let k = keyAt, t >= k { input.keys = KeyState(pressed: [0x31]) }
+                if let k = keyAt, t >= k {
+                    if let c = keyCode { input.keys = KeyState(pressed: [c]) }
+                    input.capsLock = capsLock
+                }
                 let o = m.tick(now: start + UInt32(t), input: input, fade: &fade)
                 out.append((t, o))
                 t += 1
@@ -201,6 +208,10 @@ final class StageScreenTests: XCTestCase {
         XCTAssertEqual(idle.last?.0, 1469)
         // A key held on entry: the first wait (109) sees it.
         XCTAssertEqual(run(keyAt: 0).last?.0, 110 + 160)
+        // `.IsAnyKeyDown` (M l. 31579–31595) scans key codes 1…127 only: key code 0 (A) alone never ends the card.
+        XCTAssertEqual(run(keyAt: 0, keyCode: 0).last?.0, 1469)
+        // `GetKeys` reports a locked Caps Lock (0x39) as down, so a locked Caps Lock ends it at the first wait.
+        XCTAssertEqual(run(keyAt: 0, keyCode: nil, capsLock: true).last?.0, 110 + 160)
 
         // No clut 280 + n → nothing at all.
         XCTAssertNil(ChapterScreenRun(chapter: 90, levelClut: 201, statusBar: bar, resources: r))

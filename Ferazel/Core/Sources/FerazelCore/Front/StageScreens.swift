@@ -209,9 +209,9 @@ public enum StageScreens {
 /// `SetScreenClut(280 + n)`, PICT 4600 + 10n drawn into `SetRect(0, 0, 640, 480)` (l, t, r, b) by
 /// `MTGetandDrawPICTResInRect` (the PICT's frame stretched to the rect — 608-wide cards widen [MED: library
 /// `DrawPicture`]), then the blocking `GammaFadeInSlow(0x37)` (109 ticks when faded); then up to **1200** one-tick
-/// waits, each polling `IsAnyInputKeyDown` (any key of the `KeyState`) and `Button` and calling `HideCursorSafe` — a
-/// key or the button ends the loop after the current tick; then `GammaFadeOut(0x1e)` (160 ticks), the level CLUT,
-/// PICT 129 in (0, 0, 640, 480) and `UpdateStatusBar(0, 0, 0)` (a full redraw) on the tick the fade ends.
+/// waits, each polling `IsAnyInputKeyDown` (key codes 1…127, or Caps Lock locked) and `Button` and calling
+/// `HideCursorSafe` — a key or the button ends the loop after the current tick; then `GammaFadeOut(0x1e)` (160
+/// ticks), the level CLUT, PICT 129 in (0, 0, 640, 480) and `UpdateStatusBar(0, 0, 0)` (a full redraw) on the tick the fade ends.
 /// `MusicAIFFTickle` is the QuickTime idle — nothing in the replica.
 public struct ChapterScreenRun: Sendable {
     public let chapter: Int16
@@ -262,6 +262,13 @@ public struct ChapterScreenRun: Sendable {
         return false
     }
 
+    /// `.IsAnyInputKeyDown @ 1004a1d4` (M l. 42364–42383) with InputSprocket absent → `.IsAnyKeyDown @ 10034b1c`
+    /// (M l. 31579–31595): `GetKeys`, then key codes **1 … 127** (key code 0, A, is never scanned). `GetKeys` reports
+    /// a locked Caps Lock (0x39) as down; the replica carries it in `FrontInput.capsLock`, outside `keys`.
+    static func isAnyKeyDown(_ input: FrontInput) -> Bool {
+        input.capsLock || (1...0x7f).contains { input.keys.isPressed($0) }
+    }
+
     /// One tick at absolute 60 Hz `now`; `input` is this tick's poll. `fade` is the flow's gamma state (the fades
     /// gate on and change it). Ticks the caller skipped are polled with this input.
     public mutating func tick(now: UInt32, input: FrontInput, fade: inout ScreenFade) -> FrontOutput {
@@ -289,7 +296,7 @@ public struct ChapterScreenRun: Sendable {
             case .waiting(var next, var left, var pressed):
                 while Int32(bitPattern: now &- next) >= 0 {
                     if left < 1 || pressed { break }
-                    if input.keys.bytes.contains(where: { $0 != 0 }) || input.button { pressed = true }
+                    if Self.isAnyKeyDown(input) || input.button { pressed = true }
                     left -= 1
                     out.append(FrontOutput(requests: [.hideCursor]))
                     next &+= 1
