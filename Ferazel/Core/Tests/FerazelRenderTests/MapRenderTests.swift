@@ -65,6 +65,54 @@ final class MapRenderTests: XCTestCase {
         // under clut 700, the status bar, PICT 7000 in the background with the 1–2 link, the node / marker / ambient
         // sprites (`.ruled`, lowest tie-break, error diffusion; `BoxRasterizer` text).
         XCTAssertEqual(String(fnv1a(image(m.screen.surface)), radix: 16), "38563faaa2276f05")
+
+        // The ambient sprite (type 100) is never erased: `.EraseNodeSprites` skips it (M l. 66888–66917). Its counter
+        // starts at −4 (no face), so run on until it is drawn; no background → work copy ever covers its rect, and
+        // after each frame its face's pixels (where they differ from the background) are still in the work port.
+        let ambient = try m.face(.mapAmbient, 0)
+        var ambientFrames = 0
+        for t in UInt32(1001)..<UInt32(1400) {
+            let ops = run.tick(now: t, input: FrontInput()).ops
+            try m.apply(ops)
+            var drawn: (index: Int, h: Int, v: Int)?
+            for op in ops {
+                if case .draw(.drawFace(set: .mapAmbient, let i, let h, let v), port: .work) = op { drawn = (i, h, v) }
+            }
+            guard let a = drawn else { continue }
+            ambientFrames += 1
+            let rect = Rect16(top: Int16(a.v + 4), left: Int16(a.h + 4), bottom: Int16(a.v + ambient.height + 12),
+                              right: Int16(a.h + ambient.width + 12))
+            for op in ops {
+                if case .copy(from: .background, to: .work, let s, _) = op {
+                    XCTAssertNotEqual(s, rect, "tick \(t): the ambient sprite's rect erased")
+                }
+            }
+            let face = try m.face(.mapAmbient, a.index)
+            let pixels = try face.decode()
+            var opaque = [Bool](repeating: false, count: face.width * face.height)
+            var row = -1, col = 0
+            for token in try face.tokens() {
+                switch token {
+                case .row: row += 1; col = 0
+                case .skip(let n): col += n
+                case .copy(let bytes):
+                    for k in 0..<bytes.count { opaque[row * face.width + col + k] = true }
+                    col += bytes.count
+                case .end: break
+                }
+            }
+            var differing = 0
+            for r in 0..<face.height {
+                for c in 0..<face.width where opaque[r * face.width + c] {
+                    let (x, y) = (a.h + 8 + c, a.v + 8 + r)
+                    guard m.background[x, y] != pixels[r * face.width + c] else { continue }
+                    differing += 1
+                    XCTAssertEqual(m.work[x, y], pixels[r * face.width + c], "tick \(t) ambient cell \(r), \(c)")
+                }
+            }
+            XCTAssertGreaterThan(differing, 0)
+        }
+        XCTAssertGreaterThan(ambientFrames, 0)
     }
 
     func testLinkPixels() throws {
