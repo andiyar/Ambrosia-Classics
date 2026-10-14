@@ -422,6 +422,18 @@ increments 0x306 — enemies-flyers §1.2, enemies-water-cave §0.1), `G+0x3ce/0
 the Wraith are counted but never credited, so the enemies stat of levels 10, 11, 21, 62 cannot
 reach 100 % (enemies-flyers §1.2).
 
+> ⚑ planner note (Phase 3 L2, 2026-10-14) (BC9; M l. 2752–2836, raw `10005684..100057bc`): `.FillPercent` animates
+> **n2/2** rows (n2 = (pct/2)·2; rows j = 0 … n2/2 − 1, source `SetRect(0, 14j, 52, 14j+14)`, dest `SetRect(x, y,
+> x+52, y+14)` offset by (dx, dy), `CopyBitsCTForce`) **plus one final row n2/2** — not "pct/2·2 frames". The looping
+> sound is snd **803** (prio 1, vol 0xab), started only when n2 > 0, restarted whenever its voice has ended (polled on
+> every tick of every row), stopped after the last animated row. Always then: snd **804** (vol 0x100) with the final
+> row, a wait until 804's voice ends, **4 ticks**, the band sound chosen on **n2** (not pct): 800 (n2 < 11, vol 0x100) /
+> 801 (n2 < 100, vol **0xab**) / 802 (vol 0x100), a wait until it ends, then **22** ticks (n2 < 11) else **12**.
+> Sound ids from `.InitSounds` (`_DAT_1009fe54/50/4c/5c/58/48` = 800…805, M l. 40012–40022); 805 is
+> `.StageCompleteEffect`'s opening sound. With sound off `.STPlayRegSound` returns −1 (M l. 40619) and no voice is ever
+> found playing, so both sound waits are 0 ticks and the panel runs faster. Constants re-read: 293.0f @ `100a156c`,
+> 100.0f @ `100a1570` (`tools/const.py`). As built: `FerazelCore.StageScreens` (`Front/StageScreens.swift`).
+
 ## 5. `Mcnv` — conversations  [MED framing; HIGH for the wave-2 decode below]
 
 29 resources × 36,936 B = 0x100 header (pstr conversation name, e.g. `\x0cRojinko Conv`) + 20
