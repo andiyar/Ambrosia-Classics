@@ -83,9 +83,12 @@ public final class SpriteWorld {
     /// `.MTNewSprite`'s record table: 700 entries of 0x1fc bytes at `_DAT_100a01dc`.
     public static let recordCount = 700
 
-    public init(level: LevelFile, seed: Int32 = 1, active: ActiveList = ActiveList(), idle: IdleSprites = IdleSprites()) {
+    /// - Parameter records: the live records to start from (L1: a revisit's restored snapshot, `.SetupLevel`
+    ///   M l. 2395–2516); nil → the file's.
+    public init(level: LevelFile, seed: Int32 = 1, active: ActiveList = ActiveList(), idle: IdleSprites = IdleSprites(),
+                records: [Placement]? = nil) {
         self.level = level
-        records = level.placements
+        self.records = records ?? level.placements
         tiles = TileGrid(level: level)
         rng = FastRand(seed: seed)
         globals = GameGlobals(header: level.header)

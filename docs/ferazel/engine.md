@@ -147,6 +147,19 @@ odd = !odd;
   1b, 2026-10-03) #4: both sites carry the hdr+0x2724 ≠ 0 gate (main l. 5183, 5231), so level 67
   (0x2724 = 0) fires neither.
 
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (BC11): `.SetAIFFMusic` stops and disposes the previous track and starts every
+> track at volume 0 (`SetMovieVolume(0)` before `StartMovie`); the level's `FadeAIFFMusic(1, 4)` (M l. 5222, blocking
+> 24 × 4 = 96 ticks) fades it in (raw `10049388..`, `1004974c..`). **New (dump):** `FadeAIFFMusic(0, 4)` +
+> `ShutDownAIFFMusic` (M l. 5161–5163) are inside `.GameLoop` itself, after `.ClearCrunchSprites` and before
+> `.SetupLevel` — every caller (New Game's and Continue's loops) gets them; they only bite when music is loaded and
+> unfaded (the menu's or the map's track).
+
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (BC13): `GammaFadeInAsync(0x28)` is unconditional at every level entry (M l.
+> 5228) — 41 `.HandleAsyncGammaFade` steps, one per iteration — gated only by its own tests (fading enabled `53c2`,
+> faded `fde8`; `.SetupLevel`'s `GammaFadeOut(6)` always leaves the screen faded). Only `GammaFadeIn(8)` uses
+> a4 ∧ hdr+0x2712 (M l. 5196–5197). A death inside the first 41 iterations finds the screen still "faded", so
+> `.DeathEffect`'s `GammaFadeOutAsync(0x30)` does not arm and its 50 `.HandleAsyncGammaFade` calls finish the fade-in.
+
 ## 5. Camera  [HIGH]
 
 `.PlayerScroll @ 1004c528` maintains a focus point: focus x `_DAT_1009fd44 = playerX +
@@ -208,6 +221,11 @@ that (save-continue §9.3).
   no chapter screen; "first entry" means "no checkpoint or completion recorded for L yet"
   ⚑ corrected (review 2026-10-03) #1.
 - Stage load popup `.PopupStageLoad`/`.UpdateStageLoad(…, 100)` during `.SetupLevel`.
+
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (BC12): re-entering a level whose `G+0x176+2L` is 1 re-destroys its crunch-log
+> tiles with `.DestroyCrunchTile(col, row, dir, explode 0, clearDir 1)` (raw `10004850..10004880`: r6 = 0, r7 = 1) —
+> **no** `.ExplodeCrunchedTile` / `.ExplodeFaceIntoParticles`, so no particles and no `FastRand` — before
+> `.SetupLevelSprites`, and copies the save block's snapshot over the level's records (+6 on x and y, M l. 2395–2516).
 - Victory: `_DAT_1009ffc4` set by `.HandleXichraSprite @ 1008e4ec` (death-animation counter
   > 0x96 also sets `DAT_100a5106` to end the loop) or the F8 debug key → `.Victory` (track 29,
   PICTs 159/161/162). ⚑ corrected (deepening 2026-10-03): the counter is Xichra state 8, `w+0x38 − 60 > 150` (frame 211 of

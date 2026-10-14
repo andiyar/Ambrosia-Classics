@@ -13,8 +13,9 @@ import HectorResources
 ///   `.RedrawEntireScrollGrid` (l. 5211), `.UpdateStatusBar(0, 0, 0)` (l. 5216), `.SetAIFFMusic(hdr+0x284a)` (l. 5221).
 ///   The menu bar was hidden before `.GameLoop` by the front end — on a new game by `.main` (l. 8280) and
 ///   `.MainMenu @ 1000e618` (l. 7349); on a resume by `.ContinueGame` (l. 6877). Phase 1 has no front end, so the
-///   request rides the level start. Not built: `.FadeAIFFMusic(1, 4)`, the gamma fades, `.ChapterScreen`
-///   (hdr 0x273c, l. 5222–5226).
+///   request rides the level start. Not built here: `.FadeAIFFMusic(1, 4)`, the gamma fades, `.ChapterScreen`
+///   (hdr 0x273c, l. 5222–5226) — L1's `LevelRun` hosts the session (`hostedByLevelRun`) and runs them, emitting the
+///   level start itself (the session's `startOps()`); a directly built session keeps this Phase-2 level start.
 /// - P3: the player is `Player.spawn` (`.SetupPlayerSprite`, with its held-item and five trail sprites), then the
 ///   countdown sprite `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184) into `*_DAT_1009fd7c` with its
 ///   six digit sprites 0x4c5; `iRam100a5110 = −0x1e` (l. 5186), so the countdown stays hidden (its only other writer
@@ -93,6 +94,22 @@ public final class FerazelSession {
     private var restartWithFreshGlobals = false
     /// Iterations run.
     public private(set) var iterations = 0
+    /// L1: the game loop's exit test held after the last iteration (`DAT_100a5106` or `*_DAT_100a0088`, M l. 5229) —
+    /// set for every session; a hosted one (`hostedByLevelRun`) asks nothing of the shell then (`LevelRun` builds
+    /// `LevelEnd` from the end state).
+    public private(set) var loopEnded = false
+    /// L1: `LevelRun` hosts the session — it emits the level start itself at the binary's places (`.SetupLevel`'s
+    /// tail, `startOps()`, `MusicFade`), so `step` omits the iteration-0 block and the loop end adds no request.
+    public let hostedByLevelRun: Bool
+    /// `*_DAT_1009fe68` / `*_DAT_1009fe64`: `.GameLoop`'s `param_1` / `param_2` (M l. 5146–5148), the start position —
+    /// what `.EndLevelSGUpdate` stores at save +0xc / +0x10 (M l. 6533–6534).
+    public let startX: Int
+    public let startY: Int
+    /// L1: the three `.SetupLevelSprites` tallies (`SetupFaces.Tallies`) — `.SetupLevel`'s first-visit totals.
+    public let tallies: SetupFaces.Tallies
+    /// L1 (hosted only): the `setTile`s of `.SetupLevel`'s crunch-log re-apply (M l. 2382–2393), made before
+    /// `.SetupLevelSprites` and before any redraw — `LevelRun` emits them at that place.
+    public let setupLevelTileOps: [DrawOp]
 
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
     /// The tile solver over `world` (one per level).
@@ -107,22 +124,33 @@ public final class FerazelSession {
     ///   frame for a single face) is used — a superset of the opaque bounds [MED].
     /// - Parameter particleFaces: the face pixels the face emitters walk (E1a: `.ExplodeFaceIntoParticles`,
     ///   `.ParticleGlow`) — FerazelRender's (`FrameRenderer.particleFaces`); none by default (no particles, no draws).
+    /// - Parameter start: `.GameLoop`'s (x, y) (`param_1`, `param_2`); nil → hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, as
+    ///   `.NewGame` passes (M l. 5823). Continue passes save +0xc / +0x10 (M l. 7044–7064; F1b).
+    /// - Parameter refreshFacing: on a carried G, `+0x16 ← hdr+0x26c8` (`.NewGame`'s next-level loop, M l. 5821; W4);
+    ///   Continue's loop passes false (M l. 7044–7064).
+    /// - Parameter records: the live placement records to start from (L1: `SaveBlock.restoreSnapshot`, which
+    ///   `.SetupLevel` copies over the level's records on a revisit, M l. 2395–2516); nil → the file's.
+    /// - Parameter hostedByLevelRun: L1 — `LevelRun` drives the session: `step` omits the iteration-0 block, the loop
+    ///   end appends no request, and `.SetupLevel`'s in-session parts run here (the crunch-log re-apply on a revisit,
+    ///   `unlocked[L] = 1` before the player spawn). False (every caller before L1) = Phase 2's behaviour exactly.
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32 = 1,
                 carry: LevelCarry = LevelCarry(), faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil,
-                particleFaces: ParticleFaces = ParticleFaces()) throws {
+                particleFaces: ParticleFaces = ParticleFaces(), start: (x: Int, y: Int)? = nil,
+                refreshFacing: Bool = true, records: [Placement]? = nil, hostedByLevelRun: Bool = false) throws {
         self.resources = resources
         self.prefs = prefs
+        self.hostedByLevelRun = hostedByLevelRun
         levelNumber = level
         map = try WorldMap.load(from: resources)
         let L = try LevelFile.load(from: resources, level: Int16(level))
-        let world = SpriteWorld(level: L, seed: seed)
+        let world = SpriteWorld(level: L, seed: seed, records: records)
         // W4 (P3 carries): the parity `_DAT_1009fd30` and the G-resident crunch log run on from the previous level.
         world.parity = carry.parity
         // W4 review fix: after a level exit G runs on whole (`.InitGameGlobals` is `.NewGame`'s only, M l. 5747); the
-        // next-level loop re-writes `+0x16` from the new header (l. 5821).
+        // next-level loop re-writes `+0x16` from the new header (l. 5821) — not Continue's (L1 `refreshFacing`).
         if let g = carry.globals {
             world.globals = g
-            world.globals.startFacing = Int16(L.header.startFacingLeft)
+            if refreshFacing { world.globals.startFacing = Int16(L.header.startFacingLeft) }
         }
         world.globals.crunchLog = carry.crunchLog
         // `.InitParticles` (`.SetupLevel`, `bl` 10004fc0) clears byte +0 of every record and keeps the count, hint and
@@ -133,11 +161,13 @@ public final class FerazelSession {
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
-        // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823).
-        let px = Int(L.header.startX) - 0x20, py = Int(L.header.startY) - 0x20
+        // `.GameLoop(hdr+0x2848 − 0x20, hdr+0x2846 − 0x20, 0, 1)` (`.NewGame` l. 5823), or the caller's `start` (L1).
+        let px = start?.x ?? Int(L.header.startX) - 0x20, py = start?.y ?? Int(L.header.startY) - 0x20
+        startX = px
+        startY = py
         camera = try Camera(header: L.header, spriteX: px, spriteY: py)
         // playerX = `fd94` = origin x + 0x32 (`.GameLoop` l. 5149, before `.SetupLevel`).
-        let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects)
+        let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects, records: records)
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
         // in this fresh world; W4's level flow keeps the order when a world is reused.
         world.player.crunchSprites = [Int?](repeating: nil, count: 0x28)
@@ -146,6 +176,20 @@ public final class FerazelSession {
         world.player.tileCacheValid = carry.tileCacheValid
         waterEffects = WaterEffects(cells: carry.waterCells, originCol: carry.waterOriginCol,
                                     originRow: carry.waterOriginRow)
+        // L1 (hosted): `.SetupLevel`'s revisit re-apply (M l. 2382–2393, raw `1000483c..100048a0`) — with
+        // `G+0x176 + 2L == 1` (`LevelRun` has already cleared it when F4 was held), every crunch-log entry of this
+        // level: `.DestroyCrunchTile(col +0x60fa, row +0x60f8, .GetFGCrunchDirTile(col, row), explode 0, clearDir 1)`
+        // (raw `10004850..10004880`: r6 = 0, r7 = 1) — no `.ExplodeCrunchedTile`, so no `FastRand` (BC12). Before
+        // `.SetupLevelSprites` (l. 2526): the Setups see the reshaped map.
+        if hostedByLevelRun, world.globals.hasSnapshot[level] == 1 {
+            for e in world.globals.crunchLog where Int(e.level) == level {
+                let col = Int(e.col), row = Int(e.row)
+                CrunchTiles.destroyCrunchTile(world, col: col, row: row, dir: world.tiles.crunchDir(col: col, row: row),
+                                              explode: false, clearDir: true)
+            }
+        }
+        setupLevelTileOps = world.player.tileOps
+        world.player.tileOps = []
         let spawned = try SetupFaces.spawnLevelSprites(context: context, rng: &world.rng) { e in
             // `.ActiveToIdleSprite`: the bounds of the face `+0xc0` holds at `.AddIdleSprite` time — none for a
             // Handle-faced type, the placeholder for a class-cache face (`SetupFaces` header).
@@ -157,9 +201,12 @@ public final class FerazelSession {
             }
         }
         lights = spawned.lights
+        tallies = spawned.tallies
         world.active = spawned.active
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
+        // L1 (hosted): `*(G + L·2 + 0x23e) = 1` — `unlocked[L]` — right before the player `MTNewSprite` (M l. 5180–5181).
+        if hostedByLevelRun { world.globals.unlocked[level] = 1 }
         // The player `MTNewSprite(0, x, y, 10, −1, .SetupPlayerSprite)` (l. 5181), then the countdown
         // `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184); `+0x46` of the player = param_3 = 0.
         guard let pid = Player.spawn(world: world, x: px, y: py) else { throw SessionError.noPlayerRecord }
@@ -189,6 +236,17 @@ public final class FerazelSession {
         // `.RedrawEntireScrollGrid` in `.GameLoop` (l. 5210–5211): none, as (1).
         world.passageView = PassageView(snap: { [unowned self] _ in self.passageSnap() },
                                         redraw: { [unowned self] _ in self.passageRedraw() })
+    }
+
+    /// L1: `.GameLoop`'s level-start draws after the player spawn (M l. 5209–5216): `.FindUpperLeftCorner`,
+    /// `.SetScrollLocation`, `.RedrawEntireScrollGrid`, `.UpdateStatusBar(0, 0, 0)` — the iteration-0 block's part
+    /// that `LevelRun` emits for a hosted session, at its place (after `HideCursorSafe`, before `.SetAIFFMusic`).
+    /// `.AnimateCLUT`, `.BuildTintTable` and `.BuildReddenTable` (M l. 5206–5208) drew in `init` (`tintTableDraws`).
+    public func startOps() -> [DrawOp] {
+        findUpperLeftCorner(graphics: prefs.graphics)
+        return [.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV),
+                .redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV),
+                .statusBar(globals.statusBar(levelName: level.header.name))]
     }
 
     /// `.AnimateCLUT @ 1001180c`'s `FastRand(4000)` count (l. 8961–9062, raw `10011bc4`): with header `0x2732` (count)
@@ -242,7 +300,7 @@ public final class FerazelSession {
     public func step(keys: KeyState) -> FrameOps {
         var ops = FrameOps()
         let graphics = prefs.graphics
-        if iterations == 0 {
+        if iterations == 0 && !hostedByLevelRun {
             ops.draws.append(.setScreenClut(id: ColorLUT.screenClutId(level.header)))
             ops.draws.append(.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
             ops.draws.append(.redrawEntireScrollGrid(h: 0, v: 0))
@@ -363,11 +421,14 @@ public final class FerazelSession {
         if let g = world.gammaFade.handle() { ops.draws.append(g) }
         // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
         // after this iteration (W4).
-        let endsNow = ended == nil && (world.player.gameOver || world.player.levelDone)
+        let endsNow = !loopEnded && (world.player.gameOver || world.player.levelDone)
         if endsNow {
-            let request = loopEnd()
-            ended = request
-            ops.requests.append(request)
+            loopEnded = true
+            if !hostedByLevelRun {
+                let request = loopEnd()
+                ended = request
+                ops.requests.append(request)
+            }
             // The player pass's cues (the exit's snd 421) start at once in the original (the Sound Tool); the loop
             // ends before the next Handle pass would hand them out, so the last iteration hands them out after its
             // Handle pass's cues. Normal iterations keep the once-per-frame drain above.
@@ -572,6 +633,9 @@ public final class FerazelSession {
 /// header), so a level starts with no fade pending (done) and not faded out [MED: `DAT_100a53d6`'s value at a level
 /// start depends on those unbuilt fades].
 public struct AsyncGammaFade: Equatable, Sendable {
+    /// `DAT_100a53c2`: fading enabled — every async call is gated on it (M l. 31878, 31899, 31922). True for a
+    /// directly built session (Phase 2); `LevelRun` hands `ScreenFade`'s value over (L1).
+    public private(set) var fadingEnabled = true
     /// `DAT_100a53d6`.
     public private(set) var done = true
     /// `_DAT_100a17ec`: 0 out, 1 in.
@@ -586,9 +650,17 @@ public struct AsyncGammaFade: Equatable, Sendable {
 
     public init() {}
 
-    /// `.GammaFadeOutAsync(N, rgb)`.
+    /// L1: the global fade state as `ScreenFade` holds it when a `LevelRun` starts the session's loop (`*_DAT_1009fde8`
+    /// faded, `DAT_100a53d6` no async fade running, `DAT_100a53c2` fading enabled).
+    public init(fadedOut: Bool, done: Bool, fadingEnabled: Bool) {
+        self.fadedOut = fadedOut
+        self.done = done
+        self.fadingEnabled = fadingEnabled
+    }
+
+    /// `.GammaFadeOutAsync(N, rgb) @ 100356c0` (M l. 31896–31912): only when fading is enabled and not faded out.
     public mutating func fadeOut(steps n: Int16, toward rgb: RGB16) {
-        guard !fadedOut else { return }
+        guard fadingEnabled, !fadedOut else { return }
         done = false
         step = 0
         fadingIn = false
@@ -596,9 +668,9 @@ public struct AsyncGammaFade: Equatable, Sendable {
         toward = rgb
     }
 
-    /// `.GammaFadeInAsync(N)`.
+    /// `.GammaFadeInAsync(N) @ 1003565c` (M l. 31875–31890): only when fading is enabled and faded out.
     public mutating func fadeIn(steps n: Int16) {
-        guard fadedOut else { return }
+        guard fadingEnabled, fadedOut else { return }
         done = false
         step = 0
         steps = n
@@ -607,7 +679,7 @@ public struct AsyncGammaFade: Equatable, Sendable {
 
     /// `.HandleAsyncGammaFade`: the step's op, nil when no fade runs.
     public mutating func handle() -> DrawOp? {
-        guard !done else { return nil }
+        guard !done, fadingEnabled else { return nil }
         let op = DrawOp.gammaStep(numerator: Int(step), denominator: Int(steps), toward: fadingIn ? nil : toward)
         step &+= 1
         if steps < step {

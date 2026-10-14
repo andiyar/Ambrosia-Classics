@@ -113,10 +113,18 @@ public enum SetupFaces {
         /// prefs `+6` Effects (`_DAT_1009fe44 + 6`): the Xichron and money-bag lights need it == 1.
         public let effects: Int16
 
-        public init(level: LevelFile, playerX: Int, effects: Int16 = FerazelPrefs().effects) {
+        /// The live placement records `.SetupLevelSprites` walks (`*_DAT_100a0058 + 4 + 16·i`) when they differ from the
+        /// file's (L1): `.SetupLevel` copies a level's snapshot over them on a revisit (M l. 2395–2516,
+        /// `SaveBlock.restoreSnapshot`) before the Setups run. nil → the file's `level.placements` (every caller before
+        /// L1).
+        public let records: [Placement]?
+
+        public init(level: LevelFile, playerX: Int, effects: Int16 = FerazelPrefs().effects,
+                    records: [Placement]? = nil) {
             self.level = level
             self.playerX = playerX
             self.effects = effects
+            self.records = records
         }
 
         /// The playerX in effect while `.SetupLevel` runs at a level start: `.GameLoop(hdr+0x2848 − 0x20, …)`
@@ -529,6 +537,52 @@ public enum SetupFaces {
         public var lights: [Light]
         /// The level's placement records after the Setups' write-backs (`Entry.record`), by index (W2a).
         public var records: [Placement]
+        /// The three tallies the Setups count while `*_DAT_1009fe8c` is set (`.SetupLevel` sets it around
+        /// `.SetupLevelSprites`, M l. 2524–2526, after zeroing them, M l. 2520–2523): `.SetupLevel` stores them as the
+        /// level's totals on a first visit (M l. 2528–2536; L1).
+        public var tallies = Tallies()
+    }
+
+    /// `*_DAT_1009ffac` secrets, `*_DAT_1009ffb0` Xichrons, `*_DAT_1009ffb4` enemies — each Setup site sets the
+    /// sprite's `+0x1b5` and adds 1 only while `*_DAT_1009fe8c` ≠ 0 (L1, transcribed for the classes levels 1–2
+    /// place): `.SetupBonusSprite` 0x423 → secrets (M l. 52410–52414), 0x41f / 0x420 → Xichrons (M l. 52463–52467);
+    /// enemies: `.SetupCrawlerSprite` (M l. 56236–56240), `.SetupWalkerSprite` (M l. 57090–57094), `.SetupRoachSprite`
+    /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s 0x6cc… arm (M l. 68282–68285),
+    /// `.SetupFrogSprite` at its end (M l. 70211–70215). // later: Phase 4–5 — the other enemy classes' sites
+    /// (`.SetupBlobSprite` M l. 67730, Gremlin 69229, Floater 69899, Salamander 70697, Dillo 72370, Warrior 73069,
+    /// Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups
+    /// throw `notTranscribed` before any tally).
+    public struct Tallies: Equatable, Sendable {
+        public var secrets: Int16 = 0
+        public var xichrons: Int16 = 0
+        public var enemies: Int16 = 0
+
+        public init(secrets: Int16 = 0, xichrons: Int16 = 0, enemies: Int16 = 0) {
+            self.secrets = secrets
+            self.xichrons = xichrons
+            self.enemies = enemies
+        }
+
+        /// The site a Setup of `type` (class `cls`) reaches during `.SetupLevelSprites`.
+        mutating func count(type: Int16, class cls: SpriteClass) {
+            switch cls {
+            case .bonus where type == 0x423: secrets &+= 1
+            case .bonus where type == 0x41f || type == 0x420: xichrons &+= 1
+            case .walker, .crawler, .roach, .frog: enemies &+= 1
+            case .bat where (0x6cc...0x6d5).contains(type): enemies &+= 1
+            default: break
+            }
+        }
+    }
+
+    /// The `.SetupLevelSprites @ 10003cd0` order over a set of live records — `LevelFile.spawnOrder`'s three passes
+    /// (flag == 1: type 0x51b, then 0x578…0x595, then every other type ≠ 0), over `records` instead of the file's.
+    public static func spawnOrder(_ records: [Placement]) -> [Placement] {
+        let active = records.filter { $0.flag == 1 }
+        let isPlatform: (Placement) -> Bool = { (0x578...0x595).contains($0.type) }
+        return active.filter { $0.type == 0x51b }
+            + active.filter(isPlatform)
+            + active.filter { $0.type != 0 && $0.type != 0x51b && !isPlatform($0) }
     }
 
     /// `.SetupLevelSprites @ 10003cd0` (l. 1940–2101): every flag-1 record of type 0x51b, then types 0x578..0x595,
@@ -549,9 +603,10 @@ public enum SetupFaces {
                                          idleFaceRect: (Entry) -> IdleSprites.Rect) throws -> Spawned {
         guard c.level.header.autoScrollEnable == 0 else { throw Error.autoScrollSprites }
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
-                          records: c.level.placements)
-        for p in c.level.spawnOrder {
+                          records: c.records ?? c.level.placements)
+        for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
             var e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
+            out.tallies.count(type: e.type, class: e.spriteClass)
             if e.type == BoxSprite.stalactite, e.slot.recordIndex != -1 {
                 // `.SetupBoxSprite`'s stalactite arm (M l. 59383–59400) makes its child before the parent is inserted
                 // or idled: `.MTNewSprite(0xb74, +8, +6, +0x80 − 1, −1, .SetupBoxSprite)` — the record −1 arm — then

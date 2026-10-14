@@ -65,6 +65,13 @@ public struct LevelCarry: Equatable, Sendable {
     public var waterOriginCol: Int16 = 0
     public var waterOriginRow: Int16 = 0
     public var tileCacheValid = false
+    /// L1: `_DAT_100a267e` (the level whose tilesets are loaded) and `DAT_100a267d` (tilesets disposed): `.SetupLevel`
+    /// takes its restart fast path when the level is the same and they were not disposed (M l. 2252); data-section
+    /// initial 267e = −1, 267d = 1 (`const.py 100a267c`: 01 01 ff ff).
+    public var tilesetLevel: Int16 = -1
+    public var tilesetsDisposed = true
+    /// L1: the class face cache's loaded records and CLUT ids (`.LoadCachedSpriteFaces`' bars).
+    public var cachedFaces = CachedFaces()
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity
@@ -75,4 +82,14 @@ public struct LevelCarry: Equatable, Sendable {
         self.init(parity: parity, crunchLog: crunchLog)
         self.globals = globals
     }
+
+    /// L1: the G image path — `globals` (and the crunch log it holds) from a G byte image (0x19978 bytes, SV1: the
+    /// save block's `+0x18` copy, or `globalsImage` of an earlier carry).
+    public init(parity: Bool = false, globalsImage: Data) throws {
+        let g = try GameGlobals(image: globalsImage)
+        self.init(parity: parity, crunchLog: g.crunchLog, globals: g)
+    }
+
+    /// L1: `globals` as its byte image (`GameGlobals.image()`), nil for a fresh G.
+    public var globalsImage: Data? { globals?.image() }
 }

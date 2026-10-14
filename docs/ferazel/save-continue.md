@@ -295,6 +295,29 @@ Edge case [MED]: if `OpenSG(fd18)` fails (file moved/deleted), ContinueGame retu
 - Debug only (out of scope): key 0x76 during SetupLevel clears `G+0x176+2L`; keys C+S (codes 8 and 1)
   held without ⌘/Esc while the debug flag is set → `SavePointSave` (raw 0x10007b6c).
 
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (BC8): key 0x76 (F4) during `.SetupLevel` clears `G+0x176+2L` **ungated** —
+> no debug-flag test (raw `100047e0..10004810`: `li r3,0x76`, `bl IsPressed`, `beq`, `sth r26(=0),0x176(r3)`), so it is
+> not "debug only": holding F4 while a level loads makes it a first visit (no restore, totals rewritten, the chapter
+> card). Built as the binary (`LevelRun`).
+
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (BC29 + L1 dump reading): the level-entry load bar (`.UpdateStageLoad(p, q)`,
+> w = trunc(p/q · 293.0f) single precision): a first visit / other level draws 15, 20, 25, 35, 40 (`.LoadLevelTilesets`,
+> M l. 1588–1629), 50 (M l. 2519), then one bar per cached face record loaded by `.LoadCachedSpriteFaces` (M l.
+> 73769–73868: q = 2n with n = the faces needing a load, p from n, + a set's face count or + 1 per single), then 100
+> (M l. 73864) and 100 again (M l. 2569); the restart fast path (`L == _DAT_100a267e ∧ DAT_100a267d == 0`, M l. 2252;
+> data-section 267d = 1, 267e = −1) draws 25 instead of the five. `.GameLoop` sets `unlocked[L]` (G+0x23e+2L) right
+> before the player spawn (M l. 5180) and calls `InputActivate(1,1)` before `.ChapterScreen` (M l. 5224). **New (dump):**
+> the CLUT ids `_DAT_100a3eae` / `sRam100a3eb2` that `.NeedToReloadForThisClut` compares are updated only on the
+> other-level branch (M l. 2331–2332; initial −1 / −2), so a restart of the first level played still sees −1 ≠ 202 and
+> reloads every flag-1 cached single (level 1: six → bars 7…12 of 12). Level 1 after launch: n 90, q 180, bars p 96 …
+> 180 (12 sets, 18 singles); level 2 after level 1: n 31, q 62. Derivation and the per-type marks: `FerazelCore.CachedFaces`.
+
+> ⚑ planner note (Phase 3 L1, 2026-10-14) (dump): `.EndLevelSGUpdate` stores save +0xc / +0x10 from `*_DAT_1009fe68` /
+> `*_DAT_1009fe64` (M l. 6533–6534) — `.GameLoop`'s param_1 / param_2, the level's start position, not the player's
+> position at the exit. A first visit's totals come from the three Setup tallies (`*ffb4` enemies, `*ffb0` Xichrons,
+> `*ffac` secrets), counted only while `*_DAT_1009fe8c` is set around `.SetupLevelSprites` (M l. 2520–2536); level 1:
+> 15 / 43 / 10.
+
 ## 7. What is NOT persisted  [HIGH unless noted]
 
 - Live level header except the 511 records (tile edits other than the crunch log are not saved).
