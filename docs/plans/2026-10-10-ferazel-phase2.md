@@ -1188,7 +1188,7 @@ the Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and longplays. `-Fe
    19..20 = x 1792..2623, ≈ 1800–2600) — splash on entry and exit, swimming strokes, the
    drift of the current (level 1 only), bubbles, breath running out: hits every ~2.3 s once breath is gone.
 8. **Acid and the damaging floor** (level 1: the acid pool at the far right, 18 damaging floor cells; level 2: four
-   acid pools, 74 cells — probe B `probe_liquids.out` / `level_kinds.out`) — hurt flash, a groan/ouch, the knock-back stun.
+   acid pools, 114 acid cells (74 damaging-floor cells) — probe B `probe_liquids.out` / `level_kinds.out`) — hurt flash, a groan/ouch, the knock-back stun. [corrected, phase-end Fable review]
 9. **Healing brine** (level 2, 12 cells) — health and magic fill with the "fill-up" sound.
 10. **Platforms** — sliding platforms (level 1's three sliding platforms dip when you land on them and spring back), the rotor pair and the
     pendulum platform near x 2300 / 3200, the three-wheel near x 1850; on level 2 the rafts float and tilt under you,

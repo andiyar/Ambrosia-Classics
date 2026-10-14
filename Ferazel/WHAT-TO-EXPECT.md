@@ -71,7 +71,7 @@ hand your timing will drift; aim for its shape. Times are at 30 frames a second.
    for 1.2 s. He drops into the first pool with a big splash about 11.9 s in (frame 357).
 
 That first pool is only wading-deep, so jumping there is an ordinary jump and **swimming is not covered by any machine
-test.** To swim, go on to the **deep pool**: columns 146–156, rows 23–26 (x ≈ 4670–5020, about y 740–860), about
+test.** To swim, go on to the **deep pool**: columns 144–160, rows 23–27 (x 4608–5151, y 736–895), about
 7½ screens right of the start and a good way below it, just above and right of the level exit.
 
 ## The gate card: what to check
@@ -97,8 +97,10 @@ what "wrong" would look like. **MED** = fairly sure. Unmarked lines are read str
 7. **Water.** Level 1 has five pools; the first is described above. Built as the binary: a splash going in and coming
    out, swimming strokes (deep pool only), the current pushing him along (level 1 only), bubbles, and his breath
    running out. Once it is gone he takes a hit about every 2.3 s.
-8. **Acid and damaging floors.** Level 1 has the acid pool at the far right and 18 damaging floor cells; level 2 has
-   four acid pools (74 cells). Built as the binary: the hurt flash, a groan or "ouch", and the knock-back stun.
+8. **Acid and damaging floors.** Level 1 has the acid pool at the far right (24 cells) and 18 damaging floor cells;
+   level 2 has four acid pools (114 cells) and 74 damaging floor cells. Built as the binary: acid gives the hurt
+   flash, a groan, the health loss and a short invulnerability, and **no** stun; a damaging floor gives the hurt
+   flash, a "big ouch", the health loss and the knock-back stun.
 9. **Healing brine** (level 2, 12 cells). His health and magic fill up, with the fill-up sound.
 10. **Platforms.** Built as the binary:
     - Level 1's three sliding platforms dip when you land on them and spring back.
@@ -134,8 +136,8 @@ what "wrong" would look like. **MED** = fairly sure. Unmarked lines are read str
     - Your score, health, magic and coins carry into level 2, as in the original. Level 2's own exits lead to levels 3
       and 4, which aren't built, so they restart level 2.
     - **To die on purpose** (for card 15): wade into the acid pool at the far right end of level 1 (columns 188–195,
-      x ≈ 6000–6270, almost 10 screens right of the start); it hurts about every 2 s and five hits kill him, so
-      about 9 s. Or stay under in the deep pool: his breath lasts about 19 s, then five choking hits about 2.3 s
+      rows 17–19: x 6016–6271, almost 10 screens right of the start); it hurts about every 2 s and five hits kill
+      him, so about 9 s. Or stay under in the deep pool: his breath lasts about 19 s, then five choking hits about 2.3 s
       apart, so about half a minute in all.
 17. **Sound.** Footsteps, jump, soft and hard landings, head bonk, splash, swim, groan or "ouch", the drowning choke,
     fill-up, cannon, trampoline. Built as the binary: the original's Sound Tool mixer, 8-bit at 22,050 Hz with
