@@ -104,7 +104,7 @@ git -C "$WT" status --porcelain | grep -v '^??'
 ```
 
 **Test ladder (`Ferazel/Core`, cumulative; canonical order = execution order; STOP if different):** base **256** →
-X1 **256** → R1 **260** → SV1 **266** → SV2 **272** → FE0 **278** → O1 **284** → L1 **292** → L2 **297** → M1
+X1 **256** → R1 **260** → SV1 **266** → SV2 **272** → FE0 **278** → O1 **284** → L2 **289** → L1 **297** → M1
 **305** → M2 **308** → F1a **313** → D1 **317** → F1b **323** → S1 **330** → P1 **335** → C1 **342** → C2 **345**
 (then A1a, A1b, A2: no tests). Merged in another order: previous total + the task's N. Review fix rounds add
 asserts, not tests, unless the orchestrator rules otherwise (recorded "As executed").
@@ -277,7 +277,7 @@ New test files named per task. No new target.
 ### S3. Seam additions (cases/fields ADDED only; Invariant 9)
 ```swift
 // DrawOp — new cases, ALL added by FE0 (with every exhaustive `switch` given an arm: FrameRenderer.swift:280ff,
-// SessionTests.swift:285); later tasks only give them behaviour (M2 drawFace/drawLine, C2 restoreView/drawText layout)
+// SessionTests.swift:288); later tasks only give them behaviour (M2 drawFace/drawLine, C2 restoreView/drawText layout)
 case fillRect(left: Int, top: Int, right: Int, bottom: Int, rgb: RGB16)          // PaintRect in a colour (Color2Index)
 case copyPicture(id: Int16, chain: ResourceChain, source: Rect16, dest: Rect16, forceClut: Int16?,
                  transparent: Bool)                                              // CopyBits / CopyBitsCTForce / mode 0x24
@@ -364,7 +364,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   first loads level 52 or 55; lost coins drawing when `.MTNewSprite` finds no record → Phase 4; the later-phase
   `3DSoundRand` idle-only sites (M l. 62997, 63199–63257, 61047–61057) → the Phase 4/5 plans (Invariant 4 conflict).
   `beginEnding`'s placeholder phase goes with the `Ending` struct in A1a.
-- **Gate:** G2 = 256 (asserts only), G5 (touches the App). **Commit:** `Phase 2 carry sweep: FastRand cite, liquid tile range constant, stopAll, jump-frame soundStopAt and PlayerConstraints order asserts`.
+- **Gate:** G2 = 256 (asserts only), G5 (touches the App), G6, G7(+b), G8, G10. **Commit:** `Phase 2 carry sweep: FastRand cite, liquid tile range constant, stopAll, jump-frame soundStopAt and PlayerConstraints order asserts`.
 
 #### R1 — minor — Dialog and menu resources (→ 260)
 - **Files:** `Sources/FerazelCore/Front/DialogResources.swift`; `Tests/FerazelCoreTests/DialogResourceTests.swift`.
@@ -386,6 +386,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   Effects ⌘F, –, Preferences… ⌘P; MENU 128 "About Ferazel's Wand…") · `testStandardFileDitls` (DITL 1003 item 13
   static "Your saved game will reflect your position as of the most recent checkpoint."; DITL 1500 item 10 "^0"
   (166,11,203,334)).
+- **Gate:** G2 = 260, G6, G7(+b), G8, G10; wave 3.0 end: G3, G5.
 - **Commit:** `FerazelCore: DLOG/ALRT/DITL/CNTL/MENU/MBAR parsers (dialog and menu resources); 4 tests`.
 
 ### Wave 3.1 — byte images, files, the front-end seam
@@ -403,8 +404,9 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   {id 0, count 1, +4 −1, +6 0, spell flag 1}, slot 1 {0, 1, −1, 0, 0}, slots 2…26 {−1, 0, −1, 0, 0}; crunch levels
   `+0x12d8` 0xff × 20000, count 0; `+0x16`, `+0x20`, `+0x22`, crunch pairs **not** written by InitGameGlobals (they keep
   the previous value — `previous` passes the old struct through; nil (the very first game) → 0). **The routine's
-  tail (M l. 815–825) also zeroes non-G state**, in this order: `*ffac`, `*ffb0`, `*ffb4` (the secrets / Xichrons /
-  enemies tallies), `*ffa8` (died), `*ffa4`, `*ffa0`, `*ff9c`, then **`save+6 = 0`** when the save block exists
+  tail (M l. 815–825) also zeroes non-G state** — 8 stores, in this order: `*ffac`, `*ffb0`, `*ffb4` (the secrets /
+  Xichrons / enemies tallies), **`G+0` (score, u32) = 0** (M l. 818, raw `10001a3c stw r24,0x0(r4)` — a G field, so
+  `initGameGlobals` writes it), `*ffa8` (died), `*ffa4`, `*ffa0`, `*ff9c`, then **`save+6 = 0`** when the save block exists
   (`*_DAT_100a0054 ≠ nil`, always true after `.InitAppGlobals`' `NewHandleClear(0xebe58)`, M l. 345). SV1 documents the
   list in `initGameGlobals(previous:)`'s doc comment and exposes `SaveBlock.isCheckpoint` writable; F1b's
   `GameFlow.initGameGlobals()` performs the tail on the flow's fields and the block. `SaveBlock`: offsets
@@ -431,6 +433,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   point, x 2377 y 878) stored at 0x19998 + 0x2000 + 16·24 with y 872, x 2371; `+6` = 1; `hasSnapshot[1]` = 1 inside the
   G copy) · `testRestoreSnapshotPlus6` (save then restore returns records equal to the ones written; the
   `initGameGlobals(previous:)` tail list is not testable on G alone and is pinned by F1b's `testNewGameStartsLevel1`).
+- **Gate:** G2 = 266, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: G as a byte image (every field), the 966,232-byte save block (SavePointSave/EndLevelSGUpdate writers, snapshots ±6); 6 tests`.
 
 #### SV2 — minor — Prefs record, prefs file, saved-game file (→ 272)
@@ -468,6 +471,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   type/creator read back as 'FWSg'/'Msct'; bytes equal) · `testSavedGameFromResourceFork` (a file whose resource fork
   holds the map and whose data fork is empty reads the same block) · `testSaveNameSequence` ("@@@@@" → "Ferazel Saved
   Game" → "Ferazel Saved Game 2" → "… 3"; "Game " → "Game 2"; a 31-char name unchanged).
+- **Gate:** G2 = 272, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: prefs record (0x942) + prefs file, saved-game file (FWSg 0, data fork or resource fork), IncrementLastSGString; 6 tests`.
 
 #### FE0 — ⚑ MAJOR — Front-end seam, `ScreenSurface`/`ScreenRenderer`, timed fades, music fades (→ 278)
@@ -476,7 +480,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `Sources/FerazelRender/Screens/{ScreenSurface,ScreenRenderer}.swift`, `Sources/FerazelRender/Effects/ScreenGamma.swift`,
   `Sources/FerazelRender/Frame/FrameRenderer.swift` (the `surface:` parameter, defaulted, + no-op arms for the new
   cases in its exhaustive `switch op`, l. 280ff), `Tests/FerazelCoreTests/SessionTests.swift` (only the exhaustive
-  `switch op` at l. 285 gains arms; no expectation changes), `Ferazel/App/FerazelController.swift` (no-op arms for the
+  `switch op` at l. 288 gains arms; no expectation changes), `Ferazel/App/FerazelController.swift` (no-op arms for the
   new `ShellRequest` cases); `Tests/FerazelRenderTests/ScreenTests.swift`; bank `rendering-omnipx-titles.md` §4.3 +
   `lighting-tables.md` §10 (BC16, BC28).
 - **Contract:** **every** S3 case is added here, up front (`fillRect`, `copyPicture`, `drawFace`, `drawLine`,
@@ -527,6 +531,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   6, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18**, then 100; n 15 → s 2, 51 steps) · `testMusicFadeVolumes` (V 256: in
   t 4 → 24 cues 0, 10, 21 … 245 at ticks 0, 4 … 92, then 256; out t 2 → 256·(24−s)/24 …, then 0; no cue when
   already faded/unfaded; `SetAIFFMusic(−1)` → no cue at all, not even `.stop`).
+- **Gate:** G2 = 278, G5 (touches the App), G6, G7(+b), G8, G10.
 - **Commit:** `Front-end seam: ScreenSurface + ScreenRenderer (picture/stretch/transparent/fill/line/text ops), timed gamma fades (TintFadeProc), music fades; 6 tests`.
 
 #### O1 — minor — Options dialog model, `.MakeCurrPrefs`, the Music / Sound Effects toggles (→ 284)
@@ -553,8 +558,10 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   panel — Controls and Sound reset the working copy; **Game Options writes the defaults into the record, not the
   working copy** (raw `10076520..10076528`; writes `100764f4..1007654c`; the +6 default is 2 if `_DAT_100a511a` <
   0x108 else 1, as `.InitPrefs`), so nothing visibly changes, OK then overwrites them and Cancel keeps them;
-  `.Options` (M l. 7254–7289): `FlushEvents`, `InputActivate(0,0)`, cursor shown, the dialog, then the record is
-  written to the prefs file on every close, `MTRedraw`, `.MakeCurrPrefs`, `.UpdateMenus`, `fe0c = 1`, `511e = 1`.
+  `.Options` (M l. 7254–7289): `FlushEvents`, `InputActivate(0,0)`, cursor shown, the prefs file opened
+  (`.SetPrefFile`, M l. 7269) and **re-read** (`.InitPrefs`, M l. 7273), `.PreferencesDialog` (M l. 7275), then the
+  'Pref' record is written back on **every** close, OK or Cancel (`ChangedResource` + `WriteResource`, M l.
+  7276–7277), `MTRedraw`, `.MakeCurrPrefs`, `.UpdateMenus`, the file closed (M l. 7284), `fe0c = 1`, `511e = 1`.
   Live effects inside the dialog: the Music checkbox writes the **live** prefs `_DAT_1009fe44`+0x0c directly; off →
   `ShutDownAIFFMusic` (`.stop`); on → `SetMusicAIFFVolume(V)` only, which does nothing because the shutdown cleared the
   loaded flag (`1992`; M l. 64546–64565, 41958) — **the dialog never restarts the music**; the Sound Effects volume
@@ -580,11 +587,52 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   running, music on, track 24: ⌘M → `.stop`, +0x0c 0, prefs written; ⌘M again → `.volume(0)`, `.play(track: 24)`,
   `.volume(256)` with prefs+0x10 = 9; paused: ⌘M on → no music cue; ⌘F flips +0x0b and writes; both emit
   `FrontOutput.prefs`).
+- **Gate:** G2 = 284, G6, G7(+b), G8, G10; wave 3.1 end: G3, G5.
 - **Commit:** `FerazelCore: Options dialog model (three panels, key capture, AlreadyUsingKey, ConvertKeyName, Default Settings as written), MakeCurrPrefs, Music/Sound Effects toggles; 6 tests`.
 
 ### Wave 3.2 — between two levels
 
-#### L1 — ⚑ MAJOR — `LevelRun`: level entry, cadence, exit; `.SetupLevel`'s restore branch (→ 292)
+#### L2 — minor — Chapter card, stage-load popup, stage-complete panel (→ 289)
+- **Files:** `Sources/FerazelCore/Front/StageScreens.swift`, `Sources/FerazelRender/Screens/ScreenRenderer.swift`
+  (nothing new beyond FE0's ops unless a test needs it); `Tests/FerazelCoreTests/StageScreenTests.swift`; bank
+  `world-data-format.md` §4.3 (BC9).
+- **Contract:** digest C §1, §3. **Rect conventions are mixed in the dump — every rect below is labelled.** The popup
+  and stage-complete rects are QuickDraw **(top, left, bottom, right)** — `CONCAT22(hi+s, lo)` adds s to `top`, and the
+  offset is (h 160, v 173 / 150) — so (203,160,207,480) is a 320-wide, 4-high strip at v 203, **not** a 4-px-wide
+  column; `SetRect` arguments (the load bar, D1's hit rects, F1a's hot rects) are **(left, top, right, bottom)**.
+  `Rect16` stores {top, left, bottom, right}; the tests construct it by field name. `.PopupStageLoad` (M l.
+  2946–2990): the **whole** PICT 142 (320×64, port built on clut 199, source `&local_2a`) copied with plain CopyBits
+  (remapped by colour, **stretched** into the shrinking rect, not cropped) to (t 173+s, l 160, b 237−s, r 480), s = 30,
+  28 … 0, one tick each (16 ticks), no DeadTime. `.UpdateStageLoad(p,q)` (M l. 2993–3029): w =
+  (int)((float)p/(float)q·293.0f) (293.0f @`100a156c`) clamped 0…293, `SetRect(172, 213, 172+w, 224)` (l,t,r,b) +
+  `PaintRect` in RGB 0x59d8 ×3; no wait. (The sequence of bars a level entry draws is L1's.) `.ChapterScreen(n)` (M l. 5038–5089): clut 280+n (nil → skip
+  all), PICT 4600+10n at (0,0,640,480), `GammaFadeInSlow(0x37)` (109 ticks), up to **1200** one-tick iterations
+  ending early on any key or the mouse button (the current tick finishes; a key held on entry skips at once),
+  `GammaFadeOut(0x1e)` (2656 ms → 160 ticks), the level clut back, PICT 129, `UpdateStatusBar(0,0,0)`.
+  `.StageCompleteEffect` (M l. 2870–2943): snd **805** (prio 1, vol 0x100); 27 frames s = 52, 50 … 0 of PICT 140
+  (the whole picture, `CopyBitsCTForce`, port on clut 200, M l. 483) stretched into (t 150+s, l 160, b 260−s, r 480),
+  one tick each; wait 15 ticks; three `.FillPercent` bars at screen (h 413, v 200 / 218 / 236) for enemies `(achieved[0], totals[0])`, Xichrons `[1]`, secrets `[2]`; wait
+  40 ticks. `.CalcPercent(a,b)` (M l. 2843–2865): b 0 → 100; a 0 → 0; else (int)(100.0f·a/b) clamped 2…100.
+  `.FillPercent` (M l. 2752–2836): n2 = (pct/2)·2; tick = 1 if pct > 45 else 2; when n2 > 0: snd **803** (prio 1, vol
+  0xab), rows j = 0 … n2/2 − 1 of PICT 141 (source (0, 14j, 52, 14j+14)), restarting 803 when its voice ended, then
+  stop it; always: snd **804** (vol 0x100) + the final row n2/2, wait until 804 ends (2304 samples → 7 ticks at
+  22,050 Hz, rounded up [MED]), 4 ticks, band snd **800** (n2 < 11, vol 0x100) / **801** (< 100, vol **0xab**) /
+  **802** (vol 0x100), wait until it ends, then 22 ticks (n2 < 11) else 12. Sound lengths come from `SoundBank`
+  sample counts (Core receives them as an injected table — no PCM in Core).
+- **Tests (5):** `testCalcPercentTable` ((0,0) 100; (0,5) 0; (1,100) 2; (7,7) 100; (9,8) 100; (1,3) 33) ·
+  `testFillPercentTimeline` (pct 0 → no 803, final row 0, 800, wait 22; 11 → rows 0…4 at 2 ticks, 800; 46 → 23 rows at
+  1 tick, 801 at 0xab; 100 → 50 rows, 802, wait 12) · `testStageCompleteTimeline` (805, 27 panel frames with the rects,
+  15, three bars in order at y 200/218/236, 40) · `testChapterScreenLevel1` (clut 281, PICT 4610, 109-tick fade-in, key
+  on tick 300 → fade-out 160 ticks, clut back, PICT 129; untouched → 1200 ticks) · `testPopupAndLoadBar` (16 rects,
+  built by field name, (top 203, left 160, bottom 207, right 480) … (top 173, left 160, bottom 237, right 480), each
+  with the whole 320×64 source; the bar formula alone: (25, 50, 100)/100 → widths 73, 146, 293 — not an entry sequence,
+  which L1 pins).
+- **Gate:** G2 = 289, G6, G7(+b), G8, G10.
+- **Commit:** `FerazelCore: chapter card, stage-load popup and bar, stage-complete panel with CalcPercent/FillPercent; 5 tests`.
+
+#### L1 — ⚑ MAJOR — `LevelRun`: level entry, cadence, exit; `.SetupLevel`'s restore branch (→ 297)
+- **Precondition:** L2 merged (FABLE-GRADE fix: L1's entry and exit sequences and its tests drive L2's
+  `StageScreens` — `.PopupStageLoad`, `.UpdateStageLoad`, `.ChapterScreen`, `.StageCompleteEffect` — no stub), SV1, FE0.
 - **Files:** `Sources/FerazelCore/Front/{LevelRun,LevelServices}.swift`, `Sources/FerazelCore/Session/FerazelSession.swift`
   (the new init parameters below, `startOps()`, the `LevelEnd` source; the Phase-2 `ended`/`deathEffectDone` path kept
   for directly built sessions), `Sources/FerazelCore/Session/SpriteWorld.swift` (the async fade honours `ScreenFade`'s
@@ -626,8 +674,9 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `totals[2][L] ← secrets (*ffac)` (M l. 2528–2536); revisit keeps both; `G+0x174 = 0`; `GammaFadeOut(6)` (M l. 2570);
   level CLUT; PICT 129. `.GameLoop` pre-loop: **`unlocked[L] = 1` (M l. 5180) before the player spawn
   (`MTNewSprite(0,…)`, M l. 5181)**; `GammaFadeIn(8)` only when a4 ∧ hdr+0x2712 ≠ 0 (M l. 5196–5197; never in the data);
-  `HideCursorSafe` (M l. 5203); the session's `startOps()` (AnimateCLUT, tint/redden tables, FindUpperLeftCorner, the
-  entire-grid redraw, status bar, M l. 5204–5216); boss music rule (M l. 5218); `SetAIFFMusic(hdr+0x284a)` +
+  `LoadLevelSounds` (M l. 5199), `DAT_100a5106 = 0` (the loop-exit flag, M l. 5200); `HideCursorSafe` (M l. 5203); the
+  session's `startOps()` (AnimateCLUT, tint/redden tables, FindUpperLeftCorner, the entire-grid redraw, status bar,
+  M l. 5204–5216); `*fd74 = 0x200` (M l. 5217, after the status bar); boss music rule (M l. 5218); `SetAIFFMusic(hdr+0x284a)` +
   **`FadeAIFFMusic(1,4)` blocking 96 ticks** (M l. 5221–5222; owns Phase-2 carry M13); chapter gate `hdr+0x273c ≠ 0 ∧
   hasSnapshot[L] == 0` → **`InputActivate(1,1)`** then L2's `.ChapterScreen` (M l. 5223–5227); **`GammaFadeInAsync(0x28)`
   on every entry** (M l. 5228; owns the Phase-2 "no fade-in after restart" carry), stepped once per iteration by the
@@ -655,44 +704,8 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   · `testDeathExitSequence` (24 music cues over 48 ticks → 50 wipe steps → `.stop`; `ffa8` set; no `.deathEffect`
   request) · `testCompleteExitSequence` (EndLevelSGUpdate (`+6` = 1, `hasSnapshot[1]` = 1) → stage-complete machine →
   music fade 48 ticks → GammaFadeOut(6) 30 ticks → `.stop`; `exit1` 0 for L1's rec 66; no `.loadLevel` request).
+- **Gate:** G2 = 297, G6, G7(+b), G8, G10; wave 3.2 end: G3, G5.
 - **Commit:** `FerazelCore: LevelRun — level entry (SetupLevel restore/first visit, fades, music fade-in, chapter gate, async fade-in), 2-tick cadence, death/complete/abort exits; 8 tests`.
-
-#### L2 — minor — Chapter card, stage-load popup, stage-complete panel (→ 297)
-- **Files:** `Sources/FerazelCore/Front/StageScreens.swift`, `Sources/FerazelRender/Screens/ScreenRenderer.swift`
-  (nothing new beyond FE0's ops unless a test needs it); `Tests/FerazelCoreTests/StageScreenTests.swift`; bank
-  `world-data-format.md` §4.3 (BC9).
-- **Contract:** digest C §1, §3. **Rect conventions are mixed in the dump — every rect below is labelled.** The popup
-  and stage-complete rects are QuickDraw **(top, left, bottom, right)** — `CONCAT22(hi+s, lo)` adds s to `top`, and the
-  offset is (h 160, v 173 / 150) — so (203,160,207,480) is a 320-wide, 4-high strip at v 203, **not** a 4-px-wide
-  column; `SetRect` arguments (the load bar, D1's hit rects, F1a's hot rects) are **(left, top, right, bottom)**.
-  `Rect16` stores {top, left, bottom, right}; the tests construct it by field name. `.PopupStageLoad` (M l.
-  2946–2990): the **whole** PICT 142 (320×64, port built on clut 199, source `&local_2a`) copied with plain CopyBits
-  (remapped by colour, **stretched** into the shrinking rect, not cropped) to (t 173+s, l 160, b 237−s, r 480), s = 30,
-  28 … 0, one tick each (16 ticks), no DeadTime. `.UpdateStageLoad(p,q)` (M l. 2993–3029): w =
-  (int)((float)p/(float)q·293.0f) (293.0f @`100a156c`) clamped 0…293, `SetRect(172, 213, 172+w, 224)` (l,t,r,b) +
-  `PaintRect` in RGB 0x59d8 ×3; no wait. (The sequence of bars a level entry draws is L1's.) `.ChapterScreen(n)` (M l. 5038–5089): clut 280+n (nil → skip
-  all), PICT 4600+10n at (0,0,640,480), `GammaFadeInSlow(0x37)` (109 ticks), up to **1200** one-tick iterations
-  ending early on any key or the mouse button (the current tick finishes; a key held on entry skips at once),
-  `GammaFadeOut(0x1e)` (2656 ms → 160 ticks), the level clut back, PICT 129, `UpdateStatusBar(0,0,0)`.
-  `.StageCompleteEffect` (M l. 2870–2943): snd **805** (prio 1, vol 0x100); 27 frames s = 52, 50 … 0 of PICT 140
-  (the whole picture, `CopyBitsCTForce`, port on clut 200, M l. 483) stretched into (t 150+s, l 160, b 260−s, r 480),
-  one tick each; wait 15 ticks; three `.FillPercent` bars at screen (h 413, v 200 / 218 / 236) for enemies `(achieved[0], totals[0])`, Xichrons `[1]`, secrets `[2]`; wait
-  40 ticks. `.CalcPercent(a,b)` (M l. 2843–2865): b 0 → 100; a 0 → 0; else (int)(100.0f·a/b) clamped 2…100.
-  `.FillPercent` (M l. 2752–2836): n2 = (pct/2)·2; tick = 1 if pct > 45 else 2; when n2 > 0: snd **803** (prio 1, vol
-  0xab), rows j = 0 … n2/2 − 1 of PICT 141 (source (0, 14j, 52, 14j+14)), restarting 803 when its voice ended, then
-  stop it; always: snd **804** (vol 0x100) + the final row n2/2, wait until 804 ends (2304 samples → 7 ticks at
-  22,050 Hz, rounded up [MED]), 4 ticks, band snd **800** (n2 < 11, vol 0x100) / **801** (< 100, vol **0xab**) /
-  **802** (vol 0x100), wait until it ends, then 22 ticks (n2 < 11) else 12. Sound lengths come from `SoundBank`
-  sample counts (Core receives them as an injected table — no PCM in Core).
-- **Tests (5):** `testCalcPercentTable` ((0,0) 100; (0,5) 0; (1,100) 2; (7,7) 100; (9,8) 100; (1,3) 33) ·
-  `testFillPercentTimeline` (pct 0 → no 803, final row 0, 800, wait 22; 11 → rows 0…4 at 2 ticks, 800; 46 → 23 rows at
-  1 tick, 801 at 0xab; 100 → 50 rows, 802, wait 12) · `testStageCompleteTimeline` (805, 27 panel frames with the rects,
-  15, three bars in order at y 200/218/236, 40) · `testChapterScreenLevel1` (clut 281, PICT 4610, 109-tick fade-in, key
-  on tick 300 → fade-out 160 ticks, clut back, PICT 129; untouched → 1200 ticks) · `testPopupAndLoadBar` (16 rects,
-  built by field name, (top 203, left 160, bottom 207, right 480) … (top 173, left 160, bottom 237, right 480), each
-  with the whole 320×64 source; the bar formula alone: (25, 50, 100)/100 → widths 73, 146, 293 — not an entry sequence,
-  which L1 pins).
-- **Commit:** `FerazelCore: chapter card, stage-load popup and bar, stage-complete panel with CalcPercent/FillPercent; 5 tests`.
 
 ### Wave 3.3 — the world map
 
@@ -714,12 +727,13 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   **before** `AddNodeSprite`; one draw per visible node, node order), sprite at (h−20, v−20), type = node `+0x116`, and
   `.DrawLink(node, link)` for every link slot > 0 whose target's **level** is unlocked (target existence not checked;
   drawn from both ends); marker type 0x45 at (h−20, v−20); **`.UpdateNodeSprites` once before the first draw** (M l.
-  67530: the first frame shows node counters `FastRand(15)+1`, the ambient counter −3 → no face); **`InputActivate(1,1)`**;
+  67530: the first frame shows node counters `FastRand(15)+1`, the ambient counter −3 → no face);
   music: `SetAIFFMusic(25)` + `FadeAIFFMusic(1,2)` + `GammaFadeIn(15)` (M l. 67540–67542); `walkTarget = cur`,
   `walkStep = 0` (M l. 67543–67544); for exit1 ≥ 0: the unlock again (idempotent, M l. 67545–67557) then
   `.DrawNewLink(cur, exit1)`; for exit2 ≥ 0: the unlock again, `.DrawNewLink(cur, exit2)`, then `walkTarget = cur`,
   `walkStep = 0` (M l. 67558–67559; two new links → no auto-walk); exit1 = exit2 = −1; abort = 0; on-map flag
-  `1009fe2c` = 1. `.DrawNewLink(cur, exit)` (M l. 67171–67274; r3 = cur, r4 = exit, raw `1007c7c0..c860`): snd **420**
+  `1009fe2c` = 1; **then `InputActivate(1,1)`** (M l. 67561–67565: after the music, the fade-in and the `.DrawNewLink`s,
+  just before the map loop). `.DrawNewLink(cur, exit)` (M l. 67171–67274; r3 = cur, r4 = exit, raw `1007c7c0..c860`): snd **420**
   (handle `100a03e0` = load(0x1a4); `STPlayRegSound(…, 1, 0x100)`) once; **50** iterations of 3 `FastRand(32000) << 1`
   (R, G, B — **150 draws**) and three lines in that one colour, **order centre, −1/−1, +1/+1** (`.DrawLink`'s order
   differs, M2), dirty rect = bbox ±10 offset (16, 8), each iteration ≥ 2 ticks from its own start; end: restore the
@@ -770,6 +784,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   starts with only its own node sprites — the count reset) · `testMapDrawsPerVisibleNode` (after level 1: 2 visible
   nodes → 2 `FastRand(15)` draws + 150; the first frame's node counters = draw + 1, ambient −3; the stream state
   recorded).
+- **Gate:** G2 = 305, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: WorldMapRun — ShowWorldMap, node sprites, DrawNewLink, the 29-frame walk, CheckPlayerNodeMovement, unlocks, exit keys; 8 tests`.
 
 #### M2 — minor — Map drawing (→ 308)
@@ -793,6 +808,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   indices + CLUT, self-derived) · `testLinkPixels` (the 1 → 2 link (dx 32, dy 23): a white centre pixel on a **flat
   run** of the centre line — not a diagonal step, where the white centre line overwrites a neighbour — flanked by black
   at (+1, +1) and (−1, −1); a flash frame's three lines all in its one colour) · `testNodeFaceCentred` (node 1 face covers screen (h+16−12 … h+16+11, v+8−12 … v+8+11)).
+- **Gate:** G2 = 308, G6, G7(+b), G8, G10; wave 3.3 end: G3, G5.
 - **Commit:** `FerazelRender: world map — PICT 7000, node faces (slop-8 centring), links, new-link flashes; 3 tests`.
 
 ### Wave 3.4 — the game flow: title, menu, New Game, death, Continue
@@ -837,6 +853,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   v 21 hides) · `testTrackClickKeyboardPath` (N: PICT 4901, 4803, 10 ticks, PICT 4911, 4804, then New Game) ·
   `testMouseTrackSlideOut` (press in, slide out, release outside → no action; 4803/4804 per crossing) ·
   `testXCooldownAndCredits` (X twice within 30 passes → one report; credits strip offset after 300 ticks = 100 px).
+- **Gate:** G2 = 313, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: GameFlow — boot (logo, loading bar), main menu (buttons, keys, X joke), Quit, Credits scroll timing; 5 tests`.
 
 #### D1 — minor — The death screen (→ 317)
@@ -860,6 +877,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   the 1-px-smaller hit rect) · `testWandGlowTimeline` (6 + 55 ticks; frame ids 172…177, 176…172; snd 606) ·
   `testTurnGrayClut` (Core maths: entry values at f 0 (unchanged), 75 (gray), 150 (black) for two clut-132 entries;
   151 `.clut` ops, then the restore).
+- **Gate:** G2 = 317, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: the death screen — AskToContinue, death buttons, WandGlow, TurnGray; 4 tests`.
 
 #### F1b — ⚑ MAJOR — `GameFlow` part 2: New Game, the level ⇄ map loop, Continue, death (→ 323)
@@ -916,6 +934,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   demo + 80 → two reports) · `testContinueFromCheckpoint` (a block saved at L1 rec 24: one `FadeAIFFMusic(0,2)` before
   the loop and none per level; level 1 at the saved x/y with the snapshot (save point face 1/2), no chapter card,
   `G+0x16` not refreshed on the next level; a block naming level 9 (no `Mlvl` 9) → the 0x100a2e76 report, menu).
+- **Gate:** G2 = 323, G6, G7(+b), G8, G10; wave 3.4 end: G3, G5.
 - **Commit:** `FerazelCore: GameFlow — New Game and Continue loops, level ⇄ map, death → AskToContinue → reload, refusals incl. the missing level (design §9 d); 6 tests`.
 
 ### Wave 3.5 — in-level modal moments: save points, keys, pause
@@ -968,6 +987,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `testReuseSavedGamesSkipsPrompt` (prefs+1 = 1 after a first save: the second save writes to the same file with no
   `putFile` request; prefs+0x42 unchanged; a failing write after a fresh prompt leaves the new name in prefs and
   `fd54` set).
+- **Gate:** G2 = 330, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: resumable frame (FrameSuspension) and the save point — hold counter, SavePointSave/SaveSG flow, success flash, statue faces; 7 tests`.
 
 #### P1 — minor — `.CheckGameLoopKeys` and `.Pause` (→ 335)
@@ -1017,6 +1037,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `FadeAIFFMusic(0,2)`, no GammaFadeOut; `.stop`; ⌘W OK the same) · `testCommandQConfirmQuits` (OK → quit request;
   Cancel → no `PaintFrameWrap`, the frame resumes, the same frame's `.UpdateSprites` runs) · `testKeysIgnoredWhileFading`
   (during the first 41 iterations' async fade-in Esc does nothing).
+- **Gate:** G2 = 335, G6, G7(+b), G8, G10; wave 3.5 end: G3, G5.
 - **Commit:** `FerazelCore: CheckGameLoopKeys (⌘Q/⌘W/⌘P/Esc) and Pause (Caps Lock, banner, music, menus); 5 tests`.
 
 ### Wave 3.6 — talk
@@ -1044,7 +1065,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   conditions 1 coins ≥ A, 2 item A count ≥ B (spell flag 0), 3 never, 4 the **low byte** of own record p(A+1) ≠ 0
   (`& 0xff`), 5 world flag A == B;
   a true condition jumps to its target and skips the actions and next; actions 1 coins −= A (floor 0) + coin text
-  redraw, 2 give item A × (B == 0 ? 1 : B) — **not** `max(B,1)`: a negative B is added as-is (M l. 66262) — (first
+  redraw, 2 give item A × (B == 0 ? 1 : B) — **not** `max(B,1)`: a negative B is added as-is (M l. 66288–66290) — (first
   empty-or-matching slot, count ≤ 99, snd 501 [MED id], HUD ◇ Phase 4), 3 remove item A × max(B,1), 4 own record p(A+1) = 1, 5 world flag A = B, 6 record A p(B+1) = 1, 9 the talker's
   `+0xe9 = 1` + its record spawn byte 0, 10 the save block's snapshot record A of level B spawn byte = 1; 0/7/8 nothing.
   Targets: 20 → 999, t > 0 → t − 1, t < 0 → t + 1; next 0 → i + 1 wrapping 19 → 0; ≥ 20 ends. On end: restore the
@@ -1058,6 +1079,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   no re-read without UP; UP re-reads after 90 frames) · `testTypingTimeline` (a 20-character line → 40 ticks; key held
   → 0; trail greys 36000 … 4000 on odd ages) · `testEscapeAtAnyKeyStillRunsActions` (Esc at "press any key" on a line
   with an action → the action runs, then the conversation ends).
+- **Gate:** G2 = 342, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: conversations (Mcnv interpreter, NPC arm, cooldown 150) and signs (STR# 500, cooldown 90) in the suspended frame; 7 tests`.
 
 #### C2 — minor — Conversation drawing and text layout (→ 345)
@@ -1077,7 +1099,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Tests (3):** `testConversationFrameTransparent` (18,627 view pixels unchanged under the frame) · `testWrapAt214`
   (`BoxRasterizer`: a 60-byte line breaks after the last space before 214 px; lines at baselines 89, 107 on screen) ·
   `testSignFrameGolden` (L1 sign rec 1 fully typed over a level-1 frame, `BoxRasterizer`, FNV-1a, self-derived).
-- **Gate:** G5 (touches the App). **Commit:** `FerazelRender: conversation frame (transparent copy), portraits, Times 18 layout and wrap, trail colours; TextRasterizer widths/metrics; 3 tests`.
+- **Gate:** G2 = 345, G5 (touches the App), G6, G7(+b), G8, G10; wave 3.6 end: G3. **Commit:** `FerazelRender: conversation frame (transparent copy), portraits, Times 18 layout and wrap, trail colours; TextRasterizer widths/metrics; 3 tests`.
 
 ### Wave 3.7 — the app
 
@@ -1109,7 +1131,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   is running (else ignored). `FerazelLevel` launch switch → `GameFlow` New Game at that level (1...2). Load progress
   callback while the renderers load faces (the boot bar). Quit request → `NSApp.terminate`; `applicationShouldTerminate`
   from the system → the flow's Quit sequence first.
-- **Gate:** G5; G2 = 345 (LevelFlowTests rewritten, count unchanged). **Commit:** `Ferazel app: driven by GameFlow (ticks, mouse, Caps Lock), shared screen, music fades (one track id, 0…256 volume), prefs and saved-game files, Finder open`.
+- **Gate:** G2 = 345 (LevelFlowTests rewritten, count unchanged), G5, G6, G7(+b), G8, G10. **Commit:** `Ferazel app: driven by GameFlow (ticks, mouse, Caps Lock), shared screen, music fades (one track id, 0…256 volume), prefs and saved-game files, Finder open`.
 
 #### A1b — ⚑ MAJOR — App dialogs and menus
 - **Files:** `Ferazel/App/Dialogs/{FerazelCarbonDialog,DialogViews,FerazelDialogs,PrefsDialogView,CreditsDialog}.swift`,
@@ -1130,7 +1152,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   system Quit item is replaced by File ▸ Quit. In full screen the menu bar shows on the flow's `showMenuBar` request
   (pointer v < 21 at the menu, during pause) and hides otherwise; windowed, the macOS menu bar stays visible (D35
   deviation).
-- **Gate:** G5. **Commit:** `Ferazel app: the original's dialogs (abort/quit confirm, reports, Options with key remapping, Credits) and menus (MBAR 128, enabled where the original listened)`.
+- **Gate:** G2 = 345, G5, G6, G7(+b), G8, G10; wave 3.7 end: G3. **Commit:** `Ferazel app: the original's dialogs (abort/quit confirm, reports, Options with key remapping, Credits) and menus (MBAR 128, enabled where the original listened)`.
 
 ### Wave 3.8 — phase end
 
@@ -1196,7 +1218,7 @@ The canonical order is the execution order (each task starts from the previous t
 |---|---|---|---|
 | 3.0 | X1 → R1 | one each | run 1: [X1 R1 SV1] (spans into 3.1; one ⚑) |
 | 3.1 | SV1 ⚑ → SV2 → FE0 ⚑ → O1 | SV1, FE0 two; SV2, O1 one | run 2: [SV2 FE0 O1] (one ⚑) |
-| 3.2 | L1 ⚑ → L2 | L1 two; L2 one | run 3: [L1 L2] |
+| 3.2 | L2 → L1 ⚑ | L2 one; L1 two | run 3: [L2 L1] |
 | 3.3 | M1 ⚑ → M2 | M1 two; M2 one | run 4: [M1 M2] |
 | 3.4 | F1a → D1 → F1b ⚑ | F1b two; F1a, D1 one | run 5: [F1a D1 F1b] |
 | 3.5 | S1 ⚑ → P1 | S1 two; P1 one | run 6: [S1 P1] |
@@ -1208,7 +1230,7 @@ G3 still runs at each **wave** end (a run that spans two waves runs it at the wa
 G1 = HK `0c65dcb` untouched for the whole phase.
 
 - **Dependencies:** SV2 after SV1 (`SaveBlock`); FE0 after R1 (`FerazelDialog` texts) and SV1 (G in `FrontOutput`'s
-  flow); O1 after R1 + SV2; L1 after SV1 + FE0; L2 after FE0; M1 after SV1 + FE0 (+ L1's `LevelEnd`); F1a after FE0 +
+  flow); O1 after R1 + SV2; L2 after FE0; L1 after SV1 + FE0 + L2 (its entry/exit sequences run L2's `StageScreens`); M1 after SV1 + FE0 (+ L1's `LevelEnd`); F1a after FE0 +
   L1 (`LevelServices`); D1 after FE0; F1b after L1, L2, M1, D1, SV2; S1 after L1 + SV2; P1 after S1 (suspension) + O1
   + M1 (replaces M1's pause stub); C1 after S1; C2 after C1; A1a after every Core task; A1b after A1a + O1 + R1.
 - **File overlaps that force order:** `FerazelSession.swift` (L1, S1, P1, A1a), `LevelRun.swift` (L1, S1, P1, C1),
@@ -1304,10 +1326,10 @@ G1 = HK `0c65dcb` untouched for the whole phase.
    and its iteration-0 block (`FerazelSession.swift:245–255`), `loopEnd()` (~l. 369), `SpriteWorld.records`
    (`SpriteWorld.swift:28–31`), `SetupFaces.spawnLevelSprites` (l. 552–553), `FerazelController.openLevel` (l. 148–158),
    `FerazelAudio` `.volume` (l. 134–136), `ClassicResourceMap.serialize(_:)` (HK l. 69), `ShellMixer.load(id:)` (HK
-   l. 103), the `switch op` sites (`FrameRenderer.swift:280ff`, `SessionTests.swift:285`), `LevelFlowTests.touchExit`
+   l. 103), the `switch op` sites (`FrameRenderer.swift:280ff`, `SessionTests.swift:288`), `LevelFlowTests.touchExit`
    (l. 31). New names are defined once in S2–S5.
-4. **Ladder arithmetic (fix round).** 256 + (X1 0 + R1 4 + SV1 6 + SV2 6 + FE0 6 + O1 **6** + L1 8 + L2 5 + M1 8 + M2 3 +
-   F1a 5 + D1 4 + F1b 6 + S1 7 + P1 5 + C1 7 + C2 3 = 89) = **345** ✅; cumulative: 256, 260, 266, 272, 278, 284, 292, 297,
+4. **Ladder arithmetic (fix round).** 256 + (X1 0 + R1 4 + SV1 6 + SV2 6 + FE0 6 + O1 **6** + L2 5 + L1 8 + M1 8 + M2 3 +
+   F1a 5 + D1 4 + F1b 6 + S1 7 + P1 5 + C1 7 + C2 3 = 89) = **345** ✅; cumulative: 256, 260, 266, 272, 278, 284, 289, 297,
    305, 308, 313, 317, 323, 330, 335, 342, 345 ✅ (each task's "Tests (N)" count equals the names it lists). The only
    count change from the draft: O1 +1 (`testToggleMusicAndSound`, ⌘M/⌘F). No HectorKit tests: K1 dropped, HK floor 328.
 5. **Layering.** Core gains no AppKit/CoreGraphics; file I/O is Foundation (the two Darwin-only file APIs under
@@ -1391,7 +1413,8 @@ returning `.SaveSG`'s result; `.SaveSG` deletes the target file **after** commit
 writing, so a write error leaves the old file deleted, the new name in prefs and reuse armed (S1).
 BC24 world-data §4.2 (+ M2's drawing notes) — the map walk draws **29** frames (steps 2…30; step 1 is never drawn;
 walking = `cur ≠ walkTarget`); the unlock runs twice (idempotent, M l. 67545–67557); `.UpdateNodeSprites` once before
-the first draw (M l. 67530); `.ReInitWorldMapGraphics` (PICTs 600/601) and `InputActivate(1,1)` at entry; the
+the first draw (M l. 67530); `.ReInitWorldMapGraphics` (PICTs 600/601) at entry and `InputActivate(1,1)` last before the map loop (M l. 67565,
+after the `.DrawNewLink`s and `fe2c = 1`); the
 node-sprite count is reset on exit (M l. 67652); `.DrawNodeSprites` calls `.RedrawLinks` while the ambient sprite has
 a face; the status bar keeps the Mlvl spelling until arrival; `.DrawNewLink`'s line order is centre, −1/−1, +1/+1
 (`.DrawLink`'s is centre, +1/+1, −1/−1, white centre); PICT 8003 is **loaded, never drawn** (M l. 66635–66636), not
@@ -1419,7 +1442,7 @@ BC29 world-data §4.3 / save-continue §6 — the level-entry load bar: a first 
 (`.LoadLevelTilesets`), 50, the face-set bars, then 100 twice (M l. 73864, 2569); the restart fast path draws 25, 50,
 the face-set bars, 100, 100; `.GameLoop` sets `unlocked[L]` before the player spawn and calls `InputActivate(1,1)`
 before `.ChapterScreen` (M l. 5180, 5224) (L1).
-BC30 conversations-mcnv — action 2 gives `B == 0 ? 1 : B` (a negative B is added as-is, M l. 66262); condition 4 tests
+BC30 conversations-mcnv — action 2 gives `B == 0 ? 1 : B` (a negative B is added as-is, M l. 66288–66290); condition 4 tests
 only the low byte of p(A+1); 2907 and 2833…2836 also fall through to `.PlatformBounce`; portraits 4026–4029 do not
 exist (C1, C2).
 
@@ -1513,4 +1536,4 @@ No shipped `.FWSg` save exists in the repo or the archive mirror (digest D §7) 
   overridden; one decision the legs left open — design §9 (d)'s text is now the original's *shown* missing-level
   string 0x100a2e76 (verifier 1, item 4), recorded in Ruling 11 and BC25. Runs re-sized to 9 (X1 R1 SV1 | SV2 FE0 O1 |
   …).
-- **FABLE-GRADE plan leg:** _(pending — one Fable leg over this plan after the Opus legs, D34)_.
+- **FABLE-GRADE plan leg:** PASS WITH FIXES (G2 256/0 re-run in archive; 7 findings: 1 MAJOR wave order L2→L1, 6 MINOR) — fixed in this round.
