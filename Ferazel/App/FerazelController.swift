@@ -3,16 +3,23 @@ import FerazelCore
 import FerazelRender
 import HectorShell
 
-/// The app delegate and shell owner (plan S5, A1): opens level 1 (Phase 1 has no front end), shows the 640×480 screen
-/// at a whole-number scale (Ben's ruling 4, design §5), and runs `.GameLoop`'s clock — one `FerazelSession.step` per
-/// iteration, its `FrameOps` executed by `FrameRenderer`, the indexed screen presented through the screen CLUT. Keys are
-/// polled once per step (`GetKeys`). The session owns the draw/skip parity; the App owns only the timing.
+/// The app delegate and shell owner (plan S5, A1, A3): opens the `FerazelLevel` level (1 or 2; no front end yet), shows
+/// the 640×480 screen at a whole-number scale (Ben's ruling 4, design §5), and runs `.GameLoop`'s clock — one
+/// `FerazelSession.step` per iteration, its `FrameOps` executed by `FrameRenderer`, its sounds by the Sound Tool, the
+/// indexed screen presented through the screen CLUT and the screen gamma. Keys are polled once per step (`GetKeys`; the
+/// session reads them through `FerazelPrefs.keys`). The session owns the draw/skip parity; the App owns only the timing.
+/// When a level ends (`ShellRequest.loadLevel` on an exit, `.deathEffect` on a death) the App runs what `.GameLoop` does
+/// after its loop (M l. 5296–5320) — the music fade, the death wipe, `.ShutDownAIFFMusic` — then rebuilds the session
+/// on the next level with the old stream and carry.
 @MainActor final class FerazelController: NSObject, NSApplicationDelegate, ShellInputHandler {
     static let width = IndexedFrame.width
     static let height = IndexedFrame.height
     static let title = "Ferazel's Wand"
-    /// Phase 1 opens "A Scent Of Peril" directly (the chapter screen and front end are later phases).
-    static let level = 1
+    /// The hidden defaults key for the starting level (Ben D33): `-FerazelLevel 2` on the command line opens level 2
+    /// for one launch. Phase 2 loads levels 1–2 only; absent or outside 1...2 opens level 1, "A Scent Of Peril" (the
+    /// chapter screen and front end are later phases).
+    static let levelKey = "FerazelLevel"
+    static let levels = 1...2
     /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "lowest" → `.lowest`, anything
     /// else → `.highest` — the app's default since Ben's ruling of 2026-10-10 (his Let's Play at 02:12: clean FG rock
     /// edges, no yellow specks). `-ColorTieBreak lowest` on the command line sets it for one launch. Core's
@@ -32,6 +39,8 @@ import HectorShell
     private var session: FerazelSession!
     private var renderer: FrameRenderer!
     private var audio: FerazelAudio?
+    private var resources: FerazelResources!
+    private var search: ColorSearch!
     private var shell: ShellWindowController!
     private var timer: ShellIdleTimer!
     private let prefs = FerazelPrefs()
@@ -50,6 +59,26 @@ import HectorShell
     /// `NSCursor.hide` is counted: whether this controller's one hide is in effect.
     private var cursorHidden = false
 
+    /// What `.GameLoop` does after its loop (M l. 5296–5320), stepped by the clock because the original blocks in it.
+    private struct Ending {
+        enum Phase {
+            /// `.FadeAIFFMusic(0, 2)`'s step s (0 … 24; 24 = the closing volume 0).
+            case fade(Int)
+            /// `.DeathEffect`'s step k (0 … 50; 50 = the last step's wait is over).
+            case wipe(Int)
+            case finish
+        }
+        /// G+4 < 1: the wipe runs and the current level restarts (`deathEffectDone`).
+        let death: Bool
+        /// The level an exit asked for (`LevelFlow`).
+        let next: Int
+        var phase: Phase
+        /// `TickCount()` at the start of the step being waited out, and the ticks to wait.
+        var stepStart: UInt32?
+        var wait: UInt32 = 0
+    }
+    private var ending: Ending?
+
     // MARK: Launch
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -66,17 +95,19 @@ import HectorShell
         }
         do {
             let resources = try FerazelData.open(dataDirectory)
-            let search = ColorSearch(model: .exactNearest, tieBreak: Self.tieBreak())  // D26 LP measurement 2026-10-10 (Ben)
-            renderer = try FrameRenderer(resources: resources, level: Self.level, search: search,
-                                         dither: .errorDiffusion, text: CoreTextRasterizer(), prefs: prefs)
-            session = try FerazelSession(resources: resources, prefs: prefs, level: Self.level,
-                                         faceBounds: renderer.faceBounds, particleFaces: renderer.particleFaces)
-            try renderer.addLights(session.lights)
-            try renderer.buildTintTable(session.tintTableDraws)   // tint 0xa from the session's stream (E2 Part A)
+            self.resources = resources
+            search = ColorSearch(model: .exactNearest, tieBreak: Self.tieBreak())  // D26 LP measurement 2026-10-10 (Ben)
+            var bank: SoundBank?
+            do { bank = try SoundBank(sounds: resources.sounds) } catch {
+                NSLog("Ferazel's Wand: sounds: %@", "\(error)")   // the game runs without effects
+            }
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory,
-                                 prefs: prefs)
-            // Step 1's `.SetAIFFMusic(hdr+0x284a)` (l. 5221): decoded now, not inside the first step.
-            audio?.prepare(track: Int(session.level.header.music))
+                                 prefs: prefs, sounds: bank)
+            // `.InitAppGlobals`' `_FastRand(0)` (M l. 334): the stream is seeded once from Time + Ticks and never again.
+            let clock = FastRand.systemClock()
+            try openLevel(Self.startLevel(), seed: FastRand.clockSeed(secondsSince1904: clock.secondsSince1904,
+                                                                     ticks: clock.ticks),
+                          carry: LevelCarry())
         } catch {
             #if DEBUG
             let alert = NSAlert()
@@ -99,6 +130,43 @@ import HectorShell
         timer = ShellIdleTimer(interval: 1.0 / 240.0) { [weak self] in self?.idleFired() }
         timer.start()
         idleFired()
+    }
+
+    /// Builds the renderer and the session for level `n` (launch, and every `loadLevel`, plan A3): the session takes
+    /// `seed` (the previous session's `rngSeed` — the original never reseeds) and `carry`; the renderer gets the
+    /// session's lights and tint table; the level's track is decoded now, ahead of step 1's `.SetAIFFMusic(hdr+0x284a)`
+    /// (l. 5221), which plays it at full volume (M13: the fade-in is Phase 3).
+    private func openLevel(_ n: Int, seed: Int32, carry: LevelCarry) throws {
+        let renderer = try FrameRenderer(resources: resources, level: n, search: search, dither: .errorDiffusion,
+                                         text: CoreTextRasterizer(), prefs: prefs)
+        let session = try FerazelSession(resources: resources, prefs: prefs, level: n, seed: seed, carry: carry,
+                                         faceBounds: renderer.faceBounds, particleFaces: renderer.particleFaces)
+        try renderer.addLights(session.lights)
+        try renderer.buildTintTable(session.tintTableDraws)   // tint 0xa from the session's stream (E2 Part A)
+        self.renderer = renderer
+        self.session = session
+        audio?.prepare(track: Int(session.level.header.music))
+        lastStepStart = nil
+    }
+
+    /// `ShellRequest.loadLevel(n)`: effects stopped, then the session rebuilt on level `n` with the old session's
+    /// stream (`rngSeed`) and `carry` (globals on an exit; parity, particle counters and water cache always — W4, E1).
+    private func loadLevel(_ n: Int) {
+        audio?.stopEffects()
+        let seed = session.rngSeed
+        let carry = session.carry
+        do {
+            try openLevel(n, seed: seed, carry: carry)
+        } catch {
+            timer.invalidate()
+            fail("cannot load level \(n): \(error)")
+        }
+    }
+
+    /// `FerazelLevel` (Ben D33): 1 when absent or outside `levels`.
+    static func startLevel(_ defaults: UserDefaults = .standard) -> Int {
+        let n = defaults.integer(forKey: levelKey)
+        return levels.contains(n) ? n : 1
     }
 
     static func tieBreak(_ defaults: UserDefaults = .standard) -> ColorSearch.TieBreak {
@@ -167,6 +235,10 @@ import HectorShell
         guard session != nil else { return }
         defer { updateCursor() }
         let now = ShellClock.ticks()
+        if ending != nil {
+            advanceEnding(now: now)
+            return
+        }
         if prefs.reduceFrameRate == 0 {
             if let last = lastStepStart, now &- last < 2 { return }
             lastStepStart = now
@@ -195,10 +267,70 @@ import HectorShell
             fail("the frame could not be drawn: \(error)")
             return ops.drawn
         }
+        audio?.apply(sounds: ops.sounds, stops: ops.soundStops, stopAt: ops.soundStopAt)
         for cue in ops.music { audio?.handle(cue) }
         for request in ops.requests { honour(request) }
         if ops.drawn { present() }               // a skipped iteration leaves the screen as it was
         return ops.drawn
+    }
+
+    // MARK: After the loop
+
+    /// The loop ended (the frame that ended it has run; its sound stops — M l. 5298–5299, and 5308–5310 on a level
+    /// complete — came in its ops). The music fade comes first when its gate is open.
+    private func beginEnding(death: Bool, next: Int) {
+        guard ending == nil else { return }
+        let fades = audio?.canFadeOut ?? false
+        ending = Ending(death: death, next: next, phase: fades ? .fade(0) : (death ? .wipe(0) : .finish))
+    }
+
+    /// One clock fire inside the after-loop sequence: waits out the current step, then runs the next. Death (l. 5302–
+    /// 5306): `.FadeAIFFMusic(0, 2)` — 24 volume steps 2 ticks apart, then volume 0 — then `.DeathEffect` — 50 wipe
+    /// steps, each followed by a wait of ≥ 1 tick (l. 2731–2742) — then `.ShutDownAIFFMusic` (l. 5320) and
+    /// `session.deathEffectDone()` → `loadLevel(current)`. Level complete (l. 5307–5318): the fade, then
+    /// `.ShutDownAIFFMusic` and `loadLevel(next)`. The screen holds still throughout, as the original blocks in both.
+    private func advanceEnding(now: UInt32) {
+        guard var e = ending else { return }
+        if let start = e.stepStart, now &- start < e.wait { return }
+        while true {
+            switch e.phase {
+            case .fade(let s):
+                audio?.fadeOutStep(s)
+                if s < FerazelAudio.fadeSteps {
+                    e.phase = .fade(s + 1)
+                    e.stepStart = now
+                    e.wait = 2                            // `_FadeAIFFMusic(0, 2)`
+                    ending = e
+                    return
+                }
+                e.phase = e.death ? .wipe(0) : .finish
+            case .wipe(let k):
+                guard k < DeathEffect.steps else {
+                    e.phase = .finish
+                    continue
+                }
+                do {
+                    try renderer.deathEffectStep(k)
+                } catch {
+                    ending = nil
+                    timer.invalidate()
+                    fail("the death wipe could not be drawn: \(error)")
+                    return
+                }
+                present()
+                e.phase = .wipe(k + 1)
+                e.stepStart = now
+                e.wait = 1
+                ending = e
+                return
+            case .finish:
+                ending = nil
+                audio?.shutDownMusic()
+                let request = e.death ? session.deathEffectDone() : .loadLevel(e.next)
+                if case .loadLevel(let n) = request { loadLevel(n) }
+                return
+            }
+        }
     }
 
     /// Right Shift, Option and ⌘ (0x3C, 0x3D, 0x36) as the left keys (0x38, 0x3A, 0x37): the classic `KeyMap`
@@ -212,12 +344,12 @@ import HectorShell
         }
     }
 
-    /// The renderer's 8-bit screen through the current screen CLUT, written straight into the window bitmap (the
-    /// `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word array per frame). With `MacGamma` on,
-    /// each palette channel goes through `macGammaLUT` first.
+    /// The renderer's 8-bit screen through the presented CLUT (the screen CLUT through `ScreenGamma`, E2), written
+    /// straight into the window bitmap (the `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word
+    /// array per frame). With `MacGamma` on, each palette channel then goes through `macGammaLUT`.
     private func present() {
         let lut = macGamma ? Self.macGammaLUT : nil
-        let table = renderer.screenClut.entries.map { e -> UInt32 in
+        let table = renderer.presentedClut.entries.map { e -> UInt32 in
             var (r, g, b) = (Int(e.red >> 8), Int(e.green >> 8), Int(e.blue >> 8))
             if let lut { (r, g, b) = (Int(lut[r]), Int(lut[g]), Int(lut[b])) }
             return 0xff00_0000 | UInt32(r) << 16 | UInt32(g) << 8 | UInt32(b)
@@ -237,10 +369,8 @@ import HectorShell
         case .showCursor: wantsCursorHidden = false
         case .hideMenuBar: wantsMenuBarHidden = true
         case .showMenuBar: wantsMenuBarHidden = false
-        // W4: no-op until A3 (rebuild the session with `rngSeed` + `carry` and the renderer; drive `DeathEffect`, then
-        // `session.deathEffectDone()`).
-        case .loadLevel: break
-        case .deathEffect: break
+        case .loadLevel(let n): beginEnding(death: false, next: n)
+        case .deathEffect: beginEnding(death: true, next: session.levelNumber)
         }
         updateMenuBar()
         updateCursor()
