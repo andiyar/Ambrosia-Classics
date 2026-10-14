@@ -1166,6 +1166,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   `tools/stage-ferazel.sh` (only if needed).
 - **Gate:** G1, G2 = 238/0, G3, G5, G9. **STOP for Ben.** **Commit:** `WHAT-TO-EXPECT: Phase 2 gate card (feel on levels 1–2)`.
 
+- ⚑ **As executed (A4 + the phase-end run, loop run 7, 2026-10-14; af89a88 card + Opus leg MERGEABLE with 7 card fixes 02b3078; FABLE-GRADE gate PASS WITH FIXES → c3e28e8, 734e3bd, d5586fb, Opus re-review MERGEABLE):** G2 **256** / 0 (+2: the phase-end fixes), census 1,108/0, G5 BUILD SUCCEEDED, G7/G10 empty, HK untouched; staged at d5586fb, G9 boots clean (level 1 and `-FerazelLevel 2`). Card corrections vs this section: a cannon takes him in on touch (no key); level 2 acid 114 cells (74 = damaging floor); acid has no stun; deep pool cols 144–160 rows 23–27; level 1 exit x 4518 y 1080 (≈ 7 screens right); the pool route as the golden plays it. Code fixes from the Fable review: `.PlayerConstraints @1004cb4c` (was a no-op 'later: W4'; arena lock + auto-scroll death stubbed, unreachable on L1/L2) and the coin-loss hit's per-coin Setup draws (nine per coin, dump tail R(0x3c) at `1005e8bc`). No golden moved.
+
 ---
 
 ## What Ben checks — the Phase 2 gate card ("feel on levels 1–2")
@@ -1188,7 +1190,7 @@ the Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and longplays. `-Fe
    19..20 = x 1792..2623, ≈ 1800–2600) — splash on entry and exit, swimming strokes, the
    drift of the current (level 1 only), bubbles, breath running out: hits every ~2.3 s once breath is gone.
 8. **Acid and the damaging floor** (level 1: the acid pool at the far right, 18 damaging floor cells; level 2: four
-   acid pools, 114 acid cells (74 damaging-floor cells) — probe B `probe_liquids.out` / `level_kinds.out`) — hurt flash, a groan/ouch, the knock-back stun. [corrected, phase-end Fable review]
+   acid pools, 114 acid cells (74 damaging-floor cells) — probe B `probe_liquids.out` / `level_kinds.out`) — hurt flash, a groan/ouch; the knock-back stun on the damaging floor only (acid: flash, HP loss, invulnerability — M l. 44901–44906 vs 45106–45123). [corrected, phase-end Fable review]
 9. **Healing brine** (level 2, 12 cells) — health and magic fill with the "fill-up" sound.
 10. **Platforms** — sliding platforms (level 1's three sliding platforms dip when you land on them and spring back), the rotor pair and the
     pendulum platform near x 2300 / 3200, the three-wheel near x 1850; on level 2 the rafts float and tilt under you,

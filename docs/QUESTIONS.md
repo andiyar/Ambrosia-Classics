@@ -44,6 +44,20 @@ Recommendation: a. Nothing in it is needed; everything was rebuilt, reviewed and
 Blocks: nothing.
 Answer:
 
+### Q2 — 2026-10-14 — Phase 2 gate: does Ferazel move like Ferazel on levels 1–2?
+Context: Phase 2 ("Ferazel moves") is built and its machine gates are green (Ferazel/Core 256/0, census 1,108/0, app
+builds, staged build boots and quits clean; Fable phase review passed after fixes — D33 as built, loop run 7). Ben's
+gate is pending. Play `~/Desktop/Ferazel's Wand.app` (build d5586fb) with the keypad, beside the Let's Play; the
+checklist is `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (repo: `Ferazel/WHAT-TO-EXPECT.md`). Level 2 directly:
+`open -n ~/Desktop/Ferazel\'s\ Wand.app --args -FerazelLevel 2`. Pass looks like: walking, running, jumping, spinning,
+wall clinging, slopes, the camera, water, acid, platforms, pendulums, cannons, passages, death → wipe → restart and the
+level 1 → 2 exit all feel like the original; sounds land where and when they should. Known stand-ins are listed at the
+card's end (enemies stand still, no pickups, no title/menu, no fade-in after a restart).
+Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what feels wrong).
+Recommendation: a or b — the machine reads match the binary on every point checked; only your hands can judge feel.
+Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
