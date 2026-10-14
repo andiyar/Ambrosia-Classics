@@ -1267,3 +1267,15 @@ cadence, died/completed/aborted exits → `LevelEnd`; session seams `start:`/`re
 expectations (Invariant 10) until A1a moves the app onto LevelRun; `PlatformSprite` reads live records. **Named task
 added:** RX (Roach Setup p3 0 → 0xaa write-back, M l. 64940–64944; changes one named BackgroundMoverTests expectation),
 first in the next run. Ferazel/Core 284 → 297/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
+
+**As built (loop run 12, 2026-10-14) — wave 3.3 CLOSED (RX, M1, M2):** RX (83786a7) Roach p3 0 → 0xaa write-back (the
+named BackgroundMoverTests expectation; other Setups' write-backs listed in the plan, none on L1/L2). M1 ⚑ (072bf8b + fix
+70384af) `WorldMapRun`: entry, unlocks by target level, node sprites + `FastRand(15)` per visible node, `.DrawNewLink` (snd
+420, 50 × ≥ 2 ticks, 150 draws), the 29-frame walk, `.CheckPlayerNodeMovement`, exit keys + confirms, exit resets. M2
+(b79e58e + fix 548019f) `MapRenderer`: PICT 7000, slop-8 node faces, links, flashes, first-frame golden
+`38563faaa2276f05`. **Rulings (follow the binary, BC31):** the map loop's walking test is `step ≠ 0`; entry order clut 700 →
+PICT 129 → status bar → graphics → PICT 7000; a second status-bar update after the first frame; a clear level-complete flag
+or a nil/empty Mmap returns 1; no current node → ExitToShell (a quit request, no result); FlushEvents + ShowCursorSafe only
+inside the Q and W/Esc branches; the node-sprite list is emptied on exit (and by `.InitPlayerMapData`), not on entry; the
+plan's `testLinkPixels` geometry was impossible (stepped line) → each flat pair checked; lines rasterised from the upper
+end point [MED]. Ferazel/Core 297 → 308/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).

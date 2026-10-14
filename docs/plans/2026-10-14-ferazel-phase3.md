@@ -821,6 +821,13 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   may move (if one does, STOP and record it). Also check the other Setups `.SetupLevelSprites` calls on L1/L2 for any
   further unbuilt record write-backs, and list them in the as-executed bullet (build them only if no golden moves).
 - **Gate:** G2 = 297 (no new test function), G6, G7, G10. One Opus leg. Runs first in [RX M1 M2].
+- ⚑ **As executed (RX, loop run 12; 83786a7):** G2 297. `.SetupRoachSprite`'s p3 0 → 0xaa write-back (M l. 64940–64944,
+  offset +0xc = p3) built; the named expectation exempts level-1 Roach records 15, 19, 27, 30, 163 (derived from the level
+  file in the test), record 19 pinned; no other expectation moved. No other Setup placed on levels 1–2 writes back (the
+  reviewer scanned every `.Setup*` incl. split-index forms). Listed, unbuilt (not on L1/L2): box pipes 0x5d2–0x5d5 p2
+  0 → 100 (l. 59327–59330); Background 0x76c–0x76f p1 0 → 0x2d, p2 0 → 0x32 (l. 62507–62514); Dillo / Warrior / Wizard p2
+  0 → 0x96 (l. 72354, 73056, 75662); cannons 0x69/0x6a p2 → 4 (l. 62125). Carried: `.HandleRoachSprite` (unbuilt) must read
+  the written-back p3; the binary also writes for record index 0x1ff (not from a record). One Opus leg MERGEABLE.
 
 #### M1 — ⚑ MAJOR — `WorldMapRun` (→ 305)
 - **Files:** `Sources/FerazelCore/Front/WorldMapRun.swift`, `Sources/FerazelCore/World/WorldMap.swift` (lookups only);
@@ -900,6 +907,25 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   recorded).
 - **Gate:** G2 = 305, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: WorldMapRun — ShowWorldMap, node sprites, DrawNewLink, the 29-frame walk, CheckPlayerNodeMovement, unlocks, exit keys; 8 tests`.
+- ⚑ **As executed (M1, loop run 12; 072bf8b + review fix 70384af):** G2 305 (308 with M2). API for F1b: `WorldMapRun.init(
+  resources:prefs:globals:level:levelName:exit1:exit2:levelComplete:seed:fade:music:sprites:)`, `tick(now:input:)`,
+  `dialogDone(ok:)`, `result` (nil on the quit paths), `quitRequested`, `aborted`, `mapMissing`, read-back of `globals`,
+  `rng`, `fade`, `music`, `exit1`/`exit2` (both −1 once the loop starts — the exit2 global reset), `sprites` (the node-sprite
+  list carried across entries: emptied on exit, M l. 67652, and by `.InitPlayerMapData` l. 66610 — not on entry). For M2:
+  `WorldMapOutput`, `MapOp` (`.draw(DrawOp, port:)`, `.portsClut`, `.loadMapGraphics`, `.drawLink`, `.redrawLinks`,
+  `.copy`), `MapPort`, `MapLink`, `MapFace`, `MapSprite`, `viewRect`/`viewOffset`. **The dump beat the plan (BC31):** the
+  map loop's walking test is `step ≠ 0` (only `.FindPlayerNodeLoc` tests `cur ≠ walkTarget`); entry order is clut 700 →
+  PICT 129 → status bar → `.ReInitWorldMapGraphics` → PICT 7000 (l. 67498–67512); a second status-bar update follows the
+  first frame (l. 67539); a clear level-complete flag — or a nil/empty Mmap — returns **1** (l. 67492–67496); no current
+  node → ReportError + `ExitToShell` (l. 67154–67155) → a `.quit` request, no result; FlushEvents + ShowCursorSafe only in
+  the Q and W/Esc branches (plan sentence corrected). BC14 checked against STR# 1000: the spellings differ on levels 1, 10,
+  50, 51, 67. RNG state after entry + 150 flash draws pinned `0x7b052a62` (self-derived). Held-⌘ quirk modelled as the
+  tail keys and the next loop test read on the same tick [MED, gate card]. Caps Lock pause = `// later: P1`. Carried
+  (minor): `UpdateStatusBar(1,…)` and `(0,…)` emit the same op; a wrong-length Mmap still throws; the re-entry check can't
+  tell "no reset on entry" from "reset on entry" (unobservable); F1b must test `result == nil` with `quitRequested`.
+  Two Opus legs MERGEABLE (both: named rules unpinned — 10 mutations survived) → fix round pinned tie / strict above /
+  equal-h / unlock-by-level / wraps 15 and 127 / exit2-only / re-entry / ⌘Q while walking / the two error paths → Opus
+  re-review MERGEABLE.
 
 #### M2 — minor — Map drawing (→ 308)
 - **Files:** `Sources/FerazelRender/Screens/MapRenderer.swift`, `Sources/FerazelRender/Screens/ScreenRenderer.swift`;
@@ -924,6 +950,17 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   at (+1, +1) and (−1, −1); a flash frame's three lines all in its one colour) · `testNodeFaceCentred` (node 1 face covers screen (h+16−12 … h+16+11, v+8−12 … v+8+11)).
 - **Gate:** G2 = 308, G6, G7(+b), G8, G10; wave 3.3 end: G3, G5.
 - **Commit:** `FerazelRender: world map — PICT 7000, node faces (slop-8 centring), links, new-link flashes; 3 tests`.
+- ⚑ **As executed (M2, loop run 12; b79e58e + review fix 548019f):** G2 308. `MapRenderer` (FerazelRender) draws M1's
+  `MapOp` stream into two 656×432 QuickDraw-coordinate ports (faces at slop +8, M l. 31490) and the screen; first-frame
+  golden `38563faaa2276f05` (after level 1, seed 1, self-derived). **The plan was wrong on `testLinkPixels`:** a stepped
+  line (237,307)→(269,330) never has more than two pixels per row, so no centre pixel has black on both diagonals — the
+  test checks each flat pair instead (white pair, black at (+1,+1) of the left, (−1,−1) of the right); flash colours are
+  checked on the screen (`.EraseNodeSprites` restores sprite rects in the work port within the iteration). Lines are
+  rasterised from the upper end point so a link drawn from both ends hits the same pixels [MED: QuickDraw's ROM line code
+  may break ties differently]. The status bar is always drawn in full (M1's op has no full/incremental flag; pixel-identical
+  for the shipped nodes, max v 358). Review fix 548019f pins "the ambient sprite is never erased" (a mutation survived).
+  Carried (minor, unbuilt): ports start at index 0, not the original's gray fill (nothing visible); an undecodable face
+  is skipped silently; `ScreenRenderer` ignores a face op aimed at the screen. One Opus leg MERGEABLE.
 
 ### Wave 3.4 — the game flow: title, menu, New Game, death, Continue
 
