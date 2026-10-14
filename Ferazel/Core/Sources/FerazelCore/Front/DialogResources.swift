@@ -39,8 +39,8 @@ private func loadResource(_ resources: FerazelResources, type: String, id: Int16
 }
 
 /// A `DLOG` or `ALRT` template. DLOG = rect(8) procID(2) visible(1) pad(1) goAway(1) pad(1) refCon(4) itemsID(2)
-/// title pstr [position word]; ALRT = rect(8) itemsID(2) stages(2) [position word] (ALRT 500/501: stages 0x4444,
-/// position 0x280A).
+/// title pstr [position word]; ALRT = rect(8) itemsID(2) stages(2) [position word] (ALRT 500/501: stages 0x4444;
+/// position 0x300A for ALRT 500, 0x280A for ALRT 501).
 public struct DialogTemplate: Sendable, Equatable {
     public enum Kind: Sendable, Equatable { case dialog, alert }
 
@@ -235,6 +235,8 @@ public struct MenuTemplate: Sendable, Equatable {
     public let procID: Int16
     /// Bit 0 = the whole menu, bit n = item n (items past 31 are always enabled).
     public let enableFlags: UInt32
+    /// The title pstr, MacRoman-decoded. MENU 128's title is the single byte 0x14 (the Apple-logo character, decoded
+    /// U+0014); A1b recognises the Apple menu by it.
     public let title: String
     public let items: [Item]
 

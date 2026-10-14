@@ -646,6 +646,9 @@ final class PlayerMotionTests: XCTestCase {
         place(x: 100, y: -200, vy: -0x2000)
         Player.constraints(w, id: id)
         XCTAssertEqual(player(w).vy, 0)
+        // The glider-floor vs y-clamp order is not observable: the y clamp sets any vy below −0x100 to 0, and the
+        // glider floor −0x9c4 is itself below −0x100, so both orders give the same vy. Hence the order pinned below is
+        // row 38 → row 39, through the fields only row 39 writes.
         // Through the Handle (row 38, before row 39 re-derives `+0xc` from `+0x14`): spawned left of −64 and above −128,
         // one frame. Row 39 also copies the pixel position and the centre to `fe68`/`fe64` and `fd94`/`fd90`, which no
         // later row rewrites (the record's `+8`/`+0x10` are re-derived by the end pass and `.StandardSpriteCleanup`): a

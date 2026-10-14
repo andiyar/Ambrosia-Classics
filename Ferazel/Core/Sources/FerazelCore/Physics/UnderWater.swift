@@ -1,15 +1,16 @@
 import Foundation
 
-/// `.HandleUnderWater @ 10042e30` (decompile l. 38127–38221; physics-sprites §8.6), `.IsWaterTile @ 100430c8`
-/// (l. 38225–38233) and `.GetWaterTileKind @ 1004310c` (l. 38238–38242): the water branch of every tile callback (the
-/// BG pass, layer 0, with `+0x140 == 0`; 21 callers — Phase 2 has the player's `.HitPlayerTileSprite` (the end pass
-/// only) and the Effect class's `.HitEffectTileSprite`). Plan P4.
 /// The liquid BG tile kinds 200…209: `.IsWaterTile`'s `199 < kind && kind < 0xd2` (decompile l. 38225–38233) and
-/// `.GetWaterTileKind`'s `kind + -200` (l. 38238–38242).
+/// `.GetWaterTileKind`'s `kind + -200` (l. 38238–38242). `UnderWater.isWaterTile` is the same test on the i16 tile
+/// kind.
 public enum LiquidTiles {
     public static let range = 200..<210
 }
 
+/// `.HandleUnderWater @ 10042e30` (decompile l. 38127–38221; physics-sprites §8.6), `.IsWaterTile @ 100430c8`
+/// (l. 38225–38233) and `.GetWaterTileKind @ 1004310c` (l. 38238–38242): the water branch of every tile callback (the
+/// BG pass, layer 0, with `+0x140 == 0`; 21 callers — Phase 2 has the player's `.HitPlayerTileSprite` (the end pass
+/// only) and the Effect class's `.HitEffectTileSprite`). Plan P4.
 public enum UnderWater {
     /// `.IsWaterTile(kind)`: `199 < kind < 0xd2` on the i16 BG kind (200…209).
     @inline(__always) public static func isWaterTile(_ kind: Int) -> Bool {
