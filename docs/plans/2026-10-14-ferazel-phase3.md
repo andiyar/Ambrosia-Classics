@@ -224,7 +224,7 @@ New test files named per task. No new target.
   `demo`, `isCheckpoint`, `level`, `playerX`, `playerY`, `globals: GameGlobals`, `date`, `snapshots` (100 × 511 × 16 B),
   `worldName`; `init(image:)`, `image()`; `mutating savePointSave(…, records: [Placement])` / `endLevelSGUpdate(…,
   records:)` (the shared write core, M l. 6322ff / 6501ff; the records are the session's live `world.records`) and
-  `restoreSnapshot(level:) -> [Placement]` (+6).
+  `restoreSnapshot(level:) -> [Placement]` (+6). ⚑ As built (SV1, run 9): both writers also take `globals: inout GameGlobals` — the live G — because the binary sets `hasSnapshot[L]` in the live G (raw `1000c1c0`) before the copy; G gains `appendCrunch(_:)` (O(1)).
 - ★ `PrefsRecord` coding on `FerazelPrefs` (SV2) — `FerazelPrefs.init(record: Data)`, `record() -> Data` (0x942,
   unknown bytes preserved), `savedGameName` pstr, `recentNames` (+0x142, 8 pstr[256], write-only).
 - ★ `SavedGameFile`, `PrefsFile` (SV2, `Saves/`) — resource-file codecs over HK's existing
@@ -365,6 +365,14 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `3DSoundRand` idle-only sites (M l. 62997, 63199–63257, 61047–61057) → the Phase 4/5 plans (Invariant 4 conflict).
   `beginEnding`'s placeholder phase goes with the `Ending` struct in A1a.
 - **Gate:** G2 = 256 (asserts only), G5 (touches the App), G6, G7(+b), G8, G10. **Commit:** `Phase 2 carry sweep: FastRand cite, liquid tile range constant, stopAll, jump-frame soundStopAt and PlayerConstraints order asserts`.
+- ⚑ **As executed (X1, loop run 9, 2026-10-14; 6c32f4e + review fixes ebed14e):** G2 256 (asserts only; 260 on the
+  branch with R1). Two contract items were wrong and were not done as written: (3) `stopAll` is **not** redundant —
+  `ShellMixer.stopAll()` stops mixer voices only, the Sound Tool is a separate attached stream, so `stopEffects()` is the
+  only effects stop and already runs once (left unchanged); (5) the glider-floor vs y-clamp order is unobservable (the
+  clamp zeroes any vy < −0x100 and the glider floor −0x9c4 is below it), so the test pins row 38 → row 39 through the
+  fields only row 39 writes (fe68/fe64, fd94/fd90; swapping the rows fails 4 asserts). M l. 334 is the `_FastRand(0)`
+  call site (kept) — the clock reseed cite is `LMGetTime` M l. 31295–31298. Jump frame `soundStopAt == [1]`.
+  `LiquidTiles.range` in `Physics/UnderWater.swift`. One Opus leg MERGEABLE (minors fixed).
 
 #### R1 — minor — Dialog and menu resources (→ 260)
 - **Files:** `Sources/FerazelCore/Front/DialogResources.swift`; `Tests/FerazelCoreTests/DialogResourceTests.swift`.
@@ -388,6 +396,13 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   (166,11,203,334)).
 - **Gate:** G2 = 260, G6, G7(+b), G8, G10; wave 3.0 end: G3, G5.
 - **Commit:** `FerazelCore: DLOG/ALRT/DITL/CNTL/MENU/MBAR parsers (dialog and menu resources); 4 tests`.
+- ⚑ **As executed (R1, loop run 9; 5c91bd3 + ebed14e):** G2 260. The DITL 6902 item numbers above (7–15, 26) are
+  **dialog** item numbers (DITL 6900's six come first); in DITL 6902 itself they are items 1–9 and 20. ALRT `stages` is
+  2 bytes, then a position word (ALRT 500 0x300A, 501 0x280A). MENU 128's title is the single byte 0x14 (Apple menu,
+  decoded U+0014 — A1b must recognise it). DITL 1003 item 12 → CNTL −6046, not in the app fork (O1/A1b cope). Every
+  DLOG (20), ALRT (2), DITL (30), CNTL (7), MENU (9) and MBAR parses (reviewer scratch run). For O1/A1b, review minors
+  left as they are: `isItemEnabled` ignores the menu-enable bit 0; ⌘ bytes 0x1B–0x1F (none in the data) decode as
+  characters. One Opus leg MERGEABLE.
 
 ### Wave 3.1 — byte images, files, the front-end seam
 
@@ -435,6 +450,17 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `initGameGlobals(previous:)` tail list is not testable on G alone and is pinned by F1b's `testNewGameStartsLevel1`).
 - **Gate:** G2 = 266, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: G as a byte image (every field), the 966,232-byte save block (SavePointSave/EndLevelSGUpdate writers, snapshots ±6); 6 tests`.
+- ⚑ **As executed (SV1, loop run 9; ebbd7aa + review fixes d8f2ebe):** G2 266. Dump beat plan: BC7's "+0x55e/+0x626/
+  +0x946/+0xa0e never accessed" is wrong — `.InitGameGlobals` zeroes all five 200-byte rows (M l. 725–761), play uses
+  rows 0–2 (bank note says so); `+0x174` is a u8 (M l. 797); the writers take `globals: inout` (live G, raw `1000c1c0`);
+  inventory slot byte +9 is copied as half of a halfword when slots move (always 0 in practice). Crunch log stored as
+  the binary's three 20000-entry arrays + count (`crunchLog` computed over the first count; `appendCrunch` O(1)), so the
+  round trip is byte-exact incl. pairs `initGameGlobals(previous:)` carries over. All 511 records are written −6 with no
+  flag check. Leg 1 (fidelity: 64 G-pointer loads scanned, every offset/width covered) MERGEABLE; leg 2 (quality, 20
+  mutations) MERGEABLE with 4 surviving offset mutations → fix round pinned every scalar offset by raw bytes → Opus
+  re-review MERGEABLE (all caught). Carried to F1b: `.NewGame` also writes save +0xc/+0x10 from header 0x2848/0x2846 − 0x20
+  (raw `1000b498`/`1000b4b4`) — `SaveBlock` has no method for it yet; untested `appendCrunch` 20000 cap; `.RemoveItem`
+  leaves the last slot's +8..+9 (raw `100456a0..100456ac`).
 
 #### SV2 — minor — Prefs record, prefs file, saved-game file (→ 272)
 - **Precondition:** SV1 merged (`SaveBlock`). No HectorKit precondition: the writer is HK's existing

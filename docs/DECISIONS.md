@@ -1235,3 +1235,10 @@ plan's "Rulings" section (17 items) is the full text; in short:
 **Rejected:** a HectorKit resource writer (exists); "Tried to open a level that wasn't there!" (never shown by the
 original); a real resource fork by default (stripped by zip/git/Windows — Ben may choose it, Q3); restart-after-death.
 **Approved by:** seat under D34 (Ben reads later, Q3).
+**As built (loop run 9, 2026-10-14) — wave 3.0 + SV1:** X1 (6c32f4e) — `stopAll` left as is (the plan's "redundant
+stopEffects" premise was wrong: the mixer's `stopAll` does not stop the Sound Tool stream) and the glider order ruled
+unobservable (test pins row 38 → 39 instead); R1 (5c91bd3) — DLOG/ALRT/DITL/CNTL/MENU/MBAR parsers, plan's DITL 6902
+numbers are dialog item numbers; review fixes ebed14e; SV1 (ebbd7aa + d8f2ebe) — G image (0x19978) and save block
+(966,232) byte-exact; the writers take the live G `inout` (the binary flags `hasSnapshot[L]` in it before the copy —
+S2 amended); BC7 corrected (the four 200-byte rows are zeroed by InitGameGlobals), +0x174 u8. Ferazel/Core 256 → 266/0,
+census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
