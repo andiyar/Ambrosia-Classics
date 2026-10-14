@@ -586,4 +586,71 @@ final class PlayerMotionTests: XCTestCase {
         XCTAssertEqual(player(w).vx, 0)
         XCTAssertEqual(w.player.facing, 1)
     }
+
+    /// `.PlayerConstraints @ 1004cb4c` (main l. 43991–44123; raw `1004cb4c..1004cc0c`), row 38: x < −64 → −64, else
+    /// x > 32·W − 32 → that (hdr `+0xb280`); `+0x14 = x << 8` only on a clamp. y < −128 → −128, `+0x1c = y << 8`, and
+    /// then vy < −0x100 → 0. On the glider (`_DAT_100a05e0`) vy < −0x9c4 → −0x9c4. The tests are strict (`cmpwi; bge`).
+    func testPlayerConstraintsMapClamps() throws {
+        let w = try world(floor: false)
+        let id = try XCTUnwrap(Player.spawn(world: w, x: 100, y: 100))
+        let right = Int(w.level.header.gridWidth) * 32 - 32
+        func place(x: Int, y: Int, vy: Int32 = 0) {
+            w.active.update(id: id) { s in
+                s.x = x
+                s.y = y
+                s.x256 = 0x1234
+                s.y256 = 0x5678
+                s.vy = vy
+            }
+        }
+        place(x: -65, y: 100)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).x, -64)
+        XCTAssertEqual(player(w).x256, -64 << 8)
+        XCTAssertEqual(player(w).y256, 0x5678)                          // y in range: untouched
+        place(x: -64, y: 100)                                            // the edge itself: no clamp, no x256 store
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).x, -64)
+        XCTAssertEqual(player(w).x256, 0x1234)
+        place(x: right + 1, y: 100)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).x, right)
+        XCTAssertEqual(player(w).x256, Int32(right) << 8)
+        place(x: right, y: 100)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).x, right)
+        XCTAssertEqual(player(w).x256, 0x1234)
+        // y: −129 → −128, y256 stored; vy −0x101 → 0, vy −0x100 kept (`cmpwi r0,-0x100; bge`), vy untouched at −128.
+        place(x: 100, y: -129, vy: -0x101)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).y, -128)
+        XCTAssertEqual(player(w).y256, -128 << 8)
+        XCTAssertEqual(player(w).vy, 0)
+        XCTAssertEqual(player(w).x256, 0x1234)
+        place(x: 100, y: -129, vy: -0x100)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).vy, -0x100)
+        place(x: 100, y: -128, vy: -5000)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).y, -128)
+        XCTAssertEqual(player(w).y256, 0x5678)
+        XCTAssertEqual(player(w).vy, -5000)                             // off the glider: no vy floor
+        // Glider: vy floor −0x9c4 (raw `1004cbec..1004cc0c`), after the y clamp (which zeroes it first).
+        w.player.glider = true
+        place(x: 100, y: 100, vy: -0x9c5)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).vy, -0x9c4)
+        place(x: 100, y: 100, vy: -0x9c4)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).vy, -0x9c4)
+        place(x: 100, y: -200, vy: -0x2000)
+        Player.constraints(w, id: id)
+        XCTAssertEqual(player(w).vy, 0)
+        // Through the Handle (row 38, before row 39 re-derives `+0xc` from `+0x14`): spawned left of −64, one frame.
+        let w2 = try world(floor: false)
+        _ = try XCTUnwrap(Player.spawn(world: w2, x: -100, y: 100))
+        frame(w2, TileSolver(world: w2))
+        XCTAssertEqual(player(w2).x, -64)
+        XCTAssertEqual(player(w2).x256, -64 << 8)
+    }
 }

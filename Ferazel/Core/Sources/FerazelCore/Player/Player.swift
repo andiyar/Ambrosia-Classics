@@ -24,7 +24,7 @@ import Foundation
 /// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 oxygen, drowning, bubbles (P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
-/// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (later: W4)
+/// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (map, glider; arena later)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
 /// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (`PlayerScroll`, P5)
 /// 20 hot rect, ground latch, catapult, impact            40 end `.SeparateFromTiles2` (water pass; plan row 35),
@@ -308,7 +308,8 @@ public enum Player {
         PlayerStates.tint(w, id: id)
         // 37 (l. 46347–46365).
         sidePush(w, id: id)
-        // 38 (l. 46366): `.PlayerConstraints @ 1004cb4c` (map clamps, the level exits hdr+0x2724). // later: W4
+        // 38 (l. 46366, raw `bl` at `100513b0`): `.PlayerConstraints @ 1004cb4c`.
+        constraints(w, id: id)
         // 39 (l. 46367–46392).
         positions(w, id: id)
         // The camera look-ahead `_DAT_100a0680` and `uRam100a5114` (l. 46393–46422), then `.PlayerScroll @ 1004c528`
@@ -564,6 +565,45 @@ public enum Player {
             w.active.update(id: id) { $0.x256 &+= v >> 2 }
             w.player.cameraSnapVeto = true
         }
+    }
+
+    /// Row 38: `.PlayerConstraints @ 1004cb4c` (main l. 43991–44123; raw `1004cb4c..1004ce60`), in its order:
+    /// - x (`lha +0xc`, read once): x < −64 → x = −64; else x > 32·W − 32 (hdr `+0xb280`) → x = that (`extsh`);
+    ///   either clamp stores `+0x14 = x << 8` (raw `1004cb54..1004cbb4`).
+    /// - y: y < −128 → y = −128, `+0x1c = y << 8`, then vy < −0x100 → vy = 0 (raw `1004cbb8..1004cbe8`).
+    /// - on the glider `*_DAT_100a05e0`: vy < −0x9c4 → vy = −0x9c4 (raw `1004cbec..1004cc0c`).
+    /// - the boss-arena lock (hdr `+0x2724` ≠ 0 ∧ `*_DAT_1009fed0` "no boss alive" = 0; raw `1004cc10..1004cd8c`,
+    ///   bosses §1.3: the lock line |v ± 60|, the pan counter `_DAT_1009ff9c = −40`, the lock `PTR_DAT_1009fed4`).
+    ///   // later: Phase 6 (bosses) — `fed0`/`fed4`/`ff9c` have no writer or reader yet (no boss Setup clears
+    ///   `fed0`, `.SetupLevelSprites` sets it 1, so the arm cannot fire), and `Camera` refuses hdr `0x2724` ≠ 0.
+    /// - the auto-scroll death (`*_DAT_1009fec4` ∧ mode `_DAT_1009fec0` 1–4 with the player past the scroll point
+    ///   `PTR_DAT_1009fe78` −0x40 / +0x2a0 / −100 / +0x1c0 → G+6 = G+4 = 0, `+0xa4` = 0, `*_DAT_100a0568` =
+    ///   `*_DAT_100a0564` = 1; raw `1004cd90..1004ce60`). // later: auto-scroll levels — `Camera` refuses hdr
+    ///   `0x272a` ≠ 0 and `fec4`/`fec0` are not modelled (no Phase-2 level scrolls).
+    static func constraints(_ w: SpriteWorld, id: Int) {
+        let gridWidth = Int32(w.level.header.gridWidth)
+        let glider = w.player.glider
+        w.active.update(id: id) { p in
+            let x = Int32(Int16(truncatingIfNeeded: p.x))
+            if x < -0x40 {
+                p.x = -0x40
+                p.x256 = Int32(-0x40) << 8
+            } else {
+                let right = gridWidth &* 0x20 &- 0x20
+                if right < x {
+                    let cx = Int16(truncatingIfNeeded: right)
+                    p.x = Int(cx)
+                    p.x256 = Int32(cx) << 8
+                }
+            }
+            if Int16(truncatingIfNeeded: p.y) < -0x80 {
+                p.y = -0x80
+                p.y256 = Int32(-0x80) << 8
+                if p.vy < -0x100 { p.vy = 0 }
+            }
+            if glider && p.vy < -0x9c4 { p.vy = -0x9c4 }
+        }
+        // The arena lock and the auto-scroll death: see above. // later: Phase 6 (arena), auto-scroll levels
     }
 
     /// Row 39 (l. 46367–46392): `+8 = +0xc = fe68 = (i16)(x256 >> 8)`, `+6 = +0xa = fe64`; the centre
