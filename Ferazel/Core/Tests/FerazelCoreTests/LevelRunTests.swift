@@ -32,7 +32,10 @@ final class LevelRunTests: XCTestCase {
 
     private struct Tick {
         let t: UInt32
+        /// The tick's work as one output (`LevelRunOutput.merged`).
         let out: FrontOutput
+        /// The tick's draws by renderer, in order.
+        let segments: [LevelRunSegment]
         /// The iterations this tick stepped.
         let steps: [FrameOps]
     }
@@ -41,9 +44,31 @@ final class LevelRunTests: XCTestCase {
 
     private func make(_ r: FerazelResources, level: Int, carry: LevelCarry = LevelCarry(), save: SaveBlock = SaveBlock(),
                       prefs: FerazelPrefs = FerazelPrefs(), music: MusicFade = MusicFade(),
+                      start: (x: Int, y: Int)? = nil, refreshFacing: Bool = true, skipStageComplete: Bool = false,
                       stub: StubServices) throws -> LevelRun {
         try LevelRun(resources: r, prefs: prefs, level: level, seed: 1, carry: carry, save: save, fade: ScreenFade(),
-                     music: music, services: stub, sounds: StageSounds(prefs: prefs, lengths: Self.lengths))
+                     music: music, services: stub, sounds: StageSounds(prefs: prefs, lengths: Self.lengths),
+                     start: start, refreshFacing: refreshFacing, skipStageComplete: skipStageComplete)
+    }
+
+    /// Each segment's draws are ones its renderer executes (`FrameRenderer` refuses the front-end ops and any CLUT
+    /// but the level's; `ScreenRenderer` refuses the level ops), and neighbouring segments change renderer.
+    private func checkRouting(_ o: LevelRunOutput, levelClut: Int16, at t: UInt32) {
+        for (i, g) in o.segments.enumerated() {
+            if i > 0 { XCTAssertNotEqual(g.target, o.segments[i - 1].target, "tick \(t): segments not merged") }
+            for op in g.output.draws {
+                switch op {
+                case .setScreenClut(let id):
+                    XCTAssertEqual(g.target == .level, id == levelClut, "tick \(t): \(op) on \(g.target)")
+                case .drawPicture, .gammaStep: break
+                case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
+                    XCTAssertEqual(g.target, .screen, "tick \(t): \(op)")
+                default:
+                    XCTAssertEqual(g.target, .level, "tick \(t): \(op)")
+                }
+            }
+        }
+        XCTAssertEqual(o.merged.draws, o.segments.flatMap { $0.output.draws })
     }
 
     /// Ticks `run` from `t0` once per tick until `until` holds (checked after each tick).
@@ -55,7 +80,8 @@ final class LevelRunTests: XCTestCase {
         for _ in 0..<max {
             stub.now = t
             let out = try run.tick(now: t, input: input(t))
-            ticks.append(Tick(t: t, out: out, steps: run.lastSteps))
+            checkRouting(out, levelClut: ColorLUT.screenClutId(run.levelFile.header), at: t)
+            ticks.append(Tick(t: t, out: out.merged, segments: out.segments, steps: run.lastSteps))
             if until(run) { return ticks }
             t &+= 1
         }
@@ -111,7 +137,11 @@ final class LevelRunTests: XCTestCase {
         let run = try make(r, level: 1, carry: LevelCarry(parity: false, crunchLog: [], globals: g), music: menuMusic(),
                            stub: stub)
         let t0: UInt32 = 1000
-        let ticks = try drive(run, stub, from: t0) { $0.iterations >= 1 }
+        var unlockedAtSetup: Int16?
+        let ticks = try drive(run, stub, from: t0) { run in
+            if unlockedAtSetup == nil, let s = run.session { unlockedAtSetup = s.globals.unlocked[1] }
+            return run.iterations >= 1
+        }
         func at(_ t: UInt32) -> FrontOutput { ticks[Int(t - t0)].out }
 
         // `FadeAIFFMusic(0, 4)` (M l. 5161): V·(24 − s)/24 every 4 ticks, then 0 and `ShutDownAIFFMusic` at 96.
@@ -133,7 +163,9 @@ final class LevelRunTests: XCTestCase {
                       265, 266, 268, 270, 271, 273, 275, 276, 278, 279, 281, 283, 284, 286, 288, 289, 291, 293]
         XCTAssertEqual(bars(ticks), [43, 58, 73, 102, 117, 146] + cached + [293, 293])
         XCTAssertEqual(bars([ticks[112]]).count, 38)
-        // `unlocked[1]` set (before the player spawn, M l. 5180).
+        // `unlocked[1]` set (before the player spawn, M l. 5180): already on the `.SetupLevel` tick, inside the session
+        // init — not by a later `.GameLoop` stage.
+        XCTAssertEqual(unlockedAtSetup, 1)
         XCTAssertEqual(run.session?.globals.unlocked[1], 1)
         // `GammaFadeOut(6)`: 30 `.TintFadeProc` ticks 112 … 141.
         let tints = ticks.filter { $0.out.draws.contains { if case .screenGamma(.tint(3, _)) = $0 { true } else { false } } }
@@ -149,6 +181,9 @@ final class LevelRunTests: XCTestCase {
                                                   .statusBar(s.globals.statusBar(levelName: s.level.header.name))])
         XCTAssertEqual(e.requests, [.hideCursor])
         XCTAssertEqual(e.music, [.play(track: 1), .volume(0)])
+        // All of it the level renderer's (A1a): one `.level` segment holding every draw of the tick.
+        XCTAssertEqual(ticks[142].segments.map { $0.target }, [.level])
+        XCTAssertEqual(ticks[142].segments[0].output.draws, e.draws)
         // Exactly one `.play` before the first step, and `FadeAIFFMusic(1, 4)`'s 24 steps over 96 ticks, then V.
         XCTAssertEqual(cues.filter { if case .play = $0.cue { true } else { false } }.map { $0.cue }, [.play(track: 1)])
         let fadeIn = cues.filter { $0.t >= t0 + 142 }
@@ -156,10 +191,22 @@ final class LevelRunTests: XCTestCase {
         XCTAssertEqual(fadeIn.dropFirst().map { $0.cue }, (0..<24).map { MusicCue.volume(256 * $0 / 24) } + [.volume(256)])
         // Then (`InputActivate(1, 1)`, no op) the chapter card at 238: clut 281, PICT 4610.
         XCTAssertEqual(Array(at(t0 + 238).draws.prefix(1)), [.setScreenClut(id: 281)])
+        XCTAssertEqual(ticks[238].segments.first { $0.output.draws.contains(.setScreenClut(id: 281)) }?.target, .screen)
+        // The card's end (`GammaFadeOut(0x1e)` done): the level CLUT, PICT 129 and the full status bar — the level
+        // renderer's — then, on the same tick, the first iteration's draws.
+        let tail = try XCTUnwrap(ticks.first { $0.t > t0 + 238 && $0.out.draws.contains(.setScreenClut(id: 202)) })
+        XCTAssertEqual(tail.segments.map { $0.target }, [.level])
+        let tailDraws = try XCTUnwrap(tail.segments.last).output.draws
+        XCTAssertEqual(Array(tailDraws.prefix(3)), [.setScreenClut(id: 202), .drawPicture(id: 0x81, chain: .frontEnd, h: 0, v: 0),
+                                                    .statusBar(s.globals.statusBar(levelName: s.level.header.name))])
         // The first step: no start ops in it, the async fade-in's first step at its end.
         let first = try XCTUnwrap(ticks.last)
-        XCTAssertGreaterThan(first.t, t0 + 238 + 109 + 1200)
+        // The card: `GammaFadeInSlow(0x37)` 109 ticks, 1200 one-tick waits, `GammaFadeOut(0x1e)` 160 ticks, then the
+        // loop's first iteration on the tick the fade-out ends.
+        XCTAssertEqual(tail.t, t0 + 238 + 109 + 1200 + 160)
+        XCTAssertEqual(first.t, tail.t)
         XCTAssertEqual(first.steps.count, 1)
+        XCTAssertEqual(Array(tailDraws.dropFirst(3)), first.steps[0].draws)
         XCTAssertEqual(first.steps[0].draws.first, .redrawScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV))
         XCTAssertFalse(first.steps[0].draws.contains { if case .setScreenClut = $0 { true } else { false } })
         XCTAssertTrue(first.steps[0].music.isEmpty)
@@ -169,6 +216,9 @@ final class LevelRunTests: XCTestCase {
         let all = [first] + more
         let withGamma = all.flatMap { $0.steps }.map { $0.draws.contains(where: isGammaStep) }
         XCTAssertEqual(withGamma, Array(repeating: true, count: 41) + Array(repeating: false, count: 4))
+        // The fade-in's end (step 41): `ShowCursorSafe` (M l. 31945), once.
+        let shows = all.flatMap { $0.steps }.map { $0.requests.contains(.showCursor) }
+        XCTAssertEqual(shows, Array(repeating: false, count: 40) + [true] + Array(repeating: false, count: 4))
 
         // The restart fast path (same level, tilesets kept, M l. 2252): 25 %, 50 %, the six flag-1 singles reloaded
         // (the CLUT ids stay −1 / 202 — self-derived, `CachedFaces`), 100 % twice.
@@ -221,7 +271,10 @@ final class LevelRunTests: XCTestCase {
         var g = GameGlobals.initGameGlobals(previous: nil)
         g.achieved[0][1] = 7
         g.achieved[2][1] = 3
-        let run = try make(r, level: 1, carry: LevelCarry(parity: false, crunchLog: [], globals: g), stub: stub)
+        g.omniPxActive = 1
+        // A logged crunch of level 1: a first visit (`hasSnapshot[1] == 0`) does not re-apply it.
+        g.crunchLog = [CrunchLogEntry(level: 1, col: 119, row: 36)]
+        let run = try make(r, level: 1, carry: LevelCarry(parity: false, crunchLog: g.crunchLog, globals: g), stub: stub)
         _ = try drive(run, stub, from: 0) { $0.session != nil }
         let s = try XCTUnwrap(run.session)
         XCTAssertFalse(run.revisit)
@@ -235,6 +288,10 @@ final class LevelRunTests: XCTestCase {
         XCTAssertEqual(s.globals.darknessOverride, 0)
         XCTAssertEqual(s.globals.savedDarkness, 5)
         XCTAssertEqual(s.globals.omniPxActive, 0)
+        // No re-apply: no `setTile`, the crunch cell's direction kept (the re-apply clears it).
+        XCTAssertTrue(s.setupLevelTileOps.isEmpty)
+        XCTAssertNotEqual(s.world.tiles.crunchDir(col: 119, row: 36), 0)
+        XCTAssertEqual(s.globals.crunchLog.count, 1)
     }
 
     func testRevisitKeepsCountersAndSnapshot() throws {
@@ -249,15 +306,23 @@ final class LevelRunTests: XCTestCase {
         g.achieved[0][1] = 4
         g.totals[0][1] = 99
         g.totals[1][1] = 50
+        let facing = Int16(L.header.startFacingLeft) == 0 ? Int16(1) : 0
+        g.startFacing = facing
         var save = SaveBlock()
         save.savePointSave(level: 1, x: 2371, y: 872, stamp: 0, date: 0, globals: &g, records: records)
         XCTAssertEqual(g.hasSnapshot[1], 1)
         let stub = StubServices()
+        // As Continue runs it: the start at save +0xc / +0x10, `G+0x16` not refreshed.
         let run = try make(r, level: 1, carry: LevelCarry(parity: false, crunchLog: [], globals: g), save: save,
-                           stub: stub)
+                           start: (x: 2371, y: 872), refreshFacing: false, stub: stub)
         let ticks = try drive(run, stub, from: 0) { $0.iterations >= 1 }
         let s = try XCTUnwrap(run.session)
         XCTAssertTrue(run.revisit)
+        XCTAssertEqual([s.startX, s.startY], [2371, 872])
+        XCTAssertEqual(s.globals.startFacing, facing)
+        // `GammaFadeInAsync(0x28)` on a revisit too (M l. 5228): the first step ends with its first step.
+        let first = try XCTUnwrap(ticks.last?.steps.first)
+        XCTAssertEqual(first.draws.last, .gammaStep(numerator: 0, denominator: 0x28, toward: nil))
         // The snapshot's records (+6 back) rebuilt the level: the save point shows face 2.
         XCTAssertEqual(s.world.records[24].p1, 2)
         XCTAssertEqual(savePoint(s)?.face?.index, 2)
@@ -361,11 +426,13 @@ final class LevelRunTests: XCTestCase {
         s.world.active.update(id: pid) { $0.hp = 0 }
         s.world.globals.health = 0
         s.world.player.gameOver = true
+        // The exit touched on the same frame: G+4 < 1 is tested first (M l. 5302) — died, no completion save.
+        s.world.player.levelDone = true
         ticks = try drive(run, stub, from: ticks.last!.t + 2) { $0.end != nil }
         let te = ticks[0].t                                           // the iteration that ended the loop
         XCTAssertEqual(ticks[0].steps.count, 1)
         // The after-loop stops (M l. 5298–5299) close the iteration's stops.
-        XCTAssertEqual(ticks[0].steps[0].soundStops.suffix(2), [452, 511])
+        XCTAssertEqual(ticks[0].steps.first?.soundStops.suffix(2), [452, 511])
         // Its 2-tick wait, then `FadeAIFFMusic(0, 2)`: 24 volumes 2 ticks apart, 0 at 48.
         let cues = musicCues(ticks)
         XCTAssertEqual(cues.prefix(25).map { $0.t }, (0..<25).map { te + 2 + UInt32(2 * $0) })
@@ -385,6 +452,11 @@ final class LevelRunTests: XCTestCase {
         XCTAssertTrue(run.died)
         XCTAssertTrue(s.world.playerDead)
         XCTAssertEqual(run.end, .died)
+        XCTAssertEqual(run.save, SaveBlock())
+        XCTAssertEqual(s.globals.hasSnapshot[2], 0)
+        XCTAssertFalse(ticks.flatMap { $0.out.draws }.contains { if case .copyPicture(140, _, _, _, _, _) = $0 { true } else { false } })
+        // The wipe's gamma steps run on the level renderer.
+        XCTAssertEqual(Set(wipe.flatMap { $0.segments }.map { $0.target }), [.level])
         XCTAssertFalse(ticks.flatMap { $0.out.requests }.contains(.deathEffect))
         XCTAssertNil(s.ended)
     }
@@ -399,14 +471,18 @@ final class LevelRunTests: XCTestCase {
         ticks = try drive(run, stub, from: ticks.last!.t + 2) { $0.end != nil }
         let te = ticks[0].t
         XCTAssertEqual(ticks[0].steps.count, 1)
-        XCTAssertEqual(ticks[0].steps[0].soundStops.suffix(5), [452, 511, 452, 453, 511])
+        XCTAssertEqual(ticks[0].steps.first?.soundStops.suffix(5), [452, 511, 452, 453, 511])
         // `.EndLevelSGUpdate` after the iteration's wait: `+6 = 1`, `+8 = 1`, `hasSnapshot[1] = 1` in the live G and
-        // the copy, x / y = the `.GameLoop` start.
+        // the copy, x / y = `*fe68` / `*fe64` — the player's whole-px position at the exit (`.HandlePlayerSprite`
+        // rewrites them every frame, M l. 46367–46376), not the `.GameLoop` start.
         XCTAssertEqual(run.save.isCheckpoint, 1)
         XCTAssertEqual(run.save.level, 1)
         XCTAssertEqual(run.save.globals.hasSnapshot[1], 1)
         XCTAssertEqual(s.globals.hasSnapshot[1], 1)
-        XCTAssertEqual([run.save.playerX, run.save.playerY], [Int32(s.startX), Int32(s.startY)])
+        let player = try XCTUnwrap(s.world.playerID.flatMap { s.world.active.sprite(id: $0) })
+        XCTAssertEqual([run.save.playerX, run.save.playerY], [Int32(s.world.player.pixelX), Int32(s.world.player.pixelY)])
+        XCTAssertEqual([run.save.playerX, run.save.playerY], [Int32(player.x), Int32(player.y)])
+        XCTAssertNotEqual([run.save.playerX, run.save.playerY], [Int32(s.startX), Int32(s.startY)])
         XCTAssertEqual(run.save.worldStamp, try WorldFile.load(from: r).stamp)
         XCTAssertEqual(run.save.restoreSnapshot(level: 1), s.world.records)
         // `.StageCompleteEffect` (L2) from te + 2, then `FadeAIFFMusic(0, 2)` 48 ticks, `GammaFadeOut(6)` 30 ticks,
@@ -429,5 +505,20 @@ final class LevelRunTests: XCTestCase {
         XCTAssertEqual(run.end, .completed(exit1: 0, exit2: -1))
         XCTAssertFalse(ticks.flatMap { $0.out.requests }.contains { if case .loadLevel = $0 { true } else { false } })
         XCTAssertFalse(run.died)
+        // The panel is the screen renderer's.
+        XCTAssertTrue(panelTicks.allSatisfy { $0.segments.allSatisfy { $0.target == .screen } })
+
+        // `*_DAT_1009fd64` set: no `.StageCompleteEffect`, the flag cleared (M l. 5311–5313); the music fade at once.
+        let stub2 = StubServices()
+        let skip = try make(r, level: 1, music: menuMusic(), skipStageComplete: true, stub: stub2)
+        var ticks2 = try drive(skip, stub2, from: 0) { $0.iterations >= 45 }
+        try touchExit(try XCTUnwrap(skip.session), record: 66)
+        ticks2 = try drive(skip, stub2, from: ticks2.last!.t + 2) { $0.end != nil }
+        let te2 = ticks2[0].t
+        XCTAssertFalse(ticks2.flatMap { $0.out.draws }.contains { if case .copyPicture(140, _, _, _, _, _) = $0 { true } else { false } })
+        XCTAssertFalse(skip.skipStageComplete)
+        XCTAssertEqual(musicCues(ticks2).first?.t, te2 + 2)
+        XCTAssertEqual(ticks2.last?.t, te2 + 2 + 48 + 30)
+        XCTAssertEqual(skip.end, .completed(exit1: 0, exit2: -1))
     }
 }

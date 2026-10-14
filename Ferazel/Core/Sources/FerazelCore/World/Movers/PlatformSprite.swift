@@ -56,11 +56,12 @@ public enum PlatformSprite {
         s.hotRect = emptyRect
     }
 
-    /// The placement record `+0x48` (nil for −1 or outside the table).
+    /// The live placement record `+0x48` (`*_DAT_100a0058`, `world.records` — a revisit's restored snapshot included;
+    /// nil for −1 or outside the table).
     static func record(_ w: SpriteWorld, _ s: SpriteSlot) -> Placement? {
         let i = Int(s.recordIndex)
-        guard i >= 0, i < w.level.placements.count else { return nil }
-        return w.level.placements[i]
+        guard i >= 0, i < w.records.count else { return nil }
+        return w.records[i]
     }
 
     /// `MTNewSprite(type, x, y, layer, −1, .SetupPlatformSprite)` — a sibling or child.

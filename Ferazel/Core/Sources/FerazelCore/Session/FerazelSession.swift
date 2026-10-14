@@ -101,8 +101,9 @@ public final class FerazelSession {
     /// L1: `LevelRun` hosts the session — it emits the level start itself at the binary's places (`.SetupLevel`'s
     /// tail, `startOps()`, `MusicFade`), so `step` omits the iteration-0 block and the loop end adds no request.
     public let hostedByLevelRun: Bool
-    /// `*_DAT_1009fe68` / `*_DAT_1009fe64`: `.GameLoop`'s `param_1` / `param_2` (M l. 5146–5148), the start position —
-    /// what `.EndLevelSGUpdate` stores at save +0xc / +0x10 (M l. 6533–6534).
+    /// `.GameLoop`'s `param_1` / `param_2` (M l. 5146–5148), the start position — the first value of `*_DAT_1009fe68`
+    /// / `*_DAT_1009fe64`, which `.HandlePlayerSprite` rewrites every frame (M l. 46367–46376; `PlayerState.pixelX/Y`),
+    /// so `.EndLevelSGUpdate`'s save +0xc / +0x10 (M l. 6541–6542) are the player's position at the exit, not these.
     public let startX: Int
     public let startY: Int
     /// L1: the three `.SetupLevelSprites` tallies (`SetupFaces.Tallies`) — `.SetupLevel`'s first-visit totals.
@@ -418,7 +419,10 @@ public final class FerazelSession {
         // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).
         world.updateSprites()
         // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
+        let fadingIn = !world.gammaFade.done && world.gammaFade.fadingIn
         if let g = world.gammaFade.handle() { ops.draws.append(g) }
+        // A fade-in's end call: `_ShowCursorSafe()` (M l. 31945; L1 review fix).
+        if fadingIn && world.gammaFade.done { ops.requests.append(.showCursor) }
         // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
         // after this iteration (W4).
         let endsNow = !loopEnded && (world.player.gameOver || world.player.levelDone)
@@ -627,8 +631,8 @@ public final class FerazelSession {
 /// - fade-in — only while faded out: done 0, step 0, N, direction 1;
 /// - each iteration while not done: `MT_FadeToColor(rgb or nil, step·100 / N, 0, 1)` (`gammaStep(step, N, toward)`),
 ///   step += 1; past N: done, and the end state — fade-out `FadeToColor(rgb, 100)` + faded out 1, fade-in
-///   `FadeToColor(nil, 0)` + faded out 0 (`_ShowCursorSafe`). Neither end call moves the gamma `ScreenGamma` models
-///   (100 % toward the colour just reached; 0 %), so no op is emitted for them.
+///   `FadeToColor(nil, 0)` + faded out 0 + `_ShowCursorSafe` (a `.showCursor` request, L1). Neither end call moves
+///   the gamma `ScreenGamma` models (100 % toward the colour just reached; 0 %), so no op is emitted for them.
 /// `DAT_100a53c2` (gamma available) is taken as set. The level-start fades of `.GameLoop` are not built (session
 /// header), so a level starts with no fade pending (done) and not faded out [MED: `DAT_100a53d6`'s value at a level
 /// start depends on those unbuilt fades].

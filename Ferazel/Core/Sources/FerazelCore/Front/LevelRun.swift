@@ -5,12 +5,108 @@ public enum LevelEnd: Equatable, Sendable {
     /// G+4 < 1 after the loop (tested first, M l. 5302): `*_DAT_1009ffa8 = 1`, the music faded, `.DeathEffect`.
     case died
     /// `*_DAT_100a0088` (the exit sprite 0xcb1, M l. 49733–49741): `exit1` = `uRam100a5116` (the record's p1),
-    /// `exit2` = `_DAT_100a5118` (p2, stored only when ≠ 0; −1 otherwise).
+    /// `exit2` = `_DAT_100a5118` (p2, stored only when ≠ 0; −1 otherwise). Carry → M1 / F1b: `_DAT_100a5118` is a
+    /// global that only `.ShowWorldMap` resets (to −1, M l. 67561), so in the original a p2 stored on one level stays
+    /// until the next map; the replica's comes from the session's `PlayerState` (fresh per level).
     case completed(exit1: Int16, exit2: Int16)
     /// `DAT_100a5106` with HP ≥ 1 and the level not complete (Esc / ⌘W OK, P1): neither after-loop branch.
     case aborted
     /// ⌘Q OK (P1): the flow quits. // later: P1 (no Phase-3 writer before P1).
     case quit
+}
+
+/// Which renderer executes a `LevelRunOutput` segment's draws (A1a): both draw on the one shared `ScreenSurface`.
+public enum LevelRunTarget: Equatable, Sendable {
+    /// The level `FrameRenderer` (`apply(FrameOps(draws: …))`): the grid, lights, sprites, copy / erase, status bar,
+    /// tiles, water, particles, and the level CLUT (the one its tables are built for).
+    case level
+    /// The level-less `ScreenRenderer` (`apply(_:)`): the front-end ops (fills, picture copies, faces, lines, text,
+    /// the view restore, the timed gamma) and every other CLUT (the chapter card's 280 + n).
+    case screen
+}
+
+/// A run of consecutive draws for one renderer, with the cues and requests that came with them.
+public struct LevelRunSegment: Equatable, Sendable {
+    public let target: LevelRunTarget
+    public var output: FrontOutput
+
+    public init(target: LevelRunTarget, output: FrontOutput) {
+        self.target = target
+        self.output = output
+    }
+}
+
+/// One `LevelRun.tick`'s work (L1 review fix, for A1a): the segments in the order the original makes them — execute
+/// each segment's draws on its target's renderer, in order; `merged` is the whole tick as one `FrontOutput` (the
+/// sounds, music and requests in order, `present` / `prefs` merged).
+///
+/// Routing: an op only one renderer executes goes to it (`FrameRenderer.swift` refuses the front-end ops,
+/// `ScreenRenderer.Refusal.levelOp` the level ops); `setScreenClut(id)` goes to `.level` when `id` is the level's
+/// screen CLUT (the one `FrameRenderer`'s tables are built for — it refuses any other, e.g. clut 281) and to `.screen`
+/// otherwise; `drawPicture` and `gammaStep` (both renderers execute them on the shared surface) stay with the
+/// renderer of the draw before them (`.screen` before any). A cue- or request-only output joins the last segment; an
+/// output split across renderers carries its sounds, music and requests on its first part (a `FrontOutput` does not
+/// order them against its draws).
+public struct LevelRunOutput: Equatable, Sendable {
+    public var segments: [LevelRunSegment] = []
+
+    public init(segments: [LevelRunSegment] = []) { self.segments = segments }
+
+    /// Every segment's output appended in order.
+    public var merged: FrontOutput {
+        var o = FrontOutput()
+        for g in segments { o.append(g.output) }
+        return o
+    }
+
+    /// `o` split into segments by target; `owner` is the renderer of the last draw so far (carried across ticks).
+    mutating func append(_ o: FrontOutput, levelClut: Int16, owner: inout LevelRunTarget) {
+        var rest = o
+        rest.draws = []
+        var first = true
+        func add(_ draws: [DrawOp], _ t: LevelRunTarget) {
+            var part = first ? rest : FrontOutput(present: o.present)
+            part.draws = draws
+            first = false
+            if let last = segments.last, last.target == t {
+                segments[segments.count - 1].output.append(part)
+            } else {
+                segments.append(LevelRunSegment(target: t, output: part))
+            }
+        }
+        var run: [DrawOp] = []
+        for op in o.draws {
+            let t = Self.target(of: op, levelClut: levelClut, owner: owner)
+            if t != owner, !run.isEmpty {
+                add(run, owner)
+                run = []
+            }
+            owner = t
+            run.append(op)
+        }
+        if !run.isEmpty {
+            add(run, owner)
+        } else if first, rest != FrontOutput() {
+            if segments.isEmpty {
+                segments.append(LevelRunSegment(target: owner, output: rest))
+            } else {
+                segments[segments.count - 1].output.append(rest)
+            }
+        }
+    }
+
+    /// The renderer `op` belongs to (the routing rule above).
+    static func target(of op: DrawOp, levelClut: Int16, owner: LevelRunTarget) -> LevelRunTarget {
+        switch op {
+        case .setScreenClut(let id): return id == levelClut ? .level : .screen
+        case .drawPicture, .gammaStep: return owner
+        case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
+        case .redrawScrollGrid, .redrawEntireScrollGrid, .drawLightsOntoTiles, .wrapDrawSprites, .copyToScreen,
+             .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
+             .eraseParticles:
+            return .level
+        }
+    }
 }
 
 /// One level, as `.GameLoop @ 10009d48` runs it (plan S2 `LevelRun`, L1; M l. 5093–5325 with `.SetupLevel @
@@ -61,8 +157,9 @@ public final class LevelRun {
     public private(set) var died = false
     /// How the run ended; nil while it runs.
     public private(set) var end: LevelEnd?
-    /// The `FrameOps` of the iterations the last `tick` stepped (empty when none ran) — what `FrameRenderer.apply`
-    /// takes (A1a); their draws, sounds and cues are also in that tick's `FrontOutput`.
+    /// The `FrameOps` of the iterations the last `tick` stepped (empty when none ran); their draws, sounds and cues are
+    /// also in that tick's `LevelRunOutput` (`.level` segments) — which, unlike these, also holds the level-start draws
+    /// (`.SetupLevel`'s tail, the crunch re-apply's `setTile`s, `startOps()`), so A1a drives the renderers from it.
     public private(set) var lastSteps: [FrameOps] = []
     /// The `.GameLoop` iterations stepped.
     public private(set) var iterations = 0
@@ -101,6 +198,8 @@ public final class LevelRun {
     /// `.DeathEffect`'s next step and the tick it may run.
     private var deathStep = 0
     private var deathNext: UInt32 = 0
+    /// The renderer of the last draw emitted (`LevelRunOutput`'s routing of the shared ops; carried across ticks).
+    private var drawOwner: LevelRunTarget = .screen
 
     /// - Parameters:
     ///   - carry: the previous level's carry (`globals` nil → a fresh `GameGlobals(header:)`, as the session).
@@ -141,7 +240,10 @@ public final class LevelRun {
     }
 
     /// What the next level's run takes: the session's carry (parity, particle counters, water cache, G — the live
-    /// G after this level, crunch log included) plus the tileset and cached-face state `.SetupLevel` left.
+    /// G after this level, crunch log included) plus the tileset and cached-face state `.SetupLevel` left. Carry →
+    /// F1b: the class face cache and the tileset globals `DAT_100a267d` / `_DAT_100a267e` persist across games in the
+    /// original (only the launch data section initialises them), while a `LevelCarry()` starts them fresh — the flow
+    /// must hand this carry on from game to game, not only from level to level.
     public var carry: LevelCarry {
         var c = session?.carry ?? carryIn
         c.tilesetLevel = tilesetLevel
@@ -150,14 +252,14 @@ public final class LevelRun {
         return c
     }
 
-    /// One tick at absolute 60 Hz `now` with this tick's polled input. Throws what the session init or the level
-    /// services throw.
-    public func tick(now: UInt32, input: FrontInput) throws -> FrontOutput {
-        var out = FrontOutput()
+    /// One tick at absolute 60 Hz `now` with this tick's polled input: its draws split by renderer, in order
+    /// (`LevelRunOutput`). Throws what the session init or the level services throw.
+    public func tick(now: UInt32, input: FrontInput) throws -> LevelRunOutput {
+        var out = LevelRunOutput()
         lastSteps = []
         while end == nil {
             if var run = blocking {
-                out.append(run.tick(now: now))
+                emit(&out, run.tick(now: now))
                 guard run.isDone(now: now) else {
                     blocking = run
                     return out
@@ -165,7 +267,7 @@ public final class LevelRun {
                 blocking = nil
             }
             if var c = chapter {
-                out.append(c.tick(now: now, input: input, fade: &fade))
+                emit(&out, c.tick(now: now, input: input, fade: &fade))
                 guard c.isDone else {
                     chapter = c
                     return out
@@ -191,13 +293,17 @@ public final class LevelRun {
         return out
     }
 
+    private func emit(_ out: inout LevelRunOutput, _ o: FrontOutput) {
+        out.append(o, levelClut: ColorLUT.screenClutId(levelFile.header), owner: &drawOwner)
+    }
+
     private func block(_ t: FrontTimeline, now: UInt32) {
         if !t.isEmpty { blocking = TimelineRun(t, start: now) }
     }
 
     // MARK: Entry
 
-    private func run(_ stage: Stage, now: UInt32, input: FrontInput, out: inout FrontOutput) throws {
+    private func run(_ stage: Stage, now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws {
         let h = levelFile.header
         switch stage {
         case .musicOut:
@@ -212,12 +318,12 @@ public final class LevelRun {
             try setupLevel(input: input, out: &out)
             // `_UpdateStageLoad(100, 100)` (M l. 2569), then `_GammaFadeOut(6, …)` (M l. 2570). The colour argument
             // (`_DAT_100a53d0…` halves) only feeds the async fade-out colour [LOW: black, as L2's chapter card].
-            out.append(StageScreens.updateStageLoad(100, of: 100))
+            emit(&out, StageScreens.updateStageLoad(100, of: 100))
             block(fade.gammaFadeOut(6, rgb: RGB16(red: 0, green: 0, blue: 0)), now: now)
         case .setupLevelTail:
             // `_SetScreenClut(*piVar8)` (the level CLUT, hdr+0x285e, 0 → 202), `_DrawPICTToBackScreen(0x81)`, the
             // scroll point zeroed, `_RedrawEntireScrollGrid` (M l. 2571–2582).
-            out.append(FrontOutput(draws: [.setScreenClut(id: ColorLUT.screenClutId(h)),
+            emit(&out, FrontOutput(draws: [.setScreenClut(id: ColorLUT.screenClutId(h)),
                                            .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
                                            .redrawEntireScrollGrid(h: 0, v: 0)], present: true))
         case .gammaIn8:
@@ -226,15 +332,17 @@ public final class LevelRun {
         case .preLoop:
             guard let s = session else { return }
             // `_LoadLevelSounds()` (M l. 5199: header+0x26d0 = 0 on every level — no per-level sounds), `DAT_100a5106
-            // = 0` (M l. 5200), `_HideCursorSafe()` (M l. 5203), then the start draws (M l. 5206–5216). `*fd74 = 0x200`
+            // = 0` (M l. 5200), `_HideCursorSafe()` (M l. 5203), then the start draws (M l. 5206–5216). Carry: a
+            // hosted session no longer sends `.hideMenuBar` — `_HideTheMenuBar` is `.main`'s (M l. 8280) and
+            // `.MainMenu`'s (M l. 7349) → F1a, and `.ContinueGame`'s (M l. 6877) → F1b; `.GameLoop` never calls it. `*fd74 = 0x200`
             // (M l. 5217) and `fe0c`/`511e` (status-bar redraw flags) have no Core reader.
-            out.append(FrontOutput(draws: s.startOps(), requests: [.hideCursor], present: true))
+            emit(&out, FrontOutput(draws: s.startOps(), requests: [.hideCursor], present: true))
             // The boss-music rule (M l. 5218–5220): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ("no boss alive": cleared by a
             // boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
             // Kills that write `fed0` are not transcribed; no Phase-3 level has hdr+0x2724 ≠ 0 (levels 1–2: 0).
             let noBossAlive = false
             let track = h.arenaBound != 0 && noBossAlive ? 0x1e : Int(h.music)
-            out.append(FrontOutput(music: music.setAIFFMusic(track)))
+            emit(&out, FrontOutput(music: music.setAIFFMusic(track)))
             block(music.fadeAIFFMusic(direction: 1, ticks: 4, prefs: prefs), now: now)
         case .chapterGate:
             guard let s = session else { return }
@@ -260,12 +368,12 @@ public final class LevelRun {
         case .completeSave:
             guard let s = session else { return }
             // `.EndLevelSGUpdate @ 1000c8d8` (M l. 6501ff): `FlushEvents`, the stamp (`Mwld+0x100`), `GetDateTime`,
-            // `+6 = 1`, `+8 = L`, `hasSnapshot[L] = 1` in the live G, the G copy, x / y = `*fe68` / `*fe64` (the
-            // `.GameLoop` start, M l. 6533–6534), the live records −6.
+            // `+6 = 1`, `+8 = L`, `hasSnapshot[L] = 1` in the live G, the G copy, x / y = `*fe68` / `*fe64` (M l.
+            // 6541–6542) — the player's whole-px position as `.HandlePlayerSprite` last wrote it (M l. 46367–46376,
+            // every frame): where the player stood at the exit (`PlayerState.pixelX/Y`) — the live records −6.
             var g = s.world.globals
-            save.endLevelSGUpdate(level: Int16(levelNumber), x: Int16(truncatingIfNeeded: s.startX),
-                                  y: Int16(truncatingIfNeeded: s.startY), stamp: worldStamp, date: date(),
-                                  globals: &g, records: s.world.records)
+            save.endLevelSGUpdate(level: Int16(levelNumber), x: s.world.player.pixelX, y: s.world.player.pixelY,
+                                  stamp: worldStamp, date: date(), globals: &g, records: s.world.records)
             s.world.globals = g
         case .stageComplete:
             guard let s = session else { return }
@@ -280,14 +388,14 @@ public final class LevelRun {
         case .finish:
             // `_ShutDownAIFFMusic`, `_TurnOffOmniPx`, `_KillOmniPx` (no OmniPx in Phase 3), `_InputActivate(0, 0)`
             // (no op), `_ShowCursorSafe` (M l. 5320–5324).
-            out.append(FrontOutput(music: music.shutDown(), requests: [.showCursor]))
+            emit(&out, FrontOutput(music: music.shutDown(), requests: [.showCursor]))
             end = levelEnd()
         }
     }
 
     /// `.SetupLevel`'s body up to `.LoadCachedSpriteFaces` (M l. 2252–2568): the bars, the G writes, the session
     /// init (crunch re-apply, records, the Setups, the player), the totals, the cached-face bars.
-    private func setupLevel(input: FrontInput, out: inout FrontOutput) throws {
+    private func setupLevel(input: FrontInput, out: inout LevelRunOutput) throws {
         let h = levelFile.header
         let L = levelNumber
         // `if (*psVar6 == _DAT_100a267e && DAT_100a267d == 0)` (M l. 2252): the restart fast path → 25 % (M l. 2270);
@@ -296,7 +404,7 @@ public final class LevelRun {
         // 01 01 ff ff), so the first level after launch takes the long path.
         let fast = Int16(truncatingIfNeeded: L) == tilesetLevel && !tilesetsDisposed
         for p: Int16 in fast ? [0x19] : [0xf, 0x14, 0x19, 0x23, 0x28] {
-            out.append(StageScreens.updateStageLoad(p, of: 100))
+            emit(&out, StageScreens.updateStageLoad(p, of: 100))
         }
         if !fast {
             // The CLUT ids (M l. 2331–2332, inside the other-level branch, before `.LoadLevelTilesets`).
@@ -324,8 +432,8 @@ public final class LevelRun {
         // `*(G + player +0x46) = param_3` (M l. 5188).
         if let pid = s.world.playerID { s.world.active.update(id: pid) { $0.phase = self.param3 } }
         // The re-apply's tile writes (M l. 2382–2393), then `_UpdateStageLoad(0x32, 100)` (M l. 2519).
-        out.append(FrontOutput(draws: s.setupLevelTileOps))
-        out.append(StageScreens.updateStageLoad(0x32, of: 100))
+        emit(&out, FrontOutput(draws: s.setupLevelTileOps))
+        emit(&out, StageScreens.updateStageLoad(0x32, of: 100))
         if !revisit {
             // A first visit (`bVar1`, M l. 2528–2536): achieved 0, totals ← the Setups' tallies.
             for k in 0..<3 { s.world.globals.achieved[k][L] = 0 }
@@ -335,9 +443,9 @@ public final class LevelRun {
         }
         // `.LoadCachedSpriteFaces` (M l. 2537): one bar per face set / single loaded, then 100 % (M l. 73864).
         for (p, q) in cachedFaces.load(needed: CachedFaces.needed(by: s)) {
-            out.append(StageScreens.updateStageLoad(p, of: q))
+            emit(&out, StageScreens.updateStageLoad(p, of: q))
         }
-        out.append(StageScreens.updateStageLoad(100, of: 100))
+        emit(&out, StageScreens.updateStageLoad(100, of: 100))
         // `*(char *)(G + 0x174) = 0` (M l. 2539).
         s.world.globals.omniPxActive = 0
     }
@@ -345,7 +453,7 @@ public final class LevelRun {
     // MARK: The loop
 
     /// The loop's part of a tick (Invariant 4): returns false when the run waits for a later tick.
-    private func loop(now: UInt32, input: FrontInput, out: inout FrontOutput) throws -> Bool {
+    private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         let reduce = prefs.reduceFrameRate != 0
         // `.GameLoop`'s bottom-of-loop wait (M l. 5285–5294): prefs[0] = 0 → until 2 ticks after the iteration's start;
@@ -363,7 +471,7 @@ public final class LevelRun {
         return true
     }
 
-    private func step(_ s: FerazelSession, input: FrontInput, out: inout FrontOutput) -> FrameOps {
+    private func step(_ s: FerazelSession, input: FrontInput, out: inout LevelRunOutput) -> FrameOps {
         let ops = s.step(keys: input.keys)
         iterations += 1
         lastSteps.append(ops)
@@ -374,7 +482,7 @@ public final class LevelRun {
         // `_HandleAsyncAIFFMusicFade()` (M l. 5281), after `.UpdateStatusBar(1, 0, 0)`: nothing armed outside the
         // boss rule's in-loop block (M l. 5257–5266, // later: Phase 5).
         o.music += music.handleAsyncFade(prefs: prefs)
-        out.append(o)
+        emit(&out, o)
         return ops
     }
 
@@ -401,7 +509,7 @@ public final class LevelRun {
     /// `.DeathEffect` (M l. 2676–2738): `GammaFadeOutAsync(0x30, black)` first (gated: fading enabled, not faded
     /// out — with the entry's fade-in still running the screen is still "faded", so the fade-in keeps going), then
     /// 50 steps one tick apart: the bands (`LevelServices`), one `.HandleAsyncGammaFade`. Returns false while waiting.
-    private func deathEffect(now: UInt32, out: inout FrontOutput) throws -> Bool {
+    private func deathEffect(now: UInt32, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         if deathStep < 0 {
             var g = s.world.gammaFade
@@ -409,7 +517,7 @@ public final class LevelRun {
             g.fadeOut(steps: 0x30, toward: RGB16(red: 0, green: 0, blue: 0))
             s.world.gammaFade = g
             // `.GammaFadeOutAsync` calls `HideCursorSafe` when it arms (M l. 31905).
-            if g != before { out.append(FrontOutput(requests: [.hideCursor])) }
+            if g != before { emit(&out, FrontOutput(requests: [.hideCursor])) }
             deathStep = 0
             deathNext = now
         }
@@ -417,9 +525,12 @@ public final class LevelRun {
             guard Int32(bitPattern: now &- deathNext) >= 0 else { return false }
             try services.deathEffectStep(deathStep)
             var g = s.world.gammaFade
+            let fadingIn = !g.done && g.fadingIn
             let op = g.handle()
             s.world.gammaFade = g
-            out.append(FrontOutput(draws: op.map { [$0] } ?? [], present: true))
+            // The entry's fade-in ending here: `_ShowCursorSafe()` (M l. 31945), as in the session's step.
+            emit(&out, FrontOutput(draws: op.map { [$0] } ?? [], requests: fadingIn && g.done ? [.showCursor] : [],
+                                   present: true))
             deathStep += 1
             deathNext = now &+ 1
             return false

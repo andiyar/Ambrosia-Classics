@@ -312,9 +312,10 @@ Edge case [MED]: if `OpenSG(fd18)` fails (file moved/deleted), ContinueGame retu
 > reloads every flag-1 cached single (level 1: six → bars 7…12 of 12). Level 1 after launch: n 90, q 180, bars p 96 …
 > 180 (12 sets, 18 singles); level 2 after level 1: n 31, q 62. Derivation and the per-type marks: `FerazelCore.CachedFaces`.
 
-> ⚑ planner note (Phase 3 L1, 2026-10-14) (dump): `.EndLevelSGUpdate` stores save +0xc / +0x10 from `*_DAT_1009fe68` /
-> `*_DAT_1009fe64` (M l. 6533–6534) — `.GameLoop`'s param_1 / param_2, the level's start position, not the player's
-> position at the exit. A first visit's totals come from the three Setup tallies (`*ffb4` enemies, `*ffb0` Xichrons,
+> ⚑ planner note (Phase 3 L1, 2026-10-14; corrected in the L1 review fix) (dump): `.EndLevelSGUpdate` stores save +0xc /
+> +0x10 from `*_DAT_1009fe68` / `*_DAT_1009fe64` (M l. 6541–6542). `.GameLoop` seeds them with param_1 / param_2 (M l.
+> 5146–5148), but `.HandlePlayerSprite` rewrites them every frame with the player's whole-px x / y (M l. 46367–46376;
+> see the globals table above), so the completion save holds the player's position at the exit, not the start. A first visit's totals come from the three Setup tallies (`*ffb4` enemies, `*ffb0` Xichrons,
 > `*ffac` secrets), counted only while `*_DAT_1009fe8c` is set around `.SetupLevelSprites` (M l. 2520–2536); level 1:
 > 15 / 43 / 10.
 
