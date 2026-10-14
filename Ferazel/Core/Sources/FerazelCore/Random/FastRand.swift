@@ -27,9 +27,11 @@ public struct FastRand: Sendable {
         Int32(bitPattern: secondsSince1904 &+ ticks)
     }
 
-    /// The host clock: seconds since 1904 from the wall clock, ticks from the system uptime.
+    /// The host clock: seconds since 1904 in local time (`GetDateTime`, M l. 334, counts the Mac's local clock), ticks
+    /// from the system uptime.
     public static let systemClock: Clock = {
-        let since1904 = Date().timeIntervalSince1970 + 2_082_844_800
+        let date = Date()
+        let since1904 = date.timeIntervalSince1970 + 2_082_844_800 + Double(TimeZone.current.secondsFromGMT(for: date))
         let ticks = ProcessInfo.processInfo.systemUptime * 60
         return (UInt32(truncatingIfNeeded: Int64(since1904)), UInt32(truncatingIfNeeded: Int64(ticks)))
     }

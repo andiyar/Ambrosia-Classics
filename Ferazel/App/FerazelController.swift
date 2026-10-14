@@ -51,6 +51,11 @@ import HectorShell
     /// `TickCount()` at the start of the step the next wait is measured from (`.GameLoop`'s `start`); nil before the
     /// first step.
     private var lastStepStart: UInt32?
+    /// The iteration being run: its `start` and the ticks its bottom-of-loop wait (M l. 5285–5294) holds after that
+    /// start — 2 with prefs[0] = 0; with prefs[0] set, 4 on the drawing iteration and 0 on the non-drawing one. An
+    /// ending begun in it waits this out before its first step.
+    private var frameStart: UInt32 = 0
+    private var frameWait: UInt32 = 0
 
     /// The game asked for the menu bar hidden (`.hideMenuBar`); honoured in full screen only (design §7.4).
     private var wantsMenuBarHidden = false
@@ -61,6 +66,12 @@ import HectorShell
 
     /// What `.GameLoop` does after its loop (M l. 5296–5320), stepped by the clock because the original blocks in it.
     private struct Ending {
+        enum Cause {
+            /// G+4 < 1: the wipe runs and the current level restarts (`deathEffectDone`).
+            case death
+            /// The level an exit asked for (`LevelFlow`).
+            case exit(next: Int)
+        }
         enum Phase {
             /// `.FadeAIFFMusic(0, 2)`'s step s (0 … 24; 24 = the closing volume 0).
             case fade(Int)
@@ -68,10 +79,8 @@ import HectorShell
             case wipe(Int)
             case finish
         }
-        /// G+4 < 1: the wipe runs and the current level restarts (`deathEffectDone`).
-        let death: Bool
-        /// The level an exit asked for (`LevelFlow`).
-        let next: Int
+        let cause: Cause
+        var death: Bool { if case .death = cause { true } else { false } }
         var phase: Phase
         /// `TickCount()` at the start of the step being waited out, and the ticks to wait.
         var stepStart: UInt32?
@@ -149,10 +158,12 @@ import HectorShell
         lastStepStart = nil
     }
 
-    /// `ShellRequest.loadLevel(n)`: effects stopped, then the session rebuilt on level `n` with the old session's
-    /// stream (`rngSeed`) and `carry` (globals on an exit; parity, particle counters and water cache always — W4, E1).
+    /// `ShellRequest.loadLevel(n)`: the session rebuilt on level `n` with the old session's stream (`rngSeed`) and
+    /// `carry` (globals on an exit; parity, particle counters and water cache always — W4, E1). No stop-all sweep: the
+    /// binary has none on this path (its only `FUN_10091504(0)` calls are M l. 78109/78153; `_LoadLevelSounds`,
+    /// M l. 1667, disposes only for a level with its own sounds, header+0x26d0 = 0 in all levels) — the after-loop
+    /// stops (M l. 5298–5299, 5308–5310) came in the last frame's ops, and anything else (the exit cue) plays out.
     private func loadLevel(_ n: Int) {
-        audio?.stopEffects()
         let seed = session.rngSeed
         let carry = session.carry
         do {
@@ -242,22 +253,26 @@ import HectorShell
         if prefs.reduceFrameRate == 0 {
             if let last = lastStepStart, now &- last < 2 { return }
             lastStepStart = now
-            runStep()
+            runStep(start: now)
         } else {
             if let last = lastStepStart, now &- last < 4 { return }
-            // The session's parity decides which iteration draws (the first skips, R5); run until one has drawn.
-            if !runStep() {
-                lastStepStart = ShellClock.ticks()
-                runStep()
+            // The session's parity decides which iteration draws (the first skips, R5); run until one has drawn —
+            // unless the skipped iteration ended the loop (the original's `while` test stops there).
+            if !runStep(start: now) {
+                guard ending == nil else { return }
+                let start = ShellClock.ticks()
+                lastStepStart = start
+                runStep(start: start)
             } else {
                 lastStepStart = now
             }
         }
     }
 
-    /// One `.GameLoop` iteration: keys → `session.step` → `renderer.apply` → present. Returns `FrameOps.drawn`.
+    /// One `.GameLoop` iteration begun at `start`: keys → `session.step` → `renderer.apply` → present. Returns
+    /// `FrameOps.drawn`.
     @discardableResult
-    private func runStep() -> Bool {
+    private func runStep(start: UInt32) -> Bool {
         let held = shell.view.pollKeyState().held
         let ops = session.step(keys: KeyState(pressed: held.map { Self.keyMapCode(Int($0)) }))
         do {
@@ -267,6 +282,8 @@ import HectorShell
             fail("the frame could not be drawn: \(error)")
             return ops.drawn
         }
+        frameStart = start
+        frameWait = prefs.reduceFrameRate == 0 ? 2 : (ops.drawn ? 4 : 0)
         audio?.apply(sounds: ops.sounds, stops: ops.soundStops, stopAt: ops.soundStopAt)
         for cue in ops.music { audio?.handle(cue) }
         for request in ops.requests { honour(request) }
@@ -277,11 +294,14 @@ import HectorShell
     // MARK: After the loop
 
     /// The loop ended (the frame that ended it has run; its sound stops — M l. 5298–5299, and 5308–5310 on a level
-    /// complete — came in its ops). The music fade comes first when its gate is open.
-    private func beginEnding(death: Bool, next: Int) {
+    /// complete — came in its ops), but its own frame wait (M l. 5285–5294) is still to run out before the first
+    /// after-loop step. The music fade comes first when its gate is open.
+    private func beginEnding(_ cause: Ending.Cause) {
         guard ending == nil else { return }
         let fades = audio?.canFadeOut ?? false
-        ending = Ending(death: death, next: next, phase: fades ? .fade(0) : (death ? .wipe(0) : .finish))
+        var e = Ending(cause: cause, phase: .finish, stepStart: frameStart, wait: frameWait)
+        e.phase = fades ? .fade(0) : (e.death ? .wipe(0) : .finish)
+        ending = e
     }
 
     /// One clock fire inside the after-loop sequence: waits out the current step, then runs the next. Death (l. 5302–
@@ -326,7 +346,11 @@ import HectorShell
             case .finish:
                 ending = nil
                 audio?.shutDownMusic()
-                let request = e.death ? session.deathEffectDone() : .loadLevel(e.next)
+                let request: ShellRequest
+                switch e.cause {
+                case .death: request = session.deathEffectDone()
+                case .exit(let next): request = .loadLevel(next)
+                }
                 if case .loadLevel(let n) = request { loadLevel(n) }
                 return
             }
@@ -369,8 +393,8 @@ import HectorShell
         case .showCursor: wantsCursorHidden = false
         case .hideMenuBar: wantsMenuBarHidden = true
         case .showMenuBar: wantsMenuBarHidden = false
-        case .loadLevel(let n): beginEnding(death: false, next: n)
-        case .deathEffect: beginEnding(death: true, next: session.levelNumber)
+        case .loadLevel(let n): beginEnding(.exit(next: n))
+        case .deathEffect: beginEnding(.death)
         }
         updateMenuBar()
         updateCursor()

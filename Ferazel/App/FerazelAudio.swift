@@ -73,7 +73,7 @@ import HectorShell
         }
     }
 
-    /// Silences every effect (the level is being replaced, plan A3 `loadLevel`): each `snd ` id's `FUN_10091504`.
+    /// Silences every effect (on quit, `stopAll`): each `snd ` id's `FUN_10091504`.
     func stopEffects() {
         guard let tool = soundTool else { return }
         for id in soundIDs { tool.stop(snd: id) }
