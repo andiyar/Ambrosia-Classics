@@ -49,6 +49,35 @@ public struct ScreenGamma: Sendable, Equatable {
         }
     }
 
+    /// `.TintFadeProc @ 10034f40`'s per-channel factors (R, G, B) at `percent` (handlers dump l. 178ff, raw
+    /// `10034fd8..10035268`): t = percent · 0.01 **rounded to single precision** (`frsp`, raw `10035008`); mode 3
+    /// (`.GammaFadeOut`, raw `100351e0..10035268`): B · (1 − t), G · max(1 − 1.35t, 0), R · max(1 − 2.5t, 0) — each
+    /// `1 − k·t` one fused `fnmsub` (1.35 @ `100a1960`, 2.5 @ `100a1958`) — so the fade goes red first, blue last.
+    /// Modes 0 / 1 / 2 keep R / G / B · (1 − t) and the other two · max(1 − 2t, 0) (2 @ `100a1970`; lighting-tables §10
+    /// [MED: no caller passes them]); any other mode leaves the values.
+    public static func tintFactors(mode: Int, percent: Int) -> [Double] {
+        let t = Double(Float(Double(percent) * 0.01))
+        func clamp(_ k: Double) -> Double { max(1.0.addingProduct(-k, t), 0) }
+        let keep = 1 - t
+        switch mode {
+        case 3: return [clamp(2.5), clamp(1.35), keep]
+        case 0: return [keep, clamp(2), clamp(2)]
+        case 1: return [clamp(2), keep, clamp(2)]
+        case 2: return [clamp(2), clamp(2), keep]
+        default: return [1, 1, 1]
+        }
+    }
+
+    /// One tick of `MT_FadeCustom(0, 100, ms, .TintFadeProc, mode)` at `percent`: the **unfaded** gamma scaled by
+    /// `tintFactors` (the proc writes the scaled values back into the list in place; whether that compounds tick to tick
+    /// is the library's `MT_FadeCustom` [MED] — the replica scales the original table each tick, lighting-tables §10
+    /// + BC28). The scaled values truncate toward zero (`FUN_10090a64`, double → u32).
+    public static func tintFade(mode: Int, percent: Int) -> ScreenGamma {
+        var g = ScreenGamma()
+        g.gain = tintFactors(mode: mode, percent: percent)
+        return g
+    }
+
     /// Channel `c` (0 R, 1 G, 2 B) of a 16-bit value through this gamma.
     public func apply(_ v: UInt16, channel c: Int) -> UInt16 {
         let x = (gain[c] * Double(v) + offset[c]).rounded(.towardZero)

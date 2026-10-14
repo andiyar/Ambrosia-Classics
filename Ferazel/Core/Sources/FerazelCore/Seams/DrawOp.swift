@@ -46,4 +46,25 @@ public enum DrawOp: Equatable, Sendable {
     /// `.EraseParticles @ 10031d6c` (l. 9449), drawn iterations only, right after `.WrapCopyToScreen`: what the last
     /// `drawParticles` drew is restored from the tile port by each record's erase mode `+0x1d`.
     case eraseParticles
+
+    // MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
+
+    /// `RGBForeColor(rgb)` + `PaintRect` (right and bottom exclusive): the colour through `Color2Index` in the screen
+    /// CLUT.
+    case fillRect(left: Int, top: Int, right: Int, bottom: Int, rgb: RGB16)
+    /// `CopyBits` of PICT `id`'s `source` rect into the screen's `dest` rect (stretched when the sizes differ);
+    /// `forceClut` = `CopyBitsCTForce` (the picture converted under that CLUT, then copied by colour into the screen
+    /// CLUT); `transparent` = transfer mode 0x24 (white source pixels skipped, raw `10079870`).
+    case copyPicture(id: Int16, chain: ResourceChain, source: Rect16, dest: Rect16, forceClut: Int16?,
+                     transparent: Bool)
+    /// A world-map face (node / marker / boss / ambient) centred per the slop-8 port (M2).
+    case drawFace(set: FrontFaceSet, index: Int, h: Int, v: Int)
+    /// A 1-pixel QuickDraw line (pen 1×1) from (h1, v1) to (h2, v2) in `rgb` (map links, M2).
+    case drawLine(h1: Int, v1: Int, h2: Int, v2: Int, rgb: RGB16)
+    /// `DrawString` / `DrawText` (`TextRun`).
+    case drawText(TextRun)
+    /// `.WrapCopyToScreen` of the last drawn level frame (C2).
+    case restoreView
+    /// A Monitor-Tool gamma change (`ScreenGammaOp`): tint-fade percent, `FadeToColor` percent, identity, a CLUT.
+    case screenGamma(ScreenGammaOp)
 }

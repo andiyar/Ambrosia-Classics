@@ -485,6 +485,17 @@ Liquid screen tint (`.HandlePlayerSprite`, handlers l. 2704–2730) [MED]: while
 `TintScreen(colour, 15)` with kind 0 → (0,0,64000), 1 → (0,64000,0), 2 → (64000,0,0), other kinds →
 black; cleared with `TintScreen(nil)` when `+0x11c` is 0 or > 10.
 
+> ⚑ planner note (Phase 3 FE0, 2026-10-14) (BC28): `.GammaFadeOut` ms = `trunc(0.7 · Double(55 · trunc(2.3n)))` in that
+> order — `fctiwz(2.3n)`, the integer `extsh(m)·0x37`, × 0.7, `FUN_10090a64` (double → u32) — n 3 → 230, not 231 (raw
+> `10035338..100353c4`); it also sets `53d6 = 1` (M l. 31799). `.TintFadeProc`'s t = pct·0.01 is rounded to single
+> precision (`frsp`, raw `10035008`), each `1 − k·t` is one fused `fnmsub`, and the scaled values are written back into
+> the list in place (whether that compounds tick to tick is `MT_FadeCustom`'s [MED]; the replica scales the unfaded
+> table each tick). `.GammaFadeIn` ends with `ShowCursorSafe`; its n 6 sequence is 0, 0, 1, 2 … 9, 9, 10 … 18 (BC16).
+> Music (M l. 41852–42140): `.SetAIFFMusic(−1)` does nothing (no stop); `SetMovieVolume(0)` precedes `StartMovie`;
+> `.FadeAIFFMusicAsync`'s fade-in clears `*0448` at its **start** (`stb r6` raw `10049c5c`) as well as at the handler's
+> end. Data-section initials: `5be0` = −1, `5be2` = 1, `198c` = 1, `53c2` = `53d6` = 1. Transcribed in
+> `FerazelCore.ScreenFade` / `MusicFade`, `FerazelRender.ScreenGamma.tintFade`.
+
 ## NOT RESOLVED
 1. **Exact index chosen by `Color2Index`.** The inverse-table resolution (`MakeITable(c, nil, 0)` →
    device preference) and the nearest rule are ROM code. Tried: res-4, res-5 and exact-nearest

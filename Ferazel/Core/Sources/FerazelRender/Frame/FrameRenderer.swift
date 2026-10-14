@@ -82,15 +82,28 @@ public final class FrameRenderer {
     public let search: ColorSearch
     public let dither: DitherModel
     public private(set) var tables: LevelTables
-    /// The screen (the main device's 640×480 pixels).
-    public private(set) var screen: IndexedFrame
-    /// The CLUT the screen shows through (`.SetScreenClut`); present with `screen.rgba(through: screenClut,
-    /// gamma: gamma)`, or through `presentedClut`.
-    public private(set) var screenClut: ColorLUT
-    /// The screen gamma the Monitor Tool fades leave (`DrawOp.gammaStep`; lighting-tables §10).
-    public private(set) var gamma = ScreenGamma.identity
+    /// The screen this renderer draws on (FE0): the shared `ScreenSurface` handed to `init(surface:)`, else its own.
+    public let surface: ScreenSurface
+    /// The screen (the main device's 640×480 pixels) — `surface.frame`.
+    public private(set) var screen: IndexedFrame {
+        get { surface.frame }
+        _modify { yield &surface.frame }
+        set { surface.frame = newValue }
+    }
+    /// The CLUT the screen shows through (`.SetScreenClut`) — `surface.clut`; present with `screen.rgba(through:
+    /// screenClut, gamma: gamma)`, or through `presentedClut`.
+    public private(set) var screenClut: ColorLUT {
+        get { surface.clut }
+        set { surface.clut = newValue }
+    }
+    /// The screen gamma the Monitor Tool fades leave (`DrawOp.gammaStep`; lighting-tables §10) — `surface.gamma`.
+    public private(set) var gamma: ScreenGamma {
+        get { surface.gamma }
+        _modify { yield &surface.gamma }
+        set { surface.gamma = newValue }
+    }
     /// `screenClut` through `gamma` — what the screen shows; presentation only (the app's MacGamma goes on top).
-    public var presentedClut: ColorLUT { gamma.apply(screenClut) }
+    public var presentedClut: ColorLUT { surface.presentedClut }
     public private(set) var ports: FramePorts
     public private(set) var grid: TileGridRenderer
     public private(set) var sprites: SpriteBlitter
@@ -121,8 +134,11 @@ public final class FrameRenderer {
     /// `SetupFaces.boxChildSheets`), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
+    /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
+    ///   change them (the level's `setScreenClut` / `drawPicture`). Nil (today's tests): a fresh surface — a 0-filled
+    ///   frame under the level CLUT, identity gamma.
     public init(resources: FerazelResources, level: Int, search: ColorSearch, dither: DitherModel,
-                text: any TextRasterizer, prefs: FerazelPrefs = FerazelPrefs()) throws {
+                text: any TextRasterizer, prefs: FerazelPrefs = FerazelPrefs(), surface: ScreenSurface? = nil) throws {
         self.resources = resources
         self.prefs = prefs
         self.search = search
@@ -134,7 +150,7 @@ public final class FrameRenderer {
         self.level = L
         levelData = mlvl.data
         let clut = try ColorLUT.load(id: ColorLUT.screenClutId(L.header), from: resources, chain: .level)
-        screenClut = clut
+        self.surface = surface ?? ScreenSurface(clut: clut)
         levelClut = clut
         // Tint table 0xa takes `.BuildTintTable`'s draws from the session's stream: built here with 0s, rebuilt by
         // `buildTintTable(session.tintTableDraws)` before the first `apply` (as `addLights`).
@@ -165,7 +181,6 @@ public final class FrameRenderer {
         particles = ParticleRenderer(system: try ColorLUT.load(id: 801, from: resources, chain: .frontEnd),
                                      screenClut: clut, search: search, tables: tables,
                                      darkness: L.header.darknessEnable, effects: prefs.effects)
-        screen = IndexedFrame()
         ports = FramePorts()
     }
 
@@ -346,6 +361,9 @@ public final class FrameRenderer {
             case .eraseParticles:
                 particles.erase(scroll: scroll, ports: &ports)
                 executed.append(.eraseParticles)
+            case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
+                // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.
+                break
             case .statusBar(let state):
                 let full = statusBarFull
                 statusBar.update(state, full: full, screen: &screen)

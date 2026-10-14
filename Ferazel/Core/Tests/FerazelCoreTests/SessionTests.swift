@@ -301,6 +301,13 @@ final class SessionTests: XCTestCase {
                 case .wrapDrawWaterEffects: return "water"
                 case .drawParticles: return "particles"
                 case .eraseParticles: return "eraseP"
+                case .fillRect: return "fill"
+                case .copyPicture: return "copyPicture"
+                case .drawFace: return "face"
+                case .drawLine: return "line"
+                case .drawText: return "text"
+                case .restoreView: return "restoreView"
+                case .screenGamma: return "screenGamma"
                 }
             }
         }

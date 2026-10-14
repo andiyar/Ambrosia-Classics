@@ -396,6 +396,8 @@ import HectorShell
         case .showMenuBar: wantsMenuBarHidden = false
         case .loadLevel(let n): beginEnding(.exit(next: n))
         case .deathEffect: beginEnding(.death)
+        case .dialog, .putFile, .getFile, .quit, .showMenuBarItems:
+            break   // Phase 3 front end (FE0 seam): honoured once the App drives GameFlow (A1a, A1b)
         }
         updateMenuBar()
         updateCursor()
