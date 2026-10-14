@@ -1107,12 +1107,23 @@ final class BackgroundMoverTests: XCTestCase {
         let b = try XCTUnwrap(w.active.sprite(id: id)?.radial)
         XCTAssertEqual([b.radius, Int32(b.gravity), b.speed], [140 << 8, 30, 0])
         XCTAssertEqual(b.spokes.count, 140 / 16)
-        // In a level-1 session: records 16 and 44 (1485, p2 120, p3 0) become p3 30; every other record as loaded.
+        // In a level-1 session: records 16 and 44 (1485, p2 120, p3 0) become p3 30; the roaches (0x6b8) whose p3 is 0
+        // on file — records 15, 19, 27, 30, 163 — become p3 0xaa (`.SetupRoachSprite`, l. 64940–64944); every other
+        // record as loaded.
         let s = try session()
+        let roaches = [15, 19, 27, 30, 163]
+        XCTAssertEqual(s.level.placements.filter { $0.flag == 1 && $0.type == 0x6b8 && $0.p3 == 0 }.map(\.index),
+                       roaches)
+        XCTAssertEqual([s.world.records[19].type, s.world.records[19].p3], [0x6b8, 170])
         for i in 0..<LevelFile.placementCount {
             if i == 16 || i == 44 {
                 XCTAssertEqual([s.world.records[i].p2, s.world.records[i].p3], [120, 30])
                 XCTAssertEqual(s.level.placements[i].p3, 0)
+            } else if roaches.contains(i) {
+                let (r, p) = (s.world.records[i], s.level.placements[i])
+                XCTAssertEqual([p.p3, r.p3], [0, 170], "record \(i)")
+                XCTAssertEqual(Placement(index: r.index, flag: r.flag, byte1: r.byte1, type: r.type, p1: r.p1, p2: r.p2,
+                                         p3: 0, p4: r.p4, y: r.y, x: r.x), p, "record \(i)")
             } else {
                 XCTAssertEqual(s.world.records[i], s.level.placements[i], "record \(i)")
             }

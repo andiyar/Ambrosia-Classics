@@ -101,7 +101,8 @@ public enum SetupFaces {
         /// The light the Setup adds (`.AddLight`), nil when none.
         public let light: Light?
         /// The placement record as the Setup leaves it: the Setups that write defaults back (W2a: 1480–1489's p2 0 →
-        /// 0x8c, p3 0 → 0x1e) change it; every other Setup leaves the record it read.
+        /// 0x8c, p3 0 → 0x1e; the Roach's p3 0 → 0xaa, M l. 64940–64944) change it; every other Setup leaves the record
+        /// it read.
         public let record: Placement
     }
 
@@ -471,6 +472,11 @@ public enum SetupFaces {
         case .roach:
             s.layer = 0xb                                      // l. 64923
             face(0x6b8, 0, .setupCached)
+            // The live record's p3 (`*_DAT_100a0058 + 16·(+0x48) + 0xc`): 0 → 0xaa, written back (l. 64940–64944).
+            if p.p3 == 0 {
+                record = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2,
+                                   p3: 0xaa, p4: p.p4, y: p.y, x: p.x)
+            }
 
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
