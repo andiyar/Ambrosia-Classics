@@ -1128,6 +1128,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   `STPlay3DSoundRand`'s R(10000) + 0xec77, both correct; then 401/402/403 by R(3) at 0xab → 65/65).
 - **Commit:** `FerazelCore: Sound Tool cue arithmetic (Reg/Pitched/3D/Rand, CalcStereoVolume), cues at every Phase-2 call site, stops and only-if-idle; 7 tests`.
 
+- ⚑ **As executed (S1, loop run 6, 2026-10-14; 3098bf7 + fix round 4b1e218; one Opus leg MERGEABLE (42 mutants / 7 survivors → pinned), fix round re-reviewed MERGEABLE 16/16):** G2 **250** / 0; no golden moved. `.UpdateDynamicSounds`: never armed → not built. Dump beats plan: play/stop order through the seam needs `FrameOps.soundStopAt` (ADDED, Invariant 9); the app interleaves. After-loop stops are Core's; the music fade is A3's. Cue sites also in `Breathing`, `PlayerState`, `PlatformSprite` (none in `BoxSprite`). Bank corrections 8–9 (`sprites-backgrounds-sounds.md`). D33 as built.
+
 ### Wave 2.5 — goldens, app, stage
 
 #### GD — minor — Phase 2 goldens (→ 238)
@@ -1140,6 +1142,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   row 19: frame-hash FNV, entry splash count 96) · `testLevel1ScriptedPlayGolden` (600 frames of a fixed walk/run/jump
   script: hash of frame hashes, cue list hash, final state).
 - **Commit:** `FerazelRender: Phase 2 goldens (level 2 frame 1, jump, swim, 600-frame scripted play); 4 tests`.
+
+- ⚑ **As executed (GD, loop run 6, 2026-10-14; 42a0a6e + fix round 04032ac; one Opus leg NOT MERGEABLE (goldens weaker than named) → fix round, test-only):** G2 **254** / 0. Deviations: L2 also hashes iteration 2; jump runs 40 frames (30 never land); water is unreachable by walking right — a 357-frame route (col-24 wall broken by a spin-jump fall) enters the plan's pool; the 600-frame play starts with that route. Hashes in D33 as built. Swimming itself is not covered (wading pool).
 
 #### A3 — ⚑ MAJOR — App: original keys, sound, level switch, restart
 - **Files:** `Ferazel/App/{FerazelController,FerazelAudio}.swift`.
@@ -1154,6 +1158,8 @@ reviewers are Opus 5.5 (Ben 2026-10-07; no Fable legs).** Each task's preconditi
   Phase 2 loads levels 1–2 only) — Ben D33. Seed = `FastRand.clockSeed` at launch. ⌘Q/⌘W keep their menu meaning
   [LOW, gate card]. Debug alert unchanged.
 - **Gate:** G5 (Ferazel). **Commit:** `Ferazel app: original keys only, Sound Tool effects, level switching (exit, FerazelLevel), death wipe + restart`.
+
+- ⚑ **As executed (A3, loop run 6, 2026-10-14; 85c5514 + fix round 8d94b4d; two Opus legs MERGEABLE, fix round re-reviewed MERGEABLE):** G5 BUILD SUCCEEDED, G2 254/0. Dump beats plan: no stop-all on `loadLevel` (exit cue 421 plays out). Ending: music fade 24 × 2 ticks, death wipe 50 steps, after the last frame's wait. Clock seed local time (`FastRand.swift`, outside Files). Carries in D33 as built.
 
 #### A4 — minor — Stage + WHAT-TO-EXPECT + the Phase 2 gate card
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (rewritten for Phase 2; fixes the stale "MacGamma not built" lines),
