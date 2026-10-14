@@ -327,10 +327,9 @@ public enum CrunchTiles {
 
     /// The crunched-tile log (`G+0xad6` < 20000): level byte, row, column (raw `10044bc8..10044c14`).
     static func log(_ w: SpriteWorld, col: Int, row: Int) {
-        guard w.globals.crunchLog.count < 20000 else { return }
-        w.globals.crunchLog.append(CrunchLogEntry(level: Int8(truncatingIfNeeded: w.level.id),
-                                                 col: Int16(truncatingIfNeeded: col),
-                                                 row: Int16(truncatingIfNeeded: row)))
+        w.globals.appendCrunch(CrunchLogEntry(level: Int8(truncatingIfNeeded: w.level.id),
+                                             col: Int16(truncatingIfNeeded: col),
+                                             row: Int16(truncatingIfNeeded: row)))
     }
 
     /// `.FindCrunchSprite(tx, ty)`: the first table slot whose sprite's pixel copy `+0xc`/`+0xa` is (tx·32 + 16,

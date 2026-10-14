@@ -16,7 +16,7 @@ public struct CrunchLogEntry: Equatable, Sendable {
 
 /// The game-globals block `G` (`_DAT_1009ffc0`; engine §9, save-continue §3.3) — all 0x19978 bytes by named field,
 /// as the PPC lays them out (big-endian; `image()` / `init(image:)`). Never-accessed bytes are gaps: not stored, written
-/// 0 (Phase 3 Invariant 7): `+0x18..+0x1f`, `+0x21`, byte `+9` of each inventory slot, `+0x132..+0x171`, `+0x175`.
+/// 0 (Phase 3 Invariant 7): `+0x18..+0x1f`, `+0x21`, byte `+9` of each inventory slot (see `InventorySlot`), `+0x132..+0x171`, `+0x175`.
 /// No pointers in G. Start values: `.InitGameGlobals @ 10001498` (M l. 582–825; `initGameGlobals(previous:)`).
 /// `+0x16` (start facing) is the header's 0x26c8, copied by `.NewGame` before `.GameLoop` (M l. 5821).
 public struct GameGlobals: Equatable, Sendable {
@@ -107,6 +107,18 @@ public struct GameGlobals: Equatable, Sendable {
             }
             crunchCount = Int16(newValue.count)
         }
+    }
+
+    /// `.CrunchTile`'s append (raw `10044bc8..10044c14`): while the count is < 20000, writes the one slot at the
+    /// count (level byte, row, column) and bumps the count; at 20000 nothing is logged. O(1) — the same result as
+    /// `crunchLog.append(entry)` behind that guard, without rebuilding the log.
+    public mutating func appendCrunch(_ entry: CrunchLogEntry) {
+        let n = max(0, min(Int(crunchCount), GameGlobals.crunchCapacity))
+        guard n < GameGlobals.crunchCapacity else { return }
+        crunchLevels[n] = entry.level
+        crunchRows[n] = entry.row
+        crunchCols[n] = entry.col
+        crunchCount = Int16(n + 1)
     }
 
     /// The cleared block (every field 0) — what `initGameGlobals(previous: nil)` starts from, and G inside a

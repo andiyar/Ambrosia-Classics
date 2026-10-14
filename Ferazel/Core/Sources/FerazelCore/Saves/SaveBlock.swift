@@ -104,6 +104,11 @@ public struct SaveBlock: Equatable, Sendable {
     /// **before** the G copy (`1000c1cc..1000c1e0`, so the copy carries the flag), x / y sign-extended (`1000c204`,
     /// `1000c214`), `+4 = +5 = 0` (`1000c220`, `1000c22c`), then the 511 live records (`world.records`) with x (+0xe)
     /// and y (+0xc) each −6 (`1000c2a4..1000c2d8`). The file write (`SaveSG`) and the redraw are the caller's.
+    ///
+    /// `globals` is the LIVE G (the session's / world's), not a copy: the binary sets `hasSnapshot[L]` in the live G
+    /// (`1000c1c0`) before copying it in, so the flag lands in both. Never pass a G that aliases this block's own
+    /// `globals` storage held in the same class instance (e.g. `owner.save.savePointSave(…, globals: &owner.save.globals,
+    /// …)`) — overlapping `inout` accesses trap (Swift exclusive access).
     public mutating func savePointSave(level: Int16, x: Int16, y: Int16, stamp: UInt32, date: UInt32,
                                        globals: inout GameGlobals, records: [Placement]) {
         writeSnapshotSave(level: level, x: x, y: y, stamp: stamp, date: date, globals: &globals, records: records,
@@ -111,7 +116,7 @@ public struct SaveBlock: Equatable, Sendable {
     }
 
     /// `.EndLevelSGUpdate @ 1000c8d8` (M l. 6501ff): `savePointSave` without the `+4/+5` stores (and without
-    /// `InputActivate` / `SaveSG` — memory only).
+    /// `InputActivate` / `SaveSG` — memory only). `globals` is the live G, as for `savePointSave` (same aliasing rule).
     public mutating func endLevelSGUpdate(level: Int16, x: Int16, y: Int16, stamp: UInt32, date: UInt32,
                                           globals: inout GameGlobals, records: [Placement]) {
         writeSnapshotSave(level: level, x: x, y: y, stamp: stamp, date: date, globals: &globals, records: records,
@@ -121,7 +126,8 @@ public struct SaveBlock: Equatable, Sendable {
     /// The level-L snapshot as the game restores it: the 511 stored records with +6 on x and y (`.SetupLevel`
     /// M l. 2405–2409, `.ContinueGame` M l. 6744–6747).
     public func restoreSnapshot(level: Int16) -> [Placement] {
-        snapshots[Int(level)].map { $0.moved(by: 6) }
+        precondition((0..<SaveBlock.snapshotLevels).contains(Int(level)), "level outside the 100 snapshot slots")
+        return snapshots[Int(level)].map { $0.moved(by: 6) }
     }
 
     private mutating func writeSnapshotSave(level L: Int16, x: Int16, y: Int16, stamp: UInt32, date: UInt32,

@@ -67,9 +67,12 @@ final class SaveBlockTests: XCTestCase {
 
     func testGameGlobalsRoundTrip() throws {
         var g = GameGlobals.initGameGlobals(previous: nil)
-        g.score = 0x01020304; g.health = 11; g.breath = 12; g.suffocation = 13; g.maxHealth = 14; g.maxMagic = 15
-        g.magic = 16; g.coins = 17; g.unread12 = 18; g.xichrons = 19; g.startFacing = 1; g.darknessOverride = 0xab
-        g.savedDarkness = -3; g.selectedSlot = 5; g.omniPxActive = 1
+        // Every scalar a distinct non-default value, so a field read and written at the same wrong offset (which
+        // the round trip alone cannot see) fails the raw-offset asserts below.
+        g.score = 0x01020304; g.health = 0x1104; g.breath = 0x1206; g.suffocation = 0x1308; g.maxHealth = 0x140a
+        g.maxMagic = 0x150c; g.magic = 0x160e; g.coins = 0x1710; g.unread12 = 0x1812; g.xichrons = 0x1914
+        g.startFacing = 0x1a16; g.darknessOverride = 0xab; g.savedDarkness = -3; g.selectedSlot = 0x1d72
+        g.omniPxActive = 0x5d
         g.inventory[26] = InventorySlot(id: 7, count: 99, field4: 3, field6: -2, isSpell: 1)
         g.hasSnapshot[99] = 1; g.unlocked[42] = 1; g.achieved[4][99] = 21; g.achieved[0][0] = 22
         g.totals[2][50] = 23; g.totals[4][99] = 24; g.worldFlags[1023] = 25; g.worldFlags[0] = 26
@@ -80,9 +83,16 @@ final class SaveBlockTests: XCTestCase {
         XCTAssertEqual(try GameGlobals(image: image), g)
         XCTAssertEqual(try GameGlobals(image: image).image(), image)
         XCTAssertEqual(u32(image, 0), 0x01020304)
+        XCTAssertEqual([0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e, 0x10, 0x12, 0x14, 0x16].map { u16(image, $0) },
+                       [0x1104, 0x1206, 0x1308, 0x140a, 0x150c, 0x160e, 0x1710, 0x1812, 0x1914, 0x1a16],
+                       "health, breath, suffocation, maxHealth, maxMagic, magic, coins, +0x12, xichrons, startFacing")
         XCTAssertEqual(u8(image, 0x20), 0xab)
         XCTAssertEqual(i16(image, 0x22), -3)
-        XCTAssertEqual(u8(image, 0x174), 1)
+        XCTAssertEqual(u16(image, 0x172), 0x1d72)
+        XCTAssertEqual(u8(image, 0x174), 0x5d)
+        XCTAssertEqual(u16(image, 0xad6), 2)
+        XCTAssertEqual([UInt8(bitPattern: 3), UInt8(bitPattern: -2)], [u8(image, 0x12d8), u8(image, 0x12d9)])
+        XCTAssertEqual([i16(image, 0x60f8), i16(image, 0x60fa), i16(image, 0x60fc), i16(image, 0x60fe)], [-1, 100, 2, 1])
         XCTAssertEqual(u16(image, 0x176 + 2 * 99), 1)
         XCTAssertEqual(u16(image, 0x23e + 2 * 42), 1)
         XCTAssertEqual(u16(image, 0x306 + 200 * 4 + 2 * 99), 21)
