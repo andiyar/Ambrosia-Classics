@@ -244,7 +244,7 @@ public enum SetupFaces {
         /// `.GetBGTile(x >> 5, (y + 0xc) >> 5)` → `.LookupBGTileKind` → `.IsWaterTile` (200..209).
         func inWater() -> Bool {
             let k = c.level.bgKind(tile: c.level.bgTile(col: s.x >> 5, row: (s.y + 0xc) >> 5))
-            return (200..<210).contains(k)
+            return LiquidTiles.range.contains(k)
         }
 
         switch cls {

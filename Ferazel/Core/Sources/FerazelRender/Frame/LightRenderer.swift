@@ -401,7 +401,7 @@ extension TileGridRenderer {
     /// The water kind w of the cell's BG tile (`.IsWaterTile` → `.GetWaterTileKind`): BG kind − 200 for 200…209, else −1.
     private func waterKind(bgTile b: Int) -> Int {
         let kind = level.bgKind(tile: b)
-        return (200..<210).contains(kind) ? kind - 200 : -1
+        return LiquidTiles.range.contains(kind) ? kind - 200 : -1
     }
 
     /// `.PlainWrapBGTile @ 10012ea8`: the BG face into `0004` (b outside −1…95 is the original's ReportError).

@@ -112,7 +112,8 @@ import HectorShell
             }
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory,
                                  prefs: prefs, sounds: bank)
-            // `.InitAppGlobals`' `_FastRand(0)` (M l. 334): the stream is seeded once from Time + Ticks and never again.
+            // `.InitAppGlobals`' `_FastRand(0)` (M l. 334; `LMGetTime` + `LMGetTicks`, M l. 31295–31298): the stream is seeded
+            // once from Time + Ticks and never again.
             let clock = FastRand.systemClock()
             try openLevel(Self.startLevel(), seed: FastRand.clockSeed(secondsSince1904: clock.secondsSince1904,
                                                                      ticks: clock.ticks),

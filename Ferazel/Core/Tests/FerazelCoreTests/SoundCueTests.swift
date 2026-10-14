@@ -67,6 +67,8 @@ final class SoundCueTests: XCTestCase {
         XCTAssertEqual(ops.sounds, [cue(414, 1, 59, 59)])
         // The grounded arm's stop 427 (`FUN_10091504`, a stop, not a play).
         XCTAssertEqual(ops.soundStops, [427])
+        // Its place: `.HandleKeys`' play 414 comes first, the state selection's stop 427 after it (at 1).
+        XCTAssertEqual(ops.soundStopAt, [1])
         // Volume 5 → 140: (156 · 140) >> 8 = 85 → 42; volume 0 → 0/0 (Reg has no drop).
         XCTAssertEqual(try jumpFrame(prefs(volume: 5)).sounds, [cue(414, 1, 42, 42)])
         XCTAssertEqual(try jumpFrame(prefs(volume: 0)).sounds, [cue(414, 1, 0, 0)])

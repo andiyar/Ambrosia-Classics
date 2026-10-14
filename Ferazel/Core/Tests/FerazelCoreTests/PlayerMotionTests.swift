@@ -646,11 +646,21 @@ final class PlayerMotionTests: XCTestCase {
         place(x: 100, y: -200, vy: -0x2000)
         Player.constraints(w, id: id)
         XCTAssertEqual(player(w).vy, 0)
-        // Through the Handle (row 38, before row 39 re-derives `+0xc` from `+0x14`): spawned left of −64, one frame.
+        // Through the Handle (row 38, before row 39 re-derives `+0xc` from `+0x14`): spawned left of −64 and above −128,
+        // one frame. Row 39 also copies the pixel position and the centre to `fe68`/`fe64` and `fd94`/`fd90`, which no
+        // later row rewrites (the record's `+8`/`+0x10` are re-derived by the end pass and `.StandardSpriteCleanup`): a
+        // clamp run after row 39 would leave them at (−100, −199) and (−50, −140).
         let w2 = try world(floor: false)
-        _ = try XCTUnwrap(Player.spawn(world: w2, x: -100, y: 100))
+        _ = try XCTUnwrap(Player.spawn(world: w2, x: -100, y: -200))
         frame(w2, TileSolver(world: w2))
-        XCTAssertEqual(player(w2).x, -64)
-        XCTAssertEqual(player(w2).x256, -64 << 8)
+        let p2 = player(w2)
+        XCTAssertEqual(p2.x, -64)
+        XCTAssertEqual(p2.x256, -64 << 8)
+        XCTAssertEqual(p2.y, -128)
+        XCTAssertEqual(p2.y256, -128 << 8)
+        XCTAssertEqual(w2.player.pixelX, -64)
+        XCTAssertEqual(w2.player.pixelY, -128)
+        XCTAssertEqual(w2.player.centreX, Int16(-64 + p2.hotRect.left + ((p2.hotRect.right - p2.hotRect.left) >> 1)))
+        XCTAssertEqual(w2.player.centreY, Int16(-128 + p2.hotRect.top + ((p2.hotRect.bottom - p2.hotRect.top) >> 1)))
     }
 }

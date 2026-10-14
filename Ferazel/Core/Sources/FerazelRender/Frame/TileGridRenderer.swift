@@ -230,7 +230,7 @@ public struct TileGridRenderer: Sendable {
             let kind = level.fgKind(tile: t)
             let k = kind % 100
             let bgKind = level.bgKind(tile: b)
-            let w = (200..<210).contains(bgKind) ? bgKind - 200 : -1
+            let w = LiquidTiles.range.contains(bgKind) ? bgKind - 200 : -1
             let submerged = header.submergedFaces != 0
             let pattern = Self.patternTile(col: col, row: row, periodSix: header.patternPeriodSix != 0)
             if t < 0x5f {

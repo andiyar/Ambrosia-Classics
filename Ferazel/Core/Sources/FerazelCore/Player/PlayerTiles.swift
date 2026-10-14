@@ -70,7 +70,7 @@ public enum PlayerTiles {
                 GroundCeilingEffects.check(w, id: id)
             } else if UInt16(truncatingIfNeeded: kind - 600) < 2 {
                 return
-            } else if (200..<210).contains(k), w.player.waterPass, !(w.active.sprite(id: id)?.underwaterDone ?? true) {
+            } else if LiquidTiles.range.contains(k), w.player.waterPass, !(w.active.sprite(id: id)?.underwaterDone ?? true) {
                 // `.HandleUnderWater(s, pos) @ 10042e30` (P4); its entry `.Splash(s, 3)` (E1a).
                 UnderWater.handle(world: w, id: id, pos: pos)
             }

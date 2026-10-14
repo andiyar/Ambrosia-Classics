@@ -7,8 +7,8 @@ import Foundation
 /// - n ≠ 0 (raw `1003411c..1003419c`): one Park–Miller step, seed = 16807·seed mod (2³¹ − 1), computed with 16-bit
 ///   halves; lo = seed & 0xffff; **lo == 0x8000 → lo = 0** (`rlwinm r6,r6,0,0,15`, the stored seed keeps it);
 ///   result = (Int16)((extsh(n) · lo) >> 16) — 0 … n − 1 for n > 0.
-/// - n == 0 (raw `100340fc..10034118`): seed = `LMGetTime()` + `LMGetTicks()` (`.InitAppGlobals` l. 334 calls
-///   `FastRand(0)`); the return value is the caller's r30 (`unaff_r30`), undefined — 0 here.
+/// - n == 0 (raw `100340fc..10034118`): seed = `LMGetTime()` + `LMGetTicks()` (M l. 31295–31298;
+///   `.InitAppGlobals` calls `FastRand(0)` once, M l. 334); the return value is the caller's r30 (`unaff_r30`), undefined — 0 here.
 public struct FastRand: Sendable {
     /// `LMGetTime()` (seconds since 1904-01-01) and `LMGetTicks()` (1/60 s since start-up).
     public typealias Clock = @Sendable () -> (secondsSince1904: UInt32, ticks: UInt32)
@@ -27,7 +27,7 @@ public struct FastRand: Sendable {
         Int32(bitPattern: secondsSince1904 &+ ticks)
     }
 
-    /// The host clock: seconds since 1904 in local time (`GetDateTime`, M l. 334, counts the Mac's local clock), ticks
+    /// The host clock: seconds since 1904 in local time (`LMGetTime`, M l. 31295–31298, counts the Mac's local clock), ticks
     /// from the system uptime.
     public static let systemClock: Clock = {
         let date = Date()
