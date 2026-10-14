@@ -25,7 +25,8 @@ import HectorResources
 ///   `ScreenGamma.fade` (compounding); `.timedFadeToColor` → the gamma captured at its tick 0 moved the tick's absolute
 ///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut` (`.TurnGray`) // later: D1.
 /// - `gammaStep`: one `.HandleAsyncGammaFade` step (`ScreenGamma.step`).
-/// - `drawFace` // later: M2; `restoreView` // later: C2 — accepted as no-ops.
+/// - `drawFace`: the map's faces are blitted into `MapRenderer`'s work port (M2; `MapRenderer.apply` sends only the
+///   `.screen` ops here, and M1 puts no face on the screen) — a no-op here; `restoreView` // later: C2 — a no-op.
 /// - The level ops (grid, lights, sprites, copy, erase, status bar, tiles, water, particles) are `FrameRenderer`'s:
 ///   `Refusal.levelOp`.
 public final class ScreenRenderer {
@@ -99,7 +100,7 @@ public final class ScreenRenderer {
                 surface.timedFadeStart = nil
                 surface.gamma.step(numerator: numerator, denominator: denominator, toward: toward)
             case .drawFace:
-                break   // later: M2 (the map's node / marker / boss / ambient faces)
+                break   // M2: `MapRenderer` blits the map's faces into its work port; never sent to the screen
             case .restoreView:
                 break   // later: C2 (`.WrapCopyToScreen` of the last drawn level frame)
             case .redrawScrollGrid: throw Refusal.levelOp("redrawScrollGrid")
