@@ -1242,3 +1242,13 @@ numbers are dialog item numbers; review fixes ebed14e; SV1 (ebbd7aa + d8f2ebe) �
 (966,232) byte-exact; the writers take the live G `inout` (the binary flags `hasSnapshot[L]` in it before the copy —
 S2 amended); BC7 corrected (the four 200-byte rows are zeroed by InitGameGlobals), +0x174 u8. Ferazel/Core 256 → 266/0,
 census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
+
+**As built (loop run 10, 2026-10-14) — rest of wave 3.1, wave CLOSED:** SV2 (d88a7f1) prefs record 0x942 + `PrefsFile` +
+`SavedGameFile` ('FWSg' 0 in the data fork, resource-fork read and HFS type/creator under `#if os(macOS)`) + `SaveName`;
+FE0 ⚑ (9bd5d1e) every S3 case, `ScreenSurface`/`ScreenRenderer`, `ScreenFade`, `MusicFade`; O1 (0810ff3) Options dialog
+model, `.MakeCurrPrefs`, ⌘M/⌘F; review fixes 6d919da. **Rulings (follow the binary):** the async music fade-in clears
+the music-faded flag at its start (raw 10049c5c); `.stop` only when music is loaded (M l. 41943), so ⌘M on emits
+`.play`, `.volume(V)`; the slow fade-in is linear and non-compounding through the ADDED `ScreenGammaOp.timedFadeToColor`
+(Invariant 9 — a case added; not in the S3 list); `PutFileRequest {prompt, defaultName, message}` defined by FE0
+(the plan named, never defined it); an unreadable prefs file falls back to defaults. Ferazel/Core 266 → 284/0, census
+1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).

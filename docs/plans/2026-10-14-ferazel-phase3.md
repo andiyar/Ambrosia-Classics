@@ -499,6 +499,15 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   Game" → "Ferazel Saved Game 2" → "… 3"; "Game " → "Game 2"; a 31-char name unchanged).
 - **Gate:** G2 = 272, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: prefs record (0x942) + prefs file, saved-game file (FWSg 0, data fork or resource fork), IncrementLastSGString; 6 tests`.
+- ⚑ **As executed (SV2, loop run 10, 2026-10-14; d88a7f1 + review fixes 6d919da):** G2 272. Dump beat plan: a record
+  longer than 0x942 keeps its tail (`.InitPrefs` only grows, M l. 7760–7766); `SaveName` tests chars 1…4 "@@@@" past
+  the length byte (M l. 41135); a short saved-game body is zero-padded (no size check in `.OpenSG`); `.openFailed` is
+  unreachable in the replica (no `CloseResFile` failure) — case and string kept. `FerazelPrefs ==` compares the whole
+  record (stale bytes after a pstr included, as `CopyPString` leaves them). Fix round: an existing but unreadable prefs
+  file → nil (defaults), as the original's failed `Get1Resource`; citations (AddResource M l. 7758, FSpCreate ≈ 41253,
+  D35 ruling numbers per DECISIONS). One Opus leg MERGEABLE (probe: type/creator FWSg/Msct, resource-fork fallback,
+  HK serialize round-trips name + id). Carried: OSErr mapping from Foundation errors → F1a/A1; prefs file has no
+  type/creator (not asked); the old save is deleted before the write, as `FSpDelete` (not atomic).
 
 #### FE0 — ⚑ MAJOR — Front-end seam, `ScreenSurface`/`ScreenRenderer`, timed fades, music fades (→ 278)
 - **Files:** `Sources/FerazelCore/Seams/{DrawOp,ShellRequest,Rect16,TextRun,FerazelDialog,FrontFaceSet,ScreenGammaOp,MenuState}.swift`,
@@ -559,6 +568,22 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   already faded/unfaded; `SetAIFFMusic(−1)` → no cue at all, not even `.stop`).
 - **Gate:** G2 = 278, G5 (touches the App), G6, G7(+b), G8, G10.
 - **Commit:** `Front-end seam: ScreenSurface + ScreenRenderer (picture/stretch/transparent/fill/line/text ops), timed gamma fades (TintFadeProc), music fades; 6 tests`.
+- ⚑ **As executed (FE0 ⚑, loop run 10; 9bd5d1e + review fixes 6d919da):** G2 278. **Plan wrong against the dump:** the
+  async music fade-in clears `*0448` at its **start** too (`li r6,0` 10049bec, `stb r6` raw 10049c5c), not only at its
+  end (contract above) — built as the binary. Added outside S3's list: `PutFileRequest {prompt, defaultName, message}`
+  in `ShellRequest.swift` (the plan named the type, never defined it — F1b/A1 consume these fields) and, in the fix
+  round, `ScreenGammaOp.timedFadeToColor(tick:milliseconds:rgb:)` (the slow fade-in was compounding floored percents —
+  0 % for 9 ticks, then 25 → 34 → 52 → 100; now tick 0 records the start gamma and each tick is an absolute linear
+  fraction, n 0x37 → 109 ticks [MED, library `MT_FadeToColor`]). `drawLine` implemented (Bresenham [MED vs QuickDraw's
+  tie rule]; M2 may revisit); `drawFace`/`restoreView`/`ScreenGammaOp.clut` (TurnGray) are `// later` no-ops (M2/C2/D1).
+  `drawText` is srcOr only (the game never calls `TextMode`). `forceClut` loads on the picture's chain; `ScreenRenderer.chain`
+  (default `.frontEnd`) for `setScreenClut` — untested, set to `.level` by whoever draws the pause screen (P1/A1a).
+  Fix round also: `.stop` only when music is loaded (`ShutDownAIFFMusic` M l. 41877ff/41943), `present` asserted on gamma
+  ticks. Main-menu golden `ed142fed9e3bdce7` is self-derived under `.ruled` (pins the code, eyeballed right — PICT 130
+  under clut 130; stretched PICT 140 "Stage Complete" checked as an image). Two Opus legs MERGEABLE (A: every timeline
+  re-derived from the dump; B: renderer/seam, images), fix round re-reviewed MERGEABLE. Carried to A1a: with a shared
+  surface `FrameRenderer` no longer sets the level CLUT at init — `deathEffect` before the level's `setScreenClut`
+  would use the previous screen's CLUT; replica-only: a gamma op landing mid-timed-fade re-bases the fade.
 
 #### O1 — minor — Options dialog model, `.MakeCurrPrefs`, the Music / Sound Effects toggles (→ 284)
 - **Files:** `Sources/FerazelCore/Front/{PrefsDialogModel,PrefsToggles}.swift`; `Tests/FerazelCoreTests/PrefsDialogTests.swift`;
@@ -615,6 +640,16 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `FrontOutput.prefs`).
 - **Gate:** G2 = 284, G6, G7(+b), G8, G10; wave 3.1 end: G3, G5.
 - **Commit:** `FerazelCore: Options dialog model (three panels, key capture, AlreadyUsingKey, ConvertKeyName, Default Settings as written), MakeCurrPrefs, Music/Sound Effects toggles; 6 tests`.
+- ⚑ **As executed (O1, loop run 10; 0810ff3 + 6d919da):** G2 284. Dump beat plan: ⌘M back on (no game) emits
+  `.play(track: 24)`, `.volume(256)` — not `.volume(0)` first — because `SetMusicAIFFVolume` and `ShutDownAIFFMusic` act
+  only on a loaded movie (M l. 41943, 41959–41971; the stop happened at ⌘M off). Plan errors: the Music checkbox is at
+  M l. 64494–64524 (not 64546–64565); item 12 does exist — the disabled "Graphics:" label on 6901 (the dead branch's
+  target). `.ConvertKeyName` matches all 45 table cases. Items 14 → 16 / 26 → 30 built as "no visible change" [LOW:
+  `GetDialogItem` on a missing item may leave the clicked item's handle, making the slip invisible]. The dialog works on
+  its own copy of the live prefs + music player (GameFlow takes `live` back at close); `lastModifier` is carried by the
+  caller. Not built (unreachable): the no-QuickTime branches (M l. 64650). Carried to A1b: the `.Options` sequence itself
+  (prefs re-read, write back on every close, `MTRedraw`, `fe0c`/`511e`) has no Core function yet; `uppercased()` ≠
+  `UpperString` for non-ASCII; a key with no character gives "". One Opus leg MERGEABLE.
 
 ### Wave 3.2 — between two levels
 
