@@ -350,8 +350,8 @@ public struct PlayerState: Equatable, Sendable {
 
     /// The coins `.HurtPlayer` knocked out of the player (W2a; l. 48078–48103): the count taken from `G+0x10`, summed
     /// over the level. The original makes a Bonus 0x516 per coin (`MTNewSprite(0x516, …, 0x14, −1, .SetupBonusSprite)`);
-    /// // later: Phase 4 (Bonus pickups) spawns them — until then they are only counted, and the Bonus Setup's own
-    /// `FastRand` draws between each coin's draws are not made (the stream diverges after a coin-losing hit).
+    /// // later: Phase 4 (Bonus pickups) spawns them — until then they are only counted; the Bonus Setup's own
+    /// `FastRand` draws (R(9), R(6), R(3), R(0x3c)) are made between each coin's draws (`HurtPlayer`).
     public var coinsLost: Int16 = 0
 
     /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile

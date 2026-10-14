@@ -272,7 +272,9 @@ extension HitPlayerSprite {
 ///    `.STPlay3DSoundRand(489, 1, 0x100, player +0xe)`; per coin `FastRand(8)` (dy), `FastRand(8)` (dx), the Bonus
 ///    0x516 at (cx + dx − 8, cy + dy − 2), layer 0x14, `+0xb0 = 0xc`, vx = `FastRand(0x640)` + 600 (negated when
 ///    `FastRand(100)` > 0x31), vy = −2000 − `FastRand(0xdac)`, `+0x16c = −0xf0`. The coins are counted in
-///    `PlayerState.coinsLost`, **not spawned** (// later: Phase 4); the five draws per coin are made.
+///    `PlayerState.coinsLost`, **not spawned** (// later: Phase 4); all nine draws per coin are made in
+///    order: R(8), R(8), the 0x516 Setup's R(9), R(6), R(3) (arm `LAB_1005e02c`, M l. 52576–52581) and R(0x3c) (tail
+///    `LAB_1005e8bc`, M l. 52795), then R(0x640), R(100), R(0xdac).
 public enum HurtPlayer {
     @discardableResult
     public static func hurt(_ w: SpriteWorld, player pID: Int, attacker aID: Int, damage: Int16, blood: Bool,
@@ -322,7 +324,13 @@ public enum HurtPlayer {
             while k < n {
                 _ = w.rng.next(8)                                       // dy
                 _ = w.rng.next(8)                                       // dx
-                // later: Phase 4 — `MTNewSprite(0x516, …, .SetupBonusSprite)` (its Setup's draws come here).
+                // `MTNewSprite(0x516, …, .SetupBonusSprite)`: the Setup's draws are made, the coin is not. // later: Phase 4
+                // (the Bonus sprite). Arm `LAB_1005e02c` (M l. 52576–52581, raw `1005e050..1005e078`): `+0x46`,
+                // `+0x112 − 0x1c`, `+0x114 − 2`; then the shared tail `LAB_1005e8bc` (M l. 52795, raw `1005e8bc`): `+0x14c`.
+                _ = w.rng.next(9)
+                _ = w.rng.next(6)
+                _ = w.rng.next(3)
+                _ = w.rng.next(0x3c)
                 _ = w.rng.next(0x640)                                   // vx − 600
                 _ = w.rng.next(100)                                     // vx sign
                 _ = w.rng.next(0xdac)                                   // −vy − 2000

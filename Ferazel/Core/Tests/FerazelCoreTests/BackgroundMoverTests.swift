@@ -275,7 +275,7 @@ final class BackgroundMoverTests: XCTestCase {
         let rate1 = Int32(r.next(10000)) + 50000, rate2 = Int32(r.next(10000)) + 65000
         let coins = r.next(3) + 5 - 1
         let rate3 = r.soundRate()
-        for _ in 0..<5 { for n: Int16 in [8, 8, 0x640, 100, 0xdac] { _ = r.next(n) } }
+        for _ in 0..<5 { for n: Int16 in [8, 8, 9, 6, 3, 0x3c, 0x640, 100, 0xdac] { _ = r.next(n) } }
         HitPlayerSprite.hit(w, player: p, other: m)
         let s = try XCTUnwrap(w.active.sprite(id: p))
         XCTAssertEqual(s.hp, 0x230 - 224)
@@ -283,9 +283,8 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(w.player.coinsLost, 5)
         XCTAssertEqual(coins, 6)
         XCTAssertEqual(w.globals.coins, 0)
-        // Every draw Core makes, in order. Not yet every draw the binary makes: each coin's Bonus Setup
-        // (`.SetupBonusSprite` M l. ~52576–52580, ≥ 3 draws per coin; Phase 4) draws between its dx and vx draws.
-        // rate1 / rate2 / rate3 below are measured against that placeholder and move when Phase 4 lands. ⚑ E1a
+        // Every draw, in order — each coin's Bonus Setup (`.SetupBonusSprite` R(9) R(6) R(3), M l. 52576–52581, and
+        // the tail R(0x3c), M l. 52795) between its dx and vx draws (phase-end fix; rate1–3 precede the coins). ⚑ E1a
         // (Invariant-10, revert-verified): the blood spray (`.BloodSpray`, 80 draws before the 508 rates) now draws —
         // rates were 50000 + 2564, 65000 + 2302, 0xec77 + 475.
         XCTAssertEqual(w.rng.seed, r.seed)
@@ -405,7 +404,7 @@ final class BackgroundMoverTests: XCTestCase {
             PlayerCue(call: .threeDRand, snd: 489, priority: 1, volume: 0x100, position: SpriteSlot.Point(), rate: coinRate),
         ])
         XCTAssertEqual([rate, Int32(pick)], [65000 + 2564, 0])
-        // coins 3 > 2 → R(3) + 2, capped at G+0x10 = 1: one coin, its 3D Rand cue and five draws.
+        // coins 3 > 2 → R(3) + 2, capped at G+0x10 = 1: one coin, its 3D Rand cue and nine draws.
         XCTAssertEqual([w3.globals.coins, w3.player.coinsLost], [0, 1])
         // Invulnerable (`+0x116` 5): `.HurtSprite` refuses → 0, the player untouched (no knockback, stun, coin, cue).
         w3.active.update(id: p3) { $0.invulnerable = 5 }
@@ -437,7 +436,7 @@ final class BackgroundMoverTests: XCTestCase {
         w4.globals.coins = 9
         var r4 = w4.rng
         let rA = Int32(r4.next(10000)) + 50000, rB = Int32(r4.next(10000)) + 65000, rC = r4.soundRate()
-        for _ in 0..<2 { for n: Int16 in [8, 8, 0x640, 100, 0xdac] { _ = r4.next(n) } }
+        for _ in 0..<2 { for n: Int16 in [8, 8, 9, 6, 3, 0x3c, 0x640, 100, 0xdac] { _ = r4.next(n) } }
         XCTAssertTrue(HurtPlayer.hurt(w4, player: p4, attacker: atk4, damage: 0xe0, blood: false, invulnerable: 0x10,
                                       coins: 2))
         XCTAssertEqual([w4.active.sprite(id: p4)?.vx, Int32(w4.active.sprite(id: p4)?.invulnerable ?? 0)], [0x80, 0x10])
@@ -479,6 +478,36 @@ final class BackgroundMoverTests: XCTestCase {
     private func placement(_ index: Int, _ type: Int16, p1: Int16 = 0, p2: Int16 = 0, p3: Int16 = 0, x: Int16,
                            y: Int16) -> Placement {
         Placement(index: index, flag: 1, byte1: 0, type: type, p1: p1, p2: p2, p3: p3, p4: 0, y: y, x: x)
+    }
+
+    func testCoinLossDrawsTheBonusSetupPerCoin() throws {
+        // `.HurtPlayer`'s coin loop (M l. 48088–48104): per coin R(8) dy, R(8) dx, `MTNewSprite(0x516, …,
+        // .SetupBonusSprite)` — whose arm `LAB_1005e02c` draws R(9) `+0x46`, R(6) `+0x112`, R(3) `+0x114` (M l.
+        // 52576–52581, raw `1005e050..1005e078`) and the shared tail R(0x3c) `+0x14c` (`LAB_1005e8bc`, M l. 52795, raw
+        // `1005e8bc`) — then R(0x640) vx, R(100) sign, R(0xdac) vy: nine draws per coin. The sprite itself is Phase 4.
+        for lost in [Int16(1), 2] {
+            let (w, p) = try world()
+            let atk = w.active.insert(SpriteSlot(type: 1485, x: 0, y: 0))
+            w.active.update(id: atk) { $0.hp = 1 }
+            w.active.update(id: p) { $0.hp = 0x230 }
+            w.globals.coins = lost
+            var r = w.rng
+            _ = r.next(10000)                                   // 508's rate (damage < 0xe0)
+            _ = r.next(3)                                       // 401 / 402 / 403
+            _ = r.soundRate()                                   // 489 (3D Rand); coins ≤ 2 → no R(3) on n
+            var draws = 0
+            for _ in 0..<lost {
+                for n: Int16 in [8, 8, 9, 6, 3, 0x3c, 0x640, 100, 0xdac] {
+                    _ = r.next(n)
+                    draws += 1
+                }
+            }
+            XCTAssertEqual(draws, 9 * Int(lost))
+            XCTAssertTrue(HurtPlayer.hurt(w, player: p, attacker: atk, damage: 0x70, blood: false, invulnerable: 1,
+                                          coins: lost))
+            XCTAssertEqual([w.globals.coins, w.player.coinsLost], [0, lost])
+            XCTAssertEqual(w.rng.seed, r.seed, "coins \(lost)")
+        }
     }
 
     func testCannonP0LaunchUp() throws {

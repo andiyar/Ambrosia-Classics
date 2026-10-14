@@ -592,3 +592,11 @@ Ziridium, 8 dust effects 0x442 unless `+0xf0`.
    `+0x46 = 1` is stored before the threshold test (`1005728c`), so a standing player re-arms the squash every
    contact (face held at 1). The Box arm is shared with the see-saw segments 0x59b (`_DAT_100a01c8`, M l.
    49149–49166: centre-x gate, segment `+0xb2 = 1`, `_DAT_100a067c = 1`) [HIGH].
+
+⚑ correction (Phase 2 phase-end): §1.3 row 1302 (0x516) lists only `+0x46 = rand(9)`, and §1.9 gives the hurt drop's
+draws as dy, dx, vx, sign, vy. The 0x516 Setup arm (`LAB_1005e02c`, M l. 52576–52581, raw `1005e050..1005e078`) draws
+`+0x46 = FastRand(9)`, `+0x112 = FastRand(6) + 0x1c`, `+0x114 = FastRand(3) + 2`, then the shared Bonus tail
+(`LAB_1005e8bc`, M l. 52795, raw `1005e8bc`) `+0x14c = FastRand(0x3c)`. `.HurtPlayer`'s coin loop (M l. 48088–48104)
+calls that Setup through `MTNewSprite` between the dx draw and the vx draw, so each lost coin is **nine** draws:
+R(8) R(8) R(9) R(6) R(3) R(0x3c) R(0x640) R(100) R(0xdac) [HIGH, raw]. `HurtPlayer` makes all nine (the sprite itself waits
+for Phase 4).
