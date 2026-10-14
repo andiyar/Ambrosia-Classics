@@ -1252,3 +1252,18 @@ the music-faded flag at its start (raw 10049c5c); `.stop` only when music is loa
 (Invariant 9 — a case added; not in the S3 list); `PutFileRequest {prompt, defaultName, message}` defined by FE0
 (the plan named, never defined it); an unreadable prefs file falls back to defaults. Ferazel/Core 266 → 284/0, census
 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
+
+**As built (loop run 11, 2026-10-14) — wave 3.2 CLOSED (L2, L1):** L2 (d144872 + fix a5c1beb) `StageScreens`: popup +
+load bar, chapter card, stage-complete panel, `CalcPercent`/`FillPercent` as `FrontTimeline`s; L1 ⚑ (6db035d + fixes
+6615728, aa78964) `LevelRun` + `LevelServices`: level entry (`.SetupLevel` first visit / restart fast path / snapshot
+restore, load bars, fades, one `.play` + 96-tick music fade-in, chapter gate, async fade-in every entry), the 2-tick
+cadence, died/completed/aborted exits → `LevelEnd`; session seams `start:`/`refreshFacing:`/`records:`/
+`hostedByLevelRun:` + `startOps()`, defaulted to Phase-2 behaviour. **Rulings (follow the binary):** "any key" =
+`.IsAnyKeyDown` (keycodes 1–127 + a locked Caps Lock; M l. 31579); the completion save stores the player's exit position
+(`*fe68/*fe64` per frame, M l. 46367–46376); `FadeAIFFMusic(0,4)` + shutdown are inside `.GameLoop` so Continue runs them
+(the plan said skipped); F4 clears the snapshot flag ungated; `LevelRun` output is ordered segments tagged `.level` /
+`.screen` (ADDED shape, so A1a can route ops to FrameRenderer vs ScreenRenderer); per-iteration `HideCursorSafe`
+(M l. 5233) + the fade-end `ShowCursorSafe` (M l. 31945) only for hosted sessions — the Phase-2 direct path keeps its
+expectations (Invariant 10) until A1a moves the app onto LevelRun; `PlatformSprite` reads live records. **Named task
+added:** RX (Roach Setup p3 0 → 0xaa write-back, M l. 64940–64944; changes one named BackgroundMoverTests expectation),
+first in the next run. Ferazel/Core 284 → 297/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).

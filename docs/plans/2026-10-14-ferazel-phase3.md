@@ -690,6 +690,17 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   which L1 pins).
 - **Gate:** G2 = 289, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: chapter card, stage-load popup and bar, stage-complete panel with CalcPercent/FillPercent; 5 tests`.
+- ⚑ **As executed (L2, loop run 11; d144872 + a5c1beb):** G2 289. API: `StageScreens.popupStageLoad()`,
+  `fillPercent(…)`, `stageCompleteEffect(globals:level:sounds:)` → `FrontTimeline` (played by `TimelineRun`);
+  `updateStageLoad(_:of:)` → `FrontOutput`; `calcPercent`, `stageLoadWidth`; `ChapterScreenRun(…)` (nil when clut 280+n
+  is missing) ticked until `isDone`; `StageSounds(prefs:lengths:)` takes per-snd play lengths in ticks (the App fills them
+  from `SoundBank` sample counts). Dump beat/added to the plan: the band snd + wait are chosen on n2 (M l. 2810–2830);
+  with sound off `STPlayRegSound` returns −1 (M l. 40619) so every wait-on-sound is 0 ticks; the chapter card is
+  DrawPicture'd into (0,0,640,480), so the four 608-wide cards stretch; the popup's plain CopyBits from a clut-199 port is
+  emitted as `forceClut: 199` (same colours). Review fix (a5c1beb): "any key" is `.IsAnyKeyDown` (M l. 31579–31595, via
+  `.IsAnyInputKeyDown` M l. 42364) — keycodes 1–127 only (A = 0 alone does not skip) and a locked Caps Lock counts
+  (`FrontInput.capsLock`; the shell must fill it — carry to A1a); FillPercent's pct-45 case pinned. [LOW] the fade-out
+  colour global assumed black (same global as every GammaFadeOut). One Opus leg MERGEABLE (+ fix round).
 
 #### L1 — ⚑ MAJOR — `LevelRun`: level entry, cadence, exit; `.SetupLevel`'s restore branch (→ 297)
 - **Precondition:** L2 merged (FABLE-GRADE fix: L1's entry and exit sequences and its tests drive L2's
@@ -721,7 +732,7 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   (S2): `prepare(level:)` before the session init (its `faceBounds`/`particleFaces`), `attach(lights:tintTableDraws:)`
   after it — the App's order today (`FerazelController.swift:148–158`).
 - **Contract:** digest C §1, §2, §5, §6; M l. 2189–2590 (`.SetupLevel`), 5093–5325 (`.GameLoop`). **Entry, in order:**
-  `FadeAIFFMusic(0,4)` + shutdown (M l. 5161–5163; skipped by Continue's loop, F1b); `.SetupLevel`: `.PopupStageLoad`
+  `FadeAIFFMusic(0,4)` + shutdown (M l. 5161–5163; ⚑ run 11: NOT skipped by Continue — they are inside `.GameLoop`, which Continue calls, M l. 7046); `.SetupLevel`: `.PopupStageLoad`
   (L2's machine), then the load bar (`UpdateStageLoad`, L2): **first visit / other level** (the else branch, M l.
   2350–2362, always `.LoadLevelTilesets`) → 15, 20, 25, 35, 40 (M l. 1588–1629; widths 43, 58, 73, 102, 117), then
   50 (M l. 2519; 146), then one bar per cached face set in `.LoadCachedSpriteFaces` (M l. 73832/73859; p/q with q = 2 ×
@@ -767,8 +778,49 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   music fade 48 ticks → GammaFadeOut(6) 30 ticks → `.stop`; `exit1` 0 for L1's rec 66; no `.loadLevel` request).
 - **Gate:** G2 = 297, G6, G7(+b), G8, G10; wave 3.2 end: G3, G5.
 - **Commit:** `FerazelCore: LevelRun — level entry (SetupLevel restore/first visit, fades, music fade-in, chapter gate, async fade-in), 2-tick cadence, death/complete/abort exits; 8 tests`.
+- ⚑ **As executed (L1, loop run 11; 6db035d + 6615728 + aa78964):** G2 297 (no existing test or golden moved). API:
+  `LevelRun` (`tick` → `LevelRunOutput`: ordered segments tagged `.level` → FrameRenderer / `.screen` → ScreenRenderer,
+  plus `merged`; the chapter card's CLUT 281 is `.screen`, its tail — level CLUT, PICT 129, status bar — `.level`),
+  `LevelEnd`, `LevelServices` (+ `deathEffectStep`, bands only), `LevelFaces`, `CachedFaces`, `SetupFaces.Tallies`;
+  session init `start:`, `refreshFacing:`, `records:`, `hostedByLevelRun:` + `startOps()`; `LevelCarry` + `globalsImage`,
+  tileset state, `cachedFaces`. Self-derived (re-derived by review leg A): L1 face cache n 90 / q 180 → 30 bars (12 sets =
+  72 faces + 18 singles, `.InitSprites` order) from width 156; L1 totals enemies 15, Xichrons 43, secrets 10; L2 after L1
+  n 31 / q 62; an L1 restart reloads 6 flag-1 singles (bars 7…12 of 12, the fast path never updates the CLUT ids). Dump
+  beat plan: `FadeAIFFMusic(0,4)` + shutdown are inside `.GameLoop` (M l. 5161–5163) so Continue runs them (F1b: correct
+  your text); crunch re-apply = explode 0, clearDir 1 (raw `10004874–78`); F4 ungated (the bank's "debug only" wrong);
+  `*fd74` is the renderer's ripple phase (not Core). **Review fixes:** (HIGH) the completion save stores the player's
+  EXIT position — `*fe68/*fe64` are rewritten every frame (M l. 46367–46376, read M l. 6541–6542), not the level start;
+  six surviving mutations killed (died/completed order, unlocked-before-spawn, revisit fade-in, first-visit crunch, fd64,
+  G+0x174); ops routing tagged (above); `PlatformSprite` reads the live records (deviation: outside Files, no golden
+  moved); `ShowCursorSafe` at the async fade-in's end (M l. 31945) + `HideCursorSafe` at the top of every iteration
+  (M l. 5233) — **hosted sessions only**: the non-hosted (Phase-2 app) path keeps its one start-block hide because the
+  per-iteration hide moves SessionTests/LevelFlowTests/SoundCueTests expectations (Invariant 10). Not landed: the Roach
+  Setup's p3 0 → 0xaa write-back (M l. 64940–64944) moves `BackgroundMoverTests.testBackgroundRecordDefaultsWrittenBack`
+  → named task **RX** (wave 3.3, first). Stand-ins: `InputActivate(1,1)` no-op; boss-music flag stubbed. **Carries:**
+  `.hideMenuBar` is not sent by a hosted session → **F1a** (`.main` M l. 8280, `.MainMenu` 7349) and **F1b** (`.ContinueGame`
+  6877); exit2 (`_DAT_100a5118`) is a global only `ShowWorldMap` resets (M l. 67561) → **M1/F1b**; the face cache + the
+  tileset globals 267d/267e persist across games in the original but `LevelCarry()` starts fresh → **F1b**; **A1a**
+  routes `LevelRunOutput` segments to the two renderers, moves the app onto LevelRun (the non-hosted cursor path and the
+  three ◇ `.loadLevel`/`.deathEffect` LevelFlowTests go then), fills `FrontInput.capsLock` and the `StageSounds` length
+  table from `SoundBank`; **F1b**'s `GameFlow.tick` keeps the segments. After-loop stops land 2 ticks before the binary's
+  (accepted by the plan). Minor open: `SetupFaces.spawnOrder` duplicates `LevelFile.spawnOrder`; `checkRouting` in the
+  tests restates the routing rule. Two Opus legs (A NEEDS FIXES, B MERGEABLE) → fix round → Opus re-review (cursor
+  regression) → fix round 2 → Opus re-review MERGEABLE.
 
 ### Wave 3.3 — the world map
+
+#### RX — minor — Roach Setup p3 write-back (added by loop run 11; → 297, no new test)
+- **Why:** L1's review (loop run 11) found `.SetupRoachSprite` writes **p3 0 → 0xaa (170)** back into the live record
+  (M l. 64940–64944). The replica does not, and since L1 `endLevelSGUpdate` saves `world.records`, a saved snapshot
+  differs from the binary's. L1's fix round built it and reverted it, because it moves an existing expectation.
+- **Files:** the Roach arm in `Sources/FerazelCore/Sprites/SetupFaces.swift`;
+  `Tests/FerazelCoreTests/BackgroundMoverTests.swift` (`testBackgroundRecordDefaultsWrittenBack`, l. ~1090–1118).
+- **Expectation change named here (Invariant 10):** the level-1 loop "every other record as loaded" also exempts the
+  Roach records whose p3 is 0 on file (L1's fix round found records 15, 19, 27, 30, 163 → p3 170; re-derive them from
+  the level file + M l. 64940–64944 before pinning). Add an assertion on one Roach record; no other golden or expectation
+  may move (if one does, STOP and record it). Also check the other Setups `.SetupLevelSprites` calls on L1/L2 for any
+  further unbuilt record write-backs, and list them in the as-executed bullet (build them only if no golden moves).
+- **Gate:** G2 = 297 (no new test function), G6, G7, G10. One Opus leg. Runs first in [RX M1 M2].
 
 #### M1 — ⚑ MAJOR — `WorldMapRun` (→ 305)
 - **Files:** `Sources/FerazelCore/Front/WorldMapRun.swift`, `Sources/FerazelCore/World/WorldMap.swift` (lookups only);
@@ -1280,7 +1332,7 @@ The canonical order is the execution order (each task starts from the previous t
 | 3.0 | X1 → R1 | one each | run 1: [X1 R1 SV1] (spans into 3.1; one ⚑) |
 | 3.1 | SV1 ⚑ → SV2 → FE0 ⚑ → O1 | SV1, FE0 two; SV2, O1 one | run 2: [SV2 FE0 O1] (one ⚑) |
 | 3.2 | L2 → L1 ⚑ | L2 one; L1 two | run 3: [L2 L1] |
-| 3.3 | M1 ⚑ → M2 | M1 two; M2 one | run 4: [M1 M2] |
+| 3.3 | RX → M1 ⚑ → M2 | RX one; M1 two; M2 one | run 4: [RX M1 M2] (RX added by run 11) |
 | 3.4 | F1a → D1 → F1b ⚑ | F1b two; F1a, D1 one | run 5: [F1a D1 F1b] |
 | 3.5 | S1 ⚑ → P1 | S1 two; P1 one | run 6: [S1 P1] |
 | 3.6 | C1 ⚑ → C2 | C1 two; C2 one | run 7: [C1 C2] |

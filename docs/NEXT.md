@@ -45,9 +45,10 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D33** (Phase 2 as built), **D34** (the loop's
    authorizations), **D35** (Phase 3 rulings).
 3. **The plan: `docs/plans/2026-10-14-ferazel-phase3.md`** — Verification model (l. 69), Invariants + Hazards (l. 129),
-   Shared architecture LOCKED (l. 209), this run's task sections, Execution order (l. 1274), Bank corrections (l. 1421,
-   each task appends the BCs it relies on), Rulings (l. 1524). Line numbers are as of run 10's close. Read the
-   "⚑ As executed" bullets of SV2/FE0/O1 (l. 501–655) — they record where the dump beat the plan and what was carried.
+   Shared architecture LOCKED (l. 209), this run's task sections (RX l. 812, M1 l. 825, M2 l. 903), Execution order
+   (l. 1326), Bank corrections (l. 1473, each task appends the BCs it relies on), Rulings (l. 1576). Line numbers are
+   as of run 11's close. Read the "⚑ As executed" bullets of L2/L1 (l. 693, 781) — the LevelRun API M1 composes with,
+   where the dump beat the plan, and what was carried.
 4. The bank files and dump ranges each task section cites (`docs/ferazel/*.md`, `ghidra/ferazel/`).
 
 ## RECONCILE FIRST (before any dispatch — the chip can be stale)
@@ -64,18 +65,17 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 4. `git -C ~/Developer/HectorKit status --porcelain` empty and `log -1` = the HK SHA below (or a later local main that
    a previous run recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK worktree.
 
-## STATE (live, 2026-10-14, written by loop run 10 at its close; head of `main` = run 10's docs-close commit on top of 6d919da — read `git log -8 main`)
+## STATE (live, 2026-10-14, written by loop run 11 at its close; head of `main` = run 11's docs-close commit on top of aa78964 — read `git log -8 main`)
 - **Phase 2 "Ferazel moves" is CLOSED on the machine side** (loop run 7; staged d5586fb → `~/Desktop/Ferazel's Wand.app`).
   **Ben's gate pending: QUESTIONS Q2** (gates queue, D34).
 - **Phase 3 "Front end + saves" is UNDER WAY** (plan `docs/plans/2026-10-14-ferazel-phase3.md`, D35 + its "As built
-  (loop run 9)" and "(loop run 10)" paragraphs). **Waves 3.0 and 3.1 CLOSED.** Done: X1 256, R1 260, SV1 ⚑ 266 (run 9);
-  **run 10:** SV2 (d88a7f1) 272, FE0 ⚑ (9bd5d1e) 278, O1 (0810ff3) 284, review fixes 6d919da (linear slow fade-in via
-  the added `ScreenGammaOp.timedFadeToColor`, `.stop` only when music is loaded, `present` on gamma ticks, prefs-file
-  fallback, citations). Wave 3.1 end gates G3 + G5 green at 6d919da.
-  **Remaining ladder:** L2 289 → L1 297 → M1 305 → M2 308 → F1a 313 → D1 317 → F1b 323 → S1 330 → P1 335 → C1 342 →
-  C2 345 → A1a, A1b (app, no tests) → A2 phase end. Runs: **[L2 L1]**, [M1 M2], [F1a D1 F1b], [S1 P1], [C1 C2],
-  [A1a A1b], phase end. Q3 = Ben's four choices (defaults built unless he answers).
-- `Ferazel/Core` suite: **284 passed, 0 failed/skipped**. Census `Totals: items 1,108 decoded, failures 0`. HectorKit
+  (loop run 9/10/11)" paragraphs). **Waves 3.0, 3.1, 3.2 CLOSED.** Done: X1 256, R1 260, SV1 ⚑ 266 (run 9); SV2 272,
+  FE0 ⚑ 278, O1 284 (run 10); **run 11:** L2 (d144872 + fix a5c1beb) 289, L1 ⚑ (6db035d + fixes 6615728, aa78964) 297.
+  Wave 3.2 end gates G3 + G5 green at aa78964.
+  **Remaining ladder:** **RX 297 (added by run 11, no new test)** → M1 305 → M2 308 → F1a 313 → D1 317 → F1b 323 → S1 330
+  → P1 335 → C1 342 → C2 345 → A1a, A1b (app, no tests) → A2 phase end. Runs: **[RX M1 M2]**, [F1a D1 F1b], [S1 P1],
+  [C1 C2], [A1a A1b], phase end. Q3 = Ben's four choices (defaults built unless he answers).
+- `Ferazel/Core` suite: **297 passed, 0 failed/skipped**. Census `Totals: items 1,108 decoded, failures 0`. HectorKit
   `~/Developer/HectorKit` main **0c65dcb**, clean, floor **328** (no HK change this phase).
 - Worktrees: run 1's dirty `loop-1-20261013-180951` (Q1, unanswered — never delete, never build on), run 2's
   `loop-2-20261013-182411` and run 8's `loop-8-20261014-142204` (merged; the looper's to remove) are still listed;
@@ -84,46 +84,46 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   `cc9786ba763d383a` / chain `b4230ba5a643c5b5`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump
   `e4f4bf977dd98eaa`, swim `95ff5176412df650`, 600-frame chain `9532d65a42d39666` / cues `a875a96c2801dbe9`; Phase 3
   main-menu screen `ed142fed9e3bdce7` (FE0, self-derived under `.ruled`).
-- **Carries landed tasks left for later ones** (each in the plan's "As executed" bullets): to **L1/A1a**: with a shared
-  surface `FrameRenderer` no longer sets the level CLUT at init (a `deathEffect` before the level's `setScreenClut`
-  uses the previous screen's CLUT); `ScreenRenderer.chain` (default `.frontEnd`) must be set to `.level` for level-clut
-  screens (pause, P1/A1a). To **F1a/A1**: Foundation errors → OSErr −34/−33/−44 for the save-error strings. To **A1b**:
-  the `.Options` sequence (re-read, write back on every close, `MTRedraw`, `fe0c`/`511e`) has no Core function; the
-  dialog model works on its own copy of live prefs + music (take `live` back at close; carry `lastModifier`). To
-  **F1b**: `.NewGame` writes save +0xc/+0x10 (SV1 carry). `PutFileRequest {prompt, defaultName, message}` was defined by
-  FE0 — F1b/A1 use those fields.
-- **Lessons (runs 9–10):** (1) the plan's "digest A–F" research digests were never committed — tasks citing "digest X
-  §n" must ground on the bank files + the dump instead (say so in each implementer brief); (2) the plan's contract is
-  wrong against the dump about once per task (run 10: the async fade-in flag, ⌘M's first `.volume(0)`, a citation, item
-  12) — the dump wins (Invariant 2), the as-executed bullet records it; (3) parallel implementers in one worktree work
-  with disjoint files + their own `swift test --scratch-path`; run the seat's own gates from a `git archive` copy with
-  a sibling `HectorKit` symlink (`B=/tmp/x; mkdir -p $B/repo; ln -s ~/Developer/HectorKit $B/HectorKit; git archive
-  <sha> | tar -x -C $B/repo`) so in-flight edits never leak in; (4) several foreground `Agent` calls in ONE message run
-  concurrently and all return before the turn continues — run 10 ran SV2 ∥ FE0, then 3 reviews ∥ O1, then O1 review ∥
-  fix round (~330 k subagent tokens per pair); (5) a reviewer's MED "this is not linear/not as documented" finding is
-  worth a fix round even when legs say MERGEABLE.
+- **Carries landed tasks left for later ones** (full list in the plan's L1/L2 "⚑ As executed" bullets, l. 693 and 781):
+  to **M1/F1b**: exit2 (`_DAT_100a5118`) is a global only `ShowWorldMap` resets (M l. 67561) — `LevelEnd` treats it per
+  level. To **F1a**: `.hideMenuBar` (`.main` M l. 8280, `.MainMenu` 7349) — a hosted session no longer sends it; Foundation
+  errors → OSErr −34/−33/−44 for the save-error strings. To **F1b**: `.hideMenuBar` in `.ContinueGame` (M l. 6877); the face
+  cache + tileset globals 267d/267e persist across games (LevelCarry() starts fresh); `.NewGame` writes save +0xc/+0x10;
+  `GameFlow.tick` must keep `LevelRunOutput`'s tagged segments; the plan's F1b text that says Continue skips
+  `FadeAIFFMusic(0,4)` is wrong (it is inside `.GameLoop`). To **A1a**: route `LevelRunOutput` segments (`.level` →
+  FrameRenderer, `.screen` → ScreenRenderer) and move the app onto LevelRun (then the non-hosted per-iteration cursor
+  path and the three ◇ `.loadLevel`/`.deathEffect` LevelFlowTests go, plan-named); fill `FrontInput.capsLock` (a locked
+  Caps Lock is "any key") and the `StageSounds` length table from `SoundBank`; with a shared surface `FrameRenderer`
+  does not set the level CLUT at init. To **A1b**: the `.Options` sequence has no Core function; the dialog model works
+  on its own copy of live prefs + music. `PutFileRequest {prompt, defaultName, message}` (FE0) for F1b/A1.
+- **Lessons (runs 9–11):** (1) the plan's "digest A–F" were never committed — ground on the bank files + the dump (say so
+  in every brief); (2) the plan is wrong against the dump about once per task — the dump wins, the as-executed bullet
+  records it; (3) run the seat's own gates from a `git archive` copy with a sibling `HectorKit` symlink (`B=/tmp/x;
+  mkdir -p $B/repo; ln -s ~/Developer/HectorKit $B/HectorKit; git archive <sha> | tar -x -C $B/repo`); (4) `Agent` calls
+  return async here even in the foreground — **stay in the turn**: block in 10-minute Bash loops that poll the branch
+  head / the agent output file's mtime (`stat -L` — the output path is a symlink); a subagent that "stops with background
+  work" must be resumed with SendMessage ("run tests in the foreground"); (5) independent work runs side by side (run 11:
+  L2 review ∥ L1 implementation; L1 legs A ∥ B ∥ the L2 fix round) when files are disjoint; (6) a fix round that changes
+  behaviour gets a re-review — run 11's caught a cursor regression the fix round introduced; (7) a fix that moves an
+  existing expectation is reverted and becomes a NAMED plan task (Invariant 10), as RX.
 
-## THIS RUN'S JOB — Phase 3 run 3: **[L2 L1]** (wave 3.2; one ⚑ MAJOR)
-- **L2 — minor — chapter card, stage-load popup and bar, stage-complete panel (→ 289)**, plan l. 656–692:
-  `Front/StageScreens.swift` (`.PopupStageLoad` M l. 2946–2990, `.UpdateStageLoad` 2993–3029, `.ChapterScreen` 5038–5089,
-  `.StageCompleteEffect` 2870–2943, `.CalcPercent` 2843–2865, `.FillPercent` 2752–2836), drawn through FE0's ops
-  (`ScreenRenderer` only if a test needs it), timed fades via FE0's `ScreenFade` (`GammaFadeInSlow(0x37)` = 109 ticks
-  — now linear via `timedFadeToColor`; `GammaFadeOut(0x1e)` = 160 ticks); mixed rect conventions — every rect labelled;
-  sound lengths injected (no PCM in Core); bank `world-data-format.md` §4.3 (BC9). 5 tests. One Opus leg. G2 = 289.
-- **L1 — ⚑ MAJOR — `LevelRun`: level entry, cadence, exit; `.SetupLevel`'s restore branch (→ 297)**, plan l. 694–772:
-  precondition L2 (drives its `StageScreens`, no stub), SV1, FE0. Touches `Session/FerazelSession.swift`,
-  `SpriteWorld.swift`, `SetupFaces.swift` (see its Files list) — Phase 1/2 goldens must not move. Mind the A1a carry
-  above (level CLUT on the shared surface). **Two Opus legs.** G2 = 297; wave 3.2 end: G3 + G5 (if L1 touches the App).
-- L1 needs L2 → run them in sequence (L2's review can overlap L1's implementation once L2 is committed).
-- Close: plan "⚑ As executed" bullets per task, D35 "As built" paragraph, STATE, memory, this file, LOOP-LOG.
-- If the cap allows nothing more after L2, close with L1 as next run's first task and say so.
+## THIS RUN'S JOB — Phase 3 run 4: **[RX M1 M2]** (wave 3.3; one ⚑ MAJOR)
+- **RX — minor — Roach Setup p3 write-back (→ 297, no new test)**, plan l. 812–823: `.SetupRoachSprite` writes p3 0 →
+  0xaa into the live record (M l. 64940–64944); the named expectation change in `BackgroundMoverTests.
+  testBackgroundRecordDefaultsWrittenBack` (l. ~1090–1118). One Opus leg. Small — fold its review into M1's first leg
+  or run it alongside M1's implementation (disjoint files: RX = SetupFaces Roach arm + BackgroundMoverTests).
+- **M1 — ⚑ MAJOR — `WorldMapRun` (→ 305)**, plan l. 825–902 (contract, 8 tests; mind the exit2 carry above and its
+  `// later: P1` stub). **Two Opus legs.**
+- **M2 — minor — map drawing (→ 308)**, plan l. 903–928. One Opus leg.
+- Wave 3.3 end: G3 + G5. Close: plan "⚑ As executed" bullets per task, D35 "As built" paragraph, STATE, memory, this
+  file, LOOP-LOG. If the cap allows nothing more after RX + M1, close with M2 as next run's first task.
 
-## GATES (fenced; verified on this machine 2026-10-14 from d5586fb (run 7); G2 284/0, G3, G5 re-run by run 10 at 6d919da — copy literally; `$WT` = your worktree)
+## GATES (fenced; verified on this machine 2026-10-14; G2 297/0, G3, G5 re-run by run 11 at aa78964 — copy literally; `$WT` = your worktree)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (Phase 3 plan: no HK task); later phases: a local HK main you made + floor ≥ 328 (see AUTHORIZATIONS)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 0c65dcb
-# G2 suite: first number = the ladder total (284 at start; 289 after L2, 297 after L1), second = 0
+# G2 suite: first number = the ladder total (297 at start; 297 after RX, 305 after M1, 308 after M2), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0
