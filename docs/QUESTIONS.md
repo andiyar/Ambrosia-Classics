@@ -42,7 +42,7 @@ Options: (a) delete it: `git worktree remove --force .claude/worktrees/loop-1-20
 loop/1-20261013-180951`; (b) keep it.
 Recommendation: a. Nothing in it is needed; everything was rebuilt, reviewed and merged.
 Blocks: nothing.
-Answer:
+Answer: (a) yes — done 2026-10-15 by Ben's attended session: worktree removed, its partial work was archived as 51c9532 on loop/1-20261013-180951, then that branch was deleted too.
 
 ### Q2 — 2026-10-14 — Phase 2 gate: does Ferazel move like Ferazel on levels 1–2?
 Context: Phase 2 ("Ferazel moves") is built and its machine gates are green (Ferazel/Core 256/0, census 1,108/0, app
@@ -56,7 +56,7 @@ card's end (enemies stand still, no pickups, no title/menu, no fade-in after a r
 Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what feels wrong).
 Recommendation: a or b — the machine reads match the binary on every point checked; only your hands can judge feel.
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
-Answer:
+Answer: DEFERRED, not a verdict — Ben will play it when he is back from Fiji. Keep this item open; do not treat Phase 2 as passed or failed.
 
 ### Q3 — 2026-10-14 — Phase 3 plan (front end + saves): four small choices, for your later read
 Context: Loop run 8 wrote and reviewed the Phase 3 plan (`docs/plans/2026-10-14-ferazel-phase3.md`, rulings in
@@ -69,7 +69,7 @@ File dialogs — default yes; (3) in a window the macOS menu bar stays visible d
 design §7.4) — default visible; (4) keep the hidden `-FerazelLevel N` test switch — default keep.
 Recommendation: the defaults — each keeps the game's behaviour and only touches the Mac around it.
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
-Answer:
+Answer: the defaults, all four — (1) data fork; (2) modern macOS save/open panels; (3) menu bar visible in a window, hidden in full screen; (4) keep the -FerazelLevel switch for now ("probably" — Ben may revisit).
 
 ## Answered
 
