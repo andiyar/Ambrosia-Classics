@@ -35,7 +35,8 @@ progress bar, then the title screen (main menu), as the original did.
 - A game controller — the **Switch Pro Controller**, Joy-Cons, Xbox or PlayStation pads — works with no setup: it
   presses the game's own keys. In a game: d-pad / left stick move, **any face button** pushes, **+** (Menu /
   Options) pauses and un-pauses, hold **−** (View / Share) for a second to end the game. On the title screen, the
-  scores, credits and dialogs: any face button or **+** = Return (start, continue, OK), **−** = Esc (Cancel).
+  scores, credits and dialogs: any face button or **+** = Return (start, continue, OK), **−** = Esc (Cancel) — except that in a dialog
+  opened during a game **+** stays pause / un-pause.
 - Move and push follow the key set in Preferences, so remapping a key remaps the button.
 - Full table, pairing steps and the check list: **GAMEPAD.md** (next to the app; on the Desktop as
   "Bubble Trouble X — GAMEPAD.md").

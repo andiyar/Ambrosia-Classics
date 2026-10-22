@@ -18,7 +18,8 @@ Every face button does the same thing, so it never matters which one is "A". The
 | **Cancel** (dialogs) | **−** | View | Create / Share |
 
 Shoulder buttons, triggers and stick clicks do nothing. While a demo plays, a face button, **+**, **−** or the d-pad ends
-it, as any key does. Outside a game the d-pad presses the arrow keys (the title screen ignores them).
+it, as any key does. Outside a game the d-pad presses the arrow keys: the title screen ignores them, but on the scores and credits
+screens any key — the d-pad too — goes back to the title screen.
 
 ## Pairing a Switch Pro Controller with the Mac
 
@@ -46,6 +47,9 @@ that set's five keys, so changing a key there changes the button too. Pause stay
   already in the box (the last one entered). Use the keyboard to type a new name.
 - In a dialog opened during a game (Preferences… while paused), **+** still pauses / un-pauses; a face button
   is OK there.
+- The game is paused while the controller's pause **or** the keyboard's Caps Lock is on — both must be off to
+  play on.
+- A single Joy-Con held sideways has no **−** button, so it cannot end a game early (play to the end, or press Esc).
 - The controller works only while the game is the front app, like the keyboard.
 
 ## Check with a real controller (for Ben)
