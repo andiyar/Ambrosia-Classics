@@ -13,8 +13,8 @@
   gamepads; HK floor **361** (was 328), HectorSDL 48/0. Classics: BTX core 261/0/0 (Core untouched), Windows package
   126/0/0, cross-build OK; BubbleTroubleX/Aki/AkiPad/Deimos/Ferazel build. Every task Opus-implemented + Opus-reviewed;
   Fable plan review + phase-end review (READY_TO_STAGE). Staged `~/Desktop/Bubble Trouble X.app` + GAMEPAD notes.
-  **Ben played a level with a real controller 2026-10-23: "BTX works"** (Mac build). The GAMEPAD.md 6-step check
-  was NOT run — pause (+), hold-− to end, and the high-score dialog are still unconfirmed on hardware.
+  **Ben's real-controller check 2026-10-23 (Mac build): GAMEPAD.md steps 1–3 PASS** (title start, d-pad + stick,
+  push with all four face buttons). Steps 4–6 (+ pause, hold-− to end, high-score dialog OK) untried, not failed.
   **Owed:** push + a BTX 1.1 release only on his word; the Windows pad path is still untested on hardware. Ferazel adopts via its own
   plan (set `padMapping`, implement `padKeyDown`). Plan `docs/plans/2026-10-22-gamepad.md`.
 - **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
