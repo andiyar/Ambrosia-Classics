@@ -131,6 +131,8 @@ targets:
         product: BubbleTroubleRender
       - package: HectorKit
         product: HectorShell
+      - package: HectorKit
+        product: HectorInput
     settings:
       base:
         PRODUCT_NAME: "Bubble Trouble X"

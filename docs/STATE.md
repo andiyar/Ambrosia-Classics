@@ -4,11 +4,18 @@
 
 ## Where we are
 
-- **Bubble Trouble X gamepad (2026-10-22, D36, HectorKit D16) — on branch `gamepad` in both repos, NOT yet merged.**
-  A controller acts as the original keys (`BubbleTroubleX/Shared/BTXPadLayout.swift`, `BubbleTroubleX/GAMEPAD.md`);
-  Mac app wired (A1); Windows = W1; a real-controller check by Ben is owed (GAMEPAD.md list). Plan
-  `docs/plans/2026-10-22-gamepad.md`.
-
+- **Bubble Trouble X gamepad — DONE, merged to local main, NOT pushed / not released (2026-10-22, D36, HectorKit D16).**
+  A controller (Switch Pro first; Xbox / PlayStation / Joy-Con) acts as BTX's original keys, Mac and Windows: layout
+  `BubbleTroubleX/Shared/BTXPadLayout.swift` (current key set in play, every face button pushes, + pauses via a Caps
+  Lock latch, − held 1 s = Esc; outside play face/+ = Return, − = Esc, d-pad = arrows), user notes
+  `BubbleTroubleX/GAMEPAD.md`. Kit: new Foundation-only `HectorInput` (translator, re-exported by HectorShell),
+  `ShellGamepad` (GameController), `ShellView.padMapping` (nil default — Aki/Deimos/Ferazel unchanged), HectorSDL
+  gamepads; HK floor **361** (was 328), HectorSDL 48/0. Classics: BTX core 261/0/0 (Core untouched), Windows package
+  126/0/0, cross-build OK; BubbleTroubleX/Aki/AkiPad/Deimos/Ferazel build. Every task Opus-implemented + Opus-reviewed;
+  Fable plan review + phase-end review (READY_TO_STAGE). Staged `~/Desktop/Bubble Trouble X.app` + GAMEPAD notes.
+  **Owed:** Ben's real-controller check (GAMEPAD.md, 6 steps; no pad was connected here — the Mac wiring has no
+  automated test, the Windows driver has 13); push + a BTX 1.1 release only on his word. Ferazel adopts via its own
+  plan (set `padMapping`, implement `padKeyDown`). Plan `docs/plans/2026-10-22-gamepad.md`.
 - **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
   `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
   `docs/QUESTIONS.md` (what only Ben can answer — his phase gate cards queue there; he is away in Fiji). Each run

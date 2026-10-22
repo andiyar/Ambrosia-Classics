@@ -832,9 +832,11 @@ public final class WinGameDriver: DialogSystemDelegate {
             quitChosen()
             if quitPending && !finished { closeRequestPending = true }
         case .focusLost:
-            // Another application came forward: every key is up (the pad too, from the next poll).
+            // Another application came forward: every key is up (the pad too, from the next poll); a pad button
+            // held now is ignored until released, even if focus returns before another poll runs.
             keys.releaseAll()
             hasFocus = false
+            padTranslator.ignoreHeldButtons()
             guard let frontEnd else { return }
             handle(frontEnd.appDeactivated(), now: ticksNow())
         case .focusGained:
