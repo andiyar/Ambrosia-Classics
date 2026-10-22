@@ -277,14 +277,18 @@ let options = WinGameDriver.Options(registeredName: registeredName, today: today
 
 let driver: WinGameDriver
 do {
+    // The gamepad (D36): every connected pad, unioned, read by the driver at each poll — not in headless mode (real
+    // input is ignored there).
     driver = try WinGameDriver(assets: assets, host: host, audioOutput: output, prefsBacking: prefsBacking,
-                               dialogs: autoDialogs ? WinAutoDialogs() : nil, options: options)
+                               dialogs: autoDialogs ? WinAutoDialogs() : nil,
+                               padSource: headless ? nil : { sdl.padState() }, options: options)
 } catch {
     startupFailure(WinStartup.failureMessage("cannot start the game", error: error, logURL: startupLog?.url))
 }
 driver.start()
 startupLog?.write("window: scale \(windowScale), video=\(SDLHost.currentVideoDriver) "
                   + "audio=\(audioOut != nil ? SDLHost.currentAudioDriver : "none")")
+startupLog?.write(sdl.gamepadsAvailable ? "gamepads: \(sdl.connectedGamepadCount) connected" : "gamepads: unavailable")
 
 // MARK: The loop
 

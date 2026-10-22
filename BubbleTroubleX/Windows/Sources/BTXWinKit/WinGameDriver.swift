@@ -2,6 +2,7 @@ import BubbleTroubleCore
 import BubbleTroubleRender
 import Foundation
 import HectorGraphics
+import HectorInput
 
 /// The original data as the Windows build ships it (D10, D15.4): a `Data/` folder beside the `.exe` holding the five
 /// `.rsrc` files, `Fonts/` (the baked faces, W2) and `Decoded/` (the pre-decoded QuickTime-JPEG bands, D16.1).
@@ -43,7 +44,8 @@ public struct WinGameAssets {
 ///
 /// The window is the 640×480 game screen alone, windowed and in full screen (D21: no menu bar); the Mac's dialogs are
 /// drawn over it in-window (`DialogSystem`, W6, D15.3). The Mac menu bar's key equivalents stay (`WinShortcuts`, Ctrl
-/// for ⌘). Input goes to the Ctrl shortcuts first, then a dialog (app-modal), then the game.
+/// for ⌘). Input goes to the Ctrl shortcuts first, then a dialog (app-modal), then the game. A gamepad (the injected
+/// `padSource`, D36 / HectorKit D16) acts as the original keys, as on the Mac (`BTXController`'s Gamepad section).
 public final class WinGameDriver: DialogSystemDelegate {
     public struct Options {
         /// Info message 2's "Registered To:" name (the Mac passes `NSFullUserName()`).
@@ -141,6 +143,17 @@ public final class WinGameDriver: DialogSystemDelegate {
     private enum MouseTarget { case none, game, dialog }
     private var mouseTarget = MouseTarget.none
 
+    /// Where the gamepad is read (nil: no pad — headless runs). HectorSDL's `SDLHost.padState` in the executable.
+    private let padSource: (() -> ShellPadState)?
+    private var padTranslator = ShellPadTranslator()
+    /// The last pad translation (tests, diagnostics); empty while no pad is read.
+    public private(set) var padFrame = ShellPadFrame()
+    /// The window has the keyboard (SDL focus): the pad reads as nothing while it does not, as on the Mac while the
+    /// app is inactive.
+    private var hasFocus = true
+    /// Pad edges are being delivered: a poll from inside them uses the frame in hand.
+    private var deliveringPadEdges = false
+
     /// Called after every frame fire with the running session (tests trace the demo).
     public var frameObserver: ((GameSession) -> Void)?
     /// Called after every present.
@@ -149,10 +162,12 @@ public final class WinGameDriver: DialogSystemDelegate {
     /// Loads the prefs and builds the sound and the compositor (the first half of the Mac's
     /// `applicationDidFinishLaunching`); `start()` opens the front end.
     /// `dialogs` defaults to the real in-window `DialogSystem`; pass `WinAutoDialogs` for runs that must not stop at a
-    /// dialog.
+    /// dialog. `padSource` returns the gamepad buttons held now (all pads unioned); nil = no gamepad.
     public init(assets: WinGameAssets, host: any WinHost, audioOutput: any WinAudioOutput,
-                prefsBacking: any BTXPrefsBacking, dialogs: (any WinDialogs)? = nil, options: Options) throws {
+                prefsBacking: any BTXPrefsBacking, dialogs: (any WinDialogs)? = nil,
+                padSource: (() -> ShellPadState)? = nil, options: Options) throws {
         self.host = host
+        self.padSource = padSource
         self.data = assets.data
         self.dialogs = dialogs ?? DialogSystem(data: assets.data, art: assets.art,
                                                renderer: DialogRenderer(rasterizer: assets.text))
@@ -212,6 +227,12 @@ public final class WinGameDriver: DialogSystemDelegate {
     private func fireDueTimers() {
         let now = host.nanoseconds
         if dialogTimer.poll(now: now) {
+            // While a dialog waits every game clock is stopped: this tick is the pad's only poll (BTXController's
+            // `pollPadInDialog`), turning pad presses into the dialog's Return / Esc.
+            if dialogs.isModal {
+                pollPad()
+                if finished { return }
+            }
             dialogs.tick(heldKeys: keys.held)
             if finished { return }
         }
@@ -317,10 +338,55 @@ public final class WinGameDriver: DialogSystemDelegate {
         audio.titleMusicPref = prefs.titleMusic
     }
 
-    /// The keyboard as `GetKeys` reads it, re-polled once per fire.
+    /// The keyboard as `GetKeys` reads it, re-polled once per fire — with the gamepad merged in as the original keys
+    /// (D36): its held keys, its pause latch as Caps Lock (the pad's edges are delivered first, `pollPad`).
     private func heldKeys() -> HeldKeys {
+        pollPad()
         let m = host.modifiers
-        return HeldKeys(codes: keys.held, capsLock: m.contains(.capsLock), command: m.contains(.command))
+        return HeldKeys(codes: keys.held.union(padFrame.held), capsLock: m.contains(.capsLock) || padFrame.capsLock,
+                        command: m.contains(.command))
+    }
+
+    // MARK: Gamepad (D36, HectorKit D16)
+
+    /// Reads the pad, translates it with the layout for this poll (`BTXPadLayout`: the current key set, whether a
+    /// play-mode game is in progress, whether a dialog waits) and delivers its key-downs (`padKeyDown`) — HectorShell's
+    /// `pollKeyState` for the Mac. Without the focus the pad reads as nothing, and buttons still held when it returns
+    /// are ignored until released. Key-ups need no delivery: the pad's held keys are merged at each read, never put
+    /// into the keyboard's state.
+    private func pollPad() {
+        guard let padSource, let frontEnd, !deliveringPadEdges else { return }
+        let inPlay = session.map { $0.mode == .play && $0.isInGame } ?? false
+        let mapping = BTXPadLayout.mapping(keySet: frontEnd.prefs.currentKeySet, inPlay: inPlay,
+                                           dialogUp: dialogs.isModal)
+        let state = hasFocus ? padSource() : .empty
+        let frame = padTranslator.update(state, mapping: mapping,
+                                         now: Double(host.nanoseconds) / Double(WinClock.nanosPerSecond))
+        if !hasFocus { padTranslator.ignoreHeldButtons() }
+        padFrame = frame
+        deliveringPadEdges = true
+        defer { deliveringPadEdges = false }
+        for code in frame.pressed {
+            padKeyDown(code)
+            if finished { return }
+        }
+    }
+
+    /// A pad key went down. With a dialog up (where the keyboard's keys go), Return and Esc reach it as the keyboard's
+    /// would; other keys do nothing there. Otherwise the key goes to the front end as a keyboard key-down does, with
+    /// the US characters of its key code and Caps Lock as the merged keyboard + pad state reads it (BTXController's
+    /// `shellView(_:padKeyDown:)`).
+    private func padKeyDown(_ code: UInt16) {
+        let chars = ShellKeyCharacters.characters(forKeyCode: code) ?? ""
+        if dialogs.isShowing {
+            guard code == BTXPadLayout.returnKey || code == BTXPadLayout.escapeKey else { return }
+            dialogs.keyDown(DialogKeyEvent(keyCode: code, characters: chars))
+            return
+        }
+        guard let frontEnd else { return }
+        let capsLock = host.modifiers.contains(.capsLock) || padFrame.capsLock
+        handle(frontEnd.key(code, chars: chars, modifiers: KeyModifiers(capsLock: capsLock), isRepeat: false),
+               now: ticksNow())
     }
 
     /// `_GetMouse` in the 640×480 screen, plus `Button()`.
@@ -331,6 +397,7 @@ public final class WinGameDriver: DialogSystemDelegate {
     private func frameFired() {
         guard let frontEnd else { return }
         var keys = heldKeys()
+        guard !finished else { return }                                 // a pad key-down quit
         if quitPending {
             keys.codes.insert(0x0c)
             keys.command = true
@@ -354,7 +421,9 @@ public final class WinGameDriver: DialogSystemDelegate {
             }
             wipe = w.row < rows ? w : nil
         }
-        handle(frontEnd.tick(now: now, keys: heldKeys(), mouse: mousePoint()), now: now, alreadyDirty: dirty)
+        let keys = heldKeys()
+        guard !finished else { return }                                 // a pad key-down quit
+        handle(frontEnd.tick(now: now, keys: keys, mouse: mousePoint()), now: now, alreadyDirty: dirty)
     }
 
     private static func wipeRows(_ w: (out: Bool, step: Int, row: Int, lastTick: UInt32)) -> Int {
@@ -759,11 +828,13 @@ public final class WinGameDriver: DialogSystemDelegate {
             quitChosen()
             if quitPending && !finished { closeRequestPending = true }
         case .focusLost:
-            // Another application came forward: every key is up.
+            // Another application came forward: every key is up (the pad too, from the next poll).
             keys.releaseAll()
+            hasFocus = false
             guard let frontEnd else { return }
             handle(frontEnd.appDeactivated(), now: ticksNow())
         case .focusGained:
+            hasFocus = true
             guard let frontEnd else { return }
             handle(frontEnd.appActivated(keys: heldKeys()), now: ticksNow())
         }

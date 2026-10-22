@@ -1,6 +1,7 @@
 import BTXWinKit
 import BubbleTroubleCore
 import Foundation
+import HectorInput
 import XCTest
 
 /// A `WinHost` for headless driver tests: the fixed-step clock and scripted input of `WinScriptedInput`, plus
@@ -122,10 +123,11 @@ enum WinTestData {
     /// A started driver over a scripted host; fixed date and name, so runs are reproducible.
     static func driver(script: WinKeyScript = WinKeyScript(), backing: any BTXPrefsBacking = WinMemoryPrefs(),
                        output: any WinAudioOutput = SilentWinAudioOutput(),
-                       dialogs: (any WinDialogs)? = WinAutoDialogs()) throws -> (WinGameDriver, ScriptedHost) {
+                       dialogs: (any WinDialogs)? = WinAutoDialogs(),
+                       padSource: (() -> ShellPadState)? = nil) throws -> (WinGameDriver, ScriptedHost) {
         let host = ScriptedHost(script: script)
         let driver = try WinGameDriver(assets: assets(), host: host, audioOutput: output, prefsBacking: backing,
-                                       dialogs: dialogs,
+                                       dialogs: dialogs, padSource: padSource,
                                        options: .init(registeredName: "Player", today: { (3, 3) }))
         driver.start()
         return (driver, host)

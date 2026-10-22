@@ -30,6 +30,9 @@ let package = Package(
             .product(name: "HectorResources", package: "HectorKit"),
             .product(name: "HectorGraphics", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
+            // The gamepad translator (HectorKit D16); `BTXPadLayout.swift` is a symlink to the Mac app's
+            // `BubbleTroubleX/Shared` file, so both shells compile the same layout (D36).
+            .product(name: "HectorInput", package: "HectorKit"),
         ]),
         .executableTarget(name: "BubbleTroubleXWin", dependencies: [
             "BTXWinKit",
@@ -46,6 +49,7 @@ let package = Package(
             .product(name: "BubbleTroubleRender", package: "Core"),
             .product(name: "HectorGraphics", package: "HectorKit"),
             .product(name: "HectorAudio", package: "HectorKit"),
+            .product(name: "HectorInput", package: "HectorKit"),
         ]),
     ]
 )
