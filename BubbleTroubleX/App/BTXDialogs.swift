@@ -61,6 +61,9 @@ import BubbleTroubleRender
     var livePrefs: (BTXPrefs, Bool) -> Void = { _, _ in }
     /// Called whenever `isShowing` / `isModal` may have changed (the App stops / restarts its clocks and menus).
     var modalStateChanged: () -> Void = {}
+    /// Runs on every fire of the 1/60 s null timer, before the front dialog's null event — the App polls the
+    /// gamepad here while a dialog stops its clocks (D36).
+    var nullTick: () -> Void = {}
 
     /// Dialogs and alerts on screen, front last.
     private var stack: [CarbonDialog] = []
@@ -332,7 +335,10 @@ import BubbleTroubleRender
             return consumed ? nil : event
         }
         let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.stack.last?.nullEvent?() }
+            MainActor.assumeIsolated {
+                self?.nullTick()
+                self?.stack.last?.nullEvent?()
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         nullTimer = timer

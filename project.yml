@@ -123,6 +123,7 @@ targets:
     sources:
       - path: BubbleTroubleX/App
         excludes: ["Info.plist"]
+      - path: BubbleTroubleX/Shared
     dependencies:
       - package: BubbleTroubleCore
         product: BubbleTroubleCore

@@ -156,6 +156,7 @@ import HectorShell
             if updateMusic { audio.updateMusicVolume() }
         }
         dialogs.modalStateChanged = { [unowned self] in modalStateChanged() }
+        dialogs.nullTick = { [unowned self] in pollPadInDialog() }
         menus.preferencesHandler = { [unowned self] in preferencesChosen() }
         frameTimer = ShellIdleTimer(interval: 0.033) { [weak self] in self?.frameFired() }
         fastFrameTimer = ShellIdleTimer(interval: 0.001) { [weak self] in self?.frameFired() }
@@ -263,8 +264,10 @@ import HectorShell
         audio.titleMusicPref = prefs.titleMusic
     }
 
-    /// The keyboard as `GetKeys` reads it: K1's key state, Caps Lock and modifiers re-polled once per fire.
+    /// The keyboard as `GetKeys` reads it: K1's key state, Caps Lock and modifiers re-polled once per fire — with
+    /// the gamepad merged in as the original keys (D36): its held keys, its pause latch as Caps Lock.
     private func heldKeys() -> HeldKeys {
+        updatePadMapping()
         let state = shell.view.pollKeyState()
         return HeldKeys(codes: state.held, capsLock: state.capsLock, command: state.modifiers.contains(.command))
     }
@@ -642,6 +645,51 @@ import HectorShell
             savePrefs()
         }
         showCursor()
+    }
+
+    // MARK: Gamepad (D36, HectorKit D16)
+
+    /// The pad layout for the poll about to run: the current key set, whether a play-mode game is in progress, and
+    /// whether a dialog waits for the user (`BTXPadLayout`). Assigning an equal mapping is a no-op in HectorShell.
+    private func updatePadMapping() {
+        guard let frontEnd else { return }
+        let inPlay = session.map { $0.mode == .play && $0.isInGame } ?? false
+        shell.view.padMapping = BTXPadLayout.mapping(keySet: frontEnd.prefs.currentKeySet, inPlay: inPlay,
+                                                     dialogUp: dialogs?.isModal == true)
+    }
+
+    /// The dialogs' 1/60 s null timer: while a dialog waits for the user every game clock is stopped, so this is
+    /// the only poll — it turns pad presses into the dialog's Return / Esc (`shellView(_:padKeyDown:)`).
+    private func pollPadInDialog() {
+        guard dialogs?.isModal == true else { return }
+        updatePadMapping()
+        _ = shell.view.pollKeyState()
+    }
+
+    /// A pad key went down. With a dialog up, Return and Esc reach it as a synthesized key-down + key-up posted to
+    /// the front dialog's panel — through the event queue, so `BTXDialogs`' local event monitor sees them as it
+    /// sees the keyboard's (`sendEvent` would bypass it); other keys do nothing there. Otherwise the key goes to
+    /// the front end exactly as a keyboard key-down does, with the US characters of its key code and Caps Lock as
+    /// the merged keyboard + pad state reads it.
+    func shellView(_ view: ShellView, padKeyDown keyCode: UInt16) {
+        guard let frontEnd else { return }
+        let chars = ShellKeyCharacters.characters(forKeyCode: keyCode) ?? ""
+        if dialogs?.isModal == true {
+            guard keyCode == BTXPadLayout.returnKey || keyCode == BTXPadLayout.escapeKey,
+                  let panel = dialogs.frontDialog?.panel else { return }
+            for type in [NSEvent.EventType.keyDown, .keyUp] {
+                guard let event = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [],
+                                                   timestamp: ProcessInfo.processInfo.systemUptime,
+                                                   windowNumber: panel.windowNumber, context: nil,
+                                                   characters: chars, charactersIgnoringModifiers: chars,
+                                                   isARepeat: false, keyCode: keyCode) else { return }
+                NSApp.postEvent(event, atStart: false)
+            }
+            return
+        }
+        let capsLock = NSEvent.modifierFlags.contains(.capsLock) || view.padFrame.capsLock
+        handle(frontEnd.key(keyCode, chars: chars, modifiers: KeyModifiers(capsLock: capsLock), isRepeat: false),
+               now: ticksNow())
     }
 
     // MARK: ShellInputHandler
