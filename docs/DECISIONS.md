@@ -1279,3 +1279,34 @@ or a nil/empty Mmap returns 1; no current node → ExitToShell (a quit request, 
 inside the Q and W/Esc branches; the node-sprite list is emptied on exit (and by `.InitPlayerMapData`), not on entry; the
 plan's `testLinkPixels` geometry was impossible (stepped line) → each flat pair checked; lines rasterised from the upper
 end point [MED]. Ferazel/Core 297 → 308/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
+
+## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
+
+**Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their
+Switch Pro Controller first; Xbox / PlayStation / Joy-Con as GameController delivers them) works out of the box and
+acts as the ORIGINAL keys. The Mac shell around the game changes; game behaviour stays 100 % the original's (the standing
+ruling carried from EV D30/D67) — BTX Core is untouched and never sees a pad. Mechanism: HectorKit **D16** (`HectorInput` translator,
+`ShellGamepad`, `ShellView.padMapping` — pad keys merged into the polled key state, the pause latch ORed into Caps
+Lock, pad key-down edges delivered to the app). Plan `docs/plans/2026-10-22-gamepad.md` (Fable review record folded in).
+**The layout** (`BubbleTroubleX/Shared/BTXPadLayout.swift`, Foundation + HectorInput + `KeySet` only, so W1 compiles it):
+1. **In play** (a play-mode session in its game, no dialog): d-pad / left stick → the CURRENT key set's left / right /
+   up / down; all four face buttons → its push (Nintendo and Xbox swap A/B and X/Y labels — no "which one is A");
+   + / Menu → Caps Lock toggle (BTX pauses on the lock state, so a latch, not a held key); − / View → Esc only after a
+   1 s hold (a stray press must not end a kid's game). Remapping a key in Preferences remaps the button.
+2. **In play with a dialog up:** + stays the Caps Lock toggle (the pause survives the dialog); face → Return; − → Esc.
+3. **Everywhere else** (splash, menu, screens, demo, dialogs): face and + → Return (start, continue, OK); − → Esc at
+   once (Cancel); d-pad → the fixed arrows 0x7B–0x7E, never the key set — the menu acts on characters, so the J/L/I/K,
+   Z/X, Q/W/E/R sets would fire menu commands (L level select, Q quit, X/Z poem/quote…).
+4. Shoulders, triggers, stick clicks unmapped.
+**Wiring (Mac):** `BTXController` assigns the mapping before every poll; pad key-downs go to `FrontEnd.key` like a
+keyboard key-down (US characters per key code, `ShellKeyCharacters`); while a dialog is modal (every game clock stopped)
+the dialogs' 1/60 null timer polls, and Return / Esc reach the front panel as a synthesized key-down + key-up posted to
+the event queue (the dialog keys live in a local event monitor; `sendEvent` would bypass it).
+**Known limits** (GAMEPAD.md): − works only un-paused (Esc is read in play, not in the pause); with "Hold Escape to
+exit" the hold is ≈ 2 s; no pad typing — face = OK accepts the default high-score name.
+**Later:** Ferazel adopts via its own plan (play keys; no pointer emulation for its mouse-driven map/dialogs); Windows
+per plan task W1 (SDL3 gamepad into the same layout file).
+**Rejected:** d-pad = key set outside play (fires menu commands, review record #2); per-button labels (A ≠ B) — kids
+cannot tell them apart across Nintendo / Xbox; a pad-configuration UI (not in the original; the key set already
+remaps); `window.sendEvent` for dialog keys (bypasses the monitor).
+**Approved by:** Ben, 2026-10-22.

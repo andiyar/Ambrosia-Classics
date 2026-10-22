@@ -2,9 +2,9 @@
 # Stage Bubble Trouble X for Ben (CLAUDE.md "Staged builds"; plan 2026-10-04-btx-playable A1/S5): build Release,
 # copy the ORIGINAL 1.1 Contents/Resources files the game loads into the built app unchanged (original names — the
 # app resolves them from its own bundle), strip quarantine/xattrs, ad-hoc re-sign, and place
-# out/BubbleTroubleX/Bubble Trouble X.app + out/BubbleTroubleX/WHAT-TO-EXPECT.md. out/, .build/ and *.xcodeproj are
+# out/BubbleTroubleX/Bubble Trouble X.app + WHAT-TO-EXPECT.md + GAMEPAD.md (D36). out/, .build/ and *.xcodeproj are
 # git-ignored; the original data never enters git (plan R13).
-# BTX_DATA overrides the data folder. Both are also ditto'd to ~/Desktop (hidden worktrees are unopenable from
+# BTX_DATA overrides the data folder. All are also ditto'd to ~/Desktop (hidden worktrees are unopenable from
 # Finder); BTX_STAGE_NO_DESKTOP=1 skips that (implementer test runs — the orchestrator stages for Ben).
 set -euo pipefail
 
@@ -48,13 +48,16 @@ xattr -cr "$OUT/$NAME"
 codesign --force --deep --sign - "$OUT/$NAME"
 codesign --verify --deep "$OUT/$NAME"
 cp "$ROOT/BubbleTroubleX/WHAT-TO-EXPECT.md" "$OUT/WHAT-TO-EXPECT.md"
+cp "$ROOT/BubbleTroubleX/GAMEPAD.md" "$OUT/GAMEPAD.md"                     # the controller layout (D36)
 
 if [ "${BTX_STAGE_NO_DESKTOP:-0}" != "1" ]; then
     rm -rf "$HOME/Desktop/$NAME"
     ditto "$OUT/$NAME" "$HOME/Desktop/$NAME"
     cp "$OUT/WHAT-TO-EXPECT.md" "$HOME/Desktop/Bubble Trouble X — WHAT-TO-EXPECT.md"
+    cp "$OUT/GAMEPAD.md" "$HOME/Desktop/Bubble Trouble X — GAMEPAD.md"
     echo "desktop: $HOME/Desktop/$NAME"
 fi
 
 echo "staged: $OUT/$NAME"
 echo "notes:  $OUT/WHAT-TO-EXPECT.md"
+echo "pad:    $OUT/GAMEPAD.md"

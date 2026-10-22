@@ -31,6 +31,15 @@ progress bar, then the title screen (main menu), as the original did.
 - **⌘Q** quits: in play the music fades out first, as the original did; quitting while playing does
   not save prefs, quitting while paused does — again as the original
 
+## Controller (new)
+- A game controller — the **Switch Pro Controller**, Joy-Cons, Xbox or PlayStation pads — works with no setup: it
+  presses the game's own keys. In a game: d-pad / left stick move, **any face button** pushes, **+** (Menu /
+  Options) pauses and un-pauses, hold **−** (View / Share) for a second to end the game. On the title screen, the
+  scores, credits and dialogs: any face button or **+** = Return (start, continue, OK), **−** = Esc (Cancel).
+- Move and push follow the key set in Preferences, so remapping a key remaps the button.
+- Full table, pairing steps and the check list: **GAMEPAD.md** (next to the app; on the Desktop as
+  "Bubble Trouble X — GAMEPAD.md").
+
 ## Menu bar (transcribed from the original's `main.nib`)
 - **Bubble Trouble X**: About (the standard panel with the original credits), Preferences…, Services, Hide, Hide Others, Show All, Quit. No Register / Check for Updates.
 - **Edit**: the standard items (for the dialogs' text fields later).

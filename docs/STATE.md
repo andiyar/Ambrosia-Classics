@@ -4,6 +4,11 @@
 
 ## Where we are
 
+- **Bubble Trouble X gamepad (2026-10-22, D36, HectorKit D16) — on branch `gamepad` in both repos, NOT yet merged.**
+  A controller acts as the original keys (`BubbleTroubleX/Shared/BTXPadLayout.swift`, `BubbleTroubleX/GAMEPAD.md`);
+  Mac app wired (A1); Windows = W1; a real-controller check by Ben is owed (GAMEPAD.md list). Plan
+  `docs/plans/2026-10-22-gamepad.md`.
+
 - **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
   `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
   `docs/QUESTIONS.md` (what only Ben can answer — his phase gate cards queue there; he is away in Fiji). Each run
