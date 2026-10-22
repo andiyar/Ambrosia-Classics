@@ -343,9 +343,13 @@ public final class WinGameDriver: DialogSystemDelegate {
     private func heldKeys() -> HeldKeys {
         pollPad()
         let m = host.modifiers
-        return HeldKeys(codes: keys.held.union(padFrame.held), capsLock: m.contains(.capsLock) || padFrame.capsLock,
-                        command: m.contains(.command))
+        lastHeldKeys = HeldKeys(codes: keys.held.union(padFrame.held),
+                                capsLock: m.contains(.capsLock) || padFrame.capsLock, command: m.contains(.command))
+        return lastHeldKeys
     }
+
+    /// The merged keyboard + pad state the last clock fire read (tests, diagnostics).
+    public private(set) var lastHeldKeys = HeldKeys()
 
     // MARK: Gamepad (D36, HectorKit D16)
 

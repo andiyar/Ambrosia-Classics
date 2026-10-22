@@ -1,5 +1,6 @@
 import BTXWinKit
 import BubbleTroubleCore
+import BubbleTroubleRender
 import Foundation
 import HectorInput
 import XCTest
@@ -11,7 +12,39 @@ final class WinGamepadTests: XCTestCase {
     /// The buttons held now; the driver reads them through `state`.
     final class FakePad {
         var buttons: Set<ShellPadButton> = []
-        var state: ShellPadState { ShellPadState(buttons: buttons) }
+        /// Runs (once) at the next read, before the state is returned — a pad edge's consequence mid-step.
+        var onRead: (() -> Void)?
+        var state: ShellPadState {
+            if let f = onRead {
+                onRead = nil
+                f()
+            }
+            return ShellPadState(buttons: buttons)
+        }
+    }
+
+    /// Dialogs that stay up once asked for (modal) and count their ticks — nothing drawn, no answers.
+    final class StuckDialogs: WinDialogs {
+        weak var delegate: DialogSystemDelegate?
+        private(set) var isShowing = false
+        var isModal: Bool { isShowing }
+        var wantsTextInput: Bool { false }
+        var drawKey: Int { isShowing ? 1 : 0 }
+        private(set) var ticks = 0
+        @discardableResult
+        func present(_ request: ShellRequest, prefs: BTXPrefs,
+                     completion: @escaping (DialogSystem.Answer) -> Void) -> Bool {
+            isShowing = true
+            delegate?.dialogModalStateChanged()
+            return true
+        }
+        func close() {}
+        func mouseDown(x: Int, y: Int) {}
+        func mouseMoved(x: Int, y: Int) {}
+        func mouseUp(x: Int, y: Int) {}
+        func keyDown(_ event: DialogKeyEvent) {}
+        func tick(heldKeys: Set<UInt16>) { ticks += 1 }
+        func draw(into image: inout RGBAImage, canvasX: Int, canvasY: Int) {}
     }
 
     private static let returnKey: UInt16 = 0x24, escapeKey: UInt16 = 0x35
@@ -187,6 +220,98 @@ final class WinGamepadTests: XCTestCase {
         pad.buttons = [.right]
         steps(d, h, 4)
         XCTAssertEqual(d.padFrame.held, [set.right])
+    }
+
+    func testThePauseLatchSurvivesADialogAndOnlyPlusUnpauses() throws {
+        let (d, h, pad) = try driver(dialogs: nil)                     // the real in-window dialogs
+        startGameWithPad(d, h, pad)
+        pad.buttons = [.start]
+        XCTAssertTrue(WinTestData.run(d, h, limit: 300) { d.session?.phase == .paused }, "paused")
+        pad.buttons = []
+        steps(d, h, 4)
+        d.preferencesChosen()                                           // the pause loop opens DLOG 190
+        XCTAssertTrue(d.dialogs.isModal, "prefs up over the pause")
+        // The mapping changed under the dialog (face buttons are Return), but + stays the latch: the pause holds.
+        steps(d, h, 30)
+        XCTAssertTrue(d.padFrame.capsLock, "the latch survives the dialog")
+        XCTAssertTrue(d.dialogs.isModal)
+        pad.buttons = [.back]                                           // Esc: Cancel
+        XCTAssertTrue(WinTestData.run(d, h, limit: 120) { !d.dialogs.isShowing }, "Esc closed the prefs")
+        pad.buttons = []
+        steps(d, h, 30)
+        XCTAssertEqual(d.session?.phase, .paused, "still paused after the dialog")
+        XCTAssertTrue(d.padFrame.capsLock)
+        pad.buttons = [.start]
+        steps(d, h, 4)
+        pad.buttons = []
+        XCTAssertTrue(WinTestData.run(d, h, limit: 300) { d.session?.phase == .playing }, "+ unpaused")
+    }
+
+    func testKeyboardAndPadHoldingTheSameKeyReleaseIndependently() throws {
+        let (d, h, pad) = try driver()
+        startGameWithPad(d, h, pad)
+        let right = d.currentPrefs.currentKeySet.right
+        func held() -> Bool { d.lastHeldKeys.codes.contains(right) }
+        h.injected = [.keyDown(keyCode: right, characters: "", modifiers: [], isRepeat: false)]
+        pad.buttons = [.right]
+        steps(d, h, 6)
+        XCTAssertTrue(held())
+        h.injected = [.keyUp(keyCode: right, modifiers: [])]            // the keyboard lets go: the pad still holds
+        steps(d, h, 6)
+        XCTAssertTrue(held())
+        h.injected = [.keyDown(keyCode: right, characters: "", modifiers: [], isRepeat: false)]
+        pad.buttons = []                                                // the pad lets go: the keyboard still holds
+        steps(d, h, 6)
+        XCTAssertTrue(held())
+        XCTAssertEqual(d.padFrame.held, [])
+        h.injected = [.keyUp(keyCode: right, modifiers: [])]
+        steps(d, h, 6)
+        XCTAssertFalse(held(), "both released: up")
+    }
+
+    // MARK: A pad read that ends the driver mid-step: the rest of the step does not run
+
+    func testAFrameFireStopsWhenThePadReadFinishesTheDriver() throws {
+        let (d, h, pad) = try driver()
+        startGameWithPad(d, h, pad)
+        XCTAssertEqual(d.clock, .frame)
+        let session = try XCTUnwrap(d.session)
+        let frame = session.state.frame
+        var frames = 0
+        d.frameObserver = { _ in frames += 1 }
+        pad.onRead = { [unowned d] in
+            d.handleEvent(.quit)                                        // in play: waits on the game's own quit
+            d.handleEvent(.quit)                                        // a second close: terminate now
+        }
+        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.finished })
+        XCTAssertEqual(frames, 0, "no frame ran after the driver finished")
+        XCTAssertEqual(session.state.frame, frame)
+    }
+
+    func testATickFireStopsWhenThePadReadFinishesTheDriver() throws {
+        let (d, h, pad) = try driver()
+        WinTestData.run(d, h, limit: 30)
+        XCTAssertEqual(d.frontEnd.phase, .splash)
+        XCTAssertEqual(d.clock, .tick)
+        let presents = h.presents
+        pad.onRead = { [unowned d] in d.handleEvent(.quit) }            // the splash: terminate at once
+        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.finished })
+        XCTAssertEqual(h.presents, presents, "the tick's output was never handled")
+    }
+
+    func testADialogTickStopsWhenThePadReadFinishesTheDriver() throws {
+        let dialogs = StuckDialogs()
+        let (d, h, pad) = try driver(dialogs: dialogs)
+        toMenu(d, h)
+        h.injected = [.keyDown(keyCode: 0x25, characters: "l", modifiers: [], isRepeat: false)]   // level select
+        XCTAssertTrue(WinTestData.run(d, h, limit: 300) { dialogs.isModal })
+        steps(d, h, 4)
+        XCTAssertGreaterThan(dialogs.ticks, 0)
+        XCTAssertEqual(d.clock, .none)
+        let ticks = dialogs.ticks
+        pad.onRead = { [unowned d] in d.handleEvent(.quit) }            // a dialog up: terminate at once
+        XCTAssertTrue(WinTestData.run(d, h, limit: 10) { d.finished })
+        XCTAssertEqual(dialogs.ticks, ticks, "the dialog tick after the pad poll did not run")
     }
 
     /// No pad source (headless runs, the existing tests): the pad is never read.

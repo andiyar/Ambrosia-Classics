@@ -162,6 +162,16 @@ D21 results (2026-10-06, no menu bar): every dump is 640×480. `--frames 600` (m
 return` (level 1) and `--frames 660` with `600 press 0x2b cmd` (Ctrl+, → DLOG 190) exit 0 in CrossOver and are
 `cmp`-identical to the Mac SDL build's.
 
+**Gamepad (gamepad plan W1, D36):** the Windows build reads every connected controller through HectorSDL
+(`SDLHost.padState`) with the Mac's layout — `BubbleTroubleX/Windows/Sources/BTXWinKit/BTXPadLayout.swift` is a
+**git symlink** (mode 120000) to `BubbleTroubleX/Shared/BTXPadLayout.swift`, so both shells compile one file. Builds
+are cross-built on the Mac, where the symlink just works; a Git-for-Windows checkout with `core.symlinks=false`, or a
+GitHub source zip extracted on Windows, turns it into a one-line text file and the build fails — enable symlinks
+(`git config core.symlinks true` and check out again) or copy the Shared file over it. Only controllers SDL has a
+gamepad mapping for are opened (SDL's built-in database: Xbox, PlayStation, Switch Pro and most XInput pads); any
+other device is ignored. Headless (`--frames`) runs read no pad. The log notes `gamepads: N connected` at start
+(`unavailable` if SDL's gamepad subsystem did not start — the keyboard still works).
+
 ## Staging for a tester (W7)
 
 `tools/windows/stage-btx.sh` → `out/Windows/Bubble Trouble X/` (git-ignored), copied to `~/Desktop/Bubble Trouble X
