@@ -13,8 +13,8 @@
   gamepads; HK floor **361** (was 328), HectorSDL 48/0. Classics: BTX core 261/0/0 (Core untouched), Windows package
   126/0/0, cross-build OK; BubbleTroubleX/Aki/AkiPad/Deimos/Ferazel build. Every task Opus-implemented + Opus-reviewed;
   Fable plan review + phase-end review (READY_TO_STAGE). Staged `~/Desktop/Bubble Trouble X.app` + GAMEPAD notes.
-  **Owed:** Ben's real-controller check (GAMEPAD.md, 6 steps; no pad was connected here — the Mac wiring has no
-  automated test, the Windows driver has 13); push + a BTX 1.1 release only on his word. Ferazel adopts via its own
+  **Ben's real-controller check PASSED 2026-10-23** ("BTX works", Mac build, Switch Pro Controller).
+  **Owed:** push + a BTX 1.1 release only on his word; the Windows pad path is still untested on hardware. Ferazel adopts via its own
   plan (set `padMapping`, implement `padKeyDown`). Plan `docs/plans/2026-10-22-gamepad.md`.
 - **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
   `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
