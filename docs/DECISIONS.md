@@ -1304,8 +1304,12 @@ the dialogs' 1/60 null timer polls, and Return / Esc reach the front panel as a 
 the event queue (the dialog keys live in a local event monitor; `sendEvent` would bypass it).
 **Known limits** (GAMEPAD.md): − works only un-paused (Esc is read in play, not in the pause); with "Hold Escape to
 exit" the hold is ≈ 2 s; no pad typing — face = OK accepts the default high-score name.
-**Later:** Ferazel adopts via its own plan (play keys; no pointer emulation for its mouse-driven map/dialogs); Windows
-per plan task W1 (SDL3 gamepad into the same layout file).
+**Windows (W1, built):** HectorSDL opens every SDL3-recognised gamepad (XInput pads, Switch Pro, PlayStation) and
+reports `padState()`; `WinGameDriver` compiles the SAME `BTXPadLayout.swift` (git symlink into BTXWinKit), merges pad
+keys by union at each read (never into the keyboard's held set, so neither releases the other), ORs the latch into Caps
+Lock, polls on the dialog tick too, treats focus loss as the Mac's inactive app. A device SDL has no gamepad mapping
+for is not opened. Not yet in a published Windows zip (needs Ben's word).
+**Later:** Ferazel adopts via its own plan (play keys; no pointer emulation for its mouse-driven map/dialogs).
 **Rejected:** d-pad = key set outside play (fires menu commands, review record #2); per-button labels (A ≠ B) — kids
 cannot tell them apart across Nintendo / Xbox; a pad-configuration UI (not in the original; the key set already
 remaps); `window.sendEvent` for dialog keys (bypasses the monitor).

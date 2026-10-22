@@ -52,6 +52,13 @@ that set's five keys, so changing a key there changes the button too. Pause stay
 - A single Joy-Con held sideways has no **−** button, so it cannot end a game early (play to the end, or press Esc).
 - The controller works only while the game is the front app, like the keyboard.
 
+## On Windows
+
+The Windows build has the same layout. Any controller Windows and SDL recognise works (Xbox and other XInput pads,
+PlayStation, Switch Pro); plug it in or pair it in Windows' Bluetooth settings, before or while the game runs. Start =
+**+** / Menu / Options, Back = **−** / View / Share. A controller SDL does not recognise as a gamepad is ignored. The
+controller works only while the game window has the focus.
+
 ## Check with a real controller (for Ben)
 
 1. Title screen: press a face button → a new game starts.

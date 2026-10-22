@@ -33,6 +33,11 @@ remembers which you used.
   - **Ctrl+Q** quit (closing the window quits too)
 - The Mac's Option key is **Alt** (for example Alt-click "Scores" on the title screen to erase the high scores).
 - You can choose other keys in Preferences → Keys → New Set….
+- **A game controller works too** (Xbox, PlayStation, Switch Pro — any pad Windows and SDL recognise; plug it in or pair
+  it before or while the game runs). In a game: d-pad / left stick move, **any face button** pushes, **Start / Menu /
+  +** pauses and un-pauses, hold **Back / View / −** for a second to end the game. On the title screen, scores and
+  dialogs: any face button or Start = Enter (start, OK), Back = Esc (Cancel). Move and push follow the key set in
+  Preferences. The controller only works while the game window has the focus.
 
 ## Sound
 Sound effects and music play through your default sound device, at the original's levels (checked on a real
