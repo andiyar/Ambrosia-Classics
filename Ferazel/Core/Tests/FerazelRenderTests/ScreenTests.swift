@@ -44,6 +44,23 @@ final class ScreenTests: XCTestCase {
         // error diffusion), then `.MTRedraw`'s Color2Index of each index's own colour.
         XCTAssertEqual(String(fnv1a(image(r.surface)), radix: 16), "ed142fed9e3bdce7")
         XCTAssertGreaterThan(Set(r.surface.frame.pixels).count, 16)          // a picture, not a flat fill
+
+        // `.screenGamma(.clut(entries))` (`.TurnGray`'s `SetEntries`): the entries become the presented CLUT, entry i
+        // = index i; entries past the list keep the CLUT's; same id, the pixels and the gamma untouched.
+        let before = r.surface.clut, pixels = r.surface.frame.pixels
+        let gray: [RGB16] = (0..<256).map { (i: Int) -> RGB16 in
+            let v = UInt16(i * 0x101)
+            return RGB16(v, v, v)
+        }
+        try r.apply([.screenGamma(.clut(entries: gray))])
+        XCTAssertEqual(r.surface.presentedClut.entries.map { RGB16($0) }, gray)
+        XCTAssertEqual(r.surface.clut.id, 130)
+        XCTAssertEqual(r.surface.gamma, .identity)
+        XCTAssertEqual(r.surface.frame.pixels, pixels)
+        try r.apply([.setScreenClut(id: 130), .screenGamma(.clut(entries: [RGB16(1, 2, 3), RGB16(4, 5, 6)]))])
+        let partial = r.surface.presentedClut.entries.map { RGB16($0) }
+        XCTAssertEqual(Array(partial.prefix(2)), [RGB16(1, 2, 3), RGB16(4, 5, 6)])
+        XCTAssertEqual(Array(partial.dropFirst(2)), before.entries.dropFirst(2).map { RGB16($0) })
     }
 
     func testStretchedPanelRows() throws {

@@ -23,9 +23,9 @@ import HectorResources
 ///   change, to `Color2Index(run.rgb)`.
 /// - `screenGamma(op)`: `.tint` → `ScreenGamma.tintFade` (the unfaded gamma scaled, `.TintFadeProc`); `.fadeToColor` →
 ///   `ScreenGamma.fade` (compounding); `.timedFadeToColor` → the gamma captured at its tick 0 moved the tick's absolute
-///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut(entries)` (`.TurnGray`'s `SetEntries(0, 0xff)`) → the entries become the screen
-///   CLUT (entry i = index i; entries past the list keep the current CLUT's); the gamma stays. The maths is Core's
-///   (`DeathScreen.turnGray`).
+///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut(entries)`
+///   (`.TurnGray`'s `SetEntries(0, 0xff)`) → the entries become the screen CLUT (entry i = index i; entries past the
+///   list keep the current CLUT's); the gamma stays. The maths is Core's (`DeathScreen.turnGray`).
 /// - `gammaStep`: one `.HandleAsyncGammaFade` step (`ScreenGamma.step`).
 /// - `drawFace`: the map's faces are blitted into `MapRenderer`'s work port (M2; `MapRenderer.apply` sends only the
 ///   `.screen` ops here, and M1 puts no face on the screen) — a no-op here; `restoreView` // later: C2 — a no-op.

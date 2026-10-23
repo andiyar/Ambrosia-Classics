@@ -43,7 +43,10 @@ public struct SaveWriteError: Error, Equatable, Sendable {
             }
         } else if ns.domain == NSPOSIXErrorDomain {
             switch Int32(ns.code) {
-            case ENOSPC, EDQUOT: self.init(osErr: Self.diskFull); return
+            case ENOSPC: self.init(osErr: Self.diskFull); return
+            #if !os(Windows)
+            case EDQUOT: self.init(osErr: Self.diskFull); return    // the Windows C runtime has no EDQUOT
+            #endif
             case EROFS: self.init(osErr: Self.volumeLocked); return
             default: break
             }

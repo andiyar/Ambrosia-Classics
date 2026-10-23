@@ -86,9 +86,9 @@ public final class GameFlow {
     public internal(set) var lastReply: SavedGameRef?
     /// `*_DAT_1009fd5c`: set to 1 before `.NewGame` from the menu (the default world).
     public internal(set) var defaultWorld: UInt8 = 0
-    /// `*_DAT_1009fe0c` and `uRam100a511e`, set at the end of `.Options` (M l. 7285–7286).
-    public internal(set) var optionsClosed = false
-    public internal(set) var prefsReread = false
+    /// The status-bar redraw flags `*_DAT_1009fe0c` and `uRam100a511e`, set at the end of `.Options` (M l. 7285–7286).
+    public internal(set) var statusBarRedrawFe0c = false
+    public internal(set) var statusBarRedraw511e = false
     /// The menu loop's `sVar5`: the X joke's cooldown in passes.
     public private(set) var jokeCooldown = 0
     /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global, carried across openings).
@@ -270,9 +270,11 @@ public final class GameFlow {
                                                         soundOn: toggles.live.soundOn != 0)))
     }
 
-    /// `.STPlayRegSound(snd, 10, 0x55)`: nothing with sound off (prefs+0x0b) or no snd loaded (F1 at boot).
+    /// `.STPlayRegSound(snd, 10, 0x55)`: nothing with sound off (prefs+0x0b). F1 at boot does not silence it:
+    /// 4803 / 4804 are loaded by `.InitAppGlobals` unconditionally (M l. 352–357); only `.InitSounds` checks `5105`
+    /// (M l. 39746).
     private func buttonSound(_ snd: Int16, _ out: inout FrontOutput) {
-        guard toggles.live.soundOn != 0, soundLoading else { return }
+        guard toggles.live.soundOn != 0 else { return }
         out.sounds.append(SoundCues.regSound(snd: snd, priority: MainMenu.soundPriority, volume: MainMenu.soundVolume,
                                              global: SoundCues.globalVolume(toggles.live)))
     }
@@ -501,8 +503,8 @@ public final class GameFlow {
                 f.lastModifier = model.lastModifier
                 out.append(f.toggles.makeCurrPrefs(model.record, paused: false))
                 f.updateMenus(&out)
-                f.optionsClosed = true
-                f.prefsReread = true
+                f.statusBarRedrawFe0c = true
+                f.statusBarRedraw511e = true
                 f.prefsDialog = nil
                 f.state = .mainMenu
             },

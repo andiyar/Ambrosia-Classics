@@ -17,14 +17,26 @@ final class GameFlowMenuTests: XCTestCase {
         func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
     }
 
+    /// The prefs file as a record in memory; every write-back recorded.
+    private final class PrefsFiles: FrontFiles {
+        let record: Data
+        var stored: [Data] = []
+        init(record: Data) { self.record = record }
+        func loadPrefs() -> Data? { record }
+        func storePrefs(_ record: Data) throws { stored.append(record) }
+        func readSavedGame(_ ref: SavedGameRef) throws -> SaveBlock { SaveBlock() }
+        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
+    }
+
     private final class NoLevels: LevelServices {
         func prepare(level: Int) throws -> LevelFaces { LevelFaces() }
         func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {}
         func deathEffectStep(_ k: Int) throws {}
     }
 
-    private func make(_ r: FerazelResources, prefs: FerazelPrefs = FerazelPrefs()) -> GameFlow {
-        GameFlow(resources: r, prefs: prefs, seed: 1, files: NoFiles(), levels: NoLevels())
+    private func make(_ r: FerazelResources, prefs: FerazelPrefs = FerazelPrefs(),
+                      files: FrontFiles = NoFiles()) -> GameFlow {
+        GameFlow(resources: r, prefs: prefs, seed: 1, files: files, levels: NoLevels())
     }
 
     private struct Tick {
@@ -126,6 +138,16 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertTrue(flow.tick(now: t, input: FrontInput()).draws.isEmpty); t &+= 1
         XCTAssertEqual(flow.progressBar.drawnWidth, 3)                // a skipped call keeps the stored width
         XCTAssertEqual(flow.progressBar.progress, 20 * 0x48)
+        // p ≥ 58000 redraws even a small move: w 166 (57400) → 168 is skipped at 57999, drawn at 58000.
+        var near = ProgressBar3D()
+        XCTAssertFalse(near.update(57400).isEmpty)
+        XCTAssertEqual(near.drawnWidth, 166)
+        XCTAssertTrue(near.update(57999).isEmpty)
+        XCTAssertEqual(near.drawnWidth, 166)
+        XCTAssertFalse(near.update(58000).isEmpty)
+        XCTAssertEqual(near.drawnWidth, 168)
+        // The ramp (`SetColorPerc`): [3] = (0x27, 0x27, 0x51) % → 39·0xffff/100, 81·0xffff/100.
+        XCTAssertEqual(ProgressBar3D.ramp[3], RGB16(25558, 25558, 53083))
 
         // `Update3DProgBar(0x10000)` (full, 190 px), then `.MainMenu`: idle 60 ticks (`WaitNextEvent` sleep 60),
         // `GammaFadeOut(6)`, clut 130 + PICT 130, `GammaFadeIn(6)` → the first menu pass.
@@ -133,6 +155,8 @@ final class GameFlowMenuTests: XCTestCase {
         let t2 = t
         let c = drive(flow, &t) { $0.state == .mainMenu }
         XCTAssertTrue(c[0].out.draws.contains(.drawLine(h1: 226, v1: 440, h2: 226, v2: 448, rgb: RGB16(0, 0, 0))))
+        XCTAssertEqual(c[0].out.draws.first, .drawLine(h1: 36, v1: 440, h2: 36, v2: 449,
+                                                       rgb: RGB16(25558, 25558, 53083)))   // the left edge, ramp[3]
         XCTAssertEqual(flow.progressBar.drawnWidth, 190)
         let firstTint = c.firstIndex { tints($0.out) > 0 }!
         XCTAssertEqual(Int(c[firstTint].t &- t2), 60)
@@ -175,6 +199,13 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertEqual(reports.map(\.tick), [195, 196])              // each report blocks until it is answered
         XCTAssertFalse(keyed.fade.fadingEnabled)
         XCTAssertFalse(keyed.soundLoading)
+        // F1 empties only `.InitSounds` (M l. 39746); 4803/4804 come from `.InitAppGlobals` (M l. 352–357), which
+        // loads them regardless: the menu buttons still click.
+        bootToMenu(keyed, &k)
+        let credit = FrontInput(keys: KeyState(pressed: [0x08]))
+        let click = drive(keyed, &k, max: 11, input: { _ in credit }) { _ in false }
+        XCTAssertEqual(snds(click[0].out), [4803])
+        XCTAssertEqual(snds(click[10].out), [4804])
     }
 
     func testMainMenuHotRects() throws {
@@ -239,6 +270,60 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertEqual(flow.defaultWorld, 1)                          // `*fd5c = 1` before `.NewGame`
         XCTAssertFalse(ticks.contains { !fadeIns($0.out).isEmpty })   // the keyboard path has no GammaFadeIn
 
+        // At prefs+0x0e 9 (scale 252) 0x55 and 0x56 part: (0x55·252) >> 8 = 83 → 41 (0x56 would give 42).
+        var nine = FerazelPrefs(); nine.soundVolume = 9
+        let loud = make(try resources(), prefs: nine)
+        var l: UInt32 = 0
+        bootToMenu(loud, &l)
+        let lc = loud.tick(now: l, input: FrontInput(keys: KeyState(pressed: [0x08])))
+        XCTAssertEqual(lc.sounds, [SoundCue(snd: 4803, priority: 10, left: 41, right: 41, rate: 0x10000)])
+
+        // O and R → `.ContinueGame` (button 2), after the 10-tick track.
+        for key in [0x1f, 0x0f] {
+            let cont = make(try resources())
+            var c: UInt32 = 0
+            bootToMenu(cont, &c)
+            let c0 = c
+            let press = FrontInput(keys: KeyState(pressed: [key]))
+            let ct = drive(cont, &c, max: 40, input: { $0 == c0 ? press : FrontInput() }) {
+                $0.state != .mainMenu
+            }
+            XCTAssertEqual(cont.state, .continueGame, "key \(key)")
+            XCTAssertEqual(pictures(ct[0].out), [4902], "key \(key)")
+            XCTAssertEqual(ct.count, 11, "key \(key)")
+        }
+
+        // I and P → `.Options` (DLOG 6900); closing writes the re-read record back (`WriteResource`), `.MakeCurrPrefs`
+        // reports it, the status-bar redraw flags are set and the loop resumes.
+        var stored = FerazelPrefs(); stored.soundVolume = 3
+        let pf = PrefsFiles(record: stored.record())
+        let opt = make(try resources(), files: pf)
+        var o: UInt32 = 0
+        bootToMenu(opt, &o)
+        for (i, key) in [0x22, 0x23].enumerated() {
+            let o0 = o
+            let press = FrontInput(keys: KeyState(pressed: [key]))
+            let ot = drive(opt, &o, max: 40, input: { $0 == o0 ? press : FrontInput() }) {
+                $0.state != .mainMenu
+            }
+            XCTAssertEqual(opt.state, .options, "key \(key)")
+            XCTAssertEqual(pictures(ot[0].out), [4903], "key \(key)")
+            XCTAssertEqual(ot.last!.out.requests, [.showCursor, .dialog(.preferences)], "key \(key)")
+            let model = try XCTUnwrap(opt.prefsDialog)
+            XCTAssertEqual(model.record, stored)
+            XCTAssertEqual(pf.stored.count, i)                        // nothing written while the dialog is up
+            opt.dialogDone(.ok)
+            let closed = opt.tick(now: o, input: FrontInput()); o &+= 1
+            XCTAssertEqual(pf.stored.count, i + 1)
+            XCTAssertEqual(pf.stored.last, stored.record())
+            XCTAssertEqual(closed.prefs, stored)
+            XCTAssertTrue(closed.present)
+            XCTAssertEqual(opt.state, .mainMenu)
+            XCTAssertNil(opt.prefsDialog)
+            XCTAssertTrue(opt.statusBarRedrawFe0c)
+            XCTAssertTrue(opt.statusBarRedraw511e)
+        }
+
         // Sound off: the same draws, no cue.
         var off = FerazelPrefs(); off.soundOn = 0
         let quiet = make(try resources(), prefs: off)
@@ -253,6 +338,7 @@ final class GameFlowMenuTests: XCTestCase {
         let quit = make(try resources())
         var w: UInt32 = 0
         bootToMenu(quit, &w)
+        XCTAssertEqual(quit.tick(now: w, input: FrontInput(mouse: (100, 20))).requests, [.showMenuBar]); w &+= 1
         let w0 = w
         let qt = drive(quit, &w, max: 200, input: { $0 == w0 ? FrontInput(keys: KeyState(pressed: [0x0c])) : FrontInput() }) {
             $0.state == .quit
@@ -261,6 +347,10 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertEqual(pictures(qt[10].out), [4915])
         XCTAssertEqual(qt[10].out.music.first, .volume(256))
         XCTAssertEqual(qt[10 + 24].out.music, [.volume(0), .stop])
+        // `.HideTheMenuBar` after `FlameDispose`, with the first `GammaFadeOut(6)` step on the same tick.
+        XCTAssertEqual(qt[10 + 24].out.requests, [.hideMenuBar])
+        XCTAssertEqual(tints(qt[10 + 24].out), 1)
+        XCTAssertFalse(qt[..<(10 + 24)].contains { $0.out.requests.contains(.hideMenuBar) })
         XCTAssertEqual(qt.last!.out.requests.suffix(2), [.showMenuBar, .quit])
         XCTAssertEqual(qt.last!.out.draws.last, .setScreenClut(id: 801))
         XCTAssertEqual(Int(qt.last!.t &- w0), 10 + 24 + 30)

@@ -156,6 +156,23 @@ final class DeathScreenTests: XCTestCase {
         XCTAssertEqual(sounds(o).map { $0.1 }, [4803, 4804])
         XCTAssertNil(c.chosen)
         XCTAssertFalse(c.isDone)
+        // A completed Continue click with Esc held on the release tick: the click sets Continue, the same pass's key
+        // half then runs Esc's track (4981, Delay(10), 4971) and sets Abort — Abort wins.
+        do {
+            var s = try screen()
+            var fade = ScreenFade()
+            let outs = run(&s, fade: &fade, limit: 300) { t in
+                switch t {
+                case 10...13: return FrontInput(mouse: (300, 400), button: true)
+                case 14: return FrontInput(keys: KeyState(pressed: [0x35]), mouse: (300, 400), button: false)
+                default: return FrontInput(mouse: (0, 0))
+                }
+            }
+            XCTAssertEqual(faces(outs).map { $0.0 }, [10, 14, 14, 24])
+            XCTAssertEqual(faces(outs).map { $0.1 }, [4980, 4970, 4981, 4971])
+            XCTAssertEqual(s.chosen, 2)
+            XCTAssertEqual(s.continues, false)
+        }
     }
 
     func testWandGlowTimeline() throws {
@@ -199,12 +216,17 @@ final class DeathScreenTests: XCTestCase {
         XCTAssertEqual(f0.count, 256)
         XCTAssertEqual(f0[1], RGB16(63479, 63479, 61423), "f 0: unchanged")
         XCTAssertEqual(f0[100], RGB16(21074, 14649, 2056))
+        // Full white at f 0 stays 0xffff (c · 1.0 = 65535, the top of the 0…0xffff clamp).
+        XCTAssertEqual(clut.entries[0].rgb, [0xffff, 0xffff, 0xffff])
+        XCTAssertEqual(f0[0], RGB16(0xffff, 0xffff, 0xffff))
         // f 75: k = 0 → every channel the gray (r + g + b) >> 2.
         let f75 = DeathScreen.turnGray(clut, frame: 75, entry255: black)
         XCTAssertEqual(f75[1], RGB16(47095, 47095, 47095))     // 188,381 >> 2
         XCTAssertEqual(f75[100], RGB16(9444, 9444, 9444))      // 37,779 >> 2
         // f 30: k = (float)(1 − (float)0.4) = 0.6f; red 1 = trunc((float)(63479 · 0.6f) + 47095 · (1 − 0.6f)) = 56925.
         XCTAssertEqual(DeathScreen.turnGray(clut, frame: 30, entry255: black)[1].red, 56925)
+        // f 76: the first scaled frame (f > 75) — trunc(47095f · (float)(74 / 75.0)) = 46467.
+        XCTAssertEqual(DeathScreen.turnGray(clut, frame: 76, entry255: black)[1], RGB16(46467, 46467, 46467))
         // f 113: gray scaled by (float)(37 / 75) — trunc(47095f · 0.49333334f) = 23233.
         XCTAssertEqual(DeathScreen.turnGray(clut, frame: 113, entry255: black)[1], RGB16(23233, 23233, 23233))
         // f 150: black. Entry 255 is never computed: it comes from the level working copy (`SetEntries(0, 0xff)`).
