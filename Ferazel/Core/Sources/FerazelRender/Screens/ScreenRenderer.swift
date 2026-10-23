@@ -23,7 +23,9 @@ import HectorResources
 ///   change, to `Color2Index(run.rgb)`.
 /// - `screenGamma(op)`: `.tint` → `ScreenGamma.tintFade` (the unfaded gamma scaled, `.TintFadeProc`); `.fadeToColor` →
 ///   `ScreenGamma.fade` (compounding); `.timedFadeToColor` → the gamma captured at its tick 0 moved the tick's absolute
-///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut` (`.TurnGray`) // later: D1.
+///   fraction (`ScreenSurface.timedFadeStart`, non-compounding); `.identity` → the original gamma; `.clut(entries)` (`.TurnGray`'s `SetEntries(0, 0xff)`) → the entries become the screen
+///   CLUT (entry i = index i; entries past the list keep the current CLUT's); the gamma stays. The maths is Core's
+///   (`DeathScreen.turnGray`).
 /// - `gammaStep`: one `.HandleAsyncGammaFade` step (`ScreenGamma.step`).
 /// - `drawFace`: the map's faces are blitted into `MapRenderer`'s work port (M2; `MapRenderer.apply` sends only the
 ///   `.screen` ops here, and M1 puts no face on the screen) — a no-op here; `restoreView` // later: C2 — a no-op.
@@ -94,7 +96,7 @@ public final class ScreenRenderer {
                 case .fadeToColor(let percent, let rgb): surface.gamma.fade(toward: rgb, percent: percent)
                 case .timedFadeToColor: break   // handled above
                 case .identity: surface.gamma = .identity
-                case .clut: break   // later: D1 (`.TurnGray`'s SetEntries)
+                case .clut(let entries): surface.clut = Self.clut(surface.clut, setting: entries)
                 }
             case .gammaStep(let numerator, let denominator, let toward):
                 surface.timedFadeStart = nil
@@ -117,6 +119,24 @@ public final class ScreenRenderer {
             case .eraseParticles: throw Refusal.levelOp("eraseParticles")
             }
         }
+    }
+
+    /// `SetEntries(0, n − 1, entries)`: `clut` with entries 0…n − 1 replaced by `entries` — same id, seed, flags and
+    /// stored values (built through `ColorLUT`'s resource layout, as `ScreenGamma.apply`).
+    static func clut(_ clut: ColorLUT, setting entries: [RGB16]) -> ColorLUT {
+        var b: [UInt8] = []
+        b.reserveCapacity(8 + 8 * ColorLUT.entryCount)
+        func put16(_ v: UInt16) { b.append(UInt8(v >> 8)); b.append(UInt8(v & 0xff)) }
+        put16(UInt16(clut.seed >> 16)); put16(UInt16(clut.seed & 0xffff))
+        put16(clut.flags)
+        put16(UInt16(ColorLUT.entryCount - 1))
+        for (i, e) in clut.entries.enumerated() {
+            put16(clut.storedValues[i])
+            let c = i < entries.count ? entries[i] : RGB16(e.red, e.green, e.blue)
+            put16(c.red); put16(c.green); put16(c.blue)
+        }
+        // The layout is the one `ColorLUT(id:name:data:)` validated for `clut` itself.
+        return try! ColorLUT(id: clut.id, name: clut.name, data: Data(b))
     }
 
     /// The source row (or column) each of `dest` destination rows samples in a `CopyBits` stretch from `source` rows:

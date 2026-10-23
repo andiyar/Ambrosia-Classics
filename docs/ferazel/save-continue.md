@@ -279,6 +279,22 @@ by `EndLevelSGUpdate` in memory, crunch tiles broken later, items picked up late
 Edge case [MED]: if `OpenSG(fd18)` fails (file moved/deleted), ContinueGame returns with `fd48` still
 1, so MainMenu calls it again every loop pass (raw 0x1000e984..0x1000e994) — an error-dialog loop.
 
+⚑ corrected (D1, loop run 13) [HIGH, M l. 3440–3714 + 3718–3858, raw `10006d40..10006f30`]:
+- (BC10) the InputSprocket marker move plays **snd 4803** (`_DAT_100a0040`) at prio 10 / vol 0x55, not "snd 10"
+  (10 is the priority). The ISp branches never run in the replica (prefs+0x0a forced 0).
+- The rects above are `.TrackClickOnCommandButtonDeath`'s; `.AskToContinue`'s hit tests are 1 px smaller:
+  `PointInRect(252, 390, 389, 411)` / `(262, 413, 378, 433)` (l, t, r, b). A hover without the button does nothing
+  (the tracker's `while (Button())` never runs). A keyboard press made **while the button is down** enters the
+  mouse-tracking loop instead of the 10-tick `Delay`; the key branch sets its flag whatever the tracker returns.
+  The key half of a pass runs after a completed mouse click in the same pass (Esc held then → Abort wins).
+- `.TurnGray` computes entries 0…254 of clut 132 into the **level working copy** `*_DAT_1009fe94` and
+  `SetEntries(0, 0xff)` sends all 256 (entry 255 = the working copy's own, black in every shipped `clut` but 198).
+  Its closing copy from `*_DAT_1009ff8c` restores that **working table only** — no `SetEntries`, no screen change:
+  the screen stays black until the next `SetScreenClut` (the caller's `MTRedraw`, M l. 5850, redraws pixels only).
+  The replica emits nothing for it (every level load rebuilds the working copy, `.SetupLevel`'s `HandToHand`).
+- Sound: TurnGray's snd 435 is `STPlay3DSoundPitched(10, 0x100, (scroll h + 0x140, scroll v + 0xc0), 35000)`;
+  WandGlow's snd 606 is `STPlayRegSound(10, 0x100)` after a 6-tick wait.
+
 ## 6. Escape / abort / menus (save-related parts)  [HIGH unless noted]
 
 - In game, Esc → `ConfirmAbortGameDialog` (`DLOG 202`, ParamText "Are you sure you want to abort this
