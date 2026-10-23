@@ -71,6 +71,24 @@ Recommendation: the defaults — each keeps the game's behaviour and only touche
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
 Answer: the defaults, all four — (1) data fork; (2) modern macOS save/open panels; (3) menu bar visible in a window, hidden in full screen; (4) keep the -FerazelLevel switch for now ("probably" — Ben may revisit).
 
+### Q4 — 2026-10-24 — Ferazel gets game-controller support (Ben's ruling, written by his attended session)
+Context: While the loop was paused (STOP 2026-10-14 → 2026-10-24), an attended side session added controller support
+to Bubble Trouble X (Classics D36, HectorKit D16: new Foundation-only `HectorInput` translator, `ShellGamepad`,
+`ShellView.padMapping` — nil by default, so Ferazel is unchanged until it opts in). **HectorKit main moved 0c65dcb →
+35a85ba, zero-skip floor 328 → 361**; checked on 2026-10-24: Ferazel/Core is still **308/0** against it. Classics main
+also gained the gamepad commits and the BTX 1.1 release record, and **main was pushed to GitHub** (Ben chose "push
+everything"); the loop itself still never pushes. Ben's real-controller check of BTX passed (D36 STATE entry).
+Ben wants the same for Ferazel: his kids play on the Switch and the keyboard (keypad-only defaults) is hard.
+Options: (a) add a Ferazel controller task to the Phase 3 plan, adopting `HectorInput` exactly as BTX does (the
+controller presses the keys named in `FerazelPrefs.keys`, so remapping a key remaps the button; d-pad/left stick =
+the four move keys; face buttons and shoulders mapped to the remaining actions with a documented default layout),
+built and reviewed like any task, landed before the Phase 3 gate build so Ben's next play test can use a pad;
+(b) defer to Phase 7.
+Recommendation: a — the game behaviour stays original (the pad only presses the original keys), same class as Q3.
+Blocks: nothing.
+Answer: (a) — Ben, 2026-10-24 ("let's go" after BTX's pad passed). Plan it as a named Phase 3 task before the gate
+build, record the ruling in DECISIONS (next free D-number), and pin the new HectorKit SHA/floor in STATE.
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
