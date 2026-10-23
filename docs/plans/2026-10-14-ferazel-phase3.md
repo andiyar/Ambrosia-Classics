@@ -1305,11 +1305,48 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   deviation).
 - **Gate:** G2 = 345, G5, G6, G7(+b), G8, G10; wave 3.7 end: G3. **Commit:** `Ferazel app: the original's dialogs (abort/quit confirm, reports, Options with key remapping, Credits) and menus (MBAR 128, enabled where the original listened)`.
 
+#### GP — minor — A game controller acts as the original keys (added by loop run 13 from Ben's Q4 answer, D37; → 349)
+- **Why:** Ben, 2026-10-24 (QUESTIONS Q4 (a)): his kids play on a Switch and the keypad defaults are hard. Same
+  mechanism as Bubble Trouble X (Classics D36, HectorKit D16 — `HectorInput` translator, `ShellGamepad`,
+  `ShellView.padMapping`, `ShellViewInputHandler.shellView(_:padKeyDown:)`); exemplar `BubbleTroubleX/Shared/BTXPadLayout.swift`
+  and its wiring in `BubbleTroubleX/App/BTXController.swift`. The game behaviour stays the original's: the pad only
+  presses keys the original reads, held keys merged into the polled `KeyState`, the Caps Lock latch ORed into
+  `FrontInput.capsLock`. No pointer emulation (the main menu's Continue/Options/Credits, the Options dialog and the
+  file panels stay mouse/keyboard). HectorKit is NOT changed (pinned 35a85ba, floor 361).
+- **Files:** `Ferazel/Core/Sources/FerazelCore/Input/FerazelPadLayout.swift` (new; Foundation + `HectorInput` only —
+  `HectorInput` is Foundation-only, so G7 holds; Phase 7's Windows shell compiles the same file),
+  `Ferazel/Core/Package.swift` (FerazelCore gains the `HectorInput` product), `Front/GameFlow.swift` (a read-only
+  `padContext` — which of the contexts below the flow is in; no behaviour change), `Ferazel/App/FerazelController.swift`
+  (assign `padMapping` before every poll; pad key-downs into the flow's key path like keyboard key-downs),
+  `Tests/FerazelCoreTests/PadLayoutTests.swift` (new), `Ferazel/GAMEPAD.md` (new, user notes like
+  `BubbleTroubleX/GAMEPAD.md`).
+- **Layout (Ben delegated the default, Q4 (a); D37).** Buttons by position (Nintendo and Xbox swap labels):
+
+  | context | d-pad / left stick | south + east | west | north | L / R shoulder | ZL / ZR triggers | + / Menu | − / View |
+  |---|---|---|---|---|---|---|---|---|
+  | in a level, playing | `prefs.keys[0…3]` (left, right, up, down) | `keys[5]` jump | `keys[4]` run | `keys[6]` use | `keys[7]` / `keys[8]` prev / next item | `keys[4]` run | Caps Lock toggle (pause) | Esc after a 1 s hold |
+  | paused (Caps Lock latch on) | — | — | — | — | — | — | Caps Lock toggle | — |
+  | main menu | — | N (0x2d, New Game) | — | — | — | — | N | — |
+  | everything else (chapter card, stage panels, map, death screen, conversations, reports/confirms) | arrows 0x7B–0x7E | Return | Return | Return | — | — | Return | Esc at once |
+
+  The current `prefs.keys` are read every poll, so remapping a key in Options remaps the button. Outside a level the
+  d-pad is the fixed arrows, never the key set (the menu acts on letters). Ground before building: the map reads
+  arrows and the keypad and enters on Return/Enter/use (`WorldMapRun.swift` l. ~474); the death screen Return/Esc
+  (D1); the chapter card any key; conversations per C1's key reads (if C1 advances on a key other than Return, the
+  "everything else" face binding for the conversation context is that key — record it).
+- **Tests (4):** `testPlayLayoutFollowsPrefsKeys` (default keys and a remapped set) · `testOutOfPlayLayouts` (menu N,
+  arrows/Return/Esc elsewhere, pause = only +) · `testPadContextAcrossFlow` (boot → menu → New Game → level → pause →
+  map → death screen, scripted as in GameFlowGameTests) · `testHoldToEscape` (− held under 1 s → no Esc, 1 s or more → Esc,
+  driven through `ShellPadTranslator` with a scripted clock).
+- **Gate:** G2 = 349, G5, G6, G7, G10. App-only wiring is checked by the reviewer reading the controller diff and by
+  Ben's pad (the gate card gains a Controller step; QUESTIONS when staged). **Commit:** `Ferazel: a game controller as
+  the original keys (FerazelPadLayout over HectorInput, D37); 4 tests`.
+
 ### Wave 3.8 — phase end
 
 #### A2 — minor — Stage + WHAT-TO-EXPECT + the Phase 3 gate card
 - **Files:** `Ferazel/WHAT-TO-EXPECT.md` (rewritten for Phase 3), `tools/stage-ferazel.sh` (only if needed).
-- **Gate:** G1 (HK still 0c65dcb), G2 = 345/0, G3, G5, G7, G9 (+ the boot reaches the menu), G10. Then the FABLE-GRADE phase review over
+- **Gate:** G1 (HK still 35a85ba, floor 361 — moved by the BTX gamepad work, Q4), G2 = 349/0, G3, G5, G7, G9 (+ the boot reaches the menu), G10. Then the FABLE-GRADE phase review over
   the phase diff + the card (D34), its fixes, re-stage. **STOP for Ben** (QUESTIONS item).
 - **Commit:** `WHAT-TO-EXPECT: Phase 3 gate card (title → level 2 and back)`.
 
@@ -1374,16 +1411,16 @@ The canonical order is the execution order (each task starts from the previous t
 | 3.4 | F1a → D1 → F1b ⚑ | F1b two; F1a, D1 one | run 5: [F1a D1 F1b] |
 | 3.5 | S1 ⚑ → P1 | S1 two; P1 one | run 6: [S1 P1] |
 | 3.6 | C1 ⚑ → C2 | C1 two; C2 one | run 7: [C1 C2] |
-| 3.7 | A1a ⚑ → A1b ⚑ | two each | run 8: [A1a A1b] |
-| 3.8 | A2 (+ FABLE-GRADE phase review + fixes) | one + Fable | run 9: phase end |
+| 3.7 | A1a ⚑ → A1b ⚑ → GP | two each; GP one | run 8: [A1a A1b]; GP opens run 9 (D37) |
+| 3.8 | A2 (+ FABLE-GRADE phase review + fixes) | one + Fable | run 9: [GP] + phase end |
 
 G3 still runs at each **wave** end (a run that spans two waves runs it at the wave boundary too). No HectorKit task:
-G1 = HK `0c65dcb` untouched for the whole phase.
+G1 = HK `0c65dcb` untouched for the whole phase. ⚑ Loop run 13: HK main moved to `35a85ba` (floor 361) by Ben's attended BTX gamepad work (D36, HK D16) while the loop was paused; Ferazel/Core is 308/0 against it; G1 now reads 35a85ba and still no Phase-3 task changes HectorKit.
 
 - **Dependencies:** SV2 after SV1 (`SaveBlock`); FE0 after R1 (`FerazelDialog` texts) and SV1 (G in `FrontOutput`'s
   flow); O1 after R1 + SV2; L2 after FE0; L1 after SV1 + FE0 + L2 (its entry/exit sequences run L2's `StageScreens`); M1 after SV1 + FE0 (+ L1's `LevelEnd`); F1a after FE0 +
   L1 (`LevelServices`); D1 after FE0; F1b after L1, L2, M1, D1, SV2; S1 after L1 + SV2; P1 after S1 (suspension) + O1
-  + M1 (replaces M1's pause stub); C1 after S1; C2 after C1; A1a after every Core task; A1b after A1a + O1 + R1.
+  + M1 (replaces M1's pause stub); C1 after S1; C2 after C1; A1a after every Core task; A1b after A1a + O1 + R1. GP (loop run 13, D37) after A1b + P1 + C1 (it reads the flow contexts and the pause/conversation keys).
 - **File overlaps that force order:** `FerazelSession.swift` (L1, S1, P1, A1a), `LevelRun.swift` (L1, S1, P1, C1),
   `WorldMapRun.swift` (M1, P1), `GameFlow.swift` (F1a, F1b), `HitPlayerSprite.swift` (S1, C1), `BoxSprite.swift` (S1,
   C1), `SetupFaces.swift` (X1, L1), `ScreenRenderer.swift` (FE0, L2, M2, D1), `FrameRenderer.swift` (FE0 only),

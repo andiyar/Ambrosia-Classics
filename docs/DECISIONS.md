@@ -1280,6 +1280,11 @@ inside the Q and W/Esc branches; the node-sprite list is emptied on exit (and by
 plan's `testLinkPixels` geometry was impossible (stepped line) → each flat pair checked; lines rasterised from the upper
 end point [MED]. Ferazel/Core 297 → 308/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
 
+**Addendum — Ben's Q3 answer (written by his attended session, commit 8b318d3; recorded by loop run 13):** the
+defaults, all four — (1) saved games in the data fork; (2) the macOS save/open panels; (3) the menu bar visible in a
+window, hidden in full screen; (4) keep the hidden `-FerazelLevel N` switch for now ("probably" — he may revisit). The
+plan already builds exactly these; no task changes. Q1 (the leftover loop-1 worktree) was done by the same session.
+
 ## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
 
 **Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their
@@ -1314,3 +1319,23 @@ for is not opened. Not yet in a published Windows zip (needs Ben's word).
 cannot tell them apart across Nintendo / Xbox; a pad-configuration UI (not in the original; the key set already
 remaps); `window.sendEvent` for dialog keys (bypasses the monitor).
 **Approved by:** Ben, 2026-10-22.
+
+## D37 — Ferazel's Wand gets game-controller support in Phase 3 (Ben's Q4 answer, 2026-10-24; recorded by loop run 13)
+
+**Decided (Ben, 2026-10-24, QUESTIONS Q4 (a) — "let's go" after BTX's pad passed; his kids play on a Switch and the
+keypad defaults are hard):** Ferazel adopts the D36 / HectorKit D16 mechanism as a named Phase 3 task, **GP**, landed
+before the Phase 3 gate build so Ben's next play test can use a pad. The pad only presses keys the original reads (held
+keys merged into the polled key state, + as a Caps Lock latch), so game behaviour stays the original's — the same class
+as Q3's shell-only choices. Remapping a key in Options remaps the button.
+**Default layout (Ben delegated it in Q4 (a); the seat chose, loop run 13):** in a level — d-pad/left stick = the four
+move keys of the current prefs, south + east = jump, west = run, north = use, L/R shoulders = previous/next item, ZL/ZR
+= run, + = Caps Lock toggle (pause), − = Esc after a 1 s hold (a stray press must not abort a kid's game); paused — only
++; main menu — south/east and + = N (New Game); everywhere else — d-pad = arrows, face and + = Return, − = Esc. Full
+table: plan `docs/plans/2026-10-14-ferazel-phase3.md` task GP. Positions, not labels (Nintendo/Xbox swap A/B, X/Y).
+Jump on the bottom/right pair follows the platformer convention kids know (Mario: B/A jump, Y run).
+**Not done:** no pointer emulation (Continue/Options/Credits on the menu, the Options dialog and the file panels stay
+mouse/keyboard); no pad configuration UI (the key remap already exists). HectorKit unchanged — Classics pins HK main
+**35a85ba**, zero-skip floor **361** (moved from 0c65dcb / 328 by the BTX gamepad work; Ferazel/Core 308/0 against it).
+**Ladder:** Phase 3 345 → **349** (GP, 4 tests); run 9 = [GP] + the phase end.
+**Approved by:** Ben, 2026-10-24 (the ruling); layout by the seat under his delegation — his pad play at the Phase 3
+gate is the check.

@@ -32,18 +32,6 @@ brother's Windows machine.
 
 ## Open
 
-### Q1 — 2026-10-13 — Remove the leftover loop-1 worktree and branch?
-Context: Loop run 1 ended its turn while a background implementer was still working. In the looper's headless mode
-that exits the session and kills the agent, so run 1 merged nothing. It left uncommitted, superseded partial P4 edits
-in `.claude/worktrees/loop-1-20261013-180951` (branch `loop/1-20261013-180951`, at 17f5b04). Run 2 rebuilt P4 + P5
-from scratch and merged them, and later runs now dispatch subagents in the foreground. The loop never deletes what it
-did not create.
-Options: (a) delete it: `git worktree remove --force .claude/worktrees/loop-1-20261013-180951 && git branch -D
-loop/1-20261013-180951`; (b) keep it.
-Recommendation: a. Nothing in it is needed; everything was rebuilt, reviewed and merged.
-Blocks: nothing.
-Answer: (a) yes — done 2026-10-15 by Ben's attended session: worktree removed, its partial work was archived as 51c9532 on loop/1-20261013-180951, then that branch was deleted too.
-
 ### Q2 — 2026-10-14 — Phase 2 gate: does Ferazel move like Ferazel on levels 1–2?
 Context: Phase 2 ("Ferazel moves") is built and its machine gates are green (Ferazel/Core 256/0, census 1,108/0, app
 builds, staged build boots and quits clean; Fable phase review passed after fixes — D33 as built, loop run 7). Ben's
@@ -58,18 +46,9 @@ Recommendation: a or b — the machine reads match the binary on every point che
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
 Answer: DEFERRED, not a verdict — Ben will play it when he is back from Fiji. Keep this item open; do not treat Phase 2 as passed or failed.
 
-### Q3 — 2026-10-14 — Phase 3 plan (front end + saves): four small choices, for your later read
-Context: Loop run 8 wrote and reviewed the Phase 3 plan (`docs/plans/2026-10-14-ferazel-phase3.md`, rulings in
-DECISIONS D35): title, menu, options, world map, chapter and stats screens, save points, Continue, death screen,
-conversations, pause. Execution starts next run without waiting (D34). Four choices in it are yours; each has a default
-the loop builds unless you say otherwise.
-Options: (1) saved games written in the data fork (portable; reads original saves too) vs a real resource fork
-(original-readable, stripped by zip/Windows) — default data fork; (2) macOS save/open panels instead of 1997 Standard
-File dialogs — default yes; (3) in a window the macOS menu bar stays visible during play (full screen hides it, as
-design §7.4) — default visible; (4) keep the hidden `-FerazelLevel N` test switch — default keep.
-Recommendation: the defaults — each keeps the game's behaviour and only touches the Mac around it.
-Blocks: nothing (D34). A different answer becomes a small task in the phase.
-Answer: the defaults, all four — (1) data fork; (2) modern macOS save/open panels; (3) menu bar visible in a window, hidden in full screen; (4) keep the -FerazelLevel switch for now ("probably" — Ben may revisit).
+## Answered
+
+_(moved here by the run that acted on the answer, with what it did)_
 
 ### Q4 — 2026-10-24 — Ferazel gets game-controller support (Ben's ruling, written by his attended session)
 Context: While the loop was paused (STOP 2026-10-14 → 2026-10-24), an attended side session added controller support
@@ -88,7 +67,33 @@ Recommendation: a — the game behaviour stays original (the pad only presses th
 Blocks: nothing.
 Answer: (a) — Ben, 2026-10-24 ("let's go" after BTX's pad passed). Plan it as a named Phase 3 task before the gate
 build, record the ruling in DECISIONS (next free D-number), and pin the new HectorKit SHA/floor in STATE.
+Acted (loop run 13, 2026-10-24): DECISIONS D37 (with the default button layout the loop chose under your
+delegation); new plan task GP in `docs/plans/2026-10-14-ferazel-phase3.md` (after A1b, before the gate build; ladder
+345 → 349); STATE and the loop chip pin HectorKit 35a85ba, floor 361. Your pad play at the Phase 3 gate is the check.
 
-## Answered
+### Q3 — 2026-10-14 — Phase 3 plan (front end + saves): four small choices, for your later read
+Context: Loop run 8 wrote and reviewed the Phase 3 plan (`docs/plans/2026-10-14-ferazel-phase3.md`, rulings in
+DECISIONS D35): title, menu, options, world map, chapter and stats screens, save points, Continue, death screen,
+conversations, pause. Execution starts next run without waiting (D34). Four choices in it are yours; each has a default
+the loop builds unless you say otherwise.
+Options: (1) saved games written in the data fork (portable; reads original saves too) vs a real resource fork
+(original-readable, stripped by zip/Windows) — default data fork; (2) macOS save/open panels instead of 1997 Standard
+File dialogs — default yes; (3) in a window the macOS menu bar stays visible during play (full screen hides it, as
+design §7.4) — default visible; (4) keep the hidden `-FerazelLevel N` test switch — default keep.
+Recommendation: the defaults — each keeps the game's behaviour and only touches the Mac around it.
+Blocks: nothing (D34). A different answer becomes a small task in the phase.
+Answer: the defaults, all four — (1) data fork; (2) modern macOS save/open panels; (3) menu bar visible in a window, hidden in full screen; (4) keep the -FerazelLevel switch for now ("probably" — Ben may revisit).
+Acted (loop run 13, 2026-10-24): recorded as an addendum to DECISIONS D35; the plan already builds the defaults.
 
-_(moved here by the run that acted on the answer, with what it did)_
+### Q1 — 2026-10-13 — Remove the leftover loop-1 worktree and branch?
+Context: Loop run 1 ended its turn while a background implementer was still working. In the looper's headless mode
+that exits the session and kills the agent, so run 1 merged nothing. It left uncommitted, superseded partial P4 edits
+in `.claude/worktrees/loop-1-20261013-180951` (branch `loop/1-20261013-180951`, at 17f5b04). Run 2 rebuilt P4 + P5
+from scratch and merged them, and later runs now dispatch subagents in the foreground. The loop never deletes what it
+did not create.
+Options: (a) delete it: `git worktree remove --force .claude/worktrees/loop-1-20261013-180951 && git branch -D
+loop/1-20261013-180951`; (b) keep it.
+Recommendation: a. Nothing in it is needed; everything was rebuilt, reviewed and merged.
+Blocks: nothing.
+Answer: (a) yes — done 2026-10-15 by Ben's attended session: worktree removed, its partial work was archived as 51c9532 on loop/1-20261013-180951, then that branch was deleted too.
+Acted (loop run 13, 2026-10-24): nothing left to do — Ben's session removed both.
