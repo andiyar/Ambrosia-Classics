@@ -15,7 +15,11 @@
   Fable plan review + phase-end review (READY_TO_STAGE). Staged `~/Desktop/Bubble Trouble X.app` + GAMEPAD notes.
   **Ben's real-controller check 2026-10-23 (Mac build): GAMEPAD.md steps 1–5 PASS** (title start, d-pad + stick,
   push with all four face buttons, + pause/resume, hold-− to end). Step 6 (high-score dialog OK) untried, not failed.
-  **Owed:** push + a BTX 1.1 release only on his word; the Windows pad path is still untested on hardware. Ferazel adopts via its own
+  **BTX 1.1 release (Ben's go, 2026-10-23): main + HectorKit PUSHED; GitHub release `btx-1.1` is a DRAFT** (target
+  8f804cc, HK 35a85ba): notarized+stapled universal `BubbleTroubleX-1.1.dmg` (sha 81c20fa3…) + `BubbleTroubleX-1.1-Windows.zip`
+  (sha cd83afb9…); downloads re-verified; copies in `releases/btx-1.1/`; notes `docs/release/btx-1.1.md`.
+  **Owed:** Ben tries the browser-downloaded DMG → publish → then update README's BTX download link/badge to 1.1.
+  The Windows pad path is still untested on hardware (his brother). Ferazel adopts via its own
   plan (set `padMapping`, implement `padKeyDown`). Plan `docs/plans/2026-10-22-gamepad.md`.
 - **Ferazel's Wand is on the unattended session loop (2026-10-13, D34).** Live Ferazel state now lives in
   `docs/NEXT.md` (the loop's chip; first line `STATUS: …`), `docs/LOOP-LOG.md` (one line per run) and
