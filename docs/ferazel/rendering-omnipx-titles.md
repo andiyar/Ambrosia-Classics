@@ -317,6 +317,13 @@ also exists in Sprites/Sounds (census), so every id below resolves to Titles.
 Note: holding a main-menu button and sliding in/out of it more than 9 times plays `snd 199` via `SndPlay`
 (`TrackClickOnCommandButton`, MED).
 
+> ⚑ corrected (F1a, loop run 13, 2026-10-24) (BC19): no fork holds a `snd 199` (Titles, Sounds, Sprites, World,
+> Backgrounds, app), so the "more than 9" slide-out's `SndPlay(GetResource('snd ', 199))` is **silent**; the entry
+> count still restarts (M l. 1473–1478). Also from the dump: the keyboard path `Track(n, 0)` with the mouse button
+> held falls into the mouse loop (M l. 1459–1466); `.Quit` ends with `SetScreenClut(*_DAT_100a0038)` = clut **801**
+> (`GetCTable(0x321)`, M l. 358, 7464) and `.ShowTheMenuBar`; `.main` hides the menu bar right after PICT 131
+> (M l. 8280). Transcribed in `FerazelCore.GameFlow` / `MainMenu`.
+
 ### 4.2 clut (16)  [HIGH for the GetCTable sites]
 | id 'name' | site | role |
 |---|---|---|
