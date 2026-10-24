@@ -246,3 +246,15 @@ Read in `ghidra/ferazel/Ferazel_pef.decompiled.c` (raw addresses from `Ferazel_p
 - `.SetupLevel` draws PICT 129 with `.DrawPICTToBackScreen(0x81, &DAT_100a266c)` (l. 2574): rect (0, 0, 480, 640)
   (data `100a266c` = `0000 0000 01e0 0280`), into the back screen (clut = level+base after `.ChangeBlitPortClut`,
   l. 7999–8000), then `.MTRedraw` copies it to the window (translated: differing seeds) [MED].
+
+> ⚑ planner note (Phase 4 HU, 2026-10-25) (BC39): `.UpdateStatusBar` steps the selection on **every** call (keys 8 / 7,
+> the 12-call repeat `*_DAT_1009fd9c`), the mid-frame (1,1,0) / (1,0,1) calls and the world map's four calls included
+> (M l. 4885–4912; 67505, 67539, 67579, 67585); the item flash colourises the slot's small icon with
+> `RGBForeColor(s·0x5dc, s·0x5dc, s·0x5dc)` (mode 0) or `(s·3000, 0, 0)` (mode 1), s = flash − 1 (M l. 4767–4790);
+> counts: the big icon's in Geneva **plain 9** ("x" — pstr 0x100a1531 = 01 78 — at 0xf5 / 0xf2, the number at 0xfb /
+> 0xf8, v 0x3e), the strip's in Geneva **bold 8** ("x" at left + 0xe / + 9, the number at left + 0x12 / + 0xc, v = the
+> box bottom) (M l. 4674–4841). As built (HU): param_3 does not force the bars — `.UpdateHealthMagic(param_3 ? 1 :
+> param_1)` takes the cached path (M l. 4878–4883); `.UpdateHealthMagic` also stores G+4 / G+0xe clamped to their maxima
+> and G+6 clamped to G+4 (M l. 4409–4415, 4426–4428) and plays snd 442 (`*_DAT_1009fdb4`) when the suffocation count mod
+> 10 is 9 while the health part redraws (M l. 4486–4493) — neither is built yet; conversation action 2's two stores (M l.
+> 66312–66313) go to `PTR_DAT_100a0bf4` / `0bf0`, not the item flash.

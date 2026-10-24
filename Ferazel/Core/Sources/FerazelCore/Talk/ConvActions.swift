@@ -39,12 +39,14 @@ enum ConvActions {
     }
 
     /// The two actions in order (M l. 66251–66357, jump table `0x100a6cd0`, raw `1007a2ac..1007a568`):
-    /// - 1 coins −= A, floor 0; `.UpdateTextStats(0)` (the coin / score text — the status bar op);
+    /// - 1 coins −= A, floor 0; `.UpdateTextStats(0)` (the coin / score text — a `textOnly` op, M l. 66284);
     /// - 2 give item A × (B == 0 ? 1 : B) — a negative B is added as-is (BC30, M l. 66288–66290): the first slot that is
     ///   empty (id −1) or holds item A with spell flag 0; flag 0, id A, count += B, > 99 → 99; `.STPlayRegSound(snd 501,
-    ///   1, 0x100)` (`*_DAT_100a02d4`, [MED] the loader); `.UpdateItemStat` (// later: Phase 4 ◇ — the HUD inventory);
-    ///   `*0x1024b4cc = slot`, `*0x1024b4ca = 30` (no reader, conversations-mcnv NR 2: not kept). No slot → nothing;
-    /// - 3 `.RemoveItem(A)` max(B, 1) times, `.UpdateItemStat`;
+    ///   1, 0x100)` (`*_DAT_100a02d4`, [MED] the loader); `.UpdateItemStat` (HU: an `itemsOnly` op, M l. 66311);
+    ///   `*PTR_DAT_100a0bf4 = slot`, `*PTR_DAT_100a0bf0 = 30` (M l. 66312–66313 — not the item flash's `fda4` / `fda8`;
+    ///   no reader, conversations-mcnv NR 2: not kept). No slot → nothing;
+    /// - 3 `.RemoveItem(A)` max(B, 1) times (each found one with its own `.UpdateItemStat`), `.UpdateItemStat` (an
+    ///   `itemsOnly` op, M l. 66325);
     /// - 4 `0 ≤ recIdx < 0x200` → own record p(A+1) = 1; 5 world flag A = B; 6 record A's p(B+1) = 1 (no range check);
     /// - 9 the talker ≠ 0 → its `+0xe9 = 1` (kill request) and its record's spawn byte (`+0`) = 0;
     /// - 10 the save block's level-B snapshot record A spawn byte (`+0x19998 + 0x2000·B + 16·A`) = 1;
@@ -57,16 +59,20 @@ enum ConvActions {
         case 1:
             w.globals.coins = w.globals.coins &- a
             if w.globals.coins < 0 { w.globals.coins = 0 }
-            out.draws.append(.statusBar(w.globals.statusBar(levelName: levelName)))
+            let flashes = StatusBarCalls.Flashes(player: w.player)
+            out.draws.append(StatusBarCalls.textStats(globals: w.globals, flashes: flashes, levelName: levelName))
         case 2:
             guard w.globals.addItem(a, count: b == 0 ? 1 : b) != -1 else { return }
             let call = PlayerState.SoundCall(cue: PlayerCue(call: .reg, snd: 501, priority: 1, volume: 0x100),
                                              scrollH: 0, scrollV: 0)
             if case .play(let cue)? = SoundCues.convert(call, prefs: prefs) { out.sounds.append(cue) }
-            // later: Phase 4 ◇ — `.UpdateItemStat` (the HUD inventory).
+            out.draws.append(itemStat(w, levelName: levelName))
         case 3:
-            for _ in 0..<max(1, Int(b)) { w.globals.removeItem(a) }
-            // later: Phase 4 ◇ — `.UpdateItemStat`.
+            // `.RemoveItem` makes its own `.UpdateItemStat` when it found the item (M l. 39652–39658).
+            for _ in 0..<max(1, Int(b)) where w.globals.removeItem(a) {
+                out.draws.append(itemStat(w, levelName: levelName))
+            }
+            out.draws.append(itemStat(w, levelName: levelName))
         case 4:
             if 0 <= record && record < 0x200 { setRecordWord(w, offset: record * 16 + 4 + 2 * Int(a), 1) }
         case 5:
@@ -92,6 +98,15 @@ enum ConvActions {
         default:
             break
         }
+    }
+
+    /// A direct `.UpdateItemStat()` on the live G (`StatusBarCalls.itemStat`: the op, then its `== 2 ∧ +8 → 3` store).
+    private static func itemStat(_ w: SpriteWorld, levelName: String) -> DrawOp {
+        var g = w.globals
+        let op = StatusBarCalls.itemStat(globals: &g, flashes: StatusBarCalls.Flashes(player: w.player),
+                                         levelName: levelName)
+        w.globals = g
+        return op
     }
 
     // MARK: The live records as the code addresses them

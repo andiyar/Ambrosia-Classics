@@ -276,9 +276,11 @@ public struct GameGlobals: Equatable, Sendable {
         }
     }
 
-    /// What `.UpdateStatusBar` draws.
+    /// What `.UpdateStatusBar` draws from G (HU: the inventory, maxima and suffocation too). The flashes and the call
+    /// are `StatusBarCalls`' (defaults here: no flash, the full call (0, 0, 0)).
     public func statusBar(levelName: String) -> StatusBarState {
         StatusBarState(score: Int(score), coins: Int(coins), health: Int(health), breath: Int(breath),
-                       magic: Int(magic), levelName: levelName, selectedSlot: Int(selectedSlot))
+                       magic: Int(magic), levelName: levelName, selectedSlot: Int(selectedSlot), inventory: inventory,
+                       maxHealth: Int(maxHealth), maxMagic: Int(maxMagic), suffocation: Int(suffocation))
     }
 }

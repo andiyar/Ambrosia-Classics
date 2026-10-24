@@ -6,8 +6,7 @@ import FerazelCore
 /// presents through the current screen CLUT (design §5). One renderer per level start.
 ///
 /// Per op:
-/// - `setScreenClut(id)`: the screen CLUT (`.SetScreenClut @ 1000faa8`, `value` = index); the next status-bar op is the
-///   level start's full `.UpdateStatusBar(0, 0, 0)`.
+/// - `setScreenClut(id)`: the screen CLUT (`.SetScreenClut @ 1000faa8`, `value` = index).
 /// - `drawPicture(id, chain, h, v)`: `.DrawPICTToBackScreen(0x81, &DAT_100a266c)` (`.SetupLevel` l. 2574; the rect at
 ///   `100a266c` is (0, 0, 480, 640)): the PICT converted under the screen CLUT into the back screen, whose CLUT
 ///   `.SetScreenClut` set to the same colours (l. 7999–8000), then `.MTRedraw`'s `CopyBits` to the window — differing
@@ -33,8 +32,8 @@ import FerazelCore
 ///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
 ///   redraws the cells it covers.
 /// - `wrapEraseSprites`: `SpriteBlitter.wrapEraseSprites` with the grid's mask re-stamp.
-/// - `statusBar`: `StatusBar.update` — full after a `setScreenClut` (the level start), incremental otherwise (D26 R5:
-///   the seam does not carry the flag).
+/// - `statusBar`: `StatusBar.update` as the op's call says (HU): full = param_1 0 (`!call.partial`), a direct
+///   `.UpdateItemStat()` / `.UpdateTextStats(0)` that part only.
 /// - `gammaStep(j, N, toward)`: one `.HandleAsyncGammaFade` step on `gamma` (`ScreenGamma`); `presentedClut` shows it.
 /// - `setTile(col, row, fg)` (P2): the FG cell of the renderer's level becomes `fg` (`.SetFGTile` /
 ///   `.SetFGCrunchDirTile` as Core made them), then `.ChangedTile @ 10012a50` = `.RedrawScrollGrid` of that one cell
@@ -133,7 +132,6 @@ public final class FrameRenderer {
     public private(set) var tintTableBuilt = false
     /// The ops of the last `apply`, as executed.
     private(set) var executed: [Executed] = []
-    private var statusBarFull = true
     /// The light faces loaded so far, by (pict, width, height).
     private var lightFaces: [[Int]: LightFace] = [:]
 
@@ -330,7 +328,6 @@ public final class FrameRenderer {
                     throw Refusal.screenClut(id, tablesBuiltFor: tables.screenClutId)
                 }
                 screenClut = try ColorLUT.load(id: id, from: resources, chain: .level)
-                statusBarFull = true
                 executed.append(.screenClut(id))
             case .drawPicture(let id, let chain, let h, let v):
                 try drawPicture(id: id, chain: chain, h: h, v: v)
@@ -414,10 +411,8 @@ public final class FrameRenderer {
                 // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.
                 break
             case .statusBar(let state):
-                let full = statusBarFull
-                statusBar.update(state, full: full, screen: &screen)
-                statusBarFull = false
-                executed.append(.statusBar(full: full))
+                statusBar.update(state, screen: &screen)
+                executed.append(.statusBar(full: !state.call.partial && !state.call.itemsOnly && !state.call.textOnly))
             }
         }
     }

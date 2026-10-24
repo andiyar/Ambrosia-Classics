@@ -336,7 +336,12 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(calls(first.draws)[11], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
         XCTAssertEqual(calls(first.draws)[12], .eraseParticles)
         XCTAssertEqual(calls(first.draws)[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
-        XCTAssertEqual(calls(first.draws)[15], .statusBar(start))
+        // HU: the iteration's `.UpdateStatusBar(1, 0, 0)` (M l. 5280) — `partial`; G+8 is 0x1e after the player's
+        // out-of-water row (`PlayerLiquids`).
+        var iteration = start
+        iteration.suffocation = 0x1e
+        iteration.call.partial = true
+        XCTAssertEqual(calls(first.draws)[15], .statusBar(iteration))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
         XCTAssertTrue(first.drawn)

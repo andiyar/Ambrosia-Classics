@@ -155,12 +155,11 @@ enum SavePointSave {
     /// `RedrawEntireScrollGrid`, `ResetCursor` (no op), `HideCursorSafe`, `fe0c = 1`, `511e = 1` (no Core reader),
     /// `RedrawGameArea` (M l. 6491, raw `1000c870`: `DrawBlackLines` in graphics mode 3 with `5107`, M l. 37849, then
     /// `.WrapCopyToScreen` at the scroll point — `GameLoopKeys.redrawGameArea`, P1 review fix), `UpdateStatusBar(0, 0,
-    /// 0)`.
-    static func redraw(session s: FerazelSession, prefs: FerazelPrefs) -> FrontOutput {
+    /// 0)` (M l. 6492; HU: its key step reads `keys`, the tick's poll).
+    static func redraw(session s: FerazelSession, prefs: FerazelPrefs, keys: KeyState = KeyState()) -> FrontOutput {
         let h = s.camera.scrollH, v = s.camera.scrollV
-        return FrontOutput(draws: [.redrawEntireScrollGrid(h: h, v: v)]
-                               + GameLoopKeys.redrawGameArea(h: h, v: v, prefs: prefs)
-                               + [.statusBar(s.globals.statusBar(levelName: s.level.header.name))],
+        let draws = [.redrawEntireScrollGrid(h: h, v: v)] + GameLoopKeys.redrawGameArea(h: h, v: v, prefs: prefs)
+        return FrontOutput(draws: draws + [s.updateStatusBar(.savePointSave, keys: keys)],
                            requests: [.hideCursor], present: true)
     }
 }

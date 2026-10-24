@@ -15,27 +15,18 @@ import FerazelCore
 /// - the item / spell icons (PICTs 700..703 under 200) are `CopyBits`'d with differing seeds, so translated:
 ///   `Color2Index`(RGB under 200) against the screen CLUT [MED].
 ///
-/// Phase 1 holds the start values the bar never sees change: max health and magic 0x230 (`.InitGameGlobals`), no
-/// suffocation, no pickup flash, and the start inventory (slot 0 spell 0, slot 1 item 0, both count 1; l. 616–625).
-/// What `StatusBarState` carries is drawn when it changes, as the originals' caches decide.
+/// HU (plan S4): everything is drawn from `StatusBarState` — G's inventory, maxima and suffocation, the flash counters
+/// and the call (`StatusBarCall`): param_1 0 → the whole port copied and every part drawn; otherwise each part draws
+/// only when the originals' caches say it changed; `.UpdateItemStat` as `StatusBarState.drawsItems` decides; the
+/// direct `.UpdateItemStat()` / `.UpdateTextStats(0)` draw only that part. The colourised copies (`RGBForeColor(c)`
+/// then an indexed `CopyBits` srcCopy with c ≠ black: the health / magic flashes, the suffocation tick, the item flash)
+/// combine the pixel values as QuickDraw's colourising does on indexed pixels, `(src & fg) | (~src & bg)`, fg =
+/// `Color2Index(c)` and bg = white against the screen device [MED: QuickDraw colourise]; c black is a plain copy.
 public struct StatusBar {
     public static let width = 0x280
     public static let height = 0x58
     /// The bar's top on the screen (`.UpdateStatusBar`'s rect (0, 0x188)–(0x280, 0x1e0)).
     public static let screenTop = 0x188
-
-    /// One inventory slot (`G+0x24 + 10·i`; spells-items §1).
-    struct Slot: Equatable {
-        var id: Int
-        var count: Int
-        var spell: Bool
-    }
-
-    /// `G+0x0a`, `G+0x0c` (`.InitGameGlobals` l. 799–812).
-    static let maxHealth = 0x230, maxMagic = 0x230
-    /// `.InitGameGlobals` l. 616–625: 27 slots, slot 0 = spell 0, slot 1 = item 0.
-    static let startInventory: [Slot] = [Slot(id: 0, count: 1, spell: true), Slot(id: 0, count: 1, spell: false)]
-        + [Slot](repeating: Slot(id: -1, count: 0, spell: false), count: 25)
 
     /// The status port `0x100ab9d8`, row-major 640×88.
     public private(set) var port: [UInt8]
@@ -49,13 +40,13 @@ public struct StatusBar {
     public let black: UInt8
     public let white: UInt8
     let text: any TextRasterizer
-    let inventory: [Slot]
+    /// The screen device's search (`Color2Index` of the colourising colours).
+    let prepared: ColorSearch.Prepared
 
     // `.UpdateHealthMagic`'s statics `_DAT_100ab9c8` (health), `…9d0` (breath), `…9d4` (suffocation), `…9cc` (magic);
     // `.UpdateTextStats`' `…9c0` (score), `…9c4` (coins); nil before the first draw.
     var lastHealth: Int?, lastBreath: Int?, lastSuffocation: Int?, lastMagic: Int?
     var lastScore: Int?, lastCoins: Int?
-    var lastSelected: Int?
 
     /// - Parameter screenClut: the level CLUT the screen device holds (`.SetScreenClut`).
     public init(resources: FerazelResources, screenClut: ColorLUT, search: ColorSearch,
@@ -78,53 +69,80 @@ public struct StatusBar {
         black = prepared.index(of: RGB16(0, 0, 0))
         white = prepared.index(of: RGB16(0xffff, 0xffff, 0xffff))
         self.text = text
-        inventory = Self.startInventory
+        self.prepared = prepared
         port = back.pixels
         // `.InitGameGlobals` l. 852–860: the 30 inventory boxes painted black.
         for i in 0..<30 { paint(Self.box(i), 0xff) }
     }
 
-    /// `.UpdateStatusBar(full ? 0 : 1, 0, 0)` with `state`'s values: full = the level-start call (the whole port
-    /// copied, every part drawn); otherwise each part draws only when its values changed.
+    /// The op's call (`StatusBarState.call`): a direct `.UpdateTextStats(0)` or `.UpdateItemStat()` draws that part
+    /// only; otherwise `.UpdateStatusBar(param_1, param_2, param_3)` (`update(_:full:screen:)`, full = param_1 0).
+    public mutating func update(_ state: StatusBarState, screen: inout IndexedFrame) {
+        if state.call.textOnly { return updateTextStats(state, incremental: false, screen: &screen) }
+        if state.call.itemsOnly { return updateItemStat(state, screen: &screen) }
+        update(state, full: !state.call.partial, screen: &screen)
+    }
+
+    /// `.UpdateStatusBar(full ? 0 : 1, …)` (M l. 4842–4921) with `state`'s values: param_1 0 copies the whole port to
+    /// the screen; `.UpdateHealthMagic(param_3 ? 1 : param_1)`; `.UpdateTextStats(param_1)`; then — Core has made the
+    /// key step (`state.call.stepped`) — `.UpdateItemStat` unless (not stepped ∧ param_1 ≠ 0 ∧ param_2 == 0 ∧ no item
+    /// flash) (`StatusBarState.drawsItems`, with param_1 = `!full`).
     public mutating func update(_ state: StatusBarState, full: Bool, screen: inout IndexedFrame) {
         if full { copyToScreen(top: 0, left: 0, bottom: Self.height, right: Self.width, screen: &screen) }
-        updateHealthMagic(state, incremental: !full, screen: &screen)
+        updateHealthMagic(state, incremental: !full || state.call.forceBars, screen: &screen)
         updateTextStats(state, incremental: !full, screen: &screen)
-        // The binary redraws the item stat when param_1 == 0, when Next/Previous (actions 8/7) stepped the selection
-        // this call (`bVar1`, its 12-frame repeat counter `*_DAT_1009fd9c` at 0; l. 4885–4918 — the step happens in
-        // `.UpdateStatusBar` itself) or while the item flash `PTR_DAT_1009fda8` runs. The seam carries neither the
-        // keys nor the flash (both idle in Phase 1), so a changed `selectedSlot` stands for the key step.
-        if full || state.selectedSlot != lastSelected { updateItemStat(selected: state.selectedSlot, screen: &screen) }
+        var gate = state
+        gate.call.partial = !full
+        if gate.drawsItems { updateItemStat(state, screen: &screen) }
     }
 
     // MARK: - `.UpdateHealthMagic`
 
+    /// `.UpdateHealthMagic(incremental) @ 10008430` (M l. 4361–4580). G+4 / G+0xe above their maxima are read as the
+    /// maxima (the routine stores them — a G write Core does not make, reported), the breath above the health as the
+    /// health. Health part: skipped when health, magic, suffocation and breath equal the caches, `incremental`, and
+    /// neither flash runs (the whole routine returns), or when health and breath equal theirs, `incremental` and no
+    /// health flash (M l. 4417–4424). Magic part: skipped when the magic equals its cache, `incremental`, and no magic
+    /// flash (M l. 4517–4521).
     mutating func updateHealthMagic(_ s: StatusBarState, incremental: Bool, screen: inout IndexedFrame) {
-        let health = min(s.health, Self.maxHealth), magic = min(s.magic, Self.maxMagic), suffocation = 0
+        let health = min(s.health, s.maxHealth), magic = min(s.magic, s.maxMagic), suffocation = s.suffocation
         var breath = s.breath
-        if incremental && health == lastHealth && magic == lastMagic && suffocation == lastSuffocation
-            && breath == lastBreath { return }
-        if !(health == lastHealth && breath == lastBreath && incremental) {
+        if health == lastHealth && magic == lastMagic && suffocation == lastSuffocation && breath == lastBreath
+            && incremental && s.healthFlash < 1 && s.magicFlash < 1 { return }
+        if !(health == lastHealth && breath == lastBreath && incremental && s.healthFlash < 1) {
             if health < breath { breath = health }
             lastHealth = health; lastBreath = breath; lastSuffocation = suffocation
-            let h = Self.bar(health), b = Self.bar(breath), m = Self.maxHealth >> 3
+            let h = Self.bar(health), b = Self.bar(breath), m = Int(Int16(truncatingIfNeeded: s.maxHealth) >> 3)
             blitHUD(top: 0, left: h, bottom: 9, right: m, x: 0xd6 + h, y: 7)          // empty
             blitHUD(top: 0x24, left: m, bottom: 0x2d, right: 0xc4, x: 0xd6 + m, y: 7)  // past max
-            blitHUD(top: 9, left: 0, bottom: 0x12, right: b, x: 0xd6, y: 7)           // breath
-            blitHUD(top: 0x1b, left: b, bottom: 0x24, right: h, x: 0xd6 + b, y: 7)    // health above breath
+            // The breath, colourised by the health flash: s = flash − 1 (≥ 0), RGB (3000 s ×3) (M l. 4465–4481).
+            blitHUD(top: 9, left: 0, bottom: 0x12, right: b, x: 0xd6, y: 7,
+                    fore: s.healthFlash < 1 ? nil : Self.grey(max(s.healthFlash - 1, 0) * 3000))
+            // The health above the breath: with no breath left and the suffocation counting, colourised by (its
+            // count mod 10)·3000 grey (M l. 4486–4505; the tick sound at 9 is Core's — not built, reported).
+            let tick = breath < 1 && 0 < suffocation ? Self.grey(suffocation % 10 * 3000) : nil
+            blitHUD(top: 0x1b, left: b, bottom: 0x24, right: h, x: 0xd6 + b, y: 7, fore: tick)
             copyToScreen(top: 7, left: 0xd4, bottom: 0x10, right: 0x19c, screen: &screen)
         }
-        if magic == lastMagic && incremental { return }
+        if magic == lastMagic && incremental && s.magicFlash < 1 { return }
         lastMagic = magic
-        let m = Self.bar(magic), mm = Self.maxMagic >> 3
+        let m = Self.bar(magic), mm = Int(Int16(truncatingIfNeeded: s.maxMagic) >> 3)
         blitHUD(top: 0, left: m, bottom: 9, right: 0xc4, x: m + 0x1ab - 8, y: 7)
         blitHUD(top: 0x24, left: mm, bottom: 0x2d, right: 0xc4, x: 0x1ab + mm - 8, y: 7)
-        blitHUD(top: 0x12, left: 0, bottom: 0x1b, right: m, x: 0x1ab - 8, y: 7)
+        // The magic, colourised by the magic flash (M l. 4548–4564).
+        blitHUD(top: 0x12, left: 0, bottom: 0x1b, right: m, x: 0x1ab - 8, y: 7,
+                fore: s.magicFlash < 1 ? nil : Self.grey(max(s.magicFlash - 1, 0) * 3000))
         copyToScreen(top: 7, left: 0x1a8 - 8, bottom: 0x10, right: 0x270 - 8, screen: &screen)
     }
 
     /// `v >> 3` clamped to 0 … 0xc4.
     static func bar(_ v: Int) -> Int { min(max(Int(Int16(truncatingIfNeeded: v >> 3)), 0), 0xc4) }
+
+    /// `RGBForeColor(v, v, v)` with v the routine's 16-bit short.
+    static func grey(_ v: Int) -> RGB16 {
+        let c = UInt16(truncatingIfNeeded: v)
+        return RGB16(c, c, c)
+    }
 
     // MARK: - `.UpdateTextStats`
 
@@ -136,14 +154,15 @@ public struct StatusBar {
                                     ((9, 0x94, 0x15, 0xc0), (0x96, 0x13), String(s.coins)),
                                     ((0x24, 0x19, 0x31, 0xc0), (0x1b, 0x2e), s.levelName)] {
             paint(rect, black)
-            drawString(string, x: pen.0, y: pen.1)
+            drawString(string, x: pen.0, y: pen.1, font: 20, size: 12, face: 1)
             copyToScreen(top: rect.0, left: rect.1, bottom: rect.2, right: rect.3, screen: &screen)
         }
     }
 
-    /// `TextFace(1)`, `TextFont(20)`, `TextSize(12)`, `MoveTo(x, y)`, `DrawString` in white (srcOr), clipped to the port.
-    mutating func drawString(_ string: String, x: Int, y: Int) {
-        let g = text.rasterize(string, font: 20, size: 12, face: 1)
+    /// `TextFace(face)`, `TextFont(font)`, `TextSize(size)`, `MoveTo(x, y)`, `DrawString` in white (srcOr), clipped to
+    /// the port: `.UpdateTextStats`' bold Times (20) 12; `.UpdateItemStat`'s Geneva (3) plain 9 and bold 8.
+    mutating func drawString(_ string: String, x: Int, y: Int, font: Int16, size: Int16, face: Int16) {
+        let g = text.rasterize(string, font: font, size: size, face: face)
         precondition(g.bits.count == g.width * g.height, "TextRasterizer: \(g.width)×\(g.height) mask")
         for r in 0..<g.height {
             let py = y + g.top + r
@@ -163,19 +182,50 @@ public struct StatusBar {
         return (top, left, top + 0x17, left + 0x17)
     }
 
-    mutating func updateItemStat(selected: Int, screen: inout IndexedFrame) {
-        lastSelected = selected
-        let sel = inventory[selected]
-        precondition(sel.id >= 0, "UpdateItemStat: the selected slot is empty (the source rect leaves the port)")
-        precondition(inventory.allSatisfy { $0.count <= 1 }, "UpdateItemStat: counts > 1 are not built (Phase 1)")
-        blit(sel.spell ? spellBig : itemBig, top: 0, left: sel.id * 0x2d, bottom: 0x2f, right: sel.id * 0x2d + 0x2c,
-             x: 0xd7, y: 0x1e)
-        for (i, slot) in inventory.enumerated() where slot.id != -1 {
-            let id = slot.id == 2 && slot.spell ? 3 : slot.id     // the `== 2 && +8` → 3 store
+    /// `.UpdateItemStat @ 10008f90` (M l. 4674–4841), the selection as Core's key step left it:
+    /// - the selected slot's big icon (src (0, id·45)–(47, id·45 + 44) of 700 when `+8` == 1, else 702) at (0xd7,
+    ///   0x1e), from the slot as read (M l. 4708–4718); its count > 1 in Geneva (font 3) plain 9 pt white — "x" (pstr
+    ///   0x100a1531) at (0xf5, 0x3e), the number at (0xfb, 0x3e); from 10 on (0xf2 / 0xf8) (M l. 4719–4745);
+    /// - each slot: id 2 with `+8 ≠ 0` → 3 (the G write is Core's, `StatusBarCalls`); a non-empty slot's small icon (rows
+    ///   23…46, 0…23 when selected; 701 when `+8` == 1, else 703) into box i — colourised while the item flash runs
+    ///   for this slot: s = flash − 1 (≥ 0), mode 0 → RGB (0x5dc s ×3), mode 1 → (3000 s, 0, 0), another mode → plain
+    ///   (M l. 4767–4790) — then its count > 1 in Geneva bold 8 pt white: "x" at (left + 0xe, bottom), the number at
+    ///   (left + 0x12, bottom); from 10 on (+9 / +0xc) (M l. 4791–4814);
+    /// - only the **first** empty slot's box painted black (`sVar11 = 0x1b` ends the loop, M l. 4818–4830);
+    /// - status x 0xd7…0x10b and 0x108…0x268, y 0x1e…0x4c → the screen (M l. 4831–4838).
+    mutating func updateItemStat(_ s: StatusBarState, screen: inout IndexedFrame) {
+        let inventory = s.inventory, selected = s.selectedSlot
+        precondition(inventory.indices.contains(selected) && inventory[selected].id >= 0,
+                     "UpdateItemStat: the selected slot is empty (the source rect leaves the port)")
+        let sel = inventory[selected], selId = Int(sel.id)
+        blit(sel.isSpell == 1 ? spellBig : itemBig, top: 0, left: selId * 0x2d, bottom: 0x2f,
+             right: selId * 0x2d + 0x2c, x: 0xd7, y: 0x1e)
+        if 1 < sel.count {
+            let small = sel.count < 10
+            drawString("x", x: small ? 0xf5 : 0xf2, y: 0x3e, font: 3, size: 9, face: 0)
+            drawString(String(sel.count), x: small ? 0xfb : 0xf8, y: 0x3e, font: 3, size: 9, face: 0)
+        }
+        for (i, slot) in inventory.enumerated() {
+            let id = slot.id == 2 && slot.isSpell != 0 ? 3 : Int(slot.id)
+            guard id != -1 else { continue }
             let rowTop = i == selected ? 0 : 0x17
             let b = Self.box(i)
-            blit(slot.spell ? spellSmall : itemSmall, top: rowTop, left: id * 0x17, bottom: rowTop + 0x17,
-                 right: id * 0x17 + 0x17, x: b.1, y: b.0)
+            var fore: RGB16?
+            if 1 <= s.itemFlash && s.itemFlashSlot == i {
+                let k = max(s.itemFlash - 1, 0)
+                switch s.itemFlashMode {
+                case 0: fore = Self.grey(k * 0x5dc)
+                case 1: fore = RGB16(UInt16(truncatingIfNeeded: k * 3000), 0, 0)
+                default: fore = nil
+                }
+            }
+            blit(slot.isSpell == 1 ? spellSmall : itemSmall, top: rowTop, left: id * 0x17, bottom: rowTop + 0x17,
+                 right: id * 0x17 + 0x17, x: b.1, y: b.0, fore: fore)
+            if 1 < slot.count {
+                let small = slot.count < 10
+                drawString("x", x: b.1 + (small ? 0xe : 9), y: b.2, font: 3, size: 8, face: 1)
+                drawString(String(slot.count), x: b.1 + (small ? 0x12 : 0xc), y: b.2, font: 3, size: 8, face: 1)
+            }
         }
         if let empty = inventory.firstIndex(where: { $0.id == -1 }) { paint(Self.box(empty), black) }
         copyToScreen(top: 0x1e, left: 0xd7, bottom: 0x4c, right: 0x10b, screen: &screen)
@@ -184,15 +234,26 @@ public struct StatusBar {
 
     // MARK: - pixels
 
-    /// `CopyBitsCT`: HUD piece rect → port at (x, y), raw (an empty rect copies nothing).
-    mutating func blitHUD(top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int) {
-        copy(hud, top: top, left: left, bottom: bottom, right: right, x: x, y: y) { $0 }
+    /// `CopyBitsCT`: HUD piece rect → port at (x, y), raw (an empty rect copies nothing); `fore` non-nil and not black
+    /// → colourised.
+    mutating func blitHUD(top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int, fore: RGB16? = nil) {
+        let c = colourise(fore)
+        copy(hud, top: top, left: left, bottom: bottom, right: right, x: x, y: y) { c($0) }
     }
 
-    /// `CopyBits` icon rect → port at (x, y), translated.
-    mutating func blit(_ p: ConvertedPicture, top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int) {
-        let t = translate
-        copy(p, top: top, left: left, bottom: bottom, right: right, x: x, y: y) { t[Int($0)] }
+    /// `CopyBits` icon rect → port at (x, y), translated; `fore` non-nil and not black → colourised.
+    mutating func blit(_ p: ConvertedPicture, top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int,
+                       fore: RGB16? = nil) {
+        let t = translate, c = colourise(fore)
+        copy(p, top: top, left: left, bottom: bottom, right: right, x: x, y: y) { c(t[Int($0)]) }
+    }
+
+    /// QuickDraw's colourising of an indexed srcCopy with foreground `fore` and background white: `(src & fg) | (~src &
+    /// bg)` on the pixel values, fg = `Color2Index(fore)` on the screen device [MED]; black (or nil) → identity.
+    func colourise(_ fore: RGB16?) -> (UInt8) -> UInt8 {
+        guard let f = fore, f != RGB16(0, 0, 0) else { return { $0 } }
+        let fg = prepared.index(of: f), bg = white
+        return { ($0 & fg) | (~$0 & bg) }
     }
 
     private mutating func copy(_ p: ConvertedPicture, top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int,

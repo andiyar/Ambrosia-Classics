@@ -109,6 +109,126 @@ final class StatusBarTests: XCTestCase {
         bar.update(scored, full: false, screen: &screen)
         XCTAssertEqual(text.calls.suffix(3), ["120|20|12|1", "0|20|12|1", "A Scent Of Peril|20|12|1"])
     }
+
+    // MARK: - HU: the bar from the game globals (M l. 4361–4921)
+
+    private struct Fixture {
+        let r: FerazelResources
+        let search: ColorSearch
+        let c202: ColorLUT
+        let hud: ConvertedPicture
+        let white: UInt8
+        let black: UInt8
+        let start: StatusBarState
+    }
+
+    private func fixture() throws -> Fixture {
+        let r = try FerazelData.open(try FerazelData.dataDirectory())
+        let L = try LevelFile.load(from: r, level: 1)
+        let search = ColorSearch(model: .ruled)
+        let c200 = try ColorLUT.load(id: 200, from: r, chain: .level)
+        let c202 = try ColorLUT.load(id: 202, from: r, chain: .level)
+        let hud = try ConvertedPicture(source: try PictureSource.load(id: 133, from: r, chain: .frontEnd), clut: c200,
+                                       search: search)
+        return Fixture(r: r, search: search, c202: c202, hud: hud,
+                       white: search.index(of: RGB16(0xffff, 0xffff, 0xffff), in: c202),
+                       black: search.index(of: RGB16(0, 0, 0), in: c202),
+                       start: GameGlobals(header: L.header).statusBar(levelName: L.header.name))
+    }
+
+    private static func item(_ id: Int16, _ count: Int16) -> InventorySlot {
+        InventorySlot(id: id, count: count, field4: -1, field6: 0, isSpell: 0)
+    }
+
+    /// `.UpdateItemStat`'s counts (M l. 4719–4745, 4791–4814): the selected slot's count > 1 in Geneva (3) plain 9 pt —
+    /// "x" (pstr 0x100a1531) at (0xf5, 0x3e), the number at (0xfb, 0x3e), or (0xf2 / 0xf8) from 10 on; each slot's
+    /// count > 1 in Geneva bold 8 pt at the box bottom — "x" at left + 0xe, the number at left + 0x12 (+9 / +0xc from 10
+    /// on); white (`ForeColor(0x1e)`), drawn over the icons. Exactly those pixels differ from the count-1 drawing.
+    func testCountsDrawn() throws {
+        let f = try fixture()
+        func draw(_ count: Int16) throws -> (port: [UInt8], calls: [String]) {
+            let text = BoxRasterizer()
+            var bar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: text)
+            var s = f.start
+            s.inventory[1] = Self.item(6, count)
+            s.selectedSlot = 1
+            var screen = IndexedFrame(fill: 0)
+            bar.update(s, screen: &screen)
+            return (bar.port, text.calls)
+        }
+        let one = try draw(1)
+        // A glyph run of n characters at pen (x, y): BoxRasterizer's 5×7 boxes over the baseline, advance 6.
+        func glyphs(_ pens: [(x: Int, y: Int, n: Int)]) -> Set<Int> {
+            var set = Set<Int>()
+            for p in pens { for dy in -7..<0 { for dx in 0..<(6 * p.n - 1) where dx % 6 != 5 {
+                set.insert((p.y + dy) * StatusBar.width + p.x + dx)
+            } } }
+            return set
+        }
+        for (count, big, small) in [(Int16(3), [(0xf5, 0x3e, 1), (0xfb, 0x3e, 1)], [(0x121 + 0xe, 0x36, 1),
+                                                                                   (0x121 + 0x12, 0x36, 1)]),
+                                    (Int16(12), [(0xf2, 0x3e, 1), (0xf8, 0x3e, 2)], [(0x121 + 9, 0x36, 1),
+                                                                                    (0x121 + 0xc, 0x36, 2)])] {
+            let d = try draw(count)
+            // The text calls after the three text fields: the big count (plain 9), then slot 1's (bold 8).
+            XCTAssertEqual(Array(d.calls.dropFirst(3)), ["x|3|9|0", "\(count)|3|9|0", "x|3|8|1", "\(count)|3|8|1"])
+            let pixels = glyphs((big + small).map { (x: $0.0, y: $0.1, n: $0.2) })
+            for i in pixels { XCTAssertEqual(d.port[i], f.white, "count \(count): glyph pixel \(i % 640), \(i / 640)") }
+            for i in 0..<d.port.count where !pixels.contains(i) {
+                XCTAssertEqual(d.port[i], one.port[i], "count \(count): (\(i % 640), \(i / 640)) changed")
+            }
+            XCTAssertTrue(pixels.contains { one.port[$0] != f.white }, "the counts draw over the icons")
+        }
+    }
+
+    /// `.UpdateItemStat`'s empty-box loop (M l. 4818–4830): only the **first** empty slot's box is painted black
+    /// (`sVar11 = 0x1b` ends the loop) — a box emptied earlier keeps its icon.
+    func testFirstEmptyBoxOnly() throws {
+        let f = try fixture()
+        var bar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: BoxRasterizer())
+        var screen = IndexedFrame(fill: 0)
+        var s = f.start
+        for k in 2..<5 { s.inventory[k] = Self.item(Int16(k), 1) }                 // 5 filled: boxes 0…4 have icons
+        bar.update(s, screen: &screen)
+        let before = bar.port
+        s.inventory[3] = .empty
+        s.inventory[4] = .empty                                                     // 3 filled
+        bar.update(s, screen: &screen)
+        func box(_ i: Int) -> [Int] {
+            let b = StatusBar.box(i)
+            return (b.0..<b.2).flatMap { y in (b.1..<b.3).map { y * StatusBar.width + $0 } }
+        }
+        XCTAssertTrue(box(3).allSatisfy { bar.port[$0] == f.black }, "box 3 painted black")
+        XCTAssertTrue(box(4).contains { before[$0] != f.black }, "box 4 held an icon")
+        for i in 4..<30 { for p in box(i) { XCTAssertEqual(bar.port[p], before[p], "box \(i) keeps its pixels") } }
+        // Box 5 keeps the first drawing's black (its first empty box then); 6…29 still hold `.InitGameGlobals`' 0xFF.
+        XCTAssertTrue(box(5).allSatisfy { bar.port[$0] == f.black })
+        XCTAssertTrue((6..<30).allSatisfy { box($0).allSatisfy { bar.port[$0] == 0xff } })
+    }
+
+    /// `.UpdateHealthMagic` reads G's maxima (M l. 4442–4455, 4535–4542): max health 0x2a0 (>> 3 = 0x54) → the empty
+    /// segment runs from the health (0x230 >> 3 = 0x46) to 0x54 and the past-max segment starts at x 0xd6 + 0x54 =
+    /// 0x12a, not 0x11c; max magic 0x2a0 → its past-max segment at 0x1ab − 8 + 0x54.
+    func testMaximaFromGlobals() throws {
+        let f = try fixture()
+        var bar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: BoxRasterizer())
+        var screen = IndexedFrame(fill: 0)
+        var s = f.start
+        s.maxHealth = 0x2a0
+        s.maxMagic = 0x2a0
+        bar.update(s, screen: &screen)
+        func at(_ x: Int, _ y: Int) -> UInt8 { bar.port[y * StatusBar.width + x] }
+        func hud(_ row: Int, _ col: Int) -> UInt8 { f.hud.pixels[row * f.hud.width + col] }
+        XCTAssertNotEqual((0..<9).map { hud($0, 0x50) }, (0..<9).map { hud(36 + $0, 0x50) }, "rows 0 and 36 differ")
+        for y in 7..<16 {
+            for x in 0xd6..<0x11c { XCTAssertEqual(at(x, y), hud(y - 7 + 9, x - 0xd6), "breath (\(x), \(y))") }
+            for x in 0x11c..<0x12a { XCTAssertEqual(at(x, y), hud(y - 7, x - 0xd6), "empty (\(x), \(y))") }
+            for x in 0x12a..<0x19a { XCTAssertEqual(at(x, y), hud(y - 7 + 36, x - 0xd6), "past max (\(x), \(y))") }
+            for x in 0x1a3..<0x1e9 { XCTAssertEqual(at(x, y), hud(y - 7 + 18, x - 0x1a3), "magic (\(x), \(y))") }
+            for x in 0x1e9..<0x1f7 { XCTAssertEqual(at(x, y), hud(y - 7, x - 0x1a3), "magic empty (\(x), \(y))") }
+            for x in 0x1f7..<0x267 { XCTAssertEqual(at(x, y), hud(y - 7 + 36, x - 0x1a3), "magic past (\(x), \(y))") }
+        }
+    }
 }
 
 private extension Range where Bound == Int {

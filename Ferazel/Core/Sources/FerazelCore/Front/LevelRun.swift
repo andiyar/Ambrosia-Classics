@@ -386,7 +386,16 @@ public final class LevelRun {
                 blocking = nil
             }
             if var c = chapter {
-                emit(&out, c.tick(now: now, input: input, fade: &fade))
+                var o = c.tick(now: now, input: input, fade: &fade)
+                if c.isDone, let s = session {
+                    // HU: the card's closing `.UpdateStatusBar(0, 0, 0)` (M l. 5087) runs the key step on the live G
+                    // with this tick's keys — the session makes it (the card holds no G).
+                    o.draws = o.draws.map { op in
+                        if case .statusBar = op { return s.updateStatusBar(.chapterScreen, keys: input.keys) }
+                        return op
+                    }
+                }
+                emit(&out, o)
                 guard c.isDone else {
                     chapter = c
                     return out
@@ -461,7 +470,7 @@ public final class LevelRun {
             // hosted session no longer sends `.hideMenuBar` — `_HideTheMenuBar` is `.main`'s (M l. 8280) and
             // `.MainMenu`'s (M l. 7349) → F1a, and `.ContinueGame`'s (M l. 6877) → F1b; `.GameLoop` never calls it. `*fd74 = 0x200`
             // (M l. 5217) and `fe0c`/`511e` (status-bar redraw flags) have no Core reader.
-            emit(&out, FrontOutput(draws: s.startOps(), requests: [.hideCursor], present: true))
+            emit(&out, FrontOutput(draws: s.startOps(keys: input.keys), requests: [.hideCursor], present: true))
             // The boss-music rule (M l. 5218–5220): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ("no boss alive": cleared by a
             // boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
             // Kills that write `fed0` are not transcribed; no Phase-3 level has hdr+0x2724 ≠ 0 (levels 1–2: 0).
@@ -671,7 +680,7 @@ public final class LevelRun {
             }
             return resumeTalk(s, .conversation(keys: input.keys, capsLock: input.capsLock), out: &out)
         }
-        if saveSG != nil { return advanceSave(s, out: &out) }
+        if saveSG != nil { return advanceSave(s, input: input, out: &out) }
         guard let m = keysModal else { return nil }
         switch m {
         case .confirm:
@@ -833,7 +842,7 @@ public final class LevelRun {
 
     /// `.SaveSG` on from its last step with the App's answers; when it has returned: `.SavePointSave`'s tail and the
     /// session's `resume` — the rest of the frame's ops (nil while still waiting).
-    private func advanceSave(_ s: FerazelSession, out: inout LevelRunOutput) -> FrameOps? {
+    private func advanceSave(_ s: FerazelSession, input: FrontInput, out: inout LevelRunOutput) -> FrameOps? {
         guard var sg = saveSG, var step = saveStep else { return nil }
         while true {
             switch step {
@@ -857,7 +866,7 @@ public final class LevelRun {
                     emit(&out, FrontOutput(music: sg.music, prefs: sg.madeCurrent ? sg.prefs : nil))
                 }
                 // The tail reads the live prefs (`_DAT_1009fe44 + 2`, `5107`) as `.UpdateSGString` left them.
-                emit(&out, SavePointSave.redraw(session: s, prefs: livePrefs))
+                emit(&out, SavePointSave.redraw(session: s, prefs: livePrefs, keys: input.keys))
                 let rest = s.resume(.savePoint(saved: saved), playing: tickPlaying)
                 emitFrame(rest, out: &out)
                 return rest

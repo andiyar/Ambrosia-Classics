@@ -39,9 +39,8 @@ import FerazelCore
 /// - **`.draw(op, port: .screen)`**: `screen.apply([op])`, except `statusBar` — the bar the map shows over PICT 129
 ///   (`.UpdateStatusBar`, its level name in Times (20) 12 bold white `0xffff` at `MoveTo(27, 46)` in the status port,
 ///   `.UpdateTextStats` M l. 4612–4666) through the existing `StatusBar` path, built on the screen CLUT of the moment.
-///   Every map bar is drawn as `UpdateStatusBar(0, 0, 0)` (full) [MED]: the op carries no flag; the idle loop and the
-///   entry call (0, 0, 0), only walking iterations call (1, 0, 0) — and with the same state a full redraw paints the
-///   pixels the incremental one leaves (no map rect reaches the bar's rows 392…479 with the shipped nodes).
+///   Each bar is drawn as its call says (HU: full = param_1 0, `!call.partial`): the entry, first-frame and idle calls
+///   (0, 0, 0), every iteration's call after the marker (1, 0, 0).
 /// - **`loadMapGraphics`** (`.ReInitWorldMapGraphics`): PICTs 600 / 601 into two blit ports nothing draws from — no op.
 public final class MapRenderer {
 
@@ -147,7 +146,7 @@ public final class MapRenderer {
                                           dither: screen.dither, text: screen.text)
                 statusBarClut = clut
             }
-            statusBar?.update(state, full: true, screen: &screen.surface.frame)
+            statusBar?.update(state, screen: &screen.surface.frame)
         case (_, .screen):
             try screen.apply([op])
         case (.drawFace(let set, let index, let h, let v), .work):

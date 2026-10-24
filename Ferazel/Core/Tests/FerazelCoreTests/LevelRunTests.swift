@@ -162,12 +162,16 @@ final class LevelRunTests: XCTestCase {
         // At 142: the level CLUT, PICT 129, the zeroed redraw (`.SetupLevel` tail), `HideCursorSafe`, the start ops,
         // then `SetAIFFMusic(1)` + the fade-in's first volume.
         let s = try XCTUnwrap(run.session)
+        // HU: the bar carries G+8; the level's first iterations set it to 0x1e out of water (`PlayerLiquids`) — before
+        // them it is `.InitGameGlobals`' 0.
+        var bar = s.globals.statusBar(levelName: s.level.header.name)
+        bar.suffocation = 0
         let e = at(t0 + 142)
         XCTAssertEqual(Array(e.draws.prefix(6)), [.setScreenClut(id: 202), .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0),
                                                   .redrawEntireScrollGrid(h: 0, v: 0),
                                                   .redrawScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV),
                                                   .redrawEntireScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV),
-                                                  .statusBar(s.globals.statusBar(levelName: s.level.header.name))])
+                                                  .statusBar(bar)])
         XCTAssertEqual(e.requests, [.hideCursor])
         XCTAssertEqual(e.music, [.play(track: 1), .volume(0)])
         // All of it the level renderer's (A1a): one `.level` segment holding every draw of the tick.
@@ -187,7 +191,7 @@ final class LevelRunTests: XCTestCase {
         XCTAssertEqual(tail.segments.map { $0.target }, [.level])
         let tailDraws = try XCTUnwrap(tail.segments.last).output.draws
         XCTAssertEqual(Array(tailDraws.prefix(3)), [.setScreenClut(id: 202), .drawPicture(id: 0x81, chain: .frontEnd, h: 0, v: 0),
-                                                    .statusBar(s.globals.statusBar(levelName: s.level.header.name))])
+                                                    .statusBar(bar)])
         // The first step: no start ops in it, the async fade-in's first step at its end.
         let first = try XCTUnwrap(ticks.last)
         // The card: `GammaFadeInSlow(0x37)` 109 ticks, 1200 one-tick waits, `GammaFadeOut(0x1e)` 160 ticks, then the

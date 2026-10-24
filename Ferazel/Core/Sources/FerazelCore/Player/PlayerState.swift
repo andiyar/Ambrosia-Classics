@@ -247,6 +247,11 @@ public struct PlayerState: Equatable, Sendable {
     public var countdownFDBC: Int16 = 0
     public var countdownFDB8: Int16 = 0
     public var countdownFDA8: Int16 = 0
+    /// `_DAT_1009fda4` / `_DAT_1009fda0`: the item flash's slot and mode (0 grey, 1 red) — `.UpdateItemStat` colourises
+    /// that slot's small icon while `countdownFDA8` > 0 (M l. 4767–4787; HU). Written with the counter by the pickups
+    /// and item uses (M l. 45459–45461, 47997–48003, 48970–48972, 49016–49018: later tasks').
+    public var itemFlashSlot: Int16 = 0
+    public var itemFlashMode: Int16 = 0
     public var savePointHold: Int16 = 0
     public var noCling: Int16 = 0
     public var carpetLock: Int16 = 0
