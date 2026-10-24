@@ -375,6 +375,7 @@ public final class LevelRun {
     public func tick(now: UInt32, input: FrontInput) throws -> LevelRunOutput {
         var out = LevelRunOutput()
         lastSteps = []
+        tickVoices = SoundVoices(playing: input.playing)
         while end == nil {
             if var run = blocking {
                 emit(&out, run.tick(now: now))
@@ -413,7 +414,13 @@ public final class LevelRun {
 
     private func emit(_ out: inout LevelRunOutput, _ o: FrontOutput) {
         out.append(o, levelClut: ColorLUT.screenClutId(levelFile.header), owner: &drawOwner)
+        tickVoices = tickVoices.applying(sounds: o.sounds, stops: o.soundStops, stopAt: o.soundStopAt)
     }
+
+    /// VS: the tick's playing set (`FrontInput.playing`) with every play and stop this tick has already handed the
+    /// shell applied — what each `step` / `resume` of the tick reads (a resume or the second iteration of a pair on
+    /// the same tick follows the calls made before it).
+    private var tickVoices = SoundVoices()
 
     private func block(_ t: FrontTimeline, now: UInt32) {
         if !t.isEmpty { blocking = TimelineRun(t, start: now) }
@@ -613,7 +620,7 @@ public final class LevelRun {
     }
 
     private func step(_ s: FerazelSession, input: FrontInput, out: inout LevelRunOutput) -> FrameOps {
-        let ops = s.step(keys: input.keys, capsLock: input.capsLock)
+        let ops = s.step(keys: input.keys, capsLock: input.capsLock, playing: tickVoices.playing)
         iterations += 1
         emitFrame(ops, out: &out)
         return ops
@@ -777,7 +784,8 @@ public final class LevelRun {
     private func resumeKeys(_ s: FerazelSession, _ reply: GameLoopKeyAnswer.Reply, input: FrontInput,
                             out: inout LevelRunOutput) -> FrameOps {
         let rest = s.resume(.gameLoopKeys(GameLoopKeyAnswer(reply: reply, keys: input.keys,
-                                                            capsLock: input.capsLock)))
+                                                            capsLock: input.capsLock)),
+                            playing: tickVoices.playing)
         emitFrame(rest, out: &out, present: true)
         return rest
     }
@@ -818,7 +826,7 @@ public final class LevelRun {
     /// The session's frame on from a conversation / sign suspension (C1).
     private func resumeTalk(_ s: FerazelSession, _ outcome: FrameSuspension.Outcome,
                             out: inout LevelRunOutput) -> FrameOps {
-        let rest = s.resume(outcome)
+        let rest = s.resume(outcome, playing: tickVoices.playing)
         emitFrame(rest, out: &out, present: true)
         return rest
     }
@@ -850,7 +858,7 @@ public final class LevelRun {
                 }
                 // The tail reads the live prefs (`_DAT_1009fe44 + 2`, `5107`) as `.UpdateSGString` left them.
                 emit(&out, SavePointSave.redraw(session: s, prefs: livePrefs))
-                let rest = s.resume(.savePoint(saved: saved))
+                let rest = s.resume(.savePoint(saved: saved), playing: tickVoices.playing)
                 emitFrame(rest, out: &out)
                 return rest
             }

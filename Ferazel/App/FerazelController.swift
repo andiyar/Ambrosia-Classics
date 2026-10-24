@@ -359,7 +359,8 @@ import HectorShell
         let state = shell.view.pollKeyState()
         let keys = KeyState(pressed: state.held.map { Self.keyMapCode(Int($0)) })
         return FrontInput(keys: keys, capsLock: state.capsLock, mouse: canvasMouse(),
-                          button: NSEvent.pressedMouseButtons & 1 != 0, active: NSApp.isActive)
+                          button: NSEvent.pressedMouseButtons & 1 != 0, active: NSApp.isActive,
+                          playing: audio?.playingSounds() ?? [])
     }
 
     /// The pointer in 640×480 canvas coordinates, nil when it is not over the game image (or there is no window):

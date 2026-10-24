@@ -302,9 +302,11 @@ public final class FerazelSession {
     /// modal moment (`FrameSuspension`), the ops so far are returned with `suspension` set and the frame waits for
     /// `resume(_:)`; a `step` while suspended is a precondition failure. P1: `capsLock` is `.CapsLockDown()` for the
     /// hosted session's `.CheckGameLoopKeys` (a session not hosted by `LevelRun` runs no `.CheckGameLoopKeys`: Phase 2's
-    /// frame exactly).
-    public func step(keys: KeyState, capsLock: Bool = false) -> FrameOps {
+    /// frame exactly). VS: `playing` is the shell's playing set at the iteration's start (`SoundVoices`; the idle-only
+    /// calls ask `world.isSoundPlaying(_:)`).
+    public func step(keys: KeyState, capsLock: Bool = false, playing: Set<Int16> = []) -> FrameOps {
         precondition(world.suspension == nil, "FerazelSession.step while the frame is suspended — resume(_:) first")
+        world.voices = SoundVoices(playing: playing, prefs: prefs)
         var ops = FrameOps()
         let graphics = prefs.graphics
         if iterations == 0 && !hostedByLevelRun {
@@ -444,9 +446,13 @@ public final class FerazelSession {
     /// P1: a `.gameLoopKeys` suspension goes on with `.CheckGameLoopKeys`' branch tail (`GameLoopKeys`), which may run a
     /// nested `.PaintFrameWrap` — whose own special pass can suspend at a save point: its `resume(.savePoint)` then
     /// finishes that nested pass and goes on where it was called.
-    public func resume(_ outcome: FrameSuspension.Outcome) -> FrameOps {
+    ///
+    /// VS: `playing` is the playing set of the tick that resumes (`SoundVoices`); a nested `.PaintFrameWrap` run from
+    /// here reads it plus its own calls.
+    public func resume(_ outcome: FrameSuspension.Outcome, playing: Set<Int16> = []) -> FrameOps {
         guard let pending = world.suspension else { preconditionFailure("FerazelSession.resume without a suspension") }
         world.suspension = nil
+        world.voices = SoundVoices(playing: playing, prefs: prefs)
         var ops = FrameOps()
         switch (pending, outcome) {
         case (.savePoint(let record), .savePoint(let saved)):

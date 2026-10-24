@@ -8,14 +8,18 @@ public struct FrontInput: Sendable {
     public var mouse: (h: Int, v: Int)?
     public var button: Bool
     public var active: Bool
+    /// VS: the `snd ` ids the shell's Sound Tool is playing at the tick's start (`SoundTool.playingSounds()`) — the
+    /// base of `SoundVoices`, the idle-only calls' `FUN_100916dc(snd)`.
+    public var playing: Set<Int16>
 
     public init(keys: KeyState = KeyState(), capsLock: Bool = false, mouse: (h: Int, v: Int)? = nil,
-                button: Bool = false, active: Bool = true) {
+                button: Bool = false, active: Bool = true, playing: Set<Int16> = []) {
         self.keys = keys
         self.capsLock = capsLock
         self.mouse = mouse
         self.button = button
         self.active = active
+        self.playing = playing
     }
 }
 

@@ -75,6 +75,9 @@ import HectorShell
         }
     }
 
+    /// VS: the `snd ` ids the Sound Tool is playing now (`FrontInput.playing`); empty with no Sound Tool.
+    func playingSounds() -> Set<Int16> { soundTool?.playingSounds() ?? [] }
+
     /// Silences every effect (on quit, `stopAll`): each loaded `snd ` id's `FUN_10091504`.
     func stopEffects() {
         guard let tool = soundTool else { return }

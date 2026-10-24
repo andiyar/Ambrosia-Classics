@@ -83,6 +83,9 @@ public final class SpriteWorld {
     /// C1: World Data's `STR# 500` (the sign texts) that the 2902 sign's `GetIndString(500, p1)` reads (raw `10057100`);
     /// the session loads it. Nil → every sign text is empty (a world built without resources).
     public var signTexts: StringList?
+    /// VS: the voice query's base for this iteration (`SoundVoices`) — the session sets it from the shell's playing set
+    /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
+    public var voices = SoundVoices()
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

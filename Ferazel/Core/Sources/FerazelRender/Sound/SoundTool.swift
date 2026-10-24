@@ -218,6 +218,16 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         }
     }
 
+    /// VS: every `snd ` some entry (audible or not) is playing — `FrontInput.playing`, the base of Core's
+    /// `SoundVoices` (`FUN_100916dc(snd) != 0` for each id in the set).
+    public func playingSounds() -> Set<Int16> {
+        state.withLock { st in
+            var ids = Set<Int16>()
+            for i in 0..<st.count { ids.insert(st.list[i].snd) }
+            return ids
+        }
+    }
+
     func snapshot() -> [VoiceState] {
         state.withLock { st in
             (0..<st.count).map { i in
