@@ -61,8 +61,8 @@ public enum RopeSprite {
     @inline(__always) static func half(_ v: Int32) -> Int32 { v / 2 }
 
     /// `.SetupRopeSprite` (M l. 71078–71125): `.InitSprite`, `+0x84 = +0x86 = 0`, layer `+0x80 = 1`, the rope Handle,
-    /// `+0x5c = 0`, `+0x1f8 = 0`, `+0xa6 = 3` then 4, HP 6, `+0x8a = 0`, `+0x188 = 1` (the record write-back flag — no
-    /// Phase-2 reader, not kept), the position from the spawn copy, `+0x46 = 0`, idle margins `+0x1c8 = +0x1ca =
+    /// `+0x5c = 0`, `+0x1f8 = 0`, `+0xa6 = 3` then 4, HP 6, `+0x8a = 0`, `+0x188 = 1` (M l. 71107:
+    /// `keepRecord`), the position from the spawn copy, `+0x46 = 0`, idle margins `+0x1c8 = +0x1ca =
     /// (i16)(p3 − p1) / 2`, `+0x1ce = 0x40` (`+0x1d0 = 0x3c` has no reader, not kept), the idle callbacks `+0x54 =
     /// .RopeIdleize`, `+0x58 = .RopeDeIdleize` (`idleize` / `deIdleize`, dispatched on the rope Handle), `+0x17c = 0`.
     /// No face, no `FastRand`.
@@ -74,6 +74,7 @@ public enum RopeSprite {
         s.counterA6 = 4
         s.hp = 6
         s.currentApplies = false
+        s.keepRecord = true                                       // `+0x188 = 1` (M l. 71107)
         s.x256 = Int32(truncatingIfNeeded: s.x) << 8
         s.y256 = Int32(truncatingIfNeeded: s.y) << 8
         s.phase = 0
@@ -181,7 +182,7 @@ public enum RopeSprite {
     /// `.MakeRopeSegSprites` (M l. 71152–71193), from `setupSegArray` and `deIdleize`: with a block, for k < nSeg
     /// `MTNewSprite(600, x + k·seg, y, −1, −1, .SetupRopeSegSprite)` (`newRecord`), its `+0x1d4` = the rope; then the end
     /// sprites at (x − seg, y − seg/2) and (x + span, dy + y − seg/2), `+0x1d4` = the rope. `.SetupRopeSegSprite` (M l.
-    /// 71128–71137): `.InitSprite`, the segment Handle, HP 400, `+0x188 = 1` (not kept). A full record table (700)
+    /// 71128–71137): `.InitSprite`, the segment Handle, HP 400, `+0x188 = 1` (M l. 71136, `keepRecord`). A full record table (700)
     /// leaves the slot nil (the original then stores through NULL).
     static func makeSegments(_ active: inout ActiveList, ropeID: Int) {
         guard let s = active.record(id: ropeID), var b = s.rope else { return }
@@ -190,6 +191,7 @@ public enum RopeSprite {
             guard active.sprites.count < SpriteWorld.recordCount else { return nil }
             var g = SpriteWorld.newRecord(type: segmentType, x: x, y: y, layer: -1, handler: .ropeSegment, record: -1) {
                 $0.hp = 400
+                $0.keepRecord = true                              // `+0x188 = 1` (M l. 71136)
             }
             g.siblings.first = ropeID
             return active.insert(g)
@@ -340,8 +342,8 @@ public enum RopeSprite {
     }
 
     /// `.RopeIdleize` (M l. 71458–71489), `+0x54` called by `.ActiveToIdleSprite` before the record is saved: with
-    /// `+0x17c` and a block, `+0xe9 = 1` on each of the nSeg segments and the two ends, `+0x170 = 0`. // later: the
-    /// `+0xe9` count-up of `.UpdateSprites` (Phase 4–5) kills them; until then they stay listed, undrawn.
+    /// `+0x17c` and a block, `+0xe9 = 1` on each of the nSeg segments and the two ends, `+0x170 = 0`. `.UpdateSprites`'
+    /// `+0xe9` count-up then unlinks them on its fourth pass (`SpriteWorld.updateSprites`).
     static func idleize(_ active: inout ActiveList, id: Int) {
         guard let s = active.record(id: id), s.setupDone, let b = s.rope else { return }
         var k = 0

@@ -6,7 +6,8 @@ import Foundation
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
 /// `.HitBackgroundSprite`. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x730…0x733, 0x73f / 0x740, 0x76c…0x76f,
-/// 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–2.
+/// 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–2 (with them their `+0x188`: 0x731 M l. 61983,
+/// 0x730 62280, 0x732 / 0x733 62462).
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -40,8 +41,9 @@ public enum BackgroundSprite {
     /// - `+0x5c`, `+0x1f8` 0; rect `SetRect(0x12, 0x2c, 0x6e, 0x44)` below 0x5cd, else `(0x16, 0x16, 0x4e, 0x4e)`;
     ///   the class-cache face (`+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`, flagged for `.LoadCachedSpriteFaces`).
     /// - mode `+0xb0` = p1, 0 → 0xb; **p2 0 → 0x8c and p3 0 → 0x1e written back to the record**.
-    /// - modes 1, 2: the programmed path (`SetupFaces` refuses them — // later: no level 1–2 placement).
-    /// - modes 10…14: `+0x188 = 1` (the record write-back flag; Core has no write-back — // later: Phase 4),
+    /// - modes 1, 2: the programmed path and `+0x188 = 1` (M l. 62342; `SetupFaces` refuses them — // later: no level
+    ///   1–2 placement).
+    /// - modes 10…14: `+0x188 = 1` (M l. 62363: `keepRecord` — no `.UpdateSprites` write-back or count-up flag clear),
     ///   one-way `+0x185 = 1`; with a record (`+0x48 ≠ −1`): persp = 1 for modes 12, 13, 2 for 14, else 0; persp ≠ 0
     ///   clears `+0x88`; `+0xa6 = 0`, `+0x1f8 = 0`.
     public static func setupMace(_ s: inout SpriteSlot, record p: Placement) -> Placement {
@@ -57,6 +59,7 @@ public enum BackgroundSprite {
                             p2: p.p2 == 0 ? 0x8c : p.p2, p3: p.p3 == 0 ? 0x1e : p.p3, p4: p.p4, y: p.y, x: p.x)
         let mode = s.subtype
         if 9 < mode && mode < 0xf {
+            s.keepRecord = true
             s.oneWay = true
             if s.recordIndex != -1 {
                 if persp(mode: mode) != 0 { s.lightOverlay = false }
@@ -235,7 +238,7 @@ extension BackgroundSprite {
 
     /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 (`SetupFaces` refuses the others): aim
     /// `+0x46 = (type − 0x442)·4`; layer 1000; home `+0x14c` = x, `+0x150` = y; `+0x154` 0; p1 ≤ 0: `+0x14/+0x1c` from
-    /// `+0xc/+0xa`, (p1 ≠ 0: `.SetupProgrammedPath` — not built), `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed
+    /// `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 — // later: not built), `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed
     /// `+0x164` = 9000 for p1 0 (`li r0,0x2328 @ 10071c3c`, M l. 62114), else 0x1fa4; hot rect
     /// `SetRect(0x35, 0x38, 0x61, 0x5b)`; the hit callback `.HitBackgroundSprite` (`+0x5c`); `+0x16c` = the BG cell
     /// (x >> 5, y >> 5) is water (`.IsWaterTile` 200…209). The face is the Handle's.

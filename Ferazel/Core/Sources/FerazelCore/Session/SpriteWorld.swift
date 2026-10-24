@@ -162,14 +162,83 @@ public final class SpriteWorld {
         active.relink(id: id)
     }
 
-    /// `.UpdateSprites @ 10009a00` (decompile l. 4940–5033), at the end of the `.GameLoop` iteration (after
-    /// `.PaintFrameWrap`; platforms-ropes-radial-2 §8.1 step 7) — the part Phase 2 reaches: every listed record whose
-    /// Handle `+0x4c` is 0 (`.ActiveToIdleSprite` saved it this iteration, `SpriteSlot.handleCleared`) is killed
-    /// (`.MTKillSprite`; the record stays readable through `ActiveList.record(id:)`). The `+0xe9` death count-up
-    /// (1 … 4, the callbacks, face and light cleared, the record flag), the record position write-back (`+0x188` …)
-    /// and the 0x6ea re-type are not built — // later: Phase 4–5 (no Phase-2 writer of a killing `+0xe9` count).
-    public func updateSprites() {
-        for id in active.sprites.filter(\.handleCleared).map(\.id) { active.remove(id: id) }
+    /// `.UpdateSprites @ 1000982c` (M l. 4934–5037; raw `1000982c..10009b78`; spells-detail-2 §5, pickups-boxes
+    /// §1.10), at the end of the `.GameLoop` iteration (raw `1000a298`, after `.CheckGameLoopKeys`). From the head, for
+    /// each sprite:
+    /// 1. type 0x6ea → 0x6eb, then −1 (M l. 4955–4958: stays 0x6ea, as written);
+    /// 2. unless `+0x188`, `+0x18a` or `+0x189`, a record 0 ≤ `+0x48` < 0x1ff gets type `+6` ← `+4`, x `+0x12` ←
+    ///    `+0xc`, y `+0x10` ← `+0xa` (M l. 4959–4967; the two "unreachable" blocks at `10009914` / `10009954` sit
+    ///    behind `+0x189` / `+0x18a` tests already known to be 0 — dead code);
+    /// 3. `+0xe9` < 4 with a Handle (`+0x4c` ≠ 0): `+0xe9` 0 → with `+0xea`, not `+0x188` and a valid record, record
+    ///    `+4` = 0; `+0xe9` 1…3 → `+0xe9` + 1, `+0x5c` / `+0x1f8` (hit, tile callbacks) 0, type −|type|, face 0, the
+    ///    light removed (`.RemoveLight` on `lights` when `+0x9a` ≠ −1), record `+4` = 0 unless `+0x188`; then `next`
+    ///    (M l. 4968–5001);
+    /// 4. otherwise (`+0xe9` ≥ 4, or Handle 0 — an idled record, `SpriteSlot.handleCleared`): if `+0xe9` ≠ 0 → the
+    ///    light removed, a type of ±0x41f stored 0x41f, and with a valid record: record `+4` = 0 unless `+0x18b`, the
+    ///    idle entry `+0xa8` (0…0x1ff) freed; then `.MTKillSprite` and the walk **restarts from the head**
+    ///    (M l. 5002–5032) — sprites before it are passed again (counted up again) in the same call.
+    /// A record index outside the table (`records`) is not written.
+    public func updateSprites(lights: inout LightTable) {
+        func valid(_ r: Int16) -> Bool { 0 <= r && r < 0x1ff && Int(r) < records.count }
+        var cursor = active.sprites.first?.id
+        while let id = cursor, let s0 = active.sprite(id: id) {
+            if s0.type == 0x6ea {
+                active.update(id: id) { c in
+                    c.type = 0x6eb
+                    c.type &-= 1
+                }
+            }
+            let s = active.sprite(id: id)!
+            if !s.keepRecord && !s.noWriteBack18a && !s.noWriteBack189 && valid(s.recordIndex) {
+                writeBack(Int(s.recordIndex), type: s.type, x: Int16(truncatingIfNeeded: s.x),
+                          y: Int16(truncatingIfNeeded: s.y))
+            }
+            let k = s.killCount
+            if k < 4 && !s.handleCleared {
+                if k == 0 {
+                    if s.killedForGood && !s.keepRecord && valid(s.recordIndex) { clearRecordFlag(Int(s.recordIndex)) }
+                } else {
+                    active.update(id: id) { c in
+                        c.killCount = k &+ 1
+                        c.hasHit = false
+                        c.hasTileHit = false
+                        let m = c.type < 1 ? 0 &- c.type : c.type
+                        c.type = 0 &- m
+                        c.face = nil
+                        if c.light != -1 { lights.remove(&c.light) }
+                    }
+                    if !s.keepRecord && valid(s.recordIndex) { clearRecordFlag(Int(s.recordIndex)) }
+                }
+                cursor = active.next(after: id)
+            } else {
+                if k != 0 {
+                    active.update(id: id) { c in
+                        if c.light != -1 { lights.remove(&c.light) }
+                        if abs(Int(c.type)) == 0x41f { c.type = 0x41f }
+                    }
+                    if valid(s.recordIndex) {
+                        if !s.keepRecordAtKill { clearRecordFlag(Int(s.recordIndex)) }
+                        idle.free(s.idleEntry)
+                    }
+                }
+                active.remove(id: id)                               // `.MTKillSprite`
+                cursor = active.sprites.first?.id                   // `iVar6 = *piVar7`: from the head again
+            }
+        }
+    }
+
+    /// `.UpdateSprites`' write-back into record `i`: `+6` type, `+0x12` x, `+0x10` y.
+    private func writeBack(_ i: Int, type: Int16, x: Int16, y: Int16) {
+        let p = records[i]
+        records[i] = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: type, p1: p.p1, p2: p.p2, p3: p.p3,
+                               p4: p.p4, y: y, x: x)
+    }
+
+    /// Record `i`'s `+4` (the active flag `Placement.flag`) = 0.
+    private func clearRecordFlag(_ i: Int) {
+        let p = records[i]
+        records[i] = Placement(index: p.index, flag: 0, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2, p3: p.p3,
+                               p4: p.p4, y: p.y, x: p.x)
     }
 
     // MARK: - the passes

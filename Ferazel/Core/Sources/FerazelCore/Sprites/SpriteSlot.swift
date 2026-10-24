@@ -124,8 +124,32 @@ public struct SpriteSlot: Equatable, Sendable {
     public var scale: Int16 = 0x100
     /// `+0x11c` water contact (0 in Phase 1).
     public var waterRow: Int32 = 0
-    /// `+0xe9` kill request.
-    public var dead = false
+    /// `+0xe9` (u8): the kill request / death count (US). Every writer in the dump stores 1 (the request), 0
+    /// (`.InitSprite`, `.ActiveToIdleSprite`, `.IdleToActiveSprite`) or `+0xe9 + 1` (`.UpdateSprites`' count-up,
+    /// M l. 4983); `.UpdateSprites` unlinks the sprite at 4 (`SpriteWorld.updateSprites`).
+    public var killCount: UInt8 = 0
+    /// `+0xe9` ≠ 0: the kill request, as the Handles and passes test it. Setting true stores 1 — the literal every
+    /// `stb` of the dump writes (M l. 38830, 39174, 44154, …; none keeps a running count) — false stores 0.
+    public var dead: Bool {
+        get { killCount != 0 }
+        set { killCount = newValue ? 1 : 0 }
+    }
+    /// `+0xea` (u8): killed for good — with `+0xe9` 0, `.UpdateSprites` clears the record's `+4` (M l. 4971–4977).
+    public var killedForGood = false
+    /// `+0x188` (u8): keep the record — no write-back and no `+4` clear on the count-up passes (`.UpdateSprites`
+    /// M l. 4959, 4975, 4995); the Background modes 10…14 set it (M l. 62363).
+    public var keepRecord = false
+    /// `+0x189` (u8): no record write-back (`.UpdateSprites` M l. 4960).
+    public var noWriteBack189 = false
+    /// `+0x18a` (u8): no record write-back (`.UpdateSprites` M l. 4959).
+    public var noWriteBack18a = false
+    /// `+0x18b` (u8): keep the record's `+4` at the final kill (`.UpdateSprites` M l. 5021).
+    public var keepRecordAtKill = false
+    /// `+0x1b5` (u8): counted in the level totals (plan S2). No reader in `.UpdateSprites`.
+    public var countedInTotals = false
+    /// `+0xa8` (i16): the idle-table entry the sprite came from — `.InitSprite` −1 (M l. 35592), `.IdleToActiveSprite`
+    /// the entry index (M l. 4265); `.UpdateSprites`' final kill frees entry 0…0x1ff (M l. 5024–5027).
+    public var idleEntry: Int16 = -1
 
     // MARK: The physics record (plan S2, F2). Defaults are `.MTNewSprite`'s `MemoryClear` + `.InitSprite`.
 

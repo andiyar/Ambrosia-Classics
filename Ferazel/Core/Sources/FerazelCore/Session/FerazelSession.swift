@@ -693,7 +693,7 @@ public final class FerazelSession {
         ops.drawn = draw
         odd.toggle()
         // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).
-        world.updateSprites()
+        world.updateSprites(lights: &lightTable)
         // `.HandleAsyncGammaFade` (l. 5282, after `.UpdateStatusBar(1, 0, 0)`; W2b — the passages start the fades).
         let fadingIn = !world.gammaFade.done && world.gammaFade.fadingIn
         if let g = world.gammaFade.handle() { ops.draws.append(g) }

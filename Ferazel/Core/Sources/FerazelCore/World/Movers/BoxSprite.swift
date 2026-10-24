@@ -37,7 +37,8 @@ public enum BoxSprite {
     /// (several make sprites or draw `FastRand` at Setup) leave the head's fields — // later: SW (tree trunk
     /// 0x2c8/0x2c9), BX1 (the cart 0xb72/0xb73), BT (the gate 0xb7c), SH/BX1 (0xb7d, the ice wall 2941), Phase 5
     /// (geysers 0x5a0…0x5a9, pipes 0x5d2…0x5d5), Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table
-    /// 0xb71, the snowball 0xbfe).
+    /// 0xb71, the snowball 0xbfe). Their write-back flags come with them: the geysers' `+0x189` and their two parts'
+    /// `+0x188` (M l. 59127, 59174, 59181), 0xb7c…'s `+0x188` (M l. 59470).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`

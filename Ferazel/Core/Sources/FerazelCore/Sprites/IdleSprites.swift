@@ -71,6 +71,13 @@ public struct IdleSprites: Equatable, Sendable {
         return k
     }
 
+    /// `.UpdateSprites`' final kill (M l. 5024–5027; raw `10009a34..10009a50`): the entry's in-use byte `+0` = 0 for
+    /// an index 0…0x1ff — `.HandleIdleSprites` skips it and `.AddIdleSprite` may reuse it (the entry is dropped).
+    public mutating func free(_ entry: Int16) {
+        guard 0 <= entry && entry < 0x200 else { return }
+        entries[Int(entry)] = nil
+    }
+
     /// The `.HandleIdleSprites` window for view origin (h, v) (`PTR_DAT_1009fe78`).
     public static func window(h: Int, v: Int, playerHotRect: Rect?) -> Rect {
         var w = Rect(top: v - 0x18, left: h - 0x18, bottom: v + 0x198, right: h + 0x278)
@@ -121,8 +128,11 @@ public struct IdleSprites: Equatable, Sendable {
                 guard e.saved.type != 0 else { continue }
                 let r = Self.testRect(x: e.saved.x, y: e.saved.y, face: e.faceRect, margins: e.saved.margins)
                 if r.intersects(window) {
-                    // `.IdleToActiveSprite(i)`; then `+0x58` (l. 4266–4268): `.RopeDeIdleize` (W3).
-                    let id = active.insert(e.saved)
+                    // `.IdleToActiveSprite(i)`: `+0xa8 = i` (M l. 4265, US); then `+0x58` (l. 4266–4268):
+                    // `.RopeDeIdleize` (W3).
+                    var t = e.saved
+                    t.idleEntry = Int16(i)
+                    let id = active.insert(t)
                     e.activeID = id
                     if e.saved.handler == .rope { RopeSprite.deIdleize(&active, id: id) }
                     entries[i] = e
