@@ -1007,6 +1007,20 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Gate:** G2 = 313, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: GameFlow — boot (logo, loading bar), main menu (buttons, keys, X joke), Quit, Credits scroll timing; 5 tests`.
 
+- ⚑ **As executed (F1a, loop run 13; 24330a0 + review fix 75c6052):** G2 313 (317 with D1). Dump beat plan: `.Quit`
+  also sets clut 801 (M l. 358, 7464) and shows the menu bar (M l. 7465) before `.quit`; a menu letter key pressed with
+  the button held falls into the mouse tracking loop (M l. 1459–1466); the bar's first 4-px width comes at 20 faces, not
+  17. Built beyond the plan's text but inside its contract (reviewer ruled in scope, right against the dump): two App load
+  phases (sounds under the logo, faces under the bar), each ended by `loadFinished()`; `DialogResult`, `FileResult`,
+  `SavedGameRef` and a Foundation-error → OSErr mapping (−33 never produced; `EDQUOT` guarded off Windows); **`.Options`
+  is built in Core** (re-read prefs, DLOG 6900 over `prefsDialog`, write-back, `MakeCurrPrefs`, the two status-bar redraw
+  flags) — so A1b only renders it. Review (one Opus leg, NEEDS FIXES → fixed): menu button sounds 4803/4804 must play even
+  with F1 (sound loading off) — `.InitAppGlobals` loads them unconditionally (M l. 352–357); **A1a: the App must load
+  4803/4804 in the F1 case too.** Seven test survivors pinned inside the existing tests. Carried (low, not built): the menu
+  bar is left as is while the pointer is off the canvas; the pre-menu idle wakes on a held key/button (the original on
+  events only); the bar's partial-redraw rect (unreachable); `loadProgress` has no state check. Bank: `rendering-omnipx-
+  titles.md` §4.1 (BC19 + the above).
+
 #### D1 — minor — The death screen (→ 317)
 - **Files:** `Sources/FerazelCore/Front/DeathScreen.swift` (incl. the `TurnGray` CLUT maths — **in Core**, because
   `FerazelCoreTests` cannot import FerazelRender; the clut-132 RGBs come from Core's existing `ColorLUT` loader),
@@ -1030,6 +1044,18 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   151 `.clut` ops, then the restore).
 - **Gate:** G2 = 317, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: the death screen — AskToContinue, death buttons, WandGlow, TurnGray; 4 tests`.
+
+- ⚑ **As executed (D1, loop run 13; b63332e + review fix 75c6052):** G2 317. API: `DeathScreen(saved:prefs:resources:
+  scrollH:scrollV:entry255:)`, `tick(now:input:fade:)` until `isDone`, then `continues` / `chosen`. **The plan was wrong on
+  the restore:** after TurnGray `.AskToContinue` only copies `1009ff8c` back into the working table (M l. 3687–3714), no
+  `SetEntries` — no op is emitted; the screen stays black until the menu return draws (M l. 5850–5866). TurnGray computes
+  entries 0–254 and sends 256 (`SetEntries(0, 0xff)`); entry 255 is the level table's, passed in as `entry255` (default
+  black; every shipped clut has a black 255 except 198). Constants 7500.0 @`100a1560`, 75.0 @`100a1540` re-read from the
+  data section by the reviewer. A key with the button down runs the mouse tracking; key checks follow a completed click in
+  the same pass (held Esc → Abort wins). `ScreenRenderer` applies `.screenGamma(.clut(entries:))` as the screen CLUT
+  (pinned in `ScreenTests.testMainMenuScreenGolden`). One Opus leg MERGEABLE; test gaps (f 76, clamp, Esc after click,
+  the CLUT arm) pinned in 75c6052. Carried (low): death-button sounds skip the slot "is loaded" check; glow frames go
+  through the normal present. Bank: `save-continue.md` §5 (BC10 + the above).
 
 #### F1b — ⚑ MAJOR — `GameFlow` part 2: New Game, the level ⇄ map loop, Continue, death (→ 323)
 - **Files:** `Sources/FerazelCore/Front/{GameFlow,NewGame,ContinueGame,BuiltLevels}.swift`;
