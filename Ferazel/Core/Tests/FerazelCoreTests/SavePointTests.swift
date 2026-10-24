@@ -49,9 +49,17 @@ final class SavePointTests: XCTestCase {
     private func onPoint(_ p: Placement) -> (x: Int, y: Int) { (Int(p.x) - 8, Int(p.y) + 0x3f - 0x55 + 1) }
 
     private func session(_ r: FerazelResources, level: Int = 1, record: Int = 24, hosted: Bool = false,
-                         prefs: FerazelPrefs = FerazelPrefs()) throws -> FerazelSession {
+                         prefs: FerazelPrefs = FerazelPrefs(), facingLeft: Bool = false) throws -> FerazelSession {
         let L = try LevelFile.load(from: r, level: Int16(level))
-        return try FerazelSession(resources: r, prefs: prefs, level: level, start: onPoint(L.placements[record]),
+        var carry = LevelCarry()
+        if facingLeft {
+            // A carried G with `G+0x16` = 1 (not refreshed): `.SetupPlayerSprite` spawns him facing left.
+            var g = GameGlobals(header: L.header)
+            g.startFacing = 1
+            carry.globals = g
+        }
+        return try FerazelSession(resources: r, prefs: prefs, level: level, carry: carry,
+                                  start: onPoint(L.placements[record]), refreshFacing: !facingLeft,
                                   hostedByLevelRun: hosted)
     }
 
@@ -84,10 +92,11 @@ final class SavePointTests: XCTestCase {
     }
 
     private func make(_ r: FerazelResources, level: Int, record: Int, prefs: FerazelPrefs, files: Files,
-                      state: SaveGameState = SaveGameState(), date: UInt32 = 0xb5c0_0000) throws -> LevelRun {
+                      state: SaveGameState = SaveGameState(), date: UInt32 = 0xb5c0_0000,
+                      music: MusicFade = MusicFade()) throws -> LevelRun {
         let L = try LevelFile.load(from: r, level: Int16(level))
         return try LevelRun(resources: r, prefs: prefs, level: level, seed: 1, carry: LevelCarry(), save: SaveBlock(),
-                            fade: ScreenFade(), music: MusicFade(), services: StubServices(),
+                            fade: ScreenFade(), music: music, services: StubServices(),
                             sounds: StageSounds(prefs: prefs, lengths: [:]), start: onPoint(L.placements[record]),
                             date: { date }, files: files, saveState: state)
     }
@@ -179,6 +188,29 @@ final class SavePointTests: XCTestCase {
         XCTAssertEqual(s.world.records[24].p1, 0)
         XCTAssertEqual(rest.requests.first, .hideCursor)
         XCTAssertTrue(rest.draws.contains { if case .statusBar = $0 { true } else { false } })
+
+        // Facing left (`+0x17e` = 1): p1 = 2, `G+0x16` = 1; saved, the Box Handle shows the statue facing left (face 2)
+        // from the next frame's handle pass (save-continue §9.1).
+        let left = try session(r, facingLeft: true)
+        XCTAssertEqual(left.globals.startFacing, 1)
+        let (lholds, lfired) = stepToFire(left)
+        XCTAssertEqual(lholds, (2...15).map { Int16($0) })
+        XCTAssertNotNil(lfired)
+        XCTAssertEqual(left.world.records[24].p1, 2)
+        XCTAssertEqual(left.globals.startFacing, 1)
+        _ = left.resume(.savePoint(saved: true))
+        XCTAssertEqual(left.world.records[24].p1, 2)
+        _ = left.step(keys: KeyState())
+        let point = try XCTUnwrap(left.active.sprites.first { $0.recordIndex == 24 })
+        XCTAssertEqual(point.face, FaceRef(pict: Self.saveType, index: 2, set: .encoded))
+        // Facing right: the statue facing right (face 1), `G+0x16` = 0.
+        let right = try session(r)
+        guard stepToFire(right).ops != nil else { return XCTFail("no fire") }
+        _ = right.resume(.savePoint(saved: true))
+        _ = right.step(keys: KeyState())
+        XCTAssertEqual(right.active.sprites.first { $0.recordIndex == 24 }?.face,
+                       FaceRef(pict: Self.saveType, index: 1, set: .encoded))
+        XCTAssertEqual(right.globals.startFacing, 0)
     }
 
     func testRefireOn65thAfterCancel() throws {
@@ -220,9 +252,13 @@ final class SavePointTests: XCTestCase {
         for _ in 0..<14 {
             XCTAssertEqual(a.step(keys: KeyState()), b.step(keys: KeyState()))
         }
-        // The 15th landing: `a` fires; `b` is held below the threshold (its counter is not drawn or sounded).
+        // The 15th landing: `a` fires; `b` is held below the threshold (its counter is not drawn or sounded). A sound
+        // call made in the frame before the suspension (as a Handle's would be) is handed out with the part before it.
         b.world.player.savePointHold = 0
+        let startFacing = b.globals.startFacing
+        for s in [a, b] { s.world.player.cue(PlayerCue(call: .reg, snd: 420, priority: 1, volume: 0x100)) }
         let before = a.step(keys: KeyState())
+        XCTAssertEqual(before.sounds.map(\.snd), [420])
         XCTAssertEqual(before.suspension, .savePoint(record: 24))
         let whole = b.step(keys: KeyState())
         XCTAssertNil(whole.suspension)
@@ -231,6 +267,7 @@ final class SavePointTests: XCTestCase {
         XCTAssertFalse(before.draws.contains { if case .wrapEraseSprites = $0 { true } else { false } })
         // A step while suspended is a precondition failure (not run here); resume finishes the SAME frame.
         let after = a.resume(.savePoint(saved: false))
+        XCTAssertFalse(after.sounds.contains { $0.snd == 420 })
         let j = joined(before, after)
         XCTAssertEqual(j.draws, whole.draws)
         XCTAssertEqual(j.sounds, whole.sounds)
@@ -248,15 +285,70 @@ final class SavePointTests: XCTestCase {
         XCTAssertEqual(a.player.pixelX, b.player.pixelX)
         XCTAssertEqual(a.player.pixelY, b.player.pixelY)
         XCTAssertEqual(a.iterations, b.iterations)
+        // The fire wrote `G+0x16` (facing 0 here); the held-off twin kept its own.
+        XCTAssertEqual(a.globals.startFacing, 0)
+        XCTAssertEqual(b.globals.startFacing, startFacing)
         // The next frames match draw for draw.
         for _ in 0..<3 { XCTAssertEqual(a.step(keys: KeyState()).draws, b.step(keys: KeyState()).draws) }
+
+        // The pass's iteration state across a suspension (`SpriteWorld.continueSpecialPass`): n Box contacts on the
+        // player, the call log of an uninterrupted pass vs one suspended at call k and continued — the same calls in
+        // the same order, the suspending contact's own hit owed after it, nothing restarted. (4, 1): the sorted
+        // dispatch; (18, 16): the 17th contact's at-once call inside the collection walk, the walk going on after it.
+        let L1 = try LevelFile.load(from: r, level: 1)
+        for (n, k) in [(4, 1), (18, 16)] {
+            func pass(suspendAt: Int?) throws -> [String] {
+                let w = try session(r).world
+                let pid = try XCTUnwrap(w.playerID)
+                let P = try XCTUnwrap(w.active.sprite(id: pid))
+                var e = try SetupFaces.setup(L1.placements[24], context: SetupFaces.Context(level: L1, playerX: 0)).slot
+                e.x = P.x
+                e.y = P.y
+                for _ in 0..<n { w.active.insert(e) }
+                var log: [String] = []
+                var calls = 0
+                let hitPlayer: (SpriteWorld, Int, Int) -> Void = { w, _, c in
+                    log.append("P\(c)")
+                    if calls == suspendAt { w.suspension = .savePoint(record: 24) }
+                    calls += 1
+                }
+                let hit: (SpriteWorld, Int, Int) -> Void = { _, c, _ in log.append("H\(c)") }
+                var done = w.collideSpecial(hitPlayer: hitPlayer, hit: hit)
+                while !done {
+                    log.append("|")
+                    w.suspension = nil
+                    done = w.continueSpecialPass(hitPlayer: hitPlayer, hit: hit)
+                }
+                return log
+            }
+            let whole = try pass(suspendAt: nil)
+            let cut = try pass(suspendAt: k)
+            XCTAssertEqual(whole.filter { $0.hasPrefix("P") }.count, n, "n \(n)")
+            XCTAssertEqual(cut.filter { $0 != "|" }, whole, "n \(n)")
+            let bar = try XCTUnwrap(cut.firstIndex(of: "|"))
+            XCTAssertEqual(cut.filter { $0.hasPrefix("P") }.firstIndex(of: cut[bar - 1]), k)
+            if n <= 16 { XCTAssertEqual(cut[bar + 1], "H" + cut[bar - 1].dropFirst()) }       // the owed hit
+        }
     }
 
     func testSaveBlockAtSavePoint() throws {
         let r = try resources()
         let files = Files()
-        let run = try make(r, level: 1, record: 24, prefs: FerazelPrefs(), files: files)
+        // The stored prefs differ from the live ones in +0x0e (sound volume): `.UpdateSGString`'s `.MakeCurrPrefs`
+        // makes the stored record live.
+        var stored = FerazelPrefs()
+        stored.soundVolume = FerazelPrefs().soundVolume == 3 ? 4 : 3
+        files.prefs = stored.record()
+        // An armed async music fade-in (`5be2 = 0`, N huge): `.HandleAsyncAIFFMusicFade` runs once at each iteration's
+        // end — never in the part of a frame before a suspension.
+        var m = MusicFade()
+        m.asyncDone = false
+        m.asyncDirection = 1
+        m.asyncFrames = 30000
+        let run = try make(r, level: 1, record: 24, prefs: FerazelPrefs(), files: files, music: m)
         let (t, outs) = try drive(run, from: 100) { _, o in self.putFile(o) != nil }
+        XCTAssertEqual(outs.last?.music, [])
+        XCTAssertEqual(outs.dropLast().last { !$0.music.isEmpty }?.music.count, 1)
         let s = try XCTUnwrap(run.session)
         // The entry's `GammaFadeInAsync(0x28)` keeps gate 1 shut for 41 iterations; then 15 landings.
         XCTAssertEqual(run.iterations, 41 + 15)
@@ -298,6 +390,9 @@ final class SavePointTests: XCTestCase {
         XCTAssertEqual(run.livePrefs.savedGameName, "My Save")
         XCTAssertEqual(files.prefs.map(FerazelPrefs.init(record:))?.savedGameName, "My Save")
         XCTAssertEqual(done.prefs?.savedGameName, "My Save")
+        XCTAssertEqual(run.livePrefs.soundVolume, stored.soundVolume)
+        XCTAssertEqual(done.prefs?.soundVolume, stored.soundVolume)
+        XCTAssertEqual(done.music.count, 1)                                  // the resumed iteration's async step
         XCTAssertNil(s.suspension)
         XCTAssertEqual(s.world.records[24].p1, facing + 1)
         // `.SavePointSave`'s tail (raw `1000c804..1000c888`, not paused): `RedrawEntireScrollGrid`, `HideCursorSafe`,
@@ -308,6 +403,23 @@ final class SavePointTests: XCTestCase {
                         .copyToScreen(h: h, v: v, graphicsMode: Int(run.prefs.graphics), backdrop: run.prefs.plainCopy == 0),
                         .statusBar(s.globals.statusBar(levelName: s.level.header.name))])
         XCTAssertEqual(done.requests.first, .hideCursor)
+
+        // The flash's fade-in keeps gate 1 shut at the `LevelRun` level too: with p1 cleared by hand the point does not
+        // count landings for the 45 iterations after the save frame (the counter only decays), then counts again.
+        let p = s.world.records[24]
+        s.world.records[24] = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: 0, p2: p.p2,
+                                        p3: p.p3, p4: p.p4, y: p.y, x: p.x)
+        XCTAssertEqual(s.player.savePointHold, -150)
+        var now = t + 7
+        var holds: [Int16] = []
+        while run.iterations < 56 + 46 {
+            let before = run.iterations
+            let o = try run.tick(now: now, input: FrontInput()).merged
+            XCTAssertNil(putFile(o))
+            if run.iterations > before { holds.append(s.player.savePointHold) }
+            now += 1
+        }
+        XCTAssertEqual(holds, (1...45).map { Int16(-150 + $0) } + [-150 + 46 + 2])
     }
 
     func testSuccessFlashSequence() throws {

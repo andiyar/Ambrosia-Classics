@@ -40,7 +40,9 @@ public enum SavedGameFile {
         let map = ClassicResourceMap.serialize([Resource(type: resourceType, id: resourceID, name: resourceName,
                                                          data: block.image())])
         let fm = FileManager.default
-        if fm.fileExists(atPath: url.path) { try fm.removeItem(at: url) }
+        // `FSpDelete`'s result is never tested (raw `100483e0`): a failed delete is not an error here either — the
+        // write that follows reports what goes wrong.
+        if fm.fileExists(atPath: url.path) { try? fm.removeItem(at: url) }
         try map.write(to: url)
         #if os(macOS)
         try fm.setAttributes([.hfsTypeCode: NSNumber(value: fileType), .hfsCreatorCode: NSNumber(value: creator)],
@@ -64,7 +66,9 @@ public enum SavedGameFile {
 
     /// `.SaveSG`'s error mapping (M l. 41275–41296; `ReportError(text, code)`): −34 (disk full, `0x100a58d1`), −33
     /// (directory full, `0x100a5908`), −44 (volume locked, `0x100a5944`), anything else → the general text
-    /// (`0x100a597f`), the only one whose report carries the code (`code` nil for the other three).
+    /// (`0x100a597f`). All four reports carry the code: r4 = the error (`extsh r4,r25`, raw `1004851c`) at every
+    /// `ReportError` call (S1, save-continue §3.1 note) — `SaveSG` sends it with each. `code` here is non-nil only for
+    /// the general text, the one the decompile shows passing it explicitly (SV2's reading, kept for its tests).
     public static func writeErrorReport(osErr: Int16) -> (message: String, code: Int16?) {
         switch osErr {
         case -34: ("The game could not be saved, because the disk is full.", nil)

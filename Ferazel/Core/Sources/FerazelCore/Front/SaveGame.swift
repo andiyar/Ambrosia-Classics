@@ -69,6 +69,9 @@ public struct SaveSG {
     /// static text (`putFileMessage`).
     public mutating func start(prompt: Bool, message: String, block: SaveBlock, files: FrontFiles?,
                                musicFade: inout MusicFade) -> Step {
+        // GameFlow always hands its `FrontFiles` to the `LevelRun` it builds (S1 fix round); a run without one (a Core
+        // test that never reaches a save point) must not pretend a save was written.
+        guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
         oldName = prefs.savedGameName
         if !prompt, state.saveFileKnown, let reply = state.lastReply {
             return goodReply(reply, block: block, files: files, musicFade: &musicFade)
@@ -85,6 +88,7 @@ public struct SaveSG {
             prefs.savedGameName = oldName
             return .done(saved: false)
         case .chosen(let reply):
+            guard let files else { preconditionFailure("a save point needs the file seam (LevelRun(files:))") }
             return goodReply(reply, block: block, files: files, musicFade: &musicFade)
         }
     }
@@ -92,17 +96,12 @@ public struct SaveSG {
     /// The error report was dismissed: `.SaveSG` returns 0.
     public func reportDone() -> Step { .done(saved: false) }
 
-    private mutating func goodReply(_ reply: SavedGameRef, block: SaveBlock, files: FrontFiles?,
+    private mutating func goodReply(_ reply: SavedGameRef, block: SaveBlock, files: FrontFiles,
                                     musicFade: inout MusicFade) -> Step {
         state.saveFileKnown = true
         state.lastReply = reply
         prefs.savedGameName = reply.displayName
         updateSGString(files: files, musicFade: &musicFade)
-        // No file seam (a Core test's `LevelRun` without `files`): the block stays in memory, as written.
-        guard let files else {
-            state.savedThisGame = true
-            return .done(saved: true)
-        }
         do {
             try files.writeSavedGame(block, to: reply)
         } catch {
@@ -117,8 +116,7 @@ public struct SaveSG {
     /// prefs+0x42 copied into it, `ChangedResource` + `WriteResource`, `.MakeCurrPrefs` (the record → the live prefs;
     /// not paused — a save runs inside a frame). The applied music flag `fd20` is the live +0x0c (every
     /// `.MakeCurrPrefs` leaves them equal), so the music part acts only when the file's flag differs.
-    private mutating func updateSGString(files: FrontFiles?, musicFade: inout MusicFade) {
-        guard let files else { return }
+    private mutating func updateSGString(files: FrontFiles, musicFade: inout MusicFade) {
         var record = files.loadPrefs().map(FerazelPrefs.init(record:)) ?? FerazelPrefs()
         record.savedGameName = prefs.savedGameName
         try? files.storePrefs(record.record())

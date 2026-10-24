@@ -239,11 +239,23 @@ public final class GameFlow {
             lastDialogResult = result
             return
         }
+        // S1: inside a level only a save point's error report is modal — it belongs to the `LevelRun`.
+        if case .level = wait, let run = levelRun {
+            run.dialogDone(result)
+            lastDialogResult = result
+            return
+        }
         dialogAnswer = result
     }
 
-    /// A Standard File dialog (`.getFile`) was answered; the flow goes on at the next tick.
+    /// A Standard File dialog (`.getFile`, or a save point's `.putFile` inside a level) was answered; the flow goes on
+    /// at the next tick. A level's answer goes to its `LevelRun` and never reaches the flow's own `fileAnswer` (so no
+    /// stale reply can feed Continue's `.OpenSG`).
     public func fileDone(_ result: FileResult) {
+        if case .level = wait, let run = levelRun {
+            run.fileDone(result)
+            return
+        }
         fileAnswer = result
     }
 

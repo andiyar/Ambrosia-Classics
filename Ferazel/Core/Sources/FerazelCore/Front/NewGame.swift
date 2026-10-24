@@ -111,7 +111,9 @@ extension GameFlow {
                                    carry: carry, save: saveBlock, fade: fade, music: toggles.music, services: levels,
                                    sounds: StageSounds(prefs: toggles.live, lengths: soundLengths), start: start,
                                    param3: 0, param4: !continuing, refreshFacing: !continuing,
-                                   skipStageComplete: skipStageComplete, date: dateTime)
+                                   skipStageComplete: skipStageComplete, date: dateTime, files: files,
+                                   saveState: SaveGameState(savedThisGame: savedThisGame, saveFileKnown: saveFileKnown,
+                                                            lastReply: lastReply))
             levelRun = run
             levelComplete = false                                       // `.GameLoop`: `*0088 = 0` (M l. 5151)
             wait = .level
@@ -129,6 +131,18 @@ extension GameFlow {
             fade = run.fade
             toggles.music = run.music
             skipStageComplete = run.skipStageComplete
+            // S1: what the level's save points left — fe00 / fd54 / fd18 and the live prefs (`.SaveSG`'s prefs+0x42,
+            // `.UpdateSGString`'s `.MakeCurrPrefs`: the record live, `5107`, `510c`, `fd20 = +0x0c`; its music cues
+            // already went through `run.music`).
+            savedThisGame = run.saveState.savedThisGame
+            saveFileKnown = run.saveState.saveFileKnown
+            lastReply = run.saveState.lastReply
+            if run.livePrefs != toggles.live {
+                toggles.live = run.livePrefs
+                toggles.wrapCopyFlag = run.livePrefs.plainCopy == 0
+                toggles.soundScale = Int(run.livePrefs.soundVolume) * 0x1c
+                toggles.appliedMusicOn = run.livePrefs.musicOn
+            }
             if let s = run.session {
                 rng = FastRand(seed: s.rngSeed)
                 deathScroll = (s.camera.h, s.camera.v)

@@ -21,7 +21,8 @@ final class GameFlowGameTests: XCTestCase {
             guard let b = blocks[ref.url] else { throw SavedGameError.notASavedGame }
             return b
         }
-        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
+        var written: [URL: SaveBlock] = [:]
+        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) { written[ref.url] = block }
     }
 
     /// The renderer side, recorded; `failAttach` makes `attach` throw (a renderer failure inside `LevelRun.tick`).
@@ -623,5 +624,56 @@ final class GameFlowGameTests: XCTestCase {
         rig2.drive { $0.state == .mainMenu }
         XCTAssertNil(rig2.flow.levelRun)
         XCTAssertTrue(rig2.levels.prepared.isEmpty)
+
+        // S1: a save point inside a GameFlow game. A checkpoint whose snapshot leaves record 24 unused (p1 0) and puts
+        // the player on it: the flow hands `LevelRun` its file seam and fe00 / fd54 / fd18; the save panel's reply
+        // goes to the level (never to the flow's own `fileAnswer`); the flags and live prefs come back at the level's end.
+        func standing(_ rig: Rig, _ name: String) throws -> (SavedGameRef, FerazelSession) {
+            var cp = try checkpoint(r)
+            let q = cp.snapshots[1][24]
+            cp.snapshots[1][24] = Placement(index: 24, flag: q.flag, byte1: q.byte1, type: q.type, p1: 0, p2: q.p2,
+                                            p3: q.p3, p4: q.p4, y: q.y, x: q.x)
+            cp.playerX = Int32(L1.placements[24].x) - 8
+            cp.playerY = Int32(L1.placements[24].y) - 21
+            let opened = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/\(name)"), displayName: name)
+            rig.files.blocks[opened.url] = cp
+            rig.toMenu()
+            rig.press(0x0f)
+            rig.drive { _ in self.askedFile(rig.last) }
+            rig.flow.fileDone(.chosen(opened))
+            rig.drive { _ in rig.last.requests.contains { if case .putFile = $0 { return true }; return false } }
+            return (opened, try XCTUnwrap(rig.flow.levelRun?.session))
+        }
+        let rig3 = Rig(r)
+        let (opened3, s4) = try standing(rig3, "cp3")
+        XCTAssertEqual(s4.suspension, .savePoint(record: 24))
+        XCTAssertEqual(rig3.flow.levelRun?.saveState, SaveGameState(savedThisGame: true, saveFileKnown: true,
+                                                                    lastReply: opened3))
+        let mine = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/mine"), displayName: "Mine")
+        rig3.flow.fileDone(.chosen(mine))
+        XCTAssertNil(rig3.flow.fileAnswer, "a level's panel reply never reaches Continue's `.OpenSG`")
+        rig3.drive(max: 1) { _ in true }
+        XCTAssertNil(s4.suspension)
+        XCTAssertEqual(rig3.files.written[mine.url]?.level, 1)
+        XCTAssertEqual(rig3.files.written[mine.url]?.snapshots[1][24].p1, s4.world.records[24].p1)
+        XCTAssertNotEqual(s4.world.records[24].p1, 0)
+        rig3.drive { self.isRunning($0, level: 1, iterations: 120) }
+        try touchExit(try XCTUnwrap(rig3.flow.levelRun?.session), record: 66)
+        rig3.drive { self.onIdleMap($0) }
+        XCTAssertTrue(rig3.flow.savedThisGame)
+        XCTAssertTrue(rig3.flow.saveFileKnown)
+        XCTAssertEqual(rig3.flow.lastReply, mine)
+        XCTAssertEqual(rig3.flow.toggles.live.savedGameName, "Mine")
+        // Cancelled: nothing written, the point re-armed, fd18 still the file Continue opened.
+        let rig4 = Rig(r)
+        let (opened4, s5) = try standing(rig4, "cp4")
+        rig4.flow.fileDone(.cancelled)
+        XCTAssertNil(rig4.flow.fileAnswer)
+        rig4.drive(max: 1) { _ in true }
+        XCTAssertNil(s5.suspension)
+        XCTAssertTrue(rig4.files.written.isEmpty)
+        XCTAssertEqual(s5.world.records[24].p1, 0)
+        XCTAssertEqual(rig4.flow.levelRun?.saveState.lastReply, opened4)
+        XCTAssertEqual(rig4.flow.toggles.live.savedGameName, FerazelPrefs().savedGameName)
     }
 }

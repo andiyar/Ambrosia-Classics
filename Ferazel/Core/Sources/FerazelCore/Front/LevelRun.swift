@@ -165,6 +165,9 @@ public final class LevelRun {
     /// The `FrameOps` of the iterations the last `tick` stepped (empty when none ran); their draws, sounds and cues are
     /// also in that tick's `LevelRunOutput` (`.level` segments) — which, unlike these, also holds the level-start draws
     /// (`.SetupLevel`'s tail, the crunch re-apply's `setTile`s, `startOps()`), so A1a drives the renderers from it.
+    /// S1: a suspended iteration appears as its parts — the part up to the suspension (`suspension` set) in the tick
+    /// it stopped, the resumed rest in the tick the modal was answered (`.SavePointSave`'s redraw lies between them,
+    /// in the output only).
     public private(set) var lastSteps: [FrameOps] = []
     /// The `.GameLoop` iterations stepped.
     public private(set) var iterations = 0
@@ -257,7 +260,8 @@ public final class LevelRun {
     /// session keeps its own copy (P1 makes `FerazelSession.prefs` settable).
     public var livePrefs: FerazelPrefs { saveSG?.prefs ?? prefsAfterSaves }
     private var prefsAfterSaves: FerazelPrefs
-    /// The prefs file and saved-game seam (`.SaveSG`'s writes); nil → the block stays in memory.
+    /// The prefs file and saved-game seam (`.SaveSG`'s writes; GameFlow always passes its own). Nil is allowed only
+    /// for a run that never reaches a save point (a precondition failure there).
     private let files: FrontFiles?
     /// `.SaveSG` in progress (the frame is suspended meanwhile) and the answers the App gave.
     private var saveSG: SaveSG?
@@ -568,6 +572,8 @@ public final class LevelRun {
             case .report(let d)?: emit(&out, FrontOutput(requests: [.dialog(d)]))      // a reuse save's write error
             default: break
             }
+        case .conversation, .sign:
+            preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
         }
     }
 

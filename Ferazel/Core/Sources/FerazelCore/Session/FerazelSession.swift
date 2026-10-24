@@ -431,6 +431,8 @@ public final class FerazelSession {
             let tail = HitPlayerSprite.savePointDone(world, record: record, saved: saved)
             ops.draws += tail.draws
             ops.requests += tail.requests
+        case (.conversation, _), (.sign, _):
+            preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
         return finishFrame(ops)
