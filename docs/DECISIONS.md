@@ -1349,6 +1349,16 @@ play — and the flow's own Quit then terminates unasked (QUESTIONS Q5, Ben's la
 events for the menu pass; 4803/4804 are sounds, and 198/4801 load even with F1. Ferazel/Core 345/0 (unchanged by
 design), census 1,108/0, Ferazel builds, HectorKit 35a85ba untouched (floor 361).
 
+**As built (loop run 17, 2026-10-24) — PHASE 3 MACHINE-CLOSED (GP + A2); Ben's gate = QUESTIONS Q6.** GP (325d2e4 +
+88a0809): the pad acts as the original keys per D37, with three contexts the plan's table lacked — conversations (d-pad
+= the prefs move keys, as `ConversationRun` reads them), the world map and the death screen (− is the 1 s hold there
+too: a seat ruling under D37's own reason — on the map Esc opens an abort confirm whose OK any face button presses, and
+on the death screen Esc gives up unasked). A2: staged, two clean boots (the first launch of the GameFlow app), the
+gate card rewritten (`Ferazel/WHAT-TO-EXPECT.md`), Fable phase-end leg "stage as is after doc fixes" (dump fidelity
+MATCH across the front end, saves, map, pause, stage panel; 9/9 mutations killed) → doc/comment fixes 3553392, restaged.
+Ferazel/Core **349/0**, census 1,108/0, Ferazel builds, HectorKit 35a85ba untouched (floor 361). Next: plan Phase 4
+(design §8; next free D38).
+
 ## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
 
 **Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their

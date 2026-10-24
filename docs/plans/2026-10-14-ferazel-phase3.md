@@ -1508,6 +1508,18 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Gate:** G2 = 349, G5, G6, G7, G10. App-only wiring is checked by the reviewer reading the controller diff and by
   Ben's pad (the gate card gains a Controller step; QUESTIONS when staged). **Commit:** `Ferazel: a game controller as
   the original keys (FerazelPadLayout over HectorInput, D37); 4 tests`.
+- ⚑ **As executed (GP, loop run 17, 2026-10-24; 325d2e4 + review fixes 88a0809):** G2 349/0; G5 BUILD SUCCEEDED; G7
+  empty. One Opus leg: approve, with a plan-level finding the seat ruled on → fix round (seat read the diff). Prefs keys
+  are Mac virtual key codes, the same codes the keyboard path reads, so the pad presses them unchanged (codes > 127 get
+  no button); HectorInput reaches the app through HectorShell (no `project.yml` change). Extra file (plan gap):
+  `Ferazel/App/Dialogs/FerazelDialogs.swift` — dialogs stop the flow's ticks, so the dialogs' timer polls the pad (BTX
+  precedent); pad Return/Esc go only to confirm/report panels; + stays the pause latch over a dialog in a level.
+  **`padContext` grew** past the table: `.conversation` (its menu moves on the up/down INPUT keys, `ConversationRun`
+  l. 230–236 → d-pad = the prefs move keys there; face/+ = Return; − = Esc at once), `.map` and `.deathScreen`; the
+  map's pause counts as `.paused`. **Seat ruling (D37's own reason, "a stray press must not abort a kid's game"):** −
+  is the 1 s hold on the world map and on the death screen too — map Esc opens the abort confirm whose default OK any
+  face button (Return) presses while Esc can't cancel it, and death-screen Esc gives up with no question. "Playing" =
+  a level session past its first iteration and not loop-ended (pinned by tests; reviewer mutation killed).
 
 ### Wave 3.8 — phase end
 
@@ -1516,6 +1528,20 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Gate:** G1 (HK still 35a85ba, floor 361 — moved by the BTX gamepad work, Q4), G2 = 349/0, G3, G5, G7, G9 (+ the boot reaches the menu), G10. Then the FABLE-GRADE phase review over
   the phase diff + the card (D34), its fixes, re-stage. **STOP for Ben** (QUESTIONS item).
 - **Commit:** `WHAT-TO-EXPECT: Phase 3 gate card (title → level 2 and back)`.
+- ⚑ **As executed (A2, loop run 17, 2026-10-24; 4184463 + Fable fixes 3553392):** staged twice (4184463, then 3553392
+  → `~/Desktop/Ferazel's Wand.app` + notes + icon previews); **G9 2/2** — the first launch ever of the GameFlow app:
+  up after 5 s and 20 s, a system quit is answered "cancelled" and then the app quits itself (proof the boot reached the
+  main menu's event pass, the only place the queued quit is handled), no crash report, no errors in the system log.
+  G2 349/0, G3 1,108/0, G5 BUILD SUCCEEDED, G7 empty, G1 HK 35a85ba clean. **FABLE-GRADE phase-end leg: "stage as is
+  after doc fixes"** — no BLOCKER/MAJOR; helpers re-read the front end, saves, save point, prefs, map, pause and stage
+  panel against the dump: all MATCH; 9/9 mutations killed. Fixed (3553392): the card's chapter-card claim (it shows on
+  every entry until a save-point save on that level), Finder open while paused (the pause loop drops it), the
+  full-screen menu-bar reveal (top edge of the picture), the boot bar (jumps), a held-key-across-a-dialog deviation
+  line; this plan's card step 5 order (popup → music → card → fade-in); stale "later: Phase 3 / C2 / S1" stubs
+  relabelled; `StageScreens.swift:72` Float bound. Carried NOTEs (unowned, minor): `FerazelController.fail()` exits with
+  only an NSLog (a Release alert would help); save panel's field label repeats the prompt; stale "later: W1/W3/W4/P2"
+  comments (Phase 2 tasks) in `SpriteSlot.swift:135`, `SpriteWorld.swift:57,297`, `Player.swift:17`,
+  `RectBounce.swift:155`, `BoxSprite.swift:36`, `BackgroundSprite.swift:25`. Gate card → QUESTIONS Q6.
 
 ---
 

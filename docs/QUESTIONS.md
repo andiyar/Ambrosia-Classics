@@ -58,6 +58,24 @@ Recommendation: a — the standing 100 % rule (replicate the original, no modern
 Blocks: nothing (built as (a); (b)/(c) would be a small App change).
 Answer:
 
+### Q6 — 2026-10-24 — Phase 3 gate: title → level 2 and back — does the front end feel like Ferazel's?
+Context: Phase 3 ("Front end + saves", plus controller support) is built and machine-checked (Ferazel/Core 349/0,
+census 1,108/0, app builds; the staged build boots to the main menu and quits clean, twice; the Fable phase-end review
+found no code problems, only wording fixes, now applied — D35 as built, loop run 17). Play `~/Desktop/Ferazel's
+Wand.app` (build 3553392) from a cold start, keypad or a game controller, beside the Let's Play. The checklist is
+`~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (repo: `Ferazel/WHAT-TO-EXPECT.md`): title and loading screen, main
+menu, Options (key remapping), Credits, New Game, talking and signs, the save point, Caps Lock pause, the stage-complete
+panel, the world map, level 2, aborting back to the menu, Resume from a save, death with and without a save, and the
+Controller step (a kid can play levels 1–2 with only the pad; a stray − tap never aborts). This is the first time
+anyone has played through the new front end — a crash or hang anywhere is the most likely failure. Known stand-ins
+are listed at the card's end (only levels 1–2, HUD shows the start inventory, enemies stand still).
+Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what is wrong).
+Recommendation: a or b — every front-end and save-file behaviour checked matches the original's code; only your
+hands and eyes can judge the feel, and only real play can find a crash the boot check can't reach.
+Blocks: nothing (D34: gates queue). The loop plans and builds Phase 4 meanwhile; (b)/(c) notes become Phase 3 fix
+tasks, planned first.
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
