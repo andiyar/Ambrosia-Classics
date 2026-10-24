@@ -1280,6 +1280,22 @@ inside the Q and W/Esc branches; the node-sprite list is emptied on exit (and by
 plan's `testLinkPixels` geometry was impossible (stepped line) → each flat pair checked; lines rasterised from the upper
 end point [MED]. Ferazel/Core 297 → 308/0, census 1,108/0, Ferazel builds, HectorKit untouched (0c65dcb, 328).
 
+**As built (loop run 13, 2026-10-24) — wave 3.4 CLOSED (F1a, D1, F1b):** F1a (24330a0 + fix 75c6052) `GameFlow` part 1:
+boot (logo PICT 131, title music 24, F1 / N+F boot keys, the 3-D load bar), main menu (hot rects, button tracking by mouse
+and keys, the X joke), Quit, Credits scroll timing, and `.Options` in Core (A1b only renders it). D1 (b63332e + fix
+75c6052) `DeathScreen`: AskToContinue, death buttons, WandGlow, TurnGray. F1b ⚑ (9cc9d01 + test fix 4593041) New
+Game and Continue loops, level ⇄ map, death → AskToContinue → Continue from the last save, the refusals, the missing-level
+report, `BuiltLevels` 1…2, `FerazelLevel` as `startLevel`. **Rulings (follow the binary):** `.Quit` sets clut 801 and shows
+the menu bar before quitting; the menu button sounds 4803/4804 play even with sound loading off (`.InitAppGlobals` loads
+them unconditionally — the App must too); after TurnGray no CLUT op (the original only copies the level table back — the
+screen stays black until the menu return draws; the plan was wrong); Continue's normal path sends no menu-bar hide and no
+fade-out on the death screen's Continue (both are in the never-taken fallback branch); New Game's per-level music fade runs
+before `.GameLoop`'s own (which then finds nothing); `.InitGameGlobals` empties the map node sprites for both New Game and
+Continue; New Game clears `fd54` after the missing-level check; a refused save still leaves G loaded. Accepted deviations
+(low): F4 held at Continue does not keep Continue's own snapshot copy; a non-save file keeps the old save block (the
+original nils it — undefined behaviour later). Ferazel/Core 308 → 323/0, census 1,108/0, Ferazel builds, HectorKit 35a85ba
+untouched (floor 361).
+
 **Addendum — Ben's Q3 answer (written by his attended session, commit 8b318d3; recorded by loop run 13):** the
 defaults, all four — (1) saved games in the data fork; (2) the macOS save/open panels; (3) the menu bar visible in a
 window, hidden in full screen; (4) keep the hidden `-FerazelLevel N` switch for now ("probably" — he may revisit). The

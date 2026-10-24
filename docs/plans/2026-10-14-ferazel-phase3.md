@@ -1114,6 +1114,22 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Gate:** G2 = 323, G6, G7(+b), G8, G10; wave 3.4 end: G3, G5.
 - **Commit:** `FerazelCore: GameFlow — New Game and Continue loops, level ⇄ map, death → AskToContinue → reload, refusals incl. the missing level (design §9 d); 6 tests`.
 
+- ⚑ **As executed (F1b, loop run 13; 9cc9d01 + test fix 4593041):** G2 323. Two Opus legs MERGEABLE (A: fidelity, every
+  string byte-checked; B: 34 mutations, 12 survivors → the test-only fix round pinned them inside the six tests). **Dump
+  beat plan:** Continue's normal path has no menu-bar hide (M l. 6877/6906 are the fallback branch after a failed
+  `OpenDefaultWorld`, M l. 6746 — the L1 carry was wrong); New Game's per-level `FadeAIFFMusic(0,4)` + shutdown (M l.
+  5817–5818) run before `.GameLoop`'s own (5161–5163), which then find nothing — one cue sequence, no double; Continue fades
+  once before its loop (7040–7041); `.InitGameGlobals` empties the map node sprites (M l. 864) for Continue too; no
+  `GammaFadeOut(6)` on the death screen's Continue (M l. 6892 is the fallback; default branch M l. 7073–7075); New Game
+  clears `fd54` after the missing-level check (M l. 5813); Continue copies G before the refusals (M l. 6717–6727). An extra
+  report path for a level/map that throws (not in the original; harmless). Accepted (low): F4 at Continue (Continue's own
+  snapshot copy not kept — without F4 setup re-copies the same snapshot, M l. 2382ff); a non-save file keeps the old save
+  block (the original nils it, M l. 41358). **For A1a:** `GameFlow.segments` holds each tick's draws per renderer (screen,
+  level, map) in order — draw from the segments only (the output's draw list mixes level and screen; map draws live only
+  in segments); sounds/music/requests are per tick, not placed between segments; the App sets `startLevel`
+  (`FerazelLevel`), `soundLengths`, `dateTime`. Unbounded fd48 → Continue error loop on an unreadable last save is the
+  original's (fd48 cleared only after the loop, M l. 7068). Bank: `save-continue.md` §4.
+
 ### Wave 3.5 — in-level modal moments: save points, keys, pause
 
 #### S1 — ⚑ MAJOR — The frame suspension seam and the save point (→ 330)
