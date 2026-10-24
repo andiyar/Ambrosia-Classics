@@ -24,11 +24,13 @@ final class GameFlowGameTests: XCTestCase {
         func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
     }
 
-    /// The renderer side, recorded.
+    /// The renderer side, recorded; `failAttach` makes `attach` throw (a renderer failure inside `LevelRun.tick`).
     private final class Levels: LevelServices {
+        struct Failure: Error {}
         var prepared: [Int] = []
+        var failAttach = false
         func prepare(level: Int) throws -> LevelFaces { prepared.append(level); return LevelFaces() }
-        func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {}
+        func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws { if failAttach { throw Failure() } }
         func deathEffectStep(_ k: Int) throws {}
     }
 
@@ -179,11 +181,14 @@ final class GameFlowGameTests: XCTestCase {
         let rig = Rig(r)
         let flow = rig.flow
         rig.toMenu()
-        // State a previous game left: a checkpoint in the block, the died flag, a G with a crunch-pair and a facing.
-        flow.saveBlock.isCheckpoint = 1
+        // State a previous game left: a checkpoint save in the block, the died flag, a G with a crunch-pair and a
+        // facing, node sprites on the map.
+        flow.saveBlock = try checkpoint(r)
+        XCTAssertEqual(flow.saveBlock.isCheckpoint, 1)
         flow.died = true
         flow.globals.coins = 99
         flow.globals.startFacing = 5
+        flow.mapSprites = [MapSprite(h: 10, v: 20, type: 0, counter: 0)]
         rig.press(0x2d)                                                    // N
         let ticks = rig.drive { self.isRunning($0, level: 1, iterations: 1) }
         XCTAssertEqual(flow.state, .newGame)
@@ -194,6 +199,7 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(flow.saveBlock.isCheckpoint, 0)
         XCTAssertFalse(flow.savedThisGame)
         XCTAssertFalse(flow.saveFileKnown)
+        XCTAssertTrue(flow.mapSprites.isEmpty, "`.InitPlayerMapData`: the node-sprite count 0 (M l. 864)")
         XCTAssertEqual(flow.defaultWorld, 1)
         XCTAssertEqual(flow.levelNumber, 1)
         var expected = GameGlobals.initGameGlobals(previous: nil)
@@ -221,17 +227,32 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertTrue(ticks.flatMap(\.segments).contains { if case .level(let d) = $0 { return d.contains { if case .redrawEntireScrollGrid = $0 { return true }; return false } }; return false })
         XCTAssertEqual(rig.levels.prepared, [1])
 
-        // Option held at New Game (no debug flag): "Ferazel sez:\rNo more cheating!" (0x100a2e31), then level 1. The
-        // hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead.
-        let rig2 = Rig(r, startLevel: 2)
+        // Option held at New Game (no debug flag; the level switch at its default 1): "Ferazel sez:\rNo more
+        // cheating!" (0x100a2e31), then level 1.
+        let rig2 = Rig(r)
         rig2.toMenu()
         let ask = rig2.drive(input: { _ in FrontInput(keys: KeyState(pressed: [0x2d, 0x3a])) }) { _ in self.asked(rig2.last) }
         XCTAssertEqual(dialogs(ask).last, .report(text: "Ferazel sez:\rNo more cheating!"))
         XCTAssertNil(rig2.flow.levelRun)
         rig2.flow.dialogDone(.ok)
-        rig2.drive { self.isRunning($0, level: 2, iterations: 1) }
-        XCTAssertEqual(rig2.flow.levelNumber, 2)
+        rig2.drive { self.isRunning($0, level: 1, iterations: 1) }
+        XCTAssertEqual(rig2.flow.levelNumber, 1)
+        XCTAssertEqual(rig2.levels.prepared, [1])
+        // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
+        // BuiltLevels (3 and 0) starts level 1.
         XCTAssertEqual(BuiltLevels.range, 1...2)
+        for (start, option, expected) in [(2, true, 2), (3, false, 1), (0, false, 1)] {
+            let rig3 = Rig(r, startLevel: start)
+            rig3.toMenu()
+            let keys = option ? [0x2d, 0x3a] : [0x2d]
+            let a = rig3.drive(input: { f in FrontInput(keys: KeyState(pressed: f.state == .mainMenu ? keys : [])) }) {
+                f in self.asked(rig3.last) || self.isRunning(f, level: expected, iterations: 1)
+            }
+            XCTAssertEqual(dialogs(a), option ? [.report(text: GameFlow.noMoreCheating)] : [], "start \(start)")
+            if option { rig3.flow.dialogDone(.ok); rig3.drive { self.isRunning($0, level: expected, iterations: 1) } }
+            XCTAssertEqual(rig3.flow.levelNumber, expected, "start \(start)")
+            XCTAssertEqual(rig3.levels.prepared, [expected], "start \(start)")
+        }
     }
 
     func testLevel1ToMapToLevel2() throws {
@@ -255,6 +276,18 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(map.globals.unlocked[2], 1)
         XCTAssertTrue(toMap.flatMap(\.segments).contains { if case .map(let ops) = $0 { return ops.contains(.portsClut(id: 700)) }; return false })
         XCTAssertEqual(flow.state, .newGame)
+        // The segments are lossless: on every tick so far the `.screen` + `.level` segments' draws, in order, are the
+        // output's draw list (the map's ops live only in `.map` segments, and the map was drawn).
+        for k in rig.log {
+            let flat = k.segments.flatMap { g -> [DrawOp] in
+                switch g {
+                case .screen(let d), .level(let d): return d
+                case .map: return []
+                }
+            }
+            XCTAssertEqual(flat, k.out.draws, "tick \(k.t)")
+        }
+        XCTAssertTrue(rig.log.contains { k in k.segments.contains { if case .map(let o) = $0 { return !o.isEmpty }; return false } })
         // Return → level 2 entered with G carried (HP, coins); `save+0xc/+0x10 ← L2 hdr+0x2848 − 32 / +0x2846 − 32`.
         rig.drive(input: { _ in FrontInput(keys: KeyState(pressed: [0x24])) }) { $0.worldMap == nil }
         rig.drive { self.isRunning($0, level: 2) }
@@ -298,6 +331,7 @@ final class GameFlowGameTests: XCTestCase {
         rig.drive { self.isRunning($0, level: 1) }
         try touchExit(try XCTUnwrap(flow.levelRun?.session), record: 66)
         rig.drive { self.onIdleMap($0) }
+        let exitSpot = [flow.saveBlock.playerX, flow.saveBlock.playerY]
         // Esc → "Are you sure you want to abort this game?" → OK → −1.
         let ask = rig.drive(max: 1, input: { _ in FrontInput(keys: KeyState(pressed: [0x35])) }) { _ in true }
         XCTAssertEqual(dialogs(ask), [.confirm(text: "Are you sure you want to abort this game?")])
@@ -310,9 +344,14 @@ final class GameFlowGameTests: XCTestCase {
         checkMenuReturn(back, flow)
         XCTAssertFalse(flow.continueRequested)
         XCTAssertTrue(flow.aborted)
-        // Not aborted is false: the save position is the level-1 exit's (no next-level write).
+        // Not aborted is false: the save position is the level-1 exit's (no write of the level's start − 32 — level 1
+        // is still `feac` after the −1).
         XCTAssertEqual(flow.saveBlock.level, 1)
-        XCTAssertNotEqual([flow.saveBlock.playerX, flow.saveBlock.playerY], [901 - 32, 256 - 32])
+        XCTAssertEqual(flow.levelNumber, 1)
+        let h1 = try LevelFile.load(from: r, level: 1).header
+        XCTAssertNotEqual([flow.saveBlock.playerX, flow.saveBlock.playerY],
+                          [Int32(h1.startX) - 32, Int32(h1.startY) - 32])
+        XCTAssertEqual([flow.saveBlock.playerX, flow.saveBlock.playerY], exitSpot)
         // The tileset globals and the class face cache run on from game to game (L1 carry); the node sprites are gone.
         XCTAssertEqual(flow.levelCarry.tilesetLevel, 1)
         XCTAssertFalse(flow.levelCarry.cachedFaces.loadedSets.isEmpty)
@@ -361,10 +400,42 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertFalse(flow.continueRequested)
         XCTAssertTrue(flow.died)
         XCTAssertNil(flow.deathScreen)
+        XCTAssertEqual(flow.lastAskToContinue, false, "`.AskToContinue` ran (and said no)")
         // The menu loop goes on: no Continue is started by itself.
         for _ in 0..<30 { rig.drive(max: 1) { _ in true } }
         XCTAssertEqual(flow.state, .mainMenu)
         XCTAssertTrue(rig.files.reads.isEmpty)
+
+        // New Game's death test is G+4 < 1, not `ffa8`: the player dies (`ffa8` set), then G+4 is put back to 1
+        // during `.DeathEffect` — `.AskToContinue` is never called.
+        let rig2 = Rig(r)
+        rig2.toMenu()
+        rig2.press(0x2d)
+        rig2.drive { self.isRunning($0, level: 1) }
+        let s2 = try XCTUnwrap(rig2.flow.levelRun?.session)
+        try kill(s2)
+        rig2.drive { $0.levelRun?.died == true }
+        s2.world.globals.health = 1
+        let back2 = rig2.drive { $0.state == .mainMenu }
+        checkMenuReturn(back2, rig2.flow)
+        XCTAssertTrue(rig2.flow.died)
+        XCTAssertNil(rig2.flow.lastAskToContinue)
+
+        // A level whose renderer throws inside `LevelRun.tick` (`attach`): the level-load report (0x100a2e76), then
+        // the loop's end and the menu return (G+4 is the fresh game's: no death).
+        let rig3 = Rig(r)
+        rig3.levels.failAttach = true
+        rig3.toMenu()
+        rig3.press(0x2d)
+        let failed = rig3.drive { _ in self.asked(rig3.last) }
+        XCTAssertEqual(dialogs(failed), [.report(text: GameFlow.levelLoadError)])
+        XCTAssertEqual(rig3.levels.prepared, [1])
+        XCTAssertNil(rig3.flow.levelRun)
+        rig3.flow.dialogDone(.ok)
+        let back3 = rig3.drive { $0.state == .mainMenu }
+        checkMenuReturn(back3, rig3.flow)
+        XCTAssertNil(rig3.flow.lastAskToContinue)
+        XCTAssertTrue(rig3.flow.loopEnded)
     }
 
     func testContinueRefusals() throws {
@@ -380,11 +451,19 @@ final class GameFlowGameTests: XCTestCase {
         let eighty = try checkpoint(r, level: 80)
         var both = try checkpoint(r, level: 80)
         both.demo = 1
-        rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both]
+        var previewDemo = try checkpoint(r)
+        previewDemo.preview = 1
+        previewDemo.demo = 1
+        var all = try checkpoint(r, level: 80)
+        all.preview = 1
+        all.demo = 1
+        rig.files.blocks = [url("preview"): preview, url("demo"): demo, url("eighty"): eighty, url("both"): both,
+                            url("previewDemo"): previewDemo, url("all"): all]
         let previewText = "Sorry, this saved game was saved with a preview version of Ferazel and can not be used with this version."
         let demoText = "Sorry, this saved game was saved with a demo version of Ferazel and can not be used with this version."
         for (name, expected) in [("preview", [previewText]), ("demo", [demoText]), ("eighty", [demoText]),
-                                 ("both", [demoText, demoText])] {
+                                 ("both", [demoText, demoText]), ("previewDemo", [previewText, demoText]),
+                                 ("all", [previewText, demoText, demoText])] {
             rig.press(0x0f)                                                // R
             let ask = rig.drive { _ in self.askedFile(rig.last) }
             XCTAssertEqual(ask.last?.out.requests.last,
@@ -431,6 +510,7 @@ final class GameFlowGameTests: XCTestCase {
         let ref = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/cp"), displayName: "cp")
         let save = try checkpoint(r)
         rig.files.blocks[ref.url] = save
+        flow.mapSprites = [MapSprite(h: 10, v: 20, type: 0, counter: 0)]
         rig.press(0x0f)
         rig.drive { _ in self.askedFile(rig.last) }
         flow.fileDone(.chosen(ref))
@@ -448,6 +528,11 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual([s.startX, s.startY], [2371, 872])
         XCTAssertTrue(try XCTUnwrap(flow.levelRun).revisit)
         XCTAssertEqual(s.world.records[24].p1, 2)
+        // `restoreSnapshot(save+8)` puts the 6 back on x and y: the records stand where the level file has them.
+        let L1 = try LevelFile.load(from: r, level: 1)
+        XCTAssertEqual(s.world.records.map(\.x), L1.placements.map(\.x))
+        XCTAssertEqual(s.world.records.map(\.y), L1.placements.map(\.y))
+        XCTAssertTrue(flow.mapSprites.isEmpty, "`.InitGameGlobals`' `.InitPlayerMapData` (M l. 864) on Continue too")
         XCTAssertFalse(draws(entry).contains(.setScreenClut(id: 281)))
         XCTAssertEqual(s.globals.startFacing, 7)
         XCTAssertEqual(s.globals.coins, 23)
@@ -473,8 +558,11 @@ final class GameFlowGameTests: XCTestCase {
 
         // Death with a save this game → the death screen (clut 132, PICT 138) → Return → WandGlow → `fd48` → the menu
         // loop's Continue with the last reply: the file read again, level 1 at the saved spot.
+        // Continue's death test is `ffa8`, not G+4: G+4 put back to 1 during `.DeathEffect` still asks.
         rig.drive { self.isRunning($0, level: 2, iterations: 45) }
         try kill(s2)
+        rig.drive { $0.levelRun?.died == true }
+        s2.world.globals.health = 1
         let dying = rig.drive { f in f.deathScreen != nil && rig.last.draws.contains(.setScreenClut(id: DeathScreen.clutId)) }
         XCTAssertTrue(pictures(draws(dying)).contains(DeathScreen.backgroundPicture))
         XCTAssertEqual(rig.files.reads, [ref.url])
@@ -505,6 +593,18 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(draws(gray).filter { if case .screenGamma(.clut) = $0 { return true }; return false }.count, 151)
         checkMenuReturn(gray, flow, continuing: true)
         XCTAssertFalse(flow.continueRequested)
+        XCTAssertEqual(rig.files.reads.count, 2)
+        // New Game after a Continue clears `fe00` (and `fd54`, save+6): a death then goes straight to the menu.
+        XCTAssertTrue(flow.savedThisGame)
+        rig.press(0x2d)
+        rig.drive { self.isRunning($0, level: 1) }
+        XCTAssertFalse(flow.savedThisGame)
+        XCTAssertFalse(flow.saveFileKnown)
+        XCTAssertEqual(flow.saveBlock.isCheckpoint, 0)
+        try kill(try XCTUnwrap(flow.levelRun?.session))
+        let fresh = rig.drive { $0.state == .mainMenu }
+        XCTAssertFalse(draws(fresh).contains(.setScreenClut(id: DeathScreen.clutId)))
+        checkMenuReturn(fresh, flow)
         XCTAssertEqual(rig.files.reads.count, 2)
 
         // A block naming level 9 (no `Mlvl` 9): "An unexpected error occurred -- the level could not be loaded from the

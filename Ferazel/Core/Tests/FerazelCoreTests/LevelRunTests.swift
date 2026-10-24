@@ -110,17 +110,6 @@ final class LevelRunTests: XCTestCase {
         return m
     }
 
-    /// Inserts the level exit of record `rec` (its Setup) and puts the player inside its rect, then runs the player
-    /// pass's contact (`HitPlayerSprite.hit`) — as `LevelFlowTests.touchExit`.
-    private func touchExit(_ s: FerazelSession, record rec: Int) throws {
-        let c = SetupFaces.Context(level: s.level, playerX: 0)
-        let e = try SetupFaces.setup(s.level.placements[rec], context: c)
-        let exit = s.world.active.insert(e.slot)
-        let pid = try XCTUnwrap(s.world.playerID)
-        s.world.active.update(id: pid) { $0.x = e.slot.x; $0.y = e.slot.y }
-        HitPlayerSprite.hit(s.world, player: pid, other: exit)
-    }
-
     /// The save point (record 24, type 0x429) wherever the Setups put it (active or idle).
     private func savePoint(_ s: FerazelSession) -> SpriteSlot? {
         s.active.sprites.first { $0.recordIndex == 24 } ?? s.idle.entries.compactMap { $0?.saved }
