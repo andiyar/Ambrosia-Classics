@@ -2,9 +2,12 @@ import XCTest
 @testable import FerazelCore
 
 /// W4 (docs/plans/2026-10-10-ferazel-phase2.md): the level-2 Setups Phase 1 never transcribed, the level exit 3249
-/// (`.HitPlayerSprite` M l. 49733–49741) → ◇ `LevelFlow` (`Mmap 200`, world-data §4.2; the Phase-2 mapping, D33), and
-/// game over → `ShellRequest.deathEffect` → `deathEffectDone()` → restart with fresh globals (D33), against the
-/// committed `Resources/Ferazel` (D26). A missing data file is a FAILURE, never a skip.
+/// (`.HitPlayerSprite` M l. 49733–49741) → `LevelFlow.next` (`Mmap 200`, world-data §4.2), and game over. A1a
+/// (docs/plans/2026-10-14-ferazel-phase3.md): the Phase-2 ◇ mapping and restart-after-death are gone — a directly built
+/// session's loop end reports the level `LevelFlow.next` unlocks (the current one when none) or `.deathEffect`, a death
+/// runs through `LevelRun` (`.died`, no shell request), and every carry holds the live G (the flow decides a fresh G:
+/// New Game's `.InitGameGlobals`). Against the committed `Resources/Ferazel` (D26). A missing data file is a FAILURE,
+/// never a skip.
 final class LevelFlowTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
@@ -224,7 +227,6 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(map.nodes.first { $0.level == 1 }?.index, 1)
         XCTAssertEqual(map.nodes.first { $0.index == 1 }?.links.first, 2)
         XCTAssertEqual(LevelFlow.next(level: 1, exit: 0, map: map), 2)
-        XCTAssertEqual(LevelFlow.exitRequest(level: 1, exit: 0, map: map, current: 1), .loadLevel(2))
 
         // Through the session: the exit's rect (12, 12, 84, 84); the arm's cue 421 (no draw), exit index p1, level
         // complete — the loop ends after the iteration → `.loadLevel(2)`, once.
@@ -360,63 +362,66 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertNil(LevelFlow.next(level: 2, exit: 3, map: map))        // link 0 = none
         XCTAssertNil(LevelFlow.next(level: 2, exit: 7, map: map))        // past the seven links
         XCTAssertNil(LevelFlow.next(level: 99, exit: 0, map: map))       // no node
-        // The Phase-2 mapping (D33): 1 and 2 load; 3, 4 and no target restart the current level.
-        XCTAssertEqual(LevelFlow.phase2Level(next: 3, current: 2), 2)
-        XCTAssertEqual(LevelFlow.phase2Level(next: 4, current: 2), 2)
-        XCTAssertEqual(LevelFlow.phase2Level(next: nil, current: 2), 2)
-        XCTAssertEqual(LevelFlow.phase2Level(next: 1, current: 2), 1)
-        XCTAssertEqual(LevelFlow.phase2Level(next: 2, current: 1), 2)
-        XCTAssertEqual(LevelFlow.phase2Level(next: 0, current: 1), 1)
 
-        // Level 2's three exits through the session: recs 0 (p1 −1), 39 (1 → 3), 98 (2 → 4) all restart level 2.
+        // Level 2's three exits through a directly built session: recs 0 (p1 −1: no target → the current level),
+        // 39 (1 → 3) and 98 (2 → 4) — `LevelFlow.next` as is, no Phase-2 clamp to 1…2 (A1a: the map and
+        // `BuiltLevels` decide what is entered, F1b).
         let L2 = try LevelFile.load(from: r, level: 2)
-        for (rec, p1) in [(0, Int16(-1)), (39, 1), (98, 2)] {
+        for (rec, p1, next) in [(0, Int16(-1), 2), (39, 1, 3), (98, 2, 4)] {
             XCTAssertEqual([L2.placements[rec].type, L2.placements[rec].p1], [3249, p1])
             let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2)
             _ = s.step(keys: KeyState())
             try touchExit(s, record: rec)
             XCTAssertEqual(s.player.exitIndex, p1)
-            XCTAssertEqual(s.step(keys: KeyState()).requests, [.loadLevel(2)], "rec \(rec)")
+            XCTAssertEqual(s.step(keys: KeyState()).requests, [.loadLevel(next)], "rec \(rec)")
+            XCTAssertEqual(s.ended, .loadLevel(next), "rec \(rec)")
         }
     }
 
-    func testDeathRequestsWipeThenRestart() throws {
+    func testDeathEndsLevelRun() throws {
+        // A death through `LevelRun` (the app's path from A1a): the hosted session asks nothing of the shell (no
+        // `.deathEffect`, no `.loadLevel`), the run ends `.died` after the wipe's 50 steps on the level services, and
+        // its carry hands the flow the live G (crunch log included) — the flow, not the session, decides what G the
+        // next level gets.
+        final class Services: LevelServices {
+            var deathSteps: [Int] = []
+            func prepare(level: Int) throws -> LevelFaces { LevelFaces() }
+            func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {}
+            func deathEffectStep(_ k: Int) throws { deathSteps.append(k) }
+        }
         let r = try resources()
-        let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
-        _ = s.step(keys: KeyState())
-        let pid = try XCTUnwrap(s.world.playerID)
-        s.world.active.update(id: pid) { $0.hp = 0 }
-        // The dying arm runs until it sets the game-over flag (P4); the iteration that sets it ends the loop with
-        // G+4 < 1 → `*_DAT_1009ffa8 = 1` and `.deathEffect`, once; nothing earlier.
-        var frames = 0
-        while !s.player.gameOver && frames < 200 {
-            let ops = s.step(keys: KeyState())
-            frames += 1
-            if s.player.gameOver {
-                XCTAssertEqual(ops.requests, [.deathEffect])
-                XCTAssertLessThan(s.globals.health, 1)
-                XCTAssertTrue(s.world.playerDead)
-            } else {
-                XCTAssertTrue(ops.requests.isEmpty, "frame \(frames)")
-                XCTAssertFalse(s.world.playerDead)
-            }
+        let services = Services()
+        let prefs = FerazelPrefs()
+        let run = try LevelRun(resources: r, prefs: prefs, level: 1, seed: 1, carry: LevelCarry(), save: SaveBlock(),
+                               fade: ScreenFade(), music: MusicFade(), services: services,
+                               sounds: StageSounds(prefs: prefs, lengths: [:]))
+        var requests: [ShellRequest] = []
+        var t: UInt32 = 0
+        func tick() throws {
+            requests += try run.tick(now: t, input: FrontInput()).merged.requests
+            t += 1
         }
-        XCTAssertTrue(s.player.gameOver)
-        XCTAssertEqual(s.ended, .deathEffect)
-        XCTAssertTrue(s.step(keys: KeyState()).requests.isEmpty)
-        // The shell reports the wipe's end → the current level again.
-        XCTAssertEqual(s.deathEffectDone(), .loadLevel(1))
-        let l2 = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2)
-        XCTAssertEqual(l2.deathEffectDone(), .loadLevel(2))
-        // Death wins over a completed level (G+4 < 1 is tested first, l. 5302).
-        let both = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
-        _ = both.step(keys: KeyState())
-        both.world.player.levelDone = true
-        both.world.active.update(id: try XCTUnwrap(both.world.playerID)) { $0.hp = 0 }
-        XCTAssertEqual(both.step(keys: KeyState()).requests, [.deathEffect])
+        while run.iterations < 10 && t < 4000 { try tick() }
+        let s = try XCTUnwrap(run.session)
+        XCTAssertTrue(s.hostedByLevelRun)
+        s.world.globals.crunchLog.append(CrunchLogEntry(level: 1, col: 3, row: 4))
+        s.world.active.update(id: try XCTUnwrap(s.world.playerID)) { $0.hp = 0 }
+        while run.end == nil && t < 8000 { try tick() }
+        XCTAssertEqual(run.end, .died)
+        XCTAssertTrue(run.died)
+        XCTAssertTrue(s.world.playerDead)
+        XCTAssertNil(s.ended)
+        XCTAssertEqual(services.deathSteps, Array(0..<50))                   // `.DeathEffect`'s 50 steps
+        XCTAssertFalse(requests.contains(.deathEffect))
+        XCTAssertFalse(requests.contains { if case .loadLevel = $0 { true } else { false } })
+        let carry = run.carry
+        XCTAssertEqual(carry.globals, s.globals)
+        XCTAssertLessThan(try XCTUnwrap(carry.globals).health, 1)
+        XCTAssertEqual(carry.crunchLog, [CrunchLogEntry(level: 1, col: 3, row: 4)])
+        XCTAssertEqual(carry.parity, s.world.parity)
     }
 
-    func testRestartFreshGlobals() throws {
+    func testDeathCarriesG() throws {
         let r = try resources()
         let s = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         for _ in 0..<5 { _ = s.step(keys: KeyState()) }
@@ -425,31 +430,52 @@ final class LevelFlowTests: XCTestCase {
         s.world.globals.coins = 9
         s.world.globals.score = 55
         s.world.globals.crunchLog = [CrunchLogEntry(level: 1, col: 1, row: 2)]
-        // The death path: HP 0 → the dying arm → game over → `.deathEffect`; the shell's wipe ends → restart.
+        // HP 0 → the dying arm runs until it sets the game-over flag (P4); the iteration that sets it ends the loop
+        // with G+4 < 1 → `*_DAT_1009ffa8 = 1` and `.deathEffect`, once; nothing earlier. Death wins over a completed
+        // level (G+4 < 1 is tested first, l. 5302).
         s.world.active.update(id: try XCTUnwrap(s.world.playerID)) { $0.hp = 0 }
         var frames = 0
-        while s.ended == nil && frames < 200 { _ = s.step(keys: KeyState()); frames += 1 }
+        while !s.player.gameOver && frames < 200 {
+            let ops = s.step(keys: KeyState())
+            frames += 1
+            if s.player.gameOver {
+                XCTAssertEqual(ops.requests, [.deathEffect])
+                XCTAssertTrue(s.world.playerDead)
+            } else {
+                XCTAssertTrue(ops.requests.isEmpty, "frame \(frames)")
+                XCTAssertFalse(s.world.playerDead)
+            }
+        }
         XCTAssertEqual(s.ended, .deathEffect)
+        let both = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        _ = both.step(keys: KeyState())
+        both.world.player.levelDone = true
+        both.world.active.update(id: try XCTUnwrap(both.world.playerID)) { $0.hp = 0 }
+        XCTAssertEqual(both.step(keys: KeyState()).requests, [.deathEffect])
         XCTAssertLessThan(s.globals.health, 1)
         s.world.parity = true
-        XCTAssertEqual(s.carry.crunchLog.count, 1)
-        XCTAssertNotNil(s.carry.globals)
-        guard case .loadLevel(let n) = s.deathEffectDone() else { return XCTFail("no loadLevel") }
-        XCTAssertEqual(n, 1)
-        // Fresh G (D33): the crunch log goes with it; the parity is not G's and runs on.
-        // ⚑ E1a: the particle counters ride every carry (`.InitParticles` keeps them): the level-1 raft 1403's entry
-        // splash on iteration 21 (53 columns × 3 kind-200 particles, slots 0…158) has drained to count 0, hwm 157.
-        var expectCarry = LevelCarry(parity: true, crunchLog: [])
+        // A1a: the carry after a death holds the live G and its crunch log (no Phase-2 fresh-G restart); the parity
+        // is not G's and runs on. ⚑ E1a: the particle counters ride every carry (`.InitParticles` keeps them): the
+        // level-1 raft 1403's entry splash on iteration 21 (53 columns × 3 kind-200 particles, slots 0…158) has
+        // drained to count 0, hwm 157. E1b review fix: the water-effects cache, its origin and the flag are globals.
+        var expectCarry = LevelCarry(parity: true, crunchLog: [CrunchLogEntry(level: 1, col: 1, row: 2)],
+                                     globals: s.globals)
         expectCarry.particles = ParticlePool.Counters(count: 0, hint: 0, highWater: 157)
-        // E1b review fix: the water-effects cache, its origin and the flag are globals and ride the restart too.
         expectCarry.waterCells = s.waterEffects.cells
         expectCarry.waterOriginCol = s.waterEffects.originCol
         expectCarry.waterOriginRow = s.waterEffects.originRow
         expectCarry.tileCacheValid = true
         XCTAssertEqual(s.carry, expectCarry)
         XCTAssertEqual([s.carry.waterOriginCol, s.carry.waterOriginRow], [0, 2])       // the dying player's window
-        XCTAssertNil(s.carry.globals)
-        let fresh = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: n, seed: s.rngSeed, carry: s.carry)
+        XCTAssertEqual(s.carry.globals?.coins, 9)
+        let carried = s.carry
+        // A fresh G is the flow's choice (New Game: `.InitGameGlobals`; `LevelRun` builds `GameGlobals(header:)` for a
+        // carry without one): the same carry with G dropped starts the level fresh, the non-G globals running on.
+        var freshCarry = carried
+        freshCarry.globals = nil
+        freshCarry.crunchLog = []
+        let fresh = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, seed: s.rngSeed,
+                                       carry: freshCarry)
         XCTAssertEqual([fresh.globals.health, fresh.globals.magic, fresh.globals.breath], [560, 560, 560])
         XCTAssertEqual([fresh.globals.maxHealth, fresh.globals.maxMagic, fresh.globals.coins], [560, 560, 0])
         XCTAssertEqual(fresh.globals, GameGlobals(header: fresh.level.header))
@@ -470,8 +496,10 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual([Int(p.x256 >> 8), Int(p.y256 >> 8)], [Int(h.startX) - 0x20, Int(h.startY) - 0x20])
         XCTAssertEqual([p.oldPosition.x, p.oldPosition.y], [Int(h.startX) - 0x20, Int(h.startY) - 0x20])
         XCTAssertEqual(p.hp, 560)
-        // The stream continues from the dead session's state (A3 passes `rngSeed`).
+        // The stream continues from the dead session's state (the flow hands on `rngSeed`).
         XCTAssertEqual(try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, seed: s.rngSeed).seedAfterSetups,
                        fresh.seedAfterSetups)
+        // The loop end is reported once.
+        XCTAssertTrue(s.step(keys: KeyState()).requests.isEmpty)
     }
 }

@@ -4,6 +4,45 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Ferazel's Wand Saved Game</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>FWSg</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.ambrosiaclassics.ferazel.savedgame</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.ambrosiaclassics.ferazel.savedgame</string>
+			<key>UTTypeDescription</key>
+			<string>Ferazel's Wand Saved Game</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>com.apple.ostype</key>
+				<array>
+					<string>FWSg</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Ferazel's Wand</string>
 	<key>CFBundleExecutable</key>

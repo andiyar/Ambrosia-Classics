@@ -1,11 +1,11 @@
 import Foundation
 
-/// ◇ Phase-2 level flow (plan S2, W4; Ben D33): what follows the end of a `.GameLoop @ 10009d48`. The loop runs while
-/// `DAT_100a5106` (game over) and `*_DAT_100a0088` (level complete) are both 0 (M l. 5229); after it (M l. 5302–5322)
-/// G+4 < 1 → `*_DAT_1009ffa8 = 1`, `.FadeAIFFMusic(0, 2)`, `.DeathEffect` (the border wipe); else level complete →
+/// What follows the end of a `.GameLoop @ 10009d48` (plan S2, W4; A1a). The loop runs while `DAT_100a5106` (game
+/// over) and `*_DAT_100a0088` (level complete) are both 0 (M l. 5229); after it (M l. 5302–5322) G+4 < 1 →
+/// `*_DAT_1009ffa8 = 1`, `.FadeAIFFMusic(0, 2)`, `.DeathEffect` (the border wipe); else level complete →
 /// `.EndLevelSGUpdate`, `.StageCompleteEffect`, the fades, then `.ShowWorldMap` (M l. 67465–67563), which unlocks the
-/// level of `node[cur].links[exit]` (world-data §4.2). Phase 2 has neither the stage-complete screen nor the world map
-/// (Phase 3): the exit loads the level it unlocks straight away, death restarts the current level with fresh globals.
+/// level of `node[cur].links[exit]` (world-data §4.2). Phase 3 runs all of it (`LevelRun`, `WorldMapRun`, `GameFlow`);
+/// the Phase-2 mapping and restart-after-death (D33 ◇) left with A1a.
 public enum LevelFlow {
     /// `.FindCurrNode(hdr 0x26c4) @ 1007bb80` (M l. 67144–67163), then the level of the node at `links[exit]`
     /// (`node + 0x108 + 2·exit` → that node's `+0x102`), as `.ShowWorldMap` reads it (M l. 67513–67524). Nil when the
@@ -17,22 +17,6 @@ public enum LevelFlow {
         let link = cur.links[Int(exit)]
         guard link != 0, let n = map.nodes.first(where: { $0.index == Int(link) }) else { return nil }
         return n.level
-    }
-
-    /// The levels Phase 2 loads (D33).
-    public static let phase2Levels: ClosedRange<Int> = 1...2
-
-    /// ◇ The Phase-2 mapping (D33 seat stub): a target inside 1…2 is loaded; any other target — level 2's exits to 3
-    /// and 4, or no target (an exit with p1 −1, which in the original goes to the world map) — restarts the current
-    /// level.
-    public static func phase2Level(next: Int16?, current: Int) -> Int {
-        guard let n = next, phase2Levels.contains(Int(n)) else { return current }
-        return Int(n)
-    }
-
-    /// The request a level exit makes: `.loadLevel` of the Phase-2 mapping of `next(level:exit:map:)`.
-    public static func exitRequest(level: Int16, exit: Int16, map: WorldMap, current: Int) -> ShellRequest {
-        .loadLevel(phase2Level(next: next(level: level, exit: exit, map: map), current: current))
     }
 }
 
@@ -50,8 +34,8 @@ public struct LevelCarry: Equatable, Sendable {
     /// (M l. 5747, 6707) — the next-level loop (l. 5815–5836) re-writes `+0x16` (the start facing, from the next
     /// header, l. 5821) and `.SetupLevel` `+0x20`/`+0x22`/`+0x176` (not modelled; l. 2376–2381), so score, health,
     /// breath, suffocation, max health / magic, magic, coins, `+0x12`, Xichrons and the selected slot run on (the
-    /// player's HP is `G+4` again at `.SetupPlayerSprite`, l. 42831). Nil = fresh `G` (a first start, or the restart
-    /// after death, D33); `crunchLog` above still rules the log.
+    /// player's HP is `G+4` again at `.SetupPlayerSprite`, l. 42831). Nil = fresh `G` (`GameGlobals(header:)`; the flow
+    /// passes its own G from Phase 3 on, A1a); `crunchLog` above still rules the log.
     public var globals: GameGlobals?
     /// The particle pool's count, hint and high-water mark (`100a019c`/`01a0`/`01a4`): static shorts `.InitParticles`
     /// never resets (particles §1.1), so they run on into every next level and every restart (E1a).

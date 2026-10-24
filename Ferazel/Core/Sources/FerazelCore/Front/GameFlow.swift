@@ -199,6 +199,9 @@ public final class GameFlow {
     private var lastPassEnd: UInt32?
     /// The running level threw (a session or renderer failure) — reported as the level-load error.
     var levelFailed = false
+    /// A1a: the Apple events waiting for the menu loop's `.CheckEvent` (`openDocument`, `quitEvent`).
+    private var openEvent: SavedGameRef?
+    private var quitEventPending = false
 
     /// `prefs` = the live record `.main` built (`.InitPrefs` + `.MakeCurrPrefs`, M l. 8192–8243 — the App read it with
     /// `files.loadPrefs()`); `seed` = `FastRand.clockSeed` at launch (`.InitAppGlobals`' `FastRand(0)`).
@@ -322,6 +325,21 @@ public final class GameFlow {
     /// The App finished the load `state` asked for; the flow goes on at the next tick.
     public func loadFinished() {
         loadDone = true
+    }
+
+    // MARK: - The Apple events (A1a)
+
+    /// `.DoOpenDocAE @ 10033dbc` (M l. 31166–31236; save-continue §4): the Finder opened `ref` → `.ContinueGame(&reply)`
+    /// while `DAT_100a5106` is set (no game loop running; data-section initial 1). The event waits in the queue until
+    /// the menu loop's `.CheckEvent` dispatches it (the menu pass's end); the App sends it only when no game runs.
+    public func openDocument(_ ref: SavedGameRef) {
+        openEvent = ref
+    }
+
+    /// `.DoQuitAppAE @ 10033f24` (M l. 31240–31245): the system's quit → `.Quit` (no confirm), dispatched by the menu
+    /// loop's `.CheckEvent` like any Apple event. // later: the pause loop's `.CheckEvent` (M l. 3218) dispatches it too.
+    public func quitEvent() {
+        quitEventPending = true
     }
 
     // MARK: - Blocking calls
@@ -555,6 +573,16 @@ public final class GameFlow {
         }
         items.append { f, _, _, out in
             if f.continueRequested { f.continueGame(f.lastReply, &out) }
+        }
+        items.append { f, _, _, out in
+            // `.CheckEvent`'s `AEProcessAppleEvent` (A1a): the quit, or the Finder's open with no game loop running.
+            if f.quitEventPending {
+                f.quitEventPending = false
+                f.quit()
+            } else if let ref = f.openEvent {
+                f.openEvent = nil
+                f.continueGame(ref, &out)
+            }
         }
         items.append { f, now, _, _ in
             if f.jokeCooldown > 0 { f.jokeCooldown -= 1 }

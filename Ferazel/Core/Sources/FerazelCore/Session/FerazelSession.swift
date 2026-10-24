@@ -92,8 +92,6 @@ public final class FerazelSession {
     /// The request that ended the game loop (W4): `.deathEffect` or `.loadLevel(n)`, emitted once with the iteration
     /// that ended it; nil while the loop runs.
     public private(set) var ended: ShellRequest?
-    /// `deathEffectDone()` was called: the restart takes fresh globals (D33), so `carry` drops the crunch log.
-    private var restartWithFreshGlobals = false
     /// Iterations run.
     public private(set) var iterations = 0
     /// L1: the game loop's exit test held after the last iteration (`DAT_100a5106` or `*_DAT_100a0088`, M l. 5229) —
@@ -322,8 +320,9 @@ public final class FerazelSession {
             ops.music.append(.play(track: Int(level.header.music)))
         }
         iterations += 1
-        // `_HideCursorSafe()` at the top of every iteration (M l. 5233; L1 review fix 2). Hosted only: the non-hosted
-        // Phase-2 path keeps its expectations (Invariant 10) — its one hide is the start block's above. Carry: A1a.
+        // `_HideCursorSafe()` at the top of every iteration (M l. 5233; L1 review fix 2). Hosted only: a directly built
+        // session (Core tests) keeps its expectations (Invariant 10) — its one hide is the start block's above; the app
+        // runs hosted sessions only since A1a.
         if hostedByLevelRun { ops.requests.append(.hideCursor) }
         // `*piVar5 += 1` (`_DAT_1009fd98`, l. 5236).
         world.frameCounter &+= 1
@@ -711,37 +710,28 @@ public final class FerazelSession {
         return ops
     }
 
-    /// After the loop (l. 5296–5322): G+4 < 1 → `*_DAT_1009ffa8 = 1`, `.FadeAIFFMusic(0, 2)`, `.DeathEffect` (the
-    /// shell's, `ShellRequest.deathEffect`); else level complete → the stage-complete screen and the world map, which
-    /// Phase 2 replaces by `LevelFlow` (◇ D33). // later: Phase 3 — `.EndLevelSGUpdate`, `.StageCompleteEffect`, the
-    /// fades, `.ShowWorldMap` (and its unlock of the second exit `_DAT_100a5118`). A game over with G+4 ≥ 1 has no
-    /// Phase-2 writer (the dying arm follows HP < 1); it takes the death path too (◇).
+    /// After the loop (l. 5296–5322), for a session not hosted by `LevelRun` (a directly built one — Core tests): G+4 < 1
+    /// → `*_DAT_1009ffa8 = 1` and `.deathEffect`; else level complete → `.loadLevel` of the level the exit unlocks
+    /// (`LevelFlow.next`; the current level when it unlocks none). The stage-complete screen, `.EndLevelSGUpdate` and
+    /// the world map are `LevelRun`'s / `GameFlow`'s (the app's path from A1a). A game over with G+4 ≥ 1 takes the
+    /// death path too.
     private func loopEnd() -> ShellRequest {
         if globals.health < 1 {
             world.playerDead = true
             return .deathEffect
         }
         if world.player.levelDone {
-            return LevelFlow.exitRequest(level: level.header.mapNodeLevel, exit: world.player.exitIndex, map: map,
-                                         current: levelNumber)
+            let next = LevelFlow.next(level: level.header.mapNodeLevel, exit: world.player.exitIndex, map: map)
+            return .loadLevel(next.map(Int.init) ?? levelNumber)
         }
         return .deathEffect
     }
 
-    /// W4 (◇ D33): the shell reports that `.DeathEffect`'s wipe ended → restart the current level from its start with
-    /// fresh globals (`carry` then keeps only the non-G globals: the parity, the particle-pool counters and the water-tile
-    /// cache — E1a/E1b). The shell rebuilds the session with `rngSeed` and `carry`.
-    public func deathEffectDone() -> ShellRequest {
-        restartWithFreshGlobals = true
-        return .loadLevel(levelNumber)
-    }
-
-    /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a) and the
-    /// water-effects cache, origin and flag (E1b) always; the crunch log unless the restart after death takes fresh
-    /// globals (D33).
+    /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a), the
+    /// water-effects cache, origin and flag (E1b), and the live G with its crunch log (A1a: the flow decides when a
+    /// game starts from a fresh G — New Game's `.InitGameGlobals` — never the session).
     public var carry: LevelCarry {
-        var c = LevelCarry(parity: world.parity, crunchLog: restartWithFreshGlobals ? [] : world.globals.crunchLog,
-                           globals: restartWithFreshGlobals ? nil : world.globals)
+        var c = LevelCarry(parity: world.parity, crunchLog: world.globals.crunchLog, globals: world.globals)
         c.particles = world.particles.counters
         c.waterCells = waterEffects.cells
         c.waterOriginCol = waterEffects.originCol
