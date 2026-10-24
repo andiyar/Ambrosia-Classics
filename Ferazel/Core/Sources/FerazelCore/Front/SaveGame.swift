@@ -153,17 +153,14 @@ enum SavePointSave {
     /// After `.SaveSG` (raw `1000c804..1000c888`): `MTRedraw` (the window from the back screen — the replica's panel
     /// never covers the canvas: a present only), then — not paused (`*_DAT_100a0050 == 0`, always inside a frame) —
     /// `RedrawEntireScrollGrid`, `ResetCursor` (no op), `HideCursorSafe`, `fe0c = 1`, `511e = 1` (no Core reader),
-    /// `RedrawGameArea` (`.WrapCopyToScreen` at the scroll point; `DrawBlackLines` before it in graphics mode 3 with
-    /// `5107` — no op for it [LOW]), `UpdateStatusBar(0, 0, 0)`.
+    /// `RedrawGameArea` (M l. 6491, raw `1000c870`: `DrawBlackLines` in graphics mode 3 with `5107`, M l. 37849, then
+    /// `.WrapCopyToScreen` at the scroll point — `GameLoopKeys.redrawGameArea`, P1 review fix), `UpdateStatusBar(0, 0,
+    /// 0)`.
     static func redraw(session s: FerazelSession, prefs: FerazelPrefs) -> FrontOutput {
         let h = s.camera.scrollH, v = s.camera.scrollV
-        let backdrop = prefs.plainCopy == 0                                   // `cRam100a5107`
-        // `RedrawGameArea` passes `prefs+2 == 3` (the line skip) only in its `DrawBlackLines` branch (mode 3 with
-        // 5107), else 0 — mode 3 without 5107 copies every line, as mode 1 does [MED: the op's mode folds that flag].
-        let mode = Int(prefs.graphics) == 3 && !backdrop ? 1 : Int(prefs.graphics)
-        return FrontOutput(draws: [.redrawEntireScrollGrid(h: h, v: v),
-                                   .copyToScreen(h: h, v: v, graphicsMode: mode, backdrop: backdrop),
-                                   .statusBar(s.globals.statusBar(levelName: s.level.header.name))],
+        return FrontOutput(draws: [.redrawEntireScrollGrid(h: h, v: v)]
+                               + GameLoopKeys.redrawGameArea(h: h, v: v, prefs: prefs)
+                               + [.statusBar(s.globals.statusBar(levelName: s.level.header.name))],
                            requests: [.hideCursor], present: true)
     }
 }

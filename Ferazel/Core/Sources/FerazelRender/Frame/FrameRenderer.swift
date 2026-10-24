@@ -363,8 +363,9 @@ public final class FrameRenderer {
                 particles.erase(scroll: scroll, ports: &ports)
                 executed.append(.eraseParticles)
             case .drawBlackLines:
-                // `.DrawBlackLines @ 1001fa58`: rows 9 + 2k (k < 0xbe), 0x98 words from x 16, byte 0xff.
-                for k in 0..<0xbe {
+                // `.DrawBlackLines @ 1001fa58`: rows 9 + 2k (k ≤ 0xbe: `cmplwi r6,0` before `subi`), 0x98 words from
+                // x 16, byte 0xff.
+                for k in 0...0xbe {
                     let row = (9 + 2 * k) * IndexedFrame.width
                     for x in 0x10..<(0x10 + 0x98 * 4) { screen.pixels[row + x] = 0xff }
                 }

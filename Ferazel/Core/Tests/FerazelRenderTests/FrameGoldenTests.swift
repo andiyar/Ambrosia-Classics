@@ -153,6 +153,20 @@ final class FrameGoldenTests: XCTestCase {
         } }
         let view = (8..<392).flatMap { y in (16..<624).map { x in (r.screen[x, y], expected[y * 640 + x]) } }
         XCTAssertGreaterThan(view.filter { $0.0 != $0.1 }.count, 0)
+        // P1: `DrawOp.drawBlackLines` (`.DrawBlackLines @ 1001fa58`, raw `1001fabc..1001fc48`): rows 9, 11 … 389 (191:
+        // the counter 0xbe is tested before its decrement), x 16 … 623, byte 0xff — every other pixel untouched.
+        let before = r.screen
+        try r.apply(FrameOps(draws: [.drawBlackLines]))
+        var blackened = 0
+        for y in 0..<480 { for x in 0..<640 {
+            let band = y % 2 == 1 && (9...389).contains(y) && (16..<624).contains(x)
+            if band { blackened += 1 }
+            XCTAssertEqual(r.screen[x, y], band ? 0xff : before[x, y], "(\(x), \(y))")
+        } }
+        XCTAssertEqual(blackened, 191 * 608)
+        for y in [8, 10, 390, 391] { XCTAssertEqual((16..<624).map { r.screen[$0, y] }, (16..<624).map { before[$0, y] }) }
+        XCTAssertEqual(r.screen[16, 389], 0xff)
+        XCTAssertEqual(r.screen[623, 9], 0xff)
     }
 
     func testFirstFrameOpsOrder() throws {

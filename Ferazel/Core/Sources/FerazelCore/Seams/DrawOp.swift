@@ -47,7 +47,8 @@ public enum DrawOp: Equatable, Sendable {
     /// `drawParticles` drew is restored from the tile port by each record's erase mode `+0x1d`.
     case eraseParticles
     /// `.DrawBlackLines @ 1001fa58` (P1; raw `1001fa58..1001fc84`): only off the map (`*fe2c == 0`); every odd screen
-    /// row 9, 11 … 387 (190 rows), x 16 … 623 (152 words) set to byte 0xff — index 255, the CLUT's black — straight
+    /// row 9, 11 … 389 (191 rows: the counter starts at 0xbe and is tested before its decrement, raw `1001fc30`,
+    /// `1001fc44`), x 16 … 623 (152 words) set to byte 0xff — index 255, the CLUT's black — straight
     /// into the screen's pixels (the cursor hidden and shown around it). Graphics mode 3's copy skips those rows, so the
     /// callers blacken them after anything drew over the view (`.RestoreWindowBackground`, `.CheckGameLoopKeys`,
     /// `.RedrawGameArea`).

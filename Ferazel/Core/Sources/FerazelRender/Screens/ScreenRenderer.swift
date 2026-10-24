@@ -117,7 +117,10 @@ public final class ScreenRenderer {
             case .wrapDrawWaterEffects: throw Refusal.levelOp("wrapDrawWaterEffects")
             case .drawParticles: throw Refusal.levelOp("drawParticles")
             case .eraseParticles: throw Refusal.levelOp("eraseParticles")
-            case .drawBlackLines: throw Refusal.levelOp("drawBlackLines")
+            case .drawBlackLines:
+                // A level op (`FrameRenderer`): `.DrawBlackLines` returns at once on the map (`*fe2c`), so no
+                // front-end or map frame ever carries it.
+                throw Refusal.levelOp("drawBlackLines")
             }
         }
     }

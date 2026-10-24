@@ -513,6 +513,9 @@ final class SavePointTests: XCTestCase {
         XCTAssertEqual(files.writes, [ref.url])
         let name = run1.livePrefs.savedGameName
         XCTAssertEqual(name, "Ferazel Saved Game")
+        // P1 review fix: `.UpdateSGString`'s `.MakeCurrPrefs` reaches the run's and the session's live prefs.
+        XCTAssertEqual(run1.prefs.savedGameName, name)
+        XCTAssertEqual(run1.session?.prefs.savedGameName, name)
 
         // The next save in the game (the flow hands fd54 / fd18 and the live prefs on): no `putFile`, the same file
         // written again, prefs+0x42 unchanged (`.UpdateSGString` still runs: the prefs file written again).
@@ -550,6 +553,8 @@ final class SavePointTests: XCTestCase {
         XCTAssertNil(run3.session?.suspension)
         XCTAssertEqual(run3.session?.world.records[24].p1, 0)
         XCTAssertEqual(run3.livePrefs.savedGameName, "Elsewhere")
+        XCTAssertEqual(run3.prefs.savedGameName, "Elsewhere")
+        XCTAssertEqual(run3.session?.prefs.savedGameName, "Elsewhere")
         XCTAssertEqual(failing.prefs.map(FerazelPrefs.init(record:))?.savedGameName, "Elsewhere")
         XCTAssertEqual(run3.saveState, SaveGameState(savedThisGame: false, saveFileKnown: true, lastReply: ref3))
         XCTAssertNil(failing.blocks[ref3.url])

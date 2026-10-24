@@ -32,10 +32,10 @@ final class PauseKeysTests: XCTestCase {
         var t: UInt32 = 1000
         var ticks: [Tick] = []
 
-        init(_ r: FerazelResources, prefs: FerazelPrefs = FerazelPrefs()) throws {
+        init(_ r: FerazelResources, prefs: FerazelPrefs = FerazelPrefs(), lengths: [Int16: Int] = [:]) throws {
             run = try LevelRun(resources: r, prefs: prefs, level: 1, seed: 1, carry: LevelCarry(), save: SaveBlock(),
                                fade: ScreenFade(), music: MusicFade(), services: StubServices(),
-                               sounds: StageSounds(prefs: prefs, lengths: [:]))
+                               sounds: StageSounds(prefs: prefs, lengths: lengths))
         }
 
         @discardableResult
@@ -466,7 +466,8 @@ final class PauseKeysTests: XCTestCase {
         // ⌘P: `.Options` over the re-read record; OK with graphics 3 → `.MakeCurrPrefs`: the run's and the session's
         // live prefs, the output's `prefs`; the tail `.SetScrollLocation`, `.RedrawEntireScrollGrid`, the status bar and
         // — the new mode being 3 — `DrawBlackLines`; the next copies line-skip.
-        let o = try Rig(r)
+        let stageLengths: [Int16: Int] = [800: 30, 801: 40, 802: 50, 803: 5, 804: 7, 805: 20]
+        let o = try Rig(r, lengths: stageLengths)
         try o.settle()
         let opt = try XCTUnwrap(try o.drive(max: 4, input: { _ in
             FrontInput(keys: KeyState(pressed: [Self.command, 0x23]))
@@ -475,6 +476,7 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertEqual(opt.steps.last?.suspension, FrameSuspension.gameLoopKeys(.options))
         XCTAssertNotNil(o.run.prefsDialog)
         o.run.prefsDialog?.working.graphics = 3
+        o.run.prefsDialog?.working.soundOn = 0
         _ = o.run.prefsDialog?.hit(1)
         o.run.dialogDone(.ok)
         let closed = try o.tick()
@@ -493,6 +495,49 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertTrue(next.steps.flatMap { $0.draws }.contains {
             if case .copyToScreen(_, _, 3, _) = $0 { true } else { false }
         })
+        // The stage-complete panel's `.STPlayRegSound`s read the live prefs+0x0b: sound now off → none (a run with
+        // sound on plays snd 805 there, `LevelRunTests.testCompleteExitSequence`).
+        XCTAssertEqual(os.prefs.soundOn, 0)
+        try touchExit(os, record: 66)
+        let doneAt = o.t
+        try o.drive(max: 400) { rig, _ in rig.run.end != nil }
+        XCTAssertEqual(o.run.end, .completed(exit1: 0, exit2: -1))
+        XCTAssertTrue(o.ticks.filter { $0.t >= doneAt }.flatMap { $0.out.draws }.contains {
+            if case .copyPicture(140, _, _, _, _, _) = $0 { true } else { false }
+        }, "the panel ran")
+        XCTAssertEqual(o.ticks.filter { $0.t >= doneAt }.flatMap { $0.out.sounds }, [])
+
+        // Graphics mode 3: ⌘Q's ask ends with `DrawBlackLines` (`.RestoreWindowBackground`); OK → the pass, then
+        // `DrawBlackLines`, the status bar; Cancel → the grid, `DrawBlackLines`, the status bar.
+        for ok in [true, false] {
+            let q = try Rig(r, prefs: Self.prefs(graphics: 3))
+            try q.settle()
+            let qask = try XCTUnwrap(try q.drive(max: 4, input: { _ in
+                FrontInput(keys: KeyState(pressed: [Self.command, Self.keyQ]))
+            }) { _, k in !self.dialogs(k.out).isEmpty })
+            XCTAssertEqual(qask.steps.last?.draws.last, .drawBlackLines)
+            q.run.dialogDone(ok ? .ok : .cancel)
+            let qs = try XCTUnwrap(q.run.session)
+            let rest = try XCTUnwrap(try q.tick().steps.first).draws
+            let status = DrawOp.statusBar(qs.globals.statusBar(levelName: qs.level.header.name))
+            if ok {
+                XCTAssertEqual(q.run.end, .quit)
+                let erase = try XCTUnwrap(rest.firstIndex(where: isErase))
+                XCTAssertEqual(Array(rest[(erase + 1)...]), [.drawBlackLines, status])
+            } else {
+                XCTAssertEqual(Array(rest.prefix(3)), [.redrawEntireScrollGrid(h: qs.camera.scrollH, v: qs.camera.scrollV),
+                                                       .drawBlackLines, status])
+            }
+        }
+
+        // `.SavePointSave`'s tail calls `RedrawGameArea` (M l. 6491): `DrawBlackLines` before the line-skipped copy in
+        // mode 3 (with `5107`), none in mode 1.
+        let h = os.camera.scrollH, v = os.camera.scrollV
+        XCTAssertEqual(SavePointSave.redraw(session: os, prefs: Self.prefs(graphics: 3)).draws,
+                       [.redrawEntireScrollGrid(h: h, v: v), .drawBlackLines,
+                        .copyToScreen(h: h, v: v, graphicsMode: 3, backdrop: true), .statusBar(os.globals.statusBar(
+                            levelName: os.level.header.name))])
+        XCTAssertFalse(SavePointSave.redraw(session: os, prefs: Self.prefs(graphics: 1)).draws.contains(.drawBlackLines))
     }
 
     // MARK: - The gates
