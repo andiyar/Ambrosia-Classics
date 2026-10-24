@@ -64,6 +64,11 @@ public struct StatusBarCalls: Equatable, Sendable {
         case mapEntry, mapFirstFrame, mapIdle, mapIteration
         /// `.MoveSelectedItemToFront` — M l. 39704 (1, 1, 0) (its callers are later tasks').
         case moveSelectedItemToFront
+        /// PK: `.HitPlayerSprite`'s pickup refreshes — the 100th Xichron's Red Xichron (M l. 48694), a scroll (M l.
+        /// 48975), an item (M l. 49021) — (1, 1, 0).
+        case pickup
+        /// PK: the upgrade animation's bar calls (1340 / 1341, M l. 48849, 48871, 48888, 48908) — (1, 0, 1).
+        case upgradeStep
 
         /// (param_1 ≠ 0, param_2 ≠ 0, param_3 ≠ 0).
         public var parameters: (p1: Bool, p2: Bool, p3: Bool) {
@@ -73,8 +78,10 @@ public struct StatusBarCalls: Equatable, Sendable {
                 return (false, false, false)
             case .loopIteration, .mapIteration:
                 return (true, false, false)
-            case .moveSelectedItemToFront:
+            case .moveSelectedItemToFront, .pickup:
                 return (true, true, false)
+            case .upgradeStep:
+                return (true, false, true)
             }
         }
     }

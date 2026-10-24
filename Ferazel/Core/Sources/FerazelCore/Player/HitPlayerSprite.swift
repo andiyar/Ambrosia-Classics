@@ -5,12 +5,20 @@ import HectorResources
 /// `.MTCollideSpecialSprite(player, .HitPlayerSprite)` (platforms-ropes-radial-2 §8.3). The arms built so far: the
 /// entry gates, the **Platform** arm (W1), the **Background** arm's pendulum (W2a) and passage (W2b) parts, and the
 /// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`) plus the save point (S1, `savePoint`, which
-/// suspends the frame). // later: the Bonus arm (Phase 4), the other Box mechanisms (Phase 4), the enemy and shot arms
-/// (Phase 4–5).
+/// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame). // later:
+/// the other Box mechanisms (Phase 4), the enemy and shot arms (Phase 4–5).
 public enum HitPlayerSprite {
+    /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
+    /// prefs'.
+    public static func hit(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
+        var scratch = LightTable()
+        hit(w, player: pID, other: oID, keys: keys, lights: &scratch, effects: FerazelPrefs().effects)
+    }
+
     /// The entry gates (l. 48565–48570): dying (`_DAT_100a069c > 0`) → nothing; in spirit form (`_DAT_100a0578 > 0`)
-    /// only a Bonus reaches its arm. Then the Platform arm (l. 49124–49147; `+0x4c == .HandlePlatformSprite`, so an
-    /// idled record — `+0x4c = 0` — is no Platform):
+    /// only a Bonus (`+0x4c == PTR_PTR_100a047c`) reaches its arm. A Bonus with `+0xa6 == 0` and `+0xb0 == 0` takes the
+    /// Bonus arm (PK, M l. 48571–49123, `bonus`); any other Bonus matches no later arm. Then the Platform arm (l.
+    /// 49124–49147; `+0x4c == .HandlePlatformSprite`, so an idled record — `+0x4c = 0` — is no Platform):
     /// - the player's hot-rect centre offset (x = left + (right − left) >> 1, y = top + (bottom − top) >> 1);
     ///   the bumped / landed latches `_DAT_100a0720` / `_DAT_100a0724` cleared;
     /// - a catapult 0x582 / 0x583 whose record p1 == 2 is walk-through: return;
@@ -21,12 +29,17 @@ public enum HitPlayerSprite {
     ///   −0x70, invulnerable 0x3c, flash 0xc, return;
     /// - `.CheckGroundCeilingHitEffects(player)`.
     /// - Parameter keys: the frame's `.IsInputKeyPressed` answers (the passage arm's UP; one snapshot per step — plan
-    ///   hazard "live key reads").
-    public static func hit(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
+    ///   hazard "live key reads"; the pickups' `.UpdateStatusBar` key step).
+    /// - Parameter lights: the session's light table (`.KillBonus`'s `.RemoveLight`).
+    /// - Parameter effects: prefs `+6` (`_DAT_1009fe44 + 6`, the Xichron burst).
+    public static func hit(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = [],
+                           lights: inout LightTable, effects: Int16) {
         guard w.player.dying <= 0 else { return }
         guard let o = w.active.record(id: oID) else { return }
-        if 0 < w.player.spiritTimer {
-            // later: Phase 4 — only the Bonus handler (`PTR_PTR_100a047c`) passes; no Phase-2 Bonus arm.
+        let isBonus = o.handler == .bonus && !o.handleCleared
+        if 0 < w.player.spiritTimer && !isBonus { return }
+        if isBonus && o.counterA6 == 0 && o.pickupDelay == 0 {
+            bonus(w, player: pID, other: oID, keys: keys, lights: &lights, effects: effects)
             return
         }
         guard !o.handleCleared else { return }                          // `+0x4c == 0`: no arm
@@ -308,6 +321,398 @@ extension HitPlayerSprite {
     static let trampolineCap = -6500.0
 }
 
+extension HitPlayerSprite {
+    /// `GammaFadeOutAsync`'s colours (`.InitPlayerSprite` M l. 42420–42426): 1340's `_DAT_100a07f4` = (0xffff, 0x5555,
+    /// 0xffff), 1341's `_DAT_100a07f0` = (0x5555, 0xffff, 0xffff).
+    public static let healthUpgradeColour = RGB16(red: 0xffff, green: 0x5555, blue: 0xffff)
+    public static let magicUpgradeColour = RGB16(red: 0x5555, green: 0xffff, blue: 0xffff)
+    /// The upgrade types 1340 (max health) / 1341 (max magic).
+    public static let healthUpgrade: Int16 = 0x53c
+    public static let magicUpgrade: Int16 = 0x53d
+
+    /// The Bonus arm (PK; `.HitPlayerSprite` M l. 48571–49123; pickups-boxes §1.3, §1.6–§1.8, spells-items §3, §5;
+    /// the sound ids pickups-boxes-2 §1.3). `+0xe9 = 1` is the arm's own store (the literal 1); "KillBonus" is the call
+    /// through `+0x50` (`lwz r12,0x50(r30)` at `100559e8`, `10055c18`, `10055c64` = `.KillBonus`, BN). The 3D sounds
+    /// are placed at the player's `+0xe` (y) / `+0x10` (x); every pitched call draws its rate `FastRand(10000)` at the
+    /// call. By type:
+    /// - 1293 (M l. 48575–48586): snd 501, 489 at R + 40000, 489 at R + 30000; score + 100, coins + 25; `+0xe9`.
+    /// - 1059 (M l. 48589–48594): record p1 ≠ 0 → snd 505; KillBonus.
+    /// - 69, the Mist body (M l. 48597–48615): the spirit timer > 0x167 → nothing; else timer −1, `_DAT_100a0574 = 14`,
+    ///   `PTR_DAT_100a05a8 = 6`, snd 420, `+0xe9`, the player to the stored body (`+0xc`/`+0xa` from the i32s
+    ///   `04d4`/`04d0`, 24.8 from them, v = 0).
+    /// - 1058 (M l. 48619–48630): `G+0xad8 + 2·p1` = p2, or 1 when p2 is 0; KillBonus.
+    /// - 1055 / 1056 (M l. 48631–48695): `xichron`.
+    /// - 1290 / 1291 / 1292 (M l. 48697–48738), 1300 / 1301 / 1302 / 1305 / 1306 (M l. 48745–48795), 1350 (M l.
+    ///   48799–48807): `crystalOrCoin`.
+    /// - 1340 / 1341 (M l. 48808–48918): `upgrade` — the frame suspends.
+    /// - 3050 (M l. 48920–48936): the glider pickup (`glider`).
+    /// - 2000…2049 (M l. 48939–48976): `scroll`; 3200… (M l. 48977–49022): `item`; 1330…1339 (M l. 49023–49121):
+    ///   `sphere`. Every other type (0x4bf, 0x421, 0x517, 0x518, …) does nothing.
+    static func bonus(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions, lights: inout LightTable,
+                      effects: Int16) {
+        guard let o = w.active.record(id: oID) else { return }
+        let t = o.type, ti = Int(t)
+        func dead() { w.active.update(id: oID) { $0.killCount = 1 } }           // `*(+0xe9) = 1`
+        switch ti {
+        case 0x50d:
+            reg(w, 501, 0x100)
+            pitched(w, player: pID, 489, 40000)
+            pitched(w, player: pID, 489, 30000)
+            w.globals.score &+= 100
+            w.globals.coins &+= 0x19
+            dead()
+        case 0x423:
+            if record(w, o.recordIndex).p1 != 0 { reg(w, 505, 0x100) }
+            BonusSprite.kill(w, id: oID, lights: &lights)
+        case 0x45:
+            guard w.player.spiritTimer <= 0x167 else { return }
+            w.player.spiritTimer = -1
+            w.player.spiritTransition = 0xe
+            w.player.countdown05a8 = 6
+            reg(w, 420, 0x100)
+            dead()
+            let bx = Int(Int16(truncatingIfNeeded: w.player.mistBodyX))
+            let by = Int(Int16(truncatingIfNeeded: w.player.mistBodyY))
+            w.active.update(id: pID) { p in
+                p.x = bx
+                p.y = by
+                p.x256 = Int32(bx) << 8
+                p.y256 = Int32(by) << 8
+                p.vy = 0
+                p.vx = 0
+            }
+        case 0x422:
+            let r = record(w, o.recordIndex)
+            let i = Int(r.p1)
+            if w.globals.worldFlags.indices.contains(i) { w.globals.worldFlags[i] = r.p2 == 0 ? 1 : r.p2 }
+            BonusSprite.kill(w, id: oID, lights: &lights)
+        case 0x41f, 0x420:
+            xichron(w, player: pID, other: oID, keys: keys, lights: &lights, effects: effects)
+        case 0x50a...0x50c, 0x514...0x516, 0x519, 0x51a, 0x546:
+            crystalOrCoin(w, player: pID, other: oID)
+        case 0x53c, 0x53d:
+            reg(w, 451, 0xab)
+            w.globals.score &+= 2000
+            dead()
+            w.gammaFade.fadeOut(steps: 2, toward: t == magicUpgrade ? magicUpgradeColour : healthUpgradeColour)
+            w.suspension = .upgrade(type: t)
+        case 0xbea:
+            glider(w, player: pID, other: oID)
+        case 2000..<0x802:
+            scroll(w, other: oID, keys: keys)
+        case 0xc80...:
+            item(w, other: oID, keys: keys)
+        case 0x532...0x53b:
+            sphere(w, player: pID, other: oID)
+        default:
+            return
+        }
+    }
+
+    /// The placement record at `i` as the arms read it (`hdr + 16·i + …`): zeros outside the live records (plan hazard
+    /// "Record index 0x200").
+    private static func record(_ w: SpriteWorld, _ i: Int16) -> (p1: Int16, p2: Int16) {
+        guard w.records.indices.contains(Int(i)) else { return (0, 0) }
+        return (w.records[Int(i)].p1, w.records[Int(i)].p2)
+    }
+
+    /// `.STPlayRegSound(snd, 1, vol)` (no draw).
+    private static func reg(_ w: SpriteWorld, _ snd: Int16, _ vol: Int16) {
+        w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol))
+    }
+
+    /// `.STPlay3DSoundPitched(snd, 1, 0x100, player +0xe, FastRand(10000) + base)`.
+    private static func pitched(_ w: SpriteWorld, player pID: Int, _ snd: Int16, _ base: Int32) {
+        let rate = Int32(w.rng.next(10000)) + base
+        let pos = w.active.record(id: pID)?.centre
+        w.player.cue(PlayerCue(call: .threeDPitched, snd: snd, priority: 1, volume: 0x100, position: pos, rate: rate))
+    }
+
+    /// An arm's `.UpdateStatusBar(1, 1, 0)` inside the special pass (`StatusBarCalls.Site.pickup`): the key step reads
+    /// the frame's actions; the op goes to `PlayerState.passDraws`, its suffocation tick (snd 442) joins the frame's
+    /// sound calls at this point.
+    static func statusBar(_ w: SpriteWorld, keys: InputActions) {
+        var g = w.globals
+        let made = w.statusBar.update(.pickup, globals: &g, actions: keys, levelName: w.level.header.name)
+        w.globals = g
+        w.player.passDraws.append(made.op)
+        if made.suffocationTick {
+            w.player.soundCalls.append(PlayerState.SoundCall(
+                cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
+                scrollH: w.player.scrollH, scrollV: w.player.scrollV))
+        }
+    }
+
+    /// 1055 / 1056 (M l. 48631–48695): 1055 score + 10, `G+0x14` + 1, snd 501 vol 0x55; 1056 score + 1000, `G+0x14`
+    /// + 100, 489 at R + 40000 and R + 30000, snd 501 vol 0x55; KillBonus; the burst `.ExplodeFaceIntoParticles(face,
+    /// (+0xa, +0xc), …, 0x28, 0x65)` — face `*PTR_DAT_100a0478` (set 0x421 face 0), `*_DAT_100a0474` (set 0x422 face 0)
+    /// when `G+0x14 > 99`; Effects 1 with the particle count `*_DAT_100a019c` < 1000 → (1, 1, 1), 2 with < 0x5dc →
+    /// (2, 1, 7), else (2, 2, 7). `G+0x14 < 100` → return; else `G+0x14 = 0` (raw `10055ac4..acc`), snd 451, 445, the
+    /// Red Xichron item 0x16 + 1 (`GameGlobals.addItem`; no slot → return), `+0xe9`, snd 501, `.UpdateStatusBar(1, 1,
+    /// 0)`. No item flash.
+    private static func xichron(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions,
+                                lights: inout LightTable, effects: Int16) {
+        guard let o = w.active.record(id: oID) else { return }
+        if o.type == 0x41f {
+            w.globals.score &+= 10
+            w.globals.xichrons &+= 1
+            reg(w, 501, 0x55)
+        } else {
+            w.globals.score &+= 1000
+            w.globals.xichrons &+= 100
+            pitched(w, player: pID, 489, 40000)
+            pitched(w, player: pID, 489, 30000)
+            reg(w, 501, 0x55)
+        }
+        BonusSprite.kill(w, id: oID, lights: &lights)
+        let face = FaceRef(pict: 99 < w.globals.xichrons ? 0x422 : 0x421, index: 0, set: .encoded)
+        let count = w.particles.counters.count
+        let step: (x: Int16, y: Int16, shape: Int16)
+        if effects == 1 && count < 1000 {
+            step = (1, 1, 1)
+        } else if effects == 2 && count < 0x5dc {
+            step = (2, 1, 7)
+        } else {
+            step = (2, 2, 7)
+        }
+        ExplodeFace.explode(w, face: w.particleFaces.sprite(face), v: Int16(truncatingIfNeeded: o.y),
+                            h: Int16(truncatingIfNeeded: o.x), xStep: step.x, yStep: step.y, shape: step.shape,
+                            gravity: 0x28, style: 0x65)
+        guard 100 <= w.globals.xichrons else { return }
+        w.globals.xichrons = 0
+        reg(w, 451, 0x100)
+        reg(w, 445, 0x100)
+        guard w.globals.addItem(0x16, count: 1) != -1 else { return }
+        w.active.update(id: oID) { $0.killCount = 1 }
+        reg(w, 501, 0x100)
+        statusBar(w, keys: keys)
+    }
+
+    /// The crystals, money bag, coins and the air bubble (each `+0xe9 = 1`; the clamps as written):
+    /// - 1290 (M l. 48699–48707): snd 500; score + 100; magic `G+0xe` + 0x2a0, > `G+0xc` → `G+0xc`.
+    /// - 1291 (M l. 48720–48737): snd 502; score + 100; health `G+4` and breath `G+6` + 0x2a0, the player's `+0xa4` +
+    ///   0xe0; each > max health `G+0xa` → `G+0xa`.
+    /// - 1292 (M l. 48711–48718): snd 501, 489 at R + 40000; score + 25, coins + 5.
+    /// - 1300 (M l. 48763–48772): snd 500 vol 0xab; score + 25; magic + 0xe0, clamped.
+    /// - 1301 (M l. 48774–48788): snd 502; score + 25; `+0xa4` + 0xe0, breath + 0xe0, `G+8 = 30`, breath then `+0xa4`
+    ///   clamped to `G+0xa`, health = `+0xa4`.
+    /// - 1302 / 1305 / 1306 (M l. 48754–48760, 48790–48795, 48746–48752): snd 501 vol 0xab; score + 5; coins + 1 / 10 /
+    ///   100.
+    /// - 1350 (M l. 48799–48807): snd 456; breath + 0x230, > health → health.
+    private static func crystalOrCoin(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let o = w.active.record(id: oID) else { return }
+        func dead() { w.active.update(id: oID) { $0.killCount = 1 } }
+        var g = w.globals
+        switch o.type {
+        case 0x50a:
+            dead()
+            reg(w, 500, 0x100)
+            g.score &+= 100
+            g.magic &+= 0x2a0
+            if g.maxMagic < g.magic { g.magic = g.maxMagic }
+        case 0x50b:
+            dead()
+            reg(w, 502, 0x100)
+            g.score &+= 100
+            g.health &+= 0x2a0
+            g.breath &+= 0x2a0
+            let max = g.maxHealth
+            w.active.update(id: pID) { $0.hp &+= 0xe0 }
+            if max < g.health { g.health = max }
+            if max < g.breath { g.breath = max }
+            w.active.update(id: pID) { p in if max < p.hp { p.hp = max } }
+        case 0x50c:
+            reg(w, 501, 0x100)
+            pitched(w, player: pID, 489, 40000)
+            g.score &+= 0x19
+            g.coins &+= 5
+            dead()
+        case 0x514:
+            dead()
+            reg(w, 500, 0xab)
+            g.score &+= 0x19
+            g.magic &+= 0xe0
+            if g.maxMagic < g.magic { g.magic = g.maxMagic }
+        case 0x515:
+            dead()
+            reg(w, 502, 0x100)
+            g.score &+= 0x19
+            w.active.update(id: pID) { $0.hp &+= 0xe0 }
+            g.breath &+= 0xe0
+            g.suffocation = 0x1e
+            let max = g.maxHealth
+            if max < g.breath { g.breath = max }
+            w.active.update(id: pID) { p in if max < p.hp { p.hp = max } }
+            g.health = w.active.record(id: pID)?.hp ?? g.health
+        case 0x516, 0x519, 0x51a:
+            reg(w, 501, 0xab)
+            g.score &+= 5
+            g.coins &+= o.type == 0x516 ? 1 : o.type == 0x519 ? 10 : 100
+            dead()
+        case 0x546:
+            reg(w, 456, 0x100)
+            g.breath &+= 0x230
+            if g.health < g.breath { g.breath = g.health }
+            dead()
+        default:
+            return
+        }
+        w.globals = g
+    }
+
+    /// 3050, the hang glider (M l. 48920–48936): only with `PTR_DAT_100a05c4 == 0`: `+0xe9`, on the glider
+    /// `_DAT_100a05e0 = 1`, `_DAT_100a05d4 = 1`, `PTR_DAT_100a05c8 = 0`; the player's 24.8 position = the glider's, its
+    /// `+0xc` / `+0xa` from them (`>> 8`, i16); `+0xc0` = the cached set `_DAT_100a0778` face 0 (PICT 0x41a,
+    /// `.InitPlayerSprite` M l. 42486); `SetRect(+0x34, 0x37, 0x3e, 99, 0x6e)`. // later: GL — the glider's row and
+    /// the 0x41a faces (renderer sheet).
+    private static func glider(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard w.player.countdown05c4 == 0, let o = w.active.record(id: oID) else { return }
+        w.active.update(id: oID) { $0.killCount = 1 }
+        w.player.glider = true
+        w.player.gliderExit = 1
+        w.player.glider05c8 = 0
+        w.active.update(id: pID) { p in
+            p.x256 = o.x256
+            p.y256 = o.y256
+            p.x = Int(Int16(truncatingIfNeeded: p.x256 >> 8))
+            p.y = Int(Int16(truncatingIfNeeded: p.y256 >> 8))
+            p.face = FaceRef(pict: gliderFaceSet, index: 0, set: .encoded)
+            p.hotRect = IdleSprites.Rect(top: 0x3e, left: 0x37, bottom: 0x6e, right: 99)
+        }
+    }
+
+    /// `_DAT_100a0778`'s PICT (`_CacheEncFaceSetFromPICT(…, 0x41a, 6, 0xa0, 0xa0, …)`, M l. 42486).
+    public static let gliderFaceSet: Int16 = 0x41a
+
+    /// 2000…2049 (M l. 48939–48976): spell = record p1 for 2000, else type − 2000; `GameGlobals.learnSpell` (the first
+    /// slot empty or holding that spell, compared before the 2 → 3 remap — BC48); no slot → return (no sound, not
+    /// killed); `+0xe9`, snd 503, the item flash `PTR_DAT_1009fda8 = 0x20` on the slot (`_DAT_1009fda4`), mode
+    /// `_DAT_1009fda0 = 0`; `.UpdateStatusBar(1, 1, 0)`.
+    private static func scroll(_ w: SpriteWorld, other oID: Int, keys: InputActions) {
+        guard let o = w.active.record(id: oID) else { return }
+        let spell = o.type == 2000 ? record(w, o.recordIndex).p1 : o.type &- 2000
+        let k = w.globals.learnSpell(spell)
+        guard k != -1 else { return }
+        w.active.update(id: oID) { $0.killCount = 1 }
+        reg(w, 503, 0x100)
+        flash(w, slot: k)
+        statusBar(w, keys: keys)
+    }
+
+    /// The item flash a scroll / item pickup sets (M l. 48970–48974, 49016–49020).
+    private static func flash(_ w: SpriteWorld, slot k: Int) {
+        w.statusBar.flashes.item = 0x20
+        w.statusBar.flashes.itemSlot = Int16(k)
+        w.statusBar.flashes.itemMode = 0
+    }
+
+    /// 3200… (M l. 48977–49022): 3221 first `.RemoveItem(0)` (the dagger), 3215 first `.RemoveItem(0xe)` (the wooden
+    /// shield) — each `.UpdateItemStat` when found (M l. 39658); `GameGlobals.addItem(type − 3200, 3 for 3206 else 1)`;
+    /// no slot → return; `+0xe9`, snd 506, the item flash as a scroll's, `.UpdateStatusBar(1, 1, 0)`.
+    private static func item(_ w: SpriteWorld, other oID: Int, keys: InputActions) {
+        guard let o = w.active.record(id: oID) else { return }
+        func remove(_ id: Int16) {
+            guard w.globals.removeItem(id) else { return }
+            var g = w.globals
+            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
+            w.globals = g
+        }
+        if o.type == 0xc95 { remove(0) }
+        if o.type == 0xc8f { remove(0xe) }
+        let k = w.globals.addItem(o.type &- 0xc80, count: o.type == 0xc86 ? 3 : 1)
+        guard k != -1 else { return }
+        w.active.update(id: oID) { $0.killCount = 1 }
+        reg(w, 506, 0x100)
+        flash(w, slot: k)
+        statusBar(w, keys: keys)
+    }
+
+    /// 1330…1339 (M l. 49023–49121; spells-items §5): the sphere stays (except 1339) and hides for its duration
+    /// (`sphere+0xa6`, M l. 49120). 1330: `064c` = 600, `0654` = 1, snd 447. 1331…1333: `0640` = 600, `0648` = 1,
+    /// `0644` = 1, `063c` = type − 0x533, snd 444. 1334: `0630` = 600, `0634` = 1, `0638` = 1, snd 449. 1335: the
+    /// player's `+0x116` = 0x1c2, `0650` = 0x1c2, snd 446; hides 32000 when the record's p2 is 0, else 0x1c2. 1336:
+    /// `0624` = 900, `0628`, `062c` = 1, snd 445. 1337: `0618` = 600, `061c`, `0620` = 1, snd 447. 1338: `053c` + 5 (≤ 8);
+    /// orbs 0…n−1: angle i·(360 / n)·256, radius 0x30, speed 0xa00, in use, a live orb sprite `+0xe9 = 1` and dropped;
+    /// orbs n…7 not in use (their sprites likewise); `0614 = 1`; 32000; snd 444. 1339: `+0xe9`, snd 450 vol 0xab, the
+    /// player's `+0xa4` − 0x380, `+0x116 = 30`, `+0xaa = 30`; 0. // later: PU / SD — the timers' `.TickTock`s, the
+    /// double and the orbs.
+    private static func sphere(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let o = w.active.record(id: oID) else { return }
+        var duration: Int16 = 0
+        switch o.type {
+        case 0x532:
+            w.player.shadowTimer = 600
+            duration = 600
+            w.player.shadowDouble = true
+            reg(w, 447, 0x100)
+        case 0x533...0x535:
+            w.player.walkOnLiquidTimer = 600
+            duration = 600
+            w.player.walkOnLiquid = true
+            w.player.tint0644 = true
+            w.player.walkOnLiquidKind = o.type &- 0x533
+            reg(w, 444, 0x100)
+        case 0x536:
+            w.player.highJumpTimer = 600
+            duration = 600
+            w.player.tint0634 = true
+            w.player.highJump = true
+            reg(w, 449, 0x100)
+        case 0x537:
+            w.active.update(id: pID) { $0.invulnerable = 0x1c2 }
+            w.player.invincibleTimer = 0x1c2
+            duration = record(w, o.recordIndex).p2 == 0 ? 32000 : 0x1c2
+            reg(w, 446, 0x100)
+        case 0x538:
+            w.player.featherFallTimer = 900
+            duration = 900
+            w.player.tint0628 = true
+            w.player.featherFall = true
+            reg(w, 445, 0x100)
+        case 0x539:
+            w.player.doubleSpeedTimer = 600
+            duration = 600
+            w.player.tint061c = true
+            w.player.doubleSpeed = true
+            reg(w, 447, 0x100)
+        case 0x53a:
+            w.player.pentashieldCount &+= 5
+            if 8 < w.player.pentashieldCount { w.player.pentashieldCount = 8 }
+            let n = Int(w.player.pentashieldCount)
+            for i in 0..<8 {
+                var orb = w.player.orbs[i]
+                if i < n {
+                    orb.angle = Int32(i) * Int32(0x168 / n) * 0x100
+                    orb.radius = 0x30
+                    orb.speed = 0xa00
+                    orb.active = true
+                } else {
+                    orb.active = false
+                }
+                if let sprite = orb.sprite {
+                    w.active.update(id: sprite) { $0.killCount = 1 }
+                    orb.sprite = nil
+                }
+                w.player.orbs[i] = orb
+            }
+            duration = 32000
+            w.player.flag0614 = true
+            reg(w, 444, 0x100)
+        case 0x53b:
+            w.active.update(id: oID) { $0.killCount = 1 }
+            reg(w, 450, 0xab)
+            w.active.update(id: pID) { p in
+                p.hp &-= 0x380
+                p.invulnerable = 0x1e
+                p.flash = 0x1e
+            }
+        default:
+            return
+        }
+        w.active.update(id: oID) { $0.counterA6 = duration }
+    }
+}
+
 /// The session's part of a passage jump (`.HitPlayerSprite` l. 49659–49682; W2b), called by `HitPlayerSprite.passage`
 /// at the binary's call sites — a world without a session (nil) skips them.
 public struct PassageView {
@@ -406,11 +811,17 @@ extension HitPlayerSprite {
 /// 7. coins n ≠ 0: n > 2 → n = FastRand(3) + n − 1; capped at `G+0x10`; `G+0x10 −= n`; n > 0 →
 ///    `.STPlay3DSoundRand(489, 1, 0x100, player +0xe)`; per coin `FastRand(8)` (dy), `FastRand(8)` (dx), the Bonus
 ///    0x516 at (cx + dx − 8, cy + dy − 2), layer 0x14, `+0xb0 = 0xc`, vx = `FastRand(0x640)` + 600 (negated when
-///    `FastRand(100)` > 0x31), vy = −2000 − `FastRand(0xdac)`, `+0x16c = −0xf0`. The coins are counted in
-///    `PlayerState.coinsLost`, **not spawned** (// later: Phase 4); all nine draws per coin are made in
-///    order: R(8), R(8), the 0x516 Setup's R(9), R(6), R(3) (arm `LAB_1005e02c`, M l. 52576–52581) and R(0x3c) (tail
-///    `LAB_1005e8bc`, M l. 52795), then R(0x640), R(100), R(0xdac).
+///    `FastRand(100)` > 0x31), vy = −2000 − `FastRand(0xdac)`, `+0x16c = −0xf0` (M l. 48088–48104). PK: each coin is
+///    spawned — `.MTNewSprite(0x516, …, 0x14, −1, .SetupBonusSprite)` runs the Bonus Setup inside the call
+///    (`BonusSprite.setup`: its R(9), R(6), R(3) — arm `LAB_1005e02c`, M l. 52576–52581 — and R(0x3c), tail
+///    `LAB_1005e8bc`, M l. 52795) and the Setup's `+0x80 = 1` (M l. 52383) is the layer the insert uses, not the 0x14
+///    passed; nine draws per coin. With all 700 records in use `.MTNewSprite` returns 0 without running the Setup
+///    (Ruling 16, BC46): five draws — R(8), R(8), R(0x640), R(100), R(0xdac) — and the stores go nowhere. The count is
+///    also summed in `PlayerState.coinsLost`.
 public enum HurtPlayer {
+    /// The coin `.HurtPlayer` knocks out (1302).
+    public static let lostCoin: Int16 = 0x516
+
     @discardableResult
     public static func hurt(_ w: SpriteWorld, player pID: Int, attacker aID: Int, damage: Int16, blood: Bool,
                             invulnerable: Int16, coins: Int16) -> Bool {
@@ -457,18 +868,29 @@ public enum HurtPlayer {
             }
             var k: Int16 = 0
             while k < n {
-                _ = w.rng.next(8)                                       // dy
-                _ = w.rng.next(8)                                       // dx
-                // `MTNewSprite(0x516, …, .SetupBonusSprite)`: the Setup's draws are made, the coin is not. // later: Phase 4
-                // (the Bonus sprite). Arm `LAB_1005e02c` (M l. 52576–52581, raw `1005e050..1005e078`): `+0x46`,
-                // `+0x112 − 0x1c`, `+0x114 − 2`; then the shared tail `LAB_1005e8bc` (M l. 52795, raw `1005e8bc`): `+0x14c`.
-                _ = w.rng.next(9)
-                _ = w.rng.next(6)
-                _ = w.rng.next(3)
-                _ = w.rng.next(0x3c)
-                _ = w.rng.next(0x640)                                   // vx − 600
-                _ = w.rng.next(100)                                     // vx sign
-                _ = w.rng.next(0xdac)                                   // −vy − 2000
+                let dy = Int(w.rng.next(8))
+                let cy = w.active.record(id: pID)?.centre.y ?? 0
+                let dx = Int(w.rng.next(8))
+                let cx = w.active.record(id: pID)?.centre.x ?? 0
+                let layer = w.active.record(id: pID)?.layer ?? 0
+                let x = Int(Int16(truncatingIfNeeded: cx + dx - 8)), y = Int(Int16(truncatingIfNeeded: cy + dy - 2))
+                let coin = w.newSprite(type: lostCoin, x: x, y: y, layer: 0x14, handler: .bonus) { s in
+                    _ = try? BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
+                                               lightCount: 0, counting: false, playerLayer: layer, rng: &w.rng) {
+                        _, _, _, _ in -1                                // the coin arm adds no light (M l. 52571–52581)
+                    }
+                }
+                let vx = Int32(w.rng.next(0x640)) + 600
+                let sign = w.rng.next(100)
+                let vy = -2000 - Int32(w.rng.next(0xdac))
+                if let coin {
+                    w.active.update(id: coin) { s in
+                        s.pickupDelay = 0xc
+                        s.vx = 0x31 < sign ? -vx : vx
+                        s.vy = vy
+                        s.coinLife = -0xf0
+                    }
+                }
                 k += 1
             }
             w.player.coinsLost &+= n

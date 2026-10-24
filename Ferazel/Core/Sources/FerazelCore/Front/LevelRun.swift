@@ -354,6 +354,8 @@ public final class LevelRun {
 
     /// `.Conversation` / `.SimpleConv` while it runs (nil otherwise).
     public private(set) var conversation: ConversationRun?
+    /// PK: the upgrade arm's blocking animation while it runs (nil otherwise).
+    public private(set) var upgrade: UpgradeAnimation?
     /// The conversation text's measures (Render's font, C2; the App sets them, A1a). Default: unmeasured.
     public var conversationText = ConversationText.unmeasured
 
@@ -598,7 +600,7 @@ public final class LevelRun {
     private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         var ops: FrameOps
-        if saveSG != nil || keysModal != nil || conversation != nil {
+        if saveSG != nil || keysModal != nil || conversation != nil || upgrade != nil {
             // S1 / P1: a suspended frame waits for the modal; its answer finishes the same iteration.
             guard let resumed = advanceModal(s, now: now, input: input, out: &out) else { return false }
             ops = resumed
@@ -684,6 +686,16 @@ public final class LevelRun {
                 return resumeTalk(s, .sign(keys: input.keys, capsLock: input.capsLock), out: &out)
             }
             return resumeTalk(s, .conversation(keys: input.keys, capsLock: input.capsLock), out: &out)
+        }
+        if var u = upgrade {
+            // PK: the upgrade's tick loops (`UpgradeAnimation`), then the rest of the frame — the input is not read by
+            // the arm's remainder (it returns), the later contacts read the frame's (`FerazelSession.resume`).
+            emit(&out, u.tick(now: now, session: s, keys: input.keys))
+            guard u.isDone else { upgrade = u; return nil }
+            upgrade = nil
+            let rest = s.resume(.upgrade, playing: tickPlaying)
+            emitFrame(rest, out: &out, present: true)
+            return rest
         }
         if saveSG != nil { return advanceSave(s, input: input, out: &out) }
         guard let m = keysModal else { return nil }
@@ -832,6 +844,8 @@ public final class LevelRun {
                                                    name: MacRoman.bytes(HitPlayerSprite.signName), text: text),
                                            world: s.world, resources: resources, prefs: livePrefs,
                                            levelName: levelFile.header.name, text: conversationText)
+        case .upgrade(let type):
+            upgrade = UpgradeAnimation(type: type)
         case .gameLoopKeys:
             preconditionFailure("beginModal routes the keys")
         }
@@ -1100,5 +1114,104 @@ public struct CachedFaces: Equatable, Sendable {
             bars.append((Int16(truncatingIfNeeded: p), q))
         }
         return bars
+    }
+}
+
+/// PK: the upgrade arm's six blocking loops (1340 / 1341, `.HitPlayerSprite` M l. 48820–48917; pickups-boxes §1.3,
+/// BC35), run by the flow over ticks while the frame is suspended (`FrameSuspension.upgrade`), on the session's state:
+/// 1. 5 × (wait 2 ticks, `.HandleAsyncGammaFade`) — the arm's `GammaFadeOutAsync(2, …)` (3 steps) runs out;
+/// 2. `.GammaFadeInAsync(0x28)`; 10 × (`.HandleAsyncGammaFade`, wait 1);
+/// 3. the flash (`PTR_DAT_1009fdbc` for 1340, `_DAT_1009fdb8` for 1341) = 11; 11 × (flash − 1, `.UpdateStatusBar(1, 0,
+///    1)`, `.HandleAsyncGammaFade`, wait 2);
+/// 4. the refill — 1340: breath `G+6` = health `G+4` = max `G+0xa`, `G+8 = 8`; 1341: magic `G+0xe` = max `G+0xc`;
+/// 5. 14 × (max + 8, bar, step, wait 2); 6. 14 × (1340: health + 8, breath + 8, the player's `+0xa4` = health; 1341:
+///    magic + 8; bar, step, wait 2);
+/// 7. the flash = 11; 11 × (flash − 1, bar, step, wait 2).
+/// 120 ticks in all. Each wait is `TickCount() − n < t0` with t0 read at the loop iteration's start (`now` of the tick
+/// that started it). A fade-in that ends inside the loops makes its `_ShowCursorSafe` (M l. 31945; a `.showCursor`
+/// request). The bar calls are outside the frame's ops: their snd 442 goes out with them (`FerazelSession
+/// .updateStatusBar`).
+public struct UpgradeAnimation: Equatable, Sendable {
+    public let type: Int16
+    private enum Step: Equatable, Sendable {
+        case wait(UInt32), handle, fadeIn, flashSet, flashDown, refill, maxUp, valueUp, bar
+    }
+    private let steps: [Step]
+    private var next = 0
+    private var until: UInt32?
+
+    public init(type: Int16) {
+        self.type = type
+        var s: [Step] = []
+        for _ in 0..<5 { s += [.wait(2), .handle] }
+        s.append(.fadeIn)
+        for _ in 0..<10 { s += [.handle, .wait(1)] }
+        s.append(.flashSet)
+        for _ in 0..<11 { s += [.flashDown, .bar, .handle, .wait(2)] }
+        s.append(.refill)
+        for _ in 0..<14 { s += [.maxUp, .bar, .handle, .wait(2)] }
+        for _ in 0..<14 { s += [.valueUp, .bar, .handle, .wait(2)] }
+        s.append(.flashSet)
+        for _ in 0..<11 { s += [.flashDown, .bar, .handle, .wait(2)] }
+        steps = s
+    }
+
+    /// The loops have run out: the flow resumes the frame (`.upgrade`).
+    public var isDone: Bool { next == steps.count && until == nil }
+
+    /// The steps due by `now`, with `keys` the live poll the bar calls' key step reads.
+    public mutating func tick(now: UInt32, session s: FerazelSession, keys: KeyState) -> FrontOutput {
+        var out = FrontOutput()
+        let health = type == HitPlayerSprite.healthUpgrade, magic = type == HitPlayerSprite.magicUpgrade
+        while true {
+            if let u = until {
+                guard Int32(bitPattern: now &- u) >= 0 else { return out }
+                until = nil
+            }
+            guard next < steps.count else { return out }
+            let step = steps[next]
+            next += 1
+            let w = s.world
+            switch step {
+            case .wait(let n):
+                until = now &+ n
+            case .handle:
+                let fadingIn = !w.gammaFade.done && w.gammaFade.fadingIn
+                if let op = w.gammaFade.handle() {
+                    out.draws.append(op)
+                    out.present = true
+                }
+                if fadingIn && w.gammaFade.done { out.requests.append(.showCursor) }
+            case .fadeIn:
+                w.gammaFade.fadeIn(steps: 0x28)
+            case .flashSet:
+                if health { w.statusBar.flashes.health = 0xb } else if magic { w.statusBar.flashes.magic = 0xb }
+            case .flashDown:
+                if health { w.statusBar.flashes.health &-= 1 } else if magic { w.statusBar.flashes.magic &-= 1 }
+            case .refill:
+                if health {
+                    w.globals.breath = w.globals.maxHealth
+                    w.globals.health = w.globals.maxHealth
+                    w.globals.suffocation = 8
+                } else if magic {
+                    w.globals.magic = w.globals.maxMagic
+                }
+            case .maxUp:
+                if health { w.globals.maxHealth &+= 8 } else if magic { w.globals.maxMagic &+= 8 }
+            case .valueUp:
+                if health {
+                    w.globals.health &+= 8
+                    w.globals.breath &+= 8
+                    let hp = w.globals.health
+                    if let p = w.playerID { w.active.update(id: p) { $0.hp = hp } }
+                } else if magic {
+                    w.globals.magic &+= 8
+                }
+            case .bar:
+                var bar = s.updateStatusBar(.upgradeStep, keys: keys)
+                bar.present = true
+                out.append(bar)
+            }
+        }
     }
 }

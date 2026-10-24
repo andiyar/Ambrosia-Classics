@@ -35,6 +35,12 @@ public enum BonusSprite {
         return all
     }()
 
+    /// PK: the sheets of the Bonus types spawned at run time — `.HurtPlayer`'s lost coin 0x516 (`_DAT_100a08d0`, M l.
+    /// 52294, 9 × 10×10) — for a renderer that loads only the placed types' sheets.
+    public static let dropSheets: Set<SetupFaces.Sheet> = [
+        SetupFaces.Sheet(pict: 0x516, count: 9, cellWidth: 10, cellHeight: 10, columns: 9, clut: 200),
+    ]
+
     /// The light faces: `_DAT_100a07fc` 0x336 (52×52), `PTR_DAT_100a088c[0…3]` 0x32a…0x32d (72×72, `BonusHandle`),
     /// `_DAT_100a08c0` 0x321 / `_DAT_100a08bc` 0x322 (192×192), `_DAT_100a08b8` 0x326 (84×84).
     static let crystalLight = LightFaceRef(pict: 0x336, width: 0x34, height: 0x34)

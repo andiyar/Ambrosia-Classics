@@ -125,6 +125,14 @@ Names: PICT names in `Ferazel's Wand Sprites.rsrc` (quoted), manual TEXT 131/132
 | 3200..3248 | items, §1.8 (face `_DAT_100a08a0[type−3200]` = PICT 3200+id) | rect 4,4,0x1c,0x18 + per-type trims; gravity 200, **0 if p1 ≠ 0**; `+0x114 = 6`; light 99 (0x21 for 3223/3225/3226, 0x2c for 3206/3224, 0x4d for 3219) | static | §1.8 |
 | 1215..1218 (0x4bf..0x4c2) | Multi Crystal shards (PICT 1215, 4 frames 16×17) — spawned by `.HurtPlayer` | layer = player layer + 1; gravity 0x151; `+0xa6 = −40` | frames by `+0xa6` (−13/−9/−5 thresholds), die at 0 | never collectable (`+0xa6 ≠ 0` while alive; 0x4bf returns explicitly, l. 3451) |
 
+> ⚑ planner note (Phase 4 PK, 2026-10-25) (BC35): rows 1340/1341 — the upgrade blocks the game for **120 ticks**,
+> not "~0.5 s": snd 451 vol 0xab, score + 2000, `+0xe9 = 1`, `GammaFadeOutAsync(2, rgb, 0xc, 0x10)` (1340 `_DAT_100a07f4`
+> = (0xffff, 0x5555, 0xffff), 1341 `_DAT_100a07f0` = (0x5555, 0xffff, 0xffff), `.InitPlayerSprite` M l. 42420–42426);
+> 5 × (2-tick wait, `.HandleAsyncGammaFade`); `GammaFadeInAsync(0x28)`; 10 × (step, 1 tick); flash (`PTR_DAT_1009fdbc`
+> / `_DAT_1009fdb8`) = 11, 11 × (flash − 1, `.UpdateStatusBar(1, 0, 1)`, step, 2 ticks); the refill (1340: breath =
+> health = max, `G+8 = 8`; 1341: magic = max); 14 × (max + 8, bar, step, 2 ticks); 14 × (1340: health + 8, breath +
+> 8, sprite `+0xa4` = health; 1341: magic + 8; bar, step, 2 ticks); flash = 11, 11 × (…, 2 ticks) (M l. 48808–48918).
+
 Sounds are TOC handles (`*_DAT_100a02d4` etc.); ~~the `snd ` ids behind them are NOT RESOLVED here~~ every
 handle → id, and every pickup/box sound site: pickups-boxes-2 §1 ⚑ wave 2 (2026-10-04).
 
@@ -183,6 +191,10 @@ shipped scroll or drop. ~~Conversations (`Mcnv`) were not checked as a grant pat
 conversation action can grant a spell (pickups-boxes-2 §8 ⚑ wave 2 (2026-10-04); conversations-mcnv §4.3
 ⚑ wave 2 corr (2026-10-04) CM #4 = PB2 #P5/#P6).
 
+> ⚑ planner note (Phase 4 PK, 2026-10-25) (BC48): the scroll's slot search compares the **unmapped** spell id (2) before
+> the 2 → 3 remap, so a second 2-scroll takes a new empty slot rather than the Ice Wall slot (M l. 48946–48954); with
+> no empty or matching slot the arm returns at once — no sound, the scroll not killed (M l. 48957–48959).
+
 ### 1.8 Items 3200..3248 (item id = type − 3200)  [HIGH arithmetic; names MED, ids 0..11 HIGH for the art (PICT 702)]
 `.HitPlayerSprite` l. 3688–3739: 3221 first `RemoveItem(0)` (one dagger), 3215 first
 `RemoveItem(0xe)`; first slot empty or holding this item id (flag 0); count +3 for 3206 (fire
@@ -229,6 +241,12 @@ reachability HIGH per conversations-mcnv §4.2–§4.3 ⚑ wave 2 corr (2026-10-
   bonus whose y exceeds the level height (`hdr+0xb282` rows · 32) is killed.
 - Multi Crystal loss (l. 45085–45122): 4 shards 0x4bf..0x4c2 (table row above).
 - Containers (§1.5), chests and crates (§2.4.1–2.4.2).
+
+> ⚑ planner note (Phase 4 PK, 2026-10-25) (BC46): a lost coin for which `.MTNewSprite` finds no free record (700 in
+> use) runs no Setup: **five** draws (R(8), R(8), R(0x640), R(100), R(0xdac)), not nine, and its field stores go
+> nowhere (M l. 48088–48104; Ruling 16). PK as executed: the "layer 0x14" is only `.MTNewSprite`'s argument —
+> `.SetupBonusSprite` stores `+0x80 = 1` (M l. 52383) before `.MTInsertSprite` (M l. 30715–30719), so a dropped coin
+> sits on layer **1**.
 
 ### 1.10 Persistence and level statistics  [HIGH]
 `.UpdateSprites` (main dump l. 4899–) writes each live sprite's type/x/y back into its record and

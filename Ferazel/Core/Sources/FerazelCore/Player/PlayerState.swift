@@ -129,7 +129,7 @@ public struct PlayerState: Equatable, Sendable {
     public var airWalk: Int16 = 0x76c
     public var airRun: Int16 = 0xc80
     /// `PTR_DAT_100a0620`: Double Speed active. `PTR_DAT_100a0638`: High Jump active. `PTR_DAT_100a062c`: Feather
-    /// Fall active. // later: Phase 4 (power-ups — their `.TickTock` timers have no Phase-2 writer; stay false).
+    /// Fall active. PK: the spheres set them (M l. 49049–49081); // later: PU — row 14's `.TickTock`s clear them.
     public var doubleSpeed = false
     public var highJump = false
     public var featherFall = false
@@ -218,7 +218,8 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a0670`: the standing flag (the cling / stun arms clear it; P3 reads it).
     public var standing0670 = false
     /// `PTR_DAT_100a0648` / `PTR_DAT_100a063c`: the walk-on-liquid power-up and its liquid kind — `.HitPlayerTileSprite`
-    /// turns a matching BG water cell into an FG kind-3 floor 16 px up. // later: Phase 4 (no Phase-2 writer).
+    /// turns a matching BG water cell into an FG kind-3 floor 16 px up. PK: the 1331…1333 spheres set them (M l.
+    /// 49039–49046); // later: PU — row 14's `.TickTock` clears the flag.
     public var walkOnLiquid = false
     public var walkOnLiquidKind: Int16 = 0
 
@@ -353,10 +354,51 @@ public struct PlayerState: Equatable, Sendable {
     public var tileCacheValid = false
 
     /// The coins `.HurtPlayer` knocked out of the player (W2a; l. 48078–48103): the count taken from `G+0x10`, summed
-    /// over the level. The original makes a Bonus 0x516 per coin (`MTNewSprite(0x516, …, 0x14, −1, .SetupBonusSprite)`);
-    /// // later: Phase 4 (Bonus pickups) spawns them — until then they are only counted; the Bonus Setup's own
-    /// `FastRand` draws (R(9), R(6), R(3), R(0x3c)) are made between each coin's draws (`HurtPlayer`).
+    /// over the level (no game reader — a test aid). PK: each coin is also spawned (`HurtPlayer`).
     public var coinsLost: Int16 = 0
+
+    // MARK: pickup state (PK: the `.HitPlayerSprite` Bonus arms write it, M l. 48593–49123; its readers are GL, MS,
+    // PU, SD's rows)
+
+    /// `PTR_DAT_100a04d4` / `PTR_DAT_100a04d0` (i32): the Mist body's stored x / y — the 69 arm moves the player there
+    /// (M l. 48607–48610). // later: MS — the spirit form writes them (M l. 44830, 44834).
+    public var mistBodyX: Int32 = 0
+    public var mistBodyY: Int32 = 0
+    /// `PTR_DAT_100a05c8`: zeroed by the glider pickup (M l. 48924). // later: GL — the glider row's counter (M l.
+    /// 45226–45236).
+    public var glider05c8: Int16 = 0
+    /// The sphere timers (`.TickTock`ed in row 14, M l. 44748–44799 — // later: PU) and the Shadow Double flag:
+    /// `PTR_DAT_100a064c` 1330's 600 and `PTR_DAT_100a0654` its flag; `PTR_DAT_100a0640` walk-on-liquid 600;
+    /// `PTR_DAT_100a0630` High Jump 600; `PTR_DAT_100a0650` Invincibility 0x1c2; `PTR_DAT_100a0624` Feather Fall 900;
+    /// `PTR_DAT_100a0618` Double Speed 600 (M l. 49033–49077). `.ClearPlayerVars` zeroes them (M l. 42642–42672).
+    public var shadowTimer: Int16 = 0
+    public var shadowDouble = false
+    public var walkOnLiquidTimer: Int16 = 0
+    public var highJumpTimer: Int16 = 0
+    public var invincibleTimer: Int16 = 0
+    public var featherFallTimer: Int16 = 0
+    public var doubleSpeedTimer: Int16 = 0
+    /// `PTR_DAT_100a053c`: the Pentashield orb count (1338: + 5, ≤ 8, M l. 49085–49088; `.SetupPlayerSprite` 0).
+    public var pentashieldCount: Int16 = 0
+    /// `PTR_DAT_100a0514`: the eight Pentashield orb records (0x14 bytes each). // later: PU / SD — their Handle.
+    public struct Orb: Equatable, Sendable {
+        /// `+0`: the orb sprite (nil = 0).
+        public var sprite: Int?
+        /// `+4` (u8): in use.
+        public var active: Bool
+        /// `+8` / `+0xc` / `+0x10` (i32): the angle (24.8 degrees), the radius, the angular speed.
+        public var angle: Int32
+        public var radius: Int32
+        public var speed: Int32
+    }
+    /// As `.SetupPlayerSprite` leaves them (M l. 42908–42955 — their only writer before a pickup; `Player.spawn` starts
+    /// from this default): orb i at angle i·0x4800, radius 0x30, speed 0xa00, no sprite, not in use.
+    public var orbs: [Orb] = (0..<8).map { Orb(sprite: nil, active: false, angle: Int32($0) * 0x4800, radius: 0x30,
+                                               speed: 0xa00) }
+    /// Draws a `.HitPlayerSprite` arm makes inside the special pass (PK: the pickups' `.UpdateStatusBar(1, 1, 0)` and
+    /// `.RemoveItem`'s `.UpdateItemStat`), in call order; the session appends them to the frame after the pass (or at
+    /// its suspension).
+    public var passDraws: [DrawOp] = []
 
     /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile
     /// callback and by the Effect Handles (the crumble overlay's 424).

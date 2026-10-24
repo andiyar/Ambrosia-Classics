@@ -517,7 +517,9 @@ public final class FerazelSession {
             frameCapsLock = capsLock
             frameActions = InputActions(keys: keys, prefs: prefs)
             if let p = world.playerID { HitPlayerSprite.talkDone(world, player: p) }
-        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _):
+        case (.upgrade, .upgrade):
+            break                                                       // PK: the arm returns after its loops
+        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
@@ -679,8 +681,12 @@ public final class FerazelSession {
     }
 
     /// `.HitPlayerSprite` with the frame's key snapshot.
+    /// PK: on a copy of `lightTable` written back after the call — the passage arm's `PassageView` reads the table
+    /// inside the call (`passageRedraw`), which an `inout` of the stored table would make an exclusivity conflict.
     private func hitPlayer(_ w: SpriteWorld, _ p: Int, _ c: Int) {
-        HitPlayerSprite.hit(w, player: p, other: c, keys: frameActions)
+        var table = lightTable
+        HitPlayerSprite.hit(w, player: p, other: c, keys: frameActions, lights: &table, effects: prefs.effects)
+        lightTable = table
     }
 
     /// The frame so far, handed out at a suspension (S1): the passage draws made in the pass so far, the sound calls
@@ -690,6 +696,8 @@ public final class FerazelSession {
         var ops = ops
         ops.draws.append(contentsOf: passageOps)
         passageOps = []
+        ops.draws.append(contentsOf: world.player.passDraws)            // PK: the pickups' status bar calls
+        world.player.passDraws = []
         SoundCues.emit(world.player.soundCalls, prefs: prefs, into: &ops)
         world.player.soundCalls = []
         ops.drawn = frameDraw
@@ -708,9 +716,12 @@ public final class FerazelSession {
 
     /// `.PaintFrameWrap`'s end after the special pass.
     private func paintTail(_ ops: inout FrameOps) {
-        // A passage jump's draws (`PassageView`, W2b), made inside the player pass.
+        // A passage jump's draws (`PassageView`, W2b), made inside the player pass; PK: the pickup arms' status bar
+        // calls (`PlayerState.passDraws`), made there too.
         ops.draws.append(contentsOf: passageOps)
         passageOps = []
+        ops.draws.append(contentsOf: world.player.passDraws)
+        world.player.passDraws = []
         // `.HandleParticles` (l. 9454), after `.HandleSprites` and before `.WrapEraseSprites`.
         world.particles.handle(tiles: world.tiles)
         // `.WrapEraseSprites` reads the live scroll point (`PTR_DAT_1009fe78`, l. 10452–10458): on a passage jump the

@@ -178,9 +178,13 @@ final class Phase2GoldenTests: XCTestCase {
         XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy), Int(p.waterRow)], [1978, 539, 0, 0, 69])
         // ◈ Re-measured 2026-10-25 (BN: the Bonus Handles — the torches' spark particles and their `FastRand` draws,
         // the spheres' mode 0xb; route, entry and splashes unchanged; was [67, 252] / 95ff5176412df650).
-        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [68, 305])
+        // ◈ Re-measured 2026-10-25 (PK: the route now collects what it walks through — the magic potion 3204 (rec 68,
+        // iteration 61) and the Xichrons of recs 92, 91, 93, 94 (324…338: score, snd 501, their light freed, the
+        // `.ExplodeFaceIntoParticles` bursts and their `FastRand` draws); route, entry and splashes unchanged; with the
+        // pickup arm disabled the old values return; was [68, 305] / 10b7b133cdc273c2).
+        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [67, 321])
         XCTAssertEqual(chain.count, 397)
-        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "10b7b133cdc273c2")
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "c1dd428a3f146d77")
     }
 
     /// 600 iterations: the swim route (357: the col-24 wall break, the camera pan, the pool entry), the pool strokes
@@ -217,31 +221,49 @@ final class Phase2GoldenTests: XCTestCase {
         // ◈ Re-measured 2026-10-25 (BN: the Bonus Handles — sphere flicker + mode 0xb, torch sparks and their
         // `FastRand` draws; the player's path and the scroll are unchanged; was 9532d65a42d39666 / a875a96c2801dbe9 /
         // seed 2032060201 / 44 particles).
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "1ebeb6a5f3f3b6b0")
-        XCTAssertEqual(cues.count, 3078)
-        XCTAssertEqual(hex(fnv1a(bytes(cues))), "e350390fb4658cfd")
+        // ◈ Re-measured 2026-10-25 (PK: the pickups on the route — the magic potion 3204 at iteration 61, the Xichrons
+        // of recs 92, 91, 93, 94 (324…338) and 95 (497): six more cues (506, 501 ×5 = 36 cue words), the Xichron
+        // bursts' particles and `FastRand` draws; the player's path and the scroll unchanged; with the pickup arm
+        // disabled the old values return; was 1ebeb6a5f3f3b6b0 / 3078 / e350390fb4658cfd / seed 1248094906 / 151).
+        XCTAssertEqual(hex(fnv1a(bytes(chain))), "a8dda9cf3e448016")
+        XCTAssertEqual(cues.count, 3114)
+        XCTAssertEqual(hex(fnv1a(bytes(cues))), "28a48762cfff1b2b")
         XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy)], [1591, 361, 1150, 705])
         XCTAssertNotEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [1353, 309])
-        XCTAssertEqual(s.rngSeed, 1248094906)
-        XCTAssertEqual(s.world.particles.live, 151)
+        XCTAssertEqual(s.rngSeed, 1574122804)
+        XCTAssertEqual(s.world.particles.live, 156)
     }
 
     /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in (the
     /// goldens' driver, not the App's path — since A1a the App's sessions are hosted by `LevelRun`, which runs the
     /// conversation). The drivers walk the player onto L1 sign rec 1 (step 148). No conversation ran, so the input
     /// polled at the answer is the frame's own (`keys`, Caps Lock up).
+    /// PK: an upgrade suspension runs `UpgradeAnimation` to its end (ticks 0, 1, … — the driver has no clock) and its
+    /// draws and sounds are merged in before the rest of the frame.
     static func answeringTalk(_ s: FerazelSession, _ first: FrameOps, keys: KeyState) -> FrameOps {
         var ops = first
         while let x = ops.suspension {
             let outcome: FrameSuspension.Outcome
+            var modal = FrontOutput()
             switch x {
             case .sign: outcome = .sign(keys: keys, capsLock: false)
             case .conversation: outcome = .conversation(keys: keys, capsLock: false)
+            case .upgrade(let type):
+                var u = UpgradeAnimation(type: type)
+                var now: UInt32 = 0
+                while !u.isDone {
+                    modal.append(u.tick(now: now, session: s, keys: keys))
+                    now += 1
+                }
+                outcome = .upgrade
             default: return ops
             }
             let rest = s.resume(outcome)
             var whole = ops
+            whole.draws += modal.draws
+            whole.sounds += modal.sounds
+            whole.requests += modal.requests
             whole.draws += rest.draws
             for (i, snd) in rest.soundStops.enumerated() {
                 whole.soundStops.append(snd)

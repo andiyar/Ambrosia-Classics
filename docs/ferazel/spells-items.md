@@ -27,6 +27,9 @@ therefore at most [MED], with the evidence named. `G` = game globals (engine.md 
   the count; at 0 the slot is removed and later slots shift down, selection adjusted [HIGH].
 - Picking up an item id that is already held adds to its count; otherwise the first empty slot
   is used (`.HitPlayerSprite`); scrolls (§3) add spell slots the same way [HIGH].
+  ⚑ planner note (Phase 4 PK, 2026-10-25; run 20 carry): the search takes the **first** slot that is empty **or**
+  holds the same id (items: flag 0; spells: flag ≠ 0) — not "the held slot, else the first empty one": an empty slot
+  before the held one is filled instead (M l. 48670–48681, 48946–48954, 48987–48997).
 - ⚑ wave 2 corr (2026-10-04) CM #7: conversation action 2 also fills item slots (first slot empty or
   holding item A with flag 0; flag 0, count += B, cap 99; `1007a3e0..1007a408`), and `.RemoveItem` is
   reachable from conversations (action 3). Conversations grant items only, never spells (review 2h
@@ -139,6 +142,10 @@ drops) in **pickups-boxes.md §1**; boxes, crates, doors, gates, save points in 
 | 3200..3248 | item | item `type−3200` +1 (fire seeds 3206: +3); 3221 (item 0x15) first removes item 0 (dagger); 3215 (item 0xf) first removes 0xe (shield) |
 | 3050 (0xbea) | hang glider | enters glider mode (`_DAT_100a05e0`) |
 | 1057 (0x421), 1058 (0x422), 1059 (0x423) | triggers | 0x422: `G+0xad8 + 2·param1 = param2 (or 1)` (world flags); 0x423: sound if param1 ≠ 0, then its callback — ⚑ 1057 is never spawned; 1059 is the **secret** counter (pickups-boxes §1.10) |
+
+> ⚑ planner note (Phase 4 PK, 2026-10-25) (BC35): 1340 / 1341 block the game for **120 ticks** (the gamma flash, the
+> bar flashes and the +0x70 in 8-steps; the six tick loops are spelled out in pickups-boxes §1.3's BC35 note, M l.
+> 48808–48918); the score + 2000 and snd 451 vol 0xab come first.
 
 ## 4. Items (item-slot ids)  [MED: names from manual order + code use]
 
