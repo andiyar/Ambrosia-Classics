@@ -119,7 +119,7 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(full, fullBefore)
     }
 
-    func testMoveSelectedToFront() {
+    func testMoveSelectedToFront() throws {
         let start = [Self.spell(0), Self.item(0), Self.item(1), Self.item(4)]
         var g = globals(start, selected: 3)
         XCTAssertTrue(g.moveSelectedItemToFront())
@@ -145,6 +145,14 @@ final class InventoryTests: XCTestCase {
         e.inventory[0] = Self.item(2)
         e.repairSelection()
         XCTAssertEqual(e.selectedSlot, -1)                            // slot "−1" reads the zero gap at G+0x1a: kept
+        // …and the player's frame runs it (`Player.handle` row 25): selection 5 on an empty slot → 0.
+        let w = SpriteWorld(level: try LevelFile.load(from: try FerazelData.open(try FerazelData.dataDirectory()),
+                                                      level: 1))
+        XCTAssertNotNil(Player.spawn(world: w, x: 100, y: 100))
+        w.globals.inventory = globals(start).inventory
+        w.globals.selectedSlot = 5
+        Player.handle(world: w, keys: [])
+        XCTAssertEqual(w.globals.selectedSlot, 0)
     }
 
     func testStepSelectionRepeat() {

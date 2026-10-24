@@ -4,8 +4,8 @@ import Foundation
 /// (spells-items §1, BC37). Status bar ops are the caller's: `removeItem` true → `.UpdateItemStat`,
 /// `moveSelectedItemToFront` true → `.UpdateStatusBar(1,1,0)`.
 extension GameGlobals {
-    /// The i16 the code reads as "slot `k`'s id" (`G + 0x24 + 10·k`). Slot −1 is `G+0x1a`, inside the never-written
-    /// gap `+0x18..+0x1f` (Phase 3 Invariant 7) → 0; the selection never leaves −1…26 (`stepSelection`,
+    /// The i16 the code reads as "slot `k`'s id" (`G + 0x24 + 10·k`). Slot −1's id is `G+0x1a`, inside the
+    /// never-written gap `+0x18..+0x1f` (Phase 3 Invariant 7) → 0; the selection never leaves −1…26 (`stepSelection`,
     /// `repairSelection`), any other value also reads 0 here (not modelled).
     private func slotWord(_ k: Int16) -> Int16 {
         inventory.indices.contains(Int(k)) ? inventory[Int(k)].id : 0
@@ -46,8 +46,9 @@ extension GameGlobals {
 
     /// `.MoveSelectedItemToFront @ 100456e8` (M l. 39664–39709): selection ≠ 0 → its slot to slot 0, slots 0…sel−1
     /// down one, selection 0; true = moved (the caller's `.UpdateStatusBar(1,1,0)`). Selection 0 → nothing, false.
-    /// A selection outside 1…26 (only −1 can occur: the empty inventory) would copy the gap bytes at `G+0x1a` into
-    /// slot 0 in the binary — not modelled: nothing, false.
+    /// A selection outside 1…26 (only −1 can occur: the empty inventory) would copy "slot −1" — `G+0x1a..+0x23`: the
+    /// gap words at `+0x1a`/`+0x1c`/`+0x1e`, then `G+0x20` (as `+6`) and `G+0x22` (as the flag byte) — into slot 0 in
+    /// the binary — not modelled: nothing, false.
     @discardableResult
     public mutating func moveSelectedItemToFront() -> Bool {
         let sel = Int(selectedSlot)
