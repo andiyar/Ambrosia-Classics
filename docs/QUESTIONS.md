@@ -46,6 +46,18 @@ Recommendation: a or b — the machine reads match the binary on every point che
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
 Answer: DEFERRED, not a verdict — Ben will play it when he is back from Fiji. Keep this item open; do not treat Phase 2 as passed or failed.
 
+### Q5 — 2026-10-24 — Quitting Ferazel from the Dock or at logout during a level: keep the original's "wait"?
+Context: The original game only listens for the system's "quit" message at the main menu and in its pause screen; during
+play it holds it (or, with "Allow background tasks" on, throws it away). Loop run 16 copied that (D35 as built, run 16):
+Quit from the Dock, the app menu, or a logout while a level runs does nothing until you pause or return to the menu —
+then the game's own quit sequence runs. macOS shows that as "Ferazel's Wand cancelled logout". File ▸ Quit (⌘Q) in the
+pause works normally.
+Options: (a) keep the original's behaviour; (b) quit at once from anywhere (a modern affordance); (c) at once only for
+logout/shutdown, original behaviour for Dock/app-menu Quit.
+Recommendation: a — the standing 100 % rule (replicate the original, no modern affordances).
+Blocks: nothing (built as (a); (b)/(c) would be a small App change).
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_

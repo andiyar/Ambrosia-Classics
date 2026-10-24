@@ -1414,6 +1414,26 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   callback while the renderers load faces (the boot bar). Quit request → `NSApp.terminate`; `applicationShouldTerminate`
   from the system → the flow's Quit sequence first.
 - **Gate:** G2 = 345 (LevelFlowTests rewritten, count unchanged), G5, G6, G7(+b), G8, G10. **Commit:** `Ferazel app: driven by GameFlow (ticks, mouse, Caps Lock), shared screen, music fades (one track id, 0…256 volume), prefs and saved-game files, Finder open`.
+- ⚑ **As executed (A1a ⚑, loop run 16, 2026-10-24; 7d64447 + review fixes 9566578 + fixes 2 b692dd8):** G2 345 (the
+  three ◇ LevelFlowTests rewritten, count 6); G5 BUILD SUCCEEDED. Two Opus legs MERGEABLE → fix round → Opus re-review
+  MERGEABLE → second fix round (seat read the App diff). New file `Ferazel/App/FerazelFiles.swift`; extra Core files
+  (plan gap — the Apple events had no Core seam): `Front/{GameFlow,LevelRun,NewGame,Pause,WorldMapRun}.swift`,
+  `Seams/ShellRequest.swift`, `FerazelRender/Frame/FrameRenderer.swift` (live prefs: parallax read every copy).
+  **Dump beat plan:** (1) the quit and open-document Apple events are queued (FIFO) and dispatched only by the main
+  menu's end-of-pass `.CheckEvent` (M l. 7441) and the pause loop (M l. 3218, level and map); the in-play fetch runs only
+  with "Allow background tasks" (prefs +0x08) and discards the event (M l. 5277–5279); a Finder open is ignored only when
+  a game is running at dispatch (M l. 31221) — so the plan's "else ignored" becomes "queued, continued after the game"
+  and "Quit sequence first" becomes "queued until a pause or the menu". **Seat rulings:** `applicationShouldTerminate`
+  queues the quit and answers `.terminateCancel` (a `.terminateLater` across play would hold AppKit in the modal-panel
+  run-loop mode); the flow's `.quit` then terminates unasked; the boot idle (M l. 7323) keeps queued events for the menu
+  pass (Classic Mac returns activate/update events first). (2) PICT/snd confusion: 4803/4804 are `'snd '`, and `.InitAppGlobals`
+  (M l. 350–356) also loads 198 (pause) and 4801 unconditionally — all four load even with F1. (3) A directly built
+  session still emits `.loadLevel` at an exit (SoundCueTests pins it), now the unlocked level with no 1…2 clamp.
+  App: keys pass through unremapped (right Shift/Option/⌘/Control folded to left, M l. 42340), plus Caps Lock; the mouse
+  outside the canvas (and with no window) is nil; only conversation ops go to `ConversationRenderer`; `FerazelAudio`
+  keeps no prefs (Core's fades carry every volume). Follow-ups (minor, unowned): the boot bar advances only for the 25
+  map faces (the original also loads PICT 8003/150/151 + sprite faces under it); music is decoded on play (possible
+  one-tick hitch).
 
 #### A1b — ⚑ MAJOR — App dialogs and menus
 - **Files:** `Ferazel/App/Dialogs/{FerazelCarbonDialog,DialogViews,FerazelDialogs,PrefsDialogView,CreditsDialog}.swift`,
@@ -1435,6 +1455,22 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   (pointer v < 21 at the menu, during pause) and hides otherwise; windowed, the macOS menu bar stays visible (D35
   deviation).
 - **Gate:** G2 = 345, G5, G6, G7(+b), G8, G10; wave 3.7 end: G3. **Commit:** `Ferazel app: the original's dialogs (abort/quit confirm, reports, Options with key remapping, Credits) and menus (MBAR 128, enabled where the original listened)`.
+- ⚑ **As executed (A1b ⚑, loop run 16, 2026-10-24; 2902f93 + review fixes e7545cd + tests 771625d):** G2 345; G3
+  1,108/0; G5 BUILD SUCCEEDED. Leg A (fidelity) MERGEABLE, leg B (quality) NOT MERGEABLE (26 mutation survivors + the
+  dead-keys option passed as a bit number, so dead-key names were blank) → fix e7545cd → Opus re-review MERGEABLE (6
+  survivors) → tests round 771625d (seat read the diff). Extra Core files (P1 handed A1b the paused Quit/Preferences/About;
+  menu picks had no route): `Front/{GameFlow,LevelRun,WorldMapRun,Pause,NewGame,ContinueGame}.swift`. **Dump beat plan:**
+  report and error both use DLOG 200 (code in the second text line, M l. 35537; the dump has no Alert calls — ALRT
+  500/501 unused); DLOG 202 has no cancel item, so Esc does nothing; the main menu polls N, O/R, I/P, C, Q before its
+  menu check (M l. 7388–7441), so ⌘N/⌘O/⌘P/⌘Q act as those letters there (⌘M/⌘F toggle, ⌘W nothing); in the pause loop
+  ⌘W/⌘M/⌘F/⌘Q/⌘P act, ⌘N/⌘O disabled; enable rules M l. 28763–28889; each main-menu button's sequence opens with
+  `FlushEvents` (M l. 5745, 6705, 7266, 7296, 7458), dropping a pick queued during the button flash; Credits closes on
+  button-down and flushes mouse-down only (M l. 65423). The App reads only the flow's `MenuState` (menus dead from a
+  game's start, during `.Quit`, live again when New Game/Continue fail back to the menu). A live menu freezes the game
+  (MenuSelect blocks, as the original). Approximations: flat classic controls, bold system font for Charcoal, dialogs
+  one point per original pixel. Follow-ups (minor, unowned): the instant fade back in before a report when the screen is
+  faded (M l. 35448, Core's report sequence) is not built; a second main-menu pick while one waits is dropped (the
+  original would queue it).
 
 #### GP — minor — A game controller acts as the original keys (added by loop run 13 from Ben's Q4 answer, D37; → 349)
 - **Why:** Ben, 2026-10-24 (QUESTIONS Q4 (a)): his kids play on a Switch and the keypad defaults are hard. Same

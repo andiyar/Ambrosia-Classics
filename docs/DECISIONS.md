@@ -1333,6 +1333,22 @@ A1a sets the real measures; (2) plan gap — three test drivers that walk onto L
 (no expected value or golden moved). Ferazel/Core 335 → 345/0, census 1,108/0, Ferazel builds, HectorKit 35a85ba
 untouched (floor 361).
 
+**As built (loop run 16, 2026-10-24) — wave 3.7 CLOSED (A1a, A1b): the app runs on `GameFlow`.** A1a ⚑ (7d64447 + fixes
+9566578, b692dd8): the 240 Hz timer drives `GameFlow.tick`; segments routed in order to the screen/frame/map/conversation
+renderers on one shared surface; real text measures for conversations; music on one mixer id with the 0…256 volume;
+`FerazelFiles` (prefs file + saved-game panels, Finder open, 'FWSg' document type); the ◇ suspension stand-in and the
+Phase-2 ◇ helpers are gone. A1b ⚑ (2902f93 + fixes e7545cd + tests 771625d): Dialog Manager windows from the original
+templates (DLOG 202 confirm, 200 report and error, 6900 Options with key capture, 600 Credits) and the MBAR 128 menus,
+live only where the original read menu events (main menu, pause loop). **Rulings (follow the binary):** the quit and
+open-document Apple events are queued first-in-first-out and handled only at the main menu's event check and the pause
+loop; the in-play fetch (only with "Allow background tasks") throws them away; a Finder open during a game is therefore
+continued after it, not ignored; report and error share DLOG 200; the confirm has no cancel item (Esc does nothing); at
+the main menu ⌘N/⌘O/⌘P/⌘Q act as the plain letters; each main-menu button flushes events first. **Seat rulings:** a
+system Quit (Dock, logout, app menu) is queued and the terminate is cancelled at once — no terminate stays pending through
+play — and the flow's own Quit then terminates unasked (QUESTIONS Q5, Ben's later read); the boot idle keeps queued
+events for the menu pass; 4803/4804 are sounds, and 198/4801 load even with F1. Ferazel/Core 345/0 (unchanged by
+design), census 1,108/0, Ferazel builds, HectorKit 35a85ba untouched (floor 361).
+
 ## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
 
 **Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their
