@@ -868,6 +868,10 @@ public final class GameFlow {
                 // `InitCursor`, `ShowCursorSafe`, `SetWatchCursor`, `FlushEvents`, `FadeAIFFMusic(0,1)`.
                 f.flushEvents()
                 out.requests.append(.showCursor)
+                // No menu event is processed again (main menu or pause loop): the App's menus dead, unconditionally —
+                // a pause loop's own live state never went through `menuBarListening` (A1b).
+                f.menuBarListening = false
+                out.requests.append(f.menuState(live: false))
                 f.block(f.toggles.music.fadeAIFFMusic(direction: 0, ticks: 1, prefs: f.toggles.live), now, &out)
             },
             { f, now, _, out in

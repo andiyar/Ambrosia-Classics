@@ -324,7 +324,11 @@ final class GameFlowMenuTests: XCTestCase {
         for (i, key) in [0x22, 0x23].enumerated() {
             let o0 = o
             let press = FrontInput(keys: KeyState(pressed: [key]))
-            let ot = drive(opt, &o, max: 40, input: { $0 == o0 ? press : FrontInput() }) {
+            // A pick made during the flash waits in the OS queue; `.Options` opens with `FlushEvents` (M l. 7266).
+            let ot = drive(opt, &o, max: 40, input: {
+                if $0 == o0 &+ 1 { XCTAssertTrue(opt.menusLive); opt.menuChosen(.music) }
+                return $0 == o0 ? press : FrontInput()
+            }) {
                 $0.state != .mainMenu
             }
             XCTAssertEqual(opt.state, .options, "key \(key)")
@@ -343,6 +347,9 @@ final class GameFlowMenuTests: XCTestCase {
             XCTAssertNil(opt.prefsDialog)
             XCTAssertTrue(opt.statusBarRedrawFe0c)
             XCTAssertTrue(opt.statusBarRedraw511e)
+            _ = opt.tick(now: o, input: FrontInput()); o &+= 1
+            XCTAssertEqual(opt.toggles.live.musicOn, 1, "the flushed ⌘M never toggled (key \(key))")
+            XCTAssertTrue(opt.menusLive)
         }
 
         // Sound off: the same draws, no cue.
@@ -361,7 +368,10 @@ final class GameFlowMenuTests: XCTestCase {
         bootToMenu(quit, &w)
         XCTAssertEqual(quit.tick(now: w, input: FrontInput(mouse: (100, 20))).requests, [.showMenuBar]); w &+= 1
         let w0 = w
-        let qt = drive(quit, &w, max: 200, input: { $0 == w0 ? FrontInput(keys: KeyState(pressed: [0x0c])) : FrontInput() }) {
+        let qt = drive(quit, &w, max: 200, input: {
+            if $0 == w0 &+ 1 { XCTAssertTrue(quit.menusLive); quit.menuChosen(.music) }   // during Q's flash
+            return $0 == w0 ? FrontInput(keys: KeyState(pressed: [0x0c])) : FrontInput()
+        }) {
             $0.state == .quit
         }
         XCTAssertEqual(pictures(qt[0].out), [4905])
@@ -376,6 +386,13 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertEqual(qt.last!.out.draws.last, .setScreenClut(id: 801))
         XCTAssertEqual(Int(qt.last!.t &- w0), 10 + 24 + 30)
         XCTAssertEqual(qt.filter { tints($0.out) > 0 }.count, 30)
+        XCTAssertTrue(qt[10].out.requests.contains(.showMenuBarItems(MenuState(menusLive: false, paused: false,
+                                                                               musicOn: true, soundOn: true))))
+        // `.Quit`'s `FlushEvents` dropped the pick made during the flash: with `quitting` and the state put back by
+        // hand (`.Quit` never returns), nothing waits for a pass.
+        quit.quitting = false
+        quit.state = .mainMenu
+        XCTAssertTrue(quit.menusLive, "the flushed pick is gone")
 
         // The system's quit at the main menu (`.DoQuitAppAE`, dispatched by the pass's `.CheckEvent`): the same `.Quit`
         // sequence with no button track — FadeAIFFMusic(0,1), `.stop`, GammaFadeOut(6), clut 801, `ExitToShell`.
@@ -591,6 +608,9 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertTrue(flow.quitting)
         XCTAssertFalse(flow.menusLive)
         XCTAssertTrue(quit.requests.contains(.showCursor))
+        XCTAssertTrue(quit.requests.contains(.showMenuBarItems(MenuState(menusLive: false, paused: false, musicOn: false,
+                                                                         soundOn: true))),
+                      "`.Quit` processes no menu event again: the menus dead")
         XCTAssertEqual(pictures(quit), [])
     }
 }

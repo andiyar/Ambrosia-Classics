@@ -1,4 +1,5 @@
 import XCTest
+import HectorResources
 @testable import FerazelCore
 
 /// F1b (docs/plans/2026-10-14-ferazel-phase3.md): `GameFlow` part 2 — `.NewGame @ 1000b11c` (M l. 5704–5874),
@@ -259,6 +260,36 @@ final class GameFlowGameTests: XCTestCase {
             XCTAssertEqual(rig3.levels.prepared, [expected], "start \(start)")
         }
 
+        // The world file without `Mlvl 1` (`OpenDefaultWorldLevel(1)` nil): the level-load report, then back in the
+        // menu loop with the menus live again. A pick made during N's flash was dropped by `.NewGame`'s `FlushEvents`
+        // (M l. 5745): it never fires on the return.
+        var noL1World = ResourceCollection()
+        for type in r.world.types() {
+            for res in r.world.resources(of: type) where !(type == "Mlvl" && res.id == 1) { noL1World.add(res) }
+        }
+        let noL1 = FerazelResources(app: r.app, world: noL1World, backgrounds: r.backgrounds, sprites: r.sprites,
+                                    sounds: r.sounds, titles: r.titles, musicDirectory: r.musicDirectory)
+        let rig7 = Rig(noL1)
+        rig7.toMenu()
+        rig7.press(0x2d)
+        XCTAssertEqual(rig7.flow.state, .mainMenu, "N's flash")
+        XCTAssertTrue(rig7.flow.menusLive)
+        rig7.flow.menuChosen(.music)
+        let noLevel = rig7.drive { _ in self.asked(rig7.last) }
+        XCTAssertEqual(dialogs(noLevel), [.report(text: GameFlow.levelLoadError)])
+        XCTAssertTrue(noLevel.flatMap { $0.out.requests }.contains(.showMenuBarItems(MenuState(
+            menusLive: false, paused: false, musicOn: true, soundOn: true))))
+        rig7.flow.dialogDone(.ok)
+        let back7 = rig7.drive { $0.state == .mainMenu }
+        XCTAssertEqual(back7.last?.out.requests.last, .showMenuBarItems(MenuState(menusLive: true, paused: false,
+                                                                                 musicOn: true, soundOn: true)),
+                       "back in the menu loop: the menus live again")
+        for _ in 0..<3 { rig7.drive(max: 1) { _ in true } }
+        XCTAssertEqual(rig7.flow.toggles.live.musicOn, 1, "the flushed ⌘M never toggled")
+        XCTAssertTrue(rig7.flow.menusLive)
+        XCTAssertNil(rig7.flow.levelRun)
+        XCTAssertTrue(rig7.levels.prepared.isEmpty)
+
         // A1a, the system's quit during a level. "Allow background tasks" off (the default): `.GameLoop` fetches no
         // event, so the quit stays queued; the pause loop's `.CheckEvent` (Caps Lock, M l. 3218) dispatches it →
         // `.Quit` from inside `.Pause` (no pause exit, `fd50` untouched) → `ExitToShell`.
@@ -285,6 +316,12 @@ final class GameFlowGameTests: XCTestCase {
                                                                 soundOn: true))
         XCTAssertTrue(paused.contains { $0.out.requests.contains(.showMenuBar) && !$0.out.requests.contains(.quit) })
         XCTAssertFalse(paused.contains { $0.out.requests.contains(exitMenus) }, "no pause exit")
+        // `.Quit` from the pause loop processes no menu event again: the pause's live menus sent dead.
+        let pauseMenus = paused.flatMap { $0.out.requests }.filter { if case .showMenuBarItems = $0 { return true }; return false }
+        XCTAssertEqual(pauseMenus.first, .showMenuBarItems(MenuState(menusLive: true, paused: true, musicOn: true,
+                                                                     soundOn: true)))
+        XCTAssertEqual(pauseMenus.last, .showMenuBarItems(MenuState(menusLive: false, paused: false, musicOn: true,
+                                                                    soundOn: true)))
         // "Allow background tasks" on: every iteration's `WaitNextEvent(0xffff, …, 0, 0)` (M l. 5277–5279) fetches the
         // quit and never handles it — lost; the pause later dispatches nothing and the game goes on.
         let rig5 = Rig(r)
@@ -774,15 +811,25 @@ final class GameFlowGameTests: XCTestCase {
         let ref9 = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/nine"), displayName: "nine")
         rig2.files.blocks[ref9.url] = try checkpoint(r, level: 9)
         rig2.press(0x0f)
+        // A pick made during R's flash waits in the OS queue; `.ContinueGame` opens with `FlushEvents` (M l. 6705).
+        XCTAssertEqual(rig2.flow.state, .mainMenu, "R's flash")
+        XCTAssertTrue(rig2.flow.menusLive)
+        rig2.flow.menuChosen(.music)
         rig2.drive { _ in self.askedFile(rig2.last) }
         rig2.flow.fileDone(.chosen(ref9))
         let missing = rig2.drive { _ in self.asked(rig2.last) }
         XCTAssertEqual(dialogs(missing),
                        [.report(text: "An unexpected error occurred -- the level could not be loaded from the world file!")])
         rig2.flow.dialogDone(.ok)
-        rig2.drive { $0.state == .mainMenu }
+        let back9 = rig2.drive { $0.state == .mainMenu }
         XCTAssertNil(rig2.flow.levelRun)
         XCTAssertTrue(rig2.levels.prepared.isEmpty)
+        XCTAssertEqual(back9.last?.out.requests.last, .showMenuBarItems(MenuState(menusLive: true, paused: false,
+                                                                                 musicOn: true, soundOn: true)),
+                       "back in the menu loop: the menus live again")
+        for _ in 0..<3 { rig2.drive(max: 1) { _ in true } }
+        XCTAssertEqual(rig2.flow.toggles.live.musicOn, 1, "the flushed ⌘M never toggled")
+        XCTAssertTrue(rig2.flow.menusLive)
 
         // S1: a save point inside a GameFlow game. A checkpoint whose snapshot leaves record 24 unused (p1 0) and puts
         // the player on it: the flow hands `LevelRun` its file seam and fe00 / fd54 / fd18; the save panel's reply
