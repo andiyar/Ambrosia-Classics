@@ -40,25 +40,24 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 1. This file, then `docs/QUESTIONS.md` (act on any new text under an item's `Answer:` before anything else — it is an
    authorization for exactly what it says; record it in DECISIONS). Open: **Q2** (the Phase 2 gate card — Ben DEFERRED it
    until he is back; not a verdict, keep it open), **Q5** (system Quit/logout during a level waits for a pause or the
-   menu, as the original — built as (a)), **Q6** (run 17: the Phase 3 gate card — first real play of the new front end).
-   If Ben answers Q2 or Q6 with (b)/(c), his notes become fix tasks for that phase — plan them FIRST, before Phase 4
-   work, and say so in LOOP-LOG; Q5 (b)/(c) is a small App task, plan it first too. Q1, Q3, Q4 are answered and acted on.
+   menu, as the original — built as (a)), **Q6** (run 17: the Phase 3 gate card), **Q7** (run 18: the Phase 4 plan's
+   three non-blocking choices — defaults are being built). If Ben answers Q2 or Q6 with (b)/(c), his notes become fix
+   tasks for that phase — plan them FIRST (append them to the Phase 4 plan as a named wave before the next one) and say
+   so in LOOP-LOG; Q5 (b)/(c) is a small App task, plan it first too; a non-default Q7 answer becomes a small task in
+   Phase 4. Q1, Q3, Q4 are answered and acted on.
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D26** (the Ferazel design ruling), **D33** (Phase 2
-   as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + its "As built (loop run 9 … 17)"
-   paragraphs), **D37** (Ferazel controller).
-3. **The design: `docs/plans/2026-10-06-ferazel-design.md`** — §1 scope, §8 the phase table (l. 168: **Phase 4 "Spells
-   + items"** = casting, the spells and player shots, items/inventory/HUD, pickups, boxes (crates, chests, doors, keys,
-   switches, teleporters), held weapon; Ben's gate "first levels as the original allows"), §9 open items.
-4. **The Phase 3 plan as the template and the carry source: `docs/plans/2026-10-14-ferazel-phase3.md`** — its shape
-   (Verification model, Invariants + Hazards, Shared architecture LOCKED, waves of tasks with Files/Contract/Tests/Gate/
-   Commit, Execution order, Stand-ins, Bank corrections, Rulings, Review ledger, the gate card), its **"Stand-ins kept
-   (◇)" table (l. ~1628)** — every row marked "Phase 4" is Phase 4's to replace (HUD from G's inventory, USE-item hint
-   conversations, Escape Ring, the 1058 world-flag Bonus class, `BuiltLevels` widening as levels' Setups land) — and the
-   "As executed" bullets of GP and A2 (carried NOTEs). Next free bank correction number: grep `BC` in that plan (last
-   was BC34 → **BC35**).
-5. The bank: `docs/ferazel/INDEX.md` then the topical files for items, spells, boxes, inventory (load only what the plan
-   needs); the decompile `ghidra/ferazel/` (the dump beats the bank: "follow the binary"; the "digest A–F" files were
-   never committed — ground on the bank + the dump, say so in every brief).
+   as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + as built), **D37** (Ferazel controller),
+   **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text).
+3. **The plan: `docs/plans/2026-10-24-ferazel-phase4.md`** — read "Verification model" (l. 78, gates G1–G10 incl. G7b
+   and G8), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared architecture LOCKED" (l. 222), then your
+   wave's tasks, "Execution order" (l. ~1283, dependencies + file overlaps), "Stand-ins kept (◇)" (l. ~1321), "Bank
+   corrections to append" (l. ~1417; BC35–BC50, each appended by the task named) and "Rulings" (l. ~1510). The design
+   `docs/plans/2026-10-06-ferazel-design.md` §8 row 4 is the scope; the Phase 3 plan is history.
+4. The bank: `docs/ferazel/INDEX.md` then only the topical files your tasks cite; the decompile `ghidra/ferazel/` (the
+   dump beats the bank: "follow the binary"; Phase 3's "digest A–F" files were never committed — the Phase 4 plan is
+   grounded on the bank + the dump + the planner's census scripts (not committed); say so in every brief). **Every
+   brief must tell the implementer to re-read each cited M line in the committed dump before coding** — the plan is
+   wrong against the dump about once per task; the dump wins and the task's "As executed" note records it.
 
 ## RECONCILE FIRST (before any dispatch — the chip can be stale)
 1. `git -C "$REPO" worktree list` and `git -C "$REPO" branch --list 'loop/*'`: a leftover `loop-*` worktree or branch
@@ -75,66 +74,62 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-24, written by loop run 17 at its close; head of `main` = run 17's docs-close commit on top of 3553392 — read `git log -8 main`)
-- **Phase 2 "Ferazel moves" is CLOSED on the machine side** (loop run 7). **Ben's gate: QUESTIONS Q2 — DEFERRED.**
-- **Phase 3 "Front end + saves" is CLOSED on the machine side** (loop run 17): every task of the plan
-  `docs/plans/2026-10-14-ferazel-phase3.md` done — X1 R1 SV1 SV2 FE0 O1 L2 L1 RX M1 M2 F1a D1 F1b S1 P1 EC C1 C2 A1a A1b
-  **GP** (325d2e4 + 88a0809, a game controller as the original keys, → 349) **A2** (4184463 + Fable fixes 3553392).
-  Staged build **3553392** at `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate
-  card) + icon previews; **G9 2/2** (the first launches of the GameFlow app: boot reaches the main menu, quits clean, no
-  crash report). Fable phase-end leg: "stage as is after doc fixes" (dump MATCH across the front end, saves, map,
-  pause, stage panel; 9/9 mutations killed). **Ben's gate: QUESTIONS Q6.**
-- `Ferazel/Core` suite: **349 passed, 0 failed/skipped**. Census `Totals: items 1,108 decoded, failures 0`. HectorKit
-  `~/Developer/HectorKit` main **35a85ba**, clean, floor **361** (unchanged since the BTX gamepad work).
+## STATE (live, 2026-10-24, written by loop run 18 at its close; head of `main` = run 18's docs-close commit on top of b55e7c5 — read `git log -8 main`)
+- **Phase 2 "Ferazel moves" CLOSED on the machine side** (loop run 7). **Ben's gate: QUESTIONS Q2 — DEFERRED.**
+- **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
+  `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card). **Ben's gate: Q6.**
+- **Phase 4 "Spells + items" PLANNED** (loop run 18; plan `docs/plans/2026-10-24-ferazel-phase4.md` at 04cfec0 →
+  f8d250c → b55e7c5; D38): 24 tasks + phase end A4, **12 ⚑ MAJOR** (LT US BN PK EF CS SH IU SD BX1 TP LV3), ladder
+  **349 → 481**, ten runs. Two Opus legs SOUND WITH FIXES (1 critical: teleporter partner rule) + FABLE-GRADE plan leg
+  PASS WITH FIXES (G2 349/0 re-run), both fix rounds applied, nothing rejected. No HectorKit change. `BuiltLevels`
+  widens to 1...3 at LV3 and 1...4 at LV4; level 5 (first boss) stays refused. **No Phase 4 task executed yet.**
+- `Ferazel/Core` suite: **349 passed, 0 failed/skipped** (run 18 re-ran it). Census `Totals: items 1,108 decoded,
+  failures 0`. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
-  `gamepad`, merged) are Ben's — never touch. Run 17's own worktree is the looper's to remove.
+  `gamepad`, merged) are Ben's — never touch. Run 18's own worktree is the looper's to remove.
 - Goldens: Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `172596fa2f3b6c58` / pan 60 `cc9786ba763d383a` /
   chain `b4230ba5a643c5b5`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `e4f4bf977dd98eaa`, swim
   `95ff5176412df650`, 600-frame chain `9532d65a42d39666` / cues `a875a96c2801dbe9`; Phase 3 main-menu screen
-  `ed142fed9e3bdce7` (FE0), world map first frame `38563faaa2276f05` (M1/M2), map RNG `0x7b052a62` (M1), sign frame
-  `c8e41941c1e4d6da` (C2).
-- **Carried minor follow-ups (unowned; the Phase 4 plan may adopt any):** report fade-in when faded (M l. 35448) unbuilt;
-  a second queued main-menu pick dropped; boot bar jumps (all map faces load in one callback); music decoded on play;
+  `ed142fed9e3bdce7` (FE0), world map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign frame
+  `c8e41941c1e4d6da` (C2). **Phase 4: LT must not move any golden; only BN, PK, BX1, BX2 (◈ in the plan) may, each
+  recording old → new and the cause in its "As executed" note.**
+- **Carried minor follow-ups (not adopted by Phase 4, D38 Ruling 15 — left to Ben's Q6 verdict):** report fade-in when
+  faded (M l. 35448) unbuilt; a second queued main-menu pick dropped; boot bar jumps; music decoded on play;
   `.savePoint(saved:)` carries no polled input after the save dialog; `SavedGameFile.writeErrorReport` code typed
-  optional; `CoreTextRasterizer` widths untested; `FerazelController.fail()` exits with only an NSLog (a Release alert
-  would help); the save panel's field label repeats the prompt; stale "later: W1/W3/W4/P2" comments (Phase 2 tasks) in
+  optional; `CoreTextRasterizer` widths untested; `FerazelController.fail()` exits with only an NSLog; the save panel's
+  field label repeats the prompt. (The stale "later: W1/W3/W4/P2" stubs + M7 are X1's.)
+- **Lessons (runs 9–18):** (1) ground on the bank + the dump (digests A–F never committed); (2) the plan is wrong
+  against the dump about once per task — the dump wins, the as-executed bullet records it; (3) run the seat's own gates
+  from the worktree once no agent is building; (4) foreground `Agent` calls return the report directly — two review
+  legs in one message run in parallel in `git archive` temp copies; (5) a fix round that changes behaviour gets a
+  re-review; a tests-only or tiny round the seat reads itself; (6) reviewers' mutation runs are the best signal —
+  strengthen inside existing test functions so the ladder total holds; (7) plan file lists miss flow wiring and seams —
+  Phase 4's plan lists them, but check `FerazelSession.swift`'s switch (no default), `SessionTests.swift`,
+  `ScreenRenderer.swift` and the FrameRenderer sheet table whenever a task adds a case or a spawnable type; (8) merge
+  each green task to main before starting the next; (9) AppKit: never leave a `.terminateLater` pending across play;
+  (10) a Fable reviewer that launches background helpers returns early — tell it up front "no background agents";
+  (11) read each layout/flow table against its ruling's stated why; (12) **run 18: a resumed subagent (SendMessage)
+  runs in the background — the seat must stay in its turn (a foreground `Bash` wait loop on `git log -1` up to 10 min)
+  until its notice arrives, or the headless session ends and kills it.**
+
+## THIS RUN'S JOB — loop run 19: **Phase 4 wave 4.0 = [X1 VS LT]** (3 tasks, one ⚑ MAJOR)
+- **X1** (plan l. 326, minor, → 349, 0 tests): carry sweep — the stale "later: W1/W3/W4/P2" comments in
   `SpriteSlot.swift:135`, `SpriteWorld.swift:57,297`, `Player.swift:17`, `RectBounce.swift:155`, `BoxSprite.swift:36`,
-  `BackgroundSprite.swift:25`.
-- **Lessons (runs 9–17):** (1) the plan's "digest A–F" were never committed — ground on the bank files + the dump (say so
-  in every brief); (2) the plan is wrong against the dump about once per task — the dump wins, the as-executed bullet
-  records it; (3) run the seat's own gates from the worktree once no agent is building; (4) foreground `Agent` calls
-  return the report directly — two review legs in one message run in parallel in `git archive` temp copies; (5) a fix
-  round that changes behaviour gets a re-review; a tests-only or tiny round the seat reads itself; (6) Opus reviewers'
-  mutation runs are the best signal — strengthen inside existing test functions so the ladder total holds; (7) plan file
-  lists miss flow wiring and seams — every A/GP task needed files the plan did not list; a Phase 4 plan should list the
-  `Front/` flow files and `Ferazel/App/` seams each task touches; (8) merge each green task to main before starting the
-  next; (9) on AppKit: never leave a `.terminateLater` pending across play; pass UCKeyTranslate option MASKS; (10) **run
-  17: a Fable reviewer that launches its own background helpers returns early and does NOT wake on their results** (the
-  notices come to the seat) — resume it with SendMessage giving the helpers' output-file paths, or tell it up front "no
-  background agents"; (11) a plan table can contradict its own ruling's reason (GP's map − tap aborted a game) — read
-  each layout/flow table against the ruling's stated why.
+  `BackgroundSprite.swift:25` relabelled; M7 `TileHotRects.init(level:)` (review: no test caller → delete). One Opus
+  review leg (the seat may read a comments-only diff itself, lesson 5).
+- **VS** (plan l. 340, minor, → 352): `SoundVoices` + `FrontInput.playing` from the Render `SoundTool`'s playing set
+  (App `FerazelAudio.swift` + `FerazelController.swift` — G5). One Opus leg.
+- **LT** (plan l. 364, ⚑ MAJOR, → 357): the light table moves into Core (`LightTable`, `DrawOp.lightTable`), **no
+  golden moves**. Two Opus review legs in parallel.
+- Order X1 → VS → LT, each merged to main before the next (lesson 8). Wave end: G3 + G5. Then CLOSE. The next chip names
+  wave 4.1 = [US IV HU] (plan l. 401–505, → 374).
 
-## THIS RUN'S JOB — loop run 18: **the Phase 4 planning run** ("Spells + items")
-- Write `docs/plans/<date>-ferazel-phase4.md` with an Opus planner (`fk-implementer`, no model param — never
-  Sonnet/Haiku, never general-purpose), `superpowers:writing-plans` shape, **contracts not code**
-  (`feedback-plans-carry-contracts-not-code`), against the design §8 row 4, the bank, the dump and what landed (Phase 3
-  as built + its ◇ table). It must carry: its own ladder from **349**, gate commands with numbers, waves of 2–3 tasks
-  (⚑ MAJOR marked), Files lists that include the flow/App seams (lesson 7), the stand-ins it keeps (◇, named) and
-  replaces, bank corrections numbered from BC35 (or the Phase 4 plan's own series, say which), the gate card ("first
-  levels as the original allows" — say which levels are enterable at the end of Phase 4: `BuiltLevels` widens only as
-  each level's Setups are transcribed; decide whether Phase 4 widens it and how far), and whether HectorKit changes.
-- Then **two Opus review legs** (`fk-reviewer`, no model param, in parallel, each grounded on the dump), fixes, then
-  **one Fable leg** (`fk-reviewer`, `model: "fable"`, "FABLE-GRADE gate" in its prompt, told: no background agents),
-  fixes. Rulings → **D38** in `docs/DECISIONS.md` (next free; D36 is BTX's gamepad, D37 Ferazel's controller). List the
-  plan for Ben's later read in QUESTIONS (non-blocking, like Q3). **Execution starts the next run without waiting.**
-- The NEXT chip you write then names the first wave of Phase 4 tasks (2 tasks, 3 if at most one is ⚑ MAJOR).
-
-## GATES (fenced; verified on this machine 2026-10-24; G2 349/0, G3, G5, G9 re-run by run 17 — copy literally; `$WT` = your worktree)
+## GATES (fenced; verified on this machine 2026-10-24; G2 349/0 re-run by run 18 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
-# G1 HectorKit untouched unless the Phase 4 plan names an HK task; then: a local HK main you made + floor ≥ 361 (see AUTHORIZATIONS)
+# G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (349 at the start of Phase 4; a planning run must not change it), second = 0
+# G2 suite: first number = the ladder total (X1 349, VS 352, LT 357), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

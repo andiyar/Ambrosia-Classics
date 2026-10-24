@@ -1413,3 +1413,40 @@ mouse/keyboard); no pad configuration UI (the key remap already exists). HectorK
 **Ladder:** Phase 3 345 → **349** (GP, 4 tests); run 9 = [GP] + the phase end.
 **Approved by:** Ben, 2026-10-24 (the ruling); layout by the seat under his delegation — his pad play at the Phase 3
 gate is the check.
+
+## D38 — Ferazel's Wand Phase 4 "Spells + items": planning rulings (2026-10-24, loop run 18)
+
+**Decided (seat, under D34's plan authorization — execution does not wait for Ben; his read is QUESTIONS Q7):** the plan
+is `docs/plans/2026-10-24-ferazel-phase4.md` (Opus planner; Opus leg A plan-vs-dump SOUND WITH FIXES — ~10 important
+dump disagreements, e.g. the cast press moves the spell to the front, 14 power-up warning marks from 210, the second
+scroll's slot search, the pickup bounce argument, the dagger cannot crunch; Opus leg B plan-vs-code SOUND WITH FIXES —
+1 critical: the teleporter search tests only the in-use byte, so level 1's teleporter 126 sends the player to record 0;
+the teleport is two suspension stages; missing seam files; run-time-spawned faces need sheet-table entries; SW moved
+after BX1; Opus fix round f8d250c; FABLE-GRADE plan leg PASS WITH FIXES — re-ran G2 349/0 in an archive, ~25
+independent samples agree, 1 important (CS's same-frame stab assertion belongs to IU) + 8 minor; seat ruled LV3 back to
+⚑ MAJOR; Opus fix round 2 b55e7c5). 24 tasks + phase end A4; 12 ⚑ MAJOR (LT US BN PK EF CS SH IU SD BX1 TP LV3); ladder
+349 → **481**; ten runs: [X1 VS LT] 357, [US IV HU] 374, [BN PK] 390, [EF CS] 406, [SH GL PU] 425, [IU MS] 438, [SD BX1]
+451, [BX2 BT TP] 467, [SW LV3 LV4] 481, [A4 + Fable phase review]. Bank corrections BC35–BC50. The plan's "Rulings"
+section (16 items) is the full text; in short:
+1. **Scope** = design §8 row 4 + §9 (c); out: enemy Handles/Hits/Kills + enemy shots + geysers (Phase 5), bosses +
+   `.Victory` (6), Box/Background types first placed on levels ≥ 5 (the phase that widens past 4), the debug kit.
+2. **`BuiltLevels` → 1...3 (LV3), 1...4 (LV4); level 5 (first boss) stays refused**; report text "(Phases 5-6)".
+3. **Enemies on levels 3–4 keep the Phase-1 Setup-face stub** (drawn, inert); `.SmiteEnemies` still finds them by class.
+4. **The light table moves into Core** (`LightTable`, single source of truth; renderer gets it per frame).
+5. **Idle-only sound calls decided in Core** (`SoundVoices` from the shell's playing set + the iteration's own cues);
+   gate (BT) and spikes (LV3) owned here, cannon site M l. 62997 → Phase 6.
+6. **Three new in-frame modal moments:** the upgrade animation, the teleport (two stages), the USE hints (a resumable
+   player Handle, including the nested pass inside `.PaintFrameWrap`).
+7. **`.UpdateSprites` in full** (four-pass kill, record write-back): saves persist pickups, doors, chests, torches, latches.
+8. **Boulder spouts' boulders are ◇ until Phase 5.**
+9. **§9 (c)** copied as the code permits; enemy drops are Phase 5's Kill routines.
+10. **No HectorKit change** (HK 35a85ba, floor 361).
+11. **Unreachable player systems built now** (spells 2–7, items, glider, Mist potion, necklace), pinned by synthetic tests.
+12. Arms inside routines transcribed whole are built where they sit even if first used on level ≥ 5.
+13. **Status-bar call parameters come from Core** (`StatusBarCall`); the HUD shows G's inventory and maxima.
+14. **The Effect class gains every id Phase 4 spawns**; the 1207 explosion hurts the player (enemy damage Phase 5).
+15. **Carried follow-ups:** stale later-stubs + M7 adopted (X1); Phase 3 front-end polish left to Ben's Q6 verdict.
+16. **No free record:** a spawn with all 700 records in use runs no Setup and no draws; caller stores dropped (BC46's rule).
+**Rejected:** keeping levels 3–4 closed until Phase 5 (Ben can still choose it in Q7); deferring unreachable spells/items
+to the phases that open their levels (no later phase owns player systems).
+**Approved by:** the seat under D34; Ben's later read = QUESTIONS Q7.

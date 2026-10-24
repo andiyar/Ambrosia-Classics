@@ -76,6 +76,19 @@ Blocks: nothing (D34: gates queue). The loop plans and builds Phase 4 meanwhile;
 tasks, planned first.
 Answer:
 
+### Q7 — 2026-10-24 — Phase 4 plan (spells + items): three small choices, for your later read
+Context: Loop run 18 wrote and reviewed the Phase 4 plan (`docs/plans/2026-10-24-ferazel-phase4.md`, rulings in
+DECISIONS D38): casting and every spell, items and the inventory display, pickups and power-ups, crates, chests, doors,
+keys, switches, teleporters, the held weapon. At the end of Phase 4 levels 1–4 can be entered (level 5 is the first boss).
+Execution starts next run without waiting (D34). Three choices in it are yours; each has a default the loop builds.
+Options: (1) levels 3 and 4 open in Phase 4 with their enemies standing still (they come alive in Phase 5) — default
+open; or keep them closed until Phase 5; (2) spells and items first found on later levels (Boomerang, Ice Wall, the
+glider, the shields …) are built and machine-tested now though you cannot reach them before Phase 6 — default yes;
+(3) item counts drawn in Geneva by the Mac's own font engine — default yes.
+Recommendation: the defaults — more of the game to try sooner, and no behaviour changes.
+Blocks: nothing (D34). A different answer becomes a small task in the phase.
+Answer:
+
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
