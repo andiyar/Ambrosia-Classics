@@ -1,197 +1,175 @@
-# Ferazel's Wand — what to expect (Phase 2 gate build: feel on levels 1–2)
+# Ferazel's Wand — what to expect (Phase 3 gate build: title → level 2 and back)
 
 **Status: machine gates green; Ben's gate pending.**
 
-This build of our Ferazel's Wand 1.0.3 replica makes **Ferazel move.** You can play levels 1 and 2 with the original
-keys: walk, run, jump, spin, cling and climb walls, swim, ride the platforms, get hurt, die and start again, and walk
-out of level 1 into level 2. The sound effects play through a copy of the original's own sound mixer. Every picture and
-sound still comes from the original game files, unchanged.
+This build of our Ferazel's Wand 1.0.3 replica is **the whole game around the levels.** It starts like the original:
+the Ambrosia logo and title music, the loading bar, the main menu. From there you can start a New Game, play level 1,
+save at a save point, pause, finish the level, see the stage-complete panel, walk the world map to level 2, die and
+get the death screen, abort back to the menu, and resume your saved game later. Options, Credits and the menu bar work
+where the original's did. A game controller now works too. Every picture, sound and dialog still comes from the
+original game files, unchanged.
 
-The question for you: **does he move and feel like Ferazel on levels 1 and 2?** Play it side by side with your Let's
-Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
+The question for you: **does the trip from the title screen to level 2 and back feel like the original?** Play it
+side by side with your Let's Play (https://www.youtube.com/watch?v=ESuyxMUEzDw) and the longplays.
 
 ## What this build is, and what it is not
-- **It is** the player's whole movement on levels 1 and 2, the camera that follows him, water, acid, damaging floors,
-  healing brine, drowning, platforms of every kind on these two levels, the spiked pendulums, cannons, trampolines,
-  bridges, passages, dying and restarting, the exit from level 1 into level 2 (where it is, and how to die on
-  purpose: card 16), the splashes, bubbles and particles, and the sound effects. Phase 1's look is unchanged underneath.
-- **It is not** the rest of the game yet. Enemies stand still and do no harm (Phase 5). Coins, potions, chests, doors,
-  teleporters, save points, signs and the people you meet are only solid things to stand on or bump into (Phases 3–4).
-  Crates and the boulder can't be pushed yet (Phase 4). No title screen, no menus, no world map, no stage-complete
-  screen (Phase 3).
+- **It is** the title and loading screens, the main menu and its five buttons, Options (with key setup), Credits, New
+  Game with the chapter card, the conversations and signs, the save points and saved-game files, the pause, the
+  "abort?" and "quit?" questions, the stage-complete panel, the world map, the death screen, Resume, the menu bar, and
+  controller support. Phase 2's movement and Phase 1's look are unchanged underneath.
+- **It is not** the rest of the game yet. Only levels 1 and 2 can be entered. Enemies stand still and do no harm
+  (Phase 5). Coins, potions, chests, doors and teleporters can't be picked up or used, and the item bar at the bottom
+  always shows the starting items (Phase 4). Crates and the boulder can't be pushed (Phase 4).
 
 ## Opening it
-- Double-click `Ferazel's Wand.app` on your Desktop. It opens on level 1.
+- Double-click `Ferazel's Wand.app` on your Desktop. It opens on the title screen, then the main menu.
 - If macOS says it can't check the app: right-click it, choose Open, then Open again.
-- **To start on level 2**, quit the game, open Terminal and paste:
-
-  `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 2`
-
-  That counts for that one launch. To make it stick, paste
-  `defaults write com.ambrosiaclassics.ferazel FerazelLevel 2` instead, and
-  `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` to go back to level 1. Any number other than 1 or 2
-  starts level 1. You can also just reach level 2 through level 1's exit.
 - The window is the game's 640×480 screen scaled ×3 if that whole window (title bar included) fits your screen's free
   area, menu bar and Dock left out; else ×2 if that fits; else ×1. ⌃⌘F gives full screen.
 - This is a Release build, so it holds the original's speed (about 30 frames a second).
-- The hidden settings below all live in the `com.ambrosiaclassics.ferazel` preferences domain.
+- **Your saved games and the game's settings file** live in `~/Library/Application Support/Ambrosia Classics/Ferazel's
+  Wand/`. To start completely fresh, quit and delete that folder.
+- **To make New Game start on level 2** (a hidden test switch), quit the game, open Terminal and paste:
 
-## Keys (the original's defaults; there is no key setup screen yet)
-- **keypad 4 / 6** — walk left / right. **Shift** — run.
-- **keypad 8** — up: climb a wall, enter a passage. **keypad 5** — down: crouch, climb down. Cannons need no key:
-  walk into one (card 12).
-- **Option** — jump. **keypad 5 + Option** — a spin-jump from the ground, a wall or the water; keypad 5 alone also
-  spins him in the first moment of a jump (card 3).
-- **⌘, keypad 7 and keypad 9** are mapped as in the original; nothing on levels 1–2 uses them yet.
-- The arrow keys do nothing now. Phase 1's arrow-key camera is gone.
-- **⌃⌘F** — full screen on and off. **⌘Q** — quit at once. The original asked "are you sure?" first; that dialog
-  comes later. ⌘W does nothing.
-- **Caps Lock** (pause) and **Esc** (the "abort game?" dialog) do nothing until Phase 3.
+  `cd ~/Desktop && open -n "Ferazel's Wand.app" --args -FerazelLevel 2`
 
-## How to get to water on level 1
-Walking right from the start does **not** reach water. Walk right from the start and you drop at once into a little
-pit and cling to its wall. That is the original. The start rooms are closed in by **breakable walls**; the one that
-matters is the wall at column 24 (x ≈ 770, about one screen right of the start). A spin-jump down onto it breaks it,
-and then a run right along the lower passage drops you into the first pool (x ≈ 1800–2600, about 3–4 screens right of
-the start). "Screens" here means the 608-pixel-wide play view inside the black border.
+  The game still opens on the title and menu; New Game then goes straight to level 2. That counts for that one launch.
+  To make it stick, paste `defaults write com.ambrosiaclassics.ferazel FerazelLevel 2` instead, and
+  `defaults delete com.ambrosiaclassics.ferazel FerazelLevel` to go back. Any number other than 1 or 2 means level 1.
+- The hidden picture settings below also live in the `com.ambrosiaclassics.ferazel` preferences domain.
 
-The machine test plays a scripted version of this route, about 12 seconds long. A computer search found it, so by
-hand your timing will drift; aim for its shape. Times are at 30 frames a second.
-1. **Out of the pit (0–2.4 s).** Hold keypad 6 the whole time. Tap Option at about 0.5 s, again at 1 s (hold it a
-   little longer), and a quick tap at 1.7 s. Then add Shift for about 0.6 s to run. You end up in the lower room.
-2. **First spin (2.4–4.1 s).** Keypad 6 + 5 for a quarter second (crouch), keypad 4 + Option for a quarter second (a
-   jump to the left), then **keypad 5 + Option for about 0.8 s** (the first spin-jump), then keypad 8 + 6 for
-   0.4 s.
-3. **The climb (4.1–5.8 s).** Walk right for about 0.75 s, tap Option, then hold keypad 8 alone for about 0.9 s.
-4. **Second spin, the wall breaks (5.8–8.6 s).** Run right (Shift + keypad 6) for 0.8 s, walk left for 0.7 s, a short
-   run-jump right (Shift + keypad 6 + Option, about 0.1 s), keypad 6 + 5 for about 0.1 s, another short run-jump,
-   keypad 8 + 6 for 0.2 s, then **keypad 5 + Option for about 0.7 s** (the second spin-jump). The wall breaks just
-   after it, about 8.6 s in (frame 259).
-5. **Run to the pool (8.6–11.9 s).** Keypad 8 + 6 for 0.4 s, run right for 1.6 s, a run-jump of 0.2 s, then run right
-   for 1.2 s. He drops into the first pool with a big splash about 11.9 s in (frame 357).
-
-That first pool is only wading-deep, so jumping there is an ordinary jump and **swimming is not covered by any machine
-test.** To swim, go on to the **deep pool**: columns 144–160, rows 23–27 (x 4608–5151, y 736–895), about
-7½ screens right of the start and a good way below it, just above and right of the level exit.
+## Keys (the original's defaults; change them in Options ▸ Controls)
+- **keypad 4 / 6** — walk left / right. **Shift** — run. **keypad 8** — up. **keypad 5** — down.
+- **Option** — jump. **⌘** — use an item. **keypad 7 / 9** — previous / next item (nothing to choose from yet).
+- **Caps Lock** — pause: the game is paused while the Caps Lock light is on.
+- **Esc** or **⌘W** in a level — "Are you sure you want to abort this game?". **⌘Q** — "Are you sure you want to
+  quit?". **⌘P** — Options. These are read by the game itself, as in the original, so they don't act during a fade.
+- At the main menu the letters act: **N** New Game, **O** or **R** Resume, **I** or **P** Options, **C** Credits,
+  **Q** Quit, and **X** for a joke. ⌘ with those letters does the same thing.
+- **⌃⌘F** — full screen on and off.
 
 ## The gate card: what to check
 
-Each line says what the build does, copied from the original's code ("built as the binary"), and where we have one,
-what "wrong" would look like. **MED** = fairly sure. Unmarked lines are read straight from the code.
+Each line says what the build does, read from the original's code. **MED** = fairly sure. Unmarked lines are read
+straight from the code.
 
-1. **Walk and run.** Speed, how fast he gets going and how fast he stops. Built as the binary: **right reaches full
-   walking speed in 4 frames, left in 8** (an extra push to the right only), and running right overshoots full speed
-   for one frame. Wrong would look like: left and right feeling the same, or a slide when you let go.
-2. **Jump.** Built as the binary: a full jump is about 100 px high, a tap about 44 px; a full jump is back on the
-   ground in about 0.8 s. No grace jump after you walk off a ledge, no jump that remembers an early press, and holding
-   Option does not jump again. On the take-off frame he still looks like he is standing.
-3. **Spin.** Built as the binary: from the ground, a wall or the water, keypad 5 + Option starts a spin-jump. In
-   mid-jump, keypad 5 (alone or with Option) spins him only in the first moment of a jump, while Option is still held
-   from the take-off, and it does **not** refill or lengthen the jump. (Our notes said it did; the code says no.)
-4. **Walls.** Clinging, climbing up and down (keypad 8 / 5), the wall jump, pulling himself up over a ledge.
-5. **Slopes and ledges.** Built as the binary: he climbs a slope faster going right than going left. He drops when
-   there is nothing under him, and lands on one-way ledges from above only.
-6. **Camera.** Built as the binary: when he jumps from flat ground the view does **not** follow him up. When he falls
-   below where he stood it eases down; when he lands higher it eases up. It looks up to 80 px ahead in the direction he
-   walks and keeps that when he stops.
-7. **Water.** Level 1 has five pools; the first is described above. Built as the binary: a splash going in and coming
-   out, swimming strokes (deep pool only), the current pushing him along (level 1 only), bubbles, and his breath
-   running out. Once it is gone he takes a hit about every 2.3 s.
-8. **Acid and damaging floors.** Level 1 has the acid pool at the far right (24 cells) and 18 damaging floor cells;
-   level 2 has four acid pools (114 cells) and 74 damaging floor cells. Built as the binary: acid gives the hurt
-   flash, a groan, the health loss and a short invulnerability, and **no** stun; a damaging floor gives the hurt
-   flash, a "big ouch", the health loss and the knock-back stun.
-9. **Healing brine** (level 2, 12 cells). His health and magic fill up, with the fill-up sound.
-10. **Platforms.** Built as the binary:
-    - Level 1's three sliding platforms dip when you land on them and spring back.
-    - The rotor pair and the swinging platform are near x 2300 and x 3200 (about 3½ and 5 screens right of the start),
-      and the three-wheel is near x 1850 (about 3 screens).
-    - On level 2 the rafts float and tilt under you, and the wheels turn when you ride them.
-    - A platform never shows on the very first frame of a level, as in the original.
-    - Level 1's wheel bumps itself on its first frame, out of view, so early in level 1 it has already turned about 28°
-      and moved about 28 px left. That is the original's own quirk.
-11. **Spiked pendulums** (level 1, x ≈ 2660 and 2760, about 4 screens right of the start). Built as the binary:
-    they hurt only in a narrow band just in front of the bottom of the swing. (Our notes had the band the wrong way
-    round.) The coins you would lose are not dropped yet (Phase 4).
-12. **Cannons** (level 1, three: x ≈ 2517, 4117 and 4635, about 4, 6½ and 7½ screens right of the start). No key:
-    walk into one and it takes you in at once, with a sound. It holds you about half a second, then fires you out the
-    way its barrel points, with a bang and a puff of smoke. All three on level 1 point straight up.
-13. **Crates, the boulder (level 2), trampolines (level 2), bridges.** Crates and the boulder stand still as solid
-    blocks (pushing is Phase 4). Trampolines bounce you, and bridges are solid both ways. **MED:** the original lets
-    crates settle under gravity, which is Phase 4's, so level 1's crates sit 2–6 px lower than the original would
-    settle them, one crate stacked on another sits 2 px high, and level 2's boulder sits 2 px low.
-14. **Passages** (level 2, three pairs). Press keypad 8 at one: the screen fades to black, you come out at its
-    partner, and it fades back in.
-15. **Death.** The dying animation, then the music fades out over about 0.8 s while the screen holds still, then
-    the original's border wipe, then the level starts again from the beginning with fresh health, magic and score.
-    That restart stands in for Phase 3's menu / Continue. **Not built:** the original fades the restarted level in
-    from black; here it appears at full brightness at once.
-16. **Level 1 → 2.** Level 1's exit is about 7 screens right of the start and well below it (x ≈ 4518, y ≈ 1080;
-    column 141, row 33 of 50), just below and left of the deep pool. Touching it loads level 2 at once. That stands
-    in for Phase 3's stats screen and world map. What happens:
-    - The exit sound plays out. Nothing silences it when the new level loads; the original does not either.
-    - The music fades out, and the screen holds still for about 0.8 s while it does. The original holds still too.
-    - Then level 2 appears straight away. **Not built:** the original's stage-complete effect, its fade to black and
-      its end-of-level stats update. The music starts again at full volume, with no fade-in.
-    - Your score, health, magic and coins carry into level 2, as in the original. Level 2's own exits lead to levels 3
-      and 4, which aren't built, so they restart level 2.
-    - **To die on purpose** (for card 15): wade into the acid pool at the far right end of level 1 (columns 188–195,
-      rows 17–19: x 6016–6271, almost 10 screens right of the start); it hurts about every 2 s and five hits kill
-      him, so about 9 s. Or stay under in the deep pool: his breath lasts about 19 s, then five choking hits about 2.3 s
-      apart, so about half a minute in all.
-17. **Sound.** Footsteps, jump, soft and hard landings, head bonk, splash, swim, groan or "ouch", the drowning choke,
-    fill-up, cannon, trampoline. Built as the binary: the original's Sound Tool mixer, 8-bit at 22,050 Hz with
-    8 voices at most, so a little gritty on purpose. Wrong would look like: sounds cut off oddly, coming from the wrong
-    side in stereo, or too loud or quiet next to the music.
-18. **Water look (MED).** On level 1 the water now shows drifting motes, the acid bubbles, and the ground under water
-    shimmers every other frame. These are the original's "Enhanced" water effects, which Phase 1 didn't draw.
-19. **Breathing (MED).** When he has stood still a while, his chest stops moving. The original holds the calm breath on
-    one picture.
-20. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
-    - the keys are read live, within a frame;
-    - how he catches on the seams between tiles;
-    - exactly where the water surface starts to count as water;
-    - where the wheels start on their first frame (off-screen);
-    - when a bubble is allowed to rise.
-21. **Every run is different.** Random numbers start from the clock at launch, as the original's did, so no two runs
-    play out exactly the same (splashes, particles, sound pitches).
+1. **Title.** Black, then the Ambrosia logo fades in with the title music and stays while the game loads; then the
+   loading screen, whose 3-D progress bar at the bottom left fills; then a fade to the main menu. No timed wait and no
+   skip, as in the original.
+2. **Main menu.** Five picture buttons light up while you press them (click and hold; slide off and back on), with
+   their click sounds. The letter keys above do the same. **X** shows the "Coming soon" joke. In full screen, moving
+   the mouse to the very top shows the menu bar.
+3. **Options (I).** Three panels from the popup: Game Options, Controls, and Sound & Music.
+   - Controls: click a key box, then press a key. A key already in use is refused with a message; Up and Jump may
+     share a key. The **A** key is always refused as "already used" — the original does that too.
+   - Sound & Music: the volume popups (1–9) act at once.
+   - "Default Settings" on Game Options seems to do nothing until you press Cancel. That is the original's bug, kept.
+   - Your settings survive a relaunch.
+4. **Credits (C).** The scrolling credits window. Click inside it to close it; a click outside beeps.
+5. **New Game (N).** The loading panel appears and its bar fills; the screen goes dark and the level's music fades
+   up over about 1½ seconds. Then the chapter card fades in slowly (any key skips it; otherwise it waits about 20
+   seconds) and fades out, and level 1 fades in. The chapter card shows only on a level's first visit.
+6. **Talk.** Geroditus on level 1 talks to you: the text types at about 30 letters a second. Signs read themselves
+   the first time you touch them, and again when you press keypad 8 at them. Esc ends a conversation. The merchant
+   (Rojinko) on level 1 offers potions. Buying needs coins, and coins can't be picked up until Phase 4, so you likely
+   can't buy anything yet; anything you do buy won't show in the item bar until Phase 4.
+7. **Save point.** Level 1 has two: a pedestal with a green check about 3½ screens right of the start, and another
+   about 8 screens right. Stand on one for about half a second and macOS's own save window opens (see the deviations
+   below), suggesting "Ferazel Saved Game". Save → a white flash, and the pedestal turns into a stone statue facing
+   your way; it won't fire again. Cancel → the pedestal stays usable, and fires again after about 2 more seconds of
+   standing on it.
+8. **Pause (Caps Lock).** The pause banner, a sound, and the music fades out. File ▸ Abort Game, Quit and
+   Preferences… work here, as do Music and Sound Effects. In full screen the menu bar appears; in a window it is
+   always there, and its items wake up only now. Caps Lock off → the game resumes after a moment and the music fades
+   back in.
+9. **Finishing level 1.** The stage-complete panel unfolds and three bars fill (enemies, Xichrons, secrets) with a
+   ticking sound and a chime per bar, then a fade. Enemies can't die until Phase 5, so expect a low first bar.
+10. **World map.** It fades in with its own music. The new path to the next place flashes in random colours and your
+    marker walks there by itself. The arrow keys or the keypad move you along open paths only. Return, Enter, Option
+    or ⌘ enters the level. The bar at the bottom shows the level's name. Esc or ⌘W asks to abort, ⌘Q asks to quit.
+11. **Level 2.** It starts like level 1, but with no chapter card (level 2 has none). Its two exits open new places on
+    the map; choosing one shows a stand-in message, "Level 3 is not built yet (Phases 4-6)." (or 4), and leaves you on
+    the map.
+12. **"…and back".** Esc or ⌘W in a level → "Are you sure you want to abort this game?" → OK → the main menu with its
+    music. The question has no Cancel on Esc (the original's dialog has no cancel key), so click Cancel to carry on.
+    ⌘Q in a level asks "Are you sure you want to quit?" first. File ▸ Quit from the pause or Q at the main menu quits
+    without asking, as the original.
+13. **Resume (O).** Pick your saved game in macOS's open window: level 1 at the save point, the statue still there, no
+    chapter card. Double-clicking a saved game in Finder opens it the same way at the main menu; during a game it waits
+    until that game ends.
+14. **Death.** Die (stay under water, or wade into the acid pool at the far right end of level 1, almost 10 screens
+    right of the start). You see the dying animation and the border wipe. Then:
+    - if you saved or resumed a saved game since New Game: the death screen with Continue and Abort. Continue (or
+      Return) → the wand glows and you're back at your last save. Abort (or Esc) → the screen turns gray, then black,
+      then back to the main menu.
+    - if you haven't: straight back to the main menu. The original has no death screen then.
+15. **Controller (new).** A Switch Pro Controller, Joy-Cons, an Xbox or a PlayStation pad works with no setup. It
+    simply presses the original's keys, so the game plays exactly the same. Buttons go by position, so the Switch's and
+    Xbox's swapped labels don't matter. Pairing steps are in `Ferazel/GAMEPAD.md`.
 
-## Still true from Phase 1 (the look)
-- **Colours** go through the exact nearest-colour search (you ruled it 2026-10-10 against your Let's Play). The
-  duplicate-black tie-break is **highest** (your ruling, Let's Play 02:12). To look at **lowest**, quit and paste
+    | where | d-pad or left stick | bottom / right button | left button | top button | L / R | ZL / ZR | + | − |
+    |---|---|---|---|---|---|---|---|---|
+    | in a level | walk, up, down | jump | run | use item | previous / next item | run | pause / unpause | held 1 s: the abort question |
+    | paused | — | — | — | — | — | — | unpause | — |
+    | main menu | — | New Game | — | — | — | — | New Game | — |
+    | world map, death screen | arrow keys | Return | Return | Return | — | — | Return | held 1 s: Esc |
+    | conversation | moves the choice | Return | Return | Return | — | — | Return | Esc at once |
+    | everything else | arrow keys | Return | Return | Return | — | — | Return | Esc at once |
+
+    - In a level the pad follows the keys set in Options, so remapping a key there remaps the button too.
+    - **What it can't do:** there is no pointer, so Continue, Options and Credits on the main menu, the Options window
+      and the save/open windows need the mouse or keyboard.
+    - The abort question's OK is on a face button; to carry on, click Cancel (− can't cancel it, as Esc can't).
+    - Pass looks like: **a kid can play levels 1 and 2 with only the pad, and a stray tap of − never aborts.**
+16. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
+    - fade speeds (the original's timings, rounded to 60ths of a second);
+    - on the map, holding ⌘ alone enters the level (it is also the use key), so ⌘Q there only works if Q goes down at
+      the same moment — the original's quirk;
+    - the stage-complete panel's stretched rows;
+    - the logo's colours at boot;
+    - the conversation and dialog text drawn with macOS's Times, not the 1997 bitmap font.
+
+## Still true from Phases 1 and 2
+- **The feel card from Phase 2** still describes the movement: walking, jumping, spins, walls, water, platforms,
+  cannons, passages. Nothing there has changed.
+- **Colours** go through the exact nearest-colour search (your ruling, 2026-10-10). The duplicate-black tie-break is
+  **highest**. To look at **lowest**, quit and paste
   `defaults write com.ambrosiaclassics.ferazel ColorTieBreak lowest`, then open the game again;
   `defaults delete com.ambrosiaclassics.ferazel ColorTieBreak` goes back.
-- **The hidden Mac gamma switch is built**, and off by default. The picture looks a little darker than your Let's Play
-  because the original ran on a classic Mac screen (gamma 1.8) and modern screens use 2.2. To see it as a classic Mac
-  showed it, quit and paste `defaults write com.ambrosiaclassics.ferazel MacGamma -bool true` (or launch with
+- **The hidden Mac gamma switch**, off by default. The picture looks a little darker than your Let's Play because the
+  original ran on a classic Mac screen (gamma 1.8) and modern screens use 2.2. To see it as a classic Mac showed it,
+  quit and paste `defaults write com.ambrosiaclassics.ferazel MacGamma -bool true` (or launch with
   `--args -MacGamma YES` for one run), then open the game again; `defaults delete com.ambrosiaclassics.ferazel MacGamma`
   turns it off.
-- **The glow behind the table next to the potion is fixed.** The potion's light twinkles, as in the original. **MED:**
-  every item light twinkles in step, where the original starts each one at a random point. The torch flicker isn't
-  built yet.
+- **Item lights** twinkle, but all in step (**MED**: the original starts each at a random point). The torch flicker
+  isn't built yet.
 - **The black border** around the play view is the original's own screen picture, not a bug.
-- **The music** is each level's own track from the original files (level 1 plays track 1, level 2 plays track 3),
-  played by our own player. It starts at full volume; the original fades it in at the start of a level, and that
-  isn't built yet. The loop point may sound a hair different from
-  QuickTime's.
-- **The placed sprites** that aren't built yet (enemies, items, people) still show their first picture only.
-- On the very first frame of a level Ferazel isn't drawn. That one-frame blink is the original's.
+- **Every run is different.** Random numbers start from the clock at launch, as the original's did.
 
 ## Known stand-ins and differences
-- **Enemies** stand still and do no harm (Phase 5). **Pickups, chests, doors, teleporters, save points, signs and
-  people** are only solid (Phases 3–4).
-- **Death restarts the level** and **the exit loads level 2 at once.** These are stand-ins for Phase 3's menu, stats
-  screen and world map. Not built: the fade-in after a restart, the stage-complete effect, the fade to black at the
-  exit, and the end-of-level stats update.
-- **Only levels 1 and 2 load.** Level 2's exits restart level 2.
-- **No music fade-in**, at a level's start or after the exit.
-- **⌘Q quits without asking**, and ⌘W does nothing.
-- **Caps Lock and Esc** do nothing until Phase 3.
-- **Ropes and springs are built**, but levels 1 and 2 have none. The first rope is on level 3 and the first spring on
-  level 15.
-- **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.** The game runs in a
-  window and does the 256-colour palette itself, and the keys come straight from the original's key table.
+- **Only levels 1 and 2 can be entered.** The map opens and draws every place as the original; choosing level 3 or
+  beyond shows a stand-in message (the only text in the game we wrote ourselves).
+- **The item bar** always shows the starting items, whatever you own (Phase 4). Potions bought don't show (Phase 4).
+- **Enemies** stand still and do no harm (Phase 5). **Pickups, chests, doors and teleporters** are only solid
+  (Phase 4). **Crates and the boulder** can't be pushed (Phase 4).
+- **Save and open windows** are macOS's own, not the 1997 ones; the original's prompt text is carried into them.
+- **Saved games** are written so they survive zip, git and Windows. An original 1997 saved game opens here, but a save
+  made here won't open in the original game on a classic Mac.
+- **The settings file** lives in Application Support (above), not the classic System Folder.
+- **The menu bar.** In a window the macOS menu bar stays visible; its items are greyed out during play and work only at
+  the main menu and in the pause, where the original listened. In full screen it stays hidden, as the original: it shows during the
+  pause, and at the main menu when the mouse is at the very top.
+- **Quitting from the Dock or at logout during a level waits** until you pause or get back to the main menu; then the
+  game quits. That is the original's behaviour (it only listened for "quit" there); macOS may report that the game
+  cancelled the logout. QUESTIONS asks whether you want that kept (Q5).
+- **The "set system volume" option** is remembered but never changes your Mac's volume.
+- **Fonts:** the game ships no bitmap fonts, so Times comes from macOS.
+- **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.**
 
-## What to tell us
-Plain yes or no to "does he move and feel like Ferazel on levels 1 and 2?". Then anything that felt or looked wrong,
-by card number if you can.
+## What to tell me
+A pass looks like: you go from the title to level 2 and back to the menu, save and resume, die and continue, pause
+and abort, and it all feels like the original, and the kids can play with the pad.
+
+Your answer goes in `docs/QUESTIONS.md`, under the Phase 3 gate item: a plain yes or no to "does the trip from the
+title screen to level 2 and back feel like the original?", then anything that felt or looked wrong, by card number if
+you can.
