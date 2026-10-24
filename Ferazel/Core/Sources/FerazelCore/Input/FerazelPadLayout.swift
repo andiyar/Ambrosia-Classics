@@ -14,13 +14,16 @@ import HectorInput
 /// | `.playing` | keys 0–3 | keys 5 jump | keys 4 run | keys 6 use | keys 7 / 8 | keys 4 | Caps Lock toggle | Esc after 1 s |
 /// | `.paused` | — | — | — | — | — | — | Caps Lock toggle | — |
 /// | `.mainMenu` | — | N | — | — | — | — | N | — |
+/// | `.map`, `.deathScreen` | arrows | Return | Return | Return | — | — | Return | Esc after 1 s |
 /// | `.conversation` | keys 0–3 | Return | Return | Return | — | — | Return | Esc |
 /// | `.other` | arrows | Return | Return | Return | — | — | Return | Esc |
 ///
 /// With a dialog up (a confirm or report over any context): arrows, Return, Esc, and + stays the latch inside a level
 /// (`.playing` / `.paused`), so a pause survives the dialog. Outside a level the d-pad is the fixed arrows, never the
 /// key set (the menu acts on letters). A conversation's menu moves on the up / down INPUT keys (`ConversationRun`'s
-/// inputs 2 / 3, C1), so its d-pad is the move keys; Return confirms there and is "any key" for its waits.
+/// inputs 2 / 3, C1), so its d-pad is the move keys; Return confirms there and is "any key" for its waits. On the map
+/// Esc opens the abort question (whose default OK Return presses, Esc ignored) and on the death screen Esc gives up
+/// with no question, so − is a 1 s hold there as in a level (D37: a stray press must not abort a kid's game).
 public enum FerazelPadLayout {
     public static let returnKey: UInt16 = 0x24
     public static let escapeKey: UInt16 = 0x35
@@ -86,6 +89,9 @@ public enum FerazelPadLayout {
             b[.right] = action(1)
             b[.up] = action(2)
             b[.down] = action(3)
+        case .map, .deathScreen:
+            arrowsReturnEscape()
+            b[.back] = .keyAfterHold(escapeKey, seconds: escapeHoldSeconds)
         case .other:
             arrowsReturnEscape()
         }

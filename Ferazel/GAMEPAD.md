@@ -21,6 +21,7 @@ stick both move.
 | **New Game** (main menu) | B, A or **+** | A, B or Menu | ✕, ○ or Options |
 | **OK / continue** (everything else) | any face button or **+** | any face button or Menu | any face button or Options |
 | **Back / skip** (everything else) | **−** | View | Create / Share |
+| **Abort / give up** (world map, death screen) — hold for 1 second | **−** | View | Create / Share |
 
 Everywhere outside a level (the world map, the death screen, the chapter cards, the "OK" messages) the d-pad presses
 the arrow keys and every face button presses Return. In a conversation the d-pad moves through the answers and a face
@@ -37,7 +38,8 @@ item keys follow them, so changing a key there changes the button too. Pause sta
   need the mouse or keyboard. A controller starts a New Game only.
 - **−** in a level asks "abort this game?" the way Esc does — only after a 1-second hold, so a stray press does
   nothing. A face button answers OK (the game ends); to carry on, click Cancel — the original's question ignores Esc,
-  so **−** cannot cancel it. On the world map **−** asks at once, as Esc does there.
+  so **−** cannot cancel it. On the world map the same 1-second hold asks the same question, and on the death screen
+  a 1-second hold gives up (as Esc does there, with no question).
 - The game is paused while the controller's pause **or** the keyboard's Caps Lock is on — both must be off to play on.
 - While paused only **+** does anything; use the mouse for the menu bar (Abort Game, Preferences…).
 - The controller works only while the game is the front app, like the keyboard.

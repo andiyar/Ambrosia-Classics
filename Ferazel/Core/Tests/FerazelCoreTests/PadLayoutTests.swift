@@ -59,10 +59,22 @@ final class PadLayoutTests: XCTestCase {
         ]
         XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .other, dialogUp: false).bindings, other)
         XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .mainMenu, dialogUp: true).bindings, other)
+        // The world map and the death screen: as everything else, but − is a 1 s hold (map Esc = the abort question,
+        // death-screen Esc = give up); a dialog over them takes Esc at once.
+        var held = other
+        held[.back] = .keyAfterHold(0x35, seconds: 1.0)
+        XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .map, dialogUp: false).bindings, held)
+        XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .deathScreen, dialogUp: false).bindings, held)
+        XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .map, dialogUp: true).bindings, other)
         // A conversation's menu moves on the up / down INPUT keys (C1: inputs 2 / 3), so its d-pad is the move keys.
         var talk = other
         (talk[.left], talk[.right], talk[.up], talk[.down]) = (.key(0x56), .key(0x58), .key(0x5b), .key(0x57))
-        XCTAssertEqual(FerazelPadLayout.mapping(keys: keys, context: .conversation, dialogUp: false).bindings, talk)
+        let conv = FerazelPadLayout.mapping(keys: keys, context: .conversation, dialogUp: false)
+        XCTAssertEqual(conv.bindings, talk)
+        XCTAssertEqual([conv.bindings[.up], conv.bindings[.down]], [.key(0x5b), .key(0x57)], "C1's inputs 2 / 3")
+        let remapped: [Int16] = [0x00, 0x02, 0x0d, 0x01, 0x31, 0x26, 0x28, 0x0c, 0x0e]
+        XCTAssertEqual(FerazelPadLayout.mapping(keys: remapped, context: .conversation, dialogUp: false).bindings[.up],
+                       .key(0x0d), "the live move keys, not the defaults")
         // A dialog over a level (a confirm, a report, the pause's Abort Game): arrows / Return / Esc, + stays the latch
         // (the pause survives the dialog).
         var inGame = other
@@ -111,6 +123,10 @@ final class PadLayoutTests: XCTestCase {
         drive { $0.state == .mainMenu }
         XCTAssertEqual(flow.padContext, .mainMenu)
         drive(max: 1, { _ in FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey])) }) { _ in true }   // N
+        // The session exists from `.SetupLevel`, but its fades and pre-loop run before the first iteration: not play.
+        drive { $0.levelRun?.session != nil }
+        XCTAssertEqual(flow.levelRun?.iterations, 0)
+        XCTAssertEqual(flow.padContext, .other, "a session before its first iteration")
         drive { playing($0, level: 1) }
         XCTAssertEqual(flow.padContext, .playing)
         XCTAssertEqual(seen, [.other, .mainMenu, .other, .playing], "the popup, load bars and chapter card are not play")
@@ -119,8 +135,13 @@ final class PadLayoutTests: XCTestCase {
         drive { $0.levelRun?.pause == nil }
         XCTAssertEqual(flow.padContext, .playing)
         try touchExit(try XCTUnwrap(flow.levelRun?.session), record: 66)
+        // The loop over, the exit sequence (stage complete) still in the run: not play.
+        drive { $0.levelRun?.session?.loopEnded == true }
+        XCTAssertNotNil(flow.levelRun)
+        XCTAssertNil(flow.levelRun?.end)
+        XCTAssertEqual(flow.padContext, .other, "the exit sequence after the loop")
         drive { f in f.worldMap.map { $0.iterations >= 2 && $0.walkStep == 0 && $0.result == nil } ?? false }
-        XCTAssertEqual(flow.padContext, .other, "the map")
+        XCTAssertEqual(flow.padContext, .map)
         drive({ _ in FrontInput(capsLock: true) }) { $0.worldMap?.pause != nil }
         XCTAssertEqual(flow.padContext, .paused, "the map's pause loop")
         drive { $0.worldMap?.pause == nil }
@@ -133,8 +154,11 @@ final class PadLayoutTests: XCTestCase {
         s.world.active.update(id: try XCTUnwrap(s.world.playerID)) { $0.hp = 0 }
         s.world.globals.health = 0
         s.world.player.gameOver = true
+        drive { $0.levelRun?.session?.loopEnded == true }
+        XCTAssertNotNil(flow.levelRun)
+        XCTAssertEqual(flow.padContext, .other, "the death effect after the loop")
         drive { $0.deathScreen != nil }
-        XCTAssertEqual(flow.padContext, .other, "the death screen")
+        XCTAssertEqual(flow.padContext, .deathScreen)
         XCTAssertNil(flow.levelRun)
     }
 

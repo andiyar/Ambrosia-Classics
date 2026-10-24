@@ -417,7 +417,11 @@ public final class GameFlow {
         case conversation
         /// The menu loop.
         case mainMenu
-        /// Anything else: the boot, the stage screens and chapter card, the map, the death screen, Options / Credits.
+        /// The world map, not paused (Esc there opens the abort question).
+        case map
+        /// The death screen (`.AskToContinue`; Esc there gives up, no question).
+        case deathScreen
+        /// Anything else: the boot, the stage screens and chapter card, Options / Credits.
         case other
     }
 
@@ -430,7 +434,8 @@ public final class GameFlow {
             if let s = run.session, run.iterations > 0, !s.loopEnded { return .playing }
             return .other
         }
-        if worldMap?.pause != nil { return .paused }
+        if deathScreen != nil { return .deathScreen }
+        if let m = worldMap { return m.pause != nil ? .paused : .map }
         return state == .mainMenu ? .mainMenu : .other
     }
 
