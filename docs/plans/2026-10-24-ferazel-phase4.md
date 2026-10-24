@@ -1,7 +1,7 @@
 # Plan — Ferazel's Wand Phase 4 "Spells + items": casting, the spells and player shots, items and the inventory HUD, pickups, power-ups, boxes (crates, chests, doors, keys, switches, teleporters), the held weapon — 2026-10-24
 
-> Status: **DRAFT, Opus review fix round applied (legs A + B, SOUND WITH FIXES) — planner Opus 5.5, loop run 18 (2026-10-24); awaiting the
-> Fable leg (D34)**. Implements `docs/plans/2026-10-06-ferazel-design.md` (APPROVED) **§8 row 4 only** (+ §9 (c)),
+> Status: **READY TO EXECUTE — planner Opus 5.5, loop run 18 (2026-10-24); two Opus legs (SOUND WITH FIXES) and the
+> FABLE-GRADE plan leg (PASS WITH FIXES) done, both fix rounds applied (see "Review ledger")**. Implements `docs/plans/2026-10-06-ferazel-design.md` (APPROVED) **§8 row 4 only** (+ §9 (c)),
 > written against what Phases 1–3 landed (Classics main b5bfb62: D26 as built, D32, D33 as built, D35 as built through
 > loop run 17, D37; `Ferazel/Core` 349/0; HectorKit 35a85ba, floor 361).
 > **Format (Ben, 2026-10-03): CONTRACTS, not code.** Files, public names (signatures only where they pin a seam),
@@ -53,7 +53,8 @@ transcriptions beside Phase 2's movers (`World/Movers/{BonusSprite,ButtonSprite,
 game state the `+0x89` sprite light and every Handle read and write), `.UpdateSprites` in full, a live-voice query
 (`Sound/SoundVoices.swift`) and three new modal moments inside the frame (the upgrade animation, the teleport, the USE
 hints). `FerazelRender` gains the HUD from G (`StatusBar`), the mask-port flash, the mosaic and executes the new
-`DrawOp`s. `Ferazel/App` passes the mixer's playing set and gives `CoreTextRasterizer` the Geneva face. **HectorKit:
+`DrawOp`s. `Ferazel/App` passes the mixer's playing set (`CoreTextRasterizer` already maps font 3 to Geneva — no font
+change). **HectorKit:
 untouched this phase** (Ruling 10).
 
 **Tech:** Swift 6.4 / Xcode 27 beta, SwiftPM tools 6.0, XCTest, macOS 15, xcodegen.
@@ -116,13 +117,13 @@ APP="$WT/out/Ferazel/Ferazel's Wand.app"; open -n "$APP"; sleep 5; pgrep -fl "Fe
 ```
 
 **Expected G2 at each wave end** (the run boundaries, "Execution order"): 4.0 **357** · 4.1 **374** · 4.2 **390** ·
-4.3 **406** · 4.4 **425** · 4.5 **438** · 4.6 **451** · 4.7 **469** · 4.8 **481** · 4.9 (phase end) **481**.
+4.3 **406** · 4.4 **425** · 4.5 **438** · 4.6 **451** · 4.7 **467** · 4.8 **481** · 4.9 (phase end) **481**.
 
 **Test ladder (`Ferazel/Core`, cumulative; canonical order = execution order; STOP if different):** base **349** →
 X1 **349** → VS **352** → LT **357** → US **362** → IV **368** → HU **374** → BN **382** → PK **390** → EF **397** → CS
-**406** → SH **414** → GL **419** → PU **425** → IU **433** → MS **438** → SD **443** → BX1 **451** → SW **457** → BX2
-**463** → BT **469** → TP **473** → LV3 **477** → LV4 **481** (A4: no tests; fix round A+B: SW moved after BX1, GL/PU
-into 4.4, SD into 4.6, CS +1, TP −1, LV4 +1). Merged in another order: previous total
+**406** → SH **414** → GL **419** → PU **425** → IU **433** → MS **438** → SD **443** → BX1 **451** → BX2 **457** → BT
+**463** → TP **467** → SW **473** → LV3 **477** → LV4 **481** (A4: no tests; fix round A+B: SW after BX1, GL/PU into 4.4,
+SD into 4.6, CS +1, TP −1, LV4 +1; Fable round: LV3 back to ⚑, TP into 4.7, SW into 4.8). Merged in another order: previous total
 + the task's N. Review fix rounds add asserts, not tests, unless the orchestrator rules otherwise (recorded "As
 executed").
 
@@ -208,6 +209,10 @@ states). Added for Phase 4:
   white (classic colour constants).
 - **The mask port.** `_DAT_100a0008` is the 640×416 mask port (`FramePorts.mask`: 0xFF where the parallax shows); the
   `_DAT_100a00fc` flash copies it to the screen on alternate frames (M l. 9437–9447) — not a screen shake.
+- **No free record (Ruling 16).** `.MTNewSprite` returns 0 without running the Setup when all 700 records are in use;
+  `.CastSpell`, `.SmiteEnemies`, `.KillCrate` (and the other spawners) then store through the null pointer unguarded.
+  The replica: `newSprite` returns nil, no Setup runs (none of its draws), every store meant for that sprite is
+  dropped, and the caller's own later draws are still made — as BC46 rules for the hurt coins.
 - **Record index 0x200.** Sprites spawned by code with record 0x200 read their "record" at `hdr + 0x2008..` (zero in
   every level, pickups-boxes §2.4.1) — a crate's sphere drop falls (p1 0) and an Invincibility sphere from a crate
   hides 32000 frames. Model the read as zeros for indices ≥ 0x1ff, never an out-of-range trap.
@@ -294,7 +299,7 @@ case mosaic(cell: Int, graphicsMode3: Bool)
 ### S5. App
 `FerazelController` passes `SoundTool`'s playing set (`isPlaying(snd:)` over the ids it has started — a
 `playingSounds() -> Set<Int16>` accessor added to `SoundTool`, Render) into `FrontInput.playing` each tick (VS);
-`CoreTextRasterizer` maps font id 3 to Geneva (HU). Nothing else: suspensions present through the existing
+`CoreTextRasterizer` already maps font id 3 to Geneva (`CoreTextRasterizer.swift:16`) — HU changes no App file. Nothing else: suspensions present through the existing
 `present: true` path.
 
 ---
@@ -527,7 +532,7 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   prefs+6 gating), the torch light flicker `ChangeLightFace` 0x321 ↔ 0x322; the item twinkle (Phase 1); 1350's
   `+0x11c = 1`; the tail: friction `+0x114`, `ApplyGravityAndSeparateFromTiles` when gravity > 0 and the type is not
   0x517/0x41f/0x420, `.StandardSpriteCleanup`, the light following the centre (`SetLightPos`, LT) except 0x51b and
-  0xc1c…0xc25), `.HitBonusSprite` M l. 53444–53536 (type 0x4bf returns at once, M l. 53452) **except** the player-shot container arm (`LAB_1005fd94`, SH builds
+  0xc1c…0xc25), `.HitBonusSprite` M l. 53444–53536 (type 0x4bf returns at once, M l. 53468) **except** the player-shot container arm (`LAB_1005fd94`, SH builds
   it): the non-container rest on a Platform or Box (not the player, not a chest 0x51c, types < 2000 or > 0xc80) →
   `.PlatformBounce(bonus, other, own rect centre, f, rect, last)` with f = 0x80 and last = 1, or f = 0 and last = 0 when
   `vy < 0x180` (raw `1005ffb8..1005ffd0`: `(f == 0) − (~f >> 31) & 1`);
@@ -575,7 +580,8 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   **replaces the Phase 3 ◇ "1058 world flag never set"**), 1059 (p1 ≠ 0 → snd 505; KillBonus), 1290/1291/1292/1293,
   1300/1301/1302/1305/1306, 1340/1341 (below), 1350 (breath +0x230 ≤ HP, snd 456), scrolls 2000…2049 (spell = p1 for
   2000 else type − 2000; the first slot empty or holding that spell — compared **before** the remap; then id 2 → 3; flag 1; count untouched; snd 503;
-  `PTR_DAT_1009fda8 = 0x20` and `_DAT_1009fda4` = the slot; `.UpdateStatusBar(1,1,0)`), items 3200…3248 (3221 first
+  `PTR_DAT_1009fda8 = 0x20`, `_DAT_1009fda4` = the slot and the flash mode `_DAT_1009fda0 = 0`; `.UpdateStatusBar(1,1,0)`;
+  with no empty or matching slot the arm returns at once — no sound, the scroll not killed, M l. 48956–48962), items 3200…3248 (3221 first
   `RemoveItem(0)`, 3215 first `RemoveItem(0xe)`; +3 for 3206 else +1, cap 99; snd 506; the same highlight), 3050 (the
   glider pickup's state writes: cooldown `PTR_DAT_100a05c4 == 0` → `_DAT_100a05e0 = 1`, `_DAT_100a05d4 = 1`,
   `PTR_DAT_100a05c8 = 0`, the player snapped to the pickup, face/rect (0x37,0x3e,99,0x6e)), the spheres 1330…1339
@@ -707,9 +713,10 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   that order; power 3 (two Multi Crystals): two follower Setups' R(5) between) · `testCastSpeeds` (player vx 0x400,
   facing right: vx = 0x200 + R(100) + 0xd2f, vy = pvy/2 − 0x5dc + R(0x4b) − 0x28; UP held: a further −0x5dc / −0x2ee;
   facing left: vx negated) · `testMagicBelowOneSelectsDagger` (magic 0 with spell 0 selected: no cast, the selection
-  moves to the dagger's slot and to the front, two `.UpdateStatusBar(1,1,0)` calls, and the same frame's item gate
-  starts the stab — snd 418, melee counter 1) · `testCastPressMovesSpellToFront` (spell 0 in slot 3 selected, magic 560:
-  the press casts, slot 3 moves to slot 0 and the selection is 0 (one (1,1,0) call); `075c` is 0 after the call) · `testCostWithoutFloor` (Statue at magic 1
+  moves to the dagger's slot and to the front, two `.UpdateStatusBar(1,1,0)` calls — the same-frame stab is IU's
+  assertion, the item switch being IU's) · `testCastPressMovesSpellToFront` (spell 0 in slot 3 selected, magic 560:
+  the press casts, slot 3 moves to slot 0 and the selection is 0 (one (1,1,0) call); `075c` set by the press — its
+  clear by the item gate is IU's assertion) · `testCostWithoutFloor` (Statue at magic 1
   → magic −31) · `testPowerMultipliesOnAgeOne` (power 3 Fireball: `+0xa4` 100 at age 0, 300 at age 1; followers'
   `+0xa4` 0, placed at the main's stack offsets (0, 6·k)) · `testBoomerangHomes` (id 5: straight for 12 frames, then
   an 800 impulse toward the player's centre − 4 px each frame, |vx|, |vy| ≤ 0x1450) · `testShotFizzlesInLiquid` (a
@@ -743,8 +750,10 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   bottom (SW), then kill; BG ≥ 200 water → `.HandleUnderWater` unless `+0x140`; crunch → `.CrunchTile(pos, +0x158)`,
   processed → kill (not 6/0x3c)); `.KillPlayerShot(s, sound, effect)` M l. 51072–51218 (type 100 returns at once; then `.StandardSpriteCleanup` first
   (the tunnel fields the effect test reads); when the effect is suppressed the ids 1–7 / 0x3c arm still recolours the
-  light with a register the suppressed path never set — **follow the binary**: the implementer traces that register's
-  last write on each path into the arm in the raw and transcribes it, recorded in "As executed";
+  light with a register the suppressed path never set — `unaff_r29`, which on that path is the **caller's** r29 (M l.
+  51090, 51190–51195) — **follow the binary**: the implementer traces r29 at each **call site** of `.KillPlayerShot`
+  (the sprite hits, the tile hits, the liquid / orb paths) in the raw and transcribes what it holds there (a light slot
+  read through it, or a no-op when it is no sprite), recorded in "As executed";
   followers `+0xe9 = 1`; the wall-tunnel test suppressing the effect (spells-detail-2 §2); id 0: snd 301 Rand, effect 0
   at (x−8, y−12); ids 1–7, 0x3c: snd 301, effect 5 (2 for id 4) at (x−5, y−12) with light colour 0x21 (1, 2), 0x4d (3),
   0x42 (4); 0x50: hits `+0x168` − 1, at < 1 snd 424 + `.ExplodeFaceIntoParticles(face, pos, 2,1,7,0x50,0x65)` +
@@ -874,12 +883,16 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   `+0xa4` = max, snds 502 + 415, `.RemoveItem`, `PTR_DAT_100a05a8 = 6`, health flash 0xb; magic 4 → magic = max, snds
   500 + 415, remove, `05a8 = 6`, magic flash 0xb; mist 0x19 → snd 415, remove, `05a8 = 6`; at 40 mist → the spirit
   trigger (MS); > 40 → 0). The hint is a modal moment inside the player's Handle (Invariant 5; Ruling 6). A hint raised inside a **nested**
-  pass (the pause loop's or `.CheckGameLoopKeys`' redraws, `FerazelSession.swift:589–592`) suspends that nested pass the
-  same way — the implementer first confirms from the dump whether those nested `.PaintFrameWrap`s run `.HandleSprites`
-  (`.PaintFrameWrap` M l. 9104ff calls it unless the map flag is set); if they do, the nested pass resumes after the
-  hint, if not, the case cannot arise — recorded.
+  pass (the pause loop's or `.CheckGameLoopKeys`' redraws, `FerazelSession.swift:589–592`) **does arise**: `.PaintFrameWrap`
+  runs `.HandleSprites` (M l. 9453) off the map, so a held USE on a key / shield / red Xichron during a nested pass
+  reaches the switch. The nested pass suspends the same way (`.hint` with a nested flag), `LevelRun` runs the hint
+  inside the outer modal (pause / confirm), and `resume(.hint)` finishes the nested pass, then hands control back to
+  the outer modal's state machine; `testHintSuspendsInsidePlayerHandle` covers the top-level case and gains an assert
+  for one nested case (a pause redraw with USE held on the Steel Key).
 - **Tests (8):** `testDaggerStab` (USE with the dagger: snd 418; counter 1, 2, 3, 4, 5, −5 … −1, 0 over 10 frames; the
-  held sprite `.playerShot` only at c 3, 4, 5, damage 100; Ice Pick 300 / strength 4; Vorpal Dirk 200) ·
+  held sprite `.playerShot` only at c 3, 4, 5, damage 100; Ice Pick 300 / strength 4; Vorpal Dirk 200; with magic 0
+  and the Fireball selected the press moves the dagger to the front (CS) and the **same frame** stabs — snd 418,
+  counter 1; after a cast press `075c` is 0 at the end of the call — the gate's clear, M l. 47353ff) ·
   `testHeldItemPositions` (c 1 facing right: (x + 0x2d, y + 0x1e + 0x16); c 5 crouching: (x + 0x54, y + 0x11 + 0xc +
   0x16); pressed facing left, c 3: x + (100 − 0x42) − 0x20; pressed facing left then turned right mid-swing: x + (100 −
   off) with no −0x20) · `testSeedsThrown` (fire seeds count 2 → 1 at the press; at c == 5 a
@@ -994,43 +1007,9 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   HP 50 and a shake of 5 + R(2) frames; a second → HP < 1 → gravity 0xfa).
 - **Gate:** G2 = 451, G5 (wave 4.6 end), G6, G7(+b), G8, G10; wave end: G3. **Commit:** `FerazelCore: the Box class tail, crates (KillCrate drops and explosions, spin stomp), boulders, mine carts, stalactites; goldens moved as recorded; 8 tests`.
 
-### Wave 4.7 — the spells' world effects, chests and doors, switches
+### Wave 4.7 — chests and doors, switches, teleporters
 
-#### SW — minor — the spells' world effects: Ice Wall floes and ledges, Tree Trunk, Statue (→ 457)
-- **Files:** `Sources/FerazelCore/Shots/PlayerShot.swift`, `Sources/FerazelCore/Shots/PlayerShotHits.swift` (the floe,
-  ledge and trunk spawns), `Sources/FerazelCore/World/Movers/BoxSprite.swift` (trunks 712/713: Setup arms, Handle
-  lifetime/blink, `.HitBoxTileSprite`'s 713 → 712), `Sources/FerazelCore/World/Movers/StatueSprite.swift` (new:
-  `.TurnIntoStatue`, `.HandleStatueSprite`), `Sources/FerazelCore/World/Movers/PlatformSprite.swift` (the Statue site of
-  `.HitPlatformSprite`, M l. 55798–55803, replacing its `// later: Phase 4`), `Sources/FerazelCore/Sprites/SpriteSlot.swift`
-  (`SpriteHandler.statue`; saved Handle `+0x1ec`, hit `+0x1f0`, tile `+0x1f4`, timer `+0x130`, saved `+0xb8` `+0x134`),
-  `Sources/FerazelCore/Session/FerazelSession.swift` (the handle-pass switch, l. 389–429, has no default — `.statue`),
-  `Sources/FerazelCore/World/Movers/BackgroundSprite.swift` (the cannon capture excludes the Statue Handle,
-  `BackgroundSprite.swift:400–436` — A7), `Tests/FerazelCoreTests/SpellWorldTests.swift` (new).
-- **Contract:** spells-detail §3.4 (floes, ledges: the shot writes `+0xb0 = 4`, `+0xa6 = 0xb4`, `+0x16c` 0 / 1 / 2;
-  physics §8.9 mode 4 — PlatformSprite's mode 4 is built, W1), §3.5 (trunks), §3.6; pickups-boxes §2.4.9; Dump:
-  `.TurnIntoStatue` M l. 38244–38272 (snd 302 `STPlay3DSound` vol 0x32 — no draw; saves `+0x4c`/`+0x5c`/`+0x1f8` into
-  `+0x1ec`/`+0x1f0`/`+0x1f4`; `+0x130 = 0x78`; `+0x134 = +0xb8`; the Statue Handle/Hit/Tile callbacks; v = 0),
-  `.HandleStatueSprite` M l. 56521–56555 (no light → `AddLight(face _DAT_100a099c, centre, …, 0x21)`; `+0xb8 =
-  0x1000b`; timer − 1; v = 0; `+0x80 = 2` stored directly (no re-sort); timer < 20 and odd → `+0xb8 = 0`; < 1 → the
-  saved callbacks and `+0xb8` restored, **HP −200**, light removed), the Platform site M l. 55798–55803 (a player shot
-  with `+4 == 1` → shot `+0xe9 = 1`, platform `+0x190 = 0`, `.TurnIntoStatue(platform)`). Enemies' 11 statue sites are
-  Phase 5 (◇). Trunks: 712 at (cx−8, cy−6) layer 2 with `+0xa6 = parity + 120`, effect 2 at (x−6, y−9) `+0x46 = 8`
-  light 0x42, snd 302, the shot's kill flag set directly (followers orphaned — spells-detail-2 §5); growth: walk
-  `+0x1d4` to the top, 713 at (top.x, top.y − 16), lifetime parity + 120, old top ≥ 35; Handle: −1 per frame, blink
-  0xb0001 (< 23), 0xb0000 (< 21), 0xb0002 (< 11), killed < 1; 712 gravity 0x15e rect (3,4,0x1d,0x18), 713 gravity 0 rect
-  (3,3,0x1d,0x15); a landing 713 → 712 with gravity 0.
-- **Tests (6):** `testIceWallFloe` (an Ice Wall shot into water: a 0x57c at (x−10, cy−4) with `+0xb0 = 4`, `+0x16c = 0`,
-  `+0xa6 = 0xb4`; the shot killed) · `testIceWallLedge` (into an FG kind-2 wall: a ledge at (tileX − 0x17, cy) variant 1;
-  kind 0: (tileX + 0xf, cy) variant 2; a floor contact makes nothing; spell 7 makes neither) · `testTrunkPlanted` (a
-  Tree Trunk shot landing: 712 at (cx−8, cy−6), lifetime 120 or 121 by `_DAT_1009fd30`, effect 2, snd 302; its
-  followers stay alive) · `testTrunkGrows` (a second shot into the trunk: 713 at (x, y−16) linked as `+0x1d4`; the old
-  top's lifetime raised to 35 when below) · `testStatueFreezesPlatform` (a Statue shot into a moving platform: the
-  shot `+0xe9 = 1`, the platform's Handle the Statue's for 120 frames with v 0, `+0xb8 0x1000b` (0 on odd frames below
-  20), then its callbacks back and HP −200) · `testFollowerPetrifies` (a power-0 follower of id 1 touching the platform
-  petrifies it too — the site tests only `+4 == 1`).
-- **Gate:** G2 = 457, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: Ice Wall floes and ledges, Tree Trunk segments, Statue (.TurnIntoStatue on platforms); 6 tests`.
-
-#### BX2 — minor ◈ — chests, doors and keys, the thought balloons (→ 463)
+#### BX2 — minor ◈ — chests, doors and keys, the thought balloons (→ 457)
 - **Files:** `Sources/FerazelCore/World/Movers/BoxSprite.swift` (the chest 0x51c and door 0xb5e/0xb5f Handle arms;
   `.CreateBalloonSprite`), `Sources/FerazelCore/Player/HitPlayerSprite.swift` (the Box arm's door / chest / timer
   0xb5b branches, M l. 49211–49286 — replacing `HitPlayerSprite.swift:159`'s `// later`), `Sources/FerazelCore/Player/GroundCeilingEffects.swift`
@@ -1063,9 +1042,9 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   quirk, no `.GenerateSprite`) · `testBalloonNearLockedChest` (within 0x4b px on both axes: a 0xcb2 balloon with the key
   face; at 0x4c px none; an unlocked chest none) · `testOpenDoorPersists` (a save-point resume after opening door 55 →
   the door Setup with p4 1 opens at once; the key stays spent).
-- **Gate:** G2 = 463, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: chests, doors and keys, the thought balloons; 6 tests`.
+- **Gate:** G2 = 457, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: chests, doors and keys, the thought balloons; 6 tests`.
 
-#### BT — minor — Buttons, gates, switch blocks, boulder spouts (→ 469)
+#### BT — minor — Buttons, gates, switch blocks, boulder spouts (→ 463)
 - **Files:** `Sources/FerazelCore/World/Movers/ButtonSprite.swift` (new: `.InitButtonSprite`, `.SetupButtonSprite`,
   `.HandleButtonSprite`, `.HitButtonSprite`), `Sources/FerazelCore/World/Movers/BoxSprite.swift` (gate 2940, switch blocks
   1250…1279, spouts 1450…1453 arms + Setups), `Sources/FerazelCore/Sprites/SetupFaces.swift` (the `.button` class arm;
@@ -1096,18 +1075,17 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   183 (record 0 twice: never fires).
 - **Tests (6):** `testMomentaryButton` (1322 p1 0 stood on from frame 1: the Handle runs before the press each frame, so
   the level after frame 1 is 8 (snd 4704), after frame 2 15, and frame 3's Handle clamps 14 → 9 and writes record p4 =
-  1 (0 on frames 1–2); stepping off: 8 (p4 0), 7, 6, 5, then 4 plays snd 4705) · `testLatchingButton` (p1 1: once ≥ 9 it stays; p4
+  1 (0 on frames 1–2); stepping off: the first Handle yields 9 (p4 still 1), then 8 (p4 0), 7, 6, 5,
+  and 4 plays snd 4705) · `testLatchingButton` (p1 1: once ≥ 9 it stays; p4
   1 survives a save-point resume via the record — the first Handle's level 10) · `testShotPressesButton` (a Fireball →
   level 11, p4 1) · `testGateRisesWithButton` (level 3 gate 72: Button 90 pressed → the gate rises 2 px/frame for 50
   frames (100 px) then stops; the idle-only sound: with its snd in `playing` → no cue and no draw; idle → a cue and one
   R(10000)) · `testSwitchBlocksFollowButton` (level 4 block 53: solid with rect (1,1,0x23,0x23) only while record 57's
   p4 == 1, else the outline face and an empty rect) · `testSpoutTimerAndDraws` (level 4 spout 28 with Button 30 pressed:
   at `+0xa6` 0 → no sprite, R(300), R(400), then R(30) → `+0xa6` = 50 + it; unpressed → no draws).
-- **Gate:** G2 = 469, G5 (wave 4.7 end), G6, G7(+b), G8, G10; wave end: G3. **Commit:** `FerazelCore: Buttons, gates (idle-only sounds via SoundVoices), switch blocks, boulder spouts (shots in Phase 5); 6 tests`.
+- **Gate:** G2 = 463, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: Buttons, gates (idle-only sounds via SoundVoices), switch blocks, boulder spouts (shots in Phase 5); 6 tests`.
 
-### Wave 4.8 — teleporters, levels 3 and 4
-
-#### TP — ⚑ MAJOR — teleporters and the mosaic (→ 473)
+#### TP — ⚑ MAJOR — teleporters and the mosaic (→ 467)
 - **Files:** `Sources/FerazelCore/Player/HitPlayerSprite.swift` (the teleporter branch of the Box arm, M l.
   49407–49470), `Sources/FerazelCore/Player/PlayerStates.swift` (row 36's fire pulse `0708` at charge 80,
   `PlayerStates.swift:525`; the `070c` writer, `PlayerState.swift:322`), `Sources/FerazelCore/Seams/FrameSuspension.swift`
@@ -1146,9 +1124,45 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   ticks, the same frame resumed; every `.mosaic` with `graphicsMode3` false at prefs+2 = 3) · `testTeleporterToRecordZero`
   (level 1 record 126 (p1 0) → the player at record 0's 2922 entry (5455, 666) + d) · Render `testMosaicBlit` (cell 4
   on a 608×384 view: every 4×4 block one index, the block pixel the dump picks — recorded).
-- **Gate:** G2 = 473, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: teleporters (the charge pulse, the in-use idle-entry search, the camera re-seat) with the two-stage mosaic inside the frame; 4 tests`.
+- **Gate:** G2 = 467, G5 (wave 4.7 end), G6, G7(+b), G8, G10; wave end: G3. **Commit:** `FerazelCore: teleporters (the charge pulse, the in-use idle-entry search, the camera re-seat) with the two-stage mosaic inside the frame; 4 tests`.
 
-#### LV3 — minor — level 3 "Western Reaches" enterable (→ 477)
+### Wave 4.8 — the spells' world effects, levels 3 and 4
+
+#### SW — minor — the spells' world effects: Ice Wall floes and ledges, Tree Trunk, Statue (→ 473)
+- **Files:** `Sources/FerazelCore/Shots/PlayerShot.swift`, `Sources/FerazelCore/Shots/PlayerShotHits.swift` (the floe,
+  ledge and trunk spawns), `Sources/FerazelCore/World/Movers/BoxSprite.swift` (trunks 712/713: Setup arms, Handle
+  lifetime/blink, `.HitBoxTileSprite`'s 713 → 712), `Sources/FerazelCore/World/Movers/StatueSprite.swift` (new:
+  `.TurnIntoStatue`, `.HandleStatueSprite`), `Sources/FerazelCore/World/Movers/PlatformSprite.swift` (the Statue site of
+  `.HitPlatformSprite`, M l. 55798–55803, replacing its `// later: Phase 4`), `Sources/FerazelCore/Sprites/SpriteSlot.swift`
+  (`SpriteHandler.statue`; saved Handle `+0x1ec`, hit `+0x1f0`, tile `+0x1f4`, timer `+0x130`, saved `+0xb8` `+0x134`),
+  `Sources/FerazelCore/Session/FerazelSession.swift` (the handle-pass switch, l. 389–429, has no default — `.statue`),
+  `Sources/FerazelCore/World/Movers/BackgroundSprite.swift` (the cannon capture excludes the Statue Handle,
+  `BackgroundSprite.swift:400–436` — A7), `Tests/FerazelCoreTests/SpellWorldTests.swift` (new).
+- **Contract:** spells-detail §3.4 (floes, ledges: the shot writes `+0xb0 = 4`, `+0xa6 = 0xb4`, `+0x16c` 0 / 1 / 2;
+  physics §8.9 mode 4 — PlatformSprite's mode 4 is built, W1), §3.5 (trunks), §3.6; pickups-boxes §2.4.9; Dump:
+  `.TurnIntoStatue` M l. 38244–38272 (snd 302 `STPlay3DSound` vol 0x32 — no draw; saves `+0x4c`/`+0x5c`/`+0x1f8` into
+  `+0x1ec`/`+0x1f0`/`+0x1f4`; `+0x130 = 0x78`; `+0x134 = +0xb8`; the Statue Handle/Hit/Tile callbacks; v = 0),
+  `.HandleStatueSprite` M l. 56521–56555 (no light → `AddLight(face _DAT_100a099c, centre, …, 0x21)`; `+0xb8 =
+  0x1000b`; timer − 1; v = 0; `+0x80 = 2` stored directly (no re-sort); timer < 20 and odd → `+0xb8 = 0`; < 1 → the
+  saved callbacks and `+0xb8` restored, **HP −200**, light removed), the Platform site M l. 55798–55803 (a player shot
+  with `+4 == 1` → shot `+0xe9 = 1`, platform `+0x190 = 0`, `.TurnIntoStatue(platform)`). Enemies' 11 statue sites are
+  Phase 5 (◇). Trunks: 712 at (cx−8, cy−6) layer 2 with `+0xa6 = parity + 120`, effect 2 at (x−6, y−9) `+0x46 = 8`
+  light 0x42, snd 302, the shot's kill flag set directly (followers orphaned — spells-detail-2 §5); growth: walk
+  `+0x1d4` to the top, 713 at (top.x, top.y − 16), lifetime parity + 120, old top ≥ 35; Handle: −1 per frame, blink
+  0xb0001 (< 23), 0xb0000 (< 21), 0xb0002 (< 11), killed < 1; 712 gravity 0x15e rect (3,4,0x1d,0x18), 713 gravity 0 rect
+  (3,3,0x1d,0x15); a landing 713 → 712 with gravity 0.
+- **Tests (6):** `testIceWallFloe` (an Ice Wall shot into water: a 0x57c at (x−10, cy−4) with `+0xb0 = 4`, `+0x16c = 0`,
+  `+0xa6 = 0xb4`; the shot killed) · `testIceWallLedge` (into an FG kind-2 wall: a ledge at (tileX − 0x17, cy) variant 1;
+  kind 0: (tileX + 0xf, cy) variant 2; a floor contact makes nothing; spell 7 makes neither) · `testTrunkPlanted` (a
+  Tree Trunk shot landing: 712 at (cx−8, cy−6), lifetime 120 or 121 by `_DAT_1009fd30`, effect 2, snd 302; its
+  followers stay alive) · `testTrunkGrows` (a second shot into the trunk: 713 at (x, y−16) linked as `+0x1d4`; the old
+  top's lifetime raised to 35 when below) · `testStatueFreezesPlatform` (a Statue shot into a moving platform: the
+  shot `+0xe9 = 1`, the platform's Handle the Statue's for 120 frames with v 0, `+0xb8 0x1000b` (0 on odd frames below
+  20), then its callbacks back and HP −200) · `testFollowerPetrifies` (a power-0 follower of id 1 touching the platform
+  petrifies it too — the site tests only `+4 == 1`).
+- **Gate:** G2 = 473, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: Ice Wall floes and ledges, Tree Trunk segments, Statue (.TurnIntoStatue on platforms); 6 tests`.
+
+#### LV3 — ⚑ MAJOR — level 3 "Western Reaches" enterable (→ 477)
 - **Files:** `Sources/FerazelCore/Front/BuiltLevels.swift` (`1...3`), `Sources/FerazelCore/Sprites/SetupFaces.swift`
   (the level-3 types no task covered: the enemy face stubs Bat 1741 (0x6cd, p1 2) and Blob 1730 (0x6c2) — the Phase-1 ◇
   shape, Ruling 3; the Blob Setup counts itself as an enemy — `+0x1b5` and `_DAT_1009ffb4` — so the totals tally at
@@ -1279,15 +1293,15 @@ The canonical order is the execution order (each task starts from the previous t
 | 4.4 | SH ⚑ → GL → PU | SH two; GL, PU one | run 5: [SH GL PU] |
 | 4.5 | IU ⚑ → MS | IU two; MS one | run 6: [IU MS] |
 | 4.6 | SD ⚑ → BX1 ⚑◈ | two each | run 7: [SD BX1] |
-| 4.7 | SW → BX2 ◈ → BT | one each | run 8: [SW BX2 BT] |
-| 4.8 | TP ⚑ → LV3 → LV4 | TP two; LV3, LV4 one | run 9: [TP LV3 LV4] |
+| 4.7 | BX2 ◈ → BT → TP ⚑ | BX2, BT one; TP two | run 8: [BX2 BT TP] |
+| 4.8 | SW → LV3 ⚑ → LV4 | SW, LV4 one; LV3 two | run 9: [SW LV3 LV4] |
 | 4.9 | A4 (+ FABLE-GRADE phase review + fixes) | one + Fable | run 10: phase end |
 
 G3 runs at each **wave** end. No HectorKit task: G1 = HK `35a85ba` untouched for the whole phase.
 
 - **Dependencies:** US after LT (light removal); HU after IV; BN after US + LT; PK after BN + HU + IV; EF after LT + US;
   CS after IV + LT + US (+ EF for the liquid rule's effect 5); SH after CS + EF + BN; SW after SH + **BX1** (the trunk landing 713 → 712 needs the Box tail and the
-  `.HitBoxTileSprite` dispatch — fix round B7, so SW moved to wave 4.7); GL after PK; IU after
+  `.HitBoxTileSprite` dispatch — fix round B7; SW runs in wave 4.8); GL after PK; IU after
   CS + SH (+ HU); MS after IU + PK; PU after PK; BX1 after US + SH + EF + PK; BX2 after BX1 + EF; BT after BX1 + VS; TP
   after BX1; SD after PU + CS + SH; LV3 after BT + BX1 (mine carts, the gate) + TP (level 3's teleporters 63 ↔ 64) + VS; LV4 after LV3 + BT + TP + BX2; A4
   after all.
@@ -1374,11 +1388,11 @@ G3 runs at each **wave** end. No HectorKit task: G1 = HK `35a85ba` untouched for
    `BuiltLevels.range`/`notBuiltReport`, `GameFlowGameTests.swift:249/453`, `FerazelController.swift:173–176`,
    `TileHotRects.init(level:)` (no production caller; `SeparateFromTiles.swift:80`), the stale-comment lines of X1.
 4. **Ladder arithmetic (fix round A+B).** Canonical order X1, VS, LT, US, IV, HU, BN, PK, EF, CS, SH, GL, PU, IU, MS, SD,
-   BX1, SW, BX2, BT, TP, LV3, LV4: 349 + (0 + 3 + 5 + 5 + 6 + 6 + 8 + 8 + 7 + 9 + 8 + 5 + 6 + 8 + 5 + 5 + 8 + 6 + 6 + 6 +
-   4 + 4 + 4 = 132) = **481** ✅; cumulative 349, 352, 357, 362, 368, 374, 382, 390, 397, 406, 414, 419, 425, 433, 438, 443,
-   451, 457, 463, 469, 473, 477, 481 ✅ (each task's "Tests (N)" equals the names it lists — re-counted by script). Wave
-   ends 357, 374, 390, 406, 425, 438, 451, 469, 481 ✅. ⚑ MAJOR: LT, US, BN, PK, EF, CS, SH, IU, SD, BX1, TP = 11 (LV3
-   demoted to minor in the fix round so wave 4.8 fits one run).
+   BX1, BX2, BT, TP, SW, LV3, LV4: 349 + (0 + 3 + 5 + 5 + 6 + 6 + 8 + 8 + 7 + 9 + 8 + 5 + 6 + 8 + 5 + 5 + 8 + 6 + 6 + 4 +
+   6 + 4 + 4 = 132) = **481** ✅; cumulative 349, 352, 357, 362, 368, 374, 382, 390, 397, 406, 414, 419, 425, 433, 438, 443,
+   451, 457, 463, 467, 473, 477, 481 ✅ (each task's "Tests (N)" equals the names it lists — re-counted by script). Wave
+   ends 357, 374, 390, 406, 425, 438, 451, 467, 481 ✅. ⚑ MAJOR: LT, US, BN, PK, EF, CS, SH, IU, SD, BX1, TP, LV3 = **12**;
+   every run is 2 tasks, or 3 with at most one ⚑ (Fable round, seat ruling).
 5. **Layering.** Core gains no AppKit/CoreGraphics; `LightTable` holds face *references* (pict, width, height), not
    pixels; the mosaic and the mask copy are Render's; the App adds two lines of plumbing. No HectorKit change.
 6. **Risk.** Biggest: the resumable player Handle (IU) — the frame must continue at `.HandleKeys`' item switch with
@@ -1531,6 +1545,8 @@ in the committed `Ferazel_pef.decompiled.c`, decoded the pstrs with `pef.py`, an
     explosion package; the 1207 explosion hurts the player (its enemy damage is Phase 5's).
 15. **Carried follow-ups:** adopted — the stale later-stubs and M7 (X1); not adopted — the Phase 3 front-end polish
     items (left to Ben's Q6 verdict).
+16. **No free record:** a spawn that finds all 700 records in use runs no Setup and makes none of its draws; the
+    caller's stores to it are dropped and its own later draws still made (BC46's rule, for every spawner).
 
 ---
 
@@ -1573,8 +1589,20 @@ in the committed `Ferazel_pef.decompiled.c`, decoded the pstrs with `pef.py`, an
   nested status-bar sites named; VS: which playing set a resumed / nested pass uses; LV4: `startLevel` is a property, the
   5 → 1 clamp is `NewGame.swift:64` (and the App's); LV3 changes `GameFlowGameTests` l. 250; `PauseKeysTests` (CS, IU)
   and the golden drivers (PK, IU, TP) listed.
-- **Rejected / kept differently:** none rejected. One count differs from the coordinator's note: "12 ⚑ MAJOR" — after
-  the fix round LV3 is minor, so the plan has **11** ⚑ MAJOR tasks (LT, US, BN, PK, EF, CS, SH, IU, SD, BX1, TP); before
-  it there were 12 (the planner's first report said "11" while listing 12 — a miscount).
-- **Fix round result:** ladder 349 → **481** (CS +1, TP −1, LV4 +1); waves 10 (4.0–4.9), wave ends 357, 374, 390, 406, 425,
-  438, 451, 469, 481. Awaiting the FABLE-GRADE plan leg.
+- **Rejected / kept differently:** none rejected. (LV3 was demoted to minor in this round — 11 ⚑; the Fable round
+  restored it — 12 ⚑, below.)
+- **Fix round result:** ladder 349 → **481** (CS +1, TP −1, LV4 +1); waves 10 (4.0–4.9).
+- **FABLE-GRADE plan leg: PASS WITH FIXES** (G2 349/0 re-run in an archive copy; ~25 independent dump samples agree; no
+  scope dropped). Findings and dispositions (all verified against the dump, all fixed): (1, IMPORTANT) CS's
+  `testMagicBelowOneSelectsDagger` asserted the same-frame stab and the `075c` clear, both IU's (the item switch, wave
+  4.5) → CS keeps the selection + the two (1,1,0) calls; IU's `testDaggerStab` gains the stab and the clear. (2) the
+  scroll arm also stores `_DAT_1009fda0 = 0` and returns silently with no free slot (M l. 48956–48962 verified) → PK.
+  (3) the stale register is `unaff_r29`, the caller's r29 (M l. 51090, 51190–51195 verified) → traced per call site
+  of `.KillPlayerShot` → SH. (4) unguarded `MTNewSprite` results in `.CastSpell`, `.SmiteEnemies`, `.KillCrate` → one
+  ruling for every spawner (Ruling 16, Hazards). (5) the Geneva claim reconciled: no App change (l. 56, S5). (6) the
+  1322 release starts at 9 (p4 still 1) → BT test. (7) the 0x4bf return is M l. 53468 (verified) → BN. (8) the nested
+  hint case does arise — `.HandleSprites` runs inside `.PaintFrameWrap` (M l. 9453 verified) → IU specifies the nested
+  suspension and its resume. (9) seat ruling on the leg's judgement note: LV3 back to ⚑ MAJOR; waves re-cut so every run
+  is 2 tasks or 3 with at most one ⚑: 4.7 [BX2 BT TP], 4.8 [SW LV3 LV4]; ⚑ MAJOR = 12. Rejected: none.
+- **Final:** ladder 349 → **481**; runs 4.0 [X1 VS LT] 357 · 4.1 [US IV HU] 374 · 4.2 [BN PK] 390 · 4.3 [EF CS] 406 ·
+  4.4 [SH GL PU] 425 · 4.5 [IU MS] 438 · 4.6 [SD BX1] 451 · 4.7 [BX2 BT TP] 467 · 4.8 [SW LV3 LV4] 481 · 4.9 [A4] 481.
