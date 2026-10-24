@@ -136,6 +136,11 @@ public struct LevelRunOutput: Equatable, Sendable {
 /// one `.HandleAsyncGammaFade` per step, the bands through `LevelServices.deathEffectStep`); completed →
 /// `.EndLevelSGUpdate` (SV1), `.StageCompleteEffect` unless `fd64` (L2), `fd64 = 0`, `FadeAIFFMusic(0, 2)`,
 /// `GammaFadeOut(6)`; aborted → neither; all → `ShutDownAIFFMusic`, `InputActivate(0, 0)`, `ShowCursorSafe`.
+///
+/// **A save point (S1, Invariant 6):** the session suspends inside its special pass (`FrameSuspension.savePoint`); the
+/// run does `.SavePointSave` at that moment (`SaveGame.swift`: the block, `.SaveSG` with its panel / error report
+/// answered through `fileDone` / `dialogDone`, the redraw tail), then `resume` finishes the same iteration. No
+/// iteration runs meanwhile; the cadence measures the next one from the suspended iteration's start.
 public final class LevelRun {
     public let resources: FerazelResources
     public let prefs: FerazelPrefs
@@ -215,7 +220,8 @@ public final class LevelRun {
     public init(resources: FerazelResources, prefs: FerazelPrefs, level: Int, seed: Int32, carry: LevelCarry,
                 save: SaveBlock, fade: ScreenFade, music: MusicFade, services: LevelServices, sounds: StageSounds,
                 start: (x: Int, y: Int)? = nil, param3: Int16 = 0, param4: Bool = true, refreshFacing: Bool = true,
-                skipStageComplete: Bool = false, date: @escaping () -> UInt32 = { 0 }) throws {
+                skipStageComplete: Bool = false, date: @escaping () -> UInt32 = { 0 }, files: FrontFiles? = nil,
+                saveState: SaveGameState = SaveGameState()) throws {
         self.resources = resources
         self.prefs = prefs
         levelNumber = level
@@ -237,6 +243,36 @@ public final class LevelRun {
         tilesetLevel = carry.tilesetLevel
         tilesetsDisposed = carry.tilesetsDisposed
         cachedFaces = carry.cachedFaces
+        self.files = files
+        self.saveState = saveState
+        prefsAfterSaves = prefs
+    }
+
+    // MARK: S1 — the save point
+
+    /// fe00 / fd54 / fd18 (`SaveGameState`), as the flow handed them in and the save points left them.
+    public private(set) var saveState: SaveGameState
+    /// The live prefs (`_DAT_1009fe44`) as `.SaveSG` leaves them (prefs+0x42 incremented / named / restored,
+    /// `.UpdateSGString`'s `.MakeCurrPrefs`) — while the panel is up, with the incremented default name in it; the
+    /// session keeps its own copy (P1 makes `FerazelSession.prefs` settable).
+    public var livePrefs: FerazelPrefs { saveSG?.prefs ?? prefsAfterSaves }
+    private var prefsAfterSaves: FerazelPrefs
+    /// The prefs file and saved-game seam (`.SaveSG`'s writes); nil → the block stays in memory.
+    private let files: FrontFiles?
+    /// `.SaveSG` in progress (the frame is suspended meanwhile) and the answers the App gave.
+    private var saveSG: SaveSG?
+    private var saveStep: SaveSG.Step?
+    private var fileAnswer: FileResult?
+    private var dialogAnswered = false
+
+    /// The save panel (`ShellRequest.putFile`) was answered; the run goes on at the next tick.
+    public func fileDone(_ result: FileResult) {
+        fileAnswer = result
+    }
+
+    /// The error report (`ShellRequest.dialog`) was dismissed; the run goes on at the next tick.
+    public func dialogDone(_ result: DialogResult) {
+        dialogAnswered = true
     }
 
     /// What the next level's run takes: the session's carry (parity, particle counters, water cache, G — the live
@@ -456,13 +492,32 @@ public final class LevelRun {
     private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         let reduce = prefs.reduceFrameRate != 0
-        // `.GameLoop`'s bottom-of-loop wait (M l. 5285–5294): prefs[0] = 0 → until 2 ticks after the iteration's start;
-        // prefs[0] ≠ 0 → the non-drawing iteration does not wait, the drawing one waits until 4 ticks after its own
-        // start. A late tick runs one iteration (or pair): fixed step, no catch-up.
-        if let last = lastStart, now &- last < (reduce ? 4 : 2) { return false }
-        lastStart = now
-        var ops = step(s, input: input, out: &out)
-        if reduce && !ops.drawn && !s.loopEnded { ops = step(s, input: input, out: &out) }
+        var ops: FrameOps
+        if saveSG != nil {
+            // S1: a suspended frame waits for the modal; its answer finishes the same iteration.
+            guard let resumed = advanceSave(s, out: &out) else { return false }
+            ops = resumed
+        } else {
+            // `.GameLoop`'s bottom-of-loop wait (M l. 5285–5294): prefs[0] = 0 → until 2 ticks after the iteration's
+            // start; prefs[0] ≠ 0 → the non-drawing iteration does not wait, the drawing one waits until 4 ticks after
+            // its own start. A late tick runs one iteration (or pair): fixed step, no catch-up.
+            if let last = lastStart, now &- last < (reduce ? 4 : 2) { return false }
+            lastStart = now
+            ops = step(s, input: input, out: &out)
+        }
+        while true {
+            if ops.suspension != nil {
+                beginSave(s, suspension: ops.suspension!, out: &out)
+                guard let resumed = advanceSave(s, out: &out) else { return false }
+                ops = resumed
+                continue
+            }
+            if reduce && !ops.drawn && !s.loopEnded {
+                ops = step(s, input: input, out: &out)
+                continue
+            }
+            break
+        }
         guard s.loopEnded else { return false }
         // The loop is over after this iteration (M l. 5229); its own wait still runs out first.
         playing = false
@@ -474,16 +529,79 @@ public final class LevelRun {
     private func step(_ s: FerazelSession, input: FrontInput, out: inout LevelRunOutput) -> FrameOps {
         let ops = s.step(keys: input.keys)
         iterations += 1
+        emitFrame(ops, out: &out)
+        return ops
+    }
+
+    /// One iteration's ops (or a suspended part of one) into the tick's output.
+    private func emitFrame(_ ops: FrameOps, out: inout LevelRunOutput) {
         lastSteps.append(ops)
         var o = FrontOutput(draws: ops.draws, sounds: ops.sounds, soundStops: ops.soundStops,
                             soundStopAt: ops.soundStopAt, music: ops.music, requests: ops.requests)
         // A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
         o.present = ops.drawn || ops.draws.contains { if case .gammaStep = $0 { true } else { false } }
-        // `_HandleAsyncAIFFMusicFade()` (M l. 5281), after `.UpdateStatusBar(1, 0, 0)`: nothing armed outside the
-        // boss rule's in-loop block (M l. 5257–5266, // later: Phase 5).
-        o.music += music.handleAsyncFade(prefs: prefs)
+        // `_HandleAsyncAIFFMusicFade()` (M l. 5281), after `.UpdateStatusBar(1, 0, 0)` — at the iteration's end, so
+        // not in a suspended part: nothing armed outside the boss rule's in-loop block (M l. 5257–5266, // later:
+        // Phase 5).
+        if ops.suspension == nil { o.music += music.handleAsyncFade(prefs: prefs) }
         emit(&out, o)
-        return ops
+    }
+
+    // MARK: The save point (S1)
+
+    /// The session suspended at a save point (`HitPlayerSprite.savePoint`): `.SavePointSave` (M l. 6322ff) —
+    /// `InputActivate(0, 0)` and `FlushEvents(0xff7f)` (nothing in Core), the block written at that moment, then
+    /// `.SaveSG(prefs[1] == 0)`.
+    private func beginSave(_ s: FerazelSession, suspension: FrameSuspension, out: inout LevelRunOutput) {
+        switch suspension {
+        case .savePoint:
+            SavePointSave.write(&save, session: s, stamp: worldStamp, date: date())
+            var sg = SaveSG(state: saveState, prefs: livePrefs)
+            saveStep = sg.start(prompt: livePrefs.reuseSavedGames == 0,
+                                message: SaveSG.putFileMessage(resources: resources), block: save, files: files,
+                                musicFade: &music)
+            saveSG = sg
+            fileAnswer = nil
+            dialogAnswered = false
+            switch saveStep {
+            case .putFile(let req)?: emit(&out, FrontOutput(requests: [.putFile(req)]))
+            case .report(let d)?: emit(&out, FrontOutput(requests: [.dialog(d)]))      // a reuse save's write error
+            default: break
+            }
+        }
+    }
+
+    /// `.SaveSG` on from its last step with the App's answers; when it has returned: `.SavePointSave`'s tail and the
+    /// session's `resume` — the rest of the frame's ops (nil while still waiting).
+    private func advanceSave(_ s: FerazelSession, out: inout LevelRunOutput) -> FrameOps? {
+        guard var sg = saveSG, var step = saveStep else { return nil }
+        while true {
+            switch step {
+            case .putFile:
+                guard let a = fileAnswer else { saveSG = sg; return nil }
+                fileAnswer = nil
+                step = sg.fileDone(a, block: save, files: files, musicFade: &music)
+                if case .report(let d) = step { emit(&out, FrontOutput(requests: [.dialog(d)])) }
+            case .report:
+                guard dialogAnswered else { saveSG = sg; saveStep = step; return nil }
+                dialogAnswered = false
+                step = sg.reportDone()
+            case .done(let saved):
+                saveSG = nil
+                saveStep = nil
+                saveState = sg.state
+                prefsAfterSaves = sg.prefs
+                if sg.madeCurrent || !sg.music.isEmpty {
+                    emit(&out, FrontOutput(music: sg.music, prefs: sg.madeCurrent ? sg.prefs : nil))
+                }
+                // The tail reads the live prefs (`_DAT_1009fe44 + 2`, `5107`) as `.UpdateSGString` left them.
+                emit(&out, SavePointSave.redraw(session: s, prefs: livePrefs))
+                let rest = s.resume(.savePoint(saved: saved))
+                emitFrame(rest, out: &out)
+                return rest
+            }
+            saveStep = step
+        }
     }
 
     // MARK: Exit

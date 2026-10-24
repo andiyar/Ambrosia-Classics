@@ -96,6 +96,17 @@ level 3 rec 216, level 22 rec 66); all params 0; none in 67 Xichra's Lair or 70 
 level: 1:2, 2:3, 3:6, 4:6, 5:2, 10:5, 11:4, 15:7, 18:2, 20:3, 21:5, 22:8, 25:2, 30:8, 31:5, 40:2, 45:5,
 50:6, 51:3, 52:3, 55:1, 62:3 [HIGH, Python over `Mlvl`].
 
+> ⚑ planner note (Phase 3 S1, 2026-10-24) (BC1, BC23): the success flash is **white** — `GammaFadeOutAsync(2, …)` gets
+> the 6 bytes at `0x100a53ca` = FFFF FFFF FFFF (`subi r5,r2,0x2476` @ `100577f4`; its r6/r7 0xc / 0x10 are unread) and
+> calls `HideCursorSafe` itself when it arms (M l. 31905); the three `HandleAsyncGammaFade` are 0 %, 50 %, 100 %;
+> `GammaFadeInAsync(0x2d)` is **46** `HandleAsyncGammaFade` calls (k = 0…45, one per `.GameLoop` iteration from the
+> save frame's own), ending with `ShowCursorSafe` (M l. 31929–31947); gate 1 stays shut until then. All of it is gated
+> on `DAT_100a53c2` (fading enabled): with fading off there is no flash and gate 1 stays open. Around `.SavePointSave`:
+> `MTSetPortScreen` (`1005777c`), `ShowCursorSafe` (`100577a4`) after the p1 write, `HideCursorSafe` (`10057858`) on
+> both paths. The save point's `.HandleBoxSprite` arm (M l. 60191–60195) re-faces from the live p1 every frame and then
+> runs the Box tail `LAB_1006f948` like the trampoline. Built: `HitPlayerSprite.savePoint` / `savePointDone`,
+> `BoxSprite.handle`.
+
 ### 2.2 `.SavePointSave @ 1000c104` (l. 6287–6460)
 
 Raw-verified order: `InputActivate(0,0)`, `FlushEvents(0xff7f)`;
@@ -163,6 +174,17 @@ level start.
 No slots: Standard File named files, any number, any folder.
 
 > ⚑ planner note (Phase 3 SV1, 2026-10-14) (BC21): 0xebe58 = **966,232** bytes; "965,208" above is a decimal slip.
+
+> ⚑ planner note (Phase 3 S1, 2026-10-24) (BC6, BC23): `.SaveSG` commits `fd54 = 1` and the reply → `fd18` **before**
+> `FSpDelete`, then the name → prefs+0x42 and `.UpdateSGString`, then the create/write — on every good reply, reuse
+> included (raw `100483a8` `fd54`, `100483e0` `FSpDelete`, `100483f8` `.UpdateSGString`, `10048418`
+> `FSpCreate`); after a successful write it copies the local reply back to `fd18` (no effect).
+> So a write error leaves the old file deleted, the new name in prefs (and the prefs file) and reuse armed.
+> `.UpdateSGString` (M l. 7155ff) is more than a write: `.SetPrefFile` + `.InitPrefs` re-read the stored record, +0x42
+> is copied in, the record written, then `.MakeCurrPrefs` makes the **stored** record the live prefs. The error calls
+> pass the File Manager code in r4 at all four `ReportError`s (raw `1004851c` `extsh r4,r25`, before the compares), not
+> only the general one; whether `GenericMessage(1)` shows `^1` is the alert's DITL. Cancel is the only path that puts
+> the old prefs+0x42 back (`CopyPString(auStack_378, …)`, M l. 41310). Built: `SaveSG` (`Front/SaveGame.swift`).
 
 ### 3.2 Default name (`.IncrementLastSGString @ 1004811c`, l. 40877)
 
@@ -511,6 +533,11 @@ second at 30 frames/s). A frame without a landing costs one step of decay and no
   adds +1 (handler) +2 (landing) = +3 per frame, `C = −150 + 3j` after j frames, so it fires again on
   the **56th** landing frame (j = 55 gives exactly 15, not > 15); stepping off, C is back to 0 after 150
   frames.
+
+> ⚑ planner note (Phase 3 S1, 2026-10-24) (BC22): the refire after a cancel is on the **65th** landing frame, not the
+> 56th: the decay moves C one step toward 0 in **both** directions (`> 0 → −1`, `< 0 → +1`, raw `1004de68..1004de98`),
+> so standing nets +3 a frame only until C = 0 at j = 50, then +1 a frame (j − 49), and 16 > 15 first at j = 65 — the
+> same in either order of decay and landing within a frame. Pinned by `SavePointTests.testRefireOn65thAfterCancel`.
 
 ### 9.3 `OpenDefaultWorldLevel` failing inside `.ContinueGame` (NR 6)  [HIGH up to the nil dereference]
 `.OpenDefaultWorldLevel(level, fileName) @ 10048ac0` (main l. 41500–41562):

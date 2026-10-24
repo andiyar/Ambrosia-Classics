@@ -297,8 +297,11 @@ public final class FerazelSession {
         }
     }
 
-    /// One `.GameLoop` iteration (the first call also carries the level start).
+    /// One `.GameLoop` iteration (the first call also carries the level start). S1: when the special pass reaches a
+    /// modal moment (`FrameSuspension`), the ops so far are returned with `suspension` set and the frame waits for
+    /// `resume(_:)`; a `step` while suspended is a precondition failure.
     public func step(keys: KeyState) -> FrameOps {
+        precondition(world.suspension == nil, "FerazelSession.step while the frame is suspended — resume(_:) first")
         var ops = FrameOps()
         let graphics = prefs.graphics
         if iterations == 0 && !hostedByLevelRun {
@@ -406,8 +409,61 @@ public final class FerazelSession {
         frameCues = world.player.drainFrameOutputs().cues
         // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
         world.collideSprites(Self.hitCallback)
-        world.collideSpecial(hitPlayer: { w, p, c in HitPlayerSprite.hit(w, player: p, other: c, keys: actions) },
-                             hit: Self.hitCallback)
+        frameActions = actions
+        frameDraw = draw
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        return finishFrame(ops)
+    }
+
+    /// The suspended frame's modal moment (S1), nil while none is pending.
+    public var suspension: FrameSuspension? { world.suspension }
+
+    /// S1: finishes the suspended frame with the modal's answer — the rest of the arm that suspended
+    /// (`HitPlayerSprite.savePointDone`), then the special pass from the **next** contact (its iteration state kept),
+    /// then the frame's end (passage draws, particles, erase, status bar, `.UpdateSprites`, the async gamma step, the
+    /// sounds). Returns those ops — suspended again when a later contact is modal too.
+    public func resume(_ outcome: FrameSuspension.Outcome) -> FrameOps {
+        guard let pending = world.suspension else { preconditionFailure("FerazelSession.resume without a suspension") }
+        world.suspension = nil
+        var ops = FrameOps()
+        switch (pending, outcome) {
+        case (.savePoint(let record), .savePoint(let saved)):
+            let tail = HitPlayerSprite.savePointDone(world, record: record, saved: saved)
+            ops.draws += tail.draws
+            ops.requests += tail.requests
+        }
+        guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        return finishFrame(ops)
+    }
+
+    /// The frame's `.IsInputKeyPressed` answers and draw flag, kept across a suspension (S1).
+    private var frameActions: InputActions = []
+    private var frameDraw = true
+
+    /// `.HitPlayerSprite` with the frame's key snapshot.
+    private func hitPlayer(_ w: SpriteWorld, _ p: Int, _ c: Int) {
+        HitPlayerSprite.hit(w, player: p, other: c, keys: frameActions)
+    }
+
+    /// The frame so far, handed out at a suspension (S1): the passage draws made in the pass so far, the sound calls
+    /// made so far (the Sound Tool has already started them), and — for a save point — `ShowCursorSafe` (raw
+    /// `100577a4`, made before `.SavePointSave`).
+    private func suspend(_ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        ops.draws.append(contentsOf: passageOps)
+        passageOps = []
+        SoundCues.emit(world.player.soundCalls, prefs: prefs, into: &ops)
+        world.player.soundCalls = []
+        ops.drawn = frameDraw
+        ops.suspension = world.suspension
+        if case .savePoint? = world.suspension { ops.requests.append(.showCursor) }
+        return ops
+    }
+
+    /// The frame after the special pass (unchanged order; S1 split it out so `resume` can finish a frame).
+    private func finishFrame(_ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        let draw = frameDraw
         // A passage jump's draws (`PassageView`, W2b), made inside the player pass.
         ops.draws.append(contentsOf: passageOps)
         passageOps = []

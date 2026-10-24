@@ -12,6 +12,8 @@ import Foundation
 public enum BoxSprite {
     /// The trampoline (PICT 1470, the 4-face set `_DAT_100a0a2c`).
     public static let trampoline: Int16 = 0x5be
+    /// The save point (PICT 1065, the 3-face set `_DAT_100a0a28`; S1).
+    public static let savePoint: Int16 = 0x429
     /// The bridges 1460…1467 (0x5b4…0x5bb).
     public static let bridges: ClosedRange<Int16> = 0x5b4...0x5bb
     /// The stalactite 2932 (W4; its child is made by `SetupFaces.spawnLevelSprites`).
@@ -257,14 +259,16 @@ public enum BoxSprite {
         s.pushForce = 0x80
     }
 
-    /// The types whose `.HandleBoxSprite` arm W3 builds: the trampoline and the bridges.
-    public static func handleBuilt(_ t: Int16) -> Bool { t == trampoline || bridges.contains(t) }
+    /// The types whose `.HandleBoxSprite` arm is built: the trampoline and the bridges (W3), the save point (S1).
+    public static func handleBuilt(_ t: Int16) -> Bool { t == trampoline || bridges.contains(t) || t == savePoint }
 
     /// `.HandleBoxSprite` (M l. 60030–61157) for the built types (`handleBuilt`; every other Box returns at once — its
     /// arm and the tail are Phase 4, and they stand still meanwhile):
     /// - `+0xe9` or `+0x1b2` → return; `.StandardSpriteHandles`; `+0x182 = 0` (the `.HitBoxSprite` pair latch — no
     ///   Phase-2 writer, not kept);
     /// - 0x5be (l. 60555–60563): face = the cache set `_DAT_100a0a2c` [`+0x46`]; `+0x46 > 0` → `+0x46 += 1`, past 3 → 0;
+    /// - 0x429 (M l. 60191–60195, S1): face = `*_DAT_100a0a28 + p1·0x34` — the set cell of the **live** record's p1
+    ///   every frame (0 the empty pedestal, 1 the statue facing right, 2 facing left; save-continue §9.1), then the tail;
     /// - 0x5b4…0x5bb (l. 60565–60591): face = the class cache (0x5b5 / 0x5b6 → 0x5b5, 0x5b8 / 0x5b9 → 0x5b8, the others
     ///   their own);
     /// - the tail `LAB_1006f948` (l. 61152–61156): `.ApplyFriction(+0x114)`; type ≠ 0x438 / 0x439 ∧ `+0xcd ≠ 0` →
@@ -279,8 +283,11 @@ public enum BoxSprite {
         guard let s0 = w.active.record(id: id), handleBuilt(s0.type), !s0.dead, !s0.handleSkip else { return }
         w.standardSpriteHandles(id)
         let t = s0.type
+        let p1 = t == savePoint && w.records.indices.contains(Int(s0.recordIndex)) ? w.records[Int(s0.recordIndex)].p1 : 0
         w.active.update(id: id) { s in
-            if t == trampoline {
+            if t == savePoint {
+                s.face = FaceRef(pict: savePoint, index: Int(p1), set: .encoded)
+            } else if t == trampoline {
                 s.face = FaceRef(pict: trampoline, index: Int(s.phase), set: .encoded)
                 if 0 < s.phase {
                     s.phase += 1

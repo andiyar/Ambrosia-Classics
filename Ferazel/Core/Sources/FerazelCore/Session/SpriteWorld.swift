@@ -77,6 +77,9 @@ public final class SpriteWorld {
     /// the session (`FerazelSession(…particleFaces:)`). The default finds none — then those emitters make no
     /// particles and no `FastRand` draws.
     public var particleFaces = ParticleFaces()
+    /// S1: a modal moment reached inside the special pass (`FrameSuspension`) — set by the `.HitPlayerSprite` arm that
+    /// fires it; the pass stops after that call and keeps its iteration state (`continueSpecialPass`).
+    public var suspension: FrameSuspension?
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360
@@ -289,41 +292,124 @@ public final class SpriteWorld {
     /// Two or more: if any is a see-saw segment, `hitPlayer` for each in list order and no contact hits; otherwise
     /// each in list order (the "sort" takes the first unvisited key < 32000 and breaks — every key is ≤ 0) gets
     /// `hitPlayer` then `C.hit`. `hitPlayer` = `.HitPlayerSprite` // later: P2 (and the movers' arms, W1–W3).
-    public func collideSpecial(hitPlayer: (SpriteWorld, Int, Int) -> Void, hit: (SpriteWorld, Int, Int) -> Void) {
-        guard !playerDead, let pID = playerID, active.sprite(id: pID) != nil else { return }
+    ///
+    /// S1 (Invariant 6): a `hitPlayer` that sets `suspension` (a save point firing) stops the pass right after that
+    /// call; the iteration state is kept (`SpecialPass`) and `continueSpecialPass` goes on with what the original does
+    /// next — that contact's own hit, then the next contact. Returns false when suspended.
+    @discardableResult
+    public func collideSpecial(hitPlayer: (SpriteWorld, Int, Int) -> Void, hit: (SpriteWorld, Int, Int) -> Void) -> Bool {
+        specialPass = nil
+        guard !playerDead, let pID = playerID, active.sprite(id: pID) != nil else { return true }
+        specialPass = SpecialPass(player: pID, cursor: active.sprites.first?.id)
+        return continueSpecialPass(hitPlayer: hitPlayer, hit: hit)
+    }
+
+    /// The special pass's iteration state, kept across a suspension (S1).
+    struct SpecialPass {
+        enum Dispatch { case seeSaw, sorted }
+        let player: Int
+        /// Collecting: the next sprite to test (nil = the list's end); `resumeAfter` = the 17th-or-later contact whose
+        /// at-once `hitPlayer` suspended (the walk goes on from its `next`, read after the call as the original does).
+        var collecting = true
+        var cursor: Int?
+        var resumeAfter: Int?
+        var contacts: [Int] = []
+        /// Dispatching: the keys (32000 = visited) or the see-saw walk's position; the contact whose own hit is still
+        /// due after its `hitPlayer` returned.
+        var dispatch: Dispatch = .sorted
+        var keys: [Int16] = []
+        var nextSeeSaw = 0
+        var owedHit: Int?
+
+        init(player: Int, cursor: Int?) {
+            self.player = player
+            self.cursor = cursor
+        }
+    }
+
+    /// The pass in progress (nil when none ran or it finished).
+    var specialPass: SpecialPass?
+
+    /// `collideSpecial` from where it stopped (S1): true when the pass finished, false when it suspended again.
+    @discardableResult
+    public func continueSpecialPass(hitPlayer: (SpriteWorld, Int, Int) -> Void,
+                                    hit: (SpriteWorld, Int, Int) -> Void) -> Bool {
+        guard var pass = specialPass else { return true }
+        let pID = pass.player
         func rect(_ s: SpriteSlot) -> IdleSprites.Rect {
             IdleSprites.Rect(top: Int(Int16(truncatingIfNeeded: s.hotRect.top + s.y)),
                              left: Int(Int16(truncatingIfNeeded: s.hotRect.left + s.x)),
                              bottom: Int(Int16(truncatingIfNeeded: s.hotRect.bottom + s.y)),
                              right: Int(Int16(truncatingIfNeeded: s.hotRect.right + s.x)))
         }
-        var contacts: [Int] = []
-        var cursor = active.sprites.first?.id
-        while let cID = cursor {
-            defer { cursor = active.next(after: cID) }
-            guard cID != pID, let C = active.sprite(id: cID), !C.handleCleared, !C.dead, let P = active.sprite(id: pID),
-                  rect(P).intersects(rect(C)) else { continue }
-            if contacts.count < 16 { contacts.append(cID) } else { hitPlayer(self, pID, cID) }
-        }
         func contactHit(_ c: Int) {
             if active.sprite(id: c)?.hasHit == true { hit(self, c, pID) }
         }
-        if contacts.count == 1 {
-            hitPlayer(self, pID, contacts[0])
-            contactHit(contacts[0])
-        } else if contacts.count > 1, let P = active.sprite(id: pID) {
-            var keys = contacts.map { Self.dispatchKey(of: $0, from: P, world: self) }
-            let seeSaw = contacts.contains { active.sprite(id: $0).map(Self.isSeeSawSegment) ?? false }
-            if seeSaw {
-                for c in contacts { hitPlayer(self, pID, c) }        // `10032e9c..10032ed8`
+        /// After a `hitPlayer`: true (and the state kept) when it suspended the frame.
+        func suspended() -> Bool {
+            guard suspension != nil else { return false }
+            specialPass = pass
+            return true
+        }
+        if let c = pass.owedHit {
+            pass.owedHit = nil
+            contactHit(c)
+        }
+        if let after = pass.resumeAfter {
+            pass.resumeAfter = nil
+            pass.cursor = active.next(after: after)
+        }
+        while pass.collecting, let cID = pass.cursor {
+            guard cID != pID, let C = active.sprite(id: cID), !C.handleCleared, !C.dead, let P = active.sprite(id: pID),
+                  rect(P).intersects(rect(C)) else {
+                pass.cursor = active.next(after: cID)
+                continue
+            }
+            if pass.contacts.count < 16 {
+                pass.contacts.append(cID)
             } else {
-                // `10032e04..10032e30`: each round takes the first key < 32000, marks it 32000 and breaks.
-                while let k = keys.firstIndex(where: { $0 < 32000 }) {
-                    keys[k] = 32000
-                    hitPlayer(self, pID, contacts[k])
-                    contactHit(contacts[k])
+                hitPlayer(self, pID, cID)
+                if suspension != nil {
+                    pass.resumeAfter = cID
+                    specialPass = pass
+                    return false
                 }
             }
+            pass.cursor = active.next(after: cID)
         }
+        if pass.collecting {
+            pass.collecting = false
+            if pass.contacts.count == 1 {
+                pass.keys = [0]                                         // one contact: hitPlayer, then its hit
+            } else if pass.contacts.count > 1, let P = active.sprite(id: pID) {
+                pass.keys = pass.contacts.map { Self.dispatchKey(of: $0, from: P, world: self) }
+                let seeSaw = pass.contacts.contains { active.sprite(id: $0).map(Self.isSeeSawSegment) ?? false }
+                pass.dispatch = seeSaw ? .seeSaw : .sorted
+            }
+        }
+        switch pass.dispatch {
+        case .seeSaw:
+            while pass.nextSeeSaw < pass.contacts.count {             // `10032e9c..10032ed8`
+                let c = pass.contacts[pass.nextSeeSaw]
+                pass.nextSeeSaw += 1
+                hitPlayer(self, pID, c)
+                if suspended() { return false }
+            }
+        case .sorted:
+            // `10032e04..10032e30`: each round takes the first key < 32000, marks it 32000 and breaks.
+            while let k = pass.keys.firstIndex(where: { $0 < 32000 }) {
+                pass.keys[k] = 32000
+                let c = pass.contacts[k]
+                hitPlayer(self, pID, c)
+                if suspension != nil {
+                    pass.owedHit = c
+                    specialPass = pass
+                    return false
+                }
+                contactHit(c)
+            }
+        }
+        specialPass = nil
+        return true
     }
 }

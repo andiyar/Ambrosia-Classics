@@ -20,6 +20,9 @@ public struct FrameOps: Equatable, Sendable {
     /// stop frees nothing for the plays before it. The consumer interleaves: for i in 0...sounds.count, apply every
     /// stop whose `soundStopAt` == i (in order), then play `sounds[i]` (when i < sounds.count).
     public var soundStopAt: [Int] = []
+    /// S1 (Phase 3): set when the iteration stopped part-way at a modal moment (`FrameSuspension`) — these ops are the
+    /// frame so far; `FerazelSession.resume(_:)` returns the rest of the same frame. nil for a whole iteration.
+    public var suspension: FrameSuspension? = nil
 
     /// A stop at its place in call order (after the plays already in `sounds`).
     public mutating func stopSound(_ snd: Int16) {

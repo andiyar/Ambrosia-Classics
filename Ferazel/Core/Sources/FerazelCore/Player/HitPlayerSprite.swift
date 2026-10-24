@@ -3,8 +3,9 @@ import Foundation
 /// `.HitPlayerSprite(player, other) @ 100556f4` (decompile l. 48450–49929), reached only through the player pass
 /// `.MTCollideSpecialSprite(player, .HitPlayerSprite)` (platforms-ropes-radial-2 §8.3). The arms built so far: the
 /// entry gates, the **Platform** arm (W1), the **Background** arm's pendulum (W2a) and passage (W2b) parts, and the
-/// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`). // later: the Bonus arm (Phase 4), the
-/// Box mechanisms (Phase 4), the enemy and shot arms (Phase 4–5).
+/// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`) plus the save point (S1, `savePoint`, which
+/// suspends the frame). // later: the Bonus arm (Phase 4), the other Box mechanisms (Phase 4), the enemy and shot arms
+/// (Phase 4–5).
 public enum HitPlayerSprite {
     /// The entry gates (l. 48565–48570): dying (`_DAT_100a069c > 0`) → nothing; in spirit form (`_DAT_100a0578 > 0`)
     /// only a Bonus reaches its arm. Then the Platform arm (l. 49124–49147; `+0x4c == .HandlePlatformSprite`, so an
@@ -134,8 +135,9 @@ extension HitPlayerSprite {
     ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
     ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`
     ///    (`_DAT_100a027c`, no draw); the air counter `_DAT_100a0718 = 1`; `+0xce = 0`;
-    /// 9. // later: Phase 4 — the mechanism branches from l. 49363: the spin stomp on switch blocks / crates, the
-    ///    teleporters 0x424…0x426, the save point 0x429.
+    /// 9. // later: Phase 4 — the mechanism branches from l. 49363: the spin stomp on switch blocks / crates (types
+    ///    0x4e2…0x4ff / 0xc12…0xc1b), the teleporters 0x424…0x426;
+    /// 10. the save point 0x429 (S1, `savePoint`) — reached past the not-built branches, whose type tests exclude it.
     static func box(_ w: SpriteWorld, player pID: Int, other oID: Int) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
@@ -154,7 +156,10 @@ extension HitPlayerSprite {
         if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
         guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p.hotRect, bounce: false) == 1
         else { return }
-        guard o.type == BoxSprite.trampoline else { return }            // later: Phase 4 (7, 9)
+        guard o.type == BoxSprite.trampoline else {                     // later: Phase 4 (7, 9)
+            if o.type == BoxSprite.savePoint { savePoint(w, player: pID, other: oID) }
+            return
+        }
         w.active.update(id: oID) { $0.phase = 1 }
         guard 0xa5a < entryVY else { return }
         guard let p1 = w.active.record(id: pID) else { return }
@@ -166,6 +171,63 @@ extension HitPlayerSprite {
         }
         w.player.cue(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
         w.player.airCounter = 1
+    }
+
+    /// The save point's arm (M l. 49471–49504, raw `10057714..10057858`; save-continue §2.1, §9.2), on a landing:
+    /// 1. gate 1: `DAT_100a53d6` (no async gamma fade running, `AsyncGammaFade.done`) clear → return (raw `1005771c`);
+    /// 2. gate 2: the record's p1 (`hdr + idx·16 + 8`, idx = `+0x48`) ≠ 0 → return (raw `10057740`);
+    /// 3. the hold counter `*_DAT_100a0684 += 2` (raw `10057754..1005775c`); ≤ 15 → return (`cmpwi 0xf; ble`, raw
+    ///    `10057768`) — `.HandlePlayerSprite` moves it one step toward 0 every frame (`Player.countdowns`, raw
+    ///    `1004de68..1004de98`), so the 15th consecutive landing fires (BC22: the 65th after a cancel);
+    /// 4. fire: counter −150 (`10057774`), `MTSetPortScreen` (no op), p1 ← `+0x17e` + 1 (`1005778c..100577a0`),
+    ///    `ShowCursorSafe` (`100577a4`: the session's `.showCursor` with the suspension), `G+0x16` ← `+0x17e`
+    ///    (`100577b0`), then `.SavePointSave()` (`100577b4`) — run by the flow: the frame **suspends** here
+    ///    (`FrameSuspension.savePoint`) and `savePointDone` is the rest of the arm.
+    static func savePoint(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard w.gammaFade.done, let o = w.active.record(id: oID) else { return }
+        let i = Int(o.recordIndex)
+        guard w.records.indices.contains(i), w.records[i].p1 == 0 else { return }
+        w.player.savePointHold &+= 2
+        guard 0xf < w.player.savePointHold else { return }
+        w.player.savePointHold = -0x96
+        let facing: Int16 = (w.active.record(id: pID)?.mirrored ?? false) ? 1 : 0
+        setP1(w, record: i, facing &+ 1)
+        w.globals.startFacing = facing
+        w.suspension = .savePoint(record: i)
+    }
+
+    /// The arm after `.SavePointSave` returns (raw `100577bc..10057858`): saved → `.STPlayRegSound(420, 1, 0x100)`
+    /// (`_DAT_100a03e0`), `(421, 1, 0x100)` (`_DAT_100a03dc`), `GammaFadeOutAsync(2, white)` (the colour at `0x100a53ca`
+    /// = FFFF ×3, BC1; r6/r7 0xc/0x10 unread; it calls `HideCursorSafe` when it arms, M l. 31905), three
+    /// `HandleAsyncGammaFade` (0 %, 50 %, 100 %), `GammaFadeInAsync(0x2d)` — the frame's own `HandleAsyncGammaFade`
+    /// then takes the first of its 46 steps (BC23); all gated on fading enabled (`DAT_100a53c2`), so with fading off
+    /// there is no flash and gate 1 stays open. Not saved → p1 ← 0 (`1005783c..10057854`). Both: `HideCursorSafe`
+    /// (`10057858`). Returns the draws and requests in call order.
+    static func savePointDone(_ w: SpriteWorld, record i: Int, saved: Bool) -> (draws: [DrawOp], requests: [ShellRequest]) {
+        var draws: [DrawOp] = [], requests: [ShellRequest] = []
+        if saved {
+            w.player.cue(PlayerCue(call: .reg, snd: 420, priority: 1, volume: 0x100))
+            w.player.cue(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
+            let before = w.gammaFade
+            w.gammaFade.fadeOut(steps: 2, toward: savePointFlashColour)
+            if w.gammaFade != before { requests.append(.hideCursor) }
+            for _ in 0..<3 { if let op = w.gammaFade.handle() { draws.append(op) } }
+            w.gammaFade.fadeIn(steps: 0x2d)
+        } else if w.records.indices.contains(i) {
+            setP1(w, record: i, 0)
+        }
+        requests.append(.hideCursor)
+        return (draws, requests)
+    }
+
+    /// The success flash's colour: the 6 bytes at `0x100a53ca` (`subi r5,r2,0x2476` @ `100577f4`; FFFF FFFF FFFF).
+    public static let savePointFlashColour = RGB16(red: 0xffff, green: 0xffff, blue: 0xffff)
+
+    /// The live record's p1 (`sth …,0x8(r3)`).
+    private static func setP1(_ w: SpriteWorld, record i: Int, _ v: Int16) {
+        let p = w.records[i]
+        w.records[i] = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: v, p2: p.p2, p3: p.p3,
+                                 p4: p.p4, y: p.y, x: p.x)
     }
 
     /// `dRam100a1a10` = 0.6 and `dRam100a1a08` = −6500 (doubles; `tools/const.py`).
