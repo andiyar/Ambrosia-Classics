@@ -87,6 +87,8 @@ public struct ParallaxBlitter: Sendable {
     /// Header `0x271e` (0 in all 24 levels) and `0x26ca` — the stack flags `0x86`/`0x85` (`100179a0..100179f0`).
     let parallaxMode: Int16
     let parallaxRipple: UInt8
+    /// Header `0x2722` (≤ 0 here: init refuses > 0).
+    let flameMode: Int16
     let pxBackMap: TileMap
     let pxMidMap: TileMap
     /// `slotCount` faces of `cellBytes` each, back to back.
@@ -129,6 +131,7 @@ public struct ParallaxBlitter: Sendable {
         pxMidEnable = h.pxMidEnable
         parallaxMode = h.parallaxMode
         parallaxRipple = h.parallaxRipple
+        flameMode = h.flameMode
         pxBackMap = level.pxBack
         pxMidMap = level.pxMid
         var faces = [UInt8](repeating: 0, count: Self.slotCount * Self.cellBytes)
@@ -489,6 +492,26 @@ public struct ParallaxBlitter: Sendable {
             if edge == 0 { nextCell(); edge = 0x20 }
         }
         for _ in 0..<split.tail { byte() }
+    }
+
+    // MARK: .CalcPxRowContents
+
+    /// One byte of `.CalcPxRowContents(x, y, n) @ 10027aac` (decompile l. 23141–23224), header `0x2722` = 0 branch,
+    /// at scroll (h, v) (`PTR_DAT_1009fe78`): PxBack row = y − v + (v·yb >> 8) − 1, column = x − h + (h·xb[row] >> 8)
+    /// (`hdr + 0x326c + 2·row`), cell `.GetPxBackTile(column / 128, row / 128)`, the cell face's byte (row mod 128,
+    /// column mod 128). The routine copies n + 1 such bytes from x on (at most 301), stepping to the next cell column
+    /// at each 128-px edge; byte i of its buffer is `pxRowPixel(x + i, y)`. nil where the replica does not make the
+    /// read: header `0x2722` ≠ 0 (the `_DAT_1009fe84` GWorld branch, not built), a negative row or column (the
+    /// binary reads before the row), or a cell slot with no face.
+    func pxRowPixel(x: Int, y: Int, h: Int, v: Int) -> UInt8? {
+        guard flameMode == 0 else { return nil }
+        let row = (y - v) + ((v * backYFactor) >> 8) - 1
+        guard row >= 0 else { return nil }
+        let col = (x - h) + ((h * backFactor(row)) >> 8)
+        guard col >= 0 else { return nil }
+        let slot = Self.backBase + pxBackTile(col >> 7, row >> 7)
+        guard (0..<Self.slotCount).contains(slot), slotLoaded[slot] else { return nil }
+        return faces[slot * Self.cellBytes + (row & 0x7f) * Self.cell + (col & 0x7f)]
     }
 
     /// The byte offset of a face slot; a slot the binary would read as an unloaded pointer stops here.

@@ -203,6 +203,27 @@ loop]. Combined with platforms §2.8's table formulas (½/½, ¾·row+¼·col, �
 L1 to confirm), a = 1 is the most opaque and a = 2 the most transparent of the three; tables for
 a = 3, 4, 5 → L1.
 
+⚑ TB (2026-10-25, built in `SpriteBlitter.transClip`; decompile l. 23226–23456, 23737–23960, 23141–23224) — the
+parallax operand, read in full:
+- `.CalcPxRowContents(x, y, n)` gets x = sprite `+0xc` + face column (the world point `param_3` = `+0xa/+0xc`, not the
+  ring point) and y = a row counter starting at `+0xa` and **incremented at every row token**, so face row r passes
+  `+0xa + r + 1`; the routine's own `− 1` (PxBack row = y − v + (v·hdr`0xb26c` >> 8) − 1) cancels it. Column =
+  x − h + (h·hdr`0x326c`[row] >> 8); cell `.GetPxBackTile(col/128, row/128)`; it copies n + 1 bytes (n capped at 300)
+  into `0x100a3a16` (= `0x100a39b6 + 0x60`) and returns that buffer; header `0x2722` ≠ 0 takes a GWorld branch
+  (`_DAT_1009fe84`) instead [HIGH].
+- The fetch flag resets at row and skip tokens only, not at a new copy run [HIGH].
+- **The flip twin reads the parallax mirrored inside the run**, as written: it fetches at x = `+0xc` + r21 − iVar22
+  (r21 = the run's first drawn face column, iVar22 = pixels drawn since the row/skip token) and walks the buffer
+  backwards from index n — so face column c of run [a, b) reads `+0xc + a + b − c`, while it lands at
+  `+0xc + width − 1 − c`. iVar22 is also added to r21 after the run, so a copy run straight after another copy run
+  would put the flip twin's column counter off (the encoder never writes one) [HIGH] — this replaces the
+  "[MED for its loop]" above.
+- `0148` has 255 entries (`cmpwi 0xff`), so a ≥ 0x80 with sprite pixel 0xff reads past it; a = 0x80..0x8f stay
+  inside `0144` (row byte (a − 0x80)·16 + level); every other a ∉ {0..5} reads before or after `0144` for some or all
+  pixels (the replica refuses each such read) [HIGH].
+- `.BlitEncFaceTransClip` itself writes no mask byte (`.BlitEncFaceTransRippleClip` does, `*r29 = 0` under 0xff);
+  the mask pass does it for 0xb [HIGH].
+
 ### 2.8 Modes 0xd, 0xe, ≥ 0x14  [HIGH for "no sprite writer"]
 - 0xd `.BlitEncFaceTransRippleClip @ 10028220`: translucency (same eight slots) with the ripple
   phase (`10028254`, `100286dc`, `10028724`); never written to `+0xb8`.

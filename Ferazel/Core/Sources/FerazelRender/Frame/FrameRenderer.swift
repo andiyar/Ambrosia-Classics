@@ -348,6 +348,7 @@ public final class FrameRenderer {
                 executed.append(.lightsOntoTiles)
             case .wrapDrawSprites(let draws):
                 sprites.lights = lights
+                sprites.parallax = parallax     // mode 0xb's `.CalcPxRowContents` reads (TB)
                 try sprites.wrapDrawSprites(draws, h: scroll.h, v: scroll.v, drawn: (grid.drawnH, grid.drawnV),
                                             ports: &ports)
                 executed.append(.sprites(draws.count))

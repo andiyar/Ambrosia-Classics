@@ -373,6 +373,14 @@ public enum TableRequests {
         return out
     }
 
+    /// `_DAT_100a0148` (`100211a8..10021248`), the brightness level of CLUT entries 0..254 (255 bytes; `cmpwi 0xff;
+    /// blt`): lum = (R + G + B) / 3 (`mulhw 0x55555556`), then lum / 3072 (`mulhw 0x2aaaaaab; srawi 9`) − 2, ≤ 0 → 0
+    /// (`subic.; ble`), ≥ 15 → 15. No `Color2Index`: the bytes are levels, not indices. Mode-0xb args ≥ 0x80 remap the
+    /// sprite pixel through it (draw-effects §2.7).
+    public static func brightnessLevels(clut: ColorLUT) -> [UInt8] {
+        clut.entries.prefix(0xff).map { e in UInt8(max(0, min(15, lum(RGB16(e)) / 3072 - 2))) }
+    }
+
     // MARK: - §7 lighting (`.CalcAmbientDarken`, `.CalcLightingTable`)
 
     /// `.CalcAmbientDarken(c, L, D) @ 1001ab74` in **single precision** (§7.2; constants f32 1.0, 10.0, 0.0625):

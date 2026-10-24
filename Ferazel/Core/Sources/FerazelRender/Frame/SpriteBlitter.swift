@@ -32,10 +32,13 @@ import FerazelCore
 /// image re-centred) and rotation (`.BlitEncFaceRot @ 1002ac00`) with their erase twins, and `.WrapEraseSprites` for
 /// rotated, scaled and split sprites.
 ///
-/// Still refused by name (`Refusal`): diffuse (5), behind-tiles (8), squash (0xa), translucency (0xb, 0xd — table
-/// `0148` not built), silhouette (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13), the
-/// same modes under scale / rotation (no table: the register keeps garbage). The light pass over a sprite with a water
-/// row uses `.DrawLightOverFace`'s underwater variants (P4).
+/// TB (Phase 4) adds translucency, mode 0xb (`.BlitEncFaceTransClip` / `.BlitEncFaceTransFlipClip`, draw-effects §2.7;
+/// `transClip`), with the parallax row of `.CalcPxRowContents` under an empty mask byte.
+///
+/// Still refused by name (`Refusal`): diffuse (5), behind-tiles (8), squash (0xa), translucent ripple (0xd), silhouette
+/// (0xe), tile blends (≥ 0x14), the undefined Special tables (2, 7, 0xf..0x13), the same modes and 0xb under scale /
+/// rotation (no table: the register keeps garbage), and a mode-0xb arg whose table read leaves its table.
+/// The light pass over a sprite with a water row uses `.DrawLightOverFace`'s underwater variants (P4).
 public struct SpriteBlitter: Sendable {
 
     public enum Refusal: Error, Equatable {
@@ -56,6 +59,11 @@ public struct SpriteBlitter: Sendable {
         /// A water-ripple row index that is negative under the back-scratch twins' signed `%` (the phase
         /// `*_DAT_1009fd74` past 2³¹): the original reads before `_DAT_100a0118`.
         case ripplePhase(Int32)
+        /// A mode-0xb background read the replica does not make, at world x and the blitter's row counter y: no
+        /// `parallax` blitter, a `.CalcPxRowContents` read `ParallaxBlitter.pxRowPixel` refuses, a buffer index past
+        /// the bytes it fills (n + 1, at most 301), or a flipped copy run straight after another copy run (the flip
+        /// twin's pixel counter `iVar22` carries over and its column counter goes wrong — `FaceEncoder` never emits one).
+        case translucency(x: Int, y: Int)
     }
 
     /// The face sets the sprites draw from (`SetupFaces.Sheet`s), loaded once.
@@ -112,6 +120,8 @@ public struct SpriteBlitter: Sendable {
     public var effects: Int16
     /// The light slots `.DrawLightOverFace` walks and the darkness it reads.
     public var lights: LightRenderer
+    /// The PxBack layer mode 0xb reads under an 0xff mask byte (`.CalcPxRowContents`); nil refuses that read.
+    public var parallax: ParallaxBlitter?
 
     public init(level: LevelFile, tables: LevelTables, faces: Faces, effects: Int16 = FerazelPrefs().effects,
                 lights: LightRenderer? = nil) {
@@ -141,7 +151,8 @@ public struct SpriteBlitter: Sendable {
             for c in plan.calls {
                 try Self.wrap(src: (c.srcV, c.srcH), dst: (c.dstV, c.dstH), w: c.w, h: c.h, h0: h, v0: v) { s, t, w, hh in
                     try blitEncFaceX(face, src: s, dst: t, w: w, h: hh, word: c.word, flip: d.mirrored,
-                                     rotation: d.rotation, scale: d.scale, ports: &ports)
+                                     rotation: d.rotation, scale: d.scale, origin: (d.x, d.y), scroll: (h, v),
+                                     ports: &ports)
                 }
             }
             if let l = plan.light, effects != 3 {
@@ -219,13 +230,15 @@ public struct SpriteBlitter: Sendable {
     /// mode 0xa forces it); then
     /// - mode 0, no transform: the copy (`NoClipX`/`ClipX`, flip twins);
     /// - mode ∈ {5, 6, 8, 0xb, 0xd, 0xe}, mode > 0x13, or a transform: untransformed mode 6 → `.BlitEncFaceWaterRipple`
-    ///   (flipped `.BlitEncFaceFlipWaterRipple`), the others refused; a transform with rotation 0, not flipped →
-    ///   `.BlitEncFaceScale`; any other transform → `.BlitEncFaceRot`;
+    ///   (flipped `.BlitEncFaceFlipWaterRipple`), untransformed 0xb → `.BlitEncFaceTrans(Flip)Clip` (`transClip`, at
+    ///   the sprite's `origin` (+0xc, +0xa) and the `scroll`), the others refused; a transform with rotation 0, not
+    ///   flipped → `.BlitEncFaceScale`; any other transform → `.BlitEncFaceRot`;
     /// - else the Special table modes (`special`);
     /// then, for mode < 0x14, ≠ 0xd, untransformed, the mask pass: 0 under the silhouette (mode 6 through the ripple
     /// twins `.BlitEncBoolFace(Flip)WaterRipple`). Scale and Rot write the mask inline.
     func blitEncFaceX(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, word: UInt32, flip: Bool,
-                      rotation rot: Int16, scale: Int16, ports: inout FramePorts) throws {
+                      rotation rot: Int16, scale: Int16, origin: (x: Int, y: Int) = (0, 0),
+                      scroll: (h: Int, v: Int) = (0, 0), ports: inout FramePorts) throws {
         let W = FramePorts.width, H = FramePorts.height
         let (dv, dh) = dst
         guard dh + face.width >= 0, dv + face.height >= 0, dh <= W, dv <= H else { return }
@@ -234,7 +247,10 @@ public struct SpriteBlitter: Sendable {
         if mode == 0 && !transformed {
             Self.blit(face, into: &ports.frame, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { s, _ in s }
         } else if [5, 6, 8, 0xb, 0xd, 0xe].contains(mode) || mode > 0x13 || transformed {
-            if !transformed {
+            if !transformed && mode == 0xb {
+                try transClip(face, src: src, dst: dst, w: w, h: h, word: word, flip: flip, origin: origin,
+                              scroll: scroll, ports: &ports)
+            } else if !transformed {
                 guard mode == 6 else { throw Refusal.mode(word) }
                 let t = try table(mode: 6, sub: sub, word: word)
                 try Self.rippleWalk(face, src: src, dst: dst, w: w, h: h, flip: flip, phase: ripplePhase,
@@ -266,6 +282,103 @@ public struct SpriteBlitter: Sendable {
                                 signedModulo: false) { o, _ in ports.mask[o] = 0 }
             } else {
                 Self.blit(face, into: &ports.mask, src: src, dst: dst, w: w, h: h, flip: flip, reject: true) { _, _ in 0 }
+            }
+        }
+    }
+
+    /// `.BlitEncFaceTransClip @ 10027d04` / `.BlitEncFaceTransFlipClip @ 100287cc` (decompile l. 23226–23456,
+    /// 23737–23960; draw-effects §2.7), mode 0xb, arg a = (short) sub. Table (`10027d28..10027dfc`): 0 → `015c` avg,
+    /// 1 → `0158` ¾ sprite, 2 → `0154` ¼ sprite, 3 → `0150`, 4 → `014c` glow, 5 → `0160` additive, else the grey-pull
+    /// `0144 + (short)(a − 0x80)·0x1000`, and for a ≥ 0x80 the sprite pixel first through `0148` (255 bytes: s = 0xff
+    /// reads past it → refused). Clipped as `ClipX` (the window walk of `forEachRun`). Per copy-run pixel s at port
+    /// offset o: bg = mask[o] == 0xff ? the parallax row byte : frame[o]; frame[o] = T[s·0x100 + bg] (a read outside
+    /// the table → `Refusal.mode`). The mask is left to `blitEncFaceX`'s mask pass.
+    ///
+    /// The parallax row (`.CalcPxRowContents(x, y, n)`): fetched at the first 0xff pixel after a row or skip token
+    /// (the flag `cVar12` / `bVar13`), with y the row counter (sprite y + 1 per row token, so face row r reads
+    /// sprite y + r + 1) and n the pixels left in the run, then walked:
+    /// - unflipped: fetched at x = sprite x + c (c the face column), forwards — pixel c reads `pxRowPixel(sprite x + c)`;
+    /// - flipped, as written: fetched at x = sprite x + a − k (a the run's first drawn face column, k = `iVar22`, the
+    ///   pixels drawn since the row/skip token) and read **backwards from index n** — pixel j after the fetch reads
+    ///   byte n − j, so with the fetch at the run start pixel c of run [a, b) reads sprite x + a + b − c, not the column
+    ///   it lands on (sprite x + width − 1 − c).
+    func transClip(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, word: UInt32, flip: Bool,
+                   origin: (x: Int, y: Int), scroll: (h: Int, v: Int), ports: inout FramePorts) throws {
+        let arg = Int(Int16(truncatingIfNeeded: word & 0xffff))
+        let table: [UInt8], base: Int
+        switch arg {
+        case 0: table = tables.pair(.average); base = 0
+        case 1: table = tables.pair(.threeQuarterSprite); base = 0
+        case 2: table = tables.pair(.quarterSprite); base = 0
+        case 3: table = tables.pair(.spriteGreyAverage); base = 0
+        case 4: table = tables.pair(.glow); base = 0
+        case 5: table = tables.pair(.additive); base = 0
+        default: table = tables.greyPull; base = Int(Int16(truncatingIfNeeded: arg - 0x80)) * 0x1000
+        }
+        let remap = arg >= 0x80 ? tables.brightness : nil
+        let W = FramePorts.width, H = FramePorts.height, fw = face.width
+        var (sv, sh) = src, (dv, dh) = dst, w = w, h = h
+        if dh < 0 { sh -= dh; w += dh; dh = 0 }
+        if dv < 0 { h += dv; sv -= dv; dv = 0 }
+        if W <= dh + w { w = W - dh }
+        if H <= dv + h { h = H - dv }
+        guard w > 0, h > 0 else { return }
+        let ox = dh - sh, oy = dv - sv
+        let c0 = flip ? fw - sh - w : sh, c1 = flip ? fw - sh : sh + w
+        let data = face.data
+        var p = 0, row = -1, col = 0, y = origin.y
+        var fetch: (c: Int, n: Int, x: Int)?       // the `.CalcPxRowContents` buffer of this stretch
+        var k = 0                                  // the flip twin's `iVar22`
+        var afterCopy = false
+        func background(_ o: Int, _ c: Int, _ a: Int, _ b: Int) throws -> UInt8 {
+            guard ports.mask[o] == 0xff else { return ports.frame[o] }
+            if fetch == nil {
+                fetch = (c, b - c, flip ? origin.x + a - k : origin.x + c)
+            }
+            guard let f = fetch else { preconditionFailure() }
+            let j = c - f.c
+            let index = flip ? f.n - j : j
+            let x = f.x + index
+            guard index <= min(f.n, 300), let parallax,
+                  let px = parallax.pxRowPixel(x: x, y: y, h: scroll.h, v: scroll.v)
+            else { throw Refusal.translucency(x: x, y: y) }
+            return px
+        }
+        while p + 4 <= data.count {
+            let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
+            p += 4
+            switch tok {
+            case 1:
+                row += 1; col = 0; y += 1
+                fetch = nil; k = 0; afterCopy = false
+                if row >= sv + h { return }
+            case 3:
+                col += n
+                fetch = nil; k = 0; afterCopy = false
+            case 2:
+                if row >= sv {
+                    let a = max(col, c0), b = min(col + n, c1)
+                    if a < b {
+                        if flip && afterCopy && k != 0 { throw Refusal.translucency(x: origin.x + a, y: y) }
+                        for c in a..<b {
+                            let o = (oy + row) * W + (flip ? ox + fw - 1 - c : ox + c)
+                            var s = Int(data[p + c - col])
+                            if let remap {
+                                guard s < remap.count else { throw Refusal.mode(word) }
+                                s = Int(remap[s])
+                            }
+                            let i = base + s * 0x100 + Int(try background(o, c, a, b))
+                            guard table.indices.contains(i) else { throw Refusal.mode(word) }
+                            ports.frame[o] = table[i]
+                            k += 1
+                        }
+                    }
+                }
+                col += n
+                p += (n + 3) & ~3
+                afterCopy = true
+            default:
+                return
             }
         }
     }

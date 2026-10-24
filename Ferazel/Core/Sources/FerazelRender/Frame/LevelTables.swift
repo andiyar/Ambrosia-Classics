@@ -36,6 +36,9 @@ public struct LevelTables: Sendable, Equatable {
     let pairs: [[UInt8]]
     /// `_DAT_100a0144` grey-pull, `[a·0x1000 + b·0x100 + i]` (§6.1).
     public let greyPull: [UInt8]
+    /// `_DAT_100a0148`, the brightness level (0…15) of entries 0…254 — 255 bytes, levels not indices (§6.1;
+    /// `TableRequests.brightnessLevels`).
+    public let brightness: [UInt8]
     /// `_DAT_100a0130` ambient, D 0..15 (§7.3).
     public let ambient: [[UInt8]]
     /// `_DAT_100a0134` light, 16 × 0x6e00 (§7.3).
@@ -69,6 +72,7 @@ public struct LevelTables: Sendable, Equatable {
         reddenB = (0..<16).map { resolve(TableRequests.reddenB($0, clut: workingClut)) }
         pairs = TableRequests.Pair.allCases.map { resolve(TableRequests.pair($0, clut: workingClut)) }
         greyPull = resolve(TableRequests.greyPullTable(clut: workingClut))
+        brightness = TableRequests.brightnessLevels(clut: workingClut)
         ambient = (0..<TableRequests.darknessLevels).map { resolve(TableRequests.ambient(darkness: $0, clut: levelBaseClut)) }
         var light: [RGB16] = []
         light.reserveCapacity(TableRequests.darknessLevels * TableRequests.lightGroups * TableRequests.lightIntensities * 256)
