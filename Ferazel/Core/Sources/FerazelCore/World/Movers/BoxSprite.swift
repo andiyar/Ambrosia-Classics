@@ -33,10 +33,11 @@ public enum BoxSprite {
     /// Transcribed arms: teleporters 0x424…0x426, the save point 0x429, boulders / rocks 0x42e…0x430, 0x433, 0x434, the
     /// chest 0x51c, the bridges 0x5b4…0x5bb, the trampoline 0x5be, signs 0xb56…0xb5d, doors 0xb5e / 0xb5f, crates
     /// 0xc12…0xc14, the stalactite 0xb74 (W4), and the post-chain blocks: switch blocks 0x4e2…0x4ff, furniture 0xb68…0xb70, decorations
-    /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99. // later: Phase 4 / W4 — the other
-    /// arms (tree trunk 0x2c8/0x2c9, carpet 0x438/0x439, geysers 0x5a0…0x5a9, spiked balls 0x5c3/0x5c4, pipes
-    /// 0x5d2…0x5d5, the table 0xb71, the cart 0xb72/0xb73, gates 0xb7c/0xb7d, the snowball 0xbfe —
-    /// several make sprites or draw `FastRand` at Setup) leave the head's fields.
+    /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99. The other arms
+    /// (several make sprites or draw `FastRand` at Setup) leave the head's fields — // later: SW (tree trunk
+    /// 0x2c8/0x2c9), BX1 (the cart 0xb72/0xb73), BT (the gate 0xb7c), SH/BX1 (0xb7d, the ice wall 2941), Phase 5
+    /// (geysers 0x5a0…0x5a9, pipes 0x5d2…0x5d5), Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table
+    /// 0xb71, the snowball 0xbfe).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`

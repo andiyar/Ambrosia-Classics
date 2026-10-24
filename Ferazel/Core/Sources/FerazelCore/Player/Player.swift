@@ -14,7 +14,7 @@ import Foundation
 ///  5 max speeds (quicksand, Double Speed)                 26 climb pre-move
 ///  6 idle +1, `+0x18c`, `+0x8a`, rope latch               27 latches cleared, `.ApplySpeedAndSeparateFromTiles`
 ///                                                            (plan row 22)
-///  7 `.RopeCollide` (later: W3)                           28 surface material: damage (P4), ice
+///  7 `.RopeCollide` (W3)                                  28 surface material: damage (P4), ice
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
 /// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (later: Phase 4)

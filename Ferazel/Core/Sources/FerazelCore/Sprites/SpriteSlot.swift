@@ -132,7 +132,8 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x4c` the Handle (`.MTHandleSprites` calls it) — every class Setup installs one (plan S2 `SpriteHandler`).
     public var handler: SpriteHandler
     /// `+0x5c` ≠ 0: the sprite has a hit callback (`.MTCollideSprites` outer gate, `C.hit` in the player pass). No
-    /// Phase-2 Setup before W1 sets it. // later: W1 platform, W2a/W2b background, W3 box/rope
+    /// Setups that set it are built: the platforms (W1), the Background cannons, springs and tunnels (W2b) and the
+    /// Box solids (W3); the rope Setup clears it (W3).
     public var hasHit = false
     /// `+0x14` / `+0x1c`: x / y in 24.8 fixed point (`.MTNewSprite`: `x << 8`, `y << 8`).
     public var x256: Int32

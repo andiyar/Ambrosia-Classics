@@ -152,7 +152,8 @@ extension SpriteWorld {
     /// ≤ 0x100 / above; the mover's 24.8 x **restored** (a landing never shoves sideways) and `+0xc`/`+0xa`
     /// refreshed; `+0xcd = 1`, `+0xce = 3`, `+0xdc = solid`; solid `+0xe0 = mover`, `+0x186 = 1`; solid sag
     /// `vy += entry vy · +0x13a >> 8` when `+0x13a > 0` and the entry vy > 0x200. Return 2 sets `+0xcf = 1`.
-    /// - Parameter surface: `solid+0x1e8` // later: W3 (ropes, rope bridge).
+    /// - Parameter surface: `solid+0x1e8` — no caller passes one: the ropes (W3, built) ride through `.RopeCollide`,
+    ///   not here; the rope bridge 1466's surface function (unplaced) // later: Phase 6.
     @discardableResult
     public func platformBounce(mover mID: Int, solid sID: Int, centre: SpriteSlot.Point? = nil, factor f: Int32,
                                rect r: IdleSprites.Rect, bounce: Bool,

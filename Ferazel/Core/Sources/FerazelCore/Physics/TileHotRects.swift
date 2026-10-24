@@ -42,9 +42,4 @@ public struct TileHotRects: Equatable, Sendable {
         }
         perTile = tiles
     }
-
-    /// The level's table (`.LoadTileDefinitions` then `.InitTileHotRects`).
-    public init(level: LevelFile) {
-        self.init(fgKind: { level.fgKind(tile: $0) })
-    }
 }

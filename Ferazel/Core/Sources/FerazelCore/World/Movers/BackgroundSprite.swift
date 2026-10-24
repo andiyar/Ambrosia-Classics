@@ -22,8 +22,8 @@ public enum BackgroundSprite {
 
     /// `.SetupBackgroundSprite @ 10071710` (decompile l. 61919–61987, the common head, for every Background type):
     /// `.InitSprite`; `+0x84 = +0x86 = 0` (no reader); layer `+0x80 = 1`; the Handle; hit `+0x5c` and tile `+0x1f8`
-    /// callbacks 0 (arms re-set them — // later: W2b); `+0xa6 = 3`; HP `+0xa4 = 6`; `+0x8a = 0` (no water current);
-    /// the position from the spawn copy (`SetupFaces`).
+    /// callbacks 0 (arms re-set them — built, W2b: cannons, springs, tunnels); `+0xa6 = 3`; HP `+0xa4 = 6`; `+0x8a = 0`
+    /// (no water current); the position from the spawn copy (`SetupFaces`).
     public static func setupCommon(_ s: inout SpriteSlot) {
         s.layer = 1
         s.handler = .background

@@ -54,7 +54,7 @@ public final class SpriteWorld {
     private var reserved = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.
     /// Set only after the game loop exits, when G+4 < 1 (decompile l. 5303) — not by the death trigger (row 41).
-    /// // later: W4
+    /// Built (W4: `FerazelSession.loopEnd`; L1: `LevelRun`'s death exit).
     public var playerDead = false
     /// `*_DAT_1009fd30`: the frame-parity flag. Only `.PaintFrameWrap` writes it — toggled on **drawn** iterations,
     /// after `.DrawParticles`/`.UpdateOmniPx` and before `.WrapCopyToScreen` (raw `10012710..1001272c`, l. 9435–9440;
@@ -294,7 +294,9 @@ public final class SpriteWorld {
     /// `hitPlayer` at once (no own hit). One contact: `hitPlayer(player, C)`, then `C.hit(C, player)` if C has one.
     /// Two or more: if any is a see-saw segment, `hitPlayer` for each in list order and no contact hits; otherwise
     /// each in list order (the "sort" takes the first unvisited key < 32000 and breaks — every key is ≤ 0) gets
-    /// `hitPlayer` then `C.hit`. `hitPlayer` = `.HitPlayerSprite` // later: P2 (and the movers' arms, W1–W3).
+    /// `hitPlayer` then `C.hit`. `hitPlayer` = `.HitPlayerSprite` — built
+    /// (W1 Platform arm, W2a/W2b Background arms, W3 Box arm, S1 save point, C1 NPCs / signs); its other arms are
+    /// `HitPlayerSprite`'s own stubs (PK the Bonus arm; BX1/BX2/BT/TP the Box mechanisms; Phase 5 enemies and shots).
     ///
     /// S1 (Invariant 6): a `hitPlayer` that sets `suspension` (a save point firing) stops the pass right after that
     /// call; the iteration state is kept (`SpecialPass`) and `continueSpecialPass` goes on with what the original does
