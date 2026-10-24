@@ -167,6 +167,8 @@ final class SavePointTests: XCTestCase {
     func testHoldFiresOn15thLanding() throws {
         let r = try resources()
         let s = try session(r)
+        // `G+0x16` holding a value no facing has: the fire must overwrite it with the facing (raw `100577b0`).
+        s.world.globals.startFacing = 7
         // C after each landing frame: the handler pass moves it toward 0, the landing adds 2 → 2, 3 … 15; the 15th
         // landing makes 16 > 15 (`cmpwi 0xf; ble`, raw `10057768`) and fires inside the special pass.
         let (holds, fired) = stepToFire(s)
@@ -184,6 +186,8 @@ final class SavePointTests: XCTestCase {
         // Cancelled: p1 back to 0 (raw `1005783c`), `HideCursorSafe` (raw `10057858`); the frame finishes.
         let rest = s.resume(.savePoint(saved: false))
         XCTAssertNil(rest.suspension)
+        // The pass went on from the next contact: the save point was not hit (landed on) again — C still −150.
+        XCTAssertEqual(s.player.savePointHold, -150)
         XCTAssertNil(s.suspension)
         XCTAssertEqual(s.world.records[24].p1, 0)
         XCTAssertEqual(rest.requests.first, .hideCursor)
@@ -211,6 +215,23 @@ final class SavePointTests: XCTestCase {
         XCTAssertEqual(right.active.sprites.first { $0.recordIndex == 24 }?.face,
                        FaceRef(pict: Self.saveType, index: 1, set: .encoded))
         XCTAssertEqual(right.globals.startFacing, 0)
+
+        // `resume` continues the session's pass from the next contact, never from the first: the level exit 0xcb1 on
+        // the player too, met before the save point in the pass, is hit once in the frame (one snd 421), not again.
+        let x = try session(r)
+        for _ in 0..<14 { _ = x.step(keys: KeyState()) }
+        let L1 = try LevelFile.load(from: r, level: 1)
+        var exit = try SetupFaces.setup(L1.placements[66], context: SetupFaces.Context(level: L1, playerX: 0)).slot
+        let xp = try XCTUnwrap(x.world.active.sprite(id: try XCTUnwrap(x.world.playerID)))
+        exit.x = xp.x
+        exit.y = xp.y
+        exit.layer = -1000                                              // ahead of the save point in list order
+        x.world.active.insert(exit)
+        let xb = x.step(keys: KeyState())
+        XCTAssertEqual(xb.suspension, .savePoint(record: 24))
+        let xa = x.resume(.savePoint(saved: false))
+        XCTAssertEqual((xb.sounds + xa.sounds).filter { $0.snd == 421 }.count, 1)
+        XCTAssertEqual(xb.sounds.filter { $0.snd == 421 }.count, 1)
     }
 
     func testRefireOn65thAfterCancel() throws {

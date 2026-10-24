@@ -22,7 +22,11 @@ final class GameFlowGameTests: XCTestCase {
             return b
         }
         var written: [URL: SaveBlock] = [:]
-        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) { written[ref.url] = block }
+        var failWrite: Int16?
+        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {
+            if let e = failWrite { throw SaveWriteError(osErr: e) }
+            written[ref.url] = block
+        }
     }
 
     /// The renderer side, recorded; `failAttach` makes `attach` throw (a renderer failure inside `LevelRun.tick`).
@@ -675,5 +679,23 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(s5.world.records[24].p1, 0)
         XCTAssertEqual(rig4.flow.levelRun?.saveState.lastReply, opened4)
         XCTAssertEqual(rig4.flow.toggles.live.savedGameName, FerazelPrefs().savedGameName)
+        // A failing write: the level's error report reaches the App through the flow, and its answer goes back to the
+        // level (`GameFlow.dialogDone` while a level runs), which then finishes the frame with the point re-armed.
+        let rig5 = Rig(r)
+        rig5.files.failWrite = SaveWriteError.volumeLocked
+        let (_, s6) = try standing(rig5, "cp5")
+        let other = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/other"), displayName: "Other")
+        rig5.flow.fileDone(.chosen(other))
+        rig5.drive(max: 1) { _ in true }
+        XCTAssertEqual(rig5.last.requests.last,
+                       .dialog(.error(text: "The game could not be saved, because the volume is locked.",
+                                      code: SaveWriteError.volumeLocked)))
+        XCTAssertEqual(s6.suspension, .savePoint(record: 24))
+        rig5.flow.dialogDone(.ok)
+        rig5.drive(max: 1) { _ in true }
+        XCTAssertNil(s6.suspension)
+        XCTAssertEqual(s6.world.records[24].p1, 0)
+        XCTAssertTrue(rig5.files.written.isEmpty)
+        XCTAssertEqual(rig5.flow.levelRun?.saveState.lastReply, other)
     }
 }
