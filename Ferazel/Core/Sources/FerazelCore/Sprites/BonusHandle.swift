@@ -37,4 +37,14 @@ public enum BonusHandle {
         let f = twinkleFaces[twinkleOrder[Int(k)]]
         return .changeLightFace(slot: Int(sprite.light), pict: f.pict, width: f.width, height: f.height)
     }
+
+    /// LT: the Handle call with its `.ChangeLightFace` also made on Core's light table (the single source of truth);
+    /// the returned op carries the same call to the renderer's copy for the redrawn cells of this frame.
+    public static func twinkle(_ sprite: inout SpriteSlot, effects: Int16, lights: inout LightTable) -> DrawOp? {
+        let op = twinkle(&sprite, effects: effects)
+        if case .changeLightFace(let slot, let pict, let width, let height)? = op {
+            lights.changeFace(Int16(slot), LightFaceRef(pict: pict, width: width, height: height))
+        }
+        return op
+    }
 }

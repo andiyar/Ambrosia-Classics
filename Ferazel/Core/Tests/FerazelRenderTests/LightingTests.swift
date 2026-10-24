@@ -281,4 +281,41 @@ final class LightingTests: XCTestCase {
         // The ambient table's line is R1's (C4's CLUT-202 census): 1,887 of 4,096.
         XCTAssertEqual((0..<16).map { differ(f.tables.ambient[$0][...], exact.ambient[$0][...]) }.reduce(0, +), 1_887)
     }
+
+    /// LT: the first `.lightTable` op (Core's table before the frame's `.HandleLights`) leaves the renderer's slots as
+    /// `addLights` built them from `FerazelSession.lights` — face, point, radius, colour, flags per slot (a mismatch is
+    /// a Debug precondition failure inside `apply`); then the frame's `.HandleLights` runs `LightTable.handleLights()`
+    /// on the renderer's copy and its slots follow the session's table.
+    func testLightTableOpMatchesAddLights() throws {
+        let res = try FerazelData.open(try FerazelData.dataDirectory())
+        var prefs = FerazelPrefs()
+        prefs.effects = 1
+        let r = try FrameRenderer(resources: res, level: 1, search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                                  dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
+        let s = try FerazelSession(resources: res, prefs: prefs, level: 1, faceBounds: r.faceBounds)
+        try r.addLights(s.lights)
+        try r.buildTintTable(s.tintTableDraws)
+        let built = r.lights.slots
+        XCTAssertEqual(built.filter(\.active).count, 68)
+        XCTAssertEqual(r.lightTable, s.lightTable)
+        let ops = s.step(keys: KeyState()).draws
+        guard let k = ops.firstIndex(where: { if case .lightTable = $0 { true } else { false } }) else {
+            return XCTFail("no lightTable op")
+        }
+        try r.apply(FrameOps(draws: Array(ops[...k])))
+        XCTAssertEqual(r.lights.slots, built)
+        for (i, l) in s.lights.enumerated() {
+            let slot = r.lights.slots[i]
+            XCTAssertEqual(slot.face?.pict, l.pict, "slot \(i)")
+            XCTAssertEqual([slot.face?.width, slot.face?.height], [l.width, l.height], "slot \(i)")
+            XCTAssertEqual([slot.x, slot.y, slot.radius, slot.colour], [l.x, l.y, l.radius, l.colour], "slot \(i)")
+        }
+        // The rest of the frame: the renderer's `.HandleLights` and the twinkle's `changeLightFace` leave its copy equal
+        // to the session's table.
+        try r.apply(FrameOps(draws: Array(ops[(k + 1)...])))
+        XCTAssertEqual(r.lightTable, s.lightTable)
+        XCTAssertTrue(r.lights.slots[0..<68].allSatisfy { $0.active && !$0.isNew && $0.previousFace != nil })
+        XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32b)
+        XCTAssertEqual(r.lights.slots[24].previousFace?.pict, 0x32a)
+    }
 }

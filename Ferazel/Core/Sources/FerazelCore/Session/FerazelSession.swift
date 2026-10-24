@@ -58,6 +58,10 @@ public final class FerazelSession {
     public var idle: IdleSprites { world.idle }
     /// The lights the Setups added, in `.AddLight` (= `.SetupLevel`) order — the light slots 0… a renderer fills.
     public let lights: [SetupFaces.Light]
+    /// LT: the light table `_DAT_100a0128` — the single source of truth: fresh at `.SetupLevel` (`.RemoveAllLights`),
+    /// the Setup lights added through it in `.SetupLevelSprites` order, every later light call made on it at its call
+    /// site; handed to the renderer once per `.PaintFrameWrap` (`DrawOp.lightTable`).
+    public private(set) var lightTable: LightTable
     /// The player's `ActiveList` id (`*_DAT_1009fdd8`).
     public let playerID: Int
     /// The player's globals (`world.player`).
@@ -203,6 +207,7 @@ public final class FerazelSession {
             }
         }
         lights = spawned.lights
+        lightTable = spawned.lightTable
         tallies = spawned.tallies
         world.active = spawned.active
         world.idle = spawned.idle
@@ -355,13 +360,17 @@ public final class FerazelSession {
         let graphics = prefs.graphics
         let h = camera.scrollH, v = camera.scrollV
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
+        // LT: the table as `.DrawLightsOntoTiles` reads it (before `.HandleLights`), also when Effects == 3 skips it.
+        ops.draws.append(.lightTable(lightTable))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
-        let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
+        // `.HandleLights` (M l. 9205): after `.DrawLightsOntoTiles` and before `.WrapDrawWaterEffects`, unconditional.
+        lightTable.handleLights()
+        let table = lightTable, bounds0 = faceBounds, res = resources, lvl = level
         // `.WrapDrawWaterEffects(odd)` (l. 9206): every iteration, drawn or not, with the parity before this
         // iteration's flip — its bubbles, motes and wind dust into the pool, its Enhanced water faces into the op (E1b).
         ops.draws.append(.wrapDrawWaterEffects(waterEffects.run(world: world, h: h, v: v, effects: prefs.effects)))
         ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
-            Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
+            Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
         if draw {
             // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
@@ -406,7 +415,9 @@ public final class FerazelSession {
                       !s0.dead, !s0.handleSkip else { return }
                 world.standardSpriteHandles(id)
                 world.active.update(id: id) { s in
-                    if let op = BonusHandle.twinkle(&s, effects: effects) { ops.draws.append(op) }
+                    if let op = BonusHandle.twinkle(&s, effects: effects, lights: &self.lightTable) {
+                        ops.draws.append(op)
+                    }
                 }
             case .platform:
                 PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
@@ -772,9 +783,9 @@ public final class FerazelSession {
         }
         world.idle.handle(h: camera.scrollH, v: camera.scrollV, playerHotRect: playerRect, active: &world.active,
                           faceRect: faceBounds)
-        let lightList = lights, bounds0 = faceBounds, res = resources, lvl = level
+        let table = lightTable, bounds0 = faceBounds, res = resources, lvl = level
         passageOps.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
-            Self.dynamicLight(s, level: lvl, lights: lightList, bounds: bounds0) { Self.frameRect($0, resources: res) }
+            Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
         passageOps.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
     }
@@ -800,6 +811,23 @@ public final class FerazelSession {
     static func dynamicLight(_ s: SpriteSlot, level: LevelFile, lights: [SetupFaces.Light],
                              bounds: (FaceRef) -> IdleSprites.Rect,
                              frame: (FaceRef) -> IdleSprites.Rect) -> (lightTile: Int, fakeLight: Int) {
+        dynamicLight(s, level: level, lights: table(lights), bounds: bounds, frame: frame)
+    }
+
+    /// The Setup lights `list` as `.AddLight` puts them into a fresh table (slot order = list order).
+    static func table(_ list: [SetupFaces.Light]) -> LightTable {
+        var t = LightTable()
+        for l in list {
+            t.add(face: LightFaceRef(pict: l.pict, width: l.width, height: l.height), x: Int16(truncatingIfNeeded: l.x),
+                  y: Int16(truncatingIfNeeded: l.y), vx: 0, vy: 0, accelY: 0, colour: Int16(truncatingIfNeeded: l.colour))
+        }
+        return t
+    }
+
+    /// LT: `dynamicLight` over the light table (the live `_DAT_100a0128`).
+    static func dynamicLight(_ s: SpriteSlot, level: LevelFile, lights: LightTable,
+                             bounds: (FaceRef) -> IdleSprites.Rect,
+                             frame: (FaceRef) -> IdleSprites.Rect) -> (lightTile: Int, fakeLight: Int) {
         let L = level.lightByte(col: Int(Int16(truncatingIfNeeded: s.centre.x) >> 5),
                                 row: Int(Int16(truncatingIfNeeded: s.centre.y) >> 5))
         guard let f = s.face else { return (L, 0) }
@@ -815,7 +843,7 @@ public final class FerazelSession {
     }
 
     /// `.GetFakeLight(face, …, w, h, pos, &out) @ 1001d708` (decompile l. 15290–15360; lighting-tables §7.5): the first
-    /// active light in slot order (the Setup lights, `lights`, in `.AddLight` order — Phase 2 removes none) that passes
+    /// active light in slot order (LT: the light table's slots) that passes
     /// the bounding pre-test (it is skipped only when |x + w/2 − lx| ≥ lx + r + w/2 **and** |y + h/2 − ly| ≥ ly + r + h/2
     /// — the light's own coordinate added, as written), has radius `+0x14` > 0x20 and whose face rect (`+0x58` = (0, 0,
     /// height, width) offset by (lx − r, ly − r)) contains the centre of the sprite face's opaque bounds (face `+8` at
@@ -823,20 +851,28 @@ public final class FerazelSession {
     /// 0 ≤ v < 12 → v + the light's colour. Otherwise 0.
     static func fakeLight(x: Int, y: Int, width w: Int, height h: Int, faceBounds b: IdleSprites.Rect,
                           lights: [SetupFaces.Light]) -> Int {
+        fakeLight(x: x, y: y, width: w, height: h, faceBounds: b, lights: table(lights))
+    }
+
+    /// LT: `fakeLight` over the light table. A slot pending removal (`+0` still set, face nil, radius 0) fails the
+    /// `radius > 0x20` test (the binary reads its nil face's rect first; nothing of it is used).
+    static func fakeLight(x: Int, y: Int, width w: Int, height h: Int, faceBounds b: IdleSprites.Rect,
+                          lights: LightTable) -> Int {
         let s16 = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
-        for l in lights {
-            let r = l.radius
-            let ax = abs(x + (w >> 1) - l.x)
-            if l.x + r + (w >> 1) <= ax {
-                let ay = abs(y + (h >> 1) - l.y)
-                if l.y + r + (h >> 1) <= ay { continue }
+        for l in lights.slots where l.active {
+            let r = Int(l.radius), lx = Int(l.x), ly = Int(l.y)
+            let ax = abs(x + (w >> 1) - lx)
+            if lx + r + (w >> 1) <= ax {
+                let ay = abs(y + (h >> 1) - ly)
+                if ly + r + (h >> 1) <= ay { continue }
             }
-            let top = l.y - r, left = l.x - r
+            guard let face = l.face else { continue }
+            let top = ly - r, left = lx - r
             let px = s16(x + ((b.left + b.right) >> 1)), py = s16(y + ((b.top + b.bottom) >> 1))
-            guard 0x20 < r, left <= px, px < left + l.width, top <= py, py < top + l.height else { continue }
-            let d = peDistance(l.x - px, l.y - py)
+            guard 0x20 < r, left <= px, px < left + face.width, top <= py, py < top + face.height else { continue }
+            let d = peDistance(lx - px, ly - py)
             let v = s16(0xb - s16((d * 0xb) / r))
-            if 0 <= v && v < 0xc { return s16(v + l.colour) }
+            if 0 <= v && v < 0xc { return s16(v + Int(l.colour)) }
         }
         return 0
     }

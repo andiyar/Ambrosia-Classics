@@ -283,8 +283,11 @@ final class SessionTests: XCTestCase {
         let r = try resources()
         let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
         let first = session.step(keys: KeyState())
+        // LT: `.lightTable` is a state hand-off (Core's light table), not a draw call — the draw order below omits it
+        // (its place is pinned by `LightTableTests.testSetupLightsGoThroughTable`).
+        func calls(_ ops: [DrawOp]) -> [DrawOp] { ops.filter { if case .lightTable = $0 { false } else { true } } }
         func kinds(_ ops: [DrawOp]) -> [String] {
-            ops.map { op in
+            calls(ops).map { op in
                 switch op {
                 case .setScreenClut: return "clut"
                 case .drawPicture: return "picture"
@@ -309,6 +312,7 @@ final class SessionTests: XCTestCase {
                 case .restoreView: return "restoreView"
                 case .screenGamma: return "screenGamma"
                 case .drawBlackLines: return "blackLines"
+                case .lightTable: return "lightTable"
                 }
             }
         }
@@ -319,20 +323,20 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(kinds(first.draws), ["clut", "picture", "entire", "grid", "entire", "status",
                                             "grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
                                             "lightFace", "erase", "status"])
-        XCTAssertEqual(first.draws[0], .setScreenClut(id: 202))
-        XCTAssertEqual(first.draws[1], .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
-        XCTAssertEqual(first.draws[2], .redrawEntireScrollGrid(h: 0, v: 0))
-        XCTAssertEqual(first.draws[3], .redrawScrollGrid(h: 0, v: 0))
-        XCTAssertEqual(first.draws[4], .redrawEntireScrollGrid(h: 0, v: 0))
+        XCTAssertEqual(calls(first.draws)[0], .setScreenClut(id: 202))
+        XCTAssertEqual(calls(first.draws)[1], .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
+        XCTAssertEqual(calls(first.draws)[2], .redrawEntireScrollGrid(h: 0, v: 0))
+        XCTAssertEqual(calls(first.draws)[3], .redrawScrollGrid(h: 0, v: 0))
+        XCTAssertEqual(calls(first.draws)[4], .redrawEntireScrollGrid(h: 0, v: 0))
         let start = StatusBarState(score: 0, coins: 0, health: 560, breath: 560, magic: 560,
                                    levelName: "A Scent Of Peril", selectedSlot: 0)
-        XCTAssertEqual(first.draws[5], .statusBar(start))
-        XCTAssertEqual(first.draws[8], .wrapDrawWaterEffects([]))
-        XCTAssertEqual(first.draws[10], .drawParticles([]))
-        XCTAssertEqual(first.draws[11], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
-        XCTAssertEqual(first.draws[12], .eraseParticles)
-        XCTAssertEqual(first.draws[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
-        XCTAssertEqual(first.draws[15], .statusBar(start))
+        XCTAssertEqual(calls(first.draws)[5], .statusBar(start))
+        XCTAssertEqual(calls(first.draws)[8], .wrapDrawWaterEffects([]))
+        XCTAssertEqual(calls(first.draws)[10], .drawParticles([]))
+        XCTAssertEqual(calls(first.draws)[11], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
+        XCTAssertEqual(calls(first.draws)[12], .eraseParticles)
+        XCTAssertEqual(calls(first.draws)[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
+        XCTAssertEqual(calls(first.draws)[15], .statusBar(start))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
         XCTAssertTrue(first.drawn)
@@ -340,10 +344,10 @@ final class SessionTests: XCTestCase {
         // Iteration 1 draws the spawned-now sprites with a face; the player's face is still 0 (`.SetupPlayerSprite`).
         // W1 ◈: the 7 platforms are faceless until their first Handle (`.SetupPlatformSprite` `+0xc0 = 0`), so 3 of
         // the 10 are drawn (was 10 with the Phase-1 Setup faces).
-        guard case .wrapDrawSprites(let drawn1) = first.draws[9] else { return XCTFail("sprites") }
+        guard case .wrapDrawSprites(let drawn1) = calls(first.draws)[9] else { return XCTFail("sprites") }
         XCTAssertEqual(drawn1.count, 3)
         XCTAssertFalse(drawn1.contains { $0.face.pict == 1003 })
-        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = first.draws[14] else { return XCTFail("erase") }
+        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = calls(first.draws)[14] else { return XCTFail("erase") }
         XCTAssertEqual([eh, ev], [0, 0])
         XCTAssertEqual(sprites1, session.active.sprites)
         let player = try XCTUnwrap(session.active.sprite(id: session.playerID))
@@ -356,7 +360,7 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(kinds(second.draws), ["grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
                                              "lightFace", "erase", "status"])
         XCTAssertTrue(second.music.isEmpty && second.requests.isEmpty)
-        guard case .wrapDrawSprites(let drawn2) = second.draws[3] else { return XCTFail("sprites") }
+        guard case .wrapDrawSprites(let drawn2) = calls(second.draws)[3] else { return XCTFail("sprites") }
         XCTAssertTrue(drawn2.contains { $0.face == FaceRef(pict: 1003, index: 3, set: .encoded) && $0.x == 83 })
 
         // prefs[0] "Reduce frame rate": the FIRST iteration skips (odd starts false), then they alternate. A skipped
@@ -381,7 +385,7 @@ final class SessionTests: XCTestCase {
         _ = e.step(keys: KeyState())
         let e2 = e.step(keys: KeyState())
         XCTAssertEqual(kinds(e2.draws), ["grid", "water", "sprites", "particles", "copy", "eraseP", "erase", "status"])
-        XCTAssertEqual(e2.draws[4], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
+        XCTAssertEqual(calls(e2.draws)[4], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
 
         // The keys drive the player; his Handle's look-ahead row and `.PlayerScroll` move the focus (P5; the arrow
         // keys of the Phase-1 ◇ focus driver are gone): keypad 6 (action 1, `FerazelPrefs.defaultKeys`) walks.

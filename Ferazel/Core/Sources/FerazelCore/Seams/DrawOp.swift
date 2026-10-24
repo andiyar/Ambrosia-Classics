@@ -53,6 +53,11 @@ public enum DrawOp: Equatable, Sendable {
     /// callers blacken them after anything drew over the view (`.RestoreWindowBackground`, `.CheckGameLoopKeys`,
     /// `.RedrawGameArea`).
     case drawBlackLines
+    /// LT (Phase 4): Core's light table (`_DAT_100a0128`, `LightTable`) as `.DrawLightsOntoTiles` reads it — the table
+    /// before this frame's `.HandleLights` — emitted on every `.PaintFrameWrap` right after its `.redrawScrollGrid` and
+    /// before `.drawLightsOntoTiles`, also when Effects == 3 skips that op (the sprite light pass reads the table). The
+    /// renderer takes it as its slots and runs the same `LightTable.handleLights()` before `.WrapDrawWaterEffects`.
+    case lightTable(LightTable)
 
     // MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
 

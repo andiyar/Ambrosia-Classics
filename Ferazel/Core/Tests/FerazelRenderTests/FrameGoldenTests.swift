@@ -380,7 +380,13 @@ final class FrameGoldenTests: XCTestCase {
             if let pict {
                 try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48)]))
             }
-            try r.apply(s.step(keys: KeyState()))
+            // LT: Core's table is the source of truth, so each `.lightTable` op restores Core's face; the held face is
+            // forced again on the measured frame right after its `.lightTable` (before `.DrawLightsOntoTiles`).
+            var ops = s.step(keys: KeyState())
+            if let pict, let k = ops.draws.firstIndex(where: { if case .lightTable = $0 { true } else { false } }) {
+                ops.draws.insert(.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48), at: k + 1)
+            }
+            try r.apply(ops)
             let h = s.camera.scrollH, v = s.camera.scrollV
             var sum = 0
             for wy in 134..<160 { for wx in 270..<330 {

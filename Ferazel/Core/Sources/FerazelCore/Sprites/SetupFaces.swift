@@ -227,8 +227,27 @@ public enum SetupFaces {
     /// The class Setup for record `p` (`.GenerateSprite`'s selection, then the Setup arm).
     /// - Parameter lightsInUse: `*_DAT_100a0124`, the lights added so far (the Xichron light needs < 150).
     /// - Parameter rng: the session stream; the Setup draws as the binary does (plan "F1 ⚑ FastRand sites").
+    /// The light's slot (`+0x9a`) is `lightsInUse` — the first free slot of a table with no removal (LT: the session's
+    /// spawn adds through its `LightTable` instead, `setup(_:context:lights:rng:)`).
     public static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int = 0,
                              rng: inout FastRand) throws -> Entry {
+        try setup(p, context: c, lightsInUse: lightsInUse, rng: &rng) { _ in Int16(lightsInUse) }
+    }
+
+    /// LT: the Setup with its `.AddLight` made on `lights` (`*_DAT_100a0124` = `lights.count` for the Xichron gate);
+    /// the slot `.AddLight` returns goes to `+0x9a`.
+    public static func setup(_ p: Placement, context c: SetupFaces.Context, lights: inout LightTable,
+                             rng: inout FastRand) throws -> Entry {
+        try setup(p, context: c, lightsInUse: Int(lights.count), rng: &rng) { l in
+            lights.add(face: LightFaceRef(pict: l.pict, width: l.width, height: l.height),
+                       x: Int16(truncatingIfNeeded: l.x), y: Int16(truncatingIfNeeded: l.y), vx: 0, vy: 0, accelY: 0,
+                       colour: Int16(truncatingIfNeeded: l.colour))
+        }
+    }
+
+    /// The Setup body; `addLight` makes the `.AddLight` call and returns its slot.
+    private static func setup(_ p: Placement, context c: SetupFaces.Context, lightsInUse: Int, rng: inout FastRand,
+                              addLight addToTable: (Light) -> Int16) throws -> Entry {
         guard let (cls, spawn) = SpriteClassTable.classify(type: p.type, p1Negative: p.p1 < 0) else {
             throw Error.unmapped(type: p.type)
         }
@@ -241,8 +260,9 @@ public enum SetupFaces {
         /// The slot `.AddLight` returns — the first free one, = the lights added so far — goes to `+0x9a` (every
         /// `.SetupBonusSprite` site, l. 52455–52700).
         func addLight(_ pict: Int16, _ size: Int, dx: Int, dy: Int, colour: Int) {
-            light = Light(pict: pict, width: size, height: size, x: s.x + dx, y: s.y + dy, colour: colour)
-            s.light = Int16(lightsInUse)
+            let l = Light(pict: pict, width: size, height: size, x: s.x + dx, y: s.y + dy, colour: colour)
+            light = l
+            s.light = addToTable(l)
         }
 
         func face(_ pict: Int16, _ i: Int = 0, _ src: FaceSource) {
@@ -547,6 +567,9 @@ public enum SetupFaces {
         /// `.SetupLevelSprites`, M l. 2524–2526, after zeroing them, M l. 2520–2523): `.SetupLevel` stores them as the
         /// level's totals on a first visit (M l. 2528–2536; L1).
         public var tallies = Tallies()
+        /// LT: the light table after the Setups — fresh (`.RemoveAllLights`, `.SetupLevel` M l. 2269 / `.InitLighting`
+        /// M l. 13611, before `.SetupLevelSprites`), then each Setup's `.AddLight` in spawn order.
+        public var lightTable = LightTable()
     }
 
     /// `*_DAT_1009ffac` secrets, `*_DAT_1009ffb0` Xichrons, `*_DAT_1009ffb4` enemies — each Setup site sets the
@@ -611,7 +634,7 @@ public enum SetupFaces {
         var out = Spawned(active: ActiveList(), idle: IdleSprites(), created: [], lights: [],
                           records: c.records ?? c.level.placements)
         for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
-            var e = try setup(p, context: c, lightsInUse: out.lights.count, rng: &rng)
+            var e = try setup(p, context: c, lights: &out.lightTable, rng: &rng)
             out.tallies.count(type: e.type, class: e.spriteClass)
             if e.type == BoxSprite.stalactite, e.slot.recordIndex != -1 {
                 // `.SetupBoxSprite`'s stalactite arm (M l. 59383–59400) makes its child before the parent is inserted

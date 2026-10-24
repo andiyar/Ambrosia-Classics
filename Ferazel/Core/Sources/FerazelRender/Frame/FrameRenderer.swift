@@ -14,20 +14,24 @@ import FerazelCore
 ///   seeds, so each index goes through `Color2Index` of its own colour [MED].
 /// - `redrawScrollGrid` / `redrawEntireScrollGrid` (`TileGridRenderer`): the scroll point `PTR_DAT_1009fe78` becomes
 ///   (h, v) as passed; `drawLightsOntoTiles` at that point.
+/// - `lightTable(t)` (LT): Core's light table before this frame's `.HandleLights` becomes the renderer's copy
+///   (`lightTable`) and its `LightRenderer` slots (faces from the cache). The first one must equal the table
+///   `addLights` built (Debug precondition).
 /// - `wrapDrawWaterEffects` (E1a): first `.HandleLights @ 1001bff0` (`.PaintFrameWrap` l. 9205, after
 ///   `.DrawLightsOntoTiles` and before `.WrapDrawWaterEffects` l. 9206, unconditional — not an op of the seam; the
-///   session emits this op on every `.PaintFrameWrap` iteration): every active slot not pending removal copies its
-///   face, point, radius and colour to the "previous" fields and clears `+1` (new); the speeds are 0 for every
-///   level-1 light, so nothing moves; the row-redraw counter `*_DAT_100a012c` has no writer (its only TOC load is
-///   `1001bff8`), so its redraw never runs. Then the op's Enhanced water faces (E1b), in list order:
-///   `WaterFaceBlitter.draw` into the frame port at the scroll point (Core already made the bubbles, motes and dust).
+///   session emits this op on every `.PaintFrameWrap` iteration): `LightTable.handleLights()` on the renderer's copy
+///   (LT: Core's one implementation), its slots refreshed from it; the row-redraw counter `*_DAT_100a012c` has no
+///   writer (its only TOC load is `1001bff8`), so its redraw never runs. Then the op's Enhanced water faces (E1b), in
+///   list order: `WaterFaceBlitter.draw` into the frame port at the scroll point (Core already made the bubbles, motes
+///   and dust).
 /// - `wrapDrawSprites`: `SpriteBlitter.wrapDrawSprites` at the scroll point, culled by the grid's drawn pair. A passage
 ///   jump's own `.WrapDrawSprites` (`.HitPlayerSprite` l. 49677) has no `.HandleLights` before it.
 /// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
 ///   its erase after the copy.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
-/// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` — the slot's face and radius; the next
-///   `.DrawLightsOntoTiles` sees the face differ from its previous one and redraws the cells it covers.
+/// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` (`LightTable.changeFace` on the renderer's copy) —
+///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
+///   redraws the cells it covers.
 /// - `wrapEraseSprites`: `SpriteBlitter.wrapEraseSprites` with the grid's mask re-stamp.
 /// - `statusBar`: `StatusBar.update` — full after a `setScreenClut` (the level start), incremental otherwise (D26 R5:
 ///   the seam does not carry the flag).
@@ -114,6 +118,11 @@ public final class FrameRenderer {
     public private(set) var statusBar: StatusBar
     /// `_DAT_100a0128`: the light slots the grid and the sprite light pass read.
     public private(set) var lights: LightRenderer
+    /// LT: the renderer's copy of Core's light table (`addLights`, then each `DrawOp.lightTable`); `lights.slots` is
+    /// this table with the faces loaded.
+    public private(set) var lightTable = LightTable()
+    /// LT: a `.lightTable` op has been applied (the first one confirms `addLights`' table).
+    private var lightTableConfirmed = false
     /// The particle colour rows, draw and erase (E1a).
     public private(set) var particles: ParticleRenderer
     /// `PTR_DAT_1009fe78`.
@@ -212,24 +221,44 @@ public final class FrameRenderer {
         SetupFaces.Sheet(pict: 0x410, count: 4, cellWidth: 8, cellHeight: 8, columns: 4, clut: 200),
     ]
 
-    /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order): the first
-    /// free slot gets `+0` active, `+1` new, `+2` 0, `+4` the face (`LightFace.load`, clut 801), `+8` nil, `+0x14`
-    /// the face width >> 1, `+0xc` the point, `+0x18` the colour.
+    /// `.AddLight @ 1001bc08` for each light, in order (the session's `lights`, `.SetupLevelSprites` order) —
+    /// `LightTable.add` on the renderer's copy: the first free slot gets `+0` active, `+1` new, `+2` 0, `+4` the face
+    /// (`LightFace.load`, clut 801), `+8` nil, `+0x14` the face width >> 1, `+0xc` the point, `+0x18` the colour. The
+    /// first `DrawOp.lightTable` then confirms this table (LT).
     /// - Throws: `Refusal.lightSlotsFull`; `LightFaceError` / `PictureSourceError` for a face that does not load.
     public func addLights(_ list: [SetupFaces.Light]) throws {
         for l in list {
-            let face = try lightFace(pict: l.pict, width: l.width, height: l.height)
-            guard let i = lights.slots.firstIndex(where: { !$0.active }) else { throw Refusal.lightSlotsFull }
-            var s = LightSlot()
-            s.active = true
-            s.isNew = true
-            s.face = face
-            s.x = l.x
-            s.y = l.y
-            s.radius = face.width >> 1
-            s.colour = l.colour
-            lights.slots[i] = s
+            _ = try lightFace(pict: l.pict, width: l.width, height: l.height)
+            let i = lightTable.add(face: LightFaceRef(pict: l.pict, width: l.width, height: l.height),
+                                   x: Int16(truncatingIfNeeded: l.x), y: Int16(truncatingIfNeeded: l.y), vx: 0, vy: 0,
+                                   accelY: 0, colour: Int16(truncatingIfNeeded: l.colour))
+            guard i >= 0 else { throw Refusal.lightSlotsFull }
+            lights.slots[Int(i)] = try lightSlot(lightTable.slots[Int(i)])
         }
+    }
+
+    /// One of Core's slots with its faces loaded.
+    private func lightSlot(_ t: LightTable.Slot) throws -> LightSlot {
+        var s = LightSlot()
+        s.active = t.active
+        s.isNew = t.isNew
+        s.removePending = t.removing
+        s.face = try t.face.map { try lightFace(pict: $0.pict, width: $0.width, height: $0.height) }
+        s.previousFace = try t.previousFace.map { try lightFace(pict: $0.pict, width: $0.width, height: $0.height) }
+        s.y = Int(t.y)
+        s.x = Int(t.x)
+        s.previousY = Int(t.previousY)
+        s.previousX = Int(t.previousX)
+        s.radius = Int(t.radius)
+        s.previousRadius = Int(t.previousRadius)
+        s.colour = Int(t.colour)
+        s.previousColour = Int(t.previousColour)
+        return s
+    }
+
+    /// `lights.slots` ← `lightTable`.
+    private func syncLightSlots() throws {
+        for i in lightTable.slots.indices { lights.slots[i] = try lightSlot(lightTable.slots[i]) }
     }
 
     /// `.BuildTintTable @ 10020a5c`'s table 0xa from the session's stream (`FerazelSession.tintTableDraws`: 510
@@ -332,11 +361,19 @@ public final class FrameRenderer {
             case .changeLightFace(let slot, let pict, let width, let height):
                 // `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.
                 if lights.slots.indices.contains(slot) {
-                    let face = try lightFace(pict: pict, width: width, height: height)
-                    lights.slots[slot].face = face
-                    lights.slots[slot].radius = face.width >> 1
+                    _ = try lightFace(pict: pict, width: width, height: height)
+                    lightTable.changeFace(Int16(slot), LightFaceRef(pict: pict, width: width, height: height))
+                    lights.slots[slot] = try lightSlot(lightTable.slots[slot])
                 }
                 executed.append(.lightFace(slot))
+            case .lightTable(let table):
+                // LT: the first op carries the table the Setups built — the one `addLights` built from the same list.
+                assert(lightTableConfirmed || table == lightTable,
+                       "FrameRenderer: the first DrawOp.lightTable differs from the table addLights built")
+                lightTableConfirmed = true
+                lightTable = table
+                try syncLightSlots()
+                // A state hand-off, not a draw call of the original: not in `executed` (the draw-order oracle).
             case .wrapEraseSprites(let list, let h, let v):
                 grid.lights = lights
                 try sprites.wrapEraseSprites(list, h: h, v: v, ports: &ports, grid: grid)
@@ -351,7 +388,8 @@ public final class FrameRenderer {
                 executed.append(.tile(col: col, row: row))
             case .wrapDrawWaterEffects(let list):
                 // `.HandleLights` (l. 9205) runs just before `.WrapDrawWaterEffects` (l. 9206).
-                handleLights()
+                lightTable.handleLights()
+                try syncLightSlots()
                 executed.append(.handleLights)
                 // Its Enhanced water faces (E1b): the FG-water faces through mode 0x60000 + kind, then the light.
                 sprites.lights = lights
@@ -427,23 +465,6 @@ public final class FrameRenderer {
         for y in 0..<picture.height where (0..<IndexedFrame.height).contains(v + y) {
             for x in 0..<picture.width where (0..<IndexedFrame.width).contains(h + x) {
                 screen[h + x, v + y] = redraw[Int(picture.pixels[y * picture.width + x])]
-            }
-        }
-    }
-
-    /// `.HandleLights @ 1001bff0` for lights without speed: removal-pending slots go inactive; the rest remember
-    /// this frame's face, point, radius and colour and stop being new.
-    private func handleLights() {
-        for i in lights.slots.indices where lights.slots[i].active {
-            if lights.slots[i].removePending {
-                lights.slots[i].active = false
-            } else {
-                lights.slots[i].isNew = false
-                lights.slots[i].previousFace = lights.slots[i].face
-                lights.slots[i].previousX = lights.slots[i].x
-                lights.slots[i].previousY = lights.slots[i].y
-                lights.slots[i].previousRadius = lights.slots[i].radius
-                lights.slots[i].previousColour = lights.slots[i].colour
             }
         }
     }

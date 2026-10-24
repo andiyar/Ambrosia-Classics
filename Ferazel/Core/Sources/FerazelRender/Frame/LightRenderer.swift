@@ -1,9 +1,10 @@
 import Foundation
 import FerazelCore
 
-/// One of the 200 light slots at `_DAT_100a0128` (0x30 bytes each; lighting-tables §7.4). `FrameRenderer` fills them
-/// from the Setup lights (`.AddLight`), runs `.HandleLights` for still lights and `.ChangeLightFace` for the item
-/// twinkle (`BonusHandle`); lights added later by effects and moving lights are not built.
+/// One of the 200 light slots at `_DAT_100a0128` (0x30 bytes each; lighting-tables §7.4) with its faces loaded. LT:
+/// Core owns the table (`FerazelCore.LightTable`); `FrameRenderer` fills these slots from its copy of it — `addLights`,
+/// each `DrawOp.lightTable`, `.ChangeLightFace` and `.HandleLights` all run `LightTable`'s one implementation on that
+/// copy, then refresh the slots.
 public struct LightSlot: Sendable, Equatable {
     /// `+0x00`.
     public var active = false
