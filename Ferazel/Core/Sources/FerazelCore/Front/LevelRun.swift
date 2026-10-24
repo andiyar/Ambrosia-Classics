@@ -11,7 +11,8 @@ public enum LevelEnd: Equatable, Sendable {
     case completed(exit1: Int16, exit2: Int16)
     /// `DAT_100a5106` with HP ≥ 1 and the level not complete (Esc / ⌘W OK, P1): neither after-loop branch.
     case aborted
-    /// ⌘Q OK (P1): the flow quits. // later: P1 (no Phase-3 writer before P1).
+    /// ⌘Q OK (P1, `.CheckGameLoopKeys`): `.Quit` follows — the flow quits; the iteration is never finished and no
+    /// exit sequence runs.
     case quit
 }
 
@@ -141,9 +142,17 @@ public struct LevelRunOutput: Equatable, Sendable {
 /// run does `.SavePointSave` at that moment (`SaveGame.swift`: the block, `.SaveSG` with its panel / error report
 /// answered through `fileDone` / `dialogDone`, the redraw tail), then `resume` finishes the same iteration. No
 /// iteration runs meanwhile; the cadence measures the next one from the suspended iteration's start.
+///
+/// **`.CheckGameLoopKeys` (P1, `Pause.swift`):** the session suspends after its `.PaintFrameWrap`
+/// (`FrameSuspension.gameLoopKeys`); the run asks the confirm (`ShellRequest.dialog`, answered through `dialogDone`),
+/// runs `.Options` (`prefsDialog`, then `dialogDone`; the new live prefs into the session) or `.Pause` (`PauseRun`,
+/// ticked until it returns; its menu items through `menuChosen`), and resumes the same iteration. ⌘Q's OK ends the run
+/// `.quit` at once; ⌘W / Esc OK (and the pause's Abort Game) end the loop after the iteration — `.aborted`, no fades.
 public final class LevelRun {
     public let resources: FerazelResources
-    public let prefs: FerazelPrefs
+    /// The live prefs (`_DAT_1009fe44`): the cadence and the fades read them; P1's `.Options` and the pause's toggles
+    /// replace them (the session's too).
+    public private(set) var prefs: FerazelPrefs
     public let levelNumber: Int
     /// The level file (`Mlvl`), loaded at `init`.
     public let levelFile: LevelFile
@@ -274,10 +283,51 @@ public final class LevelRun {
         fileAnswer = result
     }
 
-    /// The error report (`ShellRequest.dialog`) was dismissed; the run goes on at the next tick.
+    /// The dialog the run asked for (`ShellRequest.dialog`) was answered — a save point's error report, a
+    /// `.CheckGameLoopKeys` confirm, the Options dialog (once `prefsDialog.result` is set), or the pause's Abort Game
+    /// confirm; the run goes on at the next tick.
     public func dialogDone(_ result: DialogResult) {
-        dialogAnswered = true
+        if saveSG != nil {
+            dialogAnswered = true
+        } else if case .pause? = keysModal, var p = pause {
+            p.dialogDone(ok: result == .ok)
+            pause = p
+        } else if keysModal != nil {
+            keysAnswer = result
+        } else {
+            dialogAnswered = true
+        }
     }
+
+    // MARK: P1 — `.CheckGameLoopKeys`
+
+    /// `.Pause` while it runs (nil otherwise).
+    public private(set) var pause: PauseRun?
+    /// O1's model while ⌘P's DLOG 6900 is up (nil otherwise); the App drives it and answers `dialogDone` once its
+    /// `result` is set (as `GameFlow.prefsDialog`).
+    public var prefsDialog: PrefsDialogModel?
+    /// The keyboard layout's character for a key code (the Options dialog's key names; `GameFlow.keyCharacter`).
+    public var keyCharacter: @Sendable (Int16) -> String? = { _ in nil }
+    /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global the flow carries).
+    public var lastModifier: Int16 = 0
+
+    /// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+    public func menuChosen(_ item: PauseRun.MenuItem) {
+        guard var p = pause else { return }
+        p.menuChosen(item)
+        pause = p
+    }
+
+    /// The `.CheckGameLoopKeys` modal in progress.
+    private enum KeysModal {
+        case confirm(GameLoopKeyEvent)
+        case options
+        case pausePaint
+        case pause
+    }
+
+    private var keysModal: KeysModal?
+    private var keysAnswer: DialogResult?
 
     /// What the next level's run takes: the session's carry (parity, particle counters, water cache, G — the live
     /// G after this level, crunch log included) plus the tileset and cached-face state `.SetupLevel` left. Carry →
@@ -495,13 +545,13 @@ public final class LevelRun {
     /// The loop's part of a tick (Invariant 4): returns false when the run waits for a later tick.
     private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
-        let reduce = prefs.reduceFrameRate != 0
         var ops: FrameOps
-        if saveSG != nil {
-            // S1: a suspended frame waits for the modal; its answer finishes the same iteration.
-            guard let resumed = advanceSave(s, out: &out) else { return false }
+        if saveSG != nil || keysModal != nil {
+            // S1 / P1: a suspended frame waits for the modal; its answer finishes the same iteration.
+            guard let resumed = advanceModal(s, now: now, input: input, out: &out) else { return false }
             ops = resumed
         } else {
+            let reduce = prefs.reduceFrameRate != 0
             // `.GameLoop`'s bottom-of-loop wait (M l. 5285–5294): prefs[0] = 0 → until 2 ticks after the iteration's
             // start; prefs[0] ≠ 0 → the non-drawing iteration does not wait, the drawing one waits until 4 ticks after
             // its own start. A late tick runs one iteration (or pair): fixed step, no catch-up.
@@ -509,10 +559,11 @@ public final class LevelRun {
             lastStart = now
             ops = step(s, input: input, out: &out)
         }
+        let reduce = prefs.reduceFrameRate != 0
         while true {
-            if ops.suspension != nil {
-                beginSave(s, suspension: ops.suspension!, out: &out)
-                guard let resumed = advanceSave(s, out: &out) else { return false }
+            if let suspension = ops.suspension {
+                beginModal(s, suspension: suspension, now: now, out: &out)
+                guard end == nil, let resumed = advanceModal(s, now: now, input: input, out: &out) else { return false }
                 ops = resumed
                 continue
             }
@@ -531,19 +582,21 @@ public final class LevelRun {
     }
 
     private func step(_ s: FerazelSession, input: FrontInput, out: inout LevelRunOutput) -> FrameOps {
-        let ops = s.step(keys: input.keys)
+        let ops = s.step(keys: input.keys, capsLock: input.capsLock)
         iterations += 1
         emitFrame(ops, out: &out)
         return ops
     }
 
-    /// One iteration's ops (or a suspended part of one) into the tick's output.
-    private func emitFrame(_ ops: FrameOps, out: inout LevelRunOutput) {
+    /// One iteration's ops (or a suspended part of one) into the tick's output. `present`: a part after a
+    /// `.CheckGameLoopKeys` answer (its redraws and nested `.PaintFrameWrap` change the screen whatever the iteration's
+    /// draw flag).
+    private func emitFrame(_ ops: FrameOps, out: inout LevelRunOutput, present: Bool = false) {
         lastSteps.append(ops)
         var o = FrontOutput(draws: ops.draws, sounds: ops.sounds, soundStops: ops.soundStops,
                             soundStopAt: ops.soundStopAt, music: ops.music, requests: ops.requests)
         // A skipped iteration leaves the screen as it was, but its `.HandleAsyncGammaFade` still moves the gamma.
-        o.present = ops.drawn || ops.draws.contains { if case .gammaStep = $0 { true } else { false } }
+        o.present = present || ops.drawn || ops.draws.contains { if case .gammaStep = $0 { true } else { false } }
         // `_HandleAsyncAIFFMusicFade()` (M l. 5281), after `.UpdateStatusBar(1, 0, 0)` — at the iteration's end, so
         // not in a suspended part: nothing armed outside the boss rule's in-loop block (M l. 5257–5266, // later:
         // Phase 5).
@@ -552,6 +605,122 @@ public final class LevelRun {
     }
 
     // MARK: The save point (S1)
+
+    /// The session suspended: a save point (S1) or `.CheckGameLoopKeys` (P1).
+    private func beginModal(_ s: FerazelSession, suspension: FrameSuspension, now: UInt32,
+                            out: inout LevelRunOutput) {
+        if case .gameLoopKeys(let e) = suspension {
+            beginKeys(s, e, now: now, out: &out)
+        } else {
+            beginSave(s, suspension: suspension, out: &out)
+        }
+    }
+
+    /// The modal's answers so far: the rest of the frame when it has returned (nil while it waits).
+    private func advanceModal(_ s: FerazelSession, now: UInt32, input: FrontInput,
+                              out: inout LevelRunOutput) -> FrameOps? {
+        if saveSG != nil { return advanceSave(s, out: &out) }
+        guard let m = keysModal else { return nil }
+        switch m {
+        case .confirm:
+            guard let a = keysAnswer else { return nil }
+            keysAnswer = nil
+            keysModal = nil
+            return resumeKeys(s, .confirm(ok: a == .ok), input: input, out: &out)
+        case .options:
+            guard keysAnswer != nil else { return nil }
+            keysAnswer = nil
+            keysModal = nil
+            closeOptions(s, out: &out)
+            return resumeKeys(s, .optionsClosed, input: input, out: &out)
+        case .pausePaint:
+            keysModal = nil
+            return resumeKeys(s, .pausePaint, input: input, out: &out)
+        case .pause:
+            guard var p = pause else { return nil }
+            emit(&out, p.tick(now: now, input: input))
+            pause = p
+            guard p.isDone else { return nil }
+            // The pause's live side back: the music player, and the prefs ⌘M / ⌘F re-made current.
+            music = p.live.music
+            if p.live.live != livePrefs { applyPrefs(p.live.live, s) }
+            pause = nil
+            keysModal = nil
+            return resumeKeys(s, .pauseEnded(aborted: p.aborted), input: input, out: &out)
+        }
+    }
+
+    /// `.CheckGameLoopKeys`' modal starts (`GameLoopKeys`; the session has made `ShowCursorSafe`).
+    private func beginKeys(_ s: FerazelSession, _ e: GameLoopKeyEvent, now: UInt32, out: inout LevelRunOutput) {
+        switch e {
+        case .confirmQuit, .confirmAbort:
+            // `ParamText(…)`, `.ConfirmAbortGameDialog` (DLOG 202).
+            let text = e == .confirmQuit ? GameLoopKeys.quitText : GameLoopKeys.abortText
+            emit(&out, FrontOutput(requests: [.dialog(.confirm(text: text))]))
+            keysModal = .confirm(e)
+            keysAnswer = nil
+        case .options:
+            // `.Options @ 1000e470` (M l. 7254ff): `FlushEvents`, `InputActivate(0, 0)`, `ShowCursorSafe`, the prefs
+            // file re-read (`.SetPrefFile` + `.InitPrefs`), `.PreferencesDialog` — not paused.
+            let record = files?.loadPrefs().map(FerazelPrefs.init(record:)) ?? FerazelPrefs()
+            prefsDialog = PrefsDialogModel(record: record, live: PrefsToggles(live: livePrefs, music: music),
+                                           paused: false, lastModifier: lastModifier, keyCharacter: keyCharacter)
+            emit(&out, FrontOutput(requests: [.showCursor, .dialog(.preferences)]))
+            keysModal = .options
+            keysAnswer = nil
+        case .pause:
+            var p = PauseRun(resources: resources, onMap: false, prefs: livePrefs, music: music,
+                             levelClut: ColorLUT.screenClutId(levelFile.header),
+                             scroll: PauseRun.Scroll(h: s.camera.scrollH, v: s.camera.scrollV), files: files)
+            emit(&out, p.enter())
+            pause = p
+            keysModal = .pausePaint
+        case .paused:
+            guard var p = pause else { return }
+            emit(&out, p.painted(now: now))
+            pause = p
+            keysModal = .pause
+        case .quit:
+            // `.Quit()` (the flow's `GameFlow.quit`) never returns: no exit sequence.
+            playing = false
+            end = .quit
+        }
+    }
+
+    /// `.Options`' close (M l. 7275–7286): the record written back, `MTRedraw`, `.MakeCurrPrefs` (not paused: a changed
+    /// music flag re-applies at once), `.UpdateMenus` (the bar stays hidden in a level), `fe0c` / `511e` (no Core
+    /// reader); the new live prefs into the run and the session.
+    private func closeOptions(_ s: FerazelSession, out: inout LevelRunOutput) {
+        guard let model = prefsDialog else { return }
+        try? files?.storePrefs(model.record.record())
+        var toggles = model.live
+        lastModifier = model.lastModifier
+        var o = FrontOutput(present: true)
+        o.append(toggles.makeCurrPrefs(model.record, paused: false))
+        o.requests.append(.showMenuBarItems(MenuState(menusLive: false, paused: false,
+                                                      musicOn: toggles.live.musicOn != 0,
+                                                      soundOn: toggles.live.soundOn != 0)))
+        music = toggles.music
+        applyPrefs(toggles.live, s)
+        prefsDialog = nil
+        emit(&out, o)
+    }
+
+    /// The live prefs replaced (`.MakeCurrPrefs` in a level): the run's, the saves', the session's.
+    private func applyPrefs(_ p: FerazelPrefs, _ s: FerazelSession) {
+        prefs = p
+        prefsAfterSaves = p
+        s.prefs = p
+    }
+
+    /// The session's frame on from a `.gameLoopKeys` suspension with this tick's input.
+    private func resumeKeys(_ s: FerazelSession, _ reply: GameLoopKeyAnswer.Reply, input: FrontInput,
+                            out: inout LevelRunOutput) -> FrameOps {
+        let rest = s.resume(.gameLoopKeys(GameLoopKeyAnswer(reply: reply, keys: input.keys,
+                                                            capsLock: input.capsLock)))
+        emitFrame(rest, out: &out, present: true)
+        return rest
+    }
 
     /// The session suspended at a save point (`HitPlayerSprite.savePoint`): `.SavePointSave` (M l. 6322ff) —
     /// `InputActivate(0, 0)` and `FlushEvents(0xff7f)` (nothing in Core), the block written at that moment, then
@@ -574,6 +743,8 @@ public final class LevelRun {
             }
         case .conversation, .sign:
             preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
+        case .gameLoopKeys:
+            preconditionFailure("beginModal routes the keys")
         }
     }
 

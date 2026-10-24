@@ -353,6 +353,17 @@ Edge case [MED]: if `OpenSG(fd18)` fails (file moved/deleted), ContinueGame retu
 - Debug only (out of scope): key 0x76 during SetupLevel clears `G+0x176+2L`; keys C+S (codes 8 and 1)
   held without ⌘/Esc while the debug flag is set → `SavePointSave` (raw 0x10007b6c).
 
+> ⚑ implementer note (Phase 3 P1, loop run 14, 2026-10-24) (BC15, BC26 + dump): the menu bar is shown
+> **unconditionally** inside `.Pause` and the menus are live there (`.CheckEvent` → `.HandleMenuSelection`; clicks
+> accepted at global v < 0x14 by `.HandleMouseEvent`, M l. 7542, app-active gated); `.UpdateMenus` while paused disables
+> New Game / Restore and enables Abort Game (M l. 28763ff). File ▸ Abort Game (`.AbortGame`, M l. 6240–6268): OK →
+> `MTRedraw`, `DAT_100a5106 = 1`, the pause flag cleared (the pause then exits normally — music fade-in, redraw — and
+> the level ends after the iteration, an abort); Cancel → `MTRedraw`, and only when not paused the grid redraw. In a
+> level ⌘W's and Esc's confirm is the same DLOG 202 (text pstr 0x100a2cec; ⌘Q's 0x100a2ccd); ⌘W/⌘Q Cancel redraw the
+> grid and status bar without `.PaintFrameWrap`, Esc's Cancel adds `.PaintFrameWrap(1, 1)` — a whole pass, see engine
+> §7.2 note. DLOG 202's item-5 Save branch stays dead (BC26). On the map, Abort Game's OK while paused sets
+> `DAT_100a5106`, which ends `.NewGame`'s / `.ContinueGame`'s loop after the map returns (the map's own abort is `fd4c`).
+
 > ⚑ planner note (Phase 3 L1, 2026-10-14) (BC8): key 0x76 (F4) during `.SetupLevel` clears `G+0x176+2L` **ungated** —
 > no debug-flag test (raw `100047e0..10004810`: `li r3,0x76`, `bl IsPressed`, `beq`, `sth r26(=0),0x176(r3)`), so it is
 > not "debug only": holding F4 while a level loads makes it a first visit (no restore, totals rewritten, the chapter

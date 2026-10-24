@@ -267,6 +267,21 @@ lock is down and the debounce `PTR_DAT_1009fe14` is 0. `.Pause @ 10006078`: draw
 then spins `CheckEvent` until caps lock has been up for 5 consecutive polls; restores volume /
 music, hides the menu bar, redraws.
 
+> ⚑ implementer note (Phase 3 P1, loop run 14, 2026-10-24) (BC15 + dump): `.CheckGameLoopKeys` returns at once while
+> faded (`*fde8`) or while an async fade runs (`53d6 == 0`) — the debounce counters do not run then either. The pause
+> counter starts at **10**, −1 per poll while Caps Lock is up **and** the app active (`5108`) **and** no sleep pending
+> (`*fe40`), else back to **5**; unpause at 0; Caps Lock already up when the loop would start → no loop (M l.
+> 3211–3231). **Dump beat plan:** `.PaintFrameWrap(1, x)` inside `.CheckGameLoopKeys` (⌘Q / ⌘W / Esc OK, Esc Cancel)
+> and `.Pause` (`(1, 0)`) is a **whole pass** — `.HandleIdleSprites`, `.HandleSprites`, `.HandleParticles`,
+> `.WrapEraseSprites` included (M l. 9452–9456), not only the draw — so a confirm's OK and every pause run one extra
+> game-logic pass inside the iteration (its special pass can even fire a save point); gated off on the map by `fe2c`
+> (M l. 9192). `.Pause`'s exit restarts the music when +0x0c changed during the pause and **then** runs
+> `FadeAIFFMusic(1, 2)` (M l. 3233–3257); `*fe28 = 0` / `*fe88 = 0` come after the banner (M l. 3197–3203). The
+> banner rect's offset (sprite world +0x48, +0x46) is (0, 0): `.MTInit` zeroes both (M l. 30157–30159), no other
+> writer. `.RestoreWindowBackground` is `DrawBlackLines` in graphics mode 3 only (M l. 3046ff); ⌘P flushes events
+> before `ShowCursorSafe`. Built: `FerazelCore.GameLoopKeys`, `PauseRun` (`Front/Pause.swift`), the session's
+> `.gameLoopKeys` suspension.
+
 ### 7.3 Debug/cheat keys (out of scope, identification only)
 `_DAT_100a0064` debug flag set by ⌘+Shift+Option+';'+'0' (key codes 0x37 + 0x38,0x3a,0x29,0x1d)
 in `.CheckGameLoopKeys`; then in `.HandleKeys`: keys '1'/'2'/'9' (0x12/0x13/0x19) complete

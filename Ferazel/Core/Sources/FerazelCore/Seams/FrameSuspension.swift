@@ -16,11 +16,18 @@ public enum FrameSuspension: Equatable, Sendable {
     case conversation(id: Int16, record: Int, sprite: Int)
     /// A sign / grave text (plan S3). // later: C1 — no arm makes it yet (unreachable).
     case sign(text: [UInt8])
+    /// P1: `.CheckGameLoopKeys @ 10007684` (M l. 3861–4030), called by `.GameLoop` after `.PaintFrameWrap` and before
+    /// `.UpdateSprites` (M l. 5251) — a confirm, the Options dialog or `.Pause` (`GameLoopKeyEvent`, `Pause.swift`). The
+    /// flow runs it and resumes with `.gameLoopKeys(_:)`; a hosted session only (`hostedByLevelRun`).
+    case gameLoopKeys(GameLoopKeyEvent)
 
     /// What the modal answered — the value `resume(_:)` continues the frame with.
     public enum Outcome: Equatable, Sendable {
         /// `.SavePointSave`'s return (`.SaveSG`'s): true = written (the success flash), false = cancelled or failed
         /// (the record's p1 back to 0).
         case savePoint(saved: Bool)
+        /// P1: the answer to a `.gameLoopKeys` suspension, with the polled input at that moment (the nested
+        /// `.PaintFrameWrap` passes read the keys, the Caps Lock test reads `CapsLockDown()` live).
+        case gameLoopKeys(GameLoopKeyAnswer)
     }
 }

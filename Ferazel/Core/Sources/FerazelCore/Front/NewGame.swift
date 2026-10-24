@@ -114,6 +114,9 @@ extension GameFlow {
                                    skipStageComplete: skipStageComplete, date: dateTime, files: files,
                                    saveState: SaveGameState(savedThisGame: savedThisGame, saveFileKnown: saveFileKnown,
                                                             lastReply: lastReply))
+            // P1: ⌘P's Options inside the level uses the flow's key names and its last captured modifier.
+            run.keyCharacter = keyCharacter
+            run.lastModifier = lastModifier
             levelRun = run
             levelComplete = false                                       // `.GameLoop`: `*0088 = 0` (M l. 5151)
             wait = .level
@@ -131,9 +134,10 @@ extension GameFlow {
             fade = run.fade
             toggles.music = run.music
             skipStageComplete = run.skipStageComplete
+            lastModifier = run.lastModifier
             // S1: what the level's save points left — fe00 / fd54 / fd18 and the live prefs (`.SaveSG`'s prefs+0x42,
             // `.UpdateSGString`'s `.MakeCurrPrefs`: the record live, `5107`, `510c`, `fd20 = +0x0c`; its music cues
-            // already went through `run.music`).
+            // already went through `run.music`) — and P1's in-level `.MakeCurrPrefs` (⌘P's Options, the pause's ⌘M / ⌘F).
             savedThisGame = run.saveState.savedThisGame
             saveFileKnown = run.saveState.saveFileKnown
             lastReply = run.saveState.lastReply
@@ -170,7 +174,7 @@ extension GameFlow {
             run([{ f, now, _, out in f.mapEnded(continuing: continuing, now, &out) }])
             return
         case .quit?:
-            // ⌘Q's OK inside the level (`.CheckGameLoopKeys`) — // later: P1.
+            // ⌘Q's OK inside the level (`.CheckGameLoopKeys`, P1): `.Quit` — it never returns.
             loopEnded = true
             quitRequested = true
             quit()
@@ -200,7 +204,8 @@ extension GameFlow {
         do {
             let m = try WorldMapRun(resources: resources, prefs: toggles.live, globals: globals, level: level,
                                     levelName: name, exit1: exit1, exit2: exit2, levelComplete: levelComplete,
-                                    seed: rng.seed, fade: fade, music: toggles.music, sprites: mapSprites)
+                                    seed: rng.seed, fade: fade, music: toggles.music, sprites: mapSprites,
+                                    files: files)
             worldMap = m
             wait = .map
         } catch {
@@ -221,6 +226,15 @@ extension GameFlow {
         rng = m.rng
         fade = m.fade
         toggles.music = m.music
+        if m.prefs != toggles.live {
+            // P1: the pause's ⌘M / ⌘F on the map re-made the prefs current (`fd20 = +0x0c` with them).
+            toggles.live = m.prefs
+            toggles.wrapCopyFlag = m.prefs.plainCopy == 0
+            toggles.soundScale = Int(m.prefs.soundVolume) * 0x1c
+            toggles.appliedMusicOn = m.prefs.musicOn
+        }
+        // P1: File ▸ Abort Game's OK while paused on the map set `DAT_100a5106` — the loop test after the map ends it.
+        if m.loopEndRequested { loopEnded = true }
         exit1 = m.exit1
         exit2 = m.exit2
         mapSprites = m.sprites

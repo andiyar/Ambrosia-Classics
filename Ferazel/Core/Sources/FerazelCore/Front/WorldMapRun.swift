@@ -150,8 +150,10 @@ public struct WorldMapOutput: Equatable, Sendable {
 /// **Loop (M l. 67567–67650), one iteration per tick:** runs while (no Return 0x24, no Enter 0x4c, no action 6, no
 /// action 5) or step ≠ 0, and not aborted. `.FindPlayerNodeLoc`; step 0 → `.CheckPlayerNodeMovement` and the level
 /// name (`STR# 1000[node[cur].level]` → hdr+0x25c4) + `UpdateStatusBar(0,0,0)`; the marker at the walk position − 20;
-/// draw, copy to the screen; `UpdateStatusBar(1,0,0)`; the wait (≥ 1 tick from the iteration's start); Caps Lock →
-/// `.Pause` (// later: P1); ⌘ (0x37) or Esc (0x35) held: + Q (0x0c) → the quit confirm, else + W (0x0d) or Esc → the
+/// draw, copy to the screen; `UpdateStatusBar(1,0,0)`; the wait (≥ 1 tick from the iteration's start); Caps Lock (and
+/// the debounce `fe14` 0) → the work port copied to the back screen, `.Pause` with `fe2c = 1` (P1, `PauseRun`: no level
+/// CLUT, no `.PaintFrameWrap`, no level redraw; its menu items through `menuChosen`), the work port copied back to the
+/// screen (M l. 67590–67600); ⌘ (0x37) or Esc (0x35) held: + Q (0x0c) → the quit confirm, else + W (0x0d) or Esc → the
 /// abort confirm; `.UpdateNodeSprites`, `.EraseNodeSprites`. The polled keys of an iteration's tail (Caps Lock, ⌘, Esc)
 /// and of the next iteration's loop test are read on the same tick — the held-⌘ quirk: an idle ⌘ (action 6) ends the
 /// loop before ⌘Q can be seen unless Q goes down on the same tick [MED, gate card].
@@ -192,7 +194,8 @@ public final class WorldMapRun {
     /// `STR# 1000` (`.InitMapLevelNames @ 1007ad84`, M l. 66644–66664: `GetIndString(1000, i)` for i < 100, from the
     /// world file).
     public let levelNames: StringList
-    public let prefs: FerazelPrefs
+    /// The live prefs; the pause's ⌘M / ⌘F re-make them current (P1) — the flow takes them back after the run.
+    public private(set) var prefs: FerazelPrefs
 
     /// G (the flow's): `.ShowWorldMap` writes `unlocked` (+0x23e).
     public private(set) var globals: GameGlobals
@@ -225,6 +228,14 @@ public final class WorldMapRun {
     public private(set) var iterations = 0
     /// `.ShowWorldMap`'s return value; nil while it runs.
     public private(set) var result: Int?
+    /// `.Pause` while it runs (P1; nil otherwise).
+    public private(set) var pause: PauseRun?
+    /// `DAT_100a5106` set by File ▸ Abort Game's OK while paused on the map (P1): the game loop ends after the map —
+    /// the flow's (`.NewGame` / `.ContinueGame` test it after `.ShowWorldMap` returns).
+    public private(set) var loopEndRequested = false
+    /// The prefs file (the pause's ⌘M / ⌘F re-read and write it).
+    private let files: FrontFiles?
+    private let resources: FerazelResources
 
     private let level: Int16
     private let levelComplete: Bool
@@ -245,8 +256,12 @@ public final class WorldMapRun {
     private enum LoopPhase {
         /// The loop test and the iteration's drawing half.
         case head
-        /// The rest of the iteration, on or after `due` (the one-tick wait).
+        /// The rest of the iteration, on or after `due` (the one-tick wait): the Caps Lock test.
         case tail(due: UInt32)
+        /// `.Pause` running (P1).
+        case paused
+        /// After the Caps Lock test: ⌘ / Esc, `.UpdateNodeSprites`, `.EraseNodeSprites`.
+        case keys
     }
 
     private var stages: [Stage] = [.enter]
@@ -265,9 +280,12 @@ public final class WorldMapRun {
     ///   - seed: the game's `FastRand` seed.
     ///   - fade / music: the flow's gamma and music state.
     ///   - sprites: the node-sprite list as the previous map run left it (`sprites` after its exit — empty, M l. 67652).
+    ///   - files: the prefs file, for the pause's ⌘M / ⌘F (P1).
     public init(resources: FerazelResources, prefs: FerazelPrefs, globals: GameGlobals, level: Int16, levelName: String,
                 exit1: Int16, exit2: Int16, levelComplete: Bool, seed: Int32, fade: ScreenFade,
-                music: MusicFade, sprites: [MapSprite] = []) throws {
+                music: MusicFade, sprites: [MapSprite] = [], files: FrontFiles? = nil) throws {
+        self.files = files
+        self.resources = resources
         // `(int *)*_DAT_100a043c == 0 || *(int *)*_DAT_100a043c == 0` → the entry's error (M l. 67492–67493).
         if resources.world.resource(type: "Mmap", id: 200) == nil {
             map = try WorldMap(data: Data(count: WorldMap.length))
@@ -301,7 +319,19 @@ public final class WorldMapRun {
     /// The answer to the dialog the last `tick` requested (`ShellRequest.dialog`): OK (true) or Cancel. The run goes
     /// on at the next `tick`.
     public func dialogDone(ok: Bool) {
+        if case .paused = phase, var p = pause {
+            p.dialogDone(ok: ok)
+            pause = p
+            return
+        }
         answer = ok
+    }
+
+    /// A menu item chosen while paused (A1b): taken at the pause loop's next poll; ignored when not paused.
+    public func menuChosen(_ item: PauseRun.MenuItem) {
+        guard var p = pause else { return }
+        p.menuChosen(item)
+        pause = p
     }
 
     /// One tick at absolute 60 Hz `now` with this tick's polled input.
@@ -502,10 +532,38 @@ public final class WorldMapRun {
             return false
         case .tail(let due):
             guard Int32(bitPattern: now &- due) >= 0 else { return false }
+            // `_CapsLockDown() && *(short *)PTR_DAT_1009fe14 == 0` (the debounce is never set > 0, BC15) → the work
+            // port (0, 0, 608, 384) copied to the back screen at (16, 8) — one surface in the replica: no op — then
+            // `.Pause` with `fe2c = 1` (its own gate `DAT_100a53d6`), then the work port copied to the screen (M l.
+            // 67590–67600).
+            phase = .keys
+            if input.capsLock {
+                if fade.noAsyncFade {
+                    var p = PauseRun(resources: resources, onMap: true, prefs: prefs, music: music, levelClut: nil,
+                                     scroll: nil, files: files)
+                    out.append(p.enter())
+                    out.append(p.painted(now: now))                      // `fe2c`: no `.PaintFrameWrap` on the map
+                    pause = p
+                    phase = .paused
+                } else {
+                    out.add(.copy(from: .work, to: .screen, source: Self.viewRect, dest: Self.toScreen(Self.viewRect)))
+                }
+            }
+            return true
+        case .paused:
+            guard var p = pause else { return false }
+            out.append(p.tick(now: now, input: input))
+            pause = p
+            guard p.isDone else { return false }
+            music = p.live.music
+            prefs = p.live.live
+            if p.aborted { loopEndRequested = true }
+            pause = nil
+            out.add(.copy(from: .work, to: .screen, source: Self.viewRect, dest: Self.toScreen(Self.viewRect)))
+            phase = .keys
+            return true
+        case .keys:
             let keys = input.keys
-            // `_CapsLockDown() && *(short *)PTR_DAT_1009fe14 == 0` → the work port copied aside, `.Pause`, copied back
-            // (M l. 67590–67600). // later: P1 — `.Pause` is P1's (`PauseRun`); the debounce `fe14` is never set > 0
-            // (BC15).
             // ⌘ or Esc held (M l. 67602–67646).
             if keys.isPressed(0x37) || keys.isPressed(0x35) {
                 var quit: Bool?

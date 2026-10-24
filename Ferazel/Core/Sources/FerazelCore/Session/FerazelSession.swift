@@ -45,7 +45,9 @@ import HectorResources
 /// `collideSprites`, then `collideSpecial`.
 public final class FerazelSession {
     public let resources: FerazelResources
-    public let prefs: FerazelPrefs
+    /// The live prefs (`_DAT_1009fe44`). P1: settable — the flow writes it after an in-level `.MakeCurrPrefs` (⌘P's
+    /// Options, the pause's ⌘M / ⌘F), so the rest of the level reads the new keys, volumes and graphics.
+    public var prefs: FerazelPrefs
     /// The sprite physics world: active list, idle table, `FastRand` stream, game globals, level.
     public let world: SpriteWorld
     public var level: LevelFile { world.level }
@@ -299,8 +301,10 @@ public final class FerazelSession {
 
     /// One `.GameLoop` iteration (the first call also carries the level start). S1: when the special pass reaches a
     /// modal moment (`FrameSuspension`), the ops so far are returned with `suspension` set and the frame waits for
-    /// `resume(_:)`; a `step` while suspended is a precondition failure.
-    public func step(keys: KeyState) -> FrameOps {
+    /// `resume(_:)`; a `step` while suspended is a precondition failure. P1: `capsLock` is `.CapsLockDown()` for the
+    /// hosted session's `.CheckGameLoopKeys` (a session not hosted by `LevelRun` runs no `.CheckGameLoopKeys`: Phase 2's
+    /// frame exactly).
+    public func step(keys: KeyState, capsLock: Bool = false) -> FrameOps {
         precondition(world.suspension == nil, "FerazelSession.step while the frame is suspended — resume(_:) first")
         var ops = FrameOps()
         let graphics = prefs.graphics
@@ -329,6 +333,24 @@ public final class FerazelSession {
         // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
         if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c) }
         let draw = prefs.reduceFrameRate == 0 || odd
+        let actions = InputActions(keys: keys, prefs: prefs)
+        frameKeys = keys
+        frameCapsLock = capsLock
+        paintFrameWrap(draw: draw, actions: actions, nested: false, into: &ops)
+        frameActions = actions
+        frameDraw = draw
+        afterSpecial = .mainPaint
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        return finishFrame(ops)
+    }
+
+    /// `.PaintFrameWrap(draw, odd) @ 10011cf8` up to `.MTCollideSprites` (M l. 9104–9460; the special pass and the
+    /// tail are the caller's): `.SetScrollLocation`, the lights, `.WrapDrawWaterEffects` (its parameter is unused),
+    /// `.WrapDrawSprites`, on a drawn pass the particles, the parity flip and `.WrapCopyToScreen`, then
+    /// `.HandleIdleSprites` and `.HandleSprites`. `nested` (P1): a call from `.CheckGameLoopKeys` / `.Pause` — its
+    /// Handle-pass cues join the iteration's.
+    private func paintFrameWrap(draw: Bool, actions: InputActions, nested: Bool, into ops: inout FrameOps) {
+        let graphics = prefs.graphics
         let h = camera.scrollH, v = camera.scrollV
         ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
@@ -357,7 +379,6 @@ public final class FerazelSession {
         }
         world.idle.handle(h: h, v: v, playerHotRect: playerRect, active: &world.active, faceRect: bounds)
         // `.HandleSprites`: `.MTHandleSprites` — each sprite's Handle at its list position.
-        let actions = InputActions(keys: keys, prefs: prefs)
         let effects = prefs.effects
         let solver = self.solver
         world.handleSprites { world, id in
@@ -406,13 +427,10 @@ public final class FerazelSession {
             }
         }
         // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).
-        frameCues = world.player.drainFrameOutputs().cues
+        let cues = world.player.drainFrameOutputs().cues
+        if nested { frameCues += cues } else { frameCues = cues }
         // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
         world.collideSprites(Self.hitCallback)
-        frameActions = actions
-        frameDraw = draw
-        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
-        return finishFrame(ops)
     }
 
     /// The suspended frame's modal moment (S1), nil while none is pending.
@@ -422,6 +440,10 @@ public final class FerazelSession {
     /// (`HitPlayerSprite.savePointDone`), then the special pass from the **next** contact (its iteration state kept),
     /// then the frame's end (passage draws, particles, erase, status bar, `.UpdateSprites`, the async gamma step, the
     /// sounds). Returns those ops — suspended again when a later contact is modal too.
+    ///
+    /// P1: a `.gameLoopKeys` suspension goes on with `.CheckGameLoopKeys`' branch tail (`GameLoopKeys`), which may run a
+    /// nested `.PaintFrameWrap` — whose own special pass can suspend at a save point: its `resume(.savePoint)` then
+    /// finishes that nested pass and goes on where it was called.
     public func resume(_ outcome: FrameSuspension.Outcome) -> FrameOps {
         guard let pending = world.suspension else { preconditionFailure("FerazelSession.resume without a suspension") }
         world.suspension = nil
@@ -431,16 +453,160 @@ public final class FerazelSession {
             let tail = HitPlayerSprite.savePointDone(world, record: record, saved: saved)
             ops.draws += tail.draws
             ops.requests += tail.requests
+        case (.gameLoopKeys(let event), .gameLoopKeys(let answer)):
+            return keysAnswered(event, answer, ops)
         case (.conversation, _), (.sign, _):
             preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
+        case (.savePoint, _), (.gameLoopKeys, _):
+            preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
-        return finishFrame(ops)
+        return afterSpecialPass(ops)
     }
 
     /// The frame's `.IsInputKeyPressed` answers and draw flag, kept across a suspension (S1).
     private var frameActions: InputActions = []
     private var frameDraw = true
+
+    // MARK: P1 — `.CheckGameLoopKeys`
+
+    /// `DAT_100a5106`: set by ⌘Q / ⌘W / Esc OK and File ▸ Abort Game while paused — the loop ends after this iteration
+    /// (`LevelRun` reports `.aborted`).
+    public private(set) var loopAborted = false
+    /// `PTR_DAT_1009fe14`: the pause debounce — decremented while > 0, zeroed by `.Pause`'s exit; never set > 0 (BC15).
+    /// (`*_DAT_1009fddc`, the other counter, has no reader: not modelled.)
+    public private(set) var pauseDebounce: Int16 = 0
+    /// The polled input of the frame (and, after an answer, of the answer's tick): `.CheckGameLoopKeys` reads the keys
+    /// and `.CapsLockDown()` live.
+    private var frameKeys = KeyState()
+    private var frameCapsLock = false
+
+    /// Where a finished special pass goes on: the frame's own `.PaintFrameWrap`, or a nested one (P1) and what follows
+    /// it in `.CheckGameLoopKeys` / `.Pause`.
+    private enum AfterSpecial {
+        case mainPaint
+        case nestedPaint(NestedTail)
+    }
+
+    private enum NestedTail {
+        /// ⌘Q / ⌘W / Esc OK: `DrawBlackLines`, `DAT_100a5106 = 1`, `.UpdateStatusBar(0, 0, 0)` (+ ⌘Q `.Quit`).
+        case confirmOK(GameLoopKeyEvent)
+        /// Esc Cancel: `.UpdateStatusBar(0, 0, 0)`.
+        case escapeCancel
+        /// `.Pause`'s `.PaintFrameWrap(1, 0)`: back to the flow (`.paused`).
+        case pausePaint
+    }
+
+    private var afterSpecial = AfterSpecial.mainPaint
+
+    private func afterSpecialPass(_ ops: FrameOps) -> FrameOps {
+        switch afterSpecial {
+        case .mainPaint:
+            return finishFrame(ops)
+        case .nestedPaint(let tail):
+            afterSpecial = .mainPaint
+            var ops = ops
+            paintTail(&ops)
+            return nestedDone(tail, ops)
+        }
+    }
+
+    /// `.CheckGameLoopKeys @ 10007684` from its start (M l. 3880ff; `GameLoopKeys`), after the frame's
+    /// `.PaintFrameWrap`: the gates, the key branch (suspends for the flow), else the counters and Caps Lock.
+    private func checkGameLoopKeys(_ ops: FrameOps) -> FrameOps {
+        guard !world.gammaFade.fadedOut, world.gammaFade.done else { return loopTail(ops) }
+        guard let e = GameLoopKeys.branch(frameKeys) else { return keysCounters(ops) }
+        var ops = ops
+        // `.RestoreWindowBackground` (`DrawBlackLines` in mode 3: no op), `ShowCursorSafe`, `FlushEvents`,
+        // `InputActivate(0, 0)` (⌘P: `FlushEvents` before `ShowCursorSafe`).
+        ops.requests.append(.showCursor)
+        world.suspension = .gameLoopKeys(e)
+        return suspend(ops)
+    }
+
+    /// The debounce counters, then `CapsLockDown() && fe14 == 0` → `.Pause` (its own gate `DAT_100a53d6`, M l. 3171 —
+    /// a nested pass may have started an async fade).
+    private func keysCounters(_ ops: FrameOps) -> FrameOps {
+        if 0 < pauseDebounce { pauseDebounce -= 1 }
+        if frameCapsLock && pauseDebounce == 0 && world.gammaFade.done {
+            world.suspension = .gameLoopKeys(.pause)
+            return suspend(ops)
+        }
+        return loopTail(ops)
+    }
+
+    /// The flow answered a `.gameLoopKeys` suspension (`GameLoopKeys` header for each tail).
+    private func keysAnswered(_ event: GameLoopKeyEvent, _ answer: GameLoopKeyAnswer, _ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        frameKeys = answer.keys
+        frameCapsLock = answer.capsLock
+        let h = camera.scrollH, v = camera.scrollV
+        switch (event, answer.reply) {
+        case (.confirmQuit, .confirm(ok: true)), (.confirmAbort, .confirm(ok: true)):
+            return nestedPaintFrameWrap(then: .confirmOK(event), ops)
+        case (.confirmQuit, .confirm(ok: false)), (.confirmAbort(escape: false), .confirm(ok: false)):
+            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
+            return keysCounters(ops)
+        case (.confirmAbort(escape: true), .confirm(ok: false)):
+            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            return nestedPaintFrameWrap(then: .escapeCancel, ops)
+        case (.options, .optionsClosed):
+            // `.SetScrollLocation`, `.RedrawEntireScrollGrid`, `.UpdateStatusBar(0, 0, 0)`, `fe0c = 1`, `511e = 1` (no
+            // Core reader), `DrawBlackLines` (mode 3: no op).
+            ops.draws.append(.redrawScrollGrid(h: h, v: v))
+            ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
+            return keysCounters(ops)
+        case (.pause, .pausePaint):
+            return nestedPaintFrameWrap(then: .pausePaint, ops)
+        case (.paused, .pauseEnded(let aborted)):
+            // `.AbortGame`'s OK inside the pause: `DAT_100a5106 = 1`; `.Pause`'s exit: `fe14 = 0`. `.CheckGameLoopKeys`
+            // returns after `.Pause`.
+            if aborted { loopAborted = true }
+            pauseDebounce = 0
+            return loopTail(ops)
+        default:
+            preconditionFailure("FerazelSession.resume: \(answer.reply) does not answer \(event)")
+        }
+    }
+
+    /// A nested `.PaintFrameWrap(1, odd)` inside `.CheckGameLoopKeys` / `.Pause`: a whole drawn pass — the Handles, the
+    /// collisions, the special pass (which can suspend at a save point), the particles and the erase — on the frame's
+    /// scroll point, with the live keys.
+    private func nestedPaintFrameWrap(then tail: NestedTail, _ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        let actions = InputActions(keys: frameKeys, prefs: prefs)
+        paintFrameWrap(draw: true, actions: actions, nested: true, into: &ops)
+        frameActions = actions
+        afterSpecial = .nestedPaint(tail)
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        afterSpecial = .mainPaint
+        paintTail(&ops)
+        return nestedDone(tail, ops)
+    }
+
+    private func nestedDone(_ tail: NestedTail, _ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        switch tail {
+        case .confirmOK(let event):
+            // `DrawBlackLines` (mode 3: no op), `DAT_100a5106 = 1`, `FlushEvents`, `.UpdateStatusBar(0, 0, 0)`.
+            loopAborted = true
+            ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
+            if event == .confirmQuit {
+                // `.Quit()` never returns: the frame stops here.
+                world.suspension = .gameLoopKeys(.quit)
+                return suspend(ops)
+            }
+            return keysCounters(ops)
+        case .escapeCancel:
+            ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
+            return keysCounters(ops)
+        case .pausePaint:
+            world.suspension = .gameLoopKeys(.paused)
+            return suspend(ops)
+        }
+    }
 
     /// `.HitPlayerSprite` with the frame's key snapshot.
     private func hitPlayer(_ w: SpriteWorld, _ p: Int, _ c: Int) {
@@ -462,10 +628,16 @@ public final class FerazelSession {
         return ops
     }
 
-    /// The frame after the special pass (unchanged order; S1 split it out so `resume` can finish a frame).
+    /// The frame after the special pass (unchanged order; S1 split it out so `resume` can finish a frame): the end of
+    /// `.PaintFrameWrap`, then (P1, hosted) `.CheckGameLoopKeys`, then the rest of the iteration.
     private func finishFrame(_ ops: FrameOps) -> FrameOps {
         var ops = ops
-        let draw = frameDraw
+        paintTail(&ops)
+        return hostedByLevelRun ? checkGameLoopKeys(ops) : loopTail(ops)
+    }
+
+    /// `.PaintFrameWrap`'s end after the special pass.
+    private func paintTail(_ ops: inout FrameOps) {
         // A passage jump's draws (`PassageView`, W2b), made inside the player pass.
         ops.draws.append(contentsOf: passageOps)
         passageOps = []
@@ -474,6 +646,13 @@ public final class FerazelSession {
         // `.WrapEraseSprites` reads the live scroll point (`PTR_DAT_1009fe78`, l. 10452–10458): on a passage jump the
         // snap and its 90 `.FindUpperLeftCorner` passes (inside `.MTCollideSpecialSprite`) have just moved it.
         ops.draws.append(.wrapEraseSprites(sprites: world.active.sprites, h: camera.scrollH, v: camera.scrollV))
+    }
+
+    /// `.GameLoop` after `.CheckGameLoopKeys` (M l. 5252–5294): `.UpdateSprites`, `.UpdateStatusBar(1, 0, 0)`, the
+    /// async gamma step, the loop test.
+    private func loopTail(_ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        let draw = frameDraw
         ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
         ops.drawn = draw
         odd.toggle()
@@ -486,8 +665,8 @@ public final class FerazelSession {
         // again. Hosted only: the non-hosted path sends no per-iteration hide, so a show there would linger.
         if hostedByLevelRun && fadingIn && world.gammaFade.done { ops.requests.append(.showCursor) }
         // `while (DAT_100a5106 == 0 && *_DAT_100a0088 == 0)` (l. 5229): game over or level complete ends the loop
-        // after this iteration (W4).
-        let endsNow = !loopEnded && (world.player.gameOver || world.player.levelDone)
+        // after this iteration (W4); P1: `DAT_100a5106` from ⌘Q / ⌘W / Esc OK or the pause's Abort Game.
+        let endsNow = !loopEnded && (world.player.gameOver || world.player.levelDone || loopAborted)
         if endsNow {
             loopEnded = true
             if !hostedByLevelRun {

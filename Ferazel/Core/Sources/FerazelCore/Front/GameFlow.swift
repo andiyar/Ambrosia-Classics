@@ -67,8 +67,14 @@ public final class GameFlow {
 
     public internal(set) var state: State = .boot
     /// O1's model while DLOG 6900 is up (nil otherwise); the App feeds the dialog's events into it and answers with
-    /// `dialogDone` once its `result` is set.
-    public var prefsDialog: PrefsDialogModel?
+    /// `dialogDone` once its `result` is set. P1: inside a level, ⌘P's model is the `LevelRun`'s.
+    public var prefsDialog: PrefsDialogModel? {
+        get { levelRun?.prefsDialog ?? menuPrefsDialog }
+        set {
+            if let run = levelRun, run.prefsDialog != nil { run.prefsDialog = newValue } else { menuPrefsDialog = newValue }
+        }
+    }
+    private var menuPrefsDialog: PrefsDialogModel?
     /// The credits scroll while DLOG 600 is up.
     public private(set) var credits: CreditsScroll?
     /// The keyboard layout's character for a key code (`KeyTranslate`), for the Options dialog's key names (App).
@@ -101,8 +107,9 @@ public final class GameFlow {
     public internal(set) var statusBarRedraw511e = false
     /// The menu loop's `sVar5`: the X joke's cooldown in passes.
     public private(set) var jokeCooldown = 0
-    /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global, carried across openings).
-    private var lastModifier: Int16 = 0
+    /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global, carried across openings — and into
+    /// a level's ⌘P, P1).
+    var lastModifier: Int16 = 0
 
     // MARK: F1b — the game's state
 
