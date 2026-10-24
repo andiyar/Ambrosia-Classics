@@ -496,7 +496,47 @@ final class GameFlowMenuTests: XCTestCase {
         t &+= 1
         flow.dialogDone(.ok)
         _ = flow.tick(now: t, input: FrontInput())
+        t &+= 1
         XCTAssertEqual(flow.state, .mainMenu)
         XCTAssertNil(flow.credits)
+
+        // A1b: the menu bar's picks in the menu loop — one per pass, at its `.CheckEvent`. Abort Game is disabled when
+        // not paused: nothing happens.
+        XCTAssertTrue(flow.menusLive)
+        flow.menuChosen(.abortGame)
+        XCTAssertFalse(flow.menusLive, "one pick waits for the pass")
+        XCTAssertEqual(flow.tick(now: t, input: FrontInput()), FrontOutput())
+        t &+= 1
+        XCTAssertTrue(flow.menusLive)
+        // Game ▸ Sound Effects (`.ToggleSound`): +0x0b flipped, `.MakeCurrPrefs`, `.UpdateMenus`.
+        flow.menuChosen(.soundEffects)
+        let sound = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.toggles.live.soundOn, 0)
+        XCTAssertEqual(sound.prefs?.soundOn, 0)
+        XCTAssertEqual(sound.requests, [.showMenuBarItems(MenuState(menusLive: true, paused: false, musicOn: true,
+                                                                     soundOn: false))])
+        // Apple ▸ About → `.Credits`: no button track, DLOG 600 at once; nothing else is taken meanwhile.
+        flow.menuChosen(.about)
+        let about = flow.tick(now: t, input: FrontInput())
+        XCTAssertEqual(about.requests, [.dialog(.credits)])
+        XCTAssertEqual(pictures(about), [])
+        XCTAssertEqual(flow.state, .credits)
+        XCTAssertEqual(flow.credits?.start, t)
+        t &+= 1
+        XCTAssertFalse(flow.menusLive)
+        flow.menuChosen(.quit)
+        flow.dialogDone(.ok)
+        _ = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.state, .mainMenu)
+        XCTAssertFalse(flow.quitting, "a pick while the menus were not live is dropped")
+        // File ▸ Quit → `.Quit` at once (no confirm, no button track).
+        flow.menuChosen(.quit)
+        let quit = flow.tick(now: t, input: FrontInput())
+        XCTAssertTrue(flow.quitting)
+        XCTAssertFalse(flow.menusLive)
+        XCTAssertTrue(quit.requests.contains(.showCursor))
+        XCTAssertEqual(pictures(quit), [])
     }
 }

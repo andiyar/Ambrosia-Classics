@@ -114,7 +114,8 @@ public enum GameLoopKeys {
 ///
 /// **Loop:** Caps Lock already up → the flag cleared, no loop. Else (`*fe38 = 1`) one poll per tick (`.CheckEvent` =
 /// `WaitNextEvent(…, 1, …)` [MED: one tick]): the menu events (`.HandleMenuSelection`: File ▸ Abort Game → `.AbortGame`;
-/// Game ▸ Music / Sound Effects → O1's toggles, paused); then the counter, from **10**: −1 while Caps Lock is up, the app
+/// Game ▸ Music / Sound Effects → O1's toggles, paused; A1b: File ▸ Quit → `.Quit`, Apple ▸ About → `.Credits`, Game ▸
+/// Preferences… → `.Options` with the pause flag set); then the counter, from **10**: −1 while Caps Lock is up, the app
 /// active (`DAT_100a5108`) and no sleep pending (`*fe40`, `.MySleepProc` — never in the replica), else **5**; unpause at
 /// 0.
 ///
@@ -125,7 +126,9 @@ public enum GameLoopKeys {
 /// `.RedrawEntireScrollGrid`; `HideCursorSafe`, `fe0c = 1`, `511e = 1`, not on the map: `.RedrawGameArea`;
 /// `InputActivate(1, 0)` (nothing).
 public struct PauseRun {
-    /// The menu items the pause loop acts on (A1b delivers them; New Game / Restore are disabled while paused).
+    /// MBAR 128's items as `.HandleMenuSelection @ 10030398` dispatches them (M l. 28795–28889) — the pause loop's and
+    /// (A1b, `GameFlow.menuChosen`) the main menu's. New Game / Restore Game are disabled while paused and Abort Game
+    /// when not (`.UpdateMenus`, M l. 28763–28792): a pick of a disabled item never comes.
     public enum MenuItem: Equatable, Sendable {
         /// File ▸ Abort Game (`.AbortGame @ 1000bec0`).
         case abortGame
@@ -133,6 +136,16 @@ public struct PauseRun {
         case music
         /// Game ▸ Sound Effects, ⌘F (`.ToggleSound`).
         case soundEffects
+        /// File ▸ New Game, ⌘N (`*fd5c = 1`, `.NewGame`).
+        case newGame
+        /// File ▸ Restore Game..., ⌘O (`.ContinueGame(0)`).
+        case restoreGame
+        /// File ▸ Quit, ⌘Q (`.Quit` — no confirm; it never returns).
+        case quit
+        /// Apple ▸ About Ferazel's Wand… (`.Credits`).
+        case about
+        /// Game ▸ Preferences…, ⌘P (`.Options`).
+        case preferences
     }
 
     /// The scroll point a level's exit redraw uses (`PTR_DAT_1009fe78`).
@@ -173,9 +186,18 @@ public struct PauseRun {
     /// with no menu event takes one — the quit (`.DoQuitAppAE` → `.Quit`) or an open (ignored: `DAT_100a5106` is clear
     /// inside a game).
     public var appleEvents = PendingAppleEvents()
-    /// A poll dispatched the quit event: `.Quit` runs from inside the pause loop and never returns — the pause stops
-    /// here (no exit sequence) and the host ends with `.Quit`.
+    /// A poll dispatched the quit event — or File ▸ Quit (A1b): `.Quit` runs from inside the pause loop and never
+    /// returns — the pause stops here (no exit sequence) and the host ends with `.Quit`.
     public private(set) var quitDispatched = false
+    /// A1b: Game ▸ Preferences… while paused — `.Options` with the pause flag set (O1's model, `paused: true`); the App
+    /// drives it (through the host and `GameFlow.prefsDialog`) and answers `dialogDone` once its `result` is set.
+    public var prefsDialog: PrefsDialogModel?
+    /// A1b: Apple ▸ About while paused — `.Credits`' scroll while DLOG 600 is up (`GameFlow.credits`).
+    public private(set) var credits: CreditsScroll?
+    /// The Options dialog's key names and its last captured modifier (`*PTR_DAT_100a0b64`, a global): the host hands
+    /// its own in and takes the modifier back after the pause.
+    public var keyCharacter: @Sendable (Int16) -> String? = { _ in nil }
+    public var lastModifier: Int16 = 0
 
     private let resources: FerazelResources
     private let levelClut: Int16?
@@ -190,6 +212,9 @@ public struct PauseRun {
     private var menu: MenuItem?
     private var confirming = false
     private var answer: Bool?
+    /// `.Credits` / `.Options` from a menu pick is up; `dialogDone` came.
+    private var modalOpen = false
+    private var modalAnswered = false
 
     /// - Parameters:
     ///   - prefs / music: the live prefs and the music player (`_DAT_1009fe44`, the QuickTime state).
@@ -238,15 +263,19 @@ public struct PauseRun {
         return out
     }
 
-    /// A menu item chosen while the loop runs (taken at the next poll, as `.CheckEvent` would).
+    /// The loop is running and no menu pick waits: a menu pick is taken now (the menu bar is live — A1b's enable rule).
+    public var acceptsMenus: Bool { stage == .loop && menu == nil && !isDone }
+
+    /// A menu item chosen while the loop runs (taken at the next poll, as `.CheckEvent` would). New Game / Restore Game
+    /// are disabled while paused (`.UpdateMenus`): ignored.
     public mutating func menuChosen(_ item: MenuItem) {
-        guard stage == .loop, menu == nil else { return }
+        guard acceptsMenus, item != .newGame, item != .restoreGame else { return }
         menu = item
     }
 
-    /// The Abort Game confirm was answered.
+    /// The Abort Game confirm, the Credits or the Options dialog was answered.
     public mutating func dialogDone(ok: Bool) {
-        if confirming { answer = ok }
+        if confirming { answer = ok } else if modalOpen { modalAnswered = true }
     }
 
     /// One tick at `now` with this tick's polled input.
@@ -277,7 +306,7 @@ public struct PauseRun {
                     return out
                 }
             case .loop:
-                guard poll(input: input, out: &out) else { return out }
+                guard poll(now: now, input: input, out: &out) else { return out }
                 if quitDispatched {
                     stage = .done
                     isDone = true
@@ -305,9 +334,58 @@ public struct PauseRun {
 
     /// One loop pass: the menu event (a confirm blocks the pass until answered), then the counter. False while a
     /// confirm waits.
-    private mutating func poll(input: FrontInput, out: inout FrontOutput) -> Bool {
+    private mutating func poll(now: UInt32, input: FrontInput, out: inout FrontOutput) -> Bool {
         if let item = menu {
             switch item {
+            case .newGame, .restoreGame:
+                break                                                   // disabled while paused
+            case .quit:
+                // `.HandleFileMenuSelection` item 6 → `.Quit()` (M l. 28863): never returns, as the quit event.
+                menu = nil
+                quitDispatched = true
+                polls += 1
+                return true
+            case .about:
+                // `.HandleAppleMenuSelection` item 1 → `.Credits` (M l. 7291–7299): `FlushEvents`,
+                // `.DoAboutDialog(600, 4803)` — modal until a click inside closes it; `MTSetPortScreen`.
+                if !modalOpen {
+                    modalOpen = true
+                    modalAnswered = false
+                    let size = ChapterScreenRun.frameSize(
+                        resources.resource(type: "PICT", id: CreditsScroll.stripPicture, chain: .frontEnd)?.data)
+                        ?? (144, 811)
+                    credits = CreditsScroll(start: now, stripWidth: size.width, stripHeight: size.height)
+                    out.requests.append(.dialog(.credits))
+                    return false
+                }
+                guard modalAnswered else { return false }
+                modalOpen = false
+                modalAnswered = false
+                credits = nil
+            case .preferences:
+                // `.HandleGameMenuSelection` item 4 → `.Options @ 1000e470` (M l. 7254–7288) with the pause flag set:
+                // `FlushEvents`, `InputActivate(0, 0)`, `ShowCursorSafe`, the prefs file re-read, the dialog (paused).
+                if !modalOpen {
+                    modalOpen = true
+                    modalAnswered = false
+                    let record = files?.loadPrefs().map(FerazelPrefs.init(record:)) ?? FerazelPrefs()
+                    prefsDialog = PrefsDialogModel(record: record, live: live, paused: true,
+                                                   lastModifier: lastModifier, keyCharacter: keyCharacter)
+                    out.requests += [.showCursor, .dialog(.preferences)]
+                    return false
+                }
+                guard modalAnswered, let model = prefsDialog else { return false }
+                modalOpen = false
+                modalAnswered = false
+                // The record written back on every close, `MTRedraw`, `.MakeCurrPrefs` (paused: the music is not
+                // restarted), `.UpdateMenus`; `fe0c` / `511e` (no Core reader).
+                try? files?.storePrefs(model.record.record())
+                live = model.live
+                lastModifier = model.lastModifier
+                out.present = true
+                out.append(live.makeCurrPrefs(model.record, paused: true))
+                out.requests.append(updateMenus(live: true))
+                prefsDialog = nil
             case .abortGame:
                 if !confirming {
                     // `FlushEvents`, `ShowCursorSafe`, `ParamText(abort)`, `.ConfirmAbortGameDialog`.

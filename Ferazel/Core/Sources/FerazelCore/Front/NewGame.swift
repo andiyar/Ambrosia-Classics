@@ -208,6 +208,9 @@ extension GameFlow {
                                     levelName: name, exit1: exit1, exit2: exit2, levelComplete: levelComplete,
                                     seed: rng.seed, fade: fade, music: toggles.music, sprites: mapSprites,
                                     files: files)
+            // A1b: the pause's Preferences… on the map uses the flow's key names and last captured modifier.
+            m.keyCharacter = keyCharacter
+            m.lastModifier = lastModifier
             worldMap = m
             wait = .map
         } catch {
@@ -226,6 +229,7 @@ extension GameFlow {
         }
         globals = m.globals
         rng = m.rng
+        lastModifier = m.lastModifier
         fade = m.fade
         toggles.music = m.music
         if m.prefs != toggles.live {

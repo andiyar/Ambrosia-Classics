@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import FerazelCore
 import FerazelRender
 import HectorShell
@@ -77,10 +78,16 @@ import HectorShell
     private var wantsCursorHidden = false
     /// `NSCursor.hide` is counted: whether this controller's one hide is in effect.
     private var cursorHidden = false
-    /// What the menu bar should offer (`.showMenuBarItems`) — // later: A1b (MBAR 128).
-    private var menuState: MenuState?
+    /// MBAR 128 (A1b): built once the data is open; `.showMenuBarItems` sets its check marks and paused state.
+    private var menus: FerazelMenus?
+    /// The original's Dialog Manager windows (A1b).
+    private var dialogs: FerazelDialogs?
+    /// A file panel is up.
+    private var panelUp = false
+    /// A live menu is down (`MenuSelect` tracking blocks the loop that called it — the main menu's or the pause's).
+    private var menuTracking = false
     /// A dialog or a file panel is up: the flow does not tick meanwhile (BTX D13.6 precedent).
-    private var modalUp = false
+    private var modalUp: Bool { panelUp || (dialogs?.isShowing ?? false) }
     /// A Finder open that came before the flow existed.
     private var pendingOpen: SavedGameRef?
     /// The flow's `.quit` came (or a launch failure): the terminate the App then makes is not asked again.
@@ -129,6 +136,7 @@ import HectorShell
                                 seed: FastRand.clockSeed(secondsSince1904: clock.secondsSince1904, ticks: clock.ticks),
                                 files: files, levels: self)
             flow.startLevel = Self.startLevel()
+            flow.keyCharacter = { Self.layoutCharacter($0) }               // `KeyTranslate` (the Options key names)
             flow.dateTime = { FastRand.systemClock().secondsSince1904 }   // `GetDateTime`
             self.flow = flow
             if let ref = pendingOpen {
@@ -149,6 +157,8 @@ import HectorShell
         shell = ShellWindowController(title: Self.title, logicalWidth: Self.width, logicalHeight: Self.height,
                                       styleMask: Self.windowStyle, scalingPolicy: .integerFit)
         shell.view.inputHandler = self
+        installMenus()
+        installDialogs()
         sizeToWholeScale(shell.windowedWindow)
         shell.view.present(bitmap)                                      // black until the flow first presents
         shell.windowedWindow.makeKeyAndOrderFront(nil)
@@ -202,26 +212,115 @@ import HectorShell
 
     // MARK: Menu
 
-    /// The app menu only: a hidden Full Screen ⌃⌘F item whose shortcut goes through key-equivalent matching (the
-    /// Deimos/BTX pattern; the original had no such entry) and Quit — with no key equivalent, so ⌘Q reaches the game's
-    /// polled keys (the main menu's Q, the level's ⌘Q confirm) as in the original. // later: A1b — MBAR 128 (File,
-    /// Game), About, the enable rules.
+    /// The hidden Full Screen ⌃⌘F item, whose shortcut goes through key-equivalent matching (the Deimos/BTX pattern; the
+    /// original had no such entry).
+    private lazy var fullScreenItem: NSMenuItem = {
+        let item = NSMenuItem(title: "Full Screen", action: #selector(toggleFullScreenChosen(_:)), keyEquivalent: "f")
+        item.keyEquivalentModifierMask = [.control, .command]
+        item.target = self
+        item.isHidden = true
+        item.allowsKeyEquivalentWhenHidden = true
+        return item
+    }()
+
+    /// Until the data is open: the app menu with the hidden Full Screen item only (no Quit — a system quit goes through
+    /// `applicationShouldTerminate`).
     private func makeMenuBar() -> NSMenu {
         let bar = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu(title: Self.title)
-        let fullScreen = NSMenuItem(title: "Full Screen", action: #selector(toggleFullScreenChosen(_:)),
-                                    keyEquivalent: "f")
-        fullScreen.keyEquivalentModifierMask = [.control, .command]
-        fullScreen.target = self
-        fullScreen.isHidden = true
-        fullScreen.allowsKeyEquivalentWhenHidden = true
-        appMenu.addItem(fullScreen)
-        appMenu.addItem(NSMenuItem(title: "Quit \(Self.title)", action: #selector(NSApplication.terminate(_:)),
-                                   keyEquivalent: ""))
+        appMenu.addItem(fullScreenItem)
         appItem.submenu = appMenu
         bar.addItem(appItem)
         return bar
+    }
+
+    /// MBAR 128 (A1b, `FerazelMenus`): its picks go to `GameFlow.menuChosen` where the original listened for them.
+    private func installMenus() {
+        fullScreenItem.menu?.removeItem(fullScreenItem)
+        let m = FerazelMenus(resources: resources, title: Self.title, fullScreen: fullScreenItem)
+        m.isLive = { [weak self] in
+            guard let self, let flow else { return false }
+            return flow.menusLive && !modalUp
+        }
+        m.inMainMenu = { [weak self] in
+            guard let flow = self?.flow else { return false }
+            return flow.state == .mainMenu && flow.levelRun == nil && flow.worldMap == nil
+        }
+        m.chosen = { [weak self] item in self?.flow?.menuChosen(item) }
+        menus = m
+        NSApp.mainMenu = m.bar
+        let center = NotificationCenter.default
+        center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: m.bar, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let flow = self.flow else { return }
+                self.menuTracking = flow.menusLive && !self.modalUp
+            }
+        }
+        center.addObserver(forName: NSMenu.didEndTrackingNotification, object: m.bar, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.menuTracking = false }
+        }
+    }
+
+    /// The dialogs (A1b, `FerazelDialogs`), drawn over the game image's centre, just above the game window.
+    private func installDialogs() {
+        let d = FerazelDialogs(resources: resources, picture: { [weak self] id in self?.dialogPicture(id) },
+                               gameArea: { [weak self] in
+            guard let self else { return (NSScreen.main?.frame ?? .zero, .normal) }
+            let view = shell.view
+            let window = shell.currentWindow
+            let rect = window.convertToScreen(view.convert(view.imageRectInPoints, to: nil))
+            return (rect, window.level)
+        })
+        d.modalStateChanged = { [weak self] in
+            self?.updateCursor()
+            if self?.modalUp == false { self?.shell.currentWindow.makeKeyAndOrderFront(nil) }
+        }
+        dialogs = d
+    }
+
+    /// A `PICT` as QuickDraw drew it into a dialog window: converted under the screen's current CLUT (`ColorSearch`,
+    /// the screen's inverse table), shown through it (and MacGamma when on).
+    private func dialogPicture(_ id: Int16) -> CGImage? {
+        guard let source = try? PictureSource.load(id: id, from: resources, chain: .frontEnd),
+              let picture = try? ConvertedPicture(source: source, clut: surface.clut, search: search) else { return nil }
+        let lut = macGamma ? Self.macGammaLUT : nil
+        let table: [(UInt8, UInt8, UInt8)] = surface.clut.entries.map { e in
+            var (r, g, b) = (Int(e.red >> 8), Int(e.green >> 8), Int(e.blue >> 8))
+            if let lut { (r, g, b) = (Int(lut[r]), Int(lut[g]), Int(lut[b])) }
+            return (UInt8(r), UInt8(g), UInt8(b))
+        }
+        var bytes = [UInt8](repeating: 0xff, count: picture.width * picture.height * 4)
+        for (i, v) in picture.pixels.enumerated() where Int(v) < table.count {
+            let c = table[Int(v)]
+            (bytes[4 * i], bytes[4 * i + 1], bytes[4 * i + 2]) = c
+        }
+        guard picture.width > 0, picture.height > 0,
+              let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+        return CGImage(width: picture.width, height: picture.height, bitsPerComponent: 8, bitsPerPixel: 32,
+                       bytesPerRow: picture.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                       bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+    }
+
+    /// `KeyTranslate` for the Options dialog's key names (`.ConvertKeyName`'s fallback): the character the current
+    /// keyboard layout gives `code` with no modifiers; nil when it gives none.
+    nonisolated static func layoutCharacter(_ code: Int16) -> String? {
+        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
+              let raw = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
+        let data = Unmanaged<CFData>.fromOpaque(raw).takeUnretainedValue() as Data
+        var dead: UInt32 = 0
+        var chars = [UniChar](repeating: 0, count: 4)
+        var length = 0
+        let status = data.withUnsafeBytes { buffer -> OSStatus in
+            guard let layout = buffer.bindMemory(to: UCKeyboardLayout.self).baseAddress else { return -1 }
+            return UCKeyTranslate(layout, UInt16(bitPattern: code), UInt16(kUCKeyActionDisplay), 0,
+                                  UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysBit), &dead,
+                                  chars.count, &length, &chars)
+        }
+        guard status == noErr, length > 0 else { return nil }
+        let s = String(utf16CodeUnits: chars, count: length)
+        return s.unicodeScalars.allSatisfy({ $0.value >= 0x20 && $0.value != 0x7f }) ? s : nil
     }
 
     // MARK: Clock
@@ -229,7 +328,7 @@ import HectorShell
     /// One 1/240 s fire: the flow runs once per new 60 Hz tick (`ShellClock.ticks()`, absolute — Core times every
     /// sequence and the level cadence from it, Invariants 3–4); never while a dialog or a panel is up.
     private func idleFired() {
-        guard flow != nil, !modalUp else { return }
+        guard flow != nil, !modalUp, !menuTracking else { return }
         defer { updateCursor() }
         let now = ShellClock.ticks()
         guard now != lastTick else { return }
@@ -425,55 +524,46 @@ import HectorShell
         case .putFile(let r): showSavePanel(r)
         case .getFile(let prompt): showOpenPanel(prompt)
         case .quit: quitNow()
-        case .showMenuBarItems(let s): menuState = s   // later: A1b — the MBAR 128 items and their enable rules
+        case .showMenuBarItems(let s): menus?.update(s)    // `.UpdateMenus`: the check marks, paused or not
         }
         updateMenuBar()
         updateCursor()
     }
 
-    /// `ShellRequest.dialog`. // later: A1b — the Dialog Manager windows from R1's templates (DLOG 200 / 202, the
-    /// error alert, DLOG 6900 over `PrefsDialogModel`, DLOG 600 Credits). Until then: reports, errors and confirms are
-    /// plain alerts; Options closes at once with Cancel (the record is written back unchanged); Credits closes at once.
+    /// `ShellRequest.dialog` → the original's Dialog Manager window (`FerazelDialogs`), answered into
+    /// `GameFlow.dialogDone` once it closes. While it is up the flow does not tick.
     private func showDialog(_ d: FerazelDialog) {
+        guard let dialogs else { flow.dialogDone(.cancel); return }
         switch d {
-        case .preferences:
-            flow.prefsDialog?.hit(2)
-            flow.dialogDone(.cancel)
-        case .credits:
-            flow.dialogDone(.ok)
-        case .report(let text):
-            runModal { [weak self] in
-                _ = Self.alert(text, buttons: ["OK"]).runModal()
-                self?.flow.dialogDone(.ok)
-            }
-        case .error(let text, let code):
-            runModal { [weak self] in
-                _ = Self.alert(text, detail: "\(code)", buttons: ["OK"]).runModal()
-                self?.flow.dialogDone(.ok)
-            }
         case .confirm(let text):
-            runModal { [weak self] in
-                let ok = Self.alert(text, buttons: ["OK", "Cancel"]).runModal() == .alertFirstButtonReturn
-                self?.flow.dialogDone(ok ? .ok : .cancel)
-            }
+            dialogs.confirm(text) { [weak self] ok in self?.flow.dialogDone(ok ? .ok : .cancel) }
+        case .report(let text):
+            dialogs.report(text) { [weak self] in self?.flow.dialogDone(.ok) }
+        case .error(let text, let code):
+            dialogs.report(text, code: code) { [weak self] in self?.flow.dialogDone(.ok) }
+        case .preferences:
+            dialogs.preferences(model: { [weak self] in self?.flow.prefsDialog }, update: { [weak self] body in
+                guard let self, var m = flow.prefsDialog else { return }
+                let cues = body(&m)
+                flow.prefsDialog = m
+                for cue in cues { audio?.handle(cue) }              // the Music checkbox and popup act at once
+            }, completion: { [weak self] in
+                guard let self else { return }
+                flow.dialogDone(flow.prefsDialog?.result == .ok ? .ok : .cancel)
+            })
+        case .credits:
+            let scroll = flow.credits ?? CreditsScroll(start: ShellClock.ticks())
+            dialogs.credits(scroll) { [weak self] in self?.flow.dialogDone(.ok) }
         }
     }
 
-    private static func alert(_ text: String, detail: String? = nil, buttons: [String]) -> NSAlert {
-        let alert = NSAlert()
-        alert.messageText = text.replacingOccurrences(of: "\r", with: "\n")   // Mac Roman CR line breaks
-        if let detail { alert.informativeText = detail }
-        for b in buttons { alert.addButton(withTitle: b) }
-        return alert
-    }
-
-    /// Runs `body` (a modal alert or panel) after this tick, with the flow held still until it returns.
+    /// Runs `body` (a modal panel) after this tick, with the flow held still until it returns.
     private func runModal(_ body: @escaping @MainActor () -> Void) {
-        modalUp = true
+        panelUp = true
         updateCursor()
         DispatchQueue.main.async { [weak self] in
             body()
-            self?.modalUp = false
+            self?.panelUp = false
         }
     }
 
@@ -517,10 +607,18 @@ import HectorShell
     }
 
     /// The menu bar is hidden only in full screen and only while the game asks (design §7.4: windowed macOS keeps it).
+    /// In full screen the game window sits at the shielding level, above the menu bar: while the game shows the bar
+    /// (`.ShowTheMenuBar` — the pointer at the main menu's top edge, the pause) the window goes just below the menu bar's
+    /// level, and back to the shielding level when it hides.
     private func updateMenuBar() {
-        let hide = shell.isFullscreen && wantsMenuBarHidden
-        let options: NSApplication.PresentationOptions = hide ? [.hideDock, .hideMenuBar] : []
+        let full = shell.isFullscreen
+        let hide = full && wantsMenuBarHidden
+        let options: NSApplication.PresentationOptions = hide ? [.hideDock, .hideMenuBar] : full ? [.hideDock] : []
         if NSApp.presentationOptions != options { NSApp.presentationOptions = options }
+        guard full else { return }
+        let level = wantsMenuBarHidden ? NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()))
+                                       : NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue - 1)
+        if shell.currentWindow.level != level { shell.currentWindow.level = level }
     }
 
     /// The hide is honoured only over the game image while the window is key and no dialog is up (Deimos
@@ -552,7 +650,7 @@ import HectorShell
     /// pass or the pause loop's — dispatches it and `.Quit` runs, whose `.quit` terminates (`quitNow`); `.GameLoop`
     /// with "Allow background tasks" fetches it and drops it (nothing more happens, the game goes on); anywhere else it
     /// waits (a level with the pref off holds it until a pause or the menu). A terminate while a quit is already
-    /// queued, or while `.Quit` runs, adds nothing. // later: A1b — the File menu's Quit.
+    /// queued, or while `.Quit` runs, adds nothing. File ▸ Quit (A1b) is a menu pick, not a terminate.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let flow, !quitApproved else { return .terminateNow }
         if !flow.quitting && !flow.appleEvents.quit { flow.quitEvent() }

@@ -340,6 +340,16 @@ public final class WorldMapRun {
         pause = p
     }
 
+    /// A1b: the pause's Game ▸ Preferences… model while it is up (nil otherwise) — `GameFlow.prefsDialog` forwards here.
+    public var pausePrefsDialog: PrefsDialogModel? {
+        get { pause?.prefsDialog }
+        set { pause?.prefsDialog = newValue }
+    }
+    /// The Options dialog's key names and its last captured modifier (a global the flow carries), for the pause's
+    /// Preferences… (A1b).
+    public var keyCharacter: @Sendable (Int16) -> String? = { _ in nil }
+    public var lastModifier: Int16 = 0
+
     /// One tick at absolute 60 Hz `now` with this tick's polled input.
     public func tick(now: UInt32, input: FrontInput) -> WorldMapOutput {
         var out = WorldMapOutput()
@@ -547,6 +557,8 @@ public final class WorldMapRun {
                 if fade.noAsyncFade {
                     var p = PauseRun(resources: resources, onMap: true, prefs: prefs, music: music, levelClut: nil,
                                      scroll: nil, files: files)
+                    p.keyCharacter = keyCharacter
+                    p.lastModifier = lastModifier
                     out.append(p.enter())
                     out.append(p.painted(now: now))                      // `fe2c`: no `.PaintFrameWrap` on the map
                     pause = p
@@ -571,6 +583,7 @@ public final class WorldMapRun {
             guard p.isDone else { return false }
             music = p.live.music
             prefs = p.live.live
+            lastModifier = p.lastModifier
             if p.aborted { loopEndRequested = true }
             pause = nil
             out.add(.copy(from: .work, to: .screen, source: Self.viewRect, dest: Self.toScreen(Self.viewRect)))

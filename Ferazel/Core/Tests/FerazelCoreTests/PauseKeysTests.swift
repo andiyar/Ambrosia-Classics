@@ -181,6 +181,67 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertTrue(pq.paused)
         XCTAssertTrue(pq.isDone)
         XCTAssertFalse(qo.requests.contains(.hideMenuBar), "no pause exit")
+
+        // A1b: MBAR 128's other picks while paused (`.HandleMenuSelection`, M l. 28795ff). New Game / Restore Game are
+        // disabled (`.UpdateMenus` paused): ignored, the poll as any other.
+        let caps = FrontInput(capsLock: true)
+        var pm = pause()
+        XCTAssertFalse(pm.acceptsMenus, "before the loop runs")
+        _ = pm.tick(now: 0, input: caps)
+        XCTAssertTrue(pm.acceptsMenus)
+        pm.menuChosen(.newGame)
+        pm.menuChosen(.restoreGame)
+        XCTAssertTrue(pm.acceptsMenus)
+        XCTAssertEqual(dialogs(pm.tick(now: 1, input: caps)), [])
+        XCTAssertEqual(pm.polls, 1)
+        // Apple ▸ About → `.Credits`: DLOG 600, modal (no poll, no counter step), its scroll from that tick.
+        pm.menuChosen(.about)
+        XCTAssertFalse(pm.acceptsMenus)
+        let about = pm.tick(now: 2, input: caps)
+        XCTAssertEqual(dialogs(about), [.credits])
+        XCTAssertEqual(pm.credits?.start, 2)
+        XCTAssertEqual(pm.credits?.stripHeight, 811)
+        _ = pm.tick(now: 3, input: FrontInput())
+        XCTAssertEqual(pm.polls, 1)
+        XCTAssertEqual(pm.counter, 5)
+        pm.dialogDone(ok: true)
+        _ = pm.tick(now: 4, input: caps)
+        XCTAssertNil(pm.credits)
+        XCTAssertEqual(pm.polls, 2)
+        XCTAssertTrue(pm.paused)
+        XCTAssertTrue(pm.acceptsMenus)
+        // Game ▸ Preferences… → `.Options` with the pause flag set: the record re-read, O1's model (paused, the host's
+        // last modifier), OK written back, `.MakeCurrPrefs` (paused: no music restart), `.UpdateMenus`.
+        pm.lastModifier = 0x38
+        pm.menuChosen(.preferences)
+        let opts = pm.tick(now: 5, input: caps)
+        XCTAssertEqual(opts.requests, [.showCursor, .dialog(.preferences)])
+        var model = try XCTUnwrap(pm.prefsDialog)
+        XCTAssertTrue(model.paused)
+        XCTAssertEqual(model.lastModifier, 0x38)
+        model.hit(3, value: 3)
+        XCTAssertEqual(model.hit(8), [], "paused: no volume cue (no music loaded: no stop)")
+        model.hit(1)
+        pm.prefsDialog = model
+        pm.dialogDone(ok: true)
+        let closed = pm.tick(now: 6, input: caps)
+        XCTAssertNil(pm.prefsDialog)
+        XCTAssertEqual(pm.live.live.musicOn, 0)
+        XCTAssertEqual(closed.prefs?.musicOn, 0)
+        XCTAssertTrue(closed.present)
+        XCTAssertEqual(closed.music, [])
+        XCTAssertTrue(closed.requests.contains(.showMenuBarItems(MenuState(menusLive: true, paused: true,
+                                                                             musicOn: false, soundOn: true))))
+        XCTAssertEqual(pm.lastModifier, 0x38)
+        XCTAssertEqual(pm.polls, 3)
+        XCTAssertTrue(pm.paused)
+        // File ▸ Quit → `.Quit` (no confirm), as the quit event: the pause stops there, no exit sequence.
+        pm.menuChosen(.quit)
+        let quit = pm.tick(now: 7, input: FrontInput())
+        XCTAssertTrue(pm.quitDispatched)
+        XCTAssertTrue(pm.isDone)
+        XCTAssertFalse(pm.acceptsMenus)
+        XCTAssertFalse(quit.requests.contains(.hideMenuBar), "no pause exit")
     }
 
     // MARK: - Pause entry and exit
@@ -188,6 +249,7 @@ final class PauseKeysTests: XCTestCase {
     func testPauseEntryAndExit() throws {
         let r = try resources()
         let rig = try Rig(r)
+        rig.run.lastModifier = 0x3a
         try rig.settle()
         let s = try XCTUnwrap(rig.run.session)
         let prefs = FerazelPrefs()
@@ -230,6 +292,21 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertTrue(menus.out.requests.contains(.showMenuBarItems(MenuState(menusLive: true, paused: true,
                                                                                musicOn: true, soundOn: true))))
         XCTAssertTrue(try XCTUnwrap(rig.run.pause).paused)
+        // A1b: Game ▸ Preferences… while paused — the pause's `.Options` (paused) through `pausePrefsDialog`, with the
+        // run's last captured modifier, which comes back when the pause ends.
+        rig.run.menuChosen(.preferences)
+        XCTAssertEqual(dialogs(try rig.tick(FrontInput(capsLock: true)).out), [.preferences])
+        var pd = try XCTUnwrap(rig.run.pausePrefsDialog)
+        XCTAssertTrue(pd.paused)
+        XCTAssertEqual(pd.lastModifier, 0x3a)
+        _ = pd.idle(modifiers: 0)
+        pd.hit(2)
+        rig.run.pausePrefsDialog = pd
+        rig.run.dialogDone(.cancel)
+        try rig.tick(FrontInput(capsLock: true))
+        XCTAssertNil(rig.run.pausePrefsDialog)
+        XCTAssertTrue(try XCTUnwrap(rig.run.pause).paused)
+        XCTAssertEqual(rig.run.lastModifier, 0x3a, "taken back only when the pause ends")
 
         // Held 10 more polls (no iteration runs), then released: unpaused on the 5th up poll; `FadeAIFFMusic(1, 2)`.
         try rig.idle(10, input: FrontInput(capsLock: true))
@@ -242,6 +319,7 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertEqual(back.map { $0.t }, (0...24).map { unpause.t + UInt32(2 * $0) })
         XCTAssertEqual(back.map { $0.cue }, (0..<24).map { MusicCue.volume(V * $0 / 24) } + [.volume(V)])
         XCTAssertEqual(end.t, unpause.t + 48)
+        XCTAssertEqual(rig.run.lastModifier, 0)
         // The exit's tail: the menu bar hidden, `RedrawEntireScrollGrid` + `RedrawGameArea`, the cursor hidden — then
         // the same iteration finishes (status bar) and the run steps on.
         let tail = end.out

@@ -325,6 +325,12 @@ public final class LevelRun {
         pause = p
     }
 
+    /// A1b: the pause's Game ▸ Preferences… model while it is up (nil otherwise) — `GameFlow.prefsDialog` forwards here.
+    public var pausePrefsDialog: PrefsDialogModel? {
+        get { pause?.prefsDialog }
+        set { pause?.prefsDialog = newValue }
+    }
+
     /// The Apple events queued (A1a; the flow hands its queue in before each `tick` and takes it back after): every
     /// finished iteration drops one when prefs+0x08 "Allow background tasks" is set (`.GameLoop`'s
     /// `WaitNextEvent(0xffff, …, 0, 0)`, its event never handled, M l. 5277–5279); the pause loop dispatches one
@@ -691,8 +697,10 @@ public final class LevelRun {
                 return nil
             }
             guard p.isDone else { return nil }
-            // The pause's live side back: the music player, and the prefs ⌘M / ⌘F re-made current.
+            // The pause's live side back: the music player, the prefs ⌘M / ⌘F / Preferences… re-made current, the
+            // Options dialog's last captured modifier.
             music = p.live.music
+            lastModifier = p.lastModifier
             if p.live.live != livePrefs { applyPrefs(p.live.live, s) }
             pause = nil
             keysModal = nil
@@ -722,6 +730,8 @@ public final class LevelRun {
             var p = PauseRun(resources: resources, onMap: false, prefs: livePrefs, music: music,
                              levelClut: ColorLUT.screenClutId(levelFile.header),
                              scroll: PauseRun.Scroll(h: s.camera.scrollH, v: s.camera.scrollV), files: files)
+            p.keyCharacter = keyCharacter
+            p.lastModifier = lastModifier
             emit(&out, p.enter())
             pause = p
             keysModal = .pausePaint

@@ -111,15 +111,25 @@ public final class GameFlow {
     public internal(set) var state: State = .boot
     /// O1's model while DLOG 6900 is up (nil otherwise); the App feeds the dialog's events into it and answers with
     /// `dialogDone` once its `result` is set. P1: inside a level, ⌘P's model is the `LevelRun`'s.
+    /// A1b: the pause's Game ▸ Preferences… model (in a level or on the map) comes through here too.
     public var prefsDialog: PrefsDialogModel? {
-        get { levelRun?.prefsDialog ?? menuPrefsDialog }
+        get { levelRun?.prefsDialog ?? levelRun?.pausePrefsDialog ?? worldMap?.pausePrefsDialog ?? menuPrefsDialog }
         set {
-            if let run = levelRun, run.prefsDialog != nil { run.prefsDialog = newValue } else { menuPrefsDialog = newValue }
+            if let run = levelRun, run.prefsDialog != nil {
+                run.prefsDialog = newValue
+            } else if let run = levelRun, run.pausePrefsDialog != nil {
+                run.pausePrefsDialog = newValue
+            } else if let m = worldMap, m.pausePrefsDialog != nil {
+                m.pausePrefsDialog = newValue
+            } else {
+                menuPrefsDialog = newValue
+            }
         }
     }
     private var menuPrefsDialog: PrefsDialogModel?
-    /// The credits scroll while DLOG 600 is up.
-    public private(set) var credits: CreditsScroll?
+    /// The credits scroll while DLOG 600 is up — the main menu's, or (A1b) the pause's Apple ▸ About.
+    public var credits: CreditsScroll? { menuCredits ?? levelRun?.pause?.credits ?? worldMap?.pause?.credits }
+    private var menuCredits: CreditsScroll?
     /// The keyboard layout's character for a key code (`KeyTranslate`), for the Options dialog's key names (App).
     public var keyCharacter: @Sendable (Int16) -> String? = { _ in nil }
 
@@ -383,6 +393,55 @@ public final class GameFlow {
         appleEvents.post(.open(ref))
     }
 
+    // MARK: - The menu bar (A1b)
+
+    /// The menu bar takes picks now: the original handles menu events only in `.CheckEvent` — the main-menu loop's pass
+    /// (M l. 7441) and the pause loop's poll (M l. 3218). Elsewhere (the boot, a level or the map not paused, the stage
+    /// screens, the death screen, `.Quit`) the App disables every item, so the ⌘ keys reach the polled game keys.
+    public var menusLive: Bool {
+        if quitting { return false }
+        if let run = levelRun { return run.pause?.acceptsMenus ?? false }
+        if let m = worldMap { return m.pause?.acceptsMenus ?? false }
+        return state == .mainMenu && pendingMenu == nil
+    }
+
+    /// A menu item was chosen (`MenuSelect` / `MenuKey` → `.HandleMenuSelection`, M l. 28795ff): in a pause loop it
+    /// goes to the `LevelRun` / `WorldMapRun` (their pause's next poll); in the main menu it waits for the pass's
+    /// `.CheckEvent`. Anywhere `menusLive` is false it is dropped.
+    public func menuChosen(_ item: PauseRun.MenuItem) {
+        guard menusLive else { return }
+        if let run = levelRun { run.menuChosen(item); return }
+        if let m = worldMap { m.menuChosen(item); return }
+        pendingMenu = item
+    }
+
+    /// The main menu's pick waiting for the pass's `.CheckEvent`.
+    private var pendingMenu: PauseRun.MenuItem?
+
+    /// `.HandleMenuSelection` in the menu loop (not paused: Abort Game is disabled).
+    private func menuSelection(_ item: PauseRun.MenuItem, _ out: inout FrontOutput) {
+        switch item {
+        case .newGame:
+            // `*_DAT_1009fd5c = 1`, `.NewGame()` (M l. 28859–28860) — no button track, no `GammaFadeIn(6)` after.
+            defaultWorld = 1
+            run([{ f, _, _, out in f.newGame(&out) }])
+        case .restoreGame: continueGame(nil, &out)                    // `.ContinueGame(0)`
+        case .abortGame: break                                         // disabled when not paused
+        case .quit: quit()
+        case .about: creditsDialog()                                   // `.Credits`
+        case .preferences: options()
+        case .music, .soundEffects:
+            // `.ToggleMusic` / `.ToggleSound` (M l. 7105–7214): the record re-read, toggled, written back,
+            // `.MakeCurrPrefs` (not paused), `.UpdateMenus`.
+            var record = files.loadPrefs().map(FerazelPrefs.init(record:)) ?? FerazelPrefs()
+            let o = item == .music ? toggles.toggleMusic(&record, paused: false)
+                                   : toggles.toggleSound(&record, paused: false)
+            try? files.storePrefs(record.record())
+            out.append(o)
+            updateMenus(&out)
+        }
+    }
+
     /// `.DoQuitAppAE @ 10033f24` (M l. 31240–31245): the system's quit → `.Quit` (no confirm) when a `.CheckEvent`
     /// dispatches it — the menu pass's end or the pause loop's poll (M l. 3218: in a level the run ends `.quit`, on the
     /// map `quitEventDispatched`); `.GameLoop`'s background-tasks fetch drops it (`appleEvents`). The App cancels the
@@ -630,8 +689,14 @@ public final class GameFlow {
             if f.continueRequested { f.continueGame(f.lastReply, &out) }
         }
         items.append { f, _, _, out in
-            // `.CheckEvent`'s `AEProcessAppleEvent` (A1a): one event — the quit, or the Finder's open (`5106` set: no
-            // game loop runs at the menu).
+            // `.CheckEvent` takes one event: a menu pick (A1b — the OS queue's events come before the high-level ones),
+            // else `AEProcessAppleEvent` (A1a): the quit, or the Finder's open (`5106` set: no game loop runs at the
+            // menu).
+            if let item = f.pendingMenu {
+                f.pendingMenu = nil
+                f.menuSelection(item, &out)
+                return
+            }
             switch f.appleEvents.takeFirst() {
             case .quit?: f.quit()
             case .open(let ref)?: f.continueGame(ref, &out)
@@ -752,13 +817,13 @@ public final class GameFlow {
                 let size = ChapterScreenRun.frameSize(
                     f.resources.resource(type: "PICT", id: CreditsScroll.stripPicture, chain: .frontEnd)?.data)
                     ?? (144, 811)
-                f.credits = CreditsScroll(start: now, stripWidth: size.width, stripHeight: size.height)
+                f.menuCredits = CreditsScroll(start: now, stripWidth: size.width, stripHeight: size.height)
                 f.state = .credits
                 out.requests.append(.dialog(.credits))
                 f.wait = .dialog
             },
             { f, _, _, _ in
-                f.credits = nil
+                f.menuCredits = nil
                 f.state = .mainMenu
             },
         ])
