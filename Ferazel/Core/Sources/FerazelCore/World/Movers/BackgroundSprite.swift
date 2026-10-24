@@ -238,8 +238,9 @@ extension BackgroundSprite {
 
     /// The cannon arm of `.SetupBackgroundSprite` (l. 62057–62184) for p1 0 (`SetupFaces` refuses the others): aim
     /// `+0x46 = (type − 0x442)·4`; layer 1000; home `+0x14c` = x, `+0x150` = y; `+0x154` 0; p1 ≤ 0: `+0x14/+0x1c` from
-    /// `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 — // later: not built), `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed
-    /// `+0x164` = 9000 for p1 0 (`li r0,0x2328 @ 10071c3c`, M l. 62114), else 0x1fa4; hot rect
+    /// `+0xc/+0xa`, (p1 < 0: `+0x188 = 1` and `.SetupProgrammedPath`, M l. 62071 — // later: not built),
+    /// `+8 = +0xc`, `+6 = +0xa`, the aim again; launch speed `+0x164` = 9000 for p1 0 (`li r0,0x2328 @ 10071c3c`,
+    /// M l. 62114), else 0x1fa4; hot rect
     /// `SetRect(0x35, 0x38, 0x61, 0x5b)`; the hit callback `.HitBackgroundSprite` (`+0x5c`); `+0x16c` = the BG cell
     /// (x >> 5, y >> 5) is water (`.IsWaterTile` 200…209). The face is the Handle's.
     public static func setupCannon(_ s: inout SpriteSlot, record p: Placement, level L: LevelFile) {

@@ -37,7 +37,8 @@ public enum PlatformSprite {
     /// level-start frame draws **no** platform — the face is `.DoSetupPlatformSprite`'s, on the first Handle frame);
     /// position from the spawn copy (`+0xc ← +8`, `+0xa ← +6`; 24.8 from them); one-way `+0x185 = 1`; `+0x190 = 0`
     /// (dead field, not kept); gravity 0; sag `+0x13a = 0x50`; `+0xa6 = 1` unless type 0x6a4; `+0x188 = 1` (M l. 54530:
-    /// `keepRecord` — no `.UpdateSprites` record write-back); `+0x17c = 0`; empty hot rect. `+0x84`/`+0x86 = 0` have no reader (not kept).
+    /// `keepRecord` — no `.UpdateSprites` record write-back); `+0x17c = 0`; empty hot rect. `+0x84`/`+0x86 = 0` have
+    /// no reader (not kept).
     public static func setup(_ s: inout SpriteSlot) {
         s.handler = .platform
         s.keepRecord = true                                       // `+0x188 = 1` (M l. 54530)

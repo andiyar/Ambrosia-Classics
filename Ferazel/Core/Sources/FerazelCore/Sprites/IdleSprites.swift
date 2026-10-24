@@ -128,9 +128,13 @@ public struct IdleSprites: Equatable, Sendable {
                 guard e.saved.type != 0 else { continue }
                 let r = Self.testRect(x: e.saved.x, y: e.saved.y, face: e.faceRect, margins: e.saved.margins)
                 if r.intersects(window) {
-                    // `.IdleToActiveSprite(i)`: `+0xa8 = i` (M l. 4265, US); then `+0x58` (l. 4266–4268):
-                    // `.RopeDeIdleize` (W3).
+                    // `.IdleToActiveSprite(i)` (M l. 4253–4265): `+0x14`/`+0x1c` = the entry's x/y (i16) << 8 — the
+                    // saved fraction dropped (l. 4262–4263); `+0xe9 = 0` (l. 4264); `+0xa8 = i` (l. 4265, US); then
+                    // `+0x58` (l. 4266–4268): `.RopeDeIdleize` (W3).
                     var t = e.saved
+                    t.x256 = Int32(Int16(truncatingIfNeeded: t.x)) << 8
+                    t.y256 = Int32(Int16(truncatingIfNeeded: t.y)) << 8
+                    t.killCount = 0
                     t.idleEntry = Int16(i)
                     let id = active.insert(t)
                     e.activeID = id

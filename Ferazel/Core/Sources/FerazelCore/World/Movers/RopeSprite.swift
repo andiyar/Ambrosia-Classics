@@ -182,8 +182,8 @@ public enum RopeSprite {
     /// `.MakeRopeSegSprites` (M l. 71152–71193), from `setupSegArray` and `deIdleize`: with a block, for k < nSeg
     /// `MTNewSprite(600, x + k·seg, y, −1, −1, .SetupRopeSegSprite)` (`newRecord`), its `+0x1d4` = the rope; then the end
     /// sprites at (x − seg, y − seg/2) and (x + span, dy + y − seg/2), `+0x1d4` = the rope. `.SetupRopeSegSprite` (M l.
-    /// 71128–71137): `.InitSprite`, the segment Handle, HP 400, `+0x188 = 1` (M l. 71136, `keepRecord`). A full record table (700)
-    /// leaves the slot nil (the original then stores through NULL).
+    /// 71128–71137): `.InitSprite`, the segment Handle, HP 400, `+0x188 = 1` (M l. 71136, `keepRecord`). A full
+    /// record table (700) leaves the slot nil (the original then stores through NULL).
     static func makeSegments(_ active: inout ActiveList, ropeID: Int) {
         guard let s = active.record(id: ropeID), var b = s.rope else { return }
         let seg = Int(b.seg)

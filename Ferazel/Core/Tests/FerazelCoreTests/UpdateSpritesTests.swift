@@ -87,20 +87,24 @@ final class UpdateSpritesTests: XCTestCase {
         XCTAssertEqual(w.records.count, 0x200)
         var lights = LightTable()
         let t: Int16 = 1400
-        for i in [7, 8, 9, 10, 0x1ff] { setRecord(w, i) }
+        for i in [7, 8, 9, 10, 11, 0x1ff] { setRecord(w, i) }
         add(w, type: t, x: 300, y: 120, record: 7)
         add(w, type: t, x: 300, y: 120, record: 8) { $0.keepRecord = true }
         add(w, type: t, x: 300, y: 120, record: 9) { $0.noWriteBack189 = true }
         add(w, type: t, x: 300, y: 120, record: 10) { $0.noWriteBack18a = true }
         add(w, type: t, x: 300, y: 120, record: 0x1ff)
+        // A rope: `.SetupRopeSprite` sets `+0x188` (M l. 71107) — its record is never rewritten.
+        var rope = SpriteSlot(type: 3020, x: 300, y: 120, recordIndex: 11)
+        RopeSprite.setup(&rope, record: w.records[11])
+        w.active.insert(rope)
         w.updateSprites(lights: &lights)
         let r = w.records[7]
         XCTAssertEqual([r.x, r.y, r.type], [300, 120, t])
         XCTAssertEqual([Int16(r.flag), r.p1, Int16(r.index)], [1, 0x55, 7], "the other bytes kept")
-        for i in [8, 9, 10, 0x1ff] {
+        for i in [8, 9, 10, 11, 0x1ff] {
             XCTAssertEqual(w.records[i], placement(i), "record \(i) unchanged")
         }
-        XCTAssertEqual(w.active.sprites.count, 5, "no kill request: all listed")
+        XCTAssertEqual(w.active.sprites.count, 6, "no kill request: all listed")
     }
 
     func testKilledForGoodClearsRecord() throws {
@@ -153,6 +157,28 @@ final class UpdateSpritesTests: XCTestCase {
         XCTAssertTrue(on.activated.contains(5))
         let live = try XCTUnwrap(w.idle.entries[5]?.activeID)
         XCTAssertEqual(w.active.sprite(id: live)?.idleEntry, 5)
+        // Idled with `+0xe9` 2 and a sub-pixel x: `.IdleToActiveSprite` stores `+0xe9 = 0` (M l. 4264) and
+        // `+0x14 = x << 8` (l. 4262), so it comes back alive and whole-pixel, and stays listed.
+        w.active.update(id: live) { $0.killCount = 2; $0.x256 = Int32($0.x) << 8 + 0x80 }
+        w.idle.handle(h: 100_000, v: 100_000, playerHotRect: nil, active: &w.active, faceRect: { _ in .noFace })
+        w.updateSprites(lights: &lights)
+        XCTAssertNil(w.active.sprite(id: live), "idled: killed")
+        w.idle.handle(h: 0, v: 0, playerHotRect: nil, active: &w.active, faceRect: { _ in .noFace })
+        let back = try XCTUnwrap(w.idle.entries[5]?.activeID)
+        w.updateSprites(lights: &lights)
+        let b5 = try XCTUnwrap(w.active.sprite(id: back), "not unlinked")
+        XCTAssertEqual(b5.killCount, 0)
+        XCTAssertEqual(b5.x256, Int32(b5.x) << 8)
+        // The free's bound (raw `10009a38..10009a44`: 0 ≤ `+0xa8` ≤ 0x1ff): entry 0x1ff freed, 0x200 ignored.
+        while w.idle.add(SpriteSlot(type: 1400, x: 0, y: 0), faceRect: .noFace) != nil {}
+        setRecord(w, 7)
+        add(w, type: 1400, record: 7) { $0.killCount = 4; $0.idleEntry = 0x1ff }
+        add(w, type: 1400, record: 7) { $0.killCount = 4; $0.idleEntry = 0x200 }
+        add(w, type: 1400, record: 7) { $0.killCount = 4; $0.idleEntry = -1 }
+        let used = w.idle.entries.filter { $0 != nil }.count
+        w.updateSprites(lights: &lights)
+        XCTAssertNil(w.idle.entries[0x1ff])
+        XCTAssertEqual(w.idle.entries.filter { $0 != nil }.count, used - 1)
     }
 
     func testXichronTypeRestoredAndIdledRecordKilled() throws {
