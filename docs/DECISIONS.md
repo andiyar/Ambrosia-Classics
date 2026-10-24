@@ -1301,6 +1301,24 @@ defaults, all four — (1) saved games in the data fork; (2) the macOS save/open
 window, hidden in full screen; (4) keep the hidden `-FerazelLevel N` switch for now ("probably" — he may revisit). The
 plan already builds exactly these; no task changes. Q1 (the leftover loop-1 worktree) was done by the same session.
 
+**As built (loop run 14, 2026-10-24) — wave 3.5 CLOSED (S1, P1):** S1 ⚑ (8f37a71 + fix 18ecb64 + tests bde40b6) the
+resumable frame (`FrameOps.suspension`, `FerazelSession.resume(_:)`, the special pass continues from the next contact)
+and the save point: the 0x429 landing hold (fires on the 15th landing, re-fires on the 65th after a cancel),
+`.SavePointSave` / `.SaveSG` (reuse, prompt, delete, name, prefs, write; cancel restores the name; a write error keeps the
+original's half-done state), the white success flash (420/421, 3 + 46 fade steps), statue faces. P1 (9daa907 + fixes
+57a76c2, fb0d565) `.CheckGameLoopKeys` (⌘Q/⌘W/⌘P/Esc confirms, a second suspension point before `.UpdateSprites`) and
+`.Pause` (Caps Lock counter 10/5, snd 198, banner PICT 4921, music out/in, menus, from the map too); new draw op
+`drawBlackLines` for graphics mode 3. **Rulings (follow the binary):** the stored save prefs become the live prefs
+(`.UpdateSGString` runs `.MakeCurrPrefs`), and a save or ⌘P re-applies them to the running level; `.PaintFrameWrap(1,x)`
+in the confirm and pause paths is a whole frame pass (sprites, collisions, save point), not a redraw; pause exit restarts
+the music before fading it in; the pause banner has no offset; `DrawBlackLines` covers rows 9–389 (191 rows) and also
+runs in the save point's `RedrawGameArea`. **Plan gap ruled by the seat:** the `GameFlow` side of saving had no task —
+S1 took it (`GameFlow` carries the file seam and the three save flags into each level and reads them back), because a
+save point inside a real game would otherwise wait forever. **Stand-in ◇ (A1a removes it):** the current app answers any
+suspension "cancelled" at once, so a save point does nothing in today's app instead of crashing. **Named follow-up EC:**
+every save-error report carries the code (dump raw `1004851c`); SV2's test says three carry none — moved by name next
+run. Ferazel/Core 323 → 335/0, census 1,108/0, Ferazel builds, HectorKit 35a85ba untouched (floor 361).
+
 ## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
 
 **Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their

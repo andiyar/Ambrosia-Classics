@@ -1182,6 +1182,23 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   `fd54` set).
 - **Gate:** G2 = 330, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: resumable frame (FrameSuspension) and the save point — hold counter, SavePointSave/SaveSG flow, success flash, statue faces; 7 tests`.
+- ⚑ **As executed (S1 ⚑, loop run 14, 2026-10-24; 8f37a71 + review fixes 18ecb64 + tests bde40b6):** G2 330 (no
+  existing test or golden moved). Two Opus legs MERGEABLE (A: dump fidelity, 9 mutations caught, 3 survivors; B: the
+  resumable pass traced at 1–20 stacked contacts — never skipped or doubled; 6 survivors) → fix round 18ecb64 → Opus
+  re-review MERGEABLE, 2 survivors → tests-only bde40b6. **Dump beat plan:** `.UpdateSGString` re-reads the stored prefs
+  and runs `.MakeCurrPrefs` (M l. 7155ff) — the stored record becomes the live prefs; the save-error code is passed to
+  all four reports (raw `1004851c`); the save point's Box Handle runs the shared Box tail after the re-face (M l. 60191);
+  the target file is deleted inside the write, after the prefs write; a failed delete is ignored (FSpDelete unchecked).
+  **Plan gap closed here:** no task owned the `GameFlow` side of the save — `GameFlow` now builds `LevelRun` with the
+  file seam + the three save flags (`fe00`/`fd54`/`fd18`), forwards the save panel reply and the error-report answer to
+  the running level (never to Continue's own file prompt), and reads the flags and the live prefs back at level end
+  (`GameFlow.swift`, `NewGame.swift`, `GameFlowGameTests.swift` added to S1's files). Seam: `FrameSuspension` has
+  `.savePoint` plus unreachable `conversation`/`sign` cases (`// later: C1`). A level without the file seam is a
+  precondition failure. **◇ App stand-in (goes in A1a):** `FerazelController` resumes any suspension `.cancelled` at once
+  (save points do nothing in today's app; no crash). **Named follow-up EC (minor):** `SavedGameFile.writeErrorReport`
+  still returns no code for three of the four reports and SV2's `SavedFileTests` (~l. 165) asserts that — the dump says
+  every report carries the code; `.SaveSG` already sends it. Moving that expectation is its own task (Invariant 10).
+  Bank: `save-continue.md` §2.1, §3.1, §9.2.
 
 #### P1 — minor — `.CheckGameLoopKeys` and `.Pause` (→ 335)
 - **Files:** `Sources/FerazelCore/Front/{Pause,LevelRun,WorldMapRun}.swift` (WorldMapRun: M1's `// later: P1` stub
@@ -1232,6 +1249,35 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   (during the first 41 iterations' async fade-in Esc does nothing).
 - **Gate:** G2 = 335, G6, G7(+b), G8, G10; wave 3.5 end: G3, G5.
 - **Commit:** `FerazelCore: CheckGameLoopKeys (⌘Q/⌘W/⌘P/Esc) and Pause (Caps Lock, banner, music, menus); 5 tests`.
+- ⚑ **As executed (P1, loop run 14, 2026-10-24; 9daa907 + review fixes 57a76c2, fb0d565):** G2 335 (no existing test or
+  golden moved). One Opus leg MERGEABLE with fixes (graphics-mode-3 `DrawBlackLines` was a no-op; a save's prefs did not
+  re-apply to the run; 5 mutation survivors) → fix 57a76c2 → Opus re-review NOT MERGEABLE (rows one short; the save
+  point's `RedrawGameArea` missing them) → fix fb0d565 (seat read the code diff). **Dump beat plan:** `.PaintFrameWrap(1,x)`
+  in the ⌘Q/⌘W/Esc OK paths, Esc Cancel and `.Pause` is a whole frame pass — sprite logic, collisions, the save-point
+  check (M l. 9452–9456) — built as a real nested pass; Pause exit restarts the music first, then `FadeAIFFMusic(1,2)`
+  (M l. 3233–3257); the banner offset is (0,0) (`.MTInit` zeroes it, M l. 30157–30159); Abort Game while paused on the map
+  sets the loop-end flag (the game ends after the map returns); `DrawBlackLines` (raw `1001fa58..1001fc84`) blackens rows
+  9, 11 … **389** (191 rows — the counter is tested before its decrement, raw `1001fc30`/`1001fc44`), x 16–623, and its
+  callers are the confirms, ⌘Q/⌘W/Esc OK + Cancel, after Options, pause exit and `RedrawGameArea` (M l. 37849; called only
+  by `.Pause` and `.SavePointSave`, M l. 6491); stage-complete sounds read the live prefs (M l. 40620). New draw op
+  `drawBlackLines` (FrameRenderer renders it; ScreenRenderer refuses it — the map never draws it). **Outside the Files
+  list:** `GameFlow.swift` (`prefsDialog` forwards to the running level's model; `lastModifier` internal so ⌘P in a level
+  uses the flow's modifier state). `FerazelSession.prefs` is `public var`; a save's `.MakeCurrPrefs` and ⌘P re-apply to
+  the run and the session. **For A1b:** `menuChosen` exists on `LevelRun` and `WorldMapRun` but nothing routes menu picks
+  yet; Quit / Preferences / About while paused are A1b's. Untested (accepted): a save point firing inside the nested pass.
+  Bank: `engine.md` §7.2, `save-continue.md` §6.
+
+#### EC — minor — every save-error report carries the code (added by loop run 14; ladder unchanged)
+- **Files:** `Sources/FerazelCore/Saves/SavedGameFile.swift` (`writeErrorReport`), `Tests/FerazelCoreTests/SavedFileTests.swift`
+  (the expectation ~l. 165 that three reports carry no code), any caller that relied on the empty code (grep); bank
+  `save-continue.md` (a BC).
+- **Contract:** the dump puts the error code into the report's second argument once (raw `1004851c`) and nothing
+  overwrites it before any of the four error-report calls; the report routine always turns it into the alert's text. So
+  all four reports carry the code. `.SaveSG` (S1) already sends it; the shared mapping does not. Re-read the four call
+  sites and the report routine before changing anything; the dump wins.
+- **Tests:** none new — `SavedFileTests`' expectation moves (named here, Invariant 10) and gains the three codes.
+- **Gate:** G2 unchanged total, 0 failed; G6, G7, G10.
+- **Commit:** `FerazelCore: every save-error report carries the code (EC; dump raw 1004851c); SV2 expectation moved by name`.
 
 ### Wave 3.6 — talk
 
@@ -1452,7 +1498,7 @@ The canonical order is the execution order (each task starts from the previous t
 | 3.3 | RX → M1 ⚑ → M2 | RX one; M1 two; M2 one | run 4: [RX M1 M2] (RX added by run 11) |
 | 3.4 | F1a → D1 → F1b ⚑ | F1b two; F1a, D1 one | run 5: [F1a D1 F1b] |
 | 3.5 | S1 ⚑ → P1 | S1 two; P1 one | run 6: [S1 P1] |
-| 3.6 | C1 ⚑ → C2 | C1 two; C2 one | run 7: [C1 C2] |
+| 3.6 | C1 ⚑ → C2 (+ EC, loop run 14) | C1 two; C2, EC one | run 7: [C1 C2 EC] — EC: every save-error report carries the code (S1 as-executed; moves SV2's expectation, ladder unchanged) |
 | 3.7 | A1a ⚑ → A1b ⚑ → GP | two each; GP one | run 8: [A1a A1b]; GP opens run 9 (D37) |
 | 3.8 | A2 (+ FABLE-GRADE phase review + fixes) | one + Fable | run 9: [GP] + phase end |
 
