@@ -64,4 +64,22 @@ final class CoreTextRasterizer: TextRasterizer {
         // Row 0 of `coverage` is the top row (CGContext memory is top-down): pen-relative top = −above.
         return (-pad, -above, w, h, coverage.map { $0 >= 0x80 })
     }
+
+    /// QuickDraw `CharWidth(byte)` (C2): the Mac Roman character's CoreText advance, rounded to whole pixels
+    /// [MED: the bitmap font's integer widths are not on this Mac].
+    func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int {
+        guard let s = String(bytes: [byte], encoding: .macOSRoman), !s.isEmpty else { return 0 }
+        let attributes: [NSAttributedString.Key: Any] = [
+            NSAttributedString.Key(kCTFontAttributeName as String): ctFont(font, size: size, face: face),
+        ]
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: s, attributes: attributes))
+        return Int(CTLineGetTypographicBounds(line, nil, nil, nil).rounded())
+    }
+
+    /// QuickDraw `GetFontInfo` (C2): CoreText's ascent, descent and leading, each rounded to whole pixels [MED].
+    func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) {
+        let f = ctFont(font, size: size, face: face)
+        return (Int(CTFontGetAscent(f).rounded()), Int(CTFontGetDescent(f).rounded()),
+                Int(CTFontGetLeading(f).rounded()))
+    }
 }

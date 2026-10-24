@@ -18,6 +18,12 @@ final class StatusBarTests: XCTestCase {
             let bits = (0..<7).flatMap { _ in (0..<w).map { $0 % 6 != 5 } }
             return (0, -7, w, 7, bits)
         }
+
+        /// The fixed 6-px advance of every character (C2).
+        func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int { 6 }
+
+        /// The 7-px box over the baseline, 2 below, no leading: a 9-px TextEdit line (C2).
+        func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) { (7, 2, 0) }
     }
 
     func testStatusBarStartValues() throws {

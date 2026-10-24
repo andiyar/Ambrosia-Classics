@@ -356,6 +356,16 @@ origin `*0x100a0bfc` = (v 0x2e, h 0x7e) = **(46, 126) on screen** (`10078e80..8c
 | text / responses | x = 0x9a (154), first baseline y = 0x1d + 0xe = 43, wrap width 0xd6 = 214 px, line step 0x12 = 18 | `.DrawConvTextString` |
 | erase rects (copied back from the frame GWorld) | text (154, 29)–(372, 221); name (19, 260)–(199, 300) | `.EraseConvNameAndText` |
 
+> ⚑ implementer note (Phase 3 C2, loop run 15, 2026-10-24) (BC20, BC30): PICT 4000 is a **32-bit** picture with
+> 18,627 pure-white (FF, FF, FF) pixels; mode 0x24 tests the *converted* GWorld pixel, so under clut 202 with error
+> diffusion 4 near-white greys (E1…E8) become white too and 18,631 pixels show the view [MED: the replica converts once
+> to the screen CLUT; the original's boot GWorld has a nil ctab (BC20), i.e. the default 8-bit table, then a by-colour
+> copy]. Portraits 4001 and 4020 (96×96, 32-bit) hold no pure white. The response rows' TextEdit height is
+> `(nLines + 1) · (ascent + descent + leading)` of the port font (Times 18 — `.DrawConvNameString` set it on the screen
+> port just before; `TENew` with destRect (0, 0, 214, 400); `+0x5e` nLines, `+0x18` lineHeight, M l. 31656ff). Exit:
+> `_WrapCopyToScreen(*_DAT_100a000c, scroll, 0x10, 8, prefs+9 == 0, prefs+2 == 3, 0)` (M l. 66019 / 66542) — the
+> same arguments as `.PaintFrameWrap`'s copy (M l. 9442), closing NOT RESOLVED 4's "redraw arguments" half.
+
 ### 6.2 Text typing  [HIGH]
 `.DrawConvTextString` appends a space, word-wraps at spaces when the running width exceeds 214 px,
 and draws each wrapped chunk with `.DrawStringCharByChar` (spoken text, flag 1) or
