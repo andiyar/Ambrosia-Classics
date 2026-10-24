@@ -1319,6 +1319,20 @@ suspension "cancelled" at once, so a save point does nothing in today's app inst
 every save-error report carries the code (dump raw `1004851c`); SV2's test says three carry none — moved by name next
 run. Ferazel/Core 323 → 335/0, census 1,108/0, Ferazel builds, HectorKit 35a85ba untouched (floor 361).
 
+**As built (loop run 15, 2026-10-24) — wave 3.6 CLOSED (C1, C2, EC):** EC (353f76a) every save-error report carries the
+code. C1 ⚑ (cfdfc43 + fix 837619d + tests 888be68) conversations and signs: the NPC arm (cooldown 150) and sign arm
+(cooldown 90, p4 auto-read, UP re-read, 2902/2907/graves fall-through), `ConversationRun` (the Mcnv interpreter as a tick
+machine: typing 2 ticks/char, trail, menu, conditions, actions 0–10) run by `LevelRun` inside the suspended frame. C2
+(42df853 + fix 7c31c36) `ConversationRenderer`: frame PICT 4000 see-through, portraits, Times 18 text, trail greys,
+response rows; `TextRasterizer` widths/metrics. **Rulings (follow the binary):** signs include type 2902; Escape stops the
+reply text before every chunk; input after a talk is read live (the outcome carries the polled keys + Caps Lock); the
+conversation GWorld is built at boot on the Mac default 8-bit clut, so PICT 4000 and portraits are dithered through it
+and then copied by colour (36,590 of 119,196 frame pixels differ from a one-step conversion). **Seat rulings:** (1) Core
+owns the 214-px wrap through a measures seam (`ConversationText`) because a line break changes the typing timeline —
+A1a sets the real measures; (2) plan gap — three test drivers that walk onto L1's first sign now answer the talk at once
+(no expected value or golden moved). Ferazel/Core 335 → 345/0, census 1,108/0, Ferazel builds, HectorKit 35a85ba
+untouched (floor 361).
+
 ## D36 — A game controller acts as Bubble Trouble X's original keys (2026-10-22)
 
 **Decided (Ben, 2026-10-22 — his kids play on a Nintendo Switch and find BTX's keyboard hard):** a controller (their

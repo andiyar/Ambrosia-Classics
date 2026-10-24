@@ -1278,6 +1278,12 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
 - **Tests:** none new — `SavedFileTests`' expectation moves (named here, Invariant 10) and gains the three codes.
 - **Gate:** G2 unchanged total, 0 failed; G6, G7, G10.
 - **Commit:** `FerazelCore: every save-error report carries the code (EC; dump raw 1004851c); SV2 expectation moved by name`.
+- ⚑ **As executed (EC, loop run 15, 2026-10-24; 353f76a):** G2 335 unchanged; only `SavedFileTests`' named expectation
+  moved (three reports gain −34, −33, −44). One Opus leg MERGEABLE (reverting the code fails the test 3×). Dump confirmed:
+  code loaded once at raw `1004851c`, reports at `10048548` disk full, `10048558` directory full, `10048568` locked,
+  `1004857c` general; the report routine `1003d2a0` always formats it (`1003d2dc` → alert `1003d2f4`). No runtime
+  change today (`SaveGame.swift:108`, the only caller, already passed the code). BC32 (save-continue.md). Follow-up
+  (minor): the return type still says the code is optional.
 
 ### Wave 3.6 — talk
 
@@ -1320,6 +1326,25 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   with an action → the action runs, then the conversation ends).
 - **Gate:** G2 = 342, G6, G7(+b), G8, G10.
 - **Commit:** `FerazelCore: conversations (Mcnv interpreter, NPC arm, cooldown 150) and signs (STR# 500, cooldown 90) in the suspended frame; 7 tests`.
+- ⚑ **As executed (C1 ⚑, loop run 15, 2026-10-24; cfdfc43 + review fixes 837619d + tests 888be68):** G2 342 (no
+  expectation or golden moved). **Plan gap (seat ruling):** the first sign on L1 (rec 1) now suspends, so three test
+  DRIVERS had to answer it — `Phase2GoldenTests` swim + scripted-play answer a talk at once and merge the rest of the
+  frame (as the app stand-in does), `BoxRopeTests.testSignStandableOnlyWith15c` resumes before its checks; every golden
+  byte-identical. Two Opus legs MERGEABLE (A: interpreter vs dump, 14 mutations, 9 survivors; B: arms + seam, 7
+  mutations, 1 survivor; the nested `.PaintFrameWrap` pass traced and probed — a sign read inside it suspends and
+  resumes correctly) → fix 837619d → Opus re-review MERGEABLE (2 survivors) → tests 888be68 (both killed). **Dump beat
+  plan/bank:** signs include 2902 (raw `10056fe0..10056ff4`; bank §1.1 said 2903); the reply-text routine checks the
+  abort flag before every chunk (M l. 65816–65820 — after Esc at "press any key" the header draws, rows stay blank, it
+  still waits); input is read LIVE (`_IsPressed` → `GetKeys`), so `FrameSuspension.Outcome.conversation`/`.sign` carry
+  the keys + Caps Lock polled at the talk's end and the rest of the frame uses them. **Deviation (accepted):** Core does
+  the 214-px wrap through a measures seam `ConversationText {charWidth, wrappedHeight}` — a wrap removes one 2-tick
+  step per line break, so timing needs widths; `LevelRun.conversationText` defaults to `.unmeasured` (zero widths) —
+  **A1a must set it** (`TextLayout.conversationText(CoreTextRasterizer())`). **Outside the Files list:**
+  `FrameSuspension.swift`, `FerazelSession.swift` (resume arm, STR# 500 load now `try`, face bounds), `SpriteWorld.swift`
+  (sign texts), the ◇ stand-in in `Ferazel/App/FerazelController.swift` (answers a talk at once with the frame's keys;
+  cooldown re-arms, no loop), the three drivers. BC33. **Untested/accepted:** the `.savePoint(saved:)` outcome carries
+  no polled input (same live-keys argument applies after the save dialog — S1's, minor); an Esc released inside the
+  sub-ms gap between the two Esc checks (M l. 65863–65870) — unobservable at one input sample per tick.
 
 #### C2 — minor — Conversation drawing and text layout (→ 345)
 - **Files:** `Sources/FerazelRender/Screens/ConversationRenderer.swift`, `Sources/FerazelRender/Frame/{TextRasterizer,StatusBar}.swift`
@@ -1339,6 +1364,24 @@ one fixed id and no `unload` is needed. No HK task, no HK D-number, HK floor sta
   (`BoxRasterizer`: a 60-byte line breaks after the last space before 214 px; lines at baselines 89, 107 on screen) ·
   `testSignFrameGolden` (L1 sign rec 1 fully typed over a level-1 frame, `BoxRasterizer`, FNV-1a, self-derived).
 - **Gate:** G2 = 345, G5 (touches the App), G6, G7(+b), G8, G10; wave 3.6 end: G3. **Commit:** `FerazelRender: conversation frame (transparent copy), portraits, Times 18 layout and wrap, trail colours; TextRasterizer widths/metrics; 3 tests`.
+
+- ⚑ **As executed (C2, loop run 15, 2026-10-24; 42df853 + review fixes 7c31c36):** G2 345; G5 BUILD SUCCEEDED. One
+  Opus leg MERGEABLE with an Important (single conversion to the level clut is not the original's) → fix 7c31c36 →
+  Opus re-review MERGEABLE (6 mutations, 1 harmless survivor). **Dump beat plan:** `.InitConversation` runs once at boot
+  from the tile setup (M l. 8343 → 927), before any level clut exists, so the 8-bit 387×308 conversation GWorld
+  (M l. 65548) has a nil ctab = the Mac default 8-bit clut (identical to Ferazel's own clut 801 "System CLUT"; a local
+  copy of the standard table, no DeimosCore dependency); PICT 4000 and the conversation-start portrait are dithered into
+  it, then copied mode 0x24 by colour into the level clut; the conversation start also redraws the portrait straight to
+  the screen (M l. 66478–66480); the sign's 4020 goes through the GWorld only (M l. 65958). Result: exactly the 18,627
+  pure-white pixels show the view through; the end restores the view with the normal frame copy's arguments;
+  `GetCTable(4000)` is loaded and never read. Wrap: Render reuses Core's wrap (no second wrap). Baseline 43 + origin
+  46 = 89. Golden `testSignFrameGolden` **`c8e41941c1e4d6da`** (self-derived; the first cut's `45ccc55d61af45dc` was
+  pre-fix). Files: as listed; `StatusBar.swift`/`FrameRenderer` unchanged. BC34. **For A1a:** route conversation draws
+  to `ConversationRenderer(frame:text:)`. **Untested/accepted (LOW):** `CoreTextRasterizer`'s new widths/line heights
+  (it already thresholds at ≥ 0x80); the GWorld conversion uses Ferazel's `ColorSearch` where Deimos models QuickDraw's
+  inverse table (`DeimosCore/QuickDrawColor.swift:37`) — reviewer confidence 0.6 that it matters; PICT 4000 is read
+  through the level's resource chain each time (the original drew it once at boot — differs only if a level file
+  carries its own 4000, unchecked).
 
 ### Wave 3.7 — the app
 
@@ -1731,6 +1774,12 @@ is **step `*_DAT_100a0c18` ≠ 0**; only `.FindPlayerNodeLoc` tests `cur ≠ wal
 "Error showing world map" (M l. 67493–67496). The node sprite's `+0xc` byte has no reader; `+0xd` is written only for
 type 100 (the array is static, so 0 elsewhere). `.DrawNewLink`'s end draws the sprites twice around the background
 restore (M l. 67263–67270) (M1).
+BC32 save-continue — every save-error report carries the code (raw `1004851c`, reports `10048548`/`58`/`68`/`7c`) (EC).
+BC33 conversations-mcnv — signs include 2902 (raw `10056fe0..10056ff4`); the reply text checks abort before each chunk
+(M l. 65816–65820); input after a talk is live (`_IsPressed` → `GetKeys`) (C1).
+BC34 conversations-mcnv §6 — the conversation GWorld is built at boot on the default 8-bit clut (nil ctab, M l. 8343 →
+927, 65548); PICT 4000 + the start portrait are dithered into it, then copied mode 0x24 by colour (C2; BC20's [MED]
+settled).
 
 ---
 
