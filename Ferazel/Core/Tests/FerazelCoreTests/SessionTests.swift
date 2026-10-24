@@ -320,9 +320,11 @@ final class SessionTests: XCTestCase {
         // `.HandleSprites` runs between the copy and the erase: the active potion's light twinkle (`BonusHandle`).
         // E1a: `.WrapDrawWaterEffects` before the sprites every iteration; `.DrawParticles` before and
         // `.EraseParticles` after the copy on drawn iterations (l. 9206, 9433, 9449).
+        // ◈ BN: three light changes in list order — the sphere 0x537 (slot 22), the torch (slot 0, re-faced to the
+        // face it has, Effects 1) and the potion (slot 24); was the potion's alone.
         XCTAssertEqual(kinds(first.draws), ["clut", "picture", "entire", "grid", "entire", "status",
                                             "grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
-                                            "lightFace", "erase", "status"])
+                                            "lightFace", "lightFace", "lightFace", "erase", "status"])
         XCTAssertEqual(calls(first.draws)[0], .setScreenClut(id: 202))
         XCTAssertEqual(calls(first.draws)[1], .drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0))
         XCTAssertEqual(calls(first.draws)[2], .redrawEntireScrollGrid(h: 0, v: 0))
@@ -335,7 +337,9 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(calls(first.draws)[10], .drawParticles([]))
         XCTAssertEqual(calls(first.draws)[11], .copyToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true))
         XCTAssertEqual(calls(first.draws)[12], .eraseParticles)
-        XCTAssertEqual(calls(first.draws)[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
+        XCTAssertEqual(calls(first.draws)[13], .changeLightFace(slot: 22, pict: 0x32b, width: 0x48, height: 0x48))
+        XCTAssertEqual(calls(first.draws)[14], .changeLightFace(slot: 0, pict: 0x321, width: 0xc0, height: 0xc0))
+        XCTAssertEqual(calls(first.draws)[15], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
         // HU: the iteration's `.UpdateStatusBar(1, 0, 0)` (M l. 5280) — `partial`; G+8 is 0x1e after the player's
         // out-of-water row (`PlayerLiquids`); health, breath and magic as cached: neither bar part runs (G+8 alone
         // does not redraw, M l. 4423–4424).
@@ -344,7 +348,7 @@ final class SessionTests: XCTestCase {
         iteration.call.partial = true
         iteration.call.healthBar = false
         iteration.call.magicBar = false
-        XCTAssertEqual(calls(first.draws)[15], .statusBar(iteration))
+        XCTAssertEqual(calls(first.draws)[17], .statusBar(iteration))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])
         XCTAssertTrue(first.drawn)
@@ -355,7 +359,7 @@ final class SessionTests: XCTestCase {
         guard case .wrapDrawSprites(let drawn1) = calls(first.draws)[9] else { return XCTFail("sprites") }
         XCTAssertEqual(drawn1.count, 3)
         XCTAssertFalse(drawn1.contains { $0.face.pict == 1003 })
-        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = calls(first.draws)[14] else { return XCTFail("erase") }
+        guard case .wrapEraseSprites(let sprites1, let eh, let ev) = calls(first.draws)[16] else { return XCTFail("erase") }
         XCTAssertEqual([eh, ev], [0, 0])
         XCTAssertEqual(sprites1, session.active.sprites)
         let player = try XCTUnwrap(session.active.sprite(id: session.playerID))
@@ -366,7 +370,7 @@ final class SessionTests: XCTestCase {
         // Iteration 2: no level-start ops; the player is drawn.
         let second = session.step(keys: KeyState())
         XCTAssertEqual(kinds(second.draws), ["grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
-                                             "lightFace", "erase", "status"])
+                                             "lightFace", "lightFace", "lightFace", "erase", "status"])       // ◈ BN: sphere, torch, potion
         XCTAssertTrue(second.music.isEmpty && second.requests.isEmpty)
         guard case .wrapDrawSprites(let drawn2) = calls(second.draws)[3] else { return XCTFail("sprites") }
         XCTAssertTrue(drawn2.contains { $0.face == FaceRef(pict: 1003, index: 3, set: .encoded) && $0.x == 83 })
@@ -378,11 +382,12 @@ final class SessionTests: XCTestCase {
         let s = try FerazelSession(resources: r, prefs: slow, level: 1)
         let steps = (0..<4).map { _ in s.step(keys: KeyState()) }
         XCTAssertEqual(steps.map(\.drawn), [false, true, false, true])
+        // ◈ BN: three light changes per iteration (sphere, torch, potion; was the potion's alone).
         XCTAssertEqual(kinds(steps[0].draws), ["clut", "picture", "entire", "grid", "entire", "status",
-                                               "grid", "lights", "water", "sprites", "lightFace", "erase", "status"])
+                                               "grid", "lights", "water", "sprites", "lightFace", "lightFace", "lightFace", "erase", "status"])
         XCTAssertEqual(kinds(steps[1].draws), ["grid", "lights", "water", "sprites", "particles", "copy", "eraseP",
-                                               "lightFace", "erase", "status"])
-        XCTAssertEqual(kinds(steps[2].draws), ["grid", "lights", "water", "sprites", "lightFace", "erase", "status"])
+                                               "lightFace", "lightFace", "lightFace", "erase", "status"])
+        XCTAssertEqual(kinds(steps[2].draws), ["grid", "lights", "water", "sprites", "lightFace", "lightFace", "lightFace", "erase", "status"])
 
         // Effects 3 (Reduced) drops `.DrawLightsOntoTiles`; Low Detail / plain copy reach the copy's arguments.
         var reduced = FerazelPrefs()
@@ -392,7 +397,10 @@ final class SessionTests: XCTestCase {
         let e = try FerazelSession(resources: r, prefs: reduced, level: 1)
         _ = e.step(keys: KeyState())
         let e2 = e.step(keys: KeyState())
-        XCTAssertEqual(kinds(e2.draws), ["grid", "water", "sprites", "particles", "copy", "eraseP", "erase", "status"])
+        // ◈ BN: the sphere's light change is not gated by Effects (M l. 53296: a type < 2000 takes its arm at any
+        // Effects); the torch's and the potion's are (was no `lightFace`).
+        XCTAssertEqual(kinds(e2.draws), ["grid", "water", "sprites", "particles", "copy", "eraseP", "lightFace", "erase",
+                                         "status"])
         XCTAssertEqual(calls(e2.draws)[4], .copyToScreen(h: 0, v: 0, graphicsMode: 2, backdrop: false))
 
         // The keys drive the player; his Handle's look-ahead row and `.PlayerScroll` move the focus (P5; the arrow
@@ -516,12 +524,20 @@ final class SessionTests: XCTestCase {
         // In the session: one op per step for slot 24 while the potion is active; none at Effects 3.
         let ops = (0..<8).map { _ in session.step(keys: KeyState()).draws.filter {
             if case .changeLightFace = $0 { return true } else { return false } } }
-        XCTAssertEqual(ops.map(\.count), [Int](repeating: 1, count: 8))
-        XCTAssertEqual(ops[3], [.changeLightFace(slot: 24, pict: 0x32c, width: 0x48, height: 0x48)])   // phase 10, k 2
+        // ◈ BN: the sphere (slot 22) and torch (slot 0) Handles' changes join the potion's, in list order (was one op
+        // per step); the torch's second call (0x322 at `+0x14c` 3 or 7) makes iteration 6's fourth.
+        XCTAssertEqual(ops.map(\.count), [3, 3, 3, 3, 3, 4, 3, 3])
+        XCTAssertEqual(ops.map { $0.filter { if case .changeLightFace(24, _, _, _) = $0 { true } else { false } }.count },
+                       [Int](repeating: 1, count: 8))
+        XCTAssertTrue(ops[5].contains(.changeLightFace(slot: 0, pict: 0x322, width: 0xc0, height: 0xc0)))
+        XCTAssertEqual(ops[3], [.changeLightFace(slot: 22, pict: 0x32a, width: 0x48, height: 0x48),
+                                .changeLightFace(slot: 0, pict: 0x321, width: 0xc0, height: 0xc0),
+                                .changeLightFace(slot: 24, pict: 0x32c, width: 0x48, height: 0x48)])   // phase 10, k 2
         var reduced = FerazelPrefs()
         reduced.effects = 3
         let e = try FerazelSession(resources: r, prefs: reduced, level: 1)
+        // ◈ BN: at Effects 3 only the sphere's slot 22 changes (its arm is not gated by Effects, M l. 53296).
         XCTAssertFalse((0..<8).contains { _ in e.step(keys: KeyState()).draws.contains {
-            if case .changeLightFace = $0 { return true } else { return false } } })
+            if case .changeLightFace(let slot, _, _, _) = $0 { return slot != 22 } else { return false } } })
     }
 }

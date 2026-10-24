@@ -77,6 +77,11 @@ platforms: if the other sprite is a Platform or Box (not the player), the bonus 
 non-item type (`< 2000` or `> 0xc80`), and the other is not type 0x51c (chest),
 `PlatformBounce(bonus, other, centre, f, rect, f == 0)` with f = 0x80, or 0 (no bounce) when the
 bonus's `vy < 0x180`. Items 0xc81..0xcb0 also qualify (they are `> 0xc80`).
+⚑ planner-note correction BC49 (Phase 4 BN, 2026-10-25; raw `1005ffb8..1005ffd0`: `eqv`/`subfc`/`addze`/`rlwinm 0,31,31`
+= `(f == 0) − (~f >> 31) & 1`): the last argument is **1 when f = 0x80 and 0 when f = 0** — the opposite of "f == 0".
+A bonus falling at vy ≥ 0x180 onto a crate or platform bounces (vy = −vy·0x80 >> 8) and does not land; slower, it
+lands (vy 0, riding it). The containers 0x517, 0x51b and 0xc1c…0xc25 never take this arm (only the player-shot arm),
+and 0x4bf returns at once (M l. 53468) [HIGH].
 
 ### 1.2 Pickup gate (`.HitPlayerSprite`, handler dump l. 3270–3283)  [HIGH]
 `.HitPlayerSprite(player, other)` returns at once if `*_DAT_100a069c > 0` (~~unnamed global~~ the dying counter, pickups-boxes-2 §3 ⚑ wave 2 (2026-10-04)), or if

@@ -184,7 +184,10 @@ public enum SetupFaces {
         all += [set(0x53c, 6, 0x2c, 0x2a, 6), set(0x53d, 6, 0x2c, 0x2a, 6), set(0xb75, 0x18, 0x20, 0x36, 0xc),
                 set(0x6cc, 0xb, 0x38, 0x34, 0xb), set(0x708, 8, 0x78, 100, 8)]
         all.append(one(placeholderPict))
-        return Dictionary(uniqueKeysWithValues: all)
+        // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
+        var table = Dictionary(uniqueKeysWithValues: all)
+        for sh in BonusSprite.sheets where table[sh.pict] == nil { table[sh.pict] = sh }
+        return table
     }()
 
     /// The Background class's radial bars and balls (`.InitBackgroundSprite` l. 61906–61909: ten
@@ -321,66 +324,19 @@ public enum SetupFaces {
             }
 
         case .bonus:
-            s.layer = 1                                        // l. 52383
-            switch t {
-            case 0x41f, 0x420:                                 // Xichrons (l. 52430–52466): Handle face set 0x421, `+0x46 >> 1`
-                // 0x420 (W4): the same arm and Handle face set (`PTR_DAT_100a0478`, l. 52855); its Handle also sets
-                // `+0xb8 = 0x10001` every frame (l. 52860) // later: Phase 4 (the Bonus Handle) — inert, untinted.
-                s.lightOverlay = false
-                face(0x421, 0, .handle)
-                s.phase = rng.next(0x13)                       // raw `1005db3c` → `+0x46`
-                s.slip = rng.next(6) + 0x1c                    // `1005db4c` → `+0x112`
-                s.friction = rng.next(3) + 2                   // `1005db60` → `+0x114`
-                // prefs +6 == 1 and fewer than 150 lights: `_DAT_100a07fc` = light 0x336 (52×52), colour 0x16 (0x41f)
-                // or 0x2c (0x420).
-                if c.effects == 1 && lightsInUse < 0x96 {
-                    addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: t == 0x41f ? 0x16 : 0x2c)
-                }
-            case 0x422:                                        // trigger (l. 52469–52477; W4): no face, rect (0, 0, 0x60, 0x60)
-                s.lightOverlay = false
-                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x60, right: 0x60)   // SetRect l. 52472
-            case 0x423:                                        // secret-area trigger: no face (l. 52403)
-                s.lightOverlay = false
-            case 0x50c:                                        // money bag: Handle face `*_DAT_100a08e0` (PICT 0x50c)
-                s.lightOverlay = false
-                face(0x50c, 0, .handle)
-                s.phase = -5 - rng.next(10)                    // raw `1005df24` (`neg; subi 5`) → `+0x46`
-                if c.effects == 1 { addLight(0x336, 0x34, dx: 0x10, dy: 0x10, colour: 99) }   // prefs +6 == 1
-            case 0x517:                                        // rock pile (l. 52567): Handle face PICT 0x517; `+0x88` kept
-                face(0x517, 0, .handle)
-            case 0x51b:                                        // torch (l. 52541): Handle face set 0x51b, `+0x46 >> 1`
-                s.lightOverlay = false
-                face(0x51b, 0, .handle)
-                s.phase = rng.next(10)                         // raw `1005e110` → `+0x46`
-                // Ungated: `_DAT_100a08c0` = light 0x321 (192×192) at (y + 8, x + 5), colour 0x16 (p3 = 0) or 0x58.
-                addLight(0x321, 0xc0, dx: 5, dy: 8, colour: p.p3 == 0 ? 0x16 : 0x58)
-            case 0x53c, 0x53d:                                 // (l. 52650–52663; W4) Handle face sets 0x53c / 0x53d
-                s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
-                face(Int16(t), 0, .handle)                     // `+0xc0` stays 0; the Handle's `+0x46 >> 1` (l. 53300)
-                // `*PTR_DAT_100a088c` = light 0x32a (72×72) at (y + 0x14, x + 0x16), ungated: colour 0x21 / 0x4d.
-                addLight(0x32a, 0x48, dx: 0x16, dy: 0x14, colour: t == 0x53d ? 0x21 : 0x4d)
-                s.classWord15c = Int32(rng.next(0x10))         // raw `1005e6c0` → `+0x15c` (`stw`)
-            case 0x532...0x53b:                                // spheres: Handle face `_DAT_100a089c[type − 0x532]`
-                s.lightOverlay = false                         // the shared tail before the range arms (l. 52642)
-                face(Int16(t), 0, .handle)
-                s.phase = rng.next(0x10)                       // raw `1005e5dc` → `+0x46`
-                // `*PTR_DAT_100a088c` = light 0x32a (72×72) at (y + 0x10, x + 0x10), colour 99.
-                addLight(0x32a, 0x48, dx: 0x10, dy: 0x10, colour: 99)
-            case 0xc80...0xcb0:                                // items: `+0xc0 = _DAT_100a08a0[type − 0xc80]` (l. 52667)
-                s.lightOverlay = false
-                face(Int16(t), 0, .setup)
-                // Light 0x32a at (y + 0xc, x + 0x10), colour 99 (0x21 / 0x2c / 0x4d for the listed items).
-                let colour = [0xc97, 0xc99, 0xc9a].contains(t) ? 0x21 : [0xc86, 0xc98].contains(t) ? 0x2c
-                    : t == 0xc93 ? 0x4d : 99
-                // `+0x46 = FastRand(0x10)` (raw `1005e724`, l. 52670–52671), drawn before the `.AddLight`: the start
-                // phase of `BonusHandle.twinkle`.
-                s.phase = rng.next(0x10)
-                addLight(0x32a, 0x48, dx: 0x10, dy: 0xc, colour: colour)
-            default:
-                throw Error.notTranscribed(type: p.type)
+            // BN: `.SetupBonusSprite` in full (`BonusSprite.setup`) — every type 0x41f…0xcb0 the class owns; its `.AddLight`s
+            // through `addLight` (the session's table). A Handle-faced type (`.handle`) leaves `+0xc0 = 0` in the binary;
+            // the Phase-1 stand-in (the Handle's first sheet cell, below) is kept for the level start's draw.
+            let records = c.records ?? c.level.placements
+            if let f = try BonusSprite.setup(&s, x: Int(p.x), y: Int(p.y), level: c.level, records: records,
+                                             effects: c.effects, lightCount: Int16(truncatingIfNeeded: lightsInUse),
+                                             counting: true, rng: &rng, addLight: { lf, h, v, colour in
+                let l = Light(pict: lf.pict, width: lf.width, height: lf.height, x: h, y: v, colour: Int(colour))
+                light = l
+                return addToTable(l)
+            }) {
+                face(f.pict, f.index, f.source)
             }
-            // `LAB_1005e8bc`, every arm (raw `1005e8c0`): `+0x14c = FastRand(60)`.
-            s.classTimer = Int32(rng.next(0x3c))
 
         case .box:
             // `.SetupBoxSprite` (W3, `BoxSprite.setup`): layer, rect, one-way, callbacks, gravity, HP, the type's fields.

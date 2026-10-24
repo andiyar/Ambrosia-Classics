@@ -151,30 +151,35 @@ final class ParticleTests: XCTestCase {
             }
         }
         // Iteration 1 is skipped: no `.DrawParticles` → the age-1 kind-14 particle is not colour-killed;
-        // `.HandleParticles` still runs (ages 1 → 2 and 0 → 1, the moves), and the parity does not flip.
+        // `.HandleParticles` still runs (ages 1 → 2 and 0 → 1, the moves), and the parity does not flip. ◈ BN: the
+        // Bonus Handles' torch sparks (kind 1, `.HandleBonusSprite` M l. 53108–53294) join the pool in the handle pass
+        // — slots 2 and 3 here (was count 2, hint 1, hwm 1).
         let first = s.step(keys: KeyState())
         XCTAssertFalse(first.drawn)
         XCTAssertEqual(kinds(first), ["water0", "sprites", "erase"])
-        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 2, hint: 1, highWater: 1))
+        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 4, hint: 3, highWater: 3))
         XCTAssertEqual(s.world.particles.records[0].age, 2)
         XCTAssertTrue(s.world.particles.records[0].alive)
         XCTAssertEqual(s.world.particles.records[1].x, 310 << 8 + 0x100)
         XCTAssertFalse(s.world.parity)
         // Iteration 2 is drawn: the kind-14 particle dies in the draw (count − 2), the blood is handed over at age 1;
-        // then the handle pass ages the survivor.
+        // then the handle pass ages the survivor. ◈ BN: the two sparks are drawn too (was `particles1`, the blood
+        // alone); the handle pass's new sparks take the freed slot 0 and slot 4 (was count 0, hint 0, hwm 1, slot 0
+        // dead).
         let second = s.step(keys: KeyState())
         XCTAssertTrue(second.drawn)
-        XCTAssertEqual(kinds(second), ["water0", "sprites", "particles1", "copy", "eraseP", "erase"])
+        XCTAssertEqual(kinds(second), ["water0", "sprites", "particles3", "copy", "eraseP", "erase"])
         let list = second.draws.compactMap { if case .drawParticles(let l) = $0 { l } else { nil } }.first
-        XCTAssertEqual(list, [ParticleDraw(slot: 1, kind: 2, age: 1, shape: 4, v: 40, h: 311)])
-        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
-        XCTAssertFalse(s.world.particles.records[0].alive)
+        XCTAssertEqual(list?.first, ParticleDraw(slot: 1, kind: 2, age: 1, shape: 4, v: 40, h: 311))
+        XCTAssertEqual(list?.dropFirst().map { [$0.slot, Int($0.kind)] }, [[2, 1], [3, 1]])
+        XCTAssertEqual(s.world.particles.counters, ParticlePool.Counters(count: 4, hint: 4, highWater: 4))
+        XCTAssertEqual([s.world.particles.records[0].alive ? 1 : 0, Int(s.world.particles.records[0].kind)], [1, 1])
         XCTAssertEqual(s.world.particles.records[1].age, 2)
         XCTAssertTrue(s.world.parity)
         // The counters ride the carry into the next level (`.InitParticles` keeps them), the records do not.
-        XCTAssertEqual(s.carry.particles, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
+        XCTAssertEqual(s.carry.particles, ParticlePool.Counters(count: 4, hint: 4, highWater: 4))
         let next = try FerazelSession(resources: try resources(), prefs: prefs, level: 2, carry: s.carry)
-        XCTAssertEqual(next.world.particles.counters, ParticlePool.Counters(count: 0, hint: 0, highWater: 1))
+        XCTAssertEqual(next.world.particles.counters, ParticlePool.Counters(count: 4, hint: 4, highWater: 4))
         XCTAssertEqual(next.world.particles.live, 0)
         XCTAssertEqual(next.world.frameCounter, 0)
         _ = next.step(keys: KeyState())

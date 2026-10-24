@@ -462,7 +462,9 @@ final class LevelFlowTests: XCTestCase {
         // drained to count 0, hwm 157. E1b review fix: the water-effects cache, its origin and the flag are globals.
         var expectCarry = LevelCarry(parity: true, crunchLog: [CrunchLogEntry(level: 1, col: 1, row: 2)],
                                      globals: s.globals)
-        expectCarry.particles = ParticlePool.Counters(count: 0, hint: 0, highWater: 157)
+        // ◈ BN: the Bonus Handles' torch / candelabra sparks (kind 1) join the pool; their `.DrawParticles` colour-0
+        // kills decrement the count twice (as read), so it runs negative (was count 0, hint 0, hwm 157).
+        expectCarry.particles = ParticlePool.Counters(count: -75, hint: 25, highWater: 207)
         expectCarry.waterCells = s.waterEffects.cells
         expectCarry.waterOriginCol = s.waterEffects.originCol
         expectCarry.waterOriginRow = s.waterEffects.originRow

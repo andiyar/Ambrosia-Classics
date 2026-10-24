@@ -503,8 +503,8 @@ extension BackgroundSprite {
     // MARK: cannon captives
 
     /// `.TurnIntoCannoned(captive, cannon) @ 10058594` (decompile l. 49930–49974): d = the captive's centre − its
-    /// origin (`+0x10 − +0xc`, `+0xe − +0xa`, i16); refused for a dead player (HP `+0xa4` < 1) and a Bonus with
-    /// `+0x168 == 1` (// later: Phase 4 — Core has no Bonus Handle nor `+0x168`); else
+    /// origin (`+0x10 − +0xc`, `+0xe − +0xa`, i16); refused for a dead player (HP `+0xa4` < 1) and a sprite whose Handle
+    /// is the Bonus one with `+0x168 == 1` (BN, A7: raw `100585e0–100585f8`; an idled record's `+0x4c` is 0); else
     /// `.STPlay3DSoundRand(484, 1, 0x97, captive +0xe)` (`_DAT_100a030c`, its rate drawn here), the Handle / hit / tile
     /// callbacks saved to `+0x1ec/+0x1f0/+0x1f4`, `+0x130 = 15`, the Handle `.HandleCannonedSprite`, both callbacks 0,
     /// v = 0, `+0x1e4` = the cannon, the origin = the cannon's centre − d (24.8 from it), the centre = origin + d; a light
@@ -516,6 +516,7 @@ extension BackgroundSprite {
         let dx = h(c.centre.x - c.x), dy = h(c.centre.y - c.y)
         let isPlayer = cID == w.playerID
         guard !isPlayer || 0 < c.hp else { return }
+        guard c.handler != .bonus || c.handleCleared || c.bonusP4 != 1 else { return }
         w.player.cue(PlayerCue(call: .threeDRand, snd: 484, priority: 1, volume: 0x97, position: c.centre,
                                rate: w.rng.soundRate()))
         w.active.update(id: cID) { s in

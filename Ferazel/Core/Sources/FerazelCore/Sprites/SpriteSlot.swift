@@ -113,6 +113,33 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0xb0` (i16): a class's sub-type word — the Background's p1, a Platform's base type (0x58c = springboard,
     /// read through the ridden `+0xdc` by `.CheckGroundCeilingHitEffects` and `.HandleKeys`; W1 writes it).
     public var subtype: Int16 = 0
+    /// BN (the Bonus class's names for offsets `SpriteSlot` already holds — one storage per offset):
+    /// `+0xb0` the pickup delay (`.HitPlayerSprite` collects only at 0; drops set 12, the Handles count it down; the
+    /// torch's / candelabras' "unspent" flag) = `subtype`.
+    public var pickupDelay: Int16 {
+        get { subtype }
+        set { subtype = newValue }
+    }
+    /// `+0x14c` the Bonus light-flicker timer (`.SetupBonusSprite`'s tail `FastRand(60)`) = `classTimer`.
+    public var lightTimer: Int32 {
+        get { classTimer }
+        set { classTimer = newValue }
+    }
+    /// `+0x15c` a Xichron's in-water-at-spawn flag (`.HandleBonusSprite` then sets `+0x11c`/`+0x120` every frame); the
+    /// upgrades 0x53c / 0x53d's light counter = `classWord15c`.
+    public var inWaterAtSpawn: Int32 {
+        get { classWord15c }
+        set { classWord15c = newValue }
+    }
+    /// `+0x16c` a dropped coin's life (`.HurtPlayer` −240; the Handle counts up, blinks from −44, kills at 0) =
+    /// `classWord16c`.
+    public var coinLife: Int32 {
+        get { classWord16c }
+        set { classWord16c = newValue }
+    }
+    /// `+0x168` (i32): a Bonus's record p4 (`.SetupBonusSprite`, valid record only) — read by `.TurnIntoCannoned`
+    /// (1 → never cannoned; pickups-boxes-2 §2).
+    public var bonusP4: Int32 = 0
     /// `+0xf0` (i32): Walker (goblin) voice pitch `2·FastRand(0x5fff) + 0xbfff` (enemies-ground §3).
     public var voicePitch: Int32 = 0
     /// `+0x1c8..+0x1ce`.
@@ -381,9 +408,8 @@ public struct SpriteSlot: Equatable, Sendable {
     }
 }
 
-/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 4/5 classes (Bonus, enemies, buttons):
-/// no Phase-2 Handle and no hit callback; still drawn, idled and erased. (The Bonus item-light twinkle Phase 1
-/// built, `BonusHandle`, is the one piece of an inert Handle that runs — at the sprite's place in the handle pass.)
+/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 5 classes (enemies, buttons): no Handle
+/// built yet and no hit callback; still drawn, idled and erased. `bonus` (BN) = `.HandleBonusSprite` (`BonusSprite`).
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
     /// W1 (added, Invariant 9): `.HandleSeeSawSegSprite @ 100655c8` (`_DAT_100a01c8`) — the see-saw segments 0x59b
@@ -392,6 +418,8 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// W2b (added, Invariant 9): `.HandleCannonedSprite @ 10058710` (`PTR_PTR_100a045c`) — the Handle
     /// `.TurnIntoCannoned` installs on a cannon's captive until the launch restores the saved one (`+0x1ec`).
     case cannoned
+    /// BN (added, Invariant 9): `.HandleBonusSprite @ 1005e934` (`PTR_PTR_100a047c`), installed by `.SetupBonusSprite`.
+    case bonus
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.
@@ -402,6 +430,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .background: return .background
         case .effect: return .effect
         case .rope: return .rope
+        case .bonus: return .bonus
         default: return .inert
         }
     }

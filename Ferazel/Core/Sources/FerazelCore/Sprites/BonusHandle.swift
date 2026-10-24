@@ -12,10 +12,8 @@ import Foundation
 /// are the light faces 0x32a–0x32d, 72×72 (`.InitEffectSprite` l. 53662–53668). `.ChangeLightFace @ 1001bdbc` ignores
 /// a slot outside 0…199 (an item with no light, `+0x9a` = −1), and sets the slot's face and radius `+0x14` = width / 2.
 ///
-/// Phase 1 runs this for the Setups it transcribes that reach the branch with a light: the items 0xc80…0xcb0
-/// (`SetupFaces`, l. 52664–52700). Of the other Bonus types ≥ 2000 that fall through to `LAB_1005f808`, none is
-/// transcribed. The rest of the Handle is not built: the sphere and 0x53c/0x53d cycles (they also set mode 0xb), the
-/// torch flicker (`ChangeLightFace` 0x321 ↔ 0x322, l. 53261–53266), and the motion after `LAB_1005fc30`.
+/// BN: the whole Handle is `BonusSprite.handle` (`LAB_1005f808` is `BonusSprite.loot`); this type stays as a thin
+/// forward for the Phase-1 callers and tests — the twinkle of an item (0xc80…0xcb0) on one sprite.
 public enum BonusHandle {
     /// `PTR_DAT_100a088c[0..3]`: (pict, width, height).
     public static let twinkleFaces: [(pict: Int16, width: Int, height: Int)] = [
@@ -30,12 +28,14 @@ public enum BonusHandle {
     /// One Handle call for `sprite` (dead sprites return at the top of the Handle, l. 52832): advances `+0x46` and
     /// returns the `.ChangeLightFace` it makes as `DrawOp.changeLightFace`, or nil.
     public static func twinkle(_ sprite: inout SpriteSlot, effects: Int16) -> DrawOp? {
-        guard !sprite.dead, twinkles(type: sprite.type), effects != 3 else { return nil }
-        sprite.phase &+= 1
-        let k = (sprite.phase >> 2) % 6
-        guard k >= 0, (0..<200).contains(Int(sprite.light)) else { return nil }
-        let f = twinkleFaces[twinkleOrder[Int(k)]]
-        return .changeLightFace(slot: Int(sprite.light), pict: f.pict, width: f.width, height: f.height)
+        guard !sprite.dead, twinkles(type: sprite.type) else { return nil }
+        let slot = sprite.light
+        var op: DrawOp?
+        BonusSprite.loot(&sprite, effects: effects) { f in
+            guard let f, (0..<LightTable.slotCount).contains(Int(slot)) else { return }
+            op = .changeLightFace(slot: Int(slot), pict: f.pict, width: f.width, height: f.height)
+        }
+        return op
     }
 
     /// LT: the Handle call with its `.ChangeLightFace` also made on Core's light table (the single source of truth);

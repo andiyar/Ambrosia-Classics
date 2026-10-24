@@ -491,10 +491,14 @@ final class PlatformTests: XCTestCase {
         let L1 = s1.level.lightByte(col: (3603 - 1634) >> 5, row: (1504 - 707) >> 5)
         _ = s1.step(keys: KeyState())
         XCTAssertEqual(L1, 9)
-        XCTAssertEqual(s1.active.record(id: lit1)?.mode, 0xc0967)           // 0xc0000 + 9·0x100 + 103
+        // ◈ BN: the sphere's Handle tail `.SetLightPos(+0x9a, centre)` (M l. 53436) has moved its light to (1969, 770)
+        // by now (it settles 1 px and the point is its centre), so F = 101 (was 0xc0967, F = 103 at y 774).
+        XCTAssertEqual(s1.lightTable.slots[22].y, 770)
+        XCTAssertEqual(s1.active.record(id: lit1)?.mode, 0xc0965)           // 0xc0000 + 9·0x100 + 101
         // LT: the closure reads the session's light table, not the Setup list: with the sphere's light removed from
         // the table (`.RemoveLight`; inactive after the frame's `.HandleLights`), F = 0 → 0xc0000 + 9·0x100.
-        var sphereSlot = Int16(try XCTUnwrap(s1.lightTable.slots.firstIndex { $0.face?.pict == 810 && $0.x == 1969 }))
+        // (BN: found by point and colour — the sphere's face now flickers 0x32a…0x32d.)
+        var sphereSlot = Int16(try XCTUnwrap(s1.lightTable.slots.firstIndex { $0.active && $0.colour == 99 && $0.x == 1969 }))
         s1.lightTable.remove(&sphereSlot)
         s1.world.active.update(id: lit1) { c in
             c.x = 3562 - 1634

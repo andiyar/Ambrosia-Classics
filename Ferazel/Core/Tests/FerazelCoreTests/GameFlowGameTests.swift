@@ -736,7 +736,12 @@ final class GameFlowGameTests: XCTestCase {
         // `restoreSnapshot(save+8)` puts the 6 back on x and y: the records stand where the level file has them.
         let L1 = try LevelFile.load(from: r, level: 1)
         XCTAssertEqual(s.world.records.map(\.x), L1.placements.map(\.x))
-        XCTAssertEqual(s.world.records.map(\.y), L1.placements.map(\.y))
+        // BN: record 2, the sphere 0x537 (gravity 200), settles 758 → 757 under its first Handle's gravity tail and
+        // `.UpdateSprites` writes it back; every other record stands where the level file has it.
+        var ys = L1.placements.map(\.y)
+        XCTAssertEqual([L1.placements[2].type, ys[2]], [0x537, 758])
+        ys[2] = 757
+        XCTAssertEqual(s.world.records.map(\.y), ys)
         XCTAssertTrue(flow.mapSprites.isEmpty, "`.InitGameGlobals`' `.InitPlayerMapData` (M l. 864) on Continue too")
         XCTAssertFalse(draws(entry).contains(.setScreenClut(id: 281)))
         XCTAssertEqual(s.globals.startFacing, 7)

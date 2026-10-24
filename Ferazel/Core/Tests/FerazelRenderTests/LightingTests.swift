@@ -311,9 +311,15 @@ final class LightingTests: XCTestCase {
             XCTAssertEqual([slot.x, slot.y, slot.radius, slot.colour], [l.x, l.y, l.radius, l.colour], "slot \(i)")
         }
         // The rest of the frame: the renderer's `.HandleLights` and the twinkle's `changeLightFace` leave its copy equal
-        // to the session's table.
+        // to the session's table — but for the points the Bonus Handle's tail `.SetLightPos(+0x9a, centre)` moved (BN,
+        // M l. 53436: the sphere's slot 22, 774 → 770, and the potion's slot 24, 135 → 137); no op carries those — the
+        // next frame's `.lightTable` hand-over does, before anything reads them.
         try r.apply(FrameOps(draws: Array(ops[(k + 1)...])))
-        XCTAssertEqual(r.lightTable, s.lightTable)
+        var moved = r.lightTable
+        XCTAssertEqual([moved.slots[22].y, moved.slots[24].y, s.lightTable.slots[22].y, s.lightTable.slots[24].y],
+                       [774, 135, 770, 137])
+        for i: Int16 in [22, 24] { moved.setPos(i, x: s.lightTable.slots[Int(i)].x, y: s.lightTable.slots[Int(i)].y) }
+        XCTAssertEqual(moved, s.lightTable)
         XCTAssertTrue(r.lights.slots[0..<68].allSatisfy { $0.active && !$0.isNew && $0.previousFace != nil })
         XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32b)
         XCTAssertEqual(r.lights.slots[24].previousFace?.pict, 0x32a)

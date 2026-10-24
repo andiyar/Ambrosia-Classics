@@ -59,7 +59,9 @@ final class FrameGoldenTests: XCTestCase {
 
     /// Light 24 (the potion 0xc84) after step 1 under seed 1: the Setup's `+0x46 = FastRand(0x10)` = 6, the twinkle
     /// makes it 7 → k = (7 >> 2) mod 6 = 1 → 0x32b, after the draw that used the Setup face 0x32a.
-    private static let potionStep1: [Int: (drawn: Int16, now: Int16)] = [24: (0x32a, 0x32b)]
+    // BN: the sphere 0x537 (slot 22, `.HandleBonusSprite` M l. 53345–53380) re-faces on step 1 too (0x32a → 0x32b);
+    // the torch's slot 0 is re-faced to the face it has (0x321, M l. 53261).
+    private static let potionStep1: [Int: (drawn: Int16, now: Int16)] = [22: (0x32a, 0x32b), 24: (0x32a, 0x32b)]
 
     private func fnv1a(_ bytes: [UInt8]) -> UInt64 {
         var h: UInt64 = 0xcbf2_9ce4_8422_2325
@@ -183,7 +185,8 @@ final class FrameGoldenTests: XCTestCase {
             .screenClut(202), .picture(129), .entireGrid(h: 0, v: 0), .strip(h: 0, v: 0), .entireGrid(h: 0, v: 0),
             .statusBar(full: true),
             .strip(h: 0, v: 0), .lightsOntoTiles, .handleLights, .waterEffects(0), .sprites(sprites), .particles(0),
-            .copy(h: 0, v: 0), .eraseParticles, .lightFace(24), .erase(erased), .statusBar(full: false),
+            .copy(h: 0, v: 0), .eraseParticles, .lightFace(22), .lightFace(0), .lightFace(24), .erase(erased),
+            .statusBar(full: false),   // BN: the sphere (22), torch (0) and potion (24) Bonus Handles, in list order
         ])
         XCTAssertEqual(r.lights.slots.filter(\.active).count, 68)          // the level-1 Setup lights (Effects 1)
         // The ripple phase `*_DAT_1009fd74`: 0x200 at level start (l. 5217), + 0x100 after the erase (`100127ec..f4`).
@@ -351,9 +354,12 @@ final class FrameGoldenTests: XCTestCase {
         // 6e034d02ef78d7fb; frame 60 is unchanged — the player is off-screen by then). ◈ Re-measured 2026-10-13 (P5,
         // twice): `.PlayerScroll` replaces the ◇ focus driver, so the view stays on the player (was be2b8e2e6631b1a7 /
         // 3ec51d436e278776 / 967803e69d2ceaf6).
-        XCTAssertEqual(hex(chain[29]), "172596fa2f3b6c58")
-        XCTAssertEqual(hex(chain[59]), "cc9786ba763d383a")
-        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "b4230ba5a643c5b5")
+        // ◈ Re-measured 2026-10-25 (BN): the Bonus Handles run in full — the sphere 0x537's light flicker and mode-0xb
+        // translucency cycle, the torch — the scrolls are unchanged (was 172596fa2f3b6c58 / cc9786ba763d383a /
+        // b4230ba5a643c5b5).
+        XCTAssertEqual(hex(chain[29]), "b1f4efcf3c34735f")
+        XCTAssertEqual(hex(chain[59]), "80d88efdc8fac27c")
+        XCTAssertEqual(hex(fnv1a(chain.flatMap { v in (0..<8).map { UInt8(v >> (8 * $0) & 0xff) } })), "aaab15c0710cbcf7")
     }
 
     func testItemLightTwinkleDimsTheTable() throws {

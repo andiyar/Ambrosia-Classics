@@ -86,6 +86,11 @@ public final class SpriteWorld {
     /// C1: World Data's `STR# 500` (the sign texts) that the 2902 sign's `GetIndString(500, p1)` reads (raw `10057100`);
     /// the session loads it. Nil → every sign text is empty (a world built without resources).
     public var signTexts: StringList?
+    /// BN: `*_DAT_1009feac`, the level being played (`.KillBonus`'s `G + 2L` counters) — the session sets it.
+    public var levelIndex = 0
+    /// BN: the pending counts `*_DAT_1009ffb0` (Xichrons) / `*_DAT_1009ffac` (secrets) the Setups tallied during
+    /// `.SetupLevelSprites` (`SetupFaces.Tallies`); `.KillBonus` moves one unit from here to `G`'s achieved counters.
+    public var pendingTallies = SetupFaces.Tallies()
     /// VS: the voice query's base for this iteration (`SoundVoices`) — the session sets it from the shell's playing set
     /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
     public var voices = SoundVoices()

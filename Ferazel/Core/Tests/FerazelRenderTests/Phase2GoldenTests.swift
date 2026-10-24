@@ -113,7 +113,9 @@ final class Phase2GoldenTests: XCTestCase {
         XCTAssertEqual(top, 22)
         XCTAssertEqual(landed, 33)
         XCTAssertEqual([p.x, p.y, Int(p.vy)], [83, 123, 0])
-        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "e4f4bf977dd98eaa")
+        // ◈ Re-measured 2026-10-25 (BN: the Bonus Handles — sphere flicker + mode 0xb, torch; the path is unchanged; was
+        // e4f4bf977dd98eaa).
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "deb577ecdeb64c58")
     }
 
     /// The route from the start (centre cell (4, 5)) to the first water body (BG liquid, cols 56…81, row 19): found
@@ -174,9 +176,11 @@ final class Phase2GoldenTests: XCTestCase {
         XCTAssertEqual(splashes, [357, 405, 365, 406, 385, 405])
         let p = try player(s)
         XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy), Int(p.waterRow)], [1978, 539, 0, 0, 69])
-        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [67, 252])
+        // ◈ Re-measured 2026-10-25 (BN: the Bonus Handles — the torches' spark particles and their `FastRand` draws,
+        // the spheres' mode 0xb; route, entry and splashes unchanged; was [67, 252] / 95ff5176412df650).
+        XCTAssertEqual([liquidParticles(s), s.world.particles.live], [68, 305])
         XCTAssertEqual(chain.count, 397)
-        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "95ff5176412df650")
+        XCTAssertEqual(hex(fnv1a(bytes(chain) + bytes(cues))), "10b7b133cdc273c2")
     }
 
     /// 600 iterations: the swim route (357: the col-24 wall break, the camera pan, the pool entry), the pool strokes
@@ -210,14 +214,17 @@ final class Phase2GoldenTests: XCTestCase {
         // seed, the live particles.
         let p = try player(s)
         XCTAssertEqual(s.iterations, 600)
-        XCTAssertEqual(hex(fnv1a(bytes(chain))), "9532d65a42d39666")
+        // ◈ Re-measured 2026-10-25 (BN: the Bonus Handles — sphere flicker + mode 0xb, torch sparks and their
+        // `FastRand` draws; the player's path and the scroll are unchanged; was 9532d65a42d39666 / a875a96c2801dbe9 /
+        // seed 2032060201 / 44 particles).
+        XCTAssertEqual(hex(fnv1a(bytes(chain))), "1ebeb6a5f3f3b6b0")
         XCTAssertEqual(cues.count, 3078)
-        XCTAssertEqual(hex(fnv1a(bytes(cues))), "a875a96c2801dbe9")
+        XCTAssertEqual(hex(fnv1a(bytes(cues))), "e350390fb4658cfd")
         XCTAssertEqual([p.x, p.y, Int(p.vx), Int(p.vy)], [1591, 361, 1150, 705])
         XCTAssertNotEqual([s.camera.scrollH, s.camera.scrollV], [0, 0])
         XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [1353, 309])
-        XCTAssertEqual(s.rngSeed, 2032060201)
-        XCTAssertEqual(s.world.particles.live, 44)
+        XCTAssertEqual(s.rngSeed, 1248094906)
+        XCTAssertEqual(s.world.particles.live, 151)
     }
 
     /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in (the

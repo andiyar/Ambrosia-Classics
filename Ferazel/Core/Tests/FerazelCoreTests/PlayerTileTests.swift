@@ -800,8 +800,11 @@ final class PlayerTileTests: XCTestCase {
             frames.append(session.step(keys: KeyState()))
             XCTAssertTrue(potionIdle())
         }
+        // ◈ BN: the idle potion's slot 24 is never re-faced; the light changes are the other Bonus Handles' near the
+        // player (torches, spheres, items around (3806, 1083)) — was 0 on every frame before BN.
+        XCTAssertFalse(frames.contains { $0.draws.contains { if case .changeLightFace(24, _, _, _) = $0 { true } else { false } } })
         XCTAssertEqual(frames.map { $0.draws.filter { if case .changeLightFace = $0 { true } else { false } }.count },
-                       [Int](repeating: 0, count: 17))
+                       [3, 14, 12, 12, 10, 9, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3])
         XCTAssertEqual(frames.prefix(16).map { $0.draws.filter { if case .setTile = $0 { true } else { false } }.count },
                        [Int](repeating: 0, count: 16))
         let draws = frames[16].draws
@@ -815,8 +818,11 @@ final class PlayerTileTests: XCTestCase {
         let copy = try XCTUnwrap(draws.firstIndex { if case .copyToScreen = $0 { true } else { false } })
         let first = try XCTUnwrap(draws.firstIndex { if case .setTile = $0 { true } else { false } })
         let erase = try XCTUnwrap(draws.firstIndex { if case .wrapEraseSprites = $0 { true } else { false } })
-        XCTAssertEqual([copy + 2, first + 10], [first, erase])          // E1a: `.EraseParticles` follows the copy
+        // E1a: `.EraseParticles` follows the copy. ◈ BN: the frame's three Bonus light changes come in the handle pass
+        // before the collapse's tiles (was copy + 2 = first).
+        XCTAssertEqual([copy + 5, first + 10], [first, erase])
         XCTAssertEqual(draws[copy + 1], .eraseParticles)
+        XCTAssertTrue(draws[(copy + 2)..<first].allSatisfy { if case .changeLightFace = $0 { true } else { false } })
         XCTAssertEqual(session.world.tiles.fg.cell(col: 120, row: 36), 0x0300)
         // Strength 1 — a fall faster than 0x9c4 while crunch-capable (spinning): `+0xeb` 1 → the overlay is made (423, R(3))
         // and the player bounces off the block (raw `100552c8..100553f4`). Spawned 5 px above at vy 3000: row 23 → 3440;

@@ -28,7 +28,7 @@ import HectorResources
 /// the `if (param_1 != 0)` block (l. 9254–9450) with `.WrapCopyToScreen(port, h, v, 0x10, 8, prefs+9 == 0,
 /// prefs+2 == 3, 0)` (l. 9443/9447) is skipped — and with it the parity flip `*_DAT_1009fd30` (`SpriteWorld.parity`,
 /// l. 9435–9440, before the copy); then always `.HandleIdleSprites`, `.HandleSprites` (the items' light twinkle from
-/// `.HandleBonusSprite` — `BonusHandle`, as `changeLightFace` ops — the player's `.HandlePlayerSprite` (`Player`) with
+/// `.HandleBonusSprite` — `BonusSprite.handle`, its light calls as `changeLightFace` ops (BN) — the player's `.HandlePlayerSprite` (`Player`) with
 /// its look-ahead and `.PlayerScroll` moving the camera focus (P5), and the Effect Handles), `.WrapEraseSprites`
 /// (l. 9452–9456); after it `.UpdateStatusBar(1, 0, 0)`.
 ///
@@ -41,7 +41,7 @@ import HectorResources
 ///
 /// F2: the sprites live in a `SpriteWorld`. `.HandleSprites` is its three passes (Invariant 3): `handleSprites`
 /// walks the active list (each sprite's Handle at its list position: the player slot runs `Player.handle` (with
-/// `.PlayerScroll`), an Effect its `EffectSprite.handle`, an inert Bonus item its `BonusHandle` twinkle), then
+/// `.PlayerScroll`), an Effect its `EffectSprite.handle`, a Bonus its `BonusSprite.handle`), then
 /// `collideSprites`, then `collideSpecial`.
 public final class FerazelSession {
     public let resources: FerazelResources
@@ -210,6 +210,8 @@ public final class FerazelSession {
         lights = spawned.lights
         lightTable = spawned.lightTable
         tallies = spawned.tallies
+        world.pendingTallies = spawned.tallies                          // BN: `*_DAT_1009ffb0` / `*_DAT_1009ffac`
+        world.levelIndex = level                                        // BN: `*_DAT_1009feac`
         world.active = spawned.active
         world.idle = spawned.idle
         world.records = spawned.records                                  // the Setups' write-backs (W2a)
@@ -442,20 +444,16 @@ public final class FerazelSession {
                 Player.handle(world: world, keys: actions, solver: solver)
             case .effect:
                 EffectSprite.handle(world: world, id: id, lights: &self.lightTable)
+            case .bonus:
+                // `.HandleBonusSprite @ 1005e934` (BN, `BonusSprite.handle`) — M6: dispatched by the record's Handle
+                // (`handler == .bonus`), not by the type's class; its `.ChangeLightFace`s land in `lightTable` and go
+                // out as ops at its place in the pass.
+                ops.draws.append(contentsOf: BonusSprite.handle(world: world, id: id, solver: solver, effects: effects,
+                                                                lights: &self.lightTable) {
+                    Self.frameRect($0, resources: res).right
+                })
             case .inert:
-                // `.HandleBonusSprite @ 1005e934` (decompile l. 52832–52840), as far as Phase 2 builds it: `+0xe9` →
-                // return, `+0x1b2` → return, `.StandardSpriteHandles`, (`+0xa6 < 0` counts up // later: Phase 4 — no
-                // Phase-2 writer), then the item-light twinkle (`BonusHandle`). The other inert classes (enemies,
-                // buttons) stay Handle-less until Phase 4/5.
-                guard let s0 = world.active.record(id: id),
-                      SpriteClassTable.classify(type: s0.type, p1Negative: false)?.0 == .bonus,
-                      !s0.dead, !s0.handleSkip else { return }
-                world.standardSpriteHandles(id)
-                world.active.update(id: id) { s in
-                    if let op = BonusHandle.twinkle(&s, effects: effects, lights: &self.lightTable) {
-                        ops.draws.append(op)
-                    }
-                }
+                break                                       // later: Phase 5 — the enemies' and buttons' Handles
             case .platform:
                 PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
             case .chain:
@@ -847,6 +845,7 @@ public final class FerazelSession {
         switch s.handler {
         case .platform: PlatformSprite.hit(w, id: a, other: b)
         case .background: BackgroundSprite.hit(w, id: a, other: b, lights: &lights)   // `.HitBackgroundSprite` (W2b)
+        case .bonus: BonusSprite.hit(w, id: a, other: b)                                // `.HitBonusSprite` (BN)
         default: break
         }
     }

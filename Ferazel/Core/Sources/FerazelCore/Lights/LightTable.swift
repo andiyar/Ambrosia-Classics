@@ -124,6 +124,15 @@ public struct LightTable: Equatable, Sendable {
         slots[Int(slot)].radius = Self.radius(face)
     }
 
+    /// `.ChangeLightFace(slot, 0)` (BN: a hidden sphere, M l. 53358): `+4` = 0 and `+0x14` = the word at address 0x50
+    /// `>> 1` — the binary reads `face + 0x50` unchecked, a Mac OS low-memory word; 0 here [LOW]. A slot outside 0…199
+    /// is ignored.
+    public mutating func clearFace(_ slot: Int16) {
+        guard (0..<Self.slotCount).contains(Int(slot)) else { return }
+        slots[Int(slot)].face = nil
+        slots[Int(slot)].radius = 0
+    }
+
     /// `.SetLightPos(slot, x, y) @ 1001be18` (M l. 14375–14396): `+0x1c = x << 8`, `+0x20 = y << 8`, `+0xe = x`,
     /// `+0xc = y`; a slot outside 0…199 is ignored.
     public mutating func setPos(_ slot: Int16, x: Int16, y: Int16) {
