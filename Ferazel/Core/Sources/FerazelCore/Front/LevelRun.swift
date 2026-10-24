@@ -12,8 +12,8 @@ public enum LevelEnd: Equatable, Sendable {
     case completed(exit1: Int16, exit2: Int16)
     /// `DAT_100a5106` with HP ≥ 1 and the level not complete (Esc / ⌘W OK, P1): neither after-loop branch.
     case aborted
-    /// ⌘Q OK (P1, `.CheckGameLoopKeys`): `.Quit` follows — the flow quits; the iteration is never finished and no
-    /// exit sequence runs.
+    /// ⌘Q OK (P1, `.CheckGameLoopKeys`) or the pause loop's quit event (A1a, `LevelRun.quitEventDispatched`):
+    /// `.Quit` follows — the flow quits; the iteration is never finished and no exit sequence runs.
     case quit
 }
 
@@ -325,6 +325,14 @@ public final class LevelRun {
         pause = p
     }
 
+    /// The Apple events queued (A1a; the flow hands its queue in before each `tick` and takes it back after): every
+    /// finished iteration drops one when prefs+0x08 "Allow background tasks" is set (`.GameLoop`'s
+    /// `WaitNextEvent(0xffff, …, 0, 0)`, its event never handled, M l. 5277–5279); the pause loop dispatches one
+    /// (`PauseRun.appleEvents`).
+    public var appleEvents = PendingAppleEvents()
+    /// The pause loop dispatched the quit event: the run ended `.quit` (`.Quit` from inside `.Pause`).
+    public private(set) var quitEventDispatched = false
+
     /// The `.CheckGameLoopKeys` modal in progress.
     private enum KeysModal {
         case confirm(GameLoopKeyEvent)
@@ -619,6 +627,9 @@ public final class LevelRun {
         // Phase 5).
         if ops.suspension == nil { o.music += music.handleAsyncFade(prefs: prefs) }
         emit(&out, o)
+        // `if (prefs+0x08) WaitNextEvent(0xffff, …, 0, 0)` after `_UpdateSprites` (M l. 5277–5279): an iteration's
+        // end fetches one queued event and never handles it — a quit or an open is lost.
+        if ops.suspension == nil && prefs.backgroundTasks != 0 { _ = appleEvents.takeFirst() }
     }
 
     // MARK: The save point (S1)
@@ -666,8 +677,19 @@ public final class LevelRun {
             return resumeKeys(s, .pausePaint, input: input, out: &out)
         case .pause:
             guard var p = pause else { return nil }
+            p.appleEvents = appleEvents
             emit(&out, p.tick(now: now, input: input))
+            appleEvents = p.appleEvents
             pause = p
+            if p.quitDispatched {
+                // `.DoQuitAppAE` → `.Quit` inside the pause loop: it never returns (no pause exit, no rest of frame).
+                quitEventDispatched = true
+                pause = nil
+                keysModal = nil
+                playing = false
+                end = .quit
+                return nil
+            }
             guard p.isDone else { return nil }
             // The pause's live side back: the music player, and the prefs ⌘M / ⌘F re-made current.
             music = p.live.music

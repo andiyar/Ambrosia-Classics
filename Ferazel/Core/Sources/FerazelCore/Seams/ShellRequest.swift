@@ -6,12 +6,12 @@ public enum ShellRequest: Equatable, Sendable {
     case showCursor
     case hideMenuBar
     case showMenuBar
-    /// W4 (◇ `LevelFlow`, D33): load level n — the shell rebuilds the session with the old one's `rngSeed` and
-    /// `carry`, and the renderer. A level exit asks for the level it unlocks (Phase 2: 1…2, else the current level);
-    /// `FerazelSession.deathEffectDone()` asks for the current level.
+    /// W4 (`LevelFlow`, D33): a session not hosted by `LevelRun` (a directly built one — Core tests) ended at a level
+    /// exit: the level the exit unlocks (`LevelFlow.next`), else the current level. The app's sessions are hosted by
+    /// `LevelRun` (A1a), whose level end goes to `GameFlow`; the app ignores this request.
     case loadLevel(Int)
-    /// W4: the game loop ended with G+4 < 1 (M l. 5302–5306) — run `.DeathEffect` (E2's `DeathEffect.frame(step:on:)`),
-    /// then call `FerazelSession.deathEffectDone()`.
+    /// W4: a directly built session's game loop ended with G+4 < 1 (M l. 5302–5306) — `.DeathEffect`. Hosted sessions
+    /// leave it to `LevelRun` (its `.DeathEffect` steps through `LevelServices.deathEffectStep`); the app ignores it.
     case deathEffect
 
     // MARK: Phase 3 (FE0 adds every case; F1b, S1, P1, A1b use them)

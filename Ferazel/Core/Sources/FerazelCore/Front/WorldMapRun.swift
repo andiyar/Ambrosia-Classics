@@ -233,6 +233,12 @@ public final class WorldMapRun {
     /// `DAT_100a5106` set by File ▸ Abort Game's OK while paused on the map (P1): the game loop ends after the map —
     /// the flow's (`.NewGame` / `.ContinueGame` test it after `.ShowWorldMap` returns).
     public private(set) var loopEndRequested = false
+    /// The Apple events queued (A1a; the flow hands its queue in before each `tick` and takes it back after): the map
+    /// loop never fetches events; its pause loop dispatches one (`PauseRun.appleEvents`).
+    public var appleEvents = PendingAppleEvents()
+    /// The pause loop dispatched the quit event: `.Quit` runs from inside `.Pause` and never returns — the run stops
+    /// with no `result` (the flow quits).
+    public private(set) var quitEventDispatched = false
     /// The prefs file (the pause's ⌘M / ⌘F re-read and write it).
     private let files: FrontFiles?
     private let resources: FerazelResources
@@ -337,7 +343,7 @@ public final class WorldMapRun {
     /// One tick at absolute 60 Hz `now` with this tick's polled input.
     public func tick(now: UInt32, input: FrontInput) -> WorldMapOutput {
         var out = WorldMapOutput()
-        while result == nil {
+        while result == nil && !quitEventDispatched {
             if var b = blocking {
                 out.append(b.tick(now: now))
                 guard b.isDone(now: now) else {
@@ -552,8 +558,16 @@ public final class WorldMapRun {
             return true
         case .paused:
             guard var p = pause else { return false }
+            p.appleEvents = appleEvents
             out.append(p.tick(now: now, input: input))
+            appleEvents = p.appleEvents
             pause = p
+            if p.quitDispatched {
+                quitEventDispatched = true
+                pause = nil
+                playing = false
+                return false
+            }
             guard p.isDone else { return false }
             music = p.live.music
             prefs = p.live.live

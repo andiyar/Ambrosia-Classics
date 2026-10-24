@@ -79,7 +79,9 @@ public final class FrameRenderer {
     private var levelData: Data
     /// The fixed tile faces (`TileGridRenderer` takes its blend sheet from them when rebuilt by `setTile`).
     private let fixed: TileSets.Fixed
-    public let prefs: FerazelPrefs
+    /// The live prefs. prefs+4 (parallax) is read at every `copyToScreen`, so the app hands a `.MakeCurrPrefs` (⌘P
+    /// mid-level) through; the blitters took prefs+6 (Effects) at `init` and keep it.
+    public var prefs: FerazelPrefs
     public let search: ColorSearch
     public let dither: DitherModel
     public private(set) var tables: LevelTables
@@ -249,8 +251,8 @@ public final class FrameRenderer {
     }
 
     /// One `.DeathEffect @ 10005270` step k (0 … 49) on `screen`, with its `.HandleAsyncGammaFade` step applied to
-    /// `gamma` (none after k = 0x30) — what the app (A3) runs once per tick for the 50 steps, then
-    /// `session.deathEffectDone()`; `executed` holds the gamma step.
+    /// `gamma` (none after k = 0x30); `executed` holds the gamma step. (The app's path since A1a is `LevelRun`'s: its
+    /// `LevelServices.deathEffectStep` paints the bands and the gamma op rides the tick's output.)
     /// - Throws: `Refusal.deathEffectStep` for k outside 0 … 49, `Refusal.tintTableNotBuilt` before the hand-off.
     public func deathEffectStep(_ k: Int) throws {
         guard (0..<DeathEffect.steps).contains(k) else { throw Refusal.deathEffectStep(k) }

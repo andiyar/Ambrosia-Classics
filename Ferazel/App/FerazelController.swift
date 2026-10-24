@@ -7,9 +7,9 @@ import HectorShell
 /// Game / Continue, levels, the map, the death screen) — the App ticks it once per 60 Hz tick with the polled input
 /// (`GetKeys` as `KeyState`, Caps Lock, the mouse in canvas coordinates, the button, whether the app is active), draws
 /// each tick's `segments` in order on the one shared `ScreenSurface` — `.screen` → the level-less `ScreenRenderer`
-/// (inside a level: the level's `ConversationRenderer`, whose own `ScreenRenderer` reads the level chain), `.level` →
-/// the level's `FrameRenderer` (built per level through `LevelServices`), `.map` → `MapRenderer` — plays the tick's
-/// sounds and music cues, honours its requests (cursor, menu bar, dialogs, file panels, quit), and presents the
+/// (inside a level: the level-chain `ScreenRenderer`, the conversation's own ops the level's `ConversationRenderer`),
+/// `.level` → the level's `FrameRenderer` (built per level through `LevelServices`), `.map` → `MapRenderer` — plays
+/// the tick's sounds and music cues, honours its requests (cursor, menu bar, dialogs, file panels, quit), presents the
 /// surface through its presented CLUT (then MacGamma) when the tick asks. The 640×480 screen is shown at a
 /// whole-number scale (Ben's ruling 4, design §5).
 @MainActor final class FerazelController: NSObject, NSApplicationDelegate, ShellInputHandler {
@@ -52,6 +52,8 @@ import HectorShell
     /// until the next is prepared.
     private var levelRenderer: FrameRenderer?
     private var conversationRenderer: ConversationRenderer?
+    /// The `LevelRun` that was running when `conversationRenderer` was built (`prepare`).
+    private weak var conversationRun: LevelRun?
     private let rasterizer = CoreTextRasterizer()
     /// The conversation text's measures (C1/C2: the 214-px wrap and the typing timeline need real widths).
     private var conversationText = ConversationText.unmeasured
@@ -59,8 +61,6 @@ import HectorShell
     private var configuredRun: LevelRun?
     private var audio: FerazelAudio?
     private let files = FerazelFiles()
-    /// The live prefs as the flow last reported them (`FrontOutput.prefs`: Options, ⌘M / ⌘F, a save, ⌘P).
-    private var prefs = FerazelPrefs()
     private var shell: ShellWindowController!
     private var timer: ShellIdleTimer!
     private let bitmap = ShellBitmap(width: FerazelController.width, height: FerazelController.height)
@@ -85,6 +85,8 @@ import HectorShell
     private var pendingOpen: SavedGameRef?
     /// The flow's `.quit` came (terminate without asking again); a system terminate waits for it.
     private var quitApproved = false
+    /// A system terminate answered `.terminateLater`: its quit event is queued in the flow (`GameFlow.appleEvents`)
+    /// or `.Quit` is running; answered true at the flow's `.quit`, false once the event was dropped.
     private var terminateReplyPending = false
 
     // MARK: Launch
@@ -114,6 +116,7 @@ import HectorShell
             conversationText = TextLayout.conversationText(rasterizer)
             audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory)
             // `.SetPrefFile` + `.InitPrefs` (M l. 8192–8243): the stored record, else the defaults, written at once.
+            let prefs: FerazelPrefs
             if let record = files.loadPrefs() {
                 prefs = FerazelPrefs(record: record)
             } else {
@@ -234,8 +237,10 @@ import HectorShell
         let now = ShellClock.ticks()
         guard now != lastTick else { return }
         lastTick = now
-        configureLevelRun()
         let out = flow.tick(now: now, input: pollInput())
+        // A run created inside this tick is set up (and the last level's conversation renderer dropped) before the
+        // tick's segments are routed — its first popup draws go to `levelScreen`.
+        configureLevelRun()
         do {
             try draw(flow.segments)
         } catch {
@@ -245,12 +250,14 @@ import HectorShell
         audio?.apply(sounds: out.sounds, stops: out.soundStops, stopAt: out.soundStopAt)
         for cue in out.music { audio?.handle(cue) }
         if let p = out.prefs {
-            prefs = p
+            // `.MakeCurrPrefs` (⌘P, the pause's ⌘M / ⌘F, a save): the live record the renderers read per copy —
+            // `FrameRenderer`'s parallax (prefs+4, every `copyToScreen`), the conversation's `restoreView`.
+            levelRenderer?.prefs = p
             conversationRenderer?.prefs = p
         }
-        configureLevelRun()
         if out.present { present() }
         for request in out.requests { honour(request) }
+        answerTerminate()
         serviceLoad()
     }
 
@@ -259,31 +266,46 @@ import HectorShell
     private func pollInput() -> FrontInput {
         let state = shell.view.pollKeyState()
         let keys = KeyState(pressed: state.held.map { Self.keyMapCode(Int($0)) })
-        let p = shell.view.logicalMouseLocation()
-        let onCanvas = (0..<Self.width).contains(p.h) && (0..<Self.height).contains(p.v)
-        return FrontInput(keys: keys, capsLock: state.capsLock, mouse: onCanvas ? (h: p.h, v: p.v) : nil,
+        return FrontInput(keys: keys, capsLock: state.capsLock, mouse: canvasMouse(),
                           button: NSEvent.pressedMouseButtons & 1 != 0, active: NSApp.isActive)
     }
 
-    /// Right Shift, Option and ⌘ (0x3C, 0x3D, 0x36) as the left keys (0x38, 0x3A, 0x37): the classic `KeyMap`
-    /// reports either side of a modifier under the left key's bit.
+    /// The pointer in 640×480 canvas coordinates, nil when it is not over the game image (or there is no window):
+    /// tested before truncating (HectorShell's `logicalMouseLocation` truncates toward zero, so −0.5 would read 0, and
+    /// answers (0, 0) without a window). Same mapping as `ShellScaling.logicalPoint(viewPoint:…)`.
+    private func canvasMouse() -> (h: Int, v: Int)? {
+        let view = shell.view
+        guard let window = view.window else { return nil }
+        let p = view.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+        let r = view.imageRectInPoints
+        guard r.width > 0, r.height > 0 else { return nil }
+        let x = (Double(p.x) - Double(r.minX)) * Double(Self.width) / Double(r.width)
+        let y = Double(Self.height) - (Double(p.y) - Double(r.minY)) * Double(Self.height) / Double(r.height)
+        guard x >= 0, x < Double(Self.width), y >= 0, y < Double(Self.height) else { return nil }   // NaN fails too
+        return (h: Int(x), v: Int(y))
+    }
+
+    /// Right Shift, Option, Control and ⌘ (0x3C, 0x3D, 0x3E, 0x36) as the left keys (0x38, 0x3A, 0x3B, 0x37): the
+    /// classic `KeyMap` reports either side of a modifier under the left key's bit, and the game reads every key the
+    /// same way (`.IsInputKeyPressed` → `_IsPressed(prefs+0x12 + 2n)`, one `GetKeys` bit test, M l. 42340–42353).
     static func keyMapCode(_ code: Int) -> Int {
         switch code {
         case 0x3c: return 0x38
         case 0x3d: return 0x3a
+        case 0x3e: return 0x3b
         case 0x36: return 0x37
         default: return code
         }
     }
 
     /// A new `LevelRun` gets the conversation measures before its session can step (its popup blocks the first 16
-    /// ticks, L2), and the previous level's conversation renderer goes.
+    /// ticks, L2), and the previous level's conversation renderer goes — unless `prepare` already built this run's.
     private func configureLevelRun() {
         guard let run = flow.levelRun else { return }
         guard run !== configuredRun else { return }
         configuredRun = run
         run.conversationText = conversationText
-        conversationRenderer = nil
+        if conversationRun !== run { conversationRenderer = nil }
     }
 
     /// The tick's draws, renderer by renderer, in order (F1b: the segments only).
@@ -291,17 +313,42 @@ import HectorShell
         for segment in segments {
             switch segment {
             case .screen(let ops):
-                if flow.levelRun != nil {
-                    if let c = conversationRenderer { try c.apply(ops) } else { try levelScreen.apply(ops) }
-                } else {
+                guard flow.levelRun != nil else {
                     try frontScreen.apply(ops)
+                    break
                 }
+                // In a level each op goes to the renderer that draws it as the original: the conversation's own ops
+                // (`ConversationRun`, C2) to `ConversationRenderer`; the pause, stage, load-bar and every other screen
+                // op to the level-chain `ScreenRenderer` (`DrawString` text, pictures under the screen CLUT).
+                var run: [DrawOp] = []
+                var toConversation = false
+                func flush() throws {
+                    guard !run.isEmpty else { return }
+                    if toConversation, let c = conversationRenderer { try c.apply(run) } else { try levelScreen.apply(run) }
+                    run = []
+                }
+                for op in ops {
+                    let c = Self.isConversationOp(op)
+                    if c != toConversation { try flush(); toConversation = c }
+                    run.append(op)
+                }
+                try flush()
             case .level(let ops):
                 guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
                 try r.apply(FrameOps(draws: ops))
             case .map(let ops):
                 try mapRenderer.apply(ops)
             }
+        }
+    }
+
+    /// The ops only `ConversationRun` makes (C1/C2): `DrawChar` text, the conversation GWorld's transparent copies
+    /// (no forced CLUT), the end's `restoreView` and its mode-3 `drawBlackLines`.
+    static func isConversationOp(_ op: DrawOp) -> Bool {
+        switch op {
+        case .drawText, .restoreView, .drawBlackLines: return true
+        case .copyPicture(_, _, _, _, nil, true): return true
+        default: return false
         }
     }
 
@@ -318,10 +365,12 @@ import HectorShell
         flow.loadFinished()
     }
 
-    /// Every `snd ` of the Sounds file — or with F1 at boot (`soundLoading` off) only the menu buttons' 4803 / 4804,
-    /// which `.InitAppGlobals` loads unconditionally (M l. 352–357) — and their play lengths for the stage screens.
+    /// Every `snd ` of the Sounds file — or with F1 at boot (`soundLoading` off) only the four `.InitAppGlobals` loads
+    /// unconditionally (M l. 350–356): 198 (the pause, `uRam100ab9bc`), 4801 and the menu buttons' 4803 / 4804 — and
+    /// their play lengths for the stage screens.
     private func loadSounds() {
-        let only: Set<Int16>? = flow.soundLoading ? nil : [MainMenu.enterSound, MainMenu.exitSound]
+        let only: Set<Int16>? = flow.soundLoading ? nil
+            : [PauseRun.sound, 4801, MainMenu.enterSound, MainMenu.exitSound]
         do {
             let bank = try SoundBank(sounds: resources.sounds)
             audio?.loadSounds(bank, only: only)
@@ -506,24 +555,31 @@ import HectorShell
         }
     }
 
-    /// A terminate the flow did not ask for (the app menu's Quit, logout — the quit Apple event, `.DoQuitAppAE`): at
-    /// the main menu (or before it: the boot, a menu dialog) the flow runs `.Quit` first and the answer waits for its
-    /// `.quit`; while a game runs the original would hold the event until its next `.CheckEvent`, so the replica quits
-    /// at once rather than hang a logout. // later: A1b — the File menu's Quit, menus disabled during play.
+    /// A terminate the flow did not ask for (the app menu's Quit, logout — the quit Apple event, `.DoQuitAppAE`): the
+    /// event is queued in the flow and the answer waits (`.terminateLater`). As the original: a `.CheckEvent` — the
+    /// main menu's pass or the pause loop's — dispatches it and `.Quit` runs (answered true at its `.quit`); `.GameLoop`
+    /// with "Allow background tasks" and `.MainMenu`'s boot idle fetch it and drop it (answered false, the game goes
+    /// on); anywhere else it waits (a level with the pref off holds it until a pause or the menu). Once `.Quit` runs no
+    /// event is dispatched again, so a terminate then just waits for its `.quit`; a second terminate while one is
+    /// waiting is the same queued event — cancelled, the first answer stands. // later: A1b — the File menu's Quit.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let flow, !quitApproved, !terminateReplyPending else { return .terminateNow }
-        switch flow.state {
-        case .newGame, .continueGame, .quit:
-            return .terminateNow
-        case .boot, .loading, .mainMenu, .options, .credits:
-            flow.quitEvent()
-            terminateReplyPending = true
-            return .terminateLater
-        }
+        guard let flow, !quitApproved else { return .terminateNow }
+        guard !terminateReplyPending else { return .terminateCancel }
+        if !flow.quitting { flow.quitEvent() }
+        terminateReplyPending = true
+        return .terminateLater
     }
 
-    /// Finder open (`.DoOpenDocAE`): Continue with the first file when no game loop runs (`DAT_100a5106` set), else
-    /// ignored. The flow takes it at the main menu's next pass.
+    /// After each tick: a waiting terminate whose quit event was dropped (no `.Quit` running, none queued) is refused.
+    private func answerTerminate() {
+        guard terminateReplyPending, !quitApproved, !flow.quitting, !flow.appleEvents.quit else { return }
+        terminateReplyPending = false
+        NSApp.reply(toApplicationShouldTerminate: false)
+    }
+
+    /// Finder open (`.DoOpenDocAE`): queued in the flow like the quit — the menu pass's `.CheckEvent` continues with the
+    /// first file (`DAT_100a5106` set); inside a game the pause loop's ignores it (`5106` clear) and `.GameLoop`'s
+    /// background-tasks fetch drops it; with neither it waits for the menu after the game.
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         let ref = SavedGameRef(url: url, displayName: url.lastPathComponent)
@@ -531,10 +587,7 @@ import HectorShell
             pendingOpen = ref
             return
         }
-        switch flow.state {
-        case .newGame, .continueGame, .quit: return
-        default: flow.openDocument(ref)
-        }
+        flow.openDocument(ref)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -576,6 +629,7 @@ extension FerazelController: @MainActor LevelServices {
                                   text: rasterizer, prefs: flow.toggles.live, surface: surface)
         levelRenderer = r
         conversationRenderer = ConversationRenderer(frame: r, text: rasterizer, prefs: flow.toggles.live)
+        conversationRun = flow.levelRun
         return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces)
     }
 

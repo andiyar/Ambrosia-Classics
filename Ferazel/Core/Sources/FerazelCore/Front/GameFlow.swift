@@ -16,6 +16,46 @@ public enum FlowSegment: Equatable, Sendable {
     case map([MapOp])
 }
 
+/// The Apple events the system sent that no `.CheckEvent` has dispatched yet (A1a; one high-level event queue). Only
+/// two calls take them: `.CheckEvent` (`WaitNextEvent(0xffff, …, 1, …)` + `.HandleEvent`'s `AEProcessAppleEvent`, M l.
+/// 7487–7530) in the menu loop (M l. 7441) and the pause loop (M l. 3218) dispatches one; a `WaitNextEvent(0xffff, …)`
+/// whose event is never handled fetches one and drops it — `.GameLoop`'s, once per iteration when prefs+0x08 "Allow
+/// background tasks" is set (M l. 5277–5279), and `.MainMenu`'s 60-tick idle (M l. 7323). Elsewhere (the stage
+/// screens, the map loop, the death screen, `.Quit`'s sequence) they stay queued.
+public struct PendingAppleEvents: Equatable, Sendable {
+    public enum Event: Equatable, Sendable {
+        /// `'quit'` → `.DoQuitAppAE` → `.Quit` (M l. 31240–31245).
+        case quit
+        /// `'odoc'` → `.DoOpenDocAE`: `.ContinueGame(&reply)` only while `DAT_100a5106` is set (M l. 31166–31236).
+        case open(SavedGameRef)
+    }
+
+    /// `'quit'` waiting.
+    public var quit = false
+    /// The Finder's `'odoc'` waiting (its first file).
+    public var open: SavedGameRef?
+
+    public init(quit: Bool = false, open: SavedGameRef? = nil) {
+        self.quit = quit
+        self.open = open
+    }
+
+    public var isEmpty: Bool { !quit && open == nil }
+
+    /// The next event out of the queue (the quit first), or nil.
+    public mutating func takeFirst() -> Event? {
+        if quit {
+            quit = false
+            return .quit
+        }
+        if let ref = open {
+            open = nil
+            return .open(ref)
+        }
+        return nil
+    }
+}
+
 /// The whole game's front end as one tick machine (plan S2 `GameFlow`, F1a part 1; Invariant 3): `.main @ 1000ffc0`
 /// (M l. 8136–8358) — the logo, the boot music, the boot keys, the loading screen and its 3-D bar — then
 /// `.MainMenu @ 1000e618` (M l. 7303–7445): the buttons (`.TrackClickOnCommandButton`, mouse and keyboard), the
@@ -199,9 +239,11 @@ public final class GameFlow {
     private var lastPassEnd: UInt32?
     /// The running level threw (a session or renderer failure) — reported as the level-load error.
     var levelFailed = false
-    /// A1a: the Apple events waiting for the menu loop's `.CheckEvent` (`openDocument`, `quitEvent`).
-    private var openEvent: SavedGameRef?
-    private var quitEventPending = false
+    /// A1a: the Apple events no `.CheckEvent` has taken yet (`openDocument`, `quitEvent`; `PendingAppleEvents`). A
+    /// running `LevelRun` / `WorldMapRun` takes them over for its tick (its game loop and its pause loop).
+    public internal(set) var appleEvents = PendingAppleEvents()
+    /// `.Quit` has started (by any path): it never returns, so no later event is ever dispatched.
+    public internal(set) var quitting = false
 
     /// `prefs` = the live record `.main` built (`.InitPrefs` + `.MakeCurrPrefs`, M l. 8192–8243 — the App read it with
     /// `files.loadPrefs()`); `seed` = `FastRand.clockSeed` at launch (`.InitAppGlobals`' `FastRand(0)`).
@@ -330,16 +372,19 @@ public final class GameFlow {
     // MARK: - The Apple events (A1a)
 
     /// `.DoOpenDocAE @ 10033dbc` (M l. 31166–31236; save-continue §4): the Finder opened `ref` → `.ContinueGame(&reply)`
-    /// while `DAT_100a5106` is set (no game loop running; data-section initial 1). The event waits in the queue until
-    /// the menu loop's `.CheckEvent` dispatches it (the menu pass's end); the App sends it only when no game runs.
+    /// while `DAT_100a5106` is set (no game loop running; data-section initial 1). The event waits in the queue
+    /// (`appleEvents`) until a `.CheckEvent` dispatches it: the menu pass's end continues with it; the pause loop's (in a
+    /// level or on the map: `5106` clear) ignores it; `.GameLoop`'s background-tasks fetch drops it.
     public func openDocument(_ ref: SavedGameRef) {
-        openEvent = ref
+        appleEvents.open = ref
     }
 
-    /// `.DoQuitAppAE @ 10033f24` (M l. 31240–31245): the system's quit → `.Quit` (no confirm), dispatched by the menu
-    /// loop's `.CheckEvent` like any Apple event. // later: the pause loop's `.CheckEvent` (M l. 3218) dispatches it too.
+    /// `.DoQuitAppAE @ 10033f24` (M l. 31240–31245): the system's quit → `.Quit` (no confirm) when a `.CheckEvent`
+    /// dispatches it — the menu pass's end or the pause loop's poll (M l. 3218: in a level the run ends `.quit`, on the
+    /// map `quitEventDispatched`); `.GameLoop`'s background-tasks fetch and `.MainMenu`'s idle drop it (`appleEvents`).
+    /// The App's terminate waits for `.quit`, or is cancelled once `appleEvents.quit` is gone without `quitting`.
     public func quitEvent() {
-        quitEventPending = true
+        appleEvents.quit = true
     }
 
     // MARK: - Blocking calls
@@ -358,8 +403,13 @@ public final class GameFlow {
             guard loadDone else { return false }
             loadDone = false
         case .idle(let start):
-            let event = input.button || input.keys != KeyState()
-            guard event || Int(now &- start) >= BootSequence.menuIdleTicks else { return false }
+            if appleEvents.quit {
+                // `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323) returns the queued quit and nothing handles it.
+                appleEvents.quit = false
+            } else {
+                let event = input.button || input.keys != KeyState()
+                guard event || Int(now &- start) >= BootSequence.menuIdleTicks else { return false }
+            }
         case .track(var track):
             let (events, result) = track.step(button: input.button, mouse: input.mouse)
             emit(events, button: track.button, &out)
@@ -367,6 +417,8 @@ public final class GameFlow {
             trackResult = result
         case .level:
             guard let run = levelRun else { break }
+            run.appleEvents = appleEvents
+            defer { appleEvents = run.appleEvents }
             do {
                 emit(try run.tick(now: now, input: input), &out)
             } catch {
@@ -376,8 +428,10 @@ public final class GameFlow {
             guard run.end != nil else { return false }
         case .map:
             guard let m = worldMap else { break }
+            m.appleEvents = appleEvents
             emit(m.tick(now: now, input: input), &out)
-            guard m.result != nil || m.quitRequested else { return false }
+            appleEvents = m.appleEvents
+            guard m.result != nil || m.quitRequested || m.quitEventDispatched else { return false }
         case .death:
             guard var d = deathScreen else { break }
             out.append(d.tick(now: now, input: input, fade: &fade))
@@ -575,13 +629,12 @@ public final class GameFlow {
             if f.continueRequested { f.continueGame(f.lastReply, &out) }
         }
         items.append { f, _, _, out in
-            // `.CheckEvent`'s `AEProcessAppleEvent` (A1a): the quit, or the Finder's open with no game loop running.
-            if f.quitEventPending {
-                f.quitEventPending = false
-                f.quit()
-            } else if let ref = f.openEvent {
-                f.openEvent = nil
-                f.continueGame(ref, &out)
+            // `.CheckEvent`'s `AEProcessAppleEvent` (A1a): one event — the quit, or the Finder's open (`5106` set: no
+            // game loop runs at the menu).
+            switch f.appleEvents.takeFirst() {
+            case .quit?: f.quit()
+            case .open(let ref)?: f.continueGame(ref, &out)
+            case nil: break
             }
         }
         items.append { f, now, _, _ in
@@ -713,6 +766,7 @@ public final class GameFlow {
     /// `.Quit @ 1000e9d4` (M l. 7447–7482). The prefs are not written; `STSetVolume` of the startup volume is not
     /// reproduced (Known deviation 8).
     func quit() {
+        quitting = true
         run([
             { f, now, _, out in
                 // `InitCursor`, `ShowCursorSafe`, `SetWatchCursor`, `FlushEvents`, `FadeAIFFMusic(0,1)`.

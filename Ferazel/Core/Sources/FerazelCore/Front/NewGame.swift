@@ -155,6 +155,7 @@ extension GameFlow {
             deathEntry255 = Self.entry255(resources, level: run.levelFile.header)
         }
         let end = levelRun?.end
+        let quitEvent = levelRun?.quitEventDispatched ?? false
         levelRun = nil
         if levelFailed {
             levelFailed = false
@@ -174,9 +175,10 @@ extension GameFlow {
             run([{ f, now, _, out in f.mapEnded(continuing: continuing, now, &out) }])
             return
         case .quit?:
-            // ⌘Q's OK inside the level (`.CheckGameLoopKeys`, P1): `.Quit` — it never returns.
+            // ⌘Q's OK inside the level (`.CheckGameLoopKeys`, P1; `fd50 = 1`) or the pause loop's quit event (A1a,
+            // `.DoQuitAppAE`): `.Quit` — it never returns.
             loopEnded = true
-            quitRequested = true
+            if !quitEvent { quitRequested = true }
             quit()
             return
         case .died?, .aborted?, nil:
@@ -241,6 +243,12 @@ extension GameFlow {
         aborted = m.aborted
         quitRequested = m.quitRequested
         worldMap = nil
+        if m.quitEventDispatched {
+            // The map pause loop's quit event (A1a, `.DoQuitAppAE` from `.Pause`'s `.CheckEvent`): `.Quit` there —
+            // it never returns, so nothing of `.ShowWorldMap`'s exit runs.
+            quit()
+            return
+        }
         guard let n = m.result else {
             // `.FindCurrNode`'s `ExitToShell` (M l. 67155): the map has sent `.quit`; nothing returns.
             state = .quit

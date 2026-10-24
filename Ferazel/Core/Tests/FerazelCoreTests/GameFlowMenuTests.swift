@@ -180,6 +180,24 @@ final class GameFlowMenuTests: XCTestCase {
             $0.state == .mainMenu
         }
         XCTAssertEqual(Int(d.first { tints($0.out) > 0 }!.t &- u2), 5)
+        // A quit event ends the idle too — and is lost: `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323) returns it and
+        // nothing handles it, so no `.Quit` follows (the App's terminate is cancelled).
+        let eaten = make(r)
+        var e: UInt32 = 0
+        drive(eaten, &e) { f in if case .loading = f.state { return true }; return false }
+        eaten.loadFinished()
+        drive(eaten, &e) { f in if case .loading(.faces) = f.state { return true }; return false }
+        eaten.loadFinished()
+        let e2 = e
+        let q = drive(eaten, &e, input: { t in
+            if t &- e2 == 5 { eaten.quitEvent() }
+            return FrontInput()
+        }) { $0.state == .mainMenu }
+        XCTAssertEqual(Int(q.first { tints($0.out) > 0 }!.t &- e2), 5)
+        drive(eaten, &e, max: 30) { _ in false }
+        XCTAssertEqual(eaten.state, .mainMenu)
+        XCTAssertFalse(eaten.quitting)
+        XCTAssertTrue(eaten.appleEvents.isEmpty)
 
         // Boot keys N+F (0x2d + 0x03): fading disabled + "Fading disabled."; F1 (0x7a): "Sound loading turned off."
         let keyed = make(r)
@@ -355,6 +373,25 @@ final class GameFlowMenuTests: XCTestCase {
         XCTAssertEqual(qt.last!.out.draws.last, .setScreenClut(id: 801))
         XCTAssertEqual(Int(qt.last!.t &- w0), 10 + 24 + 30)
         XCTAssertEqual(qt.filter { tints($0.out) > 0 }.count, 30)
+
+        // The system's quit at the main menu (`.DoQuitAppAE`, dispatched by the pass's `.CheckEvent`): the same `.Quit`
+        // sequence with no button track — FadeAIFFMusic(0,1), `.stop`, GammaFadeOut(6), clut 801, `ExitToShell`.
+        let sys = make(try resources())
+        var y: UInt32 = 0
+        bootToMenu(sys, &y)
+        XCTAssertFalse(sys.quitting)
+        sys.quitEvent()
+        let y0 = y
+        let st = drive(sys, &y, max: 200) { $0.state == .quit }
+        XCTAssertTrue(sys.quitting)
+        XCTAssertTrue(sys.appleEvents.isEmpty)
+        XCTAssertFalse(st.contains { pictures($0.out).contains(4905) }, "no button track")
+        XCTAssertEqual(st[0].out.requests.first, .showCursor)
+        XCTAssertEqual(st[0].out.music.first, .volume(256))
+        XCTAssertEqual(st[24].out.music, [.volume(0), .stop])
+        XCTAssertEqual(st.last!.out.requests.suffix(2), [.showMenuBar, .quit])
+        XCTAssertEqual(st.last!.out.draws.last, .setScreenClut(id: 801))
+        XCTAssertEqual(Int(st.last!.t &- y0), 24 + 30)
     }
 
     func testMouseTrackSlideOut() throws {

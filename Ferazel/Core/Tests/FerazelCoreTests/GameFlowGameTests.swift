@@ -258,6 +258,49 @@ final class GameFlowGameTests: XCTestCase {
             XCTAssertEqual(rig3.flow.levelNumber, expected, "start \(start)")
             XCTAssertEqual(rig3.levels.prepared, [expected], "start \(start)")
         }
+
+        // A1a, the system's quit during a level. "Allow background tasks" off (the default): `.GameLoop` fetches no
+        // event, so the quit stays queued; the pause loop's `.CheckEvent` (Caps Lock, M l. 3218) dispatches it →
+        // `.Quit` from inside `.Pause` (no pause exit, `fd50` untouched) → `ExitToShell`.
+        func runTicks(_ rig: Rig, _ n: Int, _ input: FrontInput = FrontInput()) {
+            var k = 0
+            rig.drive(max: n, input: { _ in input }) { _ in k += 1; return k == n }
+        }
+        let rig4 = Rig(r)
+        rig4.toMenu()
+        rig4.press(0x2d)
+        rig4.drive { self.isRunning($0, level: 1) }
+        rig4.flow.quitEvent()
+        runTicks(rig4, 10)
+        XCTAssertTrue(rig4.flow.appleEvents.quit, "held: no event fetch in the game loop")
+        XCTAssertFalse(rig4.flow.quitting)
+        let paused = rig4.drive(input: { _ in FrontInput(capsLock: true) }) { $0.state == .quit }
+        XCTAssertTrue(rig4.flow.quitting)
+        XCTAssertTrue(rig4.flow.appleEvents.isEmpty)
+        XCTAssertFalse(rig4.flow.quitRequested, "`fd50` is ⌘Q's, not the quit event's")
+        XCTAssertNil(rig4.flow.levelRun)
+        XCTAssertTrue(pictures(draws(paused)).contains(PauseRun.banner))
+        XCTAssertEqual(paused.last?.out.requests.suffix(2), [.showMenuBar, .quit])
+        let exitMenus = ShellRequest.showMenuBarItems(MenuState(menusLive: false, paused: true, musicOn: true,
+                                                                soundOn: true))
+        XCTAssertTrue(paused.contains { $0.out.requests.contains(.showMenuBar) && !$0.out.requests.contains(.quit) })
+        XCTAssertFalse(paused.contains { $0.out.requests.contains(exitMenus) }, "no pause exit")
+        // "Allow background tasks" on: every iteration's `WaitNextEvent(0xffff, …, 0, 0)` (M l. 5277–5279) fetches the
+        // quit and never handles it — lost; the pause later dispatches nothing and the game goes on.
+        let rig5 = Rig(r)
+        rig5.flow.toggles.live.backgroundTasks = 1
+        rig5.toMenu()
+        rig5.press(0x2d)
+        rig5.drive { self.isRunning($0, level: 1) }
+        let before = try XCTUnwrap(rig5.flow.levelRun).iterations
+        rig5.flow.quitEvent()
+        rig5.drive { ($0.levelRun?.iterations ?? 0) > before }
+        XCTAssertTrue(rig5.flow.appleEvents.isEmpty)
+        XCTAssertFalse(rig5.flow.quitting)
+        runTicks(rig5, 120, FrontInput(capsLock: true))
+        XCTAssertNotNil(rig5.flow.levelRun?.pause, "paused, no quit")
+        XCTAssertEqual(rig5.flow.state, .newGame)
+        XCTAssertFalse(rig5.flow.quitting)
     }
 
     func testLevel1ToMapToLevel2() throws {
@@ -387,6 +430,29 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertNil(rig2.flow.worldMap)
         XCTAssertTrue(rig2.flow.quitRequested)
         for _ in 0..<5 { XCTAssertEqual(rig2.flow.tick(now: rig2.t, input: FrontInput()), FrontOutput()); rig2.t += 1 }
+
+        // A1a: the system's quit on the map stays queued (the map loop fetches no event) until the map's pause loop
+        // dispatches it → `.Quit` from inside `.Pause` → `ExitToShell`.
+        let rig3 = Rig(r)
+        rig3.toMenu()
+        rig3.press(0x2d)
+        rig3.drive { self.isRunning($0, level: 1) }
+        try touchExit(try XCTUnwrap(rig3.flow.levelRun?.session), record: 66)
+        rig3.drive { self.onIdleMap($0) }
+        rig3.flow.quitEvent()
+        rig3.drive(max: 1) { _ in true }
+        XCTAssertTrue(rig3.flow.appleEvents.quit)
+        var mapPaused = false
+        let mapQuit = rig3.drive(input: { _ in FrontInput(capsLock: true) }) { f in
+            if f.worldMap?.pause != nil { mapPaused = true }
+            return f.state == .quit
+        }
+        XCTAssertTrue(mapPaused)
+        XCTAssertNil(rig3.flow.worldMap)
+        XCTAssertTrue(rig3.flow.quitting)
+        XCTAssertFalse(rig3.flow.quitRequested)
+        XCTAssertTrue(rig3.flow.appleEvents.isEmpty)
+        XCTAssertEqual(mapQuit.last?.out.requests.suffix(2), [.showMenuBar, .quit])
     }
 
     func testDeathWithoutSaveGoesToMenu() throws {
@@ -697,5 +763,57 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(s6.world.records[24].p1, 0)
         XCTAssertTrue(rig5.files.written.isEmpty)
         XCTAssertEqual(rig5.flow.levelRun?.saveState.lastReply, other)
+
+        // A1a, the Finder's open (`.DoOpenDocAE`). At the main menu: the pass's `.CheckEvent` → `.ContinueGame(&reply)`
+        // with that file — no file dialog, level 1 at the saved spot.
+        func runTicks(_ rig: Rig, _ n: Int, _ input: FrontInput = FrontInput()) {
+            var k = 0
+            rig.drive(max: n, input: { _ in input }) { _ in k += 1; return k == n }
+        }
+        let rig6 = Rig(r)
+        rig6.toMenu()
+        let finder = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/finder"), displayName: "finder")
+        rig6.files.blocks[finder.url] = try checkpoint(r)
+        rig6.flow.openDocument(finder)
+        let opened = rig6.drive { self.isRunning($0, level: 1, iterations: 1) }
+        XCTAssertEqual(rig6.flow.state, .continueGame)
+        XCTAssertEqual(rig6.files.reads, [finder.url])
+        XCTAssertEqual(rig6.flow.lastReply, finder)
+        XCTAssertTrue(rig6.flow.appleEvents.isEmpty)
+        XCTAssertFalse(opened.contains { askedFile($0.out) })
+        XCTAssertEqual([try XCTUnwrap(rig6.flow.levelRun?.session).startX,
+                        try XCTUnwrap(rig6.flow.levelRun?.session).startY], [2371, 872])
+        // While a level runs with "Allow background tasks" on: the game loop's fetch drops it — ignored, and the menu
+        // after the game continues nothing.
+        let rig7 = Rig(r)
+        rig7.flow.toggles.live.backgroundTasks = 1
+        rig7.files.blocks[finder.url] = try checkpoint(r)
+        rig7.toMenu()
+        rig7.press(0x2d)
+        rig7.drive { self.isRunning($0, level: 1) }
+        rig7.flow.openDocument(finder)
+        runTicks(rig7, 10)
+        XCTAssertTrue(rig7.flow.appleEvents.isEmpty)
+        XCTAssertEqual(rig7.flow.levelRun?.levelNumber, 1)
+        try kill(try XCTUnwrap(rig7.flow.levelRun?.session))
+        rig7.drive { $0.state == .mainMenu }
+        runTicks(rig7, 30)
+        XCTAssertEqual(rig7.flow.state, .mainMenu)
+        XCTAssertTrue(rig7.files.reads.isEmpty)
+        // With it off (the default) the event stays queued through the level and the menu's first pass continues with
+        // it (`5106` set again) — the original's order, not an App filter.
+        let rig8 = Rig(r)
+        rig8.files.blocks[finder.url] = try checkpoint(r)
+        rig8.toMenu()
+        rig8.press(0x2d)
+        rig8.drive { self.isRunning($0, level: 1) }
+        rig8.flow.openDocument(finder)
+        runTicks(rig8, 10)
+        XCTAssertEqual(rig8.flow.appleEvents.open, finder)
+        XCTAssertTrue(rig8.files.reads.isEmpty)
+        try kill(try XCTUnwrap(rig8.flow.levelRun?.session))
+        rig8.drive { $0.state == .continueGame }
+        XCTAssertEqual(rig8.files.reads, [finder.url])
+        XCTAssertTrue(rig8.flow.appleEvents.isEmpty)
     }
 }

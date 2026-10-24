@@ -402,6 +402,7 @@ final class LevelFlowTests: XCTestCase {
             t += 1
         }
         while run.iterations < 10 && t < 4000 { try tick() }
+        XCTAssertGreaterThanOrEqual(run.iterations, 10, "the warm-up reached the loop")
         let s = try XCTUnwrap(run.session)
         XCTAssertTrue(s.hostedByLevelRun)
         s.world.globals.crunchLog.append(CrunchLogEntry(level: 1, col: 3, row: 4))

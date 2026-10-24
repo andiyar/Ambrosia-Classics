@@ -220,9 +220,10 @@ final class Phase2GoldenTests: XCTestCase {
         XCTAssertEqual(s.world.particles.live, 44)
     }
 
-    /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in — as the App's
-    /// ◇ stand-in does (`FerazelController`, until A1a). The drivers walk the player onto L1 sign rec 1 (step 148). No
-    /// conversation ran, so the input polled at the answer is the frame's own (`keys`, Caps Lock up).
+    /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in (the
+    /// goldens' driver, not the App's path — since A1a the App's sessions are hosted by `LevelRun`, which runs the
+    /// conversation). The drivers walk the player onto L1 sign rec 1 (step 148). No conversation ran, so the input
+    /// polled at the answer is the frame's own (`keys`, Caps Lock up).
     static func answeringTalk(_ s: FerazelSession, _ first: FrameOps, keys: KeyState) -> FrameOps {
         var ops = first
         while let x = ops.suspension {

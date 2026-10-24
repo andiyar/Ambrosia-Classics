@@ -169,6 +169,13 @@ public struct PauseRun {
     public private(set) var polls = 0
     /// `.Pause` has returned.
     public private(set) var isDone = false
+    /// The Apple events queued (A1a; the host hands its queue in before each `tick` and takes it back after): a poll
+    /// with no menu event takes one — the quit (`.DoQuitAppAE` → `.Quit`) or an open (ignored: `DAT_100a5106` is clear
+    /// inside a game).
+    public var appleEvents = PendingAppleEvents()
+    /// A poll dispatched the quit event: `.Quit` runs from inside the pause loop and never returns — the pause stops
+    /// here (no exit sequence) and the host ends with `.Quit`.
+    public private(set) var quitDispatched = false
 
     private let resources: FerazelResources
     private let levelClut: Int16?
@@ -271,6 +278,11 @@ public struct PauseRun {
                 }
             case .loop:
                 guard poll(input: input, out: &out) else { return out }
+                if quitDispatched {
+                    stage = .done
+                    isDone = true
+                    return out
+                }
                 if !paused { exit(now: now, out: &out) } else { return out }
             case .musicIn:
                 // `SwitchTo8BitColorMT`, `MTRedraw`, `fe14 = 0`, `HideTheMenuBar`, `MTRedraw`, the redraws, the cursor.
@@ -323,6 +335,11 @@ public struct PauseRun {
                 out.requests.append(updateMenus(live: true))
             }
             menu = nil
+        } else if case .quit? = appleEvents.takeFirst() {
+            // `.CheckEvent`'s `AEProcessAppleEvent` (M l. 3218, 7530): `.DoQuitAppAE` → `.Quit`, never returning.
+            quitDispatched = true
+            polls += 1
+            return true
         }
         polls += 1
         // M l. 3217–3231 (`*fe40` — a sleep pending — is never set in the replica).
