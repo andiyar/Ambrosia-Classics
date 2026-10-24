@@ -151,7 +151,8 @@ final class SavedFileTests: XCTestCase {
         }
         XCTAssertEqual(SavedGameError.notASavedGame.message, "Sorry, this does not appear to be a saved game file.")
         XCTAssertEqual(SavedGameError.openFailed.message, "Error opening the saved game.")
-        // `.SaveSG`'s error mapping (M l. 41275–41296): −34 / −33 / −44 / other; only the last passes the code.
+        // `.SaveSG`'s error mapping (M l. 41275–41296): −34 / −33 / −44 / other; all four carry the code (r4 = the
+        // error at every `ReportError` call, raw `1004851c`; EC moved SV2's "only the last" expectation by name).
         XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -34).message,
                        "The game could not be saved, because the disk is full.")
         XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -33).message,
@@ -162,7 +163,9 @@ final class SavedFileTests: XCTestCase {
         XCTAssertEqual(other.message,
                        "The game could not be saved. Check that there is enough space and the volume is not locked.")
         XCTAssertEqual(other.code, -36)
-        XCTAssertNil(SavedGameFile.writeErrorReport(osErr: -34).code)
+        XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -34).code, -34)
+        XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -33).code, -33)
+        XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -44).code, -44)
         XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -32).code, -32)   // > −33 falls to the last string
         XCTAssertEqual(SavedGameFile.writeErrorReport(osErr: -35).code, -35)   // < −34, not −44
     }

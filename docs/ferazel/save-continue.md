@@ -186,6 +186,13 @@ No slots: Standard File named files, any number, any folder.
 > only the general one; whether `GenericMessage(1)` shows `^1` is the alert's DITL. Cancel is the only path that puts
 > the old prefs+0x42 back (`CopyPString(auStack_378, …)`, M l. 41310). Built: `SaveSG` (`Front/SaveGame.swift`).
 
+> ⚑ implementer note (Phase 3 EC, loop run 15, 2026-10-24) (BC32): re-read in the disasm — r4 is set once
+> (`1004851c extsh r4,r25`) and only compares and r3 loads follow before the four `.ReportError` calls (raw `10048548`
+> disk full, `10048558` directory full, `10048568` volume locked, `1004857c` general — the last re-does the `extsh`).
+> `.ReportError @ 1003d2a0` always turns r4 into text (`NumToString` at `1003d2dc`, `ParamText` at `1003d2f4`). So all
+> four reports carry the code; the decompile's single explicit argument is Ghidra's reading. SV2's shared mapping
+> gave the code only to the general text; as built: `SavedGameFile.writeErrorReport` returns it for all four.
+
 ### 3.2 Default name (`.IncrementLastSGString @ 1004811c`, l. 40877)
 
 On prefs+0x42 (live prefs copy): if its chars 1..4 are `@@@@` (the factory default "@@@@@",

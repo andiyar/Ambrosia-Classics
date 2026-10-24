@@ -67,13 +67,14 @@ public enum SavedGameFile {
     /// `.SaveSG`'s error mapping (M l. 41275–41296; `ReportError(text, code)`): −34 (disk full, `0x100a58d1`), −33
     /// (directory full, `0x100a5908`), −44 (volume locked, `0x100a5944`), anything else → the general text
     /// (`0x100a597f`). All four reports carry the code: r4 = the error (`extsh r4,r25`, raw `1004851c`) at every
-    /// `ReportError` call (S1, save-continue §3.1 note) — `SaveSG` sends it with each. `code` here is non-nil only for
-    /// the general text, the one the decompile shows passing it explicitly (SV2's reading, kept for its tests).
+    /// `ReportError` call (S1, save-continue §3.1 note), and `.ReportError` always turns it into the alert's text
+    /// (`NumToString` raw `1003d2dc`, `ParamText` raw `1003d2f4`) — so `code` is the error for all four (EC; SV2 had
+    /// it only for the general text, the one the decompile shows passing it explicitly).
     public static func writeErrorReport(osErr: Int16) -> (message: String, code: Int16?) {
         switch osErr {
-        case -34: ("The game could not be saved, because the disk is full.", nil)
-        case -33: ("The game could not be saved, because the directory is full.", nil)
-        case -44: ("The game could not be saved, because the volume is locked.", nil)
+        case -34: ("The game could not be saved, because the disk is full.", osErr)
+        case -33: ("The game could not be saved, because the directory is full.", osErr)
+        case -44: ("The game could not be saved, because the volume is locked.", osErr)
         default: ("The game could not be saved. Check that there is enough space and the volume is not locked.", osErr)
         }
     }
