@@ -1450,3 +1450,10 @@ section (16 items) is the full text; in short:
 **Rejected:** keeping levels 3–4 closed until Phase 5 (Ben can still choose it in Q7); deferring unreachable spells/items
 to the phases that open their levels (no later phase owns player systems).
 **Approved by:** the seat under D34; Ben's later read = QUESTIONS Q7.
+
+**As built — wave 4.0 (loop run 19, 2026-10-24; main 18e00de):** X1 (stale Phase-2 stubs relabelled, `TileHotRects(level:)`
+deleted) → 349; VS (`SoundVoices`, `FrontInput.playing` from the Sound Tool; nil-handle query/stop = every voice, Core and
+Render, follow the binary M l. 78341) → 352; LT ⚑ (Core `LightTable` + `DrawOp.lightTable`; nil-face add returns the free
+slot — follow the binary, bank corrected; **seat ruling: `.lightTable` goes before `.redrawScrollGrid`**, not after, so the
+renderer's strip lights read the current table) → **357/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba
+untouched. Details: the plan's "As executed" notes for X1, VS, LT.

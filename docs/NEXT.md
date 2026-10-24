@@ -50,8 +50,9 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text).
 3. **The plan: `docs/plans/2026-10-24-ferazel-phase4.md`** — read "Verification model" (l. 78, gates G1–G10 incl. G7b
    and G8), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared architecture LOCKED" (l. 222), then your
-   wave's tasks, "Execution order" (l. ~1283, dependencies + file overlaps), "Stand-ins kept (◇)" (l. ~1321), "Bank
-   corrections to append" (l. ~1417; BC35–BC50, each appended by the task named) and "Rulings" (l. ~1510). The design
+   wave's tasks, "Execution order" (l. ~1290, dependencies + file overlaps), "Stand-ins kept (◇)" (l. ~1328), "Bank
+   corrections to append" (l. ~1424; BC35–BC50, each appended by the task named) and "Rulings" (l. ~1523). Read the
+   wave 4.0 "As executed" notes (X1 l. ~342, VS l. ~367, LT l. ~406) — they change seams you will use. The design
    `docs/plans/2026-10-06-ferazel-design.md` §8 row 4 is the scope; the Phase 3 plan is history.
 4. The bank: `docs/ferazel/INDEX.md` then only the topical files your tasks cite; the decompile `ghidra/ferazel/` (the
    dump beats the bank: "follow the binary"; Phase 3's "digest A–F" files were never committed — the Phase 4 plan is
@@ -74,16 +75,19 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-24, written by loop run 18 at its close; head of `main` = run 18's docs-close commit on top of b55e7c5 — read `git log -8 main`)
+## STATE (live, 2026-10-24, written by loop run 19 at its close; head of `main` = run 19's docs-close commit on top of 18e00de — read `git log -8 main`)
 - **Phase 2 "Ferazel moves" CLOSED on the machine side** (loop run 7). **Ben's gate: QUESTIONS Q2 — DEFERRED.**
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
   `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card). **Ben's gate: Q6.**
-- **Phase 4 "Spells + items" PLANNED** (loop run 18; plan `docs/plans/2026-10-24-ferazel-phase4.md` at 04cfec0 →
-  f8d250c → b55e7c5; D38): 24 tasks + phase end A4, **12 ⚑ MAJOR** (LT US BN PK EF CS SH IU SD BX1 TP LV3), ladder
-  **349 → 481**, ten runs. Two Opus legs SOUND WITH FIXES (1 critical: teleporter partner rule) + FABLE-GRADE plan leg
-  PASS WITH FIXES (G2 349/0 re-run), both fix rounds applied, nothing rejected. No HectorKit change. `BuiltLevels`
-  widens to 1...3 at LV3 and 1...4 at LV4; level 5 (first boss) stays refused. **No Phase 4 task executed yet.**
-- `Ferazel/Core` suite: **349 passed, 0 failed/skipped** (run 18 re-ran it). Census `Totals: items 1,108 decoded,
+- **Phase 4 "Spells + items" UNDER WAY** (plan `docs/plans/2026-10-24-ferazel-phase4.md`; D38 + its "As built — wave
+  4.0" paragraph): 24 tasks + phase end A4, 12 ⚑ MAJOR, ladder **349 → 481**. `BuiltLevels` widens to 1...3 at LV3 and
+  1...4 at LV4; level 5 stays refused. **Wave 4.0 DONE (loop run 19):** X1 ad91474 (carry sweep) → 349; VS 1b92b6b +
+  63ce6af (`SoundVoices`, `FrontInput.playing`, `FerazelSession.step(keys:capsLock:playing:)`, `resume(_:playing:)`;
+  nil-handle query/stop = every voice) → 352; LT f2416e9 + 8925bba + 18e00de (Core `LightTable` in
+  `Sources/FerazelCore/Lights/`, `DrawOp.lightTable` emitted **before** `.redrawScrollGrid` — seat ruling, the plan said
+  after; nil-face add returns the free slot; light calls of cannons/bubbles/smokes routed through the table;
+  `FerazelSession.lightTable` `internal(set)`) → **357**. No golden moved.
+- `Ferazel/Core` suite: **357 passed, 0 failed/skipped** (run 19, seat-run from the merge head). Census `Totals: items 1,108 decoded,
   failures 0`. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Run 18's own worktree is the looper's to remove.
@@ -91,14 +95,17 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   chain `b4230ba5a643c5b5`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `e4f4bf977dd98eaa`, swim
   `95ff5176412df650`, 600-frame chain `9532d65a42d39666` / cues `a875a96c2801dbe9`; Phase 3 main-menu screen
   `ed142fed9e3bdce7` (FE0), world map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign frame
-  `c8e41941c1e4d6da` (C2). **Phase 4: LT must not move any golden; only BN, PK, BX1, BX2 (◈ in the plan) may, each
-  recording old → new and the cause in its "As executed" note.**
+  `c8e41941c1e4d6da` (C2). All held through wave 4.0. **Phase 4: only BN, PK, BX1, BX2 (◈ in the plan) may move a
+  golden, each recording old → new and the cause in its "As executed" note; US, IV, HU must not.**
 - **Carried minor follow-ups (not adopted by Phase 4, D38 Ruling 15 — left to Ben's Q6 verdict):** report fade-in when
   faded (M l. 35448) unbuilt; a second queued main-menu pick dropped; boot bar jumps; music decoded on play;
   `.savePoint(saved:)` carries no polled input after the save dialog; `SavedGameFile.writeErrorReport` code typed
   optional; `CoreTextRasterizer` widths untested; `FerazelController.fail()` exits with only an NSLog; the save panel's
-  field label repeats the prompt. (The stale "later: W1/W3/W4/P2" stubs + M7 are X1's.)
-- **Lessons (runs 9–18):** (1) ground on the bank + the dump (digests A–F never committed); (2) the plan is wrong
+  field label repeats the prompt. **Run 19 carries:** `SeparateFromTiles.swift:109` still names landed P2/W1–W3
+  (relabel when a task touches the file); the app's `SoundTool` decides "unloaded" from its own bank (a sound in the
+  bank but never given a handle — 602 — or skipped by the F1 boot load stops only itself; `isPlaying`/`playingSounds`
+  lack the nil-handle-counts-all rule); `GroundCeilingEffects.swift:207` builds a small lookup per smoke frame.
+- **Lessons (runs 9–19):** (1) ground on the bank + the dump (digests A–F never committed); (2) the plan is wrong
   against the dump about once per task — the dump wins, the as-executed bullet records it; (3) run the seat's own gates
   from the worktree once no agent is building; (4) foreground `Agent` calls return the report directly — two review
   legs in one message run in parallel in `git archive` temp copies; (5) a fix round that changes behaviour gets a
@@ -110,26 +117,29 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   (10) a Fable reviewer that launches background helpers returns early — tell it up front "no background agents";
   (11) read each layout/flow table against its ruling's stated why; (12) **run 18: a resumed subagent (SendMessage)
   runs in the background — the seat must stay in its turn (a foreground `Bash` wait loop on `git log -1` up to 10 min)
-  until its notice arrives, or the headless session ends and kills it.**
+  until its notice arrives, or the headless session ends and kills it.** (13) **run 19: a reviewer that symlinks
+  HectorKit for its temp copy can leave a self-link inside `~/Developer/HectorKit` (`HectorKit/HectorKit →
+  HectorKit`, seen at G1) — tell reviewers to make the link inside their temp tree only, and run G1 at the close;
+  remove only a stray link this run's agents made (check its mtime).** (14) fix rounds driven by a review's mutation
+  table work well: ask the implementer to apply each surviving mutation, see a failure, revert, and report the table.
 
-## THIS RUN'S JOB — loop run 19: **Phase 4 wave 4.0 = [X1 VS LT]** (3 tasks, one ⚑ MAJOR)
-- **X1** (plan l. 326, minor, → 349, 0 tests): carry sweep — the stale "later: W1/W3/W4/P2" comments in
-  `SpriteSlot.swift:135`, `SpriteWorld.swift:57,297`, `Player.swift:17`, `RectBounce.swift:155`, `BoxSprite.swift:36`,
-  `BackgroundSprite.swift:25` relabelled; M7 `TileHotRects.init(level:)` (review: no test caller → delete). One Opus
-  review leg (the seat may read a comments-only diff itself, lesson 5).
-- **VS** (plan l. 340, minor, → 352): `SoundVoices` + `FrontInput.playing` from the Render `SoundTool`'s playing set
-  (App `FerazelAudio.swift` + `FerazelController.swift` — G5). One Opus leg.
-- **LT** (plan l. 364, ⚑ MAJOR, → 357): the light table moves into Core (`LightTable`, `DrawOp.lightTable`), **no
-  golden moves**. Two Opus review legs in parallel.
-- Order X1 → VS → LT, each merged to main before the next (lesson 8). Wave end: G3 + G5. Then CLOSE. The next chip names
-  wave 4.1 = [US IV HU] (plan l. 401–505, → 374).
+## THIS RUN'S JOB — loop run 20: **Phase 4 wave 4.1 = [US IV HU]** (3 tasks, one ⚑ MAJOR)
+- **US** (plan l. ~410, ⚑ MAJOR, → 362): `.UpdateSprites` in full (the kill count `+0xe9`, `dead` computed, the
+  write-back flags `+0xea/+0x188..+0x18b/+0x1b5`, `idleEntry +0xa8` — S2 `SpriteSlot` fields; Invariant 8 persistence
+  through the write-back). Two Opus review legs in parallel.
+- **IV** (plan l. ~442, minor, → 368): `Inventory` (`extension GameGlobals`: hasItem / hasItemWhichSlot / removeItem /
+  moveSelectedItemToFront / addItem / learnSpell / stepSelection; `ConvActions.removeItem` calls it). One Opus leg.
+- **HU** (plan l. ~467, minor, → 374): the status bar from the game globals (`StatusBarState` S2 fields + `call`;
+  `startInventory` deleted; Geneva 9/8 counts; flashes). One Opus leg.
+- Order US → IV → HU, each merged to main before the next (lesson 8). Wave end: G3 + G5. Then CLOSE. The next chip names
+  wave 4.2 = [BN PK] (plan l. ~514–626, → 390; both ⚑ MAJOR ◈ — a 2-task run).
 
-## GATES (fenced; verified on this machine 2026-10-24; G2 349/0 re-run by run 18 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-24; G2 357/0, G3 1,108/0, G5 SUCCEEDED re-run by run 19 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (X1 349, VS 352, LT 357), second = 0
+# G2 suite: first number = the ladder total (US 362, IV 368, HU 374), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0
