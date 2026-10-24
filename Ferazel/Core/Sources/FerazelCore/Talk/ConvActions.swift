@@ -59,28 +59,13 @@ enum ConvActions {
             if w.globals.coins < 0 { w.globals.coins = 0 }
             out.draws.append(.statusBar(w.globals.statusBar(levelName: levelName)))
         case 2:
-            let n: Int16 = b == 0 ? 1 : b
-            var found: Int?
-            for k in 0..<GameGlobals.inventorySlots {
-                let s = w.globals.inventory[k]
-                if s.id == -1 || (s.id == a && s.isSpell == 0) {
-                    found = k
-                    break
-                }
-            }
-            guard let k = found else { return }
-            var s = w.globals.inventory[k]
-            s.isSpell = 0
-            s.id = a
-            s.count = s.count &+ n
-            if 99 < s.count { s.count = 99 }
-            w.globals.inventory[k] = s
+            guard w.globals.addItem(a, count: b == 0 ? 1 : b) != -1 else { return }
             let call = PlayerState.SoundCall(cue: PlayerCue(call: .reg, snd: 501, priority: 1, volume: 0x100),
                                              scrollH: 0, scrollV: 0)
             if case .play(let cue)? = SoundCues.convert(call, prefs: prefs) { out.sounds.append(cue) }
             // later: Phase 4 ◇ — `.UpdateItemStat` (the HUD inventory).
         case 3:
-            for _ in 0..<max(1, Int(b)) { removeItem(a, from: &w.globals) }
+            for _ in 0..<max(1, Int(b)) { w.globals.removeItem(a) }
             // later: Phase 4 ◇ — `.UpdateItemStat`.
         case 4:
             if 0 <= record && record < 0x200 { setRecordWord(w, offset: record * 16 + 4 + 2 * Int(a), 1) }
@@ -107,25 +92,6 @@ enum ConvActions {
         default:
             break
         }
-    }
-
-    /// `.RemoveItem(A) @ 10045594` (M l. 39602–39655): the first item slot (spell flag 0) holding A: count − 1; below 1
-    /// the selection `G+0x172` moves back one when it was that slot (floor 0), the slots after it move up one (10 bytes
-    /// each, through slot 26) and slot 26 becomes {−1, 0, −1, 0} (its `+8` byte as it was). Not held → nothing.
-    static func removeItem(_ id: Int16, from g: inout GameGlobals) {
-        guard let k = g.inventory.firstIndex(where: { $0.id == id && $0.isSpell == 0 }) else { return }
-        g.inventory[k].count = g.inventory[k].count &- 1
-        guard g.inventory[k].count < 1 else { return }
-        if Int(g.selectedSlot) == k {
-            g.selectedSlot -= 1
-            if g.selectedSlot < 0 { g.selectedSlot = 0 }
-        }
-        let last = GameGlobals.inventorySlots - 1
-        for j in k..<last { g.inventory[j] = g.inventory[j + 1] }
-        g.inventory[last].id = -1
-        g.inventory[last].count = 0
-        g.inventory[last].field4 = -1
-        g.inventory[last].field6 = 0
     }
 
     // MARK: The live records as the code addresses them

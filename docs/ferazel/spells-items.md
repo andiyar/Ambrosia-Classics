@@ -33,6 +33,10 @@ therefore at most [MED], with the evidence named. `G` = game globals (engine.md 
   ruling 3: 205 #8 Platinum Key, #5 removes a Health Potion; 207 #7 Ice Pick, #9 removes a Steel Key;
   conversations-mcnv §3.4, §4.3) [HIGH].
 
+> ⚑ planner note (Phase 4 IV, 2026-10-25) (BC37): `.RemoveItem` adjusts the selection only when the removed slot **is**
+> the selected one (−1, floor 0); the vacated slot 26 gets id −1, count 0, +4 −1, +6 0 and keeps its +8 byte;
+> `.UpdateItemStat` only when found (M l. 39602–39663).
+
 ## 2. Casting (`.HandleKeys @ 10052ac0`, `.HandlePlayerSprite`, `.CastSpell @ 10051d1c`)  [HIGH]
 
 1. USE (action 6) with the selected slot a spell, no cast in progress, not in the mist/potion

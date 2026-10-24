@@ -265,7 +265,8 @@ public enum Player {
             p.groundKind = 0
             p.ceilingHit = 0
         }
-        // The selected-slot repair (`G+0x172`, the item at `G+0x24 + 10·slot`). // later: Phase 4 (inventory)
+        // The selected-slot repair (l. 45056–45063: `G+0x172`, the item at `G+0x24 + 10·slot`).
+        w.globals.repairSelection()
         // 26 (l. 45064–45100).
         climbPreMove(w, id: id)
         // 27 (l. 45101–45105; plan row 22): the move.
