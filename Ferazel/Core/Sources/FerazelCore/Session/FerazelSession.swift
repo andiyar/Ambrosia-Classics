@@ -250,28 +250,46 @@ public final class FerazelSession {
     /// `.SetScrollLocation`, `.RedrawEntireScrollGrid`, `.UpdateStatusBar(0, 0, 0)` — the iteration-0 block's part
     /// that `LevelRun` emits for a hosted session, at its place (after `HideCursorSafe`, before `.SetAIFFMusic`).
     /// `.AnimateCLUT`, `.BuildTintTable` and `.BuildReddenTable` (M l. 5206–5208) drew in `init` (`tintTableDraws`).
-    /// HU: `keys` is the poll the status bar's key step reads (live in the original).
-    public func startOps(keys: KeyState = KeyState()) -> [DrawOp] {
+    /// HU: `keys` is the poll the status bar's key step reads (live in the original); the call's suffocation tick
+    /// (snd 442) is in the output.
+    public func startOps(keys: KeyState = KeyState()) -> FrontOutput {
         findUpperLeftCorner(graphics: prefs.graphics)
-        return [.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV),
-                .redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV),
-                updateStatusBar(.levelStart, keys: keys)]
+        var out = updateStatusBar(.levelStart, keys: keys)
+        out.draws = [.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV),
+                     .redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV)] + out.draws
+        return out
     }
 
     /// `.UpdateStatusBar` at `site` (HU, `StatusBarCalls` on the world's flow-wide `statusBar`): `.UpdateHealthMagic`'s
-    /// G writes and caches, the selection step on G with actions 8 / 7 of `keys` (the live `IsInputKeyPressed` reads),
-    /// the op. The suffocation tick (snd 442, `.STPlayRegSound(…, 1, 0x100)`) joins the frame's sound calls here.
-    public func updateStatusBar(_ site: StatusBarCalls.Site, keys: KeyState) -> DrawOp {
+    /// G writes and caches, the selection step on G with actions 8 / 7 of `keys` (the live `IsInputKeyPressed` reads).
+    /// Returns the op and the suffocation tick (snd 442, `.STPlayRegSound(…, 1, 0x100)`, M l. 4492) as made at the
+    /// call — for a call outside the frame loop (the level start, the chapter card, the save point's redraw), whose
+    /// sound goes out with that call, not with the next frame's sound calls.
+    public func updateStatusBar(_ site: StatusBarCalls.Site, keys: KeyState) -> FrontOutput {
+        let made = statusBarCall(site, keys: keys)
+        var out = FrontOutput(draws: [made.op])
+        if let call = made.tick, case .play(let cue)? = SoundCues.convert(call, prefs: prefs) { out.sounds.append(cue) }
+        return out
+    }
+
+    /// A call inside a frame (the loop's and `.CheckGameLoopKeys`' sites; a directly built session's start block, in
+    /// its first step): the tick joins the frame's sound calls in call order.
+    private func statusBarInFrame(_ site: StatusBarCalls.Site, keys: KeyState) -> DrawOp {
+        let made = statusBarCall(site, keys: keys)
+        if let call = made.tick { world.player.soundCalls.append(call) }
+        return made.op
+    }
+
+    private func statusBarCall(_ site: StatusBarCalls.Site,
+                               keys: KeyState) -> (op: DrawOp, tick: PlayerState.SoundCall?) {
         var g = world.globals
         let made = world.statusBar.update(site, globals: &g, actions: InputActions(keys: keys, prefs: prefs),
                                           levelName: level.header.name)
         world.globals = g
-        if made.suffocationTick {
-            world.player.soundCalls.append(PlayerState.SoundCall(
-                cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
-                scrollH: camera.scrollH, scrollV: camera.scrollV))
-        }
-        return made.op
+        guard made.suffocationTick else { return (made.op, nil) }
+        return (made.op, PlayerState.SoundCall(
+            cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
+            scrollH: camera.scrollH, scrollV: camera.scrollV))
     }
 
     /// `.AnimateCLUT @ 1001180c`'s `FastRand(4000)` count (l. 8961–9062, raw `10011bc4`): with header `0x2732` (count)
@@ -341,7 +359,7 @@ public final class FerazelSession {
             findUpperLeftCorner(graphics: graphics)
             ops.draws.append(.redrawScrollGrid(h: camera.scrollH, v: camera.scrollV))
             ops.draws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
-            ops.draws.append(updateStatusBar(.levelStart, keys: keys))
+            ops.draws.append(statusBarInFrame(.levelStart, keys: keys))
             ops.music.append(.play(track: Int(level.header.music)))
         }
         iterations += 1
@@ -592,7 +610,7 @@ public final class FerazelSession {
         case (.confirmQuit, .confirm(ok: false)), (.confirmAbort(escape: false), .confirm(ok: false)):
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
             drawBlackLines(&ops)
-            ops.draws.append(updateStatusBar(.confirmCancel, keys: frameKeys))       // M l. 3977, 4002
+            ops.draws.append(statusBarInFrame(.confirmCancel, keys: frameKeys))      // M l. 3977, 4002
             return keysCounters(ops)
         case (.confirmAbort(escape: true), .confirm(ok: false)):
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
@@ -603,7 +621,7 @@ public final class FerazelSession {
             // Core reader), `DrawBlackLines` (mode 3).
             ops.draws.append(.redrawScrollGrid(h: h, v: v))
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
-            ops.draws.append(updateStatusBar(.optionsClosed, keys: frameKeys))       // M l. 3956
+            ops.draws.append(statusBarInFrame(.optionsClosed, keys: frameKeys))      // M l. 3956
             drawBlackLines(&ops)
             return keysCounters(ops)
         case (.pause, .pausePaint):
@@ -646,7 +664,7 @@ public final class FerazelSession {
             // `DrawBlackLines` (mode 3), `DAT_100a5106 = 1`, `FlushEvents`, `.UpdateStatusBar(0, 0, 0)`.
             drawBlackLines(&ops)
             loopAborted = true
-            ops.draws.append(updateStatusBar(.confirmOK, keys: frameKeys))           // M l. 3928, 3986, 4011
+            ops.draws.append(statusBarInFrame(.confirmOK, keys: frameKeys))          // M l. 3928, 3986, 4011
             if event == .confirmQuit {
                 // `.Quit()` never returns: the frame stops here.
                 world.suspension = .gameLoopKeys(.quit)
@@ -654,7 +672,7 @@ public final class FerazelSession {
             }
             return keysCounters(ops)
         case .escapeCancel:
-            ops.draws.append(updateStatusBar(.escapeCancel, keys: frameKeys))        // M l. 3919
+            ops.draws.append(statusBarInFrame(.escapeCancel, keys: frameKeys))       // M l. 3919
             return keysCounters(ops)
         case .pausePaint:
             world.suspension = .gameLoopKeys(.paused)
@@ -707,7 +725,7 @@ public final class FerazelSession {
     private func loopTail(_ ops: FrameOps) -> FrameOps {
         var ops = ops
         let draw = frameDraw
-        ops.draws.append(updateStatusBar(.loopIteration, keys: frameKeys))           // M l. 5280
+        ops.draws.append(statusBarInFrame(.loopIteration, keys: frameKeys))          // M l. 5280
         ops.drawn = draw
         odd.toggle()
         // Back in `.GameLoop` after the events, keys, sounds and track map: `.UpdateSprites` (raw `1000a298`).

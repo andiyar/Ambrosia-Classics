@@ -404,6 +404,7 @@ final class GameFlowGameTests: XCTestCase {
         rig.drive { self.isRunning($0, level: 1) }
         let s1 = try XCTUnwrap(flow.levelRun?.session)
         s1.world.globals.coins = 17
+        s1.world.statusBar.flashes.itemSlot = 9                       // HU: a status-bar global the map does not touch
         s1.world.active.update(id: try XCTUnwrap(s1.world.playerID)) { $0.hp = 333 }
         try touchExit(s1, record: 66)
         // Exit → `.EndLevelSGUpdate` → the stats panel (PICT 140) → the map (clut 700, PICT 7000) → the auto-walk to 2.
@@ -414,6 +415,7 @@ final class GameFlowGameTests: XCTestCase {
         let map = try XCTUnwrap(flow.worldMap)
         XCTAssertEqual(map.cur, try XCTUnwrap(map.map.findCurrNode(level: 2)).index)
         XCTAssertEqual(map.globals.unlocked[2], 1)
+        XCTAssertEqual(map.statusCalls.flashes.itemSlot, 9)           // HU: the flow hands its status-bar globals in
         XCTAssertTrue(toMap.flatMap(\.segments).contains { if case .map(let ops) = $0 { return ops.contains(.portsClut(id: 700)) }; return false })
         XCTAssertEqual(flow.state, .newGame)
         // The segments are lossless: on every tick so far the `.screen` + `.level` segments' draws, in order, are the
@@ -429,7 +431,13 @@ final class GameFlowGameTests: XCTestCase {
         }
         XCTAssertTrue(rig.log.contains { k in k.segments.contains { if case .map(let o) = $0 { return !o.isEmpty }; return false } })
         // Return → level 2 entered with G carried (HP, coins); `save+0xc/+0x10 ← L2 hdr+0x2848 − 32 / +0x2846 − 32`.
-        rig.drive(input: { _ in FrontInput(keys: KeyState(pressed: [0x24])) }) { $0.worldMap == nil }
+        // HU: Next (0x5c) held until the map's idle call steps the selection, then Return — the map's status-bar
+        // globals (the repeat counter 12 → 11 after its (1, 0, 0) call) go back to the flow.
+        rig.drive(input: { f in
+            FrontInput(keys: KeyState(pressed: f.worldMap?.globals.selectedSlot == 0 ? [0x5c] : [0x24]))
+        }) { $0.worldMap == nil }
+        XCTAssertEqual(map.statusCalls.repeatCounter, 11)
+        XCTAssertEqual(flow.levelCarry.statusBar, map.statusCalls)
         rig.drive { self.isRunning($0, level: 2) }
         XCTAssertEqual([flow.saveBlock.playerX, flow.saveBlock.playerY], [901 - 32, 256 - 32])
         let s2 = try XCTUnwrap(flow.levelRun?.session)

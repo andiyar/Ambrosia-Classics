@@ -85,14 +85,24 @@ final class StatusBarCallTests: XCTestCase {
         g.suffocation = 18
         XCTAssertEqual(calls.update(.levelStart, globals: &g, actions: [], levelName: "x").suffocationTick, false)
 
-        // The session emits it as `.STPlayRegSound(snd 442, 1, 0x100)` among the frame's sound calls.
+        // A call outside the frame loop (the level start, M l. 5216): `.STPlayRegSound(snd 442, 1, 0x100)` goes out
+        // with the call's own output at once (M l. 4492) — not into the next frame's sound calls.
         let r = try FerazelData.open(try FerazelData.dataDirectory())
-        let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, hostedByLevelRun: true)
         session.world.globals.breath = 0
         session.world.globals.suffocation = 29
-        _ = session.updateStatusBar(.levelStart, keys: KeyState())
-        XCTAssertEqual(session.world.player.soundCalls.last?.cue,
-                       PlayerCue(call: .reg, snd: 442, priority: 1, volume: 0x100))
+        let start = session.startOps()
+        let tick = SoundCues.convert(PlayerState.SoundCall(cue: PlayerCue(call: .reg, snd: 442, priority: 1,
+                                                                          volume: 0x100), scrollH: 0, scrollV: 0),
+                                     prefs: FerazelPrefs())
+        guard case .play(let cue)? = tick else { return XCTFail("snd 442 plays with sound on") }
+        XCTAssertEqual(start.sounds, [cue])
+        XCTAssertTrue(session.world.player.soundCalls.isEmpty)
+        // The three flash countdowns are the flow-wide set's: row 13 counts each down once a frame (M l. 44728–44736).
+        session.world.statusBar.flashes = StatusBarCalls.Flashes(health: 3, magic: 5, item: 7, itemSlot: 2, itemMode: 1)
+        _ = session.step(keys: KeyState())
+        XCTAssertEqual(session.world.statusBar.flashes,
+                       StatusBarCalls.Flashes(health: 2, magic: 4, item: 6, itemSlot: 2, itemMode: 1))
     }
 
     /// BC39: the world map's calls step the selection too. Next (key 8, default key code 0x5c) held from the second
@@ -146,7 +156,7 @@ final class StatusBarCallTests: XCTestCase {
         carry.globals = run.globals
         carry.statusBar = run.statusCalls
         let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, carry: carry)
-        let op = session.updateStatusBar(.levelStart, keys: next.keys)
+        let op = session.updateStatusBar(.levelStart, keys: next.keys).draws[0]
         XCTAssertEqual(call(op)?.stepped, false)
         XCTAssertEqual(session.world.statusBar.repeatCounter, 11)
         XCTAssertEqual(session.carry.statusBar, session.world.statusBar)

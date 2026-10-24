@@ -390,9 +390,11 @@ public final class LevelRun {
                 if c.isDone, let s = session {
                     // HU: the card's closing `.UpdateStatusBar(0, 0, 0)` (M l. 5087) runs the key step on the live G
                     // with this tick's keys — the session makes it (the card holds no G).
-                    o.draws = o.draws.map { op in
-                        if case .statusBar = op { return s.updateStatusBar(.chapterScreen, keys: input.keys) }
-                        return op
+                    for (k, op) in o.draws.enumerated() {
+                        guard case .statusBar = op else { continue }
+                        let bar = s.updateStatusBar(.chapterScreen, keys: input.keys)
+                        o.draws[k] = bar.draws[0]
+                        o.sounds += bar.sounds                      // its snd 442, at the call (M l. 4492)
                     }
                 }
                 emit(&out, o)
@@ -470,7 +472,10 @@ public final class LevelRun {
             // hosted session no longer sends `.hideMenuBar` — `_HideTheMenuBar` is `.main`'s (M l. 8280) and
             // `.MainMenu`'s (M l. 7349) → F1a, and `.ContinueGame`'s (M l. 6877) → F1b; `.GameLoop` never calls it. `*fd74 = 0x200`
             // (M l. 5217) and `fe0c`/`511e` (status-bar redraw flags) have no Core reader.
-            emit(&out, FrontOutput(draws: s.startOps(keys: input.keys), requests: [.hideCursor], present: true))
+            var start = s.startOps(keys: input.keys)
+            start.requests = [.hideCursor]
+            start.present = true
+            emit(&out, start)
             // The boss-music rule (M l. 5218–5220): hdr+0x2724 ≠ 0 ∧ `*_DAT_1009fed0` ("no boss alive": cleared by a
             // boss Setup, set by its Kill — engine §4) → `hdr+0x284a = 0x1e`. // later: Phase 5 — the boss Setups and
             // Kills that write `fed0` are not transcribed; no Phase-3 level has hdr+0x2724 ≠ 0 (levels 1–2: 0).

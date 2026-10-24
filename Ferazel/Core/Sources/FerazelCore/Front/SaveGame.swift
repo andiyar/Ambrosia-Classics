@@ -159,7 +159,8 @@ enum SavePointSave {
     static func redraw(session s: FerazelSession, prefs: FerazelPrefs, keys: KeyState = KeyState()) -> FrontOutput {
         let h = s.camera.scrollH, v = s.camera.scrollV
         let draws = [.redrawEntireScrollGrid(h: h, v: v)] + GameLoopKeys.redrawGameArea(h: h, v: v, prefs: prefs)
-        return FrontOutput(draws: draws + [s.updateStatusBar(.savePointSave, keys: keys)],
+        let bar = s.updateStatusBar(.savePointSave, keys: keys)              // its snd 442 at the call (M l. 4492)
+        return FrontOutput(draws: draws + bar.draws, sounds: bar.sounds,
                            requests: [.hideCursor], present: true)
     }
 }
