@@ -270,6 +270,7 @@ import HectorShell
             self?.updateCursor()
             if self?.modalUp == false { self?.shell.currentWindow.makeKeyAndOrderFront(nil) }
         }
+        d.nullTick = { [weak self] in self?.pollPadInDialog() }
         dialogs = d
     }
 
@@ -351,8 +352,10 @@ import HectorShell
     }
 
     /// The tick's input: the held keys (`GetKeys`), Caps Lock, the pointer in 640×480 canvas coordinates (nil off the
-    /// canvas), the button, the app active.
+    /// canvas), the button, the app active — with the gamepad merged in as the original keys (GP, D37): its held keys
+    /// into the key map, its pause latch ORed into Caps Lock (`ShellView.pollKeyState`).
     private func pollInput() -> FrontInput {
+        updatePadMapping()
         let state = shell.view.pollKeyState()
         let keys = KeyState(pressed: state.held.map { Self.keyMapCode(Int($0)) })
         return FrontInput(keys: keys, capsLock: state.capsLock, mouse: canvasMouse(),
@@ -672,6 +675,45 @@ import HectorShell
             cursorHidden = false
         }
         NSApp.presentationOptions = []
+    }
+
+    // MARK: Gamepad (GP, D37; HectorKit D16)
+
+    /// The pad layout for the poll about to run (`FerazelPadLayout`): the live prefs' action keys (the running level's,
+    /// which ⌘P's Options and the pause replace; else the flow's), the flow's `padContext`, whether a dialog is up.
+    /// Assigning an equal mapping is a no-op in HectorShell.
+    private func updatePadMapping() {
+        guard let flow else { return }
+        let keys = flow.levelRun?.prefs.keys ?? flow.toggles.live.keys
+        shell.view.padMapping = FerazelPadLayout.mapping(keys: keys, context: flow.padContext,
+                                                         dialogUp: dialogs?.isShowing == true)
+    }
+
+    /// The dialogs' 1/60 s null timer: while a dialog is up the flow does not tick, so this is the only poll — it turns
+    /// pad presses into the dialog's Return / Esc (`shellView(_:padKeyDown:)`).
+    private func pollPadInDialog() {
+        guard dialogs?.isShowing == true else { return }
+        updatePadMapping()
+        _ = shell.view.pollKeyState()
+    }
+
+    /// A pad key went down. The game reads the keyboard by polling only (the held keys reach it through
+    /// `pollInput`), so outside a dialog nothing more happens — as for a keyboard key-down. With a confirm or report
+    /// up, Return and Esc reach it as a synthesized key-down + key-up posted to its panel — through the event queue, so
+    /// `FerazelDialogs`' local event monitor sees them as it sees the keyboard's; Options and Credits take none.
+    func shellView(_ view: ShellView, padKeyDown keyCode: UInt16) {
+        guard dialogs?.isShowing == true,
+              keyCode == FerazelPadLayout.returnKey || keyCode == FerazelPadLayout.escapeKey,
+              let panel = dialogs?.padKeyPanel else { return }
+        let chars = ShellKeyCharacters.characters(forKeyCode: keyCode) ?? ""
+        for type in [NSEvent.EventType.keyDown, .keyUp] {
+            guard let event = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [],
+                                               timestamp: ProcessInfo.processInfo.systemUptime,
+                                               windowNumber: panel.windowNumber, context: nil,
+                                               characters: chars, charactersIgnoringModifiers: chars,
+                                               isARepeat: false, keyCode: keyCode) else { return }
+            NSApp.postEvent(event, atStart: false)
+        }
     }
 
     // MARK: ShellInputHandler

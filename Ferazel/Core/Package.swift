@@ -3,7 +3,7 @@ import PackageDescription
 
 // Ferazel's Wand — core (data, world parsers, tables) and the render layer (decoders, later the renderer) on HectorKit.
 // Plan: docs/plans/2026-10-06-ferazel-phase1.md (Phase 1: level 1 look-and-feel; DECISIONS D26).
-// FerazelCore is Foundation + HectorResources only; FerazelRender adds FerazelCore, HectorGraphics and
+// FerazelCore is Foundation + HectorResources (+ the Foundation-only HectorInput, GP) only; FerazelRender adds FerazelCore, HectorGraphics and
 // HectorAudio, still no Apple framework but Foundation (HectorKit D6; plan invariant 1).
 // HectorKit is a LOCAL path dependency during build-out: from Ferazel/Core, three levels up is the
 // directory that holds both repos (in a worktree session: the .claude/worktrees/HectorKit symlink —
@@ -24,6 +24,7 @@ let package = Package(
     targets: [
         .target(name: "FerazelCore", dependencies: [
             .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorInput", package: "HectorKit"),   // GP (D37): the gamepad layout, Foundation-only
         ]),
         .target(name: "FerazelRender", dependencies: [
             "FerazelCore",
@@ -36,6 +37,7 @@ let package = Package(
         .testTarget(name: "FerazelCoreTests", dependencies: [
             "FerazelCore",
             .product(name: "HectorResources", package: "HectorKit"),
+            .product(name: "HectorInput", package: "HectorKit"),
         ]),
         // Depends on the executable so `swift test` builds it (CensusTests.testExitCodes runs the binary).
         .testTarget(name: "FerazelRenderTests", dependencies: [

@@ -405,6 +405,35 @@ public final class GameFlow {
         return state == .mainMenu && pendingMenu == nil
     }
 
+    // MARK: - The gamepad (GP, D37)
+
+    /// Which pad layout applies (`FerazelPadLayout`); read-only — the flow does nothing with it.
+    public enum PadContext: Equatable, Sendable {
+        /// A level's game loop runs (its iterations, not yet ended): the prefs keys.
+        case playing
+        /// A pause loop runs (`.Pause`, in a level or on the map): only the Caps Lock latch.
+        case paused
+        /// A level's conversation or sign (`ConversationRun`): its menu moves on the up / down input keys.
+        case conversation
+        /// The menu loop.
+        case mainMenu
+        /// Anything else: the boot, the stage screens and chapter card, the map, the death screen, Options / Credits.
+        case other
+    }
+
+    public var padContext: PadContext {
+        if let run = levelRun, run.end == nil {
+            if run.pause != nil { return .paused }
+            if run.conversation != nil { return .conversation }
+            // The loop has run and not ended: before its first iteration the popup, the load bars, the fades and the
+            // chapter card run; after `loopEnded` the exit sequence (death effect, stage complete).
+            if let s = run.session, run.iterations > 0, !s.loopEnded { return .playing }
+            return .other
+        }
+        if worldMap?.pause != nil { return .paused }
+        return state == .mainMenu ? .mainMenu : .other
+    }
+
     /// A menu item was chosen (`MenuSelect` / `MenuKey` → `.HandleMenuSelection`, M l. 28795ff): in a pause loop it
     /// goes to the `LevelRun` / `WorldMapRun` (their pause's next poll); in the main menu it waits for the pass's
     /// `.CheckEvent`. Anywhere `menusLive` is false it is dropped.

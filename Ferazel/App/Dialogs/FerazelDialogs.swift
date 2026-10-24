@@ -22,6 +22,8 @@ import FerazelCore
     let gameArea: () -> (rect: NSRect, level: NSWindow.Level)
     /// Called whenever `isShowing` may have changed (the App stops / restarts its clock and menus).
     var modalStateChanged: () -> Void = {}
+    /// Called once per tick while a dialog is up (the App's gamepad poll, GP: the game clock is stopped meanwhile).
+    var nullTick: () -> Void = {}
 
     /// Dialogs on screen, front last.
     private var stack: [FerazelCarbonDialog] = []
@@ -33,6 +35,14 @@ import FerazelCore
     private var credits: CreditsDialog?
 
     var isShowing: Bool { !stack.isEmpty }
+
+    /// The front dialog's panel when it is a plain message (DLOG 202 confirm, DLOG 200 report / error): the gamepad's
+    /// Return / Esc go to it (GP). Nil for Options (its key capture) and Credits (closed by a click), which stay
+    /// mouse / keyboard (D37).
+    var padKeyPanel: NSPanel? {
+        guard let front = stack.last, front.keyFilter == nil, !front.takesAllClicks, front.nullEvent == nil else { return nil }
+        return front.panel
+    }
 
     init(resources: FerazelResources, picture: @escaping (Int16) -> CGImage?,
          gameArea: @escaping () -> (rect: NSRect, level: NSWindow.Level)) {
@@ -131,7 +141,10 @@ import FerazelCore
         }
         // `ModalDialog`'s null events (and the TextEdit caret): once per tick.
         let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.stack.last?.nullEvent?() }
+            MainActor.assumeIsolated {
+                self?.stack.last?.nullEvent?()
+                self?.nullTick()
+            }
         }
         RunLoop.main.add(timer, forMode: .common)
         nullTimer = timer
