@@ -66,14 +66,16 @@ final class TranslucencyTests: XCTestCase {
                                   ports: &ports)
             return ports
         }
-        // `_DAT_100a0148` (`100211a8..10021248`): 255 bytes, clamp(lum/3072 − 2, 0, 15) of the working CLUT (202).
-        let clut = try ColorLUT.load(id: 202, from: f.resources, chain: .level)
+        // `_DAT_100a0148` (`100211a8..10021248`): 255 bytes, clamp(lum/3072 − 2, 0, 15) of the working CLUT (202),
+        // pinned by hand from clut 202's entries: 0 (FFFF FFFF FFFF) → 15, 0x20 (7F7F 4040 FFFF) → 38207/3072 − 2 = 10,
+        // 0x37 (4040 7F7F BFBF) → 8, 0x40 (4040 0000 FFFF) → 6, 0x80 (4E3B 7F52 79DD) → 7, 0xd7 (2121 ×3) → 0,
+        // 0xf0 (0000 9494 0808) → 2, 0xfe (black) → 0; the whole table sums to 1,178.
         XCTAssertEqual(f.tables.brightness.count, 255)
-        for i in 0..<255 {
-            let e = clut.entries[i]
-            let lum = (Int(e.red) + Int(e.green) + Int(e.blue)) / 3
-            XCTAssertEqual(Int(f.tables.brightness[i]), max(0, min(15, lum / 3072 - 2)), "0148[\(i)]")
+        for (i, level) in [(0, 15), (1, 15), (0x20, 10), (0x37, 8), (0x40, 6), (0x80, 7), (0xa0, 0), (0xd7, 0),
+                           (0xf0, 2), (0xfe, 0)] {
+            XCTAssertEqual(Int(f.tables.brightness[i]), level, "0148[\(i)]")
         }
+        XCTAssertEqual(f.tables.brightness.reduce(0) { $0 + Int($1) }, 1178)
         let cases: [(UInt32, [UInt8], (UInt8) -> Int)] = [
             (0, f.tables.pair(.average), { Int($0) }), (1, f.tables.pair(.threeQuarterSprite), { Int($0) }),
             (2, f.tables.pair(.quarterSprite), { Int($0) }), (3, f.tables.pair(.spriteGreyAverage), { Int($0) }),
@@ -140,6 +142,24 @@ final class TranslucencyTests: XCTestCase {
                 }
             }
         }
+        // The fetch mid-run: with the empty mask only from x0 + 4 on, the first 0xff pixel is face column 4 of a run
+        // that started at column 0 or 1, and the buffer is fetched at that pixel's own x (sprite x + 4), not at the
+        // run's start — each pixel still reads its own column.
+        let (h, v) = (40, 20), x0 = h + 100, y0 = v + 50
+        var ports = FramePorts(fill: d)
+        for y in y0..<(y0 + Self.h) {
+            for x in x0..<(x0 + Self.w) { ports.mask[FramePorts.ringOffset(x: x, y: y)] = x >= x0 + 4 ? 0xff : m }
+        }
+        b.parallax = try parallax(f)
+        try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: x0, y: y0, mode: 0xb0000, clip: Self.open)], h: h, v: v,
+                              ports: &ports)
+        for r in 0..<Self.h {
+            for c in 0..<Self.w where Self.pixel(r, c) != 0 {
+                let bg = c >= 4 ? px(f, x: x0 + c, y: y0 + r + 1, h: h, v: v) : d
+                XCTAssertEqual(at(ports.frame, x0 + c, y0 + r), avg[Int(Self.pixel(r, c)) * 0x100 + Int(bg)],
+                               "mid-run fetch (\(r), \(c))")
+            }
+        }
     }
 
     /// `.BlitEncFaceTransFlipClip`: the face mirrored in its frame (face column c at x0 + 7 − c), the blend as the
@@ -182,6 +202,73 @@ final class TranslucencyTests: XCTestCase {
             }
         }
         // (Row 0's run is [1, 8): the pixel drawn at x0 + 6, face column 1, read the parallax at x0 + 8.)
+
+        // The fetch mid-run, flipped: the empty mask only left of x0 + 4, so face columns ≥ 4 of each run [a, b) take
+        // the parallax; the first, column cf = max(a, 4), fetches at x0 + a − k with k = cf − a pixels already drawn
+        // since the row/skip token, n = b − cf, and pixel c reads byte n − (c − cf): x0 + a − k + b − c.
+        var mid = FramePorts(fill: d)
+        for y in y0..<(y0 + Self.h) {
+            for x in x0..<(x0 + Self.w) { mid.mask[FramePorts.ringOffset(x: x, y: y)] = x < x0 + 4 ? 0xff : m }
+        }
+        b.parallax = try parallax(f)
+        try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: x0, y: y0, mode: 0xb0002, mirrored: true,
+                                          clip: Self.open)], h: 0, v: 0, ports: &mid)
+        var kSeen = false
+        for r in 0..<Self.h {
+            var runs: [(Int, Int)] = [], start: Int?
+            for c in 0...Self.w {
+                let opaque = c < Self.w && Self.pixel(r, c) != 0
+                if opaque, start == nil { start = c }
+                if !opaque, let a = start { runs.append((a, c)); start = nil }
+            }
+            for (a, e) in runs {
+                let cf = max(a, 4), k = cf - a
+                kSeen = kSeen || k > 0
+                for c in a..<e {
+                    let bg = c >= 4 ? Self.pattern(y0 + r, (x0 + a - k + e - c) & 0x7f) : d
+                    XCTAssertEqual(at(mid.frame, x0 + Self.w - 1 - c, y0 + r), q[Int(Self.pixel(r, c)) * 0x100 + Int(bg)],
+                                   "flipped mid-run fetch (\(r), \(c))")
+                }
+            }
+        }
+        XCTAssertTrue(kSeen)
+
+        // Straddling the view's left edge (h = 0, sprite x −3, face columns 0..4 drawn at x 4..0): the flipped reads
+        // run down to sprite x + 1 + … = x −2, left of the view — parallax columns −1 and −2. `.CalcPxRowContents`
+        // divides by 128 truncating (`10027b30..10027b5c`, `srawi; addze`, remainder by `subfc`): cell column 0,
+        // remainder −1/−2, so the copy starts at row pointer (`+0x60` table) − 1/−2 — the tail of the face's previous
+        // row (rows are 128 bytes, one 128×128 GWorld per cell, `.NewBlitPort`) — and on a cell's row 0 the bytes before
+        // its pixel base, modelled as 0 (`ParallaxBlitter.beforePixelBase`). y0 = 125: face row 3 reads PxBack row 128.
+        for y0 in [50, 125] {
+            let x0 = -3
+            var edge = FramePorts(fill: d)
+            for k in edge.mask.indices { edge.mask[k] = 0xff }
+            try b.wrapDrawSprites([SpriteDraw(face: Self.ref, x: x0, y: y0, mode: 0xb0002, mirrored: true,
+                                              clip: Self.open)], h: 0, v: 0, ports: &edge)
+            var negative = 0
+            for r in 0..<Self.h {
+                var runs: [(Int, Int)] = [], start: Int?
+                for c in 0...Self.w {
+                    let opaque = c < Self.w && Self.pixel(r, c) != 0
+                    if opaque, start == nil { start = c }
+                    if !opaque, let a = start { runs.append((a, c)); start = nil }
+                }
+                for (a0, e0) in runs {
+                    let a = max(a0, 0), e = min(e0, 5)
+                    guard a < e else { continue }
+                    for c in a..<e {
+                        let col = x0 + a + e - c, row = y0 + r
+                        let bg: UInt8 = col >= 0 ? Self.pattern(row & 0x7f, col)
+                            : row & 0x7f == 0 ? 0 : Self.pattern((row & 0x7f) - 1, 128 + col)
+                        if col < 0 { negative += 1 }
+                        XCTAssertEqual(at(edge.frame, x0 + Self.w - 1 - c, row), q[Int(Self.pixel(r, c)) * 0x100 + Int(bg)],
+                                       "left edge y0 \(y0) (\(r), \(c))")
+                    }
+                }
+            }
+            XCTAssertGreaterThan(negative, 0)
+        }
+        b.parallax = nil
 
         // The forced erase: the 40×40 face unchanged and away from the edge strips is not erased after a mode-0 frame,
         // and is after a mode-0xb frame (and a mode-0xb0004 one: any sub).

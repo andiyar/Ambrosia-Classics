@@ -221,6 +221,13 @@ parallax operand, read in full:
 - `0148` has 255 entries (`cmpwi 0xff`), so a ≥ 0x80 with sprite pixel 0xff reads past it; a = 0x80..0x8f stay
   inside `0144` (row byte (a − 0x80)·16 + level); every other a ∉ {0..5} reads before or after `0144` for some or all
   pixels (the replica refuses each such read) [HIGH].
+- ⚑ TB fix round (2026-10-25): a flipped sprite straddling the view's left edge reads parallax columns left of
+  the view (down to `+0xc` + 1, more with a mid-run fetch). `.CalcPxRowContents` splits row and column by a
+  **truncating** /128 (`10027b30..10027b5c` `srawi; addze`, remainder `subfc`), so column −127…−1 → cell column 0 with a
+  negative remainder and the copy starts that many bytes before the cell row's pointer (`10027b88..10027b8c`): the
+  tail of the row above in the same 128×128 `NewBlitPort` GWorld (rowBytes 128), or on a cell's row 0 the bytes
+  before the GWorld pixel base (unknown; the replica reads 0) [HIGH for the walk, LOW for the row-0 value]. All
+  shipped x/y factors are ≥ 0, so unflipped reads and rows never go negative. Runs over 301 px stay refused.
 - `.BlitEncFaceTransClip` itself writes no mask byte (`.BlitEncFaceTransRippleClip` does, `*r29 = 0` under 0xff);
   the mask pass does it for 0xb [HIGH].
 

@@ -496,23 +496,43 @@ public struct ParallaxBlitter: Sendable {
 
     // MARK: .CalcPxRowContents
 
-    /// One byte of `.CalcPxRowContents(x, y, n) @ 10027aac` (decompile l. 23141–23224), header `0x2722` = 0 branch,
-    /// at scroll (h, v) (`PTR_DAT_1009fe78`): PxBack row = y − v + (v·yb >> 8) − 1, column = x − h + (h·xb[row] >> 8)
-    /// (`hdr + 0x326c + 2·row`), cell `.GetPxBackTile(column / 128, row / 128)`, the cell face's byte (row mod 128,
-    /// column mod 128). The routine copies n + 1 such bytes from x on (at most 301), stepping to the next cell column
-    /// at each 128-px edge; byte i of its buffer is `pxRowPixel(x + i, y)`. nil where the replica does not make the
-    /// read: header `0x2722` ≠ 0 (the `_DAT_1009fe84` GWorld branch, not built), a negative row or column (the
-    /// binary reads before the row), or a cell slot with no face.
-    func pxRowPixel(x: Int, y: Int, h: Int, v: Int) -> UInt8? {
+    /// `.CalcPxRowContents(x, y, n) @ 10027aac` (decompile l. 23141–23224, raw `10027af4..10027c7c`), header `0x2722`
+    /// = 0 branch, at scroll (h, v) (`PTR_DAT_1009fe78`): the buffer it fills at `0x100a3a16`, bytes 0…min(n, 300)
+    /// (the copy runs on by up to 3 bytes more, word steps; nothing indexes them below 301). PxBack row
+    /// = y − v + (v·yb >> 8) − 1, column = x − h + (h·xb[row] >> 8) (`hdr + 0x326c + 2·row`, raw `10027b2c`); both are
+    /// split by a **truncating** divide by 128 (`srawi; addze`, remainder `subfc`, `10027b30..10027b5c`), so a negative
+    /// column −127…−1 gives cell column 0 and a negative remainder r: the copy starts at the cell row's pointer
+    /// (face `+0x60` table, `10027b88`) + r and walks on through that row, then each next cell column's row from its
+    /// byte 0. Each PxBack cell is its own 128×128 `NewBlitPort` GWorld (row pointer = base + rowBytes·row, rowBytes
+    /// 128 for 128 8-bit pixels), so the r bytes before a row are the tail of the face's row above. On a cell's row 0
+    /// they lie before the GWorld's pixel base — Memory Manager / QuickDraw bytes the replica does not model; it reads
+    /// them as `beforePixelBase` (LOW: the value is unknown, the read never stops the original). No shipped level
+    /// gives a negative row: yb ≥ 0 and xb ≥ 0 in all 24 levels, and every drawn sprite row is at or below v.
+    /// nil where the replica does not make the read: header `0x2722` ≠ 0 (the `_DAT_1009fe84` GWorld branch, not
+    /// built), a negative row (the binary indexes before the `+0x60` row table), or a cell slot with no face.
+    func pxRowContents(x: Int, y: Int, n: Int, h: Int, v: Int) -> [UInt8]? {
         guard flameMode == 0 else { return nil }
         let row = (y - v) + ((v * backYFactor) >> 8) - 1
         guard row >= 0 else { return nil }
         let col = (x - h) + ((h * backFactor(row)) >> 8)
-        guard col >= 0 else { return nil }
-        let slot = Self.backBase + pxBackTile(col >> 7, row >> 7)
-        guard (0..<Self.slotCount).contains(slot), slotLoaded[slot] else { return nil }
-        return faces[slot * Self.cellBytes + (row & 0x7f) * Self.cell + (col & 0x7f)]
+        let q = col / Self.cell, r0 = col - q * Self.cell      // C truncation, as `srawi; addze` / `subfc`
+        let cellRow = row / Self.cell, inRow = row % Self.cell
+        var out = [UInt8]()
+        out.reserveCapacity(min(n, 300) + 1)
+        for i in 0...max(0, min(n, 300)) {
+            let t = r0 + i
+            let (cellCol, off) = t < Self.cell ? (q, t) : (q + t / Self.cell, t % Self.cell)
+            let slot = Self.backBase + pxBackTile(cellCol, cellRow)
+            guard (0..<Self.slotCount).contains(slot), slotLoaded[slot] else { return nil }
+            out.append(off < 0 && inRow == 0 ? Self.beforePixelBase
+                       : faces[slot * Self.cellBytes + inRow * Self.cell + off])
+        }
+        return out
     }
+
+    /// What the replica reads for the bytes just before a PxBack GWorld's pixel base (`pxRowContents`, a negative
+    /// column on a cell's row 0): unknown in the original, 0 here.
+    static let beforePixelBase: UInt8 = 0
 
     /// The byte offset of a face slot; a slot the binary would read as an unloaded pointer stops here.
     func faceBase(_ slot: Int) -> Int {

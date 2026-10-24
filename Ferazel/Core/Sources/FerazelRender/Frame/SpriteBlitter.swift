@@ -60,9 +60,11 @@ public struct SpriteBlitter: Sendable {
         /// `*_DAT_1009fd74` past 2³¹): the original reads before `_DAT_100a0118`.
         case ripplePhase(Int32)
         /// A mode-0xb background read the replica does not make, at world x and the blitter's row counter y: no
-        /// `parallax` blitter, a `.CalcPxRowContents` read `ParallaxBlitter.pxRowPixel` refuses, a buffer index past
-        /// the bytes it fills (n + 1, at most 301), or a flipped copy run straight after another copy run (the flip
-        /// twin's pixel counter `iVar22` carries over and its column counter goes wrong — `FaceEncoder` never emits one).
+        /// `parallax` blitter, a `.CalcPxRowContents` fetch `ParallaxBlitter.pxRowContents` refuses (x = the fetch
+        /// point), a buffer index past the 301 bytes it fills (a run over 301 pixels wide: the original reads stale
+        /// bytes of its static buffer, `0x100a3a16`, and past index 415 the globals after it — not modelled), or a
+        /// flipped copy run straight after another copy run (the flip twin's pixel counter `iVar22` carries over and
+        /// its column counter goes wrong — `FaceEncoder` never emits one).
         case translucency(x: Int, y: Int)
     }
 
@@ -290,18 +292,29 @@ public struct SpriteBlitter: Sendable {
     /// 23737–23960; draw-effects §2.7), mode 0xb, arg a = (short) sub. Table (`10027d28..10027dfc`): 0 → `015c` avg,
     /// 1 → `0158` ¾ sprite, 2 → `0154` ¼ sprite, 3 → `0150`, 4 → `014c` glow, 5 → `0160` additive, else the grey-pull
     /// `0144 + (short)(a − 0x80)·0x1000`, and for a ≥ 0x80 the sprite pixel first through `0148` (255 bytes: s = 0xff
-    /// reads past it → refused). Clipped as `ClipX` (the window walk of `forEachRun`). Per copy-run pixel s at port
-    /// offset o: bg = mask[o] == 0xff ? the parallax row byte : frame[o]; frame[o] = T[s·0x100 + bg] (a read outside
-    /// the table → `Refusal.mode`). The mask is left to `blitEncFaceX`'s mask pass.
+    /// reads past it → refused). Clipped by its own token walk (not `forEachRun`): the left/top port edge moves the
+    /// source window, the right/bottom edge shortens it, as `ClipX` does; the flip twin draws face column c at
+    /// dh − sh + width − 1 − c. Per copy-run pixel s at port offset o: bg = mask[o] == 0xff ? the parallax row byte :
+    /// frame[o]; frame[o] = T[s·0x100 + bg] (a read outside the table → `Refusal.mode`). The mask is left to
+    /// `blitEncFaceX`'s mask pass.
     ///
     /// The parallax row (`.CalcPxRowContents(x, y, n)`): fetched at the first 0xff pixel after a row or skip token
     /// (the flag `cVar12` / `bVar13`), with y the row counter (sprite y + 1 per row token, so face row r reads
     /// sprite y + r + 1) and n the pixels left in the run, then walked:
-    /// - unflipped: fetched at x = sprite x + c (c the face column), forwards — pixel c reads `pxRowPixel(sprite x + c)`;
+    /// - unflipped: fetched at x = sprite x + c (c the face column), forwards — pixel c reads the column of
+    ///   sprite x + c;
     /// - flipped, as written: fetched at x = sprite x + a − k (a the run's first drawn face column, k = `iVar22`, the
     ///   pixels drawn since the row/skip token) and read **backwards from index n** — pixel j after the fetch reads
     ///   byte n − j, so with the fetch at the run start pixel c of run [a, b) reads sprite x + a + b − c, not the column
-    ///   it lands on (sprite x + width − 1 − c).
+    ///   it lands on (sprite x + width − 1 − c). Straddling the view's left edge the reads run down to sprite x + 1
+    ///   (further with a mid-run fetch), left of the view: a negative parallax column reads before the cell row as the
+    ///   binary does (`ParallaxBlitter.pxRowContents`), never a refusal. The unflipped reads and every row stay at or
+    ///   right of / below the view (all shipped x and y factors ≥ 0).
+    ///
+    /// Runs over 301 pixels are refused (`Refusal.translucency`): sprite sheet cells are at most 256 px wide (the
+    /// widest `.Load/.CacheEncFaceSetFromPICT` cell is 0x100), but whole-PICT faces (`.Load1/.Cache1EncFaceFromPICT`,
+    /// some at computed ids) can be wider (Sprites holds PICTs of 302–3,944 px), and whether any such face draws in
+    /// mode 0xb with a 302-pixel opaque run is not checked.
     func transClip(_ face: EncodedFace, src: (Int, Int), dst: (Int, Int), w: Int, h: Int, word: UInt32, flip: Bool,
                    origin: (x: Int, y: Int), scroll: (h: Int, v: Int), ports: inout FramePorts) throws {
         let arg = Int(Int16(truncatingIfNeeded: word & 0xffff))
@@ -327,22 +340,23 @@ public struct SpriteBlitter: Sendable {
         let c0 = flip ? fw - sh - w : sh, c1 = flip ? fw - sh : sh + w
         let data = face.data
         var p = 0, row = -1, col = 0, y = origin.y
-        var fetch: (c: Int, n: Int, x: Int)?       // the `.CalcPxRowContents` buffer of this stretch
+        var fetch: (c: Int, n: Int, x: Int, bytes: [UInt8])?   // the `.CalcPxRowContents` buffer of this stretch
         var k = 0                                  // the flip twin's `iVar22`
         var afterCopy = false
         func background(_ o: Int, _ c: Int, _ a: Int, _ b: Int) throws -> UInt8 {
             guard ports.mask[o] == 0xff else { return ports.frame[o] }
             if fetch == nil {
-                fetch = (c, b - c, flip ? origin.x + a - k : origin.x + c)
+                let x = flip ? origin.x + a - k : origin.x + c
+                guard let parallax,
+                      let bytes = parallax.pxRowContents(x: x, y: y, n: b - c, h: scroll.h, v: scroll.v)
+                else { throw Refusal.translucency(x: x, y: y) }
+                fetch = (c, b - c, x, bytes)
             }
             guard let f = fetch else { preconditionFailure() }
             let j = c - f.c
             let index = flip ? f.n - j : j
-            let x = f.x + index
-            guard index <= min(f.n, 300), let parallax,
-                  let px = parallax.pxRowPixel(x: x, y: y, h: scroll.h, v: scroll.v)
-            else { throw Refusal.translucency(x: x, y: y) }
-            return px
+            guard index < f.bytes.count else { throw Refusal.translucency(x: f.x + index, y: y) }
+            return f.bytes[index]
         }
         while p + 4 <= data.count {
             let tok = data[p], n = Int(data[p + 1]) << 16 | Int(data[p + 2]) << 8 | Int(data[p + 3])
