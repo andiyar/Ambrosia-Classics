@@ -1457,3 +1457,15 @@ Render, follow the binary M l. 78341) → 352; LT ⚑ (Core `LightTable` + `Draw
 slot — follow the binary, bank corrected; **seat ruling: `.lightTable` goes before `.redrawScrollGrid`**, not after, so the
 renderer's strip lights read the current table) → **357/0**, census 1,108/0, Ferazel builds, no golden moved, HK 35a85ba
 untouched. Details: the plan's "As executed" notes for X1, VS, LT.
+
+**As built — wave 4.1 (loop run 20, 2026-10-25; main 38b144b):** US ⚑ (`.UpdateSprites` in full: kill passes, record
+write-back, keep-record flags; `dead` computed over `killCount` +0xe9) → 362; IV (`Inventory` on `GameGlobals`) → 368; HU
+(the status bar from the game globals; `StatusBarCalls`) → **374/0**, census 1,108/0, Ferazel builds, no golden moved, HK
+35a85ba untouched. **Seat rulings (follow the binary):** (1) the write-back flags `+0x188/+0x189/+0x18a/+0x18b/+0xea` are
+set by every Setup already built in Core at the dump's sites (Platform M l. 54530, Rope 71107/71136, Background modes
+10–14) — each later task sets them for the Setups it builds (BN, BX1, Phase 5 enemies); (2) `dead = true` stores the
+literal 1; `.IdleToActiveSprite` clears +0xe9 and rebuilds the 24.8 position (M l. 4262–4264); (3) `.UpdateHealthMagic`'s
+clamps, caches, skips and the suffocation tick snd 442 are Core state; (4) the status-bar globals (the 12-call repeat
+counter, the four bar caches, the five flash globals) are ONE flow-wide instance carried through map and levels, never
+reset, not saved; (5) a status-bar call outside the frame loop emits its sound in its own output. Details: the plan's "As
+executed" notes for US, IV, HU.
