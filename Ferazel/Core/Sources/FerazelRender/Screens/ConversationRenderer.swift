@@ -3,12 +3,17 @@ import FerazelCore
 
 /// Draws what `ConversationRun` (C1) emits for a conversation or a sign (plan S4, C2; conversations-mcnv §6, BC20,
 /// BC30) on the level's screen — the shared `ScreenSurface` of the level's `FrameRenderer`:
-/// - `copyPicture` (`.CopyConvToScreen @ 100797e4`, `.DrawConvPicToScreen @ 10078f34`, `.EraseConvNameAndText @
-///   100798cc`): `ScreenRenderer`'s `CopyBits` — the picture converted under the screen CLUT (32-bit portraits
-///   through the `ConvertedPicture`/`Dither` path), every pixel by colour into the screen CLUT, mode 0x24 skipping the
-///   white source pixels (raw `10079870`): PICT 4000's 18,627 pure-white pixels show the game view through. [MED: the
-///   frame GWorld is made at boot with a nil ctab (BC20), so the original's PICT 4000 is first matched to the default
-///   8-bit table and then by colour to the screen; the replica matches it to the screen CLUT once.]
+/// - `copyPicture`, transparent (`.DrawConvPic @ 10078ee4` + `.CopyConvToScreen @ 100797e4`, `.EraseConvNameAndText @
+///   100798cc`): the conversation GWorld. `.InitConversation` (from `.InitTiles` at boot, M l. 8343 → 927, before any
+///   `.SetupLevel` fills `*_DAT_1009ff8c`) makes it `NewGWorld(8, (0, 0, 387, 308), *_DAT_1009ff8c = nil, 0, 0)`
+///   (M l. 65548): depth 8 with a nil ctab — the system's default 8-bit table (`systemClut`). PICT 4000 (and in a
+///   level the portrait, `.DrawConvPic`) is `DrawPicture`d into it (`_DrawPicInGWorld`; 32-bit mode 64 = ditherCopy),
+///   so it is converted under `systemClut`; then `CopyBits(GWorld, screen, …, 0x24)`: the white test on the GWorld
+///   index (white = index 0), every other pixel by colour (`Color2Index`) into the screen CLUT (raw `10079870`).
+///   PICT 4000's 18,627 pure-white pixels show the game view through. [MED: the GWorld's own inverse table and
+///   ditherCopy are ROM code; the replica converts with the level's `ColorSearch` / `DitherModel` under `systemClut`.]
+/// - `copyPicture`, opaque (`.DrawConvPicToScreen @ 10078f34`: `_DrawPicInRect` on the screen port): `ScreenRenderer`'s
+///   — the portrait converted under the screen CLUT.
 /// - `drawText(run)`: QuickDraw `DrawChar` per byte, srcOr — only glyph pixels change, to `Color2Index(run.rgb)` in the
 ///   screen CLUT (`ColorSearch`) — the pen advancing by `CharWidth` (`.DrawStringCharByCharOrig @ 1007912c`'s loop; the
 ///   name's `DrawString` in a bitmap font is the same sum). The positions are Core's: name centred in 180 px from
@@ -36,6 +41,28 @@ public final class ConversationRenderer {
                                 dither: frame.dither, text: text, chain: .level)
     }
 
+    /// The default 8-bit system colour table (`clut` 8) — what `NewGWorld` with a nil ctab at depth 8 gets: the
+    /// 6×6×6 cube over FF CC 99 66 33 00 (index = 36·r + 6·g + b) without its final black (0–214), then 10-step ramps of
+    /// red (215–224), green (225–234), blue (235–244) and grey (245–254) over EE DD BB AA 88 77 55 44 22 11, then black
+    /// (255). The same table as `DeimosCore.QuickDrawColor.systemCLUT8` (Inside Macintosh: Imaging With QuickDraw,
+    /// the standard 8-bit colour table); built here because FerazelRender does not depend on DeimosCore. The game's
+    /// clut 801 "System CLUT" holds the same 256 colours (`ConversationRenderTests`); the GWorld takes the system's.
+    public static let systemClut: ColorLUT = {
+        let levels: [UInt16] = [0xff, 0xcc, 0x99, 0x66, 0x33, 0x00]
+        let ramp: [UInt16] = [0xee, 0xdd, 0xbb, 0xaa, 0x88, 0x77, 0x55, 0x44, 0x22, 0x11]
+        var t: [(UInt16, UInt16, UInt16)] = []
+        for r in levels { for g in levels { for b in levels { t.append((r, g, b)) } } }
+        t.removeLast()
+        t += ramp.map { ($0, 0, 0) } + ramp.map { (0, $0, 0) } + ramp.map { (0, 0, $0) } + ramp.map { ($0, $0, $0) }
+        t.append((0, 0, 0))
+        var b: [UInt8] = [0, 0, 0, 0, 0, 0, 0, 0xff]
+        func put16(_ v: UInt16) { b.append(UInt8(v >> 8)); b.append(UInt8(v & 0xff)) }
+        for (i, c) in t.enumerated() {
+            put16(UInt16(i)); put16(c.0 * 0x101); put16(c.1 * 0x101); put16(c.2 * 0x101)
+        }
+        return try! ColorLUT(id: 8, name: "System 8-bit", data: Data(b))
+    }()
+
     /// Executes the conversation's ops in order.
     /// - Throws: `ScreenRenderer.Refusal.levelOp` for a level op other than `drawBlackLines`; `ColorLUTError` /
     ///   `PictureSourceError` for a missing CLUT or picture; `FrameRenderer.Refusal` from `drawBlackLines`.
@@ -51,6 +78,12 @@ public final class ConversationRenderer {
                                         screen: &f.surface.frame.pixels)
             case .drawBlackLines:
                 try frame.apply(FrameOps(draws: [.drawBlackLines]))
+            case .copyPicture(let id, let chain, let source, let dest, nil, true):
+                let clut = Self.systemClut
+                let picture = try ConvertedPicture(source: try PictureSource.load(id: id, from: frame.resources,
+                                                                                  chain: chain),
+                                                   clut: clut, search: frame.search, dither: frame.dither)
+                screen.copyBits(picture, clut: clut, source: source, dest: dest, transparent: true)
             default:
                 try screen.apply([op])
             }

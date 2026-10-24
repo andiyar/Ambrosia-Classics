@@ -357,14 +357,32 @@ origin `*0x100a0bfc` = (v 0x2e, h 0x7e) = **(46, 126) on screen** (`10078e80..8c
 | erase rects (copied back from the frame GWorld) | text (154, 29)–(372, 221); name (19, 260)–(199, 300) | `.EraseConvNameAndText` |
 
 > ⚑ implementer note (Phase 3 C2, loop run 15, 2026-10-24) (BC20, BC30): PICT 4000 is a **32-bit** picture with
-> 18,627 pure-white (FF, FF, FF) pixels; mode 0x24 tests the *converted* GWorld pixel, so under clut 202 with error
-> diffusion 4 near-white greys (E1…E8) become white too and 18,631 pixels show the view [MED: the replica converts once
-> to the screen CLUT; the original's boot GWorld has a nil ctab (BC20), i.e. the default 8-bit table, then a by-colour
-> copy]. Portraits 4001 and 4020 (96×96, 32-bit) hold no pure white. The response rows' TextEdit height is
+> 18,627 pure-white (FF, FF, FF) pixels; mode 0x24 tests the *converted* GWorld pixel (superseded by BC34 below: the
+> GWorld holds system-table indices, and exactly the 18,627 show the view). Portraits 4001 and 4020 (96×96, 32-bit)
+> hold no pure-white source pixel; neither converts to white under the GWorld's system table, and drawn opaque on the
+> screen (`.DrawConvPicToScreen`) 4001 converts to 2 white pixels under clut 202 — an opaque copy, so they are
+> drawn white; nothing is skipped there. The response rows' TextEdit height is
 > `(nLines + 1) · (ascent + descent + leading)` of the port font (Times 18 — `.DrawConvNameString` set it on the screen
 > port just before; `TENew` with destRect (0, 0, 214, 400); `+0x5e` nLines, `+0x18` lineHeight, M l. 31656ff). Exit:
 > `_WrapCopyToScreen(*_DAT_100a000c, scroll, 0x10, 8, prefs+9 == 0, prefs+2 == 3, 0)` (M l. 66019 / 66542) — the
 > same arguments as `.PaintFrameWrap`'s copy (M l. 9442), closing NOT RESOLVED 4's "redraw arguments" half.
+
+> ⚑ implementer note (Phase 3 C2 review fix round, loop run 15, 2026-10-24) (BC34): the conversation GWorld's colour
+> table, read in the dump. `.InitConversation` runs once at boot (`.main` → `.InitTiles` M l. 8343 → l. 927), before
+> any `.SetupLevel` has filled the level CLUT slot `*_DAT_1009ff8c` (written by `.SetupLevel`, M l. 2301–2318; every
+> other use is level-time), and calls
+> `NewGWorld(&gw, 8, (0, 0, 387, 308), *_DAT_1009ff8c, nil, 0)` (M l. 65548) — depth 8, ctab nil → the system's
+> default 8-bit table (`clut` 8: the 6×6×6 cube over FF CC 99 66 33 00, the red/green/blue/grey ramps over EE…11,
+> black at 255; the game's own clut 801 "System CLUT" is the same 256 colours). PICT 4000 is `DrawPicture`d into it
+> (`.DrawPicInGWorld`, l. 65567), and so is `.DrawConvPic`'s portrait (l. 65584: a conversation's line #1, a sign's 4020); every
+> GWorld copy to the screen — `.CopyConvToScreen` and both `.EraseConvNameAndText` rects (l. 65883ff, 65910ff) — is
+> `CopyBits(…, 0x24)`: white = GWorld index 0, every other pixel by colour into the screen CLUT. `.DrawConvPicToScreen`
+> draws its portrait straight onto the screen port (`.DrawPicInRect`, no GWorld). `GetCTable(4000)` (l. 65539) is
+> loaded into `*_DAT_100a0c0c` and never read again. The replica (C2 fix) converts the transparent copies under the
+> system table, then by colour: under clut 202 with error diffusion exactly the 18,627 pure whites are transparent (the
+> 4 near-whites a one-step conversion took to white are copied), and 36,590 of the frame's 119,196 pixels land on a
+> different screen index than the one-step conversion gave (measured 2026-10-24). [MED: the GWorld's inverse table
+> and ditherCopy are ROM code; the replica dithers with the level's ColorSearch / DitherModel under the system table.]
 
 ### 6.2 Text typing  [HIGH]
 `.DrawConvTextString` appends a space, word-wraps at spaces when the running width exceeds 214 px,
