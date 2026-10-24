@@ -255,8 +255,14 @@ public struct PlayerState: Equatable, Sendable {
     public var countdown0610: Int16 = 0
     public var flag0614 = false
     /// `_DAT_100a06d8`, `PTR_DAT_100a06cc`: countdowns. `_DAT_100a067c`: see-saw touch (write-only).
+    /// `*PTR_DAT_100a06cc` is the talk cooldown (C1): the NPC arm sets 150 (raw `10056d44`), the sign arm 90 (raw
+    /// `10057070`); `.ClearPlayerVars` clears it (M l. 42585), `.HandlePlayerSprite` counts it down (M l. 44912).
     public var countdown06d8: Int16 = 0
     public var countdown06cc: Int16 = 0
+    /// C1: the sign / grave whose arm suspended the frame at its `.SimpleConv` / `.Conversation` (an `ActiveList` id)
+    /// — the rest of that Box arm (its `+0x15c` gate and `.PlatformBounce`, M l. 49304–49308) runs when the frame
+    /// resumes (`HitPlayerSprite.talkDone`). Nil otherwise (the NPC arm returns after its call).
+    public var talkTail: Int?
     public var seeSawTouch = false
     /// `PTR_DAT_100a0704`: the end separation pass is running (the only pass that processes water, P2/P4).
     public var waterPass = false

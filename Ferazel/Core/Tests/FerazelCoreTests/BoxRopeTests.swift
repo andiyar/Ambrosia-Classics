@@ -299,6 +299,11 @@ final class BoxRopeTests: XCTestCase {
         XCTAssertEqual([ss.oneWay, ss.hasHit, ss.hasTileHit], [true, false, false])
         dropPlayer(w, p, ontoTop: ss.y + 7, x: ss.x + 4, vy: 0x300)
         HitPlayerSprite.hit(w, player: p, other: sign)
+        // C1: the first touch (p4 0) reads the sign — the arm suspends at `.SimpleConv`; resume it (the rest of the arm).
+        if w.suspension != nil {
+            w.suspension = nil
+            HitPlayerSprite.talkDone(w, player: p)
+        }
         var ps = try XCTUnwrap(w.active.sprite(id: p))
         XCTAssertEqual([ps.vy, Int32(ps.groundKind)], [0, 3])
         XCTAssertEqual(ps.ridden, sign)

@@ -1,4 +1,5 @@
 import Foundation
+import HectorResources
 
 /// `.HitPlayerSprite(player, other) @ 100556f4` (decompile l. 48450–49929), reached only through the player pass
 /// `.MTCollideSpecialSprite(player, .HitPlayerSprite)` (platforms-ropes-radial-2 §8.3). The arms built so far: the
@@ -35,7 +36,7 @@ public enum HitPlayerSprite {
             background(w, player: pID, other: oID, keys: keys)
             return
         case .box, .seeSawSegment:
-            box(w, player: pID, other: oID)                             // `PTR_PTR_100a0484` / `_DAT_100a01c8` (W3)
+            box(w, player: pID, other: oID, keys: keys)                 // `PTR_PTR_100a0484` / `_DAT_100a01c8` (W3)
             return
         default: return                                                 // later: the other arms
         }
@@ -126,7 +127,8 @@ extension HitPlayerSprite {
     ///    the signs after the text code (l. 49287–49303), and the falling rocks 0x433 / 0x434 (0x433 also with
     ///    `+0x160` < 0) except on the hurting drop (`+0x160` ≥ 0, the rock's `+0xe` above the player's, vy > 599:
     ///    `.HurtPlayer` + `.KillBox`, return) and 0x434 with `+0x160` < 0 (return, l. 49170); the spiked balls
-    ///    0x5c3 / 0x5c4 return;
+    ///    0x5c3 / 0x5c4 return. C1 builds the NPC arm and the sign / grave arm (`talk`) — both suspend the frame
+    ///    (`FrameSuspension.conversation` / `.sign`); the sign arm's rest (5–6) runs at the resume (`talkDone`);
     /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
     /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
     ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 4;
@@ -138,7 +140,7 @@ extension HitPlayerSprite {
     /// 9. // later: Phase 4 — the mechanism branches from l. 49363: the spin stomp on switch blocks / crates (types
     ///    0x4e2…0x4ff / 0xc12…0xc1b), the teleporters 0x424…0x426;
     /// 10. the save point 0x429 (S1, `savePoint`) — reached past the not-built branches, whose type tests exclude it.
-    static func box(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+    static func box(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let entryVY = p.vy                                              // `uVar38`
@@ -150,11 +152,24 @@ extension HitPlayerSprite {
             w.player.seeSawTouch = true
         }
         let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
-        if (0xb87...0xb99).contains(o.type) {
-            return      // later: Phase 4 — `+0xb0` / `_DAT_100a06cc` gates, the 0x96 cool-down and `.Conversation`
+        if npcs.contains(o.type) {
+            npc(w, other: oID)
+            return
         }
+        // later: Phase 4 — the doors 0xb5e / 0xb5f, the chest 0x51c, the timer 0xb5b (l. 49211–49286).
+        if talk(w, other: oID, keys: keys) {
+            w.player.talkTail = oID                                     // the rest runs at the resume (`talkDone`)
+            return
+        }
+        boxTail(w, player: pID, other: oID, entryVY: entryVY, d: d, rect: p.hotRect)
+    }
+
+    /// The Box arm from the sign gate on (steps 5–10 above; l. 49304ff).
+    private static func boxTail(_ w: SpriteWorld, player pID: Int, other oID: Int, entryVY: Int32, d: SpriteSlot.Point,
+                                rect: IdleSprites.Rect) {
+        guard let o = w.active.record(id: oID) else { return }
         if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
-        guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: p.hotRect, bounce: false) == 1
+        guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: rect, bounce: false) == 1
         else { return }
         guard o.type == BoxSprite.trampoline else {                     // later: Phase 4 (7, 9)
             if o.type == BoxSprite.savePoint { savePoint(w, player: pID, other: oID) }
@@ -171,6 +186,64 @@ extension HitPlayerSprite {
         }
         w.player.cue(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
         w.player.airCounter = 1
+    }
+
+    /// The NPC types 2951…2969 (`cmpwi r3,0xb87` / `0xb9a`, raw `10056d14..10056d20`).
+    public static let npcs: ClosedRange<Int16> = 0xb87...0xb99
+    /// The talk cooldown values (`li r0,0x96` raw `10056d44`; `li r0,0x5a` raw `10057070`).
+    public static let npcCooldown: Int16 = 0x96
+    public static let signCooldown: Int16 = 0x5a
+    /// `.SimpleConv`'s portrait and name for the 2902 sign: PICT 4020 (`li r3,0xfb4`) and the pstr at `0x100a6254`.
+    public static let signPortrait: Int16 = 0xfb4
+    public static let signName = "Wooden Sign"
+
+    /// The NPC arm (M l. 49199–49210, raw `10056d14..10056d68`): `+0xb0 ≠ 0` or the cooldown `*PTR_DAT_100a06cc ≠ 0`
+    /// → nothing; else cooldown 150 and `.Conversation(p1 of the record, +0x48, the sprite)` — the frame suspends there.
+    /// The caller returns on every path (never `.PlatformBounce`: NPCs are never solid). No `p1 > 100` test.
+    static func npc(_ w: SpriteWorld, other oID: Int) {
+        guard let o = w.active.record(id: oID), o.subtype == 0, w.player.countdown06cc == 0 else { return }
+        w.player.countdown06cc = npcCooldown
+        let i = Int(o.recordIndex)
+        let p1 = w.records.indices.contains(i) ? w.records[i].p1 : 0
+        w.suspension = .conversation(id: p1, record: i, sprite: oID)
+    }
+
+    /// The sign / grave arm (M l. 49287–49303, raw `10056fdc..10057134`): signs 0xb56…0xb5d except the timer 0xb5b, and
+    /// the graves 0xb11…0xb14; (UP — `.IsInputKeyPressed(2)` — or the record's p4 == 0) ∧ p1 ≠ 0 ∧ cooldown 0 →
+    /// cooldown 90, p4 ← 1 (raw `1005708c`, before the call), then the 2902 sign with p1 > 0 → `.SimpleConv(4020,
+    /// "Wooden Sign", GetIndString(500, p1))` (`.sign`), any other type with p1 > 100 → `.Conversation(p1, +0x48, the
+    /// sprite)` (`cmpwi r3,0x64` raw `10057124`; ≤ 100 nothing more). Returns true when the frame suspended.
+    static func talk(_ w: SpriteWorld, other oID: Int, keys: InputActions) -> Bool {
+        guard let o = w.active.record(id: oID) else { return false }
+        let t = o.type
+        guard ((0xb56...0xb5d).contains(t) && t != 0xb5b) || (0xb11...0xb14).contains(t) else { return false }
+        let i = Int(o.recordIndex)
+        guard w.records.indices.contains(i) else { return false }     // `+0x48` −1: no record (none on the levels)
+        let r = w.records[i]
+        guard keys.contains(.up) || r.p4 == 0, r.p1 != 0, w.player.countdown06cc == 0 else { return false }
+        w.player.countdown06cc = signCooldown
+        w.records[i] = Placement(index: r.index, flag: r.flag, byte1: r.byte1, type: r.type, p1: r.p1, p2: r.p2,
+                                 p3: r.p3, p4: 1, y: r.y, x: r.x)
+        if t == 0xb56 && 0 < r.p1 {
+            let text = w.signTexts?.string(Int(r.p1)).map(MacRoman.bytes) ?? []
+            w.suspension = .sign(text: text)
+            return true
+        }
+        guard 100 < r.p1 else { return false }
+        w.suspension = .conversation(id: r.p1, record: i, sprite: oID)
+        return true
+    }
+
+    /// The rest of the sign / grave arm after its `.SimpleConv` / `.Conversation` returned (the frame's resume): the
+    /// `+0x15c` gate and `.PlatformBounce` (step 5–6), with the player's centre offset and rect as they are — nothing
+    /// moved while the frame was suspended.
+    static func talkDone(_ w: SpriteWorld, player pID: Int) {
+        guard let oID = w.player.talkTail else { return }
+        w.player.talkTail = nil
+        guard let p = w.active.record(id: pID) else { return }
+        let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
+        boxTail(w, player: pID, other: oID, entryVY: p.vy, d: d, rect: p.hotRect)
     }
 
     /// The save point's arm (M l. 49471–49504, raw `10057714..10057858`; save-continue §2.1, §9.2), on a landing:

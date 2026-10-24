@@ -33,6 +33,18 @@ The cooldown counts down 1 per frame in `.HandlePlayerSprite` (`1004e560..1004e5
 else stops an NPC from re-triggering, so a player who stays in contact replays the conversation every
 150 frames [MED: contact persistence not traced].
 
+> ⚑ implementer note (Phase 3 C1, loop run 15, 2026-10-24) (dump beats bank): the sign arm's types are **2902**…2909
+> except 2907 — `cmpwi r3,0xb56` / `0xb5e` / `0xb5b` (raw `10056fe0..10056ff4`) — not "2903..2909"; the 2902 sign is the
+> only `.SimpleConv` caller and also takes this arm's gate (UP or p4 == 0, p1 ≠ 0, cooldown 0 → cooldown 90, p4 = 1).
+> NPC types 2951…2969 confirmed (raw `10056d14..10056d20`). After the call the sign arm goes on to the `+0x15c` gate and
+> `.PlatformBounce` (M l. 49304–49308): 2902 and 2907 (`+0x15c = 1`) are solid, 2903…2906 / 2908 / 2909 return, the graves
+> 2833…2836 (not in the gate's range) always reach `.PlatformBounce` (BC30). The NPC arm's hot rect is the face's bounds,
+> set every frame by the Box Handle (M l. 61119–61134; 2957 with p3 ≠ 0 faces left). In the replica a player who stays in
+> contact is re-offered the conversation exactly 150 frames later (`ConversationTests`, Mcnv 201 on L1 — NR 3 for the
+> replica's contact model). As built: `HitPlayerSprite.npc` / `.talk` / `.talkDone`, `BoxSprite.handle`,
+> `FrameSuspension.conversation` / `.sign` (the frame suspends at the call and resumes after it, Invariant 6),
+> `PlayerState.countdown06cc` (the cooldown), `FerazelCore.ConversationRun` / `ConvActions`, run by `LevelRun`.
+
 `.SimpleConv(pict, name, text)` (one page, no menu, no actions) is used by the 2902 sign (`PICT 4020`,
 "Wooden Sign", `STR# 500` string `p1`, `10057100`) and by three USE-item hints in `.HandleKeys`
 (`100534a0..100534d8`, `PICT 4001`, "Ferazel" `0x100a60a0`): item 1/2/3 (keys) → string `0x100a616f`
@@ -148,6 +160,11 @@ actions 0, next 0) it falls through to line #1 (`i = 19 → 0`).
    (No shipped line has both: checked over all 580.)
 6. Escape → abort.
 
+> ⚑ implementer note (Phase 3 C1, loop run 15, 2026-10-24) (BC20): index 0 skips the erase as well as the portrait;
+> Escape at "press any key" only sets the abort flag — the line's menu or condition/actions/next still run, then the
+> loop ends (M l. 66378–66437, 65440–65466). A load failure reports "Error attempting to load the conversation resource!"
+> (`0x100a6cfc`, 51 bytes) with the id as the code and still runs the end (erase, reset, waits, view restore).
+
 ### 3.3 Menu: `.HandleLineResponses`  [HIGH]
 If response-0 target (`+0x800`) is 0 → return 0. Else: portrait **4001** (`li r3,0xfa1` `10079d0c`, the
 Ferazel portrait), erase, name "Ferazel" (pstr at `0x100a6cc6`, `subi r3,r2,0xb7a` `10079d18`). Row
@@ -191,6 +208,12 @@ bgt` → none):
 | 6 | `1007a4cc` | record **A** of the current level: `p(B+1) = 1` (no range check) | 2 |
 | 9 | `1007a4f8` | if the conversation sprite ≠ 0: `sprite+0xe9 = 1` (kill request) and its record's spawn byte `hdr+4+16·(sprite+0x48) = 0` | 1 |
 | 10 | `1007a530` | save block `+0x19998 + 0x2000·B + 16·A` = 1: the spawn byte of record A in **level B's snapshot** | 1 |
+
+> ⚑ implementer note (Phase 3 C1, loop run 15, 2026-10-24) (BC30): action 2 adds `B == 0 ? 1 : B` — a negative B is added
+> as-is (only the > 99 cap applies; M l. 66288–66309); condition 4 tests only the **low byte** of own p(A+1) (`& 0xff`,
+> M l. 66242–66244); condition 2 scans all 27 slots (no early exit); action 3 is `max(B, 1)` `.RemoveItem` calls, which
+> moves the later slots up one when a count reaches 0 (M l. 39602–39655). Record words are addressed as the code does
+> (`16·r + 4 + 2·k` from record 0), so A / B past p4 reach y, x and the next record.
 
 Then **next** (`1007a56c..1007a5e8`, §2.3). Action 2 never writes a spell slot (flag `+0x2c` is
 stored 0, `stb r3,0x2c(r4)` with r3 = 0 at `1007a3e0`) — **conversations cannot teach spells** [HIGH].
@@ -348,6 +371,12 @@ from light grey to near black. Per character `.CharByCharDelay(2, start)` waits 
 10-space pass `li r6,0x0` at `10079784` — ⚑ corrected (review 2a, 2026-10-04) #6) ≈ 30 chars/s; while any
 input key is held the delay ends at once (fast-forward). After the last chunk a 10-space pass with
 delay 0 finishes the fade. A `DeadTime` follows each wrapped line. Escape aborts mid-text.
+
+> ⚑ implementer note (Phase 3 C1, loop run 15, 2026-10-24) (BC20 + dump): the new byte goes into the **last** slot whose
+> age is > 9 (slot 0 if none — `sVar6` starts at 0 in each `.DrawStringCharByChar` call); the 10-space pass draws 9 steps
+> (bytes 1…9); the `DeadTime` follows each **wrapped** line of spoken text only, never the last; a key held ends each
+> delay at once, so the whole text and the pass run in one tick; a 20-byte line takes 40 ticks. A word wider than 214 px
+> with no earlier space on its line makes the original loop for ever (no shipped text has one; the replica ends the text).
 
 ### 6.3 Keys and waits  [HIGH]
 - After a spoken line: wait all-keys-up, then `.ConvPressAnyKeyDeadTime`: loop `DeadTime` until any

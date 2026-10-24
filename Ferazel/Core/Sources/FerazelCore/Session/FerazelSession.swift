@@ -161,6 +161,7 @@ public final class FerazelSession {
         world.particles = ParticlePool(counters: carry.particles)
         world.particles.initParticles()
         world.particleFaces = particleFaces
+        world.signTexts = try? StringList.load(from: resources, id: 500)  // C1: the 2902 sign's `GetIndString(500, p1)`
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
@@ -419,7 +420,7 @@ public final class FerazelSession {
             case .cannoned:
                 BackgroundSprite.handleCannoned(world: world, id: id, keys: actions)   // `.HandleCannonedSprite` (W2b)
             case .box:
-                BoxSprite.handle(world: world, id: id)                            // `.HandleBoxSprite` (W3)
+                BoxSprite.handle(world: world, id: id, faceBounds: bounds)        // `.HandleBoxSprite` (W3; C1 NPCs)
             case .rope:
                 RopeSprite.handle(world: world, id: id)                           // `.HandleRopeSprite` (W3)
             case .ropeSegment:
@@ -455,9 +456,11 @@ public final class FerazelSession {
             ops.requests += tail.requests
         case (.gameLoopKeys(let event), .gameLoopKeys(let answer)):
             return keysAnswered(event, answer, ops)
-        case (.conversation, _), (.sign, _):
-            preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
-        case (.savePoint, _), (.gameLoopKeys, _):
+        case (.conversation, .conversation), (.sign, .sign):
+            // C1: `.Conversation` / `.SimpleConv` returned; a sign / grave arm goes on with its `+0x15c` gate and
+            // `.PlatformBounce` (`talkDone`; the NPC arm has returned already).
+            if let p = world.playerID { HitPlayerSprite.talkDone(world, player: p) }
+        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }

@@ -80,6 +80,9 @@ public final class SpriteWorld {
     /// S1: a modal moment reached inside the special pass (`FrameSuspension`) — set by the `.HitPlayerSprite` arm that
     /// fires it; the pass stops after that call and keeps its iteration state (`continueSpecialPass`).
     public var suspension: FrameSuspension?
+    /// C1: World Data's `STR# 500` (the sign texts) that the 2902 sign's `GetIndString(500, p1)` reads (raw `10057100`);
+    /// the session loads it. Nil → every sign text is empty (a world built without resources).
+    public var signTexts: StringList?
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

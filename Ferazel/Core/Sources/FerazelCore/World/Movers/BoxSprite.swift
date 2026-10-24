@@ -259,8 +259,11 @@ public enum BoxSprite {
         s.pushForce = 0x80
     }
 
-    /// The types whose `.HandleBoxSprite` arm is built: the trampoline and the bridges (W3), the save point (S1).
-    public static func handleBuilt(_ t: Int16) -> Bool { t == trampoline || bridges.contains(t) || t == savePoint }
+    /// The types whose `.HandleBoxSprite` arm is built: the trampoline and the bridges (W3), the save point (S1), the
+    /// NPCs (C1).
+    public static func handleBuilt(_ t: Int16) -> Bool {
+        t == trampoline || bridges.contains(t) || t == savePoint || HitPlayerSprite.npcs.contains(t)
+    }
 
     /// `.HandleBoxSprite` (M l. 60030–61157) for the built types (`handleBuilt`; every other Box returns at once — its
     /// arm and the tail are Phase 4, and they stand still meanwhile):
@@ -271,6 +274,10 @@ public enum BoxSprite {
     ///   every frame (0 the empty pedestal, 1 the statue facing right, 2 facing left; save-continue §9.1), then the tail;
     /// - 0x5b4…0x5bb (l. 60565–60591): face = the class cache (0x5b5 / 0x5b6 → 0x5b5, 0x5b8 / 0x5b9 → 0x5b8, the others
     ///   their own);
+    /// - 0xb87…0xb99 (M l. 61119–61134; C1): 0xb8d with the record's p3 ≠ 0 → `+0x17e = 1` (facing left); face = the
+    ///   class cache single of the type (`_DAT_100a0a6c + type·0x10 − 0xb85c`); `+0x46 = 0`, gravity `+0x110 = 0`, layer
+    ///   `+0x80 = 0`; the hot rect `+0x34` / `+0x38` = the face's `+8` / `+0xc` (its bounds, `faceBounds`); one-way
+    ///   `+0x185 = 1`;
     /// - the tail `LAB_1006f948` (l. 61152–61156): `.ApplyFriction(+0x114)`; type ≠ 0x438 / 0x439 ∧ `+0xcd ≠ 0` →
     ///   `.FootPressure` — not called here (// later: Phase 4). `+0xcd` CAN be set: a built Box whose
     ///   `.StandardSpriteHandles` ride sets `+0xce = 3` has it copied to `+0xcd` below, so the next frame's tail would
@@ -279,13 +286,25 @@ public enum BoxSprite {
     ///   gravity ≠ 0 → `.ApplyGravityAndSeparateFromTiles` // later: Phase 4 (the fall — no built type has gravity);
     ///   `.BoxCleanUp`: `.BoxUW @ 1006d758` (`+0x120 ≠ 0` ∧ `+0x11c == 0` → `.Splash(s, 4)`, E1a) then `.BoxClean` (M l.
     ///   60000–60015): the centre `+0x10 = x + left + (right − left) >> 1`, `+0xe` likewise, `+0xdc = 0`, `+0xd6 = 0`.
-    public static func handle(world w: SpriteWorld, id: Int) {
+    /// - Parameter faceBounds: a face's bounds (`face +8`, the session's) — the NPC arm's hot rect; nil → an empty rect
+    ///   (a bare world without the session's faces: no contact).
+    public static func handle(world w: SpriteWorld, id: Int, faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) {
         guard let s0 = w.active.record(id: id), handleBuilt(s0.type), !s0.dead, !s0.handleSkip else { return }
         w.standardSpriteHandles(id)
         let t = s0.type
         let p1 = t == savePoint && w.records.indices.contains(Int(s0.recordIndex)) ? w.records[Int(s0.recordIndex)].p1 : 0
+        let p3 = w.records.indices.contains(Int(s0.recordIndex)) ? w.records[Int(s0.recordIndex)].p3 : 0
         w.active.update(id: id) { s in
-            if t == savePoint {
+            if HitPlayerSprite.npcs.contains(t) {
+                if t == 0xb8d && p3 != 0 { s.mirrored = true }
+                let f = FaceRef(pict: t, index: 0, set: .encoded)
+                s.face = f
+                s.phase = 0
+                s.gravity = 0
+                s.layer = 0
+                s.hotRect = faceBounds?(f) ?? IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+                s.oneWay = true
+            } else if t == savePoint {
                 s.face = FaceRef(pict: savePoint, index: Int(p1), set: .encoded)
             } else if t == trampoline {
                 s.face = FaceRef(pict: trampoline, index: Int(s.phase), set: .encoded)

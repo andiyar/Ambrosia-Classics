@@ -1,4 +1,5 @@
 import Foundation
+import HectorResources
 
 /// How a `LevelRun` ended (plan S2, L1) — what `.GameLoop @ 10009d48` leaves for its caller (M l. 5296–5325).
 public enum LevelEnd: Equatable, Sendable {
@@ -148,6 +149,10 @@ public struct LevelRunOutput: Equatable, Sendable {
 /// runs `.Options` (`prefsDialog`, then `dialogDone`; the new live prefs into the session) or `.Pause` (`PauseRun`,
 /// ticked until it returns; its menu items through `menuChosen`), and resumes the same iteration. ⌘Q's OK ends the run
 /// `.quit` at once; ⌘W / Esc OK (and the pause's Abort Game) end the loop after the iteration — `.aborted`, no fades.
+///
+/// **A conversation or a sign (C1):** the session suspends inside its special pass (`FrameSuspension.conversation` /
+/// `.sign`, also inside a nested `.PaintFrameWrap`); the run ticks `ConversationRun` (`.Conversation` / `.SimpleConv`
+/// over the live G, records and save block) until it returns, then `resume` finishes the same iteration.
 public final class LevelRun {
     public let resources: FerazelResources
     /// The live prefs (`_DAT_1009fe44`): the cadence and the fades read them; P1's `.Options` and the pause's toggles
@@ -287,7 +292,9 @@ public final class LevelRun {
     /// `.CheckGameLoopKeys` confirm, the Options dialog (once `prefsDialog.result` is set), or the pause's Abort Game
     /// confirm; the run goes on at the next tick.
     public func dialogDone(_ result: DialogResult) {
-        if saveSG != nil {
+        if let c = conversation {
+            c.dialogDone()
+        } else if saveSG != nil {
             dialogAnswered = true
         } else if case .pause? = keysModal, var p = pause {
             p.dialogDone(ok: result == .ok)
@@ -328,6 +335,13 @@ public final class LevelRun {
 
     private var keysModal: KeysModal?
     private var keysAnswer: DialogResult?
+
+    // MARK: C1 — conversations and signs
+
+    /// `.Conversation` / `.SimpleConv` while it runs (nil otherwise).
+    public private(set) var conversation: ConversationRun?
+    /// The conversation text's measures (Render's font, C2; the App sets them, A1a). Default: unmeasured.
+    public var conversationText = ConversationText.unmeasured
 
     /// What the next level's run takes: the session's carry (parity, particle counters, water cache, G — the live
     /// G after this level, crunch log included) plus the tileset and cached-face state `.SetupLevel` left. Carry →
@@ -549,7 +563,7 @@ public final class LevelRun {
     private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         var ops: FrameOps
-        if saveSG != nil || keysModal != nil {
+        if saveSG != nil || keysModal != nil || conversation != nil {
             // S1 / P1: a suspended frame waits for the modal; its answer finishes the same iteration.
             guard let resumed = advanceModal(s, now: now, input: input, out: &out) else { return false }
             ops = resumed
@@ -622,6 +636,14 @@ public final class LevelRun {
     /// The modal's answers so far: the rest of the frame when it has returned (nil while it waits).
     private func advanceModal(_ s: FerazelSession, now: UInt32, input: FrontInput,
                               out: inout LevelRunOutput) -> FrameOps? {
+        if let c = conversation {
+            // C1: `.Conversation` / `.SimpleConv` until it returns, then the rest of the arm and the frame.
+            emit(&out, c.tick(now: now, input: input, save: &save))
+            guard c.isDone else { return nil }
+            conversation = nil
+            if case .simple = c.kind { return resumeTalk(s, .sign, out: &out) }
+            return resumeTalk(s, .conversation, out: &out)
+        }
         if saveSG != nil { return advanceSave(s, out: &out) }
         guard let m = keysModal else { return nil }
         switch m {
@@ -744,11 +766,26 @@ public final class LevelRun {
             case .report(let d)?: emit(&out, FrontOutput(requests: [.dialog(d)]))      // a reuse save's write error
             default: break
             }
-        case .conversation, .sign:
-            preconditionFailure("no conversation / sign arm suspends yet")     // later: C1
+        case .conversation(let id, let record, let sprite):
+            conversation = ConversationRun(.conversation(id: id, record: record, sprite: sprite), world: s.world,
+                                           resources: resources, prefs: livePrefs, levelName: levelFile.header.name,
+                                           text: conversationText)
+        case .sign(let text):
+            conversation = ConversationRun(.simple(pict: HitPlayerSprite.signPortrait,
+                                                   name: MacRoman.bytes(HitPlayerSprite.signName), text: text),
+                                           world: s.world, resources: resources, prefs: livePrefs,
+                                           levelName: levelFile.header.name, text: conversationText)
         case .gameLoopKeys:
             preconditionFailure("beginModal routes the keys")
         }
+    }
+
+    /// The session's frame on from a conversation / sign suspension (C1).
+    private func resumeTalk(_ s: FerazelSession, _ outcome: FrameSuspension.Outcome,
+                            out: inout LevelRunOutput) -> FrameOps {
+        let rest = s.resume(outcome)
+        emitFrame(rest, out: &out, present: true)
+        return rest
     }
 
     /// `.SaveSG` on from its last step with the App's answers; when it has returned: `.SavePointSave`'s tail and the

@@ -12,9 +12,15 @@ public enum FrameSuspension: Equatable, Sendable {
     /// the hold counter is −150, the record's p1 = facing + 1, `G+0x16` = facing, `ShowCursorSafe` made. The flow runs
     /// `.SavePointSave` (`SaveGame.swift`) and resumes with `.savePoint(saved:)`.
     case savePoint(record: Int)
-    /// The NPC arm's `.Conversation(id, record, sprite)` (plan S3). // later: C1 — no arm makes it yet (unreachable).
+    /// C1: `.Conversation(id, record, sprite) @ 1007a7e8` from `.HitPlayerSprite`'s Box arm — the NPC arm (types
+    /// 0xb87…0xb99, M l. 49199–49210, raw `10056d14..10056d68`: `id` = the record's p1, cooldown 150) or the sign arm
+    /// (2902…2909 except 2907, graves 2833…2836, p1 > 100, raw `10057124`: cooldown 90). `record` = the sprite's `+0x48`,
+    /// `sprite` = its `ActiveList` id (`*PTR_DAT_100a0bec`, action 9's target). The flow runs `ConversationRun` and
+    /// resumes with `.conversation`.
     case conversation(id: Int16, record: Int, sprite: Int)
-    /// A sign / grave text (plan S3). // later: C1 — no arm makes it yet (unreachable).
+    /// C1: the 2902 sign's `.SimpleConv(4020, "Wooden Sign", STR# 500[p1])` (M l. 49287–49297, raw `10057100`): the
+    /// text as `GetIndString` returns it (Mac Roman bytes; empty outside the list). The flow runs `ConversationRun`
+    /// and resumes with `.sign`.
     case sign(text: [UInt8])
     /// P1: `.CheckGameLoopKeys @ 10007684` (M l. 3861–4030), called by `.GameLoop` after `.PaintFrameWrap` and before
     /// `.UpdateSprites` (M l. 5251) — a confirm, the Options dialog or `.Pause` (`GameLoopKeyEvent`, `Pause.swift`). The
@@ -29,5 +35,10 @@ public enum FrameSuspension: Equatable, Sendable {
         /// P1: the answer to a `.gameLoopKeys` suspension, with the polled input at that moment (the nested
         /// `.PaintFrameWrap` passes read the keys, the Caps Lock test reads `CapsLockDown()` live).
         case gameLoopKeys(GameLoopKeyAnswer)
+        /// C1: `.Conversation` returned (ended, aborted by Escape, or its `Mcnv` failed to load and the error was
+        /// reported) — the arm goes on after the call.
+        case conversation
+        /// C1: `.SimpleConv` returned.
+        case sign
     }
 }

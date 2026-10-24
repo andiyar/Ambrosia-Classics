@@ -278,9 +278,16 @@ import HectorShell
         var ops = session.step(keys: KeyState(pressed: held.map { Self.keyMapCode(Int($0)) }))
         // ◇ later: A1a — the app moves onto GameFlow/LevelRun and this guard goes. A save point suspends the frame
         // (S1, `FrameSuspension`); this Phase-2 path has no save dialog, so it answers "cancelled" at once and runs
-        // the rest of the same frame (the point stays usable; the counter re-arms as after a cancel).
-        while ops.suspension != nil {
-            let rest = session.resume(.savePoint(saved: false))
+        // the rest of the same frame (the point stays usable; the counter re-arms as after a cancel). A conversation
+        // or a sign (C1) is answered "ended" at once the same way (no conversation screen before A1a).
+        while let suspension = ops.suspension {
+            let outcome: FrameSuspension.Outcome
+            switch suspension {
+            case .conversation: outcome = .conversation
+            case .sign: outcome = .sign
+            default: outcome = .savePoint(saved: false)
+            }
+            let rest = session.resume(outcome)
             var whole = ops
             whole.draws += rest.draws
             for (i, snd) in rest.soundStops.enumerated() {
