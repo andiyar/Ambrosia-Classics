@@ -54,11 +54,12 @@ Each line says what the build does, read from the original's code. **MED** = fai
 straight from the code.
 
 1. **Title.** Black, then the Ambrosia logo fades in with the title music and stays while the game loads; then the
-   loading screen, whose 3-D progress bar at the bottom left fills; then a fade to the main menu. No timed wait and no
+   loading screen, whose 3-D progress bar at the bottom left fills (quickly — a known small difference); then a fade to the main menu. No timed wait and no
    skip, as in the original.
 2. **Main menu.** Five picture buttons light up while you press them (click and hold; slide off and back on), with
    their click sounds. The letter keys above do the same. **X** shows the "Coming soon" joke. In full screen, moving
-   the mouse to the very top shows the menu bar.
+   the mouse to the top edge of the game picture (just inside it) shows the menu bar; if the picture has black bars
+   above it, the very top of the screen does not.
 3. **Options (I).** Three panels from the popup: Game Options, Controls, and Sound & Music.
    - Controls: click a key box, then press a key. A key already in use is refused with a message; Up and Jump may
      share a key. The **A** key is always refused as "already used" — the original does that too.
@@ -68,7 +69,8 @@ straight from the code.
 4. **Credits (C).** The scrolling credits window. Click inside it to close it; a click outside beeps.
 5. **New Game (N).** The loading panel appears and its bar fills; the screen goes dark and the level's music fades
    up over about 1½ seconds. Then the chapter card fades in slowly (any key skips it; otherwise it waits about 20
-   seconds) and fades out, and level 1 fades in. The chapter card shows only on a level's first visit.
+   seconds) and fades out, and level 1 fades in. The chapter card shows every time you enter a level that has one (a restart after death, a
+   return from the map) until you save at a save point on that level; a game saved there skips it.
 6. **Talk.** Geroditus on level 1 talks to you: the text types at about 30 letters a second. Signs read themselves
    the first time you touch them, and again when you press keypad 8 at them. Esc ends a conversation. The merchant
    (Rojinko) on level 1 offers potions. Buying needs coins, and coins can't be picked up until Phase 4, so you likely
@@ -96,7 +98,7 @@ straight from the code.
     without asking, as the original.
 13. **Resume (O).** Pick your saved game in macOS's open window: level 1 at the save point, the statue still there, no
     chapter card. Double-clicking a saved game in Finder opens it the same way at the main menu; during a game it waits
-    until that game ends.
+    until that game ends, unless you pause first (then the original forgets it).
 14. **Death.** Die (stay under water, or wade into the acid pool at the far right end of level 1, almost 10 screens
     right of the start). You see the dying animation and the border wipe. Then:
     - if you saved or resumed a saved game since New Game: the death screen with Continue and Abort. Continue (or
@@ -158,10 +160,11 @@ straight from the code.
 - **The settings file** lives in Application Support (above), not the classic System Folder.
 - **The menu bar.** In a window the macOS menu bar stays visible; its items are greyed out during play and work only at
   the main menu and in the pause, where the original listened. In full screen it stays hidden, as the original: it shows during the
-  pause, and at the main menu when the mouse is at the very top.
+  pause, and at the main menu when the mouse is at the top edge of the game picture.
 - **Quitting from the Dock or at logout during a level waits** until you pause or get back to the main menu; then the
   game quits. That is the original's behaviour (it only listened for "quit" there); macOS may report that the game
   cancelled the logout. QUESTIONS asks whether you want that kept (Q5).
+- **A key still held when a dialog closes** isn't seen until you press it again (the original would read it at once).
 - **The "set system volume" option** is remembered but never changes your Mac's volume.
 - **Fonts:** the game ships no bitmap fonts, so Times comes from macOS.
 - **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.**

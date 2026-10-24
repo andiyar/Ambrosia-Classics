@@ -8,9 +8,9 @@ import Foundation
 /// plan's row numbers map as: plan row 13 = row 19, 22 = 27, 35 = 40 (the end pass), 36 = 40 (the draw offsets);
 /// plan P1a "⚑ As executed"):
 ///  1 entry: ridden copy, last facing, turn flag          22 quicksand vy × 0.65
-///  2 looped ambient sound (later: S1)                     23 gravity add, terminal 12000, vy 0 → 1
+///  2 looped ambient sound (no L1/L2 op)                  23 gravity add, terminal 12000, vy 0 → 1
 ///  3 riding: carpet, camera latch, 0x6a4 ride-on cue     24 air drag / ground deceleration
-///  4 kill / Handle-skip returns                           25 `+0xce = +0xcf = 0`; inventory repair (later: Phase 3)
+///  4 kill / Handle-skip returns                           25 `+0xce = +0xcf = 0`; inventory repair (later: Phase 4)
 ///  5 max speeds (quicksand, Double Speed)                 26 climb pre-move
 ///  6 idle +1, `+0x18c`, `+0x8a`, rope latch               27 latches cleared, `.ApplySpeedAndSeparateFromTiles`
 ///                                                            (plan row 22)
@@ -265,7 +265,7 @@ public enum Player {
             p.groundKind = 0
             p.ceilingHit = 0
         }
-        // The selected-slot repair (`G+0x172`, the item at `G+0x24 + 10·slot`). // later: Phase 3 (inventory)
+        // The selected-slot repair (`G+0x172`, the item at `G+0x24 + 10·slot`). // later: Phase 4 (inventory)
         // 26 (l. 45064–45100).
         climbPreMove(w, id: id)
         // 27 (l. 45101–45105; plan row 22): the move.

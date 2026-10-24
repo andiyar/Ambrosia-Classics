@@ -1533,8 +1533,9 @@ Play `~/Desktop/Ferazel's Wand.app` from a cold start, with the keypad (4/6 walk
    in use is refused; Up and Jump may share), Sound & Music (volume popups 1–9 act at once). "Default Settings" on
    Game Options seems to do nothing until you press Cancel — the original's bug, kept. The settings survive a relaunch.
 4. **Credits (C)** — the scrolling credits window; click inside it to close.
-5. **New Game (N)** — the chapter card "intro" fades in slowly (any key skips; it waits about 20 s otherwise), fades out,
-   then the loading popup, then level 1 fades in while the music fades up.
+5. **New Game (N)** — the loading popup, then the music fades up, then the chapter card "intro" fades in slowly (any
+   key skips; it waits about 20 s otherwise) and fades out, then level 1 fades in (corrected at the phase end, loop
+   run 17).
 6. **Talk** — near the start Geroditus talks (text types at about 30 letters a second, fading in); signs read
    themselves the first time you touch them and again with 8. Esc ends a conversation. The trader at the far right
    (Rojinko) talks and offers potions (buying needs coins; the potions you'd get don't show in the HUD until Phase 4).

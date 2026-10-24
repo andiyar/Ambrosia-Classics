@@ -28,7 +28,7 @@ public struct LevelCarry: Equatable, Sendable {
     public var parity: Bool
     /// `GameGlobals.crunchLog` (G+0xad6 / +0x12d8 / +0x60f8): G-resident, so it survives a level change while G
     /// lives; `.SetupLevel` re-applies a level's entries only when G+0x176 + 2·level == 1 (M l. 2382–2393) — the
-    /// revisit flag, // later: Phase 3 (no Phase-2 writer).
+    /// revisit flag (built in Phase 3 as `LevelRun.revisit`).
     public var crunchLog: [CrunchLogEntry]
     /// The game globals `G` after a level EXIT (W4 review fix): `.InitGameGlobals` runs only from `.NewGame`
     /// (M l. 5747, 6707) — the next-level loop (l. 5815–5836) re-writes `+0x16` (the start facing, from the next

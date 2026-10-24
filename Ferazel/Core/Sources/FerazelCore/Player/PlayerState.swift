@@ -182,7 +182,7 @@ public struct PlayerState: Equatable, Sendable {
     public var tumbleFrame: Int16 = 0
     /// `_DAT_100a06f0`: door transit counter (input lock) — the passage arm of `.HitPlayerSprite` (W2b).
     public var doorTransit: Int16 = 0
-    /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 3 (teleporters).
+    /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 4 (teleporters).
     public var teleporterCharge: Int16 = 0
     /// `_DAT_100a05b0`: potion drink counter; `_DAT_100a0570`: boss-grab counter; `_DAT_100a0578` / `_DAT_100a0574`:
     /// spirit-form timer / transition. // later: Phase 4–5 (no Phase-2 writer).
@@ -319,7 +319,7 @@ public struct PlayerState: Equatable, Sendable {
     public var exitIndex: Int16 = -1
     public var exit2: Int16 = -1
     /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.
-    /// // later: Phase 3 (teleporters) — no Phase-2 writer of 070c.
+    /// // later: Phase 4 (teleporters) — no writer of 070c yet.
     public var teleporterTouch = false
     public var teleporterFire = false
     /// `PTR_DAT_100a0644`, `PTR_DAT_100a0634`, `PTR_DAT_100a0628`, `PTR_DAT_100a061c`: the power-up tint flags paired

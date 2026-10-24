@@ -60,7 +60,7 @@ public enum GroundCeilingEffects {
 /// The Effect class (triggers-background-2 §2): `.SetupEffectSprite @ 10060680` and `.HandleEffectSprite @ 10061160`
 /// for the effects Phase 2 spawns — the landing dust 1201 (`.CheckGroundCeilingHitEffects`), the crumble overlay 1210
 /// (`.MakeCrunchSprite`) and the bubble 1040 (`.EmitBubble`, P4). The other ids (explosions and their particle package,
-/// plumes, the countdown's digits, crate debris, …) // later: E1a / Phase 3–5.
+/// plumes, the countdown's digits, crate debris, …) // later: Phase 4–5.
 public enum EffectSprite {
     /// 0x4b1 'dust cloud' (PICT 1201, 6 × 56×8) and 0x4ba 'crumble overlay' (PICT 1210, 3 × 32×32).
     public static let dust: Int16 = 0x4b1
@@ -92,7 +92,7 @@ public enum EffectSprite {
     /// `.HitEffectTileSprite(s, pos, kind, layer) @ 100619a0` (l. 54298–54324), the Effect class's tile callback: BG
     /// (layer 0) liquid (`.IsWaterTile`) with `+0x140 == 0` → `.HandleUnderWater(s, pos)` (its entry `.Splash` —
     /// an Effect's `+0x13e` is 0, so it returns at once). The FG arm (0xc1b's `.WallBounce`) and the crunch arm (`+0xeb` → `.CrunchTile`) belong to effects
-    /// Phase 2 does not spawn (// later: E1a / Phase 3–5).
+    /// Phase 2 does not spawn (// later: Phase 4–5).
     public static func hitTile(_ solver: TileSolver, id: Int, pos: TilePos, kind: Int, layer: TileLayer) {
         let w = solver.world
         guard layer == .background, UnderWater.isWaterTile(kind),
@@ -202,7 +202,7 @@ public enum EffectSprite {
                 }
             }
         default:
-            break   // later: E1a / Phase 3–5 — the other effect ids.
+            break   // later: Phase 4–5 — the other effect ids.
         }
         w.active.update(id: id) { p in
             p.x256 &+= p.vx

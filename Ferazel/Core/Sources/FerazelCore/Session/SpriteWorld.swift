@@ -164,7 +164,7 @@ public final class SpriteWorld {
     /// Handle `+0x4c` is 0 (`.ActiveToIdleSprite` saved it this iteration, `SpriteSlot.handleCleared`) is killed
     /// (`.MTKillSprite`; the record stays readable through `ActiveList.record(id:)`). The `+0xe9` death count-up
     /// (1 … 4, the callbacks, face and light cleared, the record flag), the record position write-back (`+0x188` …)
-    /// and the 0x6ea re-type are not built — // later: Phase 3–5 (no Phase-2 writer of a killing `+0xe9` count).
+    /// and the 0x6ea re-type are not built — // later: Phase 4–5 (no Phase-2 writer of a killing `+0xe9` count).
     public func updateSprites() {
         for id in active.sprites.filter(\.handleCleared).map(\.id) { active.remove(id: id) }
     }

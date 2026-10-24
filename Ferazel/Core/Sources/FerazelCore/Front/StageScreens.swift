@@ -69,7 +69,7 @@ public enum StageScreens {
     /// PowerPC `fctiwz`: toward zero, saturating at the Int32 bounds; NaN → Int32.min.
     static func fctiwz(_ x: Float) -> Int32 {
         if x.isNaN { return .min }
-        if x >= 2_147_483_647 { return .max }
+        if x >= 2_147_483_648.0 { return .max }
         if x <= -2_147_483_648 { return .min }
         return Int32(x.rounded(.towardZero))
     }

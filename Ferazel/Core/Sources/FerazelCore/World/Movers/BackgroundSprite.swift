@@ -41,7 +41,7 @@ public enum BackgroundSprite {
     ///   the class-cache face (`+0xc0 = PTR_DAT_100a09f4[type − 0x5c8] + 4`, flagged for `.LoadCachedSpriteFaces`).
     /// - mode `+0xb0` = p1, 0 → 0xb; **p2 0 → 0x8c and p3 0 → 0x1e written back to the record**.
     /// - modes 1, 2: the programmed path (`SetupFaces` refuses them — // later: no level 1–2 placement).
-    /// - modes 10…14: `+0x188 = 1` (the record write-back flag; Core has no write-back — // later: Phase 3),
+    /// - modes 10…14: `+0x188 = 1` (the record write-back flag; Core has no write-back — // later: Phase 4),
     ///   one-way `+0x185 = 1`; with a record (`+0x48 ≠ −1`): persp = 1 for modes 12, 13, 2 for 14, else 0; persp ≠ 0
     ///   clears `+0x88`; `+0xa6 = 0`, `+0x1f8 = 0`.
     public static func setupMace(_ s: inout SpriteSlot, record p: Placement) -> Placement {

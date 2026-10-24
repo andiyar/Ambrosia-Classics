@@ -204,7 +204,7 @@ public final class FrameRenderer {
     /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`), the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`) and
     /// the bubble 1040 (`LoadEncFaceSetFromPICT(0x410, 4, 8, 8, 4, …)`, l. 53656: 4 × 8×8, `.EmitBubble`, P4) — the
     /// effects Phase 2 spawns — and W2b's cannon smoke 0x442 (`LoadEncFaceSetFromPICT(0x4b0, 13, 48, 48, 13, …)`,
-    /// l. 53646). // later: E1a / Phase 3–5 — the other effect sets.
+    /// l. 53646). // later: Phase 4–5 — the other effect sets.
     static let effectSheets: Set<SetupFaces.Sheet> = [
         SetupFaces.Sheet(pict: 0x4b0, count: 0xd, cellWidth: 0x30, cellHeight: 0x30, columns: 0xd, clut: 200),
         SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),

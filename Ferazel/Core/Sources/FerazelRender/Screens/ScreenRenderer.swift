@@ -28,7 +28,7 @@ import HectorResources
 ///   list keep the current CLUT's); the gamma stays. The maths is Core's (`DeathScreen.turnGray`).
 /// - `gammaStep`: one `.HandleAsyncGammaFade` step (`ScreenGamma.step`).
 /// - `drawFace`: the map's faces are blitted into `MapRenderer`'s work port (M2; `MapRenderer.apply` sends only the
-///   `.screen` ops here, and M1 puts no face on the screen) — a no-op here; `restoreView` // later: C2 — a no-op.
+///   `.screen` ops here, and M1 puts no face on the screen) — a no-op here; `restoreView` is C2's, in `ConversationRenderer` — a no-op here.
 /// - The level ops (grid, lights, sprites, copy, erase, status bar, tiles, water, particles) are `FrameRenderer`'s:
 ///   `Refusal.levelOp`.
 public final class ScreenRenderer {
@@ -104,7 +104,7 @@ public final class ScreenRenderer {
             case .drawFace:
                 break   // M2: `MapRenderer` blits the map's faces into its work port; never sent to the screen
             case .restoreView:
-                break   // later: C2 (`.WrapCopyToScreen` of the last drawn level frame)
+                break   // C2 draws it (`.WrapCopyToScreen` of the last drawn level frame): `ConversationRenderer`
             case .redrawScrollGrid: throw Refusal.levelOp("redrawScrollGrid")
             case .redrawEntireScrollGrid: throw Refusal.levelOp("redrawEntireScrollGrid")
             case .drawLightsOntoTiles: throw Refusal.levelOp("drawLightsOntoTiles")

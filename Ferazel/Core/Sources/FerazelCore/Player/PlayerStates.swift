@@ -89,7 +89,7 @@ public enum PlayerStates {
             }
             let ended = w.player.diedInLiquid ? 100 < w.player.dying : 0x50 < w.player.dying
             if ended {
-                // `.HasItemWhichSlot(0x17, …)`: no inventory in Phase 2 (// later: Phase 3–4), so never the revive
+                // `.HasItemWhichSlot(0x17, …)`: no inventory in Phase 2 (// later: Phase 4), so never the revive
                 // arm — `DAT_100a5106 = 1`, the game over.
                 w.player.gameOver = true
             }
@@ -278,7 +278,7 @@ public enum PlayerStates {
                     setFace(face(crouch, Int(w.player.crouch) - 1))
                 } else {
                     if w.player.shieldExtension < 7 { w.player.shieldExtension += 1 }
-                    // `.HasItem(0xf)` (the Magical Shield): no inventory in Phase 2 (// later: Phase 3–4) → false, so
+                    // `.HasItem(0xf)` (the Magical Shield): no inventory in Phase 2 (// later: Phase 4) → false, so
                     // 1039[min(raise − 1, 5)] (the other arm: 1039[min(raise + 2, 8)] with raise ≥ 4).
                     var i = Int(w.player.shieldRaise) - 1
                     if 4 < i { i = 5 }
@@ -522,7 +522,7 @@ public enum PlayerStates {
     ///   flags; // later: Phase 4 — all false in Phase 2) or 0, and `+0xb8 == 0` → `+0x1a6 = +0x1a8 = 0`, `+0x88 = 1`,
     ///   else `+0x88 = 0`, `+0x1a8 = 8`;
     /// - |n| < 21 → `+0xb8 = 0`, `+0x18c = 0`; 21…59 → the sparkle `0x50000 + clamp(min(((|n| − 12) >> 2) + 2, 15) +
-    ///   FastRand(6) − 3, 0, 15)`, `+0x18c = 1`; 60…79 → 0x4f; 80 → `0708` = 1 (fire). // later: Phase 3 (teleporters)
+    ///   FastRand(6) − 3, 0, 15)`, `+0x18c = 1`; 60…79 → 0x4f; 80 → `0708` = 1 (fire). // later: Phase 4 (teleporters)
     /// - `070c` = 0.
     static func tint(_ w: SpriteWorld, id: Int) {
         w.player.teleporterFire = false

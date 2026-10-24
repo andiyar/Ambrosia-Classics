@@ -78,7 +78,7 @@ extension HitPlayerSprite {
     /// - **the level exit** 0xcb1 (l. 49733–49741; W4): `.STPlayRegSound(*_DAT_100a03dc = snd 421, 1, 0x100)` (no
     ///   draw), the exit index `uRam100a5116` = the record's p1 (`+8`), `_DAT_100a5118` = p2 when ≠ 0, level complete
     ///   `*_DAT_100a0088 = 1` — `.GameLoop` leaves its loop after this iteration (`FerazelSession`, `LevelFlow`).
-    /// - // later: 0xbf4 and the other Background arms (Phase 3; none placed on levels 1–2). Cannons, springs and
+    /// - // later: 0xbf4 and the other Background arms (Phase 4; none placed on levels 1–2). Cannons, springs and
     ///   tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
     /// The level exit (PICT-less Background type 3249).
     public static let levelExit: Int16 = 0xcb1
@@ -99,7 +99,7 @@ extension HitPlayerSprite {
             w.player.levelDone = true
             return
         }
-        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 3)
+        guard BackgroundSprite.maces.contains(o.type) else { return }    // later: 0xbf4 … (Phase 4)
         if p.invulnerable == 0 && o.classWord170 == 1 {
             HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0xe0, blood: true, invulnerable: 0x3c, coins: 5)
             w.active.update(id: pID) { $0.invulnerable = 0x1e }
@@ -353,7 +353,7 @@ extension HitPlayerSprite {
         guard w.player.doorTransit == 0x16,
               let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         w.player.lookAhead = 0
-        // later: Phase 3 — p2 ≠ 0: −1 → `G+0x20 = 0`, hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
+        // later: Phase 4 — p2 ≠ 0: −1 → `G+0x20 = 0`, hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let dx = h(p.x - o.x), dy = h(p.y - o.y)
         let partner = BackgroundSprite.record(w, o)?.p1

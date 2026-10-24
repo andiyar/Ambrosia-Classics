@@ -341,7 +341,7 @@ public enum RopeSprite {
 
     /// `.RopeIdleize` (M l. 71458–71489), `+0x54` called by `.ActiveToIdleSprite` before the record is saved: with
     /// `+0x17c` and a block, `+0xe9 = 1` on each of the nSeg segments and the two ends, `+0x170 = 0`. // later: the
-    /// `+0xe9` count-up of `.UpdateSprites` (Phase 3–5) kills them; until then they stay listed, undrawn.
+    /// `+0xe9` count-up of `.UpdateSprites` (Phase 4–5) kills them; until then they stay listed, undrawn.
     static func idleize(_ active: inout ActiveList, id: Int) {
         guard let s = active.record(id: id), s.setupDone, let b = s.rope else { return }
         var k = 0

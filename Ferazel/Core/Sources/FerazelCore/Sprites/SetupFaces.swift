@@ -262,7 +262,7 @@ public enum SetupFaces {
             switch t {
             case 0x442...1098:                                 // cannons (l. 62058–62184; W2b `setupCannon`)
                 // p1 < 0 (programmed path, `.SetupProgrammedPath`) and p1 > 0 (101…106 rotating / shot-steered; the
-                // rest a path without a Setup) are not built: none is placed on levels 1–2. // later: Phase 3.
+                // rest a path without a Setup) are not built: none is placed on levels 1–2. // later: Phase 4.
                 guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }
                 BackgroundSprite.setupCannon(&s, record: p, level: c.level)
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
