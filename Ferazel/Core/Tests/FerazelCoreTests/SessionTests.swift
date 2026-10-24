@@ -308,6 +308,7 @@ final class SessionTests: XCTestCase {
                 case .drawText: return "text"
                 case .restoreView: return "restoreView"
                 case .screenGamma: return "screenGamma"
+                case .drawBlackLines: return "blackLines"
                 }
             }
         }

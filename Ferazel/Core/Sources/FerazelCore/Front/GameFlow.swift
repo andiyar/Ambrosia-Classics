@@ -238,15 +238,16 @@ public final class GameFlow {
         return out
     }
 
-    /// The modal dialog the flow asked for was answered (the map's confirms go to the map); the flow goes on at the
-    /// next tick.
+    /// The modal dialog the flow asked for was answered (the map's confirms — and its pause's — go to the map, a level's
+    /// to its `LevelRun`); the flow goes on at the next tick.
     public func dialogDone(_ result: DialogResult) {
         if case .map = wait, let m = worldMap {
             m.dialogDone(ok: result == .ok)
             lastDialogResult = result
             return
         }
-        // S1: inside a level only a save point's error report is modal — it belongs to the `LevelRun`.
+        // Inside a level every modal belongs to the `LevelRun`: a save point's error report (S1), the
+        // `.CheckGameLoopKeys` confirms, ⌘P's Options and the pause's Abort Game confirm (P1).
         if case .level = wait, let run = levelRun {
             run.dialogDone(result)
             lastDialogResult = result

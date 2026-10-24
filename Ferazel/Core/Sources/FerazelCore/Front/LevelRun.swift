@@ -104,7 +104,7 @@ public struct LevelRunOutput: Equatable, Sendable {
         case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
         case .redrawScrollGrid, .redrawEntireScrollGrid, .drawLightsOntoTiles, .wrapDrawSprites, .copyToScreen,
              .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
-             .eraseParticles:
+             .eraseParticles, .drawBlackLines:
             return .level
         }
     }
@@ -468,7 +468,10 @@ public final class LevelRun {
         case .stageComplete:
             guard let s = session else { return }
             if !skipStageComplete {
-                block(StageScreens.stageCompleteEffect(globals: s.globals, level: levelNumber, sounds: sounds), now: now)
+                // `.STPlayRegSound` reads the live prefs+0x0b and `iRam100a510c` (M l. 40605ff): an in-level
+                // `.MakeCurrPrefs` (⌘P, the pause's ⌘F, a save's `.UpdateSGString`) is heard here.
+                let live = StageSounds(prefs: livePrefs, lengths: sounds.lengths)
+                block(StageScreens.stageCompleteEffect(globals: s.globals, level: levelNumber, sounds: live), now: now)
             }
             skipStageComplete = false                                  // `*_DAT_1009fd64 = 0` (M l. 5313)
         case .completeMusic:
@@ -767,7 +770,9 @@ public final class LevelRun {
                 saveSG = nil
                 saveStep = nil
                 saveState = sg.state
-                prefsAfterSaves = sg.prefs
+                // `.SaveSG` edits the live prefs (prefs+0x42) and `.UpdateSGString` re-makes them current: the run's
+                // and the session's copies follow (P1 review fix).
+                applyPrefs(sg.prefs, s)
                 if sg.madeCurrent || !sg.music.isEmpty {
                     emit(&out, FrontOutput(music: sg.music, prefs: sg.madeCurrent ? sg.prefs : nil))
                 }

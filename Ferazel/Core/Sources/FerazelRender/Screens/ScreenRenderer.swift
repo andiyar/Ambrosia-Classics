@@ -117,6 +117,7 @@ public final class ScreenRenderer {
             case .wrapDrawWaterEffects: throw Refusal.levelOp("wrapDrawWaterEffects")
             case .drawParticles: throw Refusal.levelOp("drawParticles")
             case .eraseParticles: throw Refusal.levelOp("eraseParticles")
+            case .drawBlackLines: throw Refusal.levelOp("drawBlackLines")
             }
         }
     }

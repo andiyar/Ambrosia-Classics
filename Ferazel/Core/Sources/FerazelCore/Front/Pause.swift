@@ -65,8 +65,8 @@ public struct GameLoopKeyAnswer: Equatable, Sendable {
 /// `.UpdateStatusBar(0, 0, 0)`, `fe0c = 1`, `511e = 1`, `DrawBlackLines` (mode 3). DLOG 202's item-5 Save branch is
 /// dead (BC26) and not built.
 ///
-/// `DrawBlackLines` has no op: the replica's dialogs are not drawn on the screen surface, and mode 3's black lines are
-/// the copy's own (`copyToScreen(graphicsMode: 3)`) — nothing for it to restore [MED].
+/// `DrawBlackLines` (graphics mode 3 only) is `DrawOp.drawBlackLines`: mode 3's copy skips the odd rows, so whatever was
+/// drawn over the view there (a dialog in the original, the pause banner in both) stays until they are blackened.
 public enum GameLoopKeys {
     /// 0x100a2ccd (the pstr `ParamText` gets; the same text as the map's 0x100a6d69).
     public static let quitText = WorldMapRun.quitText
@@ -88,12 +88,13 @@ public enum GameLoopKeys {
         return nil                                      // the debug keys (debug flag only): out of scope
     }
 
-    /// `.RedrawGameArea @ 10042404` (M l. 37834ff): `WrapCopyToScreen(back screen, h, v, …, 5107, mode 3 only in its
-    /// `DrawBlackLines` branch)` — as `SavePointSave.redraw` folds it.
-    static func redrawGameArea(h: Int, v: Int, prefs: FerazelPrefs) -> DrawOp {
+    /// `.RedrawGameArea @ 10042404` (M l. 37834ff): mode 3 with `5107` → `DrawBlackLines`, then `WrapCopyToScreen(…,
+    /// line skip)`; else `WrapCopyToScreen(…, 0)` — the mode folded as `SavePointSave.redraw` does.
+    static func redrawGameArea(h: Int, v: Int, prefs: FerazelPrefs) -> [DrawOp] {
         let backdrop = prefs.plainCopy == 0                                   // `cRam100a5107`
         let mode = Int(prefs.graphics) == 3 && !backdrop ? 1 : Int(prefs.graphics)
-        return .copyToScreen(h: h, v: v, graphicsMode: mode, backdrop: backdrop)
+        let copy = DrawOp.copyToScreen(h: h, v: v, graphicsMode: mode, backdrop: backdrop)
+        return Int(prefs.graphics) == 3 && backdrop ? [.drawBlackLines, copy] : [copy]
     }
 }
 
@@ -278,7 +279,7 @@ public struct PauseRun {
                 if !onMap, let s = scroll { out.draws.append(.redrawEntireScrollGrid(h: s.h, v: s.v)) }
                 out.requests.append(.hideCursor)
                 if !onMap, let s = scroll {
-                    out.draws.append(GameLoopKeys.redrawGameArea(h: s.h, v: s.v, prefs: live.live))
+                    out.draws += GameLoopKeys.redrawGameArea(h: s.h, v: s.v, prefs: live.live)
                 }
                 out.present = true
                 stage = .done

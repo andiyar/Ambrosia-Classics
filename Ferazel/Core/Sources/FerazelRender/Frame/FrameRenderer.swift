@@ -69,6 +69,7 @@ public final class FrameRenderer {
         case gamma(numerator: Int, denominator: Int)
         case tile(col: Int, row: Int)
         case waterEffects(Int), particles(Int), eraseParticles
+        case blackLines
     }
 
     public let resources: FerazelResources
@@ -361,6 +362,13 @@ public final class FrameRenderer {
             case .eraseParticles:
                 particles.erase(scroll: scroll, ports: &ports)
                 executed.append(.eraseParticles)
+            case .drawBlackLines:
+                // `.DrawBlackLines @ 1001fa58`: rows 9 + 2k (k < 0xbe), 0x98 words from x 16, byte 0xff.
+                for k in 0..<0xbe {
+                    let row = (9 + 2 * k) * IndexedFrame.width
+                    for x in 0x10..<(0x10 + 0x98 * 4) { screen.pixels[row + x] = 0xff }
+                }
+                executed.append(.blackLines)
             case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
                 // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.
                 break

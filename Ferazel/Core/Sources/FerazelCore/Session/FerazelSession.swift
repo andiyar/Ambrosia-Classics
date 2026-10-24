@@ -517,8 +517,9 @@ public final class FerazelSession {
         guard !world.gammaFade.fadedOut, world.gammaFade.done else { return loopTail(ops) }
         guard let e = GameLoopKeys.branch(frameKeys) else { return keysCounters(ops) }
         var ops = ops
-        // `.RestoreWindowBackground` (`DrawBlackLines` in mode 3: no op), `ShowCursorSafe`, `FlushEvents`,
-        // `InputActivate(0, 0)` (⌘P: `FlushEvents` before `ShowCursorSafe`).
+        // `.RestoreWindowBackground` (`DrawBlackLines` in mode 3), `ShowCursorSafe`, `FlushEvents`, `InputActivate(0,
+        // 0)` (⌘P: `FlushEvents` before `ShowCursorSafe`).
+        drawBlackLines(&ops)
         ops.requests.append(.showCursor)
         world.suspension = .gameLoopKeys(e)
         return suspend(ops)
@@ -546,17 +547,20 @@ public final class FerazelSession {
             return nestedPaintFrameWrap(then: .confirmOK(event), ops)
         case (.confirmQuit, .confirm(ok: false)), (.confirmAbort(escape: false), .confirm(ok: false)):
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            drawBlackLines(&ops)
             ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
             return keysCounters(ops)
         case (.confirmAbort(escape: true), .confirm(ok: false)):
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
+            drawBlackLines(&ops)
             return nestedPaintFrameWrap(then: .escapeCancel, ops)
         case (.options, .optionsClosed):
             // `.SetScrollLocation`, `.RedrawEntireScrollGrid`, `.UpdateStatusBar(0, 0, 0)`, `fe0c = 1`, `511e = 1` (no
-            // Core reader), `DrawBlackLines` (mode 3: no op).
+            // Core reader), `DrawBlackLines` (mode 3).
             ops.draws.append(.redrawScrollGrid(h: h, v: v))
             ops.draws.append(.redrawEntireScrollGrid(h: h, v: v))
             ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
+            drawBlackLines(&ops)
             return keysCounters(ops)
         case (.pause, .pausePaint):
             return nestedPaintFrameWrap(then: .pausePaint, ops)
@@ -586,11 +590,17 @@ public final class FerazelSession {
         return nestedDone(tail, ops)
     }
 
+    /// `if (prefs+2 == 3) _DrawBlackLines()` — the session is never on the map (`fe2c` 0).
+    private func drawBlackLines(_ ops: inout FrameOps) {
+        if prefs.graphics == 3 { ops.draws.append(.drawBlackLines) }
+    }
+
     private func nestedDone(_ tail: NestedTail, _ ops: FrameOps) -> FrameOps {
         var ops = ops
         switch tail {
         case .confirmOK(let event):
-            // `DrawBlackLines` (mode 3: no op), `DAT_100a5106 = 1`, `FlushEvents`, `.UpdateStatusBar(0, 0, 0)`.
+            // `DrawBlackLines` (mode 3), `DAT_100a5106 = 1`, `FlushEvents`, `.UpdateStatusBar(0, 0, 0)`.
+            drawBlackLines(&ops)
             loopAborted = true
             ops.draws.append(.statusBar(globals.statusBar(levelName: level.header.name)))
             if event == .confirmQuit {

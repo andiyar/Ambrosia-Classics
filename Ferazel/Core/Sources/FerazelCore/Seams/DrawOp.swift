@@ -46,6 +46,12 @@ public enum DrawOp: Equatable, Sendable {
     /// `.EraseParticles @ 10031d6c` (l. 9449), drawn iterations only, right after `.WrapCopyToScreen`: what the last
     /// `drawParticles` drew is restored from the tile port by each record's erase mode `+0x1d`.
     case eraseParticles
+    /// `.DrawBlackLines @ 1001fa58` (P1; raw `1001fa58..1001fc84`): only off the map (`*fe2c == 0`); every odd screen
+    /// row 9, 11 … 387 (190 rows), x 16 … 623 (152 words) set to byte 0xff — index 255, the CLUT's black — straight
+    /// into the screen's pixels (the cursor hidden and shown around it). Graphics mode 3's copy skips those rows, so the
+    /// callers blacken them after anything drew over the view (`.RestoreWindowBackground`, `.CheckGameLoopKeys`,
+    /// `.RedrawGameArea`).
+    case drawBlackLines
 
     // MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
 

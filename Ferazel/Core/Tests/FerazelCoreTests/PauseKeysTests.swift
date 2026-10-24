@@ -82,6 +82,13 @@ final class PauseKeysTests: XCTestCase {
     private func isErase(_ op: DrawOp) -> Bool { if case .wrapEraseSprites = op { true } else { false } }
     private func isStatus(_ op: DrawOp) -> Bool { if case .statusBar = op { true } else { false } }
     private func isGrid(_ op: DrawOp) -> Bool { if case .redrawEntireScrollGrid = op { true } else { false } }
+    private func isPaint(_ op: DrawOp) -> Bool { if case .redrawScrollGrid = op { true } else { false } }
+
+    private static func prefs(graphics: Int16) -> FerazelPrefs {
+        var p = FerazelPrefs()
+        p.graphics = graphics
+        return p
+    }
 
     // MARK: - The pause counter
 
@@ -220,12 +227,41 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertTrue(tail.requests.contains(.hideCursor))
         let grid = try XCTUnwrap(tail.draws.firstIndex(of: .redrawEntireScrollGrid(h: s.camera.scrollH,
                                                                                    v: s.camera.scrollV)))
-        XCTAssertTrue(isCopy(tail.draws[grid + 1]))
+        XCTAssertTrue(isCopy(tail.draws[grid + 1]), "graphics 1: no `DrawBlackLines`")
+        XCTAssertFalse(rig.ticks.filter { $0.t >= e }.flatMap { $0.out.draws }.contains(.drawBlackLines))
         XCTAssertTrue(tail.draws[(grid + 2)...].contains(where: isStatus))
         XCTAssertEqual(rig.run.iterations, iterationsBefore + 1)
         XCTAssertEqual(end.steps.last?.suspension, nil)
         XCTAssertEqual(s.pauseDebounce, 0)
         try rig.drive(max: 4) { rig, _ in rig.run.iterations == iterationsBefore + 2 }
+
+        // Graphics mode 3, File ▸ Abort Game while paused: the confirm, OK → unpaused (`DAT_100a5106`); the exit as
+        // ever — `.RedrawGameArea` now `DrawBlackLines` + the line-skipped copy — then the level ends `.aborted`.
+        let ab = try Rig(r, prefs: Self.prefs(graphics: 3))
+        try ab.settle()
+        try ab.drive(max: 60, input: { _ in FrontInput(capsLock: true) }) { _, k in
+            k.out.requests.contains(.showMenuBar)
+        }
+        ab.run.menuChosen(.abortGame)
+        let confirm = try ab.tick(FrontInput(capsLock: true))
+        XCTAssertEqual(dialogs(confirm.out), [.confirm(text: GameLoopKeys.abortText)])
+        try ab.idle(3, input: FrontInput(capsLock: true))
+        XCTAssertEqual(ab.run.pause?.paused, true, "the confirm is modal")
+        ab.run.dialogDone(.ok)
+        try ab.tick(FrontInput(capsLock: true))
+        XCTAssertEqual(ab.run.pause?.paused, false)
+        XCTAssertEqual(ab.run.pause?.aborted, true)
+        let abEnd = try XCTUnwrap(try ab.drive(max: 60, input: { _ in FrontInput(capsLock: true) }) { rig, _ in
+            rig.run.pause == nil
+        })
+        let abs = try XCTUnwrap(ab.run.session)
+        let abGrid = try XCTUnwrap(abEnd.out.draws.firstIndex(of: .redrawEntireScrollGrid(h: abs.camera.scrollH,
+                                                                                         v: abs.camera.scrollV)))
+        XCTAssertEqual(abEnd.out.draws[abGrid + 1], .drawBlackLines)
+        XCTAssertTrue(isCopy(abEnd.out.draws[abGrid + 2]))
+        XCTAssertTrue(abs.loopAborted)
+        try ab.drive(max: 20, input: { _ in FrontInput(capsLock: true) }) { rig, _ in rig.run.end != nil }
+        XCTAssertEqual(ab.run.end, .aborted)
 
         // From the map (`fe2c = 1`): no level CLUT, no `.PaintFrameWrap`, no level redraw; the work port copied back
         // over the banner after.
@@ -264,14 +300,36 @@ final class PauseKeysTests: XCTestCase {
         })
         XCTAssertTrue(during[mb...].contains(.copy(from: .work, to: .screen, source: WorldMapRun.viewRect,
                                                    dest: WorldMapRun.toScreen(WorldMapRun.viewRect))))
+        XCTAssertFalse(map.loopEndRequested)
+
+        // On the map, Abort Game's OK while paused sets `DAT_100a5106` — the flow's loop ends after the map.
+        let map2 = try WorldMapRun(resources: r, prefs: prefs, globals: g, level: 1, levelName: name, exit1: 0,
+                                   exit2: -1, levelComplete: true, seed: 1, fade: fade, music: MusicFade())
+        var t2: UInt32 = 9000
+        func tick2(_ input: FrontInput) -> WorldMapOutput {
+            defer { t2 &+= 1 }
+            return map2.tick(now: t2, input: input)
+        }
+        for _ in 0..<600 where !(map2.onMap && map2.walkStep == 0 && map2.iterations > 40) { _ = tick2(FrontInput()) }
+        for _ in 0..<60 where !(map2.pause?.polls ?? 0 > 0) { _ = tick2(FrontInput(capsLock: true)) }
+        XCTAssertEqual(map2.pause?.paused, true)
+        map2.menuChosen(.abortGame)
+        let ask2 = tick2(FrontInput(capsLock: true))
+        XCTAssertEqual(dialogs(ask2.output), [.confirm(text: GameLoopKeys.abortText)])
+        map2.dialogDone(ok: true)
+        for _ in 0..<200 where map2.pause != nil { _ = tick2(FrontInput(capsLock: true)) }
+        XCTAssertNil(map2.pause)
+        XCTAssertTrue(map2.loopEndRequested)
+        XCTAssertFalse(map2.aborted, "the map's own abort (`fd4c`) is not set")
     }
 
     // MARK: - Esc / ⌘W: abort
 
     func testEscAbortEndsLevelWithoutFades() throws {
         let r = try resources()
-        for keys in [[Self.escape], [Self.command, Self.keyW]] {
-            let rig = try Rig(r)
+        for (keys, graphics) in [([Self.escape], Int16(1)), ([Self.command, Self.keyW], 1), ([Self.escape], 3),
+                                 ([Self.command, Self.keyW], 3)] {
+            let rig = try Rig(r, prefs: Self.prefs(graphics: graphics))
             try rig.settle()
             let musicBefore = rig.ticks.flatMap { $0.out.music }.count
             let ask = try XCTUnwrap(try rig.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: keys)) }) {
@@ -280,6 +338,10 @@ final class PauseKeysTests: XCTestCase {
             XCTAssertEqual(dialogs(ask.out), [.confirm(text: GameLoopKeys.abortText)], "\(keys)")
             XCTAssertTrue(ask.out.requests.contains(.showCursor))
             XCTAssertNotNil(ask.steps.last?.suspension)
+            // `.RestoreWindowBackground`: `DrawBlackLines` in graphics mode 3 only, right after the frame's erase.
+            let asked = try XCTUnwrap(ask.steps.last).draws
+            XCTAssertEqual(asked.last == .drawBlackLines, graphics == 3, "\(keys) mode \(graphics)")
+            XCTAssertEqual(asked.filter { $0 == .drawBlackLines }.count, graphics == 3 ? 1 : 0)
             let iterations = rig.run.iterations
             try rig.idle(5)
             XCTAssertEqual(rig.run.iterations, iterations, "the confirm is modal: no iteration runs")
@@ -291,6 +353,16 @@ final class PauseKeysTests: XCTestCase {
             let erase = try XCTUnwrap(d.firstIndex(where: isErase))
             XCTAssertLessThan(copy, erase)
             XCTAssertTrue(d[erase...].contains(where: isStatus))
+            // OK: `.PaintFrameWrap(1, 1)`, `DrawBlackLines` (mode 3), `.UpdateStatusBar(0, 0, 0)`.
+            let rest = try XCTUnwrap(ok.steps.first).draws
+            let okErase = try XCTUnwrap(rest.firstIndex(where: isErase))
+            if graphics == 3 {
+                XCTAssertEqual(rest[okErase + 1], .drawBlackLines)
+                XCTAssertTrue(isStatus(rest[okErase + 2]))
+            } else {
+                XCTAssertFalse(rest.contains(.drawBlackLines))
+                XCTAssertTrue(isStatus(rest[okErase + 1]))
+            }
             XCTAssertEqual(rig.run.iterations, iterations, "the same iteration ends")
             let end = try XCTUnwrap(try rig.drive(max: 20) { rig, _ in rig.run.end != nil })
             XCTAssertEqual(rig.run.end, .aborted)
@@ -303,6 +375,38 @@ final class PauseKeysTests: XCTestCase {
             // The loop's end stops 452 and 511 (`*fe24`, `*fe20`, M l. 5297–5300) after the iteration's own.
             XCTAssertEqual(rig.ticks.filter { $0.t >= ok.t }.flatMap { $0.out.soundStops }.suffix(2), [452, 511])
             XCTAssertTrue(end.out.requests.contains(.showCursor))
+        }
+
+        // Esc's Cancel: `.RedrawEntireScrollGrid`, `DrawBlackLines` (mode 3), `.PaintFrameWrap(1, 1)` — a whole drawn
+        // pass — `.UpdateStatusBar(0, 0, 0)`; then the iteration ends and the run goes on (⌘W's Cancel has no pass).
+        for (keys, graphics) in [([Self.escape], Int16(3)), ([Self.escape], 1), ([Self.command, Self.keyW], 3)] {
+            let rig = try Rig(r, prefs: Self.prefs(graphics: graphics))
+            try rig.settle()
+            let iterations = rig.run.iterations
+            try rig.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: keys)) }) { _, k in
+                !self.dialogs(k.out).isEmpty
+            }
+            let s = try XCTUnwrap(rig.run.session)
+            let parity = s.world.parity
+            rig.run.dialogDone(.cancel)
+            let cancel = try rig.tick()
+            let rest = try XCTUnwrap(cancel.steps.first).draws
+            XCTAssertNil(cancel.steps.last?.suspension)
+            XCTAssertEqual(rest.first, .redrawEntireScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV))
+            XCTAssertEqual(rest[1] == .drawBlackLines, graphics == 3)
+            let escape = keys == [Self.escape]
+            XCTAssertEqual(rest.contains(where: isCopy), escape, "\(keys): the pass")
+            XCTAssertEqual(rest.contains(where: isErase), escape)
+            XCTAssertEqual(rest.contains(where: isPaint), escape)
+            // The nested drawn pass flips the parity `_DAT_1009fd30` once.
+            XCTAssertEqual(s.world.parity != parity, escape)
+            if escape {
+                let erase = try XCTUnwrap(rest.firstIndex(where: isErase))
+                XCTAssertTrue(isStatus(rest[erase + 1]))
+            }
+            XCTAssertEqual(rig.run.iterations, iterations + 1)
+            try rig.drive(max: 4) { rig, _ in rig.run.iterations == iterations + 2 }
+            XCTAssertNil(rig.run.end)
         }
     }
 
@@ -358,6 +462,37 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertEqual(a.run.iterations, b.run.iterations)
         XCTAssertEqual(a.run.session?.player, b.run.session?.player)
         XCTAssertEqual(a.ticks.last?.steps, b.ticks.last?.steps)
+
+        // ⌘P: `.Options` over the re-read record; OK with graphics 3 → `.MakeCurrPrefs`: the run's and the session's
+        // live prefs, the output's `prefs`; the tail `.SetScrollLocation`, `.RedrawEntireScrollGrid`, the status bar and
+        // — the new mode being 3 — `DrawBlackLines`; the next copies line-skip.
+        let o = try Rig(r)
+        try o.settle()
+        let opt = try XCTUnwrap(try o.drive(max: 4, input: { _ in
+            FrontInput(keys: KeyState(pressed: [Self.command, 0x23]))
+        }) { _, k in !self.dialogs(k.out).isEmpty })
+        XCTAssertEqual(dialogs(opt.out), [.preferences])
+        XCTAssertEqual(opt.steps.last?.suspension, FrameSuspension.gameLoopKeys(.options))
+        XCTAssertNotNil(o.run.prefsDialog)
+        o.run.prefsDialog?.working.graphics = 3
+        _ = o.run.prefsDialog?.hit(1)
+        o.run.dialogDone(.ok)
+        let closed = try o.tick()
+        let os = try XCTUnwrap(o.run.session)
+        XCTAssertNil(o.run.prefsDialog)
+        XCTAssertEqual(o.run.prefs.graphics, 3)
+        XCTAssertEqual(os.prefs.graphics, 3)
+        XCTAssertEqual(o.run.livePrefs.graphics, 3)
+        XCTAssertEqual(closed.out.prefs?.graphics, 3)
+        let tail = try XCTUnwrap(closed.steps.first).draws
+        XCTAssertEqual(Array(tail.prefix(4)), [.redrawScrollGrid(h: os.camera.scrollH, v: os.camera.scrollV),
+                                               .redrawEntireScrollGrid(h: os.camera.scrollH, v: os.camera.scrollV),
+                                               .statusBar(os.globals.statusBar(levelName: os.level.header.name)),
+                                               .drawBlackLines])
+        let next = try XCTUnwrap(try o.drive(max: 4) { _, k in k.steps.contains { $0.draws.contains(where: self.isCopy) } })
+        XCTAssertTrue(next.steps.flatMap { $0.draws }.contains {
+            if case .copyToScreen(_, _, 3, _) = $0 { true } else { false }
+        })
     }
 
     // MARK: - The gates
@@ -384,5 +519,20 @@ final class PauseKeysTests: XCTestCase {
         }
         XCTAssertEqual(ask.map { dialogs($0.out) }, [.confirm(text: GameLoopKeys.abortText)])
         XCTAssertEqual(rig.run.iterations, 42)
+
+        // `DAT_100a53d6` on its own: an async fade-OUT running (not faded yet, `*fde8` 0) holds the keys and the pause.
+        let out = try Rig(r)
+        try out.settle()
+        let s = try XCTUnwrap(out.run.session)
+        s.world.gammaFade.fadeOut(steps: 20, toward: RGB16(0, 0, 0))
+        let start = out.run.iterations
+        try out.drive(max: 100, input: { _ in esc }) { rig, k in
+            XCTAssertEqual(self.dialogs(k.out), [])
+            XCTAssertTrue(k.steps.allSatisfy { $0.suspension == nil })
+            XCTAssertNil(rig.run.pause)
+            return rig.run.iterations >= start + 10
+        }
+        XCTAssertFalse(s.world.gammaFade.fadedOut)
+        XCTAssertFalse(s.world.gammaFade.done)
     }
 }
