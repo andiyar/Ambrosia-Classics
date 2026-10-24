@@ -7,12 +7,21 @@ public enum DialogResult: Equatable, Sendable {
     case cancel
 }
 
+/// One renderer's run of draws in a `GameFlow` tick (F1b; A1a routes them, in order, onto the one shared screen):
+/// the level-less `ScreenRenderer` (the flow's own draws, the stage screens, the death screen and the `.screen`
+/// segments of a `LevelRun`), the level `FrameRenderer` (a `LevelRun`'s `.level` segments), the map's `MapRenderer`.
+public enum FlowSegment: Equatable, Sendable {
+    case screen([DrawOp])
+    case level([DrawOp])
+    case map([MapOp])
+}
+
 /// The whole game's front end as one tick machine (plan S2 `GameFlow`, F1a part 1; Invariant 3): `.main @ 1000ffc0`
 /// (M l. 8136–8358) — the logo, the boot music, the boot keys, the loading screen and its 3-D bar — then
 /// `.MainMenu @ 1000e618` (M l. 7303–7445): the buttons (`.TrackClickOnCommandButton`, mouse and keyboard), the
 /// letter keys, the X joke, the menu bar at the top edge, `.Options` (M l. 7254–7288), `.Credits` (M l. 7291–7299) and
-/// `.Quit @ 1000e9d4` (M l. 7447–7482). New Game (`.NewGame`) and Continue (`.ContinueGame`) end in the states
-/// `.newGame` / `.continueGame`, which F1b fills (`// later: F1b`).
+/// `.Quit @ 1000e9d4` (M l. 7447–7482). F1b: New Game (`.NewGame`, `NewGame.swift`) and Continue (`.ContinueGame`,
+/// `ContinueGame.swift`) — the level ⇄ map loop over `LevelRun` and `WorldMapRun`, death → `DeathScreen`.
 ///
 /// The original's nested blocking calls run as a queue of work items: each item is the code between two blocking
 /// calls and may start one block (a `FrontTimeline`, a dialog, a load, the menu's idle, a button track); the queue
@@ -22,7 +31,8 @@ public enum DialogResult: Equatable, Sendable {
 /// The App's side: tick with `ShellClock.ticks()` and the polled input; answer `.dialog` requests with `dialogDone`
 /// (the Options dialog is driven through `prefsDialog`, the credits drawn from `credits`); while `state` is
 /// `.loading(.sounds)` load the sound effects (none when `soundLoading` is false — F1 at boot), while
-/// `.loading(.faces)` load the faces calling `loadProgress(faces:)`; then `loadFinished()`.
+/// `.loading(.faces)` load the faces calling `loadProgress(faces:)`; then `loadFinished()`. Draw each tick's
+/// `segments` on their renderers in order (F1b); answer `.getFile` with `fileDone`.
 public final class GameFlow {
     /// What the App loads while the flow waits (`.InitSounds` + `.InitAppGlobals` under the logo, M l. 8324–8326;
     /// `.InitSprites`, `.InitFaces`, `.InitTiles` under the loading screen, M l. 8341–8343).
@@ -42,9 +52,9 @@ public final class GameFlow {
         case options
         /// DLOG 600 up (`credits`).
         case credits
-        /// `.NewGame` — later: F1b.
+        /// `.NewGame` running (its level ⇄ map loop, the death screen, the menu return).
         case newGame
-        /// `.ContinueGame(reply)` — later: F1b.
+        /// `.ContinueGame(reply)` running (the file dialog, the refusals, its loop, the death screen, the menu return).
         case continueGame
         /// `ExitToShell` asked.
         case quit
@@ -52,10 +62,10 @@ public final class GameFlow {
 
     public let resources: FerazelResources
     public let files: FrontFiles
-    /// L1's renderer seam — unused until F1b opens a level.
+    /// L1's renderer seam (each `LevelRun`'s).
     public let levels: LevelServices
 
-    public private(set) var state: State = .boot
+    public internal(set) var state: State = .boot
     /// O1's model while DLOG 6900 is up (nil otherwise); the App feeds the dialog's events into it and answers with
     /// `dialogDone` once its `result` is set.
     public var prefsDialog: PrefsDialogModel?
@@ -70,7 +80,7 @@ public final class GameFlow {
     public internal(set) var globals = GameGlobals()
     public internal(set) var saveBlock = SaveBlock()
     /// The gamma-fade globals (`53c2`, `*fde8`, `53d6`).
-    public private(set) var fade = ScreenFade()
+    public internal(set) var fade = ScreenFade()
     /// The live prefs, `fd20`, the sound scale and the music player.
     public internal(set) var toggles: PrefsToggles
     /// The boot bar.
@@ -94,33 +104,94 @@ public final class GameFlow {
     /// `*PTR_DAT_100a0b64`: the modifier the Options dialog last captured (a global, carried across openings).
     private var lastModifier: Int16 = 0
 
-    private typealias Work = (GameFlow, UInt32, FrontInput, inout FrontOutput) -> Void
+    // MARK: F1b — the game's state
+
+    /// The hidden `FerazelLevel` switch (D35, kept): New Game starts at this level instead of the literal 1 (raw
+    /// `1000b2b8..1000b2cc`). The App passes it (A1a); a level outside `BuiltLevels.range` starts level 1.
+    public var startLevel = 1
+    /// The stage screens' sound lengths (snd id → ticks; `StageSounds`) — the App fills them from its `SoundBank` (A1a).
+    public var soundLengths: [Int16: Int] = [:]
+    /// `GetDateTime` (seconds since 1904) for `.EndLevelSGUpdate` — Core never reads a clock; the App supplies it.
+    public var dateTime: @Sendable () -> UInt32 = { 0 }
+    /// `*_DAT_1009feac` / `_DAT_100ab9ba`: the level being played (the one `OpenDefaultWorldLevel` last opened).
+    public internal(set) var levelNumber = 0
+    /// `*PTR_DAT_1009fe00`: something was saved or loaded this game (`.OpenSG` and the save-point save set it; New
+    /// Game clears it) — `.AskToContinue` shows nothing without it.
+    public internal(set) var savedThisGame = false
+    /// `*_DAT_1009fd54`: the saved-game file is known (`.OpenSG` sets it; New Game clears it).
+    public internal(set) var saveFileKnown = false
+    /// `*_DAT_1009ffa8`: the player died in the last level (`LevelRun.died`); `.InitGameGlobals`' tail clears it
+    /// (M l. 818). Continue's after-loop test reads it (raw `1000d7ac`), New Game's reads G+4.
+    public internal(set) var died = false
+    /// `DAT_100a5106`: the game loop is over (death, an abort, the map's −1).
+    public internal(set) var loopEnded = false
+    /// `*_DAT_100a0088`: the last level was completed (the exit sprite; `.GameLoop` clears it on entry, M l. 5151).
+    public internal(set) var levelComplete = false
+    /// `*_DAT_1009fd4c`: the game was aborted on the map. `*_DAT_1009fd50`: ⌘Q's OK on the map — Quit.
+    public internal(set) var aborted = false
+    public internal(set) var quitRequested = false
+    /// `sRam100a5116` / `_DAT_100a5118`: the exit globals (the exit sprite's p1 / p2); `.ShowWorldMap` resets them to −1.
+    public internal(set) var exit1: Int16 = -1
+    public internal(set) var exit2: Int16 = -1
+    /// `*_DAT_1009fd64`: skip the next `.StageCompleteEffect` (`LevelRun` clears it at a completion).
+    public internal(set) var skipStageComplete = false
+    /// The last level's scroll point and working-CLUT entry 255 when it ended (the death screen's, D1).
+    var deathScroll = (h: 0, v: 0)
+    var deathEntry255 = RGB16(0, 0, 0)
+    /// `.AskToContinue`'s last return (nil before any death screen).
+    public internal(set) var lastAskToContinue: Bool?
+    /// The level running, the map up, the death screen up (nil otherwise).
+    public internal(set) var levelRun: LevelRun?
+    public internal(set) var worldMap: WorldMapRun?
+    public internal(set) var deathScreen: DeathScreen?
+    /// What runs on from level to level **and from game to game** (L1 carry): the parity, the particle counters, the
+    /// water-effects cache, the tileset globals `DAT_100a267d` / `_DAT_100a267e` and the class face cache are globals
+    /// only the launch data section initialises; G (and its crunch log) is set per game.
+    public internal(set) var levelCarry = LevelCarry()
+    /// The node-sprite list (`_DAT_100a0c30`, count `*_DAT_100a0c50`): carried from map run to map run (emptied on
+    /// each map exit, M l. 67652, and by `.InitPlayerMapData` on a new game, M l. 66610).
+    public internal(set) var mapSprites: [MapSprite] = []
+    /// This tick's draws by renderer, in order (F1b; A1a routes them): the tick's `FrontOutput` holds every sound,
+    /// music cue and request, and the `.screen` / `.level` draws in order — the map's ops are only here.
+    public private(set) var segments: [FlowSegment] = []
+    /// `out.draws` up to here are in `segments`.
+    private var segmentMark = 0
+
+    typealias Work = (GameFlow, UInt32, FrontInput, inout FrontOutput) -> Void
 
     /// A blocking call in progress.
-    private enum Wait {
+    enum Wait {
         case timeline(TimelineRun)
         case dialog
         case load
         /// `WaitNextEvent(…, 0x3c, …)`: up to 60 ticks, ended early by an event.
         case idle(start: UInt32)
         case track(ButtonTrack)
-        /// The F1b seams: nothing ends it yet.
+        /// A level (`LevelRun.end`), the map (`WorldMapRun.result`), the death screen (`isDone`).
+        case level
+        case map
+        case death
+        /// A Standard File dialog (`fileDone`).
+        case file
+        /// `ExitToShell`: nothing ends it.
         case later
     }
 
     private var started = false
-    private var queue: [Work] = []
-    private var wait: Wait?
+    var queue: [Work] = []
+    var wait: Wait?
     /// Output made outside `tick` (the boot bar), emitted by the next tick.
     private var pending = FrontOutput()
     private var dialogAnswer: DialogResult?
     /// The answer the last dialog got.
     public private(set) var lastDialogResult: DialogResult?
-    private var fileAnswer: FileResult?
+    var fileAnswer: FileResult?
     private var loadDone = false
     private var facesLoaded = 0
     private var trackResult = false
     private var lastPassEnd: UInt32?
+    /// The running level threw (a session or renderer failure) — reported as the level-load error.
+    var levelFailed = false
 
     /// `prefs` = the live record `.main` built (`.InitPrefs` + `.MakeCurrPrefs`, M l. 8192–8243 — the App read it with
     /// `files.loadPrefs()`); `seed` = `FastRand.clockSeed` at launch (`.InitAppGlobals`' `FastRand(0)`).
@@ -138,6 +209,8 @@ public final class GameFlow {
     public func tick(now: UInt32, input: FrontInput) -> FrontOutput {
         var out = pending
         pending = FrontOutput()
+        segments = []
+        segmentMark = 0
         if !started {
             started = true
             queue = bootWork() + menuEntryWork()
@@ -154,17 +227,63 @@ public final class GameFlow {
             let work = queue.removeFirst()
             work(self, now, input, &out)
         }
+        flushScreen(out)
         return out
     }
 
-    /// The modal dialog the flow asked for was answered; the flow goes on at the next tick.
+    /// The modal dialog the flow asked for was answered (the map's confirms go to the map); the flow goes on at the
+    /// next tick.
     public func dialogDone(_ result: DialogResult) {
+        if case .map = wait, let m = worldMap {
+            m.dialogDone(ok: result == .ok)
+            lastDialogResult = result
+            return
+        }
         dialogAnswer = result
     }
 
-    /// A Standard File dialog was answered (later: F1b — `.putFile` / `.getFile` are F1b's).
+    /// A Standard File dialog (`.getFile`) was answered; the flow goes on at the next tick.
     public func fileDone(_ result: FileResult) {
         fileAnswer = result
+    }
+
+    // MARK: - Segments
+
+    /// The flow's own draws since the last mark → a `.screen` segment.
+    private func flushScreen(_ out: FrontOutput) {
+        guard out.draws.count > segmentMark else { return }
+        addSegment(.screen(Array(out.draws[segmentMark...])))
+        segmentMark = out.draws.count
+    }
+
+    private func addSegment(_ g: FlowSegment) {
+        switch (segments.last, g) {
+        case (.screen(let a)?, .screen(let b)): segments[segments.count - 1] = .screen(a + b)
+        case (.level(let a)?, .level(let b)): segments[segments.count - 1] = .level(a + b)
+        case (.map(let a)?, .map(let b)): segments[segments.count - 1] = .map(a + b)
+        default: segments.append(g)
+        }
+    }
+
+    /// A `LevelRun` tick's output: its segments kept as tagged (`.level` → the level renderer, `.screen` → the screen
+    /// renderer); everything appended to `out` in order.
+    func emit(_ o: LevelRunOutput, _ out: inout FrontOutput) {
+        flushScreen(out)
+        for g in o.segments {
+            out.append(g.output)
+            if !g.output.draws.isEmpty {
+                addSegment(g.target == .level ? .level(g.output.draws) : .screen(g.output.draws))
+            }
+        }
+        segmentMark = out.draws.count
+    }
+
+    /// A `WorldMapRun` tick's output: its ops as a `.map` segment, its cues and requests into `out`.
+    func emit(_ o: WorldMapOutput, _ out: inout FrontOutput) {
+        flushScreen(out)
+        out.append(o.output)
+        if !o.ops.isEmpty { addSegment(.map(o.ops)) }
+        segmentMark = out.draws.count
     }
 
     /// `faces` faces loaded so far (cumulative): one `.Update3DProgBar(*018c + 0x48)` per new face; the redraws ride
@@ -208,6 +327,26 @@ public final class GameFlow {
             emit(events, button: track.button, &out)
             guard let result else { wait = .track(track); return false }
             trackResult = result
+        case .level:
+            guard let run = levelRun else { break }
+            do {
+                emit(try run.tick(now: now, input: input), &out)
+            } catch {
+                levelFailed = true
+                break
+            }
+            guard run.end != nil else { return false }
+        case .map:
+            guard let m = worldMap else { break }
+            emit(m.tick(now: now, input: input), &out)
+            guard m.result != nil || m.quitRequested else { return false }
+        case .death:
+            guard var d = deathScreen else { break }
+            out.append(d.tick(now: now, input: input, fade: &fade))
+            deathScreen = d
+            guard d.isDone else { return false }
+        case .file:
+            guard fileAnswer != nil else { return false }
         case .later:
             return false
         }
@@ -216,7 +355,7 @@ public final class GameFlow {
     }
 
     /// Starts a blocking timeline at `now` (its tick-0 events emitted now); a gated-off call does nothing.
-    private func block(_ t: FrontTimeline, _ now: UInt32, _ out: inout FrontOutput) {
+    func block(_ t: FrontTimeline, _ now: UInt32, _ out: inout FrontOutput) {
         guard !t.isEmpty else { return }
         var run = TimelineRun(t, start: now)
         out.append(run.tick(now: now))
@@ -224,32 +363,32 @@ public final class GameFlow {
     }
 
     /// Runs `items` before the rest of the queue (a nested call's body).
-    private func run(_ items: [Work]) {
+    func run(_ items: [Work]) {
         queue.insert(contentsOf: items, at: 0)
     }
 
     /// `ReportDialog(text)` (DLOG 200), modal.
-    private func report(_ text: String, _ out: inout FrontOutput) {
+    func report(_ text: String, _ out: inout FrontOutput) {
         out.requests.append(.dialog(.report(text: text)))
         wait = .dialog
     }
 
-    private func draw(_ ops: [DrawOp], _ out: inout FrontOutput) {
+    func draw(_ ops: [DrawOp], _ out: inout FrontOutput) {
         guard !ops.isEmpty else { return }
         out.draws += ops
         out.present = true
     }
 
-    private func gammaFadeOut(_ now: UInt32, _ out: inout FrontOutput) {
-        block(fade.gammaFadeOut(6, rgb: RGB16(0, 0, 0)), now, &out)   // `_DAT_100a53d0…`: the async colour only
+    func gammaFadeOut(_ now: UInt32, _ out: inout FrontOutput, _ n: Int = 6) {
+        block(fade.gammaFadeOut(n, rgb: RGB16(0, 0, 0)), now, &out)   // `_DAT_100a53d0…`: the async colour only
     }
 
-    private func gammaFadeIn(_ now: UInt32, _ out: inout FrontOutput) {
-        block(fade.gammaFadeIn(6), now, &out)
+    func gammaFadeIn(_ now: UInt32, _ out: inout FrontOutput, _ n: Int = 6) {
+        block(fade.gammaFadeIn(n), now, &out)
     }
 
     /// `.HideTheMenuBar` (`MT_HideMenubar` + `MTRedraw` when shown).
-    private func hideMenuBar(_ out: inout FrontOutput) {
+    func hideMenuBar(_ out: inout FrontOutput) {
         guard !menuBarHidden else { return }
         menuBarHidden = true
         out.requests.append(.hideMenuBar)
@@ -257,14 +396,19 @@ public final class GameFlow {
     }
 
     /// `.ShowTheMenuBar`.
-    private func showMenuBar(_ out: inout FrontOutput) {
+    func showMenuBar(_ out: inout FrontOutput) {
         guard menuBarHidden else { return }
         menuBarHidden = false
         out.requests.append(.showMenuBar)
     }
 
+    /// `.DrawMainMenu`: `KillAllSprites` (no sprites alive outside a level), clut 130, PICT 130.
+    func drawMainMenu(_ out: inout FrontOutput) {
+        draw([.setScreenClut(id: MainMenu.clut), .drawPicture(id: MainMenu.picture, chain: .frontEnd, h: 0, v: 0)], &out)
+    }
+
     /// `.UpdateMenus` (M l. 28763ff): the menus live in the menu loop, the Music / Sound Effects check marks.
-    private func updateMenus(_ out: inout FrontOutput) {
+    func updateMenus(_ out: inout FrontOutput) {
         out.requests.append(.showMenuBarItems(MenuState(menusLive: true, paused: false,
                                                         musicOn: toggles.live.musicOn != 0,
                                                         soundOn: toggles.live.soundOn != 0)))
@@ -373,10 +517,8 @@ public final class GameFlow {
             { f, now, _, _ in f.wait = .idle(start: now) },          // `WaitNextEvent(0xffff, …, 0x3c)`
             { f, now, _, out in f.gammaFadeOut(now, &out) },
             { f, now, _, out in
-                // `.DrawMainMenu` (no sprites alive at the menu: `KillAllSprites` has nothing to do), `.UpdateMenus`,
-                // `MTRedraw`, `GammaFadeIn(6)`.
-                f.draw([.setScreenClut(id: MainMenu.clut),
-                        .drawPicture(id: MainMenu.picture, chain: .frontEnd, h: 0, v: 0)], &out)
+                // `.DrawMainMenu`, `.UpdateMenus`, `MTRedraw`, `GammaFadeIn(6)`.
+                f.drawMainMenu(&out)
                 f.updateMenus(&out)
                 f.gammaFadeIn(now, &out)
             },
@@ -469,17 +611,7 @@ public final class GameFlow {
 
     // MARK: - The buttons' calls
 
-    /// `.NewGame @ 1000b11c` (M l. 5704ff) — later: F1b (G init, the save block, the first level, the level ⇄ map loop).
-    private func newGame(_ out: inout FrontOutput) {
-        state = .newGame
-        wait = .later
-    }
-
-    /// `.ContinueGame(reply) @ 1000d004` (M l. 6663ff; 0 from the menu, `fd18` when `fd48` is set) — later: F1b.
-    private func continueGame(_ reply: SavedGameRef?, _ out: inout FrontOutput) {
-        state = .continueGame
-        wait = .later
-    }
+    // `.NewGame` (`newGame(_:)`) and `.ContinueGame` (`continueGame(_:_:)`): NewGame.swift, ContinueGame.swift (F1b).
 
     /// `.Options @ 1000e470` (M l. 7254–7288).
     private func options() {
@@ -532,7 +664,7 @@ public final class GameFlow {
 
     /// `.Quit @ 1000e9d4` (M l. 7447–7482). The prefs are not written; `STSetVolume` of the startup volume is not
     /// reproduced (Known deviation 8).
-    private func quit() {
+    func quit() {
         run([
             { f, now, _, out in
                 // `InitCursor`, `ShowCursorSafe`, `SetWatchCursor`, `FlushEvents`, `FadeAIFFMusic(0,1)`.

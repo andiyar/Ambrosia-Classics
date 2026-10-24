@@ -243,6 +243,26 @@ no game loop runs) [HIGH].
    re-destroy the crunch tiles logged for L, copy the snapshot in again, keep the per-level
    counters; no chapter screen (engine.md §6/§9).
 
+⚑ corrected (F1b, loop run 13) [HIGH, M l. 5704–5874, 6663–7102, 815–866, 5151–5163]:
+- **No `.HideTheMenuBar` in the default branch.** Its two calls (M l. 6877, 6906) sit in the fallback branch only,
+  with that branch's `GammaFadeOut(6)` + PICT 129 (M l. 6874–6878). The default branch never hides the menu bar;
+  neither does `.NewGame`. The replica sends nothing there (the L1 carry naming l. 6877 for Continue was wrong).
+- **The music fade-out at a level start.** `.GameLoop` itself opens with `FadeAIFFMusic(0, 4)` + `ShutDownAIFFMusic`
+  (M l. 5161–5163). `.NewGame`'s loop body runs the same pair first (M l. 5817–5818), so `.GameLoop`'s finds no music
+  and does nothing. Continue's loop body has no pair: its one `FadeAIFFMusic(0, 2)` + shutdown before the loop
+  (M l. 7040–7041) does the work, and each `.GameLoop`'s pair runs and finds nothing (after the map, the map's
+  `FadeAIFFMusic(0, 2)` leaves the track loaded but faded, so only the shutdown acts).
+- **`.InitGameGlobals` also calls `.InitPlayerMapData`** (M l. 864): the node table re-read and the node-sprite count
+  zeroed (M l. 66610) — for Continue as well as New Game, then `*ff90 = 0`.
+- **`.GameLoop` clears the level-complete flag `*0088` on entry** (M l. 5151); `.NewGame` clears it once before its loop.
+- **After `.AskToContinue` says yes, the default branch has no `GammaFadeOut(6)`** (that one is the fallback
+  branch's, M l. 6892): `fd48 = 1` and return, as `.NewGame`.
+- **A nil level at New Game** (M l. 5809–5810) reports and returns without redrawing the menu; the mouse path's
+  `GammaFadeIn(6)` (M l. 7385) then runs after `.NewGame` returns, the keyboard path has none.
+- A file without `'FWSg' 0`: `.OpenSG` has already disposed the save block (`*_DAT_100a0054 = 0`, raw before
+  `GetResource`) when it reports; the replica keeps the old block [LOW: unreachable consequences — every later writer
+  would dereference nil].
+
 ## 5. Death → continue  [HIGH unless noted]
 
 `GameLoop` ends; `G+4 < 1` → `ffa8 = 1`, `FadeAIFFMusic(0,2)`, `.DeathEffect` (closing-border wipe,
