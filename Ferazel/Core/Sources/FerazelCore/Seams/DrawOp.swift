@@ -54,8 +54,9 @@ public enum DrawOp: Equatable, Sendable {
     /// `.RedrawGameArea`).
     case drawBlackLines
     /// LT (Phase 4): Core's light table (`_DAT_100a0128`, `LightTable`) as `.DrawLightsOntoTiles` reads it — the table
-    /// before this frame's `.HandleLights` — emitted on every `.PaintFrameWrap` right after its `.redrawScrollGrid` and
-    /// before `.drawLightsOntoTiles`, also when Effects == 3 skips that op (the sprite light pass reads the table). The
+    /// before this frame's `.HandleLights` — emitted on every `.PaintFrameWrap` right before its `.redrawScrollGrid`
+    /// (the strip's tile lights read it) and so before `.drawLightsOntoTiles`, also when Effects == 3 skips that op (the
+    /// sprite light pass reads the table). The
     /// renderer takes it as its slots and runs the same `LightTable.handleLights()` before `.WrapDrawWaterEffects`.
     case lightTable(LightTable)
 

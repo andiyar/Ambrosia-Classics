@@ -196,7 +196,9 @@ final class LevelRunTests: XCTestCase {
         XCTAssertEqual(first.t, tail.t)
         XCTAssertEqual(first.steps.count, 1)
         XCTAssertEqual(Array(tailDraws.dropFirst(3)), first.steps[0].draws)
-        XCTAssertEqual(first.steps[0].draws.first, .redrawScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV))
+        // LT: the iteration opens with Core's light table, then its `.SetScrollLocation` strip.
+        guard case .lightTable? = first.steps[0].draws.first else { return XCTFail("\(first.steps[0].draws[0])") }
+        XCTAssertEqual(first.steps[0].draws[1], .redrawScrollGrid(h: s.camera.scrollH, v: s.camera.scrollV))
         XCTAssertFalse(first.steps[0].draws.contains { if case .setScreenClut = $0 { true } else { false } })
         XCTAssertTrue(first.steps[0].music.isEmpty)
         XCTAssertEqual(first.steps[0].draws.last, .gammaStep(numerator: 0, denominator: 0x28, toward: nil))

@@ -650,3 +650,10 @@ The faces are 0x32a–0x32d, 72×72, loaded by `.InitEffectSprite` (l. 53662–5
 (l. 52670). The torches flicker 0x321 ↔ 0x322 at Effects 1 (l. 53260–53266). The spheres (l. 53347–53383) and 0x53c/0x53d
 (l. 53298–53340) cycle the same array and also set mode 0xb. Built for the items (D26 "As built (light-24 table glow)"); the rest are
 carried. This light, held on 0x32a, is what over-lit the level-1 table at Let's Play 02:12.
+
+## ⚑ Correction (BC (LT, loop run 19), 2026-10-25; follow the binary)
+§7.4's `.AddLight @ 1001bc08`: the slot loop stores the index in r31 and stops at the first slot whose `+0` is 0 (a
+slot pending removal still has `+0` = 1 and is not free). With a **nil face** and a free slot nothing is stored and
+the count does not move (`ReportError(…, 200)`), but the call still **returns that free slot's index** — the store path
+and the `ReportError` path both end at `1001bd08 or r3,r31,r31` (raw `1001bc58..1001bd08`); −1 only when all 200 slots
+are in use. Transcribed in `FerazelCore.LightTable.add` (LT) [HIGH].

@@ -492,6 +492,17 @@ final class PlatformTests: XCTestCase {
         _ = s1.step(keys: KeyState())
         XCTAssertEqual(L1, 9)
         XCTAssertEqual(s1.active.record(id: lit1)?.mode, 0xc0967)           // 0xc0000 + 9·0x100 + 103
+        // LT: the closure reads the session's light table, not the Setup list: with the sphere's light removed from
+        // the table (`.RemoveLight`; inactive after the frame's `.HandleLights`), F = 0 → 0xc0000 + 9·0x100.
+        var sphereSlot = Int16(try XCTUnwrap(s1.lightTable.slots.firstIndex { $0.face?.pict == 810 && $0.x == 1969 }))
+        s1.lightTable.remove(&sphereSlot)
+        s1.world.active.update(id: lit1) { c in
+            c.x = 3562 - 1634
+            c.y = 1487 - 707
+            c.centre = SpriteSlot.Point(x: 3603 - 1634, y: 1504 - 707)
+        }
+        _ = s1.step(keys: KeyState())
+        XCTAssertEqual(s1.active.record(id: lit1)?.mode, 0xc0900)
     }
 
     func testMode2SpringBackTrace() throws {

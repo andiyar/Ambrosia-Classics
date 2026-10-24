@@ -138,9 +138,9 @@ final class LightTableTests: XCTestCase {
         }
         XCTAssertTrue(s.lightTable.slots[68...].allSatisfy { !$0.active && $0.face == nil })
         XCTAssertEqual(s.lightTable.slots[24].face?.pict, 0x32a)
-        // The first iteration: `.lightTable` right after its `.redrawScrollGrid` and before `.drawLightsOntoTiles`,
-        // carrying the table before this frame's `.HandleLights`; Core then runs `.HandleLights` itself, and the
-        // potion's twinkle (`.ChangeLightFace`) lands in the table too.
+        // The first iteration: `.lightTable` right before its `.redrawScrollGrid` (the strip's tile lights read it)
+        // and so before `.drawLightsOntoTiles`, carrying the table before this frame's `.HandleLights`; Core then runs
+        // `.HandleLights` itself, and the potion's twinkle (`.ChangeLightFace`) lands in the table too.
         let before = s.lightTable
         let ops = s.step(keys: KeyState()).draws
         guard let k = ops.firstIndex(where: { if case .lightTable = $0 { true } else { false } }) else {
@@ -148,9 +148,9 @@ final class LightTableTests: XCTestCase {
         }
         XCTAssertEqual(ops.filter { if case .lightTable = $0 { true } else { false } }.count, 1)
         XCTAssertEqual(ops[k], .lightTable(before))
-        guard case .redrawScrollGrid = ops[k - 1] else { return XCTFail("\(ops[k - 1])") }
-        XCTAssertEqual(ops[..<k].filter { if case .redrawScrollGrid = $0 { true } else { false } }.count, 2)
-        XCTAssertEqual(ops[k + 1], .drawLightsOntoTiles)
+        guard case .redrawScrollGrid = ops[k + 1] else { return XCTFail("\(ops[k + 1])") }
+        XCTAssertEqual(ops[..<k].filter { if case .redrawScrollGrid = $0 { true } else { false } }.count, 1)
+        XCTAssertEqual(ops[k + 2], .drawLightsOntoTiles)
         XCTAssertEqual(s.lightTable.count, 68)
         // `+0x9a` holds the slot `.AddLight` returned: the potion's light is slot 24 (its twinkle's slot).
         XCTAssertTrue(s.active.sprites.contains { (0xc80...0xcb0).contains(Int($0.type)) && $0.light == 24 })
@@ -166,6 +166,7 @@ final class LightTableTests: XCTestCase {
             return XCTFail("no lightTable op at Effects 3")
         }
         XCTAssertFalse(ops3.contains(.drawLightsOntoTiles))
-        guard case .wrapDrawWaterEffects = ops3[k3 + 1] else { return XCTFail("\(ops3[k3 + 1])") }
+        guard case .redrawScrollGrid = ops3[k3 + 1] else { return XCTFail("\(ops3[k3 + 1])") }
+        guard case .wrapDrawWaterEffects = ops3[k3 + 2] else { return XCTFail("\(ops3[k3 + 2])") }
     }
 }

@@ -120,7 +120,16 @@ public enum EffectSprite {
     ///   +0x158, +0x15c, 1, 1, 0)` and the log; else face `+0x14c − hp` (0…2, otherwise `ReportError("Crunch sprite face
     ///   out of range")` and the face is left).
     /// then x += vx, y += vy, the pixel copies `+8 = +0xc`, `+6 = +0xa` from 24.8, `.StandardSpriteCleanup`.
+    ///
+    /// This form (no light table) is the test-only one: its light calls go to a scratch table.
     public static func handle(world w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int = EffectSprite.faceWidth) {
+        var scratch = LightTable()
+        handle(world: w, id: id, lights: &scratch, faceWidth: faceWidth)
+    }
+
+    /// LT: `handle` with its `.RemoveLight` / `.ChangeLightFace` calls made on `lights` (the session's `lightTable`).
+    public static func handle(world w: SpriteWorld, id: Int, lights: inout LightTable,
+                              faceWidth: (FaceRef) -> Int = EffectSprite.faceWidth) {
         guard let s0 = w.active.record(id: id), !s0.dead, !s0.handleSkip else { return }
         w.standardSpriteHandles(id)
         guard let s = w.active.record(id: id) else { return }
@@ -170,7 +179,7 @@ public enum EffectSprite {
         case PlayerLiquids.bubble:
             // 1040 (l. 54149–54161; raw `10061584..10061604`): `+0x46` += 1, past 7 → 0; face `+0x46 >> 1` of PICT
             // 1040; vy = −500; `.SeparateFromTiles2` with `.HitEffectTileSprite`; out of the liquid (`+0x11c == 0`) →
-            // face 0, `.RemoveLight(+0x9a)` (the bubble has none: −1), killed; then straight to the tail (`b
+            // face 0, `.RemoveLight(+0x9a)` (the bubble has none: −1, a no-op), killed; then straight to the tail (`b
             // 0x100618dc` — the decompile's view-bottom kill, l. 54267, belongs to 0x4b2…0x4b4 only, raw
             // `10061260..1006127c`).
             w.active.update(id: id) { p in
@@ -183,17 +192,25 @@ public enum EffectSprite {
             if w.active.record(id: id)?.waterRow == 0 {
                 w.active.update(id: id) { p in
                     p.face = nil
+                    lights.remove(&p.light)
                     p.dead = true
                 }
             }
         case BackgroundSprite.smoke:
             // The cannon smoke 0x442 (W2b; the `type < 0xcb2` arm, l. 54203–54255): `+0xb8 = 0x10005`; `+0x46` += 1;
-            // the `.ChangeLightFace` / `.RemoveLight` steps at 2, 4, 6, 14, 17, 20, 23 act on `+0x9a` = −1 (the smoke
-            // has no light: no-ops, raw `1001bdbc` / `1001bd34`); `+0x46` < 0x1a → face 0x4b0[`+0x46` >> 1], else
-            // killed and face 0.
+            // the `.ChangeLightFace` (`PTR_DAT_100a088c[2, 1, 0, 1, 2, 3]`) / `.RemoveLight` steps at 2, 4, 6, 14, 17,
+            // 20, 23 on `lights` (the smoke has no light, `+0x9a` = −1: no-ops, raw `1001bdbc` / `1001bd34`);
+            // `+0x46` < 0x1a → face 0x4b0[`+0x46` >> 1], else killed and face 0.
             w.active.update(id: id) { p in
                 p.mode = 0x10005
                 p.phase &+= 1
+                let step: [Int16: Int] = [2: 2, 4: 1, 6: 0, 0xe: 1, 0x11: 2, 0x14: 3]
+                if let i = step[p.phase] {
+                    let f = BonusHandle.twinkleFaces[i]
+                    lights.changeFace(p.light, LightFaceRef(pict: f.pict, width: f.width, height: f.height))
+                } else if p.phase == 0x17 {
+                    lights.remove(&p.light)
+                }
                 if p.phase < 0x1a {
                     p.face = FaceRef(pict: BackgroundSprite.smokeSheet, index: Int(p.phase >> 1), set: .encoded)
                 } else {

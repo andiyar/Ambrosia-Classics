@@ -377,11 +377,8 @@ final class FrameGoldenTests: XCTestCase {
             // Seed 1: the Setup phase is 6, so step 13 leaves phase 19 → k = (19 >> 2) mod 6 = 4 → 0x32c.
             for _ in 0..<13 { try r.apply(s.step(keys: KeyState())) }
             XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32c)
-            if let pict {
-                try r.apply(FrameOps(draws: [.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48)]))
-            }
             // LT: Core's table is the source of truth, so each `.lightTable` op restores Core's face; the held face is
-            // forced again on the measured frame right after its `.lightTable` (before `.DrawLightsOntoTiles`).
+            // forced on the measured frame right after its `.lightTable` (before the strip and `.DrawLightsOntoTiles`).
             var ops = s.step(keys: KeyState())
             if let pict, let k = ops.draws.firstIndex(where: { if case .lightTable = $0 { true } else { false } }) {
                 ops.draws.insert(.changeLightFace(slot: 24, pict: pict, width: 0x48, height: 0x48), at: k + 1)

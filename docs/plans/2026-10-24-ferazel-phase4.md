@@ -233,8 +233,9 @@ New folders: `Sources/FerazelCore/{Lights,Items,Shots}/`; new files named per ta
   `_DAT_100a0124`; the row-redraw countdown `_DAT_100a012c` stays Render's. Operations (M l. 14275–14556):
   `mutating func add(face:x:y:vx:vy:accelY:colour:) -> Int16` (`.AddLight`: the loop stores `iVar5 = i` and jumps
   to 200 at the first `+0 == 0`, so the **first** free slot — a slot whose removal is pending (`+2 = 1`, `+0` still 1
-  until the next `handleLights`) is not free; −1 and nothing stored when full or the face is nil — the original's
-  `ReportError(…, 200)`; stores `+0 = 1`, `+1 = 1`, `+2 = 0`, `+8 = nil`, radius = face width >> 1, count + 1),
+  until the next `handleLights`) is not free; nothing stored when full or the face is nil — the original's
+  `ReportError(…, 200)` — and the return is the loop's index either way: −1 when full, the first free slot when only
+  the face is nil (raw `1001bc58..1001bd08`, both paths end at `or r3,r31,r31`) (corrected, LT as executed); stores `+0 = 1`, `+1 = 1`, `+2 = 0`, `+8 = nil`, radius = face width >> 1, count + 1),
   `remove(_ slot: inout Int16)`
   (`.RemoveLight`: in range → `+2 = 1`, face nil, radius 0, count − 1; always `slot = −1`), `changeFace`, `setPos`,
   `changeSpeed`, `changeColor` (each ignores a slot outside 0…199), `handleLights()` (the slot loop of
@@ -277,6 +278,8 @@ New folders: `Sources/FerazelCore/{Lights,Items,Shots}/`; new files named per ta
 // DrawOp — new cases
 case lightTable(LightTable)          // LT: Core's table as `.DrawLightsOntoTiles` reads it (emitted before that op
                                      //     every drawn iteration, also when Effects == 3 skips the op)
+                                     //     (corrected, LT as executed: emitted before .redrawScrollGrid — the strip's
+                                     //     tile lights read it — on every .PaintFrameWrap)
 case copyMaskToScreen(h: Int, v: Int, graphicsMode: Int, backdrop: Bool)
                                      // EF: `.WrapCopyToScreen(*_DAT_100a0008, …)` while the flash toggle is on
 case mosaic(cell: Int, graphicsMode3: Bool)
@@ -377,8 +380,8 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
   `.HandleLights`); `.PaintFrameWrap` order M l. 9196–9202 (`.SetScrollLocation`, `.DrawLightsOntoTiles` unless prefs+6
   == 3, `.HandleLights`, `.WrapDrawWaterEffects`, `.WrapDrawSprites`). The table is the single source of truth: Core
   mutates it at every call site (Setups, Handles, kills) in call order; the renderer receives the table **as it stands
-  before this frame's `.HandleLights`** (`.lightTable`, emitted right after `.redrawScrollGrid` and before
-  `.drawLightsOntoTiles` — also emitted when Effects == 3 omits that op, since the sprite light pass reads it), runs the
+  before this frame's `.HandleLights`** (`.lightTable`, emitted right before `.redrawScrollGrid` (corrected, LT as
+  executed: the strip's tile lights read it) and so before `.drawLightsOntoTiles` — also emitted when Effects == 3 omits that op, since the sprite light pass reads it), runs the
   same `handleLights()` on its copy at its existing place (inside the `wrapDrawWaterEffects` arm), and draws; Core runs
   its own `handleLights()` at the same point of its frame. The `changeLightFace` op stays (Phase 1; the renderer applies
   it to its copy for the redrawn cell's light pass in the same frame, then the next `.lightTable` agrees). `.RemoveAllLights`
@@ -390,7 +393,8 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
 - **Tests (5; numbers from M l. 14275–14556):** `testAddTakesFirstFreeSlot` (slots 0, 1 active; remove 0 → slot 0
   still active with `removing`; the next add takes slot 2; after `handleLights()` slot 0 is free and the next add
   takes it; the count `_DAT_100a0124` follows +1/−1) · `testAddFullOrNilFace` (200 active → −1, nothing stored; a nil
-  face → −1) · `testHandleLightsIntegratesSpeed` (point (100, 50), speed (0x180, −0x100), accel 0x20: after one step
+  face with a free slot → that slot's index, nothing stored, the count unchanged (corrected, LT as executed: raw
+  `1001bc58..1001bd08`)) · `testHandleLightsIntegratesSpeed` (point (100, 50), speed (0x180, −0x100), accel 0x20: after one step
   x256 = 100·256 + 0x180, the point x 101, y 49; previous fields = the old values; `isNew` false) ·
   `testSetupLightsGoThroughTable` (level 1, Effects 1: the session's table holds the 68 Setup lights (D26 R4) in
   slots 0…67 in `.SetupLevel` order with the faces/colours of `FerazelSession.lights`) · Render
@@ -1469,6 +1473,12 @@ BC49 `pickups-boxes.md` §1.1 — `.HitBonusSprite`'s `.PlatformBounce` last arg
 BC50 `pickups-boxes.md` §2.4.7 (supersedes BC40's partner sentence) — the teleporter's search tests only the idle-table
 entry's in-use byte (M l. 48564, 49416), so an active partner still matches; level 1 record 126 (p1 0) sends the player
 to record 0, a type-2922 furniture piece at (5455, 666) (TP).
+
+*Added by the LT review fix round (loop run 19, 2026-10-25):*
+
+BC (LT, loop run 19) `lighting-tables.md` §7.4 — `.AddLight` with a nil face and a free slot stores nothing but
+returns that slot's index (raw `1001bc58..1001bd08`: both the store and the `ReportError` path end at `1001bd08
+or r3,r31,r31`); −1 only when all 200 slots are in use (LT).
 
 ---
 

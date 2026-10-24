@@ -317,5 +317,17 @@ final class LightingTests: XCTestCase {
         XCTAssertTrue(r.lights.slots[0..<68].allSatisfy { $0.active && !$0.isNew && $0.previousFace != nil })
         XCTAssertEqual(r.lights.slots[24].face?.pict, 0x32b)
         XCTAssertEqual(r.lights.slots[24].previousFace?.pict, 0x32a)
+        // A later op is the renderer's table: a hand-made one (slot 5 moved, slot 6 removed) replaces its slots.
+        var altered = s.lightTable
+        altered.setPos(5, x: 1234, y: 567)
+        var six: Int16 = 6
+        altered.remove(&six)
+        XCTAssertNotEqual(altered, r.lightTable)
+        try r.apply(FrameOps(draws: [.lightTable(altered)]))
+        XCTAssertEqual(r.lightTable, altered)
+        XCTAssertEqual([r.lights.slots[5].x, r.lights.slots[5].y], [1234, 567])
+        XCTAssertTrue(r.lights.slots[6].removePending)
+        XCTAssertNil(r.lights.slots[6].face)
+        XCTAssertEqual(r.lights.slots[6].radius, 0)
     }
 }

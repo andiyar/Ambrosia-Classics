@@ -403,7 +403,15 @@ extension BackgroundSprite {
     ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
     ///   Statue and EnemyShot Handles do not exist in Phase 2 (// later: Phase 4–5); a Button is an `inert` sprite of
     ///   the Button class.
+    ///
+    /// Without a light table (the test-only form): `.TurnIntoCannoned`'s `.RemoveLight` goes to a scratch table.
     public static func hit(_ w: SpriteWorld, id: Int, other oID: Int) {
+        var scratch = LightTable()
+        hit(w, id: id, other: oID, lights: &scratch)
+    }
+
+    /// `hit` with the light calls made on `lights` (LT: the session's `lightTable`).
+    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable) {
         guard let bg = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
         let t = bg.type
         if tunnels.contains(t) {
@@ -434,7 +442,7 @@ extension BackgroundSprite {
                 }
             }
             guard ![0x41f, 0x434, 0x771, 0x772, 0xb7c, 0x5c3, 0x5c4].contains(o.type), o.reentry >= 0 else { return }
-            turnIntoCannoned(w, captive: oID, cannon: id)
+            turnIntoCannoned(w, captive: oID, cannon: id, lights: &lights)
             w.active.update(id: id) { $0.classWord154 = 6 }
         }
     }
@@ -496,9 +504,10 @@ extension BackgroundSprite {
     /// `.STPlay3DSoundRand(484, 1, 0x97, captive +0xe)` (`_DAT_100a030c`, its rate drawn here), the Handle / hit / tile
     /// callbacks saved to `+0x1ec/+0x1f0/+0x1f4`, `+0x130 = 15`, the Handle `.HandleCannonedSprite`, both callbacks 0,
     /// v = 0, `+0x1e4` = the cannon, the origin = the cannon's centre − d (24.8 from it), the centre = origin + d; a light
-    /// `+0x9a ≠ −1` is removed (`light = −1`; // later: Core has no light-removal seam — no capturable Phase-2 sprite
-    /// carries a light); the player → launched `_DAT_100a05b8 = 1`.
-    public static func turnIntoCannoned(_ w: SpriteWorld, captive cID: Int, cannon kID: Int) {
+    /// `+0x9a ≠ −1` is removed (`.RemoveLight(+0x9a)`, M l. 49965–49967, on `lights`: the slot pending removal,
+    /// `+0x9a = −1`); the player → launched `_DAT_100a05b8 = 1`.
+    public static func turnIntoCannoned(_ w: SpriteWorld, captive cID: Int, cannon kID: Int,
+                                        lights: inout LightTable) {
         guard let c = w.active.record(id: cID), let k = w.active.record(id: kID) else { return }
         let dx = h(c.centre.x - c.x), dy = h(c.centre.y - c.y)
         let isPlayer = cID == w.playerID
@@ -524,7 +533,7 @@ extension BackgroundSprite {
             s.y256 = Int32(s.y) << 8
             s.centre.x = h(s.x + dx)
             s.centre.y = h(s.y + dy)
-            if s.light != -1 { s.light = -1 }
+            if s.light != -1 { lights.remove(&s.light) }
         }
         if isPlayer { w.player.launched = true }
     }
@@ -542,7 +551,15 @@ extension BackgroundSprite {
     ///    `.STPlay3DSoundRand(483, 1, 0x100, +0xe)` (`_DAT_100a0310`); the saved Handle / callbacks restored; the player:
     ///    launched, face tumble 1015[`_DAT_100a05b4`], swim `0714` 0, spin `0668` 0, climb `0758` 0, `.PlayerScroll`,
     ///    `+8 = +0xc = fe68` and `+6 = +0xa = fe64` from 24.8, the centre from the hot rect into `fd94`/`fd90`.
+    ///
+    /// This form (no light table) is the test-only one: its light calls go to a scratch table.
     public static func handleCannoned(world w: SpriteWorld, id: Int, keys: InputActions) {
+        var scratch = LightTable()
+        handleCannoned(world: w, id: id, keys: keys, lights: &scratch)
+    }
+
+    /// LT: `handleCannoned` with the smokes' `.ChangeLightColor` made on `lights` (the session's `lightTable`).
+    public static func handleCannoned(world w: SpriteWorld, id: Int, keys: InputActions, lights: inout LightTable) {
         guard let c0 = w.active.record(id: id), let kID = c0.cannon, let k0 = w.active.record(id: kID) else { return }
         let isPlayer = id == w.playerID
         let dx = h(c0.centre.x - c0.x), dy = h(c0.centre.y - c0.y)
@@ -584,7 +601,7 @@ extension BackgroundSprite {
         guard let c = w.active.record(id: id), c.reentry < 1, let k = w.active.record(id: kID) else { return }
         let aim = Int32(k.phase)
         guard aim % 4 == 0 else { return }
-        fire(w, captive: id, cannon: kID, isPlayer: isPlayer)
+        fire(w, captive: id, cannon: kID, isPlayer: isPlayer, lights: &lights)
     }
 
     /// The launch vector for aim / 4 = `octant` and speed S (l. 50074–50113; doubles `100a19e8` 0.707, `100a19e0`
@@ -609,12 +626,12 @@ extension BackgroundSprite {
     }
 
     /// The launch (step 4 of `handleCannoned`).
-    static func fire(_ w: SpriteWorld, captive id: Int, cannon kID: Int, isPlayer: Bool) {
+    static func fire(_ w: SpriteWorld, captive id: Int, cannon kID: Int, isPlayer: Bool, lights: inout LightTable) {
         guard let k = w.active.record(id: kID), let c = w.active.record(id: id) else { return }
         let S = k.launchSpeed
         w.active.update(id: id) { $0.reentry = isPlayer ? -5 : -0x23 }
         var (vx, vy) = launchVector(octant: Int32(k.phase) >> 2, speed: S)
-        smokes(w, cannon: k, vx: vx, vy: vy)
+        smokes(w, cannon: k, vx: vx, vy: vy, lights: &lights)
         if 0 <= (record(w, k)?.p1 ?? 0) {
             w.active.update(id: kID) { s in
                 s.x256 = TileSolver.fctiwz(-(1.6 * Double(vx) - Double(s.x256)))
@@ -676,10 +693,10 @@ extension BackgroundSprite {
     /// The three smokes of a launch (l. 50114–50150): at (x, y) = ((int)(1.5·vx·(1/256) + cannon +0x10 − 24),
     /// (int)(1.5·vy·(1/256) + cannon +0xe − 24)) (doubles `100a19c8` 1.5, `100a19c0` 1/256, `100a19b8` 24), each
     /// `MTNewSprite(0x442, …, .SetupEffectSprite)` (`smokeSetup`) followed by `+0x17e = FastRand(2)`, `+0x46 =
-    /// FastRand(4)` and `.ChangeLightColor(+0x9a, 0)` (no light: a no-op, `1001becc`): the first at (x, y), layer 0xb;
+    /// FastRand(4)` and `.ChangeLightColor(+0x9a, 0)` on `lights` (no light: a no-op, `1001becc`): the first at (x, y), layer 0xb;
     /// then dy = `FastRand(8)`, dx = `FastRand(8)` and the second at (x − dx, y − dy); again dy, dx and the third at
     /// (x + dx, y + dy) — both at the cannon's layer + 1 (the Setup stores 0x7fbc over every one).
-    static func smokes(_ w: SpriteWorld, cannon k: SpriteSlot, vx: Int32, vy: Int32) {
+    static func smokes(_ w: SpriteWorld, cannon k: SpriteSlot, vx: Int32, vy: Int32, lights: inout LightTable) {
         let x = Int(TileSolver.fctiwz((1.5 * Double(vx) * 0.00390625 + Double(h(k.centre.x))) - 24.0))
         let y = Int(TileSolver.fctiwz((1.5 * Double(vy) * 0.00390625 + Double(h(k.centre.y))) - 24.0))
         func make(_ sx: Int, _ sy: Int, layer: Int16) {
@@ -693,6 +710,7 @@ extension BackgroundSprite {
                     s.mirrored = mirrored != 0
                     s.phase = phase
                 }
+                if let s = w.active.record(id: id) { lights.changeColor(s.light, 0) }
             }
         }
         let x16 = h(x), y16 = h(y)

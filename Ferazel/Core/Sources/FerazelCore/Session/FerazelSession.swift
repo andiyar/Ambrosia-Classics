@@ -61,7 +61,7 @@ public final class FerazelSession {
     /// LT: the light table `_DAT_100a0128` — the single source of truth: fresh at `.SetupLevel` (`.RemoveAllLights`),
     /// the Setup lights added through it in `.SetupLevelSprites` order, every later light call made on it at its call
     /// site; handed to the renderer once per `.PaintFrameWrap` (`DrawOp.lightTable`).
-    public private(set) var lightTable: LightTable
+    public internal(set) var lightTable: LightTable
     /// The player's `ActiveList` id (`*_DAT_1009fdd8`).
     public let playerID: Int
     /// The player's globals (`world.player`).
@@ -338,7 +338,7 @@ public final class FerazelSession {
         if -0x1e < countdown { countdown -= 1 }
         findUpperLeftCorner(graphics: graphics)
         // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
-        if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c) }
+        if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c, lights: &lightTable) }
         let draw = prefs.reduceFrameRate == 0 || odd
         let actions = InputActions(keys: keys, prefs: prefs)
         frameKeys = keys
@@ -347,7 +347,7 @@ public final class FerazelSession {
         frameActions = actions
         frameDraw = draw
         afterSpecial = .mainPaint
-        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
         return finishFrame(ops)
     }
 
@@ -359,9 +359,10 @@ public final class FerazelSession {
     private func paintFrameWrap(draw: Bool, actions: InputActions, nested: Bool, into ops: inout FrameOps) {
         let graphics = prefs.graphics
         let h = camera.scrollH, v = camera.scrollV
-        ops.draws.append(.redrawScrollGrid(h: h, v: v))
-        // LT: the table as `.DrawLightsOntoTiles` reads it (before `.HandleLights`), also when Effects == 3 skips it.
+        // LT: the table as `.SetScrollLocation`'s strip redraw and `.DrawLightsOntoTiles` read it (before
+        // `.HandleLights`, M l. 9200–9205), handed over right before the strip; also when Effects == 3 skips the latter.
         ops.draws.append(.lightTable(lightTable))
+        ops.draws.append(.redrawScrollGrid(h: h, v: v))
         if prefs.effects != 3 { ops.draws.append(.drawLightsOntoTiles) }
         // `.HandleLights` (M l. 9205): after `.DrawLightsOntoTiles` and before `.WrapDrawWaterEffects`, unconditional.
         lightTable.handleLights()
@@ -404,7 +405,7 @@ public final class FerazelSession {
                 // `.HandlePlayerSprite` (its look-ahead row and `.PlayerScroll` move the focus, P5).
                 Player.handle(world: world, keys: actions, solver: solver)
             case .effect:
-                EffectSprite.handle(world: world, id: id)
+                EffectSprite.handle(world: world, id: id, lights: &self.lightTable)
             case .inert:
                 // `.HandleBonusSprite @ 1005e934` (decompile l. 52832–52840), as far as Phase 2 builds it: `+0xe9` →
                 // return, `+0x1b2` → return, `.StandardSpriteHandles`, (`+0xa6 < 0` counts up // later: Phase 4 — no
@@ -430,7 +431,8 @@ public final class FerazelSession {
                 // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b: cannons, springs, passages).
                 BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
             case .cannoned:
-                BackgroundSprite.handleCannoned(world: world, id: id, keys: actions)   // `.HandleCannonedSprite` (W2b)
+                // `.HandleCannonedSprite` (W2b).
+                BackgroundSprite.handleCannoned(world: world, id: id, keys: actions, lights: &self.lightTable)
             case .box:
                 BoxSprite.handle(world: world, id: id, faceBounds: bounds)        // `.HandleBoxSprite` (W3; C1 NPCs)
             case .rope:
@@ -443,7 +445,7 @@ public final class FerazelSession {
         let cues = world.player.drainFrameOutputs().cues
         if nested { frameCues += cues } else { frameCues = cues }
         // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
-        world.collideSprites(Self.hitCallback)
+        world.collideSprites(hit)
     }
 
     /// The suspended frame's modal moment (S1), nil while none is pending.
@@ -484,7 +486,7 @@ public final class FerazelSession {
         case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
-        guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
         return afterSpecialPass(ops)
     }
 
@@ -608,7 +610,7 @@ public final class FerazelSession {
         paintFrameWrap(draw: true, actions: actions, nested: true, into: &ops)
         frameActions = actions
         afterSpecial = .nestedPaint(tail)
-        guard world.collideSpecial(hitPlayer: hitPlayer, hit: Self.hitCallback) else { return suspend(ops) }
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
         afterSpecial = .mainPaint
         paintTail(&ops)
         return nestedDone(tail, ops)
@@ -793,12 +795,21 @@ public final class FerazelSession {
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels). // later:
     /// Phase 4 — the Box class's `.HitBoxSprite` (box vs box / statue / platform; W3 builds the boxes standing still),
-    /// Phase 4–5 (enemies, shots).
+    /// Phase 4–5 (enemies, shots). This form (no light table) is the test-only one: its light calls go to a scratch table.
+    /// The session's hit callback: `hitCallback` on `lightTable`.
+    private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) { Self.hitCallback(w, a, b, lights: &lightTable) }
+
     static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
+        var scratch = LightTable()
+        hitCallback(w, a, b, lights: &scratch)
+    }
+
+    /// LT: `hitCallback` with the light calls made on `lights` (`.TurnIntoCannoned`'s `.RemoveLight`).
+    static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int, lights: inout LightTable) {
         guard let s = w.active.record(id: a) else { return }
         switch s.handler {
         case .platform: PlatformSprite.hit(w, id: a, other: b)
-        case .background: BackgroundSprite.hit(w, id: a, other: b)        // `.HitBackgroundSprite` (W2b)
+        case .background: BackgroundSprite.hit(w, id: a, other: b, lights: &lights)   // `.HitBackgroundSprite` (W2b)
         default: break
         }
     }
@@ -808,6 +819,7 @@ public final class FerazelSession {
     /// `.GetFakeLight` (`fakeLight`). `SpriteSlot.applyDynamicLight` turns them into `+0xb8`. The original computes them
     /// only for a sprite whose face passes the draw's cull (`SectRectFast`, l. 10261–10265); Core asks for every `+0x89`
     /// sprite with a face [MED: an off-view raft's word is refreshed one draw early].
+    /// The test-only list form (PlatformTests): the Setup lights as a fresh table; the session uses the table form.
     static func dynamicLight(_ s: SpriteSlot, level: LevelFile, lights: [SetupFaces.Light],
                              bounds: (FaceRef) -> IdleSprites.Rect,
                              frame: (FaceRef) -> IdleSprites.Rect) -> (lightTile: Int, fakeLight: Int) {
@@ -849,6 +861,7 @@ public final class FerazelSession {
     /// height, width) offset by (lx − r, ly − r)) contains the centre of the sprite face's opaque bounds (face `+8` at
     /// (x, y); `PtInRect`, half-open): v = 11 − (`.PEDistance`(lx − px, ly − py)·11) / r (i16, C division), accepted for
     /// 0 ≤ v < 12 → v + the light's colour. Otherwise 0.
+    /// The test-only list form (PlatformTests) of `fakeLight` over the table.
     static func fakeLight(x: Int, y: Int, width w: Int, height h: Int, faceBounds b: IdleSprites.Rect,
                           lights: [SetupFaces.Light]) -> Int {
         fakeLight(x: x, y: y, width: w, height: h, faceBounds: b, lights: table(lights))

@@ -586,10 +586,21 @@ final class BackgroundMoverTests: XCTestCase {
             s.hp = 0x230; s.vx = 0x123; s.vy = 0x456; s.hasTileHit = true
             s.centre = SpriteSlot.Point(x: 4150, y: 599)
         }
+        // LT: a captive carrying a light (`+0x9a` = 1) has it removed on the table (`.RemoveLight`, M l. 49966).
+        var lights = LightTable()
+        let face = LightFaceRef(pict: 0x32a, width: 0x48, height: 0x48)
+        lights.add(face: face, x: 1, y: 1, vx: 0, vy: 0, accelY: 0, colour: 99)
+        w.active.update(id: p) { $0.light = lights.add(face: face, x: 2, y: 2, vx: 0, vy: 0, accelY: 0, colour: 99) }
+        XCTAssertEqual(w.active.sprite(id: p)?.light, 1)
         var r = w.rng
         let rate484 = r.soundRate()
-        BackgroundSprite.hit(w, id: k, other: p)
+        BackgroundSprite.hit(w, id: k, other: p, lights: &lights)
         var q = try XCTUnwrap(w.active.sprite(id: p))
+        XCTAssertEqual(q.light, -1)
+        XCTAssertEqual(lights.count, 1)
+        XCTAssertEqual([lights.slots[1].active, lights.slots[1].removing], [true, true])
+        XCTAssertNil(lights.slots[1].face)
+        XCTAssertFalse(lights.slots[0].removing)
         XCTAssertEqual(q.handler, .cannoned)
         XCTAssertEqual(q.savedHandler, .player)
         XCTAssertEqual([q.savedHasHit, q.savedHasTileHit, q.hasHit, q.hasTileHit], [false, true, false, false])
