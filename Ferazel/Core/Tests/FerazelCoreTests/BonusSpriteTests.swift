@@ -69,6 +69,25 @@ final class BonusSpriteTests: XCTestCase {
         XCTAssertEqual([hung.gravity, fell.gravity], [0, 0x151])
         XCTAssertEqual(hung.friction, 10)
         XCTAssertGreaterThanOrEqual(hung.slip, 0x1c)
+        // The coin's draws across seeds (`LAB_1005e02c`, M l. 52573–52582): R(9), R(6) + 0x1c, R(3) + 2.
+        for seed in Int32(1)...24 {
+            let ws = try world()
+            ws.rng = FastRand(seed: seed)
+            var y = ws.rng
+            var ls = LightTable()
+            let cID = try make(ws, 0x516, lights: &ls)
+            let c = try XCTUnwrap(ws.active.sprite(id: cID))
+            XCTAssertEqual([c.phase, c.slip, c.friction], [y.next(9), y.next(6) + 0x1c, y.next(3) + 2], "seed \(seed)")
+        }
+        // The write-back flags (M l. 52615–52636): the glider 0xbea `+0x18b = 1`, `+0x188 = 1`; the air bubble 0x546
+        // `+0x188 = 1` only; a coin neither.
+        let gliderID = try make(w, 0xbea, lights: &lights)
+        let glider = try XCTUnwrap(w.active.sprite(id: gliderID))
+        XCTAssertEqual([glider.keepRecordAtKill, glider.keepRecord], [true, true])
+        let bubbleID = try make(w, 0x546, lights: &lights)
+        let bubble = try XCTUnwrap(w.active.sprite(id: bubbleID))
+        XCTAssertEqual([bubble.keepRecordAtKill, bubble.keepRecord], [false, true])
+        XCTAssertEqual([coin.keepRecordAtKill, coin.keepRecord], [false, false])
     }
 
     func testXichronCycle() throws {
@@ -98,6 +117,50 @@ final class BonusSpriteTests: XCTestCase {
             handle(w, big, lights: &lights)
             XCTAssertEqual(w.active.sprite(id: big)?.mode, 0x10001)
         }
+        // In water at spawn (`+0x15c ≠ 0`): `+0x120 = +0x11c = 1` (M l. 52857–52860).
+        w.active.update(id: id) { s in
+            s.inWaterAtSpawn = 1
+            s.lastWater = 0
+            s.waterRow = 0
+        }
+        handle(w, id, lights: &lights)
+        let wet = try XCTUnwrap(w.active.sprite(id: id))
+        XCTAssertEqual([wet.lastWater, wet.waterRow], [1, 1])
+        // The big crystal's 11-step glint (M l. 52904–52935): `+0x46` 1…10 then 0; `+0xb8` 0 below 2, 0x10008 on
+        // 2…3 and 6…7, 0x10009 on 4…5, 0 from 8.
+        let crystal = try make(w, 0x50a, lights: &lights)
+        w.active.update(id: crystal) { s in
+            s.phase = 0
+            s.gravity = 0
+        }
+        var glint: [UInt32] = []
+        for _ in 0..<12 {
+            handle(w, crystal, lights: &lights)
+            glint.append(try XCTUnwrap(w.active.sprite(id: crystal)?.mode))
+        }
+        XCTAssertEqual(glint, [0, 0x10008, 0x10008, 0x10009, 0x10009, 0x10008, 0x10008, 0, 0, 0, 0, 0])
+        XCTAssertEqual(w.active.sprite(id: crystal)?.phase, 1, "10 < 11 → 0, then 1")
+        // The shards (M l. 52937–52955): `+0xa6` −40 counts up one a Handle; above −13 0xb0001, above −9 0xb0000,
+        // above −5 0xb0002, at 0 `+0xb8 = 0`, face 0, the kill request. Below −12 `+0xb8` is left as it was.
+        let shard = try make(w, 0x4c0, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: shard)?.counterA6, -40)
+        w.active.update(id: shard) { s in
+            s.gravity = 0
+            s.mode = 0x77
+        }
+        handle(w, shard, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: shard)?.counterA6, -39, "+0xa6 < 0 counts up (M l. 52839–52841)")
+        var shardModes: [UInt32] = [try XCTUnwrap(w.active.sprite(id: shard)?.mode)]
+        for _ in 0..<39 {
+            handle(w, shard, lights: &lights)
+            shardModes.append(try XCTUnwrap(w.active.sprite(id: shard)?.mode))
+        }
+        XCTAssertEqual(shardModes, [UInt32](repeating: 0x77, count: 27) + [UInt32](repeating: 0xb0001, count: 4)
+                       + [UInt32](repeating: 0xb0000, count: 4) + [UInt32](repeating: 0xb0002, count: 4) + [0])
+        let gone = try XCTUnwrap(w.active.sprite(id: shard))
+        XCTAssertEqual(gone.counterA6, 0)
+        XCTAssertNil(gone.face)
+        XCTAssertEqual(gone.killCount, 1)
     }
 
     func testTorchDrawsWhileUnspent() throws {
@@ -148,6 +211,54 @@ final class BonusSpriteTests: XCTestCase {
                        [0x321, 0x322])
         XCTAssertEqual(s.lightTimer, 3)
         XCTAssertEqual(lights.slots[Int(s.light)].face?.pict, 0x322)
+        // Effects 3, unspent: `+0xb2` toggles every call and only its 1 sparks (M l. 53207–53220) — 1, 0, 1, 0, … sparks
+        // per call (plus the torch's own 1-in-30); no light calls.
+        w.active.update(id: id) { s in
+            s.pickupDelay = 1
+            s.subState = 0
+        }
+        for call in 1...12 {
+            var x = w.rng
+            let before = w.particles.counters.count
+            let ops3 = handle(w, id, effects: 3, lights: &lights)
+            _ = x.next(100)
+            let sparks = call % 2 == 1
+            if sparks { for _ in 0..<3 { _ = x.next(1) } }
+            let torchSpark = x.next(0x1e) == 1
+            if torchSpark { for _ in 0..<2 { _ = x.next(1) } }
+            XCTAssertEqual(w.rng.seed, x.seed, "Effects 3 call \(call)")
+            XCTAssertEqual(Int(w.particles.counters.count - before), (sparks ? 1 : 0) + (torchSpark ? 1 : 0),
+                           "Effects 3 call \(call)")
+            XCTAssertEqual(w.active.sprite(id: id)?.subState, sparks ? 1 : 0)
+            XCTAssertTrue(ops3.isEmpty)
+        }
+        // A candelabra 0xc1c (fresh pool, Effects 1, unspent): R(100), two sparks, then its four flame points (M l.
+        // 53120–53123: (x + 6, y + 0x17), (+0xd, +0x10), (+0x13, +0x10), (+0x19, +0x16)) each R(3) → h += r − 1,
+        // R(100) → `.NewParticle(1, 0, point, 1, 0, −0x32 − r, 0, 0)` (M l. 53233–53258).
+        let wc = try world()
+        var lc = LightTable()
+        let cand = try make(wc, 0xc1c, lights: &lc)
+        let cslot = try XCTUnwrap(wc.active.sprite(id: cand)?.light)
+        XCTAssertEqual([lc.slots[Int(cslot)].x, lc.slots[Int(cslot)].y], [400 + 0xf, 100 + 0x10])
+        wc.active.update(id: cand) { $0.lightTimer = 50 }
+        lc.setPos(cslot, x: 1, y: 2)                       // moved off its Setup point: the Handle must leave it
+        var xc = wc.rng
+        handle(wc, cand, lights: &lc)
+        _ = xc.next(100)
+        for _ in 0..<6 { _ = xc.next(1) }
+        let flames: [(dx: Int, dy: Int)] = [(6, 0x17), (0xd, 0x10), (0x13, 0x10), (0x19, 0x16)]
+        let born = wc.particles.records.indices.filter { wc.particles.records[$0].alive }
+        XCTAssertEqual(born, Array(0..<6), "two sparks then four flames")
+        for (i, f) in flames.enumerated() {
+            let dh = Int(xc.next(3)), r = Int(xc.next(100))
+            let p = wc.particles.records[2 + i]
+            XCTAssertEqual([p.x, p.y], [Int32(400 + f.dx - 1 + dh) << 8, Int32(100 + f.dy) << 8], "flame \(i)")
+            XCTAssertEqual([p.vx, p.vy], [0, Int32(-0x32 - r)], "flame \(i)")
+            XCTAssertEqual([Int(p.shape), Int(p.kind), Int(p.mode), Int(p.gravity)], [1, 1, 0, 0], "flame \(i)")
+        }
+        XCTAssertEqual(wc.rng.seed, xc.seed)
+        // The tail's `.SetLightPos` skips the torch and the candelabras (M l. 53434–53439): the light stays put.
+        XCTAssertEqual([lc.slots[Int(cslot)].x, lc.slots[Int(cslot)].y], [1, 2])
     }
 
     func testDroppedCoinLife() throws {
@@ -186,6 +297,32 @@ final class BonusSpriteTests: XCTestCase {
         w.active.update(id: edge) { $0.gravity = 0 }
         handle(w, edge, lights: &lights)
         XCTAssertEqual(w.active.sprite(id: edge)?.killCount, 0, "y == height · 32 stays")
+        // The coin's 18-frame cell cycle (M l. 53064–53077): `+0x46` 1…17 then 0, cell `+0x46 >> 1`.
+        let spin = try make(w, 0x516, lights: &lights)
+        w.active.update(id: spin) { s in
+            s.phase = 0
+            s.gravity = 0
+        }
+        var cells: [Int] = []
+        for _ in 0..<36 {
+            handle(w, spin, lights: &lights)
+            cells.append(try XCTUnwrap(w.active.sprite(id: spin)?.face?.index))
+        }
+        let cycle = (1...17).map { $0 >> 1 } + [0]
+        XCTAssertEqual(cells, cycle + cycle)
+        // The tail's friction (M l. 53418–53428): vx moves `+0x114` toward 0 each Handle, clamped at 0.
+        for (v0, steps) in [(Int32(12), [Int32(7), 2, 0, 0]), (-12, [-7, -2, 0, 0])] {
+            w.active.update(id: spin) { s in
+                s.vx = v0
+                s.friction = 5
+            }
+            var vs: [Int32] = []
+            for _ in 0..<4 {
+                handle(w, spin, lights: &lights)
+                vs.append(try XCTUnwrap(w.active.sprite(id: spin)?.vx))
+            }
+            XCTAssertEqual(vs, steps, "vx \(v0)")
+        }
     }
 
     func testSphereHidesAndReturns() throws {
@@ -211,6 +348,18 @@ final class BonusSpriteTests: XCTestCase {
         XCTAssertNotNil(lights.slots[Int(slot)].face)
         XCTAssertEqual(ops.count, 1)
         XCTAssertFalse(s.lightOverlay)
+        // The upgrade 0x53c's light (M l. 53314–53344): `+0x15c` + 1, k = (`+0x15c` / 3) mod 6 — 0 → 0x326 (`_DAT_100a08b8`),
+        // 1 and 5 → `PTR_DAT_100a088c[0]` 0x32a, 2 and 4 → `[1]` 0x32b, 3 → `[2]` 0x32c.
+        let up = try make(w, 0x53c, lights: &lights)
+        w.active.update(id: up) { $0.inWaterAtSpawn = 0 }
+        var picts: [Int16] = []
+        for _ in 0..<20 {
+            for op in handle(w, up, lights: &lights) {
+                if case .changeLightFace(_, let p, _, _) = op { picts.append(p) }
+            }
+        }
+        XCTAssertEqual(picts, [0x326, 0x326, 0x32a, 0x32a, 0x32a, 0x32b, 0x32b, 0x32b, 0x32c, 0x32c, 0x32c,
+                               0x32b, 0x32b, 0x32b, 0x32a, 0x32a, 0x32a, 0x326, 0x326, 0x326])
     }
 
     func testRestsOnBoxes() throws {
@@ -251,6 +400,41 @@ final class BonusSpriteTests: XCTestCase {
         let playerID = w.active.insert(player)
         XCTAssertEqual(try drop(0x516, vy: 0x200, onto: playerID).vy, 0x200)
         XCTAssertEqual(try drop(0x4bf, vy: 0x200, onto: crateID).vy, 0x200)
+        // `sVar9 < 2000 || 0xc80 < sVar9` (M l. 53519): the item 0xc80 does not rest, 0xc81 does.
+        XCTAssertEqual(try drop(0xc80, vy: 0x200, onto: crateID).vy, 0x200)
+        XCTAssertEqual(try drop(0xc81, vy: 0x200, onto: crateID).vy, -0x100)
+        // `.TurnIntoCannoned` refuses a sprite on the Bonus Handle whose `+0x168` (record p4, M l. 52399) is 1
+        // (M l. 49946); p4 0 is captured.
+        w.records[0] = record(0, 0x516, p4: 1)
+        w.records[1] = record(1, 0x516, p4: 0)
+        let cannonID = w.active.insert(SpriteSlot(type: 0x442, x: 300, y: 300))
+        let kept = try make(w, 0x516, record: 0, lights: &lights)
+        let taken = try make(w, 0x516, record: 1, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: kept)?.bonusP4, 1)
+        BackgroundSprite.turnIntoCannoned(w, captive: kept, cannon: cannonID, lights: &lights)
+        BackgroundSprite.turnIntoCannoned(w, captive: taken, cannon: cannonID, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: kept)?.handler, .bonus, "p4 = 1: never cannoned")
+        XCTAssertEqual(w.active.sprite(id: taken)?.handler, .cannoned)
+        // The handle pass runs the Bonus Handle only on the Bonus Handle's records: an enemy-class record (no Handle
+        // built yet, `.inert`) on the live list at the player record's position is untouched by it (no `+0xb0` count-down, no friction, no gravity).
+        let session = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()),
+                                         prefs: FerazelPrefs(), level: 1, seed: 1)
+        let pl = try XCTUnwrap(session.world.playerID.flatMap { session.world.active.sprite(id: $0) })
+        var walker = SpriteSlot(type: 0x6a4, x: pl.x, y: pl.y)
+        XCTAssertEqual(walker.handler, .inert)
+        walker.pickupDelay = 5
+        walker.vx = 0x40
+        walker.friction = 0x10
+        walker.gravity = 0x151
+        walker.hasHit = false
+        walker.hasTileHit = false
+        walker.x256 = Int32(walker.x) << 8
+        walker.y256 = Int32(walker.y) << 8
+        let walkerID = session.world.active.insert(walker)
+        _ = session.step(keys: KeyState())
+        let after = try XCTUnwrap(session.world.active.sprite(id: walkerID))
+        XCTAssertEqual([Int(after.pickupDelay), Int(after.vx), Int(after.vy)], [5, 0x40, 0])
+        XCTAssertEqual(after.y256, walker.y256)
     }
 
     func testTileBounceFactors() throws {

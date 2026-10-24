@@ -326,11 +326,14 @@ public enum SetupFaces {
         case .bonus:
             // BN: `.SetupBonusSprite` in full (`BonusSprite.setup`) — every type 0x41f…0xcb0 the class owns; its `.AddLight`s
             // through `addLight` (the session's table). A Handle-faced type (`.handle`) leaves `+0xc0 = 0` in the binary;
-            // the Phase-1 stand-in (the Handle's first sheet cell, below) is kept for the level start's draw.
+            // the Phase-1 stand-in (the Handle's first sheet cell, below) is kept for the level start's draw. The shards'
+            // `*(*_DAT_1009fdd8 + 0x80) + 1` (M l. 52531): `.GameLoop` makes the new player only after `.SetupLevel` (M l.
+            // 5165–5183), so the Setups read the previous player record's layer — `.SetupPlayerSprite`'s 10 (M l. 42828).
             let records = c.records ?? c.level.placements
             if let f = try BonusSprite.setup(&s, x: Int(p.x), y: Int(p.y), level: c.level, records: records,
                                              effects: c.effects, lightCount: Int16(truncatingIfNeeded: lightsInUse),
-                                             counting: true, rng: &rng, addLight: { lf, h, v, colour in
+                                             counting: true, playerLayer: Int32(Player.layer), rng: &rng,
+                                             addLight: { lf, h, v, colour in
                 let l = Light(pict: lf.pict, width: lf.width, height: lf.height, x: h, y: v, colour: Int(colour))
                 light = l
                 return addToTable(l)

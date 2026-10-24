@@ -124,7 +124,7 @@ public struct LightTable: Equatable, Sendable {
         slots[Int(slot)].radius = Self.radius(face)
     }
 
-    /// `.ChangeLightFace(slot, 0)` (BN: a hidden sphere, M l. 53358): `+4` = 0 and `+0x14` = the word at address 0x50
+    /// `.ChangeLightFace(slot, 0)` (BN: a hidden sphere, M l. 53386): `+4` = 0 and `+0x14` = the word at address 0x50
     /// `>> 1` — the binary reads `face + 0x50` unchecked, a Mac OS low-memory word; 0 here [LOW]. A slot outside 0…199
     /// is ignored.
     public mutating func clearFace(_ slot: Int16) {
