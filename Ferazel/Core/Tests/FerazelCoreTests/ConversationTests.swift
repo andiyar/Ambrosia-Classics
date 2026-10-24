@@ -365,6 +365,38 @@ final class ConversationTests: XCTestCase {
         for _ in 0..<600 { _ = try tick() }
         XCTAssertNil(run.conversation)
         XCTAssertGreaterThan(run.iterations - second, 200)
+
+        // The rest of the read's frame reads the keys polled at the read's end, not the frame start's: a synthetic
+        // passage 2900 (records 509 / 510) on the player, after the sign in the contact order — frame start no UP, the
+        // answer UP held → its UP gate (`.IsInputKeyPressed(2)`) opens in the same frame (doorTransit 0 → 1).
+        let signStart = (Int(sign.x) - 0x26 + 8, Int(sign.y) + 0x1f - 0x55)
+        let sp = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, start: signStart)
+        let sw = sp.world
+        XCTAssertEqual([sw.records[509].type, sw.records[510].type], [0, 0])
+        sw.records[509] = Placement(index: 509, flag: 1, byte1: 0, type: 2900, p1: 510, p2: 0, p3: 0, p4: 0,
+                                    y: Int16(signStart.1), x: Int16(signStart.0 + 0x10))
+        sw.records[510] = Placement(index: 510, flag: 1, byte1: 0, type: 2900, p1: 509, p2: 0, p3: 0, p4: 0,
+                                    y: 500, x: 1600)
+        var passage = try SetupFaces.setup(sw.records[509], context: SetupFaces.Context(level: sw.level, playerX: 0)).slot
+        passage.recordIndex = 509
+        let passageID = sw.active.insert(passage)
+        let (_, xs) = stepToTalk(sp)
+        XCTAssertEqual(xs, .sign(text: MacRoman.bytes(try StringList.load(from: r, id: 500).string(12)!)))
+        let signID = try XCTUnwrap(sw.active.sprites.first { $0.type == 0xb56 && $0.recordIndex == 1 }?.id)
+        XCTAssertEqual(sw.specialPass?.contacts, [signID, passageID])   // the sign, then the passage (layer 0, 1)
+        XCTAssertEqual(sw.player.doorTransit, 0)
+        XCTAssertNil(sp.resume(.sign(keys: KeyState(pressed: [Self.upKey]), capsLock: false)).suspension)
+        XCTAssertEqual(sw.player.doorTransit, 1, "the passage after the sign saw the answer's UP")
+        // And Caps Lock: a hosted session's `.CheckGameLoopKeys` after the read pauses on the Caps Lock polled at the
+        // read's end (frame start up, answer down → `.Pause`); answered up, the frame ends.
+        for caps in [true, false] {
+            let hs = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, start: signStart,
+                                        hostedByLevelRun: true)
+            let (_, xh) = stepToTalk(hs)
+            guard case .sign? = xh else { return XCTFail("no hosted sign read: \(String(describing: xh))") }
+            XCTAssertEqual(hs.resume(.sign(keys: KeyState(), capsLock: caps)).suspension,
+                           caps ? .gameLoopKeys(.pause) : nil, "Caps Lock \(caps) at the read's end")
+        }
     }
 
     func testTypingTimeline() throws {
