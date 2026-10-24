@@ -247,6 +247,10 @@ final class SoundToolTests: XCTestCase {
         XCTAssertFalse(tool.isPlaying(snd: 1))
         if !tool.isPlaying(snd: 1) { tool.play(snd: 1, priority: 1, left: 0x80, right: 0x80) }   // idle → plays
         XCTAssertTrue(tool.isPlaying(snd: 1))
+        // A stop of a sound the tool holds none of (a nil handle, `|| param_1 == 0`, M l. 78341): every entry goes.
+        XCTAssertFalse(tool.snapshot().isEmpty)
+        tool.stop(snd: 99)
+        XCTAssertEqual(tool.snapshot().map(\.snd), [])
 
         // render clamps frames like HectorKit's PCMMixer: ≤ 0 → untouched, never past buffer.count / 2.
         var small = [Float](repeating: 9, count: 2)

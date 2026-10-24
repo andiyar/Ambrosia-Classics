@@ -16,10 +16,23 @@ final class SoundVoicesTests: XCTestCase {
         func deathEffectStep(_ k: Int) throws {}
     }
 
+    /// The file seam a save point needs (nothing is written: the panel is cancelled).
+    private final class NoFiles: FrontFiles {
+        func loadPrefs() -> Data? { nil }
+        func storePrefs(_ record: Data) throws {}
+        func readSavedGame(_ ref: SavedGameRef) throws -> SaveBlock { SaveBlock() }
+        func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
+    }
+
     func testIdleQueryReadsShellSet() throws {
         let v = SoundVoices(playing: [493])
         XCTAssertTrue(v.isPlaying(493))
         XCTAssertFalse(v.isPlaying(494))
+        // An unloaded snd (602, a nil handle): `FUN_100916dc(0)` counts every entry, `FUN_10091504(0)` stops every one.
+        XCTAssertFalse(SoundSlots.isLoaded(602))
+        XCTAssertTrue(v.isPlaying(602))
+        XCTAssertFalse(SoundVoices().isPlaying(602))
+        XCTAssertEqual(SoundVoices(playing: [493, 494]).applying(sounds: [], stops: [602], stopAt: [0]).playing, [])
         // The session's iteration reads the set the shell passed for it (and the default stays empty).
         let s = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 1, seed: 1)
         _ = s.step(keys: KeyState(), playing: [493])
@@ -89,5 +102,68 @@ final class SoundVoicesTests: XCTestCase {
         XCTAssertTrue(s.world.isSoundPlaying(421))
         _ = try stepTick(FrontInput())
         XCTAssertFalse(s.world.isSoundPlaying(421))
+
+        // Level 1 runs: the shell set is empty until the ticks that resume a suspended frame, which poll [421].
+        let L1 = try LevelFile.load(from: r, level: 1)
+        let marked = FrontInput(playing: [421])
+        func level1(_ p: FerazelPrefs = FerazelPrefs(), start: (x: Int, y: Int)? = nil,
+                    files: FrontFiles? = nil) throws -> LevelRun {
+            try LevelRun(resources: r, prefs: p, level: 1, seed: 1, carry: LevelCarry(), save: SaveBlock(),
+                         fade: ScreenFade(), music: MusicFade(), services: StubServices(),
+                         sounds: StageSounds(prefs: p, lengths: [:]), start: start, files: files)
+        }
+        func drive(_ run: LevelRun, _ input: (LevelRun) -> FrontInput = { _ in FrontInput() },
+                   until: (LevelRun) -> Bool) throws {
+            for _ in 0..<6000 {
+                _ = try run.tick(now: t, input: input(run))
+                t &+= 1
+                if until(run) { return }
+            }
+            XCTFail("the run did not reach the condition")
+        }
+        /// The tick's last session call was a resume (the frame finished, no further step) and it read [421].
+        func assertResumed(_ run: LevelRun, _ what: String) throws {
+            let s = try XCTUnwrap(run.session)
+            XCTAssertNil(s.suspension, what)
+            XCTAssertEqual(run.lastSteps.count, 1, what)
+            XCTAssertTrue(s.world.voices.playing.contains(421), "\(what): the resume reads the tick's shell set")
+        }
+        // A save point (`resume(.savePoint)` after the put-file panel is cancelled).
+        let point = L1.placements[24]
+        let save = try level1(start: (Int(point.x) - 8, Int(point.y) + 0x3f - 0x55 + 1), files: NoFiles())
+        try drive(save) { $0.session?.suspension != nil }
+        save.fileDone(.cancelled)
+        _ = try save.tick(now: t, input: marked)
+        t &+= 1
+        try assertResumed(save, "save point")
+        // A sign read (`resume(.sign)`), answered with any key.
+        let sign = L1.placements[1]
+        let talk = try level1(start: (Int(sign.x) - 0x26 + 8, Int(sign.y) + 0x1f - 0x55))
+        try drive(talk) { $0.conversation != nil }
+        try drive(talk, { FrontInput(keys: KeyState(pressed: $0.conversation?.wait == .anyKey ? [0x01] : []),
+                                     playing: [421]) }) { $0.conversation == nil }
+        try assertResumed(talk, "sign")
+        // A Caps Lock pause (`resume(.gameLoopKeys)`), released.
+        let keys = try level1()
+        try drive(keys) { $0.session.map { $0.world.gammaFade.done } == true && $0.iterations >= 60 }
+        try drive(keys, { _ in FrontInput(capsLock: true) }) { $0.pause != nil }
+        try drive(keys, { _ in marked }) { $0.pause == nil }
+        try assertResumed(keys, "pause")
+        // The pass-through: on a tick that runs a pair (Reduce Frame Rate, an undrawn iteration), the second step reads
+        // the first's play (snd 489, cued before the tick) on top of the shell's (empty) set.
+        var reduced = FerazelPrefs()
+        reduced.reduceFrameRate = 1
+        let pair = try level1(reduced)
+        var paired = false
+        for _ in 0..<6000 where !paired {
+            pair.session?.world.player.cue(PlayerCue(call: .reg, snd: 489, priority: 1, volume: 0x100))
+            _ = try pair.tick(now: t, input: FrontInput())
+            t &+= 1
+            if pair.lastSteps.count == 2, pair.lastSteps[0].sounds.contains(where: { $0.snd == 489 }) {
+                paired = true
+                XCTAssertTrue(try XCTUnwrap(pair.session).world.voices.playing.contains(489))
+            }
+        }
+        XCTAssertTrue(paired, "no paired tick")
     }
 }

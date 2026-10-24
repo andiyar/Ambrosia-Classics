@@ -9,7 +9,8 @@ import Foundation
 /// `SoundTool.playingSounds()`) with the calls made since applied in call order (the `FrameOps.soundStopAt`
 /// interleave): a play that the Sound Tool takes (`SoundCues.convert` → `.play`) adds its snd, a stop
 /// (`FUN_10091504(snd)`) removes it. Known deviation 2: a sound that ends inside the iteration counts until the next
-/// tick; a play evicting another entry (all 16 busy) is not modelled.
+/// tick; a play evicting another entry (all 16 busy) is not modelled. A play the Sound Tool turns away (all 16 entries
+/// outrank it: `FUN_10091208` takes no entry and returns 0, M l. 78265/78312) counts here until the next tick's shell set.
 public struct SoundVoices: Equatable, Sendable {
     /// The `snd ` ids some entry plays at the iteration's start (the shell's set, plus — on a tick that runs more than
     /// one part — what the tick's earlier parts started and stopped).
@@ -37,7 +38,15 @@ public struct SoundVoices: Equatable, Sendable {
 
     /// This set with emitted plays and stops applied in the `soundStopAt` order (stop k before play `stopAt[k]`).
     public func applying(sounds: [SoundCue], stops: [Int16], stopAt: [Int]) -> SoundVoices {
-        var set = playing
+        var v = self
+        v.playing = Self.playing(playing, applying: sounds, stops: stops, stopAt: stopAt)
+        return v
+    }
+
+    /// `set` with emitted plays and stops applied in the `soundStopAt` order (no prefs: the ops are already converted).
+    public static func playing(_ base: Set<Int16>, applying sounds: [SoundCue], stops: [Int16],
+                               stopAt: [Int]) -> Set<Int16> {
+        var set = base
         var k = 0
         for i in 0...sounds.count {
             while k < stops.count, (k < stopAt.count ? stopAt[k] : sounds.count) <= i {
@@ -51,9 +60,7 @@ public struct SoundVoices: Equatable, Sendable {
             Self.stop(stops[k], in: &set)
             k += 1
         }
-        var v = self
-        v.playing = set
-        return v
+        return set
     }
 
     /// `FUN_10091504(snd)`: every entry playing `snd`'s handle — every entry for a nil handle (an unloaded snd).

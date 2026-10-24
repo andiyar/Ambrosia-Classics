@@ -200,12 +200,15 @@ public final class SoundTool: PCMPullSource, @unchecked Sendable {
         }
     }
 
-    /// `FUN_10091504(snd)`: removes every entry playing `snd`, closing up the list.
+    /// `FUN_10091504(snd)`: removes every entry playing `snd`, closing up the list. A `snd` this tool holds no sound
+    /// for is the original's nil handle: `|| param_1 == 0` (M l. 78341) removes every entry (Core's `SoundVoices`
+    /// stop rule).
     public func stop(snd: Int16) {
+        let all = bySnd[snd] == nil
         state.withLock { st in
             var i = 0
             while i < st.count {
-                if st.list[i].snd == snd { remove(&st, at: i) } else { i += 1 }
+                if all || st.list[i].snd == snd { remove(&st, at: i) } else { i += 1 }
             }
         }
     }
