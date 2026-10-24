@@ -16,12 +16,13 @@ public enum FlowSegment: Equatable, Sendable {
     case map([MapOp])
 }
 
-/// The Apple events the system sent that no `.CheckEvent` has dispatched yet (A1a; one high-level event queue). Only
-/// two calls take them: `.CheckEvent` (`WaitNextEvent(0xffff, …, 1, …)` + `.HandleEvent`'s `AEProcessAppleEvent`, M l.
-/// 7487–7530) in the menu loop (M l. 7441) and the pause loop (M l. 3218) dispatches one; a `WaitNextEvent(0xffff, …)`
-/// whose event is never handled fetches one and drops it — `.GameLoop`'s, once per iteration when prefs+0x08 "Allow
-/// background tasks" is set (M l. 5277–5279), and `.MainMenu`'s 60-tick idle (M l. 7323). Elsewhere (the stage
-/// screens, the map loop, the death screen, `.Quit`'s sequence) they stay queued.
+/// The Apple events the system sent that no `.CheckEvent` has dispatched yet (A1a; the high-level event queue,
+/// first in first out like the Event Manager's). Only two calls take them: `.CheckEvent` (`WaitNextEvent(0xffff, …, 1,
+/// …)` + `.HandleEvent`'s `AEProcessAppleEvent`, M l. 7487–7530) in the menu loop (M l. 7441) and the pause loop (M l.
+/// 3218) dispatches one; `.GameLoop`'s `WaitNextEvent(0xffff, …)` when prefs+0x08 "Allow background tasks" is set
+/// fetches one per finished iteration and never handles it (M l. 5277–5279). `.MainMenu`'s 60-tick idle (M l. 7323)
+/// leaves them: the pending activate / update events come back first, so a queued Apple event reaches the menu pass.
+/// Elsewhere (the stage screens, the map loop, the death screen, `.Quit`'s sequence) they stay queued.
 public struct PendingAppleEvents: Equatable, Sendable {
     public enum Event: Equatable, Sendable {
         /// `'quit'` → `.DoQuitAppAE` → `.Quit` (M l. 31240–31245).
@@ -30,29 +31,31 @@ public struct PendingAppleEvents: Equatable, Sendable {
         case open(SavedGameRef)
     }
 
-    /// `'quit'` waiting.
-    public var quit = false
-    /// The Finder's `'odoc'` waiting (its first file).
-    public var open: SavedGameRef?
+    /// The queue, oldest first.
+    public private(set) var events: [Event] = []
 
-    public init(quit: Bool = false, open: SavedGameRef? = nil) {
-        self.quit = quit
-        self.open = open
+    public init(_ events: [Event] = []) {
+        self.events = events
     }
 
-    public var isEmpty: Bool { !quit && open == nil }
-
-    /// The next event out of the queue (the quit first), or nil.
-    public mutating func takeFirst() -> Event? {
-        if quit {
-            quit = false
-            return .quit
-        }
-        if let ref = open {
-            open = nil
-            return .open(ref)
-        }
+    /// A `'quit'` is waiting.
+    public var quit: Bool { events.contains(.quit) }
+    /// The oldest `'odoc'` waiting (its first file).
+    public var open: SavedGameRef? {
+        for case .open(let ref) in events { return ref }
         return nil
+    }
+
+    public var isEmpty: Bool { events.isEmpty }
+
+    /// The system sent `event`: queued behind the others.
+    public mutating func post(_ event: Event) {
+        events.append(event)
+    }
+
+    /// The oldest event out of the queue, or nil.
+    public mutating func takeFirst() -> Event? {
+        events.isEmpty ? nil : events.removeFirst()
     }
 }
 
@@ -374,17 +377,18 @@ public final class GameFlow {
     /// `.DoOpenDocAE @ 10033dbc` (M l. 31166–31236; save-continue §4): the Finder opened `ref` → `.ContinueGame(&reply)`
     /// while `DAT_100a5106` is set (no game loop running; data-section initial 1). The event waits in the queue
     /// (`appleEvents`) until a `.CheckEvent` dispatches it: the menu pass's end continues with it; the pause loop's (in a
-    /// level or on the map: `5106` clear) ignores it; `.GameLoop`'s background-tasks fetch drops it.
+    /// level or on the map: `5106` clear) takes it and does nothing more (M l. 31221–31225); `.GameLoop`'s
+    /// background-tasks fetch drops it.
     public func openDocument(_ ref: SavedGameRef) {
-        appleEvents.open = ref
+        appleEvents.post(.open(ref))
     }
 
     /// `.DoQuitAppAE @ 10033f24` (M l. 31240–31245): the system's quit → `.Quit` (no confirm) when a `.CheckEvent`
     /// dispatches it — the menu pass's end or the pause loop's poll (M l. 3218: in a level the run ends `.quit`, on the
-    /// map `quitEventDispatched`); `.GameLoop`'s background-tasks fetch and `.MainMenu`'s idle drop it (`appleEvents`).
-    /// The App's terminate waits for `.quit`, or is cancelled once `appleEvents.quit` is gone without `quitting`.
+    /// map `quitEventDispatched`); `.GameLoop`'s background-tasks fetch drops it (`appleEvents`). The App cancels the
+    /// system's terminate and terminates at the flow's `.quit`.
     public func quitEvent() {
-        appleEvents.quit = true
+        appleEvents.post(.quit)
     }
 
     // MARK: - Blocking calls
@@ -403,13 +407,10 @@ public final class GameFlow {
             guard loadDone else { return false }
             loadDone = false
         case .idle(let start):
-            if appleEvents.quit {
-                // `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323) returns the queued quit and nothing handles it.
-                appleEvents.quit = false
-            } else {
-                let event = input.button || input.keys != KeyState()
-                guard event || Int(now &- start) >= BootSequence.menuIdleTicks else { return false }
-            }
+            // `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323): any event ends it. A queued Apple event ends it too, but the
+            // event it returns is the pending activate / update one — the Apple event stays for the menu pass.
+            let event = input.button || input.keys != KeyState() || !appleEvents.isEmpty
+            guard event || Int(now &- start) >= BootSequence.menuIdleTicks else { return false }
         case .track(var track):
             let (events, result) = track.step(button: input.button, mouse: input.mouse)
             emit(events, button: track.button, &out)

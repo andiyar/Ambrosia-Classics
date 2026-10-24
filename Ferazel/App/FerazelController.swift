@@ -83,11 +83,8 @@ import HectorShell
     private var modalUp = false
     /// A Finder open that came before the flow existed.
     private var pendingOpen: SavedGameRef?
-    /// The flow's `.quit` came (terminate without asking again); a system terminate waits for it.
+    /// The flow's `.quit` came (or a launch failure): the terminate the App then makes is not asked again.
     private var quitApproved = false
-    /// A system terminate answered `.terminateLater`: its quit event is queued in the flow (`GameFlow.appleEvents`)
-    /// or `.Quit` is running; answered true at the flow's `.quit`, false once the event was dropped.
-    private var terminateReplyPending = false
 
     // MARK: Launch
 
@@ -257,7 +254,6 @@ import HectorShell
         }
         if out.present { present() }
         for request in out.requests { honour(request) }
-        answerTerminate()
         serviceLoad()
     }
 
@@ -544,37 +540,23 @@ import HectorShell
 
     // MARK: Quit and Finder open
 
-    /// The flow's `.quit` (`ExitToShell` after `.Quit`'s sequence): terminate, answering a waiting system terminate.
+    /// The flow's `.quit` (`ExitToShell` after `.Quit`'s sequence): terminate, not asked again.
     private func quitNow() {
         quitApproved = true
-        if terminateReplyPending {
-            terminateReplyPending = false
-            NSApp.reply(toApplicationShouldTerminate: true)
-        } else {
-            NSApp.terminate(nil)
-        }
+        NSApp.terminate(nil)
     }
 
     /// A terminate the flow did not ask for (the app menu's Quit, logout — the quit Apple event, `.DoQuitAppAE`): the
-    /// event is queued in the flow and the answer waits (`.terminateLater`). As the original: a `.CheckEvent` — the
-    /// main menu's pass or the pause loop's — dispatches it and `.Quit` runs (answered true at its `.quit`); `.GameLoop`
-    /// with "Allow background tasks" and `.MainMenu`'s boot idle fetch it and drop it (answered false, the game goes
-    /// on); anywhere else it waits (a level with the pref off holds it until a pause or the menu). Once `.Quit` runs no
-    /// event is dispatched again, so a terminate then just waits for its `.quit`; a second terminate while one is
-    /// waiting is the same queued event — cancelled, the first answer stands. // later: A1b — the File menu's Quit.
+    /// event is queued in the flow and the terminate is cancelled at once — no terminate stays pending through play
+    /// (AppKit would hold its run loop in the modal-panel mode). As the original: a `.CheckEvent` — the main menu's
+    /// pass or the pause loop's — dispatches it and `.Quit` runs, whose `.quit` terminates (`quitNow`); `.GameLoop`
+    /// with "Allow background tasks" fetches it and drops it (nothing more happens, the game goes on); anywhere else it
+    /// waits (a level with the pref off holds it until a pause or the menu). A terminate while a quit is already
+    /// queued, or while `.Quit` runs, adds nothing. // later: A1b — the File menu's Quit.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let flow, !quitApproved else { return .terminateNow }
-        guard !terminateReplyPending else { return .terminateCancel }
-        if !flow.quitting { flow.quitEvent() }
-        terminateReplyPending = true
-        return .terminateLater
-    }
-
-    /// After each tick: a waiting terminate whose quit event was dropped (no `.Quit` running, none queued) is refused.
-    private func answerTerminate() {
-        guard terminateReplyPending, !quitApproved, !flow.quitting, !flow.appleEvents.quit else { return }
-        terminateReplyPending = false
-        NSApp.reply(toApplicationShouldTerminate: false)
+        if !flow.quitting && !flow.appleEvents.quit { flow.quitEvent() }
+        return .terminateCancel
     }
 
     /// Finder open (`.DoOpenDocAE`): queued in the flow like the quit — the menu pass's `.CheckEvent` continues with the

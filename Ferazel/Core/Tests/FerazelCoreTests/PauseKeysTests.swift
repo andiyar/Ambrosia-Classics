@@ -159,6 +159,28 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertFalse(pa.paused)
         XCTAssertTrue(pa.aborted)
         XCTAssertTrue(pa.isDone)
+
+        // A1a: a poll's `.CheckEvent` takes one queued Apple event, oldest first (M l. 3218). An open is taken and does
+        // nothing (`.DoOpenDocAE` with `5106` clear, M l. 31221–31225): the poll goes on as any other. The quit →
+        // `.Quit` from inside the loop: counted as a poll, the pause stops there — still paused, no exit sequence.
+        var pq = pause()
+        _ = pq.tick(now: 0, input: FrontInput(capsLock: true))
+        let ref = SavedGameRef(url: URL(fileURLWithPath: "/nonexistent/finder"), displayName: "finder")
+        pq.appleEvents = PendingAppleEvents([.open(ref), .quit])
+        _ = pq.tick(now: 1, input: FrontInput(capsLock: true))
+        XCTAssertEqual(pq.appleEvents.events, [.quit])
+        XCTAssertEqual(pq.polls, 1)
+        XCTAssertEqual(pq.counter, 5)
+        XCTAssertFalse(pq.quitDispatched)
+        XCTAssertFalse(pq.isDone)
+        let qo = pq.tick(now: 2, input: FrontInput(capsLock: false))
+        XCTAssertTrue(pq.appleEvents.isEmpty)
+        XCTAssertTrue(pq.quitDispatched)
+        XCTAssertEqual(pq.polls, 2)
+        XCTAssertEqual(pq.counter, 5, "no counter step on the quit")
+        XCTAssertTrue(pq.paused)
+        XCTAssertTrue(pq.isDone)
+        XCTAssertFalse(qo.requests.contains(.hideMenuBar), "no pause exit")
     }
 
     // MARK: - Pause entry and exit

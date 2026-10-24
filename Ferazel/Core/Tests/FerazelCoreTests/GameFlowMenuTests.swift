@@ -180,8 +180,8 @@ final class GameFlowMenuTests: XCTestCase {
             $0.state == .mainMenu
         }
         XCTAssertEqual(Int(d.first { tints($0.out) > 0 }!.t &- u2), 5)
-        // A quit event ends the idle too — and is lost: `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323) returns it and
-        // nothing handles it, so no `.Quit` follows (the App's terminate is cancelled).
+        // A quit event ends the idle too — and survives it: `WaitNextEvent(0xffff, …, 0x3c)` (M l. 7323) returns the
+        // pending activate / update event first, so the menu's first pass dispatches the quit → `.Quit`.
         let eaten = make(r)
         var e: UInt32 = 0
         drive(eaten, &e) { f in if case .loading = f.state { return true }; return false }
@@ -189,14 +189,17 @@ final class GameFlowMenuTests: XCTestCase {
         drive(eaten, &e) { f in if case .loading(.faces) = f.state { return true }; return false }
         eaten.loadFinished()
         let e2 = e
+        var kept = false
         let q = drive(eaten, &e, input: { t in
             if t &- e2 == 5 { eaten.quitEvent() }
+            if t &- e2 == 20 { kept = eaten.appleEvents.quit }                   // the idle over, the fade-out on
             return FrontInput()
         }) { $0.state == .mainMenu }
         XCTAssertEqual(Int(q.first { tints($0.out) > 0 }!.t &- e2), 5)
-        drive(eaten, &e, max: 30) { _ in false }
-        XCTAssertEqual(eaten.state, .mainMenu)
-        XCTAssertFalse(eaten.quitting)
+        XCTAssertTrue(kept, "kept through the idle")
+        drive(eaten, &e, max: 200) { $0.state == .quit }
+        XCTAssertEqual(eaten.state, .quit)
+        XCTAssertTrue(eaten.quitting)
         XCTAssertTrue(eaten.appleEvents.isEmpty)
 
         // Boot keys N+F (0x2d + 0x03): fading disabled + "Fading disabled."; F1 (0x7a): "Sound loading turned off."

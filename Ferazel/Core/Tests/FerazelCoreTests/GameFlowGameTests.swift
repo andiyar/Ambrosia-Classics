@@ -301,6 +301,20 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertNotNil(rig5.flow.levelRun?.pause, "paused, no quit")
         XCTAssertEqual(rig5.flow.state, .newGame)
         XCTAssertFalse(rig5.flow.quitting)
+        // A suspended part is no iteration's end: a quit queued as Caps Lock suspends the frame (`.CheckGameLoopKeys`'
+        // pause) is not fetched by the game loop — the pause loop's first poll dispatches it → `.Quit`.
+        let rig9 = Rig(r)
+        rig9.flow.toggles.live.backgroundTasks = 1
+        rig9.toMenu()
+        rig9.press(0x2d)
+        rig9.drive { self.isRunning($0, level: 1) }
+        var posted = false
+        rig9.drive(input: { f in
+            if !posted { posted = true; f.quitEvent() }
+            return FrontInput(capsLock: true)
+        }) { $0.state == .quit }
+        XCTAssertTrue(rig9.flow.quitting)
+        XCTAssertTrue(rig9.flow.appleEvents.isEmpty)
     }
 
     func testLevel1ToMapToLevel2() throws {
@@ -815,5 +829,42 @@ final class GameFlowGameTests: XCTestCase {
         rig8.drive { $0.state == .continueGame }
         XCTAssertEqual(rig8.files.reads, [finder.url])
         XCTAssertTrue(rig8.flow.appleEvents.isEmpty)
+        // First in, first out. At the menu a quit then an open: `.Quit` runs (no `.CheckEvent` after it) — the open is
+        // never read; an open then a quit: the game is continued and the quit waits in the level.
+        let rig10 = Rig(r)
+        rig10.files.blocks[finder.url] = try checkpoint(r)
+        rig10.toMenu()
+        rig10.flow.quitEvent()
+        rig10.flow.openDocument(finder)
+        rig10.drive { $0.state == .quit }
+        XCTAssertTrue(rig10.flow.quitting)
+        XCTAssertTrue(rig10.files.reads.isEmpty)
+        XCTAssertEqual(rig10.flow.appleEvents.open, finder)
+        let rig11 = Rig(r)
+        rig11.files.blocks[finder.url] = try checkpoint(r)
+        rig11.toMenu()
+        rig11.flow.openDocument(finder)
+        rig11.flow.quitEvent()
+        rig11.drive { self.isRunning($0, level: 1) }
+        XCTAssertEqual(rig11.flow.state, .continueGame)
+        XCTAssertEqual(rig11.files.reads, [finder.url])
+        XCTAssertEqual(rig11.flow.appleEvents.events, [.quit])
+        XCTAssertFalse(rig11.flow.quitting)
+        // The pause loop's `.CheckEvent` takes an open and does nothing with it (`.DoOpenDocAE`, `5106` clear: no
+        // `.ContinueGame`, M l. 31221–31225): an open then a quit queued in a level → the first poll eats the open,
+        // the next dispatches the quit → `.Quit`; the file is never read.
+        let rig12 = Rig(r)
+        rig12.files.blocks[finder.url] = try checkpoint(r)
+        rig12.toMenu()
+        rig12.press(0x2d)
+        rig12.drive { self.isRunning($0, level: 1) }
+        rig12.flow.openDocument(finder)
+        rig12.flow.quitEvent()
+        runTicks(rig12, 10)
+        XCTAssertEqual(rig12.flow.appleEvents.events, [.open(finder), .quit])
+        rig12.drive(input: { _ in FrontInput(capsLock: true) }) { $0.state == .quit }
+        XCTAssertTrue(rig12.flow.quitting)
+        XCTAssertTrue(rig12.files.reads.isEmpty)
+        XCTAssertTrue(rig12.flow.appleEvents.isEmpty)
     }
 }
