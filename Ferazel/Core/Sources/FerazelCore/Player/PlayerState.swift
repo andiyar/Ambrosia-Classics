@@ -238,20 +238,13 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a06bc` (no reader) / `PTR_DAT_100a06c0` (`+0x116` copy).
     public var newHit: Int16 = 0
     public var lastInvulnerable: Int16 = 0
-    /// `PTR_DAT_100a060c`: crunch-bounce cooldown. `PTR_DAT_100a05c4`, `PTR_DAT_100a05a8`, `PTR_DAT_1009fdbc`,
-    /// `_DAT_1009fdb8`, `PTR_DAT_1009fda8`: countdowns. `_DAT_100a0684`: save-point hold (toward 0). `PTR_DAT_100a05f0`:
+    /// `PTR_DAT_100a060c`: crunch-bounce cooldown. `PTR_DAT_100a05c4`, `PTR_DAT_100a05a8`: countdowns (the flash
+    /// countdowns `PTR_DAT_1009fdbc`, `_DAT_1009fdb8`, `PTR_DAT_1009fda8` are the status bar's flow-wide globals:
+    /// `SpriteWorld.statusBar.flashes`, HU review fix). `_DAT_100a0684`: save-point hold (toward 0). `PTR_DAT_100a05f0`:
     /// no-cling timer. `_DAT_100a059c`: carpet-steering lock. `_DAT_100a073c`: the item-0x13 countdown.
     public var crunchCooldown: Int16 = 0
     public var countdown05c4: Int16 = 0
     public var countdown05a8: Int16 = 0
-    public var countdownFDBC: Int16 = 0
-    public var countdownFDB8: Int16 = 0
-    public var countdownFDA8: Int16 = 0
-    /// `_DAT_1009fda4` / `_DAT_1009fda0`: the item flash's slot and mode (0 grey, 1 red) — `.UpdateItemStat` colourises
-    /// that slot's small icon while `countdownFDA8` > 0 (M l. 4767–4787; HU). Written with the counter by the pickups
-    /// and item uses (M l. 45459–45461, 47997–48003, 48970–48972, 49016–49018: later tasks').
-    public var itemFlashSlot: Int16 = 0
-    public var itemFlashMode: Int16 = 0
     public var savePointHold: Int16 = 0
     public var noCling: Int16 = 0
     public var carpetLock: Int16 = 0

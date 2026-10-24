@@ -256,5 +256,6 @@ Read in `ghidra/ferazel/Ferazel_pef.decompiled.c` (raw addresses from `Ferazel_p
 > box bottom) (M l. 4674–4841). As built (HU): param_3 does not force the bars — `.UpdateHealthMagic(param_3 ? 1 :
 > param_1)` takes the cached path (M l. 4878–4883); `.UpdateHealthMagic` also stores G+4 / G+0xe clamped to their maxima
 > and G+6 clamped to G+4 (M l. 4409–4415, 4426–4428) and plays snd 442 (`*_DAT_1009fdb4`) when the suffocation count mod
-> 10 is 9 while the health part redraws (M l. 4486–4493) — neither is built yet; conversation action 2's two stores (M l.
-> 66312–66313) go to `PTR_DAT_100a0bf4` / `0bf0`, not the item flash.
+> 10 is 9 while the health part redraws (M l. 4486–4493) — both built in Core (`StatusBarCalls`, review fix), which owns
+> the caches; the repeat counter, the caches and the flash counters are one flow-wide set (data-section initialised
+> only); conversation action 2's two stores (M l. 66312–66313) go to `PTR_DAT_100a0bf4` / `0bf0`, not the item flash.

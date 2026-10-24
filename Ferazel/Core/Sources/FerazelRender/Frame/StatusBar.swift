@@ -43,9 +43,8 @@ public struct StatusBar {
     /// The screen device's search (`Color2Index` of the colourising colours).
     let prepared: ColorSearch.Prepared
 
-    // `.UpdateHealthMagic`'s statics `_DAT_100ab9c8` (health), `…9d0` (breath), `…9d4` (suffocation), `…9cc` (magic);
-    // `.UpdateTextStats`' `…9c0` (score), `…9c4` (coins); nil before the first draw.
-    var lastHealth: Int?, lastBreath: Int?, lastSuffocation: Int?, lastMagic: Int?
+    // `.UpdateTextStats`' statics `…9c0` (score), `…9c4` (coins); nil before the first draw. (`.UpdateHealthMagic`'s
+    // caches are Core's — `StatusBarCalls`; the op says which parts draw.)
     var lastScore: Int?, lastCoins: Int?
 
     /// - Parameter screenClut: the level CLUT the screen device holds (`.SetScreenClut`).
@@ -89,7 +88,7 @@ public struct StatusBar {
     /// flash) (`StatusBarState.drawsItems`, with param_1 = `!full`).
     public mutating func update(_ state: StatusBarState, full: Bool, screen: inout IndexedFrame) {
         if full { copyToScreen(top: 0, left: 0, bottom: Self.height, right: Self.width, screen: &screen) }
-        updateHealthMagic(state, incremental: !full || state.call.forceBars, screen: &screen)
+        updateHealthMagic(state, screen: &screen)
         updateTextStats(state, incremental: !full, screen: &screen)
         var gate = state
         gate.call.partial = !full
@@ -98,20 +97,13 @@ public struct StatusBar {
 
     // MARK: - `.UpdateHealthMagic`
 
-    /// `.UpdateHealthMagic(incremental) @ 10008430` (M l. 4361–4580). G+4 / G+0xe above their maxima are read as the
-    /// maxima (the routine stores them — a G write Core does not make, reported), the breath above the health as the
-    /// health. Health part: skipped when health, magic, suffocation and breath equal the caches, `incremental`, and
-    /// neither flash runs (the whole routine returns), or when health and breath equal theirs, `incremental` and no
-    /// health flash (M l. 4417–4424). Magic part: skipped when the magic equals its cache, `incremental`, and no magic
-    /// flash (M l. 4517–4521).
-    mutating func updateHealthMagic(_ s: StatusBarState, incremental: Bool, screen: inout IndexedFrame) {
+    /// `.UpdateHealthMagic @ 10008430` (M l. 4361–4580), its drawing: the parts the op's call says run
+    /// (`StatusBarCall.healthBar` / `magicBar`, Core's caches and G writes — the values arrive clamped; the `min`s
+    /// below only restate it).
+    mutating func updateHealthMagic(_ s: StatusBarState, screen: inout IndexedFrame) {
         let health = min(s.health, s.maxHealth), magic = min(s.magic, s.maxMagic), suffocation = s.suffocation
-        var breath = s.breath
-        if health == lastHealth && magic == lastMagic && suffocation == lastSuffocation && breath == lastBreath
-            && incremental && s.healthFlash < 1 && s.magicFlash < 1 { return }
-        if !(health == lastHealth && breath == lastBreath && incremental && s.healthFlash < 1) {
-            if health < breath { breath = health }
-            lastHealth = health; lastBreath = breath; lastSuffocation = suffocation
+        let breath = min(s.breath, health)
+        if s.call.healthBar {
             let h = Self.bar(health), b = Self.bar(breath), m = Int(Int16(truncatingIfNeeded: s.maxHealth) >> 3)
             blitHUD(top: 0, left: h, bottom: 9, right: m, x: 0xd6 + h, y: 7)          // empty
             blitHUD(top: 0x24, left: m, bottom: 0x2d, right: 0xc4, x: 0xd6 + m, y: 7)  // past max
@@ -119,13 +111,12 @@ public struct StatusBar {
             blitHUD(top: 9, left: 0, bottom: 0x12, right: b, x: 0xd6, y: 7,
                     fore: s.healthFlash < 1 ? nil : Self.grey(max(s.healthFlash - 1, 0) * 3000))
             // The health above the breath: with no breath left and the suffocation counting, colourised by (its
-            // count mod 10)·3000 grey (M l. 4486–4505; the tick sound at 9 is Core's — not built, reported).
+            // count mod 10)·3000 grey (M l. 4486–4505; the tick sound at 9 is Core's).
             let tick = breath < 1 && 0 < suffocation ? Self.grey(suffocation % 10 * 3000) : nil
             blitHUD(top: 0x1b, left: b, bottom: 0x24, right: h, x: 0xd6 + b, y: 7, fore: tick)
             copyToScreen(top: 7, left: 0xd4, bottom: 0x10, right: 0x19c, screen: &screen)
         }
-        if magic == lastMagic && incremental && s.magicFlash < 1 { return }
-        lastMagic = magic
+        guard s.call.magicBar else { return }
         let m = Self.bar(magic), mm = Int(Int16(truncatingIfNeeded: s.maxMagic) >> 3)
         blitHUD(top: 0, left: m, bottom: 9, right: 0xc4, x: m + 0x1ab - 8, y: 7)
         blitHUD(top: 0x24, left: mm, bottom: 0x2d, right: 0xc4, x: 0x1ab + mm - 8, y: 7)
@@ -195,9 +186,11 @@ public struct StatusBar {
     /// - status x 0xd7…0x10b and 0x108…0x268, y 0x1e…0x4c → the screen (M l. 4831–4838).
     mutating func updateItemStat(_ s: StatusBarState, screen: inout IndexedFrame) {
         let inventory = s.inventory, selected = s.selectedSlot
-        precondition(inventory.indices.contains(selected) && inventory[selected].id >= 0,
-                     "UpdateItemStat: the selected slot is empty (the source rect leaves the port)")
-        let sel = inventory[selected], selId = Int(sel.id)
+        // An empty selected slot (id −1) gives the rect (0, −45)–(47, −1): clipped away, nothing drawn. A selection
+        // outside 0…26 (−1: the empty inventory) would read G+0x1a…+0x23 (the gap, Phase 3 Invariant 7) — not
+        // modelled: nothing drawn [LOW].
+        let sel = inventory.indices.contains(selected) ? inventory[selected] : InventorySlot.empty
+        let selId = Int(sel.id)
         blit(sel.isSpell == 1 ? spellBig : itemBig, top: 0, left: selId * 0x2d, bottom: 0x2f,
              right: selId * 0x2d + 0x2c, x: 0xd7, y: 0x1e)
         if 1 < sel.count {
@@ -258,16 +251,17 @@ public struct StatusBar {
 
     private mutating func copy(_ p: ConvertedPicture, top: Int, left: Int, bottom: Int, right: Int, x: Int, y: Int,
                                _ map: (UInt8) -> UInt8) {
-        guard bottom > top, right > left else { return }
-        precondition(top >= 0 && left >= 0 && bottom <= p.height && right <= p.width,
-                     "StatusBar: source rect outside PICT \(p.id)")
-        for r in 0..<(bottom - top) {
-            let py = y + r
+        // The source rect clipped to the picture's bounds (the destination moves with it); an empty or wholly
+        // outside rect copies nothing — an empty selected slot's id −1 rect, a max >> 3 beyond 0xc4 (HU review fix).
+        let t = max(top, 0), l = max(left, 0), b = min(bottom, p.height), r = min(right, p.width)
+        guard b > t, r > l else { return }
+        for row in t..<b {
+            let py = y + row - top
             guard (0..<Self.height).contains(py) else { continue }
-            for c in 0..<(right - left) {
-                let px = x + c
+            for col in l..<r {
+                let px = x + col - left
                 guard (0..<Self.width).contains(px) else { continue }
-                port[py * Self.width + px] = map(p.pixels[(top + r) * p.width + left + c])
+                port[py * Self.width + px] = map(p.pixels[row * p.width + col])
             }
         }
     }

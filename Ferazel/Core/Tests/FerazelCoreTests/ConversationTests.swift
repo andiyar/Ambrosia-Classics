@@ -197,6 +197,19 @@ final class ConversationTests: XCTestCase {
                             prefs: FerazelPrefs(), levelName: "", into: &out)
             XCTAssertEqual([s.world.globals.inventory[k].id, s.world.globals.inventory[k].count], [4, count], "B \(b)")
         }
+        // HU: action 3 × 2 of a held item — each found `.RemoveItem` makes its own `.UpdateItemStat` (M l. 39658),
+        // then the action's (M l. 66325): three `itemsOnly` ops; an absent item only the action's.
+        func itemOps(_ o: FrontOutput) -> Int {
+            o.draws.filter { if case .statusBar(let b) = $0 { b.call.itemsOnly } else { false } }.count
+        }
+        var removed = FrontOutput()
+        ConvActions.run(Conversation.Action(type: 3, a: 4, b: 2), record: 12, talker: id, world: s.world, save: &save,
+                        prefs: FerazelPrefs(), levelName: "", into: &removed)
+        XCTAssertEqual([itemOps(removed), Int(s.world.globals.inventory[k].count)], [3, 97])
+        var absent = FrontOutput()
+        ConvActions.run(Conversation.Action(type: 3, a: 77, b: 2), record: 12, talker: id, world: s.world, save: &save,
+                        prefs: FerazelPrefs(), levelName: "", into: &absent)
+        XCTAssertEqual(itemOps(absent), 1)
         // A missing `Mcnv` (L4 rec 88's p1 0): the report with the id as its code, then the end once it is answered.
         let bad = ConversationRun(.conversation(id: 0, record: 88, sprite: id), world: s.world, resources: r,
                                   prefs: FerazelPrefs(), levelName: "")

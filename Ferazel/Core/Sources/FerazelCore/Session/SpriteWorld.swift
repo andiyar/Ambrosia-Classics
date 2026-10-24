@@ -50,6 +50,9 @@ public final class SpriteWorld {
     /// The player's globals (`_DAT_100a0xxx`, player-states §2): `.ClearPlayerVars` until `Player.spawn` runs
     /// `.SetupPlayerSprite` (P1a). Read and written by `Player.handle` and `HandleKeys`.
     public var player = PlayerState()
+    /// HU: the status bar's flow-wide globals (repeat counter, `.UpdateHealthMagic` caches, flash counters) — taken
+    /// from `LevelCarry.statusBar` and handed back in the session's `carry`.
+    public var statusBar = StatusBarCalls()
     /// Records taken whose Setup is still running (`newSprite`).
     private var reserved = 0
     /// `*_DAT_1009ffa8`: the player is dying / dead — `.HandleSprites` then skips the player pass.

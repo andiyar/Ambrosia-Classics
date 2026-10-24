@@ -212,7 +212,7 @@ extension GameFlow {
             let m = try WorldMapRun(resources: resources, prefs: toggles.live, globals: globals, level: level,
                                     levelName: name, exit1: exit1, exit2: exit2, levelComplete: levelComplete,
                                     seed: rng.seed, fade: fade, music: toggles.music, sprites: mapSprites,
-                                    files: files)
+                                    files: files, statusBar: levelCarry.statusBar)
             // A1b: the pause's Preferences… on the map uses the flow's key names and last captured modifier.
             m.keyCharacter = keyCharacter
             m.lastModifier = lastModifier
@@ -233,6 +233,7 @@ extension GameFlow {
             return
         }
         globals = m.globals
+        levelCarry.statusBar = m.statusCalls                            // HU: the status bar's globals run on
         rng = m.rng
         lastModifier = m.lastModifier
         fade = m.fade

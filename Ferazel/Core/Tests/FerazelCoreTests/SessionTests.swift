@@ -337,10 +337,13 @@ final class SessionTests: XCTestCase {
         XCTAssertEqual(calls(first.draws)[12], .eraseParticles)
         XCTAssertEqual(calls(first.draws)[13], .changeLightFace(slot: 24, pict: 0x32b, width: 0x48, height: 0x48)) // seed 1: 6 → 7, k 1
         // HU: the iteration's `.UpdateStatusBar(1, 0, 0)` (M l. 5280) — `partial`; G+8 is 0x1e after the player's
-        // out-of-water row (`PlayerLiquids`).
+        // out-of-water row (`PlayerLiquids`); health, breath and magic as cached: neither bar part runs (G+8 alone
+        // does not redraw, M l. 4423–4424).
         var iteration = start
         iteration.suffocation = 0x1e
         iteration.call.partial = true
+        iteration.call.healthBar = false
+        iteration.call.magicBar = false
         XCTAssertEqual(calls(first.draws)[15], .statusBar(iteration))
         XCTAssertEqual(first.music, [.play(track: 1)])
         XCTAssertEqual(first.requests, [.hideMenuBar, .hideCursor])

@@ -120,6 +120,10 @@ final class StatusBarTests: XCTestCase {
         let white: UInt8
         let black: UInt8
         let start: StatusBarState
+        let itemSmall: ConvertedPicture
+        let spellSmall: ConvertedPicture
+        /// `Color2Index`(clut 200 entry i) against clut 202.
+        let translate: [UInt8]
     }
 
     private func fixture() throws -> Fixture {
@@ -128,12 +132,16 @@ final class StatusBarTests: XCTestCase {
         let search = ColorSearch(model: .ruled)
         let c200 = try ColorLUT.load(id: 200, from: r, chain: .level)
         let c202 = try ColorLUT.load(id: 202, from: r, chain: .level)
-        let hud = try ConvertedPicture(source: try PictureSource.load(id: 133, from: r, chain: .frontEnd), clut: c200,
-                                       search: search)
-        return Fixture(r: r, search: search, c202: c202, hud: hud,
+        func picture(_ id: Int16) throws -> ConvertedPicture {
+            try ConvertedPicture(source: try PictureSource.load(id: id, from: r, chain: .frontEnd), clut: c200,
+                                 search: search)
+        }
+        return Fixture(r: r, search: search, c202: c202, hud: try picture(133),
                        white: search.index(of: RGB16(0xffff, 0xffff, 0xffff), in: c202),
                        black: search.index(of: RGB16(0, 0, 0), in: c202),
-                       start: GameGlobals(header: L.header).statusBar(levelName: L.header.name))
+                       start: GameGlobals(header: L.header).statusBar(levelName: L.header.name),
+                       itemSmall: try picture(703), spellSmall: try picture(701),
+                       translate: c200.entries.map { search.index(of: RGB16($0.red, $0.green, $0.blue), in: c202) })
     }
 
     private static func item(_ id: Int16, _ count: Int16) -> InventorySlot {
@@ -179,6 +187,37 @@ final class StatusBarTests: XCTestCase {
             }
             XCTAssertTrue(pixels.contains { one.port[$0] != f.white }, "the counts draw over the icons")
         }
+        // The item flash on slot 1 (M l. 4767–4790): flash 3 → s = 2; mode 0 colourises with RGB (2·0x5dc ×3), mode 1
+        // with (2·3000, 0, 0): each pixel (src & fg) | (~src & white) [MED]; mode 2 is a plain copy.
+        func flashed(_ mode: Int) throws -> [UInt8] {
+            var bar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: BoxRasterizer())
+            var s = f.start
+            s.inventory[1] = Self.item(6, 1)
+            s.itemFlash = 3
+            s.itemFlashSlot = 1
+            s.itemFlashMode = mode
+            var screen = IndexedFrame(fill: 0)
+            bar.update(s, screen: &screen)
+            return bar.port
+        }
+        var plainBar = try StatusBar(resources: f.r, screenClut: f.c202, search: f.search, text: BoxRasterizer())
+        var plainState = f.start
+        plainState.inventory[1] = Self.item(6, 1)
+        var plainScreen = IndexedFrame(fill: 0)
+        plainBar.update(plainState, screen: &plainScreen)
+        let grey = f.search.index(of: RGB16(3000, 3000, 3000), in: f.c202)
+        let red = f.search.index(of: RGB16(6000, 0, 0), in: f.c202)
+        XCTAssertNotEqual(grey, red)
+        let box1 = (0x1f..<0x36).flatMap { y in (0x121..<0x138).map { y * StatusBar.width + $0 } }
+        for (mode, fg) in [(0, grey), (1, red)] {
+            let port = try flashed(mode)
+            for (k, i) in box1.enumerated() {
+                let src = f.translate[Int(f.itemSmall.pixels[(0x17 + k / 23) * f.itemSmall.width + 6 * 0x17 + k % 23])]
+                XCTAssertEqual(port[i], (src & fg) | (~src & f.white), "mode \(mode) pixel \(k)")
+            }
+            XCTAssertTrue(box1.contains { port[$0] != plainBar.port[$0] }, "mode \(mode) colourises")
+        }
+        XCTAssertEqual(try flashed(2), plainBar.port)
     }
 
     /// `.UpdateItemStat`'s empty-box loop (M l. 4818–4830): only the **first** empty slot's box is painted black
@@ -204,6 +243,23 @@ final class StatusBarTests: XCTestCase {
         // Box 5 keeps the first drawing's black (its first empty box then); 6…29 still hold `.InitGameGlobals`' 0xFF.
         XCTAssertTrue(box(5).allSatisfy { bar.port[$0] == f.black })
         XCTAssertTrue((6..<30).allSatisfy { box($0).allSatisfy { bar.port[$0] == 0xff } })
+        // Spell id 2 (`+8` 1) is drawn as 3 in the strip (M l. 4748–4750): box 2 from 701's column 3, lower row.
+        s.inventory[2] = InventorySlot(id: 2, count: 1, field4: -1, field6: 0, isSpell: 1)
+        bar.update(s, screen: &screen)
+        for (k, p) in box(2).enumerated() {
+            let src = f.spellSmall.pixels[(0x17 + k / 23) * f.spellSmall.width + 3 * 0x17 + k % 23]
+            XCTAssertEqual(bar.port[p], f.translate[Int(src)], "spell 2 → icon 3, pixel \(k)")
+        }
+        XCTAssertTrue(box(2).enumerated().contains { k, p in
+            bar.port[p] != f.translate[Int(f.spellSmall.pixels[(0x17 + k / 23) * f.spellSmall.width + 2 * 0x17 + k % 23])]
+        }, "icons 2 and 3 differ")
+        // An empty selected slot (3, after a removal compacted the strip): the big icon's rect (id −1) is clipped
+        // away — nothing drawn there, no trap (M l. 4709–4718).
+        let big = (0x1e..<0x4d).flatMap { y in (0xd7..<0x103).map { y * StatusBar.width + $0 } }
+        let beforeBig = big.map { bar.port[$0] }
+        s.selectedSlot = 3
+        bar.update(s, screen: &screen)
+        XCTAssertEqual(big.map { bar.port[$0] }, beforeBig)
     }
 
     /// `.UpdateHealthMagic` reads G's maxima (M l. 4442–4455, 4535–4542): max health 0x2a0 (>> 3 = 0x54) → the empty
@@ -227,6 +283,14 @@ final class StatusBarTests: XCTestCase {
             for x in 0x1a3..<0x1e9 { XCTAssertEqual(at(x, y), hud(y - 7 + 18, x - 0x1a3), "magic (\(x), \(y))") }
             for x in 0x1e9..<0x1f7 { XCTAssertEqual(at(x, y), hud(y - 7, x - 0x1a3), "magic empty (\(x), \(y))") }
             for x in 0x1f7..<0x267 { XCTAssertEqual(at(x, y), hud(y - 7 + 36, x - 0x1a3), "magic past (\(x), \(y))") }
+        }
+        // Maxima past 0xc4 << 3 (0x700 >> 3 = 0xe0): the empty rect (h, 0)–(0xe0, 9) is clipped to the 196-px piece and
+        // the past-max rect (0xe0 … 0xc4) is empty — QuickDraw draws what lies inside, no trap.
+        s.maxHealth = 0x700
+        s.maxMagic = 0x700
+        bar.update(s, screen: &screen)
+        for y in 7..<16 {
+            for x in 0x11c..<0x19a { XCTAssertEqual(at(x, y), hud(y - 7, x - 0xd6), "wide empty (\(x), \(y))") }
         }
     }
 }

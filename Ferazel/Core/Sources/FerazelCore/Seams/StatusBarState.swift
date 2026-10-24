@@ -20,7 +20,8 @@ public struct StatusBarState: Equatable, Sendable {
     public var maxMagic: Int
     /// `G+0x08`: the suffocation countdown (the breath segment's tick colour while `G+6 < 1`).
     public var suffocation: Int
-    /// `PTR_DAT_1009fdbc` / `_DAT_1009fdb8`: the health / magic flash counters (`PlayerState` row 13 counts them down).
+    /// `PTR_DAT_1009fdbc` / `_DAT_1009fdb8`: the health / magic flash counters (flow-wide, `StatusBarCalls.flashes`;
+    /// row 13 counts them down).
     public var healthFlash: Int
     public var magicFlash: Int
     /// `PTR_DAT_1009fda8`: the item flash counter; `_DAT_1009fda4`: its slot; `_DAT_1009fda0`: its mode (0 grey, 1 red).
@@ -74,7 +75,8 @@ public struct StatusBarCall: Equatable, Sendable {
     /// param_2 ≠ 0: `.UpdateItemStat` runs even without a key step or an item flash.
     public var forceItems: Bool
     /// param_3 ≠ 0: `.UpdateHealthMagic(1)` instead of `.UpdateHealthMagic(param_1)` (M l. 4878–4883) — the bars take
-    /// the cached (skip-if-unchanged) path whatever param_1 is. (The plan's name; the dump's effect is that one.)
+    /// the cached (skip-if-unchanged) path whatever param_1 is (the plan's name; the dump's effect is that one) — Core
+    /// applies it (`healthBar` / `magicBar`).
     public var forceBars: Bool
     /// A direct `.UpdateItemStat()` (`.HandleLineActions` M l. 66311, 66325; `.RemoveItem` M l. 39658).
     public var itemsOnly: Bool
@@ -82,14 +84,20 @@ public struct StatusBarCall: Equatable, Sendable {
     public var textOnly: Bool
     /// `.UpdateStatusBar`'s key block stepped the selection in this call (`bVar1`, M l. 4885–4912).
     public var stepped: Bool
+    /// `.UpdateHealthMagic`'s health / magic part runs (its caches, Core's `StatusBarCalls.healthMagic`, M l.
+    /// 4417–4424, 4517–4521) — Render draws exactly those parts (HU review fix: one set of caches).
+    public var healthBar: Bool
+    public var magicBar: Bool
 
     public init(partial: Bool = false, forceItems: Bool = false, forceBars: Bool = false, itemsOnly: Bool = false,
-                textOnly: Bool = false, stepped: Bool = false) {
+                textOnly: Bool = false, stepped: Bool = false, healthBar: Bool = true, magicBar: Bool = true) {
         self.partial = partial
         self.forceItems = forceItems
         self.forceBars = forceBars
         self.itemsOnly = itemsOnly
         self.textOnly = textOnly
         self.stepped = stepped
+        self.healthBar = healthBar
+        self.magicBar = magicBar
     }
 }

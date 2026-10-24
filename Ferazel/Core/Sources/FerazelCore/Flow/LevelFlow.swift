@@ -56,6 +56,9 @@ public struct LevelCarry: Equatable, Sendable {
     public var tilesetsDisposed = true
     /// L1: the class face cache's loaded records and CLUT ids (`.LoadCachedSpriteFaces`' bars).
     public var cachedFaces = CachedFaces()
+    /// HU review fix: the status bar's globals (`StatusBarCalls`: `*_DAT_1009fd9c`, the `.UpdateHealthMagic` caches,
+    /// the flash counters) — data-section initialised only, so they run on through every level, map, death and game.
+    public var statusBar = StatusBarCalls()
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

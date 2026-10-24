@@ -59,8 +59,7 @@ enum ConvActions {
         case 1:
             w.globals.coins = w.globals.coins &- a
             if w.globals.coins < 0 { w.globals.coins = 0 }
-            let flashes = StatusBarCalls.Flashes(player: w.player)
-            out.draws.append(StatusBarCalls.textStats(globals: w.globals, flashes: flashes, levelName: levelName))
+            out.draws.append(w.statusBar.textStats(globals: w.globals, levelName: levelName))
         case 2:
             guard w.globals.addItem(a, count: b == 0 ? 1 : b) != -1 else { return }
             let call = PlayerState.SoundCall(cue: PlayerCue(call: .reg, snd: 501, priority: 1, volume: 0x100),
@@ -103,8 +102,7 @@ enum ConvActions {
     /// A direct `.UpdateItemStat()` on the live G (`StatusBarCalls.itemStat`: the op, then its `== 2 ∧ +8 → 3` store).
     private static func itemStat(_ w: SpriteWorld, levelName: String) -> DrawOp {
         var g = w.globals
-        let op = StatusBarCalls.itemStat(globals: &g, flashes: StatusBarCalls.Flashes(player: w.player),
-                                         levelName: levelName)
+        let op = w.statusBar.itemStat(globals: &g, levelName: levelName)
         w.globals = g
         return op
     }

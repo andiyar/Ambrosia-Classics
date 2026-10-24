@@ -272,6 +272,7 @@ final class LevelFlowTests: XCTestCase {
         expectCarry.waterOriginCol = s.waterEffects.originCol
         expectCarry.waterOriginRow = s.waterEffects.originRow
         expectCarry.tileCacheValid = true
+        expectCarry.statusBar = s.world.statusBar                     // HU: the status bar's globals ride it too
         XCTAssertEqual(carry, expectCarry)
         // Level 1's last walk filled at the start window: origin (0, 0), flag set, the cells `.FillCachedTileArray(0, 0)`
         // makes from level 1.
@@ -466,6 +467,7 @@ final class LevelFlowTests: XCTestCase {
         expectCarry.waterOriginCol = s.waterEffects.originCol
         expectCarry.waterOriginRow = s.waterEffects.originRow
         expectCarry.tileCacheValid = true
+        expectCarry.statusBar = s.world.statusBar                     // HU: the status bar's globals ride it too
         XCTAssertEqual(s.carry, expectCarry)
         XCTAssertEqual([s.carry.waterOriginCol, s.carry.waterOriginRow], [0, 2])       // the dying player's window
         XCTAssertEqual(s.carry.globals?.coins, 9)

@@ -199,8 +199,9 @@ public final class WorldMapRun {
 
     /// G (the flow's): `.ShowWorldMap` writes `unlocked` (+0x23e).
     public private(set) var globals: GameGlobals
-    /// HU: `*_DAT_1009fd9c`, the status bar's selection-key repeat counter (`StatusBarCalls`).
-    public private(set) var statusCalls = StatusBarCalls()
+    /// HU: the status bar's flow-wide globals (`StatusBarCalls`: the repeat counter, the `.UpdateHealthMagic` caches,
+    /// the flash counters — not counted down on the map) — the flow hands them in and takes them back.
+    public private(set) var statusCalls: StatusBarCalls
     /// The game's one random stream (Invariant 5).
     public private(set) var rng: FastRand
     public private(set) var fade: ScreenFade
@@ -289,9 +290,12 @@ public final class WorldMapRun {
     ///   - fade / music: the flow's gamma and music state.
     ///   - sprites: the node-sprite list as the previous map run left it (`sprites` after its exit — empty, M l. 67652).
     ///   - files: the prefs file, for the pause's ⌘M / ⌘F (P1).
+    ///   - statusBar: the flow's status-bar globals (HU).
     public init(resources: FerazelResources, prefs: FerazelPrefs, globals: GameGlobals, level: Int16, levelName: String,
                 exit1: Int16, exit2: Int16, levelComplete: Bool, seed: Int32, fade: ScreenFade,
-                music: MusicFade, sprites: [MapSprite] = [], files: FrontFiles? = nil) throws {
+                music: MusicFade, sprites: [MapSprite] = [], files: FrontFiles? = nil,
+                statusBar: StatusBarCalls = StatusBarCalls()) throws {
+        statusCalls = statusBar
         self.files = files
         self.resources = resources
         // `(int *)*_DAT_100a043c == 0 || *(int *)*_DAT_100a043c == 0` → the entry's error (M l. 67492–67493).
@@ -462,7 +466,8 @@ public final class WorldMapRun {
         out.add(.draw(.setScreenClut(id: Self.mapClut), port: .screen))
         // `_MTGetandDrawPICTResInRect(0x81, (0, 0, 640, 480))`, `_UpdateStatusBar(0, 0, 0)` (M l. 67504–67505).
         out.add(.draw(.drawPicture(id: 129, chain: .frontEnd, h: 0, v: 0), port: .screen))
-        out.add(.draw(statusBar(.mapEntry, keys: keys), port: .screen))
+        let entryBar = statusBar(.mapEntry, keys: keys, out: &out)
+        out.add(.draw(entryBar, port: .screen))
         out.add(.loadMapGraphics)                                                // M l. 67506
         // PICT 7000 into the background at (0, 0, 608, 384) (M l. 67507–67512).
         out.add(.draw(.copyPicture(id: Self.mapPicture, chain: .frontEnd, source: mapPictureFrame, dest: Self.viewRect,
@@ -482,7 +487,8 @@ public final class WorldMapRun {
         drawNodeSprites(out: &out)                                               // M l. 67536–67538
         copyNodeSpritesToScreen(out: &out)
         eraseNodeSprites(out: &out)
-        out.add(.draw(statusBar(.mapFirstFrame, keys: keys), port: .screen))     // M l. 67539
+        let firstBar = statusBar(.mapFirstFrame, keys: keys, out: &out)
+        out.add(.draw(firstBar, port: .screen))                                  // M l. 67539
         stages = [.musicIn, .gammaIn, .walkInit, .loopStart]
     }
 
@@ -537,14 +543,16 @@ public final class WorldMapRun {
                     walkStep = 1
                 }
                 levelName = levelNames.string(Int(levelOf(slot: cur))) ?? ""
-                out.add(.draw(statusBar(.mapIdle, keys: keys), port: .screen))
+                let idleBar = statusBar(.mapIdle, keys: keys, out: &out)
+                out.add(.draw(idleBar, port: .screen))
             }
             // The marker at the walk position (M l. 67580–67581), draw, copy, `_UpdateStatusBar(1, 0, 0)`.
             sprites[marker].h = at.h - 0x14
             sprites[marker].v = at.v - 0x14
             drawNodeSprites(out: &out)
             copyNodeSpritesToScreen(out: &out)
-            out.add(.draw(statusBar(.mapIteration, keys: keys), port: .screen))
+            let bar = statusBar(.mapIteration, keys: keys, out: &out)
+            out.add(.draw(bar, port: .screen))
             // `_DeadTime()`, then wait until `TickCount − 1 ≥ start` (M l. 67585–67588).
             phase = .tail(due: now &+ 1)
             return false
@@ -853,11 +861,19 @@ public final class WorldMapRun {
         return MapLink(h1: Int(n.h), v1: Int(n.v), h2: Int(t?.h ?? 0), v2: Int(t?.v ?? 0))
     }
 
-    /// `.UpdateStatusBar` at `site` with hdr+0x25c4 = `levelName` (HU, BC39): the selection step on G with actions
-    /// 8 / 7 of the live `keys`; no flash (the counters are the level's `PlayerState`).
-    private func statusBar(_ site: StatusBarCalls.Site, keys: KeyState) -> DrawOp {
-        statusCalls.update(site, globals: &globals, actions: InputActions(keys: keys, prefs: prefs),
-                           levelName: levelName)
+    /// `.UpdateStatusBar` at `site` with hdr+0x25c4 = `levelName` (HU, BC39): `.UpdateHealthMagic`'s G writes and
+    /// caches, the selection step on G with actions 8 / 7 of the live `keys`; its suffocation tick (snd 442,
+    /// `.STPlayRegSound(…, 1, 0x100)`; nothing with sound off) goes out before the bar's draw.
+    private func statusBar(_ site: StatusBarCalls.Site, keys: KeyState, out: inout WorldMapOutput) -> DrawOp {
+        let made = statusCalls.update(site, globals: &globals, actions: InputActions(keys: keys, prefs: prefs),
+                                      levelName: levelName)
+        if made.suffocationTick && prefs.soundOn != 0 {
+            var sound = FrontOutput()
+            sound.sounds.append(SoundCues.regSound(snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100,
+                                                   global: SoundCues.globalVolume(prefs)))
+            out.append(WorldMapOutput(output: sound))
+        }
+        return made.op
     }
 }
 

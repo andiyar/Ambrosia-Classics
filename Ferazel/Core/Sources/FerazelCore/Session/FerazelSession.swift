@@ -158,6 +158,7 @@ public final class FerazelSession {
             if refreshFacing { world.globals.startFacing = Int16(L.header.startFacingLeft) }
         }
         world.globals.crunchLog = carry.crunchLog
+        world.statusBar = carry.statusBar
         // `.InitParticles` (`.SetupLevel`, `bl` 10004fc0) clears byte +0 of every record and keeps the count, hint and
         // high-water mark (particles §1.1): they run on from the previous level (E1a).
         world.particles = ParticlePool(counters: carry.particles)
@@ -257,17 +258,20 @@ public final class FerazelSession {
                 updateStatusBar(.levelStart, keys: keys)]
     }
 
-    /// HU: `*_DAT_1009fd9c`, the status bar's selection-key repeat counter (`StatusBarCalls`).
-    public private(set) var statusCalls = StatusBarCalls()
-
-    /// `.UpdateStatusBar` at `site` (HU, `StatusBarCalls`): the selection step on G with actions 8 / 7 of `keys` (the
-    /// live `IsInputKeyPressed` reads), the flashes from the player, the op.
+    /// `.UpdateStatusBar` at `site` (HU, `StatusBarCalls` on the world's flow-wide `statusBar`): `.UpdateHealthMagic`'s
+    /// G writes and caches, the selection step on G with actions 8 / 7 of `keys` (the live `IsInputKeyPressed` reads),
+    /// the op. The suffocation tick (snd 442, `.STPlayRegSound(…, 1, 0x100)`) joins the frame's sound calls here.
     public func updateStatusBar(_ site: StatusBarCalls.Site, keys: KeyState) -> DrawOp {
         var g = world.globals
-        let op = statusCalls.update(site, globals: &g, actions: InputActions(keys: keys, prefs: prefs),
-                                    flashes: StatusBarCalls.Flashes(player: world.player), levelName: level.header.name)
+        let made = world.statusBar.update(site, globals: &g, actions: InputActions(keys: keys, prefs: prefs),
+                                          levelName: level.header.name)
         world.globals = g
-        return op
+        if made.suffocationTick {
+            world.player.soundCalls.append(PlayerState.SoundCall(
+                cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
+                scrollH: camera.scrollH, scrollV: camera.scrollV))
+        }
+        return made.op
     }
 
     /// `.AnimateCLUT @ 1001180c`'s `FastRand(4000)` count (l. 8961–9062, raw `10011bc4`): with header `0x2732` (count)
@@ -770,6 +774,7 @@ public final class FerazelSession {
         c.waterOriginCol = waterEffects.originCol
         c.waterOriginRow = waterEffects.originRow
         c.tileCacheValid = world.player.tileCacheValid
+        c.statusBar = world.statusBar
         return c
     }
 

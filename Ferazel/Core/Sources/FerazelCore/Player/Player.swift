@@ -437,9 +437,10 @@ public enum Player {
         }
         if 0 < p.noCling { p.noCling -= 1 }
         if 0 < p.countdown05a8 { p.countdown05a8 -= 1 }
-        if 0 < p.countdownFDBC { p.countdownFDBC -= 1 }
-        if 0 < p.countdownFDB8 { p.countdownFDB8 -= 1 }
-        if 0 < p.countdownFDA8 { p.countdownFDA8 -= 1 }
+        // The status bar's flash counters (flow-wide globals, `StatusBarCalls.flashes`; M l. 44728–44736).
+        if 0 < w.statusBar.flashes.health { w.statusBar.flashes.health -= 1 }
+        if 0 < w.statusBar.flashes.magic { w.statusBar.flashes.magic -= 1 }
+        if 0 < w.statusBar.flashes.item { w.statusBar.flashes.item -= 1 }
         if 0 < p.carpetLock { p.carpetLock -= 1 }
         if 0 < p.bossGrab { p.bossGrab -= 1 }
         if 0 < p.countdown073c {
