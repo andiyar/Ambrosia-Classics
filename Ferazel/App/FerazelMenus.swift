@@ -21,21 +21,22 @@ import FerazelCore
 /// still goes through the flow's queued quit event). Enable rules, `.UpdateMenus` (M l. 28763–28792): not paused —
 /// New Game and Restore Game enabled, Abort Game disabled; paused — the reverse; check marks Music = prefs+0x0c,
 /// Sound Effects = prefs+0x0b (the flow's `MenuState`). **Menus act only where the original handled menu events**
-/// (`GameFlow.menusLive`: the main-menu loop and the pause loop's poll) and never while a dialog is up; elsewhere every
+/// (the flow's `MenuState.menusLive`: the main-menu loop and the pause loop) and never while a dialog is up; elsewhere every
 /// item is disabled and its ⌘ key falls through to the game's polled keys (`GetKeys`: a level's ⌘Q / ⌘W / ⌘P).
 /// In the main menu the ⌘ keys of its own letters (N, O, Q, P — `.MainMenu`'s `GetKeys` block runs before the pass's
 /// `.CheckEvent`) fall through too, so they act as the polled letter (the button track, then the action).
 @MainActor final class FerazelMenus: NSObject, NSMenuDelegate, NSMenuItemValidation {
     let bar = NSMenu(title: "main")
-    /// What `.UpdateMenus` last said (paused, the check marks).
-    private var state = MenuState(menusLive: false, paused: false, musicOn: true, soundOn: true)
+    /// What the flow last sent (`.UpdateMenus` and the menu loop's entry / exit): live, paused, the check marks — the
+    /// one source for what the menu bar takes.
+    private(set) var state = MenuState(menusLive: false, paused: false, musicOn: true, soundOn: true)
     private var musicItem: NSMenuItem?
     private var soundItem: NSMenuItem?
 
-    /// The flow takes picks now (`GameFlow.menusLive`) and no dialog or panel is up.
-    var isLive: () -> Bool = { false }
-    /// The game's polled main-menu letters are being read (the menu loop, no level or map running).
-    var inMainMenu: () -> Bool = { false }
+    /// A dialog or a file panel is up (no pick is taken).
+    var modalUp: () -> Bool = { true }
+    /// The game's polled main-menu letters are being read: the menu loop is live and not paused.
+    private var inMainMenu: Bool { state.menusLive && !state.paused }
     /// A pick → `GameFlow.menuChosen`.
     var chosen: (PauseRun.MenuItem) -> Void = { _ in }
 
@@ -111,7 +112,7 @@ import FerazelCore
     }
 
     private func enabled(_ item: PauseRun.MenuItem) -> Bool {
-        guard isLive() else { return false }
+        guard state.menusLive, !modalUp() else { return false }
         switch item {
         case .newGame, .restoreGame: return !state.paused
         case .abortGame: return state.paused
@@ -134,7 +135,7 @@ import FerazelCore
         }
         guard let item = menu.items.first(where: { $0.keyEquivalent == key }),
               let p = item.representedObject as? Pick, enabled(p.item) else { return false }
-        if inMainMenu(), Self.mainMenuLetters.contains(Int(event.keyCode)) { return false }
+        if inMainMenu, Self.mainMenuLetters.contains(Int(event.keyCode)) { return false }
         keyPick = p.item
         target.pointee = self
         action.pointee = #selector(keyPicked(_:))

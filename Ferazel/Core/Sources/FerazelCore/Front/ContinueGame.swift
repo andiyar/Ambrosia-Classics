@@ -35,9 +35,11 @@ extension GameFlow {
     /// `.ContinueGame(reply)` (nil = `0`: ask for the file).
     func continueGame(_ reply: SavedGameRef?, _ out: inout FrontOutput) {
         state = .continueGame
+        menuLoopListening(false, &out)                                  // the menu loop left (A1b)
         run([
             { f, now, _, out in
                 // `FlushEvents(0xff7f, 0)`, `MTShowWindow`, `.InitGameGlobals` (M l. 6705–6707), then `.OpenSG`.
+                f.flushEvents()
                 f.initGameGlobals()
                 f.fileAnswer = nil
                 if let reply {
@@ -88,6 +90,7 @@ extension GameFlow {
     private func continueReturns(_ out: inout FrontOutput) {
         out.present = true
         state = .mainMenu
+        menuLoopListening(true, &out)
     }
 
     /// M l. 6712–6744: the block taken in, the refusals, the default branch.
@@ -119,7 +122,10 @@ extension GameFlow {
         // `.InitMapLevelNames`, `OpenDefaultWorldLevel(*feac)`.
         guard let h = try? LevelFile.load(from: resources, level: Int16(truncatingIfNeeded: levelNumber)).header else {
             report(Self.levelLoadError, &out)                           // design §9 (d), D35
-            run([{ f, _, _, _ in f.state = .mainMenu }])
+            run([{ f, _, _, out in
+                f.state = .mainMenu
+                f.menuLoopListening(true, &out)
+            }])
             return
         }
         if saveBlock.isCheckpoint == 0 { globals.startFacing = Int16(h.startFacingLeft) }

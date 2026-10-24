@@ -190,8 +190,11 @@ public struct PauseRun {
     /// returns — the pause stops here (no exit sequence) and the host ends with `.Quit`.
     public private(set) var quitDispatched = false
     /// A1b: Game ▸ Preferences… while paused — `.Options` with the pause flag set (O1's model, `paused: true`); the App
-    /// drives it (through the host and `GameFlow.prefsDialog`) and answers `dialogDone` once its `result` is set.
-    public var prefsDialog: PrefsDialogModel?
+    /// drives it (through the host and `GameFlow.prefsDialog`) and answers `dialogDone` once its `result` is set. While
+    /// the dialog is up it cannot be cleared from outside (a nil written then is ignored — the close needs the model).
+    public var prefsDialog: PrefsDialogModel? {
+        didSet { if prefsDialog == nil, modalOpen, menu == .preferences { prefsDialog = oldValue } }
+    }
     /// A1b: Apple ▸ About while paused — `.Credits`' scroll while DLOG 600 is up (`GameFlow.credits`).
     public private(set) var credits: CreditsScroll?
     /// The Options dialog's key names and its last captured modifier (`*PTR_DAT_100a0b64`, a global): the host hands

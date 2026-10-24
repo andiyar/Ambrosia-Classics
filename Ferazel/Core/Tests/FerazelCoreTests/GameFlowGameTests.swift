@@ -315,6 +315,47 @@ final class GameFlowGameTests: XCTestCase {
         }) { $0.state == .quit }
         XCTAssertTrue(rig9.flow.quitting)
         XCTAssertTrue(rig9.flow.appleEvents.isEmpty)
+
+        // A1b through the flow, as the App drives it: File ▸ New Game from the menu bar (`*fd5c = 1`, `.NewGame`, no
+        // button track) — the menu loop left, so the App's menus go dead; in a level they stay dead until the pause loop.
+        let caps: (GameFlow) -> FrontInput = { _ in FrontInput(capsLock: true) }
+        let rig6 = Rig(r)
+        rig6.flow.keyCharacter = { _ in "q" }
+        rig6.toMenu()
+        XCTAssertEqual(rig6.flow.defaultWorld, 0)
+        rig6.flow.menuChosen(.newGame)
+        let started = rig6.drive { self.isRunning($0, level: 1) }
+        XCTAssertEqual(rig6.flow.defaultWorld, 1)
+        XCTAssertEqual(rig6.flow.levelNumber, 1)
+        XCTAssertTrue(started.first?.out.requests.contains(.showMenuBarItems(MenuState(
+            menusLive: false, paused: false, musicOn: true, soundOn: true))) ?? false)
+        XCTAssertFalse(rig6.flow.menusLive, "a level not paused")
+        rig6.drive(input: caps) { $0.menusLive }
+        XCTAssertNotNil(rig6.flow.levelRun?.pause)
+        // Game ▸ Preferences… while paused: the pause's model through `flow.prefsDialog` (paused, the flow's key names).
+        rig6.flow.menuChosen(.preferences)
+        rig6.drive(max: 1, input: caps) { _ in true }
+        var pd = try XCTUnwrap(rig6.flow.prefsDialog)
+        XCTAssertTrue(pd.paused)
+        pd.hit(3, value: 2)
+        XCTAssertEqual(pd.keyDown(char: 0x7a, keyCode: 0x06), .captured(item: 7))
+        XCTAssertEqual(pd.itemTexts[7], "Q")
+        pd.hit(1)
+        rig6.flow.prefsDialog = pd
+        XCTAssertEqual(rig6.flow.prefsDialog?.result, .ok)
+        rig6.flow.dialogDone(.ok)
+        rig6.drive(max: 1, input: caps) { _ in true }
+        XCTAssertNil(rig6.flow.prefsDialog)
+        XCTAssertEqual(rig6.flow.levelRun?.pause?.live.live.keys[0], 0x06)
+        // Apple ▸ About while paused: the pause's `.Credits` through `flow.credits`.
+        rig6.flow.menuChosen(.about)
+        let about = rig6.drive(max: 1, input: caps) { _ in true }
+        XCTAssertEqual(dialogs(about), [.credits])
+        XCTAssertNotNil(rig6.flow.credits)
+        rig6.flow.dialogDone(.ok)
+        rig6.drive(max: 1, input: caps) { _ in true }
+        XCTAssertNil(rig6.flow.credits)
+        XCTAssertTrue(rig6.flow.menusLive)
     }
 
     func testLevel1ToMapToLevel2() throws {
@@ -467,6 +508,40 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertFalse(rig3.flow.quitRequested)
         XCTAssertTrue(rig3.flow.appleEvents.isEmpty)
         XCTAssertEqual(mapQuit.last?.out.requests.suffix(2), [.showMenuBar, .quit])
+
+        // A1b on the map's pause, through the flow: the menus dead on the map until the pause loop; Game ▸ Preferences…
+        // gets the flow's key names and its last captured modifier, and the one captured comes back to the map.
+        let caps: (GameFlow) -> FrontInput = { _ in FrontInput(capsLock: true) }
+        let rig4 = Rig(r)
+        rig4.flow.keyCharacter = { _ in "q" }
+        rig4.flow.lastModifier = 0x3a
+        rig4.toMenu()
+        rig4.press(0x2d)
+        rig4.drive { self.isRunning($0, level: 1) }
+        try touchExit(try XCTUnwrap(rig4.flow.levelRun?.session), record: 66)
+        rig4.drive { self.onIdleMap($0) }
+        XCTAssertFalse(rig4.flow.menusLive, "the map not paused")
+        rig4.drive(input: caps) { $0.menusLive }
+        XCTAssertNotNil(rig4.flow.worldMap?.pause)
+        rig4.flow.menuChosen(.preferences)
+        rig4.drive(max: 1, input: caps) { _ in true }
+        var pd = try XCTUnwrap(rig4.flow.prefsDialog)
+        XCTAssertTrue(pd.paused)
+        XCTAssertEqual(pd.lastModifier, 0x3a)
+        pd.hit(3, value: 2)
+        XCTAssertEqual(pd.keyDown(char: 0x7a, keyCode: 0x06), .captured(item: 7))
+        XCTAssertEqual(pd.itemTexts[7], "Q")
+        XCTAssertEqual(pd.idle(modifiers: 0x1000), .captured(item: 8))
+        pd.hit(1)
+        rig4.flow.prefsDialog = pd
+        XCTAssertEqual(rig4.flow.prefsDialog?.result, .ok)
+        rig4.flow.dialogDone(.ok)
+        rig4.drive(max: 1, input: caps) { _ in true }
+        XCTAssertNil(rig4.flow.prefsDialog)
+        XCTAssertEqual(rig4.flow.worldMap?.lastModifier, 0x3a, "taken back only when the pause ends")
+        rig4.drive { $0.worldMap?.pause == nil }
+        XCTAssertEqual(rig4.flow.worldMap?.lastModifier, 0x3b)
+        XCTAssertEqual(rig4.flow.worldMap?.prefs.keys[0], 0x06)
     }
 
     func testDeathWithoutSaveGoesToMenu() throws {

@@ -242,6 +242,69 @@ final class PauseKeysTests: XCTestCase {
         XCTAssertTrue(pm.isDone)
         XCTAssertFalse(pm.acceptsMenus)
         XCTAssertFalse(quit.requests.contains(.hideMenuBar), "no pause exit")
+        XCTAssertEqual(pm.polls, 4, "the Quit pick's poll")
+
+        // Preferences… with music loaded and the prefs file: the record written back on every close; the model's live
+        // side taken back (Music off in the dialog shut the movie down at once); `.MakeCurrPrefs` paused — Music on
+        // again in the dialog restarts nothing.
+        final class Prefs: FrontFiles {
+            var stored: [Data] = []
+            func loadPrefs() -> Data? { stored.last }
+            func storePrefs(_ record: Data) throws { stored.append(record) }
+            func readSavedGame(_ ref: SavedGameRef) throws -> SaveBlock { SaveBlock() }
+            func writeSavedGame(_ block: SaveBlock, to ref: SavedGameRef) throws(SaveWriteError) {}
+        }
+        let files = Prefs()
+        var music = MusicFade()
+        _ = music.setAIFFMusic(5)
+        var pl = PauseRun(resources: r, onMap: true, prefs: FerazelPrefs(), music: music, levelClut: nil, scroll: nil,
+                          files: files)
+        _ = pl.enter()
+        _ = pl.painted(now: 0)
+        var now: UInt32 = 0
+        while !pl.acceptsMenus, now < 100 { _ = pl.tick(now: now, input: caps); now += 1 }
+        XCTAssertTrue(pl.acceptsMenus)
+        func preferences(_ body: (inout PrefsDialogModel) -> Void) throws -> FrontOutput {
+            pl.menuChosen(.preferences)
+            _ = pl.tick(now: now, input: caps)
+            now += 1
+            var model = try XCTUnwrap(pl.prefsDialog)
+            body(&model)
+            pl.prefsDialog = model
+            pl.dialogDone(ok: true)
+            let o = pl.tick(now: now, input: caps)
+            now += 1
+            XCTAssertNil(pl.prefsDialog)
+            return o
+        }
+        let off = try preferences { m in
+            m.hit(3, value: 3)
+            XCTAssertEqual(m.hit(8), [.stop])
+            m.hit(1)
+        }
+        XCTAssertEqual(files.stored.count, 1)
+        XCTAssertEqual(files.stored.last.map(FerazelPrefs.init(record:))?.musicOn, 0)
+        XCTAssertFalse(pl.live.music.loaded)
+        XCTAssertEqual(off.music, [])
+        let on = try preferences { m in
+            m.hit(3, value: 3)
+            m.hit(8)
+            m.hit(1)
+        }
+        XCTAssertEqual(files.stored.count, 2)
+        XCTAssertEqual(pl.live.live.musicOn, 1)
+        XCTAssertEqual(on.music, [], "paused: the music is not restarted")
+        // A cleared model while the dialog is up is ignored (the close needs it): the pause cannot stall.
+        pl.menuChosen(.preferences)
+        _ = pl.tick(now: now, input: caps)
+        now += 1
+        pl.prefsDialog = nil
+        XCTAssertNotNil(pl.prefsDialog)
+        pl.dialogDone(ok: false)
+        _ = pl.tick(now: now, input: caps)
+        XCTAssertNil(pl.prefsDialog)
+        XCTAssertEqual(files.stored.count, 3)
+        XCTAssertTrue(pl.acceptsMenus)
     }
 
     // MARK: - Pause entry and exit

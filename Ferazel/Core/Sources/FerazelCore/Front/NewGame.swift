@@ -49,10 +49,12 @@ extension GameFlow {
     /// `.NewGame` (the menu has set `fd5c = 1`).
     func newGame(_ out: inout FrontOutput) {
         state = .newGame
+        menuLoopListening(false, &out)                                  // the menu loop left (A1b)
         run([
             { f, _, input, out in
                 // `FlushEvents(0xff7f, 0)`, `KillAllSprites` (none outside a level), `.InitGameGlobals`, `fe00 = 0`,
                 // `ReportMem`; `OpenDefaultWorld` + `.InitMapLevelNames` (M l. 5747–5757).
+                f.flushEvents()
                 f.initGameGlobals()
                 f.savedThisGame = false
                 if input.keys.isPressed(Self.optionKey) { f.report(Self.noMoreCheating, &out) }
@@ -63,7 +65,10 @@ extension GameFlow {
                 f.levelNumber = n
                 guard f.levelExists(n) else {
                     f.report(Self.levelLoadError, &out)
-                    f.run([{ f, _, _, _ in f.state = .mainMenu }])
+                    f.run([{ f, _, _, out in
+                        f.state = .mainMenu
+                        f.menuLoopListening(true, &out)
+                    }])
                     return
                 }
                 // `DAT_100a5106 = 0`, `*0088 = 0`, `*fd54 = 0` (M l. 5813–5815).

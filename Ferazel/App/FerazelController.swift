@@ -136,7 +136,8 @@ import HectorShell
                                 seed: FastRand.clockSeed(secondsSince1904: clock.secondsSince1904, ticks: clock.ticks),
                                 files: files, levels: self)
             flow.startLevel = Self.startLevel()
-            flow.keyCharacter = { Self.layoutCharacter($0) }               // `KeyTranslate` (the Options key names)
+            // `KeyTranslate` (the Options key names): the flow calls it on the main thread (its ticks, the dialog).
+            flow.keyCharacter = { code in MainActor.assumeIsolated { Self.layoutCharacter(code) } }
             flow.dateTime = { FastRand.systemClock().secondsSince1904 }   // `GetDateTime`
             self.flow = flow
             if let ref = pendingOpen {
@@ -239,22 +240,15 @@ import HectorShell
     private func installMenus() {
         fullScreenItem.menu?.removeItem(fullScreenItem)
         let m = FerazelMenus(resources: resources, title: Self.title, fullScreen: fullScreenItem)
-        m.isLive = { [weak self] in
-            guard let self, let flow else { return false }
-            return flow.menusLive && !modalUp
-        }
-        m.inMainMenu = { [weak self] in
-            guard let flow = self?.flow else { return false }
-            return flow.state == .mainMenu && flow.levelRun == nil && flow.worldMap == nil
-        }
+        m.modalUp = { [weak self] in self?.modalUp ?? true }
         m.chosen = { [weak self] item in self?.flow?.menuChosen(item) }
         menus = m
         NSApp.mainMenu = m.bar
         let center = NotificationCenter.default
         center.addObserver(forName: NSMenu.didBeginTrackingNotification, object: m.bar, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, let flow = self.flow else { return }
-                self.menuTracking = flow.menusLive && !self.modalUp
+                guard let self else { return }
+                self.menuTracking = (self.menus?.state.menusLive ?? false) && !self.modalUp
             }
         }
         center.addObserver(forName: NSMenu.didEndTrackingNotification, object: m.bar, queue: .main) { [weak self] _ in
@@ -305,7 +299,7 @@ import HectorShell
 
     /// `KeyTranslate` for the Options dialog's key names (`.ConvertKeyName`'s fallback): the character the current
     /// keyboard layout gives `code` with no modifiers; nil when it gives none.
-    nonisolated static func layoutCharacter(_ code: Int16) -> String? {
+    static func layoutCharacter(_ code: Int16) -> String? {
         guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
               let raw = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
         let data = Unmanaged<CFData>.fromOpaque(raw).takeUnretainedValue() as Data
@@ -315,7 +309,7 @@ import HectorShell
         let status = data.withUnsafeBytes { buffer -> OSStatus in
             guard let layout = buffer.bindMemory(to: UCKeyboardLayout.self).baseAddress else { return -1 }
             return UCKeyTranslate(layout, UInt16(bitPattern: code), UInt16(kUCKeyActionDisplay), 0,
-                                  UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysBit), &dead,
+                                  UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysMask), &dead,
                                   chars.count, &length, &chars)
         }
         guard status == noErr, length > 0 else { return nil }

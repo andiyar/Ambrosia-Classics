@@ -415,8 +415,34 @@ public final class GameFlow {
         pendingMenu = item
     }
 
-    /// The main menu's pick waiting for the pass's `.CheckEvent`.
+    /// The main menu's pick waiting for the pass's `.CheckEvent` — an event in the OS queue: a pick made while a
+    /// button flashes waits there, and the `FlushEvents(0xff7f, 0)` that opens each button's call (`.NewGame`,
+    /// `.ContinueGame`, `.Options`, `.Credits`, `.Quit` — M l. 5745, 6705, 7266, 7296, 7458) drops it (`flushEvents`).
     private var pendingMenu: PauseRun.MenuItem?
+
+    /// `FlushEvents(0xff7f, 0)`: every OS event but disk events — a waiting menu pick is dropped (the high-level queue,
+    /// `appleEvents`, is not touched).
+    func flushEvents() {
+        pendingMenu = nil
+    }
+
+    /// The menu-loop liveness the App was last sent (`MenuState.menusLive` — the App's one source for the menu bar):
+    /// `.UpdateMenus` in the menu loop sends it live; leaving the loop for a game (`.NewGame`, `.ContinueGame`) sends it
+    /// dead, and a Continue that comes back without a game (cancelled, refused, a level-load error) live again. Inside a
+    /// game the pause and the level's Options send their own.
+    private var menuBarListening = false
+
+    /// Sends `MenuState(menusLive: live)` (not paused, the live check marks) when it changes.
+    func menuLoopListening(_ live: Bool, _ out: inout FrontOutput) {
+        guard live != menuBarListening else { return }
+        menuBarListening = live
+        out.requests.append(menuState(live: live))
+    }
+
+    private func menuState(live: Bool) -> ShellRequest {
+        .showMenuBarItems(MenuState(menusLive: live, paused: false, musicOn: toggles.live.musicOn != 0,
+                                    soundOn: toggles.live.soundOn != 0))
+    }
 
     /// `.HandleMenuSelection` in the menu loop (not paused: Abort Game is disabled).
     private func menuSelection(_ item: PauseRun.MenuItem, _ out: inout FrontOutput) {
@@ -561,9 +587,8 @@ public final class GameFlow {
 
     /// `.UpdateMenus` (M l. 28763ff): the menus live in the menu loop, the Music / Sound Effects check marks.
     func updateMenus(_ out: inout FrontOutput) {
-        out.requests.append(.showMenuBarItems(MenuState(menusLive: true, paused: false,
-                                                        musicOn: toggles.live.musicOn != 0,
-                                                        soundOn: toggles.live.soundOn != 0)))
+        menuBarListening = true
+        out.requests.append(menuState(live: true))
     }
 
     /// `.STPlayRegSound(snd, 10, 0x55)`: nothing with sound off (prefs+0x0b). F1 at boot does not silence it:
@@ -785,6 +810,7 @@ public final class GameFlow {
         run([
             { f, _, _, out in
                 // `FlushEvents`, `InputActivate(0,0)` (no InputSprocket), `ShowCursorSafe`, the prefs file re-read.
+                f.flushEvents()
                 out.requests.append(.showCursor)
                 let record = f.files.loadPrefs().map(FerazelPrefs.init(record:)) ?? FerazelPrefs()
                 f.prefsDialog = PrefsDialogModel(record: record, live: f.toggles, paused: false,
@@ -814,6 +840,10 @@ public final class GameFlow {
     private func creditsDialog() {
         run([
             { f, now, _, out in
+                // `FlushEvents(0xff7f, 0)`, then `.DoAboutDialog(600, 4803)`: it closes on `Button()` down inside
+                // (`FlushEvents(mDownMask)` takes only the mouse-down) and `.Credits` returns at once — nothing waits
+                // for the button to come up; the polled button reads down until it does, as the original's.
+                f.flushEvents()
                 let size = ChapterScreenRun.frameSize(
                     f.resources.resource(type: "PICT", id: CreditsScroll.stripPicture, chain: .frontEnd)?.data)
                     ?? (144, 811)
@@ -836,6 +866,7 @@ public final class GameFlow {
         run([
             { f, now, _, out in
                 // `InitCursor`, `ShowCursorSafe`, `SetWatchCursor`, `FlushEvents`, `FadeAIFFMusic(0,1)`.
+                f.flushEvents()
                 out.requests.append(.showCursor)
                 f.block(f.toggles.music.fadeAIFFMusic(direction: 0, ticks: 1, prefs: f.toggles.live), now, &out)
             },

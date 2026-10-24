@@ -531,6 +531,60 @@ final class GameFlowMenuTests: XCTestCase {
         t &+= 1
         XCTAssertEqual(flow.state, .mainMenu)
         XCTAssertFalse(flow.quitting, "a pick while the menus were not live is dropped")
+        _ = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertFalse(flow.quitting, "dropped, not left for the next pass")
+        // A pick made while a button flashes waits in the OS queue — and the button's call opens with `FlushEvents`
+        // (`.Credits`, M l. 7296): dropped, it never fires on the return to the menu.
+        _ = flow.tick(now: t, input: FrontInput(keys: KeyState(pressed: [0x08])))
+        t &+= 1
+        XCTAssertEqual(flow.state, .mainMenu, "C's flash")
+        XCTAssertTrue(flow.menusLive)
+        flow.menuChosen(.music)
+        drive(flow, &t, max: 20) { $0.state == .credits }
+        XCTAssertEqual(flow.state, .credits)
+        flow.dialogDone(.ok)
+        for _ in 0..<3 { _ = flow.tick(now: t, input: FrontInput()); t &+= 1 }
+        XCTAssertEqual(flow.state, .mainMenu)
+        XCTAssertEqual(flow.toggles.live.musicOn, 1, "the flushed ⌘M never toggled")
+        XCTAssertTrue(flow.menusLive)
+        // Game ▸ Preferences… → `.Options` (not paused): DLOG 6900 at once, no button track.
+        flow.menuChosen(.preferences)
+        let options = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(options.requests, [.showCursor, .dialog(.preferences)])
+        XCTAssertEqual(pictures(options), [])
+        XCTAssertEqual(flow.state, .options)
+        XCTAssertEqual(flow.prefsDialog?.paused, false)
+        flow.dialogDone(.cancel)
+        _ = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.state, .mainMenu)
+        XCTAssertNil(flow.prefsDialog)
+        XCTAssertEqual(flow.toggles.live.soundOn, 1, "the record re-read (no file: the defaults) made current")
+        // File ▸ Restore Game... → `.ContinueGame(0)`: the menu loop left (the App's menus dead), the file dialog;
+        // cancelled → back in the menu loop (live again).
+        let dead = ShellRequest.showMenuBarItems(MenuState(menusLive: false, paused: false, musicOn: true, soundOn: true))
+        let live = ShellRequest.showMenuBarItems(MenuState(menusLive: true, paused: false, musicOn: true, soundOn: true))
+        flow.menuChosen(.restoreGame)
+        let restore = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.state, .continueGame)
+        XCTAssertEqual(restore.requests, [dead, .getFile(prompt: GameFlow.continuePrompt)])
+        flow.fileDone(.cancelled)
+        let cancelled = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.state, .mainMenu)
+        XCTAssertEqual(cancelled.requests, [live])
+        // One event per `.CheckEvent`: Game ▸ Music (`.ToggleMusic`) is taken; the system quit queued with it waits.
+        flow.menuChosen(.music)
+        flow.quitEvent()
+        let music = flow.tick(now: t, input: FrontInput())
+        t &+= 1
+        XCTAssertEqual(flow.toggles.live.musicOn, 0)
+        XCTAssertEqual(music.prefs?.musicOn, 0)
+        XCTAssertFalse(flow.quitting)
+        XCTAssertTrue(flow.appleEvents.quit)
         // File ▸ Quit → `.Quit` at once (no confirm, no button track).
         flow.menuChosen(.quit)
         let quit = flow.tick(now: t, input: FrontInput())
