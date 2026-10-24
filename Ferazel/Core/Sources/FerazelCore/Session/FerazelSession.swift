@@ -795,10 +795,10 @@ public final class FerazelSession {
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels). // later:
     /// Phase 4 — the Box class's `.HitBoxSprite` (box vs box / statue / platform; W3 builds the boxes standing still),
-    /// Phase 4–5 (enemies, shots). This form (no light table) is the test-only one: its light calls go to a scratch table.
-    /// The session's hit callback: `hitCallback` on `lightTable`.
+    /// Phase 4–5 (enemies, shots). The session's form: `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) { Self.hitCallback(w, a, b, lights: &lightTable) }
 
+    /// The test-only form (no light table): its light calls go to a scratch table.
     static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         var scratch = LightTable()
         hitCallback(w, a, b, lights: &scratch)
