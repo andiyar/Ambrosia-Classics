@@ -146,7 +146,7 @@ final class Phase2GoldenTests: XCTestCase {
         for (keys, n) in Self.swimRoute + Self.poolStrokes { for _ in 0..<n {
             let before = liquidParticles(s)
             let wasDry = try player(s).waterRow == 0
-            let ops = Self.answeringTalk(s, s.step(keys: KeyState(pressed: keys)))
+            let ops = Self.answeringTalk(s, s.step(keys: KeyState(pressed: keys)), keys: KeyState(pressed: keys))
             try r.apply(ops)
             i += 1
             chain.append(fnv1a(r.screen.pixels))
@@ -198,7 +198,7 @@ final class Phase2GoldenTests: XCTestCase {
         var i = 0
         let script = Self.swimRoute + Self.poolStrokes + Self.poolExit + Self.playCycle + Self.playCycle
         for (keys, n) in script { for _ in 0..<n {
-            let ops = Self.answeringTalk(s, s.step(keys: KeyState(pressed: keys)))
+            let ops = Self.answeringTalk(s, s.step(keys: KeyState(pressed: keys)), keys: KeyState(pressed: keys))
             try r.apply(ops)
             chain.append(fnv1a(r.screen.pixels))
             cues += [i] + cueWords(ops)
@@ -221,14 +221,15 @@ final class Phase2GoldenTests: XCTestCase {
     }
 
     /// C1: a sign / conversation suspension answered "ended" at once with the rest of the frame merged in — as the App's
-    /// ◇ stand-in does (`FerazelController`, until A1a). The drivers walk the player onto L1 sign rec 1 (step 148).
-    static func answeringTalk(_ s: FerazelSession, _ first: FrameOps) -> FrameOps {
+    /// ◇ stand-in does (`FerazelController`, until A1a). The drivers walk the player onto L1 sign rec 1 (step 148). No
+    /// conversation ran, so the input polled at the answer is the frame's own (`keys`, Caps Lock up).
+    static func answeringTalk(_ s: FerazelSession, _ first: FrameOps, keys: KeyState) -> FrameOps {
         var ops = first
         while let x = ops.suspension {
             let outcome: FrameSuspension.Outcome
             switch x {
-            case .sign: outcome = .sign
-            case .conversation: outcome = .conversation
+            case .sign: outcome = .sign(keys: keys, capsLock: false)
+            case .conversation: outcome = .conversation(keys: keys, capsLock: false)
             default: return ops
             }
             let rest = s.resume(outcome)

@@ -400,6 +400,18 @@ delay 0 finishes the fade. A `DeadTime` follows each wrapped line. Escape aborts
   `Button(); CheckFlags(); MusicAIFFTickle()`, engine §4), so music keeps playing and the game is
   frozen; on exit the cooldown (§1.1) starts.
 
+> ⚑ implementer note (Phase 3 C1 review fix round, loop run 15, 2026-10-24) (BC33): `.DrawConvTextString` tests the abort
+> flag before every chunk (M l. 65816–65820) and, for replies (flag 0), returns with nothing drawn — so after Escape at
+> "press any key" on a line with replies the menu's header (portrait 4001, erase, "Ferazel") is drawn, every reply row
+> is blank, and the menu still waits for its key; the confirm then ends the conversation. After `.Conversation` /
+> `.SimpleConv` return, the rest of the frame reads the keys **live** (`.IsInputKeyPressed` → `_IsPressed` → `GetKeys`,
+> M l. 42336ff / 32391ff: the later contacts' UP test l. 49281, `.CheckGameLoopKeys`, `CapsLockDown()`), i.e. as polled
+> once the conversation's all-keys-up wait ended — not the frame start's keys. The opening composite (portrait drawn
+> into the frame GWorld, one mode-0x24 copy) equals the replica's two transparent copies on the shipped data: PICT
+> 4000 is non-white over the whole portrait rect, a conversation's portrait is then redrawn opaque on the screen, and
+> the sign's PICT 4020 converts to no white index under any level's screen CLUT (202, 210, 212, 214, 224, 236, 246;
+> ruled / exactNearest, with and without error diffusion; measured 2026-10-24).
+
 ## NOT RESOLVED
 1. Designer intent of condition/action type 3 in 200/202/204/207/211 (own-flag shape, but the code makes
    condition 3 always false and action 3 `RemoveItem`). Tried: jump table (`0x100a6cd0`), every branch

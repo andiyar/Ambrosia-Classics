@@ -36,9 +36,12 @@ public enum FrameSuspension: Equatable, Sendable {
         /// `.PaintFrameWrap` passes read the keys, the Caps Lock test reads `CapsLockDown()` live).
         case gameLoopKeys(GameLoopKeyAnswer)
         /// C1: `.Conversation` returned (ended, aborted by Escape, or its `Mcnv` failed to load and the error was
-        /// reported) — the arm goes on after the call.
-        case conversation
-        /// C1: `.SimpleConv` returned.
-        case sign
+        /// reported) — the arm goes on after the call, with the polled input at that moment: the rest of the frame
+        /// reads it live (`.IsInputKeyPressed` → `_IsPressed` → `GetKeys`, M l. 42336ff / 32391ff; the later contacts'
+        /// UP test l. 49281, `.CheckGameLoopKeys`' keys and `CapsLockDown()`), and the conversation ended waiting for
+        /// all keys up.
+        case conversation(keys: KeyState, capsLock: Bool)
+        /// C1: `.SimpleConv` returned, with the polled input at that moment (as `.conversation`).
+        case sign(keys: KeyState, capsLock: Bool)
     }
 }

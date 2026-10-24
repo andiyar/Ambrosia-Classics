@@ -153,6 +153,27 @@ final class ConversationTests: XCTestCase {
         XCTAssertTrue(npc.oneWay)
         XCTAssertEqual(npc.gravity, 0)
         XCTAssertFalse(npc.mirrored)
+        // The player falling onto that one-way top: the arm talks and returns — no `.PlatformBounce` landing (as the
+        // 2903 sign with `+0x15c` 1 would land him, BoxRopeTests), the fall goes on.
+        s.world.active.update(id: id) { $0.subtype = 0 }
+        let hot = HandleKeys.standardHotRect
+        s.world.active.update(id: pid) { p in
+            p.x = npc.x + 8 - hot.left
+            p.y = npc.y + bounds.top + 4 - hot.bottom
+            p.x256 = Int32(p.x) << 8
+            p.y256 = Int32(p.y) << 8
+            p.vx = 0
+            p.vy = 0x300
+            p.groundKind = 0
+            p.ridden = nil
+            p.centre = SpriteSlot.Point(x: p.x + 0x32, y: p.y + 0x3b)
+        }
+        HitPlayerSprite.hit(s.world, player: pid, other: id)
+        XCTAssertEqual(s.world.suspension, .conversation(id: 200, record: 12, sprite: id))
+        s.world.suspension = nil
+        let fallen = try XCTUnwrap(s.world.active.sprite(id: pid))
+        XCTAssertEqual([fallen.vy, Int32(fallen.groundKind)], [0x300, 0])
+        XCTAssertNil(fallen.ridden)
         // Mcnv 221 #8 (Dimbo, L22): action 9 removes the talker (`+0xe9`, its record's spawn byte 0) and action 10 arms
         // L11's snapshot record 283 (spawn byte 1) — run on this talker and an empty save block.
         let dimbo = try Conversation.load(from: r, id: 221).lines[7]
@@ -168,6 +189,14 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(s.world.records[12].flag, 0)
         XCTAssertEqual(save.snapshots[11][283].flag, 1)
         XCTAssertEqual(save.snapshots[11].filter { $0.flag != 0 }.count, 1)
+        // Action 2 adds B as it is (B 0 → 1; a negative B is no 1), capped at 99 (M l. 66288–66309): item 4 into the
+        // first empty slot (2) × 5, × −2, × 120.
+        let k = try XCTUnwrap(s.world.globals.inventory.firstIndex { $0.id == -1 })
+        for (b, count) in [(5, 5), (-2, 3), (0, 4), (120, 99)] as [(Int16, Int16)] {
+            ConvActions.run(Conversation.Action(type: 2, a: 4, b: b), record: 12, talker: id, world: s.world, save: &save,
+                            prefs: FerazelPrefs(), levelName: "", into: &out)
+            XCTAssertEqual([s.world.globals.inventory[k].id, s.world.globals.inventory[k].count], [4, count], "B \(b)")
+        }
         // A missing `Mcnv` (L4 rec 88's p1 0): the report with the id as its code, then the end once it is answered.
         let bad = ConversationRun(.conversation(id: 0, record: 88, sprite: id), world: s.world, resources: r,
                                   prefs: FerazelPrefs(), levelName: "")
@@ -194,7 +223,7 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(c.shown, Array(1...15))                      // #1, then #2 … #15
         XCTAssertFalse(c.aborted)
         XCTAssertEqual(s.world.records[157].p2, 1)                  // #14 / #15: action 4, own p2 = 1
-        XCTAssertNil(s.resume(.conversation).suspension)
+        XCTAssertNil(s.resume(.conversation(keys: KeyState(), capsLock: false)).suspension)
         // Still in contact: the next touch is the frame the cooldown reaches 0 — 150 frames later — and plays #16 only.
         let (steps, y) = stepToTalk(s)
         XCTAssertEqual(steps, 150)
@@ -202,7 +231,7 @@ final class ConversationTests: XCTestCase {
         let c2 = try run(s, y, r: r)
         talk(c2, save: &save)
         XCTAssertEqual(c2.shown, [16])
-        XCTAssertNil(s.resume(.conversation).suspension)
+        XCTAssertNil(s.resume(.conversation(keys: KeyState(), capsLock: false)).suspension)
     }
 
     func testMcnv203FiveLines() throws {
@@ -226,6 +255,9 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(draws.dropFirst().first.map { if case .copyPicture(4006, _, _, _, _, true) = $0 { true } else { false } },
                        true)
         XCTAssertEqual(draws.dropFirst(2).first.map { if case .copyPicture(4006, _, _, _, _, false) = $0 { true } else { false } },
+                       true)
+        // #20 (portrait 0) is silent and falls through to #1 = index 0: no portrait, no erase — its name is next.
+        XCTAssertEqual(draws.dropFirst(3).first.map { if case .drawText(let t) = $0 { t.v == 46 + 0x114 } else { false } },
                        true)
         XCTAssertEqual(draws.last, .restoreView)
     }
@@ -263,6 +295,19 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(s2.world.globals.inventory[slot].isSpell, 0)
         XCTAssertTrue(outs.flatMap(\.draws).contains { if case .statusBar(let b) = $0 { b.coins == 0 } else { false } })
         if SoundSlots.isLoaded(501) { XCTAssertEqual(outs.flatMap(\.sounds).map(\.snd), [501]) }
+        // Own p3 0x100: #20's condition 4 reads the low byte only (0: false). #3 reply 1 → #4, whose next −3 reopens #3's
+        // menu silently (a negative index: no text); down five times stops at the last targeted reply (4: "I should
+        // really…" → #9), never past it.
+        let s3 = try session(r, level: 1, record: 12)
+        let r12 = s3.world.records[12]
+        s3.world.records[12] = Placement(index: r12.index, flag: r12.flag, byte1: r12.byte1, type: r12.type, p1: r12.p1,
+                                         p2: r12.p2, p3: 0x100, p4: r12.p4, y: r12.y, x: r12.x)
+        let (_, z) = stepToTalk(s3)
+        let c3 = try run(s3, z, r: r)
+        talk(c3, menu: [Self.returnKey] + [Int](repeating: Self.downKey, count: 5) + [Self.returnKey], save: &save)
+        XCTAssertEqual(c3.shown, [1, 3, 4, 9])
+        XCTAssertEqual(c3.selection, 3)
+        XCTAssertEqual(s3.world.records[12].p2, 1)
     }
 
     func testSignAutoReadThenUp() throws {
@@ -279,22 +324,26 @@ final class ConversationTests: XCTestCase {
             defer { t &+= 1 }
             return try run.tick(now: t, input: FrontInput(keys: KeyState(pressed: keys))).merged
         }
-        /// Ticks with `keys` held until a read starts (or `max` ticks); the iteration it started in.
-        func untilRead(_ keys: [Int] = [], max: Int = 3000) throws -> Int? {
+        /// Ticks with `keys` held until a read starts (or `max` ticks); the iteration it started in. `extra` is held too
+        /// while the next iteration is number `at`.
+        func untilRead(_ keys: [Int] = [], extra: [Int] = [], at: Int = -1, max: Int = 3000) throws -> Int? {
             for _ in 0..<max {
-                _ = try tick(keys)
+                _ = try tick(run.iterations + 1 == at ? keys + extra : keys)
                 if run.conversation != nil { return run.iterations }
             }
             return nil
         }
-        /// Answers the read ("press any key" one tick) to its end.
-        func finishRead() throws {
+        /// Answers the read ("press any key" one tick) to its end; the requests made meanwhile.
+        @discardableResult
+        func finishRead() throws -> [ShellRequest] {
             var guardTicks = 0
+            var requests: [ShellRequest] = []
             while let c = run.conversation, guardTicks < 5000 {
-                _ = try tick(c.wait == .anyKey ? [Self.anyKey] : [])
+                requests += try tick(c.wait == .anyKey ? [Self.anyKey] : []).requests
                 guardTicks += 1
             }
             XCTAssertNil(run.conversation)
+            return requests
         }
         // The first touch reads at once (p4 0 → 1).
         let first = try XCTUnwrap(try untilRead(), "no automatic read")
@@ -304,10 +353,14 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(run.session?.world.records[1].p4, 1)
         XCTAssertEqual(run.session?.world.player.countdown06cc, 90)
         try finishRead()
-        // UP held: the sign reads again the frame the cooldown reaches 0 — 90 frames after the first read.
-        let second = try XCTUnwrap(try untilRead([Self.upKey]), "no read with UP")
+        // UP held: the sign reads again the frame the cooldown reaches 0 — 90 frames after the first read. Escape is held
+        // too in that frame: it aborts the text, the read ends on all keys up, and the rest of the frame reads the
+        // keys live (`.CheckGameLoopKeys`, M l. 3880ff) — no Escape, so no abort-game confirm (the frame start's
+        // snapshot would open one and stop the loop).
+        let second = try XCTUnwrap(try untilRead([Self.upKey], extra: [Self.escape], at: first + 90), "no read with UP")
         XCTAssertEqual(second - first, 90)
-        try finishRead()
+        XCTAssertEqual(run.conversation?.aborted, true)
+        XCTAssertFalse(try finishRead().contains { if case .dialog = $0 { true } else { false } })
         // Without UP no read, however long the player stays (p4 = 1).
         for _ in 0..<600 { _ = try tick() }
         XCTAssertNil(run.conversation)
@@ -337,6 +390,17 @@ final class ConversationTests: XCTestCase {
             return nil
         }
         XCTAssertEqual(greys, [36000, 28000, 20000, 12000, 4000])
+        // Each step takes the LAST slot older than 9 (`sVar6`, M l. 65700–65705): steps 1…20 fill slots 9, 8, …, 0, 9, …
+        // ('T' in slot 0), the 9 pass spaces slots 9…1 — 'T' is left at age 10, the spaces at 9…1 (the 10th space step
+        // is never taken).
+        XCTAssertEqual(c.trail.map(\.char), [0x54] + [UInt8](repeating: 0x20, count: 9))
+        XCTAssertEqual(c.trail.map(\.age), [10, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        // The step order: 'B' drawn at age 1 before 'A' at 3 within step 4 (slot 7 before slot 9).
+        let order = draws.compactMap { op -> UInt8? in
+            if case .drawText(let run) = op, run.bytes.count == 1 { return run.bytes[0] }
+            return nil
+        }
+        XCTAssertEqual(Array(order.prefix(6)), MacRoman.bytes("ABCADB"))
         // Any key held: no delay — the whole line and the pass in the first tick (then the wait for all keys up).
         let c2 = ConversationRun(.simple(pict: 4020, name: MacRoman.bytes("Wooden Sign"), text: line), world: s.world,
                                  resources: r, prefs: FerazelPrefs(), levelName: "")
@@ -366,5 +430,29 @@ final class ConversationTests: XCTestCase {
         XCTAssertEqual(s.world.records[157].p2, 1)                  // the action ran
         XCTAssertEqual(c.shown.last, 14)                             // #15 never typed
         XCTAssertEqual(c.index, 14)                                  // #14's next 0 → index 14; the abort flag ends it
+        // A line with replies (Mcnv 200 #3): Escape at its "press any key" — the menu's header is drawn (portrait
+        // 4001, the erase, "Ferazel") but every reply row draws nothing (the abort flag stops `.DrawConvTextString`
+        // before its first chunk, M l. 65816–65820); the key wait still runs; its confirm ends the conversation.
+        let s2 = try session(r, level: 1, record: 12)
+        s2.world.globals.coins = 0
+        let (_, y) = stepToTalk(s2)
+        let c2 = try run(s2, y, r: r)
+        talk(c2, save: &save, stopAt: { $0.shown.last == 3 && $0.wait == .anyKey })
+        _ = c2.tick(now: 90000, input: FrontInput(keys: KeyState(pressed: [Self.escape])), save: &save)
+        XCTAssertTrue(c2.aborted)
+        var menu: [DrawOp] = []
+        var t: UInt32 = 90001
+        while c2.wait != .menuKey && t < 90010 {
+            menu += c2.tick(now: t, input: FrontInput(), save: &save).draws
+            t += 1
+        }
+        XCTAssertEqual(c2.wait, .menuKey)
+        XCTAssertTrue(menu.contains { if case .copyPicture(4001, _, _, _, _, false) = $0 { true } else { false } })
+        let texts = menu.compactMap { op -> [UInt8]? in if case .drawText(let run) = op { return run.bytes } else { return nil } }
+        XCTAssertEqual(texts, [MacRoman.bytes("Ferazel")])
+        _ = c2.tick(now: t, input: FrontInput(keys: KeyState(pressed: [Self.returnKey])), save: &save)
+        _ = c2.tick(now: t + 1, input: FrontInput(), save: &save)
+        XCTAssertTrue(c2.isDone)
+        XCTAssertEqual(c2.shown, [1, 3])
     }
 }

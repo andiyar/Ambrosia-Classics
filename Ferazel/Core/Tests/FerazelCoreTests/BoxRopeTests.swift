@@ -342,6 +342,18 @@ final class BoxRopeTests: XCTestCase {
         dropPlayer(w, p, ontoTop: ss.y + 7, x: ss.x + 4, vy: 0x300)
         HitPlayerSprite.hit(w, player: p, other: sign)
         XCTAssertEqual(w.active.sprite(id: p)?.vy, 0x300)
+        // The timer 2907 (0xb5b) is in the range but `+0x15c` 1 (above): no text arm (it is excluded from the sign arm,
+        // M l. 49279), and the gate lets it through to `.PlatformBounce` (M l. 49304–49308) — it is stood on.
+        // (A synthetic record 400 with p1 201 and p4 0: the sign arm would talk on it.)
+        w.records[400] = placement(400, 0xb5b, p1: 201, x: 3200, y: 900)
+        let tm = addBox(w, w.records[400])
+        w.player.countdown06cc = 0                                      // the 2902 read above set it to 90
+        dropPlayer(w, p, ontoTop: 900 + 7, x: 3200 + 4, vy: 0x300)
+        HitPlayerSprite.hit(w, player: p, other: tm)
+        XCTAssertNil(w.suspension)
+        XCTAssertEqual(w.active.sprite(id: p)?.vy, 0)
+        XCTAssertEqual(w.active.sprite(id: p)?.ridden, tm)
+        XCTAssertEqual(w.records[400].p4, 0)
         let door = try add(w, w.level.placements[55])
         let ds = try XCTUnwrap(w.active.sprite(id: door))
         XCTAssertEqual(ds.type, 2910)

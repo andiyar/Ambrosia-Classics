@@ -40,8 +40,8 @@ public struct ConversationText: Sendable {
 /// **`.HandleConvLine`:** Escape (0x35) → index 21 + abort. A negative index → negated, nothing displayed. Else index
 /// 1…19 with a portrait → portrait + erase (index 0 does neither: `.Conversation` drew line #1's already); a portrait ≠
 /// 0 → the name, the text typed; Escape → index 21 + abort, return; all keys up; press any key (Escape there sets the
-/// abort flag — the line's menu / actions still run); all keys up. Then the menu (`.HandleLineResponses`); with none,
-/// the condition / actions / next (`ConvActions`); Escape → index 21 + abort.
+/// abort flag — the line's menu / actions still run, the menu's rows blank); all keys up. Then the menu
+/// (`.HandleLineResponses`); with none, the condition / actions / next (`ConvActions`); Escape → index 21 + abort.
 ///
 /// **The menu:** all keys up; response 0's target 0 → none. Else portrait **4001**, erase, name "Ferazel" (`0x100a6cc6`);
 /// the row tops from origin.v + 0x2b by each targeted response's wrapped height; Escape → index 21 + abort; then from
@@ -116,7 +116,8 @@ public final class ConversationRun {
     private let levelName: String
     private let text: ConversationText
     private var conv: Conversation?
-    private var trail = [Slot](repeating: Slot(), count: 10)
+    /// The typer's 10 trail slots (`*0x100a0c10`).
+    private(set) var trail = [Slot](repeating: Slot(), count: 10)
     private var pc: PC = .begin
     private var dialogAnswered = false
     private var rowTops = [Int](repeating: 0, count: 6)
@@ -475,10 +476,13 @@ public final class ConversationRun {
     }
 
     /// `.DrawConvTextString(text, param2, 0, rgb)` (responses): each wrapped chunk at once (`.DrawStringCharByCharOrig`);
-    /// Escape after a chunk sets the abort flag and stops.
+    /// Escape after a chunk sets the abort flag and stops. The abort flag is tested before every chunk (M l. 65816–65820:
+    /// set → return, and with flag 0 no space pass): once it is set — Escape at "press any key", or at an earlier row —
+    /// the rows draw nothing (the menu's header and key wait still run).
     private func drawStatic(_ bytes: [UInt8], param2: Int, rgb: RGB16, input i: FrontInput, out: inout FrontOutput) {
         let x = Self.originH + 0x9a
         for c in Self.wrap(bytes, width: text.charWidth) {
+            guard !aborted else { return }
             let v = Self.originV + param2 + 0xe + 0x12 * c.line + 0x1d
             if !c.bytes.isEmpty {
                 out.draws.append(.drawText(TextRun(bytes: c.bytes, font: 0x14, size: 0x12, face: 0, h: x, v: v, rgb: rgb)))

@@ -161,7 +161,7 @@ public final class FerazelSession {
         world.particles = ParticlePool(counters: carry.particles)
         world.particles.initParticles()
         world.particleFaces = particleFaces
-        world.signTexts = try? StringList.load(from: resources, id: 500)  // C1: the 2902 sign's `GetIndString(500, p1)`
+        world.signTexts = try StringList.load(from: resources, id: 500)   // C1: the 2902 sign's `GetIndString(500, p1)`
         self.world = world
         let bounds = faceBounds ?? { Self.frameRect($0, resources: resources) }
         self.faceBounds = bounds
@@ -456,9 +456,14 @@ public final class FerazelSession {
             ops.requests += tail.requests
         case (.gameLoopKeys(let event), .gameLoopKeys(let answer)):
             return keysAnswered(event, answer, ops)
-        case (.conversation, .conversation), (.sign, .sign):
+        case (.conversation, .conversation(let keys, let capsLock)), (.sign, .sign(let keys, let capsLock)):
             // C1: `.Conversation` / `.SimpleConv` returned; a sign / grave arm goes on with its `+0x15c` gate and
-            // `.PlatformBounce` (`talkDone`; the NPC arm has returned already).
+            // `.PlatformBounce` (`talkDone`; the NPC arm has returned already). The rest of the frame — the later
+            // contacts' `.IsInputKeyPressed`, `.CheckGameLoopKeys` — reads the input polled at the return (live in
+            // the original: `_IsPressed` is `GetKeys`), not the frame start's.
+            frameKeys = keys
+            frameCapsLock = capsLock
+            frameActions = InputActions(keys: keys, prefs: prefs)
             if let p = world.playerID { HitPlayerSprite.talkDone(world, player: p) }
         case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")

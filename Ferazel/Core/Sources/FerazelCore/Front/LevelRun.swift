@@ -641,8 +641,11 @@ public final class LevelRun {
             emit(&out, c.tick(now: now, input: input, save: &save))
             guard c.isDone else { return nil }
             conversation = nil
-            if case .simple = c.kind { return resumeTalk(s, .sign, out: &out) }
-            return resumeTalk(s, .conversation, out: &out)
+            // The rest of the frame reads the input of this tick (live in the original; the run ended on all keys up).
+            if case .simple = c.kind {
+                return resumeTalk(s, .sign(keys: input.keys, capsLock: input.capsLock), out: &out)
+            }
+            return resumeTalk(s, .conversation(keys: input.keys, capsLock: input.capsLock), out: &out)
         }
         if saveSG != nil { return advanceSave(s, out: &out) }
         guard let m = keysModal else { return nil }
