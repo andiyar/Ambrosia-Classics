@@ -275,6 +275,21 @@ final class CastTests: XCTestCase {
             XCTAssertEqual(w.globals.magic, 552)
             XCTAssertTrue(w.player.useDebounce)
         }
+        // The same for case 5 (R(100), M l. 46842) and case 6 — both V Blade spawns fail, both R(0x100) are still drawn
+        // (M l. 46864, 46867) — each before R(0x4b).
+        for (spell, middle) in [(Int16(5), [100]), (6, [0x100, 0x100])] {
+            let w = try world()
+            let pID = try XCTUnwrap(Player.spawn(world: w, x: 100, y: standY))
+            stock(w, [Self.spell(spell)])
+            while w.active.sprites.count < SpriteWorld.recordCount { _ = w.active.insert(SpriteSlot(type: 0, x: 0, y: 0)) }
+            var r = w.rng
+            _ = r.next(10000)
+            for n in middle { _ = r.next(Int16(n)) }
+            _ = r.next(0x4b)
+            CastSpell.cast(world: w, player: pID, keys: [])
+            XCTAssertEqual(w.rng.seed, r.seed, "case \(spell)")
+            XCTAssertTrue(shots(w).isEmpty, "case \(spell)")
+        }
         // Power clamped to 5 after the stack offset (raw `1005956c`): type 0x0006 → power 5, offset (0, (6 − 1)·3 = 15),
         // four followers; type 0x0005 → power 5, offset (0, 12).
         for (raw, offset) in [(Int16(6), Int32(15)), (5, 12)] {

@@ -501,5 +501,16 @@ standard face and rect (0x26,0x22,0x3e,0x55).
    (M l. 47356–47358; spells-detail-2 §1): it is never observable after the call.
 6. **PICT 1117** is `.InitEnemyShotSprite`'s (M l. 51418), not a player-shot sheet: the player's sheets are 1100–1105,
    1113–1116 and the single 1118, with the light faces 810 and 822 (M l. 50235–50259).
+7. **`.KillPlayerShot` (§3.7) re-read** for CS fix round 2 (M l. 51076–51215 in the committed dump — the bank's "main
+   l. 45377–45521" is an older numbering; raw `1005ac34..1005b094`): it opens with `.StandardSpriteCleanup(shot)` (raw
+   `1005ac58`, r3 kept), then id 100 returns; the followers are flagged for every other id (the orb and ids > 100
+   included). The default arm is every id < 100 but 0, 0x50 and 0x5a (not only 1–7 and 0x3c). The orb dies when its
+   count falls **below 1**, and otherwise is not killed. The seed's snd 435 is played whatever the sound flag, and
+   neither seed spawn tests the effect flag; each 0x442 smoke's Setup runs the explosion package (45 × 3 draws) before
+   the arm's R(0x96) and R(7); the direction is `.FindDesiredDirectionGeneric(cell, shot centre)` — from the centre
+   toward the cell. The > 100 arm's sound is at `+0xa` (the position), not the centre, with no sound-flag test. The
+   "uninitialised register" of ids 1–4 with the effect flag clear is callee-saved r29, still the caller's: from the
+   spring arm of `.HitBackgroundSprite`, `PTR_PTR_100a0480` (raw `10075060`) [LOW: what +0x9a past it reads is not
+   resolved; the port changes no light].
 Transcribed in `FerazelCore.CastSpell`, `PlayerShot` (Setup, Handle, the water arm of the tile callback),
-`HandleKeys.useGate` and `Player.wand` (CS) [HIGH].
+`HandleKeys.useGate`, `Player.wand` and `PlayerShotHits.kill` (CS) [HIGH].

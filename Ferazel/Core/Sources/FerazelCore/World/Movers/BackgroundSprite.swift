@@ -397,14 +397,11 @@ extension BackgroundSprite {
     ///   window `+0x1be = bg.left + (x256 >> 8) + 0x2e`, `+0x1c0 = bg.right + x − 0x2f`, `+0x1c4 = bg.top + y − 0x2c`,
     ///   `+0x1c2 = bg.bottom + y + 0x27` (bg's `+0x34` rect, x/y its 24.8 position) — for 3002 at (x, y): x + 38 …
     ///   x + 153, y − 54 … y + 189. Nothing resets it (`.InitSprite`'s 32000s only).
-    /// - **spring** 0x47e…0x487 (l. 63716–63731): a player shot is killed (`.KillPlayerShot(other, 1, 1)`, l. 63718–63720)
-    ///   and an enemy shot (`.KillEnemyShot`, // later: SH); then, if other is not itself a Background 0x47e…0x487, the
-    ///   spring's `+0x46` is 0, other's `+0xe9` is 0 and its Handle is not the Effect's: `+0x46 = 4`,
-    ///   `.SuperSpring(bg, other)`. `.KillPlayerShot` (M l. 51076–51215) ends with `+0xe9 = 1` for every id < 100 but the
-    ///   orb 0x50 (whose `+0x168` count only falls by one), so a player shot is never launched: here its `+0xe9` and,
-    ///   power > 1, its followers' are set and the arm returns (no snd 493, no draw). // later: SH — the rest of
-    ///   `.KillPlayerShot` (`.StandardSpriteCleanup`, the 3D sound and its draw, the effect sprite, the light colour,
-    ///   the orb's count).
+    /// - **spring** 0x47e…0x487 (l. 63716–63731): a player shot gets `.KillPlayerShot(other, 1, 1)` (l. 63718–63720,
+    ///   `PlayerShotHits.kill`) and an enemy shot `.KillEnemyShot` (// later: SH); then, if other is not itself a
+    ///   Background 0x47e…0x487, the spring's `+0x46` is 0, other's `+0xe9` is 0 and its Handle is not the Effect's:
+    ///   `+0x46 = 4`, `.SuperSpring(bg, other)`. The kill sets `+0xe9` for ids < 100 except an orb 0x50 with hits left
+    ///   (`+0x168` still ≥ 1 after its − 1), and never for ids ≥ 100 (100 included): those are launched.
     /// - **cannon** 0x442…0x44b (l. 63679–63714): other's Handle is none of Background, Statue (`01f8`), Cannoned
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
     ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: SH, and
@@ -419,7 +416,9 @@ extension BackgroundSprite {
     }
 
     /// `hit` with the light calls made on `lights` (LT: the session's `lightTable`).
-    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable) {
+    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int, lights: inout LightTable, effects: Int16 = 1,
+                           faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                           faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
         guard let bg = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
         let t = bg.type
         if tunnels.contains(t) {
@@ -433,18 +432,13 @@ extension BackgroundSprite {
                 c.occluder.bottom = Int16(truncatingIfNeeded: r.bottom + y + 0x27)
             }
         } else if (0x47e...0x487).contains(t) {
-            // `.KillPlayerShot(other, 1, 1)` (l. 63718–63720): `+0xe9 = 1` (and the followers', power > 1), so the
-            // `+0xe9` test below refuses the launch. // later: SH — the rest of `.KillPlayerShot` (sound, effect, light,
-            // the orb's count) and `.KillEnemyShot(other)`.
+            // `.KillPlayerShot(other, 1, 1)` (l. 63718–63720), then — no return — the launch test on the record as the
+            // kill left it. `.KillEnemyShot(other)` (l. 63721–63723) // later: SH.
             if runs(o, .playerShot) {
-                if o.type != PlayerShot.orb {
-                    w.active.update(id: oID) { $0.dead = true }
-                    if 1 < o.power {
-                        for f in PlayerShot.followers(o).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
-                    }
-                }
-                return
+                PlayerShotHits.kill(w, shot: oID, sound: true, effect: true, effects: effects, lights: &lights,
+                                    faceWidth: faceWidth, faceBounds: faceBounds)
             }
+            guard let o = w.active.record(id: oID), let bg = w.active.record(id: id) else { return }
             let otherSpring = runs(o, .background) && (0x47e...0x487).contains(o.type)
             guard !otherSpring, bg.phase == 0, !o.dead, !runs(o, .effect) else { return }
             w.active.update(id: id) { $0.phase = 4 }

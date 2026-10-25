@@ -1292,25 +1292,152 @@ final class BackgroundMoverTests: XCTestCase {
                          hit: FerazelSession.hitCallback)
         XCTAssertEqual(w.active.sprite(id: p)?.vy, -0x2292)
         XCTAssertEqual(w.player.cues.map(\.snd), [493, 493])
-        // A player shot in view (M l. 63718–63720): `.KillPlayerShot(other, 1, 1)` sets its `+0xe9` (and, power > 1,
-        // its followers') before the `+0xe9` test, so it is never launched — no snd 493, no draw, the spring idle.
+        // A player shot in view (M l. 63718–63731): `.KillPlayerShot(other, 1, 1)` (M l. 51076–51215) first, then the
+        // launch test, which its `+0xe9` refuses. Fire (id 0, power 2): `.StandardSpriteCleanup`, the follower flagged,
+        // snd 301 (`*_DAT_100a0420`) at the centre — R(10000) —, the effect 0 at (x − 8, y − 0xc) whose Setup draws the
+        // explosion package (45 × R(2000), R(2000), R(2)) and adds the plume (prefs+6 = 1) and a light; never launched.
         func shot(_ type: Int16, power: Int32) -> Int {
             var s = SpriteSlot(type: type, x: 2000, y: 1000)
             s.handler = .playerShot
             s.power = power
             s.vy = 0x100
+            s.hotRect = IdleSprites.Rect(top: 3, left: 8, bottom: 0xc, right: 0xf)      // the Setup's: centre ≠ position
             return w.active.insert(s)
         }
+        func explosionPackage(_ r: inout FastRand) { for _ in 0..<0x2d { _ = r.next(2000); _ = r.next(2000); _ = r.next(2) } }
+        func centre(_ id: Int) -> SpriteSlot.Point {
+            let s = w.active.sprite(id: id)!, h = s.hotRect
+            return SpriteSlot.Point(x: s.x + h.left + ((h.right - h.left) >> 1), y: s.y + h.top + ((h.bottom - h.top) >> 1))
+        }
+        func effects(_ t: Int16) -> [SpriteSlot] { w.active.sprites.filter { $0.handler == .effect && $0.type == t } }
         let fol = shot(0, power: 0), fire0 = shot(0, power: 2)
         w.active.update(id: fire0) { $0.siblings.first = fol }
         w.active.update(id: sp) { $0.phase = 0 }
         w.player.cues = []
-        let seed = w.rng.seed
+        var r = w.rng
+        var rate = r.soundRate()
+        explosionPackage(&r)
         BackgroundSprite.hit(w, id: sp, other: fire0)
         XCTAssertEqual(w.active.sprite(id: fire0).map { [Int($0.vy), $0.dead ? 1 : 0] }, [0x100, 1])
         XCTAssertEqual(w.active.sprite(id: fol)?.dead, true)
         XCTAssertEqual(w.active.sprite(id: sp)?.phase, 0)
-        XCTAssertTrue(w.player.cues.isEmpty)
-        XCTAssertEqual(w.rng.seed, seed)
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 301, priority: 1, volume: 0x100,
+                                                 position: centre(fire0), rate: rate)])
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(effects(0).map { [$0.x, $0.y, Int($0.layer)] }, [[1992, 988, 0xb]])
+        XCTAssertEqual(effects(EffectSprite.plume).count, 1)
+        XCTAssertGreaterThanOrEqual(try XCTUnwrap(effects(0).first).light, 0)
+        // The launch test after the kill: the spring fires for a shot `.KillPlayerShot` leaves alive.
+        func launched(_ id: Int) -> Bool {
+            w.active.sprite(id: id)?.vy == -0x2292 && w.active.sprite(id: sp)?.phase == 4
+        }
+        func strike(_ id: Int) -> [PlayerCue] {
+            w.active.update(id: sp) { $0.phase = 0 }
+            w.active.update(id: id) { $0.vy = 0x100 }
+            w.player.cues = []
+            BackgroundSprite.hit(w, id: sp, other: id)
+            return w.player.cues
+        }
+        // The orb (0x50): `+0x168` − 1; still ≥ 1 → snd 423 (`*_DAT_100a01e4`), not killed, so launched (snd 493 pair);
+        // at < 1 → snd 424 (`*_DAT_100a01e0`), `.ExplodeFaceIntoParticles` (no face pixels here: no draws), killed.
+        let orb = shot(PlayerShot.orb, power: 1)
+        w.active.update(id: orb) { $0.stackX = 2 }
+        r = w.rng
+        rate = r.soundRate()
+        let rate493 = r.soundRate()
+        XCTAssertEqual(strike(orb), [
+            PlayerCue(call: .threeDRand, snd: 423, priority: 1, volume: 0x100, position: centre(orb), rate: rate),
+            PlayerCue(call: .stop, snd: 493),
+            PlayerCue(call: .threeDRand, snd: 493, priority: 1, volume: 0x100,
+                      position: SpriteSlot.Point(x: 2040, y: 1075), rate: rate493),
+        ])
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(w.active.sprite(id: orb).map { [Int($0.stackX), $0.dead ? 1 : 0] }, [1, 0])
+        XCTAssertTrue(launched(orb))
+        // The break with a face to walk (one row, 3 literal pixels; xStep 2 → 2 particles, style 0x65: R(60), R(60),
+        // R(16), R(12) each, after the sound's draw).
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let orbFace = ParticleFace(frame: [0, 0, 1, 3], bounds: [0, 0, 1, 3],
+                                   tokens: tok(1, 8) + tok(2, 3) + [10, 11, 12, 0] + tok(0, 0))
+        w.particleFaces = ParticleFaces(sprite: { _ in orbFace })
+        w.active.update(id: orb) { $0.face = FaceRef(pict: 0x45e, index: 0, set: .encoded) }
+        let particles0 = w.particles.counters.count
+        r = w.rng
+        rate = r.soundRate()
+        let b0 = Int32(r.next(0x3c))
+        _ = (r.next(0x3c), r.next(0x10), r.next(0xc))
+        _ = (r.next(0x3c), r.next(0x3c), r.next(0x10), r.next(0xc))
+        XCTAssertEqual(strike(orb), [
+            PlayerCue(call: .threeDRand, snd: 424, priority: 1, volume: 0x100, position: centre(orb), rate: rate),
+        ])
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(w.particles.counters.count - particles0, 2)
+        // Style 0x65 is radial about (cV, cH) = (y + 0, x + 1): the first pixel (h = x) gets vx = 50·(−1) + R(60) − 30.
+        XCTAssertEqual(w.particles.records.filter { $0.alive && $0.kind == -266 }.map(\.vx), [-50 + b0 - 30])
+        w.particleFaces = ParticleFaces()
+        XCTAssertEqual(w.active.sprite(id: orb).map { [Int($0.stackX), $0.dead ? 1 : 0] }, [0, 1])
+        XCTAssertFalse(launched(orb))
+        // An id ≥ 100 (101, power 2): the follower flagged, never the shot; `+0xa6 == 0` → snd 419 (`*_DAT_100a03e4`,
+        // volume 0xab, at `+0xa` — the position, not the centre), then `+0xa6 = −6`; launched. Again at −6: no 419.
+        // Id 100: `.StandardSpriteCleanup` only; launched.
+        let fol101 = shot(0x65, power: 0), s101 = shot(0x65, power: 2)
+        w.active.update(id: s101) { $0.siblings.first = fol101 }
+        r = w.rng
+        rate = r.soundRate()
+        XCTAssertEqual(strike(s101).first, PlayerCue(call: .threeDRand, snd: 419, priority: 1,
+                                                                    volume: 0xab, position: SpriteSlot.Point(x: 2000, y: 1000), rate: rate))
+        XCTAssertEqual(w.active.sprite(id: s101).map { [Int($0.counterA6), $0.dead ? 1 : 0] }, [-6, 0])
+        XCTAssertEqual(w.active.sprite(id: fol101)?.dead, true)
+        XCTAssertTrue(launched(s101))
+        XCTAssertEqual(strike(s101).map(\.snd), [493, 493])
+        XCTAssertTrue(launched(s101))
+        let s100 = shot(100, power: 2)
+        XCTAssertEqual(strike(s100).map(\.snd), [493, 493])
+        XCTAssertTrue(launched(s100))
+        // Ids 3 and 4 (the session's light table): snd 301, the effect 5 (id 4: 2) at (x − 5, y − 0xc), its light's
+        // colour changed to 0x4d (id 4: 0x42; ids 1, 2: 0x21); killed.
+        for (id, effect, colour) in [(Int16(3), Int16(5), Int16(0x4d)), (4, 2, 0x42)] {
+            let s = shot(id, power: 1)
+            w.active.update(id: sp) { $0.phase = 0 }
+            var lights = LightTable()
+            BackgroundSprite.hit(w, id: sp, other: s, lights: &lights)
+            let e = try XCTUnwrap(effects(effect).last, "id \(id)")
+            XCTAssertEqual([e.x, e.y], [1995, 988], "id \(id)")
+            XCTAssertEqual(lights.slots[Int(e.light)].colour, colour, "id \(id)")
+            XCTAssertEqual(w.active.sprite(id: s)?.dead, true, "id \(id)")
+            XCTAssertFalse(launched(s), "id \(id)")
+        }
+        // The seed (0x5a): snd 435 (`*_DAT_1009fdec`) whatever the sound flag, the mask flash 3, the shake 0x14, the big
+        // explosion 0x4b7 at (x − 0x2a, y − 0x2a) (its package: 45 × 3 draws; `+0xf4` → mode 0x10004), and with `+0xf0`
+        // clear a 4 × 4 walk that spawns a smoke 0x442 every second cell (8: package, R(0x96), R(7) each); killed.
+        let seed = shot(PlayerShot.seed, power: 1)
+        w.active.update(id: seed) { $0.classWordF4 = 1 }
+        w.flash = ScreenFlash()
+        let smokes0 = effects(BackgroundSprite.smoke).count
+        r = w.rng
+        rate = r.soundRate()
+        explosionPackage(&r)
+        var phases: [Int16] = []
+        for _ in 0..<8 {
+            explosionPackage(&r)
+            _ = r.next(0x96)
+            phases.append(r.next(7))
+        }
+        XCTAssertEqual(strike(seed), [
+            PlayerCue(call: .threeDRand, snd: 435, priority: 1, volume: 0x100, position: centre(seed), rate: rate),
+        ])
+        XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual([Int(w.flash.count), Int(w.shakeStore ?? 0)], [3, 0x14])
+        let big = try XCTUnwrap(effects(EffectSprite.bigExplosion).last)
+        XCTAssertEqual([big.x, big.y, Int(big.mode)], [2000 - 0x2a, 1000 - 0x2a, 0x10004])
+        let smokes = effects(BackgroundSprite.smoke)
+        XCTAssertEqual(smokes.count - smokes0, 8)
+        XCTAssertEqual(smokes.suffix(8).map(\.phase), phases)
+        XCTAssertEqual(smokes.suffix(8).map { [$0.x, $0.y] }.first, [2000 - 4 - 0x18, 1000 - 10 - 0x18])
+        XCTAssertEqual(w.active.sprite(id: seed)?.dead, true)
+        XCTAssertFalse(launched(seed))
     }
 }

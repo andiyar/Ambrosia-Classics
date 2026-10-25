@@ -6,9 +6,10 @@ import Foundation
 /// splits it — `+0x170` = power, `+4` = the id (plan hazard "`+0x04` vs `+0x170`") — so every reader after the Setup
 /// sees the id in `type`.
 ///
-/// Not built here: the hit callback `.HitPlayerShotSprite`, `.KillPlayerShot` and every arm of the tile callback
-/// `.HitPlayerShotTileSprite` but its water arm (`hitTile`) // later: SH. Until SH a shot dies only by the liquid rule
-/// and the level-bottom rule (and V Blade's ±500 px rule): it flies through walls, enemies and pickups.
+/// Not built here: the hit callback `.HitPlayerShotSprite` and every arm of the tile callback `.HitPlayerShotTileSprite`
+/// but its water arm (`hitTile`) // later: SH. `.KillPlayerShot` is `PlayerShotHits.kill`, called so far by the spring
+/// arm of `.HitBackgroundSprite` only. Until SH a shot dies only by the liquid rule, the level-bottom rule, V Blade's
+/// ±500 px rule (plain `+0xe9` stores in the Handle) and a spring: it flies through walls, enemies and pickups.
 public enum PlayerShot {
     /// `.InitPlayerShotSprite`'s face sets (M l. 50235–50256; boot loads, CLUT 200): 1100…1105 the Fireball / Statue /
     /// Ice Crystals pairs (6 × 24×15, right / left), 1113 the Boomerang (6 × 32×32), 1114 the V Blade (20 × 32×40, 10

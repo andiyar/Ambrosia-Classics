@@ -826,7 +826,7 @@ public final class FerazelSession {
         c.flash = world.flash
         c.paintCounter = world.paintCounter
         c.plumeCount = world.plumeCount
-        c.shake = camera.shake
+        c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
         return c
     }
 
@@ -867,7 +867,11 @@ public final class FerazelSession {
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels). // later:
     /// Phase 4 — the Box class's `.HitBoxSprite` (box vs box / statue / platform; W3 builds the boxes standing still),
     /// Phase 4–5 (enemies, shots). The session's form: `hitCallback` on `lightTable`.
-    private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) { Self.hitCallback(w, a, b, lights: &lightTable) }
+    private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
+        let res = resources
+        Self.hitCallback(w, a, b, lights: &lightTable, effects: prefs.effects,
+                         faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: faceBounds)
+    }
 
     /// The test-only form (no light table): its light calls go to a scratch table.
     static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int) {
@@ -875,12 +879,18 @@ public final class FerazelSession {
         hitCallback(w, a, b, lights: &scratch)
     }
 
-    /// LT: `hitCallback` with the light calls made on `lights` (`.TurnIntoCannoned`'s `.RemoveLight`).
-    static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int, lights: inout LightTable) {
+    /// LT: `hitCallback` with the light calls made on `lights` (`.TurnIntoCannoned`'s `.RemoveLight`). CS: `effects`
+    /// (prefs+6), `faceWidth` and `faceBounds` reach `.KillPlayerShot` (the spring arm; its effect sprite's Setup, its
+    /// `.StandardSpriteCleanup` and its clip test).
+    static func hitCallback(_ w: SpriteWorld, _ a: Int, _ b: Int, lights: inout LightTable, effects: Int16 = 1,
+                            faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                            faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
         guard let s = w.active.record(id: a) else { return }
         switch s.handler {
         case .platform: PlatformSprite.hit(w, id: a, other: b)
-        case .background: BackgroundSprite.hit(w, id: a, other: b, lights: &lights)   // `.HitBackgroundSprite` (W2b)
+        case .background:                                                               // `.HitBackgroundSprite` (W2b)
+            BackgroundSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
+                                 faceBounds: faceBounds)
         case .bonus: BonusSprite.hit(w, id: a, other: b)                                // `.HitBonusSprite` (BN)
         case .playerShot: break                                     // `.HitPlayerShotSprite` // later: SH
         default: break
@@ -973,6 +983,10 @@ public final class FerazelSession {
     /// snap vetoes read through `*_DAT_1009fdd8` (`+0xdc` → type 0x57a, `+0x11c`, `+0x120`) and `*_DAT_1009fd34`
     /// (cleared by the snap test). The scroll point it leaves (`PTR_DAT_1009fe78`) is what `.PlayerScroll` reads.
     private func findUpperLeftCorner(graphics: Int16) {
+        if let v = world.shakeStore {                                   // CS: a Handle's or hit's `*_DAT_1009ffa0 = v`
+            camera.shake = v
+            world.shakeStore = nil
+        }
         let p = world.player
         let s = world.playerID.flatMap { world.active.record(id: $0) }   // the live `*_DAT_1009fdd8`, not `playerID`
         let ridden = s?.ridden.flatMap { world.active.record(id: $0) }

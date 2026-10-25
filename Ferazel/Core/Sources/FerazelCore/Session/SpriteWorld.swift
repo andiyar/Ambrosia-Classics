@@ -97,6 +97,10 @@ public final class SpriteWorld {
     /// EF: the mask flash (`ScreenFlash`: `*_DAT_100a00fc` / `*_DAT_100a00cc`) — here so the Handles that write it
     /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`; `LevelCarry.flash` carries it.
     public var flash = ScreenFlash()
+    /// CS: a Handle's or hit's store into the camera shake `*_DAT_1009ffa0` (the camera's `shake`, which the world
+    /// cannot reach): `.KillPlayerShot`'s seed explosion writes 0x14 (M l. 51147–51150). The session moves it into
+    /// `camera.shake` before the shake is next read (`.FindUpperLeftCorner`, the level carry) and clears it.
+    public var shakeStore: Int16?
     /// EF: `*_DAT_1009fd2c`, the paint counter — +1 in every `.PaintFrameWrap` (M l. 9250, drawn or not, before the
     /// draw block); read by `.FindUpperLeftCorner`'s shake (M l. 6148–6152). Never reset in the binary (no other
     /// writer): it runs on through every level, death, map and game (`LevelCarry.paintCounter`, EF review fix).
