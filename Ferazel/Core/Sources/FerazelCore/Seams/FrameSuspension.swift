@@ -26,7 +26,7 @@ public enum FrameSuspension: Equatable, Sendable {
     /// `.UpdateSprites` (M l. 5251) — a confirm, the Options dialog or `.Pause` (`GameLoopKeyEvent`, `Pause.swift`). The
     /// flow runs it and resumes with `.gameLoopKeys(_:)`; a hosted session only (`hostedByLevelRun`).
     case gameLoopKeys(GameLoopKeyEvent)
-    /// PK: the upgrade arm (1340 / 1341, `.HitPlayerSprite` M l. 48805–48925) has played snd 451, added 2000 to the
+    /// PK: the upgrade arm (1340 / 1341, `.HitPlayerSprite` M l. 48810–48916) has played snd 451, added 2000 to the
     /// score, set `+0xe9` and started `GammaFadeOutAsync(2, colour, 0xc, 0x10)`; its six blocking tick loops (120 ticks,
     /// BC35) run in the flow (`UpgradeAnimation`, `LevelRun`), which resumes with `.upgrade` — the arm returns after
     /// them.
@@ -48,7 +48,8 @@ public enum FrameSuspension: Equatable, Sendable {
         case conversation(keys: KeyState, capsLock: Bool)
         /// C1: `.SimpleConv` returned, with the polled input at that moment (as `.conversation`).
         case sign(keys: KeyState, capsLock: Bool)
-        /// PK: the upgrade animation's loops ran out (`UpgradeAnimation.isDone`).
-        case upgrade
+        /// PK: the upgrade animation's loops ran out (`UpgradeAnimation.isDone`), with the polled input at that moment
+        /// (as `.conversation`: the rest of the frame reads it — live in the original).
+        case upgrade(keys: KeyState, capsLock: Bool)
     }
 }

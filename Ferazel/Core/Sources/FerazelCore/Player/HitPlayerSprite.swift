@@ -344,7 +344,8 @@ extension HitPlayerSprite {
     /// - 1055 / 1056 (M l. 48631–48695): `xichron`.
     /// - 1290 / 1291 / 1292 (M l. 48697–48738), 1300 / 1301 / 1302 / 1305 / 1306 (M l. 48745–48795), 1350 (M l.
     ///   48799–48807): `crystalOrCoin`.
-    /// - 1340 / 1341 (M l. 48808–48918): `upgrade` — the frame suspends.
+    /// - 1340 / 1341 (M l. 48810–48916): snd 451 vol 0xab, score + 2000, `+0xe9`, `GammaFadeOutAsync(2, colour)` (its
+    ///   `HideCursorSafe` → `PlayerState.passRequests`); the frame suspends (`.upgrade`, `UpgradeAnimation`).
     /// - 3050 (M l. 48920–48936): the glider pickup (`glider`).
     /// - 2000…2049 (M l. 48939–48976): `scroll`; 3200… (M l. 48977–49022): `item`; 1330…1339 (M l. 49023–49121):
     ///   `sphere`. Every other type (0x4bf, 0x421, 0x517, 0x518, …) does nothing.
@@ -384,6 +385,8 @@ extension HitPlayerSprite {
         case 0x422:
             let r = record(w, o.recordIndex)
             let i = Int(r.p1)
+            // Carry (PK review): a p1 outside `worldFlags` is dropped here; the binary writes `G+0xad8 + 2·p1` whatever
+            // p1 is — past the array's end into the rest of G (or beyond). No shipped 1058 has such a p1.
             if w.globals.worldFlags.indices.contains(i) { w.globals.worldFlags[i] = r.p2 == 0 ? 1 : r.p2 }
             BonusSprite.kill(w, id: oID, lights: &lights)
         case 0x41f, 0x420:
@@ -394,7 +397,10 @@ extension HitPlayerSprite {
             reg(w, 451, 0xab)
             w.globals.score &+= 2000
             dead()
+            // `GammaFadeOutAsync` calls `HideCursorSafe` when it arms (M l. 31905), as at the save point.
+            let before = w.gammaFade
             w.gammaFade.fadeOut(steps: 2, toward: t == magicUpgrade ? magicUpgradeColour : healthUpgradeColour)
+            if w.gammaFade != before { w.player.passRequests.append(.hideCursor) }
             w.suspension = .upgrade(type: t)
         case 0xbea:
             glider(w, player: pID, other: oID)
@@ -875,7 +881,9 @@ public enum HurtPlayer {
                 let layer = w.active.record(id: pID)?.layer ?? 0
                 let x = Int(Int16(truncatingIfNeeded: cx + dx - 8)), y = Int(Int16(truncatingIfNeeded: cy + dy - 2))
                 let coin = w.newSprite(type: lostCoin, x: x, y: y, layer: 0x14, handler: .bonus) { s in
-                    _ = try? BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
+                    // Cannot throw: `BonusSprite.setup` throws only for the candelabra 0xc25 and an item id outside
+                    // 0xc80…0xc9a (`SetupFaces.Error.notTranscribed`) — never for the coin 0x516 (arm `LAB_1005e02c`).
+                    _ = try! BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
                                                lightCount: 0, counting: false, playerLayer: layer, rng: &w.rng) {
                         _, _, _, _ in -1                                // the coin arm adds no light (M l. 52571–52581)
                     }

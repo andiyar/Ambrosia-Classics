@@ -688,12 +688,12 @@ public final class LevelRun {
             return resumeTalk(s, .conversation(keys: input.keys, capsLock: input.capsLock), out: &out)
         }
         if var u = upgrade {
-            // PK: the upgrade's tick loops (`UpgradeAnimation`), then the rest of the frame — the input is not read by
-            // the arm's remainder (it returns), the later contacts read the frame's (`FerazelSession.resume`).
+            // PK: the upgrade's tick loops (`UpgradeAnimation`), then the rest of the frame — the arm's remainder
+            // returns; the later contacts and `.CheckGameLoopKeys` read the input of this tick (live in the original).
             emit(&out, u.tick(now: now, session: s, keys: input.keys))
             guard u.isDone else { upgrade = u; return nil }
             upgrade = nil
-            let rest = s.resume(.upgrade, playing: tickPlaying)
+            let rest = s.resume(.upgrade(keys: input.keys, capsLock: input.capsLock), playing: tickPlaying)
             emitFrame(rest, out: &out, present: true)
             return rest
         }

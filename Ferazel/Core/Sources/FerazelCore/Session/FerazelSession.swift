@@ -119,9 +119,6 @@ public final class FerazelSession {
     private let faceBounds: (FaceRef) -> IdleSprites.Rect
     /// The tile solver over `world` (one per level).
     private let solver: TileSolver
-    /// The draws a passage jump makes inside the player pass (`PassageView`, W2b), appended after it.
-    private var passageOps: [DrawOp] = []
-
     /// - Parameter seed: the `FastRand` seed (tests fix it; the app seeds from the clock like `.InitAppGlobals`).
     /// - Parameter carry: what the previous level's session hands on (`carry`; W4) — the parity and the crunch log.
     /// - Parameter faceBounds: a face's opaque bounds (`face +8`), which `.ActiveToIdleSprite` stores and
@@ -517,8 +514,12 @@ public final class FerazelSession {
             frameCapsLock = capsLock
             frameActions = InputActions(keys: keys, prefs: prefs)
             if let p = world.playerID { HitPlayerSprite.talkDone(world, player: p) }
-        case (.upgrade, .upgrade):
-            break                                                       // PK: the arm returns after its loops
+        case (.upgrade, .upgrade(let keys, let capsLock)):
+            // PK: the arm returns after its loops; the rest of the frame reads the input polled at the resume tick
+            // (live in the original, as after a conversation).
+            frameKeys = keys
+            frameCapsLock = capsLock
+            frameActions = InputActions(keys: keys, prefs: prefs)
         case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
@@ -689,15 +690,12 @@ public final class FerazelSession {
         lightTable = table
     }
 
-    /// The frame so far, handed out at a suspension (S1): the passage draws made in the pass so far, the sound calls
+    /// The frame so far, handed out at a suspension (S1): the pass's draws and requests so far (`drainPass`), the sound calls
     /// made so far (the Sound Tool has already started them), and — for a save point — `ShowCursorSafe` (raw
     /// `100577a4`, made before `.SavePointSave`).
     private func suspend(_ ops: FrameOps) -> FrameOps {
         var ops = ops
-        ops.draws.append(contentsOf: passageOps)
-        passageOps = []
-        ops.draws.append(contentsOf: world.player.passDraws)            // PK: the pickups' status bar calls
-        world.player.passDraws = []
+        drainPass(&ops)
         SoundCues.emit(world.player.soundCalls, prefs: prefs, into: &ops)
         world.player.soundCalls = []
         ops.drawn = frameDraw
@@ -714,14 +712,19 @@ public final class FerazelSession {
         return hostedByLevelRun ? checkGameLoopKeys(ops) : loopTail(ops)
     }
 
-    /// `.PaintFrameWrap`'s end after the special pass.
-    private func paintTail(_ ops: inout FrameOps) {
-        // A passage jump's draws (`PassageView`, W2b), made inside the player pass; PK: the pickup arms' status bar
-        // calls (`PlayerState.passDraws`), made there too.
-        ops.draws.append(contentsOf: passageOps)
-        passageOps = []
+    /// The draws and requests the player pass made (`PlayerState.passDraws` / `passRequests`), in call order: a
+    /// passage jump's (`PassageView`, W2b) and the pickup arms' status bar calls (PK) share one list — the original
+    /// draws each to the screen as it is made, so they interleave in contact order; the upgrade's cursor hide.
+    private func drainPass(_ ops: inout FrameOps) {
         ops.draws.append(contentsOf: world.player.passDraws)
         world.player.passDraws = []
+        ops.requests.append(contentsOf: world.player.passRequests)
+        world.player.passRequests = []
+    }
+
+    /// `.PaintFrameWrap`'s end after the special pass.
+    private func paintTail(_ ops: inout FrameOps) {
+        drainPass(&ops)
         // `.HandleParticles` (l. 9454), after `.HandleSprites` and before `.WrapEraseSprites`.
         world.particles.handle(tiles: world.tiles)
         // `.WrapEraseSprites` reads the live scroll point (`PTR_DAT_1009fe78`, l. 10452–10458): on a passage jump the
@@ -816,7 +819,7 @@ public final class FerazelSession {
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
         for _ in 0..<Self.passagePasses { findUpperLeftCorner(graphics: prefs.graphics) }
-        passageOps.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
     }
 
     /// The passage jump's `.FindUpperLeftCorner` passes (`sVar36 < 0x5a`, l. 49666).
@@ -832,10 +835,10 @@ public final class FerazelSession {
         world.idle.handle(h: camera.scrollH, v: camera.scrollV, playerHotRect: playerRect, active: &world.active,
                           faceRect: faceBounds)
         let table = lightTable, bounds0 = faceBounds, res = resources, lvl = level
-        passageOps.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
+        world.player.passDraws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
-        passageOps.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
     }
 
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the

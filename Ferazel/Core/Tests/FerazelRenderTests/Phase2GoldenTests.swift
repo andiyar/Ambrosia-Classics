@@ -256,7 +256,7 @@ final class Phase2GoldenTests: XCTestCase {
                     modal.append(u.tick(now: now, session: s, keys: keys))
                     now += 1
                 }
-                outcome = .upgrade
+                outcome = .upgrade(keys: keys, capsLock: false)
             default: return ops
             }
             let rest = s.resume(outcome)

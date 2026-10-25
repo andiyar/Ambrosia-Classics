@@ -114,6 +114,8 @@ final class PickupTests: XCTestCase {
         XCTAssertEqual(w.globals.score, 1010)
         XCTAssertEqual(w.globals.inventory[2].count, 2, "the slot already holding 0x16")
         XCTAssertEqual(w.player.cues.map(\.snd), [489, 489, 501, 451, 445, 501])
+        // The 1056's own 501 at 0x55 (M l. 48647), the hundred's 451 / 445 / 501 at 0x100 (M l. 48668–48669, 48693).
+        XCTAssertEqual(w.player.cues.map(\.volume), [0x100, 0x100, 0x55, 0x100, 0x100, 0x100])
         XCTAssertEqual(w.player.cues.prefix(2).map(\.rate), [r1, r2])
         XCTAssertEqual(w.player.cues[0].call, .threeDPitched)
         // Below the hundred: no item, no second sound pair; the light slot freed (KillBonus).
@@ -125,6 +127,51 @@ final class PickupTests: XCTestCase {
         XCTAssertEqual(w.globals.xichrons, 1)
         XCTAssertEqual(w.player.cues.map(\.snd), [501])
         XCTAssertTrue(lights.slots[Int(slot)].removing)
+
+        // The burst (M l. 48632, 48649–48661) with face pixels: `*PTR_DAT_100a0478` (set 0x421 face 0), `*_DAT_100a0474` (set
+        // 0x422 face 0) once `G+0x14 > 99` — here a 1 × 1 face for 0x421, 2 rows × 4 pixels for 0x422. Effects 1 with
+        // the count < 1000 → (1, 1, 1): every pixel; 2 with < 0x5dc → (2, 1, 7): every other pixel; else (2, 2, 7):
+        // every other pixel of every other row. Style 0x65 draws R(60), R(60), R(16), R(12) per particle.
+        func face(rows: Int, pixels: Int) -> ParticleFace {
+            var t: [UInt8] = []
+            for _ in 0..<rows {
+                t += [1, 0, 0, 0, 2, 0, 0, UInt8(pixels)] + [UInt8](repeating: 9, count: pixels)
+                t += [UInt8](repeating: 0, count: (4 - pixels % 4) % 4)
+            }
+            t += [0, 0, 0, 0]
+            let b: [Int16] = [0, 0, Int16(rows), Int16(pixels)]
+            return ParticleFace(frame: b, bounds: b, tokens: t)
+        }
+        let one = face(rows: 1, pixels: 1), eight = face(rows: 2, pixels: 4)
+        let faces = ParticleFaces(sprite: { ref in
+            guard ref.index == 0 else { return nil }
+            return ref.pict == 0x421 ? one : ref.pict == 0x422 ? eight : nil
+        })
+        let cases: [(type: Int16, effects: Int16, count: Int16, made: Int, shape: Int16)] = [
+            (0x41f, 1, 0, 1, 1), (0x420, 1, 0, 8, 1), (0x420, 1, 1000, 2, 7), (0x420, 2, 0, 4, 7),
+            (0x420, 2, 0x5dc, 2, 7), (0x420, 0, 0, 2, 7), (0x420, 3, 0, 2, 7),
+        ]
+        for c in cases {
+            let (bw, bp) = try world()
+            var bl = LightTable()
+            bw.particleFaces = faces
+            bw.particles.counters.count = c.count
+            let b = try bonus(bw, c.type, lights: &bl)
+            let before = Set(bw.particles.records.indices.filter { bw.particles.records[$0].alive })
+            var rr = bw.rng
+            if c.type == 0x420 { _ = rr.next(10000); _ = rr.next(10000) }
+            for _ in 0..<c.made { for n: Int16 in [0x3c, 0x3c, 0x10, 0xc] { _ = rr.next(n) } }
+            HitPlayerSprite.hit(bw, player: bp, other: b, keys: [], lights: &bl, effects: c.effects)
+            let made = bw.particles.records.indices.filter { bw.particles.records[$0].alive && !before.contains($0) }
+            XCTAssertEqual(made.count, c.made, "\(c)")
+            XCTAssertEqual(Set(made.map { bw.particles.records[$0].shape }), [c.shape], "\(c)")
+            XCTAssertEqual(bw.rng.seed, rr.seed, "\(c)")
+        }
+        // The renderer loads both burst sets with the drops (FrameRenderer): 0x421 / 0x422 / 0x516 as `.InitBonusSprite`.
+        for pict: Int16 in [0x421, 0x422, 0x516] {
+            let sheet = try XCTUnwrap(BonusSprite.sheets.first { $0.pict == pict })
+            XCTAssertTrue(BonusSprite.dropSheets.contains(sheet), "sheet \(pict)")
+        }
     }
 
     func testCrystalsMoneyCoins() throws {
@@ -161,6 +208,93 @@ final class PickupTests: XCTestCase {
         touch(w, p, try bonus(w, 0x546, lights: &lights), lights: &lights)
         XCTAssertEqual(w.globals.breath, 0x180)
         XCTAssertEqual(w.player.cues.suffix(2).map(\.snd), [502, 456])
+        // 1291 with `+0xa4` 0x200: + 0xe0 → clamped to max health 0x230 (M l. 48735–48738).
+        w.active.update(id: p) { $0.hp = 0x200 }
+        touch(w, p, try bonus(w, 0x50b, lights: &lights), lights: &lights)
+        XCTAssertEqual(w.active.record(id: p)?.hp, 0x230)
+        // 1300 (M l. 48763–48772): snd 500 vol 0xab; score + 25; magic + 0xe0, clamped at `G+0xc`.
+        w.player.cues = []
+        w.globals.magic = 0x100
+        var score = w.globals.score
+        let c1300 = try bonus(w, 0x514, lights: &lights)
+        touch(w, p, c1300, lights: &lights)
+        XCTAssertEqual([Int(w.globals.magic), Int(w.globals.score - score)], [0x1e0, 25])
+        XCTAssertEqual(dead(w, c1300), 1)
+        w.globals.magic = 0x200
+        touch(w, p, try bonus(w, 0x514, lights: &lights), lights: &lights)
+        XCTAssertEqual(w.globals.magic, 0x230)
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 500, priority: 1, volume: 0xab),
+                                       PlayerCue(call: .reg, snd: 500, priority: 1, volume: 0xab)])
+        // 1292 (M l. 48711–48718): snd 501, the 489 at R + 40000; score + 25; coins + 5.
+        w.player.cues = []
+        score = w.globals.score
+        var coins = w.globals.coins
+        let c1292 = try bonus(w, 0x50c, lights: &lights)
+        var r = w.rng
+        let rate = Int32(r.next(10000)) + 40000
+        touch(w, p, c1292, lights: &lights)
+        XCTAssertEqual([Int(w.globals.score - score), Int(w.globals.coins - coins)], [25, 5])
+        XCTAssertEqual(w.player.cues.map(\.snd), [501, 489])
+        XCTAssertEqual(w.player.cues.map(\.volume), [0x100, 0x100])
+        XCTAssertEqual(w.player.cues.last?.rate, rate)
+        XCTAssertEqual(dead(w, c1292), 1)
+        // 1305 (M l. 48790–48795): coins + 10, score + 5, snd 501 vol 0xab.
+        w.player.cues = []
+        score = w.globals.score
+        coins = w.globals.coins
+        touch(w, p, try bonus(w, 0x519, lights: &lights), lights: &lights)
+        XCTAssertEqual([Int(w.globals.score - score), Int(w.globals.coins - coins)], [5, 10])
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 501, priority: 1, volume: 0xab)])
+
+        // 69, the Mist body (M l. 48597–48615): the spirit timer above 0x167 → nothing; at 0x167 → timer −1,
+        // `_DAT_100a0574 = 14`, `PTR_DAT_100a05a8 = 6`, snd 420, `+0xe9`, the player to the stored body (`+0xc` from
+        // `04d4`, `+0xa` from `04d0`, 24.8 from them), vx = vy = 0.
+        var m = SpriteSlot(type: 0x45, x: 0, y: 0)
+        m.handler = .bonus
+        let mist = w.active.insert(m)
+        w.player.cues = []
+        w.player.mistBodyX = 0x123
+        w.player.mistBodyY = 0x45
+        w.active.update(id: p) { $0.vx = 0x300; $0.vy = -0x200 }
+        w.player.spiritTimer = 0x168
+        touch(w, p, mist, lights: &lights)
+        XCTAssertEqual(dead(w, mist), 0)
+        XCTAssertEqual(w.player.spiritTimer, 0x168)
+        XCTAssertTrue(w.player.cues.isEmpty)
+        w.player.spiritTimer = 0x167
+        touch(w, p, mist, lights: &lights)
+        XCTAssertEqual(dead(w, mist), 1)
+        XCTAssertEqual([Int(w.player.spiritTimer), Int(w.player.spiritTransition), Int(w.player.countdown05a8)],
+                       [-1, 14, 6])
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 420, priority: 1, volume: 0x100)])
+        let pm = try XCTUnwrap(w.active.record(id: p))
+        XCTAssertEqual([pm.x, pm.y], [0x123, 0x45])
+        XCTAssertEqual([pm.x256, pm.y256, pm.vx, pm.vy], [0x12300, 0x4500, 0, 0])
+
+        // 3050, the glider (M l. 48920–48936): `PTR_DAT_100a05c4 ≠ 0` → nothing; else `+0xe9`, `_DAT_100a05e0 = 1`,
+        // `_DAT_100a05d4 = 1`, `PTR_DAT_100a05c8 = 0`, the player's 24.8 position the glider's, `+0xc`/`+0xa` from
+        // them, face set `_DAT_100a0778` (0x41a) face 0, `SetRect(+0x34, 0x37, 0x3e, 99, 0x6e)`.
+        var gl = SpriteSlot(type: 0xbea, x: 0x210, y: 0x88)
+        gl.handler = .bonus
+        gl.x256 = 0x210_80
+        gl.y256 = 0x88_40
+        let glider = w.active.insert(gl)
+        w.player.countdown05c4 = 1
+        w.player.glider05c8 = 7
+        touch(w, p, glider, lights: &lights)
+        XCTAssertEqual(dead(w, glider), 0)
+        XCTAssertFalse(w.player.glider)
+        XCTAssertEqual(w.player.glider05c8, 7)
+        w.player.countdown05c4 = 0
+        touch(w, p, glider, lights: &lights)
+        XCTAssertEqual(dead(w, glider), 1)
+        XCTAssertTrue(w.player.glider)
+        XCTAssertEqual([w.player.gliderExit, w.player.glider05c8], [1, 0])
+        let pg = try XCTUnwrap(w.active.record(id: p))
+        XCTAssertEqual([pg.x256, pg.y256], [0x210_80, 0x88_40])
+        XCTAssertEqual([pg.x, pg.y], [0x210, 0x88])
+        XCTAssertEqual(pg.face, FaceRef(pict: 0x41a, index: 0, set: .encoded))
+        XCTAssertEqual(pg.hotRect, IdleSprites.Rect(top: 0x3e, left: 0x37, bottom: 0x6e, right: 99))
     }
 
     func testScrollLearns() throws {
@@ -191,6 +325,48 @@ final class PickupTests: XCTestCase {
         touch(w, p, s3, lights: &lights)
         XCTAssertTrue(w.player.cues.isEmpty)
         XCTAssertEqual(dead(w, s3), 0)
+
+        // One pass, one ordered list: the original draws each call to the screen as it is made, so a scroll's
+        // `.UpdateStatusBar(1, 1, 0)` and a passage jump's redraws (M l. 49659–49682) reach the frame in contact
+        // order — here the scroll first (list order), then the synthetic passage 2900 (records 509 / 510) at its
+        // jump (`06f0` 0x15 → 0x16).
+        let r = try resources()
+        let ps = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1)
+        for _ in 0..<30 { _ = ps.step(keys: KeyState()) }
+        let pw = ps.world
+        let pid = try XCTUnwrap(pw.playerID)
+        let pl = try XCTUnwrap(pw.active.record(id: pid))
+        var sc = SpriteSlot(type: 2005, x: pl.x, y: pl.y, recordIndex: -1)
+        var sr = pw.rng
+        _ = try BonusSprite.setup(&sc, x: pl.x, y: pl.y, level: ps.level, records: pw.records, effects: 2,
+                                  lightCount: 0, counting: false, rng: &sr) { _, _, _, _ in -1 }
+        sc.x = pl.x
+        sc.y = pl.y
+        sc.hotRect = pl.hotRect
+        sc.layer = 0
+        pw.records[509] = Placement(index: 509, flag: 1, byte1: 0, type: 2900, p1: 510, p2: 0, p3: 0, p4: 0,
+                                    y: Int16(pl.y), x: Int16(pl.x))
+        pw.records[510] = Placement(index: 510, flag: 1, byte1: 0, type: 2900, p1: 509, p2: 0, p3: 0, p4: 0,
+                                    y: 500, x: 1600)
+        var passage = try SetupFaces.setup(pw.records[509], context: SetupFaces.Context(level: pw.level, playerX: 0)).slot
+        passage.recordIndex = 509
+        passage.x = pl.x
+        passage.y = pl.y
+        passage.hotRect = pl.hotRect
+        let scrollID = pw.active.insert(sc), passageID = pw.active.insert(passage)
+        let order = pw.active.sprites.map(\.id)
+        XCTAssertLessThan(try XCTUnwrap(order.firstIndex(of: scrollID)), try XCTUnwrap(order.firstIndex(of: passageID)))
+        pw.player.doorTransit = 0x15
+        let ops = ps.step(keys: KeyState())
+        XCTAssertEqual(pw.player.doorTransit, -0x16, "the jump ran")
+        XCTAssertTrue(pw.globals.inventory.contains { $0.isSpell == 1 && $0.id == 5 }, "the scroll was taken")
+        let bar = try XCTUnwrap(ops.draws.firstIndex { op in
+            if case .statusBar(let b) = op { b.call.forceItems } else { false }
+        })
+        let redraw = try XCTUnwrap(ops.draws.firstIndex { op in
+            if case .redrawEntireScrollGrid = op { true } else { false }
+        })
+        XCTAssertLessThan(bar, redraw, "the scroll's bar call, then the passage's redraws")
     }
 
     func testItemsStack() throws {
@@ -215,6 +391,88 @@ final class PickupTests: XCTestCase {
             if case .statusBar(let s) = op { s.call } else { nil }
         }
         XCTAssertEqual(calls.map(\.itemsOnly), [true, false], "the removal's item stat, then the pickup's (1, 1, 0)")
+        // 3215 first `.RemoveItem(0xe)` (the wooden shield, M l. 48983–48985), then item 0xf.
+        w.globals.inventory[3] = Self.item(0xe)
+        w.player.passDraws = []
+        touch(w, p, try bonus(w, 0xc8f, lights: &lights), lights: &lights)
+        XCTAssertFalse(w.globals.hasItem(0xe))
+        XCTAssertTrue(w.globals.hasItem(0xf))
+        XCTAssertEqual(w.player.passDraws.count, 2, "the removal's item stat, then the pickup's bar")
+
+        // The spheres (M l. 49023–49121): each one's timer and flags, its sound, the hide timer `sphere+0xa6`
+        // (M l. 49120) — 1335's 32000 with its record's p2 = 0, else 0x1c2; 1338's 32000; 1339's 0 (killed).
+        let (sw, sp) = try world()
+        var sl = LightTable()
+        func sphere(_ type: Int16, record: Int16 = -1) throws -> (id: Int, hide: Int16, cues: [PlayerCue]) {
+            sw.player.cues = []
+            let id = try bonus(sw, type, record: record, lights: &sl)
+            sw.active.update(id: id) { $0.counterA6 = 0; $0.pickupDelay = 0 }
+            touch(sw, sp, id, lights: &sl)
+            return (id, try XCTUnwrap(sw.active.record(id: id)).counterA6, sw.player.cues)
+        }
+        func reg(_ snd: Int16, _ vol: Int16 = 0x100) -> [PlayerCue] {
+            [PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol)]
+        }
+        var x = try sphere(0x532)
+        XCTAssertEqual([x.hide, sw.player.shadowTimer], [600, 600])
+        XCTAssertTrue(sw.player.shadowDouble)
+        XCTAssertEqual(x.cues, reg(447))
+        XCTAssertEqual(dead(sw, x.id), 0, "the sphere stays, hidden")
+        for t: Int16 in [0x533, 0x534, 0x535] {
+            sw.player.walkOnLiquidTimer = 0
+            x = try sphere(t)
+            XCTAssertEqual([x.hide, sw.player.walkOnLiquidTimer, sw.player.walkOnLiquidKind], [600, 600, t - 0x533])
+            XCTAssertTrue(sw.player.walkOnLiquid && sw.player.tint0644)
+            XCTAssertEqual(x.cues, reg(444))
+        }
+        x = try sphere(0x536)
+        XCTAssertEqual([x.hide, sw.player.highJumpTimer], [600, 600])
+        XCTAssertTrue(sw.player.highJump && sw.player.tint0634)
+        XCTAssertEqual(x.cues, reg(449))
+        sw.records[0] = record(0, 0x537, p2: 0)
+        x = try sphere(0x537, record: 0)
+        XCTAssertEqual([x.hide, sw.player.invincibleTimer, sw.active.record(id: sp)?.invulnerable], [32000, 0x1c2, 0x1c2])
+        XCTAssertEqual(x.cues, reg(446))
+        sw.records[0] = record(0, 0x537, p2: 1)
+        sw.active.update(id: sp) { $0.invulnerable = 0 }
+        x = try sphere(0x537, record: 0)
+        XCTAssertEqual([x.hide, sw.active.record(id: sp)?.invulnerable], [0x1c2, 0x1c2])
+        x = try sphere(0x538)
+        XCTAssertEqual([x.hide, sw.player.featherFallTimer], [900, 900])
+        XCTAssertTrue(sw.player.featherFall && sw.player.tint0628)
+        XCTAssertEqual(x.cues, reg(445))
+        x = try sphere(0x539)
+        XCTAssertEqual([x.hide, sw.player.doubleSpeedTimer], [600, 600])
+        XCTAssertTrue(sw.player.doubleSpeed && sw.player.tint061c)
+        XCTAssertEqual(x.cues, reg(447))
+        // 1338: + 5 orbs, capped at 8; orbs 0…n−1 at i·(360 / n)·256, radius 0x30, speed 0xa00, in use; the rest out of
+        // use; a live orb sprite killed and dropped; `0614 = 1`; hidden 32000; snd 444.
+        let old = sw.active.insert(SpriteSlot(type: 1, x: 0, y: 0))
+        sw.player.orbs[6].sprite = old
+        sw.player.orbs[7].active = true
+        x = try sphere(0x53a)
+        XCTAssertEqual([x.hide, sw.player.pentashieldCount], [32000, 5])
+        XCTAssertEqual(sw.player.orbs.map(\.active), [true, true, true, true, true, false, false, false])
+        XCTAssertEqual(sw.player.orbs.prefix(5).map(\.angle), [0, 72, 144, 216, 288].map { Int32($0) * 0x100 })
+        XCTAssertEqual(dead(sw, old), 1)
+        XCTAssertNil(sw.player.orbs[6].sprite)
+        XCTAssertTrue(sw.player.flag0614)
+        XCTAssertEqual(x.cues, reg(444))
+        sw.player.orbs[1].radius = 0
+        sw.player.orbs[1].speed = 0
+        x = try sphere(0x53a)
+        XCTAssertEqual(sw.player.pentashieldCount, 8, "5 + 5 capped")
+        XCTAssertEqual(sw.player.orbs.map(\.active), [Bool](repeating: true, count: 8))
+        XCTAssertEqual(sw.player.orbs.map(\.angle), (0..<8).map { Int32($0) * 45 * 0x100 })
+        XCTAssertEqual([sw.player.orbs[1].radius, sw.player.orbs[1].speed], [0x30, 0xa00])
+        // 1339: `+0xe9`, snd 450 vol 0xab, `+0xa4` − 0x380, `+0x116 = 30`, `+0xaa = 30`; hide 0.
+        sw.active.update(id: sp) { $0.hp = 0x400; $0.invulnerable = 0; $0.flash = 0 }
+        x = try sphere(0x53b)
+        XCTAssertEqual(dead(sw, x.id), 1)
+        XCTAssertEqual(x.hide, 0)
+        XCTAssertEqual(x.cues, reg(450, 0xab))
+        let hurt = try XCTUnwrap(sw.active.record(id: sp))
+        XCTAssertEqual([hurt.hp, hurt.invulnerable, hurt.flash], [0x80, 30, 30])
     }
 
     func testWorldFlagTrigger() throws {
@@ -238,6 +496,13 @@ final class PickupTests: XCTestCase {
         w.records[0] = record(0, 0x423, p1: 1)
         touch(w, p, try bonus(w, 0x423, record: 0, lights: &lights), lights: &lights)
         XCTAssertEqual(w.player.cues.map(\.snd), [505])
+        // A 1059 with p1 = 0 (M l. 48590–48593): no sound, still KillBonus'd.
+        w.player.cues = []
+        w.records[0] = record(0, 0x423, p1: 0)
+        let quiet = try bonus(w, 0x423, record: 0, lights: &lights)
+        touch(w, p, quiet, lights: &lights)
+        XCTAssertTrue(w.player.cues.isEmpty)
+        XCTAssertEqual(dead(w, quiet), 1)
     }
 
     /// The renderer side of a `LevelRun` (Core: the session's default face bounds).
@@ -261,7 +526,7 @@ final class PickupTests: XCTestCase {
         let s = try XCTUnwrap(run.session)
         let pid = try XCTUnwrap(s.world.playerID)
         let pl = try XCTUnwrap(s.world.active.record(id: pid))
-        s.world.globals.magic = 0x230
+        s.world.globals.magic = 0x100                                   // below the max: the refill fills it
         s.world.globals.maxMagic = 0x230
         let score = s.world.globals.score
         // A 1341 under the player (its Setup as `.SetupLevelSprites` makes it).
@@ -304,6 +569,84 @@ final class PickupTests: XCTestCase {
         XCTAssertEqual(s.world.statusBar.flashes.magic, 0)
         XCTAssertNil(run.upgrade)
         XCTAssertNil(s.suspension)
+
+        // The arm itself (M l. 48808–48819): snd 451 vol 0xab, score + 2000, `+0xe9`, `GammaFadeOutAsync(2, …)` toward
+        // 1341's `_DAT_100a07f0` (0x5555, 0xffff, 0xffff) / 1340's `_DAT_100a07f4` (0xffff, 0x5555, 0xffff) — whose
+        // `HideCursorSafe` (M l. 31905) is a `.hideCursor` request when the fade arms; fading off, neither.
+        for (type, rgb) in [(Int16(0x53d), RGB16(red: 0x5555, green: 0xffff, blue: 0xffff)),
+                            (Int16(0x53c), RGB16(red: 0xffff, green: 0x5555, blue: 0xffff))] {
+            let (w, p) = try world()
+            var lights = LightTable()
+            let b = try bonus(w, type, lights: &lights)
+            w.active.update(id: b) { $0.counterA6 = 0 }
+            touch(w, p, b, lights: &lights)
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 451, priority: 1, volume: 0xab)])
+            XCTAssertEqual(w.globals.score, 2000)
+            XCTAssertEqual(dead(w, b), 1)
+            XCTAssertEqual(w.gammaFade.toward, rgb)
+            XCTAssertEqual([w.gammaFade.steps, w.gammaFade.done ? 1 : 0], [2, 0])
+            XCTAssertEqual(w.suspension, .upgrade(type: type))
+            XCTAssertEqual(w.player.passRequests, [.hideCursor])
+            let (w2, p2) = try world()
+            w2.gammaFade = AsyncGammaFade(fadedOut: false, done: true, fadingEnabled: false)
+            let b2 = try bonus(w2, type, lights: &lights)
+            w2.active.update(id: b2) { $0.counterA6 = 0 }
+            touch(w2, p2, b2, lights: &lights)
+            XCTAssertEqual(w2.suspension, .upgrade(type: type))
+            XCTAssertEqual(w2.player.passRequests, [], "fading off: no fade, no cursor hide")
+        }
+
+        // A hosted session: the suspended frame hands the cursor hide out; after the loops the rest of the frame
+        // reads the keys polled at the resume tick (live in the original) — Caps Lock down there → `.CheckGameLoopKeys`
+        // pauses. A 1340 there: the refill (breath = health = max, `G+8 = 8`), max + 0x70, health / breath + 0x70 with
+        // the player's `+0xa4` = health; the bar calls are (1, 0, 1).
+        for caps in [true, false] {
+            let hs = try FerazelSession(resources: r, prefs: prefs, level: 2, hostedByLevelRun: true)
+            for _ in 0..<45 { XCTAssertNil(hs.step(keys: KeyState()).suspension) }
+            let hw = hs.world
+            let hp = try XCTUnwrap(hw.playerID)
+            let hpl = try XCTUnwrap(hw.active.record(id: hp))
+            var hu = SpriteSlot(type: 0x53c, x: hpl.x, y: hpl.y, recordIndex: -1)
+            var hr = hw.rng
+            _ = try BonusSprite.setup(&hu, x: hpl.x, y: hpl.y, level: hs.level, records: hw.records, effects: 2,
+                                      lightCount: 0, counting: false, rng: &hr) { _, _, _, _ in -1 }
+            hu.hotRect = hpl.hotRect
+            hu.x = hpl.x
+            hu.y = hpl.y
+            _ = hw.active.insert(hu)
+            hw.globals.maxHealth = 0x230
+            hw.globals.health = 0x100
+            hw.active.update(id: hp) { $0.hp = 0x100 }                 // the frame reads G+4 back from `+0xa4`
+            hw.globals.breath = 0x80
+            hw.globals.suffocation = 0x1e
+            hw.globals.magic = 0x100
+            hw.globals.maxMagic = 0x230
+            var first = FrameOps()
+            for _ in 0..<4 {
+                first = hs.step(keys: KeyState())
+                if first.suspension != nil { break }
+            }
+            XCTAssertEqual(first.suspension, .upgrade(type: 0x53c))
+            XCTAssertEqual(hw.globals.health, 0x100, "below the max at the arm")
+            XCTAssertEqual(first.requests, [.hideCursor, .hideCursor], "the iteration's (M l. 5233), the fade's")
+            var anim = UpgradeAnimation(type: 0x53c)
+            var now: UInt32 = 0
+            var barCalls: [StatusBarCall] = []
+            while !anim.isDone {
+                for op in anim.tick(now: now, session: hs, keys: KeyState()).draws {
+                    if case .statusBar(let b) = op { barCalls.append(b.call) }
+                }
+                now += 1
+            }
+            XCTAssertEqual(barCalls.count, 50)
+            XCTAssertEqual(Set(barCalls.map { [$0.partial, $0.forceItems, $0.forceBars] }), [[true, false, true]])
+            XCTAssertEqual([hw.globals.maxHealth, hw.globals.health, hw.globals.breath], [0x2a0, 0x2a0, 0x2a0])
+            XCTAssertEqual(hw.globals.suffocation, 8)
+            XCTAssertEqual(hw.active.record(id: hp)?.hp, 0x2a0)
+            XCTAssertEqual([hw.globals.magic, hw.globals.maxMagic], [0x100, 0x230], "a 1340 leaves magic")
+            let rest = hs.resume(.upgrade(keys: KeyState(), capsLock: caps))
+            XCTAssertEqual(rest.suspension, caps ? .gameLoopKeys(.pause) : nil, "Caps Lock \(caps) at the resume")
+        }
     }
 
     func testHurtCoinsSpawned() throws {

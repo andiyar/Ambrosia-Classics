@@ -35,11 +35,13 @@ public enum BonusSprite {
         return all
     }()
 
-    /// PK: the sheets of the Bonus types spawned at run time — `.HurtPlayer`'s lost coin 0x516 (`_DAT_100a08d0`, M l.
-    /// 52294, 9 × 10×10) — for a renderer that loads only the placed types' sheets.
-    public static let dropSheets: Set<SetupFaces.Sheet> = [
-        SetupFaces.Sheet(pict: 0x516, count: 9, cellWidth: 10, cellHeight: 10, columns: 9, clut: 200),
-    ]
+    /// PK: the sheets Bonus faces are read from at run time without a placed type to load them — `.HurtPlayer`'s lost
+    /// coin 0x516 (`_DAT_100a08d0`, M l. 52294, 9 × 10×10) and the Xichron burst's sets (`.ExplodeFaceIntoParticles`,
+    /// M l. 48632, 48649–48661: 0x421 face 0 `*PTR_DAT_100a0478`, 0x422 face 0 `*_DAT_100a0474` from the hundredth on;
+    /// 10 × 0x20×0x20) — for a renderer that loads only the placed types' sheets (`.InitBonusSprite` loads them all
+    /// at boot). The burst's particles and their `FastRand` draws follow the face's pixels, which Core has only from
+    /// the renderer (`SpriteWorld.particleFaces`): a face not loaded would emit nothing.
+    public static let dropSheets: Set<SetupFaces.Sheet> = Set(sheets.filter { [0x421, 0x422, 0x516].contains($0.pict) })
 
     /// The light faces: `_DAT_100a07fc` 0x336 (52×52), `PTR_DAT_100a088c[0…3]` 0x32a…0x32d (72×72, `BonusHandle`),
     /// `_DAT_100a08c0` 0x321 / `_DAT_100a08bc` 0x322 (192×192), `_DAT_100a08b8` 0x326 (84×84).

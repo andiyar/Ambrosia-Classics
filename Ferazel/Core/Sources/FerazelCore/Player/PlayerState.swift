@@ -396,9 +396,13 @@ public struct PlayerState: Equatable, Sendable {
     public var orbs: [Orb] = (0..<8).map { Orb(sprite: nil, active: false, angle: Int32($0) * 0x4800, radius: 0x30,
                                                speed: 0xa00) }
     /// Draws a `.HitPlayerSprite` arm makes inside the special pass (PK: the pickups' `.UpdateStatusBar(1, 1, 0)` and
-    /// `.RemoveItem`'s `.UpdateItemStat`), in call order; the session appends them to the frame after the pass (or at
-    /// its suspension).
+    /// `.RemoveItem`'s `.UpdateItemStat`; a passage jump's `PassageView` redraws, W2b), in one list in call order; the
+    /// session appends them to the frame after the pass (or at its suspension).
     public var passDraws: [DrawOp] = []
+    /// The shell requests a `.HitPlayerSprite` arm makes inside the special pass (PK: the upgrade's
+    /// `GammaFadeOutAsync` → `HideCursorSafe`, M l. 31905), in call order; the session appends them to the frame's
+    /// requests after the pass (or at its suspension).
+    public var passRequests: [ShellRequest] = []
 
     /// The sound calls made since the last `drainFrameOutputs()`, in call order — by the player's Handle and tile
     /// callback and by the Effect Handles (the crumble overlay's 424).
