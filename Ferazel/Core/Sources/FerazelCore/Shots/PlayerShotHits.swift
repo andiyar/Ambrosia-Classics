@@ -154,7 +154,7 @@ public enum PlayerShotHits {
     /// 4. a Box (`PTR_PTR_100a0484`) of type 0x2c8 / 0x2c9 (a tree trunk): id 4 grows it (`trunkGrowth`), any other id
     ///    nothing;
     /// 5. the player or an Effect (`PTR_PTR_100a0460`) → nothing; a Bonus (`PTR_PTR_100a047c`) 0x517 / 0x51b with
-    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: Phase 5 — no
+    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: SW — no
     ///    sprite has the Statue's Handle yet) or a Box: no one-way top (`+0x185`) and no surface function (`+0x1e8`;
     ///    only the rope bridge, // later: Phase 6) → the 2941 test (type 0xb7d, `+0x116 < 1`, the shot's `+0xa4 ==
     ///    300`, `cmpwi r0,0x12c` raw `1005ab7c` → HP − 0x50, `+0xaa = 10`, `+0x116 = 10`,
@@ -201,10 +201,10 @@ public enum PlayerShotHits {
         if runs(o, .bonus) {
             if (o.type == 0x517 || o.type == 0x51b) && s.type != PlayerShot.orb && o.pickupDelay != 0 { killShot(true, true) }
         } else if runs(o, .box) {
-            // The Statue Handle `PTR_PTR_100a01f8` takes this arm too (M l. 51038) // later: Phase 5 (the Statue's Handle;
-            // no sprite runs it on levels 1–4).
+            // The Statue Handle `PTR_PTR_100a01f8` takes this arm too (M l. 51038) // later: SW (the Statue's Handle;
+            // no sprite runs it yet).
             if !o.oneWay {                                                  // `+0x1e8` 0 for every Box built
-                // The 2941 test, for a Box or a Statue // later: Phase 5 (its Statue half: the Statue's Handle).
+                // The 2941 test, for a Box or a Statue // later: SW (its Statue half: the Statue's Handle).
                 if o.type == 0xb7d && o.invulnerable < 1 && s.hp == 300 {
                     w.active.update(id: oID) { b in
                         b.hp &-= 0x50
