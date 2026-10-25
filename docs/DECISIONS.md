@@ -1496,3 +1496,9 @@ Xichrons). New values: STATE / the plan's "As executed" notes for TB, BN, PK.
    it."). For Ferazel: smooth today's Times/Geneva first (TX); only if it still looks off against the Let's Play, source
    the classic fonts (Ben's Mac OS 9 setup, or github.com/pjobson/Apple-Fonts) and bundle them. Release scripts that
    assert "no fonts bundled" change only when a font actually ships.
+
+**As built — wave 4.2F (loop run 22, 2026-10-25):** TX cdcb8b8 + 480d46e — text smoothed as Mac OS 9 drew it (coverage
+blended into the palette; 14 pt threshold read from the Let's Play: conversation text smoothed, status-bar and item-count
+text crisp) → Ferazel/Core **396/0**, no golden moved; SP — measured, no change: the port runs at the binary's cap (30
+steps/s, `.GameLoop` M l. 5229–5292); the LP shows ~25 steps/s during play (SheepShaver CPU-bound; its text reveal runs
+at the true 30 characters/s) → Ben's call, QUESTIONS Q9. Ladder from EF on +3 more (Phase 4 end **487**).

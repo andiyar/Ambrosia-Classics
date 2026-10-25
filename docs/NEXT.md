@@ -38,13 +38,14 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 
 ## READ FIRST (in order)
 1. This file, then `docs/QUESTIONS.md` (act on any new text under an item's `Answer:` before anything else — it is an
-   authorization for exactly what it says; record it in DECISIONS). Open: **Q2** (the Phase 2 gate card — Ben DEFERRED it
-   until he is back; not a verdict, keep it open), **Q5** (system Quit/logout during a level waits for a pause or the
-   menu, as the original — built as (a)), **Q6** (run 17: the Phase 3 gate card), **Q7** (run 18: the Phase 4 plan's
-   three non-blocking choices — defaults are being built). If Ben answers Q2 or Q6 with (b)/(c), his notes become fix
-   tasks for that phase — plan them FIRST (append them to the Phase 4 plan as a named wave before the next one) and say
-   so in LOOP-LOG; Q5 (b)/(c) is a small App task, plan it first too; a non-default Q7 answer becomes a small task in
-   Phase 4. Q1, Q3, Q4 are answered and acted on.
+   authorization for exactly what it says; record it in DECISIONS). Open: **Q5** (system Quit/logout during a level waits
+   for a pause or the menu, as the original — built as (a)), **Q7** (run 18: the Phase 4 plan's three non-blocking
+   choices — defaults are being built), **Q9** (run 22: game speed — the port runs at the original's cap, 30 steps/s; the
+   Let's Play ~25; keep / hidden slower cap / slower default — default (a) keep, nothing changes). A (b)/(c) answer to Q5
+   or Q9 is a small App task, plan it first (as wave 4.2F was: a named wave before the next one in the Phase 4 plan); a
+   non-default Q7 answer becomes a small task in Phase 4. **Ben's later notes on the text** (Q8 says: if the smoothed
+   modern Times still looks off against the Let's Play, bundle classic Times/Geneva — allowed, D39) become a task the same way.
+   Phase 4. Q1, Q2, Q3, Q4, Q6, Q8 are answered and acted on (D39 records Q2/Q6/Q8).
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D26** (the Ferazel design ruling), **D33** (Phase 2
    as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + as built), **D37** (Ferazel controller),
    **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text).
@@ -77,13 +78,13 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-25, written by loop run 21 at its close; head of `main` = run 21's docs-close commit on top of 92419b6 — read `git log -8 main`)
-- **Phase 2 "Ferazel moves" CLOSED on the machine side** (loop run 7). **Ben's gate: QUESTIONS Q2 — DEFERRED.**
+## STATE (live, 2026-10-25, written by loop run 22 at its close; head of `main` = run 22's docs-close commit on top of 480d46e — read `git log -8 main`)
+- **Phases 2 and 3 PASSED WITH NOTES by Ben (2026-10-25, D39).** His notes became wave 4.2F (done by loop run 22).
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
-  `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card). **Ben's gate: Q6.**
+  `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card; Ben played it — Q6 answered).
 - **Phase 4 "Spells + items" UNDER WAY** (plan `docs/plans/2026-10-24-ferazel-phase4.md`; D38 + its "As built — wave
-  4.0/4.1/4.2" paragraphs): 24 tasks + the seat-inserted TB + phase end A4. **Ladder now 349 → 484** (TB added 3 before BN;
-  every total from BN on is the plan's + 3 — plan l. ~119 says so). `BuiltLevels` widens to 1...3 at LV3 and 1...4 at LV4.
+  4.0/4.1/4.2" + D39 "As built — wave 4.2F"): 24 tasks + the seat-inserted TB + wave 4.2F (TX, SP) + phase end A4. **Ladder
+  now 349 → 487** (TB +3 before BN, TX +3 before EF: every total from EF on is the plan's + 6 — plan l. ~119 says so). `BuiltLevels` widens to 1...3 at LV3 and 1...4 at LV4.
   Waves 4.0 (run 19) → 357 and 4.1 (run 20) → 374 done. **Wave 4.2 DONE (loop run 21):** TB 46d2173 + d4c1f7b (sprite
   draw mode 0xb, translucency — `.BlitEncFaceTransClip`/`…FlipClip`, `.CalcPxRowContents`, table 0148; a flipped sprite over
   the left edge reads what the binary reads, never refuses) → 377; BN 8180590 + 9b2faaf (`World/Movers/BonusSprite.swift`:
@@ -91,12 +92,15 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   0xc9b…0xcb0 — not on levels 1–2, **recheck at LV3/LV4**) → 385; PK 7208dbd + eb754a1 + 92419b6 (the pickup arm in
   `Player/HitPlayerSprite.swift`, `.upgrade(type:)` suspension run by `LevelRun` over 120 ticks, `Outcome.upgrade` carries
   the resume tick's keys + Caps Lock, hurt coins spawned on layer 1 (the dump, not 0x14), `fadeOut` returns whether it armed
-  → `.hideCursor` via `PlayerState.passRequests`, one ordered list for pass draws) → **393**.
-- `Ferazel/Core` suite: **393 passed, 0 failed/skipped** (run 21, seat-run from the merge head). Census `Totals: items 1,108
+  → `.hideCursor` via `PlayerState.passRequests`, one ordered list for pass draws) → **393**. **Wave 4.2F DONE (loop run 22,
+  Ben's notes):** TX cdcb8b8 + 480d46e (`TextRasterizer` returns coverage 0…255; one blend helper in `TextRasterizer.swift`;
+  the App's `CoreTextRasterizer` smooths at ≥ 14 pt as the LP shows; status bar mixes through the screen CLUT) → **396**;
+  SP (measured, no code: port = binary cap 30 steps/s; LP ~25 — Q9).
+- `Ferazel/Core` suite: **396 passed, 0 failed/skipped** (run 22, seat-run from the merge head). Census `Totals: items 1,108
   decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- **Goldens (current, after wave 4.2):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+- **Goldens (current, after wave 4.2F — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
   `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `deb577ecdeb64c58`,
   swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
   1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
@@ -116,7 +120,10 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   Core, or stop when missing); **sphere timers are not counted down until PU** (a walk-on-liquid sphere stays on — level 2
   has one; PU owns it); a 1058 with p1 out of range is dropped where the binary writes past the end; the glider's 0x41a sheet
   is GL's.
-- **Lessons (runs 9–21):** (1) ground on the bank + the dump; (2) the plan is wrong against the dump about once per task —
+- **Run 22 carries:** the smoothing mix is linear with no gamma and the 14 pt threshold is read from the LP, both [MED];
+  the LP's Times still looks a little heavier and ~5 % wider than today's system Times (the font — D39 allows bundling
+  classic Times if Ben asks); SP left the level-start pan, the load bar and walk distance per step unmeasured [LOW].
+- **Lessons (runs 9–21, 22):** (1) ground on the bank + the dump; (2) the plan is wrong against the dump about once per task —
   the dump wins, the as-executed bullet records it; (3) run the seat's own gates from the worktree once no agent is
   building; (4) foreground `Agent` calls return the report directly — two review legs in one message run in parallel in
   `git archive` temp copies; (5) a fix round that changes behaviour gets a re-review; a tests-only or tiny round the seat
@@ -133,27 +140,31 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   no task owns (mode 0xb), park its work as a WIP commit on a side branch, rewind, insert a small task for the gap first,
   then cherry-pick the parked work and have a fresh implementer finish — history stays task-by-task; the ladder shift is
   recorded in the plan and D38;** (19) the golden "switch the new behaviour off → old values return" check is what makes a
-  ◈ move acceptable — ask both implementer and reviewer to do it.
+  ◈ move acceptable — ask both implementer and reviewer to do it; (20) **run 22: a "measure first" task runs well as a read-only
+  investigator in parallel with the other task's implementer, then a reviewer who re-measures independently; wait on a
+  background agent by `stat -L` on its transcript (the task file is a symlink).**
 
-## THIS RUN'S JOB — loop run 22: **Phase 4 wave 4.3 = [EF CS]** (2 tasks, both ⚑ MAJOR)
-- **EF** (plan l. ~637–677, ⚑ MAJOR, → **400** = plan 397 + 3): the Effect ids Phase 4 spawns (0…15, 0x442, 0x4b6, 0x4b7,
-  0xc1b, 0xc81, the balloons — Ruling 14), the explosion package, `ScreenFlash` (`Particles/ScreenFlash.swift`,
+## THIS RUN'S JOB — loop run 23: **Phase 4 wave 4.3 = [EF CS]** (2 tasks, both ⚑ MAJOR)
+- **EF** (plan `#### EF`, l. ~705–745, ⚑ MAJOR, → **403** = plan 397 + 6): the Effect ids Phase 4 spawns (0…15, 0x442,
+  0x4b6, 0x4b7, 0xc1b, 0xc81, the balloons — Ruling 14), the explosion package, `ScreenFlash` (`Particles/ScreenFlash.swift`,
   `_DAT_100a00fc`/`_DAT_100a00cc`, M l. 9437–9447), `DrawOp.copyMaskToScreen`, the Camera shake counter `_DAT_1009ffa0`;
   `GroundCeilingEffects.swift` is its main file (fix the per-smoke-frame lookup carry there if cheap). Every Effect type
-  spawned at run time needs its sheet in the renderer's sheet table (plan l. 318–323). No golden may move (not ◈) — STOP if
+  spawned at run time needs its sheet in the renderer's sheet table (plan l. ~318–323). No golden may move (not ◈) — STOP if
   one does. Two Opus review legs.
-- **CS** (plan l. ~678–741, ⚑ MAJOR, → **409** = plan 406 + 3): casting (`.CastSpell`; the cast sound's `FastRand(10000)`
-  precedes the shot Setup's `FastRand(5)` — Hazards) and the player shots in flight (`SpriteHandler.playerShot`, `+0x170`
-  power / `+4` spell id split, `+0x14c` shot age); the no-free-record rule (Ruling 16). Not ◈. Two Opus review legs.
+- **CS** (plan `#### CS`, l. ~746–811, ⚑ MAJOR, → **412** = plan 406 + 6): casting (`.CastSpell`; the cast sound's
+  `FastRand(10000)` precedes the shot Setup's `FastRand(5)` — Hazards) and the player shots in flight
+  (`SpriteHandler.playerShot`, `+0x170` power / `+4` spell id split, `+0x14c` shot age); the no-free-record rule (Ruling 16).
+  Not ◈. Two Opus review legs.
 - Order EF → CS (CS uses EF's effect 5 for the liquid rule), each merged to main before the next. Wave end: G3 + G5. Then
-  CLOSE. The next chip names wave 4.4 = [SH GL PU] (plan l. ~742ff, → 428; SH ⚑ — a 3-task run if only SH is MAJOR).
+  CLOSE. The next chip names wave 4.4 = [SH GL PU] (plan `#### SH` l. ~812ff, → 431; SH ⚑ — a 3-task run if only SH is MAJOR).
+- First, if Ben answered Q5/Q9 with (b)/(c) or wrote text notes: plan that small task first (see READ FIRST 1).
 
-## GATES (fenced; verified on this machine 2026-10-25; G2 393/0, G3 1,108/0, G5 SUCCEEDED re-run by run 21 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-25; G2 396/0, G3 1,108/0, G5 SUCCEEDED re-run by run 22 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (EF 400, CS 409), second = 0
+# G2 suite: first number = the ladder total (EF 403, CS 412), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

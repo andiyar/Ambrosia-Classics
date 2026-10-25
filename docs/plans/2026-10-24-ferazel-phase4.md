@@ -116,7 +116,7 @@ git -C "$WT" status --porcelain | grep -v '^??'
 APP="$WT/out/Ferazel/Ferazel's Wand.app"; open -n "$APP"; sleep 5; pgrep -fl "Ferazel's Wand" | cut -c1-100; osascript -e 'tell application "Ferazel'"'"'s Wand" to quit'; sleep 2; pgrep -fl "Ferazel's Wand"; ls -t ~/Library/Logs/DiagnosticReports | head -n 3
 ```
 
-**(Loop run 21: the seat-inserted task TB (+3, before BN) shifts every total from BN on by +3 — BN 385, PK 393, wave ends 4.2 **393** · 4.3 **409** · 4.4 **428** · 4.5 **441** · 4.6 **454** · 4.7 **470** · 4.8/4.9 **484**.)** **Expected G2 at each wave end** (the run boundaries, "Execution order"): 4.0 **357** · 4.1 **374** · 4.2 **390** ·
+**(Loop run 22: wave 4.2F (TX +3, SP +0) shifts every total from EF on by a further +3 — EF 403, CS 412, wave ends 4.3 **412** · 4.4 **431** · 4.5 **444** · 4.6 **457** · 4.7 **473** · 4.8/4.9 **487**.)** **(Loop run 21: the seat-inserted task TB (+3, before BN) shifts every total from BN on by +3 — BN 385, PK 393, wave ends 4.2 **393** · 4.3 **409** · 4.4 **428** · 4.5 **441** · 4.6 **454** · 4.7 **470** · 4.8/4.9 **484**.)** **Expected G2 at each wave end** (the run boundaries, "Execution order"): 4.0 **357** · 4.1 **374** · 4.2 **390** ·
 4.3 **406** · 4.4 **425** · 4.5 **438** · 4.6 **451** · 4.7 **467** · 4.8 **481** · 4.9 (phase end) **481**.
 
 **Test ladder (`Ferazel/Core`, cumulative; canonical order = execution order; STOP if different):** base **349** →
@@ -663,6 +663,17 @@ records it here and in NEXT).
   50 % mix (status bar, conversation, screen); coverage 0/255 → today's pixels. App code has no test target: the seat's
   G5 build + an offline render of one LP line (the implementer's own check, reported) close it.
 - **Gate:** G2 (base + TX's tests), G5, G6, G7, G10. Not ◈.
+- ⚑ **As executed (TX, loop run 22; cdcb8b8 + tests-only fix round 480d46e):** G2 **396**/0 (+3), G3 1,108/0, G5
+  SUCCEEDED, no golden moved. `TextRasterizer` returns `coverage` 0…255; one blend helper in `TextRasterizer.swift` (linear
+  16-bit mix of text RGB and the destination's CLUT RGB by c/255, rounded, then the site's colour search; 255 → text index,
+  0 → untouched). The status bar mixes through the **screen** CLUT (new stored `screenClut`): the dump draws into the status
+  port with no device switch and the port is copied raw. **Threshold 14 pt [MED → read from the LP]:** at 03:16 the Times 18
+  conversation text and speaker name are smoothed, the status bar's Times 12 bold stage name is crisp; at ~09:50 the Geneva
+  bold 8 "x2" count is crisp — the game draws only 8, 9, 12, 18 pt, so 13…18 draw the same (the plan's open question: the
+  small count is not smoothed). Linear mix, no gamma [MED]. Offline render of one LP line: raggedness gone; the LP glyphs are
+  still a little heavier and ~5 % wider — the font, not the smoothing (Q8's next step if Ben still sees it). One Opus leg
+  MERGEABLE WITH FIXES (5 surviving mutations: blend only over black, symmetric coverage, zero coverage, rounding, CLUT
+  choice) → tests-only round inside the three tests (all killed; the screen test moved to level CLUT 202), seat-read.
 
 #### SP — game speed against the Let's Play (Q6 note 2)
 - **Why:** Ben: "it runs very fast". The timing code was built to the binary (flow at 60 Hz ticks, `LevelRun` steps on
@@ -678,6 +689,16 @@ records it here and in NEXT).
   measurement error), change nothing and write the numbers up for Ben — his question then becomes a QUESTIONS item.
 - **Gate:** G2, G5 (if the App changes), G6, G7, G10. A golden moving is a STOP unless the fix is the pace itself and
   the reviewer confirms the cause by switching it off.
+- ⚑ **As executed (SP, loop run 22; no code change, +0 tests):** measured, verdict **the port = the binary's cap**. Port:
+  `ShellClock.ticks()` 60 Hz; `FerazelController.swift:168` 240 Hz idle timer, l. 329–331 one flow tick per new tick;
+  `LevelRun.swift:612` one step per 2 ticks, no catch-up → 30 steps/s. Binary: `.GameLoop` M l. 5229–5292 waits for 2
+  ticks since the loop top (4 with "reduce frame rate", which only skips drawing — off by default, M l. 7716 /
+  `FerazelPrefs.swift:90`); movement is per step, never scaled by elapsed time; `.CharByCharDelay` 2 ticks per character
+  (M l. 65645). LP (30 fps constant): text reveal ≈ 30 characters/s (= the port; the emulator's clock ran true); during
+  play only 25.1–25.8 new frames/s (range 20–29), each one game step (a jump's gravity increments) → the port is
+  ≈ 1.16–1.20× the LP because SheepShaver was CPU-bound. Investigator leg + independent reviewer leg (re-measured 204 s
+  of play) CONFIRMED. Ben decides: QUESTIONS **Q9** (keep the cap / hidden slower cap / slower default). Unmeasured
+  anchors (level-start pan, load bar) and walk distance per step left unchecked [LOW].
 
 ### Wave 4.3 — effects, casting
 
