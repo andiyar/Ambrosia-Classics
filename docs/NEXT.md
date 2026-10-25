@@ -49,13 +49,13 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + as built), **D37** (Ferazel controller),
    **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text).
 3. **The plan: `docs/plans/2026-10-24-ferazel-phase4.md`** — read "Verification model" (l. 78, gates G1–G10 incl. G7b
-   and G8), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared architecture LOCKED" (l. 222), then your
-   wave's tasks, "Execution order" (l. ~1290, dependencies + file overlaps), "Stand-ins kept (◇)" (l. ~1328), "Bank
-   corrections to append" (l. ~1424; BC35–BC50, each appended by the task named) and "Rulings" (l. ~1523). Read the
-   wave 4.0 + 4.1 "As executed" notes (X1 l. ~342, VS l. ~367, LT l. ~406, US l. ~442, IV l. ~468, HU l. ~512) — they
-   change seams you will use (`killCount`/write-back flags, `addItem` returns the slot, `StatusBarCalls` + the flow-wide
-   status-bar globals). The design
-   `docs/plans/2026-10-06-ferazel-design.md` §8 row 4 is the scope; the Phase 3 plan is history.
+   and G8, and the run-21 ladder-shift note at l. ~119), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared
+   architecture LOCKED" (l. 222), then your wave's tasks, "Execution order" (l. ~1298), "Stand-ins kept (◇)" (l. ~1336),
+   "Bank corrections to append" (l. ~1432) and "Rulings" (l. ~1531). Read the "As executed" notes of waves 4.0–4.2 (X1,
+   VS, LT, US, IV, HU, TB, BN, PK — grep `As executed (`) — they change seams you will use (`killCount`/write-back flags,
+   `addItem` returns the slot, `StatusBarCalls` + the flow-wide status-bar globals, `BonusSprite`, `Outcome.upgrade`,
+   `PlayerState.passRequests`, `fadeOut` returning whether it armed). The design `docs/plans/2026-10-06-ferazel-design.md`
+   §8 row 4 is the scope; the Phase 3 plan is history.
 4. The bank: `docs/ferazel/INDEX.md` then only the topical files your tasks cite; the decompile `ghidra/ferazel/` (the
    dump beats the bank: "follow the binary"; Phase 3's "digest A–F" files were never committed — the Phase 4 plan is
    grounded on the bank + the dump + the planner's census scripts (not committed); say so in every brief). **Every
@@ -77,94 +77,83 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-25, written by loop run 20 at its close; head of `main` = run 20's docs-close commit on top of 38b144b — read `git log -8 main`)
+## STATE (live, 2026-10-25, written by loop run 21 at its close; head of `main` = run 21's docs-close commit on top of 92419b6 — read `git log -8 main`)
 - **Phase 2 "Ferazel moves" CLOSED on the machine side** (loop run 7). **Ben's gate: QUESTIONS Q2 — DEFERRED.**
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
   `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card). **Ben's gate: Q6.**
 - **Phase 4 "Spells + items" UNDER WAY** (plan `docs/plans/2026-10-24-ferazel-phase4.md`; D38 + its "As built — wave
-  4.0" and "wave 4.1" paragraphs): 24 tasks + phase end A4, 12 ⚑ MAJOR, ladder **349 → 481**. `BuiltLevels` widens to
-  1...3 at LV3 and 1...4 at LV4; level 5 stays refused. **Wave 4.0 DONE (run 19)** → 357. **Wave 4.1 DONE (loop run
-  20):** US 7ccad36 + 6b78909 (`.UpdateSprites` in full; `SpriteSlot.killCount` +0xe9 with `dead` computed — `dead = true`
-  stores 1; write-back flags `keepRecord` +0x188 / `noWriteBack189` / `noWriteBack18a` / `keepRecordAtKill` +0x18b /
-  `killedForGood` +0xea / `countedInTotals` +0x1b5 / `idleEntry` +0xa8; `updateSprites(lights:)`; **seat ruling: every
-  Setup sets its write-back flags at the dump's sites — BN must set them for the Bonus types (M l. 52615–52636: 0xbea,
-  0x546) and BX1 for the Box arms (59127, 59174, 59181, 59470)**, else the write-back moves their records) → 362; IV
-  99a5059 + 2122059 (`Items/Inventory.swift`; `addItem` returns the slot −1 none; `learnSpell`; `repairSelection()`) →
-  368; HU a5e461c + fa0d3a5 + 38b144b (`Items/StatusBarCalls.swift` — every `.UpdateStatusBar` site is a named
-  `StatusBarCalls.Site`; `FerazelSession.updateStatusBar(_:keys:) -> FrontOutput` outside the frame loop, `statusBarInFrame`
-  inside; `.UpdateHealthMagic` clamps/caches/snd 442 in Core; the repeat counter, bar caches and five flash globals are one
-  flow-wide instance on `SpriteWorld.statusBar`, carried with the level carry and through the map via `NewGame.swift`;
-  `StatusBarState` carries inventory/maxima/flashes/`call`; `StatusBar.startInventory` deleted) → **374**. No golden moved.
-- `Ferazel/Core` suite: **374 passed, 0 failed/skipped** (run 20, seat-run from the merge head). Census `Totals: items 1,108 decoded,
-  failures 0`. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
+  4.0/4.1/4.2" paragraphs): 24 tasks + the seat-inserted TB + phase end A4. **Ladder now 349 → 484** (TB added 3 before BN;
+  every total from BN on is the plan's + 3 — plan l. ~119 says so). `BuiltLevels` widens to 1...3 at LV3 and 1...4 at LV4.
+  Waves 4.0 (run 19) → 357 and 4.1 (run 20) → 374 done. **Wave 4.2 DONE (loop run 21):** TB 46d2173 + d4c1f7b (sprite
+  draw mode 0xb, translucency — `.BlitEncFaceTransClip`/`…FlipClip`, `.CalcPxRowContents`, table 0148; a flipped sprite over
+  the left edge reads what the binary reads, never refuses) → 377; BN 8180590 + 9b2faaf (`World/Movers/BonusSprite.swift`:
+  Setup/Handle/Hit/HitTile/Kill, write-back flags, M6, `LightTable.clearFace`; still `notTranscribed`: 0xc25 and
+  0xc9b…0xcb0 — not on levels 1–2, **recheck at LV3/LV4**) → 385; PK 7208dbd + eb754a1 + 92419b6 (the pickup arm in
+  `Player/HitPlayerSprite.swift`, `.upgrade(type:)` suspension run by `LevelRun` over 120 ticks, `Outcome.upgrade` carries
+  the resume tick's keys + Caps Lock, hurt coins spawned on layer 1 (the dump, not 0x14), `fadeOut` returns whether it armed
+  → `.hideCursor` via `PlayerState.passRequests`, one ordered list for pass draws) → **393**.
+- `Ferazel/Core` suite: **393 passed, 0 failed/skipped** (run 21, seat-run from the merge head). Census `Totals: items 1,108
+  decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- Goldens: Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `172596fa2f3b6c58` / pan 60 `cc9786ba763d383a` /
-  chain `b4230ba5a643c5b5`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `e4f4bf977dd98eaa`, swim
-  `95ff5176412df650`, 600-frame chain `9532d65a42d39666` / cues `a875a96c2801dbe9`; Phase 3 main-menu screen
-  `ed142fed9e3bdce7` (FE0), world map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign frame
-  `c8e41941c1e4d6da` (C2). All held through wave 4.1. **Phase 4: only BN, PK, BX1, BX2 (◈ in the plan) may move a
-  golden, each recording old → new and the cause in its "As executed" note, the reviewer re-deriving each new value and
-  confirming the cause (plan "Goldens (◈)", l. ~131).**
-- **Carried minor follow-ups (not adopted by Phase 4, D38 Ruling 15 — left to Ben's Q6 verdict):** report fade-in when
-  faded (M l. 35448) unbuilt; a second queued main-menu pick dropped; boot bar jumps; music decoded on play;
-  `.savePoint(saved:)` carries no polled input after the save dialog; `SavedGameFile.writeErrorReport` code typed
-  optional; `CoreTextRasterizer` widths untested; `FerazelController.fail()` exits with only an NSLog; the save panel's
-  field label repeats the prompt. **Run 19 carries:** `SeparateFromTiles.swift:109` still names landed P2/W1–W3
-  (relabel when a task touches the file); the app's `SoundTool` decides "unloaded" from its own bank (a sound in the
-  bank but never given a handle — 602 — or skipped by the F1 boot load stops only itself; `isPlaying`/`playingSounds`
-  lack the nil-handle-counts-all rule); `GroundCeilingEffects.swift:207` builds a small lookup per smoke frame. **Run 20
-  carries:** `SpriteWorld.valid()` adds a `< records.count` bound the binary lacks (never fires); the Px strip sprites'
-  `+0xea` (M l. 30809) unmodelled; conversation action 2's slot stores to `0bf4`/`0bf0` (M l. 66312–66313) unwired (find
-  their reader when a task touches them); bank spells-items §1's "first empty slot" pickup wording is wrong (first empty
-  **or** same slot — PK appends the correction if its BC list allows); the status bar's QuickDraw source-clip model is
-  untested against the original [MED]; Render's score/coin text caches are per renderer.
-- **Lessons (runs 9–20):** (1) ground on the bank + the dump (digests A–F never committed); (2) the plan is wrong
-  against the dump about once per task — the dump wins, the as-executed bullet records it; (3) run the seat's own gates
-  from the worktree once no agent is building; (4) foreground `Agent` calls return the report directly — two review
-  legs in one message run in parallel in `git archive` temp copies; (5) a fix round that changes behaviour gets a
-  re-review; a tests-only or tiny round the seat reads itself; (6) reviewers' mutation runs are the best signal —
-  strengthen inside existing test functions so the ladder total holds; (7) plan file lists miss flow wiring and seams —
-  Phase 4's plan lists them, but check `FerazelSession.swift`'s switch (no default), `SessionTests.swift`,
-  `ScreenRenderer.swift` and the FrameRenderer sheet table whenever a task adds a case or a spawnable type; (8) merge
-  each green task to main before starting the next; (9) AppKit: never leave a `.terminateLater` pending across play;
-  (10) a Fable reviewer that launches background helpers returns early — tell it up front "no background agents";
-  (11) read each layout/flow table against its ruling's stated why; (12) **run 18: a resumed subagent (SendMessage)
-  runs in the background — the seat must stay in its turn (a foreground `Bash` wait loop on `git log -1` up to 10 min)
-  until its notice arrives, or the headless session ends and kills it.** (13) **run 19: a reviewer that symlinks
-  HectorKit for its temp copy can leave a self-link inside `~/Developer/HectorKit` (`HectorKit/HectorKit →
-  HectorKit`, seen at G1) — tell reviewers to make the link inside their temp tree only, and run G1 at the close;
-  remove only a stray link this run's agents made (check its mtime).** (14) fix rounds driven by a review's mutation
-  table work well: ask the implementer to apply each surviving mutation, see a failure, revert, and report the table.
-  (15) **run 20: a new routine that writes a field the binary's Setups set (e.g. a write-back flag) exposes every Setup
-  that does not set it yet — audit the dump for every writer of a newly-read field and set it in each built Setup; ask
-  the implementer to grep the dump for the offset.** (16) implementers sometimes edit an expectation instead of stopping
-  when a whole-struct compare gains fields — accept only after reading the diff (no asserted value changed). (17) a
-  "follow-ups not built" list in an implementer report can hide in-contract work (HU left out the health clamps and a
-  sound) — check each against the task's M lines before accepting.
+- **Goldens (current, after wave 4.2):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+  `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `deb577ecdeb64c58`,
+  swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
+  1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
+  frame `c8e41941c1e4d6da`. **Only BX1 and BX2 (◈) may move a golden from here**, each recording old → new and the cause,
+  the reviewer confirming the cause by switching it off (the method that worked in run 21).
+- **Carried minor follow-ups (not adopted, D38 Ruling 15 — left to Ben's Q6 verdict):** report fade-in when faded (M l. 35448)
+  unbuilt; a second queued main-menu pick dropped; boot bar jumps; music decoded on play; `.savePoint(saved:)` carries no
+  polled input after the save dialog; `SavedGameFile.writeErrorReport` code typed optional; `CoreTextRasterizer` widths
+  untested; `FerazelController.fail()` exits with only an NSLog; the save panel's field label repeats the prompt. **Runs
+  19–20 carries:** `SeparateFromTiles.swift:109` names landed tasks (relabel when touched); the app's `SoundTool` "unloaded"
+  rule + `isPlaying`/`playingSounds` lack the nil-handle-counts-all rule; `GroundCeilingEffects.swift:207` builds a lookup
+  per smoke frame (EF touches this file — fix it there if cheap); `SpriteWorld.valid()` extra bound; the Px strip `+0xea`;
+  conversation action 2's `0bf4`/`0bf0` stores unwired; the status bar's source-clip model untested [MED]; Render's text
+  caches per renderer. **Run 21 carries:** TB's test fixture uses one face in every parallax cell slot (cell choice and the
+  128-px step untested) and assumes rowBytes 128; several `BonusSprite.swift` cites run ~20 lines short of the dump; a
+  Core-only session with no faces skips the Xichron burst's draws quietly (faithful fix: load all `BonusSprite.sheets` in
+  Core, or stop when missing); **sphere timers are not counted down until PU** (a walk-on-liquid sphere stays on — level 2
+  has one; PU owns it); a 1058 with p1 out of range is dropped where the binary writes past the end; the glider's 0x41a sheet
+  is GL's.
+- **Lessons (runs 9–21):** (1) ground on the bank + the dump; (2) the plan is wrong against the dump about once per task —
+  the dump wins, the as-executed bullet records it; (3) run the seat's own gates from the worktree once no agent is
+  building; (4) foreground `Agent` calls return the report directly — two review legs in one message run in parallel in
+  `git archive` temp copies; (5) a fix round that changes behaviour gets a re-review; a tests-only or tiny round the seat
+  reads itself; (6) reviewers' mutation runs are the best signal — strengthen inside existing test functions so the ladder
+  holds; (7) check `FerazelSession.swift`'s switch, `SessionTests.swift`, `ScreenRenderer.swift` and the FrameRenderer sheet
+  table whenever a task adds a case or a spawnable type; (8) merge each green task to main before starting the next; (9)
+  AppKit: never leave a `.terminateLater` pending across play; (10) tell Fable reviewers "no background agents"; (11) read
+  each layout/flow table against its ruling's why; (12) a resumed subagent (SendMessage) runs in the background — stay in
+  the turn until its notice arrives; (13) **reviewers keep making the `~/Developer/HectorKit/HectorKit` self-link (again in
+  run 21, mtime during the run) — check G1 with `git -C ~/Developer/HectorKit status --porcelain` at the close and `rm` only
+  that symlink (`[ -L … ]`) if this run's agents made it**; (14) fix rounds driven by a mutation table work well; (15)
+  audit the dump for every writer of a newly-read field; (16) accept a whole-struct expectation edit only after reading the
+  diff; (17) check each "not built" item against the task's M lines; (18) **run 21: when an implementer is BLOCKED by a gap
+  no task owns (mode 0xb), park its work as a WIP commit on a side branch, rewind, insert a small task for the gap first,
+  then cherry-pick the parked work and have a fresh implementer finish — history stays task-by-task; the ladder shift is
+  recorded in the plan and D38;** (19) the golden "switch the new behaviour off → old values return" check is what makes a
+  ◈ move acceptable — ask both implementer and reviewer to do it.
 
-## THIS RUN'S JOB — loop run 21: **Phase 4 wave 4.2 = [BN PK]** (2 tasks, both ⚑ MAJOR ◈)
-- **BN** (plan l. ~517, ⚑ MAJOR ◈, → 382): the Bonus class — `World/Movers/BonusSprite.swift` (new; absorbs
-  `Sprites/BonusHandle.swift`'s twinkle as a thin forward), Setup/Handle/Hit/HitTile/Kill; `SetupFaces`' `.bonus` arm calls
-  `BonusSprite.setup` for 0x41f…0xcb0; `SpriteHandler.bonus`; fields `pickupDelay` +0xb0, `bonusP4` +0x168; **plus the
-  write-back flags the Bonus Setup sets (M l. 52615–52636: +0x188 / +0x18b for 0xbea and 0x546 — run 20 ruling)**; the
-  run-time-spawned faces in the renderer's sheet table (plan "Faces of run-time-spawned sprites"). ◈: the Bonus Handles
-  start running on levels 1–2 (Xichron, torch, crystal, coin, sphere faces animate, lights flicker, torch spark `FastRand`
-  enters the stream) — every moved golden recorded old → new with the cause; reviewer re-derives. Two Opus review legs.
-- **PK** (plan l. ~574, ⚑ MAJOR ◈, → 390): the pickup arm of `.HitPlayerSprite`, the upgrade animation suspension
-  (`.upgrade(type:)`, `Outcome.upgrade`), the hurt drops; uses IV's `addItem` (returns the slot — the pickup stores it
-  for the highlight) / `learnSpell` and HU's `StatusBarCalls` sites + flow-wide flash globals (`itemFlash`,
-  `itemFlashSlot`, `itemFlashMode`, health/magic flashes). ◈ a scripted golden that walks through a pickup now collects
-  it. Two Opus review legs.
-- Order BN → PK (PK depends on BN), each merged to main before the next (lesson 8). Wave end: G3 + G5. Then CLOSE. The
-  next chip names wave 4.3 = [EF CS] (plan l. ~630–735, → 406; both ⚑ MAJOR — a 2-task run).
+## THIS RUN'S JOB — loop run 22: **Phase 4 wave 4.3 = [EF CS]** (2 tasks, both ⚑ MAJOR)
+- **EF** (plan l. ~637–677, ⚑ MAJOR, → **400** = plan 397 + 3): the Effect ids Phase 4 spawns (0…15, 0x442, 0x4b6, 0x4b7,
+  0xc1b, 0xc81, the balloons — Ruling 14), the explosion package, `ScreenFlash` (`Particles/ScreenFlash.swift`,
+  `_DAT_100a00fc`/`_DAT_100a00cc`, M l. 9437–9447), `DrawOp.copyMaskToScreen`, the Camera shake counter `_DAT_1009ffa0`;
+  `GroundCeilingEffects.swift` is its main file (fix the per-smoke-frame lookup carry there if cheap). Every Effect type
+  spawned at run time needs its sheet in the renderer's sheet table (plan l. 318–323). No golden may move (not ◈) — STOP if
+  one does. Two Opus review legs.
+- **CS** (plan l. ~678–741, ⚑ MAJOR, → **409** = plan 406 + 3): casting (`.CastSpell`; the cast sound's `FastRand(10000)`
+  precedes the shot Setup's `FastRand(5)` — Hazards) and the player shots in flight (`SpriteHandler.playerShot`, `+0x170`
+  power / `+4` spell id split, `+0x14c` shot age); the no-free-record rule (Ruling 16). Not ◈. Two Opus review legs.
+- Order EF → CS (CS uses EF's effect 5 for the liquid rule), each merged to main before the next. Wave end: G3 + G5. Then
+  CLOSE. The next chip names wave 4.4 = [SH GL PU] (plan l. ~742ff, → 428; SH ⚑ — a 3-task run if only SH is MAJOR).
 
-## GATES (fenced; verified on this machine 2026-10-24; G2 374/0, G3 1,108/0, G5 SUCCEEDED re-run by run 20 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-25; G2 393/0, G3 1,108/0, G5 SUCCEEDED re-run by run 21 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (BN 382, PK 390), second = 0
+# G2 suite: first number = the ladder total (EF 400, CS 409), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

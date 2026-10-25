@@ -1469,3 +1469,16 @@ clamps, caches, skips and the suffocation tick snd 442 are Core state; (4) the s
 counter, the four bar caches, the five flash globals) are ONE flow-wide instance carried through map and levels, never
 reset, not saved; (5) a status-bar call outside the frame loop emits its sound in its own output. Details: the plan's "As
 executed" notes for US, IV, HU.
+
+**As built — wave 4.2 (loop run 21, 2026-10-25; main 92419b6):** TB (seat-inserted: sprite draw mode 0xb, translucency,
+`.BlitEncFaceTransClip`/`…FlipClip` + `.CalcPxRowContents` + table 0148) → 377; BN ⚑◈ (the Bonus class: Setup, Handle,
+rest on boxes, tile bounce, KillBonus totals, write-back flags, M6) → 385; PK ⚑◈ (the pickup arm, the 120-tick upgrade
+suspension, the hurt coins) → **393/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched. **Seat rulings:** (1) BN
+hit Invariant 10 — the level-1 sphere writes mode 0xb, which the renderer refused (a plan gap): **mode 0xb is built as its
+own task TB before BN, following the binary, rather than stubbed** (blinks, trails and spirit form need it later); the
+ladder shifts +3 from BN on (wave ends 393 · 409 · 428 · 441 · 454 · 470 · 484); (2) a flipped translucent sprite over the
+view's left edge reads what the binary's truncating divide reads (previous cell row, 0 before the pixel base) — never a
+refusal that stops the app; (3) the upgrade resume carries the resume tick's keys like the conversation resume; the
+async fade's arm sends the cursor hide. **◈ goldens moved, causes confirmed by switch-off:** BN pan 30/60/chain, jump, swim,
+600-frame (+ cues, seed, particles); PK swim and 600-frame again (level 1's route now collects a potion and five
+Xichrons). New values: STATE / the plan's "As executed" notes for TB, BN, PK.
