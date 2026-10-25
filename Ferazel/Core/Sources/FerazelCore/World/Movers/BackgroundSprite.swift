@@ -397,13 +397,17 @@ extension BackgroundSprite {
     ///   window `+0x1be = bg.left + (x256 >> 8) + 0x2e`, `+0x1c0 = bg.right + x − 0x2f`, `+0x1c4 = bg.top + y − 0x2c`,
     ///   `+0x1c2 = bg.bottom + y + 0x27` (bg's `+0x34` rect, x/y its 24.8 position) — for 3002 at (x, y): x + 38 …
     ///   x + 153, y − 54 … y + 189. Nothing resets it (`.InitSprite`'s 32000s only).
-    /// - **spring** 0x47e…0x487 (l. 63716–63731): a player shot is killed (`.KillPlayerShot(other, 1, 1)`) and an enemy
-    ///   shot (`.KillEnemyShot`) — // later: Phase 4 (no shots in Phase 2); then, if other is not itself a Background
-    ///   0x47e…0x487, the spring's `+0x46` is 0, other's `+0xe9` is 0 and its Handle is not the Effect's: `+0x46 = 4`,
-    ///   `.SuperSpring(bg, other)`.
+    /// - **spring** 0x47e…0x487 (l. 63716–63731): a player shot is killed (`.KillPlayerShot(other, 1, 1)`, l. 63718–63720)
+    ///   and an enemy shot (`.KillEnemyShot`, // later: SH); then, if other is not itself a Background 0x47e…0x487, the
+    ///   spring's `+0x46` is 0, other's `+0xe9` is 0 and its Handle is not the Effect's: `+0x46 = 4`,
+    ///   `.SuperSpring(bg, other)`. `.KillPlayerShot` (M l. 51076–51215) ends with `+0xe9 = 1` for every id < 100 but the
+    ///   orb 0x50 (whose `+0x168` count only falls by one), so a player shot is never launched: here its `+0xe9` and,
+    ///   power > 1, its followers' are set and the arm returns (no snd 493, no draw). // later: SH — the rest of
+    ///   `.KillPlayerShot` (`.StandardSpriteCleanup`, the 3D sound and its draw, the effect sprite, the light colour,
+    ///   the orb's count).
     /// - **cannon** 0x442…0x44b (l. 63679–63714): other's Handle is none of Background, Statue (`01f8`), Cannoned
     ///   (`045c`), Button (`0ac4`), EnemyShot (`0488`), Effect (`0460`); its type none of 0x41f, 0x434, 0x771, 0x772,
-    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: Phase 4, and
+    ///   0xb7c, 0x5c3, 0x5c4; `+0x130 ≥ 0` → (a player shot at a 105 / 106 cannon is steered — // later: SH, and
     ///   those cannons are refused at Setup) `.TurnIntoCannoned(other, bg)`, then bg `+0x154 = 6` (write-only).
     ///   Statue and EnemyShot Handles do not exist in Phase 2 (// later: Phase 4–5); a Button is an `inert` sprite of
     ///   the Button class.
@@ -429,7 +433,18 @@ extension BackgroundSprite {
                 c.occluder.bottom = Int16(truncatingIfNeeded: r.bottom + y + 0x27)
             }
         } else if (0x47e...0x487).contains(t) {
-            // later: Phase 4 — `.KillPlayerShot(other, 1, 1)` / `.KillEnemyShot(other)` (no shots in Phase 2).
+            // `.KillPlayerShot(other, 1, 1)` (l. 63718–63720): `+0xe9 = 1` (and the followers', power > 1), so the
+            // `+0xe9` test below refuses the launch. // later: SH — the rest of `.KillPlayerShot` (sound, effect, light,
+            // the orb's count) and `.KillEnemyShot(other)`.
+            if runs(o, .playerShot) {
+                if o.type != PlayerShot.orb {
+                    w.active.update(id: oID) { $0.dead = true }
+                    if 1 < o.power {
+                        for f in PlayerShot.followers(o).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
+                    }
+                }
+                return
+            }
             let otherSpring = runs(o, .background) && (0x47e...0x487).contains(o.type)
             guard !otherSpring, bg.phase == 0, !o.dead, !runs(o, .effect) else { return }
             w.active.update(id: id) { $0.phase = 4 }

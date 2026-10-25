@@ -439,15 +439,7 @@ extension HitPlayerSprite {
     /// the frame's actions; the op goes to `PlayerState.passDraws`, its suffocation tick (snd 442) joins the frame's
     /// sound calls at this point.
     static func statusBar(_ w: SpriteWorld, keys: InputActions) {
-        var g = w.globals
-        let made = w.statusBar.update(.pickup, globals: &g, actions: keys, levelName: w.level.header.name)
-        w.globals = g
-        w.player.passDraws.append(made.op)
-        if made.suffocationTick {
-            w.player.soundCalls.append(PlayerState.SoundCall(
-                cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
-                scrollH: w.player.scrollH, scrollV: w.player.scrollV))
-        }
+        HandleKeys.statusBarCall(w, .pickup, keys: keys)
     }
 
     /// 1055 / 1056 (M l. 48631–48695): 1055 score + 10, `G+0x14` + 1, snd 501 vol 0x55; 1056 score + 1000, `G+0x14`

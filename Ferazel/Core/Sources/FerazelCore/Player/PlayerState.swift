@@ -288,7 +288,9 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a0744` / `PTR_DAT_100a0674`: the stillness counter / standing still.
     public var stillness: Int16 = 0
     public var standingStill = false
-    /// `PTR_DAT_100a0590` / `_DAT_100a05bc`: the riding ramps (0…0x1b by 2, 0…8).
+    /// `PTR_DAT_100a0590` / `_DAT_100a05bc`: the riding ramps (0…0x1b by 2, 0…8). The same `PTR_DAT_100a0590` is the
+    /// Shadow Double's history index: `.CastSpell` reads entry `0590 >> 1` of `PTR_DAT_100a0520` (`shadowRingGrounded`,
+    /// M l. 46914–46973).
     public var rideRamp: Int16 = 0
     public var rideRamp2: Int16 = 0
     /// `PTR_DAT_100a05ec` (0…0x1f) / `_DAT_100a057c` (0…0x167, +2): the free-running counters at the Handle's end.

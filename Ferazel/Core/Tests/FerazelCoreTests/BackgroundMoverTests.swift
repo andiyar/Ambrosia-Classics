@@ -1292,5 +1292,25 @@ final class BackgroundMoverTests: XCTestCase {
                          hit: FerazelSession.hitCallback)
         XCTAssertEqual(w.active.sprite(id: p)?.vy, -0x2292)
         XCTAssertEqual(w.player.cues.map(\.snd), [493, 493])
+        // A player shot in view (M l. 63718–63720): `.KillPlayerShot(other, 1, 1)` sets its `+0xe9` (and, power > 1,
+        // its followers') before the `+0xe9` test, so it is never launched — no snd 493, no draw, the spring idle.
+        func shot(_ type: Int16, power: Int32) -> Int {
+            var s = SpriteSlot(type: type, x: 2000, y: 1000)
+            s.handler = .playerShot
+            s.power = power
+            s.vy = 0x100
+            return w.active.insert(s)
+        }
+        let fol = shot(0, power: 0), fire0 = shot(0, power: 2)
+        w.active.update(id: fire0) { $0.siblings.first = fol }
+        w.active.update(id: sp) { $0.phase = 0 }
+        w.player.cues = []
+        let seed = w.rng.seed
+        BackgroundSprite.hit(w, id: sp, other: fire0)
+        XCTAssertEqual(w.active.sprite(id: fire0).map { [Int($0.vy), $0.dead ? 1 : 0] }, [0x100, 1])
+        XCTAssertEqual(w.active.sprite(id: fol)?.dead, true)
+        XCTAssertEqual(w.active.sprite(id: sp)?.phase, 0)
+        XCTAssertTrue(w.player.cues.isEmpty)
+        XCTAssertEqual(w.rng.seed, seed)
     }
 }

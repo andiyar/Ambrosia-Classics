@@ -596,9 +596,15 @@ final class PauseKeysTests: XCTestCase {
         let a = try Rig(r), b = try Rig(r)
         try a.settle()
         try b.settle()
-        // CS: ⌘ is USE — held with the Fireball selected it casts (the twin does not). Both run with the dagger
-        // (slot 1, no spell) selected, so the held ⌘ stays out of the USE spell gate (plan CS, recorded).
-        for rig in [a, b] { rig.run.session?.world.globals.selectedSlot = 1 }
+        // CS: ⌘ is USE — held with the Fireball selected it casts (the twin does not); the dagger would stab once the
+        // item switch lands. An empty slot does not hold: row 25's repair (M l. 45056–45063) moves it back to slot 0
+        // before the next frame. Both run with a Locket (item 7: no spell, no arm in `.HandleKeys`' item switch,
+        // M l. 47551–47606) in slot 2, selected, so the held ⌘ casts nothing and uses nothing.
+        for rig in [a, b] {
+            rig.run.session?.world.globals.inventory[2] = InventorySlot(id: 7, count: 1, field4: -1, field6: 0,
+                                                                        isSpell: 0)
+            rig.run.session?.world.globals.selectedSlot = 2
+        }
         XCTAssertEqual(a.t, b.t)
         let iterations = a.run.iterations
         let qa = try a.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: [Self.command, Self.keyQ])) }) {

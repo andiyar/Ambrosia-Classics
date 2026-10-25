@@ -500,8 +500,7 @@ public enum PlayerShot {
     /// nothing for dir > 35; dir 0 / 9 / 18 / 27 → vx − m / vy + m / vx + m / vy − m (integer); any other dir k = 10·d
     /// degrees from the left, clockwise through down: vx += −cos·m, vy += sin·m with the table doubles 0.174, 0.342,
     /// 0.5, 0.643, 0.766, 0.866, 0.94, 0.985 (`100a18c0` … `100a18c8`), each as one `fmadd` / `fnmsub` (fused) on the
-    /// double of the field, then `fctiwz`. Read from the raw: the decompile's case 12 (vx += 0.985m, vy −= 0.174m) is a
-    /// misreading — the raw entry 12 (`10040120`) is vx += 0.5m, vy += 0.866m like its neighbours.
+    /// double of the field, then `fctiwz`. The decompile and the raw (entry 12 at `10040120`) agree on every case.
     static func addDirImpulse(_ s: inout SpriteSlot, dir: Int, magnitude m: Int32) {
         guard (0...0x23).contains(dir) else { return }
         switch dir {
