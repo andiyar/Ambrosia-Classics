@@ -110,6 +110,7 @@ public final class ScreenRenderer {
             case .drawLightsOntoTiles: throw Refusal.levelOp("drawLightsOntoTiles")
             case .wrapDrawSprites: throw Refusal.levelOp("wrapDrawSprites")
             case .copyToScreen: throw Refusal.levelOp("copyToScreen")
+            case .copyMaskToScreen: throw Refusal.levelOp("copyMaskToScreen")
             case .changeLightFace: throw Refusal.levelOp("changeLightFace")
             case .lightTable: throw Refusal.levelOp("lightTable")
             case .wrapEraseSprites: throw Refusal.levelOp("wrapEraseSprites")

@@ -296,6 +296,7 @@ final class SessionTests: XCTestCase {
                 case .drawLightsOntoTiles: return "lights"
                 case .wrapDrawSprites: return "sprites"
                 case .copyToScreen: return "copy"
+                case .copyMaskToScreen: return "copyMask"
                 case .changeLightFace: return "lightFace"
                 case .wrapEraseSprites: return "erase"
                 case .statusBar: return "status"

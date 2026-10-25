@@ -472,3 +472,23 @@ and p4 stays 1) [HIGH arithmetic, part 1 §1 rules].
    (`1003372c..10033740`; N held in r23 from `10033660`, truncating ÷768 at `100335f0..1003360c`) and places copy k in
    slot count + k (`1003368c..1003369c`), so the count grows each pass: 9/12/12/3/9/2 sprites on levels
    10/30/40/45/62/67 (N = 8/11/11/2/8/1). "Capped at 31 sprites total" reads as at most 16 per call [HIGH, two Opus legs].
+
+## ⚑ Correction (BC (EF, loop run 23), 2026-10-25; follow the binary)
+§2.1–§2.2 re-read against the dump for EF (M l. 53688–53863, 54024–54324, 49763–49799):
+1. **Two "centres".** The package's particles start at (x + 16, y + 24) — (x + 32, y + 48) for 1207 — but the light is
+   added at (x + 24, y + 24) — (x + 48, y + 48) for 1207 (`uStack_30` vs `uStack_38`, M l. 53753–53758, 53771–53778).
+   The plume is made at (x − 8, y − 90), layer 0x14 overwritten to 0xb by its own Setup (M l. 53787–53790).
+2. **1207 and 3099 move twice per frame.** `.ApplyGravityAndSeparateFromTiles` already adds vy += `+0x110`, x += vx and
+   y += vy (M l. 32942–32970); the Handle's tail adds vx / vy again (M l. 54272–54273). For 3099 the arm also adds
+   `+0x110` a second time (M l. 54169), so "gravity 0x5a plus tile gravity" is 0x5a twice per frame (0xb4), not a
+   tile-dependent term. 1207's own `+0x110` is the record's `.InitSprite` 0 unless its spawner sets one.
+3. **3099's fade for a negative count** is 0xb0002 (the `else` of M l. 54180–54196), as for ≥ 3.
+4. **The 1207 hurt is `.HurtSprite`** (not `.HurtPlayer`): `HurtSprite(player, 0x70, ±300, −0x640, 0x3c, 0xc)`, kvx
+   +300 when the effect's `+0x10` is left of the player's (i16 compare), then the stun — as enemy-shots-and-damage §3.4
+   has it (M l. 49763–49799).
+5. **The flash under "plain copy".** `.WrapCopyToScreen`'s port argument reaches only the compositor
+   (`.DoubleBlitUniversal` → `.DoubleBlitPPCParallaxOneLayer`, F's rows from r3, raw `10017954`, `10017fe4..10017ffc`);
+   its plain `CopyBits` pieces (prefs+9 ≠ 0) copy `*(_DAT_1009ff58 + 8)` whatever the argument (M l. 11811–11836), so
+   with plain copy the mask flash shows only in the corner piece (always composited) [HIGH call; MED visual].
+Transcribed in `FerazelCore.EffectSprite`, `HitPlayerSprite.effect`, `ScreenFlash`, `Camera.shake` and
+`FrameRenderer`'s `.copyMaskToScreen` (EF) [HIGH].

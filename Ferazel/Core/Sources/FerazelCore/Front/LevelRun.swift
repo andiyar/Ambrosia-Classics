@@ -104,7 +104,7 @@ public struct LevelRunOutput: Equatable, Sendable {
         case .drawPicture, .gammaStep: return owner
         case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
         case .redrawScrollGrid, .redrawEntireScrollGrid, .drawLightsOntoTiles, .wrapDrawSprites, .copyToScreen,
-             .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
+             .copyMaskToScreen, .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
              .eraseParticles, .drawBlackLines, .lightTable:
             return .level
         }

@@ -11,8 +11,9 @@ import Foundation
 /// auto-scroll modes 1–2 (refused here), or the one-shot `*_DAT_1009fd34` is set — which this test clears (P5); each axis
 /// eases by `max(Δ / 6, 1)` (`* 0x2aaaaaab >> 32`, truncating); the scroll point takes the eased pair (no auto-scroll);
 /// graphics 2 / 3 (prefs+2) force an even v; then `0 ≤ h ≤ 32·W − 0x280`, `0 ≤ v ≤ 32·H − 0x180` (`hdr+0xb280` /
-/// `+0xb282`). The boss-arena bounds (hdr 0x2724 / 0x272e), auto-scroll (0x272a) and the shake counters
-/// (`_DAT_1009ff9c`, `_DAT_1009ffa0`) are not built in Phase 1: a level with an arena bound or auto-scroll is refused.
+/// `+0xb282`). The boss-arena bounds (hdr 0x2724 / 0x272e) and auto-scroll (0x272a) are not built: a level with an
+/// arena bound or auto-scroll is refused (`_DAT_1009ff9c` is the arena's). EF: the shake `_DAT_1009ffa0` (`shake`),
+/// applied to the scroll point's v before the even-v rule.
 /// `.MTHandlePxSprites`, called at the end, is the caller's (level 1 has no strip).
 ///
 /// Start (`.GameLoop` l. 5168–5195): the eased pair and the scroll point are set to the sprite origin − 0xd0
@@ -41,6 +42,10 @@ public struct Camera: Equatable, Sendable {
     /// `PTR_DAT_1009fe78 + 2` / `PTR_DAT_1009fe78`.
     public private(set) var scrollH: Int
     public private(set) var scrollV: Int
+    /// EF: `*_DAT_1009ffa0`, the screen shake (engine §5). Zeroed by `.InitGameGlobals` (M l. 821) and by nothing else;
+    /// writers set it (the seed explosion 0x14, M l. 51150 // later: SH). Per camera here [LOW: a shake still running
+    /// at a level end stops].
+    public var shake: Int16 = 0
 
     /// The camera `.GameLoop` sets up for a sprite origin (x, y) = (hdr 0x2848 − 0x20, hdr 0x2846 − 0x20).
     public init(header: LevelHeader, spriteX: Int, spriteY: Int) throws {
@@ -64,11 +69,14 @@ public struct Camera: Equatable, Sendable {
     /// call and iteration 1, whose initial value is unread) — no level-1 effect: both targets clamp to h = 0 either
     /// way. `graphics` is prefs+2. The snap vetoes (P5): `ridingVeto` = the player's ridden sprite is a 0x57a,
     /// `inWater` = its `+0x11c` or `+0x120` ≠ 0, `latch` = `*_DAT_1009fd34`.
+    /// EF: `counter` is the paint counter `*_DAT_1009fd2c` (`SpriteWorld.paintCounter`), `reduceFrameRate` prefs+0 —
+    /// the shake's parity test (below).
     /// - Returns: `*_DAT_1009fd34` after the call — cleared when the snap test ran (|vx| < 0x100 and armed), else as
     ///   passed.
     @discardableResult
     public mutating func findUpperLeftCorner(focusX: Int, focusY: Int, playerVX: Int = 0, snapArmed: Bool = true,
                                              ridingVeto: Bool = false, inWater: Bool = false, latch: Bool = false,
+                                             counter: UInt32 = 0, reduceFrameRate: Bool = false,
                                              graphics: Int16 = 1) -> Bool {
         var tx = Int(Int16(truncatingIfNeeded: focusX - Self.focusOffsetX + offsetX))
         let ty = Int(Int16(truncatingIfNeeded: focusY - Self.focusOffsetY + offsetY))
@@ -83,6 +91,14 @@ public struct Camera: Equatable, Sendable {
         v = Self.ease(v, toward: ty)
         scrollH = h
         scrollV = v
+        // The shake (M l. 6147–6161): while `_DAT_1009ffa0` > 0, the counter `& 1` (`& 3` with prefs+0 set) == 0 →
+        // v −= shake >> 1, else v += shake >> 1 (`srawi`, i16 stores); shake − 1.
+        if 0 < shake {
+            let parity = reduceFrameRate ? counter & 3 : counter & 1
+            let d = Int(shake >> 1)
+            scrollV = Int(Int16(truncatingIfNeeded: parity == 0 ? scrollV - d : scrollV + d))
+            shake &-= 1
+        }
         if graphics == 3 || graphics == 2 {
             scrollV = (scrollV >> 1) << 1
         }

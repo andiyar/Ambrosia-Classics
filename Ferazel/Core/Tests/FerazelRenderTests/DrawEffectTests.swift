@@ -614,4 +614,62 @@ final class DrawEffectTests: XCTestCase {
         XCTAssertEqual(frame.rgba(through: r.presentedClut)[0], 0xffbf_bfbf)
         XCTAssertEqual(r.deathEffect.foreColor, ColorSearch(model: .ruled).index(of: black, in: c202))
     }
+    /// EF: `.WrapCopyToScreen(*_DAT_100a0008, …)` while the flash toggle is on (`.PaintFrameWrap` M l. 9443–9447). The
+    /// port argument is the compositor's F (`.DoubleBlitPPCParallaxOneLayer` row pointers from `0x158(r1)` = r3, raw
+    /// `10017954`, `10017fe4..10017ffc`; the M gate is the mask port's own TOC slot), so a composited piece shows the
+    /// mask port's 0x00 / 0xFF where the frame would show; the plain `CopyBits` pieces (no backdrop, prefs+9 ≠ 0) copy
+    /// `*(_DAT_1009ff58 + 8)` whatever the argument (M l. 11811–11836) — as `.copyToScreen`'s; the corner piece is
+    /// always composited. Placed at (16, 8); nothing outside the 608×384 view moves.
+    func testCopyMaskToScreen() throws {
+        let f = try fixture()
+        func renderer(backdrop: Bool) throws -> FrameRenderer {
+            var prefs = FerazelPrefs()
+            prefs.plainCopy = backdrop ? 0 : 1
+            let r = try FrameRenderer(resources: f.resources, level: 1, search: ColorSearch(model: .ruled),
+                                      dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
+            try r.buildTintTable([Int16](repeating: 0, count: 0x1fe))
+            try r.apply(FrameOps(draws: [.redrawEntireScrollGrid(h: 40, v: 400)]))
+            return r
+        }
+        for backdrop in [true, false] {
+            let normal = try renderer(backdrop: backdrop), flash = try renderer(backdrop: backdrop)
+            XCTAssertEqual(normal.ports, flash.ports)
+            let before = flash.screen.pixels
+            XCTAssertTrue(flash.ports.mask.contains(0) && flash.ports.mask.contains(0xff))
+            try normal.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 1, backdrop: backdrop)]))
+            try flash.apply(FrameOps(draws: [.copyMaskToScreen(h: 40, v: 400, graphicsMode: 1, backdrop: backdrop)]))
+            XCTAssertEqual(flash.executed, [.copyMask(h: 40, v: 400)])
+            // The model: each piece of `ParallaxBlitter.calls` — composited from the mask port, plain from the frame.
+            var expected = before
+            var none: [[ParallaxBlitter.RowTrace]]? = nil
+            for call in ParallaxBlitter.calls(h: 40, v: 400, backdrop: backdrop) {
+                if call.composited {
+                    flash.parallax.doubleBlitUniversal(call, source: flash.ports.mask, mask: flash.ports.mask, h: 40,
+                                                       v: 400, graphicsMode: 1, parallax: 2, screen: &expected,
+                                                       trace: &none)
+                } else {
+                    flash.parallax.copyBits(call.src, call.dst, source: flash.ports.frame, screen: &expected)
+                }
+            }
+            XCTAssertEqual(flash.screen.pixels, expected, "backdrop \(backdrop)")
+            // With the backdrop the flash differs (the tiles show the mask's 0x00); without it only the corner piece
+            // could (level 1's ring corner at this point holds no drawn cell, so the screens agree).
+            if backdrop { XCTAssertNotEqual(flash.screen.pixels, normal.screen.pixels) }
+            else { XCTAssertEqual(flash.screen.pixels, normal.screen.pixels) }
+            // Outside the view (16, 8)–(624, 392): untouched.
+            let w = ParallaxBlitter.screenWidth
+            for y in [0, 7, 392, 479] { XCTAssertEqual(flash.screen.pixels[(y * w)..<(y * w + w)], before[(y * w)..<(y * w + w)]) }
+            for y in 8..<392 {
+                XCTAssertEqual(flash.screen.pixels[y * w + 15], before[y * w + 15])
+                XCTAssertEqual(flash.screen.pixels[y * w + 624], before[y * w + 624])
+            }
+        }
+        // Off a level: refused by name.
+        let screen = ScreenRenderer(surface: ScreenSurface(clut: try ColorLUT.load(id: 202, from: f.resources, chain: .level)),
+                                    resources: f.resources, search: ColorSearch(model: .ruled),
+                                    text: StatusBarTests.BoxRasterizer())
+        XCTAssertThrowsError(try screen.apply([.copyMaskToScreen(h: 0, v: 0, graphicsMode: 1, backdrop: true)])) {
+            XCTAssertEqual($0 as? ScreenRenderer.Refusal, .levelOp("copyMaskToScreen"))
+        }
+    }
 }

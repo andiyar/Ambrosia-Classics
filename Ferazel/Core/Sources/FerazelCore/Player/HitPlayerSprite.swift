@@ -51,6 +51,9 @@ public enum HitPlayerSprite {
         case .box, .seeSawSegment:
             box(w, player: pID, other: oID, keys: keys)                 // `PTR_PTR_100a0484` / `_DAT_100a01c8` (W3)
             return
+        case .effect:
+            effect(w, player: pID, other: oID)                          // `PTR_PTR_100a0460` (EF)
+            return
         default: return                                                 // later: the other arms
         }
         guard let p = w.active.record(id: pID) else { return }
@@ -910,6 +913,24 @@ public enum HurtPlayer {
     static func bloodSpray(_ w: SpriteWorld, player: Int, attacker: Int, count: Int16, speed: Int16, spread: Int16,
                            kind: Int16) {
         BloodSpray.spray(w, victim: player, attacker: attacker, count: count, speed: speed, spread: spread, kind: kind)
+    }
+}
+
+extension HitPlayerSprite {
+    /// The Effect arm (EF; M l. 49763–49799, raw `10058540..`; triggers-background-2 §2.2 (a), enemy-shots-and-damage
+    /// §3.4): an Effect (`+0x4c == PTR_PTR_100a0460`) of type 0x4b7 whose `+0x46` ≤ 7 →
+    /// `.HurtSprite(player, 0x70, kvx, −0x640, 0x3c, 0xc)` with kvx = 300 when the effect's centre x `+0x10` is left of
+    /// the player's (i16 compare), else −300; a hurt → the stun `_DAT_100a0748 = 1`. `.HurtSprite`, not `.HurtPlayer`:
+    /// no scream, no coin loss. Any other Effect: nothing. The 0x5a0 geyser segment's part of the same test (a sprite
+    /// of type 0x5a0 with `+0x14c` ≥ 1, any handler on this path: 0x70 / 0x150 by liquid kind, the walk-on and Fire
+    /// Charm immunities) // later: the geyser task.
+    static func effect(_ w: SpriteWorld, player pID: Int, other oID: Int) {
+        guard let o = w.active.record(id: oID), o.type == EffectSprite.bigExplosion, o.phase <= 7,
+              let p = w.active.record(id: pID) else { return }
+        let kvx: Int16 = Int16(truncatingIfNeeded: o.centre.x) < Int16(truncatingIfNeeded: p.centre.x) ? 300 : -300
+        if HurtSprite.apply(w, id: pID, damage: 0x70, dvx: kvx, dvy: -0x640, invulnerable: 0x3c, flash: 0xc) {
+            w.player.stun = 1                                           // `*_DAT_100a0748 = 1`
+        }
     }
 }
 

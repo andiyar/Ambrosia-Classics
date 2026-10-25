@@ -94,6 +94,16 @@ public final class SpriteWorld {
     /// VS: the voice query's base for this iteration (`SoundVoices`) — the session sets it from the shell's playing set
     /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
     public var voices = SoundVoices()
+    /// EF: the mask flash (`ScreenFlash`: `*_DAT_100a00fc` / `*_DAT_100a00cc`) — here so the Handles that write it
+    /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`.
+    public var flash = ScreenFlash()
+    /// EF: `*_DAT_1009fd2c`, the paint counter — +1 in every `.PaintFrameWrap` (M l. 9250, drawn or not, before the
+    /// draw block); read by `.FindUpperLeftCorner`'s shake (M l. 6148–6152). Never reset in the binary (no other
+    /// writer); per session here [LOW: only its low bits are read, and only while a shake runs].
+    public var paintCounter: UInt32 = 0
+    /// EF: `*PTR_DAT_100a0904`, the plumes alive — +1 in the 1206 Setup (M l. 53741), −1 when a 1206 dies (M l. 54090);
+    /// the explosion package adds a plume only below 3 (M l. 53787). Never reset in the binary; per session here.
+    public var plumeCount: Int16 = 0
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360

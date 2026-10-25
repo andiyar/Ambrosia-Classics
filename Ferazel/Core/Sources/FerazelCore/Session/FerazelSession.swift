@@ -373,7 +373,7 @@ public final class FerazelSession {
         if -0x1e < countdown { countdown -= 1 }
         findUpperLeftCorner(graphics: graphics)
         // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
-        if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c, lights: &lightTable) }
+        if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c, lights: &lightTable, effects: prefs.effects) }
         let draw = prefs.reduceFrameRate == 0 || odd
         let actions = InputActions(keys: keys, prefs: prefs)
         frameKeys = keys
@@ -408,12 +408,20 @@ public final class FerazelSession {
         ops.draws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
         }))
+        // `*_DAT_1009fd2c += 1` (M l. 9250): every pass, before the draw block (EF; the shake reads it).
+        world.paintCounter &+= 1
         if draw {
+            // EF: the flash step (M l. 9437–9443), before `.DrawParticles`.
+            world.flash.step()
             // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
             ops.draws.append(.drawParticles(world.particles.draw()))
             // later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
-            ops.draws.append(.copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: prefs.plainCopy == 0))
+            // `.WrapCopyToScreen` of the frame port, or of the mask port while the flash toggle is on (M l. 9443–9447).
+            let backdrop = prefs.plainCopy == 0
+            ops.draws.append(world.flash.on
+                ? .copyMaskToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: backdrop)
+                : .copyToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: backdrop))
             // `.EraseParticles` (l. 9449).
             ops.draws.append(.eraseParticles)
         }
@@ -440,7 +448,7 @@ public final class FerazelSession {
                 // `.HandlePlayerSprite` (its look-ahead row and `.PlayerScroll` move the focus, P5).
                 Player.handle(world: world, keys: actions, solver: solver)
             case .effect:
-                EffectSprite.handle(world: world, id: id, lights: &self.lightTable)
+                EffectSprite.handle(world: world, id: id, lights: &self.lightTable, effects: effects)
             case .bonus:
                 // `.HandleBonusSprite @ 1005e934` (BN, `BonusSprite.handle`) — M6: dispatched by the record's Handle
                 // (`handler == .bonus`), not by the type's class; its `.ChangeLightFace`s land in `lightTable` and go
@@ -956,7 +964,8 @@ public final class FerazelSession {
         world.player.cameraSnapVeto = camera.findUpperLeftCorner(
             focusX: Int(p.focusX), focusY: Int(p.focusY), playerVX: Int(p.lastVX), snapArmed: p.snapArmed,
             ridingVeto: ridden?.type == Camera.snapVetoRiddenType,
-            inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.cameraSnapVeto, graphics: graphics)
+            inWater: (s?.waterRow ?? 0) != 0 || (s?.lastWater ?? 0) != 0, latch: p.cameraSnapVeto,
+            counter: world.paintCounter, reduceFrameRate: prefs.reduceFrameRate != 0, graphics: graphics)
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
     }

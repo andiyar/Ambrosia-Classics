@@ -28,6 +28,9 @@ import FerazelCore
 /// - `drawParticles` / `eraseParticles` (E1a): `ParticleRenderer.draw` into the frame port at the scroll point, and
 ///   its erase after the copy.
 /// - `copyToScreen`: `ParallaxBlitter.copyToScreen` from the frame port into the screen (prefs+4 = parallax).
+/// - `copyMaskToScreen` (EF, the flash): the same pieces with the mask port as the compositor's source F (its M is the
+///   mask port either way); the plain `CopyBits` pieces copy what `copyToScreen`'s do (`*(_DAT_1009ff58 + 8)`, not
+///   the argument — M l. 11811–11836).
 /// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` (`LightTable.changeFace` on the renderer's copy) —
 ///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
 ///   redraws the cells it covers.
@@ -69,6 +72,7 @@ public final class FrameRenderer {
     enum Executed: Equatable {
         case screenClut(Int16), picture(Int16), entireGrid(h: Int, v: Int), strip(h: Int, v: Int), lightsOntoTiles
         case handleLights, sprites(Int), copy(h: Int, v: Int), lightFace(Int), erase(Int), statusBar(full: Bool)
+        case copyMask(h: Int, v: Int)
         case gamma(numerator: Int, denominator: Int)
         case tile(col: Int, row: Int)
         case waterEffects(Int), particles(Int), eraseParticles
@@ -212,8 +216,13 @@ public final class FrameRenderer {
     /// 1201 (6 × 56×8, `.CheckGroundCeilingHitEffects`), the crumble overlay 1210 (3 × 32×32, `.MakeCrunchSprite`) and
     /// the bubble 1040 (`LoadEncFaceSetFromPICT(0x410, 4, 8, 8, 4, …)`, l. 53656: 4 × 8×8, `.EmitBubble`, P4) — the
     /// effects Phase 2 spawns — and W2b's cannon smoke 0x442 (`LoadEncFaceSetFromPICT(0x4b0, 13, 48, 48, 13, …)`,
-    /// l. 53646). // later: Phase 4–5 — the other effect sets.
+    /// l. 53646); EF: the run-time explosion sets — 1207 (`LoadEncFaceSetFromPICT(0x4b7, 13, 96, 96, 13, …)`, l. 53652),
+    /// the plume 1206 (`(0x4b6, 34, 64, 116, 34, …)`, l. 53658) and the debris 3099 (`(0xc1b, 16, 24, 24, 8, …)`, l. 53660).
+    /// // later: Phase 5–6 — 1202…1204, 1251, 1220 (their spawners).
     static let effectSheets: Set<SetupFaces.Sheet> = [
+        SetupFaces.Sheet(pict: 0x4b7, count: 0xd, cellWidth: 0x60, cellHeight: 0x60, columns: 0xd, clut: 200),
+        SetupFaces.Sheet(pict: 0x4b6, count: 0x22, cellWidth: 0x40, cellHeight: 0x74, columns: 0x22, clut: 200),
+        SetupFaces.Sheet(pict: 0xc1b, count: 0x10, cellWidth: 0x18, cellHeight: 0x18, columns: 8, clut: 200),
         SetupFaces.Sheet(pict: 0x4b0, count: 0xd, cellWidth: 0x30, cellHeight: 0x30, columns: 0xd, clut: 200),
         SetupFaces.Sheet(pict: 0x4b1, count: 6, cellWidth: 0x38, cellHeight: 8, columns: 6, clut: 200),
         SetupFaces.Sheet(pict: 0x4ba, count: 3, cellWidth: 0x20, cellHeight: 0x20, columns: 3, clut: 200),
@@ -357,6 +366,21 @@ public final class FrameRenderer {
                 parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
                                       parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copy(h: h, v: v))
+            case .copyMaskToScreen(let h, let v, let graphicsMode, let backdrop):
+                // `.WrapCopyToScreen(*_DAT_100a0008, …)` (M l. 9443–9447): the port argument reaches only the
+                // compositor (`.DoubleBlitUniversal` passes r3 through; `.DoubleBlitPPCParallaxOneLayer` reads F's rows
+                // from it, raw `10017954`, `10017fe4..10017ffc`).
+                var none: [[ParallaxBlitter.RowTrace]]? = nil
+                for call in ParallaxBlitter.calls(h: h, v: v, backdrop: backdrop) {
+                    if call.composited {
+                        parallax.doubleBlitUniversal(call, source: ports.mask, mask: ports.mask, h: h, v: v,
+                                                     graphicsMode: graphicsMode, parallax: Int(prefs.parallax),
+                                                     screen: &screen.pixels, trace: &none)
+                    } else {
+                        parallax.copyBits(call.src, call.dst, source: ports.frame, screen: &screen.pixels)
+                    }
+                }
+                executed.append(.copyMask(h: h, v: v))
             case .changeLightFace(let slot, let pict, let width, let height):
                 // `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.
                 if lights.slots.indices.contains(slot) {
