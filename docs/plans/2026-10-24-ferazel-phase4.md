@@ -632,6 +632,53 @@ the task is added and recorded in "As executed" (G6 then reads the amended list)
 - **Gate:** G2 = 390, G6, G7(+b), G8, G10; wave 4.2 end: G3, G5. **Commit:** `FerazelCore: pickups (Xichrons, crystals, coins, upgrades with their 120-tick animation, scrolls, items, triggers 1058/1059, spheres' timers, glider pickup), hurt coins spawned; 8 tests`.
 - ⚑ **As executed (PK, loop run 21; 7208dbd + fix rounds eb754a1, 92419b6):** G2 **393**/0, G3 1,108/0, G5 SUCCEEDED. `Inventory.swift` unchanged (IV's `addItem` sufficed); files added: `FrameRenderer.swift` (drop/burst sheets 0x421, 0x422, 0x516 from `BonusSprite.sheets`), `Front/LevelRun.swift` (also the death fade's arm check), `Tests/…/BackgroundMoverTests.swift`. BC35, BC46, BC48 appended and spells-items §1's pickup-search wording corrected (first empty **or** same slot). **◈ goldens moved** — level 1's routes, not level 2's as the plan guessed (the route picks up the magic potion, record 68 at iteration 61, and Xichrons 91–95; cause confirmed by both legs, pickup arm off → old values): swim `10b7b133cdc273c2` → `c1dd428a3f146d77` (particles [68,305] → [67,321]); 600-frame `1ebeb6a5f3f3b6b0` → `a8dda9cf3e448016`, cue words 3078 → 3114, cues `e350390fb4658cfd` → `28a48762cfff1b2b`, seed 1248094906 → 1574122804, particles 151 → 156. Following the dump: a lost coin sits on layer 1, not 0x14 (the Bonus Setup overwrites it, M l. 52383, before the insert); the upgrade's first fade step comes 2 ticks in (its wait comes first), first bar call at tick 20, end at 120; `Outcome.upgrade` carries the resume tick's keys + Caps Lock (fields added) as the conversation resume; `GammaFadeOutAsync`'s arm calls `HideCursorSafe` (M l. 31905) — the upgrade and passage fades send `.hideCursor` through `PlayerState.passRequests`, `fadeOut` returns whether it armed; passage redraws and pickup status-bar calls share one ordered list (each draws as it is made). Two Opus legs (leg 1 MERGEABLE WITH FIXES — burst sheet 0x422 never loaded, stale keys after the upgrade; leg 2 MERGEABLE, 21/74 survived incl. the whole sphere arm) → fix round → re-review MERGEABLE WITH FIXES (keys-half and passage-snap order untested, passage fade cursor hide) → fix round 2, seat-read. Carried: a Core-only session with no faces skips the burst's draws quietly (the original loads every Bonus sheet at boot — load all of `BonusSprite.sheets` in Core or stop when missing); nothing counts the sphere timers down until PU (a walk-on-liquid sphere stays on — level 2 has one); a 1058 with p1 out of range is dropped where the binary writes past the end; the glider's 0x41a sheet is GL's.
 
+### Wave 4.2F — Ben's play-test notes (Q2 + Q6, inserted by loop run 22, 2026-10-25)
+
+Ben played the Phase 3 build (3553392) and passed Phases 2 and 3 **with notes** (QUESTIONS Q2, Q6 answers; D39). The
+chip rule: a (b) answer's notes become fix tasks, planned first, as a named wave before the next one. Two tasks, both
+App-facing, neither ◈ for the Phase 1–3 goldens (the Core test rasterizer stays two-level — see TX). Ladder: base
+**393**; TX and SP add what they record in their "As executed" note; every later total shifts by that sum (the run
+records it here and in NEXT).
+
+#### TX — text smoothing, as Mac OS 9 drew it (Q6 note 1; Q8)
+- **Why:** against the Let's Play (Mac OS 9 in SheepShaver; `~/Let's Play Ferazel's Wand! Part 1： A Scent of Peril
+  [ESuyxMUEzDw].mkv`, e.g. 03:16 = a level-1 conversation) the port's conversation text, speaker name and status-bar
+  stage name are ragged and broken. Cause (Ben's attended session): `Ferazel/App/CoreTextRasterizer.swift` thresholds
+  CoreText coverage at half (`$0 >= 0x80`), dropping Times' thin strokes. Mac OS 8.5+ (Appearance Manager "smooth all
+  fonts on screen", size threshold) drew `DrawString` antialiased: each partly covered pixel took a colour between the
+  text colour and the pixel under it, mapped into the screen's 8-bit palette.
+- **Contract:** `TextRasterizer` (Core, `FerazelRender/Frame/TextRasterizer.swift`) returns per-pixel **coverage**
+  (0…255) instead of a two-level mask; the three draw sites (`StatusBar.drawString`, `ConversationRenderer` per-char,
+  `ScreenRenderer.drawText`) paint coverage 255 in the text index exactly as today, leave 0 untouched, and for
+  0 < c < 255 blend the text RGB with the destination pixel's RGB (through the port's/surface's CLUT) by c and map the
+  blend back with the same colour search the site already uses for the text index (`search.index(of:in:)` /
+  Color2Index). One shared helper in FerazelRender, not three copies. The App's `CoreTextRasterizer` returns CoreText's
+  antialiased coverage (no threshold) for sizes at or above the smoothing threshold and a two-level mask below it;
+  the threshold is the Mac OS 9 Appearance default **[MED — verify against the LP: is the status bar's Geneva 9 item
+  count smoothed?]**, a named constant. Every Core test rasterizer that returns 0/255 only keeps today's pixels, so no
+  Phase 1–3 golden may move — STOP if one does (Invariant 10).
+- **Fonts:** keep today's system Times/Geneva (Q8 says smooth first). Bundling classic fonts is a later task only if
+  Ben still sees a mismatch.
+- **Tests:** Core: a stub rasterizer with mid coverage → the blended index is the colour search's answer for the
+  50 % mix (status bar, conversation, screen); coverage 0/255 → today's pixels. App code has no test target: the seat's
+  G5 build + an offline render of one LP line (the implementer's own check, reported) close it.
+- **Gate:** G2 (base + TX's tests), G5, G6, G7, G10. Not ◈.
+
+#### SP — game speed against the Let's Play (Q6 note 2)
+- **Why:** Ben: "it runs very fast". The timing code was built to the binary (flow at 60 Hz ticks, `LevelRun` steps on
+  a 2-tick cadence per `.GameLoop`), so **measure before changing anything**.
+- **Measure:** a stretch of level 1 whose length in game steps does not depend on the player's input — candidates: the
+  level-start camera pan-in from (0, 0), a looping sprite animation, the conversation's per-character reveal, the
+  stage-load bar. Count its frames/seconds in the LP (`ffmpeg`/`ffprobe` on the .mkv; read the video's real frame
+  rate) and its ticks/steps in the port (Core headless session + the App's clock rule). Report both numbers per anchor,
+  the ratio, and the dump lines that pace each one.
+- **Then:** if the port is faster, find the cause in the code against the dump (e.g. a clock counting faster than
+  60 Hz, a step taken per tick instead of per 2 ticks, a reduced-frame-rate rule misread) and fix it, with a Core test
+  pinning the cadence where the cause lives in Core. If the measurements agree (the port's pace = the LP's within
+  measurement error), change nothing and write the numbers up for Ben — his question then becomes a QUESTIONS item.
+- **Gate:** G2, G5 (if the App changes), G6, G7, G10. A golden moving is a STOP unless the fix is the pace itself and
+  the reviewer confirms the cause by switching it off.
+
 ### Wave 4.3 — effects, casting
 
 #### EF — ⚑ MAJOR — the Effect ids, the explosion package, the flash and the shake (→ 397)

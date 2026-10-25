@@ -1482,3 +1482,17 @@ refusal that stops the app; (3) the upgrade resume carries the resume tick's key
 async fade's arm sends the cursor hide. **◈ goldens moved, causes confirmed by switch-off:** BN pan 30/60/chain, jump, swim,
 600-frame (+ cues, seed, particles); PK swim and 600-frame again (level 1's route now collects a potion and five
 Xichrons). New values: STATE / the plan's "As executed" notes for TB, BN, PK.
+
+## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
+
+**Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
+1. **Phase 2 "Ferazel moves" and Phase 3 "Front end + saves" PASS WITH NOTES.** Ben played the Phase 3 build 3553392 with
+   the keypad and a controller: no crash or hang; movement, damage, drowning and breaking the environment work; spells
+   and interaction missing is expected (Phase 4). His two notes become wave **4.2F** of the Phase 4 plan (planned first,
+   per the chip rule): **TX** — text is hard to read (the App's CoreText rasterizer thresholds coverage at half; Mac OS 9
+   smoothed screen text — keep the coverage and blend it into the palette); **SP** — the game runs very fast (the timing
+   code was built to the binary, so measure the port against the Let's Play first, then fix only a measured cause).
+2. **Apple system fonts may ship** — supersedes the font part of D23 (Ben: "I didn't make that rule. happy to override
+   it."). For Ferazel: smooth today's Times/Geneva first (TX); only if it still looks off against the Let's Play, source
+   the classic fonts (Ben's Mac OS 9 setup, or github.com/pjobson/Apple-Fonts) and bundle them. Release scripts that
+   assert "no fonts bundled" change only when a font actually ships.
