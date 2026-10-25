@@ -539,3 +539,23 @@ Transcribed in `FerazelCore.CastSpell`, `PlayerShot` (Setup, Handle, the water a
    torch's side still opens it and kills the shot again: two snd 301, two effects (as written).
 Transcribed in `FerazelCore.PlayerShotHits` (`kill`, `hit`), `PlayerShot.hitTile`, `BonusSprite.container` and the
 stalactite case of `BoxSprite.hit` (SH) [HIGH but the two [LOW] heap/low-memory reads, where no light is changed].
+
+## ⚑ Correction (BC (GL, loop run 24), 2026-10-26; follow the binary)
+§5.2–§5.4 re-read against the dump for GL (M l. 44598–44655, 45219–45471, 47494–47541, 43801–43812):
+1. **The deploy glides off at vy −839, not ≈ −720.** The gravity −0x78 is stored when the incremented phase passes 16,
+   i.e. on the frames whose phase goes 16 → 17 … 23 → 24 (eight frames), and row 23 applies each a frame later (frames
+   17…24 after the pickup) — eight −120 frames, not seven. With the ramp's eight frames (−90 … +120, sum +120) and the
+   vy 0 → 1 of row 23 on the still frames: 1 − 960 + 120 = **−839** when the phase reaches 0 (32 frames after the
+   pickup).
+2. **Steering overshoots.** `vx ± 0x96` is gated by `vx < 0xc80` (`> −0xc80`) *before* the step, so held RIGHT ends at
+   0xce4 (22 presses), LEFT at −0xce4.
+3. **The landing frame already stows.** Count > 12 sets phase −23 before the phase switch on the same frame, so the
+   stow arm runs at once (−23 → −22): 23 stow frames counting the landing frame.
+4. **Dying on the glider draws no face** (M l. 45405–45470): it keeps the glide arm's face of the frame (the phase is
+   reset to 0 each frame), sets gravity 0x17c and pitch + 1 (≤ 5); `.HasItemWhichSlot(0x17)` is still called but the
+   glider sends every end to `DAT_100a5106 = 1`.
+5. **The camera citation.** `.PlayerScroll` is M l. 43754 on; its two glider tests (freeze veto, exact follow) are
+   M l. 43801–43812 (`pcVar9 = _DAT_100a05e0`) — "main l. 43151–43166" points into another routine. The camera is as
+   built in P5.
+Transcribed in `FerazelCore.Player.selectGravity`, `PlayerStates.glider` / `dropGlider` and `HandleKeys.gliderSteering`
+(GL) [HIGH].

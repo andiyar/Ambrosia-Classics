@@ -23,15 +23,21 @@ public enum PlayerStates {
     public static let vBladeCast: Int16 = 1032, crouchCast: Int16 = 1034, potion: Int16 = 1036, shield: Int16 = 1039
     /// 1033 (`_DAT_100a07a0`): the door walk-in (W2b).
     public static let walkIn: Int16 = 1033
+    /// The glider's cached sets (`_CacheEncFaceSetFromPICT`, l. 42486–42489; 160×160 cells): 1050 deploy / stow / turn
+    /// (`_DAT_100a0778`, 6), 1051 the glide loop (`_DAT_100a0774`, 4), 1052 pitch (`_DAT_100a0770`, 6: nose up 0…2,
+    /// down 3…5), 1053 casting (`_DAT_100a076c`, 4).
+    public static let gliderDeploy: Int16 = 1050, gliderLoop: Int16 = 1051, gliderPitch: Int16 = 1052
+    public static let gliderCast: Int16 = 1053
 
     /// A player face's width (face `+6`) for `.StandardSpriteCleanup`: the set's cell width (150 for 1022, 120 for
-    /// 1023, else 100 — the single 1004 is 100×120 too). The sets themselves are FerazelRender's
+    /// 1023, 160 for the glider's 1050…1053, else 100 — the single 1004 is 100×120 too). The sets themselves are FerazelRender's
     /// `FaceSheet.playerSheets` (the one table, `.InitPlayerSprite` l. 42427–42484); `FaceTests.testPlayerFaceSetsTable`
     /// checks these widths against it.
     public static func faceWidth(_ f: FaceRef) -> Int {
         switch f.pict {
         case dying: return 0x96
         case pullUp: return 0x78
+        case gliderDeploy...gliderCast: return 0xa0
         default: return 100
         }
     }
@@ -41,6 +47,167 @@ public enum PlayerStates {
     }
 
     // MARK: - row 33
+
+    /// Row 33's glider arm (l. 45219–45471; raw `1004ec4c…`; spells-detail §5.2–§5.4). Idle and stun 0, the glider rect
+    /// `SetRect(+0x34, 0x37, 0x3e, 99, 0x61)`. Ground contact (`+0xce` or `+0xcd`) not riding (`+0xdc` 0) → the count
+    /// `PTR_DAT_100a05c8` + 1, vx = (int)(vx · 0.5) (`dRam100a1a28`, fctiwz), vy 0x100; else count 0. Count > 12 at
+    /// phase 0 → phase −23 (the stow then runs this same frame). Alive (`_DAT_100a069c` 0): vy ≤ 2000. Then by phase:
+    /// - 0, gliding: the loop counter `_DAT_100a05dc` + 1 (0…0x1f), face 1051[c >> 3]. No turn running: wand step
+    ///   (`_DAT_100a06d4`) < 3 — pitch 0 → dive counter `PTR_DAT_100a05cc` 0; pitch p ≠ 0, k = |p| >> 1: p < 0 → face
+    ///   1052[k]; p > 0 → 1052[k + 3], and k 2 (pitch 4…5) → dive counter + 1 (≤ 30), vx ±0x50 toward the facing
+    ///   (`+0x17e` 0 → +, while vx < 0xc80; else −, while vx > −0xc80); k < 2 with a counter c > 0 → vy +=
+    ///   trunc(−0x640·c / 30). Wand step ≥ 3 → face 1053[step − 3]. A turn t ≠ 0: t → 1 toward 0, k = min(|t| >> 1, 5);
+    ///   k < 3 → face 1050[5 − k] and the facing toward the turn (old t < 1 → `+0x17e` 0, F 2; else 1, F 1); k ≥ 3 →
+    ///   face 1050[k] and the facing still away from it; t reaching 0 → face 1051[0].
+    /// - < 0, stowing: face 1050[|phase| >> 2], vx 0, gravity 0, vy 0x100; phase < −16 → `+0x1c` −= 0x200 (`+0xa` from
+    ///   it); phase + 1; at 0: `.MTNewSprite(0xbea, +0xc, +0xa, 2, −1, .SetupBonusSprite)` (`_DAT_1009ff38`), the
+    ///   cooldown `PTR_DAT_100a05c4` = 180, glider off, gravity 0x1b8, `+0x14` += 0x1e00, `+0x1c` += 0x2000 (0xa00 while
+    ///   `PTR_DAT_100a04cc`), the stand face `*_DAT_100a07ec` and the standard rect.
+    /// - > 0, deploying: phase 1 → vy 0, gravity 0; phase < 24 → face 1050[phase >> 2], phase + 1, past 16 → gravity
+    ///   −0x78, vx 0; else gravity < 100 → loop counter + 1, face 1051[c >> 3], gravity + 0x1e; else the loop step and
+    ///   phase 0.
+    /// Dying on the glider (`_DAT_100a069c > 0`): the dying arm's counters without its faces — idle reset, `+0x5c` 0,
+    /// vx 0, climb 0, phase 0, gravity 0x17c, pitch + 1 (≤ 5), d < 30 → buoyancy / float line / rect drift, `+0x116`
+    /// 0, d + 1; at the end `DAT_100a5106 = 1` — never the Resurrection Necklace (`_DAT_100a05e0 ≠ 0`, l. 45449).
+    static func glider(_ w: SpriteWorld, id: Int) {
+        guard var s = w.active.record(id: id) else { return }
+        var p = w.player
+        p.idle = 0
+        p.stun = 0
+        s.hotRect = IdleSprites.Rect(top: 0x3e, left: 0x37, bottom: 0x61, right: 99)
+        if (s.groundKind == 0 && s.onSprite == 0) || s.ridden != nil {
+            p.glider05c8 = 0
+        } else {
+            p.glider05c8 &+= 1
+            s.vx = TileSolver.fctiwz(Double(s.vx) * 0.5)
+            s.vy = 0x100
+        }
+        if 0xc < p.glider05c8 && p.gliderExit == 0 { p.gliderExit = -0x17 }
+        if 2000 < s.vy && p.dying == 0 { s.vy = 2000 }
+        func loopStep() {
+            p.gliderLoop &+= 1
+            if 0x1f < p.gliderLoop { p.gliderLoop = 0 }
+            s.face = face(gliderLoop, Int(p.gliderLoop >> 3))
+        }
+        let phase = p.gliderExit
+        if phase == 0 {
+            loopStep()
+            let t = p.gliderTurn
+            if t == 0 {
+                let step = p.wandPhase
+                if step < 3 {
+                    let pitch = p.gliderPitch
+                    if pitch == 0 {
+                        p.gliderDive = 0
+                    } else {
+                        let k = Int(abs(Int32(pitch)) >> 1)
+                        if pitch < 0 {
+                            s.face = face(gliderPitch, k)
+                        } else {
+                            s.face = face(gliderPitch, k + 3)
+                            if k == 2 {
+                                if p.gliderDive < 0x1e { p.gliderDive += 1 }
+                                if !s.mirrored {
+                                    if s.vx < 0xc80 { s.vx &+= 0x50 }
+                                } else if -0xc80 < s.vx {
+                                    s.vx &-= 0x50
+                                }
+                            } else if 0 < p.gliderDive {
+                                s.vy &+= Int32(p.gliderDive) &* -0x640 / 0x1e
+                            }
+                        }
+                    }
+                } else if 0 < step {
+                    s.face = face(gliderCast, Int(step) - 3)
+                }
+            } else {
+                if t < 0 { p.gliderTurn = t + 1 } else if 0 < t { p.gliderTurn = t - 1 }
+                let k = min(Int(abs(Int32(p.gliderTurn)) >> 1), 5)
+                let towardTurn = k < 3
+                s.face = face(gliderDeploy, towardTurn ? 5 - k : k)
+                let left = (t < 1) != towardTurn                     // `+0x17e`
+                s.mirrored = left
+                p.facing = left ? 1 : 2                              // `_DAT_100a5f5a`
+                if p.gliderTurn == 0 { s.face = face(gliderLoop, 0) }
+            }
+        } else if phase < 1 {
+            s.face = face(gliderDeploy, Int(abs(Int32(phase))) >> 2)
+            s.vy = 0
+            s.gravity = 0
+            s.vx = 0
+            s.vy = 0x100
+            if p.gliderExit < -0x10 {
+                s.y256 &-= 0x200
+                s.y = Int(Int16(truncatingIfNeeded: s.y256 >> 8))
+            }
+            p.gliderExit += 1
+            if p.gliderExit == 0 {
+                dropGlider(w, x: s.x, y: s.y)
+                p.countdown05c4 = 0xb4
+                p.glider = false
+                s.gravity = 0x1b8
+                s.x256 &+= 0x1e00
+                s.y256 &+= p.oneWayTimer == 0 ? 0x2000 : 0xa00
+                s.face = face(stand, 0)
+                s.hotRect = HandleKeys.standardHotRect
+            }
+        } else {
+            if phase == 1 {
+                s.vy = 0
+                s.gravity = 0
+            }
+            if p.gliderExit < 0x18 {
+                s.face = face(gliderDeploy, Int(p.gliderExit >> 2))
+                p.gliderExit += 1
+                if 0x10 < p.gliderExit { s.gravity = -0x78 }
+                s.vx = 0
+            } else if s.gravity < 100 {
+                loopStep()
+                s.gravity += 0x1e
+            } else {
+                loopStep()
+                p.gliderExit = 0
+            }
+        }
+        if 0 < p.dying {
+            if 0 < p.idle { p.idle = p.fidgets }
+            s.hasHit = false                                         // `+0x5c = 0`
+            // `*PTR_DAT_100a0654 = 0`: the Shadow Double off. // later: SD
+            s.vx = 0
+            p.climb = 0
+            p.gliderExit = 0
+            s.gravity = 0x17c
+            if p.gliderPitch < 5 { p.gliderPitch += 1 }
+            let d = p.dying
+            if d < 0x1e {
+                s.buoyancy = Int16(truncatingIfNeeded: Int(UInt16(bitPattern: d) & 1) + Int(s.buoyancy) + 1)
+                s.floatOffset = -0x16                                // `+0x1a0 = 0xffea`
+                if 8 < d {
+                    let dx = s.mirrored ? -2 : 2
+                    s.hotRect.left += dx                             // `+0x36`
+                    s.hotRect.right += dx                            // `+0x3a`
+                }
+            }
+            s.invulnerable = 0
+            p.dying &+= 1
+            let ended = p.diedInLiquid ? 100 < p.dying : 0x50 < p.dying
+            // `.HasItemWhichSlot(0x17, …)` is called but the glider sends every end to `DAT_100a5106 = 1`.
+            if ended { p.gameOver = true }
+        }
+        w.player = p
+        let out = s
+        w.active.update(id: id) { $0 = out }
+    }
+
+    /// The stow's `.MTNewSprite(0xbea, x, y, 2, −1, .SetupBonusSprite)` (M l. 45354–45356): the Bonus Setup's 0xbea arm
+    /// (M l. 52611–52627) — no light — and its tail's `FastRand(60)`; the Setup puts it on layer 1 (M l. 52383).
+    static func dropGlider(_ w: SpriteWorld, x: Int, y: Int) {
+        _ = w.newSprite(type: 0xbea, x: x, y: y, layer: 2, handler: .bonus) { b in
+            // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never for 0xbea.
+            _ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
+                                       counting: false, rng: &w.rng) { _, _, _, _ in -1 }
+        }
+    }
 
     /// Row 33 for the player `id`. Returns `cStack_6b`: the launched tumble face was drawn (row 34 then leaves the
     /// facing `+0x17e` as it is).
@@ -54,8 +221,11 @@ public enum PlayerStates {
         /// `if (FUN_100916dc(*_DAT_100a03cc)) FUN_10091504(…)`: stop the spin sound 427 if it is playing.
         func stopSpinSound() { w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427)) }
 
-        // Glider (`_DAT_100a05e0`, l. 45219–45518, incl. dying on the glider). // later: Phase 4 (no Phase-2 writer)
-        if w.player.glider { return false }
+        // Glider (`_DAT_100a05e0`, l. 45219–45471, incl. dying on the glider; GL).
+        if w.player.glider {
+            glider(w, id: id)
+            return false
+        }
 
         // Dying (`_DAT_100a069c > 0`, l. 45519–45589).
         if 0 < w.player.dying {

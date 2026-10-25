@@ -366,7 +366,9 @@ final class PlayerMotionTests: XCTestCase {
             w.player.exertion = 0
             gate(&w.player)
             HandleKeys.run(world: w, keys: [.right, .run], ridden: nil)
-            XCTAssertEqual(player(w).vx, 0, name)
+            // GL: the glider skips the walk block but runs its own steering (M l. 47494–47541) — RIGHT from rest
+            // steps vx + 0x96 (no walk flag, no exertion: the steering writes neither).
+            XCTAssertEqual(player(w).vx, name == "glider" ? 0x96 : 0, name)
             XCTAssertFalse(w.player.walkRight, name)
             XCTAssertEqual(w.player.exertion, 0, name)
             w.player = saved

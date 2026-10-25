@@ -562,8 +562,8 @@ extension HitPlayerSprite {
     /// 3050, the hang glider (M l. 48920–48936): only with `PTR_DAT_100a05c4 == 0`: `+0xe9`, on the glider
     /// `_DAT_100a05e0 = 1`, `_DAT_100a05d4 = 1`, `PTR_DAT_100a05c8 = 0`; the player's 24.8 position = the glider's, its
     /// `+0xc` / `+0xa` from them (`>> 8`, i16); `+0xc0` = the cached set `_DAT_100a0778` face 0 (PICT 0x41a,
-    /// `.InitPlayerSprite` M l. 42486); `SetRect(+0x34, 0x37, 0x3e, 99, 0x6e)`. // later: GL — the glider's row and
-    /// the 0x41a faces (renderer sheet).
+    /// `.InitPlayerSprite` M l. 42486); `SetRect(+0x34, 0x37, 0x3e, 99, 0x6e)`. The glider itself is row 33's arm
+    /// (`PlayerStates.glider`, GL).
     private static func glider(_ w: SpriteWorld, player pID: Int, other oID: Int) {
         guard w.player.countdown05c4 == 0, let o = w.active.record(id: oID) else { return }
         w.active.update(id: oID) { $0.killCount = 1 }

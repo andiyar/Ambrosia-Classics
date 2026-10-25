@@ -141,8 +141,8 @@ public struct FaceSheet: Sendable, Equatable {
 
     /// The player's face sets in `.InitPlayerSprite` call order (player-states §7; main dump l. 42427–42484):
     /// 29 sheets, 1003..1039 except 1005–1009, 1018, 1019 and 1026 — all with cell 100×120 except 1022 (150×120) and 1023
-    /// (120×120); 1004 through `.Load1EncFaceFromPICT`. Converted under the sprite CLUT 200. The glider sets
-    /// 1050..1053 (cached 160×160) are not Phase 1.
+    /// (120×120); 1004 through `.Load1EncFaceFromPICT`. Converted under the sprite CLUT 200. The glider's cached sets
+    /// 1050..1053 are `gliderSheets`.
     public static let playerSheets: [Loader] = {
         func s(_ pict: Int16, _ count: Int, _ w: Int, _ cols: Int, h: Int = 120) -> Loader {
             .set(Arguments(unchecked: pict, count: count, cellWidth: w, cellHeight: h, columns: cols))
@@ -156,4 +156,13 @@ public struct FaceSheet: Sendable, Equatable {
             s(1036, 6, 100, 6), s(1037, 4, 100, 4), s(1038, 4, 100, 4), s(1039, 9, 100, 9),
         ]
     }()
+
+    /// The glider's sets, `_CacheEncFaceSetFromPICT` right after the player's (main dump l. 42486–42489; GL): 1050
+    /// (6 × 160×160, 3 columns), 1051 (4, 4 columns), 1052 (6, 3 columns), 1053 (4, 4 columns); clut 200.
+    public static let gliderSheets: [Loader] = [
+        .set(Arguments(unchecked: 1050, count: 6, cellWidth: 0xa0, cellHeight: 0xa0, columns: 3)),
+        .set(Arguments(unchecked: 1051, count: 4, cellWidth: 0xa0, cellHeight: 0xa0, columns: 4)),
+        .set(Arguments(unchecked: 1052, count: 6, cellWidth: 0xa0, cellHeight: 0xa0, columns: 3)),
+        .set(Arguments(unchecked: 1053, count: 4, cellWidth: 0xa0, cellHeight: 0xa0, columns: 4)),
+    ]
 }

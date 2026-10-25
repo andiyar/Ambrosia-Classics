@@ -57,7 +57,7 @@ public enum HandleKeys {
                     leftRight(w, id: id, keys: keys)
                 }
             } else if s().hp > 0 {
-                // later: Phase 4 — glider steering (l. 47494–47541).
+                gliderSteering(w, id: id, keys: keys)                     // GL (M l. 47494–47541)
             }
         } else {
             // later: Phase 4 — the item switch (l. 47543–47609).
@@ -481,6 +481,36 @@ public enum HandleKeys {
             w.player.crouch = 0
             w.player.spinFrame = 0
         }
+    }
+
+    /// The glider's steering (M l. 47494–47541; raw `10053a10..10053ac4`; spells-detail §5.3), while HP `+0xa4` > 0:
+    /// LEFT (key 0) → vx −= 0x96 while vx > −0xc80, and past vx < −0x300 facing right (`+0x17e` 0) with no turn
+    /// running → turn counter `_DAT_100a05d0` = 12; else RIGHT (key 1) → vx += 0x96 while vx < 0xc80, past 0x300
+    /// facing left with no turn → −12 (both test before the step: the last step overshoots to ±0xce4). UP (key 2) →
+    /// pitch `_DAT_100a05d8` − 1 (≥ −5); else DOWN (key 3) → + 1 (≤ 5); neither → 1 toward 0.
+    static func gliderSteering(_ w: SpriteWorld, id: Int, keys: InputActions) {
+        guard var s = w.active.record(id: id) else { return }
+        if keys.contains(.left) {
+            if -0xc80 < s.vx { s.vx &-= 0x96 }
+            if s.vx < -0x300 && !s.mirrored && w.player.gliderTurn == 0 { w.player.gliderTurn = 0xc }
+        } else if keys.contains(.right) {
+            if s.vx < 0xc80 { s.vx &+= 0x96 }
+            if 0x300 < s.vx && s.mirrored && w.player.gliderTurn == 0 { w.player.gliderTurn = -0xc }
+        }
+        var pitch = w.player.gliderPitch
+        if keys.contains(.up) {
+            pitch -= 1
+            if pitch < -5 { pitch = -5 }
+        } else if keys.contains(.down) {
+            pitch += 1
+            if 5 < pitch { pitch = 5 }
+        } else {
+            if pitch < 0 { pitch += 1 }
+            if 0 < pitch { pitch -= 1 }
+        }
+        w.player.gliderPitch = pitch
+        let out = s
+        w.active.update(id: id) { $0 = out }
     }
 
     /// `.HasItem(0xe) ∨ .HasItem(0xf)` (a shield). // later: Phase 4 (inventory) — no Phase-2 inventory: false.

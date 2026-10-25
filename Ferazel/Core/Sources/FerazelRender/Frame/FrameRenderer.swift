@@ -202,10 +202,11 @@ public final class FrameRenderer {
     }
 
     /// `.InitPlayerSprite @ 1004a284` (l. 42427–42484): the player's face sets — `FaceSheet.playerSheets`, the one
-    /// table (29 sets: every face the state machine selects, P3), at boot under clut 200 (`.InitSprites`, l. 118). Not
-    /// loaded: the cached glider sets 1050–1053 (// later: Phase 4) and the held-item singles 0x2ee…0x308
-    /// (`_DAT_100a5f68`, l. 42490; // later: the phase that shows the held item).
-    static let playerSheets: Set<SetupFaces.Sheet> = Set(FaceSheet.playerSheets.map { loader -> SetupFaces.Sheet in
+    /// table (29 sets: every face the state machine selects, P3), at boot under clut 200 (`.InitSprites`, l. 118), and
+    /// the cached glider sets 1050–1053 (`FaceSheet.gliderSheets`, l. 42486–42489; GL). Not loaded: the held-item
+    /// singles 0x2ee…0x308 (`_DAT_100a5f68`, l. 42490; // later: the phase that shows the held item).
+    static let playerSheets: Set<SetupFaces.Sheet> = Set((FaceSheet.playerSheets + FaceSheet.gliderSheets).map {
+        loader -> SetupFaces.Sheet in
         switch loader {
         case .single(let pict): return .single(pict)
         case .set(let a):

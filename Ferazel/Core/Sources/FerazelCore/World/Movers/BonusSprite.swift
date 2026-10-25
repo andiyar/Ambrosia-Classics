@@ -202,7 +202,8 @@ public enum BonusSprite {
             s.keepRecord = true                            // `+0x188 = 1` (M l. 52617)
             s.face = FaceRef(pict: 0xbea, index: 0, set: .encoded)
             face = Face(pict: 0xbea, index: 0, source: .setup)
-            // `_DAT_100a076c…0778 + 1 = 1` (four cache entries' "needed" bytes) // later: GL — the glider's faces.
+            // `_DAT_100a076c…0778 + 1 = 1`: the four glider cache entries' "needed" bytes — Core keeps no face cache;
+            // the renderer loads 1050…1053 with the player's sets (`FaceSheet.gliderSheets`, GL).
         case 0x546:                                        // the air bubble (M l. 52628–52638)
             s.lightOverlay = false
             s.hotRect = rect(8, 8, 0x18, 0x18)

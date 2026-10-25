@@ -144,11 +144,19 @@ public struct PlayerState: Equatable, Sendable {
 
     /// `_DAT_100a069c`: dying counter (0 alive; row 41's death trigger sets 1, P4).
     public var dying: Int16 = 0
-    /// `_DAT_100a05e0`: on the glider. // later: Phase 4 (spells).
+    /// `_DAT_100a05e0`: on the glider (spells-detail §5.1; GL). Written only by `.ClearPlayerVars`, `.SetupPlayerSprite`,
+    /// the pickup (PK) and the stow (row 33).
     public var glider = false
-    /// `_DAT_100a05d8`: glider pitch (−5…5); `_DAT_100a05d4`: glider exit counter. // later: Phase 4.
+    /// `_DAT_100a05d8`: glider pitch (−5 nose up … 5 nose down; `.HandleKeys` UP / DOWN, row 8 reads it).
+    /// `_DAT_100a05d4`: the glider's phase — > 0 deploying (the pickup sets 1), 0 gliding, < 0 stowing (−23 → 0).
     public var gliderPitch: Int16 = 0
     public var gliderExit: Int16 = 0
+    /// `_DAT_100a05d0`: the glider's turn counter (±12 from `.HandleKeys`, 1 toward 0 a frame in row 33).
+    /// `_DAT_100a05dc`: the glide loop's face counter (0…0x1f, face 1051[c >> 3]). `PTR_DAT_100a05cc`: the dive
+    /// counter (0…30; reset only at pitch 0).
+    public var gliderTurn: Int16 = 0
+    public var gliderLoop: Int16 = 0
+    public var gliderDive: Int16 = 0
     /// `PTR_DAT_100a0668` / `_DAT_100a0664`: spin flag / spin frame (0…7).
     public var spin = false
     public var spinFrame: Int16 = 0
@@ -255,9 +263,9 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a06bc` (no reader) / `PTR_DAT_100a06c0` (`+0x116` copy).
     public var newHit: Int16 = 0
     public var lastInvulnerable: Int16 = 0
-    /// `PTR_DAT_100a060c`: crunch-bounce cooldown. `PTR_DAT_100a05c4`, `PTR_DAT_100a05a8`: countdowns (the flash
-    /// countdowns `PTR_DAT_1009fdbc`, `_DAT_1009fdb8`, `PTR_DAT_1009fda8` are the status bar's flow-wide globals:
-    /// `SpriteWorld.statusBar.flashes`, HU review fix). `_DAT_100a0684`: save-point hold (toward 0). `PTR_DAT_100a05f0`:
+    /// `PTR_DAT_100a060c`: crunch-bounce cooldown. `PTR_DAT_100a05c4` (the glider's re-pickup cooldown, 180 from the
+    /// stow), `PTR_DAT_100a05a8`: countdowns (the flash countdowns `PTR_DAT_1009fdbc`, `_DAT_1009fdb8`,
+    /// `PTR_DAT_1009fda8` are the status bar's flow-wide globals: `SpriteWorld.statusBar.flashes`, HU review fix). `_DAT_100a0684`: save-point hold (toward 0). `PTR_DAT_100a05f0`:
     /// no-cling timer. `_DAT_100a059c`: carpet-steering lock. `_DAT_100a073c`: the item-0x13 countdown.
     public var crunchCooldown: Int16 = 0
     public var countdown05c4: Int16 = 0
@@ -383,8 +391,8 @@ public struct PlayerState: Equatable, Sendable {
     /// (M l. 48607–48610). // later: MS — the spirit form writes them (M l. 44830, 44834).
     public var mistBodyX: Int32 = 0
     public var mistBodyY: Int32 = 0
-    /// `PTR_DAT_100a05c8`: zeroed by the glider pickup (M l. 48924). // later: GL — the glider row's counter (M l.
-    /// 45226–45236).
+    /// `PTR_DAT_100a05c8`: the glider's ground-contact frames (row 33, M l. 45224–45238: > 12 at phase 0 → the stow);
+    /// zeroed by the glider pickup (M l. 48924).
     public var glider05c8: Int16 = 0
     /// The sphere timers (`.TickTock`ed in row 14, M l. 44748–44799 — // later: PU) and the Shadow Double flag:
     /// `PTR_DAT_100a064c` 1330's 600 and `PTR_DAT_100a0654` its flag; `PTR_DAT_100a0640` walk-on-liquid 600;

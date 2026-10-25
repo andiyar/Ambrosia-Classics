@@ -391,8 +391,10 @@ public enum Player {
     /// Row 8 (l. 44598–44658; raw `1004da74..1004dc4c`): not gliding → gravity 0x1b8. Airborne (`+0xce == 0`):
     /// swimming or fully submerged (`+0x11c == 1`, last frame's water pass) → 0x50, spinning → 0x118; fully
     /// submerged: **vy −= 0x200 when vy > 0x6a4** (> 3000 spinning) (raw `1004daec..1004db10`; Bank correction
-    /// A4), and not spinning, not swimming, liquid ≠ 5 → swim 1; on a rope → 0; the glider's pitch gravity
-    /// (`_DAT_100a05d8`, wind scale `+0x90`) // later: Phase 4. Grounded → 0x1b8.
+    /// A4), and not spinning, not swimming, liquid ≠ 5 → swim 1; on a rope → 0; gliding (`_DAT_100a05e0`, phase
+    /// `_DAT_100a05d4` 0; GL, M l. 44622–44655) the pitch p (`_DAT_100a05d8`) sets gravity and wind scale `+0x90` with
+    /// C's truncating division: p < 0 → 0x3c + (−0x28 / (6 − |p|)), 0x100 + 0xfa / (6 − |p|) (20…52, 506…306); 0 →
+    /// 0x3c, 0x100; p > 0 → 0x3c + 0x3c / (6 − p), 0x100 − 0xdc / (6 − p) (72…120, 212…36). Grounded → 0x1b8.
     static func selectGravity(world w: SpriteWorld, id: Int) {
         guard var s = w.active.record(id: id) else { return }
         if !w.player.glider { s.gravity = gravity }
@@ -411,7 +413,17 @@ public enum Player {
             }
             if w.player.rope { s.gravity = 0 }
             if w.player.glider && w.player.gliderExit == 0 {
-                // later: Phase 4 — the glider's pitch gravity and wind scale (l. 44622–44655).
+                let p = Int32(w.player.gliderPitch), d = 6 - abs(p)
+                if p < 0 {
+                    s.gravity = Int16(truncatingIfNeeded: -0x28 / d + 0x3c)
+                    s.windScale = Int16(truncatingIfNeeded: 0xfa / d + 0x100)
+                } else if p < 1 {
+                    s.windScale = 0x100
+                    s.gravity = 0x3c
+                } else {
+                    s.gravity = Int16(truncatingIfNeeded: 0x3c / d + 0x3c)
+                    s.windScale = Int16(truncatingIfNeeded: 0x100 - 0xdc / d)
+                }
             }
         } else {
             s.gravity = gravity
