@@ -40,22 +40,21 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 1. This file, then `docs/QUESTIONS.md` (act on any new text under an item's `Answer:` before anything else — it is an
    authorization for exactly what it says; record it in DECISIONS). Open: **Q5** (system Quit/logout during a level waits
    for a pause or the menu, as the original — built as (a)), **Q7** (run 18: the Phase 4 plan's three non-blocking
-   choices — defaults are being built), **Q9** (run 22: game speed — the port runs at the original's cap, 30 steps/s; the
-   Let's Play ~25; keep / hidden slower cap / slower default — default (a) keep, nothing changes). A (b)/(c) answer to Q5
-   or Q9 is a small App task, plan it first (as wave 4.2F was: a named wave before the next one in the Phase 4 plan); a
-   non-default Q7 answer becomes a small task in Phase 4. **Ben's later notes on the text** (Q8 says: if the smoothed
-   modern Times still looks off against the Let's Play, bundle classic Times/Geneva — allowed, D39) become a task the same way.
-   Phase 4. Q1, Q2, Q3, Q4, Q6, Q8 are answered and acted on (D39 records Q2/Q6/Q8).
+   choices — defaults are being built). A (b)/(c) answer to Q5 is a small App task, plan it first (as wave 4.2F was: a
+   named wave before the next one in the Phase 4 plan); a non-default Q7 answer becomes a small task in Phase 4. **Ben's
+   later notes on the text** (Q8 says: if the smoothed modern Times still looks off against the Let's Play, bundle classic
+   Times/Geneva — allowed, D39) become a task the same way. Q1, Q2, Q3, Q4, Q6, Q8, Q9 are answered and acted on (D39
+   records Q2/Q6/Q8 and, in its addendum, Q9: keep the original's top speed, no code change).
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D26** (the Ferazel design ruling), **D33** (Phase 2
    as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + as built), **D37** (Ferazel controller),
    **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text).
 3. **The plan: `docs/plans/2026-10-24-ferazel-phase4.md`** — read "Verification model" (l. 78, gates G1–G10 incl. G7b
    and G8, and the run-21 ladder-shift note at l. ~119), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared
-   architecture LOCKED" (l. 222), then your wave's tasks, "Execution order" (l. ~1373), "Stand-ins kept (◇)" (l. ~1411),
-   "Bank corrections to append" (l. ~1507) and "Rulings" (l. ~1606). Read the "As executed" notes of waves 4.0–4.4 (X1,
-   VS, LT, US, IV, HU, TB, BN, PK, TX, EF, CS, SH, GL, PU — grep `As executed (`) — they change seams you will use (`killCount`/write-back flags,
+   architecture LOCKED" (l. 222), then your wave's tasks (SD l. ~1027, BX1 l. ~1049 incl. its loop-run-24 seat note), "Execution order" (l. ~1373), "Stand-ins kept (◇)" (l. ~1411),
+   "Bank corrections to append" (l. ~1507) and "Rulings" (l. ~1606). Read the "As executed" notes of waves 4.0–4.5 (X1,
+   VS, LT, US, IV, HU, TB, BN, PK, TX, EF, CS, SH, GL, PU, IU, MS — grep `As executed (`) — they change seams you will use (`killCount`/write-back flags,
    `addItem` returns the slot, `StatusBarCalls` + the flow-wide status-bar globals, `BonusSprite`, `Outcome.upgrade`,
-   `PlayerState.passRequests`, `fadeOut` returning whether it armed). The design `docs/plans/2026-10-06-ferazel-design.md`
+   `PlayerState.passRequests`, `fadeOut` returning whether it armed, IU's `.hint` suspension + resumable handle pass `continueHandlePass` + `suspendedInNestedPass`, MS's halfword spirit timer). The design `docs/plans/2026-10-06-ferazel-design.md`
    §8 row 4 is the scope; the Phase 3 plan is history.
 4. The bank: `docs/ferazel/INDEX.md` then only the topical files your tasks cite; the decompile `ghidra/ferazel/` (the
    dump beats the bank: "follow the binary"; Phase 3's "digest A–F" files were never committed — the Phase 4 plan is
@@ -78,34 +77,32 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-26, written by loop run 24 at its close; head of `main` = run 24's docs-close commit on top of e67a795 — read `git log -8 main`)
-- **Phases 2 and 3 PASSED WITH NOTES by Ben (2026-10-25, D39).** His notes became wave 4.2F (done by loop run 22).
+## STATE (live, 2026-10-26, written by loop run 25 at its close; head of `main` = run 25's docs-close commit on top of a3512db — read `git log -8 main`)
+- **Phases 2 and 3 PASSED WITH NOTES by Ben (2026-10-25, D39).** His notes became wave 4.2F (done by loop run 22). Q9
+  answered 2026-10-26: keep the original's speed (D39 addendum).
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
-  `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card; Ben played it — Q6 answered).
+  `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (Ben played it — Q6 answered).
 - **Phase 4 "Spells + items" UNDER WAY** (plan `docs/plans/2026-10-24-ferazel-phase4.md`; D38 + its "As built — wave
-  4.0 … 4.4" + D39 "As built — wave 4.2F"): 24 tasks + the seat-inserted TB + wave 4.2F (TX, SP) + phase end A4. **Ladder
-  349 → 487** (TB +3 before BN, TX +3 before EF: every total from EF on is the plan's + 6 — plan l. ~119 says so). `BuiltLevels`
-  widens to 1...3 at LV3 and 1...4 at LV4. Waves 4.0 (run 19) → 357, 4.1 (run 20) → 374, 4.2 (run 21) → 393, 4.2F (run 22)
-  → 396, 4.3 (run 23: EF, CS — explosions, flash, shake, casting, shots in flight, `.KillPlayerShot`) → 412.
-  **Wave 4.4 DONE (loop run 24):** SH a6bebdc + 223c838 + 8adf768 (`.HitPlayerShotSprite` + the rest of
-  `.HitPlayerShotTileSprite` in `Shots/PlayerShotHits.swift` / `Shots/PlayerShot.swift`; `FerazelSession.hitCallback` has
-  `.playerShot` and a `.box` case (stalactite shot case only — BX1 builds the rest); the container arm in `BonusSprite.swift`;
-  idled records match nothing wherever the dump compares a Handle — `runs()`; enemy-shot/Crawler arms `// later: Phase 5`,
-  Statue arm `// later: SW`) → 420; GL 4820e54 + b41bfe0 (glider in `PlayerStates.swift`/`Player.swift`/`HandleKeys.swift`,
-  sheets 1050–1053 in `FrameRenderer` + `FaceSheet.gliderSheets`; glide starts at vy −839, steering to ±0xce4) → 425; PU
-  ee00638 + e67a795 (`Player/PowerUps.swift`: `.TickTock`, `.DoubleSpeedTrail`, `SpriteHandler.trail`; Featherfall clamps
-  before gravity; the level-2 walk-on-liquid sphere now expires) → **431**. Shots now stop at walls.
-- `Ferazel/Core` suite: **431 passed, 0 failed/skipped** (run 24, seat-run from the merge head e67a795). Census `Totals: items 1,108
-  decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
+  4.0 … 4.5" + D39 "As built — wave 4.2F"): 24 tasks + the seat-inserted TB + wave 4.2F (TX, SP) + phase end A4. **Ladder
+  349 → 487** (every total from EF on is the plan's + 6 — plan l. ~119). `BuiltLevels` widens to 1...3 at LV3 and 1...4 at
+  LV4. Waves 4.0 → 357, 4.1 → 374, 4.2 → 393, 4.2F → 396, 4.3 → 412, 4.4 (run 24: shot impacts, glider, power-ups) → 431.
+  **Wave 4.5 DONE (loop run 25):** IU aff2a13 + 8ab9168 (the item gate + switch in `HandleKeys.swift`; `Items/HeldItem.swift`,
+  `Items/Smite.swift`; potion drink row 32; `FrameSuspension.hint(text:)` raised inside the player's Handle, resumed by
+  `FerazelSession.resume(.hint)` via a resumable handle pass (`continueHandlePass`), also nested inside a pause redraw
+  (`suspendedInNestedPass`); `LevelRun` runs `.SimpleConv(4001, "Ferazel", text)` and the Escape Ring's `fd64`; the shield
+  needs item 0xe/0xf) → 439; MS f9f6944 + a3512db (Mist spirit form + body return, the necklace revive in row 33's dying arm,
+  the Fire Charm in the fire arm + geyser 0x5a0, the Multi Crystal loss; `PlayerTiles` now reads the spirit timer as the
+  halfword it is) → **444**.
+- `Ferazel/Core` suite: **444 passed, 0 failed/skipped** (run 25, seat-run from the merge head a3512db). Census `Totals: items
+  1,108 decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- **Goldens (current, after wave 4.4 — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+- **Goldens (current, after wave 4.5 — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
   `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `deb577ecdeb64c58`,
   swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
   1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
   frame `c8e41941c1e4d6da`. **Only BX1 and BX2 (◈) may move a golden from here**, each recording old → new and the cause,
-  the reviewer confirming the cause by switching it off (the method that worked in run 21). IU changes the golden drivers
-  (`FrameGoldenTests`, `Phase2GoldenTests` return early on a suspension) — their hashes must not move.
+  the reviewer confirming the cause by switching it off (the method that worked in run 21).
 - **Carried minor follow-ups (not adopted, D38 Ruling 15 — left to Ben's Q6 verdict):** report fade-in when faded (M l. 35448)
   unbuilt; a second queued main-menu pick dropped; boot bar jumps; music decoded on play; `.savePoint(saved:)` carries no
   polled input after the save dialog; `SavedGameFile.writeErrorReport` code typed optional; `CoreTextRasterizer` widths
@@ -127,6 +124,11 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   light [LOW]; the crunch strength is passed as 8 bits where the binary passes 16 (always 1) [LOW]; the dump clears the
   Shadow Double flag in two state-selection branches (M l. 45410, 45478) — **SD's**; the trail's 0xb000x tints are not
   checked by eye; SW owns the Statue arm of `.HitPlayerShotSprite` and BX1 the crate arm's r29 (seat notes in their plan sections).
+- **Run 25 carries:** the Magical Shield's crouch face is still a stub that treats the shield as absent; with slot −1 (empty
+  inventory) the binary's move-to-front copies the empty slot's raw words into slot 0 — not modelled [LOW]; two
+  health-potion loops in `ItemUseTests` are unbounded; the resumed player's map-redraw ops are unpinned (the next Handle's
+  cleanup flushes them); Smite computes the inert Phase-1 enemies' centre from the hot rect (`// later: Phase 5`); MS: the
+  Blob-attacker exception of the crystal shards is Phase 5's; the forced-death flag `0568` is always 0.
 - **Run 22 carries:** the smoothing mix is linear with no gamma and the 14 pt threshold is read from the LP, both [MED];
   the LP's Times still looks a little heavier and ~5 % wider than today's system Times (D39 allows bundling classic Times if
   Ben asks); SP left the level-start pan, the load bar and walk distance per step unmeasured [LOW].
@@ -152,29 +154,31 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   background agent by `stat -L` on its transcript (the task file is a symlink).** (21) **run 23: a stub that skips a routine's
   sound or spawn draws desynchronises the RNG — when built code reaches a later task's routine (the spring → `.KillPlayerShot`),
   build the routine faithfully now and tell the owning task; run the wave-end gates in a background Bash while a
-  foreground reviewer works.** (22) **run 24: a test that pinned a named stub's placeholder (GL's steering row) may take the dump's value by seat ruling, recorded in the commit body + D-number; the implementer must STOP and report first (it did); mislabelled `// later:` owners are worth a check (the Statue arm is SW's, not Phase 5).**
+  foreground reviewer works.** (23) **run 25: when an implementer STOPS on an existing test the dump contradicts, read the cited M lines yourself, then rule and record it in the commit body + D38 (it took one SendMessage); a new suspension case can break the app's exhaustive switches — run G5 before merging even a Core-only task that touches `FrameSuspension`; Ben's attended session may commit to main mid-run (Q9) — rebase before the merge.** (22) **run 24: a test that pinned a named stub's placeholder (GL's steering row) may take the dump's value by seat ruling, recorded in the commit body + D-number; the implementer must STOP and report first (it did); mislabelled `// later:` owners are worth a check (the Statue arm is SW's, not Phase 5).**
 
-## THIS RUN'S JOB — loop run 25: **Phase 4 wave 4.5 = [IU MS]** (2 tasks; IU is ⚑ MAJOR)
-- **IU** (plan `#### IU`, l. ~923–997, ⚑ MAJOR, → **439** = plan 433 + 6): the USE item switch, the held weapon (dagger
-  stab, snd 418), thrown seeds, potions, rings, the hint conversations **inside the player's Handle** (a second resume
-  point: `FerazelSession.resume(_:)` today always continues the special pass, `FerazelSession.swift:~447–471`; the
-  handle-pass walk `SpriteWorld.handleSprites` becomes resumable), the shield needs a shield (`HandleKeys.swift:~430`). It
-  inherits CS's pending assertions: the same-frame dagger stab after magic < 1 (`testMagicBelowOneSelectsDagger`'s tail)
-  and the item gate clearing `075c` (CS as executed). `PauseKeysTests`' ⌘ twins run with a Locket (item 7) selected —
-  re-check them. The golden drivers change (return early on a suspension); **no golden may move**. Two Opus legs.
-- **MS** (plan `#### MS`, l. ~998–1022, minor, → **444**): the Mist potion's spirit form (row 16, `.TickTockLong`), the
-  Resurrection Necklace, the Fire Charm, the Multi Crystal loss. One Opus leg. GL built "death on the glider skips the
-  necklace (`5106 = 1`)" — MS's necklace must honour it.
-- Order IU → MS, each merged to main before the next. Wave end: G3 + G5. Then CLOSE. The next chip names wave 4.6
-  = [SD BX1] (plan "Execution order", l. ~1373; both ⚑, two legs each; BX1 ◈ may move goldens) → 457.
-- First, if Ben answered Q5/Q9 with (b)/(c) or wrote text notes: plan that small task first (see READ FIRST 1).
+## THIS RUN'S JOB — loop run 26: **Phase 4 wave 4.6 = [SD BX1]** (2 tasks; both ⚑ MAJOR, two Opus legs each)
+- **SD** (plan `#### SD`, l. ~1027–1048, ⚑ MAJOR, → **449** = plan 443 + 6): the Shadow Double (`.SetupShadowSprite`,
+  `.HandleShadowSprite`, the pose ring written by row 42, row 11; the cast copies — CS built the spawn) and the Pentashield
+  orbs (`.UpdatePentSprites`). New `Player/ShadowDouble.swift`, `Player/Pentashield.swift`, `ShadowPentaTests.swift` (5
+  tests). Carried to SD: PU found the dump clears the Shadow Double flag in two state-selection branches (M l. 45410,
+  45478); row 14 already ticks the double's timer and sets its flag (PU); `rideRamp` doubles as the history index (CS
+  carry) — check it. The orbs "destroy enemy shots" is Phase 5's (keep a named stub). No golden may move.
+- **BX1** (plan `#### BX1`, l. ~1049–1100, ⚑ MAJOR ◈, → **457** = plan 451 + 6): the Box class tail, `.HitBoxSprite`,
+  `.HitBoxTileSprite`, `.KillBox`/`.KillCrate`, crates and drops, boulders, mine carts, stalactites; the spin stomp in
+  `HitPlayerSprite.swift`. Read its **loop-run-24 seat note** (l. 1050: `FerazelSession.hitCallback`'s `.box` case exists
+  for the stalactite's shot case only; the crate arm's stale r29 = the shot's own light). ◈: may move goldens **only** for
+  the Box tail settling crates/boulders — every moved golden old → new + cause in the commit body, both legs confirm by
+  switching the tail off. Recheck `BonusSprite` 0xc25 / 0xc9b…0xcb0 `notTranscribed` if crate drops reach them.
+- Order SD → BX1, each merged to main before the next. Wave end: G3 + G5. Then CLOSE. The next chip names wave 4.7
+  = [BX2 BT TP] (BX2 ◈ and BT one leg each, TP ⚑ two) → 473.
+- First, if Ben answered Q5/Q7 differently from the defaults or wrote text notes: plan that small task first (READ FIRST 1).
 
-## GATES (fenced; verified on this machine 2026-10-26; G2 431/0, G3 1,108/0, G5 SUCCEEDED re-run by run 24 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-26; G2 444/0, G3 1,108/0, G5 SUCCEEDED re-run by run 25 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (IU 439, MS 444), second = 0
+# G2 suite: first number = the ladder total (SD 449, BX1 457), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0

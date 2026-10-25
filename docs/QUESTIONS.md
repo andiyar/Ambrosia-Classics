@@ -57,6 +57,10 @@ Recommendation: the defaults — more of the game to try sooner, and no behaviou
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
 Answer:
 
+## Answered
+
+_(moved here by the run that acted on the answer, with what it did)_
+
 ### Q9 — 2026-10-25 — Game speed: keep the original's top speed, or slow it to the Let's Play's pace?
 Context: Your Phase 3 note "it runs very fast" was measured (loop run 22, two independent checks). The port runs exactly
 as fast as the original's own code allows: one game step every two sixtieths of a second, 30 steps a second, the same
@@ -72,10 +76,7 @@ Recommendation: a — it is what the binary does; if the video's pace is what yo
 changing the faithful default.
 Blocks: nothing. (b) or (c) becomes a small App task.
 Answer: (a) keep the original's top speed, for now — Ben, 2026-10-26. Ben's attended session measured the running app on his Mac (a screen recording of level-1 play): a steady 30 new frames a second, never more, so the port matches the binary's cap. Ben: "huh. let's keep it for now." No code change; he may revisit (b) later.
-
-## Answered
-
-_(moved here by the run that acted on the answer, with what it did)_
+Acted on (loop run 25, 2026-10-26): recorded as an addendum to DECISIONS D39; nothing changes in code.
 
 ### Q8 — 2026-10-25 — Apple system fonts may ship (Ben's ruling, written by his attended session)
 Context: The project had a standing rule (Aki D23, carried into the BTX release script) against shipping Apple's system

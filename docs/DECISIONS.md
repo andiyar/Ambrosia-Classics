@@ -1507,6 +1507,18 @@ a named stub's placeholder, not an expectation edited to agree; (5) PU: tests th
 its timer (row 14 now clears a flag whose timer is 0). Dump-over-plan corrections (glide vy −839, steering cap 0xce4,
 Featherfall clamp before gravity, 0x4b7 layer 0xb …) are in the plan's "As executed" notes for SH, GL, PU and the bank BCs.
 
+**As built — wave 4.5 (loop run 25, 2026-10-26; main a3512db):** IU ⚑ (USE with an item: the item gate and switch, the
+held weapon — dagger, Ice Pick, Vorpal Dirk stabs — thrown seeds, health/magic potions, the Smiting and Escape Rings, the
+three hint conversations raised **inside the player's Handle** with a resumable handle pass, top-level and nested in a
+pause redraw; the shield raise needs a shield) → 439; MS (the Mist potion's spirit form and the way back into the body,
+the Resurrection Necklace, the Fire Charm, the Multi Crystal loss) → **444/0**, census 1,108/0, Ferazel builds, HK
+35a85ba untouched, no golden moved. **Seat rulings:** (1) IU: two existing tests adapted to M l. 47543–47550 (the item
+branch sets both latches and zeroes idle/fidgets) — `CastTests`' same-frame stab, `PauseKeysTests`' ⌘Q twin holds ⌘ alone;
+(2) the nested-hint flag is a session property, the locked seam keeps `.hint(text:)`; (3) MS: the spirit timer is a
+halfword — `PlayerTiles` read it wrong, fixed (the Mist form now passes through tiles). Dump-over-plan corrections (melee
+faces 1021, necklace in row 33 not 41, no lava immunity, spirit form 12 frames after the drink's 40) are in the plan's
+"As executed" notes for IU and MS and the bank BCs.
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
@@ -1526,3 +1538,8 @@ blended into the palette; 14 pt threshold read from the Let's Play: conversation
 text crisp) → Ferazel/Core **396/0**, no golden moved; SP — measured, no change: the port runs at the binary's cap (30
 steps/s, `.GameLoop` M l. 5229–5292); the LP shows ~25 steps/s during play (SheepShaver CPU-bound; its text reveal runs
 at the true 30 characters/s) → Ben's call, QUESTIONS Q9. Ladder from EF on +3 more (Phase 4 end **487**).
+
+**Addendum — Q9 (Ben, 2026-10-26; recorded by loop run 25):** game speed **(a) keep the original's top speed, for now.**
+Ben's attended session measured the running app on his Mac (a screen recording of level-1 play): a steady 30 new frames a
+second, never more — the port matches the binary's cap. Ben: "huh. let's keep it for now." No code change; he may revisit
+(b) (a hidden slower cap) later.
