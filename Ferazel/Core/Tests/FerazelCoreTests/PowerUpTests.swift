@@ -110,6 +110,35 @@ final class PowerUpTests: XCTestCase {
         frame(w, solver)
         XCTAssertEqual([w.player.highJumpTimer], [0])
         XCTAssertEqual(tickCues(w), [])
+
+        // Several timers at once (row 14, M l. 44748–44808): one shared flag, toggled by each `.TickTock` in the row's
+        // order — `0650`, `064c` (then `0654` = timer ≥ 1 ∧ flag), `0640`, `0630` (`0634`), `0624` (`0628`), `0618`
+        // (`061c`) — and each blink flag copies it right after its own tick.
+        func reg(_ snds: [Int16]) -> [PlayerCue] {
+            snds.map { PlayerCue(call: .reg, snd: $0, priority: 1, volume: 0x100) }
+        }
+        w.player.flag5fd4 = true
+        w.player.shadowTimer = 211
+        w.player.highJumpTimer = 211
+        w.player.featherFallTimer = 196
+        w.player.doubleSpeedTimer = 300
+        w.player.shadowDouble = true
+        w.player.tint061c = true
+        frame(w, solver)
+        // Shadow 210 → 428, flag off, `0654` 0; High Jump 210 → 428, on, `0634` 1; Feather Fall 195 → 429, off,
+        // `0628` 0; Double Speed 299 (no mark) → `061c` = off.
+        XCTAssertEqual(tickCues(w), reg([428, 428, 429]))
+        XCTAssertEqual([w.player.shadowDouble, w.player.tint0634, w.player.tint0628, w.player.tint061c, w.player.flag5fd4],
+                       [false, true, false, false, false])
+        for _ in 2...15 { frame(w, solver) }
+        frame(w, solver)
+        // Frame 16: Shadow 195 → 429, on, `0654` 1; High Jump 195 → 429, off, `0634` 0; Feather Fall 180 → 428, on,
+        // `0628` 1; Double Speed 284 → `061c` 1.
+        XCTAssertEqual(tickCues(w), reg([429, 429, 428]))
+        XCTAssertEqual([w.player.shadowDouble, w.player.tint0634, w.player.tint0628, w.player.tint061c, w.player.flag5fd4],
+                       [true, false, true, true, true])
+        XCTAssertEqual([w.player.shadowTimer, w.player.highJumpTimer, w.player.featherFallTimer,
+                        w.player.doubleSpeedTimer], [195, 195, 180, 284])
     }
 
     func testSolidLiquid() throws {
@@ -246,6 +275,25 @@ final class PowerUpTests: XCTestCase {
             XCTAssertFalse(t.lightOverlay)
         }
         XCTAssertNotEqual(poses[n - 1].x, poses[n - 3].x, "the poses differ, so the trail spreads")
+        // The player's `.HandleCannonedSprite` runs `.DoubleSpeedTrail` too (M l. 50038): captured by L1's cannon
+        // (record 41), each held frame pushes the pinned pose (face 0) into the ring; after three every trail sprite
+        // sits on it.
+        let pid = try XCTUnwrap(w.playerID)
+        var cs = try SetupFaces.setup(w.records[41], context: SetupFaces.Context(level: w.level, playerX: 0)).slot
+        cs.recordIndex = 41
+        let k = w.active.insert(cs)
+        BackgroundSprite.hit(w, id: k, other: pid)
+        XCTAssertEqual(player(w).handler, .cannoned)
+        for _ in 0..<3 { BackgroundSprite.handleCannoned(world: w, id: pid, keys: []) }
+        let pinned = player(w)
+        XCTAssertEqual(w.player.trailPoses.suffix(3),
+                       Array(repeating: PlayerState.TrailPose(face: nil, y: Int16(pinned.y), x: Int16(pinned.x),
+                                                              mirrored: pinned.mirrored), count: 3))
+        for id in trail {
+            let t = try XCTUnwrap(w.active.record(id: id))
+            XCTAssertEqual([t.x, t.y], [pinned.x, pinned.y])
+            XCTAssertNil(t.face)
+        }
         // Expiry: `0620` = 0 at 0 → the faces go.
         w.player.doubleSpeedTimer = 1
         frame(w, solver)
@@ -253,6 +301,22 @@ final class PowerUpTests: XCTestCase {
         for id in trail { XCTAssertNil(try XCTUnwrap(w.active.record(id: id)).face) }
         frame(w, solver)
         XCTAssertEqual([w.player.maxWalk, w.player.maxRun], [0x76c, 0xc80])
+        // In a level-1 session the five trail records carry `.HandleTrailSprite @ 1004b354` (`.SetupTrailSprite`), and
+        // `.MTHandleSprites` runs it: `.StandardSpriteHandles` (`+0x116` − 1) then `.StandardSpriteCleanup` (the
+        // centre from the position and hot rect, here (0, 0, 0, 0)).
+        let s = try FerazelSession(resources: try FerazelData.open(try FerazelData.dataDirectory()), prefs: FerazelPrefs(),
+                                   level: 1, seed: 1)
+        let sTrail = s.world.player.trail.compactMap { $0 }
+        XCTAssertEqual(sTrail.count, 5)
+        for id in sTrail { XCTAssertEqual(s.world.active.record(id: id)?.handler, .trail) }
+        for (i, id) in sTrail.enumerated() {
+            s.world.active.update(id: id) { $0.x = 300 + i; $0.y = 200 + i; $0.invulnerable = 5; $0.centre = .init() }
+        }
+        _ = s.step(keys: KeyState())
+        for (i, id) in sTrail.enumerated() {
+            let t = try XCTUnwrap(s.world.active.record(id: id))
+            XCTAssertEqual([Int(t.invulnerable), t.centre.x, t.centre.y], [4, 300 + i, 200 + i], "trail \(i)")
+        }
     }
 
     func testInvincibilityAndDeath() throws {

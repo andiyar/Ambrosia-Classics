@@ -2,8 +2,12 @@ import Foundation
 
 /// The power-up timers (plan PU; spells-items §5, held-item-melee §3): `.TickTock @ 1004c1bc` (M l. 43583–43663), row
 /// 14 of `.HandlePlayerSprite` (M l. 44748–44808) and `.DoubleSpeedTrail @ 1004d370` (M l. 44302–44395). The spheres
-/// that set the timers are PK's (`HitPlayerSprite.sphere`, M l. 49023–49121); the flags' readers are rows 5, 9, 33, 36
-/// and `.HitPlayerTileSprite`'s walk-on-liquid rewrite.
+/// that set the timers are PK's (`HitPlayerSprite.sphere`, M l. 49023–49121). The flags' readers (dump; the plan's
+/// "rows 5, 8, 9, 23, 36" is wrong — rows 8 and 23 read none): `.HandlePlayerSprite` row 5 (`0620`, M l. 44559), row 9
+/// (`0638` / `062c`, M l. 44662–44665), row 11 (`0654`, M l. 44674), row 33 (`0620` M l. 45893 / 45924, `062c` M l.
+/// 46116), row 36 (the blink flags with their actives, M l. 46255–46258); `.HandleKeys` (`0620`, M l. 47418–47709);
+/// `.HandleShadowSprite` (`0654`, M l. 43072); `.HitPlayerTileSprite`'s walk-on-liquid rewrite (`0648`, M l. 48166);
+/// `.HitPlayerSprite` (`0648` with `063c`, M l. 49314–49319 / 49774–49780).
 public enum PowerUps {
     /// `*_DAT_100a03c8` = 428 (the warning tick and the time-up sound) / `*_DAT_100a03c4` = 429 (the tock).
     static let tickSound: Int16 = 428
@@ -25,6 +29,7 @@ public enum PowerUps {
                 p.flag5fd4 = true
             }
         }
+        // A negative timer would pass the mark test below (Swift `%` keeps the sign); no writer makes one.
         let t = p[keyPath: timer]
         if t != 0, t <= 210, t % 15 == 0 {
             p.cue(PlayerCue(call: .reg, snd: t % 30 == 0 ? tickSound : tockSound, priority: 1, volume: 0x100))
