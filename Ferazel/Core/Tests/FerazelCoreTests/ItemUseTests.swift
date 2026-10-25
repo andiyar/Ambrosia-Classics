@@ -117,6 +117,9 @@ final class ItemUseTests: XCTestCase {
         var after: [Int16] = [w.player.itemUse]
         var faces: [Int] = [player(w).face?.index ?? -1]
         var striking: [Bool] = [held(w).handler == .playerShot && held(w).hasHit]
+        // Each half on its own: off outside c 3…5 is the Handle back to `.HandleHeldItemSprite` and the hit callback 0.
+        var hits: [Bool] = [held(w).hasHit]
+        var handlers: [SpriteHandler?] = [held(w).handler]
         for k in 2...10 {
             if k == 3 { w.player.fidgets = 7 }
             frame(w, solver, k == 3 ? [] : .use)                  // a release on frame 3 clears the latch only
@@ -126,12 +129,17 @@ final class ItemUseTests: XCTestCase {
             XCTAssertEqual(player(w).face?.pict, 1021)
             faces.append(player(w).face?.index ?? -1)
             striking.append(held(w).handler == .playerShot && held(w).hasHit)
+            hits.append(held(w).hasHit)
+            handlers.append(held(w).handler)
             XCTAssertEqual(held(w).face, FaceRef(pict: 750, index: 0, set: .encoded))
             XCTAssertEqual([held(w).hp, Int16(held(w).crunchStrength), Int16(held(w).crunches)], [100, -1, 0])
         }
         XCTAssertEqual(after, [2, 3, 4, 5, -5, -4, -3, -2, -1, 0])
         XCTAssertEqual(faces, [0, 1, 2, 3, 4, 4, 3, 2, 1, 0])
         XCTAssertEqual(striking, [false, false, true, true, true, false, false, false, false, false])
+        XCTAssertEqual(hits, [false, false, true, true, true, false, false, false, false, false])
+        XCTAssertEqual(handlers, [.heldItem, .heldItem, .playerShot, .playerShot, .playerShot,
+                                  .heldItem, .heldItem, .heldItem, .heldItem, .heldItem])
         XCTAssertEqual(held(w).handler, .heldItem)
         // The press on frame 4 found the swing running (`0698 ≠ 0`): no second 418; frame 11, USE still held: latched.
         frame(w, solver, .use)
@@ -168,6 +176,37 @@ final class ItemUseTests: XCTestCase {
             stock(v, [Self.spell(0), Self.spell(5), Self.item(0), Self.item(1)], selected: 0, magic: 0)
             HandleKeys.run(world: v, keys: .use, ridden: nil)
             XCTAssertEqual(v.globals.inventory.prefix(4).map(\.id), [0, 0, 5, 1])
+            XCTAssertEqual(v.player.cues, [reg(418, 0x55)])
+            XCTAssertEqual(v.player.itemUse, 1)
+            XCTAssertEqual(v.player.meleeItem, 0)
+            XCTAssertTrue(v.player.useItemHeld)
+        }
+        // USE held with an item selected, latched (`075c` set: no switch): fidgets and idle zeroed every frame (M l.
+        // 47544–47545), each on its own.
+        do {
+            let v = try world()
+            XCTAssertNotNil(Player.spawn(world: v, x: 100, y: standY))
+            stock(v, [Self.spell(0), Self.item(0)], selected: 1)
+            v.player.useItemHeld = true
+            v.player.fidgets = 7
+            v.player.idle = 9
+            HandleKeys.run(world: v, keys: .use, ridden: nil)
+            XCTAssertEqual(v.player.fidgets, 0)
+            XCTAssertEqual(v.player.idle, 0)
+            XCTAssertEqual(v.player.itemUse, 0)
+            // USE up: neither touched (the L/R block runs instead).
+            v.player.fidgets = 7
+            v.player.idle = 9
+            HandleKeys.run(world: v, keys: [], ridden: nil)
+            XCTAssertEqual([v.player.fidgets, v.player.idle], [7, 9])
+        }
+        // Slot −1 (the empty inventory, `repairSelection`): the gate and switch read `G+0x22` (flag 0, an item) and
+        // `G+0x1a` (id 0, the zero gap): the dagger's arm — snd 418, counter 1 (M l. 47541–47561).
+        do {
+            let v = try world()
+            XCTAssertNotNil(Player.spawn(world: v, x: 100, y: standY))
+            stock(v, [], selected: -1)
+            HandleKeys.run(world: v, keys: .use, ridden: nil)
             XCTAssertEqual(v.player.cues, [reg(418, 0x55)])
             XCTAssertEqual(v.player.itemUse, 1)
             XCTAssertEqual(v.player.meleeItem, 0)
@@ -367,6 +406,19 @@ final class ItemUseTests: XCTestCase {
             XCTAssertEqual(shots(w).count, 1)
             XCTAssertEqual(w.player.itemUse, 0)
         }
+        // The player's vy is added only when > 0 (M l. 44278–44280): rising (vy < 0) → −0x60e alone; falling → + vy.
+        do {
+            let w = try world()
+            _ = standing(w)
+            let pid = w.playerID!, hid = w.player.heldItem!
+            for (vy, added) in [(Int32(-0x300), false), (0x200, true)] {
+                w.active.update(id: pid) { $0.vy = vy }
+                let before = Set(shots(w).map(\.id))
+                HeldItem.throwSeed(w, player: pid, held: hid, ziridium: false)
+                let s = try XCTUnwrap(shots(w).first { !before.contains($0.id) })
+                XCTAssertEqual(s.vy, -0x60e + (added ? vy : 0), "vy \(vy)")
+            }
+        }
     }
 
     func testPotionsDrink() throws {
@@ -413,7 +465,8 @@ final class ItemUseTests: XCTestCase {
         stock(m, [Self.item(4)], selected: 0, magic: 7)
         m.player.cues = []
         frame(m, ms, .use)
-        while m.player.potion != 0x14 { frame(m, ms, []) }
+        for _ in 0..<0x40 where m.player.potion != 0x14 { frame(m, ms, []) }
+        XCTAssertEqual(m.player.potion, 0x14, "the drink never reached 20")
         XCTAssertEqual(m.globals.magic, 1000)
         XCTAssertEqual(m.player.cues.filter { $0.call == .reg && $0.snd != 442 }, [reg(500, 0x100), reg(415, 0x100)])
         XCTAssertEqual(m.statusBar.flashes.magic, 0xb)
@@ -427,7 +480,8 @@ final class ItemUseTests: XCTestCase {
         stock(x, [Self.item(0x19)], selected: 0)
         x.player.cues = []
         frame(x, xs, .use)
-        while x.player.potion != 0x14 { frame(x, xs, []) }
+        for _ in 0..<0x40 where x.player.potion != 0x14 { frame(x, xs, []) }
+        XCTAssertEqual(x.player.potion, 0x14, "the drink never reached 20")
         XCTAssertEqual(x.player.cues.filter { $0.call == .reg && $0.snd != 442 }, [reg(415, 0x100)])
         XCTAssertFalse(x.globals.hasItem(0x19))
         XCTAssertEqual(x.player.countdown05a8, 6)
@@ -601,9 +655,14 @@ final class ItemUseTests: XCTestCase {
         // Nested: the pause's `.PaintFrameWrap(1, 0)` (hosted) runs the Handles with USE held on the Steel Key — the
         // nested pass suspends at the switch; its resume finishes that pass and hands back to the pause.
         let h = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, hostedByLevelRun: true)
-        for _ in 0..<5 { _ = h.step(keys: KeyState()) }
+        for _ in 0..<40 { _ = h.step(keys: KeyState()) }
         Self.stock(&h.world.globals, [Self.spell(0), Self.item(1)], selected: 1)
-        XCTAssertEqual(h.step(keys: KeyState(), capsLock: true).suspension, .gameLoopKeys(.pause))
+        // JUMP held on the pausing frame: its top-level pass cues the initial jump (snd 414) — kept when the nested pass
+        // adds its own cues (appended, not replaced).
+        let jumpKeys = KeyState(pressed: [Int(FerazelPrefs.defaultKeys[5])])
+        XCTAssertEqual(h.step(keys: jumpKeys, capsLock: true).suspension, .gameLoopKeys(.pause))
+        let topCues = h.frameCues
+        XCTAssertTrue(topCues.contains { $0.snd == 414 })
         let paint = h.resume(.gameLoopKeys(GameLoopKeyAnswer(reply: .pausePaint, keys: useKeys(), capsLock: false)))
         XCTAssertEqual(paint.suspension, .hint(text: HandleKeys.keyHint))
         XCTAssertTrue(h.suspendedInNestedPass)
@@ -611,6 +670,79 @@ final class ItemUseTests: XCTestCase {
         XCTAssertEqual(back.suspension, .gameLoopKeys(.paused))
         XCTAssertFalse(h.suspendedInNestedPass)
         XCTAssertTrue(back.draws.contains { if case .wrapEraseSprites = $0 { true } else { false } })
+        XCTAssertEqual(Array(h.frameCues.prefix(topCues.count)), topCues)
+
+        // Through `LevelRun`, top-level: the Steel Key + USE → the run shows `.SimpleConv(4001, "Ferazel", text)`; its
+        // end resumes the player's Handle and the frame finishes in the same iteration.
+        let run = try LevelRun(resources: r, prefs: FerazelPrefs(), level: 1, seed: 1, carry: LevelCarry(),
+                               save: SaveBlock(), fade: ScreenFade(), music: MusicFade(), services: StubServices(),
+                               sounds: StageSounds(prefs: FerazelPrefs(), lengths: Self.lengths))
+        var t: UInt32 = 1000
+        func tick(_ input: FrontInput = FrontInput()) throws {
+            _ = try run.tick(now: t, input: input)
+            t &+= 1
+        }
+        let anyKey = FrontInput(keys: KeyState(pressed: [0x01]))     // 'S': no game action
+        func finishRead() throws {
+            for _ in 0..<5000 {
+                guard let c = run.conversation else { return }
+                try tick(c.wait == .anyKey ? anyKey : FrontInput())
+            }
+            XCTFail("the hint never ended")
+        }
+        for _ in 0..<6000 {
+            if let ls = run.session, ls.world.gammaFade.done, run.iterations >= 60, !run.lastSteps.isEmpty { break }
+            try tick()
+        }
+        let ls = try XCTUnwrap(run.session)
+        XCTAssertTrue(ls.world.gammaFade.done)
+        Self.stock(&ls.world.globals, [Self.spell(0), Self.item(1)], selected: 1)
+        let iterationsBefore = run.iterations
+        for _ in 0..<10 where run.conversation == nil { try tick(FrontInput(keys: useKeys())) }
+        guard case .simple(4001, let name, let text)? = run.conversation?.kind else { return XCTFail("not the hint") }
+        XCTAssertEqual(name, MacRoman.bytes("Ferazel"))
+        XCTAssertEqual(text, HandleKeys.keyHint)
+        XCTAssertEqual(text.count, 112)
+        XCTAssertEqual(ls.suspension, .hint(text: HandleKeys.keyHint))
+        XCTAssertEqual(run.iterations, iterationsBefore + 1)
+        let runTail = ls.player.counter05ec
+        try finishRead()
+        XCTAssertNil(ls.suspension)
+        XCTAssertNil(run.lastSteps.last?.suspension)
+        XCTAssertEqual(ls.player.counter05ec, (runTail + 1) % 0x20)     // the rest of the Handle ran
+        XCTAssertTrue(run.lastSteps.last?.draws.contains { if case .wrapEraseSprites = $0 { true } else { false } }
+                      ?? false)
+        XCTAssertEqual(run.iterations, iterationsBefore + 1)
+        XCTAssertNil(run.end)
+
+        // Nested, through `LevelRun`: Caps Lock + USE on the Steel Key. The shield is up at the gate of the top-level
+        // pass (raise 1 ≥ 1: no switch; no DOWN, so the DOWN block lowers it to 0), so the pause's `.PaintFrameWrap(1,
+        // 0)` is the first pass to reach the switch: the hint runs inside the pause, then control returns to it.
+        for _ in 0..<20 { try tick() }                                 // USE up: the latch cleared
+        XCTAssertFalse(ls.player.useItemHeld)
+        let nestedBefore = run.iterations
+        for _ in 0..<10 where run.conversation == nil && run.pause == nil {
+            ls.world.player.shieldRaise = 1
+            try tick(FrontInput(keys: useKeys(), capsLock: true))
+        }
+        XCTAssertNotNil(run.pause)
+        guard case .simple(4001, _, let nestedText)? = run.conversation?.kind else { return XCTFail("no nested hint") }
+        XCTAssertEqual(nestedText, HandleKeys.keyHint)
+        XCTAssertTrue(ls.suspendedInNestedPass)
+        XCTAssertEqual(ls.suspension, .hint(text: HandleKeys.keyHint))
+        XCTAssertEqual(run.iterations, nestedBefore + 1)
+        try finishRead()
+        XCTAssertFalse(ls.suspendedInNestedPass)
+        XCTAssertEqual(ls.suspension, .gameLoopKeys(.paused))
+        XCTAssertNotNil(run.pause)
+        XCTAssertNil(run.end)
+        // Caps Lock up: the pause ends and the same iteration finishes; the run steps on.
+        for _ in 0..<200 where run.pause != nil { try tick() }
+        XCTAssertNil(run.pause)
+        XCTAssertNil(ls.suspension)
+        XCTAssertEqual(run.iterations, nestedBefore + 1)
+        for _ in 0..<4 { try tick() }
+        XCTAssertGreaterThan(run.iterations, nestedBefore + 1)
     }
 
     func testShieldRaiseNeedsShield() throws {
