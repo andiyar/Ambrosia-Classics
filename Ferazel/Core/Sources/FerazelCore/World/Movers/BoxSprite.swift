@@ -8,7 +8,7 @@ import Foundation
 /// Not built (design §8 puts the Box mechanisms in Phase 4): pushing and falling — the common tail's
 /// `.ApplyGravityAndSeparateFromTiles` and `.FootPressure` — and every other type arm of the Handle (chests, crates,
 /// switch blocks, decorations' re-face, NPCs, doors, teleporters, boulders' roll, spouts, geysers, pipes, carts, gates,
-/// stalactites, snowballs); `.HitBoxSprite` (box vs box / platform) and `.HitBoxTileSprite`.
+/// stalactites, snowballs); `.HitBoxSprite` but the stalactite's player-shot case (`hit`, SH) and `.HitBoxTileSprite`.
 public enum BoxSprite {
     /// The trampoline (PICT 1470, the 4-face set `_DAT_100a0a2c`).
     public static let trampoline: Int16 = 0x5be
@@ -333,6 +333,31 @@ public enum BoxSprite {
             s.centre.y = Int(Int16(truncatingIfNeeded: s.y + r.top + ((r.bottom - r.top) >> 1)))
             s.ridden = nil
             s.slope = 0
+        }
+    }
+
+    /// `.HitBoxSprite(self, other) @ 10070024` (M l. 61328–61482) — SH builds the stalactite's player-shot case only:
+    /// the routine is skipped for the NPCs 0xb87…0xbb7, the switch blocks 0x4e2…0x4ff and a geyser part (0x5a0 / 0x5a5
+    /// / 0x5a9) against another (M l. 61352–61355); the doors 0xb5e / 0xb5f store a dead `+0xa0 = 0` (pickups-boxes-2
+    /// §6; not kept); a player shot (`PTR_PTR_100a04e8`) with `+0xa6 == 0`: the crates 0xc12…0xc1b lose its `+0xa4`
+    /// (`.KillCrate`, `.KillPlayerShot(shot, 1, 0)`) // later: BX1; the stalactite 0xb74 (M l. 61374–61382; raw
+    /// `1007012c..10070190`; pickups-boxes-2 §4.2): HP − d (d = the shot's `+0xa4`), then n = d / 20 (C division) and
+    /// `+0xa6 = n + FastRand(n / 2)` — the shake frames; the shot is not killed here (its own Hit does that). // later:
+    /// BX1 — the 0x4b7 against crates, the Box / Statue / Platform pairs (`.PlatformBounce` both ways, `+0x182`); Phase
+    /// 6 — the carpet 0x438.
+    public static func hit(_ w: SpriteWorld, id: Int, other oID: Int) {
+        guard let s = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
+        let t = s.type
+        let geyser = { (v: Int16) in v == 0x5a0 || v == 0x5a5 || v == 0x5a9 }
+        guard t < 0xb87 || 2999 < t, t < 0x4e2 || 0x4ff < t, !(geyser(t) && geyser(o.type)) else { return }
+        guard t != 0xb5e && t != 0xb5f else { return }
+        guard o.handler == .playerShot && o.counterA6 == 0 else { return }
+        if t == stalactite {
+            let d = o.hp
+            let n = d / 20
+            w.active.update(id: id) { $0.hp &-= d }
+            let r = w.rng.next(n / 2)
+            w.active.update(id: id) { $0.counterA6 = n &+ r }
         }
     }
 }

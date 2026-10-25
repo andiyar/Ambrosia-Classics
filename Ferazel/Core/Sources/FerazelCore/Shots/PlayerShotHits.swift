@@ -1,14 +1,17 @@
 import Foundation
 
-/// What happens to a player shot when it hits something. `.KillPlayerShot` is built (CS fix round 2) for its first
-/// built caller, the spring arm of `.HitBackgroundSprite` (M l. 63718–63720). // later: SH — `.HitPlayerShotSprite`
-/// (M l. 50947–51068) and the other arms of `.HitPlayerShotTileSprite` (M l. 51219–51392) go here and call `kill`.
+/// What happens to a player shot when it hits something: `.KillPlayerShot` (`kill`; CS fix round 2, first called by the
+/// spring arm of `.HitBackgroundSprite`, M l. 63718–63720) and `.HitPlayerShotSprite` (`hit`; SH). The tile callback
+/// `.HitPlayerShotTileSprite` is `PlayerShot.hitTile`; the container arm of `.HitBonusSprite` is `BonusSprite.container`.
 public enum PlayerShotHits {
     /// The snd slots `.KillPlayerShot` reads (`SoundSlots`): `*_DAT_100a0420` = 301 (the generic hit), `*_DAT_100a01e4`
     /// = 423 (the orb struck), `*_DAT_100a01e0` = 424 (the orb broken), `*_DAT_1009fdec` = 435 (the seed bursts),
     /// `*_DAT_100a03e4` = 419 (an id ≥ 100).
     static let hitSound: Int16 = 301, orbHitSound: Int16 = 423, orbBreakSound: Int16 = 424, seedSound: Int16 = 435,
                highSound: Int16 = 419
+    /// `*_DAT_100a01fc` = 302 (the Tree Trunk's growth, `.STPlay3DSound`), `*_DAT_100a03e4` = 419 (the 2941's pitched
+    /// hit, `.STPlay3DSoundPitched`).
+    static let trunkSound: Int16 = 302, iceWallSound: Int16 = 419
 
     /// `.KillPlayerShot(shot, sound, effect) @ 1005ac34` (M l. 51076–51215; raw `1005ac34..1005b094`), in order:
     /// 1. `.StandardSpriteCleanup(shot)` (raw `1005ac58`, r3 = the shot — the decompile drops the argument);
@@ -32,15 +35,29 @@ public enum PlayerShotHits {
     ///      −1, .SetupEffectSprite)`; ids 1 / 2 → `.ChangeLightColor(effect +0x9a, 0x21)`, 3 → 0x4d, 4 → 0x42; killed.
     /// Every `.STPlay3DSoundRand` draws its `FastRand(10000)` at the call (Invariant 4). A spawn that finds no free
     /// record (Ruling 16) runs no Setup and its stores are dropped; the later draws are still made.
-    /// Ids 1…4 with the effect flag clear: the binary changes the colour of the light named by `r29 + 0x9a` — r29 still
-    /// holds the caller's value (the spring arm's: the Background Handle's descriptor `PTR_PTR_100a0480`), a stale
-    /// read [LOW: no light is changed here].
+    /// Ids 1…4 with no effect sprite made: the binary changes the colour of the light named by `r29 + 0x9a`
+    /// (`lha r3,0x9a(r29)`, raw `1005b044` / `1005b058` / `1005b06c`) — r29 is set only by the effect's `MTNewSprite`
+    /// (raw `1005b018`), so on this path it still holds the **caller's** r29 (`stmw` saves it, nothing in between
+    /// writes it). Per call site (SH, traced in the raw), `staleSlot` is that short:
+    /// - the spring arm of `.HitBackgroundSprite`: the Background Handle's descriptor `PTR_PTR_100a0480` (raw
+    ///   `10075060`) + 0x9a — a relocated word, load-address dependent [LOW]: nil, no light changed;
+    /// - `.HitPlayerShotSprite`: r29 = the snd-303 slot (`lwz r29,-0x7424(r2)`, raw `1005a810`, the TOC word
+    ///   0x21b19c → 0x102ba9dc) + 0x9a = 0x102baa76, the low half of the snd-432 Handle in the slot at 0x102baa74 (TOC
+    ///   `a03b8`) — a Memory Manager address [LOW]: nil;
+    /// - `.HitPlayerShotTileSprite`: r29 = the bounce factor (`li r29,0` / `li r29,0xa0`, raw `1005b0d8` /
+    ///   `1005b130`), 0 for every id but the seed — the short at low-memory address 0x9a [LOW]: nil;
+    /// - the container arm of `.HitBonusSprite`: r29 = G + 4 (`addi r29,r31,0x4`, raw `1005fdc0`) — the short at G + 0x9e,
+    ///   inventory slot 12's count (`BonusSprite.container` passes it);
+    /// - `.HitBoxSprite`'s crate arm (BX1): r29 = the shot itself (`or r29,r4,r4`, raw `10070038`) — its own light.
+    /// `.ChangeLightColor` ignores a slot outside 0…199 (M l. 14419–14432).
     /// - Parameters: `sound` / `effect` the two flags; `effects` prefs+6 (the effect's Setup); `faceWidth` (face `+6`,
-    ///   the Cleanup) and `faceBounds` (face `+8`, the clip test) — Core has no face records.
+    ///   the Cleanup) and `faceBounds` (face `+8`, the clip test) — Core has no face records; `staleSlot` the caller's
+    ///   `r29 + 0x9a` (nil: no light changed).
     public static func kill(_ w: SpriteWorld, shot id: Int, sound: Bool, effect effectFlag: Bool, effects: Int16,
                             lights: inout LightTable,
                             faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
-                            faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
+                            faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect,
+                            staleSlot: Int16? = nil) {
         guard w.active.record(id: id) != nil else { return }
         w.standardSpriteCleanup(id, faceWidth: faceWidth)
         guard let s = w.active.record(id: id), s.type != 100 else { return }
@@ -113,11 +130,116 @@ public enum PlayerShotHits {
         default:
             let type: Int16 = s.type == 4 ? 2 : 5
             if sound { play(hitSound, at: s.centre) }
-            var e: Int?
-            if effect { e = spawn(type, x - 5, y - 0xc, layer: 0xb) }
             let colour: Int16? = s.type == 3 ? 0x4d : s.type == 4 ? 0x42 : (1...2).contains(s.type) ? 0x21 : nil
-            if let colour, let e, let light = w.active.record(id: e)?.light { lights.changeColor(light, colour) }
+            if effect {
+                // r29 = the new effect (nil: no free record — the binary reads low memory, Ruling 16: dropped).
+                let e = spawn(type, x - 5, y - 0xc, layer: 0xb)
+                if let colour, let e, let light = w.active.record(id: e)?.light { lights.changeColor(light, colour) }
+            } else if let colour, let staleSlot {
+                lights.changeColor(staleSlot, colour)                       // the caller's r29 + 0x9a
+            }
             killed()
         }
+    }
+
+    /// `.HitPlayerShotSprite(shot, other) @ 1005a7fc` (M l. 50947–51071; raw `1005a7fc..1005ac08`), in order:
+    /// 1. other = the player (`PTR_PTR_100a052c`), id 5, age `+0x14c` > 10 → the Boomerang is caught: `+0xe9 = 1`, magic
+    ///    `G+0xe` + 8 (no clamp), power > 1 → the four followers `+0xe9 = 1` — no `.KillPlayerShot` (no sound, no
+    ///    effect); the routine goes on;
+    /// 2. other an enemy shot (`PTR_PTR_100a0488`) of type 0x77b → `.STPlay3DSound(303, 1, 0xab, other +0xe)`,
+    ///    `.KillPlayerShot(s, 0, 1)`; then the orb 0x50 vs any enemy shot → `.STPlay3DSound(303, 1, 0x55, other +0xe)`,
+    ///    `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)` and return // later: Phase 5 (no sprite has the enemy
+    ///    shot's Handle until the enemies are built);
+    /// 3. the orb vs the gate 0xb7c → nothing;
+    /// 4. a Box (`PTR_PTR_100a0484`) of type 0x2c8 / 0x2c9 (a tree trunk): id 4 grows it (`trunkGrowth`), any other id
+    ///    nothing;
+    /// 5. the player or an Effect (`PTR_PTR_100a0460`) → nothing; a Bonus (`PTR_PTR_100a047c`) 0x517 / 0x51b with
+    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: SW — no
+    ///    sprite has the Statue's Handle yet) or a Box: no one-way top (`+0x185`) and no surface function (`+0x1e8`;
+    ///    only the rope bridge, // later: Phase 6) → the 2941 test (type 0xb7d, `+0x116 < 1`, the shot's `+0xa4 ==
+    ///    300`, `cmpwi r0,0x12c` raw `1005ab7c` → HP − 0x50, `+0xaa = 10`, `+0x116 = 10`,
+    ///    `.STPlay3DSoundPitched(419, 1, 0x100, shot +0xa, 35000)`) then `.KillPlayerShot(s, 1, 1)`; with one →
+    ///    `.PlatformBounce(s, other, the hot-rect centre offset, 0, +0x34, 0)`, a contact (≠ 0) →
+    ///    `.KillPlayerShot(s, 1, 1)`; the Crawler (`PTR_PTR_100a04b8`) → `.KillPlayerShot(s, 0, 0)` // later: Phase 5
+    ///    (the level-1–4 Crawler stand-in is `.inert`); any other Handle nothing.
+    /// No `+0xe9` test: `.MTCollideSprites` calls both sides of a contact, so a shot killed by the other side's Hit in
+    /// the same dispatch still runs this one (the container then sees `+0xb0` already cleared).
+    /// `.KillPlayerShot`'s stale r29 at every call here is the snd-303 slot (`kill`): no light changed [LOW].
+    public static func hit(_ w: SpriteWorld, shot id: Int, other oID: Int, effects: Int16, lights: inout LightTable,
+                           faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                           faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
+        guard let s = w.active.record(id: id), let o = w.active.record(id: oID) else { return }
+        func killShot(_ sound: Bool, _ effect: Bool) {
+            kill(w, shot: id, sound: sound, effect: effect, effects: effects, lights: &lights, faceWidth: faceWidth,
+                 faceBounds: faceBounds)
+        }
+        // 1.
+        if o.handler == .player && s.type == 5 && 10 < s.shotAge {
+            w.active.update(id: id) { $0.dead = true }
+            w.globals.magic &+= 8
+            if 1 < s.power {
+                for f in PlayerShot.followers(s).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
+            }
+        }
+        // 2. // later: Phase 5 — the enemy-shot arms.
+        // 3.
+        if s.type == PlayerShot.orb && o.type == 0xb7c { return }
+        // 4.
+        if o.handler == .box && (o.type == 0x2c8 || o.type == 0x2c9) {
+            if s.type == 4 { trunkGrowth(w, shot: id, trunk: oID, effects: effects, lights: &lights) }
+            return
+        }
+        // 5.
+        switch o.handler {
+        case .bonus:
+            if (o.type == 0x517 || o.type == 0x51b) && s.type != PlayerShot.orb && o.pickupDelay != 0 { killShot(true, true) }
+        case .box:
+            if !o.oneWay {                                                  // `+0x1e8` 0 for every Box built
+                if o.type == 0xb7d && o.invulnerable < 1 && s.hp == 300 {
+                    w.active.update(id: oID) { b in
+                        b.hp &-= 0x50
+                        b.flash = 10
+                        b.invulnerable = 10
+                    }
+                    w.player.cue(PlayerCue(call: .threeDPitched, snd: iceWallSound, priority: 1, volume: 0x100,
+                                           position: SpriteSlot.Point(x: PlayerShot.h16(s.x), y: PlayerShot.h16(s.y)),
+                                           rate: 35000))
+                }
+                killShot(true, true)
+            } else {
+                let r = s.hotRect
+                let h = PlayerShot.h16
+                let centre = SpriteSlot.Point(x: h(r.left + h((r.right - r.left) >> 1)),
+                                              y: h(r.top + h((r.bottom - r.top) >> 1)))
+                if w.platformBounce(mover: id, solid: oID, centre: centre, factor: 0, rect: r, bounce: false) != 0 {
+                    killShot(true, true)
+                }
+            }
+        default:
+            break                                                           // the player, Effects, the rest
+        }
+    }
+
+    /// The Tree Trunk's growth (`.HitPlayerShotSprite` M l. 51007–51030; raw `1005a984..1005aa58`; spells-detail §3.5):
+    /// the trunk is walked up its `+0x1d4` links to the top segment; `MTNewSprite(0x2c9, top +0xc, top +0xa − 0x10, 2,
+    /// −1, .SetupBoxSprite)` linked as `top +0x1d4` with `+0xa6 = *_DAT_1009fd30 + 0x78` // later: SW (the segment;
+    /// `.SetupBoxSprite`'s 0x2c9 arm draws nothing, M l. 58967–58972); the old top's `+0xa6` raised to ≥ 0x23;
+    /// `MTNewSprite(2, segment +0xc − 6, segment +0xa − 9, 0xb, −1, .SetupEffectSprite)` (its package draws), `+0x46 =
+    /// 8`, `.ChangeLightColor(+0x9a, 0x42)`; the shot `+0xe9 = 1` directly (the followers fly on); `.STPlay3DSound(302,
+    /// 1, 0x100, effect +0xe)` — the effect's centre word, still 0 (no Handle has run).
+    static func trunkGrowth(_ w: SpriteWorld, shot id: Int, trunk: Int, effects: Int16, lights: inout LightTable) {
+        var top = trunk
+        while let next = w.active.record(id: top)?.siblings.first { top = next }
+        guard let t = w.active.record(id: top) else { return }
+        let sx = PlayerShot.h16(t.x), sy = PlayerShot.h16(t.y - 0x10)          // the new segment's `+0xc` / `+0xa`
+        w.active.update(id: top) { if $0.counterA6 < 0x23 { $0.counterA6 = 0x23 } }
+        let e = EffectSprite.spawn(w, type: 2, x: sx - 6, y: sy - 9, layer: 0xb, effects: effects, lights: &lights)
+        if let e {
+            w.active.update(id: e) { $0.phase = 8 }
+            if let light = w.active.record(id: e)?.light { lights.changeColor(light, 0x42) }
+        }
+        w.active.update(id: id) { $0.dead = true }
+        w.player.cue(PlayerCue(call: .threeD, snd: trunkSound, priority: 1, volume: 0x100,
+                               position: e.flatMap { w.active.record(id: $0)?.centre } ?? SpriteSlot.Point()))
     }
 }

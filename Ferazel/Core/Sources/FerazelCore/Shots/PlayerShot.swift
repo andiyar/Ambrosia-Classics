@@ -6,10 +6,8 @@ import Foundation
 /// splits it — `+0x170` = power, `+4` = the id (plan hazard "`+0x04` vs `+0x170`") — so every reader after the Setup
 /// sees the id in `type`.
 ///
-/// Not built here: the hit callback `.HitPlayerShotSprite` and every arm of the tile callback `.HitPlayerShotTileSprite`
-/// but its water arm (`hitTile`) // later: SH. `.KillPlayerShot` is `PlayerShotHits.kill`, called so far by the spring
-/// arm of `.HitBackgroundSprite` only. Until SH a shot dies only by the liquid rule, the level-bottom rule, V Blade's
-/// ±500 px rule (plain `+0xe9` stores in the Handle) and a spring: it flies through walls, enemies and pickups.
+/// The tile callback `.HitPlayerShotTileSprite` is `hitTile` (SH); the hit callback `.HitPlayerShotSprite` and
+/// `.KillPlayerShot` are `PlayerShotHits.hit` / `.kill`.
 public enum PlayerShot {
     /// `.InitPlayerShotSprite`'s face sets (M l. 50235–50256; boot loads, CLUT 200): 1100…1105 the Fireball / Statue /
     /// Ice Crystals pairs (6 × 24×15, right / left), 1113 the Boomerang (6 × 32×32), 1114 the V Blade (20 × 32×40, 10
@@ -84,7 +82,7 @@ public enum PlayerShot {
         s.phase = w.rng.next(5)
         s.layer = 0xb
         s.handler = .playerShot
-        s.hasHit = true                                                 // `.HitPlayerShotSprite` // later: SH
+        s.hasHit = true                                                 // `.HitPlayerShotSprite` (`PlayerShotHits.hit`)
         s.hasTileHit = true                                             // `.HitPlayerShotTileSprite` (`hitTile`)
         s.counterA6 = 0
         s.windScale = 0x100
@@ -251,8 +249,15 @@ public enum PlayerShot {
         // 7.
         if let s = w.active.record(id: id),
            s.type < 100 || s.type == seed || (s.type == 100 && 0 < s.crunchStrength) {
-            let pass: TileHit? = s.hasTileHit ? { hitTile($0, $1, $2, $3, $4) } : nil
-            solver.separateFromTiles(id, pass: pass)
+            if s.hasTileHit {
+                // The callback reaches `.KillPlayerShot` (the session's light table, prefs+6, the face reads).
+                withoutActuallyEscaping({ (sv: TileSolver, i: Int, c: TilePos, k: Int, l: TileLayer) in
+                    hitTile(sv, i, c, k, l, lights: &lights, effects: effects, faceWidth: faceWidth,
+                            faceBounds: faceBounds)
+                }) { pass in solver.separateFromTiles(id, pass: pass) }
+            } else {
+                solver.separateFromTiles(id, pass: nil)
+            }
         }
         // 8.
         if let s = w.active.record(id: id), 0 < s.waterRow, s.type < 100, s.type != 6 {
@@ -538,25 +543,96 @@ public enum PlayerShot {
 
     // MARK: - the tile callback
 
-    /// `.HitPlayerShotTileSprite(s, pos, kind, layer) @ 1005b0bc` (M l. 51219–51392) — its water arm only: nothing when
-    /// `+0xe9 ≠ 0` (or the debug key 0x32 held, debug mode off here); ids 6 / 0x3c take only the crunch layer; a BG
-    /// kind ≥ 200 that `.IsWaterTile` accepts, with `+0x140` clear and id ≠ 100 → `.HandleUnderWater(s, pos)` (M l.
-    /// 51375–51378). // later: SH — the FG arm (`.WallBounce`, the Ice Wall ledges, the Tree Trunk, `.KillPlayerShot`),
-    /// the BG kinds < 200 (`.WallBounce` / `.WallBounceBG`) and the crunch arm (`.CrunchTile`).
-    static func hitTile(_ solver: TileSolver, _ id: Int, _ pos: TilePos, _ kind: Int, _ layer: TileLayer) {
+    /// `.HitPlayerShotTileSprite(s, pos, kind, layer) @ 1005b0bc` (M l. 51219–51392; raw `1005b0bc..1005b66c`;
+    /// spells-detail §3.3). Nothing when `+0xe9 ≠ 0` (or the debug key 0x32 held — debug mode off here); ids 6 / 0x3c
+    /// take only the crunch layer (M l. 51257). The factor is 0xa0 for the seed 0x5a (bounce flag set), else 0 (M l.
+    /// 51248–51251); vCentre is the hot rect's vertical centre offset (`sStack_50`). By layer:
+    /// - FG (id ≠ 100, M l. 51259–51327): unless the orb, `.WallBounce(s, kind, &pos, vCentre, f, +0x34, 0, seed)`; on
+    ///   a contact: id 3 with the side test (M l. 51263–51297: kind 4…5 / 6…7 need vx 0) makes a wall ledge
+    ///   `MTNewSprite(0x57c, …)` // later: SW (`.SetupPlatformSprite` draws nothing, M l. 54497–54536); then, unless id
+    ///   4 grounded (`+0xce`), the contact rule (`contact`); id 4 grounded: the trunk (`trunkLanding`);
+    /// - BG (id ≠ 100) kind < 100 (M l. 51330–51347): as FG without the ledge and trunk; 100…199 (M l. 51348–51372):
+    ///   `.WallBounceBG(s, kind − 100, …)`, a contact with id 4 grounded makes a trunk bottom `MTNewSprite(0x2c8, +0x10
+    ///   − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` with `+0xa6 = 0x78` // later: SW (no draws, no sound), then the contact
+    ///   rule; ≥ 200: a liquid (`.IsWaterTile`) with `+0x140` clear → `.HandleUnderWater(s, pos)` (M l. 51374–51378);
+    /// - crunch (M l. 51380–51386): `.CrunchTile(pos, (short)+0x158)` processed (≠ 0) and the id not 6 / 0x3c →
+    ///   `.KillPlayerShot(s, 1, 1)`.
+    /// The contact rule (M l. 51298–51311): the seed dies only when `|vy| < 0x200` after the bounce; every other id
+    /// `.KillPlayerShot(s, 1, 1)`. `.KillPlayerShot`'s stale r29 here is the factor — 0 for every id it can recolour —
+    /// low memory [LOW]: no light changed.
+    static func hitTile(_ solver: TileSolver, _ id: Int, _ posIn: TilePos, _ kind: Int, _ layer: TileLayer,
+                        lights: inout LightTable, effects: Int16,
+                        faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                        faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
         let w = solver.world
         guard let s = w.active.record(id: id), s.killCount == 0 else { return }
-        guard (s.type != 6 && s.type != PlayerShot.vBladeLower) || layer == .crunch else { return }
+        let t = s.type
+        guard (t != 6 && t != vBladeLower) || layer == .crunch else { return }
+        let seedShot = t == seed
+        let factor: Int16 = seedShot ? 0xa0 : 0
+        let r = s.hotRect
+        let vCentre = h16(r.top + h16((r.bottom - r.top) >> 1))
+        var pos = posIn
+        func killShot() {
+            PlayerShotHits.kill(w, shot: id, sound: true, effect: true, effects: effects, lights: &lights,
+                                faceWidth: faceWidth, faceBounds: faceBounds)
+        }
+        func contact() {
+            guard let c = w.active.record(id: id) else { return }
+            if c.type == seed {
+                if TileSolver.magnitude(c.vy) < 0x200 { killShot() }
+            } else {
+                killShot()
+            }
+        }
         switch layer {
         case .foreground:
-            break                                                           // later: SH
+            guard t != 100, t != orb,
+                  solver.wallBounce(id, kind: kind, tile: &pos, vCentre: vCentre, factor: factor, rect: r,
+                                    bounce: seedShot) else { return }
+            // id 3: the wall ledge // later: SW.
+            guard let c = w.active.record(id: id) else { return }
+            if c.groundKind == 0 || c.type != 4 {
+                contact()
+            } else {
+                trunkLanding(w, shot: id, effects: effects, lights: &lights)
+            }
         case .background:
-            guard s.type != 100 else { return }
+            guard t != 100 else { return }
             let k = Int16(truncatingIfNeeded: kind)
-            if k < 200 { return }                                           // later: SH (k < 100 / < 200)
-            if UnderWater.isWaterTile(kind) && !s.underwaterDone { UnderWater.handle(world: w, id: id, pos: pos) }
+            if k < 100 {
+                guard t != orb, solver.wallBounce(id, kind: kind, tile: &pos, vCentre: vCentre, factor: factor, rect: r,
+                                                  bounce: seedShot) else { return }
+                contact()
+            } else if k < 200 {
+                guard t != orb, solver.wallBounceBG(id, kind: kind - 100, tile: &pos, vCentre: vCentre, factor: factor,
+                                                    rect: r, bounce: seedShot) else { return }
+                // id 4 grounded: the trunk bottom // later: SW.
+                contact()
+            } else if UnderWater.isWaterTile(kind) && !s.underwaterDone {
+                UnderWater.handle(world: w, id: id, pos: pos)
+            }
         case .crunch:
-            break                                                           // later: SH
+            let strength = UInt8(truncatingIfNeeded: Int16(truncatingIfNeeded: s.crunchStrength))
+            guard CrunchTiles.crunchTile(w, pos: pos, strength: strength) != 0, t != 6, t != vBladeLower else { return }
+            killShot()
         }
+    }
+
+    /// The Tree Trunk landing on an FG floor (M l. 51312–51327; raw `1005b2c0..1005b3dc`; spells-detail §3.5): the trunk
+    /// bottom `MTNewSprite(0x2c8, +0x10 − 8, +0xe − 6, 2, −1, .SetupBoxSprite)` with `+0xa6 = *_DAT_1009fd30 + 0x78`
+    /// // later: SW (the trunk; its Setup draws nothing, M l. 58975–58980); `MTNewSprite(2, trunk +0xc − 6, trunk +0xa
+    /// − 9, 0xb, −1, .SetupEffectSprite)` (its package draws), `+0x46 = 8`, `.ChangeLightColor(+0x9a, 0x42)`; the shot
+    /// `+0xe9 = 1` directly (the followers fly on, spells-detail-2 §5); `.STPlay3DSound(302, 1, 0x100, shot +0xe)`.
+    static func trunkLanding(_ w: SpriteWorld, shot id: Int, effects: Int16, lights: inout LightTable) {
+        guard let c = w.active.record(id: id) else { return }
+        let bx = h16(c.centre.x - 8), by = h16(c.centre.y - 6)                 // the trunk's `+0xc` / `+0xa`
+        if let e = EffectSprite.spawn(w, type: 2, x: bx - 6, y: by - 9, layer: 0xb, effects: effects, lights: &lights) {
+            w.active.update(id: e) { $0.phase = 8 }
+            if let light = w.active.record(id: e)?.light { lights.changeColor(light, 0x42) }
+        }
+        w.active.update(id: id) { $0.dead = true }
+        w.player.cue(PlayerCue(call: .threeD, snd: PlayerShotHits.trunkSound, priority: 1, volume: 0x100,
+                               position: c.centre))
     }
 }

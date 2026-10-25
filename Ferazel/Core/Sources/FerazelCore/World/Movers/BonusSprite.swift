@@ -608,17 +608,22 @@ public enum BonusSprite {
     // MARK: - hit callbacks
 
     /// `.HitBonusSprite(self, other) @ 1005fd38` (M l. 53444–53536): 0x4bf returns at once (M l. 53468). The
-    /// containers 0x51b, 0x517 and 0xc1c…0xc25 take the player-shot arm `LAB_1005fd94` // later: SH (a player shot
-    /// opens them: `+0xb0`, record p4, `.KillPlayerShot`, score 150, the 0x514 / 0x515 crystal) — and nothing else.
-    /// Any other Bonus rests on a Platform or Box (by the other's Handle; not the player) unless it is a scroll or
+    /// containers 0x51b, 0x517 and 0xc1c…0xc25 take the player-shot arm `LAB_1005fd94` (`container`, SH) — and nothing
+    /// else. Any other Bonus rests on a Platform or Box (by the other's Handle; not the player) unless it is a scroll or
     /// low item (2000 ≤ t ≤ 0xc80) or the other is a chest 0x51c: `.PlatformBounce(self, other, own rect centre, f,
     /// own rect, f == 0x80)` with f = 0x80, or 0 when `vy < 0x180` (BC49: raw `1005ffb8..1005ffd0`).
-    public static func hit(_ w: SpriteWorld, id: Int, other: Int) {
+    /// - Parameters: `lights` the session's table, `effects` prefs+6, `faceWidth` / `faceBounds` the face reads — the
+    ///   container arm's `.KillPlayerShot`, `.KillBonus` and the crystal's Setup.
+    public static func hit(_ w: SpriteWorld, id: Int, other: Int, lights: inout LightTable, effects: Int16 = 1,
+                           faceWidth: (FaceRef) -> Int = { PlayerShot.cellRect($0).right },
+                           faceBounds: (FaceRef) -> IdleSprites.Rect = PlayerShot.cellRect) {
         guard let s = w.active.record(id: id), let o = w.active.record(id: other) else { return }
         let t = s.type
         if t == 0x4bf { return }
         if t == torch || t == 0x517 || candelabras.contains(t) {
-            return                                         // later: SH — `LAB_1005fd94`, the player-shot container arm
+            container(w, id: id, shot: other, lights: &lights, effects: effects, faceWidth: faceWidth,
+                      faceBounds: faceBounds)
+            return
         }
         guard !o.handleCleared, o.handler == .platform || o.handler == .box, t < 2000 || 0xc80 < t,
               o.type != 0x51c else { return }
@@ -626,6 +631,62 @@ public enum BonusSprite {
         let centre = SpriteSlot.Point(x: h(r.left + h((r.right - r.left) >> 1)), y: h(r.top + h((r.bottom - r.top) >> 1)))
         let f: Int32 = s.vy < 0x180 ? 0 : 0x80
         w.platformBounce(mover: id, solid: other, centre: centre, factor: f, rect: r, bounce: f != 0)
+    }
+
+    /// The test-only form (no light table): its light calls go to a scratch table.
+    static func hit(_ w: SpriteWorld, id: Int, other: Int) {
+        var scratch = LightTable()
+        hit(w, id: id, other: other, lights: &scratch)
+    }
+
+    /// The container arm `LAB_1005fd94` of `.HitBonusSprite` (M l. 53472–53503; raw `1005fd94..1005ff24`;
+    /// pickups-boxes §1.5): only a player shot (`PTR_PTR_100a04e8`) that is not the orb 0x50 with `+0xa6 == 0`. G's
+    /// magic, health, max health and max magic are read first (`G+0xe`, `+4`, `+0xa`, `+0xc`). The torch 0x51b and the
+    /// candelabras: spent (`+0xb0 == 0`) → nothing (the shot is not consumed); else `+0xb0 = 0`, `SetRect(+0x34, 0, 0, 0,
+    /// 0)` and the record's p4 = 1 (`*(*_DAT_100a0058) + +0x48·0x10 + 0xe`, raw `1005fe48`); the rock pile 0x517:
+    /// `.KillBonus`. Then `.KillPlayerShot(shot, 1, 1)` (its stale r29 here is G + 4: the short at G + 0x9e, inventory
+    /// slot 12's count, `PlayerShotHits.kill`), score `G+0` + 0x96 and the crystal — 0x514 when `(magic << 8) / max
+    /// magic < (health << 8) / max health` (`cmpw r28,r25; ble`, raw `1005fe74`) and the live health `G+4` > 0x25
+    /// (`bgt`), else 0x515 — `MTNewSprite(type, +0x10 − 9, +0xe − 9, 2, −1, .SetupBonusSprite)` (its Setup's draws),
+    /// then `FastRand(1000)` and `vy = −2000 − R` (drawn even with no free record, Ruling 16). A maximum of 0 (`divw`
+    /// by 0, undefined on the PPC) is taken as a quotient of 0 [LOW: no maximum is ever 0].
+    static func container(_ w: SpriteWorld, id: Int, shot: Int, lights: inout LightTable, effects: Int16,
+                          faceWidth: (FaceRef) -> Int, faceBounds: (FaceRef) -> IdleSprites.Rect) {
+        guard let s = w.active.record(id: id), let o = w.active.record(id: shot), o.handler == .playerShot,
+              o.type != PlayerShot.orb, o.counterA6 == 0 else { return }
+        let g = w.globals
+        func q(_ n: Int16, _ d: Int16) -> Int32 { d == 0 ? 0 : (Int32(n) << 8) / Int32(d) }
+        let magicPct = q(g.magic, g.maxMagic), healthPct = q(g.health, g.maxHealth)
+        if s.type == torch || candelabras.contains(s.type) {
+            guard s.pickupDelay != 0 else { return }
+            w.active.update(id: id) { b in
+                b.pickupDelay = 0
+                b.hotRect = rect(0, 0, 0, 0)
+            }
+            let i = Int(s.recordIndex)
+            if w.records.indices.contains(i) {                         // `+0x48` −1: no record (none on the levels)
+                let p = w.records[i]
+                w.records[i] = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2,
+                                         p3: p.p3, p4: 1, y: p.y, x: p.x)
+            }
+        } else {
+            kill(w, id: id, lights: &lights)
+        }
+        PlayerShotHits.kill(w, shot: shot, sound: true, effect: true, effects: effects, lights: &lights,
+                            faceWidth: faceWidth, faceBounds: faceBounds, staleSlot: w.globals.inventory[12].count)
+        w.globals.score &+= 0x96
+        let type: Int16 = magicPct < healthPct && 0x25 < w.globals.health ? 0x514 : 0x515
+        let x = h(s.centre.x - 9), y = h(s.centre.y - 9)
+        let crystal = w.newSprite(type: type, x: x, y: y, layer: 2, handler: .bonus) { c in
+            // Cannot throw: `setup` throws only for 0xc25 and out-of-table item faces — never for 0x514 / 0x515.
+            _ = try! setup(&c, x: x, y: y, level: w.level, records: w.records, effects: effects,
+                           lightCount: lights.count, counting: false, rng: &w.rng) { f, lh, lv, colour in
+                lights.add(face: f, x: Int16(truncatingIfNeeded: lh), y: Int16(truncatingIfNeeded: lv), vx: 0, vy: 0,
+                           accelY: 0, colour: colour)
+            }
+        }
+        let r = w.rng.next(1000)
+        if let crystal { w.active.update(id: crystal) { $0.vy = -2000 - Int32(r) } }
     }
 
     /// `.HitBonusTileSprite(s, pos, kind, layer) @ 1006010c` (M l. 53571–53638). The debug no-clip skip (`_DAT_100a0064`

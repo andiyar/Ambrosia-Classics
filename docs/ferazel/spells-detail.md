@@ -514,3 +514,28 @@ standard face and rect (0x26,0x22,0x3e,0x55).
    resolved; the port changes no light].
 Transcribed in `FerazelCore.CastSpell`, `PlayerShot` (Setup, Handle, the water arm of the tile callback),
 `HandleKeys.useGate`, `Player.wand` and `PlayerShotHits.kill` (CS) [HIGH].
+
+## ⚑ Correction (BC (SH, loop run 24), 2026-10-26; follow the binary)
+§3.3 and §3.7 re-read against the dump and the raw for SH (M l. 50947–51071, 51072–51218, 51219–51392, 53472–53503,
+61374–61382; raw `1005a7fc..1005ac08`, `1005ac34..1005b094`, `1005b0bc..1005b66c`, `1005fd94..1005ff24`):
+1. **The stale r29 of `.KillPlayerShot`, per call site.** With no effect sprite made, ids 1–4 recolour the light slot
+   `lha r3,0x9a(r29)` (raw `1005b044`/`58`/`6c`), r29 being the caller's (TOC words resolved with `tools/pef.py`):
+   - `.HitPlayerShotSprite`: r29 = the snd-303 slot (`lwz r29,-0x7424(r2)`, raw `1005a810`; word 0x21b19c → 0x102ba9dc),
+     so the slot is the low half of the snd-432 Handle stored at 0x102baa74 (TOC `a03b8`) — a heap address [LOW];
+   - `.HitPlayerShotTileSprite`: r29 = the bounce factor (`li r29,0` / `0xa0`, raw `1005b0d8` / `1005b130`) — 0 for
+     every id that recolours, so the short at low-memory address 0x9a (the 68k TRAP #6 vector's low half) [LOW];
+   - the container arm of `.HitBonusSprite`: r29 = G + 4 (`addi r29,r31,0x4`, raw `1005fdc0`), so the slot is the
+     short at **G + 0x9e = inventory slot 12's count** (deterministic; transcribed);
+   - `.HitBoxSprite`'s crate arm (BX1's): r29 = the shot itself (`or r29,r4,r4`, raw `10070038`) — its own light.
+   The effect is skipped only by the wall-tunnel clip test (spells-detail-2 §2) or an `effect` argument of 0 (the
+   crates' `(shot, 1, 0)`, the Crawler's `(s, 0, 0)`).
+2. **The 0x4b7's layer.** The seed passes layer 0xc, but `.SetupEffectSprite` stores `+0x80 = 0xb` before the insert
+   (M l. 53722): the big explosion sorts on layer 0xb.
+3. **Where the impact sound plays.** `.KillPlayerShot` opens with `.StandardSpriteCleanup`, which recomputes the centre
+   `+0xe`/`+0x10` from the current position — so a tile hit's snd 301 plays at the centre of the position
+   `.WallBounce` stopped the shot at, not last frame's.
+4. **Both sides of a container contact can kill the shot.** `.MTCollideSprites` calls both Hits; when the shot's side
+   runs first (a torch with `+0xb0 ≠ 0`, M l. 51033–51036), its `.KillPlayerShot(s, 1, 1)` leaves `+0xa6` at 0, so the
+   torch's side still opens it and kills the shot again: two snd 301, two effects (as written).
+Transcribed in `FerazelCore.PlayerShotHits` (`kill`, `hit`), `PlayerShot.hitTile`, `BonusSprite.container` and the
+stalactite case of `BoxSprite.hit` (SH) [HIGH but the two [LOW] heap/low-memory reads, where no light is changed].
