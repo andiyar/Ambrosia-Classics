@@ -5,10 +5,19 @@ import Foundation
 
 /// QuickDraw `DrawString` for the status bar (`TextRasterizer`, plan S4/S5; BTX precedent): the pixels one string
 /// sets in font family `font` (`TextFont`), `size` points (`TextSize`) and style `face` (`TextFace`), drawn with
-/// CoreText at 72 dpi, one pixel per point. The status bar draws srcOr in one index (R6: `.UpdateTextStats`, Times 12
-/// bold), so the mask is two-level: a pixel is set where the glyph covers at least half of it [MED: QuickDraw's
-/// bitmap Times 12 is not on this Mac; CoreText's outline Times stands in].
+/// CoreText at 72 dpi, one pixel per point. TX (Q6 note 1): Mac OS 8.5+ smoothed screen text ("Smooth all fonts on
+/// screen", Appearance → Fonts) at and above a size threshold, so at `smoothingThreshold` points and up the mask is
+/// CoreText's antialiased coverage as it comes (linear, no threshold — FerazelRender blends it into the palette,
+/// `TextCoverage`); below it the mask is two-level, 0 / 255, where the glyph covers at least half of a pixel [MED:
+/// QuickDraw's bitmap Times / Geneva are not on this Mac; CoreText's outline fonts stand in].
 final class CoreTextRasterizer: TextRasterizer {
+    /// The smallest smoothed size ("Smooth all fonts on screen", Appearance → Fonts → Size … and above) [MED]. Read
+    /// against the Let's Play (Mac OS 9, `ESuyxMUEzDw`): the conversation's Times 18 is smoothed (03:16), while the
+    /// status bar's Times 12 bold stage name (03:16) and a Geneva bold 8 item count (09:50) are crisp, bitmap-like.
+    /// The control panel's default as remembered (12 and above) would smooth the stage name, so the Let's Play wins:
+    /// 14. The game draws 8, 9, 12 and 18 point text only, so any value 13…18 draws the same.
+    static let smoothingThreshold: Int16 = 14
+
     private var fonts: [String: CTFont] = [:]
 
     /// The classic font family numbers (Inside Macintosh: Text, "Font family IDs") → today's family names.
@@ -35,7 +44,7 @@ final class CoreTextRasterizer: TextRasterizer {
     }
 
     func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
-        -> (left: Int, top: Int, width: Int, height: Int, bits: [Bool]) {
+        -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) {
         guard !text.isEmpty else { return (0, 0, 0, 0, []) }
         let f = ctFont(font, size: size, face: face)
         let attributes: [NSAttributedString.Key: Any] = [
@@ -62,7 +71,8 @@ final class CoreTextRasterizer: TextRasterizer {
             CTLineDraw(line, ctx)
         }
         // Row 0 of `coverage` is the top row (CGContext memory is top-down): pen-relative top = −above.
-        return (-pad, -above, w, h, coverage.map { $0 >= 0x80 })
+        if size < Self.smoothingThreshold { coverage = coverage.map { $0 >= 0x80 ? 0xff : 0 } }
+        return (-pad, -above, w, h, coverage)
     }
 
     /// QuickDraw `CharWidth(byte)` (C2): the Mac Roman character's CoreText advance, rounded to whole pixels

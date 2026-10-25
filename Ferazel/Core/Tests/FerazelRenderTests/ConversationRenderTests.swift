@@ -298,4 +298,27 @@ final class ConversationRenderTests: XCTestCase {
         XCTAssertTrue(c.isDone)
         XCTAssertEqual(String(fnv1a(frame.screen.pixels), radix: 16), "9db8f32f7e3d88b4")
     }
+
+    /// TX (Q6 note 1): the conversation's `DrawChar`s smoothed as Mac OS 9 drew them — per character, coverage 0
+    /// leaves the pixel, 255 is `Color2Index(run.rgb)` as before, a partial pixel is `Color2Index` of the run's colour
+    /// mixed with the pixel's colour under the screen CLUT; the pen still advances by `CharWidth`.
+    func testDrawCharBlendsCoverageIntoTheScreen() throws {
+        let r = try Self.resources.get()
+        let search = ColorSearch(model: .ruled, tieBreak: .lowest)
+        let text = StatusBarTests.CoverageRasterizer()
+        let frame = try FrameRenderer(resources: r, level: 1, search: search, dither: .errorDiffusion, text: text)
+        let renderer = ConversationRenderer(frame: frame, text: text)
+        let clut = frame.surface.clut
+        let back = search.index(of: RGB16(0xcccc, 0xcccc, 0xcccc), in: clut)
+        frame.surface.frame = IndexedFrame(fill: back)
+        let rgb = RGB16(0x1000, 0x2000, 0x3000)
+        try renderer.apply([.drawText(TextRun(bytes: MacRoman.bytes("ab"), font: 20, size: 18, face: 0, h: 200, v: 100,
+                                              rgb: rgb))])
+        let ink = search.index(of: rgb, in: clut)
+        let want = search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[Int(back)]), 128), in: clut)
+        XCTAssertFalse([ink, back].contains(want))
+        // "a" at pen 200 (pixels 200…202), "b" at 204 (204…206).
+        XCTAssertEqual((199..<208).map { frame.surface.frame[$0, 99] }, [back, back, want, ink, back, back, want, ink, back])
+        XCTAssertEqual(frame.surface.frame.pixels.filter { $0 != back }.count, 4)
+    }
 }

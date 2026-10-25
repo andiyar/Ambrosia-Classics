@@ -34,6 +34,28 @@ final class ScreenTests: XCTestCase {
 
     // MARK: - ScreenRenderer
 
+    /// TX (Q6 note 1): `drawText` smoothed as Mac OS 9 drew it — coverage 0 leaves the pixel, 255 is
+    /// `Color2Index(run.rgb)` as before, a partial pixel is `Color2Index` of the run's colour mixed with the pixel's
+    /// colour under the surface's CLUT.
+    func testDrawTextBlendsCoverageIntoTheScreen() throws {
+        let r = try Self.resources.get()
+        let surface = ScreenSurface(clut: try ColorLUT.load(id: 130, from: r, chain: .frontEnd))
+        let search = ColorSearch(model: .ruled)
+        let screen = ScreenRenderer(surface: surface, resources: r, search: search,
+                                    text: StatusBarTests.CoverageRasterizer())
+        let clut = surface.clut
+        let back = search.index(of: RGB16(0xffff, 0xffff, 0xffff), in: clut)
+        surface.frame = IndexedFrame(fill: back)
+        let rgb = RGB16(0x0000, 0x0000, 0x0000)
+        try screen.apply([.drawText(TextRun(bytes: [0x48, 0x69], font: 20, size: 18, face: 0, h: 300, v: 200,
+                                            rgb: rgb))])
+        let text = search.index(of: rgb, in: clut)
+        let want = search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[Int(back)]), 128), in: clut)
+        XCTAssertFalse([text, back].contains(want))
+        XCTAssertEqual((299..<304).map { surface.frame[$0, 199] }, [back, back, want, text, back])
+        XCTAssertEqual(surface.frame.pixels.filter { $0 != back }.count, 2)
+    }
+
     func testMainMenuScreenGolden() throws {
         let r = try renderer(clut: 0x80)       // a fresh surface under some other CLUT; the op sets 130
         try r.apply([.setScreenClut(id: 130), .drawPicture(id: 130, chain: .frontEnd, h: 0, v: 0)])

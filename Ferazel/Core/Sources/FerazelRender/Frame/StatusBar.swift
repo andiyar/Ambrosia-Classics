@@ -42,6 +42,9 @@ public struct StatusBar {
     let text: any TextRasterizer
     /// The screen device's search (`Color2Index` of the colourising colours).
     let prepared: ColorSearch.Prepared
+    /// The screen device's CLUT: the port's indices are copied to the screen raw, so a smoothed text pixel's colour
+    /// under it is looked up here (TX).
+    let screenClut: ColorLUT
 
     // `.UpdateTextStats`' statics `…9c0` (score), `…9c4` (coins); nil before the first draw. (`.UpdateHealthMagic`'s
     // caches are Core's — `StatusBarCalls`; the op says which parts draw.)
@@ -69,6 +72,7 @@ public struct StatusBar {
         white = prepared.index(of: RGB16(0xffff, 0xffff, 0xffff))
         self.text = text
         self.prepared = prepared
+        self.screenClut = screenClut
         port = back.pixels
         // `.InitGameGlobals` l. 852–860: the 30 inventory boxes painted black.
         for i in 0..<30 { paint(Self.box(i), 0xff) }
@@ -151,18 +155,12 @@ public struct StatusBar {
     }
 
     /// `TextFace(face)`, `TextFont(font)`, `TextSize(size)`, `MoveTo(x, y)`, `DrawString` in white (srcOr), clipped to
-    /// the port: `.UpdateTextStats`' bold Times (20) 12; `.UpdateItemStat`'s Geneva (3) plain 9 and bold 8.
+    /// the port: `.UpdateTextStats`' bold Times (20) 12; `.UpdateItemStat`'s Geneva (3) plain 9 and bold 8. Smoothed
+    /// pixels blend white with the port pixel's colour under the screen CLUT (TX, `TextCoverage`).
     mutating func drawString(_ string: String, x: Int, y: Int, font: Int16, size: Int16, face: Int16) {
         let g = text.rasterize(string, font: font, size: size, face: face)
-        precondition(g.bits.count == g.width * g.height, "TextRasterizer: \(g.width)×\(g.height) mask")
-        for r in 0..<g.height {
-            let py = y + g.top + r
-            guard (0..<Self.height).contains(py) else { continue }
-            for c in 0..<g.width where g.bits[r * g.width + c] {
-                let px = x + g.left + c
-                if (0..<Self.width).contains(px) { port[py * Self.width + px] = white }
-            }
-        }
+        TextCoverage.paint(g, x: x, y: y, into: &port, width: Self.width, height: Self.height, index: white,
+                           rgb: RGB16(0xffff, 0xffff, 0xffff), clut: screenClut, search: prepared)
     }
 
     // MARK: - `.UpdateItemStat`

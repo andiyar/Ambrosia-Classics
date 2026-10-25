@@ -201,14 +201,14 @@ public final class ScreenRenderer {
 
     /// srcOr only: the binary imports no `TextMode` (0 hits in `ghidra/ferazel/` main, handlers and disasm), so every
     /// `DrawString` (e.g. M l. 3351, 4589, 4666) draws in the port's default `txMode` srcOr — the only mode `TextRun`
-    /// defines; `run.mode` is therefore not consulted.
+    /// defines; `run.mode` is therefore not consulted. Smoothed pixels blend with the screen pixel under the surface's
+    /// CLUT (TX, `TextCoverage`).
     private func drawText(_ run: TextRun) {
         let mask = text.rasterize(MacRoman.decode(run.bytes), font: run.font, size: run.size, face: run.face)
-        let index = search.index(of: run.rgb, in: surface.clut)
-        for y in 0..<mask.height {
-            for x in 0..<mask.width where mask.bits[y * mask.width + x] {
-                plot(run.h + mask.left + x, run.v + mask.top + y, index)
-            }
-        }
+        let clut = surface.clut
+        let prepared = search.prepared(for: clut)
+        TextCoverage.paint(mask, x: run.h, y: run.v, into: &surface.frame.pixels, width: IndexedFrame.width,
+                           height: IndexedFrame.height, index: prepared.index(of: run.rgb), rgb: run.rgb, clut: clut,
+                           search: prepared)
     }
 }

@@ -90,22 +90,18 @@ public final class ConversationRenderer {
         }
     }
 
-    /// `DrawChar` per byte at the pen, advancing by `CharWidth`; srcOr in `Color2Index(run.rgb)`, clipped to the screen.
+    /// `DrawChar` per byte at the pen, advancing by `CharWidth`; srcOr in `Color2Index(run.rgb)`, clipped to the screen;
+    /// smoothed pixels blend with the screen pixel under the screen CLUT (TX, `TextCoverage`).
     private func drawText(_ run: TextRun) {
         let surface = frame.surface
-        let index = frame.search.index(of: run.rgb, in: surface.clut)
+        let clut = surface.clut
+        let search = frame.search.prepared(for: clut)
+        let index = search.index(of: run.rgb)
         var pen = run.h
         for b in run.bytes {
             let g = text.rasterize(byte: b, font: run.font, size: run.size, face: run.face)
-            precondition(g.bits.count == g.width * g.height, "TextRasterizer: \(g.width)×\(g.height) mask")
-            for y in 0..<g.height {
-                let py = run.v + g.top + y
-                guard (0..<IndexedFrame.height).contains(py) else { continue }
-                for x in 0..<g.width where g.bits[y * g.width + x] {
-                    let px = pen + g.left + x
-                    if (0..<IndexedFrame.width).contains(px) { surface.frame[px, py] = index }
-                }
-            }
+            TextCoverage.paint(g, x: pen, y: run.v, into: &surface.frame.pixels, width: IndexedFrame.width,
+                               height: IndexedFrame.height, index: index, rgb: run.rgb, clut: clut, search: search)
             pen += text.charWidth(b, font: run.font, size: run.size, face: run.face)
         }
     }

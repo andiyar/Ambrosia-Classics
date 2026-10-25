@@ -12,11 +12,11 @@ final class StatusBarTests: XCTestCase {
         private(set) var calls: [String] = []
 
         func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
-            -> (left: Int, top: Int, width: Int, height: Int, bits: [Bool]) {
+            -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) {
             calls.append("\(text)|\(font)|\(size)|\(face)")
             let w = max(0, 6 * text.count - 1)
-            let bits = (0..<7).flatMap { _ in (0..<w).map { $0 % 6 != 5 } }
-            return (0, -7, w, 7, bits)
+            let coverage = (0..<7).flatMap { _ in (0..<w).map { $0 % 6 != 5 ? UInt8(255) : 0 } }
+            return (0, -7, w, 7, coverage)
         }
 
         /// The fixed 6-px advance of every character (C2).
@@ -24,6 +24,43 @@ final class StatusBarTests: XCTestCase {
 
         /// The 7-px box over the baseline, 2 below, no leading: a 9-px TextEdit line (C2).
         func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) { (7, 2, 0) }
+    }
+
+    /// TX: every string (and character) is one row of three pixels just above the baseline at the pen — coverage
+    /// 0, 128, 255 — advance 4.
+    final class CoverageRasterizer: TextRasterizer {
+        func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
+            -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) { (0, -1, 3, 1, [0, 128, 255]) }
+        func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int { 4 }
+        func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) { (1, 0, 0) }
+    }
+
+    /// TX: the text RGB `t` over the pixel's RGB `d` at coverage `c`/255, per 16-bit channel, rounded.
+    static func mix(_ t: RGB16, _ d: RGB16, _ c: Int) -> RGB16 {
+        func m(_ a: UInt16, _ b: UInt16) -> UInt16 { UInt16((Int(a) * c + Int(b) * (255 - c) + 127) / 255) }
+        return RGB16(m(t.red, d.red), m(t.green, d.green), m(t.blue, d.blue))
+    }
+
+    /// TX (Q6 note 1): `DrawString` smoothed as Mac OS 9 drew it — coverage 0 leaves the port's pixel, 255 is the
+    /// white index as before, a partial pixel is `Color2Index` (the screen device's search) of white mixed with the
+    /// pixel's colour under the screen CLUT (202 here).
+    func testTextSmoothingBlendsIntoTheStatusPort() throws {
+        let r = try FerazelData.open(try FerazelData.dataDirectory())
+        let search = ColorSearch(model: .ruled)
+        let c202 = try ColorLUT.load(id: 202, from: r, chain: .level)
+        var bar = try StatusBar(resources: r, screenClut: c202, search: search, text: CoverageRasterizer())
+        bar.paint((50, 100, 60, 110), bar.black)
+        let before = bar.port
+        bar.drawString("A", x: 102, y: 56, font: 20, size: 12, face: 1)
+        let row = 55 * StatusBar.width + 102
+        let grey = Self.mix(RGB16(0xffff, 0xffff, 0xffff), RGB16(c202.entries[Int(bar.black)]), 128)
+        XCTAssertEqual(grey, RGB16(0x8080, 0x8080, 0x8080))
+        let want = search.index(of: grey, in: c202)
+        XCTAssertFalse([bar.black, bar.white].contains(want))
+        XCTAssertEqual(Array(bar.port[row..<row + 3]), [bar.black, want, bar.white])
+        var rest = bar.port
+        rest.replaceSubrange(row..<row + 3, with: before[row..<row + 3])
+        XCTAssertEqual(rest, before)          // only the two covered pixels changed
     }
 
     func testStatusBarStartValues() throws {
