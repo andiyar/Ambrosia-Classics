@@ -555,7 +555,7 @@ extension BackgroundSprite {
     /// `.HandleCannonedSprite(s) @ 10058710` (decompile l. 49976–50223), the captive's Handle:
     /// 1. d = centre − origin; face 0; pinned to the cannon's centre − d (24.8 from it), centre = origin + d.
     /// 2. The player: `_DAT_100a05a0 = 1`, the centre globals `fd94`/`fd90`, `.PlayerScroll`, HP < 1 → `+0x130 = −1`,
-    ///    `.DoubleSpeedTrail` (// later: Phase 4).
+    ///    `.DoubleSpeedTrail` (`PowerUps`, PU).
     /// 3. The hold: the player in a path cannon (record p1 < 0): `05a0 = 1`, and below 2 `+0x130` steps only while
     ///    **jump** (action 5) is pressed; everything else −1 a frame. v = 0, `+0x80 = 2` (the sort key stored, no relink).
     /// 4. `+0x130 < 1` and the cannon's aim mod 4 == 0 → **fire**, S = the cannon's `+0x164`: re-entry `+0x130` = −5
@@ -592,7 +592,7 @@ extension BackgroundSprite {
             w.player.centreY = Int16(truncatingIfNeeded: s.centre.y)
             PlayerScroll.scroll(&w.player, groundKind: s.groundKind, inWind: s.inWind)
             if s.hp < 1 { w.active.update(id: id) { $0.reentry = -1 } }
-            // later: Phase 4 — `.DoubleSpeedTrail(s)` (the trail sprites' faces; no Phase-2 Double Speed).
+            PowerUps.doubleSpeedTrail(w, player: id)                     // M l. 50038
         }
         let pathCannon = (record(w, k0)?.p1 ?? 0) < 0
         if isPlayer && pathCannon {

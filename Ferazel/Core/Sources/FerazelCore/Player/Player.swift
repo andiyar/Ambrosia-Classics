@@ -21,7 +21,7 @@ import Foundation
 /// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
 /// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
-/// 14 power-up `.TickTock`s (later: Phase 4); 0610/0614   35 oxygen, drowning, bubbles (P4)
+/// 14 power-up `.TickTock`s (PU); 0610/0614              35 oxygen, drowning, bubbles (P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
 /// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
 /// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (map, glider; arena later)
@@ -32,7 +32,7 @@ import Foundation
 /// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, breath refill (P4); liquid tint
 ///                                                            (later: no seam)
 ///                                                         42 tail: copies, below-map, stillness, ride ramps, trail
-///                                                            ring (later: Phase 4), `.StandardSpriteCleanup`,
+///                                                            ring (PU), `.StandardSpriteCleanup`,
 ///                                                            counters, tint overrides
 public enum Player {
     /// `.SetupPlayerSprite`'s layer `+0x80` and type `+4`.
@@ -61,10 +61,11 @@ public enum Player {
     /// `5f5a`/`5f5c`). Inside the Setup, before the player's own `.MTInsertSprite` (P3, the P1a carry): the held-item
     /// sprite `MTNewSprite(100, 0, 0, 0x14, 0x1ff, .SetupHeldItemSprite)` into `_DAT_100a065c` (l. 42846), then the
     /// five trail sprites `MTNewSprite(1, −1, −1, +0x80 − 1 = 9, 0x1ff, .SetupTrailSprite)` into `PTR_DAT_100a051c`
-    /// (l. 42898–42907) — both `.inert` here: `.HandleHeldItemSprite @ 1004be74` only re-pins a faceless sprite
-    /// (// later: Phase 4, held items) and `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
-    /// `.StandardSpriteCleanup` of a faceless sprite (// later: Phase 4, `.DoubleSpeedTrail` gives them faces);
-    /// neither Setup nor Handle draws `FastRand` (plan Invariant 4). Not built: the Shadow-Double ring, the Pentashield
+    /// (l. 42898–42907; each record's pose `{0, −1, −1, 0}` = `PlayerState.trailPoses`' initial value). The held item
+    /// is `.inert` here: `.HandleHeldItemSprite @ 1004be74` only re-pins a faceless sprite (// later: Phase 4, held
+    /// items); the trail's Handle `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
+    /// `.StandardSpriteCleanup` (`SpriteHandler.trail`, PU; `.DoubleSpeedTrail` gives them faces); neither Setup nor
+    /// Handle draws `FastRand` (plan Invariant 4). Not built: the Shadow-Double ring, the Pentashield
     /// slots and `+0xe4 = 1` (the dead second loop's gate) — // later: Phase 4.
     /// `PTR_DAT_100a0530` (the global copy of the hot rect, `SetRect` at l. 42818–42820) is not kept: its one TOC
     /// load is that store (raw `1004af68 lwz r3,-0x7310(r2)`) — write-only.
@@ -117,7 +118,7 @@ public enum Player {
             let trailLayer = Int16(truncatingIfNeeded: s.layer - 1)
             for _ in 0..<5 {
                 // `.SetupTrailSprite @ 1004b3b4`: `.InitSprite` and the Handle.
-                trail.append(w.newSprite(type: trailType, x: -1, y: -1, layer: trailLayer, handler: .inert,
+                trail.append(w.newSprite(type: trailType, x: -1, y: -1, layer: trailLayer, handler: .trail,
                                          record: 0x1ff))
             }
             s.pushForce = 0x100
@@ -196,8 +197,9 @@ public enum Player {
         // 13 (l. 44692–44747).
         countdowns(w, id: id)
         // 14 (l. 44748–44814): `.TickTock` of the power-up timers 0650/064c/0640/0630/0624/0618 and their
-        // active/blink flags (0654, 0648/0644, 0638/0634, 062c/0628, 0620/061c). // later: Phase 4 (no Phase-2 writer
-        // of the timers; the flags stay 0). Then 0610 −1 (no floor) and 0614 = (0610 ≥ 1):
+        // active/blink flags (0654, 0648/0644, 0638/0634, 062c/0628, 0620/061c; `PowerUps.tickTimers`, PU). Then 0610
+        // −1 (no floor) and 0614 = (0610 ≥ 1):
+        PowerUps.tickTimers(&w.player)
         w.player.countdown0610 &-= 1
         w.player.flag0614 = w.player.countdown0610 >= 1
         // 15 (l. 44815–44826).
@@ -683,8 +685,8 @@ public enum Player {
     }
 
     /// Row 42 (l. 46489–46649): `G+4 = HP`, `fd3c = vx`, `04c8 = vy`; below the map (y > hdr 0xb282·32 + 100) →
-    /// HP 0; the stillness counter; the riding ramps; the Shadow-Double ring // later: Phase 4;
-    /// `.DoubleSpeedTrail` // later: Phase 4; `.StandardSpriteCleanup`; `05ec` (0…0x1f) and `057c` (+2, 0…0x167);
+    /// HP 0; the stillness counter; the riding ramps; the Shadow-Double ring // later: SD;
+    /// `.DoubleSpeedTrail` (`PowerUps`, PU); `.StandardSpriteCleanup`; `05ec` (0…0x1f) and `057c` (+2, 0…0x167);
     /// the tint overrides (05a8 → 0x10008 / 0x10009; spirit 0xb0001/0xb0005 // later: Phase 4; 0564 → 0x10007
     /// // later: Phase 4); `04cc` −1; `.UpdatePentSprites` // later: Phase 4.
     static func tail(_ w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int) {
@@ -714,8 +716,8 @@ public enum Player {
             }
             if w.player.rideRamp2 < 8 { w.player.rideRamp2 += 1 }
         }
-        // The Shadow-Double pose ring `PTR_DAT_100a0520` (14 × 16 B) while not standing still. // later: Phase 4
-        // `.DoubleSpeedTrail`. // later: Phase 4
+        // The Shadow-Double pose ring `PTR_DAT_100a0520` (14 × 16 B) while not standing still. // later: SD
+        PowerUps.doubleSpeedTrail(w, player: id)                         // M l. 46615
         w.standardSpriteCleanup(id, faceWidth: faceWidth)
         w.player.counter05ec += 1
         if 0x1f < w.player.counter05ec { w.player.counter05ec = 0 }

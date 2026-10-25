@@ -477,6 +477,10 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// CS (added, Invariant 9): `.HandlePlayerShotSprite @ 10059704` (`PTR_PTR_100a04e8`), installed by
     /// `.SetupPlayerShotSprite` (`PlayerShot`).
     case playerShot
+    /// PU (added, Invariant 9): `.HandleTrailSprite @ 1004b354` (`PTR_PTR_100a0508`, M l. 42986–42994) =
+    /// `.StandardSpriteHandles` + `.StandardSpriteCleanup`, installed by `.SetupTrailSprite` on the player's five
+    /// Double-Speed trail sprites (`Player.spawn`).
+    case trail
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

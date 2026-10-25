@@ -469,6 +469,10 @@ public final class FerazelSession {
                                   faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
             case .inert:
                 break                                       // later: Phase 5 — the enemies' and buttons' Handles
+            case .trail:
+                // `.HandleTrailSprite @ 1004b354` (PU): `.StandardSpriteHandles` + `.StandardSpriteCleanup`.
+                world.standardSpriteHandles(id)
+                world.standardSpriteCleanup(id) { Self.frameRect($0, resources: res).right }
             case .platform:
                 PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
             case .chain:

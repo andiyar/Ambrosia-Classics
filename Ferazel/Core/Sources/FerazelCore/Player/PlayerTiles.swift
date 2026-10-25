@@ -9,8 +9,8 @@ import Foundation
 /// >> 1; srawi) are taken once (raw `10054ce8..10054d34`). Spirit form (`_DAT_100a0578`, `lha`: the high half of the
 /// long — no Phase-2 writer) returns at once. Then, by layer:
 /// - **BG (layer 0)**, after the walk-on-liquid rewrite (`PTR_DAT_100a0648` ∧ BG ∧ `kind − 200 == 063c` → layer 1, kind
-///   3, `pos.y −= 16`; raw `10054d4c..10054d94`; // later: Phase 4 — no Phase-2 writer): kind < 100 → `.WallBounce`
-///   + `.CheckGroundCeilingHitEffects`; < 200 → `.WallBounceBG(kind − 100)`, a hit while `+0xce` ≠ 0 sets the one-way
+///   3, `pos.y −= 16`; raw `10054d4c..10054d94`; the spheres 1331…1333 set it (PK), row 14 clears it at 0 (PU)):
+///   kind < 100 → `.WallBounce` + `.CheckGroundCeilingHitEffects`; < 200 → `.WallBounceBG(kind − 100)`, a hit while `+0xce` ≠ 0 sets the one-way
 ///   timer `04cc = 0xf`, then the effects; 600 / 601 → nothing; `.IsWaterTile` (200…209) ∧ the water pass ∧ `+0x140`
 ///   == 0 → `.HandleUnderWater(s, pos)` (P4).
 /// - **FG (layer 1)**: the cling test, the post-jump guard `04d8 > 0` → return (no `.WallBounce`, no effects), then

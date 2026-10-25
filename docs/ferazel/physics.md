@@ -476,3 +476,9 @@ file had passed the ~650-line split rule. References to "physics §8.x" mean tha
 ⚑ R4 note (2026-10-09): `.MTNewSprite` writes y into `+0xc` (`100331e4..100331f8`); every level-1 Setup copies the
 position back from `+8`/`+6`, so it is harmless there. `.GameLoop` sets playerX = (x − 32) + 50 before `.SetupLevel`
 (decompile l. 5150–5165) — 133 on level 1, which mirrors every Walker at Setup.
+
+- BC (PU, 2026-10-26): the feather-fall clamp `vy ≤ 0x352` is row 9's (M l. 44665–44671), **before** row 23 adds the
+  gravity 0x40 (M l. 44958–44968) — a steady feather fall moves at 0x352 + 0x40 = 0x392 = 914 a frame, not 850
+  (`PowerUpTests.testFeatherfall`). The timers' `.TickTock` (M l. 43583–43663) shares one blink byte `0x100a5fd4`
+  with every power-up; its time-up `.STPlay3DSoundPitched(428, 0x14, 0x100, *0x100a1998, 32000)` plays at (0, 0)
+  (the PEF data word is 0).

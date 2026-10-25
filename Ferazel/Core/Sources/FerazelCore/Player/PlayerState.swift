@@ -129,7 +129,7 @@ public struct PlayerState: Equatable, Sendable {
     public var airWalk: Int16 = 0x76c
     public var airRun: Int16 = 0xc80
     /// `PTR_DAT_100a0620`: Double Speed active. `PTR_DAT_100a0638`: High Jump active. `PTR_DAT_100a062c`: Feather
-    /// Fall active. PK: the spheres set them (M l. 49049–49081); // later: PU — row 14's `.TickTock`s clear them.
+    /// Fall active. PK: the spheres set them (M l. 49049–49081); row 14 re-derives them from the timers (PU).
     public var doubleSpeed = false
     public var highJump = false
     public var featherFall = false
@@ -227,7 +227,7 @@ public struct PlayerState: Equatable, Sendable {
     public var standing0670 = false
     /// `PTR_DAT_100a0648` / `PTR_DAT_100a063c`: the walk-on-liquid power-up and its liquid kind — `.HitPlayerTileSprite`
     /// turns a matching BG water cell into an FG kind-3 floor 16 px up. PK: the 1331…1333 spheres set them (M l.
-    /// 49039–49046); // later: PU — row 14's `.TickTock` clears the flag.
+    /// 49039–49046); row 14 re-derives the flag from `0640` (PU).
     public var walkOnLiquid = false
     public var walkOnLiquidKind: Int16 = 0
 
@@ -349,7 +349,8 @@ public struct PlayerState: Equatable, Sendable {
     public var teleporterTouch = false
     public var teleporterFire = false
     /// `PTR_DAT_100a0644`, `PTR_DAT_100a0634`, `PTR_DAT_100a0628`, `PTR_DAT_100a061c`: the power-up tint flags paired
-    /// with walk-on-liquid / High Jump / Feather Fall / Double Speed in row 36. // later: Phase 4 (`.TickTock`).
+    /// with walk-on-liquid / High Jump / Feather Fall / Double Speed in row 36; row 14 copies the blink flag into them
+    /// while their timers run (PU).
     public var tint0644 = false
     public var tint0634 = false
     public var tint0628 = false
@@ -357,16 +358,26 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a065c`: the held-item sprite (`.SetupPlayerSprite`'s `MTNewSprite(100, 0, 0, 0x14, 0x1ff, …)`).
     public var heldItem: Int?
     /// `PTR_DAT_100a051c`: the five trail records `{sprite, 0, −1, −1, 0}` (`.SetupPlayerSprite`'s loop); the
-    /// sprites are type 1, layer 9 (`.SetupTrailSprite`). `.DoubleSpeedTrail` // later: Phase 4.
+    /// sprites are type 1, layer 9 (`.SetupTrailSprite`), Handle `.HandleTrailSprite` (`SpriteHandler.trail`).
+    /// `trail` holds each record's sprite (`+0`), `trailPoses` the rest; `.DoubleSpeedTrail` (`PowerUps`, PU) shifts
+    /// and shows them.
     public var trail: [Int?] = []
+    /// A trail record's pose: face `+4` (nil = 0), (y, x) `+8`, mirror `+0xc` (u8).
+    public struct TrailPose: Equatable, Sendable {
+        public var face: FaceRef?
+        public var y: Int16
+        public var x: Int16
+        public var mirrored: Bool
+    }
+    public var trailPoses = [TrailPose](repeating: TrailPose(face: nil, y: -1, x: -1, mirrored: false), count: 5)
 
     // MARK: ClearPlayerVars' non-zero globals with no P1a reader (kept for the later rows)
 
     /// `uRam100a5f5e`: breath phase (3). `_DAT_100a5f56`: bubble timer (0x28). `DAT_100a5f58` (1) is `scrollLatch`.
-    /// `uRam100a5fd4` (1).
+    /// `cRam100a5fd4` (u8, 1; raw `1004ad30 stb`): the power-up blink flag every `.TickTock` toggles (`PowerUps`).
     public var breathPhase: Int16 = 3
     public var bubbleTimer: Int16 = 0x28
-    public var flag5fd4: Int16 = 1
+    public var flag5fd4 = true
     /// `_DAT_100a5fd6` / `_DAT_100a5fd8`: potion / melee item id (−1).
     public var potionItem: Int16 = -1
     public var meleeItem: Int16 = -1
@@ -394,7 +405,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a05c8`: the glider's ground-contact frames (row 33, M l. 45224–45238: > 12 at phase 0 → the stow);
     /// zeroed by the glider pickup (M l. 48924).
     public var glider05c8: Int16 = 0
-    /// The sphere timers (`.TickTock`ed in row 14, M l. 44748–44799 — // later: PU) and the Shadow Double flag:
+    /// The sphere timers (`.TickTock`ed in row 14, M l. 44748–44799 — `PowerUps.tickTimers`) and the Shadow Double flag:
     /// `PTR_DAT_100a064c` 1330's 600 and `PTR_DAT_100a0654` its flag; `PTR_DAT_100a0640` walk-on-liquid 600;
     /// `PTR_DAT_100a0630` High Jump 600; `PTR_DAT_100a0650` Invincibility 0x1c2; `PTR_DAT_100a0624` Feather Fall 900;
     /// `PTR_DAT_100a0618` Double Speed 600 (M l. 49033–49077). `.ClearPlayerVars` zeroes them (M l. 42642–42672).
@@ -407,7 +418,7 @@ public struct PlayerState: Equatable, Sendable {
     public var doubleSpeedTimer: Int16 = 0
     /// `PTR_DAT_100a053c`: the Pentashield orb count (1338: + 5, ≤ 8, M l. 49085–49088; `.SetupPlayerSprite` 0).
     public var pentashieldCount: Int16 = 0
-    /// `PTR_DAT_100a0514`: the eight Pentashield orb records (0x14 bytes each). // later: PU / SD — their Handle.
+    /// `PTR_DAT_100a0514`: the eight Pentashield orb records (0x14 bytes each). // later: SD — their Handle.
     public struct Orb: Equatable, Sendable {
         /// `+0`: the orb sprite (nil = 0).
         public var sprite: Int?

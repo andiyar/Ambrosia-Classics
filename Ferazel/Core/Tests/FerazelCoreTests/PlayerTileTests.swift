@@ -355,12 +355,15 @@ final class PlayerTileTests: XCTestCase {
         frame(w, solver, .down)
         XCTAssertEqual(player(w).y256 - y0, 900)
         XCTAssertEqual(w.player.climb, 1)
-        // Double Speed: ±0x578 (raw `10053e4c..`) → −0x578 + 100 = −1300.
+        // Double Speed: ±0x578 (raw `10053e4c..`) → −0x578 + 100 = −1300 (the flag with its timer: row 14 re-derives
+        // it from `0618`, PU).
         w.player.doubleSpeed = true
+        w.player.doubleSpeedTimer = 600
         y0 = player(w).y256
         frame(w, solver, .up)
         XCTAssertEqual(player(w).y256 - y0, -1300)
         w.player.doubleSpeed = false
+        w.player.doubleSpeedTimer = 0
         // A cast begun this call (`06e0` == 0) or a wand phase with the wand held < 5: vy 0 instead of the climb.
         for (began, wand, held) in [(true, Int16(0), Int16(0)), (false, 1, 4)] {
             w.player.noCastBegan = !began

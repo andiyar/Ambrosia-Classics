@@ -153,11 +153,13 @@ final class PlayerStateTests: XCTestCase {
             }
         }
         XCTAssertEqual(steps, [5, 13, 21, 29])
-        // Double Speed (no Phase-2 writer; set directly): the walk's steps move to `+0x46` 8 and 0x20 — 0x20 never
-        // occurs (the phase wraps past 0x1f), so one step per 16-frame cycle: 0xe, 0x10 … 0x1e, 0, 2 … 8 → frames 14, 30.
+        // Double Speed (set directly, with its timer — row 14 re-derives the flag from `0618`, PU): the walk's steps
+        // move to `+0x46` 8 and 0x20 — 0x20 never occurs (the phase wraps past 0x1f), so one step per 16-frame cycle:
+        // 0xe, 0x10 … 0x1e, 0, 2 … 8 → frames 14, 30.
         let d = try world()
         let ds = standing(d, x: 20)
         d.player.doubleSpeed = true
+        d.player.doubleSpeedTimer = 600
         var dsteps: [Int] = []
         for k in 1...30 {
             frame(d, ds, [.right])
@@ -206,10 +208,11 @@ final class PlayerStateTests: XCTestCase {
         XCTAssertEqual(steps, [2, 9, 14, 21])
         XCTAssertEqual(Array(faces.prefix(8)), [7, 8, 9, 10, 11, 0, 1, 2])
         XCTAssertEqual(w.player.turnCountdown, 0)
-        // Double Speed (no Phase-2 writer; set directly): steps at `+0x46` 8 and 0x10.
+        // Double Speed (set directly, with its timer — row 14 re-derives the flag, PU): steps at `+0x46` 8 and 0x10.
         let d = try world()
         let ds = standing(d, x: 20)
         d.player.doubleSpeed = true
+        d.player.doubleSpeedTimer = 600
         var dsteps: [Int] = []
         for k in 1...14 {
             frame(d, ds, [.right, .run])
@@ -501,11 +504,13 @@ final class PlayerStateTests: XCTestCase {
         XCTAssertEqual(high.mode, 0x10009)
         XCTAssertEqual([high.glowKind, high.glowChance], [0xdc, 0x10])
         XCTAssertEqual(try blink(invul: 61, parity: true).mode, 0x10006) // 60
-        // The power-up tints (Phase 4 flags, set directly) and their `+0x88` 0 / `+0x1a8` 8.
+        // The power-up tints (set directly, with the timer row 14 re-derives them from, PU) and their `+0x88` 0 /
+        // `+0x1a8` 8.
         let w = try world()
         let solver = standing(w)
         w.player.tint0634 = true
         w.player.highJump = true
+        w.player.highJumpTimer = 600
         frame(w, solver)
         XCTAssertEqual(player(w).mode, 0x1000c)
         XCTAssertEqual([player(w).glowKind, player(w).glowChance], [9, 8])
