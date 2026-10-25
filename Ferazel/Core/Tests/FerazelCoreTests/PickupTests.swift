@@ -354,6 +354,12 @@ final class PickupTests: XCTestCase {
         passage.y = pl.y
         passage.hotRect = pl.hotRect
         let scrollID = pw.active.insert(sc), passageID = pw.active.insert(passage)
+        // The partner idle (record 510): the jump's scan finds it, so `PassageView.snap` runs.
+        var partner = try SetupFaces.setup(pw.records[510], context: SetupFaces.Context(level: pw.level, playerX: 0)).slot
+        partner.recordIndex = 510
+        partner.x = 1600
+        partner.y = 500
+        XCTAssertNotNil(pw.idle.add(partner, faceRect: .noFace))
         let order = pw.active.sprites.map(\.id)
         XCTAssertLessThan(try XCTUnwrap(order.firstIndex(of: scrollID)), try XCTUnwrap(order.firstIndex(of: passageID)))
         pw.player.doorTransit = 0x15
@@ -367,6 +373,22 @@ final class PickupTests: XCTestCase {
             if case .redrawEntireScrollGrid = op { true } else { false }
         })
         XCTAssertLessThan(bar, redraw, "the scroll's bar call, then the passage's redraws")
+        // The one ordered list from the bar on: `PassageView.snap`'s `.RedrawEntireScrollGrid` after its 90 passes,
+        // then `PassageView.redraw`'s `.WrapDrawSprites` and `.RedrawEntireScrollGrid` (l. 49672, 49676–49678).
+        let grid = DrawOp.redrawEntireScrollGrid(h: ps.camera.scrollH, v: ps.camera.scrollV)
+        let tail = ops.draws[bar...].filter { op in
+            switch op {
+            case .statusBar, .redrawEntireScrollGrid, .wrapDrawSprites: true
+            default: false
+            }
+        }.map { op -> String in
+            switch op {
+            case .statusBar: "bar"
+            case .wrapDrawSprites: "sprites"
+            default: op == grid ? "grid" : "\(op)"
+            }
+        }
+        XCTAssertEqual(Array(tail.prefix(4)), ["bar", "grid", "sprites", "grid"], "snap, then redraw")
     }
 
     func testItemsStack() throws {
@@ -598,9 +620,9 @@ final class PickupTests: XCTestCase {
 
         // A hosted session: the suspended frame hands the cursor hide out; after the loops the rest of the frame
         // reads the keys polled at the resume tick (live in the original) — Caps Lock down there → `.CheckGameLoopKeys`
-        // pauses. A 1340 there: the refill (breath = health = max, `G+8 = 8`), max + 0x70, health / breath + 0x70 with
+        // pauses, Esc there asks the abort (`.ConfirmAbortGameDialog`). A 1340 there: the refill (breath = health = max, `G+8 = 8`), max + 0x70, health / breath + 0x70 with
         // the player's `+0xa4` = health; the bar calls are (1, 0, 1).
-        for caps in [true, false] {
+        for (caps, pressed) in [(true, [Int]()), (false, []), (false, [0x35])] {
             let hs = try FerazelSession(resources: r, prefs: prefs, level: 2, hostedByLevelRun: true)
             for _ in 0..<45 { XCTAssertNil(hs.step(keys: KeyState()).suspension) }
             let hw = hs.world
@@ -644,8 +666,10 @@ final class PickupTests: XCTestCase {
             XCTAssertEqual(hw.globals.suffocation, 8)
             XCTAssertEqual(hw.active.record(id: hp)?.hp, 0x2a0)
             XCTAssertEqual([hw.globals.magic, hw.globals.maxMagic], [0x100, 0x230], "a 1340 leaves magic")
-            let rest = hs.resume(.upgrade(keys: KeyState(), capsLock: caps))
-            XCTAssertEqual(rest.suspension, caps ? .gameLoopKeys(.pause) : nil, "Caps Lock \(caps) at the resume")
+            let rest = hs.resume(.upgrade(keys: KeyState(pressed: pressed), capsLock: caps))
+            let expected: FrameSuspension? = caps ? .gameLoopKeys(.pause)
+                : pressed.isEmpty ? nil : .gameLoopKeys(.confirmAbort(escape: true))
+            XCTAssertEqual(rest.suspension, expected, "Caps Lock \(caps), keys \(pressed) at the resume")
         }
     }
 

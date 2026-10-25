@@ -1017,13 +1017,17 @@ public struct AsyncGammaFade: Equatable, Sendable {
     }
 
     /// `.GammaFadeOutAsync(N, rgb) @ 100356c0` (M l. 31896–31912): only when fading is enabled and not faded out.
-    public mutating func fadeOut(steps n: Int16, toward rgb: RGB16) {
-        guard fadingEnabled, !fadedOut else { return }
+    /// Returns whether it armed — the arm is where it calls `HideCursorSafe` (M l. 31905), even when it re-arms to the
+    /// state it was already in.
+    @discardableResult
+    public mutating func fadeOut(steps n: Int16, toward rgb: RGB16) -> Bool {
+        guard fadingEnabled, !fadedOut else { return false }
         done = false
         step = 0
         fadingIn = false
         steps = n
         toward = rgb
+        return true
     }
 
     /// `.GammaFadeInAsync(N) @ 1003565c` (M l. 31875–31890): only when fading is enabled and faded out.

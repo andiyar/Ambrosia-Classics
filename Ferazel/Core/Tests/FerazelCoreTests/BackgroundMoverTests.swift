@@ -964,6 +964,8 @@ final class BackgroundMoverTests: XCTestCase {
             if n == 20 { XCTAssertEqual(w.player.lookAhead, 0x1234) }
         }
         XCTAssertEqual([Int(w.player.lookAhead), Int(w.player.animation05f8)], [0, 1])   // 0x15 → look-ahead 0
+        // `.GammaFadeOutAsync` arms once (contact 1) and calls `HideCursorSafe` then (M l. 49603 → 31905).
+        XCTAssertEqual(w.player.passRequests, [.hideCursor])
         let black = RGB16(red: 0, green: 0, blue: 0)
         XCTAssertEqual(ops, (0...20).map { DrawOp.gammaStep(numerator: $0, denominator: 20, toward: black) })
         XCTAssertTrue(w.gammaFade.fadedOut)
@@ -1038,9 +1040,18 @@ final class BackgroundMoverTests: XCTestCase {
                        [.gammaStep(numerator: 0, denominator: 2, toward: black),
                         .gammaStep(numerator: 1, denominator: 2, toward: black),
                         .gammaStep(numerator: 2, denominator: 2, toward: black), nil])
-        g.fadeOut(steps: 2, toward: black)
+        XCTAssertFalse(g.fadeOut(steps: 2, toward: black), "faded out: not armed")
         XCTAssertNil(g.handle())
         XCTAssertTrue(g.fadedOut)
+        // The arm is the call passing its gate, not a changed state: re-armed to the same state it still arms
+        // (and so hides the cursor, M l. 31905); fading off it never does.
+        var same = AsyncGammaFade()
+        XCTAssertTrue(same.fadeOut(steps: 2, toward: black))
+        let armed = same
+        XCTAssertTrue(same.fadeOut(steps: 2, toward: black))
+        XCTAssertEqual(same, armed)
+        var off = AsyncGammaFade(fadedOut: false, done: true, fadingEnabled: false)
+        XCTAssertFalse(off.fadeOut(steps: 2, toward: black))
 
         // In a session (level 1, a synthetic pair in records 509 / 510): UP held, the 22nd iteration jumps — the
         // camera snapped to (x − 0x142, y − 0xc0) and eased by 90 `.FindUpperLeftCorner` passes, the jump's draws

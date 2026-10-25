@@ -294,9 +294,7 @@ extension HitPlayerSprite {
         if saved {
             w.player.cue(PlayerCue(call: .reg, snd: 420, priority: 1, volume: 0x100))
             w.player.cue(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
-            let before = w.gammaFade
-            w.gammaFade.fadeOut(steps: 2, toward: savePointFlashColour)
-            if w.gammaFade != before { requests.append(.hideCursor) }
+            if w.gammaFade.fadeOut(steps: 2, toward: savePointFlashColour) { requests.append(.hideCursor) }
             for _ in 0..<3 { if let op = w.gammaFade.handle() { draws.append(op) } }
             w.gammaFade.fadeIn(steps: 0x2d)
         } else if w.records.indices.contains(i) {
@@ -398,9 +396,9 @@ extension HitPlayerSprite {
             w.globals.score &+= 2000
             dead()
             // `GammaFadeOutAsync` calls `HideCursorSafe` when it arms (M l. 31905), as at the save point.
-            let before = w.gammaFade
-            w.gammaFade.fadeOut(steps: 2, toward: t == magicUpgrade ? magicUpgradeColour : healthUpgradeColour)
-            if w.gammaFade != before { w.player.passRequests.append(.hideCursor) }
+            if w.gammaFade.fadeOut(steps: 2, toward: t == magicUpgrade ? magicUpgradeColour : healthUpgradeColour) {
+                w.player.passRequests.append(.hideCursor)
+            }
             w.suspension = .upgrade(type: t)
         case 0xbea:
             glider(w, player: pID, other: oID)
@@ -742,7 +740,7 @@ extension HitPlayerSprite {
 
     /// The passage arm (0xb54 / 0xb55, decompile l. 49594–49683; triggers-background §2.11, -2 §8.2):
     /// 1. the door counter `_DAT_100a06f0` 0 and UP (action 2) not pressed → return; at 0: the walk counter
-    ///    `_DAT_100a05f8 = 1` and `.GammaFadeOutAsync(0x14, black)`;
+    ///    `_DAT_100a05f8 = 1` and `.GammaFadeOutAsync(0x14, black)` (its arm's `HideCursorSafe` → `passRequests`);
     /// 2. `06f0` += 1; 0x15 → the look-ahead `_DAT_100a0680 = 0`; not 0x16 → return (frozen meanwhile: `.HandlePlayerSprite`
     ///    skips `.HandleKeys` and zeroes v while `06f0` ≠ 0);
     /// 3. at 0x16: d = the player's origin − the passage's (i16); `0680 = 0`; the record's p2 (darkness) — // later: the
@@ -757,7 +755,8 @@ extension HitPlayerSprite {
         if w.player.doorTransit == 0 && !keys.contains(.up) { return }
         if w.player.doorTransit == 0 {
             w.player.animation05f8 = 1
-            w.gammaFade.fadeOut(steps: 0x14, toward: passageFadeColour)
+            // `GammaFadeOutAsync` calls `HideCursorSafe` when it arms (M l. 31905), as at the upgrade.
+            if w.gammaFade.fadeOut(steps: 0x14, toward: passageFadeColour) { w.player.passRequests.append(.hideCursor) }
         }
         w.player.doorTransit &+= 1
         if w.player.doorTransit == 0x15 { w.player.lookAhead = 0 }

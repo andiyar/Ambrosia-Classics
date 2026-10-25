@@ -921,11 +921,10 @@ public final class LevelRun {
         guard let s = session else { return false }
         if deathStep < 0 {
             var g = s.world.gammaFade
-            let before = g
-            g.fadeOut(steps: 0x30, toward: RGB16(red: 0, green: 0, blue: 0))
+            let armed = g.fadeOut(steps: 0x30, toward: RGB16(red: 0, green: 0, blue: 0))
             s.world.gammaFade = g
             // `.GammaFadeOutAsync` calls `HideCursorSafe` when it arms (M l. 31905).
-            if g != before { emit(&out, FrontOutput(requests: [.hideCursor])) }
+            if armed { emit(&out, FrontOutput(requests: [.hideCursor])) }
             deathStep = 0
             deathNext = now
         }
