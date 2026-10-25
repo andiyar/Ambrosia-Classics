@@ -474,7 +474,7 @@ final class LevelFlowTests: XCTestCase {
         expectCarry.tileCacheValid = true
         expectCarry.statusBar = s.world.statusBar                     // HU: the status bar's globals ride it too
         // EF review fix: the flash, the paint counter (+1 per `.PaintFrameWrap`: 5 + the dying frames), the plume
-        // count and the shake are globals too (set here as a Handle would; the shake through a carried-in session).
+        // count are globals too (set here as a Handle would; the shake's carry is asserted in EffectTests/GameFlowGameTests).
         XCTAssertEqual(s.world.paintCounter, UInt32(5 + frames))
         s.world.flash = ScreenFlash(count: 2, on: true)
         s.world.plumeCount = 2

@@ -62,7 +62,9 @@ public struct LevelCarry: Equatable, Sendable {
     /// EF review fix: the mask flash's count and toggle (`*_DAT_100a00fc` / `*_DAT_100a00cc`, `ScreenFlash`), the paint
     /// counter `*_DAT_1009fd2c` and the plume count `*PTR_DAT_100a0904` — their only writers are the thunder, Smiting
     /// and seed-explosion stores and `.PaintFrameWrap`'s step (M l. 8458, 47593, 51149, 9426–9433), the paint
-    /// counter's +1 (M l. 9250) and the 1206 Setup / death (M l. 53743, 54090): data-section globals no level load,
+    /// counter's +1 (M l. 9250) and the 1206 Setup / death (M l. 53743, 54090) — plus the boss routines' flash 3 stores
+    /// (`_KillWarrior` M l. 73488, `_KillDemon` 74997, `_HandleChiefSprite` 75372, `_KillChief` 75525, `_KillWizard`
+    /// 76159, `_KillXichra` 77475; // later: Phase 6): data-section globals no level load,
     /// death, map or new game touches, so they run on through all of them.
     public var flash = ScreenFlash()
     public var paintCounter: UInt32 = 0
