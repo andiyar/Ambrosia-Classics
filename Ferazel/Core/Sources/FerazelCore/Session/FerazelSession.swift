@@ -462,6 +462,11 @@ public final class FerazelSession {
                                                                 lights: &self.lightTable) {
                     Self.frameRect($0, resources: res).right
                 })
+            case .playerShot:
+                // `.HandlePlayerShotSprite @ 10059704` (CS, `PlayerShot.handle`): its lights land in `lightTable`, the
+                // liquid rule's effect 5 takes prefs+6.
+                PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
+                                  faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
             case .inert:
                 break                                       // later: Phase 5 — the enemies' and buttons' Handles
             case .platform:
@@ -877,6 +882,7 @@ public final class FerazelSession {
         case .platform: PlatformSprite.hit(w, id: a, other: b)
         case .background: BackgroundSprite.hit(w, id: a, other: b, lights: &lights)   // `.HitBackgroundSprite` (W2b)
         case .bonus: BonusSprite.hit(w, id: a, other: b)                                // `.HitBonusSprite` (BN)
+        case .playerShot: break                                     // `.HitPlayerShotSprite` // later: SH
         default: break
         }
     }

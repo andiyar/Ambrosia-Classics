@@ -203,7 +203,7 @@ public struct PlayerState: Equatable, Sendable {
     public var spinCooldown: Int16 = 0
     public var strokeCooldown: Int16 = 0
     /// `_DAT_100a06a4`: exertion (+8 per jump / stroke here; +1 / +3 per walk / run frame in the L/R block, P1b;
-    /// `.HandleBreathing` spends it, P3).
+    /// +0x19 per `.CastSpell`, M l. 46723, CS; `.HandleBreathing` spends it, P3).
     public var exertion: Int16 = 0
     /// `_DAT_100a0738`: the ground kind at the pre-move pass (`s+0xce`, 3 while riding).
     public var groundLast: UInt8 = 0
@@ -225,14 +225,30 @@ public struct PlayerState: Equatable, Sendable {
 
     // MARK: casting and items (read by the climb and JUMP gates)
 
-    /// `PTR_DAT_100a06e0`: no cast began in this `.HandleKeys` call (set 1 at its top).
+    /// `PTR_DAT_100a06e0`: no cast began in this `.HandleKeys` call (set 1 at its top; the USE gate's step-0 press
+    /// stores 0, M l. 47344 — the plan's `castBegan`, kept under its P1a name).
     public var noCastBegan = false
-    /// `_DAT_100a06d4` / `_DAT_100a06d0`: wand phase (0…7) / wand-held counter. // later: Phase 4 (spells).
+    /// `_DAT_100a06d4` / `_DAT_100a06d0`: wand phase (0…7) / wand-held counter — the USE gate starts the phase
+    /// (M l. 47341–47348), row 31 steps it (M l. 45142–45176; CS).
     public var wandPhase: Int16 = 0
     public var wandHeld: Int16 = 0
-    /// `_DAT_100a0760` / `_DAT_100a075c`: the USE debounces.
+    /// `_DAT_100a0760` / `_DAT_100a075c`: the USE debounces — `0760` the cast latch (the USE gate, M l. 47314,
+    /// 47340; `.CastSpell` M l. 46893), `075c` the item latch (M l. 47339, 47358).
     public var useDebounce = false
     public var useItemHeld = false
+    /// `_DAT_100a06ec` (u8): the cast flag — the USE gate sets it (M l. 47342, 47347), row 31 steps the wand while
+    /// it is set and clears it past step 6 (M l. 45142–45159; CS).
+    public var castFlag = false
+    /// `PTR_DAT_100a06e8` (u8): the second arming path of row 31 (M l. 45143–45146) — its only writers are
+    /// `.ClearPlayerVars` (0) and that path's own clear, so it is never set (spells-detail §2.2): kept as written.
+    public var castArming = false
+    /// `_DAT_100a0658`: the Shadow Double sprite (nil = 0) `.CastSpell` copies the first shot from (M l. 46916).
+    /// // later: SD — row 11 makes and keeps it; no writer yet.
+    public var shadowDoubleSprite: Int?
+    /// `PTR_DAT_100a0520` (14 × 16 B): byte `+4` of each Shadow-Double history entry — "on the ground, not on a
+    /// platform" (`.CastSpell` reads entry `PTR_DAT_100a0590 >> 1`, M l. 46928). // later: SD — the ring's writer
+    /// (row 42); false until then.
+    public var shadowRingGrounded = [Bool](repeating: false, count: 14)
 
     // MARK: per-frame counters (row 13)
 
@@ -295,7 +311,8 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a0710`: the footstep index into the 4-sound table `_DAT_100a025c` (410…413).
     public var footstep: Int16 = 0
     /// `_DAT_100a058c`: the rope walk counter (0…15; the rope state, `PlayerStates`; `.RopeCollide` reads it, W3).
-    /// `_DAT_100a0768`: the last cast was V Blade (alternate cast faces). // later: Phase 4 (spells) — no Phase-2 writer.
+    /// `_DAT_100a0768`: the last cast was V Blade (alternate cast faces) — `.CastSpell` stores 0, then 1 in case 6
+    /// (M l. 46724, 46871; CS).
     public var ropeWalk: Int16 = 0
     public var vBladeCast = false
     /// `_DAT_100a0698`: the melee / throw counter (`.HandleItemUse`). // later: Phase 4 (no Phase-2 writer).

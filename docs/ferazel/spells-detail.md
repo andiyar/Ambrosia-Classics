@@ -477,3 +477,32 @@ standard face and rect (0x26,0x22,0x3e,0x55).
 | C11 | physics.md §7 (review 1a #5, adj. 2–3) | Bat "HP 100, 200"; "Statue/Box/Platform set +0x185"; Floater rect (0x17,2,0x38,0x5c) | Bat 1740 family 500 (`1007dcc0`), 1850 family 100 (`1007dde0`), insects 200 (`1007e144`); the Statue does **not** set `+0x185` (no store in `100664a8–100665bc`, `10043138–100431c4`; thaw −200 `1006656c–10066574`, `+0x130 = 0x78` `10043194`); shipped 1780 rect (0x23,1,0x3e,0x4b) `10081550–1008155c` | enemies-flyers, enemies-water-cave |
 | C12 | physics.md §2 water gravity (review 1a #2, adj. 4) | `max(0.7·g, 0x100)` in water | only when `+0x11c ≠ 0` at entry (`100375c8`); zeroed per frame (`100369ac`), so a first call each frame uses dry gravity; only a second same-frame call (Frog) or a direct `+0x11c` writer (Bonus 1055, 1350) takes the 0x100 branch | enemies-water-cave §0.1 |
 | — | (wave 2) | — | ⚑ wave 2 (2026-10-04): wave-2 corrections (S1..S4) are in spells-detail-2 "Corrections to the existing bank" | — |
+
+## ⚑ Correction (BC (CS, loop run 23), 2026-10-26; follow the binary)
+§2.1–§3.2 re-read against the dump and the raw for CS (M l. 47310–47352, 45142–45176, 46653–46980, 50226–50946,
+51219–51392; raw `1005925c..100596ff`, `10059704..1005a7f8`, `1003f218..1004047c`):
+1. **Follower spawn point.** `.SetupPlayerShotSprite`'s loop subtracts k·`+0x160` (the **x** step) from **both**
+   coordinates (raw `100595d4 subf r4,r30,r4`, `100595d8 subf r5,r30,r0`; r30 = k·r31, r31 = the x step): followers
+   start at (x + offX − k·sx, y + offY − k·sx) — all at (x, y + offY) for the vertical stacks, (x + offX − 10k, y − 10k)
+   for V Blade. The Handle's placement (step 12) uses the right steps from the first handled frame on. The first
+   follower goes to `+0x1d4` (raw `1005960c..10059610`; the decompile's `+0x1d4 = 0` misreads the loop, as §2.4 says).
+2. **The stack offset uses the unclamped power.** `+0x168/+0x16c = (power − 1)·step/2` is computed (raw
+   `10059544..10059564`) before power is clamped to 5 (`1005956c`): with more than four Multi Crystals the drawn stack
+   moves further from the hit rect (6 crystals → power 7 → offset (0, 18), still 4 followers).
+3. **Ids 3 and 4 draw a discarded FastRand(400)** first in each particle (raw `10059a88..10059a90`,
+   `10059b6c..10059b74`: the result in r3 is overwritten unread): 6 draws per Ice Wall particle (R(400), R(6), R(6),
+   R(800), R(400), R(2)), 6 per Tree Trunk particle (R(400), R(8), R(8), R(400) vy, R(400) vx, R(2)); id 2's 5 draws are
+   all read (R(400) vy, R(6), R(6), R(400) vx, R(2)).
+4. **`FUN_1003f218` case 12.** The decompile shows vx += 0.985m, vy −= 0.174m (case 19's values); the raw entry 12 of the
+   jump table `0x100a5694` (`10040120..100401ac`) is vx += 0.5m, vy += 0.866m — the table is regular in all 36 entries
+   (spells-detail-2 §3's pattern holds).
+5. **The lower V Blade 0x3c never fizzles.** `.HitPlayerShotTileSprite` returns for ids 6 **and 0x3c** on every layer but
+   the crunch layer (M l. 51257), so its water arm (`.HandleUnderWater`, M l. 51375–51378) never sets `+0x11c` for the
+   lower half either: the liquid rule's `id ≠ 6` test (M l. 50789) is redundant for 6 and unreachable for 0x3c. Both
+   halves pass through liquids (§3.2's "the lower half 0x3c … do die" does not hold).
+6. **The press frame's `075c = 1`** (M l. 47339) is cleared before `.HandleKeys` returns whenever a spell is selected
+   (M l. 47356–47358; spells-detail-2 §1): it is never observable after the call.
+7. **PICT 1117** is `.InitEnemyShotSprite`'s (M l. 51418), not a player-shot sheet: the player's sheets are 1100–1105,
+   1113–1116 and the single 1118, with the light faces 810 and 822 (M l. 50235–50259).
+Transcribed in `FerazelCore.CastSpell`, `PlayerShot` (Setup, Handle, the water arm of the tile callback),
+`HandleKeys.useGate` and `Player.wand` (CS) [HIGH].

@@ -2,7 +2,7 @@ import Foundation
 
 /// `.HandleKeys(s, ridden) @ 10052ac0` (decompile l. 47047–47882; player-states §4–§5, physics §4), called by
 /// `.HandlePlayerSprite` row 21 unless a door transit locks input: the early returns, the standard hot rect, the
-/// carpet steering, the USE gates (false in Phase 2), the L/R block with `.FootPressure` (P1b), the DOWN block
+/// carpet steering, the USE spell gate (CS; the item gate false until IU), the L/R block with `.FootPressure` (P1b), the DOWN block
 /// (crouch, shield, spin), the climb block and the JUMP arm with its else-refill (P1a).
 ///
 /// Keys: one `InputActions` snapshot per frame stands in for each live `.IsInputKeyPressed(i)` (plan Hazards: keys
@@ -40,9 +40,7 @@ public enum HandleKeys {
         }
         // LAB_100530cc.
         w.player.noCastBegan = true                                       // `PTR_DAT_100a06e0 = 1`
-        // USE, first gate (l. 47311–47352): USE ∧ the selected slot is a spell (G + 0x2c + 10·slot) ∧ shield raise < 1
-        // → cast / select. // later: Phase 4 (spells, inventory) — false in Phase 2 (plan P1a).
-        w.player.useDebounce = false                                      // `_DAT_100a0760 = 0`
+        useGate(w, keys: keys)                                            // CS (M l. 47311–47352)
         // USE, second gate (l. 47353–47357): USE ∧ an item (not a spell) selected ∧ shield < 1 ∧ climb 0 ∧ rope 0 →
         // the item switch (l. 47543–47609) instead of the L/R and glider blocks. // later: Phase 4 — false in
         // Phase 2 (no inventory; plan P1a/P1b).
@@ -154,6 +152,64 @@ public enum HandleKeys {
             }
         } else if near || w.player.swim != 0 {
             swimStroke(w, id: id, near: near, ridden: ridden)
+        }
+    }
+
+    /// The USE spell gate (M l. 47311–47352; spells-detail §2.1, spells-detail-2 §1): USE (action 6) up, the selected
+    /// slot not a spell (its `+8` byte, `G + 0x2c + 10·G+0x172`; slot −1 reads `G+0x22`, never written → 0) or the
+    /// shield raised (`PTR_DAT_100a05e8 > 0`) → the cast latch `_DAT_100a0760` = 0. Otherwise the idle counters
+    /// `0688`/`068c` = 0 and, with the latch clear and the mist states off (`_DAT_100a0578`, `_DAT_100a0574` 0):
+    /// - magic `G+0xe < 1` → the selection = the first slot holding item 0 or 0x15 with `+8 == 0` (0 when none),
+    ///   `.MoveSelectedItemToFront` (its own `.UpdateStatusBar(1, 1, 0)` when it moves, M l. 39704), then
+    ///   `.UpdateStatusBar(1, 1, 0)` (M l. 47336) — two calls, two key steps; no latch;
+    /// - else `075c` = 1, `0760` = 1; wand step 0 → the cast flag `_DAT_100a06ec` = 1, step 3, `PTR_DAT_100a06e0` = 0;
+    ///   step 3 → the flag only; steps 1, 2, 4, 5, 6 swallow the press; then `.MoveSelectedItemToFront` (with its call).
+    /// The cast itself is row 31's (`Player.wand`). The status-bar calls draw as they are made: their ops go to
+    /// `PlayerState.passDraws` in call order (the session hands them over after the player pass, as the pickups').
+    static func useGate(_ w: SpriteWorld, keys: InputActions) {
+        let g = w.globals
+        let sel = Int(g.selectedSlot)
+        let spellSelected = g.inventory.indices.contains(sel) && g.inventory[sel].isSpell != 0
+        guard keys.contains(.use), spellSelected, w.player.shieldRaise < 1 else {
+            w.player.useDebounce = false                                  // `_DAT_100a0760 = 0`
+            return
+        }
+        w.player.fidgets = 0
+        w.player.idle = 0
+        guard !w.player.useDebounce, w.player.spiritTimer == 0, w.player.spiritTransition == 0 else { return }
+        if w.globals.magic < 1 {
+            let k = w.globals.inventory.firstIndex { ($0.id == 0 || $0.id == 0x15) && $0.isSpell == 0 } ?? 0
+            w.globals.selectedSlot = Int16(k)
+            if w.globals.moveSelectedItemToFront() { statusBarCall(w, .moveSelectedItemToFront, keys: keys) }
+            statusBarCall(w, nil, keys: keys)
+        } else {
+            w.player.useItemHeld = true                                   // `_DAT_100a075c = 1` (dead, see §1)
+            w.player.useDebounce = true
+            if w.player.wandPhase == 0 {
+                w.player.castFlag = true
+                w.player.wandPhase = 3
+                w.player.noCastBegan = false
+            } else if w.player.wandPhase == 3 {
+                w.player.castFlag = true
+            }
+            if w.globals.moveSelectedItemToFront() { statusBarCall(w, .moveSelectedItemToFront, keys: keys) }
+        }
+    }
+
+    /// `.UpdateStatusBar(1, 1, 0)` made inside the player's Handle (`site` nil: `.HandleKeys`' own call, M l. 47336):
+    /// the key step reads the frame's actions; the op goes to `passDraws`, the suffocation tick (snd 442) joins the
+    /// frame's sound calls at this point.
+    static func statusBarCall(_ w: SpriteWorld, _ site: StatusBarCalls.Site?, keys: InputActions) {
+        var g = w.globals
+        let made = site.map { w.statusBar.update($0, globals: &g, actions: keys, levelName: w.level.header.name) }
+            ?? w.statusBar.update(p1: true, p2: true, p3: false, globals: &g, actions: keys,
+                                  levelName: w.level.header.name)
+        w.globals = g
+        w.player.passDraws.append(made.op)
+        if made.suffocationTick {
+            w.player.soundCalls.append(PlayerState.SoundCall(
+                cue: PlayerCue(call: .reg, snd: StatusBarCalls.suffocationSound, priority: 1, volume: 0x100),
+                scrollH: w.player.scrollH, scrollV: w.player.scrollV))
         }
     }
 

@@ -596,6 +596,9 @@ final class PauseKeysTests: XCTestCase {
         let a = try Rig(r), b = try Rig(r)
         try a.settle()
         try b.settle()
+        // CS: ⌘ is USE — held with the Fireball selected it casts (the twin does not). Both run with the dagger
+        // (slot 1, no spell) selected, so the held ⌘ stays out of the USE spell gate (plan CS, recorded).
+        for rig in [a, b] { rig.run.session?.world.globals.selectedSlot = 1 }
         XCTAssertEqual(a.t, b.t)
         let iterations = a.run.iterations
         let qa = try a.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: [Self.command, Self.keyQ])) }) {

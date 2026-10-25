@@ -187,6 +187,8 @@ public enum SetupFaces {
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
         for sh in BonusSprite.sheets where table[sh.pict] == nil { table[sh.pict] = sh }
+        // CS: `.InitPlayerShotSprite`'s sets (`PlayerShot.sheets`) — the shots' cells for the session's face bounds.
+        for sh in PlayerShot.sheets where table[sh.pict] == nil { table[sh.pict] = sh }
         return table
     }()
 

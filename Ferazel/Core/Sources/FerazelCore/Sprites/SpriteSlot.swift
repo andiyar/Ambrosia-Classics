@@ -140,6 +140,60 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x168` (i32): a Bonus's record p4 (`.SetupBonusSprite`, valid record only) — read by `.TurnIntoCannoned`
     /// (1 → never cannoned; pickups-boxes-2 §2).
     public var bonusP4: Int32 = 0
+    /// `+0x160` (i32): a class word — a player shot's follower step x (`.SetupPlayerShotSprite`, CS).
+    public var classWord160: Int32 = 0
+    /// `+0xf4` (i32): a class word — a thrown seed 0x5a's Ziridium flag (`.HandlePlayerShotSprite`'s 0x5a arm reads
+    /// it, M l. 50689; its writer is the seed thrower's, IU).
+    public var classWordF4: Int32 = 0
+    /// `+0x84` / `+0x86` (i16): the particle offsets the shot particles subtract (`.InitSprite`'s clear; every Setup
+    /// that writes them stores 0 — `.SetupPlayerShotSprite` M l. 50289–50290 — so they read 0; enemies-flyers §7.1).
+    public var particleOffsetY: Int16 = 0
+    public var particleOffsetX: Int16 = 0
+
+    // MARK: player shots (CS; `.SetupPlayerShotSprite @ 1005925c`, `.HandlePlayerShotSprite @ 10059704`) — the shot's
+    // names for offsets the record already holds (one storage per offset).
+
+    /// `+0x14c` the shot's age (−1 at Setup, +1 per Handle up to 200) = `classTimer`.
+    public var shotAge: Int32 {
+        get { classTimer }
+        set { classTimer = newValue }
+    }
+    /// `+0x170` the shot's power (the low byte of the spawn type; ≤ 5 after Setup; 0 = a follower) = `classWord170`.
+    public var power: Int32 {
+        get { classWord170 }
+        set { classWord170 = newValue }
+    }
+    /// `+0x158` the crunch strength `.CrunchTile` is passed (1 for shots, 2 for the seeds) = `classWord158`.
+    public var crunchStrength: Int32 {
+        get { classWord158 }
+        set { classWord158 = newValue }
+    }
+    /// `+0x160` / `+0x164` the follower step (x, y): (10, 0) for ids 6 / 0x3c, else (0, 6) = `classWord160` /
+    /// `launchSpeed` (the 0x50 orb's `+0x164` is its flash timer — the same storage).
+    public var stepX: Int32 {
+        get { classWord160 }
+        set { classWord160 = newValue }
+    }
+    public var stepY: Int32 {
+        get { launchSpeed }
+        set { launchSpeed = newValue }
+    }
+    /// `+0x168` / `+0x16c` the stack offset (x, y) = (power − 1)·step / 2 (the 0x50 orb: hits left / tint phase) =
+    /// `bonusP4` / `classWord16c`.
+    public var stackX: Int32 {
+        get { bonusP4 }
+        set { bonusP4 = newValue }
+    }
+    public var stackY: Int32 {
+        get { classWord16c }
+        set { classWord16c = newValue }
+    }
+    /// `+0xf0` a thrown seed's "no fragments / invisible" flag (`.HandlePlayerShotSprite`'s 0x5a arm, M l. 50685) =
+    /// `voicePitch`.
+    public var seedHidden: Int32 {
+        get { voicePitch }
+        set { voicePitch = newValue }
+    }
     /// `+0xf0` (i32): Walker (goblin) voice pitch `2·FastRand(0x5fff) + 0xbfff` (enemies-ground §3).
     public var voicePitch: Int32 = 0
     /// `+0x1c8..+0x1ce`.
@@ -420,6 +474,9 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     case cannoned
     /// BN (added, Invariant 9): `.HandleBonusSprite @ 1005e934` (`PTR_PTR_100a047c`), installed by `.SetupBonusSprite`.
     case bonus
+    /// CS (added, Invariant 9): `.HandlePlayerShotSprite @ 10059704` (`PTR_PTR_100a04e8`), installed by
+    /// `.SetupPlayerShotSprite` (`PlayerShot`).
+    case playerShot
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

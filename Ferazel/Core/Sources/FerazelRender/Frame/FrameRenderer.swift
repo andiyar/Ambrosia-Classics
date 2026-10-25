@@ -145,7 +145,8 @@ public final class FrameRenderer {
     /// `SetupFaces.backgroundSheets`, W2a; the mace chains 1434 / 1436 are the platform sets'; W2b: the springs and
     /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
     /// the placed types' sheets; W4: the level-2 types' sheets come with them, plus the stalactite child's set 0xb74,
-    /// `SetupFaces.boxChildSheets`; PK: the hurt coins' 0x516 and the Xichron burst's 0x421 / 0x422, `BonusSprite.dropSheets`), empty light slots (`addLights`), the status bar under the level
+    /// `SetupFaces.boxChildSheets`; PK: the hurt coins' 0x516 and the Xichron burst's 0x421 / 0x422, `BonusSprite.dropSheets`;
+    /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
@@ -183,7 +184,8 @@ public final class FrameRenderer {
                                                 .union(SetupFaces.backgroundSheets)
                                                 .union(SetupFaces.backgroundW2bSheets)
                                                 .union(SetupFaces.boxChildSheets)
-                                                .union(BonusSprite.dropSheets),
+                                                .union(BonusSprite.dropSheets)
+                                                .union(PlayerShot.sheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights

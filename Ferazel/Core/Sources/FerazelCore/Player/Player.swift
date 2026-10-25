@@ -17,7 +17,7 @@ import Foundation
 ///  7 `.RopeCollide` (W3)                                  28 surface material: damage (P4), ice
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
-/// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (later: Phase 4)
+/// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (CS)
 /// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
 /// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
@@ -287,9 +287,10 @@ public enum Player {
         }
         // 30 (l. 45140): `.HandleBreathing @ 1004bb44` (physics-sprites §8.8).
         Breathing.handle(world: w, id: id)
-        // 31 (l. 45141–45176): the held item's face `*(_DAT_100a065c + 0xc0) = 0`; then the cast / wand phase machine,
-        // `.CastSpell` // later: Phase 4 (spells, held items).
+        // 31 (l. 45141–45172): the held item's face `*(_DAT_100a065c + 0xc0) = 0`; then the cast / wand phase machine
+        // and `.CastSpell` (CS).
         if let h = w.player.heldItem { w.active.update(id: h) { $0.face = nil } }
+        wand(w, id: id, keys: keys)
         // 32 (l. 45177–45218): the potion drink. // later: Phase 4
         // 33 (l. 45219–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
         // hurt-stun, `05f8`, rope, swim, cling / climb / pull-up, melee, grounded (walk sounds, fidgets: FastRand),
@@ -448,6 +449,44 @@ public enum Player {
             // At 0 with item 0x13 held: `.RemoveItem(0x13)`, `.UpdateStatusBar(1, 1, 0)`. // later: Phase 4
         }
         w.player = p
+    }
+
+    /// Row 31's wand machine (M l. 45142–45176; spells-detail §2.2): the cast flag `_DAT_100a06ec` clear → the dead
+    /// arming path (`PTR_DAT_100a06e8` set → step + 1, past 2 → the path cleared and the flag set; never taken: only
+    /// `.ClearPlayerVars` writes it); set → step + 1, step 4 → `.CastSpell(player)` if magic `G+0xe > 0`, else past 6
+    /// → flag 0, step 3. Then step 3 → hold `_DAT_100a06d0` + 1, at 18 step 2; step 2 with hold 18 → 1; step 1 with
+    /// hold 18 → hold 0, step 0; any other step → hold 0. Since `.HandleKeys` (row 21) arms step 0 → 3, the shot leaves
+    /// on the frame of the press.
+    static func wand(_ w: SpriteWorld, id: Int, keys: InputActions) {
+        if !w.player.castFlag {
+            if w.player.castArming {
+                w.player.wandPhase &+= 1
+                if 2 < w.player.wandPhase {
+                    w.player.castArming = false
+                    w.player.castFlag = true
+                }
+            }
+        } else {
+            w.player.wandPhase &+= 1
+            if w.player.wandPhase == 4 {
+                if 0 < w.globals.magic { CastSpell.cast(world: w, player: id, keys: keys) }
+            } else if 6 < w.player.wandPhase {
+                w.player.castFlag = false
+                w.player.wandPhase = 3
+            }
+        }
+        let step = w.player.wandPhase
+        if step == 3 {
+            w.player.wandHeld &+= 1
+            if w.player.wandHeld == 0x12 { w.player.wandPhase = 2 }
+        } else if w.player.wandHeld == 0x12 && step == 2 {
+            w.player.wandPhase = 1
+        } else if w.player.wandHeld == 0x12 && step == 1 {
+            w.player.wandHeld = 0
+            w.player.wandPhase = 0
+        } else {
+            w.player.wandHeld = 0
+        }
     }
 
     /// Row 24 (l. 44969–45053): airborne or gliding — drag toward 0 every frame, input or not: 100 (600 on a rope,
