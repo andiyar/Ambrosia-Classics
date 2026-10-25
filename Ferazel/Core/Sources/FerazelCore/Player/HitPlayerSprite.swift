@@ -580,7 +580,8 @@ extension HitPlayerSprite {
         }
     }
 
-    /// `_DAT_100a0778`'s PICT (`_CacheEncFaceSetFromPICT(…, 0x41a, 6, 0xa0, 0xa0, …)`, M l. 42486).
+    /// `_DAT_100a0778`'s PICT (`_CacheEncFaceSetFromPICT(…, 0x41a, 6, 0xa0, 0xa0, …)`, M l. 42486);
+    /// the same set as `PlayerStates.gliderDeploy` (1050).
     public static let gliderFaceSet: Int16 = 0x41a
 
     /// 2000…2049 (M l. 48939–48976): spell = record p1 for 2000, else type − 2000; `GameGlobals.learnSpell` (the first

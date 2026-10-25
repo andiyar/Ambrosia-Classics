@@ -114,17 +114,44 @@ final class GliderTests: XCTestCase {
         Player.selectGravity(world: w, id: id)
         XCTAssertEqual([player(w).gravity, player(w).windScale], [0x1b8, 7])
 
+        // Row 33 gliding (phase 0, pitch 0, no turn, airborne): vy above 2000 is capped at 2000 while alive (M l.
+        // 45239–45241), 2000 itself stands; the loop counter + 1 wraps past 0x1f to 0 (l. 45245–45248), face 1051[c >> 3].
+        w.player.gliderPitch = 0
+        w.player.gliderTurn = 0
+        w.player.wandPhase = 0
+        w.player.gliderLoop = 0x1e
+        w.active.update(id: id) { $0.groundKind = 0; $0.onSprite = 0; $0.vy = 2001 }
+        PlayerStates.select(world: w, id: id)
+        XCTAssertEqual([player(w).vy, Int32(w.player.gliderLoop)], [2000, 0x1f])
+        XCTAssertEqual(player(w).face, f(1051, 3))
+        PlayerStates.select(world: w, id: id)
+        XCTAssertEqual([player(w).vy, Int32(w.player.gliderLoop)], [2000, 0])
+        XCTAssertEqual(player(w).face, f(1051, 0))
+
         // Dying on the glider (row 33, M l. 45405–45470): gravity 0x17c, pitch + 1 (≤ 5), phase 0, vx 0 and no face
         // of its own (the glide arm's 1052[5] stays); its end is the game over even holding the Resurrection Necklace.
         w.globals.inventory = [InventorySlot](repeating: .empty, count: GameGlobals.inventorySlots)
         w.globals.inventory[1] = InventorySlot(id: 0x17, count: 1, field4: -1, field6: 0, isSpell: 0)
         w.player.gliderPitch = 4
         w.player.dying = 1
-        w.active.update(id: id) { $0.vx = 0x300; $0.groundKind = 0; $0.onSprite = 0 }
+        w.active.update(id: id) { $0.vx = 0x300; $0.vy = 3000; $0.groundKind = 0; $0.onSprite = 0 }
         PlayerStates.select(world: w, id: id)
         XCTAssertEqual([player(w).gravity, w.player.gliderPitch, w.player.dying, w.player.gliderExit], [0x17c, 5, 2, 0])
-        XCTAssertEqual(player(w).vx, 0)
+        XCTAssertEqual([player(w).vx, player(w).vy], [0, 3000])         // no vy cap while dying
         XCTAssertEqual(player(w).face, FaceRef(pict: 1052, index: 5, set: .encoded))
+        // Mid-deploy the phase is reset to 0 (l. 45416); d < 30 → buoyancy += (d & 1) + 1, float line −0x16, and past
+        // d 8 the rect drifts 2 px toward the facing (l. 45422–45434) from the glider rect (0x37…99) set each call.
+        for (d, mirrored, buoyancy, dx) in [(9, false, 2, 2), (10, true, 1, -2), (8, false, 1, 0), (0x1e, false, 0, 0)] {
+            w.player.dying = Int16(d)
+            w.player.gliderExit = 9
+            w.active.update(id: id) { $0.mirrored = mirrored; $0.buoyancy = 0; $0.floatOffset = 0 }
+            PlayerStates.select(world: w, id: id)
+            XCTAssertEqual([Int(w.player.gliderExit), Int(w.player.dying), Int(player(w).buoyancy)], [0, d + 1, buoyancy],
+                           "d \(d)")
+            XCTAssertEqual(player(w).floatOffset, d < 0x1e ? -0x16 : 0, "d \(d)")
+            XCTAssertEqual(player(w).hotRect, IdleSprites.Rect(top: 0x3e, left: 0x37 + dx, bottom: 0x61, right: 99 + dx),
+                           "d \(d)")
+        }
         w.player.dying = 0x50
         PlayerStates.select(world: w, id: id)
         XCTAssertTrue(w.player.gameOver)
@@ -169,6 +196,10 @@ final class GliderTests: XCTestCase {
         XCTAssertEqual(w.player.gliderPitch, -4)
         for _ in 0..<12 { HandleKeys.run(world: w, keys: .down, ridden: nil) }
         XCTAssertEqual(w.player.gliderPitch, 5)
+        for n in 1...6 {                                                 // held at the clamp (M l. 47529–47532)
+            HandleKeys.run(world: w, keys: .down, ridden: nil)
+            XCTAssertEqual(w.player.gliderPitch, 5, "down \(n)")
+        }
         w.active.update(id: id) { $0.hp = 0; $0.vx = 0 }
         HandleKeys.run(world: w, keys: [.left, .up], ridden: nil)
         XCTAssertEqual([player(w).vx, Int32(w.player.gliderPitch)], [0, 5])

@@ -409,6 +409,22 @@ final class FaceTests: XCTestCase {
                 XCTAssertEqual([source.width, source.height], [100, 120])
             }
         }
+        // The glider's cached sets (`_CacheEncFaceSetFromPICT`, M l. 42486–42489): 0x41a–0x41d, 160×160 cells, counts
+        // 6 / 4 / 6 / 4 in 3 / 4 / 3 / 4 columns; Core's face width 0xa0 agrees; every cell inside its PICT's frame.
+        let glider: [FaceSheet.Arguments] = FaceSheet.gliderSheets.compactMap {
+            if case .set(let a) = $0 { return a } else { return nil }
+        }
+        XCTAssertEqual(glider.count, FaceSheet.gliderSheets.count)
+        XCTAssertEqual(glider.map { [Int($0.pict), $0.count, $0.cellWidth, $0.cellHeight, $0.columns] },
+                       [[1050, 6, 160, 160, 3], [1051, 4, 160, 160, 4], [1052, 6, 160, 160, 3], [1053, 4, 160, 160, 4]])
+        XCTAssertEqual(glider.map { PlayerStates.faceWidth(FaceRef(pict: $0.pict, index: 0, set: .encoded)) },
+                       glider.map(\.cellWidth))
+        for a in glider {
+            let source = try PictureSource.load(id: a.pict, from: r, chain: .frontEnd)
+            XCTAssertEqual(Int(try FaceSheet.cellRect(a.count - 1, a).bottom), a.count > 4 ? 320 : 160, "\(a.pict)")
+            XCTAssertLessThanOrEqual(Int(try FaceSheet.cellRect(a.count - 1, a).bottom), source.height, "\(a.pict)")
+            XCTAssertLessThanOrEqual(a.columns * a.cellWidth, source.width, "\(a.pict)")
+        }
     }
 
     func testWaterMask183() throws {

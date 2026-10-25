@@ -355,7 +355,8 @@ final class PlayerMotionTests: XCTestCase {
         XCTAssertEqual(w.player.idle, 0)
         XCTAssertEqual(w.player.fidgets, 0)
         // The gates (raw `100534f0..10053548`): glider, climb ≠ 0, crouch ≠ 0, carpet, |teleporter charge| ≥ 0x15
-        // each skip the whole block — vx, walk flag and exertion untouched.
+        // each skip the whole walk block — walk flag and exertion untouched, and vx too except on the glider row, whose
+        // own steering adds 0x96 (M l. 47494–47541).
         let gates: [(String, (inout PlayerState) -> Void)] = [
             ("glider", { $0.glider = true }), ("climb", { $0.climb = 1 }), ("crouch", { $0.crouch = 1 }),
             ("carpet", { $0.carpet = true }), ("charge", { $0.teleporterCharge = -0x15 }),

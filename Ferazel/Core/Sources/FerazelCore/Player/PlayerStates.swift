@@ -26,6 +26,7 @@ public enum PlayerStates {
     /// The glider's cached sets (`_CacheEncFaceSetFromPICT`, l. 42486–42489; 160×160 cells): 1050 deploy / stow / turn
     /// (`_DAT_100a0778`, 6), 1051 the glide loop (`_DAT_100a0774`, 4), 1052 pitch (`_DAT_100a0770`, 6: nose up 0…2,
     /// down 3…5), 1053 casting (`_DAT_100a076c`, 4).
+    /// `gliderDeploy` is the same set as `HitPlayerSprite.gliderFaceSet` (0x41a).
     public static let gliderDeploy: Int16 = 1050, gliderLoop: Int16 = 1051, gliderPitch: Int16 = 1052
     public static let gliderCast: Int16 = 1053
 
