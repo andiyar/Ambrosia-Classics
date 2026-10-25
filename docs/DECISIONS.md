@@ -1493,6 +1493,20 @@ spring runs `.KillPlayerShot` as the binary — built in full by CS in SH's file
 stub skipping its sound/Effect draws would desynchronise the RNG (Invariant 6); (3) the stale-r29 recolour at the spring
 site is built as a no-op [MED]. Details: the plan's "As executed" notes for EF and CS.
 
+**As built — wave 4.4 (loop run 24, 2026-10-26; main e67a795):** SH ⚑ (player-shot impacts: `.HitPlayerShotSprite`,
+the rest of `.HitPlayerShotTileSprite`, the container arm of `.HitBonusSprite`, the stalactite's shot case; seed explosions,
+Boomerang refund, 2941 ice wall, crunch cells) → 420; GL (the hang glider: deploy, pitch gravity + wind, steering, dive,
+landing, stow) → 425; PU (`.TickTock` warnings and expiry, Featherfall/High Jump/Double Speed/solid liquids/Invincibility/
+Death timers, the Double-Speed trail) → **431/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched, no golden moved.
+**Seat rulings:** (1) SH's hit routines treat an idled record as matching nothing wherever the dump compares the other
+sprite's Handle (`runs()`), and keep type tests where the dump compares the type; (2) the enemy-shot and Crawler arms stay
+named Phase 5 stubs (no handler exists); the Statue arm is SW's (Phase 4) — noted in SW's section; (3) the stale r29 is
+transcribed per call site (container → inventory slot 12's count, built; crate arm → the shot's own light, noted for BX1);
+(4) GL: an older test row that pinned the steering stub (vx 0 on the glider) now expects the dump's steering step 0x96 —
+a named stub's placeholder, not an expectation edited to agree; (5) PU: tests that set a power-up flag directly also set
+its timer (row 14 now clears a flag whose timer is 0). Dump-over-plan corrections (glide vy −839, steering cap 0xce4,
+Featherfall clamp before gravity, 0x4b7 layer 0xb …) are in the plan's "As executed" notes for SH, GL, PU and the bank BCs.
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
