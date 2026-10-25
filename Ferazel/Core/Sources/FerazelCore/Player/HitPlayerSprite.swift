@@ -928,7 +928,8 @@ public enum HurtPlayer {
             let y = Int(Int16(truncatingIfNeeded: 1 < i ? p.centre.y : p.centre.y - 0x10))
             let layer = p.layer
             let shard = w.newSprite(type: 0x4bf + Int16(i), x: x, y: y, layer: 0x14, handler: .bonus) { s in
-                // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never 0x4bf…0x4c2.
+                // Cannot throw: `BonusSprite.setup` throws `notTranscribed` only from its default arm (0xc25, or any
+                // type there outside the items 0xc80…0xc9a, e.g. 0x4c3); 0x4bf…0x4c2 have their own arm.
                 _ = try! BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
                                            lightCount: 0, counting: false, playerLayer: layer, rng: &w.rng) {
                     _, _, _, _ in -1                                    // the shard arm adds no light (M l. 52530–52536)

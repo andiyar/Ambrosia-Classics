@@ -203,7 +203,7 @@ public enum PlayerStates {
         w.active.update(id: id) { $0 = out }
     }
 
-    /// The Resurrection Necklace's revive frame (MS; M l. 45495–45512; physics §5.2, player-states §3.2), while
+    /// The Resurrection Necklace's revive frame (MS; M l. 45504–45522; physics §5.2, player-states §3.2), while
     /// `PTR_DAT_100a0594` r > 0 (after the dying counter's + 1): `+0x19e = 0`, face 1022[(30 − r) / 3] (the death
     /// backwards), r + 1; past 30 → `G+6 = G+4 = +0xa4 = G+10` (breath, health, HP = the maximum), dying 0, r 0,
     /// `+0x116 = 0x3c`, `PTR_DAT_100a055c = 1`, `.RemoveItem(0x17)` (its `.UpdateItemStat`), `SetRect(+0x34, 0x26, 0x22,
@@ -286,7 +286,8 @@ public enum PlayerStates {
             w.player.spiritBlink = false
             let body = w.newSprite(type: Player.spriteType, x: x, y: y, layer: Int16(truncatingIfNeeded: s.layer),
                                    handler: .bonus) { b in
-                // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never for 0x45.
+                // Cannot throw: `BonusSprite.setup` throws `notTranscribed` only from its default arm (0xc25, or any
+                // type there outside the items 0xc80…0xc9a, e.g. 0x4c3); 0x45 has its own arm.
                 _ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
                                            counting: false, rng: &w.rng) { _, _, _, _ in -1 }
             }
@@ -306,7 +307,8 @@ public enum PlayerStates {
     /// (M l. 52611–52627) — no light — and its tail's `FastRand(60)`; the Setup puts it on layer 1 (M l. 52383).
     static func dropGlider(_ w: SpriteWorld, x: Int, y: Int) {
         _ = w.newSprite(type: 0xbea, x: x, y: y, layer: 2, handler: .bonus) { b in
-            // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never for 0xbea.
+            // Cannot throw: `BonusSprite.setup` throws `notTranscribed` only from its default arm (0xc25, or any type
+            // there outside the items 0xc80…0xc9a, e.g. 0x4c3); 0xbea has its own arm.
             _ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
                                        counting: false, rng: &w.rng) { _, _, _, _ in -1 }
         }
@@ -330,7 +332,7 @@ public enum PlayerStates {
             return false
         }
 
-        // Dying (`_DAT_100a069c > 0`, l. 45519–45589).
+        // Dying (`_DAT_100a069c > 0`, M l. 45473–45554).
         if 0 < w.player.dying {
             idleReset()
             set { p in

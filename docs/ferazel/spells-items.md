@@ -186,7 +186,7 @@ the player-shot handlers only at stab steps 3..5 (pickups-boxes §3.1, player-st
 > through every tile; the body 0x45 takes face 1038[3] (`*_DAT_100a0780 + 0x9c`, M l. 52424); the form starts 12
 > frames after the drink's frame 40 (transition 1…12, M l. 45555–45579); the time-out (exit B) moves the player to
 > the body with HP 0 and his velocity untouched (M l. 44831–44840). **0x17 Necklace** — the revive lives in row 33's
-> dying arm only (M l. 45495–45553), not in row 41; the glider's copy of the end test (pitch 48000, M l. 45447–45467)
+> dying arm only (M l. 45473–45554), not in row 41; the glider's copy of the end test (pitch 48000, M l. 45447–45467)
 > is unreachable (`_DAT_100a05e0 ≠ 0` there), so every revive sounds snd 420 at 40000. **0x13 Multi Crystal** — the
 > shards' |vx| < 500 test reads back the vx just stored; with no free record that store lands at low memory and the
 > test still reads it (Ruling 16: modelled as the computed value).

@@ -341,7 +341,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `.SetHeldItemPos` mirrors the held item's x by it (M l. 43505–43512; IU).
     public var heldLeft = false
     /// `PTR_DAT_100a0594`: the necklace revive counter. `PTR_DAT_100a0560`: died in liquid (the dying arm ends at
-    /// 100, not 80; row 41's death trigger writes it, P4). The revive is row 33's dying arm (MS, M l. 45495–45555).
+    /// 100, not 80; row 41's death trigger writes it, P4). The revive is row 33's dying arm (MS, M l. 45473–45554).
     public var revive: Int16 = 0
     public var diedInLiquid = false
     /// `PTR_DAT_100a0538`: row 17's liquid-contact counter (0 out of the liquid, +1 per frame up to 2; acid and healing

@@ -5,7 +5,7 @@ import HectorResources
 /// MS (docs/plans/2026-10-24-ferazel-phase4.md): the Mist potion's spirit form (row 33's transition arm M l.
 /// 45555–45589, row 16 M l. 44827–44855, `.TickTockLong` M l. 43664–43746, row 42's tint M l. 46633–46641, the tile
 /// callback's return raw `10054d3c`), the Mist body's arm (M l. 48597–48615), the Resurrection Necklace (row 33's dying
-/// arm M l. 45495–45553), the Fire Charm (the Background arm M l. 49576–49580) and the Multi Crystal (`.HurtPlayer` M l.
+/// arm M l. 45473–45554), the Fire Charm (the Background arm M l. 49576–49580) and the Multi Crystal (`.HurtPlayer` M l.
 /// 47989–48032, row 13 M l. 44743–44747); spells-items §4, player-states §3.2–§3.3, physics §5.2,
 /// enemy-shots-and-damage §3.7. Synthetic 16×16 grids over level 1's header (as `ItemUseTests`).
 final class PassiveItemTests: XCTestCase {
@@ -97,6 +97,7 @@ final class PassiveItemTests: XCTestCase {
         XCTAssertEqual(w.player.spiritTransition, 2)
         XCTAssertEqual(player(w).face, f(1038, 0))
         XCTAssertEqual(w.player.spiritTimer, 0)
+        w.player.spiritBlink = true                                      // the start clears it (M l. 45571–45574)
         // n 2…12: face 1038[n >> 2], v = 0; at 13 the spirit form starts (M l. 45555–45579).
         var faces: [FaceRef?] = []
         for _ in 0..<20 where w.player.spiritTimer == 0 {
@@ -197,20 +198,37 @@ final class PassiveItemTests: XCTestCase {
         XCTAssertEqual(w.active.record(id: bodyID)?.killCount, 1)
         XCTAssertEqual(w.player.mistBodyX, Int32(x0))
         XCTAssertNotEqual(player(w).mode, 0xb0001)                       // timer 0: no spirit tint
-        // Row 16 alone writes G+4 = 0 (row 42 would copy the HP into it later in the Handle).
+        // Row 16 alone writes G+4 = 0 (row 42 would copy the HP into it later in the Handle) and moves the player
+        // from wherever he floats to the body, x and y, 24.8 too, his velocity kept.
         w.globals.health = 0x100
         w.player.spiritTimer = 1
+        w.active.update(id: pid) { p in
+            p.x = x0 + 0x50
+            p.y = y0 + 0x30
+            p.x256 = Int32(x0 + 0x50) << 8
+            p.y256 = Int32(y0 + 0x30) << 8
+            p.vx = 0x123
+            p.vy = -0x77
+        }
         Player.spiritForm(w, id: pid)
         XCTAssertEqual(w.globals.health, 0)
+        XCTAssertEqual([player(w).x, player(w).y], [x0, y0])
+        XCTAssertEqual([player(w).x256, player(w).y256, player(w).vx, player(w).vy],
+                       [Int32(x0) << 8, Int32(y0) << 8, 0x123, -0x77])
     }
 
     func testMistBodyReturn() throws {
         let w = try world()
         let solver = standing(w)
         let pid = w.playerID!
+        // Facing left (`+0x17e` set): the body copies it (M l. 45578).
+        w.player.facing = 1
+        frame(w, solver)
+        XCTAssertTrue(player(w).mirrored)
         let x0 = player(w).x, y0 = player(w).y
         _ = drinkMist(w, solver)
         let bodyID = try XCTUnwrap(w.player.mistBody)
+        XCTAssertEqual(w.active.record(id: bodyID)?.mirrored, true)
         // Away from the body, timer 0x169 → 0x168 after a frame: the body's arm refuses (> 0x167).
         w.player.spiritTimer = 0x169
         for _ in 0..<10 { frame(w, solver) }
@@ -241,6 +259,7 @@ final class PassiveItemTests: XCTestCase {
         var faces: [FaceRef?] = []
         var modes: [UInt32] = []
         for _ in 0..<13 {
+            w.active.update(id: pid) { $0.vx = 0x300 }                   // the arm zeroes it (M l. 45556–45557)
             frame(w, solver)
             faces.append(player(w).face)
             modes.append(player(w).mode)
@@ -276,7 +295,7 @@ final class PassiveItemTests: XCTestCase {
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDPitched, snd: 420, priority: 1, volume: 0x100,
                                                  position: player(w).centre, rate: 40000)])
         XCTAssertTrue(w.globals.hasItem(0x17))
-        // The revive (M l. 45495–45512): 30 frames of 1022[(30 − r)/3] with `+0x19e` 0, dying still counting; at the
+        // The revive (M l. 45504–45522): 30 frames of 1022[(30 − r)/3] with `+0x19e` 0, dying still counting; at the
         // 30th HP = health = breath = the maximum, dying 0, `+0x116 = 0x3c`, `055c`, the necklace removed (one
         // `.UpdateItemStat`), the standard rect.
         var faces: [Int] = []
@@ -343,6 +362,7 @@ final class PassiveItemTests: XCTestCase {
             var fire = SpriteSlot(type: type, x: player(w).x, y: player(w).y)
             fire.handler = .background
             fire.hp = 1
+            fire.hotRect = player(w).hotRect                             // overlapping: the blood spray draws
             fire.classTimer = timer
             let fid = w.active.insert(fire)
             w.player.cues = []
@@ -357,12 +377,14 @@ final class PassiveItemTests: XCTestCase {
         XCTAssertEqual(w.player.cues.map(\.snd), [450, 508, 508])
         XCTAssertEqual(w.player.cues.first, reg(450, 0xab))
         XCTAssertEqual(w.globals.coins, 10)
+        XCTAssertEqual(w.particles.counters.count, 0x28)                 // blood on: `.BloodSpray(…, 0x28, …)`
         for t: Int16 in [0x4bb, 0x4bc, 0x4bd] { XCTAssertEqual(try hurt(t, charm: false).hp, 0xe0, "type \(t)") }
         for t: Int16 in [0x4b8, 0x4bb, 0x4bc, 0x4bd] {
             let (d, v) = try hurt(t, charm: true)
             XCTAssertEqual(d, 0, "type \(t)")
             XCTAssertTrue(v.player.cues.isEmpty)
             XCTAssertEqual(v.player.stun, 0)
+            XCTAssertEqual(v.particles.counters.count, 0)
             XCTAssertEqual(try hurt(t, charm: true, timer: 1).hp, 0xe0, "type \(t), +0x14c 1")
         }
         XCTAssertEqual(try hurt(0x4b8, charm: true, timer: -1).hp, 0)
@@ -401,6 +423,7 @@ final class PassiveItemTests: XCTestCase {
             XCTAssertEqual(s.vx, -(0x800 - Int32(r.next(300))))
             XCTAssertEqual(s.handler, .bonus)
             XCTAssertEqual(s.counterA6, -40)
+            XCTAssertEqual(s.layer, Int32(Player.layer) + 1)
         }
         // The hurt's own draws follow (snd 508's rate, then R(3)).
         XCTAssertEqual(w.player.cues[1].rate, Int32(r.next(10000)) + 65000)
@@ -411,7 +434,7 @@ final class PassiveItemTests: XCTestCase {
             stock(v, [Self.spell(0), Self.item(0x13)])
             let vid = v.playerID!
             let att = v.active.insert(a)
-            v.active.update(id: vid) { $0.vx = 0; $0.mirrored = true }
+            v.active.update(id: vid) { $0.vx = 0; $0.mirrored = true; $0.layer = 0x20 }
             var q = v.rng
             let pre = Set(v.active.sprites.map(\.id))
             HurtPlayer.hurt(v, player: vid, attacker: att, damage: 0x70, blood: false, invulnerable: 0x3c, coins: 0)
@@ -420,6 +443,7 @@ final class PassiveItemTests: XCTestCase {
                 _ = q.next(0x708)
                 _ = q.next(300)
                 XCTAssertEqual(s.vx, 600 - Int32(q.next(200)))
+                XCTAssertEqual(s.layer, 0x21)                            // the player's `+0x80` + 1 (M l. 52531)
             }
         }
         // The |vx| < 500 test at its edge: |player vx| / 4 − R(300) = 500 is kept (negated), 499 is replaced.
