@@ -154,7 +154,7 @@ public enum PlayerShotHits {
     /// 4. a Box (`PTR_PTR_100a0484`) of type 0x2c8 / 0x2c9 (a tree trunk): id 4 grows it (`trunkGrowth`), any other id
     ///    nothing;
     /// 5. the player or an Effect (`PTR_PTR_100a0460`) → nothing; a Bonus (`PTR_PTR_100a047c`) 0x517 / 0x51b with
-    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: SW — no
+    ///    `+0xb0 ≠ 0` and id ≠ 0x50 → `.KillPlayerShot(s, 1, 1)`; a Statue (`PTR_PTR_100a01f8`, // later: Phase 5 — no
     ///    sprite has the Statue's Handle yet) or a Box: no one-way top (`+0x185`) and no surface function (`+0x1e8`;
     ///    only the rope bridge, // later: Phase 6) → the 2941 test (type 0xb7d, `+0x116 < 1`, the shot's `+0xa4 ==
     ///    300`, `cmpwi r0,0x12c` raw `1005ab7c` → HP − 0x50, `+0xaa = 10`, `+0x116 = 10`,
@@ -162,6 +162,8 @@ public enum PlayerShotHits {
     ///    `.PlatformBounce(s, other, the hot-rect centre offset, 0, +0x34, 0)`, a contact (≠ 0) →
     ///    `.KillPlayerShot(s, 1, 1)`; the Crawler (`PTR_PTR_100a04b8`) → `.KillPlayerShot(s, 0, 0)` // later: Phase 5
     ///    (the level-1–4 Crawler stand-in is `.inert`); any other Handle nothing.
+    /// Every Handle comparison is `+0x4c == Handle`, so an idled record (`+0x4c` 0, `handleCleared`) matches none
+    /// (`BackgroundSprite.runs`); the orb-vs-0xb7c test reads the type only.
     /// No `+0xe9` test: `.MTCollideSprites` calls both sides of a contact, so a shot killed by the other side's Hit in
     /// the same dispatch still runs this one (the container then sees `+0xb0` already cleared).
     /// `.KillPlayerShot`'s stale r29 at every call here is the snd-303 slot (`kill`): no light changed [LOW].
@@ -173,28 +175,36 @@ public enum PlayerShotHits {
             kill(w, shot: id, sound: sound, effect: effect, effects: effects, lights: &lights, faceWidth: faceWidth,
                  faceBounds: faceBounds)
         }
-        // 1.
-        if o.handler == .player && s.type == 5 && 10 < s.shotAge {
+        // An idled record (`+0x4c` 0, `handleCleared`) matches none of the Handle comparisons below (`runs`); only the
+        // type test of step 3 still reads it.
+        let runs = BackgroundSprite.runs
+        // 1. (M l. 50972: `+0x4c == PTR_PTR_100a052c`)
+        if runs(o, .player) && s.type == 5 && 10 < s.shotAge {
             w.active.update(id: id) { $0.dead = true }
             w.globals.magic &+= 8
             if 1 < s.power {
                 for f in PlayerShot.followers(s).compactMap({ $0 }) { w.active.update(id: f) { $0.dead = true } }
             }
         }
-        // 2. // later: Phase 5 — the enemy-shot arms.
-        // 3.
+        // 2. the enemy shot 0x77b → snd 303 vol 0xab, `.KillPlayerShot(s, 0, 1)` (M l. 50991–50994) // later: Phase 5
+        // (the enemy shot's Handle `PTR_PTR_100a0488`); the orb vs any enemy shot → snd 303 vol 0x55,
+        // `.KillPlayerShot(s, 1, 1)`, `.KillEnemyShot(other)`, return (M l. 50997–51001) // later: Phase 5 (the enemy
+        // shot's Handle and `.KillEnemyShot`).
+        // 3. (M l. 51004: a type test, no Handle)
         if s.type == PlayerShot.orb && o.type == 0xb7c { return }
-        // 4.
-        if o.handler == .box && (o.type == 0x2c8 || o.type == 0x2c9) {
+        // 4. (M l. 51005: `+0x4c == PTR_PTR_100a0484`, the Box Handle)
+        if runs(o, .box) && (o.type == 0x2c8 || o.type == 0x2c9) {
             if s.type == 4 { trunkGrowth(w, shot: id, trunk: oID, effects: effects, lights: &lights) }
             return
         }
-        // 5.
-        switch o.handler {
-        case .bonus:
+        // 5. (M l. 51031–51066) the player / Effect Handles → nothing; then by Handle:
+        if runs(o, .bonus) {
             if (o.type == 0x517 || o.type == 0x51b) && s.type != PlayerShot.orb && o.pickupDelay != 0 { killShot(true, true) }
-        case .box:
+        } else if runs(o, .box) {
+            // The Statue Handle `PTR_PTR_100a01f8` takes this arm too (M l. 51038) // later: Phase 5 (the Statue's Handle;
+            // no sprite runs it on levels 1–4).
             if !o.oneWay {                                                  // `+0x1e8` 0 for every Box built
+                // The 2941 test, for a Box or a Statue // later: Phase 5 (its Statue half: the Statue's Handle).
                 if o.type == 0xb7d && o.invulnerable < 1 && s.hp == 300 {
                     w.active.update(id: oID) { b in
                         b.hp &-= 0x50
@@ -215,9 +225,9 @@ public enum PlayerShotHits {
                     killShot(true, true)
                 }
             }
-        default:
-            break                                                           // the player, Effects, the rest
         }
+        // The Crawler Handle `PTR_PTR_100a04b8` → `.KillPlayerShot(s, 0, 0)` (M l. 51062–51064) // later: Phase 5 (the
+        // Crawler's Handle; the level-1–4 stand-in is `.inert`). Any other Handle (or none): nothing.
     }
 
     /// The Tree Trunk's growth (`.HitPlayerShotSprite` M l. 51007–51030; raw `1005a984..1005aa58`; spells-detail §3.5):

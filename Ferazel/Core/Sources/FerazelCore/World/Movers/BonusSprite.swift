@@ -652,7 +652,8 @@ public enum BonusSprite {
     /// by 0, undefined on the PPC) is taken as a quotient of 0 [LOW: no maximum is ever 0].
     static func container(_ w: SpriteWorld, id: Int, shot: Int, lights: inout LightTable, effects: Int16,
                           faceWidth: (FaceRef) -> Int, faceBounds: (FaceRef) -> IdleSprites.Rect) {
-        guard let s = w.active.record(id: id), let o = w.active.record(id: shot), o.handler == .playerShot,
+        // `+0x4c == PTR_PTR_100a04e8` (M l. 53473–53474): an idled shot (`+0x4c` 0) is no player shot (`runs`).
+        guard let s = w.active.record(id: id), let o = w.active.record(id: shot), BackgroundSprite.runs(o, .playerShot),
               o.type != PlayerShot.orb, o.counterA6 == 0 else { return }
         let g = w.globals
         func q(_ n: Int16, _ d: Int16) -> Int32 { d == 0 ? 0 : (Int32(n) << 8) / Int32(d) }

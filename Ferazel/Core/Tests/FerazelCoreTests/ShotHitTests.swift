@@ -105,6 +105,76 @@ final class ShotHitTests: XCTestCase {
         for _ in 0..<8 { handleShots(w2, solver2, lights: &lights2) }
         XCTAssertEqual(w2.active.sprite(id: b)?.killCount, 1)
         XCTAssertEqual(effects(w2, 0).map { [$0.x, $0.y] }, [[249, 188]])
+        // BG kinds 100…199 (M l. 51348–51372): `.WallBounceBG(s, kind − 100, …)` — a BG cell of kind 103 is the one-way
+        // floor 3 (as 103 itself is no kind, > 0x3c); the contact kills the shot. A Fireball falls onto it on row 12.
+        let w3 = try world([])
+        var bgKinds = [Int](repeating: 0, count: 0x60)
+        bgKinds[3] = 103
+        w3.tiles = TileGrid(fg: w3.tiles.fg, bg: TileMap(width: 16, height: 16,
+                                                          cells: (0..<16 * 16).map { $0 / 16 == 12 ? 4 : 0 }),
+                            fgKinds: Array(0..<0x60), bgKinds: bgKinds)
+        let d = try XCTUnwrap(PlayerShot.spawn(w3, type: 0x0001, x: 180, y: 360))
+        w3.active.update(id: d) { $0.vy = 0x400 }
+        let solver3 = TileSolver(world: w3)
+        var lights3 = LightTable()
+        var frames3 = 0
+        while w3.active.sprite(id: d)?.dead == false && frames3 < 20 {
+            handleShots(w3, solver3, lights: &lights3)
+            frames3 += 1
+        }
+        XCTAssertEqual(w3.active.sprite(id: d)?.killCount, 1)
+        XCTAssertLessThan(frames3, 20)
+        XCTAssertLessThanOrEqual(try XCTUnwrap(w3.active.sprite(id: d)).y, 400)       // stopped on the floor, not through it
+        XCTAssertEqual(w3.player.cues.filter { $0.snd == 301 }.count, 1)
+        // The Tree Trunk (id 4) landing on an FG floor: `.WallBounce` grounds it (`+0xce`) and the contact takes the
+        // trunk arm (M l. 51312–51327): the trunk bottom 0x2c8 (// later: SW, its Setup draws nothing), an effect 2
+        // at (trunk +0xc − 6, trunk +0xa − 9) = (centre.x − 8 − 6, centre.y − 6 − 9) with `+0x46 = 8` and light colour
+        // 0x42, the shot `+0xe9 = 1`, `.STPlay3DSound(302, 1, 0x100, shot +0xe)` — no `.KillPlayerShot` (no 301).
+        let w4 = try world(floor())
+        let trunk = try XCTUnwrap(PlayerShot.spawn(w4, type: 0x0401, x: 180, y: 360))
+        w4.active.update(id: trunk) { $0.vy = 0x400 }
+        let solver4 = TileSolver(world: w4)
+        var lights4 = LightTable()
+        var frames4 = 0
+        while w4.active.sprite(id: trunk)?.dead == false && frames4 < 20 {
+            handleShots(w4, solver4, lights: &lights4)
+            frames4 += 1
+        }
+        let landed = try XCTUnwrap(w4.active.sprite(id: trunk))
+        XCTAssertTrue(landed.dead)
+        XCTAssertNotEqual(landed.groundKind, 0)
+        // The centre at the landing (the frame's later steps refresh it): the sound's position.
+        let at = try XCTUnwrap(w4.player.cues.first { $0.snd == 302 }?.position)
+        XCTAssertEqual(w4.player.cues, [PlayerCue(call: .threeD, snd: 302, priority: 1, volume: 0x100, position: at)])
+        XCTAssertEqual(at.x, landed.centre.x)
+        let grown = effects(w4, 2)
+        XCTAssertEqual(grown.map { [$0.x, $0.y, Int($0.phase)] }, [[at.x - 14, at.y - 15, 8]])
+        XCTAssertEqual(lights4.slots[Int(try XCTUnwrap(grown.first).light)].colour, 0x42)
+        // Any other id grounded by the floor takes the contact rule (`+4 != 4`, M l. 51298): a Fireball falling onto
+        // it dies with 301, no 302.
+        let w6 = try world(floor())
+        let fb = try XCTUnwrap(PlayerShot.spawn(w6, type: 0x0001, x: 180, y: 360))
+        w6.active.update(id: fb) { $0.vy = 0x400 }
+        let solver6 = TileSolver(world: w6)
+        var lights6 = LightTable()
+        for _ in 0..<20 where w6.active.sprite(id: fb)?.dead == false { handleShots(w6, solver6, lights: &lights6) }
+        XCTAssertNotEqual(w6.active.sprite(id: fb)?.groundKind, 0)
+        XCTAssertEqual(w6.player.cues.map(\.snd), [301])
+        // A Tree Trunk flying into the kind-2 wall is not grounded: the contact rule kills it (snd 301, effect 2,
+        // M l. 51298–51311), no 302.
+        let w5 = try world(wall)
+        let side = try XCTUnwrap(PlayerShot.spawn(w5, type: 0x0401, x: 200, y: 200))
+        w5.active.update(id: side) { s in
+            s.gravity = 0
+            s.vx = 0x800
+        }
+        let solver5 = TileSolver(world: w5)
+        var lights5 = LightTable()
+        for _ in 0..<8 { handleShots(w5, solver5, lights: &lights5) }
+        XCTAssertEqual(w5.active.sprite(id: side)?.groundKind, 0)
+        XCTAssertEqual(w5.active.sprite(id: side)?.killCount, 1)
+        XCTAssertEqual(w5.player.cues.map(\.snd), [301])
+        XCTAssertEqual(effects(w5, 2).count, 1)
     }
 
     func testSeedsBounceThenExplode() throws {
@@ -160,6 +230,19 @@ final class ShotHitTests: XCTestCase {
         // `MTNewSprite(0x4b7, …, 0xc, …)`: `.SetupEffectSprite` stores layer 0xb before the insert (M l. 53722).
         XCTAssertEqual(big.map(\.layer), [0xb])
         XCTAssertEqual(effects(w, BackgroundSprite.smoke).map(\.phase), phases)
+        // The exact threshold (`iVar8 < 0x200`, M l. 51302): an entry vy of 820 bounces to −((820·0xa0) >> 8) = −0x200
+        // and lives; 819 bounces to −0x1ff and dies.
+        for (entry, dies) in [(Int32(820), false), (819, true)] {
+            let w2 = try world(floor())
+            let s2 = try XCTUnwrap(PlayerShot.spawn(w2, type: 0x5a01, x: 100, y: 394))
+            w2.active.update(id: s2) { $0.vy = entry - 0xfa }
+            let solver2 = TileSolver(world: w2)
+            var lights2 = LightTable()
+            handleShots(w2, solver2, lights: &lights2)
+            let after = try XCTUnwrap(w2.active.sprite(id: s2))
+            XCTAssertEqual(after.vy, entry == 820 ? -0x200 : -0x1ff, "entry \(entry)")
+            XCTAssertEqual(after.dead, dies, "entry \(entry)")
+        }
     }
 
     func testZiridiumTint() throws {
@@ -229,6 +312,24 @@ final class ShotHitTests: XCTestCase {
         XCTAssertGreaterThan(blade.y, 420)
         XCTAssertEqual(w2.globals.crunchLog.map { [Int($0.col), Int($0.row)] }, [[5, 12]])
         XCTAssertFalse(w2.player.cues.contains { $0.snd == 301 })
+        // Strength 1 (`+0x158` from the Setup, `(short)` M l. 51381) against crunch kind 2 (breaks only at strength 2):
+        // `.CrunchTile` plays 423 (only if idle), breaks nothing and returns 1 → the Fireball is killed. Strength 2
+        // would break it (424); 0 would return the kind without the 423.
+        let w3 = try world((0..<16).map { c in (c, 12, c == 5 ? 0x1000 | 0x200 | 4 : 4) })
+        let k2 = try XCTUnwrap(PlayerShot.spawn(w3, type: 0x0001, x: 180, y: 360))
+        XCTAssertEqual(w3.active.sprite(id: k2)?.crunchStrength, 1)
+        w3.active.update(id: k2) { $0.vy = 0x400 }
+        let solver3 = TileSolver(world: w3)
+        var lights3 = LightTable()
+        var frames3 = 0
+        while w3.active.sprite(id: k2)?.dead == false && frames3 < 20 {
+            handleShots(w3, solver3, lights: &lights3)
+            frames3 += 1
+        }
+        XCTAssertEqual(w3.active.sprite(id: k2)?.killCount, 1)
+        XCTAssertEqual(w3.globals.crunchCount, 0)
+        XCTAssertEqual(w3.player.cues.filter { $0.snd == 423 || $0.snd == 424 }.map { [Int($0.snd), $0.onlyIfIdle ? 1 : 0] },
+                       [[423, 1]])
     }
 
     // MARK: - sprite hits
@@ -260,6 +361,16 @@ final class ShotHitTests: XCTestCase {
         var lights = LightTable()
         FerazelSession.hitCallback(w, f, pID, lights: &lights)
         XCTAssertEqual(w.active.sprite(id: f)?.dead, false)
+        // An idled player record (`+0x4c` 0) is not the player's Handle (M l. 50972): the Boomerang is not caught.
+        let w2 = try world([])
+        let p2 = try XCTUnwrap(Player.spawn(world: w2, x: 1000, y: 300))
+        let b2 = try XCTUnwrap(PlayerShot.spawn(w2, type: 0x501, x: 1000, y: 300))
+        w2.active.update(id: b2) { $0.shotAge = 11 }
+        w2.active.update(id: p2) { $0.handleCleared = true }
+        w2.globals.magic = 552
+        FerazelSession.hitCallback(w2, b2, p2, lights: &lights)
+        XCTAssertEqual(w2.active.sprite(id: b2)?.dead, false)
+        XCTAssertEqual(w2.globals.magic, 552)
     }
 
     /// A Bonus container of `type` at (2000, 1000) on record 5 (p4 0), through `.SetupBonusSprite`.
@@ -329,6 +440,25 @@ final class ShotHitTests: XCTestCase {
         FerazelSession.hitCallback(w2, orb, torch2, lights: &lights2)
         XCTAssertEqual(w2.active.sprite(id: torch2)?.pickupDelay, 1)
         XCTAssertEqual(w2.active.sprite(id: orb)?.dead, false)
+        // A shot with `+0xa6 ≠ 0` (M l. 53475) and an idled shot (`+0x4c` 0 ≠ the player-shot Handle, M l. 53473–53474)
+        // open nothing; an idled torch is no Bonus to the shot's side (M l. 51032): the shot lives.
+        w2.globals.maxHealth = 0x230
+        w2.globals.maxMagic = 0x230
+        let busy = shot(w2, 0, x: 2000, y: 1000)
+        w2.active.update(id: busy) { $0.counterA6 = 1 }
+        let idled = shot(w2, 0, x: 2000, y: 1000)
+        w2.active.update(id: idled) { $0.handleCleared = true }
+        let seed2 = w2.rng.seed
+        FerazelSession.hitCallback(w2, torch2, busy, lights: &lights2)
+        FerazelSession.hitCallback(w2, torch2, idled, lights: &lights2)
+        XCTAssertEqual(w2.active.sprite(id: torch2)?.pickupDelay, 1)
+        XCTAssertEqual([w2.active.sprite(id: busy)?.dead, w2.active.sprite(id: idled)?.dead], [false, false])
+        XCTAssertEqual([Int(w2.records[5].p4), Int(w2.globals.score), w2.rng.seed == seed2 ? 1 : 0], [0, 0, 1])
+        w2.active.update(id: torch2) { $0.handleCleared = true }
+        let probe = shot(w2, 0, x: 2000, y: 1000)
+        FerazelSession.hitCallback(w2, probe, torch2, lights: &lights2)
+        XCTAssertEqual(w2.active.sprite(id: probe)?.dead, false)
+        XCTAssertTrue(w2.player.cues.isEmpty)
         // The shot's side first, on a fresh torch (M l. 51032–51036): `.KillPlayerShot(s, 1, 1)`; then the torch's side
         // still sees `+0xa6 == 0` and opens it, killing the shot a second time (two 301s, two effects) — as written.
         let w3 = try world([])
@@ -393,6 +523,17 @@ final class ShotHitTests: XCTestCase {
         w2.globals.maxMagic = 0x230
         FerazelSession.hitCallback(w2, pile2, shot(w2, 0, x: 2000, y: 1000), lights: &lights2)
         XCTAssertEqual(w2.active.sprites.filter { $0.type == 0x514 || $0.type == 0x515 }.map(\.type), [0x514])
+        // Equal percentages (magic 0x118/0x230 and health 0x118/0x230, both 128/256): `(m << 8)/M < (h << 8)/H` is
+        // false (`cmpw r28,r25; ble`, raw `1005fe74`) → the 0x515.
+        let w3 = try world([])
+        var lights3 = LightTable()
+        let pile3 = try container(w3, 0x517, lights: &lights3)
+        w3.globals.health = 0x118
+        w3.globals.maxHealth = 0x230
+        w3.globals.magic = 0x118
+        w3.globals.maxMagic = 0x230
+        FerazelSession.hitCallback(w3, pile3, shot(w3, 0, x: 2000, y: 1000), lights: &lights3)
+        XCTAssertEqual(w3.active.sprites.filter { $0.type == 0x514 || $0.type == 0x515 }.map(\.type), [0x515])
     }
 
     func testIceWall2941Needs300() throws {
@@ -436,6 +577,27 @@ final class ShotHitTests: XCTestCase {
             XCTAssertEqual(w.player.cues.map(\.snd), [301])
             XCTAssertEqual(w.active.sprite(id: s)?.dead, true)
         }
+        // An idled 2941 (`+0x4c` 0) is no Box (M l. 51038): no damage, the shot lives.
+        w.active.update(id: wallID) { s in
+            s.invulnerable = 0
+            s.handleCleared = true
+        }
+        w.player.cues = []
+        let ghost = shot(w, 2, x: 2000, y: 1000, hp: 300)
+        FerazelSession.hitCallback(w, ghost, wallID, lights: &lights)
+        XCTAssertEqual([Int(w.active.sprite(id: wallID)?.hp ?? 0), w.active.sprite(id: ghost)?.dead == true ? 1 : 0], [300, 0])
+        XCTAssertTrue(w.player.cues.isEmpty)
+        // The orb vs the gate 0xb7c (a Box, no one-way top): nothing (M l. 51004) — not the Box arm's kill.
+        var gate = SpriteSlot(type: 0xb7c, x: 2000, y: 1000)
+        gate.handler = .box
+        gate.hasHit = true
+        let gateID = w.active.insert(gate)
+        let orb = shot(w, PlayerShot.orb, x: 2000, y: 1000, hp: 300)
+        w.active.update(id: orb) { $0.stackX = 3 }
+        FerazelSession.hitCallback(w, orb, gateID, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: orb)?.dead, false)
+        XCTAssertEqual(w.active.sprite(id: orb)?.stackX, 3)
+        XCTAssertTrue(w.player.cues.isEmpty)
         // A one-way Box: `.PlatformBounce(s, box, centre, 0, +0x34, 0)` (M l. 51050–51060) — no contact, no kill.
         var ledge = SpriteSlot(type: 0xb7d, x: 2000, y: 2000)
         ledge.handler = .box
@@ -447,6 +609,66 @@ final class ShotHitTests: XCTestCase {
         FerazelSession.hitCallback(w, far, ledgeID, lights: &lights)
         XCTAssertEqual(w.active.sprite(id: far)?.dead, false)
         XCTAssertEqual(w.active.sprite(id: ledgeID)?.hp, 300)
+        // A thin one-way ledge (top 2000, rect height 2: solid centre line 2001) and a shot falling 1 px a frame at
+        // x 2000: `.RectBounce` lands it from above only when the previous centre `y + 7 − 1` (7 = the hot rect's
+        // vertical centre, 3 + (0xc − 3) >> 1) is above 2001 — then the contact (1) kills the shot (M l. 51057–51060).
+        // y 1994 → 2000 < 2001: landed, killed; y 1995 → 2001: no side for a one-way solid, no contact.
+        for (y, killed) in [(1994, true), (1995, false)] {
+            var thin = SpriteSlot(type: 0xb7d, x: 2000, y: 2000)
+            thin.handler = .box
+            thin.oneWay = true
+            thin.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 2, right: 0x20)
+            let thinID = w.active.insert(thin)
+            w.player.cues = []
+            let faller = shot(w, 2, x: 2000, y: y, hp: 300)
+            w.active.update(id: faller) { s in
+                s.x256 = Int32(s.x) << 8
+                s.y256 = Int32(s.y) << 8
+                s.vy = 0x100
+            }
+            FerazelSession.hitCallback(w, faller, thinID, lights: &lights)
+            XCTAssertEqual(w.active.sprite(id: faller)?.dead, killed, "y \(y)")
+            XCTAssertEqual(w.player.cues.map(\.snd), killed ? [301] : [], "y \(y)")
+            w.active.update(id: thinID) { $0.dead = true }
+        }
+        // The tree trunk 0x2c8 → its top segment 0x2c9 (`+0x1d4`), hit by a Tree Trunk shot (M l. 51005–51030): the
+        // new segment (// later: SW) would sit at (top +0xc, top +0xa − 0x10); the old top's `+0xa6` is raised to 0x23
+        // (kept when above), an effect 2 at (top.x − 6, top.y − 0x10 − 9) with `+0x46 = 8` and colour 0x42, the shot
+        // `+0xe9 = 1`, `.STPlay3DSound(302, 1, 0x100, effect +0xe)` (the new effect's centre word). Any other id: nothing.
+        for (a6, kept) in [(Int16(0x10), Int16(0x23)), (0x30, 0x30)] {
+            let wt = try world([])
+            var lt = LightTable()
+            var top = SpriteSlot(type: 0x2c9, x: 4000, y: 968)
+            top.handler = .box
+            top.counterA6 = a6
+            let topID = wt.active.insert(top)
+            var base = SpriteSlot(type: 0x2c8, x: 4000, y: 1000)
+            base.handler = .box
+            base.counterA6 = 5
+            base.siblings = SpriteSlot.Siblings(first: topID)
+            let baseID = wt.active.insert(base)
+            let plain = shot(wt, 0, x: 4000, y: 1000)
+            FerazelSession.hitCallback(wt, plain, baseID, lights: &lt)
+            XCTAssertEqual(wt.active.sprite(id: plain)?.dead, false)
+            XCTAssertEqual(wt.active.sprite(id: topID)?.counterA6, a6)
+            XCTAssertTrue(wt.player.cues.isEmpty)
+            let tree = shot(wt, 4, x: 4000, y: 1000)
+            FerazelSession.hitCallback(wt, tree, baseID, lights: &lt)
+            XCTAssertEqual(wt.active.sprite(id: tree)?.dead, true)
+            XCTAssertEqual([wt.active.sprite(id: topID)?.counterA6, wt.active.sprite(id: baseID)?.counterA6], [kept, 5])
+            let e = effects(wt, 2)
+            XCTAssertEqual(e.map { [$0.x, $0.y, Int($0.phase)] }, [[4000 - 6, 968 - 0x10 - 9, 8]])
+            let e0 = try XCTUnwrap(e.first)
+            XCTAssertEqual(lt.slots[Int(e0.light)].colour, 0x42)
+            XCTAssertEqual(wt.player.cues, [PlayerCue(call: .threeD, snd: 302, priority: 1, volume: 0x100,
+                                                      position: e0.centre)])
+            // An idled trunk (`+0x4c` 0 ≠ the Box Handle, M l. 51005): a second Tree Trunk shot grows nothing.
+            wt.active.update(id: baseID) { $0.handleCleared = true }
+            let tree2 = shot(wt, 4, x: 4000, y: 1000)
+            FerazelSession.hitCallback(wt, tree2, baseID, lights: &lt)
+            XCTAssertEqual(wt.active.sprite(id: tree2)?.dead, false)
+            XCTAssertEqual(effects(wt, 2).count, 1)
+        }
         // The stalactite 2932's side (`.HitBoxSprite` M l. 61374–61382): HP − d, shake `+0xa6 = d/20 + R(d/20/2)`.
         var stal = SpriteSlot(type: BoxSprite.stalactite, x: 3000, y: 1000)
         stal.handler = .box
@@ -461,5 +683,15 @@ final class ShotHitTests: XCTestCase {
         let st = try XCTUnwrap(w.active.sprite(id: stalID))
         XCTAssertEqual([Int(st.hp), Int(st.counterA6)], [50, Int(shake)])
         XCTAssertEqual(w.active.sprite(id: fire)?.dead, false)              // its own side kills it, not the box's
+        // A shot with `+0xa6 ≠ 0`, and an idled shot (`+0x4c` 0, M l. 61366): no damage, no draw.
+        let busy = shot(w, 0, x: 3000, y: 1000, hp: 100)
+        w.active.update(id: busy) { $0.counterA6 = 2 }
+        let idled = shot(w, 0, x: 3000, y: 1000, hp: 100)
+        w.active.update(id: idled) { $0.handleCleared = true }
+        let seed1 = w.rng.seed
+        FerazelSession.hitCallback(w, stalID, busy, lights: &lights)
+        FerazelSession.hitCallback(w, stalID, idled, lights: &lights)
+        XCTAssertEqual(w.active.sprite(id: stalID)?.hp, 50)
+        XCTAssertEqual(w.rng.seed, seed1)
     }
 }

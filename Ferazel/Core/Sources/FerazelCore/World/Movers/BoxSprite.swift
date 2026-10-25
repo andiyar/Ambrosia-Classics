@@ -351,7 +351,8 @@ public enum BoxSprite {
         let geyser = { (v: Int16) in v == 0x5a0 || v == 0x5a5 || v == 0x5a9 }
         guard t < 0xb87 || 2999 < t, t < 0x4e2 || 0x4ff < t, !(geyser(t) && geyser(o.type)) else { return }
         guard t != 0xb5e && t != 0xb5f else { return }
-        guard o.handler == .playerShot && o.counterA6 == 0 else { return }
+        // `+0x4c == PTR_PTR_100a04e8` (M l. 61366): an idled shot (`+0x4c` 0) is no player shot (`runs`).
+        guard BackgroundSprite.runs(o, .playerShot) && o.counterA6 == 0 else { return }
         if t == stalactite {
             let d = o.hp
             let n = d / 20
