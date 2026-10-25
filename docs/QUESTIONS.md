@@ -71,7 +71,7 @@ second, or another number).
 Recommendation: a — it is what the binary does; if the video's pace is what you remember, (b) gives it to you without
 changing the faithful default.
 Blocks: nothing. (b) or (c) becomes a small App task.
-Answer:
+Answer: (a) keep the original's top speed, for now — Ben, 2026-10-26. Ben's attended session measured the running app on his Mac (a screen recording of level-1 play): a steady 30 new frames a second, never more, so the port matches the binary's cap. Ben: "huh. let's keep it for now." No code change; he may revisit (b) later.
 
 ## Answered
 
