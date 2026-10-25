@@ -177,6 +177,20 @@ the swing arc positions [MED]. ⚑ corrected (deepening 2026-10-03): the kick re
 in `.InitPlayerKickRects`); the hit test is the held-item sprite's own face rect, and it carries
 the player-shot handlers only at stab steps 3..5 (pickups-boxes §3.1, player-states §3.10).
 
+> ⚑ planner note (Phase 4 MS, 2026-10-26) (BC (MS)): **0x18 Fire Charm** — `.HasItem(0x18)` has exactly two call
+> sites (raw `10057e44`, `10058500`): the fire Background arm (M l. 49576–49580: 0x4b8 / 0x4bb…0x4bd hurt
+> `(0xe0, 1, 0x3c, 0)` unless the charm is held **and** the fire's `+0x14c` < 1) and the geyser segment 0x5a0 with
+> `+0x14c == 2` (M l. 49778–49786, the 0x150 hurt). There is **no lava-pool immunity**: row 17's liquid damage never
+> asks for the charm ("and lava pools" above is wrong). **0x19 Mist** — the timer `_DAT_100a0578` is a **halfword**
+> (every access `lha`/`sth`), so the tile callback's test (raw `10054d3c`) sees 600, not a high half: the spirit passes
+> through every tile; the body 0x45 takes face 1038[3] (`*_DAT_100a0780 + 0x9c`, M l. 52424); the form starts 12
+> frames after the drink's frame 40 (transition 1…12, M l. 45555–45579); the time-out (exit B) moves the player to
+> the body with HP 0 and his velocity untouched (M l. 44831–44840). **0x17 Necklace** — the revive lives in row 33's
+> dying arm only (M l. 45495–45553), not in row 41; the glider's copy of the end test (pitch 48000, M l. 45447–45467)
+> is unreachable (`_DAT_100a05e0 ≠ 0` there), so every revive sounds snd 420 at 40000. **0x13 Multi Crystal** — the
+> shards' |vx| < 500 test reads back the vx just stored; with no free record that store lands at low memory and the
+> test still reads it (Ruling 16: modelled as the computed value).
+
 ## 5. Power-ups (spheres, `.HitPlayerSprite` switch 0x532..0x53b)  [HIGH arithmetic; names from PICTs]
 
 | type | PICT name | timer (frames) | effect while active |

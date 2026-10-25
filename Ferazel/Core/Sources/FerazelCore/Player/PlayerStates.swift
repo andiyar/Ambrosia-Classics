@@ -3,9 +3,9 @@ import Foundation
 /// `.HandlePlayerSprite` row 33 — the state / face selection (decompile l. 45219–46196, `goto LAB_10050e6c`; raw
 /// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
-/// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider, spirit,
-/// boss-grab arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs (the melee arm is
-/// IU's `.HandleItemUse`, `HeldItem`); the door
+/// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider arm is GL's,
+/// the spirit transition and the dying arm's necklace revive MS's; the boss-grab arm is a named stub (no writer until
+/// Phase 5); the melee arm is IU's `.HandleItemUse`, `HeldItem`; the door
 /// arm is W2b's (passages) (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
 public enum PlayerStates {
     // MARK: the face sets (`.InitPlayerSprite @ 1004a284`, l. 42428–42490; player-states §7)
@@ -22,6 +22,8 @@ public enum PlayerStates {
     public static let pullUp: Int16 = 1023, run: Int16 = 1024, spin: Int16 = 1025, swim: Int16 = 1027
     public static let fidget2: Int16 = 1028, fidget1: Int16 = 1029, turn: Int16 = 1030, clingCast: Int16 = 1031
     public static let vBladeCast: Int16 = 1032, crouchCast: Int16 = 1034, potion: Int16 = 1036, shield: Int16 = 1039
+    /// 1038 (`_DAT_100a0780`, 4 × 100×120): the spirit transition, both ways, and the Mist body's face 3 (MS).
+    public static let mist: Int16 = 1038
     /// 1033 (`_DAT_100a07a0`): the door walk-in (W2b).
     public static let walkIn: Int16 = 1033
     /// The glider's cached sets (`_CacheEncFaceSetFromPICT`, l. 42486–42489; 160×160 cells): 1050 deploy / stow / turn
@@ -201,6 +203,105 @@ public enum PlayerStates {
         w.active.update(id: id) { $0 = out }
     }
 
+    /// The Resurrection Necklace's revive frame (MS; M l. 45495–45512; physics §5.2, player-states §3.2), while
+    /// `PTR_DAT_100a0594` r > 0 (after the dying counter's + 1): `+0x19e = 0`, face 1022[(30 − r) / 3] (the death
+    /// backwards), r + 1; past 30 → `G+6 = G+4 = +0xa4 = G+10` (breath, health, HP = the maximum), dying 0, r 0,
+    /// `+0x116 = 0x3c`, `PTR_DAT_100a055c = 1`, `.RemoveItem(0x17)` (its `.UpdateItemStat`), `SetRect(+0x34, 0x26, 0x22,
+    /// 0x3e, 0x55)`.
+    static func reviveStep(_ w: SpriteWorld, id: Int) {
+        let r = w.player.revive
+        w.active.update(id: id) { p in
+            p.buoyancy = 0
+            p.face = face(dying, Int(0x1e - r) / 3)
+        }
+        w.player.revive = r &+ 1
+        guard 0x1e < w.player.revive else { return }
+        let m = w.globals.maxHealth
+        w.globals.breath = m
+        w.globals.health = m
+        w.player.dying = 0
+        w.player.revive = 0
+        w.active.update(id: id) { p in
+            p.hp = m
+            p.invulnerable = 0x3c
+        }
+        w.player.flag055c = true
+        Player.removeItem(w, 0x17)
+        w.active.update(id: id) { $0.hotRect = HandleKeys.standardHotRect }
+    }
+
+    /// The dying arm's end (dying > 80, or > 100 after a death in liquid; M l. 45531–45553): `.HasItemWhichSlot(0x17)`;
+    /// none, the forced death `*_DAT_100a0568` (the debug key / the auto-scroll death — no Core writer, so 0) or the
+    /// glider (`_DAT_100a05e0`; the glider's dying runs inside its own arm, so never here) → `DAT_100a5106 = 1`, the game
+    /// over; the centre `fd94`/`fd90` outside the map (x < 0 or > 32·hdr`+0xb280`, y < 0 or > 32·hdr`+0xb282`) → the
+    /// game over too; else the revive starts: the item flash mode `_DAT_1009fda0` 0, count `PTR_DAT_1009fda8` 0x1e, slot
+    /// `_DAT_1009fda4` = the necklace's, dying back to 0x1e, `PTR_DAT_100a0594 = 1`, `.STPlay3DSoundPitched(420, 1,
+    /// 0x100, +0xe, 40000)` (`_DAT_100a03e0`; no draw), `PTR_DAT_100a05a8 = 0x14`. The game-over call is not repeated
+    /// on later frames by anything here: the flag ends `.GameLoop` after this iteration.
+    static func necklaceOrGameOver(_ w: SpriteWorld, id: Int) {
+        guard let slot = w.globals.hasItemWhichSlot(0x17), !w.player.glider else {
+            w.player.gameOver = true
+            return
+        }
+        let cx = Int32(w.player.centreX), cy = Int32(w.player.centreY)
+        let mapW = Int32(w.level.header.gridWidth) << 5, mapH = Int32(w.level.header.gridHeight) << 5
+        if cx < 0 || mapW < cx || cy < 0 || mapH < cy {
+            w.player.gameOver = true
+            return
+        }
+        w.statusBar.flashes.itemMode = 0
+        w.statusBar.flashes.item = 0x1e
+        w.statusBar.flashes.itemSlot = Int16(slot)
+        w.player.dying = 0x1e
+        w.player.revive = 1
+        let pos = w.active.record(id: id)?.centre
+        w.player.cue(PlayerCue(call: .threeDPitched, snd: 420, priority: 1, volume: 0x100, position: pos,
+                               rate: 40000))
+        w.player.countdown05a8 = 0x14
+    }
+
+    /// Row 33's spirit transition arm (MS; M l. 45555–45589, the timer stores raw `1004fb04`, `1004fb88`;
+    /// player-states §3.3), while `_DAT_100a0574` n > 0: v = 0; n < 13 → face 1038[n >> 2] (`_DAT_100a0780`), n + 1, and at 13: vy = −0x35c, the
+    /// body position `PTR_DAT_100a04d4` / `04d0` = `+0xc` / `+0xa`, the timer `_DAT_100a0578 = 600`, n = 0,
+    /// `_DAT_100a056c = 0`, the body `.MTNewSprite(0x45, +0xc, +0xa, (i16) +0x80, −1, .SetupBonusSprite)` into
+    /// `PTR_DAT_100a0550` with the player's `+0x17e`. n > 13 (the way back, from the body's arm's 14) → face
+    /// 1038[(27 − n) >> 2], n + 1, past 26 → n = 0 and the timer 0.
+    static func spiritTransition(_ w: SpriteWorld, id: Int) {
+        guard let s = w.active.record(id: id) else { return }
+        w.active.update(id: id) { p in
+            p.vy = 0
+            p.vx = 0
+        }
+        let n = w.player.spiritTransition
+        if n < 0xd {
+            w.active.update(id: id) { $0.face = face(mist, Int(n >> 2)) }
+            w.player.spiritTransition = n + 1
+            guard w.player.spiritTransition == 0xd else { return }
+            w.active.update(id: id) { $0.vy = -0x35c }
+            let x = Int(Int16(truncatingIfNeeded: s.x)), y = Int(Int16(truncatingIfNeeded: s.y))
+            w.player.mistBodyX = Int32(x)
+            w.player.mistBodyY = Int32(y)
+            w.player.spiritTimer = 600
+            w.player.spiritTransition = 0
+            w.player.spiritBlink = false
+            let body = w.newSprite(type: Player.spriteType, x: x, y: y, layer: Int16(truncatingIfNeeded: s.layer),
+                                   handler: .bonus) { b in
+                // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never for 0x45.
+                _ = try! BonusSprite.setup(&b, x: x, y: y, level: w.level, records: w.records, effects: 0, lightCount: 0,
+                                           counting: false, rng: &w.rng) { _, _, _, _ in -1 }
+            }
+            w.player.mistBody = body
+            if let body { w.active.update(id: body) { $0.mirrored = s.mirrored } }   // no free record: dropped
+        } else if 0xd < n {
+            w.active.update(id: id) { $0.face = face(mist, Int(0x1b - n) >> 2) }
+            w.player.spiritTransition = n + 1
+            if 0x1a < w.player.spiritTransition {
+                w.player.spiritTransition = 0
+                w.player.spiritTimer = 0
+            }
+        }
+    }
+
     /// The stow's `.MTNewSprite(0xbea, x, y, 2, −1, .SetupBonusSprite)` (M l. 45354–45356): the Bonus Setup's 0xbea arm
     /// (M l. 52611–52627) — no light — and its tail's `FastRand(60)`; the Setup puts it on layer 1 (M l. 52383).
     static func dropGlider(_ w: SpriteWorld, x: Int, y: Int) {
@@ -255,20 +356,16 @@ public enum PlayerStates {
             }
             set { $0.invulnerable = 0 }
             w.player.dying &+= 1
-            if 0 < w.player.revive {
-                // later: Phase 4 — the necklace revive (`PTR_DAT_100a0594` 1…30, faces 1022[(30 − r)/3], HP/breath
-                // from `G+0xa`, `.RemoveItem(0x17)`); no Phase-2 writer of `0594`.
-            }
+            if 0 < w.player.revive { reviveStep(w, id: id) }
             let ended = w.player.diedInLiquid ? 100 < w.player.dying : 0x50 < w.player.dying
-            if ended {
-                // `.HasItemWhichSlot(0x17, …)`: no inventory in Phase 2 (// later: Phase 4), so never the revive
-                // arm — `DAT_100a5106 = 1`, the game over.
-                w.player.gameOver = true
-            }
+            if ended { necklaceOrGameOver(w, id: id) }
             return false
         }
-        // Spirit transition (`_DAT_100a0574 > 0`, l. 45590–45624). // later: Phase 4 (Mist potion; no Phase-2 writer)
-        if 0 < w.player.spiritTransition { return false }
+        // Spirit transition (`_DAT_100a0574 > 0`, M l. 45555–45589; MS).
+        if 0 < w.player.spiritTransition {
+            spiritTransition(w, id: id)
+            return false
+        }
         // Boss grab (`_DAT_100a0570 > 0`, l. 45625–45672). // later: Phase 5 (Chief, Xichra; no Phase-2 writer)
         if 0 < w.player.bossGrab { return false }
 

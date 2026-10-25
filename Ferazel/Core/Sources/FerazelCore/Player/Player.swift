@@ -23,7 +23,7 @@ import Foundation
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
 /// 14 power-up `.TickTock`s (PU); 0610/0614              35 oxygen, drowning, bubbles (P4)
 /// 15 `+0x116` copy, water-pass flag, near-surface         36 teleporter charge, blink, power-up tint (P3)
-/// 16 spirit form (later: Phase 4)                         37 level side push hdr+0x272c
+/// 16 spirit form (MS)                                     37 level side push hdr+0x272c
 /// 17 liquid damage / heal (P4)                           38 `.PlayerConstraints` (map, glider; arena later)
 /// 18 countdowns 06d8 / 06cc, see-saw flag                 39 pixel / centre positions; look-ahead + `.PlayerScroll`
 /// 19 pre-move `.SeparateFromTiles2` (plan row 13)            (`PlayerScroll`, P5)
@@ -188,7 +188,7 @@ public enum Player {
         let crunch: UInt8 = (w.player.spin || s().groundKind != 0) ? 1 : 0
         set { $0.crunches = crunch }
         // 13 (l. 44692–44747).
-        countdowns(w, id: id)
+        countdowns(w, id: id, keys: keys)
         // 14 (l. 44748–44814): `.TickTock` of the power-up timers 0650/064c/0640/0630/0624/0618 and their
         // active/blink flags (0654, 0648/0644, 0638/0634, 062c/0628, 0620/061c; `PowerUps.tickTimers`, PU). Then 0610
         // −1 (no floor) and 0614 = (0610 ≥ 1):
@@ -204,7 +204,8 @@ public enum Player {
         } else {
             w.player.nearSurface = true
         }
-        // 16 (l. 44827–44855): spirit form (`_DAT_100a0578 > 0`, `.TickTockLong`). // later: Phase 4
+        // 16 (l. 44827–44855): spirit form (`_DAT_100a0578 > 0`, `.TickTockLong`; MS).
+        spiritForm(w, id: id)
         // 17 (l. 44856–44908): liquid damage / heal (`PTR_DAT_100a0538`, kinds 0/1/2/3; P4).
         PlayerLiquids.liquidDamage(w, id: id)
         // 18 (l. 44909–44915).
@@ -452,8 +453,11 @@ public enum Player {
         w.active.update(id: id) { $0 = out }
     }
 
-    /// Row 13 (l. 44692–44747): the counters that tick toward 0.
-    static func countdowns(_ w: SpriteWorld, id: Int) {
+    /// Row 13 (l. 44692–44747): the counters that tick toward 0. Last, the Multi Crystal loss (M l. 44743–44747; MS):
+    /// `_DAT_100a073c` > 0 → − 1; reaching 0 with item 0x13 held (`.HasItemWhichSlot(0x13)`) → `.RemoveItem(0x13)` (its
+    /// `.UpdateItemStat`, M l. 39658) then `.UpdateStatusBar(1, 1, 0)` — both drawn inside the player's Handle
+    /// (`passDraws`), the key step reading this frame's `keys`.
+    static func countdowns(_ w: SpriteWorld, id: Int, keys: InputActions = []) {
         let invul = w.active.record(id: id)?.invulnerable ?? 0
         var p = w.player
         if p.lastInvulnerable < invul && p.doorTransit == 0 { p.newHit = 3 }
@@ -476,11 +480,80 @@ public enum Player {
         if 0 < w.statusBar.flashes.item { w.statusBar.flashes.item -= 1 }
         if 0 < p.carpetLock { p.carpetLock -= 1 }
         if 0 < p.bossGrab { p.bossGrab -= 1 }
+        var crystalLost = false
         if 0 < p.countdown073c {
             p.countdown073c -= 1
-            // At 0 with item 0x13 held: `.RemoveItem(0x13)`, `.UpdateStatusBar(1, 1, 0)`. // later: Phase 4
+            crystalLost = p.countdown073c == 0 && w.globals.hasItemWhichSlot(0x13) != nil
         }
         w.player = p
+        if crystalLost {
+            removeItem(w, 0x13)
+            HandleKeys.statusBarCall(w, nil, keys: keys)                  // (1, 1, 0), as `.HandleKeys`' own call
+        }
+    }
+
+    /// `.RemoveItem(id)` inside the player's Handle: found → its `.UpdateItemStat` (M l. 39658) into `passDraws`.
+    static func removeItem(_ w: SpriteWorld, _ item: Int16) {
+        guard w.globals.removeItem(item) else { return }
+        var g = w.globals
+        w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
+        w.globals = g
+    }
+
+    /// Row 16 (M l. 44827–44855; raw `1004e230..1004e300`; player-states §3.3), while the spirit timer `_DAT_100a0578`
+    /// > 0: `_DAT_100a056c` = `.TickTockLong(0578)`; then the timer < 1 (it ran out — exit B) → `G+4 = +0xa4 = 0` (the
+    /// death trigger of row 41 fires this frame), the player to the stored body (`+0xc` / `+0xa` from the low halves of
+    /// `04d4` / `04d0`, 24.8 from them; velocity untouched) and the body `PTR_DAT_100a0550`'s `+0xe9 = 1` when it is
+    /// set; else the float: `+0xce = 0`, swim `_DAT_100a0714` 0 → 1, near-surface `_DAT_100a05fc = 1`, gravity 0x50, vy
+    /// ≥ 0x400 → 0x400.
+    static func spiritForm(_ w: SpriteWorld, id: Int) {
+        guard 0 < Int16(truncatingIfNeeded: w.player.spiritTimer) else { return }
+        w.player.spiritBlink = tickTockLong(&w.player)
+        if Int16(truncatingIfNeeded: w.player.spiritTimer) < 1 {
+            w.globals.health = 0
+            let bx = Int(Int16(truncatingIfNeeded: w.player.mistBodyX))
+            let by = Int(Int16(truncatingIfNeeded: w.player.mistBodyY))
+            w.active.update(id: id) { p in
+                p.hp = 0
+                p.x = bx
+                p.y = by
+                p.x256 = Int32(bx) << 8
+                p.y256 = Int32(by) << 8
+            }
+            if let b = w.player.mistBody { w.active.update(id: b) { $0.dead = true } }
+        } else {
+            w.active.update(id: id) { p in
+                p.groundKind = 0
+                p.gravity = 0x50
+                if 0x3ff < p.vy { p.vy = 0x400 }
+            }
+            if w.player.swim == 0 { w.player.swim = 1 }
+            w.player.nearSurface = true
+        }
+    }
+
+    /// `.TickTockLong(t) @ 1004c364` (M l. 43664–43746): `.TickTock`'s body (`PowerUps.tickTock`) on the halfword `t`
+    /// with marks up to 240: `t > 0` → `t −= 1`; reaching 0 → `.STPlay3DSoundPitched(428, 0x14, 0x100, *_DAT_100a199c,
+    /// 32000)` (the PEF data word at `0x100a199c` is 0: position (0, 0)) and the shared blink byte `cRam100a5fd4` = 1;
+    /// then on the value now held: 240, 210, … 30 → `.STPlayRegSound(428, 1, 0x100)`, 225, 195, … 15 → 429 — each
+    /// toggling the byte. Returns the byte.
+    static func tickTockLong(_ p: inout PlayerState) -> Bool {
+        var t = Int16(truncatingIfNeeded: p.spiritTimer)
+        if 0 < t {
+            t -= 1
+            p.spiritTimer = Int32(t)
+            if t == 0 {
+                p.cue(PlayerCue(call: .threeDPitched, snd: PowerUps.tickSound, priority: 0x14, volume: 0x100,
+                                position: SpriteSlot.Point(x: 0, y: 0), rate: 32000))
+                p.flag5fd4 = true
+            }
+        }
+        if 0 < t, t <= 240, t % 15 == 0 {
+            p.cue(PlayerCue(call: .reg, snd: t % 30 == 0 ? PowerUps.tickSound : PowerUps.tockSound, priority: 1,
+                            volume: 0x100))
+            p.flag5fd4.toggle()
+        }
+        return p.flag5fd4
     }
 
     /// Row 32 (M l. 45177–45218): the drink counter `_DAT_100a05b0` > 0 → + 1; at 20 by the potion `_DAT_100a5fd6`:
@@ -488,18 +561,13 @@ public enum Player {
     /// 415 (`_DAT_100a03f4`), `.RemoveItem(5)` (its `.UpdateItemStat`), `PTR_DAT_100a05a8` = 6, the health flash
     /// `PTR_DAT_1009fdbc` = 0xb; 4 (magic) → `G+0xe` = `G+0xc`, snd 500 (`_DAT_100a02d8`), 415, remove, `05a8` 6, the
     /// magic flash `_DAT_1009fdb8` = 0xb; 0x19 (Mist) → snd 415, remove, `05a8` 6. At 40 with 0x19 → the spirit
-    /// transition `_DAT_100a0574 = 1` (// later: MS — the spirit form; not stored until its rows exist). Past 40 → 0.
+    /// transition `_DAT_100a0574 = 1` (row 33's transition arm runs it from this frame; MS). Past 40 → 0.
     /// Every sound `.STPlayRegSound(…, 1, 0x100)` (no `FastRand`).
     static func drink(_ w: SpriteWorld, id: Int) {
         guard 0 < w.player.potion else { return }
         w.player.potion &+= 1
         func cue(_ snd: Int16) { w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: 0x100)) }
-        func remove(_ item: Int16) {
-            guard w.globals.removeItem(item) else { return }
-            var g = w.globals
-            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
-            w.globals = g
-        }
+        func remove(_ item: Int16) { removeItem(w, item) }
         let n = w.player.potion, item = w.player.potionItem
         if n == 0x14 {
             if item == 5 {
@@ -527,9 +595,7 @@ public enum Player {
                 w.player.countdown05a8 = 6
             }
         } else if n == 0x28 {
-            if item == 0x19 {
-                // `*_DAT_100a0574 = 1` (M l. 45211): the Mist potion's spirit transition. // later: MS
-            }
+            if item == 0x19 { w.player.spiritTransition = 1 }            // M l. 45210–45213
         } else if 0x28 < n {
             w.player.potion = 0
         }
@@ -757,8 +823,9 @@ public enum Player {
     /// Row 42 (l. 46489–46649): `G+4 = HP`, `fd3c = vx`, `04c8 = vy`; below the map (y > hdr 0xb282·32 + 100) →
     /// HP 0; the stillness counter; the riding ramps; the Shadow-Double ring // later: SD;
     /// `.DoubleSpeedTrail` (`PowerUps`, PU); `.StandardSpriteCleanup`; `05ec` (0…0x1f) and `057c` (+2, 0…0x167);
-    /// the tint overrides (05a8 → 0x10008 / 0x10009; spirit 0xb0001/0xb0005 // later: Phase 4; 0564 → 0x10007
-    /// // later: Phase 4); `04cc` −1; `.UpdatePentSprites` // later: Phase 4.
+    /// the tint overrides (05a8 → 0x10008 / 0x10009; the spirit form `0578 > 0` → 0xb0001, 0xb0005 while `056c`, and
+    /// `+0x88 = 0` (M l. 46633–46641; MS); 0564 → 0x10007 // later: auto-scroll levels); `04cc` −1;
+    /// `.UpdatePentSprites` // later: SD.
     static func tail(_ w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int) {
         guard let s = w.active.record(id: id) else { return }
         w.globals.health = s.hp
@@ -796,6 +863,13 @@ public enum Player {
         if 0 < w.player.countdown05a8 {
             let m: UInt32 = w.player.countdown05a8 < 3 ? 0x10008 : 0x10009
             w.active.update(id: id) { $0.mode = m }
+        }
+        if 0 < Int16(truncatingIfNeeded: w.player.spiritTimer) {
+            let m: UInt32 = w.player.spiritBlink ? 0xb0005 : 0xb0001
+            w.active.update(id: id) { p in
+                p.mode = m
+                p.lightOverlay = false
+            }
         }
         if w.player.oneWayTimer != 0 { w.player.oneWayTimer -= 1 }
     }

@@ -127,7 +127,9 @@ public enum BonusSprite {
             s.mode = 0
             s.pickupDelay = 0
             s.counterA6 = 0
-            // `+0xc0 = player face + 0x9c` // later: MS — the Mist body's spawner hands its face over.
+            // `+0xc0 = *_DAT_100a0780 + 0x9c`: face 3 of the player's spirit set 1038 (MS; `+0x183 = 1` has no reader).
+            s.face = FaceRef(pict: PlayerStates.mist, index: 3, set: .encoded)
+            face = Face(pict: PlayerStates.mist, index: 3, source: .setup)
         case 0x41f, 0x420:                                 // Xichrons (M l. 52430–52467)
             s.lightOverlay = false
             s.hotRect = rect(2, -4, 0x12, 0x10)

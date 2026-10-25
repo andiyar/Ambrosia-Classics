@@ -84,8 +84,9 @@ extension HitPlayerSprite {
     /// The Background arm (`+0x4c == PTR_PTR_100a0480`, decompile l. 49573–49592) as far as W2a builds it:
     /// - d = (player `+0x10` − other `+0xc`, player `+0xe` − other `+0xa`) — the player's centre against the other's
     ///   origin, as written (the point `.PlatformBounce` gets);
-    /// - // later: fire 0x4b8 / 0x4bb…0x4bd → `.HurtPlayer(…, 0xe0, 1, 0x3c, 0)` unless `HasItem(0x18)` and
-    ///   `+0x14c < 1` (Phase 4: the inventory) — none placed on levels 1–2;
+    /// - **fire** 0x4b8 / 0x4bb…0x4bd (M l. 49576–49580; MS): without the Fire Charm (`.HasItem(0x18)`, asked only
+    ///   for these types) or with the fire's `+0x14c` > 0 → `.HurtPlayer(player, fire, 0xe0, 1, 0x3c, 0)`; then on
+    ///   through the type tests below (none matches a fire) — none placed on levels 1–2;
     /// - **the pendulum arm** (0x5c8…0x5d1, l. 49583–49592): player `+0x116 == 0` and other `+0x170 == 1` →
     ///   `.HurtPlayer(player, other, 0xe0, blood 1, invul 0x3c, coins 5)` and then `+0x116 = 0x1e` — **whether or not
     ///   the hurt landed**; then, if the other's one-way `+0x185` is 0, `.PlatformBounce(player, other, d, 0, player
@@ -103,6 +104,10 @@ extension HitPlayerSprite {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let d = SpriteSlot.Point(x: h(p.centre.x - o.x), y: h(p.centre.y - o.y))
+        if o.type == 0x4b8 || (0x4bb...0x4bd).contains(o.type),
+           !w.globals.hasItem(0x18) || 0 < o.classTimer {
+            HurtPlayer.hurt(w, player: pID, attacker: oID, damage: 0xe0, blood: true, invulnerable: 0x3c, coins: 0)
+        }
         if BackgroundSprite.passages.contains(o.type) {
             passage(w, player: pID, passage: oID, keys: keys)
             return
@@ -797,9 +802,15 @@ extension HitPlayerSprite {
 ///    all (0, no draw). [Plan W2a named "Platform / Background" — the dump and the bank (review A3) say EnemyShot /
 ///    Box.] Core has no EnemyShot Handle yet: // later: Phase 4 (enemy shots are `inert` until then).
 /// 2. `.HurtSprite(player, damage, (i16) attacker vx, −1000, invul, 0xc)` (`HurtSprite.apply`); 0 → return 0.
-/// 3. // later: Phase 4 — item 0x13 (`HasItemWhichSlot(0x13)`, the attacker not a Blob nor a Background 0x730…0x733):
-///    `_DAT_100a073c = 0xf`, snd 507, `PTR_DAT_1009fda8 = 0xf`, four 0x4bf + i sprites with 3 draws each. No Phase-2
-///    inventory holds it.
+/// 3. The Multi Crystal (M l. 47989–48032; MS): the attacker's Handle not the Blob's (`PTR_PTR_100a04c0` — // later:
+///    Phase 5, no Blob in Core) and not a Background (`runs`) of type 0x730…0x733, and `.HasItemWhichSlot(0x13)` → the
+///    loss timer `_DAT_100a073c = 0xf` (row 13 removes one crystal at 0), `.STPlayRegSound(507, 1, 0x100)`
+///    (`_DAT_100a02bc`), the item flash `PTR_DAT_1009fda8 = 0xf` on the crystal's slot `_DAT_1009fda4` in red
+///    (`_DAT_1009fda0 = 1`); four shards i = 0…3, `.MTNewSprite(0x4bf + i, x, y, 0x14, −1, .SetupBonusSprite)` at x =
+///    `+0x10` − 0x10 (i 0, 2) or `+0x10` (i 1, 3), y = `+0xe` − 0x10 (i 0, 1) or `+0xe` (i 2, 3) — the Setup's draws
+///    inside the call — then vy = −0x4b0 − `FastRand(0x708)`, vx = |player vx| / 4 (C division) − `FastRand(300)`,
+///    |vx| < 500 → 600 − `FastRand(200)`, negated while the player's `+0x17e` is 0. With no free record the stores go
+///    nowhere (Ruling 16) and the draws are made as written (the |vx| test reads back the value just stored).
 /// 4. `_DAT_100a059c = 5`; on a magic carpet (`PTR_DAT_100a05a4`) a rising ridden sprite (`PTR_DAT_100a0558`
 ///    `+0x2c < 0`) stops; `_DAT_100a05b0 = 0`, stun `_DAT_100a0748 = 1`, spin `PTR_DAT_100a0668 = 0`, pull-up
 ///    `_DAT_100a06a0 = 0`, climb `_DAT_100a0758 = 0`, exertion `_DAT_100a06a4 += 0x50`.
@@ -830,7 +841,10 @@ public enum HurtPlayer {
         if a.hp < 1 && a.handler != .box { return false }               // later: Phase 4 — or the EnemyShot Handle
         guard HurtSprite.apply(w, id: pID, damage: damage, dvx: Int16(truncatingIfNeeded: a.vx), dvy: -1000,
                                invulnerable: invulnerable, flash: 0xc) else { return false }
-        // later: Phase 4 — the item-0x13 arm (no Phase-2 inventory).
+        if !(BackgroundSprite.runs(a, .background) && (0x730...0x733).contains(a.type)),
+           let slot = w.globals.hasItemWhichSlot(0x13) {
+            crystalShards(w, player: pID, slot: slot)
+        }
         w.player.carpetLock = 5
         if w.player.carpet, let r = w.player.ridden, let rs = w.active.record(id: r), rs.vy < 0 {
             w.active.update(id: r) { $0.vy = 0 }
@@ -899,6 +913,40 @@ public enum HurtPlayer {
             w.player.coinsLost &+= n
         }
         return true
+    }
+
+    /// Step 3's arm (the Multi Crystal; see the type's notes).
+    static func crystalShards(_ w: SpriteWorld, player pID: Int, slot: Int) {
+        w.player.countdown073c = 0xf
+        w.player.cue(PlayerCue(call: .reg, snd: 507, priority: 1, volume: 0x100))
+        w.statusBar.flashes.item = 0xf
+        w.statusBar.flashes.itemSlot = Int16(slot)
+        w.statusBar.flashes.itemMode = 1
+        for i in 0..<4 {
+            guard let p = w.active.record(id: pID) else { return }
+            let x = Int(Int16(truncatingIfNeeded: (i == 1 || i == 3) ? p.centre.x : p.centre.x - 0x10))
+            let y = Int(Int16(truncatingIfNeeded: 1 < i ? p.centre.y : p.centre.y - 0x10))
+            let layer = p.layer
+            let shard = w.newSprite(type: 0x4bf + Int16(i), x: x, y: y, layer: 0x14, handler: .bonus) { s in
+                // Cannot throw: `BonusSprite.setup` throws only for 0xc25 and out-of-table item faces — never 0x4bf…0x4c2.
+                _ = try! BonusSprite.setup(&s, x: x, y: y, level: w.level, records: w.records, effects: 0,
+                                           lightCount: 0, counting: false, playerLayer: layer, rng: &w.rng) {
+                    _, _, _, _ in -1                                    // the shard arm adds no light (M l. 52530–52536)
+                }
+            }
+            let vy = -0x4b0 - Int32(w.rng.next(0x708))
+            let pvx = w.active.record(id: pID)?.vx ?? 0
+            let speed = pvx < 1 ? 0 &- pvx : pvx                       // `if (v < 1) v = −v`
+            var vx = speed / 4 &- Int32(w.rng.next(300))
+            if (vx < 1 ? 0 &- vx : vx) < 500 { vx = 600 - Int32(w.rng.next(200)) }
+            if !(w.active.record(id: pID)?.mirrored ?? false) { vx = -vx }
+            if let shard {
+                w.active.update(id: shard) { s in
+                    s.vy = vy
+                    s.vx = vx
+                }
+            }
+        }
     }
 
     /// `.BloodSpray(s, attacker, count, speed, spread, kind) @ 100425f8` (particles §5.3; E1a): 40 particles and their

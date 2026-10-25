@@ -193,11 +193,20 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 4 (teleporters).
     public var teleporterCharge: Int16 = 0
     /// `_DAT_100a05b0`: potion drink counter (the item switch sets 1, row 32 drinks — IU); `_DAT_100a0570`: boss-grab
-    /// counter; `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition. // later: MS, Phase 5 (no writer yet).
+    /// counter (// later: Phase 5, no writer yet); `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition
+    /// (MS: row 33's transition arm sets the timer 600, row 16 counts it down). `_DAT_100a0578` is a **halfword** in the
+    /// binary (every access `lha`/`sth`, raw `1004e234`, `1004fb04`, `10054d40`); it is kept as `Int32` (Invariant 9) and
+    /// every value written fits in an `Int16`.
     public var potion: Int16 = 0
     public var bossGrab: Int16 = 0
     public var spiritTimer: Int32 = 0
     public var spiritTransition: Int16 = 0
+    /// `_DAT_100a056c` (u8): row 16's `.TickTockLong` answer — the spirit tint 0xb0005 instead of 0xb0001 (row 42);
+    /// cleared when the spirit form starts (M l. 45571–45574). `PTR_DAT_100a0550`: the Mist body sprite 0x45 (an
+    /// `ActiveList` id; nil = 0) — the transition stores it (M l. 45575–45577), row 16's time-out kills it (M l. 44836–44840).
+    /// MS.
+    public var spiritBlink = false
+    public var mistBody: Int?
 
     // MARK: jump
 
@@ -332,7 +341,7 @@ public struct PlayerState: Equatable, Sendable {
     /// `.SetHeldItemPos` mirrors the held item's x by it (M l. 43505–43512; IU).
     public var heldLeft = false
     /// `PTR_DAT_100a0594`: the necklace revive counter. `PTR_DAT_100a0560`: died in liquid (the dying arm ends at
-    /// 100, not 80; row 41's death trigger writes it, P4). // later: Phase 4 (revive).
+    /// 100, not 80; row 41's death trigger writes it, P4). The revive is row 33's dying arm (MS, M l. 45495–45555).
     public var revive: Int16 = 0
     public var diedInLiquid = false
     /// `PTR_DAT_100a0538`: row 17's liquid-contact counter (0 out of the liquid, +1 per frame up to 2; acid and healing
@@ -403,7 +412,7 @@ public struct PlayerState: Equatable, Sendable {
     // PU, SD's rows)
 
     /// `PTR_DAT_100a04d4` / `PTR_DAT_100a04d0` (i32): the Mist body's stored x / y — the 69 arm moves the player there
-    /// (M l. 48607–48610). // later: MS — the spirit form writes them (M l. 44830, 44834).
+    /// (M l. 48607–48610); the spirit transition stores them (M l. 45567–45569, MS).
     public var mistBodyX: Int32 = 0
     public var mistBodyY: Int32 = 0
     /// `PTR_DAT_100a05c8`: the glider's ground-contact frames (row 33, M l. 45224–45238: > 12 at phase 0 → the stow);
