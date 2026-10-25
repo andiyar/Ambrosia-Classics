@@ -497,6 +497,8 @@ public final class FerazelSession {
         case .heldItem:
             // `.HandleHeldItemSprite @ 1004be74` (IU, `HeldItem.handle`): the hot rect from the face's bounds.
             HeldItem.handle(world: world, id: id, faceBounds: bounds)
+        case .shadow:
+            ShadowDouble.handle(world: world, id: id)                         // `.HandleShadowSprite` (SD)
         case .platform:
             PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
         case .chain:

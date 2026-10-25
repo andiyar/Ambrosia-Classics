@@ -18,7 +18,7 @@ import Foundation
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
 /// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (CS)
-/// 11 Shadow Double (later: Phase 4)                       32 potion drink (IU)
+/// 11 Shadow Double (`ShadowDouble`, SD)                   32 potion drink (IU)
 /// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
 /// 14 power-up `.TickTock`s (PU); 0610/0614              35 oxygen, drowning, bubbles (P4)
@@ -31,9 +31,10 @@ import Foundation
 ///                                                            draw offsets (plan row 36)
 /// 21 `.HandleKeys` (door transit: input cleared)          41 death trigger, breath refill (P4); liquid tint
 ///                                                            (later: no seam)
-///                                                         42 tail: copies, below-map, stillness, ride ramps, trail
-///                                                            ring (PU), `.StandardSpriteCleanup`,
-///                                                            counters, tint overrides
+///                                                         42 tail: copies, below-map, stillness, ride ramps, the
+///                                                            Shadow-Double pose ring (SD), trail ring (PU),
+///                                                            `.StandardSpriteCleanup`, counters, tint overrides,
+///                                                            `.UpdatePentSprites` (SD)
 public enum Player {
     /// `.SetupPlayerSprite`'s layer `+0x80` and type `+4`.
     public static let layer: Int16 = 10
@@ -64,8 +65,10 @@ public enum Player {
     /// (l. 42898–42907; each record's pose `{0, −1, −1, 0}` = `PlayerState.trailPoses`' initial value). The held item
     /// runs `.HandleHeldItemSprite @ 1004be74` (`SpriteHandler.heldItem`, `HeldItem.handle`; IU); the trail's Handle `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
     /// `.StandardSpriteCleanup` (`SpriteHandler.trail`, PU; `.DoubleSpeedTrail` gives them faces); neither Setup nor
-    /// Handle draws `FastRand` (plan Invariant 4). Not built: the Shadow-Double ring, the Pentashield
-    /// slots and `+0xe4 = 1` (the dead second loop's gate) — // later: Phase 4.
+    /// Handle draws `FastRand` (plan Invariant 4). Then the Shadow-Double pose ring `PTR_DAT_100a0520`: each of its 14
+    /// entries (y −1, x −1, airborne, face 0), the mirror byte `+0xc` left as it was (l. 42855–42895; SD), and the
+    /// eight Pentashield orb records (l. 42908–42955, `PlayerState.orbs`' default). Not kept: `+0xe4 = 1` (the dead
+    /// second loop's gate).
     /// `PTR_DAT_100a0530` (the global copy of the hot rect, `SetRect` at l. 42818–42820) is not kept: its one TOC
     /// load is that store (raw `1004af68 lwz r3,-0x7310(r2)`) — write-only.
     ///
@@ -80,6 +83,10 @@ public enum Player {
         // `*_DAT_100a00f4` (written only by `.FillCachedTileArray` l. 8568 and `.DestroyCrunchTile` l. 39072).
         p.crunchSprites = w.player.crunchSprites
         p.tileCacheValid = w.player.tileCacheValid
+        // The pose ring is a global `.ClearPlayerVars` leaves; the Setup rewrites all but each entry's mirror byte.
+        p.shadowRing = w.player.shadowRing.map {
+            PlayerState.ShadowPose(y: -1, x: -1, grounded: false, face: nil, mirrored: $0.mirrored)
+        }
         p.pixelX = Int16(truncatingIfNeeded: x)
         p.pixelY = Int16(truncatingIfNeeded: y)
         p.centreX = Int16(truncatingIfNeeded: x + 0x32)
@@ -183,7 +190,8 @@ public enum Player {
         }
         // 10 (l. 44673).
         w.standardSpriteHandles(id)
-        // 11 (l. 44674–44685): the Shadow Double sprite 0x1b39 (`PTR_DAT_100a0654`/`_DAT_100a0658`). // later: Phase 4
+        // 11 (l. 44674–44685): the Shadow Double sprite 0x1b39 (`PTR_DAT_100a0654`/`_DAT_100a0658`; SD).
+        ShadowDouble.row11(w, player: id)
         // 12 (l. 44686–44691).
         let crunch: UInt8 = (w.player.spin || s().groundKind != 0) ? 1 : 0
         set { $0.crunches = crunch }
@@ -821,11 +829,11 @@ public enum Player {
     }
 
     /// Row 42 (l. 46489–46649): `G+4 = HP`, `fd3c = vx`, `04c8 = vy`; below the map (y > hdr 0xb282·32 + 100) →
-    /// HP 0; the stillness counter; the riding ramps; the Shadow-Double ring // later: SD;
+    /// HP 0; the stillness counter; the riding ramps; the Shadow-Double pose ring (`ShadowDouble.record`, SD);
     /// `.DoubleSpeedTrail` (`PowerUps`, PU); `.StandardSpriteCleanup`; `05ec` (0…0x1f) and `057c` (+2, 0…0x167);
     /// the tint overrides (05a8 → 0x10008 / 0x10009; the spirit form `0578 > 0` → 0xb0001, 0xb0005 while `056c`, and
     /// `+0x88 = 0` (M l. 46633–46641; MS); 0564 → 0x10007 // later: auto-scroll levels); `04cc` −1;
-    /// `.UpdatePentSprites` // later: SD.
+    /// `.UpdatePentSprites` (`Pentashield.update`, M l. 46648; SD).
     static func tail(_ w: SpriteWorld, id: Int, faceWidth: (FaceRef) -> Int) {
         guard let s = w.active.record(id: id) else { return }
         w.globals.health = s.hp
@@ -853,7 +861,8 @@ public enum Player {
             }
             if w.player.rideRamp2 < 8 { w.player.rideRamp2 += 1 }
         }
-        // The Shadow-Double pose ring `PTR_DAT_100a0520` (14 × 16 B) while not standing still. // later: SD
+        // The Shadow-Double pose ring `PTR_DAT_100a0520` (14 × 16 B) while not standing still (M l. 46535–46614).
+        ShadowDouble.record(w, player: id)
         PowerUps.doubleSpeedTrail(w, player: id)                         // M l. 46615
         w.standardSpriteCleanup(id, faceWidth: faceWidth)
         w.player.counter05ec += 1
@@ -872,5 +881,6 @@ public enum Player {
             }
         }
         if w.player.oneWayTimer != 0 { w.player.oneWayTimer -= 1 }
+        Pentashield.update(w, player: id)                                // M l. 46648
     }
 }

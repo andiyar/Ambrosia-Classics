@@ -259,13 +259,33 @@ public struct PlayerState: Equatable, Sendable {
     /// `PTR_DAT_100a06e8` (u8): the second arming path of row 31 (M l. 45143–45146) — its only writers are
     /// `.ClearPlayerVars` (0) and that path's own clear, so it is never set (spells-detail §2.2): kept as written.
     public var castArming = false
-    /// `_DAT_100a0658`: the Shadow Double sprite (nil = 0) `.CastSpell` copies the first shot from (M l. 46916).
-    /// // later: SD — row 11 makes and keeps it; no writer yet.
+    /// `_DAT_100a0658`: the Shadow Double sprite (nil = 0) — row 11 makes and removes it (M l. 44674–44685, SD);
+    /// `.CastSpell` copies the shots at its offset (M l. 46914).
     public var shadowDoubleSprite: Int?
-    /// `PTR_DAT_100a0520` (14 × 16 B): byte `+4` of each Shadow-Double history entry — "on the ground, not on a
-    /// platform" (`.CastSpell` reads entry `PTR_DAT_100a0590 >> 1`, M l. 46928). // later: SD — the ring's writer
-    /// (row 42); false until then.
-    public var shadowRingGrounded = [Bool](repeating: false, count: 14)
+    /// One 16-byte entry of the Shadow Double's pose ring `PTR_DAT_100a0520` (row 42 writes entry 13 from the player
+    /// record, M l. 46607–46613): `+0` y / `+2` x (the player's `+0xa`/`+0xc`), `+4` "on the ground, not riding"
+    /// (`+0xce ≠ 0 ∧ +0xdc == 0`), `+8` the face `+0xc0`, `+0xc` the mirror `+0x17e`.
+    public struct ShadowPose: Equatable, Sendable {
+        public var y: Int16
+        public var x: Int16
+        public var grounded: Bool
+        public var face: FaceRef?
+        public var mirrored: Bool
+
+        public init(y: Int16 = 0, x: Int16 = 0, grounded: Bool = false, face: FaceRef? = nil, mirrored: Bool = false) {
+            self.y = y; self.x = x; self.grounded = grounded; self.face = face; self.mirrored = mirrored
+        }
+    }
+    /// `PTR_DAT_100a0520` (14 × 16 B, entry 0 oldest, 13 newest): a global `.ClearPlayerVars` leaves; `Player.spawn`
+    /// sets each to (y −1, x −1, airborne, face 0) and keeps the mirror (M l. 42855–42895); row 42 shifts and records
+    /// it while the player is not standing still (M l. 46535–46614); `.HandleShadowSprite` and `.CastSpell` read entry
+    /// `PTR_DAT_100a0590 >> 1` (`rideRamp`).
+    public var shadowRing = [ShadowPose](repeating: ShadowPose(), count: 14)
+    /// `PTR_DAT_100a05c0` (i16): the double's bob offset (y); `_DAT_100a0604` (i16): the bob phase (0…46);
+    /// `PTR_DAT_100a0608` (u8): re-synced since the last still-on-the-ground frame (`.ShadowBob`, M l. 43012–43050).
+    public var shadowBob: Int16 = 0
+    public var shadowBobPhase: Int16 = 0
+    public var shadowBobSynced = false
 
     // MARK: per-frame counters (row 13)
 
@@ -305,9 +325,10 @@ public struct PlayerState: Equatable, Sendable {
     /// `_DAT_100a0744` / `PTR_DAT_100a0674`: the stillness counter / standing still.
     public var stillness: Int16 = 0
     public var standingStill = false
-    /// `PTR_DAT_100a0590` / `_DAT_100a05bc`: the riding ramps (0…0x1b by 2, 0…8). The same `PTR_DAT_100a0590` is the
-    /// Shadow Double's history index: `.CastSpell` reads entry `0590 >> 1` of `PTR_DAT_100a0520` (`shadowRingGrounded`,
-    /// M l. 46914–46973).
+    /// `PTR_DAT_100a0590` / `_DAT_100a05bc`: the riding ramps (0…0x1b by 2, 0…8). They are the Shadow Double's replay
+    /// index and x offset — one global each, the same TOC slot in every reader: `.HandleShadowSprite` replays entry
+    /// `0590 >> 1` of `shadowRing` and adds `05bc >> 1` to x (M l. 43067–43160), `.CastSpell` reads that entry's
+    /// grounded byte (M l. 46691, 46928). Not riding: 0 (13 entries behind); riding: 0x1b (the newest entry).
     public var rideRamp: Int16 = 0
     public var rideRamp2: Int16 = 0
     /// `PTR_DAT_100a05ec` (0…0x1f) / `_DAT_100a057c` (0…0x167, +2): the free-running counters at the Handle's end.
@@ -431,7 +452,8 @@ public struct PlayerState: Equatable, Sendable {
     public var doubleSpeedTimer: Int16 = 0
     /// `PTR_DAT_100a053c`: the Pentashield orb count (1338: + 5, ≤ 8, M l. 49085–49088; `.SetupPlayerSprite` 0).
     public var pentashieldCount: Int16 = 0
-    /// `PTR_DAT_100a0514`: the eight Pentashield orb records (0x14 bytes each). // later: SD — their Handle.
+    /// `PTR_DAT_100a0514`: the eight Pentashield orb records (0x14 bytes each); `.UpdatePentSprites` keeps their
+    /// sprites (`Pentashield`, SD).
     public struct Orb: Equatable, Sendable {
         /// `+0`: the orb sprite (nil = 0).
         public var sprite: Int?

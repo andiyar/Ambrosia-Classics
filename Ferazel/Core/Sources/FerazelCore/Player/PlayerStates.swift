@@ -176,7 +176,7 @@ public enum PlayerStates {
         if 0 < p.dying {
             if 0 < p.idle { p.idle = p.fidgets }
             s.hasHit = false                                         // `+0x5c = 0`
-            // `*PTR_DAT_100a0654 = 0`: the Shadow Double off. // later: SD
+            p.shadowDouble = false                                   // `*PTR_DAT_100a0654 = 0` (M l. 45410)
             s.vx = 0
             p.climb = 0
             p.gliderExit = 0
@@ -339,7 +339,7 @@ public enum PlayerStates {
                 p.hasHit = false                                     // `+0x5c = 0`
                 p.vx = 0
             }
-            // `*PTR_DAT_100a0654 = 0`: the Shadow Double off. // later: Phase 4
+            w.player.shadowDouble = false                            // `*PTR_DAT_100a0654 = 0` (M l. 45478)
             w.player.climb = 0
             let d = w.player.dying
             if d < 0x1e {

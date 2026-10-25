@@ -485,6 +485,9 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.SetupHeldItemSprite` on the player's held-item sprite (`Player.spawn`) and re-installed by `.HandleItemUse` at
     /// c ∉ {3, 4, 5} (`HeldItem`); at c 3…5 the held sprite carries `.playerShot` instead.
     case heldItem
+    /// SD (added, Invariant 9): `.HandleShadowSprite @ 1004b4f0` (M l. 43052–43166), installed by `.SetupShadowSprite`
+    /// on the Shadow Double 0x1b39 row 11 makes (`ShadowDouble`).
+    case shadow
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

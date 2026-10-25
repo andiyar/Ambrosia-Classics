@@ -140,13 +140,13 @@ public enum CastSpell {
     /// position `+0xa`/`+0xc` and 24.8 from it; vx = the shot's (before the facing flip); vy = the shot's, − 0x44c when
     /// the double's replayed history entry (`PTR_DAT_100a0520[PTR_DAT_100a0590 >> 1]` byte +4) is grounded and the shot
     /// has gravity; `+0x17e` 0; vx negated when the double faces left. No `+0xa4` store: its damage stays 0. A shot whose
-    /// spawn failed reads as zeros [LOW: the binary reads low memory].
-    /// // later: SD — the double, its ring and its facing (no writer of `_DAT_100a0658` yet).
+    /// spawn failed reads as zeros [LOW: the binary reads low memory]. The double, its ring and its facing are
+    /// `ShadowDouble`'s (SD): row 11 makes it, its Handle (earlier in the list) has placed it this frame.
     static func shadowCopy(_ w: SpriteWorld, of shotID: Int?, type: Int16, player p: SpriteSlot, double dID: Int) {
         let src = shotID.flatMap { w.active.record(id: $0) } ?? SpriteSlot(type: 0, x: 0, y: 0)
         let d = w.active.record(id: dID) ?? SpriteSlot(type: 0, x: 0, y: 0)
-        let ring = Int(w.player.rideRamp >> 1)
-        let grounded = w.player.shadowRingGrounded.indices.contains(ring) && w.player.shadowRingGrounded[ring]
+        let ring = Int(w.player.rideRamp >> 1)                           // `PTR_DAT_100a0590 >> 1` (M l. 46928)
+        let grounded = w.player.shadowRing.indices.contains(ring) && w.player.shadowRing[ring].grounded
             && 0 < src.gravity
         guard let copy = PlayerShot.spawn(w, type: type, x: Int(Int16(truncatingIfNeeded: p.x)),
                                           y: Int(Int16(truncatingIfNeeded: p.y))) else { return }
