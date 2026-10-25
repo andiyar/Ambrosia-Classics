@@ -58,7 +58,7 @@ public enum PlayerShotHits {
         }
         guard s.type < 100 || s.type == PlayerShot.seed else {
             // 4.
-            if s.counterA6 == 0 { play(highSound, volume: 0xab, at: SpriteSlot.Point(x: s.x, y: s.y)) }
+            if s.counterA6 == 0 { play(highSound, volume: 0xab, at: SpriteSlot.Point(x: x, y: y)) }   // the i16 pair `+0xa`/`+0xc`
             w.active.update(id: id) { $0.counterA6 = -6 }
             return
         }
@@ -98,7 +98,7 @@ public enum PlayerShotHits {
                         let cx = Int16(truncatingIfNeeded: x + 8 * i - 4), cy = Int16(truncatingIfNeeded: y + 8 * j - 10)
                         guard counter < 1 else { continue }
                         counter = 2
-                        let smoke = spawn(BackgroundSprite.smoke, Int(cx) - 0x18, Int(cy) - 0x18, layer: 0xc)
+                        let smoke = spawn(EffectSprite.smoke, Int(cx) - 0x18, Int(cy) - 0x18, layer: 0xc)
                         let m = Int32(w.rng.next(0x96)) + 400
                         let dir = BloodSpray.direction(target: (v: cy, h: cx),
                                                        from: (v: Int16(truncatingIfNeeded: s.centre.y),

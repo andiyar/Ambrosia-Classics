@@ -76,6 +76,8 @@ public enum EffectSprite {
     public static let plume: Int16 = 0x4b6
     /// 0x4b7 'big explosion' (PICT 1207, 13 × 96×96, M l. 53652).
     public static let bigExplosion: Int16 = 0x4b7
+    /// 0x442 the smoke puff (the cannon smoke 1090, `BackgroundSprite.smoke`; the seed's burst spawns it too).
+    public static let smoke: Int16 = BackgroundSprite.smoke
     /// 0xc1b crate debris (PICT 3099, 16 × 24×24, 8 per row, M l. 53660).
     public static let debris: Int16 = 0xc1b
     /// The explosion faces (PICT 1200 = 0x4b0, 13 × 48×48, M l. 53650): ids 0…15, 1090, 3201, −1.

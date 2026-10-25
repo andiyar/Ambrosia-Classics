@@ -443,5 +443,19 @@ final class EffectTests: XCTestCase {
         XCTAssertEqual(offsets, expected)
         XCTAssertEqual(offsets, [9, 8, -8, 7, 7, 6, -6, 5])                 // counters 0x42…0x49: & 3 == 0 at 0x44, 0x48
         XCTAssertEqual([Int(shaken.carry.shake), Int(shaken.carry.paintCounter)], [0x12 - 8, 0x4a])
+        // A seed's kill in the unshaken twin (`.KillPlayerShot`, M l. 51148: `*_DAT_1009ffa0 = 0x14`): the store is the
+        // camera's shake from the next `.FindUpperLeftCorner` (one per pass now, counted down, M l. 6147–6162); a level
+        // exit before that pass carries 0x14.
+        var seed = SpriteSlot(type: PlayerShot.seed, x: Int(L.header.startX), y: 600)
+        seed.handler = .playerShot
+        seed.seedHidden = 1
+        let seedID = still.world.active.insert(seed)
+        var lights = LightTable()
+        PlayerShotHits.kill(still.world, shot: seedID, sound: true, effect: true, effects: 0, lights: &lights)
+        XCTAssertEqual([Int(still.camera.shake), Int(still.carry.shake)], [0, 0x14])
+        _ = still.step(keys: KeyState())
+        XCTAssertEqual([Int(still.camera.shake), Int(still.carry.shake)], [0x13, 0x13])
+        _ = still.step(keys: KeyState())
+        XCTAssertEqual([Int(still.camera.shake), Int(still.carry.shake)], [0x12, 0x12])
     }
 }

@@ -1420,10 +1420,10 @@ final class BackgroundMoverTests: XCTestCase {
         r = w.rng
         rate = r.soundRate()
         explosionPackage(&r)
-        var phases: [Int16] = []
+        var phases: [Int16] = [], speeds: [Int32] = []
         for _ in 0..<8 {
             explosionPackage(&r)
-            _ = r.next(0x96)
+            speeds.append(Int32(r.next(0x96)) + 400)
             phases.append(r.next(7))
         }
         XCTAssertEqual(strike(seed), [
@@ -1437,7 +1437,46 @@ final class BackgroundMoverTests: XCTestCase {
         XCTAssertEqual(smokes.count - smokes0, 8)
         XCTAssertEqual(smokes.suffix(8).map(\.phase), phases)
         XCTAssertEqual(smokes.suffix(8).map { [$0.x, $0.y] }.first, [2000 - 4 - 0x18, 1000 - 10 - 0x18])
+        // Each smoke's push (M l. 51172–51176): `FUN_1003f218(smoke, .FindDesiredDirectionGeneric((cy, cx), centre),
+        // R(0x96) + 400)` — the cell (x − 4 + 8i, y − 10 + 8j), i outer, every second cell (j = 0, 2) — from rest.
+        let seedCentre = centre(seed)
+        var pushes: [[Int32]] = []
+        for i in 0..<4 {
+            for j in [0, 2] {
+                let cell = (v: Int16(1000 - 10 + 8 * j), h: Int16(2000 - 4 + 8 * i))
+                var e = SpriteSlot(type: EffectSprite.smoke, x: 0, y: 0)
+                PlayerShot.addDirImpulse(&e, dir: BloodSpray.direction(target: cell, from: (v: Int16(seedCentre.y), h: Int16(seedCentre.x))),
+                                         magnitude: speeds[pushes.count])
+                pushes.append([e.vx, e.vy])
+            }
+        }
+        XCTAssertEqual(smokes.suffix(8).map { [$0.vx, $0.vy] }, pushes)
+        XCTAssertEqual(smokes.suffix(8).map { [$0.x, $0.y] }.last, [2000 + 0x14 - 0x18, 1000 + 6 - 0x18])
         XCTAssertEqual(w.active.sprite(id: seed)?.dead, true)
         XCTAssertFalse(launched(seed))
+        // The clip window (M l. 51114–51119): a face wholly outside `+0x1b6` / `+0x1b8` (face `+0xe` ≤ left, or
+        // right ≤ face `+0xa`) clears the effect flag — snd 301 still plays, no effect 0, no package drawn; a face
+        // that overlaps by a pixel on either side keeps it.
+        let faceRect = IdleSprites.Rect(top: 0, left: 4, bottom: 0x10, right: 0xc)
+        for (left, right, spawns) in [(0xc, 32000, false), (0, 4, false), (0xb, 5, true)] {
+            let s = shot(0, power: 1)
+            w.active.update(id: s) {
+                $0.face = FaceRef(pict: 0x45e, index: 0, set: .encoded)
+                $0.clip = SpriteClip(left: left, right: right, bottom: 32000, top: 0)
+            }
+            let e0 = effects(0).count
+            w.player.cues = []
+            r = w.rng
+            rate = r.soundRate()
+            if spawns { explosionPackage(&r) }
+            var lights = LightTable()
+            PlayerShotHits.kill(w, shot: s, sound: true, effect: true, effects: 1, lights: &lights,
+                                faceWidth: { _ in 0x10 }, faceBounds: { _ in faceRect })
+            XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDRand, snd: 301, priority: 1, volume: 0x100,
+                                                     position: centre(s), rate: rate)], "clip \(left) \(right)")
+            XCTAssertEqual(w.rng.seed, r.seed, "clip \(left) \(right)")
+            XCTAssertEqual(effects(0).count - e0, spawns ? 1 : 0, "clip \(left) \(right)")
+            XCTAssertEqual(w.active.sprite(id: s)?.dead, true, "clip \(left) \(right)")
+        }
     }
 }
