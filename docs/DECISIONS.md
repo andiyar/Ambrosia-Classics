@@ -1483,6 +1483,16 @@ async fade's arm sends the cursor hide. **◈ goldens moved, causes confirmed by
 600-frame (+ cues, seed, particles); PK swim and 600-frame again (level 1's route now collects a potion and five
 Xichrons). New values: STATE / the plan's "As executed" notes for TB, BN, PK.
 
+**As built — wave 4.3 (loop run 23, 2026-10-25/26; main 03a2c52):** EF ⚑ (the Effect ids: explosion package, light
+schedule, 1207 big-explosion hurt via `.HurtSprite`, 3099 debris; `ScreenFlash` + `DrawOp.copyMaskToScreen`; the camera
+shake) → 403; CS ⚑ (casting: the USE gate, the wand steps, `.CastSpell`; the player shots in flight: followers, lights,
+Boomerang, V Blade, liquids) → **412/0**, census 1,108/0, Ferazel builds, HK 35a85ba untouched, no golden moved. **Seat
+rulings:** (1) the flash count/toggle, the paint counter and the plume count ride `LevelCarry` (data-section globals,
+never reset); the shake rides it too, zeroed only by `.InitGameGlobals` (New Game, Continue); (2) a player shot touching a
+spring runs `.KillPlayerShot` as the binary — built in full by CS in SH's file `Shots/PlayerShotHits.swift`, because a
+stub skipping its sound/Effect draws would desynchronise the RNG (Invariant 6); (3) the stale-r29 recolour at the spring
+site is built as a no-op [MED]. Details: the plan's "As executed" notes for EF and CS.
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**

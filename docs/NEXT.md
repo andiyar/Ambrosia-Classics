@@ -78,7 +78,7 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-25, written by loop run 22 at its close; head of `main` = run 22's docs-close commit on top of 480d46e — read `git log -8 main`)
+## STATE (live, 2026-10-26, written by loop run 23 at its close; head of `main` = run 23's docs-close commit on top of 03a2c52 — read `git log -8 main`)
 - **Phases 2 and 3 PASSED WITH NOTES by Ben (2026-10-25, D39).** His notes became wave 4.2F (done by loop run 22).
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
   `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (the gate card; Ben played it — Q6 answered).
@@ -95,12 +95,18 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   → `.hideCursor` via `PlayerState.passRequests`, one ordered list for pass draws) → **393**. **Wave 4.2F DONE (loop run 22,
   Ben's notes):** TX cdcb8b8 + 480d46e (`TextRasterizer` returns coverage 0…255; one blend helper in `TextRasterizer.swift`;
   the App's `CoreTextRasterizer` smooths at ≥ 14 pt as the LP shows; status bar mixes through the screen CLUT) → **396**;
-  SP (measured, no code: port = binary cap 30 steps/s; LP ~25 — Q9).
-- `Ferazel/Core` suite: **396 passed, 0 failed/skipped** (run 22, seat-run from the merge head). Census `Totals: items 1,108
+  SP (measured, no code: port = binary cap 30 steps/s; LP ~25 — Q9). **Wave 4.3 DONE (loop run 23):** EF bdafea7 + 002df68 + 4c81946
+  (`EffectSprite` ids 0…15, 0x442, 0x4b6, 0x4b7, 0xc1b, 0xc81, 3201, balloons; 1207 hurts via `.HurtSprite`; `ScreenFlash`
+  + `DrawOp.copyMaskToScreen`; `Camera.shake`; **flash, paint counter, plume count and shake ride `LevelCarry`**, the shake
+  zeroed only by New Game / Continue) → 403; CS adbb056 + d9bfa55 + aea9a49 + 03a2c52 (`Shots/CastSpell.swift`,
+  `Shots/PlayerShot.swift`, the USE gate in `HandleKeys`, row 31 in `Player.swift`; **`.KillPlayerShot` built in full in
+  `Shots/PlayerShotHits.swift`** — springs kill shots through it; seed explosion writes the flash/shake through
+  `SpriteWorld.shakeStore`) → **412**. Shots fly through walls until SH builds the tile hits.
+- `Ferazel/Core` suite: **412 passed, 0 failed/skipped** (run 23, seat-run from the merge head 03a2c52). Census `Totals: items 1,108
   decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- **Goldens (current, after wave 4.2F — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+- **Goldens (current, after wave 4.3 — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
   `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `deb577ecdeb64c58`,
   swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
   1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
@@ -120,6 +126,12 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   Core, or stop when missing); **sphere timers are not counted down until PU** (a walk-on-liquid sphere stays on — level 2
   has one; PU owns it); a 1058 with p1 out of range is dropped where the binary writes past the end; the glider's 0x41a sheet
   is GL's.
+- **Run 23 carries:** the Continue route's level carry is untested (a reset right after Continue passes every test —
+  pre-existing); the 1090 cannon smoke's Setup exists twice (`BackgroundSprite.swift:~737` and `EffectSprite`); the
+  stale-r29 light recolour in `.KillPlayerShot` (ids 1–4, effect suppressed) is a no-op at the spring site [MED] — SH traces
+  r29 at its own call sites; Core never reuses sprite records (followers never alias a reused record; SH's kill writes
+  through follower pointers); the "no free record" error report is not modelled; `noCastBegan`/`wandHeld` are the plan's
+  `castBegan`/`wandHold`; `rideRamp` doubles as the Shadow Double history index (SD).
 - **Run 22 carries:** the smoothing mix is linear with no gamma and the 14 pt threshold is read from the LP, both [MED];
   the LP's Times still looks a little heavier and ~5 % wider than today's system Times (the font — D39 allows bundling
   classic Times if Ben asks); SP left the level-start pan, the load bar and walk distance per step unmeasured [LOW].
@@ -142,29 +154,31 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   recorded in the plan and D38;** (19) the golden "switch the new behaviour off → old values return" check is what makes a
   ◈ move acceptable — ask both implementer and reviewer to do it; (20) **run 22: a "measure first" task runs well as a read-only
   investigator in parallel with the other task's implementer, then a reviewer who re-measures independently; wait on a
-  background agent by `stat -L` on its transcript (the task file is a symlink).**
+  background agent by `stat -L` on its transcript (the task file is a symlink).** (21) **run 23: a stub that skips a routine's
+  sound or spawn draws desynchronises the RNG — when built code reaches a later task's routine (the spring → `.KillPlayerShot`),
+  build the routine faithfully now and tell the owning task; run the wave-end gates in a background Bash while a
+  foreground reviewer works.**
 
-## THIS RUN'S JOB — loop run 23: **Phase 4 wave 4.3 = [EF CS]** (2 tasks, both ⚑ MAJOR)
-- **EF** (plan `#### EF`, l. ~705–745, ⚑ MAJOR, → **403** = plan 397 + 6): the Effect ids Phase 4 spawns (0…15, 0x442,
-  0x4b6, 0x4b7, 0xc1b, 0xc81, the balloons — Ruling 14), the explosion package, `ScreenFlash` (`Particles/ScreenFlash.swift`,
-  `_DAT_100a00fc`/`_DAT_100a00cc`, M l. 9437–9447), `DrawOp.copyMaskToScreen`, the Camera shake counter `_DAT_1009ffa0`;
-  `GroundCeilingEffects.swift` is its main file (fix the per-smoke-frame lookup carry there if cheap). Every Effect type
-  spawned at run time needs its sheet in the renderer's sheet table (plan l. ~318–323). No golden may move (not ◈) — STOP if
-  one does. Two Opus review legs.
-- **CS** (plan `#### CS`, l. ~746–811, ⚑ MAJOR, → **412** = plan 406 + 6): casting (`.CastSpell`; the cast sound's
-  `FastRand(10000)` precedes the shot Setup's `FastRand(5)` — Hazards) and the player shots in flight
-  (`SpriteHandler.playerShot`, `+0x170` power / `+4` spell id split, `+0x14c` shot age); the no-free-record rule (Ruling 16).
-  Not ◈. Two Opus review legs.
-- Order EF → CS (CS uses EF's effect 5 for the liquid rule), each merged to main before the next. Wave end: G3 + G5. Then
-  CLOSE. The next chip names wave 4.4 = [SH GL PU] (plan `#### SH` l. ~812ff, → 431; SH ⚑ — a 3-task run if only SH is MAJOR).
+## THIS RUN'S JOB — loop run 24: **Phase 4 wave 4.4 = [SH GL PU]** (3 tasks; only SH is ⚑ MAJOR)
+- **SH** (plan `#### SH`, l. ~814–868, ⚑ MAJOR, → **420** = plan 414 + 6): shot impacts — `.HitPlayerShotSprite` (M l.
+  50947–51071), `.HitPlayerShotTileSprite` (M l. 51219–51392: walls, crunch cells, water), the container arm of
+  `.HitBonusSprite`, the 2941 ice wall and the 2932 stalactite's shot case. **`.KillPlayerShot` is already built**
+  (`Shots/PlayerShotHits.swift`, CS as executed) — SH adds Hit/HitTile to that file and calls it; SH traces r29 at each of
+  its own call sites (plan l. ~836–840). CS's tile callback already has the water branch. The flash/shake writers for the
+  seed are in (via `SpriteWorld.shakeStore`). Two Opus legs. Not ◈.
+- **GL** (plan `#### GL`, l. ~869–893, minor, → **425**): the hang glider. One Opus leg. The glider's 0x41a sheet is GL's.
+- **PU** (plan `#### PU`, l. ~894–917, minor, → **431**): power-up timers and their effects (sphere timers counted down —
+  the level-2 walk-on-liquid sphere stays on until then). One Opus leg.
+- Order SH → GL → PU, each merged to main before the next. Wave end: G3 + G5. Then CLOSE. The next chip names wave 4.5
+  = [IU MS] (plan `### Wave 4.5`, l. ~918ff, → 444).
 - First, if Ben answered Q5/Q9 with (b)/(c) or wrote text notes: plan that small task first (see READ FIRST 1).
 
-## GATES (fenced; verified on this machine 2026-10-25; G2 396/0, G3 1,108/0, G5 SUCCEEDED re-run by run 22 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-26; G2 412/0, G3 1,108/0, G5 SUCCEEDED re-run by run 23 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (EF 403, CS 412), second = 0
+# G2 suite: first number = the ladder total (SH 420, GL 425, PU 431), second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0
