@@ -257,6 +257,9 @@ final class Phase2GoldenTests: XCTestCase {
                     now += 1
                 }
                 outcome = .upgrade(keys: keys, capsLock: false)
+            case .hint:
+                // IU: a USE hint answered at once (no route selects an item and presses USE; no golden sees one).
+                outcome = .hint(keys: keys, capsLock: false)
             default: return ops
             }
             let rest = s.resume(outcome)

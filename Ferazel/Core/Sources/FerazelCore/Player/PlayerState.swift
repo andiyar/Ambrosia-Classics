@@ -192,8 +192,8 @@ public struct PlayerState: Equatable, Sendable {
     public var doorTransit: Int16 = 0
     /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 4 (teleporters).
     public var teleporterCharge: Int16 = 0
-    /// `_DAT_100a05b0`: potion drink counter; `_DAT_100a0570`: boss-grab counter; `_DAT_100a0578` / `_DAT_100a0574`:
-    /// spirit-form timer / transition. // later: Phase 4–5 (no Phase-2 writer).
+    /// `_DAT_100a05b0`: potion drink counter (the item switch sets 1, row 32 drinks — IU); `_DAT_100a0570`: boss-grab
+    /// counter; `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition. // later: MS, Phase 5 (no writer yet).
     public var potion: Int16 = 0
     public var bossGrab: Int16 = 0
     public var spiritTimer: Int32 = 0
@@ -325,8 +325,12 @@ public struct PlayerState: Equatable, Sendable {
     /// (M l. 46724, 46871; CS).
     public var ropeWalk: Int16 = 0
     public var vBladeCast = false
-    /// `_DAT_100a0698`: the melee / throw counter (`.HandleItemUse`). // later: Phase 4 (no Phase-2 writer).
+    /// `_DAT_100a0698`: the melee / throw counter — `.HandleKeys`' item switch sets 1 (M l. 47557, 47580),
+    /// `.HandleItemUse` steps it 1…5, −5…−1, 0 (M l. 44296–44299; IU).
     public var itemUse: Int16 = 0
+    /// `PTR_DAT_100a04f4` (u8): the swing's side — facing left at the press (`_DAT_100a5f5a == 1`, M l. 47558, 47581);
+    /// `.SetHeldItemPos` mirrors the held item's x by it (M l. 43505–43512; IU).
+    public var heldLeft = false
     /// `PTR_DAT_100a0594`: the necklace revive counter. `PTR_DAT_100a0560`: died in liquid (the dying arm ends at
     /// 100, not 80; row 41's death trigger writes it, P4). // later: Phase 4 (revive).
     public var revive: Int16 = 0

@@ -110,6 +110,13 @@ public final class SpriteWorld {
     /// through every level, death, map and game (`LevelCarry.plumeCount`, EF review fix) — a plume alive at a level
     /// end is never counted down.
     public var plumeCount: Int16 = 0
+    /// IU: `*_DAT_1009fd64 = 1` — the Escape Ring's store (M l. 47603): skip the next `.StageCompleteEffect`. The global
+    /// is `LevelRun`'s (`skipStageComplete`, cleared at every completion, M l. 5313); `LevelRun` takes this store when
+    /// the loop ends.
+    public var stageCompleteSkip = false
+    /// IU: the handle pass stopped inside a Handle (a hint at the player's item switch) — the walk's saved `next`
+    /// (`continueHandleSprites` goes on from it; nil inside = the list's end). Nil when no pass is suspended.
+    public internal(set) var handlePassNext: Int??
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
     public static let collideRange = 360
@@ -282,14 +289,37 @@ public final class SpriteWorld {
     /// `.MTRemoveSprite`'s one caller, `.MTChangeSpriteLayer`, re-inserts at once. Moving the saved `next` to the head
     /// (a layer change below everything) makes the walk re-handle the current sprite: [1, 2, 3] with 1 moving 2 to the
     /// front handles [1, 2, 1, 3] (platforms-ropes-radial-2 §8.2).
-    public func handleSprites(_ handle: (SpriteWorld, Int) -> Void) {
-        var cursor = active.sprites.first?.id
+    ///
+    /// IU: a Handle that sets `suspension` (the player's item switch reaching a hint) stops the walk after that call;
+    /// its saved `next` is kept (`handlePassNext`) and `continueHandleSprites` goes on from it once the Handle has
+    /// finished — the sprites after the player are handled once that frame, the ones before it not again. Returns
+    /// false when suspended.
+    @discardableResult
+    public func handleSprites(_ handle: (SpriteWorld, Int) -> Void) -> Bool {
+        walkHandles(from: active.sprites.first?.id, handle)
+    }
+
+    /// IU: the suspended handle pass from its saved `next`.
+    @discardableResult
+    public func continueHandleSprites(_ handle: (SpriteWorld, Int) -> Void) -> Bool {
+        guard let saved = handlePassNext else { preconditionFailure("continueHandleSprites without a suspended pass") }
+        handlePassNext = nil
+        return walkHandles(from: saved, handle)
+    }
+
+    private func walkHandles(from start: Int?, _ handle: (SpriteWorld, Int) -> Void) -> Bool {
+        var cursor = start
         while let id = cursor {
             let next = active.next(after: id)                     // `lwz r31,0x68(r3)` before `bl 0x1009f80c`
             // `+0x4c` read from the record, linked or not; 0 (an idled record, `SpriteSlot.handleCleared`) is skipped.
             if let r = active.record(id: id), !r.handleCleared { handle(self, id) }
             cursor = next
+            if suspension != nil {
+                handlePassNext = .some(next)
+                return false
+            }
         }
+        return true
     }
 
     /// `.CalcHotRect @ 10032614`: `+0x3c = +0x34` offset by (x, y); `+0x44 = 1`.

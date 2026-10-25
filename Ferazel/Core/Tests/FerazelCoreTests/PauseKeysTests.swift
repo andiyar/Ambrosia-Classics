@@ -599,7 +599,9 @@ final class PauseKeysTests: XCTestCase {
         // CS: ⌘ is USE — held with the Fireball selected it casts (the twin does not); the dagger would stab once the
         // item switch lands. An empty slot does not hold: row 25's repair (M l. 45056–45063) moves it back to slot 0
         // before the next frame. Both run with a Locket (item 7: no spell, no arm in `.HandleKeys`' item switch,
-        // M l. 47551–47606) in slot 2, selected, so the held ⌘ casts nothing and uses nothing.
+        // M l. 47551–47606) in slot 2, selected, so the held ⌘ casts nothing and uses nothing. IU (seat ruling): the
+        // item gate zeroes the idle and fidget counters while ⌘ is held (M l. 47544–47545), so the twin holds ⌘ alone
+        // on that frame (no ⌘-key branch) and the two players stay equal.
         for rig in [a, b] {
             rig.run.session?.world.globals.inventory[2] = InventorySlot(id: 7, count: 1, field4: -1, field6: 0,
                                                                         isSpell: 0)
@@ -610,7 +612,9 @@ final class PauseKeysTests: XCTestCase {
         let qa = try a.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: [Self.command, Self.keyQ])) }) {
             rig, _ in rig.run.iterations > iterations
         }
-        let qb = try b.drive(max: 4) { rig, _ in rig.run.iterations > iterations }
+        let qb = try b.drive(max: 4, input: { _ in FrontInput(keys: KeyState(pressed: [Self.command])) }) {
+            rig, _ in rig.run.iterations > iterations
+        }
         let first = try XCTUnwrap(qa?.steps.last)
         let whole = try XCTUnwrap(qb?.steps.last)
         XCTAssertEqual(first.suspension, .gameLoopKeys(.confirmQuit))

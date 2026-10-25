@@ -4,7 +4,8 @@ import Foundation
 /// `1004ec4c..10050e6c`; player-states §3) — and row 36's tint (l. 46242–46346): plan P3. **First match wins**, in the binary's order: glider → dying → spirit transition → boss grab →
 /// hurt-stun → door walk (`_DAT_100a05f8`) → rope → swim → wall cling / climb / pull-up → melee (`.HandleItemUse`) →
 /// grounded (crouch, walk / run with footsteps, stand / turn / uphill / fidget) → airborne. The glider, spirit,
-/// boss-grab and melee arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs; the door
+/// boss-grab arms are never taken in Phase 2 (their flags have no Phase-2 writer) and are named stubs (the melee arm is
+/// IU's `.HandleItemUse`, `HeldItem`); the door
 /// arm is W2b's (passages) (plan Invariant 6). A face is `+0xc0 = set + index·0x34` (one 0x34-byte face record per index).
 public enum PlayerStates {
     // MARK: the face sets (`.InitPlayerSprite @ 1004a284`, l. 42428–42490; player-states §7)
@@ -344,7 +345,7 @@ public enum PlayerStates {
             }
             setFace(face(swim, Int(k >> 1)))
             if w.player.itemUse != 0 {
-                // later: Phase 4 — `.HandleItemUse(s)` (melee while swimming).
+                HeldItem.handleItemUse(w, player: id)                   // M l. 45727–45729: the stab while swimming (IU)
             }
             if 1 < w.player.swim { w.player.swim += 1 }
             if w.player.strokeCooldown == 0 { w.player.jumpCounter = 6 }
@@ -363,8 +364,11 @@ public enum PlayerStates {
             clingArm(w, id: id)
             return false
         }
-        // Melee / throw (`_DAT_100a0698 ≠ 0`, l. 45856–45859). // later: Phase 4 (`.HandleItemUse`; no Phase-2 writer)
-        if w.player.itemUse != 0 { return false }
+        // Melee / throw (`_DAT_100a0698 ≠ 0`, M l. 45817–45820): `.HandleItemUse` (IU), then `goto LAB_10050e6c`.
+        if w.player.itemUse != 0 {
+            HeldItem.handleItemUse(w, player: id)
+            return false
+        }
 
         // Grounded (`_DAT_100a0738 ∨ +0xce`, l. 45860–46053). The jump frame lands here: `0738` was latched by row 20
         // before `.HandleKeys` made the impulse (Bank correction A9).
@@ -528,8 +532,7 @@ public enum PlayerStates {
                     break
                 }
             }
-            // The potion overlay (`_DAT_100a05b0 > 0`). The potion counter has no Phase-2 writer (// later: Phase 4);
-            // built as read.
+            // The potion overlay (`_DAT_100a05b0 > 0`; the item switch starts the drink, row 32 counts it — IU).
             let n = Int(w.player.potion)
             if 0 < n {
                 if n < 0x14 {

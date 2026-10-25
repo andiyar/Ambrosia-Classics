@@ -143,7 +143,14 @@ final class CastTests: XCTestCase {
                 XCTAssertEqual(w.globals.selectedSlot, 0)
             }
             XCTAssertFalse(w.player.castFlag)
-            XCTAssertFalse(w.player.useDebounce)
+            // IU: with the dagger left selected (no Next) the item gate of the same call stabs (M l. 47353–47357,
+            // 47543–47561): both latches set (`0760`, `075c`, M l. 47549–47550), snd 418 vol 0x55, counter 1; with
+            // Next the selection is the Fireball — no stab, `075c` cleared (M l. 47358).
+            let stab = !keys.contains(.nextItem)
+            XCTAssertEqual(w.player.useDebounce, stab)
+            XCTAssertEqual(w.player.useItemHeld, stab)
+            XCTAssertEqual(w.player.cues, stab ? [PlayerCue(call: .reg, snd: 418, priority: 1, volume: 0x55)] : [])
+            XCTAssertEqual(w.player.itemUse, stab ? 1 : 0)
             XCTAssertEqual(w.player.wandPhase, 0)
             XCTAssertTrue(shots(w).isEmpty)
             XCTAssertEqual(w.globals.magic, 0)

@@ -383,10 +383,13 @@ public final class FerazelSession {
         let actions = InputActions(keys: keys, prefs: prefs)
         frameKeys = keys
         frameCapsLock = capsLock
-        paintFrameWrap(draw: draw, actions: actions, nested: false, into: &ops)
         frameActions = actions
         frameDraw = draw
         afterSpecial = .mainPaint
+        // IU: a hint inside the player's Handle stops the frame inside the handle pass (`resume(.hint)`).
+        guard paintFrameWrap(draw: draw, actions: actions, nested: false, into: &ops) else {
+            return suspendHandlePass(ops, nested: false)
+        }
         guard world.collideSpecial(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
         return finishFrame(ops)
     }
@@ -395,8 +398,9 @@ public final class FerazelSession {
     /// tail are the caller's): `.SetScrollLocation`, the lights, `.WrapDrawWaterEffects` (its parameter is unused),
     /// `.WrapDrawSprites`, on a drawn pass the particles, the parity flip and `.WrapCopyToScreen`, then
     /// `.HandleIdleSprites` and `.HandleSprites`. `nested` (P1): a call from `.CheckGameLoopKeys` / `.Pause` — its
-    /// Handle-pass cues join the iteration's.
-    private func paintFrameWrap(draw: Bool, actions: InputActions, nested: Bool, into ops: inout FrameOps) {
+    /// Handle-pass cues join the iteration's. IU: false when a Handle suspended the handle pass (a hint inside the
+    /// player's Handle) — the rest (`afterHandlePass`) runs at the resume.
+    private func paintFrameWrap(draw: Bool, actions: InputActions, nested: Bool, into ops: inout FrameOps) -> Bool {
         let graphics = prefs.graphics
         let h = camera.scrollH, v = camera.scrollV
         // LT: the table as `.SetScrollLocation`'s strip redraw and `.DrawLightsOntoTiles` read it (before
@@ -439,66 +443,110 @@ public final class FerazelSession {
         }
         world.idle.handle(h: h, v: v, playerHotRect: playerRect, active: &world.active, faceRect: bounds)
         // `.HandleSprites`: `.MTHandleSprites` — each sprite's Handle at its list position.
-        let effects = prefs.effects
-        let solver = self.solver
-        world.handleSprites { world, id in
-            guard let handler = world.active.record(id: id)?.handler else { return }   // the record's `+0x4c`
-            defer {
-                // `.ChangedTile`'s redraw happens inside the Handle that wrote the map: its ops go here (header).
-                ops.draws.append(contentsOf: world.player.tileOps)
-                world.player.tileOps = []
-            }
-            switch handler {
-            case .player:
-                // `.HandlePlayerSprite` (its look-ahead row and `.PlayerScroll` move the focus, P5).
-                Player.handle(world: world, keys: actions, solver: solver)
-            case .effect:
-                EffectSprite.handle(world: world, id: id, lights: &self.lightTable, effects: effects)
-            case .bonus:
-                // `.HandleBonusSprite @ 1005e934` (BN, `BonusSprite.handle`) — M6: dispatched by the record's Handle
-                // (`handler == .bonus`), not by the type's class; its `.ChangeLightFace`s land in `lightTable` and go
-                // out as ops at its place in the pass.
-                ops.draws.append(contentsOf: BonusSprite.handle(world: world, id: id, solver: solver, effects: effects,
-                                                                lights: &self.lightTable) {
-                    Self.frameRect($0, resources: res).right
-                })
-            case .playerShot:
-                // `.HandlePlayerShotSprite @ 10059704` (CS, `PlayerShot.handle`): its lights land in `lightTable`, the
-                // liquid rule's effect 5 takes prefs+6.
-                PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
-                                  faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
-            case .inert:
-                break                                       // later: Phase 5 — the enemies' and buttons' Handles
-            case .trail:
-                // `.HandleTrailSprite @ 1004b354` (PU): `.StandardSpriteHandles` + `.StandardSpriteCleanup`.
-                world.standardSpriteHandles(id)
-                world.standardSpriteCleanup(id) { Self.frameRect($0, resources: res).right }
-            case .platform:
-                PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
-            case .chain:
-                ChainSprite.handle(world: world, id: id)                          // `.HandleChainSprite` (W1)
-            case .seeSawSegment:
-                ChainSprite.handleSeeSawSegment(world: world, id: id, solver: solver,
-                                                faceWidth: PlatformSprite.faceWidth)
-            case .background:
-                // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b: cannons, springs, passages).
-                BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
-            case .cannoned:
-                // `.HandleCannonedSprite` (W2b).
-                BackgroundSprite.handleCannoned(world: world, id: id, keys: actions, lights: &self.lightTable)
-            case .box:
-                BoxSprite.handle(world: world, id: id, faceBounds: bounds)        // `.HandleBoxSprite` (W3; C1 NPCs)
-            case .rope:
-                RopeSprite.handle(world: world, id: id)                           // `.HandleRopeSprite` (W3)
-            case .ropeSegment:
-                RopeSprite.handleSegment(world: world, id: id) { Self.frameRect($0, resources: res).right }
-            }
+        guard world.handleSprites({ world, id in handleOne(world, id, actions: actions, ops: &ops) }) else {
+            return false
         }
-        // The cues the Handles made, once per frame after `.MTHandleSprites` (P2 review ruling 1).
+        afterHandlePass(nested: nested)
+        return true
+    }
+
+    /// `.HandleSprites` after `.MTHandleSprites`: the cues the Handles made (once per frame, P2 review ruling 1), then
+    /// `.MTCollideSprites` (the player pass `.MTCollideSpecialSprite` is the caller's).
+    private func afterHandlePass(nested: Bool) {
         let cues = world.player.drainFrameOutputs().cues
         if nested { frameCues += cues } else { frameCues = cues }
-        // `.MTCollideSprites`, then the player pass `.MTCollideSpecialSprite(player, .HitPlayerSprite)`.
         world.collideSprites(hit)
+    }
+
+    /// One sprite's Handle in the handle pass, dispatched by the record's `+0x4c` (`SpriteSlot.handler`).
+    private func handleOne(_ world: SpriteWorld, _ id: Int, actions: InputActions, ops: inout FrameOps) {
+        let effects = prefs.effects
+        let solver = self.solver
+        let bounds = faceBounds, res = resources
+        guard let handler = world.active.record(id: id)?.handler else { return }   // the record's `+0x4c`
+        defer {
+            // `.ChangedTile`'s redraw happens inside the Handle that wrote the map: its ops go here (header).
+            ops.draws.append(contentsOf: world.player.tileOps)
+            world.player.tileOps = []
+        }
+        switch handler {
+        case .player:
+            // `.HandlePlayerSprite` (its look-ahead row and `.PlayerScroll` move the focus, P5).
+            Player.handle(world: world, keys: actions, solver: solver)
+        case .effect:
+            EffectSprite.handle(world: world, id: id, lights: &self.lightTable, effects: effects)
+        case .bonus:
+            // `.HandleBonusSprite @ 1005e934` (BN, `BonusSprite.handle`) — M6: dispatched by the record's Handle
+            // (`handler == .bonus`), not by the type's class; its `.ChangeLightFace`s land in `lightTable` and go
+            // out as ops at its place in the pass.
+            ops.draws.append(contentsOf: BonusSprite.handle(world: world, id: id, solver: solver, effects: effects,
+                                                            lights: &self.lightTable) {
+                Self.frameRect($0, resources: res).right
+            })
+        case .playerShot:
+            // `.HandlePlayerShotSprite @ 10059704` (CS, `PlayerShot.handle`): its lights land in `lightTable`, the
+            // liquid rule's effect 5 takes prefs+6.
+            PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
+                              faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
+        case .inert:
+            break                                       // later: Phase 5 — the enemies' and buttons' Handles
+        case .trail:
+            // `.HandleTrailSprite @ 1004b354` (PU): `.StandardSpriteHandles` + `.StandardSpriteCleanup`.
+            world.standardSpriteHandles(id)
+            world.standardSpriteCleanup(id) { Self.frameRect($0, resources: res).right }
+        case .heldItem:
+            // `.HandleHeldItemSprite @ 1004be74` (IU, `HeldItem.handle`): the hot rect from the face's bounds.
+            HeldItem.handle(world: world, id: id, faceBounds: bounds)
+        case .platform:
+            PlatformSprite.handle(world: world, id: id, solver: solver)       // `.HandlePlatformSprite` (W1)
+        case .chain:
+            ChainSprite.handle(world: world, id: id)                          // `.HandleChainSprite` (W1)
+        case .seeSawSegment:
+            ChainSprite.handleSeeSawSegment(world: world, id: id, solver: solver,
+                                            faceWidth: PlatformSprite.faceWidth)
+        case .background:
+            // `.HandleBackgroundSprite` (W2a: radial bars / balls, the re-face tail; W2b: cannons, springs, passages).
+            BackgroundSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        case .cannoned:
+            // `.HandleCannonedSprite` (W2b).
+            BackgroundSprite.handleCannoned(world: world, id: id, keys: actions, lights: &self.lightTable)
+        case .box:
+            BoxSprite.handle(world: world, id: id, faceBounds: bounds)        // `.HandleBoxSprite` (W3; C1 NPCs)
+        case .rope:
+            RopeSprite.handle(world: world, id: id)                           // `.HandleRopeSprite` (W3)
+        case .ropeSegment:
+            RopeSprite.handleSegment(world: world, id: id) { Self.frameRect($0, resources: res).right }
+        }
+    }
+
+    /// IU: the handle pass stopped inside the player's Handle (a hint at the item switch): the frame so far goes out
+    /// with `suspension` set; `nested` = inside a `.CheckGameLoopKeys` / `.Pause` redraw (`suspendedInNestedPass`).
+    private func suspendHandlePass(_ ops: FrameOps, nested: Bool) -> FrameOps {
+        suspendedInNestedPass = nested
+        return suspend(ops)
+    }
+
+    /// IU: the pending hint was raised inside a nested `.PaintFrameWrap` (the pause's or `.CheckGameLoopKeys`' redraw)
+    /// — its resume finishes that pass, then hands back to the outer modal's state machine. False otherwise.
+    public private(set) var suspendedInNestedPass = false
+
+    /// IU: `resume(.hint)` — the player's Handle on from the switch (`Player.resumeAfterHint`, with the resumed keys),
+    /// its map writes' ops, the handle pass from the player's saved `next`, `.MTCollideSprites`, the special pass, then
+    /// the frame's (or the nested pass's) end.
+    private func continueHandlePass(_ ops: FrameOps) -> FrameOps {
+        var ops = ops
+        let nested = suspendedInNestedPass
+        suspendedInNestedPass = false
+        Player.resumeAfterHint(world: world, keys: frameActions, solver: solver)
+        ops.draws.append(contentsOf: world.player.tileOps)
+        world.player.tileOps = []
+        let actions = frameActions
+        guard world.continueHandleSprites({ world, id in handleOne(world, id, actions: actions, ops: &ops) }) else {
+            return suspendHandlePass(ops, nested: nested)
+        }
+        afterHandlePass(nested: nested)
+        guard world.collideSpecial(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
+        return afterSpecialPass(ops)
     }
 
     /// The suspended frame's modal moment (S1), nil while none is pending.
@@ -542,7 +590,14 @@ public final class FerazelSession {
             frameKeys = keys
             frameCapsLock = capsLock
             frameActions = InputActions(keys: keys, prefs: prefs)
-        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _):
+        case (.hint, .hint(let keys, let capsLock)):
+            // IU: `.SimpleConv` returned inside the player's Handle: the rest of the Handle, the handle pass and the
+            // frame read the input polled at the return (live in the original).
+            frameKeys = keys
+            frameCapsLock = capsLock
+            frameActions = InputActions(keys: keys, prefs: prefs)
+            return continueHandlePass(ops)
+        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _), (.hint, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
@@ -666,9 +721,13 @@ public final class FerazelSession {
     private func nestedPaintFrameWrap(then tail: NestedTail, _ ops: FrameOps) -> FrameOps {
         var ops = ops
         let actions = InputActions(keys: frameKeys, prefs: prefs)
-        paintFrameWrap(draw: true, actions: actions, nested: true, into: &ops)
         frameActions = actions
         afterSpecial = .nestedPaint(tail)
+        // IU: its handle pass can reach the player's item switch too (a hint with USE held on a key / shield / Red
+        // Xichron): suspended the same way, finished by `resume(.hint)`, which then goes on with `tail`.
+        guard paintFrameWrap(draw: true, actions: actions, nested: true, into: &ops) else {
+            return suspendHandlePass(ops, nested: true)
+        }
         guard world.collideSpecial(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
         afterSpecial = .mainPaint
         paintTail(&ops)

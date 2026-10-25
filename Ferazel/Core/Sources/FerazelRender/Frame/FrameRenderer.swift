@@ -146,7 +146,9 @@ public final class FrameRenderer {
     /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
     /// the placed types' sheets; W4: the level-2 types' sheets come with them, plus the stalactite child's set 0xb74,
     /// `SetupFaces.boxChildSheets`; PK: the hurt coins' 0x516 and the Xichron burst's 0x421 / 0x422, `BonusSprite.dropSheets`;
-    /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`), empty light slots (`addLights`), the status bar under the level
+    /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`; IU: the held items' singles 750, 756,
+    /// 768, 771, `HeldItem.sheets` — the thrown seeds and the Smiting seeds are 1116, the stab faces 1021 / 1035 the
+    /// player's), empty light slots (`addLights`), the status bar under the level
     /// CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
@@ -185,7 +187,8 @@ public final class FrameRenderer {
                                                 .union(SetupFaces.backgroundW2bSheets)
                                                 .union(SetupFaces.boxChildSheets)
                                                 .union(BonusSprite.dropSheets)
-                                                .union(PlayerShot.sheets),
+                                                .union(PlayerShot.sheets)
+                                                .union(HeldItem.sheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -203,8 +206,8 @@ public final class FrameRenderer {
 
     /// `.InitPlayerSprite @ 1004a284` (l. 42427–42484): the player's face sets — `FaceSheet.playerSheets`, the one
     /// table (29 sets: every face the state machine selects, P3), at boot under clut 200 (`.InitSprites`, l. 118), and
-    /// the cached glider sets 1050–1053 (`FaceSheet.gliderSheets`, l. 42486–42489; GL). Not loaded: the held-item
-    /// singles 0x2ee…0x308 (`_DAT_100a5f68`, l. 42490; // later: the phase that shows the held item).
+    /// the cached glider sets 1050–1053 (`FaceSheet.gliderSheets`, l. 42486–42489; GL). The held-item singles
+    /// 0x2ee…0x308 (`_DAT_100a5f68`, l. 42490) are `HeldItem.sheets` (the four the data holds; IU).
     static let playerSheets: Set<SetupFaces.Sheet> = Set((FaceSheet.playerSheets + FaceSheet.gliderSheets).map {
         loader -> SetupFaces.Sheet in
         switch loader {

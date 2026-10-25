@@ -628,6 +628,8 @@ public final class LevelRun {
             break
         }
         guard s.loopEnded else { return false }
+        // IU: the Escape Ring's `*_DAT_1009fd64 = 1` (M l. 47603) — the flag this run clears at the completion.
+        if s.world.stageCompleteSkip { skipStageComplete = true }
         // The loop is over after this iteration (M l. 5229); its own wait still runs out first.
         playing = false
         exitAt = now &+ UInt32(reduce ? (ops.drawn ? 4 : 0) : 2)
@@ -682,6 +684,10 @@ public final class LevelRun {
             guard c.isDone else { return nil }
             conversation = nil
             // The rest of the frame reads the input of this tick (live in the original; the run ended on all keys up).
+            // IU: a USE hint (the session still holds its `.hint` suspension) resumes inside the player's Handle.
+            if case .hint? = s.suspension {
+                return resumeTalk(s, .hint(keys: input.keys, capsLock: input.capsLock), out: &out)
+            }
             if case .simple = c.kind {
                 return resumeTalk(s, .sign(keys: input.keys, capsLock: input.capsLock), out: &out)
             }
@@ -846,6 +852,14 @@ public final class LevelRun {
                                            levelName: levelFile.header.name, text: conversationText)
         case .upgrade(let type):
             upgrade = UpgradeAnimation(type: type)
+        case .hint(let text):
+            // IU: `.SimpleConv(4001, "Ferazel", text)` from `.HandleKeys`' item switch (M l. 47563–47606) — inside the
+            // player's Handle; inside the outer modal when raised by a pause / `.CheckGameLoopKeys` redraw (the
+            // session's resume then hands back to it).
+            conversation = ConversationRun(.simple(pict: HandleKeys.hintPortrait, name: MacRoman.bytes(HandleKeys.hintName),
+                                                   text: text),
+                                           world: s.world, resources: resources, prefs: livePrefs,
+                                           levelName: levelFile.header.name, text: conversationText)
         case .gameLoopKeys:
             preconditionFailure("beginModal routes the keys")
         }

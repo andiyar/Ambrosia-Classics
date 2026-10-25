@@ -31,6 +31,13 @@ public enum FrameSuspension: Equatable, Sendable {
     /// BC35) run in the flow (`UpgradeAnimation`, `LevelRun`), which resumes with `.upgrade` — the arm returns after
     /// them.
     case upgrade(type: Int16)
+    /// IU: a USE hint — `.HandleKeys`' item switch with a key (1–3), a shield (0xe, 0xf) or the Red Xichrons (0x16)
+    /// selected calls `.SimpleConv(4001, "Ferazel", text)` (M l. 47563–47566, 47587–47589, 47605–47606) **inside the
+    /// player's Handle** (Invariant 5): the frame stops at the switch (also inside a nested `.PaintFrameWrap` — the
+    /// pause's or `.CheckGameLoopKeys`' redraw, `FerazelSession.suspendedInNestedPass`); the flow runs `ConversationRun`
+    /// and resumes with `.hint` — the rest of `.HandleKeys`, the player's rows, the handle pass from the player's saved
+    /// `next`, then the frame.
+    case hint(text: [UInt8])
 
     /// What the modal answered — the value `resume(_:)` continues the frame with.
     public enum Outcome: Equatable, Sendable {
@@ -51,5 +58,9 @@ public enum FrameSuspension: Equatable, Sendable {
         /// PK: the upgrade animation's loops ran out (`UpgradeAnimation.isDone`), with the polled input at that moment
         /// (as `.conversation`: the rest of the frame reads it — live in the original).
         case upgrade(keys: KeyState, capsLock: Bool)
+        /// IU: the hint's `.SimpleConv` returned, with the polled input at that moment — the rest of `.HandleKeys`
+        /// (the DOWN / climb blocks, the JUMP arm), the player's rows, the later Handles and the frame read it (live in
+        /// the original, as after a conversation).
+        case hint(keys: KeyState, capsLock: Bool)
     }
 }

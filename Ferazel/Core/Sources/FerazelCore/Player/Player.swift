@@ -18,7 +18,7 @@ import Foundation
 ///  8 gravity selection, submerged brake, swim entry       29 lost the wall → v = 0
 ///  9 jump base J, High Jump, Feather Fall                 30 `.HandleBreathing` (P3)
 /// 10 `.StandardSpriteHandles`                             31 held-item face 0 (P3); cast / wand (CS)
-/// 11 Shadow Double (later: Phase 4)                       32 potion drink (later: Phase 4)
+/// 11 Shadow Double (later: Phase 4)                       32 potion drink (IU)
 /// 12 crunch-capable `+0xeb`                               33 state / face selection (`PlayerStates`, P3)
 /// 13 countdown timers                                     34 pull-up reset, facing `+0x17e`
 /// 14 power-up `.TickTock`s (PU); 0610/0614              35 oxygen, drowning, bubbles (P4)
@@ -62,8 +62,7 @@ public enum Player {
     /// sprite `MTNewSprite(100, 0, 0, 0x14, 0x1ff, .SetupHeldItemSprite)` into `_DAT_100a065c` (l. 42846), then the
     /// five trail sprites `MTNewSprite(1, −1, −1, +0x80 − 1 = 9, 0x1ff, .SetupTrailSprite)` into `PTR_DAT_100a051c`
     /// (l. 42898–42907; each record's pose `{0, −1, −1, 0}` = `PlayerState.trailPoses`' initial value). The held item
-    /// is `.inert` here: `.HandleHeldItemSprite @ 1004be74` only re-pins a faceless sprite (// later: Phase 4, held
-    /// items); the trail's Handle `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
+    /// runs `.HandleHeldItemSprite @ 1004be74` (`SpriteHandler.heldItem`, `HeldItem.handle`; IU); the trail's Handle `.HandleTrailSprite @ 1004b354` is `.StandardSpriteHandles` +
     /// `.StandardSpriteCleanup` (`SpriteHandler.trail`, PU; `.DoubleSpeedTrail` gives them faces); neither Setup nor
     /// Handle draws `FastRand` (plan Invariant 4). Not built: the Shadow-Double ring, the Pentashield
     /// slots and `+0xe4 = 1` (the dead second loop's gate) — // later: Phase 4.
@@ -105,15 +104,9 @@ public enum Player {
             s.y256 = Int32(p.focusY) << 8
             s.face = nil
             s.hotRect = HandleKeys.standardHotRect
-            held = w.newSprite(type: heldItemType, x: 0, y: 0, layer: 0x14, handler: .inert, record: 0x1ff) { h in
-                // `.SetupHeldItemSprite @ 1004bdd0` (l. 43406–43425).
-                h.type = heldItemType
-                h.face = nil
-                h.y = 0
-                h.x = 0
-                h.layer = 0x14
-                h.hasHit = false
-                h.hotRect = IdleSprites.Rect(top: 2, left: -2, bottom: 0x16, right: 0x1a)
+            // `.SetupHeldItemSprite @ 1004bdd0` (l. 43406–43425; `HeldItem.setup`).
+            held = w.newSprite(type: heldItemType, x: 0, y: 0, layer: 0x14, handler: .heldItem, record: 0x1ff) { h in
+                HeldItem.setup(&h)
             }
             let trailLayer = Int16(truncatingIfNeeded: s.layer - 1)
             for _ in 0..<5 {
@@ -240,6 +233,8 @@ public enum Player {
         // 21 (l. 44942–44950).
         if w.player.doorTransit == 0 {
             HandleKeys.run(world: w, keys: keys, ridden: w.player.ridden)
+            // IU: a hint at the item switch suspends the frame inside this Handle (`resumeAfterHint` goes on).
+            if case .hint? = w.suspension { return }
         } else {
             w.player.walkRight = false
             w.player.walkLeft = false
@@ -248,6 +243,28 @@ public enum Player {
                 p.vx = 0
             }
         }
+        rest(w, id: id, keys: keys, solver: solver, tileHit: tileHit, faceWidth: faceWidth)
+    }
+
+    /// IU: the player's Handle on from a hint (`FrameSuspension.hint`) — the rest of `.HandleKeys` after the item switch
+    /// (`HandleKeys.afterSwitch`), then rows 22–42, with the keys polled at the `.SimpleConv`'s return (live in the
+    /// original: the DOWN / climb blocks, the JUMP arm and the tile callback read them).
+    public static func resumeAfterHint(world w: SpriteWorld, keys: InputActions, solver: TileSolver? = nil,
+                                       tileHit: TileHit? = nil,
+                                       faceWidth: (FaceRef) -> Int = PlayerStates.faceWidth) {
+        guard let id = w.playerID, w.active.record(id: id) != nil else { return }
+        let solver = solver ?? TileSolver(world: w)
+        let tileHit = tileHit ?? PlayerTiles.hit(keys: keys)
+        HandleKeys.afterSwitch(w, id: id, keys: keys, ridden: w.player.ridden)
+        rest(w, id: id, keys: keys, solver: solver, tileHit: tileHit, faceWidth: faceWidth)
+    }
+
+    /// Rows 22–42 of `.HandlePlayerSprite` (after `.HandleKeys`).
+    static func rest(_ w: SpriteWorld, id: Int, keys: InputActions, solver: TileSolver, tileHit: @escaping TileHit,
+                     faceWidth: (FaceRef) -> Int) {
+        guard w.active.record(id: id) != nil else { return }
+        func s() -> SpriteSlot { w.active.record(id: id)! }
+        func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
         // 22 (l. 44951–44957): quicksand.
         if (s().waterRow != 0 || s().lastWater != 0) && s().waterKind == 5 {
             set { $0.vy = TileSolver.fctiwz(Double($0.vy) * quicksandFactor) }
@@ -293,7 +310,8 @@ public enum Player {
         // and `.CastSpell` (CS).
         if let h = w.player.heldItem { w.active.update(id: h) { $0.face = nil } }
         wand(w, id: id, keys: keys)
-        // 32 (l. 45177–45218): the potion drink. // later: Phase 4
+        // 32 (l. 45177–45218): the potion drink (IU).
+        drink(w, id: id)
         // 33 (l. 45219–46196, `goto LAB_10050e6c`): the state / face selection — glider, dying, spirit, boss grab,
         // hurt-stun, `05f8`, rope, swim, cling / climb / pull-up, melee, grounded (walk sounds, fidgets: FastRand),
         // airborne (`_DAT_100a0718`); first match wins (`PlayerStates.select`, P3).
@@ -463,6 +481,58 @@ public enum Player {
             // At 0 with item 0x13 held: `.RemoveItem(0x13)`, `.UpdateStatusBar(1, 1, 0)`. // later: Phase 4
         }
         w.player = p
+    }
+
+    /// Row 32 (M l. 45177–45218): the drink counter `_DAT_100a05b0` > 0 → + 1; at 20 by the potion `_DAT_100a5fd6`:
+    /// 5 (health) → `G+6` = `G+4` = `+0xa4` = `G+10` (breath, health, HP = the maximum), snd 502 (`_DAT_100a02d0`) then
+    /// 415 (`_DAT_100a03f4`), `.RemoveItem(5)` (its `.UpdateItemStat`), `PTR_DAT_100a05a8` = 6, the health flash
+    /// `PTR_DAT_1009fdbc` = 0xb; 4 (magic) → `G+0xe` = `G+0xc`, snd 500 (`_DAT_100a02d8`), 415, remove, `05a8` 6, the
+    /// magic flash `_DAT_1009fdb8` = 0xb; 0x19 (Mist) → snd 415, remove, `05a8` 6. At 40 with 0x19 → the spirit
+    /// transition `_DAT_100a0574 = 1` (// later: MS — the spirit form; not stored until its rows exist). Past 40 → 0.
+    /// Every sound `.STPlayRegSound(…, 1, 0x100)` (no `FastRand`).
+    static func drink(_ w: SpriteWorld, id: Int) {
+        guard 0 < w.player.potion else { return }
+        w.player.potion &+= 1
+        func cue(_ snd: Int16) { w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: 0x100)) }
+        func remove(_ item: Int16) {
+            guard w.globals.removeItem(item) else { return }
+            var g = w.globals
+            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
+            w.globals = g
+        }
+        let n = w.player.potion, item = w.player.potionItem
+        if n == 0x14 {
+            if item == 5 {
+                let m = w.globals.maxHealth
+                w.globals.breath = m
+                w.globals.health = m
+                w.active.update(id: id) { $0.hp = m }
+                cue(502)
+                cue(415)
+                remove(item)
+                w.player.countdown05a8 = 6
+                w.statusBar.flashes.health = 0xb
+            } else if item < 5 {
+                if 3 < item {
+                    w.globals.magic = w.globals.maxMagic
+                    cue(500)
+                    cue(415)
+                    remove(item)
+                    w.player.countdown05a8 = 6
+                    w.statusBar.flashes.magic = 0xb
+                }
+            } else if item == 0x19 {
+                cue(415)
+                remove(item)
+                w.player.countdown05a8 = 6
+            }
+        } else if n == 0x28 {
+            if item == 0x19 {
+                // `*_DAT_100a0574 = 1` (M l. 45211): the Mist potion's spirit transition. // later: MS
+            }
+        } else if 0x28 < n {
+            w.player.potion = 0
+        }
     }
 
     /// Row 31's wand machine (M l. 45142–45176; spells-detail §2.2): the cast flag `_DAT_100a06ec` clear → the dead

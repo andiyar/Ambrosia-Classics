@@ -481,6 +481,10 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// `.StandardSpriteHandles` + `.StandardSpriteCleanup`, installed by `.SetupTrailSprite` on the player's five
     /// Double-Speed trail sprites (`Player.spawn`).
     case trail
+    /// IU (added, Invariant 9): `.HandleHeldItemSprite @ 1004be74` (`PTR_PTR_100a04f8`, M l. 43431–43458), installed by
+    /// `.SetupHeldItemSprite` on the player's held-item sprite (`Player.spawn`) and re-installed by `.HandleItemUse` at
+    /// c ∉ {3, 4, 5} (`HeldItem`); at c 3…5 the held sprite carries `.playerShot` instead.
+    case heldItem
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.

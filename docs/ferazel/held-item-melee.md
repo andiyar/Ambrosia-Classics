@@ -389,3 +389,13 @@ Wave 2 (2026-10-04):
 |---|---|---|---|---|
 | W1 | pickups-boxes NR 8 ("Door `+0xa0` cleared by `.HitBoxSprite`") / INDEX 21 | reader unknown | no reader anywhere: write-only | §4.4 field scan |
 | W2 | enemies-* notes that a stab "hits once" | via invulnerability | also: the enemy's Hit routine runs twice per strike frame (pair visited both ways); the second call is the one refused | §4.1; platforms-ropes-radial-2 §8.3 |
+
+### BC (IU) — loop run 25, 2026-10-26 (Phase 4 task IU, read against the committed main dump)
+
+| # | file § | old | new | evidence |
+|---|---|---|---|---|
+| IU1 | §1.2 | the gate's effects: the two latches, then the switch | also: **every** frame USE is held with an item (not a spell) selected and the gate passes, the fidget count `_DAT_100a0688` and the idle counter `_DAT_100a068c` are zeroed — latched or not, whatever the item (a Locket included). Holding USE on any item keeps the player from fidgeting | M l. 47543–47545 |
+| IU2 | §1.2 (and the Phase 4 plan's IU contract, which omitted it) | — | the cast latch `_DAT_100a0760` is set with `075c` before the switch (M l. 47549–47550): after CS's magic < 1 path picks the dagger, the same call's stab ends with both latches set | M l. 47549–47550 |
+| IU3 | §1.2–§1.4 line cites | `.HandleKeys` arm "main dump l. 44446–44680", `.HandleItemUse` "l. 43547–43650", `.SetHeldItemPos` "l. 42810–42880", `.InitPlayerSprite` "l. 42252–42255" | the committed dump's M l. 47353–47609, 44197–44301, 43460–43533, 42478–42482 (the cites predate the regenerated dump) | `ghidra/ferazel/Ferazel_pef.decompiled.c` |
+| IU4 | §1.2 (shield, physics of the raise) | DOWN + away from the facing raises the shield | from **standing**, the first DOWN frame runs the L/R block too (its gate wants crouch 0, M l. 47359–47365): the player walks a step and turns, so the press is "toward" his new facing; the raise starts once crouched (crouch ≥ 1 skips the L/R block). Without a shield (`.HasItem(0xe) ∨ .HasItem(0xf)` false, M l. 47635–47636) the DOWN block turns him instead | M l. 47359–47365, 47610–47680 |
+| IU5 | §1.5 SmiteEnemies context (pickups-boxes §3.3) | — | `.SmiteEnemies` reads each match's stored centre `+0x10`/`+0xe` (no `+0xe9` test; the first 16 matches of the 15 enemy Handles at TOC 0x100a048c…0x100a04c4: Xichra, Wizard, Warrior, Walker, Salamander, Roach, Gremlin, Frog, Floater, Demon, Dillo, Crawler, Chief, Blob, Bat — no Crab). The port's inert Phase-1 enemies never run a Cleanup, so their centre is computed from the hot rect as the enemy Handle would keep it (stand-in until Phase 5) | M l. 46981–47046; `pef.py tocfunc` |

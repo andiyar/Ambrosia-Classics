@@ -1,9 +1,15 @@
 import Foundation
+import HectorResources
 
 /// `.HandleKeys(s, ridden) @ 10052ac0` (decompile l. 47047–47882; player-states §4–§5, physics §4), called by
 /// `.HandlePlayerSprite` row 21 unless a door transit locks input: the early returns, the standard hot rect, the
-/// carpet steering, the USE spell gate (CS; the item gate false until IU), the L/R block with `.FootPressure` (P1b), the DOWN block
-/// (crouch, shield, spin), the climb block and the JUMP arm with its else-refill (P1a).
+/// carpet steering, the USE spell gate (CS), the USE item gate and switch (IU) — or the L/R block with `.FootPressure`
+/// (P1b) and the glider's steering (GL) — the DOWN block (crouch, shield, spin), the climb block and the JUMP arm with
+/// its else-refill (P1a).
+///
+/// IU: the switch's hints (`.SimpleConv`) are modal moments inside the player's Handle: `run` returns at the switch with
+/// `SpriteWorld.suspension` = `.hint(text:)`, and `afterSwitch` is the rest of the call, run at the resume with the keys
+/// polled then (`Player.resumeAfterHint`).
 ///
 /// Keys: one `InputActions` snapshot per frame stands in for each live `.IsInputKeyPressed(i)` (plan Hazards: keys
 /// cannot change inside a frame) [MED, gate card 20]. Every sound here is `.STPlayRegSound` — no `FastRand` draw.
@@ -41,11 +47,15 @@ public enum HandleKeys {
         // LAB_100530cc.
         w.player.noCastBegan = true                                       // `PTR_DAT_100a06e0 = 1`
         useGate(w, keys: keys)                                            // CS (M l. 47311–47352)
-        // USE, second gate (l. 47353–47357): USE ∧ an item (not a spell) selected ∧ shield < 1 ∧ climb 0 ∧ rope 0 →
-        // the item switch (l. 47543–47609) instead of the L/R and glider blocks. // later: Phase 4 — false in
-        // Phase 2 (no inventory; plan P1a/P1b).
-        let itemSwitch = false
-        if !itemSwitch {
+        // USE, second gate (M l. 47353–47357): USE ∧ an item (not a spell) selected ∧ shield < 1 ∧ climb 0 ∧ rope 0 →
+        // the item switch (M l. 47541–47609) instead of the L/R and glider blocks. The selected slot read as the CS
+        // gate reads it (slot −1: `G+0x1a` id 0, `G+0x22` flag 0 — an item).
+        let g = w.globals, sel = Int(g.selectedSlot)
+        let inRange = g.inventory.indices.contains(sel)
+        let spellSelected = inRange && g.inventory[sel].isSpell != 0
+        let itemGate = keys.contains(.use) && !spellSelected && w.player.shieldRaise < 1 && w.player.climb == 0
+            && !w.player.rope
+        if !itemGate {
             w.player.useItemHeld = false                                  // `_DAT_100a075c = 0`
             // The L/R gate (l. 47359–47365; raw `100534f0..10053548`, Bank correction A7): not gliding
             // (`_DAT_100a05e0`), climb 0 (`_DAT_100a0758`), crouch depth 0 (`_DAT_100a071c`), no carpet
@@ -60,8 +70,22 @@ public enum HandleKeys {
                 gliderSteering(w, id: id, keys: keys)                     // GL (M l. 47494–47541)
             }
         } else {
-            // later: Phase 4 — the item switch (l. 47543–47609).
+            w.player.fidgets = 0                                          // `_DAT_100a0688`
+            w.player.idle = 0                                             // `_DAT_100a068c`
+            if !w.player.useItemHeld {
+                if itemSwitch(w, id: id, item: inRange ? g.inventory[sel].id : 0, keys: keys) { return }
+            }
         }
+        afterSwitch(w, id: id, keys: keys, ridden: ridden)
+    }
+
+    /// The rest of `.HandleKeys` after the item switch (M l. 47610–47880): the DOWN block or the climb block, then the
+    /// JUMP arm or its else-refill. A hint's resume runs it with the keys polled at the return (`Player.resumeAfterHint`).
+    static func afterSwitch(_ w: SpriteWorld, id: Int, keys: InputActions, ridden: Int?) {
+        guard w.active.record(id: id) != nil else { return }
+        func s() -> SpriteSlot { w.active.record(id: id)! }
+        func set(_ body: (inout SpriteSlot) -> Void) { w.active.update(id: id, body) }
+        func cue(_ snd: Int16, _ vol: Int16) { w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol)) }
 
         if w.player.climb == 0 {
             downBlock(w, id: id, keys: keys)
@@ -194,6 +218,91 @@ public enum HandleKeys {
             }
             if w.globals.moveSelectedItemToFront() { statusBarCall(w, .moveSelectedItemToFront, keys: keys) }
         }
+    }
+
+    /// The hints' `.SimpleConv(0xfa1, &DAT_100a60a0, text)`: portrait PICT 4001, the speaker `pstr` at 0x100a60a0
+    /// ("Ferazel", 7 B), the texts the `pstr`s at 0x100a616f (keys, 112 B), 0x100a60e7 (the shield, 135 B) and
+    /// 0x100a60a8 (the Red Xichrons, 62 B, a trailing space) hold (`pef.py pstr`; plain ASCII).
+    public static let hintPortrait: Int16 = 0xfa1
+    public static let hintName = "Ferazel"
+    public static let keyHint = MacRoman.bytes("You don't need to select keys from the inventory. Just walk into the "
+                                               + "door that requires it and I'll use the key.")
+    public static let shieldHint = MacRoman.bytes("You don't need to select the shield from the inventory. Crouch and "
+                                                  + "press the direction opposite to the one I'm facing, and I'll use it!")
+    public static let xichronHint = MacRoman.bytes("You don't need to select the Red Xichrons from the inventory. ")
+
+    /// The item switch (M l. 47541–47609; held-item-melee §1.2, spells-items §4), reached with the latch `075c` clear:
+    /// `0760` = `075c` = 1 (one action per press; the cast latch too), then by the selected item's id:
+    /// - 0 / 0x12 / 0x15 (dagger, Ice Pick, Vorpal Dirk), no swing (`_DAT_100a0698` 0) and no mist states (`0578`,
+    ///   `0574` 0): snd 418 (`_DAT_100a03e8`) vol 0x55, counter 1, the side flag `PTR_DAT_100a04f4` = (F == 1), the
+    ///   in-use item `_DAT_100a5fd8` = id, `.MoveSelectedItemToFront` (its (1,1,0) call when it moves);
+    /// - 1 / 2 / 3 (the keys): `.SimpleConv(4001, "Ferazel", keyHint)`;
+    /// - 4 / 5 / 0x19 (the potions), no mist states: the drink counter `_DAT_100a05b0` = 1, `_DAT_100a5fd6` = id
+    ///   (row 32 drinks it, `Player.drink`);
+    /// - 6 / 0x1a (the seeds): as the stab with snd 704 (`_DAT_100a0268`), then `.RemoveItem(id)` at the press (its
+    ///   `.UpdateItemStat` when found);
+    /// - 0xe / 0xf (the shields): `.SimpleConv(…, shieldHint)`;
+    /// - 0x10 (Ring of Smiting): `.RemoveItem`, the flash `*_DAT_100a00fc = 3`, snd 421 (`_DAT_100a03dc`) vol 0x100,
+    ///   `.SmiteEnemies` (`Smite`);
+    /// - 0x11 (Escape Ring): `.RemoveItem`, snd 421, the exit `uRam100a5116` = −1, the level complete
+    ///   `*_DAT_100a0088 = 1`, `*_DAT_1009fd64 = 1` (`SpriteWorld.stageCompleteSkip`: `LevelRun` skips the panel);
+    /// - 0x16 (Red Xichrons): `.SimpleConv(…, xichronHint)`; every other id: nothing.
+    /// Returns true when a hint suspended the frame (`SpriteWorld.suspension = .hint`): `.HandleKeys` stops here.
+    static func itemSwitch(_ w: SpriteWorld, id: Int, item: Int16, keys: InputActions) -> Bool {
+        func cue(_ snd: Int16, _ vol: Int16) { w.player.cue(PlayerCue(call: .reg, snd: snd, priority: 1, volume: vol)) }
+        func remove(_ item: Int16) {
+            guard w.globals.removeItem(item) else { return }
+            var g = w.globals
+            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
+            w.globals = g
+        }
+        func swing(_ snd: Int16) {
+            cue(snd, 0x55)
+            w.player.itemUse = 1
+            w.player.heldLeft = w.player.facing == 1
+            w.player.meleeItem = item
+            if w.globals.moveSelectedItemToFront() { statusBarCall(w, .moveSelectedItemToFront, keys: keys) }
+        }
+        w.player.useDebounce = true                                       // `_DAT_100a0760 = 1` (M l. 47549)
+        w.player.useItemHeld = true                                       // `_DAT_100a075c = 1` (M l. 47550)
+        let mist = w.player.spiritTimer != 0 || w.player.spiritTransition != 0
+        switch item {
+        case 0, 0x12, 0x15:
+            if w.player.itemUse == 0 && !mist { swing(418) }
+        case 1, 2, 3:
+            w.suspension = .hint(text: keyHint)
+            return true
+        case 4, 5, 0x19:
+            if !mist {
+                w.player.potion = 1
+                w.player.potionItem = item
+            }
+        case 6, 0x1a:
+            if w.player.itemUse == 0 && !mist {
+                swing(704)
+                remove(item)
+            }
+        case 0xe, 0xf:
+            w.suspension = .hint(text: shieldHint)
+            return true
+        case 0x10:
+            remove(item)
+            w.flash.count = 3
+            cue(421, 0x100)
+            Smite.smiteEnemies(w)
+        case 0x11:
+            remove(item)
+            cue(421, 0x100)
+            w.player.exitIndex = -1
+            w.player.levelDone = true
+            w.stageCompleteSkip = true
+        case 0x16:
+            w.suspension = .hint(text: xichronHint)
+            return true
+        default:
+            break
+        }
+        return false
     }
 
     /// `.UpdateStatusBar(1, 1, 0)` made inside the player's Handle (`site` nil: `.HandleKeys`' own call, M l. 47336):
@@ -513,8 +622,8 @@ public enum HandleKeys {
         w.active.update(id: id) { $0 = out }
     }
 
-    /// `.HasItem(0xe) ∨ .HasItem(0xf)` (a shield). // later: Phase 4 (inventory) — no Phase-2 inventory: false.
-    static func hasShield(_ w: SpriteWorld) -> Bool { false }
+    /// `.HasItem(0xe) ∨ .HasItem(0xf)` (M l. 47635–47636): the Shield or the Magical Shield (IU).
+    static func hasShield(_ w: SpriteWorld) -> Bool { w.globals.hasItem(0xe) || w.globals.hasItem(0xf) }
 
     /// The climb block while clinging and the wand phase < 4 (l. 47681–47724): UP → vy −1000 (−0x578 Double
     /// Speed), DOWN → +1000 (+0x578), each with idle/fidgets 0 and wand phase 0 — or vy 0 when a cast began this

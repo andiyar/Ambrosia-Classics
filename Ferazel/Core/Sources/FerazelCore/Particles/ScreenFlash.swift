@@ -7,7 +7,7 @@ import Foundation
 /// `DrawOp.copyMaskToScreen`) — the alternate-frame silhouette flash, not a screen shake.
 ///
 /// Writers store 3 into the count: `.GenerateRain`'s thunder (M l. 8458), the Smiting cast in `.HandleKeys` (M l.
-/// 47593; // later: IU), `.KillPlayerShot`'s seed explosion (M l. 51149; `PlayerShotHits.kill`) and the bosses' deaths (M l.
+/// 47593; IU), `.KillPlayerShot`'s seed explosion (M l. 51149; `PlayerShotHits.kill`) and the bosses' deaths (M l.
 /// 73488, 74997, 75372, 75525, 76159, 77475; // later: Phase 6). No routine resets either
 /// global (they are data-section only), so they run on across levels, deaths, the map and new games: the session's
 /// `SpriteWorld` holds them and `LevelCarry.flash` hands them on (EF review fix).
