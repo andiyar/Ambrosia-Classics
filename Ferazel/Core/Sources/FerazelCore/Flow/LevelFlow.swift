@@ -59,6 +59,18 @@ public struct LevelCarry: Equatable, Sendable {
     /// HU review fix: the status bar's globals (`StatusBarCalls`: `*_DAT_1009fd9c`, the `.UpdateHealthMagic` caches,
     /// the flash counters) — data-section initialised only, so they run on through every level, map, death and game.
     public var statusBar = StatusBarCalls()
+    /// EF review fix: the mask flash's count and toggle (`*_DAT_100a00fc` / `*_DAT_100a00cc`, `ScreenFlash`), the paint
+    /// counter `*_DAT_1009fd2c` and the plume count `*PTR_DAT_100a0904` — their only writers are the thunder, Smiting
+    /// and seed-explosion stores and `.PaintFrameWrap`'s step (M l. 8458, 47593, 51149, 9426–9433), the paint
+    /// counter's +1 (M l. 9250) and the 1206 Setup / death (M l. 53743, 54090): data-section globals no level load,
+    /// death, map or new game touches, so they run on through all of them.
+    public var flash = ScreenFlash()
+    public var paintCounter: UInt32 = 0
+    public var plumeCount: Int16 = 0
+    /// EF review fix: the shake `*_DAT_1009ffa0` (`Camera.shake`) — runs on across level exits, deaths and the map like
+    /// the above; zeroed only by `.InitGameGlobals` (M l. 821), which New Game and Continue Game run (M l. 5747, 6707;
+    /// `GameFlow.initGameGlobals`).
+    public var shake: Int16 = 0
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

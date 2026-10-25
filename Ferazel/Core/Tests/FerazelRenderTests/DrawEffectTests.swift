@@ -614,7 +614,7 @@ final class DrawEffectTests: XCTestCase {
         XCTAssertEqual(frame.rgba(through: r.presentedClut)[0], 0xffbf_bfbf)
         XCTAssertEqual(r.deathEffect.foreColor, ColorSearch(model: .ruled).index(of: black, in: c202))
     }
-    /// EF: `.WrapCopyToScreen(*_DAT_100a0008, …)` while the flash toggle is on (`.PaintFrameWrap` M l. 9443–9447). The
+    /// EF: `.WrapCopyToScreen(*_DAT_100a0008, …)` while the flash toggle is on (`.PaintFrameWrap` M l. 9441–9447). The
     /// port argument is the compositor's F (`.DoubleBlitPPCParallaxOneLayer` row pointers from `0x158(r1)` = r3, raw
     /// `10017954`, `10017fe4..10017ffc`; the M gate is the mask port's own TOC slot), so a composited piece shows the
     /// mask port's 0x00 / 0xFF where the frame would show; the plain `CopyBits` pieces (no backdrop, prefs+9 ≠ 0) copy
@@ -624,6 +624,7 @@ final class DrawEffectTests: XCTestCase {
         let f = try fixture()
         func renderer(backdrop: Bool) throws -> FrameRenderer {
             var prefs = FerazelPrefs()
+            prefs.parallax = 0
             prefs.plainCopy = backdrop ? 0 : 1
             let r = try FrameRenderer(resources: f.resources, level: 1, search: ColorSearch(model: .ruled),
                                       dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer(), prefs: prefs)
@@ -639,19 +640,52 @@ final class DrawEffectTests: XCTestCase {
             try normal.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 1, backdrop: backdrop)]))
             try flash.apply(FrameOps(draws: [.copyMaskToScreen(h: 40, v: 400, graphicsMode: 1, backdrop: backdrop)]))
             XCTAssertEqual(flash.executed, [.copyMask(h: 40, v: 400)])
-            // The model: each piece of `ParallaxBlitter.calls` — composited from the mask port, plain from the frame.
-            var expected = before
-            var none: [[ParallaxBlitter.RowTrace]]? = nil
-            for call in ParallaxBlitter.calls(h: 40, v: 400, backdrop: backdrop) {
-                if call.composited {
-                    flash.parallax.doubleBlitUniversal(call, source: flash.ports.mask, mask: flash.ports.mask, h: 40,
-                                                       v: 400, graphicsMode: 1, parallax: 2, screen: &expected,
-                                                       trace: &none)
-                } else {
-                    flash.parallax.copyBits(call.src, call.dst, source: flash.ports.frame, screen: &expected)
+            XCTAssertEqual(flash.prefs.parallax, 0)
+            // Pixel by pixel, with parallax 0 (prefs+4; only 3 gates the compositor). h' = 40, v' = 400: the main
+            // piece is ring (400…415, 40…639) at screen (16, 8)…; the corner piece ring (0…367, 0…7) at (616, 24)….
+            // A composited piece reads F from the mask port: inside a run of 0x00 mask bytes the screen takes that
+            // 0x00 (the back-row word `M == 0 → F`), inside a run of 0xFF the backdrop shows as on a normal copy
+            // (`M == ~0 → I`); a word straddling both is `F + (M & I)` (one 32-bit add, carries and all), so only
+            // pixels whose ±3 neighbours share their mask byte are checked. A plain `CopyBits` piece copies the frame
+            // port, as `.copyToScreen`'s does.
+            let fw = FramePorts.width, sw = ParallaxBlitter.screenWidth
+            let mask = flash.ports.mask, frame = flash.ports.frame
+            var zeros = 0, ffs = 0, changed = 0
+            func check(ringRow: Int, ringCol: Int, x: Int, y: Int, composited: Bool) {
+                let m = mask[ringRow * fw + ringCol], got = flash.screen.pixels[y * sw + x]
+                let run = (-3...3).allSatisfy { d in
+                    let c = ringCol + d
+                    return !(0..<fw).contains(c) || mask[ringRow * fw + c] == m
+                }
+                guard run || !composited else { return }
+                let normalByte = normal.screen.pixels[y * sw + x]
+                if !composited {
+                    XCTAssertEqual(got, frame[ringRow * fw + ringCol], "plain (\(x), \(y))")
+                    XCTAssertEqual(got, normalByte, "plain (\(x), \(y))")
+                } else if m == 0 {
+                    XCTAssertEqual(got, 0, "mask 0x00 at (\(x), \(y))")
+                    zeros += 1
+                    if normalByte != 0 { changed += 1 }
+                } else if m == 0xff {
+                    XCTAssertEqual(got, normalByte, "mask 0xFF at (\(x), \(y))")
+                    ffs += 1
                 }
             }
-            XCTAssertEqual(flash.screen.pixels, expected, "backdrop \(backdrop)")
+            // The origin: screen (16, 8) is ring (400, 40) — and the first 16 rows × 600 columns of the main piece.
+            for row in 0..<16 { for col in 0..<600 { check(ringRow: 400 + row, ringCol: 40 + col, x: 16 + col, y: 8 + row, composited: backdrop) } }
+            if backdrop {
+                XCTAssertEqual(mask[400 * fw + 40], 0)
+                XCTAssertEqual(flash.screen.pixels[8 * sw + 16], 0)
+                XCTAssertNotEqual(normal.screen.pixels[8 * sw + 16], 0)
+                XCTAssertTrue(zeros > 0 && ffs > 0 && changed > 0, "zeros \(zeros) ffs \(ffs) changed \(changed)")
+            } else {
+                XCTAssertEqual([zeros, ffs], [0, 0])
+                XCTAssertEqual(flash.screen.pixels[8 * sw + 16], frame[400 * fw + 40])
+            }
+            // The corner piece: composited either way (the binary's corner `CopyBits` is unreachable).
+            zeros = 0; ffs = 0
+            for row in 0..<368 { for col in 0..<8 { check(ringRow: row, ringCol: col, x: 616 + col, y: 24 + row, composited: true) } }
+            XCTAssertEqual([zeros, ffs], [2688, 256], "backdrop \(backdrop)")   // the corner's uniform-run pixels
             // With the backdrop the flash differs (the tiles show the mask's 0x00); without it only the corner piece
             // could (level 1's ring corner at this point holds no drawn cell, so the screens agree).
             if backdrop { XCTAssertNotEqual(flash.screen.pixels, normal.screen.pixels) }

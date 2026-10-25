@@ -43,8 +43,8 @@ public struct Camera: Equatable, Sendable {
     public private(set) var scrollH: Int
     public private(set) var scrollV: Int
     /// EF: `*_DAT_1009ffa0`, the screen shake (engine §5). Zeroed by `.InitGameGlobals` (M l. 821) and by nothing else;
-    /// writers set it (the seed explosion 0x14, M l. 51150 // later: SH). Per camera here [LOW: a shake still running
-    /// at a level end stops].
+    /// writers set it (the seed explosion 0x14, M l. 51150 // later: SH). A shake still running at a level end runs on
+    /// into the next level (`LevelCarry.shake`, EF review fix); the flow zeroes it in `GameFlow.initGameGlobals`.
     public var shake: Int16 = 0
 
     /// The camera `.GameLoop` sets up for a sprite origin (x, y) = (hdr 0x2848 − 0x20, hdr 0x2846 − 0x20).

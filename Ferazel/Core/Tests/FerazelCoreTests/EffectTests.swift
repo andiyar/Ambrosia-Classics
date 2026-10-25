@@ -6,7 +6,7 @@ import HectorResources
 /// (`.SetupEffectSprite @ 10060680`, M l. 53688–53863), the explosion light schedule and the debris 3099
 /// (`.HandleEffectSprite @ 10061160`, M l. 54024–54286; `.HitEffectTileSprite @ 100619a0`, M l. 54298–54324), the big
 /// explosion's hurt (`.HitPlayerSprite`'s Effect arm, M l. 49763–49799), the mask flash (`.PaintFrameWrap` M l.
-/// 9437–9447) and the camera shake (`.FindUpperLeftCorner` M l. 6147–6162). The expected draws are re-derived from a
+/// 9426–9447) and the camera shake (`.FindUpperLeftCorner` M l. 6147–6162). The expected draws are re-derived from a
 /// copy of the stream at the call site; the geometry from the dump's arithmetic next to each assertion.
 final class EffectTests: XCTestCase {
 
@@ -31,7 +31,7 @@ final class EffectTests: XCTestCase {
         var lights = LightTable()
         var rng = w.rng
         // Id 0 at (400, 300), prefs+6 = 1, no plume yet: 45 × (R(2000), R(2000), R(2)) → `.NewParticle(1, 0x96,
-        // (y + 0x18, x + 0x10), r2 + 1, r1 − 1000, r0 − 1000, 0, 1)` (M l. 53774–53783), in this order.
+        // (y + 0x18, x + 0x10), r2 + 1, r1 − 1000, r0 − 1000, 0, 1)` (M l. 53765–53783), in this order.
         var expected: [ParticlePool.Record] = []
         for _ in 0..<0x2d {
             let r0 = Int32(rng.next(2000)), r1 = Int32(rng.next(2000)), r2 = Int16(rng.next(2))
@@ -51,13 +51,13 @@ final class EffectTests: XCTestCase {
         XCTAssertEqual(Array(w.particles.records.prefix(0x2d)), expected)
         XCTAssertEqual(w.particles.counters.count, 0x2d)
         XCTAssertEqual(w.rng.seed, rng.seed)                            // 135 draws, none after (plume, light)
-        // The plume `MTNewSprite(0x4b6, x − 8, y − 0x5a, 0x14, −1, Setup)` (M l. 53788–53792): its Setup stores
-        // layer 0xb and counts it (M l. 53740–53742); it is inserted before the explosion (made inside its Setup).
+        // The plume `MTNewSprite(0x4b6, x − 8, y − 0x5a, 0x14, −1, Setup)` (M l. 53785–53790): its Setup stores
+        // layer 0xb and counts it (M l. 53742–53744); it is inserted before the explosion (made inside its Setup).
         XCTAssertEqual(w.active.sprites.map(\.type), [EffectSprite.plume, 0])
         let plume = w.active.sprites[0]
         XCTAssertEqual([plume.x, plume.y, Int(plume.layer)], [392, 210, 0xb])
         XCTAssertEqual(w.plumeCount, 1)
-        // The light `.AddLight(PICT 813, (y + 0x18, x + 0x18), 0, 0, 0, 0x16)` → `+0x9a` (M l. 53794–53797).
+        // The light `.AddLight(PICT 813, (y + 0x18, x + 0x18), 0, 0, 0, 0x16)` → `+0x9a` (M l. 53791–53793).
         let e = try XCTUnwrap(w.active.record(id: id))
         XCTAssertEqual(e.light, 0)
         XCTAssertEqual(lights.slots[0].face, LightFaceRef(pict: 0x32d, width: 0x48, height: 0x48))
@@ -65,7 +65,7 @@ final class EffectTests: XCTestCase {
         XCTAssertEqual(lights.count, 1)
         XCTAssertEqual(Int(e.layer), 0xb)
 
-        // Three plumes alive → none; prefs+6 = 2 → none (M l. 53786–53787).
+        // Three plumes alive → none; prefs+6 = 2 → none (M l. 53785–53786).
         w.plumeCount = 3
         EffectSprite.spawn(w, type: 3, x: 0, y: 0, layer: 0xb, effects: 1, lights: &lights)
         w.plumeCount = 0
@@ -103,6 +103,28 @@ final class EffectTests: XCTestCase {
         XCTAssertEqual(w3.rng.seed, seed)
         XCTAssertEqual(w3.particles.counters.count, 0)
         XCTAssertEqual(l3.count, 2)
+        // Every id of the skip list (M l. 53745–53751): 1201…1206, 1220, 1040, 1430, 1251, 1210, 3099, 1440, 1435,
+        // 1830, and ≥ 3200 — no package draws, no particle, no light, no plume (only 3099's own Setup draws: R(100),
+        // R(8)); and the ids just outside it (1200, 1207, 1209, 3199) run the package.
+        let skipped: [Int16] = [0x4b1, 0x4b2, 0x4b3, 0x4b4, 0x4b5, 0x4b6, 0x4c4, 0x410, 0x596, 0x4e3, 0x4ba, 0xc1b,
+                                0x5a0, 0x59b, 0x726, 0xc80, 0xc81, 0xcb2, 0xcb3, 0x7fff]
+        for t in skipped {
+            let k = SpriteWorld(level: try level1())
+            var lk = LightTable()
+            var expectRng = k.rng
+            if t == EffectSprite.debris { _ = expectRng.next(100); _ = expectRng.next(8) }
+            let id = try XCTUnwrap(EffectSprite.spawn(k, type: t, x: 0, y: 0, layer: 0xb, effects: 1, lights: &lk))
+            XCTAssertEqual(k.rng.seed, expectRng.seed, "id \(t)")
+            XCTAssertEqual(k.particles.counters.count, 0, "id \(t)")
+            XCTAssertEqual([Int(lk.count), Int(k.active.record(id: id)?.light ?? 0)], [0, -1], "id \(t)")
+            XCTAssertEqual(k.active.sprites.map(\.type), [t], "id \(t)")
+        }
+        for t: Int16 in [0x4b0, 0x4b7, 0x4b9, 0xc7f] {
+            let k = SpriteWorld(level: try level1())
+            var lk = LightTable()
+            EffectSprite.spawn(k, type: t, x: 0, y: 0, layer: 0xb, effects: 2, lights: &lk)
+            XCTAssertEqual([Int(k.particles.counters.count), Int(lk.count)], [0x2d, 1], "id \(t)")
+        }
         // The balloons' layers: 3250 → 100, 3251… → 101 (M l. 53799–53804).
         XCTAssertEqual(w3.active.sprites.filter { $0.type >= 0xcb2 }.map(\.layer), [100, 101])
     }
@@ -163,7 +185,7 @@ final class EffectTests: XCTestCase {
         let e = try XCTUnwrap(EffectSprite.spawn(w, type: EffectSprite.bigExplosion, x: 80, y: 190, layer: 0xc,
                                                  effects: 2, lights: &lights))
         let big = try XCTUnwrap(w.active.record(id: e))
-        // `SetRect(+0x34, 8, 8, 0x58, 0x58)`, `+0xeb = 2` (M l. 53737–53740).
+        // `SetRect(+0x34, 8, 8, 0x58, 0x58)`, `+0xeb = 2` (M l. 53738–53741).
         XCTAssertEqual(big.hotRect, IdleSprites.Rect(top: 8, left: 8, bottom: 0x58, right: 0x58))
         XCTAssertEqual(big.crunches, 2)
         // Frames 0…7 hurt: `.HurtSprite(player, 0x70, +300 (the effect's centre x is left of the player's), −0x640,
@@ -244,9 +266,14 @@ final class EffectTests: XCTestCase {
         var phase = start
         var seen = Set<Int32>()
         var killedAt: Int32?
+        var firstBounce: (before: Int32, after: Int32)?
         for _ in 0..<400 where killedAt == nil {
+            let before = try XCTUnwrap(w.active.record(id: id))
             EffectSprite.handle(world: w, id: id, lights: &lights, effects: 1)
             let s = try XCTUnwrap(w.active.record(id: id))
+            if before.classWord16c == 0 && s.classWord16c == 1 {
+                firstBounce = (before.vy, s.vy)
+            }
             phase = phase + 1 > 7 ? 0 : phase + 1
             XCTAssertEqual(s.face, FaceRef(pict: EffectSprite.debris, index: Int(phase) + (variant != 0 ? 8 : 0),
                                            set: .encoded))
@@ -255,8 +282,24 @@ final class EffectTests: XCTestCase {
             XCTAssertEqual(s.mode, fade[min(n, 3)], "bounces \(n)")
             if s.dead { killedAt = n } else { XCTAssertLessThanOrEqual(n, 3) }
         }
-        XCTAssertEqual(killedAt.map { $0 > 3 }, true)
+        XCTAssertEqual(killedAt, 4)                                       // killed the Handle `+0x16c` reaches 4
         XCTAssertTrue(seen.contains(1))
+        // The first bounce: the tail's second move left it in the floor, so the first `.SeparateFromTiles` of the next
+        // Handle bounces it — `.WallBounce` factor 0x80 (raw `100619f8..10061a04`): vy = −((vy · 0x80) >> 8) — then
+        // gravity twice: −(0x9d8 · 0x80 >> 8) + 0x5a + 0x5a = −0x438.
+        let b = try XCTUnwrap(firstBounce)
+        XCTAssertEqual([b.before, b.after], [0x9d8, -0x438])
+        XCTAssertEqual(b.after, 0 - ((b.before &* 0x80) >> 8) + 0xb4)
+        // One airborne frame: gravity 0x5a twice — `.ApplyGravityAndSeparateFromTiles`' and the arm's own
+        // `+0x2c += +0x110` (M l. 54168–54169) — and y moved twice: by the 0x5a inside it, by the 0xb4 at the tail
+        // (M l. 54272–54273).
+        let air = try XCTUnwrap(EffectSprite.spawn(w, type: EffectSprite.debris, x: 100, y: 0, layer: 0xb, effects: 1,
+                                                   lights: &lights))
+        let a0 = try XCTUnwrap(w.active.record(id: air))
+        EffectSprite.handle(world: w, id: air, lights: &lights, effects: 1)
+        let a1 = try XCTUnwrap(w.active.record(id: air))
+        XCTAssertEqual([a0.vy, a1.vy, a1.y256 - a0.y256], [0, 0xb4, 0x5a + 0xb4])
+        XCTAssertEqual(a1.classWord16c, 0)
         // The fade states by count directly (an airborne debris: no contact), and none at prefs+6 ≠ 1.
         for (n, m) in [(Int32(0), UInt32(0)), (1, 0xb0001), (2, 0xb0000), (3, 0xb0002), (4, 0xb0002)] {
             let a = try XCTUnwrap(EffectSprite.spawn(w, type: EffectSprite.debris, x: 100, y: 0, layer: 0xb, effects: 1,
@@ -286,7 +329,7 @@ final class EffectTests: XCTestCase {
             }
         }
         // Each drawn `.PaintFrameWrap`: count < 1 → toggle 0, else toggle = !toggle, count − 1; toggle on → the copy
-        // reads the mask port `*_DAT_100a0008` (M l. 9437–9447).
+        // reads the mask port `*_DAT_100a0008` (M l. 9426–9447).
         var seq: [String] = []
         var masks: [DrawOp] = []
         for _ in 0..<4 {
@@ -359,5 +402,46 @@ final class EffectTests: XCTestCase {
             got.append(g.scrollV - v0)
         }
         XCTAssertEqual(got, [-10, 8, -10, 8])                                // −10, +9 → +8, −9 → −10, +8
+
+        // Through the session, prefs+0 set (every other pass skipped): `*_DAT_1009fd2c` + 1 on every `.PaintFrameWrap`,
+        // drawn or skipped (M l. 9250, before the `param_1 != 0` block), and the shake's `& 3` reads the counter as
+        // the pass before left it (`.FindUpperLeftCorner` runs first). The shake and the counter come in on the carry
+        // (EF review fix) and go out on it; a twin without the shake gives the unshaken v.
+        let res = try FerazelData.open(try FerazelData.dataDirectory())
+        var prefs = FerazelPrefs()
+        prefs.reduceFrameRate = 1
+        prefs.graphics = 1
+        var carryIn = LevelCarry()
+        carryIn.shake = 0x14
+        carryIn.paintCounter = 0x41
+        // Started 600 px down so the shaken v is never clamped at 0.
+        let start = (x: Int(L.header.startX) - 0x20, y: 600)
+        let shaken = try FerazelSession(resources: res, prefs: prefs, level: 1, carry: carryIn, start: start)
+        var plain = LevelCarry()
+        plain.paintCounter = 0x41
+        let still = try FerazelSession(resources: res, prefs: prefs, level: 1, carry: plain, start: start)
+        XCTAssertEqual([Int(shaken.camera.shake), Int(shaken.world.paintCounter)], [0x14, 0x41])
+        // The first pass: the iteration-0 block's own `.FindUpperLeftCorner` and the loop's — two shake steps, one
+        // paint (skipped: prefs+0 with odd false).
+        XCTAssertFalse(shaken.step(keys: KeyState()).drawn)
+        _ = still.step(keys: KeyState())
+        XCTAssertEqual([Int(shaken.camera.shake), Int(shaken.world.paintCounter)], [0x12, 0x42])
+        var drawn: [Bool] = []
+        var offsets: [Int] = []
+        var expected: [Int] = []
+        for k in 0..<8 {
+            let c0 = shaken.world.paintCounter, s0 = shaken.camera.shake
+            drawn.append(shaken.step(keys: KeyState()).drawn)
+            _ = still.step(keys: KeyState())
+            XCTAssertEqual(shaken.world.paintCounter, c0 + 1, "pass \(k)")
+            XCTAssertEqual(shaken.camera.shake, s0 - 1, "pass \(k)")
+            offsets.append(shaken.camera.scrollV - still.camera.scrollV)
+            expected.append(c0 & 3 == 0 ? -Int(s0 >> 1) : Int(s0 >> 1))
+        }
+        XCTAssertEqual(drawn, [true, false, true, false, true, false, true, false])
+        XCTAssertEqual(shaken.world.paintCounter, 0x4a)
+        XCTAssertEqual(offsets, expected)
+        XCTAssertEqual(offsets, [9, 8, -8, 7, 7, 6, -6, 5])                 // counters 0x42…0x49: & 3 == 0 at 0x44, 0x48
+        XCTAssertEqual([Int(shaken.carry.shake), Int(shaken.carry.paintCounter)], [0x12 - 8, 0x4a])
     }
 }

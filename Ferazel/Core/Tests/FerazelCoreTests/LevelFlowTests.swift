@@ -273,6 +273,8 @@ final class LevelFlowTests: XCTestCase {
         expectCarry.waterOriginRow = s.waterEffects.originRow
         expectCarry.tileCacheValid = true
         expectCarry.statusBar = s.world.statusBar                     // HU: the status bar's globals ride it too
+        expectCarry.paintCounter = s.world.paintCounter               // EF review fix: the paint counter (+ flash, plumes)
+        XCTAssertGreaterThan(s.world.paintCounter, 0)
         XCTAssertEqual(carry, expectCarry)
         // Level 1's last walk filled at the start window: origin (0, 0), flag set, the cells `.FillCachedTileArray(0, 0)`
         // makes from level 1.
@@ -294,6 +296,7 @@ final class LevelFlowTests: XCTestCase {
         let np = try XCTUnwrap(next.world.playerID.flatMap { next.active.sprite(id: $0) })
         XCTAssertEqual(np.hp, 333)                                     // `.SetupPlayerSprite`: `+0xa4 = G+4`
         XCTAssertEqual(next.carry.globals, expected)
+        XCTAssertEqual(next.world.paintCounter, carry.paintCounter)    // EF review fix: runs on into level 2
         // The cache arrives as level 1 left it; level 2's first drawn origin (19, 0) differs → its first walk refills.
         XCTAssertEqual(next.waterEffects.cells, carry.waterCells)
         XCTAssertEqual([next.waterEffects.originCol, next.waterEffects.originRow], [0, 0])
@@ -470,6 +473,14 @@ final class LevelFlowTests: XCTestCase {
         expectCarry.waterOriginRow = s.waterEffects.originRow
         expectCarry.tileCacheValid = true
         expectCarry.statusBar = s.world.statusBar                     // HU: the status bar's globals ride it too
+        // EF review fix: the flash, the paint counter (+1 per `.PaintFrameWrap`: 5 + the dying frames), the plume
+        // count and the shake are globals too (set here as a Handle would; the shake through a carried-in session).
+        XCTAssertEqual(s.world.paintCounter, UInt32(5 + frames))
+        s.world.flash = ScreenFlash(count: 2, on: true)
+        s.world.plumeCount = 2
+        expectCarry.flash = ScreenFlash(count: 2, on: true)
+        expectCarry.paintCounter = UInt32(5 + frames)
+        expectCarry.plumeCount = 2
         XCTAssertEqual(s.carry, expectCarry)
         XCTAssertEqual([s.carry.waterOriginCol, s.carry.waterOriginRow], [0, 2])       // the dying player's window
         XCTAssertEqual(s.carry.globals?.coins, 9)
@@ -486,6 +497,9 @@ final class LevelFlowTests: XCTestCase {
         XCTAssertEqual(fresh.globals, GameGlobals(header: fresh.level.header))
         XCTAssertEqual(fresh.globals.crunchLog, [])
         XCTAssertTrue(fresh.world.parity)
+        XCTAssertEqual([fresh.world.flash, fresh.carry.flash], [ScreenFlash(count: 2, on: true), ScreenFlash(count: 2, on: true)])
+        XCTAssertEqual([fresh.world.paintCounter, fresh.carry.paintCounter], [UInt32(5 + frames), UInt32(5 + frames)])
+        XCTAssertEqual(fresh.world.plumeCount, 2)
         XCTAssertEqual(fresh.waterEffects.cells, s.waterEffects.cells)
         XCTAssertEqual([fresh.waterEffects.originCol, fresh.waterEffects.originRow],
                        [s.waterEffects.originCol, s.waterEffects.originRow])

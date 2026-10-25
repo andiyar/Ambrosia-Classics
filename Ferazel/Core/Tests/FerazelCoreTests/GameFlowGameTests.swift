@@ -405,6 +405,11 @@ final class GameFlowGameTests: XCTestCase {
         let s1 = try XCTUnwrap(flow.levelRun?.session)
         s1.world.globals.coins = 17
         s1.world.statusBar.flashes.itemSlot = 9                       // HU: a status-bar global the map does not touch
+        // EF review fix: the flash, paint counter and plume count are data-section globals — set here as their writers
+        // would, they run on through the exit, the map and into level 2.
+        s1.world.flash = ScreenFlash(count: 0x7fff, on: false)
+        s1.world.paintCounter = 0x10000
+        s1.world.plumeCount = 2
         s1.world.active.update(id: try XCTUnwrap(s1.world.playerID)) { $0.hp = 333 }
         try touchExit(s1, record: 66)
         // Exit → `.EndLevelSGUpdate` → the stats panel (PICT 140) → the map (clut 700, PICT 7000) → the auto-walk to 2.
@@ -444,6 +449,9 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(s2.globals.coins, 17)
         XCTAssertEqual(s2.globals.health, 333)
         XCTAssertEqual(s2.globals.unlocked[2], 1)
+        XCTAssertEqual(s2.world.plumeCount, 2)
+        XCTAssertGreaterThan(s2.world.paintCounter, 0x10000)
+        XCTAssertTrue(0 < s2.world.flash.count && s2.world.flash.count < 0x7fff)
         XCTAssertEqual(flow.levelNumber, 2)
         XCTAssertEqual(flow.exit1, -1)
         XCTAssertEqual(flow.exit2, -1)
@@ -504,9 +512,18 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(flow.levelCarry.tilesetLevel, 1)
         XCTAssertFalse(flow.levelCarry.cachedFaces.loadedSets.isEmpty)
         XCTAssertTrue(flow.mapSprites.isEmpty)
-        // The menu works again: N starts a fresh game at level 1 (no death screen; `G` re-initialised).
+        // The menu works again: N starts a fresh game at level 1 (no death screen; `G` re-initialised). EF review fix:
+        // New Game's `.InitGameGlobals` zeroes the shake `*_DAT_1009ffa0` (M l. 821) and nothing else of the carry —
+        // the paint counter and plume count run on into the new game.
+        let painted = flow.levelCarry.paintCounter
+        XCTAssertGreaterThan(painted, 0)
+        flow.levelCarry.shake = 0x7fff
+        flow.levelCarry.plumeCount = 1
         rig.press(0x2d)
         rig.drive { self.isRunning($0, level: 1, iterations: 1) }
+        XCTAssertEqual(flow.levelRun?.session?.camera.shake, 0)
+        XCTAssertEqual(flow.levelRun?.session?.world.plumeCount, 1)
+        XCTAssertGreaterThan(try XCTUnwrap(flow.levelRun?.session?.world.paintCounter), painted)
         XCTAssertEqual(flow.levelRun?.session?.globals.unlocked[2], 0)
         XCTAssertEqual(flow.levelRun?.carry.cachedFaces, flow.levelCarry.cachedFaces)
 

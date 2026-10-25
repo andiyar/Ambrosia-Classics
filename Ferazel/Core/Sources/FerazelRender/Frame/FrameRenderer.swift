@@ -367,19 +367,9 @@ public final class FrameRenderer {
                                       parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copy(h: h, v: v))
             case .copyMaskToScreen(let h, let v, let graphicsMode, let backdrop):
-                // `.WrapCopyToScreen(*_DAT_100a0008, …)` (M l. 9443–9447): the port argument reaches only the
-                // compositor (`.DoubleBlitUniversal` passes r3 through; `.DoubleBlitPPCParallaxOneLayer` reads F's rows
-                // from it, raw `10017954`, `10017fe4..10017ffc`).
-                var none: [[ParallaxBlitter.RowTrace]]? = nil
-                for call in ParallaxBlitter.calls(h: h, v: v, backdrop: backdrop) {
-                    if call.composited {
-                        parallax.doubleBlitUniversal(call, source: ports.mask, mask: ports.mask, h: h, v: v,
-                                                     graphicsMode: graphicsMode, parallax: Int(prefs.parallax),
-                                                     screen: &screen.pixels, trace: &none)
-                    } else {
-                        parallax.copyBits(call.src, call.dst, source: ports.frame, screen: &screen.pixels)
-                    }
-                }
+                // `.WrapCopyToScreen(*_DAT_100a0008, …)` (M l. 9441–9447): `ParallaxBlitter.copyMaskToScreen`.
+                parallax.copyMaskToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                                          parallax: Int(prefs.parallax), screen: &screen.pixels)
                 executed.append(.copyMask(h: h, v: v))
             case .changeLightFace(let slot, let pict, let width, let height):
                 // `.ChangeLightFace @ 1001bdbc`: slots outside 0…199 are ignored; `+4` face, `+0x14` = width >> 1.

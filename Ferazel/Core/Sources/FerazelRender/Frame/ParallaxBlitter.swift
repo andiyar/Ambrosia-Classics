@@ -216,18 +216,32 @@ public struct ParallaxBlitter: Sendable {
                      backdrop: backdrop, parallax: parallax, screen: &screen)
     }
 
-    /// With `trace` non-nil, one `[RowTrace]` per compositor call that drew is appended.
+    /// EF: `.WrapCopyToScreen(*_DAT_100a0008, …)`, the flash's copy (`DrawOp.copyMaskToScreen`): the port argument
+    /// reaches only the compositor (`.DoubleBlitUniversal` passes r3 through; `.DoubleBlitPPCParallaxOneLayer` reads
+    /// F's rows from it, raw `10017954`, `10017fe4..10017ffc`), so the composited pieces take the mask port as F (and
+    /// as M); the plain `CopyBits` pieces copy `*(_DAT_1009ff58 + 8)`, the frame port, whatever the argument (M l.
+    /// 11811–11836).
+    public func copyMaskToScreen(ports: FramePorts, h: Int, v: Int, graphicsMode: Int, backdrop: Bool, parallax: Int,
+                                 screen: inout [UInt8]) {
+        var none: [[RowTrace]]? = nil
+        copyToScreen(source: ports.mask, mask: ports.mask, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                     parallax: parallax, screen: &screen, plain: ports.frame, trace: &none)
+    }
+
+    /// With `trace` non-nil, one `[RowTrace]` per compositor call that drew is appended. `plain` (EF) is the port the
+    /// plain `CopyBits` pieces copy — `source` when nil.
     func copyToScreen(source: [UInt8], mask: [UInt8], h: Int, v: Int, graphicsMode: Int, backdrop: Bool,
-                      parallax: Int, screen: inout [UInt8], trace: inout [[RowTrace]]?) {
-        precondition(source.count == FramePorts.width * FramePorts.height && mask.count == source.count,
-                     "ParallaxBlitter: ports are 640×416")
+                      parallax: Int, screen: inout [UInt8], plain: [UInt8]? = nil, trace: inout [[RowTrace]]?) {
+        let plain = plain ?? source
+        precondition(source.count == FramePorts.width * FramePorts.height && mask.count == source.count
+                     && plain.count == source.count, "ParallaxBlitter: ports are 640×416")
         precondition(screen.count == Self.screenWidth * Self.screenHeight, "ParallaxBlitter: screen is 640×480")
         for call in Self.calls(h: h, v: v, backdrop: backdrop) {
             if call.composited {
                 doubleBlitUniversal(call, source: source, mask: mask, h: h, v: v, graphicsMode: graphicsMode,
                                     parallax: parallax, screen: &screen, trace: &trace)
             } else {
-                copyBits(call.src, call.dst, source: source, screen: &screen)
+                copyBits(call.src, call.dst, source: plain, screen: &screen)
             }
         }
     }

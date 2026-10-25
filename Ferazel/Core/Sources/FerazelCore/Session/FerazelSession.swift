@@ -156,6 +156,10 @@ public final class FerazelSession {
         }
         world.globals.crunchLog = carry.crunchLog
         world.statusBar = carry.statusBar
+        // EF review fix: the flash, the paint counter and the plume count run on (`LevelCarry`).
+        world.flash = carry.flash
+        world.paintCounter = carry.paintCounter
+        world.plumeCount = carry.plumeCount
         // `.InitParticles` (`.SetupLevel`, `bl` 10004fc0) clears byte +0 of every record and keeps the count, hint and
         // high-water mark (particles §1.1): they run on from the previous level (E1a).
         world.particles = ParticlePool(counters: carry.particles)
@@ -170,6 +174,7 @@ public final class FerazelSession {
         startX = px
         startY = py
         camera = try Camera(header: L.header, spriteX: px, spriteY: py)
+        camera.shake = carry.shake                                     // EF review fix: the shake runs on (`LevelCarry`)
         // playerX = `fd94` = origin x + 0x32 (`.GameLoop` l. 5149, before `.SetupLevel`).
         let context = SetupFaces.Context(level: L, playerX: px + 0x32, effects: prefs.effects, records: records)
         // `.ClearCrunchSprites` (`.GameLoop` l. 5160, before `.SetupLevel`): the 40-slot overlay table — already empty
@@ -411,13 +416,13 @@ public final class FerazelSession {
         // `*_DAT_1009fd2c += 1` (M l. 9250): every pass, before the draw block (EF; the shake reads it).
         world.paintCounter &+= 1
         if draw {
-            // EF: the flash step (M l. 9437–9443), before `.DrawParticles`.
+            // EF: the flash step (M l. 9426–9432), before `.DrawParticles`.
             world.flash.step()
             // `.DrawParticles` (l. 9433): the colour-0 kills here, on drawn iterations only (`ParticlePool.draw`).
             ops.draws.append(.drawParticles(world.particles.draw()))
             // later: `.UpdateOmniPx` (l. 9434). Then the parity flip (raw `10012710..1001272c`).
             world.parity.toggle()
-            // `.WrapCopyToScreen` of the frame port, or of the mask port while the flash toggle is on (M l. 9443–9447).
+            // `.WrapCopyToScreen` of the frame port, or of the mask port while the flash toggle is on (M l. 9441–9447).
             let backdrop = prefs.plainCopy == 0
             ops.draws.append(world.flash.on
                 ? .copyMaskToScreen(h: h, v: v, graphicsMode: Int(graphics), backdrop: backdrop)
@@ -803,7 +808,7 @@ public final class FerazelSession {
     }
 
     /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a), the
-    /// water-effects cache, origin and flag (E1b), and the live G with its crunch log (A1a: the flow decides when a
+    /// water-effects cache, origin and flag (E1b), the flash, paint counter, plume count and shake (EF), and the live G with its crunch log (A1a: the flow decides when a
     /// game starts from a fresh G — New Game's `.InitGameGlobals` — never the session).
     public var carry: LevelCarry {
         var c = LevelCarry(parity: world.parity, crunchLog: world.globals.crunchLog, globals: world.globals)
@@ -813,6 +818,10 @@ public final class FerazelSession {
         c.waterOriginRow = waterEffects.originRow
         c.tileCacheValid = world.player.tileCacheValid
         c.statusBar = world.statusBar
+        c.flash = world.flash
+        c.paintCounter = world.paintCounter
+        c.plumeCount = world.plumeCount
+        c.shake = camera.shake
         return c
     }
 

@@ -95,14 +95,16 @@ public final class SpriteWorld {
     /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
     public var voices = SoundVoices()
     /// EF: the mask flash (`ScreenFlash`: `*_DAT_100a00fc` / `*_DAT_100a00cc`) — here so the Handles that write it
-    /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`.
+    /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`; `LevelCarry.flash` carries it.
     public var flash = ScreenFlash()
     /// EF: `*_DAT_1009fd2c`, the paint counter — +1 in every `.PaintFrameWrap` (M l. 9250, drawn or not, before the
     /// draw block); read by `.FindUpperLeftCorner`'s shake (M l. 6148–6152). Never reset in the binary (no other
-    /// writer); per session here [LOW: only its low bits are read, and only while a shake runs].
+    /// writer): it runs on through every level, death, map and game (`LevelCarry.paintCounter`, EF review fix).
     public var paintCounter: UInt32 = 0
-    /// EF: `*PTR_DAT_100a0904`, the plumes alive — +1 in the 1206 Setup (M l. 53741), −1 when a 1206 dies (M l. 54090);
-    /// the explosion package adds a plume only below 3 (M l. 53787). Never reset in the binary; per session here.
+    /// EF: `*PTR_DAT_100a0904`, the plumes alive — +1 in the 1206 Setup (M l. 53743), −1 when a 1206 dies (M l. 54090);
+    /// the explosion package adds a plume only below 3 (M l. 53785–53790). Never reset in the binary: it runs on
+    /// through every level, death, map and game (`LevelCarry.plumeCount`, EF review fix) — a plume alive at a level
+    /// end is never counted down.
     public var plumeCount: Int16 = 0
 
     /// `*(_DAT_1009ff58 + 0x1c)` = 360 (`li r0,0x168` at `10032274`): `.MTCollideSprites`' |Δx|, |Δy| window.
