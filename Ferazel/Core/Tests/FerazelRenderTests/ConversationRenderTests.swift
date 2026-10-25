@@ -301,24 +301,41 @@ final class ConversationRenderTests: XCTestCase {
 
     /// TX (Q6 note 1): the conversation's `DrawChar`s smoothed as Mac OS 9 drew them — per character, coverage 0
     /// leaves the pixel, 255 is `Color2Index(run.rgb)` as before, a partial pixel is `Color2Index` of the run's colour
-    /// mixed with the pixel's colour under the screen CLUT; the pen still advances by `CharWidth`.
+    /// mixed with the pixel's colour under the screen CLUT by coverage / 255 (text weighted by the coverage, rounded);
+    /// the pen still advances by `CharWidth`.
     func testDrawCharBlendsCoverageIntoTheScreen() throws {
         let r = try Self.resources.get()
         let search = ColorSearch(model: .ruled, tieBreak: .lowest)
-        let text = StatusBarTests.CoverageRasterizer()
+        let text = StatusBarTests.CoverageRasterizer(row: [0, 64, 136, 255], advance: 5)
         let frame = try FrameRenderer(resources: r, level: 1, search: search, dither: .errorDiffusion, text: text)
         let renderer = ConversationRenderer(frame: frame, text: text)
         let clut = frame.surface.clut
         let back = search.index(of: RGB16(0xcccc, 0xcccc, 0xcccc), in: clut)
         frame.surface.frame = IndexedFrame(fill: back)
+        // Under "a"'s coverage-0 pixel: index 7, whose colour the search answers with another index — writing it
+        // would show. Under its 136 pixel: index 4, where rounding and truncating the mix pick different indices.
+        frame.surface.frame[200, 99] = 7
+        frame.surface.frame[202, 99] = 4
+        XCTAssertNotEqual(search.index(of: RGB16(clut.entries[7]), in: clut), 7)
         let rgb = RGB16(0x1000, 0x2000, 0x3000)
         try renderer.apply([.drawText(TextRun(bytes: MacRoman.bytes("ab"), font: 20, size: 18, face: 0, h: 200, v: 100,
                                               rgb: rgb))])
         let ink = search.index(of: rgb, in: clut)
-        let want = search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[Int(back)]), 128), in: clut)
-        XCTAssertFalse([ink, back].contains(want))
-        // "a" at pen 200 (pixels 200…202), "b" at 204 (204…206).
-        XCTAssertEqual((199..<208).map { frame.surface.frame[$0, 99] }, [back, back, want, ink, back, back, want, ink, back])
-        XCTAssertEqual(frame.surface.frame.pixels.filter { $0 != back }.count, 4)
+        func blend(_ under: UInt8, _ c: Int, rounded: Bool = true) -> UInt8 {
+            search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[Int(under)]), c, rounded: rounded), in: clut)
+        }
+        func swapped(_ under: UInt8, _ c: Int) -> UInt8 {
+            search.index(of: StatusBarTests.mix(RGB16(clut.entries[Int(under)]), rgb, c), in: clut)
+        }
+        let low = blend(back, 64), mid = blend(4, 136), midBack = blend(back, 136)
+        XCTAssertFalse([ink, back].contains(low))
+        XCTAssertNotEqual(swapped(back, 64), low)               // the mix's direction shows at a lopsided coverage
+        XCTAssertNotEqual(blend(4, 136, rounded: false), mid)   // and its rounding at this one
+        XCTAssertFalse([ink, 4].contains(mid))
+        // "a" at pen 200 (pixels 200…203), "b" at 205 (205…208).
+        XCTAssertEqual((199..<210).map { frame.surface.frame[$0, 99] },
+                       [back, 7, low, mid, ink, back, back, low, midBack, ink, back])
+        XCTAssertEqual(frame.surface.frame.pixels.filter { $0 != back }.count, [7, low, mid, ink, low, midBack, ink]
+            .filter { $0 != back }.count)
     }
 }

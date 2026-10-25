@@ -36,24 +36,32 @@ final class ScreenTests: XCTestCase {
 
     /// TX (Q6 note 1): `drawText` smoothed as Mac OS 9 drew it — coverage 0 leaves the pixel, 255 is
     /// `Color2Index(run.rgb)` as before, a partial pixel is `Color2Index` of the run's colour mixed with the pixel's
-    /// colour under the surface's CLUT.
+    /// colour under the surface's CLUT, rounded. The surface holds level clut 202 here: 130 has no colour its search
+    /// answers with another index, so a written coverage-0 pixel could not show.
     func testDrawTextBlendsCoverageIntoTheScreen() throws {
         let r = try Self.resources.get()
-        let surface = ScreenSurface(clut: try ColorLUT.load(id: 130, from: r, chain: .frontEnd))
+        let surface = ScreenSurface(clut: try ColorLUT.load(id: 202, from: r, chain: .level))
         let search = ColorSearch(model: .ruled)
         let screen = ScreenRenderer(surface: surface, resources: r, search: search,
                                     text: StatusBarTests.CoverageRasterizer())
         let clut = surface.clut
         let back = search.index(of: RGB16(0xffff, 0xffff, 0xffff), in: clut)
         surface.frame = IndexedFrame(fill: back)
+        // Under the coverage-0 pixel: index 7, whose colour the search answers with another index. Under the 128
+        // pixel: index 8, where rounding and truncating the mix pick different indices.
+        surface.frame[300, 199] = 7
+        surface.frame[301, 199] = 8
+        XCTAssertNotEqual(search.index(of: RGB16(clut.entries[7]), in: clut), 7)
         let rgb = RGB16(0x0000, 0x0000, 0x0000)
         try screen.apply([.drawText(TextRun(bytes: [0x48, 0x69], font: 20, size: 18, face: 0, h: 300, v: 200,
                                             rgb: rgb))])
         let text = search.index(of: rgb, in: clut)
-        let want = search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[Int(back)]), 128), in: clut)
-        XCTAssertFalse([text, back].contains(want))
-        XCTAssertEqual((299..<304).map { surface.frame[$0, 199] }, [back, back, want, text, back])
-        XCTAssertEqual(surface.frame.pixels.filter { $0 != back }.count, 2)
+        let want = search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[8]), 128), in: clut)
+        XCTAssertNotEqual(search.index(of: StatusBarTests.mix(rgb, RGB16(clut.entries[8]), 128, rounded: false),
+                                       in: clut), want)
+        XCTAssertFalse([text, back, 8].contains(want))
+        XCTAssertEqual((299..<304).map { surface.frame[$0, 199] }, [back, 7, want, text, back])
+        XCTAssertEqual(surface.frame.pixels.filter { $0 != back }.count, 3)
     }
 
     func testMainMenuScreenGolden() throws {

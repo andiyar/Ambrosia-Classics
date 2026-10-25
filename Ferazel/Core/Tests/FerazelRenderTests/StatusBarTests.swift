@@ -26,40 +26,58 @@ final class StatusBarTests: XCTestCase {
         func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) { (7, 2, 0) }
     }
 
-    /// TX: every string (and character) is one row of three pixels just above the baseline at the pen — coverage
-    /// 0, 128, 255 — advance 4.
+    /// TX: every string (and character) is one row of pixels just above the baseline at the pen — coverage `row`
+    /// (default 0, 128, 255) — advance `advance` (default 4).
     final class CoverageRasterizer: TextRasterizer {
+        let row: [UInt8]
+        let advance: Int
+        init(row: [UInt8] = [0, 128, 255], advance: Int = 4) { self.row = row; self.advance = advance }
         func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
-            -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) { (0, -1, 3, 1, [0, 128, 255]) }
-        func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int { 4 }
+            -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) { (0, -1, row.count, 1, row) }
+        func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int { advance }
         func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) { (1, 0, 0) }
     }
 
-    /// TX: the text RGB `t` over the pixel's RGB `d` at coverage `c`/255, per 16-bit channel, rounded.
-    static func mix(_ t: RGB16, _ d: RGB16, _ c: Int) -> RGB16 {
-        func m(_ a: UInt16, _ b: UInt16) -> UInt16 { UInt16((Int(a) * c + Int(b) * (255 - c) + 127) / 255) }
+    /// TX: the text RGB `t` over the pixel's RGB `d` at coverage `c`/255, per 16-bit channel, rounded (`rounded:
+    /// false` truncates — what the rounding asserts tell apart).
+    static func mix(_ t: RGB16, _ d: RGB16, _ c: Int, rounded: Bool = true) -> RGB16 {
+        let half = rounded ? 127 : 0
+        func m(_ a: UInt16, _ b: UInt16) -> UInt16 { UInt16((Int(a) * c + Int(b) * (255 - c) + half) / 255) }
         return RGB16(m(t.red, d.red), m(t.green, d.green), m(t.blue, d.blue))
     }
 
     /// TX (Q6 note 1): `DrawString` smoothed as Mac OS 9 drew it — coverage 0 leaves the port's pixel, 255 is the
     /// white index as before, a partial pixel is `Color2Index` (the screen device's search) of white mixed with the
-    /// pixel's colour under the screen CLUT (202 here).
+    /// pixel's colour under the screen CLUT (202 here), not under the port's own 199 or the icons' 200, rounded.
     func testTextSmoothingBlendsIntoTheStatusPort() throws {
         let r = try FerazelData.open(try FerazelData.dataDirectory())
         let search = ColorSearch(model: .ruled)
+        let c199 = try ColorLUT.load(id: 199, from: r, chain: .level)
+        let c200 = try ColorLUT.load(id: 200, from: r, chain: .level)
         let c202 = try ColorLUT.load(id: 202, from: r, chain: .level)
         var bar = try StatusBar(resources: r, screenClut: c202, search: search, text: CoverageRasterizer())
         bar.paint((50, 100, 60, 110), bar.black)
+        // Under the coverage-0 pixel: index 7, whose colour 202's search answers with another index (3) — writing
+        // it would show. Under the 128 pixel: index 165, whose colour differs across 199 / 200 / 202.
+        bar.paint((55, 102, 56, 103), 7)
+        bar.paint((55, 103, 56, 104), 165)
+        XCTAssertNotEqual(search.index(of: RGB16(c202.entries[7]), in: c202), 7)
         let before = bar.port
         bar.drawString("A", x: 102, y: 56, font: 20, size: 12, face: 1)
         let row = 55 * StatusBar.width + 102
-        let grey = Self.mix(RGB16(0xffff, 0xffff, 0xffff), RGB16(c202.entries[Int(bar.black)]), 128)
-        XCTAssertEqual(grey, RGB16(0x8080, 0x8080, 0x8080))
-        let want = search.index(of: grey, in: c202)
-        XCTAssertFalse([bar.black, bar.white].contains(want))
-        XCTAssertEqual(Array(bar.port[row..<row + 3]), [bar.black, want, bar.white])
+        let white = RGB16(0xffff, 0xffff, 0xffff)
+        let want = search.index(of: Self.mix(white, RGB16(c202.entries[165]), 128), in: c202)
+        XCTAssertEqual(want, 3)
+        // Every wrong reading lands elsewhere: under black (no CLUT lookup), under 199, under 200, truncated, swapped.
+        let wrong = [Self.mix(white, RGB16(0, 0, 0), 128), Self.mix(white, RGB16(c199.entries[165]), 128),
+                     Self.mix(white, RGB16(c200.entries[165]), 128),
+                     Self.mix(white, RGB16(c202.entries[165]), 128, rounded: false),
+                     Self.mix(RGB16(c202.entries[165]), white, 128)].map { search.index(of: $0, in: c202) }
+        XCTAssertFalse(wrong.contains(want), "\(wrong)")
+        XCTAssertFalse([bar.black, bar.white, 165].contains(want))
+        XCTAssertEqual(Array(bar.port[row..<row + 3]), [7, want, bar.white])
         var rest = bar.port
-        rest.replaceSubrange(row..<row + 3, with: before[row..<row + 3])
+        rest.replaceSubrange(row + 1..<row + 3, with: before[row + 1..<row + 3])
         XCTAssertEqual(rest, before)          // only the two covered pixels changed
     }
 
