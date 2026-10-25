@@ -44,7 +44,7 @@ card's end (enemies stand still, no pickups, no title/menu, no fade-in after a r
 Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what feels wrong).
 Recommendation: a or b — the machine reads match the binary on every point checked; only your hands can judge feel.
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 3 meanwhile; a fail re-opens Phase 2 as tasks.
-Answer: DEFERRED, not a verdict — Ben will play it when he is back from Fiji. Keep this item open; do not treat Phase 2 as passed or failed.
+Answer: (b) pass with notes — Ben, 2026-10-25, covered by his Phase 3 play test (Q6): movement, damage, drowning and breaking things all work; the speed note in Q6 applies here too.
 
 ### Q5 — 2026-10-24 — Quitting Ferazel from the Dock or at logout during a level: keep the original's "wait"?
 Context: The original game only listens for the system's "quit" message at the main menu and in its pause screen; during
@@ -74,7 +74,7 @@ Recommendation: a or b — every front-end and save-file behaviour checked match
 hands and eyes can judge the feel, and only real play can find a crash the boot check can't reach.
 Blocks: nothing (D34: gates queue). The loop plans and builds Phase 4 meanwhile; (b)/(c) notes become Phase 3 fix
 tasks, planned first.
-Answer:
+Answer: (b) pass with notes — Ben, 2026-10-25, played the Phase 3 build (3553392) with keypad and controller: no crash or hang; movement, damage, drowning and breaking the environment work. Notes (each a fix task, planned first): (1) TEXT IS HARD TO READ — vs the Let's Play (SheepShaver, Mac OS 9) the conversation/sign text and the status-bar stage name are ragged and broken; cause found by his attended session: Ferazel/App/CoreTextRasterizer.swift thresholds CoreText coverage at 50% (`$0 >= 0x80`), dropping Times' thin strokes; Mac OS 9 smoothed screen text, so keep the antialiased coverage and blend it into the palette as the original OS did; Ben's screenshots (LP vs port) are the reference. (2) IT RUNS VERY FAST — timing code matches the binary (2-tick cadence), so measure Ferazel's speed across a known stretch of level 1 in the Let's Play vs the port before changing anything; the LP was recorded in SheepShaver. Spells / interaction missing is expected (Phase 4).
 
 ### Q7 — 2026-10-24 — Phase 4 plan (spells + items): three small choices, for your later read
 Context: Loop run 18 wrote and reviewed the Phase 4 plan (`docs/plans/2026-10-24-ferazel-phase4.md`, rulings in
@@ -88,6 +88,18 @@ glider, the shields …) are built and machine-tested now though you cannot reac
 Recommendation: the defaults — more of the game to try sooner, and no behaviour changes.
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
 Answer:
+
+### Q8 — 2026-10-25 — Apple system fonts may ship (Ben's ruling, written by his attended session)
+Context: The project had a standing rule (Aki D23, carried into the BTX release script) against shipping Apple's system
+fonts. Ben, 2026-10-25: "I didn't make that rule. happy to override it." For Ferazel's text fix (Q6 note 1), the faithful
+font is Mac OS 9's Times (and Geneva for the status bar), which today's macOS ships in different versions.
+Options: (a) ship Apple fonts where the faithful version needs them; (b) keep the old rule.
+Recommendation: a — Ben's word.
+Blocks: nothing.
+Answer: (a) — Ben, 2026-10-25. Record as a new DECISIONS entry superseding the font part of D23. Approach for Ferazel:
+first smooth the modern Times/Geneva (Q6 note 1); if it still looks off against the Let's Play, source the classic fonts
+from Ben's Mac OS 9 setup, or from the collection Ben pointed to (https://github.com/pjobson/Apple-Fonts), and bundle them. Release scripts that assert "no fonts bundled" (package-*-release.sh) need
+updating only when a font is actually shipped.
 
 ## Answered
 
