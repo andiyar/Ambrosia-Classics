@@ -55,7 +55,7 @@ glider, the shields …) are built and machine-tested now though you cannot reac
 (3) item counts drawn in Geneva by the Mac's own font engine — default yes.
 Recommendation: the defaults — more of the game to try sooner, and no behaviour changes.
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
-Answer:
+Answer: the defaults — Ben, 2026-10-26: "levels don't care. spells yes. item counts yes." (1) levels 3–4: no preference, so the default stands (open in Phase 4, enemies still until Phase 5); (2) build and test the later-level spells and items now: yes; (3) item counts in Geneva by the Mac's font engine: yes.
 
 ## Answered
 
