@@ -32,6 +32,17 @@ brother's Windows machine.
 
 ## Open
 
+### Q12 — 2026-10-26 — NEVER launch the game (Ben's ruling, written by his attended session) — overrides D34's G9 boot permission
+Context: The Phase 4 end run's boot check opened the staged app four times at ~22:00 with sound; it woke Ben's wife.
+Ben is angry about it. This withdraws the loop's permission to launch any app.
+Options: (a) no app launches by the loop, ever: no boot checks, no smoke runs, no `open`, no CrossOver/Wine runs of the
+Windows build, no audio. Ben launches builds himself.
+Recommendation: a — Ben's word.
+Blocks: nothing. Gate cards say "not launched by the loop; Ben's first launch is the boot check".
+Answer: (a) — Ben, 2026-10-26. Effective immediately for every run, including the Windows runs. Record in DECISIONS
+superseding the launch part of D34 (G9); remove app launches from NEXT.md and every plan's gates; staging (copying the
+build to ~/Desktop or out/) stays allowed. Headless tests that make no sound and open no window are fine.
+
 ### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
 data decodes cleanly, the app builds, the staged build starts and quits cleanly, and the Fable review over the whole
