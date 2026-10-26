@@ -1623,3 +1623,21 @@ build in lockstep with the Mac build." From then on every task that changes what
 Windows side in the same task, and every phase end stages both builds (Mac app + Windows zip) with one gate card; the
 Phase 5+ plans are written that way. This moves the design §8 Phase 7 Windows work forward; Phase 7 keeps only what is
 left.
+
+## D42 — Ben's Q12 ruling: the loop launches a build only muted, and never at night (2026-10-26; recorded by loop run 31)
+
+**Decided (Ben, QUESTIONS Q12, written, answered and twice amended by his attended session 2026-10-26, after the Phase 4
+end run's G9 boot checks opened the staged app with sound at ~22:00 and woke his household):** (1) first ruling: no
+launches by the loop at all. (2) **Amended minutes later ("Muted launches is fine to test"):** launching a build IS
+allowed for boot checks, but **only with the game's sound fully off**. Before any launch the loop adds, and tests
+headlessly, a **mute switch** (a launch argument or environment variable that stops the app opening any audio output on
+the Mac; for the Windows build in CrossOver a no-sound audio driver passed through the `HECTOR_SDL_*` passthrough, since
+CrossOver strips `SDL_*`) and uses it on every launch. **No muted switch → no launch.** Launches few and short.
+(3) **Night rule (Ben, 22:10):** **no launches of any kind, muted or not, between 21:00 and 09:00 Mac local time** —
+check `date` right before any launch; a run that reaches a launch step in those hours skips it, stages only, and writes
+"boot check owed (night rule)" in its LOOP-LOG line and the gate card; the first daytime run does it, muted.
+**Supersedes the launch half of D34 (3)** and every earlier G9 / boot step; staging (copying a build to `out/` or
+`~/Desktop`) stays allowed at any hour; headless tests that make no sound and open no window (`swift test`, the census,
+`xcodebuild build`, cross-compiling) are fine at any hour. Seat's reading (run 31): a CrossOver run of a cross-built
+test executable (Proof B) counts as a launch — it runs muted (no-sound driver) and only in daytime hours.
+**Approved by:** Ben, 2026-10-26.
