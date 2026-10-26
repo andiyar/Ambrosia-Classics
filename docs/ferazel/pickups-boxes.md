@@ -408,7 +408,10 @@ Keys are global inventory, so a key can be spent in a later level. Selecting a k
 `.HandleBoxSprite` l. 13234–13294. Open condition from p1: p1 ≥ 0 → record[p1].p4 == 1 (a Button);
 p1 = −1 → `*_DAT_1009fed0 == 1` (set by `.KillDemon`, handler dump l. 21463); p1 = −2 → a test on the
 2907 timer `uRam100a5110` (decompiled `(t < 0xffffffed) − (~(t ^ 0xffffffec) >> 31) & 1`; meaning
-NOT RESOLVED). Open → rises 2 px/frame (`vy` step 0x200 in fixed point) until 100 px above its
+NOT RESOLVED). ⚑ planner note (Phase 4 BT, 2026-10-26): resolved — the expression is the signed-compare idiom for
+(i32)t ≥ −19, i.e. open while the countdown is > −20 (as triggers-background §1 has it); the 2941 shares the whole arm
+(its move and the clip `+0x1bc` run every frame, the open flag forced 0), and the sound is idle-only
+(`if (!FUN_100916dc(460)) .STPlay3DSoundRand(460, …)`, made only when the new y differs from `+0xc4`). Open → rises 2 px/frame (`vy` step 0x200 in fixed point) until 100 px above its
 start `+0x158`; closed → sinks back; a looping sound while moving; draw clip `+0x1bc = start − y + 7`
 (+0x20 if p2 ≠ 0). 2941 never opens: it is broken only by a **player shot with damage exactly 300**
 (`cmpwi r0,0x12c` at `1005ab7c`; `.HitPlayerShotSprite` l. 5663–5672): HP −0x50 (`subi r4,r4,0x50`
@@ -423,7 +426,10 @@ record[p2].p4 == 1 (else rect zeroed and the PICT 1252 outline face). All 14 pla
 have p1 = 2, p2 = a Button record (1320/1322), p4 = 1; p4 = 1 also disables the spin-stomp, and
 1250..1279 ignore shots, so shipped blocks are indestructible. The same "record[N].p4 == 1"
 test drives spouts 1450..1453 and gates 2940; that a Button writes its own p4 = 1 when pressed is
-the Button reader's to confirm.
+the Button reader's to confirm. ⚑ planner note (Phase 4 BT, 2026-10-26): confirmed (`.HandleButtonSprite` M l. 61803–61810, p4 = level ≥ 9). The
+§2.2 row's "1270 animated" has no Handle code behind it: the Handle treats every block alike; 1270 differs only by the
+Setup's `+0xb8 = 0xb0001` and `+0x88 = 1` (M l. 59589–59592). The off face is the boot single PICT 1252 (`_DAT_100a0a50`),
+the on face the set 0x4e2 cell (type − 0x4e2); the p1 == 2 test reads the live record (index 0…0x1fe), not `+0x14c`.
 
 #### 2.4.6 ~~Crumbling ledge~~ Magic carpet 1080/1081  [HIGH arithmetic; ~~MED purpose~~ purpose from the decoded art and the riding code, pickups-boxes-2 §4.3 ⚑ wave 2 (2026-10-04)]
 1080 is dormant; the player touching it (`.HitBoxSprite` l. 13541–13547) turns it into 1081 with

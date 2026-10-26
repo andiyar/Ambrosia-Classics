@@ -188,6 +188,12 @@ public enum SetupFaces {
         // 0), the ice wall 0xb7d (boot single).
         all += [one(0x42f), one(0x430), one(0xc13), one(0xb7d)]
         all += [set(BoxSprite.cart, 0xe, 0x80, 0x60, 7), set(BoxSprite.wheel, 0x15, 0x80, 0x3a, 7)]
+        // BT (`.InitBoxSprite` M l. 58791–58796, 58809–58810; boot): the switch-block set 0x4e2 (21 × 0x24×0x24, 7 per
+        // row) and its outline single 0x4e4, the spout set 0x5aa (4 × 0x20×0x20), the gate single 0xb7c; the Buttons'
+        // sets (`.InitButtonSprite`, `ButtonSprite.sheets`).
+        all += [set(0x4e2, 0x15, 0x24, 0x24, 7), one(BoxSprite.switchOffFace), set(0x5aa, 4, 0x20, 0x20, 4),
+                one(BoxSprite.gate)]
+        all += ButtonSprite.sheets.map { ($0.pict, $0) }
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -365,6 +371,12 @@ public enum SetupFaces {
                 face(BoxSprite.cart, 0, .setupCached)
             case 0xb7d:                                        // the 2941 (M l. 59475; BX1): the boot single 0xb7d
                 face(0xb7d, 0, .setup)
+            case 0xb7c:                                        // the gate 2940 (M l. 59472; BT): the boot single 0xb7c
+                face(0xb7c, 0, .setup)
+            case 0x4e2...0x4ff:                                // switch blocks (M l. 59584; BT): set 0x4e2 cell t − 0x4e2
+                face(0x4e2, t - 0x4e2, .setup)
+            case 0x5aa...0x5ad:                                // spouts (M l. 59596; BT): set 0x5aa cell t − 0x5aa
+                face(0x5aa, t - 0x5aa, .setup)
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
                 face(0x51c, 0, .setup)
@@ -395,6 +407,13 @@ public enum SetupFaces {
             default:
                 throw Error.notTranscribed(type: p.type)
             }
+
+        case .button:
+            // `.SetupButtonSprite` (BT, `ButtonSprite.setup`): `+0xc0` stays 0 — the first Handle faces 1320…1322 from
+            // their sets (the entry names the set, `.handle`; the slot's face stays nil, as the Platforms'); 1323…1329
+            // have none.
+            ButtonSprite.setup(&s)
+            if (0x528...0x52a).contains(t) { face(Int16(t), 0, .handle) }
 
         case .rope:
             // `.SetupRopeSprite` (W3, `RopeSprite.setup`): no face — the segments the first Handle makes carry them.
@@ -515,7 +534,7 @@ public enum SetupFaces {
         }
 
         if source != .none, sheet == nil { throw Error.notTranscribed(type: p.type) }   // a face outside the table
-        if source != .none, cls != .platform, let sh = sheet {
+        if source != .none, cls != .platform, cls != .button, let sh = sheet {
             s.face = FaceRef(pict: sh.pict, index: index, set: .encoded)
         }
         return Entry(type: p.type, spriteClass: cls, spawn: spawn, sheet: source == .none ? nil : sheet,

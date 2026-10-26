@@ -94,6 +94,12 @@ public final class SpriteWorld {
     /// VS: the voice query's base for this iteration (`SoundVoices`) — the session sets it from the shell's playing set
     /// at each `step` / `resume`; `isSoundPlaying(_:)` adds the calls made since.
     public var voices = SoundVoices()
+    /// BT: `iRam100a5110`, the countdown (−0x1e = hidden) — the session's (`FerazelSession.countdown` reads it here) so
+    /// the gate 2940's p1 −2 arm reads it inside its Handle (M l. 61025).
+    public var countdown: Int32 = -0x1e
+    /// BT: `*_DAT_1009fed0`, "no boss alive" — `.SetupLevelSprites` sets it 1 (M l. 2019), the gate 2940's p1 −1 arm
+    /// opens on 1 (M l. 61022). // later: Phase 6 — the boss Setups that clear it and the Kills that set it again.
+    public var bossFlag: UInt8 = 1
     /// EF: the mask flash (`ScreenFlash`: `*_DAT_100a00fc` / `*_DAT_100a00cc`) — here so the Handles that write it
     /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`; `LevelCarry.flash` carries it.
     public var flash = ScreenFlash()
@@ -422,8 +428,8 @@ public final class SpriteWorld {
     /// each in list order (the "sort" takes the first unvisited key < 32000 and breaks — every key is ≤ 0) gets
     /// `hitPlayer` then `C.hit`. `hitPlayer` = `.HitPlayerSprite` — built
     /// (W1 Platform arm, W2a/W2b Background arms, W3 Box arm, S1 save point, C1 NPCs / signs); its other arms are
-    /// `HitPlayerSprite`'s own stubs (BT/TP the Box mechanisms — BX1 built the spin stomp, BX2 the doors, chest and
-    /// 2907 timer; Phase 5 enemies and shots).
+    /// `HitPlayerSprite`'s own stubs (TP the teleporters — BX1 built the spin stomp, BX2 the doors, chest and 2907
+    /// timer; Phase 5 enemies and shots).
     ///
     /// S1 (Invariant 6): a `hitPlayer` that sets `suspension` (a save point firing) stops the pass right after that
     /// call; the iteration state is kept (`SpecialPass`) and `continueSpecialPass` goes on with what the original does

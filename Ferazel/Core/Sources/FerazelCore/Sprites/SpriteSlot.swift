@@ -344,6 +344,13 @@ public struct SpriteSlot: Equatable, Sendable {
     public var sameHandlerExempt = false
     /// `+0x1b2` (u8): Handle skip — never the outer sprite of `.MTCollideSprites`.
     public var handleSkip = false
+    /// BT (added, Invariant 9): `+0xa0` (i32) — a Button's level as its last Handle left it (`.HandleButtonSprite`'s
+    /// last store, M l. 61812; the 4705 test reads it, M l. 61772–61775). The doors' dead `+0xa0 = 0` is not kept.
+    public var buttonPrevious: Int32 = 0
+    /// BT (added, Invariant 9): `+0xe4` (u8) — a Button's first-Handle flag (`.SetupButtonSprite` 0, the first Handle
+    /// 1 and the record-p4 restore, M l. 61755–61760). The player shots' write (`.SeparateFromTiles2`'s dead gate) is
+    /// not kept.
+    public var firstHandled = false
     /// `+0x1a2` (i16): burn-away row (≠ 0 → `.HandleBurn` from `.StandardSpriteCleanup`).
     public var burnRow: Int16 = 0
     /// `+0x1a6` / `+0x1a8` (i16): glow particle kind / glow chance (`.ParticleGlow` from `.StandardSpriteCleanup`).
@@ -466,7 +473,7 @@ public struct SpriteSlot: Equatable, Sendable {
     }
 }
 
-/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 5 classes (enemies, buttons): no Handle
+/// The Handle a sprite's `+0x4c` names (plan S2, LOCKED). `inert` = the Phase 5 classes (enemies): no Handle
 /// built yet and no hit callback; still drawn, idled and erased. `bonus` (BN) = `.HandleBonusSprite` (`BonusSprite`).
 public enum SpriteHandler: Equatable, Hashable, Sendable {
     case player, platform, chain, background, box, effect, rope, ropeSegment, inert
@@ -492,6 +499,9 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
     /// SD (added, Invariant 9): `.HandleShadowSprite @ 1004b4f0` (M l. 43052–43166), installed by `.SetupShadowSprite`
     /// on the Shadow Double 0x1b39 row 11 makes (`ShadowDouble`).
     case shadow
+    /// BT (added, Invariant 9): `.HandleButtonSprite @ 10070e60` (`PTR_PTR_100a0ac4`, M l. 61742–61815) with the hit
+    /// `.HitButtonSprite @ 100710e4` (`PTR_PTR_100a0ac0`), installed by `.SetupButtonSprite` (`ButtonSprite`).
+    case button
 
     /// The Handle the class Setup `.GenerateSprite` selects for `type` installs (`SpriteClassTable`). The player
     /// (`.SetupPlayerSprite`), chain spokes (`.SetupChainSprite`, W1) and rope segments (W3) are set by their makers.
@@ -503,6 +513,7 @@ public enum SpriteHandler: Equatable, Hashable, Sendable {
         case .effect: return .effect
         case .rope: return .rope
         case .bonus: return .bonus
+        case .button: return .button
         default: return .inert
         }
     }

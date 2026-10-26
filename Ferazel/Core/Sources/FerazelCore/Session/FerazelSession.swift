@@ -69,8 +69,9 @@ public final class FerazelSession {
     public var player: PlayerState { world.player }
     /// `*_DAT_1009fd7c`: the countdown sprite 0x4c4 (nil when `.MTNewSprite` found no record).
     public let countdownID: Int?
-    /// `iRam100a5110`: the countdown (−0x1e = hidden; `.GameLoop` decrements it only while > −0x1e).
-    public private(set) var countdown: Int32 = -0x1e
+    /// `iRam100a5110`: the countdown (−0x1e = hidden; `.GameLoop` decrements it only while > −0x1e) — held by the world
+    /// (`SpriteWorld.countdown`, BT: the gate's −2 arm reads it inside its Handle).
+    public var countdown: Int32 { world.countdown }
     /// The player cues of the last iteration, in call order (`PlayerState.drainFrameOutputs` after `.MTHandleSprites`).
     /// The `SoundCue`s come from `PlayerState.soundCalls` instead (S1: converted at the end of the same iteration).
     public private(set) var frameCues: [PlayerCue] = []
@@ -382,11 +383,11 @@ public final class FerazelSession {
 
         // BX2: the 2907 timer's store into `iRam100a5110` during the last iteration's player pass (`PlayerState.countdownStore`).
         if let t = world.player.countdownStore {
-            countdown = t
+            world.countdown = t
             world.player.countdownStore = nil
         }
         // `if (-0x1e < iRam100a5110) iRam100a5110 -= 1` (l. 5237–5239).
-        if -0x1e < countdown { countdown -= 1 }
+        if -0x1e < world.countdown { world.countdown -= 1 }
         findUpperLeftCorner(graphics: graphics)
         // The countdown's Handle, called directly before `.PaintFrameWrap` (raw `1000a148..1000a158`).
         if let c = countdownID, world.active.record(id: c) != nil { EffectSprite.handle(world: world, id: c, lights: &lightTable, effects: prefs.effects) }
@@ -500,7 +501,10 @@ public final class FerazelSession {
             PlayerShot.handle(world: world, id: id, solver: solver, lights: &self.lightTable, effects: effects,
                               faceWidth: { Self.frameRect($0, resources: res).right }, faceBounds: bounds)
         case .inert:
-            break                                       // later: Phase 5 — the enemies' and buttons' Handles
+            break                                       // later: Phase 5 — the enemies' Handles
+        case .button:
+            // `.HandleButtonSprite @ 10070e60` (BT, `ButtonSprite.handle`).
+            ButtonSprite.handle(world: world, id: id) { Self.frameRect($0, resources: res).right }
         case .trail:
             // `.HandleTrailSprite @ 1004b354` (PU): `.StandardSpriteHandles` + `.StandardSpriteCleanup`.
             world.standardSpriteHandles(id)
@@ -957,7 +961,7 @@ public final class FerazelSession {
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the
     /// Effect class's `.HitEffectSprite` is empty; `.HitBackgroundSprite` (W2b: cannons, springs, wall tunnels);
     /// `.HitBonusSprite` (BN; its container arm SH); `.HitPlayerShotSprite` (SH); the Box class's `.HitBoxSprite` (SH:
-    /// the stalactite's shot case; BX1 the rest). // later: Phase 5 (enemies, enemy shots). The session's form:
+    /// the stalactite's shot case; BX1 the rest); `.HitButtonSprite` (BT). // later: Phase 5 (enemies, enemy shots). The session's form:
     /// `hitCallback` on `lightTable`.
     private func hit(_ w: SpriteWorld, _ a: Int, _ b: Int) {
         let res = resources
@@ -992,6 +996,7 @@ public final class FerazelSession {
         case .box:                                                                      // `.HitBoxSprite` (SH, BX1)
             BoxSprite.hit(w, id: a, other: b, lights: &lights, effects: effects, faceWidth: faceWidth,
                           faceBounds: faceBounds)
+        case .button: ButtonSprite.hit(w, id: a, other: b)                              // `.HitButtonSprite` (BT)
         default: break
         }
     }

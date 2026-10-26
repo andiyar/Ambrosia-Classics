@@ -328,7 +328,7 @@ extension HitPlayerSprite {
     /// (`FUN_100916dc` / `FUN_10091504`: a stop, no `SoundVoices` question), the air counter `_DAT_100a0718 = 1`; both: vy
     /// = `iStack_ac` = `(int)(−0.9 · entry vy)` (the double at `0x100a1a20`), made negative if positive; cooldown 5,
     /// `+0xce = 0`, `_DAT_100a0738 = 0`, `+0xdc = 0`; return. The crate dies in its own Handle (HP < 1 → `.KillCrate`),
-    /// a block in its Handle's `.KillBox` (// later: BT). Returns whether it stomped.
+    /// a block in its Handle's `.KillBox` (BT, `BoxSprite.switchBlockArm`). Returns whether it stomped.
     static func spinStomp(_ w: SpriteWorld, player pID: Int, other oID: Int, entryVY: Int32, keys: InputActions) -> Bool {
         guard let o = w.active.record(id: oID) else { return false }
         let t = o.type

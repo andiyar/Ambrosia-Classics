@@ -8,7 +8,9 @@ import Foundation
 /// (the class caches of `.InitBoxSprite`).
 ///
 /// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
-/// (`createBalloon`, `destructBalloon`). Not built (named where they stand): the gate 0xb7c, the switch blocks 0x4e2…0x4ff and the spouts 0x5aa…0x5ad (BT), the tree trunk 0x2c8 / 0x2c9 (SW), the geysers
+/// (`createBalloon`, `destructBalloon`). BT: the gate 0xb7c (`gateArm`, with the 2941's move and clip), the switch
+/// blocks 0x4e2…0x4ff (`switchBlockArm`) and the spouts 0x5aa…0x5ad (`spoutArm`; their boulders ◇ Phase 5). Not built
+/// (named where they stand): the tree trunk 0x2c8 / 0x2c9 (SW), the geysers
 /// 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
 /// still; `.HitBoxSprite`'s Statue partner (SW) and its carpet arm (Phase 6).
@@ -24,8 +26,13 @@ public enum BoxSprite {
     /// The mine cart 2930 (0xb72) and its wheel 2931 (0xb73) — a placed cart makes one child of each (BX1).
     public static let cart: Int16 = 0xb72
     public static let wheel: Int16 = 0xb73
-    /// The weakened ice wall 2941 (0xb7d).
+    /// The weakened ice wall 2941 (0xb7d) and the gate 2940 (0xb7c; BT) — one Setup arm, one Handle arm.
     public static let iceWall: Int16 = 0xb7d
+    public static let gate: Int16 = 0xb7c
+    /// The boulder spouts 1450…1453 (0x5aa…0x5ad; BT) — the Setup block reaches 0x5b3 (none placed past 0x5ad).
+    public static let spouts: ClosedRange<Int16> = 0x5aa...0x5b3
+    /// The gate's move sound `*_DAT_100a0360` = 460 'rock barrier move' (pickups-boxes-2 §1.2).
+    static let gateSound: Int16 = 460
     /// The chest 1308 (0x51c; its face set `_DAT_100a0a94`, PICT 1308, 4 × 0x21×0x1f) and the doors 2910 / 2911
     /// (0xb5e / 0xb5f; both faced from the set `_DAT_100a0a98`, PICT 2910, 6 × 0x3c×0x58) — BX2.
     public static let chest: Int16 = 0x51c
@@ -43,8 +50,10 @@ public enum BoxSprite {
     public static let crateRange: ClosedRange<Int16> = 0xc12...0xc1b
     /// The boulders 1070…1072 and the falling rocks 1075 / 1076 (`LAB_1006dafc`, M l. 60222–60284).
     public static func isBoulder(_ t: Int16) -> Bool { (0x42e...0x430).contains(t) || t == 0x433 || t == 0x434 }
-    /// The switch blocks 1250…1279.
+    /// The switch blocks 1250…1279; the outline face a released block shows (`*_DAT_100a0a50`, the boot single PICT
+    /// 1252 = 0x4e4, `.InitBoxSprite` M l. 58793).
     public static let switchBlocks: ClosedRange<Int16> = 0x4e2...0x4ff
+    public static let switchOffFace: Int16 = 0x4e4
     /// `.KillCrate`'s sounds: `*_DAT_100a02fc` = 492 (the crate breaks), `*_DAT_1009fdec` = 435 (the explosive's bang);
     /// `.KillBox` / the 2941's `*_DAT_100a01e0` = 424; `.HitBoxTileSprite`'s `*_DAT_100a03ac` = 436 (the boulder's thud)
     /// and `*_DAT_100a041c` = 303 (the spiked balls); pickups-boxes-2 §1.2.
@@ -60,9 +69,12 @@ public enum BoxSprite {
     /// row) and 0xb73 (21 × 0x80×0x3a) for its children (`.InitBoxSprite` M l. 58785–58786, cached, flag 0). The debris
     /// 0xc1b, the 3201 pieces and the dust 0x442 (faced from 0x4b0) and the 0x4b7 are the Effect sheets the renderer
     /// already loads; the drops are `dropSheets`.
+    /// BT: the switch blocks' outline single 0x4e4 (boot, `.InitBoxSprite` M l. 58793) — a face their Handle switches
+    /// to that no Setup names.
     public static let spawnSheets: Set<SetupFaces.Sheet> = [
         SetupFaces.Sheet(pict: cart, count: 0xe, cellWidth: 0x80, cellHeight: 0x60, columns: 7, clut: 200),
         SetupFaces.Sheet(pict: wheel, count: 0x15, cellWidth: 0x80, cellHeight: 0x3a, columns: 7, clut: 200),
+        SetupFaces.Sheet.single(switchOffFace),
     ]
 
     /// The Bonus faces the crates among `records` can drop (`.KillCrate`, p1 0 / 1, p2 > 0): `.InitBonusSprite` loads
@@ -103,13 +115,14 @@ public enum BoxSprite {
     ///
     /// Transcribed arms: teleporters 0x424…0x426, the save point 0x429, boulders / rocks 0x42e…0x430, 0x433, 0x434, the
     /// chest 0x51c, the bridges 0x5b4…0x5bb, the trampoline 0x5be, signs 0xb56…0xb5d, doors 0xb5e / 0xb5f, crates
-    /// 0xc12…0xc14, the stalactite 0xb74 (W4), and the post-chain blocks: switch blocks 0x4e2…0x4ff, furniture 0xb68…0xb70, decorations
+    /// 0xc12…0xc14, the stalactite 0xb74 (W4), and the post-chain blocks: switch blocks 0x4e2…0x4ff, the spouts
+    /// 0x5aa…0x5b3 (BT), furniture 0xb68…0xb70, decorations
     /// 0xaf5…0xb21, outcrops 0xb22…0xb35, mushrooms 0xb36…0xb49, NPCs 0xb87…0xb99; BX1: the mine cart 0xb72 / wheel
-    /// 0xb73, the ice wall 0xb7d. The other arms (several make sprites or draw `FastRand` at Setup) leave the head's
-    /// fields — // later: SW (tree trunk 0x2c8/0x2c9), BT (the gate 0xb7c), Phase 5
+    /// 0xb73, the ice wall 0xb7d; BT: the gate 0xb7c. The other arms (several make sprites or draw `FastRand` at Setup)
+    /// leave the head's fields — // later: SW (tree trunk 0x2c8/0x2c9), Phase 5
     /// (geysers 0x5a0…0x5a9, pipes 0x5d2…0x5d5), Phase 6 (carpet 0x438/0x439, spiked balls 0x5c3/0x5c4, the table
     /// 0xb71, the snowball 0xbfe). Their write-back flags come with them: the geysers' `+0x189` and their two parts'
-    /// `+0x188` (M l. 59127, 59174, 59181), the gate 0xb7c's `+0x188` (M l. 59470; the 2941's is built).
+    /// `+0x188` (M l. 59127, 59174, 59181).
     public static func setup(_ s: inout SpriteSlot, record p: Placement, level: LevelFile) {
         let t = s.type
         s.oldPosition = SpriteSlot.Point(x: s.x, y: s.y)                       // the spawn copy `+8` / `+6`
@@ -241,11 +254,12 @@ public enum BoxSprite {
                 s.classTimer = 0
                 s.hotRect = rect(0x1e, 0x32, 0x5a, 0x50)
             }
-        case iceWall:                                      // the 2941's half of the gate arm (M l. 59469–59497; BX1)
-            // The arm is shared with the gate 0xb7c (its face and the header-0x26cd tint) // later: BT.
+        case gate, iceWall:                                // the gate arm (M l. 59469–59497; BX1 the 2941, BT the 2940)
             s.keepRecord = true                            // `+0x188 = 1`
-            s.hp = 300
-            s.flashTable = 1                               // `+0x1b4 = 1`
+            if t == iceWall {                              // the 2940's face is `*_DAT_100a0a24`, the 2941's `0a20`
+                s.hp = 300
+                s.flashTable = 1                           // `+0x1b4 = 1`
+            }
             s.pushMass = 0
             s.slip = 0
             s.phase = 0
@@ -260,6 +274,7 @@ public enum BoxSprite {
             s.hasHit = false
             s.gravity = 0
             s.hotRect = rect(0, 0, 0x20, 0x74)
+            if level.header.inLiquid != 0 && t == gate { s.mode = 0x10018 }   // hdr 0x26cd ≠ 0 (M l. 59492–59494)
         case 0xc12...0xc14:                                // crates (l. 59535–59560)
             s.classTimer = Int32(p.p1)
             s.gravity = 0
@@ -294,6 +309,11 @@ public enum BoxSprite {
                 s.mode = 0xb0001
                 s.lightOverlay = true
             }
+        case spouts:                                       // boulder spouts (l. 59594–59601; BT): 0x5aa…0x5b3
+            s.oneWay = false
+            s.gravity = 0
+            s.layer = 10
+            s.counterA6 = 0
         case 0xb68...0xb70:                                // furniture (l. 59603–59640)
             s.phase = 0
             s.gravity = 0
@@ -370,18 +390,17 @@ public enum BoxSprite {
     }
 
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the gate 0xb7c, the
-    /// switch blocks 0x4e2…0x4ff and the spouts 0x5aa…0x5ad (// later: BT), the tree trunk 0x2c8 / 0x2c9 (// later:
+    /// return at once and stand still: the tree trunk 0x2c8 / 0x2c9 (// later:
     /// SW), the geysers 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet 0x438 / 0x439, the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
-    /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors) and the types with no arm
+    /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors; BT the gate 0xb7c with the 2941's
+    /// move and clip, the switch blocks 0x4e2…0x4ff, the spouts 0x5aa…0x5ad) and the types with no arm
     /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
     /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0xb7c, switchBlocks, 0x5aa...0x5ad, 0x2c8, 0x2c9, 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438,
-             0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
+        case 0x2c8, 0x2c9, 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438, 0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
             return true
@@ -405,9 +424,10 @@ public enum BoxSprite {
     ///   60596–60620; `stalactiteArm`); the cart with a record (M l. 60871–60936; `cartArm`); the crates 0xc12…0xc14
     ///   (M l. 61078–61084): `.MTChangeSpriteLayer(−(2y + x))` (the list re-sort — a crate moved past the walk's place is
     ///   handled again that frame), HP < 1 → `.KillCrate`; the 2907 timer 0xb5b (M l. 60786–60791): `+0xa6 > 0` → −1;
-    ///   the 2941 (M l. 61016–61040; `iceWallArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e /
-    ///   0xb5f (M l. 60803–60868; `doorArm`);
-    /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (not run, BT), then the face
+    ///   the gate 0xb7c and the 2941 (M l. 61016–61064; `gateArm`); the spouts 0x5aa…0x5ad (M l. 60488–60547;
+    ///   `spoutArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e / 0xb5f (M l. 60803–60868;
+    ///   `doorArm`);
+    /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (`switchBlockArm`), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
     ///   (C1): 0xb8d with the record's p3 ≠ 0 → `+0x17e = 1`; face = the class cache single of the type; `+0x46 = 0`,
@@ -456,14 +476,17 @@ public enum BoxSprite {
             if let s = w.active.record(id: id), s.hp < 1 { killCrate(w, id: id, lights: &lights, effects: effects) }
         case 0xb5b:
             w.active.update(id: id) { if 0 < $0.counterA6 { $0.counterA6 -= 1 } }
-        case iceWall:
-            iceWallArm(w, id: id)
+        case gate, iceWall:
+            gateArm(w, id: id)
+        case 0x5aa...0x5ad:
+            spoutArm(w, id: id)
         case chest:
             chestArm(w, id: id, lights: &lights, effects: effects)
         case doors:
             doorArm(w, id: id, lights: &lights, effects: effects)
         default:
-            // The block chain (M l. 61088–61151): the switch blocks' part does not run here (`handleBuilt`, BT).
+            // The block chain (M l. 61088–61151): the switch blocks (BT), then the class-cache faces.
+            if switchBlocks.contains(t) { switchBlockArm(w, id: id) }
             switch t {
             case 0xaf5...0xb21, 0xb22...0xb35, 0xb36...0xb49, 0xb68...0xb70:
                 w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
@@ -641,12 +664,62 @@ public enum BoxSprite {
         }
     }
 
-    /// The 2941's half of the gate arm (M l. 61016–61040; raw `1006f564..1006f5b0`): `+0x183 = 0` (no reader, not
-    /// kept); the open test of the record's p1 is made and then overridden (`unaff_r19 = 0`) — no draws; HP < 1 →
+    /// The gate arm 0xb7c / 0xb7d (M l. 61016–61064; raw `1006f4e0..1006f6f0`; pickups-boxes §2.4.4,
+    /// triggers-background §1): `+0x183 = 0` (no reader, not kept); open from the live record's p1 — p1 ≥ 0: record
+    /// [p1]'s p4 == 1 (an index outside the table reads as 0); −1: `*_DAT_1009fed0 == 1` (`SpriteWorld.bossFlag`); −2: the
+    /// countdown `iRam100a5110` > −20 (`SpriteWorld.countdown`; the decompile's `(t < 0xffffffed) − (~(t ^ 0xffffffec) >>
+    /// 31) & 1` is the signed t ≥ −19); any other negative p1 leaves r19 as the function found it [LOW: no record has
+    /// one] — taken as shut. The 2941 overrides it to shut (`unaff_r19 = 0`) and dies at HP < 1 (`iceWallDeath`). Then
+    /// (both types, the dying 2941 too):
+    /// - shut: while `+0x158 − y > 0` (above its start) `+0x1c += 0x200`, `+0xa` from it;
+    /// - open: while `+0x158 − y < 100` `+0x1c −= 0x200`, `+0xa` from it;
+    /// - after either move, when the new y differs from `+0xc4` (the last draw's y): **idle-only** — `if
+    ///   (!FUN_100916dc(460)) .STPlay3DSoundRand(460, 1, 0x100, centre)` (`SoundVoices`; its R(10000) only with the call);
+    /// - the clip `+0x1bc = (+0x158 as i16) − y + 7`, + 0x20 when the live record's p2 ≠ 0.
+    static func gateArm(_ w: SpriteWorld, id: Int) {
+        guard let s0 = w.active.record(id: id) else { return }
+        let p1 = liveRecord(w, s0.recordIndex)?.p1 ?? 0
+        var open: Bool
+        switch p1 {
+        case 0...: open = liveRecord(w, p1)?.p4 == 1
+        case -1: open = w.bossFlag == 1
+        case -2: open = -20 < w.countdown
+        default: open = false
+        }
+        if s0.type == iceWall {
+            open = false
+            iceWallDeath(w, id: id)
+        }
+        guard let s = w.active.record(id: id) else { return }
+        let above = s.classWord158 &- Int32(Int16(truncatingIfNeeded: s.y))
+        var step: Int32 = 0
+        if !open {
+            if 0 < above { step = 0x200 }
+        } else if above < 100 {
+            step = -0x200
+        }
+        if step != 0 {
+            w.active.update(id: id) { g in
+                g.y256 &+= step
+                g.y = Int(Int16(truncatingIfNeeded: g.y256 >> 8))
+            }
+            if let g = w.active.record(id: id), g.y != g.drawnY, !w.isSoundPlaying(gateSound) {
+                w.player.cue(PlayerCue(call: .threeDRand, snd: gateSound, priority: 1, volume: 0x100, position: g.centre,
+                                       rate: w.rng.soundRate()))
+            }
+        }
+        let p2 = liveRecord(w, s0.recordIndex)?.p2 ?? 0
+        w.active.update(id: id) { g in
+            var c = Int16(truncatingIfNeeded: g.classWord158) &- Int16(truncatingIfNeeded: g.y) &+ 7
+            if p2 != 0 { c &+= 0x20 }
+            g.clip.top = Int(c)
+        }
+    }
+
+    /// The 2941's death in the gate arm (M l. 61032–61040; raw `1006f564..1006f5b0`): HP < 1 →
     /// `.ExplodeFaceIntoParticles(+0xc0, (+0xa, +0xc), 2, 2, 2, 0x32, 100)`, `+0xe9 = 1`, `FastRand(5000)` and
-    /// `.STPlay3DSoundPitched(424, 1, 0x100, centre, R + 43000)`. // later: BT — the rest of the arm (the closed gate's
-    /// descent toward `+0x158` with its idle-only sound, the clip `+0x1bc`); a 2941 is placed first on level 30.
-    static func iceWallArm(_ w: SpriteWorld, id: Int) {
+    /// `.STPlay3DSoundPitched(424, 1, 0x100, centre, R + 43000)`; a 2941 is placed first on level 30.
+    static func iceWallDeath(_ w: SpriteWorld, id: Int) {
         guard let s = w.active.record(id: id), s.hp < 1 else { return }
         ExplodeFace.explode(w, face: s.face.flatMap(w.particleFaces.sprite), v: Int16(truncatingIfNeeded: s.y),
                             h: Int16(truncatingIfNeeded: s.x), xStep: 2, yStep: 2, shape: 2, gravity: 0x32, style: 100)
@@ -654,6 +727,51 @@ public enum BoxSprite {
         let r = w.rng.next(5000)
         w.player.cue(PlayerCue(call: .threeDPitched, snd: breakSound, priority: 1, volume: 0x100, position: s.centre,
                                rate: Int32(r) + 43000))
+    }
+
+    /// The boulder spouts 0x5aa…0x5ad (M l. 60488–60547; raw `1006e8d8..1006ea6c`; pickups-boxes §2.2,
+    /// triggers-background §1): `+0xa6 > 0` → − 1; at 0, when record[own p1]'s p4 == 1 or record[own p2]'s p4 == 1
+    /// (an index outside the table reads as 0): `MTNewSprite(0x6e1 + own p4, (+0xc, +0xa), layer − 1, −1,
+    /// .SetupEnemyShotSprite)` — ◇ // later: Phase 5 (no EnemyShot class yet): the boulder is not made, so neither its
+    /// Setup's draws nor the speed stores happen — but the two speed draws a made shot takes are made, by type (1450
+    /// R(300), R(400); 1451 R(300), R(300); 1452 / 1453 R(600), R(700)); then `+0xa6 = R(30) + 50`. Neither pressed:
+    /// the timer stays 0 and is tested again next frame.
+    static func spoutArm(_ w: SpriteWorld, id: Int) {
+        w.active.update(id: id) { if 0 < $0.counterA6 { $0.counterA6 -= 1 } }
+        guard let s = w.active.record(id: id), s.counterA6 == 0 else { return }
+        let own = liveRecord(w, s.recordIndex)
+        guard liveRecord(w, own?.p1 ?? 0)?.p4 == 1 || liveRecord(w, own?.p2 ?? 0)?.p4 == 1 else { return }
+        // ◇ the spawn of `0x6e1 + (own?.p4 ?? 0)` (Phase 5); its speed draws:
+        switch s.type {
+        case 0x5aa: _ = w.rng.next(300); _ = w.rng.next(400)       // vx = R − 0x96, vy = R
+        case 0x5ab: _ = w.rng.next(300); _ = w.rng.next(300)       // vx = R − 0x96, vy = −3000 − R
+        default: _ = w.rng.next(600); _ = w.rng.next(700)          // vx = ±(R + 0xaf0), vy = −(R + 500)
+        }
+        let r = w.rng.next(0x1e)
+        w.active.update(id: id) { $0.counterA6 = r &+ 0x32 }
+    }
+
+    /// The switch blocks' part of the block chain (M l. 61088–61113; raw `1006f730..1006f7c0`; pickups-boxes §2.4.5): a
+    /// record index 0…0x1fe whose live record's p1 == 2 → record[p2]'s p4 == 1: `SetRect(1, 1, 0x23, 0x23)`, `+0x88 = 1`,
+    /// face = the set 0x4e2 cell (type − 0x4e2); else the empty rect, `+0x88 = 0`, face = the outline single 0x4e4 (PICT
+    /// 1252). Then (any p1) HP < 1 → `.KillBox` (a spin stomp's − 1, `HitPlayerSprite.spinStomp`).
+    static func switchBlockArm(_ w: SpriteWorld, id: Int) {
+        guard let s = w.active.record(id: id) else { return }
+        if 0 <= s.recordIndex && s.recordIndex < 0x1ff, let own = liveRecord(w, s.recordIndex), own.p1 == 2 {
+            let on = liveRecord(w, own.p2)?.p4 == 1
+            w.active.update(id: id) { b in
+                if on {
+                    b.hotRect = rect(1, 1, 0x23, 0x23)
+                    b.lightOverlay = true
+                    b.face = FaceRef(pict: 0x4e2, index: Int(b.type) - 0x4e2, set: .encoded)
+                } else {
+                    b.hotRect = rect(0, 0, 0, 0)
+                    b.lightOverlay = false
+                    b.face = FaceRef(pict: switchOffFace, index: 0, set: .encoded)
+                }
+            }
+        }
+        if let b = w.active.record(id: id), b.hp < 1 { killBox(w, id: id) }
     }
 
     // MARK: - chests, doors, thought balloons (BX2)
