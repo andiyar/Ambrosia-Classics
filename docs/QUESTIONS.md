@@ -42,7 +42,7 @@ Options: (a) keep the original's behaviour; (b) quit at once from anywhere (a mo
 logout/shutdown, original behaviour for Dock/app-menu Quit.
 Recommendation: a — the standing 100 % rule (replicate the original, no modern affordances).
 Blocks: nothing (built as (a); (b)/(c) would be a small App change).
-Answer: Ben, 2026-10-26: "quit from dock should always behave." then "or it can trigger the game quit dialogue". Build: Quit from the Dock or the app menu during a level brings up the game's own quit confirmation at once (as ⌘Q in the pause does), instead of waiting for a pause; a logout or shutdown quits at once without a dialog, so it is never cancelled. A deliberate departure from the original's wait, Ben's call (read by his attended session; he will say if he wants it otherwise).
+Answer: Ben, 2026-10-26: "quit from dock should always behave." then "or it can trigger the game quit dialogue". Build: Quit from the Dock or the app menu during a level does exactly what ⌘Q does in a level: the game's own "do you want to quit?" box, at once, instead of waiting for a pause; a logout or shutdown quits at once without a dialog, so it is never cancelled. A deliberate departure from the original's wait, Ben's call (read by his attended session; he will say if he wants it otherwise).
 
 ### Q7 — 2026-10-24 — Phase 4 plan (spells + items): three small choices, for your later read
 Context: Loop run 18 wrote and reviewed the Phase 4 plan (`docs/plans/2026-10-24-ferazel-phase4.md`, rulings in
