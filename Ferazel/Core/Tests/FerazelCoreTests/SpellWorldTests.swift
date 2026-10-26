@@ -104,6 +104,24 @@ final class SpellWorldTests: XCTestCase {
                            "kind \(kind)")                              // the Setup's sag 0x50 stays (no `+0x13a` store)
             XCTAssertEqual(w.player.cues.map(\.snd), [301], "kind \(kind)")
         }
+        // Kinds 4…7 need the shot stopped (`+0x24 == 0` after the bounce): a kind-4 corner (its rect the cell's lower
+        // left quarter) met with vx 0 makes the kind-0 side's ledge (pos.h + 0xf, variant 2); met moving right, the
+        // bounce leaves vx and nothing is made. Called straight (the tile callback at the cell (256, 192)).
+        for (vx, made) in [(Int32(0), true), (0x100, false)] {
+            let wk = try world()
+            var k = SpriteSlot(type: 3, x: 251, y: 205)
+            k.handler = .playerShot
+            k.hotRect = IdleSprites.Rect(top: 3, left: 8, bottom: 0xc, right: 0xf)
+            k.oldPosition = SpriteSlot.Point(x: 251, y: 205)
+            k.centre = SpriteSlot.Point(x: 262, y: 212)
+            k.vx = vx
+            k.vy = 0x200
+            let kID = wk.active.insert(k)
+            var lk = LightTable()
+            PlayerShot.hitTile(TileSolver(world: wk), kID, TilePos(x: 256, y: 192), 4, .foreground, lights: &lk, effects: 2)
+            XCTAssertEqual(sprites(wk, 0x57c, .platform).map { [$0.x, Int($0.classWord16c)] }, made ? [[256 + 0xf, 2]] : [],
+                           "vx \(vx)")
+        }
         // A floor contact (kind 3) makes nothing; the shot dies on it.
         let wf = try world(floor)
         let down = try XCTUnwrap(PlayerShot.spawn(wf, type: 0x0301, x: 180, y: 300))
@@ -151,6 +169,24 @@ final class SpellWorldTests: XCTestCase {
             let e = try XCTUnwrap(sprites(w, 2, .effect).first)
             XCTAssertEqual([e.x, e.y, Int(e.phase)], [t.x - 6, t.y - 9, 8])
         }
+        // On an underground floor (BG kind 103 = `.WallBounceBG` kind 3, M l. 51352–51358): a trunk bottom with `+0xa6 =
+        // 0x78` (no parity), no effect 2 or snd 302 of its own; the contact rule then kills the shot (snd 301, its
+        // effect 2 — the only one).
+        let wb = try world()
+        wb.parity = true
+        var bgKinds = [Int](repeating: 0, count: 0x60)
+        bgKinds[3] = 103
+        wb.tiles = TileGrid(fg: wb.tiles.fg, bg: TileMap(width: 16, height: 16,
+                                                          cells: (0..<16 * 16).map { $0 / 16 == 12 ? 4 : 0 }),
+                            fgKinds: Array(0..<0x60), bgKinds: bgKinds)
+        let ub = try XCTUnwrap(PlayerShot.spawn(wb, type: 0x0401, x: 180, y: 300))
+        wb.active.update(id: ub) { $0.vy = 0x400 }
+        _ = run(wb, until: ub)
+        XCTAssertEqual(try XCTUnwrap(wb.active.sprite(id: ub)).killCount, 1)
+        let under = sprites(wb, 0x2c8, .box)
+        XCTAssertEqual(under.map { Int($0.counterA6) }, [0x78])
+        XCTAssertEqual(wb.player.cues.map(\.snd), [301])
+        XCTAssertEqual(sprites(wb, 2, .effect).count, 1)
         // The trunk's Handle arm (M l. 60198–60216): `+0xa6 − 1` a frame; below 0x17 the blink 0xb0001, below 0x15
         // 0xb0000, below 0xb 0xb0002; below 1 `+0xe9 = 1`.
         let w = try world()
@@ -213,6 +249,19 @@ final class SpellWorldTests: XCTestCase {
         XCTAssertEqual(w.active.sprite(id: seg1)?.counterA6, 121)
         XCTAssertEqual(w.active.sprite(id: baseID)?.counterA6, 0x23)
         XCTAssertEqual(w.player.cues.map(\.snd), [302, 302])
+        // The raise is `< 0x23` (M l. 51016): an old top at 0x22 → 0x23, at 0x23 and 0x24 unchanged.
+        for (a6, after) in [(Int16(0x22), Int16(0x23)), (0x23, 0x23), (0x24, 0x24)] {
+            let wr = try world()
+            var top = SpriteSlot(type: 0x2c8, x: 4000, y: 1000)
+            top.handler = .box
+            top.counterA6 = a6
+            let topID = wr.active.insert(top)
+            var sh = SpriteSlot(type: 4, x: 4000, y: 1000)
+            sh.handler = .playerShot
+            let shID = wr.active.insert(sh)
+            FerazelSession.hitCallback(wr, shID, topID, lights: &lights)
+            XCTAssertEqual(wr.active.sprite(id: topID)?.counterA6, after, "a6 \(a6)")
+        }
         // A segment that lands becomes a bottom (`.HitBoxTileSprite`'s FG arm, M l. 61574–61580): 0x2c9 grounded →
         // 0x2c8, gravity 0.
         let wf = try world(floor)
@@ -283,6 +332,56 @@ final class SpellWorldTests: XCTestCase {
         let bID = w.active.insert(b)
         FerazelSession.hitCallback(w, bID, pID, lights: &lights)
         XCTAssertEqual(w.active.sprite(id: bID)?.phase, 8)
+        // The four Statue arms, on a second frozen platform with the 0x578 rect DoSetup gives (0x10, 6, 0x3d, 0x1e):
+        let w2 = try world()
+        let q = try platform(w2)
+        w2.active.update(id: q) { $0.hotRect = IdleSprites.Rect(top: 6, left: 0x10, bottom: 0x1e, right: 0x3d) }
+        FerazelSession.hitCallback(w2, q, statueShot(w2, power: 1))
+        XCTAssertEqual(w2.active.sprite(id: q)?.handler, .statue)
+        w2.player.cues = []
+        // (a) the shot's side (M l. 51038–51058): a Fireball falling onto the Statue takes the Statue/Box arm; the
+        // platform's one-way top (`+0x185`) → `.PlatformBounce`, a contact → `.KillPlayerShot(s, 1, 1)` (snd 301).
+        var fb = SpriteSlot(type: 0, x: 2020, y: 2000 + 6 - 0xc + 2)          // its rect bottom 2 px into the top
+        fb.handler = .playerShot
+        fb.hasHit = true
+        fb.hotRect = IdleSprites.Rect(top: 3, left: 8, bottom: 0xc, right: 0xf)
+        fb.oldPosition = SpriteSlot.Point(x: 2020, y: 2000 + 6 - 0xc - 4)
+        fb.vy = 0x600
+        let fbID = w2.active.insert(fb)
+        var l2 = LightTable()
+        FerazelSession.hitCallback(w2, fbID, q, lights: &l2)
+        XCTAssertEqual(w2.active.sprite(id: fbID)?.killCount, 1)
+        XCTAssertEqual(w2.player.cues.map(\.snd), [301])
+        // (b) the player's side (M l. 49506–49513): `.PlatformBounce(player, statue, …)` lands him on it and returns —
+        // the Platform arm's latch clears (`_DAT_100a0720`) and its ground effects are not reached.
+        let pl = try XCTUnwrap(Player.spawn(world: w2, x: 2000, y: 2000 + 6 - 0x55 + 3))
+        w2.active.update(id: pl) { s in                                  // the pixel copy `.MTNewSprite` scrambles
+            s.x = 2000
+            s.y = 2000 + 6 - 0x55 + 3
+            s.x256 = Int32(s.x) << 8
+            s.y256 = Int32(s.y) << 8
+            s.vy = 0x400
+            s.oldPosition = SpriteSlot.Point(x: 2000, y: 2000 + 6 - 0x55 - 6)
+        }
+        w2.player.bumpedLatch = true
+        w2.player.landedLatch = true
+        HitPlayerSprite.hit(w2, player: pl, other: q, lights: &l2, effects: 1)
+        let ps = try XCTUnwrap(w2.active.sprite(id: pl))
+        XCTAssertEqual([Int(ps.vy), ps.y], [0, 2000 + 6 - 0x55])
+        XCTAssertTrue(w2.player.bumpedLatch && w2.player.landedLatch)
+        // (c) `.HitBoxSprite`'s pair arm takes a Statue partner (M l. 61393): a Box against the Statue latches both;
+        // (d) a Statue's own hit is `.HitBoxSprite` (`PTR_PTR_100a01f4`): the Statue against a Box latches both too.
+        var box = SpriteSlot(type: 0x42e, x: 5000, y: 5000)
+        box.handler = .box
+        box.hasHit = true
+        box.hotRect = IdleSprites.Rect(top: 0, left: 4, bottom: 0x1c, right: 0x1c)
+        let boxID = w2.active.insert(box)
+        FerazelSession.hitCallback(w2, boxID, q, lights: &l2)
+        XCTAssertEqual([w2.active.sprite(id: boxID)?.boxPairLatch, w2.active.sprite(id: q)?.boxPairLatch], [true, true])
+        w2.active.update(id: boxID) { $0.boxPairLatch = false }
+        w2.active.update(id: q) { $0.boxPairLatch = false }
+        FerazelSession.hitCallback(w2, q, boxID, lights: &l2)
+        XCTAssertEqual([w2.active.sprite(id: boxID)?.boxPairLatch, w2.active.sprite(id: q)?.boxPairLatch], [true, true])
         // `.HandleStatueSprite` (M l. 56521–56555), 120 frames: a light (face 820, colour 0x21) at the centre once;
         // `+0xb8 = 0x1000b` (0 on odd counts below 20); v = 0; `+0x80 = 2`; at 0 the callbacks and `+0xb8` back, HP −200,
         // the light removed.
