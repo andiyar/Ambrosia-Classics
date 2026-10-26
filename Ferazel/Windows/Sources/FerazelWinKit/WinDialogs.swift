@@ -29,6 +29,11 @@ import Foundation
     var revision: Int { get }
     /// Draws every dialog on screen, back to front, into a 640×480 R, G, B, A frame (Ruling 4, ◇W10).
     func draw(into rgba: inout [UInt8])
+
+    // WF4b
+
+    /// A key-down with its auto-key flag (Options' filter swallows auto-keys); defaults to `keyDown(_:modifiers:)`.
+    func keyDown(_ keyCode: UInt16, modifiers: WinModifiers, isRepeat: Bool)
 }
 
 extension WinDialogs {
@@ -39,23 +44,41 @@ extension WinDialogs {
     public func mouseUp(x: Int, y: Int) {}
     public var revision: Int { 0 }
     public func draw(into rgba: inout [UInt8]) {}
+    public func keyDown(_ keyCode: UInt16, modifiers: WinModifiers, isRepeat: Bool) {
+        keyDown(keyCode, modifiers: modifiers)
+    }
 }
 
 /// What the dialogs need from the booted game (WF4a): the resources (the DLOG / DITL / dctb, `.frontEnd` chain), a
 /// `PICT` as QuickDraw drew it into a dialog (`FerazelDriver.dialogPicture`: under the screen's current CLUT), `SysBeep`
-/// (the driver's: nothing when muted, Ruling 20) and TickCount (the flash's clock).
+/// (the driver's: nothing when muted, Ruling 20) and TickCount (the flash's clock); WF4b: the flow's Options model
+/// (`GameFlow.prefsDialog`, read after every event; `updatePrefs` mutates it and plays the music cues a hit made at
+/// once — the Mac's `showDialog` closures), its credits scroll (`GameFlow.credits`) and the modifier keys held now
+/// (Options' null-event modifier capture, the Mac's `NSEvent.modifierFlags`).
 public struct WinDialogServices {
     public var resources: FerazelResources
     public var picture: (Int16) -> (rgba: [UInt8], width: Int, height: Int)?
     public var beep: () -> Void
     public var ticks: () -> UInt32
+    public var prefs: () -> PrefsDialogModel?
+    public var updatePrefs: ((inout PrefsDialogModel) -> [MusicCue]) -> Void
+    public var credits: () -> CreditsScroll?
+    public var modifiers: () -> WinModifiers
 
     public init(resources: FerazelResources, picture: @escaping (Int16) -> (rgba: [UInt8], width: Int, height: Int)?,
-                beep: @escaping () -> Void, ticks: @escaping () -> UInt32) {
+                beep: @escaping () -> Void, ticks: @escaping () -> UInt32,
+                prefs: @escaping () -> PrefsDialogModel? = { nil },
+                updatePrefs: @escaping ((inout PrefsDialogModel) -> [MusicCue]) -> Void = { _ in },
+                credits: @escaping () -> CreditsScroll? = { nil },
+                modifiers: @escaping () -> WinModifiers = { [] }) {
         self.resources = resources
         self.picture = picture
         self.beep = beep
         self.ticks = ticks
+        self.prefs = prefs
+        self.updatePrefs = updatePrefs
+        self.credits = credits
+        self.modifiers = modifiers
     }
 }
 

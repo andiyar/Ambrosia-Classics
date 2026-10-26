@@ -157,8 +157,19 @@ public enum WinClock {
         try driver.boot(dataDirectory: dataDirectory)
         seedUsed = driver.flow.rng.seed
         let driver = driver, host = host
-        dialogs.attach(WinDialogServices(resources: driver.resources, picture: { driver.dialogPicture($0) },
-                                         beep: { driver.beep() }, ticks: { host.ticks }))
+        dialogs.attach(WinDialogServices(
+            resources: driver.resources, picture: { driver.dialogPicture($0) }, beep: { driver.beep() },
+            ticks: { host.ticks },
+            prefs: { driver.flow?.prefsDialog },
+            updatePrefs: { body in
+                // The Mac's `showDialog(.preferences)`: the flow's model mutated, the cues played at once.
+                guard let flow = driver.flow, var m = flow.prefsDialog else { return }
+                let cues = body(&m)
+                flow.prefsDialog = m
+                for cue in cues { driver.handle(cue) }
+            },
+            credits: { driver.flow?.credits },
+            modifiers: { host.modifiers }))
         shortcuts = WinShortcuts(resources: driver.resources)
         if let path = args.document {
             let url = URL(fileURLWithPath: path)
@@ -303,7 +314,7 @@ public enum WinClock {
                 shortcutsTaken.append(item)
                 driver.flow?.menuChosen(item)
             case .dialog:
-                dialogs.keyDown(code, modifiers: mods)
+                dialogs.keyDown(code, modifiers: mods, isRepeat: isRepeat)
             }
         case let .keyUp(code):
             input.keyUp(code)
