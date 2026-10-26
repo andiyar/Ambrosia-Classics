@@ -100,6 +100,9 @@ public final class SpriteWorld {
     /// BT: `*_DAT_1009fed0`, "no boss alive" — `.SetupLevelSprites` sets it 1 (M l. 2019), the gate 2940's p1 −1 arm
     /// opens on 1 (M l. 61022). // later: Phase 6 — the boss Setups that clear it and the Kills that set it again.
     public var bossFlag: UInt8 = 1
+    /// BT: `.PaintFrameWrap`'s param_1 (the draw flag; 1 for the nested paints), live in r19 through the handle pass —
+    /// the gate arm's open flag for a p1 below −2 (raw `10011d04`, `1006f4f8..1006f564`). The session sets it per paint.
+    public var paintDraw = true
     /// EF: the mask flash (`ScreenFlash`: `*_DAT_100a00fc` / `*_DAT_100a00cc`) — here so the Handles that write it
     /// (Smiting, the seed explosion) reach it; the session steps it in `.PaintFrameWrap`; `LevelCarry.flash` carries it.
     public var flash = ScreenFlash()

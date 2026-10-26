@@ -415,6 +415,7 @@ public final class FerazelSession {
     private func paintFrameWrap(draw: Bool, actions: InputActions, nested: Bool, into ops: inout FrameOps) -> Bool {
         let graphics = prefs.graphics
         let h = camera.scrollH, v = camera.scrollV
+        world.paintDraw = draw                                     // r19 = param_1 (raw `10011d04`; BT gate arm)
         // LT: the table as `.SetScrollLocation`'s strip redraw and `.DrawLightsOntoTiles` read it (before
         // `.HandleLights`, M l. 9200–9205), handed over right before the strip; also when Effects == 3 skips the latter.
         ops.draws.append(.lightTable(lightTable))

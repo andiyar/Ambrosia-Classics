@@ -552,8 +552,8 @@ final class ItemUseTests: XCTestCase {
             centres.append(SpriteSlot.Point(x: e.x + rect.left + ((rect.right - rect.left) >> 1),
                                             y: e.y + rect.top + ((rect.bottom - rect.top) >> 1)))
         }
-        // Not enemies: a Button (0x528, inert), a Bonus, an idled enemy record (Handle 0).
-        w.newSprite(type: 0x528, x: 10, y: 10, layer: 4, handler: .inert)
+        // Not enemies: a Button (0x528, its own Handle — not one of the 15), a Bonus, an idled enemy record (Handle 0).
+        w.newSprite(type: 0x528, x: 10, y: 10, layer: 4, handler: .button)
         w.newSprite(type: 0x532, x: 10, y: 10, layer: 4, handler: .bonus)
         let idled = try XCTUnwrap(w.newSprite(type: 0x6cc, x: 10, y: 10, layer: 4, handler: .inert))
         w.active.update(id: idled) { $0.handleCleared = true }

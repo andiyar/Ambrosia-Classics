@@ -166,6 +166,24 @@ final class ButtonGateTests: XCTestCase {
         handle(m, e)
         XCTAssertEqual([Int(button(m, e).phase), Int(m.records[63].p4)], [10, 1])
         XCTAssertEqual(button(m, e).face, FaceRef(pict: 0x528, index: 5, set: .encoded))
+        // Past 11: a shot press (11) then a stand-on press (+8 → 19); latched, the Handle only clamps — 0…11 (M l.
+        // 61765–61771) → 11, face 11 >> 1 = 5; a momentary 1320 from 19 the same way: 18 → 11.
+        let mp = try XCTUnwrap(m.playerID)
+        let ms = try XCTUnwrap(PlayerShot.spawn(m, type: 0x0001, x: 0, y: 0))
+        ButtonSprite.hit(m, id: e, other: ms)
+        ButtonSprite.hit(m, id: e, other: mp)
+        XCTAssertEqual(button(m, e).phase, 19)
+        handle(m, e)
+        XCTAssertEqual([Int(button(m, e).phase), button(m, e).face?.index], [11, 5])
+        setP4(m, 63, 0)
+        let q63 = m.records[63]
+        m.records[63] = Placement(index: q63.index, flag: q63.flag, byte1: q63.byte1, type: q63.type, p1: 0, p2: q63.p2,
+                                  p3: q63.p3, p4: 0, y: q63.y, x: q63.x)
+        let f = try add(m, record: 63)
+        handle(m, f)
+        m.active.update(id: f) { $0.phase = 19 }
+        handle(m, f)
+        XCTAssertEqual([Int(button(m, f).phase), button(m, f).face?.index, Int(m.records[63].p4)], [11, 5, 1])
     }
 
     func testShotPressesButton() throws {
@@ -276,13 +294,14 @@ final class ButtonGateTests: XCTestCase {
         XCTAssertEqual(w.active.sprite(id: g)!.y, y0)
 
         // p1 −2 (the 2907 timer's countdown `iRam100a5110`): open while it is > −20; p1 −1: `*_DAT_1009fed0 == 1`.
-        func open(p1: Int16, countdown: Int32 = -0x1e, bossFlag: UInt8 = 1) throws -> Bool {
+        func open(p1: Int16, countdown: Int32 = -0x1e, bossFlag: UInt8 = 1, paintDraw: Bool = true) throws -> Bool {
             let (v, _) = try world(level: 3)
             let q = v.records[72]
             v.records[72] = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: p1, p2: 0, p3: 0,
                                       p4: 0, y: q.y, x: q.x)
             v.countdown = countdown
             v.bossFlag = bossFlag
+            v.paintDraw = paintDraw
             let k = try add(v, record: 72)
             v.voices = SoundVoices(playing: [460])
             var l = LightTable()
@@ -292,6 +311,8 @@ final class ButtonGateTests: XCTestCase {
         XCTAssertEqual(try [open(p1: -2, countdown: -20), open(p1: -2, countdown: -19), open(p1: -2, countdown: 0),
                             open(p1: -2, countdown: 300)], [false, true, true, true])
         XCTAssertEqual(try [open(p1: -1, bossFlag: 1), open(p1: -1, bossFlag: 0)], [true, false])
+        // p1 below −2: r19 as the Handle found it — `.PaintFrameWrap`'s draw flag.
+        XCTAssertEqual(try [open(p1: -3, paintDraw: true), open(p1: -3, paintDraw: false)], [true, false])
     }
 
     func testSwitchBlocksFollowButton() throws {

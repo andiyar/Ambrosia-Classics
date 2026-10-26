@@ -668,8 +668,10 @@ public enum BoxSprite {
     /// triggers-background §1): `+0x183 = 0` (no reader, not kept); open from the live record's p1 — p1 ≥ 0: record
     /// [p1]'s p4 == 1 (an index outside the table reads as 0); −1: `*_DAT_1009fed0 == 1` (`SpriteWorld.bossFlag`); −2: the
     /// countdown `iRam100a5110` > −20 (`SpriteWorld.countdown`; the decompile's `(t < 0xffffffed) − (~(t ^ 0xffffffec) >>
-    /// 31) & 1` is the signed t ≥ −19); any other negative p1 leaves r19 as the function found it [LOW: no record has
-    /// one] — taken as shut. The 2941 overrides it to shut (`unaff_r19 = 0`) and dies at HP < 1 (`iceWallDeath`). Then
+    /// 31) & 1` is the signed t ≥ −19); any other negative p1 leaves r19 as the function found it — no write of r19 lies
+    /// on the gate's path from the entry (raw `1006d878..1006f4d8`), `.MTHandleSprites` and `.HandleSprites` keep it,
+    /// so it is `.PaintFrameWrap`'s param_1 (`or r19,r3,r3` raw `10011d04`): the paint's draw flag
+    /// (`SpriteWorld.paintDraw`) [no placed record has such a p1]. The 2941 overrides it to shut (`unaff_r19 = 0`) and dies at HP < 1 (`iceWallDeath`). Then
     /// (both types, the dying 2941 too):
     /// - shut: while `+0x158 − y > 0` (above its start) `+0x1c += 0x200`, `+0xa` from it;
     /// - open: while `+0x158 − y < 100` `+0x1c −= 0x200`, `+0xa` from it;
@@ -684,7 +686,7 @@ public enum BoxSprite {
         case 0...: open = liveRecord(w, p1)?.p4 == 1
         case -1: open = w.bossFlag == 1
         case -2: open = -20 < w.countdown
-        default: open = false
+        default: open = w.paintDraw                    // r19 as found: `.PaintFrameWrap`'s param_1 (see the doc)
         }
         if s0.type == iceWall {
             open = false

@@ -93,7 +93,7 @@ the record's p4 to 0 within two frames unless p4 ≠ 0 at start **and** p1 == 1 
 
 Net while standing on it: +8 − 1 = +7/frame → ≥ 9 on the second contact frame. Released: −1/frame
 → 11 → 8 in 3 frames (momentary).
-> ⚑ planner note (Phase 4 BT, 2026-10-26): the player presses a Button **twice** per frame, not once — `.MTCollideSprites`
+> ⚑ implementer note (BT, loop run 27): the player presses a Button **twice** per frame, not once — `.MTCollideSprites`
 > (M l. 30216ff) visits the Button as the outer sprite (it has a hit callback) with the player as a partner, and
 > `.MTCollideSpecialSprite` (M l. 30374ff) calls the contact's own hit after `.HitPlayerSprite` (which has no Button arm).
 > So standing on it: +16 − 1 = +15/frame — ≥ 9 after the first contact frame (level 16) and p4 written on the second
