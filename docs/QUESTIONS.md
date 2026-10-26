@@ -32,26 +32,18 @@ brother's Windows machine.
 
 ## Open
 
-### Q12 — 2026-10-26 — NEVER launch the game (Ben's ruling, written by his attended session) — overrides D34's G9 boot permission
-Context: The Phase 4 end run's boot check opened the staged app four times at ~22:00 with sound; it woke Ben's wife.
-Ben is angry about it. This withdraws the loop's permission to launch any app.
-Options: (a) no app launches by the loop, ever: no boot checks, no smoke runs, no `open`, no CrossOver/Wine runs of the
-Windows build, no audio. Ben launches builds himself.
-Recommendation: a — Ben's word.
-Blocks: nothing. Gate cards say "not launched by the loop; Ben's first launch is the boot check".
-Answer: (a) — Ben, 2026-10-26. Effective immediately for every run, including the Windows runs. Record in DECISIONS
-superseding the launch part of D34 (G9); remove app launches from NEXT.md and every plan's gates; staging (copying the
-build to ~/Desktop or out/) stays allowed. Headless tests that make no sound and open no window are fine.
-Amended — Ben, 2026-10-26, a few minutes later: "Muted launches is fine to test." So: launching a build IS allowed again
-for boot checks, but ONLY with the game's sound fully off. Before any launch, the loop adds (and tests headlessly) a
-mute switch the launch uses — e.g. a launch argument or environment variable that stops the app opening any audio
-output (Mac); for the Windows build in CrossOver use a no-sound audio driver through the HECTOR_SDL_* passthrough
-(CrossOver strips SDL_*). No launch without that switch. Keep launches few and short. The attended monitoring session
-warns Ben in its hourly note before a phase-end run that will launch.
-Night rule — Ben, 2026-10-26 22:10, going to sleep: "don't want it to wake anyone up". NO launches of any kind, muted
-or not, between 21:00 and 09:00 Mac local time (check `date` right before any launch). A run that reaches a launch step
-in those hours skips it, stages only, and writes "boot check owed (night rule)" in its LOOP-LOG line and the gate card;
-the first daytime run does it, muted.
+### Q13 — 2026-10-26 — Windows plan (Phase W): six small choices, for your later read
+Context: Loop run 31 wrote the plan for Ferazel's Windows build (`docs/plans/2026-10-26-ferazel-windows.md`, D43): seven
+tasks over about four runs, reusing Bubble Trouble X's Windows parts, the zip staged under `out/` (never published).
+Launches follow your Q12 rule (muted, never 21:00–09:00). The loop builds with the defaults below unless you say otherwise.
+Options: WQ2 saved-game files: (a) native Windows Open/Save boxes (b) the original's file box drawn in the window
+(c) a fixed saves folder with an in-window list. WQ3 full-screen key: (a) Alt+Enter (b) F11 (c) both. WQ4 window:
+(a) resizable, whole-number scaling on black (b) fixed like the Mac. WQ5 key names in Options: (a) US-layout names
+(b) the PC's own layout. WQ6 saved-game names: (a) no extension, as the Mac (b) add `.fwsg`. WQ7 dialogs: (a) inside
+the window, enlarged with the game (as Bubble Trouble X) (b) inside, always original size (c) separate windows.
+Recommendation: (a) for all six — closest to the Mac app and to what Bubble Trouble X's Windows build already does.
+Blocks: nothing (D34: execution does not wait).
+Answer:
 
 ### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
 Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
@@ -74,6 +66,29 @@ Answer:
 ## Answered
 
 _(moved here by the run that acted on the answer, with what it did)_
+
+### Q12 — 2026-10-26 — NEVER launch the game (Ben's ruling, written by his attended session) — overrides D34's G9 boot permission
+Context: The Phase 4 end run's boot check opened the staged app four times at ~22:00 with sound; it woke Ben's wife.
+Ben is angry about it. This withdraws the loop's permission to launch any app.
+Options: (a) no app launches by the loop, ever: no boot checks, no smoke runs, no `open`, no CrossOver/Wine runs of the
+Windows build, no audio. Ben launches builds himself.
+Recommendation: a — Ben's word.
+Blocks: nothing. Gate cards say "not launched by the loop; Ben's first launch is the boot check".
+Answer: (a) — Ben, 2026-10-26. Effective immediately for every run, including the Windows runs. Record in DECISIONS
+superseding the launch part of D34 (G9); remove app launches from NEXT.md and every plan's gates; staging (copying the
+build to ~/Desktop or out/) stays allowed. Headless tests that make no sound and open no window are fine.
+Amended — Ben, 2026-10-26, a few minutes later: "Muted launches is fine to test." So: launching a build IS allowed again
+for boot checks, but ONLY with the game's sound fully off. Before any launch, the loop adds (and tests headlessly) a
+mute switch the launch uses — e.g. a launch argument or environment variable that stops the app opening any audio
+output (Mac); for the Windows build in CrossOver use a no-sound audio driver through the HECTOR_SDL_* passthrough
+(CrossOver strips SDL_*). No launch without that switch. Keep launches few and short. The attended monitoring session
+warns Ben in its hourly note before a phase-end run that will launch.
+Night rule — Ben, 2026-10-26 22:10, going to sleep: "don't want it to wake anyone up". NO launches of any kind, muted
+or not, between 21:00 and 09:00 Mac local time (check `date` right before any launch). A run that reaches a launch step
+in those hours skips it, stages only, and writes "boot check owed (night rule)" in its LOOP-LOG line and the gate card;
+the first daytime run does it, muted.
+Acted on (loop run 31, 2026-10-26): recorded as D42 (all three parts); the Windows plan (D43) and NEXT.md carry the
+mute switches (Mac `-FerazelMute YES`, Windows `--mute` / `HECTOR_SDL_AUDIO_DRIVER=dummy`) and the 09–20 launch guard.
 
 ### Q10 — 2026-10-26 — A Windows build before Phase 5 (Ben's ruling, written by his attended session)
 Context: Ben wants a friend (Andrew, on Windows) to beta-test playable levels soon. The design puts the Windows twin in

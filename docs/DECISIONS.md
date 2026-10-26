@@ -1641,3 +1641,36 @@ check `date` right before any launch; a run that reaches a launch step in those 
 `xcodebuild build`, cross-compiling) are fine at any hour. Seat's reading (run 31): a CrossOver run of a cross-built
 test executable (Proof B) counts as a launch — it runs muted (no-sound driver) and only in daytime hours.
 **Approved by:** Ben, 2026-10-26.
+
+## D43 — Ferazel's Wand "Phase W" (the Windows twin): planning rulings (2026-10-26, loop run 31)
+
+**Plan:** `docs/plans/2026-10-26-ferazel-windows.md` (contracts, not code; Opus planner; two Opus review legs — A against
+BTX's Windows code + `tools/windows/`, B against Ferazel's App + design + rulings — both PASS WITH FIXES, round applied
+with Ben's amended Q12; FABLE-GRADE gate PASS WITH FIXES (re-ran G2 490/0 and GW1, seven findings), round applied).
+Seven tasks + phase end: **WF0** Core + tests cross-compile, Proof B script; **WF1 ⚑** the shared shell half
+(`Ferazel/Shared`, symlinked into a new `Ferazel/Windows` package) + the Mac mute switch; **WF2** text from BTX's baked
+format, baked from the Mac's own CoreText path, byte-compared; **WF3 ⚑** the game on HectorSDL + the Windows mute
+switch; **WF5** saved games (native Windows dialogs); **WF4a** / **WF4b ⚑** the original's dialogs drawn in-window;
+**WF6** stage both + phase end. Ladder: Ferazel/Core stays **490**; the Windows package's macOS-hosted tests 0 → **77**;
+Proof B 490/0/0/0 in CrossOver. No HectorKit change (G1 35a85ba, floor 361). Execution: run 32 = WF0 + WF1, 33 = WF2 +
+WF3, 34 = WF5 + WF4a + WF4b, 35 = WF6 phase end, then the Phase 5 plan.
+**Rulings (the plan's "Rulings" section is the full text; one line each):** (1) one neutral driver shared by symlink,
+the Mac keeps only AppKit work; (2) text = BTX's baked format + rasterizer, baked from `CoreTextRasterizer` (made
+public), 0/255 cut after composing, byte-for-byte tests; dialog face = font 0 face 1; (3) saved games = native Windows
+Open/Save dialogs (WQ2); (4) the original's dialogs drawn in-window, scaled with the game (WQ7); (5) no menu bar, MBAR
+commands by Ctrl alone, keys from the MENU resources; (6) keys Ctrl = ⌘, Alt = ⌥ (D18.5); (7) gamepad through
+`ShellPadTranslator` + `FerazelPadLayout`; (8) clock = SDL nanoseconds → 60 Hz ticks, the 2-tick step and the 30-step cap
+unchanged; (9) the window's close / Alt+F4 = the Mac's Dock Quit (D40), logoff quits at once; (10) prefs + saves in
+`%APPDATA%\Ambrosia Classics\Ferazel's Wand\`; (11) hidden switches on the command line with the Mac's parse; (12) data
+folder beside the exe = `Resources/Ferazel/` unchanged; (13) audio through `PCMMixer` + `SDLAudioOut`; (14) 640×480
+window, whole-number scale, Alt+Enter full screen (WQ3/WQ4); (15) launches per D42 (muted, 09–20 only, guard in
+every launch script); (16) **lockstep (D41) standing contract for Phase 5+**: every task that changes what the Mac app
+shows or does carries its Windows side in the same task; every task (Core-only too) runs G2 + GW1 + GW2 + GW3 + G5;
+every phase end stages both builds with one gate card; (17) no HectorKit change; (18) the Foundation-on-Windows and
+GUI-subsystem traps (no `replacingOccurrences`, no stderr/`NSLog` in the GUI build, live redraw during drag); (19) a
+dedicated `WIN_BUILD_ROOT` for every Ferazel cross-build; (20) mute + determinism: `-FerazelMute YES` / `FERAZEL_MUTE=1`
+(Mac: no `ShellMixer`, no beeps) and `--mute` (Windows: SDL dummy audio, no `MessageBeep`); headless `--frames` dumps
+open no audio device, drain the Sound Tool silently at 367/368 frames per tick, and fix the seed and clock.
+**Owner choices** (QUESTIONS Q13, non-blocking, defaults = (a)): WQ2 save dialogs, WQ3 full-screen key, WQ4 resizable
+window, WQ5 key names, WQ6 save-file extension, WQ7 dialog scaling.
+**Approved by:** the seat under D34's plan authority; Ben reads later (Q13).
