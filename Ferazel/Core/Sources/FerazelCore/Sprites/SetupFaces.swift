@@ -183,6 +183,11 @@ public enum SetupFaces {
         for p: Int16 in [0x534, 0xc85, 0xb20, 0xb21, 0xb6d, 0xb6e, 0xb70, 0xb8a] { all.append(one(p)) }
         all += [set(0x53c, 6, 0x2c, 0x2a, 6), set(0x53d, 6, 0x2c, 0x2a, 6), set(0xb75, 0x18, 0x20, 0x36, 0xc),
                 set(0x6cc, 0xb, 0x38, 0x34, 0xb), set(0x708, 8, 0x78, 100, 8)]
+        // BX1 (`.InitBoxSprite` M l. 58745, 58747, 58760, 58785–58786, 58811): the boulders 2 / 3 0x42f / 0x430 and the crate 0xc13
+        // (boot singles), the mine cart's cache sets 0xb72 (14 × 0x80×0x60, 7 per row) and 0xb73 (21 × 0x80×0x3a; flag
+        // 0), the ice wall 0xb7d (boot single).
+        all += [one(0x42f), one(0x430), one(0xc13), one(0xb7d)]
+        all += [set(BoxSprite.cart, 0xe, 0x80, 0x60, 7), set(BoxSprite.wheel, 0x15, 0x80, 0x3a, 7)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -352,8 +357,14 @@ public enum SetupFaces {
                 if inWater() { s.mode = 0x90000 }
             case 0x429:                                        // save point: set 0x429 cell p1 (l. 59000)
                 face(0x429, Int(p.p1), .setup)
-            case 0x42e:                                        // boulder (l. 59064): the boot single 0x42e (W3)
+            case 0x42e, 0x433, 0x434:                          // boulder / rocks (M l. 59056–59058): the boot single 0x42e
                 face(0x42e, 0, .setup)
+            case 0x42f, 0x430:                                 // boulders 2 / 3 (M l. 59059–59064; BX1)
+                face(Int16(t), 0, .setup)
+            case 0xb72, 0xb73:                                 // mine cart / wheel (M l. 59436; BX1): cache 0xb72 cell 0
+                face(BoxSprite.cart, 0, .setupCached)
+            case 0xb7d:                                        // the 2941 (M l. 59475; BX1): the boot single 0xb7d
+                face(0xb7d, 0, .setup)
             case 0x51c:                                        // chest (l. 59031)
                 if inWater() { s.mode = 0x90000 }
                 face(0x51c, 0, .setup)
@@ -597,6 +608,30 @@ public enum SetupFaces {
         for p in c.records.map(spawnOrder) ?? c.level.spawnOrder {
             var e = try setup(p, context: c, lights: &out.lightTable, rng: &rng)
             out.tallies.count(type: e.type, class: e.spriteClass)
+            if e.type == BoxSprite.cart || e.type == BoxSprite.wheel, e.slot.recordIndex != -1 {
+                // The cart arm of `.SetupBoxSprite` (M l. 59444–59463; BX1) makes two children before the cart is
+                // inserted or idled: `MTNewSprite(0xb72, +8, +6, 100, −1, .SetupBoxSprite)` — its Setup's head stores
+                // layer 2, the sort key — then `+0x80 = 100` (no re-sort) and face = cache 0xb72 cell 7 (`+0x20`); then
+                // `MTNewSprite(0xb73, +8, +6, +0x80 − 1, −1, …)` then `+0x80 = −1` and face = cache 0xb73 cell 0. Both
+                // take the record −1 arm (empty rect, gravity 0). The cart's `+0x1d4` / `+0x1d8` = the children.
+                func child(_ type: Int16, layer: Int32, face: FaceRef) -> Int {
+                    var k = SpriteSlot(type: type, x: e.slot.oldPosition.x, y: e.slot.oldPosition.y, recordIndex: -1)
+                    BoxSprite.setup(&k, record: p, level: c.level)
+                    let id = out.active.insert(k)
+                    out.active.update(id: id) { s in
+                        s.layer = layer
+                        s.face = face
+                    }
+                    return id
+                }
+                var parent = e.slot
+                parent.siblings.first = child(BoxSprite.cart, layer: 100,
+                                              face: FaceRef(pict: BoxSprite.cart, index: 7, set: .encoded))
+                parent.siblings.second = child(BoxSprite.wheel, layer: -1,
+                                               face: FaceRef(pict: BoxSprite.wheel, index: 0, set: .encoded))
+                e = Entry(type: e.type, spriteClass: e.spriteClass, spawn: e.spawn, sheet: e.sheet,
+                          faceIndex: e.faceIndex, source: e.source, slot: parent, light: e.light, record: e.record)
+            }
             if e.type == BoxSprite.stalactite, e.slot.recordIndex != -1 {
                 // `.SetupBoxSprite`'s stalactite arm (M l. 59383–59400) makes its child before the parent is inserted
                 // or idled: `.MTNewSprite(0xb74, +8, +6, +0x80 − 1, −1, .SetupBoxSprite)` — the record −1 arm — then

@@ -623,3 +623,15 @@ draws as dy, dx, vx, sign, vy. The 0x516 Setup arm (`LAB_1005e02c`, M l. 52576�
 calls that Setup through `MTNewSprite` between the dx draw and the vx draw, so each lost coin is **nine** draws:
 R(8) R(8) R(9) R(6) R(3) R(0x3c) R(0x640) R(100) R(0xdac) [HIGH, raw]. `HurtPlayer` makes all nine (the sprite itself waits
 for Phase 4).
+
+⚑ BC (BX1, 2026-10-26): §2.4.1's spin stomp keeps spinning while **DOWN** is held, not JUMP — `.IsInputKeyPressed(3)`
+(action 3 = DOWN, `InputActions`) at M l. 49378; DOWN held → `.STPlayRegSound(427, 1, 0xba)` and the spin stays on;
+not held → the spin ends, 427 stopped if playing, the air counter `_DAT_100a0718 = 1` (that branch only); both →
+`vy = −|(int)(−0.9·vy)|`, cooldown 5, `+0xce = 0`, `_DAT_100a0738 = 0`, `+0xdc = 0` (M l. 49378–49405; player-states-2's
+crunch bounce reads DOWN too). The 2941's death (HP < 1 → `.ExplodeFaceIntoParticles(…, 2, 2, 2, 0x32, 100)`,
+`+0xe9 = 1`, `FastRand(5000)`, `.STPlay3DSoundPitched(424, …, R + 43000)`) is in `.HandleBoxSprite`'s gate arm (M l.
+61032–61040), not `.HitBoxSprite`. An Effect's `+0xa6` stays the Setup's 3 (M l. 53726; no Effect code writes it), so
+the 0x4b7 that `.HitBoxSprite`'s crate arm hands to `.KillPlayerShot` never plays 419 — it only becomes −6. A falling
+Box moves by its old and new vy in one frame: the tail's `+0x1c += vy` (M l. 61159) precedes the integration's own
+step. The placed stalactite's Setup `+0xa6 = 3` makes it shake three frames when its Handle first runs (M l. 58943,
+60596–60616).

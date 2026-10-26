@@ -457,8 +457,11 @@ final class BoxRopeTests: XCTestCase {
         XCTAssertEqual([ps.vy, Int32(ps.groundKind)], [0, 3])
         XCTAssertEqual(ps.ridden, c)
         XCTAssertFalse(ps.oneWayLanded)
-        // From the left at walking speed: vx 0, x snapped to the crate's left; the crate is not moved (pushing is the
-        // Phase-4 tail).
+        // From the left at walking speed: vx 0, x snapped to the crate's left. The side push gives the crate vx
+        // (`.RectBounce`: (0x100 · ((0x78 · 0x300) >> 8)) >> 8 = 360). Its Handle's tail is BX1's (M l. 61152–61177):
+        // `.ApplyFriction(0x5a)` → 270, no `.FootPressure` (`+0xcd` 0), `y += vy` (0), then
+        // `.ApplyGravityAndSeparateFromTiles` — x256 += 270 → x 3011; the record puts the crate's bottom (y + 0x20 = 1490)
+        // 2 px below the kind-3 floor surface of cell (94, 46) (32·46 + 16 = 1488), so the separation lifts it to 1456.
         let r = HandleKeys.standardHotRect
         w1.active.update(id: p) { s in
             s.y = cs.y + 0x20 - r.bottom
@@ -474,7 +477,7 @@ final class BoxRopeTests: XCTestCase {
         XCTAssertEqual(ps.vx, 0)
         XCTAssertEqual(ps.x, cs.x + 4 - r.right)
         BoxSprite.handle(world: w1, id: c)
-        XCTAssertEqual([w1.active.sprite(id: c)?.x, w1.active.sprite(id: c)?.y], [cs.x, cs.y])
+        XCTAssertEqual([w1.active.sprite(id: c)?.x, w1.active.sprite(id: c)?.y], [cs.x + 1, cs.y - 2])
         let ch = try add(w1, L1.placements[23])
         let chs = try XCTUnwrap(w1.active.sprite(id: ch))
         dropPlayer(w1, p, ontoTop: chs.y + 7, x: chs.x, vy: 0x400)

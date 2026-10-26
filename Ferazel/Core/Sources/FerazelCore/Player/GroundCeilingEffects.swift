@@ -66,8 +66,8 @@ public enum GroundCeilingEffects {
 /// their spawners (CS / SH: `.KillPlayerShot`, `.KillEnemyShot`; BX1: `.KillCrate`; BX2: `.CreateBalloonSprite`).
 /// Not built (no spawner on the built levels; the bank found none for most): 1202…1205, 1251, 1830, −1 and the
 /// countdown's `.UpdateDigits` // later: their spawners' tasks (Phase 5–6). The 1207 against Crawler / Walker / Roach /
-/// Frog (their Hit routines) and against crates (`.HitBoxSprite`: −10 on any frame, then `.KillPlayerShot`;
-/// pickups-boxes-2 §7) // later: Phase 5 ◇ / BX1.
+/// Frog (their Hit routines) // later: Phase 5 ◇; against crates (`.HitBoxSprite`: −10 on any frame, then
+/// `.KillPlayerShot`; pickups-boxes-2 §7) built (BX1, `BoxSprite.hit`).
 public enum EffectSprite {
     /// 0x4b1 'dust cloud' (PICT 1201, 6 × 56×8) and 0x4ba 'crumble overlay' (PICT 1210, 3 × 32×32).
     public static let dust: Int16 = 0x4b1
@@ -88,7 +88,8 @@ public enum EffectSprite {
     /// `.SetupEffectSprite`'s common part (l. 53688–53736): `+0x88` 0, `+0x84`/`+0x86` 0 (not kept: no reader),
     /// `+0x46` 0, layer `+0x80` = 0xb (stored before `.MTInsertSprite`, so it is the sort key whatever the caller
     /// passed), the Handle (`.effect`), the hit callback `.HitEffectSprite` (empty, but installed: `+0x5c` ≠ 0), the tile
-    /// callback `.HitEffectTileSprite`, `+0xa6` 3 (not kept: no reader yet), hot rect
+    /// callback `.HitEffectTileSprite`, `+0xa6` 3 (BX1: kept — `.HitBoxSprite`'s crate arm hands the 0x4b7 to
+    /// `.KillPlayerShot`, whose id ≥ 100 branch reads it; no Effect code writes it again, M l. 53726), hot rect
     /// `SetRect(+0x34, 16, 16, 32, 32)`, face 0, `+0xc = +8`, `+0xa = +6`, 24.8 from them, `+0xe4` 1 (not kept),
     /// `+0x13e` 0 (no splash, E1a). 1040 (0x410): hot rect `SetRect(+0x34, 0, −10, 8, −2)` (left 0, top −10, right 8,
     /// bottom −2; l. 53736). The type arms and the explosion package are `setup(_:_:effects:lights:)`'s; the callers that
@@ -100,6 +101,7 @@ public enum EffectSprite {
         s.layer = 0xb
         s.handler = .effect
         s.hasHit = true
+        s.counterA6 = 3
         s.hotRect = IdleSprites.Rect(top: 0x10, left: 0x10, bottom: 0x20, right: 0x20)
         s.face = nil
         s.x = s.oldPosition.x

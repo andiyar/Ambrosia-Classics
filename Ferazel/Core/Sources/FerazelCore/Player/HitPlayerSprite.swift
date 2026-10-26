@@ -134,7 +134,7 @@ extension HitPlayerSprite {
     /// The Box / see-saw segment arm (`+0x4c == PTR_PTR_100a0484` or `_DAT_100a01c8`, decompile l. 49149–49362; raw
     /// `10057278..10057324` for the trampoline), up to the mechanism branches (pickups-boxes §2.1, §2.3, §2.4.11):
     /// 1. the entry vy `uVar38 = +0x2c` (l. 49150) — the trampoline's threshold reads it, not the post-landing 0;
-    ///    `iStack_ac = (int)(−0.9·vy)` (l. 49153) is read only by the spin-stomp mechanism (// later: Phase 4);
+    ///    `iStack_ac = (int)(−0.9·vy)` (l. 49153) is read only by the spin stomp (`spinStomp`, BX1);
     /// 2. a see-saw segment (l. 49155–49166): the player's x + (rect left + right) >> 1 outside the segment's
     ///    [x + left, x + right] → return; else the segment's `+0xb2 = 1`, `_DAT_100a067c = 1`;
     /// 3. d = (player `+0x10` − `+0xc`, `+0xe` − `+0xa`) (l. 49167–49168) — his own centre offset;
@@ -158,8 +158,8 @@ extension HitPlayerSprite {
     ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
     ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`
     ///    (`_DAT_100a027c`, no draw); the air counter `_DAT_100a0718 = 1`; `+0xce = 0`;
-    /// 9. // later: Phase 4 — the mechanism branches from l. 49363: the spin stomp on switch blocks / crates (types
-    ///    0x4e2…0x4ff / 0xc12…0xc1b), the teleporters 0x424…0x426;
+    /// 9. the spin stomp on switch blocks / crates (types 0x4e2…0x4ff / 0xc12…0xc1b; BX1, `spinStomp`); // later: TP —
+    ///    the teleporters 0x424…0x426;
     /// 10. the save point 0x429 (S1, `savePoint`) — reached past the not-built branches, whose type tests exclude it.
     static func box(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
@@ -182,17 +182,19 @@ extension HitPlayerSprite {
             w.player.talkTail = oID                                     // the rest runs at the resume (`talkDone`)
             return
         }
-        boxTail(w, player: pID, other: oID, entryVY: entryVY, d: d, rect: p.hotRect)
+        boxTail(w, player: pID, other: oID, entryVY: entryVY, d: d, rect: p.hotRect, keys: keys)
     }
 
     /// The Box arm from the sign gate on (steps 5–10 above; l. 49304ff).
     private static func boxTail(_ w: SpriteWorld, player pID: Int, other oID: Int, entryVY: Int32, d: SpriteSlot.Point,
-                                rect: IdleSprites.Rect) {
+                                rect: IdleSprites.Rect, keys: InputActions) {
         guard let o = w.active.record(id: oID) else { return }
         if (0xb56...0xb5d).contains(o.type) && o.classWord15c == 0 { return }
         guard w.platformBounce(mover: pID, solid: oID, centre: d, factor: 0, rect: rect, bounce: false) == 1
         else { return }
-        guard o.type == BoxSprite.trampoline else {                     // later: Phase 4 (7, 9)
+        guard o.type == BoxSprite.trampoline else {                     // later: Phase 5 (7, the geyser head)
+            if spinStomp(w, player: pID, other: oID, entryVY: entryVY, keys: keys) { return }
+            // later: TP — the teleporters 0x424…0x426 (M l. 49407ff.).
             if o.type == BoxSprite.savePoint { savePoint(w, player: pID, other: oID) }
             return
         }
@@ -264,7 +266,52 @@ extension HitPlayerSprite {
         guard let p = w.active.record(id: pID) else { return }
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let d = SpriteSlot.Point(x: h(p.centre.x - p.x), y: h(p.centre.y - p.y))
-        boxTail(w, player: pID, other: oID, entryVY: p.vy, d: d, rect: p.hotRect)
+        // No live key read reaches the stomp here: a talker is never a crate or a switch block.
+        boxTail(w, player: pID, other: oID, entryVY: p.vy, d: d, rect: p.hotRect, keys: [])
+    }
+
+    /// The spin stomp (M l. 49364–49406; pickups-boxes §2.4.1, its "JUMP" corrected to DOWN by BX1), on a
+    /// landing: spinning (`PTR_DAT_100a0668`), the Box's HP > 0, a switch block 0x4e2…0x4ff or a crate 0xc12…0xc1b, the
+    /// cooldown `PTR_DAT_100a060c == 0`, the entry vy > 0x9c4 and the Box's record p4 ≠ 1 → a crate's HP − 100, a
+    /// block's − 1 with `.STPlay3DSoundRand(423, 1, 0x100, block centre)` (`*_DAT_100a01e4`); DOWN held
+    /// (`.IsInputKeyPressed(3)`) → `.STPlayRegSound(427, 1, 0xba)`, spin on; else spin off and 427 stopped if playing
+    /// (`FUN_100916dc` / `FUN_10091504`: a stop, no `SoundVoices` question), the air counter `_DAT_100a0718 = 1`; both: vy
+    /// = `iStack_ac` = `(int)(−0.9 · entry vy)` (the double at `0x100a1a20`), made negative if positive; cooldown 5,
+    /// `+0xce = 0`, `_DAT_100a0738 = 0`, `+0xdc = 0`; return. The crate dies in its own Handle (HP < 1 → `.KillCrate`),
+    /// a block in its Handle's `.KillBox` (// later: BT). Returns whether it stomped.
+    static func spinStomp(_ w: SpriteWorld, player pID: Int, other oID: Int, entryVY: Int32, keys: InputActions) -> Bool {
+        guard let o = w.active.record(id: oID) else { return false }
+        let t = o.type
+        let p4 = BoxSprite.liveRecord(w, o.recordIndex)?.p4 ?? 0
+        guard w.player.spin, 0 < o.hp, BoxSprite.switchBlocks.contains(t) || BoxSprite.crateRange.contains(t),
+              w.player.crunchCooldown == 0, 0x9c4 < entryVY, p4 != 1 else { return false }
+        if BoxSprite.switchBlocks.contains(t) {
+            w.active.update(id: oID) { $0.hp &-= 1 }
+            w.player.cue(PlayerCue(call: .threeDRand, snd: 423, priority: 1, volume: 0x100, position: o.centre,
+                                   rate: w.rng.soundRate()))
+        } else {
+            w.active.update(id: oID) { $0.hp &-= 100 }
+        }
+        let rebound = TileSolver.fctiwz(-0.9 * Double(entryVY))           // `dRam100a1a20 · (double)uVar38`
+        if keys.contains(.down) {
+            w.player.cue(PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba))   // `_DAT_100a03cc`
+            w.player.spin = true
+        } else {
+            w.player.spin = false
+            w.player.cue(PlayerCue(call: .stopIfPlaying, snd: 427))
+            w.player.airCounter = 1
+        }
+        w.active.update(id: pID) { p in
+            p.vy = rebound
+            if 0 < p.vy { p.vy = 0 &- p.vy }
+        }
+        w.player.crunchCooldown = 5
+        w.active.update(id: pID) { p in
+            p.groundKind = 0
+            p.ridden = nil
+        }
+        w.player.groundLast = 0
+        return true
     }
 
     /// The save point's arm (M l. 49471–49504, raw `10057714..10057858`; save-continue §2.1, §9.2), on a landing:

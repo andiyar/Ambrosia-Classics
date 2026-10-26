@@ -403,6 +403,10 @@ public struct SpriteSlot: Equatable, Sendable {
     /// `+0x13e` (u8): the sprite splashes (`.Splash` returns at once when 0): `.InitSprite` 1 (l. 35648), the Effect
     /// Setup 0 (l. 53734) — no other writer (E1a).
     public var splashes = true
+    /// `+0x182` (u8): `.HitBoxSprite`'s pair latch — set on both sprites of a Box / Statue / Platform pair it bounces,
+    /// tested on the Box (`self`) only, cleared by `.HandleBoxSprite` after `.StandardSpriteHandles` (M l. 60091) and
+    /// `.InitSprite` (M l. 35664); no other writer (BX1).
+    public var boxPairLatch = false
 
     public init(type: Int16, x: Int, y: Int, recordIndex: Int16 = -1, layer: Int32 = 0, face: FaceRef? = nil) {
         self.type = type

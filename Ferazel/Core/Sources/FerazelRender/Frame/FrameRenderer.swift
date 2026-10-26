@@ -146,6 +146,8 @@ public final class FrameRenderer {
     /// passages, `SetupFaces.backgroundW2bSheets` — the cannon set 0x442 and the tunnels 3000…, plants 2700… come with
     /// the placed types' sheets; W4: the level-2 types' sheets come with them, plus the stalactite child's set 0xb74,
     /// `SetupFaces.boxChildSheets`; PK: the hurt coins' 0x516 and the Xichron burst's 0x421 / 0x422, `BonusSprite.dropSheets`;
+    /// BX1: the mine cart's child sets 0xb72 / 0xb73, `BoxSprite.spawnSheets`, and the faces the level's crates drop,
+    /// `BoxSprite.dropSheets`;
     /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`; IU: the held items' singles 750, 756,
     /// 768, 771, `HeldItem.sheets` — the thrown seeds and the Smiting seeds are 1116, the stab faces 1021 / 1035 the
     /// player's), empty light slots (`addLights`), the status bar under the level
@@ -188,7 +190,9 @@ public final class FrameRenderer {
                                                 .union(SetupFaces.boxChildSheets)
                                                 .union(BonusSprite.dropSheets)
                                                 .union(PlayerShot.sheets)
-                                                .union(HeldItem.sheets),
+                                                .union(HeldItem.sheets)
+                                                .union(BoxSprite.spawnSheets)
+                                                .union(BoxSprite.dropSheets(L.placements)),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
