@@ -239,8 +239,11 @@ shared `work/HectorKit` symlink, as `proof-b.sh`), cross-builds the tests, point
 runner's default 900 s is too short). Expected last line:
 
 ```
-proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
+proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)
 ```
+
+The one skip is `FerazelRenderTests.CensusTests/testExitCodes`, Wine-only (WF0b, below); the script passes only for
+exactly that skip set (any other skip, or that test not skipping, is a fail).
 
 - `--class NAME` re-runs one class — only after a crash, to find it. A watchdog kill (exit 124) prints "timed out",
   never a crash count. A count other than 490 in the `--list-tests` total is itself a finding.
@@ -251,11 +254,22 @@ proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
 - **Build-root isolation (Ruling 19):** the script builds into `$WIN_CROSS/work/proof-b-ferazel/build`; the gates'
   cross-builds pass `WIN_BUILD_ROOT=$WIN_CROSS/build/ferazel`. Never the default root: `build.sh` names its scratch
   folder after the package folder, and BTX's packages are also called `Core` and `Windows`.
-- Whole-suite wall time in CrossOver: **not yet measured (night rule)**.
+- Whole-suite wall time in CrossOver: **272 s** for the test run (2026-10-27, WF0b; about 4 min 40 s for the whole
+  script with a warm build).
 - Windows differences removed in the repo (WF0): the data test's environment override (`_putenv_s` +
   `SetEnvironmentVariableW`; Darwin `setenv`) and hard links / copies instead of symbolic links; `CensusTests` finds
   `ferazel-census.exe` beside the running test `.exe` and drops `\r` from the child's stdout; the census's five
   replaces go through a pure-Swift `replacingEvery` (the D19.5 trap above).
+- **CrossOver limitation (WF0b): Wine 11 has no advapi32 `SaferiIsExecutableFileType`** (real Windows does). Any call
+  aborts the whole test process ("unimplemented function"), so every later test showed as crashed. Foundation-on-
+  Windows calls it from `FileManager.attributesOfItem` (the POSIX execute bits), `isExecutableFile` and `Process.run`.
+  Removed: the census's `fileSize` and `FerazelDataTests`' music sizes take the length from a `FileHandle` on Windows
+  (Mac unchanged). **Skip rule:** `CensusTests.testExitCodes` spawns `ferazel-census.exe` through `Process`, which is
+  the point of the test, so it skips (`XCTSkip`) only when ntdll exports `wine_get_version` — never on the Mac or on
+  real Windows; its argument-parser checks still run first. One skip, total 490 = 489 + 1.
+- **Foundation `contains` trap (WF0b):** `String.contains` on the census's long non-ASCII stdout traps (`ud2` in
+  Foundation.dll), the D19.5 trap's kin and a Windows (not Wine) difference: `CensusTests` searches by Unicode scalars
+  in pure Swift on Windows.
 
 ## Results (W0, 2026-10-06)
 

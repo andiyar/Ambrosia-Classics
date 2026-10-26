@@ -601,9 +601,20 @@ public enum FerazelCensus {
 
     static func fileSize(_ url: URL) -> Int? {
         let resolved = url.resolvingSymlinksInPath()
+        #if os(Windows)
+        // Foundation-on-Windows' attributesOfItem derives the POSIX execute bits from advapi32's
+        // SaferiIsExecutableFileType, which Wine (CrossOver) does not implement — the call aborts the process. Only the
+        // type and the size are wanted here: a regular file (exists, not a folder) and its length from the handle.
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: resolved.path, isDirectory: &isDir), !isDir.boolValue,
+              let handle = try? FileHandle(forReadingFrom: resolved) else { return nil }
+        defer { try? handle.close() }
+        return (try? handle.seekToEnd()).map { Int($0) }
+        #else
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: resolved.path),
               attrs[.type] as? FileAttributeType == .typeRegular else { return nil }
         return (attrs[.size] as? NSNumber)?.intValue
+        #endif
     }
 
     static func isDirectory(_ url: URL) -> Bool {

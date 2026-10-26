@@ -2,6 +2,19 @@ import XCTest
 import FerazelCore
 import HectorResources
 @testable import FerazelRender
+#if os(Windows)
+import WinSDK
+#endif
+
+/// True only under Wine (CrossOver): its ntdll exports `wine_get_version`, real Windows' does not. False on the Mac.
+private let runningUnderWine: Bool = {
+    #if os(Windows)
+    guard let ntdll = "ntdll.dll".withCString(encodedAs: UTF16.self, { GetModuleHandleW($0) }) else { return false }
+    return GetProcAddress(ntdll, "wine_get_version") != nil
+    #else
+    return false
+    #endif
+}()
 
 /// The census run once over the committed data, shared by the suite.
 private enum Census {
@@ -11,6 +24,18 @@ private enum Census {
     static func lines() throws -> [String] {
         try shipped.get().stdout.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     }
+}
+
+/// `text.contains(part)`. On Windows a pure-Swift scalar search: Foundation-on-Windows' `contains` traps (`ud2` in
+/// Foundation.dll) on the census's long non-ASCII text, the D19.5 `replacingOccurrences` trap's kin. Mac: Foundation's.
+private func textContains(_ text: String, _ part: String) -> Bool {
+    #if os(Windows)
+    let hay = Array(text.unicodeScalars), needle = Array(part.unicodeScalars)
+    guard !needle.isEmpty, needle.count <= hay.count else { return needle.isEmpty }
+    return (0...(hay.count - needle.count)).contains { i in hay[i..<(i + needle.count)].elementsEqual(needle) }
+    #else
+    return text.contains(part)
+    #endif
 }
 
 /// The built `ferazel-census` binary next to this test bundle (SwiftPM puts both in the products dir; the test
@@ -125,7 +150,11 @@ final class CensusTests: XCTestCase {
         }
         #endif
 
-        // The binary: bad arguments → 2.
+        // The binary: bad arguments → 2. Wine (CrossOver) only: Foundation's Process checks the executable with
+        // advapi32's SaferiIsExecutableFileType, which Wine does not implement — the call aborts the whole process.
+        // Real Windows has it, so this skips under Wine alone (never on the Mac or on Windows itself).
+        try XCTSkipIf(runningUnderWine, "CrossOver: Wine lacks advapi32 SaferiIsExecutableFileType, which Foundation's "
+                      + "Process calls before spawning ferazel-census.exe; the spawn checks run on the Mac and real Windows")
         let binary = try censusBinary()
         XCTAssertEqual(try runCensus(binary, []).status, 2)
         XCTAssertEqual(try runCensus(binary, ["a", "b"]).status, 2)
@@ -169,7 +198,7 @@ final class CensusTests: XCTestCase {
         XCTAssertEqual(kinds, ["PICT": 770, "clut": 79, "snd": 172, "Mlvl": 24, "Mcnv": 29, "music": 28, "Mwld": 1,
                                "Mmap": 1, "STR#": 4])
         // Names only — never a machine path.
-        XCTAssertFalse(try Census.shipped.get().stdout.contains("/Users/"))
-        XCTAssertFalse(try Census.shipped.get().stdout.contains(try FerazelData.dataDirectory().path))
+        XCTAssertFalse(textContains(try Census.shipped.get().stdout, "/Users/"))
+        XCTAssertFalse(textContains(try Census.shipped.get().stdout, try FerazelData.dataDirectory().path))
     }
 }

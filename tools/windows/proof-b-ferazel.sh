@@ -114,5 +114,15 @@ print "  exit $code after ${elapsed} s"
 grep -v '^passed' "$verdicts" | sed 's/^/  /' || true
 (( crashed > 0 )) && print "  a crash: re-run one class with --class NAME to find it"
 print "logs: $logs"
+# The only skips allowed (WF0b): tests that skip under Wine alone, never on the Mac or real Windows. Any other
+# skipped test, or one of these not skipped while the rest pass, is not a pass.
+wine_skips=(FerazelRenderTests.CensusTests/testExitCodes)   # Process → advapi32 SaferiIsExecutableFileType (Wine lacks it)
+unexpected=(${(f)"$(grep '^skipped ' "$verdicts" | cut -d' ' -f2- | grep -vxF -f <(print -l $wine_skips) || true)"})
+(( ${#unexpected} )) && print "  skipped but not on the Wine-only list: ${unexpected[*]}"
 print "proof-b: $passed passed / $failed failed / $skipped skipped / $crashed crashed (of ${#tests})"
-(( failed == 0 && skipped == 0 && crashed == 0 ))
+if [[ $mode == class ]]; then
+    (( failed == 0 && crashed == 0 && ${#unexpected} == 0 ))
+else
+    (( failed == 0 && crashed == 0 && ${#unexpected} == 0 && skipped == ${#wine_skips} \
+       && passed + skipped == ${#tests} ))
+fi

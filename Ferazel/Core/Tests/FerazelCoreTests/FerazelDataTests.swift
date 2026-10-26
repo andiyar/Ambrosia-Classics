@@ -126,7 +126,13 @@ final class FerazelDataTests: XCTestCase {
         XCTAssertEqual(names, expected.map(\.0))
         for (name, bytes) in expected {
             let path = dir.appendingPathComponent(name).path
+            #if os(Windows)   // attributesOfItem calls advapi32 SaferiIsExecutableFileType there: Wine lacks it (aborts)
+            let handle = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
+            defer { try? handle.close() }
+            let size: Int? = Int(try handle.seekToEnd())
+            #else
             let size = (try fm.attributesOfItem(atPath: path)[.size] as? NSNumber)?.intValue
+            #endif
             XCTAssertEqual(size, bytes, "music \(path)")
         }
         XCTAssertEqual(expected.map(\.1).reduce(0, +), 47_201_968)
