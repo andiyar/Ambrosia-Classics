@@ -87,9 +87,12 @@ public enum BonusSprite {
     ///   leaves `+0xc0 = 0`), nil for a faceless type. Throws `notTranscribed` for a type no Bonus arm handles faithfully:
     ///   the default arm's out-of-table faces (0x421, 0x50e…0x513, 0x518, 0x53e…0x545, items past 0xc9a — the face is
     ///   read past `_DAT_100a08a0`'s 27 entries) and 0xc25 (its light point is an uninitialised stack word).
+    /// - Parameter outOfTableItems: BX2 — a chest's drop (`BoxSprite.chestArm`, M l. 60157, always this Setup): a type
+    ///   that falls into the item arm outside the table runs it as written (M l. 52665–52710: the rect, `FastRand(0x10)`,
+    ///   the light, `+0x114 = 6`; then the tail's `FastRand(0x3c)`) with a nil face instead of throwing.
     public static func setup(_ s: inout SpriteSlot, x: Int, y: Int, level: LevelFile, records: [Placement],
                              effects: Int16, lightCount: Int16, counting: Bool, playerLayer: Int32 = 0,
-                             rng: inout FastRand,
+                             outOfTableItems: Bool = false, rng: inout FastRand,
                              addLight: (_ face: LightFaceRef, _ h: Int, _ v: Int, _ colour: Int16) -> Int16)
         throws -> Face? {
         let t = s.type
@@ -270,8 +273,11 @@ public enum BonusSprite {
                 s.inWaterAtSpawn = Int32(rng.next(0x10))   // raw `1005e6c0` → `+0x15c` (`stw`)
                 face = Face(pict: t, index: 0, source: .handle)
             } else {                                       // items (M l. 52665–52710)
-                guard (0xc80..<(0xc80 + 0x1b)).contains(ti) else { throw SetupFaces.Error.notTranscribed(type: t) }
-                s.face = FaceRef(pict: t, index: 0, set: .encoded)
+                let inTable = (0xc80..<(0xc80 + 0x1b)).contains(ti)
+                guard inTable || outOfTableItems else { throw SetupFaces.Error.notTranscribed(type: t) }
+                // BX2 (`outOfTableItems`, a chest's drop): any other type reaches this arm as written — its face is read
+                // outside `_DAT_100a08a0` (garbage: nil here, not drawn); the rest, the light and both draws as for an item.
+                s.face = inTable ? FaceRef(pict: t, index: 0, set: .encoded) : nil
                 var r = rect(4, 4, 0x1c, 0x18)
                 s.phase = rng.next(0x10)                   // raw `1005e724`
                 if t == 0xc86 || t == 0xc9a { r.top += 6 }
@@ -293,7 +299,7 @@ public enum BonusSprite {
                 s.friction = 6
                 // The signed-range idiom (M l. 52704–52706): 0xc80 ≤ t ≤ 0xcb1, with p1 ≠ 0 → gravity 0.
                 if (0xc80...0xcb1).contains(ti) && (own?.p1 ?? 0) != 0 { s.gravity = 0 }
-                face = Face(pict: t, index: 0, source: .setup)
+                face = inTable ? Face(pict: t, index: 0, source: .setup) : nil
             }
         }
         // `LAB_1005e8bc` (raw `1005e8c0`): `+0x14c = FastRand(60)`; 24.8 from `+8`/`+6`; `.CalcCenterPos`.

@@ -736,9 +736,10 @@ public enum BoxSprite {
     ///   (the Setup stored layer 1), re-centred by its rect (x −= (left + right) >> 1, y −= (top + bottom) >> 1, 24.8
     ///   from them), p3 > 2 with a light → `.RemoveLight(+0x9a)`, `vy = −2000 − FastRand(1000)`, `vx = FastRand(800) −
     ///   400` (no p3 test), gravity 0 → 0x151, `+0xb0 = 12`; `+0xa6 = 4`; record p3 − 1 (raw `1006e7a4..1006e7d0`).
-    /// A drop with no free record (Ruling 16) drops its stores; the two draws are still made. Its Setup's throw (a p2
-    /// no Bonus arm transcribes, e.g. an enemy type) leaves the head's and arm's fields — the binary's draws past the
-    /// throw are not made [LOW: no chest on levels 1–4 drops such a type].
+    /// A drop with no free record (Ruling 16) drops its stores; the two draws are still made. A p2 outside every Bonus
+    /// arm (e.g. an enemy type) takes the Setup's item arm as written (`outOfTableItems`: its light and both draws; the
+    /// face read outside the item table is garbage — nil, not drawn); the Setup still throws for 0xc25 (its light point
+    /// is uninitialised), leaving the head's fields [LOW: no chest on levels 1–4 drops one].
     static func chestArm(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16) {
         guard let s = w.active.record(id: id) else { return }
         let own = liveRecord(w, s.recordIndex)
@@ -766,7 +767,7 @@ public enum BoxSprite {
         let drop = w.newSprite(type: p.p2, x: x0, y: y0, layer: layer, handler: .bonus) { c in
             _ = try? BonusSprite.setup(&c, x: x0, y: y0, level: w.level, records: w.records, effects: effects,
                                        lightCount: lights.count, counting: false, playerLayer: pl,
-                                       rng: &w.rng) { f, lh, lv, col in
+                                       outOfTableItems: true, rng: &w.rng) { f, lh, lv, col in
                 lights.add(face: f, x: Int16(truncatingIfNeeded: lh), y: Int16(truncatingIfNeeded: lv), vx: 0, vy: 0,
                            accelY: 0, colour: col)
             }

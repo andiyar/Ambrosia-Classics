@@ -19,7 +19,8 @@ import HectorResources
 /// - P3: the player is `Player.spawn` (`.SetupPlayerSprite`, with its held-item and five trail sprites), then the
 ///   countdown sprite `MTNewSprite(0x4c4, x, y, 800, −1, .SetupEffectSprite)` (l. 5184) into `*_DAT_1009fd7c` with its
 ///   six digit sprites 0x4c5; `iRam100a5110 = −0x1e` (l. 5186), so the countdown stays hidden (its only other writer
-///   is the timer pickup in `.HitPlayerSprite`, l. 49275 — // later: Phase 4). No `FastRand` in any of them.
+///   is the 2907 timer's contact in `.HitPlayerSprite`, l. 49275 — BX2, handed over in `PlayerState.countdownStore`).
+///   No `FastRand` in any of them.
 ///
 /// **Each iteration** (l. 5224–5290): `.FindUpperLeftCorner`, the countdown sprite's Handle called directly (raw
 /// `1000a148..1000a158`: `if (*_DAT_1009fd7c) (*(+0x4c))()`), then `.PaintFrameWrap(draw, odd) @ 10011cf8` with
@@ -337,8 +338,9 @@ public final class FerazelSession {
             s.layer = 0x7fff
             s.lightOverlay = false
             for _ in 0..<6 {
-                // `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: Phase 4
-                // (the timer pickup shows the countdown; then `.UpdateDigits` gives the digits faces).
+                // `.inert`: the digit Handle `.anon_10060c78` (SSH + SSC of a faceless sprite) // later: `.UpdateDigits`
+                // (gives the digits faces once the countdown shows; the 2907 timer's store is built, BX2 — none on
+                // levels 1–4).
                 w.newSprite(type: digitType, x: s.x, y: s.y, layer: 0x7fff, handler: .inert) { d in
                     d.lightOverlay = false
                     d.layer = 0x7fff

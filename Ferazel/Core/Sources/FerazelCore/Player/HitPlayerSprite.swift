@@ -226,12 +226,7 @@ extension HitPlayerSprite {
     static func lockAndKey(_ w: SpriteWorld, player pID: Int, other oID: Int, vx: Int32) {
         guard let o = w.active.record(id: oID) else { return }
         func record() -> Placement? { BoxSprite.liveRecord(w, o.recordIndex) }
-        func remove(_ id: Int16) {
-            guard w.globals.removeItem(id) else { return }
-            var g = w.globals
-            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
-            w.globals = g
-        }
+        func remove(_ id: Int16) { Player.removeItem(w, id) }           // `.RemoveItem` + its `.UpdateItemStat`
         if BoxSprite.doors.contains(o.type) {
             let p1 = record()?.p1 ?? 0
             let k = BoxSprite.key(p1)

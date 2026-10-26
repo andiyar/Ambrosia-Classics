@@ -189,6 +189,34 @@ final class ChestDoorTests: XCTestCase {
         XCTAssertEqual(w2.active.sprite(id: d2)?.phase, 0)
         XCTAssertEqual(touch(w2, pid2, d2, vx: -0x100), [reg(438)])
         XCTAssertEqual(w2.active.sprite(id: d2)?.phase, 1)
+
+        // The 2907 timer 0xb5b (placed on no level 1–4: record 72 retyped, p1 5) in a session: a contact with
+        // `+0xa6 == 0` → `+0xa6 = 100`, `.STPlay3DSoundPitched(442, 1, 0x100, player centre, 44000)` (no draw) and
+        // `iRam100a5110 = 5·30 − 1`, seen at the next iteration after its decrement (149 − 1); `+0xa6 ≠ 0`: nothing.
+        let s = try FerazelSession(resources: try resources(), prefs: FerazelPrefs(), level: 1, seed: 1)
+        let sw = s.world
+        let q = sw.records[72]
+        sw.records[72] = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: 0xb5b, p1: 5, p2: 0, p3: 0,
+                                   p4: 0, y: q.y, x: q.x)
+        var slot = SpriteSlot(type: 0xb5b, x: Int(q.x), y: Int(q.y), recordIndex: 72)
+        BoxSprite.setup(&slot, record: sw.records[72], level: sw.level)
+        XCTAssertEqual(slot.counterA6, 3)                                            // the head's `+0xa6 = 3`
+        slot.counterA6 = 0
+        let timer = sw.active.insert(slot)
+        let sp = try XCTUnwrap(sw.playerID)
+        let seed = sw.rng.seed
+        let cues = touch(sw, sp, timer)
+        XCTAssertEqual(sw.rng.seed, seed)
+        XCTAssertEqual(cues, [PlayerCue(call: .threeDPitched, snd: 442, priority: 1, volume: 0x100,
+                                        position: sw.active.sprite(id: sp)?.centre, rate: 44000)])
+        XCTAssertEqual(sw.active.sprite(id: timer)?.counterA6, 100)
+        XCTAssertEqual(sw.player.countdownStore, 5 * 30 - 1)
+        XCTAssertEqual(s.countdown, -0x1e)                                           // not yet: the next iteration's
+        XCTAssertEqual(touch(sw, sp, timer), [])                                     // `+0xa6` 100: no second start
+        sw.player.cues = []
+        _ = s.step(keys: KeyState())
+        XCTAssertEqual(s.countdown, 5 * 30 - 1 - 1)
+        XCTAssertNil(sw.player.countdownStore)
     }
 
     func testChestDropsEveryFourFrames() throws {
@@ -242,13 +270,25 @@ final class ChestDoorTests: XCTestCase {
         setRecord(w, 72, p2: 1730, p3: 1)
         let chest = try add(w, record: 72)
         touch(w, pid, chest)
-        for _ in 0..<4 { frame(w, chest, &lights) }
+        for _ in 0..<3 { frame(w, chest, &lights) }
+        // 1730 matches no Bonus arm: the default arm's item branch as written (M l. 52665–52710) — `FastRand(0x10)`, the
+        // light, then the tail's `FastRand(0x3c)`; then the chest's R(1000), R(800).
+        var r = w.rng
+        let v = dropDraws(&r) { _ = $0.next(0x10); _ = $0.next(0x3c) }
+        frame(w, chest, &lights)
+        XCTAssertEqual(w.rng.seed, r.seed)
         let e = live(w, type: 1730)
         XCTAssertEqual(e.count, 1)
         XCTAssertEqual(e.first?.handler, .bonus)
         XCTAssertEqual(e.first?.layer, layer + 1)
         XCTAssertEqual(e.first?.pickupDelay, 0xc)
         XCTAssertEqual(e.first?.gravity, 200)                                        // the Bonus default arm's
+        XCTAssertEqual([e.first?.vx, e.first?.vy], [v.vx, v.vy])
+        XCTAssertNotEqual(e.first?.light, -1)                                        // the item arm's light (p3 1)
+        XCTAssertNil(e.first?.face)                                                  // read outside `_DAT_100a08a0`
+        XCTAssertEqual(e.first?.hotRect, IdleSprites.Rect(top: 4, left: 4, bottom: 0x12, right: 0x1c))   // < 0xc84: −6
+        XCTAssertEqual(e.first?.friction, 6)
+        XCTAssertEqual(lights.count, 1)
         XCTAssertEqual(w.records[72].p3, 0)
         // p3 > 2 at a drop: the drop's light removed (M l. 60161–60164); p3 2 and 1 keep theirs.
         setRecord(w, 23, p3: 3)
@@ -263,7 +303,8 @@ final class ChestDoorTests: XCTestCase {
         XCTAssertEqual(lightsAt.count, 3)
         XCTAssertEqual(lightsAt.first, -1)
         XCTAssertTrue(lightsAt.dropFirst().allSatisfy { $0 != -1 })
-        XCTAssertEqual(lights.count, 2)
+        // The 1730's light, then three key lights added and the first removed.
+        XCTAssertEqual(lights.count, 3)
     }
 
     func testBalloonNearLockedChest() throws {
