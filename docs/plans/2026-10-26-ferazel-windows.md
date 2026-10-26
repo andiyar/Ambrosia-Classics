@@ -81,7 +81,7 @@ shared by **per-file git symlinks** into `FerazelWinKit` (BTX D36's `BTXPadLayou
 | WF6 | 490 | 77 |
 
 **Proof B (GWB, a muted daytime loop gate from WF0's run on; also on the gate card for Ben/Andrew):** the Core suite
-cross-built and run in CrossOver with the no-sound driver — **490 passed / 0 failed / 0 skipped / 0 crashed (of 490)**.
+cross-built and run in CrossOver with the no-sound driver — **489 passed / 0 failed / 1 skipped / 0 crashed (of 490)** (WF0b skip rule, run 34: `CensusTests.testExitCodes` skips under Wine only).
 No skip rule is planned: data tests get the data through `FERAZEL_DATA` (Windows path), `CensusTests` finds
 `docs/ferazel/data-census.md` through the copy's repo layout, WF0 removes the known Windows differences (environment,
 symbolic links, the census binary's location and name, CRLF, the five replaces). The suite runs **once, whole**; per
@@ -138,7 +138,7 @@ Launch gates (each after the LAUNCH GUARD; skipped by night with the "boot check
 
 ```sh
 # GWB Proof B (from WF0's run; every wave end that touches Core or Windows): last line, run once whole
-"$WT/tools/windows/proof-b-ferazel.sh"          # proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
+"$WT/tools/windows/proof-b-ferazel.sh"          # proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)
 # GW4R (from WF3) the Mac SDL development build, headless, dummy drivers (a launch by seat ruling): exit 0; log line
 #      ends "video=dummy audio=none" (WF3 as executed: headless opens no audio, so SDL reports none); the dump's FNV = WF2's recorded main-menu FNV
 #      (run only through the smoke script, which refuses without the guard and dummy drivers)
@@ -371,6 +371,19 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   stdout byte-identical to 06b1486's. Gates: GW1 0 / 2 (~20 s), G2 490/0, G3 1,108/0, `--check-guard` at 23:00 → 64
   "refused (night rule)" (also with `wasapi` set). **GWB not run — night rule; "boot check owed (night rule)"; the
   README's wall time says "not yet measured".** One Opus leg PASS WITH FIXES → round seat-read.
+- **WF0b — Proof B parity under CrossOver (loop run 34, 2026-10-27; commits dc52e5e + 1d75574):** the first daytime
+  Proof B gave `3 passed / 0 failed / 0 skipped / 487 crashed`: Wine 11 (CrossOver) has no
+  `ADVAPI32.SaferiIsExecutableFileType`, which Foundation calls from `attributesOfItem`, `isExecutableFile` and
+  `Process.run` — the call aborts the whole test process. Fixes: on Windows the census's `fileSize`
+  (`FerazelRender/Census/FerazelCensus.swift`) and `FerazelDataTests`' music-size check read the length from a
+  `FileHandle` (Mac unchanged; census output identical); Foundation's `String.contains` traps on Windows on the census's
+  long non-ASCII text (a real-Windows trap, D19.5's kin), so `CensusTests` searches in pure Swift there; **skip rule:**
+  `CensusTests.testExitCodes` (spawning the census is its point) skips **only under Wine** (the `wine_get_version`
+  export), after its argument-parser checks; `proof-b-ferazel.sh` passes only when that one named test is the skip.
+  **Proof B = `489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`, test run ~257–272 s, script ~4 min 40 s** (seat
+  and leg both). A later option (leg view): spawn with `CreateProcessW` directly and drop the `isExecutableFile` check →
+  no skip. GW4R the same morning: exit 0, `video=dummy audio=none`, main menu FNV `0xae2b1ee08c089b2a` — identical.
+  One Opus leg PASS WITH FIXES (two `contains` left in the real-Windows branch → fixed, seat-read).
 
 ### WF1 ⚑ MAJOR — The shared shell half; the Mac mute switch; the FerazelWindows package
 
@@ -706,7 +719,7 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
 bottle) and Proof B — results here; or "boot check owed (night rule)" if the run fell at night, done by the first
 daytime run. Nobody has heard it yet. Ben or Andrew, on this Mac (optional, daytime; both scripts force the no-sound
 driver and refuse 21:00–09:00):
-1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)`.
+1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 489 passed / 0 failed / 1 skipped / 0 crashed (of 490)`.
 2. `tools/windows/smoke-ferazel-win.sh` → `main menu: identical`, `new game: identical`, exit 0.
 On a Windows 10/11 PC (or CrossOver), from the unzipped `Ferazel's Wand (Windows)` folder:
 3. First launch (SmartScreen: More info → Run anyway): logo, title music, main menu — no console window, no error box.

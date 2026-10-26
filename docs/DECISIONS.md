@@ -1723,3 +1723,9 @@ levels like the game's text, where the Mac app's separate dialog windows draw it
 Keys pressed while a button is held down are dropped (the Mac would queue them); no drop shadow (classic frames had none);
 a right-click outside does not beep (HectorSDL passes left clicks only). `--frames` runs draw the real dialogs (a scripted
 Return answers); the reference FNVs did not move. FerazelWinKit **65/0**.
+**As built — WF0b (loop run 34, 2026-10-27; dc52e5e + 1d75574) — Proof B, first daytime run:** Wine (CrossOver) lacks
+`ADVAPI32.SaferiIsExecutableFileType` (Foundation's `attributesOfItem` / `isExecutableFile` / `Process.run`), which
+aborted the suite after 3 tests. File sizes now come from a `FileHandle` on Windows; `CensusTests` searches in pure Swift
+on Windows (`String.contains` traps on the long non-ASCII census text); **skip rule (exact): `CensusTests.testExitCodes`
+skips under Wine only** — Proof B's bar is now **489 passed / 0 failed / 1 skipped / 0 crashed (of 490)** (measured, ~4 min
+40 s), the script accepting only that named skip; on a real PC the test runs. GW4R measured the same morning: identical.
