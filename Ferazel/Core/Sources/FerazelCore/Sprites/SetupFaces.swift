@@ -502,6 +502,7 @@ public enum SetupFaces {
             s.voicePitch = Int32(rng.next(0x5fff)) * 2 + 0xbfff     // `+0xf0` (`rlwinm 1; addis 1; subi 0x4001`)
             s.classTimer = Int32(rng.next(0x46)) + 0x78            // `+0x14c`
             s.classWord154 = Int32(rng.next(400)) + 1000           // `+0x154`
+            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 57091–57093; review fix round)
 
         case .crawler:
             s.layer = 0xb                                      // l. 56180
@@ -515,6 +516,7 @@ public enum SetupFaces {
             case 1: s.mode = 0x10002
             default: break
             }
+            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 56237–56239; review fix round)
 
         case .roach:
             s.layer = 0xb                                      // l. 64923
@@ -524,6 +526,7 @@ public enum SetupFaces {
                 record = Placement(index: p.index, flag: p.flag, byte1: p.byte1, type: p.type, p1: p.p1, p2: p.p2,
                                    p3: 0xaa, p4: p.p4, y: p.y, x: p.x)
             }
+            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 64948–64950; review fix round)
 
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
@@ -538,6 +541,7 @@ public enum SetupFaces {
             s.classWord150 = -1
             s.hp = 500
             s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
+            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 68282–68285; review fix round)
             if t == 0x6cd {
                 s.keepRecord = true                            // `+0x188 = 1` (M l. 68300)
                 s.counterA6 = 1                                // `+0xa6 = 1`
@@ -549,6 +553,7 @@ public enum SetupFaces {
                 // gravity, 10 / 11: `.MakeRadial`, 100…199) are placed on no level 1–3 bat.
                 let mode = Int32(p.p1 < 1 ? -p.p1 : p.p1)
                 guard mode == 1 || mode == 2 else { throw Error.notTranscribed(type: p.type) }
+                // `voicePitch` is the slot at `+0xf0` (the Walker's name for it; seams locked): here the path mode.
                 s.voicePitch = mode
                 if mode == 1 { s.vy = Int32(p.p3) } else { s.vx = Int32(p.p3) }
             }
@@ -599,6 +604,7 @@ public enum SetupFaces {
             default: break
             }
             face(0x708, 0, .setupCached)                       // `+0xc0 = cache 0x708 + 4` (l. 70209)
+            s.countedInTotals = true                           // `+0x1b5 = 1` (M l. 70213–70215; review fix round)
 
         default:
             throw Error.notTranscribed(type: p.type)
@@ -642,7 +648,9 @@ public enum SetupFaces {
     /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupBlobSprite` at its end for every type (M l.
     /// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
     /// Salamander 70697, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some
-    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally).
+    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally). The Setups set the
+    /// sprite's `countedInTotals` (`+0x1b5`); the tally here counts by type and class only — one count per Setup, the
+    /// flag is not read back.
     public struct Tallies: Equatable, Sendable {
         public var secrets: Int16 = 0
         public var xichrons: Int16 = 0

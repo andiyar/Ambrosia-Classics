@@ -65,6 +65,30 @@ final class LevelThreeTests: XCTestCase {
         XCTAssertEqual(sp.tallies.enemies, 27)
         let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 3)
         XCTAssertEqual(session.tallies.enemies, 27)
+        // Every enemy Setup sets `+0x1b5` (Walker M l. 57091–57093, Crawler 56237–56239, Frog 70213–70215, Bat 68282–
+        // 68285, Blob 67728–67730); the tally counts each Setup once (27, above), not the flag.
+        for k in [SpriteClass.walker, .crawler, .frog, .bat, .blob] {
+            let recs = L.activePlacements.filter { SpriteClassTable.classify(type: $0.type, p1Negative: $0.p1 < 0)?.0 == k }
+            XCTAssertEqual(try recs.map { try SetupFaces.setup($0, context: c).slot.countedInTotals },
+                           [Bool](repeating: true, count: recs.count), "\(k)")
+        }
+        // The level-load bar (`.LoadCachedSpriteFaces` M l. 73769–73868) on a fresh cache: the sets the level's Setups
+        // mark in registration order — Crawler 0x6ae, 0x6af, 0x6b1 (6 each), Walker 0x6a5 (8), 0x6a6 (6), 0x6a9 (3),
+        // 0x6aa (2), 0x6ab (9), the mine cart 0xb72 (14), 0xb73 (21), the wall spikes 0x730 (12), Bat 0x6cc (11), Blob 0x6c2
+        // (16), Frog 0x708 (8): 128 faces — then 16 singles (0x6a4, the decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10,
+        // 0xb1b, 0xb20, the outcrops 0xb34, 0xb35, the mushrooms 0xb43, 0xb44, 0xb6f, 0xb8a, the spikes' 0x732, 0x733):
+        // n = 144, q = 288, 29 steps.
+        var cache = CachedFaces()
+        cache.enterLevel(screenClut: L.header.screenClut)
+        let needed = CachedFaces.needed(by: session)
+        XCTAssertEqual(needed.sets, [0x6a5, 0x6a6, 0x6a9, 0x6aa, 0x6ab, 0x6ae, 0x6af, 0x6b1, 0xb72, 0xb73, 0x730, 0x6cc,
+                                     0x6c2, 0x708])
+        XCTAssertEqual(needed.singles, [0x6a4, 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb20, 0xb34, 0xb35, 0xb43, 0xb44,
+                                        0xb6f, 0xb8a, 0x732, 0x733])
+        let bars = cache.load(needed: needed)
+        XCTAssertEqual(bars.map { $0.0 }, [150, 156, 162, 170, 176, 179, 181, 190, 204, 225, 237, 248, 264, 272]
+                        + Array(273...288))
+        XCTAssertEqual(Set(bars.map { $0.1 }), [288])
 
         func entry(_ rec: Int) throws -> SetupFaces.Entry { try SetupFaces.setup(L.placements[rec], context: c) }
         func f(_ pict: Int16, _ i: Int = 0) -> FaceRef { FaceRef(pict: pict, index: i, set: .encoded) }
@@ -73,6 +97,7 @@ final class LevelThreeTests: XCTestCase {
         var e = try entry(15)
         XCTAssertEqual([e.slot.layer, Int32(e.slot.gravity), Int32(e.slot.hp), e.slot.classWord150, Int32(e.slot.subtype),
                         Int32(e.slot.phase)], [8, 0xfa, 700, -1, 6, 2])
+        XCTAssertEqual(e.slot.mode, 0)                                   // `+0xb8 = 0` for 0x6c2 (M l. 67707)
         XCTAssertEqual(e.slot.hotRect, rect(0xe, 0xc, 0x2f, 0x21))
         XCTAssertEqual([e.slot.countedInTotals, e.slot.hasHit], [true, false])
         XCTAssertEqual(e.slot.handler, .inert)
@@ -113,6 +138,14 @@ final class LevelThreeTests: XCTestCase {
         let c1 = SetupFaces.Context(level: L1, playerX: 0)
         let tunnel = try XCTUnwrap(L1.activePlacements.first { (3000...3005).contains($0.type) })
         XCTAssertEqual(try SetupFaces.setup(tunnel, context: c1).sheet?.clut, 202)
+        // Each flag-1 group takes level 3's CLUT: a bridge 0x5b5, a plant 0xa96, a tunnel 0xbba, an outcrop 0xb25 (types
+        // levels 1–2 place, set up here on level 3's header); a flag-0 decoration keeps 200.
+        let anyRec = L.placements[144]
+        for (type, clut) in [(0x5b5, 210), (0xa96, 210), (0xbba, 210), (0xb25, 210), (0xb1a, 200)] as [(Int16, Int16)] {
+            let q = Placement(index: anyRec.index, flag: 1, byte1: 0, type: type, p1: 0, p2: 0, p3: 0, p4: 0, y: anyRec.y,
+                              x: anyRec.x)
+            XCTAssertEqual(try SetupFaces.setup(q, context: c).sheet?.clut, clut, "type \(type)")
+        }
         // The spikes: the floor 1842 (rec 160) and the wall 1841 (rec 217), both p 0 — static (p2 0 → 32000), out
         // (frame 0: p4 0 < 32000), `+0x188`, HP 500, the base y; 1841 mirrored, faced from the set 0x730.
         e = try entry(160)
@@ -125,6 +158,43 @@ final class LevelThreeTests: XCTestCase {
         e = try entry(217)
         XCTAssertEqual([e.slot.keepRecord, e.slot.mirrored], [true, true])
         XCTAssertEqual(e.slot.face, f(0x730, 0))
+        XCTAssertEqual(e.slot.classWord158, 0)                           // the wall arms store no base y (M l. 61982ff)
+        // The first frame: p4 < p2 → 0 (out), p4 ≥ p2 → 0xb (in) — the wall's face cell is that frame at its Setup.
+        func spike(_ rec: Int, p2: Int16, p4: Int16, level: LevelFile? = nil) throws -> SetupFaces.Entry {
+            let q = L.placements[rec]
+            let p = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: q.p1, p2: p2, p3: 30,
+                              p4: p4, y: q.y, x: q.x)
+            return try SetupFaces.setup(p, context: SetupFaces.Context(level: level ?? L, playerX: 0))
+        }
+        XCTAssertEqual(try [spike(160, p2: 60, p4: 59), spike(160, p2: 60, p4: 60), spike(217, p2: 60, p4: 59),
+                            spike(217, p2: 60, p4: 60)].map { Int($0.slot.phase) }, [0, 0xb, 0, 0xb])
+        XCTAssertEqual(try spike(217, p2: 60, p4: 60).slot.face, f(0x730, 0xb))
+        XCTAssertEqual(try spike(217, p2: 60, p4: 60).faceIndex, 0xb)
+        // hdr 0x26cd ≠ 0 → `+0xb8 = 0x10018`; then a water cell under (x >> 5, (y + 0xc) >> 5) → 0x90000 (patched data:
+        // the spike moved onto the first dry BG tile of row 20, that tile's kind made water).
+        let row = 20
+        let col = try XCTUnwrap((0..<L.bg.width).first { k in
+            let t = L.bgTile(col: k, row: row)
+            return (0..<96).contains(t) && !LiquidTiles.range.contains(L.bgKind(tile: t))
+        })
+        let tile = L.bgTile(col: col, row: row)
+        func spike(_ rec: Int, at level: LevelFile) throws -> SetupFaces.Entry {
+            let q = L.placements[rec]
+            let p = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: 0, p2: 0, p3: 0, p4: 0,
+                              y: Int16(row * 32 - 0xc), x: Int16(col * 32))
+            return try SetupFaces.setup(p, context: SetupFaces.Context(level: level, playerX: 0))
+        }
+        func patched(_ bytes: [Int: [UInt8]]) throws -> LevelFile {
+            var d = try XCTUnwrap(r.world.resource(type: "Mlvl", id: 3)).data
+            for (o, b) in bytes { for (i, v) in b.enumerated() { d[d.startIndex + o + i] = v } }
+            return try LevelFile(id: 3, data: d)
+        }
+        let icy = try patched([0x26cd: [1]])
+        XCTAssertEqual(try spike(160, at: icy).slot.mode, 0x10018)
+        XCTAssertEqual(try spike(160, at: L).slot.mode, 0)
+        let wet = try patched([0x26cd: [1], 0x29a0 + 2 * tile: [0, 200]])
+        XCTAssertEqual(try spike(160, at: wet).slot.mode, 0x90000)
+        XCTAssertEqual(try spike(217, at: wet).slot.mode, 0x90000)
         XCTAssertEqual(e.sheet, SetupFaces.Sheet(pict: 0x730, count: 12, cellWidth: 0x18, cellHeight: 0x80, columns: 12,
                                                  clut: 200))
     }
@@ -142,19 +212,37 @@ final class LevelThreeTests: XCTestCase {
         XCTAssertEqual(s.face, FaceRef(pict: 0x732, index: 0, set: .encoded))
         XCTAssertEqual([w.player.cues.count, Int(w.rng.seed)], [0, Int(seed)])
 
-        // Touching it: climb 0, the no-cling timer 3, `.HurtPlayer(0x70, blood, 60, 0)`, then invulnerable 30.
+        // Touching it (the player's rect over the spike's): climb 0, the no-cling timer 3, `.HurtPlayer(0x70, blood 1,
+        // 60, coins 0)` — the blood spray made, no coin lost — then invulnerable 30.
+        let hr = try XCTUnwrap(w.active.sprite(id: pid)).hotRect
+        w.active.update(id: pid) { $0.x = s.x + 0x20 - hr.left; $0.y = s.y + 8 - hr.top }
         w.player.climb = 1
+        w.globals.coins = 10
         let hp = try XCTUnwrap(w.active.sprite(id: pid)).hp
+        let sprites = w.active.sprites.count
         HitPlayerSprite.hit(w, player: pid, other: k)
         var p = try XCTUnwrap(w.active.sprite(id: pid))
         XCTAssertEqual([Int(hp - p.hp), Int(p.invulnerable), Int(w.player.noCling), Int(w.player.climb)], [0x70, 30, 3, 0])
         XCTAssertTrue(w.player.cues.contains { $0.snd == 508 })                // the hurt's cue (damage < 0xe0)
-        // Again while invulnerable: the climb and no-cling stores still happen, no hurt.
+        XCTAssertGreaterThan(w.particles.counters.count, 0)                    // blood 1: `.BloodSpray`
+        XCTAssertEqual(w.globals.coins, 10)                                    // coins 0: none lost
+        XCTAssertFalse(w.player.cues.contains { $0.snd == 489 })
+        XCTAssertEqual(w.active.sprites.count, sprites)
+        // Again while invulnerable (the timer run down to 5): the climb and no-cling stores still happen; no hurt, and
+        // the timer is not reset to 30.
         w.player.climb = 1
         w.player.noCling = 0
+        w.player.cues = []
+        w.active.update(id: pid) { $0.invulnerable = 5 }
         HitPlayerSprite.hit(w, player: pid, other: k)
         p = try XCTUnwrap(w.active.sprite(id: pid))
-        XCTAssertEqual([Int(hp - p.hp), Int(p.invulnerable), Int(w.player.noCling), Int(w.player.climb)], [0x70, 30, 3, 0])
+        XCTAssertEqual([Int(hp - p.hp), Int(p.invulnerable), Int(w.player.noCling), Int(w.player.climb)], [0x70, 5, 3, 0])
+        XCTAssertEqual(w.player.cues, [])
+        // The mirrored wall spike (rec 217, 1841): out, its rect SetRect(7, 0xc, 0x20, 0x74).
+        let wall = try add(w, record: 217)
+        handle(w, wall)
+        XCTAssertEqual(try XCTUnwrap(w.active.sprite(id: wall)).hotRect, rect(7, 0xc, 0x20, 0x74))
+        XCTAssertEqual(try XCTUnwrap(w.active.sprite(id: wall)).face, FaceRef(pict: 0x730, index: 0, set: .encoded))
 
         // As written, the static spike's counter reaches 32000 = p2 + p3 once: one frame in (458's idle-only call,
         // volume 0x41), then the wrap to 0 brings it out again with no call (frame 1 is not 0xb).

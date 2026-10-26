@@ -1043,9 +1043,11 @@ public struct CachedFaces: Equatable, Sendable {
         let flag: Int16
     }
 
-    /// The set list `_DAT_100a12b4` in registration order — the records levels 1–2 can mark (Crawler M l. 56142–56144,
-    /// Roach 64893–64894, Walker 56757–56768, Box 58806, Background 61875, Bat 68099, Frog 70116). // later: Phase 4–6 —
-    /// the other 50-odd sets, as their Setups are transcribed.
+    /// The set list `_DAT_100a12b4` in registration order (`.InitSprites` M l. 106–145 calls the Init routines in the
+    /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–3 can mark
+    /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768, Box 58785–58786 (LV3: the mine cart's 0xb72 /
+    /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
+    /// 70116). // later: Phase 5–6 — the other sets, as their Setups are transcribed.
     static let sets: [Record] = [
         Record(pict: 0x6ae, faces: 6, flag: 0), Record(pict: 0x6af, faces: 6, flag: 0),
         Record(pict: 0x6b1, faces: 6, flag: 0),
@@ -1053,28 +1055,39 @@ public struct CachedFaces: Equatable, Sendable {
         Record(pict: 0x6a5, faces: 8, flag: 0), Record(pict: 0x6a6, faces: 6, flag: 0),
         Record(pict: 0x6a9, faces: 3, flag: 0), Record(pict: 0x6aa, faces: 2, flag: 0),
         Record(pict: 0x6ab, faces: 9, flag: 0), Record(pict: 0x6e0, faces: 9, flag: 0),
-        Record(pict: 0x5be, faces: 4, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
-        Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x708, faces: 8, flag: 0),
+        Record(pict: 0xb72, faces: 14, flag: 0), Record(pict: 0xb73, faces: 21, flag: 0),
+        Record(pict: 0x5be, faces: 4, flag: 0),
+        Record(pict: 0x730, faces: 12, flag: 0), Record(pict: 0x442, faces: 5, flag: 0),
+        Record(pict: 0x6cc, faces: 11, flag: 0), Record(pict: 0x6c2, faces: 16, flag: 0),
+        Record(pict: 0x708, faces: 8, flag: 0),
     ]
 
     /// The singles list `PTR_DAT_100a12b8` in registration order (the same subset): Walker 0x6a4 (M l. 56755); Box
     /// loops 0xaf5+i (58776), 0xb86+i (58781), the flag-1 block 0x5b4…0x5bb (58798–58805, raw `1006af78` / `1006b014`),
-    /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), 3000+i (flag 1,
-    /// 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911).
+    /// 0xb22+i (flag 1, 58818–58823), 0xb36+i (58825), 0xb68+i (58830); Background 0xb54 (61862), the spikes' 0x732 /
+    /// 0x733 (61865–61866; LV3), 3000+i (flag 1, 61899), 0x5c8+i (61905), 0xa8c+i (flag 1, 61911). LV3 adds the
+    /// decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, the outcrops 0xb34 / 0xb35 (flag 1) and the mushroom 0xb44
+    /// at their places in the loops.
     static let singles: [Record] = [
         Record(pict: 0x6a4, faces: 1, flag: 0),
-        Record(pict: 0xb1a, faces: 1, flag: 0), Record(pict: 0xb20, faces: 1, flag: 0),
-        Record(pict: 0xb21, faces: 1, flag: 0),
+        Record(pict: 0xafc, faces: 1, flag: 0), Record(pict: 0xafd, faces: 1, flag: 0),
+        Record(pict: 0xb04, faces: 1, flag: 0), Record(pict: 0xb05, faces: 1, flag: 0),
+        Record(pict: 0xb10, faces: 1, flag: 0),
+        Record(pict: 0xb1a, faces: 1, flag: 0), Record(pict: 0xb1b, faces: 1, flag: 0),
+        Record(pict: 0xb20, faces: 1, flag: 0), Record(pict: 0xb21, faces: 1, flag: 0),
         Record(pict: 0xb87, faces: 1, flag: 0), Record(pict: 0xb88, faces: 1, flag: 0),
         Record(pict: 0xb8a, faces: 1, flag: 0),
         Record(pict: 0x5b5, faces: 1, flag: 1), Record(pict: 0x5b8, faces: 1, flag: 1),
-        Record(pict: 0xb25, faces: 1, flag: 1),
+        Record(pict: 0xb25, faces: 1, flag: 1), Record(pict: 0xb34, faces: 1, flag: 1),
+        Record(pict: 0xb35, faces: 1, flag: 1),
         Record(pict: 0xb36, faces: 1, flag: 0), Record(pict: 0xb37, faces: 1, flag: 0),
         Record(pict: 0xb3a, faces: 1, flag: 0), Record(pict: 0xb43, faces: 1, flag: 0),
+        Record(pict: 0xb44, faces: 1, flag: 0),
         Record(pict: 0xb6a, faces: 1, flag: 0), Record(pict: 0xb6c, faces: 1, flag: 0),
         Record(pict: 0xb6d, faces: 1, flag: 0), Record(pict: 0xb6e, faces: 1, flag: 0),
         Record(pict: 0xb6f, faces: 1, flag: 0), Record(pict: 0xb70, faces: 1, flag: 0),
         Record(pict: 0xb54, faces: 1, flag: 0),
+        Record(pict: 0x732, faces: 1, flag: 0), Record(pict: 0x733, faces: 1, flag: 0),
         Record(pict: 0xbba, faces: 1, flag: 1),
         Record(pict: 0x5cd, faces: 1, flag: 0),
         Record(pict: 0xa96, faces: 1, flag: 1), Record(pict: 0xa99, faces: 1, flag: 1),
@@ -1093,7 +1106,11 @@ public struct CachedFaces: Equatable, Sendable {
     /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
     /// 0xb54 (62434); Box 0x5b8 (59213), 0x5b5 / 0x5b6 → 0x5b5 (59200 / 59204), 0x5be → set 0x5be (59260), the
     /// decoration, outcrop, mushroom, furniture and NPC singles of the same id; Bat 0x6cc → set 0x6cc (68286); Frog
-    /// 0x708 → set 0x708 (70211). Every other level-1/2 type marks nothing. // later: Phase 4–6 — the other types'.
+    /// 0x708 → set 0x708 (70211). LV3: Bat 0x6cd → set 0x6cc (the same arm, 68286); Blob 0x6c2 → set 0x6c2 (67726);
+    /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
+    /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
+    /// outcrop and mushroom singles of the same id (59647, 59699, 59709). Every other level-1–3 type marks nothing.
+    /// // later: Phase 5–6 — the other types'.
     static func marks(type t: Int16) -> (sets: [Int16], singles: [Int16]) {
         switch t {
         case 0x6a4: return ([0x6a5, 0x6a6], [0x6a4])
@@ -1103,11 +1120,16 @@ public struct CachedFaces: Equatable, Sendable {
         case 0x6b8: return ([0x6b8, 0x6b9], [])
         case 0x442: return ([0x442], [])
         case 0x5be: return ([0x5be], [])
-        case 0x6cc: return ([0x6cc], [])
+        case 0x6cc, 0x6cd: return ([0x6cc], [])
+        case 0x6c2: return ([0x6c2], [])
+        case 0x730, 0x731: return ([0x730], [])
+        case 0x732, 0x733: return ([], [0x732, 0x733])
+        case 0xb72, 0xb73: return ([0xb72, 0xb73], [])
         case 0x708: return ([0x708], [])
         case 0x5b5, 0x5b6: return ([], [0x5b5])
         case 0x5b8, 0x5cd, 0xa96, 0xa99, 0xa9a, 0xbba, 0xb54, 0xb1a, 0xb20, 0xb21, 0xb87, 0xb88, 0xb8a, 0xb25,
-             0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70:
+             0xb36, 0xb37, 0xb3a, 0xb43, 0xb6a, 0xb6c, 0xb6d, 0xb6e, 0xb6f, 0xb70,
+             0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb34, 0xb35, 0xb44:
             return ([], [t])
         default: return ([], [])
         }

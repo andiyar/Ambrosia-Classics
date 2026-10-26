@@ -783,7 +783,7 @@ extension BackgroundSprite {
         s.classWord150 = p.p2 == 0 ? 32000 : Int32(p.p2)
         s.classWord154 = Int32(p.p3)
         s.counterA6 = p.p4
-        if 0x731 < s.type { s.classWord158 = Int32(Int16(truncatingIfNeeded: s.y)) }
+        if 0x731 < s.type { s.classWord158 = Int32(Int16(truncatingIfNeeded: s.y)) }   // 0x732 / 0x733 only (M l. 62474)
         s.phase = Int32(s.counterA6) < s.classWord150 ? 0 : 0xb
         s.hp = 500
         if L.header.inLiquid != 0 { s.mode = 0x10018 }
@@ -800,8 +800,8 @@ extension BackgroundSprite {
     ///    0x733: face 0x733, y = (i16) `+0x158` − 2·frame, clip top `+0x1bc` = (i16) `+0x158` − y; rect SetRect(0, 0,
     ///    0x80, 0x20) while frame < 2, else empty. 0x730 / 0x731: face cell `frame` of 0x730, rect while frame < 2
     ///    SetRect(0, 0xc, 0x13, 0x74), mirrored SetRect(7, 0xc, 0x20, 0x74), else empty.
-    /// A static spike (p2 0) stays out except at the counter's 32000: one frame in (and 458's call), then out again
-    /// (and 457's) — as written.
+    /// A static spike (p2 0) stays out except at the counter's 32000: one frame in (and 458's call), then out again with
+    /// no call (the wrap to 0 finds frame 1, not 0xb) — as written.
     static func spike(_ w: SpriteWorld, id: Int) {
         guard let s0 = w.active.record(id: id) else { return }
         let t = s0.type
