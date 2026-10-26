@@ -78,6 +78,25 @@ final class ScreenTests: XCTestCase {
         XCTAssertEqual(mosaic.executed, [.copy(h: 40, v: 400)])
         XCTAssertEqual(mosaic.screen.pixels, copy)
 
+        // Cell 20 through the renderer on a screen of 0xee: the transition's copy stays off the screen — the last 608 mod
+        // 20 = 8 columns of the view (616…623) keep 0xee in every row, where the copy has other pixels.
+        let twenty = try level()
+        twenty.surface.frame = IndexedFrame(fill: 0xee)
+        try twenty.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 2, backdrop: true),
+                                          .mosaic(cell: 20, graphicsMode3: false)]))
+        XCTAssertEqual(twenty.executed, [.mosaicCopy(h: 40, v: 400), .mosaic(20)])
+        var leftover = 0, copyDiffers = 0
+        for y in 8..<392 {
+            for x in 616..<624 {
+                if twenty.screen.pixels[y * w + x] == 0xee { leftover += 1 }
+                if copy[y * w + x] != 0xee { copyDiffers += 1 }
+            }
+            let top = 8 + (y - 8) / 20 * 20
+            XCTAssertEqual(twenty.screen.pixels[y * w + 16 + 20], copy[top * w + 16 + 20], "row \(y)")
+        }
+        XCTAssertEqual(leftover, 384 * 8)
+        XCTAssertGreaterThan(copyDiffers, 384 * 4)
+
         // The rule on numbered buffers: source (x, y) = x + 3y (mod 256), screen 0xee.
         var source = [UInt8](repeating: 0, count: w * IndexedFrame.height)
         for y in 0..<IndexedFrame.height { for x in 0..<w { source[y * w + x] = UInt8((x + 3 * y) & 0xff) } }

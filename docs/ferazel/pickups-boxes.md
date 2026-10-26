@@ -447,7 +447,7 @@ One placement (L22, p = 0 → lifetime −1 → never crumbles).
 plus the player's offset from this teleporter, recentre the camera (120 `FindUpperLeftCorner` steps),
 mosaic in, `PTR_DAT_100a0700 = −59`. Census: p1 pairs point at each other (e.g. L22 412↔411).
 
-> ⚑ planner note (Phase 4 TP, 2026-10-26) (BC40, BC50; M l. 49407–49470): on the landing `PTR_DAT_100a070c = 1` and the
+> ⚑ implementer note (TP, loop run 28, 2026-10-26) (BC40, BC50; M l. 49407–49470): on the landing `PTR_DAT_100a070c = 1` and the
 > idle counter `*_DAT_100a068c = 0` come first, whatever the pulse; with `0708` set: snd 421 (`.STPlayRegSound`, vol
 > 0x100), `.MosaicTransition(1, 3, 0x14)` (20 blits, 3-tick waits, 57 ticks), d = player − teleporter, then **every**
 > entry of 0 … 510 (`sVar40 < 0x1ff`, not 0x200) whose in-use byte is set and whose `+0xe` is the record's p1 — only the

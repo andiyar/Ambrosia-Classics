@@ -335,7 +335,7 @@ public enum Player {
         // (`FastRand(0x96)`; P4).
         PlayerLiquids.bubbles(w, id: id)
         // 36 (l. 46242–46346): teleporter charge (`FastRand(6)` sparkle), the invulnerability blink on the parity frames,
-        // the power-up tints (`PlayerStates.tint`, P3; teleporters Phase 3, power-ups Phase 4 have no Phase-2 writer).
+        // the power-up tints (`PlayerStates.tint`, P3; the teleporters' arm sets `070c`, TP; the power-up flags PU).
         PlayerStates.tint(w, id: id)
         // 37 (l. 46347–46365).
         sidePush(w, id: id)

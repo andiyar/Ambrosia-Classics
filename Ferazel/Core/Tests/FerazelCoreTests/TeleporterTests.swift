@@ -19,13 +19,21 @@ final class TeleporterTests: XCTestCase {
         return try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, start: onTeleporter(L.placements[record]))
     }
 
-    /// Steps until the frame suspends; the teleporter charge after each whole step before it.
-    private func stepToSuspension(_ s: FerazelSession, max: Int = 300) -> (charges: [Int16], ops: FrameOps?) {
+    /// Steps until the frame suspends; the teleporter charge after each whole step before it. Every whole step from
+    /// the first landing on is a landing with the pulse clear: the arm has set `070c` and zeroed the idle counter
+    /// `068c` before its pulse test (M l. 49408–49412) — checked here.
+    private func stepToSuspension(_ s: FerazelSession, max: Int = 300, file: StaticString = #filePath,
+                                  line: UInt = #line) -> (charges: [Int16], ops: FrameOps?) {
         var charges: [Int16] = []
         for _ in 0..<max {
             let ops = s.step(keys: KeyState())
             if ops.suspension != nil { return (charges, ops) }
             charges.append(s.player.teleporterCharge)
+            if charges.contains(where: { $0 != 0 }) || s.player.teleporterTouch {
+                XCTAssertTrue(s.player.teleporterTouch, "step \(charges.count)", file: file, line: line)
+                XCTAssertFalse(s.player.teleporterFire, "step \(charges.count)", file: file, line: line)
+                XCTAssertEqual(s.player.idle, 0, "step \(charges.count)", file: file, line: line)
+            }
         }
         return (charges, nil)
     }
@@ -43,7 +51,11 @@ final class TeleporterTests: XCTestCase {
 
     /// Runs the two stages of a fired teleporter from the stage-1 suspension; checks the move to `partner`'s idle
     /// entry (x, y) + d, the sounds, the second stage and the tail. `beforeMove` runs at the stage-1 suspension.
+    /// `scroll` is the scroll point the 120 `.FindUpperLeftCorner` passes leave (recorded); a shake of 200 is handed to
+    /// the camera before the move, so exactly 120 passes leave it at 80 (each pass counts it down once, M l. 6161); two
+    /// `matches` re-seat twice (240 passes: 0, and two grid redraws).
     private func runTeleport(_ s: FerazelSession, first: FrameOps, record: Int, partner: (x: Int, y: Int),
+                             scroll: (h: Int, v: Int), matches: Int = 1,
                              beforeMove: () throws -> Void = {}, file: StaticString = #filePath,
                              line: UInt = #line) throws {
         XCTAssertEqual(first.suspension, .teleport(record: record, stage: 1), file: file, line: line)
@@ -51,9 +63,12 @@ final class TeleporterTests: XCTestCase {
         XCTAssertFalse(snds(first).contains(420), file: file, line: line)
         let p0 = try playerSlot(s), t = try teleporter(s, record: Int16(record))
         let d = (x: p0.x - t.x, y: p0.y - t.y)
-        XCTAssertTrue(s.player.teleporterTouch || s.player.teleporterFire, file: file, line: line)
+        // The fire frame: row 36 cleared `070c` at the Handle's end and set the pulse; the arm set `070c` again.
+        XCTAssertTrue(s.player.teleporterTouch, file: file, line: line)
+        XCTAssertTrue(s.player.teleporterFire, file: file, line: line)
         XCTAssertEqual(s.player.idle, 0, file: file, line: line)
         try beforeMove()
+        s.world.shakeStore = 200
         // Stage 1 answered: the move, the camera re-seat, `.HandleIdleSprites`, `.WrapDrawSprites`, snd 420 — then the
         // in-mosaic.
         let second = s.resume(.teleport(keys: KeyState(), capsLock: false))
@@ -66,6 +81,14 @@ final class TeleporterTests: XCTestCase {
         XCTAssertEqual([s.player.pixelX, s.player.pixelY], [Int16(p1.x), Int16(p1.y)], file: file, line: line)
         XCTAssertEqual([s.player.focusX, s.player.focusY], [s.player.centreX, s.player.centreY], file: file, line: line)
         XCTAssertEqual([Int(s.player.centreX), Int(s.player.centreY)], [p1.centre.x, p1.centre.y], file: file, line: line)
+        // The centre as the dump computes it (M l. 49430–49438): x + 0x36 + ((0x3a − 0x36) >> 1) with the player's
+        // hot rect (left 38, top 34, right 62, bottom 85): x + 38 + 12, y + 34 + (51 >> 1 = 25).
+        XCTAssertEqual([p1.hotRect.left, p1.hotRect.top, p1.hotRect.right, p1.hotRect.bottom], [38, 34, 62, 85],
+                       file: file, line: line)
+        XCTAssertEqual([p1.centre.x, p1.centre.y], [partner.x + d.x + 50, partner.y + d.y + 59], file: file, line: line)
+        // Exactly 120 passes (the shake 200 → 80), and where they leave the scroll point.
+        XCTAssertEqual(s.camera.shake, Int16(max(200 - 120 * matches, 0)), file: file, line: line)
+        XCTAssertEqual([s.camera.scrollH, s.camera.scrollV], [scroll.h, scroll.v], file: file, line: line)
         // The re-seat's `.RedrawEntireScrollGrid` at the scroll point the 120 passes left, then the sprites.
         let kinds = second.draws.map { op -> String in
             switch op {
@@ -74,7 +97,9 @@ final class TeleporterTests: XCTestCase {
             default: return "other"
             }
         }
-        XCTAssertEqual(kinds, ["entire \(s.camera.scrollH) \(s.camera.scrollV)", "sprites"], file: file, line: line)
+        XCTAssertEqual(Array(kinds.suffix(2)), ["entire \(s.camera.scrollH) \(s.camera.scrollV)", "sprites"],
+                       file: file, line: line)
+        XCTAssertEqual(kinds.filter { $0.hasPrefix("entire") }.count, matches, file: file, line: line)
         XCTAssertEqual(s.player.teleporterCharge, 80, file: file, line: line)  // unchanged until the tail
         XCTAssertTrue(s.player.teleporterFire, file: file, line: line)
         // Stage 2 answered: `.RedrawEntireScrollGrid`, `0708 = 0`, the charge −59, the rest of the frame.
@@ -105,7 +130,8 @@ final class TeleporterTests: XCTestCase {
         let L = try LevelFile.load(from: r, level: 1)
         let partner = L.placements[149]
         XCTAssertEqual([L.placements[148].type, L.placements[148].p1, partner.type, partner.p1], [1062, 149, 1062, 148])
-        for activePartner in [false, true] {
+        for variant in ["idle", "active", "twice"] {
+            let activePartner = variant == "active"
             let s = try session(r, record: 148)
             let (charges, first) = stepToSuspension(s)
             let ops = try XCTUnwrap(first, "active partner \(activePartner)")
@@ -116,7 +142,23 @@ final class TeleporterTests: XCTestCase {
             XCTAssertEqual(s.player.teleporterCharge, 80)
             XCTAssertTrue(s.player.teleporterFire)
             let entry = try XCTUnwrap(s.world.idle.entries.firstIndex { $0?.saved.recordIndex == 149 })
-            try runTeleport(s, first: ops, record: 148, partner: (Int(partner.x), Int(partner.y)), beforeMove: {
+            var target = (x: Int(partner.x), y: Int(partner.y))
+            var scroll = (h: 2192, v: 1216), matches = 1
+            if variant == "twice" {
+                // A second in-use entry naming record 149, after the real one: the player moves twice, the later
+                // match wins (no early exit in the scan).
+                var copy = try XCTUnwrap(s.world.idle.entries[entry]).saved
+                copy.x += 0x200
+                copy.y += 0x40
+                let later = try XCTUnwrap(s.world.idle.add(copy, faceRect: IdleSprites.Rect.noFace))
+                XCTAssertGreaterThan(later, entry)
+                XCTAssertEqual(s.world.idle.inUseEntries(record: 149), [entry, later])
+                target = (copy.x, copy.y)
+                scroll = (h: 2704, v: 1216)
+                matches = 2
+            }
+            try runTeleport(s, first: ops, record: 148, partner: target, scroll: scroll, matches: matches,
+                            beforeMove: {
                 guard activePartner else {
                     XCTAssertNil(s.world.idle.entries[entry]?.activeID)
                     return
@@ -145,7 +187,7 @@ final class TeleporterTests: XCTestCase {
         let e = try XCTUnwrap(s.world.idle.entries[s.world.idle.inUseEntries(record: 0)[0]])
         XCTAssertEqual([Int(e.saved.type), e.saved.x, e.saved.y], [2922, 5455, 666])
         let first = try XCTUnwrap(stepToSuspension(s).ops)
-        try runTeleport(s, first: first, record: 126, partner: (5455, 666))
+        try runTeleport(s, first: first, record: 126, partner: (5455, 666), scroll: (h: 5152, v: 404))
     }
 
     /// `LevelRun` at graphics mode 3: the out-mosaic's 20 blits (cells 1…20) over 57 ticks, the move, the in-mosaic's
