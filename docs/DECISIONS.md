@@ -1548,6 +1548,15 @@ a platform for 120 frames then HP −200; **seat ruling:** SW also builds the pl
 l. 49506–49513 — a bounce, then return), a file beyond the task's list, so the player can stand on a statue; no golden
 moved) → **482**. HK 35a85ba untouched. Details in the plan's "As executed" notes.
 
+**As built — wave 4.8 end (loop run 29, 2026-10-26; main 3f9b391):** LV3 ⚑ (level 3 "Western Reaches" enterable: all 216
+records set up; the retracting spikes — frame 0 fully out, per the dump, against the plan's text; the hurt stores the climb
+reset and no-cling before the invulnerability check (bank corrected); the five level-palette face groups follow the level's
+palette; the level-load picture cache gained level 3's marks incl. the mine cart's two sets — 30 bar steps; the enemy stubs
+set counted-in-totals) → 486; LV4 (level 4 "Eastern Reaches" enterable, `BuiltLevels` 1...4, "Level n is not built yet
+(Phases 5-6).", the sheet table gained 0xbea, 0x514/0x515, 0x4bf; drops checked per level's renderer) → **490** — **wave 4.8
+closed** (G3 1,108/0, G5 SUCCEEDED, no golden moved, HK 35a85ba untouched). Next: the Phase 4 end run (A4 + Fable phase review),
+then the Windows plan (D41).
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
