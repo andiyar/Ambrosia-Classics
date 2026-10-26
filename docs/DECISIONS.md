@@ -1692,3 +1692,13 @@ reference = the first presented frame with text, 414 ticks after level 1's first
 `0x908483fb603623e8`** (baked = CoreText; the surface first carries text at +46, indices `0xf1a8b25e2094a097`). Ligatures
 longer than two characters are not modelled (no shipped game string has one; WF4a tests its dialog strings as a closed
 set). FerazelWinKit 27/0.
+**As built — WF3 (loop run 33, 2026-10-27):** `FerazelWin` = the game on HectorSDL (Rulings 5–14, 18–20), Windows-only
+logic in FerazelWinKit (`WinGame`, input, Ctrl-alone shortcuts from the MENU key equivalents, pad, files, args with the
+Mac's measured parse, start-up, key scripts, stub dialogs/file panels), `Ferazel/Shared/FerazelMenuRules.swift` (the
+Mac's menu rules moved, behaviour identical — symbol diff clean); cross-builds and links for Windows (GW3 0/1),
+FerazelWinKit **46/0**. Rulings refined as built: the launch line reports SDL's real drivers, so headless runs print
+`audio=none` (HectorSDL starts audio only with an output) — GW4R expects `video=dummy audio=none`; `-FerazelMute YES`
+also forces the dummy driver on Windows; held Ctrl shortcuts repeat like AppKit's ⌘ equivalents; **Windows logoff:** SDL
+3.4.16 hands `WM_QUERYENDSESSION`/`WM_ENDSESSION` to Windows' default handling (read from the DLL) — no event, no
+confirm, the process ends, nothing lost (◇W11); new **◇W14** (shortcut letters by US key position). **GW4R and Proof B
+owed by day (night rule).**

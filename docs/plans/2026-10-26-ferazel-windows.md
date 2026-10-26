@@ -140,7 +140,7 @@ Launch gates (each after the LAUNCH GUARD; skipped by night with the "boot check
 # GWB Proof B (from WF0's run; every wave end that touches Core or Windows): last line, run once whole
 "$WT/tools/windows/proof-b-ferazel.sh"          # proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
 # GW4R (from WF3) the Mac SDL development build, headless, dummy drivers (a launch by seat ruling): exit 0; log line
-#      ends "video=dummy audio=dummy"; the dump's FNV = WF2's recorded main-menu FNV
+#      ends "video=dummy audio=none" (WF3 as executed: headless opens no audio, so SDL reports none); the dump's FNV = WF2's recorded main-menu FNV
 #      (run only through the smoke script, which refuses without the guard and dummy drivers)
 "$WT/tools/windows/smoke-ferazel-win.sh" --mac-only
 # GW6 (WF6) the staged zip boots in a clean CrossOver bottle, muted: "main menu: identical", "new game: identical", exit 0
@@ -546,6 +546,28 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   script's Mac half — WF3 writes `tools/windows/smoke-ferazel-win.sh` with only `--mac-only` working, WF6 adds the
   CrossOver half): exit 0, `audio=dummy`, the main-menu dump's FNV = WF2's; by night "boot check owed (night rule)".
 
+- **As executed (loop run 33, 2026-10-27; commits 35d291b + 244138e + 680a383, merged):** as planned, with: the
+  executable's public surface is `WinGame` (wrapping the internal shared driver) plus `WinCanvas` / `WinClock`; fonts at
+  run time from `--fonts DIR`, else `<data>/Fonts` (shipped: `Data\Fonts\` beside the exe; the smoke passes
+  `Ferazel/Windows/Resources/Fonts`). **The launch line reports SDL's real drivers** (BTX shape); HectorSDL starts SDL's
+  audio only when an output opens (`HectorKit/SDL/Sources/HectorSDL/SDLAudioOut.swift:25`), so headless runs print
+  **`audio=none`** — GW4R's expectation is `video=dummy audio=none` (the plan's "audio=dummy" was wrong; the `audio=` half
+  proves only that no output opened). `WinAudioDriver.hint` reads the parsed arguments: `--mute`, `-FerazelMute YES` or
+  `FERAZEL_MUTE=1` → dummy. **Logoff (Ruling 9):** SDL 3.4.16 passes `WM_QUERYENDSESSION` / `WM_ENDSESSION` to Windows'
+  default handling (implementer disassembled `SDL3.dll`; the toolchain has no SDL source, so unverified by the legs) — no
+  SDL event, no confirm, Windows ends the process; nothing is lost (◇W11 as written). Quit: the confirm request appears
+  1–2 ticks after the quit (the flow's 2-tick rhythm — the Mac's path too; the plan's "next tick" was loose); a quit
+  during a level's opening waits for the first key check (82 ticks in the test — Core's, the Mac's as well). Held Ctrl
+  shortcuts repeat on autorepeat, as AppKit's menu key equivalents do (`FerazelMenus.swift:119–133` has no repeat
+  filter). Scripted events reach the game exactly once and only after the boot (the pre-boot poll takes only system
+  events). `--frames` runs use prefs/saves only from `--prefs` / `--saves`. Recorded, not fixable without HectorKit:
+  no mouse-leave event (the last canvas point sticks; the game reads the pointer only with the button down — cosmetic);
+  shortcut letters match US key positions, not the typed character (**◇W14**). The `.exe` is console subsystem (3) —
+  WF6's stage script makes it GUI (2). Gates: GW2 **46/0** (~9 min), GW3 0/1, GW4, G5, G2 490/0, GW1 0/2, G-MUTE 1/1,
+  G7/G7W/GW-symlinks empty; **GW4R owed (night rule)** — the smoke script's refusal checked. Two Opus legs PASS WITH
+  FIXES → one round (8 items) re-reviewed PASS WITH FIXES (2 LOW) → small round seat-read (mutations: 17/18 and 15/18
+  caught at first; every named survivor caught after).
+
 ### WF5 — Saved games on Windows (Ruling 3, 10)
 
 - **Files:** `Sources/FerazelWin/WinFileDialogs.swift` (`#if os(Windows)`: `GetSaveFileNameW` / `GetOpenFileNameW`,
@@ -653,6 +675,7 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
 | ◇W11 | The window has a close button (the Mac's has none); a Windows logoff may meet the quit confirm if SDL reports it as a plain quit | SDL windows always have one; nothing is lost (Ruling 9) |
 | ◇W12 | No single-instance guard: a second launch is a second game (the Mac opens a save in the running app) | Ruling 11 |
 | ◇W13 | Dialog text in the baked bold UI font (font 0 face 1, via CoreText) — only if it differs from the Mac's `ClassicFont` pick (Charcoal / Chicago by name, else `.boldSystemFont(ofSize: 12)`) | Ruling 2, WF4a (recorded in D43 if kept) |
+| ◇W14 | Ctrl shortcut letters are matched by US key position; the Mac matches the typed character of the live layout | HectorSDL exposes no layout query (same cause as ◇W1; WQ5) |
 
 ## The Windows gate card — Ben and Andrew (WF6 writes it as `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` + a QUESTIONS item)
 
