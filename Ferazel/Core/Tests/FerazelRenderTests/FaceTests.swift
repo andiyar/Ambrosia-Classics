@@ -502,4 +502,78 @@ final class FaceTests: XCTestCase {
                                    arguments: TileSets.pxBackArguments(pict: 207))
         XCTAssertFalse(px207.shortRows)
     }
+
+    func testEverySpawnableTypeHasSheet() throws {
+        // LV4 (B5): every face a sprite made at run time in Phase 4 is drawn from resolves to a loaded sheet cell in a
+        // level-1 `FrameRenderer` — the boot loads (`.InitSprites`' Init routines) that no placed type stands for.
+        let r = try resources()
+        func renderer(_ n: Int) throws -> FrameRenderer {
+            try FrameRenderer(resources: r, level: n, search: ColorSearch(model: .ruled, tieBreak: .lowest),
+                              dither: .errorDiffusion, text: StatusBarTests.BoxRasterizer())
+        }
+        let one = try renderer(1)
+        var missing: [String] = []
+        func want(_ label: String, _ pict: Int16, cells: Int = 1, in frame: FrameRenderer? = nil) {
+            let faces = (frame ?? one).sprites.faces
+            for i in 0..<cells where faces.face(FaceRef(pict: pict, index: i, set: .encoded)) == nil {
+                missing.append("\(label): \(pict) cell \(i)")
+                return
+            }
+        }
+        // The Effect ids (`.HandleEffectSprite` M l. 54209–54255): 0…15 (0 / 2 / 5 the explosion kinds), 1090, 3201
+        // (the 3092 crate's bits 0xc81) from 0x4b0 (13 cells, phase >> 1 < 13); 1207 from 0x4b7 (13); the plume 1206
+        // 0x4b6 (34); the debris 3099 0xc1b (16: phase + 8 for the second kind); the cannon smoke 0x442 (5); the dust
+        // 0x4b1 (6), the crumble 0x4ba (3), the bubble 0x410 (4).
+        want("explosion ids 0/2/5, 0xc81", EffectSprite.explosionSheet, cells: 13)
+        want("1207", EffectSprite.bigExplosion, cells: 13)
+        want("plume", EffectSprite.plume, cells: 34)
+        want("debris", EffectSprite.debris, cells: 16)
+        want("cannon smoke", 0x442, cells: 5)
+        want("dust", EffectSprite.dust, cells: 6)
+        want("crumble", EffectSprite.crumble, cells: 3)
+        want("bubble", 0x410, cells: 4)
+        // The player's shots (ids 0–7, 0x3c, 0x50, 0x5a; `.InitPlayerShotSprite` M l. 50235–50256), the held items
+        // (750, 756, 768, 771) and the stab sets 1021 / 1035, the Mist body (type 69, faces 1038), the trail and the
+        // Shadow Double (the player's poses: every set `.InitPlayerSprite` loads), the glider sets 1050…1053.
+        for sh in PlayerShot.sheets { want("shot", sh.pict, cells: sh.count) }
+        for sh in HeldItem.sheets { want("held item", sh.pict) }
+        want("stab", HeldItem.meleeSet, cells: 5)
+        want("crouching stab", HeldItem.crouchMeleeSet, cells: 5)
+        want("Mist body", PlayerStates.mist, cells: 4)
+        for loader in FaceSheet.playerSheets + FaceSheet.gliderSheets {
+            switch loader {
+            case .single(let p): want("player / trail / double", p)
+            case .set(let a): want("player / trail / double", a.pict, cells: a.count)
+            }
+        }
+        // The Bonus faces run-time spawns read: the dropped glider 0xbea (`.HitPlayerSprite` M l. 52612ff), the
+        // container crystals 0x514 / 0x515 (6), the hurt coin 0x516 (9), the Xichron bursts 0x421 / 0x422 and the
+        // lost shards 0x4bf (4).
+        want("dropped glider", 0xbea)
+        want("crystal 0x514", 0x514, cells: 6)
+        want("crystal 0x515", 0x515, cells: 6)
+        want("hurt coin", 0x516, cells: 9)
+        want("Xichron 0x421", 0x421)
+        want("Xichron 0x422", 0x422)
+        want("shards", 0x4bf, cells: 4)
+        // The Box class's run-time faces: the trunks 712 / 713 (SW), the switch block outline 0x4e4 (BT), the cart's
+        // children 0xb72 / 0xb73 (BX1), the thought balloon 0xcb2 (BX2); the floe 0x57c is the Platform set 0x578's
+        // cell 4 (`.DoSetupPlatformSprite`, type − 0x578).
+        want("trunk", BoxSprite.trunkBottom)
+        want("trunk segment", BoxSprite.trunkSegment)
+        want("switch outline", BoxSprite.switchOffFace)
+        want("cart", BoxSprite.cart, cells: 14)
+        want("wheel", 0xb73, cells: 21)
+        want("balloon", BoxSprite.balloon)
+        want("floe", 0x578, cells: 5)
+        // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
+        // level's renderer (a renderer loads its level's drops, `BoxSprite.dropSheets`).
+        for n in 1...4 {
+            let frame = n == 1 ? one : try renderer(n)
+            for sh in BoxSprite.dropSheets(frame.level.placements) {
+                want("level \(n) drop", sh.pict, cells: sh.count, in: frame)
+            }
+        }
+        XCTAssertEqual(missing, [])
+    }
 }

@@ -19,7 +19,7 @@ import HectorShell
     static let title = "Ferazel's Wand"
     /// The hidden defaults key for the starting level (Ben D33, D35 kept as a hidden test path): `-FerazelLevel 2` on
     /// the command line makes New Game start at level 2 for one launch (`GameFlow.startLevel`); absent or outside
-    /// `BuiltLevels.range` → level 1, "A Scent Of Peril".
+    /// `BuiltLevels.range` (1…4) → level 1, "A Scent Of Peril".
     static let levelKey = "FerazelLevel"
     /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "lowest" → `.lowest`, anything
     /// else → `.highest` — the app's default since Ben's ruling of 2026-10-10 (his Let's Play at 02:12: clean FG rock
@@ -170,7 +170,7 @@ import HectorShell
         idleFired()
     }
 
-    /// `FerazelLevel` (Ben D33): 1 when absent or outside `BuiltLevels.range`.
+    /// `FerazelLevel` (Ben D33): 1 when absent or outside `BuiltLevels.range` (1…4 since Phase 4 LV4).
     static func startLevel(_ defaults: UserDefaults = .standard) -> Int {
         let n = defaults.integer(forKey: levelKey)
         return BuiltLevels.range.contains(n) ? n : 1

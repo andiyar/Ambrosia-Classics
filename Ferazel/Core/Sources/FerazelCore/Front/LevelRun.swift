@@ -1029,7 +1029,7 @@ public final class LevelRun {
 /// (needed ∧ not loaded: a set counts its faces, a single 1), q = 2n, p = n; each needed unloaded set in list order,
 /// then each single: p += its faces, `UpdateStageLoad(p, q)`; then `UpdateStageLoad(100, 100)` (the caller's).
 ///
-/// Self-derived for the types levels 1–3 place (L1 research, every mark read from its Setup; `docs/plans` L1 as
+/// Self-derived for the types levels 1–4 place (L1 research, every mark read from its Setup; `docs/plans` L1 as
 /// executed): level 1 after launch n 90, q 180 → p 96, 102, 108, 114, 120, 128, 134, 137, 139, 148, 157, 162 (twelve
 /// sets) then 163 … 180 (eighteen singles) — widths 156, 166, 175, 185, 195, 208, 218, 223, 226, 240, 255, 263, 265,
 /// 266, 268, 270, 271, 273, 275, 276, 278, 279, 281, 283, 284, 286, 288, 289, 291, 293; level 2 after level 1 n 31,
@@ -1044,7 +1044,7 @@ public struct CachedFaces: Equatable, Sendable {
     }
 
     /// The set list `_DAT_100a12b4` in registration order (`.InitSprites` M l. 106–145 calls the Init routines in the
-    /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–3 can mark
+    /// order Platform … Crawler, Roach, Walker, Box, Background, …, Bat, Blob, …, Frog) — the records levels 1–4 can mark
     /// (Crawler M l. 56142–56144, Roach 64893–64894, Walker 56757–56768, Box 58785–58786 (LV3: the mine cart's 0xb72 /
     /// 0xb73) and 58806, Background 61864 (LV3: the wall spikes' 0x730) and 61875, Bat 68099, Blob 67666 (LV3), Frog
     /// 70116). // later: Phase 5–6 — the other sets, as their Setups are transcribed.
@@ -1100,7 +1100,7 @@ public struct CachedFaces: Equatable, Sendable {
         public var singles: Set<Int16> = []
     }
 
-    /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–3 place: Walker 0x6a4 → single
+    /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–4 place: Walker 0x6a4 → single
     /// 0x6a4 + sets 0x6a5, 0x6a6 (M l. 56966–56969), 0x6a9 → 0x6a9, 0x6aa, 0x6ab (56977–56980), 0x6e0…0x6e9 → 0x6e0
     /// (56989); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 → 0x6b8, 0x6b9 (64931–64932);
     /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
@@ -1109,7 +1109,10 @@ public struct CachedFaces: Equatable, Sendable {
     /// 0x708 → set 0x708 (70211). LV3: Bat 0x6cd → set 0x6cc (the same arm, 68286); Blob 0x6c2 → set 0x6c2 (67726);
     /// the spikes 0x730 / 0x731 → set 0x730 (61984, 62281), 0x732 / 0x733 → **both** singles 0x732 and 0x733 (62460–
     /// 62461); the mine cart 0xb72 / 0xb73 with a record → sets 0xb72, 0xb73 (59434–59435); the level-3 decoration,
-    /// outcrop and mushroom singles of the same id (59647, 59699, 59709). Every other level-1–3 type marks nothing.
+    /// outcrop and mushroom singles of the same id (59647, 59699, 59709). LV4: level 4's new types mark nothing —
+    /// the switch blocks 1250 and the spouts 1450 / 1453 face from the boot sets `_DAT_100a0a54` / `0a4c` (M l.
+    /// 59581–59597), the Buttons, the Platform 1410 and the Bonus 1331 / 1334 / 1340 / 3216 Setups store no mark.
+    /// Every other level-1–4 type marks nothing.
     /// // later: Phase 5–6 — the other types'.
     static func marks(type t: Int16) -> (sets: [Int16], singles: [Int16]) {
         switch t {

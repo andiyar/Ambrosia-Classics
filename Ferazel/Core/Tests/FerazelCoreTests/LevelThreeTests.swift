@@ -5,8 +5,8 @@ import HectorResources
 /// LV3 (docs/plans/2026-10-24-ferazel-phase4.md): level 3 "Western Reaches" enterable — every one of its 216 records
 /// sets up (the enemy face stubs Blob 1730 and Bat 1741, the decorations' faces, the retracting spikes 1840…1843), the
 /// spikes' Handle with its idle-only sounds (`.HandleBackgroundSprite` M l. 63192–63276) and their arm in
-/// `.HitPlayerSprite` (M l. 49743–49751), `BuiltLevels = 1...3`. Against the committed `Resources/Ferazel` (D26); a
-/// missing data file is a FAILURE, never a skip.
+/// `.HitPlayerSprite` (M l. 49743–49751), `BuiltLevels = 1...3` (LV4: 1...4). Against the committed
+/// `Resources/Ferazel` (D26); a missing data file is a FAILURE, never a skip.
 final class LevelThreeTests: XCTestCase {
 
     private func resources() throws -> FerazelResources { try FerazelData.open(try FerazelData.dataDirectory()) }
@@ -347,7 +347,7 @@ final class LevelThreeTests: XCTestCase {
 
     func testMapEntersLevel3() throws {
         let r = try resources()
-        XCTAssertEqual(BuiltLevels.range, 1...3)
+        XCTAssertTrue(BuiltLevels.range.contains(3))
         /// New Game at level 2 (the hidden `FerazelLevel` switch), then level 2's exit `record` → the map's auto-walk;
         /// Return on the map. The flow and the dialogs asked on the way.
         func viaExit(_ record: Int, node level: Int) throws -> (GameFlow, Levels, [FerazelDialog]) {
@@ -386,10 +386,11 @@ final class LevelThreeTests: XCTestCase {
         XCTAssertEqual(f3.levelRun?.session?.tallies.enemies, 27)
         XCTAssertEqual(l3.prepared, [2, 3])
         XCTAssertEqual(f3.levelNumber, 3)
-        // Exit p1 2 (record 98) → node 4 → Return → "Level 4 is not built yet (Phases 4-6)." and no level run.
+        // Exit p1 2 (record 98) → node 4 → Return → level 4 runs (LV4; its not-built walk moved to node 5,
+        // `LevelFourTests.testBuiltLevelsFour`).
         let (f4, l4, a4) = try viaExit(98, node: 4)
-        XCTAssertEqual(a4.last, .report(text: "Level 4 is not built yet (Phases 4-6)."))
-        XCTAssertNil(f4.levelRun)
-        XCTAssertEqual(l4.prepared, [2])
+        XCTAssertEqual(a4, [])
+        XCTAssertEqual(f4.levelRun?.levelNumber, 4)
+        XCTAssertEqual(l4.prepared, [2, 4])
     }
 }

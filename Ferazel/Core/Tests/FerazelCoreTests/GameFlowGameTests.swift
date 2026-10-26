@@ -245,9 +245,9 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(rig2.flow.levelNumber, 1)
         XCTAssertEqual(rig2.levels.prepared, [1])
         // The hidden `FerazelLevel` switch starts at its level (∈ BuiltLevels) instead, Option or not; a level outside
-        // BuiltLevels (4 and 0) starts level 1 (LV3: level 3 is built).
-        XCTAssertEqual(BuiltLevels.range, 1...3)
-        for (start, option, expected) in [(2, true, 2), (3, false, 3), (4, false, 1), (0, false, 1)] {
+        // BuiltLevels (5 and 0) starts level 1 (LV4: level 4 is built).
+        XCTAssertEqual(BuiltLevels.range, 1...4)
+        for (start, option, expected) in [(2, true, 2), (4, false, 4), (5, false, 1), (0, false, 1)] {
             let rig3 = Rig(r, startLevel: start)
             rig3.toMenu()
             let keys = option ? [0x2d, 0x3a] : [0x2d]
@@ -456,18 +456,26 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(flow.exit1, -1)
         XCTAssertEqual(flow.exit2, -1)
         XCTAssertEqual(rig.levels.prepared, [1, 2])
-        // Level 2's exit p1 2 (record 98; LV3: node 3 is built, so the walk goes on to node 4) → the map → the
-        // auto-walk to node 4 → Return → the "not built yet" report (the only invented text, D35), still on the map,
-        // nothing new unlocked.
+        // Level 2's exit p1 2 (record 98) → the map → the auto-walk to node 4 → Return → level 4 (LV4: built); its exit
+        // p1 1 (record 71) → the auto-walk to node 5 → Return → the "not built yet" report (the only invented text,
+        // D35), still on the map, nothing new unlocked.
         try touchExit(s2, record: 98)
         rig.drive { self.onIdleMap($0) }
+        let m4 = try XCTUnwrap(flow.worldMap)
+        XCTAssertEqual(m4.cur, try XCTUnwrap(m4.map.findCurrNode(level: 4)).index)
+        rig.drive(input: { f in FrontInput(keys: KeyState(pressed: f.worldMap?.result == nil ? [0x24] : [])) }) {
+            self.isRunning($0, level: 4)
+        }
+        XCTAssertEqual(rig.levels.prepared, [1, 2, 4])
+        try touchExit(try XCTUnwrap(flow.levelRun?.session), record: 71)
+        rig.drive { self.onIdleMap($0) }
         let m2 = try XCTUnwrap(flow.worldMap)
-        XCTAssertEqual(m2.cur, try XCTUnwrap(m2.map.findCurrNode(level: 4)).index)
+        XCTAssertEqual(m2.cur, try XCTUnwrap(m2.map.findCurrNode(level: 5)).index)
         let unlocked = m2.globals.unlocked
         let ask = rig.drive(input: { f in FrontInput(keys: KeyState(pressed: f.worldMap?.result == nil ? [0x24] : [])) }) {
             _ in self.asked(rig.last)
         }
-        XCTAssertEqual(dialogs(ask).last, .report(text: "Level 4 is not built yet (Phases 4-6)."))
+        XCTAssertEqual(dialogs(ask).last, .report(text: "Level 5 is not built yet (Phases 5-6)."))
         XCTAssertNil(flow.levelRun)
         flow.dialogDone(.ok)
         rig.drive { self.onIdleMap($0) }
@@ -475,7 +483,7 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertFalse(m3 === m2)
         XCTAssertEqual(m3.cur, m2.cur)
         XCTAssertEqual(m3.globals.unlocked, unlocked)
-        XCTAssertEqual(rig.levels.prepared, [1, 2])
+        XCTAssertEqual(rig.levels.prepared, [1, 2, 4])
         XCTAssertEqual(flow.state, .newGame)
     }
 

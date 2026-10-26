@@ -154,8 +154,8 @@ public final class FrameRenderer {
     /// `BoxSprite.dropSheets`;
     /// CS: the player shots' 1100…1105, 1113…1116, 1118, `PlayerShot.sheets`; IU: the held items' singles 750, 756,
     /// 768, 771, `HeldItem.sheets` — the thrown seeds and the Smiting seeds are 1116, the stab faces 1021 / 1035 the
-    /// player's), empty light slots (`addLights`), the status bar under the level
-    /// CLUT.
+    /// player's; LV4: the Bonus faces run-time spawns read that no placed type loads, `bonusSpawnSheets`), empty light
+    /// slots (`addLights`), the status bar under the level CLUT.
     /// - Parameter prefs: prefs+4 (parallax) and +6 (Effects) for the blitters; the Setup lights depend on Effects.
     /// - Parameter surface: the shared screen (FE0): its pixels, CLUT and gamma are left as they are until the ops
     ///   change them (the level's `setScreenClut` / `drawPicture`). Nil (today's tests): a fresh surface — a 0-filled
@@ -196,7 +196,8 @@ public final class FrameRenderer {
                                                 .union(PlayerShot.sheets)
                                                 .union(HeldItem.sheets)
                                                 .union(BoxSprite.spawnSheets)
-                                                .union(BoxSprite.dropSheets(L.placements)),
+                                                .union(BoxSprite.dropSheets(L.placements))
+                                                .union(Self.bonusSpawnSheets),
                                             resources: resources, search: search, dither: dither)
         let lights = LightRenderer(level: L, tables: tables)
         self.lights = lights
@@ -224,6 +225,15 @@ public final class FrameRenderer {
             return SetupFaces.Sheet(pict: a.pict, count: a.count, cellWidth: a.cellWidth, cellHeight: a.cellHeight,
                                     columns: a.columns, clut: 200)
         }
+    })
+
+    /// LV4 (B5): the Bonus faces sprites made at run time are drawn from that no placed type on levels 1–4 is sure to
+    /// load (`.InitBonusSprite` loads every Bonus face at boot, M l. 52261–52337): the glider the stow drops, 0xbea
+    /// (`MTNewSprite(0xbea, …)`, M l. 45354–45356); the crystals a torch or candelabra container gives, 0x514 / 0x515
+    /// (6 × 0x12×0x14, M l. 53496–53505); the Multi Crystal's shards 0x4bf…0x4c2, faced from the set 0x4bf (4 × 0x10×0x11,
+    /// M l. 48010). The hurt coin 0x516 and the Xichron bursts 0x421 / 0x422 are `BonusSprite.dropSheets`.
+    static let bonusSpawnSheets: Set<SetupFaces.Sheet> = Set(BonusSprite.sheets.filter {
+        [0xbea, 0x514, 0x515, 0x4bf].contains($0.pict)
     })
 
     /// `.InitEffectSprite @ 10060378` (l. 53639–53686), at boot under clut 200 like the player's: the landing dust
