@@ -31,7 +31,7 @@ private enum Census {
 private func textContains(_ text: String, _ part: String) -> Bool {
     #if os(Windows)
     let hay = Array(text.unicodeScalars), needle = Array(part.unicodeScalars)
-    guard !needle.isEmpty, needle.count <= hay.count else { return needle.isEmpty }
+    guard !needle.isEmpty, needle.count <= hay.count else { return false }   // "" → false, as Foundation's
     return (0...(hay.count - needle.count)).contains { i in hay[i..<(i + needle.count)].elementsEqual(needle) }
     #else
     return text.contains(part)
@@ -177,9 +177,9 @@ final class CensusTests: XCTestCase {
         try ClassicResourceMap.serialize([truncated]).write(to: dir.appendingPathComponent(FerazelData.titlesFile))
         let result = try runCensus(binary, [dir.path])
         XCTAssertEqual(result.status, 1)
-        let failLines = result.stdout.split(separator: "\n").filter { $0.contains("FAIL") }
+        let failLines = result.stdout.split(separator: "\n").filter { textContains(String($0), "FAIL") }
         XCTAssertTrue(failLines.contains { $0.hasPrefix("| PICT | Titles | 129 |") }, "\(failLines)")
-        XCTAssertFalse(result.stdout.contains(dir.path))
+        XCTAssertFalse(textContains(result.stdout, dir.path))
         let direct = FerazelCensus.render(dataDirectory: dir)
         XCTAssertGreaterThan(direct.failures, 0)
         XCTAssertEqual(direct.stdout, result.stdout)
