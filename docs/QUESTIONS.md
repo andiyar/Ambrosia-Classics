@@ -42,7 +42,7 @@ Options: (a) keep the original's behaviour; (b) quit at once from anywhere (a mo
 logout/shutdown, original behaviour for Dock/app-menu Quit.
 Recommendation: a — the standing 100 % rule (replicate the original, no modern affordances).
 Blocks: nothing (built as (a); (b)/(c) would be a small App change).
-Answer:
+Answer: (b) — Ben, 2026-10-26: "quit from dock should always behave." Quit from the Dock, the app menu, or a logout/shutdown quits at once from anywhere, including mid-level (a deliberate departure from the original, Ben's call). Read as (b) by his attended session; if Ben meant the Dock only, he will say.
 
 ### Q7 — 2026-10-24 — Phase 4 plan (spells + items): three small choices, for your later read
 Context: Loop run 18 wrote and reviewed the Phase 4 plan (`docs/plans/2026-10-24-ferazel-phase4.md`, rulings in
