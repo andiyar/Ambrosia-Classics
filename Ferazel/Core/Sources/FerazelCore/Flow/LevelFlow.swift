@@ -73,6 +73,10 @@ public struct LevelCarry: Equatable, Sendable {
     /// the above; zeroed only by `.InitGameGlobals` (M l. 821), which New Game and Continue Game run (M l. 5747, 6707;
     /// `GameFlow.initGameGlobals`).
     public var shake: Int16 = 0
+    /// SD review fix: the mirror byte `+0xc` of each of the Shadow Double's 14 pose-ring entries `PTR_DAT_100a0520`
+    /// (`PlayerState.shadowRing`) — a data global whose only writer is row 42 (M l. 46613); `.SetupPlayerSprite`
+    /// rewrites every other byte of the ring (l. 42855–42895), so these run on through every level, restart and game.
+    public var shadowMirrors = [Bool](repeating: false, count: 14)
 
     public init(parity: Bool = false, crunchLog: [CrunchLogEntry] = []) {
         self.parity = parity

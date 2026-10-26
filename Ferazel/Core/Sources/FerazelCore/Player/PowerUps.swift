@@ -40,7 +40,7 @@ public enum PowerUps {
 
     /// Row 14 (M l. 44748–44808): `.TickTock` of `0650` (Invincibility — no flag of its own; the player's `+0x116`
     /// counts itself down in `.StandardSpriteHandles`), `064c` (the Shadow Double: `0654` = timer ≥ 1 ∧ the shared
-    /// flag — the double itself is row 11's, // later: SD), `0640` (walk-on-liquid: `0648` = timer ≥ 1, `0644` = the
+    /// flag — the double itself is row 11's, `ShadowDouble.row11`), `0640` (walk-on-liquid: `0648` = timer ≥ 1, `0644` = the
     /// flag while it runs), `0630` (High Jump: `0638` / `0634`), `0624` (Feather Fall: `062c` / `0628`), `0618` (Double
     /// Speed: `0620` / `061c`). A blink flag is written only while its timer runs (left as it was at 0).
     static func tickTimers(_ p: inout PlayerState) {

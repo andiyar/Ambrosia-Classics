@@ -640,7 +640,8 @@ extension HitPlayerSprite {
     /// orbs 0…n−1: angle i·(360 / n)·256, radius 0x30, speed 0xa00, in use, a live orb sprite `+0xe9 = 1` and dropped;
     /// orbs n…7 not in use (their sprites likewise); `0614 = 1`; 32000; snd 444. 1339: `+0xe9`, snd 450 vol 0xab, the
     /// player's `+0xa4` − 0x380, `+0x116 = 30`, `+0xaa = 30`; 0. Row 14 ticks the timers (`PowerUps`, PU).
-    /// // later: SD — the double and the orbs.
+    /// The double is `ShadowDouble` (row 11 makes it, its Handle replays the pose ring); the orbs are `Pentashield`
+    /// (`.UpdatePentSprites`, last in the player's Handle).
     private static func sphere(_ w: SpriteWorld, player pID: Int, other oID: Int) {
         guard let o = w.active.record(id: oID) else { return }
         var duration: Int16 = 0

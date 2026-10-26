@@ -183,6 +183,10 @@ public final class FerazelSession {
         // E1b review fix: the water-effects cache, origin and flag `*_DAT_100a00f4` run on (`LevelCarry`); the player
         // Setup keeps the flag (`Player.spawn`).
         world.player.tileCacheValid = carry.tileCacheValid
+        // SD review fix: the pose ring's mirror bytes run on (`LevelCarry.shadowMirrors`); the player Setup keeps them.
+        for (k, m) in carry.shadowMirrors.enumerated() where world.player.shadowRing.indices.contains(k) {
+            world.player.shadowRing[k].mirrored = m
+        }
         waterEffects = WaterEffects(cells: carry.waterCells, originCol: carry.waterOriginCol,
                                     originRow: carry.waterOriginRow)
         // L1 (hosted): `.SetupLevel`'s revisit re-apply (M l. 2382–2393, raw `1000483c..100048a0`) — with
@@ -878,7 +882,7 @@ public final class FerazelSession {
     }
 
     /// What the next level's session takes (`init(…carry:)`, W4): the parity, the particle counters (E1a), the
-    /// water-effects cache, origin and flag (E1b), the flash, paint counter, plume count and shake (EF), and the live G with its crunch log (A1a: the flow decides when a
+    /// water-effects cache, origin and flag (E1b), the flash, paint counter, plume count and shake (EF), the Shadow-Double ring's mirror bytes (SD), and the live G with its crunch log (A1a: the flow decides when a
     /// game starts from a fresh G — New Game's `.InitGameGlobals` — never the session).
     public var carry: LevelCarry {
         var c = LevelCarry(parity: world.parity, crunchLog: world.globals.crunchLog, globals: world.globals)
@@ -892,6 +896,7 @@ public final class FerazelSession {
         c.paintCounter = world.paintCounter
         c.plumeCount = world.plumeCount
         c.shake = world.shakeStore ?? camera.shake                     // CS: a store the camera has not yet taken
+        c.shadowMirrors = world.player.shadowRing.map(\.mirrored)        // SD review fix
         return c
     }
 

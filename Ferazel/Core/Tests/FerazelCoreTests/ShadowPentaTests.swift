@@ -152,6 +152,85 @@ final class ShadowPentaTests: XCTestCase {
         }
         XCTAssertEqual(w.player.shadowRing, frozen, "no entry recorded while still")
         XCTAssertEqual(bobs, [-2, 0, 0, 2, 2, 4, 4])
+
+        // `.HandleShadowSprite`'s face arms, one Handle call each from a set state (M l. 43074–43161): entry E =
+        // ring[`0590 >> 1`] at (y 200, x 50), the wand phase `06d4`, the held count `06d0`, crouch `071c`, still `0674`.
+        let did = dd.id
+        let walkFace = PlayerStates.face(PlayerStates.walk, 5)
+        struct Out: Equatable { var face: FaceRef?; var dy: Int; var bob: Int16; var phase: Int16; var synced: Bool }
+        func arm(grounded: Bool, still: Bool, wand: Int16 = 0, held: Int16 = 0, crouch: Int16 = 0, ramp: Int16 = 0,
+                 bob: Int16 = 3, phase: Int16 = 0, synced: Bool = true) -> Out {
+            w.player.shadowRing[Int(ramp >> 1)] = PlayerState.ShadowPose(y: 200, x: 50, grounded: grounded,
+                                                                         face: walkFace, mirrored: false)
+            w.player.standingStill = still
+            w.player.wandPhase = wand
+            w.player.wandHeld = held
+            w.player.crouch = crouch
+            w.player.rideRamp = ramp
+            w.player.rideRamp2 = 0
+            w.player.shadowBob = bob
+            w.player.shadowBobPhase = phase
+            w.player.shadowBobSynced = synced
+            ShadowDouble.handle(world: w, id: did)
+            let s = w.active.sprite(id: did)!
+            XCTAssertEqual(s.x, 50)
+            return Out(face: s.face, dy: s.y - 200, bob: w.player.shadowBob, phase: w.player.shadowBobPhase,
+                       synced: w.player.shadowBobSynced)
+        }
+        // Crouching (`071c` c = 2) on a grounded E: bob decay (3 → 2, M l. 43114–43123), face 1011[c − 1] (l. 43124).
+        XCTAssertEqual(arm(grounded: true, still: false, crouch: 2),
+                       Out(face: PlayerStates.face(PlayerStates.crouch, 1), dy: 2, bob: 2, phase: 0, synced: true))
+        // Crouching on an airborne E: the not-crouching arms — not still → decay, E's face (l. 43082–43092).
+        XCTAssertEqual(arm(grounded: false, still: false, crouch: 2, bob: -3),
+                       Out(face: walkFace, dy: -2, bob: -2, phase: 0, synced: true))
+        // Still on a grounded E, riding ramp 6 → index 3: face 1003[`0590 >> 1` = 3], `0608 = 0`, decay (l. 43099–43110).
+        XCTAssertEqual(arm(grounded: true, still: true, ramp: 6, bob: -3),
+                       Out(face: PlayerStates.face(PlayerStates.stand, 3), dy: -2, bob: -2, phase: 0, synced: false))
+        // Casting (w 3): not still with h 2 → step 2, h 3 → step 1; still → w; h > 3 and still is still casting
+        // (l. 43079, 43128–43135); a grounded E decays the bob, face 1014[step − 1] (l. 43139–43150).
+        XCTAssertEqual(arm(grounded: true, still: false, wand: 3, held: 2),
+                       Out(face: PlayerStates.face(PlayerStates.cast, 1), dy: 2, bob: 2, phase: 0, synced: true))
+        XCTAssertEqual(arm(grounded: true, still: false, wand: 3, held: 3).face, PlayerStates.face(PlayerStates.cast, 0))
+        XCTAssertEqual(arm(grounded: true, still: true, wand: 3, held: 2).face, PlayerStates.face(PlayerStates.cast, 2))
+        XCTAssertEqual(arm(grounded: true, still: true, wand: 2, held: 5).face, PlayerStates.face(PlayerStates.cast, 1))
+        XCTAssertEqual(arm(grounded: true, still: false, wand: 2, held: 5).face, walkFace, "h > 3 moving: not casting")
+        // Casting on an airborne E bobs (`.ShadowBob`, l. 43136–43137): unsynced, table[0] 0 vs bob 0 → phase 46, −2.
+        XCTAssertEqual(arm(grounded: false, still: false, wand: 3, held: 2, bob: 0, synced: false),
+                       Out(face: PlayerStates.face(PlayerStates.cast, 1), dy: -2, bob: -2, phase: 0x2e, synced: true))
+
+        // `.ShadowBob` (M l. 43029–43049): synced → phase + 1, wrapping only past 46 (`0x2e < phase`): 45 → 46 keeps
+        // table[23] = −2, 46 → 47 → 0. Unsynced, the read at `0x100a5fda + 2·phase` past the 24-short table lands
+        // on the max speeds `_DAT_100a600a…6010` (0x76c / 0xc80 / 0x76c / 0xc80 as `.SetupPlayerSprite` sets them,
+        // l. 42769–42772): never within 2 of a bob → phase 0.
+        var p = PlayerState()
+        p.shadowBobSynced = true
+        p.shadowBobPhase = 45
+        ShadowDouble.bob(&p)
+        XCTAssertEqual([p.shadowBobPhase, p.shadowBob], [46, -2])
+        ShadowDouble.bob(&p)
+        XCTAssertEqual([p.shadowBobPhase, p.shadowBob], [0, 0])
+        XCTAssertEqual((24...27).map { ShadowDouble.resyncRead(p, $0) }, [0x76c, 0xc80, 0x76c, 0xc80])
+        XCTAssertEqual(ShadowDouble.resyncRead(p, 23), -2)
+        p.shadowBobSynced = false
+        p.shadowBobPhase = 24
+        p.shadowBob = 0
+        ShadowDouble.bob(&p)
+        XCTAssertEqual([p.shadowBobPhase, p.shadowBob], [0, 0], "0x76c is not near 0")
+        p.shadowBobSynced = false
+        p.shadowBobPhase = 22
+        p.shadowBob = -5
+        ShadowDouble.bob(&p)
+        XCTAssertEqual([p.shadowBobPhase, p.shadowBob], [0x2e, -2], "table[22] −4 is within 2 of −5")
+
+        // Row 42's "grounded" byte is `+0xce ≠ 0 ∧ +0xdc == 0` (M l. 46608–46611): on the ground but riding → 0.
+        w.player.standingStill = false
+        w.active.update(id: w.playerID!) { $0.groundKind = 3; $0.ridden = did }
+        ShadowDouble.record(w, player: w.playerID!)
+        XCTAssertFalse(w.player.shadowRing[13].grounded, "riding is not grounded")
+        w.active.update(id: w.playerID!) { $0.ridden = nil }
+        ShadowDouble.record(w, player: w.playerID!)
+        XCTAssertTrue(w.player.shadowRing[13].grounded)
+        XCTAssertFalse(w.player.shadowRing[12].grounded)
     }
 
     func testShadowCopiesCast() throws {
@@ -190,6 +269,13 @@ final class ShadowPentaTests: XCTestCase {
         XCTAssertEqual(copy.vx, shot.vx)
         XCTAssertEqual(copy.vy, shot.vy - 0x44c)
         XCTAssertFalse(copy.mirrored)
+        // The −0x44c wants the replayed entry's byte +4 too (M l. 46929–46939): an airborne entry 0 → vy the shot's.
+        XCTAssertGreaterThan(shot.gravity, 0)
+        w.player.shadowRing[0].grounded = false
+        CastSpell.shadowCopy(w, of: shot.id, type: 1, player: player(w), double: dID)
+        let airCopy = try XCTUnwrap(shots(w).last)
+        XCTAssertNotEqual(airCopy.id, copy.id)
+        XCTAssertEqual([airCopy.vx, airCopy.vy], [shot.vx, shot.vy])
 
         // A V Blade with the double facing left (walked left, then turned right): two copies, both `MTNewSprite(0x601,
         // …)` — the type is computed once (M l. 46915) —, each at its shot's point moved by double − player; vx the
@@ -263,11 +349,46 @@ final class ShadowPentaTests: XCTestCase {
         XCTAssertFalse(w.player.shadowDouble, "`0654` 0 once the timer is out")
         let final = try XCTUnwrap(w.player.shadowDoubleSprite)
         XCTAssertEqual(w.active.sprite(id: final)?.killCount, 0, "removed on the next row 11")
+        // Frame 601: the double (layer 9) is handled before row 11 removes it, with `0654` off: face 0 and return —
+        // no placement (M l. 43072, 43162–43163). A real entry 0 would otherwise give it a face and (50, 200).
+        w.player.shadowRing[0] = PlayerState.ShadowPose(y: 200, x: 50, grounded: false,
+                                                        face: PlayerStates.face(PlayerStates.walk, 5), mirrored: true)
+        w.active.update(id: final) { $0.face = PlayerStates.face(PlayerStates.walk, 1) }
+        let before = try XCTUnwrap(w.active.sprite(id: final))
         frame(w, solver, lights: &lights)
         XCTAssertNil(w.player.shadowDoubleSprite)
         XCTAssertEqual(w.active.sprite(id: final)?.killCount, 1)
+        let after = try XCTUnwrap(w.active.sprite(id: final))
+        XCTAssertNil(after.face, "flag off → face 0")
+        XCTAssertEqual([after.x, after.y], [before.x, before.y])
+        XCTAssertEqual(after.mirrored, before.mirrored)
         frame(w, solver, lights: &lights)
         XCTAssertNil(w.player.shadowDoubleSprite, "no new double")
+
+        // The real session's handle pass (`FerazelSession`, the `.shadow` arm): made on frame 1 by row 11, first
+        // handled on frame 2 — tint `+0xb8 = 0x1000b`, the spawn entry (x −1 → face 0, at (−1, −1)) (M l. 43074–43163).
+        let r = try FerazelData.open(try FerazelData.dataDirectory())
+        let session = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 1, seed: 1)
+        session.world.player.shadowTimer = 600
+        session.world.player.shadowDouble = true
+        _ = session.step(keys: KeyState())
+        let sd = try XCTUnwrap(session.world.player.shadowDoubleSprite)
+        XCTAssertNotEqual(session.world.active.sprite(id: sd)?.mode, ShadowDouble.tint, "not handled on frame 1")
+        _ = session.step(keys: KeyState())
+        let sds = try XCTUnwrap(session.world.active.sprite(id: sd))
+        XCTAssertEqual(sds.mode, ShadowDouble.tint)
+        XCTAssertEqual([sds.x, sds.y], [-1, -1])
+        XCTAssertNil(sds.face)
+        // The ring `PTR_DAT_100a0520` is a data global: `.SetupPlayerSprite` rewrites all but each entry's mirror byte
+        // (M l. 42855–42895) and only row 42 writes that byte (l. 46613) — nothing resets it, so it runs on into the
+        // next level and every restart (`LevelCarry.shadowMirrors`).
+        let mirrors = (0..<14).map { $0 % 3 == 0 }
+        for k in 0..<14 { session.world.player.shadowRing[k].mirrored = mirrors[k] }
+        XCTAssertEqual(session.carry.shadowMirrors, mirrors)
+        let next = try FerazelSession(resources: r, prefs: FerazelPrefs(), level: 2, carry: session.carry)
+        XCTAssertEqual(next.world.player.shadowRing.map(\.mirrored), mirrors)
+        XCTAssertTrue(next.world.player.shadowRing.allSatisfy { $0.x == -1 && $0.y == -1 && $0.face == nil })
+        XCTAssertEqual(LevelCarry().shadowMirrors, [Bool](repeating: false, count: 14), "the data section's zeros")
     }
 
     // MARK: - the Pentashield
@@ -343,6 +464,11 @@ final class ShadowPentaTests: XCTestCase {
         XCTAssertEqual(orbs(w).map(\.stepY), [Int32](repeating: 0, count: 5), "the spawn flash counted out")
         // The angle wraps at 0x16800 (M l. 44164–44166): orb 4 from 288° + 12·10°.
         XCTAssertEqual(w.player.orbs[4].angle, 288 * 0x100 + 12 * 0xa00 - 0x16800)
+        // The bound is `0x167ff < angle` (M l. 44167–44169): a step onto 0x16800 wraps to 0, one onto 0x167ff stays.
+        w.player.orbs[0].angle = 0x16800 - 0xa00
+        w.player.orbs[1].angle = 0x167ff - 0xa00
+        frame(w, solver, lights: &lights)
+        XCTAssertEqual([w.player.orbs[0].angle, w.player.orbs[1].angle], [0, 0x167ff])
 
         // A second sphere: 5 + 5 capped at 8; the five orb sprites killed (`+0xe9`) and dropped; eight new ones at
         // 45° spacing on the next frame.
