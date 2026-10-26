@@ -164,11 +164,14 @@ import Foundation
 /// "playing" follows the sounds exactly as with real output, the same on every run and on both builds.
 @MainActor final class FerazelSilentMixer: FerazelMixer {
     static let ticksPerSecond = 60
-    private var stream: SoundTool?
+    /// The attached Sound Tool (nil before `attach`).
+    private(set) var stream: SoundTool?
     /// Game ticks drained so far.
     private(set) var ticks = 0
     /// Output frames drained so far (= ⌊rate × ticks / 60⌋).
     private(set) var framesDrained = 0
+    /// Of those, the frames rendered from the attached Sound Tool (since its `attach`).
+    private(set) var streamFrames = 0
     private var scratch: [Float] = []
 
     init() {}
@@ -191,6 +194,7 @@ import Foundation
         guard let stream, frames > 0 else { return frames }
         if scratch.count < 2 * frames { scratch = [Float](repeating: 0, count: 2 * frames) }
         scratch.withUnsafeMutableBufferPointer { stream.render(into: $0, frames: frames) }
+        streamFrames += frames
         return frames
     }
 }

@@ -123,8 +123,10 @@ struct FerazelSettings: Equatable {
     /// The `LevelRun` last given `conversationText` (held, so a new run is never mistaken for it).
     private var configuredRun: LevelRun?
     private(set) var audio: FerazelAudio?
-    /// The headless frames mode's mixer, when the factory made one: drained once per game tick (Ruling 20).
+    /// The headless frames mode's mixer (`headless`): no device, drained once per game tick (Ruling 20).
     private(set) var silentMixer: FerazelSilentMixer?
+    /// The headless `--frames` mode (Ruling 20): the silent mixer, never the factory — muted or not.
+    let headless: Bool
     /// The boot's two App loads, done (`GameFlow.LoadPhase`).
     private var loadedPhases: Set<GameFlow.LoadPhase> = []
 
@@ -142,12 +144,16 @@ struct FerazelSettings: Equatable {
     ///   - seed: `.InitAppGlobals`' `FastRand(0)` seed, read once at the flow's creation (the Mac: Time + Ticks).
     ///   - keyCharacter: `KeyTranslate`, for the Options dialog's key names.
     ///   - dateTime: `GetDateTime`.
-    ///   - mixer: the audio output, called at most once (at boot) and never when `settings.mute`.
+    ///   - mixer: the audio output, called at most once (at boot) and never when `settings.mute` or `headless`.
     ///   - beeper: `SysBeep`, never called when `settings.mute`.
     ///   - log: a failure the game survives (the Mac: `NSLog("Ferazel's Wand: %@", …)`).
+    ///   - headless: the `--frames` dumps (Ruling 20): no audio device at all; the Sound Tool is drained by a
+    ///     `FerazelSilentMixer` once per tick so `playing` follows the sounds, whatever `settings.mute` says (mute
+    ///     governs the real output and the beeps only).
     init(settings: FerazelSettings, text: TextRasterizer, files: FrontFiles, seed: @escaping () -> Int32,
          keyCharacter: @escaping @Sendable (Int16) -> String?, dateTime: @escaping @Sendable () -> UInt32,
-         mixer: @escaping () -> FerazelMixer?, beeper: @escaping () -> Void, log: @escaping (String) -> Void) {
+         mixer: @escaping () -> FerazelMixer?, beeper: @escaping () -> Void, log: @escaping (String) -> Void,
+         headless: Bool = false) {
         self.settings = settings
         rasterizer = text
         self.files = files
@@ -155,6 +161,7 @@ struct FerazelSettings: Equatable {
         self.keyCharacter = keyCharacter
         self.dateTime = dateTime
         makeMixer = mixer
+        self.headless = headless
         self.beeper = beeper
         self.log = log
     }
@@ -175,9 +182,16 @@ struct FerazelSettings: Equatable {
                                      text: rasterizer, chain: .level)
         mapRenderer = MapRenderer(screen: frontScreen)
         conversationText = TextLayout.conversationText(rasterizer)
-        // Mute (D42, Ruling 20): no audio output is opened at all — `FerazelAudio` runs silent with no mixer.
-        let mixer = settings.mute ? nil : makeMixer()
-        silentMixer = mixer as? FerazelSilentMixer
+        // Headless (Ruling 20): the silent mixer, no device, whatever the mute. Mute (D42): no audio output is opened
+        // at all — `FerazelAudio` runs silent with no mixer.
+        let mixer: FerazelMixer?
+        if headless {
+            let silent = FerazelSilentMixer()
+            silentMixer = silent
+            mixer = silent
+        } else {
+            mixer = settings.mute ? nil : makeMixer()
+        }
         audio = FerazelAudio(mixer: mixer, musicDirectory: resources.musicDirectory, log: log)
         // `.SetPrefFile` + `.InitPrefs` (M l. 8192–8243): the stored record, else the defaults, written at once.
         let prefs: FerazelPrefs

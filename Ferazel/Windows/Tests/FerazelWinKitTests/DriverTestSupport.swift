@@ -97,24 +97,27 @@ func hex(_ v: UInt64) -> String { "0x" + String(v, radix: 16) }
     var lastRGBA: [UInt8]?
     var lastOutput = FrontOutput()
 
-    enum Mixer { case none, silent, fake(FakeMixer) }
+    /// `.headless`: the frames mode (Ruling 20) — the driver's own `FerazelSilentMixer`, the factory never called;
+    /// `.none` / `.fake`: a shell whose factory returns nil / the fake.
+    enum Mixer { case none, headless, fake(FakeMixer) }
 
-    /// - Parameter mixer: what the factory returns (`.silent` = the headless frames mode's `FerazelSilentMixer`).
-    init(mute: Bool = false, macGamma: Bool = false, mixer: Mixer = .silent, boot: Bool = true) throws {
+    init(mute: Bool = false, macGamma: Bool = false, mixer: Mixer = .headless, boot: Bool = true) throws {
         var settings = FerazelSettings()
         settings.mute = mute
         settings.macGamma = macGamma
         let counters = self.counters
         let made: FerazelMixer?
         switch mixer {
-        case .none: made = nil
-        case .silent: made = FerazelSilentMixer()
+        case .none, .headless: made = nil
         case .fake(let m): made = m
         }
+        var headless = false
+        if case .headless = mixer { headless = true }
         driver = FerazelDriver(settings: settings, text: StubGlyphRasterizer(), files: files, seed: { Rig.seed },
                                keyCharacter: { _ in nil }, dateTime: { Rig.dateTime },
                                mixer: { counters.mixerFactoryCalls += 1; return made },
-                               beeper: { counters.beeps += 1 }, log: { counters.logs.append($0) })
+                               beeper: { counters.beeps += 1 }, log: { counters.logs.append($0) },
+                               headless: headless)
         if boot { try driver.boot(dataDirectory: FerazelData.dataDirectory()) }
     }
 

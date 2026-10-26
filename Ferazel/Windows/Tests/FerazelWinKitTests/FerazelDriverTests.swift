@@ -8,17 +8,20 @@ import XCTest
 /// level frame, the present (RGBA and the Mac's ARGB words, MacGamma), the dialog pictures, the level services and the
 /// boot's two loads. Frames use `StubGlyphRasterizer`, the fixed seed and clock, and the silent mixer (Ruling 20).
 @MainActor final class FerazelDriverTests: XCTestCase {
-    /// Self-measured (WF1, 2026-10-26): the tick on which the flow first stands in the main menu, counted from the
-    /// first tick, and the presented frame there.
+    /// Self-measured (WF1, 2026-10-26) in the headless frames setup (Ruling 20: muted, the silent mixer draining the
+    /// Sound Tool per tick, the fixed seed and clock, stub text): the tick on which the flow first stands in the main
+    /// menu, counted from the first tick, and the presented frame there.
     static let bootTicks = 360
     static let mainMenuFNV: UInt64 = 0xae2b_1ee0_8c08_9b2a
-    /// New Game (N held one tick in the menu): ticks from the press to level 1's first presented frame, and its FNV.
+    /// New Game (N held in the menu): ticks from the first held tick to level 1's first presented frame, and its FNV.
     static let newGameTicks = 107
     static let levelOneFNV: UInt64 = 0xc99c_e8e8_5b4b_d8f7
 
     func testBootReachesMainMenuAndPresents() throws {
-        let rig = try Rig(mute: true)
+        let rig = try Rig(mute: true, mixer: .headless)
         try rig.toMainMenu()
+        XCTAssertEqual(rig.counters.mixerFactoryCalls, 0)
+        XCTAssertEqual(rig.driver.silentMixer?.ticks, rig.ticks, "the silent mixer drained every tick")
         let rgba = try XCTUnwrap(rig.lastRGBA)
         XCTAssertEqual(rgba.count, FerazelDriver.width * FerazelDriver.height * 4)
         XCTAssertEqual(rig.ticks, Self.bootTicks, "boot → main menu ticks")
@@ -59,18 +62,25 @@ import XCTest
             if a[i] != b[i] { changed += 1 }
         }
         XCTAssertGreaterThan(changed, 0)
-        // The dialog pictures go through the same LUT.
-        let p = try XCTUnwrap(off.driver.dialogPicture(CreditsScroll.stripPicture))
-        let q = try XCTUnwrap(on.driver.dialogPicture(CreditsScroll.stripPicture))
+        // The dialog pictures go through the same LUT (the credits background, PICT 4804, has mid-tones; the strip is
+        // black and white only).
+        let p = try XCTUnwrap(off.driver.dialogPicture(4804))
+        let q = try XCTUnwrap(on.driver.dialogPicture(4804))
+        // The picture has mid-tones (the LUT moves them; 0 and 255 are its fixed points), so gamma must change it.
+        let midTones = p.rgba.enumerated().filter { i, v in i % 4 != 3 && v != 0 && v != 255 }.count
+        XCTAssertGreaterThan(midTones, 0)
+        XCTAssertNotEqual(q.rgba, p.rgba, "MacGamma reaches the dialog pictures")
         XCTAssertEqual(q.rgba, p.rgba.enumerated().map { i, v in i % 4 == 3 ? v : FerazelDriver.macGammaLUT[Int(v)] })
     }
 
     func testNewGameReachesLevelOneFirstFrame() throws {
-        let rig = try Rig(mute: true)
+        let rig = try Rig(mute: true, mixer: .headless)
         try rig.toMainMenu()
         let start = rig.ticks
-        try rig.step(FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey])))
-        try rig.drive { $0.flow.levelRun != nil && $0.lastOutput.present }
+        try rig.drive(input: { _ in FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey])) }) {
+            $0.flow.levelRun != nil && $0.lastOutput.present
+        }
+        XCTAssertNotNil(rig.driver.silentMixer)
         XCTAssertEqual(rig.flow.state, .newGame)
         XCTAssertEqual(rig.flow.levelRun?.levelNumber, 1)
         XCTAssertEqual(rig.ticks - start, Self.newGameTicks, "N → level 1's first presented frame")

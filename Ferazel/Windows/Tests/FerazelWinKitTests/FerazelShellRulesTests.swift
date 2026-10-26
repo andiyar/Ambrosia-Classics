@@ -41,6 +41,21 @@ import XCTest
         XCTAssertEqual(muted.counters.mixerFactoryCalls, 0, "muted: no mixer through boot + New Game")
         XCTAssertTrue(muted.driver.playingSounds().isEmpty)
 
+        // The headless frames mode, muted: still no factory call, but the silent mixer drains the Sound Tool, so
+        // "playing" follows the sounds (Ruling 20).
+        let frames = try Rig(mute: true, mixer: .headless)
+        try frames.toMainMenu()
+        var heard = false
+        try frames.drive(max: 100, input: { _ in FrontInput(keys: KeyState(pressed: [MainMenu.newGameKey])) }) { r in
+            heard = !r.driver.playingSounds().isEmpty
+            return heard
+        }
+        XCTAssertEqual(frames.counters.mixerFactoryCalls, 0, "headless + muted: the factory is never called")
+        XCTAssertNotNil(frames.driver.silentMixer)
+        XCTAssertTrue(heard, "the menu's button sound is seen playing")
+        frames.driver.beep()
+        XCTAssertEqual(frames.counters.beeps, 0)
+
         let fake = FakeMixer()
         let loud = try Rig(mixer: .fake(fake))
         XCTAssertEqual(loud.counters.mixerFactoryCalls, 1, "unmuted: exactly one mixer, at boot")
