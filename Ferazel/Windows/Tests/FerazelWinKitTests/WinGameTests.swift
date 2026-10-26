@@ -2,6 +2,7 @@ import FerazelCore
 import FerazelRender
 @testable import FerazelWinKit
 import Foundation
+import HectorInput
 import XCTest
 
 /// WF3 (D43 Rulings 8, 9, 20): the Windows game loop `WinGame` driven headless through the scripted host — no SDL, no
@@ -10,12 +11,12 @@ import XCTest
 @MainActor final class WinGameTests: XCTestCase {
     /// A headless (`--frames`) game on the real data, in-memory prefs, the baked fonts, stub dialogs and panels.
     static func game(script: String = "", arguments: [String] = [], wallClock: (UInt32, UInt32) = (0x1111_1111, 77),
-                     dialogs: any WinDialogs = WinStubDialogs(), boot: Bool = true) throws
-        -> (WinGame, WinScriptedHost) {
+                     dialogs: any WinDialogs = WinStubDialogs(), boot: Bool = true,
+                     padSource: (() -> ShellPadState)? = nil) throws -> (WinGame, WinScriptedHost) {
         let args = try WinArgs.parse(["--frames", "100000"] + arguments, environment: [:])
         let host = WinScriptedHost(script: try WinKeyScript(text: script), wallClock: wallClock)
         let game = WinGame(args: args, host: host, text: try BakedTextTests.baked(),
-                           files: WinFiles(prefsURL: nil, savesFolder: nil), dialogs: dialogs)
+                           files: WinFiles(prefsURL: nil, savesFolder: nil), dialogs: dialogs, padSource: padSource)
         if boot { try game.boot(dataDirectory: FerazelData.dataDirectory()) }
         return (game, host)
     }
@@ -45,13 +46,25 @@ import XCTest
         XCTAssertEqual(try Self.fnv(game), hex(BakedTextTests.bakedMainMenuFNV), "main menu RGBA FNV")
         XCTAssertEqual(host.presented.last.map(fnv1a64), BakedTextTests.bakedMainMenuFNV, "the host got that frame")
         XCTAssertFalse(game.finished)
+        // Ctrl+M in the main menu is Game ▸ Music; an autorepeat picks it again (AppKit's key equivalents repeat);
+        // Ctrl+N falls through to the menu's polled N; Alt+Enter's repeat does not toggle again.
+        host.inject(.keyDown(keyCode: 0x37, modifiers: .command, isRepeat: false))
+        host.inject(.keyDown(keyCode: 0x2E, modifiers: .command, isRepeat: false))
+        host.inject(.keyDown(keyCode: 0x2E, modifiers: .command, isRepeat: true))
+        host.inject(.keyUp(keyCode: 0x2E))
+        host.inject(.keyDown(keyCode: 0x2D, modifiers: .command, isRepeat: false))
+        host.inject(.keyUp(keyCode: 0x2D))
+        game.step()
+        XCTAssertEqual(game.shortcutsTaken, [.music, .music])
+        XCTAssertEqual(game.menuState.menusLive, true)
     }
 
     // MARK: 2 · 240 Hz wakes, one flow step per new tick, none while a dialog is up
 
     func testOneFlowStepPerNewTickAndNoneWhileModal() throws {
         let dialogs = HeldDialogs()
-        let (game, host) = try Self.game(dialogs: dialogs)
+        var pad = ShellPadState()
+        let (game, host) = try Self.game(dialogs: dialogs, padSource: { pad })
         for _ in 0..<40 {
             game.step()
             host.advance()
@@ -64,18 +77,33 @@ import XCTest
             host.advance()
         }
         XCTAssertEqual(game.flowSteps, 10, "the flow is held while a dialog is up")
+        // With the dialog up the pad is polled once per tick and its Return / Esc go to the dialog (the Mac's
+        // `padKeyPanel` rule); an arrow does not.
+        pad = ShellPadState(buttons: [.south])
+        for _ in 0..<4 { game.step(); host.advance() }
+        pad = ShellPadState(buttons: [.left])
+        for _ in 0..<4 { game.step(); host.advance() }
+        pad = ShellPadState(buttons: [.back])
+        for _ in 0..<4 { game.step(); host.advance() }
+        pad = ShellPadState()
+        XCTAssertEqual(dialogs.padKeys, [FerazelPadLayout.returnKey, FerazelPadLayout.escapeKey])
+        XCTAssertEqual(game.flowSteps, 10)
         dialogs.showing = false
         for _ in 0..<8 {
             game.step()
             host.advance()
         }
         XCTAssertEqual(game.flowSteps, 12, "then once per new tick again, never catching up")
+        pad = ShellPadState(buttons: [.south])
+        for _ in 0..<4 { game.step(); host.advance() }
+        XCTAssertEqual(dialogs.padKeys.count, 2, "no dialog up: the pad is the game's")
+        XCTAssertEqual(game.flowSteps, 13)
         // Two wakes inside one tick never step twice; a skipped tick steps once with the latest `now`.
         host.skip(iterations: 9)
         game.step()
-        XCTAssertEqual(game.flowSteps, 13)
+        XCTAssertEqual(game.flowSteps, 14)
         game.step()
-        XCTAssertEqual(game.flowSteps, 13)
+        XCTAssertEqual(game.flowSteps, 14)
     }
 
     // MARK: 9 · the window's close box / Alt+F4 = the Dock's Quit (D40)
@@ -88,6 +116,23 @@ import XCTest
         Self.run(game, host) { $0.flowSteps == free + Self.settleSteps }   // past the level's opening
         XCTAssertEqual(game.flow.padContext, .playing)
         XCTAssertTrue(dialogs.shown.isEmpty)
+        // The level hid the cursor: hidden only over the canvas with the focus (Ruling 14).
+        XCTAssertTrue(host.cursorVisible, "no pointer seen yet: not over the canvas")
+        host.inject(.mouseMoved(x: 320, y: 240))
+        game.step(); host.advance()
+        XCTAssertFalse(host.cursorVisible, "over the canvas")
+        host.inject(.mouseMoved(x: 700, y: 240))
+        game.step(); host.advance()
+        XCTAssertTrue(host.cursorVisible, "off the canvas")
+        host.inject(.mouseMoved(x: 10, y: 10))
+        host.inject(.focusLost)
+        game.step(); host.advance()
+        XCTAssertTrue(host.cursorVisible, "without the focus")
+        host.inject(.focusGained)
+        game.step(); host.advance()
+        XCTAssertFalse(host.cursorVisible)
+        // Those four wakes made one tick; one more keeps the level's 2-tick cadence where the pin was measured.
+        for _ in 0..<4 { game.step(); host.advance() }
         host.inject(.quit)
         let before = game.flowSteps
         Self.run(game, host) { $0.flowSteps == before + 1 }
@@ -120,14 +165,23 @@ import XCTest
     // MARK: 10 · a quit before the flow exists ends at once
 
     func testQuitBeforeTheFlowExistsExitsZeroAtOnce() throws {
+        // A scripted `0 quit` takes the close box's path: the executable's pre-boot step ends the game, exit 0.
         let dialogs = WinStubDialogs()
-        let (game, host) = try Self.game(dialogs: dialogs, boot: false)
-        host.inject(.quit)
+        let (game, host) = try Self.game(script: "0 quit", dialogs: dialogs, boot: false)
         game.step()
         XCTAssertTrue(game.finished)
         XCTAssertEqual(game.exitCode, 0)
         XCTAssertTrue(dialogs.shown.isEmpty, "no confirm")
         XCTAssertEqual(game.flowSteps, 0)
+        XCTAssertEqual(host.pollEvents(), [], "the quit was delivered once")
+        // Each scripted event is delivered once: a second poll in the same wake (the pre-boot poll, then the loop's
+        // first) gets none of the script's; injected events still arrive; the next wake's script arrives.
+        let (_, twice) = try Self.game(script: "0 press n\n1 press m", boot: false)
+        XCTAssertEqual(twice.pollEvents(), [.keyDown(keyCode: 0x2D, modifiers: [], isRepeat: false)])
+        twice.inject(.focusLost)
+        XCTAssertEqual(twice.pollEvents(), [.focusLost])
+        twice.advance()
+        XCTAssertEqual(twice.pollEvents(), [.keyDown(keyCode: 0x2E, modifiers: [], isRepeat: false)])
     }
 
     // MARK: 18 · New Game through a key script
@@ -162,7 +216,8 @@ import XCTest
             XCTAssertEqual(host.wallClockReads, 0, "the host's wall clock is never read headless")
         }
         XCTAssertEqual(dumps[0], dumps[1], "same dump")
-        XCTAssertEqual(dates, [WinGame.headlessDateTime + 479 / 60, WinGame.headlessDateTime + 479 / 60])
+        XCTAssertEqual(dates, [0xBA00_0007, 0xBA00_0007], "GetDateTime = 0xBA000000 + 479 ticks / 60")
+        XCTAssertEqual(WinGame.headlessDateTime, 0xBA00_0000)
         // `--seed N` is the seed the flow gets.
         let (seeded, _) = try Self.game(arguments: ["--seed", "7"])
         XCTAssertEqual(seeded.seedUsed, 7)
@@ -178,5 +233,6 @@ import XCTest
     var isShowing: Bool { showing }
     func show(_ dialog: FerazelDialog, done: @escaping (DialogResult) -> Void) { done(.cancel) }
     func keyDown(_ keyCode: UInt16, modifiers: WinModifiers) {}
-    func padKeyDown(_ keyCode: UInt16) {}
+    var padKeys: [UInt16] = []
+    func padKeyDown(_ keyCode: UInt16) { padKeys.append(keyCode) }
 }

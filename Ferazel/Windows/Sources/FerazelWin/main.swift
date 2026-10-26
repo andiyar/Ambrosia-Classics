@@ -13,8 +13,8 @@
 // --frames HEADLESS MODE: N loop wakes of exactly 1/240 s (N/4 game ticks), the dummy SDL drivers forced, no audio
 //          device (the shared silent mixer drains the effects), in-memory prefs unless --prefs, no pad, the seed fixed
 //          (--seed N) and GetDateTime scripted; real input is ignored except the close box. --dump writes the last
-//          presented 640×480 frame as binary PPM; --keys plays a WinKeyScript. Prints a "video=… audio=…" line and a
-//          last line with the presented frame's RGBA FNV.
+//          presented 640×480 frame as binary PPM; --keys plays a WinKeyScript. Prints a "video=… audio=…" line (SDL's
+//          real drivers; audio=none, as no audio subsystem starts) and a last line with the presented frame's RGBA FNV.
 //
 // SDL drivers: SDL_VIDEO_DRIVER / SDL_AUDIO_DRIVER, or HECTOR_SDL_VIDEO_DRIVER / HECTOR_SDL_AUDIO_DRIVER (which win;
 // CrossOver strips SDL_*). Exit 0 on a normal quit, 1 on a failure, 64 on bad arguments.
@@ -87,10 +87,7 @@ do {
 } catch {
     if !headless { report(error.message) }
 }
-let prefsURL: URL? = args.prefsPath.map { URL(fileURLWithPath: $0) }
-    ?? (headless ? nil : folder?.appendingPathComponent(PrefsFile.fileName))
-let savesFolder: URL? = args.savesPath.map { URL(fileURLWithPath: $0, isDirectory: true) }
-    ?? folder ?? prefsURL?.deletingLastPathComponent()
+let (prefsURL, savesFolder) = WinFiles.locations(args, folder: folder)
 if let prefsURL { startupLog = WinLog(besidePrefs: prefsURL) }
 let files = WinFiles(prefsURL: prefsURL, savesFolder: savesFolder)
 startupLog?.write("Ferazel's Wand for Windows (Ambrosia Classics) starting")
@@ -110,8 +107,9 @@ func startupFailure(_ message: String) -> Never {
 // MARK: SDL drivers (Ruling 20)
 
 SDLHost.applyDriverOverridesFromEnvironment()
-let audioHint = WinAudioDriver.hint(arguments: argv, environment: environment)
+let audioHint = WinAudioDriver.hint(arguments: args, environment: environment)
 if let audioHint { SDLHost.setHint("SDL_AUDIO_DRIVER", audioHint, override: true) }
+if args.muted { startupLog?.write("muted: the SDL audio driver is forced to dummy; no audio opens, no beeps") }
 if headless {
     // A headless run never reaches a real display or audio device, whatever the environment says.
     SDLHost.forceDummyDrivers()
@@ -253,7 +251,8 @@ let game = WinGame(args: args, host: host, text: text, files: files, audio: audi
                    log: report, padSource: headless ? nil : { sdl.padState() })
 host.present(rgba: [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4).enumerated()
     .map { $0.offset % 4 == 3 ? 0xff : 0 })                               // black until the flow first presents
-// A quit that arrives before the flow exists ends at once (the Mac's `applicationShouldTerminate` before launch).
+// A quit that arrives before the flow exists ends at once (the Mac's `applicationShouldTerminate` before launch). Each
+// scripted event reaches the game once: a wake's script is delivered by its first poll only (`WinScriptedHost`).
 game.step()
 if game.finished {
     startupLog?.write("quit before the game started")
@@ -265,8 +264,9 @@ do {
     startupFailure(WinStartup.failureMessage("cannot load the original data from \(WinStartup.displayPath(dataDir))",
                                              error: error, logURL: startupLog?.url))
 }
-let audioName = audioDevice?.outputs.isEmpty == false ? SDLHost.currentAudioDriver
-    : (headless ? "dummy" : (audioHint ?? "none"))
+// SDL's real drivers (BTX `main.swift`). The audio subsystem starts only with an output: headless and muted runs open
+// none (HectorSDL has no way to start the subsystem alone), so they print `audio=none` — nothing was started.
+let audioName = audioDevice?.outputs.isEmpty == false ? SDLHost.currentAudioDriver : "none"
 let launchLine = "window: scale \(windowScale), video=\(SDLHost.currentVideoDriver) audio=\(audioName)"
 startupLog?.write(launchLine)
 startupLog?.write(sdl.gamepadsAvailable ? "gamepads: \(sdl.connectedGamepadCount) connected" : "gamepads: unavailable")

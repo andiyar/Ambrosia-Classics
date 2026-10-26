@@ -92,6 +92,8 @@ public enum WinClock {
     public private(set) var seedUsed: Int32?
     /// The last tick's output.
     private(set) var lastOutput = FrontOutput()
+    /// Every Ctrl shortcut taken, in order (tests).
+    private(set) var shortcutsTaken: [PauseRun.MenuItem] = []
 
     /// - Parameters:
     ///   - text: the baked fonts (`BakedTextRasterizer`).
@@ -163,9 +165,10 @@ public enum WinClock {
         let events = host.pollEvents()
         polling = false
         for e in events {
+            guard !finished else { return }   // a live redraw inside the poll may have ended the game
             handle(e)
-            if finished { return }
         }
+        guard !finished else { return }
         runDueTick()
     }
 
@@ -256,7 +259,10 @@ public enum WinClock {
                 host.toggleFullScreen()
                 represent()
             case .shortcut(let item):
-                if !isRepeat { driver.flow?.menuChosen(item) }
+                // An autorepeat picks again, as AppKit's menu key equivalents do on the Mac (`FerazelMenus` takes
+                // every key-down `menuHasKeyEquivalent` is asked about, repeats included).
+                shortcutsTaken.append(item)
+                driver.flow?.menuChosen(item)
             case .dialog:
                 dialogs.keyDown(code, modifiers: mods)
             }
@@ -403,11 +409,20 @@ public enum WinClock {
         return clock
     }
 
+    /// The injected events, then — on this wake's FIRST poll only — the script's (a second poll in the same wake,
+    /// e.g. the executable's pre-boot poll and the loop's first, never delivers a scripted event twice).
     public func pollEvents() -> [WinEvent] {
-        let events = injected + scripted.events()
+        var events = injected
         injected = []
+        if deliveredFrame != scripted.frame {
+            deliveredFrame = scripted.frame
+            events += scripted.events()
+        }
         return events
     }
+
+    /// The wake whose script was delivered last.
+    private var deliveredFrame: Int?
 
     public func present(rgba: [UInt8]) {
         presented.append(rgba)

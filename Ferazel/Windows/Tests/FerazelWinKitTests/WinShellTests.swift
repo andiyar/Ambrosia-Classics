@@ -218,6 +218,20 @@ import XCTest
         XCTAssertNil(files.loadPrefs())
         try files.storePrefs(Data([1, 2, 3]))
         XCTAssertEqual(files.loadPrefs(), Data([1, 2, 3]))
+        // Where a launch keeps its files: interactive — the folder; headless — only what the command line names, so
+        // a `--frames` run never creates or reads a player's folder (the stub save panel gets no folder to create).
+        let f = URL(fileURLWithPath: "/tmp/F", isDirectory: true)
+        let live = WinFiles.locations(try WinArgs.parse([], environment: [:]), folder: f)
+        XCTAssertEqual(live.prefsURL?.lastPathComponent, PrefsFile.fileName)
+        XCTAssertEqual(live.savesFolder, f)
+        let frames = WinFiles.locations(try WinArgs.parse(["--frames", "4"], environment: [:]), folder: f)
+        XCTAssertNil(frames.prefsURL)
+        XCTAssertNil(frames.savesFolder)
+        XCTAssertNil(try WinFiles(prefsURL: frames.prefsURL, savesFolder: frames.savesFolder).ensureSavesFolder())
+        let named = WinFiles.locations(try WinArgs.parse(["--frames", "4", "--saves", "/tmp/S", "--prefs", "/tmp/P"],
+                                                         environment: [:]), folder: f)
+        XCTAssertEqual(named.savesFolder?.path, "/tmp/S")
+        XCTAssertEqual(named.prefsURL?.path, "/tmp/P")
         // A default save name made Windows-legal (Ruling 10).
         XCTAssertEqual(WinFiles.legalSaveName("Ferazel: a/b\\c*?\"<>|\u{1}"), "Ferazel- a-b-c-------")
         XCTAssertEqual(WinFiles.legalSaveName("Saved Game 2. . "), "Saved Game 2")
@@ -275,13 +289,20 @@ import XCTest
     // MARK: 14 · the audio driver hint (Ruling 20) and the muted beep
 
     func testAudioDriverHintAndMutedBeeps() throws {
-        XCTAssertEqual(WinAudioDriver.hint(arguments: ["--mute"], environment: [:]), "dummy")
-        XCTAssertEqual(WinAudioDriver.hint(arguments: [], environment: ["FERAZEL_MUTE": "1"]), "dummy")
-        XCTAssertEqual(WinAudioDriver.hint(arguments: ["--mute"], environment: ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]),
-                       "dummy")
-        XCTAssertEqual(WinAudioDriver.hint(arguments: [], environment: ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "wasapi")
-        XCTAssertNil(WinAudioDriver.hint(arguments: [], environment: [:]))
-        XCTAssertNil(WinAudioDriver.hint(arguments: [], environment: ["FERAZEL_MUTE": "0", "HECTOR_SDL_AUDIO_DRIVER": ""]))
+        func hint(_ a: [String], _ env: [String: String] = [:]) throws -> String? {
+            WinAudioDriver.hint(arguments: try WinArgs.parse(a, environment: env), environment: env)
+        }
+        XCTAssertEqual(try hint(["--mute"]), "dummy")
+        XCTAssertEqual(try hint([], ["FERAZEL_MUTE": "1"]), "dummy")
+        XCTAssertEqual(try hint(["--mute"], ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "dummy")
+        XCTAssertEqual(try hint(["-FerazelMute", "YES"], ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "dummy",
+                       "the hidden switch mutes the driver too")
+        XCTAssertEqual(try hint(["-FerazelMute", "y"], ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "wasapi", "\"y\" is false")
+        XCTAssertEqual(try hint(["--data", "--mute"], ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "wasapi",
+                       "--mute as --data's value is no switch")
+        XCTAssertEqual(try hint([], ["HECTOR_SDL_AUDIO_DRIVER": "wasapi"]), "wasapi")
+        XCTAssertNil(try hint([]))
+        XCTAssertNil(try hint([], ["FERAZEL_MUTE": "0", "HECTOR_SDL_AUDIO_DRIVER": ""]))
         // Muted, `MessageBeep` (the injected beeper) is never called; unmuted, once per beep.
         for (args, beeps) in [(["--mute"], 0), (["-FerazelMute", "YES"], 0), ([], 1)] {
             var count = 0
@@ -393,9 +414,9 @@ import XCTest
         }
         // The scripted clock: 240 wakes a second, a tick every 4.
         var input = WinScriptedInput(script: s)
-        XCTAssertEqual(input.ticks, WinScriptedInput.baseTick)
+        XCTAssertEqual(input.ticks, 1000, "the shared driver tests' first tick (Rig)")
         for _ in 0..<7 { input.advance() }
-        XCTAssertEqual(input.ticks, WinScriptedInput.baseTick + 1)
+        XCTAssertEqual(input.ticks, 1001)
         XCTAssertEqual(input.seconds, 7.0 / 240.0, accuracy: 1e-12)
     }
 }

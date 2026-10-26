@@ -59,6 +59,17 @@ public final class WinFiles: FrontFiles {
         #endif
     }
 
+    /// Where this launch keeps its files (Ruling 10): interactive — `--prefs` else `folder`'s `PrefsFile.fileName`, and
+    /// `--saves` else `folder` (else the prefs file's folder); headless (`--frames`) — only what the command line names
+    /// (in-memory prefs, no saves folder), so a scripted run never reads, writes or creates a player's folder.
+    public static func locations(_ args: WinArgs, folder: URL?) -> (prefsURL: URL?, savesFolder: URL?) {
+        let prefs = args.prefsPath.map { URL(fileURLWithPath: $0) }
+        let saves = args.savesPath.map { URL(fileURLWithPath: $0, isDirectory: true) }
+        if args.headless { return (prefs, saves) }
+        let prefsURL = prefs ?? folder?.appendingPathComponent(PrefsFile.fileName)
+        return (prefsURL, saves ?? folder ?? prefsURL?.deletingLastPathComponent())
+    }
+
     /// Creates the saves folder (and its parents) when it is missing; returns it (nil when there is none).
     @discardableResult
     public func ensureSavesFolder() throws -> URL? {

@@ -73,8 +73,8 @@ public enum WinEvent: Sendable, Hashable {
 
     /// A key-down, routed as the Mac's menu bar and window would: Caps Lock is a lock; a modifier key is held (the
     /// Mac's flagsChanged); Alt+Enter toggles full screen; with a dialog up the dialog takes it; a Ctrl + letter the
-    /// menus take (`WinShortcuts.take`) is eaten; anything else is held. Repeats route the same way (the caller acts
-    /// on a repeat's full-screen toggle or shortcut not at all).
+    /// menus take (`WinShortcuts.take`) is eaten; anything else is held. Repeats route the same way (the caller picks
+    /// a shortcut again on a repeat, as AppKit does, and ignores a repeat's full-screen toggle).
     mutating func keyDown(_ code: UInt16, modifiers: WinModifiers, isRepeat: Bool, shortcuts: WinShortcuts,
                           menus: MenuState, modalUp: Bool, dialogUp: Bool) -> Route {
         if code == Self.capsLockCode { return .ignored }

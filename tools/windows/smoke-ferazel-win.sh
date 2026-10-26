@@ -4,7 +4,8 @@
 #
 #   --mac-only     the Mac SDL development build (Ferazel/Windows `FerazelWin`, brew sdl3), headless: boots to the main
 #                  menu in --frames mode, muted, on the dummy SDL drivers, and checks: exit 0, the launch line ends
-#                  "video=dummy audio=dummy", the presented main menu's RGBA FNV = WF2's (0xae2b1ee08c089b2a).
+#                  "video=dummy audio=none" (SDL's real drivers; a --frames run starts no audio subsystem — HectorSDL
+#                  starts it only with an output), the presented main menu's RGBA FNV = WF2's (0xae2b1ee08c089b2a).
 #   --check-guard  evaluate the launch guard (hour + drivers + mute) and exit: builds nothing, runs nothing
 #   (no argument)  the CrossOver half — not built yet (WF6)
 #
@@ -65,10 +66,10 @@ set +e; "$bin" $run_args > "$out/run.txt" 2>&1; code=$?; set -e
 cat "$out/run.txt"
 ok=1
 (( code == 0 )) || { print "smoke-ferazel-win: exit $code (want 0)"; ok=0; }
-grep -qE 'video=dummy audio=dummy$' "$out/run.txt" || { print "smoke-ferazel-win: no 'video=dummy audio=dummy' line"; ok=0; }
+grep -qE 'video=dummy audio=none$' "$out/run.txt" || { print "smoke-ferazel-win: no 'video=dummy audio=none' line"; ok=0; }
 grep -qF "presented RGBA FNV $menu_fnv" "$out/run.txt" || { print "smoke-ferazel-win: main menu FNV is not $menu_fnv"; ok=0; }
 if (( ok )); then
-    print "smoke-ferazel-win: mac-only: main menu: identical (exit 0, video=dummy audio=dummy, FNV $menu_fnv)"
+    print "smoke-ferazel-win: mac-only: main menu: identical (exit 0, video=dummy audio=none, FNV $menu_fnv)"
 else
     print "smoke-ferazel-win: mac-only: FAILED (log $out/run.txt)"
     exit 1

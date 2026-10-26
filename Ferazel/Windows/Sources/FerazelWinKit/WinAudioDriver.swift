@@ -4,17 +4,17 @@ import HectorAudio
 
 /// The Windows mute switch's SDL side (D42, D43 Ruling 20): which SDL audio driver to force before any audio opens.
 public enum WinAudioDriver {
-    public static let muteArgument = "--mute"
-    public static let muteEnvironment = "FERAZEL_MUTE"
     /// HectorSDL's own name for SDL_AUDIO_DRIVER (CrossOver strips SDL_*, `SDLHost.applyDriverOverridesFromEnvironment`).
     public static let driverEnvironment = "HECTOR_SDL_AUDIO_DRIVER"
     public static let dummy = "dummy"
 
-    /// `--mute` or `FERAZEL_MUTE=1` → "dummy" (whatever else is asked); else `HECTOR_SDL_AUDIO_DRIVER` as given; else
-    /// nil (SDL's default). The executable applies it with override priority after
-    /// `SDLHost.applyDriverOverridesFromEnvironment()`, before any audio opens.
-    public static func hint(arguments: [String], environment: [String: String]) -> String? {
-        if arguments.contains(muteArgument) || environment[muteEnvironment] == "1" { return dummy }
+    /// Muted — `--mute`, the hidden `-FerazelMute YES` (the Mac's argument-domain read) or `FERAZEL_MUTE=1`, all read
+    /// by `WinArgs.parse` — → "dummy" (whatever else is asked); else `HECTOR_SDL_AUDIO_DRIVER` as given; else nil
+    /// (SDL's default). From the PARSED arguments, so an option's value (`--data --mute`) is never read as a switch.
+    /// The executable applies it with override priority after `SDLHost.applyDriverOverridesFromEnvironment()`,
+    /// before any audio opens.
+    public static func hint(arguments: WinArgs, environment: [String: String]) -> String? {
+        if arguments.muted { return dummy }
         if let d = environment[driverEnvironment], !d.isEmpty { return d }
         return nil
     }
