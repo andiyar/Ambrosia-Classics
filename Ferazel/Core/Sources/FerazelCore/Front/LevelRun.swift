@@ -339,6 +339,20 @@ public final class LevelRun {
     /// The pause loop dispatched the quit event: the run ended `.quit` (`.Quit` from inside `.Pause`).
     public private(set) var quitEventDispatched = false
 
+    /// QT (D40): a system Quit (Dock / app menu) while this run is up. A level running free (playing, no modal,
+    /// suspension, pause, conversation, save or upgrade up, its loop not ending) gets the ⌘Q confirm at its next
+    /// `.CheckGameLoopKeys` (`FerazelSession.requestSystemQuit`); a request already pending or a quit confirm already up
+    /// takes the new one in (nothing added). `false` = neither: the caller queues the quit event as before.
+    public func systemQuit() -> Bool {
+        guard end == nil, let s = session else { return false }
+        if s.systemQuitPending { return true }
+        if case .confirm(.confirmQuit)? = keysModal { return true }
+        guard playing, !s.loopEnded, s.suspension == nil, keysModal == nil, saveSG == nil, conversation == nil,
+              upgrade == nil, pause == nil else { return false }
+        s.requestSystemQuit()
+        return true
+    }
+
     /// The `.CheckGameLoopKeys` modal in progress.
     private enum KeysModal {
         case confirm(GameLoopKeyEvent)
@@ -632,6 +646,8 @@ public final class LevelRun {
         if s.world.stageCompleteSkip { skipStageComplete = true }
         // The loop is over after this iteration (M l. 5229); its own wait still runs out first.
         playing = false
+        // QT: a system Quit the loop ended before asking is not lost — queued as the quit event, as before D40.
+        if s.systemQuitPending && !appleEvents.quit { appleEvents.post(.quit) }
         exitAt = now &+ UInt32(reduce ? (ops.drawn ? 4 : 0) : 2)
         stages = [.exit]
         return true

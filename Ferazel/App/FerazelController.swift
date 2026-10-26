@@ -649,10 +649,27 @@ import HectorShell
     /// with "Allow background tasks" fetches it and drops it (nothing more happens, the game goes on); anywhere else it
     /// waits (a level with the pref off holds it until a pause or the menu). A terminate while a quit is already
     /// queued, or while `.Quit` runs, adds nothing. File ▸ Quit (A1b) is a menu pick, not a terminate.
+    ///
+    /// QT — D40 (Ben's Q5), a deliberate departure from the original's wait: a logout / restart / shutdown quits at
+    /// once from anywhere, no dialog (`.Quit` writes no prefs — `GameFlow.quit` — so nothing is owed on the way out;
+    /// `applicationWillTerminate` stops the audio); a Dock or app-menu Quit during a level running free raises the
+    /// level's own "Are you sure you want to quit?" at its next tick, as ⌘Q (`GameFlow.systemQuit`). Either way no
+    /// terminate is left pending (never `.terminateLater`).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let flow, !quitApproved else { return .terminateNow }
-        if !flow.quitting && !flow.appleEvents.quit { flow.quitEvent() }
+        if Self.isSessionEnding(NSAppleEventManager.shared().currentAppleEvent) { return .terminateNow }
+        flow.systemQuit()
         return .terminateCancel
+    }
+
+    /// The quit Apple event's `kAEQuitReason` is a logout, restart or shutdown.
+    private static func isSessionEnding(_ event: NSAppleEventDescriptor?) -> Bool {
+        guard let reason = event?.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason))?.enumCodeValue else {
+            return false
+        }
+        let ending: [OSType] = [kAELogOut, kAEReallyLogOut, kAEShowRestartDialog, kAERestart, kAEShowShutdownDialog,
+                                kAEShutDown].map { OSType($0) }
+        return ending.contains(reason)
     }
 
     /// Finder open (`.DoOpenDocAE`): queued in the flow like the quit — the menu pass's `.CheckEvent` continues with the

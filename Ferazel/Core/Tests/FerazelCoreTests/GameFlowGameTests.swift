@@ -1019,4 +1019,95 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertTrue(rig12.files.reads.isEmpty)
         XCTAssertTrue(rig12.flow.appleEvents.isEmpty)
     }
+
+    // QT (D40, Ben's Q5): a system Quit (Dock / app menu) during a free level raises the level's own ⌘Q confirm at its
+    // next `.CheckGameLoopKeys` — a deliberate departure from the original's queued wait.
+    func testSystemQuitInLevelRaisesQuitConfirm() throws {
+        let r = try resources()
+        let rig = Rig(r)
+        rig.flow.toggles.live.backgroundTasks = 1          // the fetch would drop a queued quit: the seam bypasses it
+        rig.toMenu()
+        rig.press(0x2d)
+        rig.drive { self.isRunning($0, level: 1) }
+        rig.flow.systemQuit()
+        XCTAssertTrue(rig.flow.appleEvents.isEmpty, "not queued: the level asks")
+        let ask = rig.drive(max: 10) { _ in self.asked(rig.last) }
+        XCTAssertEqual(dialogs(ask), [.confirm(text: GameLoopKeys.quitText)])
+        XCTAssertTrue(ask.last?.out.requests.contains(.showCursor) ?? false, "as ⌘Q: `ShowCursorSafe` first")
+        XCTAssertNil(rig.flow.levelRun?.end)
+        XCTAssertFalse(rig.flow.quitting)
+    }
+
+    func testSystemQuitConfirmOutcomes() throws {
+        let r = try resources()
+        // OK → `DAT_100a5106`, the run ends `.quit`, the flow's `.Quit` → `ExitToShell`.
+        let ok = Rig(r)
+        ok.toMenu()
+        ok.press(0x2d)
+        ok.drive { self.isRunning($0, level: 1) }
+        ok.flow.systemQuit()
+        ok.drive(max: 10) { _ in self.asked(ok.last) }
+        ok.flow.dialogDone(.ok)
+        let quit = ok.drive { $0.state == .quit }
+        XCTAssertTrue(ok.flow.quitting)
+        XCTAssertTrue(ok.flow.quitRequested, "the ⌘Q path (`fd50`), not the quit event's")
+        XCTAssertEqual(quit.last?.out.requests.suffix(2), [.showMenuBar, .quit])
+        // Cancel → play on, nothing queued, no second confirm.
+        let cancel = Rig(r)
+        cancel.toMenu()
+        cancel.press(0x2d)
+        cancel.drive { self.isRunning($0, level: 1) }
+        cancel.flow.systemQuit()
+        cancel.drive(max: 10) { _ in self.asked(cancel.last) }
+        cancel.flow.dialogDone(.cancel)
+        let before = try XCTUnwrap(cancel.flow.levelRun).iterations
+        let after = cancel.drive(max: 60) { ($0.levelRun?.iterations ?? 0) > before + 20 }
+        XCTAssertEqual(dialogs(after), [], "the request was used once")
+        XCTAssertTrue(cancel.flow.appleEvents.isEmpty)
+        XCTAssertNil(cancel.flow.levelRun?.end)
+        XCTAssertFalse(cancel.flow.quitting)
+        XCTAssertEqual(cancel.flow.state, .newGame)
+    }
+
+    func testSystemQuitOutsideLevelUnchanged() throws {
+        let r = try resources()
+        // The main menu: the queued quit event, dispatched by the menu pass → `.Quit`.
+        let menu = Rig(r)
+        menu.toMenu()
+        menu.flow.systemQuit()
+        XCTAssertTrue(menu.flow.appleEvents.quit)
+        menu.drive { $0.state == .quit }
+        XCTAssertTrue(menu.flow.quitting)
+        XCTAssertFalse(menu.flow.quitRequested)
+        // Paused: queued as before; the pause loop's poll dispatches it → `.Quit` from inside `.Pause`.
+        let caps: (GameFlow) -> FrontInput = { _ in FrontInput(capsLock: true) }
+        let paused = Rig(r)
+        paused.toMenu()
+        paused.press(0x2d)
+        paused.drive { self.isRunning($0, level: 1) }
+        paused.drive(input: caps) { $0.menusLive }
+        XCTAssertNotNil(paused.flow.levelRun?.pause)
+        paused.flow.systemQuit()
+        XCTAssertTrue(paused.flow.appleEvents.quit)
+        let out = paused.drive(input: caps) { $0.state == .quit }
+        XCTAssertEqual(dialogs(out), [], "no confirm: the quit event's `.Quit`")
+        XCTAssertFalse(paused.flow.quitRequested)
+        // A second request while the confirm is up (or still pending) adds nothing.
+        let twice = Rig(r)
+        twice.toMenu()
+        twice.press(0x2d)
+        twice.drive { self.isRunning($0, level: 1) }
+        twice.flow.systemQuit()
+        twice.flow.systemQuit()
+        let ask = twice.drive(max: 10) { _ in self.asked(twice.last) }
+        XCTAssertEqual(dialogs(ask), [.confirm(text: GameLoopKeys.quitText)])
+        twice.flow.systemQuit()
+        XCTAssertTrue(twice.flow.appleEvents.isEmpty)
+        twice.flow.dialogDone(.cancel)
+        var k = 0
+        let later = twice.drive(max: 40) { _ in k += 1; return k == 40 }
+        XCTAssertEqual(dialogs(later), [], "one confirm for both requests")
+        XCTAssertTrue(twice.flow.appleEvents.isEmpty)
+        XCTAssertNil(twice.flow.levelRun?.end)
+    }
 }

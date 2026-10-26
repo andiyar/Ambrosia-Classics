@@ -629,6 +629,15 @@ public final class FerazelSession {
     /// and `.CapsLockDown()` live.
     private var frameKeys = KeyState()
     private var frameCapsLock = false
+    /// QT (D40, Ben's Q5 — a departure from the original, which queues the quit event): a system Quit (Dock / app
+    /// menu) asked for while the level runs free. The next `.CheckGameLoopKeys` past its gates takes the ⌘Q branch
+    /// (`.confirmQuit`) as if ⌘Q were down — no key is faked, so no other key read sees it — and clears the request.
+    public private(set) var systemQuitPending = false
+
+    /// QT: `LevelRun.systemQuit` — raise the ⌘Q confirm at the next `.CheckGameLoopKeys`.
+    func requestSystemQuit() {
+        systemQuitPending = true
+    }
 
     /// Where a finished special pass goes on: the frame's own `.PaintFrameWrap`, or a nested one (P1) and what follows
     /// it in `.CheckGameLoopKeys` / `.Pause`.
@@ -664,7 +673,9 @@ public final class FerazelSession {
     /// `.PaintFrameWrap`: the gates, the key branch (suspends for the flow), else the counters and Caps Lock.
     private func checkGameLoopKeys(_ ops: FrameOps) -> FrameOps {
         guard !world.gammaFade.fadedOut, world.gammaFade.done else { return loopTail(ops) }
-        guard let e = GameLoopKeys.branch(frameKeys) else { return keysCounters(ops) }
+        let asked: GameLoopKeyEvent? = systemQuitPending ? .confirmQuit : nil
+        systemQuitPending = false
+        guard let e = asked ?? GameLoopKeys.branch(frameKeys) else { return keysCounters(ops) }
         var ops = ops
         // `.RestoreWindowBackground` (`DrawBlackLines` in mode 3), `ShowCursorSafe`, `FlushEvents`, `InputActivate(0,
         // 0)` (⌘P: `FlushEvents` before `ShowCursorSafe`).
