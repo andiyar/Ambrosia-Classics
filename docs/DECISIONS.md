@@ -1530,6 +1530,13 @@ the spin, M l. 49378) → **457**. No golden moved (no Box is awake on the golde
 assertion pinned the pre-tail placeholder → the dump's (3011, 1456). Both tasks two Opus legs, MERGEABLE WITH FIXES →
 tests rounds; two small behaviour changes seat-read (mirror carry; `+0x182` cleared before unbuilt arms return).
 
+**As built — wave 4.6Q + wave 4.7 part 1 (loop run 27, 2026-10-26; main 3efd22f):** QT (Ben's Q5, D40 — see D40's
+as-built) → 460; BX2 ◈ (chests, doors and keys, the thought balloons; the 2907 timer's contact; a chest drop no Bonus arm
+handles takes the Bonus Setup's item arm as the binary does — light + R(16) + R(60); no golden moved) → 466; BT (Buttons —
+a new `.button` handler, pressed **twice a frame** by a player standing on one, as the binary's two collision passes do;
+gates 2940 with idle-only sounds via `SoundVoices`; switch blocks; boulder spouts with the shot ◇ Phase 5; no golden
+moved) → **472**. Census 1,108/0, Ferazel builds, HK 35a85ba untouched. Details in the plan's "As executed" notes.
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
@@ -1569,3 +1576,23 @@ second, never more — the port matches the binary's cap. Ben: "huh. let's keep 
    Levels 3–4 open in Phase 4 with enemies still until Phase 5; the later-level spells and items are built and tested now;
    item counts are drawn in Geneva by the Mac's font engine. No change to the plan.
 
+
+**As built (loop run 27, 2026-10-26) — task QT:** `GameFlow.systemQuit()` → `LevelRun.systemQuit()` → a session flag
+(`FerazelSession.requestSystemQuit`) taken at the session's next `.CheckGameLoopKeys`, where ⌘Q's `.confirmQuit` is
+raised (no ⌘ key faked). A level counts as free when it plays with no suspension, keys modal, save, conversation,
+upgrade or pause up; a Quit during the level's opening (stage load, chapter card, fades — seat ruling after review, so
+"Allow background tasks" cannot drop it) is held and asked once play starts; a level that ends before asking queues the
+old quit event; a second request while one is pending or the confirm is up adds nothing. A logout/restart/shutdown
+(`kAEQuitReason`) returns `.terminateNow` from anywhere; `.Quit` writes no prefs (M l. 7447–7482), so nothing runs first.
+Carry [LOW]: a level that fails to load while a request is held loses the quit.
+
+## D41 — Ben's Q10 answer: a Windows build straight after Phase 4, then Windows kept in lockstep (2026-10-26; recorded by loop run 27)
+
+**Decided (Ben, QUESTIONS Q10, written and answered by his attended session 2026-10-26):** (a) after Phase 4's end run
+(stage + gate card), the loop plans and builds Ferazel's Windows twin as its own short phase **before the Phase 5 plan**,
+on the BTX W-plan shape (D15–D21, `tools/windows/`, HectorSDL), staged as a zip under `out/` — **stage only, never
+publish** (D34 holds: no releases or uploads without Ben; he hands it to his tester). Then, Ben: "Then we do a windows
+build in lockstep with the Mac build." From then on every task that changes what the Mac app shows or does carries its
+Windows side in the same task, and every phase end stages both builds (Mac app + Windows zip) with one gate card; the
+Phase 5+ plans are written that way. This moves the design §8 Phase 7 Windows work forward; Phase 7 keeps only what is
+left.

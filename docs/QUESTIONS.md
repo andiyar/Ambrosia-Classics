@@ -32,6 +32,12 @@ brother's Windows machine.
 
 ## Open
 
+_(none — loop run 27, 2026-10-26)_
+
+## Answered
+
+_(moved here by the run that acted on the answer, with what it did)_
+
 ### Q10 — 2026-10-26 — A Windows build before Phase 5 (Ben's ruling, written by his attended session)
 Context: Ben wants a friend (Andrew, on Windows) to beta-test playable levels soon. The design puts the Windows twin in
 Phase 7; Ben, 2026-10-26: "Could do a windows build pre phase 5." Bubble Trouble X's Windows port (the SDL shell,
@@ -45,13 +51,7 @@ Answer: (a) — Ben, 2026-10-26. Windows build straight after Phase 4, before Ph
 never publish (D34 still holds: no releases or uploads without Ben). Then, Ben 2026-10-26: "Then we do a windows build in lockstep
 with the Mac build." From then on the Windows twin is kept in step: every task that changes what the Mac app shows or
 does carries its Windows side in the same task, and every phase end stages both builds (Mac app + Windows zip) with one
-gate card. The Phase 5+ plans are written that way.
-
-_(none — loop run 26, 2026-10-26)_
-
-## Answered
-
-_(moved here by the run that acted on the answer, with what it did)_
+gate card. The Phase 5+ plans are written that way. Recorded as D41 by loop run 27.
 
 ### Q5 — 2026-10-24 — Quitting Ferazel from the Dock or at logout during a level: keep the original's "wait"?
 Context: The original game only listens for the system's "quit" message at the main menu and in its pause screen; during
