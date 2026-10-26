@@ -173,6 +173,8 @@ targets:
     sources:
       - path: Ferazel/App
         excludes: ["Info.plist"]
+      # The platform-neutral shell half shared with the Windows build (Phase W, WF1, D43 Ruling 1).
+      - path: Ferazel/Shared
     dependencies:
       - package: FerazelCore
         product: FerazelCore

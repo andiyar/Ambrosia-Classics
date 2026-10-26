@@ -1,7 +1,6 @@
 import FerazelCore
 import FerazelRender
 import Foundation
-import HectorShell
 
 /// The music voice (plan S5, A1a; design §7.7): `.SetAIFFMusic @ decompile l. 41869–41921` plays the AIFC track `NN`
 /// from `Ferazel's Wand Music` — −1 plays nothing, a number outside 1..32 is 1, a file that does not open falls back to
@@ -16,6 +15,9 @@ import HectorShell
 /// Sounds file's `snd `s, attached beside the music voice as a mixer stream when the flow's sound load runs
 /// (`loadSounds`). Each tick's sounds / stops are applied in the binary's call order (`soundStopAt`). The cues already
 /// carry the global sound volume (prefs+0xe, S1), so the stream plays at unity.
+/// Shared by both shells (Phase W, WF1 — moved from the Mac app unchanged in logic): the mixer is a `FerazelMixer` (the
+/// Mac's `ShellMixer`; Windows' SDL output; the headless frames mode's `FerazelSilentMixer`), and failures go to the
+/// injected `log` (the Mac's `NSLog`).
 @MainActor final class FerazelAudio {
     static let musicVoice = 0
     /// The one mixer id every music track is loaded under (S5).
@@ -23,8 +25,9 @@ import HectorShell
     /// "Looped": the mixer's play count, as good as forever.
     static let musicLoops = Int.max
 
-    private let mixer: ShellMixer?
+    private let mixer: FerazelMixer?
     private let musicDirectory: URL
+    private let log: (String) -> Void
     /// The track now held under `musicID` (nil before the first).
     private var loadedTrack: Int?
     /// The Sound Tool, attached to `mixer` as a stream by `loadSounds`; nil before, or with no mixer.
@@ -33,9 +36,10 @@ import HectorShell
     private var loaded: Set<Int16> = []
 
     /// - Parameter mixer: nil when the audio device cannot start (the game runs silent).
-    init(mixer: ShellMixer?, musicDirectory: URL) {
+    init(mixer: FerazelMixer?, musicDirectory: URL, log: @escaping (String) -> Void) {
         self.mixer = mixer
         self.musicDirectory = musicDirectory
+        self.log = log
     }
 
     // MARK: Sound effects
@@ -46,7 +50,7 @@ import HectorShell
     func loadSounds(_ bank: SoundBank, only: Set<Int16>?) {
         guard let mixer, soundTool == nil else { return }
         let tool = SoundTool(bank: bank)
-        _ = mixer.attachStream(tool)
+        mixer.attach(stream: tool)
         soundTool = tool
         loaded = Set(bank.sounds.map(\.id).filter { only?.contains($0) ?? true })
     }
@@ -112,7 +116,7 @@ import HectorShell
                 mixer.load(id: Self.musicID, samples: pcm.samples, channels: pcm.channels, sampleRate: pcm.sampleRate)
                 loadedTrack = track
             } catch {
-                NSLog("Ferazel's Wand: music track %d: %@", track, "\(error)")
+                log("music track \(track): \(error)")
                 return nil
             }
         }
@@ -136,5 +140,57 @@ import HectorShell
     func stopAll() {
         mixer?.stopAll()
         stopEffects()
+    }
+}
+
+/// What `FerazelAudio` needs from a mixer (WF1): the Mac's `ShellMixer` has the voice calls exactly (`attach(stream:)`
+/// is its `attachStream`); Windows' SDL output and the headless `FerazelSilentMixer` provide the same. Volumes are the
+/// Sound Manager's 8.8 fixed point as a Float (0x100 = unity).
+@MainActor protocol FerazelMixer: AnyObject {
+    /// Registers sound `id`: interleaved Int16 `samples`, `channels` 1 or 2, at `sampleRate`.
+    func load(id: Int, samples: [Int16], channels: Int, sampleRate: Double)
+    /// Cuts whatever `voice` was playing and plays `id` `loops` times at `volume`.
+    func play(id: Int, on voice: Int, volume: Float, loops: Int)
+    func stop(voice: Int)
+    func stopAll()
+    func setVolume(voice: Int, _ volume: Float)
+    /// Adds the Sound Tool as a stream beside the voices (pulled at its own 22,050 Hz).
+    func attach(stream: SoundTool)
+}
+
+/// No device (Ruling 20, the headless `--frames` dumps of both builds): the music voice plays nothing, and the attached
+/// Sound Tool is drained once per game tick — 22,050 / 60 = 367.5 output frames per tick, the fraction accumulated (a
+/// running total of 22,050 × ticks / 60, drained to its whole part: 367, 368, 367, 368 …, 367 on the first tick) — so
+/// "playing" follows the sounds exactly as with real output, the same on every run and on both builds.
+@MainActor final class FerazelSilentMixer: FerazelMixer {
+    static let ticksPerSecond = 60
+    private var stream: SoundTool?
+    /// Game ticks drained so far.
+    private(set) var ticks = 0
+    /// Output frames drained so far (= ⌊rate × ticks / 60⌋).
+    private(set) var framesDrained = 0
+    private var scratch: [Float] = []
+
+    init() {}
+
+    func load(id: Int, samples: [Int16], channels: Int, sampleRate: Double) {}
+    func play(id: Int, on voice: Int, volume: Float, loops: Int) {}
+    func stop(voice: Int) {}
+    func stopAll() {}
+    func setVolume(voice: Int, _ volume: Float) {}
+    func attach(stream: SoundTool) { self.stream = stream }
+
+    /// One game tick's output: renders (and discards) the frames the running total owes; returns how many.
+    @discardableResult
+    func tick() -> Int {
+        ticks += 1
+        let rate = Int(stream?.outputRate ?? 22_050)
+        let total = rate * ticks / Self.ticksPerSecond
+        let frames = total - framesDrained
+        framesDrained = total
+        guard let stream, frames > 0 else { return frames }
+        if scratch.count < 2 * frames { scratch = [Float](repeating: 0, count: 2 * frames) }
+        scratch.withUnsafeMutableBufferPointer { stream.render(into: $0, frames: frames) }
+        return frames
     }
 }

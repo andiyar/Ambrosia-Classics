@@ -13,64 +13,31 @@ import HectorShell
 /// the tick's sounds and music cues, honours its requests (cursor, menu bar, dialogs, file panels, quit), presents the
 /// surface through its presented CLUT (then MacGamma) when the tick asks. The 640×480 screen is shown at a
 /// whole-number scale (Ben's ruling 4, design §5).
+///
+/// Phase W (WF1, Ruling 1): the platform-neutral half — the boot's game part, the tick's flow / draw / audio, the
+/// boot's loads, the present, the dialog pictures, the `LevelServices` and the hidden switches — is `FerazelDriver`
+/// (`Ferazel/Shared`, shared with the Windows build); this controller keeps the AppKit and HectorShell work and injects
+/// the Mac's text renderer, clock seed, `KeyTranslate`, `GetDateTime`, mixer factory (`ShellMixer.init`, never called
+/// when muted) and beeper (`NSSound.beep`, gated by the mute switch).
 @MainActor final class FerazelController: NSObject, NSApplicationDelegate, ShellInputHandler {
-    static let width = IndexedFrame.width
-    static let height = IndexedFrame.height
+    static let width = FerazelDriver.width
+    static let height = FerazelDriver.height
     static let title = "Ferazel's Wand"
-    /// The hidden defaults key for the starting level (Ben D33, D35 kept as a hidden test path): `-FerazelLevel 2` on
-    /// the command line makes New Game start at level 2 for one launch (`GameFlow.startLevel`); absent or outside
-    /// `BuiltLevels.range` (1…4) → level 1, "A Scent Of Peril".
-    static let levelKey = "FerazelLevel"
-    /// The hidden defaults key for Ben's duplicate-colour tie-break (D26, 2026-10-07): "lowest" → `.lowest`, anything
-    /// else → `.highest` — the app's default since Ben's ruling of 2026-10-10 (his Let's Play at 02:12: clean FG rock
-    /// edges, no yellow specks). `-ColorTieBreak lowest` on the command line sets it for one launch. Core's
-    /// `ColorSearch` default stays `.lowest`, so its goldens are untouched.
-    static let tieBreakKey = "ColorTieBreak"
-    /// The hidden defaults key for Ben's Mac display-gamma toggle (D26, 2026-10-10), off by default: when true, each
-    /// frame is presented as the classic Mac (gamma 1.8) showed it on a modern 2.2 display. `-MacGamma YES` on the
-    /// command line sets it for one launch. Presentation only — FerazelCore and its goldens never see it.
-    static let macGammaKey = "MacGamma"
-    /// The Let's Play measured ≈ 0.76 (colour-measurement-2026-10-10 Q2); the toggle uses the display ratio 1.8/2.2.
-    static let macGammaExponent = 1.8 / 2.2
-    /// v' = 255·(v/255)^(1.8/2.2), rounded, per 8-bit channel; applied to the 256-entry palette, not per pixel.
-    static let macGammaLUT: [UInt8] = (0...255).map { v in
-        UInt8((255 * pow(Double(v) / 255, macGammaExponent)).rounded())
-    }
-    /// The screen's CLUT before the game sets one: `SwitchTo8BitColorMT` leaves the system's 8-bit table, which the
-    /// game's clut 801 "System CLUT" holds (PICT 131, the logo, is drawn under it, M l. 8277–8281).
-    static let systemClut: Int16 = 0x321
 
+    /// The hidden switches (`FerazelLevel`, `ColorTieBreak`, `MacGamma`, `FerazelMute`), read once at launch from
+    /// `UserDefaults.standard` (the argument domain: `-Key value` on the command line) and `FERAZEL_MUTE`.
+    private let settings = FerazelSettings.parse(lookup: FerazelController.standardDefaults,
+                                                 environment: ProcessInfo.processInfo.environment)
+    /// The game half (Ruling 1); built at launch.
+    private var driver: FerazelDriver!
     private var flow: GameFlow!
-    private var resources: FerazelResources!
-    private var search: ColorSearch!
-    private var surface: ScreenSurface!
-    /// The front end's executor (`.frontEnd` chain): the boot, menu, stage, death screens; the map's screen ops.
-    private var frontScreen: ScreenRenderer!
-    /// A level's `.screen` segments before its renderer exists (the popup), on the level chain.
-    private var levelScreen: ScreenRenderer!
-    private var mapRenderer: MapRenderer!
-    /// The running level's renderer and its conversation renderer (`LevelServices.prepare`); the last level's stay
-    /// until the next is prepared.
-    private var levelRenderer: FrameRenderer?
-    private var conversationRenderer: ConversationRenderer?
-    /// The `LevelRun` that was running when `conversationRenderer` was built (`prepare`).
-    private weak var conversationRun: LevelRun?
     private let rasterizer = CoreTextRasterizer()
-    /// The conversation text's measures (C1/C2: the 214-px wrap and the typing timeline need real widths).
-    private var conversationText = ConversationText.unmeasured
-    /// The `LevelRun` last given `conversationText` (held, so a new run is never mistaken for it).
-    private var configuredRun: LevelRun?
-    private var audio: FerazelAudio?
     private let files = FerazelFiles()
     private var shell: ShellWindowController!
     private var timer: ShellIdleTimer!
     private let bitmap = ShellBitmap(width: FerazelController.width, height: FerazelController.height)
-    /// `MacGamma`, read once at launch.
-    private let macGamma = FerazelController.macGamma()
     /// The tick the flow last ran (the flow runs once per 60 Hz tick).
     private var lastTick: UInt32?
-    /// The boot's two App loads, done (`GameFlow.LoadPhase`).
-    private var loadedPhases: Set<GameFlow.LoadPhase> = []
 
     /// The game asked for the menu bar hidden (`.hideMenuBar`); honoured in full screen only (design §7.4).
     private var wantsMenuBarHidden = false
@@ -108,37 +75,25 @@ import HectorShell
             return
         }
         do {
-            let resources = try FerazelData.open(dataDirectory)
-            self.resources = resources
-            search = ColorSearch(model: .exactNearest, tieBreak: Self.tieBreak())  // D26 LP measurement 2026-10-10 (Ben)
-            surface = ScreenSurface(clut: try ColorLUT.load(id: Self.systemClut, from: resources, chain: .frontEnd))
-            frontScreen = ScreenRenderer(surface: surface, resources: resources, search: search, dither: .errorDiffusion,
-                                         text: rasterizer, chain: .frontEnd)
-            levelScreen = ScreenRenderer(surface: surface, resources: resources, search: search, dither: .errorDiffusion,
-                                         text: rasterizer, chain: .level)
-            mapRenderer = MapRenderer(screen: frontScreen)
-            conversationText = TextLayout.conversationText(rasterizer)
-            audio = FerazelAudio(mixer: try? ShellMixer(voices: 1), musicDirectory: resources.musicDirectory)
-            // `.SetPrefFile` + `.InitPrefs` (M l. 8192–8243): the stored record, else the defaults, written at once.
-            let prefs: FerazelPrefs
-            if let record = files.loadPrefs() {
-                prefs = FerazelPrefs(record: record)
-            } else {
-                prefs = FerazelPrefs()
-                do { try files.storePrefs(prefs.record()) } catch {
-                    NSLog("Ferazel's Wand: prefs file: %@", "\(error)")
-                }
-            }
-            // `.InitAppGlobals`' `_FastRand(0)` (M l. 334; `LMGetTime` + `LMGetTicks`, M l. 31295–31298): the stream is
-            // seeded once from Time + Ticks and never again.
-            let clock = FastRand.systemClock()
-            let flow = GameFlow(resources: resources, prefs: prefs,
-                                seed: FastRand.clockSeed(secondsSince1904: clock.secondsSince1904, ticks: clock.ticks),
-                                files: files, levels: self)
-            flow.startLevel = Self.startLevel()
-            // `KeyTranslate` (the Options key names): the flow calls it on the main thread (its ticks, the dialog).
-            flow.keyCharacter = { code in MainActor.assumeIsolated { Self.layoutCharacter(code) } }
-            flow.dateTime = { FastRand.systemClock().secondsSince1904 }   // `GetDateTime`
+            let driver = FerazelDriver(
+                settings: settings, text: rasterizer, files: files,
+                // `.InitAppGlobals`' `_FastRand(0)` (M l. 334; `LMGetTime` + `LMGetTicks`, M l. 31295–31298): the
+                // stream is seeded once from Time + Ticks and never again.
+                seed: {
+                    let clock = FastRand.systemClock()
+                    return FastRand.clockSeed(secondsSince1904: clock.secondsSince1904, ticks: clock.ticks)
+                },
+                // `KeyTranslate` (the Options key names): the flow calls it on the main thread (its ticks, the dialog).
+                keyCharacter: { code in MainActor.assumeIsolated { Self.layoutCharacter(code) } },
+                dateTime: { FastRand.systemClock().secondsSince1904 },   // `GetDateTime`
+                // The Mac's one audio-output open (`ShellMixer.init`); the driver never calls this when muted.
+                mixer: { try? ShellMixer(voices: 1) },
+                // `SysBeep`; the driver never calls this when muted.
+                beeper: { NSSound.beep() },
+                log: { NSLog("Ferazel's Wand: %@", $0) })
+            self.driver = driver
+            try driver.boot(dataDirectory: dataDirectory)
+            let flow: GameFlow = driver.flow
             self.flow = flow
             if let ref = pendingOpen {
                 pendingOpen = nil
@@ -170,19 +125,11 @@ import HectorShell
         idleFired()
     }
 
-    /// `FerazelLevel` (Ben D33): 1 when absent or outside `BuiltLevels.range` (1…4 since Phase 4 LV4).
-    static func startLevel(_ defaults: UserDefaults = .standard) -> Int {
-        let n = defaults.integer(forKey: levelKey)
-        return BuiltLevels.range.contains(n) ? n : 1
-    }
-
-    static func tieBreak(_ defaults: UserDefaults = .standard) -> ColorSearch.TieBreak {
-        defaults.string(forKey: tieBreakKey) == "lowest" ? .lowest : .highest
-    }
-
-    static func macGamma(_ defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: macGammaKey)
-    }
+    /// The hidden switches' reads: `UserDefaults.standard` itself (Windows reads its command line with the same
+    /// semantics, `FerazelSettings.arguments`).
+    static let standardDefaults = FerazelSettings.Lookup(integer: { UserDefaults.standard.integer(forKey: $0) },
+                                                         string: { UserDefaults.standard.string(forKey: $0) },
+                                                         bool: { UserDefaults.standard.bool(forKey: $0) })
 
     /// A title bar, collapsible, no close box (the game quits through its own Quit) and not resizable (whole-number
     /// scale) — the Deimos window.
@@ -239,7 +186,7 @@ import HectorShell
     /// MBAR 128 (A1b, `FerazelMenus`): its picks go to `GameFlow.menuChosen` where the original listened for them.
     private func installMenus() {
         fullScreenItem.menu?.removeItem(fullScreenItem)
-        let m = FerazelMenus(resources: resources, title: Self.title, fullScreen: fullScreenItem)
+        let m = FerazelMenus(resources: driver.resources, title: Self.title, fullScreen: fullScreenItem)
         m.modalUp = { [weak self] in self?.modalUp ?? true }
         m.chosen = { [weak self] item in self?.flow?.menuChosen(item) }
         menus = m
@@ -258,7 +205,7 @@ import HectorShell
 
     /// The dialogs (A1b, `FerazelDialogs`), drawn over the game image's centre, just above the game window.
     private func installDialogs() {
-        let d = FerazelDialogs(resources: resources, picture: { [weak self] id in self?.dialogPicture(id) },
+        let d = FerazelDialogs(resources: driver.resources, picture: { [weak self] id in self?.dialogPicture(id) },
                                gameArea: { [weak self] in
             guard let self else { return (NSScreen.main?.frame ?? .zero, .normal) }
             let view = shell.view
@@ -271,27 +218,15 @@ import HectorShell
             if self?.modalUp == false { self?.shell.currentWindow.makeKeyAndOrderFront(nil) }
         }
         d.nullTick = { [weak self] in self?.pollPadInDialog() }
+        d.beep = { [weak self] in self?.driver.beep() }
         dialogs = d
     }
 
-    /// A `PICT` as QuickDraw drew it into a dialog window: converted under the screen's current CLUT (`ColorSearch`,
-    /// the screen's inverse table), shown through it (and MacGamma when on).
+    /// A `PICT` as QuickDraw drew it into a dialog window (`FerazelDriver.dialogPicture`: under the screen's current
+    /// CLUT, then MacGamma when on), wrapped as a `CGImage`.
     private func dialogPicture(_ id: Int16) -> CGImage? {
-        guard let source = try? PictureSource.load(id: id, from: resources, chain: .frontEnd),
-              let picture = try? ConvertedPicture(source: source, clut: surface.clut, search: search) else { return nil }
-        let lut = macGamma ? Self.macGammaLUT : nil
-        let table: [(UInt8, UInt8, UInt8)] = surface.clut.entries.map { e in
-            var (r, g, b) = (Int(e.red >> 8), Int(e.green >> 8), Int(e.blue >> 8))
-            if let lut { (r, g, b) = (Int(lut[r]), Int(lut[g]), Int(lut[b])) }
-            return (UInt8(r), UInt8(g), UInt8(b))
-        }
-        var bytes = [UInt8](repeating: 0xff, count: picture.width * picture.height * 4)
-        for (i, v) in picture.pixels.enumerated() where Int(v) < table.count {
-            let c = table[Int(v)]
-            (bytes[4 * i], bytes[4 * i + 1], bytes[4 * i + 2]) = c
-        }
-        guard picture.width > 0, picture.height > 0,
-              let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+        guard let picture = driver.dialogPicture(id),
+              let provider = CGDataProvider(data: Data(picture.rgba) as CFData) else { return nil }
         return CGImage(width: picture.width, height: picture.height, bitsPerComponent: 8, bitsPerPixel: 32,
                        bytesPerRow: picture.width * 4, space: CGColorSpaceCreateDeviceRGB(),
                        bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipLast.rawValue),
@@ -328,27 +263,18 @@ import HectorShell
         let now = ShellClock.ticks()
         guard now != lastTick else { return }
         lastTick = now
-        let out = flow.tick(now: now, input: pollInput())
-        // A run created inside this tick is set up (and the last level's conversation renderer dropped) before the
-        // tick's segments are routed — its first popup draws go to `levelScreen`.
-        configureLevelRun()
+        // The flow's tick, the new run's set-up, the segments drawn, the sounds and music, the prefs to the renderers
+        // (`FerazelDriver.tick`); a draw failure ends the launch before the audio.
+        let out: FrontOutput
         do {
-            try draw(flow.segments)
+            out = try driver.tick(now: now, input: pollInput())
         } catch {
             fail("the screen could not be drawn: \(error)")
             return
         }
-        audio?.apply(sounds: out.sounds, stops: out.soundStops, stopAt: out.soundStopAt)
-        for cue in out.music { audio?.handle(cue) }
-        if let p = out.prefs {
-            // `.MakeCurrPrefs` (⌘P, the pause's ⌘M / ⌘F, a save): the live record the renderers read per copy —
-            // `FrameRenderer`'s parallax (prefs+4, every `copyToScreen`), the conversation's `restoreView`.
-            levelRenderer?.prefs = p
-            conversationRenderer?.prefs = p
-        }
         if out.present { present() }
         for request in out.requests { honour(request) }
-        serviceLoad()
+        driver.serviceLoad()
     }
 
     /// The tick's input: the held keys (`GetKeys`), Caps Lock, the pointer in 640×480 canvas coordinates (nil off the
@@ -357,10 +283,10 @@ import HectorShell
     private func pollInput() -> FrontInput {
         updatePadMapping()
         let state = shell.view.pollKeyState()
-        let keys = KeyState(pressed: state.held.map { Self.keyMapCode(Int($0)) })
+        let keys = KeyState(pressed: state.held.map { FerazelDriver.keyMapCode(Int($0)) })
         return FrontInput(keys: keys, capsLock: state.capsLock, mouse: canvasMouse(),
                           button: NSEvent.pressedMouseButtons & 1 != 0, active: NSApp.isActive,
-                          playing: audio?.playingSounds() ?? [])
+                          playing: driver.playingSounds())
     }
 
     /// The pointer in 640×480 canvas coordinates, nil when it is not over the game image (or there is no window):
@@ -378,133 +304,10 @@ import HectorShell
         return (h: Int(x), v: Int(y))
     }
 
-    /// Right Shift, Option, Control and ⌘ (0x3C, 0x3D, 0x3E, 0x36) as the left keys (0x38, 0x3A, 0x3B, 0x37): the
-    /// classic `KeyMap` reports either side of a modifier under the left key's bit, and the game reads every key the
-    /// same way (`.IsInputKeyPressed` → `_IsPressed(prefs+0x12 + 2n)`, one `GetKeys` bit test, M l. 42340–42353).
-    static func keyMapCode(_ code: Int) -> Int {
-        switch code {
-        case 0x3c: return 0x38
-        case 0x3d: return 0x3a
-        case 0x3e: return 0x3b
-        case 0x36: return 0x37
-        default: return code
-        }
-    }
-
-    /// A new `LevelRun` gets the conversation measures before its session can step (its popup blocks the first 16
-    /// ticks, L2), and the previous level's conversation renderer goes — unless `prepare` already built this run's.
-    private func configureLevelRun() {
-        guard let run = flow.levelRun else { return }
-        guard run !== configuredRun else { return }
-        configuredRun = run
-        run.conversationText = conversationText
-        if conversationRun !== run { conversationRenderer = nil }
-    }
-
-    /// The tick's draws, renderer by renderer, in order (F1b: the segments only).
-    private func draw(_ segments: [FlowSegment]) throws {
-        for segment in segments {
-            switch segment {
-            case .screen(let ops):
-                guard flow.levelRun != nil else {
-                    try frontScreen.apply(ops)
-                    break
-                }
-                // In a level each op goes to the renderer that draws it as the original: the conversation's own ops
-                // (`ConversationRun`, C2) to `ConversationRenderer`; the pause, stage, load-bar and every other screen
-                // op to the level-chain `ScreenRenderer` (`DrawString` text, pictures under the screen CLUT).
-                var run: [DrawOp] = []
-                var toConversation = false
-                func flush() throws {
-                    guard !run.isEmpty else { return }
-                    if toConversation, let c = conversationRenderer { try c.apply(run) } else { try levelScreen.apply(run) }
-                    run = []
-                }
-                for op in ops {
-                    let c = Self.isConversationOp(op)
-                    if c != toConversation { try flush(); toConversation = c }
-                    run.append(op)
-                }
-                try flush()
-            case .level(let ops):
-                guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
-                try r.apply(FrameOps(draws: ops))
-            case .map(let ops):
-                try mapRenderer.apply(ops)
-            }
-        }
-    }
-
-    /// The ops only `ConversationRun` makes (C1/C2): `DrawChar` text, the conversation GWorld's transparent copies
-    /// (no forced CLUT), the end's `restoreView` and its mode-3 `drawBlackLines`.
-    static func isConversationOp(_ op: DrawOp) -> Bool {
-        switch op {
-        case .drawText, .restoreView, .drawBlackLines: return true
-        case .copyPicture(_, _, _, _, nil, true): return true
-        default: return false
-        }
-    }
-
-    /// The boot's App loads (`GameFlow.state` `.loading`): the sound effects under the logo (`.InitSounds` +
-    /// `.InitAppGlobals`), the faces under the loading screen (`.InitSprites`' `.InitMapFaces` — the only faces the
-    /// App keeps from boot; a level's faces load with its renderer).
-    private func serviceLoad() {
-        guard case .loading(let phase) = flow.state, !loadedPhases.contains(phase) else { return }
-        loadedPhases.insert(phase)
-        switch phase {
-        case .sounds: loadSounds()
-        case .faces: loadFaces()
-        }
-        flow.loadFinished()
-    }
-
-    /// Every `snd ` of the Sounds file — or with F1 at boot (`soundLoading` off) only the four `.InitAppGlobals` loads
-    /// unconditionally (M l. 350–356): 198 (the pause, `uRam100ab9bc`), 4801 and the menu buttons' 4803 / 4804 — and
-    /// their play lengths for the stage screens.
-    private func loadSounds() {
-        let only: Set<Int16>? = flow.soundLoading ? nil
-            : [PauseRun.sound, 4801, MainMenu.enterSound, MainMenu.exitSound]
-        do {
-            let bank = try SoundBank(sounds: resources.sounds)
-            audio?.loadSounds(bank, only: only)
-            var lengths: [Int16: Int] = [:]
-            for s in bank.sounds where only?.contains(s.id) ?? true {
-                lengths[s.id] = StageSounds.ticks(sampleCount: s.pcm.frames, sampleRate: s.pcm.sampleRate)
-            }
-            flow.soundLengths = lengths
-        } catch {
-            NSLog("Ferazel's Wand: sounds: %@", "\(error)")   // the game runs without effects
-        }
-    }
-
-    /// The map faces (`.InitMapFaces`, clut 700): one `loadProgress` per face (`.Update3DProgBar`).
-    private func loadFaces() {
-        var n = 0
-        for (set, count) in [(FrontFaceSet.mapMarker, 1), (.mapNode, 8), (.mapBoss, 8), (.mapAmbient, 8)] {
-            for i in 0..<count {
-                do { _ = try mapRenderer.face(set, i) } catch {
-                    NSLog("Ferazel's Wand: map face %d/%d: %@", Int(set.pict), i, "\(error)")
-                }
-                n += 1
-                flow.loadProgress(faces: n)
-            }
-        }
-    }
-
-    /// The shared screen through its presented CLUT (the screen CLUT through `ScreenGamma`), written straight into the
-    /// window bitmap (the `IndexedFrame.rgba(through:)` mapping, without allocating a 640×480 word array per frame).
-    /// With `MacGamma` on, each palette channel then goes through `macGammaLUT`.
+    /// The shared screen through its presented CLUT (then MacGamma), written straight into the window bitmap
+    /// (`FerazelDriver.presentARGB`).
     private func present() {
-        let lut = macGamma ? Self.macGammaLUT : nil
-        let table = surface.presentedClut.entries.map { e -> UInt32 in
-            var (r, g, b) = (Int(e.red >> 8), Int(e.green >> 8), Int(e.blue >> 8))
-            if let lut { (r, g, b) = (Int(lut[r]), Int(lut[g]), Int(lut[b])) }
-            return 0xff00_0000 | UInt32(r) << 16 | UInt32(g) << 8 | UInt32(b)
-        }
-        let out = bitmap.pixels
-        surface.frame.pixels.withUnsafeBufferPointer { src in
-            for i in 0..<min(src.count, Self.width * Self.height) { out[i] = table[Int(src[i])] }
-        }
+        driver.presentARGB(into: bitmap.pixels)
         shell.view.present(bitmap)
     }
 
@@ -544,7 +347,7 @@ import HectorShell
                 guard let self, var m = flow.prefsDialog else { return }
                 let cues = body(&m)
                 flow.prefsDialog = m
-                for cue in cues { audio?.handle(cue) }              // the Music checkbox and popup act at once
+                for cue in cues { driver.handle(cue) }              // the Music checkbox and popup act at once
             }, completion: { [weak self] in
                 guard let self else { return }
                 flow.dialogDone(flow.prefsDialog?.result == .ok ? .ok : .cancel)
@@ -687,7 +490,7 @@ import HectorShell
 
     func applicationWillTerminate(_ notification: Notification) {
         timer?.invalidate()
-        audio?.stopAll()
+        driver?.stopAudio()
         if cursorHidden {
             NSCursor.unhide()
             cursorHidden = false
@@ -751,32 +554,12 @@ import HectorShell
     }
 }
 
-// MARK: - LevelServices
+// MARK: - The mixer
 
-/// The renderer side of a level (plan S2 `LevelServices`, L1; today's `openLevel` order): the level's `FrameRenderer`
-/// on the shared surface (it leaves the surface's CLUT alone until the level's `setScreenClut`, FE0 — `.SetupLevel`'s
-/// tail draws it before the loop, so the death wipe always paints under the level CLUT), then its lights and tint
-/// table from the session.
-extension FerazelController: @MainActor LevelServices {
-    func prepare(level: Int) throws -> LevelFaces {
-        let r = try FrameRenderer(resources: resources, level: level, search: search, dither: .errorDiffusion,
-                                  text: rasterizer, prefs: flow.toggles.live, surface: surface)
-        levelRenderer = r
-        conversationRenderer = ConversationRenderer(frame: r, text: rasterizer, prefs: flow.toggles.live)
-        conversationRun = flow.levelRun
-        return LevelFaces(faceBounds: r.faceBounds, particleFaces: r.particleFaces)
-    }
-
-    func attach(lights: [SetupFaces.Light], tintTableDraws: [Int16]) throws {
-        guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
-        try r.addLights(lights)
-        try r.buildTintTable(tintTableDraws)   // tint 0xa from the session's stream (E2 Part A)
-    }
-
-    /// `.DeathEffect`'s step k: the bands only — the step's gamma op is `LevelRun`'s (it rides the tick's output).
-    func deathEffectStep(_ k: Int) throws {
-        guard let r = levelRenderer else { throw FrameRenderer.Refusal.tintTableNotBuilt }
-        guard (0..<DeathEffect.steps).contains(k) else { throw FrameRenderer.Refusal.deathEffectStep(k) }
-        _ = r.deathEffect.frame(step: k, on: &surface.frame)
+/// The Mac's audio output for the shared `FerazelAudio` (WF1): `ShellMixer` has the voice calls exactly; the Sound
+/// Tool rides as one of its streams.
+extension ShellMixer: FerazelMixer {
+    func attach(stream: SoundTool) {
+        _ = attachStream(stream)
     }
 }

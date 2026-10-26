@@ -76,7 +76,7 @@ import HectorShell
                     close()
                     return
                 }
-                NSSound.beep()
+                dialogs.beep()
             }
             copy(step: next)
             drawn = true

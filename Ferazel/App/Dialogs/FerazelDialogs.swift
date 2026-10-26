@@ -24,6 +24,8 @@ import FerazelCore
     var modalStateChanged: () -> Void = {}
     /// Called once per tick while a dialog is up (the App's gamepad poll, GP: the game clock is stopped meanwhile).
     var nullTick: () -> Void = {}
+    /// `SysBeep` (the App's, behind the mute switch — WF1, Ruling 20).
+    var beep: () -> Void = {}
 
     /// Dialogs on screen, front last.
     private var stack: [FerazelCarbonDialog] = []
@@ -59,7 +61,7 @@ import FerazelCore
 
     /// `.ConfirmAbortGameDialog`: OK (true) or Cancel.
     func confirm(_ text: String, completion: @escaping (Bool) -> Void) {
-        guard let d = make(202, params: [text]) else { NSSound.beep(); completion(false); return }
+        guard let d = make(202, params: [text]) else { beep(); completion(false); return }
         d.outlineDefault(1)
         d.itemHit = { [unowned self, unowned d] item in
             guard item == 1 || item == 2 else { return }
@@ -100,7 +102,7 @@ import FerazelCore
         guard let c = CreditsDialog(dialogs: self, scroll: scroll, completion: { [weak self] in
             self?.credits = nil
             completion()
-        }) else { NSSound.beep(); completion(); return }
+        }) else { beep(); completion(); return }
         credits = c
         c.open()
     }
@@ -182,7 +184,7 @@ import FerazelCore
             return true
         default:
             if event.window === front.panel { return front.flashing }
-            NSSound.beep()
+            beep()
             return true
         }
     }
