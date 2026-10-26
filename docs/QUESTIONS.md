@@ -32,6 +32,18 @@ brother's Windows machine.
 
 ## Open
 
+### Q10 — 2026-10-26 — A Windows build before Phase 5 (Ben's ruling, written by his attended session)
+Context: Ben wants a friend (Andrew, on Windows) to beta-test playable levels soon. The design puts the Windows twin in
+Phase 7; Ben, 2026-10-26: "Could do a windows build pre phase 5." Bubble Trouble X's Windows port (the SDL shell,
+HectorSDL) took about an hour and a half of loop time, so it is cheap to pull forward. Ferazel's extra Mac-only App
+parts (menus, dialogs, text drawing) need Windows counterparts; Q8 lets the classic Apple fonts ship, which helps text.
+Options: (a) after Phase 4's end (stage + gate card), plan and build the Windows twin as its own short phase before
+the Phase 5 plan, staged as a zip in out/ like BTX's (no release, no upload — Ben hands it over); (b) leave it in Phase 7.
+Recommendation: a — Ben's word.
+Blocks: nothing now; the next phase-end run picks it up.
+Answer: (a) — Ben, 2026-10-26. Windows build straight after Phase 4, before Phase 5. Record in DECISIONS; stage only,
+never publish (D34 still holds: no releases or uploads without Ben).
+
 _(none — loop run 26, 2026-10-26)_
 
 ## Answered
