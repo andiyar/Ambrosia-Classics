@@ -1702,3 +1702,24 @@ also forces the dummy driver on Windows; held Ctrl shortcuts repeat like AppKit'
 3.4.16 hands `WM_QUERYENDSESSION`/`WM_ENDSESSION` to Windows' default handling (read from the DLL) — no event, no
 confirm, the process ends, nothing lost (◇W11); new **◇W14** (shortcut letters by US key position). **GW4R and Proof B
 owed by day (night rule).**
+**As built — WF5 (loop run 34, 2026-10-27; a11e39b + 034a283):** the native Open / Save dialogs (comdlg32
+`GetSaveFileNameW` / `GetOpenFileNameW` in `FerazelWin/WinFileDialogs.swift`, linked through `import WinSDK` — the exe
+imports COMDLG32.dll; compiled and linked, never run: launch rule) over a one-method `WinFilePanels.run(request) -> URL?`;
+the testable half `WinFileRequests` (title = prompt, Windows-legal default name — reserved names also with an extension,
+"nul.txt" → "nul_.txt", DEL counts as a control character — Save's folder created first, Open's used only when it exists).
+Seat-accepted refinements: the Save dialog's name field is pre-filled with the **full path** `<saves folder>\<name>` so it
+always opens in the saves folder (Windows 7+ may otherwise prefer the last-used folder); the Open dialog keeps
+`lpstrInitialDir` only and may open in the last-used folder (◇, no workaround); after a dialog the held keys, the mouse
+button and held pad buttons are cleared; `--save-as FILE` / `--open FILE` answer the panels on the Mac SDL build only;
+`--frames` runs always cancel. FerazelWinKit **54/0**.
+**As built — WF4a (loop run 34, 2026-10-27; a21dc30 + 38239c0):** DLOG 202 / 200 drawn in-window (adapted
+`DialogRenderer` / `DialogWindow` / `DialogSystem`), text in the baked dialog face. **Seat ruling (dump-checked by the
+review leg): Esc does nothing on DLOG 202** — the original calls `ModalDialog(nil)` with no filter and no cancel item, so
+only Return / Enter answer (the plan's "Esc → Cancel" was wrong; the Mac transcription `FerazelCarbonDialog.swift:298–306`
+agrees); the pad's Esc reaches it and likewise does nothing. **◇W13 not kept:** the bake equals the Mac's `ClassicFont` pick
+on this machine (`.AppleSystemUIFont`; widths 0.0 px apart over 45 lines and 32,773 code strings; every line
+byte-identical to CoreText — the closed-set test). New stand-in noted under ◇W10: the dialog text below 14 pt is cut to two
+levels like the game's text, where the Mac app's separate dialog windows draw it smoothed (arguably nearer Mac OS 9).
+Keys pressed while a button is held down are dropped (the Mac would queue them); no drop shadow (classic frames had none);
+a right-click outside does not beep (HectorSDL passes left clicks only). `--frames` runs draw the real dialogs (a scripted
+Return answers); the reference FNVs did not move. FerazelWinKit **65/0**.

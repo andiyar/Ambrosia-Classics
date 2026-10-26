@@ -588,6 +588,18 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   read back equal).
 - **Acceptance:** GW2 **54/0**; GW3; GW4; GW1; G2 490/0; G6; G10.
 
+- **As executed (loop run 34, 2026-10-27; commits a11e39b + 034a283, merged):** as planned, with: the Mac's panels now
+  sit at `FerazelController.swift:373–410` and its Finder open at `:481` (the plan's cites were stale); WF3 had already
+  written `WinFiles.legalSaveName` and the launch-path open — WF5 moved their tests into `WinFileRequestsTests.swift`;
+  `WinFilePanels` became one method `run(request) -> URL?`; reserved names keep Windows' rule with an extension
+  ("nul.txt" → "nul_.txt"); DEL is a control character; `OFN_OVERWRITEPROMPT` on both dialogs (Open ignores it); the
+  Save name field gets the full path `<folder>\<name>` (`WinFileRequests.initialFile` — Windows 7+ may otherwise open
+  the last-used folder), Open keeps `lpstrInitialDir` (may open the last-used folder — ◇); held keys, the mouse button
+  and held pad buttons are cleared after a dialog; Ctrl+O at the main menu is a held key that falls through (as Ctrl+N);
+  `--save-as` / `--open` answer the Mac SDL build's panels. The comdlg32 code is compiled and linked (COMDLG32.dll in the
+  import table), never run. Gates: GW2 **54/0**, GW3 0/1, GW4, GW1 0/2, G2 490/0 (seat, temp copy). One Opus leg PASS
+  (8 minor items) → a small round seat-read (two surviving mutations killed; the "flow held still" check made able to fail).
+
 ### WF4a — In-window dialogs I: DLOG 202 and 200 (Ruling 4)
 
 - **Files:** `Sources/FerazelWinKit/{DialogRenderer,DialogWindow,DialogSystem}.swift` (adapted from BTXWinKit's three
@@ -612,6 +624,17 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   (beeper called once unmuted, 0 muted); the flow holds still; goldens 202 and 200 (self-derived, shown to Ben on the
   card); dialog-face widths within 1 px of the Mac's `NSFont` measure (Mac-only oracle).
 - **Acceptance:** GW2 **65/0**; GW3; GW4; GW1; G2; G6; G10.
+
+- **As executed (loop run 34, 2026-10-27; commits a21dc30 + 38239c0, merged):** as planned, with: **Esc does nothing on
+  DLOG 202** — the dump's `ModalDialog(0,…)` has no filter and no cancel item; the Mac's `handleKeyDown` takes Return /
+  Enter only (seat ruling, D43; the contract's "Esc → Cancel on 202" was wrong); `showDialog` sits at
+  `FerazelController.swift:336`; **◇W13 not kept** (the bake = the Mac's pick, 0.0 px over 45 lines and 32,773 code
+  strings; the closed-set CoreText test is folded into test 11, tolerance ≤ 0.001 px); the dialog text below 14 pt is cut
+  to two levels like the game's (the Mac app's dialog windows smooth it — noted under ◇W10); keys pressed while a button
+  is held are dropped; no drop shadow; right-click outside does not beep (HectorSDL: left button only). `--frames` runs
+  draw real dialogs; the reference FNVs held. Gates: GW2 **65/0**, GW3 0/1, GW4, GW1 0/2, G2 490/0, G7W empty (seat,
+  temp copy). One Opus leg PASS WITH FIXES (mutations 20/25 killed, 3 equivalent) → a tests-only round seat-read (both gaps
+  killed).
 
 ### WF4b ⚑ MAJOR — In-window dialogs II: Options (6900) and Credits (600)
 
