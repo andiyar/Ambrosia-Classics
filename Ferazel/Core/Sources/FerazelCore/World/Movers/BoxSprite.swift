@@ -202,7 +202,7 @@ public enum BoxSprite {
             case 0x5b8: s.hotRect = rect(8, 0, 0x8c, 0x28)
             case 0x5b9: s.mirrored = true; s.hotRect = rect(0xe, 0, 0x92, 0x28)
             case 0x5ba:
-                // later: Phase 4 — `+0x1e8 = .GetRopeBridgeHeight` (platforms-ropes-radial §3.7) and `.GenerateSprite`'s
+                // later: Phase 6 — `+0x1e8 = .GetRopeBridgeHeight` (platforms-ropes-radial §3.7) and `.GenerateSprite`'s
                 // idle 0x5bb; the rope bridge is placed on no shipped level.
                 s.hotRect = rect(-0x10, 0x32, 0x11c, 0x78)
             default:                                       // 0x5bb: the face-only part, layer 0x32, empty rect

@@ -324,7 +324,7 @@ public enum SetupFaces {
             switch t {
             case 0x442...1098:                                 // cannons (l. 62058–62184; W2b `setupCannon`)
                 // p1 < 0 (programmed path, `.SetupProgrammedPath`) and p1 > 0 (101…106 rotating / shot-steered; the
-                // rest a path without a Setup) are not built: none is placed on levels 1–2. // later: Phase 4.
+                // rest a path without a Setup) are not built: none is placed on levels 1–4. // later: Phase 6.
                 guard p.p1 == 0 else { throw Error.notTranscribed(type: p.type) }
                 BackgroundSprite.setupCannon(&s, record: p, level: c.level)
                 face(0x442, 0, .handle)                        // the Handle aims the cannon (set 0x442, 5 faces)
@@ -584,7 +584,7 @@ public enum SetupFaces {
             // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; W4, inert): layer 0xb, HP 500, `+0xb0 = 0xb`,
             // `+0x14c = −0x14 − FastRand(0x1e)` (raw `10081f84`), SetRect(0xb, 0x14, 0x48, 0x49), `+0x150 = −1`,
             // `+0x15c` = p1, `+0xf0 = FastRand(0x5fff)·2 + 0xbfff` (`10081ff8`); p1 tiers (HP, `+0xb8`); hdr 0x26cd ≠ 0 →
-            // `+0x8e = 1` (0 on levels 1–2 — no field); `+0xc0` = cache 0x708 face 0. // later: Phase 4–5 (Handle).
+            // `+0x8e = 1` (0 on levels 1–2 — no field); `+0xc0` = cache 0x708 face 0. // later: Phase 5 (Handle).
             guard (0x708...0x711).contains(t) else { throw Error.notTranscribed(type: p.type) }
             s.layer = 0xb
             s.hp = 500

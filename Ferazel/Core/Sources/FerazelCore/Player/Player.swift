@@ -10,7 +10,7 @@ import Foundation
 ///  1 entry: ridden copy, last facing, turn flag          22 quicksand vy × 0.65
 ///  2 looped ambient sound (no L1/L2 op)                  23 gravity add, terminal 12000, vy 0 → 1
 ///  3 riding: carpet, camera latch, 0x6a4 ride-on cue     24 air drag / ground deceleration
-///  4 kill / Handle-skip returns                           25 `+0xce = +0xcf = 0`; inventory repair (later: Phase 4)
+///  4 kill / Handle-skip returns                           25 `+0xce = +0xcf = 0`; inventory repair (IV)
 ///  5 max speeds (quicksand, Double Speed)                 26 climb pre-move
 ///  6 idle +1, `+0x18c`, `+0x8a`, rope latch               27 latches cleared, `.ApplySpeedAndSeparateFromTiles`
 ///                                                            (plan row 22)

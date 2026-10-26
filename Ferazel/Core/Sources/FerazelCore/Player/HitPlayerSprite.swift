@@ -5,8 +5,10 @@ import HectorResources
 /// `.MTCollideSpecialSprite(player, .HitPlayerSprite)` (platforms-ropes-radial-2 §8.3). The arms built so far: the
 /// entry gates, the **Platform** arm (W1), the **Background** arm's pendulum (W2a) and passage (W2b) parts, and the
 /// **Box / see-saw segment** arm up to its mechanism branches (W3, `box`) plus the save point (S1, `savePoint`, which
-/// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame). // later:
-/// the other Box mechanisms (Phase 4), the enemy and shot arms (Phase 4–5).
+/// suspends the frame), and the **Bonus** arm (PK, `bonus`: every pickup; the upgrades suspend the frame),
+/// the Box mechanisms placed on levels 1–4 (BX1, BX2, BT, TP), the **Effect** arm (EF), the **Statue** arm (SW)
+/// and the spikes (LV3). // later: Phase 5 — the enemy and enemy-shot arms; Phase 6 — the types first placed on
+/// levels 5+.
 public enum HitPlayerSprite {
     /// The test form: the light calls (`.KillBonus`'s `.RemoveLight`) go to a scratch table, Effects is the default
     /// prefs'.
@@ -952,7 +954,8 @@ extension HitPlayerSprite {
         guard w.player.doorTransit == 0x16,
               let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
         w.player.lookAhead = 0
-        // later: Phase 4 — p2 ≠ 0: −1 → `G+0x20 = 0`, hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
+        // later: Phase 6 — p2 ≠ 0 (every passage on levels 1–4 has p2 0): −1 → `G+0x20 = 0`,
+        // hdr 0x2706 = `G+0x22`; 10 → 0; else hdr 0x2706 = p2, `G+0x20 = 1`.
         let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
         let dx = h(p.x - o.x), dy = h(p.y - o.y)
         let partner = BackgroundSprite.record(w, o)?.p1
@@ -988,7 +991,7 @@ extension HitPlayerSprite {
 /// 1. **The attacker gate** (l. 47983–47985, raw `10054768..10054794`): an attacker with HP `+0xa4` < 1 whose Handle is
 ///    neither `.HandleEnemyShotSprite` (`PTR_PTR_100a0488`) nor `.HandleBoxSprite` (`PTR_PTR_100a0484`) hurts not at
 ///    all (0, no draw). [Plan W2a named "Platform / Background" — the dump and the bank (review A3) say EnemyShot /
-///    Box.] Core has no EnemyShot Handle yet: // later: Phase 4 (enemy shots are `inert` until then).
+///    Box.] Core has no EnemyShot Handle yet: // later: Phase 5 (enemy shots are `inert` until then).
 /// 2. `.HurtSprite(player, damage, (i16) attacker vx, −1000, invul, 0xc)` (`HurtSprite.apply`); 0 → return 0.
 /// 3. The Multi Crystal (M l. 47989–48032; MS): the attacker's Handle not the Blob's (`PTR_PTR_100a04c0` — // later:
 ///    Phase 5, no Blob in Core) and not a Background (`runs`) of type 0x730…0x733, and `.HasItemWhichSlot(0x13)` → the
@@ -1026,7 +1029,7 @@ public enum HurtPlayer {
     public static func hurt(_ w: SpriteWorld, player pID: Int, attacker aID: Int, damage: Int16, blood: Bool,
                             invulnerable: Int16, coins: Int16) -> Bool {
         guard let a = w.active.record(id: aID) else { return false }
-        if a.hp < 1 && a.handler != .box { return false }               // later: Phase 4 — or the EnemyShot Handle
+        if a.hp < 1 && a.handler != .box { return false }               // later: Phase 5 — or the EnemyShot Handle
         guard HurtSprite.apply(w, id: pID, damage: damage, dvx: Int16(truncatingIfNeeded: a.vx), dvy: -1000,
                                invulnerable: invulnerable, flash: 0xc) else { return false }
         if !(BackgroundSprite.runs(a, .background) && (0x730...0x733).contains(a.type)),
@@ -1153,7 +1156,7 @@ extension HitPlayerSprite {
     /// the player's (i16 compare), else −300; a hurt → the stun `_DAT_100a0748 = 1`. `.HurtSprite`, not `.HurtPlayer`:
     /// no scream, no coin loss. Any other Effect: nothing. The 0x5a0 geyser segment's part of the same test (a sprite
     /// of type 0x5a0 with `+0x14c` ≥ 1, any handler on this path: 0x70 / 0x150 by liquid kind, the walk-on and Fire
-    /// Charm immunities) // later: the geyser task.
+    /// Charm immunities) // later: Phase 5 (geysers).
     static func effect(_ w: SpriteWorld, player pID: Int, other oID: Int) {
         guard let o = w.active.record(id: oID), o.type == EffectSprite.bigExplosion, o.phase <= 7,
               let p = w.active.record(id: pID) else { return }

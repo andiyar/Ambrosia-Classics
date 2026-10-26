@@ -552,7 +552,8 @@ public enum PlayerStates {
                     setFace(face(crouch, Int(w.player.crouch) - 1))
                 } else {
                     if w.player.shieldExtension < 7 { w.player.shieldExtension += 1 }
-                    // `.HasItem(0xf)` (the Magical Shield): no inventory in Phase 2 (// later: Phase 4) → false, so
+                    // `.HasItem(0xf)` (the Magical Shield): ◇ not built — read as false (no level 1–4
+                    // places the shield), so
                     // 1039[min(raise − 1, 5)] (the other arm: 1039[min(raise + 2, 8)] with raise ≥ 4).
                     var i = Int(w.player.shieldRaise) - 1
                     if 4 < i { i = 5 }
@@ -792,7 +793,7 @@ public enum PlayerStates {
     /// - n = 0: the **invulnerability blink** — parity `_DAT_1009fd30` set ∧ `+0x116 ≥ 15` ∧ not stunned →
     ///   `+0xb8 = 0x10006`, `+0x18c = 1`, and over 60 `0x10009`, `+0x1a6 = 0xdc`, `+0x1a8 = 0x10`; otherwise the
     ///   power-up tints (walk-on-liquid / High Jump / Feather Fall / Double Speed with their `0644/0634/0628/061c`
-    ///   flags; // later: Phase 4 — all false in Phase 2) or 0, and `+0xb8 == 0` → `+0x1a6 = +0x1a8 = 0`, `+0x88 = 1`,
+    ///   flags, set by the spheres' timers, `PowerUps`) or 0, and `+0xb8 == 0` → `+0x1a6 = +0x1a8 = 0`, `+0x88 = 1`,
     ///   else `+0x88 = 0`, `+0x1a8 = 8`;
     /// - |n| < 21 → `+0xb8 = 0`, `+0x18c = 0`; 21…59 → the sparkle `0x50000 + clamp(min(((|n| − 12) >> 2) + 2, 15) +
     ///   FastRand(6) − 3, 0, 15)`, `+0x18c = 1`; 60…79 → 0x4f; 80 → `0708` = 1 (fire; the teleporters' arm, TP)

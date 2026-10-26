@@ -161,7 +161,8 @@ public enum PlayerTiles {
             if w.player.carpet, let carpetID = w.player.ridden, let me = w.active.sprite(id: id),
                let c = w.active.record(id: carpetID) {
                 // The carpet arm (raw `100550e8..10055174`): ride it, its top under the feet, and stop it when vx <
-                // 0x100 (the signed-compare idiom `eqv`/`subfc`/`addze`). // Phase 4 builds the carpet.
+                // 0x100 (the signed-compare idiom `eqv`/`subfc`/`addze`). // later: Phase 6 — the carpet
+                // (1080/1081, first placed on level 22).
                 w.active.update(id: id) { $0.ridden = carpetID }
                 let top = Int(Int16(truncatingIfNeeded: me.y + me.hotRect.bottom - c.hotRect.top))
                 w.active.update(id: carpetID) { p in

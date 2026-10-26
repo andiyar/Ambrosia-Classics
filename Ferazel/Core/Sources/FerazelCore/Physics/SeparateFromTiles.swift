@@ -106,8 +106,9 @@ public final class TileSolver {
     /// The sprite is read as a record, linked or not (`ActiveList.record(id:)`), as the Handles read it — the original
     /// takes a record pointer (W1 reconciles the F2/F3 re-review's M3 with the `.ActiveToIdleSprite` carry; also
     /// `.WallBounce` / `.WallBounceBG`).
-    /// - Parameter pass: the sprite's tile callback `+0x1f8` (nil = 0). // later: the handlers' callbacks (P2
-    ///   `.HitPlayerTileSprite`, W1–W3 movers) — the crunch nibble's `.CrunchTile` is P2's, reached through them.
+    /// - Parameter pass: the sprite's tile callback `+0x1f8` (nil = 0): the handlers' callbacks (the player's
+    ///   `.HitPlayerTileSprite` P2, the platforms W1–W3, Bonus PK, Box BX1, the player shots CS/SH) — the crunch
+    ///   nibble's `.CrunchTile` is P2's, reached through them.
     public func separateFromTiles(_ id: Int, pass: TileHit?) {
         let h = Self.short16
         guard var s = world.active.record(id: id) else { return }

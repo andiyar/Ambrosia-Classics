@@ -407,7 +407,7 @@ public enum HandleKeys {
     /// one-way top (`+0xd0`), `+0xce` not 4/7/0x13/0x14 and not moving uphill (vx ≤ 0 excludes 0xc, 0x20, 0x21,
     /// 0x2c, 0x2d, 0x32…0x35; vx > 0 excludes 0xf, 0x22, 0x23, 0x2e, 0x2f, 0x36…0x39) → y += |vx|. Riding with a
     /// slope `+0xd6 ≠ 0`: d = |vx·slope| >> 8 (`mullw`, `srawi`); vx and slope of one sign (vx 0 counts as +) →
-    /// y += min(d, 0x800), else y −= d. Returns the delta. Also called by `.HandleBoxSprite` (Phase 4).
+    /// y += min(d, 0x800), else y −= d. Returns the delta. Also called by `.HandleBoxSprite` (BX1).
     @discardableResult
     static func footPressure(_ s: inout SpriteSlot) -> Int16 {
         if s.ridden == nil {

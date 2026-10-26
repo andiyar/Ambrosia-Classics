@@ -381,7 +381,7 @@ public struct SpriteSlot: Equatable, Sendable {
     /// iteration (W1 carry, F2 fix-round finding).
     public var handleCleared = false
     /// `+0x9c` the rope block (`.SetupRopeSegArray`, W3); its presence also stands for `+0x1e8`, the surface-height
-    /// function `.GetRopeHeight` that routine installs (`RopeBlock`). // later: Phase 4 — the rope bridge 1466's
+    /// function `.GetRopeHeight` that routine installs (`RopeBlock`). // later: Phase 6 — the rope bridge 1466's
     /// `.GetRopeBridgeHeight` (unplaced).
     public var rope: RopeBlock?
     /// W2b (cannons, `.TurnIntoCannoned @ 10058594`, decompile l. 49930–49974): `+0x164` (i32) a cannon's launch speed S
