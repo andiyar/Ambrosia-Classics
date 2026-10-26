@@ -35,14 +35,8 @@ import FerazelCore
 
     /// A dialog or a file panel is up (no pick is taken).
     var modalUp: () -> Bool = { true }
-    /// The game's polled main-menu letters are being read: the menu loop is live and not paused.
-    private var inMainMenu: Bool { state.menusLive && !state.paused }
     /// A pick → `GameFlow.menuChosen`.
     var chosen: (PauseRun.MenuItem) -> Void = { _ in }
-
-    /// `.MainMenu`'s `GetKeys` letters (M l. 7388–7431): N, O / R, I / P, C, Q, X.
-    static let mainMenuLetters: Set<Int> = Set([MainMenu.newGameKey, MainMenu.creditsKey, MainMenu.quitKey,
-                                                MainMenu.jokeKey] + MainMenu.continueKeys + MainMenu.optionsKeys)
 
     /// - Parameters:
     ///   - fullScreen: the hidden ⌃⌘F item (target and action), kept in the app menu.
@@ -63,9 +57,7 @@ import FerazelCore
             } else {
                 menu = NSMenu(title: m.title)
                 menu.delegate = self
-                let picks: [Int: PauseRun.MenuItem] = id == 129
-                    ? [1: .newGame, 2: .restoreGame, 4: .abortGame, 6: .quit]
-                    : [1: .music, 2: .soundEffects, 4: .preferences]
+                let picks = FerazelMenuRules.picks(menu: id)
                 for (i, item) in m.items.enumerated() {
                     if item.name == "-" {
                         menu.addItem(.separator())
@@ -111,13 +103,9 @@ import FerazelCore
         chosen(p.item)
     }
 
+    /// `.UpdateMenus`' enables (the shared `FerazelMenuRules`, Phase W WF3).
     private func enabled(_ item: PauseRun.MenuItem) -> Bool {
-        guard state.menusLive, !modalUp() else { return false }
-        switch item {
-        case .newGame, .restoreGame: return !state.paused
-        case .abortGame: return state.paused
-        case .quit, .about, .music, .soundEffects, .preferences: return true
-        }
+        FerazelMenuRules.enabled(item, state: state, modalUp: modalUp())
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
@@ -126,7 +114,8 @@ import FerazelCore
     }
 
     /// The File and Game menus' ⌘ keys: taken only when the item is enabled — and, in the main menu, not one of its
-    /// polled letters; otherwise the key event goes on to the game window (the polled keys).
+    /// polled letters (`FerazelMenuRules.takesKeyEquivalent`, shared with Windows' Ctrl shortcuts); otherwise the key
+    /// event goes on to the game window (the polled keys).
     func menuHasKeyEquivalent(_ menu: NSMenu, for event: NSEvent, target: AutoreleasingUnsafeMutablePointer<AnyObject?>,
                               action: UnsafeMutablePointer<Selector?>) -> Bool {
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
@@ -134,8 +123,9 @@ import FerazelCore
             return false
         }
         guard let item = menu.items.first(where: { $0.keyEquivalent == key }),
-              let p = item.representedObject as? Pick, enabled(p.item) else { return false }
-        if inMainMenu, Self.mainMenuLetters.contains(Int(event.keyCode)) { return false }
+              let p = item.representedObject as? Pick,
+              FerazelMenuRules.takesKeyEquivalent(p.item, keyCode: Int(event.keyCode), state: state,
+                                                  modalUp: modalUp()) else { return false }
         keyPick = p.item
         target.pointee = self
         action.pointee = #selector(keyPicked(_:))
