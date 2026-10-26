@@ -3,12 +3,19 @@
 > **For agentic workers:** use `superpowers:subagent-driven-development`. One Opus `fk-implementer` + one Opus
 > `fk-reviewer` per task (two review legs on ⚑ MAJOR). Contracts, not code (Ben's rule, memory
 > `feedback-plans-carry-contracts-not-code`): each task names the files, the behaviour, the tests and the acceptance
-> numbers; the implementer writes the code test-first. **The loop never launches anything** (D42): no `open`, no
-> CrossOver/Wine run of any build (game, test executable, smoke), nothing that opens a window or plays a sound.
+> numbers; the implementer writes the code test-first. **Launches (D42, Ben's Q12 as amended): only muted, never
+> 21:00–09:00.** Every step that runs a build — Proof B in CrossOver, the staged zip's boot in a clean CrossOver bottle,
+> the Mac staged app's G9, the Mac SDL development build run with dummy drivers — is a loop gate, but each one (i) uses
+> the mute switch, (ii) is preceded by `date +%H` in 09..20 — otherwise the step is skipped and the run writes "boot
+> check owed (night rule)" in LOOP-LOG and on the gate card, and (iii) is few and short. No mute switch → no launch.
+> The switches: the Mac app's `-FerazelMute YES` (built and headlessly tested in WF1; no Mac app launch before it
+> merges); in CrossOver the no-sound driver through `HECTOR_SDL_AUDIO_DRIVER=dummy` (exists today in HectorSDL and
+> `run-in-crossover.sh`; Proof B's script forces it) plus the game's own `--mute` (WF3).
 
 **Goal:** a Windows build of Ferazel's Wand that does what the Mac app does today (Phase 4 as built: levels 1–4, front
 end, saves, map, spells, items, controller) — cross-compiled on this Mac, staged as a zip under `out/` (never
-published), with every Windows check that needs a running build handed to Ben as a script on the gate card.
+published), checked muted by day by the loop (Proof B, the staged boot), with the checks only a person can make (sound,
+feel, a real PC) on the gate card for Ben and Andrew.
 
 **Starts from:** `main` **f7fd4ce** (Ben's Q12 night-rule commit on top of run 30's close 02015a7; Phase 4 machine-closed
 at 4bca4bd). Ferazel/Core **490/0**, census **1,108/0**, Ferazel BUILD SUCCEEDED, HectorKit **35a85ba** clean, floor
@@ -31,9 +38,12 @@ through `HectorResources.MacRoman` everywhere (`FerazelPrefs.swift:197,202`, `Sa
 `LevelFile.swift:200`, `TextRasterizer.swift:33`, `ScreenRenderer.swift:209`), no `UserDefaults` in Core (the game's
 prefs are a file, `PrefsFile`), and the data has **no QuickTime-JPEG pictures** (`docs/ferazel/data-census.md` names no
 codec) — so BTX's W0.5 predecode is not needed. Risks Proof B could still show (pre-empted in WF0): `CensusTests.swift:18–23`
-looks for `ferazel-census` without `.exe`; `FerazelDataTests.swift:36` makes symbolic links (Windows needs a privilege;
-Wine varies); `FerazelCensus.swift:63,560–561` call `replacingOccurrences`, which traps in Foundation-on-Windows on
-non-ASCII strings past ~64 bytes (D19.5).
+finds `ferazel-census` beside the `.xctest` bundle (`:19`) and without `.exe` — on Windows the test runner is a renamed
+`.exe`, not a bundle; `CensusTests.swift:132–133` compares the child's stdout byte for byte with the in-process render
+(Windows text-mode stdout may write CRLF); `FerazelDataTests.swift:36` makes symbolic links (Windows needs a privilege;
+Wine varies); `FerazelCensus.swift:63,560–561` make **five** `replacingOccurrences` calls, which trap in
+Foundation-on-Windows on non-ASCII strings past ~64 bytes (D19.5). Review leg A (2026-10-26) re-measured GW1: **~19 s**,
+exit 1 on the `setenv`/`unsetenv` lines; with a `_putenv_s` shim exit 0 and both `.exe` lines.
 
 ## Architecture
 
@@ -61,20 +71,23 @@ shared by **per-file git symlinks** into `FerazelWinKit` (BTX D36's `BTXPadLayou
 | after | Ferazel/Core (`swift test`, G2) | FerazelWinKit (`cd Ferazel/Windows && swift test`, GW2) |
 |---|---|---|
 | start | 490 | — (package does not exist) |
-| WF0 | 490 (3 test files + census source edited, no test added) | — |
-| WF1 ⚑ | 490 | **14** |
-| WF2 | 490 | **24** (+10) |
-| WF3 ⚑ | 490 | **40** (+16) |
-| WF5 | 490 | **48** (+8) |
-| WF4a | 490 | **58** (+10) |
-| WF4b ⚑ | 490 | **70** (+12) |
-| WF6 | 490 | 70 |
+| WF0 | 490 (2 test files + census source edited, no test added) | — |
+| WF1 ⚑ | 490 | **17** |
+| WF2 | 490 | **27** (+10) |
+| WF3 ⚑ | 490 | **45** (+18) |
+| WF5 | 490 | **53** (+8) |
+| WF4a | 490 | **64** (+11) |
+| WF4b ⚑ | 490 | **76** (+12) |
+| WF6 | 490 | 76 |
 
-**Proof B (Ben's script, not a loop gate):** the Core suite cross-built and run in CrossOver —
-**490 passed / 0 failed / 0 skipped / 0 crashed (of 490)**. No skip rule is planned: data tests get the data through
-`FERAZEL_DATA` (Windows path), `CensusTests` finds `docs/ferazel/data-census.md` through the copy's repo layout, WF0
-removes the three known Windows differences. Any miss Ben reports becomes a WF0-style parity task with a ruling, as
-BTX's 260-of-261 was (D18.1). A count other than 490 in the `--list-tests` line is itself a finding.
+**Proof B (GWB, a muted daytime loop gate from WF0's run on; also on the gate card for Ben/Andrew):** the Core suite
+cross-built and run in CrossOver with the no-sound driver — **490 passed / 0 failed / 0 skipped / 0 crashed (of 490)**.
+No skip rule is planned: data tests get the data through `FERAZEL_DATA` (Windows path), `CensusTests` finds
+`docs/ferazel/data-census.md` through the copy's repo layout, WF0 removes the known Windows differences (environment,
+symbolic links, the census binary's location and name, CRLF, the five replaces). The suite runs **once, whole**; per
+class only after a crash, to find it. Any miss becomes a WF0-style parity task with a ruling, as BTX's 260-of-261 was
+(D18.1) — or, if the implementer cannot remove a difference, WF0 names a skip rule with its exact count and the
+expected line changes to it. A count other than 490 in the `--list-tests` line is itself a finding.
 
 ## Gates (copy literally; `$WT` = the run's worktree)
 
@@ -82,14 +95,20 @@ Mac gates kept from `docs/NEXT.md` GATES: **G1** HK untouched (`git -C ~/Develop
 `log --oneline -1` = 35a85ba), **G2** Core 490/0, **G3** census `Totals: items 1,108 decoded, failures 0` (WF0 — it edits
 the census — and every wave end), **G5** Ferazel app `** BUILD SUCCEEDED **` (every task touching `Ferazel/App`,
 `Ferazel/Shared` or `project.yml`, and every wave end), **G6** scope fence ⊆ the task's Files, **G7** layering, **G10**
-clean tree. **No G9 and no launch step anywhere in this phase** (D42). New gates — all build-only:
+clean tree, and **G9M** — G9 with the mute switch (WF6 only, below). GW1–GW5, GW-symlinks and G-MUTE are build-only
+and run at any hour; the **launch gates** (GWB, GW6, G9M, GW4R) run only by day and muted (D42), each behind the same guard:
+
+```sh
+# LAUNCH GUARD — before every launch gate; outside 09..20 skip the gate and write "boot check owed (night rule)"
+h=$(date +%H); (( 10#$h >= 9 && 10#$h <= 20 )) && echo "launch ok ($h)" || echo "boot check owed (night rule) ($h)"
+```
 
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 WINB=$HOME/Developer/Toolchains/windows-cross/build/ferazel   # NEVER the default root: build.sh:47 names the scratch dir
                                                               # after the package folder, and BTX's packages are also
                                                               # called Core and Windows (Ruling 19)
-# GW1 Core + its tests cross-build for Windows (build only; never run): exit 0, then 2
+# GW1 Core + its tests cross-build for Windows (build only; GWB is what runs them): exit 0, then 2
 WIN_BUILD_ROOT="$WINB" "$WT/tools/windows/build.sh" "$WT/Ferazel/Core" all --tests > "$SCRATCH/gw1.log" 2>&1; echo $?
 grep -cE '/(FerazelCorePackageTests|ferazel-census)\.exe$' "$SCRATCH/gw1.log"
 # GW2 the Windows package's macOS-hosted tests: first number = the ladder's, second = 0
@@ -97,21 +116,44 @@ cd "$WT/Ferazel/Windows" && swift test > "$SCRATCH/fw.log" 2>&1; grep -cE "^Test
 # GW3 (from WF3) the game cross-builds and links for Windows (build only): exit 0, then 1
 WIN_BUILD_ROOT="$WINB" "$WT/tools/windows/build.sh" "$WT/Ferazel/Windows" FerazelWin --sdl > "$SCRATCH/gw3.log" 2>&1; echo $?
 grep -cE '/FerazelWin\.exe$' "$SCRATCH/gw3.log"
-# GW4 (from WF3) the Mac SDL development build compiles (never run): last line "Build complete!" (or "Compiling …" free of errors)
+# GW4 (from WF3) the Mac SDL development build compiles: last line "Build complete!" (or "Compiling …" free of errors)
 cd "$WT/Ferazel/Windows" && swift build --product FerazelWin 2>&1 | tail -n 1
 # G7W layering for the new code: empty (CoreTextRasterizer is the one guarded Mac-only file)
 grep -rlE '^import (AppKit|Carbon|CoreGraphics|CoreText|AVFoundation|Metal|QuartzCore|SwiftUI|UIKit|HectorShell|HectorSDL|CSDL3)' \
   "$WT/Ferazel/Shared" "$WT/Ferazel/Windows/Sources/FerazelWinKit" | grep -v '/CoreTextRasterizer\.swift$'
-# GW-symlinks: every Ferazel/Shared file has its FerazelWinKit symlink, mode 120000 (empty output)
-for f in "$WT"/Ferazel/Shared/*.swift; do n=${f:t}; git -C "$WT" ls-files -s "Ferazel/Windows/Sources/FerazelWinKit/$n" | grep -q '^120000' || echo "missing $n"; done
+# GW-symlinks (zsh: ${f:t} is zsh's basename): every Ferazel/Shared file has its FerazelWinKit symlink, mode 120000 (empty output)
+zsh -c 'for f in "$1"/Ferazel/Shared/*.swift; do n=${f:t}; git -C "$1" ls-files -s "Ferazel/Windows/Sources/FerazelWinKit/$n" | grep -q "^120000" || echo "missing $n"; done' _ "$WT"
+# G-MUTE (from WF1) the Mac's one audio-output open and its beeps sit behind the mute switch: 1, then 1
+grep -rn 'ShellMixer(' "$WT/Ferazel/App" "$WT/Ferazel/Shared" | wc -l   # the one call, inside the factory WF1 gates (comments say `ShellMixer.init`)
+grep -rn 'NSSound\.beep()' "$WT/Ferazel/App" | wc -l                                           # the one call, inside the gated beeper
 # GW5 (WF6 and every phase end) stage: exit 0; PE subsystem 2 (Windows GUI); the zip's file list = the script's manifest
-bash "$WT/tools/windows/stage-ferazel-win.sh" --no-desktop; echo $?
-"$HOME/Developer/Toolchains/windows-cross/swift-6.4.0-RELEASE.xctoolchain/usr/bin/llvm-objdump" -p "$WT/out/Windows/Ferazel's Wand/Ferazel's Wand.exe" | grep -i subsystem
-diff <(zipinfo -1 "$WT/out/Windows/Ferazel's Wand (Windows).zip" | sort) <(sort "$WT/out/Windows/Ferazel's Wand/MANIFEST.txt")   # empty
+"$WT/tools/windows/stage-ferazel-win.sh" --no-desktop; echo $?          # a zsh script: run directly, never `bash …`
+"$HOME/Developer/Toolchains/windows-cross/swift-6.4.0-RELEASE.xctoolchain/usr/bin/llvm-objdump" -p "$WT/out/Windows/Ferazel's Wand/Ferazel's Wand.exe" \
+  | awk '/^Subsystem/ {print $2}'                                       # 2 (stage-btx.sh:184's check; grep prints 3 lines)
+diff <(zipinfo -1 "$WT/out/Windows/Ferazel's Wand (Windows).zip" | grep -v '/$' | grep -vx 'MANIFEST.txt' | sort) \
+     <(sort "$WT/out/Windows/Ferazel's Wand/MANIFEST.txt")              # empty (folder entries and the manifest itself filtered)
 ```
 
-Implementers run their task's gates; reviewers re-run them independently (reviewers build in a `mktemp` copy with
-their own `WIN_BUILD_ROOT`, never the seat's).
+Launch gates (each after the LAUNCH GUARD; skipped by night with the "boot check owed" line):
+
+```sh
+# GWB Proof B (from WF0's run; every wave end that touches Core or Windows): last line, run once whole
+"$WT/tools/windows/proof-b-ferazel.sh"          # proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
+# GW4R (from WF3) the Mac SDL development build, headless, dummy drivers (a launch by seat ruling): exit 0; log line
+#      ends "video=dummy audio=dummy"; the dump's FNV = WF2's recorded main-menu FNV
+#      (run only through the smoke script, which refuses without the guard and dummy drivers)
+"$WT/tools/windows/smoke-ferazel-win.sh" --mac-only
+# GW6 (WF6) the staged zip boots in a clean CrossOver bottle, muted: "main menu: identical", "new game: identical", exit 0
+"$WT/tools/windows/smoke-ferazel-win.sh"
+# G9M (WF6) the Mac staged app boots MUTED: pid line after 5 s, second pgrep empty, no new crash log
+APP="$WT/out/Ferazel/Ferazel's Wand.app"; open -n "$APP" --args -FerazelMute YES; sleep 5; pgrep -fl "Ferazel's Wand" | cut -c1-100; osascript -e 'tell application "Ferazel'"'"'s Wand" to quit'; sleep 2; pgrep -fl "Ferazel's Wand"; ls -t ~/Library/Logs/DiagnosticReports | head -n 3
+```
+
+`proof-b-ferazel.sh` and `smoke-ferazel-win.sh` **refuse to run** (exit 64, one line saying why) unless
+`HECTOR_SDL_AUDIO_DRIVER=dummy` is what they pass (they set it themselves and check it) and `date +%H` is in 09..20;
+the smoke's Mac half also refuses unless it passes `--mute` and the dummy drivers. G9M never runs without
+`--args -FerazelMute YES`. Implementers run their task's gates; reviewers re-run them independently (reviewers build in a
+`mktemp` copy with their own `WIN_BUILD_ROOT`, never the seat's) — reviewers re-run launch gates only under the guard.
 
 ## Rulings (D43 — seat, under D34's plan authority; Ben reads later)
 
@@ -121,23 +163,35 @@ their own `WIN_BUILD_ROOT`, never the seat's).
    change to what the shell does must land once, not twice; BTX's "port, don't share" (D15.5) existed only because Ben
    was playtesting that Mac app; here the Mac app's behaviour is held by G2/G5 and reviewers read the move line by line.
    *Rejected:* a copy-port (drifts); a new target in `Ferazel/Core` (Core's 490 ladder and G7 would carry shell code).
-2. **Text without CoreText = glyphs baked from the Mac's own CoreText path.** `fz-bake-font` (Mac) runs the very
-   `CoreTextRasterizer` the Mac app uses (moved to Shared, Mac-only by `#if canImport(CoreText)`) and writes, per face
-   the game draws, every byte 0x00–0xFF's coverage mask, `charWidth`, plus `fontInfo`, and a whole-string cache for the
-   closed status-bar strings (every level name the data holds, `"x"`). Faces (the only text sites —
-   `StatusBar.swift:152,196–197,217–218`, `ConversationRun.swift:474,488,505`): Times 12 bold, Geneva 9 plain, Geneva 8
-   bold, Times 18 plain; plus the dialog face (WF4). **Measured equal on the Mac:** byte-for-byte equality with
-   CoreText for every glyph, width and cached string; end-to-end frame-index equality on the level-1 golden route and
-   the sign/conversation route (FNV of the 640×480 indices, baked vs CoreText); a staleness test (fresh bake = committed
-   files) so any later change to the Mac's text path fails the Windows suite until re-baked. Strings outside the cache
-   (score, coin and item counts) compose glyph by glyph on whole-pixel advances; WF2 measures them against CoreText
-   (exact expected — Times digits are tabular at a whole-pixel advance below the 14 pt smoothing threshold; if not, the
-   BTX W2 bar applies: width ±1 px, ≤ 2 % of touched pixels, recorded). Classic Times/Geneva (D39, Q8) later = re-bake.
+2. **Text without CoreText = BTX's baked format and rasterizer, copy-adapted, baked from the Mac's own CoreText path.**
+   BTX learned that CoreText places glyphs at fractional pen positions and snaps each to a few subpixel phases, with
+   kerning and ligatures, so one bitmap per glyph cannot match it (`BubbleTroubleX/Windows/Sources/BTXWinKit/BTXFont.swift:3–30`);
+   its format (per glyph: f64 advance + phase segments → de-duplicated bitmaps; kerning pairs; ligatures) and
+   `BitmapFontRasterizer` reproduce every string CoreText draws exactly. Ferazel's Mac rasterizer draws whole lines
+   through `CTLineDraw` and then, below the smoothing threshold, cuts the composed coverage to 0/255
+   (`Ferazel/App/CoreTextRasterizer.swift:46–75`), so the Windows rasterizer composes the line BTX's way and applies
+   **the same cut after composition**, never per glyph. `fz-bake-font` (Mac, BTX `btx-bake-font` shape) resolves fonts
+   only through the very `CoreTextRasterizer` the Mac app uses (moved to Shared, Mac-only by `#if canImport(CoreText)`)
+   and bakes, per face the game draws, every MacRoman character's phase segments, advance and line metrics, kerning
+   pairs and ligatures, plus `fontInfo`; `charWidth` = the Mac's rounding of the baked f64 advance. Faces (the only text
+   sites — `StatusBar.swift:152,196–197,217–218`, `ConversationRun.swift:474,488,505`): Times 12 bold, Geneva 9 plain,
+   Geneva 8 bold, Times 18 plain; plus the dialog face (WF4a). **No string cache and no ±1 px bar**: BTX's way places
+   fractional advances itself (leg B measured digit advances Times bold 12 = 6.0, Geneva 9 = 5.9985, Geneva bold 8 =
+   5.332 — the Geneva ones are not whole pixels). **Measured equal on the Mac, byte for byte against
+   `CoreTextRasterizer`:** every glyph, every string the game draws from a closed set (level names, `"x"`), the score /
+   coin strings and the Geneva item-count strings; end-to-end frame-index equality on the level-1 golden route and the
+   sign/conversation route (FNV of the 640×480 indices, baked vs CoreText); a staleness test (fresh bake = committed
+   files). If the item-count strings are not exact BTX's way, the closed set of count strings the game can show is
+   baked whole as a fallback for those strings only (recorded in D43) — never a tolerance. Classic Times/Geneva (D39,
+   Q8) later = re-bake.
 3. **Saved-game panels → the native Windows Open / Save dialogs** (comdlg32 `GetOpenFileNameW` / `GetSaveFileNameW`
    through Swift's `WinSDK`, Explorer style, in the executable under `#if os(Windows)`; no HectorKit change). *Why:* Ben's
    Q3 (2) chose the platform's own panels on the Mac; this is the same choice on Windows; it is modal and synchronous like
-   `NSSavePanel.runModal` (`FerazelController.swift:570–608`), so the flow is held still the same way. Title = the
-   prompt, start folder = the saves folder (created first), default name = the flow's, made Windows-legal (Ruling 10).
+   `NSSavePanel.runModal` (`FerazelController.swift:569–605`), so the flow is held still the same way. Title = the
+   prompt, default name = the flow's, made Windows-legal (Ruling 10). Start folder as the Mac: the **Save** dialog's is
+   the saves folder, created first (`files.ensureFolder()`, `:579`); the **Open** dialog starts there only when it
+   already exists and never creates it (`:598`). The Mac Save panel's message line (`panel.message = r.message`, `:576`,
+   DITL 1003 item 13's text) has no place in the Windows dialog (no message area in `GetSaveFileNameW`) — dropped, ◇W9.
    *Rejected:* the original's Standard File (DITL 1003/1500) drawn in-window (faithful look, but a file browser to build
    and Ben chose modern panels on the Mac) — owner choice, Questions WQ2; SDL3's file dialog (HectorSDL would need a
    change, and it is asynchronous).
@@ -145,12 +199,17 @@ their own `WIN_BUILD_ROOT`, never the seat's).
    Credits — modal over the canvas, the flow not ticking meanwhile, behaviour per `Ferazel/App/Dialogs/*` (itself the
    transcription), look per the Mac's classic style (`DialogViews.swift:1–20`: black outlines on the `dctb` grey,
    system font 12, OK ring), not BTX's. Code: adapted copies of BTXWinKit's `DialogRenderer` / `DialogWindow` /
-   `DialogSystem` (BTX's package untouched — its types are BTX-bound: `BTXPrefs`, `ArtBank`, its `SoundCue`).
+   `DialogSystem` (BTX's package untouched — its types are BTX-bound: `BTXPrefs`, `ArtBank`, its `SoundCue`). **Scale:**
+   on the Mac each dialog is its own 1× window with sharp Retina text, centred over the game but not scaled with it
+   (`FerazelCarbonDialog.swift:314–319`, `FerazelDialogs.open`); on Windows the dialog is drawn into the 640×480 picture
+   and scales with the game (up to 3×, 1× baked glyphs enlarged) — the BTX W6 precedent, ◇W10, Questions WQ7.
 5. **No menu bar** (D21, re-ruled for Ferazel as design §7.4 promised). MBAR 128's commands stay reachable exactly as
-   their ⌘ keys are on the Mac: Ctrl+N / O / W / Q / M / F / P act as the menu pick only where the Mac's menus are live
-   (`MenuState.menusLive` — main menu and pause), with the Mac's enable rules (`FerazelMenus.swift:114–121`) and the
-   main menu's letter fall-through (`:130–152`), moved to `Ferazel/Shared/FerazelMenuRules.swift` so both shells use one
-   rule; elsewhere Ctrl+letter reaches the game as ⌘+letter in the polled keys, as on the Mac (a level's ⌘Q/⌘W/⌘P).
+   their ⌘ keys are on the Mac: **Ctrl alone** (no Shift, Alt or Windows key — the Mac takes a shortcut only with ⌘ and
+   no other modifier, `FerazelMenus.swift:132–133`) + a letter acts as the menu pick only where the Mac's menus are live
+   (`MenuState.menusLive` — main menu and pause). The letters come from the MENU resources' key equivalents, as the Mac
+   builds them (`MenuTemplate.Item.keyEquivalent`, `FerazelMenus.swift:88`) — never a hard-coded list (today they read
+   N / O / W / Q / M / F / P). The Mac's enable rules (`:114–121`) and the main menu's letter fall-through (`:130–152`)
+   move to `Ferazel/Shared/FerazelMenuRules.swift` so both shells use one rule; elsewhere Ctrl+letter reaches the game as ⌘+letter in the polled keys, as on the Mac (a level's ⌘Q/⌘W/⌘P).
    A taken shortcut never enters the held keys (on the Mac the menu consumes the key-down). About has no shortcut (as
    D21): Credits stays on the main menu. Check marks have nowhere to show (the pause banner is the original's).
 6. **Keys** (D18.5 map, unchanged HectorSDL): Ctrl = ⌘, Alt = ⌥, Windows key = ⌃, right-hand modifiers folded to the
@@ -160,16 +219,22 @@ their own `WIN_BUILD_ROOT`, never the seat's).
    live layout (`FerazelController.swift:303–322`) ◇.
 7. **Gamepad** (D37): `SDLHost.padState()` → `ShellPadTranslator` with `FerazelPadLayout.mapping(keys:context:dialogUp:)`
    each poll, merged into the held keys and the Caps Lock latch exactly as HectorShell's `ShellView.pollKeyState` does
-   for the Mac (BTX: `WinGameDriver.swift:146–148`); with a confirm/report up, pad Return/Esc answer it (the Mac's
-   `padKeyPanel` rule, `FerazelController.swift:722–739`).
+   for the Mac (BTX: the merge in `WinGameDriver.swift:~360–370`, `pollPad`); with a confirm/report up, pad Return/Esc
+   answer it (the Mac's `padKeyPanel` rule, `FerazelController.swift:722–735`).
 8. **Clock:** ticks = `SDLClock.nanoseconds` × 60 / 10⁹ (absolute, `UInt32` wrap like `ShellClock.ticks()`); the loop
    wakes every 1/240 s (`SDLClock.sleepPrecise`) and runs the flow at most once per new tick, never while a dialog or a
-   file dialog is up — the Mac's `idleFired` (`:325–355`). The 30-step cap and 2-tick cadence stay Core's (Q9: keep the
+   file dialog is up — the Mac's `idleFired` (`:325–352`). The 30-step cap and 2-tick cadence stay Core's (Q9: keep the
    speed); the shell adds no cap of its own.
 9. **Quit:** the window's close button, Alt+F4 and the taskbar's Close arrive as SDL's quit event = the Mac's Dock Quit
    (D40): `GameFlow.systemQuit()` — a level running free asks "Are you sure you want to quit?", elsewhere the queued
-   quit event as the original. Windows ending the session kills the process; `.Quit` writes no prefs, so nothing is lost
-   (the D40 logout case). The flow's `.quit` request ends the loop, stops audio, exits 0.
+   quit event as the original. The close button itself is new: the Mac window has none (`FerazelController.swift:187–189`,
+   `[.titled, .miniaturizable]`) and SDL's window always has one — ◇W11. A quit that arrives before the flow exists ends
+   at once, as the Mac's `applicationShouldTerminate` does (`:659`). **Logoff / shutdown** must never be held by the
+   confirm (the Mac answers a session-ending quit with `.terminateNow`, `:660`; D40): WF3 reads how SDL 3.4.16 reports a
+   Windows logoff (`WM_QUERYENDSESSION` / `WM_ENDSESSION`) and records it in D43 — if SDL gives a distinguishable event,
+   it quits at once; if it arrives as the plain quit event, the confirm may show and Windows ends the process after its
+   own timeout, which loses nothing (`.Quit` writes no prefs) — accepted and named in ◇W11. The flow's `.quit` request
+   ends the loop, stops audio, exits 0.
 10. **Prefs and saves:** `%APPDATA%\Ambrosia Classics\Ferazel's Wand\` holds the prefs file (`PrefsFile.fileName`, the
     same 0x942-byte record the Mac writes) and is the saves dialogs' start folder; never `UserDefaults` (D16.3). The Mac
     SDL development build uses `~/Library/Application Support/Ambrosia Classics/Ferazel's Wand (SDL)/` (never the Mac
@@ -177,151 +242,235 @@ their own `WIN_BUILD_ROOT`, never the seat's).
     made Windows-legal: each of `\ / : * ? " < > |` and control characters → `-`, trailing dots/spaces dropped, a
     reserved device name (CON, PRN, AUX, NUL, COM1–9, LPT1–9) gets `_` appended; no extension is added (the Mac's files
     have none; Core refuses a non-save with the original's text) — WQ6.
-11. **Hidden switches:** `-FerazelLevel N`, `-ColorTieBreak lowest`, `-MacGamma YES` on the command line, for one
-    launch, parsed with the Mac's `UserDefaults` argument-domain semantics (`FerazelController.swift:174–185`: integer,
-    exact `"lowest"`, bool) by one shared `FerazelSettings.parse(lookup:)`. No persistent store on Windows.
+11. **Hidden switches:** `-FerazelLevel N`, `-ColorTieBreak lowest`, `-MacGamma YES`, `-FerazelMute YES` on the command
+    line, for one launch, parsed with the Mac's `UserDefaults` argument-domain semantics (`FerazelController.swift:174–185`:
+    integer, exact `"lowest"`, bool) by one shared `FerazelSettings.parse(lookup:)`. `UserDefaults` reads strings
+    loosely (a bool from "y" / "t" / a leading digit, an integer from "2abc" → 2); WF1 measures `UserDefaults`'
+    argument-domain answers on the Mac for those cases and pins them as rows of the parse table, so Windows reads every
+    value as the Mac does. No persistent store on Windows. No single-instance guard: a second launch on Windows is a
+    second game (the Mac opens a save in the running app) — ◇W12.
 12. **Data:** `Data\` beside the exe = `Resources/Ferazel/` unchanged (six `.rsrc` + `Ferazel's Wand Music\`, D10, design
     l. 119) + `Fonts\*.fzfont`; `--data DIR` overrides; the start-up check names any missing file in a message box and
-    the log (BTX `WinStartup.swift:17`). No `Decoded\` (no codec pictures).
+    the log (BTX `WinStartup.swift:17`). No `Decoded\` (no codec pictures). The message box shows in Release too, where
+    the Mac shows its alert only in DEBUG builds (`FerazelController.swift:100–108`) — justified: the Mac's data sits
+    sealed inside the app bundle, while `Data\` lies loose beside the exe and is lost by copying the exe alone, and a
+    GUI-subsystem exe that exits silently tells the player nothing (BTX W7 did the same). Never in `--frames` mode.
 13. **Audio:** music on a `PCMMixer(voices: 1, outputRate: 48000)` through one `SDLAudioOut`; the Sound Tool (a
     `PCMPullSource` at 22,050 Hz, `SoundTool.swift:42,52`) through a second `SDLAudioOut` — SDL3 mixes the two logical
     streams on the default device (`shim.h:162–168` opens one per call), as the Mac's `ShellMixer.attachStream` puts it
-    beside the voice. Cue order, the music track rule and volumes are the shared `FerazelAudio`. **Mute switch** (Ben's
-    amended Q12): `--mute`, and `HECTOR_SDL_AUDIO_DRIVER=dummy` (CrossOver strips `SDL_*`), open no audio device.
+    beside the voice. Cue order, the music track rule and volumes are the shared `FerazelAudio`. Mute: Ruling 20.
 14. **Window:** the 640×480 game screen alone (D21), title "Ferazel's Wand", opening at the largest whole scale k ≤ 3
     whose window fits the usable area (the Mac rule, `:193–205`), HectorSDL's resizable integer-fit window on black
     (◇ the Mac's is fixed; HectorSDL always opens resizable, `SDLHost.swift:43`). Full screen = **Alt+Enter** (the Mac's
     ⌃⌘F would be Win+Ctrl+F, a Windows system key, and Ctrl+F is ⌘F = Sound Effects) — eaten by the shell. Cursor
-    hide/show honoured only over the canvas, focused, no modal up (`:624–637`). `.hideMenuBar`/`.showMenuBar` ignored.
-15. **D42 holds:** Proof B, a muted CrossOver run of the game and the first boot are **scripts Ben runs**, listed with
-    their expected output on the gate card; the loop's Windows gates are GW1–GW5 (build, macOS-hosted tests, stage).
+    hide/show honoured only over the canvas, focused, no modal up (`:624–635`). `.hideMenuBar`/`.showMenuBar` ignored.
+15. **D42 as amended — launches muted, by day, few and short.** Proof B (GWB), the Mac SDL development build's headless
+    run (GW4R — a launch by seat ruling, though it opens no window and plays nothing), the staged zip's boot in a clean
+    CrossOver bottle (GW6) and the Mac staged app's boot (G9M) are **loop gates**, each behind the LAUNCH GUARD
+    (`date +%H` in 09..20, else skipped with "boot check owed (night rule)" in LOOP-LOG and on the gate card — the
+    first daytime run does it) and the mute switch; the scripts refuse to run otherwise. Proof B runs the whole suite
+    once; per class only after a crash. GW1–GW5 (build, macOS-hosted tests, stage) run at any hour. Proof B's and the
+    smoke's scripts also stay on the gate card for Ben and Andrew.
 16. **Lockstep (D41) — the standing contract for Phase 5 onward** (copied into every later plan's preamble):
     (a) a task that changes what the Mac app shows or does — `Ferazel/App`, `Ferazel/Shared`, a new `ShellRequest` /
     `FerazelDialog` case, a new text face, a new data file — carries its Windows side in the same task (FerazelWinKit /
-    FerazelWin change + GW2 tests + GW3), and its Files list names both; (b) a Core-only task needs only GW1 (and GW3 when
-    it adds a seam case the shells switch over — the run-25 lesson); (c) a change to `Ferazel/Shared` is reviewed for
+    FerazelWin change + GW2 tests + GW3), and its Files list names both; (b) a Core-only task runs GW1, GW2 and GW3 and
+    G5 — a Core API change can break the shared files, the Windows package or the Mac app without touching them (the
+    run-25 lesson); (c) a change to `Ferazel/Shared` is reviewed for
     both shells; (d) a text-path change re-runs `fz-bake-font` and commits the `.fzfont` files (the staleness test fails
     otherwise); (e) every phase end stages both builds (`tools/stage-ferazel.sh` + `tools/windows/stage-ferazel-win.sh`)
     with ONE gate card that has a Mac part and a Windows part, and the Fable phase review covers both diffs.
 17. **No HectorKit change.** Everything new is Classics-side; G1 stays 35a85ba, floor 361. (A later wish — a fixed-size
     window, layout-aware key names via SDL — would be an HK task under NEXT AUTHORIZATIONS.)
-18. **Foundation-on-Windows traps (D19.5, D16):** Windows-run code never calls `replacingOccurrences` (pure-Swift
-    replace, BTX `TextReplace.swift` shape), never `.macOSRoman`, never `UserDefaults`.
+18. **Foundation-on-Windows traps (D19.5, D16, BTX W7):** Windows-run code never calls `replacingOccurrences`
+    (pure-Swift replace, BTX `TextReplace.swift` shape), never `.macOSRoman`, never `UserDefaults`; the GUI-subsystem
+    exe never touches `FileHandle.standardError` or `NSLog` (they trap with no console) — reports go through C stdio
+    (`fputs` to stderr, silently dropped without a console) and the log file, as BTX
+    (`BubbleTroubleX/Windows/Sources/BubbleTroubleXWin/main.swift:26–28`); while the window is dragged or resized Windows'
+    modal move/size loop blocks the poll, so the executable installs HectorSDL's live-redraw handler and steps the game
+    from inside it (BTX `main.swift:313–318`).
 19. **Build-root isolation:** every Ferazel cross-build passes `WIN_BUILD_ROOT=$WIN_CROSS/build/ferazel` (scripts set it
-    themselves) — `build.sh:47` would otherwise share `build/Core` / `build/Windows` with BTX's packages.
+    themselves) — `build.sh:47` would otherwise share `build/Core` / `build/Windows` with BTX's packages. The stage
+    script uses its own folders too (`$WIN_CROSS/work/stage-ferazel`, `$WIN_CROSS/build/stage-ferazel`): `stage-btx.sh`
+    deletes `build/stage` and `work/stage-btx` (`:72,180`), and `build/ferazel` is the gates' root, never wiped by staging.
+20. **Mute (D42) and determinism.** *Mac:* `-FerazelMute YES` (argument domain, like the other hidden switches) or
+    `FERAZEL_MUTE=1` in the environment, read by the shared `FerazelSettings.parse`; when set, no `ShellMixer` is created
+    (the only audio-output open is `FerazelController.swift:121` `try? ShellMixer(voices: 1)`; `FerazelAudio` already runs
+    silent with no mixer, `FerazelAudio.swift:35–39`) and the system beeps are suppressed
+    (`FerazelDialogs.swift:62,103,185`, `CreditsDialog.swift:79`). *Windows:* `--mute` (or `FERAZEL_MUTE=1`) forces the
+    SDL audio driver hint to `dummy` before audio opens (BTX `BubbleTroubleXWin/main.swift:127–130`;
+    `HECTOR_SDL_AUDIO_DRIVER=dummy` already maps through `SDLHost.applyDriverOverridesFromEnvironment()`,
+    `HectorKit/SDL/…/SDLHost.swift:91–96`, and `run-in-crossover.sh:40–46` refuses without it) and suppresses
+    `MessageBeep`; the launch log prints `audio=<driver>`. *Determinism:* muted play sees "no sound playing"
+    (`LevelRun.swift:406,456,670` read `input.playing`), which changes level logic against an unmuted run — fine for
+    boot checks. Headless `--frames` dumps on both builds therefore open **no audio device at all** and drain the Sound
+    Tool through a **silent mixer** once per game tick, so `playing` follows the sounds as with real output, and dumps
+    are deterministic and comparable Mac ↔ Windows.
 
 ## Tasks
 
 Every brief tells the implementer: work in the run's worktree; read the cited lines first; the Mac app's behaviour must
-not change (G2 490/0 and G5 on every task that touches it); never run a built executable, never CrossOver (D42).
+not change (G2 490/0 and G5 on every task that touches it); run a built executable only through a launch gate — muted,
+behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` outside G9M.
 
-### WF0 — Core cross-compiles with its tests; Proof B script (Ben's)
+### WF0 — Core cross-compiles with its tests; Proof B
 
-- **Goal:** de-risk the toolchain first: GW1 green, and Proof B ready for Ben with the known Windows differences fixed.
-- **Files:** `Ferazel/Core/Tests/FerazelCoreTests/FerazelDataTests.swift:36–44`; `Ferazel/Core/Tests/FerazelRenderTests/CensusTests.swift:18–23`;
+- **Goal:** de-risk the toolchain first: GW1 green, and Proof B green with the known Windows differences fixed.
+- **Files:** `Ferazel/Core/Tests/FerazelCoreTests/FerazelDataTests.swift:36–44`; `Ferazel/Core/Tests/FerazelRenderTests/CensusTests.swift:18–23,125–136`;
   `Ferazel/Core/Sources/FerazelRender/Census/FerazelCensus.swift:63,560–561`; new `tools/windows/proof-b-ferazel.sh`;
   `tools/windows/README.md` (a "Ferazel's Wand" section).
 - **Contracts:** (1) the environment override in `FerazelDataTests` uses a test helper that sets/unsets the variable so
   `ProcessInfo.processInfo.environment` sees it on both platforms (`setenv`/`unsetenv` on Darwin; on Windows the CRT's
-  `_wputenv_s`, which also updates the Win32 block) — Mac behaviour identical; (2) on Windows that test links the data
-  files with hard links (`FileManager.linkItem`), falling back to copies, instead of symbolic links — same assertions;
-  (3) `censusBinary()` appends `.exe` on Windows; (4) the census's three replaces go through a pure-Swift replace — the
-  Mac census stdout byte-identical (G3 + `CensusTests` unchanged); (5) `proof-b-ferazel.sh` = `proof-b.sh`'s shape for
-  Ferazel: copies `Ferazel/Core` + `docs/ferazel/data-census.md` under `$WIN_CROSS/work/proof-b-ferazel/` laid out like
-  the repo, symlinks HectorKit at `work/HectorKit` (shared with BTX's script — same target), builds with
-  `WIN_BUILD_ROOT=$work/build`, exports `FERAZEL_DATA` as a `Z:\…` path to `Resources/Ferazel`,
-  `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy`, runs per class through `run-in-crossover.sh`, prints the
-  `passed / failed / skipped / crashed (of N)` line. Never touches the repo's copy. **The implementer writes it and
-  checks it with `zsh -n` only — it is never run by the loop.**
+  `_putenv_s` / `_wputenv_s`, which also update the Win32 block — leg A measured GW1 green with a `_putenv_s` shim) —
+  Mac behaviour identical; (2) on Windows that test links the data files with hard links (`FileManager.linkItem`),
+  falling back to copies, instead of symbolic links — same assertions; (3) `censusBinary()` on Windows finds
+  `ferazel-census.exe` in the running executable's folder (the Windows runner is a renamed `.exe`, not an `.xctest`
+  bundle, `CensusTests.swift:19`); on the Mac it stays the bundle's folder; (4) the child-output comparisons
+  (`:132–133` and every other compare of `runCensus` stdout) drop `\r` from the child's output on Windows only — the
+  Mac comparison unchanged; (5) the census's **five** `replacingOccurrences` calls (`:63` two, `:560–561` three) go
+  through a pure-Swift replace — the Mac census stdout byte-identical (G3 + `CensusTests` unchanged); (6)
+  `proof-b-ferazel.sh` (zsh) = `proof-b.sh`'s shape for Ferazel: copies `Ferazel/Core` + `docs/ferazel/data-census.md`
+  under `$WIN_CROSS/work/proof-b-ferazel/` laid out like the repo, symlinks HectorKit at `work/HectorKit` (shared with
+  BTX's script — same target), builds with `WIN_BUILD_ROOT=$work/build`, exports `FERAZEL_DATA` as a `Z:\…` path to
+  `Resources/Ferazel` and `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy`, runs the whole suite **once**
+  through `run-in-crossover.sh` (`--class NAME` re-runs one class, for use only after a crash), prints the
+  `proof-b: passed / failed / skipped / crashed (of N)` line. It **refuses** (exit 64, one line) unless `date +%H` is
+  in 09..20 and the audio driver it passes is `dummy`. Never touches the repo's copy. If a Windows difference cannot be
+  removed, the implementer names a skip rule with its exact count instead, and the expected line changes to it (D43).
 - **Tests:** none added; G2 **490/0** (Mac) proves the edits kept every test.
-- **Acceptance:** GW1 → `0` then `2`; G2 490/0; G3 1,108/0; G6 = the Files; G10. README states Proof B's expected line
-  `490 passed / 0 failed / 0 skipped / 0 crashed (of 490)`.
+- **Acceptance:** GW1 → `0` then `2` (~20 s warm); G2 490/0; G3 1,108/0; G6 = the Files; G10; `zsh -n` on the script;
+  the guard checked with `proof-b-ferazel.sh --check-guard` (evaluates the hour and the driver, builds and runs
+  nothing; no hour override exists) → by night exit 64 "refused (night rule)", by day exit 0, and with
+  `HECTOR_SDL_AUDIO_DRIVER=wasapi` in the caller's environment it still reports `dummy` (the script sets the driver,
+  never inherits it); **GWB** (behind the LAUNCH GUARD) → `490 passed / 0 failed / 0
+  skipped / 0 crashed (of 490)`, or by night "boot check owed (night rule)" and the first daytime run does it. README
+  states the expected line.
 
-### WF1 ⚑ MAJOR — The shared shell half; the FerazelWindows package
+### WF1 ⚑ MAJOR — The shared shell half; the Mac mute switch; the FerazelWindows package
 
-- **Goal:** one neutral driver both shells call; the Windows package exists and tests it on the Mac.
+- **Goal:** one neutral driver both shells call; the Mac's mute switch (D42) built and tested headlessly; the Windows
+  package exists and tests it on the Mac.
 - **Files:** new `Ferazel/Shared/FerazelDriver.swift`, `Ferazel/Shared/FerazelAudio.swift` (moved from
-  `Ferazel/App/FerazelAudio.swift`, git mv), `Ferazel/App/FerazelController.swift` (the moved parts become calls),
-  `Ferazel/App/` one small file for `extension ShellMixer: FerazelMixer` (or inside the controller), `project.yml`
-  (Ferazel target: `- path: Ferazel/Shared`; add the HectorAudio product only if the compiler asks), new
-  `Ferazel/Windows/Package.swift` (BTX `Package.swift` shape: `../Core` products FerazelCore + FerazelRender,
-  `../../../HectorKit` products HectorResources/HectorGraphics/HectorAudio/HectorInput — the same path identity Core
-  uses; the SDL dependency arrives in WF3), symlinks `Ferazel/Windows/Sources/FerazelWinKit/{FerazelDriver,FerazelAudio}.swift`,
-  `Ferazel/Windows/Tests/FerazelWinKitTests/*`.
+  `Ferazel/App/FerazelAudio.swift`, git mv), `Ferazel/App/FerazelController.swift` (the moved parts become calls; the
+  mixer factory and beeper wired), `Ferazel/App/` one small file for `extension ShellMixer: FerazelMixer` (or inside the
+  controller), `Ferazel/App/Dialogs/FerazelDialogs.swift:62,103,185` + `Ferazel/App/Dialogs/CreditsDialog.swift:79`
+  (beeps through the gated beeper), `project.yml` (Ferazel target: `- path: Ferazel/Shared`; add the HectorAudio product
+  only if the compiler asks), new `Ferazel/Windows/Package.swift` (BTX `Package.swift` shape: `../Core` products
+  FerazelCore + FerazelRender, `../../../HectorKit` products HectorResources/HectorGraphics/HectorAudio/HectorInput —
+  the same path identity Core uses; the SDL dependency arrives in WF3), symlinks
+  `Ferazel/Windows/Sources/FerazelWinKit/{FerazelDriver,FerazelAudio}.swift`, `Ferazel/Windows/Tests/FerazelWinKitTests/*`.
 - **Contracts:** `FerazelDriver` (`@MainActor final class`, Foundation + FerazelCore/Render only) takes over, with the
   same order and results: the boot in `applicationDidFinishLaunching` (`:98–171` minus the window/menus/dialogs/timer —
   resources open, `ColorSearch(.exactNearest, tieBreak)`, surface under clut 0x321, the two `ScreenRenderer`s, the map
-  renderer, `TextLayout.conversationText`, prefs load-or-store-defaults, the clock seed, `GameFlow`, `startLevel`,
-  `keyCharacter` / `dateTime` hooks injected by the shell); one tick (`:325–355`: flow tick, `configureLevelRun`
-  `:396–403`, `draw(segments)` `:405–438` with `isConversationOp` `:440–447`, the audio apply, prefs to the renderers,
-  `serviceLoad`/`loadSounds`/`loadFaces` `:451–495`) returning `present` and the requests for the shell to honour;
-  `present` (`:497–511`) as both the Mac's ARGB words and the RGBA bytes `SDLHost.present(rgba:)` takes, MacGamma
-  applied to the palette; `dialogPicture` (`:279–301`) as RGBA bytes + size (the Mac wraps them in a `CGImage`);
-  `LevelServices` (`:760–782`); `keyMapCode` (`:384–392`); `FerazelSettings.parse(lookup:)` for the three hidden keys
-  (`:174–185`; the Mac's lookup reads `UserDefaults.standard`). `FerazelAudio` unchanged in logic over
-  `protocol FerazelMixer { load, play, stop(voice:), stopAll, setVolume, attach(stream: SoundTool) }`; its `NSLog`
-  becomes an injected log closure. The App keeps only AppKit/HectorShell work. A failure the Mac turned into
-  `fail(…)` stays the shell's.
-- **Tests (+14, FerazelWinKitTests, real data via `FerazelData.dataDirectory()`, a fake mixer and a fixed clock):**
-  settings parse table (absent, "2", "9", "0", "lowest", "LOWEST", "YES", "1", "true", "NO"); boot to the main menu in
-  a fixed tick count and the presented RGBA FNV there (self-measured, recorded in the commit body and D43);
-  MacGamma on = LUT through the palette; New Game (held N) reaches level 1's popup and its first presented frame FNV;
+  renderer, `TextLayout.conversationText`, prefs load-or-store-defaults, the clock seed, `GameFlow`, `startLevel`;
+  injected by the shell: the **text renderer** (`TextRasterizer` — the Mac passes its `CoreTextRasterizer`, Windows its
+  baked one from WF2), the `keyCharacter` / `dateTime` hooks, the **mixer factory** `() -> FerazelMixer?` and the
+  **beeper** `() -> Void`); one tick (`:325–352`: flow tick, `configureLevelRun` `:396–402`, `draw(segments)`
+  `:405–436` with `isConversationOp` `:440–446`, the audio apply, prefs to the renderers, `serviceLoad` / `loadSounds` /
+  `loadFaces` `:451–492`) returning `present` and the requests for the shell to honour; `present` (`:497–509`) as both
+  the Mac's ARGB words and the RGBA bytes `SDLHost.present(rgba:)` takes, MacGamma applied to the palette;
+  `dialogPicture` (`:279–299`) as RGBA bytes + size (the Mac wraps them in a `CGImage`); `LevelServices` (`:760–782`);
+  `keyMapCode` (`:384–392`); `FerazelSettings.parse(lookup:environment:)` for the hidden keys (`:174–185`; the Mac's
+  lookup reads `UserDefaults.standard`) **plus `mute`** (Ruling 20: `-FerazelMute` bool by the same semantics, or
+  `FERAZEL_MUTE=1`). **Mute:** when `mute` is set the driver never calls the mixer factory (so the Mac creates no
+  `ShellMixer` — `FerazelController.swift:121` is the factory's one body, G-MUTE) and the beeper does nothing (every
+  `NSSound.beep()` goes through it). **Headless frames** (Ruling 20): the driver also offers a silent mixer
+  (`FerazelMixer`, no device) that drains the Sound Tool once per game tick, for the `--frames` dumps of both builds.
+  `FerazelAudio` unchanged in logic over `protocol FerazelMixer { load, play, stop(voice:), stopAll, setVolume,
+  attach(stream: SoundTool) }`; its `NSLog` becomes an injected log closure. The App keeps only AppKit/HectorShell
+  work. A failure the Mac turned into `fail(…)` stays the shell's.
+- **Tests (+17, FerazelWinKitTests, real data via `FerazelData.dataDirectory()`, a fake mixer, a fixed clock and a
+  named stub text renderer `StubGlyphRasterizer` — fixed-width solid boxes, so frame FNVs here pin the driver, not the
+  text; WF2 re-measures the text frames with real glyphs):** settings parse table (absent, "2", "9", "0", "lowest",
+  "LOWEST", "YES", "1", "true", "NO", and the loose cases "y", "t", "2abc" with the values `UserDefaults`' argument
+  domain gives on the Mac, measured by the implementer and recorded; `-FerazelMute YES` / `NO`, `FERAZEL_MUTE=1` / `0`
+  / absent); boot to the main menu in a fixed tick count and the presented RGBA FNV there (self-measured, recorded in
+  the commit body and D43 — the tick count also sets the smoke's frame counts, WF6); MacGamma on = LUT through the
+  palette; New Game (held N) reaches level 1's popup and its first presented frame FNV (stub text);
   `isConversationOp` table; `keyMapCode` table; audio apply order (stops before play i; `onlyIfIdle`; trailing stops);
-  `resolveTrack` (−1, 0, 33, 21 → 20, 27 → 26, none → nil); music cue sequence on the fake mixer; `loadSounds` with
-  F1 (`only` = the four ids); `loadFaces` progress count 25; `prepare`/`attach` through the driver; `dialogPicture`
-  under the current clut; the symlink-coverage test (every `Ferazel/Shared/*.swift` has its FerazelWinKit symlink).
-- **Acceptance:** G2 490/0; G5 SUCCEEDED; GW2 **14/0**; G7 + G7W empty; GW-symlinks empty; G6; G10. Both review legs
-  read the `FerazelController` diff as a move (nothing re-ordered); one leg builds the app and diffs the App's symbol
-  list for anything lost.
+  `resolveTrack` (−1, 0, 33, 21 → 20, 27 → 26, none → nil); music cue sequence on the fake mixer; `loadSounds` with F1
+  (`only` = the four ids); `loadFaces` progress count 25; `prepare`/`attach` through the driver; `dialogPicture` under
+  the current clut; the symlink-coverage test (every `Ferazel/Shared/*.swift` has its FerazelWinKit symlink); **mixer
+  factory calls counted** (muted: 0 through boot + New Game; unmuted: exactly 1); **beeper gated** (muted: a refused
+  dialog's beep reaches the injected beeper 0 times; unmuted: 1); **silent mixer drain** (a cue's `playing` turns false
+  after the tick its samples run out, the same tick on every run).
+- **Acceptance:** G2 490/0; G5 SUCCEEDED; GW2 **17/0**; G-MUTE `1` / `1`; G7 + G7W empty; GW-symlinks empty; G6; G10.
+  Both review legs read the `FerazelController` diff as a move (nothing re-ordered); one leg builds the app and diffs
+  the App's symbol list for anything lost. No launch in WF1 (the switch is proved headlessly; G9M first uses it in WF6).
 
 ### WF2 — Baked text (Ruling 2)
 
 - **Files:** `git mv Ferazel/App/CoreTextRasterizer.swift Ferazel/Shared/` + whole-file `#if canImport(CoreText)`;
-  its FerazelWinKit symlink; new `Ferazel/Windows/Sources/FerazelWinKit/{FZFont,BakedTextRasterizer}.swift`,
-  `Ferazel/Windows/Sources/fz-bake-font/main.swift` (Mac-only body under `#if canImport(CoreText)`, BTX
-  `btx-bake-font` shape), `Ferazel/Windows/Resources/Fonts/*.fzfont` (committed), `Package.swift` (the baker product),
-  tests.
-- **Contracts:** `.fzfont` = documented little-endian binary (`FZF1`, version, family/size/face, ascent/descent/leading,
-  256 entries of left/top/width/height/advance + coverage, then the string cache: count, each MacRoman bytes + mask).
-  The baker resolves fonts only through `CoreTextRasterizer` (no second CoreText path). `BakedTextRasterizer:
-  TextRasterizer` (`TextRasterizer.swift:11–34`): `rasterize` = cache hit, else glyphs composed at whole-pixel
-  `charWidth` advances; `charWidth`/`fontInfo` from the table; an unbaked face → empty mask + one log line. The level
-  names come from where `StatusBarState.levelName` is filled (the implementer finds and cites it).
-- **Tests (+10; the CoreText oracle ones are Mac-only by `#if canImport(CoreText)`):** every face × every byte equal
-  (mask, offsets, `charWidth`), `fontInfo` equal; every cached string equal; score/coin strings 0…99,999 sampled (1,000
-  seeded + edges) composed vs CoreText — exact, or the measured bar recorded; staleness (fresh bake == committed bytes);
-  format round trip; unbaked face; the face set the game asks for (a recording rasterizer driven through the status bar
-  and the conversation layout) ⊆ baked; level-1 golden route frame indices baked = CoreText (FNV); the sign-frame route
-  (`c8e41941c1e4d6da`'s scenario) baked = CoreText.
-- **Acceptance:** GW2 **24/0**; G2 490/0; G5 (the App lost a file to Shared); GW1; G7W; G6; G10.
+  its FerazelWinKit symlink; new `Ferazel/Windows/Sources/FerazelWinKit/{FZFont,BakedTextRasterizer}.swift`
+  (copy-adapted from BTX `BTXFont.swift` / `BitmapFontRasterizer.swift`), `Ferazel/Windows/Sources/fz-bake-font/main.swift`
+  (Mac-only body under `#if canImport(CoreText)`, BTX `btx-bake-font` shape), `Ferazel/Windows/Resources/Fonts/*.fzfont`
+  (committed), `Package.swift` (the baker product), tests.
+- **Contracts:** `.fzfont` = BTX's documented `.btxfont` layout (`BTXFont.swift:11–30`) under the magic `FZF1`, with
+  the face (family, size, QuickDraw face bits) and `fontInfo` (ascent/descent/widMax/leading) added: per glyph its f64
+  advance, line metrics and phase segments → de-duplicated coverage bitmaps (found by bisection, as BTX's baker),
+  kerning pairs, ligatures. **No string cache.** The baker resolves fonts only through `CoreTextRasterizer` (no second
+  CoreText path). `BakedTextRasterizer: TextRasterizer` (`TextRasterizer.swift:11–34`): `rasterize` composes the line
+  BTX's way (fractional pen, phase segment per glyph, kerning, ligatures) into a coverage mask in the Mac's frame
+  (`-pad`, `-above`, `pad = 2`, `CoreTextRasterizer.swift:57–60`) and **then** applies the Mac's 0/255 cut below the
+  smoothing threshold (`:73`) to the composed mask; `charWidth` = the Mac's rounding of the baked advance; `fontInfo`
+  from the file; an unbaked face → empty mask + one log line. The closed string set (level names from where
+  `StatusBarState.levelName` is filled — the implementer finds and cites it — and `"x"`) is a test fixture, not a
+  cache. If the Geneva item-count strings do not come out exact, the closed set of count strings the game can show is
+  baked whole for those strings only (recorded in D43); there is no tolerance bar. This task also re-measures WF1's
+  stub-text frames with real glyphs: the baked-text main-menu and level-1 FNVs are recorded in the commit body and
+  D43 and become WF3's reference.
+- **Tests (+10; the CoreText oracle ones are Mac-only by `#if canImport(CoreText)`), every comparison byte for byte
+  against `CoreTextRasterizer`:** every face × every MacRoman character (mask, offsets, `charWidth`) and `fontInfo`;
+  the closed string set (level names, `"x"`); score/coin strings 0…99,999 sampled (1,000 seeded + edges) in Times 12
+  bold; Geneva 9 and Geneva bold 8 item-count strings (every count the game can show); kerning and ligature pairs the
+  faces have; staleness (fresh bake == committed bytes); format round trip; unbaked face; the face set the game asks
+  for (a recording rasterizer driven through the status bar and the conversation layout) ⊆ baked; level-1 golden route
+  frame indices baked = CoreText and the sign-frame route (`c8e41941c1e4d6da`'s scenario) baked = CoreText (one test,
+  two routes, FNV).
+- **Acceptance:** GW2 **27/0**; G2 490/0; G5 (the App lost a file to Shared); GW1; G7W; G6; G10.
 
-### WF3 ⚑ MAJOR — FerazelWin: the game on HectorSDL
+### WF3 ⚑ MAJOR — FerazelWin: the game on HectorSDL; the Windows mute switch
 
 - **Files:** `Ferazel/Windows/Package.swift` (+ `../../../HectorKit/SDL`, executable `FerazelWin`); new
   `Sources/FerazelWin/main.swift` (SDL glue only, BTX `BubbleTroubleXWin/main.swift` shape);
-  `Sources/FerazelWinKit/{WinGame,WinInput,WinShortcuts,WinFiles,WinArgs,WinStartup,WinKeyScript,WinDialogs,WinFilePanels}.swift`
-  (`WinKeyScript` adapted from BTX `WinInput.swift:74–170`; `WinDialogs` / `WinFilePanels` are protocols with stub
-  answers here); new `Ferazel/Shared/FerazelMenuRules.swift` + symlink; `Ferazel/App/FerazelMenus.swift:44–46,114–152`
-  (calls the shared rules; behaviour identical).
-- **Contracts:** Rulings 5–14 as written: the loop and ticks (8); `FrontInput` from SDL events — held Mac key codes
-  through `keyMapCode`, Caps Lock from the poll's modifier state, mouse in canvas pixels via `SDLLayout.logicalPoint`
-  (nil off the canvas), button, active = focus, `playing` from the audio (`:357–382`); the pad (7); the requests
-  (`:513–531`: cursor, menu-bar ignored, `showMenuBarItems` → shortcut state, dialog → `WinDialogs`, put/get file →
-  `WinFilePanels`, quit); shortcuts (5), Alt+Enter (14); quit (9); files + args (10–12); audio + mute (13); start-up:
-  missing data → message box (never in `--frames` mode) + `Ferazel's Wand.log` beside the prefs, exit 1; window (14).
-  Headless mode for Ben's scripts and the tests: `--frames N` (N loop iterations of exactly 1/240 s each), `--dump
-  f.ppm` (the last presented 640×480), `--keys FILE` (BTX script syntax), in-memory prefs unless `--prefs`, dummy SDL
-  drivers forced in-process, no pad. Stubs: every dialog answers its default (Cancel / OK for reports / prefs
-  unchanged / credits closed); file panels answer cancelled.
-- **Tests (+16, scripted host, no SDL):** the main-menu RGBA FNV equals WF1's (the loop adds nothing); 240 Hz
-  iterations → one flow step per new 60 Hz tick; right-hand modifiers folded; shortcut table over `MenuState`
-  (main-menu letters fall through, paused enables Abort, modal blocks all); a taken shortcut not in the held keys;
-  Alt+Enter eaten; Caps Lock latch; pad merge (D37 sample: south = jump in a level, + toggles Caps Lock, − held 1 s =
-  Esc); quit event → `systemQuit` (a level running free shows the confirm request next tick); cursor rule; `WinFiles`
-  folder from `APPDATA` (set / unset → error message); args (hidden keys, `--data`, `--prefs`, `--mute`, a trailing
-  path); start-up missing list; `FerazelMenuRules` table = the Mac's old rules; key script parse; New Game via script
-  reaches level 1 with the same FNV as WF1's test.
-- **Acceptance:** GW2 **40/0**; GW3 `0` / `1`; GW4; G5 (FerazelMenus); G2 490/0; GW1; G7/G7W; G6; G10.
+  `Sources/FerazelWinKit/{WinGame,WinInput,WinShortcuts,WinFiles,WinArgs,WinStartup,WinKeyScript,WinDialogs,WinFilePanels,WinAudioDriver}.swift`
+  (`WinKeyScript` adapted from BTX `WinInput.swift:26–170` — `WinKeyNames` `:26–55` with `WinKeyScript` `:74–170`, the
+  script needs the names; `WinDialogs` / `WinFilePanels` are protocols with stub answers here); new
+  `Ferazel/Shared/FerazelMenuRules.swift` + symlink; `Ferazel/App/FerazelMenus.swift:44–46,114–152` (calls the shared
+  rules; behaviour identical); new `tools/windows/smoke-ferazel-win.sh` (zsh; its Mac half only — `--mac-only`; it
+  refuses like Proof B's script and passes `--mute` + dummy drivers itself).
+- **Contracts:** Rulings 5–14 and 18–20 as written: the loop and ticks (8); `FrontInput` from SDL events — held Mac key
+  codes through `keyMapCode`, Caps Lock from the poll's modifier state, mouse in canvas pixels via
+  `SDLLayout.logicalPoint` (nil off the canvas), button, active = focus, `playing` from the audio (`:357–363`); the pad
+  (7); the requests (`:513–529`: cursor, menu-bar ignored, `showMenuBarItems` → shortcut state, dialog → `WinDialogs`,
+  put/get file → `WinFilePanels`, quit); shortcuts (5), Alt+Enter (14); quit (9, including a quit before the flow
+  exists → exit 0 at once, and the logoff reading recorded); files + args (10–12); audio (13); **mute (20):**
+  `WinAudioDriver.hint(arguments:environment:)` — a pure function: `--mute` or `FERAZEL_MUTE=1` → `dummy`, else
+  `HECTOR_SDL_AUDIO_DRIVER` as given, else none — applied with override priority before any audio opens, after
+  `SDLHost.applyDriverOverridesFromEnvironment()`; muted, `MessageBeep` is never called; the launch log line prints
+  `video=<driver> audio=<driver>` (BTX `main.swift:308–311`). GUI-subsystem traps (18): stderr through C stdio, the
+  log file, never `FileHandle.standardError`/`NSLog`; the live-redraw handler during drag/resize. Start-up: missing
+  data → message box (never in `--frames` mode) + `Ferazel's Wand.log` beside the prefs, exit 1; window (14). Headless
+  mode for the launch gates and the tests: `--frames N` (N loop iterations of exactly 1/240 s each — N/4 game ticks),
+  `--dump f.ppm` (the last presented 640×480), `--keys FILE` (BTX script syntax), in-memory prefs unless `--prefs`,
+  dummy SDL drivers forced in-process, **no audio device: the shared silent mixer drains the Sound Tool once per tick**
+  (Ruling 20), no pad. Stubs: every dialog answers its default (Cancel / OK for reports / prefs unchanged / credits
+  closed); file panels answer cancelled.
+- **Tests (+18, scripted host, no SDL):** the main-menu RGBA FNV equals WF2's baked-text value (the loop adds nothing);
+  240 Hz iterations → one flow step per new 60 Hz tick; right-hand modifiers folded; shortcut table over `MenuState`
+  (Ctrl alone takes, Ctrl+Shift / Ctrl+Alt do not; main-menu letters fall through; paused enables Abort; modal blocks
+  all; letters read from the MENU resources); a taken shortcut not in the held keys; Alt+Enter eaten; Caps Lock latch;
+  pad merge (D37 sample: south = jump in a level, + toggles Caps Lock, − held 1 s = Esc); quit event → `systemQuit` (a
+  level running free shows the confirm request next tick); a quit before the flow exists ends at once (exit 0, no
+  confirm); cursor rule; `WinFiles` folder from `APPDATA` (set / unset → error message); args (hidden keys incl.
+  `-FerazelMute`, `--data`, `--prefs`, `--mute`, a trailing path); **audio driver hint table** (`--mute` → dummy;
+  `FERAZEL_MUTE=1` → dummy; `HECTOR_SDL_AUDIO_DRIVER=wasapi` + `--mute` → dummy; neither → none; muted → the beeper
+  count 0); start-up missing list; `FerazelMenuRules` table = the Mac's old rules; key script parse; New Game via
+  script reaches level 1 with WF2's baked-text level-1 FNV.
+- **Acceptance:** GW2 **45/0**; GW3 `0` / `1`; GW4; G5 (FerazelMenus); G2 490/0; GW1; G7/G7W; G6; G10; grep: no
+  `FileHandle.standardError` / `NSLog` under `Ferazel/Windows/Sources`; **GW4R** (behind the LAUNCH GUARD; the smoke
+  script's Mac half — WF3 writes `tools/windows/smoke-ferazel-win.sh` with only `--mac-only` working, WF6 adds the
+  CrossOver half): exit 0, `audio=dummy`, the main-menu dump's FNV = WF2's; by night "boot check owed (night rule)".
 
 ### WF5 — Saved games on Windows (Ruling 3, 10)
 
@@ -330,31 +479,41 @@ not change (G2 490/0 and G5 on every task that touches it); never run a built ex
   `GetActiveWindow()`; Mac SDL build: `--save-as FILE` / `--open FILE` answers, else cancelled);
   `Sources/FerazelWinKit/{WinFileRequests,WinFilePanels}.swift`; `WinGame.swift` (open-document at launch); tests.
 - **Contracts:** `WinFileRequests` builds the request from `PutFileRequest` (`ShellRequest.swift:34–44`) / the get
-  prompt: title, start folder (created), Windows-legal default name (Ruling 10), "All files (*.*)" filter; the answer
-  → `GameFlow.fileDone(.chosen(SavedGameRef(url:displayName:)))` or `.cancelled` (`:570–608`); input state captured
+  prompt: title, start folder (Save: created first, as `:579`; Open: only when it exists, never created, as `:598`),
+  Windows-legal default name (Ruling 10), "All files (*.*)" filter; the `PutFileRequest.message` line is not shown
+  (◇W9); the answer → `GameFlow.fileDone(.chosen(SavedGameRef(url:displayName:)))` or `.cancelled` (`:569–605`); input
+  state captured
   before the dialog is flushed after it (no stuck keys). A save-game path given on the command line (Explorer "Open
   with" / a file dropped on the exe) → `GameFlow.openDocument` once the flow exists — the Mac's Finder open (`:678–686`).
 - **Tests (+8):** name sanitising table (each illegal char, trailing dot/space, CON, `com3`, empty → the flow's default
-  unchanged when legal); request fields from a `PutFileRequest`; start folder created; answer mapping (chosen /
-  cancelled); stuck-key flush; a launch path opens the document at the menu pass; a round trip through `WinFiles` with
-  the real codecs (save block written, read back equal).
-- **Acceptance:** GW2 **48/0**; GW3; GW4; GW1; G2 490/0; G6; G10.
+  unchanged when legal); request fields from a `PutFileRequest`; Save's start folder created when missing; Open's start
+  folder used only when it exists and never created; answer mapping (chosen / cancelled); stuck-key flush; a launch
+  path opens the document at the menu pass; a round trip through `WinFiles` with the real codecs (save block written,
+  read back equal).
+- **Acceptance:** GW2 **53/0**; GW3; GW4; GW1; G2 490/0; G6; G10.
 
 ### WF4a — In-window dialogs I: DLOG 202 and 200 (Ruling 4)
 
 - **Files:** `Sources/FerazelWinKit/{DialogRenderer,DialogWindow,DialogSystem}.swift` (adapted from BTXWinKit's three
   files), `WinDialogs.swift` (real implementation for `.confirm` / `.report` / `.error`), the dialog face added to the
   baker (Ruling 2: the Mac's `ClassicFont` rule, `DialogViews.swift:9–20` — Charcoal 12, else Chicago 12, else bold
-  system 12, resolved through CoreText), its `.fzfont`, tests, `Tests/Goldens/Dialog-202.ppm`, `Dialog-200.ppm`.
+  system 12, resolved through CoreText), its `.fzfont`, `Sources/FerazelWin/main.swift` (the `MessageBeep` beeper,
+  gated by mute), tests, `Tests/Goldens/Dialog-202.ppm`, `Dialog-200.ppm`.
 - **Contracts:** layout from the original DLOG/DITL via Core's R1 template parsers (as `FerazelCarbonDialog` builds
-  them), centred over the canvas; `^0`/`^1` params (`.error` puts `NumToString(code)` in `^1`); OK ring (InsetRect −4,
-  pen 3, oval 15); Return/Enter → item 1, Esc → Cancel on 202; clicks outside the dialog do nothing but beep
-  (`MessageBeep` on Windows, silent on the Mac SDL build); pad Return/Esc reach it (Ruling 7); answers →
-  `GameFlow.dialogDone` (`:533–557`); the flow does not tick while one is up.
-- **Tests (+10):** layout rects from DITL 202/200; params; keyboard answers; mouse track (press-drag-out-release =
-  nothing); pad answers; outside click; the flow holds still; goldens 202 and 200 (self-derived, shown to Ben on the
+  them), centred over the canvas and drawn into the 640×480 picture (scaled with the game, Ruling 4, ◇W10); `^0`/`^1`
+  params (`.error` puts `NumToString(code)` in `^1`) substituted with the pure-Swift replace and MacRoman through
+  `HectorResources.MacRoman` — the Mac's `FerazelCarbonDialog.swift:34` (`.macOSRoman`) and `:169–171`
+  (`replacingOccurrences`) are exactly the traps of Ruling 18 and must not be copied; OK ring (InsetRect −4, pen 3,
+  oval 15); Return/Enter → the default item through **the OK button's 8-tick flash** (hilited, 8 ticks, unhilited, then
+  the hit; keys and clicks do nothing while it flashes — `FerazelCarbonDialog.swift:279–291`, `handleKeyDown` `:302`),
+  Esc → Cancel on 202; clicks outside the dialog do nothing but beep (the injected beeper: `MessageBeep` on Windows,
+  silent on the Mac SDL build, never when muted); pad Return/Esc reach it (Ruling 7); answers → `GameFlow.dialogDone`
+  (`showDialog`, `FerazelController.swift:533–556`); the flow does not tick while one is up.
+- **Tests (+11):** layout rects from DITL 202/200; params; keyboard answers; the OK flash (8 ticks, then the answer;
+  a key or click during the flash ignored); mouse track (press-drag-out-release = nothing); pad answers; outside click
+  (beeper called once unmuted, 0 muted); the flow holds still; goldens 202 and 200 (self-derived, shown to Ben on the
   card); dialog-face widths within 1 px of the Mac's `NSFont` measure (Mac-only oracle).
-- **Acceptance:** GW2 **58/0**; GW3; GW4; GW1; G2; G6; G10.
+- **Acceptance:** GW2 **64/0**; GW3; GW4; GW1; G2; G6; G10.
 
 ### WF4b ⚑ MAJOR — In-window dialogs II: Options (6900) and Credits (600)
 
@@ -365,26 +524,41 @@ not change (G2 490/0 and G5 on every task that touches it); never run a built ex
   acting at once through `MusicCue`s), OK/Cancel → `dialogDone`; Credits per `CreditsDialog.swift` over
   `GameFlow.credits` (`CreditsScroll` timing, PICT under the current clut via `FerazelDriver.dialogPicture`, a click
   closes). Options and Credits take no pad keys (D37).
-- **Tests (+12):** every Options control's model effect; key capture accept / refuse ("already used"); music cues act
-  at once; Cancel restores; OK returns `.ok`; credits scroll position at fixed ticks; credits close on click; golden
-  6900; the ⌘P path from a level opens it (scripted).
-- **Acceptance:** GW2 **70/0**; GW3; GW4; GW1; G2; G6; G10.
+- **Tests (+12):** every Options control's model effect; key capture accept; key capture refuse ("already used");
+  music cues act at once; Cancel restores; OK returns `.ok`; credits scroll position at fixed ticks; credits close on
+  click; credits picture under the current clut (`dialogPicture`); golden 6900; the ⌘P path from a level opens it
+  (scripted); Options and Credits ignore pad keys (D37).
+- **Acceptance:** GW2 **76/0**; GW3; GW4; GW1; G2; G6; G10.
 
-### WF6 — Stage both builds; the Windows gate card (phase-end run)
+### WF6 — Stage both builds; boot both muted by day; the Windows gate card (phase-end run)
 
-- **Files:** new `tools/windows/stage-ferazel-win.sh` (adapted from `stage-btx.sh`: committed-content check and stamp,
-  release cross-build with `WIN_BUILD_ROOT` (Ruling 19), `/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup`, `windres`
-  manifest + icon (from `Ferazel/App/AppIcon.icon`'s art) + version info, the PE import walk for DLLs, `Data\` =
-  `Resources/Ferazel` + `Fonts`, `WHAT-TO-EXPECT.txt` with BOM + CRLF, writes `MANIFEST.txt` (the zip's file list),
-  `out/Windows/Ferazel's Wand/` + `out/Windows/Ferazel's Wand (Windows).zip`, files at the zip root, Desktop copies
-  unless `--no-desktop`); new `tools/windows/smoke-ferazel-win.sh` (Ben's: muted CrossOver run of the staged exe in a
-  clean bottle, `--frames 600 --dump` and `--frames 1500 --keys` New Game, each `cmp` against the Mac SDL build's
-  dump — written, `zsh -n` checked, **never run by the loop**); new `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (the card
-  below); `tools/windows/README.md`; `Ferazel/WHAT-TO-EXPECT.md` (one "Windows" pointer line).
-- **Contract:** stage both builds: `bash tools/stage-ferazel.sh` (Mac; staging only, no G9) and the Windows script;
-  the Fable phase review over `git diff f7fd4ce..HEAD` + the card; fixes; re-stage; QUESTIONS gate card item.
-- **Acceptance:** GW5 (exit 0; `Subsystem … 2`/`Windows GUI`; manifest diff empty); GW1–GW4; G1, G2 490/0, G3, G5,
-  G7/G7W, G10. LOOP-LOG: "Windows staged; not launched by the loop (D42); Ben's first launch is the boot check".
+- **Files:** new `tools/windows/stage-ferazel-win.sh` (zsh, adapted from `stage-btx.sh`: committed-content check and
+  stamp, release cross-build with `WIN_BUILD_ROOT` (Ruling 19) and its own work/build folders
+  (`$WIN_CROSS/work/stage-ferazel`, `$WIN_CROSS/build/stage-ferazel` — never `build/stage`, `work/stage-btx` or
+  `build/ferazel`), `/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup` with `stage-btx.sh:184–185`'s awk subsystem check,
+  `windres` manifest + icon + version info — the icon from `Ferazel/App/AppIcon.icon/Assets/ferazel.png` (512 px)
+  resized with `sips` to the `.ico` sizes (there is no `.icns` for `iconutil`), the PE import walk for DLLs, `Data\` =
+  `Resources/Ferazel` + `Fonts`, `WHAT-TO-EXPECT.txt` with BOM + CRLF, writes `MANIFEST.txt` (the zip's file list,
+  files only, itself excluded), `out/Windows/Ferazel's Wand/` + `out/Windows/Ferazel's Wand (Windows).zip`, files at the
+  zip root, Desktop copies unless `--no-desktop`); `tools/windows/smoke-ferazel-win.sh` (WF3's Mac half + the CrossOver
+  half: the staged exe in a clean bottle, `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy` and `--mute`,
+  a main-menu `--frames A --dump` and a New Game `--frames B --keys` run, each `cmp` against the Mac SDL build's dump
+  of the same run; A and B derived from WF1's measured boot-to-menu tick count — `--frames` counts 1/240 s iterations,
+  so A = 4 × (that tick count + a 60-tick margin), B likewise to level 1's first frame — never guessed; it refuses
+  like Proof B's script); new `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` (the card below); `tools/windows/README.md`;
+  `Ferazel/WHAT-TO-EXPECT.md` (one "Windows" pointer line).
+- **Contract:** stage both builds: `bash tools/stage-ferazel.sh` (Mac) and `tools/windows/stage-ferazel-win.sh`; then,
+  behind the LAUNCH GUARD, **G9M** (the Mac staged app, `-FerazelMute YES`), **GW6** (the staged zip in a clean
+  CrossOver bottle, muted) and **GWB** once more — each once, short; by night all three are skipped and LOOP-LOG + the
+  card say "boot check owed (night rule)", the first daytime run does them. The Fable phase review over
+  `git diff f7fd4ce..HEAD` + the card; fixes; re-stage (re-boot only if the fixes touched what boots); QUESTIONS gate
+  card item. Brew `sdl3` on this Mac is **3.4.18**, the Windows pin is **3.4.16** (`tools/windows/env.sh:10` says they
+  are equal) — GW6's `cmp` against the Mac SDL dump compares game pictures, which SDL does not draw, so a mismatch is a
+  finding, not a version excuse; the README records the difference.
+- **Acceptance:** GW5 (exit 0; subsystem `2`; manifest diff empty); GW1–GW4; G1, G2 490/0, G3, G5, G7/G7W, G-MUTE,
+  G10; by day G9M (pid line, clean quit, no new crash log), GW6 (`main menu: identical`, `new game: identical`, exit 0),
+  GWB 490/0. LOOP-LOG: "Windows staged; booted muted (Mac + CrossOver), Proof B 490/0" — or "staged; boot check owed
+  (night rule)".
 
 ## Stand-ins kept (◇, named) at the phase's end
 
@@ -394,17 +568,23 @@ not change (G2 490/0 and G5 on every task that touches it); never run a built ex
 | ◇W2 | The window is resizable (integer-fit on black); the Mac's is fixed | HectorSDL always opens resizable (WQ4) |
 | ◇W3 | Native Windows file dialogs where the original had Standard File | Ruling 3 (WQ2) |
 | ◇W4 | No About item (Credits is on the main menu); no check marks | D21 |
-| ◇W5 | Nothing ever ran on Windows or in CrossOver by the loop: Proof B, the smoke and the first boot are Ben's | D42 |
+| ◇W5 | The loop's runs are muted and in CrossOver only: nobody has heard the Windows build or run it on a real PC; a boot skipped by night stays owed until a daytime run | D42 (Ben's ear, Andrew's PC) |
 | ◇W6 | Every Mac stand-in of Phase 4 (enemies still, levels 5+ refused, underwater tint, shield crouch face — Phase 5/6) | the Phase 4 card's table; lockstep carries them |
 | ◇W7 | No installer, no signing, no file association; SmartScreen "Run anyway" | D19.6, D20/D34 (publishing is Ben's) |
-| ◇W8 | Score/coin text composed glyph by glyph, unless WF2 measured it exact | Ruling 2 |
+| ◇W8 | Geneva item counts baked as whole strings — only if WF2 found BTX's composition not exact for them | Ruling 2 (recorded in D43 if used) |
+| ◇W9 | The Save dialog shows no message line (the Mac panel's `message`, DITL 1003 item 13's text) | `GetSaveFileNameW` has no message area (Ruling 3) |
+| ◇W10 | Dialogs drawn inside the game picture and scaled with it (1× glyphs enlarged); the Mac's are separate sharp 1× windows | BTX W6 precedent (Ruling 4, WQ7) |
+| ◇W11 | The window has a close button (the Mac's has none); a Windows logoff may meet the quit confirm if SDL reports it as a plain quit | SDL windows always have one; nothing is lost (Ruling 9) |
+| ◇W12 | No single-instance guard: a second launch is a second game (the Mac opens a save in the running app) | Ruling 11 |
 
 ## The Windows gate card — Ben and Andrew (WF6 writes it as `Ferazel/WINDOWS-WHAT-TO-EXPECT.md` + a QUESTIONS item)
 
-**Not launched by the loop (D42); Ben's first launch is the boot check.** Ben, on this Mac (optional, daytime, muted):
+**The loop booted both builds muted, by day (D42):** G9M (Mac staged app), GW6 (the staged zip in a clean CrossOver
+bottle) and Proof B — results here; or "boot check owed (night rule)" if the run fell at night, done by the first
+daytime run. Nobody has heard it yet. Ben or Andrew, on this Mac (optional, daytime; both scripts force the no-sound
+driver and refuse 21:00–09:00):
 1. `tools/windows/proof-b-ferazel.sh` → last line `proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)`.
-2. `tools/windows/smoke-ferazel-win.sh` → `main menu: identical`, `new game: identical`, exit 0 (muted by
-   `HECTOR_SDL_AUDIO_DRIVER=dummy`).
+2. `tools/windows/smoke-ferazel-win.sh` → `main menu: identical`, `new game: identical`, exit 0.
 On a Windows 10/11 PC (or CrossOver), from the unzipped `Ferazel's Wand (Windows)` folder:
 3. First launch (SmartScreen: More info → Run anyway): logo, title music, main menu — no console window, no error box.
 4. Keyboard: keypad 4/6/8/5 move with Num Lock on **and** off; Shift / Alt / Ctrl act as Shift / Option / ⌘; Caps Lock
@@ -414,16 +594,13 @@ On a Windows 10/11 PC (or CrossOver), from the unzipped `Ferazel's Wand (Windows
    Restore Game (Ctrl+O at the menu, or Continue) opens it again and the level resumes.
 7. Options: remap a key, toggle music (acts at once), OK; quit and relaunch — the prefs held.
 8. A controller (Xbox / Switch Pro / PlayStation): the Mac's layout (D37), + pauses, − held 1 s = Esc.
-9. Close button during play → "Are you sure you want to quit?" (Cancel plays on); at the main menu it quits.
+9. Close button (new on Windows — the Mac window has none) while a level runs free → "Are you sure you want to quit?"
+   (Cancel plays on); at the main menu it quits. Log off with the game running: Windows is not held up for long.
 10. `"Ferazel's Wand.exe" -FerazelLevel 3` from a command prompt → New Game starts at level 3.
 Pass looks like: the Mac build's behaviour on Windows, sound by ear, dialogs by eye. Notes become a named wave.
 
 ## Questions for Ben (non-blocking; the seat copies them to QUESTIONS; execution does not wait — D34)
 
-- **WQ1 — may the loop run headless Windows test executables in CrossOver (Proof B) by day, muted?** Your amended Q12
-  on `main` (0e45326, f7fd4ce: muted launches by day, never 21:00–09:00) came after D42 was written; this plan follows
-  D42 as recorded. Options: (a) no — Ben runs the scripts; (b) Proof B only (no window, no sound); (c) Proof B and the
-  muted smoke. **Default (a).** Blocks: nothing.
 - **WQ2 — saved-game files on Windows:** (a) the native Windows Open/Save dialogs (as the Mac uses its own);
   (b) the original's Standard File drawn inside the window; (c) a fixed saves folder with an in-window list.
   **Default (a).** Blocks: nothing.
@@ -434,33 +611,46 @@ Pass looks like: the Mac build's behaviour on Windows, sound by ear, dialogs by 
   Blocks: nothing.
 - **WQ6 — saved-game file names:** (a) no extension, as the Mac; (b) add `.fwsg` so Explorer can tell them apart.
   **Default (a).** Blocks: nothing.
+- **WQ7 — dialogs on Windows:** on the Mac the original's dialogs are separate windows with sharp text at their own
+  size; on Windows they are drawn inside the game picture. (a) inside the window, enlarged with the game (BTX did the
+  same); (b) inside the window but always at the original size, centred; (c) separate windows like the Mac (a
+  HectorKit change). **Default (a).** Blocks: nothing.
+(WQ1 — may the loop run Proof B — was answered by D42 as amended: yes, muted, by day; withdrawn.)
 
 ## Execution order (one loop run each; the cap rule: 2 tasks, 3 when at most one is ⚑)
 
 | run | unit | why this order |
 |---|---|---|
-| 32 | **WF0, WF1 ⚑, WF2** | toolchain first; the shared half before anything uses it; text needs only WF1 |
-| 33 | **WF3 ⚑, WF5** | the game, then its file dialogs (WF5 needs WF3's executable) |
+| 32 | **WF0, WF1 ⚑, WF2** | toolchain first (GWB by day); the shared half + the Mac mute switch before anything uses them; text needs only WF1 |
+| 33 | **WF3 ⚑, WF5** | the game + the Windows mute switch (GW4R by day), then its file dialogs (WF5 needs WF3's executable) |
 | 34 | **WF4a, WF4b ⚑** | the dialog foundation, then the two rich dialogs |
-| 35 | **WF6** phase end | stage both, Fable phase review, card → QUESTIONS; then the Phase 5 plan (lockstep from its first task) |
+| 35 | **WF6** phase end | stage both, boot both muted by day (G9M, GW6, GWB), Fable phase review, card → QUESTIONS; then the Phase 5 plan (lockstep from its first task) |
+
+A run that reaches a launch gate between 21:00 and 09:00 skips it, finishes everything else, writes "boot check owed
+(night rule)", and NEXT carries the owed gate to the first daytime run, which does it before its own tasks.
 
 ## Orchestration notes
 
 - **Toolchain:** installed at `~/Developer/Toolchains/windows-cross/` (Swift 6.4.0, SDL3 3.4.16, winsysroot, runtime
   DLLs); brew `sdl3` is on the Mac for GW4; `x86_64-w64-mingw32-windres` (brew `mingw-w64`, needed by the stage
-  script as by `stage-btx.sh:96–97`) is at `/opt/homebrew/bin` (checked 2026-10-26). **No installs** (NEXT
+  script as by `stage-btx.sh:96–97`) is at `/opt/homebrew/bin` (checked 2026-10-26). Brew `sdl3` is 3.4.18, the
+  Windows pin 3.4.16 (`env.sh:10` claims equal — the README is corrected in WF6). **No installs** (NEXT
   AUTHORIZATIONS): if a tool has gone missing, stage with `--no-icon` where possible and record it in QUESTIONS.
-- **Build roots:** always `WIN_BUILD_ROOT=…/build/ferazel` (seat, implementers) and a `mktemp` root for reviewers; a
-  cold GW1 is ~5–10 min, GW3 similar — run gates in a background Bash while a foreground reviewer reads.
+- **Build roots:** always `WIN_BUILD_ROOT=…/build/ferazel` (seat, implementers) and a `mktemp` root for reviewers;
+  leg A measured GW1 at ~19 s (2026-10-26); GW3 adds the SDL package — expect minutes cold, not hours. Run gates in
+  the foreground (no background agents in loop runs).
 - **HectorKit path:** `Ferazel/Windows/Package.swift` reaches HectorKit at `../../../HectorKit` (in a worktree:
   `.claude/worktrees/HectorKit` → `~/Developer/HectorKit`); never create a self-link (runs 28/29 lesson). HK must stay
   35a85ba (G1).
 - **Symlinks:** create with `ln -s ../../../Shared/X.swift` inside `FerazelWinKit/` and `git add` them; check mode
   120000 (GW-symlinks). They break in a Git-for-Windows checkout with `core.symlinks=false` — the README says so (BTX
   precedent); every build here is on the Mac.
-- **Never run what you build:** not `FerazelWin`, not the test `.exe`, not `swift run`, not `run-in-crossover.sh`, not
-  the Proof B or smoke scripts (D42). `swift test` of FerazelWinKit is allowed: its tests use a scripted host and a fake
-  mixer, open no window and no audio device — a test that would touch SDL or audio is a review failure.
+- **Run what you build only through a launch gate (D42):** `FerazelWin`, the test `.exe` and `run-in-crossover.sh`
+  run only inside `proof-b-ferazel.sh` / `smoke-ferazel-win.sh` (which refuse without the no-sound driver and outside
+  09..20), the staged Mac app only through G9M with `-FerazelMute YES`; never `swift run`, never an ad-hoc launch,
+  never a launch to "just look". Few and short: Proof B once whole, per class only after a crash. `swift test` of
+  FerazelWinKit runs at any hour: its tests use a scripted host and a fake or silent mixer, open no window and no audio
+  device — a test that would touch SDL or audio is a review failure.
 - **Mac app safety:** WF1, WF2, WF3 touch `Ferazel/App` / `project.yml`; G5 every time; Ben may be playing the staged
   Phase 4 build — the staged `~/Desktop` app is replaced only in WF6.
 - **Reviews:** two Opus legs on WF1, WF3, WF4b; one on the others; the phase-end Fable leg in run 35 (D34). The plan
