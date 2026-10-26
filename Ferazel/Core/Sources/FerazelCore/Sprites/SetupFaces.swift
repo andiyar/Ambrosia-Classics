@@ -194,6 +194,15 @@ public enum SetupFaces {
         all += [set(0x4e2, 0x15, 0x24, 0x24, 7), one(BoxSprite.switchOffFace), set(0x5aa, 4, 0x20, 0x20, 4),
                 one(BoxSprite.gate)]
         all += ButtonSprite.sheets.map { ($0.pict, $0) }
+        // LV3 — the level-3 types: the decorations 2812, 2813, 2820, 2821, 2832, 2843 (`.InitBoxSprite` M l. 58775–58778:
+        // the 0x2d cache singles 0xaf5+i, flag 0), the rock outcrops 2868 / 2869 (M l. 58818–58823: cache 0xb22+i, flag 1
+        // → the level+base CLUT, `levelClutCache`) and the mushroom cluster 2884 (M l. 58824–58827: cache 0xb36+i, flag
+        // 0); the Blob set 0x6c2 (`.InitBlobSprite` M l. 67666: cache, 16 × 0x40×0x2c, 16 per row, flag 0); the spikes'
+        // set 0x730 (12 × 0x18×0x80, 12 per row) and the singles 0x732 / 0x733 (`.InitBackgroundSprite` M l.
+        // 61864–61866: cache, flag 0).
+        for p: Int16 in [0xafc, 0xafd, 0xb04, 0xb05, 0xb10, 0xb1b, 0xb44, 0x732, 0x733] { all.append(one(p)) }
+        all += [one(0xb34, clut: 202), one(0xb35, clut: 202), set(0x6c2, 0x10, 0x40, 0x2c, 0x10),
+                set(BackgroundSprite.wallSpikeSheet, 0xc, 0x18, 0x80, 0xc)]
         all.append(one(placeholderPict))
         // BN: every face `.InitBonusSprite` loads (`BonusSprite.sheets`; the level-1/2 entries above are the same sheets).
         var table = Dictionary(uniqueKeysWithValues: all)
@@ -226,6 +235,17 @@ public enum SetupFaces {
 
     /// The sheet a Phase-1 face of PICT `pict` comes from (the level-1 table; nil for any other PICT).
     public static func sheet(pict: Int16) -> Sheet? { sheets[pict] }
+
+    /// The class caches loaded with the cache flag `_DAT_100a0a48` = 1 — converted under the level+base CLUT
+    /// `*_DAT_1009ff8c` (header 0x285e, 0 → 202; `ColorLUT.screenClutId`) by `.LoadCachedSpriteFaces` (raw
+    /// `1008901c..1008903c`): the bridges 0x5b4…0x5bb and the outcrops 0xb22…0xb35 (`.InitBoxSprite` M l. 58798–58805,
+    /// 58818–58823), the trees 0xc08…0xc0f, tunnels 3000…3005 and plants 0xa8c…0xaa9 (`.InitBackgroundSprite` M l.
+    /// 61891–61916). The table above names them under 202 (levels 1–2); LV3: an entry takes its level's CLUT (210 on
+    /// level 3).
+    static func levelClutCache(_ pict: Int16) -> Bool {
+        (0x5b4...0x5bb).contains(pict) || (0xb22...0xb35).contains(pict) || (0xc08...0xc0f).contains(pict)
+            || (3000...3005).contains(pict) || (0xa8c...0xaa9).contains(pict)
+    }
 
     /// The Platform class's sets (`.InitPlatformSprite`, W1): what its Handles face their sprites from — the platform
     /// set, ice, catapult, springboard, chain links, mace chains and see-saw segments. FerazelRender loads them all.
@@ -283,6 +303,12 @@ public enum SetupFaces {
 
         func face(_ pict: Int16, _ i: Int = 0, _ src: FaceSource) {
             sheet = sheets[pict]
+            if let sh = sheet, levelClutCache(pict) {
+                let clut = ColorLUT.screenClutId(c.level.header)
+                sheet = sh.single ? .single(pict, clut: clut)
+                    : Sheet(pict: pict, count: sh.count, cellWidth: sh.cellWidth, cellHeight: sh.cellHeight,
+                            columns: sh.columns, clut: clut)
+            }
             index = i
             source = src
         }
@@ -330,6 +356,16 @@ public enum SetupFaces {
             case 3000..<0xbc2:                                 // wall tunnels (l. 62620–62627; W2b `setupTunnel`)
                 BackgroundSprite.setupTunnel(&s)
                 face(Int16(t), 0, .setupCached)
+            case 0x730...0x733:                                // the spikes (M l. 61982–62015, 62279–62309, 62459–62490)
+                // LV3 (`BackgroundSprite.setupSpike`): `+0xc0` stays 0 — the Handle faces them every frame (0x730 / 0x731
+                // cell `+0x46` of the cache set 0x730, 0x731 mirrored; 0x732 / 0x733 their singles). The entry names
+                // that face (`.handle`) for the level start's draw.
+                BackgroundSprite.setupSpike(&s, record: p, level: c.level)
+                if t <= 0x731 {
+                    face(BackgroundSprite.wallSpikeSheet, Int(s.phase), .handle)
+                } else {
+                    face(Int16(t), 0, .handle)
+                }
             case 0xcb1:                                        // level exit: `+0xc0 = 0` (l. 62593)
                 s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xc, bottom: 0x54, right: 0x54)   // l. 62594 (W4)
             default:
@@ -492,17 +528,52 @@ public enum SetupFaces {
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
             // 0x6cc…0x6d5 arm (l. 68279–68310): HP 500, SetRect(0xc, 0xf, 0x2b, 0x2f), `+0x158 = 0x1e`, `+0x15c = 0`,
-            // `+0xb0 = 7`, no draw. Only 1740 (0x6cc) is placed on levels 1–2; 0x6cd/0x6ce (programmed path, R(0x50)),
-            // 0x6d1, the swarms and 0x73a… are not transcribed. // later: Phase 4–5 (the bat Handle).
-            guard t == 0x6cc else { throw Error.notTranscribed(type: p.type) }
+            // `+0xb0 = 7`, no draw. 1740 (0x6cc) is placed on levels 1–3; LV3: 1741 (0x6cd, level 3 record 189) — `+0x188 =
+            // 1`, `+0xa6 = 1`, gravity 0 and `.SetupProgrammedPath(s, −1, 0)` (M l. 68299–68303; `.SetupProgrammedPath` M l. 39288ff: no draw —
+            // for p1 2, `+0xf0` = |p1|, `+0xfc` = p3, `+0xf8 = 1`, the bounds `+0x100` / `+0x104` = x·256 ± …, vx =
+            // `+0xfc`, vy 0). Not transcribed: 0x6ce (→ 0x6cd with R(0x50)), 0x6d1, the swarms and 0x73a… (none placed on
+            // levels 1–3). // later: Phase 5 (the bat Handle, the path fields it reads).
+            guard t == 0x6cc || t == 0x6cd else { throw Error.notTranscribed(type: p.type) }
             s.layer = 0xb
             s.classWord150 = -1
             s.hp = 500
             s.hotRect = IdleSprites.Rect(top: 0xf, left: 0xc, bottom: 0x2f, right: 0x2b)
+            if t == 0x6cd {
+                s.keepRecord = true                            // `+0x188 = 1` (M l. 68300)
+                s.counterA6 = 1                                // `+0xa6 = 1`
+                s.gravity = 0                                  // `+0x110 = 0`
+                // `.SetupProgrammedPath(s, −1, 0)` (M l. 39304–39340): mode `+0xf0` = |p1| (2 on record 189: the
+                // horizontal path), vx = `+0xfc` = p3. // later: Phase 5 — `+0xf8`, `+0xfc`, `+0x100`, `+0x104` (no field
+                // until the bat Handle reads them).
+                // Only modes 1 and 2 (a vertical / horizontal run) are transcribed; the others (3: the hopping rect and
+                // gravity, 10 / 11: `.MakeRadial`, 100…199) are placed on no level 1–3 bat.
+                let mode = Int32(p.p1 < 1 ? -p.p1 : p.p1)
+                guard mode == 1 || mode == 2 else { throw Error.notTranscribed(type: p.type) }
+                s.voicePitch = mode
+                if mode == 1 { s.vy = Int32(p.p3) } else { s.vx = Int32(p.p3) }
+            }
             s.classWord158 = 0x1e
             s.classWord15c = 0
             s.subtype = 7                                      // `+0xb0 = 7` (l. 68310)
             face(0x6cc, 0, .handle)                            // the Handle faces it from the cache set 0x6cc
+
+        case .blob:
+            // LV3 — `.SetupBlobSprite @ 1007cdb0` (M l. 67671–67736), the Phase-1 ◇ shape (inert, no Handle, no hit
+            // callback — D38 Ruling 3): layer 8, gravity 0xfa, `+0xc0 = 0`; 0x6c2: HP 700, `+0xb8 = 0`; SetRect(0xe, 0xc,
+            // 0x2f, 0x21); `+0x150 = −1`, `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`; `+0xc0` = cache 0x6c2 face 0;
+            // counted in the totals (`+0x1b5`, `_DAT_1009ffb4`, M l. 67728–67730 — `Tallies`); no draw. Only 1730 (0x6c2)
+            // is placed on levels 1–3. // later: Phase 5 (the Blob Handle, Hit, tile hit).
+            guard t == 0x6c2 else { throw Error.notTranscribed(type: p.type) }
+            s.layer = 8
+            s.gravity = 0xfa
+            s.hp = 700
+            s.mode = 0
+            s.hotRect = IdleSprites.Rect(top: 0xc, left: 0xe, bottom: 0x21, right: 0x2f)
+            s.classWord150 = -1
+            s.subtype = 6
+            s.phase = 2
+            s.countedInTotals = true                           // `+0x1b5 = 1` while `*_DAT_1009fe8c` is set
+            face(0x6c2, 0, .setupCached)
 
         case .frog:
             // `.SetupFrogSprite @ 10081f14` (M l. 70137–70220; W4, inert): layer 0xb, HP 500, `+0xb0 = 0xb`,
@@ -568,10 +639,10 @@ public enum SetupFaces {
     /// place): `.SetupBonusSprite` 0x423 → secrets (M l. 52410–52414), 0x41f / 0x420 → Xichrons (M l. 52463–52467);
     /// enemies: `.SetupCrawlerSprite` (M l. 56236–56240), `.SetupWalkerSprite` (M l. 57090–57094), `.SetupRoachSprite`
     /// (M l. 64947–64951) at their ends (no early return), `.SetupBatSprite`'s 0x6cc… arm (M l. 68282–68285),
-    /// `.SetupFrogSprite` at its end (M l. 70211–70215). // later: Phase 4–5 — the other enemy classes' sites
-    /// (`.SetupBlobSprite` M l. 67730, Gremlin 69229, Floater 69899, Salamander 70697, Dillo 72370, Warrior 73069,
-    /// Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some branch-gated, are not transcribed (their Setups
-    /// throw `notTranscribed` before any tally).
+    /// `.SetupFrogSprite` at its end (M l. 70211–70215), `.SetupBlobSprite` at its end for every type (M l.
+    /// 67728–67730; LV3). // later: Phase 5–6 — the other enemy classes' sites (Gremlin 69229, Floater 69899,
+    /// Salamander 70697, Dillo 72370, Warrior 73069, Demon 74493, Chief 75110, Wizard 75676, Xichra 76435), some
+    /// branch-gated, are not transcribed (their Setups throw `notTranscribed` before any tally).
     public struct Tallies: Equatable, Sendable {
         public var secrets: Int16 = 0
         public var xichrons: Int16 = 0
@@ -588,7 +659,7 @@ public enum SetupFaces {
             switch cls {
             case .bonus where type == 0x423: secrets &+= 1
             case .bonus where type == 0x41f || type == 0x420: xichrons &+= 1
-            case .walker, .crawler, .roach, .frog: enemies &+= 1
+            case .walker, .crawler, .roach, .frog, .blob: enemies &+= 1        // Blob: M l. 67728–67730 (LV3)
             case .bat where (0x6cc...0x6d5).contains(type): enemies &+= 1
             default: break
             }

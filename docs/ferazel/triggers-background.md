@@ -499,3 +499,18 @@ Button-consumer count (two → three) and the wiring census (22 → 24 of 24) we
   @ `10057f44`) is (0, 0, 0) in the PEF data with no writer — black. Each async fade takes N + 1 = 21 iterations
   (`.HandleAsyncGammaFade` j = 0 … 20); the jump at contact 22 follows the fade-out's end at iteration 21.
 - §2.12 the window is built from the tunnel's 24.8 position (`+0x14 >> 8`, `+0x1c >> 8`), not `+0xc/+0xa`.
+
+⚑ LV3 build (2026-10-26, Phase 4; Ben: follow the binary) — §2.6 the retracting spikes, as built:
+- The initial frame compares p4 with `+0x150` **after** its 0 → 32000 substitution (M l. 61992–62001, 62286–62298,
+  62468–62480): a static spike (p2 0) starts at frame 0 — fully **out** (frame 0 is the most extended: the rect is set
+  while frame < 2, a floor spike sits at base + 2·frame). Frame 11 is fully in.
+- The cycle as written: the counter wraps only once it exceeds p2 + p3, so a static spike (32000 + p3, p3 0 on every
+  level-3 placement) reaches 32000 once every 32001 frames: one frame in (frame 1, snd 458's idle-only call), then
+  out again — no special case in the Handle (M l. 63193–63213).
+- Both sound sites are idle-only (`if (!FUN_100916dc(snd))`), the call's `FastRand(10000)` made only with the call:
+  457 (`*_DAT_100a036c`) leaving frame 11, 458 (`*_DAT_100a0368`) leaving frame 0, at `+0xe` (the centre).
+- 0x732 / 0x733 store `+0x158` = the start y (M l. 62474); the Handle re-faces every frame (0x732 / 0x733 singles,
+  0x730 / 0x731 cell `frame` of the set 0x730); the Setup leaves `+0xc0 = 0`.
+- The damage arm (`.HitPlayerSprite` raw `100583c8..10058410`): climb 0 and the no-cling timer 3 are stored on
+  **every** contact, before the `+0x116 == 0` test (as this section says; enemy-shots-and-damage §3.4's table row puts
+  them under the condition — see the note there).

@@ -5,9 +5,8 @@ import Foundation
 /// from the class caches (plants 0xa8c…, tunnels 3000…). Part 2 (W2b, below): cannons 0x442… (p1 0) and their
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
-/// `.HitBackgroundSprite`. // later: fire 0x4b8 / 0x4bb…0x4bd, 0x730…0x733, 0x73f / 0x740, 0x76c…0x76f,
-/// 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–2 (with them their `+0x188`: 0x731 M l. 61983,
-/// 0x730 62280, 0x732 / 0x733 62462).
+/// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. // later: fire 0x4b8 /
+/// 0x4bb…0x4bd, 0x73f / 0x740, 0x76c…0x76f, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–3.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -110,10 +109,10 @@ public enum BackgroundSprite {
     // MARK: - Handle
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
-    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, spikes, 0x73f / 0x740,
-    /// 0x76c…0x76f, clouds, 0xbf4, trees (Phase 3; none placed on levels 1–2, so `SetupFaces` refuses them).
+    /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740,
+    /// 0x76c…0x76f, clouds, 0xbf4, trees (none placed on levels 1–3, so `SetupFaces` refuses them; the spikes: LV3).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
-        t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x730...0x733).contains(t) || (0x73f...0x740).contains(t)
+        t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
             || (0x76c...0x76f).contains(t) || (0xb4a...0xb4d).contains(t) || t == 0xbf4 || (0xc08...0xc0f).contains(t)
     }
 
@@ -154,6 +153,8 @@ public enum BackgroundSprite {
             spring(w, id: id)
         } else if passages.contains(t) {
             passage(w, id: id)
+        } else if spikes.contains(t) {
+            spike(w, id: id)
         } else if (0xa8c...0xaef).contains(t) || (3000...0xbc1).contains(t) {
             w.active.update(id: id) { $0.face = FaceRef(pict: t, index: 0, set: .encoded) }
         }
@@ -752,5 +753,99 @@ extension BackgroundSprite {
                                     delay: 0, mode: 1)
         }
         s.layer = 0x7fbc
+    }
+}
+
+// MARK: - LV3: the retracting spikes
+
+extension BackgroundSprite {
+    /// The retracting spikes 1840…1843: wall 0x730 / 0x731 (mirrored), floor 0x732, ceiling 0x733 (triggers-background
+    /// §2.6); spawned now (`SpriteClassTable`).
+    public static let spikes: ClosedRange<Int16> = 0x730...0x733
+    /// The wall spikes' cache set (`.InitBackgroundSprite` M l. 61864: `_CacheEncFaceSetFromPICT(…, 0x730, 0xc, 0x18,
+    /// 0x80, 0xc, …)`).
+    public static let wallSpikeSheet: Int16 = 0x730
+    /// `snd 457` (`*_DAT_100a036c`) as the spike leaves its fully-in frame 11 / `snd 458` (`*_DAT_100a0368`) as it
+    /// leaves its fully-out frame 0 (pickups-boxes-2 §1.2).
+    public static let spikeOutSound: Int16 = 457
+    public static let spikeInSound: Int16 = 458
+
+    /// The spike arms of `.SetupBackgroundSprite` — 0x731 (M l. 61982–62015), 0x730 (l. 62279–62309), 0x732 / 0x733
+    /// (l. 62459–62490), one body: `+0x188 = 1` (`keepRecord`); 0x731 `+0x17e = 1` (mirrored); `+0x14c` = p1, `+0x150` =
+    /// p2 (0 → 32000: never retracts), `+0x154` = p3, `+0xa6` = p4 (the phase counter), 0x732 / 0x733 `+0x158` = y (the
+    /// base); `+0x46` = 0 (out) when p4 < `+0x150`, else 0xb (in); HP `+0xa4 = 500`; hdr 0x26cd ≠ 0 → `+0xb8 = 0x10018`;
+    /// then a water cell under (x >> 5, (y + 0xc) >> 5) → `+0xb8 = 0x90000`. No rect, no face, no draw (the Handle sets
+    /// them). The cache "used" flags (`+1 = 1`) are the renderer's loads (`SetupFaces`' sheet).
+    public static func setupSpike(_ s: inout SpriteSlot, record p: Placement, level L: LevelFile) {
+        s.keepRecord = true
+        if s.type == 0x731 { s.mirrored = true }
+        s.classTimer = Int32(p.p1)
+        s.classWord150 = p.p2 == 0 ? 32000 : Int32(p.p2)
+        s.classWord154 = Int32(p.p3)
+        s.counterA6 = p.p4
+        if 0x731 < s.type { s.classWord158 = Int32(Int16(truncatingIfNeeded: s.y)) }
+        s.phase = Int32(s.counterA6) < s.classWord150 ? 0 : 0xb
+        s.hp = 500
+        if L.header.inLiquid != 0 { s.mode = 0x10018 }
+        let k = L.bgKind(tile: L.bgTile(col: h(s.x) >> 5, row: h(s.y + 0xc) >> 5))
+        if LiquidTiles.range.contains(k) { s.mode = 0x90000 }
+    }
+
+    /// The spike arms of `.HandleBackgroundSprite` (0x732 / 0x733 M l. 63192–63238, 0x730 / 0x731 l. 63240–63276):
+    /// 1. `+0xa6` += 1; past `+0x150 + +0x154` it wraps to 0;
+    /// 2. `+0xa6 < +0x150` (out): at frame 0xb, **idle-only** `if (!FUN_100916dc(457)) .STPlay3DSoundRand(457, 1, vol,
+    ///    centre)` (`SoundVoices`, D38 Ruling 5: its R(10000) only with the call); the frame steps toward 0; else (in): at
+    ///    frame 0 the same with 458; the frame steps toward 0xb. vol 0x41 for 0x732 / 0x733, 0x97 for 0x730 / 0x731;
+    /// 3. 0x732: face the single 0x732, y = (i16) `+0x158` + 2·frame, clip bottom `+0x1ba` = 0x14 − 2·frame (≤ 0 → 0);
+    ///    0x733: face 0x733, y = (i16) `+0x158` − 2·frame, clip top `+0x1bc` = (i16) `+0x158` − y; rect SetRect(0, 0,
+    ///    0x80, 0x20) while frame < 2, else empty. 0x730 / 0x731: face cell `frame` of 0x730, rect while frame < 2
+    ///    SetRect(0, 0xc, 0x13, 0x74), mirrored SetRect(7, 0xc, 0x20, 0x74), else empty.
+    /// A static spike (p2 0) stays out except at the counter's 32000: one frame in (and 458's call), then out again
+    /// (and 457's) — as written.
+    static func spike(_ w: SpriteWorld, id: Int) {
+        guard let s0 = w.active.record(id: id) else { return }
+        let t = s0.type
+        let volume: Int16 = 0x731 < t ? 0x41 : 0x97
+        var a6 = s0.counterA6 &+ 1
+        if s0.classWord150 &+ s0.classWord154 < Int32(a6) { a6 = 0 }
+        w.active.update(id: id) { $0.counterA6 = a6 }
+        let out = Int32(a6) < s0.classWord150
+        let edge: Int16 = out ? 0xb : 0
+        let snd = out ? spikeOutSound : spikeInSound
+        if s0.phase == edge, !w.isSoundPlaying(snd) {
+            w.player.cue(PlayerCue(call: .threeDRand, snd: snd, priority: 1, volume: volume, position: s0.centre,
+                                   rate: w.rng.soundRate()))
+        }
+        w.active.update(id: id) { s in
+            if out {
+                if 0 < s.phase { s.phase -= 1 }
+            } else if s.phase < 0xb {
+                s.phase += 1
+            }
+            let f = Int(s.phase)
+            let base = Int(Int16(truncatingIfNeeded: s.classWord158))
+            switch t {
+            case 0x732:
+                s.face = FaceRef(pict: 0x732, index: 0, set: .encoded)
+                s.y = h(base + f * 2)
+                s.clip.bottom = max(0, 0x14 - f * 2)
+            case 0x733:
+                s.face = FaceRef(pict: 0x733, index: 0, set: .encoded)
+                s.y = h(base - f * 2)
+                s.clip.top = h(base - s.y)
+            default:
+                s.face = FaceRef(pict: wallSpikeSheet, index: f, set: .encoded)
+            }
+            let empty = IdleSprites.Rect(top: 0, left: 0, bottom: 0, right: 0)
+            if 2 <= f {
+                s.hotRect = empty
+            } else if 0x731 < t {
+                s.hotRect = IdleSprites.Rect(top: 0, left: 0, bottom: 0x20, right: 0x80)
+            } else if !s.mirrored {
+                s.hotRect = IdleSprites.Rect(top: 0xc, left: 0, bottom: 0x74, right: 0x13)
+            } else {
+                s.hotRect = IdleSprites.Rect(top: 0xc, left: 7, bottom: 0x74, right: 0x20)
+            }
+        }
     }
 }

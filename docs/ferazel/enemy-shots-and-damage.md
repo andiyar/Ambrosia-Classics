@@ -502,3 +502,9 @@ three collision passes and the active-list order rule (the player is reached onl
 10. physics.md §7 Bat row "HP 100, 200" (review 1a #5, adj. 3): 1740 family **500** (`1007dcbc cmpwi 0x6d6; bge` → `1007dcc0 li 0x1f4`), 1850 family 100 (`1007dde0 li 0x64`), insects 200 (`1007e144 li 0xc8`); Floater row rect (0x17,2,0x38,0x5c) → shipped 1780 (0x23,1,0x3e,0x4b) at `10081550–1008155c`.
 11. physics.md §2 water gravity `max(0.7·g, 0x100)` — add the caveat (review 1a #2, adjudication 4): taken only when `+0x11c ≠ 0` at the routine's entry (`lwz 0x11c @100375c8`), before its own `SeparateFromTiles2` (`bl 1003c804 @10037624`); `.StandardSpriteHandles` zeroes `+0x11c` each frame (`100368d4 … 100369ac`), so every sprite's first call uses dry gravity; only a second same-frame call (Frog) or a direct `+0x11c` writer (Bonus 1055 in-water flag, 1350 air bubble) takes the 0x100 branch.
 12. spells-items.md §2.1 (review 1a adjudication 1) — names only: id 2 "Ice Crystals" (cost 10, gravity 0, unholdable), id 3 "Ice Wall" (cost 0x1e `1005213c`, dmg 0x12c `10052138`, floes `1005a2e4–1005a30c`, ledges `1005b2c4/1005b2f4`), id 7 second Ice-Wall icon (cost 0xc, dmg 0x96, gravity 0xfa, no floe); PICT 700 captions 0..11 = Fireball, Statue, Ice Crystals, Ice Wall, Tree Trunk, Boomerang, VBlade, Ice Wall, DensityBall, Sandstorm, EnergyBolt, Ice Shards.
+
+⚑ LV3 build (2026-10-26, Phase 4; Ben: follow the binary) — §3.4 row "Background 0x730..0x733": the climb-state 0 and
+`PTR_DAT_100a05f0 = 3` stores come **before** the `+0x116 == 0` test and are made on every contact (raw
+`100583c8..100583dc`, then `lha 0x116; cmpwi; bne` at `100583e0..100583e8`); only `.HurtPlayer(0x70, blood, 60, 0)` and
+`+0x116 = 30` depend on it (triggers-background §2.6 had the order right). The row's types are the four spikes
+1840…1843 (0x730 = 1840), not only 1842/1843.
