@@ -86,8 +86,13 @@ public enum WinClock {
     /// The flow's `.quit` came, a quit arrived before the flow existed, or a draw failed.
     public private(set) var finished = false
     public private(set) var exitCode: Int32 = 0
-    /// The last frame presented (R, G, B, A; 640×480), nil before the first.
+    /// The last frame presented (R, G, B, A; 640×480), nil before the first — with a dialog up, the game's frame with
+    /// the dialog drawn into it (Ruling 4).
     public private(set) var lastPresented: [UInt8]?
+    /// The last frame the game itself presented (the picture under a dialog, shown again when it closes).
+    private(set) var gameFrame: [UInt8]?
+    /// The dialogs' `revision` last drawn into the picture; nil when the picture shows no dialog.
+    private var dialogRevisionShown: Int?
     /// Flow ticks run so far.
     public private(set) var flowSteps = 0
     /// The seed the flow got (nil before the boot).
@@ -151,6 +156,9 @@ public enum WinClock {
     public func boot(dataDirectory: URL) throws {
         try driver.boot(dataDirectory: dataDirectory)
         seedUsed = driver.flow.rng.seed
+        let driver = driver, host = host
+        dialogs.attach(WinDialogServices(resources: driver.resources, picture: { driver.dialogPicture($0) },
+                                         beep: { driver.beep() }, ticks: { host.ticks }))
         shortcuts = WinShortcuts(resources: driver.resources)
         if let path = args.document {
             let url = URL(fileURLWithPath: path)
@@ -172,6 +180,7 @@ public enum WinClock {
         }
         guard !finished else { return }
         runDueTick()
+        presentDialogs()
     }
 
     /// The window is being dragged or resized and Windows' modal move/size loop blocks the poll inside `step()`
@@ -182,6 +191,7 @@ public enum WinClock {
         inLiveStep = true
         defer { inLiveStep = false }
         runDueTick()
+        presentDialogs()
     }
 
     /// A dialog or a file dialog is up: the flow does not tick (BTX D13.6 precedent).
@@ -192,10 +202,14 @@ public enum WinClock {
         defer { updateCursor() }
         let now = host.ticks
         if modalUp {
-            // A dialog's 1/60 s null timer: the pad's only poll (the Mac's `pollPadInDialog`).
-            if dialogs.isShowing, now != lastModalPoll {
-                lastModalPoll = now
-                pollPad()
+            if dialogs.isShowing {
+                // The OK flash's clock (WF4a); a dialog it closes lets the flow run from the next wake.
+                dialogs.tick(now: now)
+                // A dialog's 1/60 s null timer: the pad's only poll (the Mac's `pollPadInDialog`).
+                if now != lastModalPoll {
+                    lastModalPoll = now
+                    pollPad()
+                }
             }
             return
         }
@@ -238,9 +252,32 @@ public enum WinClock {
 
     private func present() {
         let rgba = driver.presentRGBA()
+        gameFrame = rgba
         lastPresented = rgba
         host.present(rgba: rgba)
+        dialogRevisionShown = nil
     }
+
+    /// The dialogs drawn into the game's last frame whenever they change (Ruling 4, ◇W10: inside the picture, scaled
+    /// with it); once the last one closes, the game's frame again — the Mac's panel ordered out over its window.
+    private func presentDialogs() {
+        if dialogs.isShowing {
+            guard dialogs.revision != dialogRevisionShown else { return }
+            var rgba = gameFrame ?? Self.blackFrame
+            dialogs.draw(into: &rgba)
+            dialogRevisionShown = dialogs.revision
+            lastPresented = rgba
+            host.present(rgba: rgba)
+        } else if dialogRevisionShown != nil {
+            dialogRevisionShown = nil
+            let rgba = gameFrame ?? Self.blackFrame
+            lastPresented = rgba
+            host.present(rgba: rgba)
+        }
+    }
+
+    /// Opaque black, 640×480 R, G, B, A (the window before the game's first present).
+    static let blackFrame: [UInt8] = (0..<WinCanvas.width * WinCanvas.height * 4).map { $0 % 4 == 3 ? 0xFF : 0 }
 
     /// Shows the last frame again (Alt+Enter; the executable's redraws use the host's own copy).
     private func represent() {
@@ -270,9 +307,17 @@ public enum WinClock {
             }
         case let .keyUp(code):
             input.keyUp(code)
-        case let .mouseMoved(x, y): input.mouseMoved(x: x, y: y)
-        case let .mouseDown(x, y): input.mouseDown(x: x, y: y)
-        case let .mouseUp(x, y): input.mouseUp(x: x, y: y)
+        // The pointer and the button stay the live state the game polls (the Mac reads both live); with a dialog up
+        // the dialog also gets them (the flow does not tick meanwhile).
+        case let .mouseMoved(x, y):
+            input.mouseMoved(x: x, y: y)
+            if dialogs.isShowing { dialogs.mouseMoved(x: x, y: y) }
+        case let .mouseDown(x, y):
+            input.mouseDown(x: x, y: y)
+            if dialogs.isShowing { dialogs.mouseDown(x: x, y: y) }
+        case let .mouseUp(x, y):
+            input.mouseUp(x: x, y: y)
+            if dialogs.isShowing { dialogs.mouseUp(x: x, y: y) }
         case .quit:
             // The Mac's `applicationShouldTerminate` (D40): before the flow exists the quit ends at once; else the
             // flow's `systemQuit` — a level running free asks "Are you sure you want to quit?", elsewhere the quit

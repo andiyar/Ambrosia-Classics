@@ -245,12 +245,14 @@ do {
 let host = SDLWinHost(sdl: sdl, scripted: headless ? WinScriptedHost(script: script) : nil)
 let audioDevice: SDLAudioDevice? = headless ? nil : SDLAudioDevice()
 
-let game = WinGame(args: args, host: host, text: text, files: files,
+// The original's DLOG 202 / 200 drawn inside the picture (WF4a; `--frames` runs too: a scripted Return answers them and
+// the dump shows them). Their `SysBeep` (a click outside) is the beeper below, through the driver's mute gate.
+let game = WinGame(args: args, host: host, text: text, files: files, dialogs: DialogSystem(text: text),
                    panels: WinFileDialogs.panels(args, log: report), audio: audioDevice,
                    beeper: {
                        #if os(Windows)
                        _ = MessageBeep(UINT(MB_OK))   // `SysBeep`; the driver never calls this when muted
-                       #endif
+                       #endif                         // the Mac SDL development build: silent
                    },
                    log: report, padSource: headless ? nil : { sdl.padState() })
 host.present(rgba: [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4).enumerated()
