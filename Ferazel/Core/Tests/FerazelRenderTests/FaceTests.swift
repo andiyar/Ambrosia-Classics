@@ -567,11 +567,25 @@ final class FaceTests: XCTestCase {
         want("balloon", BoxSprite.balloon)
         want("floe", 0x578, cells: 5)
         // The drops of every chest and crate on levels 1–4 and the key faces their locks show — each in its own
-        // level's renderer (a renderer loads its level's drops, `BoxSprite.dropSheets`).
+        // level's renderer. The original loads every Bonus face at boot (`.InitBonusSprite` M l. 52261–52337); the
+        // replica's per-level load (`BoxSprite.dropSheets`) is a seam, so the faces are named here, not derived from it.
+        // Locks (the balloon's key face 0xc80 + |p1|): L1 chest 38 p1 1, door 55 p1 2; L2 door 97 p1 2, 212 p1 1; L3
+        // door 68 p1 3; L4 door 56 p1 1. Drops (p2): L1 3201, 3202, 1305 (→ 0x51d), 1302, crates 3219, 1291, 1293; L2
+        // 1305, 3202, 3201, 1302, 1293; L3 1302, 1305, 3205; L4 3201, 1305, 1302.
+        let keys: [Int: [Int16]] = [1: [0xc81, 0xc82], 2: [0xc81, 0xc82], 3: [0xc83], 4: [0xc81]]
+        let drops: [Int: [(Int16, Int)]] = [
+            1: [(0xc81, 1), (0xc82, 1), (0x51d, 9), (0x516, 9), (0xc93, 1), (0x50b, 1), (0x50d, 1)],
+            2: [(0x51d, 9), (0xc82, 1), (0xc81, 1), (0x516, 9), (0x50d, 1)],
+            3: [(0x516, 9), (0x51d, 9), (0xc85, 1)],
+            4: [(0xc81, 1), (0x51d, 9), (0x516, 9)],
+        ]
         for n in 1...4 {
             let frame = n == 1 ? one : try renderer(n)
+            want("level \(n) balloon", BoxSprite.balloon, in: frame)
+            for k in keys[n]! { want("level \(n) key face", k, in: frame) }
+            for (pict, cells) in drops[n]! { want("level \(n) drop", pict, cells: cells, in: frame) }
             for sh in BoxSprite.dropSheets(frame.level.placements) {
-                want("level \(n) drop", sh.pict, cells: sh.count, in: frame)
+                want("level \(n) drop sheet", sh.pict, cells: sh.count, in: frame)
             }
         }
         XCTAssertEqual(missing, [])

@@ -531,11 +531,11 @@ public enum SetupFaces {
         case .bat:
             // `.SetupBatSprite @ 1007dc30` (M l. 68108–68316; W4, inert): layer 0xb, `+0xc0 = 0`, `+0x150 = −1`; the
             // 0x6cc…0x6d5 arm (l. 68279–68310): HP 500, SetRect(0xc, 0xf, 0x2b, 0x2f), `+0x158 = 0x1e`, `+0x15c = 0`,
-            // `+0xb0 = 7`, no draw. 1740 (0x6cc) is placed on levels 1–3; LV3: 1741 (0x6cd, level 3 record 189) — `+0x188 =
+            // `+0xb0 = 7`, no draw. 1740 (0x6cc) is placed on levels 1–4; LV3: 1741 (0x6cd, level 3 record 189) — `+0x188 =
             // 1`, `+0xa6 = 1`, gravity 0 and `.SetupProgrammedPath(s, −1, 0)` (M l. 68299–68303; `.SetupProgrammedPath` M l. 39288ff: no draw —
             // for p1 2, `+0xf0` = |p1|, `+0xfc` = p3, `+0xf8 = 1`, the bounds `+0x100` / `+0x104` = x·256 ± …, vx =
             // `+0xfc`, vy 0). Not transcribed: 0x6ce (→ 0x6cd with R(0x50)), 0x6d1, the swarms and 0x73a… (none placed on
-            // levels 1–3). // later: Phase 5 (the bat Handle, the path fields it reads).
+            // levels 1–4). // later: Phase 5 (the bat Handle, the path fields it reads).
             guard t == 0x6cc || t == 0x6cd else { throw Error.notTranscribed(type: p.type) }
             s.layer = 0xb
             s.classWord150 = -1
@@ -550,7 +550,7 @@ public enum SetupFaces {
                 // horizontal path), vx = `+0xfc` = p3. // later: Phase 5 — `+0xf8`, `+0xfc`, `+0x100`, `+0x104` (no field
                 // until the bat Handle reads them).
                 // Only modes 1 and 2 (a vertical / horizontal run) are transcribed; the others (3: the hopping rect and
-                // gravity, 10 / 11: `.MakeRadial`, 100…199) are placed on no level 1–3 bat.
+                // gravity, 10 / 11: `.MakeRadial`, 100…199) are placed on no level 1–4 bat.
                 let mode = Int32(p.p1 < 1 ? -p.p1 : p.p1)
                 guard mode == 1 || mode == 2 else { throw Error.notTranscribed(type: p.type) }
                 // `voicePitch` is the slot at `+0xf0` (the Walker's name for it; seams locked): here the path mode.
@@ -567,7 +567,7 @@ public enum SetupFaces {
             // callback — D38 Ruling 3): layer 8, gravity 0xfa, `+0xc0 = 0`; 0x6c2: HP 700, `+0xb8 = 0`; SetRect(0xe, 0xc,
             // 0x2f, 0x21); `+0x150 = −1`, `+0xb0 = 6`, `+0xb2 = 0`, `+0x46 = 2`, `+0x14c = 0`; `+0xc0` = cache 0x6c2 face 0;
             // counted in the totals (`+0x1b5`, `_DAT_1009ffb4`, M l. 67728–67730 — `Tallies`); no draw. Only 1730 (0x6c2)
-            // is placed on levels 1–3. // later: Phase 5 (the Blob Handle, Hit, tile hit).
+            // is placed on levels 1–4. // later: Phase 5 (the Blob Handle, Hit, tile hit).
             guard t == 0x6c2 else { throw Error.notTranscribed(type: p.type) }
             s.layer = 8
             s.gravity = 0xfa

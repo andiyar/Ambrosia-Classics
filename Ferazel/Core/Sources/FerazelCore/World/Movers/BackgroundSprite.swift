@@ -6,7 +6,7 @@ import Foundation
 /// captives (`.TurnIntoCannoned`, `.HandleCannonedSprite`), springs 0x47e…0x481 (`.SuperSpring`), the wall tunnels'
 /// occluder window, passages 0xb54 / 0xb55 (the Handle's face; the jump is `HitPlayerSprite`'s), and
 /// `.HitBackgroundSprite`. Part 3 (LV3, below): the retracting spikes 0x730…0x733. // later: fire 0x4b8 /
-/// 0x4bb…0x4bd, 0x73f / 0x740, 0x76c…0x76f, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–3.
+/// 0x4bb…0x4bd, 0x73f / 0x740, 0x76c…0x76f, 0xb4a…0xb4d, 0xbf4, trees 0xc08…0xc0f — none placed on levels 1–4.
 public enum BackgroundSprite {
     /// The radial bars (0x5c8…0x5cc) and balls (0x5cd…0x5d1).
     public static let maces: ClosedRange<Int16> = 0x5c8...0x5d1
@@ -110,7 +110,7 @@ public enum BackgroundSprite {
 
     /// The types whose `.HandleBackgroundSprite` arm is not built: their Handle is not run (as before W2a), so
     /// nothing of it — `.StandardSpriteHandles` included — changes them. // later: fire, 0x73f / 0x740,
-    /// 0x76c…0x76f, clouds, 0xbf4, trees (none placed on levels 1–3, so `SetupFaces` refuses them; the spikes: LV3).
+    /// 0x76c…0x76f, clouds, 0xbf4, trees (none placed on levels 1–4, so `SetupFaces` refuses them; the spikes: LV3).
     static func isUnbuiltArm(_ t: Int16) -> Bool {
         t == 0x4b8 || (0x4bb...0x4bd).contains(t) || (0x73f...0x740).contains(t)
             || (0x76c...0x76f).contains(t) || (0xb4a...0xb4d).contains(t) || t == 0xbf4 || (0xc08...0xc0f).contains(t)

@@ -109,7 +109,7 @@ extension HitPlayerSprite {
     ///   = 0` and the no-cling timer `PTR_DAT_100a05f0 = 3` on every contact; then, only while the player's `+0x116` is
     ///   0, `.HurtPlayer(player, spike, 0x70, blood 1, invul 0x3c, coins 0)` and `+0x116 = 0x1e` — whether or not the
     ///   hurt landed; return. (The spike's rect is empty unless it is out — `BackgroundSprite.spike`.)
-    /// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on levels 1–3). Cannons, springs and
+    /// - // later: 0xbf4 and the other Background arms (Phase 6; none placed on levels 1–4). Cannons, springs and
     ///   tunnels have no arm here: their hit callback `.HitBackgroundSprite` runs in both passes.
     /// The level exit (PICT-less Background type 3249).
     public static let levelExit: Int16 = 0xcb1
