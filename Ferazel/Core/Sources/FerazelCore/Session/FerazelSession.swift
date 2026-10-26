@@ -378,6 +378,11 @@ public final class FerazelSession {
         // `*piVar5 += 1` (`_DAT_1009fd98`, l. 5236).
         world.frameCounter &+= 1
 
+        // BX2: the 2907 timer's store into `iRam100a5110` during the last iteration's player pass (`PlayerState.countdownStore`).
+        if let t = world.player.countdownStore {
+            countdown = t
+            world.player.countdownStore = nil
+        }
         // `if (-0x1e < iRam100a5110) iRam100a5110 -= 1` (l. 5237–5239).
         if -0x1e < countdown { countdown -= 1 }
         findUpperLeftCorner(graphics: graphics)

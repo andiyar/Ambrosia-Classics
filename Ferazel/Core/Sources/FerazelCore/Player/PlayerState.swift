@@ -378,6 +378,10 @@ public struct PlayerState: Equatable, Sendable {
     public var levelDone = false
     public var exitIndex: Int16 = -1
     public var exit2: Int16 = -1
+    /// BX2: a store into `iRam100a5110` (the countdown the session owns, `FerazelSession.countdown`) made by the 2907
+    /// timer's contact (M l. 49275); the session applies it at the next iteration's start, before its decrement — every
+    /// reader of the countdown (M l. 47169, 53921, 61025) runs after that point, so the value they see is the binary's.
+    public var countdownStore: Int32?
     /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.
     /// // later: Phase 4 (teleporters) — no writer of 070c yet.
     public var teleporterTouch = false

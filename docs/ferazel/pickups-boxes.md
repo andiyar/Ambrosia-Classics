@@ -635,3 +635,14 @@ the 0x4b7 that `.HitBoxSprite`'s crate arm hands to `.KillPlayerShot` never play
 Box moves by its old and new vy in one frame: the tail's `+0x1c += vy` (M l. 61159) precedes the integration's own
 step. The placed stalactite's Setup `+0xa6 = 3` makes it shake three frames when its Handle first runs (M l. 58943,
 60596–60616).
+
+⚑ BC (BX2, 2026-10-26; dump re-read): §2.4.2 / §2.4.3 details. The chest's drop is re-centred by **its hot rect**
+(x −= (left + right) >> 1, y −= (top + bottom) >> 1; M l. 60161–60167), not `.KillCrate`'s centre step, and its
+`vx = rand(800) − 400` has no p3 test (M l. 60176–60177). The balloon range is strict: |player centre − sprite centre| < 0x4b
+on both axes (0x4b is out; M l. 60110–60119). `.CreateBalloonSprite`'s point is (cy − 0x2d, cx − 0x36) for a chest and
+(cy − 0x3c, cx − 0x36) for a door, cx + 6 instead when mirrored (`+0x17e`); the icon sits at (+3, +3), +0xd across when
+mirrored, and only the balloon takes the mirror flag (M l. 59936–59961). A closed locked chest or door out of range
+destroys its balloon; an unlocked one never touches it. An unlocked door plays 438 on **every** player contact,
+opening or not (M l. 49213–49246). A door opened before (record p4 = 1) still draws its closed cell 0 on its first
+Handle, then cell 5 (M l. 60809, 60856–60861). The 2907 timer's sound is 442 (`*_DAT_1009fdb4`) at the player's
+centre, pitch 44000, no draw (M l. 49271–49274).

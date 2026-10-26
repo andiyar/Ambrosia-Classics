@@ -7,8 +7,8 @@ import Foundation
 /// 10070718` (M l. 61521–61683). The Box arm of `.HitPlayerSprite` is `HitPlayerSprite.box`. Faces are `SetupFaces`'s
 /// (the class caches of `.InitBoxSprite`).
 ///
-/// Not built (named where they stand): the Handle arms of the chest 0x51c and the doors 0xb5e / 0xb5f (BX2), the gate
-/// 0xb7c, the switch blocks 0x4e2…0x4ff and the spouts 0x5aa…0x5ad (BT), the tree trunk 0x2c8 / 0x2c9 (SW), the geysers
+/// BX2: the chest 0x51c and door 0xb5e / 0xb5f Handle arms (`chestArm`, `doorArm`) and the thought balloons
+/// (`createBalloon`, `destructBalloon`). Not built (named where they stand): the gate 0xb7c, the switch blocks 0x4e2…0x4ff and the spouts 0x5aa…0x5ad (BT), the tree trunk 0x2c8 / 0x2c9 (SW), the geysers
 /// 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (Phase 5), the carpet 0x438 / 0x439, the spiked balls 0x5c3 / 0x5c4, the table
 /// 0xb71 and the snowball 0xbfe (Phase 6) — those types still return at once from the Handle (`handleBuilt`) and stand
 /// still; `.HitBoxSprite`'s Statue partner (SW) and its carpet arm (Phase 6).
@@ -26,6 +26,17 @@ public enum BoxSprite {
     public static let wheel: Int16 = 0xb73
     /// The weakened ice wall 2941 (0xb7d).
     public static let iceWall: Int16 = 0xb7d
+    /// The chest 1308 (0x51c; its face set `_DAT_100a0a94`, PICT 1308, 4 × 0x21×0x1f) and the doors 2910 / 2911
+    /// (0xb5e / 0xb5f; both faced from the set `_DAT_100a0a98`, PICT 2910, 6 × 0x3c×0x58) — BX2.
+    public static let chest: Int16 = 0x51c
+    public static let doors: ClosedRange<Int16> = 0xb5e...0xb5f
+    /// The thought balloon 3250 (0xcb2; the boot single `_DAT_100a0a90`, PICT 3250) — its icon is the Effect 3250 + key
+    /// faced with the key's item face `_DAT_100a08a0[key]` (PICT 3200 + key).
+    public static let balloon: Int16 = 0xcb2
+    /// The sounds of the doors and chests (`.HitPlayerSprite`'s Box arm; pickups-boxes-2 §1.2): `*_DAT_100a03a8` = 437
+    /// (a door unlocked with its key), `*_DAT_100a03a4` = 438 (an unlocked door touched), `*_DAT_100a03a0` = 439 (a
+    /// chest opened), `*_DAT_1009fdb4` = 442 (the 2907 timer started).
+    static let doorUnlockSound: Int16 = 437, doorSound: Int16 = 438, chestSound: Int16 = 439, timerSound: Int16 = 442
     /// The crates 3090…3092 (0xc12…0xc14; their Setup arm and Handle arm) and the range `.HitBoxSprite` and the spin
     /// stomp treat as crates (0xc12…0xc1b, `cmpwi 0xc12` / `0xc1c`).
     public static let crates: ClosedRange<Int16> = 0xc12...0xc14
@@ -57,12 +68,22 @@ public enum BoxSprite {
     /// The Bonus faces the crates among `records` can drop (`.KillCrate`, p1 0 / 1, p2 > 0): `.InitBonusSprite` loads
     /// every Bonus face at boot, but `BonusSprite.sheets` names PICTs the data lacks (3109, 3200), so a renderer loads
     /// the drops of its level's crates only — a Bonus drop by its face PICT (0x41f → 0x421, 0x519 → 0x51d, 0x51a →
-    /// 0x51e), any other p2 by its own PICT (the items).
+    /// 0x51e), any other p2 by its own PICT (the items). BX2: the chests' drops (p2 > 0, the same lookup) and, for a
+    /// locked chest or door (p1 ≠ 0), the thought balloon 3250 (`.InitBoxSprite` M l. 58753, a boot single) and the
+    /// key's item face (PICT 3200 + |p1|, keys 1…26 — `.CreateBalloonSprite`'s range).
     public static func dropSheets(_ records: [Placement]) -> Set<SetupFaces.Sheet> {
         var out: Set<SetupFaces.Sheet> = []
-        for p in records where crates.contains(p.type) && (0...1).contains(p.p1) && 0 < p.p2 {
-            let pict: Int16 = p.p2 == 0x41f ? 0x421 : p.p2 == 0x519 ? 0x51d : p.p2 == 0x51a ? 0x51e : p.p2
+        func bonus(_ pict: Int16) {
             if let sh = BonusSprite.sheets.first(where: { $0.pict == pict }) { out.insert(sh) }
+        }
+        for p in records where (crates.contains(p.type) && (0...1).contains(p.p1) || p.type == chest) && 0 < p.p2 {
+            bonus(p.p2 == 0x41f ? 0x421 : p.p2 == 0x519 ? 0x51d : p.p2 == 0x51a ? 0x51e : p.p2)
+        }
+        for p in records where p.type == chest || doors.contains(p.type) {
+            let k = p.p1 < 1 ? 0 &- p.p1 : p.p1
+            guard 0 < k && k < 0x1b else { continue }
+            out.insert(SetupFaces.Sheet.single(balloon))
+            bonus(0xc80 + k)
         }
         return out
     }
@@ -349,17 +370,17 @@ public enum BoxSprite {
     }
 
     /// Whether the type's `.HandleBoxSprite` runs (the arm and the common tail). The types whose arm is not built yet
-    /// return at once and stand still: the chest 0x51c and the doors 0xb5e / 0xb5f (// later: BX2), the gate 0xb7c, the
+    /// return at once and stand still: the gate 0xb7c, the
     /// switch blocks 0x4e2…0x4ff and the spouts 0x5aa…0x5ad (// later: BT), the tree trunk 0x2c8 / 0x2c9 (// later:
     /// SW), the geysers 0x5a0…0x5a9 and the pipes 0x5d2…0x5d5 (// later: Phase 5), the carpet 0x438 / 0x439, the spiked
     /// balls 0x5c3 / 0x5c4, the table 0xb71 and the snowball 0xbfe (// later: Phase 6). Every other Box runs: the built
     /// arms (W3 trampoline and bridges, S1 save point, C1 NPCs, BX1 boulders and rocks, stalactite, mine cart, crates,
-    /// the 2907 timer's countdown, the 2941's death) and the types with no arm (teleporters, signs, decorations,
-    /// outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which go through the block chain's
-    /// faces (M l. 61088–61151) to the tail.
+    /// the 2907 timer's countdown, the 2941's death; BX2 the chest and the doors) and the types with no arm
+    /// (teleporters, signs, decorations, outcrops, mushrooms, furniture, the wheel, the crate range 0xc15…0xc1b), which
+    /// go through the block chain's faces (M l. 61088–61151) to the tail.
     public static func handleBuilt(_ t: Int16) -> Bool {
         switch t {
-        case 0x51c, 0xb5e, 0xb5f, 0xb7c, switchBlocks, 0x5aa...0x5ad, 0x2c8, 0x2c9, 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438,
+        case 0xb7c, switchBlocks, 0x5aa...0x5ad, 0x2c8, 0x2c9, 0x5a0...0x5a9, 0x5d2...0x5d5, 0x438,
              0x439, 0x5c3, 0x5c4, 0xb71, 0xbfe:
             return false
         default:
@@ -384,7 +405,8 @@ public enum BoxSprite {
     ///   60596–60620; `stalactiteArm`); the cart with a record (M l. 60871–60936; `cartArm`); the crates 0xc12…0xc14
     ///   (M l. 61078–61084): `.MTChangeSpriteLayer(−(2y + x))` (the list re-sort — a crate moved past the walk's place is
     ///   handled again that frame), HP < 1 → `.KillCrate`; the 2907 timer 0xb5b (M l. 60786–60791): `+0xa6 > 0` → −1;
-    ///   the 2941 (M l. 61016–61040; `iceWallArm`);
+    ///   the 2941 (M l. 61016–61040; `iceWallArm`); the chest 0x51c (M l. 60101–60187; `chestArm`); the doors 0xb5e /
+    ///   0xb5f (M l. 60803–60868; `doorArm`);
     /// - every other type reaches the block chain (M l. 61088–61151): the switch blocks (not run, BT), then the face
     ///   from the class caches — decorations 0xaf5…0xb21 (`0x1009b500 + type·0x10` = the cache entry), outcrops
     ///   0xb22…0xb35, mushrooms 0xb36…0xb49, furniture 0xb68…0xb70 (each `cache[type − first] + 4`); the NPCs 0xb87…0xb99
@@ -436,6 +458,10 @@ public enum BoxSprite {
             w.active.update(id: id) { if 0 < $0.counterA6 { $0.counterA6 -= 1 } }
         case iceWall:
             iceWallArm(w, id: id)
+        case chest:
+            chestArm(w, id: id, lights: &lights, effects: effects)
+        case doors:
+            doorArm(w, id: id, lights: &lights, effects: effects)
         default:
             // The block chain (M l. 61088–61151): the switch blocks' part does not run here (`handleBuilt`, BT).
             switch t {
@@ -628,6 +654,192 @@ public enum BoxSprite {
         let r = w.rng.next(5000)
         w.player.cue(PlayerCue(call: .threeDPitched, snd: breakSound, priority: 1, volume: 0x100, position: s.centre,
                                rate: Int32(r) + 43000))
+    }
+
+    // MARK: - chests, doors, thought balloons (BX2)
+
+    /// Rewrites live record `i`'s p1 / p3 / p4 (`*_DAT_100a0058 + 16·i + 8 / 0xc / 0xe`); an index outside the table
+    /// stores nothing (the binary writes past the records — no chest or door is spawned without one).
+    static func setRecord(_ w: SpriteWorld, _ i: Int16, p1: Int16? = nil, p3: Int16? = nil, p4: Int16? = nil) {
+        guard let q = liveRecord(w, i) else { return }
+        w.records[Int(i)] = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: q.type, p1: p1 ?? q.p1,
+                                      p2: q.p2, p3: p3 ?? q.p3, p4: p4 ?? q.p4, y: q.y, x: q.x)
+    }
+
+    /// The key a record's p1 names: `|p1|` (`if (k < 1) k = −k`, i16 — −32768 stays negative).
+    static func key(_ p1: Int16) -> Int16 { p1 < 1 ? 0 &- p1 : p1 }
+
+    /// The balloon range test of the chest and door arms (M l. 60110–60122, 60815–60826): |`*_DAT_1009fd94` − `+0x10`|
+    /// < 0x4b and |`*_DAT_1009fd90` − `+0xe`| < 0x4b — the player's centre (`PlayerState.centreX` / `centreY`) against
+    /// this sprite's (the previous frame's `.BoxClean`).
+    static func playerNear(_ w: SpriteWorld, _ s: SpriteSlot) -> Bool {
+        abs(Int(w.player.centreX) - h(s.centre.x)) < 0x4b && abs(Int(w.player.centreY) - h(s.centre.y)) < 0x4b
+    }
+
+    /// The chest's and the doors' balloon block: in range → `.CreateBalloonSprite(self, (cy − dv, cx − 0x36 or + 6 when
+    /// mirrored), +0x17e, |p1|)` unless one is up (`+0x1d4`); out of range → `.DestructBalloonSprite` if one is up.
+    /// `dv` = 0x2d for the chest, 0x3c for the doors.
+    static func balloonBlock(_ w: SpriteWorld, id: Int, p1: Int16, dv: Int, lights: inout LightTable, effects: Int16) {
+        guard let s = w.active.record(id: id) else { return }
+        if playerNear(w, s) {
+            guard s.siblings.first == nil else { return }
+            let bh = s.mirrored ? h(s.centre.x + 6) : h(s.centre.x - 0x36)
+            createBalloon(w, owner: id, h: bh, v: h(s.centre.y - dv), mirrored: s.mirrored, key: key(p1), lights: &lights,
+                          effects: effects)
+        } else if s.siblings.first != nil {
+            destructBalloon(w, owner: id)
+        }
+    }
+
+    /// `.CreateBalloonSprite(self, (v, h), mirrored, key) @ 1006d590` (M l. 59921–59966): only for keys 1…26 —
+    /// `+0x1d4 = MTNewSprite(0xcb2, h, v, 100, −1, .SetupEffectSprite)`; when made: its `+0x17e` = mirrored, its face
+    /// the balloon (`*_DAT_100a0a90`), and `+0x1d4` of it = `MTNewSprite(0xcb2 + key, h + 3 (+ 0xd when mirrored), v + 3,
+    /// 0x65, −1, .SetupEffectSprite)` faced with `_DAT_100a08a0[key]` (the item PICT 3200 + key). Their Setups draw
+    /// nothing (ids ≥ 3200 skip the package; layers 100 / 0x65 by the Setup's own arm) and their Handle has no branch:
+    /// they stand where they are made.
+    static func createBalloon(_ w: SpriteWorld, owner: Int, h bh: Int, v bv: Int, mirrored: Bool, key k: Int16,
+                              lights: inout LightTable, effects: Int16) {
+        guard 0 < k && k < 0x1b else { return }
+        let b = EffectSprite.spawn(w, type: balloon, x: bh, y: bv, layer: 100, effects: effects, lights: &lights)
+        w.active.update(id: owner) { $0.siblings.first = b }
+        guard let b else { return }
+        w.active.update(id: b) { c in
+            c.mirrored = mirrored
+            c.face = FaceRef(pict: balloon, index: 0, set: .encoded)
+        }
+        let ih = mirrored ? h(bh + 0xd) : h(bh + 3)
+        let icon = EffectSprite.spawn(w, type: balloon &+ k, x: ih, y: h(bv + 3), layer: 0x65, effects: effects,
+                                      lights: &lights)
+        w.active.update(id: b) { $0.siblings.first = icon }
+        if let icon { w.active.update(id: icon) { $0.face = FaceRef(pict: 0xc80 &+ k, index: 0, set: .encoded) } }
+    }
+
+    /// `.DestructBalloonSprite(self) @ 1006d6f4` (M l. 59970–59982): `+0x1d4` 0 → nothing; else the balloon's `+0xe9 = 1`,
+    /// its icon's (`+0x1d4` of it) when set, both links cleared.
+    static func destructBalloon(_ w: SpriteWorld, owner: Int) {
+        guard let b = w.active.record(id: owner)?.siblings.first else { return }
+        if let icon = w.active.record(id: b)?.siblings.first { w.active.update(id: icon) { $0.killCount = 1 } }
+        w.active.update(id: b) { c in
+            c.killCount = 1
+            c.siblings.first = nil
+        }
+        w.active.update(id: owner) { $0.siblings.first = nil }
+    }
+
+    /// The chest 0x51c's arm (M l. 60101–60187; pickups-boxes §2.4.2), with the live record's p1 (the key) / p2 (the
+    /// drop) / p3 (the count):
+    /// - closed (`+0x46 < 1`): p3 0 → face set cell 3 (`+0x9c`, the open lid — an emptied chest); else cell 0 and, when
+    ///   locked (p1 ≠ 0), the balloon block (`balloonBlock`, v − 0x2d);
+    /// - opened: `.DestructBalloonSprite` if one is up; face cell `+0x46 / 3`; `+0x46 < 11` → + 1; `+0xa6` − 1; at 0
+    ///   with p3 > 0 (the record re-read): `MTNewSprite(p2, x + 0x10, y + 0xd, player layer + 1, −1,
+    ///   .SetupBonusSprite)` — **always the Bonus Setup**, whatever p2 is — `.MTChangeSpriteLayer(drop, player layer + 1)`
+    ///   (the Setup stored layer 1), re-centred by its rect (x −= (left + right) >> 1, y −= (top + bottom) >> 1, 24.8
+    ///   from them), p3 > 2 with a light → `.RemoveLight(+0x9a)`, `vy = −2000 − FastRand(1000)`, `vx = FastRand(800) −
+    ///   400` (no p3 test), gravity 0 → 0x151, `+0xb0 = 12`; `+0xa6 = 4`; record p3 − 1 (raw `1006e7a4..1006e7d0`).
+    /// A drop with no free record (Ruling 16) drops its stores; the two draws are still made. Its Setup's throw (a p2
+    /// no Bonus arm transcribes, e.g. an enemy type) leaves the head's and arm's fields — the binary's draws past the
+    /// throw are not made [LOW: no chest on levels 1–4 drops such a type].
+    static func chestArm(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16) {
+        guard let s = w.active.record(id: id) else { return }
+        let own = liveRecord(w, s.recordIndex)
+        if s.phase < 1 {
+            guard (own?.p3 ?? 0) != 0 else {
+                w.active.update(id: id) { $0.face = FaceRef(pict: chest, index: 3, set: .encoded) }
+                return
+            }
+            w.active.update(id: id) { $0.face = FaceRef(pict: chest, index: 0, set: .encoded) }
+            let k = own?.p1 ?? 0
+            if k != 0 { balloonBlock(w, id: id, p1: k, dv: 0x2d, lights: &lights, effects: effects) }
+            return
+        }
+        destructBalloon(w, owner: id)
+        w.active.update(id: id) { c in
+            c.face = FaceRef(pict: chest, index: Int(c.phase / 3), set: .encoded)
+            if c.phase < 0xb { c.phase += 1 }
+            c.counterA6 &-= 1
+        }
+        guard let s1 = w.active.record(id: id), s1.counterA6 == 0, let p = liveRecord(w, s1.recordIndex), 0 < p.p3
+        else { return }
+        let pl = w.playerID.flatMap { w.active.record(id: $0) }?.layer ?? 0      // `*(*_DAT_1009fdd8 + 0x80)`
+        let layer = Int16(truncatingIfNeeded: pl &+ 1)
+        let x0 = h(s1.x + 0x10), y0 = h(s1.y + 0xd)
+        let drop = w.newSprite(type: p.p2, x: x0, y: y0, layer: layer, handler: .bonus) { c in
+            _ = try? BonusSprite.setup(&c, x: x0, y: y0, level: w.level, records: w.records, effects: effects,
+                                       lightCount: lights.count, counting: false, playerLayer: pl,
+                                       rng: &w.rng) { f, lh, lv, col in
+                lights.add(face: f, x: Int16(truncatingIfNeeded: lh), y: Int16(truncatingIfNeeded: lv), vx: 0, vy: 0,
+                           accelY: 0, colour: col)
+            }
+        }
+        if let drop {
+            w.changeLayer(id: drop, layer: layer)
+            let manyLeft = 2 < (liveRecord(w, s1.recordIndex)?.p3 ?? 0)
+            var slot: Int16 = -1
+            w.active.update(id: drop) { c in
+                let r = c.hotRect
+                c.x = h(c.x - h((r.left + r.right) >> 1))
+                c.y = h(c.y - h((r.top + r.bottom) >> 1))
+                c.x256 = Int32(c.x) << 8
+                c.y256 = Int32(c.y) << 8
+                if manyLeft && -1 < c.light { slot = c.light }
+            }
+            if slot != -1 {
+                lights.remove(&slot)
+                w.active.update(id: drop) { $0.light = slot }
+            }
+        }
+        let r1 = Int32(w.rng.next(1000))
+        let r2 = Int32(w.rng.next(800))
+        if let drop {
+            w.active.update(id: drop) { c in
+                c.vy = -2000 - r1
+                c.vx = r2 - 400
+                if c.gravity == 0 { c.gravity = 0x151 }
+                c.pickupDelay = 0xc
+            }
+        }
+        w.active.update(id: id) { $0.counterA6 = 4 }
+        if let q = liveRecord(w, s1.recordIndex) { setRecord(w, s1.recordIndex, p3: q.p3 &- 1) }
+    }
+
+    /// The doors 0xb5e / 0xb5f's arm (M l. 60803–60868; pickups-boxes §2.4.3), with the live record's p1 (the key) and
+    /// p4 (opened): face = the set `_DAT_100a0a98` cell `|+0x46| >> 1`; `+0x46 == 0` → when locked (p1 ≠ 0) the balloon
+    /// block (`balloonBlock`, v − 0x3c); else `.DestructBalloonSprite` if one is up, `+0x46` + 1, at 7 the hot rect
+    /// zeroed (passable); then (`LAB_1006f238`) `+0x46 < 11` → record p4 == 1 (opened before, e.g. a save-point resume)
+    /// → rect zeroed, `+0x46 = 10`; `+0x46 ≥ 11` → 10, rect zeroed, record p4 = 1. The open door holds at 10 / 11
+    /// (face 5).
+    static func doorArm(_ w: SpriteWorld, id: Int, lights: inout LightTable, effects: Int16) {
+        guard let s = w.active.record(id: id) else { return }
+        let zero = rect(0, 0, 0, 0)
+        w.active.update(id: id) { c in
+            let u = Int(c.phase < 1 ? 0 &- c.phase : c.phase)
+            c.face = FaceRef(pict: 0xb5e, index: u >> 1, set: .encoded)
+        }
+        if s.phase == 0 {
+            let k = liveRecord(w, s.recordIndex)?.p1 ?? 0
+            if k != 0 { balloonBlock(w, id: id, p1: k, dv: 0x3c, lights: &lights, effects: effects) }
+        } else {
+            destructBalloon(w, owner: id)
+            w.active.update(id: id) { c in
+                c.phase &+= 1
+                if c.phase == 7 { c.hotRect = zero }
+            }
+        }
+        guard let s1 = w.active.record(id: id) else { return }
+        if s1.phase < 0xb {
+            if liveRecord(w, s1.recordIndex)?.p4 == 1 {
+                w.active.update(id: id) { c in
+                    c.hotRect = zero
+                    c.phase = 10
+                }
+            }
+        } else {
+            w.active.update(id: id) { c in
+                c.phase = 10
+                c.hotRect = zero
+            }
+            setRecord(w, s1.recordIndex, p4: 1)
+        }
     }
 
     // MARK: - KillCrate / KillBox

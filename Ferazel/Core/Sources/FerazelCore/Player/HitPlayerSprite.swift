@@ -139,9 +139,9 @@ extension HitPlayerSprite {
     ///    [x + left, x + right] → return; else the segment's `+0xb2 = 1`, `_DAT_100a067c = 1`;
     /// 3. d = (player `+0x10` − `+0xc`, `+0xe` − `+0xa`) (l. 49167–49168) — his own centre offset;
     /// 4. the special arms of l. 49170–49303: // later: Phase 6 — falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
-    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`); // later: BX2 — doors 0xb5e/0xb5f
-    ///    and the chest 0x51c (keys, items), the timer 0xb5b; NPC `.Conversation` and the sign / grave texts (C1, built,
-    ///    below). None of their types is placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need
+    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`); the doors 0xb5e/0xb5f, the chest
+    ///    0x51c and the timer 0xb5b (BX2, `lockAndKey`, built); NPC `.Conversation` and the sign / grave texts (C1,
+    ///    built, below). None of their types is placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need
     ///    the item and conversation systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
     ///    never solid; that early return is built. Everything else falls through to `.PlatformBounce`, so its solidity
     ///    is built: the doors and the chest after their key / item code, the timer 0xb5b, the graves 0xb11…0xb14 and
@@ -177,7 +177,7 @@ extension HitPlayerSprite {
             npc(w, other: oID)
             return
         }
-        // later: Phase 4 — the doors 0xb5e / 0xb5f, the chest 0x51c, the timer 0xb5b (l. 49211–49286).
+        lockAndKey(w, player: pID, other: oID, vx: p.vx)                // BX2: doors, chest, timer (l. 49211–49277)
         if talk(w, other: oID, keys: keys) {
             w.player.talkTail = oID                                     // the rest runs at the resume (`talkDone`)
             return
@@ -209,6 +209,61 @@ extension HitPlayerSprite {
         }
         w.player.cue(PlayerCue(call: .reg, snd: 604, priority: 1, volume: 0x100))
         w.player.airCounter = 1
+    }
+
+    /// The doors, the chest and the 2907 timer (M l. 49211–49277; pickups-boxes §2.4.2, §2.4.3), with `vx` the
+    /// player's `+0x24` at the arm's entry and the Box's live record (p1 the key, p3 the chest's count):
+    /// - a door 0xb5e / 0xb5f: open = p1 == 0 or `.HaveItem(|p1|)`; open → locked: `.RemoveItem(|p1|)` (its
+    ///   `.UpdateItemStat`), record p1 = 0, snd 437 (`.STPlayRegSound`, vol 0x100); unlocked: snd 438 — **on every
+    ///   contact**, opening or not; then 0xb5e with vx > 0, 0xb5f with vx < 0, and `+0x46 == 0` → `+0x46 = 1`;
+    /// - the chest 0x51c with `+0x46 == 0`: (p1 == 0 or `.HaveItem(|p1|)`) and p3 > 0 → `.RemoveItem(|p1|)` when locked
+    ///   (record p1 kept), snd 439, `+0x46 = 1`;
+    /// - the timer 0xb5b with `+0xa6 == 0`: `+0xa6 = 100`, `.STPlay3DSoundPitched(442, 1, 0x100, player centre, 44000)`
+    ///   (no draw), `iRam100a5110 = p1·30 − 1` — the session's countdown, handed over in `PlayerState.countdownStore`
+    ///   (no 2907 on levels 1–4).
+    /// Nothing returns: the sign / grave test and `.PlatformBounce` follow (a closed door is solid until its rect is
+    /// zeroed).
+    static func lockAndKey(_ w: SpriteWorld, player pID: Int, other oID: Int, vx: Int32) {
+        guard let o = w.active.record(id: oID) else { return }
+        func record() -> Placement? { BoxSprite.liveRecord(w, o.recordIndex) }
+        func remove(_ id: Int16) {
+            guard w.globals.removeItem(id) else { return }
+            var g = w.globals
+            w.player.passDraws.append(w.statusBar.itemStat(globals: &g, levelName: w.level.header.name))
+            w.globals = g
+        }
+        if BoxSprite.doors.contains(o.type) {
+            let p1 = record()?.p1 ?? 0
+            let k = BoxSprite.key(p1)
+            if p1 == 0 || w.globals.hasItem(k) {
+                if p1 != 0 {
+                    remove(k)
+                    BoxSprite.setRecord(w, o.recordIndex, p1: 0)
+                    reg(w, BoxSprite.doorUnlockSound, 0x100)
+                } else {
+                    reg(w, BoxSprite.doorSound, 0x100)
+                }
+                w.active.update(id: oID) { c in
+                    if c.phase == 0 && (c.type == 0xb5e ? 0 < vx : vx < 0) { c.phase = 1 }
+                }
+            }
+        }
+        if let o1 = w.active.record(id: oID), o1.type == BoxSprite.chest, o1.phase == 0 {
+            let p1 = record()?.p1 ?? 0
+            let k = BoxSprite.key(p1)
+            if (p1 == 0 || w.globals.hasItem(k)) && 0 < (record()?.p3 ?? 0) {
+                if p1 != 0 { remove(k) }
+                reg(w, BoxSprite.chestSound, 0x100)
+                w.active.update(id: oID) { $0.phase = 1 }
+            }
+        }
+        if let o1 = w.active.record(id: oID), o1.type == 0xb5b, o1.counterA6 == 0 {
+            w.active.update(id: oID) { $0.counterA6 = 100 }
+            let c = w.active.record(id: pID)?.centre
+            w.player.cue(PlayerCue(call: .threeDPitched, snd: BoxSprite.timerSound, priority: 1, volume: 0x100,
+                                   position: c, rate: 44000))
+            w.player.countdownStore = Int32(record()?.p1 ?? 0) &* 0x1e &- 1
+        }
     }
 
     /// The NPC types 2951…2969 (`cmpwi r3,0xb87` / `0xb9a`, raw `10056d14..10056d20`).
