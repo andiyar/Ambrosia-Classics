@@ -1537,6 +1537,17 @@ a new `.button` handler, pressed **twice a frame** by a player standing on one, 
 gates 2940 with idle-only sounds via `SoundVoices`; switch blocks; boulder spouts with the shot ◇ Phase 5; no golden
 moved) → **472**. Census 1,108/0, Ferazel builds, HK 35a85ba untouched. Details in the plan's "As executed" notes.
 
+**As built — wave 4.7 end + wave 4.8 part 1 (loop run 28, 2026-10-26; main b0af49b):** TP ⚑ (teleporters: a landing
+sets the touch flag and resets the idle counter every time; at charge 80 the pulse fires → snd 421, a 57-tick mosaic out
+inside the frame (`.teleport(record:stage:)` + `DrawOp.mosaic`), the player moved to the last in-use idle entry — active
+ones included — whose record index is the teleporter's p1, the camera re-seated by 120 passes, snd 420, the mosaic back in,
+charge −59; the transition's copy goes to an offscreen port as the binary's does, routed by the copy-before-`.mosaic` rule
+since the seam is LOCKED; no golden moved) → 476 — **wave 4.7 closed** (G3 1,108/0, G5 SUCCEEDED); SW (Ice Wall floes in
+water and ledges on walls (layer −1 per the dump), Tree Trunk segments that grow and blink out, the Statue spell freezing
+a platform for 120 frames then HP −200; **seat ruling:** SW also builds the player's Statue arm in `.HitPlayerSprite` (M
+l. 49506–49513 — a bounce, then return), a file beyond the task's list, so the player can stand on a statue; no golden
+moved) → **482**. HK 35a85ba untouched. Details in the plan's "As executed" notes.
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
