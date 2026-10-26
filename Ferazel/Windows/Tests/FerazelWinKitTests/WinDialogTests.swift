@@ -176,12 +176,16 @@ import XCTest
                 // A key and a click on Cancel while it flashes: nothing (`handleKeyDown`'s `flashing` guard, the
                 // panel's clicks consumed).
                 b.dialogs.keyDown(0x24, modifiers: [])
-                b.click(b.canvas(190, 123))
-                XCTAssertFalse(b.front.isHighlighted(2))
+                let cancel = b.canvas(190, 123)
+                b.dialogs.mouseDown(x: cancel.x, y: cancel.y)
+                XCTAssertNil(b.front.tracking, "a press on Cancel while it flashes is not tracked")
+                XCTAssertFalse(b.front.isHighlighted(2), "pressed while flashing: Cancel stays unhilited")
+                b.dialogs.mouseUp(x: cancel.x, y: cancel.y)
+                XCTAssertEqual(b.answers, [], "released on Cancel while flashing: no hit")
             }
         }
         b.ticks(1)
-        XCTAssertEqual(b.answers, [.ok], "8 ticks, then the hit — once")
+        XCTAssertEqual(b.answers, [.ok], "8 ticks, then the hit — once, OK, never the Cancel pressed meanwhile")
         XCTAssertFalse(b.dialogs.isShowing)
         b.ticks(20)
         XCTAssertEqual(b.answers, [.ok])
@@ -201,6 +205,20 @@ import XCTest
         b.dialogs.mouseUp(x: outside.x, y: outside.y)
         XCTAssertEqual(b.answers, [], "released outside: nothing")
         XCTAssertTrue(b.dialogs.isShowing)
+        // Keys while a button is held down are dropped: Return / Enter neither flash OK nor answer, even after the
+        // flash's 8 ticks; the release outside is then nothing.
+        b.dialogs.mouseDown(x: cancel.x, y: cancel.y)
+        XCTAssertTrue(b.front.isHighlighted(2))
+        b.dialogs.keyDown(0x24, modifiers: [])
+        b.dialogs.keyDown(0x4C, modifiers: [])
+        XCTAssertNil(b.front.flashItem, "no flash while Cancel is held")
+        b.ticks(10)
+        XCTAssertEqual(b.answers, [])
+        b.dialogs.mouseMoved(x: outside.x, y: outside.y)
+        b.dialogs.mouseUp(x: outside.x, y: outside.y)
+        b.ticks(10)
+        XCTAssertEqual(b.answers, [], "held, Return, released outside: nothing")
+        XCTAssertNil(b.front.flashItem)
         // Out and back in: the release inside hits — at once, no flash.
         let ok = b.canvas(250, 120)
         b.dialogs.mouseDown(x: ok.x, y: ok.y)
@@ -382,7 +400,9 @@ import XCTest
             let mac = NSAttributedString(string: s, attributes: attrs).size().width
             worst = max(worst, abs(mac - renderer.width(s)))
         }
-        XCTAssertLessThanOrEqual(worst, 1, "dialog-face widths vs NSFont")
+        // The oracle is the Mac's `ClassicFont` pick on this machine: with Charcoal or Chicago installed it changes,
+        // and this exact-equality check would then rightly fail (◇W13 would be kept).
+        XCTAssertLessThanOrEqual(worst, 0.001, "dialog-face widths vs NSFont: equal (measured 0.0 px)")
         // Every line drawn, and every code, byte for byte against CoreText (WF2: the baked format models
         // two-character ligatures only — this closes the dialog strings).
         let baked = try BakedTextTests.baked()
