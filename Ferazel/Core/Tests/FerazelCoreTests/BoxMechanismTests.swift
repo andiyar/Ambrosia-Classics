@@ -77,6 +77,33 @@ final class BoxMechanismTests: XCTestCase {
         return phases
     }
 
+    /// The debris' velocities by spawn position, from the same walk on a copy of the stream (after the 492 draw):
+    /// `FUN_1003f218(debris, .FindDesiredDirectionGeneric((v, h), (y + 0x24, cx)), R(0x96) + 0x28a)` on the fresh
+    /// piece (vx = vy = 0), then `vy −= 0x578 − R(600)` (M l. 61230–61235).
+    private func debris(_ r: inout FastRand, crate c: SpriteSlot, explosive: Bool) -> [[Int]: [Int32]] {
+        var out: [[Int]: [Int32]] = [:]
+        var dust: Int16 = 0
+        let from = (v: Int16(c.y + 0x24), h: Int16(c.centre.x))
+        for i in 0..<4 {
+            for j in 0..<4 {
+                let hx = Int16(c.x + 8 * i + 0xc), vy = Int16(c.y + 8 * j + 0xc)
+                _ = r.next(100); _ = r.next(8)
+                let m = Int32(r.next(0x96)) + 0x28a
+                var p = SpriteSlot(type: EffectSprite.debris, x: 0, y: 0)
+                PlayerShot.addDirImpulse(&p, dir: BloodSpray.direction(target: (v: vy, h: hx), from: from), magnitude: m)
+                let r600 = Int32(r.next(600))
+                out[[Int(hx) - 0xc, Int(vy) - 0xc]] = [p.vx, p.vy - (0x578 - r600)]
+                if explosive {
+                    _ = r.next(200); _ = r.next(5)
+                } else {
+                    dust -= 1
+                    if dust < 1 { dust = 2; explosionPackage(&r); _ = r.next(0x96); _ = r.next(7) }
+                }
+            }
+        }
+        return out
+    }
+
     // MARK: - KillCrate
 
     func testCrateDropsBonus() throws {
@@ -102,8 +129,13 @@ final class BoxMechanismTests: XCTestCase {
             drops.append((vx, vy))
         }
         let rate301 = r.soundRate()                                       // `.KillPlayerShot` id 0: snd 301
+        var rd = w.rng
+        _ = rd.soundRate()
+        let wantDebris = debris(&rd, crate: c, explosive: false)
         FerazelSession.hitCallback(w, crate, fire, lights: &lights)
         XCTAssertEqual(w.rng.seed, r.seed)
+        let gotDebris = Dictionary(uniqueKeysWithValues: effects(w, EffectSprite.debris).map { ([$0.x, $0.y], [$0.vx, $0.vy]) })
+        XCTAssertEqual(gotDebris, wantDebris)
         let k = try XCTUnwrap(w.active.sprite(id: crate))
         XCTAssertEqual(k.hp, -95)
         XCTAssertTrue(k.dead)
@@ -193,11 +225,15 @@ final class BoxMechanismTests: XCTestCase {
         w.active.update(id: crate) { $0.hp = -95 }
         var r = w.rng
         let rate492 = r.soundRate()
+        var rd = r
+        let wantDebris = debris(&rd, crate: c, explosive: true)
         let phases = pieces(&r, explosive: true)
         let rate435 = r.soundRate()
         explosionPackage(&r)                                              // the 0x4b7 Setup's package
         BoxSprite.killCrate(w, id: crate, lights: &lights, effects: 2)
         XCTAssertEqual(w.rng.seed, r.seed)
+        XCTAssertEqual(Dictionary(uniqueKeysWithValues: effects(w, EffectSprite.debris).map { ([$0.x, $0.y], [$0.vx, $0.vy]) }),
+                       wantDebris)
         XCTAssertEqual(w.player.cues.map(\.snd), [492, 435])
         XCTAssertEqual(w.player.cues.map(\.priority), [100, 1])
         XCTAssertEqual(w.player.cues.map(\.rate), [rate492, rate435])
@@ -212,6 +248,25 @@ final class BoxMechanismTests: XCTestCase {
         XCTAssertEqual(big.map { [$0.x, $0.y] }, [[c.centre.x - 0x30, c.centre.y - 0x36]])
         XCTAssertTrue(w.active.sprites.allSatisfy { $0.handler != .bonus })
         XCTAssertEqual(effects(w, EffectSprite.smoke).count, 0)
+        // `.HitBoxTileSprite`'s FG arm (M l. 61572–61575): vy > 0x4b0 (signed) with the record's p1 == 2 →
+        // `.KillCrate`, which then dies behind its own HP guard; a landing crate 4 px into the kind-3 floor.
+        func land(record: Int, vy: Int32, hp: Int16) throws -> (dead: Bool, cues: [Int16]) {
+            let id = try add(w, record: record, x: 64, y: 400 - 0x20 + 4)
+            w.active.update(id: id) { $0.vy = vy; $0.hp = hp }
+            w.player.cues = []
+            BoxSprite.hitTile(TileSolver(world: w), id: id, pos: TilePos(x: 64, y: 384), kind: 3, layer: .foreground,
+                              lights: &lights, effects: 2)
+            return (try XCTUnwrap(w.active.sprite(id: id)).dead, w.player.cues.map(\.snd))
+        }
+        var l = try land(record: 130, vy: 0x4b1, hp: 0)
+        XCTAssertTrue(l.dead)
+        XCTAssertEqual(l.cues, [492, 435])
+        l = try land(record: 130, vy: 0x4b0, hp: 0)
+        XCTAssertEqual([l.dead ? 1 : 0, l.cues.count], [0, 0])
+        l = try land(record: 130, vy: 0x4b1, hp: 1)                       // alive: `.KillCrate` returns at once
+        XCTAssertEqual([l.dead ? 1 : 0, l.cues.count], [0, 0])
+        l = try land(record: 32, vy: 0x4b1, hp: 0)                        // p1 0: no call
+        XCTAssertEqual([l.dead ? 1 : 0, l.cues.count], [0, 0])
     }
 
     func testCrateDropsItemViaGenerate() throws {
@@ -247,7 +302,7 @@ final class BoxMechanismTests: XCTestCase {
     // MARK: - the spin stomp
 
     func testSpinStompCrate() throws {
-        func stomp(vy: Int32, keys: InputActions) throws -> (SpriteWorld, Int, Int) {
+        func stomp(vy: Int32, keys: InputActions, cooldown: Int16 = 0, hp: Int16? = nil) throws -> (SpriteWorld, Int, Int) {
             let w = try world()
             let pid = try XCTUnwrap(Player.spawn(world: w, x: 100, y: 200))
             w.playerID = pid
@@ -263,8 +318,9 @@ final class BoxMechanismTests: XCTestCase {
                 s.groundKind = 0
                 s.centre = SpriteSlot.Point(x: s.x + 0x32, y: s.y + 0x3b)
             }
+            if let hp { w.active.update(id: crate) { $0.hp = hp } }
             w.player.spin = true
-            w.player.crunchCooldown = 0
+            w.player.crunchCooldown = cooldown
             w.player.airCounter = 0
             HitPlayerSprite.hit(w, player: pid, other: crate, keys: keys)
             return (w, pid, crate)
@@ -293,6 +349,24 @@ final class BoxMechanismTests: XCTestCase {
         XCTAssertTrue(w.player.spin)
         XCTAssertEqual([w.player.crunchCooldown, w.player.airCounter], [5, 0])
         XCTAssertEqual(w.player.cues, [PlayerCue(call: .reg, snd: 427, priority: 1, volume: 0xba)])
+        XCTAssertEqual(w.active.sprite(id: crate)?.hp, -95)                       // the same stomp as without DOWN
+        XCTAssertEqual([Int(ps.groundKind), Int(w.player.groundLast)], [0, 0])
+        XCTAssertNil(ps.ridden)
+        // The cooldown `PTR_DAT_100a060c` ≠ 0 (M l. 49367): an ordinary landing — HP 5, vy 0, on the crate, spin on,
+        // no sound; the cooldown is left as it was.
+        (w, pid, crate) = try stomp(vy: 0xa00, keys: [], cooldown: 1)
+        ps = try XCTUnwrap(w.active.sprite(id: pid))
+        XCTAssertEqual(w.active.sprite(id: crate)?.hp, 5)
+        XCTAssertEqual([ps.vy, Int32(ps.groundKind)], [0, 3])
+        XCTAssertEqual(ps.ridden, crate)
+        XCTAssertTrue(w.player.spin)
+        XCTAssertEqual([w.player.crunchCooldown, w.player.airCounter], [1, 0])
+        XCTAssertEqual(w.player.cues, [])
+        // HP ≤ 0 (`0 < +0xa4`, M l. 49365): no stomp either.
+        (w, pid, crate) = try stomp(vy: 0xa00, keys: [], hp: 0)
+        XCTAssertEqual(w.active.sprite(id: crate)?.hp, 0)
+        XCTAssertEqual(w.active.sprite(id: pid)?.vy, 0)
+        XCTAssertEqual(w.player.crunchCooldown, 0)
         // At vy 0x9c4 (not > 0x9c4): an ordinary landing — HP 5, vy 0, standing on the crate.
         (w, pid, crate) = try stomp(vy: 0x9c4, keys: [])
         ps = try XCTUnwrap(w.active.sprite(id: pid))
@@ -363,6 +437,84 @@ final class BoxMechanismTests: XCTestCase {
         s = try XCTUnwrap(w.active.sprite(id: crate))
         XCTAssertEqual([s.x, s.y], [204, 368])
         XCTAssertEqual(s.x256, (200 << 8) + 1210)
+
+        // The tail itself (M l. 61152–61161), gravity 0 so nothing but the tail moves the crate. `.FootPressure` reads
+        // `+0xcd` (grounded last frame), after `.ApplyFriction`: vx 0x200 → 0x1a6, then y256 += |vx| (kind 0 is
+        // downhill both ways, no rider); `+0xce` alone does not trigger it. Then `+0xcd = +0xce`.
+        func tailOnly(vx: Int32, vy: Int32, last: UInt8, now: UInt8, gravity: Int16 = 0) throws -> SpriteSlot {
+            w.active.update(id: crate) { c in
+                c.x = 200; c.y = 100; c.x256 = 200 << 8; c.y256 = 100 << 8
+                c.vx = vx; c.vy = vy; c.onSprite = last; c.groundKind = now; c.gravity = gravity
+                c.ridden = nil; c.oneWayLanded = false; c.slope = 0
+            }
+            BoxSprite.tail(w, id: crate, solver: solver, lights: &lights, effects: 1)
+            return try XCTUnwrap(w.active.sprite(id: crate))
+        }
+        s = try tailOnly(vx: 0x200, vy: 0, last: 3, now: 0)
+        XCTAssertEqual([s.vx, s.y256 - (100 << 8)], [0x1a6, 0x1a6])
+        XCTAssertEqual(s.onSprite, 0)
+        s = try tailOnly(vx: 0x200, vy: 0, last: 0, now: 3)
+        XCTAssertEqual([s.vx, s.y256 - (100 << 8)], [0x1a6, 0])
+        XCTAssertEqual(s.onSprite, 3)
+        // `.EnforceMaxSpeed(0x1838)` comes before `+0x1c += vy`: vy 0x2000 moves the crate by 0x1838.
+        s = try tailOnly(vx: 0, vy: 0x2000, last: 0, now: 0)
+        XCTAssertEqual([s.vy, s.y256 - (100 << 8)], [0x1838, 0x1838])
+        // `+0xcd = +0xce` is taken before `.ApplyGravityAndSeparateFromTiles` clears `+0xce` in the air.
+        s = try tailOnly(vx: 0, vy: 0, last: 0, now: 3, gravity: 0x100)
+        XCTAssertEqual([Int(s.onSprite), Int(s.groundKind)], [3, 0])
+
+        // `.HitBoxSprite`, Box against Box (M l. 61393–61467): the mutual `.PlatformBounce` (factor 0, self's rect
+        // centre and rect for both calls). Two crates, the upper's bottom 8 px into the lower's top, vy 0 — whichever
+        // moves first is pushed out (the upper from above onto y 92, the lower from below onto y 132) and the second
+        // call finds no overlap. The order: self grounded (`+0xce`) over an airborne other → `PB(other, self)` first;
+        // the mirror; both airborne → the higher (`+0xa` smaller) first; both grounded → (|vx| − |vx'|) + (|vy| −
+        // |vy'|) < 0 → `PB(self, other)` first, else `PB(other, self)`; then both `+0x182 = 1`.
+        let up = try add(w, record: 31, x: 400, y: 100)
+        let lo = try add(w, record: 31, x: 400, y: 100 + 0x18)
+        func pair(selfUpper: Bool, ground: (up: Bool, lo: Bool), up uv: (Int32, Int32) = (0, 0),
+                  lo lv: (Int32, Int32) = (0, 0), latch: (up: Bool, lo: Bool) = (false, false)) throws -> [Int] {
+            for (id, y, g, v, l) in [(up, 100, ground.up, uv, latch.up), (lo, 100 + 0x18, ground.lo, lv, latch.lo)] {
+                w.active.update(id: id) { c in
+                    c.x = 400; c.y = y; c.x256 = 400 << 8; c.y256 = Int32(y) << 8
+                    c.vx = v.0; c.vy = v.1; c.groundKind = g ? 3 : 0; c.onSprite = 0
+                    c.boxPairLatch = l; c.ceilingHit = 0; c.ridden = nil; c.rider = nil
+                }
+            }
+            BoxSprite.hit(w, id: selfUpper ? up : lo, other: selfUpper ? lo : up, lights: &lights)
+            return [try XCTUnwrap(w.active.sprite(id: up)).y, try XCTUnwrap(w.active.sprite(id: lo)).y]
+        }
+        let upperMoved = [92, 100 + 0x18], lowerMoved = [100, 132]
+        XCTAssertEqual(try pair(selfUpper: true, ground: (false, false)), upperMoved)    // both airborne: the higher
+        XCTAssertEqual(try pair(selfUpper: false, ground: (false, false)), upperMoved)
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, false)), lowerMoved)     // grounded self: other first
+        XCTAssertEqual(try pair(selfUpper: false, ground: (false, true)), upperMoved)
+        XCTAssertEqual(try pair(selfUpper: true, ground: (false, true)), upperMoved)     // grounded other: self first
+        XCTAssertEqual(try pair(selfUpper: false, ground: (true, false)), lowerMoved)
+        XCTAssertEqual(w.active.sprite(id: lo)?.ceilingHit, 1)                           // `PB` return 2 → `+0xcf`
+        // The grounded flags win over a speed order that says the opposite.
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, false), lo: (0x80, 0)), lowerMoved)
+        XCTAssertEqual(try pair(selfUpper: false, ground: (true, false), lo: (0x80, 0)), lowerMoved)
+        // Both grounded: by speed (vx 0x80 / vy 0x80 move no pixel of the previous position, `>> 8`).
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, true), up: (0x80, 0)), lowerMoved)
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, true), lo: (0x80, 0)), upperMoved)
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, true), lo: (0, 0x80)), upperMoved)
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, true), lo: (-0x80, 0)), upperMoved)   // magnitudes
+        XCTAssertEqual(try pair(selfUpper: true, ground: (true, true)), lowerMoved)      // 0 is not < 0
+        XCTAssertEqual(try pair(selfUpper: false, ground: (true, true)), upperMoved)
+        XCTAssertEqual([w.active.sprite(id: up)?.boxPairLatch, w.active.sprite(id: lo)?.boxPairLatch], [true, true])
+        // Self's `+0x182` set → nothing (the other's latch is not read).
+        XCTAssertEqual(try pair(selfUpper: true, ground: (false, false), latch: (true, false)), [100, 100 + 0x18])
+        XCTAssertEqual(try pair(selfUpper: false, ground: (false, false), latch: (true, false)), upperMoved)
+        // The Handle clears `+0x182` after `.StandardSpriteHandles` (M l. 60090–60091) — also for a type whose arm
+        // returns at once (`handleBuilt`, here the chest 0x51c); a dying Box returns before it (M l. 60084–60089).
+        BoxSprite.handle(world: w, id: up, solver: solver, lights: &lights, effects: 1)
+        XCTAssertEqual(w.active.sprite(id: up)?.boxPairLatch, false)
+        w.active.update(id: lo) { $0.type = 0x51c; $0.boxPairLatch = true }
+        BoxSprite.handle(world: w, id: lo, solver: solver, lights: &lights, effects: 1)
+        XCTAssertEqual(w.active.sprite(id: lo)?.boxPairLatch, false)
+        w.active.update(id: lo) { $0.boxPairLatch = true; $0.dead = true }
+        BoxSprite.handle(world: w, id: lo, solver: solver, lights: &lights, effects: 1)
+        XCTAssertEqual(w.active.sprite(id: lo)?.boxPairLatch, true)
     }
 
     func testBoulderRolls() throws {
@@ -423,6 +575,83 @@ final class BoxMechanismTests: XCTestCase {
         XCTAssertEqual([l.vy, Int32(l.y)], [0, 400 - 0x1c])
         XCTAssertEqual(cues, [])
         XCTAssertEqual(w.rng.seed, seed)
+
+        // A falling rock 0x433 (the boulders' Setup arm) breaks on that bounce (M l. 61596–61600): the thud first, then
+        // `.KillBox` (M l. 61495–61500): `+0xe9`, `.STPlay3DSoundRand(424, 1, 0x100, centre)`, then
+        // `.ExplodeFaceIntoParticles(face, (y, x), 2, 2, 2, 100, 100)` — a one-pixel face: gravity 100 + R(0x1e).
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let dot = ParticleFace(frame: [0, 0, 1, 1], bounds: [0, 0, 1, 1], tokens: tok(1, 4) + tok(2, 1) + [7, 0, 0, 0] + tok(0, 0))
+        w.particleFaces = ParticleFaces(sprite: { _ in dot })
+        w.active.update(id: b) { $0.type = 0x433; $0.face = FaceRef(pict: 1070, index: 0, set: .encoded) }
+        var rr = w.rng
+        let thudPitch = Int32(rr.next(10000))
+        let rate424 = rr.soundRate()
+        _ = rr.next(0x14); _ = rr.next(0x2ee); _ = rr.next(100)
+        let r30 = Int16(rr.next(0x1e))
+        let n0 = w.particles.counters.count
+        (l, cues, _) = try land(0x320)
+        XCTAssertEqual(w.rng.seed, rr.seed)
+        XCTAssertTrue(l.dead)
+        XCTAssertEqual(cues.map(\.snd), [436, 424])
+        XCTAssertEqual(cues.map(\.rate), [48000 + thudPitch, rate424])
+        XCTAssertEqual(cues.last, PlayerCue(call: .threeDRand, snd: 424, priority: 1, volume: 0x100, position: l.centre,
+                                          rate: rate424))
+        XCTAssertEqual(w.particles.counters.count, n0 + 1)
+        XCTAssertEqual(w.particles.records[Int(w.particles.counters.hint)].gravity, 100 + r30)
+        // No bounce (|vy| ≤ 0x1ff, b 0): it survives.
+        w.active.update(id: b) { $0.dead = false }
+        (l, cues, _) = try land(0x1ff)
+        XCTAssertFalse(l.dead)
+        w.particleFaces = ParticleFaces()
+
+        // The mine cart 2930 (level 3's carts cannot load yet — enemy 1730): a cart placed alone on level 2's records.
+        // Its Setup (M l. 59433–59464) makes its two children before it idles: the rider 0xb72 at layer 100 with the
+        // set's cell 7 (`+0x20`), the wheel 0xb73 at layer −1 with cell 0; both the record −1 arm (empty rect, gravity 0).
+        var recs = w.records.map {
+            Placement(index: $0.index, flag: 0, byte1: $0.byte1, type: $0.type, p1: $0.p1, p2: $0.p2, p3: $0.p3,
+                      p4: $0.p4, y: $0.y, x: $0.x)
+        }
+        let q = recs[21]
+        recs[21] = Placement(index: q.index, flag: 1, byte1: q.byte1, type: 2930, p1: 0, p2: 0, p3: 0, p4: 0, y: q.y, x: q.x)
+        let sp = try SetupFaces.spawnLevelSprites(context: SetupFaces.Context(level: w.level, playerX: 0, records: recs)) { _ in .noFace }
+        let parent = try XCTUnwrap(sp.idle.entries.compactMap { $0 }.first { $0.saved.type == BoxSprite.cart }).saved
+        let rider = try XCTUnwrap(parent.siblings.first), wheel = try XCTUnwrap(parent.siblings.second)
+        let r0 = try XCTUnwrap(sp.active.sprite(id: rider)), w0 = try XCTUnwrap(sp.active.sprite(id: wheel))
+        XCTAssertEqual([Int(r0.type), Int(r0.layer), Int(r0.recordIndex), Int(r0.gravity)], [0xb72, 100, -1, 0])
+        XCTAssertEqual([Int(w0.type), Int(w0.layer), Int(w0.recordIndex), Int(w0.gravity)], [0xb73, -1, -1, 0])
+        XCTAssertEqual([r0.face, w0.face], [FaceRef(pict: 0xb72, index: 7, set: .encoded),
+                                            FaceRef(pict: 0xb73, index: 0, set: .encoded)])
+        XCTAssertEqual([Int(parent.gravity), Int(parent.friction), Int(parent.pushMass), Int(parent.layer)], [0x208, 6, 0xa0, 0])
+        // Its arm (M l. 60871–60936) then the tail's children (M l. 61163–61171): the face row k by `+0xce` (3 → 0,
+        // 0x22 → 4, 0x2e → 6, 0 keeps it); the rider's face = cell k + 7; the wheel's `+0x46 += vx >> 9` (arithmetic)
+        // wrapped into 0…0x17, face = cell k + (`+0x46` >> 3)·7; the rider at the cart's (x, y), the wheel 0x26 lower.
+        let cw = SpriteWorld(level: w.level, active: sp.active, records: sp.records)
+        cw.tiles = w.tiles
+        let cart = cw.active.insert(parent)
+        cw.active.update(id: cart) { c in
+            c.x = 100; c.y = 400 - 0x50; c.x256 = 100 << 8; c.y256 = Int32(400 - 0x50) << 8
+            c.oldPosition = SpriteSlot.Point(x: 100, y: 400 - 0x50)
+            c.ridingLatch = true
+        }
+        let cs = TileSolver(world: cw)
+        func cartFrame(vx: Int32, ground: UInt8) throws -> [Int] {
+            cw.active.update(id: cart) { $0.vx = vx; $0.vy = 0; $0.groundKind = ground }
+            BoxSprite.handle(world: cw, id: cart, solver: cs, lights: &lights, effects: 1)
+            let c = try XCTUnwrap(cw.active.sprite(id: cart))
+            let rs = try XCTUnwrap(cw.active.sprite(id: rider)), ws = try XCTUnwrap(cw.active.sprite(id: wheel))
+            XCTAssertEqual([rs.x, rs.y, ws.x, ws.y], [c.x, c.y, c.x, c.y + 0x26])
+            return [c.face?.index ?? -1, rs.face?.index ?? -1, Int(ws.phase), ws.face?.index ?? -1, Int(ws.classTimer)]
+        }
+        XCTAssertEqual(try cartFrame(vx: 0x1200, ground: 3), [0, 7, 9, 0 + 7, 0])          // 0x1200 >> 9 = 9
+        XCTAssertEqual(cw.active.sprite(id: cart)?.slip, 1)                                // ridden: `+0x112 + 1`
+        XCTAssertEqual(try cartFrame(vx: 0x1200, ground: 0x22), [4, 11, 18, 4 + 14, 4])
+        XCTAssertEqual(try cartFrame(vx: 0x1200, ground: 0), [4, 11, 3, 4, 4])            // 27 − 0x18; k kept
+        XCTAssertEqual(try cartFrame(vx: -0x800, ground: 0x2e), [6, 13, 23, 6 + 14, 6])    // −1 + 0x18
+        XCTAssertEqual(try cartFrame(vx: -0x100, ground: 3), [0, 7, 22, 0 + 14, 0])        // −0x100 >> 9 = −1
+        XCTAssertEqual(try cartFrame(vx: 0x1ff, ground: 3), [0, 7, 22, 14, 0])             // 0x1ff >> 9 = 0
     }
 
     // MARK: - the stalactite
@@ -481,5 +710,65 @@ final class BoxMechanismTests: XCTestCase {
         BoxSprite.handle(world: w, id: st2, solver: solver, lights: &lights, effects: 1)
         XCTAssertEqual(w.active.sprite(id: st2)?.gravity, 0xfa)
         XCTAssertEqual(w.active.sprite(id: st2)?.counterA6, 9)
+        // The shake for other damages d (M l. 61374–61381): n = d / 20, `+0xa6 = n + FastRand(n / 2)` — one draw.
+        for d: Int16 in [2000, 990, 300, 61] {
+            let id = try add(w, record: 160, x: 400, y: 100)
+            let hp0 = try XCTUnwrap(w.active.sprite(id: id)).hp
+            let f = shot(w, 0, x: 405, y: 120, hp: d)
+            var r = w.rng
+            let n = d / 20
+            let want = n + r.next(n / 2)
+            FerazelSession.hitCallback(w, id, f, lights: &lights)
+            XCTAssertEqual(w.rng.seed, r.seed, "d \(d)")
+            let s = try XCTUnwrap(w.active.sprite(id: id))
+            XCTAssertEqual([s.hp, s.counterA6], [hp0 &- d, want], "d \(d)")
+        }
+
+        // The ice wall 2941's Setup (M l. 59469–59493): gravity 0xb4 then 0 (`+0x110` stored twice — it never falls),
+        // HP 300, `+0x1b4 = 1`, friction 6, `+0x1bc = 4`, `+0x158 = y`, both callbacks 0, rect (0, 0, 0x20, 0x74).
+        let q = w.records[158]
+        let iceRecord = Placement(index: q.index, flag: q.flag, byte1: q.byte1, type: 2941, p1: 0, p2: 0, p3: 0, p4: 0,
+                                  y: q.y, x: q.x)
+        var ice = SpriteSlot(type: BoxSprite.iceWall, x: 300, y: 200, recordIndex: Int16(q.index))
+        BoxSprite.setup(&ice, record: iceRecord, level: w.level)
+        XCTAssertEqual([Int(ice.gravity), Int(ice.hp), Int(ice.friction), Int(ice.flashTable), Int(ice.clip.top),
+                        Int(ice.classWord158)], [0, 300, 6, 1, 4, 200])
+        XCTAssertEqual([ice.keepRecord, ice.hasHit, ice.hasTileHit], [true, false, false])
+        XCTAssertEqual(ice.hotRect, IdleSprites.Rect(top: 0, left: 0, bottom: 0x74, right: 0x20))
+        ice.face = FaceRef(pict: BoxSprite.iceWall, index: 0, set: .encoded)
+        ice.centre = SpriteSlot.Point(x: 300 + 0x10, y: 200 + 0x3a)
+        let iw = w.active.insert(ice)
+        BoxSprite.handle(world: w, id: iw, solver: solver, lights: &lights, effects: 1)
+        var iceNow = try XCTUnwrap(w.active.sprite(id: iw))
+        XCTAssertEqual([iceNow.y, iceNow.dead ? 1 : 0], [200, 0])                  // HP 300: it stands
+        // Its death (M l. 61032–61040): HP < 1 → `.ExplodeFaceIntoParticles(face, (y, x), 2, 2, 2, 0x32, 100)`, `+0xe9`,
+        // then `FastRand(5000)` → `.STPlay3DSoundPitched(424, 1, 0x100, centre, R + 43000)`. A one-pixel face gives one
+        // particle: R(0x14), R(0x2ee), R(100), R(0x1e) → gravity 0x32 + R30, vx R100 − 0x32, vy 0x28 − R750.
+        func tok(_ op: UInt32, _ n: Int) -> [UInt8] {
+            let t = op << 24 | UInt32(n)
+            return [UInt8(t >> 24), UInt8(t >> 16 & 0xff), UInt8(t >> 8 & 0xff), UInt8(t & 0xff)]
+        }
+        let dot = ParticleFace(frame: [0, 0, 1, 1], bounds: [0, 0, 1, 1], tokens: tok(1, 4) + tok(2, 1) + [7, 0, 0, 0] + tok(0, 0))
+        w.particleFaces = ParticleFaces(sprite: { _ in dot })
+        w.active.update(id: iw) { $0.hp = 0 }
+        w.player.cues = []
+        var ri = w.rng
+        _ = ri.next(0x14)
+        let r750 = Int32(ri.next(0x2ee)), r100 = Int32(ri.next(100)), r30 = Int32(ri.next(0x1e))
+        let pitch = Int32(ri.next(5000))
+        let n0 = w.particles.counters.count
+        BoxSprite.handle(world: w, id: iw, solver: solver, lights: &lights, effects: 1)
+        w.particleFaces = ParticleFaces()
+        XCTAssertEqual(w.rng.seed, ri.seed)
+        iceNow = try XCTUnwrap(w.active.sprite(id: iw))
+        XCTAssertTrue(iceNow.dead)
+        XCTAssertEqual(w.particles.counters.count, n0 + 1)
+        let pt = w.particles.records[Int(w.particles.counters.hint)]
+        let ptGot: [Int32] = [Int32(pt.gravity), pt.vx, pt.vy, Int32(pt.kind), pt.x >> 8, pt.y >> 8]
+        let ptWant: [Int32] = [0x32 + r30, r100 - 0x32, 0x28 - r750, -(7 + 0x100), 300, 201]
+        XCTAssertEqual(ptGot, ptWant)
+        XCTAssertEqual(w.player.cues, [PlayerCue(call: .threeDPitched, snd: 424, priority: 1, volume: 0x100,
+                                                 position: SpriteSlot.Point(x: 300 + 0x10, y: 200 + 0x3a),
+                                                 rate: pitch + 43000)])
     }
 }

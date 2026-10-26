@@ -138,11 +138,11 @@ extension HitPlayerSprite {
     /// 2. a see-saw segment (l. 49155–49166): the player's x + (rect left + right) >> 1 outside the segment's
     ///    [x + left, x + right] → return; else the segment's `+0xb2 = 1`, `_DAT_100a067c = 1`;
     /// 3. d = (player `+0x10` − `+0xc`, `+0xe` − `+0xa`) (l. 49167–49168) — his own centre offset;
-    /// 4. // later: Phase 4 — the special arms of l. 49170–49303: falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
-    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`), NPC `.Conversation`, doors
-    ///    0xb5e/0xb5f and the chest 0x51c (keys, items), the timer 0xb5b, the sign / grave texts. None of their types is
-    ///    placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need the item and conversation
-    ///    systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
+    /// 4. the special arms of l. 49170–49303: // later: Phase 6 — falling rocks 0x433/0x434 (`+0x160`, `.HurtPlayer` +
+    ///    `.KillBox`), spiked balls 0x5c3/0x5c4 (`FastRand(100)` + `.HurtPlayer`); // later: BX2 — doors 0xb5e/0xb5f
+    ///    and the chest 0x51c (keys, items), the timer 0xb5b; NPC `.Conversation` and the sign / grave texts (C1, built,
+    ///    below). None of their types is placed on levels 1–2 except the NPCs, doors, chests and signs, whose arms need
+    ///    the item and conversation systems. The NPC arm 0xb87…0xb99 (l. 49199–49210) returns on every path before `.PlatformBounce` — NPCs are
     ///    never solid; that early return is built. Everything else falls through to `.PlatformBounce`, so its solidity
     ///    is built: the doors and the chest after their key / item code, the timer 0xb5b, the graves 0xb11…0xb14 and
     ///    the signs after the text code (l. 49287–49303), and the falling rocks 0x433 / 0x434 (0x433 also with
@@ -152,8 +152,8 @@ extension HitPlayerSprite {
     ///    (`FrameSuspension.conversation` / `.sign`); the sign arm's rest (5–6) runs at the resume (`talkDone`);
     /// 5. signs 0xb56…0xb5d with `+0x15c == 0` → return (l. 49304–49307): only 2902 / 2907 (`+0x15c = 1`) are standable;
     /// 6. `.PlatformBounce(player, box, d, 0, player +0x34, 0)` (l. 49308); not a landing (≠ 1) → return. A Box with
-    ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 4;
-    /// 7. // later: Phase 4 — the geyser head 0x5a9 hurt (l. 49310–49335; made only by `.HandleGeyserColumn`);
+    ///    a surface function (`+0x1e8`: only the unplaced rope bridge 1466) // later: Phase 6;
+    /// 7. // later: Phase 5 — the geyser head 0x5a9 hurt (l. 49310–49335; made only by `.HandleGeyserColumn`);
     /// 8. the trampoline 0x5be (l. 49339–49361): `+0x46 = 1`; entry vy ≤ 0xa5a (`cmpwi r25,0xa5a; ble`) → return;
     ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
     ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`

@@ -395,7 +395,14 @@ public enum BoxSprite {
     ///   and drops), `effects` prefs+6, `faceBounds` a face's bounds (`face +8`) — the NPC arm's hot rect.
     public static func handle(world w: SpriteWorld, id: Int, solver: TileSolver, lights: inout LightTable,
                               effects: Int16, faceBounds: ((FaceRef) -> IdleSprites.Rect)? = nil) {
-        guard let s0 = w.active.record(id: id), handleBuilt(s0.type), !s0.dead, !s0.handleSkip else { return }
+        guard let s0 = w.active.record(id: id), !s0.dead, !s0.handleSkip else { return }
+        guard handleBuilt(s0.type) else {
+            // The unbuilt arms still return at once (`handleBuilt`), but past the dump's `+0x182 = 0` (M l. 60091,
+            // before every arm): a latched pair partner bounces again next frame. Their `.StandardSpriteHandles`
+            // (M l. 60090) comes with their arms.
+            w.active.update(id: id) { $0.boxPairLatch = false }
+            return
+        }
         w.standardSpriteHandles(id)
         w.active.update(id: id) { $0.boxPairLatch = false }
         let t = s0.type
