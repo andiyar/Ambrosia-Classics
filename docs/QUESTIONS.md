@@ -32,6 +32,12 @@ brother's Windows machine.
 
 ## Open
 
+_(none — loop run 26, 2026-10-26)_
+
+## Answered
+
+_(moved here by the run that acted on the answer, with what it did)_
+
 ### Q5 — 2026-10-24 — Quitting Ferazel from the Dock or at logout during a level: keep the original's "wait"?
 Context: The original game only listens for the system's "quit" message at the main menu and in its pause screen; during
 play it holds it (or, with "Allow background tasks" on, throws it away). Loop run 16 copied that (D35 as built, run 16):
@@ -43,6 +49,7 @@ logout/shutdown, original behaviour for Dock/app-menu Quit.
 Recommendation: a — the standing 100 % rule (replicate the original, no modern affordances).
 Blocks: nothing (built as (a); (b)/(c) would be a small App change).
 Answer: Ben, 2026-10-26: "quit from dock should always behave." then "or it can trigger the game quit dialogue". Build: Quit from the Dock or the app menu during a level does exactly what ⌘Q does in a level: the game's own "do you want to quit?" box, at once, instead of waiting for a pause; a logout or shutdown quits at once without a dialog, so it is never cancelled. A deliberate departure from the original's wait, Ben's call (read by his attended session; he will say if he wants it otherwise).
+Acted on (loop run 26, 2026-10-26): recorded in DECISIONS D40; planned as task QT (Phase 4 plan, wave 4.6Q, +3 tests) — built by the next run first.
 
 ### Q7 — 2026-10-24 — Phase 4 plan (spells + items): three small choices, for your later read
 Context: Loop run 18 wrote and reviewed the Phase 4 plan (`docs/plans/2026-10-24-ferazel-phase4.md`, rulings in
@@ -56,10 +63,7 @@ glider, the shields …) are built and machine-tested now though you cannot reac
 Recommendation: the defaults — more of the game to try sooner, and no behaviour changes.
 Blocks: nothing (D34). A different answer becomes a small task in the phase.
 Answer: the defaults — Ben, 2026-10-26: "levels don't care. spells yes. item counts yes." (1) levels 3–4: no preference, so the default stands (open in Phase 4, enemies still until Phase 5); (2) build and test the later-level spells and items now: yes; (3) item counts in Geneva by the Mac's font engine: yes.
-
-## Answered
-
-_(moved here by the run that acted on the answer, with what it did)_
+Acted on (loop run 26, 2026-10-26): recorded in DECISIONS D40; the plan stands unchanged.
 
 ### Q9 — 2026-10-25 — Game speed: keep the original's top speed, or slow it to the Let's Play's pace?
 Context: Your Phase 3 note "it runs very fast" was measured (loop run 22, two independent checks). The port runs exactly

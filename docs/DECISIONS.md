@@ -1519,6 +1519,17 @@ halfword — `PlayerTiles` read it wrong, fixed (the Mist form now passes throug
 faces 1021, necklace in row 33 not 41, no lava immunity, spirit form 12 frames after the drink's 40) are in the plan's
 "As executed" notes for IU and MS and the bank BCs.
 
+**As built — wave 4.6 (loop run 26, 2026-10-26; main d6958e2):** SD ⚑ (the Shadow Double — row 11 makes it, its Handle
+replays the player's pose 14 frames behind from the 14-entry ring row 42 writes, cast copies take its pose; the
+Pentashield orbs `.UpdatePentSprites` — record 0x1ff, 360°/n at radius 0x30, 3 hits; the Shadow Double flag clears in
+row 33's two state branches) → 449; the ring's mirror bytes ride `LevelCarry` (never reset by the binary). BX1 ⚑ ◈ (the
+Box common tail — friction, foot pressure, max speed, gravity + separation, BoxCleanUp; `.HitBoxSprite` in full but the
+Statue (SW) and carpet (Phase 6); `.HitBoxTileSprite`; `.KillBox`; `.KillCrate` drops and the explosive crate; boulders
+roll and bounce; mine carts and their children; stalactites shake and fall; the 2941 death arm; the spin stomp — DOWN keeps
+the spin, M l. 49378) → **457**. No golden moved (no Box is awake on the golden routes). Seat ruling: the BoxRope push
+assertion pinned the pre-tail placeholder → the dump's (3011, 1456). Both tasks two Opus legs, MERGEABLE WITH FIXES →
+tests rounds; two small behaviour changes seat-read (mirror carry; `+0x182` cleared before unbuilt arms return).
+
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
 **Decided (Ben, QUESTIONS Q2, Q6, Q8 answers, 2026-10-25):**
@@ -1543,3 +1554,18 @@ at the true 30 characters/s) → Ben's call, QUESTIONS Q9. Ladder from EF on +3 
 Ben's attended session measured the running app on his Mac (a screen recording of level-1 play): a steady 30 new frames a
 second, never more — the port matches the binary's cap. Ben: "huh. let's keep it for now." No code change; he may revisit
 (b) (a hidden slower cap) later.
+
+## D40 — Ben's Q5 + Q7 answers: a system Quit during a level asks at once; Phase 4 defaults stand (2026-10-26; recorded by loop run 26)
+
+**Decided (Ben, QUESTIONS Q5 and Q7, answered in his attended session 2026-10-26):**
+1. **Q5 — quitting from the Dock / app menu / logout during a level.** Ben: "quit from dock should always behave … or it
+   can trigger the game quit dialogue." Build: a Dock or app-menu Quit while a level runs shows the game's own "Are you
+   sure you want to quit?" box at once, exactly as ⌘Q does in a level (OK quits, Cancel plays on); a logout, restart or
+   shutdown quits at once from anywhere without a dialog, so macOS never reports "cancelled logout". Everywhere else the
+   original's queued quit event is unchanged. **A deliberate departure from the original's wait — Ben's call** (it
+   overrides D35 as built run 16 for this one case; not a precedent for other affordances). Planned by loop run 26 as
+   task **QT** (wave 4.6Q of the Phase 4 plan, +3 tests; every later total +3, ladder end 490).
+2. **Q7 — the Phase 4 plan's three choices: the defaults stand.** Ben: "levels don't care. spells yes. item counts yes."
+   Levels 3–4 open in Phase 4 with enemies still until Phase 5; the later-level spells and items are built and tested now;
+   item counts are drawn in Geneva by the Mac's font engine. No change to the plan.
+

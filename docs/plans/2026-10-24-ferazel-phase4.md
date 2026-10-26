@@ -116,7 +116,7 @@ git -C "$WT" status --porcelain | grep -v '^??'
 APP="$WT/out/Ferazel/Ferazel's Wand.app"; open -n "$APP"; sleep 5; pgrep -fl "Ferazel's Wand" | cut -c1-100; osascript -e 'tell application "Ferazel'"'"'s Wand" to quit'; sleep 2; pgrep -fl "Ferazel's Wand"; ls -t ~/Library/Logs/DiagnosticReports | head -n 3
 ```
 
-**(Loop run 22: wave 4.2F (TX +3, SP +0) shifts every total from EF on by a further +3 — EF 403, CS 412, wave ends 4.3 **412** · 4.4 **431** · 4.5 **444** · 4.6 **457** · 4.7 **473** · 4.8/4.9 **487**.)** **(Loop run 21: the seat-inserted task TB (+3, before BN) shifts every total from BN on by +3 — BN 385, PK 393, wave ends 4.2 **393** · 4.3 **409** · 4.4 **428** · 4.5 **441** · 4.6 **454** · 4.7 **470** · 4.8/4.9 **484**.)** **Expected G2 at each wave end** (the run boundaries, "Execution order"): 4.0 **357** · 4.1 **374** · 4.2 **390** ·
+**(Loop run 26: the seat-inserted task QT (+3, Ben's Q5, wave 4.6Q before BX2) shifts every total from BX2 on by +3 — BX2 466, BT 472, TP 476, SW 482, LV3 486, LV4 490; wave ends 4.6 **457** · 4.6Q **460** · 4.7 **476** · 4.8/4.9 **490**.)** **(Loop run 22: wave 4.2F (TX +3, SP +0) shifts every total from EF on by a further +3 — EF 403, CS 412, wave ends 4.3 **412** · 4.4 **431** · 4.5 **444** · 4.6 **457** · 4.7 **473** · 4.8/4.9 **487**.)** **(Loop run 21: the seat-inserted task TB (+3, before BN) shifts every total from BN on by +3 — BN 385, PK 393, wave ends 4.2 **393** · 4.3 **409** · 4.4 **428** · 4.5 **441** · 4.6 **454** · 4.7 **470** · 4.8/4.9 **484**.)** **Expected G2 at each wave end** (the run boundaries, "Execution order"): 4.0 **357** · 4.1 **374** · 4.2 **390** ·
 4.3 **406** · 4.4 **425** · 4.5 **438** · 4.6 **451** · 4.7 **467** · 4.8 **481** · 4.9 (phase end) **481**.
 
 **Test ladder (`Ferazel/Core`, cumulative; canonical order = execution order; STOP if different):** base **349** →
@@ -1045,6 +1045,7 @@ records it here and in NEXT).
   orbs 0x50 at 72° spacing, radius 0x30, `+0x164` −10 counting up; a second sphere → 8, not 10) · `testOrbHitsAndPops`
   (an orb into a crate: hits 3 → 2, snd 423; at 0 snd 424 and the burst; orbs open no containers).
 - **Gate:** G2 = 443, G6, G7(+b), G8, G10. **Commit:** `FerazelCore: the Shadow Double (pose ring, cast copies) and the Pentashield orbs; 5 tests`.
+- ⚑ **As executed (SD, loop run 26, 2026-10-26; 9b1693f + fb41893):** G2 **449**/0 (+5); **no golden moved**. Following the dump: the double replays the player's pose **14 frames** behind (13 ring entries + it runs before the player in the list, M l. 43073, 46535–46613); row 11 reads the flag before row 14 updates it (M l. 44674 vs 44752) — flag off after frame 600, the double removed on 601, 8 doubles made during the blink; the orbs are spawned with record 0x1ff (not `PlayerShot.spawn`'s −1), sort between the player and the held item (first Handle next frame; flash counter one frame later, M l. 50483); a copy's damage reads 0 after its second Handle; the bob re-sync search reads past the bob table (phases 24–27 pinned to the max-speed stores M l. 42769–42772; beyond treated as no match) [LOW]. `rideRamp` is the replay index `0590` (M l. 43067, 46691) — confirmed; `rideRamp2` the double's x offset (M l. 43158). The Shadow Double flag clears at M l. 45410 / 45478 built (`PlayerStates.swift`). CS's placeholder `shadowRingGrounded` replaced by the real 14 × 16 B ring in `PlayerState.swift` (file beyond the list). Two Opus legs MERGEABLE WITH FIXES (faithful; casting/crouch/still faces, flag-off face, airborne copy vy, ring riding check, orb wrap untested) → tests round inside the 5 tests (every listed mutation caught) + one behaviour change seat-read: the ring's mirror bytes (only writer row 42, M l. 46613; never reset) ride `LevelCarry.shadowMirrors` (`LevelFlow.swift`, `FerazelSession.swift`); stale `// later: SD` relabelled in `HitPlayerSprite.swift`, `PowerUps.swift`. Carried: a New Game builds a fresh `LevelCarry`, so the mirror bytes reset there where the original keeps them to app launch [LOW]; orbs destroying enemy shots `// later: Phase 5`.
 
 #### BX1 — ⚑ MAJOR ◈ — the Box class tail, crates and their drops, boulders, mine carts, stalactites (→ 451)
 - **Seat note (loop run 24, from SH):** `FerazelSession.hitCallback` already has a `.box` case running `BoxSprite.hit` for the stalactite 2932's player-shot case only (M l. 61366–61382, idled rule via `runs()`); BX1 builds the rest of `.HitBoxSprite` there. SH traced the stale r29 in `.KillPlayerShot`'s suppressed-effect path at the **crate arm** call site: it holds the shot itself, so the recolour hits the shot's own light — transcribe that when building crates' shot damage. The stalactite's fall trigger is its Handle's (M l. 60596), not its Hit's.
@@ -1097,6 +1098,39 @@ records it here and in NEXT).
   landing at vy 0x320 → bounce factor 0x3c and the thud) · `testStalactiteFalls` (level 2 rec 158 HP 150: a Fireball →
   HP 50 and a shake of 5 + R(2) frames; a second → HP < 1 → gravity 0xfa).
 - **Gate:** G2 = 451, G5 (wave 4.6 end), G6, G7(+b), G8, G10; wave end: G3. **Commit:** `FerazelCore: the Box class tail, crates (KillCrate drops and explosions, spin stomp), boulders, mine carts, stalactites; goldens moved as recorded; 8 tests`.
+- ⚑ **As executed (BX1, loop run 26, 2026-10-26; 5f4928b + d6958e2, rebased onto Ben's Q5/Q7 commits):** G2 **457**/0 (+8), G3 1,108/0, G5 SUCCEEDED; **no golden moved** (◈ unused: reviewer probe — no crate, boulder or cart is awake on the golden routes; the level-1 route stays below x ≈ 2400, the level-2 opening wakes only signs, decorations and the stalactite's child). Following the dump: the spin stomp keeps spinning while **DOWN** is held (`IsInputKeyPressed(3)`, M l. 49378), not JUMP (bank note in `pickups-boxes.md`); the 2941's death arm is in `.HandleBoxSprite`'s gate arm (M l. 61032–61040), not `.HitBoxSprite`; a falling Box steps by its old and new vy in one frame (tail `y += vy` M l. 61159 before the integration); the stalactite's Setup `+0xa6 = 3` shakes it 3 frames on its first Handle. **Seat ruling (run 26):** `BoxRopeTests.testBoxSolidRectsLevels1And2` l. 476–477 pinned the pre-tail placeholder ("pushing is the Phase-4 tail") → takes the dump value (3010, 1458) → (3011, 1456): the side push gives vx 360, friction 0x5a → 270, x +1; record 31 sits 2 px into the kind-3 floor of cell (94, 46) and the separation lifts it (both legs re-derived it). Files beyond the list: `SpriteSlot.swift` (`boxPairLatch`, M l. 60091, 61466–61467), `GroundCeilingEffects.swift` (Effects keep `+0xa6 = 3`, M l. 53726 — read only by `.KillPlayerShot`'s crate path), `FrameRenderer.swift` (cart child sets 0xb72/0xb73, each level's crate-drop faces; `BonusSprite.sheets` names PICTs 3109/3200 the data lacks — a missing face is simply not drawn). `BonusSprite` 0xc25 / 0xc9b…0xcb0: no crate on levels 1–4 drops them — still `notTranscribed`. Two Opus legs MERGEABLE WITH FIXES (faithful; 9/35 and 10/18 mutations survived: pair latch + bounce order, explosive landing kill, mine cart, falling rock, ice wall, stomp cooldown) → tests round inside the 8 tests (42/43 caught; the survivor swaps two unobservable steps) + one behaviour change seat-read: unbuilt Box arms now return after the dump's `+0x182 = 0` (M l. 60091); `HitPlayerSprite.swift` stubs relabelled to their owners (Phase 6 falling rocks/spiked balls/rope bridge, BX2 doors/chest/timer, Phase 5 geyser head). Carried: the Bat 0x6cc drop arm after `.GenerateSprite` is unreachable until Phase 5 builds non-Bonus crate drops; unbuilt Box arms skip `.StandardSpriteHandles` until their tasks; a stomped switch block only loses HP until BT; stale `// later: Phase 4` at `HitPlayerSprite.swift` ~l. 180, 815, 851, 889 (A4's sweep); a crate with no placement record reads p4 as 0 (the binary reads garbage) [LOW].
+
+### Wave 4.6Q — Ben's Q5 answer (inserted by loop run 26, 2026-10-26; D40)
+
+#### QT — minor — a system Quit during a level opens the game's quit box; a logout quits at once (→ 460)
+- **Why:** Ben answered Q5 (2026-10-26): "quit from dock should always behave … or it can trigger the game quit dialogue".
+  A **deliberate departure** from the original's wait (D40). Today (`FerazelController.applicationShouldTerminate`,
+  `Ferazel/App/FerazelController.swift:~652`) every unasked terminate is queued as the quit Apple event and cancelled; a
+  level holds it until a pause or the menu (or drops it with "Allow background tasks" on), and macOS reports "cancelled
+  logout".
+- **Files:** `Ferazel/App/FerazelController.swift` (the terminate reply), `Sources/FerazelCore/Front/GameFlow.swift` and/or
+  `Sources/FerazelCore/Front/LevelRun.swift` (a seam that raises the same in-level ⌘Q confirm `GameLoopKeys` raises —
+  `Front/Pause.swift:82` `.confirmQuit` → `LevelRun.swift:~753` → `FerazelSession.swift:~695`), `Tests/FerazelCoreTests/`
+  `LevelRunTests.swift` or `GameFlowGameTests.swift` (3 tests, inside an existing file).
+- **Contract:** (1) a terminate whose quit reason (`NSAppleEventManager.shared().currentAppleEvent`,
+  `kAEQuitReason`) is a logout, restart or shutdown (`kAELogOut`, `kAEReallyLogOut`, `kAEShowRestartDialog`, `kAERestart`,
+  `kAEShowShutdownDialog`, `kAEShutDown`) → the app quits at once (`.terminateNow`, after whatever the original's `.Quit`
+  writes on the way out — check `GameFlow.quit()` / `.Quit` for a prefs write and run it synchronously; audio stopped),
+  from anywhere, no dialog; (2) any other terminate (Dock, app-menu Quit) **while a level is running and not already in a
+  pause, dialog or suspension** → the next level tick shows the game's own "Are you sure you want to quit?" (DLOG 202)
+  exactly as ⌘Q in the level does, with the same OK (quit) / Cancel (play on) outcomes; the terminate itself is cancelled
+  at once (Lesson 9: never leave `.terminateLater` pending); (3) everywhere else (main menu, world map, pause, death screen,
+  a dialog already up) the current queued-event behaviour is unchanged; a second terminate while the confirm is up adds
+  nothing. "Allow background tasks" no longer drops a Dock Quit in a level (it now asks). Record the departure in a
+  comment at the reply citing D40.
+- **Tests (3):** `testSystemQuitInLevelRaisesQuitConfirm` (a running level + the seam → the next tick suspends on the
+  `.confirmQuit` text, as ⌘Q) · `testSystemQuitConfirmOutcomes` (OK → the flow quits; Cancel → play resumes, nothing
+  queued) · `testSystemQuitOutsideLevelUnchanged` (menu / pause: the queued quit event as before; a second request while
+  the confirm is up adds nothing). The logout path is App-only (AppKit) — the reviewer checks it by reading, G5 builds it.
+- **Gate:** G2 = 460, G5, G6, G7(+b), G8, G10; no golden moves. **Commit:** `Ferazel: a system Quit during a level opens the
+  game's quit box; a logout quits at once (Ben's Q5, D40); 3 tests`.
+- **Ladder shift:** +3 from here — BX2 **466**, BT **472**, TP **476**, SW **482**, LV3 **486**, LV4 **490**; wave ends 4.7
+  **476**, 4.8/4.9 **490**.
 
 ### Wave 4.7 — chests and doors, switches, teleporters
 
@@ -1385,6 +1419,7 @@ The canonical order is the execution order (each task starts from the previous t
 | 4.4 | SH ⚑ → GL → PU | SH two; GL, PU one | run 5: [SH GL PU] |
 | 4.5 | IU ⚑ → MS | IU two; MS one | run 6: [IU MS] |
 | 4.6 | SD ⚑ → BX1 ⚑◈ | two each | run 7: [SD BX1] |
+| 4.6Q | QT (seat-inserted by loop run 26, Ben's Q5, D40) | one | loop run 27: [QT BX2 BT], then [TP SW] |
 | 4.7 | BX2 ◈ → BT → TP ⚑ | BX2, BT one; TP two | run 8: [BX2 BT TP] |
 | 4.8 | SW → LV3 ⚑ → LV4 | SW, LV4 one; LV3 two | run 9: [SW LV3 LV4] |
 | 4.9 | A4 (+ FABLE-GRADE phase review + fixes) | one + Fable | run 10: phase end |
