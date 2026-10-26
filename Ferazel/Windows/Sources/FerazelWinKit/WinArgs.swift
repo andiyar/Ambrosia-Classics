@@ -3,7 +3,7 @@ import Foundation
 
 /// `FerazelWin`'s command line (plan WF3, D43 Rulings 10–12, 20):
 ///
-///     FerazelWin [--data DIR] [--fonts DIR] [--prefs FILE] [--saves DIR] [--mute]
+///     FerazelWin [--data DIR] [--fonts DIR] [--prefs FILE] [--saves DIR] [--mute] [--save-as FILE] [--open FILE]
 ///                [--frames N [--dump FILE.ppm] [--keys SCRIPT] [--seed N]]
 ///                [-FerazelLevel N] [-ColorTieBreak lowest] [-MacGamma YES] [-FerazelMute YES] [SAVED-GAME]
 ///
@@ -22,6 +22,10 @@ public struct WinArgs: Sendable {
     public var prefsPath: String?
     /// `--saves`: the saved games' start folder (default the prefs folder).
     public var savesPath: String?
+    /// `--save-as FILE` / `--open FILE`: the Mac SDL development build's answers to the Save / Open dialogs
+    /// (`WinAnswerFilePanels`, plan WF5); Windows shows its native dialogs and ignores them, `--frames` runs cancel.
+    public var saveAsPath: String?
+    public var openPath: String?
     /// `--mute` (Ruling 20).
     public var muteFlag = false
     /// `--frames N`: headless — N loop wakes of exactly 1/240 s each.
@@ -52,8 +56,8 @@ public struct WinArgs: Sendable {
     }
 
     public static let usage = "usage: FerazelWin [--data DIR] [--fonts DIR] [--prefs FILE] [--saves DIR] [--mute] "
-        + "[--frames N [--dump FILE.ppm] [--keys SCRIPT] [--seed N]] [-FerazelLevel N] [-ColorTieBreak lowest] "
-        + "[-MacGamma YES] [-FerazelMute YES] [SAVED-GAME]"
+        + "[--save-as FILE] [--open FILE] [--frames N [--dump FILE.ppm] [--keys SCRIPT] [--seed N]] "
+        + "[-FerazelLevel N] [-ColorTieBreak lowest] [-MacGamma YES] [-FerazelMute YES] [SAVED-GAME]"
 
     /// Parses the arguments after the program name. A bad option throws (`FerazelWin` exits 64 with the message).
     public static func parse(_ arguments: [String], environment: [String: String]) throws(UsageError) -> WinArgs {
@@ -69,6 +73,8 @@ public struct WinArgs: Sendable {
             case "--fonts": a.fontsPath = try value(arg)
             case "--prefs": a.prefsPath = try value(arg)
             case "--saves": a.savesPath = try value(arg)
+            case "--save-as": a.saveAsPath = try value(arg)
+            case "--open": a.openPath = try value(arg)
             case "--mute": a.muteFlag = true
             case "--frames":
                 guard let n = Int(try value(arg)), n > 0 else { throw UsageError(message: "--frames needs a count > 0") }

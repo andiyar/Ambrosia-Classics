@@ -115,6 +115,15 @@ public enum WinEvent: Sendable, Hashable {
 
     mutating func focusGained() { focused = true }
 
+    /// A native file dialog came down (plan WF5): the keys and the button held when it went up had their releases
+    /// taken by the dialog, so every key and the button are up, and a pad button still held is ignored until
+    /// released — no stuck keys. The focus is SDL's to report.
+    mutating func flushAfterModal() {
+        held.removeAll()
+        button = false
+        padTranslator.ignoreHeldButtons()
+    }
+
     /// The pointer in canvas coordinates, nil off the 640×480 canvas (or before any was seen).
     var mouseInCanvas: (h: Int, v: Int)? {
         guard let m = mouse, (0..<Self.canvasWidth).contains(m.x), (0..<Self.canvasHeight).contains(m.y) else {

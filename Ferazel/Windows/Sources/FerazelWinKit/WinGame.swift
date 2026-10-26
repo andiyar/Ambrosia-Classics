@@ -64,7 +64,7 @@ public enum WinClock {
     private let panels: any WinFilePanels
     private let padSource: (() -> ShellPadState)?
     private let log: (String) -> Void
-    private var input = WinInput()
+    private(set) var input = WinInput()
     private var shortcuts = WinShortcuts(entries: [])
     /// What the flow last sent (`.showMenuBarItems`): the shortcuts take by it.
     private(set) var menuState = MenuState(menusLive: false, paused: false, musicOn: true, soundOn: true)
@@ -307,27 +307,21 @@ public enum WinClock {
     }
 
     /// A file dialog after the tick (the Mac's `runModal` runs its panel after `idleFired` returns), modal and
-    /// synchronous: the flow is held still until it returns.
+    /// synchronous: the flow is held still until it returns; the input held when it went up is flushed after it.
     private func runPendingPanel() {
         guard let panel = pendingPanel, let flow = driver.flow else { return }
         pendingPanel = nil
         panelUp = true
         updateCursor()
-        let result: FileResult
+        let request: WinFileRequest
         switch panel {
-        case .save(let r):
-            let folder: URL?
-            do { folder = try files.ensureSavesFolder() } catch {
-                log("saves folder: \(error)")
-                folder = nil
-            }
-            result = panels.save(r, folder: folder)
-        case .open(let prompt):
-            let folder = files.savesFolder.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
-            result = panels.open(prompt: prompt, folder: folder)
+        case .save(let r): request = WinFileRequests.save(r, files: files, log: log)
+        case .open(let prompt): request = WinFileRequests.open(prompt: prompt, files: files)
         }
+        let chosen = panels.run(request)
+        input.flushAfterModal()
         panelUp = false
-        flow.fileDone(result)
+        flow.fileDone(WinFileRequests.result(chosen))
     }
 
     private func updateCursor() {

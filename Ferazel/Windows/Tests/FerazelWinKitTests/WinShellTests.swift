@@ -233,12 +233,7 @@ import XCTest
                                                          environment: [:]), folder: f)
         XCTAssertEqual(named.savesFolder?.path, "/tmp/S")
         XCTAssertEqual(named.prefsURL?.path, "/tmp/P")
-        // A default save name made Windows-legal (Ruling 10).
-        XCTAssertEqual(WinFiles.legalSaveName("Ferazel: a/b\\c*?\"<>|\u{1}"), "Ferazel- a-b-c-------")
-        XCTAssertEqual(WinFiles.legalSaveName("Saved Game 2. . "), "Saved Game 2")
-        XCTAssertEqual(WinFiles.legalSaveName("con"), "con_")
-        XCTAssertEqual(WinFiles.legalSaveName("LPT9"), "LPT9_")
-        XCTAssertEqual(WinFiles.legalSaveName("Ferazel's Wand Saved Game 1"), "Ferazel's Wand Saved Game 1")
+        // The default save name made Windows-legal: `WinFileRequestsTests.testSaveNamesAreMadeWindowsLegal` (WF5).
     }
 
     // MARK: 13 · the arguments

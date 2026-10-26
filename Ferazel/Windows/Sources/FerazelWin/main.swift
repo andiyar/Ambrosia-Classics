@@ -8,6 +8,9 @@
 // --prefs  the prefs file (default: %APPDATA%\Ambrosia Classics\Ferazel's Wand\Ferazel's Wand Prefs on Windows;
 //          ~/Library/Application Support/Ambrosia Classics/Ferazel's Wand (SDL)/ on the Mac).
 // --saves  the saved games' start folder (default: the prefs folder).
+// --save-as FILE / --open FILE  the Mac SDL development build's answers to the Save / Open dialogs (else cancelled);
+//          Windows shows its native dialogs (comdlg32, `WinFileDialogs`). A SAVED-GAME argument (Explorer's "Open
+//          with", a file dropped on the exe) is continued at the main menu's first pass, as the Mac's Finder open.
 // --mute   no sound: SDL's audio driver forced to `dummy`, no audio opened, no beeps (D42, Ruling 20); also
 //          FERAZEL_MUTE=1 or -FerazelMute YES.
 // --frames HEADLESS MODE: N loop wakes of exactly 1/240 s (N/4 game ticks), the dummy SDL drivers forced, no audio
@@ -242,7 +245,8 @@ do {
 let host = SDLWinHost(sdl: sdl, scripted: headless ? WinScriptedHost(script: script) : nil)
 let audioDevice: SDLAudioDevice? = headless ? nil : SDLAudioDevice()
 
-let game = WinGame(args: args, host: host, text: text, files: files, audio: audioDevice,
+let game = WinGame(args: args, host: host, text: text, files: files,
+                   panels: WinFileDialogs.panels(args, log: report), audio: audioDevice,
                    beeper: {
                        #if os(Windows)
                        _ = MessageBeep(UINT(MB_OK))   // `SysBeep`; the driver never calls this when muted
