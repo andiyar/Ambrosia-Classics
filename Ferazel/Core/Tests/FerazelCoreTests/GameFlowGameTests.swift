@@ -1036,6 +1036,27 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertTrue(ask.last?.out.requests.contains(.showCursor) ?? false, "as ⌘Q: `ShowCursorSafe` first")
         XCTAssertNil(rig.flow.levelRun?.end)
         XCTAssertFalse(rig.flow.quitting)
+        // Asked during the level's opening (before `.SetupLevel` builds the session, the stage load, the fades): held
+        // as the request — not queued, so the background-tasks fetch cannot drop it — and asked at the first
+        // `.CheckGameLoopKeys` once play starts; a second request meanwhile adds nothing.
+        let early = Rig(r)
+        early.flow.toggles.live.backgroundTasks = 1
+        early.toMenu()
+        early.press(0x2d)
+        early.drive { $0.levelRun != nil }
+        XCTAssertNil(early.flow.levelRun?.session, "still the opening")
+        early.flow.systemQuit()
+        early.flow.systemQuit()
+        XCTAssertTrue(early.flow.appleEvents.isEmpty)
+        let opening = early.drive { _ in self.asked(early.last) }
+        XCTAssertEqual(dialogs(opening), [.confirm(text: GameLoopKeys.quitText)])
+        XCTAssertGreaterThan(early.flow.levelRun?.iterations ?? 0, 0, "asked in play, not in the opening")
+        early.flow.systemQuit()
+        early.flow.dialogDone(.cancel)
+        var n = 0
+        let resumed = early.drive(max: 40) { _ in n += 1; return n == 40 }
+        XCTAssertEqual(dialogs(resumed), [], "one confirm for all three requests")
+        XCTAssertTrue(early.flow.appleEvents.isEmpty)
     }
 
     func testSystemQuitConfirmOutcomes() throws {
@@ -1109,5 +1130,18 @@ final class GameFlowGameTests: XCTestCase {
         XCTAssertEqual(dialogs(later), [], "one confirm for both requests")
         XCTAssertTrue(twice.flow.appleEvents.isEmpty)
         XCTAssertNil(twice.flow.levelRun?.end)
+        // A level that ends before the request is asked (the opening fade-in still gates `.CheckGameLoopKeys`) queues
+        // the quit event as before; the map then holds it until its pause loop.
+        let ends = Rig(r)
+        ends.toMenu()
+        ends.press(0x2d)
+        ends.drive { self.isRunning($0, level: 1, iterations: 1) }
+        ends.flow.systemQuit()
+        XCTAssertTrue(ends.flow.appleEvents.isEmpty, "pending in the level")
+        try touchExit(try XCTUnwrap(ends.flow.levelRun?.session), record: 66)
+        let toMap = ends.drive { self.onIdleMap($0) }
+        XCTAssertEqual(dialogs(toMap), [], "never asked")
+        XCTAssertTrue(ends.flow.appleEvents.quit, "not lost: queued at the level's end")
+        XCTAssertFalse(ends.flow.quitting)
     }
 }

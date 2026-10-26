@@ -341,17 +341,27 @@ public final class LevelRun {
 
     /// QT (D40): a system Quit (Dock / app menu) while this run is up. A level running free (playing, no modal,
     /// suspension, pause, conversation, save or upgrade up, its loop not ending) gets the ⌘Q confirm at its next
-    /// `.CheckGameLoopKeys` (`FerazelSession.requestSystemQuit`); a request already pending or a quit confirm already up
-    /// takes the new one in (nothing added). `false` = neither: the caller queues the quit event as before.
+    /// `.CheckGameLoopKeys` (`FerazelSession.requestSystemQuit`); so does one asked during the opening (the stage
+    /// load, the chapter card, the fades — seat ruling): it waits for the session's first `.CheckGameLoopKeys`. A request
+    /// already pending or a quit confirm already up takes the new one in (nothing added). `false` = none of these: the
+    /// caller queues the quit event as before. A level that ends before asking queues it then (`loop`).
     public func systemQuit() -> Bool {
-        guard end == nil, let s = session else { return false }
-        if s.systemQuitPending { return true }
+        guard end == nil else { return false }
+        if systemQuitRequested || session?.systemQuitPending == true { return true }
         if case .confirm(.confirmQuit)? = keysModal { return true }
-        guard playing, !s.loopEnded, s.suspension == nil, keysModal == nil, saveSG == nil, conversation == nil,
-              upgrade == nil, pause == nil else { return false }
+        if !playing && exitAt == nil && stages.contains(.armFade) {
+            // The opening: the session (built at `.SetupLevel`) takes the request when it exists.
+            if let s = session { s.requestSystemQuit() } else { systemQuitRequested = true }
+            return true
+        }
+        guard playing, let s = session, !s.loopEnded, s.suspension == nil, keysModal == nil, saveSG == nil,
+              conversation == nil, upgrade == nil, pause == nil else { return false }
         s.requestSystemQuit()
         return true
     }
+
+    /// QT: a system Quit asked before `.SetupLevel` built the session (handed to it there).
+    private var systemQuitRequested = false
 
     /// The `.CheckGameLoopKeys` modal in progress.
     private enum KeysModal {
@@ -586,6 +596,7 @@ public final class LevelRun {
                                    records: revisit ? save.restoreSnapshot(level: Int16(L)) : nil,
                                    hostedByLevelRun: true)
         session = s
+        if systemQuitRequested { s.requestSystemQuit(); systemQuitRequested = false }
         try services.attach(lights: s.lights, tintTableDraws: s.tintTableDraws)
         // `*(G + player +0x46) = param_3` (M l. 5188).
         if let pid = s.world.playerID { s.world.active.update(id: pid) { $0.phase = self.param3 } }
