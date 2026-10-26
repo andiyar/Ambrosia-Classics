@@ -1674,3 +1674,12 @@ open no audio device, drain the Sound Tool silently at 367/368 frames per tick, 
 **Owner choices** (QUESTIONS Q13, non-blocking, defaults = (a)): WQ2 save dialogs, WQ3 full-screen key, WQ4 resizable
 window, WQ5 key names, WQ6 save-file extension, WQ7 dialog scaling.
 **Approved by:** the seat under D34's plan authority; Ben reads later (Q13).
+**As built — WF0 + WF1 (loop run 32, 2026-10-26/27; main 59047f4):** Core + its tests cross-build for Windows (GW1 0/2);
+`tools/windows/proof-b-ferazel.sh` written and guard-checked, **Proof B not yet run (night rule — owed to the first
+daytime run)**. `Ferazel/Shared/FerazelDriver.swift` + `FerazelAudio.swift` carry the neutral shell half (Mac behaviour
+unchanged — two legs read it as a move, symbol diff clean); `-FerazelMute YES` / `FERAZEL_MUTE=1` built (no
+`ShellMixer`, no beeps); the driver's `headless` option (Ruling 20's frames mode) always uses the silent mixer, muted or
+not. Measured and recorded: UserDefaults' argument domain reads "2abc" as **0** (not 2 as Ruling 11's text guessed),
+"y"/"t" false, a value starting with "-" is a new key; boot → main menu 360 ticks FNV `0xae2b1ee08c089b2a`, New Game →
+level 1 first frame 107 ticks FNV `0xc99ce8e85b4bd8f7` (stub text; WF2 re-measures with real glyphs). `Ferazel/Windows`
+package: FerazelWinKit 17/0.

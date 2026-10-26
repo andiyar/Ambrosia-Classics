@@ -362,6 +362,16 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
   states the expected line and **the measured wall time of the whole-suite run** (also recorded in the plan's
   as-executed notes); if it comes near 3,600 s the timeout is raised there, never the suite split.
 
+- **As executed (loop run 32, 2026-10-26; commits 375fa91 + 4b5937e, merged):** as planned, with: the Windows env
+  helper calls both `_putenv_s` and `SetEnvironmentVariableW` (build-proved only until Proof B); a failed hard link of
+  the music folder makes an EMPTY folder (`FerazelData.open` throws on the missing Sounds file first — no 45 MB copy);
+  the pure replace is pinned against Foundation's inside the existing `testExitCodes` (Mac only; `return self` now
+  fails), and was made internal for that; the script lists the tests once (`--list-tests`) before the whole-suite run,
+  reports a watchdog 124 on either launch as "timed out", and refuses a malformed `--class` before the guard. Census
+  stdout byte-identical to 06b1486's. Gates: GW1 0 / 2 (~20 s), G2 490/0, G3 1,108/0, `--check-guard` at 23:00 → 64
+  "refused (night rule)" (also with `wasapi` set). **GWB not run — night rule; "boot check owed (night rule)"; the
+  README's wall time says "not yet measured".** One Opus leg PASS WITH FIXES → round seat-read.
+
 ### WF1 ⚑ MAJOR — The shared shell half; the Mac mute switch; the FerazelWindows package
 
 - **Goal:** one neutral driver both shells call; the Mac's mute switch (D42) built and tested headlessly; the Windows
@@ -417,6 +427,21 @@ behind the LAUNCH GUARD, few and short (D42); never `swift run`, never `open` ou
 - **Acceptance:** G2 490/0; G5 SUCCEEDED; GW2 **17/0**; G-MUTE `1` / `1`; G7 + G7W empty; GW-symlinks empty; G6; G10.
   Both review legs read the `FerazelController` diff as a move (nothing re-ordered); one leg builds the app and diffs
   the App's symbol list for anything lost. No launch in WF1 (the switch is proved headlessly; G9M first uses it in WF6).
+
+- **As executed (loop run 32, 2026-10-27; commits 8ef2ac6 + 16d44e1 + 59047f4, merged):** as planned, with:
+  UserDefaults' argument domain measured on the Mac (two legs, 44 strings): "y", "t" → false; "2abc" → integer **0**
+  (the plan's "→ 2" was wrong); only "yes"/"true" (any case) and an exact "1" read true; a command-line value starting
+  with "-" is read as a new key (`-FerazelLevel -1` leaves the level unset) — WF3's argument parser must copy that.
+  Ruling 20 fix (both review legs): the driver has an explicit `headless` option (the `--frames` mode) that installs
+  `FerazelSilentMixer` and never calls the mixer factory, muted or not — mute governs only the real output and the
+  beeper; the Mac passes headless false. Pinned (headless + muted, N held, `StubGlyphRasterizer`): boot → main menu
+  **360 ticks, FNV 0xae2b1ee08c089b2a**; New Game → level 1's first frame **107 ticks, FNV 0xc99ce8e85b4bd8f7** (same
+  with the silent mixer, and 600 ticks on). Longest sound = 78 blocks → runs out at tick 215. Hidden switches are read
+  when the controller is created (values unchanged). `FerazelDriver` is internal — WF3 wraps or opens it. The
+  `ShellMixer: FerazelMixer` adapter lives in `FerazelController.swift`. Gates: G2 490/0, GW2 **17/0** (~85 s), G5 and
+  Aki/AkiPad/BTX/Deimos build (project.yml touched; AkiPad needs `AKI_DATA_12` + a simulator destination in a
+  worktree), G-MUTE 1/1, G7/G7W/GW-symlinks empty; the package also cross-builds for Windows with its tests. Two Opus
+  legs PASS WITH FIXES → round re-reviewed PASS WITH FIXES (one test gap) → tests-only round seat-read.
 
 ### WF2 — Baked text (Ruling 2)
 
