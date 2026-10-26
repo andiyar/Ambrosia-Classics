@@ -158,8 +158,8 @@ extension HitPlayerSprite {
     ///    vy = max(−6500, −(0.6·g + vy)) — 0.6 is the **double** at `0x100a1a10` (`lfd f4,-0x5e30(r2)`), −6500 the
     ///    double at `0x100a1a08`, `fnmsub`, `fctiwz` truncates toward zero; `.STPlayRegSound(604, 1, 0x100)`
     ///    (`_DAT_100a027c`, no draw); the air counter `_DAT_100a0718 = 1`; `+0xce = 0`;
-    /// 9. the spin stomp on switch blocks / crates (types 0x4e2…0x4ff / 0xc12…0xc1b; BX1, `spinStomp`); // later: TP —
-    ///    the teleporters 0x424…0x426;
+    /// 9. the spin stomp on switch blocks / crates (types 0x4e2…0x4ff / 0xc12…0xc1b; BX1, `spinStomp`); the
+    ///    teleporters 0x424…0x426 (TP, `teleporter` — the fire suspends the frame twice);
     /// 10. the save point 0x429 (S1, `savePoint`) — reached past the not-built branches, whose type tests exclude it.
     static func box(_ w: SpriteWorld, player pID: Int, other oID: Int, keys: InputActions = []) {
         guard let p = w.active.record(id: pID), let o = w.active.record(id: oID) else { return }
@@ -194,7 +194,10 @@ extension HitPlayerSprite {
         else { return }
         guard o.type == BoxSprite.trampoline else {                     // later: Phase 5 (7, the geyser head)
             if spinStomp(w, player: pID, other: oID, entryVY: entryVY, keys: keys) { return }
-            // later: TP — the teleporters 0x424…0x426 (M l. 49407ff.).
+            if (0x424...0x426).contains(o.type) {                      // `(type − 0x424 & 0xffff) < 3` (M l. 49407)
+                teleporter(w, other: oID)
+                return
+            }
             if o.type == BoxSprite.savePoint { savePoint(w, player: pID, other: oID) }
             return
         }
@@ -362,6 +365,71 @@ extension HitPlayerSprite {
         }
         w.player.groundLast = 0
         return true
+    }
+
+    /// The teleporters' arm, on a landing (M l. 49407–49416; pickups-boxes §2.4.7, BC40): `PTR_DAT_100a070c = 1` (row
+    /// 36 charges while it is set), the idle counter `*_DAT_100a068c = 0` (`puVar11`, loaded at M l. 49341); the fire
+    /// pulse `PTR_DAT_100a0708` (row 36 at charge 80) clear → return; else `.STPlayRegSound(421, 1, 0x100)`
+    /// (`_DAT_100a03dc`, no draw) and `.MosaicTransition(1, 3, 0x14)` — the frame **suspends** (`.teleport(record:,
+    /// stage: 1)`, the teleporter kept in `PlayerState.teleportTail`); `teleportMove` and `teleportDone` are the rest.
+    static func teleporter(_ w: SpriteWorld, other oID: Int) {
+        guard let o = w.active.record(id: oID) else { return }
+        w.player.teleporterTouch = true
+        w.player.idle = 0
+        guard w.player.teleporterFire else { return }
+        w.player.cue(PlayerCue(call: .reg, snd: 421, priority: 1, volume: 0x100))
+        w.player.teleportTail = oID
+        w.suspension = .teleport(record: Int(o.recordIndex), stage: 1)
+    }
+
+    /// The teleport after the out-mosaic (M l. 49418–49462): d = the player's origin − the teleporter's (i16, `+0xc` x
+    /// / `+0xa` y); the partner = the teleporter's live record p1 (`hdr + 16·(+0x48) + 8`; zeros outside the records);
+    /// then for **every** in-use idle entry of 0 … 510 whose record index `+0xe` is the partner (`IdleSprites
+    /// .inUseEntries`: the dump tests only the in-use byte, M l. 48564, 49416 — an active partner matches too, BC50;
+    /// a later match moves again, last wins): the player to the entry's (x, y) + d — `+0xc = fe68`, `+0xa = fe64`, the
+    /// centre from the hot rect into `+0x10/+0xe` and `fd94/fd90`, the camera focus `fd44/fd40` = the centre, 24.8
+    /// from the origin, `+0xdc = 0` — then `snap` (the camera at (x − 0x142, y − 0xc0), `*_DAT_1009fec4` saved / 0 /
+    /// restored around 120 `.FindUpperLeftCorner`, the scroll copies, `.RedrawEntireScrollGrid`). Returns the entries
+    /// matched, in scan order. The caller then makes `.HandleIdleSprites`, `.WrapDrawSprites` and snd 420 and runs the
+    /// in-mosaic.
+    @discardableResult
+    static func teleportMove(_ w: SpriteWorld, player pID: Int, snap: () -> Void) -> [Int] {
+        guard let oID = w.player.teleportTail, let p = w.active.record(id: pID), let o = w.active.record(id: oID)
+        else { return [] }
+        let h = { (v: Int) in Int(Int16(truncatingIfNeeded: v)) }
+        let dx = h(p.x - o.x), dy = h(p.y - o.y)
+        let partner = BoxSprite.liveRecord(w, o.recordIndex)?.p1 ?? 0
+        let matched = w.idle.inUseEntries(record: partner)
+        for i in matched {
+            guard let e = w.idle.entries[i] else { continue }
+            w.active.update(id: pID) { s in
+                s.x = h(dx + e.saved.x)
+                s.y = h(dy + e.saved.y)
+                let r = s.hotRect
+                s.centre.x = h(s.x + r.left + h((r.right - r.left) >> 1))
+                s.centre.y = h(s.y + r.top + h((r.bottom - r.top) >> 1))
+                s.x256 = Int32(s.x) << 8
+                s.y256 = Int32(s.y) << 8
+                s.ridden = nil
+            }
+            guard let s = w.active.record(id: pID) else { break }
+            w.player.pixelX = Int16(truncatingIfNeeded: s.x)
+            w.player.pixelY = Int16(truncatingIfNeeded: s.y)
+            w.player.centreX = Int16(truncatingIfNeeded: s.centre.x)
+            w.player.centreY = Int16(truncatingIfNeeded: s.centre.y)
+            w.player.focusX = w.player.centreX
+            w.player.focusY = w.player.centreY
+            snap()
+        }
+        return matched
+    }
+
+    /// The teleport after the in-mosaic, past its `.RedrawEntireScrollGrid` (the caller's; M l. 49466–49469): the
+    /// fire pulse `0708 = 0`, the charge `PTR_DAT_100a0700 = 0xffc5` (−59); the arm returns.
+    static func teleportDone(_ w: SpriteWorld) {
+        w.player.teleportTail = nil
+        w.player.teleporterFire = false
+        w.player.teleporterCharge = -59
     }
 
     /// The save point's arm (M l. 49471–49504, raw `10057714..10057858`; save-continue §2.1, §9.2), on a landing:

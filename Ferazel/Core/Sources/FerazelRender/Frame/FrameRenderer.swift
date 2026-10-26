@@ -31,6 +31,9 @@ import FerazelCore
 /// - `copyMaskToScreen` (EF, the flash): the same pieces with the mask port as the compositor's source F (its M is the
 ///   mask port either way); the plain `CopyBits` pieces copy what `copyToScreen`'s do (`*(_DAT_1009ff58 + 8)`, not
 ///   the argument — M l. 11811–11836).
+/// - `mosaic(cell, _)` (TP): `.MosaicScreenBlit` (`Mosaic.blit`) from port `_DAT_100a0004` onto the screen; a
+///   `copyToScreen` directly before a `mosaic` in the same op list is `.MosaicTransition`'s copy (the screen base
+///   pointed at that port, M l. 12977–12983) and goes into the port, not the screen.
 /// - `changeLightFace(slot, …)`: `.ChangeLightFace @ 1001bdbc` (`LightTable.changeFace` on the renderer's copy) —
 ///   the slot's face and radius; the next `.DrawLightsOntoTiles` sees the face differ from its previous one and
 ///   redraws the cells it covers.
@@ -77,6 +80,7 @@ public final class FrameRenderer {
         case tile(col: Int, row: Int)
         case waterEffects(Int), particles(Int), eraseParticles
         case blackLines
+        case mosaicCopy(h: Int, v: Int), mosaic(Int)
     }
 
     public let resources: FerazelResources
@@ -341,7 +345,7 @@ public final class FrameRenderer {
     public func apply(_ ops: FrameOps) throws {
         guard tintTableBuilt else { throw Refusal.tintTableNotBuilt }
         executed = []
-        for op in ops.draws {
+        for (n, op) in ops.draws.enumerated() {
             switch op {
             case .setScreenClut(let id):
                 guard id == tables.screenClutId else {
@@ -372,6 +376,13 @@ public final class FrameRenderer {
                 try sprites.wrapDrawSprites(draws, h: scroll.h, v: scroll.v, drawn: (grid.drawnH, grid.drawnV),
                                             ports: &ports)
                 executed.append(.sprites(draws.count))
+            case .copyToScreen(let h, let v, let graphicsMode, let backdrop)
+                    where n + 1 < ops.draws.count && Self.isMosaic(ops.draws[n + 1]):
+                // TP: `.MosaicTransition`'s `.WrapCopyToScreen` (M l. 12977–12983) — the screen base pointed at port
+                // `_DAT_100a0004`, so the copy goes into that port; its blits read it (`DrawOp.mosaic`).
+                parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
+                                      parallax: Int(prefs.parallax), screen: &mosaicPort)
+                executed.append(.mosaicCopy(h: h, v: v))
             case .copyToScreen(let h, let v, let graphicsMode, let backdrop):
                 parallax.copyToScreen(ports: ports, h: h, v: v, graphicsMode: graphicsMode, backdrop: backdrop,
                                       parallax: Int(prefs.parallax), screen: &screen.pixels)
@@ -433,6 +444,10 @@ public final class FrameRenderer {
                     for x in 0x10..<(0x10 + 0x98 * 4) { screen.pixels[row + x] = 0xff }
                 }
                 executed.append(.blackLines)
+            case .mosaic(let cell, _):
+                // TP: `.MosaicScreenBlit(cell, …)` from port `_DAT_100a0004` onto the screen (`Mosaic`).
+                Mosaic.blit(cell: cell, source: mosaicPort, screen: &screen.pixels)
+                executed.append(.mosaic(cell))
             case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma:
                 // The front-end ops (FE0) are `ScreenRenderer`'s; no level frame carries them.
                 break
@@ -442,6 +457,11 @@ public final class FrameRenderer {
             }
         }
     }
+
+    /// TP: port `_DAT_100a0004` (640×480), as `.MosaicTransition`'s copy left it.
+    private var mosaicPort = [UInt8](repeating: 0, count: IndexedFrame.width * IndexedFrame.height)
+
+    private static func isMosaic(_ op: DrawOp) -> Bool { if case .mosaic = op { true } else { false } }
 
     /// `DrawOp.setTile`: the FG cell (col, row) of `level` (`Mlvl` §3.1 layout: header, PxBack, PxMid, BG, then FG)
     /// becomes `fg`; the grid, light and sprite renderers are rebuilt on the new level keeping their state (drawn

@@ -78,6 +78,13 @@ public struct IdleSprites: Equatable, Sendable {
         entries[Int(entry)] = nil
     }
 
+    /// TP: the entries of 0 ..< 0x1ff whose in-use byte `+0` is set and whose record index `+0xe` is `record`, in scan
+    /// order — the teleporters' search (M l. 49416ff., `sVar40 < 0x1ff`): only the in-use byte is tested, so an entry
+    /// whose sprite is active (`activeID`) matches too (BC50).
+    public func inUseEntries(record: Int16) -> [Int] {
+        (0..<Self.scanned).filter { entries[$0]?.saved.recordIndex == record }
+    }
+
     /// The `.HandleIdleSprites` window for view origin (h, v) (`PTR_DAT_1009fe78`).
     public static func window(h: Int, v: Int, playerHotRect: Rect?) -> Rect {
         var w = Rect(top: v - 0x18, left: h - 0x18, bottom: v + 0x198, right: h + 0x278)

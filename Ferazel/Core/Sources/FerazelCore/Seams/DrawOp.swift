@@ -62,6 +62,15 @@ public enum DrawOp: Equatable, Sendable {
     /// sprite light pass reads the table). The
     /// renderer takes it as its slots and runs the same `LightTable.handleLights()` before `.WrapDrawWaterEffects`.
     case lightTable(LightTable)
+    /// TP: one `.MosaicScreenBlit(cell, mode == 3) @ 100196e8` (M l. 12854–12943) of `.MosaicTransition @ 100198bc`
+    /// (M l. 12944–13018): the 608×384 view of the screen (x 16…623, rows 8…391) rebuilt as `cell`×`cell` blocks of
+    /// the transition's own copy — each block the copy's pixel at its top-left; `608 / cell` blocks a row (the rest of
+    /// the row keeps the screen's pixels), each block's first row copied (all 608 bytes) to its other rows. The copy:
+    /// `.MosaicTransition` points the screen at port `_DAT_100a0004` for its `.WrapDrawSprites` + `.WrapCopyToScreen`
+    /// (M l. 12977–12983), so the `.copyToScreen` right before a transition's first `.mosaic` goes into that port, not
+    /// the screen (`FrameRenderer`). `graphicsMode3` is the call's second argument — always false (graphics mode 3 is
+    /// demoted to 2 before the blits, M l. 12972–12974) and never read (r4 is overwritten at raw `10019708`).
+    case mosaic(cell: Int, graphicsMode3: Bool)
 
     // MARK: Front end (Phase 3, FE0 — every case added up front; FerazelRender.ScreenRenderer executes them)
 

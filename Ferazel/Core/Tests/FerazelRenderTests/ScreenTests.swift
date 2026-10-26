@@ -34,6 +34,72 @@ final class ScreenTests: XCTestCase {
 
     // MARK: - ScreenRenderer
 
+    /// TP: `.MosaicScreenBlit(cell, …)` (M l. 12854–12943) — cell 4 on the 608×384 view of a level-1 frame: the
+    /// transition's `.copyToScreen` goes into port `_DAT_100a0004` (nothing outside the view moves; the screen is not
+    /// copied to), and every 4×4 block of the view is one index, the copy's pixel at the block's top-left (16 + 4k, 8 +
+    /// 4j). Then the rule on a numbered source: cell 20 leaves the last 608 mod 20 = 8 columns of a block's first row as
+    /// they were and copies that whole 608-byte row into the block's other rows. `ScreenRenderer` refuses `.mosaic`.
+    func testMosaicBlit() throws {
+        let r = try Self.resources.get()
+        func level() throws -> FrameRenderer {
+            let f = try FrameRenderer(resources: r, level: 1, search: ColorSearch(model: .ruled), dither: .errorDiffusion,
+                                      text: StatusBarTests.BoxRasterizer(), prefs: FerazelPrefs())
+            try f.buildTintTable([Int16](repeating: 0, count: 0x1fe))
+            try f.apply(FrameOps(draws: [.redrawEntireScrollGrid(h: 40, v: 400)]))
+            return f
+        }
+        let reference = try level(), mosaic = try level()
+        try reference.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 2, backdrop: true)]))
+        let copy = reference.screen.pixels
+        let before = mosaic.screen.pixels
+        try mosaic.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 2, backdrop: true),
+                                          .mosaic(cell: 4, graphicsMode3: false)]))
+        XCTAssertEqual(mosaic.executed, [.mosaicCopy(h: 40, v: 400), .mosaic(4)])
+        let w = IndexedFrame.width, got = mosaic.screen.pixels
+        var blockValues = Set<UInt8>()
+        var wrongInView: [Int] = [], wrongOutside: [Int] = []
+        for y in 0..<IndexedFrame.height {
+            for x in 0..<w {
+                let inView = (8..<392).contains(y) && (16..<624).contains(x)
+                if inView {
+                    let bx = 16 + (x - 16) / 4 * 4, by = 8 + (y - 8) / 4 * 4
+                    if got[y * w + x] != copy[by * w + bx] { wrongInView.append(y * w + x) }
+                    if x == bx && y == by { blockValues.insert(got[y * w + x]) }
+                } else if got[y * w + x] != before[y * w + x] {
+                    wrongOutside.append(y * w + x)
+                }
+            }
+        }
+        XCTAssertEqual(wrongInView.prefix(4).map { [$0 % w, $0 / w] }, [])
+        XCTAssertEqual(wrongOutside.prefix(4).map { [$0 % w, $0 / w] }, [])
+        XCTAssertGreaterThan(blockValues.count, 4)          // a real frame, not one colour
+        // A later `copyToScreen` without a `.mosaic` after it goes to the screen as before.
+        try mosaic.apply(FrameOps(draws: [.copyToScreen(h: 40, v: 400, graphicsMode: 2, backdrop: true)]))
+        XCTAssertEqual(mosaic.executed, [.copy(h: 40, v: 400)])
+        XCTAssertEqual(mosaic.screen.pixels, copy)
+
+        // The rule on numbered buffers: source (x, y) = x + 3y (mod 256), screen 0xee.
+        var source = [UInt8](repeating: 0, count: w * IndexedFrame.height)
+        for y in 0..<IndexedFrame.height { for x in 0..<w { source[y * w + x] = UInt8((x + 3 * y) & 0xff) } }
+        var screen = [UInt8](repeating: 0xee, count: source.count)
+        Mosaic.blit(cell: 20, source: source, screen: &screen)
+        for y in [8, 9, 27, 28, 47, 388, 391] {
+            let top = 8 + (y - 8) / 20 * 20
+            for x in [16, 35, 36, 615] { XCTAssertEqual(screen[y * w + x], source[top * w + 16 + (x - 16) / 20 * 20]) }
+            for x in 616..<624 { XCTAssertEqual(screen[y * w + x], 0xee, "(\(x), \(y)) the row's rest") }
+        }
+        for y in [7, 392] { XCTAssertEqual(screen[(y * w)..<(y * w + w)], ArraySlice(repeating: 0xee, count: w)) }
+        for y in 8..<392 { XCTAssertEqual([screen[y * w + 15], screen[y * w + 624]], [0xee, 0xee]) }
+        var once = [UInt8](repeating: 0xee, count: source.count)
+        Mosaic.blit(cell: 1, source: source, screen: &once)
+        for y in 8..<392 { XCTAssertEqual(once[(y * w + 16)..<(y * w + 624)], source[(y * w + 16)..<(y * w + 624)]) }
+
+        let off = try renderer()
+        XCTAssertThrowsError(try off.apply([.mosaic(cell: 4, graphicsMode3: false)])) {
+            XCTAssertEqual($0 as? ScreenRenderer.Refusal, .levelOp("mosaic"))
+        }
+    }
+
     /// TX (Q6 note 1): `drawText` smoothed as Mac OS 9 drew it — coverage 0 leaves the pixel, 255 is
     /// `Color2Index(run.rgb)` as before, a partial pixel is `Color2Index` of the run's colour mixed with the pixel's
     /// colour under the surface's CLUT, rounded. The surface holds level clut 202 here: 130 has no colour its search

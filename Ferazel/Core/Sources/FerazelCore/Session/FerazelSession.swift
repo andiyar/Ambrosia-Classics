@@ -618,7 +618,29 @@ public final class FerazelSession {
             frameCapsLock = capsLock
             frameActions = InputActions(keys: keys, prefs: prefs)
             return continueHandlePass(ops)
-        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _), (.hint, _):
+        case (.teleport(let record, 1), .teleport(let keys, let capsLock)):
+            // TP: the out-mosaic returned — the move, the camera re-seat (120 passes), `.HandleIdleSprites`,
+            // `.WrapDrawSprites`, snd 420 (`_DAT_100a03e0`, M l. 49463–49465), then the in-mosaic: suspended again.
+            frameKeys = keys
+            frameCapsLock = capsLock
+            frameActions = InputActions(keys: keys, prefs: prefs)
+            if let p = world.playerID {
+                HitPlayerSprite.teleportMove(world, player: p) { passageSnap(passes: Self.teleportPasses) }
+            }
+            idleAndSprites()
+            world.player.cue(PlayerCue(call: .reg, snd: 420, priority: 1, volume: 0x100))
+            world.suspension = .teleport(record: record, stage: 2)
+            return suspend(ops)
+        case (.teleport, .teleport(let keys, let capsLock)):
+            // TP: the in-mosaic returned — `.RedrawEntireScrollGrid`, `0708 = 0`, the charge −59 (M l. 49467–49469);
+            // the rest of the frame reads the input polled at the resume tick (live in the original).
+            frameKeys = keys
+            frameCapsLock = capsLock
+            frameActions = InputActions(keys: keys, prefs: prefs)
+            world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+            HitPlayerSprite.teleportDone(world)
+        case (.savePoint, _), (.gameLoopKeys, _), (.conversation, _), (.sign, _), (.upgrade, _), (.hint, _),
+             (.teleport, _):
             preconditionFailure("FerazelSession.resume: the outcome does not answer \(pending)")
         }
         guard world.continueSpecialPass(hitPlayer: hitPlayer, hit: hit) else { return suspend(ops) }
@@ -931,32 +953,48 @@ public final class FerazelSession {
     /// saved, zeroed and restored around them — auto-scroll is refused by `Camera.init`, so it is 0 throughout); the
     /// scroll location `_DAT_1009fe74/fe70` takes the scroll point (Core's draws read `camera.scrollH/V`);
     /// `.RedrawEntireScrollGrid`.
-    private func passageSnap() {
+    /// TP: the teleport's re-seat is the same code with 120 passes (`sVar36 < 0x78`, M l. 49451), `+0xdc = 0` set by
+    /// the arm before it (`HitPlayerSprite.teleportMove`).
+    private func passageSnap(passes: Int = FerazelSession.passagePasses) {
         guard let p = world.playerID.flatMap({ world.active.record(id: $0) }) else { return }
         camera.snap(playerX: p.x, playerY: p.y)
         world.player.scrollH = camera.scrollH
         world.player.scrollV = camera.scrollV
-        for _ in 0..<Self.passagePasses { findUpperLeftCorner(graphics: prefs.graphics) }
+        for _ in 0..<passes { findUpperLeftCorner(graphics: prefs.graphics) }
         world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
     }
 
     /// The passage jump's `.FindUpperLeftCorner` passes (`sVar36 < 0x5a`, l. 49666).
     public static let passagePasses = 0x5a
+    /// TP: the teleport's (`sVar36 < 0x78`, M l. 49451).
+    public static let teleportPasses = 0x78
 
     /// `PassageView.redraw` (l. 49676–49678): `.HandleIdleSprites` at the new view (the live player's rect),
     /// `.WrapDrawSprites`, `.RedrawEntireScrollGrid`.
     private func passageRedraw() {
+        idleAndSprites()
+        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+    }
+
+    /// `.HandleIdleSprites` at the current view (the live player's rect) and `.WrapDrawSprites` into the pass's draws —
+    /// the passage jump's (before its `.RedrawEntireScrollGrid`) and the teleport's (M l. 49461–49462).
+    private func idleAndSprites() {
         let playerRect = world.playerID.flatMap { world.active.record(id: $0) }.map { p in
             IdleSprites.Rect(top: p.y + p.hotRect.top, left: p.x + p.hotRect.left, bottom: p.y + p.hotRect.bottom,
                              right: p.x + p.hotRect.right)
         }
         world.idle.handle(h: camera.scrollH, v: camera.scrollV, playerHotRect: playerRect, active: &world.active,
                           faceRect: faceBounds)
+        world.player.passDraws.append(wrapDrawSpritesOp())
+    }
+
+    /// `.WrapDrawSprites` of the active list as it stands (the passage's and the teleport's; TP: `.MosaicTransition`'s
+    /// own, `LevelRun`), each sprite's dynamic light from the light table.
+    func wrapDrawSpritesOp() -> DrawOp {
         let table = lightTable, bounds0 = faceBounds, res = resources, lvl = level
-        world.player.passDraws.append(.wrapDrawSprites(world.active.wrapDrawSprites { s in
+        return .wrapDrawSprites(world.active.wrapDrawSprites { s in
             Self.dynamicLight(s, level: lvl, lights: table, bounds: bounds0) { Self.frameRect($0, resources: res) }
-        }))
-        world.player.passDraws.append(.redrawEntireScrollGrid(h: camera.scrollH, v: camera.scrollV))
+        })
     }
 
     /// A sprite's hit callback `+0x5c` (`SpriteWorld` calls it only when `hasHit`): `.HitPlatformSprite` (W1); the

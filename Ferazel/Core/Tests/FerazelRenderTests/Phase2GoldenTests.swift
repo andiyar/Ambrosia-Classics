@@ -260,6 +260,10 @@ final class Phase2GoldenTests: XCTestCase {
             case .hint:
                 // IU: a USE hint answered at once (no route selects an item and presses USE; no golden sees one).
                 outcome = .hint(keys: keys, capsLock: false)
+            case .teleport:
+                // TP: a teleport's mosaic answered at once, both stages (no route charges a teleporter; no golden sees
+                // one).
+                outcome = .teleport(keys: keys, capsLock: false)
             default: return ops
             }
             let rest = s.resume(outcome)

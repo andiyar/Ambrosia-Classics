@@ -105,7 +105,7 @@ public struct LevelRunOutput: Equatable, Sendable {
         case .fillRect, .copyPicture, .drawFace, .drawLine, .drawText, .restoreView, .screenGamma: return .screen
         case .redrawScrollGrid, .redrawEntireScrollGrid, .drawLightsOntoTiles, .wrapDrawSprites, .copyToScreen,
              .copyMaskToScreen, .changeLightFace, .wrapEraseSprites, .statusBar, .setTile, .wrapDrawWaterEffects, .drawParticles,
-             .eraseParticles, .drawBlackLines, .lightTable:
+             .eraseParticles, .drawBlackLines, .lightTable, .mosaic:
             return .level
         }
     }
@@ -355,7 +355,7 @@ public final class LevelRun {
             return true
         }
         guard playing, let s = session, !s.loopEnded, s.suspension == nil, keysModal == nil, saveSG == nil,
-              conversation == nil, upgrade == nil, pause == nil else { return false }
+              conversation == nil, upgrade == nil, mosaic == nil, pause == nil else { return false }
         s.requestSystemQuit()
         return true
     }
@@ -380,6 +380,8 @@ public final class LevelRun {
     public private(set) var conversation: ConversationRun?
     /// PK: the upgrade arm's blocking animation while it runs (nil otherwise).
     public private(set) var upgrade: UpgradeAnimation?
+    /// TP: a teleport's `.MosaicTransition` while it runs (nil otherwise).
+    public private(set) var mosaic: MosaicTransition?
     /// The conversation text's measures (Render's font, C2; the App sets them, A1a). Default: unmeasured.
     public var conversationText = ConversationText.unmeasured
 
@@ -625,7 +627,7 @@ public final class LevelRun {
     private func loop(now: UInt32, input: FrontInput, out: inout LevelRunOutput) throws -> Bool {
         guard let s = session else { return false }
         var ops: FrameOps
-        if saveSG != nil || keysModal != nil || conversation != nil || upgrade != nil {
+        if saveSG != nil || keysModal != nil || conversation != nil || upgrade != nil || mosaic != nil {
             // S1 / P1: a suspended frame waits for the modal; its answer finishes the same iteration.
             guard let resumed = advanceModal(s, now: now, input: input, out: &out) else { return false }
             ops = resumed
@@ -727,6 +729,16 @@ public final class LevelRun {
             guard u.isDone else { upgrade = u; return nil }
             upgrade = nil
             let rest = s.resume(.upgrade(keys: input.keys, capsLock: input.capsLock), playing: tickPlaying)
+            emitFrame(rest, out: &out, present: true)
+            return rest
+        }
+        if var m = mosaic {
+            // TP: a teleport's `.MosaicTransition` (20 blits, 3-tick waits), then the frame on from where it stopped —
+            // stage 1 suspends again for the in-mosaic (the `loop`'s next pass starts it on this tick).
+            emit(&out, m.tick(now: now, session: s))
+            guard m.isDone else { mosaic = m; return nil }
+            mosaic = nil
+            let rest = s.resume(.teleport(keys: input.keys, capsLock: input.capsLock), playing: tickPlaying)
             emitFrame(rest, out: &out, present: true)
             return rest
         }
@@ -879,6 +891,9 @@ public final class LevelRun {
                                            levelName: levelFile.header.name, text: conversationText)
         case .upgrade(let type):
             upgrade = UpgradeAnimation(type: type)
+        case .teleport(_, let stage):
+            // TP: `.MosaicTransition(1, 3, 0x14)` before the move, `(0, 3, 0x14)` after it (M l. 49413, 49465).
+            mosaic = MosaicTransition(out: stage == 1)
         case .hint(let text):
             // IU: `.SimpleConv(4001, "Ferazel", text)` from `.HandleKeys`' item switch (M l. 47563–47606) — inside the
             // player's Handle; inside the outer modal when raised by a pause / `.CheckGameLoopKeys` redraw (the
@@ -1251,6 +1266,78 @@ public struct UpgradeAnimation: Equatable, Sendable {
                 var bar = s.updateStatusBar(.upgradeStep, keys: keys)
                 bar.present = true
                 out.append(bar)
+            }
+        }
+    }
+}
+
+/// TP: `.MosaicTransition(param_1, 3, 0x14) @ 100198bc` (M l. 12944–13018), run by the flow over ticks while the frame
+/// is suspended (`FrameSuspension.teleport`), on the session's state:
+/// 1. prefs+2 read; graphics mode 3 is demoted to 2 (`*psVar10 = 2`) — so the blits' mode-3 argument is false;
+/// 2. the screen pointed at port `_DAT_100a0004`: `.WrapDrawSprites`, `.WrapCopyToScreen(frame port, scroll point,
+///    0x10, 8, prefs+9 == 0, mode == 3, 0)` (M l. 12977–12983) — `DrawOp.wrapDrawSprites` + `.copyToScreen` with the
+///    demoted mode, which the renderer copies into that port (the `.copyToScreen` right before a first `.mosaic`);
+/// 3. `param_1` ≠ 0 (the out-mosaic): cells 1 … 20, else 20 … 1 — each `TickCount()` read, `.MosaicScreenBlit(cell,
+///    mode == 3)` (`DrawOp.mosaic`), then, except after the last, a wait while `TickCount() − 3 < t0`: 20 blits, 19
+///    waits, 57 ticks;
+/// 4. mode 3 restored with `.DrawBlackLines` first (M l. 13013–13016).
+/// The frame resumes on the tick of the last blit.
+public struct MosaicTransition: Equatable, Sendable {
+    /// `param_1` ≠ 0: the out-mosaic (cells 1…20); false: the in-mosaic (20…1).
+    public let out: Bool
+    private enum Step: Equatable, Sendable {
+        case prelude, blit(Int), wait(UInt32), restore
+    }
+    private let steps: [Step]
+    private var next = 0
+    private var until: UInt32?
+    /// prefs+2 was 3 at the call (`sVar1 == 3`); the mode during the blits (`*psVar10`, demoted).
+    private var mode3 = false
+    private var mode: Int16 = 0
+
+    /// `param_2` = 3 ticks, `param_3` = 0x14 blits (both call sites, M l. 49413, 49465).
+    public init(out: Bool, ticks: UInt32 = 3, blits: Int = 0x14) {
+        self.out = out
+        var s: [Step] = [.prelude]
+        let cells = out ? Array(1...blits) : Array((1...blits).reversed())
+        for (k, c) in cells.enumerated() {
+            s.append(.blit(c))
+            if k != cells.count - 1 { s.append(.wait(ticks)) }
+        }
+        s.append(.restore)
+        steps = s
+    }
+
+    /// The blits have run out: the flow resumes the frame (`.teleport`).
+    public var isDone: Bool { next == steps.count && until == nil }
+
+    /// The steps due by `now`.
+    public mutating func tick(now: UInt32, session s: FerazelSession) -> FrontOutput {
+        var out = FrontOutput()
+        while true {
+            if let u = until {
+                guard Int32(bitPattern: now &- u) >= 0 else { return out }
+                until = nil
+            }
+            guard next < steps.count else { return out }
+            let step = steps[next]
+            next += 1
+            switch step {
+            case .prelude:
+                let graphics = s.prefs.graphics
+                mode3 = graphics == 3
+                mode = mode3 ? 2 : graphics
+                out.draws.append(s.wrapDrawSpritesOp())
+                out.draws.append(.copyToScreen(h: s.camera.scrollH, v: s.camera.scrollV, graphicsMode: Int(mode),
+                                               backdrop: s.prefs.plainCopy == 0))
+            case .blit(let cell):
+                // `*psVar10 == 3`: the demoted mode — never 3 here.
+                out.draws.append(.mosaic(cell: cell, graphicsMode3: mode == 3))
+                out.present = true
+            case .wait(let n):
+                until = now &+ n
+            case .restore:
+                if mode3 { out.draws.append(.drawBlackLines) }
             }
         }
     }

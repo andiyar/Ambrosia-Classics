@@ -190,7 +190,7 @@ public struct PlayerState: Equatable, Sendable {
     public var tumbleFrame: Int16 = 0
     /// `_DAT_100a06f0`: door transit counter (input lock) — the passage arm of `.HitPlayerSprite` (W2b).
     public var doorTransit: Int16 = 0
-    /// `PTR_DAT_100a0700`: teleporter charge. // later: Phase 4 (teleporters).
+    /// `PTR_DAT_100a0700`: teleporter charge (row 36; the teleport sets −59, `HitPlayerSprite.teleportDone`).
     public var teleporterCharge: Int16 = 0
     /// `_DAT_100a05b0`: potion drink counter (the item switch sets 1, row 32 drinks — IU); `_DAT_100a0570`: boss-grab
     /// counter (// later: Phase 5, no writer yet); `_DAT_100a0578` / `_DAT_100a0574`: spirit-form timer / transition
@@ -315,6 +315,9 @@ public struct PlayerState: Equatable, Sendable {
     /// — the rest of that Box arm (its `+0x15c` gate and `.PlatformBounce`, M l. 49304–49308) runs when the frame
     /// resumes (`HitPlayerSprite.talkDone`). Nil otherwise (the NPC arm returns after its call).
     public var talkTail: Int?
+    /// TP: the teleporter whose arm suspended the frame (`.teleport`, an `ActiveList` id) — the move (`teleportMove`)
+    /// and the tail (`teleportDone`) run at the two resumes. Nil otherwise.
+    public var teleportTail: Int?
     public var seeSawTouch = false
     /// `PTR_DAT_100a0704`: the end separation pass is running (the only pass that processes water, P2/P4).
     public var waterPass = false
@@ -385,8 +388,8 @@ public struct PlayerState: Equatable, Sendable {
     /// gate's −2 arm (M l. 61025, BT's) and the player Handle's 0x78-key test (M l. 47169) when they run after the
     /// player pass [LOW: no 2907 on levels 1–4].
     public var countdownStore: Int32?
-    /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires.
-    /// // later: Phase 4 (teleporters) — no writer of 070c yet.
+    /// `PTR_DAT_100a070c` / `PTR_DAT_100a0708`: touching a teleporter this frame / the teleporter fires (070c set by
+    /// the teleporters' arm, `HitPlayerSprite.teleporter`; 0708 by row 36 at charge 80, cleared by the teleport).
     public var teleporterTouch = false
     public var teleporterFire = false
     /// `PTR_DAT_100a0644`, `PTR_DAT_100a0634`, `PTR_DAT_100a0628`, `PTR_DAT_100a061c`: the power-up tint flags paired

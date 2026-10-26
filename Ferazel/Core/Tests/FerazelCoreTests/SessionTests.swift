@@ -314,6 +314,7 @@ final class SessionTests: XCTestCase {
                 case .screenGamma: return "screenGamma"
                 case .drawBlackLines: return "blackLines"
                 case .lightTable: return "lightTable"
+                case .mosaic: return "mosaic"
                 }
             }
         }

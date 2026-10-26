@@ -447,6 +447,18 @@ One placement (L22, p = 0 → lifetime −1 → never crumbles).
 plus the player's offset from this teleporter, recentre the camera (120 `FindUpperLeftCorner` steps),
 mosaic in, `PTR_DAT_100a0700 = −59`. Census: p1 pairs point at each other (e.g. L22 412↔411).
 
+> ⚑ planner note (Phase 4 TP, 2026-10-26) (BC40, BC50; M l. 49407–49470): on the landing `PTR_DAT_100a070c = 1` and the
+> idle counter `*_DAT_100a068c = 0` come first, whatever the pulse; with `0708` set: snd 421 (`.STPlayRegSound`, vol
+> 0x100), `.MosaicTransition(1, 3, 0x14)` (20 blits, 3-tick waits, 57 ticks), d = player − teleporter, then **every**
+> entry of 0 … 510 (`sVar40 < 0x1ff`, not 0x200) whose in-use byte is set and whose `+0xe` is the record's p1 — only the
+> in-use byte is tested (M l. 48564, 49416), so a partner whose sprite is active still matches; a later match moves
+> again (last wins). Per match: the player to entry (x, y) + d, the centre into `+0x10/+0xe` and `fd94/fd90`, the focus
+> `fd44/fd40`, 24.8, `+0xdc = 0`, the camera at (x − 0x142, y − 0xc0), `*_DAT_1009fec4` saved / 0 / restored around
+> 120 `.FindUpperLeftCorner`, the scroll copies, `.RedrawEntireScrollGrid`. Then `.HandleIdleSprites`,
+> `.WrapDrawSprites`, snd 420, `.MosaicTransition(0, 3, 0x14)`, `.RedrawEntireScrollGrid`, `0708 = 0`, charge −59.
+> Level 1 record 126 (p1 0) sends the player to record 0, a type-2922 furniture piece at (5455, 666). The
+> `.MosaicScreenBlit` mode-3 argument is never read (r4 overwritten at raw `10019708`).
+
 #### 2.4.8 Save point 1065  [HIGH arithmetic; LOW for the gate byte]
 `.HitPlayerSprite` l. 4181–4219, in the **Box arm** (entered on handler == Box, `lwz r3,−0x73bc(r2)`
 at `10056b18`) after `PlatformBounce` returns 1 (a **landing**; touching from the side does nothing),

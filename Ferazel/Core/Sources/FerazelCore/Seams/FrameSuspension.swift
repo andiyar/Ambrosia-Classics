@@ -38,6 +38,14 @@ public enum FrameSuspension: Equatable, Sendable {
     /// and resumes with `.hint` — the rest of `.HandleKeys`, the player's rows, the handle pass from the player's saved
     /// `next`, then the frame.
     case hint(text: [UInt8])
+    /// TP: a teleporter fired (`.HitPlayerSprite`'s Box arm, 0x424…0x426, M l. 49407–49470; pickups-boxes §2.4.7,
+    /// BC40, BC50) — a landing with the fire pulse `PTR_DAT_100a0708` set; `record` is the teleporter's placement
+    /// record (`+0x48`, whose p1 names the partner). **Stage 1**: snd 421 made, the frame stops at
+    /// `.MosaicTransition(1, 3, 0x14)` (the out-mosaic, cells 1…20, `MosaicTransition` in `LevelRun`); its resume moves
+    /// the player (every in-use idle entry whose record index is p1), re-seats the camera, `.HandleIdleSprites`,
+    /// `.WrapDrawSprites`, snd 420 and stops again — **stage 2**: `.MosaicTransition(0, 3, 0x14)` (the in-mosaic,
+    /// cells 20…1), whose resume is `.RedrawEntireScrollGrid`, `0708 = 0`, the charge −59 and the rest of the frame.
+    case teleport(record: Int, stage: Int)
 
     /// What the modal answered — the value `resume(_:)` continues the frame with.
     public enum Outcome: Equatable, Sendable {
@@ -62,5 +70,8 @@ public enum FrameSuspension: Equatable, Sendable {
         /// (the DOWN / climb blocks, the JUMP arm), the player's rows, the later Handles and the frame read it (live in
         /// the original, as after a conversation).
         case hint(keys: KeyState, capsLock: Bool)
+        /// TP: a `.MosaicTransition` returned, with the polled input at that moment (as `.upgrade`: after stage 2 the
+        /// later contacts and `.CheckGameLoopKeys` read it — live in the original).
+        case teleport(keys: KeyState, capsLock: Bool)
     }
 }

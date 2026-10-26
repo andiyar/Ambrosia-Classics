@@ -795,7 +795,7 @@ public enum PlayerStates {
     ///   flags; // later: Phase 4 — all false in Phase 2) or 0, and `+0xb8 == 0` → `+0x1a6 = +0x1a8 = 0`, `+0x88 = 1`,
     ///   else `+0x88 = 0`, `+0x1a8 = 8`;
     /// - |n| < 21 → `+0xb8 = 0`, `+0x18c = 0`; 21…59 → the sparkle `0x50000 + clamp(min(((|n| − 12) >> 2) + 2, 15) +
-    ///   FastRand(6) − 3, 0, 15)`, `+0x18c = 1`; 60…79 → 0x4f; 80 → `0708` = 1 (fire). // later: Phase 4 (teleporters)
+    ///   FastRand(6) − 3, 0, 15)`, `+0x18c = 1`; 60…79 → 0x4f; 80 → `0708` = 1 (fire; the teleporters' arm, TP)
     /// - `070c` = 0.
     static func tint(_ w: SpriteWorld, id: Int) {
         w.player.teleporterFire = false
