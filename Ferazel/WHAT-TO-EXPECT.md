@@ -62,12 +62,13 @@ straight from the code.
 2. **The Fireball.** ⌘ with the Fireball selected: the wand comes up and the shot leaves on the same frame, arcs and
    glows, and the blue magic bar shrinks a little (8 of 560 per shot; the 560 grows
    when you take level 2's maximum-magic crystal). Holding ⌘ does not repeat; the wand drops after
-   about half a second. With no magic left, ⌘ switches to the dagger and stabs at once. Shots fizzle in water; a shot
+   about two-thirds of a second. With no magic left, ⌘ switches to the dagger and stabs at once. Shots fizzle in water; a shot
    into a wall puffs.
 3. **The dagger.** ⌘ with the dagger: a short stab. The dagger cannot break the crumbly rock — in the original only the
    Vorpal Dirk and the Ice Pick can, and so here.
-4. **Shoot the torches and rock piles.** Each torch, candelabra or rock pile gives one crystal (magic if your magic is
-   lower than your health, else health) and 150 points. A spent torch stays dark after you resume at a save point.
+4. **Shoot the torches and rock piles.** Each torch, candelabra or rock pile gives one crystal (magic if your magic bar is
+   emptier than your health bar, each measured against its own full length, and your health is above 37 points; else
+   health) and 150 points. A spent torch stays dark after you resume at a save point.
 5. **Xichrons and coins.** The spinning gold Xichrons count in the score; at 100 the counter starts again and a red
    Xichron appears in the item bar. Coins and money bags add to the coin count, so Rojinko the merchant on level 1 now
    sells you potions, and they show in the item bar. Getting hit by level 1's spiked pendulums knocks 4 to 6 coins
@@ -128,11 +129,11 @@ straight from the code.
     - level 2's hidden switch at its far left edge (it only shows in the saved game).
 
 ## Still true from Phases 1 to 3
-- **The Phase 3 card** still describes the title, menus, Options, Credits, conversations, save points, pause, the
-  stage-complete panel, the world map, Resume and the death screen. Nothing there has changed, except that the merchant
-  now sells.
-- **The feel card from Phase 2** still describes the movement: walking, jumping, spins, walls, water, platforms,
-  cannons, passages.
+- **The front end is unchanged:** the title and loading screens, the main menu, Options (with key setup), Credits,
+  New Game with the chapter card, conversations and signs, save points and Resume, the Caps Lock pause, the
+  stage-complete panel, the world map and the death screen all work as in the last build. The one difference: the
+  merchant now sells, since coins can be picked up.
+- **The movement is unchanged:** walking, running, jumping, spins, walls, water, platforms, cannons and passages.
 - **Text** in conversations and signs is drawn smoothed, as Mac OS 9 drew it (your Phase 3 note); the small text in
   the status bar and the item counts stays crisp, as in the Let's Play.
 - **Colours** go through the exact nearest-colour search (your ruling, 2026-10-10). The duplicate-black tie-break is
@@ -170,8 +171,8 @@ straight from the code.
 - **A key still held when a dialog closes** isn't seen until you press it again (the original would read it at once).
 - **The "set system volume" option** is remembered but never changes your Mac's volume.
 - **Fonts:** the game ships no fonts yet, so Times and Geneva come from macOS.
-- **The torch flicker** isn't built; item lights twinkle all in step (**MED**: the original starts each at a random
-  point).
+- **The screen does not tint under water yet** (the original colours the whole screen while you are under water, acid
+  or lava).
 - **No screen switching, no CD check, no installer check, no birthday dialog, no InputSprocket.**
 
 ## What to tell me
