@@ -1,6 +1,27 @@
 import XCTest
 import HectorResources
 @testable import FerazelCore
+#if os(Windows)
+import WinSDK
+#endif
+
+/// Sets (`value` non-nil) or removes an environment variable so `ProcessInfo.processInfo.environment` sees it on both
+/// platforms: `setenv`/`unsetenv` on Darwin; on Windows the CRT's `_putenv_s` (empty value = remove; it also updates
+/// the Win32 block) and `SetEnvironmentVariableW` as well (Foundation-on-Windows reads the Win32 block).
+private func setTestEnvironment(_ name: String, _ value: String?) {
+    #if os(Windows)
+    _ = _putenv_s(name, value ?? "")
+    name.withCString(encodedAs: UTF16.self) { wname in
+        if let value {
+            value.withCString(encodedAs: UTF16.self) { wvalue in _ = SetEnvironmentVariableW(wname, wvalue) }
+        } else {
+            _ = SetEnvironmentVariableW(wname, nil)
+        }
+    }
+    #else
+    if let value { setenv(name, value, 1) } else { unsetenv(name) }
+    #endif
+}
 
 /// C1 (docs/plans/2026-10-06-ferazel-phase1.md): the data locator, the six resource files, the music
 /// folder and the two resource-search chains, against the committed `Resources/Ferazel` (D26).
@@ -33,15 +54,19 @@ final class FerazelDataTests: XCTestCase {
         // Everything except Sounds, linked from the committed folder.
         for name in ["Ferazel's Wand.rsrc", "Ferazel's Wand World Data.rsrc", "Ferazel's Wand Backgrounds.rsrc",
                      "Ferazel's Wand Sprites.rsrc", "Ferazel's Wand Titles.rsrc", "Ferazel's Wand Music"] {
+            #if os(Windows)   // symbolic links need a privilege on Windows: hard link, else copy (a folder is copied)
+            do { try fm.linkItem(at: real.appendingPathComponent(name), to: temp.appendingPathComponent(name)) }
+            catch { try fm.copyItem(at: real.appendingPathComponent(name), to: temp.appendingPathComponent(name)) }
+            #else
             try fm.createSymbolicLink(at: temp.appendingPathComponent(name),
                                       withDestinationURL: real.appendingPathComponent(name))
+            #endif
         }
 
         let previous = ProcessInfo.processInfo.environment[FerazelData.environmentVariable]
-        setenv(FerazelData.environmentVariable, temp.path, 1)
+        setTestEnvironment(FerazelData.environmentVariable, temp.path)
         defer {   // restore an outside override for the tests that run after this one
-            if let previous { setenv(FerazelData.environmentVariable, previous, 1) }
-            else { unsetenv(FerazelData.environmentVariable) }
+            setTestEnvironment(FerazelData.environmentVariable, previous)
         }
         let overridden = try FerazelData.dataDirectory()
         XCTAssertEqual(overridden.path, temp.resolvingSymlinksInPath().path)

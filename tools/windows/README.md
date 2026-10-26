@@ -230,6 +230,33 @@ at k ≥ 4; the game's ALRT 132 "©" text, 194 UTF-8 bytes, is that shape). The 
 run-time replaces go through `String.replacingEvery` (`TextReplace.swift`, pure Swift, scalar matching like Foundation's
 UTF-16 search; tested against Foundation on the Mac). The core's only use is the Mac-only `btx-census` tool.
 
+## Ferazel's Wand (Phase W, `docs/plans/2026-10-26-ferazel-windows.md`)
+
+**Proof B for Ferazel** — `tools/windows/proof-b-ferazel.sh` (zsh; run it directly). It copies `Ferazel/Core` +
+`docs/ferazel/data-census.md` under `$WIN_CROSS/work/proof-b-ferazel/` laid out like the repo (HectorKit through the
+shared `work/HectorKit` symlink, as `proof-b.sh`), cross-builds the tests, points `FERAZEL_DATA` at the repo's
+`Resources/Ferazel` as a `Z:\…` path, and runs the **whole suite once** in CrossOver (`WIN_RUN_TIMEOUT=3600`; the
+runner's default 900 s is too short). Expected last line:
+
+```
+proof-b: 490 passed / 0 failed / 0 skipped / 0 crashed (of 490)
+```
+
+- `--class NAME` re-runs one class — only after a crash, to find it. A watchdog kill (exit 124) prints "timed out",
+  never a crash count. A count other than 490 in the `--list-tests` total is itself a finding.
+- **Night rule (D42):** it refuses (exit 64, one line) unless `date +%H` is 09..20 and the audio driver it passes is
+  `dummy`; it sets `HECTOR_SDL_AUDIO_DRIVER=dummy HECTOR_SDL_VIDEO_DRIVER=dummy` itself and never inherits the caller's.
+  There is no hour override. `--check-guard` evaluates only the hour and the driver (builds and runs nothing): by night
+  exit 64 "refused (night rule)", by day exit 0.
+- **Build-root isolation (Ruling 19):** the script builds into `$WIN_CROSS/work/proof-b-ferazel/build`; the gates'
+  cross-builds pass `WIN_BUILD_ROOT=$WIN_CROSS/build/ferazel`. Never the default root: `build.sh` names its scratch
+  folder after the package folder, and BTX's packages are also called `Core` and `Windows`.
+- Whole-suite wall time in CrossOver: **not yet measured (night rule)**.
+- Windows differences removed in the repo (WF0): the data test's environment override (`_putenv_s` +
+  `SetEnvironmentVariableW`; Darwin `setenv`) and hard links / copies instead of symbolic links; `CensusTests` finds
+  `ferazel-census.exe` beside the running test `.exe` and drops `\r` from the child's stdout; the census's five
+  replaces go through a pure-Swift `replacingEvery` (the D19.5 trap above).
+
 ## Results (W0, 2026-10-06)
 
 **Proof A** (`hello`, CrossOver, `--skip-userdefaults`): exit 0 —

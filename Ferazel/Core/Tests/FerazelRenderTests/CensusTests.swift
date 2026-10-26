@@ -14,10 +14,16 @@ private enum Census {
 }
 
 /// The built `ferazel-census` binary next to this test bundle (SwiftPM puts both in the products dir; the test
-/// target depends on the executable so it is built first).
+/// target depends on the executable so it is built first). On Windows the test runner is a renamed `.exe`, not an
+/// `.xctest` bundle: `ferazel-census.exe` sits beside the running executable.
 private func censusBinary() throws -> URL {
+    #if os(Windows)
+    let runner = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
+    let url = runner.deletingLastPathComponent().appendingPathComponent("ferazel-census.exe")
+    #else
     let bundle = try XCTUnwrap(Bundle.allBundles.first { $0.bundlePath.hasSuffix(".xctest") })
     let url = bundle.bundleURL.deletingLastPathComponent().appendingPathComponent("ferazel-census")
+    #endif
     XCTAssertTrue(FileManager.default.isExecutableFile(atPath: url.path), "no ferazel-census at \(url.path)")
     return url
 }
@@ -32,7 +38,12 @@ private func runCensus(_ binary: URL, _ arguments: [String]) throws -> (status: 
     try p.run()
     let data = out.fileHandleForReading.readDataToEndOfFile()
     p.waitUntilExit()
-    return (p.terminationStatus, String(decoding: data, as: UTF8.self))
+    let stdout = String(decoding: data, as: UTF8.self)
+    #if os(Windows)   // text-mode stdout may write CRLF: every compare of the child's output sees LF only
+    return (p.terminationStatus, String(String.UnicodeScalarView(stdout.unicodeScalars.filter { $0 != "\r" })))
+    #else
+    return (p.terminationStatus, stdout)
+    #endif
 }
 
 /// C6 (docs/plans/2026-10-06-ferazel-phase1.md): `ferazel-census` — stdout is `docs/ferazel/data-census.md` below

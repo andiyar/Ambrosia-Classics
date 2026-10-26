@@ -60,7 +60,7 @@ public enum FerazelCensus {
         var failures = 0
         let dir = dataDirectory.resolvingSymlinksInPath()
         func describe(_ error: Error) -> String {
-            String(describing: error).replacingOccurrences(of: dir.path, with: "…").replacingOccurrences(of: "|", with: "\\|")
+            String(describing: error).replacingEvery(dir.path, with: "…").replacingEvery("|", with: "\\|")
         }
         out.line("# Ferazel's Wand 1.0.3 — data census")
         out.line("")
@@ -557,8 +557,7 @@ public enum FerazelCensus {
     /// A Markdown-safe table cell (`—` for none).
     static func cell(_ s: String?) -> String {
         guard let s, !s.isEmpty else { return "—" }
-        return s.replacingOccurrences(of: "|", with: "\\|").replacingOccurrences(of: "\r", with: " ")
-            .replacingOccurrences(of: "\n", with: " ")
+        return s.replacingEvery("|", with: "\\|").replacingEvery("\r", with: " ").replacingEvery("\n", with: " ")
     }
 
     /// `1234567` → `1,234,567` (locale-free).
@@ -610,5 +609,31 @@ public enum FerazelCensus {
     static func isDirectory(_ url: URL) -> Bool {
         var isDir: ObjCBool = false
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue
+    }
+}
+
+/// Literal find-and-replace in pure Swift (BTX `TextReplace.swift`'s shape; plan Ruling 18): Foundation-on-Windows'
+/// `replacingOccurrences(of:with:)` traps on non-ASCII strings past a few dozen UTF-8 bytes (D19.5). Matching is on
+/// Unicode scalars, left to right, non-overlapping — so "\r" is found inside a "\r\n" grapheme, as Foundation finds it.
+extension String {
+    fileprivate func replacingEvery(_ target: String, with replacement: String) -> String {
+        let needle = Array(target.unicodeScalars)
+        guard !needle.isEmpty else { return self }
+        let hay = Array(unicodeScalars)
+        guard hay.count >= needle.count else { return self }
+        var out = String.UnicodeScalarView()
+        var i = 0
+        var replaced = false
+        while i < hay.count {
+            if hay[i] == needle[0], i + needle.count <= hay.count, hay[i ..< i + needle.count].elementsEqual(needle) {
+                out.append(contentsOf: replacement.unicodeScalars)
+                i += needle.count
+                replaced = true
+            } else {
+                out.append(hay[i])
+                i += 1
+            }
+        }
+        return replaced ? String(out) : self
     }
 }
