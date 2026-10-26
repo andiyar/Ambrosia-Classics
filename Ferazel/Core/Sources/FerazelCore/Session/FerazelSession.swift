@@ -331,7 +331,8 @@ public final class FerazelSession {
     /// `+0x88` 0, layer 0x7fff, the digit Handle `.anon_10060c78` (`.StandardSpriteHandles` + `.StandardSpriteCleanup`
     /// of a faceless sprite: `.inert` here). The digits are inserted before the 0x4c4 itself (its Setup runs first).
     /// `.UpdateDigits @ 10060d04` (the 0x4c4 arm of `.HandleEffectSprite`) leaves every face 0 while `iRam100a5110`
-    /// < −0x1d — always in Phase 2 (`EffectSprite.handle`'s default arm: the faces stay nil). No `FastRand`.
+    /// < −0x1d — always on levels 1–4 (`EffectSprite.handle`'s default arm: the faces stay nil). // later: Phase 6
+    /// (the 2907 timer, level 40). No `FastRand`.
     static func spawnCountdown(_ w: SpriteWorld, x: Int, y: Int) -> Int? {
         w.newSprite(type: countdownType, x: x, y: y, layer: 800, handler: .effect) { s in
             EffectSprite.setup(&s)

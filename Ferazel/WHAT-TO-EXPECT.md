@@ -60,7 +60,8 @@ straight from the code.
    left. 7 / 9 step the selection (hold one: one step, then more at a steady pace). Counts above 1 show as
    "x3" in small Geneva type.
 2. **The Fireball.** ⌘ with the Fireball selected: the wand comes up and the shot leaves on the same frame, arcs and
-   glows, and the blue magic bar shrinks a little (8 of 560 per shot). Holding ⌘ does not repeat; the wand drops after
+   glows, and the blue magic bar shrinks a little (8 of 560 per shot; the 560 grows
+   when you take level 2's maximum-magic crystal). Holding ⌘ does not repeat; the wand drops after
    about half a second. With no magic left, ⌘ switches to the dagger and stabs at once. Shots fizzle in water; a shot
    into a wall puffs.
 3. **The dagger.** ⌘ with the dagger: a short stab. The dagger cannot break the crumbly rock — in the original only the
@@ -69,8 +70,8 @@ straight from the code.
    lower than your health, else health) and 150 points. A spent torch stays dark after you resume at a save point.
 5. **Xichrons and coins.** The spinning gold Xichrons count in the score; at 100 the counter starts again and a red
    Xichron appears in the item bar. Coins and money bags add to the coin count, so Rojinko the merchant on level 1 now
-   sells you potions, and they show in the item bar. Getting hit by level 1's spiked pendulums knocks up to 5 coins
-   out of you; they blink and vanish after a few seconds unless you pick them up. (Spikes, fire and drowning hurt without
+   sells you potions, and they show in the item bar. Getting hit by level 1's spiked pendulums knocks 4 to 6 coins
+   out of you (fewer if you hold fewer); they blink and vanish after a few seconds unless you pick them up. (Spikes, fire and drowning hurt without
    costing coins, as in the original.)
 6. **Level 1's key chain.** The chest near the start gives a Steel Key. The locked chest (stand near it and a thought
    balloon shows the key it wants) opens with it and gives a Gold Key. The locked door opens with the Gold Key when you
@@ -81,10 +82,18 @@ straight from the code.
 8. **Teleporters.** Stand on one until it sparkles: the screen breaks into blocks, you come out at its partner and the
    view re-centres. One of level 1's teleporters, about nine screens in, sends you to a piece of furniture a little to
    its left rather than to another teleporter. The original's level data says so; it is not a bug of ours.
-9. **Power-up spheres.** Level 1's Invincibility (you flash), level 2's Solid Acid (walk on the acid), level 3's High
-   Jump, level 4's Solid Water (walk on the water). Each lasts about 20 seconds (Invincibility 15) and ticks a warning in
-   its last 7 seconds; Ferazel is tinted while one runs. A taken sphere hides and comes back later — one kind of
-   Invincibility sphere only after about 18 minutes, as the original's data has it.
+9. **Power-up spheres.** As the levels place them:
+
+   | level | spheres |
+   |---|---|
+   | 1 | Invincibility |
+   | 2 | Invincibility, Solid Acid (walk on the acid) |
+   | 3 | Invincibility, High Jump |
+   | 4 | Solid Water (walk on the water), High Jump |
+
+   Invincibility makes you flash and lasts about 15 seconds; the others last about 20 seconds and tint Ferazel while
+   they run. Each ticks a warning in its last 7 seconds. A taken sphere hides and comes back later — an Invincibility
+   sphere only after about 18 minutes, as the original's data has it.
 10. **Upgrades.** Level 2's maximum-magic crystal and level 4's maximum-health one: the screen flashes, the bar grows
     over about 2 seconds while the game holds still, then play resumes.
 11. **Potions.** Level 1's floating magic potion and level 2's health potion: select one, press ⌘ and Ferazel drinks;
@@ -95,7 +104,7 @@ straight from the code.
       tinted, for about 4 seconds, and you can stand on it.
     - The Wounded Habnabit, in conversation, gives you the Platinum Key for a Health Potion; it opens a door.
     - A button raises a gate and stays pressed. The mine carts can be pushed. The air bubble refills your breath.
-    - The spikes hurt while they are out. A spike that never moves still pulls in for a moment, with a sound, about
+    - The spikes hurt. Level 3's spikes never move: they stay out, and twitch in for a moment, with a sound, about
       every 18 minutes — the original's quirk.
 13. **Level 4, "Eastern Reaches".** Enter it from level 2's other exit.
     - Standing on a button makes its switch blocks appear.
@@ -104,10 +113,13 @@ straight from the code.
     - The boulder spouts stay quiet (Phase 5).
     - Level 4's exit leads to level 5 on the map; choosing it shows "Level 5 is not built yet (Phases 5-6)." and leaves
       you on the map at level 5's spot.
-14. **Quitting from the Dock (your Q5 ruling).** Quit from the Dock or the app menu while a level runs: the game's own
-    "Are you sure you want to quit?" box appears at once, exactly as ⌘Q does in a level (OK quits, Cancel plays on).
-    During the level's opening (loading, chapter card, fades) the question waits until play starts. A logout, restart
-    or shutdown quits at once without asking, so macOS never reports a cancelled logout.
+14. **Quitting from the Dock (your Q5 ruling).** Quit from the Dock while a level runs: the game's own "Are you sure
+    you want to quit?" box appears at once, exactly as ⌘Q does in a level (OK quits, Cancel plays on). During the
+    level's opening (loading, chapter card, fades) the question waits until play starts. During a conversation, an
+    upgrade, a teleport, a save, a dialog or the pause it is handled as the original did: it waits, and the game quits
+    without asking once you pause or reach the main menu — or, with the Options setting "Allow background tasks" on,
+    play simply forgets it. A logout, restart or shutdown quits at once without asking, so macOS never reports a
+    cancelled logout.
 15. **Things you can't see but may feel (MED).** All read from the code but not provable on screen:
     - the colours of the item and bar flashes;
     - the size of the teleporter's blocks;

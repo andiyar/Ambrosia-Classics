@@ -552,8 +552,8 @@ public enum PlayerStates {
                     setFace(face(crouch, Int(w.player.crouch) - 1))
                 } else {
                     if w.player.shieldExtension < 7 { w.player.shieldExtension += 1 }
-                    // `.HasItem(0xf)` (the Magical Shield): ◇ not built — read as false (no level 1–4
-                    // places the shield), so
+                    // `.HasItem(0xf)` (the Magical Shield): read as false (no level 1–4 places the
+                    // shield; // later: Phase 5, with `.ShieldBlock`), so
                     // 1039[min(raise − 1, 5)] (the other arm: 1039[min(raise + 2, 8)] with raise ≥ 4).
                     var i = Int(w.player.shieldRaise) - 1
                     if 4 < i { i = 5 }

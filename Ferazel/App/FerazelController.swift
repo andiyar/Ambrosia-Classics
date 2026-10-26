@@ -642,7 +642,7 @@ import HectorShell
         NSApp.terminate(nil)
     }
 
-    /// A terminate the flow did not ask for (the app menu's Quit, logout — the quit Apple event, `.DoQuitAppAE`): the
+    /// A terminate the flow did not ask for (the Dock's Quit, logout — the quit Apple event, `.DoQuitAppAE`): the
     /// event is queued in the flow and the terminate is cancelled at once — no terminate stays pending through play
     /// (AppKit would hold its run loop in the modal-panel mode). As the original: a `.CheckEvent` — the main menu's
     /// pass or the pause loop's — dispatches it and `.Quit` runs, whose `.quit` terminates (`quitNow`); `.GameLoop`
@@ -652,7 +652,7 @@ import HectorShell
     ///
     /// QT — D40 (Ben's Q5), a deliberate departure from the original's wait: a logout / restart / shutdown quits at
     /// once from anywhere, no dialog (`.Quit` writes no prefs — `GameFlow.quit` — so nothing is owed on the way out;
-    /// `applicationWillTerminate` stops the audio); a Dock or app-menu Quit during a level running free raises the
+    /// `applicationWillTerminate` stops the audio); a Dock Quit during a level running free raises the
     /// level's own "Are you sure you want to quit?" at its next tick, as ⌘Q (`GameFlow.systemQuit`). Either way no
     /// terminate is left pending (never `.terminateLater`).
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {

@@ -339,7 +339,7 @@ public final class LevelRun {
     /// The pause loop dispatched the quit event: the run ended `.quit` (`.Quit` from inside `.Pause`).
     public private(set) var quitEventDispatched = false
 
-    /// QT (D40): a system Quit (Dock / app menu) while this run is up. A level running free (playing, no modal,
+    /// QT (D40): a system Quit (the Dock's) while this run is up. A level running free (playing, no modal,
     /// suspension, pause, conversation, save or upgrade up, its loop not ending) gets the ⌘Q confirm at its next
     /// `.CheckGameLoopKeys` (`FerazelSession.requestSystemQuit`); so does one asked during the opening (the stage
     /// load, the chapter card, the fades — seat ruling): it waits for the session's first `.CheckGameLoopKeys`. A request

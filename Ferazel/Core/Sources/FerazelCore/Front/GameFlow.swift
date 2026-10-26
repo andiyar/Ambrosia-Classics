@@ -510,7 +510,7 @@ public final class GameFlow {
         appleEvents.post(.quit)
     }
 
-    /// QT (D40, Ben's Q5): a system Quit the flow did not ask for (the Dock's, the app menu's; the App sends a logout /
+    /// QT (D40, Ben's Q5): a system Quit the flow did not ask for (the Dock's; the App sends a logout /
     /// restart / shutdown straight to terminate). In a level running free it raises the level's own ⌘Q confirm
     /// (`LevelRun.systemQuit`) — a deliberate departure from the original, whose `.GameLoop` holds or (with "Allow
     /// background tasks") drops the quit event; OK quits, Cancel plays on. Anywhere else (the menu, the map, a pause, a
