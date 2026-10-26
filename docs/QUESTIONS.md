@@ -42,7 +42,10 @@ the Phase 5 plan, staged as a zip in out/ like BTX's (no release, no upload — 
 Recommendation: a — Ben's word.
 Blocks: nothing now; the next phase-end run picks it up.
 Answer: (a) — Ben, 2026-10-26. Windows build straight after Phase 4, before Phase 5. Record in DECISIONS; stage only,
-never publish (D34 still holds: no releases or uploads without Ben).
+never publish (D34 still holds: no releases or uploads without Ben). Then, Ben 2026-10-26: "Then we do a windows build in lockstep
+with the Mac build." From then on the Windows twin is kept in step: every task that changes what the Mac app shows or
+does carries its Windows side in the same task, and every phase end stages both builds (Mac app + Windows zip) with one
+gate card. The Phase 5+ plans are written that way.
 
 _(none — loop run 26, 2026-10-26)_
 
