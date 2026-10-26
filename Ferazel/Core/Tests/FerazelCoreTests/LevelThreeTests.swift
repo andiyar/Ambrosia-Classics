@@ -77,7 +77,7 @@ final class LevelThreeTests: XCTestCase {
         // 0x6aa (2), 0x6ab (9), the mine cart 0xb72 (14), 0xb73 (21), the wall spikes 0x730 (12), Bat 0x6cc (11), Blob 0x6c2
         // (16), Frog 0x708 (8): 128 faces — then 16 singles (0x6a4, the decorations 0xafc, 0xafd, 0xb04, 0xb05, 0xb10,
         // 0xb1b, 0xb20, the outcrops 0xb34, 0xb35, the mushrooms 0xb43, 0xb44, 0xb6f, 0xb8a, the spikes' 0x732, 0x733):
-        // n = 144, q = 288, 29 steps.
+        // n = 144, q = 288, 30 steps (14 sets + 16 singles).
         var cache = CachedFaces()
         cache.enterLevel(screenClut: L.header.screenClut)
         let needed = CachedFaces.needed(by: session)

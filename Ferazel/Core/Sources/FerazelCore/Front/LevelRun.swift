@@ -1029,7 +1029,7 @@ public final class LevelRun {
 /// (needed ∧ not loaded: a set counts its faces, a single 1), q = 2n, p = n; each needed unloaded set in list order,
 /// then each single: p += its faces, `UpdateStageLoad(p, q)`; then `UpdateStageLoad(100, 100)` (the caller's).
 ///
-/// Self-derived for the types levels 1–2 place (L1 research, every mark read from its Setup; `docs/plans` L1 as
+/// Self-derived for the types levels 1–3 place (L1 research, every mark read from its Setup; `docs/plans` L1 as
 /// executed): level 1 after launch n 90, q 180 → p 96, 102, 108, 114, 120, 128, 134, 137, 139, 148, 157, 162 (twelve
 /// sets) then 163 … 180 (eighteen singles) — widths 156, 166, 175, 185, 195, 208, 218, 223, 226, 240, 255, 263, 265,
 /// 266, 268, 270, 271, 273, 275, 276, 278, 279, 281, 283, 284, 286, 288, 289, 291, 293; level 2 after level 1 n 31,
@@ -1100,7 +1100,7 @@ public struct CachedFaces: Equatable, Sendable {
         public var singles: Set<Int16> = []
     }
 
-    /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–2 place: Walker 0x6a4 → single
+    /// The marks each placed type's Setup makes (`rec+1 = 1`), for the types levels 1–3 place: Walker 0x6a4 → single
     /// 0x6a4 + sets 0x6a5, 0x6a6 (M l. 56966–56969), 0x6a9 → 0x6a9, 0x6aa, 0x6ab (56977–56980), 0x6e0…0x6e9 → 0x6e0
     /// (56989); Crawler 0x6b0 → 0x6ae, 0x6af, 0x6b1 (56188–56190); Roach 0x6b8 → 0x6b8, 0x6b9 (64931–64932);
     /// Background 0x442 → set 0x442 (62061), 0x5c8+i → single 0x5c8+i (≈ 62320), 0xa8c+i / 3000+i → their singles,
