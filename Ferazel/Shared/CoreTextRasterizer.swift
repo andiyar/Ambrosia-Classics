@@ -1,3 +1,4 @@
+#if canImport(CoreText)
 import CoreGraphics
 import CoreText
 import FerazelRender
@@ -10,13 +11,17 @@ import Foundation
 /// CoreText's antialiased coverage as it comes (linear, no threshold — FerazelRender blends it into the palette,
 /// `TextCoverage`); below it the mask is two-level, 0 / 255, where the glyph covers at least half of a pixel [MED:
 /// QuickDraw's bitmap Times / Geneva are not on this Mac; CoreText's outline fonts stand in].
-final class CoreTextRasterizer: TextRasterizer {
+/// Shared and `public` (WF2, D43 Ruling 2): `fz-bake-font` resolves and bakes the Windows faces through this very class;
+/// Mac-only (`#if canImport(CoreText)`), it vanishes from FerazelWinKit on Windows.
+public final class CoreTextRasterizer: TextRasterizer {
     /// The smallest smoothed size ("Smooth all fonts on screen", Appearance → Fonts → Size … and above) [MED]. Read
     /// against the Let's Play (Mac OS 9, `ESuyxMUEzDw`): the conversation's Times 18 is smoothed (03:16), while the
     /// status bar's Times 12 bold stage name (03:16) and a Geneva bold 8 item count (09:50) are crisp, bitmap-like.
     /// The control panel's default as remembered (12 and above) would smooth the stage name, so the Let's Play wins:
     /// 14. The game draws 8, 9, 12 and 18 point text only, so any value 13…18 draws the same.
-    static let smoothingThreshold: Int16 = 14
+    public static let smoothingThreshold: Int16 = 14
+
+    public init() {}
 
     private var fonts: [String: CTFont] = [:]
 
@@ -27,7 +32,7 @@ final class CoreTextRasterizer: TextRasterizer {
 
     /// `font` by its family number with `face`'s bold (bit 0) and italic (bit 1); 0 and 1 (system / application
     /// font) are the system font. CoreText substitutes a fallback when a family is absent.
-    private func ctFont(_ font: Int16, size: Int16, face: Int16) -> CTFont {
+    public func ctFont(_ font: Int16, size: Int16, face: Int16) -> CTFont {
         let key = "\(font)/\(size)/\(face)"
         if let f = fonts[key] { return f }
         let pt = CGFloat(size)
@@ -43,7 +48,7 @@ final class CoreTextRasterizer: TextRasterizer {
         return f
     }
 
-    func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
+    public func rasterize(_ text: String, font: Int16, size: Int16, face: Int16)
         -> (left: Int, top: Int, width: Int, height: Int, coverage: [UInt8]) {
         guard !text.isEmpty else { return (0, 0, 0, 0, []) }
         let f = ctFont(font, size: size, face: face)
@@ -77,7 +82,7 @@ final class CoreTextRasterizer: TextRasterizer {
 
     /// QuickDraw `CharWidth(byte)` (C2): the Mac Roman character's CoreText advance, rounded to whole pixels
     /// [MED: the bitmap font's integer widths are not on this Mac].
-    func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int {
+    public func charWidth(_ byte: UInt8, font: Int16, size: Int16, face: Int16) -> Int {
         guard let s = String(bytes: [byte], encoding: .macOSRoman), !s.isEmpty else { return 0 }
         let attributes: [NSAttributedString.Key: Any] = [
             NSAttributedString.Key(kCTFontAttributeName as String): ctFont(font, size: size, face: face),
@@ -87,9 +92,10 @@ final class CoreTextRasterizer: TextRasterizer {
     }
 
     /// QuickDraw `GetFontInfo` (C2): CoreText's ascent, descent and leading, each rounded to whole pixels [MED].
-    func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) {
+    public func fontInfo(font: Int16, size: Int16, face: Int16) -> (ascent: Int, descent: Int, leading: Int) {
         let f = ctFont(font, size: size, face: face)
         return (Int(CTFontGetAscent(f).rounded()), Int(CTFontGetDescent(f).rounded()),
                 Int(CTFontGetLeading(f).rounded()))
     }
 }
+#endif

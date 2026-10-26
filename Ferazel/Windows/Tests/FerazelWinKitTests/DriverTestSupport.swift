@@ -101,7 +101,9 @@ func hex(_ v: UInt64) -> String { "0x" + String(v, radix: 16) }
     /// `.none` / `.fake`: a shell whose factory returns nil / the fake.
     enum Mixer { case none, headless, fake(FakeMixer) }
 
-    init(mute: Bool = false, macGamma: Bool = false, mixer: Mixer = .headless, boot: Bool = true) throws {
+    /// `text`: the stub by default (WF1's pins); WF2's baked-text frames pass `BakedTextRasterizer` (or the oracle).
+    init(mute: Bool = false, macGamma: Bool = false, mixer: Mixer = .headless, boot: Bool = true,
+         text: TextRasterizer = StubGlyphRasterizer()) throws {
         var settings = FerazelSettings()
         settings.mute = mute
         settings.macGamma = macGamma
@@ -113,7 +115,7 @@ func hex(_ v: UInt64) -> String { "0x" + String(v, radix: 16) }
         }
         var headless = false
         if case .headless = mixer { headless = true }
-        driver = FerazelDriver(settings: settings, text: StubGlyphRasterizer(), files: files, seed: { Rig.seed },
+        driver = FerazelDriver(settings: settings, text: text, files: files, seed: { Rig.seed },
                                keyCharacter: { _ in nil }, dateTime: { Rig.dateTime },
                                mixer: { counters.mixerFactoryCalls += 1; return made },
                                beeper: { counters.beeps += 1 }, log: { counters.logs.append($0) },
