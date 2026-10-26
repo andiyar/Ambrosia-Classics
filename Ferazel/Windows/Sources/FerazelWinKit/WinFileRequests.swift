@@ -72,6 +72,16 @@ public enum WinFileRequests {
                               options: common.union([.fileMustExist]))
     }
 
+    /// The dialog's file name field at the start (`lpstrFile`): Save — the full path `<folder>\<default name>`, so the
+    /// dialog always opens in the saves folder as the Mac panel does (Windows 7+ may prefer the last-used folder over
+    /// `lpstrInitialDir`); the name alone without a folder; "" with no name, and for Open (whose start folder is
+    /// `lpstrInitialDir` only — Windows may still prefer the last-used one there).
+    public static func initialFile(_ request: WinFileRequest) -> String {
+        guard request.kind == .save, !request.defaultName.isEmpty else { return "" }
+        guard let folder = request.folder else { return request.defaultName }
+        return WinStartup.displayPath(folder.appendingPathComponent(request.defaultName))
+    }
+
     /// The dialog's answer for `GameFlow.fileDone`: the chosen file, or cancelled (nil).
     public static func result(_ chosen: URL?) -> FileResult {
         guard let url = chosen else { return .cancelled }

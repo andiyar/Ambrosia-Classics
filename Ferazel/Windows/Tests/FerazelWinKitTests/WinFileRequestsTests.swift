@@ -2,6 +2,7 @@ import FerazelCore
 import FerazelRender
 @testable import FerazelWinKit
 import Foundation
+import HectorInput
 import XCTest
 
 /// WF5 (D43 Rulings 3, 10): saved games on Windows — the native Open / Save dialogs' requests and answers, the input
@@ -87,6 +88,15 @@ import XCTest
                                                defaultName: "Saved- Game 2", folder: folder,
                                                filters: [WinFileFilter(name: "All files (*.*)", pattern: "*.*")],
                                                options: [.explorer, .overwritePrompt, .pathMustExist, .noChangeDir]))
+        // The name field starts with the full path, so the dialog always opens in the saves folder (Windows 7+ may
+        // otherwise prefer the last-used folder over `lpstrInitialDir`); no folder → the name alone; Open → empty.
+        XCTAssertEqual(WinFileRequests.initialFile(request), folder.appendingPathComponent("Saved- Game 2").path)
+        var noFolder = request
+        noFolder.folder = nil
+        XCTAssertEqual(WinFileRequests.initialFile(noFolder), "Saved- Game 2")
+        var noName = request
+        noName.defaultName = ""
+        XCTAssertEqual(WinFileRequests.initialFile(noName), "")
         // The message line is nowhere in the request (◇W9: comdlg32 has none).
         XCTAssertFalse([request.title, request.defaultName].contains(r.message))
         // The Open request: the prompt as title, no name, the file must exist.
@@ -95,6 +105,7 @@ import XCTest
                                             filters: [WinFileRequests.allFiles],
                                             options: [.explorer, .overwritePrompt, .pathMustExist, .fileMustExist,
                                                       .noChangeDir]))
+        XCTAssertEqual(WinFileRequests.initialFile(open), "", "Open: an empty name, the folder from lpstrInitialDir")
     }
 
     // MARK: 3 · Save's start folder is created first
@@ -177,20 +188,46 @@ import XCTest
         host.inject(.keyDown(keyCode: 0x37, modifiers: .command, isRepeat: false))
         host.inject(.keyDown(keyCode: 0x1F, modifiers: .command, isRepeat: false))
         var heldWhileUp: Set<UInt16>?
-        var tickedWhileUp: Int?
+        var buttonWhileUp: Bool?
+        var stepsWhileUp: Int?
         panels.during = {
             heldWhileUp = game.input.held
-            tickedWhileUp = game.flowSteps
+            // The dialog stays up for 32 loop wakes (8 ticks): the loop's wakes reach the game, the flow never ticks.
+            // A mouse-down reaches the game window meanwhile (the click that ends the dialog; its mouse-up is the
+            // dialog's).
+            let before = game.flowSteps
+            host.inject(.mouseDown(x: 100, y: 100))
+            for _ in 0..<32 {
+                host.advance()
+                game.step()
+            }
+            stepsWhileUp = game.flowSteps - before
+            buttonWhileUp = game.input.button
         }
         WinGameTests.run(game, host, max: 400) { _ in !panels.requests.isEmpty }
         XCTAssertEqual(panels.requests.map(\.kind), [.open])
         XCTAssertEqual(heldWhileUp, [0x7B, 0x37, 0x1F], "held when the dialog came up")
+        XCTAssertEqual(buttonWhileUp, true, "the button down while the dialog was up")
+        XCTAssertEqual(stepsWhileUp, 0, "the flow is held still while the dialog is up")
         XCTAssertEqual(game.input.held, [], "flushed after it: no stuck keys")
+        XCTAssertFalse(game.input.button, "nor a stuck mouse button")
         XCTAssertEqual(game.input.frontInput(capsLock: false, playing: []).keys, KeyState(pressed: []))
-        // The flow was held still while it was up, and the cancel took it back to the menu.
-        XCTAssertEqual(tickedWhileUp, game.flowSteps)
+        // The cancel took it back to the menu.
         WinGameTests.run(game, host, max: 4000) { $0.flow.state == .mainMenu && $0.menuState.menusLive }
         XCTAssertEqual(panels.requests.count, 1)
+        // The pad: a button pressed while a dialog was up (the game polls no pad then) is ignored after it until
+        // released, then works again. (Shown on `WinInput` itself: in the game the menu's pad layout changes across
+        // the dialog's continue-game tick, which ignores a held button on its own.)
+        var input = WinInput()
+        let mapping = FerazelPadLayout.mapping(keys: [], context: .mainMenu, dialogUp: false)
+        _ = input.pollPad(ShellPadState(), mapping: mapping, now: 0)
+        input.flushAfterModal()
+        let south = ShellPadState(buttons: [.south])
+        XCTAssertEqual(input.pollPad(south, mapping: mapping, now: 0.1).held, [], "held across the dialog: nothing")
+        XCTAssertEqual(input.frontInput(capsLock: false, playing: []).keys, KeyState(pressed: []))
+        _ = input.pollPad(ShellPadState(), mapping: mapping, now: 0.2)
+        XCTAssertEqual(input.pollPad(south, mapping: mapping, now: 0.3).held, [FerazelPadLayout.newGameKey],
+                       "pressed again, it is the game's")
     }
 
     // MARK: 7 · the command line's saved game, at the menu pass

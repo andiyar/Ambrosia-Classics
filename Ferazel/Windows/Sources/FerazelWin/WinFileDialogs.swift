@@ -37,7 +37,7 @@ import WinSDK
 
     func run(_ request: WinFileRequest) -> URL? {
         var file = [WCHAR](repeating: 0, count: Self.fileBufferCount)
-        let name = Array(request.defaultName.utf16)
+        let name = Array(WinFileRequests.initialFile(request).utf16)
         if name.count < file.count { file.replaceSubrange(0..<name.count, with: name) }
         // "name\0pattern\0" per filter, then a closing NUL.
         var filter: [WCHAR] = []
@@ -47,7 +47,7 @@ import WinSDK
         let folder = Self.wide(request.folder.map(WinStartup.displayPath) ?? "")
         let hasFolder = request.folder != nil
         var ofn = OPENFILENAMEW()
-        ofn.lStructSize = DWORD(MemoryLayout<OPENFILENAMEW>.size)
+        ofn.lStructSize = DWORD(MemoryLayout<OPENFILENAMEW>.size)   // = sizeof(OPENFILENAMEW): 152 on x64
         ofn.hwndOwner = GetActiveWindow()
         ofn.nFilterIndex = 1
         ofn.Flags = Self.flags(request.options)
