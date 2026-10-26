@@ -38,23 +38,28 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
 
 ## READ FIRST (in order)
 1. This file, then `docs/QUESTIONS.md` (act on any new text under an item's `Answer:` before anything else — it is an
-   authorization for exactly what it says; record it in DECISIONS). **Open: none** (run 27 moved Q10 to Answered: D41 —
-   a Ferazel Windows build straight after Phase 4's end, before the Phase 5 plan, then Windows kept in lockstep; it
-   changes nothing in this run's tasks). **Ben's later notes on the text** (Q8:
+   authorization for exactly what it says; record it in DECISIONS). **Open: Q11** (run 30's Phase 4 gate card — Ben's play verdict; a pass/notes/fail answer is acted on first: notes become a small named wave planned before anything else, a fail re-opens Phase 4 as tasks). Q10 → D41 (Windows straight after Phase 4, then lockstep) is THIS run's reason. **Ben's later notes on the text** (Q8:
    if the smoothed modern Times still looks off against the Let's Play, bundle classic Times/Geneva — allowed, D39) become
    a task the same way (plan it first as a named wave). Ben may commit to `main` mid-run (runs 25 and 26 both saw it):
    rebase onto `main` before each merge and re-run G2.
 2. `CLAUDE.md`; `docs/STATE.md` (whole file); `docs/DECISIONS.md` **D26** (the Ferazel design ruling), **D33** (Phase 2
    as built), **D34** (the loop's authorizations), **D35** (Phase 3 rulings + as built), **D37** (Ferazel controller),
-   **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text), **D40** (Ben's Q5 + Q7 answers + QT as built), **D41** (Ben's Q10: Windows after Phase 4, then lockstep).
-3. **The plan: `docs/plans/2026-10-24-ferazel-phase4.md`** — read "Verification model" (l. 78, gates G1–G10 incl. G7b
-   and G8, and the run-21 ladder-shift note at l. ~119), "Non-negotiable invariants" + "Hazards" (l. 154, 195), "Shared
-   architecture LOCKED" (l. 222), then your task (A4 l. ~1349) and the gate-card section right after it ("What Ben checks — the Phase 4 gate card"), the run-26 ladder-shift note (l. ~119), "Execution order" (l. ~1416), "Stand-ins kept (◇)" (l. ~1455),
-   "Bank corrections to append" (l. ~1551) and "Rulings" (l. ~1650). Read the "As executed" notes of waves 4.0–4.8 (X1,
-   VS, LT, US, IV, HU, TB, BN, PK, TX, EF, CS, SH, GL, PU, IU, MS, SD, BX1, QT, BX2, BT, TP, SW, LV3, LV4 — grep `As executed (`) — they change seams you will use (`killCount`/write-back flags,
-   `addItem` returns the slot, `StatusBarCalls` + the flow-wide status-bar globals, `BonusSprite`, `Outcome.upgrade`,
-   `PlayerState.passRequests`, `fadeOut` returning whether it armed, IU's `.hint` suspension + resumable handle pass `continueHandlePass` + `suspendedInNestedPass`, MS's halfword spirit timer, SD's `PlayerState.shadowRing` + `LevelCarry.shadowMirrors`, BX1's `boxPairLatch`, the Box tail in `BoxSprite.handle` and its unbuilt-arm early return after the latch clear, QT's `LevelRun.systemQuit` + the session flag, BX2's `countdownStore` + the chest/door arms, BT's `.button` handler, `SpriteWorld.bossFlag` / `paintDraw` / the countdown on the world, TP's `.teleport(record:stage:)` + `DrawOp.mosaic` + the copy-before-mosaic port rule in `FrameRenderer`, SW's `SpriteHandler.statue` + `StatueSprite.swift` + `BoxSprite.newTrunk`). The design `docs/plans/2026-10-06-ferazel-design.md`
-   §8 row 4 is the scope; the Phase 3 plan is history.
+   **D38** (Phase 4 rulings — the plan's "Rulings" section is the full text), **D40** (Ben's Q5 + Q7 answers + QT as built), **D41** (Ben's Q10: Windows after Phase 4, then lockstep), and the BTX Windows rulings **D15, D16, D18, D19, D20, D21** (cross-compile, HectorSDL, bundled data, no menu bar, Ctrl shortcuts, 640×480 window; D20 = publishing was Ben's act, the loop never publishes).
+3. **The model for this run: `docs/plans/2026-10-06-btx-windows.md`** (BTX's W-plan: W0 toolchain proof, W0.5 parity,
+   W1 `HectorAudio.PCMMixer`, W2 bitmap font, W3 `HectorSDL`, W4 `WinGameDriver` + the Windows app, W5 in-window menu
+   bar, W6 in-window dialogs, W7 stage; Ben's gates; orchestration notes) and `tools/windows/README.md` (toolchain pins,
+   `build.sh`, `run-in-crossover.sh` + its driver env rule, `proof-b.sh`, `stage-btx.sh`, the CrossOver traps). Then the
+   BTX Windows code it reuses: `BubbleTroubleX/Windows/`, `~/Developer/HectorKit/SDL` (HectorSDL), HectorKit
+   `HectorAudio`/`HectorInput`. The Ferazel design `docs/plans/2026-10-06-ferazel-design.md` §3 (the "Windows twin"
+   layer: `Ferazel/Windows`, shells only present a finished 640×480 RGBA buffer), l. ~105 (keys, D15/D16/D21
+   precedent), l. ~119 (the staged `.app` and the zip carry the same data folder), l. ~158 (Windows has no menu bar,
+   re-ruled for Ferazel), §8 row 7. Then what the Mac app does that Windows must match: `Ferazel/App/` (the
+   `FerazelController` — `GameFlow` driving, the original's dialogs (DLOG/DITL) and MBAR menus, saved-game files and
+   panels (D35 Q3 answers: modern panels on the Mac — Windows needs its own ruling), Options key remapping, the gamepad
+   (D37), sound via `SoundTool`, text smoothing via CoreText (D39 — Windows has no CoreText: the BTX W2 bitmap-font
+   route or a baked glyph cache is the question), the system Quit (D40)) and `tools/stage-ferazel.sh`. The Phase 4 plan
+   (`docs/plans/2026-10-24-ferazel-phase4.md`) is now history except its "Stand-ins kept" table and A4's as-executed
+   note.
 4. The bank: `docs/ferazel/INDEX.md` then only the topical files your tasks cite; the decompile `ghidra/ferazel/` (the
    dump beats the bank: "follow the binary"; Phase 3's "digest A–F" files were never committed — the Phase 4 plan is
    grounded on the bank + the dump + the planner's census scripts (not committed); say so in every brief). **Every
@@ -76,26 +81,31 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
    main that a previous run or Ben recorded in STATE); a dirty HectorKit checkout is Ben's — do not touch it; use an HK
    worktree.
 
-## STATE (live, 2026-10-26, written by loop run 29 at its close; head of `main` = run 29's docs-close commit on top of 3f9b391 — read `git log -8 main`)
+## STATE (live, 2026-10-26, written by loop run 30 at its close; head of `main` = run 30's docs-close commit on top of 4bca4bd — read `git log -8 main`)
 - **Phases 2 and 3 PASSED WITH NOTES by Ben (2026-10-25, D39).** Q9 (keep the speed), Q5 + Q7 (D40), Q10 (D41) answered.
 - **Phase 3 "Front end + saves" CLOSED on the machine side** (loop run 17). Staged build **3553392** at
   `~/Desktop/Ferazel's Wand.app` + `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (Ben played it — Q6 answered).
-- **Phase 4 "Spells + items" — every build task DONE; the phase-end run (A4) is next** (plan `docs/plans/2026-10-24-ferazel-phase4.md`;
-  D38 + its "As built — wave 4.0 … 4.8 end" + D39 + D40): **ladder 349 → 490 reached**. Waves 4.0 → 357, 4.1 → 374, 4.2 → 393,
-  4.2F → 396, 4.3 → 412, 4.4 → 431, 4.5 → 444, 4.6 → 457, 4.6Q → 460, 4.7 → 476 (run 28), SW → 482. **Loop run 29:** LV3
-  c0b9e6f + 9fd2ffc + 9e979bc → 486 (level 3 enterable: all 216 records, retracting spikes, level-palette face groups, the
-  level-load picture cache extended — `Front/LevelRun.swift` `CachedFaces`, 30 bar steps on level 3; enemy stubs counted in
-  totals); LV4 0a01ab7 + 3f9b391 → **490** (level 4 enterable, `BuiltLevels` 1...4, level 5 → "Level 5 is not built yet
-  (Phases 5-6).", sheet table + 0xbea, 0x514/0x515, 0x4bf). **Wave 4.8 closed.**
-- `Ferazel/Core` suite: **490 passed, 0 failed/skipped** (run 29, seat-run from 3f9b391). Census `Totals: items 1,108
+- **Phase 4 "Spells + items" CLOSED on the machine side** (loop run 30; plan `docs/plans/2026-10-24-ferazel-phase4.md`,
+  D38 + its "As built — Phase 4 end"): ladder 349 → **490** reached; A4 2f01491 + 28ebcab + 4bca4bd (comment sweep, gate
+  card `Ferazel/WHAT-TO-EXPECT.md` as built). Staged build **4bca4bd** at `~/Desktop/Ferazel's Wand.app` +
+  `~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (two clean boots). FABLE-GRADE phase review PASS WITH FIXES (no code
+  divergence; card wording fixed). **Ben's gate: QUESTIONS Q11.**
+- **Handed to Phase 5 by seat ruling (run 30):** the underwater screen tint (`.TintScreen`, row 41 M 46450–46474; stubs
+  `Player.swift` ~360, `PlayerLiquids.swift` ~139 — missing since Phase 2, on the gate card's stand-ins) → the Phase 5 plan
+  takes it as a **named task**; the Magical Shield crouch face (`PlayerStates.swift` ~555) → Phase 5 with `.ShieldBlock`.
+- `Ferazel/Core` suite: **490 passed, 0 failed/skipped** (run 30, seat-run and Fable-run from 4bca4bd's parents; card-only after). Census `Totals: items 1,108
   decoded, failures 0`. Ferazel BUILD SUCCEEDED. HectorKit `~/Developer/HectorKit` main **35a85ba**, clean, floor **361**.
 - Worktrees: `inspiring-cannon-e97ccd` (deimos-phase2) and `~/Developer/gamepad-wt/Ambrosia-Classics` (branch
   `gamepad`, merged) are Ben's — never touch. Earlier runs' worktrees are the looper's to remove.
-- **Goldens (current, after run 29 — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
+- **Goldens (current, after run 30 — it moved none):** Phase 1 `9db8f32f7e3d88b4` / `b80b0efd384ffdb9` / pan 30 `b1f4efcf3c34735f` / pan 60
   `80d88efdc8fac27c` / chain `aaab15c0710cbcf7`; Phase 2 L2 `565e867a02736c18` / `df22325e851e782d`, jump `deb577ecdeb64c58`,
   swim `c1dd428a3f146d77` (particles [67,321]), 600-frame `a8dda9cf3e448016` / cues `28a48762cfff1b2b` (cue words 3114, seed
   1574122804, particles 156); Phase 3 FE0 `ed142fed9e3bdce7`, map first frame `38563faaa2276f05`, map RNG `0x7b052a62`, sign
-  frame `c8e41941c1e4d6da`. A4 changes no behaviour: it must move no golden; any moved value is Invariant 10 — STOP, reconcile, record.
+  frame `c8e41941c1e4d6da`. A Windows planning run changes no Core behaviour: any moved value is Invariant 10 — STOP, reconcile, record.
+- **Run 30 notes:** the G9 quit Apple event answers "User cancelled (-128)" by design (D40: the flow queues the quit and
+  the main menu's pass quits; the process is gone 3 s later) — not a failure; the Windows toolchain is already on this
+  machine (`~/Developer/Toolchains/windows-cross/` with Swift 6.4.0, SDL3 3.4.16, winsysroot; `/Applications/CrossOver.app`)
+  — no install is needed to plan, and building only needs what is there.
 - **Run 29 carries:** the enemy stubs set counted-in-totals (`+0x1b5`) unconditionally where the dump gates it on
   `_DAT_1009fe8c` (matters once Phase 5 spawns enemies through Setup at run time) [MED]; the Bat's cache marks cover
   0x6cc/0x6cd of the dump's 0x6cc–0x6d5; the Roach Setup's `+0x154 = x` and speed 0x4b0 (M l. 64945–64946) unset (Phase 5);
@@ -174,33 +184,39 @@ CLOSE. Partial progress is progress: merge what is green, say what is not.
   build the routine faithfully now and tell the owning task; run the wave-end gates in a background Bash while a
   foreground reviewer works.** (23) **run 25: when an implementer STOPS on an existing test the dump contradicts, read the cited M lines yourself, then rule and record it in the commit body + D38 (it took one SendMessage); a new suspension case can break the app's exhaustive switches — run G5 before merging even a Core-only task that touches `FrameSuspension`; Ben's attended session may commit to main mid-run (Q9) — rebase before the merge.** (24) **run 26: an implementer that STOPS on an old test pinning a named stub ("pushing is the Phase-4 tail") gets the seat ruling by SendMessage with a condition — re-derive the new value from the dump and explain every pixel, else STOP again; both review legs then re-derive it. A ◈ task may legitimately move no golden — have a reviewer probe why (which sprites wake on the golden routes).** (22) **run 24: a test that pinned a named stub's placeholder (GL's steering row) may take the dump's value by seat ruling, recorded in the commit body + D-number; the implementer must STOP and report first (it did); mislabelled `// later:` owners are worth a check (the Statue arm is SW's, not Phase 5).** (25) **run 27: Ben may commit to main mid-run (Q10 arrived during QT) — `merge --ff-only` fails, rebase, re-run G2, merge; a reviewer's mutation that survives on a fallback line is worth a seat ruling when it exposes a hole in Ben's intent (a Dock Quit lost during the opening screens); an implementer's "plan says one press, dump says two" claim gets its reviewer pointed at both call sites.** (26) **run 28: implementers and resumed agents always run in the background here — wait with a `stat -L` mtime loop on the task output (idle > 500 s, or the notification); reviewers' mutation tables keep finding arms the whole suite does not pin (TP: unpinned centre/scroll; SW: four Statue arms) — a tests-only round inside existing functions, seat-read, is the standard fix; an agent made the HK self-link again (removed at close).** (27) **run 29: a level's "enterable" task also owns its level-load picture cache (`CachedFaces` in `Front/LevelRun.swift`) — every Setup's cache marks, pinned by the bar step count; a reviewer leg that runs the real level load finds it; the census test's "nothing refused" is not the whole job.**
 
-## THIS RUN'S JOB — loop run 30: **the Phase 4 END run** (A4 + the FABLE-GRADE phase review + its fixes + re-stage)
-- **A4** (plan `#### A4`, l. ~1349–1366, minor): (1) the `// later: Phase 4` sweep — `grep -rn 'later: Phase 4'
-  Ferazel/Core/Sources` and relabel each with its real owner (the plan names most; also the stale ones runs 26 named at
-  `HitPlayerSprite.swift` ~180, 815, 851, 889 and `SeparateFromTiles.swift:109`) — comment-only, no behaviour change, the
-  grep must print nothing; (2) `Ferazel/WHAT-TO-EXPECT.md` rewritten for Phase 4 from the plan's gate card ("What Ben checks
-  — the Phase 4 gate card", right after A4) **as built** — correct it against the as-executed notes (e.g. spikes, levels 3–4,
-  what is still ◇: enemies stand still, spouts fire no boulder, level 5+ refused) and the Q7 / Q9 / Q10 answers; (3)
-  `bash tools/stage-ferazel.sh` (Release, data copied, ad-hoc signed → `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app` +
-  the WHAT-TO-EXPECT copy), then **G9** (two boots is the habit: first launch + relaunch); (4) the gate card as a QUESTIONS
-  item (Q11: "Ben: play this; pass looks like …"), the phase's ◇ list for his read.
-- Implementer for A4 (one Opus `fk-implementer`), one Opus `fk-reviewer` over A4. Then **the FABLE-GRADE phase review**:
-  `fk-reviewer` with `model: "fable"`, named "FABLE-GRADE gate", over `git diff 27c46cf..HEAD` (27c46cf = run 18's Phase 4
-  plan close) + the gate card; it re-runs G2/G3/G5 itself in a temp copy; tell it "no background agents". Fix its findings
-  with Opus implementers (re-review any behaviour change), re-stage, re-run G9. If Fable is unavailable: "Fable check
-  owed" in STATE + QUESTIONS, continue.
-- Commit (A4): `WHAT-TO-EXPECT: Phase 4 gate card (first levels as the original allows)`. Ladder stays **490** (A4 adds no
-  test); any other number is Invariant 10.
-- Then CLOSE. The next chip names, **per D41, a Windows planning run** (Ferazel's Windows twin as its own short phase,
-  BTX's W-plan shape D15–D21, `tools/windows/`, staged zip only) **before** the Phase 5 plan.
-- First, if Ben wrote a new answer or text notes in QUESTIONS: plan that small task first (READ FIRST 1).
+## THIS RUN'S JOB — loop run 31: **the Ferazel Windows PLANNING run** (D41: before the Phase 5 plan)
+- First, if Ben wrote an answer under **Q11**: act on it first (READ FIRST 1) — record it in DECISIONS (next free **D42**),
+  a pass closes Phase 4; notes become a small named wave planned (and, if small, built) before the Windows plan.
+- **Write `docs/plans/2026-10-2x-ferazel-windows.md`** (Opus planner — dispatch one `fk-implementer` as planner, or a
+  `Plan` agent then an implementer to write the file; `superpowers:writing-plans` shape, **contracts not code** —
+  memory `feedback-plans-carry-contracts-not-code`): Ferazel's Windows twin as its own short phase on the BTX W-plan
+  shape, grounded on what BTX already proved (toolchain, `HectorSDL`, `PCMMixer`, the baked bitmap font, the in-window
+  menu/dialog drawing, `stage-btx.sh`) — reuse, don't rebuild. It must carry: its own task list with ⚑ MAJOR marks and
+  file:line contracts; its own ladder (Ferazel/Core stays 490 unless a Windows parity fix adds tests; a Windows Proof B —
+  the Core suite cross-built and run in CrossOver — with its own expected count and skip rules); gate commands with
+  numbers (the Mac gates G1–G10 kept, plus Windows build, Proof B, staged-zip boot in a clean CrossOver bottle); the
+  stand-ins it keeps (◇, named); the Windows gate card (what Ben's tester checks); the **lockstep rule** from D41 written
+  as a standing contract for Phase 5+ (every task that changes what the Mac app shows or does carries its Windows side;
+  every phase end stages both); and rulings for the open Windows questions — at least: no CoreText on Windows (text
+  smoothing D39 → baked glyphs? measured how?), save/open panels (D35 Q3 chose modern Mac panels — Windows equivalent or
+  the original's Standard File drawn in-window), the original's dialogs drawn in-window (BTX W6), no menu bar (D21 re-ruled
+  for Ferazel, design l. ~158), the keypad defaults and the gamepad on Windows (HectorInput / SDL gamepad), the 30-step
+  speed cap and the 240 Hz/2-tick clock under SDL, the system quit (D40) on Windows, where saves and prefs live
+  (`%APPDATA%`?), the `-FerazelLevel` switch, the data folder carried as on the Mac. Owner-only choices go to QUESTIONS
+  as non-blocking items with defaults (D34).
+- Reviews: **two Opus `fk-reviewer` legs** on the plan (one grounds it against BTX's Windows code + `tools/windows/`,
+  one against Ferazel's App + design + D-rulings), fixes applied, then **one FABLE-GRADE leg** (`fk-reviewer`,
+  `model: "fable"`, named "FABLE-GRADE gate", told "no background agents"), fixes applied. Rulings → **D42** (or the next
+  free number). A QUESTIONS item lists the plan for Ben's later read (execution does not wait, D34).
+- Commit: `Ferazel Windows plan (D42)`. No code, no HectorKit change in a planning run (G1 must stay 35a85ba).
+- Then CLOSE. The next chip names the plan's first execution unit (2 tasks, or 3 if at most one is ⚑ MAJOR).
 
-## GATES (fenced; verified on this machine 2026-10-26; G2 490/0, G3 1,108/0, G5 SUCCEEDED re-run by run 29 — copy literally; `$WT` = your worktree; the plan's Verification model adds G7b and G8 — copy those from plan l. ~106–110)
+## GATES (fenced; verified on this machine 2026-10-26; G2 490/0, G3 1,108/0, G5 SUCCEEDED re-run by run 30 and by its Fable leg — copy literally; `$WT` = your worktree; a planning run needs only G1, G2 once at RECONCILE, G10; the new plan writes the Windows gates)
 ```sh
 WT=$PWD; SCRATCH=$(mktemp -d)
 # G1 HectorKit untouched (no Phase 4 task changes it — D38 Ruling 10)
 git -C ~/Developer/HectorKit status --porcelain; git -C ~/Developer/HectorKit log --oneline -1      # empty; 35a85ba
-# G2 suite: first number = the ladder total (490 — A4 adds none), second = 0
+# G2 suite: first number = 490, second = 0
 cd "$WT/Ferazel/Core" && swift test > "$SCRATCH/fz.log" 2>&1; grep -cE "^Test Case '.*' (passed|failed|skipped) \(" "$SCRATCH/fz.log"; grep -cE "^Test Case '.*' (failed|skipped) \(" "$SCRATCH/fz.log"
 # G3 census (once per wave end, and whenever Resources/ or a decoder changes): 0 and the Totals line
 cd "$WT/Ferazel/Core" && swift build -c release --product ferazel-census > /dev/null && "$(swift build -c release --show-bin-path)/ferazel-census" "$WT/Resources/Ferazel" > "$SCRATCH/census.md"; echo $?; tail -n 1 "$SCRATCH/census.md"   # 0 / Totals: items 1,108 decoded, failures 0
@@ -214,8 +230,6 @@ grep -rlE '^import (AppKit|CoreGraphics|AVFoundation|Metal|QuartzCore|SwiftUI|UI
 git -C "$WT" status --porcelain | grep -v '^??'
 # HK floor (only in a run that changed HectorKit): ends PASS with Executed ≥ 361 — record the new floor in HK + STATE
 ~/Developer/HectorKit/tools/check-zero-skip.sh | tail -n 3
-# A4 sweep: prints nothing
-grep -rn 'later: Phase 4' "$WT/Ferazel/Core/Sources"
 # G9 staged app boots (phase-end runs only; D34 authorizes the launch). First `bash tools/stage-ferazel.sh` (Release build,
 # data copied in, ad-hoc signed → "$WT/out/Ferazel/Ferazel's Wand.app", also ditto'd to ~/Desktop); then: pid line printed
 # after 5 s, the second pgrep prints nothing (clean quit), and no new "Ferazel" crash log in the listing

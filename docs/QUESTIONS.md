@@ -32,7 +32,23 @@ brother's Windows machine.
 
 ## Open
 
-_(none — loop run 27, 2026-10-26)_
+### Q11 — 2026-10-26 — Phase 4 gate: do the spells, items and levels 1–4 feel like Ferazel's?
+Context: Phase 4 "Spells + items" is finished on the machine side (loop run 30): all 490 core tests pass, the original
+data decodes cleanly, the app builds, the staged build starts and quits cleanly, and the Fable review over the whole
+phase found nothing wrong in the game code (only the checklist wording, now fixed). Play `~/Desktop/Ferazel's Wand.app`
+(build 4bca4bd), New Game or Resume a Phase 3 save, beside the Let's Play; the checklist is
+`~/Desktop/Ferazel's Wand — WHAT-TO-EXPECT.md` (repo: `Ferazel/WHAT-TO-EXPECT.md`). Jump straight to a level with
+`open -n ~/Desktop/Ferazel\'s\ Wand.app --args -FerazelLevel 3` (1 to 4). Pass looks like: the item bar and stepping
+through items, the Fireball and the dagger, torches and rock piles giving crystals, Xichrons and coins, level 1's chests,
+keys and door, crates, teleporters, power-up spheres, the magic and health upgrades, potions, level 3 (the Statue spell,
+the wounded Habnabit's key, the gate button, mine carts) and level 4 (buttons and switch blocks, the Ring of Smiting) all
+behave and sound like the original. Still missing on purpose: enemies stand still and ignore attacks, the boulder spouts
+fire nothing (Phase 5); level 5 and later say "not built yet"; the screen does not tint under water yet (Phase 5 will
+add it).
+Options: (a) pass; (b) pass with notes (write them — each becomes a task); (c) fail (say what feels wrong).
+Recommendation: a or b — every point the machine can check matches the original; only your hands and eyes can judge feel.
+Blocks: nothing (D34: gates queue). The loop plans the Windows build next (your Q10 answer), then Phase 5.
+Answer:
 
 ## Answered
 

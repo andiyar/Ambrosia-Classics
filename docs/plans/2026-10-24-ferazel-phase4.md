@@ -1362,6 +1362,22 @@ records it here and in NEXT).
 - **Gate:** G1 (HK still 35a85ba, floor 361), G2 = 481/0, G3, G5, G7, G9, G10. Then the FABLE-GRADE phase review over
   the phase diff + the card (D34; told: no background agents), its fixes, re-stage. **STOP for Ben** (QUESTIONS item).
 - **Commit:** `WHAT-TO-EXPECT: Phase 4 gate card (first levels as the original allows)`.
+- ⚑ **As executed (A4, loop run 30, 2026-10-26; 2f01491 + review round 28ebcab + Fable round 4bca4bd):** G2 **490**/0 (no test added),
+  G3 1,108/0, G5 SUCCEEDED, G7 empty, G1 HK 35a85ba clean, the `later: Phase 4` grep empty, no golden moved; G9 two boots
+  on each of two stagings (clean quits; the quit Apple event answers "cancelled" by design — the flow queues it and the
+  main menu's pass quits, D40). Sweep: comment-only (proved by both legs with comments stripped) — rope bridge, cannons
+  p1 ≠ 0, passage darkness, countdown digits → Phase 6; frog, enemy shots, geyser → Phase 5; power-up tints, inventory
+  repair, `SeparateFromTiles` and the `HitPlayerSprite` header rewritten as built; also `PlayerTiles` (carpet → Phase 6),
+  `HandleKeys` (built by BX1), three "app menu Quit" comments corrected to the Dock (the app menu has no Quit item).
+  **Seat rulings:** the Magical Shield crouch face (`PlayerStates.swift` ~555, `.HasItem(0xf)` read as false) → Phase 5
+  with `.ShieldBlock`; the underwater screen tint (`.TintScreen`, row 41 M 46450–46474; stubs `Player.swift` ~360,
+  `PlayerLiquids.swift` ~139, a Phase 2 carry no card or ◇ table listed) → **the Phase 5 plan takes it as a named task**;
+  it is now on the card's stand-ins. Card corrected against the as-built code: hurt coins 4–6 (capped) only from level 1's
+  spiked pendulums; crate explosion hurts; with no magic ⌘ stabs on the same frame; the per-level sphere table (every
+  Invincibility sphere on 1–3 has p2 0 → ~18 min); level 3's spikes are static (twitch in ~every 18 min); the crystal rule
+  (magic share < health share and health > 37); the wand ~⅔ s; torch flicker and item twinkle built. One Opus leg
+  MERGEABLE WITH FIXES (wording) → round seat-read; FABLE-GRADE phase review PASS WITH FIXES — gates re-run (490/0,
+  1,108/0, SUCCEEDED), no code divergence from the dump on ten high-risk ports; card-only fixes, seat-read.
 
 ---
 

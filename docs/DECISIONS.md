@@ -1556,6 +1556,13 @@ set counted-in-totals) → 486; LV4 (level 4 "Eastern Reaches" enterable, `Built
 (Phases 5-6).", the sheet table gained 0xbea, 0x514/0x515, 0x4bf; drops checked per level's renderer) → **490** — **wave 4.8
 closed** (G3 1,108/0, G5 SUCCEEDED, no golden moved, HK 35a85ba untouched). Next: the Phase 4 end run (A4 + Fable phase review),
 then the Windows plan (D41).
+**As built — Phase 4 end (loop run 30, 2026-10-26):** A4 (2f01491, 28ebcab, 4bca4bd): the `later: Phase 4` sweep (comment-only,
+every leftover relabelled to its owner or rewritten as built), `Ferazel/WHAT-TO-EXPECT.md` = the Phase 4 gate card as built,
+staged to `out/Ferazel/` + `~/Desktop/Ferazel's Wand.app` (G9: two clean boots per staging). **FABLE-GRADE phase review: PASS
+WITH FIXES** (gates re-run 490/0, census 1,108/0, SUCCEEDED; ten high-risk ports read against the dump, no divergence; card
+wording fixed). Seat rulings: the Magical Shield crouch face → Phase 5 with `.ShieldBlock`; the unbuilt underwater screen
+tint (`.TintScreen`, a Phase 2 carry) → a named task in the Phase 5 plan. **Phase 4 machine-closed; Ben's gate = QUESTIONS
+Q11.** Next (D41): the Ferazel Windows plan, before the Phase 5 plan.
 
 ## D39 — Ben's Phase 2 + 3 play-test verdicts (pass with notes) and Apple system fonts may ship (2026-10-25; recorded by loop run 22)
 
