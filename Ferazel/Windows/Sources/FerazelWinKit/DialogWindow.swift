@@ -166,10 +166,9 @@ public struct DialogPopupMenu: Equatable, Sendable {
     /// A dialog run by its own clock (the credits): every mouse event is the dialog's, nothing is tracked, nothing
     /// beeps at the press — its loop reads `Button()` and the pointer itself.
     public internal(set) var takesAllClicks = false
-    /// The pointer in content coordinates, the button, and a press not yet seen by `Button()` (the credits' loop).
+    /// The pointer in content coordinates and the button, live (the credits' loop reads `Button()`).
     public internal(set) var pointer: (x: Int, y: Int)?
     public internal(set) var buttonDown = false
-    var pressSeen: (x: Int, y: Int)?
     /// The content's pixels when the dialog paints them itself (the credits' persistent window): drawn instead of
     /// the items.
     var canvas: DialogRenderer.Image?
@@ -413,13 +412,16 @@ public struct DialogPopupMenu: Equatable, Sendable {
     }
 
     /// The event record's character code for the keys the filters read (Return 0x0d, keypad Enter 0x03, Esc 0x1b,
-    /// the period 0x2e of ⌘.); 0 for the rest (Options takes the key code, no dialog reads another character).
-    static func charCode(keyCode: UInt16) -> UInt8 {
+    /// the period 0x2e of ⌘. — the main period or the keypad's; with Shift the main key is '>' 0x3e, as the Mac's
+    /// `charactersIgnoringModifiers` keeps Shift, so ⌘⇧. is no cancel); 0 for the rest (Options takes the key code,
+    /// no dialog reads another character).
+    static func charCode(keyCode: UInt16, shift: Bool = false) -> UInt8 {
         switch keyCode {
         case 0x24: 0x0d
         case 0x4C: 0x03
         case 0x35: 0x1b
-        case 0x2F: 0x2e
+        case 0x2F: shift ? 0x3e : 0x2e
+        case 0x41: 0x2e
         default: 0
         }
     }
@@ -427,7 +429,8 @@ public struct DialogPopupMenu: Equatable, Sendable {
     // MARK: Mouse (content coordinates)
 
     /// The item a press at (x, y) goes to, as the Mac's views hit-test front to back: hidden items, static text and
-    /// pictures (and disabled user items) pass the click on; an edit item's view is its rect outset by 4. Nil = none.
+    /// pictures (and disabled user items) pass the click on; an edit item takes clicks in its own rect only (the
+    /// binary's `FindDialogItem`; the Mac's view is 4 px larger). Nil = none.
     private func clickTarget(_ x: Int, _ y: Int) -> DialogItem? {
         for d in items.reversed() where !hidden.contains(d.number) {
             switch d.item.kind {
@@ -435,8 +438,7 @@ public struct DialogPopupMenu: Equatable, Sendable {
             case .userItem, .helpItem, .icon, .other: if !d.enabled { continue }
             default: break
             }
-            let r = d.item.kind == .editText ? d.rect.insetBy(-4, -4) : d.rect
-            if r.contains(x, y) { return d }
+            if d.rect.contains(x, y) { return d }
         }
         return nil
     }

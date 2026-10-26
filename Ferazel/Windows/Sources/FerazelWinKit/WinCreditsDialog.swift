@@ -11,8 +11,8 @@ import Foundation
 /// (`DialogWindow.canvas`). Both pictures as QuickDraw drew them into a dialog: `dialogPicture`, under the screen's
 /// current CLUT (the Mac's [LOW]: the original drew the strip into an 8-bit GWorld with the default table first).
 ///
-/// `Button()` is read from the dialog's button state plus a press not yet seen (the events arrive in batches each
-/// loop wake; a press released before the next 3-tick check still counts, at the point it was made).
+/// `Button()` is the live button at each 3-tick check: a press released between two checks is missed, as in the
+/// original.
 @MainActor final class WinCreditsDialog {
     private unowned let system: DialogSystem
     private let services: WinDialogServices
@@ -76,12 +76,9 @@ import Foundation
         if drawn { dialog.invalidate() }
     }
 
-    /// `Button()` then `FlushEvents(mDownMask)`: where the pointer is while the button is down (or where a press
-    /// since the last check was made); nil when up.
+    /// `Button()` (then `GetMouse`): where the pointer is while the button is down; nil when up.
     private func button() -> (x: Int, y: Int)? {
-        defer { dialog.pressSeen = nil }
-        if dialog.buttonDown, let p = dialog.pointer { return p }
-        return dialog.pressSeen
+        dialog.buttonDown ? dialog.pointer : nil
     }
 
     /// `CopyBits(strip → dest)` under the clip, 1:1.

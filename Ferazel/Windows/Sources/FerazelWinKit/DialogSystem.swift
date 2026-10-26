@@ -138,7 +138,8 @@ import Foundation
 
     /// A key-down as the event record (character code, key code, modifiers word, auto-key) to the front dialog.
     public func keyDown(_ keyCode: UInt16, modifiers: WinModifiers, isRepeat: Bool) {
-        let key = DialogKeyEvent(char: DialogWindow.charCode(keyCode: keyCode), keyCode: Int(keyCode),
+        let key = DialogKeyEvent(char: DialogWindow.charCode(keyCode: keyCode, shift: modifiers.contains(.shift)),
+                                 keyCode: Int(keyCode),
                                  modifiers: DialogKeyEvent.modifiers(modifiers, buttonDown: buttonDown),
                                  isRepeat: isRepeat)
         stack.last?.handleKey(key, now: now)
@@ -152,10 +153,11 @@ import Foundation
     }
 
     /// Every wake: the flash's clock, then — once per new tick — the front dialog's null event (the Mac's 1/60 s
-    /// timer: Options' modifier capture and caret, the credits' scroll).
+    /// timer: Options' modifier capture and caret, the credits' scroll); none while a popup menu is open
+    /// (`PopUpMenuSelect` tracks modally in the original).
     public func tick(now: UInt32) {
         stack.last?.tick(now: now)
-        guard now != lastNull else { return }
+        guard now != lastNull, stack.last?.menu == nil else { return }
         lastNull = now
         stack.last?.nullEvent?()
     }
@@ -168,7 +170,6 @@ import Foundation
         if front.takesAllClicks {
             front.pointer = (x - front.contentX, y - front.contentY)
             front.buttonDown = true
-            front.pressSeen = front.pointer
             return
         }
         guard front.containsCanvas(x, y) else { beep(); return }
