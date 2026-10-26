@@ -15,8 +15,10 @@ import HectorInput
     /// The wall clock the interactive game seeds from and reads `GetDateTime` from (`FastRand.systemClock`); never
     /// read in `--frames` mode (Ruling 20).
     var wallClock: (secondsSince1904: UInt32, ticks: UInt32) { get }
-    /// Drains the input queue.
-    func pollEvents() -> [WinEvent]
+    /// Drains the input queue. `script` false (before the boot, when no shortcuts or menu state exist yet): only the
+    /// system's events (the close box); a scripted host keeps the script's for the first poll that takes it, so each
+    /// scripted event reaches the game exactly once and only once the game is booted.
+    func pollEvents(script: Bool) -> [WinEvent]
     /// Shows one 640×480 frame of R, G, B, A bytes.
     func present(rgba: [UInt8])
     func setCursorVisible(_ visible: Bool)
@@ -162,7 +164,7 @@ public enum WinClock {
     public func step() {
         guard !finished else { return }
         polling = true
-        let events = host.pollEvents()
+        let events = host.pollEvents(script: driver.flow != nil)
         polling = false
         for e in events {
             guard !finished else { return }   // a live redraw inside the poll may have ended the game
@@ -409,12 +411,13 @@ public enum WinClock {
         return clock
     }
 
-    /// The injected events, then — on this wake's FIRST poll only — the script's (a second poll in the same wake,
-    /// e.g. the executable's pre-boot poll and the loop's first, never delivers a scripted event twice).
-    public func pollEvents() -> [WinEvent] {
+    /// The injected events (the system's: a test's quit, the executable's close box), then — when `script` and on
+    /// the first such poll of this wake only — the script's (the pre-boot poll takes none, so wake 0's script
+    /// reaches the booted game; a second poll in the same wake never delivers a scripted event twice).
+    public func pollEvents(script: Bool) -> [WinEvent] {
         var events = injected
         injected = []
-        if deliveredFrame != scripted.frame {
+        if script, deliveredFrame != scripted.frame {
             deliveredFrame = scripted.frame
             events += scripted.events()
         }

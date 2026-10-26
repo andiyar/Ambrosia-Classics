@@ -154,12 +154,12 @@ do {
         return (c.secondsSince1904, c.ticks)
     }
 
-    func pollEvents() -> [WinEvent] {
+    func pollEvents(script: Bool) -> [WinEvent] {
         let real = sdl.pollEvents()
         if real.contains(.exposed) { redraw() }
         guard let scripted else { return real.compactMap(Self.convert) }
         if real.contains(.quit) { scripted.inject(.quit) }
-        return scripted.pollEvents()
+        return scripted.pollEvents(script: script)
     }
 
     func present(rgba: [UInt8]) {
@@ -252,7 +252,8 @@ let game = WinGame(args: args, host: host, text: text, files: files, audio: audi
 host.present(rgba: [UInt8](repeating: 0, count: WinCanvas.width * WinCanvas.height * 4).enumerated()
     .map { $0.offset % 4 == 3 ? 0xff : 0 })                               // black until the flow first presents
 // A quit that arrives before the flow exists ends at once (the Mac's `applicationShouldTerminate` before launch). Each
-// scripted event reaches the game once: a wake's script is delivered by its first poll only (`WinScriptedHost`).
+// scripted event reaches the game once, after the boot: this pre-boot poll takes only the system's events
+// (`WinGame.step`, `WinScriptedHost.pollEvents(script:)`).
 game.step()
 if game.finished {
     startupLog?.write("quit before the game started")

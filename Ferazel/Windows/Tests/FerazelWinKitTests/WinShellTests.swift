@@ -102,9 +102,10 @@ import XCTest
         XCTAssertEqual(input.keyDown(0x24, modifiers: [], isRepeat: false, shortcuts: s, menus: Self.inPlay,
                                      modalUp: false, dialogUp: false), .held, "Return alone is the game's")
         // Through the loop: one toggle per press, a repeat eaten too; Ctrl+Alt+Enter is no toggle.
-        let host = WinScriptedHost(script: try WinKeyScript(text: "0 down return option\n"))
+        let host = WinScriptedHost()
         let game = WinGame(args: try WinArgs.parse([], environment: [:]), host: host, text: StubGlyphRasterizer(),
                            files: WinFiles(prefsURL: nil, savesFolder: nil))
+        host.inject(.keyDown(keyCode: 0x24, modifiers: .option, isRepeat: false))
         game.step()
         host.advance()
         host.inject(.keyDown(keyCode: 0x24, modifiers: .option, isRepeat: true))

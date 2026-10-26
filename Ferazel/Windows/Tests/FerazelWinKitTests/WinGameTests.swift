@@ -54,8 +54,15 @@ import XCTest
         host.inject(.keyUp(keyCode: 0x2E))
         host.inject(.keyDown(keyCode: 0x2D, modifiers: .command, isRepeat: false))
         host.inject(.keyUp(keyCode: 0x2D))
+        let musicBefore = game.flow.toggles.live.musicOn
+        XCTAssertEqual(game.menuState.musicOn, musicBefore != 0)
         game.step()
         XCTAssertEqual(game.shortcutsTaken, [.music, .music])
+        // The pick reached the game: the menu pass's `.ToggleMusic` flips the music pref and re-sends the menu state
+        // (both picks land before one pass; the second replaces the first in its one-event slot, as the original).
+        Self.run(game, host, max: 400) { $0.flow.toggles.live.musicOn != musicBefore }
+        XCTAssertEqual(game.menuState.musicOn, game.flow.toggles.live.musicOn != 0)
+        XCTAssertNotEqual(game.menuState.musicOn, musicBefore != 0)
         XCTAssertEqual(game.menuState.menusLive, true)
     }
 
@@ -165,23 +172,34 @@ import XCTest
     // MARK: 10 · a quit before the flow exists ends at once
 
     func testQuitBeforeTheFlowExistsExitsZeroAtOnce() throws {
-        // A scripted `0 quit` takes the close box's path: the executable's pre-boot step ends the game, exit 0.
+        // The close box before the boot (a system event): the executable's pre-boot step ends the game, exit 0.
         let dialogs = WinStubDialogs()
-        let (game, host) = try Self.game(script: "0 quit", dialogs: dialogs, boot: false)
+        let (game, host) = try Self.game(dialogs: dialogs, boot: false)
+        host.inject(.quit)
         game.step()
         XCTAssertTrue(game.finished)
         XCTAssertEqual(game.exitCode, 0)
         XCTAssertTrue(dialogs.shown.isEmpty, "no confirm")
         XCTAssertEqual(game.flowSteps, 0)
-        XCTAssertEqual(host.pollEvents(), [], "the quit was delivered once")
-        // Each scripted event is delivered once: a second poll in the same wake (the pre-boot poll, then the loop's
-        // first) gets none of the script's; injected events still arrive; the next wake's script arrives.
+        // The pre-boot step takes none of the script: wake 0's `quit` (and its Ctrl+M) reach the booted game, once —
+        // the quit then takes the flow's `systemQuit` path (no exit: the boot is not a level, the quit is queued).
+        let (late, lateHost) = try Self.game(script: "0 down m ctrl\n0 quit", boot: false)
+        late.step()
+        XCTAssertFalse(late.finished, "no script event before the boot")
+        try late.boot(dataDirectory: FerazelData.dataDirectory())
+        late.step()
+        XCTAssertFalse(late.finished, "the scripted quit went to the flow")
+        XCTAssertTrue(late.flow.appleEvents.quit, "queued as the original's quit event")
+        XCTAssertEqual(late.flowSteps, 1)
+        XCTAssertEqual(lateHost.pollEvents(script: true), [], "each scripted event delivered once")
+        // Polls in one wake: the script once; injected events still arrive; the next wake's script arrives.
         let (_, twice) = try Self.game(script: "0 press n\n1 press m", boot: false)
-        XCTAssertEqual(twice.pollEvents(), [.keyDown(keyCode: 0x2D, modifiers: [], isRepeat: false)])
+        XCTAssertEqual(twice.pollEvents(script: false), [])
+        XCTAssertEqual(twice.pollEvents(script: true), [.keyDown(keyCode: 0x2D, modifiers: [], isRepeat: false)])
         twice.inject(.focusLost)
-        XCTAssertEqual(twice.pollEvents(), [.focusLost])
+        XCTAssertEqual(twice.pollEvents(script: true), [.focusLost])
         twice.advance()
-        XCTAssertEqual(twice.pollEvents(), [.keyDown(keyCode: 0x2E, modifiers: [], isRepeat: false)])
+        XCTAssertEqual(twice.pollEvents(script: true), [.keyDown(keyCode: 0x2E, modifiers: [], isRepeat: false)])
     }
 
     // MARK: 18 · New Game through a key script
